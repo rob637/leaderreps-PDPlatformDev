@@ -1,271 +1,319 @@
-import React, { useState, useEffect, useMemo } from 'react';
-// FIX: Changed '../../../App' to correct path '../../App'
-import { useAppServices } from '../../App';
-import { Card, Button, Tooltip, NavItem } from '../shared/UI';
-// FIX: Changed '../../../data/Constants' to correct path '../../data/Constants'
-import { LEADERSHIP_TIERS } from '../../data/Constants'; 
-import { ArrowLeft, Zap, ShieldCheck, CornerRightUp, Users, Settings, AlertTriangle, Home, Clock, TrendingUp, Mic, BookOpen, Target, Briefcase } from 'lucide-react';
-// FIX: Changed '../../../utils/ApiHelpers' to correct path '../../utils/ApiHelpers'
+// src/components/screens/Dashboard.jsx
+import React, { useMemo, useState } from 'react';
+import { signOut } from 'firebase/auth';
+
+// App context + helpers
+import { useAppServices } from '../../App.jsx';
 import { mdToHtml, callSecureGeminiAPI, hasGeminiKey, GEMINI_MODEL } from '../../utils/ApiHelpers.js';
-import { signOut } from 'firebase/auth'; // Explicitly import signOut
 
-// --- DashboardScreen ---
-export const DashboardScreen = () => {
-    // FIX: Removed unnecessary destructuring of IconMap as components are imported directly.
-    const { navigate, user } = useAppServices(); 
+// Icons (install with: npm i lucide-react)
+import {
+  Clock,
+  ArrowLeft,
+  Zap,
+  ShieldCheck,
+  CornerRightUp,
+  Users,
+  Settings,
+  AlertTriangle,
+  Home,
+  TrendingUp,
+  Mic,
+  BookOpen,
+  CheckCircle2,
+} from 'lucide-react';
 
-    return (
-        <div className="p-8 space-y-8">
-            <h1 className="text-3xl font-extrabold text-[#002E47]">Welcome back, {user.name}!</h1>
-            <p className="text-lg text-gray-600">Your hub for leadership practice, strategy, and growth.</p>
+/* ---------------------------------------
+   Small UI helpers
+----------------------------------------*/
+const StatCard = ({ icon: Icon, label, value, onClick }) => (
+  <button
+    className="flex items-center gap-3 p-4 rounded-2xl bg-white hover:bg-emerald-50 transition border border-gray-100 shadow-sm text-left w-full"
+    onClick={onClick}
+    type="button"
+  >
+    <div className="p-2 rounded-xl bg-emerald-100 text-emerald-700">
+      <Icon size={20} />
+    </div>
+    <div className="flex-1">
+      <div className="text-sm text-gray-500">{label}</div>
+      <div className="text-xl font-semibold text-gray-900">{value}</div>
+    </div>
+    <CornerRightUp className="text-gray-400" size={18} />
+  </button>
+);
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                {/* Icons passed as components */}
-                <Card title="QuickStart Program Overview" icon={Zap} onClick={() => navigate('quick-start-accelerator')}>
-                    <p className="text-gray-600 text-sm mb-4">Review the core curriculum of the 4-Session QuickStart program: Feedback, Identity, Coaching, and Trust.</p>
-                    <Button onClick={() => navigate('quick-start-accelerator')} variant="outline" className="w-full">Review Sessions</Button>
-                </Card>
+const Tile = ({ icon: Icon, title, desc, onClick }) => (
+  <button
+    className="rounded-2xl border border-gray-100 bg-white hover:bg-gray-50 transition p-4 text-left shadow-sm"
+    onClick={onClick}
+    type="button"
+  >
+    <div className="flex items-center gap-2">
+      <div className="p-2 rounded-lg bg-gray-100">
+        <Icon size={18} />
+      </div>
+      <h3 className="font-semibold">{title}</h3>
+    </div>
+    <p className="text-sm text-gray-600 mt-2">{desc}</p>
+  </button>
+);
 
-                <Card title="Professional Development Plan (Prof Dev Plan)" icon={Briefcase} onClick={() => navigate('prof-dev-plan')} className="lg:col-span-1 border-4 border-[#47A88D] bg-[#47A88D]/10">
-                    <p className="text-gray-700 font-medium text-sm mb-4">Your personalized growth plan. Track your progress, set goals, and access your tailored learning path.</p>
-                    <Button onClick={() => navigate('prof-dev-plan')} className="w-full bg-[#002E47] hover:bg-gray-800">Start Development</Button>
-                </Card>
-
-                <Card title="Coaching & Crucial Conversations Lab" icon={Mic} onClick={() => navigate('coaching-lab')}>
-                    <p className="text-gray-600 text-sm mb-4">Practice high-stakes conversations and refine your feedback skills using structured templates and AI critique.</p>
-                    <Button onClick={() => navigate('coaching-lab')} variant="outline" className="w-full">Go to Lab</Button>
-                </Card>
-                
-                <Card title="Daily Practice & Commitment" icon={Clock} onClick={() => navigate('daily-practice')}>
-                    <p className="text-gray-600 text-sm mb-4">Manage your micro-habits, log daily commitments, and track the consistent effort required for long-term growth.</p>
-                    <Button onClick={() => navigate('daily-practice')} variant="outline" className="w-full">Go to Hub</Button>
-                </Card>
-
-                <Card title="Vision & OKR Planning Hub" icon={TrendingUp} onClick={() => navigate('planning-hub')}>
-                    <p className="text-gray-600 text-sm mb-4">Draft your leadership vision and set measurable Quarterly Objectives and Key Results (OKRs).</p>
-                    <Button onClick={() => navigate('planning-hub')} variant="outline" className="w-full">Plan Strategy</Button>
-                </Card>
-
-                <Card title="Business Readings" icon={BookOpen} onClick={() => navigate('business-readings')}>
-                    <p className="text-gray-600 text-sm mb-4">Access categorized, one-page summaries of top leadership and business books, generated on demand.</p>
-                    <Button onClick={() => navigate('business-readings')} variant="outline" className="w-full">Explore Summaries</Button>
-                </Card>
-            </div>
-        </div>
-    );
+/* ---------------------------------------
+   Gemini helper: extract text robustly
+----------------------------------------*/
+function extractGeminiText(resp) {
+  if (!resp) return '';
+  if (typeof resp === 'string') return resp;
+  // Proxy might return { text }
+  if (resp.text) return String(resp.text);
+  // Direct Google response
+  const c = resp.candidates?.[0];
+  const parts = c?.content?.parts;
+  if (Array.isArray(parts)) {
+    return parts.map(p => p?.text).filter(Boolean).join('\n\n');
+  }
+  return '';
 }
 
-// --- QuickStartScreen (Router) ---
-const LISAuditorView = ({ setQuickStartView }) => {
-    const { navigate } = useAppServices(); 
-    const [lisDraft, setLisDraft] = useState('I am a dedicated leader who always tries to do the right thing for my team and my company. I believe in hard work.');
-    const [isGenerating, setIsGenerating] = useState(false);
-    const [critique, setCritique] = useState('');
-    const [critiqueHtml, setCritiqueHtml] = useState('');
+/* ---------------------------------------
+   Dashboard (default export)
+----------------------------------------*/
+const DashboardScreen = () => {
+  const {
+    navigate,
+    user,
+    pdpData,
+    planningData,
+    commitmentData,
+  } = useAppServices();
 
-    const ShieldCheckIcon = ShieldCheck;
-    const ArrowLeftIcon = ArrowLeft; 
+  // Defensive counts (don’t assume shapes)
+  const goalsCount = useMemo(() => {
+    const g = pdpData?.goals;
+    if (Array.isArray(g)) return g.length;
+    if (pdpData && typeof pdpData === 'object') return Object.keys(pdpData).length;
+    return 0;
+  }, [pdpData]);
 
-    useEffect(() => {
-        if (!critique) { setCritiqueHtml(''); return; }
-        (async () => setCritiqueHtml(await mdToHtml(critique)))();
-    }, [critique]);
+  const plansCount = useMemo(() => {
+    const p = planningData?.plans || planningData?.items;
+    if (Array.isArray(p)) return p.length;
+    if (planningData && typeof planningData === 'object') return Object.keys(planningData).length;
+    return 0;
+  }, [planningData]);
 
-    const generateCritique = async () => {
-        if (!lisDraft.trim()) { alert("Please provide your Leadership Identity Statement draft first."); return; }
+  const commitsCount = useMemo(() => {
+    const c = commitmentData?.commitments || commitmentData?.items;
+    if (Array.isArray(c)) return c.length;
+    if (commitmentData && typeof commitmentData === 'object') return Object.keys(commitmentData).length;
+    return 0;
+  }, [commitmentData]);
 
-        setIsGenerating(true);
-        setCritique('');
+  // Gemini tip
+  const [tipLoading, setTipLoading] = useState(false);
+  const [tipHtml, setTipHtml] = useState('');
 
-        const systemPrompt = "You are an elite executive coach specializing in LIS development. Your task is to critique the user's LIS draft based on clarity, actionability, and aspirational alignment. Your critique must be polite, structured using Markdown, and focus on: 1) **Clarity and Specificity**; 2) **Action/Behavior Focus**; 3) **Aspirational Rigor**. Conclude with a refined, concise LIS example using the core values from the user's draft.";
-        const userQuery = `Critique this Leadership Identity Statement draft:\n\n${lisDraft}`;
+  const getDailyTip = async () => {
+    if (!hasGeminiKey()) {
+      setTipHtml(mdToHtml('> ⚠️ Gemini key/proxy not configured.\n\nSet `VITE_GEMINI_PROXY_URL` (preferred) or `VITE_GEMINI_API_KEY`.'));
+      return;
+    }
+    setTipLoading(true);
+    try {
+      const prompt = `Give a concise, actionable leadership practice for the day (2 sentences max). 
+Audience: frontline managers. 
+Tone: encouraging, specific.`;
+      const resp = await callSecureGeminiAPI({ prompt, model: GEMINI_MODEL });
+      const text = extractGeminiText(resp) || 'No suggestion available right now.';
+      setTipHtml(mdToHtml(text));
+    } catch (e) {
+      setTipHtml(mdToHtml(`**Error:** ${e?.message || 'Failed to fetch tip.'}`));
+    } finally {
+      setTipLoading(false);
+    }
+  };
 
-        try {
-            if (!hasGeminiKey()) { 
-                setCritique("## AI Critique Unavailable\n\n**ERROR**: The Gemini API Key is missing.");
-                setIsGenerating(false);
-                return;
-            }
-
-            const payload = { contents: [{ role: "user", parts: [{ text: userQuery }] }], systemInstruction: { parts: [{ text: systemPrompt }] } };
-
-            const result = await callSecureGeminiAPI(payload);
-            const aiText = result?.candidates?.[0]?.content?.parts?.[0]?.text || "Could not generate critique. The model may have blocked the request or the response was empty.";
-            setCritique(aiText);
-
-        } catch (error) {
-            console.error("Gemini API Error:", error);
-            setCritique("An error occurred while connecting to the AI coach.");
-        } finally {
-            setIsGenerating(false);
-        }
-    };
-
-    return (
-        <div className="p-8">
-            <h1 className="text-3xl font-extrabold text-[#002E47] mb-4">Leadership Identity Statement (LIS) Auditor</h1>
-            <p className="text-lg text-gray-600 mb-6 max-w-3xl">Your LIS is the foundation of your leadership. Get expert feedback to ensure your statement is specific, actionable, and truly aligned with your highest self.</p>
-            <Button onClick={() => setQuickStartView('quick-start-home')} variant="outline" className="mb-8">
-                <ArrowLeftIcon className="w-5 h-5 mr-2" /> Back to QuickStart
-            </Button>
-
-            <Card title="Draft Your Leadership Identity Statement" icon={ShieldCheckIcon} className='mb-8 border-l-4 border-[#002E47]'>
-                <p className="text-gray-700 text-sm mb-2">Write your LIS below. It should define who you are when you're leading at your absolute best.</p>
-                <textarea 
-                    value={lisDraft} 
-                    onChange={(e) => setLisDraft(e.target.value)} 
-                    className="w-full p-3 mt-4 border border-gray-300 rounded-xl focus:ring-[#47A88D] focus:border-[#47A88D] h-32" 
-                    placeholder="e.g., 'I am a visionary, transparent, and challenging leader who cultivates trust by owning failures and rewarding courageous feedback.'"
-                ></textarea>
-                
-                <Tooltip 
-                    content={hasGeminiKey() 
-                        ? "Runs your draft through the AI Coach for structured critique." 
-                        : "AI Critique is unavailable. Check App Settings for configuration."
-                    }
-                >
-                    <Button 
-                        onClick={generateCritique} 
-                        disabled={isGenerating || !lisDraft.trim()} 
-                        className="mt-4 w-full md:w-auto"
-                    >
-                        {isGenerating ? (
-                            <div className="flex items-center">
-                                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
-                                Auditing Identity...
-                            </div>
-                        ) : 'Run LIS Audit'}
-                    </Button>
-                </Tooltip>
-            </Card>
-
-            {critiqueHtml && (
-                <Card title="AI Coach Critique" className="mt-8 bg-[#002E47]/10 border border-[#002E47]/20 rounded-3xl">
-                    <div className="prose max-w-none prose-h3:text-[#47A88D] prose-p:text-gray-700 prose-ul:space-y-2">
-                        <div dangerouslySetInnerHTML={{ __html: critiqueHtml }} />
-                    </div>
-                </Card>
-            )}
+  return (
+    <div className="p-6 space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+            <Home size={20} /> Welcome{user?.email ? `, ${user.email}` : ''} 👋
+          </h1>
+          <p className="text-gray-600 text-sm mt-1">
+            Your hub for plans, practice, and progress.
+          </p>
         </div>
-    );
+        <div className="hidden sm:flex items-center gap-2 text-sm text-gray-500">
+          <Clock size={16} /> {new Date().toLocaleString()}
+        </div>
+      </div>
+
+      {/* Top stats */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <StatCard icon={TrendingUp} label="Plans" value={plansCount} onClick={() => navigate('planning-hub')} />
+        <StatCard icon={CheckCircle2} label="Commitments" value={commitsCount} onClick={() => navigate('daily-practice')} />
+        <StatCard icon={BookOpen} label="Goals / PDP" value={goalsCount} onClick={() => navigate('prof-dev-plan')} />
+      </div>
+
+      {/* Main grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Left: quick actions / navigation */}
+        <div className="space-y-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <Tile
+              icon={ShieldCheck}
+              title="Professional Dev Plan"
+              desc="Define goals, milestones, and success criteria."
+              onClick={() => navigate('prof-dev-plan')}
+            />
+            <Tile
+              icon={Mic}
+              title="Daily Practice"
+              desc="Capture reps, reflect, and track momentum."
+              onClick={() => navigate('daily-practice')}
+            />
+            <Tile
+              icon={Zap}
+              title="Coaching Lab"
+              desc="Experiment with prompts and coaching patterns."
+              onClick={() => navigate('coaching-lab')}
+            />
+            <Tile
+              icon={Users}
+              title="Planning Hub"
+              desc="Prioritize work and align with your team."
+              onClick={() => navigate('planning-hub')}
+            />
+            <Tile
+              icon={BookOpen}
+              title="Business Readings"
+              desc="Curated articles to sharpen decisions."
+              onClick={() => navigate('business-readings')}
+            />
+            <Tile
+              icon={Settings}
+              title="App Settings"
+              desc="Manage account and app options."
+              onClick={() => navigate('app-settings')}
+            />
+          </div>
+        </div>
+
+        {/* Middle: Gemini tip */}
+        <div className="space-y-4">
+          <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
+            <div className="flex items-center justify-between">
+              <h2 className="text-lg font-semibold flex items-center gap-2">
+                <AlertTriangle size={18} /> Daily Coaching Tip
+              </h2>
+              <button
+                className="rounded-md border px-3 py-1.5 text-sm hover:bg-gray-50"
+                onClick={getDailyTip}
+                disabled={tipLoading}
+                type="button"
+              >
+                {tipLoading ? 'Fetching…' : 'Generate'}
+              </button>
+            </div>
+            <div className="mt-3 prose prose-sm max-w-none">
+              {tipHtml
+                ? <div dangerouslySetInnerHTML={{ __html: tipHtml }} />
+                : <p className="text-gray-600 text-sm">Click “Generate” to get a short, actionable tip.</p>}
+            </div>
+          </div>
+        </div>
+
+        {/* Right: recent activity (lightweight placeholder, safe if data undefined) */}
+        <div className="space-y-4">
+          <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
+            <h2 className="text-lg font-semibold flex items-center gap-2">
+              <TrendingUp size={18} /> Recent Activity
+            </h2>
+            <ul className="mt-3 space-y-2 text-sm text-gray-700">
+              <li>• PDP items: <span className="font-medium">{goalsCount}</span></li>
+              <li>• Plans: <span className="font-medium">{plansCount}</span></li>
+              <li>• Commitments: <span className="font-medium">{commitsCount}</span></li>
+            </ul>
+            <p className="text-xs text-gray-500 mt-3">
+              This is a simple overview. Hook in your real timeline when ready.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 };
 
+/* ---------------------------------------
+   Quick Start (named export)
+----------------------------------------*/
 export const QuickStartScreen = () => {
-    const [view, setQuickStartView] = useState('quick-start-home');
-    const { IconMap } = useAppServices();
-    const ZapIcon = Zap;
+  const { navigate } = useAppServices();
+  const md = `
+# Quick Start
 
-    const sessions = [
-        { id: 1, title: 'Delivering Effective Feedback', focus: 'CLEAR Framework & The Magic Ratio (5:1)', keyRationale: 'Feedback is the currency of growth. Master objectivity (SBI) and ensure positive reinforcement outweighs correction to build a high-trust team environment.', preWork: ['Watch Session 1 Prep Video', 'Complete Pre-Session Exercises', 'Complete Workout Prep'] },
-        { id: 2, title: 'Anchoring Feedback with Identity', focus: 'Leadership Identity Statement (LIS) & Anchored Feedback', keyRationale: 'Your LIS is your North Star. Grounding every action and conversation in your core values ensures integrity and makes your leadership predictable and trustworthy.', preWork: ['Watch Session 2 Prep Video', 'Draft Leadership Identity Statement', 'Feedback Reflection'] },
-        { id: 3, title: 'Coaching One-on-One (1:1)', focus: '1:1 Structure, Direct-Led Agenda, and Coaching for Growth', keyRationale: 'Effective 1:1s are the most high-leverage time you spend. Shift from status updates to future-focused coaching and actively listening to employee challenges.', preWork: ['Sign up for 1:1 with Trainer', 'Review 1:1 Notes & Topics', 'Prepare for Personalized Coaching Session'] },
-        { id: 4, title: 'Building Vulnerability-Based Trust', focus: 'Trust Fundamentals, 1:1 Habit, and Leading with Vulnerability', keyRationale: 'Trust is the foundation for speed and psychological safety. Learn to lead by modeling vulnerability and commitment, creating space for the team to take risks and admit mistakes.', preWork: ['Watch Session 4 Prep Video', 'Complete Pre-Session Exercises', 'Complete Reflections'] }
-    ];
-
-    const renderView = () => {
-        switch(view) {
-            case 'lis-auditor':
-                return <LISAuditorView setQuickStartView={setQuickStartView} />;
-            case 'quick-start-home':
-            default:
-                return (
-                    <div className="p-8">
-                        <h1 className="text-3xl font-extrabold text-[#002E47] mb-6">4-Session QuickStart Program</h1>
-                        <p className="text-lg text-gray-600 mb-8 max-w-2xl">This program is the foundational accelerator for the LeaderReps methodology. Review the sessions, core focus, and pre-work below.</p>
-
-                        <Card 
-                            title="Draft & Refine Your Leadership Identity" 
-                            icon={ShieldCheck} 
-                            onClick={() => setQuickStartView('lis-auditor')}
-                            className='mb-8 bg-[#47A88D]/10 border-4 border-[#47A88D]'
-                        >
-                            <p className='text-gray-700 text-sm'>Access the **LIS Auditor** to receive expert critique on your personal leadership foundation statement. This is crucial for Session 2 pre-work!</p>
-                            <div className="mt-4 text-[#47A88D] font-semibold flex items-center">
-                                Launch LIS Auditor &rarr;
-                            </div>
-                        </Card>
-
-                        <div className="space-y-6">
-                            {sessions.map(session => (
-                            <Card key={session.id} title={`Session ${session.id}: ${session.title}`} icon={Zap} className="border-l-8 border-[#002E47]">
-                                <p className='text-md font-semibold text-[#002E47] mb-4'>Why this session matters:</p>
-                                <blockquote className="border-l-4 border-[#47A88D] pl-4 py-1 mb-4 text-sm italic text-gray-600">
-                                    {session.keyRationale}
-                                </blockquote>
-                                <div className="md:flex md:space-x-8">
-                                <div className="md:w-1/2 mb-4 md:mb-0">
-                                    <h3 className="text-lg font-semibold text-[#47A88D] mb-2">Core Focus</h3>
-                                    <p className="text-gray-700">{session.focus}</p>
-                                </div>
-                                <div className="md:w-1/2">
-                                    <h3 className="text-lg font-semibold text-[#47A88D] mb-2">Pre-Work Checklist</h3>
-                                    <ul className="list-disc pl-5 text-gray-700 space-y-1">
-                                    {session.preWork.map((item, index) => (
-                                        <li key={index} className="text-sm">{item}</li>
-                                    ))}
-                                    </ul>
-                                </div>
-                                </div>
-                            </Card>
-                            ))}
-                        </div>
-                    </div>
-                );
-        }
-    }
-    return renderView();
-};
-
-// --- AppSettingsScreen ---
-export const AppSettingsScreen = () => {
-    const { userId, navigate, firebaseServices } = useAppServices();
-    const { auth } = firebaseServices;
-
-    const handleSignOut = async () => {
-        try {
-            await signOut(auth);
-            // State context handles navigation automatically
-        } catch (e) {
-            alert("Failed to sign out.");
-            console.error("Sign out error:", e);
-        }
-    }
-
-    return (
-        <div className="p-8">
-            <h1 className="text-3xl font-extrabold text-[#002E47] mb-6">Application Settings & Configuration</h1>
-            <p className="text-lg text-gray-600 mb-8 max-w-3xl">Manage API keys, user data, and system preferences here.</p>
-
-            <Card title="Gemini API Key Configuration" icon={Settings} className='border-l-4 border-[#47A88D]'>
-                <p className="text-[#E04E1B] font-semibold mb-3">
-                    <AlertTriangle className="w-5 h-5 inline mr-2"/> Action Required for AI Features:
-                </p>
-                <p className="text-gray-700 text-sm mb-4">
-                    To unlock AI Coaching (SBI Critique, Role-Play, OKR Audit) and Leadership Book Summaries, you must set your Gemini API Key in the execution environment.
-                </p>
-                <div className='bg-gray-100 p-4 rounded-xl font-mono text-sm'>
-                    <p className='text-[#002E47] font-bold'>Required Global Variable:</p>
-                    <code className='text-[#47A88D] break-words'>window.__GEMINI_API_KEY</code>
-                </div>
-                <p className='text-xs text-gray-500 mt-3'>
-                    *This key is necessary for fetching real-time and generative content.
-                </p>
-            </Card>
-
-            <Card title="Account & Data Maintenance" icon={Users} className='mt-8 border-l-4 border-[#002E47]'>
-                <p className="text-gray-700 text-sm mb-4">
-                    Your current User ID (UID) is used to partition your personal data in the database.
-                </p>
-                <div className='bg-gray-100 p-4 rounded-xl font-mono text-sm mb-4'>
-                    <p className='text-[#002E47] font-bold'>Current User ID (UID):</p>
-                    <code className='text-[#47A88D] break-words'>{userId}</code>
-                </div>
-                <Button onClick={handleSignOut} className='w-full bg-[#E04E1B] hover:bg-red-700'>
-                    Sign Out (Ends Session)
-                </Button>
-            </Card>
+- **Create your PDP**: capture goals and milestones.
+- **Do Daily Practice**: quick reps + reflection.
+- **Explore Coaching Lab**: try prompt patterns.
+- **Plan your week**: align tasks in Planning Hub.
+  `;
+  return (
+    <div className="p-6">
+      <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
+        <div className="prose prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: mdToHtml(md) }} />
+        <div className="mt-4 flex gap-2">
+          <button className="rounded-md bg-emerald-600 text-white px-3 py-2 text-sm" onClick={() => navigate('prof-dev-plan')}>Start PDP</button>
+          <button className="rounded-md border px-3 py-2 text-sm" onClick={() => navigate('daily-practice')}>Do a Rep</button>
+          <button className="rounded-md border px-3 py-2 text-sm" onClick={() => navigate('coaching-lab')}>Open Lab</button>
         </div>
-    );
+      </div>
+    </div>
+  );
 };
 
-export default { DashboardScreen, QuickStartScreen, AppSettingsScreen };
+/* ---------------------------------------
+   App Settings (named export)
+----------------------------------------*/
+export const AppSettingsScreen = () => {
+  const { user, auth } = useAppServices();
+
+  const doSignOut = async () => {
+    try { if (auth) await signOut(auth); }
+    catch (e) { console.error('Sign out failed:', e); }
+  };
+
+  return (
+    <div className="p-6 space-y-6">
+      <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
+        <h2 className="text-lg font-semibold flex items-center gap-2">
+          <Settings size={18} /> Account
+        </h2>
+        <div className="mt-3 text-sm text-gray-700">
+          <div><span className="text-gray-500">Email:</span> {user?.email || '—'}</div>
+          <div><span className="text-gray-500">User ID:</span> {user?.userId || '—'}</div>
+        </div>
+        <div className="mt-4">
+          <button className="rounded-md border px-3 py-2 text-sm hover:bg-gray-50" onClick={doSignOut} type="button">
+            Sign out
+          </button>
+        </div>
+      </div>
+
+      <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
+        <h2 className="text-lg font-semibold flex items-center gap-2">
+          <ShieldCheck size={18} /> App
+        </h2>
+        <ul className="mt-3 text-sm text-gray-700 space-y-1">
+          <li>Icons loaded: lucide-react</li>
+          <li>Gemini configured: {hasGeminiKey() ? 'Yes' : 'No'}</li>
+          <li>Model: <code>{GEMINI_MODEL}</code></li>
+        </ul>
+      </div>
+    </div>
+  );
+};
+
+export default DashboardScreen;
