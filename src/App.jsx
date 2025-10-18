@@ -36,7 +36,7 @@ import PlanningHubScreen from './components/screens/PlanningHub.jsx';
 import BusinessReadingsScreen from './components/screens/BusinessReadings.jsx';
 
 // Icons used in the new NavSidebar
-import { Home, Zap, ShieldCheck, TrendingUp, Mic, BookOpen, Settings, X, Menu, LogOut, CornerRightUp } from 'lucide-react';
+import { Home, Zap, ShieldCheck, TrendingUp, Mic, BookOpen, Settings, X, Menu, LogOut, CornerRightUp, CalendarCheck, BarChart3 } from 'lucide-react';
 
 const CoachingLabScreen = Labs;
 
@@ -162,14 +162,22 @@ function LoginPanel({ auth, onSuccess, allowAnonymous = false }) {
     setBusy(true);
     try {
       const user = auth.currentUser;
-      if (user?.isAnonymous) {
+      // FIX: Only attempt to link if the current user is anonymous.
+      const isAnonymousUser = user && user.isAnonymous;
+      
+      if (isAnonymousUser) {
         const cred = EmailAuthProvider.credential(email.trim(), pass);
         await linkWithCredential(user, cred);
       } else {
         await createUserWithEmailAndPassword(auth, email.trim(), pass);
       }
       finalize();
-    } catch (ex) { setErr(ex.message || 'Sign up failed.'); }
+    } catch (ex) { 
+      // If the user is already authenticated (e.g., via custom token) and not anonymous,
+      // createUserWithEmailAndPassword will fail if the email is new,
+      // or linkWithCredential would fail. We primarily focus on the anonymous path.
+      setErr(ex.message || 'Sign up failed.'); 
+    }
     finally { setBusy(false); }
   };
 
@@ -296,20 +304,37 @@ if (raw) { window.__firebase_config = JSON.parse(raw); }`}</pre>
 }
 
 /* =========================================================
-   NAV SIDEBAR (NEW IMPLEMENTATION)
+   NAV SIDEBAR (NEW IMPLEMENTATION WITH SECTIONS)
 ========================================================= */
 const NavSidebar = ({ currentScreen, setCurrentScreen, user, isMobileOpen, closeMobileMenu }) => {
     const { auth } = useAppServices();
-
-    const menuItems = [
-        { screen: 'dashboard', label: 'Dashboard', icon: Home },
-        { screen: 'prof-dev-plan', label: 'Development Plan', icon: TrendingUp },
-        { screen: 'daily-practice', label: 'Daily Practice', icon: Mic },
-        { screen: 'planning-hub', label: 'Planning Hub (OKRs)', icon: Zap },
-        { screen: 'business-readings', label: 'Business Readings', icon: BookOpen },
-        { screen: 'coaching-lab', label: 'Coaching Lab', icon: ShieldCheck },
-        { screen: 'app-settings', label: 'Settings', icon: Settings },
+    
+    // --- CONSOLIDATED NAV SECTIONS ---
+    const combinedNavSections = [
+        {
+            title: 'NAVIGATION',
+            items: [
+                { screen: 'dashboard', label: 'Dashboard', icon: Home },
+            ]
+        },
+        {
+            title: 'TOOLS & HUBS', // Consolidating Development, Execution, and Learning here
+            items: [
+                { screen: 'prof-dev-plan', label: 'Development Plan', icon: TrendingUp },
+                { screen: 'daily-practice', label: 'Daily Practice', icon: Mic },
+                { screen: 'planning-hub', label: 'Planning Hub', icon: Zap },
+                { screen: 'business-readings', label: 'Business Readings', icon: BookOpen },
+                { screen: 'coaching-lab', label: 'Coaching Lab', icon: ShieldCheck },
+            ]
+        },
+        {
+            title: 'SYSTEM',
+            items: [
+                { screen: 'app-settings', label: 'Settings', icon: Settings },
+            ]
+        },
     ];
+
 
     const handleSignOut = async () => {
         try {
@@ -325,6 +350,28 @@ const NavSidebar = ({ currentScreen, setCurrentScreen, user, isMobileOpen, close
         closeMobileMenu();
     };
     
+    const renderNavItems = (items) => items.map((item) => {
+        const Icon = item.icon;
+        const isActive = currentScreen === item.screen;
+        const baseClasses = 'flex items-center w-full px-4 py-2.5 rounded-xl font-medium transition-colors';
+        
+        // Custom styling for the buttons (Navy, Teal/Green, White)
+        const buttonClasses = isActive
+            ? 'bg-[#47A88D] text-[#002E47] shadow-md' // Active: Teal background, Navy text
+            : 'text-white hover:bg-[#47A88D]/20 hover:text-white'; // Inactive: White text, Teal hover
+
+        return (
+            <button
+                key={item.screen}
+                onClick={() => handleNavigate(item.screen)}
+                className={`${baseClasses} ${buttonClasses}`}
+            >
+                <Icon className="w-5 h-5 mr-3" />
+                <span>{item.label}</span>
+            </button>
+        );
+    });
+
     // --- Mobile Overlay and Menu (Full Screen on small screens) ---
     if (isMobileOpen) {
         return (
@@ -338,25 +385,15 @@ const NavSidebar = ({ currentScreen, setCurrentScreen, user, isMobileOpen, close
                     </button>
                 </div>
                 
-                <nav className="space-y-2">
-                    {menuItems.map((item) => {
-                        const Icon = item.icon;
-                        const isActive = currentScreen === item.screen;
-                        return (
-                            <button
-                                key={item.screen}
-                                onClick={() => handleNavigate(item.screen)}
-                                className={`flex items-center w-full px-4 py-3 rounded-xl font-medium transition-colors ${
-                                    isActive
-                                        ? 'bg-[#47A88D] text-[#002E47] shadow-lg'
-                                        : 'text-gray-200 hover:bg-[#47A88D]/20 hover:text-white'
-                                }`}
-                            >
-                                <Icon className="w-5 h-5 mr-3" />
-                                <span>{item.label}</span>
-                            </button>
-                        );
-                    })}
+                <nav className="space-y-4">
+                    {combinedNavSections.map(section => (
+                        <div key={section.title}>
+                            <h3 className="text-xs font-semibold text-[#47A88D] uppercase mb-1.5">{section.title}</h3>
+                            <div className="space-y-1">
+                                {renderNavItems(section.items)}
+                            </div>
+                        </div>
+                    ))}
                 </nav>
 
                 <div className="absolute bottom-6 left-6 right-6 pt-4 border-t border-[#47A88D]/50">
@@ -382,25 +419,15 @@ const NavSidebar = ({ currentScreen, setCurrentScreen, user, isMobileOpen, close
                 </h1>
             </div>
 
-            <nav className="flex-1 space-y-2">
-                {menuItems.map((item) => {
-                    const Icon = item.icon;
-                    const isActive = currentScreen === item.screen;
-                    return (
-                        <button
-                            key={item.screen}
-                            onClick={() => handleNavigate(item.screen)}
-                            className={`flex items-center w-full px-4 py-3 rounded-xl font-medium transition-colors ${
-                                isActive
-                                    ? 'bg-[#47A88D] text-[#002E47] shadow-md'
-                                    : 'text-gray-200 hover:bg-[#47A88D]/20 hover:text-white'
-                            }`}
-                        >
-                            <Icon className="w-5 h-5 mr-3" />
-                            <span>{item.label}</span>
-                        </button>
-                    );
-                })}
+            <nav className="flex-1 space-y-4">
+                {combinedNavSections.map(section => (
+                    <div key={section.title}>
+                        <h3 className="text-xs font-semibold text-[#47A88D] uppercase mb-1.5">{section.title}</h3>
+                        <div className="space-y-1">
+                            {renderNavItems(section.items)}
+                        </div>
+                    </div>
+                ))}
             </nav>
 
             <div className="pt-4 border-t border-[#47A88D]/50 mt-4">

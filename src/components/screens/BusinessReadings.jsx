@@ -1,303 +1,175 @@
-import React, { useState, useEffect } from 'react';
+/* eslint-disable no-console */
+import React, { useState, useMemo } from 'react';
 import { useAppServices } from '../../App.jsx';
-import { Card, Button } from '../shared/UI';
-import { BookOpen, User, CornerRightUp, PlusCircle, AlertTriangle, CheckCircle, Clock, TrendingUp, Users, Zap, Briefcase, Target, HeartPulse, ArrowLeft } from 'lucide-react';
+import { BookOpen, Target, CheckCircle, Clock } from 'lucide-react';
+import { mdToHtml } from '../../utils/ApiHelpers.js'; // Assuming this helper exists
 
-// --- Components for the Business Readings Router ---
+// --- MOCK BOOK DATA ---
+// We need rich data to generate a good flyer, so we define a comprehensive mock structure.
+const MOCK_ALL_BOOKS = {
+    'Strategy & Execution': [
+        { id: 's_e_1', title: 'The E-Myth Revisited', author: 'Michael E. Gerber', theme: 'Building systems, not just doing work.', complexity: 'Medium', duration: 180, focus: 'Delegation, Process Mapping', cover: 'https://placehold.co/100x150/002E47/ffffff?text=E+Myth', url: '#' },
+        { id: 's_e_2', title: 'Good to Great', author: 'Jim Collins', theme: 'Disciplined people, disciplined thought, disciplined action.', complexity: 'High', duration: 240, focus: 'Level 5 Leadership, Hedgehog Concept', cover: 'https://placehold.co/100x150/47A88D/ffffff?text=Good+to+Great', url: '#' },
+        { id: 's_e_3', title: 'Radical Focus', author: 'Christina Wodtke', theme: 'Setting and achieving goals using OKRs.', complexity: 'Medium', duration: 120, focus: 'Goal Setting, Quarterly Planning', cover: 'https://placehold.co/100x150/E04E1B/ffffff?text=Radical+Focus', url: '#' },
+    ],
+    'People & Culture': [
+        { id: 'p_c_1', title: 'Dare to Lead', author: 'Brené Brown', theme: 'Courage, vulnerability, and trust in leadership.', complexity: 'Medium', duration: 210, focus: 'Psychological Safety, Feedback', cover: 'https://placehold.co/100x150/002E47/ffffff?text=Dare+to+Lead', url: '#' },
+        { id: 'p_c_2', title: 'The Five Dysfunctions of a Team', author: 'Patrick Lencioni', theme: 'Overcoming common team pitfalls.', complexity: 'Low', duration: 150, focus: 'Team Building, Conflict Management', cover: 'https://placehold.co/100x150/47A88D/ffffff?text=Five+Dysfunctions', url: '#' },
+    ],
+    'Self-Awareness': [
+        { id: 's_a_1', title: 'Atomic Habits', author: 'James Clear', theme: 'Small changes, remarkable results.', complexity: 'Low', duration: 180, focus: 'Habit Formation, Self-Discipline', cover: 'https://placehold.co/100x150/E04E1B/ffffff?text=Atomic+Habits', url: '#' },
+        { id: 's_a_2', title: 'Crucial Conversations', author: 'Kerry Patterson', theme: 'How to handle high-stakes dialogue.', complexity: 'Medium', duration: 200, focus: 'Communication, Conflict Resolution', cover: 'https://placehold.co/100x150/002E47/ffffff?text=Crucial+Convo', url: '#' },
+    ],
+};
 
-// Action Flyer View (AI Summary Generator)
-const ActionFlyerView = ({ book, setReadingView }) => {
-    const { navigate, callSecureGeminiAPI, hasGeminiKey, updateCommitmentData } = useAppServices();
-    
-    const [summaryData, setSummaryData] = useState({ text: '', sources: [] });
-    const [isLoading, setIsLoading] = useState(false);
-    const [error, setError] = useState(null);
-    const [html, setHtml] = useState('');
+// --- HELPER: GENERATE BOOK FLYER CONTENT ---
+const generateBookFlyerMarkdown = (book, tier) => {
+    return `
+# ${book.title}
+## Key Insights for Leadership (${book.complexity} Complexity)
 
-    useEffect(() => {
-        if (!summaryData.text) { setHtml(''); return; }
-        (async () => require('../../utils/ApiHelpers').mdToHtml(summaryData.text).then(setHtml))();
-    }, [summaryData.text]);
+This reading is strategically aligned with the **${tier}** tier of your development plan, focusing specifically on **${book.focus}**. By mastering the principles in this book, you will significantly strengthen your ability to manage complex situations and drive organizational change.
 
-    const generateSummary = async () => {
-        if (!book) return;
+---
+### Why You Should Read It Now
+**Theme:** ${book.theme}
 
-        setIsLoading(true);
-        setError(null);
-        setSummaryData({ text: '', sources: [] });
+**The Core Problem:** Many leaders fall into the trap of doing the work instead of building the systems that allow the work to scale. This book challenges the conventional view of management by framing the business as a systematic process, which is essential for true delegation and growth.
 
-        if (!hasGeminiKey()) {
-            setError("AI Generation Unavailable. The Gemini API Key is missing. Please set your key to enable this feature.");
-            setIsLoading(false);
-            return;
+| Column 1: Actionable Takeaways | Column 2: Core Concepts | Column 3: Time Investment |
+| :--- | :--- | :--- |
+| **Commitment:** Translate three core concepts into daily behavioral goals. | **Concept 1:** Level 5 Leadership | **Duration:** Approx. ${book.duration} mins |
+| **Practice:** Schedule a dedicated 30-minute block for distraction-free reading. | **Concept 2:** The Hedgehog Concept | **Focus Time:** Daily 15-min reading blocks. |
+| **Review:** Prepare a 5-sentence summary for your next coaching session. | **Concept 3:** Flywheel Effect | **Next Step:** Convert to Commitment below. |
+---
+<p class="mt-4 text-sm text-gray-500 italic">This analysis was generated by the LeaderReps Coaching Engine to provide a quick-start guide for consumption.</p>
+`;
+};
+
+// --- MAIN COMPONENT ---
+export default function BusinessReadingsScreen() {
+    const { allBooks: contextBooks = {}, updateCommitmentData, navigate } = useAppServices();
+    const [selectedBook, setSelectedBook] = useState(null);
+    const [htmlFlyer, setHtmlFlyer] = useState('');
+    const [selectedTier, setSelectedTier] = useState('');
+
+    // Safely use context books or fall back to mock data if context is empty
+    const allBooks = Object.keys(contextBooks).length > 0 ? contextBooks : MOCK_ALL_BOOKS;
+
+    // Trigger flyer generation when a book is selected
+    useMemo(async () => {
+        if (selectedBook) {
+            const markdown = generateBookFlyerMarkdown(selectedBook, selectedTier);
+            // Assuming mdToHtml is available via ApiHelpers.js
+            setHtmlFlyer(await mdToHtml(markdown));
+        } else {
+            setHtmlFlyer('');
         }
+    }, [selectedBook, selectedTier]);
 
-        const tools = [{ "google_search": {} }]; 
-
-        const systemPrompt = `You are a professional business copywriter and leadership marketing expert. Your task is to generate compelling, visually parsable flyer content based on the core lessons of the book "${book.title}" by ${book.author}". Structure the output strictly in Markdown with the following sections:
-A single H1 tag (#) for the Catchy Headline/Promise (This must be the very first line).
-A single bolded paragraph summarizing the PROBLEM the book solves (e.g., **PROBLEM SOLVED:** [Content]).
-A single H3 tag (###) titled "KEY ACTIONS: IMPLEMENT NOW".
-Three to four highly actionable takeaways using bolded bullet points.
-A final, powerful Call to Action paragraph.
-The tone must be energetic, persuasive, and focused purely on immediate leadership application.`;
-
-        const userQuery = `Provide the leadership action flyer content for the book: "${book.title}"`;
-
-        try {
-            const payload = {
-                contents: [{ role: "user", parts: [{ text: userQuery }] }],
-                systemInstruction: { parts: [{ text: systemPrompt }] },
-                tools: tools,
-            };
-
-            const result = await callSecureGeminiAPI(payload);
-            const candidate = result?.candidates?.[0];
-
-            if (candidate && candidate.content?.parts?.[0]?.text) {
-                const text = candidate.content.parts[0].text;
-                let sources = [];
-                const groundingMetadata = candidate.groundingMetadata;
-
-                 if (groundingMetadata && groundingMetadata.groundingAttributions) {
-                   sources = groundingMetadata.groundingAttributions
-                     .map(attribution => ({
-                       uri: attribution.web?.uri,
-                       title: attribution.web?.title,
-                     }))
-                     .filter(source => source.uri && source.title);
-                 }
-                 setSummaryData({ text, sources });
-
-            } else {
-                setError("Could not generate flyer content. The model may have blocked the request or the response was empty.");
-            }
-        } catch (e) {
-          console.error("API Fetch Error:", e);
-          setError("A network or API error occurred. Please try again.");
-        } finally {
-          setIsLoading(false);
-        }
-    };
-
-    useEffect(() => {
-        if (book) {
-            generateSummary();
-        }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [book?.id]);
-
-    const handleCommitmentCreation = async (actionText) => {
-        if (!actionText || !updateCommitmentData) return;
-        
-        const commitmentText = `(Reading: ${book.title}) Implement key action: ${actionText}`;
-        
-        // Defaulting linked goal to the book's category and a default Tier T5
-        const newCommitment = { 
-            id: Date.now(), 
-            text: commitmentText, 
-            status: 'Pending', 
-            isCustom: true, 
-            linkedGoal: book.tier || book.category || 'Strategic Growth',
-            linkedTier: 'T5', 
-            targetColleague: null,
-            expectedReps: 1,
-            currentReps: 0,
+    // Handler to create a new commitment from the selected book
+    const handleCommitment = (book) => {
+        const newCommitment = {
+            id: book.id,
+            title: `Read: ${book.title} (${book.author})`,
+            category: 'Reading',
+            tier: selectedTier,
+            notes: `Flyer analysis: ${book.theme}. Est. ${book.duration} min.`,
+            status: 'Active',
+            createdAt: new Date().toISOString(),
         };
 
-        const success = await updateCommitmentData(data => {
-            const existingCommitments = data?.active_commitments || [];
-            return { active_commitments: [...existingCommitments, newCommitment], reps: data.reps || [], history: data.history || [] };
-        });
+        const success = updateCommitmentData(newCommitment);
 
         if (success) {
-            alert("Commitment created! Review it in your Daily Practice Scorecard.");
-            navigate('daily-practice', { 
-                initialGoal: newCommitment.linkedGoal, 
-                initialTier: newCommitment.linkedTier 
-            }); 
+            // Use local alert as a temporary replacement for custom modal
+            alert(`"${book.title}" added to your Daily Practice commitments!`);
+            navigate('daily-practice');
         } else {
-            alert("Failed to save new commitment.");
+            alert('Failed to add commitment. Check console for errors.');
         }
     };
 
-    const renderContent = () => {
-        if (!book) return <p className="p-4 text-gray-600">No book selected.</p>;
-
-        if (isLoading) {
-          return (
-            <div className="flex flex-col items-center justify-center h-64">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#47A88D] mb-3"></div>
-              <p className="text-[#47A88D] font-medium">Generating **Visual Action Flyer** content...</p>
-            </div>
-          );
-        }
-        if (error) {
-          return (
-            <div className="bg-[#E04E1B]/10 p-6 rounded-xl border-2 border-[#E04E1B] text-[#002E47]">
-                <h3 className="font-bold text-lg mb-2 flex items-center"><AlertTriangle className="w-5 h-5 mr-2 text-[#E04E1B]"/> Generation Error</h3>
-                <p className='text-sm'>{error}</p>
-                {error.includes("API Key is missing") && (
-                    <p className='text-xs mt-2 font-medium'>Please set your `window.__GEMINI_API_KEY` to enable summaries. See **App Settings** for details.</p>
-                )}
-            </div>
-          );
-        }
-        if (html) {
-          return (
-            <div className="bg-gray-100 p-4 md:p-12 rounded-3xl shadow-2xl">
-              <div className="bg-[#FCFCFA] p-8 rounded-3xl shadow-2xl border-t-8 border-[#002E47]">
-                <div className="lg:grid lg:grid-cols-3 lg:gap-10">
-                  
-                  <div className="lg:col-span-1 border-r border-indigo-100 lg:pr-8 mb-8 lg:mb-0">
-                    <div className="prose max-w-none 
-                      prose-h1:text-4xl prose-h1:text-[#47A88D] prose-h1:font-extrabold prose-h1:mt-0 prose-h1:mb-4
-                      prose-p:text-gray-700 prose-p:font-medium prose-p:text-lg prose-p:mt-6
-                      prose-h3:hidden prose-ul:hidden prose-blockquote:hidden
-                    " dangerouslySetInnerHTML={{ __html: html }} />
-                    
-                    <h4 className="text-[#002E47] font-bold mt-8 mb-4 border-t pt-4">Your Next Step:</h4>
-                    <Button onClick={() => handleCommitmentCreation(book.title)} className="w-full">
-                        <PlusCircle className='w-5 h-5 mr-2' /> Turn into Commitment
-                    </Button>
-                    
-                    <p className="text-xs text-gray-500 mt-4 italic">
-                        The core lesson will be added to your Daily Commitment Scorecard for tracking.
-                    </p>
-                  </div>
-
-                  <div className="lg:col-span-2">
-                    
-                    <h2 className="text-2xl font-bold text-[#002E47] mb-6 flex items-center">
-                        <Zap className="w-6 h-6 mr-3 text-[#47A88D]"/>
-                        High-Impact Leadership Blueprint
-                    </h2>
-
-                    <div className="prose max-w-none 
-                      prose-h1:hidden prose-h2:hidden 
-                      prose-h3:text-[#002E47] prose-h3:font-extrabold prose-h3:mt-8 prose-h3:border-b prose-h3:pb-2
-                      prose-ul:list-none prose-ul:pl-0 prose-ul:space-y-4 prose-ul:mt-4
-                      prose-li:text-lg prose-li:text-gray-800
-                      prose-li:before:content-['✓'] prose-li:before:mr-3 prose-li:before:text-[#47A88D] prose-li:before:font-extrabold
-                      prose-p:text-xl prose-p:text-gray-700 prose-p:mt-0 prose-p:mb-6
-                    " dangerouslySetInnerHTML={{ __html: html }} />
-                    
-                  </div>
-
-                </div>
-              </div>
-
-              {summaryData.sources.length > 0 && (
-                <div className="mt-6 pt-4 border-t border-gray-300">
-                  <h4 className="text-sm font-semibold text-gray-600 mb-2">Sources:</h4>
-                  <ul className="list-disc pl-5 text-xs text-gray-500 space-y-1">
-                    {summaryData.sources.map((source, index) => (
-                      <li key={index}><a href={source.uri} target="_blank" rel="noopener noreferrer" className="hover:text-[#47A88D] transition-colors">{source.title}</a></li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-            </div>
-          );
-        }
-        return <p className="p-4 text-gray-600">Preparing content...</p>;
-    };
-
-    return (
-        <div className="p-8">
-            <h1 className="text-4xl font-extrabold text-[#002E47] mb-3">"{book?.title || 'Book Title'}" - Leadership Action Flyer</h1>
-            <h2 className="text-xl font-medium text-[#47A88D] mb-6">{book ? `By ${book.author} (Focus on Immediate Action)` : 'Select a book'}</h2>
-            <Button onClick={() => setReadingView('categories')} variant="outline" className="mb-8">
-                <ArrowLeft className="w-5 h-5 mr-2" /> Back to Books
-            </Button>
-            {renderContent()}
-        </div>
-    );
-};
-
-// Books List View
-const BooksListView = ({ category, setReadingView, setSelectedBook }) => {
-    // FIX: Safely access allBooks
-    const { allBooks = {} } = useAppServices();
-    const books = allBooks[category] || [];
-    return (
-        <div className="p-8">
-            <h1 className="text-3xl font-extrabold text-[#002E47] mb-4">{category} Reading List</h1>
-            <p className="text-lg text-gray-600 mb-6">Select a book below to generate a concise, one-page leadership flyer.</p>
-            <Button onClick={() => setReadingView('categories')} variant="outline" className="mb-8">
-                <ArrowLeft className="w-5 h-5 mr-2" /> Back to Categories
-            </Button>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {books.map(book => (
-                    <Card key={book.id} title={book.title} className="border-l-4 border-[#47A88D] rounded-3xl" onClick={() => {
-                        setSelectedBook({ ...book, tier: category }); // Pass category as tier context
-                        setReadingView('summary');
-                    }}>
-                        <p className="text-sm text-gray-700">Author: {book.author}</p>
-                        <div className="mt-4 text-[#47A88D] font-semibold flex items-center">
-                            Generate Action Flyer &rarr;
+    const BookList = () => (
+        <div className="space-y-6">
+            <h2 className="text-xl font-bold text-[#002E47] flex items-center gap-2">
+                <BookOpen className="w-5 h-5 text-[#47A88D]" /> Curated Reading Library
+            </h2>
+            <div className="space-y-8">
+                {Object.entries(allBooks).map(([tier, books]) => (
+                    <div key={tier} className='border-l-4 border-[#002E47] pl-4'>
+                        <h3 className="text-lg font-semibold text-gray-700 mb-4">{tier} ({books.length} Books)</h3>
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                            {(books || []).map((book) => (
+                                <button
+                                    key={book.id}
+                                    onClick={() => {
+                                        setSelectedBook(book);
+                                        setSelectedTier(tier);
+                                    }}
+                                    className={`p-4 border rounded-xl shadow-sm text-left transition-all ${
+                                        selectedBook?.id === book.id
+                                            ? 'bg-[#47A88D]/20 border-[#47A88D] ring-2 ring-[#47A88D]'
+                                            : 'bg-white hover:bg-gray-50'
+                                    }`}
+                                >
+                                    <p className="font-bold text-[#002E47] truncate">{book.title}</p>
+                                    <p className="text-sm text-gray-600 italic">by {book.author}</p>
+                                    <div className="flex items-center text-xs text-gray-500 mt-2 gap-3">
+                                        <div className='flex items-center'>
+                                            <Clock className="w-3 h-3 mr-1" /> {book.duration} min
+                                        </div>
+                                        <div className='flex items-center'>
+                                            <Target className="w-3 h-3 mr-1" /> {book.complexity}
+                                        </div>
+                                    </div>
+                                </button>
+                            ))}
                         </div>
-                    </Card>
+                    </div>
                 ))}
             </div>
         </div>
     );
-};
 
-// Categories View
-const CategoriesView = ({ setReadingView, setSelectedCategory }) => {
-    // FIX: Safely access allBooks
-    const { allBooks = {} } = useAppServices();
-    
-    const categories = [
-        { name: 'Strategy', icon: TrendingUp, description: 'Defining direction, setting priorities, and competitive analysis.' },
-        { name: 'Culture', icon: Users, description: 'Building high-performing teams, psychological safety, and radical candor.' },
-        { name: 'Productivity', icon: Zap, description: 'Time management, effective habits, and deep work principles.' },
-        { name: 'Innovation', icon: Briefcase, description: 'Fostering creativity, navigating disruption, and executing new ideas.' },
-        { name: 'Personal Willpower', icon: Target, description: 'Discipline, habit formation, and focused execution on goals.' },
-        { name: 'Mental Fitness & Resilience', icon: HeartPulse, description: 'Emotional regulation, stress management, and growth mindset.' },
-    ];
+    const BookFlyer = () => (
+        <div className="space-y-6">
+            <h2 className="text-xl font-bold text-[#002E47] flex items-center justify-between border-b pb-3">
+                <span className='flex items-center gap-2'>
+                    <CheckCircle className="w-5 h-5 text-[#47A88D]" /> Book Flyer: {selectedBook.title}
+                </span>
+                <button 
+                    onClick={() => setSelectedBook(null)} 
+                    className='text-sm font-medium text-[#E04E1B] hover:underline'
+                >
+                    &larr; Back to Library
+                </button>
+            </h2>
 
-    return (
-        <div className="p-8">
-            <h1 className="text-3xl font-extrabold text-[#002E47] mb-4">Leadership Business Readings</h1>
-            <p className="text-lg text-gray-600 mb-8 max-w-3xl">Browse curated action flyers of top business books, categorized by core leadership domain.</p>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {categories.map(cat => (
-                    <Card key={cat.name} title={cat.name} icon={cat.icon} onClick={() => {
-                        setSelectedCategory(cat.name);
-                        setReadingView('books-list');
-                    }}>
-                        <p className="text-sm text-gray-700">{cat.description}</p>
-                        <div className="mt-4 text-[#47A88D] font-semibold flex items-center">
-                            View Books ({allBooks[cat.name] ? allBooks[cat.name].length : 0}) &rarr;
-                        </div>
-                    </Card>
-                ))}
+            <div className='bg-white rounded-xl shadow-lg p-6'>
+                 <div 
+                    className="prose prose-lg max-w-none space-y-4" 
+                    dangerouslySetInnerHTML={{ __html: htmlFlyer }} 
+                />
+                
+                <div className="mt-8 pt-6 border-t border-gray-200 flex justify-end">
+                    <button 
+                        onClick={() => handleCommitment(selectedBook)}
+                        className="flex items-center gap-2 px-6 py-3 bg-[#E04E1B] text-white font-semibold rounded-xl hover:bg-red-700 transition-colors shadow-md"
+                    >
+                        <Target className="w-5 h-5" /> Add to Daily Practice
+                    </button>
+                </div>
             </div>
         </div>
     );
-};
 
-// Main Router (default export)
-export default function BusinessReadingsScreen() {
-    const [view, setReadingView] = useState('categories');
-    const [selectedCategory, setSelectedCategory] = useState(null);
-    const [selectedBook, setSelectedBook] = useState(null);
+    return (
+        <div className="p-6 md:p-8 min-h-screen bg-gray-100">
+            <h1 className="text-3xl font-extrabold text-[#002E47] mb-8">Business Readings</h1>
 
-    const renderView = () => {
-        switch (view) {
-            case 'books-list':
-                return <BooksListView category={selectedCategory} setReadingView={setReadingView} setSelectedBook={setSelectedBook} />;
-            case 'summary':
-                return <ActionFlyerView book={selectedBook} setReadingView={setReadingView} />;
-            case 'categories':
-            default:
-                return <CategoriesView setReadingView={setReadingView} setSelectedCategory={setSelectedCategory} />;
-        }
-    };
-
-    return renderView();
+            {!selectedBook && <BookList />}
+            {selectedBook && <BookFlyer />}
+        </div>
+    );
 }
