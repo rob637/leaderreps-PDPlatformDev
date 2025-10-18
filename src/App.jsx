@@ -870,6 +870,7 @@ const updatePdpData = useCallback(async (dataToUpdate) => {
   }
 }, [pdpData, pdpPath]);
 
+
 return { pdpData, isLoading, error, updatePdpData };
 
 
