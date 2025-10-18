@@ -42,7 +42,7 @@ const CoachingLabScreen = Labs;
    - false => show the real app (or login)
    - URL override: add ?sanity=1 to force test screen
 ========================================================= */
-const SANITY_MODE = true;
+const SANITY_MODE = false;
 
 /* =========================================================
    CONTEXT + SAFE DEFAULTS
