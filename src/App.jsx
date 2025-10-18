@@ -134,7 +134,6 @@ async function callSecureGeminiAPI(payload, endpoint = '/generateContent') {
     // For Canvas, we use the public URL but rely on the environment having set the key.
     const GEMINI_API_URL = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}${endpoint}?key=${API_KEY}`;
 
-
     const response = await fetch(GEMINI_API_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -148,7 +147,6 @@ async function callSecureGeminiAPI(payload, endpoint = '/generateContent') {
 
     return response.json();
 }
-
 
 /**
 
@@ -255,7 +253,6 @@ const MOCK_CONTENT_DETAILS = {
     'Case Study': (title, skill) => `### Case Study Setup: ${title}\n\n**Focus Skill:** ${skill}\n\nReview the following scenario description and prepare a 5-step action plan before running the simulation or discussing with your coach. The scenario involves a failure to delegate a crucial task to a capable subordinate, leading to team burnout and missed deadlines.`,
     'Tool': (title, skill) => `### Tool Overview: ${title}\n\n**Focus Skill:** ${skill}\n\nThis module guides you through a new framework. The current focus is risk identification and mitigation planning. The objective of this tool is to formalize risk assessment across your strategic goals.`,
 };
-
 
 /**
 
@@ -381,7 +378,6 @@ return {
     latestScenario: null,
     lastUpdate: new Date().toISOString(),
 };
-
 
 };
 
@@ -680,7 +676,6 @@ const SignUpScreen = ({ setAuthView }) => {
     );
 };
 
-
 // 3. PASSWORD RESET SCREEN
 const PasswordResetScreen = ({ setAuthView }) => {
     const [email, setEmail] = useState('');
@@ -748,7 +743,6 @@ const PasswordResetScreen = ({ setAuthView }) => {
         </div>
     );
 };
-
 
 // Main Authentication Router
 const AuthRouter = ({ onLogin }) => {
@@ -873,47 +867,6 @@ const updatePdpData = useCallback(async (dataToUpdate) => {
 return { pdpData, isLoading, error, updatePdpData };
 };
 
-
-
-// Initial Plan Save function (for PlanGenerator)
-const saveNewPlan = useCallback(async (newPlanData) => {
-    const { db, userId } = useAppServices();
-
-    if (!db || !userId || !pdpPath) {
-        return false;
-    }
-    
-    try {
-        const docRef = doc(db, pdpPath);
-        await setDoc(docRef, { 
-            ...newPlanData, 
-            ownerUid: userId,
-            lastUpdate: new Date().toISOString(),
-            currentMonth: 1,
-        });
-        // Setting pdpData locally forces the switch to TrackerDashboard
-        // We rely on the onSnapshot listener for the state update, but this ensures a fallback.
-        // setPdpData(newPlanData); 
-        return true;
-    } catch (e) {
-        console.error("Error saving new PDP document:", e);
-        return false;
-    }
-}, [pdpPath]);
-
-
-// Expose functions and data
-return { 
-    pdpData, 
-    isLoading, 
-    error, 
-    updatePdpData,
-    saveNewPlan, // New function for the generator
-};
-
-
-};
-
 // --- Commitment Data Persistence (Simplified, keeping current structure) ---
 const DEFAULT_COMMITMENT_DATA = {
 // FIX: Added lastCommitmentDate to enable daily reset logic
@@ -939,17 +892,106 @@ const COMMITMENT_COLLECTION = 'daily_practice';
 const COMMITMENT_DOCUMENT = 'scorecard_data';
 
 const useCommitmentData = (db, userId, isAuthReady) => {
-const [commitmentData, setCommitmentData] = useState(null);
-const [isLoading, setIsLoading] = useState(true);
-const [error, setError] = useState(null);
+  const [commitmentData, setCommitmentData] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-const commitmentPath = userId ? `/artifacts/${appId}/users/${userId}/${COMMITMENT_COLLECTION}/${COMMITMENT_DOCUMENT}` : null;
+  const commitmentPath = userId
+    ? `/artifacts/${appId}/users/${userId}/${COMMITMENT_COLLECTION}/${COMMITMENT_DOCUMENT}`
+    : null;
 
-// Helper to check if commitment needs resetting
-const needsReset = (data) => {
+  const needsReset = (data) => {
     if (!data) return false;
     const today = new Date().toISOString().split('T')[0];
     return data.lastCommitmentDate !== today;
+  };
+
+  useEffect(() => {
+    if (!db || !isAuthReady || !userId || !commitmentPath) {
+      if (isAuthReady) setIsLoading(false);
+      return;
+    }
+    setError(null);
+    const docRef = doc(db, commitmentPath);
+    const unsubscribe = onSnapshot(docRef, async (docSnap) => {
+      let currentData;
+      if (docSnap.exists()) {
+        currentData = docSnap.data();
+      } else {
+        try {
+          await setDoc(docRef, DEFAULT_COMMITMENT_DATA, { merge: true });
+          currentData = DEFAULT_COMMITMENT_DATA;
+        } catch (e) {
+          console.error("Error creating default Commitment document:", e);
+          setError("Could not initialize Commitment data.");
+          setIsLoading(false);
+          return;
+        }
+      }
+
+      if (needsReset(currentData)) {
+        const today = new Date().toISOString().split('T')[0];
+        const yesterdayScore = currentData.active_commitments.length > 0
+          ? `${currentData.active_commitments.filter(c => c.status === 'Committed').length}/${currentData.active_commitments.length}`
+          : '0/0';
+
+        const newHistory = [...(currentData.history || [])];
+        const lastDate = currentData.lastCommitmentDate;
+        if (newHistory.length === 0 || newHistory[newHistory.length - 1].date !== lastDate) {
+          newHistory.push({ date: lastDate, score: yesterdayScore });
+        }
+        if (newHistory.length > 7) newHistory.splice(0, newHistory.length - 7);
+
+        const resetCommitments = (currentData.active_commitments || []).map(c => ({ ...c, status: 'Pending' }));
+
+        const batch = writeBatch(db);
+        batch.update(docRef, {
+          lastCommitmentDate: today,
+          history: newHistory,
+          active_commitments: resetCommitments,
+          reflection_journal: '',
+        });
+        try {
+          await batch.commit();
+        } catch (e) {
+          console.error("Error resetting daily commitments via batch:", e);
+          setError("Failed to reset daily scorecard.");
+        }
+      } else {
+        setCommitmentData(currentData);
+      }
+      setIsLoading(false);
+    }, (e) => {
+      console.error("Error subscribing to Commitment data:", e);
+      setError("Commitment data synchronization failed.");
+      setIsLoading(false);
+    });
+    return () => unsubscribe();
+  }, [db, userId, isAuthReady, commitmentPath]);
+
+  const updateCommitmentData = useCallback(
+    async (dataToUpdateOrFunction) => {
+      if (!db || !userId || !commitmentPath) return false;
+      try {
+        const docRefLocal = doc(db, commitmentPath);
+        let dataToUpdate = dataToUpdateOrFunction;
+        if (typeof dataToUpdateOrFunction === 'function') {
+          const docSnap = await getDoc(docRefLocal);
+          const currentData = docSnap.exists() ? docSnap.data() : null;
+          if (!currentData) throw new Error('Commitment data not found for functional update.');
+          dataToUpdate = dataToUpdateOrFunction(currentData);
+        }
+        await updateDoc(docRefLocal, dataToUpdate);
+        return true;
+      } catch (e) {
+        console.error('Error updating Commitment data:', e);
+        return false;
+      }
+    },
+    [db, userId, commitmentPath]
+  );
+
+  return { commitmentData, isLoading, error, updateCommitmentData };
 };
 
 // Main Data Listener/Loader
@@ -1002,7 +1044,6 @@ useEffect(() => {
                 newHistory.splice(0, newHistory.length - 7);
             }
 
-
             // Reset active commitments to 'Pending'
             const resetCommitments = currentData.active_commitments.map(c => ({
                 ...c,
@@ -1038,7 +1079,6 @@ useEffect(() => {
     return () => unsubscribe();
 }, [db, userId, isAuthReady, commitmentPath]);
 
-
 const updateCommitmentData = useCallback(async (dataToUpdateOrFunction) => {
     const { db, userId } = useAppServices();
 
@@ -1071,7 +1111,6 @@ const updateCommitmentData = useCallback(async (dataToUpdateOrFunction) => {
 }, [commitmentPath]);
 
 return { commitmentData, isLoading, error, updateCommitmentData };
-
 
 };
 
@@ -1154,7 +1193,6 @@ const updatePlanningData = useCallback(async (dataToUpdate) => {
 
 return { planningData, isLoading, error, updatePlanningData };
 
-
 };
 
 /**
@@ -1178,7 +1216,7 @@ const DataProvider = ({ children, firebaseServices, userId, isAuthReady, navigat
         navigate,
         user,
         // Database State and Functions
-        ...firebaseServices, // db, auth
+        .....firebaseServices, // db, auth
         userId,
         isAuthReady,
         // Data Update Functions (exposed for all components)
@@ -1208,7 +1246,6 @@ const DataProvider = ({ children, firebaseServices, userId, isAuthReady, navigat
         </AppServiceContext.Provider>
     );
 };
-
 
 /**
 
@@ -1254,7 +1291,6 @@ const DashboardScreen = () => {
             <Button onClick={() => navigate('business-readings')} variant="outline" className="w-full">Explore Summaries</Button>
         </Card>
         </div>
-
 
         </div>
     );
@@ -1365,7 +1401,6 @@ return (
     </div>
 );
 
-
 };
 
 const QuickStartScreen = () => {
@@ -1452,7 +1487,6 @@ return (
             </div>
         );
 }
-
 
 }
 
@@ -1593,7 +1627,6 @@ return (
     </div>
 );
 
-
 }
 
 const CommitmentSelectorView = ({ setView, initialGoal, initialTier }) => {
@@ -1648,14 +1681,12 @@ useEffect(() => {
     }
 }, [initialGoal, initialTier]);
 
-
 // Set default linkedGoal if none is selected on initial load
 useEffect(() => {
     if (!linkedGoal) {
         setLinkedGoal(initialLinkedGoal);
     }
 }, [linkedGoal, initialLinkedGoal]);
-
 
 const handleAddCommitment = async (commitment, source) => {
     if (!linkedGoal || linkedGoal === initialLinkedGoal || !linkedTier) return;
@@ -1910,7 +1941,6 @@ return (
     </div>
 );
 
-
 };
 
 const DailyPracticeScreen = ({ initialGoal, initialTier }) => { // Pass initialTier now
@@ -2004,7 +2034,6 @@ const calculateStreak = (history) => {
     return streak;
 };
 
-
 const streak = calculateStreak(commitmentHistory);
 
 const renderView = () => {
@@ -2094,7 +2123,6 @@ const renderView = () => {
                       </div>
                     </div>
 
-
                     <Card title="Reinforcement Journal" icon={Lightbulb} className="bg-[#002E47]/10 border-2 border-[#002E47]/20 rounded-3xl mt-8">
                         <p className="text-gray-700 text-sm mb-4">
                             Reflect on today's performance. How did executing (or missing) these leadership commitments impact your team's momentum and your own executive presence? This reinforcement loop is vital.
@@ -2124,7 +2152,6 @@ const renderView = () => {
 }
 
 return renderView();
-
 
 };
 
@@ -2167,7 +2194,6 @@ useEffect(() => {
         }
         // --- END API KEY CHECK ---
 
-
         const conversationText = history
             .filter(msg => !msg.system)
             .map(msg => `${msg.sender}: ${msg.text}`)
@@ -2186,7 +2212,9 @@ useEffect(() => {
 
         try {
             const payload = {
-                contents: currentHistory,
+                contents: history
+                .filter(msg => !msg.system)
+                .map(msg => ({ role: msg.isAI ? "model" : "user", parts: [{ text: `${msg.sender}: ${msg.text}` }] })),
                 systemInstruction: { parts: [{ text: systemPrompt }] },
             };
 
@@ -2230,7 +2258,6 @@ return (
         </Button>
     </Card>
 );
-
 
 };
 
@@ -2281,12 +2308,10 @@ const RolePlayView = ({ scenario, setCoachingLabView }) => {
     }
     // --- End Feature 1 ---
 
-
     const generateResponse = async (history) => {
         setIsGenerating(true);
 
         const systemPrompt = `You are a direct report named 'Alex'. You embody the persona: ${scenario.persona}. Your current situation is: "${scenario.description}". The user is your manager.
-
 
 Your task is to respond to the user's input, maintaining your ${AI_PERSONA} persona and tone. Be realistic—don't resolve the conflict immediately. After 4-5 turns, you may begin to soften only if the manager demonstrates effective listening and SBI feedback. Keep your responses concise (2-3 sentences max).
 Use the history below to guide your response. Do not break character or mention your persona.`;
@@ -2311,7 +2336,9 @@ Use the history below to guide your response. Do not break character or mention 
 
         try {
             const payload = {
-                contents: currentHistory,
+                contents: history
+                .filter(msg => !msg.system)
+                .map(msg => ({ role: msg.isAI ? "model" : "user", parts: [{ text: `${msg.sender}: ${msg.text}` }] })),
                 systemInstruction: { parts: [{ text: systemPrompt }] },
             };
 
@@ -2361,7 +2388,6 @@ Use the history below to guide your response. Do not break character or mention 
             </div>
         );
     }
-
 
     return (
         <div className="p-8">
@@ -2414,7 +2440,6 @@ Use the history below to guide your response. Do not break character or mention 
         </div>
     );
 
-
 };
 
 const ScenarioPreparationView = ({ scenario, setCoachingLabView }) => {
@@ -2461,7 +2486,6 @@ return (
   </Button>
 </div>
 
-
 );
 };
 
@@ -2500,7 +2524,6 @@ return (
     ))}
   </div>
 </div>
-
 
 );
 };
@@ -2570,7 +2593,6 @@ try {
   setIsGenerating(false);
 }
 
-
 };
 
 const handleCommitmentCreation = async () => {
@@ -2608,7 +2630,6 @@ const handleCommitmentCreation = async () => {
         alert("Failed to save new commitment.");
     }
 };
-
 
 return (
 <div className="p-8">
@@ -2665,7 +2686,6 @@ return (
     </Card>
   )}
 </div>
-
 
 );
 };
@@ -2741,7 +2761,6 @@ try {
     setIsGenerating(false);
 }
 
-
 };
 
 return (
@@ -2789,7 +2808,6 @@ return (
     </Card>
   )}
 </div>
-
 
 );
 };
@@ -2849,7 +2867,6 @@ return (
     );
 }
 
-
 };
 return renderView();
 };
@@ -2891,7 +2908,6 @@ const tools = [{ "google_search": {} }];
 // MODIFIED SYSTEM PROMPT: Enforcing structure for the visual flyer layout
 const systemPrompt = `You are a professional business copywriter and leadership marketing expert. Your task is to generate compelling, visually parsable flyer content based on the core lessons of the book "${book.title}" by ${book.author}". Structure the output strictly in Markdown with the following sections:
 
-
 A single H1 tag (#) for the Catchy Headline/Promise (This must be the very first line).
 
 A single bolded paragraph summarizing the PROBLEM the book solves (e.g., PROBLEM SOLVED: [Content]).
@@ -2931,7 +2947,6 @@ const groundingMetadata = candidate.groundingMetadata;
  }
 
  setSummaryData({ text, sources });
-
 
 } else {
 setError("Could not generate flyer content. The model may have blocked the request or the response was empty.");
@@ -3037,7 +3052,6 @@ if (html) {
 }
 return <p className="p-4 text-gray-600">Preparing content...</p>;
 
-
 };
 
 return (
@@ -3079,7 +3093,6 @@ return (
   </div>
 </div>
 
-
 );
 };
 
@@ -3113,7 +3126,6 @@ return (
     ))}
   </div>
 </div>
-
 
 );
 };
@@ -3262,7 +3274,6 @@ const PreMortemView = ({ setPlanningView }) => {
         }
     };
 
-
     return (
         <div className="p-8">
             <h1 className="text-3xl font-extrabold text-[#002E47] mb-4">Decision-Making Matrix (Pre-Mortem Audit)</h1>
@@ -3342,7 +3353,6 @@ const PreMortemView = ({ setPlanningView }) => {
         </div>
     );
 
-
 };
 
 const VisionBuilderView = ({ setPlanningView }) => {
@@ -3411,7 +3421,6 @@ const VisionBuilderView = ({ setPlanningView }) => {
         ) : <><CheckCircle className="w-5 h-5 mr-2" /> Save Vision & Mission</>}
       </Button>
     </div>
-
 
     );
 };
@@ -3488,7 +3497,6 @@ const OKRDraftingView = ({ setPlanningView }) => {
     }
     // --- END API KEY CHECK ---
 
-
     const draftedOKRs = okrs.map((o, i) =>
       `Objective ${i + 1}: ${o.objective}\nKey Results:\n${o.keyResults.map(kr => `- ${kr.kr}`).join('\n')}`
     ).join('\n\n---\n\n');
@@ -3517,7 +3525,6 @@ const OKRDraftingView = ({ setPlanningView }) => {
     } finally {
         setIsCritiquing(false);
     }
-
 
     };
 
@@ -3609,7 +3616,6 @@ const OKRDraftingView = ({ setPlanningView }) => {
 
     </div>
 
-
     );
 };
 
@@ -3672,7 +3678,6 @@ const AlignmentTrackerView = ({ setPlanningView }) => {
       </div>
     </div >
 
-
     );
 };
 
@@ -3700,7 +3705,6 @@ const PlanningHubScreen = () => {
 
     // We pass the local view state function down. Data/Updates are via context.
     const viewProps = { setPlanningView: setPlanningView };
-
 
     const renderView = () => {
         switch (view) {
@@ -3752,7 +3756,6 @@ const PlanningHubScreen = () => {
             );
         }
     };
-
 
     return renderView();
 };
@@ -3809,7 +3812,6 @@ const AppSettingsScreen = () => {
     );
 };
 
-
 // --- PROFESSIONAL DEVELOPMENT PLAN ROUTER ---
 const ProfDevPlanScreen = () => {
     // Consume data and updates via context
@@ -3860,7 +3862,6 @@ const ContentDetailsModal = ({ isVisible, onClose, content }) => {
     useEffect(() => {
         (async () => setHtmlContent(await mdToHtml(mockDetail)))();
     }, [content.id, mockDetail]);
-
 
     return (
         <div className="fixed inset-0 bg-[#002E47]/80 z-50 flex items-center justify-center p-4">
@@ -4006,7 +4007,6 @@ const completedTiers = useMemo(() => {
     return fullyCompletedTiers;
 }, [data.plan, currentMonth]);
 
-
 // Sync local state with loaded Firestore data
 useEffect(() => {
     if (currentMonthPlan) {
@@ -4063,7 +4063,6 @@ const handleCompleteMonth = async () => {
                 initialTier: nextMonthTier // Pass the tier for easy selection
             });
         }
-
 
     } catch (e) {
         console.error("Error advancing month via batch:", e);
@@ -4126,7 +4125,6 @@ const handleOpenContentModal = (contentItem) => {
     setSelectedContent(contentItem);
     setIsContentModalVisible(true);
 };
-
 
 if (!currentMonthPlan) {
     // Should only happen if plan is complete (Month 25)
@@ -4317,7 +4315,6 @@ return (
     </div>
 );
 
-
 };
 
 // Component 1: Plan Generator View
@@ -4450,7 +4447,6 @@ return (
     </div>
 );
 
-
 };
 
 /**
@@ -4577,7 +4573,6 @@ const App = ({initialState}) => {
         setCurrentScreen(screen);
     }, []);
 
-
 // 1. Firebase Initialization and Auth Logic (useEffect runs once)
 useEffect(() => {
     let app, firestore, authentication;
@@ -4656,7 +4651,6 @@ if (DEBUG_MODE) {
 }
 // --- END DEBUG MODE LOGIC ---
 
-
 // Check if auth is ready before rendering DataProvider
 if (!isAuthReady) {
      return (
@@ -4721,6 +4715,5 @@ const ScreenRouter = ({ currentScreen, navParams }) => {
             return <DashboardScreen />;
     }
 };
-
 
 export default App;
