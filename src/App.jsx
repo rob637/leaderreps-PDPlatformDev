@@ -41,23 +41,34 @@ const CoachingLabScreen = Labs;
 const AppServiceContext = createContext(null);
 
 const DEFAULT_SERVICES = {
+  // nav + user
   navigate: () => {},
   user: null,
+
+  // firebase
   db: null,
   auth: null,
   userId: null,
   isAuthReady: false,
+
+  // writers
   updatePdpData: () => {},
   saveNewPlan: () => {},
   updateCommitmentData: () => {},
   updatePlanningData: () => {},
+
+  // state
   pdpData: null,
   commitmentData: null,
   planningData: null,
+
+  // meta
   isLoading: false,
   error: null,
   appId: 'default-app-id',
   IconMap: {},
+
+  // Gemini helpers
   callSecureGeminiAPI: async () => { throw new Error('Gemini not configured.'); },
   hasGeminiKey: () => false,
   GEMINI_MODEL,
@@ -86,22 +97,33 @@ const DataProvider = ({ children, firebaseServices, userId, isAuthReady, navigat
   const error = pdp.error || commitment.error || planning.error;
 
   const appServices = useMemo(() => ({
+    // nav + user
     navigate,
     user,
+
+    // firebase
     ...firebaseServices,
     userId,
     isAuthReady,
+
+    // writers
     updatePdpData: pdp.updatePdpData,
     saveNewPlan: pdp.saveNewPlan,
     updateCommitmentData: commitment.updateCommitmentData,
     updatePlanningData: planning.updatePlanningData,
+
+    // state blobs
     pdpData: pdp.pdpData,
     commitmentData: commitment.commitmentData,
     planningData: planning.planningData,
+
+    // meta
     isLoading,
     error,
     appId,
     IconMap,
+
+    // Gemini helpers
     callSecureGeminiAPI,
     hasGeminiKey,
     GEMINI_MODEL,
@@ -131,17 +153,14 @@ function LoginPanel({ auth, onSuccess, allowAnonymous = false }) {
   const [err, setErr] = useState('');
 
   const finalize = () => {
-    // Let parent gate re-evaluate; also navigate root to drop any ?debug flag from deep URLs
     try { window.history.replaceState(null, '', '/'); } catch {}
     onSuccess?.();
   };
 
   const handleSignIn = async (e) => {
     e.preventDefault(); setErr(''); setBusy(true);
-    try {
-      await signInWithEmailAndPassword(auth, email.trim(), pass);
-      finalize();
-    } catch (ex) { setErr(ex.message || 'Sign in failed.'); }
+    try { await signInWithEmailAndPassword(auth, email.trim(), pass); finalize(); }
+    catch (ex) { setErr(ex.message || 'Sign in failed.'); }
     finally { setBusy(false); }
   };
 
@@ -154,7 +173,6 @@ function LoginPanel({ auth, onSuccess, allowAnonymous = false }) {
     try {
       const user = auth.currentUser;
       if (user?.isAnonymous) {
-        // Upgrade anonymous → email/password (keeps UID & data)
         const cred = EmailAuthProvider.credential(email.trim(), pass);
         await linkWithCredential(user, cred);
       } else {
@@ -167,11 +185,8 @@ function LoginPanel({ auth, onSuccess, allowAnonymous = false }) {
 
   const handleReset = async (e) => {
     e.preventDefault(); setErr(''); setBusy(true);
-    try {
-      await sendPasswordResetEmail(auth, email.trim());
-      setMode('signin');
-      setErr('Reset email sent. Check your inbox.');
-    } catch (ex) { setErr(ex.message || 'Reset failed.'); }
+    try { await sendPasswordResetEmail(auth, email.trim()); setMode('signin'); setErr('Reset email sent.'); }
+    catch (ex) { setErr(ex.message || 'Reset failed.'); }
     finally { setBusy(false); }
   };
 
@@ -250,15 +265,39 @@ function LoginPanel({ auth, onSuccess, allowAnonymous = false }) {
 /* =========================
    Debug overlay (toggle with ?debug=1)
    ========================= */
-function DebugOverlay({ authRequired, isAuthReady, user, userId }) {
+function DebugOverlay({ stage, authRequired, isAuthReady, user, userId, initError }) {
   const show = /[?&]debug=1/.test(window.location.search);
   if (!show) return null;
   return (
     <div className="fixed bottom-2 right-2 bg-black/80 text-white text-xs rounded-lg p-2 space-y-1 z-50">
+      <div><span className="font-semibold">stage:</span> {stage}</div>
       <div><span className="font-semibold">authRequired:</span> {String(authRequired)}</div>
       <div><span className="font-semibold">isAuthReady:</span> {String(isAuthReady)}</div>
       <div><span className="font-semibold">userId:</span> {userId || '—'}</div>
-      <div><span className="font-semibold">user.email:</span> {user?.email || '—'}</div>
+      <div><span className="font-semibold">email:</span> {user?.email || '—'}</div>
+      {initError && <div className="text-red-300">initError: {initError}</div>}
+    </div>
+  );
+}
+
+/* =========================
+   Config error screen
+   ========================= */
+function ConfigError({ message }) {
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-red-50 px-4">
+      <div className="max-w-xl w-full bg-white rounded-2xl shadow p-6 space-y-3 border border-red-200">
+        <h1 className="text-lg font-semibold text-red-700">Firebase configuration error</h1>
+        <p className="text-sm text-red-700">{message || 'Missing or invalid VITE_FIREBASE_CONFIG.'}</p>
+        <ol className="text-sm list-decimal pl-5 space-y-1">
+          <li>In Netlify → <em>Site settings → Build &amp; deploy → Environment</em>, set <code>VITE_FIREBASE_CONFIG</code> to your Firebase Web config as a single-line JSON.</li>
+          <li>In <code>src/main.jsx</code>, ensure you parse and inject:
+            <pre className="bg-gray-100 p-2 rounded mt-1 text-xs overflow-auto">{`const raw = import.meta.env.VITE_FIREBASE_CONFIG;
+if (raw) { window.__firebase_config = JSON.parse(raw); }`}</pre>
+          </li>
+          <li>Authorized domains: add your Netlify domain in Firebase Console → Auth → Settings.</li>
+        </ol>
+      </div>
     </div>
   );
 }
@@ -277,6 +316,10 @@ const App = ({ initialState }) => {
   const [navParams, setNavParams] = useState(initialState?.params || {});
   const [authRequired, setAuthRequired] = useState(!DEBUG_MODE);
 
+  // init stage: 'init' | 'ok' | 'error'
+  const [initStage, setInitStage] = useState('init');
+  const [initError, setInitError] = useState('');
+
   const navigate = useCallback((screen, params = {}) => {
     setNavParams(params);
     setCurrentScreen(screen);
@@ -293,16 +336,17 @@ const App = ({ initialState }) => {
         authentication = getAuth(app);
         setFirebaseServices({ db: firestore, auth: authentication });
         setIsAuthReady(true);
+        setInitStage('ok');
         return;
       } catch (e) {
-        if (e.name !== 'FirebaseError' || !e.message.includes('already been initialized')) {
-          console.warn('Firebase already initialized in DEBUG mode:', e);
-        }
-        const existing = getApp();
-        firestore = getFirestore(existing);
-        authentication = getAuth(existing);
-        setFirebaseServices({ db: firestore, auth: authentication });
+        try {
+          const existing = getApp();
+          firestore = getFirestore(existing);
+          authentication = getAuth(existing);
+          setFirebaseServices({ db: firestore, auth: authentication });
+        } catch {}
         setIsAuthReady(true);
+        setInitStage('ok');
         return;
       }
     }
@@ -317,7 +361,10 @@ const App = ({ initialState }) => {
         if (s.startsWith("'") && s.endsWith("'")) s = s.slice(1, -1);
         firebaseConfig = JSON.parse(s.replace(/'/g, '"'));
       } else {
-        console.warn('No Firebase config found; set VITE_FIREBASE_CONFIG and inject in main.jsx');
+        setInitError('window.__firebase_config is missing. Ensure VITE_FIREBASE_CONFIG is set and parsed in main.jsx.');
+        setIsAuthReady(true);
+        setInitStage('error');
+        return;
       }
 
       app = initializeApp(firebaseConfig);
@@ -339,6 +386,7 @@ const App = ({ initialState }) => {
           setAuthRequired(true);
         }
         setIsAuthReady(true);
+        setInitStage('ok');
       });
 
       if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
@@ -348,16 +396,16 @@ const App = ({ initialState }) => {
 
       return () => unsubscribe();
     } catch (e) {
-      if (e.name !== 'FirebaseError' || !e.message.includes('already been initialized')) {
-        console.error('Firebase setup failed:', e);
-      }
+      console.error('Firebase setup failed:', e);
+      setInitError(e?.message || 'Firebase initialization failed.');
       setIsAuthReady(true);
+      setInitStage('error');
     }
   }, []);
 
-  // ---------- Auth Gate ----------
+  // ---------- Auth Gate (only when DEBUG_MODE = false) ----------
   if (!DEBUG_MODE) {
-    if (!firebaseServices.auth || !isAuthReady) {
+    if (initStage === 'init') {
       return (
         <div className="min-h-screen flex items-center justify-center bg-gray-100">
           <div className="flex flex-col items-center">
@@ -368,7 +416,17 @@ const App = ({ initialState }) => {
       );
     }
 
-    if (authRequired || !user) {
+    if (initStage === 'error') {
+      return (
+        <>
+          <ConfigError message={initError} />
+          <DebugOverlay stage={initStage} authRequired={authRequired} isAuthReady={isAuthReady} user={user} userId={userId} initError={initError} />
+        </>
+      );
+    }
+
+    // initStage === 'ok' here
+    if (!user) {
       return (
         <>
           <LoginPanel
@@ -380,13 +438,13 @@ const App = ({ initialState }) => {
             }}
             allowAnonymous={false /* set true if you enabled Anonymous in Console */}
           />
-          <DebugOverlay authRequired={authRequired} isAuthReady={isAuthReady} user={user} userId={userId} />
+          <DebugOverlay stage={initStage} authRequired={authRequired} isAuthReady={isAuthReady} user={user} userId={userId} />
         </>
       );
     }
   }
 
-  // ---------- App ----------
+  // ---------- App (DEBUG_MODE || signed-in) ----------
   return (
     <>
       <DataProvider
@@ -403,7 +461,7 @@ const App = ({ initialState }) => {
           navParams={navParams}
         />
       </DataProvider>
-      <DebugOverlay authRequired={authRequired} isAuthReady={isAuthReady} user={user} userId={userId} />
+      <DebugOverlay stage={initStage} authRequired={authRequired} isAuthReady={isAuthReady} user={user} userId={userId} />
     </>
   );
 };
