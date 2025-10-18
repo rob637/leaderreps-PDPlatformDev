@@ -3,12 +3,17 @@ import { useAppServices } from '../../App.jsx';
 import { Card, Button } from '../shared/UI';
 import { getTimestamp } from '../../utils/ApiHelpers';
 import { PlusCircle, X, CheckCircle, Target, TrendingUp, Clock, AlertTriangle, BarChart3, CornerRightUp } from 'lucide-react';
-import { LEADERSHIP_TIERS, COMMITMENT_COLLECTION } from '../../data/Constants';
+// We still need to import Constants for the collection name and tier definitions, but will use the context version of Tiers.
+import { COMMITMENT_COLLECTION } from '../../data/Constants'; 
+
+// --- Constants for this screen ---
+const REPS_COLLECTION = 'daily_reps';
 
 // --- Commitment Selector ---
 // This is the view for managing (adding/removing) commitments
 const CommitmentSelectorView = ({ setView, initialGoal, initialTier }) => {
-    const { updateCommitmentData, commitmentData, planningData, pdpData, allBooks, LEADERSHIP_TIERS: Tiers } = useAppServices();
+    // Safely destructure LEADERSHIP_TIERS and allBooks, defaulting to empty objects
+    const { updateCommitmentData, commitmentData, planningData, pdpData, LEADERSHIP_TIERS: Tiers = {} } = useAppServices();
 
     const [tab, setTab] = useState('bank');
     const [searchTerm, setSearchTerm] = useState('');
@@ -23,9 +28,16 @@ const CommitmentSelectorView = ({ setView, initialGoal, initialTier }) => {
     
     // Combine all commitments from the bank into a flat array
     const allBankCommitments = useMemo(() => {
-        // Need to import the bank from Constants.js
-        const { leadershipCommitmentBank } = require('../../data/Constants');
-        return Object.values(leadershipCommitmentBank).flat();
+        try {
+            // FIX: Safely import the bank here, handling the potential error if Constants.js is empty
+            const constantsModule = require('../../data/Constants');
+            const leadershipCommitmentBank = constantsModule.leadershipCommitmentBank || {};
+            // FIX: Use Object.values safely
+            return Object.values(leadershipCommitmentBank).flat();
+        } catch (e) {
+            console.warn("Could not load leadershipCommitmentBank from Constants. Defaulting to empty array.", e);
+            return [];
+        }
     }, []);
 
     // PDP Content Calculation
@@ -250,7 +262,8 @@ const CommitmentSelectorView = ({ setView, initialGoal, initialTier }) => {
                                     className="w-full p-3 border border-gray-300 rounded-xl focus:ring-[#002E47] focus:border-[#002E47] text-[#002E47] font-semibold"
                                 >
                                      <option value="">--- Select Tier ---</option>
-                                     {Object.values(Tiers).map(tier => (
+                                     {/* FIX: Safely access Object.values(Tiers) here */}
+                                     {Object.values(Tiers || {}).map(tier => (
                                         <option key={tier.id} value={tier.id}>
                                             {tier.id}: {tier.name}
                                         </option>
@@ -325,7 +338,8 @@ const CommitmentSelectorView = ({ setView, initialGoal, initialTier }) => {
                                 />
                                 
                                 <div className="h-64 overflow-y-auto pr-2 space-y-3">
-                                    {Object.entries(require('../../data/Constants').leadershipCommitmentBank).map(([category, commitments]) => {
+                                    {/* FIX: Safely access require('../../data/Constants').leadershipCommitmentBank */}
+                                    {Object.entries(require('../../data/Constants').leadershipCommitmentBank || {}).map(([category, commitments]) => {
                                         const categoryCommitments = commitments.filter(c => 
                                             !userCommitments.some(uc => uc.text === c.text) && // Simple text match check to avoid re-adding bank items
                                             c.text.toLowerCase().includes(searchTerm.toLowerCase())
@@ -384,6 +398,9 @@ const CommitmentSelectorView = ({ setView, initialGoal, initialTier }) => {
 
 // --- Daily Practice Screen (default export) ---
 const CommitmentItem = ({ commitment, onLogCommitment, onRemove }) => {
+    // FIX: Safely access LEADERSHIP_TIERS from useAppServices
+    const { LEADERSHIP_TIERS: Tiers = {} } = useAppServices();
+
     const getStatusColor = (status) => {
         if (status === 'Committed') return 'bg-green-100 text-green-800 border-green-500 shadow-md';
         if (status === 'Missed') return 'bg-red-100 text-red-800 border-red-500 shadow-md';
@@ -398,7 +415,8 @@ const CommitmentItem = ({ commitment, onLogCommitment, onRemove }) => {
 
     const status = commitment.status || 'Pending';
 
-    const tierMeta = commitment.linkedTier ? LEADERSHIP_TIERS[commitment.linkedTier] : null;
+    // FIX: Safely use Tiers here
+    const tierMeta = commitment.linkedTier ? Tiers[commitment.linkedTier] : null;
     const tierLabel = tierMeta ? `${tierMeta.id}: ${tierMeta.name}` : 'N/A';
     const colleagueLabel = commitment.targetColleague || 'Self-Focus';
 
@@ -458,6 +476,9 @@ const CommitmentItem = ({ commitment, onLogCommitment, onRemove }) => {
 }
 
 const ScorecardView = ({ setView, initialGoal, initialTier, isSaving, commitmentData, handleLogCommitment, handleRemoveCommitment, handleSaveReflection, calculateTotalScore, calculateStreak, commitmentHistory, reflection, setReflection }) => {
+    // FIX: Safely access LEADERSHIP_TIERS from useAppServices
+    const { LEADERSHIP_TIERS: Tiers = {} } = useAppServices();
+
     const streak = calculateStreak(commitmentHistory);
     return (
         <div className="p-8">
@@ -472,7 +493,8 @@ const ScorecardView = ({ setView, initialGoal, initialTier, isSaving, commitment
                             <p className='font-bold flex items-center'>
                                 <CornerRightUp className='w-4 h-4 mr-2'/> New PDP Focus:
                             </p>
-                            <p>Your new focus area is **{initialGoal || LEADERSHIP_TIERS[initialTier]?.name || 'a new phase'}**. Click 'Manage Commitments' to align your daily practice to this goal!</p>
+                            {/* FIX: Safely access Tiers here */}
+                            <p>Your new focus area is **{initialGoal || Tiers[initialTier]?.name || 'a new phase'}**. Click 'Manage Commitments' to align your daily practice to this goal!</p>
                             </div>
                     )}
                     <div className="mb-8 flex justify-between items-center">
@@ -564,7 +586,9 @@ export default function DailyPracticeScreen({ initialGoal, initialTier }) {
     const { commitmentData, updateCommitmentData, isLoading, error } = useAppServices();
     const [view, setView] = useState('scorecard'); 
     const [isSaving, setIsSaving] = useState(false);
-    const [reflection, setReflection] = useState(commitmentData?.reflection_journal || '');
+    
+    // FIX: Safely initialize reflection if commitmentData is null on first render
+    const [reflection, setReflection] = useState('');
     
     // Auto-switch to selector if navigation params are present
     useEffect(() => {
@@ -606,7 +630,7 @@ export default function DailyPracticeScreen({ initialGoal, initialTier }) {
                 const isNewCommit = status === 'Committed' && c.status !== 'Committed';
                 const isUncommit = status !== 'Committed' && c.status === 'Committed';
                 
-                const newReps = c.currentReps + (isNewCommit ? 1 : 0) - (isUncommit ? 1 : 0);
+                const newReps = (c.currentReps || 0) + (isNewCommit ? 1 : 0) - (isUncommit ? 1 : 0);
                 const finalReps = Math.max(0, newReps);
                 
                 return { 

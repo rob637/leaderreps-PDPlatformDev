@@ -16,7 +16,7 @@ const ActionFlyerView = ({ book, setReadingView }) => {
 
     useEffect(() => {
         if (!summaryData.text) { setHtml(''); return; }
-        (async () => setHtml(await require('../../utils/ApiHelpers').mdToHtml(summaryData.text)))();
+        (async () => require('../../utils/ApiHelpers').mdToHtml(summaryData.text).then(setHtml))();
     }, [summaryData.text]);
 
     const generateSummary = async () => {
@@ -217,7 +217,8 @@ The tone must be energetic, persuasive, and focused purely on immediate leadersh
 
 // Books List View
 const BooksListView = ({ category, setReadingView, setSelectedBook }) => {
-    const { allBooks } = useAppServices();
+    // FIX: Safely access allBooks
+    const { allBooks = {} } = useAppServices();
     const books = allBooks[category] || [];
     return (
         <div className="p-8">
@@ -246,7 +247,8 @@ const BooksListView = ({ category, setReadingView, setSelectedBook }) => {
 
 // Categories View
 const CategoriesView = ({ setReadingView, setSelectedCategory }) => {
-    const { allBooks } = useAppServices();
+    // FIX: Safely access allBooks
+    const { allBooks = {} } = useAppServices();
     
     const categories = [
         { name: 'Strategy', icon: TrendingUp, description: 'Defining direction, setting priorities, and competitive analysis.' },

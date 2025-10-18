@@ -1,6 +1,7 @@
 /* eslint-disable no-console */
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useAppServices } from '../../App.jsx'; // Correct import
+import { Tooltip } from '../shared/UI'; // <-- FIX: Import Tooltip from the local shared UI components
 import {
   BookOpen,
   CheckCircle,
@@ -19,19 +20,21 @@ import {
   PlusCircle,
   Copy,
   Trash2,
+  // Removed Tooltip from lucide-react, as it is not exported by that library
 } from 'lucide-react';
 
 /**
  * Labs Screen — Full Feature Sandbox for Plan Generation
  */
 export default function Labs() {
+    // FIX: Safely destructure context data, defaulting complex objects to {}
     const { 
         db, 
         auth, 
         pdpData, 
         commitmentData, 
-        LEADERSHIP_TIERS, 
-        allBooks,
+        LEADERSHIP_TIERS = {}, // Added safe default
+        allBooks = {}, // Added safe default
         appId
     } = useAppServices();
 
@@ -46,8 +49,6 @@ export default function Labs() {
           { id: 'ea_1', title: 'Delegation map', tier: 'Execution & Accountability', effort: 3, description: 'Define tasks to delegate using RACI.' },
         ];
         
-        // This relies on you having a `leadershipCommitmentBank` in your Constants.js
-        // For now, we use the PDP goals as mock items if available, otherwise the fallback.
         let raw = fallbackIfEmpty; 
         if (pdpData?.plan?.length) {
             raw = pdpData.plan.flatMap(m => m.requiredContent.map(c => ({
@@ -60,7 +61,8 @@ export default function Labs() {
         }
 
         const tierTitleByKey = new Map();
-        Object.values(LEADERSHIP_TIERS).forEach(t => {
+        // FIX: Ensure LEADERSHIP_TIERS is treated as an object for Object.values
+        Object.values(LEADERSHIP_TIERS || {}).forEach(t => {
             tierTitleByKey.set(t.id, t.name);
             tierTitleByKey.set(t.name, t.name);
         });
@@ -76,11 +78,13 @@ export default function Labs() {
     }, [pdpData, LEADERSHIP_TIERS]);
     
     const totalBooks = useMemo(
+        // FIX: Ensure allBooks is an object before calling Object.values()
         () => Object.values(allBooks || {}).reduce((n, arr) => n + (arr?.length || 0), 0),
         [allBooks]
     );
     
-    const COMMITMENT_COLLECTION_COUNT = commitmentData?.items?.length || 0;
+    // FIX: Ensure commitmentData is checked before accessing .items
+    const COMMITMENT_COLLECTION_COUNT = commitmentData?.active_commitments?.length || 0;
 
 
     // ----------------------------------
@@ -202,7 +206,8 @@ export default function Labs() {
             completed: [...completed],
             updatedAt: serverTimestamp(),
             meta: {
-              tiers: Object.values(LEADERSHIP_TIERS).map(t => t.name ?? t.id),
+              // FIX: Safely access Object.values
+              tiers: Object.values(LEADERSHIP_TIERS || {}).map(t => t.name ?? t.id),
               booksCount: totalBooks,
               commitmentsCount: COMMITMENT_COLLECTION_COUNT
             }
@@ -406,7 +411,8 @@ export default function Labs() {
                 >
                   <option value="all">All tiers</option>
                   {Array.from(new Set([
-                    ...Object.values(LEADERSHIP_TIERS).map(t => t.name ?? t.id),
+                    // FIX: Safely access Object.values
+                    ...Object.values(LEADERSHIP_TIERS || {}).map(t => t.name ?? t.id),
                     ...bankItems.map(b => b.tier),
                   ])).map(t => (
                     <option key={t} value={t}>{t}</option>
@@ -446,7 +452,8 @@ export default function Labs() {
 
           {/* KPIs */}
           <section className="grid grid-cols-1 sm:grid-cols-4 gap-4">
-            <Kpi icon={TrendingUp} label="Tiers" value={Object.keys(LEADERSHIP_TIERS).length || new Set(bankItems.map(b => b.tier)).size} hint="Leadership framework levels" />
+            {/* FIX: Safely access Object.keys */}
+            <Kpi icon={TrendingUp} label="Tiers" value={Object.keys(LEADERSHIP_TIERS || {}).length || new Set(bankItems.map(b => b.tier)).size} hint="Leadership framework levels" />
             <Kpi icon={CheckCircle} label="Items in Bank" value={bankItems.length} hint="Activities available to generate plans" />
             <Kpi icon={BookOpen} label="Total Books" value={totalBooks} hint="Reading bank" />
             <Kpi icon={Target} label="Total Effort" value={effortByMonth.reduce((s, n) => s + n, 0)} hint="Sum of effort across plan" />
@@ -527,7 +534,7 @@ export default function Labs() {
           </section>
 
           {/* Books by Tier */}
-          {Object.keys(allBooks).length > 0 && (
+          {Object.keys(allBooks || {}).length > 0 && ( // FIX: Safely check keys
             <section className="space-y-2">
               <h2 className="text-lg font-semibold flex items-center gap-2"><BookOpen className="w-5 h-5" /> Suggested Reading (From App Context)</h2>
               <div className="grid md:grid-cols-2 gap-4">

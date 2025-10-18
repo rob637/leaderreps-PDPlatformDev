@@ -3,9 +3,9 @@ import { useAppServices } from '../../App.jsx';
 import { Card, Button, Tooltip } from '../shared/UI';
 import {
     PlusCircle, Edit, Trash2, CheckCircle, Clock, CornerRightUp, AlertTriangle,
-    TrendingUp, Target, Users, Lightbulb, ArrowLeft, Zap, Briefcase, Mic
+    TrendingUp, Target, Users, Lightbulb, ArrowLeft, Zap, Briefcase, Mic, X
 } from 'lucide-react';
-import { LEADERSHIP_TIERS } from '../../data/Constants'; // Import tiers for context
+// We don't need to import LEADERSHIP_TIERS directly if it's coming from context
 
 // NOTE: All view components (VisionBuilderView, OKRDraftingView, PreMortemView, AlignmentTrackerView)
 // are defined within this file to match the structure in the backup.
@@ -20,8 +20,8 @@ const VisionBuilderView = ({ setPlanningView }) => {
 
     useEffect(() => {
         if (planningData) {
-            setVision(planningData.vision);
-            setMission(planningData.mission);
+            setVision(planningData.vision || '');
+            setMission(planningData.mission || '');
         }
     }, [planningData]);
 
@@ -81,7 +81,10 @@ const VisionBuilderView = ({ setPlanningView }) => {
 
 // --- OKR Drafting View ---
 const OKRDraftingView = ({ setPlanningView }) => {
-    const { planningData, updatePlanningData, navigate } = useAppServices();
+    // FIX: Destructure necessary helpers from useAppServices
+    const { planningData, updatePlanningData, navigate, callSecureGeminiAPI, hasGeminiKey, GEMINI_MODEL } = useAppServices();
+    // FIX: Import mdToHtml here to avoid `require` inside component
+    const { mdToHtml } = require('../../utils/ApiHelpers'); 
 
     const [okrs, setOkrs] = useState(planningData?.okrs || []);
     const [isSaving, setIsSaving] = useState(false);
@@ -97,7 +100,7 @@ const OKRDraftingView = ({ setPlanningView }) => {
 
     useEffect(() => {
         if (!okrCritique) { setCritiqueHtml(''); return; }
-        (async () => setCritiqueHtml(await require('../../utils/ApiHelpers').mdToHtml(okrCritique)))();
+        (async () => setCritiqueHtml(await mdToHtml(okrCritique)))();
     }, [okrCritique]);
 
     const updateObjective = (id, value) => {
@@ -141,7 +144,7 @@ const OKRDraftingView = ({ setPlanningView }) => {
         setIsCritiquing(true);
         setOkrCritique('');
 
-        if (!require('../../utils/ApiHelpers').hasGeminiKey()) {
+        if (!hasGeminiKey()) {
             setOkrCritique("## AI Critique Unavailable\n\n**ERROR**: The Gemini API Key is missing.");
             setIsCritiquing(false);
             return;
@@ -158,9 +161,11 @@ const OKRDraftingView = ({ setPlanningView }) => {
             const payload = {
                 contents: [{ role: "user", parts: [{ text: userQuery }] }],
                 systemInstruction: { parts: [{ text: systemPrompt }] },
+                tools: [{ "google_search": {} }],
+                model: GEMINI_MODEL // Ensure model is passed
             };
 
-            const result = await require('../../utils/ApiHelpers').callSecureGeminiAPI(payload);
+            const result = await callSecureGeminiAPI(payload);
             const candidate = result?.candidates?.[0];
 
             if (candidate && candidate.content?.parts?.[0]?.text) {
@@ -236,7 +241,7 @@ const OKRDraftingView = ({ setPlanningView }) => {
                 <p className='text-gray-700 text-sm mb-4'>Use the AI coach to review your drafted OKRs against industry best practices for measurability and ambition.</p>
                 
                 <Tooltip
-                    content={require('../../utils/ApiHelpers').hasGeminiKey() 
+                    content={hasGeminiKey() 
                         ? "Submits your OKRs to the AI Auditor for measurability and ambition critique." 
                         : "Requires Gemini API Key to run. Check App Settings."
                     }
@@ -266,8 +271,10 @@ const OKRDraftingView = ({ setPlanningView }) => {
 
 // --- Pre-Mortem View ---
 const PreMortemView = ({ setPlanningView }) => {
-    const { planningData, updatePlanningData, updateCommitmentData, navigate } = useAppServices();
-    
+    // FIX: Destructure necessary helpers from useAppServices
+    const { planningData, updatePlanningData, updateCommitmentData, navigate, callSecureGeminiAPI, hasGeminiKey, GEMINI_MODEL } = useAppServices();
+    const { mdToHtml } = require('../../utils/ApiHelpers'); 
+
     const [decision, setDecision] = useState(planningData?.last_premortem_decision || 'Should we restructure the Product and Engineering teams into vertical, feature-specific groups?');
     const [outcome, setOutcome] = useState('Faster time-to-market and clearer ownership for key features.');
     const [risks, setRisks] = useState(['Loss of technical expertise centralization.', 'Initial dips in morale due to fear of change.']); 
@@ -285,7 +292,7 @@ const PreMortemView = ({ setPlanningView }) => {
 
     useEffect(() => {
         if (!auditResult) { setAuditHtml(''); setMitigationText(''); return; }
-        (async () => setAuditHtml(await require('../../utils/ApiHelpers').mdToHtml(auditResult)))();
+        (async () => setAuditHtml(await mdToHtml(auditResult)))();
         
         const mitigationMatch = auditResult.match(/### Mitigation Strategy\s*([\s\S]*)/i);
         if (mitigationMatch && mitigationMatch[1]) {
@@ -319,7 +326,7 @@ const PreMortemView = ({ setPlanningView }) => {
         setIsGenerating(true);
         setAuditResult('');
 
-        if (!require('../../utils/ApiHelpers').hasGeminiKey()) {
+        if (!hasGeminiKey()) {
             setAuditResult("## AI Critique Unavailable\n\n**ERROR**: The Gemini API Key is missing.");
             setIsGenerating(false);
             return;
@@ -332,9 +339,10 @@ const PreMortemView = ({ setPlanningView }) => {
             const payload = {
                 contents: [{ role: "user", parts: [{ text: userQuery }] }],
                 systemInstruction: { parts: [{ text: systemPrompt }] },
+                model: GEMINI_MODEL
             };
 
-            const result = await require('../../utils/ApiHelpers').callSecureGeminiAPI(payload);
+            const result = await callSecureGeminiAPI(payload);
             const text = result?.candidates?.[0]?.content?.parts?.[0]?.text || "Audit failed to generate results.";
             setAuditResult(text);
             
@@ -428,7 +436,7 @@ const PreMortemView = ({ setPlanningView }) => {
             </div >
 
             <Tooltip
-                content={require('../../utils/ApiHelpers').hasGeminiKey() 
+                content={hasGeminiKey() 
                     ? "Submits your decision analysis to the AI Auditor for risk identification." 
                     : "Requires Gemini API Key to run. Check App Settings."
                 }
@@ -449,7 +457,7 @@ const PreMortemView = ({ setPlanningView }) => {
                         <div dangerouslySetInnerHTML={{ __html: auditHtml }} />
                     </div>
                     
-                    {mitigationText && require('../../utils/ApiHelpers').hasGeminiKey() && (
+                    {mitigationText && hasGeminiKey() && (
                         <Button onClick={handleCommitmentCreation} className="mt-6 w-full bg-[#349881] hover:bg-[#47A88D]">
                             <PlusCircle className='w-5 h-5 mr-2' /> Turn Mitigation Strategy into Daily Commitment
                         </Button>
@@ -462,7 +470,8 @@ const PreMortemView = ({ setPlanningView }) => {
 
 // --- Alignment Tracker View ---
 const AlignmentTrackerView = ({ setPlanningView }) => {
-    const { planningData } = useAppServices();
+    // FIX: Safely access LEADERSHIP_TIERS from useAppServices
+    const { planningData, LEADERSHIP_TIERS: Tiers = {} } = useAppServices();
 
     const objectives = planningData?.okrs?.map((o, index) => ({
         id: o.id,
