@@ -264,4 +264,7 @@ const ScreenRouter = ({ currentScreen, navParams }) => {
   }
 };
 
-export default App;
+// TEMP TEST — put this at the very bottom instead of your full export
+export default function App() {
+  return <div style={{ padding: 32, fontSize: 18 }}>✅ React is rendering</div>;
+}
