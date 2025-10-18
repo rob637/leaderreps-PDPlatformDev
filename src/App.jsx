@@ -4573,7 +4573,8 @@ useEffect(() => {
     let app, firestore, authentication;
     try {
         if (!AUTH_BYPASS && !firebaseConfig?.apiKey) {
-  throw new Error('Firebase is not configured. Check VITE_FIREBASE_* env vars.');app = initializeApp(firebaseConfig);
+ throw new Error('Firebase is not configured. Check VITE_FIREBASE_* env vars.');
+        app = initializeApp(firebaseConfig);
         firestore = getFirestore(app);
         authentication = getAuth(app);
         
