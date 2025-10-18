@@ -6,21 +6,20 @@ import { signOut } from 'firebase/auth';
 import { useAppServices } from '../../App.jsx';
 import { mdToHtml, callSecureGeminiAPI, hasGeminiKey, GEMINI_MODEL } from '../../utils/ApiHelpers.js';
 
-// Icons (install with: npm i lucide-react)
+// Icons
 import {
-  Clock,
-  ArrowLeft,
-  Zap,
+  Clock as ClockIcon,   // ← alias avoids undefined global
+  TrendingUp,
+  CheckCircle2,
+  BookOpen,
   ShieldCheck,
-  CornerRightUp,
+  Mic,
   Users,
+  Zap,
   Settings,
   AlertTriangle,
   Home,
-  TrendingUp,
-  Mic,
-  BookOpen,
-  CheckCircle2,
+  CornerRightUp,
 } from 'lucide-react';
 
 /* ---------------------------------------
@@ -65,7 +64,7 @@ const Tile = ({ icon: Icon, title, desc, onClick }) => (
 function extractGeminiText(resp) {
   if (!resp) return '';
   if (typeof resp === 'string') return resp;
-  if (resp.text) return String(resp.text); // proxy-style
+  if (resp.text) return String(resp.text);
   const c = resp.candidates?.[0];
   const parts = c?.content?.parts;
   if (Array.isArray(parts)) {
@@ -86,7 +85,7 @@ const DashboardScreen = () => {
     commitmentData,
   } = useAppServices();
 
-  // Defensive counts (don’t assume shapes)
+  // Defensive counts
   const goalsCount = useMemo(() => {
     const g = pdpData?.goals;
     if (Array.isArray(g)) return g.length;
@@ -107,11 +106,6 @@ const DashboardScreen = () => {
     if (commitmentData && typeof commitmentData === 'object') return Object.keys(commitmentData).length;
     return 0;
   }, [commitmentData]);
-
-  // ✅ Fallback so a missing import can’t crash prod
-  const ClockIcon = (typeof Clock === 'undefined')
-    ? (props) => <span {...props}>⏰</span>
-    : Clock;
 
   // Gemini tip
   const [tipLoading, setTipLoading] = useState(false);
@@ -229,7 +223,7 @@ Tone: encouraging, specific.`;
           </div>
         </div>
 
-        {/* Right: recent activity (lightweight placeholder, safe if data undefined) */}
+        {/* Right: recent activity */}
         <div className="space-y-4">
           <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
             <h2 className="text-lg font-semibold flex items-center gap-2">
