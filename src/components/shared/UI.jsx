@@ -1,19 +1,11 @@
 // src/components/shared/UI.jsx
 import React from 'react';
-import {
-  Home,
-  Zap,
-  Users,
-  Settings,
-  BookOpen,
-  ShieldCheck,
-  Mic,
-  TrendingUp,
-  Clock as ClockIcon, // ✅ alias, not bare Clock
-} from 'lucide-react';
-import { IconMap } from '../../data/Constants'; // string→component map
+import { TrendingUp, Clock as ClockIcon } from 'lucide-react';
+import { IconMap } from '../../data/Constants'; // string → component map
 
+// ===== Sidebar (default export) =====
 export default function NavSidebar({ currentScreen, setCurrentScreen, user }) {
+  // Use string keys so we always resolve via IconMap
   const NAV = [
     { id: 'dashboard',         iconKey: 'Home',        label: 'Dashboard' },
     { id: 'prof-dev-plan',     iconKey: 'ShieldCheck', label: 'Professional Dev Plan' },
@@ -26,14 +18,13 @@ export default function NavSidebar({ currentScreen, setCurrentScreen, user }) {
 
   const Item = ({ id, iconKey, label }) => {
     const active = currentScreen === id;
-    const Icon = IconMap[iconKey];
+    const Icon = IconMap?.[iconKey];
     return (
       <button
         type="button"
         onClick={() => setCurrentScreen(id)}
-        className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm ${
-          active ? 'bg-emerald-100 text-emerald-700' : 'text-gray-700 hover:bg-gray-100'
-        }`}
+        className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition
+          ${active ? 'bg-emerald-100 text-emerald-700' : 'text-gray-700 hover:bg-gray-100'}`}
       >
         {Icon ? <Icon size={18} /> : <span className="w-[18px]" />}
         <span>{label}</span>
@@ -62,5 +53,54 @@ export default function NavSidebar({ currentScreen, setCurrentScreen, user }) {
         <TrendingUp size={14} /> <span>v1</span>
       </div>
     </aside>
+  );
+}
+
+// ===== Named UI primitives =====
+export function Button({ children, className = '', ...props }) {
+  return (
+    <button
+      type="button"
+      className={`rounded-md border px-3 py-2 text-sm hover:bg-gray-50 ${className}`}
+      {...props}
+    >
+      {children}
+    </button>
+  );
+}
+
+/**
+ * Card accepts either:
+ *  - icon: 'Clock' (string key resolved via IconMap), or
+ *  - icon: SomeIconComponent (component)
+ */
+export function Card({ title, icon, className = '', children }) {
+  const IconComp = typeof icon === 'string' ? IconMap?.[icon] : icon;
+  return (
+    <div className={`rounded-2xl border border-gray-100 bg-white p-5 shadow-sm ${className}`}>
+      {(title || IconComp) && (
+        <div className="flex items-center gap-2 mb-3">
+          {IconComp ? <IconComp size={18} /> : null}
+          {title ? <h3 className="text-lg font-semibold">{title}</h3> : null}
+        </div>
+      )}
+      {children}
+    </div>
+  );
+}
+
+// Lightweight tooltip (pure CSS)
+export function Tooltip({ content, children }) {
+  return (
+    <span className="relative inline-flex group">
+      {children}
+      <span
+        className="pointer-events-none absolute left-1/2 -translate-x-1/2 top-full mt-1
+                   scale-0 group-hover:scale-100 transition origin-top
+                   rounded bg-black/80 text-white text-xs px-2 py-1 whitespace-nowrap z-10"
+      >
+        {content}
+      </span>
+    </span>
   );
 }
