@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
-import { Home, Zap, HeartPulse, BookOpen, Users, Settings, Briefcase, TrendingUp } from 'lucide-react';
+import {Home, Zap, Users, Settings, BookOpen, ShieldCheck, Mic, TrendingUp,
+Clock as ClockIcon                // ✅ alias, not bare Clock
+from 'lucide-react';
 import { useAppServices } from '../../App'; // Import App Context
 import { IconMap } from '../../data/Constants'; // Import all icons
 
@@ -113,7 +115,7 @@ const NavSidebar = ({ currentScreen, setCurrentScreen, user }) => {
     ];
     const toolNav = [
         { name: 'prof-dev-plan', icon: Briefcase, label: 'Prof Dev Plan' },
-        { name: 'daily-practice', icon: Clock, label: 'Daily Practice & Scorecard' },
+        { name: 'daily-practice', icon: ClockIcon, label: 'Daily Practice & Scorecard' },
         { name: 'business-readings', icon: BookOpen, label: 'Leadership Readings' },
         { name: 'coaching-lab', icon: Mic, label: 'Coaching & Crucial Labs' },
         { name: 'planning-hub', icon: TrendingUp, label: 'Strategic Planning Hub' },

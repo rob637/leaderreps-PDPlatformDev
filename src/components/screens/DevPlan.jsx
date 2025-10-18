@@ -4,7 +4,7 @@ import { useAppServices } from '../../App';
 import { Card, Button, Tooltip } from '../shared/UI';
 // FIX 2: Correct path depth for Constants
 import { IconMap, LEADERSHIP_TIERS, PDP_COLLECTION, PDP_DOCUMENT, generatePlanData } from '../../data/Constants';
-import { ArrowLeft, Target, BarChart3, Users, Clock, Eye, X, CornerRightUp, BookOpen } from 'lucide-react';
+import { ArrowLeft, Target, BarChart3, Users, Clock as ClockIcon, Eye, X, CornerRightUp, BookOpen } from 'lucide-react';
 import { doc, writeBatch, setDoc } from 'firebase/firestore'; 
 // FIX 3: Correct path depth for ApiHelpers
 import { mdToHtml } from '../../utils/ApiHelpers'; 

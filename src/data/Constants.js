@@ -1,5 +1,5 @@
 // --- ICON IMPORTS FOR ICON MAP ---
-import { Zap, HeartPulse, Users, Mic, Briefcase, Target, CheckCircle, TrendingUp, ShieldCheck, BarChart3, AlertTriangle, Clock, Lightbulb, CornerRightUp, Eye, BookOpen, Home, ArrowLeft, PlusCircle, X, MessageSquare, Info } from 'lucide-react';
+import { Zap, HeartPulse, Users, Mic, Briefcase, Target, CheckCircle, TrendingUp, ShieldCheck, BarChart3, AlertTriangle, Clock as ClockIcon, Lightbulb, CornerRightUp, Eye, BookOpen, Home, ArrowLeft, PlusCircle, X, MessageSquare, Info } from 'lucide-react';
 
 // --- APPLICATION CONSTANTS ---
 export const GEMINI_MODEL = "gemini-2.5-flash-preview-09-2025";
@@ -8,9 +8,28 @@ export const SECRET_SIGNUP_CODE = "LeaderReps2024!";
 
 // --- ICON MAPPING ---
 export const IconMap = {
-    Zap, HeartPulse, Users, Mic, Briefcase, Target, CheckCircle, TrendingUp, ShieldCheck, 
-    BarChart3, AlertTriangle, Clock, Lightbulb, CornerRightUp, Eye, BookOpen, Home, ArrowLeft, 
-    PlusCircle, X, MessageSquare, Info
+  Zap,
+  HeartPulse,
+  Users,
+  Mic,
+  Briefcase,
+  Target,
+  CheckCircle,
+  TrendingUp,
+  ShieldCheck,
+  BarChart3,
+  AlertTriangle,
+  Clock: ClockIcon, // ✅ key "Clock" -> aliased component
+  Lightbulb,
+  CornerRightUp,
+  Eye,
+  BookOpen,
+  Home,
+  ArrowLeft,
+  PlusCircle,
+  X,
+  MessageSquare,
+  Info,
 };
 
 // --- PDP TIER METADATA ---
