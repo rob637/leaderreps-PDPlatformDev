@@ -1600,6 +1600,7 @@ const availableGoals = [
     ...okrGoals,
     ...missionVisionGoals,
     'Improve Feedback & Coaching Skills', // Used as a fixed option in FeedbackPrepToolView
+    'Risk Mitigation Strategy', // Added goal from Pre-Mortem View
     'Other / New Goal'
 ];
 const initialLinkedGoal = availableGoals[0];
@@ -2071,6 +2072,9 @@ const renderView = () => {
                             className="w-full p-3 border border-gray-300 rounded-xl focus:ring-[#47A88D] focus:border-[#47A88D] h-40" 
                             placeholder="My reflection (required)..."
                         ></textarea>
+                        <p className={`text-xs mt-1 ${reflection.length < 50 ? 'text-[#E04E1B]' : 'text-[#47A88D]'}`}>
+                            {reflection.length} / 50 characters written.
+                        </p>
                         <Button 
                             variant="secondary" 
                             onClick={handleSaveReflection}
@@ -2149,7 +2153,7 @@ useEffect(() => {
 
         try {
             const payload = {
-                contents: [{ role: "user", parts: [{ text: userQuery }] }],
+                contents: currentHistory,
                 systemInstruction: { parts: [{ text: systemPrompt }] },
             };
 
@@ -2599,7 +2603,7 @@ return (
   <Tooltip
     content={hasGeminiKey() 
         ? "Sends your draft to the AI Coach for deep critique." 
-        : "AI Critique is unavailable. Check App Settings for configuration."
+        : "Requires Gemini API Key to run. Check App Settings."
     }
   >
     <Button onClick={generateCritique} disabled={isGenerating || !situation || !behavior || !impact} className="w-full md:w-auto">
@@ -4212,6 +4216,19 @@ return (
                     <p className={`text-xs mt-1 ${localReflection.length < 50 ? 'text-[#E04E1B]' : 'text-[#47A88D]'}`}>
                         {localReflection.length} / 50 characters written.
                     </p>
+                    <Button 
+                        onClick={handleCompleteMonth} 
+                        disabled={isSaving || !isReadyToComplete}
+                        className='w-full bg-[#47A88D] hover:bg-[#349881] mt-4'
+                    >
+                        {isSaving ? 'Processing...' : `Complete Month ${currentMonth}`}
+                    </Button>
+                    {!allContentCompleted && (
+                        <p className='text-[#E04E1B] text-xs mt-2'>* Finish all content items first.</p>
+                    )}
+                    {allContentCompleted && localReflection.length < 50 && (
+                         <p className='text-[#E04E1B] text-xs mt-2'>* Reflection required (50 chars min).</p>
+                    )}
                 </Card>
 
             </div>
@@ -4506,6 +4523,11 @@ return (
 };
 
 const App = ({initialState}) => {
+    // --- DEBUG MODE FLAG ---
+    // Set this to TRUE to bypass login and use a mock user for faster debugging.
+    const DEBUG_MODE = true; 
+    // -------------------------
+
     // Initial state handling for inter-component navigation (e.g., PDP -> Daily Practice)
     const [user, setUser] = useState(null);
     const [currentScreen, setCurrentScreen] = useState(initialState?.screen || 'dashboard');
@@ -4584,6 +4606,23 @@ const handleMockLogin = (userInfo) => {
     }
 };
 
+// --- DEBUG MODE LOGIC ---
+if (DEBUG_MODE) {
+    if (!user) {
+        // Mock a logged-in user immediately
+        const debugUser = { name: 'Debugger User', userId: 'debug-user-456' };
+        setUser(debugUser);
+        setUserId(debugUser.userId);
+        setAuthRequired(false);
+    }
+    // Force AuthReady and skip rendering the loading screen for mock user
+    if (!isAuthReady) {
+        setIsAuthReady(true);
+    }
+}
+// --- END DEBUG MODE LOGIC ---
+
+
 // Check if auth is ready before rendering DataProvider
 if (!isAuthReady) {
      return (
@@ -4596,7 +4635,7 @@ if (!isAuthReady) {
     );
 }
 
-// 3. Render Authentication Router if required
+// 3. Render Authentication Router if required (SKIPPED IF DEBUG_MODE IS TRUE)
 if (authRequired || !user) {
     return <LoginScreenContainer onLogin={handleMockLogin} />;
 }
