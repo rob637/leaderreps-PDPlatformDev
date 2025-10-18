@@ -52,8 +52,31 @@ TrendingUp, Target, Mic, ArrowLeft, CheckCircle, Lightbulb, Clock, PlusCircle, X
 
 // FIREBASE IMPORTS
 import { initializeApp, getApp } from 'firebase/app';
-import { getAuth, signInWithCustomToken, signInAnonymously, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, sendPasswordResetEmail, signOut } from 'firebase/auth';
-import { getFirestore, doc, onSnapshot, setDoc, updateDoc, setLogLevel, writeBatch, getDoc, addDoc, collection } from 'firebase/firestore'; 
+import {
+  getAuth,
+  signInWithCustomToken,
+  signInAnonymously,
+  onAuthStateChanged,
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
+  sendPasswordResetEmail,
+  signOut
+} from 'firebase/auth';
+import {
+  getFirestore,
+  doc,
+  onSnapshot,
+  setDoc,
+  updateDoc,
+  setLogLevel,
+  writeBatch,
+  getDoc,
+  addDoc,
+  collection
+} from 'firebase/firestore';
+
+// ✅ ADD THIS LINE (uses your env-driven config module)
+import { firebaseConfig } from './firebaseConfig';
 
 /**
 
@@ -4549,8 +4572,8 @@ const App = ({initialState}) => {
 useEffect(() => {
     let app, firestore, authentication;
     try {
-        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
-        app = initializeApp(firebaseConfig);
+        if (!AUTH_BYPASS && !firebaseConfig?.apiKey) {
+  throw new Error('Firebase is not configured. Check VITE_FIREBASE_* env vars.');app = initializeApp(firebaseConfig);
         firestore = getFirestore(app);
         authentication = getAuth(app);
         
