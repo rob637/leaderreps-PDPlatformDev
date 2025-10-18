@@ -22,6 +22,7 @@ import {
 } from './data/Constants';
 import { usePDPData, useCommitmentData, usePlanningData } from './firebase/Hooks';
 
+// ESM-safe on Netlify/Linux
 import { callSecureGeminiAPI, hasGeminiKey, GEMINI_MODEL, API_KEY } from './utils/ApiHelpers.js';
 
 // Screens
@@ -35,57 +36,52 @@ import BusinessReadingsScreen from './components/screens/BusinessReadings.jsx';
 
 const CoachingLabScreen = Labs;
 
-/* =========================
-   CONTEXT + SAFE DEFAULTS
-   ========================= */
-const AppServiceContext = createContext(null);
+/* =========================================================
+   STEP 1: SANITY SWITCH
+   - true  => always show ✅ test screen
+   - false => show the real app (or login)
+   - URL override: add ?sanity=1 to force test screen
+========================================================= */
+const SANITY_MODE = true;
 
+/* =========================================================
+   CONTEXT + SAFE DEFAULTS
+========================================================= */
+const AppServiceContext = createContext(null);
 const DEFAULT_SERVICES = {
-  // nav + user
   navigate: () => {},
   user: null,
-
-  // firebase
   db: null,
   auth: null,
   userId: null,
   isAuthReady: false,
-
-  // writers
   updatePdpData: () => {},
   saveNewPlan: () => {},
   updateCommitmentData: () => {},
   updatePlanningData: () => {},
-
-  // state
   pdpData: null,
   commitmentData: null,
   planningData: null,
-
-  // meta
   isLoading: false,
   error: null,
   appId: 'default-app-id',
   IconMap: {},
-
-  // Gemini helpers
   callSecureGeminiAPI: async () => { throw new Error('Gemini not configured.'); },
   hasGeminiKey: () => false,
   GEMINI_MODEL,
   API_KEY,
 };
-
 export const useAppServices = () => useContext(AppServiceContext) ?? DEFAULT_SERVICES;
 
-// For Firestore pathing if you use it
+// Optional App ID for Firestore pathing
 const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
 
-// 👉 Flip to false to require real login
+// Set to false for real login; true bypasses auth (dev only)
 const DEBUG_MODE = false;
 
-/* =========================
-   Data Provider
-   ========================= */
+/* =========================================================
+   DATA PROVIDER
+========================================================= */
 const DataProvider = ({ children, firebaseServices, userId, isAuthReady, navigate, user }) => {
   const { db } = firebaseServices;
 
@@ -97,33 +93,22 @@ const DataProvider = ({ children, firebaseServices, userId, isAuthReady, navigat
   const error = pdp.error || commitment.error || planning.error;
 
   const appServices = useMemo(() => ({
-    // nav + user
     navigate,
     user,
-
-    // firebase
     ...firebaseServices,
     userId,
     isAuthReady,
-
-    // writers
     updatePdpData: pdp.updatePdpData,
     saveNewPlan: pdp.saveNewPlan,
     updateCommitmentData: commitment.updateCommitmentData,
     updatePlanningData: planning.updatePlanningData,
-
-    // state blobs
     pdpData: pdp.pdpData,
     commitmentData: commitment.commitmentData,
     planningData: planning.planningData,
-
-    // meta
     isLoading,
     error,
     appId,
     IconMap,
-
-    // Gemini helpers
     callSecureGeminiAPI,
     hasGeminiKey,
     GEMINI_MODEL,
@@ -141,9 +126,9 @@ const DataProvider = ({ children, firebaseServices, userId, isAuthReady, navigat
   );
 };
 
-/* =========================
-   Minimal Email/Password Login (+ optional anonymous upgrade)
-   ========================= */
+/* =========================================================
+   LOGIN PANEL (Email/Password + optional Guest)
+========================================================= */
 function LoginPanel({ auth, onSuccess, allowAnonymous = false }) {
   const [mode, setMode] = useState('signin'); // 'signin' | 'signup' | 'reset'
   const [email, setEmail] = useState('');
@@ -262,11 +247,11 @@ function LoginPanel({ auth, onSuccess, allowAnonymous = false }) {
   );
 }
 
-/* =========================
-   Debug overlay (toggle with ?debug=1)
-   ========================= */
+/* =========================================================
+   DEBUG OVERLAY (?debug=1)
+========================================================= */
 function DebugOverlay({ stage, authRequired, isAuthReady, user, userId, initError }) {
-  const show = /[?&]debug=1/.test(window.location.search);
+  const show = typeof window !== 'undefined' && /[?&]debug=1/.test(window.location.search);
   if (!show) return null;
   return (
     <div className="fixed bottom-2 right-2 bg-black/80 text-white text-xs rounded-lg p-2 space-y-1 z-50">
@@ -275,14 +260,14 @@ function DebugOverlay({ stage, authRequired, isAuthReady, user, userId, initErro
       <div><span className="font-semibold">isAuthReady:</span> {String(isAuthReady)}</div>
       <div><span className="font-semibold">userId:</span> {userId || '—'}</div>
       <div><span className="font-semibold">email:</span> {user?.email || '—'}</div>
-      {initError && <div className="text-red-300">initError: {initError}</div>}
+      {initError && <div className="text-red-300 max-w-xs break-words">initError: {initError}</div>}
     </div>
   );
 }
 
-/* =========================
-   Config error screen
-   ========================= */
+/* =========================================================
+   CONFIG ERROR SCREEN
+========================================================= */
 function ConfigError({ message }) {
   return (
     <div className="min-h-screen flex items-center justify-center bg-red-50 px-4">
@@ -290,22 +275,28 @@ function ConfigError({ message }) {
         <h1 className="text-lg font-semibold text-red-700">Firebase configuration error</h1>
         <p className="text-sm text-red-700">{message || 'Missing or invalid VITE_FIREBASE_CONFIG.'}</p>
         <ol className="text-sm list-decimal pl-5 space-y-1">
-          <li>In Netlify → <em>Site settings → Build &amp; deploy → Environment</em>, set <code>VITE_FIREBASE_CONFIG</code> to your Firebase Web config as a single-line JSON.</li>
-          <li>In <code>src/main.jsx</code>, ensure you parse and inject:
+          <li>Netlify → <em>Site settings → Build &amp; deploy → Environment</em> → set <code>VITE_FIREBASE_CONFIG</code> (single-line JSON).</li>
+          <li>In <code>src/main.jsx</code>, inject before importing App:
             <pre className="bg-gray-100 p-2 rounded mt-1 text-xs overflow-auto">{`const raw = import.meta.env.VITE_FIREBASE_CONFIG;
 if (raw) { window.__firebase_config = JSON.parse(raw); }`}</pre>
           </li>
-          <li>Authorized domains: add your Netlify domain in Firebase Console → Auth → Settings.</li>
+          <li>Firebase Console → Auth → Settings → add your Netlify domain to **Authorized domains**.</li>
         </ol>
       </div>
     </div>
   );
 }
 
-/* =========================
-   Main App
-   ========================= */
+/* =========================================================
+   MAIN APP (REAL)
+========================================================= */
 const App = ({ initialState }) => {
+  console.log('Boot', {
+    hasConfig: typeof window !== 'undefined' && !!window.__firebase_config,
+    configKeys: typeof window !== 'undefined' && window.__firebase_config ? Object.keys(window.__firebase_config) : [],
+    DEBUG_MODE,
+  });
+
   const [user, setUser] = useState(
     DEBUG_MODE ? { name: 'Debugger', userId: 'mock-debugger-123', email: 'debug@leaderreps.com' } : null
   );
@@ -316,8 +307,7 @@ const App = ({ initialState }) => {
   const [navParams, setNavParams] = useState(initialState?.params || {});
   const [authRequired, setAuthRequired] = useState(!DEBUG_MODE);
 
-  // init stage: 'init' | 'ok' | 'error'
-  const [initStage, setInitStage] = useState('init');
+  const [initStage, setInitStage] = useState('init'); // 'init' | 'ok' | 'error'
   const [initError, setInitError] = useState('');
 
   const navigate = useCallback((screen, params = {}) => {
@@ -338,7 +328,7 @@ const App = ({ initialState }) => {
         setIsAuthReady(true);
         setInitStage('ok');
         return;
-      } catch (e) {
+      } catch {
         try {
           const existing = getApp();
           firestore = getFirestore(existing);
@@ -352,7 +342,6 @@ const App = ({ initialState }) => {
     }
 
     try {
-      // Prefer parsed object from main.jsx
       let firebaseConfig = {};
       if (typeof window !== 'undefined' && window.__firebase_config) {
         firebaseConfig = window.__firebase_config;
@@ -403,7 +392,7 @@ const App = ({ initialState }) => {
     }
   }, []);
 
-  // ---------- Auth Gate (only when DEBUG_MODE = false) ----------
+  // Auth Gate (only when not in DEBUG)
   if (!DEBUG_MODE) {
     if (initStage === 'init') {
       return (
@@ -415,7 +404,6 @@ const App = ({ initialState }) => {
         </div>
       );
     }
-
     if (initStage === 'error') {
       return (
         <>
@@ -424,19 +412,16 @@ const App = ({ initialState }) => {
         </>
       );
     }
-
-    // initStage === 'ok' here
     if (!user) {
       return (
         <>
           <LoginPanel
             auth={firebaseServices.auth}
             onSuccess={() => {
-              // harden transition after sign-in
               setAuthRequired(false);
               setTimeout(() => navigate('dashboard'), 0);
             }}
-            allowAnonymous={false /* set true if you enabled Anonymous in Console */}
+            allowAnonymous={false}
           />
           <DebugOverlay stage={initStage} authRequired={authRequired} isAuthReady={isAuthReady} user={user} userId={userId} />
         </>
@@ -444,7 +429,7 @@ const App = ({ initialState }) => {
     }
   }
 
-  // ---------- App (DEBUG_MODE || signed-in) ----------
+  // App (DEBUG or signed-in)
   return (
     <>
       <DataProvider
@@ -466,9 +451,9 @@ const App = ({ initialState }) => {
   );
 };
 
-/* =========================
-   Layout + Router
-   ========================= */
+/* =========================================================
+   LAYOUT + ROUTER
+========================================================= */
 const AppContent = ({ currentScreen, setCurrentScreen, user, navParams }) => {
   return (
     <div className="min-h-screen flex bg-gray-100 font-sans antialiased">
@@ -502,4 +487,23 @@ const ScreenRouter = ({ currentScreen, navParams }) => {
   }
 };
 
-export default App;
+/* =========================================================
+   DEFAULT EXPORT WRAPPER (SANITY vs FULL APP)
+   - Keeps "all functionality" in file, but lets you flip a
+     test screen without editing more code.
+========================================================= */
+export default function Root(props) {
+  const forceSanity = typeof window !== 'undefined' && /[?&]sanity=1/.test(window.location.search);
+  if (SANITY_MODE || forceSanity) {
+    return (
+      <div style={{ padding: 32, fontSize: 18, lineHeight: 1.4 }}>
+        <div>✅ <strong>React mounted</strong></div>
+        <div style={{ marginTop: 8, fontSize: 14, color: '#555' }}>
+          Turn off the test screen by setting <code>SANITY_MODE = false</code> in <code>src/App.jsx</code>,<br />
+          or remove <code>?sanity=1</code> from the URL.
+        </div>
+      </div>
+    );
+  }
+  return <App {...props} />;
+}
