@@ -12,10 +12,11 @@ export function getEnv(key, fallback = '') {
 }
 
 // Prefer using a server-side proxy (e.g., Netlify function) for Gemini calls.
-export const PROXY_URL = getEnv('VITE_GEMINI_PROXY_URL', ''); // e.g. '/.netlify/functions/gemini'
+// Leave empty by default; set VITE_GEMINI_PROXY_URL to use your function.
+export const PROXY_URL    = getEnv('VITE_GEMINI_PROXY_URL', '');
 export const GEMINI_MODEL = getEnv('VITE_GEMINI_MODEL', 'gemini-1.5-pro');
 // Only for direct client calls in dev. Prefer PROXY_URL in production.
-export const API_KEY = getEnv('VITE_GEMINI_API_KEY', '');
+export const API_KEY      = getEnv('VITE_GEMINI_API_KEY', '');
 
 export function hasGeminiKey() {
   return Boolean(PROXY_URL) || Boolean(API_KEY);
@@ -57,9 +58,63 @@ export function postJSON(url, body, init = {}) {
   });
 }
 
+// ---------------- Gemini helper ----------------
+// callSecureGeminiAPI({ prompt?, messages?, systemInstruction?, model?, stream? })
+export async function callSecureGeminiAPI(opts = {}) {
+  const {
+    prompt,
+    messages,
+    systemInstruction,
+    model = GEMINI_MODEL,
+    stream = false,
+    ...extra
+  } = opts || {};
+
+  // Prefer proxy (keeps your API key server-side)
+  if (PROXY_URL) {
+    return postJSON(PROXY_URL, {
+      model,
+      prompt,
+      messages,
+      systemInstruction,
+      stream,
+      ...extra,
+    });
+  }
+
+  // Fallback: direct call to Google API (dev-only)
+  if (!API_KEY) {
+    throw new Error('No PROXY_URL or API_KEY configured for Gemini calls.');
+  }
+
+  const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(
+    model
+  )}:generateContent?key=${encodeURIComponent(API_KEY)}`;
+
+  const contents =
+    Array.isArray(messages) && messages.length
+      ? normalizeToGeminiContents(messages)
+      : [{ role: 'user', parts: [{ text: String(prompt ?? '') }] }];
+
+  const body = {
+    contents,
+    ...(systemInstruction
+      ? { system_instruction: { parts: [{ text: String(systemInstruction) }] } }
+      : {}),
+  };
+
+  return postJSON(endpoint, body);
+}
+
+function normalizeToGeminiContents(msgs) {
+  return msgs.map((m) => {
+    if (m?.parts) return m;
+    // allow { role, text }
+    return { role: m.role || 'user', parts: [{ text: String(m.text ?? '') }] };
+  });
+}
+
 // ---------------- Markdown helper ----------------
-// Lightweight Markdown → HTML (no extra deps). Good for headings, bold/italic,
-// inline code, code blocks, links, lists, and paragraphs.
 export function mdToHtml(md = '') {
   if (typeof md !== 'string') return '';
 
@@ -91,11 +146,11 @@ export function mdToHtml(md = '') {
   // Inline code `code`
   out = out.replace(/`([^`]+)`/g, (_, code) => `<code>${escapeHtml(code)}</code>`);
 
-  // Bold **text** then italic *text*
+  // Bold then italic
   out = out.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
   out = out.replace(/(^|[^*])\*([^*\n]+)\*(?!\*)/g, '$1<em>$2</em>');
 
-  // Unordered lists: group consecutive "- " lines into a <ul>
+  // Unordered lists
   out = out.replace(
     /(?:^|\n)(- .*(?:\n- .*)*)(?:\n|$)/g,
     (block) => {
@@ -109,7 +164,7 @@ export function mdToHtml(md = '') {
     }
   );
 
-  // Paragraphs: wrap leftover text blocks
+  // Paragraphs
   const parts = out.split(/\n{2,}/).map((chunk) => chunk.trim());
   out = parts
     .map((chunk) => {
@@ -154,6 +209,7 @@ const ApiHelpers = {
   fetchJSON,
   getJSON,
   postJSON,
+  callSecureGeminiAPI,
   mdToHtml,
   sleep,
   readLocal,
