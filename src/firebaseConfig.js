@@ -1,5 +1,4 @@
 // src/firebaseConfig.js
-// Use env vars in prod, but this stub lets your build succeed even with AUTH_BYPASS=true.
 export const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY || '',
   authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || '',
