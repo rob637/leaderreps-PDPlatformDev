@@ -1,13 +1,12 @@
-# netlify.toml (repo root)
 [build]
   command = "node -v && npm ci && npm run build -- --debug && echo '--- ls dist ---' && ls -la dist"
   publish = "dist"
 
 [build.environment]
-  NODE_VERSION = "18"
+  NODE_VERSION = "20"
 
-# SPA fallback so deep links work
 [[redirects]]
   from = "/*"
   to = "/index.html"
   status = 200
+
