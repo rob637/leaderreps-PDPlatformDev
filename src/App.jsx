@@ -343,18 +343,19 @@ const App = ({ initialState }) => {
 
     try {
       let firebaseConfig = {};
-      if (typeof window !== 'undefined' && window.__firebase_config) {
-        firebaseConfig = window.__firebase_config;
-      } else if (typeof __firebase_config !== 'undefined') {
-        let s = String(__firebase_config).trim();
-        if (s.startsWith("'") && s.endsWith("'")) s = s.slice(1, -1);
-        firebaseConfig = JSON.parse(s.replace(/'/g, '"'));
-      } else {
-        setInitError('window.__firebase_config is missing. Ensure VITE_FIREBASE_CONFIG is set and parsed in main.jsx.');
-        setIsAuthReady(true);
-        setInitStage('error');
-        return;
-      }
+if (typeof window !== 'undefined' && window.__firebase_config) {
+  const cfg = window.__firebase_config;
+  firebaseConfig = (typeof cfg === 'string') ? JSON.parse(cfg) : cfg; // <-- handles both
+} else if (typeof __firebase_config !== 'undefined') {
+  let s = String(__firebase_config).trim();
+  if (s.startsWith("'") && s.endsWith("'")) s = s.slice(1, -1);
+  firebaseConfig = JSON.parse(s.replace(/'/g, '"'));
+} else {
+  setInitError('window.__firebase_config is missing. Ensure VITE_FIREBASE_CONFIG is set and parsed in main.jsx.');
+  setIsAuthReady(true);
+  setInitStage('error');
+  return;
+}
 
       app = initializeApp(firebaseConfig);
       firestore = getFirestore(app);
