@@ -14,6 +14,7 @@ import {
   EmailAuthProvider,
   linkWithCredential,
   signInAnonymously,
+  signOut, // <-- Added signOut here for convenience
 } from 'firebase/auth';
 import { getFirestore, setLogLevel } from 'firebase/firestore';
 
@@ -29,10 +30,13 @@ import { callSecureGeminiAPI, hasGeminiKey, GEMINI_MODEL, API_KEY } from './util
 import DashboardScreen, { QuickStartScreen, AppSettingsScreen } from './components/screens/Dashboard';
 import ProfDevPlanScreen from './components/screens/DevPlan';
 import Labs from './components/screens/Labs';
-import NavSidebar from './components/shared/UI';
+// import NavSidebar from './components/shared/UI'; // <-- REMOVED: Replaced with in-file definition
 import DailyPracticeScreen from './components/screens/DailyPractice.jsx';
 import PlanningHubScreen from './components/screens/PlanningHub.jsx';
 import BusinessReadingsScreen from './components/screens/BusinessReadings.jsx';
+
+// Icons used in the new NavSidebar
+import { Home, Zap, ShieldCheck, TrendingUp, Mic, BookOpen, Settings, X, Menu, LogOut, CornerRightUp } from 'lucide-react';
 
 const CoachingLabScreen = Labs;
 
@@ -129,6 +133,7 @@ const DataProvider = ({ children, firebaseServices, userId, isAuthReady, navigat
 /* =========================================================
    LOGIN PANEL (Email/Password + optional Guest)
 ========================================================= */
+// (LoginPanel component remains unchanged for brevity, but is part of App.jsx)
 function LoginPanel({ auth, onSuccess, allowAnonymous = false }) {
   const [mode, setMode] = useState('signin'); // 'signin' | 'signup' | 'reset'
   const [email, setEmail] = useState('');
@@ -246,10 +251,12 @@ function LoginPanel({ auth, onSuccess, allowAnonymous = false }) {
     </div>
   );
 }
+// (LoginPanel end)
 
 /* =========================================================
    DEBUG OVERLAY (?debug=1)
 ========================================================= */
+// (DebugOverlay component remains unchanged for brevity)
 function DebugOverlay({ stage, authRequired, isAuthReady, user, userId, initError }) {
   const show = typeof window !== 'undefined' && /[?&]debug=1/.test(window.location.search);
   if (!show) return null;
@@ -268,6 +275,7 @@ function DebugOverlay({ stage, authRequired, isAuthReady, user, userId, initErro
 /* =========================================================
    CONFIG ERROR SCREEN
 ========================================================= */
+// (ConfigError component remains unchanged for brevity)
 function ConfigError({ message }) {
   return (
     <div className="min-h-screen flex items-center justify-center bg-red-50 px-4">
@@ -286,6 +294,131 @@ if (raw) { window.__firebase_config = JSON.parse(raw); }`}</pre>
     </div>
   );
 }
+
+/* =========================================================
+   NAV SIDEBAR (NEW IMPLEMENTATION)
+========================================================= */
+const NavSidebar = ({ currentScreen, setCurrentScreen, user, isMobileOpen, closeMobileMenu }) => {
+    const { auth } = useAppServices();
+
+    const menuItems = [
+        { screen: 'dashboard', label: 'Dashboard', icon: Home },
+        { screen: 'prof-dev-plan', label: 'Development Plan', icon: TrendingUp },
+        { screen: 'daily-practice', label: 'Daily Practice', icon: Mic },
+        { screen: 'planning-hub', label: 'Planning Hub (OKRs)', icon: Zap },
+        { screen: 'business-readings', label: 'Business Readings', icon: BookOpen },
+        { screen: 'coaching-lab', label: 'Coaching Lab', icon: ShieldCheck },
+        { screen: 'app-settings', label: 'Settings', icon: Settings },
+    ];
+
+    const handleSignOut = async () => {
+        try {
+            if (auth) await signOut(auth);
+            closeMobileMenu();
+        } catch (e) {
+            console.error('Sign out failed:', e);
+        }
+    };
+
+    const handleNavigate = (screen) => {
+        setCurrentScreen(screen);
+        closeMobileMenu();
+    };
+    
+    // --- Mobile Overlay and Menu (Full Screen on small screens) ---
+    if (isMobileOpen) {
+        return (
+            <div className="fixed inset-0 z-50 bg-[#002E47] text-white p-6 md:hidden">
+                <div className="flex justify-between items-center border-b border-[#47A88D]/50 pb-4 mb-6">
+                    <h2 className="text-xl font-bold flex items-center">
+                        <CornerRightUp className="w-6 h-6 mr-2 text-[#47A88D]" /> LeaderReps
+                    </h2>
+                    <button onClick={closeMobileMenu} className="p-2 text-white hover:text-[#E04E1B] transition-colors">
+                        <X className="w-6 h-6" />
+                    </button>
+                </div>
+                
+                <nav className="space-y-2">
+                    {menuItems.map((item) => {
+                        const Icon = item.icon;
+                        const isActive = currentScreen === item.screen;
+                        return (
+                            <button
+                                key={item.screen}
+                                onClick={() => handleNavigate(item.screen)}
+                                className={`flex items-center w-full px-4 py-3 rounded-xl font-medium transition-colors ${
+                                    isActive
+                                        ? 'bg-[#47A88D] text-[#002E47] shadow-lg'
+                                        : 'text-gray-200 hover:bg-[#47A88D]/20 hover:text-white'
+                                }`}
+                            >
+                                <Icon className="w-5 h-5 mr-3" />
+                                <span>{item.label}</span>
+                            </button>
+                        );
+                    })}
+                </nav>
+
+                <div className="absolute bottom-6 left-6 right-6 pt-4 border-t border-[#47A88D]/50">
+                    <p className='text-sm text-gray-400 mb-2'>Signed in as: {user?.email || user?.userId}</p>
+                    <button
+                        onClick={handleSignOut}
+                        className="flex items-center w-full px-4 py-3 rounded-xl font-medium transition-colors bg-[#E04E1B] text-white hover:bg-red-700"
+                    >
+                        <LogOut className="w-5 h-5 mr-3" />
+                        Sign Out
+                    </button>
+                </div>
+            </div>
+        );
+    }
+
+    // --- Desktop Sidebar ---
+    return (
+        <div className="hidden md:flex flex-col w-64 min-h-screen bg-[#002E47] text-white p-4 shadow-2xl sticky top-0">
+            <div className="flex items-center justify-center h-16 border-b border-[#47A88D]/50 mb-6">
+                <h1 className="text-2xl font-extrabold flex items-center">
+                    <CornerRightUp className="w-7 h-7 mr-2 text-[#47A88D]" /> LeaderReps
+                </h1>
+            </div>
+
+            <nav className="flex-1 space-y-2">
+                {menuItems.map((item) => {
+                    const Icon = item.icon;
+                    const isActive = currentScreen === item.screen;
+                    return (
+                        <button
+                            key={item.screen}
+                            onClick={() => handleNavigate(item.screen)}
+                            className={`flex items-center w-full px-4 py-3 rounded-xl font-medium transition-colors ${
+                                isActive
+                                    ? 'bg-[#47A88D] text-[#002E47] shadow-md'
+                                    : 'text-gray-200 hover:bg-[#47A88D]/20 hover:text-white'
+                            }`}
+                        >
+                            <Icon className="w-5 h-5 mr-3" />
+                            <span>{item.label}</span>
+                        </button>
+                    );
+                })}
+            </nav>
+
+            <div className="pt-4 border-t border-[#47A88D]/50 mt-4">
+                <p className='text-xs text-gray-400 mb-2 truncate' title={user?.email || user?.userId}>
+                    {user?.email || user?.userId}
+                </p>
+                 <button
+                    onClick={handleSignOut}
+                    className="flex items-center w-full px-4 py-2 rounded-xl text-sm font-medium transition-colors bg-[#E04E1B] text-white hover:bg-red-700"
+                >
+                    <LogOut className="w-4 h-4 mr-2" />
+                    Sign Out
+                </button>
+            </div>
+        </div>
+    );
+};
+
 
 /* =========================================================
    MAIN APP (REAL)
@@ -456,14 +589,30 @@ if (typeof window !== 'undefined' && window.__firebase_config) {
    LAYOUT + ROUTER
 ========================================================= */
 const AppContent = ({ currentScreen, setCurrentScreen, user, navParams }) => {
-  return (
-    <div className="min-h-screen flex bg-gray-100 font-sans antialiased">
-      <NavSidebar currentScreen={currentScreen} setCurrentScreen={setCurrentScreen} user={user} />
-      <main className="flex-1 overflow-y-auto p-0">
-        <ScreenRouter currentScreen={currentScreen} navParams={navParams} />
-      </main>
-    </div>
-  );
+    const [isMobileOpen, setIsMobileOpen] = useState(false); // State for mobile menu
+
+    return (
+        <div className="min-h-screen flex bg-gray-100 font-sans antialiased">
+            <NavSidebar
+                currentScreen={currentScreen}
+                setCurrentScreen={setCurrentScreen}
+                user={user}
+                isMobileOpen={isMobileOpen}
+                closeMobileMenu={() => setIsMobileOpen(false)}
+            />
+            <main className="flex-1 overflow-y-auto">
+                {/* Mobile Header/Menu Button */}
+                <div className="md:hidden sticky top-0 bg-white/95 backdrop-blur-sm shadow-md p-4 flex justify-between items-center z-40">
+                    <h1 className="text-xl font-bold text-[#002E47]">LeaderReps</h1>
+                    <button onClick={() => setIsMobileOpen(true)} className="p-2 text-[#002E47] hover:text-[#47A88D]">
+                        <Menu className="w-6 h-6" />
+                    </button>
+                </div>
+                {/* Screen Content */}
+                <ScreenRouter currentScreen={currentScreen} navParams={navParams} />
+            </main>
+        </div>
+    );
 };
 
 const ScreenRouter = ({ currentScreen, navParams }) => {
