@@ -380,9 +380,6 @@ const AIStarterPackNudge = ({ pdpData, setLinkedGoal, setLinkedTier, handleAddCo
 
 };
 
-// Component is currently used in the main render, needs currentMonthPlan defined locally
-const currentMonthPlan = pdpData?.plan?.find(m => m.month === pdpData?.currentMonth);
-
 /**
  * CommitmentSelectorView: Allows users to add commitments from the bank or create custom ones.
  */
