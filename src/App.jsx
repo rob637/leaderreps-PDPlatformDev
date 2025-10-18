@@ -849,21 +849,29 @@ useEffect(() => {
 
 // Save/Update function (for TrackerDashboard)
 const updatePdpData = useCallback(async (dataToUpdate) => {
-    const { db, userId } = useAppServices();
+  const { db, userId } = useAppServices();
 
-    if (!db || !userId || !pdpPath) {
-        return false;
-    }
-    
-    try {
-        const docRef = doc(db, pdpPath);
-        await updateDoc(docRef, { ...dataToUpdate, lastUpdate: new Date().toISOString() });
-        return true;
-    } catch (e) {
-        console.error("Error updating PDP data:", e);
-        return false;
-    }
-}, [pdpPath]);
+  if (!db || !userId) {
+    console.warn('Firestore or user not available. Skipping save.');
+    return { ok: false, error: 'No database connection (bypass or offline).' };
+  }
+
+  try {
+    const docRef = doc(db, pdpPath);
+    await setDoc(
+      docRef,
+      { ...pdpData, ...dataToUpdate, lastUpdate: new Date().toISOString() },
+      { merge: true }
+    );
+    return { ok: true };
+  } catch (e) {
+    console.error('Failed to update PDP data:', e);
+    return { ok: false, error: 'Failed to save updates. Check network or Firestore rules.' };
+  }
+}, [pdpData, pdpPath]);
+
+return { pdpData, isLoading, error, updatePdpData };
+
 
 // Initial Plan Save function (for PlanGenerator)
 const saveNewPlan = useCallback(async (newPlanData) => {
