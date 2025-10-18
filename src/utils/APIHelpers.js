@@ -1,4 +1,4 @@
-// Global Constants
+// Global Constants - notification
 const GEMINI_MODEL = "gemini-2.5-flash-preview-09-2025";
 const API_KEY = (typeof window !== "undefined" && (window.__GEMINI_API_KEY || window.GEMINI_API_KEY)) || "";
 
