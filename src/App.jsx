@@ -7,13 +7,12 @@ import { initializeApp, getApp } from 'firebase/app';
 import { getAuth, signInWithCustomToken, onAuthStateChanged } from 'firebase/auth';
 import { getFirestore, setLogLevel } from 'firebase/firestore';
 
-// Project data & hooks
 import {
   allBooks, SECRET_SIGNUP_CODE, IconMap, LEADERSHIP_TIERS, PDP_COLLECTION, PDP_DOCUMENT
 } from './data/Constants';
 import { usePDPData, useCommitmentData, usePlanningData } from './firebase/Hooks';
 
-// ✅ ApiHelpers with explicit .js extension for Netlify/Linux
+// ESM-safe explicit extension for Netlify/Linux
 import { callSecureGeminiAPI, hasGeminiKey, GEMINI_MODEL, API_KEY } from './utils/ApiHelpers.js';
 
 // Screens
@@ -22,64 +21,52 @@ import ProfDevPlanScreen from './components/screens/DevPlan';
 import Labs from './components/screens/Labs';
 import NavSidebar from './components/shared/UI';
 
-// ✅ Add these if your router references them (adjust paths if your files differ)
+// These three must exist; if you haven’t built them yet, keep the stub files we added.
 import DailyPracticeScreen from './components/screens/DailyPractice.jsx';
 import PlanningHubScreen from './components/screens/PlanningHub.jsx';
 import BusinessReadingsScreen from './components/screens/BusinessReadings.jsx';
 
-// Alias Labs to legacy name (used in router)
+// Legacy alias
 const CoachingLabScreen = Labs;
 
-// --- CONTEXT AND API CONFIG ---
+// --- CONTEXT ---
 const AppServiceContext = createContext(null);
 export const useAppServices = () => useContext(AppServiceContext);
 
-// Global App ID (Used for Firestore pathing)
+// App ID for pathing (optional)
 const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
 
-// --- DEBUG MODE FLAG ---
-// TRUE = mock user + mock Firebase config for faster local dev
+// Toggle this OFF when you want real auth-gating
 const DEBUG_MODE = true;
-// -------------------------
-// --- END CONTEXT AND API CONFIG ---
 
-/** Data Provider (wraps hooks and exposes services via context) */
+// ---------- Data Provider ----------
 const DataProvider = ({ children, firebaseServices, userId, isAuthReady, navigate, user }) => {
   const { db } = firebaseServices;
 
-  // 1) Data Hooks
   const pdp = usePDPData(db, userId, isAuthReady);
   const commitment = useCommitmentData(db, userId, isAuthReady);
   const planning = usePlanningData(db, userId, isAuthReady);
 
-  // 2) Aggregate Loading/Error
   const isLoading = pdp.isLoading || commitment.isLoading || planning.isLoading;
   const error = pdp.error || commitment.error || planning.error;
 
-  // 3) Memoized services for app
   const appServices = useMemo(() => ({
-    // nav + user
     navigate,
     user,
-    // firebase
     ...firebaseServices,
     userId,
     isAuthReady,
-    // writers
     updatePdpData: pdp.updatePdpData,
     saveNewPlan: pdp.saveNewPlan,
     updateCommitmentData: commitment.updateCommitmentData,
     updatePlanningData: planning.updatePlanningData,
-    // state blobs
     pdpData: pdp.pdpData,
     commitmentData: commitment.commitmentData,
     planningData: planning.planningData,
-    // meta
     isLoading,
     error,
     appId,
     IconMap,
-    // Gemini helpers
     callSecureGeminiAPI,
     hasGeminiKey,
     GEMINI_MODEL,
@@ -97,9 +84,8 @@ const DataProvider = ({ children, firebaseServices, userId, isAuthReady, navigat
   );
 };
 
-/** Main App (auth + screen routing) */
+// ---------- Main App (single definition; default export at end) ----------
 const App = ({ initialState }) => {
-  // user/auth/ui state
   const [user, setUser] = useState(
     DEBUG_MODE ? { name: 'Debugger', userId: 'mock-debugger-123', email: 'debug@leaderreps.com' } : null
   );
@@ -115,13 +101,11 @@ const App = ({ initialState }) => {
     setCurrentScreen(screen);
   }, []);
 
-  // Firebase init + auth
   useEffect(() => {
     let app, firestore, authentication;
 
     if (DEBUG_MODE) {
       try {
-        // Lightweight mock config
         const firebaseConfig = { apiKey: 'mock', authDomain: 'mock', projectId: 'mock' };
         app = initializeApp(firebaseConfig);
         firestore = getFirestore(app);
@@ -132,28 +116,24 @@ const App = ({ initialState }) => {
         if (e.name !== 'FirebaseError' || !e.message.includes('already been initialized')) {
           console.warn('Firebase already initialized in DEBUG mode:', e);
         }
-        const existingApp = getApp();
-        firestore = getFirestore(existingApp);
-        authentication = getAuth(existingApp);
+        const existing = getApp();
+        firestore = getFirestore(existing);
+        authentication = getAuth(existing);
         setFirebaseServices({ db: firestore, auth: authentication });
         return;
       }
     }
 
     try {
-      // ✅ Robustly read config:
-      // 1) If main.jsx injected an OBJECT at window.__firebase_config, use it.
-      // 2) Else if a global string __firebase_config exists, sanitize → JSON.parse.
-      // 3) Else use empty {} (Firebase will throw; we catch below).
+      // Prefer parsed object from main.jsx: window.__firebase_config
       let firebaseConfig = {};
       if (typeof window !== 'undefined' && window.__firebase_config) {
-        firebaseConfig = window.__firebase_config; // already parsed object
+        firebaseConfig = window.__firebase_config;
       } else if (typeof __firebase_config !== 'undefined') {
-        let configString = String(__firebase_config).trim();
-        if (configString.startsWith("'") && configString.endsWith("'")) {
-          configString = configString.slice(1, -1);
-        }
-        firebaseConfig = JSON.parse(configString.replace(/'/g, '"'));
+        // Fallback if someone injected a string global
+        let s = String(__firebase_config).trim();
+        if (s.startsWith("'") && s.endsWith("'")) s = s.slice(1, -1);
+        firebaseConfig = JSON.parse(s.replace(/'/g, '"'));
       }
 
       app = initializeApp(firebaseConfig);
@@ -165,9 +145,9 @@ const App = ({ initialState }) => {
 
       const unsubscribe = onAuthStateChanged(authentication, (currentUser) => {
         if (currentUser) {
-          const currentUid = currentUser.uid;
-          setUserId(currentUid);
-          setUser({ name: currentUser.email || 'Canvas User', userId: currentUid });
+          const uid = currentUser.uid;
+          setUserId(uid);
+          setUser({ name: currentUser.email || 'Canvas User', userId: uid });
           setAuthRequired(false);
         } else {
           setUser(null);
@@ -179,7 +159,7 @@ const App = ({ initialState }) => {
 
       if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
         signInWithCustomToken(authentication, __initial_auth_token)
-          .catch(err => console.error('Canvas Token Auth failed; waiting for user login:', err));
+          .catch(err => console.error('Custom token auth failed; waiting for user login:', err));
       }
 
       return () => unsubscribe();
@@ -191,7 +171,7 @@ const App = ({ initialState }) => {
     }
   }, [DEBUG_MODE]);
 
-  // --- Auth-gate (shown only when NOT in DEBUG_MODE and user not signed in) ---
+  // Gate when DEBUG_MODE is false
   if (authRequired || !user) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-100">
@@ -200,7 +180,7 @@ const App = ({ initialState }) => {
     );
   }
 
-  // --- Init spinner while auth wires up ---
+  // Init spinner
   if (!isAuthReady) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-100">
@@ -212,7 +192,6 @@ const App = ({ initialState }) => {
     );
   }
 
-  // --- App ---
   return (
     <DataProvider
       firebaseServices={firebaseServices}
@@ -264,7 +243,4 @@ const ScreenRouter = ({ currentScreen, navParams }) => {
   }
 };
 
-// TEMP TEST — put this at the very bottom instead of your full export
-export default function App() {
-  return <div style={{ padding: 32, fontSize: 18 }}>✅ React is rendering</div>;
-}
+export default App;
