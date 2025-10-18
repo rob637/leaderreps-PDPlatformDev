@@ -11,9 +11,11 @@ import { callSecureGeminiAPI, hasGeminiKey, GEMINI_MODEL, API_KEY } from './util
 // Import Screen Components
 import DashboardScreen, { QuickStartScreen, AppSettingsScreen } from './components/screens/Dashboard';
 import ProfDevPlanScreen from './components/screens/DevPlan';
-import { CoachingLabScreen, DailyPracticeScreen, PlanningHubScreen, BusinessReadingsScreen } from './components/screens/Labs';
+import Labs from './components/screens/Labs';
 import NavSidebar from './components/shared/UI';
 
+// Alias Labs to the old name if you used it elsewhere
+const CoachingLabScreen = Labs;
 
 // --- CONTEXT AND API CONFIG ---
 const AppServiceContext = createContext(null);
