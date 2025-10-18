@@ -6,7 +6,7 @@ import { Card, Button, Tooltip, NavItem } from '../shared/UI';
 import { LEADERSHIP_TIERS } from '../../data/Constants'; 
 import { ArrowLeft, Zap, ShieldCheck, CornerRightUp, Users, Settings, AlertTriangle, Home, Clock, TrendingUp, Mic, BookOpen, Target, Briefcase } from 'lucide-react';
 // FIX: Changed '../../../utils/ApiHelpers' to correct path '../../utils/ApiHelpers'
-import { mdToHtml, callSecureGeminiAPI, hasGeminiKey, GEMINI_MODEL } from '../../utils/ApiHelpers.js
+import { mdToHtml, callSecureGeminiAPI, hasGeminiKey, GEMINI_MODEL } from '../../utils/ApiHelpers.js';
 import { signOut } from 'firebase/auth'; // Explicitly import signOut
 
 // --- DashboardScreen ---
