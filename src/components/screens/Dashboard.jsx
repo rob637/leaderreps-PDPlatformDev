@@ -65,9 +65,7 @@ const Tile = ({ icon: Icon, title, desc, onClick }) => (
 function extractGeminiText(resp) {
   if (!resp) return '';
   if (typeof resp === 'string') return resp;
-  // Proxy might return { text }
-  if (resp.text) return String(resp.text);
-  // Direct Google response
+  if (resp.text) return String(resp.text); // proxy-style
   const c = resp.candidates?.[0];
   const parts = c?.content?.parts;
   if (Array.isArray(parts)) {
@@ -110,6 +108,11 @@ const DashboardScreen = () => {
     return 0;
   }, [commitmentData]);
 
+  // ✅ Fallback so a missing import can’t crash prod
+  const ClockIcon = (typeof Clock === 'undefined')
+    ? (props) => <span {...props}>⏰</span>
+    : Clock;
+
   // Gemini tip
   const [tipLoading, setTipLoading] = useState(false);
   const [tipHtml, setTipHtml] = useState('');
@@ -121,8 +124,8 @@ const DashboardScreen = () => {
     }
     setTipLoading(true);
     try {
-      const prompt = `Give a concise, actionable leadership practice for the day (2 sentences max). 
-Audience: frontline managers. 
+      const prompt = `Give a concise, actionable leadership practice for the day (2 sentences max).
+Audience: frontline managers.
 Tone: encouraging, specific.`;
       const resp = await callSecureGeminiAPI({ prompt, model: GEMINI_MODEL });
       const text = extractGeminiText(resp) || 'No suggestion available right now.';
@@ -147,7 +150,7 @@ Tone: encouraging, specific.`;
           </p>
         </div>
         <div className="hidden sm:flex items-center gap-2 text-sm text-gray-500">
-          <Clock size={16} /> {new Date().toLocaleString()}
+          <ClockIcon size={16} /> {new Date().toLocaleString()}
         </div>
       </div>
 
@@ -278,7 +281,7 @@ export const QuickStartScreen = () => {
    App Settings (named export)
 ----------------------------------------*/
 export const AppSettingsScreen = () => {
-  const { user, auth } = useAppServices();
+  const { user, auth, GEMINI_MODEL: model } = useAppServices();
 
   const doSignOut = async () => {
     try { if (auth) await signOut(auth); }
@@ -309,7 +312,7 @@ export const AppSettingsScreen = () => {
         <ul className="mt-3 text-sm text-gray-700 space-y-1">
           <li>Icons loaded: lucide-react</li>
           <li>Gemini configured: {hasGeminiKey() ? 'Yes' : 'No'}</li>
-          <li>Model: <code>{GEMINI_MODEL}</code></li>
+          <li>Model: <code>{model || GEMINI_MODEL}</code></li>
         </ul>
       </div>
     </div>
