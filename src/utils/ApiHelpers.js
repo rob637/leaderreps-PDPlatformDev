@@ -32,11 +32,7 @@ export async function fetchJSON(input, init = {}) {
 
   const text = await res.text();
   let data;
-  try {
-    data = text ? JSON.parse(text) : null;
-  } catch {
-    data = text; // non-JSON
-  }
+  try { data = text ? JSON.parse(text) : null; } catch { data = text; }
 
   if (!res.ok) {
     const err = new Error(`HTTP ${res.status} ${res.statusText}`);
@@ -61,61 +57,69 @@ export function postJSON(url, body, init = {}) {
   });
 }
 
-// ---------------- Gemini helper ----------------
-// callSecureGeminiAPI(options)
-// options: { prompt?: string, messages?: Array<any>, systemInstruction?: string, model?: string, stream?: boolean, ... }
-export async function callSecureGeminiAPI(opts = {}) {
-  const {
-    prompt,
-    messages,
-    systemInstruction,
-    model = GEMINI_MODEL,
-    stream = false,
-    ...extra
-  } = opts || {};
+// ---------------- Markdown helper ----------------
+// Lightweight Markdown → HTML (no extra deps). Good for headings, bold/italic,
+// inline code, code blocks, links, lists, and paragraphs.
+export function mdToHtml(md = '') {
+  if (typeof md !== 'string') return '';
 
-  // Prefer proxy (keeps your API key server-side)
-  if (PROXY_URL) {
-    return postJSON(PROXY_URL, {
-      model,
-      prompt,
-      messages,
-      systemInstruction,
-      stream,
-      ...extra,
-    });
-  }
+  const escapeHtml = (s) =>
+    String(s)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;');
 
-  // Fallback: direct call to Google API (dev-only)
-  if (!API_KEY) {
-    throw new Error('No PROXY_URL or API_KEY configured for Gemini calls.');
-  }
+  let out = md.replace(/\r\n?/g, '\n');
 
-  const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(
-    model
-  )}:generateContent?key=${encodeURIComponent(API_KEY)}`;
-
-  const contents =
-    Array.isArray(messages) && messages.length
-      ? normalizeToGeminiContents(messages)
-      : [{ role: 'user', parts: [{ text: String(prompt ?? '') }] }];
-
-  const body = {
-    contents,
-    ...(systemInstruction
-      ? { system_instruction: { parts: [{ text: String(systemInstruction) }] } }
-      : {}),
-  };
-
-  return postJSON(endpoint, body);
-}
-
-function normalizeToGeminiContents(msgs) {
-  return msgs.map((m) => {
-    if (m?.parts) return m;
-    // allow { role, text }
-    return { role: m.role || 'user', parts: [{ text: String(m.text ?? '') }] };
+  // Code blocks ```...```
+  out = out.replace(/```([\s\S]*?)```/g, (_, code) => {
+    return `<pre><code>${escapeHtml(code)}</code></pre>`;
   });
+
+  // Headings
+  out = out
+    .replace(/^###\s+(.+)$/gm, '<h3>$1</h3>')
+    .replace(/^##\s+(.+)$/gm, '<h2>$1</h2>')
+    .replace(/^#\s+(.+)$/gm, '<h1>$1</h1>');
+
+  // Links [text](url)
+  out = out.replace(
+    /\[([^\]]+)]\((https?:\/\/[^\s)]+)\)/g,
+    '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>'
+  );
+
+  // Inline code `code`
+  out = out.replace(/`([^`]+)`/g, (_, code) => `<code>${escapeHtml(code)}</code>`);
+
+  // Bold **text** then italic *text*
+  out = out.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+  out = out.replace(/(^|[^*])\*([^*\n]+)\*(?!\*)/g, '$1<em>$2</em>');
+
+  // Unordered lists: group consecutive "- " lines into a <ul>
+  out = out.replace(
+    /(?:^|\n)(- .*(?:\n- .*)*)(?:\n|$)/g,
+    (block) => {
+      const items = block
+        .trim()
+        .split('\n')
+        .filter((l) => l.trim().startsWith('- '))
+        .map((l) => l.replace(/^- /, '').trim());
+      if (!items.length) return block;
+      return `\n<ul>${items.map((i) => `<li>${i}</li>`).join('')}</ul>\n`;
+    }
+  );
+
+  // Paragraphs: wrap leftover text blocks
+  const parts = out.split(/\n{2,}/).map((chunk) => chunk.trim());
+  out = parts
+    .map((chunk) => {
+      if (!chunk) return '';
+      if (/^<(h\d|ul|pre|blockquote|table|p|img|hr|code)/i.test(chunk)) return chunk;
+      return `<p>${chunk}</p>`;
+    })
+    .join('\n');
+
+  return out;
 }
 
 // ---------------- Tiny local storage utils ----------------
@@ -150,7 +154,7 @@ const ApiHelpers = {
   fetchJSON,
   getJSON,
   postJSON,
-  callSecureGeminiAPI,
+  mdToHtml,
   sleep,
   readLocal,
   writeLocal,
