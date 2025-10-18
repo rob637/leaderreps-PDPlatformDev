@@ -1,4 +1,3 @@
-// src/App.jsx
 import React, {
   useState, useEffect, useMemo, useCallback, createContext, useContext
 } from 'react';
@@ -14,7 +13,7 @@ import {
   EmailAuthProvider,
   linkWithCredential,
   signInAnonymously,
-  signOut, // <-- Added signOut here for convenience
+  signOut,
 } from 'firebase/auth';
 import { getFirestore, setLogLevel } from 'firebase/firestore';
 
@@ -30,21 +29,17 @@ import { callSecureGeminiAPI, hasGeminiKey, GEMINI_MODEL, API_KEY } from './util
 import DashboardScreen, { QuickStartScreen, AppSettingsScreen } from './components/screens/Dashboard';
 import ProfDevPlanScreen from './components/screens/DevPlan';
 import Labs from './components/screens/Labs';
-// import NavSidebar from './components/shared/UI'; // <-- REMOVED: Replaced with in-file definition
 import DailyPracticeScreen from './components/screens/DailyPractice.jsx';
 import PlanningHubScreen from './components/screens/PlanningHub.jsx';
 import BusinessReadingsScreen from './components/screens/BusinessReadings.jsx';
 
 // Icons used in the new NavSidebar
-import { Home, Zap, ShieldCheck, TrendingUp, Mic, BookOpen, Settings, X, Menu, LogOut, CornerRightUp, CalendarCheck, BarChart3 } from 'lucide-react';
+import { Home, Zap, ShieldCheck, TrendingUp, Mic, BookOpen, Settings, X, Menu, LogOut, CornerRightUp, Clock, Briefcase, Target, Users, BarChart3, HeartPulse } from 'lucide-react';
 
 const CoachingLabScreen = Labs;
 
 /* =========================================================
    STEP 1: SANITY SWITCH
-   - true  => always show ✅ test screen
-   - false => show the real app (or login)
-   - URL override: add ?sanity=1 to force test screen
 ========================================================= */
 const SANITY_MODE = false;
 
@@ -133,7 +128,6 @@ const DataProvider = ({ children, firebaseServices, userId, isAuthReady, navigat
 /* =========================================================
    LOGIN PANEL (Email/Password + optional Guest)
 ========================================================= */
-// (LoginPanel component remains unchanged for brevity, but is part of App.jsx)
 function LoginPanel({ auth, onSuccess, allowAnonymous = false }) {
   const [mode, setMode] = useState('signin'); // 'signin' | 'signup' | 'reset'
   const [email, setEmail] = useState('');
@@ -173,9 +167,6 @@ function LoginPanel({ auth, onSuccess, allowAnonymous = false }) {
       }
       finalize();
     } catch (ex) { 
-      // If the user is already authenticated (e.g., via custom token) and not anonymous,
-      // createUserWithEmailAndPassword will fail if the email is new,
-      // or linkWithCredential would fail. We primarily focus on the anonymous path.
       setErr(ex.message || 'Sign up failed.'); 
     }
     finally { setBusy(false); }
@@ -259,12 +250,10 @@ function LoginPanel({ auth, onSuccess, allowAnonymous = false }) {
     </div>
   );
 }
-// (LoginPanel end)
 
 /* =========================================================
    DEBUG OVERLAY (?debug=1)
 ========================================================= */
-// (DebugOverlay component remains unchanged for brevity)
 function DebugOverlay({ stage, authRequired, isAuthReady, user, userId, initError }) {
   const show = typeof window !== 'undefined' && /[?&]debug=1/.test(window.location.search);
   if (!show) return null;
@@ -283,7 +272,6 @@ function DebugOverlay({ stage, authRequired, isAuthReady, user, userId, initErro
 /* =========================================================
    CONFIG ERROR SCREEN
 ========================================================= */
-// (ConfigError component remains unchanged for brevity)
 function ConfigError({ message }) {
   return (
     <div className="min-h-screen flex items-center justify-center bg-red-50 px-4">
@@ -304,37 +292,66 @@ if (raw) { window.__firebase_config = JSON.parse(raw); }`}</pre>
 }
 
 /* =========================================================
-   NAV SIDEBAR (NEW IMPLEMENTATION WITH SECTIONS)
+   NAV ITEM (Sub-component for NavSidebar)
+========================================================= */
+// NavItem: true button semantics
+const NavItem = ({ name, icon: Icon, currentScreen, onClick }) => {
+    const isActive = currentScreen === name;
+    const baseStyle = "w-full text-left flex items-center space-x-3 p-3 rounded-xl transition-all duration-200";
+    
+    // FIX: Updated inactive style for high visibility and contrast
+    // Active style uses background from Accent 1 hover and text from Navy (#002E47)
+    const activeStyle = "bg-[#47A88D] text-[#002E47] font-semibold shadow-md";
+    // Inactive style uses a light indigo color for visibility and hover for dark background
+    const inactiveStyle = "text-indigo-200 hover:bg-[#47A88D]/20 hover:text-white"; 
+
+    const displayName = name.replace(/-/g, ' ').split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
+
+    return (
+        <button
+            type="button"
+            className={`${baseStyle} ${isActive ? activeStyle : inactiveStyle}`}
+            onClick={() => onClick(name)}
+            aria-current={isActive ? 'page' : undefined}
+        >
+            <Icon className="w-5 h-5" />
+            <span className="text-sm">{item.label || displayName}</span>
+        </button>
+    );
+};
+
+
+/* =========================================================
+   NAV SIDEBAR (NEW IMPLEMENTATION)
 ========================================================= */
 const NavSidebar = ({ currentScreen, setCurrentScreen, user, isMobileOpen, closeMobileMenu }) => {
     const { auth } = useAppServices();
+
+    // 1. CORE
+    const coreNav = [
+        { screen: 'dashboard', label: 'Dashboard', icon: Home },
+    ];
     
-    // --- CONSOLIDATED NAV SECTIONS ---
-    const combinedNavSections = [
-        {
-            title: 'NAVIGATION',
-            items: [
-                { screen: 'dashboard', label: 'Dashboard', icon: Home },
-            ]
-        },
-        {
-            title: 'TOOLS & HUBS', // Consolidating Development, Execution, and Learning here
-            items: [
-                { screen: 'prof-dev-plan', label: 'Development Plan', icon: TrendingUp },
-                { screen: 'daily-practice', label: 'Daily Practice', icon: Mic },
-                { screen: 'planning-hub', label: 'Planning Hub', icon: Zap },
-                { screen: 'business-readings', label: 'Business Readings', icon: BookOpen },
-                { screen: 'coaching-lab', label: 'Coaching Lab', icon: ShieldCheck },
-            ]
-        },
-        {
-            title: 'SYSTEM',
-            items: [
-                { screen: 'app-settings', label: 'Settings', icon: Settings },
-            ]
-        },
+    // 2. TOOLS & HUBS (Consolidated)
+    const toolsHubsNav = [
+        { screen: 'prof-dev-plan', label: 'Development Plan', icon: ShieldCheck },
+        { screen: 'daily-practice', label: 'Daily Practice', icon: Mic },
+        { screen: 'planning-hub', label: 'Planning Hub (OKRs)', icon: TrendingUp },
+        { screen: 'business-readings', label: 'Business Readings', icon: BookOpen },
+        { screen: 'coaching-lab', label: 'Coaching Lab', icon: Zap },
+    ];
+    
+    // 3. SYSTEM
+    const systemNav = [
+        { screen: 'quick-start-accelerator', label: 'QuickStart Accelerator', icon: Target },
+        { screen: 'app-settings', label: 'App Settings', icon: Settings },
     ];
 
+    const menuSections = [
+        { title: 'CORE NAVIGATION', items: coreNav },
+        { title: 'TOOLS & HUBS', items: toolsHubsNav },
+        { title: 'SYSTEM', items: systemNav },
+    ];
 
     const handleSignOut = async () => {
         try {
@@ -350,27 +367,28 @@ const NavSidebar = ({ currentScreen, setCurrentScreen, user, isMobileOpen, close
         closeMobileMenu();
     };
     
-    const renderNavItems = (items) => items.map((item) => {
-        const Icon = item.icon;
-        const isActive = currentScreen === item.screen;
-        const baseClasses = 'flex items-center w-full px-4 py-2.5 rounded-xl font-medium transition-colors';
-        
-        // Custom styling for the buttons (Navy, Teal/Green, White)
-        const buttonClasses = isActive
-            ? 'bg-[#47A88D] text-[#002E47] shadow-md' // Active: Teal background, Navy text
-            : 'text-white hover:bg-[#47A88D]/20 hover:text-white'; // Inactive: White text, Teal hover
-
-        return (
-            <button
-                key={item.screen}
-                onClick={() => handleNavigate(item.screen)}
-                className={`${baseClasses} ${buttonClasses}`}
-            >
-                <Icon className="w-5 h-5 mr-3" />
-                <span>{item.label}</span>
-            </button>
-        );
-    });
+    const renderNavItems = (items) => (
+        items.map((item) => {
+            const Icon = item.icon;
+            const isActive = currentScreen === item.screen;
+            return (
+                <button
+                    key={item.screen}
+                    onClick={() => handleNavigate(item.screen)}
+                    className={`flex items-center w-full px-4 py-3 rounded-xl font-medium transition-colors ${
+                        // FIX: Ensure active text uses the dark color for high contrast
+                        isActive
+                            ? 'bg-[#47A88D] text-[#002E47] shadow-md'
+                            // FIX: Ensure inactive text uses a visible light color (indigo-200)
+                            : 'text-indigo-200 hover:bg-[#47A88D]/20 hover:text-white'
+                    }`}
+                >
+                    <Icon className="w-5 h-5 mr-3" />
+                    <span>{item.label}</span>
+                </button>
+            );
+        })
+    );
 
     // --- Mobile Overlay and Menu (Full Screen on small screens) ---
     if (isMobileOpen) {
@@ -386,12 +404,10 @@ const NavSidebar = ({ currentScreen, setCurrentScreen, user, isMobileOpen, close
                 </div>
                 
                 <nav className="space-y-4">
-                    {combinedNavSections.map(section => (
-                        <div key={section.title}>
-                            <h3 className="text-xs font-semibold text-[#47A88D] uppercase mb-1.5">{section.title}</h3>
-                            <div className="space-y-1">
-                                {renderNavItems(section.items)}
-                            </div>
+                    {menuSections.map(section => (
+                        <div key={section.title} className='space-y-2'>
+                            <p className='text-xs font-semibold uppercase text-indigo-300 mb-1'>{section.title}</p>
+                            {renderNavItems(section.items)}
                         </div>
                     ))}
                 </nav>
@@ -420,12 +436,10 @@ const NavSidebar = ({ currentScreen, setCurrentScreen, user, isMobileOpen, close
             </div>
 
             <nav className="flex-1 space-y-4">
-                {combinedNavSections.map(section => (
-                    <div key={section.title}>
-                        <h3 className="text-xs font-semibold text-[#47A88D] uppercase mb-1.5">{section.title}</h3>
-                        <div className="space-y-1">
-                            {renderNavItems(section.items)}
-                        </div>
+                {menuSections.map(section => (
+                    <div key={section.title} className='space-y-2'>
+                        <p className='text-xs font-semibold uppercase text-indigo-300 mb-1'>{section.title}</p>
+                        {renderNavItems(section.items)}
                     </div>
                 ))}
             </nav>
@@ -666,8 +680,6 @@ const ScreenRouter = ({ currentScreen, navParams }) => {
 
 /* =========================================================
    DEFAULT EXPORT WRAPPER (SANITY vs FULL APP)
-   - Keeps "all functionality" in file, but lets you flip a
-     test screen without editing more code.
 ========================================================= */
 export default function Root(props) {
   const forceSanity = typeof window !== 'undefined' && /[?&]sanity=1/.test(window.location.search);

@@ -1,642 +1,779 @@
 /* eslint-disable no-console */
-import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { useAppServices } from '../../App.jsx'; // Correct import
-import { Tooltip } from '../shared/UI'; // <-- FIX: Import Tooltip from the local shared UI components
-import {
-  BookOpen,
-  CheckCircle,
-  Target,
-  TrendingUp,
-  ArrowLeft,
-  ArrowRight,
-  ArrowUp,
-  ArrowDown,
-  Save,
-  RefreshCcw,
-  Download,
-  Upload,
-  Filter,
-  Search,
-  PlusCircle,
-  Copy,
-  Trash2,
-  // Removed Tooltip from lucide-react, as it is not exported by that library
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import { useAppServices } from '../../App.jsx'; 
+import { 
+    Home, Zap, HeartPulse, BookOpen, Users, Settings, Briefcase,
+    TrendingUp, Target, Mic, ArrowLeft, CheckCircle, Lightbulb, Clock, PlusCircle, X, BarChart3, MessageSquare, AlertTriangle, ShieldCheck, CornerRightUp, Play, Info, Eye
 } from 'lucide-react';
+import { addDoc, collection } from 'firebase/firestore'; 
+import { mdToHtml } from '../../utils/ApiHelpers.js'; 
 
-/**
- * Labs Screen — Full Feature Sandbox for Plan Generation
- */
-export default function Labs() {
-    // FIX: Safely destructure context data, defaulting complex objects to {}
-    const { 
-        db, 
-        auth, 
-        pdpData, 
-        commitmentData, 
-        LEADERSHIP_TIERS = {}, // Added safe default
-        allBooks = {}, // Added safe default
-        appId
-    } = useAppServices();
+// --- COLOR PALETTE (From App.jsx) ---
+const COLORS = {
+    NAVY: '#002E47',
+    TEAL: '#47A88D',
+    ORANGE: '#E04E1B',
+    LIGHT_GRAY: '#FCFCFA',
+};
 
-    // ----------------------------------
-    // Consolidate Data from Context
-    // ----------------------------------
-    const bankItems = useMemo(() => {
-        // Mock / Fallback Data (as in original file, but simplified for clarity)
-        const fallbackIfEmpty = [
-          { id: 'sa_1', title: 'Strengths inventory', tier: 'Self-Awareness & Management', effort: 2, description: 'List top 5 strengths; align with role goals.' },
-          { id: 'pc_1', title: '1:1 coaching cadence', tier: 'People & Coaching', effort: 3, description: 'Set biweekly 1:1s with direct reports and a shared agenda doc.' },
-          { id: 'ea_1', title: 'Delegation map', tier: 'Execution & Accountability', effort: 3, description: 'Define tasks to delegate using RACI.' },
-        ];
-        
-        let raw = fallbackIfEmpty; 
-        if (pdpData?.plan?.length) {
-            raw = pdpData.plan.flatMap(m => m.requiredContent.map(c => ({
-                id: c.id,
-                title: c.title,
-                tier: c.tier, // This is the tier ID (T1, T2, etc.)
-                effort: 1, // Default effort since content doesn't have it
-                description: `Content item for ${c.type}. Difficulty: ${c.difficulty}.`,
-            })));
-        }
+// --- Custom/Placeholder UI Components (Replicated for self-contained file) ---
+const Button = ({ children, onClick, disabled = false, variant = 'primary', className = '', ...rest }) => {
+    let baseStyle = "px-6 py-3 rounded-xl font-semibold transition-all shadow-xl focus:outline-none focus:ring-4 text-white";
 
-        const tierTitleByKey = new Map();
-        // FIX: Ensure LEADERSHIP_TIERS is treated as an object for Object.values
-        Object.values(LEADERSHIP_TIERS || {}).forEach(t => {
-            tierTitleByKey.set(t.id, t.name);
-            tierTitleByKey.set(t.name, t.name);
-        });
+    if (variant === 'primary') { baseStyle += ` bg-[${COLORS.TEAL}] hover:bg-[#349881] focus:ring-[#47A88D]/50`; } 
+    else if (variant === 'secondary') { baseStyle += ` bg-[${COLORS.ORANGE}] hover:bg-red-700 focus:ring-[#E04E1B]/50`; } 
+    else if (variant === 'outline') { baseStyle = `px-6 py-3 rounded-xl font-semibold transition-all shadow-md border-2 border-[${COLORS.TEAL}] text-[${COLORS.TEAL}] hover:bg-[#47A88D]/10 focus:ring-4 focus:ring-[#47A88D]/50 bg-[${COLORS.LIGHT_GRAY}]`; }
 
-        return (raw || fallbackIfEmpty).map((x, i) => ({
-          id: x.id ?? `act_${i}`,
-          title: x.title ?? x.name ?? 'Untitled activity',
-          tier: tierTitleByKey.get(x.tier) || x.tier || 'General',
-          effort: clamp1to5(x.effort), // 1–5
-          description: x.description ?? '',
-        }));
+    if (disabled) { baseStyle = "px-6 py-3 rounded-xl font-semibold bg-gray-300 text-gray-500 cursor-not-allowed shadow-inner transition-none"; }
 
-    }, [pdpData, LEADERSHIP_TIERS]);
-    
-    const totalBooks = useMemo(
-        // FIX: Ensure allBooks is an object before calling Object.values()
-        () => Object.values(allBooks || {}).reduce((n, arr) => n + (arr?.length || 0), 0),
-        [allBooks]
-    );
-    
-    // FIX: Ensure commitmentData is checked before accessing .items
-    const COMMITMENT_COLLECTION_COUNT = commitmentData?.active_commitments?.length || 0;
-
-
-    // ----------------------------------
-    // Controls & Filters (no change from original)
-    // ----------------------------------
-    const [proficiency, setProficiency] = useState('medium'); // 'low' | 'medium' | 'high'
-    const [tierFilter, setTierFilter] = useState('all'); // 'all' or tier title/key
-    const [q, setQ] = useState('');
-
-    const density = useMemo(() => {
-        switch (proficiency) {
-          case 'low': return 5;
-          case 'high': return 2;
-          default: return 3;
-        }
-    }, [proficiency]);
-
-    // ----------------------------------
-    // Months & initial plan (no change from original)
-    // ----------------------------------
-    const months = useMemo(() => {
-        const d = new Date();
-        const list = [];
-        for (let i = 0; i < 6; i += 1) {
-          const m = new Date(d.getFullYear(), d.getMonth() + i, 1);
-          list.push(m.toLocaleString('en-US', { month: 'short', year: 'numeric' }));
-        }
-        return list;
-    }, []);
-
-    const [plan, setPlan] = useState(() => generatePlan(bankItems, months, density, proficiency));
-    const [completed, setCompleted] = useState(() => new Set());
-    const planIdRef = useRef(() => makeId());
-
-    // Rebuild when key inputs change
-    useEffect(() => {
-        // Only run if bankItems is populated (i.e., data is loaded)
-        if (bankItems.length > 3 || !q) { // Use a heuristic to check if data is loaded beyond fallback
-            setPlan(generatePlan(bankItems, months, density, proficiency));
-            setCompleted(new Set());
-        }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [bankItems.length, density, proficiency]);
-
-
-    // ----------------------------------
-    // Derived: filtered + search (no change from original)
-    // ----------------------------------
-    const filtered = useMemo(() => {
-        const ql = q.trim().toLowerCase();
-        const byMonth = plan.map(({ activities }) => {
-          const filt = activities.filter(a => {
-            if (tierFilter !== 'all' && a.tier !== tierFilter) return false;
-            if (!ql) return true;
-            return (
-              a.title.toLowerCase().includes(ql) ||
-              a.description.toLowerCase().includes(ql)
-            );
-          });
-          return { activities: filt };
-        });
-        return byMonth;
-    }, [plan, tierFilter, q]);
-
-    // Monthly effort totals (no change from original)
-    const effortByMonth = useMemo(() => plan.map(m => m.activities.reduce((s, a) => s + (a.effort || 0), 0)), [plan]);
-
-    // ----------------------------------
-    // Persistence: localStorage & Firestore Update
-    // ----------------------------------
-    // Load from localStorage on mount (no change from original)
-    useEffect(() => {
-        try {
-          const raw = localStorage.getItem('labs_plan_latest');
-          if (raw) {
-            const data = JSON.parse(raw);
-            if (data && data.months && Array.isArray(data.months)) {
-              setPlan(data.months.map(m => ({ month: m.month, activities: m.activities })));
-              setCompleted(new Set(data.completed || []));
-              if (data.proficiency) setProficiency(data.proficiency);
-              if (data.planId) planIdRef.current = data.planId;
-            }
-          }
-        } catch {}
-    }, []);
-
-    // Auto-save to localStorage (no change from original)
-    useEffect(() => {
-        try {
-          const data = {
-            planId: getPlanId(planIdRef),
-            proficiency,
-            months: plan.map(m => ({ month: m.month, activities: m.activities })),
-            completed: [...completed],
-            generatedAt: new Date().toISOString(),
-          };
-          localStorage.setItem('labs_plan_latest', JSON.stringify(data));
-        } catch {}
-    }, [plan, completed, proficiency]);
-
-    // Firestore Save (Updated to use Firestore from context)
-    const savePlan = async () => {
-        if (!db || !auth) {
-          // NOTE: Changed alert to console.log as primary, user will be logged out if auth fails
-          console.error('Plan saved locally (no Firebase/Auth available).');
-          alert('Plan saved locally only. Sign in to enable cloud saves.');
-          return;
-        }
-        
-        try {
-          const uid = auth?.currentUser?.uid || 'anonymous';
-          const { doc, setDoc, serverTimestamp } = await import('firebase/firestore'); // Dynamic import for functions
-          
-          const ref = doc(db, `/artifacts/${appId}/users/${uid}/plans/labs_sandbox_plan`); 
-          
-          await setDoc(ref, {
-            proficiency,
-            months: plan.map(m => ({ month: m.month, activities: m.activities })),
-            completed: [...completed],
-            updatedAt: serverTimestamp(),
-            meta: {
-              // FIX: Safely access Object.values
-              tiers: Object.values(LEADERSHIP_TIERS || {}).map(t => t.name ?? t.id),
-              booksCount: totalBooks,
-              commitmentsCount: COMMITMENT_COLLECTION_COUNT
-            }
-          }, { merge: true });
-          alert('Plan saved to Firestore successfully.');
-        } catch (e) {
-          console.error('Could not save to Firestore:', e);
-          alert('Could not save to Firestore. Check console for details.');
-        }
-    };
-
-    // Firestore Load (Updated to use Firestore from context)
-    useEffect(() => {
-      // Load once auth is ready and DB is available
-      if (!db || !auth || auth.currentUser === null) return; 
-      
-      (async () => {
-        try {
-          const { doc, getDoc } = await import('firebase/firestore');
-          const uid = auth.currentUser.uid;
-          const ref = doc(db, `/artifacts/${appId}/users/${uid}/plans/labs_sandbox_plan`);
-          const snap = await getDoc(ref);
-          
-          if (snap.exists()) {
-            const data = snap.data();
-            if (data?.months) {
-                setPlan(data.months.map(m => ({ month: m.month, activities: m.activities })));
-            }
-            if (data?.completed) setCompleted(new Set(data.completed));
-            if (data?.proficiency) setProficiency(data.proficiency);
-            console.log('Labs plan loaded from Firestore.');
-          }
-        } catch (e) {
-          console.warn('Firestore load skipped (Labs):', e);
-        }
-      })();
-      // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [db, auth, appId]);
-
-    // ----------------------------------
-    // Actions (No functional change, just calling helpers)
-    // ----------------------------------
-    const toggleComplete = (id) => {
-        setCompleted(prev => {
-          const next = new Set(prev);
-          next.has(id) ? next.delete(id) : next.add(id);
-          return next;
-        });
-    };
-
-    const moveActivityMonth = (fromMonthIdx, actId, dir) => {
-        setPlan(prev => {
-          const next = clone(prev);
-          const src = next[fromMonthIdx];
-          const idx = src.activities.findIndex(a => a.id === actId);
-          if (idx < 0) return prev;
-          const [item] = src.activities.splice(idx, 1);
-          const toIdx = clamp(fromMonthIdx + (dir === 'left' ? -1 : 1), 0, next.length - 1);
-          next[toIdx].activities.push(item);
-          return next;
-        });
-    };
-
-    const moveActivityIndex = (monthIdx, actId, dir) => {
-        setPlan(prev => {
-          const next = clone(prev);
-          const list = next[monthIdx].activities;
-          const idx = list.findIndex(a => a.id === actId);
-          if (idx < 0) return prev;
-          const swapWith = dir === 'up' ? idx - 1 : idx + 1;
-          if (swapWith < 0 || swapWith >= list.length) return prev;
-          [list[idx], list[swapWith]] = [list[swapWith], list[idx]];
-          return next;
-        });
-    };
-
-    const duplicateActivity = (monthIdx, actId) => {
-        setPlan(prev => {
-          const next = clone(prev);
-          const list = next[monthIdx].activities;
-          const idx = list.findIndex(a => a.id === actId);
-          if (idx < 0) return prev;
-          const copy = { ...list[idx], id: makeId() };
-          list.splice(idx + 1, 0, copy);
-          return next;
-        });
-    };
-
-    const deleteActivity = (monthIdx, actId) => {
-        setPlan(prev => {
-          const next = clone(prev);
-          const list = next[monthIdx].activities;
-          const idx = list.findIndex(a => a.id === actId);
-          if (idx < 0) return prev;
-          list.splice(idx, 1);
-          return next;
-        });
-        setCompleted(prev => {
-          const next = new Set(prev);
-          next.delete(actId);
-          return next;
-        });
-    };
-
-    const resetPlan = () => {
-        if (!window.confirm('Are you sure you want to discard the current plan and generate a new one?')) return;
-        setPlan(generatePlan(bankItems, months, density, proficiency));
-        setCompleted(new Set());
-        planIdRef.current = makeId();
-    };
-
-    const exportJson = () => {
-        const data = {
-          planId: getPlanId(planIdRef),
-          proficiency,
-          months: plan.map(m => ({ month: m.month, activities: m.activities })),
-          completed: [...completed],
-          generatedAt: new Date().toISOString(),
-        };
-        const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url; a.download = `labs_plan_${getPlanId(planIdRef)}.json`;
-        document.body.appendChild(a); a.click();
-        a.remove(); URL.revokeObjectURL(url);
-    };
-
-    const importRef = useRef(null);
-    const importJson = (file) => {
-        if (!file) return;
-        const reader = new FileReader();
-        reader.onload = () => {
-          try {
-            const data = JSON.parse(reader.result);
-            if (data?.months) setPlan(data.months.map(m => ({ month: m.month, activities: m.activities })));
-            if (data?.completed) setCompleted(new Set(data.completed));
-            if (data?.proficiency) setProficiency(String(data.proficiency));
-            if (data?.planId) planIdRef.current = data.planId;
-            alert('Plan successfully imported.');
-          } catch (e) {
-            alert('Invalid JSON file.');
-          }
-        };
-        reader.readAsText(file);
-    };
-
-
-    // Add custom activity
-    const [newAct, setNewAct] = useState({ title: '', tier: 'General', effort: 2, description: '', monthIdx: 0 });
-    const addCustomActivity = () => {
-        const title = newAct.title.trim();
-        if (!title) return alert('Please enter a title.');
-        const act = {
-          id: makeId(),
-          title,
-          tier: newAct.tier || 'General',
-          effort: clamp1to5(Number(newAct.effort)),
-          description: newAct.description?.trim() || '',
-        };
-        setPlan(prev => {
-          const next = clone(prev);
-          const idx = clamp(Number(newAct.monthIdx) || 0, 0, next.length - 1);
-          next[idx].activities.push(act);
-          return next;
-        });
-        setNewAct({ title: '', tier: 'General', effort: 2, description: '', monthIdx: newAct.monthIdx });
-    };
-
-    // ----------------------------------
-    // UI
-    // ----------------------------------
     return (
-        <div className="p-6 space-y-6">
-          <header className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-            <h1 className="text-2xl font-bold">Coaching Lab & Sandbox</h1>
+        <button {...rest} onClick={onClick} disabled={disabled} className={`${baseStyle} ${className}`}>
+            {children}
+        </button>
+    );
+};
 
-            <div className="flex flex-wrap items-center gap-3">
-              {/* Proficiency */}
-              <div className="flex items-center gap-2">
-                <label htmlFor="prof" className="text-sm">Proficiency</label>
-                <select
-                  id="prof"
-                  value={proficiency}
-                  onChange={(e) => setProficiency(e.target.value)}
-                  className="border rounded-md px-2 py-1 text-sm"
-                >
-                  <option value="low">Low (more guidance)</option>
-                  <option value="medium">Medium</option>
-                  <option value="high">High (lighter plan)</option>
-                </select>
-              </div>
+const Card = ({ children, title, icon: Icon, className = '', onClick }) => {
+    const interactive = !!onClick;
+    const Tag = interactive ? 'button' : 'div';
 
-              {/* Tier filter */}
-              <div className="flex items-center gap-2">
-                <Filter className="w-4 h-4" />
-                <select
-                  value={tierFilter}
-                  onChange={(e) => setTierFilter(e.target.value)}
-                  className="border rounded-md px-2 py-1 text-sm"
-                  title="Filter by tier"
-                >
-                  <option value="all">All tiers</option>
-                  {Array.from(new Set([
-                    // FIX: Safely access Object.values
-                    ...Object.values(LEADERSHIP_TIERS || {}).map(t => t.name ?? t.id),
-                    ...bankItems.map(b => b.tier),
-                  ])).map(t => (
-                    <option key={t} value={t}>{t}</option>
-                  ))}
-                </select>
-              </div>
+    return (
+        <Tag 
+            role={interactive ? "button" : undefined}
+            tabIndex={interactive ? 0 : undefined}
+            className={`bg-[${COLORS.LIGHT_GRAY}] p-6 rounded-3xl shadow-xl hover:shadow-2xl transition-all duration-300 ${interactive ? `cursor-pointer hover:border-[${COLORS.NAVY}] border-2 border-transparent` : ''} ${className}`}
+            onClick={onClick}
+        >
+            {Icon && <Icon className="w-8 h-8 text-[#47A88D] mb-4" />}
+            {title && <h2 className="text-xl font-bold text-[#002E47] mb-2">{title}</h2>}
+            {children}
+        </Tag>
+    );
+};
 
-              {/* Search */}
-              <label className="relative">
-                <Search className="w-4 h-4 absolute left-2 top-2.5 pointer-events-none" />
-                <input
-                  value={q}
-                  onChange={(e) => setQ(e.target.value)}
-                  placeholder="Search activities…"
-                  className="border rounded-md pl-8 pr-2 py-1 text-sm"
-                />
-              </label>
-
-              {/* Actions */}
-              <div className="flex items-center gap-2">
-                <button onClick={savePlan} className="inline-flex items-center gap-2 border rounded-md px-3 py-1.5 text-sm hover:bg-gray-50" type="button">
-                  <Save className="w-4 h-4" /> Save
-                </button>
-                <button onClick={exportJson} className="inline-flex items-center gap-2 border rounded-md px-3 py-1.5 text-sm hover:bg-gray-50" type="button">
-                  <Download className="w-4 h-4" /> Export
-                </button>
-                <button onClick={() => importRef.current?.click()} className="inline-flex items-center gap-2 border rounded-md px-3 py-1.5 text-sm hover:bg-gray-50" type="button">
-                  <Upload className="w-4 h-4" /> Import
-                </button>
-                <input ref={importRef} type="file" accept="application/json" className="hidden" onChange={(e) => importJson(e.target.files?.[0])} />
-                <button onClick={resetPlan} className="inline-flex items-center gap-2 border rounded-md px-3 py-1.5 text-sm hover:bg-gray-50" type="button">
-                  <RefreshCcw className="w-4 h-4" /> Reset
-                </button>
-              </div>
-            </div>
-          </header>
-
-          {/* KPIs */}
-          <section className="grid grid-cols-1 sm:grid-cols-4 gap-4">
-            {/* FIX: Safely access Object.keys */}
-            <Kpi icon={TrendingUp} label="Tiers" value={Object.keys(LEADERSHIP_TIERS || {}).length || new Set(bankItems.map(b => b.tier)).size} hint="Leadership framework levels" />
-            <Kpi icon={CheckCircle} label="Items in Bank" value={bankItems.length} hint="Activities available to generate plans" />
-            <Kpi icon={BookOpen} label="Total Books" value={totalBooks} hint="Reading bank" />
-            <Kpi icon={Target} label="Total Effort" value={effortByMonth.reduce((s, n) => s + n, 0)} hint="Sum of effort across plan" />
-          </section>
-
-          {/* Add custom activity */}
-          <section className="border rounded-xl p-4 space-y-3">
-            <h2 className="text-lg font-semibold flex items-center gap-2"><PlusCircle className="w-5 h-5" /> Add Custom Activity</h2>
-            <div className="grid md:grid-cols-5 gap-2">
-              <input value={newAct.title} onChange={(e) => setNewAct(a => ({ ...a, title: e.target.value }))} placeholder="Title" className="border rounded-md px-2 py-1 text-sm md:col-span-2" />
-              <input value={newAct.tier} onChange={(e) => setNewAct(a => ({ ...a, tier: e.target.value }))} placeholder="Tier (e.g., People & Coaching)" className="border rounded-md px-2 py-1 text-sm" />
-              <input type="number" min={1} max={5} value={newAct.effort} onChange={(e) => setNewAct(a => ({ ...a, effort: e.target.value }))} placeholder="Effort 1–5" className="border rounded-md px-2 py-1 text-sm w-24" />
-              <select value={newAct.monthIdx} onChange={(e) => setNewAct(a => ({ ...a, monthIdx: e.target.value }))} className="border rounded-md px-2 py-1 text-sm">
-                {months.map((m, i) => <option key={m} value={i}>{m}</option>)}
-              </select>
-            </div>
-            <textarea value={newAct.description} onChange={(e) => setNewAct(a => ({ ...a, description: e.target.value }))} placeholder="Description (optional)" className="border rounded-md px-2 py-2 text-sm w-full min-h-[72px]" />
-            <div>
-              <button onClick={addCustomActivity} className="inline-flex items-center gap-2 border rounded-md px-3 py-1.5 text-sm hover:bg-gray-50" type="button">
-                <PlusCircle className="w-4 h-4" /> Add Activity
-              </button>
-            </div>
-          </section>
-
-          {/* Monthly Plan */}
-          <section className="space-y-3">
-            <h2 className="text-lg font-semibold flex items-center gap-2"><Target className="w-5 h-5" /> 6-Month Action Plan (Editable)</h2>
-            <div className="grid lg:grid-cols-3 gap-4">
-              {plan.map((monthData, monthIdx) => {
-                const activities = filtered[monthIdx]?.activities || [];
-                return (
-                    <div key={monthData.month} className="border rounded-xl p-4 bg-white shadow-sm">
-                      <div className="flex items-center justify-between mb-2 border-b pb-2">
-                        <div className="font-semibold text-lg text-gray-800">{monthData.month}</div>
-                        <div className="text-sm text-gray-600">Effort: {effortByMonth[monthIdx] || 0}</div>
-                      </div>
-                      {activities.length ? (
-                        <ul className="space-y-3 pt-2">
-                          {activities.map((a, i) => (
-                            <li key={a.id} className="border rounded-lg p-3 bg-gray-50">
-                              <div className="flex flex-col gap-1">
-                                <div className="flex items-start justify-between gap-3">
-                                    <div className="flex items-start gap-2">
-                                      <input type="checkbox" checked={completed.has(a.id)} onChange={() => toggleComplete(a.id)} className="mt-1 h-4 w-4 text-emerald-600 rounded" />
-                                      <div>
-                                        <div className={`font-medium leading-tight ${completed.has(a.id) ? 'line-through text-gray-500' : 'text-gray-900'}`}>{a.title}</div>
-                                      </div>
-                                    </div>
-                                    <div className="flex items-center gap-1">
-                                      <Tooltip content="Move up"><IconButton title="Move up" onClick={() => moveActivityIndex(monthIdx, a.id, 'up')} disabled={i === 0}><ArrowUp className="w-4 h-4" /></IconButton></Tooltip>
-                                      <Tooltip content="Move down"><IconButton title="Move down" onClick={() => moveActivityIndex(monthIdx, a.id, 'down')} disabled={i === activities.length - 1}><ArrowDown className="w-4 h-4" /></IconButton></Tooltip>
-                                    </div>
-                                </div>
-                                
-                                <div className='flex justify-between items-center text-xs pt-1'>
-                                    <span className="text-gray-600 font-medium">Tier: {a.tier} • Effort: {a.effort}/5</span>
-                                    <div className='flex gap-1'>
-                                      <Tooltip content="Move Left"><IconButton title="Move left" onClick={() => moveActivityMonth(monthIdx, a.id, 'left')} disabled={monthIdx === 0}><ArrowLeft className="w-4 h-4" /></IconButton></Tooltip>
-                                      <Tooltip content="Move Right"><IconButton title="Move right" onClick={() => moveActivityMonth(monthIdx, a.id, 'right')} disabled={monthIdx === months.length - 1}><ArrowRight className="w-4 h-4" /></IconButton></Tooltip>
-                                      <Tooltip content="Duplicate"><IconButton title="Duplicate" onClick={() => duplicateActivity(monthIdx, a.id)}><Copy className="w-4 h-4" /></IconButton></Tooltip>
-                                      <Tooltip content="Delete"><IconButton title="Delete" onClick={() => deleteActivity(monthIdx, a.id)}><Trash2 className="w-4 h-4 text-red-500 hover:text-red-700" /></IconButton></Tooltip>
-                                    </div>
-                                </div>
-                                {a.description && (
-                                    <p className="text-xs text-gray-700 mt-2">{a.description}</p>
-                                )}
-                              </div>
-                            </li>
-                          ))}
-                        </ul>
-                      ) : (
-                        <p className="text-sm text-gray-600">No activities match filters.</p>
-                      )}
-                    </div>
-                );
-              })}
-            </div>
-          </section>
-
-          {/* Books by Tier */}
-          {Object.keys(allBooks || {}).length > 0 && ( // FIX: Safely check keys
-            <section className="space-y-2">
-              <h2 className="text-lg font-semibold flex items-center gap-2"><BookOpen className="w-5 h-5" /> Suggested Reading (From App Context)</h2>
-              <div className="grid md:grid-cols-2 gap-4">
-                {Object.entries(allBooks).map(([key, books]) => (
-                  <div key={key} className="border rounded-xl p-4 bg-white shadow-sm">
-                    <div className="font-semibold mb-2">{key}</div>
-                    <ul className="space-y-1">
-                      {(books || []).map((b, i) => (
-                        <li key={b.id ?? `${key}_${i}`} className="text-sm">
-                          <span className="font-medium">{b.title}</span>
-                          {b.author ? <span className="text-gray-600"> — {b.author}</span> : null}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                ))}
-              </div>
-            </section>
-          )}
+const Tooltip = ({ content, children }) => {
+    const [isVisible, setIsVisible] = useState(false);
+    
+    return (
+        <div 
+            className="relative inline-block"
+            onMouseEnter={() => setIsVisible(true)}
+            onMouseLeave={() => setIsVisible(false)}
+        >
+            {children}
+            {isVisible && (
+                <div className="absolute z-10 w-64 p-3 -mt-2 -ml-32 text-xs text-white bg-[#002E47] rounded-lg shadow-lg bottom-full left-1/2 transform translate-x-1/2">
+                    {content}
+                    <div className="absolute left-1/2 transform -translate-x-1/2 bottom-[-4px] w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-[#002E47]"></div>
+                </div>
+            )}
         </div>
     );
+};
+
+// --- CHAT MESSAGE COMPONENT ---
+const Message = ({ sender, text, isAI }) => (
+  <div className={`flex mb-4 ${isAI ? 'justify-start' : 'justify-end'}`}>
+    <div
+      className={`p-4 max-w-lg rounded-xl shadow-md ${
+        isAI
+          ? 'bg-[#002E47]/10 text-[#002E47] rounded-tl-none border border-[#002E47]/20'
+          : 'bg-[#47A88D] text-white rounded-tr-none'
+      }`}
+    >
+      <strong className="font-bold text-sm">{sender}:</strong>
+      <p className="text-sm mt-1">{text}</p>
+    </div>
+  </div>
+);
+
+
+// --- ROLE PLAY CRITIQUE VIEW ---
+const RolePlayCritique = ({ history, setView }) => {
+const { callSecureGeminiAPI, hasGeminiKey, navigate } = useAppServices();
+const [critique, setCritique] = useState('');
+const [critiqueHtml, setCritiqueHtml] = useState('');
+const [isGenerating, setIsGenerating] = useState(true);
+
+useEffect(() => {
+    (async () => {
+        if (history.length < 5) {
+            setCritique("## Insufficient Data\n\nTo provide a meaningful score and critique, please complete at least 5 turns (your messages + Alex's responses) in the role-play simulator.");
+            setIsGenerating(false);
+            return;
+        }
+        
+        if (!hasGeminiKey()) {
+            setCritique("## AI Critique Unavailable\n\n**ERROR**: The Gemini API Key is missing. AI Role-Play is unavailable.");
+            setIsGenerating(false);
+            return;
+        }
+
+        const conversationText = history
+            .filter(msg => !msg.system)
+            .map(msg => `${msg.sender}: ${msg.text}`)
+            .join('\n');
+
+        const systemPrompt = `You are a Senior Executive Coaching Auditor. Analyze the following conversation between a Manager ('You') and their report ('Alex'). Provide a clear score (out of 100) and structured feedback in Markdown, focusing on professional leadership skills.
+            
+            **Critique Structure:**
+            1.  **Overall Score (## 95/100):** Provide a score out of 100 based on the manager's performance.
+            2.  **SBI Effectiveness (### SBI Audit):** Did the manager effectively stick to objective facts (Situation/Behavior) and articulate the impact (Impact)?
+            3.  **Active Listening & Empathy (### Empathy Score):** Did the manager use paraphrasing, open-ended questions, or validate Alex's emotions?
+            4.  **Resolution Drive (### Bias for Action):** Did the manager guide the conversation toward a measurable commitment or next step?
+            5.  **Key Takeaway (### Next Practice Point):** Provide one specific, actionable habit for the manager to work on.`;
+
+        const userQuery = `Analyze the following role-play dialogue. The manager's goal was to address performance/behavior issues with Alex:\n\n${conversationText}`;
+
+        try {
+            const payload = {
+                contents: [{ role: "user", parts: [{ text: userQuery }] }],
+                systemInstruction: { parts: [{ text: systemPrompt }] },
+            };
+
+            const result = await callSecureGeminiAPI(payload);
+            const aiText = result?.candidates?.[0]?.content?.parts?.[0]?.text || "Critique generation failed. Check API connection.";
+            setCritique(aiText);
+
+        } catch (error) {
+            console.error("Critique API Error:", error);
+            setCritique("An error occurred during AI critique generation.");
+        } finally {
+            setIsGenerating(false);
+        }
+    })();
+// eslint-disable-next-line react-hooks/exhaustive-deps
+}, [history, setView]);
+
+useEffect(() => {
+    if (critique) {
+        (async () => setCritiqueHtml(await mdToHtml(critique)))();
+    }
+}, [critique]);
+
+if (isGenerating) {
+    return (
+        <Card title="Generating Session Critique..." icon={Zap} className="mt-8 bg-[#47A88D]/10 border-2 border-[#47A88D]">
+            <div className="flex flex-col items-center justify-center h-40">
+                <div className="animate-spin rounded-full h-10 w-10 border-b-4 border-[#47A88D] mb-4"></div>
+                <p className="text-[#47A88D] font-medium">Analyzing dialogue history and scoring performance...</p>
+            </div>
+        </Card>
+    );
 }
 
-// ---------------------------------
-// Helpers & tiny components (kept from original)
-// ---------------------------------
-function Kpi({ icon: Icon, label, value, hint }) {
-  return (
-    <div className="border rounded-xl p-4 flex items-center gap-3 bg-white shadow-sm">
-      <Icon className="w-6 h-6 text-indigo-500" />
-      <div>
-        <div className="text-sm text-gray-600">{label}</div>
-        <div className="text-xl font-bold leading-tight">{value}</div>
-        {hint && <div className="text-xs text-gray-500">{hint}</div>}
+return (
+    <Card title="Role-Play Session Audit" icon={CheckCircle} className="mt-8 bg-[#002E47]/10 border-4 border-[#002E47]/20">
+        <div className="prose max-w-none prose-h2:text-4xl prose-h2:text-[#E04E1B] prose-h2:font-extrabold prose-h3:text-[#47A88D] prose-p:text-gray-700 prose-ul:space-y-2">
+            <div dangerouslySetInnerHTML={{ __html: critiqueHtml }} />
+        </div>
+        <Button onClick={() => setView('coaching-lab-home')} className='mt-8 w-full'>
+            Return to Coaching Lab Home
+        </Button>
+    </Card>
+);
+
+
+};
+
+// --- ROLE PLAY SIMULATOR VIEW ---
+const RolePlayView = ({ scenario, setCoachingLabView }) => {
+    const { db, userId, appId, callSecureGeminiAPI, hasGeminiKey } = useAppServices();
+
+    const [chatHistory, setChatHistory] = useState([]);
+    const [inputText, setInputText] = useState('');
+    const [isGenerating, setIsGenerating] = useState(false);
+    const [conversationStarted, setConversationStarted] = useState(false);
+    const [sessionEnded, setSessionEnded] = useState(false);
+    const chatRef = React.useRef(null);
+    const COACHING_COLLECTION = 'coaching_sessions';
+
+    useEffect(() => {
+        if (chatRef.current) {
+            chatRef.current.scrollTop = chatRef.current.scrollHeight;
+        }
+    }, [chatHistory]);
+
+    const AI_PERSONA = scenario.persona.split(' ')[1]; 
+
+    const handleSaveSessionAndCritique = async (history) => {
+        if (db && userId) {
+            try {
+                await addDoc(collection(db, `/artifacts/${appId}/users/${userId}/${COACHING_COLLECTION}`), {
+                    userId: userId,
+                    scenarioTitle: scenario.title,
+                    scenarioPersona: scenario.persona,
+                    date: new Date().toISOString(),
+                    history: history,
+                    status: 'Completed',
+                });
+                console.log("Coaching session saved successfully.");
+            } catch (e) {
+                console.error("Error saving coaching session:", e);
+            }
+        }
+        
+        setSessionEnded(true);
+    }
+
+    const generateResponse = async (history) => {
+        setIsGenerating(true);
+
+        const systemPrompt = `You are a direct report named 'Alex'. You embody the persona: ${scenario.persona}. Your current situation is: "${scenario.description}". The user is your manager.
+
+Your task is to respond to the user's input, maintaining your ${AI_PERSONA} persona and tone. Be realistic—don't resolve the conflict immediately. After 4-5 turns, you may begin to soften only if the manager demonstrates effective listening and SBI feedback. Keep your responses concise (2-3 sentences max).
+Use the history below to guide your response. Do not break character or mention your persona.`;
+
+        const currentHistory = history.map(msg => ({ 
+            role: msg.isAI ? "model" : "user", 
+            parts: [{ text: msg.text }] 
+        }));
+
+        if (!hasGeminiKey()) {
+            setChatHistory(prev => [...prev, { 
+                sender: 'System', 
+                text: "**ERROR**: The Gemini API Key is missing. AI Role-Play is unavailable. Please check App Settings.", 
+                isAI: true, 
+                system: true 
+            }]);
+            setIsGenerating(false);
+            return;
+        }
+
+        try {
+            const payload = {
+                contents: currentHistory,
+                systemInstruction: { parts: [{ text: systemPrompt }] },
+            };
+
+            const result = await callSecureGeminiAPI(payload);
+            const aiText = result?.candidates?.[0]?.content?.parts?.[0]?.text || "I seem to be having trouble processing that right now. Can you rephrase?";
+
+            setChatHistory(prev => [...prev, { sender: 'Alex', text: aiText, isAI: true }]);
+        } catch (error) {
+            console.error("AI Role-Play Error:", error);
+            setChatHistory(prev => [...prev, { sender: 'Alex', text: "A communication error occurred. Please try again.", isAI: true }]);
+        } finally {
+            setIsGenerating(false);
+        }
+    };
+
+    const handleSendMessage = async () => {
+        if (!inputText.trim() || isGenerating) return;
+
+        const newUserMessage = { sender: 'You', text: inputText.trim(), isAI: false };
+        const newHistory = [...chatHistory, newUserMessage];
+        setChatHistory(newHistory);
+        setInputText('');
+        
+        if (!conversationStarted) {
+            setConversationStarted(true);
+        }
+
+        await generateResponse(newHistory);
+    };
+
+    useEffect(() => {
+        if (!conversationStarted && !sessionEnded) {
+            setChatHistory([
+                { sender: 'System', text: `You are meeting with Alex (The ${AI_PERSONA}) in the conference room. Alex looks visibly annoyed/distracted. Start the conversation with your opening statement.`, isAI: true, system: true }
+            ]);
+            setConversationStarted(true);
+        }
+    }, [conversationStarted, sessionEnded, AI_PERSONA]);
+
+    if (sessionEnded) {
+        return (
+            <div className='p-8'>
+                <h1 className="text-3xl font-extrabold text-[#002E47] mb-4">Session Complete: Audit Results</h1>
+                <RolePlayCritique history={chatHistory} setView={setCoachingLabView} />
+            </div>
+        );
+    }
+
+
+    return (
+        <div className="p-8">
+            <h1 className="text-3xl font-extrabold text-[#002E47] mb-4">Role-Play Simulator: {scenario.title}</h1>
+            <p className="text-lg text-gray-600 mb-6 max-w-3xl">Practice your conversation with Alex, who is simulating **{scenario.persona}** behavior. Focus on using empathy and clear SBI feedback.</p>
+            <Button onClick={() => handleSaveSessionAndCritique(chatHistory)} variant="secondary" className="mb-8 bg-[#E04E1B] border-red-500 hover:bg-red-700">
+                <AlertTriangle className="w-5 h-5 mr-2" /> End Session & Get Critique
+            </Button>
+            
+            <div className='flex flex-col lg:flex-row space-y-6 lg:space-y-0 lg:space-x-6'>
+                <div className='flex-1 bg-[#FCFCFA] border border-gray-300 rounded-2xl shadow-lg flex flex-col h-[500px]'>
+                    <div ref={chatRef} className='flex-1 overflow-y-auto p-4'>
+                        {chatHistory.map((msg, index) => (
+                            // Only render non-system messages in chat box (system messages are for context)
+                            !msg.system && <Message key={index} sender={msg.sender} text={msg.text} isAI={msg.isAI} />
+                        ))}
+                         {/* Display System message once */}
+                        {chatHistory.find(msg => msg.system) && (
+                            <div className="text-sm text-[#002E47] bg-[#47A88D]/10 p-3 rounded-lg border border-[#47A88D]/20 mb-4">
+                                {chatHistory.find(msg => msg.system)?.text}
+                            </div>
+                        )}
+                        {isGenerating && (
+                            <div className='flex justify-start mb-4'>
+                                <div className='p-4 max-w-lg rounded-xl bg-[#002E47]/10 text-gray-500 rounded-tl-none'>
+                                    <div className="animate-pulse text-sm">Alex is typing...</div>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+
+                    <div className='p-4 border-t border-gray-200 flex space-x-3'>
+                        <input
+                            type="text"
+                            value={inputText}
+                            onChange={(e) => setInputText(e.target.value)}
+                            onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
+                            placeholder="Type your response to Alex..."
+                            className="flex-1 p-3 border border-gray-300 rounded-xl focus:ring-[#47A88D] focus:border-[#47A88D]"
+                            disabled={isGenerating || !hasGeminiKey()}
+                        />
+                        <Button onClick={handleSendMessage} disabled={!inputText.trim() || isGenerating || !hasGeminiKey()} className='px-4 py-3'>
+                            {isGenerating ? '...' : <MessageSquare className='w-5 h-5' />}
+                        </Button>
+                    </div>
+                </div>
+
+                <div className='lg:w-1/3'>
+                    <Card title={`Alex: The ${AI_PERSONA}`} icon={Users} className='h-full bg-[#002E47]/10 border-2 border-[#002E47]/20'>
+                        <p className='text-sm text-gray-700 font-semibold mb-2'>Scenario Description:</p>
+                        <p className="text-sm text-gray-600">{scenario.description}</p>
+                        
+                        <h4 className='font-bold text-[#002E47] mt-4 mb-2 border-t pt-2'>Goal Reminder:</h4>
+                        <ul className='list-disc list-inside text-sm text-gray-700 space-y-1'>
+                            <li>Establish clear, objective facts (S&B).</li>
+                            <li>Lead with empathy, not accusation.</li>
+                            <li>Steer toward a forward-looking action plan.</li>
+                        </ul>
+                    </Card>
+                </div>
+            </div>
+        </div>
+    );
+
+
+};
+
+// --- SCENARIO PREP VIEW ---
+const ScenarioPreparationView = ({ scenario, setCoachingLabView }) => {
+    if (!scenario) {
+    return (
+    <div className="p-8">
+    <Button onClick={() => setCoachingLabView('scenario-library')} variant="outline" className="mb-8">
+    <ArrowLeft className="w-5 h-5 mr-2" /> Back to Scenarios
+    </Button>
+    <p className="text-gray-700">No scenario selected.</p>
+    </div>
+    );
+    }
+    
+    return (
+    <div className="p-8">
+    <h1 className="text-3xl font-extrabold text-[#002E47] mb-4">Prepare for: {scenario.title}</h1>
+    <p className="text-lg text-gray-600 mb-6 max-w-3xl">Scenario: {scenario.description}</p>
+    <Button onClick={() => setCoachingLabView('scenario-library')} variant="outline" className="mb-8">
+    <ArrowLeft className="w-5 h-5 mr-2" /> Back to Scenarios
+    </Button>
+    
+      <div className="space-y-8">
+        <Card title="Step 1: Define Your Objective (The Win)" icon={Target}>
+          <p className="text-gray-700">What is the **one critical outcome** you want from this conversation? What will success look like when you walk away? (Keep it measurable: commitment, change in process, etc.)</p>
+          <textarea className="w-full p-3 mt-4 border border-gray-300 rounded-xl focus:ring-[#47A88D] focus:border-[#47A88D] h-24" placeholder="e.g., 'Ensure John commits to submitting reports by Thursday COB going forward.'"></textarea>
+        </Card>
+    
+        <Card title="Step 2: Draft Your SBI Feedback (The Facts)" icon={Briefcase}>
+          <p className="text-gray-700 mb-4">Draft the specific, objective feedback using the **SBI** (Situation, Behavior, Impact) model. Focus on observable facts, not judgment.</p>
+          <div className="bg-[#002E47]/10 p-4 rounded-xl text-sm text-[#002E47] border border-[#002E47]/20">
+            <strong>Tip:</strong> Try the <span className='font-bold text-[#47A88D] cursor-pointer hover:underline' onClick={() => setCoachingLabView('feedback-prep')}>Feedback Prep Tool</span> for an AI critique of your draft!
+          </div>
+        </Card>
+    
+        <Card title="Step 3: Plan Logistics and Mindset (The How)" icon={Zap}>
+          <p className="text-gray-700">When and where will you hold this conversation? What's your **"go-first" vulnerability statement** to open the discussion and establish psychological safety?</p>
+          <textarea className="w-full p-3 mt-4 border border-gray-300 rounded-xl focus:ring-[#47A88D] focus:border-[#47A88D] h-24" placeholder="e.g., 'I plan to meet with her privately in the small conference room at 2 PM. My opening vulnerability will be admitting I should have addressed this sooner.'"></textarea>
+        </Card>
+      </div>
+    
+      <Button onClick={() => setCoachingLabView('role-play')} className="mt-10 w-full md:w-auto">
+        <Play className="w-5 h-5 mr-2" /> Start Role-Play Simulation
+      </Button>
+    </div>
+    
+    
+    );
+};
+
+// --- SCENARIO LIBRARY VIEW ---
+const ScenarioLibraryView = ({ setCoachingLabView, setSelectedScenario }) => {
+    const scenarios = [
+        { id: 1, title: 'The Underperformer', description: 'A high-potential team member is consistently missing deadlines due to distraction.', persona: 'The Deflector' },
+        { id: 2, title: 'The Boundary Pusher', description: 'An employee repeatedly oversteps their authority when dealing with clients, creating tension.', persona: 'The Defender' },
+        { id: 3, title: 'The Silent Withdrawal', description: 'A direct report has become quiet and disengaged in meetings following a minor project failure.', persona: 'The Silent Stonewall' },
+        { id: 4, title: 'The Emotional Reaction', description: 'You need to deliver corrective feedback, and the employee is highly likely to become defensive or tearful.', persona: 'The Emotional Reactor' },
+        { id: 5, title: 'The Excessive Apologizer', description: 'A team member makes a small mistake and immediately apologizes repeatedly, paralyzing forward progress.', persona: 'The Over-Apologizer' },
+        { id: 6, title: 'The Team Blamer', description: 'An employee frequently attributes project failures to "someone else on the team" instead of taking personal responsibility.', persona: 'The Blame-Shifter' },
+        { id: 7, title: 'The Silent Observer', description: 'A highly capable team member consistently fails to speak up or contribute ideas during brainstorms or strategy discussions.', persona: 'The Passive Contributor' },
+    ];
+    
+    return (
+    <div className="p-8">
+    <h1 className="text-3xl font-extrabold text-[#002E47] mb-4">Scenario Library: Practice Conversations</h1>
+    <p className="text-lg text-gray-600 mb-6">Select a high-stakes scenario to practice your preparation process. Each scenario includes a unique persona for the AI simulator.</p>
+    <Button onClick={() => setCoachingLabView('coaching-lab-home')} variant="outline" className="mb-8">
+    <ArrowLeft className="w-5 h-5 mr-2" /> Back to Coaching Lab
+    </Button>
+    
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {scenarios.map(scenario => (
+          <Card key={scenario.id} title={scenario.title} className="border-l-4 border-[#47A88D] rounded-3xl" onClick={() => {
+            setSelectedScenario(scenario);
+            setCoachingLabView('scenario-prep');
+          }}>
+            <p className="text-sm text-gray-700 mb-3">{scenario.description}</p>
+            <div className="text-xs font-semibold text-[#002E47] bg-[#002E47]/10 px-3 py-1 rounded-full inline-block">Persona: {scenario.persona}</div>
+            <div className="mt-4 text-[#47A88D] font-semibold flex items-center">
+              Start Preparation &rarr;
+            </div>
+          </Card>
+        ))}
       </div>
     </div>
-  );
-}
+    
+    
+    );
+};
 
-function IconButton({ children, onClick, title, disabled }) {
-  return (
-    <button
-      className={`p-1 border rounded-md hover:bg-gray-100 transition ${disabled ? 'opacity-50 cursor-not-allowed' : 'hover:bg-indigo-50/50'}`}
-      onClick={onClick}
-      title={title}
-      disabled={disabled}
-      type="button"
-    >
-      {children}
-    </button>
-  );
-}
+// --- FEEDBACK PREP TOOL VIEW ---
+const FeedbackPrepToolView = ({ setCoachingLabView }) => {
+    const { updateCommitmentData, navigate, callSecureGeminiAPI, hasGeminiKey } = useAppServices();
 
-function clamp1to5(v) {
-  const n = Number.isFinite(v) ? v : 2;
-  return Math.max(1, Math.min(5, n));
-}
-function clamp(v, min, max) { return Math.max(min, Math.min(max, v)); }
-function makeId() { return Math.random().toString(36).slice(2, 10); }
-function getPlanId(ref) {
-  if (typeof ref.current === 'function') ref.current = ref.current();
-  return ref.current;
-}
-function clone(v) {
-  if (typeof structuredClone === 'function') return structuredClone(v);
-  return JSON.parse(JSON.stringify(v));
-}
+    const [situation, setSituation] = useState('During the Q3 Review meeting with the leadership team last Friday.');
+    const [behavior, setBehavior] = useState('You interrupted Sarah three times while she was presenting her analysis on customer churn data, dominating the conversation.');
+    const [impact, setImpact] = useState('This caused Sarah to lose her train of thought and weakened the confidence of other team members to contribute to the discussion, hindering a full review of the data.');
+    const [isGenerating, setIsGenerating] = useState(false);
+    const [critique, setCritique] = useState('');
+    const [critiqueHtml, setCritiqueHtml] = useState('');
+    const [refinedFeedback, setRefinedFeedback] = useState(null); 
 
-/**
- * generatePlan(bankItems, months, density, proficiency)
- * - Sorts by effort and title for determinism
- * - Picks `density` per month across 6 months
- */
-function generatePlan(bankItems, months, density, proficiency) {
-  const byEffortAsc = [...bankItems].sort((a, b) => (a.effort - b.effort) || String(a.title).localeCompare(String(b.title)));
-  const byEffortDesc = [...byEffortAsc].reverse();
-  const pool = proficiency === 'medium' ? interleaveSorted(byEffortAsc, byEffortDesc) : proficiency === 'low' ? byEffortAsc : byEffortDesc;
+    useEffect(() => {
+        if (!critique) { setCritiqueHtml(''); setRefinedFeedback(null); return; }
+        (async () => setCritiqueHtml(await mdToHtml(critique)))();
+        
+        // Attempt to pull out the refined SBI text for the commitment button
+        const match = critique.match(/\*\*(Refined Feedback|Refined SBI)\*\*:?\s*([^*]+)/i);
+        if (match && match[2]) {
+            setRefinedFeedback(match[2].trim().replace(/\.$/, ''));
+        } else {
+            setRefinedFeedback(null);
+        }
 
-  const perMonth = Math.max(1, density);
-  const result = months.map((label, i) => {
-    const start = (i * perMonth) % pool.length; // Loop back if pool is smaller
-    const slice = [];
-    for(let j=0; j < perMonth; j++) {
-        slice.push(pool[(start + j) % pool.length]);
-    }
-    return { month: label, activities: slice };
-  });
-  return result;
-}
+    }, [critique]);
 
-function interleaveSorted(a, b) {
-  const res = [];
-  const max = Math.max(a.length, b.length);
-  for (let i = 0; i < max; i += 1) {
-    if (i < a.length) res.push(a[i]);
-    if (i < b.length) res.push(b[i]);
-  }
-  const seen = new Set();
-  return res.filter(x => {
-    const key = `${x.id}::${x.title}`;
-    if (seen.has(key)) return false;
-    seen.add(key);
-    return true;
-  });
+    const generateCritique = async () => {
+        setIsGenerating(true);
+        setCritique('');
+        setRefinedFeedback(null);
+
+        if (!hasGeminiKey()) {
+            setCritique("## AI Critique Unavailable\n\n**ERROR**: The Gemini API Key is missing. Please ensure `window.__GEMINI_API_KEY` is set to enable AI coaching and critique features.");
+            setIsGenerating(false);
+            return;
+        }
+
+        const userFeedback = `S: ${situation}\nB: ${behavior}\nI: ${impact}`;
+        const systemPrompt = "You are an executive coach specializing in crucial conversations and the SBI (Situation, Behavior, Impact) feedback model. Analyze the user's provided feedback draft. Your critique must be polite, professional, and actionable. First, point out one strength. Second, point out one area for improvement, specifically focusing on ensuring the Behavior is objective and the Impact is linked to business results or team culture, not emotion. Then, provide the final refined version of the feedback, strictly adhering to the S-B-I format, labeling the final version with **Refined Feedback**.";
+        const userQuery = `Critique and refine this SBI feedback draft:\n\n${userFeedback}`;
+
+        try {
+            const payload = {
+            contents: [{ role: "user", parts: [{ text: userQuery }] }],
+            systemInstruction: { parts: [{ text: systemPrompt }] },
+            };
+
+            const result = await callSecureGeminiAPI(payload);
+            const candidate = result?.candidates?.[0];
+
+            if (candidate && candidate.content?.parts?.[0]?.text) {
+                setCritique(candidate.content.parts[0].text);
+            } else {
+                setCritique("Could not generate critique. The model may have blocked the request or the response was empty.");
+            }
+        } catch (error) {
+            console.error("Gemini API Error:", error);
+            setCritique("An error occurred while connecting to the AI coach. Please check your inputs and network connection.");
+        } finally {
+            setIsGenerating(false);
+        }
+    };
+
+    const handleCommitmentCreation = async () => {
+        if (!refinedFeedback || !updateCommitmentData) return;
+
+        const commitmentText = `Practice delivering the refined SBI feedback: "${refinedFeedback}".`;
+        
+        const newCommitment = { 
+            id: Date.now(), 
+            text: commitmentText, 
+            status: 'Pending', 
+            isCustom: true, 
+            linkedGoal: 'Improve Feedback & Coaching Skills',
+            linkedTier: 'T2', 
+            targetColleague: null,
+        };
+
+        const success = await updateCommitmentData(data => {
+            const existingCommitments = data?.active_commitments || [];
+            return { active_commitments: [...existingCommitments, newCommitment] };
+        });
+
+        if (success) {
+            alert("Commitment created! Review it in your Daily Practice Scorecard.");
+            navigate('daily-practice', { 
+                initialGoal: newCommitment.linkedGoal, 
+                initialTier: newCommitment.linkedTier 
+            }); 
+        } else {
+            alert("Failed to save new commitment.");
+        }
+    };
+
+
+    return (
+    <div className="p-8">
+    <h1 className="text-3xl font-extrabold text-[#002E47] mb-4">Feedback Prep Tool (SBI Critique)</h1>
+    <p className="text-lg text-gray-600 mb-6 max-w-3xl">Draft your difficult feedback using the <strong>S</strong>ituation, <strong>B</strong>ehavior, <strong>I</strong>mpact model. Our AI coach will refine your draft for clarity and professionalism.</p>
+    <Button onClick={() => setCoachingLabView('coaching-lab-home')} variant="outline" className="mb-8">
+    <ArrowLeft className="w-5 h-5 mr-2" /> Back to Coaching Lab
+    </Button>
+    
+      <div className="space-y-6 mb-8">
+        <Card title="1. Situation (S)" icon={Briefcase}>
+          <p className="text-gray-700 text-sm mb-2">When and where did the behavior occur? (Be specific and fact-based)</p>
+          <textarea value={situation} onChange={(e) => setSituation(e.target.value)} className="w-full p-3 border border-gray-300 rounded-xl focus:ring-[#47A88D] focus:border-[#47A88D] h-16"></textarea>
+        </Card>
+        <Card title="2. Behavior (B)" icon={Briefcase}>
+          <p className="text-gray-700 text-sm mb-2">What did the person <em>do</em> or <em>say</em>? (Must be observable, not a judgment)</p>
+          <textarea value={behavior} onChange={(e) => setBehavior(e.target.value)} className="w-full p-3 border border-gray-300 rounded-xl focus:ring-[#47A88D] focus:border-[#47A88D] h-16"></textarea>
+        </Card>
+        <Card title="3. Impact (I)" icon={Briefcase}>
+          <p className="text-gray-700 text-sm mb-2">What was the consequence of the behavior on the business, the team, or you?</p>
+          <textarea value={impact} onChange={(e) => setImpact(e.target.value)} className="w-full p-3 border border-gray-300 rounded-xl focus:ring-[#47A88D] focus:border-[#47A88D] h-16"></textarea>
+        </Card>
+      </div>
+    
+      <Tooltip
+        content={hasGeminiKey() 
+            ? "Sends your draft to the AI Coach for deep critique." 
+            : "AI Critique is unavailable. Check App Settings for configuration."
+        }
+      >
+        <Button onClick={generateCritique} disabled={isGenerating || !situation || !behavior || !impact} className="w-full md:w-auto">
+            {isGenerating ? (
+            <div className="flex items-center">
+                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
+                Refining...
+            </div>
+            ) : 'Refine Feedback'}
+        </Button>
+      </Tooltip>
+    
+      {critiqueHtml && (
+        <Card title="AI Coach Critique & Refinement" className="mt-8 bg-[#002E47]/10 border border-[#002E47]/20 rounded-3xl">
+          <div className="prose prose-xl max-w-none prose-h1:text-[#002E47] prose-h1:text-4xl prose-h2:text-[#002E47] prose-h3:text-[#47A88D] prose-headings:font-extrabold prose-p:my-6 prose-ul:space-y-3 prose-li:text-base prose-ul:list-disc">
+            <div dangerouslySetInnerHTML={{ __html: critiqueHtml }} />
+          </div>
+           {refinedFeedback && hasGeminiKey() && (
+              <Button onClick={handleCommitmentCreation} className="mt-6 w-full bg-[#349881] hover:bg-[#47A88D]">
+                 <PlusCircle className='w-5 h-5 mr-2' /> Turn Refined Feedback into Daily Commitment
+              </Button>
+           )}
+           {!hasGeminiKey() && (
+                <p className='text-xs text-[#E04E1B] mt-4 font-semibold'>AI Integration is currently disabled. See App Settings to enable AI-powered commitment creation.</p>
+           )}
+        </Card>
+      )}
+    </div>
+    
+    
+    );
+};
+
+// --- ACTIVE LISTENING VIEW ---
+const ActiveListeningView = ({ setCoachingLabView }) => {
+    const { callSecureGeminiAPI, hasGeminiKey, navigate } = useAppServices();
+
+    const [responses, setResponses] = useState({ q1: '', q2: '' });
+    const [critique, setCritique] = useState(null);
+    const [critiqueHtml, setCritiqueHtml] = useState('');
+    const [isGenerating, setIsGenerating] = useState(false);
+    
+    const handleChange = (e) => {
+        setResponses({ ...responses, [e.target.name]: e.target.value });
+        setCritique(null);
+        setCritiqueHtml('');
+    };
+    
+    useEffect(() => {
+        if (!critique) { setCritiqueHtml(''); return; }
+        (async () => setCritiqueHtml(await mdToHtml(critique)))();
+    }, [critique]);
+    
+    const handleSubmit = async () => {
+        if (!responses.q1.trim() || !responses.q2.trim()) {
+            alert("Please provide a response for both prompts before submitting for coach feedback.");
+            return;
+        }
+
+        setIsGenerating(true);
+        setCritique(null);
+
+        if (!hasGeminiKey()) {
+            setCritique("## AI Critique Unavailable\n\n**ERROR**: The Gemini API Key is missing. Please check App Settings.");
+            setIsGenerating(false);
+            return;
+        }
+
+        const userQuery = `Critique the following active listening responses from a manager:
+
+**Prompt 1 (The Paraphrase):** The employee said, "I feel overwhelmed by the deadlines and the number of meetings this week." The manager's draft paraphrase is: "${responses.q1.trim()}"
+
+**Prompt 2 (Open-Ended Inquiry):** The situation is a team setback and defeat. The manager's draft open-ended question is: "${responses.q2.trim()}"
+
+Critique Guidelines (Use Markdown):
+1.  **Paraphrase Critique (## The Paraphrase Audit):** Assess if the manager successfully confirmed understanding without adding judgment or offering a solution. Suggest a better, more concise option if needed.
+2.  **Question Critique (## The Inquiry Audit):** Assess if the question is truly open-ended (not answerable with Yes/No) and if it successfully invites vulnerability and insight in a safe way. Provide a refined, more empathetic alternative.
+3.  **Overall Takeaway (### Core Skill Focus):** Give one final, actionable coaching point.
+`;
+
+        const systemPrompt = "You are an executive coach specializing in developing empathetic and effective active listening skills. Your critique must be objective, use clear Markdown formatting, and provide concrete, actionable alternatives for improvement.";
+
+        try {
+            const payload = {
+                contents: [{ role: "user", parts: [{ text: userQuery }] }],
+                systemInstruction: { parts: [{ text: systemPrompt }] },
+            };
+
+            const result = await callSecureGeminiAPI(payload);
+            const aiText = result?.candidates?.[0]?.content?.parts?.[0]?.text || "Could not generate critique. Please try again.";
+            setCritique(aiText);
+
+        } catch (error) {
+            console.error("Gemini API Error:", error);
+            setCritique("An error occurred while connecting to the AI coach. Please check your network connection.");
+        } finally {
+            setIsGenerating(false);
+        }
+
+
+    };
+
+    return (
+    <div className="p-8">
+    <h1 className="text-3xl font-extrabold text-[#002E47] mb-4">Active Listening & Reflection Prompts</h1>
+    <p className="text-lg text-gray-600 mb-6 max-w-3xl">Active listening means validating emotion and confirming understanding before attempting to solve the problem. Practice the two pillars below to build empathy and psychological safety in high-stakes conversations.</p>
+    <Button onClick={() => setCoachingLabView('coaching-lab-home')} variant="outline" className="mb-8">
+    <ArrowLeft className="w-5 h-5 mr-2" /> Back to Coaching Lab
+    </Button>
+    
+      <div className="space-y-8">
+        <Card title="Reflection 1: The Paraphrase (Confirming Understanding)" icon={Mic}>
+          <p className="text-gray-700 mb-3">**Scenario:** A direct report just told you, "I feel overwhelmed by the deadlines and the number of meetings this week." How would you **paraphrase** their statement back to them? <span className='font-semibold text-[#47A88D]'>(Rule: Must not offer a solution or advice.)</span></p>
+          <textarea name="q1" value={responses.q1} onChange={handleChange} className="w-full p-3 border border-gray-300 rounded-xl focus:ring-[#47A88D] focus:border-[#47A88D] h-24" placeholder="Draft your paraphrased response here..."></textarea>
+        </Card>
+    
+        <Card title="Reflection 2: Open-Ended Inquiry (Inviting Depth)" icon={Mic}>
+          <p className="text-gray-700 mb-3">**Scenario:** Your team has just experienced a major setback on a flagship project. They are visibly defeated. What **open-ended question** would you use to invite them to share their feelings and insights, showing empathy and psychological safety?</p>
+          <textarea name="q2" value={responses.q2} onChange={handleChange} className="w-full p-3 border border-gray-300 rounded-xl focus:ring-[#47A88D] focus:border-[#47A88D] h-24" placeholder="Draft your open-ended question here..."></textarea>
+        </Card>
+      </div>
+    
+        <Tooltip
+            content={hasGeminiKey() 
+                ? "Submits your responses to the AI Coach for structured critique." 
+                : "Requires Gemini API Key to run. Check App Settings."
+            }
+        >
+            <Button onClick={handleSubmit} disabled={isGenerating || !responses.q1.trim() || !responses.q2.trim()} className="mt-10 w-full md:w-auto">
+                {isGenerating ? (
+                    <div className="flex items-center">
+                        <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
+                        Auditing Listening Skills...
+                    </div>
+                ) : 'Submit for Coach Feedback'}
+            </Button>
+        </Tooltip>
+      
+      {critiqueHtml && (
+        <Card title="Active Listening Auditor Feedback" icon={CheckCircle} className="mt-8 bg-[#002E47]/10 border border-[#002E47]/20 rounded-3xl">
+          <div className="prose max-w-none prose-h2:text-[#002E47] prose-h2:border-b prose-h2:pb-2 prose-h3:text-[#47A88D] prose-p:text-gray-700 prose-ul:space-y-2">
+            <div dangerouslySetInnerHTML={{ __html: critiqueHtml }} />
+          </div>
+        </Card>
+      )}
+    </div>
+    
+    
+    );
+};
+
+// --- MAIN COACHING LAB ROUTER ---
+export default function CoachingLabScreen() {
+    const { navigate } = useAppServices();
+
+    const [view, setView] = useState('coaching-lab-home');
+    const [selectedScenario, setSelectedScenario] = useState(null);
+
+    const renderView = () => {
+        const viewProps = { setCoachingLabView: setView, setSelectedScenario };
+
+        switch (view) {
+            case 'scenario-library':
+                return <ScenarioLibraryView {...viewProps} />;
+            case 'scenario-prep':
+                return <ScenarioPreparationView scenario={selectedScenario} setCoachingLabView={setView} />;
+            case 'role-play':
+                return selectedScenario 
+                    ? <RolePlayView scenario={selectedScenario} setCoachingLabView={setView} /> 
+                    : <ScenarioLibraryView {...viewProps} />;
+            case 'feedback-prep':
+                return <FeedbackPrepToolView setCoachingLabView={setView} />;
+            case 'active-listening':
+                return <ActiveListeningView setCoachingLabView={setView} />;
+            case 'coaching-lab-home':
+            default:
+                return (
+                    <div className="p-8">
+                        <h1 className="text-3xl font-extrabold text-[#002E47] mb-4">Coaching & Crucial Conversations Lab</h1>
+                        <p className="text-lg text-gray-600 mb-8 max-w-3xl">Practice key leadership interactions using guided tools and receive real-time AI critique to sharpen your skills.</p>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            <Card title="Scenario Library" icon={Users} onClick={() => setView('scenario-library')} className="border-l-4 border-[#47A88D] rounded-3xl">
+                                <p className="text-gray-700 text-sm">Select a scenario to start a fully interactive AI role-play session. Practice maneuvering deflection and emotion.</p>
+                                <div className="mt-4 text-[#47A88D] font-semibold flex items-center">
+                                    Launch Library &rarr;
+                                </div>
+                            </Card>
+                            <Card title="Feedback Prep Tool (SBI)" icon={Briefcase} onClick={() => setView('feedback-prep')} className="border-l-4 border-[#002E47] rounded-3xl">
+                                <p className="text-gray-700 text-sm">Draft difficult feedback using the SBI model and get instant, professional critique from our AI Coach on objectivity and impact.</p>
+                                <div className="mt-4 text-[#002E47] font-semibold flex items-center">
+                                    Launch Prep Tool &rarr;
+                                </div>
+                            </Card>
+                            <Card title="Active Listening Prompts" icon={Mic} onClick={() => setView('active-listening')} className="border-l-4 border-[#47A88D] rounded-3xl">
+                                <p className="text-gray-700 text-sm">Exercises to develop empathy, use paraphrasing, and ask powerful, open-ended questions to drive depth in conversations.</p>
+                                <div className="mt-4 text-[#47A88D] font-semibold flex items-center">
+                                    Launch Exercises &rarr;
+                                </div>
+                            </Card>
+                        </div>
+                    </div>
+                );
+        }
+    };
+
+    return renderView();
 }

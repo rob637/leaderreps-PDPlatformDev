@@ -1,40 +1,26 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-// FIX 1: Correct path depth (Up 2 levels: screens/ -> components/ -> src/)
 import { useAppServices } from '../../App';
 import { Card, Button, Tooltip } from '../shared/UI';
-// FIX 2: Correct path depth for Constants
-import { IconMap, LEADERSHIP_TIERS, PDP_COLLECTION, PDP_DOCUMENT, generatePlanData } from '../../data/Constants';
-import { ArrowLeft, Target, BarChart3, Users, Clock as ClockIcon, Eye, X, CornerRightUp, BookOpen } from 'lucide-react';
+import { IconMap, LEADERSHIP_TIERS, PDP_COLLECTION, PDP_DOCUMENT, generatePlanData, MOCK_CONTENT_DETAILS } from '../../data/Constants';
+import { ArrowLeft, Target, BarChart3, Users, Clock, Eye, X, CornerRightUp, BookOpen, Lightbulb, Zap, Briefcase } from 'lucide-react';
 import { doc, writeBatch, setDoc } from 'firebase/firestore'; 
-// FIX 3: Correct path depth for ApiHelpers
 import { mdToHtml } from '../../utils/ApiHelpers'; 
 
-// NOTE: MOCK_CONTENT_DETAILS is imported from src/data/Constants.js in the imports above.
-const MOCK_CONTENT_DETAILS = {
-    'Reading': (title, skill) => `### Core Concepts of ${title}\n\n**Focus Skill:** ${skill}\n\nThis article highlights the importance of asynchronous communication, creating clear documentation, and setting "done" criteria upfront to reduce execution drag. Your primary takeaway should be the principle: **Clear is Kind, Vague is Cruel.**\n\n* **Action Item:** Schedule 30 minutes for process mapping.\n* **Key Term:** Psychological Safety.`,
-    'Exercise': (title, skill) => `### Guided Practice: ${title}\n\n**Focus Skill:** ${skill}\n\nThis exercise requires you to journal or draft statements based on a self-reflective prompt. Use the questions below as a starting point. Your goal is to identify a core belief and define a corresponding measurable behavior.\n\n* **Prompt 1:** When was the last time you felt truly in integrity with your stated values?\n* **Prompt 2:** What is the most difficult piece of feedback you have successfully processed and implemented?`,
-    'Journal': (title, skill) => `### Journal Prompt: ${title}\n\n**Focus Skill:** ${skill}\n\nDedicate 15 minutes to freewriting based on this reflection prompt. Do not edit or self-censored. Just write.\n\n* **Reflection Focus:** Describe a recent decision where the easiest path conflicted with the most ethical or strategically correct path. What was the impact on your long-term credibility?`,
-    'Quiz': (title, skill) => `### Self-Assessment: ${title}\n\n**Focus Skill:** ${skill}\n\nThis is a quick self-score. Rate yourself 1-5 (1=Never, 5=Always) on the following statements.\n\n* I actively ask for negative feedback from my team.\n* I publicly own mistakes before assigning blame.`,
-    'Case Study': (title, skill) => `### Case Study Setup: ${title}\n\n**Focus Skill:** ${skill}\n\nReview the following scenario description and prepare a 5-step action plan before running the simulation or discussing with your coach. The scenario involves a failure to delegate a crucial task to a capable subordinate, leading to team burnout and missed deadlines.`,
-    'Tool': (title, skill) => `### Tool Overview: ${title}\n\n**Focus Skill:** ${skill}\n\nThis module guides you through a new framework. The current focus is risk identification and mitigation planning. The objective of this tool is to formalize risk assessment across your strategic goals.`,
-};
-
+// --- Component Definitions (Moved to top for readability and flow) ---
 
 // --- Content Details Modal ---
 const ContentDetailsModal = ({ isVisible, onClose, content }) => {
-    // NOTE: Icon components (BookOpen, X, Eye) are imported from lucide-react at the top of the file
     if (!isVisible || !content) return null;
 
-    const { IconMap } = useAppServices();
     const [htmlContent, setHtmlContent] = useState('');
     const mockDetail = MOCK_CONTENT_DETAILS[content.type] 
                         ? MOCK_CONTENT_DETAILS[content.type](content.title, content.skill) 
                         : `### Content Unavailable\n\nNo detailed mock content available for type: **${content.type}**`;
     
     useEffect(() => {
-        // mdToHtml is imported from ApiHelpers
         (async () => setHtmlContent(await mdToHtml(mockDetail)))();
     }, [content.id, mockDetail]);
+
 
     return (
         <div className="fixed inset-0 bg-[#002E47]/80 z-50 flex items-center justify-center p-4">
@@ -118,7 +104,7 @@ const TierReviewModal = ({ isVisible, onClose, tierId, planData }) => {
                                 <p className='font-semibold text-[#47A88D]'>Completed Content:</p>
                                 <ul className='list-disc pl-5 text-gray-700'>
                                     {month.requiredContent.map(item => (
-                                        <li key={item.id} className={`${item.status === 'Completed' ? 'line-through text-gray-600' : 'text-gray-400 italic'}`}>{item.title} ({item.type})</li>
+                                        <li key={item.id} className={`${item.status === 'Completed' ? 'text-gray-600' : 'text-gray-400 italic'}`}>{item.title} ({item.type})</li>
                                     ))}
                                 </ul>
                             </div>
@@ -140,13 +126,17 @@ const TierReviewModal = ({ isVisible, onClose, tierId, planData }) => {
 
 // --- Tracker Dashboard View ---
 const TrackerDashboardView = ({ data, updatePdpData, saveNewPlan, db, userId, navigate }) => {
-    const { appId, IconMap } = useAppServices();
+    // We expect data to be the full roadmap document now
+    const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
     const currentMonth = data.currentMonth;
+    // Safely look up the current month's plan data
     const currentMonthPlan = data.plan.find(m => m.month === currentMonth);
+    // Get the next month's focus for inter-app linking
     const nextMonthPlan = data.plan.find(m => m.month === currentMonth + 1);
     const nextMonthFocus = nextMonthPlan ? LEADERSHIP_TIERS[nextMonthPlan.tier].name : null;
     const nextMonthTier = nextMonthPlan ? nextMonthPlan.tier : null;
 
+    // New state for Modals
     const [isReviewModalVisible, setIsReviewModalVisible] = useState(false);
     const [reviewTierId, setReviewTierId] = useState(null);
     const [isContentModalVisible, setIsContentModalVisible] = useState(false);
@@ -159,12 +149,16 @@ const TrackerDashboardView = ({ data, updatePdpData, saveNewPlan, db, userId, na
 
     // Calculate completed tiers to show review buttons
     const completedTiers = useMemo(() => {
+        // Find all tiers that have at least one month that has passed (month < currentMonth)
+        // and that passed month has been marked 'Completed'.
         const fullyCompletedTiers = Object.keys(LEADERSHIP_TIERS).filter(tierId => {
             const tierMonths = data.plan.filter(m => m.tier === tierId);
-            if (tierMonths.length < 4) return false; 
+            
+            // A tier is considered available for review if any of its modules in the past were completed
             const lastMonthForTier = tierMonths.find(m => m.month < currentMonth);
             return lastMonthForTier && lastMonthForTier.status === 'Completed';
         });
+        
         return fullyCompletedTiers;
     }, [data.plan, currentMonth]);
 
@@ -186,9 +180,11 @@ const TrackerDashboardView = ({ data, updatePdpData, saveNewPlan, db, userId, na
 
         setIsSaving(true);
         try {
+            // Firestore Batch Update: 1. Update current month status/reflection; 2. Advance pointer
             const batch = writeBatch(db);
             const docRef = doc(db, `/artifacts/${appId}/users/${userId}/${PDP_COLLECTION}/${PDP_DOCUMENT}`);
 
+            // 1. Update the current month object within the plan array
             const updatedPlan = data.plan.map(m => {
                 if (m.month === currentMonth) {
                     return {
@@ -201,6 +197,7 @@ const TrackerDashboardView = ({ data, updatePdpData, saveNewPlan, db, userId, na
                 return m;
             });
             
+            // 2. Commit the updates (plan array and currentMonth pointer)
             batch.update(docRef, {
                 plan: updatedPlan,
                 currentMonth: currentMonth + 1,
@@ -209,13 +206,15 @@ const TrackerDashboardView = ({ data, updatePdpData, saveNewPlan, db, userId, na
 
             await batch.commit();
 
+            // Clear local reflection after successful save
             setLocalReflection('');
             alert('Month successfully completed! Advancing to the next phase.');
 
+            // Interconnection: Navigate to Daily Practice to set commitments for the new month's focus
             if (nextMonthFocus) {
                  navigate('daily-practice', { 
                     initialGoal: nextMonthFocus,
-                    initialTier: nextMonthTier
+                    initialTier: nextMonthTier // Pass the tier for easy selection
                 });
             }
 
@@ -235,6 +234,7 @@ const TrackerDashboardView = ({ data, updatePdpData, saveNewPlan, db, userId, na
             setIsSaving(true);
             try {
                 const docRef = doc(db, `/artifacts/${appId}/users/${userId}/${PDP_COLLECTION}/${PDP_DOCUMENT}`);
+                // Explicitly set the document data to null/empty state to force the 'not exists' flow in the hook
                 await setDoc(docRef, { }, { merge: false }); 
                  alert("Plan successfully reset! Loading generator...");
             } catch (e) {
@@ -246,6 +246,7 @@ const TrackerDashboardView = ({ data, updatePdpData, saveNewPlan, db, userId, na
     };
 
     const handleContentStatusToggle = (contentId) => {
+        // Toggle the status of a specific content item (Pending/Completed)
         const updatedPlan = data.plan.map(m => {
             if (m.month === currentMonth) {
                 const updatedContent = m.requiredContent.map(item => {
@@ -262,6 +263,7 @@ const TrackerDashboardView = ({ data, updatePdpData, saveNewPlan, db, userId, na
             return m;
         });
 
+        // Optimistically update local state while saving asynchronously
         updatePdpData({ plan: updatedPlan });
     };
 
@@ -277,20 +279,23 @@ const TrackerDashboardView = ({ data, updatePdpData, saveNewPlan, db, userId, na
 
 
     if (!currentMonthPlan) {
+        // Should only happen if plan is complete (Month 25)
         return (
              <div className="p-8">
                 <h1 className="text-3xl font-extrabold text-[#002E47] mb-6">Roadmap Complete!</h1>
-                <p class='text-lg text-gray-600 mb-8'>Congratulations on completing your 24-month roadmap. You are now a **Seasoned Leader**!</p>
+                <p className='text-lg text-gray-600 mb-8'>Congratulations on completing your 24-month roadmap. You are now a **Seasoned Leader**!</p>
                 <Button onClick={handleResetPlan}>Generate New Roadmap</Button>
             </div>
         )
     }
 
+    // Determine if the month is ready to be completed
     const allContentCompleted = currentMonthPlan?.requiredContent?.every(item => item.status === 'Completed');
     const isReadyToComplete = allContentCompleted && localReflection.length >= 50;
 
     const progressPercentage = Math.min(100, (currentMonth / 24) * 100);
 
+    // Safely retrieve icon component, defaulting to Target if tier or icon name is missing
     const TierIcon = LEADERSHIP_TIERS[currentMonthPlan?.tier]?.icon 
                         ? IconMap[LEADERSHIP_TIERS[currentMonthPlan.tier].icon] 
                         : Target;
@@ -301,7 +306,7 @@ const TrackerDashboardView = ({ data, updatePdpData, saveNewPlan, db, userId, na
             <p className="text-lg text-gray-600 mb-8 max-w-3xl">This plan is tailored to your **Manager Status, Self-Ratings, and Goal Priorities**. Focus on completing your monthly content and reflecting on your growth.</p>
             
             {/* Progress Bar & Header */}
-            <Card title={`Roadmap Progress: Month ${currentMonth} of 24`} icon={'Clock'} className="bg-[#002E47]/10 border-4 border-[#002E47]/20 mb-8">
+            <Card title={`Roadmap Progress: Month ${currentMonth} of 24`} icon={Clock} className="bg-[#002E47]/10 border-4 border-[#002E47]/20 mb-8">
                 <div className="w-full bg-gray-200 rounded-full h-4 mb-2">
                     <div 
                         className="bg-[#47A88D] h-4 rounded-full transition-all duration-700" 
@@ -311,7 +316,6 @@ const TrackerDashboardView = ({ data, updatePdpData, saveNewPlan, db, userId, na
                 <p className='text-sm font-medium text-[#002E47]'>
                     {Math.round(progressPercentage)}% Complete. Next Tier Focus in {4 - ((currentMonth - 1) % 4)} months.
                 </p>
-                {/* FIX: Closing the Button tag that was cut off */}
                 <Button onClick={handleResetPlan} variant='outline' className='mt-4 text-xs px-4 py-2 text-[#E04E1B] border-[#E04E1B]/50 hover:bg-[#E04E1B]/10'>
                     Start Over / Re-Generate Plan
                 </Button>
@@ -319,7 +323,7 @@ const TrackerDashboardView = ({ data, updatePdpData, saveNewPlan, db, userId, na
             
             {/* Tier Review Section */}
             {completedTiers.length > 0 && (
-                <Card title="Tier Review Center" icon={'Eye'} className='mb-8 border-l-4 border-[#002E47]'>
+                <Card title="Tier Review Center" icon={Eye} className='mb-8 border-l-4 border-[#002E47]'>
                     <p className='text-sm text-gray-700 mb-4'>Review your progress and reflections for past, completed leadership tiers.</p>
                     <div className='flex flex-wrap gap-3'>
                         {completedTiers.map(tierId => {
@@ -366,7 +370,7 @@ const TrackerDashboardView = ({ data, updatePdpData, saveNewPlan, db, userId, na
                                             className='px-3 py-1 text-xs'
                                             variant='outline'
                                         >
-                                            <Eye className="w-4 h-4"/>
+                                            <Eye className='w-4 h-4'/>
                                         </Button>
                                         <Button
                                             onClick={() => handleContentStatusToggle(item.id)}
@@ -382,7 +386,7 @@ const TrackerDashboardView = ({ data, updatePdpData, saveNewPlan, db, userId, na
                         </div>
                     </Card>
 
-                    <Card title="Monthly Reflection" icon={'Lightbulb'} className="bg-[#002E47]/10 border-2 border-[#002E47]/20">
+                    <Card title="Monthly Reflection" icon={Lightbulb} className="bg-[#002E47]/10 border-2 border-[#002E47]/20">
                         <p className="text-gray-700 text-sm mb-4">
                             Reflect on the growth you achieved this month. How did the content impact your daily leadership behavior? (**Minimum 50 characters required**)
                         </p>
@@ -421,7 +425,7 @@ const TrackerDashboardView = ({ data, updatePdpData, saveNewPlan, db, userId, na
                     
                     {/* Next Month Preview Card */}
                     {nextMonthPlan && (
-                        <Card title={`Next Month: Month ${currentMonth + 1}`} icon={'Clock'} className='bg-[#FCFCFA]'>
+                        <Card title={`Next Month: Month ${currentMonth + 1}`} icon={Clock} className='bg-[#FCFCFA]'>
                             <p className='text-sm font-semibold text-[#002E47] mb-2'>Tier: {LEADERSHIP_TIERS[nextMonthPlan.tier].name}</p>
                             <p className='text-md text-gray-700 mb-3'>{nextMonthPlan.theme}</p>
                             <ul className='list-disc pl-5 text-sm text-gray-600 space-y-1'>
@@ -450,7 +454,6 @@ const TrackerDashboardView = ({ data, updatePdpData, saveNewPlan, db, userId, na
         </div>
     );
 };
-
 
 // --- Plan Generator View ---
 const PlanGeneratorView = ({ userId, saveNewPlan, isLoading, error }) => {
@@ -490,6 +493,7 @@ const PlanGeneratorView = ({ userId, saveNewPlan, isLoading, error }) => {
             dateGenerated: new Date().toISOString(),
         };
 
+        // NOTE: The implementation of generatePlanData must be available via Constants.js
         const newPlanData = generatePlanData(assessment, userId);
 
         const success = await saveNewPlan(newPlanData);
@@ -518,7 +522,7 @@ const PlanGeneratorView = ({ userId, saveNewPlan, isLoading, error }) => {
                                 onClick={() => setManagerStatus(status)}
                                 className={`px-4 py-2 rounded-xl font-semibold transition-all shadow-md ${managerStatus === status ? 'bg-[#47A88D] text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
                             >
-                                status
+                                {status}
                             </button>
                         ))}
                     </div>
@@ -584,8 +588,10 @@ const PlanGeneratorView = ({ userId, saveNewPlan, isLoading, error }) => {
 
 // --- Main Router ---
 export const ProfDevPlanScreen = () => {
-    const { pdpData, saveNewPlan, isLoading, error, userId } = useAppServices();
+    // Consume data and updates via context
+    const { pdpData, updatePdpData, saveNewPlan, isLoading, error, userId, db, navigate } = useAppServices();
 
+    // --- Router Logic ---
     if (isLoading || pdpData === undefined) {
         return (
             <div className="p-8 min-h-screen flex items-center justify-center">
@@ -606,12 +612,15 @@ export const ProfDevPlanScreen = () => {
         );
     }
 
+    // pdpData is null if the document does not exist (needs generation)
     if (pdpData === null) {
         return <PlanGeneratorView userId={userId} saveNewPlan={saveNewPlan} isLoading={false} error={null} />;
     }
 
     // pdpData exists -> show the tracker dashboard
-    return <TrackerDashboardView data={pdpData} />;
+    const trackerProps = { data: pdpData, updatePdpData, saveNewPlan, db, userId, navigate };
+
+    return <TrackerDashboardView {...trackerProps} />;
 };
 
 export default ProfDevPlanScreen;
