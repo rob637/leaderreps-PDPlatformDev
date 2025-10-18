@@ -1,8 +1,8 @@
 [build]
   command = "npm run build"
-  publish = "build"
+  publish = "dist"
 
-# SPA routing
+# SPA fallback so deep links work
 [[redirects]]
   from = "/*"
   to = "/index.html"
