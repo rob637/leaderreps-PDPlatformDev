@@ -11,6 +11,9 @@ import {
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
   sendPasswordResetEmail,
+  EmailAuthProvider,
+  linkWithCredential,
+  signInAnonymously,
 } from 'firebase/auth';
 import { getFirestore, setLogLevel } from 'firebase/firestore';
 
@@ -61,15 +64,12 @@ const DEFAULT_SERVICES = {
   API_KEY,
 };
 
-export const useAppServices = () => {
-  const ctx = useContext(AppServiceContext);
-  return ctx ?? DEFAULT_SERVICES;
-};
+export const useAppServices = () => useContext(AppServiceContext) ?? DEFAULT_SERVICES;
 
-// App ID for Firestore pathing (optional)
+// For Firestore pathing if you use it
 const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
 
-// 👉 Flip to false when you want real auth gating
+// 👉 Flip to false to require real login
 const DEBUG_MODE = false;
 
 /* =========================
@@ -120,9 +120,9 @@ const DataProvider = ({ children, firebaseServices, userId, isAuthReady, navigat
 };
 
 /* =========================
-   Minimal Email/Password Login
+   Minimal Email/Password Login (+ optional anonymous upgrade)
    ========================= */
-function LoginPanel({ auth, onSuccess }) {
+function LoginPanel({ auth, onSuccess, allowAnonymous = false }) {
   const [mode, setMode] = useState('signin'); // 'signin' | 'signup' | 'reset'
   const [email, setEmail] = useState('');
   const [pass, setPass] = useState('');
@@ -130,45 +130,56 @@ function LoginPanel({ auth, onSuccess }) {
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState('');
 
+  const finalize = () => {
+    // Let parent gate re-evaluate; also navigate root to drop any ?debug flag from deep URLs
+    try { window.history.replaceState(null, '', '/'); } catch {}
+    onSuccess?.();
+  };
+
   const handleSignIn = async (e) => {
-    e.preventDefault();
-    setErr('');
-    setBusy(true);
+    e.preventDefault(); setErr(''); setBusy(true);
     try {
       await signInWithEmailAndPassword(auth, email.trim(), pass);
-      onSuccess?.();
-    } catch (ex) {
-      setErr(ex.message || 'Sign in failed.');
-    } finally { setBusy(false); }
+      finalize();
+    } catch (ex) { setErr(ex.message || 'Sign in failed.'); }
+    finally { setBusy(false); }
   };
 
   const handleSignUp = async (e) => {
-    e.preventDefault();
-    setErr('');
+    e.preventDefault(); setErr('');
     if (SECRET_SIGNUP_CODE && invite.trim() !== String(SECRET_SIGNUP_CODE)) {
-      setErr('Invalid invite code.');
-      return;
+      setErr('Invalid invite code.'); return;
     }
     setBusy(true);
     try {
-      await createUserWithEmailAndPassword(auth, email.trim(), pass);
-      onSuccess?.();
-    } catch (ex) {
-      setErr(ex.message || 'Sign up failed.');
-    } finally { setBusy(false); }
+      const user = auth.currentUser;
+      if (user?.isAnonymous) {
+        // Upgrade anonymous → email/password (keeps UID & data)
+        const cred = EmailAuthProvider.credential(email.trim(), pass);
+        await linkWithCredential(user, cred);
+      } else {
+        await createUserWithEmailAndPassword(auth, email.trim(), pass);
+      }
+      finalize();
+    } catch (ex) { setErr(ex.message || 'Sign up failed.'); }
+    finally { setBusy(false); }
   };
 
   const handleReset = async (e) => {
-    e.preventDefault();
-    setErr('');
-    setBusy(true);
+    e.preventDefault(); setErr(''); setBusy(true);
     try {
       await sendPasswordResetEmail(auth, email.trim());
       setMode('signin');
       setErr('Reset email sent. Check your inbox.');
-    } catch (ex) {
-      setErr(ex.message || 'Reset failed.');
-    } finally { setBusy(false); }
+    } catch (ex) { setErr(ex.message || 'Reset failed.'); }
+    finally { setBusy(false); }
+  };
+
+  const handleAnonymous = async () => {
+    setErr(''); setBusy(true);
+    try { await signInAnonymously(auth); finalize(); }
+    catch (ex) { setErr(ex.message || 'Guest sign-in failed.'); }
+    finally { setBusy(false); }
   };
 
   return (
@@ -181,75 +192,73 @@ function LoginPanel({ auth, onSuccess }) {
         </h1>
 
         {err && (
-          <div className="text-sm rounded-md bg-yellow-50 text-yellow-800 border border-yellow-200 p-3">
-            {err}
-          </div>
+          <div className="text-sm rounded-md bg-yellow-50 text-yellow-800 border border-yellow-200 p-3">{err}</div>
         )}
 
         <form onSubmit={mode === 'signin' ? handleSignIn : mode === 'signup' ? handleSignUp : handleReset} className="space-y-3">
           <div>
             <label className="block text-sm text-gray-700">Email</label>
-            <input
-              type="email"
-              className="mt-1 w-full border rounded-md px-3 py-2"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              autoComplete="email"
-            />
+            <input type="email" className="mt-1 w-full border rounded-md px-3 py-2"
+                   value={email} onChange={(e) => setEmail(e.target.value)} required autoComplete="email" />
           </div>
 
           {mode !== 'reset' && (
             <div>
               <label className="block text-sm text-gray-700">Password</label>
-              <input
-                type="password"
-                className="mt-1 w-full border rounded-md px-3 py-2"
-                value={pass}
-                onChange={(e) => setPass(e.target.value)}
-                required
-                autoComplete={mode === 'signin' ? 'current-password' : 'new-password'}
-              />
+              <input type="password" className="mt-1 w-full border rounded-md px-3 py-2"
+                     value={pass} onChange={(e) => setPass(e.target.value)} required
+                     autoComplete={mode === 'signin' ? 'current-password' : 'new-password'} />
             </div>
           )}
 
           {mode === 'signup' && SECRET_SIGNUP_CODE && (
             <div>
               <label className="block text-sm text-gray-700">Invite code</label>
-              <input
-                type="text"
-                className="mt-1 w-full border rounded-md px-3 py-2"
-                value={invite}
-                onChange={(e) => setInvite(e.target.value)}
-                placeholder="Enter invite code"
-                required
-              />
+              <input type="text" className="mt-1 w-full border rounded-md px-3 py-2"
+                     value={invite} onChange={(e) => setInvite(e.target.value)} placeholder="Enter invite code" required />
             </div>
           )}
 
-          <button
-            type="submit"
-            disabled={busy}
-            className="w-full rounded-md bg-emerald-600 text-white py-2 font-medium hover:bg-emerald-700 disabled:opacity-60"
-          >
-            {busy ? 'Please wait…' :
-              (mode === 'signin' ? 'Sign in' : mode === 'signup' ? 'Create account' : 'Send reset link')}
+          <button type="submit" disabled={busy}
+                  className="w-full rounded-md bg-emerald-600 text-white py-2 font-medium hover:bg-emerald-700 disabled:opacity-60">
+            {busy ? 'Please wait…' : (mode === 'signin' ? 'Sign in' : mode === 'signup' ? 'Create account' : 'Send reset link')}
           </button>
         </form>
 
         <div className="text-xs text-gray-600 flex justify-between">
-          {mode !== 'reset' ? (
-            <button className="underline" onClick={() => setMode('reset')}>Forgot password?</button>
-          ) : (
-            <button className="underline" onClick={() => setMode('signin')}>Back to sign in</button>
-          )}
-          {mode === 'signin' ? (
-            <button className="underline" onClick={() => setMode('signup')}>Need an account?</button>
-          ) : mode === 'signup' ? (
-            <button className="underline" onClick={() => setMode('signin')}>Have an account?</button>
-          ) : null}
+          {mode !== 'reset'
+            ? <button className="underline" onClick={() => setMode('reset')}>Forgot password?</button>
+            : <button className="underline" onClick={() => setMode('signin')}>Back to sign in</button>}
+          {mode === 'signin'
+            ? <button className="underline" onClick={() => setMode('signup')}>Need an account?</button>
+            : mode === 'signup'
+              ? <button className="underline" onClick={() => setMode('signin')}>Have an account?</button>
+              : null}
         </div>
+
+        {allowAnonymous && (
+          <button onClick={handleAnonymous} disabled={busy}
+                  className="w-full mt-2 rounded-md border border-gray-300 py-2 font-medium hover:bg-gray-50 disabled:opacity-60">
+            Continue as guest
+          </button>
+        )}
       </div>
+    </div>
+  );
+}
+
+/* =========================
+   Debug overlay (toggle with ?debug=1)
+   ========================= */
+function DebugOverlay({ authRequired, isAuthReady, user, userId }) {
+  const show = /[?&]debug=1/.test(window.location.search);
+  if (!show) return null;
+  return (
+    <div className="fixed bottom-2 right-2 bg-black/80 text-white text-xs rounded-lg p-2 space-y-1 z-50">
+      <div><span className="font-semibold">authRequired:</span> {String(authRequired)}</div>
+      <div><span className="font-semibold">isAuthReady:</span> {String(isAuthReady)}</div>
+      <div><span className="font-semibold">userId:</span> {userId || '—'}</div>
+      <div><span className="font-semibold">user.email:</span> {user?.email || '—'}</div>
     </div>
   );
 }
@@ -283,6 +292,7 @@ const App = ({ initialState }) => {
         firestore = getFirestore(app);
         authentication = getAuth(app);
         setFirebaseServices({ db: firestore, auth: authentication });
+        setIsAuthReady(true);
         return;
       } catch (e) {
         if (e.name !== 'FirebaseError' || !e.message.includes('already been initialized')) {
@@ -292,6 +302,7 @@ const App = ({ initialState }) => {
         firestore = getFirestore(existing);
         authentication = getAuth(existing);
         setFirebaseServices({ db: firestore, auth: authentication });
+        setIsAuthReady(true);
         return;
       }
     }
@@ -320,7 +331,7 @@ const App = ({ initialState }) => {
         if (currentUser) {
           const uid = currentUser.uid;
           setUserId(uid);
-          setUser({ name: currentUser.email || 'Canvas User', userId: uid });
+          setUser({ name: currentUser.email || 'Canvas User', email: currentUser.email || '', userId: uid });
           setAuthRequired(false);
         } else {
           setUser(null);
@@ -358,26 +369,42 @@ const App = ({ initialState }) => {
     }
 
     if (authRequired || !user) {
-      return <LoginPanel auth={firebaseServices.auth} onSuccess={() => {/* onAuthStateChanged will take over */}} />;
+      return (
+        <>
+          <LoginPanel
+            auth={firebaseServices.auth}
+            onSuccess={() => {
+              // harden transition after sign-in
+              setAuthRequired(false);
+              setTimeout(() => navigate('dashboard'), 0);
+            }}
+            allowAnonymous={false /* set true if you enabled Anonymous in Console */}
+          />
+          <DebugOverlay authRequired={authRequired} isAuthReady={isAuthReady} user={user} userId={userId} />
+        </>
+      );
     }
   }
 
   // ---------- App ----------
   return (
-    <DataProvider
-      firebaseServices={firebaseServices}
-      userId={userId}
-      isAuthReady={isAuthReady}
-      navigate={navigate}
-      user={user}
-    >
-      <AppContent
-        currentScreen={currentScreen}
-        setCurrentScreen={navigate}
+    <>
+      <DataProvider
+        firebaseServices={firebaseServices}
+        userId={userId}
+        isAuthReady={isAuthReady}
+        navigate={navigate}
         user={user}
-        navParams={navParams}
-      />
-    </DataProvider>
+      >
+        <AppContent
+          currentScreen={currentScreen}
+          setCurrentScreen={navigate}
+          user={user}
+          navParams={navParams}
+        />
+      </DataProvider>
+      <DebugOverlay authRequired={authRequired} isAuthReady={isAuthReady} user={user} userId={userId} />
+    </>
   );
 };
 
