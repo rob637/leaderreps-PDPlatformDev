@@ -23,9 +23,9 @@ import Labs from './components/screens/Labs';
 import NavSidebar from './components/shared/UI';
 
 // ✅ Add these if your router references them (adjust paths if your files differ)
-import DailyPracticeScreen from './components/screens/DailyPractice';
-import PlanningHubScreen from './components/screens/PlanningHub';
-import BusinessReadingsScreen from './components/screens/BusinessReadings';
+import DailyPracticeScreen from './components/screens/DailyPractice.jsx';
+import PlanningHubScreen from './components/screens/PlanningHub.jsx';
+import BusinessReadingsScreen from './components/screens/BusinessReadings.jsx';
 
 // Alias Labs to legacy name (used in router)
 const CoachingLabScreen = Labs;
