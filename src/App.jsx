@@ -25,6 +25,21 @@ import { usePDPData, useCommitmentData, usePlanningData } from './firebase/Hooks
 // ESM-safe on Netlify/Linux
 import { callSecureGeminiAPI, hasGeminiKey, GEMINI_MODEL, API_KEY } from './utils/ApiHelpers.js';
 
+/* =========================================================
+   MOCK GLOBAL UTILITIES (To satisfy external component dependencies)
+========================================================= */
+// FIX: Moved 'notepad' mock to the top of the file to ensure it is defined before 
+// any imported screen component attempts to access it, resolving the ReferenceError.
+if (typeof window !== 'undefined' && typeof window.notepad === 'undefined') {
+    window.notepad = { 
+        // Mock the essential functions needed to avoid crashes
+        setTitle: (title) => console.log('Mock Notepad: Set Title', title),
+        addContent: (content) => console.log('Mock Notepad: Add Content', content),
+        getContent: () => console.log('Mock Notepad: Get Content'),
+    };
+}
+
+
 // Screens
 // FIX: We must remove QuickStartScreen and AppSettingsScreen from this import.
 // They are now defined locally as placeholders to fix the "already declared" error.
@@ -46,20 +61,6 @@ const CoachingLabScreen = Labs;
    STEP 1: SANITY SWITCH
 ========================================================= */
 const SANITY_MODE = false;
-
-/* =========================================================
-   MOCK GLOBAL UTILITIES (To satisfy external component dependencies)
-========================================================= */
-// FIX: Mocking 'notepad' to prevent 'ReferenceError: notepad is not defined' 
-// which is likely being called from one of the imported screen components.
-if (typeof window !== 'undefined' && typeof window.notepad === 'undefined') {
-    window.notepad = { 
-        // Mock the essential functions needed to avoid crashes
-        setTitle: (title) => console.log('Mock Notepad: Set Title', title),
-        addContent: (content) => console.log('Mock Notepad: Add Content', content),
-        getContent: () => console.log('Mock Notepad: Get Content'),
-    };
-}
 
 
 /* =========================================================
