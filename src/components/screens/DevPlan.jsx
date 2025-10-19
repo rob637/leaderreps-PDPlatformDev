@@ -1,36 +1,7 @@
+import { useAppServices } from '../../services/useAppServices.jsx';
 import { Home, Zap, Clock, Briefcase, Mic, Trello, BookOpen, Settings, BarChart3, TrendingUp, TrendingDown, CheckCircle, Star, Target, Users, HeartPulse, CornerRightUp, X, ArrowLeft, Activity, Link, Lightbulb, AlertTriangle, Eye, PlusCircle, Cpu, MessageSquare } from 'lucide-react';
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 // FIX:  Mocking useAppServices since the environment can't resolve relative paths
-const useAppServices = () => ({
-    // Mocked core services for local testing
-    pdpData: null,
-    updatePdpData: async () => true,
-    saveNewPlan: async () => true,
-    callSecureGeminiAPI: async (payload) => {
-        // Mock response for Monthly Briefing
-        const mockBriefing = {
-            candidates: [{
-                content: {
-                    parts: [{
-                        text: "## Monthly Executive Briefing\n\n**Focus Area:** Strategic Clarity (T5)\n\n**Coaching Nudge:** Your low self-rating (4/10) indicates a high-risk gap. You must dedicate time this month to the 'Pre-Mortem Risk Audit' content. Prioritize clear decision-making processes over routine tasks to immediately elevate your strategic focus.\n\n**Next Action:** Schedule 30 minutes to define your top 3 OKR dependencies."
-                    }]
-                }
-            }]
-        };
-        return mockBriefing;
-    },
-    hasGeminiKey: () => true,
-    navigate: (screen, params) => console.log(`Navigating to ${screen} with params:`, params),
-    userId: 'mock-user-123',
-    db: {}, // Mock Firestore instance
-    isLoading: false,
-    error: null,
-    // Mocked values needed for the Generator View logic
-    commitmentData: { active_commitments: [] },
-    planningData: { okrs: [{ objective: 'OKR Q4: Launch MVP' }] },
-    GEMINI_MODEL: 'gemini-2.5-flash-preview-09-2025',
-});
-
 /* =========================================================
    HIGH-CONTRAST PALETTE (Centralized for Consistency)
 ========================================================= */
@@ -118,14 +89,6 @@ const Tooltip = ({ content, children }) => {
     );
 };
 
-// Mock Firebase Functions (to satisfy imports)
-const doc = (db, path) => ({ db, path });
-const writeBatch = (db) => ({
-    update: () => console.log('Mock Batch Update'),
-    commit: async () => console.log('Mock Batch Commit'),
-});
-const setDoc = async () => console.log('Mock SetDoc');
-
 // Mock external utilities (to satisfy imports)
 const mdToHtml = async (md) => {
     let html = md;
@@ -140,8 +103,6 @@ const mdToHtml = async (md) => {
 const IconMap = {
     Zap: Zap, Users: Users, Briefcase: Briefcase, Target: Target, BarChart3: BarChart3, Clock: Clock, Eye: Eye, BookOpen: BookOpen, Lightbulb: Lightbulb, X: X, ArrowLeft: ArrowLeft, CornerRightUp: CornerRightUp, AlertTriangle: AlertTriangle, CheckCircle: CheckCircle, PlusCircle: PlusCircle, HeartPulse: HeartPulse, TrendingUp: TrendingUp, TrendingDown: TrendingDown, Activity: Activity, Link: Link, Cpu: Cpu, Star: Star, Mic: Mic, Trello: Trello, Settings: Settings, Home: Home, MessageSquare: MessageSquare
 };
-
-
 const PDP_COLLECTION = 'leadership_plan';
 const PDP_DOCUMENT = 'roadmap';
 const appId = 'default-app-id'; // Mock value for app id
@@ -214,8 +175,6 @@ const GENERIC_PLAN = {
     avgMasteryContent: 3, // Average 3 mastery pieces
     totalDuration: 1200, // Total duration in minutes
 };
-
-
 const generatePlanData = (assessment, ownerUid) => {
     const { managerStatus, goalPriorities, selfRatings, peerRatings, menteeFeedback, teamSkillAlignment } = assessment;
     const allTiers = Object.keys(LEADERSHIP_TIERS);
@@ -247,12 +206,10 @@ const generatePlanData = (assessment, ownerUid) => {
         // Inject team gap priority early
         tierRotationQueue.splice(1, 0, teamGapTier);
     }
-    
     // Ensure T1 is always at the front if the user is 'New'
     if (managerStatus === 'New' && tierRotationQueue[0] !== 'T1') {
          tierRotationQueue.unshift('T1');
     }
-    
     // Check for Confidence/Competence Gap (Self vs. Peer Rating Discrepancy)
     let peerGapTier = null;
     if (peerRatings) {
@@ -274,8 +231,6 @@ const generatePlanData = (assessment, ownerUid) => {
     if (menteeFeedback?.T4?.score < 70 && !tierRotationQueue.includes('T4')) {
          tierRotationQueue.splice(1, 0, 'T4');
     }
-
-
     // --- Core 24-Month Loop ---
     for (let month = 1; month <= 24; month++) {
         // Rotate through the unique tier queue
@@ -368,7 +323,6 @@ const PlanGeneratorView = ({ userId, saveNewPlan, isLoading, error }) => {
     const handleRatingChange = (tierId, value) => {
         setSelfRatings(prev => ({ ...prev, [tierId]: parseInt(value) }));
     };
-    
     const handlePeerRatingChange = (tierId, value) => {
         setPeerRatings(prev => ({ ...prev, [tierId]: parseInt(value) }));
     };
@@ -495,8 +449,6 @@ const PlanGeneratorView = ({ userId, saveNewPlan, isLoading, error }) => {
                         </div>
                     )}
                 </Card>
-
-
                 <Card title="2. Goal Priorities (Max 3)" icon={Target} accent='NAVY'>
                     <h3 className="text-md font-semibold text-gray-700 mb-3">Which tiers are most important to you right now?</h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -521,7 +473,6 @@ const PlanGeneratorView = ({ userId, saveNewPlan, isLoading, error }) => {
 
                 <Card title="3. Skill Gap Assessment (Self vs. Peer)" icon={BarChart3} accent='TEAL'>
                     <h3 className="text-md font-semibold text-gray-700 mb-6">Rate your current effectiveness (1 = Low, 10 = Mastery):</h3>
-                    
                     <div className='grid grid-cols-2 gap-x-4 gap-y-2 mb-4 text-xs font-bold text-gray-600'>
                         <div>Your Self-Rating</div>
                         <div>360° Peer/Report Avg.</div>
@@ -546,7 +497,6 @@ const PlanGeneratorView = ({ userId, saveNewPlan, isLoading, error }) => {
                                         style={{ accentColor: COLORS.TEAL }}
                                     />
                                 </div>
-                                
                                 {/* Peer Rating Column (360° Mock) */}
                                 <div>
                                     <p className="font-semibold text-[#0B3B5B] flex justify-between">
@@ -584,8 +534,6 @@ const PlanGeneratorView = ({ userId, saveNewPlan, isLoading, error }) => {
         </div>
     );
 };
-
-
 // --- Main Router ---
 export const ProfDevPlanScreen = () => {
     // Consume data and updates via context

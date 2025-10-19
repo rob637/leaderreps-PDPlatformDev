@@ -1,15 +1,8 @@
+import { useAppServices } from '../../services/useAppServices.jsx';
 // src/components/screens/ExecutiveReflection.jsx
 import React, { useMemo } from 'react';
 // FIX: Using a safe mock for useAppServices as App.jsx is the actual context provider
-const useAppServices = () => ({
-    commitmentData: { history: [{ score: '3/3' }], resilience_log: { '2025-10-19': { energy: 8, focus: 9 } } },
-    pdpData: { assessment: { selfRatings: { T3: 8, T4: 4 } } },
-    planningData: { riskAudits: 20, okrFailures: 1 },
-    user: { email: 'executive@leaderreps.com' }
-});
-
 import { BarChart3, TrendingUp, Target, ShieldCheck, Zap, TrendingDown, Cpu, Star, MessageSquare, HeartPulse, Users, Lightbulb } from 'lucide-react';
-
 /* =========================================================
    HIGH-CONTRAST PALETTE (Copied from uiKit for self-reliance)
 ========================================================= */
@@ -56,8 +49,6 @@ const Button = ({ children, onClick, disabled = false, variant = 'primary', clas
     </button>
   );
 };
-
-
 /* =========================================================
    LONGITUDINAL IMPACT VISUALIZATION LOGIC
 ========================================================= */
@@ -67,19 +58,15 @@ const useLongitudinalData = (commitmentData, pdpData, planningData) => {
         const resilienceLog = commitmentData?.resilience_log || {};
         const selfRating = pdpData?.assessment?.selfRatings?.T3 || 6; 
         const dailySuccessRate = (history.slice(-90).filter(h => h.score.split('/')[0] === h.score.split('/')[1] && h.score.split('/')[1] > 0).length / 90) * 100 || 68; 
-        
         const riskAudits = planningData?.riskAudits || 15; 
         const okrFailures = planningData?.okrFailures || 2; 
         const riskReductionScore = Math.max(0, 100 - (okrFailures / (riskAudits || 1)) * 100); 
         const tierMasteryProjection = Math.round(180 - dailySuccessRate * 1.5); 
-        
         const lowEnergyDays = Object.values(resilienceLog).filter(log => log.energy < 5).length;
         const totalLoggedDays = Object.keys(resilienceLog).length;
         const avgDailyScore = history.reduce((sum, h) => sum + (h.score.split('/')[0] / (h.score.split('/')[1] || 1)), 0) / (history.length || 1);
         const avgScoreLowEnergy = avgDailyScore * (1 - (lowEnergyDays / (totalLoggedDays || 1)) * 0.4); 
-        
         const menteeFeedback = pdpData?.assessment?.menteeFeedback?.T4 || { score: 75, comment: "Follow-up is inconsistent." };
-        
         return {
             confidence: selfRating,
             competence: dailySuccessRate.toFixed(1),
@@ -92,22 +79,17 @@ const useLongitudinalData = (commitmentData, pdpData, planningData) => {
         };
     }, [commitmentData, pdpData, planningData]);
 };
-
-
 /* =========================================================
    LONGITUDINAL IMPACT SCREEN
 ========================================================= */
 
 export default function ExecutiveReflection() {
-    const { useAppServices: useAppServicesLocal } = { useAppServices: useAppServices };
-    const { commitmentData, pdpData, planningData, user } = useAppServicesLocal();
+    const { commitmentData, pdpData, planningData, user } = useAppServices();
     const data = useLongitudinalData(commitmentData, pdpData, planningData);
-    
     const NAVY = COLORS.NAVY;
     const TEAL = COLORS.TEAL;
     const ORANGE = COLORS.ORANGE;
     const GREEN = COLORS.GREEN;
-    
     const energyScore = data.lowEnergyDays / Object.keys(commitmentData?.resilience_log || {}).length;
     const wellnessInsight = energyScore > 0.3 ? 
         `Warning: Your daily score drops to **${data.avgScoreLowEnergy.toFixed(1)}** (from ${data.avgDailyScore.toFixed(1)}) on days your energy is low. Performance is directly tied to well-being.` :
@@ -117,9 +99,7 @@ export default function ExecutiveReflection() {
         <div className={`p-8 bg-[${COLORS.LIGHT_GRAY}] min-h-screen`}>
             <h1 className={`text-3xl font-extrabold text-[${NAVY}] mb-4`}>Executive Reflection & Growth Analytics</h1>
             <p className="text-lg text-gray-600 mb-8 max-w-3xl">A data-driven view of your leadership behavior, skill mastery, and growth trends over the last 90 days. This is your personal **Leadership ROI Report**.</p>
-            
             <div className='grid lg:grid-cols-3 gap-8'>
-                
                 {/* 1. Confidence vs. Competence Map */}
                 <Card title="Confidence vs. Competence Map" icon={Target} accent='TEAL' className='lg:col-span-2 shadow-2xl'>
                     <p className='text-sm text-gray-700 mb-4'>Tracks your self-perception (Confidence: PDP Rating) against your proven capability (Competence: Daily Scorecard Success Rate).</p>
@@ -133,7 +113,6 @@ export default function ExecutiveReflection() {
                             <p className={`text-4xl font-extrabold text-[${TEAL}]`}>{data.competence}%</p>
                         </div>
                     </div>
-                    
                     <div className={`mt-6 p-4 rounded-xl border border-[${ORANGE}]/50`} style={{ background: ORANGE + '1A', color: NAVY }}>
                         <p className='font-semibold flex items-center'><Cpu className='w-4 h-4 mr-2'/> AI Insight:</p>
                         <p className='text-sm mt-1'>
@@ -148,12 +127,10 @@ export default function ExecutiveReflection() {
                 {/* 2. Risk Reduction Scorecard */}
                 <Card title="Risk Reduction Scorecard" icon={ShieldCheck} accent='ORANGE' className='shadow-2xl'>
                     <p className='text-sm text-gray-700 mb-4'>Measures the direct business impact of your **Pre-Mortem Audits** over the past quarter.</p>
-                    
                     <div className='text-center'>
                         <p className='text-xs font-semibold uppercase text-gray-500'>Risk Mitigation Effectiveness</p>
                         <p className={`text-5xl font-extrabold mt-1`} style={{ color: data.riskReduction < 70 ? ORANGE : GREEN }}>{data.riskReduction}%</p>
                     </div>
-                    
                     <div className='mt-4 pt-4 border-t border-gray-200'>
                         <p className='text-sm font-semibold' style={{ color: NAVY }}>Projection:</p>
                         <p className='text-base text-gray-700'>
@@ -161,21 +138,17 @@ export default function ExecutiveReflection() {
                         </p>
                     </div>
                 </Card>
-                
                 {/* 3. Performance vs. Well-being Analysis */}
                 <Card title="Performance vs. Well-being" icon={HeartPulse} accent='ORANGE' className='shadow-2xl'>
                      <p className='text-sm text-gray-700 mb-4'>Analyzes the correlation between your daily self-reported energy/focus and your final Daily Scorecard result.</p>
-                     
                      <div className={`mt-2 p-4 rounded-xl border border-[${NAVY}]/50`} style={{ background: NAVY + '1A', color: NAVY }}>
                          <p className='font-semibold flex items-center'><MessageSquare className='w-4 h-4 mr-2'/> AI Well-being Insight:</p>
                          <p className='text-sm mt-1 text-gray-700'>{wellnessInsight}</p>
                      </div>
                 </Card>
-                
                 {/* 4. Mentorship Alignment */}
                 <Card title="Mentorship & Coaching Alliance" icon={Users} accent='TEAL' className='shadow-2xl'>
                      <p className='text-sm text-gray-700 mb-4'>Identifies opportunities for you to mentor peers (strength) and where you should seek guidance (weakness).</p>
-                     
                      <div className={`mt-2 p-4 rounded-xl border border-[${TEAL}]/50 bg-[${COLORS.OFF_WHITE}] shadow-sm`}>
                          <p className='font-semibold flex items-center' style={{ color: TEAL }}><TrendingUp className='w-4 h-4 mr-2'/> Mentor Strength (T3 Execution):</p>
                          <p className='text-sm mt-1 text-gray-700'>Action: Schedule 30 min to coach an employee on an T3 Execution task (Mock commitment).</p>
@@ -188,11 +161,9 @@ export default function ExecutiveReflection() {
                          Review Full Mentee Feedback &rarr;
                      </Button>
                 </Card>
-                
                 {/* 5. Organizational Impact Metrics */}
                 <Card title="Organizational Impact Score" icon={BarChart3} accent='NAVY' className='shadow-2xl'>
                      <p className='text-sm text-gray-700 mb-4'>Aggregated view of how your development efforts translate to measurable team outcomes.</p>
-                     
                      <div className='space-y-3'>
                          <p className='flex justify-between text-sm font-semibold text-gray-700'>
                              Psychological Safety Index: <span className='font-extrabold' style={{ color: GREEN }}>+15%</span>

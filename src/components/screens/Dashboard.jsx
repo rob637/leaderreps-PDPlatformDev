@@ -1,9 +1,10 @@
+import { useAppServices } from '../../services/useAppServices.jsx';
 // src/components/screens/Dashboard.jsx
 import React, { useMemo, useState, useEffect, useCallback } from 'react';
 
 // --- ICONS ---
 import {
-  Clock as ClockIcon,
+Clock as ClockIcon,
   TrendingUp,
   BookOpen,
   Mic,
@@ -23,8 +24,6 @@ import {
   MessageSquare,
   User,
 } from 'lucide-react';
-
-
 /* =========================================================
    HIGH-CONTRAST PALETTE (Centralized for Consistency)
 ========================================================= */
@@ -42,8 +41,6 @@ const COLORS = {
   TEXT: '#002E47',
   MUTED: '#4B5563',
 };
-
-
 // --- MOCK IMPORTS for self-contained file ---
 const LEADERSHIP_TIERS = {
     'T1': { id: 'T1', name: 'Self-Awareness', icon: 'HeartPulse', color: 'bg-blue-100 text-blue-700' },
@@ -60,21 +57,6 @@ const MOCK_PDP_DATA = {
 const MOCK_COMMITMENT_DATA = { active_commitments: [{ id: 1, status: 'Pending' }] };
 
 // Mocking useAppServices hook logic for isolated file readability
-const useAppServices = () => ({
-    navigate: (screen, params) => console.log(`Navigating to ${screen} with:`, params),
-    user: { email: 'executive@leaderreps.com', userId: 'usr-1234' },
-    pdpData: MOCK_PDP_DATA,
-    planningData: { okrs: [{ id: 1 }, { id: 2 }] },
-    commitmentData: MOCK_COMMITMENT_DATA,
-    hasPendingDailyPractice: MOCK_COMMITMENT_DATA.active_commitments.some(c => c.status === 'Pending'),
-    callSecureGeminiAPI: async (payload) => ({
-        candidates: [{ content: { parts: [{ text: 'Focus today on deep listening; practice paraphrasing your colleague\'s needs before offering solutions.' }] } }]
-    }),
-    hasGeminiKey: () => true,
-    GEMINI_MODEL: 'gemini-2.5-flash',
-    LEADERSHIP_TIERS: LEADERSHIP_TIERS,
-});
-
 async function mdToHtml(md) {
     let html = md.replace(/\*\*(.*)\*\*/gim, '<strong>$1</strong>');
     html = html.replace(/>\s*(.*)/gim, `<div class="mt-2 text-base text-gray-800 border-l-4 pl-3 italic" style="border-left-color: ${COLORS.TEAL};">“$1”</div>`);
@@ -136,7 +118,6 @@ const StatCard = ({ icon: Icon, label, value, onClick, colorHex = COLORS.TEAL, t
     const trendIcon = trend > 0 ? TrendingUp : TrendingDown;
     const trendColor = trend > 0 ? COLORS.TEAL : trend < 0 ? COLORS.ORANGE : COLORS.MUTED;
     const isPrimary = label === "Daily Commitments Due"; 
-    
     return (
         <Card 
             icon={Icon} 
@@ -162,8 +143,6 @@ const StatCard = ({ icon: Icon, label, value, onClick, colorHex = COLORS.TEAL, t
         </Card>
     );
 };
-
-
 const ProgressKMI = ({ title, value, icon: Icon, colorHex = COLORS.TEAL }) => (
     <div className={`flex items-center space-x-4 p-4 rounded-xl bg-[${COLORS.OFF_WHITE}] shadow-md border border-gray-100 transition-all duration-300 hover:shadow-lg hover:ring-2 ring-opacity-20 ring-[${COLORS.TEAL}]`}>
         <div className={`p-3 rounded-xl bg-opacity-10 flex-shrink-0`} style={{ background: colorHex + '1A'}}>
@@ -210,7 +189,6 @@ const DashboardScreen = () => {
     const safeNavigate = useCallback((screen, params) => {
         navigate(screen, params);
     }, [navigate]);
-    
     // --- Data Calculations ---
     const goalsCount = useMemo(() => pdpData?.currentMonth || 0, [pdpData]);
     const plansCount = useMemo(() => planningData?.okrs?.length || 0, [planningData]);
@@ -269,8 +247,6 @@ const DashboardScreen = () => {
     useEffect(() => {
         getDailyTip();
     }, [getDailyTip]);
-
-
     return (
         <div className={`p-8 space-y-8 bg-[${COLORS.LIGHT_GRAY}] min-h-screen`}>
         {/* Header with improved styling */}
@@ -349,7 +325,6 @@ const DashboardScreen = () => {
 
                 {/* Daily Tip (Gemini) - Aesthetic Upgrade */}
                 <Card title="Strategic Nudge" icon={Target} accent='NAVY' className="transition-all duration-300 hover:shadow-2xl hover:bg-white/95 relative group">
-                
                 <div className="flex items-center justify-between mb-4 relative z-10 -mt-3">
                     <button
                     className="rounded-full border border-gray-200 px-3 py-1 text-sm hover:bg-gray-100 flex items-center gap-1 transition-colors"
@@ -361,7 +336,6 @@ const DashboardScreen = () => {
                     Refresh
                     </button>
                 </div>
-                
                 {/* Styled container for the AI prose to look more intentional */}
                 <div className={`p-4 rounded-xl bg-[${COLORS.OFF_WHITE}] border border-gray-200 mt-3 shadow-inner`}>
                     <div className="prose prose-sm max-w-none relative z-10">
@@ -372,8 +346,6 @@ const DashboardScreen = () => {
                 </div>
                 </Card>
             </div>
-
-
             {/* Right Column (Executive Action Hub) */}
             <div className="lg:col-span-2 space-y-8">
 
@@ -406,7 +378,6 @@ const DashboardScreen = () => {
                         />
                     </div>
                 </Card>
-                
                 {/* EXECUTIVE ACTION HUB (Consolidated) - Aesthetic Upgrade */}
                 <Card title="Executive Action Hub" icon={MessageSquare} accent='ORANGE' className='shadow-2xl'>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

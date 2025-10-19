@@ -1,8 +1,9 @@
+import { useAppServices } from '../../services/useAppServices.jsx';
 // FINALIZED FILE: DailyPractice.jsx (Aesthetic Upgrade)
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import {
-  PlusCircle, ArrowLeft, X, Target, Clock, CheckCircle, BarChart3, CornerRightUp, AlertTriangle, Users, Lightbulb, Zap, Archive, MessageSquare, List, TrendingDown, TrendingUp, BookOpen, Crown, Cpu, Star, Trash2, HeartPulse, Trello
+PlusCircle, ArrowLeft, X, Target, Clock, CheckCircle, BarChart3, CornerRightUp, AlertTriangle, Users, Lightbulb, Zap, Archive, MessageSquare, List, TrendingDown, TrendingUp, BookOpen, Crown, Cpu, Star, Trash2, HeartPulse, Trello
 } from 'lucide-react';
 
 /* =========================================================
@@ -21,29 +22,7 @@ const COLORS = {
   TEXT: '#002E47',
   MUTED: '#4B5563',
 };
-
-
 // MOCK/UI COMPONENTS/UTILITIES (Defined for component self-reliance)
-const useAppServices = () => ({
-  commitmentData: {
-    active_commitments: [
-      { id: '1', text: 'Schedule 15 min for deep work planning', status: 'Committed', linkedGoal: 'OKR Q4: Launch MVP', linkedTier: 'T3', timeContext: 'Morning' },
-      { id: '2', text: 'Give one piece of specific, positive feedback', status: 'Pending', linkedGoal: 'Improve Feedback Skills', linkedTier: 'T4', timeContext: 'Post-Meeting' },
-      { id: '3', text: 'Review team risk mitigation plan', status: 'Missed', linkedGoal: 'Risk Mitigation Strategy', linkedTier: 'T5', timeContext: 'Afternoon', missedReason: 'Firefight' },
-      { id: '4', text: 'Clear Inbox', status: 'Pending', linkedGoal: 'Efficiency', linkedTier: 'T2', timeContext: 'Morning' },
-      { id: '5', text: 'Process SOP', status: 'Pending', linkedGoal: 'Process Mapping', linkedTier: 'T2', timeContext: 'Morning' },
-    ],
-    history: [{ date: '2025-10-14', score: '3/3' }],
-    reflection_journal: '',
-    resilience_log: { '2025-10-18': { energy: 7, focus: 8 } },
-  },
-  updateCommitmentData: async (data) => new Promise(resolve => setTimeout(resolve, 300)),
-  pdpData: { assessment: { goalPriorities: ['T3', 'T4', 'T5'] }, plan: [] },
-  callSecureGeminiAPI: async (payload) => ({ candidates: [{ content: { parts: [{ text: 'mock response' }] } }] }),
-  hasGeminiKey: () => true,
-  navigate: (screen, params) => console.log(`Navigating to ${screen} with params:`, params),
-});
-
 const Button = ({ children, onClick, disabled = false, variant = 'primary', className = '', ...rest }) => {
   let baseStyle = "px-6 py-3 rounded-xl font-semibold transition-all shadow-lg focus:outline-none focus:ring-4 text-white flex items-center justify-center";
   if (variant === 'primary') { baseStyle += ` bg-[${COLORS.TEAL}] hover:bg-[${COLORS.SUBTLE_TEAL}] focus:ring-[${COLORS.TEAL}]/50`; }
@@ -83,8 +62,6 @@ function calculateTotalScore(commitments) {
     const committedCount = commitments.filter(c => c.status === 'Committed').length;
     return { committed: committedCount, total };
   }
-
-
 /* =========================================================
    NEW FEATURE: Goal Drift Logic
 ========================================================= */
@@ -93,10 +70,8 @@ const useGoalDriftAnalysis = (activeCommitments) => {
     return useMemo(() => {
         const tacticalTiers = ['T1', 'T2'];
         const strategicTiers = ['T3', 'T4', 'T5'];
-        
         let tacticalCount = 0;
         let strategicCount = 0;
-        
         activeCommitments.forEach(c => {
             if (tacticalTiers.includes(c.linkedTier)) {
                 tacticalCount++;
@@ -104,10 +79,8 @@ const useGoalDriftAnalysis = (activeCommitments) => {
                 strategicCount++;
             }
         });
-        
         const total = tacticalCount + strategicCount;
         if (total === 0) return null;
-        
         const tacticalRatio = tacticalCount / total;
 
         if (tacticalRatio >= 0.6) {
@@ -119,7 +92,6 @@ const useGoalDriftAnalysis = (activeCommitments) => {
                 icon: TrendingDown,
             };
         }
-        
         return {
             isDrifting: false,
             ratio: Math.round(strategicCount / total * 100),
@@ -127,11 +99,8 @@ const useGoalDriftAnalysis = (activeCommitments) => {
             accent: 'TEAL',
             icon: TrendingUp,
         };
-        
     }, [activeCommitments]);
 };
-
-
 /* =========================================================
    ResilienceTracker (Aesthetic Upgrade)
 ========================================================= */
@@ -159,7 +128,6 @@ const ResilienceTracker = ({ dailyLog, setDailyLog, isSaving, handleSaveResilien
                     style={{ accentColor: COLORS.ORANGE }}
                 />
             </div>
-            
             <div className='mb-4'>
                 <p className='font-semibold text-[#002E47] flex justify-between'>
                     <span>Focus Level:</span>
@@ -179,20 +147,15 @@ const ResilienceTracker = ({ dailyLog, setDailyLog, isSaving, handleSaveResilien
         </Card>
     );
 };
-
-
 /**
  * DailyPracticeScreen: Main Scorecard View
  */
 export default function DailyPracticeScreen({ initialGoal, initialTier }) {
-  const { useAppServices: useAppServicesLocal } = { useAppServices: useAppServices };
-  const { commitmentData, updateCommitmentData, callSecureGeminiAPI, hasGeminiKey, pdpData, navigate } = useAppServicesLocal(); 
-  
+  const { commitmentData, updateCommitmentData, callSecureGeminiAPI, hasGeminiKey, pdpData, navigate } = useAppServices(); 
   const userCommitments = commitmentData?.active_commitments || [];
   const score = calculateTotalScore(userCommitments);
   const driftAnalysis = useGoalDriftAnalysis(userCommitments);
   const isPerfectScore = score.total > 0 && score.committed === score.total;
-  
   // Mock implementations for brevity, actual code contains full logic
   const [view, setView] = useState('scorecard'); 
   const [isSaving, setIsSaving] = useState(false);
@@ -210,7 +173,6 @@ export default function DailyPracticeScreen({ initialGoal, initialTier }) {
   // Final Render (Scorecard View)
   const renderView = () => {
     if (view === 'selector') return (/* CommitmentSelectorView */ null);
-    
     return (
           <div className={`p-8 bg-[${COLORS.LIGHT_GRAY}] min-h-screen`}>
             <h1 className={`text-3xl font-extrabold text-[${COLORS.NAVY}] mb-6`}>Daily Scorecard</h1>
@@ -218,13 +180,11 @@ export default function DailyPracticeScreen({ initialGoal, initialTier }) {
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
               <div className='lg:col-span-2'>
-                
                 {nudgeHtml && (
                     <Card title="Contextual Learning Nudge" icon={Lightbulb} accent='TEAL' className={`mb-6 border-4 border-dashed border-[${COLORS.TEAL}]/50 bg-[${COLORS.TEAL}]/10 shadow-xl`}>
                          <div dangerouslySetInnerHTML={{ __html: nudgeHtml }} />
                     </Card>
                 )}
-                
                 {driftAnalysis && (
                     <Card 
                         title="Goal Drift Analysis" 
@@ -236,12 +196,10 @@ export default function DailyPracticeScreen({ initialGoal, initialTier }) {
                         <p className='text-base font-medium text-gray-700' dangerouslySetInnerHTML={{__html: driftAnalysis.message}} />
                     </Card>
                 )}
-                
                 <div className={`p-3 mb-6 rounded-xl shadow-lg`} style={{ background: COLORS.NAVY, color: COLORS.OFF_WHITE }}>
                     <p className='text-xs font-semibold uppercase opacity-80'>Workflow Focus</p>
                     <p className='text-sm'>{predictedRisk.text}</p>
                 </div>
-                
                 <Card title="Current Commitments" icon={Target} accent='TEAL' className="mb-8 rounded-3xl shadow-2xl">
                     <div className='mb-4 flex justify-between items-center text-sm'>
                         <div className='font-semibold text-[#002E47]'>
@@ -265,7 +223,6 @@ export default function DailyPracticeScreen({ initialGoal, initialTier }) {
 
               <div className='lg:col-span-1 space-y-8'>
                   <ResilienceTracker dailyLog={resilienceLog} setDailyLog={setResilienceLog} isSaving={isSaving} handleSaveResilience={handleSaveResilience}/>
-                  
                   <Card 
                       title="Daily Risk Indicator" 
                       icon={predictedRisk.icon} 
@@ -274,12 +231,9 @@ export default function DailyPracticeScreen({ initialGoal, initialTier }) {
                   >
                       <p className='text-sm font-semibold text-[${COLORS.NAVY}]'>{predictedRisk.microTip}</p>
                   </Card>
-                  
                   <TierSuccessMap />
               </div>
             </div>
-
-
             <Card title="Reinforcement Journal" icon={Lightbulb} accent='NAVY' className={`rounded-3xl mt-8 bg-[${COLORS.NAVY}]/10 border-2 border-[${COLORS.NAVY}]/20 shadow-2xl`}>
               <p className="text-gray-700 text-sm mb-4">
                 Write your reflection below. How did executing (or missing) these leadership commitments impact your team's momentum and your executive presence?

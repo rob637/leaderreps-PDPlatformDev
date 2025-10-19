@@ -1,11 +1,11 @@
+import { useAppServices } from '../../services/useAppServices.jsx';
 // src/components/screens/QuickStartAccelerator.jsx
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import {
   Zap, ShieldCheck, ArrowLeft, Target, Briefcase, Clock, Users, CornerRightUp, X, Activity, Cpu, Eye, CheckCircle, AlertTriangle, Lightbulb
 } from 'lucide-react';
-import { useAppServices } from '../../services/useAppServices.jsx'; // Correct relative import
-
+// Correct relative import
 // --- MOCK UTILITIES (Replicated for component self-reliance) ---
 const IconMap = {
     Zap: Zap, ShieldCheck: ShieldCheck, Target: Target, Briefcase: Briefcase, Clock: Clock, Users: Users, CheckCircle: CheckCircle, AlertTriangle: AlertTriangle, Cpu: Cpu, Eye: Eye, Lightbulb: Lightbulb, Activity: Activity, CornerRightUp: CornerRightUp, ArrowLeft: ArrowLeft, X: X,
@@ -35,14 +35,11 @@ const LIS_MOCK_CRITIQUE = `## Leadership Identity Audit Score: 75/100
 
 **Refined LIS Example:**
 "I am a **dedicated anchor** who cultivates high-speed execution by maintaining **radical transparency** in all decisions, and **I grow trust** by actively seeking and acting on constructive criticism."`;
-
-
 /* =========================================================
    LISAuditorView (Step-by-Step LIS Creation)
 ========================================================= */
 const LISAuditorView = ({ setQuickStartView }) => {
     const { hasGeminiKey, callSecureGeminiAPI } = useAppServices();
-    
     // Initial draft from the source file
     const [lisDraft, setLisDraft] = useState('I am a dedicated leader who always tries to do the right thing for my team and my company. I believe in hard work.');
     const [isGenerating, setIsGenerating] = useState(false);
@@ -86,7 +83,6 @@ const LISAuditorView = ({ setQuickStartView }) => {
             setIsGenerating(false);
         }
     };
-    
     // Custom Card Component (Minimalist version for this file)
     const SimpleCard = ({ children, title, icon: Icon, className = '' }) => (
         <div className={`p-6 rounded-2xl border-2 shadow-xl bg-white ${className}`}>
@@ -115,7 +111,6 @@ const LISAuditorView = ({ setQuickStartView }) => {
                         className="w-full p-3 mt-4 border border-gray-300 rounded-xl focus:ring-[#47A88D] focus:border-[#47A88D] h-32" 
                         placeholder="e.g., 'I am a visionary, transparent, and challenging leader who cultivates trust by owning failures and rewarding courageous feedback.'"
                     ></textarea>
-                    
                     <button 
                         onClick={generateCritique} 
                         disabled={isGenerating || !lisDraft.trim()} 
@@ -147,14 +142,11 @@ const LISAuditorView = ({ setQuickStartView }) => {
         </div>
     );
 };
-
-
 /* =========================================================
    QuickStart Accelerator MAIN ROUTER
 ========================================================= */
 const QuickStartAcceleratorScreen = () => {
     const [view, setQuickStartView] = useState('quick-start-home');
-    
     // Core Sessions data (from original backup.txt logic)
     const sessions = [
         { id: 1, title: 'Delivering Effective Feedback', focus: 'CLEAR Framework & The Magic Ratio (5:1)', keyRationale: 'Feedback is the currency of growth. Master objectivity (SBI) and ensure positive reinforcement outweighs correction to build a high-trust team environment.', preWork: ['Watch Session 1 Prep Video', 'Complete Pre-Session Exercises', 'Complete Workout Prep'] },
@@ -192,11 +184,9 @@ const QuickStartAcceleratorScreen = () => {
                                 <div key={session.id} className="p-6 rounded-2xl border-l-8 border-[#002E47] shadow-lg bg-white">
                                     <h2 className='text-xl font-extrabold text-[#002E47] mb-2'>Session {session.id}: {session.title}</h2>
                                     <p className='text-md font-semibold text-[#002E47] mb-4 border-b border-gray-200 pb-2'>Why this session matters:</p>
-                                    
                                     <blockquote className="border-l-4 border-[#47A88D] pl-4 py-1 mb-4 text-sm italic text-gray-600">
                                         {session.keyRationale}
                                     </blockquote>
-                                    
                                     <div className="grid md:grid-cols-2 gap-4">
                                         <div>
                                             <h3 className="text-lg font-semibold text-[#47A88D] mb-2">Core Focus</h3>

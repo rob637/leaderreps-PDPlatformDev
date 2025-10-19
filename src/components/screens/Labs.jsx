@@ -1,3 +1,4 @@
+import { useAppServices } from '../../services/useAppServices.jsx';
 /* =========================================================
    CORRECTED FILE: Labs.jsx
    FIX: Encapsulated mock API call logic and all hook calls 
@@ -20,15 +21,12 @@ const MOCK_PRACTICE_SESSIONS = [
 // FIX: This function remains as a mock utility
 const MOCK_API_RESPONSE_LOGIC = (payload, model) => {
     const userQuery = payload.contents[0].parts[0].text;
-    
     // --- ENHANCED ACTIVE LISTENING CRITIQUE MOCK LOGIC ---
     if (userQuery.includes("Critique the following active listening responses")) {
         const paraphraseMatch = userQuery.match(/The manager's draft paraphrase is: \"(.*?)\"/);
         const inquiryMatch = userQuery.match(/The manager's draft open-ended question is: \"(.*?)\"/);
-        
         const userParaphrase = paraphraseMatch ? paraphraseMatch[1].trim() : 'a generic paraphrase';
         const userInquiry = inquiryMatch ? inquiryMatch[1].trim() : 'a generic question';
-        
         const paraphraseScore = userParaphrase.toLowerCase().includes('so you are saying') ? 95 : 75;
         const inquiryScore = userInquiry.includes('?') && !userInquiry.toLowerCase().includes('you agree') ? 88 : 65;
 
@@ -63,7 +61,6 @@ const MOCK_API_RESPONSE_LOGIC = (payload, model) => {
             `## Generated Scenario\n\n### Title: The High-Stakes Financial Audit\n\n### Description: A high-potential team member is consistently missing deadlines due to distraction, and is currently under pressure from a difficult family situation. This adaptation forces you to handle **personal boundaries and deflection** simultaneously.\n\n### Persona: The Emotional Reactor (Highly Resistant)` 
         }] } }] };
     }
-    
     const defaultResponse = userQuery.includes("Alex") ? 
         "I am finding this conversation difficult, manager. I need more empathy before I can commit to anything." : 
         "I'm not sure how to respond to that. Can you focus on the facts?";
@@ -73,21 +70,9 @@ const MOCK_API_RESPONSE_LOGIC = (payload, model) => {
 
 // FIX: The actual mock hook definition should be simple and return the necessary functions.
 // We must *not* call callSecureGeminiAPI() inside the mock itself, but only return a reference to it.
-const useAppServices = () => ({
-  commitmentData: { active_commitments: [], history: [], reflection_journal: '' },
-  updateCommitmentData: async (data) => new Promise(resolve => setTimeout(resolve, 300)),
-  planningData: { okrs: [], vision: '', mission: '' },
-  navigate: (view, params) => console.log(`Navigating to ${view} with params:`, params),
-  // FIX: This returns the MOCK_API_RESPONSE_LOGIC function reference, which is safe.
-  callSecureGeminiAPI: async (payload) => MOCK_API_RESPONSE_LOGIC(payload), 
-  hasGeminiKey: () => true,
-  GEMINI_MODEL: GEMINI_MODEL,
-});
 // FIX: We must use the original name (useAppServices) for the components to access it, 
 // or use the original name and call it inside the component functions.
 const useAppServicesOriginal = useAppServices;
-
-
 /* =========================================================
    HIGH-CONTRAST PALETTE
 ========================================================= */
@@ -169,7 +154,6 @@ const Card = ({ children, title, icon: Icon, className = '', onClick, accent = '
 
 const Tooltip = ({ content, children }) => {
     const [isVisible, setIsVisible] = useState(false);
-    
     return (
         <div 
             className="relative inline-block"
@@ -189,13 +173,11 @@ const Tooltip = ({ content, children }) => {
 
 const mdToHtml = async (markdown) => {
   let html = markdown;
-  
   html = html.replace(/^### (.*$)/gim, '<h3 class="text-lg font-extrabold text-[#47A88D] mt-4 mb-2">$1</h3>');
   html = html.replace(/^## (.*$)/gim, '<h2 class="text-2xl font-bold text-[#0B3B5B] border-b pb-1 mb-3 mt-6">$1</h2>');
   html = html.replace(/^# (.*$)/gim, '<h1 class="text-3xl font-extrabold text-[#E04E1B] mb-4">$1</h1>');
 
   html = html.replace(/\*\*(.*)\*\*/gim, '<strong>$1</strong>');
-  
   html = html.replace(/^\* (.*$)/gim, '<li class="text-sm text-gray-700">$1</li>');
   html = html.replace(/(\n<li.*<\/li>)+/gim, '<ul class="list-disc list-inside space-y-1 mb-4">$1</ul>');
 
@@ -203,11 +185,8 @@ const mdToHtml = async (markdown) => {
       if (match.trim() === '' || /<|>/g.test(match)) return match;
       return `<p class="text-gray-700 text-sm mb-4">${match.trim()}</p>`;
   });
-  
   return html;
 };
-
-
 const Message = ({ sender, text, isAI }) => (
   <div className={`flex mb-4 ${isAI ? 'justify-start' : 'justify-end'}`}>
     <div
@@ -286,7 +265,6 @@ ${fullConversation}
     return (
         <Card title="AI Follow-Up Coaching (Deep Reflection)" icon={Lightbulb} className='mt-8 bg-[#0B3B5B]/10 border-2 border-[#0B3B5B]/20'>
             <p className='text-sm text-gray-700 mb-4'>Ask the AI Coach for specific alternatives, missed opportunities, or clarification on your score.</p>
-            
             <div ref={followUpRef} className='h-64 overflow-y-auto p-3 bg-white rounded-xl border border-gray-300 mb-3'>
                  {followUpHistory.length === 0 ? (
                     <div className='text-gray-500 text-sm italic'>
@@ -339,8 +317,6 @@ const RolePlayCritique = ({ history, setView, preparedSBI, scenario, difficultyL
     const [userReflection, setUserReflection] = useState('');
     const [auditResult, setAuditResult] = useState(null);
     const [isAuditing, setIsAuditing] = useState(false);
-
-
     const extractScore = (critiqueText, auditName) => {
         const regex = new RegExp(`${auditName}.*?\\(Score:\\s*(\\d+)/100\\)`, 'i');
         const match = critiqueText.match(regex);
@@ -371,8 +347,6 @@ const RolePlayCritique = ({ history, setView, preparedSBI, scenario, difficultyL
         }
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [scoreBreakdown?.overall]); 
-
-
     useEffect(() => {
         (async () => {
             if (history.length < 5) {
@@ -380,7 +354,6 @@ const RolePlayCritique = ({ history, setView, preparedSBI, scenario, difficultyL
                 setIsGenerating(false);
                 return;
             }
-            
             if (!hasGeminiKey()) {
                 setCritique("## AI Critique Unavailable\n\n**ERROR**: The Gemini API Key is missing. AI Role-Play is unavailable.");
                 setIsGenerating(false);
@@ -393,7 +366,6 @@ const RolePlayCritique = ({ history, setView, preparedSBI, scenario, difficultyL
                 .join('\n');
 
             const systemInstruction = `You are a Senior Executive Coaching Auditor. Analyze the following conversation between a Manager ('You') and their report ('Alex'). Provide a clear score (out of 100) and structured feedback in Markdown, focusing on professional leadership skills.
-                
                 **Critique Structure:**
                 1.  **Overall Score (## Overall Score: X/100):** Provide a score out of 100 based on the manager's performance.
                 2.  **SBI Effectiveness (### SBI Effectiveness (Score: X/100)):** Did the manager effectively stick to objective facts (Situation/Behavior) and articulate the impact (Impact)? Provide a score.
@@ -412,7 +384,6 @@ const RolePlayCritique = ({ history, setView, preparedSBI, scenario, difficultyL
 
                 const result = await callSecureGeminiAPI(payload);
                 const aiText = result?.candidates?.[0]?.content?.parts?.[0]?.text || "Critique generation failed. Check API connection.";
-                
                 const overallScore = extractScore(aiText, 'Overall Score');
                 const sbiScore = extractScore(aiText, 'SBI Effectiveness');
                 const empathyScore = extractScore(aiText, 'Active Listening & Empathy');
@@ -446,9 +417,7 @@ const RolePlayCritique = ({ history, setView, preparedSBI, scenario, difficultyL
 
     const handleCreateCommitment = async () => {
         if (!keyTakeaway || !updateCommitmentData) return;
-        
         const commitmentText = `Practice the skill: "${keyTakeaway}" (From ${scenario.title} Role-Play).`;
-        
         const newCommitment = { 
             id: String(Date.now()),
             text: commitmentText, 
@@ -484,15 +453,12 @@ const RolePlayCritique = ({ history, setView, preparedSBI, scenario, difficultyL
         const systemInstruction = `You are a world-class Executive Coach assessing a user's capacity for self-correction. Analyze the user's reflection against the provided AI critique. Determine if the user's reflection correctly identifies the root cause of their low score (if applicable) and if their proposed next steps align with the 'Next Practice Point' from the critique. The output MUST be a clear Markdown response.`;
 
         const userQuery = `Perform a Reflective Analysis.
-        
         ---
         **AI Critique (The Ground Truth):**
         ${critique}
         ---
-        
         **User's Reflection on Critique:**
         ${userReflection.trim()}
-        
         Provide your analysis focusing on:
         1. Analysis: Did the user identify the correct problem?
         2. Alignment: Does the user's plan match the critique's 'Next Practice Point'?
@@ -550,8 +516,6 @@ const RolePlayCritique = ({ history, setView, preparedSBI, scenario, difficultyL
     const difficultyMultiplier = difficultyLevel / 100 + 1;
     const globalAverage = Math.round(75 + (difficultyMultiplier * 5)); 
     const benchmarkDifference = (scoreBreakdown?.overall || 0) - globalAverage;
-
-
     return (
         <div className='space-y-6'>
             <div className='grid lg:grid-cols-4 gap-6'>
@@ -606,18 +570,15 @@ const RolePlayCritique = ({ history, setView, preparedSBI, scenario, difficultyL
                     <p className='text-sm text-gray-500'>Score breakdown is not available for this session.</p>
                 )}
             </Card>
-            
             {/* Full Critique and Accountability Actions */}
             <Card title="AI Coach Full Audit" icon={CheckCircle} className="bg-[#FCFCFA] border-4 border-[#219E8B]">
                 <div className="prose max-w-none prose-h2:text-4xl prose-h2:text-[#E04E1B] prose-h2:font-extrabold prose-h3:text-[#219E8B] prose-p:text-gray-700 prose-ul:space-y-2">
                     <div dangerouslySetInnerHTML={{ __html: critiqueHtml }} />
                 </div>
-                
                 {/* Reflective Analysis Section */}
                 <div className='mt-8 pt-6 border-t border-gray-200'>
                     <h3 className='text-xl font-bold text-[#0B3B5B] mb-3 flex items-center'><BookOpen className='w-5 h-5 mr-2 text-[#E04E1B]'/> Post-Critique Reflective Analysis</h3>
                     <p className='text-sm text-gray-700 mb-3'>Write a brief reflection on the critique: **What was your core mistake, and how will you correct it in your next session?**</p>
-                    
                     <textarea 
                         value={userReflection}
                         onChange={(e) => {setUserReflection(e.target.value); setAuditResult(null);}}
@@ -625,7 +586,6 @@ const RolePlayCritique = ({ history, setView, preparedSBI, scenario, difficultyL
                         placeholder="My reflection: I realize I got defensive when Alex deflected, and I failed to pause and paraphrase. Next time, I will start with a validation phrase, 'I hear that you feel unfairness,' before redirecting to the facts."
                         disabled={isAuditing}
                     />
-                    
                     {auditResult && (
                         <Card title="Your Reflection Audit" icon={Eye} className='bg-white shadow-lg border-l-4 border-dashed border-[#219E8B]'>
                             <div className="prose max-w-none prose-h2:text-[#0B3B5B] prose-h3:text-[#219E8B]">
@@ -641,7 +601,6 @@ const RolePlayCritique = ({ history, setView, preparedSBI, scenario, difficultyL
                         }
                     </Button>
                 </div>
-                
                 {keyTakeaway && (
                     <div className='mt-8 pt-6 border-t border-gray-200'>
                         <h3 className='text-xl font-bold text-[#0B3B5B] mb-3 flex items-center'><TrendingUp className='w-5 h-5 mr-2 text-[#219E8B]'/> Practice Commitment Planner</h3>
@@ -651,17 +610,13 @@ const RolePlayCritique = ({ history, setView, preparedSBI, scenario, difficultyL
                         </Button>
                     </div>
                 )}
-                
                 <Button onClick={() => navigate('coaching-lab-home')} variant='outline' className='mt-8 w-full'>
                     Return to Coaching Lab Home
                 </Button>
             </Card>
-            
             <FollowUpCoach history={history} setView={navigate} />
         </div>
     );
-
-
 };
 
 // --- ROLE PLAY SIMULATOR VIEW (No changes needed) ---
@@ -677,15 +632,12 @@ const RolePlayView = ({ scenario, setCoachingLabView, preparedSBI, difficultyLev
     const [sbiDelivered, setSbiDelivered] = useState(false);
     const [confidenceTip, setConfidenceTip] = useState(null);
     const [isPrimingModalVisible, setIsPrimingModalVisible] = useState(true);
-    
     // Priming Modal State
     const [stressLevel, setStressLevel] = useState(50);
     const [intentionalMindset, setIntentionalMindset] = useState('Non-Judgmental');
     const [mindsetNudge, setMindsetNudge] = useState(null);
     const [isPrimingLoading, setIsPrimingLoading] = useState(false);
-    
     const chatRef = React.useRef(null);
-    
     const resistanceFactor = Math.floor(difficultyLevel / 25); 
 
     useEffect(() => {
@@ -693,13 +645,11 @@ const RolePlayView = ({ scenario, setCoachingLabView, preparedSBI, difficultyLev
             chatRef.current.scrollTop = chatRef.current.scrollHeight;
         }
     }, [chatHistory]);
-    
     useEffect(() => {
         if (hasGeminiKey() && scenario && !isPrimingModalVisible) {
             const fetchTip = async () => {
                 const tension = difficultyLevel < 25 ? 'Low' : difficultyLevel < 75 ? 'Medium' : 'High';
                 const userQuery = `Generate a Scenario-Specific Confidence Builder Tip (1 sentence max) for this situation: Scenario: ${scenario.title}. Persona: ${scenario.persona}. Tension: ${tension}. Focus the tip on the manager's opening mindset or first reply. Confidence Builder Tip:`;
-                
                 try {
                     const payload = {
                         contents: [{ role: "user", parts: [{ text: userQuery }] }],
@@ -727,7 +677,6 @@ const RolePlayView = ({ scenario, setCoachingLabView, preparedSBI, difficultyLev
         setIsGenerating(true);
 
         const sbiPrompt = preparedSBI ? `\nThe manager prepared the following SBI statement to use as a basis for feedback: ${preparedSBI}\n` : '';
-        
         let difficultyInstruction;
         if (resistanceFactor >= 3) {
              difficultyInstruction = "Be highly resistant, skeptical, and emotionally charged (High Tension).";
@@ -740,7 +689,6 @@ const RolePlayView = ({ scenario, setCoachingLabView, preparedSBI, difficultyLev
         }
 
         const systemInstruction = `You are a direct report named 'Alex'. You embody the persona: ${scenario.persona}. Your current situation is: "${scenario.description}". The user is your manager. ${sbiPrompt}
-        
         **Difficulty Instruction:** ${difficultyInstruction}
 
         Your task is to respond to the user's input, maintaining your ${AI_PERSONA} persona and tone. Be realistic—don't resolve the conflict immediately. After 4-5 turns, you may begin to soften only if the manager demonstrates effective listening and SBI feedback. Keep your responses concise (2-3 sentences max).
@@ -788,11 +736,9 @@ const RolePlayView = ({ scenario, setCoachingLabView, preparedSBI, difficultyLev
         const newHistory = [...chatHistory, newUserMessage];
         setChatHistory(newHistory);
         setInputText('');
-        
         if (!conversationStarted) {
             setConversationStarted(true);
         }
-        
         if (preparedSBI && !sbiDelivered) {
              const sbiMatch = preparedSBI.split('.').some(part => newUserMessage.text.includes(part.trim().substring(0, 10)));
              if (sbiMatch) {
@@ -815,9 +761,7 @@ const RolePlayView = ({ scenario, setCoachingLabView, preparedSBI, difficultyLev
     const handlePrimingCheckIn = async () => {
         setIsPrimingLoading(true);
         const GEMINI_MODEL_LOCAL = useAppServicesOriginal().GEMINI_MODEL; // FIX: Access inside function
-        
         const userQuery = `Generate a 1-sentence Priming Nudge based on this self-assessment: Stress: ${stressLevel}%. Mindset: ${intentionalMindset}. The scenario is ${scenario.title} where Alex is ${scenario.persona}. Priming Nudge:`;
-        
         try {
             const payload = {
                 contents: [{ role: "user", parts: [{ text: userQuery }] }],
@@ -834,7 +778,6 @@ const RolePlayView = ({ scenario, setCoachingLabView, preparedSBI, difficultyLev
             setIsPrimingModalVisible(false);
         }
     };
-    
     if (isPrimingModalVisible) {
         return (
             <div className="fixed inset-0 bg-[#0B3B5B]/90 z-50 flex items-center justify-center p-4">
@@ -871,14 +814,11 @@ const RolePlayView = ({ scenario, setCoachingLabView, preparedSBI, difficultyLev
                             <option>Fact-Driven</option>
                         </select>
                     </div>
-                    
                     {mindsetNudge && (
                          <div className='p-3 my-4 bg-[#219E8B]/10 rounded-xl text-sm font-medium border border-[#219E8B]'>
                             <Lightbulb className='w-4 h-4 inline mr-2 text-[#219E8B]'/> **Mindset Nudge:** {mindsetNudge}
                         </div>
                     )}
-
-
                     <Button onClick={handlePrimingCheckIn} disabled={isPrimingLoading} className='mt-6 w-full'>
                         {isPrimingLoading ? 'Analyzing State...' : 'Confirm Mindset & Launch Session'}
                     </Button>
@@ -886,8 +826,6 @@ const RolePlayView = ({ scenario, setCoachingLabView, preparedSBI, difficultyLev
             </div>
         );
     }
-    
-
     if (sessionEnded) {
         return (
             <div className='p-8'>
@@ -902,8 +840,6 @@ const RolePlayView = ({ scenario, setCoachingLabView, preparedSBI, difficultyLev
             </div>
         );
     }
-
-
     return (
         <div className="p-8">
             <h1 className="text-3xl font-extrabold text-[#0B3B5B] mb-4">Role-Play Simulator: {scenario.title}</h1>
@@ -911,16 +847,13 @@ const RolePlayView = ({ scenario, setCoachingLabView, preparedSBI, difficultyLev
             <Button onClick={() => handleSaveSessionAndCritique(chatHistory)} variant="secondary" className="mb-8 bg-[#E04E1B] border-red-500 hover:bg-red-700">
                 <AlertTriangle className="w-5 h-5 mr-2" /> End Session & Get Critique
             </Button>
-            
             <div className='flex flex-col lg:flex-row space-y-6 lg:space-y-0 lg:space-x-6'>
                 <div className='flex-1 bg-[#FCFCFA] border border-gray-300 rounded-2xl shadow-lg flex flex-col h-[500px]'>
-                    
                     {confidenceTip && !isGenerating && chatHistory.length < 2 && (
                         <div className="p-3 bg-[#219E8B]/10 text-sm text-[#0B3B5B] border-b border-[#219E8B]/30 font-medium">
                             <Lightbulb className='w-4 h-4 inline mr-2 text-[#219E8B]'/> **Pre-Session Nudge:** {confidenceTip}
                         </div>
                     )}
-                    
                     <div ref={chatRef} className='flex-1 overflow-y-auto p-4'>
                         {chatHistory.map((msg, index) => (
                             !msg.system && <Message key={index} sender={msg.sender} text={msg.text} isAI={msg.isAI} />
@@ -971,7 +904,6 @@ const RolePlayView = ({ scenario, setCoachingLabView, preparedSBI, difficultyLev
 
                         <p className='text-sm text-gray-700 font-semibold mb-2'>Scenario Description:</p>
                         <p className="text-sm text-gray-600">{scenario.description}</p>
-                        
                         {preparedSBI && (
                              <div className='mt-4 pt-2 border-t border-gray-300'>
                                 <h4 className='font-bold text-[#219E8B] mb-2 flex items-center'><ShieldCheck className='w-4 h-4 mr-1'/> Prepared SBI Focus:</h4>
@@ -985,7 +917,6 @@ const RolePlayView = ({ scenario, setCoachingLabView, preparedSBI, difficultyLev
                             <li>Lead with empathy, not accusation.</li>
                             <li>Steer toward a forward-looking action plan.</li>
                         </ul>
-                        
                         <h4 className='font-bold text-[#E04E1B] mt-4 mb-2 border-t pt-2'>Tension Level:</h4>
                         <div className='text-sm text-gray-700 font-semibold'>
                             {difficultyLevel < 25 ? 'Low (Collaborative)' : difficultyLevel < 75 ? 'Medium (Defensive)' : 'High (Resistant)'}
@@ -1010,13 +941,11 @@ const LeanFeedbackPrepView = ({ setCoachingLabView, setPreparedSBI }) => {
     const [critique, setCritique] = useState(null);
     const [critiqueHtml, setCritiqueHtml] = useState('');
     const [refinedFeedback, setRefinedFeedback] = useState(null); 
-    
     const canAnalyze = !!situation && !!behavior && !!impact && hasGeminiKey();
 
     useEffect(() => {
         if (!critique) { setCritiqueHtml(''); setRefinedFeedback(null); return; }
         (async () => setCritiqueHtml(await mdToHtml(critique)))();
-        
         const match = critique.match(/\*\*(Refined Feedback|Refined SBI)\*\*:?\s*([^*]+)/i);
         if (match && match[2]) {
             const finalRefined = match[2].trim().replace(/\.$/, '');
@@ -1059,30 +988,22 @@ const LeanFeedbackPrepView = ({ setCoachingLabView, setPreparedSBI }) => {
             setIsGenerating(false);
         }
     };
-    
-
     return (
         <div className="p-8">
             <h1 className="text-3xl font-extrabold text-[#0B3B5B] mb-4">Lean Feedback Prep: Instant SBI Audit</h1>
             <p className="text-lg text-gray-600 mb-6 max-w-3xl">Get immediate AI critique and refinement for your real-world feedback drafts. This tool prioritizes speed and clarity for crucial conversations.</p>
-            
             <Button onClick={() => setCoachingLabView('coaching-lab-home')} variant="outline" className="mb-8">
                 <ArrowLeft className="w-5 h-5 mr-2" /> Back to Coaching Lab
             </Button>
-            
             <div className='flex flex-col lg:flex-row space-y-8 lg:space-y-0 lg:space-x-8'>
-                
                 {/* LEFT COLUMN: Input */}
                 <div className='lg:w-1/2 space-y-6'>
                     <Card title="Draft Your SBI Feedback" icon={Briefcase} accent="TEAL">
                         <p className="text-gray-700 text-sm mb-4">Input the specific, objective details of the situation you need to address.</p>
-                        
                         <label className="block text-sm font-medium text-[#0B3B5B] mt-3 mb-1">Situation (S): When/Where did it happen?</label>
                         <textarea value={situation} onChange={(e) => setSituation(e.target.value)} className="w-full p-2 border border-gray-300 rounded-lg h-14 text-sm" placeholder="e.g., 'During the team stand-up last Tuesday...'"></textarea>
-                        
                         <label className="block text-sm font-medium text-[#0B3B5B] mt-3 mb-1">Behavior (B): What observable action did they take?</label>
                         <textarea value={behavior} onChange={(e) => setBehavior(e.target.value)} className="w-full p-2 border border-gray-300 rounded-lg h-14 text-sm" placeholder="e.g., '...you presented the data without checking your sources.'"></textarea>
-                        
                         <label className="block text-sm font-medium text-[#0B3B5B] mt-3 mb-1">Impact (I): What was the consequence?</label>
                         <textarea value={impact} onChange={(e) => setImpact(e.target.value)} className="w-full p-2 border border-gray-300 rounded-lg h-14 text-sm" placeholder="e.g., '...which led to incorrect projections being shared with the client.'"></textarea>
 
@@ -1103,7 +1024,6 @@ const LeanFeedbackPrepView = ({ setCoachingLabView, setPreparedSBI }) => {
                             )}
                         </Button>
                     </Card>
-                    
                     {refinedFeedback && (
                         <Card title="Final Refined Feedback" icon={ShieldCheck} accent="ORANGE">
                             <h4 className='font-bold text-[#0B3B5B] mb-2'>Ready for Use:</h4>
@@ -1138,16 +1058,13 @@ const LeanFeedbackPrepView = ({ setCoachingLabView, setPreparedSBI }) => {
 // --- PRACTICE LOG VIEW (Integrated Mock Session Data) ---
 const PracticeLogView = ({ setCoachingLabView }) => {
     const { navigate } = useAppServicesOriginal();
-    
     return (
         <div className="p-8">
             <h1 className="text-3xl font-extrabold text-[#0B3B5B] mb-4">Practice Log: History & Growth</h1>
             <p className="text-lg text-gray-600 mb-6 max-w-3xl">Review your past Role-Play sessions, see your scores, and track your progress against key takeaways.</p>
-            
             <Button onClick={() => setCoachingLabView('coaching-lab-home')} variant="outline" className="mb-8">
                 <ArrowLeft className="w-5 h-5 mr-2" /> Back to Coaching Lab
             </Button>
-            
             <div className="space-y-4">
                 {MOCK_PRACTICE_SESSIONS.map(session => (
                     <Card key={session.id} title={`${session.title} (${session.score}%)`} icon={BarChart3} className="border-l-4 border-[#2563EB] flex justify-between items-center" onClick={() => console.log("Navigate to detailed critique for session", session.id)}>
@@ -1163,8 +1080,6 @@ const PracticeLogView = ({ setCoachingLabView }) => {
         </div>
     );
 };
-
-
 // --- SCENARIO PREP VIEW (No changes needed) ---
 const ScenarioPreparationView = ({ scenario, setCoachingLabView, setPreparedSBI }) => {
     // FIX: Access hook inside component
@@ -1181,14 +1096,12 @@ const ScenarioPreparationView = ({ scenario, setCoachingLabView, setPreparedSBI 
     const [critiqueHtml, setCritiqueHtml] = useState('');
     const [refinedFeedback, setRefinedFeedback] = useState(null); 
     const [currentStep, setCurrentStep] = useState(1);
-    
     const canAnalyze = !!situation && !!behavior && !!impact && hasGeminiKey();
     const isPrepComplete = !!objective && !!refinedFeedback;
 
     useEffect(() => {
         if (!critique) { setCritiqueHtml(''); setRefinedFeedback(null); return; }
         (async () => setCritiqueHtml(await mdToHtml(critique)))();
-        
         const match = critique.match(/\*\*(Refined Feedback|Refined SBI)\*\*:?\s*([^*]+)/i);
         if (match && match[2]) {
             const finalRefined = match[2].trim().replace(/\.$/, '');
@@ -1235,7 +1148,6 @@ const ScenarioPreparationView = ({ scenario, setCoachingLabView, setPreparedSBI 
             setIsGenerating(false);
         }
     };
-    
     if (!scenario) {
         return (
         <div className="p-8">
@@ -1251,7 +1163,6 @@ const ScenarioPreparationView = ({ scenario, setCoachingLabView, setPreparedSBI 
     <div className="p-8">
         <h1 className="text-3xl font-extrabold text-[#0B3B5B] mb-4">Prepare for: {scenario.title}</h1>
         <p className="text-lg text-gray-600 mb-6 max-w-3xl">Target: Alex, **{scenario.persona}** | Focus: {scenario.description}</p>
-        
         <Button onClick={() => setCoachingLabView('scenario-library')} variant="outline" className="mb-8">
             <ArrowLeft className="w-5 h-5 mr-2" /> Back to Scenarios
         </Button>
@@ -1279,7 +1190,6 @@ const ScenarioPreparationView = ({ scenario, setCoachingLabView, setPreparedSBI 
                         Current Difficulty: {difficultyLevel < 25 ? 'Low (Collaborative)' : difficultyLevel < 75 ? 'Medium (Defensive)' : 'High (Resistant)'}
                     </div>
                 </Card>
-                
                 <Card title="Step 1: Define Your Objective" icon={Target} className={currentStep === 1 ? 'border-4 border-dashed border-[#219E8B]' : 'opacity-70'}>
                     <p className="text-gray-700 text-sm">What is the **one critical outcome** you want? What measurable commitment, change, or decision will constitute success?</p>
                     <textarea 
@@ -1293,13 +1203,10 @@ const ScenarioPreparationView = ({ scenario, setCoachingLabView, setPreparedSBI 
 
                 <Card title="Step 2: Draft SBI Feedback" icon={Briefcase} className={currentStep === 2 ? 'border-4 border-dashed border-[#219E8B]' : 'opacity-70'}>
                     <p className="text-gray-700 text-sm mb-4">Draft the specific, objective feedback using the **SBI** model.</p>
-                    
                     <label className="block text-sm font-medium text-[#0B3B5B] mt-3 mb-1">Situation (S): When/Where did it happen?</label>
                     <textarea value={situation} onChange={(e) => { setSituation(e.target.value); setCurrentStep(2); }} className="w-full p-2 border border-gray-300 rounded-lg h-14 text-sm" placeholder="e.g., 'During the team stand-up last Tuesday...'"></textarea>
-                    
                     <label className="block text-sm font-medium text-[#0B3B5B] mt-3 mb-1">Behavior (B): What observable action did they take?</label>
                     <textarea value={behavior} onChange={(e) => { setBehavior(e.target.value); setCurrentStep(2); }} className="w-full p-2 border border-gray-300 rounded-lg h-14 text-sm" placeholder="e.g., '...you presented the data without checking your sources.'"></textarea>
-                    
                     <label className="block text-sm font-medium text-[#0B3B5B] mt-3 mb-1">Impact (I): What was the consequence?</label>
                     <textarea value={impact} onChange={(e) => { setImpact(e.target.value); setCurrentStep(2); }} className="w-full p-2 border border-gray-300 rounded-lg h-14 text-sm" placeholder="e.g., '...which led to incorrect projections being shared with the client.'"></textarea>
 
@@ -1323,7 +1230,6 @@ const ScenarioPreparationView = ({ scenario, setCoachingLabView, setPreparedSBI 
 
                 <Card title="Step 3: Review & Launch" icon={CheckCircle} className={currentStep === 3 ? 'border-4 border-dashed border-green-500 bg-green-50' : 'opacity-70'}>
                     <p className="text-gray-700 text-sm mb-4">Final preparation check. Are you ready to enter the simulation?</p>
-                    
                     <div className='p-3 bg-white rounded-lg border border-gray-200'>
                         <h4 className='font-bold text-[#0B3B5B] mb-1'>Objective:</h4>
                         <p className='text-sm text-gray-700 italic'>{objective || 'Objective not yet set.'}</p>
@@ -1343,8 +1249,6 @@ const ScenarioPreparationView = ({ scenario, setCoachingLabView, setPreparedSBI 
                     </Button>
                 </Card>
             </div>
-
-
             {/* RIGHT COLUMN: AI Feedback Panel */}
             <div className='lg:w-1/3'>
                 {critiqueHtml && (
@@ -1382,29 +1286,24 @@ const ActiveListeningView = ({ setCoachingLabView }) => {
     const [critique, setCritique] = useState(null);
     const [critiqueHtml, setCritiqueHtml] = useState('');
     const [isGenerating, setIsGenerating] = useState(false);
-    
     const [rewrite, setRewrite] = useState('');
     const [rewriteAudit, setRewriteAudit] = useState(null);
     const [isRewriting, setIsRewriting] = useState(false);
-    
     const handleChange = (e) => {
         setResponses({ ...responses, [e.target.name]: e.target.value });
         setCritique(null);
         setCritiqueHtml('');
         setRewriteAudit(null);
     };
-    
     useEffect(() => {
         if (!critique) { setCritiqueHtml(''); return; }
         (async () => setCritiqueHtml(await mdToHtml(critique)))();
     }, [critique]);
-    
     const getScore = (critiqueText, auditName) => {
         const regex = new RegExp(`${auditName}.*?\\(Score:\\s*(\\d+)/100\\)`, 'i');
         const match = critiqueText.match(regex);
         return match ? parseInt(match[1], 10) : null;
     };
-    
     const handleSubmit = async () => {
         if (!responses.q1.trim() || !responses.q2.trim()) {
             console.warn("Please provide a response for both prompts before submitting for coach feedback.");
@@ -1453,7 +1352,6 @@ Critique Guidelines (Use Markdown):
             setIsGenerating(false);
         }
     };
-    
     // NEW: Handle Rewrite Challenge Submission
     const handleRewriteAudit = async () => {
         if (!rewrite.trim() || !critique || isRewriting) return;
@@ -1464,13 +1362,9 @@ Critique Guidelines (Use Markdown):
         const systemPrompt = "You are an AI auditor. The user has rewritten their response to a paraphrase prompt after receiving feedback. Judge the rewritten response against the core principles of empathy and non-judgmental confirmation. Score the final result out of 100 and provide concise analysis.";
 
         const userQuery = `Audit the Rewritten Response. The original prompt was the employee saying: "I feel overwhelmed by the deadlines and the number of meetings this week." 
-        
         The user's Rewritten Response is: "${rewrite.trim()}" 
-        
         The original AI Critique stated: [${critique.substring(0, 100)}...].
-        
         Score the rewritten response out of 100 and provide analysis.`;
-        
         try {
             const payload = {
                 contents: [{ role: "user", parts: [{ text: userQuery }] }],
@@ -1489,12 +1383,9 @@ Critique Guidelines (Use Markdown):
             setIsRewriting(false);
         }
     };
-
-
     const paraphraseScore = critique ? getScore(critique, 'The Paraphrase Audit') : null;
     const inquiryScore = critique ? getScore(critique, 'The Inquiry Audit') : null;
     const totalScore = (paraphraseScore !== null && inquiryScore !== null) ? Math.round((paraphraseScore + inquiryScore) / 2) : null;
-    
     return (
     <div className="p-8">
     <h1 className="text-3xl font-extrabold text-[#0B3B5B] mb-4">Active Listening & Reflection Prompts</h1>
@@ -1502,7 +1393,6 @@ Critique Guidelines (Use Markdown):
     <Button onClick={() => setCoachingLabView('coaching-lab-home')} variant="outline" className="mb-8">
     <ArrowLeft className="w-5 h-5 mr-2" /> Back to Coaching Lab
     </Button>
-    
       <div className="space-y-8">
         <Card title="Reflection 1: The Paraphrase (Confirming Understanding)" icon={Mic}>
           <p className="text-gray-700 mb-3">**Scenario:** A direct report just told you, "I feel overwhelmed by the deadlines and the number of meetings this week." How would you **paraphrase** their statement back to them? <span className='font-semibold text-[#219E8B]'>(Rule: Must not offer a solution or advice.)</span></p>
@@ -1513,7 +1403,6 @@ Critique Guidelines (Use Markdown):
                </div>
           )}
         </Card>
-    
         <Card title="Reflection 2: Open-Ended Inquiry (Inviting Depth)" icon={Mic}>
           <p className="text-gray-700 mb-3">**Scenario:** Your team has just experienced a major setback on a flagship project. They are visibly defeated. What **open-ended question** would you use to invite them to share their feelings and insights, showing empathy and psychological safety?</p>
           <textarea name="q2" value={responses.q2} onChange={handleChange} className="w-full p-3 border border-gray-300 rounded-xl focus:ring-[#219E8B] focus:border-[#219E8B] h-24" placeholder="Draft your open-ended question here..."></textarea>
@@ -1524,7 +1413,6 @@ Critique Guidelines (Use Markdown):
           )}
         </Card>
       </div>
-    
         <Tooltip
             content={hasGeminiKey() 
                 ? "Submits your responses to the AI Coach for structured critique." 
@@ -1540,7 +1428,6 @@ Critique Guidelines (Use Markdown):
                 ) : 'Submit for Coach Feedback'}
             </Button>
         </Tooltip>
-      
       {critiqueHtml && (
         <Card accent="TEAL" title="Active Listening Auditor Feedback" icon={CheckCircle} className="mt-8 bg-[#0B3B5B]/10 border border-[#0B3B5B]/20 rounded-3xl">
            {totalScore !== null && (
@@ -1551,12 +1438,10 @@ Critique Guidelines (Use Markdown):
           <div className="prose max-w-none prose-h2:text-[#0B3B5B] prose-h2:border-b prose-h2:pb-2 prose-h3:text-[#219E8B] prose-p:text-gray-700 prose-ul:space-y-2">
             <div dangerouslySetInnerHTML={{ __html: critiqueHtml }} />
           </div>
-          
           {/* NEW FEATURE: Rewrite Challenge */}
           <div className='mt-8 pt-6 border-t border-gray-200'>
                 <h3 className='text-xl font-bold text-[#0B3B5B] mb-3 flex items-center'><CornerRightUp className='w-5 h-5 mr-2 text-[#E04E1B]'/> Rewrite Challenge (Self-Correction)</h3>
                 <p className='text-sm text-gray-700 mb-3'>Based on the AI's critique, rewrite your **Paraphrase** (Reflection 1) to correct your mistake. Focus on non-judgmental confirmation.</p>
-                
                 <textarea 
                     value={rewrite}
                     onChange={(e) => {setRewrite(e.target.value); setRewriteAudit(null);}}
@@ -1564,7 +1449,6 @@ Critique Guidelines (Use Markdown):
                     placeholder="Rewrite your perfect paraphrase here..."
                     disabled={isRewriting}
                 />
-                
                 {rewriteAudit && (
                     <Card title="Final Audit Result" icon={Eye} className='bg-white shadow-lg border-l-4 border-dashed border-[#219E8B]'>
                         <div className="prose max-w-none prose-h2:text-[#0B3B5B] prose-h3:text-[#219E8B]">
@@ -1583,8 +1467,6 @@ Critique Guidelines (Use Markdown):
         </Card>
       )}
     </div>
-    
-    
     );
 };
 
@@ -1690,7 +1572,6 @@ const DynamicScenarioGenerator = ({ setCoachingLabView, setSelectedScenario }) =
     const [modifier, setModifier] = useState('');
     const [modifiedScenario, setModifiedScenario] = useState(baseScenarios[0]);
     const [isGenerating, setIsGenerating] = useState(false);
-    
     const selectedBase = useMemo(() => baseScenarios.find(s => s.id === selectedBaseId) || baseScenarios[0], [selectedBaseId]);
 
     const handleGenerate = async () => {
@@ -1698,17 +1579,12 @@ const DynamicScenarioGenerator = ({ setCoachingLabView, setSelectedScenario }) =
         setModifiedScenario(null);
 
         const systemPrompt = "You are an expert scenario designer for executive coaching. Given a base scenario and a modifier, generate a single, highly realistic and challenging scenario in Markdown format. The persona must be a variation of the base persona, adapted to the modifier. Strictly provide the output using the structure below. Do not add any extra text or conversation.";
-        
         const userQuery = `Base Scenario: ${selectedBase.title} - ${selectedBase.description} (Persona: ${selectedBase.persona}).
         Modifier: ${modifier}.
         Generate the new scenario, incorporating the modifier into the description and title. Use this exact Markdown structure:
-        
         ## Generated Scenario
-        
         ### Title: The [Modified Title]
-        
         ### Description: [Full, compelling description incorporating the modifier's challenge]
-        
         ### Persona: The [Modified Persona]`;
 
         try {
@@ -1720,7 +1596,6 @@ const DynamicScenarioGenerator = ({ setCoachingLabView, setSelectedScenario }) =
 
             const result = await callSecureGeminiAPI(payload);
             const aiText = result?.candidates?.[0]?.content?.parts?.[0]?.text || "Generation failed.";
-            
             const titleMatch = aiText.match(/### Title: (.*)/);
             const descMatch = aiText.match(/### Description: (.*)/);
             const personaMatch = aiText.match(/### Persona: (.*)/);
@@ -1811,7 +1686,6 @@ const DynamicScenarioGenerator = ({ setCoachingLabView, setSelectedScenario }) =
                         }
                     </Button>
                 </div>
-                
                 {modifiedScenario && (
                     <Card title="Generated Scenario Preview" icon={Info} className='mt-6 bg-[#219E8B]/10 border-2 border-[#219E8B]/20'>
                         <h4 className='text-lg font-bold text-[#0B3B5B]'>{modifiedScenario.title}</h4>
@@ -1827,12 +1701,9 @@ const DynamicScenarioGenerator = ({ setCoachingLabView, setSelectedScenario }) =
         </div>
     );
 };
-
-
 // --- SCENARIO LIBRARY VIEW (No changes needed) ---
 const ScenarioLibraryView = ({ setCoachingLabView, setSelectedScenario }) => {
     const [isDynamicGeneratorVisible, setIsDynamicGeneratorVisible] = useState(false);
-    
     const scenarios = [
         { id: 1, title: 'The Underperformer', description: 'A high-potential team member is consistently missing deadlines due to distraction.', persona: 'The Deflector', difficultyLevel: 60 },
         { id: 2, title: 'The Boundary Pusher', description: 'An employee repeatedly oversteps their authority when dealing with clients, creating tension.', persona: 'The Defender', difficultyLevel: 75 },
@@ -1842,7 +1713,6 @@ const ScenarioLibraryView = ({ setCoachingLabView, setSelectedScenario }) => {
         { id: 6, title: 'The Team Blamer', description: 'An employee frequently attributes project failures to "someone else on the team" instead of taking personal responsibility.', persona: 'The Blame-Shifter', difficultyLevel: 80 },
         { id: 7, title: 'The Silent Observer', description: 'A highly capable team member consistently fails to speak up or contribute ideas during brainstorms or strategy discussions.', persona: 'The Passive Contributor', difficultyLevel: 50 },
     ];
-    
     return (
     <div className="p-8">
     <h1 className="text-3xl font-extrabold text-[#0B3B5B] mb-4">Scenario Library: Practice Conversations</h1>
@@ -1850,14 +1720,12 @@ const ScenarioLibraryView = ({ setCoachingLabView, setSelectedScenario }) => {
     <Button onClick={() => setCoachingLabView('coaching-lab-home')} variant="outline" className="mb-8">
     <ArrowLeft className="w-5 h-5 mr-2" /> Back to Coaching Lab
     </Button>
-    
       <Card title="Dynamic Scenario Generator" icon={Zap} className="mb-6 bg-[#0B3B5B]/10 border-l-4 border-[#E04E1B] rounded-3xl" onClick={() => setIsDynamicGeneratorVisible(true)}>
             <p className="text-gray-700 text-sm">Create a custom, adaptive scenario by choosing a core conflict and adding a unique **modifier** (e.g., personality, circumstance, or context).</p>
             <div className="mt-4 text-[#E04E1B] font-semibold flex items-center">
                 Launch Generator <CornerRightUp className='w-4 h-4 ml-1'/>
             </div>
       </Card>
-      
       <h2 className='text-xl font-bold text-[#0B3B5B] mb-4 border-b pb-1'>Pre-Seeded Scenarios</h2>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -1874,10 +1742,7 @@ const ScenarioLibraryView = ({ setCoachingLabView, setSelectedScenario }) => {
           </Card>
         ))}
       </div>
-      
       {isDynamicGeneratorVisible && <DynamicScenarioGenerator setCoachingLabView={setCoachingLabView} setSelectedScenario={setSelectedScenario} />}
     </div>
-    
-    
     );
 };

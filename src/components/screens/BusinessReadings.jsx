@@ -1,12 +1,12 @@
+import { useAppServices } from '../../services/useAppServices.jsx';
 /* eslint-disable no-console */
 import React, { useState, useMemo, useRef } from 'react';
-import { useAppServices } from '../../services/useAppServices.jsx';
+
 import { 
     BookOpen, Target, CheckCircle, Clock, Feather, Aperture, Briefcase, Zap, Star, 
     AlertTriangle, CornerDownRight, MessageSquare, Filter, TrendingUp, Users, Minimize2, Send, Search 
 } from 'lucide-react';
 import { mdToHtml } from '../../utils/ApiHelpers.js';
-
 // --- COLOR PALETTE (Cleaned up for higher contrast) ---
 const COLORS = {
     NAVY: '#002E47', // Primary Dark
@@ -51,7 +51,6 @@ const MOCK_ALL_BOOKS = {
 // --- HELPER: SIMULATE AI RESPONSE (Refined logic) ---
 const mockAIResponse = (bookTitle, focusAreas, query) => {
     query = query.toLowerCase();
-    
     // --- E-Myth Revisited ---
     if (bookTitle.includes('E-Myth')) {
         if (query.includes('delegate') || query.includes('system') || query.includes('hand off')) {
@@ -62,7 +61,6 @@ const mockAIResponse = (bookTitle, focusAreas, query) => {
         }
         return `Regarding the E-Myth, the primary focus is separating your roles (Entrepreneur, Manager, Technician). Your query about '${query}' suggests a need for a system. Stop performing the task and start **designing the system** that performs the task.`;
     }
-    
     // --- Good to Great ---
     if (bookTitle.includes('Good to Great')) {
         if (query.includes('hedgehog') || query.includes('core')) {
@@ -99,8 +97,6 @@ const mockAIResponse = (bookTitle, focusAreas, query) => {
     // --- Default General Response ---
     return `That’s a very relevant question for ${bookTitle}. Based on its focus on **${focusAreas[0]}**, the book's core advice would be to first **define the ideal outcome** and then use the principles of ${focusAreas[0]} to design a small, repeatable action toward that goal.`;
 };
-
-
 // --- HELPER: GENERATE BOOK FLYER CONTENT (Completely redesigned for vertical flow and contrast) ---
 const generateBookFlyerMarkdown = (book, tier, isExecutiveBrief) => {
     const focusAreas = book.focus.split(',').map(f => f.trim());
@@ -132,8 +128,6 @@ const generateBookFlyerMarkdown = (book, tier, isExecutiveBrief) => {
             <p class="font-semibold text-green-800">Adaptive Path: Novice/Intermediate</p>
             <p class="text-gray-700">Follow chapters sequentially. Complete all suggested Action Plan items before moving to the next section.</p>
         </div>`;
-
-
     // Core Content Assembly (Simplified for better rendering)
     const summarySection = isExecutiveBrief ? executiveSummary : `
         <section class="p-5 bg-[${COLORS.NAVY}]/5 rounded-lg border border-gray-200 shadow-sm">
@@ -172,8 +166,6 @@ const generateBookFlyerMarkdown = (book, tier, isExecutiveBrief) => {
             </div>
         </div>
     `;
-
-
     return `
 <div class="grid grid-cols-1 gap-8 p-4">
 
@@ -191,7 +183,6 @@ const generateBookFlyerMarkdown = (book, tier, isExecutiveBrief) => {
                 onerror="this.onerror=null;this.src='https://placehold.co/300x200/${COLORS.NAVY.slice(1)}/ffffff?text=Visual+Concept'"
             />
         </div>
-        
         <div class="lg:col-span-2 flex flex-col justify-center space-y-3 p-4 bg-gray-50 rounded-xl border border-gray-200 shadow-sm">
             <h3 class="text-xl font-bold text-[${COLORS.NAVY}] mb-1">Book Metrics</h3>
             <div class="flex flex-col space-y-2 text-base">
@@ -206,7 +197,6 @@ const generateBookFlyerMarkdown = (book, tier, isExecutiveBrief) => {
             </div>
         </div>
     </div>
-    
     <div class="space-y-6">
         ${summarySection}
         ${detailsSection}
@@ -225,8 +215,6 @@ const generateBookFlyerMarkdown = (book, tier, isExecutiveBrief) => {
 </div>
 `;
 };
-
-
 // --- MAIN COMPONENT ---
 export default function BusinessReadingsScreen() {
     const { allBooks: contextBooks = {}, updateCommitmentData, navigate } = useAppServices();
@@ -259,7 +247,6 @@ export default function BusinessReadingsScreen() {
         return flatBooks.filter(book => {
             const complexityMatch = filters.complexity === 'All' || book.complexity === filters.complexity;
             const durationMatch = book.duration <= filters.maxDuration;
-            
             // Search filter: matches title, author, or focus areas
             const searchMatch = !searchTerm || 
                 book.title.toLowerCase().includes(searchTerm) ||
@@ -280,7 +267,6 @@ export default function BusinessReadingsScreen() {
             const tierKey = selectedTier || Object.keys(allBooks).find(key => 
                 (allBooks[key] || []).some(b => b.id === selectedBook.id)
             );
-            
             if (tierKey) {
                  const markdown = generateBookFlyerMarkdown(selectedBook, tierKey, isExecutiveBrief);
                  setHtmlFlyer(await mdToHtml(markdown));
@@ -289,7 +275,6 @@ export default function BusinessReadingsScreen() {
             setHtmlFlyer('');
         }
     }, [selectedBook, selectedTier, allBooks, isExecutiveBrief]); 
-    
     // Reset states when selecting a new book
     React.useEffect(() => {
         if (selectedBook) {
@@ -308,12 +293,10 @@ export default function BusinessReadingsScreen() {
         // Immediately clear input and set loading state
         setAiQuery('');
         setAiResponse('Thinking... (Simulating real-time AI response)...');
-        
         // Wait a short time to simulate API latency
         setTimeout(() => {
             const response = mockAIResponse(selectedBook.title, selectedBook.focus.split(',').map(f => f.trim()), query);
             setAiResponse(response);
-            
             // Maintain focus on the input field after response (CRITICAL FIX)
             if (aiInputRef.current) {
                 aiInputRef.current.focus();
@@ -329,8 +312,6 @@ export default function BusinessReadingsScreen() {
             searchInputRef.current.focus();
         }
     };
-
-
     // Handler to create a new commitment from the selected book
     const handleCommitment = (book) => {
         const newCommitment = {
@@ -372,13 +353,11 @@ export default function BusinessReadingsScreen() {
             <h2 className="text-3xl font-extrabold text-[${COLORS.NAVY}] flex items-center gap-3 border-b-4 border-[${COLORS.ORANGE}] pb-2">
                 <BookOpen className="w-7 h-7 text-[${COLORS.TEAL}]" /> LeaderReps Curated Reading Library
             </h2>
-            
             {/* --- PERSONALIZATION: FILTER & SEARCH BAR --- */}
             <div className='bg-[${COLORS.OFF_WHITE}] p-5 rounded-xl shadow-xl border border-gray-100'>
                 <h3 className="text-xl font-bold text-[${COLORS.NAVY}] flex items-center gap-2 mb-4">
                     <Filter className='w-5 h-5 text-[${COLORS.ORANGE}]'/> Personalize Your Search
                 </h3>
-                
                 {/* Search Input (Now uses ref) */}
                 <div className="mb-6">
                     <label className='block text-sm font-medium text-gray-700 mb-1 flex items-center gap-1'><Search className='w-4 h-4 text-[${COLORS.TEAL}]'/> Search by Title, Author, or Key Focus (e.g., "Delegation")</label>
@@ -406,7 +385,6 @@ export default function BusinessReadingsScreen() {
                             ))}
                         </select>
                     </div>
-                    
                     <div className='md:col-span-2'>
                         <label className='block text-sm font-medium text-gray-700 mb-1'>Max Est. Learning Minutes ({filters.maxDuration} minutes)</label>
                         <input
@@ -430,7 +408,6 @@ export default function BusinessReadingsScreen() {
             <div className="space-y-12">
                 {Object.entries(filteredBooks).map(([tier, books]) => (
                     <div key={tier} className='bg-[${COLORS.OFF_WHITE}] rounded-2xl shadow-xl border-2 border-[${COLORS.NAVY}]/10 overflow-hidden'>
-                        
                         {/* Category Header (Strong NAVY Background) */}
                         <div className='p-6 border-l-8 border-[${COLORS.ORANGE}] bg-[${COLORS.NAVY}]'>
                             <h3 className="text-2xl font-bold text-white flex items-center gap-2">
@@ -461,7 +438,6 @@ export default function BusinessReadingsScreen() {
                                         >
                                             <p className="font-extrabold text-xl text-[${COLORS.NAVY}] leading-snug mb-1">{book.title}</p>
                                             <p className="text-sm text-gray-600 italic mb-3">by {book.author}</p>
-                                            
                                             <div className='h-px bg-gray-200 mb-3'></div>
 
                                             {/* Metrics: Time and Complexity */}
@@ -545,7 +521,6 @@ export default function BusinessReadingsScreen() {
                 </div>
 
                 <div className='bg-white rounded-2xl shadow-2xl p-8 border-4 border-[${COLORS.NAVY}]/10'>
-                    
                     {/* --- EXECUTIVE BRIEF TOGGLE & PROGRESS INDICATOR --- */}
                     <div className='flex justify-between mb-4'>
                         {/* Progress Indicator */}
@@ -585,7 +560,6 @@ export default function BusinessReadingsScreen() {
                         className="prose max-w-none space-y-4"
                         dangerouslySetInnerHTML={{ __html: htmlFlyer }} 
                     />
-                    
                     {/* --- AI COACH IMPLEMENTATION (FIXED) --- */}
                     <div className='mt-8 pt-4 border-t border-gray-200'>
                         <h3 className="text-2xl font-bold text-[${COLORS.NAVY}] flex items-center gap-3 mb-4">

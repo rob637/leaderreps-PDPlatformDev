@@ -1,13 +1,13 @@
+import { useAppServices } from '../../services/useAppServices.jsx';
 /* eslint-disable no-console */
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { useAppServices } from '../../services/useAppServices.jsx'; 
+
 import { 
     Home, Zap, HeartPulse, BookOpen, Users, Settings, Briefcase,
     TrendingUp, Target, Mic, ArrowLeft, CheckCircle, Lightbulb, Clock, PlusCircle, X, BarChart3, MessageSquare, AlertTriangle, ShieldCheck, CornerRightUp, Play, Info, Eye
 } from 'lucide-react';
 // We don't need direct Firestore imports here, as all data access is via useAppServices hooks.
 import { mdToHtml, hasGeminiKey, callSecureGeminiAPI } from '../../utils/ApiHelpers.js'; 
-
 // --- COLOR PALETTE (From App.jsx) ---
 const COLORS = {
     NAVY: '#002E47',
@@ -53,7 +53,6 @@ const Card = ({ children, title, icon: Icon, className = '', onClick }) => {
 
 const Tooltip = ({ content, children }) => {
     const [isVisible, setIsVisible] = useState(false);
-    
     return (
         <div 
             className="relative inline-block"
@@ -76,7 +75,6 @@ const Tooltip = ({ content, children }) => {
 
 const PreMortemView = ({ setPlanningView }) => {
     const { planningData, updatePlanningData, updateCommitmentData, navigate } = useAppServices();
-    
     // Fallback/initial data (using optional chaining for safety)
     const [decision, setDecision] = useState(planningData?.last_premortem_decision || 'Should we launch a new product feature aimed at the enterprise market next quarter?');
     const [outcome, setOutcome] = useState('Successfully launch the feature and secure 5 new enterprise customers.'); 
@@ -96,7 +94,6 @@ const PreMortemView = ({ setPlanningView }) => {
     useEffect(() => {
         if (!auditResult) { setAuditHtml(''); setMitigationText(''); return; }
         (async () => setAuditHtml(await mdToHtml(auditResult)))();
-        
         // Attempt to parse Mitigation Strategy for commitment button
         const mitigationMatch = auditResult.match(/### Mitigation Strategy\s*([\s\S]*)/i);
         if (mitigationMatch && mitigationMatch[1]) {
@@ -149,7 +146,6 @@ const PreMortemView = ({ setPlanningView }) => {
             const result = await callSecureGeminiAPI(payload);
             const text = result?.candidates?.[0]?.content?.parts?.[0]?.text || "Audit failed to generate results.";
             setAuditResult(text);
-            
             await updatePlanningData({ last_premortem_decision: decision });
 
         } catch (error) {
@@ -159,12 +155,9 @@ const PreMortemView = ({ setPlanningView }) => {
             setIsGenerating(false);
         }
     };
-    
     const handleCommitmentCreation = async () => {
         if (!mitigationText || !updateCommitmentData) return;
-        
         const commitmentText = `(Pre-Mortem Mit.) Implement mitigation for decision: ${mitigationText}.`;
-        
         const newCommitment = { 
             id: Date.now(), 
             text: commitmentText, 
@@ -190,8 +183,6 @@ const PreMortemView = ({ setPlanningView }) => {
             alert("Failed to save new commitment.");
         }
     };
-
-
     return (
         <div className="p-8">
             <h1 className="text-3xl font-extrabold text-[#002E47] mb-4">Decision-Making Matrix (Pre-Mortem Audit)</h1>
@@ -209,7 +200,6 @@ const PreMortemView = ({ setPlanningView }) => {
                         className="w-full p-3 mb-4 border border-gray-300 rounded-xl focus:ring-[#47A88D] focus:border-[#47A88D] h-20" 
                         placeholder="e.g., Should we expand into the European market next quarter?"
                     ></textarea>
-                    
                     <p className="text-gray-700 text-sm mb-2 font-semibold">What is the specific desired outcome?</p>
                     <input type="text" value={outcome} onChange={(e) => setOutcome(e.target.value)} className="w-full p-3 border border-gray-300 rounded-xl focus:ring-[#47A88D] focus:border-[#47A88D]" placeholder="e.g., Achieve $500k in ARR from the new region in Q4."/>
                 </Card>
@@ -259,7 +249,6 @@ const PreMortemView = ({ setPlanningView }) => {
                     <div className="prose max-w-none prose-h2:text-[#002E47] prose-h2:text-2xl prose-h3:text-[#47A88D] prose-p:text-gray-700 prose-ul:space-y-2">
                         <div dangerouslySetInnerHTML={{ __html: auditHtml }} />
                     </div>
-                    
                     {mitigationText && hasGeminiKey() && (
                         <Button onClick={handleCommitmentCreation} className="mt-6 w-full bg-[#349881] hover:bg-[#47A88D]">
                             <PlusCircle className='w-5 h-5 mr-2' /> Turn Mitigation Strategy into Daily Commitment
@@ -321,7 +310,6 @@ const VisionBuilderView = ({ setPlanningView }) => {
                         placeholder="e.g., 'To cultivate a culture of psychological safety that drives continuous improvement and world-class product delivery.'"
                     ></textarea>
                 </Card>
-                
                 <Card title="Vision Checkpoints" icon={CheckCircle}>
                     <ul className='list-disc pl-5 text-sm text-gray-700 space-y-1'>
                         <li>Is your Vision concise (under 20 words)?</li>
@@ -381,19 +369,15 @@ const OKRDraftingView = ({ setPlanningView }) => {
             keyResults: [...o.keyResults, { id: Date.now(), kr: '' }]
         } : o));
     };
-    
     const removeKR = (objId, krId) => {
         setOkrs(okrs.map(o => o.id === objId ? {
             ...o,
             keyResults: o.keyResults.filter(kr => kr.id !== krId)
         } : o));
     };
-    
     const removeObjective = (id) => {
         setOkrs(okrs.filter(o => o.id !== id));
     };
-
-
     const addObjective = () => {
         // Generate unique IDs for objective and initial key result
         const newObjId = Date.now();
@@ -428,8 +412,6 @@ const OKRDraftingView = ({ setPlanningView }) => {
             setIsCritiquing(false);
             return;
         }
-
-
         const draftedOKRs = okrs.map((o, i) =>
           `Objective ${i + 1}: ${o.objective}\nKey Results:\n${o.keyResults.map(kr => `- ${kr.kr}`).join('\n')}`
         ).join('\n\n---\n\n');
@@ -523,10 +505,8 @@ const OKRDraftingView = ({ setPlanningView }) => {
                     ) : <><CheckCircle className="w-5 h-5 mr-2" /> Save Quarterly OKRs</>}
                 </Button>
             </div>
-            
             <Card title="OKR Auditor (AI Critique)" icon={Mic} className='mt-8 bg-[#47A88D]/10 border-2 border-[#47A88D]'>
                 <p className='text-gray-700 text-sm mb-4'>Use the AI coach to review your drafted OKRs against industry best practices for measurability and ambition. **(Requires API Key)**</p>
-                
                 <Tooltip
                     content={hasGeminiKey() 
                         ? "Submits your OKRs to the AI Auditor for measurability and ambition critique." 
@@ -612,8 +592,6 @@ const AlignmentTrackerView = ({ setPlanningView }) => {
         </div>
     );
 };
-
-
 // --- MAIN ROUTER ---
 export default function PlanningHubScreen() {
     const { isLoading, error } = useAppServices();
@@ -667,7 +645,6 @@ export default function PlanningHubScreen() {
                                     Launch Tool &rarr;
                                 </div>
                             </Card>
-                            
                             <Card title="Decision-Making Matrix (Pre-Mortem)" icon={AlertTriangle} onClick={() => setPlanningView('pre-mortem')} className="border-l-4 border-[#E04E1B] rounded-3xl bg-[#E04E1B]/10">
                                 <p className="text-gray-700 text-sm">Use the **Devil's Advocate AI** to identify critical blind spots and failure modes before you commit to a major decision. **(Requires API Key)**</p>
                                 <div className="mt-4 text-[#E04E1B] font-semibold flex items-center">
