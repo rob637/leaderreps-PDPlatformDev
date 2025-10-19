@@ -93,16 +93,14 @@ const useAppServices = () => ({
 import { 
     Home, Zap, HeartPulse, BookOpen, Users, Settings, Briefcase, TrendingUp, Target, Mic, ArrowLeft, CheckCircle, Lightbulb, Clock, PlusCircle, X, BarChart3, MessageSquare, AlertTriangle, ShieldCheck, CornerRightUp, Play, Info, Eye, Cpu} from 'lucide-react';
 
-// --- COLOR PALETTE (High-contrast, aligned with BusinessReadings) ---
+// --- COLOR PALETTE (High-contrast + brand accents, aligned with BusinessReadings) ---
 const COLORS = {
-  // Core
   BG: '#FFFFFF',
   SURFACE: '#FFFFFF',
   BORDER: '#1F2937',
   SUBTLE: '#E5E7EB',
   TEXT: '#0F172A',
   MUTED: '#4B5563',
-  // Accents
   NAVY: '#0B3B5B',
   TEAL: '#219E8B',
   BLUE: '#2563EB',
@@ -110,7 +108,6 @@ const COLORS = {
   GREEN: '#10B981',
   AMBER: '#F59E0B',
   RED: '#EF4444',
-  // Back‑compat keys used elsewhere in Labs.jsx
   LIGHT_GRAY: '#F9FAFB'
 };
 
@@ -131,19 +128,31 @@ const Button = ({ children, onClick, disabled = false, variant = 'primary', clas
     );
 };
 
-const Card = ({ children, title, icon: Icon, className = '', onClick }) => {
+const Card = ({ children, title, icon: Icon, className = '', onClick, accent = 'ORANGE' }) => {
   const interactive = !!onClick;
   const Tag = interactive ? 'button' : 'div';
+  const accentColor = COLORS[accent] || COLORS.ORANGE;
   return (
     <Tag
       role={interactive ? 'button' : undefined}
       tabIndex={interactive ? 0 : undefined}
-      className={`p-6 rounded-2xl border-2 shadow-xl hover:shadow-2xl transition-all duration-300 text-left ${className}`}
-      style={{ background: COLORS.SURFACE, borderColor: COLORS.SUBTLE, color: COLORS.TEXT }}
+      className={`relative p-6 rounded-2xl border-2 shadow-xl hover:shadow-2xl transition-all duration-300 text-left ${className}`}
+      style={{
+        background: 'linear-gradient(180deg,#FFFFFF,#F9FAFB)',
+        borderColor: COLORS.SUBTLE,
+        color: COLORS.TEXT
+      }}
       onClick={onClick}
     >
+      <span style={{
+        position:'absolute', top:0, left:0, right:0, height:6,
+        background: accentColor,
+        borderTopLeftRadius:14, borderTopRightRadius:14
+      }} />
+
       {Icon && (
-        <div className="w-10 h-10 rounded-lg flex items-center justify-center border mb-3" style={{ borderColor: COLORS.SUBTLE, background: '#F3F4F6' }}>
+        <div className="w-10 h-10 rounded-lg flex items-center justify-center border mb-3"
+             style={{ borderColor: COLORS.SUBTLE, background: '#F3F4F6' }}>
           <Icon className="w-5 h-5" style={{ color: COLORS.TEAL }} />
         </div>
       )}
@@ -1420,21 +1429,41 @@ const ScenarioLibraryView = ({ setCoachingLabView, setSelectedScenario }) => {
     );
 };
 
-// --- FEEDBACK PREP TOOL VIEW (Replaced by integration into ScenarioPrep) ---
-const FeedbackPrepToolView = ({ setCoachingLabView }) => {
-    // This view is now deprecated, forcing users into the full preparation pipeline
-     useEffect(() => {
-        setCoachingLabView('scenario-library');
-     }, [setCoachingLabView]);
+// --- FEEDBACK PREP TOOL VIEW (Ad‑hoc SBI Builder; pretty) ---
+const FeedbackPrepToolView = ({ setCoachingLabView, setPreparedSBI }) => {
+  const adhocScenario = useMemo(() => ({
+    id: 'adhoc-sbi',
+    title: 'Ad‑hoc Feedback Builder',
+    description: 'Draft clear, specific feedback using SBI, get instant AI refinement, then take it into Role‑Play or copy to clipboard.',
+    persona: 'Your real report'
+  }), []);
 
-    return (
-        <div className='p-8'>
-             <h1 className="text-3xl font-extrabold text-[#E04E1B] mb-4">Redirecting...</h1>
-             <p className='text-gray-700'>The Feedback Prep Tool is now integrated into the **Scenario Preparation** pipeline for a better end-to-end coaching experience.</p>
-        </div>
-    );
+  return (
+    <div className="space-y-6">
+      <div className="flex justify-between items-center pb-4" style={{ borderBottom: `1px solid ${COLORS.SUBTLE}` }}>
+        <h1 className="text-3xl font-extrabold flex items-center gap-3" style={{ color: COLORS.NAVY }}>
+          Feedback Prep: SBI Builder
+        </h1>
+        <button
+          onClick={() => setCoachingLabView('coaching-lab-home')}
+          className="font-semibold px-3 py-2 rounded border"
+          style={{ color: COLORS.NAVY, borderColor: COLORS.SUBTLE }}
+        >
+          ← Back
+        </button>
+      </div>
+
+      <Card accent="ORANGE">
+        <p className="text-gray-700 mb-4">This tool is for real situations. Draft your SBI, refine with AI, then practice in the simulator.</p>
+        <ScenarioPreparationView
+          scenario={adhocScenario}
+          setCoachingLabView={setCoachingLabView}
+          setPreparedSBI={setPreparedSBI}
+        />
+      </Card>
+    </div>
+  );
 };
-
 // --- ACTIVE LISTENING VIEW ---
 const ActiveListeningView = ({ setCoachingLabView }) => {
     const { callSecureGeminiAPI, hasGeminiKey, navigate } = useAppServices();
@@ -1559,7 +1588,7 @@ Critique Guidelines (Use Markdown):
         </Tooltip>
       
       {critiqueHtml && (
-        <Card title="Active Listening Auditor Feedback" icon={CheckCircle} className="mt-8 bg-[#002E47]/10 border border-[#002E47]/20 rounded-3xl">
+        <Card accent="TEAL\" title="Active Listening Auditor Feedback" icon={CheckCircle} className="mt-8 bg-[#002E47]/10 border border-[#002E47]/20 rounded-3xl">
            {totalScore !== null && (
                 <div className={`text-4xl font-extrabold mb-4 p-3 rounded-xl border-l-8 ${totalScore > 80 ? 'text-green-700 border-green-500 bg-green-50' : 'text-[#E04E1B] border-[#E04E1B] bg-red-50'}`}>
                     Overall Score: {totalScore}%
@@ -1628,7 +1657,7 @@ export default function CoachingLabScreen() {
                                     Launch Prep Tool &rarr;
                                 </div>
                             </Card>
-                            <Card title="Active Listening Auditor" icon={Mic} onClick={() => setView('active-listening')} className="border-l-4 border-[#47A88D] rounded-3xl">
+                            <Card accent="TEAL\" title="Active Listening Auditor" icon={Mic} onClick={() => setView('active-listening')} className="border-l-4 border-[#47A88D] rounded-3xl">
                                 <p className="text-gray-700 text-sm">Exercises to develop empathy, using paraphrasing and open-ended questions. Get a **quantifiable score** on your response quality.</p>
                                 <div className="mt-4 text-[#47A88D] font-semibold flex items-center">
                                     Launch Exercises &rarr;
@@ -1661,7 +1690,7 @@ export default function CoachingLabScreen() {
               marginBottom: 12
             }}
           >
-            <strong>Debug:</strong> Labs.jsx (pretty formatting patch) mounted at {debugStamp}.
+            <strong>Debug:</strong> Labs.jsx (high-contrast + accent stripe) mounted at {debugStamp}.
             <button
               onClick={() => setShowDbg(false)}
               style={{ float: 'right', background: 'transparent', color: '#FFFFFF', border: 'none', fontWeight: 700, cursor: 'pointer' }}
