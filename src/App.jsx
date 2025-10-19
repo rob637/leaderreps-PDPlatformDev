@@ -48,6 +48,21 @@ const CoachingLabScreen = Labs;
 const SANITY_MODE = false;
 
 /* =========================================================
+   MOCK GLOBAL UTILITIES (To satisfy external component dependencies)
+========================================================= */
+// FIX: Mocking 'notepad' to prevent 'ReferenceError: notepad is not defined' 
+// which is likely being called from one of the imported screen components.
+if (typeof window !== 'undefined' && typeof window.notepad === 'undefined') {
+    window.notepad = { 
+        // Mock the essential functions needed to avoid crashes
+        setTitle: (title) => console.log('Mock Notepad: Set Title', title),
+        addContent: (content) => console.log('Mock Notepad: Add Content', content),
+        getContent: () => console.log('Mock Notepad: Get Content'),
+    };
+}
+
+
+/* =========================================================
    CONTEXT + SAFE DEFAULTS
 ========================================================= */
 const AppServiceContext = createContext(null);
