@@ -6,7 +6,6 @@ import {
   BookOpen, Target, CheckCircle, Clock, AlertTriangle,
   MessageSquare, Filter, TrendingUp, Star, Search as SearchIcon
 } from 'lucide-react';
-import { mdToHtml } from '../../utils/ApiHelpers.js';
 
 /* =========================================================
    HIGH-CONTRAST PALETTE
@@ -38,24 +37,58 @@ const COMPLEXITY_MAP = {
 ========================================================= */
 const MOCK_ALL_BOOKS = {
   'Strategy & Execution': [
-    { id: 's_e_1', title: 'The E-Myth Revisited', author: 'Michael E. Gerber', theme: 'Why most small businesses fail and how to build a scalable system.', complexity: 'Medium', duration: 180, focus: 'Delegation, Process Mapping, Systemization', cover: 'https://placehold.co/120x160/002E47/ffffff?text=E+Myth', image_url: 'https://placehold.co/640x360/0B3B5B/ffffff?text=E-Myth+System' },
-    { id: 's_e_2', title: 'Good to Great', author: 'Jim Collins', theme: 'How some companies make the leap to enduring greatness.', complexity: 'High', duration: 240, focus: 'Level 5 Leadership, Hedgehog Concept, Discipline', cover: 'https://placehold.co/120x160/47A88D/ffffff?text=Good+to+Great', image_url: 'https://placehold.co/640x360/47A88D/ffffff?text=Hedgehog+Concept' },
-    { id: 's_e_3', title: 'Measure What Matters', author: 'John Doerr', theme: 'Achieving ambitious goals using OKRs.', complexity: 'Medium', duration: 200, focus: 'Goal Setting, Quarterly Planning, Accountability', cover: 'https://placehold.co/120x160/E04E1B/ffffff?text=OKRs', image_url: 'https://placehold.co/640x360/E04E1B/ffffff?text=OKR+Framework' },
-    { id: 's_e_4', title: 'Getting Things Done', author: 'David Allen', theme: 'Stress-free productivity with GTD.', complexity: 'Low', duration: 150, focus: 'Task Management, Workflow Design, Capture', cover: 'https://placehold.co/120x160/002E47/ffffff?text=GTD', image_url: 'https://placehold.co/640x360/0B3B5B/ffffff?text=Workflow+Flowchart' },
+    { id: 's_e_1', title: 'The E-Myth Revisited', author: 'Michael E. Gerber', theme: 'Why most small businesses fail and how to build a scalable system.', complexity: 'Medium', duration: 180, focus: 'Delegation, Process Mapping, Systemization' },
+    { id: 's_e_2', title: 'Good to Great', author: 'Jim Collins', theme: 'How some companies make the leap to enduring greatness.', complexity: 'High', duration: 240, focus: 'Level 5 Leadership, Hedgehog Concept, Discipline' },
+    { id: 's_e_3', title: 'Measure What Matters', author: 'John Doerr', theme: 'Achieving ambitious goals using OKRs.', complexity: 'Medium', duration: 200, focus: 'Goal Setting, Quarterly Planning, Accountability' },
+    { id: 's_e_4', title: 'Getting Things Done', author: 'David Allen', theme: 'Stress-free productivity with GTD.', complexity: 'Low', duration: 150, focus: 'Task Management, Workflow Design, Capture' },
+    { id: 's_e_5', title: 'Playing to Win', author: 'A.G. Lafley & Roger L. Martin', theme: 'A practical guide to strategy as choice.', complexity: 'High', duration: 220, focus: 'Strategy Choices, Capabilities, Management Systems' },
+    { id: 's_e_6', title: 'Blue Ocean Strategy', author: 'W. Chan Kim & Renée Mauborgne', theme: 'Create uncontested market space.', complexity: 'High', duration: 230, focus: 'Value Innovation, Noncustomers, Strategy Canvas' },
   ],
   'People & Culture': [
-    { id: 'p_c_1', title: 'Dare to Lead', author: 'Brené Brown', theme: 'Courageous leadership by embracing vulnerability and trust.', complexity: 'Medium', duration: 210, focus: 'Psychological Safety, Feedback, Vulnerability', cover: 'https://placehold.co/120x160/0B3B5B/ffffff?text=Dare+to+Lead', image_url: 'https://placehold.co/640x360/0B3B5B/ffffff?text=Vulnerability+Trust' },
-    { id: 'p_c_2', title: 'The Five Dysfunctions of a Team', author: 'Patrick Lencioni', theme: 'Common pitfalls that prevent teams from working.', complexity: 'Low', duration: 150, focus: 'Team Building, Conflict Management, Trust', cover: 'https://placehold.co/120x160/219E8B/ffffff?text=Five+Dysfunctions', image_url: 'https://placehold.co/640x360/219E8B/ffffff?text=Teamwork+Building' },
-    { id: 'p_c_3', title: 'Radical Candor', author: 'Kim Scott', theme: 'Challenging directly while caring personally.', complexity: 'Medium', duration: 190, focus: 'Feedback Delivery, Coaching, Guidance', cover: 'https://placehold.co/120x160/E04E1B/ffffff?text=Radical+Candor', image_url: 'https://placehold.co/640x360/E04E1B/ffffff?text=Candid+Feedback' },
+    { id: 'p_c_1', title: 'Dare to Lead', author: 'Brené Brown', theme: 'Courageous leadership by embracing vulnerability and trust.', complexity: 'Medium', duration: 210, focus: 'Psychological Safety, Feedback, Vulnerability' },
+    { id: 'p_c_2', title: 'The Five Dysfunctions of a Team', author: 'Patrick Lencioni', theme: 'Common pitfalls that prevent teams from working.', complexity: 'Low', duration: 150, focus: 'Team Building, Conflict Management, Trust' },
+    { id: 'p_c_3', title: 'Radical Candor', author: 'Kim Scott', theme: 'Challenging directly while caring personally.', complexity: 'Medium', duration: 190, focus: 'Feedback Delivery, Coaching, Guidance' },
+    { id: 'p_c_4', title: 'Leaders Eat Last', author: 'Simon Sinek', theme: 'Building trust and safety in teams.', complexity: 'Low', duration: 200, focus: 'Trust, Empathy, Team Cohesion' },
+    { id: 'p_c_5', title: 'No Rules Rules', author: 'Reed Hastings & Erin Meyer', theme: 'Netflix and the culture of reinvention.', complexity: 'High', duration: 240, focus: 'Candor, Talent Density, Freedom & Responsibility' },
   ],
   'Self-Awareness & Growth': [
-    { id: 's_a_1', title: 'Atomic Habits', author: 'James Clear', theme: 'Build good habits by tiny improvements.', complexity: 'Low', duration: 180, focus: 'Habit Formation, Self-Discipline, Identity', cover: 'https://placehold.co/120x160/E04E1B/ffffff?text=Atomic+Habits', image_url: 'https://placehold.co/640x360/E04E1B/ffffff?text=Habit+Loop' },
-    { id: 's_a_2', title: 'Mindset', author: 'Carol Dweck', theme: 'Fixed vs Growth Mindsets.', complexity: 'Medium', duration: 190, focus: 'Growth Mindset, Resilience, Learning', cover: 'https://placehold.co/120x160/219E8B/ffffff?text=Mindset', image_url: 'https://placehold.co/640x360/219E8B/ffffff?text=Growth+Vs+Fixed' },
-    { id: 's_a_3', title: 'Essentialism', author: 'Greg McKeown', theme: 'Pursue the essential, eliminate the rest.', complexity: 'Low', duration: 160, focus: 'Prioritization, Saying No, Focus', cover: 'https://placehold.co/120x160/E04E1B/ffffff?text=Essentialism', image_url: 'https://placehold.co/640x360/E04E1B/ffffff?text=Focus+Path' },
+    { id: 's_a_1', title: 'Atomic Habits', author: 'James Clear', theme: 'Build good habits by tiny improvements.', complexity: 'Low', duration: 180, focus: 'Habit Formation, Self-Discipline, Identity' },
+    { id: 's_a_2', title: 'Mindset', author: 'Carol Dweck', theme: 'Fixed vs Growth Mindsets.', complexity: 'Medium', duration: 190, focus: 'Growth Mindset, Resilience, Learning' },
+    { id: 's_a_3', title: 'Essentialism', author: 'Greg McKeown', theme: 'Pursue the essential, eliminate the rest.', complexity: 'Low', duration: 160, focus: 'Prioritization, Saying No, Focus' },
+    { id: 's_a_4', title: 'Deep Work', author: 'Cal Newport', theme: 'Rules for focused success in a distracted world.', complexity: 'Medium', duration: 200, focus: 'Focus, Attention, Productivity' },
+    { id: 's_a_5', title: 'The First 90 Days', author: 'Michael D. Watkins', theme: 'Strategies for leaders in transition.', complexity: 'Medium', duration: 210, focus: 'Onboarding, Alignment, Early Wins' },
   ],
   'Innovation & Change': [
-    { id: 'i_c_1', title: 'The Lean Startup', author: 'Eric Ries', theme: 'Build-measure-learn with continuous innovation.', complexity: 'High', duration: 250, focus: 'MVP, Build-Measure-Learn, Iteration', cover: 'https://placehold.co/120x160/219E8B/ffffff?text=Lean+Startup', image_url: 'https://placehold.co/640x360/219E8B/ffffff?text=Startup+Iterate' },
-    { id: 'i_c_2', title: 'Start With Why', author: 'Simon Sinek', theme: 'The Golden Circle and purpose-driven leadership.', complexity: 'Medium', duration: 180, focus: 'Golden Circle, Purpose-Driven, Inspiration', cover: 'https://placehold.co/640x360/E04E1B/ffffff?text=Golden+Circle', image_url: 'https://placehold.co/640x360/E04E1B/ffffff?text=Golden+Circle' },
+    { id: 'i_c_1', title: 'The Lean Startup', author: 'Eric Ries', theme: 'Build-measure-learn with continuous innovation.', complexity: 'High', duration: 250, focus: 'MVP, Build-Measure-Learn, Iteration' },
+    { id: 'i_c_2', title: 'Start With Why', author: 'Simon Sinek', theme: 'The Golden Circle and purpose-driven leadership.', complexity: 'Medium', duration: 180, focus: 'Golden Circle, Purpose-Driven, Inspiration' },
+    { id: 'i_c_3', title: "The Innovator's Dilemma", author: 'Clayton Christensen', theme: 'Why great firms fail when technologies change.', complexity: 'High', duration: 240, focus: 'Disruption, Value Networks, Technology S-Curves' },
+    { id: 'i_c_4', title: 'Switch', author: 'Chip & Dan Heath', theme: 'How to change things when change is hard.', complexity: 'Low', duration: 180, focus: 'Rider-Elephant-Path, Behavior Change, Influence' },
+  ],
+  'Sales & Influence': [
+    { id: 's_i_1', title: 'Influence', author: 'Robert Cialdini', theme: 'The psychology of persuasion.', complexity: 'Medium', duration: 210, focus: 'Reciprocity, Social Proof, Scarcity' },
+    { id: 's_i_2', title: 'Never Split the Difference', author: 'Chris Voss', theme: 'Negotiation lessons from the FBI.', complexity: 'Medium', duration: 210, focus: 'Mirroring, Labeling, Tactical Empathy' },
+    { id: 's_i_3', title: 'SPIN Selling', author: 'Neil Rackham', theme: 'Consultative selling framework.', complexity: 'Medium', duration: 200, focus: 'Situation, Problem, Implication, Need-Payoff' },
+    { id: 's_i_4', title: 'The Challenger Sale', author: 'Matthew Dixon & Brent Adamson', theme: 'Teach, Tailor, and Take Control.', complexity: 'High', duration: 220, focus: 'Reframing, Commercial Insight, Control' },
+    { id: 's_i_5', title: 'To Sell Is Human', author: 'Daniel H. Pink', theme: 'Everyone is in sales now.', complexity: 'Low', duration: 180, focus: 'Attunement, Buoyancy, Clarity' },
+  ],
+  'Product & Design': [
+    { id: 'p_d_1', title: 'Inspired', author: 'Marty Cagan', theme: 'How to create tech products customers love.', complexity: 'High', duration: 240, focus: 'Discovery, Empowered Teams, Product Strategy' },
+    { id: 'p_d_2', title: 'Lean UX', author: 'Jeff Gothelf', theme: 'Collaborative design for agile teams.', complexity: 'Medium', duration: 200, focus: 'Hypotheses, Experiments, Collaboration' },
+    { id: 'p_d_3', title: 'Hooked', author: 'Nir Eyal', theme: 'How to build habit-forming products.', complexity: 'Medium', duration: 190, focus: 'Triggers, Actions, Variable Rewards' },
+    { id: 'p_d_4', title: 'Sprint', author: 'Jake Knapp', theme: 'Solve big problems and test new ideas in five days.', complexity: 'Low', duration: 170, focus: 'Prototyping, Testing, Speed' },
+    { id: 'p_d_5', title: "Don't Make Me Think", author: 'Steve Krug', theme: 'Common-sense approach to web usability.', complexity: 'Low', duration: 150, focus: 'Usability, Navigation, Clarity' },
+  ],
+  'Finance & Decision-Making': [
+    { id: 'f_d_1', title: 'Thinking, Fast and Slow', author: 'Daniel Kahneman', theme: 'Two systems of thought and their biases.', complexity: 'High', duration: 260, focus: 'Heuristics, Biases, Decision Hygiene' },
+    { id: 'f_d_2', title: 'The Psychology of Money', author: 'Morgan Housel', theme: 'Timeless lessons on wealth, greed, and happiness.', complexity: 'Low', duration: 180, focus: 'Behavioral Finance, Risk, Compounding' },
+    { id: 'f_d_3', title: 'Financial Intelligence', author: 'Karen Berman & Joe Knight', theme: "A manager's guide to knowing what the numbers really mean.", complexity: 'Medium', duration: 210, focus: 'Income Statement, Cash Flow, Ratios' },
+    { id: 'f_d_4', title: 'Superforecasting', author: 'Philip Tetlock & Dan Gardner', theme: 'The art and science of prediction.', complexity: 'High', duration: 220, focus: 'Calibration, Fermi Estimates, Aggregation' },
+  ],
+  'Communication & Writing': [
+    { id: 'c_w_1', title: 'Made to Stick', author: 'Chip & Dan Heath', theme: 'Why some ideas survive and others die.', complexity: 'Low', duration: 180, focus: 'Simplicity, Unexpectedness, Stories' },
+    { id: 'c_w_2', title: 'On Writing Well', author: 'William Zinsser', theme: 'Fundamentals of clear non-fiction writing.', complexity: 'Low', duration: 180, focus: 'Clarity, Brevity, Voice' },
+    { id: 'c_w_3', title: 'Storytelling with Data', author: 'Cole Nussbaumer Knaflic', theme: 'Effective data communication.', complexity: 'Medium', duration: 200, focus: 'Charts, Context, Narrative' },
+    { id: 'c_w_4', title: 'Confessions of a Public Speaker', author: 'Scott Berkun', theme: 'Real-world lessons for presentations.', complexity: 'Low', duration: 170, focus: 'Delivery, Anxiety, Audience' },
   ],
 };
 
@@ -109,42 +142,88 @@ const mockAIResponse = (bookTitle, focusAreas, query) => {
 };
 
 /* =========================================================
-   FLYER SUMMARY (Markdown -> HTML)
+   POSTER FLYER (HTML; condensed when exec brief ON)
 ========================================================= */
-function generateBookFlyerMarkdown(book, tier, isExecutiveBrief) {
-  const focusAreas = (book.focus || '').split(',').map(s => s.trim()).filter(Boolean);
-  const bullets = (focusAreas.length ? focusAreas : ['Define one concrete outcome you can repeat'])
-    .slice(0, 4)
-    .map(f => `- **${f}**`)
-    .join('\n');
+function generateBookFlyerHTML(book, tier, isExecutiveBrief) {
+  const focus = (book.focus || '').split(',').map(s => s.trim()).filter(Boolean);
+  const c = COMPLEXITY_MAP[book.complexity] || COMPLEXITY_MAP.Medium;
 
-  const summary = `### Summary
-**${book.title}** by *${book.author}* gives you a practical way to act on ${focusAreas[0] || 'a core skill'} this week.
-Focus on a small, repeatable behavior.
-${book.theme || ''}`;
+  if (isExecutiveBrief) {
+    // Condensed: just a couple sentences or bullets
+    return `
+      <div style="display:flex;flex-direction:column;gap:12px">
+        <header style="border-bottom:3px solid ${COLORS.ORANGE};padding-bottom:10px">
+          <p style="margin:0 0 4px 0;font-size:12px;letter-spacing:.13em;color:${COLORS.TEAL};font-weight:800;text-transform:uppercase">${tier} Competency</p>
+          <h2 style="margin:0;color:${COLORS.NAVY};font-weight:900;font-size:30px;line-height:1.05;letter-spacing:-.02em;text-shadow:0 1px 0 #fff">${book.title}</h2>
+          <p style="margin:6px 0 0 0;color:${COLORS.ORANGE};font-weight:800">by ${book.author}</p>
+        </header>
+        <p style="margin:0;color:${COLORS.TEXT}">${book.theme || 'Practical ideas you can apply this week.'}</p>
+        <ul style="margin:0 0 0 18px;color:${COLORS.TEXT}">
+          <li><strong>Focus:</strong> ${focus[0] || 'Apply one core behavior daily'}</li>
+          <li><strong>Next action:</strong> schedule a 20‑minute practice block today</li>
+        </ul>
+      </div>
+    `;
+  }
 
-  const exec = `### Executive Brief — 3 Shifts
-1. **Systemize a recurring task:** document one checklist.
-2. **Separate roles:** vision vs process vs execution.
-3. **Primary action:** ship one simple checklist by Friday.`;
+  // Full poster: elegant two-column layout + subtle texture background
+  const skills = focus.map(f => `<li style="margin:6px 0">${f}</li>`).join('');
+
+  // Subtle paper-like texture using layered gradients (no external images)
+  const posterBg = `linear-gradient(180deg, #ffffff 0%, #FAFAFB 100%)`;
+  const posterTexture = `repeating-linear-gradient(0deg, rgba(0,0,0,.018) 0, rgba(0,0,0,.018) 2px, transparent 2px, transparent 5px)`;
 
   return `
-## ${book.title}
-**Tier:** ${tier} • **Est. Minutes:** ${book.duration} • **Complexity:** ${book.complexity}
+    <div style="display:flex;flex-direction:column;gap:18px;
+                background:${posterBg};background-image:${posterBg}, ${posterTexture};
+                border:1px solid ${COLORS.SUBTLE}; border-radius:16px; padding:18px;
+                box-shadow:0 10px 30px rgba(0,0,0,.05)">
 
-![${book.title}](${book.image_url})
+      <header style="padding-bottom:12px; position:relative">
+        <p style="margin:0 0 6px 0;font-size:12px;letter-spacing:.14em;color:${COLORS.TEAL};font-weight:900;text-transform:uppercase">${tier} Competency</p>
+        <h2 style="margin:0;color:${COLORS.NAVY};font-weight:900;font-size:34px;line-height:1.04;letter-spacing:-.02em;text-shadow:0 1px 0 #fff">
+          ${book.title}
+        </h2>
+        <p style="margin:6px 0 0 0;color:${COLORS.ORANGE};font-weight:800">by ${book.author}</p>
+        <div style="height:6px;width:120px;background:${COLORS.ORANGE};border-radius:6px; margin-top:10px"></div>
+      </header>
 
-${summary}
+      <section style="display:grid;grid-template-columns:1fr 1fr;gap:18px;align-items:start;
+                      background-image: linear-gradient(to bottom, ${COLORS.SUBTLE} 0, ${COLORS.SUBTLE} 100%);
+                      background-size: 1px calc(100% - 24px);
+                      background-position: calc(50%) 12px;
+                      background-repeat: no-repeat;">
 
-### Core Skills to Master
-${bullets}
+        <div style="padding:14px;border:1px solid ${COLORS.SUBTLE};border-radius:12px;background:#FFFFFF">
+          <h3 style="margin:0 0 10px 0;color:${COLORS.NAVY};font-weight:900;letter-spacing:.01em">Summary</h3>
+          <p style="margin:0;color:${COLORS.TEXT};line-height:1.65">
+            ${book.theme || 'A concise, practical set of ideas you can apply immediately.'}
+          </p>
+        </div>
 
-### Suggested Action Plan
-- Pace: nine 20-minute sessions
-- Reflect: one note per chapter; share with a peer
+        <div style="padding:14px;border:1px solid ${COLORS.SUBTLE};border-radius:12px;background:#FFFFFF">
+          <h3 style="margin:0 0 10px 0;color:${COLORS.NAVY};font-weight:900;letter-spacing:.01em">Book Metrics</h3>
+          <div style="display:flex;gap:14px;flex-wrap:wrap;color:${COLORS.TEXT}">
+            <div><strong>Est. Minutes:</strong> ${book.duration}</div>
+            <div><strong>Complexity:</strong> <span style="color:${c.hex};font-weight:900">${c.label}</span></div>
+          </div>
+        </div>
 
-${isExecutiveBrief ? exec : ''}
-`.trim();
+        <div style="padding:14px;border:1px solid ${COLORS.SUBTLE};border-radius:12px;background:#FFFFFF">
+          <h3 style="margin:0 0 10px 0;color:${COLORS.NAVY};font-weight:900;letter-spacing:.01em">Core Skills</h3>
+          <ul style="margin:0 0 0 18px;color:${COLORS.TEXT}">${skills || '<li>Define one concrete outcome you can repeat</li>'}</ul>
+        </div>
+
+        <div style="padding:14px;border:1px solid ${COLORS.SUBTLE};border-radius:12px;background:#FFFFFF">
+          <h3 style="margin:0 0 10px 0;color:${COLORS.NAVY};font-weight:900;letter-spacing:.01em">Suggested Action Plan</h3>
+          <ul style="margin:0 0 0 18px;color:${COLORS.TEXT}">
+            <li><strong>Pace:</strong> nine 20‑minute sessions</li>
+            <li><strong>Reflect:</strong> one note per chapter; share with a peer</li>
+          </ul>
+        </div>
+      </section>
+    </div>
+  `;
 }
 
 /* =========================================================
@@ -219,6 +298,7 @@ export default function BusinessReadingsScreen() {
   const [savedBooks, setSavedBooks] = useState({});
   const [isExecutiveBrief, setIsExecutiveBrief] = useState(false);
   const [filters, setFilters] = useState({ complexity: 'All', maxDuration: 300, search: '' });
+  const [hoveredId, setHoveredId] = useState(null);
 
   const [aiQuery, setAiQuery] = useState('');
   const [aiResponse, setAiResponse] = useState('');
@@ -247,22 +327,12 @@ export default function BusinessReadingsScreen() {
       }, {});
   }, [allBooks, filters]);
 
-  /* ---------- Flyer generation ---------- */
+  /* ---------- Flyer generation (HTML) ---------- */
   useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      if (!selectedBook) { setHtmlFlyer(''); return; }
-      const tierKey = selectedTier || Object.keys(allBooks).find(k => (allBooks[k] || []).some(b => b.id === selectedBook.id)) || 'Strategy';
-      const md = generateBookFlyerMarkdown(selectedBook, tierKey, isExecutiveBrief);
-      try {
-        const out = await mdToHtml(md);
-        if (!cancelled) setHtmlFlyer(out);
-      } catch (e) {
-        const safe = md.replace(/\n/g, '<br/>');
-        if (!cancelled) setHtmlFlyer(safe);
-      }
-    })();
-    return () => { cancelled = true; };
+    if (!selectedBook) { setHtmlFlyer(''); return; }
+    const tierKey = selectedTier || Object.keys(allBooks).find(k => (allBooks[k] || []).some(b => b.id === selectedBook.id)) || 'Strategy';
+    const html = generateBookFlyerHTML(selectedBook, tierKey, isExecutiveBrief);
+    setHtmlFlyer(html);
   }, [selectedBook, selectedTier, isExecutiveBrief, allBooks]);
 
   /* ---------- Reset contextual state when changing book ---------- */
@@ -364,6 +434,7 @@ export default function BusinessReadingsScreen() {
             ref={searchInputRef}
             value={filters.search}
             onChange={(e) => setFilters(prev => ({ ...prev, search: e.target.value }))}
+            onInput={(e) => setFilters(prev => ({ ...prev, search: e.target.value }))}
             placeholder="Start typing to find a book..."
             className="w-full p-3 border rounded-lg shadow-sm focus:outline-none"
             style={{ borderColor: COLORS.SUBTLE, color: COLORS.TEXT }}
@@ -423,30 +494,39 @@ export default function BusinessReadingsScreen() {
               </p>
             </div>
 
-            {/* Cards */}
+            {/* Cards (stronger visuals, no images) */}
             <div className="p-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
               {(books || []).map((book) => {
                 const c = COMPLEXITY_MAP[book.complexity] || COMPLEXITY_MAP.Medium;
                 const isSaved = !!savedBooks[book.id];
+                const isSelected = selectedBook?.id === book.id;
+                const isHovered = hoveredId === book.id;
 
                 return (
-                  <div key={book.id} className="relative group">
+                  <div key={book.id} className="relative">
                     <button
+                      onMouseEnter={() => setHoveredId(book.id)}
+                      onMouseLeave={() => setHoveredId(null)}
                       onClick={() => { setSelectedBook(book); setSelectedTier(tier); }}
-                      className="p-4 text-left w-full h-full block rounded-xl border transition-all"
+                      className="p-5 text-left w-full h-full block rounded-2xl border-2 transition-all"
                       style={{
-                        background: COLORS.SURFACE,
-                        borderColor: selectedBook?.id === book.id ? COLORS.TEAL : COLORS.SUBTLE,
-                        boxShadow: selectedBook?.id === book.id ? `0 0 0 4px ${COLORS.TEAL}40` : '0 1px 2px rgba(0,0,0,.08)',
-                        color: COLORS.TEXT
+                        background: 'linear-gradient(180deg,#FFFFFF,#F9FAFB)',
+                        borderColor: isSelected ? COLORS.TEAL : (isHovered ? COLORS.NAVY : COLORS.SUBTLE),
+                        boxShadow: (isSelected || isHovered) ? '0 12px 30px rgba(0,0,0,.12)' : '0 2px 8px rgba(0,0,0,.06)',
+                        color: COLORS.TEXT,
+                        position: 'relative'
                       }}
                     >
-                      <div className="flex gap-3">
-                        <img src={book.cover} alt={`${book.title} cover`}
-                             className="w-16 h-20 rounded border"
-                             style={{ borderColor: COLORS.SUBTLE }}
-                             loading="lazy" decoding="async"
-                             onError={(e) => { e.currentTarget.src = 'https://placehold.co/120x160/CCCCCC/000000?text=Book'; }}/>
+                      <span style={{
+                        position:'absolute',top:0,left:0,right:0,height:6,
+                        background: isSelected ? COLORS.TEAL : COLORS.ORANGE,
+                        borderTopLeftRadius:14,borderTopRightRadius:14
+                      }} />
+
+                      <div className="flex gap-3 items-start">
+                        <div className="w-10 h-10 rounded-lg flex items-center justify-center border" style={{ borderColor: COLORS.SUBTLE, background: '#F3F4F6' }}>
+                          <BookOpen className="w-5 h-5" style={{ color: COLORS.TEAL }} />
+                        </div>
                         <div className="min-w-0">
                           <p className="font-extrabold text-lg" style={{ color: COLORS.NAVY }}>{book.title}</p>
                           <p className="text-sm italic" style={{ color: COLORS.MUTED }}>by {book.author}</p>
@@ -550,8 +630,8 @@ export default function BusinessReadingsScreen() {
             <ExecSwitch checked={isExecutiveBrief} onChange={setIsExecutiveBrief} />
           </div>
 
-          {/* Rendered Flyer */}
-          <div className="prose max-w-none space-y-4" style={{ color: COLORS.TEXT }} dangerouslySetInnerHTML={{ __html: htmlFlyer }} />
+          {/* Rendered Flyer (HTML) */}
+          <div className="max-w-none space-y-4" style={{ color: COLORS.TEXT }} dangerouslySetInnerHTML={{ __html: htmlFlyer }} />
 
           {/* AI Coach */}
           <div className="mt-8 pt-4" style={{ borderTop: `1px solid ${COLORS.SUBTLE}` }}>
@@ -572,6 +652,7 @@ export default function BusinessReadingsScreen() {
                 ref={aiInputRef}
                 value={aiQuery}
                 onChange={(e) => setAiQuery(e.target.value)}
+                onInput={(e) => setAiQuery(e.target.value)}
                 placeholder={`Ask how to apply ${selectedBook.title} at work (e.g., "How do I delegate?")`}
                 className="flex-grow p-3 border rounded"
                 style={{ borderColor: COLORS.SUBTLE, color: COLORS.TEXT }}
@@ -638,7 +719,7 @@ export default function BusinessReadingsScreen() {
             marginBottom: 12
           }}
         >
-          <strong>Debug:</strong> BusinessReadings.jsx (REAL AI enabled) mounted at {debugStamp}.
+          <strong>Debug:</strong> BusinessReadings.jsx (v5) mounted at {debugStamp}.
           <button
             onClick={() => setShowDbg(false)}
             style={{ float: 'right', background: 'transparent', color: '#FFFFFF', border: 'none', fontWeight: 700, cursor: 'pointer' }}
