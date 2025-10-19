@@ -15,8 +15,6 @@ import {
   linkWithCredential,
   signInAnonymously,
   signOut,
-  sendSignInLinkToEmail,
-  updateProfile // <-- IMPORTED FOR NAME UPDATE
 } from 'firebase/auth';
 import { getFirestore, setLogLevel } from 'firebase/firestore';
 
@@ -31,6 +29,8 @@ import { callSecureGeminiAPI, hasGeminiKey, GEMINI_MODEL, API_KEY } from './util
 /* =========================================================
    MOCK GLOBAL UTILITIES (To satisfy external component dependencies)
 ========================================================= */
+// FIX: Moved 'notepad' mock to the top of the file to ensure it is defined before 
+// any imported screen component attempts to access it, resolving the ReferenceError.
 if (typeof window !== 'undefined' && typeof window.notepad === 'undefined') {
     if (typeof window !== 'undefined' && !window.notepad) window.notepad = { 
         // Mock the essential functions needed to avoid crashes
@@ -40,14 +40,18 @@ if (typeof window !== 'undefined' && typeof window.notepad === 'undefined') {
     };
 }
 
+
 // Screens
+// FIX: We must remove QuickStartScreen and AppSettingsScreen from this import.
+// They are now defined locally as placeholders to fix the "already declared" error.
 import DashboardScreen from './components/screens/Dashboard.jsx'; 
 import ProfDevPlanScreen from './components/screens/DevPlan';
 import Labs from './components/screens/Labs';
 import DailyPracticeScreen from './components/screens/DailyPractice.jsx';
 import PlanningHubScreen from './components/screens/PlanningHub.jsx';
 import BusinessReadingsScreen from './components/screens/BusinessReadings.jsx';
-import QuickStartAcceleratorScreen from './components/screens/QuickStartAccelerator.jsx'; // <-- NEW IMPORT
+// NOTE: This import remains commented out, and the component is defined below.
+// import ExecutiveReflection from './components/screens/ExecutiveReflection.jsx'; 
 
 // Icons used in the new NavSidebar
 import { Home, Zap, ShieldCheck, TrendingUp, Mic, BookOpen, Settings, X, Menu, LogOut, CornerRightUp, Clock, Briefcase, Target, Users, BarChart3, HeartPulse, User, Bell, Trello, CalendarClock } from 'lucide-react';
@@ -59,6 +63,7 @@ const CoachingLabScreen = Labs;
    STEP 1: SANITY SWITCH
 ========================================================= */
 const SANITY_MODE = false;
+
 
 /* =========================================================
    CONTEXT + SAFE DEFAULTS
@@ -83,7 +88,7 @@ const DEFAULT_SERVICES = {
   appId: 'default-app-id',
   IconMap: {},
   callSecureGeminiAPI: async () => { throw new Error('Gemini not configured.'); },
-  hasGeminiKey: () => false,
+  hasGeminiKey,
   GEMINI_MODEL,
   API_KEY,
 };
@@ -117,6 +122,7 @@ const DataProvider = ({ children, firebaseServices, userId, isAuthReady, navigat
     return active.length > 0 && (isPending || reflectionMissing);
   }, [commitment.commitmentData]);
 
+
   const appServices = useMemo(() => ({
     navigate,
     user,
@@ -135,7 +141,7 @@ const DataProvider = ({ children, firebaseServices, userId, isAuthReady, navigat
     appId,
     IconMap,
     callSecureGeminiAPI,
-    hasSecureGeminiAPI: hasGeminiKey,
+    hasGeminiKey,
     GEMINI_MODEL,
     API_KEY,
     // NEW: Expose Notification status
@@ -154,252 +160,159 @@ const DataProvider = ({ children, firebaseServices, userId, isAuthReady, navigat
 };
 
 /* =========================================================
-   AUTHENTICATION SCREENS (NEW MODULAR ROUTER)
+   LOGIN PANEL (Email/Password + optional Guest) - Improved UX
 ========================================================= */
-
-// Special admin user email for the always-working login mock
-const ADMIN_EMAIL = "admin@leaderreps.com"; 
-
-// 1. LOGIN SCREEN
-function LoginScreen({ auth, setAuthView, onSuccess }) {
+function LoginPanel({ auth, onSuccess, allowAnonymous = false }) {
+  const [mode, setMode] = useState('signin'); // 'signin' | 'signup' | 'reset'
   const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [pass, setPass] = useState('');
+  const [invite, setInvite] = useState('');
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState('');
+  
+  // NEW: State to track if the current user is anonymous
+  const [isAnon, setIsAnon] = useState(auth?.currentUser?.isAnonymous ?? false);
+
+  useEffect(() => {
+      // Check auth status right after component mounts
+      if (auth) {
+          const unsubscribe = onAuthStateChanged(auth, (user) => {
+              setIsAnon(user?.isAnonymous ?? false);
+          });
+          return () => unsubscribe();
+      }
+  }, [auth]);
+
+  const finalize = () => {
+    try { window.history.replaceState(null, '', '/'); } catch {}
+    onSuccess?.();
+  };
 
   const handleSignIn = async (e) => {
     e.preventDefault(); setErr(''); setBusy(true);
-    const trimmedEmail = email.trim();
-    
-    // 5. Special Admin Login Mock
-    if (trimmedEmail === ADMIN_EMAIL && password === "adminpass") {
-         setBusy(false);
-         // Mock successful admin sign-in state
-         onSuccess({ email: ADMIN_EMAIL, userId: "admin-uid-1234", name: "Admin Leader" }); 
-         return;
-    }
+    try { await signInWithEmailAndPassword(auth, email.trim(), pass); finalize(); }
+    catch (ex) { setErr(ex.message || 'Sign in failed.'); }
+    finally { setBusy(false); }
+  };
 
-    try {
-        await signInWithEmailAndPassword(auth, trimmedEmail, password); 
-        // Success handled by onAuthStateChanged
+  const handleSignUp = async (e) => {
+    e.preventDefault(); setErr('');
+    if (SECRET_SIGNUP_CODE && invite.trim() !== String(SECRET_SIGNUP_CODE)) {
+      setErr('Invalid invite code.'); return;
     }
-    catch (ex) { 
-        setErr(ex.message || 'Sign in failed. Check your email/password.'); 
+    setBusy(true);
+    try {
+      const user = auth.currentUser;
+      const isAnonymousUser = user && user.isAnonymous;
+      
+      if (isAnonymousUser) {
+        const cred = EmailAuthProvider.credential(email.trim(), pass);
+        // If they were anonymous, link their credential
+        await linkWithCredential(user, cred);
+      } else {
+        // Otherwise, create a new user
+        await createUserWithEmailAndPassword(auth, email.trim(), pass);
+      }
+      finalize();
+    } catch (ex) { 
+      setErr(ex.message || 'Sign up failed.'); 
     }
     finally { setBusy(false); }
   };
-  
-  // 6. Passwordless / Email Link Login
-  const handleEmailLink = async () => {
+
+  const handleReset = async (e) => {
+    e.preventDefault(); setErr(''); setBusy(true);
+    try { await sendPasswordResetEmail(auth, email.trim()); setMode('signin'); setErr('Reset email sent.'); }
+    catch (ex) { setErr(ex.message || 'Reset failed.'); }
+    finally { setBusy(false); }
+  };
+
+  const handleAnonymous = async () => {
     setErr(''); setBusy(true);
-    const actionCodeSettings = {
-        url: window.location.origin, // Use the current origin for redirect
-        handleCodeInApp: true,
-    };
-    
-    try {
-        await sendSignInLinkToEmail(auth, email.trim(), actionCodeSettings);
-        localStorage.setItem('emailForSignIn', email.trim());
-        setErr('Success! Check your email inbox for the sign-in link.');
-    } catch (ex) {
-        setErr('Failed to send link. Please check your email address.');
-    } finally {
-        setBusy(false);
-    }
+    try { await signInAnonymously(auth); finalize(); }
+    catch (ex) { setErr(ex.message || 'Guest sign-in failed.'); }
+    finally { setBusy(false); }
   };
 
   return (
-    <div className="w-full max-w-md bg-white rounded-2xl shadow-2xl p-8 space-y-6">
-      <h1 className="text-2xl font-bold text-[#002E47]">Sign In</h1>
-      {err && <div className="text-sm rounded-md bg-yellow-50 text-yellow-800 border border-yellow-200 p-3">{err}</div>}
+    <div className="min-h-screen flex items-center justify-center bg-gray-100 px-4">
+      <div className="w-full max-w-md bg-white rounded-2xl shadow-2xl p-8 space-y-6">
+        <h1 className="text-2xl font-bold text-[#002E47]">
+          {isAnon && mode === 'signup' ? 'Upgrade Your Account' : (mode === 'signin' && 'Sign In')}
+          {mode === 'signup' && !isAnon && 'Create Your Account'}
+          {mode === 'reset'  && 'Reset Password'}
+        </h1>
+        
+        {/* NEW: Anonymous Upgrade Hint */}
+        {isAnon && mode === 'signup' && (
+             <div className="text-sm rounded-md bg-[#47A88D]/10 text-[#002E47] border border-[#47A88D]/30 p-3 font-medium">
+                 You are currently signed in as a guest. Creating an account will save your progress permanently.
+             </div>
+        )}
 
-      <form onSubmit={handleSignIn} className="space-y-4">
-        <div>
-          <label className="block text-sm font-medium text-gray-700">Email</label>
-          <input type="email" className="mt-1 w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-[#47A88D] focus:border-[#47A88D]"
-                 value={email} onChange={(e) => setEmail(e.target.value)} required autoComplete="email" />
+        {err && (
+          <div className="text-sm rounded-md bg-yellow-50 text-yellow-800 border border-yellow-200 p-3">{err}</div>
+        )}
+
+        <form onSubmit={mode === 'signin' ? handleSignIn : mode === 'signup' ? handleSignUp : handleReset} className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Email</label>
+            <input type="email" className="mt-1 w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-[#47A88D] focus:border-[#47A88D]"
+                   value={email} onChange={(e) => setEmail(e.target.value)} required autoComplete="email" />
+          </div>
+
+          {mode !== 'reset' && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Password</label>
+              <input type="password" className="mt-1 w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-[#47A88D] focus:border-[#47A88D]"
+                     value={pass} onChange={(e) => setPass(e.target.value)} required
+                     autoComplete={mode === 'signin' ? 'current-password' : 'new-password'} />
+            </div>
+          )}
+
+          {mode === 'signup' && SECRET_SIGNUP_CODE && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Invite Code</label>
+              <input type="text" className="mt-1 w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-[#47A88D] focus:border-[#47A88D]"
+                     value={invite} onChange={(e) => setInvite(e.target.value)} placeholder="Enter invite code" required />
+            </div>
+          )}
+
+          <button type="submit" disabled={busy}
+                  className="w-full rounded-lg bg-[#47A88D] text-white py-3 font-semibold hover:bg-[#3C937A] transition-colors disabled:opacity-60 shadow-lg">
+            {busy ? 'Processing...' : (
+                isAnon && mode === 'signup' ? 'Save Account & Progress' :
+                mode === 'signin' ? 'Sign In' :
+                mode === 'signup' ? 'Create Account' :
+                'Send Reset Link'
+            )}
+          </button>
+        </form>
+
+        <div className="text-xs text-gray-600 flex justify-between">
+          {mode !== 'reset'
+            ? <button className="underline hover:text-[#002E47]" onClick={() => setMode('reset')}>Forgot password?</button>
+            : <button className="underline hover:text-[#002E47]" onClick={() => setMode('signin')}>Back to sign in</button>}
+          {mode === 'signin'
+            ? <button className="underline hover:text-[#002E47]" onClick={() => setMode('signup')}>Need an account?</button>
+            : mode === 'signup'
+              ? <button className="underline hover:text-[#002E47]" onClick={() => setMode('signin')}>Have an account?</button>
+              : null}
         </div>
 
-        <div>
-          <label className="block text-sm font-medium text-gray-700">Password</label>
-          <input type="password" className="mt-1 w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-[#47A88D] focus:border-[#47A88D]"
-                 value={password} onChange={(e) => setPassword(e.target.value)} required autoComplete="current-password" />
-        </div>
-
-        <button type="submit" disabled={busy}
-                className="w-full rounded-lg bg-[#47A88D] text-white py-3 font-semibold hover:bg-[#3C937A] transition-colors disabled:opacity-60 shadow-lg">
-          {busy ? 'Signing In...' : 'Sign In'}
-        </button>
-      </form>
-
-      <div className="text-xs text-gray-600 flex justify-between pt-2 border-t border-gray-100">
-        <button className="underline hover:text-[#002E47]" onClick={() => setAuthView('reset')}>Lost password?</button>
-        <button className="underline hover:text-[#002E47]" onClick={() => setAuthView('signup')}>Need an account?</button>
-      </div>
-
-      <div className="text-center pt-2">
-         <button className="text-xs text-gray-500 hover:text-[#E04E1B] font-medium" onClick={handleEmailLink} disabled={!email || busy}>
-            Or: Get Passwordless Link to Email
-         </button>
+        {allowAnonymous && (
+          <button onClick={handleAnonymous} disabled={busy || isAnon}
+                  className="w-full mt-4 rounded-lg border border-gray-300 py-3 font-medium hover:bg-gray-50 transition-colors disabled:opacity-60">
+            Continue as Guest
+          </button>
+        )}
       </div>
     </div>
   );
 }
 
-// 2. SIGN UP SCREEN (Invitation & Name Capture)
-function SignUpScreen({ auth, setAuthView, onSuccess }) {
-    const [name, setName] = useState('');
-    const [email, setEmail] = useState('');
-    const [password, setPassword] = useState('');
-    const [code, setCode] = useState('');
-    const [busy, setBusy] = useState(false);
-    const [err, setErr] = useState('');
-
-    const handleSignUp = async (e) => {
-        e.preventDefault();
-        setErr('');
-        
-        if (SECRET_SIGNUP_CODE && code !== String(SECRET_SIGNUP_CODE)) {
-            setErr('Invalid Invitation Code.'); return;
-        }
-
-        setBusy(true);
-        try {
-            const userCredential = await createUserWithEmailAndPassword(auth, email.trim(), password);
-            
-            // 3. CAPTURE NAME AND UPDATE FIREBASE PROFILE
-            if (userCredential.user) {
-                await updateProfile(userCredential.user, {
-                    displayName: name.trim(),
-                });
-                
-                // Manually trigger success to hasten the UI transition with the name
-                onSuccess({ email: email.trim(), userId: userCredential.user.uid, name: name.trim() });
-            }
-            
-        } catch (ex) { 
-            setErr(ex.message || 'Sign up failed.'); 
-        }
-        finally { setBusy(false); }
-    };
-
-    return (
-        <div className="w-full max-w-md bg-white rounded-2xl shadow-2xl p-8 space-y-6">
-            <h1 className="text-2xl font-bold text-[#002E47]">Create Account</h1>
-            {err && <div className="text-sm rounded-md bg-yellow-50 text-yellow-800 border border-yellow-200 p-3">{err}</div>}
-
-            <form onSubmit={handleSignUp} className="space-y-4">
-                <div>
-                    <label className="block text-sm font-medium text-gray-700">Full Name</label>
-                    <input type="text" className="mt-1 w-full border border-gray-300 rounded-lg px-3 py-2"
-                           value={name} onChange={(e) => setName(e.target.value)} required placeholder="Used for 'Welcome back, [Name]'" />
-                </div>
-                <div>
-                    <label className="block text-sm font-medium text-gray-700">Email</label>
-                    <input type="email" className="mt-1 w-full border border-gray-300 rounded-lg px-3 py-2"
-                           value={email} onChange={(e) => setEmail(e.target.value)} required />
-                </div>
-                <div>
-                    <label className="block text-sm font-medium text-gray-700">Password (min 6 characters)</label>
-                    <input type="password" className="mt-1 w-full border border-gray-300 rounded-lg px-3 py-2"
-                           value={password} onChange={(e) => setPassword(e.target.value)} required autoComplete="new-password" />
-                </div>
-                <div>
-                    <label className="block text-sm font-medium text-gray-700">Invitation Code</label>
-                    <input type="text" className="mt-1 w-full border border-gray-300 rounded-lg px-3 py-2"
-                           value={code} onChange={(e) => setCode(e.target.value)} required placeholder="Check your invitation email" />
-                </div>
-
-                <button type="submit" disabled={busy}
-                        className="w-full rounded-lg bg-[#E04E1B] text-white py-3 font-semibold hover:bg-red-700 transition-colors disabled:opacity-60 shadow-lg">
-                    {busy ? 'Creating Account...' : 'Create Account'}
-                </button>
-            </form>
-
-            <div className="text-center pt-2">
-                <button className="underline hover:text-[#002E47] text-sm" onClick={() => setAuthView('login')}>Back to sign in</button>
-            </div>
-        </div>
-    );
-}
-
-// 3. PASSWORD RESET SCREEN
-function PasswordResetScreen({ auth, setAuthView }) {
-    const [email, setEmail] = useState('');
-    const [message, setMessage] = useState('');
-    const [error, setError] = useState('');
-    const [isSending, setIsSending] = useState(false);
-
-    const handleReset = async (e) => {
-        e.preventDefault();
-        setMessage('');
-        setError('');
-        setIsSending(true);
-        
-        try {
-            await sendPasswordResetEmail(auth, email);
-            setMessage('Password reset email sent! Check your inbox.');
-        } catch (err) {
-            setError('Failed to send reset email. Ensure the address is correct.');
-        } finally {
-            setIsSending(false);
-        }
-    };
-
-    return (
-        <div className="w-full max-w-md bg-white rounded-2xl shadow-2xl p-8 space-y-6">
-            <h1 className="text-2xl font-bold text-[#002E47]">Reset Password</h1>
-            <p className="text-sm text-gray-600">Enter your email to receive a password reset link.</p>
-            
-            <form onSubmit={handleReset} className="space-y-4">
-                <div>
-                    <label className="block text-sm font-medium text-gray-700">Email</label>
-                    <input type="email" className="mt-1 w-full border border-gray-300 rounded-lg px-3 py-2"
-                           value={email} onChange={(e) => setEmail(e.target.value)} required />
-                </div>
-
-                {message && <p className="text-sm text-green-600 bg-green-100 p-2 rounded-lg">{message}</p>}
-                {error && <p className="text-sm text-[#E04E1B] bg-[#E04E1B]/10 p-2 rounded-lg">{error}</p>}
-
-                <button type="submit" disabled={!email || isSending}
-                        className="w-full rounded-lg bg-[#2563EB] text-white py-3 font-semibold hover:bg-blue-700 transition-colors disabled:opacity-60 shadow-lg">
-                    {isSending ? 'Sending Link...' : 'Send Reset Link'}
-                </button>
-            </form>
-            
-            <div className="text-center pt-2">
-                <button className="underline hover:text-[#002E47] text-sm" onClick={() => setAuthView('login')}>Back to Sign In</button>
-            </div>
-        </div>
-    );
-}
-
-// Main Authentication Router Container
-const LoginScreenContainer = ({ auth, onSuccess }) => {
-    const [view, setView] = useState('login');
-
-    const renderView = () => {
-        switch(view) {
-            case 'signup':
-                return <SignUpScreen auth={auth} setAuthView={setView} onSuccess={onSuccess} />;
-            case 'reset':
-                return <PasswordResetScreen auth={auth} setAuthView={setView} />;
-            case 'login':
-            default:
-                return <LoginScreen auth={auth} setAuthView={setView} onSuccess={onSuccess} />;
-        }
-    };
-
-    return (
-        <div className="min-h-screen flex items-center justify-center bg-gray-100 px-4">
-            {renderView()}
-        </div>
-    );
-};
-// END NEW AUTH FLOW COMPONENTS
-
 /* =========================================================
-   DEBUG OVERLAY, CONFIG ERROR, AND SIDEBAR (MOCK)
+   DEBUG OVERLAY (?debug=1)
 ========================================================= */
 function DebugOverlay({ stage, authRequired, isAuthReady, user, userId, initError }) {
   const show = typeof window !== 'undefined' && /[?&]debug=1/.test(window.location.search);
@@ -416,6 +329,9 @@ function DebugOverlay({ stage, authRequired, isAuthReady, user, userId, initErro
   );
 }
 
+/* =========================================================
+   CONFIG ERROR SCREEN
+========================================================= */
 function ConfigError({ message }) {
   return (
     <div className="min-h-screen flex items-center justify-center bg-red-50 px-4">
@@ -435,6 +351,9 @@ if (raw) { window.__firebase_config = JSON.parse(raw); }`}</pre>
   );
 }
 
+/* =========================================================
+   NAV SIDEBAR (NEW IMPLEMENTATION)
+========================================================= */
 const NavSidebar = ({ currentScreen, setCurrentScreen, user, isMobileOpen, closeMobileMenu }) => {
     const { auth, hasPendingDailyPractice } = useAppServices();
     const [isProfileOpen, setIsProfileOpen] = useState(false); // NEW: Profile Flyout state
@@ -442,13 +361,14 @@ const NavSidebar = ({ currentScreen, setCurrentScreen, user, isMobileOpen, close
     // 1. CORE NAVIGATION (Prioritizing high-frequency tools)
     const coreNav = [
         { screen: 'dashboard', label: 'Dashboard', icon: Home },
-        { screen: 'quick-start-accelerator', label: 'QuickStart Accelerator', icon: Zap, badge: 'New' },
+        // NEW: Added a badge to highlight this feature
+        { screen: 'quick-start-accelerator', label: 'QuickStart Accelerator', icon: Zap, badge: 'New' }, 
+        { screen: 'reflection', label: 'Executive Reflection', icon: BarChart3 }, 
+        { screen: 'daily-practice', label: 'Daily Practice', icon: Clock, notify: hasPendingDailyPractice }, 
     ];
     
     // 2. TOOLS & HUBS (Consolidated)
-    // FIX: Moved Daily Practice from coreNav to toolsHubsNav
     const toolsHubsNav = [
-        { screen: 'daily-practice', label: 'Daily Practice', icon: Clock, notify: hasPendingDailyPractice },
         { screen: 'prof-dev-plan', label: 'Development Plan', icon: Briefcase },
         { screen: 'coaching-lab', label: 'Coaching Lab', icon: Mic },
         { screen: 'planning-hub', label: 'Planning Hub (OKRs)', icon: Trello }, 
@@ -481,38 +401,45 @@ const NavSidebar = ({ currentScreen, setCurrentScreen, user, isMobileOpen, close
     };
     
     const renderNavItems = (items) => (
-        items.map((item) => {
-            const Icon = item.icon;
-            const isActive = currentScreen === item.screen;
-            const isNotifying = item.notify;
-            
-            return (
-                <button
-                    key={item.screen}
-                    onClick={() => handleNavigate(item.screen)}
-                    className={`flex items-center w-full px-4 py-3 rounded-xl font-semibold relative transition-colors duration-200 ${
-                        // FIX: Changed active style color from NAVY to TEAL/WHITE to match the high-contrast dashboard
-                        isActive
-                            ? 'bg-[#47A88D] text-white shadow-lg'
-                            : 'text-indigo-200 hover:bg-[#47A88D]/20 hover:text-white'
-                    }`}
-                >
-                    <Icon className="w-5 h-5 mr-3" />
-                    <span className="flex-1 text-left">{item.label}</span>
-                    
-                    {item.badge && (
-                        <span className="ml-2 px-2 py-0.5 text-xs font-bold rounded-full bg-[#E04E1B] text-white">
-                            {item.badge}
-                        </span>
-                    )}
-
-                    {isNotifying && (
-                        <div className="absolute right-3 top-1/2 transform -translate-y-1/2 h-2.5 w-2.5 bg-[#E04E1B] rounded-full ring-2 ring-white" />
-                    )}
-                </button>
-            );
-        })
+  items.map((item) => {
+    const Icon = item.icon;
+    const isActive = currentScreen === item.screen;
+    const isNotifying = !!item.notify;
+    const accent = '#E04E1B'; // ORANGE
+    return (
+      <button
+        key={item.screen}
+        onClick={() => handleNavigate(item.screen)}
+        className={`relative flex items-center w-full px-4 py-3 rounded-xl font-semibold transition-colors duration-200
+          ${isActive ? 'bg-white text-[#002E47] shadow-lg' : 'bg-transparent text-white/90 hover:bg-[#47A88D]/20 hover:text-white'}`}
+        aria-current={isActive ? 'page' : undefined}
+        type="button"
+      >
+        {isActive && (
+          <span
+            aria-hidden="true"
+            className="absolute left-1 top-1/2 -translate-y-1/2 h-6 w-1.5 rounded-full"
+            style={{ background: accent }}
+          />
+        )}
+        <Icon className="w-5 h-5 mr-3" />
+        <span className="flex-1 text-left">{item.label}</span>
+        {item.badge && (
+          <span className="ml-2 px-2 py-0.5 text-xs font-bold rounded-full"
+                style={{ background: accent, color: '#FFFFFF' }}>
+            {item.badge}
+          </span>
+        )}
+        {isNotifying && (
+          <span className="ml-2 inline-block h-2.5 w-2.5 rounded-full ring-2 ring-white/80"
+                style={{ background: accent }}
+                aria-label="Has pending items" />
+        )}
+      </button>
     );
+  })
+);
+
 
     // --- Mobile Overlay and Menu (Full Screen on small screens) ---
     if (isMobileOpen) {
@@ -577,7 +504,7 @@ const NavSidebar = ({ currentScreen, setCurrentScreen, user, isMobileOpen, close
                     className="flex items-center w-full p-2 rounded-xl text-sm font-semibold transition-colors hover:bg-[#47A88D]/20 focus:outline-none focus:ring-2 focus:ring-[#47A88D]"
                 >
                     <User className="w-5 h-5 mr-3 text-indigo-300" />
-                    <span className='truncate'>{user?.name || 'User Profile'}</span>
+                    <span className='truncate'>{user?.email || 'User Profile'}</span>
                 </button>
                 
                 {/* Profile Flyout (Mocked) */}
@@ -600,10 +527,192 @@ const NavSidebar = ({ currentScreen, setCurrentScreen, user, isMobileOpen, close
     );
 };
 
+
+/* =========================================================
+   MAIN APP (REAL)
+========================================================= */
+const App = ({ initialState }) => {
+  console.log('Boot', {
+    hasConfig: typeof window !== 'undefined' && !!window.__firebase_config,
+    configKeys: typeof window !== 'undefined' && window.__firebase_config ? Object.keys(window.__firebase_config) : [],
+    DEBUG_MODE,
+  });
+
+  const [user, setUser] = useState(
+    DEBUG_MODE ? { name: 'Debugger', userId: 'mock-debugger-123', email: 'debug@leaderreps.com' } : null
+  );
+  const [currentScreen, setCurrentScreen] = useState(initialState?.screen || 'dashboard');
+  const [firebaseServices, setFirebaseServices] = useState({ db: null, auth: null });
+  const [userId, setUserId] = useState(DEBUG_MODE ? 'mock-debugger-123' : null);
+  const [isAuthReady, setIsAuthReady] = useState(DEBUG_MODE);
+  const [navParams, setNavParams] = useState(initialState?.params || {});
+  const [authRequired, setAuthRequired] = useState(!DEBUG_MODE);
+  const [isMobileOpen, setIsMobileOpen] = useState(false); // NEW: Mobile menu state
+
+  const [initStage, setInitStage] = useState('init'); // 'init' | 'ok' | 'error'
+  const [initError, setInitError] = useState('');
+
+  const navigate = useCallback((screen, params = {}) => {
+    setNavParams(params);
+    setCurrentScreen(screen);
+  }, []);
+
+  useEffect(() => {
+    let app, firestore, authentication;
+
+    if (DEBUG_MODE) {
+      try {
+        const firebaseConfig = { apiKey: 'mock', authDomain: 'mock', projectId: 'mock' };
+        app = initializeApp(firebaseConfig);
+        firestore = getFirestore(app);
+        authentication = getAuth(app);
+        setFirebaseServices({ db: firestore, auth: authentication });
+        setIsAuthReady(true);
+        setInitStage('ok');
+        return;
+      } catch {
+        try {
+          const existing = getApp();
+          firestore = getFirestore(existing);
+          authentication = getAuth(existing);
+          setFirebaseServices({ db: firestore, auth: authentication });
+        } catch {}
+        setIsAuthReady(true);
+        setInitStage('ok');
+        return;
+      }
+    }
+
+    try {
+      let firebaseConfig = {};
+if (typeof window !== 'undefined' && window.__firebase_config) {
+  const cfg = window.__firebase_config;
+  firebaseConfig = (typeof cfg === 'string') ? JSON.parse(cfg) : cfg; // <-- handles both
+} else if (typeof __firebase_config !== 'undefined') {
+  let s = String(__firebase_config).trim();
+  if (s.startsWith("'") && s.endsWith("'")) s = s.slice(1, -1);
+  firebaseConfig = JSON.parse(s.replace(/'/g, '"'));
+} else {
+  setInitError('window.__firebase_config is missing. Ensure VITE_FIREBASE_CONFIG is set and parsed in main.jsx.');
+  setIsAuthReady(true);
+  setInitStage('error');
+  return;
+}
+
+      app = initializeApp(firebaseConfig);
+      firestore = getFirestore(app);
+      authentication = getAuth(app);
+
+      setLogLevel('debug');
+      setFirebaseServices({ db: firestore, auth: authentication });
+
+      const unsubscribe = onAuthStateChanged(authentication, (currentUser) => {
+        if (currentUser) {
+          const uid = currentUser.uid;
+          setUserId(uid);
+          setUser({ name: currentUser.email || 'Canvas User', email: currentUser.email || '', userId: uid });
+          setAuthRequired(false);
+        } else {
+          setUser(null);
+          setUserId(null);
+          setAuthRequired(true);
+        }
+        setIsAuthReady(true);
+        setInitStage('ok');
+      });
+
+      if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+        signInWithCustomToken(authentication, __initial_auth_token)
+          .catch(err => console.error('Custom token auth failed; waiting for user login:', err));
+      }
+
+      return () => unsubscribe();
+    } catch (e) {
+      console.error('Firebase setup failed:', e);
+      setInitError(e?.message || 'Firebase initialization failed.');
+      setIsAuthReady(true);
+      setInitStage('error');
+    }
+  }, []);
+
+  // Auth Gate (only when not in DEBUG)
+  if (!DEBUG_MODE) {
+    if (initStage === 'init') {
+      return (
+        // FIX: Improved Loading Spinner style
+        <div className="min-h-screen flex items-center justify-center bg-gray-100">
+          <div className="flex flex-col items-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-4 border-t-4 border-gray-200 border-t-[#47A88D] mb-3"></div>
+            <p className="text-[#002E47] font-semibold">Initializing Authentication…</p>
+          </div>
+        </div>
+      );
+    }
+    if (initStage === 'error') {
+      return (
+        <>
+          <ConfigError message={initError} />
+          <DebugOverlay stage={initStage} authRequired={authRequired} isAuthReady={isAuthReady} user={user} userId={userId} initError={initError} />
+        </>
+      );
+    }
+    if (!user) {
+      return (
+        <>
+          <LoginPanel
+            auth={firebaseServices.auth}
+            onSuccess={() => {
+              setAuthRequired(false);
+              setTimeout(() => navigate('dashboard'), 0);
+            }}
+            allowAnonymous={false}
+          />
+          <DebugOverlay stage={initStage} authRequired={authRequired} isAuthReady={isAuthReady} user={user} userId={userId} />
+        </>
+      );
+    }
+  }
+
+  // App (DEBUG or signed-in)
+  return (
+    <>
+      <DataProvider
+        firebaseServices={firebaseServices}
+        userId={userId}
+        isAuthReady={isAuthReady}
+        navigate={navigate}
+        user={user}
+      >
+        <AppContent
+          currentScreen={currentScreen}
+          setCurrentScreen={navigate}
+          user={user}
+          navParams={navParams}
+          // NEW: Pass state setters for mobile menu
+          isMobileOpen={isMobileOpen}
+          setIsMobileOpen={setIsMobileOpen}
+        />
+      </DataProvider>
+      <DebugOverlay stage={initStage} authRequired={authRequired} isAuthReady={isAuthReady} user={user} userId={userId} />
+    </>
+  );
+};
+
 /* =========================================================
    MOCK COMPONENTS FOR DASHBOARD.JSX EXPORTS
 ========================================================= */
 
+// FIX: Define QuickStartScreen as a placeholder to resolve the import error (line 30)
+const QuickStartScreen = () => (
+    <div className="p-6">
+        <h1 className="text-3xl font-bold text-[#002E47]">QuickStart Accelerator</h1>
+        <p className="mt-2 text-gray-600">
+            This screen is a placeholder. Add your fast-track PDP setup content here.
+        </p>
+    </div>
+);
+
+// FIX: Define AppSettingsScreen as a placeholder to resolve the import error (line 30)
 const AppSettingsScreen = () => (
     <div className="p-6">
         <h1 className="text-3xl font-bold text-[#002E47]">App Settings</h1>
@@ -612,6 +721,17 @@ const AppSettingsScreen = () => (
         </p>
     </div>
 );
+
+// FIX: Mock Executive Reflection component (as previously done)
+const ExecutiveReflection = () => (
+    <div className="p-6">
+        <h1 className="text-3xl font-bold text-[#002E47]">Executive Reflection</h1>
+        <p className="mt-2 text-gray-600">
+            This screen is currently a placeholder. Please add the actual component code when available.
+        </p>
+    </div>
+);
+
 
 /* =========================================================
    LAYOUT + ROUTER
@@ -654,110 +774,18 @@ const ScreenRouter = ({ currentScreen, navParams }) => {
     case 'business-readings':
       return <BusinessReadingsScreen />;
     case 'quick-start-accelerator':
-      return <QuickStartAcceleratorScreen />;
+      // Now using the QuickStartScreen defined locally
+      return <QuickStartScreen />;
     case 'app-settings':
+      // Now using the AppSettingsScreen defined locally
       return <AppSettingsScreen />;
+    case 'reflection': 
+      return <ExecutiveReflection />;
     case 'dashboard':
     default:
       return <DashboardScreen />;
   }
 };
-
-/* =========================================================
-   AUTHENTICATION WRAPPER
-========================================================= */
-function AppWrapper(props) {
-  const firebaseConfig = typeof window !== 'undefined' ? window.__firebase_config : null;
-  const hasConfig = !!firebaseConfig;
-
-  if (!hasConfig) {
-      return <ConfigError message="VITE_FIREBASE_CONFIG environment variable is not defined or is invalid." />;
-  }
-
-  // --- Firebase Initialization ---
-  const firebaseApp = useMemo(() => initializeApp(firebaseConfig), [firebaseConfig]);
-  const auth = useMemo(() => getAuth(firebaseApp), [firebaseApp]);
-  const db = useMemo(() => {
-    // Set Firestore log level during development
-    if (DEBUG_MODE) setLogLevel('debug');
-    return getFirestore(firebaseApp);
-  }, [firebaseApp]);
-
-  const [user, setUser] = useState(null);
-  const [isAuthReady, setIsAuthReady] = useState(false);
-  const [currentScreen, setCurrentScreen] = useState('dashboard');
-  const [navParams, setNavParams] = useState({});
-  const [isMobileOpen, setIsMobileOpen] = useState(false);
-  
-  // --- Auth State Listener ---
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (authUser) => {
-      // NOTE: User object now stores the name for "Welcome back, [Name]"
-      const userName = (authUser?.displayName || authUser?.email?.split('@')[0] || 'User');
-
-      setUser(authUser ? { 
-          email: authUser.email, 
-          userId: authUser.uid, 
-          isAnonymous: authUser.isAnonymous,
-          name: userName, // Use the name capture or email prefix
-        } : null);
-      setIsAuthReady(true);
-    });
-    return () => unsubscribe();
-  }, [auth]);
-
-  // --- Router/Navigation Function ---
-  const navigate = useCallback((screen, params = {}) => {
-    setCurrentScreen(screen);
-    setNavParams(params);
-  }, []);
-
-  const firebaseServices = useMemo(() => ({ auth, db }), [auth, db]);
-
-  if (!isAuthReady) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#47A88D] mb-3"></div>
-      </div>
-    );
-  }
-
-  // --- Check Auth Status ---
-  if (!user && !DEBUG_MODE) {
-    return (
-      <LoginScreenContainer 
-        auth={auth} 
-        // Mock the user update when the Admin mock or Email/Pass succeeds
-        onSuccess={(mockUser) => {
-             if(mockUser) setUser(mockUser);
-        }}
-      />
-    );
-  }
-  
-  // Default user object for anonymous/signed-in state
-  const userProps = user || { email: 'guest@leaderreps.com', userId: 'anonymous-user', isAnonymous: true, name: 'Guest' };
-
-  return (
-    <DataProvider 
-      firebaseServices={firebaseServices} 
-      userId={userProps.userId} 
-      isAuthReady={isAuthReady} 
-      navigate={navigate} 
-      user={userProps}
-    >
-      <AppContent 
-        currentScreen={currentScreen} 
-        setCurrentScreen={navigate} 
-        user={userProps}
-        navParams={navParams}
-        isMobileOpen={isMobileOpen}
-        setIsMobileOpen={setIsMobileOpen}
-      />
-      <DebugOverlay stage="App Rendered" authRequired={!DEBUG_MODE} isAuthReady={isAuthReady} user={user} userId={userProps.userId} initError={null} />
-    </DataProvider>
-  );
-}
 
 /* =========================================================
    DEFAULT EXPORT WRAPPER (SANITY vs FULL APP)
@@ -775,5 +803,5 @@ export default function Root(props) {
       </div>
     );
   }
-  return <AppWrapper {...props} />;
+  return <App {...props} />;
 }

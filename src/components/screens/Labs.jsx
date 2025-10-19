@@ -1,8 +1,6 @@
 /* eslint-disable no-console */
 import React, { useState, useEffect, useMemo, useCallback, useLayoutEffect } from 'react';
-import {
-  Home, Zap, HeartPulse, BookOpen, Users, Settings, Briefcase, TrendingUp, Target, Mic, ArrowLeft, CheckCircle, Lightbulb, Clock, PlusCircle, X, BarChart3, MessageSquare, AlertTriangle, ShieldCheck, CornerRightUp, Play, Info, Eye, Cpu, Send, Star} from 'lucide-react';
-
+import { AlertTriangle, ArrowLeft, BarChart3, BookOpen, Briefcase, CheckCircle, Clock, CornerRightUp, Cpu, Eye, HeartPulse, Icon, Info, Lightbulb, Mic, Play, PlusCircle, Send, ShieldCheck, Star, Target, TrendingUp, Users, X, Zap } from 'lucide-react';
 /* =========================================================
    MOCK APP SERVICES (CLEANED)
 ========================================================= */

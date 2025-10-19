@@ -1,5 +1,13 @@
 // src/components/screens/Dashboard.jsx
 import React, { useMemo, useState, useEffect, useCallback } from 'react';
+// --- Robust navigation helper (prevents 'blink' if router not ready) ---
+function useSafeNavigate(navigate) {
+  return React.useCallback((screen, params) => {
+    try { if (typeof navigate === 'function') { navigate(screen, params); return; } } catch (e) { console.error(e); }
+    try { window?.dispatchEvent?.(new CustomEvent('app:navigate', { detail: { screen, params } })); } catch {}
+    try { if (typeof window !== 'undefined') window.location.hash = `#/${screen}`; } catch {}
+  }, [navigate]);
+}
 import { signOut } from 'firebase/auth';
 
 // --- MOCK IMPORTS for self-contained file ---
@@ -155,6 +163,7 @@ function extractGeminiText(resp) {
    Dashboard (default export)
 ----------------------------------------*/
 const DashboardScreen = () => {
+  const safeNavigate = useSafeNavigate(navigate);
   const {
     navigate,
     user,
@@ -246,7 +255,7 @@ const DashboardScreen = () => {
             icon={Briefcase}
             label="Development Plan Progress"
             value={goalsCount > 0 ? `${pdpData?.currentMonth || 1} / 24 Months` : 'Start Now'}
-            onClick={() => navigate('prof-dev-plan')}
+            onClick={() => safeNavigate('prof-dev-plan')}
             colorClass='bg-[#002E47]/10 text-[#002E47]'
             trend={12} // Mock: 12% increase
         />
@@ -254,7 +263,7 @@ const DashboardScreen = () => {
             icon={CalendarClock}
             label="Daily Commitments Due"
             value={commitsCount}
-            onClick={() => navigate('daily-practice')}
+            onClick={() => safeNavigate('daily-practice')}
             colorClass={hasPendingDailyPractice ? 'bg-[#E04E1B]/20 text-[#E04E1B] animate-pulse' : 'bg-[#47A88D]/20 text-[#47A88D]'}
             trend={-4} // Mock: 4% decrease
         />
@@ -262,7 +271,7 @@ const DashboardScreen = () => {
             icon={Trello}
             label="Objectives (OKRs) Drafted"
             value={plansCount}
-            onClick={() => navigate('planning-hub')}
+            onClick={() => safeNavigate('planning-hub')}
             colorClass='bg-indigo-100 text-indigo-700'
             trend={25} // Mock: 25% increase
         />
@@ -292,7 +301,7 @@ const DashboardScreen = () => {
                     All personalized content is weighted toward this skill to accelerate impact.
                 </p>
                 <button
-                    onClick={() => navigate('prof-dev-plan')}
+                    onClick={() => safeNavigate('prof-dev-plan')}
                     className='text-[#47A88D] font-bold text-sm mt-4 block underline hover:text-[#002E47]'
                 >
                     Review Deep Dive Content &rarr;
@@ -343,45 +352,45 @@ const DashboardScreen = () => {
                         icon={Zap}
                         title="QuickStart Accelerator"
                         desc="Start your journey. Use AI to draft your first Development Plan goals in minutes."
-                        onClick={() => navigate('quick-start-accelerator')}
+                        onClick={() => safeNavigate('quick-start-accelerator')}
                         primary={true}
                     />
                     <Tile
                         icon={Briefcase}
                         title="Development Plan"
                         desc="Manage your long-term goals, milestones, and define success criteria."
-                        onClick={() => navigate('prof-dev-plan')}
+                        onClick={() => safeNavigate('prof-dev-plan')}
                     />
                     <Tile
                         icon={ClockIcon}
                         title="Daily Scorecard"
                         desc="Capture practice reps, reflect on your day, and track momentum towards commitments."
-                        onClick={() => navigate('daily-practice')}
+                        onClick={() => safeNavigate('daily-practice')}
                     />
                     <Tile
                         icon={Mic}
                         title="Coaching Lab"
                         desc="Practice crucial conversations and leadership scenarios using AI simulation."
-                        onClick={() => navigate('coaching-lab')}
+                        onClick={() => safeNavigate('coaching-lab')}
                     />
                     {/* RESOURCE HUBS */}
                     <Tile
                         icon={Star}
                         title="Executive Reflection"
                         desc="Analyze your aggregated practice data, goal trends, and leadership growth patterns."
-                        onClick={() => navigate('reflection')}
+                        onClick={() => safeNavigate('reflection')}
                     />
                     <Tile
                         icon={TrendingUp}
                         title="Planning Hub (OKRs)"
                         desc="Draft Objectives and Key Results, set vision, and run pre-mortem risk audits."
-                        onClick={() => navigate('planning-hub')}
+                        onClick={() => safeNavigate('planning-hub')}
                     />
                     <Tile
                         icon={BookOpen}
                         title="Business Readings"
                         desc="Curated articles, book summaries, and insights for sharp, informed decisions."
-                        onClick={() => navigate('business-readings')}
+                        onClick={() => safeNavigate('business-readings')}
                     />
                 </div>
             </div>
