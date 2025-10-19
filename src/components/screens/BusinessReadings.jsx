@@ -4,7 +4,7 @@ import React, { useState, useMemo, useRef, useEffect, useCallback, useLayoutEffe
 import { useAppServices } from '../../App.jsx'; 
 import {
   BookOpen, Target, CheckCircle, Clock, AlertTriangle,
-  MessageSquare, Filter, TrendingUp, Star, Search as SearchIcon, Users, Cpu
+  MessageSquare, Filter, TrendingUp, Star, Search as SearchIcon, Users, Cpu, ChevronRight, Info
 } from 'lucide-react';
 
 /* =========================================================
@@ -22,6 +22,9 @@ const COLORS = {
   OFF_WHITE: '#FFFFFF',
   MUTED: '#4B5563',
   SUBTLE: '#E5E7EB',
+  // ADDED: referenced later in styles
+  TEXT: '#374151',
+  BLUE: '#2563EB',
 };
 
 const COMPLEXITY_MAP = {
@@ -116,7 +119,7 @@ const MOCK_ALL_BOOKS = {
 function getActionSteps(book) {
   const t = (book.title || '').toLowerCase();
   if (t.includes('e-myth')) {
-    return ['Map one repeatable process (5–7 steps) and write a 1‑page SOP.', 'Delegate the checklist, not the task.', 'Analyze your time allocation: Technician, Manager, or Entrepreneur Role?'];
+    return ['Map one repeatable process (5–7 steps) and write a 1-page SOP.', 'Delegate the checklist, not the task.', 'Analyze your time allocation: Technician, Manager, or Entrepreneur Role?'];
   } else if (t.includes('radical candor')) {
     return ['Ask your team: “What’s one thing I could do better?” then act on one item within a week.', 'Draft corrective feedback using the SBI framework (Situation, Behavior, Impact).', 'Use a 5:1 positive-to-negative feedback ratio.'];
   } else if (t.includes('atomic habits')) {
@@ -128,7 +131,7 @@ function getActionSteps(book) {
 function getFrameworks(book) {
   const t = (book.title || '').toLowerCase();
   if (t.includes('e-myth')) {
-    return [{ name: 'E‑Myth Roles', desc: 'Entrepreneur (vision), Manager (systems), Technician (doing).' }, { name: 'Systemization', desc: 'Build the business as if it were a franchise prototype.' }];
+    return [{ name: 'E-Myth Roles', desc: 'Entrepreneur (vision), Manager (systems), Technician (doing).' }, { name: 'Systemization', desc: 'Build the business as if it were a franchise prototype.' }];
   } else if (t.includes('radical candor')) {
     return [{ name: 'Candor Quadrants', desc: 'Caring Personally × Challenging Directly; aim for Radical Candor.' }, { name: 'Gives-and-Gets', desc: 'Focus on what you give (feedback) and get (results).' }];
   } else if (t.includes('atomic habits')) {
@@ -222,9 +225,10 @@ async function buildAIFlyerHTML({ book, tier, executive, callSecureGeminiAPI }) 
 /* =========================================================
    AI COACH - CONTEXTUAL FIX (Primary bug fix)
 ========================================================= */
-const handleAiSubmit = useCallback(async (e, services, selectedBook, aiQuery, setIsSubmitting, setAiResponse) => {
+// FIX: remove the stray "async" in the parameter list
+async function handleAiSubmit(e, services, selectedBook, aiQuery, setIsSubmitting, setAiResponse) {
     e.preventDefault();
-    if (setIsSubmitting) return; // Prevents double submission
+    // Prevent double submit handled by caller
 
     const q = aiQuery.trim();
     if (!selectedBook || !q) return;
@@ -260,9 +264,7 @@ const handleAiSubmit = useCallback(async (e, services, selectedBook, aiQuery, se
     } finally {
         setIsSubmitting(false);
     }
-}, []);
-
-
+}
 /* =========================================================
    MAIN COMPONENT (Aesthetic remains in place)
 ========================================================= */
@@ -291,6 +293,8 @@ export default function BusinessReadingsScreen() {
   const searchInputRef = useRef(null);
   const lastSelSearch = useRef({ start: null, end: null });
   const lastSelCoach = useRef({ start: null, end: null });
+  // ADDED: referenced by inputs' onFocus / onBlur
+  const [focusedField, setFocusedField] = useState(null);
 
   const allBooks = MOCK_ALL_BOOKS; // Using mock for reliable execution
 
@@ -424,6 +428,7 @@ export default function BusinessReadingsScreen() {
             <div className="p-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
               {(books || []).map((book) => {
                 const c = COMPLEXITY_MAP[book.complexity] || COMPLEXITY_MAP.Medium;
+                const ComplexityIcon = c.icon; // FIX: dynamic JSX component
                 const isSaved = !!savedBooks[book.id];
                 const isSelected = selectedBook?.id === book.id;
 
@@ -465,7 +470,7 @@ export default function BusinessReadingsScreen() {
                           <span className="ml-auto font-bold">{book.duration} min</span>
                         </div>
                         <div className="flex items-center">
-                          <c.icon className="w-4 h-4" style={{ color: c.hex, marginRight: 8 }}/>
+                          <ComplexityIcon className="w-4 h-4" style={{ color: c.hex, marginRight: 8 }}/>
                           <span className="font-semibold">Complexity:</span>
                           <span className="ml-auto font-bold" style={{ color: c.hex }}>{c.label}</span>
                         </div>

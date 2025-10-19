@@ -1,5 +1,6 @@
 // src/components/screens/Dashboard.jsx 
 import React, { useMemo, useState, useEffect, useCallback } from 'react';
+import { useAppServices } from '../../App.jsx';
 
 // --- MOCK IMPORTS for self-contained file ---
 const LEADERSHIP_TIERS = {
@@ -36,27 +37,7 @@ const NUDGE_CONTENT = [
 ];
 // --- END: NUDGE CONTENT ---
 
-// Mocking useAppServices hook logic for isolated file readability
-const useAppServices = () => ({
-    navigate: (screen, params) => console.log(`Navigating to ${screen} with:`, params),
-    user: { email: 'executive@leaderreps.com', userId: 'usr-1234' },
-    pdpData: MOCK_PDP_DATA,
-    planningData: { okrs: [{ id: 1 }, { id: 2 }] },
-    commitmentData: MOCK_COMMITMENT_DATA,
-    hasPendingDailyPractice: MOCK_COMMITMENT_DATA.active_commitments.some(c => c.status === 'Pending'),
-    callSecureGeminiAPI: async (payload) => {
-        // Mock a focused AI response based on the weakest tier for testing
-        const tier = payload.contents[0].parts[0].text.match(/weakest skill is (.*?),/)?.[1] || 'General Leadership';
-        const mockResponse = `> Your strategic nudge is focused on **${tier}**. Today, identify one meeting where you can practice a 70/30 split: listen 70% of the time, speak 30%. This builds team ownership and accelerates your skill in ${tier}.`;
 
-        return {
-             candidates: [{ content: { parts: [{ text: mockResponse }] } }]
-        };
-    },
-    hasGeminiKey: () => true,
-    GEMINI_MODEL: 'gemini-2.5-flash',
-    LEADERSHIP_TIERS: LEADERSHIP_TIERS,
-});
 
 async function mdToHtml(md) {
     let html = md.replace(/\*\*(.*)\*\*/gim, '<strong>$1</strong>');
@@ -273,6 +254,7 @@ const DashboardScreen = () => {
 
     // --- Daily Tip (Gemini) - Implemented for rotation (Update 2) ---
     const [tipLoading, setTipLoading] = useState(false);
+    const [nudgeIndex, setNudgeIndex] = useState(0);
     const [tipHtml, setTipHtml] = useState('');
 
     const getDailyTip = useCallback(async (force = false) => {
@@ -311,7 +293,22 @@ const DashboardScreen = () => {
         } finally {
             setTipLoading(false);
         }
-    }, [weakestTier, callSecureGeminiAPI, hasGeminiKey]);
+    }
+    , [weakestTier, callSecureGeminiAPI, hasGeminiKey]);
+const nextNudge = useCallback(() => {
+        if (typeof hasGeminiKey === 'function' && hasGeminiKey()) {
+            getDailyTip(true);
+            return;
+        }
+        setTipLoading(true);
+        setTimeout(() => {
+            const next = (nudgeIndex + 1) % (NUDGE_CONTENT?.length || 1);
+            const text = NUDGE_CONTENT?.[next] || 'Focus on one high-leverage action today.';
+            setNudgeIndex(next);
+            setTipHtml(`<p>${text}</p>`);
+            setTipLoading(false);
+        }, 200);
+    }, [getDailyTip, hasGeminiKey, nudgeIndex]);
 
     // Fetch tip on mount
     useEffect(() => {
@@ -375,28 +372,28 @@ const DashboardScreen = () => {
                         <Button
                             onClick={() => safeNavigate('quick-start-accelerator')}
                             variant='primary'
-                            className='bg-[#47A88D] hover:bg-[#349881] p-3 text-lg'
+                            className='p-3 text-lg rounded-xl bg-gradient-to-r from-[#47A88D] to-[#349881] text-white shadow-lg hover:shadow-xl transition-all ring-1 ring-white/20 hover:-translate-y-[1px]'
                         >
                             <Zap className='w-5 h-5 mr-2'/> Accelerator
                         </Button>
                         <Button
                             onClick={() => safeNavigate('prof-dev-plan')}
                             variant='primary'
-                            className='bg-[#47A88D] hover:bg-[#349881] p-3 text-lg'
+                            className='p-3 text-lg rounded-xl bg-gradient-to-r from-[#47A88D] to-[#349881] text-white shadow-lg hover:shadow-xl transition-all ring-1 ring-white/20 hover:-translate-y-[1px]'
                         >
                             <Briefcase className='w-5 h-5 mr-2'/> Dev Plan
                         </Button>
                         <Button
                             onClick={() => safeNavigate('daily-practice')}
                             variant='primary'
-                            className='bg-[#47A88D] hover:bg-[#349881] p-3 text-lg'
+                            className='p-3 text-lg rounded-xl bg-gradient-to-r from-[#47A88D] to-[#349881] text-white shadow-lg hover:shadow-xl transition-all ring-1 ring-white/20 hover:-translate-y-[1px]'
                         >
                             <ClockIcon className='w-5 h-5 mr-2'/> Daily Scorecard
                         </Button>
                         <Button
                             onClick={() => safeNavigate('coaching-lab')}
                             variant='primary'
-                            className='bg-[#47A88D] hover:bg-[#349881] p-3 text-lg'
+                            className='p-3 text-lg rounded-xl bg-gradient-to-r from-[#47A88D] to-[#349881] text-white shadow-lg hover:shadow-xl transition-all ring-1 ring-white/20 hover:-translate-y-[1px]'
                         >
                             <Mic className='w-5 h-5 mr-2'/> Coaching Lab
                         </Button>
@@ -404,21 +401,21 @@ const DashboardScreen = () => {
                         <Button
                             onClick={() => safeNavigate('reflection')}
                             variant='primary'
-                            className='bg-[#47A88D] hover:bg-[#349881] p-3 text-lg'
+                            className='p-3 text-lg rounded-xl bg-gradient-to-r from-[#47A88D] to-[#349881] text-white shadow-lg hover:shadow-xl transition-all ring-1 ring-white/20 hover:-translate-y-[1px]'
                         >
                             <Star className='w-5 h-5 mr-2'/> Reflection
                         </Button>
                         <Button
                             onClick={() => safeNavigate('planning-hub')}
                             variant='primary'
-                            className='bg-[#47A88D] hover:bg-[#349881] p-3 text-lg'
+                            className='p-3 text-lg rounded-xl bg-gradient-to-r from-[#47A88D] to-[#349881] text-white shadow-lg hover:shadow-xl transition-all ring-1 ring-white/20 hover:-translate-y-[1px]'
                         >
                             <TrendingUp className='w-5 h-5 mr-2'/> Planning Hub
                         </Button>
                         <Button
                             onClick={() => safeNavigate('business-readings')}
                             variant='primary'
-                            className='bg-[#47A88D] hover:bg-[#349881] p-3 text-lg'
+                            className='p-3 text-lg rounded-xl bg-gradient-to-r from-[#47A88D] to-[#349881] text-white shadow-lg hover:shadow-xl transition-all ring-1 ring-white/20 hover:-translate-y-[1px]'
                         >
                             <BookOpen className='w-5 h-5 mr-2'/> Readings
                         </Button>
@@ -507,7 +504,7 @@ const DashboardScreen = () => {
                     </h2>
                     <button
                     className="rounded-full border border-gray-200 px-3 py-1 text-sm hover:bg-gray-100 flex items-center gap-1 transition-colors"
-                    onClick={() => getDailyTip(true)} // FIX: Force true to bypass 6-hour cache
+                    onClick={nextNudge} // FIX: Force true to bypass 6-hour cache
                     disabled={tipLoading}
                     type="button"
                     >
