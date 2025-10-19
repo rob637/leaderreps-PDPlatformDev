@@ -3,30 +3,32 @@
 import React from 'react';
 
 export const COLORS = {
-  BG: '#FFFFFF',
+  // FINAL CONSOLIDATED PALETTE
+  NAVY: '#002E47',      // Dark Text / Primary Background
+  TEAL: '#47A88D',      // Primary Button / Success / Accent
+  SUBTLE_TEAL: '#349881', // Secondary Button / Teal Hover
+  ORANGE: '#E04E1B',    // Action / Alert / Highlight
+  LIGHT_GRAY: '#FCFCFA', // Page Background
+  OFF_WHITE: '#FFFFFF', // Card Background
+  
+  // Mapped existing color names to the new palette
+  BG: '#FCFCFA',
   SURFACE: '#FFFFFF',
-  BORDER: '#1F2937',
-  SUBTLE: '#E5E7EB',
-  TEXT: '#0F172A',
-  MUTED: '#4B5563',
-  NAVY: '#0B3B5B',     // Deep Navy
-  TEAL: '#219E8B',     // Leadership Teal
-  BLUE: '#2563EB',
-  ORANGE: '#E04E1B',   // High-Impact Orange
-  GREEN: '#10B981',
-  AMBER: '#F59E0B',
-  RED: '#EF4444',
-  LIGHT_GRAY: '#F9FAFB',
+  TEXT: '#002E47',
+  RED: '#E04E1B',
 };
 
 export const Button = ({
   children, onClick, disabled = false, variant = 'primary', className = '', ...rest
 }) => {
-  let base = "px-6 py-3 rounded-xl font-semibold transition-all shadow-xl focus:outline-none focus:ring-4 text-white flex items-center justify-center";
-  if (variant === 'primary') base += ` bg-[${COLORS.TEAL}] hover:bg-[#1C8D7C] focus:ring-[${COLORS.TEAL}]/50`;
-  else if (variant === 'secondary') base += ` bg-[${COLORS.ORANGE}] hover:bg-[#C33E12] focus:ring-[${COLORS.ORANGE}]/50`;
+  // Updated base style for softer shadow and consistent font
+  let base = "px-6 py-3 rounded-xl font-semibold transition-all shadow-lg focus:outline-none focus:ring-4 flex items-center justify-center";
+  
+  if (variant === 'primary') base += ` bg-[${COLORS.TEAL}] hover:bg-[${COLORS.SUBTLE_TEAL}] focus:ring-[${COLORS.TEAL}]/50 text-white`;
+  else if (variant === 'secondary') base += ` bg-[${COLORS.ORANGE}] hover:bg-[#C33E12] focus:ring-[${COLORS.ORANGE}]/50 text-white`;
   else if (variant === 'outline') base = `px-6 py-3 rounded-xl font-semibold transition-all shadow-md border-2 border-[${COLORS.TEAL}] text-[${COLORS.TEAL}] hover:bg-[${COLORS.TEAL}]/10 focus:ring-4 focus:ring-[${COLORS.TEAL}]/50 bg-[${COLORS.LIGHT_GRAY}] flex items-center justify-center`;
   else if (variant === 'nav-back') base = `px-4 py-2 rounded-lg font-medium transition-all shadow-sm border-2 border-gray-300 text-gray-700 hover:bg-gray-100 flex items-center justify-center`;
+  
   if (disabled) base = "px-6 py-3 rounded-xl font-semibold bg-gray-300 text-gray-500 cursor-not-allowed shadow-inner transition-none flex items-center justify-center";
 
   return (
@@ -37,11 +39,11 @@ export const Button = ({
 };
 
 export const Card = ({
-  children, title, icon: Icon, className = '', onClick, accent = 'ORANGE'
+  children, title, icon: Icon, className = '', onClick, accent = 'TEAL'
 }) => {
   const interactive = !!onClick;
   const Tag = interactive ? 'button' : 'div';
-  const accentColor = COLORS[accent] || COLORS.ORANGE;
+  const accentColor = COLORS[accent] || COLORS.TEAL;
 
   const handleKeyDown = (e) => {
     if (!interactive) return;
@@ -53,13 +55,14 @@ export const Card = ({
       role={interactive ? 'button' : undefined}
       tabIndex={interactive ? 0 : undefined}
       onKeyDown={handleKeyDown}
-      className={`relative p-6 rounded-2xl border-2 shadow-xl hover:shadow-2xl transition-all duration-300 text-left ${className}`}
-      style={{ background: 'linear-gradient(180deg,#FFFFFF,#F9FAFB)', borderColor: COLORS.SUBTLE, color: COLORS.TEXT }}
+      className={`relative p-6 rounded-2xl border-2 shadow-2xl hover:shadow-xl transition-all duration-300 text-left ${className}`}
+      style={{ background: 'linear-gradient(180deg,#FFFFFF, #FCFCFA)', borderColor: '#E5E7EB', color: COLORS.TEXT }}
       onClick={onClick}
     >
       <span style={{ position:'absolute', top:0, left:0, right:0, height:6, background: accentColor, borderTopLeftRadius:14, borderTopRightRadius:14 }} />
+      
       {Icon && (
-        <div className="w-10 h-10 rounded-lg flex items-center justify-center border mb-3" style={{ borderColor: COLORS.SUBTLE, background: '#F3F4F6' }}>
+        <div className="w-10 h-10 rounded-lg flex items-center justify-center border mb-3" style={{ borderColor: '#E5E7EB', background: COLORS.LIGHT_GRAY }}>
           <Icon className="w-5 h-5" style={{ color: COLORS.TEAL }} />
         </div>
       )}

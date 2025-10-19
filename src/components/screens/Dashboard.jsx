@@ -20,7 +20,8 @@ import {
   CalendarClock,
   LayoutDashboard,
   TrendingDown,
-  MessageSquare
+  MessageSquare,
+  User,
 } from 'lucide-react';
 
 
@@ -28,27 +29,22 @@ import {
    HIGH-CONTRAST PALETTE (Centralized for Consistency)
 ========================================================= */
 const COLORS = {
-  BG: '#FFFFFF',
-  SURFACE: '#FFFFFF',
-  BORDER: '#1F2937',
-  SUBTLE: '#E5E7EB',
-  TEXT: '#0F172A',
-  MUTED: '#4B5563',
-  NAVY: '#0B3B5B', // Deep Navy
-  TEAL: '#219E8B', // Leadership Teal
+  NAVY: '#002E47', 
+  TEAL: '#47A88D', 
   BLUE: '#2563EB',
-  ORANGE: '#E04E1B', // High-Impact Orange
+  ORANGE: '#E04E1B', 
   GREEN: '#10B981',
   AMBER: '#F59E0B',
-  RED: '#EF4444',
-  LIGHT_GRAY: '#FCFCFA'
+  RED: '#E04E1B',
+  LIGHT_GRAY: '#FCFCFA',
+  OFF_WHITE: '#FFFFFF',
+  SUBTLE: '#E5E7EB',
+  TEXT: '#002E47',
+  MUTED: '#4B5563',
 };
 
 
 // --- MOCK IMPORTS for self-contained file ---
-// The actual file paths cannot be resolved in this environment.
-// We mock the necessary context and utility functions locally.
-
 const LEADERSHIP_TIERS = {
     'T1': { id: 'T1', name: 'Self-Awareness', icon: 'HeartPulse', color: 'bg-blue-100 text-blue-700' },
     'T2': { id: 'T2', name: 'Communication', icon: 'Mic', color: 'bg-cyan-100 text-cyan-700' },
@@ -90,9 +86,9 @@ async function mdToHtml(md) {
    UI Components (Standardized)
 ----------------------------------------*/
 const Button = ({ children, onClick, disabled = false, variant = 'primary', className = '', ...rest }) => {
-  let baseStyle = "px-6 py-3 rounded-xl font-semibold transition-all shadow-xl focus:outline-none focus:ring-4 text-white flex items-center justify-center";
-  if (variant === 'primary') { baseStyle += ` bg-[${COLORS.TEAL}] hover:bg-[#1C8D7C] focus:ring-[${COLORS.TEAL}]/50`; }
-  else if (variant === 'secondary') { baseStyle += ` bg-[${COLORS.ORANGE}] hover:bg-red-700 focus:ring-[${COLORS.ORANGE}]/50`; }
+  let baseStyle = "px-6 py-3 rounded-xl font-semibold transition-all shadow-lg focus:outline-none focus:ring-4 text-white flex items-center justify-center";
+  if (variant === 'primary') { baseStyle += ` bg-[${COLORS.TEAL}] hover:bg-[#349881] focus:ring-[${COLORS.TEAL}]/50`; }
+  else if (variant === 'secondary') { baseStyle += ` bg-[${COLORS.ORANGE}] hover:bg-[#C33E12] focus:ring-[${COLORS.ORANGE}]/50`; }
   else if (variant === 'outline') { baseStyle = `px-6 py-3 rounded-xl font-semibold transition-all shadow-md border-2 border-[${COLORS.TEAL}] text-[${COLORS.TEAL}] hover:bg-[${COLORS.TEAL}]/10 focus:ring-4 focus:ring-[${COLORS.TEAL}]/50 bg-[${COLORS.LIGHT_GRAY}] flex items-center justify-center`; }
   else if (variant === 'nav-back') { baseStyle = `px-4 py-2 rounded-lg font-medium transition-all shadow-sm border-2 border-gray-300 text-gray-700 hover:bg-gray-100 flex items-center justify-center`; }
   if (disabled) { baseStyle = "px-6 py-3 rounded-xl font-semibold bg-gray-300 text-gray-500 cursor-not-allowed shadow-inner transition-none flex items-center justify-center"; }
@@ -119,14 +115,14 @@ const Card = ({ children, title, icon: Icon, className = '', onClick, accent = '
       role={interactive ? 'button' : undefined}
       tabIndex={interactive ? 0 : undefined}
       onKeyDown={handleKeyDown}
-      className={`relative p-6 rounded-2xl border-2 shadow-xl hover:shadow-2xl transition-all duration-300 text-left ${className}`}
-      style={{ background: 'linear-gradient(180deg,#FFFFFF,#F9FAFB)', borderColor: COLORS.SUBTLE, color: COLORS.TEXT }}
+      className={`relative p-6 rounded-2xl border-2 shadow-2xl hover:shadow-xl transition-all duration-300 text-left ${className}`}
+      style={{ background: 'linear-gradient(180deg,#FFFFFF, #FCFCFA)', borderColor: COLORS.SUBTLE, color: COLORS.TEXT }}
       onClick={onClick}
     >
       <span style={{ position:'absolute', top:0, left:0, right:0, height:6, background: accentColor, borderTopLeftRadius:14, borderTopRightRadius:14 }} />
 
       {Icon && (
-        <div className="w-10 h-10 rounded-lg flex items-center justify-center border mb-3" style={{ borderColor: COLORS.SUBTLE, background: '#F3F4F6' }}>
+        <div className="w-10 h-10 rounded-lg flex items-center justify-center border mb-3" style={{ borderColor: COLORS.SUBTLE, background: COLORS.LIGHT_GRAY }}>
           <Icon className="w-5 h-5" style={{ color: COLORS.TEAL }} />
         </div>
       )}
@@ -136,10 +132,10 @@ const Card = ({ children, title, icon: Icon, className = '', onClick, accent = '
   );
 };
 
-const StatCard = ({ icon: Icon, label, value, onClick, colorHex = COLORS.GREEN, trend = 0 }) => {
+const StatCard = ({ icon: Icon, label, value, onClick, colorHex = COLORS.TEAL, trend = 0 }) => {
     const trendIcon = trend > 0 ? TrendingUp : TrendingDown;
     const trendColor = trend > 0 ? COLORS.TEAL : trend < 0 ? COLORS.ORANGE : COLORS.MUTED;
-    const isPrimary = label === "Daily Commitments Due"; // Special style for key metric
+    const isPrimary = label === "Daily Commitments Due"; 
     
     return (
         <Card 
@@ -169,7 +165,7 @@ const StatCard = ({ icon: Icon, label, value, onClick, colorHex = COLORS.GREEN, 
 
 
 const ProgressKMI = ({ title, value, icon: Icon, colorHex = COLORS.TEAL }) => (
-    <div className="flex items-center space-x-4 p-4 rounded-xl bg-white shadow-sm border border-gray-100 transition-all duration-300 animate-in fade-in-0 hover:shadow-lg hover:ring-2 ring-opacity-20 ring-[#47A88D]">
+    <div className={`flex items-center space-x-4 p-4 rounded-xl bg-[${COLORS.OFF_WHITE}] shadow-md border border-gray-100 transition-all duration-300 hover:shadow-lg hover:ring-2 ring-opacity-20 ring-[${COLORS.TEAL}]`}>
         <div className={`p-3 rounded-xl bg-opacity-10 flex-shrink-0`} style={{ background: colorHex + '1A'}}>
             <Icon size={20} style={{ color: colorHex }} />
         </div>
@@ -199,7 +195,6 @@ function extractGeminiText(resp) {
    Dashboard (default export)
 ----------------------------------------*/
 const DashboardScreen = () => {
-    // FIX: Removed useSafeNavigate function and now get 'navigate' directly from the hook.
     const {
         navigate,
         user,
@@ -212,7 +207,6 @@ const DashboardScreen = () => {
         LEADERSHIP_TIERS,
     } = useAppServices();
 
-    // FIX: Implement a simple navigate wrapper that uses the hook's navigate function
     const safeNavigate = useCallback((screen, params) => {
         navigate(screen, params);
     }, [navigate]);
@@ -278,18 +272,18 @@ const DashboardScreen = () => {
 
 
     return (
-        <div className="p-8 space-y-8 bg-gray-100 min-h-screen">
+        <div className={`p-8 space-y-8 bg-[${COLORS.LIGHT_GRAY}] min-h-screen`}>
         {/* Header with improved styling */}
-        <div className="border-b border-gray-200 pb-5" style={{ background: COLORS.LIGHT_GRAY, borderRadius: 12 }}>
-            <h1 className="text-4xl font-extrabold text-[#0B3B5B] flex items-center gap-3">
+        <div className={`border-b border-gray-200 pb-5 bg-[${COLORS.LIGHT_GRAY}]`}>
+            <h1 className={`text-4xl font-extrabold text-[${COLORS.NAVY}] flex items-center gap-3`}>
             <Home size={32} style={{ color: COLORS.TEAL }} /> Executive Dashboard
             </h1>
             <p className="text-gray-600 text-base mt-2">
-            Welcome back, <span className="font-semibold text-[#0B3B5B]">{user?.email ? user.email.split('@')[0] : 'Leader'}</span>. Your strategic overview for today.
+            Welcome back, <span className={`font-semibold text-[${COLORS.NAVY}]`}>{user?.email ? user.email.split('@')[0] : 'Leader'}</span>. Your strategic overview for today.
             </p>
         </div>
 
-        {/* Top Stats - With Trend Mocking */}
+        {/* Top Stats - World Class Styling */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             <StatCard
                 icon={Briefcase}
@@ -297,7 +291,7 @@ const DashboardScreen = () => {
                 value={goalsCount > 0 ? `${pdpData?.currentMonth || 1} / 24 Months` : 'Start Now'}
                 onClick={() => safeNavigate('prof-dev-plan')}
                 colorHex={COLORS.NAVY}
-                trend={12} // Mock: 12% increase
+                trend={12} 
             />
             <StatCard
                 icon={ClockIcon}
@@ -305,7 +299,7 @@ const DashboardScreen = () => {
                 value={commitsCount}
                 onClick={() => safeNavigate('daily-practice')}
                 colorHex={hasPendingDailyPractice ? COLORS.ORANGE : COLORS.TEAL}
-                trend={-4} // Mock: 4% decrease
+                trend={-4} 
             />
             <StatCard
                 icon={Trello}
@@ -313,7 +307,7 @@ const DashboardScreen = () => {
                 value={plansCount}
                 onClick={() => safeNavigate('planning-hub')}
                 colorHex={COLORS.BLUE}
-                trend={25} // Mock: 25% increase
+                trend={25} 
             />
         </div>
 
@@ -323,13 +317,13 @@ const DashboardScreen = () => {
             {/* Left Column (Focus & Nudge) */}
             <div className="space-y-8 lg:col-span-1">
 
-                {/* AI Skill Gap Highlight Card */}
+                {/* AI Skill Gap Highlight Card - Aesthetic Upgrade */}
                 {weakestTier && (
                 <Card 
                     title="Development Focus" 
                     icon={AlertTriangle}
                     accent={weakestTier.rating < 5 ? 'ORANGE' : 'TEAL'}
-                    className={`rounded-2xl border-4 border-dashed p-6 shadow-xl transition-all duration-300`} 
+                    className={`rounded-2xl border-4 border-dashed p-6 shadow-2xl transition-all duration-300`} 
                     style={{ border: `4px dashed ${weakestTier.rating < 5 ? COLORS.ORANGE : COLORS.TEAL}`, background: weakestTier.rating < 5 ? COLORS.ORANGE + '1A' : COLORS.TEAL + '1A' }}
                 >
                     <div className='flex items-center justify-between mb-4 -mt-3'>
@@ -353,7 +347,7 @@ const DashboardScreen = () => {
                 </Card>
                 )}
 
-                {/* Daily Tip (Gemini) - Enhanced for Nudge Feel */}
+                {/* Daily Tip (Gemini) - Aesthetic Upgrade */}
                 <Card title="Strategic Nudge" icon={Target} accent='NAVY' className="transition-all duration-300 hover:shadow-2xl hover:bg-white/95 relative group">
                 
                 <div className="flex items-center justify-between mb-4 relative z-10 -mt-3">
@@ -369,7 +363,7 @@ const DashboardScreen = () => {
                 </div>
                 
                 {/* Styled container for the AI prose to look more intentional */}
-                <div className="p-4 rounded-xl bg-gray-50 border border-gray-100 mt-3">
+                <div className={`p-4 rounded-xl bg-[${COLORS.OFF_WHITE}] border border-gray-200 mt-3 shadow-inner`}>
                     <div className="prose prose-sm max-w-none relative z-10">
                         {tipHtml
                         ? <div dangerouslySetInnerHTML={{ __html: tipHtml }} />
@@ -384,7 +378,7 @@ const DashboardScreen = () => {
             <div className="lg:col-span-2 space-y-8">
 
                 {/* PROGRESS SNAPSHOT (KMI Focus) */}
-                <Card title="Key Progress Indicators" icon={LayoutDashboard} accent='TEAL'>
+                <Card title="Key Progress Indicators" icon={LayoutDashboard} accent='TEAL' className='shadow-2xl'>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <ProgressKMI
                             title="Commits Completed (Total)"
@@ -413,7 +407,7 @@ const DashboardScreen = () => {
                     </div>
                 </Card>
                 
-                {/* EXECUTIVE ACTION HUB (Consolidated) */}
+                {/* EXECUTIVE ACTION HUB (Consolidated) - Aesthetic Upgrade */}
                 <Card title="Executive Action Hub" icon={MessageSquare} accent='ORANGE' className='shadow-2xl'>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                         {/* CORE ACTIONS */}
@@ -421,6 +415,7 @@ const DashboardScreen = () => {
                             icon={Zap}
                             onClick={() => safeNavigate('quick-start-accelerator')}
                             variant='primary'
+                            className='bg-[${COLORS.TEAL}] hover:bg-[${COLORS.SUBTLE_TEAL}]'
                         >
                             <Zap className='w-5 h-5 mr-1'/> Accelerator
                         </Button>
@@ -428,6 +423,7 @@ const DashboardScreen = () => {
                             icon={Briefcase}
                             onClick={() => safeNavigate('prof-dev-plan')}
                             variant='primary'
+                            className='bg-[${COLORS.TEAL}] hover:bg-[${COLORS.SUBTLE_TEAL}]'
                         >
                             <Briefcase className='w-5 h-5 mr-1'/> Dev Plan
                         </Button>
@@ -435,6 +431,7 @@ const DashboardScreen = () => {
                             icon={ClockIcon}
                             onClick={() => safeNavigate('daily-practice')}
                             variant='primary'
+                            className='bg-[${COLORS.TEAL}] hover:bg-[${COLORS.SUBTLE_TEAL}]'
                         >
                             <ClockIcon className='w-5 h-5 mr-1'/> Daily Scorecard
                         </Button>
@@ -442,6 +439,7 @@ const DashboardScreen = () => {
                             icon={Mic}
                             onClick={() => safeNavigate('coaching-lab')}
                             variant='primary'
+                            className='bg-[${COLORS.TEAL}] hover:bg-[${COLORS.SUBTLE_TEAL}]'
                         >
                             <Mic className='w-5 h-5 mr-1'/> Coaching Lab
                         </Button>
@@ -450,6 +448,7 @@ const DashboardScreen = () => {
                             icon={TrendingUp}
                             onClick={() => safeNavigate('planning-hub')}
                             variant='primary'
+                            className='bg-[${COLORS.TEAL}] hover:bg-[${COLORS.SUBTLE_TEAL}]'
                         >
                             <TrendingUp className='w-5 h-5 mr-1'/> Planning Hub
                         </Button>
@@ -457,6 +456,7 @@ const DashboardScreen = () => {
                             icon={BookOpen}
                             onClick={() => safeNavigate('business-readings')}
                             variant='primary'
+                            className='bg-[${COLORS.TEAL}] hover:bg-[${COLORS.SUBTLE_TEAL}]'
                         >
                             <BookOpen className='w-5 h-5 mr-1'/> Readings
                         </Button>
@@ -464,13 +464,12 @@ const DashboardScreen = () => {
                             icon={Star}
                             onClick={() => safeNavigate('reflection')}
                             variant='primary'
+                            className='bg-[${COLORS.TEAL}] hover:bg-[${COLORS.SUBTLE_TEAL}]'
                         >
                             <Star className='w-5 h-5 mr-1'/> Reflection
                         </Button>
                     </div>
                 </Card>
-
-
             </div>
         </div>
         </div>
