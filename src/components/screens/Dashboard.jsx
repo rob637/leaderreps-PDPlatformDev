@@ -1,6 +1,6 @@
 // src/components/screens/Dashboard.jsx
 import React, { useMemo, useState, useEffect, useCallback } from 'react';
-// --- Robust navigation helper (prevents 'blink' if router not ready) ---
+// ---  Robust navigation helper (prevents 'blink' if router not ready) ---
 function useSafeNavigate(navigate) {
   return React.useCallback((screen, params) => {
     try { if (typeof navigate === 'function') { navigate(screen, params); return; } } catch (e) { console.error(e); }

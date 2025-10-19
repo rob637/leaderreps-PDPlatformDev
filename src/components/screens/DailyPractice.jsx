@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import {
   PlusCircle, ArrowLeft, X, Target, Clock, CheckCircle, BarChart3, CornerRightUp, AlertTriangle, Users, Lightbulb, Zap, Archive, MessageSquare, List, TrendingDown, TrendingUp, BookOpen, Crown, Cpu, Star
 } from 'lucide-react';
-// FIX: Mocking missing imports for external dependencies like useAppServices, Card, Button, Tooltip, and data/constants
+// FIX:  Mocking missing imports for external dependencies like useAppServices, Card, Button, Tooltip, and data/constants
 // In a real application, these must be provided by the host environment.
 const useAppServices = () => ({
   commitmentData: {

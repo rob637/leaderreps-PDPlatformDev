@@ -5,7 +5,7 @@ import {
     ArrowLeft, CheckCircle, PlusCircle, X, TrendingUp, Target, AlertTriangle, Lightbulb, 
     ShieldCheck, Cpu, Trash2, Zap, MessageSquare, BookOpen, Clock, CornerRightUp, Award
 } from 'lucide-react';
-// Assuming the utility functions are correctly imported
+//  Assuming the utility functions are correctly imported
 import { mdToHtml, hasGeminiKey, callSecureGeminiAPI } from '../../utils/ApiHelpers.js'; 
 
 // --- COLOR PALETTE (For consistency across modules) ---

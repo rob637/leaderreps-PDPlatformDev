@@ -1,6 +1,6 @@
 import { Home, Zap, Clock, Briefcase, Mic, Trello, BookOpen, Settings, BarChart3, TrendingUp, TrendingDown, CheckCircle, Star, Target, Users, HeartPulse } from 'lucide-react';
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-// FIX: Mocking useAppServices since the environment can't resolve relative paths
+// FIX:  Mocking useAppServices since the environment can't resolve relative paths
 const useAppServices = () => ({
     // Mocked core services for local testing
     // You should ensure the real useAppServices in your application provides these fields

@@ -6,7 +6,7 @@ import { AlertTriangle, ArrowLeft, BarChart3, BookOpen, Briefcase, CheckCircle, 
 ========================================================= */
 const GEMINI_MODEL = 'gemini-2.5-flash-preview-09-2025';
 
-// Mock array to store completed practice sessions (for PracticeLogView)
+//  Mock array to store completed practice sessions (for PracticeLogView)
 const MOCK_PRACTICE_SESSIONS = [
     { id: 1, title: 'The Underperformer', date: 'Oct 15, 2025', score: 88, takeaway: 'Focus on Deep Validation.', difficulty: 'Medium' },
     { id: 2, title: 'The Boundary Pusher', date: 'Oct 10, 2025', score: 72, takeaway: 'Improve objective Behavior statement.', difficulty: 'High' },

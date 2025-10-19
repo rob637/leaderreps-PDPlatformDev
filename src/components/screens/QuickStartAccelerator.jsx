@@ -1,4 +1,4 @@
-// src/components/screens/QuickStartAccelerator.jsx
+//  src/components/screens/QuickStartAccelerator.jsx
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import {
