@@ -1,54 +1,37 @@
-// IMPORTANT: run global notepad BEFORE anything else
-import './globals/notepad.js';
+// src/main.jsx
+import React from 'react'
+import { createRoot } from 'react-dom/client'
+import App from './App'
 
-import React, { Suspense, lazy } from 'react';
-import { createRoot } from 'react-dom/client';
-import './index.css';
-
-/**
- * Inject Firebase config from Vite env into a global BEFORE App loads.
- * Netlify env var must be ONE-LINE JSON, e.g.:
- * {"apiKey":"…","authDomain":"…","projectId":"…","appId":"…"}
- */
-(function injectFirebaseConfig() {
-  const raw = import.meta.env.VITE_FIREBASE_CONFIG;
-
-  if (!raw) {
-    console.error('VITE_FIREBASE_CONFIG is missing. Set it in Netlify → Site settings → Environment.');
-    return;
-  }
-
-  try {
-    // Normal case: raw is a JSON string
-    window.__firebase_config = typeof raw === 'string' ? JSON.parse(raw) : raw;
-  } catch (e1) {
-    // Fallback: sanitize common issues (single quotes/newlines)
-    try {
-      const cleaned = String(raw)
-        .trim()
-        .replace(/(\r\n|\n|\r)/g, '')
-        .replace(/'/g, '"');
-      window.__firebase_config = JSON.parse(cleaned);
-      console.warn('VITE_FIREBASE_CONFIG required sanitizing (quotes/newlines). Parsed successfully.');
-    } catch (e2) {
-      console.error('VITE_FIREBASE_CONFIG is not valid JSON. Received:', raw, '\nError:', e2);
+class ErrorBoundary extends React.Component {
+  constructor(props){ super(props); this.state = { error: null, info: null } }
+  static getDerivedStateFromError(error){ return { error } }
+  componentDidCatch(error, info){ console.error('App crashed:', error, info) }
+  render(){
+    if (this.state.error) {
+      const msg = String(this.state.error?.stack || this.state.error?.message || this.state.error)
+      return (
+        <pre style={{
+          whiteSpace:'pre-wrap', padding:16, background:'#111', color:'#eee',
+          minHeight:'100vh', margin:0
+        }}>
+{msg}
+        </pre>
+      )
     }
+    return this.props.children
   }
-})();
-
-// Lazy-load the app AFTER config injection
-const App = lazy(() => import('./App.jsx'));
-
-// Mount
-const container = document.getElementById('root');
-if (!container) {
-  throw new Error('Root element with id="root" not found. Ensure <div id="root"></div> exists in index.html.');
 }
 
-createRoot(container).render(
-  <React.StrictMode>
-    <Suspense fallback={<div className="p-8 text-center">Loading…</div>}>
-      <App />
-    </Suspense>
-  </React.StrictMode>
-);
+const container = document.getElementById('root')
+if (!container) {
+  document.body.innerHTML += '<pre style="padding:16px;background:#111;color:#eee">No #root element found in index.html</pre>'
+} else {
+  createRoot(container).render(
+    <React.StrictMode>
+      <ErrorBoundary>
+        <App />
+      </ErrorBoundary>
+    </React.StrictMode>
+  )
+}
