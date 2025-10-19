@@ -301,26 +301,31 @@ const NavSidebar = ({ currentScreen, setCurrentScreen, user, isMobileOpen, close
 };
 
 const ScreenRouter = ({ currentScreen, navParams }) => {
+  // FIX: Use currentScreen as a key to force React to unmount and remount 
+  // the component instance when the screen changes. This is necessary for 
+  // reliable rendering of lazy-loaded components within a switch statement.
+  const uniqueKey = currentScreen;
+  
   switch (currentScreen) {
     case 'prof-dev-plan':
-      return <ProfDevPlanScreen />;
+      return <ProfDevPlanScreen key={uniqueKey} />;
     case 'daily-practice':
-      return <DailyPracticeScreen initialGoal={navParams.initialGoal} initialTier={navParams.initialTier} />;
+      return <DailyPracticeScreen key={uniqueKey} initialGoal={navParams.initialGoal} initialTier={navParams.initialTier} />;
     case 'coaching-lab':
-      return <CoachingLabScreen />;
+      return <CoachingLabScreen key={uniqueKey} />;
     case 'planning-hub':
-      return <PlanningHubScreen />;
+      return <PlanningHubScreen key={uniqueKey} />;
     case 'business-readings':
-      return <BusinessReadingsScreen />;
+      return <BusinessReadingsScreen key={uniqueKey} />;
     case 'quick-start-accelerator':
-      return <QuickStartScreen />;
+      return <QuickStartScreen key={uniqueKey} />;
     case 'app-settings':
-      return <AppSettingsScreen />;
+      return <AppSettingsScreen key={uniqueKey} />;
     case 'reflection': 
-      return <ExecutiveReflection />;
+      return <ExecutiveReflection key={uniqueKey} />;
     case 'dashboard':
     default:
-      return <DashboardScreen />;
+      return <DashboardScreen key={uniqueKey} />;
   }
 };
 
