@@ -148,7 +148,10 @@ function ExecSwitch({ checked, onChange }) {
 }
 // --- MAIN COMPONENT ---
 export default function BusinessReadingsScreen() {
-    const { allBooks: contextBooks = {}, updateCommitmentData, navigate } = useAppServices();
+    
+  const [debugStamp] = useState(() => new Date().toLocaleString());
+  const [showDbg, setShowDbg] = useState(true);
+const { allBooks: contextBooks = {}, updateCommitmentData, navigate } = useAppServices();
     const [selectedBook, setSelectedBook] = useState(null);
     const [htmlFlyer, setHtmlFlyer] = useState('');
     const [selectedTier, setSelectedTier] = useState('');
@@ -558,6 +561,31 @@ export default function BusinessReadingsScreen() {
 
     return (
         <div className="p-6 md:p-10 min-h-screen" style={{ backgroundColor: COLORS.LIGHT_GRAY }}>
+        {showDbg && (
+          <div
+            style={{
+              position: 'sticky',
+              top: 0,
+              zIndex: 1000,
+              background: '#111827',
+              color: '#FFFFFF',
+              border: '2px solid #F59E0B',
+              borderRadius: 8,
+              padding: '8px 12px',
+              marginBottom: 12
+            }}
+          >
+            <strong>Debug:</strong> BusinessReadings.jsx (high-contrast patch) mounted at {debugStamp}.
+            <button
+              onClick={() => setShowDbg(false)}
+              style={{ float: 'right', background: 'transparent', color: '#FFFFFF', border: 'none', fontWeight: 700, cursor: 'pointer' }}
+              aria-label="Dismiss debug banner"
+            >
+              ×
+            </button>
+          </div>
+        )}
+
             <h1 className="text-4xl font-extrabold  mb-10" style={{ color: COLORS.NAVY }}>Professional Reading Hub</h1>
 
             {!selectedBook && <BookList />}
