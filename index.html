@@ -6,6 +6,21 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>package.json</title>
   </head>
+<script>
+  window.addEventListener('error', e => {
+    const pre = document.createElement('pre');
+    pre.style.cssText = 'position:fixed;inset:0;z-index:99999;background:#111;color:#eee;padding:16px;overflow:auto';
+    pre.textContent = 'JS Error: ' + e.message + '\n' + (e.error && e.error.stack || '');
+    document.body.appendChild(pre);
+  });
+  window.addEventListener('unhandledrejection', e => {
+    const pre = document.createElement('pre');
+    pre.style.cssText = 'position:fixed;inset:0;z-index:99999;background:#111;color:#eee;padding:16px;overflow:auto';
+    pre.textContent = 'Unhandled Promise Rejection: ' + (e.reason && (e.reason.stack || e.reason.message) || e.reason);
+    document.body.appendChild(pre);
+  });
+</script>
+
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
