@@ -1,15 +1,53 @@
-// Ensure a global `notepad` exists before any screen imports run.
-(() => {
-  const g = typeof globalThis !== 'undefined' ? globalThis : (typeof window !== 'undefined' ? window : {});
-  if (!g.notepad) {
-    const stub = {
-      setTitle: (t) => console.log('[Mock Notepad] setTitle:', t),
-      addContent: (c) => console.log('[Mock Notepad] addContent:', c),
-      getContent: () => '',
-      clear: () => console.log('[Mock Notepad] clear'),
+
+/* Global Notepad (safe side-effect module)
+   - Creates window.notepad/globalThis.notepad if absent
+   - No exports; pure side-effect for early import in main.jsx
+*/
+(function initNotepadGlobal(){
+  try {
+    var root = (typeof window !== 'undefined') ? window : (typeof globalThis !== 'undefined' ? globalThis : this);
+    if (root.notepad && typeof root.notepad.addContent === 'function') return;
+
+    var subs = new Set();
+    var state = { title: 'Notepad', lines: [] };
+
+    function snapshot(){
+      return { title: state.title, lines: state.lines.slice() };
+    }
+    function notify(){
+      subs.forEach(function(fn){
+        try { fn(snapshot()); } catch (e) {}
+      });
+    }
+
+    var api = {
+      setTitle: function(t){
+        state.title = String(t == null ? '' : t);
+        notify();
+        return state.title;
+      },
+      addContent: function(line){
+        state.lines.push({ ts: Date.now(), text: String(line == null ? '' : line) });
+        notify();
+        return state.lines.length;
+      },
+      get: function(){ return snapshot(); },
+      clear: function(){
+        state.lines.length = 0;
+        notify();
+      },
+      subscribe: function(fn){
+        if (typeof fn !== 'function') return function(){};
+        subs.add(fn);
+        return function(){ subs.delete(fn); };
+      }
     };
-    g.notepad = stub;
-    if (typeof window !== 'undefined') window.notepad = g.notepad;
+
+    root.notepad = api;
+    // mirror to globalThis as well (in case window is shadowed)
+    try { if (typeof globalThis !== 'undefined') globalThis.notepad = api; } catch (e) {}
+  } catch (e) {
+    // If anything unexpected happens, do not block app boot
+    console.error('Notepad global failed to initialize:', e);
   }
 })();
-export {};

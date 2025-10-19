@@ -1,6 +1,6 @@
 
 /* eslint-disable no-console */
-import React, { useState, useMemo, useRef, useEffect, useCallback } from 'react';
+import React, { useState, useMemo, useRef, useEffect, useCallback, useLayoutEffect } from 'react';
 import { useAppServices } from '../../App.jsx';
 import {
   BookOpen, Target, CheckCircle, Clock, AlertTriangle,
@@ -93,6 +93,21 @@ const MOCK_ALL_BOOKS = {
 };
 
 /* =========================================================
+   LIGHTWEIGHT HTML SANITIZER (allow basic tags/attrs only)
+========================================================= */
+function sanitizeHTML(dirty) {
+  if (!dirty || typeof dirty !== 'string') return '';
+  // Remove script/style tags entirely
+  let clean = dirty.replace(/<\/?(script|style)[^>]*>/gi, '');
+  // Drop on* attributes and javascript: URLs
+  clean = clean.replace(/\son\w+="[^"]*"/gi, '');
+  clean = clean.replace(/\son\w+='[^']*'/gi, '');
+  clean = clean.replace(/(href|src)\s*=\s*"(javascript:[^"]*)"/gi, '$1="#"');
+  clean = clean.replace(/(href|src)\s*=\s*'(javascript:[^']*)'/gi, '$1="#"');
+  return clean;
+}
+
+/* =========================================================
    AI COACH (LOCAL TIPS FALLBACK)
 ========================================================= */
 const mockAIResponse = (bookTitle, focusAreas, query) => {
@@ -142,9 +157,9 @@ const mockAIResponse = (bookTitle, focusAreas, query) => {
 };
 
 /* =========================================================
-   POSTER FLYER (HTML; condensed when exec brief ON)
+   POSTER FLYER (fallback HTML; condensed when exec brief ON)
 ========================================================= */
-function generateBookFlyerHTML(book, tier, isExecutiveBrief) {
+function generatePosterFlyerHTML(book, tier, isExecutiveBrief) {
   const focus = (book.focus || '').split(',').map(s => s.trim()).filter(Boolean);
   const c = COMPLEXITY_MAP[book.complexity] || COMPLEXITY_MAP.Medium;
 
@@ -205,7 +220,7 @@ function generateBookFlyerHTML(book, tier, isExecutiveBrief) {
           <h3 style="margin:0 0 10px 0;color:${COLORS.NAVY};font-weight:900;letter-spacing:.01em">Book Metrics</h3>
           <div style="display:flex;gap:14px;flex-wrap:wrap;color:${COLORS.TEXT}">
             <div><strong>Est. Minutes:</strong> ${book.duration}</div>
-            <div><strong>Complexity:</strong> <span style="color:${c.hex};font-weight:900">${c.label}</span></div>
+            <div><strong>Complexity:</strong> <span style="color:${COMPLEXITY_MAP[book.complexity]?.hex || COLORS.AMBER};font-weight:900">${COMPLEXITY_MAP[book.complexity]?.label || 'Intermediate'}</span></div>
           </div>
         </div>
 
@@ -227,49 +242,46 @@ function generateBookFlyerHTML(book, tier, isExecutiveBrief) {
 }
 
 /* =========================================================
-   ACCESSIBLE EXEC BRIEF SWITCH
+   AI FLYER GENERATOR
+   - Uses callSecureGeminiAPI (if available) to produce rich HTML
+   - Falls back to poster HTML above
 ========================================================= */
-function ExecSwitch({ checked, onChange }) {
-  const toggle = () => onChange(!checked);
-  const onKey = (e) => {
-    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle(); }
-  };
-  return (
-    <div className="flex items-center gap-2">
-      <button
-        type="button"
-        role="switch"
-        aria-checked={checked}
-        onClick={toggle}
-        onKeyDown={onKey}
-        className="relative inline-flex items-center"
-        style={{ width: 46, height: 26 }}
-      >
-        <span
-          style={{
-            position: 'absolute',
-            inset: 0,
-            background: checked ? COLORS.ORANGE : '#9CA3AF',
-            borderRadius: 9999,
-            transition: 'background .15s ease'
-          }}
-        />
-        <span
-          style={{
-            position: 'relative',
-            left: checked ? 22 : 2,
-            width: 22,
-            height: 22,
-            background: '#FFFFFF',
-            borderRadius: '9999px',
-            boxShadow: '0 1px 2px rgba(0,0,0,.2)',
-            transition: 'left .15s ease'
-          }}
-        />
-      </button>
-      <span style={{ color: COLORS.NAVY, fontWeight: 600 }}>Executive Brief</span>
-    </div>
-  );
+async function buildAIFlyerHTML({ book, tier, executive, callSecureGeminiAPI }) {
+  if (!callSecureGeminiAPI) return generatePosterFlyerHTML(book, tier, executive);
+  const baseInstruction = executive
+    ? `Write an EXECUTIVE BRIEF for the book below in 120–180 words max, bullet-first. Focus on the 3–5 most consequential ideas, and one concrete next action. Output clean, minimal HTML using only: <h2>, <h3>, <p>, <ul>, <li>, <strong>, <em>, <blockquote>, <div>, <span>. No external links, images, scripts, or styles.`
+    : `Create a one-page BOOK FLYER for the book below that feels like a professional, poster-style summary. Use 2 columns worth of content structure (but keep within a single container). Include sections: Key Ideas, Mental Models/Frameworks, Memorable Quotes (2–3 short quotes), Manager's Playbook (30/60/90 day plan), Metrics to Watch, Common Pitfalls. Output semantic, compact HTML with headings and lists only; use these tags only: <h2>, <h3>, <p>, <ul>, <li>, <strong>, <em>, <blockquote>, <div>, <span>. No external links, images, scripts, or styles.`;
+
+  const systemPrompt =
+    `You are the LeaderReps AI Researcher. Summarize accurately and concisely with practical guidance. Stick to verified, widely known themes for this title.`;
+
+  const userPrompt =
+    `${baseInstruction}\n\nBook: ${book.title} by ${book.author}\nPrimary focus areas: ${(book.focus || '')}\nComplexity: ${book.complexity}\nEst. Minutes: ${book.duration}\nTier: ${tier}`;
+
+  try {
+    // Try object-signature, then string-signature
+    let out = await callSecureGeminiAPI({ systemPrompt, userPrompt });
+    if (!out) out = await callSecureGeminiAPI(`${systemPrompt}\n\n${userPrompt}`);
+
+    let html = '';
+    if (typeof out === 'string') html = out;
+    else if (out?.text) html = out.text;
+    else if (out?.response) html = out.response;
+    else if (Array.isArray(out?.candidates) && out.candidates[0]?.content) html = out.candidates[0].content;
+    else if (Array.isArray(out?.candidates) && out.candidates[0]?.text) html = out.candidates[0].text;
+    else html = JSON.stringify(out);
+
+    // Sanitize
+    html = sanitizeHTML(html);
+    // Minimal wrap if model returned plain text
+    if (!/[<][a-zA-Z]/.test(html)) {
+      html = `<div><p>${html.replace(/\n/g, '<br/>')}</p></div>`;
+    }
+    return html;
+  } catch (e) {
+    console.error('AI flyer error (fallback to poster):', e);
+    return generatePosterFlyerHTML(book, tier, executive);
+  }
 }
 
 /* =========================================================
@@ -304,6 +316,19 @@ export default function BusinessReadingsScreen() {
   const [aiResponse, setAiResponse] = useState('');
   const aiInputRef = useRef(null);
   const searchInputRef = useRef(null);
+  const [focusedField, setFocusedField] = useState(null); // 'search' | 'coach' | null
+  const lastSelSearch = useRef({ start: null, end: null });
+  const lastSelCoach = useRef({ start: null, end: null });
+
+  // Optional notepad taps for quick confirmation
+  useEffect(() => {
+    try {
+      if (globalThis.notepad && typeof globalThis.notepad.addContent === 'function') {
+        globalThis.notepad.setTitle('LeaderReps Notepad');
+        globalThis.notepad.addContent('📚 BusinessReadings mounted.');
+      }
+    } catch {}
+  }, []);
 
   const allBooks = Object.keys(contextBooks).length ? contextBooks : MOCK_ALL_BOOKS;
 
@@ -327,12 +352,25 @@ export default function BusinessReadingsScreen() {
       }, {});
   }, [allBooks, filters]);
 
-  /* ---------- Flyer generation (HTML) ---------- */
+  /* ---------- Flyer generation (AI then fallback) ---------- */
   useEffect(() => {
-    if (!selectedBook) { setHtmlFlyer(''); return; }
-    const tierKey = selectedTier || Object.keys(allBooks).find(k => (allBooks[k] || []).some(b => b.id === selectedBook.id)) || 'Strategy';
-    const html = generateBookFlyerHTML(selectedBook, tierKey, isExecutiveBrief);
-    setHtmlFlyer(html);
+    let cancelled = false;
+    (async () => {
+      if (!selectedBook) { setHtmlFlyer(''); return; }
+      const tierKey = selectedTier || Object.keys(allBooks).find(k => (allBooks[k] || []).some(b => b.id === selectedBook.id)) || 'Strategy & Execution';
+
+      // Show placeholder while generating
+      setHtmlFlyer(`<div style="padding:12px;border:1px dashed ${COLORS.SUBTLE};border-radius:12px;color:${COLORS.MUTED}">Generating ${isExecutiveBrief ? 'executive brief' : 'book flyer'}…</div>`);
+
+      let html;
+      if (hasGeminiKey && typeof hasGeminiKey === 'function' && hasGeminiKey() && typeof callSecureGeminiAPI === 'function') {
+        html = await buildAIFlyerHTML({ book: selectedBook, tier: tierKey, executive: isExecutiveBrief, callSecureGeminiAPI });
+      } else {
+        html = generatePosterFlyerHTML(selectedBook, tierKey, isExecutiveBrief);
+      }
+      if (!cancelled) setHtmlFlyer(html);
+    })();
+    return () => { cancelled = true; };
   }, [selectedBook, selectedTier, isExecutiveBrief, allBooks]);
 
   /* ---------- Reset contextual state when changing book ---------- */
@@ -343,6 +381,35 @@ export default function BusinessReadingsScreen() {
       setAiResponse('');
     }
   }, [selectedBook]);
+
+  /* ---------- Focus retention for Search & AI inputs ---------- */
+  const rememberCaret = (ref, store) => {
+    try {
+      if (!ref.current) return;
+      store.start = ref.current.selectionStart;
+      store.end = ref.current.selectionEnd;
+    } catch { /* ignore */ }
+  };
+
+  useLayoutEffect(() => {
+    if (focusedField === 'search' && searchInputRef.current) {
+      const el = searchInputRef.current;
+      if (document.activeElement !== el) el.focus();
+      if (lastSelSearch.current.start != null) {
+        try { el.setSelectionRange(lastSelSearch.current.start, lastSelSearch.current.end); } catch { /* ignore */ }
+      }
+    }
+  }, [filters.search, focusedField]);
+
+  useLayoutEffect(() => {
+    if (focusedField === 'coach' && aiInputRef.current) {
+      const el = aiInputRef.current;
+      if (document.activeElement !== el) el.focus();
+      if (lastSelCoach.current.start != null) {
+        try { el.setSelectionRange(lastSelCoach.current.start, lastSelCoach.current.end); } catch { /* ignore */ }
+      }
+    }
+  }, [aiQuery, focusedField]);
 
   /* ---------- AI Coach (real model if available, mock otherwise) ---------- */
   const handleAiSubmit = useCallback(async (e) => {
@@ -433,8 +500,10 @@ export default function BusinessReadingsScreen() {
             type="text"
             ref={searchInputRef}
             value={filters.search}
-            onChange={(e) => setFilters(prev => ({ ...prev, search: e.target.value }))}
-            onInput={(e) => setFilters(prev => ({ ...prev, search: e.target.value }))}
+            onFocus={() => setFocusedField('search')}
+            onBlur={() => setFocusedField(null)}
+            onChange={(e) => { rememberCaret(searchInputRef, lastSelSearch.current); setFilters(prev => ({ ...prev, search: e.target.value })); }}
+            onInput={(e) => { rememberCaret(searchInputRef, lastSelSearch.current); setFilters(prev => ({ ...prev, search: e.target.value })); }}
             placeholder="Start typing to find a book..."
             className="w-full p-3 border rounded-lg shadow-sm focus:outline-none"
             style={{ borderColor: COLORS.SUBTLE, color: COLORS.TEXT }}
@@ -627,7 +696,9 @@ export default function BusinessReadingsScreen() {
               </div>
             </div>
 
-            <ExecSwitch checked={isExecutiveBrief} onChange={setIsExecutiveBrief} />
+            <div className="flex items-center gap-3">
+              <ExecSwitch checked={isExecutiveBrief} onChange={setIsExecutiveBrief} />
+            </div>
           </div>
 
           {/* Rendered Flyer (HTML) */}
@@ -636,7 +707,7 @@ export default function BusinessReadingsScreen() {
           {/* AI Coach */}
           <div className="mt-8 pt-4" style={{ borderTop: `1px solid ${COLORS.SUBTLE}` }}>
             <h3 className="text-2xl font-bold mb-4 flex items-center gap-3" style={{ color: COLORS.NAVY }}>
-              <MessageSquare className="w-6 h-6" style={{ color: COLORS.BLUE }}/> AI Coach: Instant Application
+              <MessageSquare className="text-2xl w-6 h-6" style={{ color: COLORS.BLUE }}/> AI Coach: Instant Application
             </h3>
 
             {aiResponse && (
@@ -651,8 +722,10 @@ export default function BusinessReadingsScreen() {
                 type="text"
                 ref={aiInputRef}
                 value={aiQuery}
-                onChange={(e) => setAiQuery(e.target.value)}
-                onInput={(e) => setAiQuery(e.target.value)}
+                onFocus={() => setFocusedField('coach')}
+                onBlur={() => setFocusedField(null)}
+                onChange={(e) => { rememberCaret(aiInputRef, lastSelCoach.current); setAiQuery(e.target.value); }}
+                onInput={(e) => { rememberCaret(aiInputRef, lastSelCoach.current); setAiQuery(e.target.value); }}
                 placeholder={`Ask how to apply ${selectedBook.title} at work (e.g., "How do I delegate?")`}
                 className="flex-grow p-3 border rounded"
                 style={{ borderColor: COLORS.SUBTLE, color: COLORS.TEXT }}
@@ -719,7 +792,7 @@ export default function BusinessReadingsScreen() {
             marginBottom: 12
           }}
         >
-          <strong>Debug:</strong> BusinessReadings.jsx (v5) mounted at {debugStamp}.
+          <strong>Debug:</strong> BusinessReadings.jsx (v6 AI flyer + focus lock) mounted at {debugStamp}.
           <button
             onClick={() => setShowDbg(false)}
             style={{ float: 'right', background: 'transparent', color: '#FFFFFF', border: 'none', fontWeight: 700, cursor: 'pointer' }}

@@ -1,4 +1,6 @@
-// src/main.jsx
+// IMPORTANT: run global notepad BEFORE anything else
+import './globals/notepad.js';
+
 import React, { Suspense, lazy } from 'react';
 import { createRoot } from 'react-dom/client';
 import './index.css';
@@ -29,7 +31,7 @@ import './index.css';
       window.__firebase_config = JSON.parse(cleaned);
       console.warn('VITE_FIREBASE_CONFIG required sanitizing (quotes/newlines). Parsed successfully.');
     } catch (e2) {
-      console.error('VITE_FIREBASE_CONFIG is not valid JSON. Received:', raw, '\nError:', e2);
+      console.error('VITE_FIREBASE_CONFIG is not valid JSON. Received:', raw, '\\nError:', e2);
     }
   }
 })();
