@@ -546,9 +546,9 @@ const AppSettingsScreen = () => (
 
 
 /* =========================================================
-   LAYOUT + ROUTER
+   LAYOUT + ROUTER (RENAMED TO APP)
 ========================================================= */
-const AppContent = ({ currentScreen, setCurrentScreen, user, navParams, isMobileOpen, setIsMobileOpen }) => {
+const App = ({ currentScreen, setCurrentScreen, user, navParams, isMobileOpen, setIsMobileOpen }) => {
     return (
         <div className="min-h-screen flex bg-gray-100 font-sans antialiased">
             <NavSidebar
@@ -589,12 +589,97 @@ const ScreenRouter = ({ currentScreen, navParams }) => {
       return <QuickStartScreen />;
     case 'app-settings':
       return <AppSettingsScreen />;
-    // REMOVED 'reflection' case which was causing the ReferenceError
     case 'dashboard':
     default:
       return <DashboardScreen />;
   }
 };
+
+/* =========================================================
+   AUTHENTICATION WRAPPER
+========================================================= */
+function AppWrapper(props) {
+  const firebaseConfig = typeof window !== 'undefined' ? window.__firebase_config : null;
+  const hasConfig = !!firebaseConfig;
+
+  if (!hasConfig) {
+      return <ConfigError message="VITE_FIREBASE_CONFIG environment variable is not defined or is invalid." />;
+  }
+
+  // --- Firebase Initialization ---
+  const firebaseApp = useMemo(() => initializeApp(firebaseConfig), [firebaseConfig]);
+  const auth = useMemo(() => getAuth(firebaseApp), [firebaseApp]);
+  const db = useMemo(() => {
+    // Set Firestore log level during development
+    if (DEBUG_MODE) setLogLevel('debug');
+    return getFirestore(firebaseApp);
+  }, [firebaseApp]);
+
+  const [user, setUser] = useState(null);
+  const [isAuthReady, setIsAuthReady] = useState(false);
+  const [currentScreen, setCurrentScreen] = useState('dashboard');
+  const [navParams, setNavParams] = useState({});
+  const [isMobileOpen, setIsMobileOpen] = useState(false);
+  
+  // --- Auth State Listener ---
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (authUser) => {
+      setUser(authUser ? { 
+          email: authUser.email, 
+          userId: authUser.uid, 
+          isAnonymous: authUser.isAnonymous,
+          // Add other user properties needed by the app
+        } : null);
+      setIsAuthReady(true);
+    });
+    return () => unsubscribe();
+  }, [auth]);
+
+  // --- Router/Navigation Function ---
+  const navigate = useCallback((screen, params = {}) => {
+    setCurrentScreen(screen);
+    setNavParams(params);
+  }, []);
+
+  const firebaseServices = useMemo(() => ({ auth, db }), [auth, db]);
+
+  if (!isAuthReady) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#47A88D]"></div>
+      </div>
+    );
+  }
+
+  if (!user && !DEBUG_MODE) {
+    return (
+      <LoginPanel auth={auth} onSuccess={() => {}} allowAnonymous={true} />
+    );
+  }
+  
+  const userProps = user || { email: 'guest@leaderreps.com', userId: 'anonymous-user', isAnonymous: true };
+
+  return (
+    <DataProvider 
+      firebaseServices={firebaseServices} 
+      userId={userProps.userId} 
+      isAuthReady={isAuthReady} 
+      navigate={navigate} 
+      user={userProps}
+    >
+      <App 
+        currentScreen={currentScreen} 
+        setCurrentScreen={setCurrentScreen} 
+        user={userProps}
+        navParams={navParams}
+        isMobileOpen={isMobileOpen}
+        setIsMobileOpen={setIsMobileOpen}
+      />
+      <DebugOverlay stage="App Rendered" authRequired={!DEBUG_MODE} isAuthReady={isAuthReady} user={user} userId={userProps.userId} initError={null} />
+    </DataProvider>
+  );
+}
+
 
 /* =========================================================
    DEFAULT EXPORT WRAPPER (SANITY vs FULL APP)
@@ -612,5 +697,5 @@ export default function Root(props) {
       </div>
     );
   }
-  return <App {...props} />;
+  return <AppWrapper {...props} />;
 }
