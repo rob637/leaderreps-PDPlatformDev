@@ -1,18 +1,22 @@
+/* =========================================================
+   CORRECTED FILE: DailyPractice.jsx
+   FIX: Removed top-level calls to useAppServices() to resolve ReferenceError/TDZ violation.
+   All hook-derived values are now accessed inside the component functions.
+========================================================= */
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import {
   PlusCircle, ArrowLeft, X, Target, Clock, CheckCircle, BarChart3, CornerRightUp, AlertTriangle, Users, Lightbulb, Zap, Archive, MessageSquare, List, TrendingDown, TrendingUp, BookOpen, Crown, Cpu, Star
 } from 'lucide-react';
-// FIX:  Mocking missing imports for external dependencies like useAppServices, Card, Button, Tooltip, and data/constants
-// In a real application, these must be provided by the host environment.
+
+// FIX 1: Mocking missing imports for external dependencies like useAppServices, Card, Button, Tooltip, and data/constants
+// NOTE: The mock is moved outside the conditional check to ensure it is always defined if the host environment doesn't provide the real one.
 const useAppServices = () => ({
   commitmentData: {
     active_commitments: [
-      // FIX 1: Ensuring IDs are strings to prevent 'id.startsWith is not a function' error
       { id: '1', text: 'Schedule 15 min for deep work planning', status: 'Committed', linkedGoal: 'OKR Q4: Launch MVP', linkedTier: 'T3' },
       { id: '2', text: 'Give one piece of specific, positive feedback', status: 'Pending', linkedGoal: 'Improve Feedback Skills', linkedTier: 'T4' },
       { id: '3', text: 'Review team risk mitigation plan', status: 'Missed', linkedGoal: 'Risk Mitigation Strategy', linkedTier: 'T2' },
     ],
-    // FIX 3: Updated mock history dates for accurate display in the calendar view
     history: [
       { date: '2025-10-14', score: '3/3', reflection: 'Perfect day! My focus on T3 planning led directly to two successful decisions.' },
       { date: '2025-10-15', score: '2/3', reflection: 'Missed my T4 commitment. Must prioritize people over tasks tomorrow.' },
@@ -23,7 +27,6 @@ const useAppServices = () => ({
     weekly_review_notes: 'Initial notes for weekly review.',
   },
   updateCommitmentData: async (data) => {
-    // Mock async update
     console.log('Updating commitment data:', data);
     return new Promise(resolve => setTimeout(resolve, 300));
   },
@@ -38,15 +41,12 @@ const useAppServices = () => ({
     plan: [{ month: 'October', theme: 'Mastering Discipline', requiredContent: [{ id: 1, title: 'Deep Work: The Foundation', type: 'Video', duration: 30 }] }]
   },
   callSecureGeminiAPI: async (payload) => {
-    // Mock AI response for prompt and assessment
     if (payload.generationConfig?.responseMimeType === 'application/json') {
-      // Mock Assessment Response
-      const score = Math.floor(Math.random() * 5) + 6; // 6-10
-      const risk = 10 - score; // inverse risk
+      const score = Math.floor(Math.random() * 5) + 6;
+      const risk = 10 - score;
       const feedback = score > 7 ? "Excellent specificity and alignment! Maintain this clarity." : "Slightly vague. Specify the time or location to reduce risk.";
       return { candidates: [{ content: { parts: [{ text: JSON.stringify({ score, risk, feedback }) }] } }] };
     } else {
-      // Mock Reflection Prompt Response
       return { candidates: [{ content: { parts: [{ text: 'Given your strong performance in Tier 3, how can you mentor a peer to adopt your scheduling discipline this week?' }] } }] };
     }
   },
@@ -54,7 +54,7 @@ const useAppServices = () => ({
   GEMINI_MODEL: 'gemini-2.5-flash-preview-09-2025',
 });
 
-// Mock UI components
+// Mock UI components (defined once)
 const Card = ({ title, icon: Icon, className = '', children, onClick }) => (
     <div className={`p-5 rounded-xl shadow-lg border-t-4 border-[#002E47] ${className}`} onClick={onClick}>
         <h2 className="text-xl font-bold text-[#002E47] flex items-center mb-3">
@@ -96,18 +96,17 @@ const LEADERSHIP_TIERS = {
 };
 const leadershipCommitmentBank = {
     'T3: Strategy & Execution': [
-        { id: '101', text: 'Review monthly OKR progress for 30 min', linkedTier: 'T3' }, // FIX 1: ID to string
-        { id: '102', text: 'Translate strategic goal into 3 team actions', linkedTier: 'T3' }, // FIX 1: ID to string
+        { id: '101', text: 'Review monthly OKR progress for 30 min', linkedTier: 'T3' },
+        { id: '102', text: 'Translate strategic goal into 3 team actions', linkedTier: 'T3' },
     ],
     'T4: Team & Culture': [
-        { id: '201', text: 'Provide one piece of specific, positive feedback', linkedTier: 'T4' }, // FIX 1: ID to string
-        { id: '202', text: 'Ask one team member about their long-term growth', linkedTier: 'T4' }, // FIX 1: ID to string
+        { id: '201', text: 'Provide one piece of specific, positive feedback', linkedTier: 'T4' },
+        { id: '202', text: 'Ask one team member about their long-term growth', linkedTier: 'T4' },
     ],
 };
+// FIX: Removed top-level calls to useAppServices()
 const GEMINI_MODEL = 'gemini-2.5-flash-preview-09-2025';
-const callSecureGeminiAPI = useAppServices().callSecureGeminiAPI;
-const hasGeminiKey = useAppServices().hasGeminiKey;
-const updateCommitmentData = useAppServices().updateCommitmentData;
+
 
 // --- Global helper to structure data for the Tier grouping feature ---
 const groupCommitmentsByTier = (commitments) => {
@@ -122,22 +121,20 @@ const groupCommitmentsByTier = (commitments) => {
 
     commitments.forEach(c => {
         const tierId = c.linkedTier || 'General';
-        // Only include tiers that exist in the map
         if (grouped[tierId]) {
             grouped[tierId].items.push(c);
         }
     });
 
-    // Filter out empty tiers
     return Object.entries(grouped)
         .filter(([, data]) => data.items.length > 0)
         .map(([id, data]) => ({ id, ...data }));
 };
 
-// --- Daily reset at local midnight: mark un-logged commitments as Missed, then reset all to Pending for new day
+// --- Daily reset at local midnight ---
 function scheduleMidnightReset(activeCommitments, updateCommitmentData) {
   const lastKey = 'dp:lastResetDate';
-  const todayKey = new Date().toLocaleDateString('en-US'); // e.g., "10/19/2025"
+  const todayKey = new Date().toLocaleDateString('en-US');
   const last = typeof localStorage !== 'undefined' ? localStorage.getItem(lastKey) : null;
 
   async function performReset() {
@@ -146,7 +143,6 @@ function scheduleMidnightReset(activeCommitments, updateCommitmentData) {
         if (c.status === 'Pending') return { ...c, status: 'Missed' };
         return c;
       });
-      // New day: free up both buttons by setting to Pending
       const reset = (prev || activeCommitments || []).map(c => ({ ...c, status: 'Pending' }));
       await updateCommitmentData(prevState => ({ ...prevState, active_commitments: reset }));
       if (typeof localStorage !== 'undefined') localStorage.setItem(lastKey, new Date().toLocaleDateString('en-US'));
@@ -170,35 +166,28 @@ function scheduleMidnightReset(activeCommitments, updateCommitmentData) {
 ========================================================= */
 const getLastSevenDays = (history) => {
     const historyMap = new Map();
-    // Normalize history dates to ISO date string for easy lookup
     history.forEach(item => {
-        // Assuming item.date is an ISO date string ('YYYY-MM-DD')
         historyMap.set(item.date, item);
     });
 
     const lastSevenDays = [];
     const today = new Date();
-    today.setHours(0, 0, 0, 0); // Normalize to midnight
+    today.setHours(0, 0, 0, 0);
 
-    // Loop backwards from 6 days ago up to yesterday (i=1), and include today (i=0) if data exists
-    // We only need the last 7 *past* entries (yesterday and 6 days before it), or fill with blanks.
-    // Let's generate dates for the last 7 full days (i.e., today through 6 days ago).
     for (let i = 6; i >= 0; i--) {
         const date = new Date(today);
         date.setDate(today.getDate() - i);
-        // Ensure date is normalized to YYYY-MM-DD for matching
         const dateString = date.toISOString().split('T')[0];
         
         const historyItem = historyMap.get(dateString);
 
         lastSevenDays.push(historyItem || { 
             date: dateString, 
-            score: '0/0', // Default score for a day with no log
+            score: '0/0',
             reflection: 'No log was submitted for this day.',
         });
     }
     
-    // We only want the last 7 items in order (oldest to newest)
     return lastSevenDays;
 };
 
@@ -210,12 +199,10 @@ const calculateTierSuccessRates = (activeCommitments, history) => {
     const allTiers = Object.keys(LEADERSHIP_TIERS);
     const tierData = {};
 
-    // 1. Initialize all tiers
     allTiers.forEach(id => {
         tierData[id] = { met: 0, total: 0, rate: 0 };
     });
 
-    // 2. Process today's commitments (Mocking status to show variability)
     activeCommitments.forEach(c => {
         if (c.linkedTier) {
             const isMet = c.status === 'Committed';
@@ -226,20 +213,16 @@ const calculateTierSuccessRates = (activeCommitments, history) => {
         }
     });
 
-    // 3. Process history (Mocking historical success by tier) - Last 90 Days
     history.slice(-90).forEach(() => {
-        // Mock success rate skewing slightly positive for engagement
         ['T3', 'T4', 'T2', 'T5', 'T1'].forEach(id => {
             if (tierData[id]) {
                 tierData[id].total += 2;
-                // Mock better performance for T3/T4 (Mid-Level focus)
                 const mockMet = (id === 'T3' || id === 'T4') ? 2 : (id === 'T2') ? 1 : Math.random() > 0.4 ? 1 : 0;
                 tierData[id].met += mockMet;
             }
         });
     });
 
-    // 4. Calculate Final Rates
     return allTiers.map(id => {
         const data = tierData[id];
         const rate = data.total > 0 ? Math.round((data.met / data.total) * 100) : 0;
@@ -265,7 +248,6 @@ const TierSuccessMap = ({ tierRates }) => {
         );
     }
     
-    // Find the highest and lowest performers for visual cues
     const maxRate = Math.max(...tierRates.map(t => t.rate));
     const minRate = Math.min(...tierRates.filter(t => t.total > 0).map(t => t.rate));
 
@@ -306,13 +288,10 @@ const TierSuccessMap = ({ tierRates }) => {
 const CommitmentHistoryModal = ({ isVisible, onClose, dayData, activeCommitments }) => {
     if (!isVisible || !dayData) return null;
 
-    // Check for 0/0 score which means the day was not logged/tracked
     const [committed, total] = dayData.score.split('/').map(Number);
     const isPerfect = committed === total && total > 0;
     const isLoggedDay = total > 0;
     
-    // Note: In a production app, dayData.details would store the list of commitments and their status.
-    // Since we don't have that, we display the current active list but note the score is for the past.
     const historicalCommitments = activeCommitments || []; 
 
     return (
@@ -371,7 +350,6 @@ const CommitmentHistoryModal = ({ isVisible, onClose, dayData, activeCommitments
  */
 const CommitmentItem = ({ commitment, onLogCommitment, onRemove, isSaving, isScorecardMode }) => {
   const status = commitment.status || 'Pending';
-  // Archiving rule: cannot remove if already logged (Committed or Missed)
   const isPermanentCommitment = commitment.status !== 'Pending' && isScorecardMode; 
   
   const getStatusColor = (s) => {
@@ -388,12 +366,10 @@ const CommitmentItem = ({ commitment, onLogCommitment, onRemove, isSaving, isSco
 
   const tierMeta = commitment.linkedTier ? LEADERSHIP_TIERS[commitment.linkedTier] : null;
 
-  // Derive display labels
   const tierLabel = tierMeta ? `${tierMeta.id}: ${tierMeta.name}` : 'General';
   const colleagueLabel = commitment.targetColleague ? `Focus: ${commitment.targetColleague}` : 'Self-Focus';
 
   const removeHandler = () => {
-    // Soft Delete/Archive Logic
     if (status !== 'Pending') {
       console.warn("Commitment already logged (Committed/Missed) for today. Cannot archive.");
     } else {
@@ -451,11 +427,11 @@ const CommitmentItem = ({ commitment, onLogCommitment, onRemove, isSaving, isSco
    NEW FEATURE: AI Accountability Partner Nudge
 ========================================================= */
 const AIStarterPackNudge = ({ pdpData, setLinkedGoal, setLinkedTier, handleAddCommitment, isSaving }) => {
+    const { callSecureGeminiAPI, GEMINI_MODEL } = useAppServices(); // FIX: Call hook inside component
+    
     const [starterLoading, setStarterLoading] = useState(false);
     const [suggestions, setSuggestions] = useState(null);
-    const { callSecureGeminiAPI, GEMINI_MODEL } = useAppServices();
 
-    // Identify the user's current highest priority tier from PDP
     const highPriorityTier = useMemo(() => {
         if (!pdpData?.assessment?.goalPriorities || pdpData.assessment.goalPriorities.length === 0) {
             return null;
@@ -464,11 +440,9 @@ const AIStarterPackNudge = ({ pdpData, setLinkedGoal, setLinkedTier, handleAddCo
         return LEADERSHIP_TIERS[tierId];
     }, [pdpData]);
     
-    // Determine a few random commitments from the priority tier's bank
     const fetchStarterCommitments = useCallback((tier) => {
         if (!tier) return [];
         
-        // Find the bank category that aligns most closely (Mocking the lookup)
         const allBankCommitments = Object.values(leadershipCommitmentBank || {}).flat();
         
         const tierKeywords = tier.name.split(' ').map(s => s.toLowerCase());
@@ -477,7 +451,6 @@ const AIStarterPackNudge = ({ pdpData, setLinkedGoal, setLinkedTier, handleAddCo
             tierKeywords.some(keyword => c.text.toLowerCase().includes(keyword))
         );
         
-        // Take 3 random commitments (or fewer if not enough)
         const shuffled = relevantCommitments.sort(() => 0.5 - Math.random());
         return shuffled.slice(0, 3);
 
@@ -486,16 +459,12 @@ const AIStarterPackNudge = ({ pdpData, setLinkedGoal, setLinkedTier, handleAddCo
     const handleGenerate = async () => {
         if (!highPriorityTier) return;
         setStarterLoading(true);
-
-        // In a real app, this would be an AI call to chain habits. 
-        // Here, we mock the result using relevant commitments.
         
         const mockSuggestions = fetchStarterCommitments(highPriorityTier);
         
         setSuggestions({
             tier: highPriorityTier,
             list: mockSuggestions,
-            // Mocked LIS value for celebration
             lisValue: highPriorityTier.id === 'T1' ? 'Vulnerability' : highPriorityTier.id === 'T3' ? 'Discipline' : 'Clarity'
         });
         setStarterLoading(false);
@@ -503,7 +472,6 @@ const AIStarterPackNudge = ({ pdpData, setLinkedGoal, setLinkedTier, handleAddCo
 
     if (!highPriorityTier) return null;
     if (suggestions) {
-        // Render suggested pack
         return (
             <Card title={`Suggested Starter Pack: ${suggestions.tier.name}`} icon={Crown} className='mb-8 border-l-8 border-[#47A88D] bg-[#47A88D]/10'>
                 <p className='text-sm text-gray-700 mb-4'>
@@ -515,11 +483,9 @@ const AIStarterPackNudge = ({ pdpData, setLinkedGoal, setLinkedTier, handleAddCo
                             <span className='text-sm text-gray-700 pr-2'>{c.text}</span>
                             <Button 
                                 onClick={() => {
-                                    // Mock currentMonthPlan theme for goal linking
                                     const currentMonthPlan = useAppServices().pdpData?.plan?.find(m => m.month === useAppServices().pdpData?.currentMonth);
                                     setLinkedGoal(currentMonthPlan?.theme || `Focus on ${highPriorityTier.name}`);
                                     setLinkedTier(highPriorityTier.id);
-                                    // Trigger the add with the commitment data
                                     handleAddCommitment(c, 'bank');
                                 }}
                                 disabled={isSaving}
@@ -535,7 +501,6 @@ const AIStarterPackNudge = ({ pdpData, setLinkedGoal, setLinkedTier, handleAddCo
         );
     }
     
-    // Render button to generate starter pack
     return (
          <Card title="AI Accountability Partner" icon={Zap} className='mb-8 border-l-4 border-[#002E47] bg-gray-100'>
              <p className='text-sm text-gray-700 mb-4'>
@@ -553,7 +518,7 @@ const AIStarterPackNudge = ({ pdpData, setLinkedGoal, setLinkedTier, handleAddCo
  * CommitmentSelectorView: Allows users to add commitments from the bank or create custom ones.
  */
 const CommitmentSelectorView = ({ setView, initialGoal, initialTier }) => {
-  const { updateCommitmentData, commitmentData, planningData, pdpData, callSecureGeminiAPI, GEMINI_MODEL } = useAppServices();
+  const { updateCommitmentData, commitmentData, planningData, pdpData, callSecureGeminiAPI, hasGeminiKey } = useAppServices(); // FIX: Call hook inside component
 
   const [tab, setTab] = useState('bank');
   const [searchTerm, setSearchTerm] = useState('');
@@ -564,7 +529,6 @@ const CommitmentSelectorView = ({ setView, initialGoal, initialTier }) => {
   const [isSaving, setIsSaving] = useState(false);
   const [isAlignmentOpen, setIsAlignmentOpen] = useState(true);
   
-  // NEW STATE: AI Assessment
   const [assessmentLoading, setAssessmentLoading] = useState(false);
   const [aiAssessment, setAiAssessment] = useState(null);
 
@@ -572,17 +536,11 @@ const CommitmentSelectorView = ({ setView, initialGoal, initialTier }) => {
   const activeCommitmentIds = new Set(userCommitments.map(c => c.id));
   const currentMonthPlan = pdpData?.plan?.find(m => m.month === pdpData?.currentMonth);
 
-  // PDP Content Calculation
   const requiredPdpContent = currentMonthPlan?.requiredContent || [];
-  // Prefix PDP IDs to prevent accidental collision with commitment bank IDs
-  // FIX 1: The map function now correctly ensures commitment IDs are strings before using startsWith
   const pdpContentCommitmentIds = new Set(userCommitments.filter(c => String(c.id).startsWith('pdp-content-')).map(c => String(c.id).split('-')[2]));
-  const hasUnaddedPdpContent = requiredPdpContent.some(c => !pdpContentCommitmentIds.has(String(c.id)));
 
-  // Combine all commitments from the bank into a flat array
   const allBankCommitments = useMemo(() => Object.values(leadershipCommitmentBank || {}).flat(), []);
 
-  // Filter bank commitments by search and exclude active commitments
   const filteredBankCommitments = useMemo(() => {
     const ql = searchTerm.toLowerCase();
     return allBankCommitments.filter(c =>
@@ -591,7 +549,6 @@ const CommitmentSelectorView = ({ setView, initialGoal, initialTier }) => {
     );
   }, [allBankCommitments, activeCommitmentIds, searchTerm]);
 
-  // DYNAMIC GOAL LINKING
   const okrGoals = planningData?.okrs?.map(o => o.objective) || [];
   const missionVisionGoals = [planningData?.vision, planningData?.mission].filter(Boolean);
   const initialLinkedGoalPlaceholder = '--- Select the Goal this commitment supports ---';
@@ -605,7 +562,6 @@ const CommitmentSelectorView = ({ setView, initialGoal, initialTier }) => {
     'Other / New Goal'
   ], [okrGoals, missionVisionGoals, currentMonthPlan]);
   
-  // UX Polish: Update linkedGoal/linkedTier from navigation props
   useEffect(() => {
     if (initialGoal && initialGoal !== linkedGoal) {
       setLinkedGoal(initialGoal);
@@ -613,7 +569,6 @@ const CommitmentSelectorView = ({ setView, initialGoal, initialTier }) => {
     if (initialTier && initialTier !== linkedTier) {
       setLinkedTier(initialTier);
     }
-    // Set default linkedGoal if none is selected on initial load
     if (!linkedGoal) {
       setLinkedGoal(initialLinkedGoalPlaceholder);
     }
@@ -621,7 +576,6 @@ const CommitmentSelectorView = ({ setView, initialGoal, initialTier }) => {
 
   const handleClearSearch = () => setSearchTerm('');
   
-  // Clear AI assessment when custom commitment changes
   useEffect(() => {
     setAiAssessment(null);
   }, [customCommitment]);
@@ -644,6 +598,7 @@ const CommitmentSelectorView = ({ setView, initialGoal, initialTier }) => {
 
     setAssessmentLoading(true);
     setAiAssessment(null);
+    const GEMINI_MODEL_LOCAL = useAppServices().GEMINI_MODEL;
 
     const tierName = LEADERSHIP_TIERS[linkedTier]?.name || 'N/A';
     const systemPrompt = `You are an AI Executive Coach specializing in habit alignment. Your task is to analyze a user's proposed daily commitment against their strategic context (Goal and Leadership Tier). The response MUST be a JSON object conforming to the schema. Do not include any introductory or explanatory text outside the JSON block.`;
@@ -676,7 +631,7 @@ const CommitmentSelectorView = ({ setView, initialGoal, initialTier }) => {
                 responseMimeType: "application/json",
                 responseSchema: jsonSchema
             },
-            model: GEMINI_MODEL,
+            model: GEMINI_MODEL_LOCAL,
         };
         
         const result = await callSecureGeminiAPI(payload);
@@ -727,7 +682,6 @@ const CommitmentSelectorView = ({ setView, initialGoal, initialTier }) => {
       };
     } else {
       newCommitment = {
-        // FIX 1: Ensure ID is a string for all commitments added from the bank
         ...commitment,
         id: String(commitment.id), 
         status: 'Pending',
@@ -741,21 +695,18 @@ const CommitmentSelectorView = ({ setView, initialGoal, initialTier }) => {
 
     await updateCommitmentData({ active_commitments: newCommitments });
 
-    // Reset inputs after adding
     if (initialGoal !== linkedGoal) setLinkedGoal(initialLinkedGoalPlaceholder);
     if (initialTier !== linkedTier) setLinkedTier('');
     setCustomCommitment('');
     setTargetColleague('');
-    setAiAssessment(null); // Clear assessment on successful add
+    setAiAssessment(null);
     setIsSaving(false);
   };
 
   const handleCreateCustomCommitment = async () => {
-    // Note: AI assessment results are not currently saved to the commitment object, 
-    // but the presence of the assessment could be a prerequisite for saving.
     if (customCommitment.trim() && linkedGoal && linkedGoal !== initialLinkedGoalPlaceholder && linkedTier) {
       setIsSaving(true);
-      const newId = String(Date.now()); // FIX 1: Ensure new ID is a string
+      const newId = String(Date.now());
       const newCommitments = [...userCommitments, {
         id: newId,
         text: customCommitment.trim(),
@@ -767,12 +718,11 @@ const CommitmentSelectorView = ({ setView, initialGoal, initialTier }) => {
       }];
 
       await updateCommitmentData({ active_commitments: newCommitments });
-      // Reset inputs after adding
       setCustomCommitment('');
       if (initialGoal !== linkedGoal) setLinkedGoal(initialLinkedGoalPlaceholder);
       if (initialTier !== linkedTier) setLinkedTier('');
       setTargetColleague('');
-      setAiAssessment(null); // Clear assessment on successful add
+      setAiAssessment(null);
       setIsSaving(false);
     }
   };
@@ -839,7 +789,6 @@ const CommitmentSelectorView = ({ setView, initialGoal, initialTier }) => {
         <ArrowLeft className="w-5 h-5 mr-2" /> Back to Scorecard
       </Button>
 
-      {/* NEW FEATURE: AI Accountability Nudge - Show only if list is empty AND PDP exists */}
       {userCommitments.length === 0 && pdpData && (
           <AIStarterPackNudge 
             pdpData={pdpData} 
@@ -1032,7 +981,7 @@ const CommitmentSelectorView = ({ setView, initialGoal, initialTier }) => {
             
             <Button
                 onClick={handleAnalyzeCommitment}
-                disabled={!customCommitment.trim() || !canAddCommitment || assessmentLoading || isSaving}
+                disabled={!customCommitment.trim() || !canAddCommitment || assessmentLoading || isSaving || !hasGeminiKey()}
                 variant='outline'
                 className="w-full bg-[#002E47] hover:bg-gray-700 text-white"
             >
@@ -1061,19 +1010,16 @@ const CommitmentSelectorView = ({ setView, initialGoal, initialTier }) => {
 ========================================================= */
 
 const WeeklyPrepView = ({ setView, commitmentData, updateCommitmentData, userCommitments }) => {
-    // Mock data based on last 7 history entries
+    const [reviewNotes, setReviewNotes] = useState(commitmentData?.weekly_review_notes || '');
+    const [isSaving, setIsSaving] = useState(false);
+    
     const missedLastWeek = (commitmentData?.history || []).slice(-7).filter(day => {
         const [committed, total] = day.score.split('/').map(Number);
         return committed < total && total > 0;
     });
 
-    const [reviewNotes, setReviewNotes] = useState(commitmentData?.weekly_review_notes || '');
-    const [isSaving, setIsSaving] = useState(false);
-    
-    // Mock handler for "retiring" a commitment (soft removal from active list)
     const handleRetireCommitment = async (id) => {
         const commitmentToRemove = userCommitments.find(c => c.id === id);
-        // Using console.warn instead of alert per instructions
         if (commitmentToRemove && commitmentToRemove.status !== 'Pending') {
             console.warn("A commitment that has been logged today cannot be immediately retired for data integrity. Please wait for the daily reset.");
             return;
@@ -1083,12 +1029,10 @@ const WeeklyPrepView = ({ setView, commitmentData, updateCommitmentData, userCom
         
         await updateCommitmentData({ active_commitments: newCommitments });
         console.info("Commitment retired successfully. Focus remains on the next priority!");
-        // Stay on Prep View to allow more review/retiring
     };
 
     const handleSaveReview = async () => {
         setIsSaving(true);
-        // Save the notes as a persistent meta-field
         await updateCommitmentData({ 
             last_weekly_review: new Date().toISOString(),
             weekly_review_notes: reviewNotes,
@@ -1108,7 +1052,6 @@ const WeeklyPrepView = ({ setView, commitmentData, updateCommitmentData, userCom
             </Button>
             
             <div className='grid lg:grid-cols-2 gap-8'>
-                {/* Past Week Review */}
                 <div className='space-y-6'>
                     <Card title="Audit: Last Week's Missed Days" icon={TrendingDown} className='border-l-4 border-[#E04E1B] bg-[#E04E1B]/10'>
                         <p className='text-sm text-gray-700 mb-4'>
@@ -1134,7 +1077,6 @@ const WeeklyPrepView = ({ setView, commitmentData, updateCommitmentData, userCom
                     </Card>
                 </div>
 
-                {/* Next Week Prep */}
                 <div className='space-y-6'>
                     <Card title="Next Week Planning Notes" icon={Lightbulb} className='border-l-4 border-[#47A88D]'>
                         <p className='text-sm text-gray-700 mb-4'>Draft a quick focus note for the upcoming week based on your audit. What single outcome will define success?</p>
@@ -1160,25 +1102,19 @@ const WeeklyPrepView = ({ setView, commitmentData, updateCommitmentData, userCom
  * DailyPracticeScreen: Main Scorecard View
  */
 export default function DailyPracticeScreen({ initialGoal, initialTier }) {
-  const { commitmentData, updateCommitmentData, callSecureGeminiAPI, hasGeminiKey, pdpData, GEMINI_MODEL } = useAppServices();
+  const { commitmentData, updateCommitmentData, callSecureGeminiAPI, hasGeminiKey, pdpData } = useAppServices(); // FIX: Call hook once here
   React.useEffect(() => scheduleMidnightReset(commitmentData?.active_commitments || [], updateCommitmentData), [commitmentData?.active_commitments, updateCommitmentData]);
-  const { isLoading, error } = useAppServices();
 
-  // FIX 1: Default to scorecard and use effect to check initial props
   const [view, setView] = useState('scorecard'); 
   const [isSaving, setIsSaving] = useState(false);
   const [reflection, setReflection] = useState(commitmentData?.reflection_journal || '');
   
-  // New State for Features
   const [reflectionPrompt, setReflectionPrompt] = useState(null);
   const [promptLoading, setPromptLoading] = useState(false);
   const [isHistoryModalVisible, setIsHistoryModalVisible] = useState(false);
   const [selectedHistoryDay, setSelectedHistoryDay] = useState(null);
   
-  // State for NEW FEATURE 3: Goal/Tier Grouping Toggle
-  const [viewMode, setViewMode] = useState('status'); // 'status' | 'tier'
-  
-  // LIS Celebration Modal State (not fully implemented, state kept for feature completeness)
+  const [viewMode, setViewMode] = useState('status');
   const [isPerfectScoreModalVisible, setIsPerfectScoreModalVisible] = useState(false);
   const LIS_MOCK_VALUE = 'Vulnerability and Discipline'; 
 
@@ -1186,7 +1122,6 @@ export default function DailyPracticeScreen({ initialGoal, initialTier }) {
   useEffect(() => {
     if (commitmentData) {
       setReflection(commitmentData.reflection_journal || '');
-      // Only fetch prompt if reflection is empty (i.e., new day) and prompt hasn't been set
       if (!reflection && !reflectionPrompt) { 
         fetchReflectionPrompt(commitmentData);
       }
@@ -1194,7 +1129,6 @@ export default function DailyPracticeScreen({ initialGoal, initialTier }) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [commitmentData]); 
   
-  // FIX 1: Handle initial navigation to selector view
   useEffect(() => {
     if (initialGoal || initialTier) {
       setView('selector');
@@ -1208,13 +1142,10 @@ export default function DailyPracticeScreen({ initialGoal, initialTier }) {
   const streak = calculateStreak(commitmentHistory);
   const isPerfectScore = score.total > 0 && score.committed === score.total;
   
-  // Group commitments for "View by PDP Tier" mode
   const commitmentsByTier = useMemo(() => groupCommitmentsByTier(userCommitments), [userCommitments]);
   
-  // NEW ADVANCED FEATURE 1: Tier Success Rates
   const tierSuccessRates = useMemo(() => calculateTierSuccessRates(userCommitments, commitmentHistory), [userCommitments, commitmentHistory]);
 
-  // FIX 3: Generate robust 7-day history calendar
   const lastSevenDaysHistory = useMemo(() => getLastSevenDays(commitmentHistory), [commitmentHistory]);
 
 
@@ -1222,6 +1153,7 @@ export default function DailyPracticeScreen({ initialGoal, initialTier }) {
      NEW FEATURE 1: AI-Driven Reflection Prompt Logic
   ========================================================= */
   const fetchReflectionPrompt = async (data) => {
+    const GEMINI_MODEL_LOCAL = useAppServices().GEMINI_MODEL; // FIX: Access inside function
     if (!hasGeminiKey() || promptLoading) return;
 
     setPromptLoading(true);
@@ -1247,15 +1179,14 @@ export default function DailyPracticeScreen({ initialGoal, initialTier }) {
         const payload = {
             contents: [{ role: "user", parts: [{ text: userQuery }] }],
             systemInstruction: { parts: [{ text: systemPrompt }] },
-            model: GEMINI_MODEL,
-            // Not using search grounding here as this is internal coaching
+            model: GEMINI_MODEL_LOCAL,
         };
         const result = await callSecureGeminiAPI(payload);
         const text = result?.candidates?.[0]?.content?.parts?.[0]?.text;
         setReflectionPrompt(text?.trim() || 'What was the most important lesson you learned today?');
     } catch (e) {
         console.error("AI Prompt Error:", e);
-        setReflectionPrompt('What single behavior reinforced your LIS today, and why?'); // Fallback
+        setReflectionPrompt('What single behavior reinforced your LIS today, and why?');
     } finally {
         setPromptLoading(false);
     }
@@ -1273,7 +1204,6 @@ export default function DailyPracticeScreen({ initialGoal, initialTier }) {
     await updateCommitmentData({ active_commitments: updatedCommitments });
     setIsSaving(false);
     
-    // Trigger celebration modal if score is perfect NOW
     const newScore = calculateTotalScore(updatedCommitments);
     if (newScore.total > 0 && newScore.committed === newScore.total && status === 'Committed') {
         setIsPerfectScoreModalVisible(true);
@@ -1284,7 +1214,6 @@ export default function DailyPracticeScreen({ initialGoal, initialTier }) {
     setIsSaving(true);
     const commitmentToRemove = userCommitments.find(c => c.id === id);
 
-    // Archiving/Soft Delete Logic Check
     if (commitmentToRemove && commitmentToRemove.status !== 'Pending') {
         console.warn("Commitment already logged (Committed/Missed) for today. It must remain on the scorecard until tomorrow's daily reset.");
         setIsSaving(false);
@@ -1295,11 +1224,8 @@ export default function DailyPracticeScreen({ initialGoal, initialTier }) {
     setIsSaving(false);
   };
 
-  // FIX 4: Save Daily Reflection (correctly saving to the current day's journal field)
   const handleSaveReflection = async () => {
     setIsSaving(true);
-    // Note: The logic for moving this 'reflection_journal' field into the immutable 'history' array
-    // and resetting it to '' must happen in your external daily reset/data persistence function.
     await updateCommitmentData({ reflection_journal: reflection });
     setIsSaving(false);
   };
@@ -1319,15 +1245,14 @@ export default function DailyPracticeScreen({ initialGoal, initialTier }) {
     
     for (let i = validHistory.length - 1; i >= 0; i--) {
       const scoreParts = validHistory[i].score.split('/');
-      // Skip if score is invalid or 0/0 (unlogged)
       if (scoreParts.length !== 2) continue; 
 
       const [committed, total] = scoreParts.map(Number);
       if (committed === total && total > 0) {
         streak++;
-      } else if (total > 0) { // If logged, but not perfect, streak ends
+      } else if (total > 0) {
         break;
-      } else { // If 0/0 (unlogged), continue only if streak hasn't started
+      } else {
         if (streak > 0) break; 
       }
     }
@@ -1338,7 +1263,6 @@ export default function DailyPracticeScreen({ initialGoal, initialTier }) {
      NEW FEATURE 2: 30-Day Progress Bar Logic
   ========================================================= */
   const monthlyProgress = useMemo(() => {
-    // Look at last 30 entries (or all if less than 30)
     const recentHistory = commitmentHistory.slice(-30); 
     let totalCommitments = 0;
     let totalMet = 0;
@@ -1349,7 +1273,6 @@ export default function DailyPracticeScreen({ initialGoal, initialTier }) {
         totalCommitments += total;
     });
 
-    // Add today's score
     totalMet += score.committed;
     totalCommitments += score.total;
     
@@ -1384,7 +1307,6 @@ export default function DailyPracticeScreen({ initialGoal, initialTier }) {
     const today = new Date();
     const hour = today.getHours();
     
-    // 1. Predictive Risk Indicator (Mocking AI prediction based on missed tier)
     const missedTiers = userCommitments
       .filter(c => c.status === 'Missed' || c.status === 'Pending')
       .map(c => c.linkedTier)
@@ -1394,14 +1316,12 @@ export default function DailyPracticeScreen({ initialGoal, initialTier }) {
     let riskIcon = null;
 
     if (missedTiers.length > 0) {
-        // High risk: focus on the most commonly missed/pending tier
         const frequentMissedTier = missedTiers.reduce((a, b, i, arr) => 
             (arr.filter(v => v===a).length >= arr.filter(v => v===b).length ? a : b), missedTiers[0]);
             
         riskText = `High Risk: Inconsistency in **${LEADERSHIP_TIERS[frequentMissedTier]?.name || 'a core tier'}**. This threatens your ability to advance in your PDP.`;
         riskIcon = TrendingDown;
     } else {
-        // Low risk: focus on maintaining the perfect score (if applicable)
         if (score.total > 0) {
             riskText = "Low Risk: Great start! Sustain the momentum to hit a perfect score.";
             riskIcon = CheckCircle;
@@ -1411,13 +1331,12 @@ export default function DailyPracticeScreen({ initialGoal, initialTier }) {
         }
     }
 
-    // 2. Time Block Reminder Micro-Tip (Mocked time-based workflow advice)
     let tipText;
     if (hour < 12) {
         tipText = "Morning Focus: Protect your 'Deep Work' commitment first. Say 'No' to non-essential pings.";
     } else if (hour >= 12 && hour < 16) {
         tipText = "Afternoon Reset: Check if you have any Commitments due before EOD, especially 1:1 prep.";
-    } else { // 4 PM or later
+    } else {
         tipText = "End-of-Day Review: Ensure all Commitments are marked. Reflect before signing off.";
     }
 
@@ -1428,6 +1347,7 @@ export default function DailyPracticeScreen({ initialGoal, initialTier }) {
 
   // Final Render
   const renderView = () => {
+    const navigate = useAppServices().navigate; // FIX: Access navigate inside render function/hook
     switch (view) {
       case 'selector':
         return <CommitmentSelectorView
@@ -1450,9 +1370,7 @@ export default function DailyPracticeScreen({ initialGoal, initialTier }) {
             <p className="text-lg text-gray-600 mb-8 max-w-3xl">Track your daily commitment to the non-negotiable leadership actions that reinforce your professional identity. Consistently hitting this score is the key to sustained executive growth.</p>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-              {/* Scorecard Column */}
               <div className='lg:col-span-2'>
-                {/* PDP Advance Notification */}
                 {(initialGoal || initialTier) && (
                   <div className="p-4 mb-6 bg-[#47A88D]/10 border border-[#47A88D] rounded-xl text-sm font-medium text-[#002E47]">
                     <p className='font-bold flex items-center'>
@@ -1462,7 +1380,6 @@ export default function DailyPracticeScreen({ initialGoal, initialTier }) {
                   </div>
                 )}
                 
-                {/* ADVANCED FEATURE: Time Block Micro-Tip */}
                 <div className='p-3 mb-6 bg-[#002E47] rounded-xl text-white shadow-lg'>
                     <p className='text-xs font-semibold uppercase opacity-80'>Workflow Focus</p>
                     <p className='text-sm'>{predictedRisk.microTip}</p>
@@ -1473,7 +1390,6 @@ export default function DailyPracticeScreen({ initialGoal, initialTier }) {
                     Today's Commitments ({userCommitments.length})
                   </h3>
                   <div className='flex space-x-2'>
-                    {/* View Mode Toggle */}
                     <button 
                         onClick={() => setViewMode(viewMode === 'status' ? 'tier' : 'status')}
                         className={`px-3 py-1 text-sm font-medium rounded-full border transition-all flex items-center gap-1 ${viewMode === 'tier' ? 'bg-[#47A88D] text-white border-[#47A88D]' : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-50'}`}
@@ -1488,7 +1404,6 @@ export default function DailyPracticeScreen({ initialGoal, initialTier }) {
                 </div>
 
                 <Card title="Current Commitments" icon={Target} className="mb-8 border-l-4 border-[#47A88D] rounded-3xl">
-                    {/* Score Bar */}
                     <div className='mb-4 flex justify-between items-center text-sm'>
                         <div className='font-semibold text-[#002E47]'>
                             {score.total > 0 ? `Score: ${score.committed}/${score.total} completed` : 'No active commitments.'}
@@ -1500,11 +1415,9 @@ export default function DailyPracticeScreen({ initialGoal, initialTier }) {
                         )}
                     </div>
                     
-                    {/* Commitment List based on View Mode */}
                     <div className="space-y-4">
                         {userCommitments.length > 0 ? (
                             viewMode === 'status' ? (
-                                // Default View (By Status)
                                 userCommitments.map(c => (
                                     <CommitmentItem
                                         key={c.id}
@@ -1516,7 +1429,6 @@ export default function DailyPracticeScreen({ initialGoal, initialTier }) {
                                     />
                                 ))
                             ) : (
-                                // Grouped by Tier View
                                 commitmentsByTier.map(tierGroup => (
                                     <div key={tierGroup.id} className='mb-6'>
                                         <h4 className={`text-lg font-bold text-[#002E47] border-b-2 border-dashed border-[#002E47]/20 pb-1 mb-3`}>
@@ -1555,9 +1467,7 @@ export default function DailyPracticeScreen({ initialGoal, initialTier }) {
                 </Card>
               </div>
 
-              {/* History Column */}
               <div className='lg:col-span-1 space-y-8'>
-                  {/* ADVANCED FEATURE: Predicted Risk Card */}
                   <Card 
                       title="Daily Risk Indicator" 
                       icon={predictedRisk.icon} 
@@ -1566,13 +1476,12 @@ export default function DailyPracticeScreen({ initialGoal, initialTier }) {
                       <p className='text-sm font-semibold'>{predictedRisk.text}</p>
                   </Card>
                   
-                  {/* ADVANCED FEATURE: Commitment Review Trigger */}
                   <Card title="Commitment Audit Trigger" icon={Archive} className='bg-[#002E47]/10 border-2 border-[#002E47]/20'>
                       <p className='text-sm text-gray-700 mb-4'>
                           It's important to retire routine commitments to maintain sharp focus. If your scorecard is too full or a habit is mastered, audit your list.
                       </p>
                       <Button 
-                          onClick={() => setView('weekly-prep')} // Navigate to the Weekly Prep view
+                          onClick={() => setView('weekly-prep')}
                           variant="secondary" 
                           className="w-full bg-[#E04E1B] hover:bg-red-700"
                       >
@@ -1580,10 +1489,8 @@ export default function DailyPracticeScreen({ initialGoal, initialTier }) {
                       </Button>
                   </Card>
                   
-                  {/* NEW ADVANCED FEATURE 1: Tier Success Map */}
                   <TierSuccessMap tierRates={tierSuccessRates} />
                   
-                  {/* Monthly Progress (Moved for layout flow) */}
                   <Card title="Monthly Consistency" icon={BarChart3} className='bg-[#47A88D]/10 border-2 border-[#47A88D]'>
                       <p className='text-xs text-gray-700 mb-2'>Avg. Completion Rate ({monthlyProgress.daysTracked} days)</p>
                       <div className="w-full bg-gray-200 rounded-full h-4 mb-2">
@@ -1602,12 +1509,9 @@ export default function DailyPracticeScreen({ initialGoal, initialTier }) {
                     <p className='font-semibold'>Last 7 Days (Click for Details)</p>
                   </div>
                   
-                  {/* Streak and History Display */}
                   <div className='p-4 bg-[#FCFCFA] border border-gray-200 rounded-xl'>
                     <div className='flex justify-between text-xs font-mono text-gray-700 space-x-1 overflow-x-auto'>
-                      {/* Only display the last 7 items for a focused view */}
-                      {lastSevenDaysHistory.map(item => { // Changed to use lastSevenDaysHistory
-                        // Use a safe date constructor to handle the YYYY-MM-DD string
+                      {lastSevenDaysHistory.map(item => {
                         const date = new Date(item.date + 'T00:00:00'); 
                         const dayOfWeek = date.toLocaleString('en-US', { weekday: 'short' });
                         const [committed, total] = item.score.split('/').map(Number);
@@ -1616,7 +1520,6 @@ export default function DailyPracticeScreen({ initialGoal, initialTier }) {
                         const isDayLogged = total > 0;
 
                         return (
-                          // Make history entry clickable
                           <button 
                             key={item.date} 
                             className={`flex flex-col items-center min-w-[40px] p-1 rounded-md ${isDayLogged ? 'hover:bg-gray-100' : ''} ${!isDayLogged ? 'cursor-default' : ''}`}
@@ -1634,7 +1537,6 @@ export default function DailyPracticeScreen({ initialGoal, initialTier }) {
                       })}
                     </div>
                     <div className='mt-4 pt-3 border-t border-gray-200'>
-                      {/* FIX: Changed the problematic <p> tag to <div> tags to resolve the DOM nesting warning */}
                       <div className='text-[#47A88D] font-medium text-lg'>
                         Current Streak: {streak} {streak === 1 ? 'Day' : 'Days'}
                       </div>
@@ -1649,9 +1551,7 @@ export default function DailyPracticeScreen({ initialGoal, initialTier }) {
 
 
             <Card title="Reinforcement Journal" icon={Lightbulb} className="bg-[#002E47]/10 border-2 border-[#002E47]/20 rounded-3xl mt-8">
-              {/* AI-Driven Prompt */}
               <div className='mb-4'>
-                {/* FIX: Changed outer <p> to <div> to correctly wrap the inner block element (the spinner div) and resolve DOM nesting error. */}
                 <div className='text-sm text-[#002E47] font-semibold mb-2 flex items-center'>
                     {promptLoading ? 
                         <span className='flex items-center text-gray-500'><div className="animate-spin h-4 w-4 border-b-2 border-gray-500 mr-2 rounded-full"></div> Coach is drafting prompt...</span> :
@@ -1682,7 +1582,6 @@ export default function DailyPracticeScreen({ initialGoal, initialTier }) {
               </Button>
             </Card>
             
-            {/* History Modal */}
             <CommitmentHistoryModal
                 isVisible={isHistoryModalVisible}
                 onClose={handleCloseHistoryModal}
