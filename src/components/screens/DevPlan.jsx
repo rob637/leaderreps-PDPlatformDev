@@ -1,40 +1,84 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-// FIX: Mocking useAppServices since the environment can't resolve relative paths
-const useAppServices = () => ({
-    // Mocked core services for local testing
-    // You should ensure the real useAppServices in your application provides these fields
-    pdpData: null,
-    updatePdpData: async () => true,
-    saveNewPlan: async () => true,
-    callSecureGeminiAPI: async () => {
-        // Mock response for Monthly Briefing
-        const mockBriefing = {
-            candidates: [{
-                content: {
-                    parts: [{
-                        text: "## Monthly Executive Briefing\n\n**Focus Area:** Strategic Clarity (T5)\n\n**Coaching Nudge:** Your low self-rating (4/10) indicates a high-risk gap. You must dedicate time this month to the 'Pre-Mortem Risk Audit' content. Prioritize clear decision-making processes over routine tasks to immediately elevate your strategic focus.\n\n**Next Action:** Schedule 30 minutes to define your top 3 OKR dependencies."
-                    }]
-                }
-            }]
-        };
-        return mockBriefing;
-    },
-    hasGeminiKey: () => true,
-    navigate: (screen, params) => console.log(`Navigating to ${screen} with params:`, params),
-    userId: 'mock-user-123',
-    db: {}, // Mock Firestore instance
-    isLoading: false,
-    error: null,
-    // Mocked values needed for the Generator View logic
-    commitmentData: { active_commitments: [] },
-    planningData: { okrs: [{ objective: 'OKR Q4: Launch MVP' }] },
-});
+import {
+    Activity, Link, Eye, PlusCircle, Star, CornerRightUp, Clock, AlertTriangle, Briefcase, Users, Target, BarChart3, ArrowLeft, Lightbulb, CheckCircle, HeartPulse, X, BookOpen, TrendingUp, Zap
+} from 'lucide-react';
 
-// Mock UI components (Replicated for self-contained file)
+// FIX: Mocking useAppServices since the environment can't resolve relative paths
+const useAppServices = () => {
+    const [pdpData, setPdpData] = useState(null);
+    const [isLoading, setIsLoading] = useState(true);
+
+    // Simulate initial loading and checking for existing plan
+    useEffect(() => {
+        const loadMockData = () => {
+            setIsLoading(false);
+        };
+        setTimeout(loadMockData, 500); // Simulate network latency
+    }, []);
+
+    const updatePdpData = async (updater) => {
+        setIsLoading(true);
+        await new Promise(resolve => setTimeout(resolve, 300));
+        setPdpData(prev => {
+            const newData = typeof updater === 'function' ? updater(prev) : updater;
+            return newData;
+        });
+        setIsLoading(false);
+        return true;
+    };
+
+    const saveNewPlan = async (planData) => {
+        setIsLoading(true);
+        await new Promise(resolve => setTimeout(resolve, 800)); // Simulate save latency
+        setPdpData(planData);
+        setIsLoading(false);
+        return true;
+    };
+
+    return {
+        pdpData,
+        updatePdpData,
+        saveNewPlan,
+        callSecureGeminiAPI: async (payload) => {
+            const userReflection = payload.contents[0].parts[0].text;
+            
+            // MOCK LOGIC for Reflection Audit
+            if (userReflection.includes("reflection audit")) {
+                const isDeep = userReflection.length > 100 && userReflection.includes("impact") && userReflection.includes("change");
+                const auditText = isDeep 
+                    ? "## Reflection Audit: Excellent (9/10)\n\n**Feedback:** Your reflection demonstrates clear alignment between the content and behavioral change. The language shows a strong intent to translate learning into action."
+                    : "## Reflection Audit: Fair (6/10)\n\n**Feedback:** The reflection meets the length requirement but lacks depth. Next time, explicitly state how the content will change your weekly routine.";
+                return { candidates: [{ content: { parts: [{ text: auditText }] } }] };
+            }
+            
+            // Mock response for Monthly Briefing
+            const mockBriefing = {
+                candidates: [{
+                    content: {
+                        parts: [{
+                            text: "## Monthly Executive Briefing\n\n**Focus Area:** Strategic Clarity (T5)\n\n**Coaching Nudge:** Your low self-rating (4/10) indicates a high-risk gap. You must dedicate time this month to the **'Pre-Mortem Risk Audit'** content. Prioritize clear decision-making processes over routine tasks to immediately elevate your strategic focus.\n\n**Next Action:** Schedule 30 minutes to define your top 3 OKR dependencies."
+                        }]
+                    }
+                }]
+            };
+            return mockBriefing;
+        },
+        hasGeminiKey: () => true,
+        navigate: (screen, params) => console.log(`Navigating to ${screen} with params:`, params),
+        userId: 'mock-user-123',
+        db: {},
+        isLoading,
+        error: null,
+        commitmentData: { active_commitments: [] },
+        planningData: { okrs: [{ objective: 'OKR Q4: Launch MVP' }] },
+    };
+};
+
+// Mock UI components
+const COLORS = { NAVY: '#002E47', TEAL: '#47A88D', ORANGE: '#E04E1B', LIGHT_GRAY: '#FCFCFA', WHITE: '#FFFFFF' };
 const Card = ({ children, title, icon: Icon, className = '', onClick }) => {
   const interactive = !!onClick;
   const Tag = interactive ? 'button' : 'div';
-  const COLORS = { NAVY: '#002E47', TEAL: '#47A88D', ORANGE: '#E04E1B', LIGHT_GRAY: '#FCFCFA' };
   const handleKeyDown = (e) => {
     if (!interactive) return;
     if (e.key === 'Enter' || e.key === ' ') {
@@ -51,7 +95,7 @@ const Card = ({ children, title, icon: Icon, className = '', onClick }) => {
       style={{ background: 'linear-gradient(180deg,#FFFFFF,#F9FAFB)', borderColor: '#E5E7EB', color: '#0F172A' }}
       onClick={onClick}
     >
-      <span style={{ position:'absolute', top:0, left:0, right:0, height:6, background: '#E04E1B', borderTopLeftRadius:14, borderTopRightRadius:14 }} />
+      <span style={{ position:'absolute', top:0, left:0, right:0, height:6, background: COLORS.ORANGE, borderTopLeftRadius:14, borderTopRightRadius:14 }} />
       {Icon && <Icon className="w-8 h-8 text-[#47A88D] mb-4" />}
       {title && <h2 className="text-xl font-bold text-[#002E47] mb-2">{title}</h2>}
       {children}
@@ -89,7 +133,7 @@ const Tooltip = ({ content, children }) => {
   );
 };
 
-// Mock Firebase Functions (to satisfy imports)
+// Mock Firebase Functions
 const doc = (db, path) => ({ db, path });
 const writeBatch = (db) => ({
     update: () => console.log('Mock Batch Update'),
@@ -97,56 +141,23 @@ const writeBatch = (db) => ({
 });
 const setDoc = async () => console.log('Mock SetDoc');
 
-// Mock external utilities (to satisfy imports)
+// Mock external utilities
 const mdToHtml = async (md) => {
     let html = md;
-    html = html.replace(/## (.*$)/gim, '<h2 class="text-2xl font-extrabold text-[#E04E1B] mb-3">$1</h2>');
-    html = html.replace(/### (.*$)/gim, '<h3 class="text-xl font-bold text-[#47A88D] mt-4 mb-2">$1</h3>');
-    html = html.replace(/\*\*(.*)\*\*/gim, '<strong>$1</strong>');
+    html = html.replace(/## Monthly Executive Briefing\n\n/g, '<div class="p-3 mb-3 border-l-4 border-[#002E47] bg-[#002E47]/5">');
+    html = html.replace(/## (.*$)/gim, '<h2 class="text-xl font-extrabold text-[#E04E1B] mb-2">$1</h2>');
+    html = html.replace(/### (.*$)/gim, '<h3 class="text-lg font-bold text-[#47A88D] mt-3 mb-1">$1</h3>');
+    html = html.replace(/\*\*(.*?)\*\*/gim, '<strong>$1</strong>');
     html = html.replace(/\n\n/g, '</p><p class="text-sm text-gray-700 mt-2">');
-    html = html.replace(/\* (.*)/gim, '<li class="text-sm text-gray-700">$1</li>');
-    html = html.replace(/<li>/g, '<ul><li>').replace(/<\/li>(?!<ul>)/g, '</li></ul>');
+    html = html.replace(/(\n\* [^\n]+)+/gim, (match) => {
+        const listItems = match.trim().split('\n* ').map(item => item.trim()).filter(item => item).map(item => `<li>${item}</li>`).join('');
+        return `<ul class="list-disc ml-5 text-sm text-gray-700 space-y-1">${listItems}</ul>`;
+    });
+    if (html.includes('</div>')) {
+        return `<div class="text-sm text-gray-700">${html}</div>`;
+    }
     return `<p class="text-sm text-gray-700">${html}</p>`;
 };
-const IconMap = {
-    Zap: () => <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>,
-    Users: () => <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75" /></svg>,
-    Briefcase: () => <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="14" rx="2" ry="2" /><path d="M16 21V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v16" /></svg>,
-    Target: () => <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" /><circle cx="12" cy="12" r="6" /><circle cx="12" cy="12" r="2" /></svg>,
-    BarChart3: () => <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M3 3v18h18" /><path d="M18 17V9" /><path d="M13 17V5" /><path d="M8 17v-3" /></svg>,
-    Clock: () => <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></svg>,
-    Eye: () => <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" /></svg>,
-    BookOpen: () => <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M2 13h20" /><path d="M2 9h20" /><path d="M2 17h20" /><path d="M20 5v14" /><path d="M4 5v14" /></svg>,
-    Lightbulb: () => <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M15 14V8a3 3 0 00-6 0v6M12 22v-4M12 4V2M15 22H9" /></svg>,
-    X: () => <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12" /></svg>,
-    ArrowLeft: () => <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M19 12H5M12 5l-7 7 7 7" /></svg>,
-    CornerRightUp: () => <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M15 14l5-5-5-5" /><path d="M4 14h16V9" /></svg>,
-    AlertTriangle: () => <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" /><path d="M12 9v4M12 17h.01" /></svg>,
-    CheckCircle: () => <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 11-5.93-9.14" /><path d="M22 4L12 14.01l-3-3" /></svg>,
-    PlusCircle: () => <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" /><path d="M12 8v8M8 12h8" /></svg>,
-    HeartPulse: () => <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M19 14.6c.72 1.34 1.88 2.65 3 3.39-1.2 1.25-2.7 2.1-4.3 2.5-1.57.4-3.17.4-4.74.05-1.6-.35-3.04-1.09-4.3-2.1-1.25-1-2.22-2.31-2.9-3.9-1.35-3.18-.7-6.52 1.7-8.86C6.6 6.13 9.4 5.3 12 5.3s5.4 1.13 7.6 3.14c2.4 2.34 3.05 5.68 1.7 8.86z" /></svg>,
-    Star: () => <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.25l-6.18 3.27L7 14.14l-5-4.87 7.91-1.01L12 2z" /></svg>,
-    Activity: () => <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12" /></svg>,
-    Link: () => <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07L13 9a5 5 0 00-1.54 3.54V17M14 11l-3 3M7 11l3 3M17 14a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07L11 15a5 5 0 001.54-3.54V7" /></svg>
-};
-const Briefcase = IconMap.Briefcase;
-const Users = IconMap.Users;
-const Target = IconMap.Target;
-const BarChart3 = IconMap.BarChart3;
-const Clock = IconMap.Clock;
-const Eye = IconMap.Eye;
-const BookOpen = IconMap.BookOpen;
-const Lightbulb = IconMap.Lightbulb;
-const CornerRightUp = IconMap.CornerRightUp;
-const AlertTriangle = IconMap.AlertTriangle;
-const CheckCircle = IconMap.CheckCircle;
-const PlusCircle = IconMap.PlusCircle;
-const X = IconMap.X;
-const ArrowLeft = IconMap.ArrowLeft;
-const Star = IconMap.Star;
-const Activity = IconMap.Activity;
-const Link = IconMap.Link;
-
 const PDP_COLLECTION = 'leadership_plan';
 const PDP_DOCUMENT = 'roadmap';
 const appId = 'default-app-id'; // Mock value for app id
@@ -191,7 +202,6 @@ const MOCK_CONTENT_DETAILS = {
     'Tool': (title, skill) => `### Tool Overview: ${title}\n\n**Focus Skill:** ${skill}\n\nThis module guides you through a new framework. The current focus is risk identification and mitigation planning. The objective of this tool is to formalize risk assessment across your strategic goals.`,
 };
 
-// Global book data for the Business Readings module
 const allBooks = {
     Strategy: [{ id: 1, title: 'Measure What Matters', author: 'John Doerr' }],
     Culture: [{ id: 2, title: 'Dare to Lead', author: 'Brené Brown' }],
@@ -213,11 +223,10 @@ const adjustDuration = (rating, baseDuration) => {
     return baseDuration;
 };
 
-// Mock data for the "Generic Manager" Plan Comparison
 const GENERIC_PLAN = {
-    avgIntroContent: 8, // Average 8 intro pieces
-    avgMasteryContent: 3, // Average 3 mastery pieces
-    totalDuration: 1200, // Total duration in minutes
+    avgIntroContent: 8,
+    avgMasteryContent: 3,
+    totalDuration: 1200,
 };
 
 
@@ -225,38 +234,31 @@ const generatePlanData = (assessment, ownerUid) => {
     const { managerStatus, goalPriorities, selfRatings, teamSkillAlignment } = assessment;
     const allTiers = Object.keys(LEADERSHIP_TIERS);
 
-    let initialTierIndex = managerStatus === 'New' ? 0 : managerStatus === 'Mid-Level' ? 2 : 4;
-
     const plan = [];
     const usedContentIds = new Set();
-    const lowRatedTiers = Object.entries(selfRatings).filter(([, rating]) => rating <= 4).map(([id]) => id);
-
+    
     let tierRotationQueue = [];
 
-    // Prioritize low-rated tiers first
-    lowRatedTiers.forEach(tier => {
-        if (!tierRotationQueue.includes(tier)) tierRotationQueue.push(tier);
-    });
-    // Add goal priorities next
-    goalPriorities.forEach(tier => {
-        if (!tierRotationQueue.includes(tier)) tierRotationQueue.push(tier);
-    });
-    // Fill the rest of the queue with all tiers to ensure full coverage
-    allTiers.forEach(tier => {
-        if (!tierRotationQueue.includes(tier)) tierRotationQueue.push(tier);
-    });
-
-    // If Team Skill Alignment is active and a team gap exists, prioritize that tier
+    // 1. Prioritize low-rated tiers
+    Object.entries(selfRatings).filter(([, rating]) => rating <= 4).map(([id]) => id)
+        .forEach(tier => { if (!tierRotationQueue.includes(tier)) tierRotationQueue.push(tier); });
+        
+    // 2. Add explicit goal priorities
+    goalPriorities.forEach(tier => { if (!tierRotationQueue.includes(tier)) tierRotationQueue.push(tier); });
+    
+    // 3. Inject team gap priority early
     const teamGapTier = teamSkillAlignment?.gapTier;
     if (assessment.alignToTeam && teamGapTier && !tierRotationQueue.includes(teamGapTier)) {
-        // Inject team gap priority early
         tierRotationQueue.splice(1, 0, teamGapTier);
     }
     
-    // Ensure T1 is always at the front if the user is 'New'
+    // 4. Ensure T1 is always at the front if the user is 'New'
     if (managerStatus === 'New' && tierRotationQueue[0] !== 'T1') {
          tierRotationQueue.unshift('T1');
     }
+    
+    // 5. Fill the rest of the queue with remaining tiers
+    allTiers.forEach(tier => { if (!tierRotationQueue.includes(tier)) tierRotationQueue.push(tier); });
 
     // --- Core 24-Month Loop ---
     for (let month = 1; month <= 24; month++) {
@@ -266,6 +268,7 @@ const generatePlanData = (assessment, ownerUid) => {
         const tierMeta = LEADERSHIP_TIERS[currentTier];
         const theme = `Focus on ${tierMeta.name}`;
 
+        // Use the self-rating from the current assessment to determine difficulty
         const rating = selfRatings[currentTier];
         const targetDifficulty = getTargetDifficulty(rating);
 
@@ -312,18 +315,30 @@ const generatePlanData = (assessment, ownerUid) => {
 
 // --- Modals ---
 
-const SharePlanModal = ({ isVisible, onClose, currentMonthPlan, data }) => {
+const SharePlanModal = ({ isVisible, onClose, currentMonthPlan, data, tierProgress }) => {
     if (!isVisible || !currentMonthPlan) return null;
 
     const tierName = LEADERSHIP_TIERS[currentMonthPlan.tier].name;
-    const progressPercentage = Math.round((data.currentMonth / 24) * 100);
+    const progressPercentage = tierProgress.overallPercentage;
+    const reflectionQuality = data.currentMonth > 1 ? (Math.floor(Math.random() * 3) + 7) : 9; // Mock score 7-9/10
 
     // Mock link for sharing
     const shareLink = `https://leaderreps.com/pdp/view/${data.ownerUid}/${data.currentMonth}`;
 
-    const shareText = `[PDP Monthly Focus]\n\nHello Manager, here is my focus for Month ${currentMonthPlan.month}:\n\n- **Current Tier Priority:** ${tierName}\n- **Theme:** ${currentMonthPlan.theme}\n- **Required Content:** ${currentMonthPlan.requiredContent.map(c => c.title).join(', ')}.\n\nMy primary skill gap is in ${tierName} (Self-Rating: ${data.assessment.selfRatings[currentMonthPlan.tier]}/10). My goal this month is to close this gap by completing all content.\n\nView my full progress: ${shareLink}`;
+    // --- ENHANCEMENT: Accountability Scorecard in Share Text ---
+    const shareText = 
+`[PDP Monthly Executive Scorecard]
 
-    // Note: The clipboard copy functionality is mocked due to sandbox limitations
+Hello Manager, here is my update for Month ${currentMonthPlan.month}:
+
+- **Current Tier Priority:** ${tierName}
+- **Content Completion:** ${progressPercentage}%
+- **Reflection Quality (AI Audit):** ${reflectionQuality}/10 (Focus: Depth & Insight)
+
+My goal this month is to close this gap by completing all content and maintaining a strong reflection score.
+
+View my full progress: ${shareLink}`;
+
     const copyToClipboard = () => {
         const el = document.createElement('textarea');
         el.value = shareText;
@@ -348,23 +363,19 @@ const SharePlanModal = ({ isVisible, onClose, currentMonthPlan, data }) => {
                     </button>
                 </div>
 
-                <p className="text-gray-700 text-sm mb-4">
-                    Send your manager or accountability partner your current focus and goals to maintain alignment and external accountability.
-                </p>
-
-                <h3 className='text-md font-bold text-[#002E47] mb-2'>Shareable Summary (Copied Text)</h3>
+                <h3 className='text-md font-bold text-[#002E47] mb-2'>Shareable Scorecard (Copied Text)</h3>
                 <textarea
                     readOnly
                     value={shareText}
-                    className="w-full p-3 border border-gray-300 rounded-xl bg-gray-50 text-sm h-40"
+                    className="w-full p-3 border border-gray-300 rounded-xl bg-gray-50 text-sm h-64"
                 ></textarea>
 
                 <Button onClick={copyToClipboard} className='mt-4 w-full bg-[#002E47] hover:bg-gray-700'>
-                    Copy to Clipboard
+                    Copy Scorecard to Clipboard
                 </Button>
 
                 <p className='text-xs text-gray-500 mt-4'>
-                    *Note: The actual URL link above is mocked in this demonstration.
+                    *The scorecard provides key metrics for manager accountability.
                 </p>
                 
                 <Button onClick={onClose} variant='outline' className='mt-4 w-full'>
@@ -394,7 +405,6 @@ const ContentDetailsModal = ({ isVisible, onClose, content }) => {
     const handleLogLearning = async () => {
         if (rating === 0) { alert('Please provide a 5-star rating before logging.'); return; }
         setIsLogging(true);
-        // Mocking an asynchronous save process to simulate an adaptive learning system
         console.log(`Mock: Logging learning for ${content.title} with rating ${rating}/5.`);
         await new Promise(r => setTimeout(r, 800));
         alert(`Learning logged! Your ${rating}/5 rating will influence future plan revisions.`);
@@ -460,7 +470,6 @@ const ContentDetailsModal = ({ isVisible, onClose, content }) => {
 };
 
 const TierReviewModal = ({ isVisible, onClose, tierId, planData }) => {
-    // Component logic remains the same (removed for brevity)
     if (!isVisible || !tierId) return null;
     return (
         <div className="fixed inset-0 bg-[#002E47]/80 z-50 flex items-center justify-center p-4">
@@ -486,20 +495,21 @@ const TrackerDashboardView = ({ data, updatePdpData, saveNewPlan, db, userId, na
 
     const assessment = data.assessment;
 
-    const [isReviewModalVisible, setIsReviewModalVisible] = useState(false);
-    const [reviewTierId, setReviewTierId] = useState(null);
     const [isContentModalVisible, setIsContentModalVisible] = useState(false);
     const [selectedContent, setSelectedContent] = useState(null);
-    const [isShareModalVisible, setIsShareModalVisible] = useState(false); // Feature 1: Share Modal
+    const [isShareModalVisible, setIsShareModalVisible] = useState(false);
     const [localReflection, setLocalReflection] = useState(currentMonthPlan?.reflectionText || '');
     const [isSaving, setIsSaving] = useState(false);
-    const [briefing, setBriefing] = useState(null); // Feature A: AI Briefing
+    const [briefing, setBriefing] = useState(null);
     const [briefingLoading, setBriefingLoading] = useState(false);
+    // NEW: State for Reflection Audit
+    const [reflectionAudit, setReflectionAudit] = useState(null); 
+    const [isAuditing, setIsAuditing] = useState(false);
 
 
     // --- AI Monthly Briefing Logic ---
     const fetchMonthlyBriefing = useCallback(async (plan, assessment) => {
-        if (briefing || briefingLoading || !hasGeminiKey()) return;
+        if (briefingLoading || !hasGeminiKey()) return;
 
         setBriefingLoading(true);
         const currentTier = LEADERSHIP_TIERS[plan.tier];
@@ -516,49 +526,166 @@ const TrackerDashboardView = ({ data, updatePdpData, saveNewPlan, db, userId, na
             };
             const result = await callSecureGeminiAPI(payload);
             const text = result?.candidates?.[0]?.content?.parts?.[0]?.text;
-            setBriefing(text);
+            setBriefing(await mdToHtml(text));
         } catch (e) {
             console.error("AI Briefing Error:", e);
-            setBriefing("AI coach unavailable. Focus on completing your required content first.");
+            setBriefing(`<p class="text-[#E04E1B] font-semibold">AI coach unavailable. Focus on completing your required content first.</p>`);
         } finally {
             setBriefingLoading(false);
         }
-    }, [briefing, briefingLoading, hasGeminiKey]);
+    }, [briefingLoading, hasGeminiKey, callSecureGeminiAPI]);
 
     useEffect(() => {
-        if (currentMonthPlan && assessment) {
+        if (currentMonthPlan && assessment && !briefing) { // Only fetch if briefing is null
             setLocalReflection(currentMonthPlan.reflectionText || '');
+            setReflectionAudit(null); // Clear audit when month reloads
             fetchMonthlyBriefing(currentMonthPlan, assessment);
         }
-    }, [currentMonthPlan, assessment, fetchMonthlyBriefing]);
+    }, [currentMonthPlan, assessment, fetchMonthlyBriefing, briefing]);
+
+
+    // --- ENHANCEMENT: Dynamic Plan Recalibration Logic ---
+    const handleRecalibrate = async () => {
+        const newRating = window.prompt(`Recalibrate your Self-Rating for ${LEADERSHIP_TIERS[currentMonthPlan.tier].name}. Current: ${assessment.selfRatings[currentMonthPlan.tier]}/10. Enter new rating (1-10):`);
+        
+        if (newRating === null) return;
+        const rating = parseInt(newRating);
+        if (isNaN(rating) || rating < 1 || rating > 10) {
+            alert("Invalid rating. Please enter a number between 1 and 10.");
+            return;
+        }
+
+        setIsSaving(true);
+        setBriefing(null);
+
+        const updatedSelfRatings = { ...assessment.selfRatings, [currentMonthPlan.tier]: rating };
+        
+        const newAssessment = {
+            ...assessment,
+            selfRatings: updatedSelfRatings,
+            dateRecalibrated: new Date().toISOString(),
+        };
+
+        const newPlanData = generatePlanData(newAssessment, userId);
+        newPlanData.currentMonth = currentMonth;
+
+        const success = await updatePdpData(newPlanData);
+
+        if (success) {
+            alert(`Plan successfully recalibrated! Difficulty adjusted to ${getTargetDifficulty(rating)} content.`);
+        } else {
+            alert("Recalibration failed. Please try again.");
+        }
+        setIsSaving(false);
+    };
+
+
+    // --- ENHANCEMENT: Monthly Reflection Audit ---
+    const runReflectionAudit = useCallback(async (reflectionText, tierName) => {
+        if (isAuditing || reflectionText.length < 50 || !hasGeminiKey()) return;
+
+        setIsAuditing(true);
+        setReflectionAudit(null);
+
+        const systemPrompt = "You are the AI Reflection Auditor. You must provide concise, direct, and non-judgmental feedback on the user's monthly reflection. Your response MUST start with '## Reflection Audit: [Quality Score (e.g., Excellent (9/10))]' and assess if the user translated learning into tangible behavioral intent.";
+        
+        const userQuery = `Review this reflection for the month focused on **${tierName}**: "${reflectionText}". Does the reflection show depth of insight and a plan for behavioral change?`;
+
+        try {
+            const payload = {
+                contents: [{ role: "user", parts: [{ text: userQuery + " reflection audit" }] }], // Add audit flag to mock payload
+                systemInstruction: { parts: [{ text: systemPrompt }] },
+            };
+            const result = await callSecureGeminiAPI(payload);
+            const text = result?.candidates?.[0]?.content?.parts?.[0]?.text;
+            setReflectionAudit(await mdToHtml(text));
+        } catch (e) {
+            setReflectionAudit(`<p class="text-[#E04E1B] font-semibold">Audit service unavailable. Please check your API connection.</p>`);
+        } finally {
+            setIsAuditing(false);
+        }
+    }, [isAuditing, hasGeminiKey, callSecureGeminiAPI]);
 
 
     // --- Handlers (Advance, Reset, Toggle) ---
     const handleCompleteMonth = async () => {
-        // ... (Logic remains the same)
-        alert('Month successfully completed! Advancing to the next phase.');
+        if (!currentMonthPlan || !isReadyToComplete) return;
 
-        // Interconnection: Navigate to Daily Practice to set commitments for the new month's focus
-        if (nextMonthFocus) {
-            navigate('daily-practice', {
-                initialGoal: nextMonthFocus,
-                initialTier: nextMonthTier // Pass the tier for easy selection
+        setIsSaving(true);
+        
+        // 1. Run the final reflection audit before saving
+        await runReflectionAudit(localReflection, LEADERSHIP_TIERS[currentMonthPlan.tier].name);
+
+        const success = await updatePdpData(prev => {
+            const newPlan = prev.plan.map(m => {
+                if (m.month === currentMonth) {
+                    return {
+                        ...m,
+                        status: 'Completed',
+                        reflectionText: localReflection,
+                        monthCompletedDate: new Date().toISOString(),
+                        // Save the audit result (optional, but good for accountability)
+                        auditResult: reflectionAudit, 
+                    };
+                }
+                return m;
             });
+            
+            return {
+                ...prev,
+                plan: newPlan,
+                currentMonth: currentMonth + 1,
+            };
+        });
+
+        setIsSaving(false);
+        setBriefing(null);
+        setReflectionAudit(null);
+
+        if (success) {
+            alert(`Month ${currentMonth} successfully completed! Advancing to Month ${currentMonth + 1}.`);
+
+            const currentTierMonths = data.plan.filter(m => m.tier === currentMonthPlan.tier && m.status === 'Completed').length;
+            if (currentTierMonths % 4 === 0) { // If a cycle of 4 months is completed
+                alert(`You completed the ${LEADERSHIP_TIERS[currentMonthPlan.tier].name} module cycle! Consider clicking 'Recalibrate' to accelerate your roadmap.`);
+            }
+
+            if (nextMonthFocus) {
+                navigate('daily-practice', {
+                    initialGoal: nextMonthFocus,
+                    initialTier: nextMonthTier
+                });
+            }
         }
     };
 
     const handleResetPlan = async () => {
-        // ... (Logic remains the same)
-        alert("Plan successfully reset! Loading generator...");
+        const confirmReset = window.confirm("Are you sure you want to completely erase your current plan and generate a new one? All progress will be lost.");
+        if (confirmReset) {
+            window.location.reload(); 
+        }
     };
 
-    const handleContentStatusToggle = (contentId) => {
-        // ... (Logic remains the same)
-    };
+    const handleContentStatusToggle = async (contentId) => {
+        setIsSaving(true);
+        
+        await updatePdpData(prev => {
+            const newPlan = prev.plan.map(month => {
+                if (month.month === currentMonth) {
+                    const updatedContent = month.requiredContent.map(content => {
+                        if (content.id === contentId) {
+                            return { ...content, status: content.status === 'Completed' ? 'Pending' : 'Completed' };
+                        }
+                        return content;
+                    });
+                    return { ...month, requiredContent: updatedContent };
+                }
+                return month;
+            });
+            return { ...prev, plan: newPlan };
+        });
 
-    const handleOpenTierReview = (tierId) => {
-        setReviewTierId(tierId);
-        setIsReviewModalVisible(true);
+        setIsSaving(false);
     };
 
     const handleOpenContentModal = (contentItem) => {
@@ -572,18 +699,12 @@ const TrackerDashboardView = ({ data, updatePdpData, saveNewPlan, db, userId, na
         if (!currentTierId || !data.plan) return { completed: 0, total: 0, percentage: 0 };
         const totalContent = data.plan.filter(m => m.tier === currentTierId).flatMap(m => m.requiredContent).length;
         const completedContent = data.plan.filter(m => m.tier === currentTierId).flatMap(m => m.requiredContent).filter(c => c.status === 'Completed').length;
-        const totalMonths = data.plan.filter(m => m.tier === currentTierId).length * 4; // Mock 4 items per month
-        const completedMonths = data.plan.filter(m => m.tier === currentTierId && m.status === 'Completed').length;
         const contentPercentage = totalContent > 0 ? Math.round((completedContent / totalContent) * 100) : 0;
-        const monthPercentage = totalMonths > 0 ? Math.round((completedMonths / totalMonths) * 100) : 0;
 
         return {
             completedContent,
             totalContent,
-            contentPercentage,
-            months: completedMonths,
-            totalMonths: data.plan.filter(m => m.tier === currentTierId).length,
-            overallPercentage: contentPercentage, // Use content % for visual
+            overallPercentage: contentPercentage,
         };
     }, [data.plan, currentTierId]);
 
@@ -591,10 +712,21 @@ const TrackerDashboardView = ({ data, updatePdpData, saveNewPlan, db, userId, na
     const progressPercentage = Math.min(100, (currentMonth / 24) * 100);
     const TierIcon = LEADERSHIP_TIERS[currentTierId]?.icon ? IconMap[LEADERSHIP_TIERS[currentTierId].icon] : Target;
 
-    if (!currentMonthPlan) { /* ... (Roadmap Complete View) ... */ return null; }
+    if (!currentMonthPlan) { 
+         return (
+            <div className="p-8 text-center">
+                <h1 className="text-3xl font-extrabold text-[#002E47] mb-4">Roadmap Complete!</h1>
+                <p className="text-gray-600 mb-6">Congratulations! You have completed your 24-month leadership roadmap. Time to re-run your assessment and generate an even more challenging plan.</p>
+                <Button onClick={() => window.location.reload()} variant='primary'>
+                    Generate New 24-Month Plan
+                </Button>
+            </div>
+        );
+    }
 
     const allContentCompleted = currentMonthPlan?.requiredContent?.every(item => item.status === 'Completed');
     const isReadyToComplete = allContentCompleted && localReflection.length >= 50;
+
 
     return (
         <div className="p-8">
@@ -628,8 +760,8 @@ const TrackerDashboardView = ({ data, updatePdpData, saveNewPlan, db, userId, na
                 <div className='lg:col-span-2 space-y-8'>
                     <Card title={`Current Focus: ${currentMonthPlan?.theme}`} icon={TierIcon} className='border-l-8 border-[#47A88D]'>
 
-                        {/* AI Monthly Briefing */}
-                        <div className='mb-4 p-4 rounded-xl bg-[#002E47]/10 border border-[#002E47]/20'>
+                        {/* AI Monthly Briefing (Enhanced UI) */}
+                        <div className='mb-4 p-4 rounded-xl border border-[#002E47]/20' style={{ background: COLORS.WHITE }}>
                             <h3 className='font-bold text-[#002E47] mb-1 flex items-center'><Activity className='w-4 h-4 mr-2' /> Monthly Executive Briefing</h3>
                             {briefingLoading ? (
                                 <p className='text-sm text-gray-600 flex items-center'><div className="animate-spin h-4 w-4 border-b-2 border-gray-500 mr-2 rounded-full"></div> Drafting advice...</p>
@@ -690,13 +822,33 @@ const TrackerDashboardView = ({ data, updatePdpData, saveNewPlan, db, userId, na
                         </p>
                         <textarea
                             value={localReflection}
-                            onChange={(e) => setLocalReflection(e.target.value)}
+                            onChange={(e) => {
+                                setLocalReflection(e.target.value);
+                                setReflectionAudit(null); // Clear audit when typing begins
+                            }}
                             className="w-full p-3 border border-gray-300 rounded-xl focus:ring-[#47A88D] focus:border-[#47A88D] h-40"
                             placeholder="My reflection (required)..."
                         ></textarea>
                         <p className={`text-xs mt-1 ${localReflection.length < 50 ? 'text-[#E04E1B]' : 'text-[#47A88D]'}`}>
                             {localReflection.length} / 50 characters written.
                         </p>
+                         {/* Reflection Audit Display */}
+                        {reflectionAudit && (
+                            <div className='mt-4 p-3 rounded-lg border-l-4 border-dashed border-[#47A88D] bg-white'>
+                                <div dangerouslySetInnerHTML={{ __html: reflectionAudit }} />
+                            </div>
+                        )}
+                        
+                        <Button 
+                            onClick={() => runReflectionAudit(localReflection, LEADERSHIP_TIERS[currentTierId].name)}
+                            disabled={isAuditing || localReflection.length < 50}
+                            className={`w-full mt-4 ${isAuditing ? 'bg-gray-400' : 'bg-[#002E47] hover:bg-gray-700'}`}
+                        >
+                             {isAuditing ? 
+                                <span className="flex items-center justify-center"><div className="animate-spin h-5 w-5 border-b-2 border-white mr-2 rounded-full"></div> Auditing...</span> 
+                                : 'Get AI Reflection Feedback'
+                            }
+                        </Button>
                     </Card>
                 </div>
 
@@ -732,14 +884,15 @@ const TrackerDashboardView = ({ data, updatePdpData, saveNewPlan, db, userId, na
 
                     <Card title="Recalibrate Skill Assessment" icon={Activity} className='bg-[#E04E1B]/10 border-4 border-[#E04E1B]'>
                         <p className='text-sm text-gray-700 mb-4'>
-                            Feel like you've mastered this tier? Re-run your initial **Self-Ratings** to check your progress and generate an **accelerated, revised roadmap** to match your new skill level.
+                            Feel like you've mastered this tier? **Re-run your initial Self-Ratings** for this tier to accelerate your roadmap.
                         </p>
                         <Button
-                            onClick={() => navigate('prof-dev-plan', { view: 'generator' })}
+                            onClick={handleRecalibrate}
                             variant="secondary"
                             className='w-full bg-[#E04E1B] hover:bg-red-700'
+                            disabled={isSaving}
                         >
-                            <Target className='w-4 h-4 mr-2' /> Re-Run Assessment
+                            <Target className='w-4 h-4 mr-2' /> Recalibrate Tier Difficulty
                         </Button>
                     </Card>
 
@@ -767,9 +920,9 @@ const TrackerDashboardView = ({ data, updatePdpData, saveNewPlan, db, userId, na
 
             {/* Modals */}
             <TierReviewModal
-                isVisible={isReviewModalVisible}
-                onClose={() => setIsReviewModalVisible(false)}
-                tierId={reviewTierId}
+                isVisible={false}
+                onClose={() => {}}
+                tierId={currentTierId}
                 planData={data}
             />
             <ContentDetailsModal
@@ -782,6 +935,7 @@ const TrackerDashboardView = ({ data, updatePdpData, saveNewPlan, db, userId, na
                 onClose={() => setIsShareModalVisible(false)}
                 currentMonthPlan={currentMonthPlan}
                 data={data}
+                tierProgress={tierProgress}
             />
         </div>
     );
@@ -790,25 +944,23 @@ const TrackerDashboardView = ({ data, updatePdpData, saveNewPlan, db, userId, na
 
 // --- Component 1: Plan Generator View ---
 const PlanGeneratorView = ({ userId, saveNewPlan, isLoading, error }) => {
-    // ... (Component logic remains the same)
     const [managerStatus, setManagerStatus] = useState('New');
     const [goalPriorities, setGoalPriorities] = useState([]);
     const [selfRatings, setSelfRatings] = useState({ T1: 5, T2: 5, T3: 5, T4: 5, T5: 5 });
-    const [alignToTeam, setAlignToTeam] = useState(false); // Feature 2: Team Alignment Toggle
+    const [alignToTeam, setAlignToTeam] = useState(false);
     const [isGenerating, setIsGenerating] = useState(false);
-    const [generatedPlan, setGeneratedPlan] = useState(null); // Feature B: Plan Comparison State
+    const [generatedPlan, setGeneratedPlan] = useState(null);
 
     const isGoalLimitReached = goalPriorities.length >= 3;
     const canGenerate = managerStatus && goalPriorities.length > 0 && !isGenerating;
 
-    const teamSkillMap = useMemo(() => ({ // Mocked Team Data
+    const teamSkillMap = useMemo(() => ({
         gapTier: 'T3',
         gapSkill: 'Execution',
-        confidence: 35, // 35% Confidence
+        confidence: 35,
     }), []);
 
     const handleGoalToggle = (tierId) => {
-        // ... (Logic remains the same)
         setGoalPriorities(prev => {
             if (prev.includes(tierId)) {
                 return prev.filter(id => id !== tierId);
@@ -825,6 +977,7 @@ const PlanGeneratorView = ({ userId, saveNewPlan, isLoading, error }) => {
         setSelfRatings(prev => ({ ...prev, [tierId]: parseInt(value) }));
     };
 
+    // --- FIX: Logic to correctly generate and save the plan ---
     const handleGenerate = async () => {
         if (!canGenerate) return;
         setIsGenerating(true);
@@ -834,24 +987,29 @@ const PlanGeneratorView = ({ userId, saveNewPlan, isLoading, error }) => {
             managerStatus,
             goalPriorities,
             selfRatings,
-            alignToTeam: alignToTeam, // Include team alignment flag
+            alignToTeam: alignToTeam,
             teamSkillAlignment: alignToTeam ? teamSkillMap : null,
             dateGenerated: new Date().toISOString(),
         };
 
+        // 1. Generate the plan data
         const newPlanData = generatePlanData(assessment, userId);
 
-        // Feature B: Store and Compare against Mock Generic Plan
+        // 2. Store and Compare against Mock Generic Plan (For immediate display)
         setGeneratedPlan({
             userPlan: newPlanData,
             genericPlan: GENERIC_PLAN,
         });
 
+        // 3. Save the new plan (updates pdpData in context, which triggers TrackerDashboardView)
         const success = await saveNewPlan(newPlanData);
-        if (!success) {
-            alert("Failed to save the plan. Check the console for database errors.");
+        
+        if (success) {
+            // State transition handled by useAppServices mock
+        } else {
+            alert("Failed to save the plan. Please try again.");
+            setIsGenerating(false);
         }
-        setIsGenerating(false);
     };
 
     const renderPlanComparison = () => {
@@ -871,33 +1029,44 @@ const PlanGeneratorView = ({ userId, saveNewPlan, isLoading, error }) => {
         const isAccelerated = durationDifference > 0;
 
         return (
-            <Card title="Plan Comparison: Personalized vs. Generic" icon={Activity} className='mt-8 border-l-4 border-[#47A88D] bg-[#47A88D]/10'>
-                <p className='text-lg font-extrabold text-[#002E47] mb-4'>Your Plan is Highly Optimized!</p>
+            <>
+                <Card title="Plan Comparison: Personalized vs. Generic" icon={Activity} className='mt-8 border-l-4 border-[#47A88D] bg-[#47A88D]/10'>
+                    <p className='text-lg font-extrabold text-[#002E47] mb-4'>Your Plan is Highly Optimized!</p>
 
-                <div className='space-y-3 text-sm text-gray-700'>
-                    <p className='flex justify-between items-center'>
-                        <span className='font-semibold'>Total Estimated Time:</span>
-                        <span className={`font-bold ${isAccelerated ? 'text-green-600' : 'text-[#E04E1B]'}`}>
-                            {userTotalDuration} min ({isAccelerated ? `~${durationDifference} min less` : 'Standard'})
-                        </span>
+                    <div className='space-y-3 text-sm text-gray-700'>
+                        <p className='flex justify-between items-center'>
+                            <span className='font-semibold'>Total Estimated Time:</span>
+                            <span className={`font-bold ${isAccelerated ? 'text-green-600' : 'text-[#E04E1B]'}`}>
+                                {userTotalDuration} min ({isAccelerated ? `~${durationDifference} min less` : 'Standard'})
+                            </span>
+                        </p>
+                        <p className='flex justify-between items-center'>
+                            <span className='font-semibold'>Introductory Content (Low Skill):</span>
+                            <span className={`font-bold ${introDifference > 0 ? 'text-green-600' : 'text-[#E04E1B]'}`}>
+                                {userIntroContent} items ({introDifference} less than Generic)
+                            </span>
+                        </p>
+                        <p className='flex justify-between items-center'>
+                            <span className='font-semibold'>Mastery Content (High Skill):</span>
+                            <span className={`font-bold ${masteryDifference > 0 ? 'text-green-600' : 'text-[#E04E1B]'}`}>
+                                {userMasteryContent} items ({masteryDifference} more than Generic)
+                            </span>
+                        </p>
+                    </div>
+                    <p className='text-xs text-gray-600 mt-4 italic'>
+                        *The AI tailored your content difficulty and sequence based on your specific Tiers and self-rated skill gaps.
                     </p>
-                    <p className='flex justify-between items-center'>
-                        <span className='font-semibold'>Introductory Content (Low Skill):</span>
-                        <span className={`font-bold ${introDifference > 0 ? 'text-green-600' : 'text-[#E04E1B]'}`}>
-                            {userIntroContent} items ({introDifference} less than Generic)
-                        </span>
-                    </p>
-                    <p className='flex justify-between items-center'>
-                        <span className='font-semibold'>Mastery Content (High Skill):</span>
-                        <span className={`font-bold ${masteryDifference > 0 ? 'text-green-600' : 'text-[#E04E1B]'}`}>
-                            {userMasteryContent} items ({masteryDifference} more than Generic)
-                        </span>
-                    </p>
-                </div>
-                <p className='text-xs text-gray-600 mt-4 italic'>
-                    *The AI tailored your content difficulty and sequence based on your specific Tiers and self-rated skill gaps.
-                </p>
-            </Card>
+                </Card>
+                
+                {/* FIX: New button to transition to Dashboard */}
+                <Button
+                    onClick={() => { /* Since saveNewPlan updates the state, the Router will handle transition */ }}
+                    className="mt-6 w-full"
+                    variant='primary'
+                >
+                    <CornerRightUp className='w-5 h-5 mr-2'/> View Your Live Roadmap Dashboard
+                </Button>
+            </>
         );
     };
 
@@ -1011,7 +1180,7 @@ export const ProfDevPlanScreen = () => {
     const { pdpData, updatePdpData, saveNewPlan, isLoading, error, userId, db, navigate } = useAppServices();
 
     // --- Router Logic ---
-    if (isLoading || pdpData === undefined) {
+    if (isLoading) {
         return (
             <div className="p-8 min-h-screen flex items-center justify-center">
                 <div className="flex flex-col items-center">
@@ -1043,4 +1212,3 @@ export const ProfDevPlanScreen = () => {
 };
 
 export default ProfDevPlanScreen;
-notepad 

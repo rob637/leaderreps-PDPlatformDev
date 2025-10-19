@@ -53,7 +53,7 @@ import BusinessReadingsScreen from './components/screens/BusinessReadings.jsx';
 // import ExecutiveReflection from './components/screens/ExecutiveReflection.jsx'; 
 
 // Icons used in the new NavSidebar
-import { Home, Zap, ShieldCheck, TrendingUp, Mic, BookOpen, Settings, X, Menu, LogOut, CornerRightUp, Clock, Briefcase, Target, Users, BarChart3, HeartPulse, User, Bell, Trello, CalendarClock } from 'lucide-react';
+import { BarChart3, Bell, BookOpen, Briefcase, CalendarClock, Clock, CornerRightUp, HeartPulse, Home, LogOut, Menu, Mic, Settings, ShieldCheck, Target, Trello, TrendingUp, User, Users, X, Zap } from 'lucide-react';
 
 const CoachingLabScreen = Labs;
 
@@ -358,20 +358,18 @@ const NavSidebar = ({ currentScreen, setCurrentScreen, user, isMobileOpen, close
 
     // 1. CORE NAVIGATION (Prioritizing high-frequency tools)
     const coreNav = [
-        { screen: 'dashboard', label: 'Dashboard', icon: Home },
-        // NEW: Added a badge to highlight this feature
-        { screen: 'quick-start-accelerator', label: 'QuickStart Accelerator', icon: Zap, badge: 'New' }, 
-        { screen: 'reflection', label: 'Executive Reflection', icon: BarChart3 }, 
-        { screen: 'daily-practice', label: 'Daily Practice', icon: Clock, notify: hasPendingDailyPractice }, 
-    ];
+    { screen: 'dashboard', label: 'Dashboard', icon: Home },
+    { screen: 'quick-start-accelerator', label: 'QuickStart Accelerator', icon: Zap, badge: 'New' }
+];
     
     // 2. TOOLS & HUBS (Consolidated)
     const toolsHubsNav = [
-        { screen: 'prof-dev-plan', label: 'Development Plan', icon: Briefcase },
-        { screen: 'coaching-lab', label: 'Coaching Lab', icon: Mic },
-        { screen: 'planning-hub', label: 'Planning Hub (OKRs)', icon: Trello }, 
-        { screen: 'business-readings', label: 'Business Readings', icon: BookOpen },
-    ];
+    { screen: 'prof-dev-plan', label: 'Development Plan', icon: Briefcase },
+    { screen: 'coaching-lab', label: 'Coaching Lab', icon: Mic },
+    { screen: 'planning-hub', label: 'Planning Hub (OKRs)', icon: Trello },
+    { screen: 'daily-practice', label: 'Daily Practice', icon: Clock, notify: hasPendingDailyPractice },
+    { screen: 'business-readings', label: 'Business Readings', icon: BookOpen }
+];
     
     // 3. SYSTEM
     const systemNav = [
@@ -399,51 +397,49 @@ const NavSidebar = ({ currentScreen, setCurrentScreen, user, isMobileOpen, close
     };
     
     const renderNavItems = (items) => (
-    items.map((item) => {
-        const Icon = item.icon;
-        const isActive = currentScreen === item.screen;
-        const isNotifying = item.notify;
-        const accent = '#E04E1B'; // ORANGE
+  items.map((item) => {
+    const Icon = item.icon;
+    const isActive = currentScreen === item.screen;
+    const isNotifying = !!item.notify;
+    const accent = '#E04E1B'; // ORANGE
 
-        return (
-            <button
-                key={item.screen}
-                onClick={() => handleNavigate(item.screen)}
-                className={`relative flex items-center w-full px-4 py-3 rounded-xl font-semibold transition-colors duration-200
-                    ${isActive ? 'bg-white text-[#002E47] shadow-lg' : 'text-white/80 hover:bg-[#47A88D]/20 hover:text-white'}`}
-                aria-current={isActive ? 'page' : undefined}
-            >
-                {isActive && (
-                    <span
-                        aria-hidden="true"
-                        className="absolute left-1 top-1/2 -translate-y-1/2 h-6 w-1.5 rounded-full"
-                        style={{ background: accent }}
-                    />
-                )}
-
-                <Icon className="w-5 h-5 mr-3" />
-                <span className="flex-1 text-left">{item.label}</span>
-
-                {item.badge && (
-                    <span className="ml-2 px-2 py-0.5 text-xs font-bold rounded-full"
-                          style={{ background: accent, color: '#FFFFFF' }}>
-                        {item.badge}
-                    </span>
-                )}
-
-                {isNotifying && (
-                    <span
-                        className="ml-2 inline-block h-2.5 w-2.5 rounded-full ring-2"
-                        style={{ background: accent, ringColor: '#FFFFFF' }}
-                        aria-label="Has pending items"
-                    />
-                )}
-            </button>
-        );
-    })
+    return (
+      <button
+        key={item.screen}
+        onClick={() => handleNavigate(item.screen)}
+        className={`relative flex items-center w-full px-4 py-3 rounded-xl font-semibold transition-colors duration-200
+          ${isActive ? 'bg-white text-[#002E47] shadow-lg' : 'bg-transparent text-white/90 hover:bg-[#47A88D]/20 hover:text-white'}`}
+        aria-current={isActive ? 'page' : undefined}
+        type="button"
+      >
+        {isActive && (
+          <span
+            aria-hidden="true"
+            className="absolute left-1 top-1/2 -translate-y-1/2 h-6 w-1.5 rounded-full"
+            style={{ background: accent }}
+          />
+        )}
+        <Icon className="w-5 h-5 mr-3" />
+        <span className="flex-1 text-left">{item.label}</span>
+        {item.badge && (
+          <span className="ml-2 px-2 py-0.5 text-xs font-bold rounded-full"
+                style={{ background: accent, color: '#FFFFFF' }}>
+            {item.badge}
+          </span>
+        )}
+        {isNotifying && (
+          <span
+            className="ml-2 inline-block h-2.5 w-2.5 rounded-full ring-2 ring-white/80"
+            style={{ background: accent }}
+            aria-label="Has pending items"
+          />
+        )}
+      </button>
+    );
+  })
 );
 
-    // --- Mobile Overlay and Menu (Full Screen on small screens) ---
+// --- Mobile Overlay and Menu (Full Screen on small screens) ---
     if (isMobileOpen) {
         return (
             <div className="fixed inset-0 z-50 bg-[#002E47] text-white p-6 md:hidden">
@@ -746,7 +742,7 @@ const AppContent = ({ currentScreen, setCurrentScreen, user, navParams, isMobile
                 setCurrentScreen={setCurrentScreen}
                 user={user}
                 isMobileOpen={isMobileOpen}
-                closeMobileMenu={() => setIsMobileMenu(false)}
+                closeMobileMenu={() => setIsMobileOpen(false)}
             />
             <main className="flex-1 overflow-y-auto">
                 {/* Mobile Header/Menu Button */}
