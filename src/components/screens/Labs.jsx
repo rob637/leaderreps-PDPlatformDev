@@ -17,12 +17,33 @@ const MOCK_PRACTICE_SESSIONS = [
 const MOCK_API_RESPONSE_LOGIC = (payload, model) => {
     const userQuery = payload.contents[0].parts[0].text;
     
+    // --- ENHANCED ACTIVE LISTENING CRITIQUE MOCK LOGIC ---
     if (userQuery.includes("Critique the following active listening responses")) {
-        // Active Listening Critique
-        return { candidates: [{ content: { parts: [{ text: `## The Paraphrase Audit (Score: 92/100)\n\nYour paraphrase, "So you're saying the deadlines and the meeting load are making you feel overwhelmed," is **Excellent**. It successfully reflects the emotion and facts without offering advice. It uses confirming language.\n\n## The Inquiry Audit (Score: 85/100)\n\nYour question is **Good**. A refined version could be: "What needs to shift for you to feel back in control of your schedule and workload?"\n\n### Core Skill Focus\n\nPractice pausing for a full three seconds after the employee speaks. The space is often more powerful than the words.` }] } }] };
+        const paraphraseMatch = userQuery.match(/The manager's draft paraphrase is: \"(.*?)\"/);
+        const inquiryMatch = userQuery.match(/The manager's draft open-ended question is: \"(.*?)\"/);
+        
+        const userParaphrase = paraphraseMatch ? paraphraseMatch[1].trim() : 'a generic paraphrase';
+        const userInquiry = inquiryMatch ? inquiryMatch[1].trim() : 'a generic question';
+        
+        // Simple analysis based on content:
+        const paraphraseScore = userParaphrase.toLowerCase().includes('so you are saying') ? 95 : 75;
+        const inquiryScore = userInquiry.includes('?') && !userInquiry.toLowerCase().includes('you agree') ? 88 : 65;
+
+        const pFeedback = paraphraseScore > 80 
+            ? `Your paraphrase, **"${userParaphrase}"**, is **Excellent**. It successfully reflects the emotion and facts without offering advice.`
+            : `Your paraphrase, **"${userParaphrase}"**, is **Fair**. It introduced judgment. A better option would be: "So, the heavy deadline load is making you feel overwhelmed."`;
+
+        const iFeedback = inquiryScore > 80
+            ? `Your question, **"${userInquiry}"**, is **Strong**. It is open-ended and invites deeper insight.`
+            : `Your question, **"${userInquiry}"**, is **Weak**. It can be answered with a simple "yes" or "no". Refine it to start with "What" or "How."`;
+
+        return { candidates: [{ content: { parts: [{ text: 
+            `## The Paraphrase Audit (Score: ${paraphraseScore}/100)\n\n${pFeedback}\n\n## The Inquiry Audit (Score: ${inquiryScore}/100)\n\n${iFeedback}\n\n### Core Skill Focus\n\nPractice pausing for a full three seconds after the employee speaks. The space is often more powerful than the words.` 
+        }] } }] };
+
     } else if (userQuery.includes("Audit the Rewritten Response")) {
-        // NEW Active Listening Rewrite Audit
-        const score = Math.floor(Math.random() * 20) + 75; // Score 75-95
+        // Active Listening Rewrite Audit
+        const score = Math.floor(Math.random() * 20) + 75;
         const feedback = score > 85 ? "Exceptional! Your rewrite incorporated validation and avoided all judgmental language. This is ready for a real conversation." : "Strong attempt, but your response still contained a passive solution. Remember to focus on confirmation only.";
         return { candidates: [{ content: { parts: [{ text: `## Correction Audit: ${score}/100\n\n**Analysis:** ${feedback}\n\n### Final Score:\n\nYour corrected response achieved a score of ${score}/100, demonstrating strong self-correction ability.` }] } }] };
     } else if (userQuery.includes("Analyze the following role-play dialogue")) {
@@ -1644,7 +1665,7 @@ export default function CoachingLabScreen() {
       try { return typeof window !== 'undefined' && /[?&]dbg=1\b/.test(window.location.search); }
       catch { return false; }
     });
-    const [debugStamp] = useState(() => new Date().toLocaleString());
+    const [debugStamp] = useState(() => new Date().toLocaleTimeString());
     return (
       <div className="p-6 md:p-10 min-h-screen" style={{ background: COLORS.BG, color: COLORS.TEXT }}>
         <h1 className="text-4xl font-extrabold mb-10" style={{ color: COLORS.NAVY }}>Professional Coaching Lab</h1>
