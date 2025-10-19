@@ -7,18 +7,35 @@
     <title>package.json</title>
   </head>
 <script>
-  window.addEventListener('error', e => {
-    const pre = document.createElement('pre');
-    pre.style.cssText = 'position:fixed;inset:0;z-index:99999;background:#111;color:#eee;padding:16px;overflow:auto';
-    pre.textContent = 'JS Error: ' + e.message + '\n' + (e.error && e.error.stack || '');
-    document.body.appendChild(pre);
-  });
-  window.addEventListener('unhandledrejection', e => {
-    const pre = document.createElement('pre');
-    pre.style.cssText = 'position:fixed;inset:0;z-index:99999;background:#111;color:#eee;padding:16px;overflow:auto';
-    pre.textContent = 'Unhandled Promise Rejection: ' + (e.reason && (e.reason.stack || e.reason.message) || e.reason);
-    document.body.appendChild(pre);
-  });
+  (function () {
+    const show = (msg) => {
+      const pre = document.createElement('pre');
+      pre.style.cssText = 'position:fixed;inset:0;z-index:99999;background:#111;color:#eee;padding:16px;overflow:auto;font:13px/1.4 monospace';
+      pre.textContent = msg;
+      document.body.appendChild(pre);
+    };
+    window.addEventListener('error', e => {
+      show('JS Error: ' + e.message + '\n' + (e.error && e.error.stack || ''));
+    });
+    window.addEventListener('unhandledrejection', e => {
+      show('Unhandled Promise Rejection: ' + (e.reason && (e.reason.stack || e.reason.message) || e.reason));
+    });
+    const origFetch = window.fetch;
+    window.fetch = async function(input, init) {
+      const res = await origFetch(input, init);
+      if (res.status === 401) {
+        show('401 from: ' + (typeof input === 'string' ? input : input.url));
+      }
+      return res;
+    };
+    const origOpen = XMLHttpRequest.prototype.open;
+    XMLHttpRequest.prototype.open = function(method, url) {
+      this.addEventListener('load', function() {
+        if (this.status === 401) show('XHR 401 from: ' + url);
+      });
+      return origOpen.apply(this, arguments);
+    };
+  })();
 </script>
 
   <body>
