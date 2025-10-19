@@ -32,60 +32,61 @@ const useAppServices = () => ({
 
 // Mock UI components (Replicated for self-contained file)
 const Card = ({ children, title, icon: Icon, className = '', onClick }) => {
-    const interactive = !!onClick;
-    const Tag = interactive ? 'button' : 'div';
-    const COLORS = { NAVY: '#002E47', TEAL: '#47A88D', ORANGE: '#E04E1B', LIGHT_GRAY: '#FCFCFA' };
-    const handleKeyDown = (e) => {
-        if (!interactive) return;
-        if (e.key === 'Enter' || e.key === ' ') {
-            e.preventDefault();
-            onClick();
-        }
-    };
-    return (
-        <Tag
-            role={interactive ? "button" : undefined}
-            tabIndex={interactive ? 0 : undefined}
-            onKeyDown={handleKeyDown}
-            className={`bg-[${COLORS.LIGHT_GRAY}] p-6 rounded-3xl shadow-xl hover:shadow-2xl transition-all duration-300 ${interactive ? 'cursor-pointer hover:border-[#002E47] border-2 border-transparent' : ''} ${className}`}
-            onClick={onClick}
-        >
-            {Icon && <Icon className="w-8 h-8 text-[#47A88D] mb-4" />}
-            {title && <h2 className="text-xl font-bold text-[#002E47] mb-2">{title}</h2>}
-            {children}
-        </Tag>
-    );
+  const interactive = !!onClick;
+  const Tag = interactive ? 'button' : 'div';
+  const COLORS = { NAVY: '#002E47', TEAL: '#47A88D', ORANGE: '#E04E1B', LIGHT_GRAY: '#FCFCFA' };
+  const handleKeyDown = (e) => {
+    if (!interactive) return;
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      onClick?.();
+    }
+  };
+  return (
+    <Tag
+      role={interactive ? 'button' : undefined}
+      tabIndex={interactive ? 0 : undefined}
+      onKeyDown={handleKeyDown}
+      className={`relative p-6 rounded-2xl border-2 shadow-xl hover:shadow-2xl transition-all duration-300 text-left ${className}`}
+      style={{ background: 'linear-gradient(180deg,#FFFFFF,#F9FAFB)', borderColor: '#E5E7EB', color: '#0F172A' }}
+      onClick={onClick}
+    >
+      <span style={{ position:'absolute', top:0, left:0, right:0, height:6, background: '#E04E1B', borderTopLeftRadius:14, borderTopRightRadius:14 }} />
+      {Icon && <Icon className="w-8 h-8 text-[#47A88D] mb-4" />}
+      {title && <h2 className="text-xl font-bold text-[#002E47] mb-2">{title}</h2>}
+      {children}
+    </Tag>
+  );
 };
 const Button = ({ children, onClick, disabled = false, variant = 'primary', className = '', ...rest }) => {
-    const COLORS = { NAVY: '#002E47', TEAL: '#47A88D', ORANGE: '#E04E1B', LIGHT_GRAY: '#FCFCFA' };
-    let baseStyle = "px-6 py-3 rounded-xl font-semibold transition-all shadow-xl focus:outline-none focus:ring-4 text-white";
-    if (variant === 'primary') { baseStyle += ` bg-[${COLORS.TEAL}] hover:bg-[#349881] focus:ring-[#47A88D]/50`; }
-    else if (variant === 'secondary') { baseStyle += ` bg-[${COLORS.ORANGE}] hover:bg-red-700 focus:ring-[#E04E1B]/50`; }
-    else if (variant === 'outline') { baseStyle = `px-6 py-3 rounded-xl font-semibold transition-all shadow-md border-2 border-[${COLORS.TEAL}] text-[${COLORS.TEAL}] hover:bg-[#47A88D]/10 focus:ring-4 focus:ring-[#47A88D]/50 bg-[${COLORS.LIGHT_GRAY}]`; }
-    if (disabled) { baseStyle = "px-6 py-3 rounded-xl font-semibold bg-gray-300 text-gray-500 cursor-not-allowed shadow-inner transition-none"; }
-    return (
-        <button {...rest} onClick={onClick} disabled={disabled} className={`${baseStyle} ${className}`}>
-            {children}
-        </button>
-    );
+  let baseStyle = "px-6 py-3 rounded-xl font-semibold transition-all shadow-xl focus:outline-none focus:ring-4 text-white";
+  if (variant === 'primary') baseStyle += " bg-[#47A88D] hover:bg-[#349881] focus:ring-[#47A88D]/50";
+  else if (variant === 'secondary') baseStyle += " bg-[#E04E1B] hover:bg-red-700 focus:ring-[#E04E1B]/50";
+  else if (variant === 'outline') baseStyle = "px-6 py-3 rounded-xl font-semibold transition-all shadow-md border-2 border-[#47A88D] text-[#47A88D] hover:bg-[#47A88D]/10 focus:ring-4 focus:ring-[#47A88D]/50 bg-[#FCFCFA]";
+  if (disabled) baseStyle = "px-6 py-3 rounded-xl font-semibold bg-gray-300 text-gray-500 cursor-not-allowed shadow-inner transition-none";
+  return (
+    <button {...rest} onClick={onClick} disabled={disabled} className={`${baseStyle} ${className}`}>
+      {children}
+    </button>
+  );
 };
 const Tooltip = ({ content, children }) => {
-    const [isVisible, setIsVisible] = useState(false);
-    return (
-        <div
-            className="relative inline-block"
-            onMouseEnter={() => setIsVisible(true)}
-            onMouseLeave={() => setIsVisible(false)}
-        >
-            {children}
-            {isVisible && (
-                <div className="absolute z-10 w-64 p-3 -mt-2 -ml-32 text-xs text-white bg-[#002E47] rounded-lg shadow-lg bottom-full left-1/2 transform translate-x-1/2">
-                    {content}
-                    <div className="absolute left-1/2 transform -translate-x-1/2 bottom-[-4px] w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-[#002E47]"></div>
-                </div>
-            )}
+  const [isVisible, setIsVisible] = useState(false);
+  return (
+    <div
+      className="relative inline-block"
+      onMouseEnter={() => setIsVisible(true)}
+      onMouseLeave={() => setIsVisible(false)}
+    >
+      {children}
+      {isVisible && (
+        <div className="absolute z-10 w-64 p-3 -mt-2 left-1/2 -translate-x-1/2 bottom-full rounded-lg shadow-lg bg-white border border-gray-200">
+          {content}
+          <div className="absolute left-1/2 -bottom-2 -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-l-transparent border-r-transparent border-t-[#002E47]" />
         </div>
-    );
+      )}
+    </div>
+  );
 };
 
 // Mock Firebase Functions (to satisfy imports)

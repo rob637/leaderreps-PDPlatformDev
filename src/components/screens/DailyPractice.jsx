@@ -1,7 +1,25 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
+
+// --- COLOR PALETTE (High-contrast + brand accents, aligned across screens) ---
+const COLORS = {
+  BG: '#FFFFFF',
+  SURFACE: '#FFFFFF',
+  BORDER: '#1F2937',
+  SUBTLE: '#E5E7EB',
+  TEXT: '#0F172A',
+  MUTED: '#4B5563',
+  NAVY: '#002E47',
+  TEAL: '#47A88D',
+  BLUE: '#2563EB',
+  ORANGE: '#E04E1B',
+  GREEN: '#10B981',
+  AMBER: '#F59E0B',
+  RED: '#EF4444',
+  LIGHT_GRAY: '#FCFCFA'
+};
+
 import {
-  PlusCircle, ArrowLeft, X, Target, Clock, CheckCircle, BarChart3, CornerRightUp, AlertTriangle, Users, Lightbulb, Zap, Archive, MessageSquare, List, TrendingDown, TrendingUp, BookOpen, Crown, Cpu, Star
-} from 'lucide-react';
+  PlusCircle, ArrowLeft, X, Target, Clock, CheckCircle, BarChart3, CornerRightUp, AlertTriangle, Users, Lightbulb, Zap, Archive, MessageSquare, List, TrendingDown, TrendingUp, BookOpen, Crown, Cpu, Star, Send} from 'lucide-react';
 // FIX: Mocking missing imports for external dependencies like useAppServices, Card, Button, Tooltip, and data/constants
 // In a real application, these must be provided by the host environment.
 const useAppServices = () => ({

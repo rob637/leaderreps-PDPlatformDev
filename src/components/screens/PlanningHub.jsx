@@ -2,53 +2,74 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useAppServices } from '../../App.jsx'; 
 import { 
-    Home, Zap, HeartPulse, BookOpen, Users, Settings, Briefcase,
-    TrendingUp, Target, Mic, ArrowLeft, CheckCircle, Lightbulb, Clock, PlusCircle, X, BarChart3, MessageSquare, AlertTriangle, ShieldCheck, CornerRightUp, Play, Info, Eye
-} from 'lucide-react';
+    Home, Zap, HeartPulse, BookOpen, Users, Settings, Briefcase, TrendingUp, Target, Mic, ArrowLeft, CheckCircle, Lightbulb, Clock, PlusCircle, X, BarChart3, MessageSquare, AlertTriangle, ShieldCheck, CornerRightUp, Play, Info, Eye, Send, Star, Cpu} from 'lucide-react';
 // We don't need direct Firestore imports here, as all data access is via useAppServices hooks.
 import { mdToHtml, hasGeminiKey, callSecureGeminiAPI } from '../../utils/ApiHelpers.js'; 
 
 // --- COLOR PALETTE (From App.jsx) ---
+// --- COLOR PALETTE (High-contrast + brand accents, aligned across screens) ---
 const COLORS = {
-    NAVY: '#002E47',
-    TEAL: '#47A88D',
-    ORANGE: '#E04E1B',
-    LIGHT_GRAY: '#FCFCFA',
+  BG: '#FFFFFF',
+  SURFACE: '#FFFFFF',
+  BORDER: '#1F2937',
+  SUBTLE: '#E5E7EB',
+  TEXT: '#0F172A',
+  MUTED: '#4B5563',
+  NAVY: '#002E47',
+  TEAL: '#47A88D',
+  BLUE: '#2563EB',
+  ORANGE: '#E04E1B',
+  GREEN: '#10B981',
+  AMBER: '#F59E0B',
+  RED: '#EF4444',
+  LIGHT_GRAY: '#FCFCFA'
 };
 
 // --- Custom/Placeholder UI Components (Replicated for self-contained file) ---
 const Button = ({ children, onClick, disabled = false, variant = 'primary', className = '', ...rest }) => {
-    let baseStyle = "px-6 py-3 rounded-xl font-semibold transition-all shadow-xl focus:outline-none focus:ring-4 text-white";
-
-    if (variant === 'primary') { baseStyle += ` bg-[${COLORS.TEAL}] hover:bg-[#349881] focus:ring-[#47A88D]/50`; } 
-    else if (variant === 'secondary') { baseStyle += ` bg-[${COLORS.ORANGE}] hover:bg-red-700 focus:ring-[#E04E1B]/50`; } 
-    else if (variant === 'outline') { baseStyle = `px-6 py-3 rounded-xl font-semibold transition-all shadow-md border-2 border-[${COLORS.TEAL}] text-[${COLORS.TEAL}] hover:bg-[#47A88D]/10 focus:ring-4 focus:ring-[#47A88D]/50 bg-[${COLORS.LIGHT_GRAY}]`; }
-
-    if (disabled) { baseStyle = "px-6 py-3 rounded-xl font-semibold bg-gray-300 text-gray-500 cursor-not-allowed shadow-inner transition-none"; }
-
-    return (
-        <button {...rest} onClick={onClick} disabled={disabled} className={`${baseStyle} ${className}`}>
-            {children}
-        </button>
-    );
+  let baseStyle = "px-6 py-3 rounded-xl font-semibold transition-all shadow-xl focus:outline-none focus:ring-4 text-white";
+  if (variant === 'primary') { baseStyle += ` bg-[${COLORS.TEAL}] hover:bg-[#349881] focus:ring-[#47A88D]/50`; }
+  else if (variant === 'secondary') { baseStyle += ` bg-[${COLORS.ORANGE}] hover:bg-red-700 focus:ring-[#E04E1B]/50`; }
+  else if (variant === 'outline') { baseStyle = `px-6 py-3 rounded-xl font-semibold transition-all shadow-md border-2 border-[${COLORS.TEAL}] text-[${COLORS.TEAL}] hover:bg-[#47A88D]/10 focus:ring-4 focus:ring-[#47A88D]/50 bg-[${COLORS.LIGHT_GRAY}]`; }
+  if (disabled) { baseStyle = "px-6 py-3 rounded-xl font-semibold bg-gray-300 text-gray-500 cursor-not-allowed shadow-inner transition-none"; }
+  return (
+    <button {...rest} onClick={onClick} disabled={disabled} className={`${baseStyle} ${className}`}>
+      {children}
+    </button>
+  );
 };
 
-const Card = ({ children, title, icon: Icon, className = '', onClick }) => {
-    const interactive = !!onClick;
-    const Tag = interactive ? 'button' : 'div';
+const Card = ({ children, title, icon: Icon, className = '', onClick, accent = 'ORANGE' }) => {
+  const interactive = !!onClick;
+  const Tag = interactive ? 'button' : 'div';
+  const accentColor = COLORS[accent] || COLORS.ORANGE;
+  const handleKeyDown = (e) => {
+    if (!interactive) return;
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      onClick?.();
+    }
+  };
+  return (
+    <Tag
+      role={interactive ? 'button' : undefined}
+      tabIndex={interactive ? 0 : undefined}
+      onKeyDown={handleKeyDown}
+      className={`relative p-6 rounded-2xl border-2 shadow-xl hover:shadow-2xl transition-all duration-300 text-left ${className}`}
+      style={{ background: 'linear-gradient(180deg,#FFFFFF,#F9FAFB)', borderColor: COLORS.SUBTLE, color: COLORS.TEXT }}
+      onClick={onClick}
+    >
+      <span style={{ position:'absolute', top:0, left:0, right:0, height:6, background: accentColor, borderTopLeftRadius:14, borderTopRightRadius:14 }} />
 
-    return (
-        <Tag 
-            role={interactive ? "button" : undefined}
-            tabIndex={interactive ? 0 : undefined}
-            className={`bg-[${COLORS.LIGHT_GRAY}] p-6 rounded-3xl shadow-xl hover:shadow-2xl transition-all duration-300 ${interactive ? `cursor-pointer hover:border-[${COLORS.NAVY}] border-2 border-transparent` : ''} ${className}`}
-            onClick={onClick}
-        >
-            {Icon && <Icon className="w-8 h-8 text-[#47A88D] mb-4" />}
-            {title && <h2 className="text-xl font-bold text-[#002E47] mb-2">{title}</h2>}
-            {children}
-        </Tag>
-    );
+      {Icon && (
+        <div className="w-10 h-10 rounded-lg flex items-center justify-center border mb-3" style={{ borderColor: COLORS.SUBTLE, background: '#F3F4F6' }}>
+          <Icon className="w-5 h-5" style={{ color: COLORS.TEAL }} />
+        </div>
+      )}
+      {title && <h2 className="text-xl font-extrabold mb-2" style={{ color: COLORS.NAVY }}>{title}</h2>}
+      {children}
+    </Tag>
+  );
 };
 
 const Tooltip = ({ content, children }) => {
