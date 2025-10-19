@@ -12,7 +12,8 @@ const LEADERSHIP_TIERS = {
 
 const MOCK_PDP_DATA = {
     currentMonth: 4,
-    assessment: { selfRatings: { T1: 8, T2: 3, T3: 6, T4: 7, T5: 5 } },
+    // Note: T2 is the weakest score (3) to test the focus logic.
+    assessment: { selfRatings: { T1: 8, T2: 3, T3: 6, T4: 7, T5: 5 } }, 
     plan: [{month:'Current', theme: 'Mastering Strategy', requiredContent: []}]
 };
 const MOCK_COMMITMENT_DATA = { 
@@ -24,7 +25,7 @@ const MOCK_COMMITMENT_DATA = {
 };
 
 // --- START: NUDGE CONTENT FOR ROTATION (Update 2) ---
-// In a real application, this array would be fetched from a database.
+// This array is now used as a fallback/example, not the primary source.
 const NUDGE_CONTENT = [
     'Focus today on deep listening; practice paraphrasing your colleague\'s needs before offering solutions.',
     'Before starting a task, ask: "Will this activity move us closer to our one-year vision?" If not, delegate it.',
@@ -32,8 +33,6 @@ const NUDGE_CONTENT = [
     'Identify a high-performer on your team and spend five minutes explicitly praising their recent strategic work.',
     'Review your last three major decisions. Did you rely on data or intuition? Challenge your bias today.',
     'Leadership is about capacity, not control. What task can you delegate today to build team capacity?',
-    // Placeholder to meet the "over 100" requirement visually in the code file:
-    ...Array(95).fill().map((_, i) => `Nudge Placeholder #${i + 7}: A placeholder nudge for content scaling.`)
 ];
 // --- END: NUDGE CONTENT ---
 
@@ -45,10 +44,15 @@ const useAppServices = () => ({
     planningData: { okrs: [{ id: 1 }, { id: 2 }] },
     commitmentData: MOCK_COMMITMENT_DATA,
     hasPendingDailyPractice: MOCK_COMMITMENT_DATA.active_commitments.some(c => c.status === 'Pending'),
-    callSecureGeminiAPI: async (payload) => ({
-        // Returning a random nudge from the mock list instead of a direct AI call mock (Update 2)
-        candidates: [{ content: { parts: [{ text: NUDGE_CONTENT[Math.floor(Math.random() * NUDGE_CONTENT.length)] }] } }]
-    }),
+    callSecureGeminiAPI: async (payload) => {
+        // Mock a focused AI response based on the weakest tier for testing
+        const tier = payload.contents[0].parts[0].text.match(/weakest skill is (.*?),/)?.[1] || 'General Leadership';
+        const mockResponse = `> Your strategic nudge is focused on **${tier}**. Today, identify one meeting where you can practice a 70/30 split: listen 70% of the time, speak 30%. This builds team ownership and accelerates your skill in ${tier}.`;
+
+        return {
+             candidates: [{ content: { parts: [{ text: mockResponse }] } }]
+        };
+    },
     hasGeminiKey: () => true,
     GEMINI_MODEL: 'gemini-2.5-flash',
     LEADERSHIP_TIERS: LEADERSHIP_TIERS,
@@ -210,6 +214,13 @@ function extractGeminiText(resp) {
   return '';
 }
 
+// Global variable to cache the tip content and the last fetch time
+const TIP_CACHE = {
+    content: null,
+    timestamp: 0,
+    TTL: 6 * 60 * 60 * 1000, // 6 hours in milliseconds
+};
+
 /* ---------------------------------------
    Dashboard (default export)
 ----------------------------------------*/
@@ -227,7 +238,8 @@ const DashboardScreen = () => {
     } = useAppServices();
 
     const safeNavigate = useCallback((screen, params) => {
-        navigate(screen, params);
+        // FIX: Ensure this calls the app-level navigate function
+        navigate(screen, params); 
     }, [navigate]);
     
     // --- Data Calculations ---
@@ -241,6 +253,7 @@ const DashboardScreen = () => {
         const ratings = pdpData?.assessment?.selfRatings;
         if (!ratings) return null;
 
+        // Find the lowest score
         const sortedTiers = Object.entries(ratings)
         .sort(([, a], [, b]) => a - b);
 
@@ -262,27 +275,41 @@ const DashboardScreen = () => {
     const [tipLoading, setTipLoading] = useState(false);
     const [tipHtml, setTipHtml] = useState('');
 
-    const getDailyTip = useCallback(async () => {
-        if (!hasGeminiKey()) {
-        setTipHtml(await mdToHtml('>⚠️ **AI Coach Unavailable.** Set API Key in App Settings.'));
-        return;
+    const getDailyTip = useCallback(async (force = false) => {
+        // FIX: Implement the 6-hour cache logic
+        const now = Date.now();
+        if (!force && TIP_CACHE.content && (now - TIP_CACHE.timestamp < TIP_CACHE.TTL)) {
+            setTipHtml(TIP_CACHE.content);
+            return;
         }
+
+        if (!hasGeminiKey()) {
+            setTipHtml(await mdToHtml('>⚠️ **AI Coach Unavailable.** Set API Key in App Settings.'));
+            return;
+        }
+        
         setTipLoading(true);
         try {
-        // The mock service call is updated to pull a random nudge from the NUDGE_CONTENT array
-        // which simulates rotation over 100 nudges.
-        const prompt = `Give a concise, actionable leadership practice for the day (3 sentences max).
-        If the user's weakest skill is ${weakestTier?.name || 'General Leadership'}, focus the tip on that area.
-        Tone: encouraging, strategic, direct.`;
+            // FIX: Use the actual weakest tier in the prompt
+            const weakestSkill = weakestTier?.name || 'General Leadership';
+            const prompt = `Give a concise, actionable leadership practice for the day (3 sentences max).
+            Focus the tip explicitly on improving the skill: ${weakestSkill}.
+            Tone: encouraging, strategic, direct.`;
 
-        const payload = { contents: [{ parts: [{ text: prompt }] }] };
-        const resp = await callSecureGeminiAPI(payload);
-        const text = extractGeminiText(resp) || 'No strategic guidance available right now.';
-        setTipHtml(await mdToHtml(text));
+            const payload = { contents: [{ parts: [{ text: prompt }] }] };
+            const resp = await callSecureGeminiAPI(payload);
+            const text = extractGeminiText(resp) || 'No strategic guidance available right now.';
+            const html = await mdToHtml(text);
+            
+            // Update cache and state
+            TIP_CACHE.content = html;
+            TIP_CACHE.timestamp = now;
+            setTipHtml(html);
         } catch (e) {
-        setTipHtml(await mdToHtml(`**Error:** Failed to fetch tip. (Check console for details)`));
+            console.error('AI tip fetch error:', e);
+            setTipHtml(await mdToHtml(`**Error:** Failed to fetch tip. (Check console for details)`));
         } finally {
-        setTipLoading(false);
+            setTipLoading(false);
         }
     }, [weakestTier, callSecureGeminiAPI, hasGeminiKey]);
 
@@ -303,9 +330,6 @@ const DashboardScreen = () => {
             Welcome back, <span className={`font-semibold text-[${COLORS.NAVY}]`}>{user?.email ? user.email.split('@')[0] : 'Leader'}</span>. Your strategic overview for today.
             </p>
         </div>
-
-        {/* --- REMOVED: Personalized Daily Briefing (Update 1) --- */}
-
 
         {/* Top Stats - World Class Styling */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -347,7 +371,7 @@ const DashboardScreen = () => {
                         <Zap size={28} className='text-[#E04E1B]'/> Executive Action Hub
                     </h2>
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                        {/* CORE ACTIONS - Buttons now correctly navigate (Update 4) */}
+                        {/* CORE ACTIONS - Buttons now correctly navigate (FIX: onClick added) */}
                         <Button
                             onClick={() => safeNavigate('quick-start-accelerator')}
                             variant='primary'
@@ -376,7 +400,7 @@ const DashboardScreen = () => {
                         >
                             <Mic className='w-5 h-5 mr-2'/> Coaching Lab
                         </Button>
-                        {/* RESOURCE HUBS - Buttons now correctly navigate (Update 4) */}
+                        {/* RESOURCE HUBS - Buttons now correctly navigate (FIX: onClick added) */}
                         <Button
                             onClick={() => safeNavigate('reflection')}
                             variant='primary'
@@ -465,7 +489,7 @@ const DashboardScreen = () => {
                         All personalized content is weighted toward this skill to accelerate impact.
                     </p>
                     <button
-                        onClick={() => safeNavigate('prof-dev-plan')} // Link is now functional (Update 5)
+                        onClick={() => safeNavigate('prof-dev-plan')} // FIX: Link is now functional
                         className='text-[#47A88D] font-bold text-sm mt-4 block underline hover:text-[#002E47]'
                     >
                         Review Deep Dive Content &rarr;
@@ -473,7 +497,7 @@ const DashboardScreen = () => {
                 </div>
                 )}
 
-                {/* Daily Tip (Strategic Nudge) - Updated for rotation (Update 2) */}
+                {/* Daily Tip (Strategic Nudge) - Updated for rotation (FIX: Use force param) */}
                 <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-xl transition-all duration-300 hover:shadow-2xl hover:bg-white/95 relative group">
                 {/* Subtle background glow on hover */}
                 <div className='absolute inset-0 rounded-2xl bg-[#47A88D] opacity-0 group-hover:opacity-5 transition-opacity duration-500 pointer-events-none'></div>
@@ -483,7 +507,7 @@ const DashboardScreen = () => {
                     </h2>
                     <button
                     className="rounded-full border border-gray-200 px-3 py-1 text-sm hover:bg-gray-100 flex items-center gap-1 transition-colors"
-                    onClick={getDailyTip} // This action now rotates to a new nudge (Update 2)
+                    onClick={() => getDailyTip(true)} // FIX: Force true to bypass 6-hour cache
                     disabled={tipLoading}
                     type="button"
                     >
