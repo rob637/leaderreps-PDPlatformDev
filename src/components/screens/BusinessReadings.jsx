@@ -3,20 +3,21 @@ import React, { useState, useMemo } from 'react';
 import { useAppServices } from '../../App.jsx';
 import { 
     BookOpen, Target, CheckCircle, Clock, Feather, Aperture, Briefcase, Zap, Star, 
-    AlertTriangle, CornerDownRight, MessageSquare, Filter, TrendingUp, Users, Minimize2
+    AlertTriangle, CornerDownRight, MessageSquare, Filter, TrendingUp, Users, Minimize2, Send
 } from 'lucide-react';
 import { mdToHtml } from '../../utils/ApiHelpers.js';
 
 // --- COLOR PALETTE ---
 const COLORS = {
-    NAVY: '#002E47', // Dark/Primary
-    TEAL: '#47A88D', // Accent 1
-    ORANGE: '#E04E1B', // Accent 2/Action
-    LIGHT_GRAY: '#FCFCFA', // Background
+    NAVY: '#002E47', // Dark/Primary (Strong)
+    TEAL: '#47A88D', // Accent 1 (Vibrant)
+    ORANGE: '#E04E1B', // Accent 2/Action (High Contrast)
+    LIGHT_GRAY: '#F8F8F5', // Soft Background
     DARK_TEXT: '#1F2937', // Near-Black for text
+    OFF_WHITE: '#FFFFFF', // Clean White for contrast elements
 };
 
-// --- COMPLEXITY MAPPING (For visual representation) ---
+// --- COMPLEXITY MAPPING ---
 const COMPLEXITY_MAP = {
     'Low': { label: 'Novice', color: 'bg-green-500', icon: CheckCircle },
     'Medium': { label: 'Intermediate', color: 'bg-yellow-500', icon: AlertTriangle },
@@ -47,7 +48,44 @@ const MOCK_ALL_BOOKS = {
     ],
 };
 
-// --- HELPER: GENERATE BOOK FLYER CONTENT (Incorporates Executive Brief) ---
+// --- HELPER: SIMULATE AI RESPONSE ---
+const mockAIResponse = (bookTitle, focusAreas, query) => {
+    query = query.toLowerCase();
+    
+    if (bookTitle.includes('E-Myth')) {
+        if (query.includes('apply') || query.includes('system')) {
+            return `The E-Myth teaches that you must **systemize your business** to make it scalable. If you're a manager, start by documenting the 3-5 most critical repetitive processes your team executes. Convert tribal knowledge into clear, step-by-step procedures that anyone can follow. This shifts your time from 'doing' to 'managing the system.'`;
+        }
+        return `Regarding the E-Myth, the primary focus is separating yourself into three roles: Entrepreneur (vision), Manager (process), and Technician (work). Your question about '${query}' likely falls under the **Manager** role, which means defining a system to solve the issue, not just performing the task yourself.`;
+    }
+    
+    if (bookTitle.includes('Good to Great')) {
+        if (query.includes('hedgehog')) {
+            return `The Hedgehog Concept is the key to focus: find the intersection of 1) **What you are deeply passionate about**, 2) **What you can be the best in the world at**, and 3) **What drives your economic engine**. Apply this by auditing your team's top 3 projects against these three circles. Eliminate projects that don't hit all three.`;
+        }
+        return `In the context of 'Good to Great,' the core principle for your question about '${query}' revolves around **disciplined people, disciplined thought, and disciplined action**. To solve this, you need a disciplined process (OKRs, systems) guided by disciplined leadership (Level 5).`;
+    }
+
+    if (bookTitle.includes('Radical Candor')) {
+        if (query.includes('feedback')) {
+            return `Radical Candor is about **Caring Personally** (the vertical axis) and **Challenging Directly** (the horizontal axis). When giving feedback on '${query}', make sure you start from a place of genuine care, and then be clear, specific, and immediate about the action you want changed. Avoid the "Ruinous Empathy" quadrant!`;
+        }
+        return `Regarding '${query}' from a Radical Candor perspective, the book stresses the importance of fostering a culture where challenging directly is the norm. It allows the truth to surface quickly, accelerating growth for everyone involved.`;
+    }
+
+    if (bookTitle.includes('Atomic Habits')) {
+        if (query.includes('start') || query.includes('new habit')) {
+            return `To start a new habit, James Clear advises using the **Four Laws of Behavior Change**. For example, make the habit **Obvious** (e.g., put your journal next to your coffee maker) and **Attractive** (e.g., pair it with something you enjoy). Start incredibly small—the goal is consistency, not intensity.`;
+        }
+        return `The core idea of Atomic Habits is that **small, 1% improvements** compound over time. To address '${query}', look for the smallest step you can take today that serves as a cue for the next desired action.`;
+    }
+
+    // Default general response if keyword not found
+    return `That's a great question about ${bookTitle}. Based on the book's core focus on ${focusAreas.join(', ')}, the author's primary advice would be to: 1. Define your goal clearly, and 2. Apply the specific principles of ${focusAreas[0]} to your immediate problem.`;
+};
+
+
+// --- HELPER: GENERATE BOOK FLYER CONTENT (Corrected for Readability) ---
 const generateBookFlyerMarkdown = (book, tier, isExecutiveBrief) => {
     const focusAreas = book.focus.split(',').map(f => f.trim());
     const complexityData = COMPLEXITY_MAP[book.complexity] || COMPLEXITY_MAP['Medium'];
@@ -60,24 +98,24 @@ const generateBookFlyerMarkdown = (book, tier, isExecutiveBrief) => {
 
     // EXECUTIVE BRIEF CONTENT
     const executiveSummary = `
-<div class="p-4 bg-[${COLORS.ORANGE}]/10 rounded-lg border-l-4 border-[${COLORS.ORANGE}]">
-    <h4 class="text-lg font-bold text-[${COLORS.NAVY}] flex items-center gap-2"><Minimize2 class="w-5 h-5 text-[${COLORS.ORANGE}]"/> Executive Brief: 3 Key Concepts</h4>
-    <ul class="list-none ml-0 text-gray-800 text-sm space-y-1 mt-2">
-        <li>1. **Systemization is Key:** Focus on building a business model that is independent of your personal time/effort.</li>
-        <li>2. **Three Roles:** Learn to separate yourself into Entrepreneur, Manager, and Technician.</li>
-        <li>3. **Primary Action:** Create and document your first **Process Map** this week.</li>
+<div class="p-5 bg-[${COLORS.NAVY}]/10 rounded-lg border-l-4 border-[${COLORS.ORANGE}]">
+    <h4 class="text-xl font-bold text-[${COLORS.NAVY}] flex items-center gap-2 mb-3"><Minimize2 class="w-5 h-5 text-[${COLORS.ORANGE}]"/> Executive Brief: 3 Core Shifts</h4>
+    <ul class="list-disc ml-6 text-gray-800 text-sm space-y-2">
+        <li>1. **Systemization is Key:** Build processes that work independently of specific individuals.</li>
+        <li>2. **Separate Roles:** Learn to distinguish between the Entrepreneur (Visionary), Manager (Process), and Technician (Doer).</li>
+        <li>3. **Primary Action:** Create and document your first **Process Map** this week, delegating tasks you currently perform.</li>
     </ul>
 </div>
 `;
 
-    // CONDITIONAL CONTENT
+    // DYNAMIC CONTENT SECTION
     const mainContent = isExecutiveBrief ? executiveSummary : `
         <section class="p-4 bg-[${COLORS.NAVY}]/5 rounded-lg border border-gray-200">
             <h3 class="text-xl font-bold text-[${COLORS.NAVY}] mb-2 flex items-center gap-2"><Feather class="w-5 h-5 text-[${COLORS.ORANGE}]"/> Rich Synopsis</h3>
             <p class="text-sm text-gray-800">${richSummary}</p>
         </section>
 
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
             <div class="space-y-3 p-4 border border-[${COLORS.TEAL}] rounded-lg bg-[${COLORS.TEAL}]/5">
                 <h3 class="text-lg font-semibold text-[${COLORS.DARK_TEXT}] flex items-center gap-2"><Briefcase class="w-5 h-5 text-[${COLORS.TEAL}]"/> Core Skills to Master</h3>
                 <ul class="list-none ml-0 text-gray-700 text-sm space-y-2">
@@ -123,7 +161,7 @@ const generateBookFlyerMarkdown = (book, tier, isExecutiveBrief) => {
 
         <div class="flex flex-col space-y-2 text-sm">
             <div class="flex justify-between items-center text-gray-700">
-                <span class="font-semibold flex items-center"><Clock class="w-4 h-4 mr-2 text-[${COLORS.ORANGE}]"/> Est. Reading Time</span>
+                <span class="font-semibold flex items-center"><Clock class="w-4 h-4 mr-2 text-[${COLORS.ORANGE}]"/> Est. Learning Minutes</span>
                 <span class="font-bold text-[${COLORS.NAVY}]">${book.duration} min</span>
             </div>
             <div class="flex justify-between items-center text-gray-700 border-t pt-2">
@@ -145,15 +183,7 @@ const generateBookFlyerMarkdown = (book, tier, isExecutiveBrief) => {
         
         <div class="mt-8 pt-4 border-t border-gray-200 grid grid-cols-1 md:grid-cols-2 gap-4">
             
-            <div class="flex items-start p-3 bg-blue-50 rounded-lg border border-blue-200">
-                <MessageSquare className="w-5 h-5 text-blue-600 flex-shrink-0 mt-1"/>
-                <div class="ml-3">
-                    <p class="text-sm text-blue-800 font-semibold">AI Coach: Ask a Question</p>
-                    <p class="text-xs text-blue-700">Instantly apply **${focusAreas[0]}** to your current role.</p>
-                </div>
-            </div>
-
-            <div class="flex items-start p-3 bg-teal-50 rounded-lg border border-teal-200">
+            <div class="flex items-start p-3 bg-teal-50 rounded-lg border border-teal-300">
                 <Users className="w-5 h-5 text-[${COLORS.TEAL}] flex-shrink-0 mt-1"/>
                 <div class="ml-3">
                     <p class="text-sm text-[${COLORS.NAVY}] font-semibold">Peer Accountability Group</p>
@@ -174,11 +204,15 @@ export default function BusinessReadingsScreen() {
     const [selectedBook, setSelectedBook] = useState(null);
     const [htmlFlyer, setHtmlFlyer] = useState('');
     const [selectedTier, setSelectedTier] = useState('');
-    const [savedBooks, setSavedBooks] = useState({}); // State for 'Save for Later'
-    const [isExecutiveBrief, setIsExecutiveBrief] = useState(false); // New state for Executive Brief
-    const [filters, setFilters] = useState({ complexity: 'All', maxDuration: 300 }); // New state for filters
+    const [savedBooks, setSavedBooks] = useState({});
+    const [isExecutiveBrief, setIsExecutiveBrief] = useState(false);
+    const [filters, setFilters] = useState({ complexity: 'All', maxDuration: 300 });
 
-    // Safely use context books or fall back to mock data if context is empty
+    // --- AI COACH STATES ---
+    const [aiQuery, setAiQuery] = useState('');
+    const [aiResponse, setAiResponse] = useState('');
+
+    // Safely use context books or fall back to mock data
     const allBooks = Object.keys(contextBooks).length > 0 ? contextBooks : MOCK_ALL_BOOKS;
 
     // --- Filtered and Sorted Book List Memo ---
@@ -214,12 +248,29 @@ export default function BusinessReadingsScreen() {
         }
     }, [selectedBook, selectedTier, allBooks, isExecutiveBrief]); 
     
-    // Reset Executive Brief when selecting a new book
+    // Reset states when selecting a new book
     React.useEffect(() => {
         if (selectedBook) {
             setIsExecutiveBrief(false);
+            setAiQuery('');
+            setAiResponse('');
         }
     }, [selectedBook]);
+
+    // --- AI Coach Handler ---
+    const handleAiQuery = (e) => {
+        e.preventDefault();
+        if (!selectedBook || aiQuery.trim() === '') return;
+
+        // Simulate AI thinking time
+        setAiResponse('Thinking... (Simulating real-time AI response)...');
+        
+        setTimeout(() => {
+            const response = mockAIResponse(selectedBook.title, selectedBook.focus.split(',').map(f => f.trim()), aiQuery);
+            setAiResponse(response);
+            setAiQuery('');
+        }, 800); 
+    };
 
     // Handler to create a new commitment from the selected book
     const handleCommitment = (book) => {
@@ -231,7 +282,7 @@ export default function BusinessReadingsScreen() {
             notes: `Flyer analysis theme: ${book.theme}. Est. ${book.duration} min.`,
             status: 'Active',
             // --- GAMIFICATION FIELD ---
-            progressMinutes: 0, // Start tracking progress
+            progressMinutes: 0, 
             totalDuration: book.duration,
             createdAt: new Date().toISOString(),
         };
@@ -255,7 +306,7 @@ export default function BusinessReadingsScreen() {
     };
 
     /* ----------------------------------------------------
-       Book List View (Improved UI - High Contrast with Filters)
+       Book List View 
     ---------------------------------------------------- */
     const BookList = () => (
         <div className="space-y-10">
@@ -264,7 +315,7 @@ export default function BusinessReadingsScreen() {
             </h2>
             
             {/* --- PERSONALIZATION: FILTER BAR --- */}
-            <div className='bg-white p-5 rounded-xl shadow-lg border border-gray-100'>
+            <div className='bg-[${COLORS.OFF_WHITE}] p-5 rounded-xl shadow-xl border border-gray-100'>
                 <h3 className="text-xl font-bold text-[${COLORS.NAVY}] flex items-center gap-2 mb-4">
                     <Filter className='w-5 h-5 text-[${COLORS.ORANGE}]'/> Personalize Your Search
                 </h3>
@@ -284,7 +335,7 @@ export default function BusinessReadingsScreen() {
                     </div>
                     
                     <div className='md:col-span-2'>
-                        <label className='block text-sm font-medium text-gray-700 mb-1'>Max Time Commitment ({filters.maxDuration} minutes)</label>
+                        <label className='block text-sm font-medium text-gray-700 mb-1'>Max Est. Learning Minutes ({filters.maxDuration} minutes)</label>
                         <input
                             type="range"
                             min="150"
@@ -292,7 +343,7 @@ export default function BusinessReadingsScreen() {
                             step="10"
                             value={filters.maxDuration}
                             onChange={(e) => setFilters({...filters, maxDuration: parseInt(e.target.value)})}
-                            className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer range-lg accent-[${COLORS.TEAL}]"
+                            className={`w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer range-lg accent-[${COLORS.TEAL}]`}
                         />
                          <div className='flex justify-between text-xs text-gray-500 mt-1'>
                              <span>150 min (Quick Reads)</span>
@@ -305,14 +356,14 @@ export default function BusinessReadingsScreen() {
             {/* --- BOOK LIST --- */}
             <div className="space-y-12">
                 {Object.entries(filteredBooks).map(([tier, books]) => (
-                    <div key={tier} className='bg-white rounded-2xl shadow-xl border border-gray-200 overflow-hidden'>
+                    <div key={tier} className='bg-white rounded-2xl shadow-xl border-2 border-[${COLORS.NAVY}]/10 overflow-hidden'>
                         
-                        {/* Category Header */}
-                        <div className='p-6 border-l-8 border-[${COLORS.ORANGE}] bg-[${COLORS.NAVY}]/10'>
-                            <h3 className="text-2xl font-bold text-[${COLORS.NAVY}] flex items-center gap-2">
-                                <Aperture className="w-6 h-6 text-[${COLORS.ORANGE}]" /> {tier}
+                        {/* Category Header (High Contrast) */}
+                        <div className='p-6 border-l-8 border-[${COLORS.ORANGE}] bg-[${COLORS.NAVY}]'>
+                            <h3 className="text-2xl font-bold text-white flex items-center gap-2">
+                                <Aperture className="w-6 h-6 text-[${COLORS.TEAL}]" /> {tier}
                             </h3>
-                            <p className="text-base text-gray-700 mt-1">Foundational books for mastering this core leadership competency. ({books.length} available)</p>
+                            <p className="text-base text-gray-200 mt-1">Foundational books for mastering this core leadership competency. ({books.length} available)</p>
                         </div>
 
                         {/* Book Cards Grid */}
@@ -329,10 +380,10 @@ export default function BusinessReadingsScreen() {
                                                 setSelectedBook(book);
                                                 setSelectedTier(tier);
                                             }}
-                                            className={`p-5 border-2 rounded-xl shadow-md text-left transition-all w-full h-full block
+                                            className={`p-5 border-2 rounded-xl shadow-lg text-left transition-all w-full h-full block
                                                 ${selectedBook?.id === book.id
                                                     ? 'bg-[${COLORS.TEAL}]/10 border-[${COLORS.TEAL}] ring-4 ring-[${COLORS.TEAL}]/50'
-                                                    : 'bg-white border-gray-100 hover:shadow-lg hover:border-[${COLORS.ORANGE}]/50'
+                                                    : 'bg-white border-gray-200 hover:shadow-xl hover:border-[${COLORS.ORANGE}]'
                                                 }`}
                                         >
                                             <p className="font-extrabold text-xl text-[${COLORS.NAVY}] leading-snug mb-1">{book.title}</p>
@@ -344,7 +395,7 @@ export default function BusinessReadingsScreen() {
                                             <div className="flex flex-col text-sm text-gray-500 mt-2 space-y-2">
                                                 <div className='flex items-center text-[${COLORS.DARK_TEXT}]'>
                                                     <Clock className="w-4 h-4 mr-2 text-[${COLORS.ORANGE}]" /> 
-                                                    <span className='font-semibold'>Est. Read Time:</span> 
+                                                    <span className='font-semibold'>Learning Mins:</span> 
                                                     <span className='ml-auto font-bold'>{book.duration} min</span>
                                                 </div>
                                                 <div className='flex items-center text-[${COLORS.DARK_TEXT}]'>
@@ -396,7 +447,7 @@ export default function BusinessReadingsScreen() {
     );
 
     /* ----------------------------------------------------
-       Book Flyer View (Professional Ad Look - Cleaned Up)
+       Book Flyer View (Corrected Readability & AI Coach)
     ---------------------------------------------------- */
     const BookFlyer = () => (
         <div className="space-y-8">
@@ -414,7 +465,7 @@ export default function BusinessReadingsScreen() {
 
             <div className='bg-white rounded-2xl shadow-2xl p-8 border-4 border-[${COLORS.NAVY}]/10'>
                 
-                {/* --- EXECUTIVE BRIEF TOGGLE --- */}
+                {/* --- EXECUTIVE BRIEF TOGGLE (FIXED COLOR) --- */}
                 <div className='flex justify-end mb-4'>
                     <label className="relative inline-flex items-center cursor-pointer">
                         <input 
@@ -424,7 +475,7 @@ export default function BusinessReadingsScreen() {
                             checked={isExecutiveBrief} 
                             onChange={() => setIsExecutiveBrief(!isExecutiveBrief)}
                         />
-                        <div className={`w-11 h-6 ${isExecutiveBrief ? 'bg-[${COLORS.ORANGE}]' : 'bg-gray-200'} peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-[${COLORS.ORANGE}]/30 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all`}></div>
+                        <div className={`w-11 h-6 ${isExecutiveBrief ? 'bg-[${COLORS.ORANGE}]' : 'bg-gray-400'} peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-[${COLORS.ORANGE}]/30 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all`}></div>
                         <span className="ml-3 text-sm font-medium text-[${COLORS.NAVY}] flex items-center gap-1">
                             <Minimize2 className='w-4 h-4'/> Executive Brief
                         </span>
@@ -436,6 +487,44 @@ export default function BusinessReadingsScreen() {
                     dangerouslySetInnerHTML={{ __html: htmlFlyer }} 
                 />
                 
+                {/* --- AI COACH IMPLEMENTATION --- */}
+                <div className='mt-8 pt-4 border-t border-gray-200'>
+                    <h3 className="text-2xl font-bold text-[${COLORS.NAVY}] flex items-center gap-3 mb-4">
+                        <MessageSquare className='w-6 h-6 text-blue-600'/> AI Coach: Instant Application
+                    </h3>
+
+                    {/* AI Response Display */}
+                    {aiResponse && (
+                        <div className='p-4 mb-4 bg-blue-50 border-l-4 border-blue-400 rounded-lg shadow-sm'>
+                            <p className='text-sm text-blue-800 font-semibold'>AI Coach:</p>
+                            <p className='text-sm text-gray-800 mt-1 italic'>{aiResponse}</p>
+                        </div>
+                    )}
+
+                    {/* User Input Form */}
+                    <form onSubmit={handleAiQuery} className='flex gap-2'>
+                        <input
+                            type='text'
+                            value={aiQuery}
+                            onChange={(e) => setAiQuery(e.target.value)}
+                            placeholder={`Ask how to apply ${selectedBook.title} concepts to your job...`}
+                            className='flex-grow p-3 border border-gray-300 rounded-lg focus:ring-[${COLORS.TEAL}] focus:border-[${COLORS.TEAL}]'
+                            required
+                        />
+                        <button
+                            type='submit'
+                            className={`p-3 rounded-lg flex items-center justify-center gap-1 font-semibold transition-colors 
+                                ${aiQuery.trim() === '' ? 'bg-gray-300 text-gray-600 cursor-not-allowed' : 'bg-blue-600 text-white hover:bg-blue-700'}`
+                            }
+                            disabled={aiQuery.trim() === ''}
+                        >
+                            <Send className='w-5 h-5'/>
+                            Ask
+                        </button>
+                    </form>
+                </div>
+                {/* --- END AI COACH IMPLEMENTATION --- */}
+
                 <div className="mt-10 pt-6 border-t border-gray-200 flex justify-end gap-4">
                     <button 
                          onClick={() => handleSaveForLater(selectedBook.id)}
