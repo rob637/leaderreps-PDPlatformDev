@@ -2,11 +2,33 @@
    CORRECTED FILE: DailyPractice.jsx
    FIX: Removed top-level calls to useAppServices() to resolve ReferenceError/TDZ violation.
    All hook-derived values are now accessed inside the component functions.
+   ENHANCEMENT: AI Reflection Prompt, AI Commitment Analysis, Tier Success Map, Weekly Prep View.
 ========================================================= */
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import {
-  PlusCircle, ArrowLeft, X, Target, Clock, CheckCircle, BarChart3, CornerRightUp, AlertTriangle, Users, Lightbulb, Zap, Archive, MessageSquare, List, TrendingDown, TrendingUp, BookOpen, Crown, Cpu, Star
+  PlusCircle, ArrowLeft, X, Target, Clock, CheckCircle, BarChart3, CornerRightUp, AlertTriangle, Users, Lightbulb, Zap, Archive, MessageSquare, List, TrendingDown, TrendingUp, BookOpen, Crown, Cpu, Star, Trash2
 } from 'lucide-react';
+
+/* =========================================================
+   HIGH-CONTRAST PALETTE (Centralized for Consistency)
+========================================================= */
+const COLORS = {
+  BG: '#FFFFFF',
+  SURFACE: '#FFFFFF',
+  BORDER: '#1F2937',
+  SUBTLE: '#E5E7EB',
+  TEXT: '#0F172A',
+  MUTED: '#4B5563',
+  NAVY: '#0B3B5B', // Deep Navy
+  TEAL: '#219E8B', // Leadership Teal
+  BLUE: '#2563EB',
+  ORANGE: '#E04E1B', // High-Impact Orange
+  GREEN: '#10B981',
+  AMBER: '#F59E0B',
+  RED: '#EF4444',
+  LIGHT_GRAY: '#FCFCFA'
+};
+
 
 // FIX 1: Mocking missing imports for external dependencies like useAppServices, Card, Button, Tooltip, and data/constants
 // NOTE: The mock is moved outside the conditional check to ensure it is always defined if the host environment doesn't provide the real one.
@@ -46,37 +68,64 @@ const useAppServices = () => ({
       const risk = 10 - score;
       const feedback = score > 7 ? "Excellent specificity and alignment! Maintain this clarity." : "Slightly vague. Specify the time or location to reduce risk.";
       return { candidates: [{ content: { parts: [{ text: JSON.stringify({ score, risk, feedback }) }] } }] };
-    } else {
+    } else if (payload.systemInstruction.parts[0].text.includes("generate ONE specific, non-judgemental, and high-leverage reflection question")) {
       return { candidates: [{ content: { parts: [{ text: 'Given your strong performance in Tier 3, how can you mentor a peer to adopt your scheduling discipline this week?' }] } }] };
+    } else {
+        return { candidates: [{ content: { parts: [{ text: 'No response for this mock query.' }] } }] };
     }
   },
   hasGeminiKey: () => true,
   GEMINI_MODEL: 'gemini-2.5-flash-preview-09-2025',
+  navigate: (screen, params) => console.log(`Navigating to ${screen} with params:`, params),
 });
 
-// Mock UI components (defined once)
-const Card = ({ title, icon: Icon, className = '', children, onClick }) => (
-    <div className={`p-5 rounded-xl shadow-lg border-t-4 border-[#002E47] ${className}`} onClick={onClick}>
-        <h2 className="text-xl font-bold text-[#002E47] flex items-center mb-3">
-            {Icon && <Icon className="w-5 h-5 mr-2 text-[#47A88D]" />}
-            {title}
-        </h2>
-        {children}
-    </div>
-);
-const Button = ({ onClick, children, className = '', variant = 'primary', disabled }) => (
-    <button
-        onClick={onClick}
-        className={`px-4 py-2 font-semibold rounded-lg transition-colors ${
-            variant === 'primary' ? 'bg-[#47A88D] text-white hover:bg-[#349881]' : 
-            variant === 'secondary' ? 'bg-[#E04E1B] text-white hover:bg-red-700' :
-            'bg-white text-[#002E47] border border-gray-300 hover:bg-gray-100'
-        } ${disabled ? 'opacity-50 cursor-not-allowed' : ''} ${className}`}
-        disabled={disabled}
-    >
-        {children}
+// Mock UI components (defined once) - STANDARDIZED
+const Button = ({ children, onClick, disabled = false, variant = 'primary', className = '', ...rest }) => {
+  let baseStyle = "px-6 py-3 rounded-xl font-semibold transition-all shadow-xl focus:outline-none focus:ring-4 text-white flex items-center justify-center";
+  if (variant === 'primary') { baseStyle += ` bg-[${COLORS.TEAL}] hover:bg-[#1C8D7C] focus:ring-[${COLORS.TEAL}]/50`; }
+  else if (variant === 'secondary') { baseStyle += ` bg-[${COLORS.ORANGE}] hover:bg-red-700 focus:ring-[${COLORS.ORANGE}]/50`; }
+  else if (variant === 'outline') { baseStyle = `px-6 py-3 rounded-xl font-semibold transition-all shadow-md border-2 border-[${COLORS.TEAL}] text-[${COLORS.TEAL}] hover:bg-[${COLORS.TEAL}]/10 focus:ring-4 focus:ring-[${COLORS.TEAL}]/50 bg-[${COLORS.LIGHT_GRAY}] flex items-center justify-center`; }
+  else if (variant === 'nav-back') { baseStyle = `px-4 py-2 rounded-lg font-medium transition-all shadow-sm border-2 border-gray-300 text-gray-700 hover:bg-gray-100 flex items-center justify-center`; }
+  if (disabled) { baseStyle = "px-6 py-3 rounded-xl font-semibold bg-gray-300 text-gray-500 cursor-not-allowed shadow-inner transition-none flex items-center justify-center"; }
+  return (
+    <button {...rest} onClick={onClick} disabled={disabled} className={`${baseStyle} ${className}`}>
+      {children}
     </button>
-);
+  );
+};
+
+const Card = ({ children, title, icon: Icon, className = '', onClick, accent = 'NAVY' }) => {
+  const interactive = !!onClick;
+  const Tag = interactive ? 'button' : 'div';
+  const accentColor = COLORS[accent] || COLORS.NAVY;
+  const handleKeyDown = (e) => {
+    if (!interactive) return;
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      onClick?.();
+    }
+  };
+  return (
+    <Tag
+      role={interactive ? 'button' : undefined}
+      tabIndex={interactive ? 0 : undefined}
+      onKeyDown={handleKeyDown}
+      className={`relative p-6 rounded-2xl border-2 shadow-xl hover:shadow-2xl transition-all duration-300 text-left ${className}`}
+      style={{ background: 'linear-gradient(180deg,#FFFFFF,#F9FAFB)', borderColor: COLORS.SUBTLE, color: COLORS.TEXT }}
+      onClick={onClick}
+    >
+      <span style={{ position:'absolute', top:0, left:0, right:0, height:6, background: accentColor, borderTopLeftRadius:14, borderTopRightRadius:14 }} />
+
+      {Icon && (
+        <div className="w-10 h-10 rounded-lg flex items-center justify-center border mb-3" style={{ borderColor: COLORS.SUBTLE, background: '#F3F4F6' }}>
+          <Icon className="w-5 h-5" style={{ color: COLORS.TEAL }} />
+        </div>
+      )}
+      {title && <h2 className="text-xl font-extrabold mb-2" style={{ color: COLORS.NAVY }}>{title}</h2>}
+      {children}
+    </Tag>
+  );
+};
 const Tooltip = ({ content, children }) => (
     <div className="relative inline-block group">
         {children}
@@ -88,11 +137,11 @@ const Tooltip = ({ content, children }) => (
 
 // Mock Constants and Data
 const LEADERSHIP_TIERS = {
-    'T1': { id: 'T1', name: 'Personal Foundation', color: '#10B981' },
-    'T2': { id: 'T2', name: 'Operational Excellence', color: '#3B82F6' },
-    'T3': { id: 'T3', name: 'Strategic Alignment', color: '#F59E0B' },
-    'T4': { id: 'T4', name: 'People Development', color: '#EF4444' },
-    'T5': { id: 'T5', name: 'Visionary Leadership', color: '#8B5CF6' },
+    'T1': { id: 'T1', name: 'Personal Foundation', color: COLORS.GREEN, hex: '#10B981' },
+    'T2': { id: 'T2', name: 'Operational Excellence', color: COLORS.BLUE, hex: '#3B82F6' },
+    'T3': { id: 'T3', name: 'Strategic Alignment', color: COLORS.AMBER, hex: '#F59E0B' },
+    'T4': { id: 'T4', name: 'People Development', color: COLORS.RED, hex: '#EF4444' },
+    'T5': { id: 'T5', name: 'Visionary Leadership', color: COLORS.NAVY, hex: '#0B3B5B' },
 };
 const leadershipCommitmentBank = {
     'T3: Strategy & Execution': [
@@ -114,15 +163,20 @@ const groupCommitmentsByTier = (commitments) => {
     Object.values(LEADERSHIP_TIERS).forEach(tier => {
         grouped[tier.id] = { 
             name: tier.name, 
-            color: tier.color,
+            color: tier.hex,
             items: [],
         };
     });
 
     commitments.forEach(c => {
-        const tierId = c.linkedTier || 'General';
+        const tierId = c.linkedTier || 'T1';
         if (grouped[tierId]) {
             grouped[tierId].items.push(c);
+        } else {
+             // Handle commitments with unlinked or mock tiers
+             if (grouped['T1']) {
+                 grouped['T1'].items.push(c);
+             }
         }
     });
 
@@ -214,6 +268,7 @@ const calculateTierSuccessRates = (activeCommitments, history) => {
     });
 
     history.slice(-90).forEach(() => {
+        // Mock historical data generation for demonstration
         ['T3', 'T4', 'T2', 'T5', 'T1'].forEach(id => {
             if (tierData[id]) {
                 tierData[id].total += 2;
@@ -230,7 +285,7 @@ const calculateTierSuccessRates = (activeCommitments, history) => {
             id,
             name: LEADERSHIP_TIERS[id].name,
             rate,
-            color: LEADERSHIP_TIERS[id].color,
+            color: LEADERSHIP_TIERS[id].hex,
             total: data.total,
         };
     }).filter(t => t.total > 0);
@@ -242,7 +297,7 @@ const calculateTierSuccessRates = (activeCommitments, history) => {
 const TierSuccessMap = ({ tierRates }) => {
     if (tierRates.length === 0) {
         return (
-            <Card title="Tier Success Map" icon={BarChart3} className='bg-gray-100 border-2 border-gray-300'>
+            <Card title="Longitudinal Tier Success" icon={BarChart3} accent='NAVY' className='bg-gray-100 border-2 border-gray-300'>
                 <p className='text-sm text-gray-500'>Log commitments for 90 days to see your long-term success mapped to your PDP tiers.</p>
             </Card>
         );
@@ -252,14 +307,14 @@ const TierSuccessMap = ({ tierRates }) => {
     const minRate = Math.min(...tierRates.filter(t => t.total > 0).map(t => t.rate));
 
     return (
-        <Card title="Longitudinal Tier Success" icon={BarChart3} className='bg-[#002E47]/10 border-2 border-[#002E47]/20'>
+        <Card title="Longitudinal Tier Success" icon={BarChart3} accent='NAVY' className='bg-[#0B3B5B]/10 border-2 border-[#0B3B5B]/20'>
             <p className='text-xs text-gray-600 mb-4'>Commitment success rate mapped to your 5 PDP Tiers (Last 90 Days).</p>
             
             <div className='space-y-3'>
                 {tierRates.map(tier => (
                     <div key={tier.id}>
                         <div className='flex justify-between items-center text-sm font-semibold mb-1'>
-                            <span className='text-[#002E47]'>{tier.id}: {tier.name}</span>
+                            <span className='text-[#0B3B5B]'>{tier.id}: {tier.name}</span>
                             <span className={`${tier.rate === maxRate ? 'text-green-600' : tier.rate === minRate ? 'text-[#E04E1B]' : 'text-[#47A88D]'}`}>
                                 {tier.rate}%
                             </span>
@@ -269,7 +324,7 @@ const TierSuccessMap = ({ tierRates }) => {
                                 className="h-2 rounded-full transition-all duration-700" 
                                 style={{ 
                                     width: `${tier.rate}%`, 
-                                    backgroundColor: tier.rate === maxRate ? '#10B981' : tier.rate === minRate ? '#E04E1B' : '#47A88D'
+                                    backgroundColor: tier.rate === maxRate ? COLORS.GREEN : tier.rate === minRate ? COLORS.ORANGE : COLORS.TEAL
                                 }}
                             ></div>
                         </div>
@@ -292,15 +347,16 @@ const CommitmentHistoryModal = ({ isVisible, onClose, dayData, activeCommitments
     const isPerfect = committed === total && total > 0;
     const isLoggedDay = total > 0;
     
+    // Use the first N commitments as a proxy for the historical log entries, based on the score.
     const historicalCommitments = activeCommitments || []; 
 
     return (
-        <div className="fixed inset-0 bg-[#002E47]/80 z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 bg-[#0B3B5B]/80 z-50 flex items-center justify-center p-4">
             <div className="bg-[#FCFCFA] rounded-3xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto p-8">
                 
                 <div className="flex justify-between items-center border-b pb-4 mb-6">
-                    <h2 className="text-2xl font-extrabold text-[#002E47] flex items-center">
-                        <MessageSquare className="w-6 h-6 mr-3 text-[#47A88D]" />
+                    <h2 className="text-2xl font-extrabold text-[#0B3B5B] flex items-center">
+                        <MessageSquare className="w-6 h-6 mr-3" style={{ color: COLORS.TEAL }} />
                         Review: {new Date(dayData.date + 'T00:00:00').toDateString()}
                     </h2>
                     <button onClick={onClose} className="p-2 text-gray-500 hover:text-[#E04E1B] transition-colors">
@@ -312,14 +368,14 @@ const CommitmentHistoryModal = ({ isVisible, onClose, dayData, activeCommitments
                     Score: {dayData.score} ({isLoggedDay ? (isPerfect ? 'Perfect Day!' : 'Commitments Missed') : 'No Commitments Logged'})
                 </div>
 
-                <h3 className="text-lg font-bold text-[#002E47] mb-3">Daily Reflection</h3>
+                <h3 className="text-lg font-bold text-[#0B3B5B] mb-3">Daily Reflection</h3>
                 <p className='text-sm text-gray-700 p-3 bg-gray-50 rounded-lg min-h-[80px]'>
                     {dayData.reflection || 'No reflection logged for this day.'}
                 </p>
 
                 {isLoggedDay && (
                     <>
-                        <h3 className="text-lg font-bold text-[#002E47] mb-3 mt-6">Commitments Logged (Based on Score)</h3>
+                        <h3 className="text-lg font-bold text-[#0B3B5B] mb-3 mt-6">Commitments Logged (Based on Score)</h3>
                         <div className='p-3 bg-white border border-gray-200 rounded-lg'>
                             <p className='text-sm text-gray-500 italic'>
                                 Since the log only stores the score, we show today's active commitments. Imagine the log here reflects the actual commitments from {dayData.date}.
@@ -336,7 +392,7 @@ const CommitmentHistoryModal = ({ isVisible, onClose, dayData, activeCommitments
                     </>
                 )}
                 
-                <Button onClick={onClose} className='mt-8 w-full'>
+                <Button onClick={onClose} className='mt-8 w-full' accent='NAVY'>
                     Close Review
                 </Button>
             </div>
@@ -353,14 +409,14 @@ const CommitmentItem = ({ commitment, onLogCommitment, onRemove, isSaving, isSco
   const isPermanentCommitment = commitment.status !== 'Pending' && isScorecardMode; 
   
   const getStatusColor = (s) => {
-    if (s === 'Committed') return 'bg-green-100 text-green-800 border-green-500 shadow-md';
-    if (s === 'Missed') return 'bg-red-100 text-red-800 border-red-500 shadow-md';
+    if (s === 'Committed') return `bg-${COLORS.GREEN}/10 text-${COLORS.NAVY} border-${COLORS.GREEN}/50 shadow-md`;
+    if (s === 'Missed') return `bg-${COLORS.ORANGE}/10 text-${COLORS.NAVY} border-${COLORS.ORANGE}/50 shadow-md`;
     return 'bg-gray-100 text-gray-700 border-gray-300 shadow-sm';
   };
 
   const getStatusIcon = (s) => {
-    if (s === 'Committed') return <CheckCircle className="w-5 h-5 text-green-600" />;
-    if (s === 'Missed') return <Zap className="w-5 h-5 text-[#E04E1B] transform rotate-45" />;
+    if (s === 'Committed') return <CheckCircle className="w-5 h-5" style={{ color: COLORS.GREEN }} />;
+    if (s === 'Missed') return <Zap className="w-5 h-5" style={{ color: COLORS.ORANGE }} />;
     return <Clock className="w-5 h-5 text-gray-500" />;
   };
 
@@ -378,24 +434,24 @@ const CommitmentItem = ({ commitment, onLogCommitment, onRemove, isSaving, isSco
   };
 
   return (
-    <div className={`p-4 rounded-xl flex flex-col justify-between ${getStatusColor(status)} transition-all duration-300 ${isSaving ? 'opacity-70' : ''}`}>
+    <div className={`p-4 rounded-xl flex flex-col justify-between ${getStatusColor(status)} transition-all duration-300 ${isSaving ? 'opacity-70' : ''}`} style={{ border: `2px solid ${status === 'Committed' ? COLORS.GREEN : status === 'Missed' ? COLORS.ORANGE : COLORS.SUBTLE}`}}>
       <div className='flex items-start justify-between'>
         <div className='flex items-start space-x-2 text-lg font-semibold mb-2'>
           {getStatusIcon(status)}
-          <span className='text-[#002E47] text-base'>{commitment.text}</span>
+          <span className='text-[#0B3B5B] text-base'>{commitment.text}</span>
         </div>
         <Tooltip content={isPermanentCommitment ? "Cannot archive once logged today." : "Remove commitment (only if Pending)."} >
             <button onClick={removeHandler} className="text-gray-400 hover:text-[#E04E1B] transition-colors p-1 rounded-full" disabled={isSaving || isPermanentCommitment}>
-              {isPermanentCommitment ? <Archive className="w-4 h-4" /> : <X className="w-4 h-4" />}
+              {isPermanentCommitment ? <Archive className="w-4 h-4" /> : <Trash2 className="w-4 h-4" />}
             </button>
         </Tooltip>
       </div>
 
       <div className='flex flex-wrap gap-2 mb-3 overflow-x-auto'>
-        <div className='text-xs text-[#002E47] bg-[#002E47]/10 px-3 py-1 rounded-full inline-block font-medium whitespace-nowrap'>
+        <div className='text-xs text-[#0B3B5B] bg-[#0B3B5B]/10 px-3 py-1 rounded-full inline-block font-medium whitespace-nowrap'>
           Goal: {commitment.linkedGoal || 'N/A'}
         </div>
-        <div className='text-xs text-[#47A88D] bg-[#47A88D]/10 px-3 py-1 rounded-full inline-block font-medium whitespace-nowrap'>
+        <div className='text-xs text-[#219E8B] bg-[#219E8B]/10 px-3 py-1 rounded-full inline-block font-medium whitespace-nowrap'>
           Tier: {tierLabel}
         </div>
         <div className='text-xs text-[#E04E1B] bg-[#E04E1B]/10 px-3 py-1 rounded-full inline-block font-medium whitespace-nowrap'>
@@ -406,14 +462,14 @@ const CommitmentItem = ({ commitment, onLogCommitment, onRemove, isSaving, isSco
       <div className="flex space-x-2 mt-3 pt-3 border-t border-gray-300/50">
   <Button
     onClick={() => onLogCommitment(commitment.id, status === 'Committed' ? 'Pending' : 'Committed')}
-    className={`px-3 py-1 text-xs ${status === 'Committed' ? 'bg-green-600 hover:bg-green-700' : 'bg-[#47A88D] hover:bg-[#349881]'}`}
+    className={`px-3 py-1 text-xs ${status === 'Committed' ? `bg-${COLORS.GREEN} hover:bg-green-700` : `bg-${COLORS.TEAL} hover:bg-[#1C8D7C]`}`}
   >
     {status === 'Committed' ? 'Mark as Pending' : 'Complete'}
   </Button>
   <Button
     onClick={() => onLogCommitment(commitment.id, status === 'Missed' ? 'Pending' : 'Missed')}
     variant="secondary"
-    className={`px-3 py-1 text-xs ${status === 'Missed' ? 'bg-red-700 hover:bg-red-800' : ''}`}
+    className={`px-3 py-1 text-xs ${status === 'Missed' ? `bg-red-700 hover:bg-red-800` : ''}`}
   >
     {status === 'Missed' ? 'Mark as Pending' : 'Not Complete'}
   </Button>
@@ -427,7 +483,8 @@ const CommitmentItem = ({ commitment, onLogCommitment, onRemove, isSaving, isSco
    NEW FEATURE: AI Accountability Partner Nudge
 ========================================================= */
 const AIStarterPackNudge = ({ pdpData, setLinkedGoal, setLinkedTier, handleAddCommitment, isSaving }) => {
-    const { callSecureGeminiAPI, GEMINI_MODEL } = useAppServices(); // FIX: Call hook inside component
+    const { useAppServices: useAppServicesLocal } = { useAppServices: useAppServices }; // FIX: Use local variable access
+    const { commitmentData, planningData, pdpData: pdpDataLocal } = useAppServicesLocal(); 
     
     const [starterLoading, setStarterLoading] = useState(false);
     const [suggestions, setSuggestions] = useState(null);
@@ -473,7 +530,7 @@ const AIStarterPackNudge = ({ pdpData, setLinkedGoal, setLinkedTier, handleAddCo
     if (!highPriorityTier) return null;
     if (suggestions) {
         return (
-            <Card title={`Suggested Starter Pack: ${suggestions.tier.name}`} icon={Crown} className='mb-8 border-l-8 border-[#47A88D] bg-[#47A88D]/10'>
+            <Card title={`Suggested Starter Pack: ${suggestions.tier.name}`} icon={Crown} accent='TEAL' className='mb-8 border-l-8 border-[#219E8B] bg-[#219E8B]/10'>
                 <p className='text-sm text-gray-700 mb-4'>
                     Based on your PDP priority, the **AI Accountability Partner** recommends this starter pack to build critical habits quickly.
                 </p>
@@ -483,13 +540,13 @@ const AIStarterPackNudge = ({ pdpData, setLinkedGoal, setLinkedTier, handleAddCo
                             <span className='text-sm text-gray-700 pr-2'>{c.text}</span>
                             <Button 
                                 onClick={() => {
-                                    const currentMonthPlan = useAppServices().pdpData?.plan?.find(m => m.month === useAppServices().pdpData?.currentMonth);
+                                    const currentMonthPlan = pdpDataLocal?.plan?.find(m => m.month === pdpDataLocal?.currentMonth);
                                     setLinkedGoal(currentMonthPlan?.theme || `Focus on ${highPriorityTier.name}`);
                                     setLinkedTier(highPriorityTier.id);
                                     handleAddCommitment(c, 'bank');
                                 }}
                                 disabled={isSaving}
-                                className='px-3 py-1 text-xs bg-[#002E47] hover:bg-gray-700'
+                                className='px-3 py-1 text-xs bg-[#0B3B5B] hover:bg-gray-700'
                             >
                                 Add
                             </Button>
@@ -502,11 +559,11 @@ const AIStarterPackNudge = ({ pdpData, setLinkedGoal, setLinkedTier, handleAddCo
     }
     
     return (
-         <Card title="AI Accountability Partner" icon={Zap} className='mb-8 border-l-4 border-[#002E47] bg-gray-100'>
+         <Card title="AI Accountability Partner" icon={Zap} accent='NAVY' className='mb-8 border-l-4 border-[#0B3B5B] bg-gray-100'>
              <p className='text-sm text-gray-700 mb-4'>
                  You have **no active commitments**. Click below to instantly generate a personalized starter pack based on your current PDP focus tier: **{highPriorityTier.name}**.
              </p>
-             <Button onClick={handleGenerate} disabled={starterLoading} className="w-full">
+             <Button onClick={handleGenerate} disabled={starterLoading} className="w-full" accent='TEAL'>
                  {starterLoading ? 'Generating...' : 'Get Personalized Starter Pack'}
              </Button>
          </Card>
@@ -518,9 +575,10 @@ const AIStarterPackNudge = ({ pdpData, setLinkedGoal, setLinkedTier, handleAddCo
  * CommitmentSelectorView: Allows users to add commitments from the bank or create custom ones.
  */
 const CommitmentSelectorView = ({ setView, initialGoal, initialTier }) => {
-  const { updateCommitmentData, commitmentData, planningData, pdpData, callSecureGeminiAPI, hasGeminiKey } = useAppServices(); // FIX: Call hook inside component
+  const { useAppServices: useAppServicesLocal } = { useAppServices: useAppServices }; // FIX: Use local variable access
+  const { updateCommitmentData, commitmentData, planningData, pdpData, callSecureGeminiAPI, hasGeminiKey, GEMINI_MODEL } = useAppServicesLocal();
 
-  const [tab, setTab] = useState('bank');
+  const [tab, setTab] = useState('custom'); // Default to custom for AI critique
   const [searchTerm, setSearchTerm] = useState('');
   const [customCommitment, setCustomCommitment] = useState('');
   const [linkedGoal, setLinkedGoal] = useState(initialGoal || '');
@@ -578,7 +636,7 @@ const CommitmentSelectorView = ({ setView, initialGoal, initialTier }) => {
   
   useEffect(() => {
     setAiAssessment(null);
-  }, [customCommitment]);
+  }, [customCommitment, linkedGoal, linkedTier]);
 
 
   /* =========================================================
@@ -598,7 +656,6 @@ const CommitmentSelectorView = ({ setView, initialGoal, initialTier }) => {
 
     setAssessmentLoading(true);
     setAiAssessment(null);
-    const GEMINI_MODEL_LOCAL = useAppServices().GEMINI_MODEL;
 
     const tierName = LEADERSHIP_TIERS[linkedTier]?.name || 'N/A';
     const systemPrompt = `You are an AI Executive Coach specializing in habit alignment. Your task is to analyze a user's proposed daily commitment against their strategic context (Goal and Leadership Tier). The response MUST be a JSON object conforming to the schema. Do not include any introductory or explanatory text outside the JSON block.`;
@@ -631,7 +688,7 @@ const CommitmentSelectorView = ({ setView, initialGoal, initialTier }) => {
                 responseMimeType: "application/json",
                 responseSchema: jsonSchema
             },
-            model: GEMINI_MODEL_LOCAL,
+            model: GEMINI_MODEL,
         };
         
         const result = await callSecureGeminiAPI(payload);
@@ -693,7 +750,7 @@ const CommitmentSelectorView = ({ setView, initialGoal, initialTier }) => {
 
     const newCommitments = [...userCommitments, newCommitment];
 
-    await updateCommitmentData({ active_commitments: newCommitments });
+    await updateCommitmentData(prevState => ({ ...prevState, active_commitments: newCommitments }));
 
     if (initialGoal !== linkedGoal) setLinkedGoal(initialLinkedGoalPlaceholder);
     if (initialTier !== linkedTier) setLinkedTier('');
@@ -717,7 +774,7 @@ const CommitmentSelectorView = ({ setView, initialGoal, initialTier }) => {
         targetColleague: targetColleague.trim() || null,
       }];
 
-      await updateCommitmentData({ active_commitments: newCommitments });
+      await updateCommitmentData(prevState => ({ ...prevState, active_commitments: newCommitments }));
       setCustomCommitment('');
       if (initialGoal !== linkedGoal) setLinkedGoal(initialLinkedGoalPlaceholder);
       if (initialTier !== linkedTier) setLinkedTier('');
@@ -732,8 +789,8 @@ const CommitmentSelectorView = ({ setView, initialGoal, initialTier }) => {
   const tabStyle = (currentTab) =>
     `px-4 py-2 font-semibold rounded-t-xl transition-colors ${
       tab === currentTab
-        ? 'bg-[#FCFCFA] text-[#002E47] border-t-2 border-x-2 border-[#47A88D]'
-        : 'bg-gray-200 text-gray-500 hover:text-[#002E47]'
+        ? `bg-[${COLORS.LIGHT_GRAY}] text-[#0B3B5B] border-t-2 border-x-2 border-[${COLORS.TEAL}]`
+        : `bg-gray-200 text-gray-500 hover:text-[#0B3B5B]`
     }`;
 
   const renderAssessmentResult = () => {
@@ -760,7 +817,7 @@ const CommitmentSelectorView = ({ setView, initialGoal, initialTier }) => {
     const riskColor = aiAssessment.risk > 7 ? 'text-red-600' : aiAssessment.risk > 4 ? 'text-yellow-600' : 'text-green-600';
     
     return (
-        <Card title="AI Commitment Analysis" icon={Cpu} className='bg-white shadow-xl border-l-4 border-[#002E47]'>
+        <Card title="AI Commitment Analysis" icon={Cpu} accent='NAVY' className='bg-white shadow-xl border-l-4 border-[#0B3B5B]'>
             <div className='grid grid-cols-2 gap-4 mb-4'>
                 <div className={`p-3 rounded-xl border ${aiAssessment.score > 7 ? 'border-green-400 bg-green-50' : 'border-gray-300 bg-gray-100'}`}>
                     <div className='text-xs font-semibold uppercase text-gray-500'>Value Score</div>
@@ -771,8 +828,8 @@ const CommitmentSelectorView = ({ setView, initialGoal, initialTier }) => {
                     <div className={`text-3xl font-extrabold ${riskColor}`}>{aiAssessment.risk}/10</div>
                 </div>
             </div>
-            <div className='p-3 bg-[#002E47]/5 rounded-lg border border-[#002E47]/10'>
-                <p className='text-xs font-semibold text-[#002E47] mb-1 flex items-center'><Lightbulb className='w-3 h-3 mr-1'/> Coach Feedback:</p>
+            <div className='p-3' style={{ background: COLORS.NAVY + '0D', border: `1px solid ${COLORS.NAVY}1A`, borderRadius: 8 }}>
+                <p className='text-xs font-semibold text-[#0B3B5B] mb-1 flex items-center'><Lightbulb className='w-3 h-3 mr-1'/> Coach Feedback:</p>
                 <p className='text-sm text-gray-700'>{aiAssessment.feedback}</p>
             </div>
         </Card>
@@ -782,10 +839,10 @@ const CommitmentSelectorView = ({ setView, initialGoal, initialTier }) => {
 
   return (
     <div className="p-8">
-      <h1 className="text-3xl font-extrabold text-[#002E47] mb-4">Manage Your Scorecard Commitments</h1>
+      <h1 className="text-3xl font-extrabold text-[#0B3B5B] mb-4">Manage Your Scorecard Commitments</h1>
       <p className="text-lg text-gray-600 mb-6 max-w-3xl">Select the core micro-habits that directly support your current leadership development goals. You should aim for 3-5 active commitments.</p>
 
-      <Button onClick={() => setView('scorecard')} variant="secondary" className="mb-8" disabled={isSaving}>
+      <Button onClick={() => setView('scorecard')} variant="nav-back" className="mb-8" disabled={isSaving}>
         <ArrowLeft className="w-5 h-5 mr-2" /> Back to Scorecard
       </Button>
 
@@ -803,16 +860,18 @@ const CommitmentSelectorView = ({ setView, initialGoal, initialTier }) => {
       <Card
         title="Goal and Tier Alignment (Mandatory)"
         icon={Target}
+        accent='TEAL'
         onClick={() => setIsAlignmentOpen(prev => !prev)}
-        className='mb-8 p-6 bg-[#47A88D]/10 border-2 border-[#47A88D] cursor-pointer'
+        className='mb-8 p-6'
+        style={{ background: COLORS.TEAL + '1A', border: `2px solid ${COLORS.TEAL}` }}
       >
         <div className='flex justify-between items-center'>
-          <p className="text-sm font-semibold text-[#002E47]">Status: {canAddCommitment ? 'Ready to Add' : 'Awaiting Selection'}</p>
-          <CornerRightUp className={`w-5 h-5 text-[#002E47] transition-transform ${isAlignmentOpen ? 'rotate-90' : 'rotate-0'}`} />
+          <p className="text-sm font-semibold text-[#0B3B5B]">Status: {canAddCommitment ? 'Ready to Add' : 'Awaiting Selection'}</p>
+          <CornerRightUp className={`w-5 h-5 text-[#0B3B5B] transition-transform ${isAlignmentOpen ? 'rotate-90' : 'rotate-0'}`} />
         </div>
 
         {isAlignmentOpen && (
-          <div className='mt-4 pt-4 border-t border-[#47A88D]/30'>
+          <div className='mt-4 pt-4 border-t border-[#219E8B]/30'>
             <p className="text-sm text-gray-700 mb-4">Ensure your daily action is tied to a strategic goal **and** a core leadership tier.</p>
 
             <div className='grid grid-cols-1 md:grid-cols-2 gap-4 mb-4'>
@@ -821,7 +880,7 @@ const CommitmentSelectorView = ({ setView, initialGoal, initialTier }) => {
                 <select
                   value={linkedGoal}
                   onChange={(e) => setLinkedGoal(e.target.value)}
-                  className="w-full p-3 border border-gray-300 rounded-xl focus:ring-[#002E47] focus:border-[#002E47] text-[#002E47] font-semibold"
+                  className="w-full p-3 border border-gray-300 rounded-xl focus:ring-[#0B3B5B] focus:border-[#0B3B5B] text-[#0B3B5B] font-semibold"
                 >
                   {availableGoals.map(goal => (
                     <option
@@ -840,7 +899,7 @@ const CommitmentSelectorView = ({ setView, initialGoal, initialTier }) => {
                 <select
                   value={linkedTier}
                   onChange={(e) => setLinkedTier(e.target.value)}
-                  className="w-full p-3 border border-gray-300 rounded-xl focus:ring-[#002E47] focus:border-[#002E47] text-[#002E47] font-semibold"
+                  className="w-full p-3 border border-gray-300 rounded-xl focus:ring-[#0B3B5B] focus:border-[#0B3B5B] text-[#0B3B5B] font-semibold"
                 >
                   <option value="">--- Select Tier ---</option>
                   {Object.values(LEADERSHIP_TIERS).map(tier => (
@@ -858,7 +917,7 @@ const CommitmentSelectorView = ({ setView, initialGoal, initialTier }) => {
               value={targetColleague}
               onChange={(e) => setTargetColleague(e.target.value)}
               placeholder="e.g., Alex, Sarah, or Leave Blank for Self-Focus"
-              className="w-full p-3 border border-gray-300 rounded-xl focus:ring-[#47A88D] focus:border-[#47A88D]"
+              className="w-full p-3 border border-gray-300 rounded-xl focus:ring-[#219E8B] focus:border-[#219E8B]"
             />
 
             {!canAddCommitment && <p className='text-[#E04E1B] text-sm mt-3'>* Please select a Strategic Goal and a Leadership Tier to activate the 'Add' buttons.</p>}
@@ -881,7 +940,7 @@ const CommitmentSelectorView = ({ setView, initialGoal, initialTier }) => {
       </div>
 
       {/* Tab Content */}
-      <div className='mt-0 bg-[#FCFCFA] p-6 rounded-b-3xl shadow-lg border-2 border-t-0 border-[#47A88D]/30'>
+      <div className='mt-0 bg-[#FCFCFA] p-6 rounded-b-3xl shadow-lg border-2 border-t-0 border-[#219E8B]/30'>
 
         {/* PDP Content Tab */}
         {tab === 'pdp' && (
@@ -892,13 +951,13 @@ const CommitmentSelectorView = ({ setView, initialGoal, initialTier }) => {
                 requiredPdpContent
                   .filter(c => !pdpContentCommitmentIds.has(String(c.id)))
                   .map(c => (
-                    <div key={c.id} className="flex justify-between items-center p-3 text-sm bg-[#47A88D]/5 rounded-lg border border-[#47A88D]/20">
+                    <div key={c.id} className="flex justify-between items-center p-3 text-sm bg-[#219E8B]/5 rounded-lg border border-[#219E8B]/20">
                       <span className='text-gray-800 font-medium'>{c.title} ({c.type}) - Est. {c.duration} min</span>
                       <Tooltip content={`Adds this item to your daily scorecard for tracking (linked goal/tier required).`}>
                         <button
                           onClick={() => handleAddCommitment(c, 'pdp')}
                           disabled={!canAddCommitment || isSaving}
-                          className={`font-semibold text-xs transition-colors p-1 flex items-center space-x-1 ${canAddCommitment && !isSaving ? 'text-[#47A88D] hover:text-[#349881]' : 'text-gray-400 cursor-not-allowed'}`}
+                          className={`font-semibold text-xs transition-colors p-1 flex items-center space-x-1 ${canAddCommitment && !isSaving ? 'text-[#219E8B] hover:text-[#1C8D7C]' : 'text-gray-400 cursor-not-allowed'}`}
                         >
                           <PlusCircle className='w-4 h-4' />
                           <span className='hidden sm:inline'>Add to Scorecard</span>
@@ -922,7 +981,7 @@ const CommitmentSelectorView = ({ setView, initialGoal, initialTier }) => {
                 placeholder="Filter Commitment Bank by keyword (e.g., 'feedback' or 'OKR')"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full p-3 border border-gray-300 rounded-xl focus:ring-[#47A88D] focus:border-[#47A88D] mb-4"
+                className="w-full p-3 border border-gray-300 rounded-xl focus:ring-[#219E8B] focus:border-[#219E8B] mb-4"
               />
               {searchTerm && (
                 <Button variant="outline" onClick={handleClearSearch} className='px-4 py-2 self-start'>
@@ -942,7 +1001,7 @@ const CommitmentSelectorView = ({ setView, initialGoal, initialTier }) => {
 
                 return (
                   <div key={category}>
-                    <h3 className="text-sm font-bold text-[#002E47] border-b pb-1 mb-2">{category}</h3>
+                    <h3 className="text-sm font-bold text-[#0B3B5B] border-b pb-1 mb-2">{category}</h3>
                     {categoryCommitments.map(c => (
                       <div key={c.id} className="flex justify-between items-center p-2 text-sm bg-gray-50 rounded-lg mb-1">
                         <span className='text-gray-800'>{c.text}</span>
@@ -950,7 +1009,7 @@ const CommitmentSelectorView = ({ setView, initialGoal, initialTier }) => {
                           <button
                             onClick={() => handleAddCommitment(c, 'bank')}
                             disabled={!canAddCommitment || isSaving}
-                            className={`font-semibold text-xs transition-colors p-1 ${canAddCommitment && !isSaving ? 'text-[#47A88D] hover:text-[#349881]' : 'text-gray-400 cursor-not-allowed'}`}
+                            className={`font-semibold text-xs transition-colors p-1 ${canAddCommitment && !isSaving ? 'text-[#219E8B] hover:text-[#1C8D7C]' : 'text-gray-400 cursor-not-allowed'}`}
                           >
                             <PlusCircle className='w-4 h-4' />
                           </button>
@@ -976,14 +1035,14 @@ const CommitmentSelectorView = ({ setView, initialGoal, initialTier }) => {
               value={customCommitment}
               onChange={(e) => setCustomCommitment(e.target.value)}
               placeholder="e.g., Conduct a 10-minute debrief after every client meeting."
-              className="w-full p-3 border border-gray-300 rounded-xl focus:ring-[#47A88D] focus:border-[#47A88D] h-20 mb-4"
+              className="w-full p-3 border border-gray-300 rounded-xl focus:ring-[#219E8B] focus:border-[#219E8B] h-20 mb-4"
             />
             
             <Button
                 onClick={handleAnalyzeCommitment}
                 disabled={!customCommitment.trim() || !canAddCommitment || assessmentLoading || isSaving || !hasGeminiKey()}
                 variant='outline'
-                className="w-full bg-[#002E47] hover:bg-gray-700 text-white"
+                className="w-full bg-[#0B3B5B] hover:bg-gray-700 text-white"
             >
                 {assessmentLoading ? 'Analyzing...' : <><Cpu className='w-4 h-4 mr-2'/> Analyze Commitment Alignment</>}
             </Button>
@@ -993,7 +1052,7 @@ const CommitmentSelectorView = ({ setView, initialGoal, initialTier }) => {
             <Button
               onClick={handleCreateCustomCommitment}
               disabled={!customCommitment.trim() || !canAddCommitment || isSaving}
-              className="w-full bg-[#47A88D] hover:bg-[#349881]"
+              className="w-full bg-[#219E8B] hover:bg-[#1C8D7C]"
             >
               {isSaving ? 'Saving...' : 'Add Custom Commitment'}
             </Button>
@@ -1027,16 +1086,17 @@ const WeeklyPrepView = ({ setView, commitmentData, updateCommitmentData, userCom
 
         const newCommitments = userCommitments.filter(c => c.id !== id);
         
-        await updateCommitmentData({ active_commitments: newCommitments });
+        await updateCommitmentData(prevState => ({ ...prevState, active_commitments: newCommitments }));
         console.info("Commitment retired successfully. Focus remains on the next priority!");
     };
 
     const handleSaveReview = async () => {
         setIsSaving(true);
-        await updateCommitmentData({ 
+        await updateCommitmentData(prevState => ({ 
+            ...prevState,
             last_weekly_review: new Date().toISOString(),
             weekly_review_notes: reviewNotes,
-        });
+        }));
         console.info('Weekly review saved!');
         setIsSaving(false);
         setView('scorecard');
@@ -1044,21 +1104,21 @@ const WeeklyPrepView = ({ setView, commitmentData, updateCommitmentData, userCom
 
     return (
         <div className="p-8">
-            <h1 className="text-3xl font-extrabold text-[#002E47] mb-4">Weekly Practice Review & Prep</h1>
+            <h1 className="text-3xl font-extrabold text-[#0B3B5B] mb-4">Weekly Practice Review & Prep</h1>
             <p className="text-lg text-gray-600 mb-6 max-w-3xl">Take 15 minutes to review last week's performance and prepare your focus for the upcoming week. This intentional review ensures sustained success.</p>
 
-            <Button onClick={() => setView('scorecard')} variant="outline" className="mb-8">
+            <Button onClick={() => setView('scorecard')} variant="nav-back" className="mb-8">
                 <ArrowLeft className="w-5 h-5 mr-2" /> Back to Scorecard
             </Button>
             
             <div className='grid lg:grid-cols-2 gap-8'>
                 <div className='space-y-6'>
-                    <Card title="Audit: Last Week's Missed Days" icon={TrendingDown} className='border-l-4 border-[#E04E1B] bg-[#E04E1B]/10'>
+                    <Card title="Audit: Last Week's Missed Days" icon={TrendingDown} accent='ORANGE' className='border-l-4 border-[#E04E1B] bg-[#E04E1B]/10'>
                         <p className='text-sm text-gray-700 mb-4'>
                             You missed your perfect score **{missedLastWeek.length} times** last week. Use the list below to retire mastered habits or re-commit to challenging ones.
                         </p>
                         
-                        <h4 className='text-md font-bold text-[#002E47] border-t pt-4 mt-4 mb-2'>Active Commitments (For Review)</h4>
+                        <h4 className='text-md font-bold text-[#0B3B5B] border-t pt-4 mt-4 mb-2'>Active Commitments (For Review)</h4>
                         <ul className='space-y-2'>
                             {userCommitments.map(c => (
                                 <li key={c.id} className='flex justify-between items-center bg-white p-3 rounded-lg shadow-sm border'>
@@ -1068,7 +1128,7 @@ const WeeklyPrepView = ({ setView, commitmentData, updateCommitmentData, userCom
                                         variant='outline' 
                                         className='text-xs px-2 py-1 text-[#E04E1B] border-[#E04E1B]/50 hover:bg-[#E04E1B]/10 whitespace-nowrap'
                                     >
-                                        <Archive className='w-4 h-4 mr-1' /> Retire
+                                        <Trash2 className='w-4 h-4 mr-1' /> Retire
                                     </Button>
                                 </li>
                             ))}
@@ -1078,17 +1138,17 @@ const WeeklyPrepView = ({ setView, commitmentData, updateCommitmentData, userCom
                 </div>
 
                 <div className='space-y-6'>
-                    <Card title="Next Week Planning Notes" icon={Lightbulb} className='border-l-4 border-[#47A88D]'>
+                    <Card title="Next Week Planning Notes" icon={Lightbulb} accent='TEAL' className='border-l-4 border-[#219E8B]'>
                         <p className='text-sm text-gray-700 mb-4'>Draft a quick focus note for the upcoming week based on your audit. What single outcome will define success?</p>
                         <textarea 
                             value={reviewNotes}
                             onChange={(e) => setReviewNotes(e.target.value)}
-                            className="w-full p-3 border border-gray-300 rounded-xl focus:ring-[#47A88D] focus:border-[#47A88D] h-32" 
+                            className="w-full p-3 border border-gray-300 rounded-xl focus:ring-[#219E8B] focus:border-[#219E8B] h-32" 
                             placeholder="e.g., 'Ensure 1:1 prep is done by Monday to maintain Coaching Tier focus.'"
                         ></textarea>
                     </Card>
 
-                    <Button onClick={handleSaveReview} disabled={isSaving} className="w-full">
+                    <Button onClick={handleSaveReview} disabled={isSaving} className="w-full" accent='TEAL'>
                         {isSaving ? 'Saving Review...' : 'Save Weekly Review & Return'}
                     </Button>
                 </div>
@@ -1102,7 +1162,9 @@ const WeeklyPrepView = ({ setView, commitmentData, updateCommitmentData, userCom
  * DailyPracticeScreen: Main Scorecard View
  */
 export default function DailyPracticeScreen({ initialGoal, initialTier }) {
-  const { commitmentData, updateCommitmentData, callSecureGeminiAPI, hasGeminiKey, pdpData } = useAppServices(); // FIX: Call hook once here
+  const { useAppServices: useAppServicesLocal } = { useAppServices: useAppServices }; // FIX: Use local variable access
+  const { commitmentData, updateCommitmentData, callSecureGeminiAPI, hasGeminiKey, pdpData, navigate } = useAppServicesLocal(); 
+  
   React.useEffect(() => scheduleMidnightReset(commitmentData?.active_commitments || [], updateCommitmentData), [commitmentData?.active_commitments, updateCommitmentData]);
 
   const [view, setView] = useState('scorecard'); 
@@ -1122,7 +1184,8 @@ export default function DailyPracticeScreen({ initialGoal, initialTier }) {
   useEffect(() => {
     if (commitmentData) {
       setReflection(commitmentData.reflection_journal || '');
-      if (!reflection && !reflectionPrompt) { 
+      // Fetch prompt only if reflection is empty OR if the prompt hasn't been set yet
+      if (!reflectionPrompt) { 
         fetchReflectionPrompt(commitmentData);
       }
     }
@@ -1153,7 +1216,7 @@ export default function DailyPracticeScreen({ initialGoal, initialTier }) {
      NEW FEATURE 1: AI-Driven Reflection Prompt Logic
   ========================================================= */
   const fetchReflectionPrompt = async (data) => {
-    const GEMINI_MODEL_LOCAL = useAppServices().GEMINI_MODEL; // FIX: Access inside function
+    const { callSecureGeminiAPI: callSecureGeminiAPI_local, GEMINI_MODEL: GEMINI_MODEL_local } = useAppServicesLocal(); // FIX: Access inside function
     if (!hasGeminiKey() || promptLoading) return;
 
     setPromptLoading(true);
@@ -1179,9 +1242,9 @@ export default function DailyPracticeScreen({ initialGoal, initialTier }) {
         const payload = {
             contents: [{ role: "user", parts: [{ text: userQuery }] }],
             systemInstruction: { parts: [{ text: systemPrompt }] },
-            model: GEMINI_MODEL_LOCAL,
+            model: GEMINI_MODEL_local,
         };
-        const result = await callSecureGeminiAPI(payload);
+        const result = await callSecureGeminiAPI_local(payload);
         const text = result?.candidates?.[0]?.content?.parts?.[0]?.text;
         setReflectionPrompt(text?.trim() || 'What was the most important lesson you learned today?');
     } catch (e) {
@@ -1201,7 +1264,7 @@ export default function DailyPracticeScreen({ initialGoal, initialTier }) {
     setIsSaving(true);
     const updatedCommitments = userCommitments.map(c => c.id === id ? { ...c, status: status } : c);
     
-    await updateCommitmentData({ active_commitments: updatedCommitments });
+    await updateCommitmentData(prevState => ({ ...prevState, active_commitments: updatedCommitments }));
     setIsSaving(false);
     
     const newScore = calculateTotalScore(updatedCommitments);
@@ -1220,13 +1283,13 @@ export default function DailyPracticeScreen({ initialGoal, initialTier }) {
         return;
     }
     const updatedCommitments = userCommitments.filter(c => c.id !== id);
-    await updateCommitmentData({ active_commitments: updatedCommitments });
+    await updateCommitmentData(prevState => ({ ...prevState, active_commitments: updatedCommitments }));
     setIsSaving(false);
   };
 
   const handleSaveReflection = async () => {
     setIsSaving(true);
-    await updateCommitmentData({ reflection_journal: reflection });
+    await updateCommitmentData(prevState => ({ ...prevState, reflection_journal: reflection }));
     setIsSaving(false);
   };
 
@@ -1347,7 +1410,6 @@ export default function DailyPracticeScreen({ initialGoal, initialTier }) {
 
   // Final Render
   const renderView = () => {
-    const navigate = useAppServices().navigate; // FIX: Access navigate inside render function/hook
     switch (view) {
       case 'selector':
         return <CommitmentSelectorView
@@ -1366,13 +1428,13 @@ export default function DailyPracticeScreen({ initialGoal, initialTier }) {
       default:
         return (
           <div className="p-8">
-            <h1 className="text-3xl font-extrabold text-[#002E47] mb-6">Daily Scorecard</h1>
+            <h1 className="text-3xl font-extrabold text-[#0B3B5B] mb-6">Daily Scorecard</h1>
             <p className="text-lg text-gray-600 mb-8 max-w-3xl">Track your daily commitment to the non-negotiable leadership actions that reinforce your professional identity. Consistently hitting this score is the key to sustained executive growth.</p>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
               <div className='lg:col-span-2'>
                 {(initialGoal || initialTier) && (
-                  <div className="p-4 mb-6 bg-[#47A88D]/10 border border-[#47A88D] rounded-xl text-sm font-medium text-[#002E47]">
+                  <div className="p-4 mb-6" style={{ background: COLORS.TEAL + '1A', border: `1px solid ${COLORS.TEAL}`, borderRadius: 12, fontSize: 14, fontWeight: 500, color: COLORS.NAVY }}>
                     <p className='font-bold flex items-center'>
                       <CornerRightUp className='w-4 h-4 mr-2' /> New Focus Recommended:
                     </p>
@@ -1380,19 +1442,19 @@ export default function DailyPracticeScreen({ initialGoal, initialTier }) {
                   </div>
                 )}
                 
-                <div className='p-3 mb-6 bg-[#002E47] rounded-xl text-white shadow-lg'>
+                <div className='p-3 mb-6 rounded-xl shadow-lg' style={{ background: COLORS.NAVY, color: COLORS.LIGHT_GRAY }}>
                     <p className='text-xs font-semibold uppercase opacity-80'>Workflow Focus</p>
                     <p className='text-sm'>{predictedRisk.microTip}</p>
                 </div>
                 
                 <div className="mb-6 flex justify-between items-center">
-                  <h3 className="text-2xl font-extrabold text-[#002E47]">
+                  <h3 className="text-2xl font-extrabold text-[#0B3B5B]">
                     Today's Commitments ({userCommitments.length})
                   </h3>
                   <div className='flex space-x-2'>
                     <button 
                         onClick={() => setViewMode(viewMode === 'status' ? 'tier' : 'status')}
-                        className={`px-3 py-1 text-sm font-medium rounded-full border transition-all flex items-center gap-1 ${viewMode === 'tier' ? 'bg-[#47A88D] text-white border-[#47A88D]' : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-50'}`}
+                        className={`px-3 py-1 text-sm font-medium rounded-full border transition-all flex items-center gap-1 ${viewMode === 'tier' ? `bg-${COLORS.TEAL} text-white border-${COLORS.TEAL}` : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-50'}`}
                     >
                         <List className='w-4 h-4' />
                         View by {viewMode === 'status' ? 'Tier' : 'Status'}
@@ -1403,9 +1465,9 @@ export default function DailyPracticeScreen({ initialGoal, initialTier }) {
                   </div>
                 </div>
 
-                <Card title="Current Commitments" icon={Target} className="mb-8 border-l-4 border-[#47A88D] rounded-3xl">
+                <Card title="Current Commitments" icon={Target} accent='TEAL' className="mb-8 rounded-3xl">
                     <div className='mb-4 flex justify-between items-center text-sm'>
-                        <div className='font-semibold text-[#002E47]'>
+                        <div className='font-semibold text-[#0B3B5B]'>
                             {score.total > 0 ? `Score: ${score.committed}/${score.total} completed` : 'No active commitments.'}
                         </div>
                         {score.total > 0 && (
@@ -1431,7 +1493,7 @@ export default function DailyPracticeScreen({ initialGoal, initialTier }) {
                             ) : (
                                 commitmentsByTier.map(tierGroup => (
                                     <div key={tierGroup.id} className='mb-6'>
-                                        <h4 className={`text-lg font-bold text-[#002E47] border-b-2 border-dashed border-[#002E47]/20 pb-1 mb-3`}>
+                                        <h4 className={`text-lg font-bold text-[#0B3B5B] border-b-2 border-dashed border-[#0B3B5B]/20 pb-1 mb-3`} style={{ color: tierGroup.color }}>
                                             {tierGroup.name} ({tierGroup.items.length})
                                         </h4>
                                         <div className='space-y-3'>
@@ -1455,12 +1517,12 @@ export default function DailyPracticeScreen({ initialGoal, initialTier }) {
                     </div>
 
                   <div className="mt-8 pt-4 border-t border-gray-200 flex justify-between items-center">
-                    <h3 className="text-2xl font-extrabold text-[#002E47]">
+                    <h3 className="text-2xl font-extrabold text-[#0B3B5B]">
                       Daily Score:
                     </h3>
                     <span className={`text-4xl font-extrabold p-3 rounded-xl shadow-inner min-w-[100px] text-center ${
-                      isPerfectScore ? 'text-green-600 bg-green-50' : 'text-[#002E47] bg-gray-100'
-                    }`}>
+                      isPerfectScore ? `text-${COLORS.GREEN} bg-green-50` : `text-[#0B3B5B] bg-gray-100`
+                    }`} style={{ color: isPerfectScore ? COLORS.GREEN : COLORS.NAVY }}>
                       {score.committed} / {score.total}
                     </span>
                   </div>
@@ -1471,12 +1533,13 @@ export default function DailyPracticeScreen({ initialGoal, initialTier }) {
                   <Card 
                       title="Daily Risk Indicator" 
                       icon={predictedRisk.icon} 
+                      accent={predictedRisk.icon === TrendingDown ? 'ORANGE' : 'GREEN'}
                       className={`border-2 ${predictedRisk.icon === TrendingDown ? 'border-red-500 bg-red-50' : 'border-green-500 bg-green-50'}`}
                   >
-                      <p className='text-sm font-semibold'>{predictedRisk.text}</p>
+                      <p className='text-sm font-semibold' style={{ color: COLORS.NAVY }}>{predictedRisk.text}</p>
                   </Card>
                   
-                  <Card title="Commitment Audit Trigger" icon={Archive} className='bg-[#002E47]/10 border-2 border-[#002E47]/20'>
+                  <Card title="Commitment Audit Trigger" icon={Archive} accent='NAVY' className='bg-[#0B3B5B]/10 border-2 border-[#0B3B5B]/20'>
                       <p className='text-sm text-gray-700 mb-4'>
                           It's important to retire routine commitments to maintain sharp focus. If your scorecard is too full or a habit is mastered, audit your list.
                       </p>
@@ -1491,20 +1554,20 @@ export default function DailyPracticeScreen({ initialGoal, initialTier }) {
                   
                   <TierSuccessMap tierRates={tierSuccessRates} />
                   
-                  <Card title="Monthly Consistency" icon={BarChart3} className='bg-[#47A88D]/10 border-2 border-[#47A88D]'>
+                  <Card title="Monthly Consistency" icon={BarChart3} accent='TEAL' className='bg-[#219E8B]/10 border-2 border-[#219E8B]'>
                       <p className='text-xs text-gray-700 mb-2'>Avg. Completion Rate ({monthlyProgress.daysTracked} days)</p>
                       <div className="w-full bg-gray-200 rounded-full h-4 mb-2">
                           <div 
-                              className="bg-[#002E47] h-4 rounded-full transition-all duration-700" 
-                              style={{ width: `${monthlyProgress.rate}%` }}
+                              className={`h-4 rounded-full transition-all duration-700`} 
+                              style={{ width: `${monthlyProgress.rate}%`, background: COLORS.NAVY }}
                           ></div>
                       </div>
-                      <p className='text-sm font-medium text-[#002E47]'>
+                      <p className='text-sm font-medium text-[#0B3B5B]'>
                           **{monthlyProgress.rate}% Rate** ({monthlyProgress.metItems} of {monthlyProgress.totalItems} total actions met)
                       </p>
                   </Card>
 
-                <Card title="Commitment History" icon={BarChart3} className='bg-[#002E47]/10 border-2 border-[#002E47]/20'>
+                <Card title="Commitment History" icon={BarChart3} accent='NAVY' className='bg-[#0B3B5B]/10 border-2 border-[#0B3B5B]/20'>
                   <div className='text-xs text-gray-700 mb-4'>
                     <p className='font-semibold'>Last 7 Days (Click for Details)</p>
                   </div>
@@ -1529,15 +1592,15 @@ export default function DailyPracticeScreen({ initialGoal, initialTier }) {
                               <span className='font-bold'>{dayOfWeek}</span>
                             </Tooltip>
                             <span className={`text-2xl font-extrabold mt-1 ${
-                              isDayComplete ? 'text-green-600' : isDayMissed ? 'text-[#E04E1B]' : 'text-gray-400'
-                            }`}>{isDayComplete ? '✓' : isDayMissed ? '✗' : '—'}</span>
+                              isDayComplete ? `text-${COLORS.GREEN}` : isDayMissed ? 'text-[#E04E1B]' : 'text-gray-400'
+                            }`} style={{ color: isDayComplete ? COLORS.GREEN : isDayMissed ? COLORS.ORANGE : COLORS.MUTED}}>{isDayComplete ? '✓' : isDayMissed ? '✗' : '—'}</span>
                             <span className='text-xs text-gray-500 mt-1'>{item.score}</span>
                           </button>
                         );
                       })}
                     </div>
                     <div className='mt-4 pt-3 border-t border-gray-200'>
-                      <div className='text-[#47A88D] font-medium text-lg'>
+                      <div className='font-medium text-lg' style={{ color: COLORS.TEAL }}>
                         Current Streak: {streak} {streak === 1 ? 'Day' : 'Days'}
                       </div>
                       {streak > 0 && (
@@ -1550,12 +1613,12 @@ export default function DailyPracticeScreen({ initialGoal, initialTier }) {
             </div>
 
 
-            <Card title="Reinforcement Journal" icon={Lightbulb} className="bg-[#002E47]/10 border-2 border-[#002E47]/20 rounded-3xl mt-8">
+            <Card title="Reinforcement Journal" icon={Lightbulb} accent='NAVY' className="rounded-3xl mt-8 bg-[#0B3B5B]/10 border-2 border-[#0B3B5B]/20">
               <div className='mb-4'>
-                <div className='text-sm text-[#002E47] font-semibold mb-2 flex items-center'>
+                <div className='text-sm text-[#0B3B5B] font-semibold mb-2 flex items-center'>
                     {promptLoading ? 
                         <span className='flex items-center text-gray-500'><div className="animate-spin h-4 w-4 border-b-2 border-gray-500 mr-2 rounded-full"></div> Coach is drafting prompt...</span> :
-                        <span className='text-[#47A88D] flex items-center'><MessageSquare className='w-4 h-4 mr-2'/> AI Reflection Prompt:</span>
+                        <span style={{ color: COLORS.TEAL }} className='flex items-center'><MessageSquare className='w-4 h-4 mr-2'/> AI Reflection Prompt:</span>
                     }
                 </div>
                 <p className='text-base font-medium text-gray-700 p-2 bg-white rounded-lg border border-gray-200'>
@@ -1569,7 +1632,7 @@ export default function DailyPracticeScreen({ initialGoal, initialTier }) {
               <textarea
                 value={reflection}
                 onChange={(e) => setReflection(e.target.value)}
-                className="w-full p-3 border border-gray-300 rounded-xl focus:ring-[#47A88D] focus:border-[#47A88D] h-40"
+                className="w-full p-3 border border-gray-300 rounded-xl focus:ring-[#219E8B] focus:border-[#219E8B] h-40"
                 placeholder="My reflection (required)..."
               ></textarea>
               <Button

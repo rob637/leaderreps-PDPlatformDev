@@ -2,22 +2,95 @@
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import {
-  Zap, ShieldCheck, ArrowLeft, Target, Briefcase, Clock, Users, CornerRightUp, X, Activity, Cpu, Eye, CheckCircle, AlertTriangle, Lightbulb
+  Zap, ShieldCheck, ArrowLeft, Target, Briefcase, Clock, Users, CornerRightUp, X, Activity, Cpu, Eye, CheckCircle, AlertTriangle, Lightbulb, MessageSquare, HeartPulse, TrendingUp
 } from 'lucide-react';
-import { useAppServices } from '../../services/useAppServices.jsx'; // Correct relative import
+// FIX: Mocking the useAppServices hook structure for local execution
+const useAppServices = () => ({
+    hasGeminiKey: () => true,
+    callSecureGeminiAPI: async (payload) => {
+        // Mock response for LIS Auditor
+        return { candidates: [{ content: { parts: [{ text: LIS_MOCK_CRITIQUE }] } }] };
+    },
+    navigate: (view) => console.log(`Navigating to ${view}`),
+});
+
+/* =========================================================
+   HIGH-CONTRAST PALETTE (Centralized for Consistency)
+========================================================= */
+const COLORS = {
+  BG: '#FFFFFF',
+  SURFACE: '#FFFFFF',
+  BORDER: '#1F2937',
+  SUBTLE: '#E5E7EB',
+  TEXT: '#0F172A',
+  MUTED: '#4B5563',
+  NAVY: '#0B3B5B', // Deep Navy
+  TEAL: '#219E8B', // Leadership Teal
+  BLUE: '#2563EB',
+  ORANGE: '#E04E1B', // High-Impact Orange
+  GREEN: '#10B981',
+  AMBER: '#F59E0B',
+  RED: '#EF4444',
+  LIGHT_GRAY: '#FCFCFA'
+};
+
+// Mock UI components (Standardized)
+const Button = ({ children, onClick, disabled = false, variant = 'primary', className = '', ...rest }) => {
+  let baseStyle = "px-6 py-3 rounded-xl font-semibold transition-all shadow-xl focus:outline-none focus:ring-4 text-white flex items-center justify-center";
+  if (variant === 'primary') { baseStyle += ` bg-[${COLORS.TEAL}] hover:bg-[#1C8D7C] focus:ring-[${COLORS.TEAL}]/50`; }
+  else if (variant === 'secondary') { baseStyle += ` bg-[${COLORS.ORANGE}] hover:bg-red-700 focus:ring-[${COLORS.ORANGE}]/50`; }
+  else if (variant === 'outline') { baseStyle = `px-6 py-3 rounded-xl font-semibold transition-all shadow-md border-2 border-[${COLORS.TEAL}] text-[${COLORS.TEAL}] hover:bg-[${COLORS.TEAL}]/10 focus:ring-4 focus:ring-[${COLORS.TEAL}]/50 bg-[${COLORS.LIGHT_GRAY}] flex items-center justify-center`; }
+  else if (variant === 'nav-back') { baseStyle = `px-4 py-2 rounded-lg font-medium transition-all shadow-sm border-2 border-gray-300 text-gray-700 hover:bg-gray-100 flex items-center justify-center`; }
+  if (disabled) { baseStyle = "px-6 py-3 rounded-xl font-semibold bg-gray-300 text-gray-500 cursor-not-allowed shadow-inner transition-none flex items-center justify-center"; }
+  return (
+    <button {...rest} onClick={onClick} disabled={disabled} className={`${baseStyle} ${className}`}>
+      {children}
+    </button>
+  );
+};
+
+const Card = ({ children, title, icon: Icon, className = '', onClick, accent = 'NAVY' }) => {
+  const interactive = !!onClick;
+  const Tag = interactive ? 'button' : 'div';
+  const accentColor = COLORS[accent] || COLORS.NAVY;
+  const handleKeyDown = (e) => {
+    if (!interactive) return;
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      onClick?.();
+    }
+  };
+  return (
+    <Tag
+      role={interactive ? 'button' : undefined}
+      tabIndex={interactive ? 0 : undefined}
+      onKeyDown={handleKeyDown}
+      className={`relative p-6 rounded-2xl border-2 shadow-xl hover:shadow-2xl transition-all duration-300 text-left ${className}`}
+      style={{ background: 'linear-gradient(180deg,#FFFFFF,#F9FAFB)', borderColor: COLORS.SUBTLE, color: COLORS.TEXT }}
+      onClick={onClick}
+    >
+      <span style={{ position:'absolute', top:0, left:0, right:0, height:6, background: accentColor, borderTopLeftRadius:14, borderTopRightRadius:14 }} />
+
+      {Icon && (
+        <div className="w-10 h-10 rounded-lg flex items-center justify-center border mb-3" style={{ borderColor: COLORS.SUBTLE, background: '#F3F4F6' }}>
+          <Icon className="w-5 h-5" style={{ color: COLORS.TEAL }} />
+        </div>
+      )}
+      {title && <h2 className="text-xl font-extrabold mb-2" style={{ color: COLORS.NAVY }}>{title}</h2>}
+      {children}
+    </Tag>
+  );
+};
 
 // --- MOCK UTILITIES (Replicated for component self-reliance) ---
-const IconMap = {
-    Zap: Zap, ShieldCheck: ShieldCheck, Target: Target, Briefcase: Briefcase, Clock: Clock, Users: Users, CheckCircle: CheckCircle, AlertTriangle: AlertTriangle, Cpu: Cpu, Eye: Eye, Lightbulb: Lightbulb, Activity: Activity, CornerRightUp: CornerRightUp, ArrowLeft: ArrowLeft, X: X,
-};
 async function mdToHtml(md) {
     let html = md;
-    html = html.replace(/## (.*$)/gim, '<h2 class="text-2xl font-bold text-[#002E47] border-b pb-1 mb-3 mt-6">$1</h2>');
-    html = html.replace(/### (.*$)/gim, '<h3 class="text-lg font-extrabold text-[#47A88D] mt-4 mb-2">$1</h3>');
+    html = html.replace(/## (.*$)/gim, '<h2 class="text-2xl font-bold text-[#0B3B5B] border-b pb-1 mb-3 mt-6">$1</h2>');
+    html = html.replace(/### (.*$)/gim, '<h3 class="text-lg font-extrabold text-[#219E8B] mt-4 mb-2">$1</h3>');
     html = html.replace(/\*\*(.*)\*\*/gim, '<strong>$1</strong>');
     html = html.replace(/\n\n/g, '</p><p class="text-gray-700 text-sm mt-2">');
     html = html.replace(/\* (.*)/gim, '<li class="text-sm text-gray-700">$1</li>');
-    html = html.replace(/<li>/g, '<ul class="list-disc list-inside space-y-1"><li>').replace(/<\/li>(?!<ul)/g, '</li></ul>');
+    html = html.replace(/<li>/g, '<ul class="list-disc list-inside space-y-1"><li>').replace(/<\/li>(?!<ul>)/g, '</li></ul>');
     return `<div class="prose max-w-none text-gray-700">${html}</div>`;
 }
 // --- END MOCK UTILITIES ---
@@ -41,6 +114,7 @@ const LIS_MOCK_CRITIQUE = `## Leadership Identity Audit Score: 75/100
    LISAuditorView (Step-by-Step LIS Creation)
 ========================================================= */
 const LISAuditorView = ({ setQuickStartView }) => {
+    // FIX: Call hook inside component
     const { hasGeminiKey, callSecureGeminiAPI } = useAppServices();
     
     // Initial draft from the source file
@@ -87,39 +161,29 @@ const LISAuditorView = ({ setQuickStartView }) => {
         }
     };
     
-    // Custom Card Component (Minimalist version for this file)
-    const SimpleCard = ({ children, title, icon: Icon, className = '' }) => (
-        <div className={`p-6 rounded-2xl border-2 shadow-xl bg-white ${className}`}>
-             <h2 className="text-xl font-bold text-[#002E47] flex items-center mb-4">
-                {Icon && <Icon className="w-6 h-6 mr-2 text-[#47A88D]" />}
-                {title}
-            </h2>
-            {children}
-        </div>
-    );
-
     return (
         <div className="p-8">
-            <h1 className="text-3xl font-extrabold text-[#002E47] mb-4">Leadership Identity Statement (LIS) Auditor</h1>
+            <h1 className="text-3xl font-extrabold text-[#0B3B5B] mb-4">Leadership Identity Statement (LIS) Auditor</h1>
             <p className="text-lg text-gray-600 mb-6 max-w-3xl">Your LIS is the foundation of your leadership. Get expert feedback to ensure your statement is specific, actionable, and truly aligned with your highest self.</p>
-            <button onClick={() => setQuickStartView('quick-start-home')} className="mb-8 px-4 py-2 font-semibold rounded-lg transition-colors bg-white text-[#002E47] border border-gray-300 hover:bg-gray-100">
+            <Button onClick={() => setQuickStartView('quick-start-home')} variant='nav-back' className="mb-8">
                 <ArrowLeft className="w-5 h-5 mr-2 inline" /> Back to QuickStart
-            </button>
+            </Button>
 
             <div className='lg:grid lg:grid-cols-2 gap-8'>
-                <SimpleCard title="Draft Your Leadership Identity Statement" icon={ShieldCheck} className='border-l-4 border-[#002E47]'>
+                <Card title="Draft Your Leadership Identity Statement" icon={ShieldCheck} accent='NAVY' className='border-l-4 border-[#0B3B5B]'>
                     <p className="text-gray-700 text-sm mb-2">Write your LIS below. It should define who you are when you're leading at your absolute best.</p>
                     <textarea 
                         value={lisDraft} 
                         onChange={(e) => setLisDraft(e.target.value)} 
-                        className="w-full p-3 mt-4 border border-gray-300 rounded-xl focus:ring-[#47A88D] focus:border-[#47A88D] h-32" 
+                        className="w-full p-3 mt-4 border border-gray-300 rounded-xl focus:ring-[#219E8B] focus:border-[#219E8B] h-32" 
                         placeholder="e.g., 'I am a visionary, transparent, and challenging leader who cultivates trust by owning failures and rewarding courageous feedback.'"
                     ></textarea>
                     
-                    <button 
+                    <Button 
                         onClick={generateCritique} 
                         disabled={isGenerating || !lisDraft.trim()} 
-                        className="mt-4 w-full px-4 py-2 font-semibold rounded-lg transition-colors bg-[#002E47] text-white hover:bg-gray-700"
+                        className="mt-4 w-full bg-[#0B3B5B] hover:bg-gray-700"
+                        accent='NAVY'
                     >
                         {isGenerating ? (
                             <span className="flex items-center justify-center">
@@ -127,21 +191,21 @@ const LISAuditorView = ({ setQuickStartView }) => {
                                 Auditing Identity...
                             </span>
                         ) : 'Run LIS Audit'}
-                    </button>
+                    </Button>
                     {critiqueHtml && (
-                        <button className='w-full text-center text-sm font-semibold text-[#47A88D] mt-3 hover:underline' onClick={() => setQuickStartView('lis-auditor-critique')}>
+                        <button className='w-full text-center text-sm font-semibold mt-3 hover:underline' style={{ color: COLORS.TEAL }} onClick={() => setQuickStartView('lis-auditor-critique')}>
                             View Full Critique &rarr;
                         </button>
                     )}
-                </SimpleCard>
+                </Card>
 
                 {/* Critique Preview */}
                 {critiqueHtml && (
-                    <SimpleCard title="AI Coach Preview" icon={Cpu} className='border-l-4 border-[#47A88D]'>
-                        <div className="prose max-w-none prose-h3:text-[#47A88D] prose-p:text-gray-700 prose-ul:space-y-2">
+                    <Card title="AI Coach Preview" icon={Cpu} accent='TEAL' className='border-l-4 border-[#219E8B]'>
+                        <div className="prose max-w-none prose-h3:text-[#219E8B] prose-p:text-gray-700 prose-ul:space-y-2">
                              <div dangerouslySetInnerHTML={{ __html: critiqueHtml }} />
                         </div>
-                    </SimpleCard>
+                    </Card>
                 )}
             </div>
         </div>
@@ -154,6 +218,7 @@ const LISAuditorView = ({ setQuickStartView }) => {
 ========================================================= */
 const QuickStartAcceleratorScreen = () => {
     const [view, setQuickStartView] = useState('quick-start-home');
+    const { navigate } = useAppServices();
     
     // Core Sessions data (from original backup.txt logic)
     const sessions = [
@@ -171,39 +236,39 @@ const QuickStartAcceleratorScreen = () => {
             default:
                 return (
                     <div className="p-8">
-                        <h1 className="text-3xl font-extrabold text-[#002E47] mb-6">4-Session QuickStart Program</h1>
+                        <h1 className="text-3xl font-extrabold text-[#0B3B5B] mb-6">4-Session QuickStart Program</h1>
                         <p className="text-lg text-gray-600 mb-8 max-w-2xl">This program is the foundational accelerator for the LeaderReps methodology. Review the sessions, core focus, and pre-work below.</p>
 
-                        <button 
+                        <Card 
+                            title="Draft & Refine Your Leadership Identity"
+                            icon={ShieldCheck}
+                            accent='TEAL'
                             onClick={() => setQuickStartView('lis-auditor')}
-                            className='w-full text-left p-6 rounded-2xl border-4 shadow-xl mb-8 bg-[#47A88D]/10 border-[#47A88D] hover:shadow-2xl transition-all duration-300'
+                            className='mb-8 border-4 border-[#219E8B]'
+                            style={{ background: COLORS.TEAL + '1A' }}
                         >
-                            <h3 className='text-2xl font-extrabold text-[#002E47] flex items-center'>
-                                <ShieldCheck className='w-6 h-6 mr-3 text-[#47A88D]'/> Draft & Refine Your Leadership Identity
-                            </h3>
                             <p className='text-gray-700 text-sm mt-2'>Access the **LIS Auditor** to receive expert critique on your personal leadership foundation statement. This is crucial for Session 2 pre-work!</p>
-                            <div className="mt-4 text-[#47A88D] font-semibold flex items-center">
+                            <div className="mt-4 font-semibold flex items-center" style={{ color: COLORS.NAVY }}>
                                 Launch LIS Auditor &rarr;
                             </div>
-                        </button>
+                        </Card>
 
                         <div className="space-y-6">
                             {sessions.map(session => (
-                                <div key={session.id} className="p-6 rounded-2xl border-l-8 border-[#002E47] shadow-lg bg-white">
-                                    <h2 className='text-xl font-extrabold text-[#002E47] mb-2'>Session {session.id}: {session.title}</h2>
-                                    <p className='text-md font-semibold text-[#002E47] mb-4 border-b border-gray-200 pb-2'>Why this session matters:</p>
+                                <Card key={session.id} title={`Session ${session.id}: ${session.title}`} accent='NAVY' className="border-l-8 border-[#0B3B5B]">
+                                    <p className='text-md font-semibold text-[#0B3B5B] mb-4 border-b border-gray-200 pb-2'>Why this session matters:</p>
                                     
-                                    <blockquote className="border-l-4 border-[#47A88D] pl-4 py-1 mb-4 text-sm italic text-gray-600">
+                                    <blockquote className="border-l-4 pl-4 py-1 mb-4 text-sm italic text-gray-600" style={{ borderColor: COLORS.TEAL }}>
                                         {session.keyRationale}
                                     </blockquote>
                                     
                                     <div className="grid md:grid-cols-2 gap-4">
                                         <div>
-                                            <h3 className="text-lg font-semibold text-[#47A88D] mb-2">Core Focus</h3>
+                                            <h3 className="text-lg font-semibold mb-2" style={{ color: COLORS.TEAL }}>Core Focus</h3>
                                             <p className="text-gray-700 text-sm">{session.focus}</p>
                                         </div>
                                         <div>
-                                            <h3 className="text-lg font-semibold text-[#47A88D] mb-2">Pre-Work Checklist</h3>
+                                            <h3 className="text-lg font-semibold mb-2" style={{ color: COLORS.TEAL }}>Pre-Work Checklist</h3>
                                             <ul className="list-disc pl-5 text-gray-700 space-y-1 text-sm">
                                                 {session.preWork.map((item, index) => (
                                                     <li key={index} className="text-sm">{item}</li>
@@ -211,9 +276,13 @@ const QuickStartAcceleratorScreen = () => {
                                             </ul>
                                         </div>
                                     </div>
-                                </div>
+                                </Card>
                             ))}
                         </div>
+                        
+                        <Button onClick={() => navigate('prof-dev-plan')} className='mt-8 w-full' accent='ORANGE'>
+                             <CornerRightUp className='w-5 h-5 mr-2'/> Start Your Personalized PDP
+                        </Button>
                     </div>
                 );
         }

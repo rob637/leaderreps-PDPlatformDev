@@ -1,9 +1,8 @@
-import { Home, Zap, Clock, Briefcase, Mic, Trello, BookOpen, Settings, BarChart3, TrendingUp, TrendingDown, CheckCircle, Star, Target, Users, HeartPulse } from 'lucide-react';
+import { Home, Zap, Clock, Briefcase, Mic, Trello, BookOpen, Settings, BarChart3, TrendingUp, TrendingDown, CheckCircle, Star, Target, Users, HeartPulse, CornerRightUp, X, ArrowLeft, Activity, Link, Lightbulb, AlertTriangle, Cpu } from 'lucide-react';
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 // FIX:  Mocking useAppServices since the environment can't resolve relative paths
 const useAppServices = () => ({
     // Mocked core services for local testing
-    // You should ensure the real useAppServices in your application provides these fields
     pdpData: null,
     updatePdpData: async () => true,
     saveNewPlan: async () => true,
@@ -29,47 +28,77 @@ const useAppServices = () => ({
     // Mocked values needed for the Generator View logic
     commitmentData: { active_commitments: [] },
     planningData: { okrs: [{ objective: 'OKR Q4: Launch MVP' }] },
+    GEMINI_MODEL: 'gemini-2.5-flash-preview-09-2025',
 });
 
-// Mock UI components (Replicated for self-contained file)
-const Card = ({ children, title, icon: Icon, className = '', onClick }) => {
-    const interactive = !!onClick;
-    const Tag = interactive ? 'button' : 'div';
-    const COLORS = { NAVY: '#002E47', TEAL: '#47A88D', ORANGE: '#E04E1B', LIGHT_GRAY: '#FCFCFA' };
-    const handleKeyDown = (e) => {
-        if (!interactive) return;
-        if (e.key === 'Enter' || e.key === ' ') {
-            e.preventDefault();
-            onClick();
-        }
-    };
-    return (
-        <Tag
-            role={interactive ? "button" : undefined}
-            tabIndex={interactive ? 0 : undefined}
-            onKeyDown={handleKeyDown}
-            className={`bg-[${COLORS.LIGHT_GRAY}] p-6 rounded-3xl shadow-xl hover:shadow-2xl transition-all duration-300 ${interactive ? 'cursor-pointer hover:border-[#002E47] border-2 border-transparent' : ''} ${className}`}
-            onClick={onClick}
-        >
-            {Icon && <Icon className="w-8 h-8 text-[#47A88D] mb-4" />}
-            {title && <h2 className="text-xl font-bold text-[#002E47] mb-2">{title}</h2>}
-            {children}
-        </Tag>
-    );
+/* =========================================================
+   HIGH-CONTRAST PALETTE (Centralized for Consistency)
+========================================================= */
+const COLORS = {
+  BG: '#FFFFFF',
+  SURFACE: '#FFFFFF',
+  BORDER: '#1F2937',
+  SUBTLE: '#E5E7EB',
+  TEXT: '#0F172A',
+  MUTED: '#4B5563',
+  NAVY: '#0B3B5B', // Deep Navy
+  TEAL: '#219E8B', // Leadership Teal
+  BLUE: '#2563EB',
+  ORANGE: '#E04E1B', // High-Impact Orange
+  GREEN: '#10B981',
+  AMBER: '#F59E0B',
+  RED: '#EF4444',
+  LIGHT_GRAY: '#FCFCFA'
 };
+
+// Mock UI components (Standardized)
 const Button = ({ children, onClick, disabled = false, variant = 'primary', className = '', ...rest }) => {
-    const COLORS = { NAVY: '#002E47', TEAL: '#47A88D', ORANGE: '#E04E1B', LIGHT_GRAY: '#FCFCFA' };
-    let baseStyle = "px-6 py-3 rounded-xl font-semibold transition-all shadow-xl focus:outline-none focus:ring-4 text-white";
-    if (variant === 'primary') { baseStyle += ` bg-[${COLORS.TEAL}] hover:bg-[#349881] focus:ring-[#47A88D]/50`; }
-    else if (variant === 'secondary') { baseStyle += ` bg-[${COLORS.ORANGE}] hover:bg-red-700 focus:ring-[#E04E1B]/50`; }
-    else if (variant === 'outline') { baseStyle = `px-6 py-3 rounded-xl font-semibold transition-all shadow-md border-2 border-[${COLORS.TEAL}] text-[${COLORS.TEAL}] hover:bg-[#47A88D]/10 focus:ring-4 focus:ring-[#47A88D]/50 bg-[${COLORS.LIGHT_GRAY}]`; }
-    if (disabled) { baseStyle = "px-6 py-3 rounded-xl font-semibold bg-gray-300 text-gray-500 cursor-not-allowed shadow-inner transition-none"; }
-    return (
-        <button {...rest} onClick={onClick} disabled={disabled} className={`${baseStyle} ${className}`}>
-            {children}
-        </button>
-    );
+  let baseStyle = "px-6 py-3 rounded-xl font-semibold transition-all shadow-xl focus:outline-none focus:ring-4 text-white flex items-center justify-center";
+  if (variant === 'primary') { baseStyle += ` bg-[${COLORS.TEAL}] hover:bg-[#1C8D7C] focus:ring-[${COLORS.TEAL}]/50`; }
+  else if (variant === 'secondary') { baseStyle += ` bg-[${COLORS.ORANGE}] hover:bg-red-700 focus:ring-[${COLORS.ORANGE}]/50`; }
+  else if (variant === 'outline') { baseStyle = `px-6 py-3 rounded-xl font-semibold transition-all shadow-md border-2 border-[${COLORS.TEAL}] text-[${COLORS.TEAL}] hover:bg-[${COLORS.TEAL}]/10 focus:ring-4 focus:ring-[${COLORS.TEAL}]/50 bg-[${COLORS.LIGHT_GRAY}] flex items-center justify-center`; }
+  else if (variant === 'nav-back') { baseStyle = `px-4 py-2 rounded-lg font-medium transition-all shadow-sm border-2 border-gray-300 text-gray-700 hover:bg-gray-100 flex items-center justify-center`; }
+  if (disabled) { baseStyle = "px-6 py-3 rounded-xl font-semibold bg-gray-300 text-gray-500 cursor-not-allowed shadow-inner transition-none flex items-center justify-center"; }
+  return (
+    <button {...rest} onClick={onClick} disabled={disabled} className={`${baseStyle} ${className}`}>
+      {children}
+    </button>
+  );
 };
+
+const Card = ({ children, title, icon: Icon, className = '', onClick, accent = 'NAVY' }) => {
+  const interactive = !!onClick;
+  const Tag = interactive ? 'button' : 'div';
+  const accentColor = COLORS[accent] || COLORS.NAVY;
+  const handleKeyDown = (e) => {
+    if (!interactive) return;
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      onClick?.();
+    }
+  };
+  return (
+    <Tag
+      role={interactive ? 'button' : undefined}
+      tabIndex={interactive ? 0 : undefined}
+      onKeyDown={handleKeyDown}
+      className={`relative p-6 rounded-2xl border-2 shadow-xl hover:shadow-2xl transition-all duration-300 text-left ${className}`}
+      style={{ background: 'linear-gradient(180deg,#FFFFFF,#F9FAFB)', borderColor: COLORS.SUBTLE, color: COLORS.TEXT }}
+      onClick={onClick}
+    >
+      <span style={{ position:'absolute', top:0, left:0, right:0, height:6, background: accentColor, borderTopLeftRadius:14, borderTopRightRadius:14 }} />
+
+      {Icon && (
+        <div className="w-10 h-10 rounded-lg flex items-center justify-center border mb-3" style={{ borderColor: COLORS.SUBTLE, background: '#F3F4F6' }}>
+          <Icon className="w-5 h-5" style={{ color: COLORS.TEAL }} />
+        </div>
+      )}
+      {title && <h2 className="text-xl font-extrabold mb-2" style={{ color: COLORS.NAVY }}>{title}</h2>}
+      {children}
+    </Tag>
+  );
+};
+
 const Tooltip = ({ content, children }) => {
     const [isVisible, setIsVisible] = useState(false);
     return (
@@ -109,43 +138,9 @@ const mdToHtml = async (md) => {
     return `<p class="text-sm text-gray-700">${html}</p>`;
 };
 const IconMap = {
-    Zap: () => <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>,
-    Users: () => <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75" /></svg>,
-    Briefcase: () => <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="14" rx="2" ry="2" /><path d="M16 21V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v16" /></svg>,
-    Target: () => <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" /><circle cx="12" cy="12" r="6" /><circle cx="12" cy="12" r="2" /></svg>,
-    BarChart3: () => <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M3 3v18h18" /><path d="M18 17V9" /><path d="M13 17V5" /><path d="M8 17v-3" /></svg>,
-    Clock: () => <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></svg>,
-    Eye: () => <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" /></svg>,
-    BookOpen: () => <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M2 13h20" /><path d="M2 9h20" /><path d="M2 17h20" /><path d="M20 5v14" /><path d="M4 5v14" /></svg>,
-    Lightbulb: () => <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M15 14V8a3 3 0 00-6 0v6M12 22v-4M12 4V2M15 22H9" /></svg>,
-    X: () => <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12" /></svg>,
-    ArrowLeft: () => <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M19 12H5M12 5l-7 7 7 7" /></svg>,
-    CornerRightUp: () => <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M15 14l5-5-5-5" /><path d="M4 14h16V9" /></svg>,
-    AlertTriangle: () => <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" /><path d="M12 9v4M12 17h.01" /></svg>,
-    CheckCircle: () => <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 11-5.93-9.14" /><path d="M22 4L12 14.01l-3-3" /></svg>,
-    PlusCircle: () => <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" /><path d="M12 8v8M8 12h8" /></svg>,
-    HeartPulse: () => <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M19 14.6c.72 1.34 1.88 2.65 3 3.39-1.2 1.25-2.7 2.1-4.3 2.5-1.57.4-3.17.4-4.74.05-1.6-.35-3.04-1.09-4.3-2.1-1.25-1-2.22-2.31-2.9-3.9-1.35-3.18-.7-6.52 1.7-8.86C6.6 6.13 9.4 5.3 12 5.3s5.4 1.13 7.6 3.14c2.4 2.34 3.05 5.68 1.7 8.86z" /></svg>,
-    Star: () => <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.25l-6.18 3.27L7 14.14l-5-4.87 7.91-1.01L12 2z" /></svg>,
-    Activity: () => <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12" /></svg>,
-    Link: () => <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07L13 9a5 5 0 00-1.54 3.54V17M14 11l-3 3M7 11l3 3M17 14a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07L11 15a5 5 0 001.54-3.54V7" /></svg>
+    Zap: Zap, Users: Users, Briefcase: Briefcase, Target: Target, BarChart3: BarChart3, Clock: Clock, Eye: Eye, BookOpen: BookOpen, Lightbulb: Lightbulb, X: X, ArrowLeft: ArrowLeft, CornerRightUp: CornerRightUp, AlertTriangle: AlertTriangle, CheckCircle: CheckCircle, PlusCircle: PlusCircle, HeartPulse: HeartPulse, TrendingUp: TrendingUp, TrendingDown: TrendingDown, Activity: Activity, Link: Link, Cpu: Cpu, Star: Star, Mic: Mic, Trello: Trello, Settings: Settings, Home: Home, MessageSquare: MessageSquare
 };
 
-
-
-
-
-const Eye = IconMap.Eye;
-
-const Lightbulb = IconMap.Lightbulb;
-const CornerRightUp = IconMap.CornerRightUp;
-const AlertTriangle = IconMap.AlertTriangle;
-
-const PlusCircle = IconMap.PlusCircle;
-const X = IconMap.X;
-const ArrowLeft = IconMap.ArrowLeft;
-
-const Activity = IconMap.Activity;
-const Link = IconMap.Link;
 
 const PDP_COLLECTION = 'leadership_plan';
 const PDP_DOCUMENT = 'roadmap';
@@ -153,11 +148,11 @@ const appId = 'default-app-id'; // Mock value for app id
 
 // --- PDP Content Model ---
 const LEADERSHIP_TIERS = {
-    T1: { id: 'T1', name: 'Self-Awareness & Trust', icon: 'HeartPulse', color: 'indigo-500' },
-    T2: { id: 'T2', name: 'Communication & Feedback', icon: 'Mic', color: 'cyan-600' },
-    T3: { id: 'T3', name: 'Execution & Delegation', icon: 'Briefcase', color: 'green-600' },
-    T4: { id: 'T4', name: 'Talent & People Development', icon: 'Users', color: 'yellow-600' },
-    T5: { id: 'T5', name: 'Vision & Strategic Clarity', icon: 'TrendingUp', color: 'red-600' },
+    T1: { id: 'T1', name: 'Self-Awareness & Trust', icon: 'HeartPulse', color: COLORS.BLUE },
+    T2: { id: 'T2', name: 'Communication & Feedback', icon: 'Mic', color: COLORS.TEAL },
+    T3: { id: 'T3', name: 'Execution & Delegation', icon: 'Briefcase', color: COLORS.GREEN },
+    T4: { id: 'T4', name: 'Talent & People Development', icon: 'Users', color: COLORS.AMBER },
+    T5: { id: 'T5', name: 'Vision & Strategic Clarity', icon: 'TrendingUp', color: COLORS.ORANGE },
 };
 
 const CONTENT_LIBRARY = [
@@ -335,12 +330,12 @@ const SharePlanModal = ({ isVisible, onClose, currentMonthPlan, data }) => {
     };
 
     return (
-        <div className="fixed inset-0 bg-[#002E47]/80 z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 bg-[#0B3B5B]/80 z-50 flex items-center justify-center p-4">
             <div className="bg-[#FCFCFA] rounded-3xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto p-8">
 
                 <div className="flex justify-between items-start border-b pb-4 mb-6">
-                    <h2 className="text-2xl font-extrabold text-[#002E47] flex items-center">
-                        <Link className="w-6 h-6 mr-3 text-[#47A88D]" />
+                    <h2 className="text-2xl font-extrabold text-[#0B3B5B] flex items-center">
+                        <Link className="w-6 h-6 mr-3" style={{ color: COLORS.TEAL }} />
                         Share Monthly Focus
                     </h2>
                     <button onClick={onClose} className="p-2 text-gray-500 hover:text-[#E04E1B] transition-colors">
@@ -352,14 +347,14 @@ const SharePlanModal = ({ isVisible, onClose, currentMonthPlan, data }) => {
                     Send your manager or accountability partner your current focus and goals to maintain alignment and external accountability.
                 </p>
 
-                <h3 className='text-md font-bold text-[#002E47] mb-2'>Shareable Summary (Copied Text)</h3>
+                <h3 className='text-md font-bold text-[#0B3B5B] mb-2'>Shareable Summary (Copied Text)</h3>
                 <textarea
                     readOnly
                     value={shareText}
                     className="w-full p-3 border border-gray-300 rounded-xl bg-gray-50 text-sm h-40"
                 ></textarea>
 
-                <Button onClick={copyToClipboard} className='mt-4 w-full bg-[#002E47] hover:bg-gray-700'>
+                <Button onClick={copyToClipboard} className='mt-4 w-full bg-[#0B3B5B] hover:bg-gray-700' accent='NAVY'>
                     Copy to Clipboard
                 </Button>
 
@@ -381,6 +376,7 @@ const ContentDetailsModal = ({ isVisible, onClose, content }) => {
     const [htmlContent, setHtmlContent] = useState('');
     const [rating, setRating] = useState(0); // For Content Review & Rating
     const [isLogging, setIsLogging] = useState(false);
+    const { updatePdpData } = useAppServices();
 
     const mockDetail = MOCK_CONTENT_DETAILS[content.type]
         ? MOCK_CONTENT_DETAILS[content.type](content.title, content.skill)
@@ -391,11 +387,25 @@ const ContentDetailsModal = ({ isVisible, onClose, content }) => {
         setRating(0); // Reset rating on new content load
     }, [content.id, mockDetail]);
 
+    // FEATURE: Log Learning & Submit Rating (Feedback loop)
     const handleLogLearning = async () => {
         if (rating === 0) { alert('Please provide a 5-star rating before logging.'); return; }
         setIsLogging(true);
+        
         // Mocking an asynchronous save process to simulate an adaptive learning system
-        console.log(`Mock: Logging learning for ${content.title} with rating ${rating}/5.`);
+        console.log(`Mock: Logging learning for ${content.title} with rating ${rating}/5. This will influence future plan revisions.`);
+        
+        // In a real application, you would update the PDP content status and the rating in the database here:
+        /* await updatePdpData(oldData => {
+             const currentMonth = oldData.plan.find(m => m.month === oldData.currentMonth);
+             const updatedContent = currentMonth.requiredContent.map(c => 
+                 c.id === content.id ? { ...c, status: 'Completed', rating: rating } : c
+             );
+             // Logic to update the plan array...
+             return { ...oldData, plan: updatedPlan };
+        }); 
+        */
+
         await new Promise(r => setTimeout(r, 800));
         alert(`Learning logged! Your ${rating}/5 rating will influence future plan revisions.`);
         setIsLogging(false);
@@ -403,12 +413,12 @@ const ContentDetailsModal = ({ isVisible, onClose, content }) => {
     };
 
     return (
-        <div className="fixed inset-0 bg-[#002E47]/80 z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 bg-[#0B3B5B]/80 z-50 flex items-center justify-center p-4">
             <div className="bg-[#FCFCFA] rounded-3xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto p-8">
 
                 <div className="flex justify-between items-start border-b pb-4 mb-6">
-                    <h2 className="text-3xl font-extrabold text-[#002E47] flex items-center">
-                        <BookOpen className="w-8 h-8 mr-3 text-[#47A88D]" />
+                    <h2 className="text-3xl font-extrabold text-[#0B3B5B] flex items-center">
+                        <BookOpen className="w-8 h-8 mr-3" style={{ color: COLORS.TEAL }} />
                         {content.title} ({content.type})
                     </h2>
                     <button onClick={onClose} className="p-2 text-gray-500 hover:text-[#E04E1B] transition-colors">
@@ -417,9 +427,9 @@ const ContentDetailsModal = ({ isVisible, onClose, content }) => {
                 </div>
 
                 <div className="mb-6 text-sm flex space-x-4 border-b pb-4">
-                    <p className="text-gray-700 font-semibold">Tier: <span className='text-[#002E47]'>{LEADERSHIP_TIERS[content.tier]?.name}</span></p>
-                    <p className="text-gray-700 font-semibold">Skill Focus: <span className='text-[#002E47]'>{content.skill}</span></p>
-                    <p className="text-gray-700 font-semibold">Est. Duration: <span className='text-[#002E47]'>{content.duration} min</span></p>
+                    <p className="text-gray-700 font-semibold">Tier: <span className='text-[#0B3B5B]'>{LEADERSHIP_TIERS[content.tier]?.name}</span></p>
+                    <p className="text-gray-700 font-semibold">Skill Focus: <span className='text-[#0B3B5B]'>{content.skill}</span></p>
+                    <p className="text-gray-700 font-semibold">Est. Duration: <span className='text-[#0B3B5B]'>{content.duration} min</span></p>
                 </div>
 
                 <div className="prose max-w-none text-gray-700">
@@ -428,8 +438,8 @@ const ContentDetailsModal = ({ isVisible, onClose, content }) => {
 
                 {/* Content Review & Rating Feature */}
                 <div className='mt-8 pt-6 border-t border-gray-200'>
-                    <h3 className='text-lg font-bold text-[#002E47] mb-3 flex items-center'>
-                        <Star className='w-5 h-5 mr-2 text-[#E04E1B]' />
+                    <h3 className='text-lg font-bold text-[#0B3B5B] mb-3 flex items-center'>
+                        <Star className='w-5 h-5 mr-2' style={{ color: COLORS.ORANGE }} />
                         Review & Log Learning
                     </h3>
                     <p className='text-sm text-gray-700 mb-4'>
@@ -447,10 +457,10 @@ const ContentDetailsModal = ({ isVisible, onClose, content }) => {
                                 />
                             ))}
                         </div>
-                        <span className='text-md font-semibold text-[#002E47]'>{rating > 0 ? `${rating}/5 Stars` : 'Rate Content'}</span>
+                        <span className='text-md font-semibold text-[#0B3B5B]'>{rating > 0 ? `${rating}/5 Stars` : 'Rate Content'}</span>
                     </div>
 
-                    <Button onClick={handleLogLearning} disabled={isLogging || rating === 0} className='w-full'>
+                    <Button onClick={handleLogLearning} disabled={isLogging || rating === 0} className='w-full' accent='ORANGE'>
                         {isLogging ? 'Logging...' : 'Log Learning & Submit Rating'}
                     </Button>
                 </div>
@@ -463,9 +473,9 @@ const TierReviewModal = ({ isVisible, onClose, tierId, planData }) => {
     // Component logic remains the same (removed for brevity)
     if (!isVisible || !tierId) return null;
     return (
-        <div className="fixed inset-0 bg-[#002E47]/80 z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 bg-[#0B3B5B]/80 z-50 flex items-center justify-center p-4">
             <div className="bg-[#FCFCFA] rounded-3xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto p-8">
-                <h2 className='text-2xl font-extrabold text-[#002E47]'>Tier Review Mockup</h2>
+                <h2 className='text-2xl font-extrabold text-[#0B3B5B]'>Tier Review Mockup</h2>
                 <p className='text-gray-600 mt-2'>This modal reviews progress for {LEADERSHIP_TIERS[tierId].name}.</p>
                 <Button onClick={onClose} className='mt-8'>Close</Button>
             </div>
@@ -476,7 +486,8 @@ const TierReviewModal = ({ isVisible, onClose, tierId, planData }) => {
 
 // --- Component 2: Tracker Dashboard View ---
 const TrackerDashboardView = ({ data, updatePdpData, saveNewPlan, db, userId, navigate }) => {
-    const { callSecureGeminiAPI, hasGeminiKey, GEMINI_MODEL } = useAppServices();
+    const { useAppServices: useAppServicesLocal } = { useAppServices: useAppServices }; // FIX: Use local variable access
+    const { callSecureGeminiAPI, hasGeminiKey, GEMINI_MODEL } = useAppServicesLocal();
 
     const currentMonth = data.currentMonth;
     const currentMonthPlan = data.plan.find(m => m.month === currentMonth);
@@ -523,7 +534,7 @@ const TrackerDashboardView = ({ data, updatePdpData, saveNewPlan, db, userId, na
         } finally {
             setBriefingLoading(false);
         }
-    }, [briefing, briefingLoading, hasGeminiKey]);
+    }, [briefing, briefingLoading, hasGeminiKey, callSecureGeminiAPI]);
 
     useEffect(() => {
         if (currentMonthPlan && assessment) {
@@ -535,7 +546,19 @@ const TrackerDashboardView = ({ data, updatePdpData, saveNewPlan, db, userId, na
 
     // --- Handlers (Advance, Reset, Toggle) ---
     const handleCompleteMonth = async () => {
-        // ... (Logic remains the same)
+        // Mocking persistence for month completion
+        // In a real app, this would save the reflection, mark the current month as 'Completed', and increment currentMonth.
+        await updatePdpData(oldData => {
+            const updatedPlan = oldData.plan.map(m => 
+                m.month === oldData.currentMonth ? { ...m, status: 'Completed', reflectionText: localReflection, monthCompletedDate: new Date().toISOString() } : m
+            );
+            return {
+                ...oldData,
+                plan: updatedPlan,
+                currentMonth: oldData.currentMonth + 1
+            };
+        });
+
         alert('Month successfully completed! Advancing to the next phase.');
 
         // Interconnection: Navigate to Daily Practice to set commitments for the new month's focus
@@ -550,10 +573,21 @@ const TrackerDashboardView = ({ data, updatePdpData, saveNewPlan, db, userId, na
     const handleResetPlan = async () => {
         // ... (Logic remains the same)
         alert("Plan successfully reset! Loading generator...");
+        navigate('prof-dev-plan', { view: 'generator' });
     };
 
     const handleContentStatusToggle = (contentId) => {
-        // ... (Logic remains the same)
+        // Mock toggling status locally
+        const updatedContent = currentMonthPlan.requiredContent.map(item =>
+            item.id === contentId ? { ...item, status: item.status === 'Completed' ? 'Pending' : 'Completed' } : item
+        );
+
+        const updatedPlan = data.plan.map(m =>
+            m.month === currentMonth ? { ...m, requiredContent: updatedContent } : m
+        );
+        
+        // Mock update to the context/database
+        updatePdpData({ ...data, plan: updatedPlan });
     };
 
     const handleOpenTierReview = (tierId) => {
@@ -572,44 +606,48 @@ const TrackerDashboardView = ({ data, updatePdpData, saveNewPlan, db, userId, na
         if (!currentTierId || !data.plan) return { completed: 0, total: 0, percentage: 0 };
         const totalContent = data.plan.filter(m => m.tier === currentTierId).flatMap(m => m.requiredContent).length;
         const completedContent = data.plan.filter(m => m.tier === currentTierId).flatMap(m => m.requiredContent).filter(c => c.status === 'Completed').length;
-        const totalMonths = data.plan.filter(m => m.tier === currentTierId).length * 4; // Mock 4 items per month
-        const completedMonths = data.plan.filter(m => m.tier === currentTierId && m.status === 'Completed').length;
         const contentPercentage = totalContent > 0 ? Math.round((completedContent / totalContent) * 100) : 0;
-        const monthPercentage = totalMonths > 0 ? Math.round((completedMonths / totalMonths) * 100) : 0;
 
         return {
             completedContent,
             totalContent,
-            contentPercentage,
-            months: completedMonths,
-            totalMonths: data.plan.filter(m => m.tier === currentTierId).length,
-            overallPercentage: contentPercentage, // Use content % for visual
+            overallPercentage: contentPercentage,
         };
     }, [data.plan, currentTierId]);
 
     const lowRatingFlag = currentTierId && assessment.selfRatings[currentTierId] <= 4;
     const progressPercentage = Math.min(100, (currentMonth / 24) * 100);
-    const TierIcon = LEADERSHIP_TIERS[currentTierId]?.icon ? IconMap[LEADERSHIP_TIERS[currentTierId].icon] : Target;
+    const TierIcon = currentTierId ? IconMap[LEADERSHIP_TIERS[currentTierId].icon] : Target;
 
-    if (!currentMonthPlan) { /* ... (Roadmap Complete View) ... */ return null; }
+    if (!currentMonthPlan) { 
+        return (
+            <div className="p-8">
+                <h1 className="text-3xl font-extrabold text-[#0B3B5B]">Roadmap Complete! 🎉</h1>
+                <p className="text-lg text-gray-600 mt-2">Congratulations on completing your 24-Month Personalized Development Plan. Re-run your assessment to generate a new, advanced roadmap.</p>
+                <Button onClick={() => navigate('prof-dev-plan', { view: 'generator' })} className='mt-8' accent='ORANGE'>
+                    <Star className='w-5 h-5 mr-2' /> Start New Assessment
+                </Button>
+            </div>
+        ); 
+    }
 
     const allContentCompleted = currentMonthPlan?.requiredContent?.every(item => item.status === 'Completed');
     const isReadyToComplete = allContentCompleted && localReflection.length >= 50;
 
     return (
         <div className="p-8">
-            <h1 className="text-3xl font-extrabold text-[#002E47] mb-6">Tracker Dashboard: Your 24-Month Roadmap</h1>
+            <h1 className="text-3xl font-extrabold text-[#0B3B5B] mb-6">Tracker Dashboard: Your 24-Month Roadmap</h1>
             <p className="text-lg text-gray-600 mb-8 max-w-3xl">This plan is tailored to your **Manager Status, Self-Ratings, and Goal Priorities**. Focus on completing your monthly content and reflecting on your growth.</p>
 
             {/* Progress Bar & Header */}
-            <Card title={`Roadmap Progress: Month ${currentMonth} of 24`} icon={Clock} className="bg-[#002E47]/10 border-4 border-[#002E47]/20 mb-8">
+            <Card title={`Roadmap Progress: Month ${currentMonth} of 24`} icon={Clock} accent='NAVY' className="bg-[#0B3B5B]/10 border-4 border-[#0B3B5B]/20 mb-8">
                 <div className="w-full bg-gray-200 rounded-full h-4 mb-2">
                     <div
-                        className="bg-[#47A88D] h-4 rounded-full transition-all duration-700"
-                        style={{ width: `${progressPercentage}%` }}
+                        className="h-4 rounded-full transition-all duration-700"
+                        style={{ width: `${progressPercentage}%`, background: COLORS.TEAL }}
                     ></div>
                 </div>
-                <p className='text-sm font-medium text-[#002E47]'>
+                <p className='text-sm font-medium text-[#0B3B5B]'>
                     {Math.round(progressPercentage)}% Complete. Next Tier Focus in {4 - ((currentMonth - 1) % 4)} months.
                 </p>
                 <div className='flex space-x-4 mt-4'>
@@ -617,7 +655,7 @@ const TrackerDashboardView = ({ data, updatePdpData, saveNewPlan, db, userId, na
                         Start Over / Re-Generate Plan
                     </Button>
                     {/* Feature 1: Share Plan Button */}
-                    <Button onClick={() => setIsShareModalVisible(true)} variant='outline' className='text-xs px-4 py-2 border-[#002E47] text-[#002E47] hover:bg-[#002E47]/10'>
+                    <Button onClick={() => setIsShareModalVisible(true)} variant='outline' className='text-xs px-4 py-2 border-[#0B3B5B] text-[#0B3B5B] hover:bg-[#0B3B5B]/10'>
                         <Link className='w-4 h-4 mr-1' /> Share Monthly Focus
                     </Button>
                 </div>
@@ -626,11 +664,11 @@ const TrackerDashboardView = ({ data, updatePdpData, saveNewPlan, db, userId, na
             {/* Current Month Plan */}
             <div className='lg:grid lg:grid-cols-3 lg:gap-8'>
                 <div className='lg:col-span-2 space-y-8'>
-                    <Card title={`Current Focus: ${currentMonthPlan?.theme}`} icon={TierIcon} className='border-l-8 border-[#47A88D]'>
+                    <Card title={`Current Focus: ${currentMonthPlan?.theme}`} icon={TierIcon} accent='TEAL' className='border-l-8 border-[#219E8B]'>
 
                         {/* AI Monthly Briefing */}
-                        <div className='mb-4 p-4 rounded-xl bg-[#002E47]/10 border border-[#002E47]/20'>
-                            <h3 className='font-bold text-[#002E47] mb-1 flex items-center'><Activity className='w-4 h-4 mr-2' /> Monthly Executive Briefing</h3>
+                        <div className='mb-4 p-4 rounded-xl' style={{ background: COLORS.NAVY + '0D', border: `1px solid ${COLORS.NAVY}1A` }}>
+                            <h3 className='font-bold text-[#0B3B5B] mb-1 flex items-center'><Activity className='w-4 h-4 mr-2' style={{ color: COLORS.TEAL }} /> Monthly Executive Briefing</h3>
                             {briefingLoading ? (
                                 <p className='text-sm text-gray-600 flex items-center'><div className="animate-spin h-4 w-4 border-b-2 border-gray-500 mr-2 rounded-full"></div> Drafting advice...</p>
                             ) : (
@@ -642,23 +680,23 @@ const TrackerDashboardView = ({ data, updatePdpData, saveNewPlan, db, userId, na
                         
                         {/* Status / Difficulty */}
                         <div className='mb-4 text-sm border-t pt-4'>
-                            <p className='font-bold text-[#002E47]'>Tier: {LEADERSHIP_TIERS[currentTierId]?.name}</p>
+                            <p className='font-bold text-[#0B3B5B]'>Tier: {LEADERSHIP_TIERS[currentTierId]?.name}</p>
                             <p className='text-gray-600'>Target Difficulty: **{assessment?.selfRatings[currentTierId] >= 8 ? 'Mastery' : assessment?.selfRatings[currentTierId] >= 5 ? 'Core' : 'Intro'}** (Self-Rating: {assessment?.selfRatings[currentTierId]}/10)</p>
                             {lowRatingFlag && (
-                                <p className='text-[#E04E1B] font-semibold mt-1 flex items-center'>
+                                <p className='font-semibold mt-1 flex items-center' style={{ color: COLORS.ORANGE }}>
                                     <AlertTriangle className='w-4 h-4 mr-1' /> HIGH RISK TIER: Prioritize Content Completion.
                                 </p>
                             )}
                         </div>
 
-                        <h3 className='text-xl font-bold text-[#002E47] border-t pt-4 mt-4'>Required Content Items</h3>
+                        <h3 className='text-xl font-bold text-[#0B3B5B] border-t pt-4 mt-4'>Required Content Items</h3>
                         <div className='space-y-3 mt-4'>
                             {currentMonthPlan?.requiredContent.map(item => (
                                 <div key={item.id} className='flex items-center justify-between p-3 bg-gray-50 rounded-xl shadow-sm'>
                                     <div className='flex flex-col'>
-                                        <p className={`font-semibold text-sm ${item.status === 'Completed' ? 'line-through text-gray-500' : 'text-[#002E47]'}`}>
+                                        <p className={`font-semibold text-sm ${item.status === 'Completed' ? 'line-through text-gray-500' : 'text-[#0B3B5B]'}`}>
                                             {item.title} ({item.type})
-                                            {lowRatingFlag && <span className='ml-2 text-xs text-[#E04E1B] font-extrabold'>(CRITICAL)</span>}
+                                            {lowRatingFlag && <span className='ml-2 text-xs font-extrabold' style={{ color: COLORS.ORANGE }}>(CRITICAL)</span>}
                                         </p>
                                         <p className='text-xs text-gray-600'>~{item.duration} min | Difficulty: {item.difficulty}</p>
                                     </div>
@@ -668,7 +706,7 @@ const TrackerDashboardView = ({ data, updatePdpData, saveNewPlan, db, userId, na
                                             className='px-3 py-1 text-xs'
                                             variant='outline'
                                         >
-                                            <Eye className='w-4 h-4' />
+                                            <IconMap.Eye className='w-4 h-4' />
                                         </Button>
                                         <Button
                                             onClick={() => handleContentStatusToggle(item.id)}
@@ -684,17 +722,17 @@ const TrackerDashboardView = ({ data, updatePdpData, saveNewPlan, db, userId, na
                         </div>
                     </Card>
 
-                    <Card title="Monthly Reflection" icon={Lightbulb} className="bg-[#002E47]/10 border-2 border-[#002E47]/20">
+                    <Card title="Monthly Reflection" icon={Lightbulb} accent="NAVY" className='bg-[#0B3B5B]/10 border-2 border-[#0B3B5B]/20'>
                         <p className="text-gray-700 text-sm mb-4">
                             Reflect on the growth you achieved this month. How did the content impact your daily leadership behavior? (**Minimum 50 characters required**)
                         </p>
                         <textarea
                             value={localReflection}
                             onChange={(e) => setLocalReflection(e.target.value)}
-                            className="w-full p-3 border border-gray-300 rounded-xl focus:ring-[#47A88D] focus:border-[#47A88D] h-40"
+                            className="w-full p-3 border border-gray-300 rounded-xl focus:ring-[#219E8B] focus:border-[#219E8B] h-40"
                             placeholder="My reflection (required)..."
                         ></textarea>
-                        <p className={`text-xs mt-1 ${localReflection.length < 50 ? 'text-[#E04E1B]' : 'text-[#47A88D]'}`}>
+                        <p className={`text-xs mt-1 ${localReflection.length < 50 ? 'text-[#E04E1B]' : 'text-[#219E8B]'}`}>
                             {localReflection.length} / 50 characters written.
                         </p>
                     </Card>
@@ -703,7 +741,7 @@ const TrackerDashboardView = ({ data, updatePdpData, saveNewPlan, db, userId, na
                 <div className='lg:col-span-1 space-y-8'>
 
                     {/* Feature 3: Tier Mastery Visualizer */}
-                    <Card title={`Tier Mastery Status (${currentTierId})`} icon={Star} className='bg-[#FCFCFA] border-l-4 border-[#002E47] text-center'>
+                    <Card title={`Tier Mastery Status (${currentTierId})`} icon={Star} accent='NAVY' className='bg-[#FCFCFA] border-l-4 border-[#0B3B5B] text-center'>
                         <div className="relative w-32 h-32 mx-auto mb-4">
                             <svg viewBox="0 0 36 36" className="w-full h-full transform -rotate-90">
                                 <path
@@ -714,7 +752,7 @@ const TrackerDashboardView = ({ data, updatePdpData, saveNewPlan, db, userId, na
                                     d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
                                 />
                                 <path
-                                    className="text-[#47A88D]"
+                                    className="text-[#219E8B]"
                                     fill="none"
                                     stroke="currentColor"
                                     strokeWidth="3.8"
@@ -723,14 +761,14 @@ const TrackerDashboardView = ({ data, updatePdpData, saveNewPlan, db, userId, na
                                 />
                             </svg>
                             <div className="absolute top-0 left-0 w-full h-full flex items-center justify-center">
-                                <span className="text-3xl font-extrabold text-[#002E47]">{tierProgress.overallPercentage}%</span>
+                                <span className="text-3xl font-extrabold text-[#0B3B5B]">{tierProgress.overallPercentage}%</span>
                             </div>
                         </div>
-                        <p className='text-md font-semibold text-[#002E47] mb-1'>{tierProgress.completedContent} / {tierProgress.totalContent} Content Items Completed</p>
+                        <p className='text-md font-semibold text-[#0B3B5B] mb-1'>{tierProgress.completedContent} / {tierProgress.totalContent} Content Items Completed</p>
                         <p className='text-xs text-gray-600'>For Tier: **{LEADERSHIP_TIERS[currentTierId]?.name}**</p>
                     </Card>
 
-                    <Card title="Recalibrate Skill Assessment" icon={Activity} className='bg-[#E04E1B]/10 border-4 border-[#E04E1B]'>
+                    <Card title="Recalibrate Skill Assessment" icon={Activity} accent='ORANGE' className='bg-[#E04E1B]/10 border-4 border-[#E04E1B]'>
                         <p className='text-sm text-gray-700 mb-4'>
                             Feel like you've mastered this tier? Re-run your initial **Self-Ratings** to check your progress and generate an **accelerated, revised roadmap** to match your new skill level.
                         </p>
@@ -743,14 +781,14 @@ const TrackerDashboardView = ({ data, updatePdpData, saveNewPlan, db, userId, na
                         </Button>
                     </Card>
 
-                    <Card title="Advance Roadmap" icon={CornerRightUp} className='bg-[#47A88D]/10 border-4 border-[#47A88D]'>
+                    <Card title="Advance Roadmap" icon={CornerRightUp} accent='TEAL' className='bg-[#219E8B]/10 border-4 border-[#219E8B]'>
                         <p className='text-sm text-gray-700 mb-4'>
                             Once all content and your reflection are complete, lock in your progress and move to **Month {currentMonth + 1}** of your plan.
                         </p>
                         <Button
                             onClick={handleCompleteMonth}
                             disabled={isSaving || !isReadyToComplete}
-                            className='w-full bg-[#47A88D] hover:bg-[#349881]'
+                            className='w-full bg-[#219E8B] hover:bg-[#1C8D7C]'
                         >
                             {isSaving ? 'Processing...' : `Complete Month ${currentMonth}`}
                         </Button>
@@ -871,8 +909,8 @@ const PlanGeneratorView = ({ userId, saveNewPlan, isLoading, error }) => {
         const isAccelerated = durationDifference > 0;
 
         return (
-            <Card title="Plan Comparison: Personalized vs. Generic" icon={Activity} className='mt-8 border-l-4 border-[#47A88D] bg-[#47A88D]/10'>
-                <p className='text-lg font-extrabold text-[#002E47] mb-4'>Your Plan is Highly Optimized!</p>
+            <Card title="Plan Comparison: Personalized vs. Generic" icon={Activity} accent='TEAL' className='mt-8 bg-[#219E8B]/10 border-l-4 border-[#219E8B]'>
+                <p className='text-lg font-extrabold text-[#0B3B5B] mb-4'>Your Plan is Highly Optimized!</p>
 
                 <div className='space-y-3 text-sm text-gray-700'>
                     <p className='flex justify-between items-center'>
@@ -904,18 +942,18 @@ const PlanGeneratorView = ({ userId, saveNewPlan, isLoading, error }) => {
     // Component Rendering
     return (
         <div className="p-8">
-            <h1 className="text-3xl font-extrabold text-[#002E47] mb-6">Personalized 24-Month Plan Generator</h1>
+            <h1 className="text-3xl font-extrabold text-[#0B3B5B] mb-6">Personalized 24-Month Plan Generator</h1>
             <p className="text-lg text-gray-600 mb-8 max-w-3xl">Answer a few questions about your current role and goals to instantly generate a hyper-personalized leadership roadmap designed to close your skill gaps over the next two years.</p>
 
             <div className="space-y-10">
-                <Card title="1. Your Management Experience" icon={Users} className='border-l-4 border-[#47A88D]'>
+                <Card title="1. Your Management Experience" icon={Users} accent='TEAL'>
                     <h3 className="text-md font-semibold text-gray-700 mb-3">Select your current status:</h3>
                     <div className="flex space-x-4">
                         {['New', 'Mid-Level', 'Seasoned'].map(status => (
                             <button
                                 key={status}
                                 onClick={() => setManagerStatus(status)}
-                                className={`px-4 py-2 rounded-xl font-semibold transition-all shadow-md ${managerStatus === status ? 'bg-[#47A88D] text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
+                                className={`px-4 py-2 rounded-xl font-semibold transition-all shadow-md ${managerStatus === status ? `bg-[${COLORS.TEAL}] text-white` : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
                             >
                                 {status}
                             </button>
@@ -924,13 +962,14 @@ const PlanGeneratorView = ({ userId, saveNewPlan, isLoading, error }) => {
                 </Card>
 
                 {/* Feature 2: Team Alignment Step */}
-                <Card title="Team Strategic Alignment (Optional)" icon={Users} className='border-l-4 border-[#002E47]'>
-                    <label className='flex items-center space-x-3 text-md font-semibold text-[#002E47] mb-3 cursor-pointer'>
+                <Card title="Team Strategic Alignment (Optional)" icon={Users} accent='NAVY'>
+                    <label className='flex items-center space-x-3 text-md font-semibold text-[#0B3B5B] mb-3 cursor-pointer'>
                         <input
                             type='checkbox'
                             checked={alignToTeam}
                             onChange={(e) => setAlignToTeam(e.target.checked)}
-                            className='h-5 w-5 text-[#47A88D] rounded'
+                            className='h-5 w-5 text-[#219E8B] rounded'
+                            style={{ accentColor: COLORS.TEAL }}
                         />
                         <span>Align my plan with my team's core skill gaps.</span>
                     </label>
@@ -945,20 +984,21 @@ const PlanGeneratorView = ({ userId, saveNewPlan, isLoading, error }) => {
                 </Card>
 
 
-                <Card title="2. Goal Priorities (Max 3)" icon={Target} className='border-l-4 border-[#002E47]'>
+                <Card title="2. Goal Priorities (Max 3)" icon={Target} accent='NAVY'>
                     <h3 className="text-md font-semibold text-gray-700 mb-3">Which tiers are most important to you right now?</h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         {Object.values(LEADERSHIP_TIERS).map(tier => (
-                            <label key={tier.id} className={`flex items-center p-3 rounded-xl border-2 transition-all cursor-pointer ${goalPriorities.includes(tier.id) ? 'bg-[#002E47]/10 border-[#002E47]' : 'bg-[#FCFCFA] border-gray-200 hover:border-[#47A88D]'}`}>
+                            <label key={tier.id} className={`flex items-center p-3 rounded-xl border-2 transition-all cursor-pointer ${goalPriorities.includes(tier.id) ? 'bg-[#0B3B5B]/10 border-[#0B3B5B]' : 'bg-[#FCFCFA] border-gray-200 hover:border-[#219E8B]'}`}>
                                 <input
                                     type="checkbox"
                                     checked={goalPriorities.includes(tier.id)}
                                     onChange={() => handleGoalToggle(tier.id)}
-                                    className="h-5 w-5 text-[#47A88D] rounded mr-3"
+                                    className="h-5 w-5 text-[#219E8B] rounded mr-3"
                                     disabled={isGoalLimitReached && !goalPriorities.includes(tier.id)}
+                                    style={{ accentColor: COLORS.TEAL }}
                                 />
                                 <div>
-                                    <p className="font-semibold text-[#002E47]">{tier.name}</p>
+                                    <p className="font-semibold text-[#0B3B5B]">{tier.name}</p>
                                     <p className="text-xs text-gray-600">({tier.id})</p>
                                 </div>
                             </label>
@@ -966,13 +1006,13 @@ const PlanGeneratorView = ({ userId, saveNewPlan, isLoading, error }) => {
                     </div>
                 </Card>
 
-                <Card title="3. Self-Ratings (Skill Gap Assessment)" icon={BarChart3} className='border-l-4 border-[#47A88D]'>
+                <Card title="3. Self-Ratings (Skill Gap Assessment)" icon={BarChart3} accent='TEAL'>
                     <h3 className="text-md font-semibold text-gray-700 mb-6">Rate your current effectiveness (1 = Low Skill/Confidence, 10 = Mastery):</h3>
                     {Object.values(LEADERSHIP_TIERS).map(tier => (
                         <div key={tier.id} className="mb-6">
-                            <p className="font-semibold text-[#002E47] flex justify-between">
+                            <p className="font-semibold text-[#0B3B5B] flex justify-between">
                                 <span>{tier.name}:</span>
-                                <span className='text-xl font-extrabold text-[#47A88D]'>{selfRatings[tier.id]}/10</span>
+                                <span className='text-xl font-extrabold text-[#219E8B]'>{selfRatings[tier.id]}/10</span>
                             </p>
                             <input
                                 type="range"
@@ -980,7 +1020,8 @@ const PlanGeneratorView = ({ userId, saveNewPlan, isLoading, error }) => {
                                 max="10"
                                 value={selfRatings[tier.id]}
                                 onChange={(e) => handleRatingChange(tier.id, e.target.value)}
-                                className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer range-lg accent-[#47A88D]"
+                                className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer range-lg accent-[#219E8B]"
+                                style={{ accentColor: COLORS.TEAL }}
                             />
                             <p className='text-xs text-gray-500 mt-1'>Rating influences target **content difficulty** (Low rating = Intro/Core content; High rating = Mastery).</p>
                         </div>
@@ -988,7 +1029,7 @@ const PlanGeneratorView = ({ userId, saveNewPlan, isLoading, error }) => {
                 </Card>
             </div>
 
-            <Button onClick={handleGenerate} disabled={!canGenerate || isGenerating} className="mt-10 w-full md:w-auto">
+            <Button onClick={handleGenerate} disabled={!canGenerate || isGenerating} className="mt-10 w-full md:w-auto" accent='ORANGE'>
                 {isGenerating ? (
                     <div className="flex items-center">
                         <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
@@ -1007,16 +1048,17 @@ const PlanGeneratorView = ({ userId, saveNewPlan, isLoading, error }) => {
 
 // --- Main Router ---
 export const ProfDevPlanScreen = () => {
+    const { useAppServices: useAppServicesLocal } = { useAppServices: useAppServices }; // FIX: Use local variable access
     // Consume data and updates via context
-    const { pdpData, updatePdpData, saveNewPlan, isLoading, error, userId, db, navigate } = useAppServices();
+    const { pdpData, updatePdpData, saveNewPlan, isLoading, error, userId, db, navigate } = useAppServicesLocal();
 
     // --- Router Logic ---
     if (isLoading || pdpData === undefined) {
         return (
             <div className="p-8 min-h-screen flex items-center justify-center">
                 <div className="flex flex-col items-center">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#47A88D] mb-3"></div>
-                    <p className="text-[#47A88D] font-medium">Loading Personalized Development Plan...</p>
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#219E8B] mb-3"></div>
+                    <p className="text-[#219E8B] font-medium">Loading Personalized Development Plan...</p>
                 </div>
             </div>
         );
@@ -1025,7 +1067,7 @@ export const ProfDevPlanScreen = () => {
     if (error) {
         return (
             <div className="p-8">
-                <p className="text-[#E04E1B] p-4 bg-red-100 rounded-xl">Application Error: {error}</p>
+                <p className="p-4 bg-red-100 rounded-xl" style={{ color: COLORS.ORANGE }}>Application Error: {error}</p>
                 <p className="text-gray-600 mt-4">If this error persists, check your browser console for Firebase configuration or security rule errors.</p>
             </div>
         );
@@ -1043,4 +1085,3 @@ export const ProfDevPlanScreen = () => {
 };
 
 export default ProfDevPlanScreen;
-notepad 
