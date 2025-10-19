@@ -1,4 +1,3 @@
-import './globals/notepad.js';
 import React, {
   useState, useEffect, useMemo, useCallback, createContext, useContext
 } from 'react';
@@ -32,7 +31,7 @@ import { callSecureGeminiAPI, hasGeminiKey, GEMINI_MODEL, API_KEY } from './util
 // FIX: Moved 'notepad' mock to the top of the file to ensure it is defined before 
 // any imported screen component attempts to access it, resolving the ReferenceError.
 if (typeof window !== 'undefined' && typeof window.notepad === 'undefined') {
-    if (typeof window !== 'undefined' && !window.notepad) window.notepad = { 
+    window.notepad = { 
         // Mock the essential functions needed to avoid crashes
         setTitle: (title) => console.log('Mock Notepad: Set Title', title),
         addContent: (content) => console.log('Mock Notepad: Add Content', content),
@@ -55,7 +54,6 @@ import BusinessReadingsScreen from './components/screens/BusinessReadings.jsx';
 
 // Icons used in the new NavSidebar
 import { Home, Zap, ShieldCheck, TrendingUp, Mic, BookOpen, Settings, X, Menu, LogOut, CornerRightUp, Clock, Briefcase, Target, Users, BarChart3, HeartPulse, User, Bell, Trello, CalendarClock } from 'lucide-react';
-const notepad = (typeof globalThis !== 'undefined' ? globalThis.notepad : (typeof window !== 'undefined' ? window.notepad : undefined));
 
 const CoachingLabScreen = Labs;
 
@@ -88,7 +86,7 @@ const DEFAULT_SERVICES = {
   appId: 'default-app-id',
   IconMap: {},
   callSecureGeminiAPI: async () => { throw new Error('Gemini not configured.'); },
-  hasGeminiKey,
+  hasGeminiKey: () => false,
   GEMINI_MODEL,
   API_KEY,
 };
@@ -141,7 +139,7 @@ const DataProvider = ({ children, firebaseServices, userId, isAuthReady, navigat
     appId,
     IconMap,
     callSecureGeminiAPI,
-    hasGeminiKey,
+    hasGeminiKey: () => false,
     GEMINI_MODEL,
     API_KEY,
     // NEW: Expose Notification status
@@ -401,41 +399,49 @@ const NavSidebar = ({ currentScreen, setCurrentScreen, user, isMobileOpen, close
     };
     
     const renderNavItems = (items) => (
-        items.map((item) => {
-            const Icon = item.icon;
-            const isActive = currentScreen === item.screen;
-            const isNotifying = item.notify;
-            
-            return (
-                <button
-                    key={item.screen}
-                    onClick={() => handleNavigate(item.screen)}
-                    className={`flex items-center w-full px-4 py-3 rounded-xl font-semibold relative transition-colors duration-200 ${
-                        // FIX: High contrast for active state
-                        isActive
-                            ? 'bg-[#47A88D] text-[#002E47] shadow-lg'
-                            // FIX: Inactive buttons use subtle, darker hover state (no stark white)
-                            : 'text-indigo-200 hover:bg-[#47A88D]/20 hover:text-white'
-                    }`}
-                >
-                    <Icon className="w-5 h-5 mr-3" />
-                    <span className="flex-1 text-left">{item.label}</span>
-                    
-                    {/* NEW: Badge for new features */}
-                    {item.badge && (
-                        <span className="ml-2 px-2 py-0.5 text-xs font-bold rounded-full bg-[#E04E1B] text-white">
-                            {item.badge}
-                        </span>
-                    )}
+    items.map((item) => {
+        const Icon = item.icon;
+        const isActive = currentScreen === item.screen;
+        const isNotifying = item.notify;
+        const accent = '#E04E1B'; // ORANGE
 
-                    {/* NEW: Notification Indicator */}
-                    {isNotifying && (
-                        <div className="absolute right-3 top-1/2 transform -translate-y-1/2 h-2.5 w-2.5 bg-[#E04E1B] rounded-full ring-2 ring-white" />
-                    )}
-                </button>
-            );
-        })
-    );
+        return (
+            <button
+                key={item.screen}
+                onClick={() => handleNavigate(item.screen)}
+                className={`relative flex items-center w-full px-4 py-3 rounded-xl font-semibold transition-colors duration-200
+                    ${isActive ? 'bg-white text-[#002E47] shadow-lg' : 'text-white/80 hover:bg-[#47A88D]/20 hover:text-white'}`}
+                aria-current={isActive ? 'page' : undefined}
+            >
+                {isActive && (
+                    <span
+                        aria-hidden="true"
+                        className="absolute left-1 top-1/2 -translate-y-1/2 h-6 w-1.5 rounded-full"
+                        style={{ background: accent }}
+                    />
+                )}
+
+                <Icon className="w-5 h-5 mr-3" />
+                <span className="flex-1 text-left">{item.label}</span>
+
+                {item.badge && (
+                    <span className="ml-2 px-2 py-0.5 text-xs font-bold rounded-full"
+                          style={{ background: accent, color: '#FFFFFF' }}>
+                        {item.badge}
+                    </span>
+                )}
+
+                {isNotifying && (
+                    <span
+                        className="ml-2 inline-block h-2.5 w-2.5 rounded-full ring-2"
+                        style={{ background: accent, ringColor: '#FFFFFF' }}
+                        aria-label="Has pending items"
+                    />
+                )}
+            </button>
+        );
+    })
+);
 
     // --- Mobile Overlay and Menu (Full Screen on small screens) ---
     if (isMobileOpen) {
@@ -740,7 +746,7 @@ const AppContent = ({ currentScreen, setCurrentScreen, user, navParams, isMobile
                 setCurrentScreen={setCurrentScreen}
                 user={user}
                 isMobileOpen={isMobileOpen}
-                closeMobileMenu={() => setIsMobileOpen(false)}
+                closeMobileMenu={() => setIsMobileMenu(false)}
             />
             <main className="flex-1 overflow-y-auto">
                 {/* Mobile Header/Menu Button */}
