@@ -7,24 +7,24 @@ import {
 } from 'lucide-react';
 import { mdToHtml } from '../../utils/ApiHelpers.js';
 
-// --- COLOR PALETTE ---
+// --- COLOR PALETTE (Cleaned up for higher contrast) ---
 const COLORS = {
-    NAVY: '#002E47', 
-    TEAL: '#47A88D', 
-    ORANGE: '#E04E1B', 
-    LIGHT_GRAY: '#F8F8F5', 
+    NAVY: '#002E47', // Primary Dark
+    TEAL: '#47A88D', // Primary Accent
+    ORANGE: '#E04E1B', // Action/Highlight
+    LIGHT_GRAY: '#F8F8F5', // Off-White Background
     DARK_TEXT: '#1F2937', 
-    OFF_WHITE: '#FFFFFF', 
+    OFF_WHITE: '#FFFFFF', // New: Pure White for Card Backgrounds
 };
 
-// --- COMPLEXITY MAPPING ---
+// --- COMPLEXITY MAPPING (Used for visual metrics) ---
 const COMPLEXITY_MAP = {
     'Low': { label: 'Novice', color: 'bg-green-500', icon: CheckCircle },
     'Medium': { label: 'Intermediate', color: 'bg-yellow-500', icon: AlertTriangle },
     'High': { label: 'Expert', color: 'bg-red-500', icon: Target },
 };
 
-// --- MOCK BOOK DATA ---
+// --- MOCK BOOK DATA (The source of truth) ---
 const MOCK_ALL_BOOKS = {
     'Strategy & Execution': [
         { id: 's_e_1', title: 'The E-Myth Revisited', author: 'Michael E. Gerber', theme: 'Why most small businesses fail and how to build a scalable system that works *for* you, not *because* of you.', complexity: 'Medium', duration: 180, focus: 'Delegation, Process Mapping, Systemization', cover: 'https://placehold.co/100x150/002E47/ffffff?text=E+Myth', image_url: 'https://placehold.co/600x400/002E47/ffffff?text=E-Myth+System' },
@@ -48,7 +48,7 @@ const MOCK_ALL_BOOKS = {
     ],
 };
 
-// --- HELPER: SIMULATE AI RESPONSE (Expanded and improved logic) ---
+// --- HELPER: SIMULATE AI RESPONSE (Refined logic) ---
 const mockAIResponse = (bookTitle, focusAreas, query) => {
     query = query.toLowerCase();
     
@@ -101,11 +101,10 @@ const mockAIResponse = (bookTitle, focusAreas, query) => {
 };
 
 
-// --- HELPER: GENERATE BOOK FLYER CONTENT (Includes Adaptive Path Placeholder and better rendering) ---
+// --- HELPER: GENERATE BOOK FLYER CONTENT (Completely redesigned for vertical flow and contrast) ---
 const generateBookFlyerMarkdown = (book, tier, isExecutiveBrief) => {
     const focusAreas = book.focus.split(',').map(f => f.trim());
     const complexityData = COMPLEXITY_MAP[book.complexity] || COMPLEXITY_MAP['Medium'];
-    const ComplexityIcon = complexityData.icon;
 
     // SIMULATED EXTERNAL/AI RICH SUMMARY
     const richSummary = `
@@ -125,29 +124,30 @@ const generateBookFlyerMarkdown = (book, tier, isExecutiveBrief) => {
 `;
     // ADAPTIVE PATH CONTENT
     const adaptivePathContent = book.complexity === 'High' 
-        ? `<div class="p-3 bg-red-50 border-l-4 border-red-500 rounded-lg text-sm">
+        ? `<div class="p-3 mt-4 bg-red-50 border-l-4 border-red-500 rounded-lg text-base">
             <p class="font-semibold text-red-800">Adaptive Path: Expert Level</p>
             <p class="text-gray-700">Focus on the most complex chapters (5, 7, 9). Use the AI Coach primarily for cross-domain application questions.</p>
         </div>`
-        : `<div class="p-3 bg-green-50 border-l-4 border-green-500 rounded-lg text-sm">
+        : `<div class="p-3 mt-4 bg-green-50 border-l-4 border-green-500 rounded-lg text-base">
             <p class="font-semibold text-green-800">Adaptive Path: Novice/Intermediate</p>
             <p class="text-gray-700">Follow chapters sequentially. Complete all suggested Action Plan items before moving to the next section.</p>
         </div>`;
 
 
-    // DYNAMIC CONTENT SECTION
-    const mainContent = isExecutiveBrief ? executiveSummary : `
-        <section class="p-4 bg-[${COLORS.NAVY}]/5 rounded-lg border border-gray-200">
+    // Core Content Assembly (Simplified for better rendering)
+    const summarySection = isExecutiveBrief ? executiveSummary : `
+        <section class="p-5 bg-[${COLORS.NAVY}]/5 rounded-lg border border-gray-200 shadow-sm">
             <h3 class="text-xl font-bold text-[${COLORS.NAVY}] mb-2 flex items-center gap-2"><Feather class="w-5 h-5 text-[${COLORS.ORANGE}]"/> Rich Synopsis</h3>
-            <p class="text-sm text-gray-800">${richSummary}</p>
+            <p class="text-base text-gray-800">${richSummary}</p>
         </section>
-
         ${adaptivePathContent}
+    `;
 
+    const detailsSection = `
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
-            <div class="space-y-3 p-4 border border-[${COLORS.TEAL}] rounded-lg bg-[${COLORS.TEAL}]/5">
+            <div class="space-y-3 p-4 border border-[${COLORS.TEAL}] rounded-lg bg-[${COLORS.TEAL}]/5 shadow-md">
                 <h3 class="text-lg font-semibold text-[${COLORS.DARK_TEXT}] flex items-center gap-2"><Briefcase class="w-5 h-5 text-[${COLORS.TEAL}]"/> Core Skills to Master</h3>
-                <ul class="list-none ml-0 text-gray-700 text-sm space-y-2">
+                <ul class="list-none ml-0 text-gray-700 text-base space-y-2">
                     ${focusAreas.map(f => `
                         <li class="flex items-start gap-2">
                             <CornerDownRight class="w-4 h-4 flex-shrink-0 mt-1 text-[${COLORS.ORANGE}]"/>
@@ -157,9 +157,9 @@ const generateBookFlyerMarkdown = (book, tier, isExecutiveBrief) => {
                 </ul>
             </div>
 
-            <div class="space-y-3 p-4 border border-[${COLORS.ORANGE}] rounded-lg bg-[${COLORS.ORANGE}]/5">
+            <div class="space-y-3 p-4 border border-[${COLORS.ORANGE}] rounded-lg bg-[${COLORS.ORANGE}]/5 shadow-md">
                 <h3 class="text-lg font-semibold text-[${COLORS.DARK_TEXT}] flex items-center gap-2"><Zap class="w-5 h-5 text-[${COLORS.ORANGE}]"/> Suggested Action Plan</h3>
-                <ul class="list-none ml-0 text-gray-700 text-sm space-y-2">
+                <ul class="list-none ml-0 text-gray-700 text-base space-y-2">
                     <li class="flex items-start gap-2">
                         <CornerDownRight class="w-4 h-4 flex-shrink-0 mt-1 text-[${COLORS.TEAL}]"/>
                         <span class="font-medium">**Pace:** Break reading into (9) 20-minute, high-focus sessions.</span>
@@ -175,53 +175,53 @@ const generateBookFlyerMarkdown = (book, tier, isExecutiveBrief) => {
 
 
     return `
-<div class="grid grid-cols-1 lg:grid-cols-3 gap-8 p-4">
+<div class="grid grid-cols-1 gap-8 p-4">
 
-    <div class="lg:col-span-1 bg-white p-6 rounded-xl border-l-4 border-[${COLORS.TEAL}] shadow-lg">
-        <h3 class="text-xl font-bold text-[${COLORS.NAVY}] mb-3 flex items-center gap-2">
-            <Aperture class="w-5 h-5 text-[${COLORS.ORANGE}]"/> Essential Context
-        </h3>
-        
-        <img class="w-full h-auto object-cover rounded-xl shadow-xl border border-gray-100 mb-4" 
-             src="${book.image_url}" 
-             alt="Related image for ${book.title}" 
-             onerror="this.onerror=null;this.src='https://placehold.co/300x200/${COLORS.NAVY.slice(1)}/ffffff?text=Visual+Concept'"
-        />
+    <header class="pb-3 border-b border-gray-200">
+        <p class="text-xs font-semibold uppercase text-[${COLORS.TEAL}] mb-1">${tier} Competency</p>
+        <h2 class="text-4xl font-extrabold text-[${COLORS.NAVY}] leading-tight">${book.title}</h2>
+        <p class="text-lg font-medium text-[${COLORS.ORANGE}] mt-1">by ${book.author}</p>
+    </header>
 
-        <div class="flex flex-col space-y-2 text-sm">
-            <div class="flex justify-between items-center text-gray-700">
-                <span class="font-semibold flex items-center"><Clock class="w-4 h-4 mr-2 text-[${COLORS.ORANGE}]"/> Est. Learning Minutes</span>
-                <span class="font-bold text-[${COLORS.NAVY}]">${book.duration} min</span>
-            </div>
-            <div class="flex justify-between items-center text-gray-700 border-t pt-2">
-                <span class="font-semibold flex items-center"><ComplexityIcon class="w-4 h-4 mr-2 ${complexityData.color.replace('bg-', 'text-')}" /> Complexity Level</span>
-                <span class="font-bold flex items-center gap-1 ${complexityData.color.replace('bg-', 'text-')}">${complexityData.label}</span>
-            </div>
+    <div class="lg:grid lg:grid-cols-3 lg:gap-6 items-start">
+        <div class="lg:col-span-1 mb-6 lg:mb-0">
+            <img class="w-full h-auto object-cover rounded-xl shadow-xl border-4 border-gray-100" 
+                src="${book.image_url}" 
+                alt="Related image for ${book.title}" 
+                onerror="this.onerror=null;this.src='https://placehold.co/300x200/${COLORS.NAVY.slice(1)}/ffffff?text=Visual+Concept'"
+            />
         </div>
-    </div>
-
-    <div class="lg:col-span-2 space-y-6">
         
-        <header class="pb-3 border-b border-gray-200">
-            <p class="text-xs font-semibold uppercase text-[${COLORS.TEAL}] mb-1">${tier} Competency</p>
-            <h2 class="text-4xl font-extrabold text-[${COLORS.NAVY}] leading-tight">${book.title}</h2>
-            <p class="text-lg font-medium text-[${COLORS.ORANGE}] mt-1">by ${book.author}</p>
-        </header>
-
-        ${mainContent}
-        
-        <div class="mt-8 pt-4 border-t border-gray-200 grid grid-cols-1 md:grid-cols-2 gap-4">
-            
-            <div class="flex items-start p-3 bg-teal-50 rounded-lg border border-teal-300">
-                <Users className="w-5 h-5 text-[${COLORS.TEAL}] flex-shrink-0 mt-1"/>
-                <div class="ml-3">
-                    <p class="text-sm text-[${COLORS.NAVY}] font-semibold">Peer Accountability Group</p>
-                    <p class="text-xs text-gray-700">Join a "Huddle" to discuss application and track shared progress.</p>
+        <div class="lg:col-span-2 flex flex-col justify-center space-y-3 p-4 bg-gray-50 rounded-xl border border-gray-200 shadow-sm">
+            <h3 class="text-xl font-bold text-[${COLORS.NAVY}] mb-1">Book Metrics</h3>
+            <div class="flex flex-col space-y-2 text-base">
+                <div class="flex justify-between items-center text-gray-700 border-b pb-2">
+                    <span class="font-semibold flex items-center"><Clock class="w-5 h-5 mr-2 text-[${COLORS.ORANGE}]"/> Est. Learning Minutes</span>
+                    <span class="font-bold text-[${COLORS.NAVY}]">${book.duration} min</span>
+                </div>
+                <div class="flex justify-between items-center text-gray-700">
+                    <span class="font-semibold flex items-center"><${complexityData.icon.name} class="w-5 h-5 mr-2 ${complexityData.color.replace('bg-', 'text-')}" /> Complexity Level</span>
+                    <span class="font-bold flex items-center gap-1 ${complexityData.color.replace('bg-', 'text-')}">${complexityData.label}</span>
                 </div>
             </div>
         </div>
-
     </div>
+    
+    <div class="space-y-6">
+        ${summarySection}
+        ${detailsSection}
+    </div>
+
+    <div class="mt-4 pt-4 border-t border-gray-200">
+        <div class="flex items-start p-3 bg-teal-50 rounded-lg border border-teal-300 shadow-sm">
+            <Users className="w-5 h-5 text-[${COLORS.TEAL}] flex-shrink-0 mt-1"/>
+            <div class="ml-3">
+                <p class="text-sm text-[${COLORS.NAVY}] font-semibold">Peer Accountability Group</p>
+                <p class="text-xs text-gray-700">Join a "Huddle" to discuss application and track shared progress.</p>
+            </div>
+        </div>
+    </div>
+
 </div>
 `;
 };
@@ -240,7 +240,10 @@ export default function BusinessReadingsScreen() {
     // --- AI COACH STATES & REFS ---
     const [aiQuery, setAiQuery] = useState('');
     const [aiResponse, setAiResponse] = useState('');
-    const aiInputRef = useRef(null); // Ref for maintaining input focus
+    const aiInputRef = useRef(null); // Ref for maintaining AI input focus
+
+    // --- Search Input Ref (New Ref for separate stability) ---
+    const searchInputRef = useRef(null);
 
     // Safely use context books or fall back to mock data
     const allBooks = Object.keys(contextBooks).length > 0 ? contextBooks : MOCK_ALL_BOOKS;
@@ -318,6 +321,16 @@ export default function BusinessReadingsScreen() {
         }, 800); 
     };
 
+    // Handler for search input change
+    const handleSearchChange = (e) => {
+        setFilters({...filters, search: e.target.value});
+        // CRITICAL FIX: Ensure focus is maintained after state update (needed if the parent re-renders)
+        if (searchInputRef.current) {
+            searchInputRef.current.focus();
+        }
+    };
+
+
     // Handler to create a new commitment from the selected book
     const handleCommitment = (book) => {
         const newCommitment = {
@@ -352,7 +365,7 @@ export default function BusinessReadingsScreen() {
     };
 
     /* ----------------------------------------------------
-       Book List View 
+       Book List View (High Contrast)
     ---------------------------------------------------- */
     const BookList = () => (
         <div className="space-y-10">
@@ -366,13 +379,14 @@ export default function BusinessReadingsScreen() {
                     <Filter className='w-5 h-5 text-[${COLORS.ORANGE}]'/> Personalize Your Search
                 </h3>
                 
-                {/* Search Input */}
+                {/* Search Input (Now uses ref) */}
                 <div className="mb-6">
                     <label className='block text-sm font-medium text-gray-700 mb-1 flex items-center gap-1'><Search className='w-4 h-4 text-[${COLORS.TEAL}]'/> Search by Title, Author, or Key Focus (e.g., "Delegation")</label>
                     <input
                         type="text"
+                        ref={searchInputRef}
                         value={filters.search}
-                        onChange={(e) => setFilters({...filters, search: e.target.value})}
+                        onChange={handleSearchChange}
                         placeholder="Start typing to find a book..."
                         className="w-full p-3 border border-gray-300 rounded-lg shadow-sm focus:ring-[${COLORS.ORANGE}] focus:border-[${COLORS.ORANGE}]"
                     />
@@ -415,9 +429,9 @@ export default function BusinessReadingsScreen() {
             {/* --- BOOK LIST --- */}
             <div className="space-y-12">
                 {Object.entries(filteredBooks).map(([tier, books]) => (
-                    <div key={tier} className='bg-white rounded-2xl shadow-xl border-2 border-[${COLORS.NAVY}]/10 overflow-hidden'>
+                    <div key={tier} className='bg-[${COLORS.OFF_WHITE}] rounded-2xl shadow-xl border-2 border-[${COLORS.NAVY}]/10 overflow-hidden'>
                         
-                        {/* Category Header (High Contrast) */}
+                        {/* Category Header (Strong NAVY Background) */}
                         <div className='p-6 border-l-8 border-[${COLORS.ORANGE}] bg-[${COLORS.NAVY}]'>
                             <h3 className="text-2xl font-bold text-white flex items-center gap-2">
                                 <Aperture className="w-6 h-6 text-[${COLORS.TEAL}]" /> {tier}
@@ -506,12 +520,12 @@ export default function BusinessReadingsScreen() {
     );
 
     /* ----------------------------------------------------
-       Book Flyer View (Corrected Readability & AI Coach)
+       Book Flyer View (Redesigned & Fixed)
     ---------------------------------------------------- */
     const BookFlyer = () => {
-        // Mock current progress data (should come from context/Firebase in a real app)
+        // Mock current progress data 
         const mockProgress = {
-            progressMinutes: 45, // Example progress
+            progressMinutes: 45, 
             totalDuration: selectedBook.duration,
             progressPercent: Math.round((45 / selectedBook.duration) * 100) || 0,
         };
@@ -582,11 +596,11 @@ export default function BusinessReadingsScreen() {
                         {aiResponse && (
                             <div className='p-4 mb-4 bg-blue-50 border-l-4 border-blue-600 rounded-lg shadow-sm'>
                                 <p className='text-sm text-blue-800 font-semibold'>AI Coach:</p>
-                                <p className='text-sm text-gray-800 mt-1 italic'>{aiResponse}</p>
+                                <p className='text-base text-gray-800 mt-1 italic'>{aiResponse}</p>
                             </div>
                         )}
 
-                        {/* User Input Form */}
+                        {/* User Input Form (Stable Input) */}
                         <form onSubmit={handleAiQuery} className='flex gap-2'>
                             <input
                                 type='text'
@@ -594,7 +608,7 @@ export default function BusinessReadingsScreen() {
                                 value={aiQuery}
                                 onChange={(e) => setAiQuery(e.target.value)}
                                 placeholder={`Ask how to apply ${selectedBook.title} concepts to your job... (e.g., "How do I delegate?")`}
-                                className='flex-grow p-3 border border-gray-300 rounded-lg focus:ring-[${COLORS.TEAL}] focus:border-[${COLORS.TEAL}]'
+                                className='flex-grow p-3 border border-gray-300 rounded-lg focus:ring-[${COLORS.TEAL}] focus:border-[${COLORS.TEAL}] text-base'
                                 required
                             />
                             <button
