@@ -1,3 +1,4 @@
+import './globals/notepad.js';
 import React, {
   useState, useEffect, useMemo, useCallback, createContext, useContext
 } from 'react';
@@ -31,7 +32,7 @@ import { callSecureGeminiAPI, hasGeminiKey, GEMINI_MODEL, API_KEY } from './util
 // FIX: Moved 'notepad' mock to the top of the file to ensure it is defined before 
 // any imported screen component attempts to access it, resolving the ReferenceError.
 if (typeof window !== 'undefined' && typeof window.notepad === 'undefined') {
-    window.notepad = { 
+    if (typeof window !== 'undefined' && !window.notepad) window.notepad = { 
         // Mock the essential functions needed to avoid crashes
         setTitle: (title) => console.log('Mock Notepad: Set Title', title),
         addContent: (content) => console.log('Mock Notepad: Add Content', content),
@@ -54,6 +55,7 @@ import BusinessReadingsScreen from './components/screens/BusinessReadings.jsx';
 
 // Icons used in the new NavSidebar
 import { Home, Zap, ShieldCheck, TrendingUp, Mic, BookOpen, Settings, X, Menu, LogOut, CornerRightUp, Clock, Briefcase, Target, Users, BarChart3, HeartPulse, User, Bell, Trello, CalendarClock } from 'lucide-react';
+const notepad = (typeof globalThis !== 'undefined' ? globalThis.notepad : (typeof window !== 'undefined' ? window.notepad : undefined));
 
 const CoachingLabScreen = Labs;
 
@@ -86,7 +88,7 @@ const DEFAULT_SERVICES = {
   appId: 'default-app-id',
   IconMap: {},
   callSecureGeminiAPI: async () => { throw new Error('Gemini not configured.'); },
-  hasGeminiKey: () => false,
+  hasGeminiKey,
   GEMINI_MODEL,
   API_KEY,
 };
@@ -139,7 +141,7 @@ const DataProvider = ({ children, firebaseServices, userId, isAuthReady, navigat
     appId,
     IconMap,
     callSecureGeminiAPI,
-    hasGeminiKey: () => false,
+    hasGeminiKey,
     GEMINI_MODEL,
     API_KEY,
     // NEW: Expose Notification status
@@ -738,7 +740,7 @@ const AppContent = ({ currentScreen, setCurrentScreen, user, navParams, isMobile
                 setCurrentScreen={setCurrentScreen}
                 user={user}
                 isMobileOpen={isMobileOpen}
-                closeMobileMenu={() => setIsMobileMenu(false)}
+                closeMobileMenu={() => setIsMobileOpen(false)}
             />
             <main className="flex-1 overflow-y-auto">
                 {/* Mobile Header/Menu Button */}
