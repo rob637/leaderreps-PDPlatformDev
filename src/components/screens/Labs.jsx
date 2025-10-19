@@ -1,99 +1,79 @@
 /* eslint-disable no-console */
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
-// FIX: Mocking missing imports for external dependencies like useAppServices, Card, Button, Tooltip, and data/constants
-// In a real application, these must be provided by the host environment.
-const useAppServices = () => ({
-  commitmentData: {
-    active_commitments: [],
-    history: [],
-    reflection_journal: '',
-  },
-  updateCommitmentData: async (data) => {
-    // Mock async update
-    console.log('Updating commitment data:', data);
-    return new Promise(resolve => setTimeout(resolve, 300));
-  },
-  planningData: {
-    okrs: [],
-    vision: '',
-    mission: ''
-  },
-  // Mock function to simulate navigation to Daily Practice Scorecard
-  navigate: (view, params) => {
-      console.log(`Navigating to ${view} with params:`, params);
-  },
-  callSecureGeminiAPI: async (payload) => {
-    // Mock AI response for prompt and assessment
-    if (payload.generationConfig?.responseMimeType === 'application/json') {
-      // Mock Assessment Response for SBI Critique (not used in this path now, but kept for context)
-      const score = Math.floor(Math.random() * 5) + 6; // 6-10
-      const risk = 10 - score; // inverse risk
-      const feedback = score > 7 ? "Excellent specificity and alignment! Maintain this clarity." : "Slightly vague. Specify the time or location to reduce risk.";
-      return { candidates: [{ content: { parts: [{ text: JSON.stringify({ score, risk, feedback }) }] } }] };
-    } else {
-        // AI response for Critique / Active Listening / Follow-up Coaching
-        const userQuery = payload.contents[0].parts[0].text;
-        
-        if (userQuery.includes("Critique the following active listening responses")) {
-             // 3. Quantifiable Active Listening Scores (Added Score)
-            return { candidates: [{ content: { parts: [{ text: `## The Paraphrase Audit (Score: 92/100)\n\nYour paraphrase, "So you're saying the deadlines and the meeting load are making you feel overwhelmed," is **Excellent**. It successfully reflects the emotion and facts without offering advice. It uses confirming language.\n\n## The Inquiry Audit (Score: 85/100)\n\nYour question, "${userQuery.split('The manager\'s draft open-ended question is:')[1].trim().slice(0, 50)}...", is **Good**. It's open-ended and empathetic. A refined version could be: "What needs to shift for you to feel back in control of your schedule and workload?"\n\n### Core Skill Focus\n\nPractice pausing for a full three seconds after the employee speaks. The space is often more powerful than the words.` }] } }] };
-        } else if (userQuery.includes("Analyze the following role-play dialogue")) {
-             // Mock Score Breakdown for Heatmap
-             return { candidates: [{ content: { parts: [{ text: `## Role-Play Audit: The Deflector\n\n### Overall Score: 88/100\n\n**Assessment:** Your manager established a clear, non-judgmental tone early in the conversation, which is critical for a high-stakes scenario. You effectively used "I" statements in the Situation and Behavior setup.\n\n### SBI Effectiveness (Score: 92/100)\n\n**Assessment:** Excellent adherence to objective facts.\n\n### Active Listening & Empathy (Score: 78/100)\n\n**Assessment:** You missed an opportunity to validate Alex's defensive statement. \n\n### Resolution Drive (Score: 88/100)\n\n**Assessment:** Clear action plan established.\n\n### Next Practice Point\n\nFocus on **Deep Validation**. When Alex shows emotion, practice saying, "I hear that you feel that this situation is unfair. Tell me more about what specifically made it feel unfair." This builds a deeper connection before moving to problem-solving.` }] } }] };
-        } else if (userQuery.includes("Critique and refine this SBI feedback draft")) {
-             return { candidates: [{ content: { parts: [{ text: `The draft is strong! **Strength:** The Behavior is highly specific—"interrupted Sarah three times"—which is measurable and objective. **Area for Improvement:** The Impact is good but could be tied more directly to the business: "hindering a full review of the data."\n\n**Refined Feedback**: S: During the Q3 Review meeting with the leadership team last Friday. B: You interrupted Sarah three times while she was presenting her analysis on customer churn data, dominating the conversation. I: This caused Sarah to lose her train of thought and delayed our ability to fully analyze critical churn data before the board meeting.` }] } }] };
-        } else if (userQuery.includes("Based on the conversation history")) {
-             // 2. AI Follow-Up Coaching Mock Response
-             return { candidates: [{ content: { parts: [{ text: "The best reply to Alex's last defense ('It's not fair') would have been a **paraphrase/validation statement** before asking a follow-up question. For example: 'I hear that you feel a sense of unfairness about the situation. Can you tell me what specific resources you felt were missing?' This validates the emotion without agreeing with the premise." }] } }] };
-        } else if (userQuery.includes("Difficulty:")) {
-             // Mock Scenario Generation based on Difficulty
-             const difficulty = userQuery.match(/Difficulty: (\w+)/)[1];
-             let persona = "The Deflector";
-             if (difficulty === 'Medium') persona = "The Defender (Slightly Stressed)";
-             if (difficulty === 'High') persona = "The Emotional Reactor (Highly Resistant)";
+import React, { useState, useEffect, useMemo, useCallback, useLayoutEffect } from 'react';
+import {
+  Home, Zap, HeartPulse, BookOpen, Users, Settings, Briefcase, TrendingUp, Target, Mic, ArrowLeft, CheckCircle, Lightbulb, Clock, PlusCircle, X, BarChart3, MessageSquare, AlertTriangle, ShieldCheck, CornerRightUp, Play, Info, Eye, Cpu, Send, Star} from 'lucide-react';
 
-             return { candidates: [{ content: { parts: [{ text: `## Generated Scenario\n\n### Title: The High-Stress Deadline Miss (Level: ${difficulty})\n\n### Description: A high-potential team member is consistently missing deadlines due to distraction, and is currently under pressure from a difficult family situation. This adaptation forces you to handle **personal boundaries and deflection** simultaneously.\n\n### Persona: ${persona}` }] } }] };
-        } else if (userQuery.includes("Confidence Builder Tip")) {
-             // NEW FEATURE 1: Confidence Builder Tip
-             const persona = userQuery.match(/Persona: (.*)/)[1];
-             const tension = userQuery.match(/Tension: (.*)/)[1];
-             let tip;
+/* =========================================================
+   MOCK APP SERVICES (CLEANED)
+========================================================= */
+const GEMINI_MODEL = 'gemini-2.5-flash-preview-09-2025';
 
-             if (persona.includes('Emotional Reactor') && tension === 'High') {
-                 tip = "The AI is primed for defensiveness. Your first line must be pure validation. Try: 'Before we talk about the report, I can see this is causing you stress. How are you doing?'";
-             } else if (persona.includes('Deflector')) {
-                 tip = "The Deflector will shift blame. Anchor your feedback to the facts: start by reading your prepared SBI statement verbatim, then wait for the response.";
-             } else {
-                 tip = "Mindset check: Remember your **Objective** is a specific action, not solving the whole problem. Stick to the agenda!";
-             }
-             return { candidates: [{ content: { parts: [{ text: tip }] } }] };
-        } else if (userQuery.includes("Reflective Analysis")) {
-            // NEW FEATURE: Post-Critique Reflective Analysis
-             return { candidates: [{ content: { parts: [{ text: `## Reflection Audit: High Insight\n\n**Analysis:** Your reflection accurately pinpoints 'missing the validation phase' as the core problem, aligning perfectly with the AI's SBI and Empathy scores. Your stated plan to 'use a reflective pause' directly addresses the Next Practice Point.\n\n**Confidence Rating:** Excellent (95%). This shows strong capacity for self-correction. Focus on immediate practice to cement this learning.` }] } }] };
-        } else if (userQuery.includes("Priming Nudge")) {
-            // NEW FEATURE: Psychological Priming Check-In
-            const mindset = userQuery.match(/Mindset: (.*)/)[1];
-            const stress = userQuery.match(/Stress: (\d+)/)[1];
-            let nudge;
-            if (stress > 60 && mindset.includes('Non-Judgmental')) {
-                nudge = "High stress compromises neutrality. Your chosen mindset is key; start by taking three deep breaths before speaking to Alex. Prioritize listening over planning your reply.";
-            } else {
-                nudge = "Your focus is sharp. Remember your pre-session objective. Carry that 'intentionality' into your opening statement.";
-            }
-            return { candidates: [{ content: { parts: [{ text: nudge }] } }] };
-        }
-        
-      return { candidates: [{ content: { parts: [{ text: 'Default AI response for complex request.' }] } }] };
+// Mock array to store completed practice sessions (for PracticeLogView)
+const MOCK_PRACTICE_SESSIONS = [
+    { id: 1, title: 'The Underperformer', date: 'Oct 15, 2025', score: 88, takeaway: 'Focus on Deep Validation.', difficulty: 'Medium' },
+    { id: 2, title: 'The Boundary Pusher', date: 'Oct 10, 2025', score: 72, takeaway: 'Improve objective Behavior statement.', difficulty: 'High' },
+];
+
+const MOCK_API_RESPONSE_LOGIC = (payload, model) => {
+    const userQuery = payload.contents[0].parts[0].text;
+    
+    if (userQuery.includes("Critique the following active listening responses")) {
+        // Active Listening Critique
+        return { candidates: [{ content: { parts: [{ text: `## The Paraphrase Audit (Score: 92/100)\n\nYour paraphrase, "So you're saying the deadlines and the meeting load are making you feel overwhelmed," is **Excellent**. It successfully reflects the emotion and facts without offering advice. It uses confirming language.\n\n## The Inquiry Audit (Score: 85/100)\n\nYour question is **Good**. A refined version could be: "What needs to shift for you to feel back in control of your schedule and workload?"\n\n### Core Skill Focus\n\nPractice pausing for a full three seconds after the employee speaks. The space is often more powerful than the words.` }] } }] };
+    } else if (userQuery.includes("Audit the Rewritten Response")) {
+        // NEW Active Listening Rewrite Audit
+        const score = Math.floor(Math.random() * 20) + 75; // Score 75-95
+        const feedback = score > 85 ? "Exceptional! Your rewrite incorporated validation and avoided all judgmental language. This is ready for a real conversation." : "Strong attempt, but your response still contained a passive solution. Remember to focus on confirmation only.";
+        return { candidates: [{ content: { parts: [{ text: `## Correction Audit: ${score}/100\n\n**Analysis:** ${feedback}\n\n### Final Score:\n\nYour corrected response achieved a score of ${score}/100, demonstrating strong self-correction ability.` }] } }] };
+    } else if (userQuery.includes("Analyze the following role-play dialogue")) {
+         // Role-Play Audit (Critique)
+         return { candidates: [{ content: { parts: [{ text: `## Overall Score: 88/100\n\n**Assessment:** Your manager established a clear, non-judgmental tone early in the conversation.\n\n### SBI Effectiveness (Score: 92/100)\n\n**Assessment:** Excellent adherence to objective facts.\n\n### Active Listening & Empathy (Score: 78/100)\n\n**Assessment:** You missed an opportunity to validate Alex's defensive statement. \n\n### Resolution Drive (Score: 88/100)\n\n**Assessment:** Clear action plan established.\n\n### Next Practice Point\n\nFocus on **Deep Validation**. When Alex shows emotion, practice saying, "I hear that you feel that this situation is unfair. Tell me more about what specifically made it feel unfair." This builds a deeper connection before moving to problem-solving.` }] } }] };
+    } else if (userQuery.includes("Critique and refine this SBI feedback draft")) {
+         // SBI Critique and Refinement
+         return { candidates: [{ content: { parts: [{ text: `The draft is strong! **Strength:** The Behavior is highly specific—"interrupted Sarah three times." **Area for Improvement:** The Impact could be tied more directly to the business. \n\n**Refined Feedback**: S: During the Q3 Review meeting with the leadership team last Friday. B: You interrupted Sarah three times while she was presenting her analysis on customer churn data. I: This caused Sarah to lose her train of thought and delayed our ability to fully analyze critical churn data before the board meeting.` }] } }] };
+    } else if (userQuery.includes("The best reply to Alex's last defense")) {
+         // AI Follow-Up Coaching
+         return { candidates: [{ content: { parts: [{ text: "The best reply to Alex's last defense ('It's not fair') would have been a **paraphrase/validation statement** before asking a follow-up question. For example: 'I hear that you feel a sense of unfairness about the situation. Can you tell me what specific resources you felt were missing?' This validates the emotion without agreeing with the premise." }] } }] };
+    } else if (userQuery.includes("Generate a 1-sentence Priming Nudge")) {
+         // Psychological Priming Nudge
+         return { candidates: [{ content: { parts: [{ text: "High stress compromises neutrality. Your chosen mindset is key; start by taking three deep breaths before speaking to Alex. Prioritize listening over planning your reply." }] } }] };
+    } else if (userQuery.includes("Perform a Reflective Analysis")) {
+        // Post-Critique Reflective Analysis
+         return { candidates: [{ content: { parts: [{ text: `## Reflection Audit: High Insight\n\n**Analysis:** Your reflection accurately pinpoints 'missing the validation phase' as the core problem. Your stated plan to 'use a reflective pause' directly addresses the Next Practice Point.\n\n**Confidence Rating:** Excellent (95%). This shows strong capacity for self-correction. Focus on immediate practice to cement this learning.` }] } }] };
+    } else if (userQuery.includes("Base Scenario:")) {
+        // Dynamic Scenario Generation
+        return { candidates: [{ content: { parts: [{ text: 
+            `## Generated Scenario\n\n### Title: The High-Stakes Financial Audit\n\n### Description: A high-potential team member is consistently missing deadlines due to distraction, and is currently under pressure from a difficult family situation. This adaptation forces you to handle **personal boundaries and deflection** simultaneously.\n\n### Persona: The Emotional Reactor (Highly Resistant)` 
+        }] } }] };
     }
+    
+    const defaultResponse = userQuery.includes("Alex") ? 
+        "I am finding this conversation difficult, manager. I need more empathy before I can commit to anything." : 
+        "I'm not sure how to respond to that. Can you focus on the facts?";
+
+    return { candidates: [{ content: { parts: [{ text: defaultResponse }] } }] };
+};
+
+const useAppServices = () => ({
+  commitmentData: { active_commitments: [], history: [], reflection_journal: '' },
+  updateCommitmentData: async (data) => new Promise(resolve => setTimeout(resolve, 300)),
+  planningData: { okrs: [], vision: '', mission: '' },
+  navigate: (view, params) => console.log(`Navigating to ${view} with params:`, params),
+  callSecureGeminiAPI: async (payload) => {
+    if (!payload.model) {
+        payload.model = GEMINI_MODEL;
+    }
+    return MOCK_API_RESPONSE_LOGIC(payload, GEMINI_MODEL);
   },
   hasGeminiKey: () => true,
-  GEMINI_MODEL: 'gemini-2.5-flash-preview-09-2025',
+  GEMINI_MODEL: GEMINI_MODEL,
 });
+const { useAppServices: useAppServicesOriginal, ...restServices } = { useAppServices: useAppServices };
 
-import { 
-    Home, Zap, HeartPulse, BookOpen, Users, Settings, Briefcase, TrendingUp, Target, Mic, ArrowLeft, CheckCircle, Lightbulb, Clock, PlusCircle, X, BarChart3, MessageSquare, AlertTriangle, ShieldCheck, CornerRightUp, Play, Info, Eye, Cpu} from 'lucide-react';
 
-// --- COLOR PALETTE (High-contrast + brand accents, aligned with BusinessReadings) ---
+/* =========================================================
+   HIGH-CONTRAST PALETTE
+========================================================= */
 const COLORS = {
   BG: '#FFFFFF',
   SURFACE: '#FFFFFF',
@@ -111,7 +91,15 @@ const COLORS = {
   LIGHT_GRAY: '#F9FAFB'
 };
 
-// --- Custom/Placeholder UI Components (Replicated for self-contained file) ---
+const COMPLEXITY_MAP = {
+  Low:    { label: 'Novice',       hex: COLORS.GREEN, icon: CheckCircle },
+  Medium: { label: 'Intermediate', hex: COLORS.AMBER, icon: AlertTriangle },
+  High:   { label: 'Expert',       hex: COLORS.RED,   icon: Target },
+};
+
+/* =========================================================
+   UI Components (CLEANED)
+========================================================= */
 const Button = ({ children, onClick, disabled = false, variant = 'primary', className = '', ...rest }) => {
     let baseStyle = "px-6 py-3 rounded-xl font-semibold transition-all shadow-xl focus:outline-none focus:ring-4 text-white";
 
@@ -173,35 +161,28 @@ const Tooltip = ({ content, children }) => {
         >
             {children}
             {isVisible && (
-                <div className="absolute z-10 w-64 p-3 -mt-2 -ml-32 text-xs text-white bg-[#002E47] rounded-lg shadow-lg bottom-full left-1/2 transform translate-x-1/2">
+                <div className="absolute z-10 w-64 p-3 -mt-2 -ml-32 text-xs text-white bg-[#0B3B5B] rounded-lg shadow-lg bottom-full left-1/2 transform translate-x-1/2">
                     {content}
-                    <div className="absolute left-1/2 transform -translate-x-1/2 bottom-[-4px] w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-[#002E47]"></div>
+                    <div className="absolute left-1/2 transform -translate-x-1/2 bottom-[-4px] w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-[#0B3B5B]"></div>
                 </div>
             )}
         </div>
     );
 };
 
-// Simple Markdown to HTML converter (Mocking external utility for this file)
 const mdToHtml = async (markdown) => {
-  // Simple replacement logic for common markdown elements.
   let html = markdown;
   
-  // Headers (H3, H2, H1)
   html = html.replace(/^### (.*$)/gim, '<h3 class="text-lg font-extrabold text-[#47A88D] mt-4 mb-2">$1</h3>');
-  html = html.replace(/^## (.*$)/gim, '<h2 class="text-2xl font-bold text-[#002E47] border-b pb-1 mb-3 mt-6">$1</h2>');
+  html = html.replace(/^## (.*$)/gim, '<h2 class="text-2xl font-bold text-[#0B3B5B] border-b pb-1 mb-3 mt-6">$1</h2>');
   html = html.replace(/^# (.*$)/gim, '<h1 class="text-3xl font-extrabold text-[#E04E1B] mb-4">$1</h1>');
 
-  // Bold
   html = html.replace(/\*\*(.*)\*\*/gim, '<strong>$1</strong>');
   
-  // Lists
   html = html.replace(/^\* (.*$)/gim, '<li class="text-sm text-gray-700">$1</li>');
   html = html.replace(/(\n<li.*<\/li>)+/gim, '<ul class="list-disc list-inside space-y-1 mb-4">$1</ul>');
 
-  // Paragraphs (must be last to wrap non-list/non-header text)
   html = html.replace(/([^<]+)/gim, (match) => {
-      // Don't wrap if it contains HTML or is just whitespace
       if (match.trim() === '' || /<|>/g.test(match)) return match;
       return `<p class="text-gray-700 text-sm mb-4">${match.trim()}</p>`;
   });
@@ -210,14 +191,13 @@ const mdToHtml = async (markdown) => {
 };
 
 
-// --- CHAT MESSAGE COMPONENT ---
 const Message = ({ sender, text, isAI }) => (
   <div className={`flex mb-4 ${isAI ? 'justify-start' : 'justify-end'}`}>
     <div
       className={`p-4 max-w-lg rounded-xl shadow-md ${
         isAI
-          ? 'bg-[#002E47]/10 text-[#002E47] rounded-tl-none border border-[#002E47]/20'
-          : 'bg-[#47A88D] text-white rounded-tr-none'
+          ? 'bg-[#0B3B5B]/10 text-[#0B3B5B] rounded-tl-none border border-[#0B3B5B]/20'
+          : 'bg-[#219E8B] text-white rounded-tr-none'
       }`}
     >
       <strong className="font-bold text-sm">{sender}:</strong>
@@ -227,11 +207,11 @@ const Message = ({ sender, text, isAI }) => (
 );
 
 /* =========================================================
-   NEW FEATURE 2: AI Follow-Up Coaching Component
+   COACHING LAB VIEWS
 ========================================================= */
 
 const FollowUpCoach = ({ history, setView }) => {
-    const { callSecureGeminiAPI, hasGeminiKey, GEMINI_MODEL } = useAppServices();
+    const { callSecureGeminiAPI, hasGeminiKey, GEMINI_MODEL } = useAppServicesOriginal();
     const [followUpHistory, setFollowUpHistory] = useState([]);
     const [inputText, setInputText] = useState('');
     const [isGenerating, setIsGenerating] = useState(false);
@@ -255,7 +235,7 @@ const FollowUpCoach = ({ history, setView }) => {
         setInputText('');
         setIsGenerating(true);
 
-        const systemPrompt = `You are a post-session AI Executive Coach. Your focus is analyzing the provided conversation history and answering the user's specific follow-up questions about their performance. Do not role-play. Keep responses brief, direct, and actionable, referencing the provided history.
+        const systemInstruction = `You are a post-session AI Executive Coach. Your focus is analyzing the provided conversation history and answering the user's specific follow-up questions about their performance. Do not role-play. Keep responses brief, direct, and actionable, referencing the provided history.
 
 Conversation History:
 ---
@@ -270,7 +250,7 @@ ${fullConversation}
         try {
             const payload = {
                 contents: currentChat,
-                systemInstruction: { parts: [{ text: systemPrompt }] },
+                systemInstruction: { parts: [{ text: systemInstruction }] },
                 model: GEMINI_MODEL,
             };
 
@@ -287,7 +267,7 @@ ${fullConversation}
     };
 
     return (
-        <Card title="AI Follow-Up Coaching (Deep Reflection)" icon={Lightbulb} className='mt-8 bg-[#002E47]/10 border-2 border-[#002E47]/20'>
+        <Card title="AI Follow-Up Coaching (Deep Reflection)" icon={Lightbulb} className='mt-8 bg-[#0B3B5B]/10 border-2 border-[#0B3B5B]/20'>
             <p className='text-sm text-gray-700 mb-4'>Ask the AI Coach for specific alternatives, missed opportunities, or clarification on your score.</p>
             
             <div ref={followUpRef} className='h-64 overflow-y-auto p-3 bg-white rounded-xl border border-gray-300 mb-3'>
@@ -304,7 +284,7 @@ ${fullConversation}
                 )}
                 {isGenerating && (
                     <div className='flex justify-start mb-4'>
-                        <div className='p-4 max-w-lg rounded-xl bg-[#002E47]/10 text-gray-500 rounded-tl-none'>
+                        <div className='p-4 max-w-lg rounded-xl bg-[#0B3B5B]/10 text-gray-500 rounded-tl-none'>
                             <div className="animate-pulse text-sm">Coach is analyzing...</div>
                         </div>
                     </div>
@@ -318,52 +298,62 @@ ${fullConversation}
                     onChange={(e) => setInputText(e.target.value)}
                     onKeyDown={(e) => e.key === 'Enter' && sendFollowUpQuery()}
                     placeholder="Ask your coach for feedback..."
-                    className="flex-1 p-3 border border-gray-300 rounded-xl focus:ring-[#47A88D] focus:border-[#47A88D]"
+                    className="flex-1 p-3 border border-gray-300 rounded-xl focus:ring-[#219E8B] focus:border-[#219E8B]"
                     disabled={isGenerating || !hasGeminiKey()}
                 />
                 <Button onClick={sendFollowUpQuery} disabled={!inputText.trim() || isGenerating || !hasGeminiKey()} className='px-4 py-3'>
-                    Send
+                    <Send className='w-5 h-5'/>
                 </Button>
             </div>
         </Card>
     );
 };
 
-/* =========================================================
-   NEW FEATURE 2: Role-Play Critique View (Heatmap & Planner)
-========================================================= */
-
 const RolePlayCritique = ({ history, setView, preparedSBI, scenario, difficultyLevel }) => {
-const { callSecureGeminiAPI, hasGeminiKey, navigate, updateCommitmentData, GEMINI_MODEL } = useAppServices();
+const { callSecureGeminiAPI, hasGeminiKey, navigate, updateCommitmentData, GEMINI_MODEL } = useAppServicesOriginal();
 const [critique, setCritique] = useState('');
 const [critiqueHtml, setCritiqueHtml] = useState('');
 const [isGenerating, setIsGenerating] = useState(true);
 const [scoreBreakdown, setScoreBreakdown] = useState(null);
 const [keyTakeaway, setKeyTakeaway] = useState(null);
 
-// NEW FEATURE 2: Reflection Audit State
 const [userReflection, setUserReflection] = useState('');
 const [auditResult, setAuditResult] = useState(null);
 const [isAuditing, setIsAuditing] = useState(false);
 
 
-// Utility to extract score from AI markdown response
 const extractScore = (critiqueText, auditName) => {
     const regex = new RegExp(`${auditName}.*?\\(Score:\\s*(\\d+)/100\\)`, 'i');
     const match = critiqueText.match(regex);
     return match ? parseInt(match[1], 10) : null;
 };
 
-// Utility to extract key takeaway/action item
 const extractKeyTakeaway = (critiqueText) => {
     const regex = /### Next Practice Point\s*\n\n(.*?)(?:\n\n|\Z)/si;
     const match = critiqueText.match(regex);
     if (match && match[1]) {
-        // Clean up markdown bolding and whitespace
         return match[1].trim().replace(/\*\*/g, '').replace(/(\r\n|\n|\r)/gm, " ");
     }
     return "Refine empathy and focus on measurable outcomes in your next practice session.";
 };
+
+// FIX: Save session data to mock history for PracticeLogView
+useEffect(() => {
+    if (scoreBreakdown?.overall) {
+        const sessionData = {
+            id: String(Date.now()),
+            title: scenario.title,
+            date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+            score: scoreBreakdown.overall,
+            takeaway: keyTakeaway,
+            difficulty: difficultyLevel < 25 ? 'Low' : difficultyLevel < 75 ? 'Medium' : 'High',
+        };
+        // Mock saving the session data
+        MOCK_PRACTICE_SESSIONS.push(sessionData);
+    }
+// eslint-disable-next-line react-hooks/exhaustive-deps
+}, [scoreBreakdown?.overall]); 
+
 
 useEffect(() => {
     (async () => {
@@ -384,10 +374,10 @@ useEffect(() => {
             .map(msg => `${msg.sender}: ${msg.text}`)
             .join('\n');
 
-        const systemPrompt = `You are a Senior Executive Coaching Auditor. Analyze the following conversation between a Manager ('You') and their report ('Alex'). Provide a clear score (out of 100) and structured feedback in Markdown, focusing on professional leadership skills.
+        const systemInstruction = `You are a Senior Executive Coaching Auditor. Analyze the following conversation between a Manager ('You') and their report ('Alex'). Provide a clear score (out of 100) and structured feedback in Markdown, focusing on professional leadership skills.
             
             **Critique Structure:**
-            1.  **Overall Score (## 95/100):** Provide a score out of 100 based on the manager's performance.
+            1.  **Overall Score (## Overall Score: X/100):** Provide a score out of 100 based on the manager's performance.
             2.  **SBI Effectiveness (### SBI Effectiveness (Score: X/100)):** Did the manager effectively stick to objective facts (Situation/Behavior) and articulate the impact (Impact)? Provide a score.
             3.  **Active Listening & Empathy (### Active Listening & Empathy (Score: Y/100)):** Did the manager use paraphrasing, open-ended questions, or validate Alex's emotions? Provide a score.
             4.  **Resolution Drive (### Resolution Drive (Score: Z/100)):** Did the manager guide the conversation toward a measurable commitment or next step? Provide a score.
@@ -398,7 +388,8 @@ useEffect(() => {
         try {
             const payload = {
                 contents: [{ role: "user", parts: [{ text: userQuery }] }],
-                systemInstruction: { parts: [{ text: systemPrompt }] },
+                systemInstruction: { parts: [{ text: systemInstruction }] },
+                model: GEMINI_MODEL,
             };
 
             const result = await callSecureGeminiAPI(payload);
@@ -435,20 +426,18 @@ useEffect(() => {
     }
 }, [critique]);
 
-// Feature 3: Create Commitment Handler
 const handleCreateCommitment = async () => {
     if (!keyTakeaway || !updateCommitmentData) return;
     
-    // Use the Key Takeaway as the basis for a new daily commitment
     const commitmentText = `Practice the skill: "${keyTakeaway}" (From ${scenario.title} Role-Play).`;
     
     const newCommitment = { 
-        id: String(Date.now()), // Ensure string ID
+        id: String(Date.now()),
         text: commitmentText, 
         status: 'Pending', 
         isCustom: true, 
         linkedGoal: 'Improve Feedback & Coaching Skills',
-        linkedTier: 'T4', // People Development Tier
+        linkedTier: 'T4',
         targetColleague: 'Self-Directed Practice',
     };
 
@@ -464,19 +453,17 @@ const handleCreateCommitment = async () => {
         }); 
     } catch (e) {
         console.error("Failed to save new commitment:", e);
-        // Fallback UI warning (using console for now)
         console.warn("Commitment saving failed. Check if updateCommitmentData is available.");
     }
 };
 
-// NEW FEATURE 2: Handle Reflection Audit
 const handleReflectionAudit = async () => {
     if (!userReflection.trim() || !critique || isAuditing) return;
 
     setIsAuditing(true);
     setAuditResult(null);
 
-    const systemPrompt = `You are a world-class Executive Coach assessing a user's capacity for self-correction. Analyze the user's reflection against the provided AI critique. Determine if the user's reflection correctly identifies the root cause of their low score (if applicable) and if their proposed next steps align with the 'Next Practice Point' from the critique. The output MUST be a clear Markdown response.`;
+    const systemInstruction = `You are a world-class Executive Coach assessing a user's capacity for self-correction. Analyze the user's reflection against the provided AI critique. Determine if the user's reflection correctly identifies the root cause of their low score (if applicable) and if their proposed next steps align with the 'Next Practice Point' from the critique. The output MUST be a clear Markdown response.`;
 
     const userQuery = `Perform a Reflective Analysis.
     
@@ -497,7 +484,7 @@ const handleReflectionAudit = async () => {
     try {
         const payload = {
             contents: [{ role: "user", parts: [{ text: userQuery }] }],
-            systemInstruction: { parts: [{ text: systemPrompt }] },
+            systemInstruction: { parts: [{ text: systemInstruction }] },
             model: GEMINI_MODEL,
         };
         const result = await callSecureGeminiAPI(payload);
@@ -511,20 +498,19 @@ const handleReflectionAudit = async () => {
     }
 };
 
-
-// Component to render individual score bar for heatmap
 const ScoreBar = ({ title, score }) => {
-    const barColor = score > 85 ? 'bg-green-500' : score > 70 ? 'bg-yellow-500' : 'bg-red-500';
+    const barColor = score > 85 ? COLORS.GREEN : score > 70 ? COLORS.AMBER : COLORS.RED;
+    const barColorClass = score > 85 ? 'text-green-500' : score > 70 ? 'text-yellow-500' : 'text-red-500';
     return (
         <div className='mb-3'>
-            <div className='flex justify-between items-center text-sm font-semibold text-[#002E47]'>
+            <div className='flex justify-between items-center text-sm font-semibold text-[#0B3B5B]'>
                 <span>{title}</span>
-                <span className={`text-lg font-extrabold ${barColor.replace('bg-', 'text-')}`}>{score}%</span>
+                <span className={`text-lg font-extrabold ${barColorClass}`}>{score}%</span>
             </div>
             <div className="w-full bg-gray-200 rounded-full h-2">
                 <div 
                     className={`h-2 rounded-full transition-all duration-700`} 
-                    style={{ width: `${score}%`, backgroundColor: barColor.replace('bg-green', '#10B981').replace('bg-yellow', '#F59E0B').replace('bg-red', '#E04E1B') }}
+                    style={{ width: `${score}%`, backgroundColor: barColor }}
                 ></div>
             </div>
         </div>
@@ -533,18 +519,17 @@ const ScoreBar = ({ title, score }) => {
 
 if (isGenerating) {
     return (
-        <Card title="Generating Session Critique..." icon={Zap} className="mt-8 bg-[#47A88D]/10 border-2 border-[#47A88D]">
+        <Card title="Generating Session Critique..." icon={Zap} className="mt-8 bg-[#219E8B]/10 border-2 border-[#219E8B]">
             <div className="flex flex-col items-center justify-center h-40">
-                <div className="animate-spin rounded-full h-10 w-10 border-b-4 border-[#47A88D] mb-4"></div>
-                <p className="text-[#47A88D] font-medium">Analyzing dialogue history and scoring performance...</p>
+                <div className="animate-spin rounded-full h-10 w-10 border-b-4 border-[#219E8B] mb-4"></div>
+                <p className="text-[#219E8B] font-medium">Analyzing dialogue history and scoring performance...</p>
             </div>
         </Card>
     );
 }
 
 const difficultyText = difficultyLevel < 25 ? 'Low (Collaborative)' : difficultyLevel < 75 ? 'Medium (Defensive)' : 'High (Resistant)';
-const difficultyMultiplier = difficultyLevel / 100 + 1; // 1.0x to 2.0x
-// Mock global average based on difficulty, incentivizing higher scores on higher difficulty
+const difficultyMultiplier = difficultyLevel / 100 + 1;
 const globalAverage = Math.round(75 + (difficultyMultiplier * 5)); 
 const benchmarkDifference = (scoreBreakdown?.overall || 0) - globalAverage;
 
@@ -553,27 +538,27 @@ return (
     <div className='space-y-6'>
         <div className='grid lg:grid-cols-4 gap-6'>
             {/* Overall Score Card */}
-            <Card title="Overall Performance" icon={Star} className='lg:col-span-2 bg-[#002E47] text-white'>
+            <Card title="Overall Performance" icon={Star} className='lg:col-span-2' accent="NAVY">
                 <p className='text-sm text-gray-300 mb-2'>Final Audit Score</p>
-                <div className={`text-6xl font-extrabold ${scoreBreakdown?.overall > 85 ? 'text-green-400' : 'text-yellow-400'}`}>
+                <div className={`text-6xl font-extrabold ${scoreBreakdown?.overall > 85 ? 'text-green-500' : 'text-yellow-500'}`}>
                     {scoreBreakdown?.overall || '--'} / 100
                 </div>
-                <div className='mt-4 pt-4 border-t border-gray-700'>
-                    <p className='text-sm font-semibold text-gray-300'>Key Takeaway:</p>
-                    <p className='text-sm text-white'>{keyTakeaway || 'Review the full critique.'}</p>
+                <div className='mt-4 pt-4 border-t border-gray-200'>
+                    <p className='text-sm font-semibold text-[#0B3B5B]'>Key Takeaway:</p>
+                    <p className='text-sm text-gray-700'>{keyTakeaway || 'Review the full critique.'}</p>
                 </div>
             </Card>
 
-             {/* Feature 1: Adaptive Scenario Tracker */}
-            <Card title="Adaptive Session Metrics" icon={Target} className='lg:col-span-2 bg-[#E04E1B]/10 border-2 border-[#E04E1B]'>
-                <p className='text-sm font-semibold text-[#002E47] mb-2'>Tension Multiplier:</p>
+             {/* Adaptive Scenario Tracker */}
+            <Card title="Adaptive Session Metrics" icon={Target} className='lg:col-span-2' accent="ORANGE">
+                <p className='text-sm font-semibold text-[#0B3B5B] mb-2'>Tension Multiplier:</p>
                 <div className='flex justify-between items-center'>
                     <span className='text-3xl font-extrabold text-[#E04E1B]'>{difficultyMultiplier.toFixed(1)}X</span>
                     <span className='text-sm text-gray-600 font-medium'>({difficultyText})</span>
                 </div>
-                <div className='mt-4 pt-4 border-t border-gray-300'>
-                    <p className='text-sm font-semibold text-[#002E47]'>Difficulty Grade:</p>
-                    <span className='text-xl font-extrabold text-[#47A88D]'>
+                <div className='mt-4 pt-4 border-t border-gray-200'>
+                    <p className='text-sm font-semibold text-[#0B3B5B]'>Difficulty Grade:</p>
+                    <span className='text-xl font-extrabold text-[#219E8B]'>
                         {difficultyLevel < 25 ? 'C - Standard' : difficultyLevel < 75 ? 'B - Challenging' : 'A - Executive Level'}
                     </span>
                 </div>
@@ -584,7 +569,6 @@ return (
         <Card title="Skill Breakdown Heatmap & Benchmarking" icon={BarChart3} className=''>
             {scoreBreakdown?.sbi !== null ? (
                 <>
-                    {/* NEW FEATURE 2: Global Benchmarking */}
                     <div className={`p-3 mb-4 rounded-xl shadow-inner text-center font-semibold border-l-4 ${benchmarkDifference >= 0 ? 'bg-green-100 border-green-500 text-green-700' : 'bg-red-100 border-red-500 text-[#E04E1B]'}`}>
                         <span className='text-lg'>
                             Global Benchmark: {globalAverage}%
@@ -606,14 +590,14 @@ return (
         </Card>
         
         {/* Full Critique and Accountability Actions */}
-        <Card title="AI Coach Full Audit" icon={CheckCircle} className="bg-[#FCFCFA] border-4 border-[#47A88D]">
-            <div className="prose max-w-none prose-h2:text-4xl prose-h2:text-[#E04E1B] prose-h2:font-extrabold prose-h3:text-[#47A88D] prose-p:text-gray-700 prose-ul:space-y-2">
+        <Card title="AI Coach Full Audit" icon={CheckCircle} className="bg-[#FCFCFA] border-4 border-[#219E8B]">
+            <div className="prose max-w-none prose-h2:text-4xl prose-h2:text-[#E04E1B] prose-h2:font-extrabold prose-h3:text-[#219E8B] prose-p:text-gray-700 prose-ul:space-y-2">
                 <div dangerouslySetInnerHTML={{ __html: critiqueHtml }} />
             </div>
             
-            {/* NEW FEATURE 2: Reflective Analysis Section */}
+            {/* Reflective Analysis Section */}
             <div className='mt-8 pt-6 border-t border-gray-200'>
-                <h3 className='text-xl font-bold text-[#002E47] mb-3 flex items-center'><BookOpen className='w-5 h-5 mr-2 text-[#E04E1B]'/> Post-Critique Reflective Analysis</h3>
+                <h3 className='text-xl font-bold text-[#0B3B5B] mb-3 flex items-center'><BookOpen className='w-5 h-5 mr-2 text-[#E04E1B]'/> Post-Critique Reflective Analysis</h3>
                 <p className='text-sm text-gray-700 mb-3'>Write a brief reflection on the critique: **What was your core mistake, and how will you correct it in your next session?**</p>
                 
                 <textarea 
@@ -625,8 +609,8 @@ return (
                 />
                 
                 {auditResult && (
-                    <Card title="Your Reflection Audit" icon={Eye} className='bg-white shadow-lg border-l-4 border-dashed border-[#47A88D]'>
-                        <div className="prose max-w-none prose-h2:text-[#002E47] prose-h3:text-[#47A88D]">
+                    <Card title="Your Reflection Audit" icon={Eye} className='bg-white shadow-lg border-l-4 border-dashed border-[#219E8B]'>
+                        <div className="prose max-w-none prose-h2:text-[#0B3B5B] prose-h3:text-[#219E8B]">
                             <div dangerouslySetInnerHTML={{ __html: auditResult }} />
                         </div>
                     </Card>
@@ -642,39 +626,38 @@ return (
             
             {keyTakeaway && (
                 <div className='mt-8 pt-6 border-t border-gray-200'>
-                    <h3 className='text-xl font-bold text-[#002E47] mb-3 flex items-center'><TrendingUp className='w-5 h-5 mr-2 text-[#47A88D]'/> Practice Commitment Planner</h3>
+                    <h3 className='text-xl font-bold text-[#0B3B5B] mb-3 flex items-center'><TrendingUp className='w-5 h-5 mr-2 text-[#219E8B]'/> Practice Commitment Planner</h3>
                     <p className='text-sm text-gray-700 mb-4'>Convert your key takeaway into a daily practice habit to reinforce learning immediately.</p>
-                    <Button onClick={handleCreateCommitment} className='w-full bg-[#349881] hover:bg-[#47A88D]'>
+                    <Button onClick={handleCreateCommitment} className='w-full bg-[#349881] hover:bg-[#219E8B]'>
                         <PlusCircle className='w-5 h-5 mr-2'/> Commit to Daily Practice: "{keyTakeaway.substring(0, 40)}..."
                     </Button>
                 </div>
             )}
             
-            <Button onClick={() => setView('coaching-lab-home')} variant='outline' className='mt-8 w-full'>
+            <Button onClick={() => navigate('coaching-lab-home')} variant='outline' className='mt-8 w-full'>
                 Return to Coaching Lab Home
             </Button>
         </Card>
         
-        {/* NEW FEATURE 2: AI Follow-Up Coaching */}
-        <FollowUpCoach history={history} setView={setView} />
+        <FollowUpCoach history={history} setView={navigate} />
     </div>
 );
 
 
 };
 
-// --- ROLE PLAY SIMULATOR VIEW ---
+// --- ROLE PLAY SIMULATOR VIEW (No changes needed) ---
 const RolePlayView = ({ scenario, setCoachingLabView, preparedSBI, difficultyLevel }) => {
-    const { db, userId, appId, callSecureGeminiAPI, hasGeminiKey } = useAppServices();
+    const { navigate, callSecureGeminiAPI, hasGeminiKey, GEMINI_MODEL } = useAppServicesOriginal();
 
     const [chatHistory, setChatHistory] = useState([]);
     const [inputText, setInputText] = useState('');
     const [isGenerating, setIsGenerating] = useState(false);
     const [conversationStarted, setConversationStarted] = useState(false);
     const [sessionEnded, setSessionEnded] = useState(false);
-    const [sbiDelivered, setSbiDelivered] = useState(false); // Track SBI Delivery
-    const [confidenceTip, setConfidenceTip] = useState(null); // Confidence Builder Tip
-    const [isPrimingModalVisible, setIsPrimingModalVisible] = useState(true); // New: Priming Modal
+    const [sbiDelivered, setSbiDelivered] = useState(false);
+    const [confidenceTip, setConfidenceTip] = useState(null);
+    const [isPrimingModalVisible, setIsPrimingModalVisible] = useState(true);
     
     // Priming Modal State
     const [stressLevel, setStressLevel] = useState(50);
@@ -683,9 +666,7 @@ const RolePlayView = ({ scenario, setCoachingLabView, preparedSBI, difficultyLev
     const [isPrimingLoading, setIsPrimingLoading] = useState(false);
     
     const chatRef = React.useRef(null);
-    const COACHING_COLLECTION = 'coaching_sessions';
     
-    // Determine the AI's resistance based on difficultyLevel (0-100)
     const resistanceFactor = Math.floor(difficultyLevel / 25); 
 
     useEffect(() => {
@@ -694,7 +675,6 @@ const RolePlayView = ({ scenario, setCoachingLabView, preparedSBI, difficultyLev
         }
     }, [chatHistory]);
     
-    // NEW FEATURE: Fetch Confidence Builder Tip on mount (runs after priming is done)
     useEffect(() => {
         if (hasGeminiKey() && scenario && !isPrimingModalVisible) {
             const fetchTip = async () => {
@@ -705,6 +685,7 @@ const RolePlayView = ({ scenario, setCoachingLabView, preparedSBI, difficultyLev
                     const payload = {
                         contents: [{ role: "user", parts: [{ text: userQuery }] }],
                         systemInstruction: { parts: [{ text: "You are an AI coach. Provide only the concise, actionable tip in plain text." }] },
+                        model: GEMINI_MODEL,
                     };
                     const result = await callSecureGeminiAPI(payload);
                     const tipText = result?.candidates?.[0]?.content?.parts?.[0]?.text;
@@ -715,20 +696,11 @@ const RolePlayView = ({ scenario, setCoachingLabView, preparedSBI, difficultyLev
             };
             fetchTip();
         }
-    }, [scenario, difficultyLevel, hasGeminiKey, isPrimingModalVisible]);
+    }, [scenario, difficultyLevel, hasGeminiKey, isPrimingModalVisible, callSecureGeminiAPI, GEMINI_MODEL]);
 
-    const AI_PERSONA = scenario.persona.split(' ')[1]; 
+    const AI_PERSONA = scenario.persona.split(' ').slice(1).join(' ');
 
     const handleSaveSessionAndCritique = async (history) => {
-        if (db && userId) {
-            try {
-                // Mock Firestore save
-                console.log("Mock saving coaching session to user history.");
-            } catch (e) {
-                console.error("Error saving coaching session:", e);
-            }
-        }
-        
         setSessionEnded(true);
     }
 
@@ -748,7 +720,7 @@ const RolePlayView = ({ scenario, setCoachingLabView, preparedSBI, difficultyLev
              difficultyInstruction = "Be collaborative and receptive to feedback.";
         }
 
-        const systemPrompt = `You are a direct report named 'Alex'. You embody the persona: ${scenario.persona}. Your current situation is: "${scenario.description}". The user is your manager. ${sbiPrompt}
+        const systemInstruction = `You are a direct report named 'Alex'. You embody the persona: ${scenario.persona}. Your current situation is: "${scenario.description}". The user is your manager. ${sbiPrompt}
         
         **Difficulty Instruction:** ${difficultyInstruction}
 
@@ -774,7 +746,8 @@ const RolePlayView = ({ scenario, setCoachingLabView, preparedSBI, difficultyLev
         try {
             const payload = {
                 contents: currentHistory,
-                systemInstruction: { parts: [{ text: systemPrompt }] },
+                systemInstruction: { parts: [{ text: systemInstruction }] },
+                model: GEMINI_MODEL,
             };
 
             const result = await callSecureGeminiAPI(payload);
@@ -801,7 +774,6 @@ const RolePlayView = ({ scenario, setCoachingLabView, preparedSBI, difficultyLev
             setConversationStarted(true);
         }
         
-        // NEW FEATURE: Check if prepared SBI was delivered (simple heuristic)
         if (preparedSBI && !sbiDelivered) {
              const sbiMatch = preparedSBI.split('.').some(part => newUserMessage.text.includes(part.trim().substring(0, 10)));
              if (sbiMatch) {
@@ -815,7 +787,7 @@ const RolePlayView = ({ scenario, setCoachingLabView, preparedSBI, difficultyLev
     useEffect(() => {
         if (!conversationStarted && !sessionEnded && !isPrimingModalVisible) {
             setChatHistory([
-                { sender: 'System', text: `You are meeting with Alex (The ${AI_PERSONA}) in the conference room. Alex looks visibly annoyed/distracted. Start the conversation with your opening statement.`, isAI: true, system: true }
+                { sender: 'System', text: `You are meeting with Alex (The ${AI_PERSONA}). Alex looks visibly annoyed/distracted. Start the conversation with your opening statement.`, isAI: true, system: true }
             ]);
             setConversationStarted(true);
         }
@@ -830,6 +802,7 @@ const RolePlayView = ({ scenario, setCoachingLabView, preparedSBI, difficultyLev
             const payload = {
                 contents: [{ role: "user", parts: [{ text: userQuery }] }],
                 systemInstruction: { parts: [{ text: "You are an AI coach. Provide only the concise, actionable nudge in plain text." }] },
+                model: GEMINI_MODEL,
             };
             const result = await callSecureGeminiAPI(payload);
             const nudgeText = result?.candidates?.[0]?.content?.parts?.[0]?.text;
@@ -838,14 +811,13 @@ const RolePlayView = ({ scenario, setCoachingLabView, preparedSBI, difficultyLev
             setMindsetNudge("Error: Check API connection. Defaulting to Mindset focus.");
         } finally {
             setIsPrimingLoading(false);
-            setIsPrimingModalVisible(false); // Close modal and start simulation
+            setIsPrimingModalVisible(false);
         }
     };
     
-    // NEW FEATURE 1: Psychological Priming Check-In Modal
     if (isPrimingModalVisible) {
         return (
-            <div className="fixed inset-0 bg-[#002E47]/90 z-50 flex items-center justify-center p-4">
+            <div className="fixed inset-0 bg-[#0B3B5B]/90 z-50 flex items-center justify-center p-4">
                 <div className="bg-[#FCFCFA] rounded-3xl shadow-2xl w-full max-w-lg p-8">
                     <h2 className="text-2xl font-extrabold text-[#E04E1B] mb-4 flex items-center">
                         <HeartPulse className="w-6 h-6 mr-3" /> Psychological Priming Check
@@ -853,7 +825,7 @@ const RolePlayView = ({ scenario, setCoachingLabView, preparedSBI, difficultyLev
                     <p className='text-gray-700 mb-6'>Manage your internal state before engaging. This minimizes emotional hijacking and maximizes skill transfer.</p>
 
                     <div className='mb-6'>
-                        <label className="block text-sm font-medium text-[#002E47] mb-1">1. Current Stress/Anxiety Level ({stressLevel}%)</label>
+                        <label className="block text-sm font-medium text-[#0B3B5B] mb-1">1. Current Stress/Anxiety Level ({stressLevel}%)</label>
                         <input 
                             type="range" 
                             min="0" 
@@ -861,13 +833,13 @@ const RolePlayView = ({ scenario, setCoachingLabView, preparedSBI, difficultyLev
                             step="1"
                             value={stressLevel} 
                             onChange={(e) => setStressLevel(parseInt(e.target.value))}
-                            className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer range-lg"
+                            className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer range-lg accent-[#E04E1B]"
                         />
                         <p className='text-xs text-gray-500 mt-1 flex justify-between'><span>Low/Calm</span><span>High/Anxious</span></p>
                     </div>
 
                     <div className='mb-6'>
-                        <label className="block text-sm font-medium text-[#002E47] mb-1">2. Intentional Mindset</label>
+                        <label className="block text-sm font-medium text-[#0B3B5B] mb-1">2. Intentional Mindset</label>
                         <select 
                             value={intentionalMindset} 
                             onChange={(e) => setIntentionalMindset(e.target.value)}
@@ -881,8 +853,8 @@ const RolePlayView = ({ scenario, setCoachingLabView, preparedSBI, difficultyLev
                     </div>
                     
                     {mindsetNudge && (
-                         <div className='p-3 my-4 bg-[#47A88D]/10 rounded-xl text-sm font-medium border border-[#47A88D]'>
-                            <Lightbulb className='w-4 h-4 inline mr-2 text-[#47A88D]'/> **Mindset Nudge:** {mindsetNudge}
+                         <div className='p-3 my-4 bg-[#219E8B]/10 rounded-xl text-sm font-medium border border-[#219E8B]'>
+                            <Lightbulb className='w-4 h-4 inline mr-2 text-[#219E8B]'/> **Mindset Nudge:** {mindsetNudge}
                         </div>
                     )}
 
@@ -894,14 +866,19 @@ const RolePlayView = ({ scenario, setCoachingLabView, preparedSBI, difficultyLev
             </div>
         );
     }
-    // End Priming Modal
     
 
     if (sessionEnded) {
         return (
             <div className='p-8'>
-                <h1 className="text-3xl font-extrabold text-[#002E47] mb-4">Session Complete: Audit Results</h1>
-                <RolePlayCritique history={chatHistory} setView={setCoachingLabView} preparedSBI={preparedSBI} scenario={scenario} difficultyLevel={difficultyLevel} />
+                <h1 className="text-3xl font-extrabold text-[#0B3B5B] mb-4">Session Complete: Audit Results</h1>
+                <RolePlayCritique 
+                    history={chatHistory} 
+                    setView={setCoachingLabView} 
+                    preparedSBI={preparedSBI} 
+                    scenario={scenario} 
+                    difficultyLevel={difficultyLevel} 
+                />
             </div>
         );
     }
@@ -909,7 +886,7 @@ const RolePlayView = ({ scenario, setCoachingLabView, preparedSBI, difficultyLev
 
     return (
         <div className="p-8">
-            <h1 className="text-3xl font-extrabold text-[#002E47] mb-4">Role-Play Simulator: {scenario.title}</h1>
+            <h1 className="text-3xl font-extrabold text-[#0B3B5B] mb-4">Role-Play Simulator: {scenario.title}</h1>
             <p className="text-lg text-gray-600 mb-6 max-w-3xl">Practice your conversation with Alex, who is simulating **{scenario.persona}** behavior. Focus on using empathy and clear SBI feedback.</p>
             <Button onClick={() => handleSaveSessionAndCritique(chatHistory)} variant="secondary" className="mb-8 bg-[#E04E1B] border-red-500 hover:bg-red-700">
                 <AlertTriangle className="w-5 h-5 mr-2" /> End Session & Get Critique
@@ -917,27 +894,25 @@ const RolePlayView = ({ scenario, setCoachingLabView, preparedSBI, difficultyLev
             
             <div className='flex flex-col lg:flex-row space-y-6 lg:space-y-0 lg:space-x-6'>
                 <div className='flex-1 bg-[#FCFCFA] border border-gray-300 rounded-2xl shadow-lg flex flex-col h-[500px]'>
-                    {/* NEW FEATURE: Confidence Builder Tip */}
+                    
                     {confidenceTip && !isGenerating && chatHistory.length < 2 && (
-                        <div className="p-3 bg-[#47A88D]/10 text-sm text-[#002E47] border-b border-[#47A88D]/30 font-medium">
-                            <Lightbulb className='w-4 h-4 inline mr-2 text-[#47A88D]'/> **Pre-Session Nudge:** {confidenceTip}
+                        <div className="p-3 bg-[#219E8B]/10 text-sm text-[#0B3B5B] border-b border-[#219E8B]/30 font-medium">
+                            <Lightbulb className='w-4 h-4 inline mr-2 text-[#219E8B]'/> **Pre-Session Nudge:** {confidenceTip}
                         </div>
                     )}
                     
                     <div ref={chatRef} className='flex-1 overflow-y-auto p-4'>
                         {chatHistory.map((msg, index) => (
-                            // Only render non-system messages in chat box (system messages are for context)
                             !msg.system && <Message key={index} sender={msg.sender} text={msg.text} isAI={msg.isAI} />
                         ))}
-                         {/* Display System message once */}
-                        {chatHistory.find(msg => msg.system) && (
-                            <div className="text-sm text-[#002E47] bg-[#47A88D]/10 p-3 rounded-lg border border-[#47A88D]/20 mb-4">
+                         {chatHistory.find(msg => msg.system) && (
+                            <div className="text-sm text-[#0B3B5B] bg-[#219E8B]/10 p-3 rounded-lg border border-[#219E8B]/20 mb-4">
                                 {chatHistory.find(msg => msg.system)?.text}
                             </div>
                         )}
                         {isGenerating && (
                             <div className='flex justify-start mb-4'>
-                                <div className='p-4 max-w-lg rounded-xl bg-[#002E47]/10 text-gray-500 rounded-tl-none'>
+                                <div className='p-4 max-w-lg rounded-xl bg-[#0B3B5B]/10 text-gray-500 rounded-tl-none'>
                                     <div className="animate-pulse text-sm">Alex is typing...</div>
                                 </div>
                             </div>
@@ -951,20 +926,19 @@ const RolePlayView = ({ scenario, setCoachingLabView, preparedSBI, difficultyLev
                             onChange={(e) => setInputText(e.target.value)}
                             onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
                             placeholder="Type your response to Alex..."
-                            className="flex-1 p-3 border border-gray-300 rounded-xl focus:ring-[#47A88D] focus:border-[#47A88D]"
+                            className="flex-1 p-3 border border-gray-300 rounded-xl focus:ring-[#219E8B] focus:border-[#219E8B]"
                             disabled={isGenerating || !hasGeminiKey()}
                         />
                         <Button onClick={handleSendMessage} disabled={!inputText.trim() || isGenerating || !hasGeminiKey()} className='px-4 py-3'>
-                            {isGenerating ? '...' : <MessageSquare className='w-5 h-5' />}
+                            {isGenerating ? '...' : <Send className='w-5 h-5' />}
                         </Button>
                     </div>
                 </div>
 
                 <div className='lg:w-1/3'>
-                    <Card title={`Alex: The ${AI_PERSONA}`} icon={Users} className='h-full bg-[#002E47]/10 border-2 border-[#002E47]/20'>
-                        {/* NEW FEATURE: Conversation Turn Tracker */}
+                    <Card title={`Alex: The ${scenario.persona.split(' ').slice(1).join(' ')}`} icon={Users} className='h-full bg-[#0B3B5B]/10 border-2 border-[#0B3B5B]/20'>
                         <div className='p-3 bg-white rounded-lg shadow-inner mb-4 border border-gray-200'>
-                            <h4 className='font-bold text-[#002E47] mb-2 flex items-center'><Clock className='w-4 h-4 mr-1'/> Conversation Tracker</h4>
+                            <h4 className='font-bold text-[#0B3B5B] mb-2 flex items-center'><Clock className='w-4 h-4 mr-1'/> Conversation Tracker</h4>
                             <div className='flex justify-between text-sm font-medium'>
                                 <span>Turn Count:</span>
                                 <span className='font-extrabold text-[#E04E1B]'>{Math.floor(chatHistory.filter(m => !m.system).length / 2)}</span>
@@ -980,12 +954,12 @@ const RolePlayView = ({ scenario, setCoachingLabView, preparedSBI, difficultyLev
                         
                         {preparedSBI && (
                              <div className='mt-4 pt-2 border-t border-gray-300'>
-                                <h4 className='font-bold text-[#47A88D] mb-2 flex items-center'><ShieldCheck className='w-4 h-4 mr-1'/> Prepared SBI Focus:</h4>
-                                <p className='text-xs text-gray-700 italic border border-[#47A88D]/20 p-2 rounded-lg bg-white'>{preparedSBI}</p>
+                                <h4 className='font-bold text-[#219E8B] mb-2 flex items-center'><ShieldCheck className='w-4 h-4 mr-1'/> Prepared SBI Focus:</h4>
+                                <p className='text-xs text-gray-700 italic border border-[#219E8B]/20 p-2 rounded-lg bg-white'>{preparedSBI}</p>
                             </div>
                         )}
 
-                        <h4 className='font-bold text-[#002E47] mt-4 mb-2 border-t pt-2'>Goal Reminder:</h4>
+                        <h4 className='font-bold text-[#0B3B5B] mt-4 mb-2 border-t pt-2'>Goal Reminder:</h4>
                         <ul className='list-disc list-inside text-sm text-gray-700 space-y-1'>
                             <li>Establish clear, objective facts (S&B).</li>
                             <li>Lead with empathy, not accusation.</li>
@@ -1001,41 +975,203 @@ const RolePlayView = ({ scenario, setCoachingLabView, preparedSBI, difficultyLev
             </div>
         </div>
     );
-
-
 };
 
-// --- SCENARIO PREP VIEW (Updated for integrated SBI and Critique) ---
+// --- LEAN FEEDBACK PREP VIEW (Dedicated for instant SBI audit) ---
+const LeanFeedbackPrepView = ({ setCoachingLabView, setPreparedSBI }) => {
+    const [situation, setSituation] = useState('');
+    const [behavior, setBehavior] = useState('');
+    const [impact, setImpact] = useState('');
+
+    const [isGenerating, setIsGenerating] = useState(false);
+    const [critique, setCritique] = useState(null);
+    const [critiqueHtml, setCritiqueHtml] = useState('');
+    const [refinedFeedback, setRefinedFeedback] = useState(null); 
+    
+    const { callSecureGeminiAPI, hasGeminiKey, GEMINI_MODEL } = useAppServicesOriginal();
+    
+    const canAnalyze = !!situation && !!behavior && !!impact && hasGeminiKey();
+
+    useEffect(() => {
+        if (!critique) { setCritiqueHtml(''); setRefinedFeedback(null); return; }
+        (async () => setCritiqueHtml(await mdToHtml(critique)))();
+        
+        const match = critique.match(/\*\*(Refined Feedback|Refined SBI)\*\*:?\s*([^*]+)/i);
+        if (match && match[2]) {
+            const finalRefined = match[2].trim().replace(/\.$/, '');
+            setRefinedFeedback(finalRefined);
+        } else {
+            setRefinedFeedback(null);
+        }
+    }, [critique]);
+
+    const generateCritique = async () => {
+        setIsGenerating(true);
+        setCritique('');
+        setRefinedFeedback(null);
+
+        if (!canAnalyze) return;
+
+        const userFeedback = `S: ${situation}\nB: ${behavior}\nI: ${impact}`;
+        const systemInstruction = "You are an AI Coach specializing in the SBI (Situation, Behavior, Impact) feedback model. Analyze the user's provided feedback draft. First, point out one strength. Second, point out one area for improvement, specifically focusing on ensuring the Behavior is objective and the Impact is linked to business results or team culture. Then, provide the final refined version of the feedback, strictly adhering to the S-B-I format, labeling the final version with **Refined Feedback**.";
+        const userQuery = `Critique and refine this SBI feedback draft for a real-world scenario:\n\n${userFeedback}`;
+
+        try {
+            const payload = {
+            contents: [{ role: "user", parts: [{ text: userQuery }] }],
+            systemInstruction: { parts: [{ text: systemInstruction }] },
+            model: GEMINI_MODEL,
+            };
+
+            const result = await callSecureGeminiAPI(payload);
+            const candidate = result?.candidates?.[0];
+
+            if (candidate && candidate.content?.parts?.[0]?.text) {
+                setCritique(candidate.content.parts[0].text);
+            } else {
+                setCritique("Could not generate critique. The model may have blocked the request.");
+            }
+        } catch (error) {
+            console.error("Gemini API Error:", error);
+            setCritique("An error occurred while connecting to the AI coach.");
+        } finally {
+            setIsGenerating(false);
+        }
+    };
+    
+
+    return (
+        <div className="p-8">
+            <h1 className="text-3xl font-extrabold text-[#0B3B5B] mb-4">Lean Feedback Prep: Instant SBI Audit</h1>
+            <p className="text-lg text-gray-600 mb-6 max-w-3xl">Get immediate AI critique and refinement for your real-world feedback drafts. This tool prioritizes speed and clarity for crucial conversations.</p>
+            
+            <Button onClick={() => setCoachingLabView('coaching-lab-home')} variant="outline" className="mb-8">
+                <ArrowLeft className="w-5 h-5 mr-2" /> Back to Coaching Lab
+            </Button>
+            
+            <div className='flex flex-col lg:flex-row space-y-8 lg:space-y-0 lg:space-x-8'>
+                
+                {/* LEFT COLUMN: Input */}
+                <div className='lg:w-1/2 space-y-6'>
+                    <Card title="Draft Your SBI Feedback" icon={Briefcase} accent="TEAL">
+                        <p className="text-gray-700 text-sm mb-4">Input the specific, objective details of the situation you need to address.</p>
+                        
+                        <label className="block text-sm font-medium text-[#0B3B5B] mt-3 mb-1">Situation (S): When/Where did it happen?</label>
+                        <textarea value={situation} onChange={(e) => setSituation(e.target.value)} className="w-full p-2 border border-gray-300 rounded-lg h-14 text-sm" placeholder="e.g., 'During the team stand-up last Tuesday...'"></textarea>
+                        
+                        <label className="block text-sm font-medium text-[#0B3B5B] mt-3 mb-1">Behavior (B): What observable action did they take?</label>
+                        <textarea value={behavior} onChange={(e) => setBehavior(e.target.value)} className="w-full p-2 border border-gray-300 rounded-lg h-14 text-sm" placeholder="e.g., '...you presented the data without checking your sources.'"></textarea>
+                        
+                        <label className="block text-sm font-medium text-[#0B3B5B] mt-3 mb-1">Impact (I): What was the consequence?</label>
+                        <textarea value={impact} onChange={(e) => setImpact(e.target.value)} className="w-full p-2 border border-gray-300 rounded-lg h-14 text-sm" placeholder="e.g., '...which led to incorrect projections being shared with the client.'"></textarea>
+
+                        <Button 
+                            onClick={generateCritique} 
+                            disabled={!canAnalyze || isGenerating} 
+                            className="w-full mt-4 bg-[#219E8B] hover:bg-[#349881]"
+                        >
+                            {isGenerating ? (
+                                <span className="flex items-center justify-center">
+                                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
+                                    Running AI Audit...
+                                </span>
+                            ) : (
+                                <span className="flex items-center justify-center">
+                                    <Cpu className='w-4 h-4 mr-2' /> Get Instant Critique
+                                </span>
+                            )}
+                        </Button>
+                    </Card>
+                    
+                    {refinedFeedback && (
+                        <Card title="Final Refined Feedback" icon={ShieldCheck} accent="ORANGE">
+                            <h4 className='font-bold text-[#0B3B5B] mb-2'>Ready for Use:</h4>
+                            <p className='text-sm text-gray-700 font-medium italic p-3 border border-[#E04E1B] rounded-lg bg-[#FBF6F0]'>
+                                {refinedFeedback}
+                            </p>
+                            <Button 
+                                onClick={() => navigator.clipboard.writeText(refinedFeedback)} 
+                                className="mt-4 w-full bg-[#E04E1B] hover:bg-red-700"
+                            >
+                                <CornerRightUp className='w-4 h-4 mr-2' /> Copy Refined SBI to Clipboard
+                            </Button>
+                        </Card>
+                    )}
+                </div>
+
+                {/* RIGHT COLUMN: AI Feedback Panel */}
+                <div className='lg:w-1/2'>
+                    {critiqueHtml && (
+                        <Card title="AI Critique (SBI Audit)" icon={Eye} className="mt-0 border-4 border-[#0B3B5B]">
+                            <div className="prose max-w-none prose-h2:text-[#0B3B5B] prose-h2:text-xl prose-h2:font-extrabold prose-h3:text-[#219E8B] prose-p:text-gray-700 prose-ul:space-y-2">
+                                <div dangerouslySetInnerHTML={{ __html: critiqueHtml }} />
+                            </div>
+                        </Card>
+                    )}
+                </div>
+            </div>
+        </div>
+    );
+};
+
+// --- PRACTICE LOG VIEW (Integrated Mock Session Data) ---
+const PracticeLogView = ({ setCoachingLabView }) => {
+    const { navigate } = useAppServicesOriginal();
+    
+    return (
+        <div className="p-8">
+            <h1 className="text-3xl font-extrabold text-[#0B3B5B] mb-4">Practice Log: History & Growth</h1>
+            <p className="text-lg text-gray-600 mb-6 max-w-3xl">Review your past Role-Play sessions, see your scores, and track your progress against key takeaways.</p>
+            
+            <Button onClick={() => setCoachingLabView('coaching-lab-home')} variant="outline" className="mb-8">
+                <ArrowLeft className="w-5 h-5 mr-2" /> Back to Coaching Lab
+            </Button>
+            
+            <div className="space-y-4">
+                {MOCK_PRACTICE_SESSIONS.map(session => (
+                    <Card key={session.id} title={`${session.title} (${session.score}%)`} icon={BarChart3} className="border-l-4 border-[#2563EB] flex justify-between items-center" onClick={() => console.log("Navigate to detailed critique for session", session.id)}>
+                        <div>
+                            <p className="text-sm text-gray-700 mb-1">**Date:** {session.date} | **Difficulty:** {session.difficulty}</p>
+                            <p className="text-sm font-semibold text-[#E04E1B] mt-1">Key Insight: {session.takeaway}</p>
+                        </div>
+                        <div className="text-sm text-[#2563EB] font-bold">View Critique &rarr;</div>
+                    </Card>
+                ))}
+                {MOCK_PRACTICE_SESSIONS.length === 0 && <p className="text-gray-500 italic">No completed practice sessions found.</p>}
+            </div>
+        </div>
+    );
+};
+
+
+// --- SCENARIO PREP VIEW (No changes needed) ---
 const ScenarioPreparationView = ({ scenario, setCoachingLabView, setPreparedSBI }) => {
-    // SBI State
     const [situation, setSituation] = useState('');
     const [behavior, setBehavior] = useState('');
     const [impact, setImpact] = useState('');
     const [objective, setObjective] = useState('');
-    const [difficultyLevel, setDifficultyLevel] = useState(50); // Feature 1: Difficulty Slider State
+    const [difficultyLevel, setDifficultyLevel] = useState(50);
 
-    // Critique State
     const [isGenerating, setIsGenerating] = useState(false);
     const [critique, setCritique] = useState(null);
     const [critiqueHtml, setCritiqueHtml] = useState('');
     const [refinedFeedback, setRefinedFeedback] = useState(null); 
     const [currentStep, setCurrentStep] = useState(1);
     
-    const { callSecureGeminiAPI, hasGeminiKey } = useAppServices();
+    const { callSecureGeminiAPI, hasGeminiKey, GEMINI_MODEL, navigate } = useAppServicesOriginal();
 
     const canAnalyze = !!situation && !!behavior && !!impact && hasGeminiKey();
-    const isPrepComplete = !!objective && !!refinedFeedback; // Requires both objective and refined SBI
+    const isPrepComplete = !!objective && !!refinedFeedback;
 
     useEffect(() => {
         if (!critique) { setCritiqueHtml(''); setRefinedFeedback(null); return; }
         (async () => setCritiqueHtml(await mdToHtml(critique)))();
         
-        // Attempt to pull out the refined SBI text for persistence
         const match = critique.match(/\*\*(Refined Feedback|Refined SBI)\*\*:?\s*([^*]+)/i);
         if (match && match[2]) {
             const finalRefined = match[2].trim().replace(/\.$/, '');
             setRefinedFeedback(finalRefined);
-            setPreparedSBI(finalRefined); // Set parent state for role-play persistence
+            setPreparedSBI(finalRefined);
         } else {
             setRefinedFeedback(null);
             setPreparedSBI(null);
@@ -1051,13 +1187,14 @@ const ScenarioPreparationView = ({ scenario, setCoachingLabView, setPreparedSBI 
         if (!canAnalyze) return;
 
         const userFeedback = `S: ${situation}\nB: ${behavior}\nI: ${impact}`;
-        const systemPrompt = "You are an AI Coach specializing in the SBI (Situation, Behavior, Impact) feedback model. Analyze the user's provided feedback draft. First, point out one strength. Second, point out one area for improvement, specifically focusing on ensuring the Behavior is objective and the Impact is linked to business results or team culture. Then, provide the final refined version of the feedback, strictly adhering to the S-B-I format, labeling the final version with **Refined Feedback**.";
+        const systemInstruction = "You are an AI Coach specializing in the SBI (Situation, Behavior, Impact) feedback model. Analyze the user's provided feedback draft. First, point out one strength. Second, point out one area for improvement, specifically focusing on ensuring the Behavior is objective and the Impact is linked to business results or team culture. Then, provide the final refined version of the feedback, strictly adhering to the S-B-I format, labeling the final version with **Refined Feedback**.";
         const userQuery = `Critique and refine this SBI feedback draft for the scenario: ${scenario.title} - ${scenario.description}:\n\n${userFeedback}`;
 
         try {
             const payload = {
             contents: [{ role: "user", parts: [{ text: userQuery }] }],
-            systemInstruction: { parts: [{ text: systemPrompt }] },
+            systemInstruction: { parts: [{ text: systemInstruction }] },
+            model: GEMINI_MODEL,
             };
 
             const result = await callSecureGeminiAPI(payload);
@@ -1065,7 +1202,7 @@ const ScenarioPreparationView = ({ scenario, setCoachingLabView, setPreparedSBI 
 
             if (candidate && candidate.content?.parts?.[0]?.text) {
                 setCritique(candidate.content.parts[0].text);
-                setCurrentStep(3); // Move to review step after critique
+                setCurrentStep(3);
             } else {
                 setCritique("Could not generate critique. The model may have blocked the request.");
             }
@@ -1090,7 +1227,7 @@ const ScenarioPreparationView = ({ scenario, setCoachingLabView, setPreparedSBI 
 
     return (
     <div className="p-8">
-        <h1 className="text-3xl font-extrabold text-[#002E47] mb-4">Prepare for: {scenario.title}</h1>
+        <h1 className="text-3xl font-extrabold text-[#0B3B5B] mb-4">Prepare for: {scenario.title}</h1>
         <p className="text-lg text-gray-600 mb-6 max-w-3xl">Target: Alex, **{scenario.persona}** | Focus: {scenario.description}</p>
         
         <Button onClick={() => setCoachingLabView('scenario-library')} variant="outline" className="mb-8">
@@ -1100,10 +1237,10 @@ const ScenarioPreparationView = ({ scenario, setCoachingLabView, setPreparedSBI 
         <div className='flex flex-col lg:flex-row space-y-8 lg:space-y-0 lg:space-x-8'>
             {/* LEFT COLUMN: Preparation Pipeline */}
             <div className='lg:w-2/3 space-y-6'>
-                {/* Feature 1: Difficulty Slider */}
+                {/* Difficulty Slider */}
                 <Card title="Set Tension Level (Optional)" icon={HeartPulse} className='bg-[#E04E1B]/10 border-4 border-dashed border-[#E04E1B]'>
                     <p className='text-sm text-gray-700 mb-4'>Control the emotional resistance of the AI persona in the simulator. Higher tension requires more empathy and validation skill.</p>
-                    <div className='flex justify-between text-xs font-bold text-[#002E47] mb-1'>
+                    <div className='flex justify-between text-xs font-bold text-[#0B3B5B] mb-1'>
                         <span>Low Tension</span>
                         <span>High Tension</span>
                     </div>
@@ -1114,41 +1251,40 @@ const ScenarioPreparationView = ({ scenario, setCoachingLabView, setPreparedSBI 
                         step="1"
                         value={difficultyLevel} 
                         onChange={(e) => setDifficultyLevel(parseInt(e.target.value))}
-                        className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer range-lg"
-                        style={{ background: `linear-gradient(to right, #47A88D ${difficultyLevel}%, #E04E1B ${difficultyLevel}%)` }}
+                        className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer range-lg accent-[#E04E1B]"
                     />
-                    <div className='text-sm font-semibold text-[#002E47] mt-3'>
+                    <div className='text-sm font-semibold text-[#0B3B5B] mt-3'>
                         Current Difficulty: {difficultyLevel < 25 ? 'Low (Collaborative)' : difficultyLevel < 75 ? 'Medium (Defensive)' : 'High (Resistant)'}
                     </div>
                 </Card>
                 
-                <Card title="Step 1: Define Your Objective" icon={Target} className={currentStep === 1 ? 'border-4 border-dashed border-[#47A88D]' : 'opacity-70'}>
+                <Card title="Step 1: Define Your Objective" icon={Target} className={currentStep === 1 ? 'border-4 border-dashed border-[#219E8B]' : 'opacity-70'}>
                     <p className="text-gray-700 text-sm">What is the **one critical outcome** you want? What measurable commitment, change, or decision will constitute success?</p>
                     <textarea 
                         value={objective}
-                        onChange={(e) => { setObjective(e.target.value); setCurrentStep(2); }} // Move to Step 2 after starting to type objective
-                        className="w-full p-3 mt-4 border border-gray-300 rounded-xl focus:ring-[#47A88D] focus:border-[#47A88D] h-20" 
+                        onChange={(e) => { setObjective(e.target.value); setCurrentStep(2); }}
+                        className="w-full p-3 mt-4 border border-gray-300 rounded-xl focus:ring-[#219E8B] focus:border-[#219E8B] h-20" 
                         placeholder="e.g., 'Ensure Alex commits to a weekly check-in process to prevent missed deadlines.'"
                     />
                     <div className='text-xs font-semibold text-[#E04E1B] mt-2'>Status: {objective.length > 5 ? 'Objective Set' : 'Pending...'}</div>
                 </Card>
 
-                <Card title="Step 2: Draft SBI Feedback" icon={Briefcase} className={currentStep === 2 ? 'border-4 border-dashed border-[#47A88D]' : 'opacity-70'}>
+                <Card title="Step 2: Draft SBI Feedback" icon={Briefcase} className={currentStep === 2 ? 'border-4 border-dashed border-[#219E8B]' : 'opacity-70'}>
                     <p className="text-gray-700 text-sm mb-4">Draft the specific, objective feedback using the **SBI** model.</p>
                     
-                    <label className="block text-sm font-medium text-[#002E47] mt-3 mb-1">Situation (S): When/Where did it happen?</label>
+                    <label className="block text-sm font-medium text-[#0B3B5B] mt-3 mb-1">Situation (S): When/Where did it happen?</label>
                     <textarea value={situation} onChange={(e) => { setSituation(e.target.value); setCurrentStep(2); }} className="w-full p-2 border border-gray-300 rounded-lg h-14 text-sm" placeholder="e.g., 'During the team stand-up last Tuesday...'"></textarea>
                     
-                    <label className="block text-sm font-medium text-[#002E47] mt-3 mb-1">Behavior (B): What observable action did they take?</label>
+                    <label className="block text-sm font-medium text-[#0B3B5B] mt-3 mb-1">Behavior (B): What observable action did they take?</label>
                     <textarea value={behavior} onChange={(e) => { setBehavior(e.target.value); setCurrentStep(2); }} className="w-full p-2 border border-gray-300 rounded-lg h-14 text-sm" placeholder="e.g., '...you presented the data without checking your sources.'"></textarea>
                     
-                    <label className="block text-sm font-medium text-[#002E47] mt-3 mb-1">Impact (I): What was the consequence?</label>
+                    <label className="block text-sm font-medium text-[#0B3B5B] mt-3 mb-1">Impact (I): What was the consequence?</label>
                     <textarea value={impact} onChange={(e) => { setImpact(e.target.value); setCurrentStep(2); }} className="w-full p-2 border border-gray-300 rounded-lg h-14 text-sm" placeholder="e.g., '...which led to incorrect projections being shared with the client.'"></textarea>
 
                     <Button 
                         onClick={generateCritique} 
                         disabled={!canAnalyze || isGenerating} 
-                        className="w-full mt-4 bg-[#47A88D] hover:bg-[#349881]"
+                        className="w-full mt-4 bg-[#219E8B] hover:bg-[#349881]"
                     >
                         {isGenerating ? (
                             <span className="flex items-center justify-center">
@@ -1167,17 +1303,17 @@ const ScenarioPreparationView = ({ scenario, setCoachingLabView, setPreparedSBI 
                     <p className="text-gray-700 text-sm mb-4">Final preparation check. Are you ready to enter the simulation?</p>
                     
                     <div className='p-3 bg-white rounded-lg border border-gray-200'>
-                        <h4 className='font-bold text-[#002E47] mb-1'>Objective:</h4>
+                        <h4 className='font-bold text-[#0B3B5B] mb-1'>Objective:</h4>
                         <p className='text-sm text-gray-700 italic'>{objective || 'Objective not yet set.'}</p>
                     </div>
 
                     <div className={`p-3 mt-3 rounded-lg border ${refinedFeedback ? 'border-green-500 bg-green-50' : 'border-red-500 bg-red-50'}`}>
-                        <h4 className='font-bold text-[#002E47] mb-1'>Refined SBI:</h4>
+                        <h4 className='font-bold text-[#0B3B5B] mb-1'>Refined SBI:</h4>
                         <p className='text-sm text-gray-700 italic'>{refinedFeedback || 'AI critique must be run before starting.'}</p>
                     </div>
 
                     <Button 
-                        onClick={() => setCoachingLabView('role-play')} 
+                        onClick={() => navigate('role-play', { scenario, preparedSBI: refinedFeedback, difficultyLevel })} 
                         disabled={!isPrepComplete} 
                         className="mt-6 w-full"
                     >
@@ -1190,21 +1326,21 @@ const ScenarioPreparationView = ({ scenario, setCoachingLabView, setPreparedSBI 
             {/* RIGHT COLUMN: AI Feedback Panel */}
             <div className='lg:w-1/3'>
                 {critiqueHtml && (
-                    <Card title="AI Critique (SBI Audit)" icon={Eye} className="mt-0 bg-white border-4 border-[#002E47]">
-                        <div className="prose max-w-none prose-h2:text-[#002E47] prose-h2:text-xl prose-h2:font-extrabold prose-h3:text-[#47A88D] prose-p:text-gray-700 prose-ul:space-y-2">
+                    <Card title="AI Critique (SBI Audit)" icon={Eye} className="mt-0 border-4 border-[#0B3B5B]">
+                        <div className="prose max-w-none prose-h2:text-[#0B3B5B] prose-h2:text-xl prose-h2:font-extrabold prose-h3:text-[#219E8B] prose-p:text-gray-700 prose-ul:space-y-2">
                             <div dangerouslySetInnerHTML={{ __html: critiqueHtml }} />
                         </div>
                          {refinedFeedback && (
                             <div className='mt-4 pt-4 border-t border-gray-200'>
-                                <h4 className='font-bold text-[#47A88D] flex items-center mb-2'><ShieldCheck className='w-4 h-4 mr-1'/> Confirmed Refined Feedback:</h4>
+                                <h4 className='font-bold text-[#219E8B] flex items-center mb-2'><ShieldCheck className='w-4 h-4 mr-1'/> Confirmed Refined Feedback:</h4>
                                 <p className='text-sm text-gray-700 font-medium italic'>{refinedFeedback}</p>
                             </div>
                          )}
                     </Card>
                 )}
 
-                 <Card title="Scenario Context" icon={Info} className={`mt-6 ${!critiqueHtml ? '' : 'lg:mt-8'} bg-[#47A88D]/10 border-2 border-[#47A88D]/20`}>
-                    <h4 className='font-bold text-[#002E47] mb-2'>Persona: {scenario.persona}</h4>
+                 <Card title="Scenario Context" icon={Info} className={`mt-6 ${!critiqueHtml ? '' : 'lg:mt-8'} bg-[#219E8B]/10 border-2 border-[#219E8B]/20`}>
+                    <h4 className='font-bold text-[#0B3B5B] mb-2'>Persona: {scenario.persona}</h4>
                     <p className="text-sm text-gray-700">{scenario.description}</p>
                     <p className='text-xs text-[#E04E1B] mt-4'>**AI Tip:** {scenario.persona} will likely resist the Impact statement. Lead with empathy before delivering the SBI.</p>
                 </Card>
@@ -1212,14 +1348,312 @@ const ScenarioPreparationView = ({ scenario, setCoachingLabView, setPreparedSBI 
             </div>
         </div>
     </div>
+    );
+};
+
+// --- ACTIVE LISTENING VIEW (With Rewrite Challenge) ---
+const ActiveListeningView = ({ setCoachingLabView }) => {
+    const { callSecureGeminiAPI, hasGeminiKey, navigate } = useAppServicesOriginal();
+
+    const [responses, setResponses] = useState({ q1: '', q2: '' });
+    const [critique, setCritique] = useState(null);
+    const [critiqueHtml, setCritiqueHtml] = useState('');
+    const [isGenerating, setIsGenerating] = useState(false);
+    
+    // NEW: State for Rewrite Challenge
+    const [rewrite, setRewrite] = useState('');
+    const [rewriteAudit, setRewriteAudit] = useState(null);
+    const [isRewriting, setIsRewriting] = useState(false);
+    
+    const handleChange = (e) => {
+        setResponses({ ...responses, [e.target.name]: e.target.value });
+        setCritique(null);
+        setCritiqueHtml('');
+        setRewriteAudit(null);
+    };
+    
+    useEffect(() => {
+        if (!critique) { setCritiqueHtml(''); return; }
+        (async () => setCritiqueHtml(await mdToHtml(critique)))();
+    }, [critique]);
+    
+    const getScore = (critiqueText, auditName) => {
+        const regex = new RegExp(`${auditName}.*?\\(Score:\\s*(\\d+)/100\\)`, 'i');
+        const match = critiqueText.match(regex);
+        return match ? parseInt(match[1], 10) : null;
+    };
+    
+    const handleSubmit = async () => {
+        if (!responses.q1.trim() || !responses.q2.trim()) {
+            console.warn("Please provide a response for both prompts before submitting for coach feedback.");
+            return;
+        }
+
+        setIsGenerating(true);
+        setCritique(null);
+        setRewriteAudit(null);
+
+        if (!hasGeminiKey()) {
+            setCritique("## AI Critique Unavailable\n\n**ERROR**: The Gemini API Key is missing. AI Role-Play is unavailable.");
+            setIsGenerating(false);
+            return;
+        }
+
+        const userQuery = `Critique the following active listening responses from a manager:
+
+**Prompt 1 (The Paraphrase):** The employee said, "I feel overwhelmed by the deadlines and the number of meetings this week." The manager's draft paraphrase is: "${responses.q1.trim()}"
+
+**Prompt 2 (Open-Ended Inquiry):** The situation is a team setback and defeat. The manager's draft open-ended question is: "${responses.q2.trim()}"
+
+Critique Guidelines (Use Markdown):
+1.  **Paraphrase Critique (## The Paraphrase Audit (Score: X/100)):** Assess if the manager successfully confirmed understanding without adding judgment or offering a solution. Provide a confidence score (0-100) in the header. Suggest a better, more concise option if needed.
+2.  **Question Critique (## The Inquiry Audit (Score: Y/100)):** Assess if the question is truly open-ended (not answerable with Yes/No) and if it successfully invites vulnerability and insight in a safe way. Provide a confidence score (0-100) in the header. Provide a refined, more empathetic alternative.
+3.  **Overall Takeaway (### Core Skill Focus):** Give one final, actionable coaching point.
+`;
+
+        const systemPrompt = "You are an executive coach specializing in developing empathetic and effective active listening skills. Your critique must be objective, use clear Markdown formatting, and provide concrete, actionable alternatives for improvement. Crucially, you MUST include a score out of 100 in parentheses in the header of each audit section (e.g., '## The Paraphrase Audit (Score: 85/100)').";
+
+        try {
+            const payload = {
+                contents: [{ role: "user", parts: [{ text: userQuery }] }],
+                systemInstruction: { parts: [{ text: systemPrompt }] },
+                model: GEMINI_MODEL,
+            };
+
+            const result = await callSecureGeminiAPI(payload);
+            const aiText = result?.candidates?.[0]?.content?.parts?.[0]?.text || "Could not generate critique. Please try again.";
+            setCritique(aiText);
+
+        } catch (error) {
+            console.error("Gemini API Error:", error);
+            setCritique("An error occurred while connecting to the AI coach. Please check your network connection.");
+        } finally {
+            setIsGenerating(false);
+        }
+    };
+    
+    // NEW: Handle Rewrite Challenge Submission
+    const handleRewriteAudit = async () => {
+        if (!rewrite.trim() || !critique || isRewriting) return;
+
+        setIsRewriting(true);
+        setRewriteAudit(null);
+
+        const systemPrompt = "You are an AI auditor. The user has rewritten their response to a paraphrase prompt after receiving feedback. Judge the rewritten response against the core principles of empathy and non-judgmental confirmation. Score the final result out of 100 and provide concise analysis.";
+
+        const userQuery = `Audit the Rewritten Response. The original prompt was the employee saying: "I feel overwhelmed by the deadlines and the number of meetings this week." 
+        
+        The user's Rewritten Response is: "${rewrite.trim()}" 
+        
+        The original AI Critique stated: [${critique.substring(0, 100)}...].
+        
+        Score the rewritten response out of 100 and provide analysis.`;
+        
+        try {
+            const payload = {
+                contents: [{ role: "user", parts: [{ text: userQuery }] }],
+                systemInstruction: { parts: [{ text: systemPrompt }] },
+                model: GEMINI_MODEL,
+            };
+
+            const result = await callSecureGeminiAPI(payload);
+            const aiText = result?.candidates?.[0]?.content?.parts?.[0]?.text || "Rewrite audit failed.";
+            setRewriteAudit(aiText);
+
+        } catch (e) {
+            console.error("Rewrite Audit Error:", e);
+            setRewriteAudit("Rewrite audit failed due to API error.");
+        } finally {
+            setIsRewriting(false);
+        }
+    };
+
+
+    const paraphraseScore = critique ? getScore(critique, 'The Paraphrase Audit') : null;
+    const inquiryScore = critique ? getScore(critique, 'The Inquiry Audit') : null;
+    const totalScore = (paraphraseScore !== null && inquiryScore !== null) ? Math.round((paraphraseScore + inquiryScore) / 2) : null;
+    
+    return (
+    <div className="p-8">
+    <h1 className="text-3xl font-extrabold text-[#0B3B5B] mb-4">Active Listening & Reflection Prompts</h1>
+    <p className="text-lg text-gray-600 mb-6 max-w-3xl">Active listening means validating emotion and confirming understanding before attempting to solve the problem. Practice the two pillars below to build empathy and psychological safety in high-stakes conversations.</p>
+    <Button onClick={() => setCoachingLabView('coaching-lab-home')} variant="outline" className="mb-8">
+    <ArrowLeft className="w-5 h-5 mr-2" /> Back to Coaching Lab
+    </Button>
+    
+      <div className="space-y-8">
+        <Card title="Reflection 1: The Paraphrase (Confirming Understanding)" icon={Mic}>
+          <p className="text-gray-700 mb-3">**Scenario:** A direct report just told you, "I feel overwhelmed by the deadlines and the number of meetings this week." How would you **paraphrase** their statement back to them? <span className='font-semibold text-[#219E8B]'>(Rule: Must not offer a solution or advice.)</span></p>
+          <textarea name="q1" value={responses.q1} onChange={handleChange} className="w-full p-3 border border-gray-300 rounded-xl focus:ring-[#219E8B] focus:border-[#219E8B] h-24" placeholder="Draft your paraphrased response here..."></textarea>
+          {paraphraseScore !== null && (
+               <div className={`mt-3 p-3 rounded-lg font-bold text-lg ${paraphraseScore > 80 ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>
+                Confidence Score: {paraphraseScore}%
+               </div>
+          )}
+        </Card>
+    
+        <Card title="Reflection 2: Open-Ended Inquiry (Inviting Depth)" icon={Mic}>
+          <p className="text-gray-700 mb-3">**Scenario:** Your team has just experienced a major setback on a flagship project. They are visibly defeated. What **open-ended question** would you use to invite them to share their feelings and insights, showing empathy and psychological safety?</p>
+          <textarea name="q2" value={responses.q2} onChange={handleChange} className="w-full p-3 border border-gray-300 rounded-xl focus:ring-[#219E8B] focus:border-[#219E8B] h-24" placeholder="Draft your open-ended question here..."></textarea>
+           {inquiryScore !== null && (
+               <div className={`mt-3 p-3 rounded-lg font-bold text-lg ${inquiryScore > 80 ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>
+                Confidence Score: {inquiryScore}%
+               </div>
+          )}
+        </Card>
+      </div>
+    
+        <Tooltip
+            content={hasGeminiKey() 
+                ? "Submits your responses to the AI Coach for structured critique." 
+                : "Requires Gemini API Key to run. Check App Settings."
+            }
+        >
+            <Button onClick={handleSubmit} disabled={isGenerating || !responses.q1.trim() || !responses.q2.trim()} className="mt-10 w-full md:w-auto">
+                {isGenerating ? (
+                    <div className="flex items-center">
+                        <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
+                        Auditing Listening Skills...
+                    </div>
+                ) : 'Submit for Coach Feedback'}
+            </Button>
+        </Tooltip>
+      
+      {critiqueHtml && (
+        <Card accent="TEAL" title="Active Listening Auditor Feedback" icon={CheckCircle} className="mt-8 bg-[#0B3B5B]/10 border border-[#0B3B5B]/20 rounded-3xl">
+           {totalScore !== null && (
+                <div className={`text-4xl font-extrabold mb-4 p-3 rounded-xl border-l-8 ${totalScore > 80 ? 'text-green-700 border-green-500 bg-green-50' : 'text-[#E04E1B] border-[#E04E1B] bg-red-50'}`}>
+                    Overall Score: {totalScore}%
+                </div>
+            )}
+          <div className="prose max-w-none prose-h2:text-[#0B3B5B] prose-h2:border-b prose-h2:pb-2 prose-h3:text-[#219E8B] prose-p:text-gray-700 prose-ul:space-y-2">
+            <div dangerouslySetInnerHTML={{ __html: critiqueHtml }} />
+          </div>
+          
+          {/* NEW FEATURE: Rewrite Challenge */}
+          <div className='mt-8 pt-6 border-t border-gray-200'>
+                <h3 className='text-xl font-bold text-[#0B3B5B] mb-3 flex items-center'><CornerRightUp className='w-5 h-5 mr-2 text-[#E04E1B]'/> Rewrite Challenge (Self-Correction)</h3>
+                <p className='text-sm text-gray-700 mb-3'>Based on the AI's critique, rewrite your **Paraphrase** (Reflection 1) to correct your mistake. Focus on non-judgmental confirmation.</p>
+                
+                <textarea 
+                    value={rewrite}
+                    onChange={(e) => {setRewrite(e.target.value); setRewriteAudit(null);}}
+                    className="w-full p-3 border border-gray-300 rounded-xl focus:ring-[#E04E1B] focus:border-[#E04E1B] h-24 mb-3" 
+                    placeholder="Rewrite your perfect paraphrase here..."
+                    disabled={isRewriting}
+                />
+                
+                {rewriteAudit && (
+                    <Card title="Final Audit Result" icon={Eye} className='bg-white shadow-lg border-l-4 border-dashed border-[#219E8B]'>
+                        <div className="prose max-w-none prose-h2:text-[#0B3B5B] prose-h3:text-[#219E8B]">
+                            <div dangerouslySetInnerHTML={{ __html: rewriteAudit }} />
+                        </div>
+                    </Card>
+                )}
+
+                <Button onClick={handleRewriteAudit} disabled={isRewriting || !rewrite.trim()} className='mt-3 w-full bg-[#2563EB] hover:bg-[#1E40AF]'>
+                     {isRewriting ? 
+                        <span className="flex items-center justify-center"><div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div> Auditing Rewrite...</span>
+                        : <><Cpu className='w-4 h-4 mr-2'/> Audit Corrected Response</>
+                    }
+                </Button>
+            </div>
+        </Card>
+      )}
+    </div>
     
     
     );
 };
 
-/* =========================================================
-   NEW FEATURE 1: Dynamic Scenario Generator Component
-========================================================= */
+// --- MAIN COACHING LAB ROUTER ---
+export default function CoachingLabScreen() {
+    const { navigate } = useAppServicesOriginal();
+
+    const [view, setView] = useState('coaching-lab-home');
+    const [selectedScenario, setSelectedScenario] = useState(null);
+    const [preparedSBI, setPreparedSBI] = useState(null);
+
+    const renderView = () => {
+        const viewProps = { setCoachingLabView: setView, setSelectedScenario };
+
+        switch (view) {
+            case 'scenario-library':
+                return <ScenarioLibraryView {...viewProps} />;
+            case 'scenario-prep':
+                return <ScenarioPreparationView 
+                    scenario={selectedScenario} 
+                    setCoachingLabView={setView} 
+                    setPreparedSBI={setPreparedSBI} 
+                />;
+            case 'role-play':
+                return selectedScenario 
+                    ? <RolePlayView 
+                        scenario={selectedScenario} 
+                        setCoachingLabView={setView}
+                        preparedSBI={preparedSBI}
+                        difficultyLevel={selectedScenario.difficultyLevel || 50}
+                    /> 
+                    : <ScenarioLibraryView {...viewProps} />;
+            case 'feedback-prep':
+                // FIX: Directs to the new, lean utility tool
+                return <LeanFeedbackPrepView setCoachingLabView={setView} setPreparedSBI={setPreparedSBI} />;
+            case 'active-listening':
+                return <ActiveListeningView setCoachingLabView={setView} />;
+            case 'practice-log':
+                return <PracticeLogView setCoachingLabView={setView} />;
+            case 'coaching-lab-home':
+            default:
+                return (
+                    <div className="p-8">
+                        <h1 className="text-3xl font-extrabold text-[#0B3B5B] mb-4">Coaching & Crucial Conversations Lab</h1>
+                        <p className="text-lg text-gray-600 mb-8 max-w-3xl">Practice key leadership interactions using guided tools and receive real-time AI critique to sharpen your skills.</p>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            <Card title="Scenario Library & Prep Pipeline" icon={Users} onClick={() => setView('scenario-library')} className="border-l-4 border-[#219E8B] rounded-3xl">
+                                <p className="text-gray-700 text-sm">Select a scenario or **dynamically generate one** to start a fully interactive AI role-play session.</p>
+                                <div className="mt-4 text-[#219E8B] font-semibold flex items-center">
+                                    Launch Library &rarr;
+                                </div>
+                            </Card>
+                            <Card title="Feedback Prep Tool (SBI Audit)" icon={Briefcase} onClick={() => setView('feedback-prep')} className="border-l-4 border-[#0B3B5B] rounded-3xl">
+                                <p className="text-gray-700 text-sm">Draft difficult feedback using the SBI model and get instant, professional critique and refinement for **real-world use**.</p>
+                                <div className="mt-4 text-[#0B3B5B] font-semibold flex items-center">
+                                    Launch Prep Tool &rarr;
+                                </div>
+                            </Card>
+                            <Card accent="TEAL" title="Active Listening Auditor" icon={Mic} onClick={() => setView('active-listening')} className="border-l-4 border-[#219E8B] rounded-3xl">
+                                <p className="text-gray-700 text-sm">Exercises to develop empathy, using paraphrasing and open-ended questions. Get a **quantifiable score** on your response quality.</p>
+                                <div className="mt-4 text-[#219E8B] font-semibold flex items-center">
+                                    Launch Exercises &rarr;
+                                </div>
+                            </Card>
+                            <Card accent="BLUE" title="Practice History Log" icon={BarChart3} onClick={() => setView('practice-log')} className="border-l-4 border-[#2563EB] rounded-3xl">
+                                <p className="text-gray-700 text-sm">Review your past session scores, track your skill growth over time, and revisit key takeaways.</p>
+                                <div className="mt-4 text-[#2563EB] font-semibold flex items-center">
+                                    View Log &rarr;
+                                </div>
+                            </Card>
+                        </div>
+                    </div>
+                );
+        }
+    };
+
+    const [showDbg, setShowDbg] = useState(() => {
+      try { return typeof window !== 'undefined' && /[?&]dbg=1\b/.test(window.location.search); }
+      catch { return false; }
+    });
+    const [debugStamp] = useState(() => new Date().toLocaleString());
+    return (
+      <div className="p-6 md:p-10 min-h-screen" style={{ background: COLORS.BG, color: COLORS.TEXT }}>
+        <h1 className="text-4xl font-extrabold mb-10" style={{ color: COLORS.NAVY }}>Professional Coaching Lab</h1>
+        {renderView()}
+      </div>
+    );
+}
+
+// --- The rest of the ScenarioLibraryView, DynamicScenarioGenerator, etc. follow here ---
 
 const DynamicScenarioGenerator = ({ setCoachingLabView, setSelectedScenario }) => {
     const baseScenarios = [
@@ -1234,7 +1668,7 @@ const DynamicScenarioGenerator = ({ setCoachingLabView, setSelectedScenario }) =
     const [isGenerating, setIsGenerating] = useState(false);
     
     const selectedBase = useMemo(() => baseScenarios.find(s => s.id === selectedBaseId) || baseScenarios[0], [selectedBaseId]);
-    const { callSecureGeminiAPI, GEMINI_MODEL } = useAppServices();
+    const { callSecureGeminiAPI, GEMINI_MODEL } = useAppServicesOriginal();
 
     const handleGenerate = async () => {
         setIsGenerating(true);
@@ -1277,7 +1711,6 @@ const DynamicScenarioGenerator = ({ setCoachingLabView, setSelectedScenario }) =
                     persona: personaMatch[1].trim(),
                 });
             } else {
-                // Fallback to simpler local generation if AI fails to parse
                 console.error("AI parse failed, falling back to local mock.");
                 setModifiedScenario({
                     id: `DYN-${Date.now()}`,
@@ -1289,7 +1722,6 @@ const DynamicScenarioGenerator = ({ setCoachingLabView, setSelectedScenario }) =
 
         } catch (error) {
             console.error("Dynamic Scenario Generation Error:", error);
-            // Fallback to simpler local generation
             setModifiedScenario({
                 id: `DYN-${Date.now()}`,
                 title: `${selectedBase.title} (Customized)`,
@@ -1302,7 +1734,6 @@ const DynamicScenarioGenerator = ({ setCoachingLabView, setSelectedScenario }) =
     };
 
     useEffect(() => {
-        // Initial setup/reset when base ID changes
         if (selectedBase) {
             setModifiedScenario(selectedBase);
         }
@@ -1316,10 +1747,10 @@ const DynamicScenarioGenerator = ({ setCoachingLabView, setSelectedScenario }) =
     };
 
     return (
-        <div className="fixed inset-0 bg-[#002E47]/90 z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 bg-[#0B3B5B]/90 z-50 flex items-center justify-center p-4">
             <div className="bg-[#FCFCFA] rounded-3xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto p-8">
                 <div className="flex justify-between items-center border-b pb-4 mb-6">
-                    <h2 className="text-2xl font-extrabold text-[#002E47] flex items-center">
+                    <h2 className="text-2xl font-extrabold text-[#0B3B5B] flex items-center">
                         <Zap className="w-6 h-6 mr-3 text-[#E04E1B]" />
                         Dynamic Scenario Generator
                     </h2>
@@ -1360,10 +1791,10 @@ const DynamicScenarioGenerator = ({ setCoachingLabView, setSelectedScenario }) =
                 </div>
                 
                 {modifiedScenario && (
-                    <Card title="Generated Scenario Preview" icon={Info} className='mt-6 bg-[#47A88D]/10 border-2 border-[#47A88D]/20'>
-                        <h4 className='text-lg font-bold text-[#002E47]'>{modifiedScenario.title}</h4>
+                    <Card title="Generated Scenario Preview" icon={Info} className='mt-6 bg-[#219E8B]/10 border-2 border-[#219E8B]/20'>
+                        <h4 className='text-lg font-bold text-[#0B3B5B]'>{modifiedScenario.title}</h4>
                         <p className='text-sm text-gray-700 mt-2'>{modifiedScenario.description}</p>
-                        <p className='text-xs text-[#002E47] mt-3 font-semibold'>AI Role: {modifiedScenario.persona}</p>
+                        <p className='text-xs text-[#0B3B5B] mt-3 font-semibold'>AI Role: {modifiedScenario.persona}</p>
                     </Card>
                 )}
 
@@ -1376,46 +1807,46 @@ const DynamicScenarioGenerator = ({ setCoachingLabView, setSelectedScenario }) =
 };
 
 
-// --- SCENARIO LIBRARY VIEW ---
+// --- SCENARIO LIBRARY VIEW (No changes needed) ---
 const ScenarioLibraryView = ({ setCoachingLabView, setSelectedScenario }) => {
     const [isDynamicGeneratorVisible, setIsDynamicGeneratorVisible] = useState(false);
     
     const scenarios = [
-        { id: 1, title: 'The Underperformer', description: 'A high-potential team member is consistently missing deadlines due to distraction.', persona: 'The Deflector' },
-        { id: 2, title: 'The Boundary Pusher', description: 'An employee repeatedly oversteps their authority when dealing with clients, creating tension.', persona: 'The Defender' },
-        { id: 3, title: 'The Silent Withdrawal', description: 'A direct report has become quiet and disengaged in meetings following a minor project failure.', persona: 'The Silent Stonewall' },
-        { id: 4, title: 'The Emotional Reaction', description: 'You need to deliver corrective feedback, and the employee is highly likely to become defensive or tearful.', persona: 'The Emotional Reactor' },
-        { id: 5, title: 'The Excessive Apologizer', description: 'A team member makes a small mistake and immediately apologizes repeatedly, paralyzing forward progress.', persona: 'The Over-Apologizer' },
-        { id: 6, title: 'The Team Blamer', description: 'An employee frequently attributes project failures to "someone else on the team" instead of taking personal responsibility.', persona: 'The Blame-Shifter' },
-        { id: 7, title: 'The Silent Observer', description: 'A highly capable team member consistently fails to speak up or contribute ideas during brainstorms or strategy discussions.', persona: 'The Passive Contributor' },
+        { id: 1, title: 'The Underperformer', description: 'A high-potential team member is consistently missing deadlines due to distraction.', persona: 'The Deflector', difficultyLevel: 60 },
+        { id: 2, title: 'The Boundary Pusher', description: 'An employee repeatedly oversteps their authority when dealing with clients, creating tension.', persona: 'The Defender', difficultyLevel: 75 },
+        { id: 3, title: 'The Silent Withdrawal', description: 'A direct report has become quiet and disengaged in meetings following a minor project failure.', persona: 'The Silent Stonewall', difficultyLevel: 45 },
+        { id: 4, title: 'The Emotional Reaction', description: 'You need to deliver corrective feedback, and the employee is highly likely to become defensive or tearful.', persona: 'The Emotional Reactor', difficultyLevel: 90 },
+        { id: 5, title: 'The Excessive Apologizer', description: 'A team member makes a small mistake and immediately apologizes repeatedly, paralyzing forward progress.', persona: 'The Over-Apologizer', difficultyLevel: 25 },
+        { id: 6, title: 'The Team Blamer', description: 'An employee frequently attributes project failures to "someone else on the team" instead of taking personal responsibility.', persona: 'The Blame-Shifter', difficultyLevel: 80 },
+        { id: 7, title: 'The Silent Observer', description: 'A highly capable team member consistently fails to speak up or contribute ideas during brainstorms or strategy discussions.', persona: 'The Passive Contributor', difficultyLevel: 50 },
     ];
     
     return (
     <div className="p-8">
-    <h1 className="text-3xl font-extrabold text-[#002E47] mb-4">Scenario Library: Practice Conversations</h1>
+    <h1 className="text-3xl font-extrabold text-[#0B3B5B] mb-4">Scenario Library: Practice Conversations</h1>
     <p className="text-lg text-gray-600 mb-6">Select a high-stakes scenario to practice your preparation process. Each scenario includes a unique persona for the AI simulator.</p>
     <Button onClick={() => setCoachingLabView('coaching-lab-home')} variant="outline" className="mb-8">
     <ArrowLeft className="w-5 h-5 mr-2" /> Back to Coaching Lab
     </Button>
     
-      <Card title="Dynamic Scenario Generator" icon={Zap} className="mb-6 bg-[#002E47]/10 border-l-4 border-[#E04E1B] rounded-3xl" onClick={() => setIsDynamicGeneratorVisible(true)}>
+      <Card title="Dynamic Scenario Generator" icon={Zap} className="mb-6 bg-[#0B3B5B]/10 border-l-4 border-[#E04E1B] rounded-3xl" onClick={() => setIsDynamicGeneratorVisible(true)}>
             <p className="text-gray-700 text-sm">Create a custom, adaptive scenario by choosing a core conflict and adding a unique **modifier** (e.g., personality, circumstance, or context).</p>
             <div className="mt-4 text-[#E04E1B] font-semibold flex items-center">
                 Launch Generator <CornerRightUp className='w-4 h-4 ml-1'/>
             </div>
       </Card>
       
-      <h2 className='text-xl font-bold text-[#002E47] mb-4 border-b pb-1'>Pre-Seeded Scenarios</h2>
+      <h2 className='text-xl font-bold text-[#0B3B5B] mb-4 border-b pb-1'>Pre-Seeded Scenarios</h2>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {scenarios.map(scenario => (
-          <Card key={scenario.id} title={scenario.title} className="border-l-4 border-[#47A88D] rounded-3xl" onClick={() => {
+          <Card key={scenario.id} title={scenario.title} className="border-l-4 border-[#219E8B] rounded-3xl" onClick={() => {
             setSelectedScenario(scenario);
             setCoachingLabView('scenario-prep');
           }}>
             <p className="text-sm text-gray-700 mb-3">{scenario.description}</p>
-            <div className="text-xs font-semibold text-[#002E47] bg-[#002E47]/10 px-3 py-1 rounded-full inline-block">Persona: {scenario.persona}</div>
-            <div className="mt-4 text-[#47A88D] font-semibold flex items-center">
+            <div className="text-xs font-semibold text-[#0B3B5B] bg-[#0B3B5B]/10 px-3 py-1 rounded-full inline-block">Persona: {scenario.persona}</div>
+            <div className="mt-4 text-[#219E8B] font-semibold flex items-center">
               Start Preparation &rarr;
             </div>
           </Card>
@@ -1428,279 +1859,3 @@ const ScenarioLibraryView = ({ setCoachingLabView, setSelectedScenario }) => {
     
     );
 };
-
-// --- FEEDBACK PREP TOOL VIEW (Ad‑hoc SBI Builder; pretty) ---
-const FeedbackPrepToolView = ({ setCoachingLabView, setPreparedSBI }) => {
-  const adhocScenario = useMemo(() => ({
-    id: 'adhoc-sbi',
-    title: 'Ad‑hoc Feedback Builder',
-    description: 'Draft clear, specific feedback using SBI, get instant AI refinement, then take it into Role‑Play or copy to clipboard.',
-    persona: 'Your real report'
-  }), []);
-
-  return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center pb-4" style={{ borderBottom: `1px solid ${COLORS.SUBTLE}` }}>
-        <h1 className="text-3xl font-extrabold flex items-center gap-3" style={{ color: COLORS.NAVY }}>
-          Feedback Prep: SBI Builder
-        </h1>
-        <button
-          onClick={() => setCoachingLabView('coaching-lab-home')}
-          className="font-semibold px-3 py-2 rounded border"
-          style={{ color: COLORS.NAVY, borderColor: COLORS.SUBTLE }}
-        >
-          ← Back
-        </button>
-      </div>
-
-      <Card accent="ORANGE">
-        <p className="text-gray-700 mb-4">This tool is for real situations. Draft your SBI, refine with AI, then practice in the simulator.</p>
-        <ScenarioPreparationView
-          scenario={adhocScenario}
-          setCoachingLabView={setCoachingLabView}
-          setPreparedSBI={setPreparedSBI}
-        />
-      </Card>
-    </div>
-  );
-};
-// --- ACTIVE LISTENING VIEW ---
-const ActiveListeningView = ({ setCoachingLabView }) => {
-    const { callSecureGeminiAPI, hasGeminiKey, navigate } = useAppServices();
-
-    const [responses, setResponses] = useState({ q1: '', q2: '' });
-    const [critique, setCritique] = useState(null);
-    const [critiqueHtml, setCritiqueHtml] = useState('');
-    const [isGenerating, setIsGenerating] = useState(false);
-    
-    const handleChange = (e) => {
-        setResponses({ ...responses, [e.target.name]: e.target.value });
-        setCritique(null);
-        setCritiqueHtml('');
-    };
-    
-    useEffect(() => {
-        if (!critique) { setCritiqueHtml(''); return; }
-        (async () => setCritiqueHtml(await mdToHtml(critique)))();
-    }, [critique]);
-    
-    const getScore = (critiqueText, auditName) => {
-        const regex = new RegExp(`${auditName}.*?\\(Score:\\s*(\\d+)/100\\)`, 'i');
-        const match = critiqueText.match(regex);
-        return match ? parseInt(match[1], 10) : null;
-    };
-    
-    const handleSubmit = async () => {
-        if (!responses.q1.trim() || !responses.q2.trim()) {
-            console.warn("Please provide a response for both prompts before submitting for coach feedback.");
-            return;
-        }
-
-        setIsGenerating(true);
-        setCritique(null);
-
-        if (!hasGeminiKey()) {
-            setCritique("## AI Critique Unavailable\n\n**ERROR**: The Gemini API Key is missing. Please check App Settings.");
-            setIsGenerating(false);
-            return;
-        }
-
-        const userQuery = `Critique the following active listening responses from a manager:
-
-**Prompt 1 (The Paraphrase):** The employee said, "I feel overwhelmed by the deadlines and the number of meetings this week." The manager's draft paraphrase is: "${responses.q1.trim()}"
-
-**Prompt 2 (Open-Ended Inquiry):** The situation is a team setback and defeat. The manager's draft open-ended question is: "${responses.q2.trim()}"
-
-Critique Guidelines (Use Markdown):
-1.  **Paraphrase Critique (## The Paraphrase Audit (Score: X/100)):** Assess if the manager successfully confirmed understanding without adding judgment or offering a solution. Provide a confidence score (0-100) in the header. Suggest a better, more concise option if needed.
-2.  **Question Critique (## The Inquiry Audit (Score: Y/100)):** Assess if the question is truly open-ended (not answerable with Yes/No) and if it successfully invites vulnerability and insight in a safe way. Provide a confidence score (0-100) in the header. Provide a refined, more empathetic alternative.
-3.  **Overall Takeaway (### Core Skill Focus):** Give one final, actionable coaching point.
-`;
-
-        const systemPrompt = "You are an executive coach specializing in developing empathetic and effective active listening skills. Your critique must be objective, use clear Markdown formatting, and provide concrete, actionable alternatives for improvement. Crucially, you MUST include a score out of 100 in parentheses in the header of each audit section (e.g., '## The Paraphrase Audit (Score: 85/100)').";
-
-        try {
-            const payload = {
-                contents: [{ role: "user", parts: [{ text: userQuery }] }],
-                systemInstruction: { parts: [{ text: systemPrompt }] },
-            };
-
-            const result = await callSecureGeminiAPI(payload);
-            const aiText = result?.candidates?.[0]?.content?.parts?.[0]?.text || "Could not generate critique. Please try again.";
-            setCritique(aiText);
-
-        } catch (error) {
-            console.error("Gemini API Error:", error);
-            setCritique("An error occurred while connecting to the AI coach. Please check your network connection.");
-        } finally {
-            setIsGenerating(false);
-        }
-    };
-
-    const paraphraseScore = critique ? getScore(critique, 'The Paraphrase Audit') : null;
-    const inquiryScore = critique ? getScore(critique, 'The Inquiry Audit') : null;
-    const totalScore = (paraphraseScore !== null && inquiryScore !== null) ? Math.round((paraphraseScore + inquiryScore) / 2) : null;
-    
-    return (
-    <div className="p-8">
-    <h1 className="text-3xl font-extrabold text-[#002E47] mb-4">Active Listening & Reflection Prompts</h1>
-    <p className="text-lg text-gray-600 mb-6 max-w-3xl">Active listening means validating emotion and confirming understanding before attempting to solve the problem. Practice the two pillars below to build empathy and psychological safety in high-stakes conversations.</p>
-    <Button onClick={() => setCoachingLabView('coaching-lab-home')} variant="outline" className="mb-8">
-    <ArrowLeft className="w-5 h-5 mr-2" /> Back to Coaching Lab
-    </Button>
-    
-      <div className="space-y-8">
-        <Card title="Reflection 1: The Paraphrase (Confirming Understanding)" icon={Mic}>
-          <p className="text-gray-700 mb-3">**Scenario:** A direct report just told you, "I feel overwhelmed by the deadlines and the number of meetings this week." How would you **paraphrase** their statement back to them? <span className='font-semibold text-[#47A88D]'>(Rule: Must not offer a solution or advice.)</span></p>
-          <textarea name="q1" value={responses.q1} onChange={handleChange} className="w-full p-3 border border-gray-300 rounded-xl focus:ring-[#47A88D] focus:border-[#47A88D] h-24" placeholder="Draft your paraphrased response here..."></textarea>
-          {paraphraseScore !== null && (
-               <div className={`mt-3 p-3 rounded-lg font-bold text-lg ${paraphraseScore > 80 ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>
-                Confidence Score: {paraphraseScore}%
-               </div>
-          )}
-        </Card>
-    
-        <Card title="Reflection 2: Open-Ended Inquiry (Inviting Depth)" icon={Mic}>
-          <p className="text-gray-700 mb-3">**Scenario:** Your team has just experienced a major setback on a flagship project. They are visibly defeated. What **open-ended question** would you use to invite them to share their feelings and insights, showing empathy and psychological safety?</p>
-          <textarea name="q2" value={responses.q2} onChange={handleChange} className="w-full p-3 border border-gray-300 rounded-xl focus:ring-[#47A88D] focus:border-[#47A88D] h-24" placeholder="Draft your open-ended question here..."></textarea>
-           {inquiryScore !== null && (
-               <div className={`mt-3 p-3 rounded-lg font-bold text-lg ${inquiryScore > 80 ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>
-                Confidence Score: {inquiryScore}%
-               </div>
-          )}
-        </Card>
-      </div>
-    
-        <Tooltip
-            content={hasGeminiKey() 
-                ? "Submits your responses to the AI Coach for structured critique." 
-                : "Requires Gemini API Key to run. Check App Settings."
-            }
-        >
-            <Button onClick={handleSubmit} disabled={isGenerating || !responses.q1.trim() || !responses.q2.trim()} className="mt-10 w-full md:w-auto">
-                {isGenerating ? (
-                    <div className="flex items-center">
-                        <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
-                        Auditing Listening Skills...
-                    </div>
-                ) : 'Submit for Coach Feedback'}
-            </Button>
-        </Tooltip>
-      
-      {critiqueHtml && (
-        <Card accent="TEAL\" title="Active Listening Auditor Feedback" icon={CheckCircle} className="mt-8 bg-[#002E47]/10 border border-[#002E47]/20 rounded-3xl">
-           {totalScore !== null && (
-                <div className={`text-4xl font-extrabold mb-4 p-3 rounded-xl border-l-8 ${totalScore > 80 ? 'text-green-700 border-green-500 bg-green-50' : 'text-[#E04E1B] border-[#E04E1B] bg-red-50'}`}>
-                    Overall Score: {totalScore}%
-                </div>
-            )}
-          <div className="prose max-w-none prose-h2:text-[#002E47] prose-h2:border-b prose-h2:pb-2 prose-h3:text-[#47A88D] prose-p:text-gray-700 prose-ul:space-y-2">
-            <div dangerouslySetInnerHTML={{ __html: critiqueHtml }} />
-          </div>
-        </Card>
-      )}
-    </div>
-    
-    
-    );
-};
-
-// --- MAIN COACHING LAB ROUTER ---
-export default function CoachingLabScreen() {
-    const { navigate } = useAppServices();
-
-    const [view, setView] = useState('coaching-lab-home');
-    const [selectedScenario, setSelectedScenario] = useState(null);
-    const [preparedSBI, setPreparedSBI] = useState(null); // State to pass refined SBI to role-play
-
-    const renderView = () => {
-        const viewProps = { setCoachingLabView: setView, setSelectedScenario };
-
-        switch (view) {
-            case 'scenario-library':
-                return <ScenarioLibraryView {...viewProps} />;
-            case 'scenario-prep':
-                return <ScenarioPreparationView 
-                    scenario={selectedScenario} 
-                    setCoachingLabView={setView} 
-                    setPreparedSBI={setPreparedSBI} // Pass setter to get refined SBI
-                />;
-            case 'role-play':
-                return selectedScenario 
-                    ? <RolePlayView 
-                        scenario={selectedScenario} 
-                        setCoachingLabView={setView}
-                        preparedSBI={preparedSBI} // Pass refined SBI to the role-play simulator
-                    /> 
-                    : <ScenarioLibraryView {...viewProps} />;
-            case 'feedback-prep':
-                return <FeedbackPrepToolView setCoachingLabView={setView} setPreparedSBI={setPreparedSBI} />;
-            case 'active-listening':
-                return <ActiveListeningView setCoachingLabView={setView} />;
-            case 'coaching-lab-home':
-            default:
-                return (
-                    <div className="p-8">
-                        <h1 className="text-3xl font-extrabold text-[#002E47] mb-4">Coaching & Crucial Conversations Lab</h1>
-                        <p className="text-lg text-gray-600 mb-8 max-w-3xl">Practice key leadership interactions using guided tools and receive real-time AI critique to sharpen your skills.</p>
-
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                            <Card title="Scenario Library & Prep Pipeline" icon={Users} onClick={() => setView('scenario-library')} className="border-l-4 border-[#47A88D] rounded-3xl">
-                                <p className="text-gray-700 text-sm">Select a scenario or **dynamically generate one** to start a fully interactive AI role-play session.</p>
-                                <div className="mt-4 text-[#47A88D] font-semibold flex items-center">
-                                    Launch Library &rarr;
-                                </div>
-                            </Card>
-                            <Card title="Feedback Prep Tool (SBI Critique)" icon={Briefcase} onClick={() => setView('scenario-library')} className="border-l-4 border-[#002E47] rounded-3xl">
-                                <p className="text-gray-700 text-sm">Draft difficult feedback using the SBI model and get instant, professional critique and refinement **within the preparation pipeline**.</p>
-                                <div className="mt-4 text-[#002E47] font-semibold flex items-center">
-                                    Launch Prep Tool &rarr;
-                                </div>
-                            </Card>
-                            <Card accent="TEAL\" title="Active Listening Auditor" icon={Mic} onClick={() => setView('active-listening')} className="border-l-4 border-[#47A88D] rounded-3xl">
-                                <p className="text-gray-700 text-sm">Exercises to develop empathy, using paraphrasing and open-ended questions. Get a **quantifiable score** on your response quality.</p>
-                                <div className="mt-4 text-[#47A88D] font-semibold flex items-center">
-                                    Launch Exercises &rarr;
-                                </div>
-                            </Card>
-                        </div>
-                    </div>
-                );
-        }
-    };
-
-    const [showDbg, setShowDbg] = useState(() => {
-      try { return typeof window !== 'undefined' && /[?&]dbg=1\b/.test(window.location.search); }
-      catch { return false; }
-    });
-    const [debugStamp] = useState(() => new Date().toLocaleString());
-    return (
-      <div className="p-6 md:p-10 min-h-screen" style={{ background: COLORS.BG, color: COLORS.TEXT }}>
-        {showDbg && (
-          <div
-            style={{
-              position: 'sticky',
-              top: 0,
-              zIndex: 1000,
-              background: '#111827',
-              color: '#FFFFFF',
-              border: `2px solid ${COLORS.AMBER}`,
-              borderRadius: 8,
-              padding: '8px 12px',
-              marginBottom: 12
-            }}
-          >
-            <strong>Debug:</strong> Labs.jsx (high-contrast + accent stripe) mounted at {debugStamp}.
-            <button
-              onClick={() => setShowDbg(false)}
-              style={{ float: 'right', background: 'transparent', color: '#FFFFFF', border: 'none', fontWeight: 700, cursor: 'pointer' }}
-              aria-label="Dismiss debug banner"
-            >
-              ×
-            </button>
-          </div>
-        )}
-        {renderView()}
-      </div>
-    );
-}
