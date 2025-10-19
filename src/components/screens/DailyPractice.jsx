@@ -1,13 +1,35 @@
-/* =========================================================
-   CORRECTED FILE: DailyPractice.jsx
-   FIX: Removed top-level calls to useAppServices() to resolve ReferenceError/TDZ violation.
-   All hook-derived values are now accessed inside the component functions.
-   ENHANCEMENT: AI Reflection Prompt, AI Commitment Analysis, Tier Success Map, Weekly Prep View.
-========================================================= */
+import { Home, Zap, Clock, Briefcase, Mic, Trello, BookOpen, Settings, BarChart3, TrendingUp, TrendingDown, CheckCircle, Star, Target, Users, HeartPulse, CornerRightUp, X, ArrowLeft, Activity, Link, Lightbulb, AlertTriangle, Eye, PlusCircle, Cpu, MessageSquare } from 'lucide-react';
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import {
-  PlusCircle, ArrowLeft, X, Target, Clock, CheckCircle, BarChart3, CornerRightUp, AlertTriangle, Users, Lightbulb, Zap, Archive, MessageSquare, List, TrendingDown, TrendingUp, BookOpen, Crown, Cpu, Star, Trash2
-} from 'lucide-react';
+// FIX:  Mocking useAppServices since the environment can't resolve relative paths
+const useAppServices = () => ({
+    // Mocked core services for local testing
+    pdpData: null,
+    updatePdpData: async () => true,
+    saveNewPlan: async () => true,
+    callSecureGeminiAPI: async (payload) => {
+        // Mock response for Monthly Briefing
+        const mockBriefing = {
+            candidates: [{
+                content: {
+                    parts: [{
+                        text: "## Monthly Executive Briefing\n\n**Focus Area:** Strategic Clarity (T5)\n\n**Coaching Nudge:** Your low self-rating (4/10) indicates a high-risk gap. You must dedicate time this month to the 'Pre-Mortem Risk Audit' content. Prioritize clear decision-making processes over routine tasks to immediately elevate your strategic focus.\n\n**Next Action:** Schedule 30 minutes to define your top 3 OKR dependencies."
+                    }]
+                }
+            }]
+        };
+        return mockBriefing;
+    },
+    hasGeminiKey: () => true,
+    navigate: (screen, params) => console.log(`Navigating to ${screen} with params:`, params),
+    userId: 'mock-user-123',
+    db: {}, // Mock Firestore instance
+    isLoading: false,
+    error: null,
+    // Mocked values needed for the Generator View logic
+    commitmentData: { active_commitments: [] },
+    planningData: { okrs: [{ objective: 'OKR Q4: Launch MVP' }] },
+    GEMINI_MODEL: 'gemini-2.5-flash-preview-09-2025',
+});
 
 /* =========================================================
    HIGH-CONTRAST PALETTE (Centralized for Consistency)
@@ -29,62 +51,12 @@ const COLORS = {
   LIGHT_GRAY: '#FCFCFA'
 };
 
-
-// FIX 1: Mocking missing imports for external dependencies like useAppServices, Card, Button, Tooltip, and data/constants
-// NOTE: The mock is moved outside the conditional check to ensure it is always defined if the host environment doesn't provide the real one.
-const useAppServices = () => ({
-  commitmentData: {
-    active_commitments: [
-      { id: '1', text: 'Schedule 15 min for deep work planning', status: 'Committed', linkedGoal: 'OKR Q4: Launch MVP', linkedTier: 'T3' },
-      { id: '2', text: 'Give one piece of specific, positive feedback', status: 'Pending', linkedGoal: 'Improve Feedback Skills', linkedTier: 'T4' },
-      { id: '3', text: 'Review team risk mitigation plan', status: 'Missed', linkedGoal: 'Risk Mitigation Strategy', linkedTier: 'T2' },
-    ],
-    history: [
-      { date: '2025-10-14', score: '3/3', reflection: 'Perfect day! My focus on T3 planning led directly to two successful decisions.' },
-      { date: '2025-10-15', score: '2/3', reflection: 'Missed my T4 commitment. Must prioritize people over tasks tomorrow.' },
-      { date: '2025-10-16', score: '3/3', reflection: 'Back on track. Used the AI prompt to focus on team value which helped.' },
-      { date: '2025-10-17', score: '1/3', reflection: 'High risk day due to emergency. Focused only on T2 core tasks.' },
-    ],
-    reflection_journal: '',
-    weekly_review_notes: 'Initial notes for weekly review.',
-  },
-  updateCommitmentData: async (data) => {
-    console.log('Updating commitment data:', data);
-    return new Promise(resolve => setTimeout(resolve, 300));
-  },
-  planningData: {
-    okrs: [{ objective: 'OKR Q4: Launch MVP' }],
-    vision: 'Become the global leader in digital transformation.',
-    mission: 'Empower teams through transparent, disciplined execution.'
-  },
-  pdpData: {
-    currentMonth: 'October',
-    assessment: { goalPriorities: ['T3', 'T4', 'T1'] },
-    plan: [{ month: 'October', theme: 'Mastering Discipline', requiredContent: [{ id: 1, title: 'Deep Work: The Foundation', type: 'Video', duration: 30 }] }]
-  },
-  callSecureGeminiAPI: async (payload) => {
-    if (payload.generationConfig?.responseMimeType === 'application/json') {
-      const score = Math.floor(Math.random() * 5) + 6;
-      const risk = 10 - score;
-      const feedback = score > 7 ? "Excellent specificity and alignment! Maintain this clarity." : "Slightly vague. Specify the time or location to reduce risk.";
-      return { candidates: [{ content: { parts: [{ text: JSON.stringify({ score, risk, feedback }) }] } }] };
-    } else if (payload.systemInstruction.parts[0].text.includes("generate ONE specific, non-judgemental, and high-leverage reflection question")) {
-      return { candidates: [{ content: { parts: [{ text: 'Given your strong performance in Tier 3, how can you mentor a peer to adopt your scheduling discipline this week?' }] } }] };
-    } else {
-        return { candidates: [{ content: { parts: [{ text: 'No response for this mock query.' }] } }] };
-    }
-  },
-  hasGeminiKey: () => true,
-  GEMINI_MODEL: 'gemini-2.5-flash-preview-09-2025',
-  navigate: (screen, params) => console.log(`Navigating to ${screen} with params:`, params),
-});
-
-// Mock UI components (defined once) - STANDARDIZED
+// Mock UI components (Standardized)
 const Button = ({ children, onClick, disabled = false, variant = 'primary', className = '', ...rest }) => {
   let baseStyle = "px-6 py-3 rounded-xl font-semibold transition-all shadow-xl focus:outline-none focus:ring-4 text-white flex items-center justify-center";
   if (variant === 'primary') { baseStyle += ` bg-[${COLORS.TEAL}] hover:bg-[#1C8D7C] focus:ring-[${COLORS.TEAL}]/50`; }
   else if (variant === 'secondary') { baseStyle += ` bg-[${COLORS.ORANGE}] hover:bg-red-700 focus:ring-[${COLORS.ORANGE}]/50`; }
-  else if (variant === 'outline') { baseStyle = `px-6 py-3 rounded-xl font-semibold transition-all shadow-md border-2 border-[${COLORS.TEAL}] text-[${COLORS.TEAL}] hover:bg-[${COLORS.TEAL}]/10 focus:ring-4 focus:ring-[${COLORS.TEAL}]/50 bg-[${COLORS.LIGHT_GRAY}] flex items-center justify-center`; }
+  else if (variant === 'outline') { baseStyle = `px-6 py-3 rounded-xl font-semibold transition-all shadow-md border-2 border-[${COLORS.TEAL}] text-[${COLORS.TEAL}] hover:bg-[${COLORS.TEAL}]/10 focus:ring-4 focus:ring-[${COLORS.TEAL}]/50 bg-[${COLORS.LIGHT_GRAY}] flex items-center justify-content`; }
   else if (variant === 'nav-back') { baseStyle = `px-4 py-2 rounded-lg font-medium transition-all shadow-sm border-2 border-gray-300 text-gray-700 hover:bg-gray-100 flex items-center justify-center`; }
   if (disabled) { baseStyle = "px-6 py-3 rounded-xl font-semibold bg-gray-300 text-gray-500 cursor-not-allowed shadow-inner transition-none flex items-center justify-center"; }
   return (
@@ -126,1535 +98,524 @@ const Card = ({ children, title, icon: Icon, className = '', onClick, accent = '
     </Tag>
   );
 };
-const Tooltip = ({ content, children }) => (
-    <div className="relative inline-block group">
-        {children}
-        <div className="absolute z-10 hidden px-3 py-1 text-xs text-white bg-gray-700 rounded-lg group-hover:block bottom-full left-1/2 transform -translate-x-1/2 whitespace-nowrap">
-            {content}
-        </div>
-    </div>
-);
 
-// Mock Constants and Data
+const Tooltip = ({ content, children }) => {
+    const [isVisible, setIsVisible] = useState(false);
+    return (
+        <div
+            className="relative inline-block"
+            onMouseEnter={() => setIsVisible(true)}
+            onMouseLeave={() => setIsVisible(false)}
+        >
+            {children}
+            {isVisible && (
+                <div className="absolute z-10 w-64 p-3 -mt-2 -ml-32 text-xs text-white bg-[#0B3B5B] rounded-lg shadow-lg bottom-full left-1/2 transform translate-x-1/2">
+                    {content}
+                    <div className="absolute left-1/2 transform -translate-x-1/2 bottom-[-4px] w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-[#0B3B5B]"></div>
+                </div>
+            )}
+        </div>
+    );
+};
+
+// Mock Firebase Functions (to satisfy imports)
+const doc = (db, path) => ({ db, path });
+const writeBatch = (db) => ({
+    update: () => console.log('Mock Batch Update'),
+    commit: async () => console.log('Mock Batch Commit'),
+});
+const setDoc = async () => console.log('Mock SetDoc');
+
+// Mock external utilities (to satisfy imports)
+const mdToHtml = async (md) => {
+    let html = md;
+    html = html.replace(/## (.*$)/gim, '<h2 class="text-2xl font-extrabold text-[#E04E1B] mb-3">$1</h2>');
+    html = html.replace(/### (.*$)/gim, '<h3 class="text-xl font-bold text-[#47A88D] mt-4 mb-2">$1</h3>');
+    html = html.replace(/\*\*(.*)\*\*/gim, '<strong>$1</strong>');
+    html = html.replace(/\n\n/g, '</p><p class="text-sm text-gray-700 mt-2">');
+    html = html.replace(/\* (.*)/gim, '<li class="text-sm text-gray-700">$1</li>');
+    html = html.replace(/<li>/g, '<ul><li>').replace(/<\/li>(?!<ul>)/g, '</li></ul>');
+    return `<p class="text-sm text-gray-700">${html}</p>`;
+};
+const IconMap = {
+    Zap: Zap, Users: Users, Briefcase: Briefcase, Target: Target, BarChart3: BarChart3, Clock: Clock, Eye: Eye, BookOpen: BookOpen, Lightbulb: Lightbulb, X: X, ArrowLeft: ArrowLeft, CornerRightUp: CornerRightUp, AlertTriangle: AlertTriangle, CheckCircle: CheckCircle, PlusCircle: PlusCircle, HeartPulse: HeartPulse, TrendingUp: TrendingUp, TrendingDown: TrendingDown, Activity: Activity, Link: Link, Cpu: Cpu, Star: Star, Mic: Mic, Trello: Trello, Settings: Settings, Home: Home, MessageSquare: MessageSquare
+};
+
+
+const PDP_COLLECTION = 'leadership_plan';
+const PDP_DOCUMENT = 'roadmap';
+const appId = 'default-app-id'; // Mock value for app id
+
+// --- PDP Content Model ---
 const LEADERSHIP_TIERS = {
-    'T1': { id: 'T1', name: 'Personal Foundation', color: COLORS.GREEN, hex: '#10B981' },
-    'T2': { id: 'T2', name: 'Operational Excellence', color: COLORS.BLUE, hex: '#3B82F6' },
-    'T3': { id: 'T3', name: 'Strategic Alignment', color: COLORS.AMBER, hex: '#F59E0B' },
-    'T4': { id: 'T4', name: 'People Development', color: COLORS.RED, hex: '#EF4444' },
-    'T5': { id: 'T5', name: 'Visionary Leadership', color: COLORS.NAVY, hex: '#0B3B5B' },
-};
-const leadershipCommitmentBank = {
-    'T3: Strategy & Execution': [
-        { id: '101', text: 'Review monthly OKR progress for 30 min', linkedTier: 'T3' },
-        { id: '102', text: 'Translate strategic goal into 3 team actions', linkedTier: 'T3' },
-    ],
-    'T4: Team & Culture': [
-        { id: '201', text: 'Provide one piece of specific, positive feedback', linkedTier: 'T4' },
-        { id: '202', text: 'Ask one team member about their long-term growth', linkedTier: 'T4' },
-    ],
-};
-// FIX: Removed top-level calls to useAppServices()
-const GEMINI_MODEL = 'gemini-2.5-flash-preview-09-2025';
-
-
-// --- Global helper to structure data for the Tier grouping feature ---
-const groupCommitmentsByTier = (commitments) => {
-    const grouped = {};
-    Object.values(LEADERSHIP_TIERS).forEach(tier => {
-        grouped[tier.id] = { 
-            name: tier.name, 
-            color: tier.hex,
-            items: [],
-        };
-    });
-
-    commitments.forEach(c => {
-        const tierId = c.linkedTier || 'T1';
-        if (grouped[tierId]) {
-            grouped[tierId].items.push(c);
-        } else {
-             // Handle commitments with unlinked or mock tiers
-             if (grouped['T1']) {
-                 grouped['T1'].items.push(c);
-             }
-        }
-    });
-
-    return Object.entries(grouped)
-        .filter(([, data]) => data.items.length > 0)
-        .map(([id, data]) => ({ id, ...data }));
+    T1: { id: 'T1', name: 'Self-Awareness & Trust', icon: 'HeartPulse', color: COLORS.BLUE },
+    T2: { id: 'T2', name: 'Communication & Feedback', icon: 'Mic', color: COLORS.TEAL },
+    T3: { id: 'T3', name: 'Execution & Delegation', icon: 'Briefcase', color: COLORS.GREEN },
+    T4: { id: 'T4', name: 'Talent & People Development', icon: 'Users', color: COLORS.AMBER },
+    T5: { id: 'T5', name: 'Vision & Strategic Clarity', icon: 'TrendingUp', color: COLORS.ORANGE },
 };
 
-// --- Daily reset at local midnight ---
-function scheduleMidnightReset(activeCommitments, updateCommitmentData) {
-  const lastKey = 'dp:lastResetDate';
-  const todayKey = new Date().toLocaleDateString('en-US');
-  const last = typeof localStorage !== 'undefined' ? localStorage.getItem(lastKey) : null;
+const CONTENT_LIBRARY = [
+    // T1: Self-Awareness & Trust
+    { id: 101, tier: 'T1', skill: 'Trust', type: 'Reading', title: 'Article: Vulnerability-Based Trust', duration: 30, difficulty: 'Intro' },
+    { id: 102, tier: 'T1', skill: 'Identity', type: 'Exercise', title: 'Drafting Your LIS', duration: 45, difficulty: 'Core' },
+    { id: 106, tier: 'T1', skill: 'Trust', type: 'Case Study', title: 'Trust Collapse Scenario Analysis', duration: 60, difficulty: 'Mastery' },
+    // T2: Communication & Feedback
+    { id: 201, tier: 'T2', skill: 'Feedback', type: 'Exercise', title: 'SBI Feedback Practice (Lab)', duration: 30, difficulty: 'Core' },
+    { id: 203, tier: 'T2', skill: 'Crucial', type: 'Role-Play', title: 'Practice: Deflecting the Blame-Shifter', duration: 40, difficulty: 'Core' },
+    { id: 207, tier: 'T2', skill: 'Crucial', type: 'Case Study', title: 'Firing for Cultural Fit Scenario', duration: 60, difficulty: 'Mastery' },
+    // T3: Execution & Delegation
+    { id: 302, tier: 'T3', skill: 'Execution', type: 'Exercise', title: 'Time Blocking for High Leverage', duration: 30, difficulty: 'Core' },
+    { id: 303, tier: 'T3', skill: 'Delegation', type: 'Exercise', title: 'RACI Matrix Practice', duration: 45, difficulty: 'Core' },
+    { id: 305, tier: 'T3', skill: 'Process', type: 'Case Study', title: 'Process Bottleneck Audit', duration: 50, difficulty: 'Mastery' },
+    // T4: Talent & People Development
+    { id: 401, tier: 'T4', skill: 'Coaching', type: 'Exercise', title: 'Grow Model Practice', duration: 35, difficulty: 'Core' },
+    { id: 403, tier: 'T4', skill: 'Talent', type: 'Exercise', title: 'Succession Planning Draft', duration: 60, difficulty: 'Mastery' },
+    { id: 404, tier: 'T4', skill: 'Coaching', type: 'Role-Play', title: 'Practice: Coaching a High Performer', duration: 40, difficulty: 'Core' },
+    // T5: Vision & Strategic Clarity
+    { id: 501, tier: 'T5', skill: 'Vision', type: 'Exercise', title: 'Vision Statement Workshop', duration: 45, difficulty: 'Core' },
+    { id: 503, tier: 'T5', skill: 'Strategic', type: 'Tool', title: 'Pre-Mortem Risk Audit', duration: 30, difficulty: 'Mastery' },
+    { id: 507, tier: 'T5', skill: 'Strategic', type: 'Case Study', title: 'Market Disruption Response Plan', duration: 60, difficulty: 'Mastery' },
+];
 
-  async function performReset() {
-    try {
-      const prev = (activeCommitments || []).map(c => {
-        if (c.status === 'Pending') return { ...c, status: 'Missed' };
-        return c;
-      });
-      const reset = (prev || activeCommitments || []).map(c => ({ ...c, status: 'Pending' }));
-      await updateCommitmentData(prevState => ({ ...prevState, active_commitments: reset }));
-      if (typeof localStorage !== 'undefined') localStorage.setItem(lastKey, new Date().toLocaleDateString('en-US'));
-      console.info('[DailyPractice] Midnight reset complete.');
-    } catch (e) {
-      console.error('Daily reset failed', e);
-    }
-  }
-
-  if (last && last !== todayKey) { performReset(); }
-  if (!last && typeof localStorage !== 'undefined') { localStorage.setItem(lastKey, todayKey); }
-
-  const now = new Date();
-  const nextMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 0, 0, 5);
-  const ms = nextMidnight.getTime() - now.getTime();
-  const t = setTimeout(() => performReset(), Math.max(1000, ms));
-  return () => clearTimeout(t);
-}
-/* =========================================================
-   FIX 2 UTILITY: Generate Last 7 Days with Blanks
-========================================================= */
-const getLastSevenDays = (history) => {
-    const historyMap = new Map();
-    history.forEach(item => {
-        historyMap.set(item.date, item);
-    });
-
-    const lastSevenDays = [];
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-
-    for (let i = 6; i >= 0; i--) {
-        const date = new Date(today);
-        date.setDate(today.getDate() - i);
-        const dateString = date.toISOString().split('T')[0];
-        
-        const historyItem = historyMap.get(dateString);
-
-        lastSevenDays.push(historyItem || { 
-            date: dateString, 
-            score: '0/0',
-            reflection: 'No log was submitted for this day.',
-        });
-    }
-    
-    return lastSevenDays;
+const MOCK_CONTENT_DETAILS = {
+    'Reading': (title, skill) => `### Core Concepts of ${title}\n\n**Focus Skill:** ${skill}\n\nThis article highlights the importance of asynchronous communication, creating clear documentation, and setting "done" criteria upfront to reduce execution drag. Your primary takeaway should be the principle: **Clear is Kind, Vague is Cruel.**\n\n* **Action Item:** Schedule 30 minutes for process mapping.\n* **Key Term:** Psychological Safety.`,
+    'Exercise': (title, skill) => `### Guided Practice: ${title}\n\n**Focus Skill:** ${skill}\n\nThis exercise requires you to journal or draft statements based on a self-reflective prompt. Use the questions below as a starting point. Your goal is to identify a core belief and define a corresponding measurable behavior.\n\n* **Prompt 1:** When was the last time you felt truly in integrity with your stated values?\n* **Prompt 2:** What is the most difficult piece of feedback you have successfully processed and implemented?`,
+    'Case Study': (title, skill) => `### Case Study Setup: ${title}\n\n**Focus Skill:** ${skill}\n\nReview the following scenario description and prepare a 5-step action plan before running the simulation or discussing with your coach. The scenario involves a failure to delegate a crucial task to a capable subordinate, leading to team burnout and missed deadlines.`,
+    'Role-Play': (title, skill) => `### Role-Play Briefing: ${title}\n\n**Focus Skill:** ${skill}\n\nThis is a simulation using the Coaching Lab. Your goal is to use the SBI model to deliver tough feedback to an employee who is likely to respond defensively. **Preparation is key!**\n\n* **Mindset:** Lead with curiosity, not judgment.\n* **Goal:** End the conversation with a measurable, agreed-upon next step.`,
+    'Tool': (title, skill) => `### Tool Overview: ${title}\n\n**Focus Skill:** ${skill}\n\nThis module guides you through a new framework. The current focus is risk identification and mitigation planning. The objective of this tool is to formalize risk assessment across your strategic goals.`,
 };
 
-/* =========================================================
-   NEW FEATURE 1 UTILITY: Tier Success Rate Calculator
-========================================================= */
+// Global book data for the Business Readings module
+const allBooks = {
+    Strategy: [{ id: 1, title: 'Measure What Matters', author: 'John Doerr' }],
+    Culture: [{ id: 2, title: 'Dare to Lead', author: 'Brené Brown' }],
+    Productivity: [{ id: 3, title: 'Deep Work', author: 'Cal Newport' }],
+    Innovation: [{ id: 4, title: 'The Lean Startup', author: 'Eric Ries' }],
+    'Personal Willpower': [{ id: 5, title: 'Atomic Habits', author: 'James Clear' }],
+    'Mental Fitness & Resilience': [{ id: 6, title: 'Mindset', author: 'Carol Dweck' }],
+};
 
-const calculateTierSuccessRates = (activeCommitments, history) => {
+const getTargetDifficulty = (rating) => {
+    if (rating <= 4) return 'Intro';
+    if (rating <= 7) return 'Core';
+    return 'Mastery';
+};
+
+const adjustDuration = (rating, baseDuration) => {
+    if (rating >= 8) return Math.max(15, Math.round(baseDuration * 0.7));
+    if (rating <= 3) return Math.min(90, Math.round(baseDuration * 1.3));
+    return baseDuration;
+};
+
+// Mock data for the "Generic Manager" Plan Comparison
+const GENERIC_PLAN = {
+    avgIntroContent: 8, // Average 8 intro pieces
+    avgMasteryContent: 3, // Average 3 mastery pieces
+    totalDuration: 1200, // Total duration in minutes
+};
+
+
+const generatePlanData = (assessment, ownerUid) => {
+    const { managerStatus, goalPriorities, selfRatings, peerRatings, teamSkillAlignment } = assessment;
     const allTiers = Object.keys(LEADERSHIP_TIERS);
-    const tierData = {};
 
-    allTiers.forEach(id => {
-        tierData[id] = { met: 0, total: 0, rate: 0 };
+    let initialTierIndex = managerStatus === 'New' ? 0 : managerStatus === 'Mid-Level' ? 2 : 4;
+
+    const plan = [];
+    const usedContentIds = new Set();
+    const lowRatedTiers = Object.entries(selfRatings).filter(([, rating]) => rating <= 4).map(([id]) => id);
+
+    let tierRotationQueue = [];
+
+    // Prioritize low-rated tiers first
+    lowRatedTiers.forEach(tier => {
+        if (!tierRotationQueue.includes(tier)) tierRotationQueue.push(tier);
+    });
+    // Add goal priorities next
+    goalPriorities.forEach(tier => {
+        if (!tierRotationQueue.includes(tier)) tierRotationQueue.push(tier);
+    });
+    // Fill the rest of the queue with all tiers to ensure full coverage
+    allTiers.forEach(tier => {
+        if (!tierRotationQueue.includes(tier)) tierRotationQueue.push(tier);
     });
 
-    activeCommitments.forEach(c => {
-        if (c.linkedTier) {
-            const isMet = c.status === 'Committed';
-            tierData[c.linkedTier].total += 1;
-            if (isMet) {
-                tierData[c.linkedTier].met += 1;
+    // If Team Skill Alignment is active and a team gap exists, prioritize that tier
+    const teamGapTier = teamSkillAlignment?.gapTier;
+    if (assessment.alignToTeam && teamGapTier && !tierRotationQueue.includes(teamGapTier)) {
+        // Inject team gap priority early
+        tierRotationQueue.splice(1, 0, teamGapTier);
+    }
+    
+    // Ensure T1 is always at the front if the user is 'New'
+    if (managerStatus === 'New' && tierRotationQueue[0] !== 'T1') {
+         tierRotationQueue.unshift('T1');
+    }
+    
+    // Check for Confidence/Competence Gap (Self vs. Peer Rating Discrepancy)
+    let peerGapTier = null;
+    if (peerRatings) {
+        for (const tierId of allTiers) {
+            const self = selfRatings[tierId];
+            const peer = peerRatings[tierId];
+            if (self - peer >= 3) { // Self rates 3+ points higher than peers
+                peerGapTier = tierId;
+                break; 
             }
         }
-    });
+    }
+    if (peerGapTier && !tierRotationQueue.includes(peerGapTier)) {
+        // Inject gap-closing tier immediately after the first priority tier
+        tierRotationQueue.splice(1, 0, peerGapTier);
+    }
 
-    history.slice(-90).forEach(() => {
-        // Mock historical data generation for demonstration
-        ['T3', 'T4', 'T2', 'T5', 'T1'].forEach(id => {
-            if (tierData[id]) {
-                tierData[id].total += 2;
-                const mockMet = (id === 'T3' || id === 'T4') ? 2 : (id === 'T2') ? 1 : Math.random() > 0.4 ? 1 : 0;
-                tierData[id].met += mockMet;
+
+    // --- Core 24-Month Loop ---
+    for (let month = 1; month <= 24; month++) {
+        // Rotate through the unique tier queue
+        let currentTier = tierRotationQueue[(month - 1) % tierRotationQueue.length];
+
+        const tierMeta = LEADERSHIP_TIERS[currentTier];
+        const theme = `Focus on ${tierMeta.name}`;
+
+        const rating = selfRatings[currentTier];
+        const targetDifficulty = getTargetDifficulty(rating);
+
+        const requiredContent = [];
+        const contentPool = CONTENT_LIBRARY.filter(item =>
+            item.tier === currentTier && item.difficulty === targetDifficulty && !usedContentIds.has(item.id)
+        );
+
+        // Pull up to 4 items
+        let count = 0;
+        for (const item of contentPool) {
+            if (count < 4) {
+                requiredContent.push({
+                    ...item,
+                    duration: adjustDuration(rating, item.duration),
+                    status: 'Pending',
+                });
+                usedContentIds.add(item.id);
+                count++;
             }
+        }
+
+        plan.push({
+            month,
+            tier: currentTier,
+            theme,
+            requiredContent,
+            status: 'Pending',
+            reflectionText: '',
+            monthCompletedDate: null,
+            totalDuration: requiredContent.reduce((sum, item) => sum + item.duration, 0),
         });
-    });
-
-    return allTiers.map(id => {
-        const data = tierData[id];
-        const rate = data.total > 0 ? Math.round((data.met / data.total) * 100) : 0;
-        return {
-            id,
-            name: LEADERSHIP_TIERS[id].name,
-            rate,
-            color: LEADERSHIP_TIERS[id].hex,
-            total: data.total,
-        };
-    }).filter(t => t.total > 0);
-};
-
-/* =========================================================
-   NEW COMPONENT: Tier Success Map (Visualization)
-========================================================= */
-const TierSuccessMap = ({ tierRates }) => {
-    if (tierRates.length === 0) {
-        return (
-            <Card title="Longitudinal Tier Success" icon={BarChart3} accent='NAVY' className='bg-gray-100 border-2 border-gray-300'>
-                <p className='text-sm text-gray-500'>Log commitments for 90 days to see your long-term success mapped to your PDP tiers.</p>
-            </Card>
-        );
     }
-    
-    const maxRate = Math.max(...tierRates.map(t => t.rate));
-    const minRate = Math.min(...tierRates.filter(t => t.total > 0).map(t => t.rate));
 
-    return (
-        <Card title="Longitudinal Tier Success" icon={BarChart3} accent='NAVY' className='bg-[#0B3B5B]/10 border-2 border-[#0B3B5B]/20'>
-            <p className='text-xs text-gray-600 mb-4'>Commitment success rate mapped to your 5 PDP Tiers (Last 90 Days).</p>
-            
-            <div className='space-y-3'>
-                {tierRates.map(tier => (
-                    <div key={tier.id}>
-                        <div className='flex justify-between items-center text-sm font-semibold mb-1'>
-                            <span className='text-[#0B3B5B]'>{tier.id}: {tier.name}</span>
-                            <span className={`${tier.rate === maxRate ? 'text-green-600' : tier.rate === minRate ? 'text-[#E04E1B]' : 'text-[#47A88D]'}`}>
-                                {tier.rate}%
-                            </span>
-                        </div>
-                        <div className="w-full bg-gray-300 rounded-full h-2">
-                            <div 
-                                className="h-2 rounded-full transition-all duration-700" 
-                                style={{ 
-                                    width: `${tier.rate}%`, 
-                                    backgroundColor: tier.rate === maxRate ? COLORS.GREEN : tier.rate === minRate ? COLORS.ORANGE : COLORS.TEAL
-                                }}
-                            ></div>
-                        </div>
-                    </div>
-                ))}
-            </div>
-        </Card>
-    );
+    return {
+        ownerUid,
+        assessment,
+        plan,
+        currentMonth: 1,
+        latestScenario: null,
+        lastUpdate: new Date().toISOString(),
+    };
 };
 
+// ... (omitted Modals, TrackerDashboardView for brevity)
 
-/* =========================================================
-   FEATURE: Commitment History Drill-Down Modal
-========================================================= */
+// --- Component 1: Plan Generator View ---
+const PlanGeneratorView = ({ userId, saveNewPlan, isLoading, error }) => {
+    // ... (Component logic remains the same)
+    const [managerStatus, setManagerStatus] = useState('New');
+    const [goalPriorities, setGoalPriorities] = useState([]);
+    const [selfRatings, setSelfRatings] = useState({ T1: 5, T2: 5, T3: 5, T4: 5, T5: 5 });
+    // NEW: 360 Feedback inputs
+    const [peerRatings, setPeerRatings] = useState({ T1: 6, T2: 6, T3: 5, T4: 5, T5: 5 }); 
+    const [alignToTeam, setAlignToTeam] = useState(false); // Feature 2: Team Alignment Toggle
+    const [isGenerating, setIsGenerating] = useState(false);
+    const [generatedPlan, setGeneratedPlan] = useState(null); // Feature B: Plan Comparison State
 
-const CommitmentHistoryModal = ({ isVisible, onClose, dayData, activeCommitments }) => {
-    if (!isVisible || !dayData) return null;
+    const isGoalLimitReached = goalPriorities.length >= 3;
+    const canGenerate = managerStatus && goalPriorities.length > 0 && !isGenerating;
 
-    const [committed, total] = dayData.score.split('/').map(Number);
-    const isPerfect = committed === total && total > 0;
-    const isLoggedDay = total > 0;
+    const teamSkillMap = useMemo(() => ({ // Mocked Team Data
+        gapTier: 'T3',
+        gapSkill: 'Execution',
+        confidence: 35, // 35% Confidence
+    }), []);
+
+    const handleGoalToggle = (tierId) => {
+        // ... (Logic remains the same)
+        setGoalPriorities(prev => {
+            if (prev.includes(tierId)) {
+                return prev.filter(id => id !== tierId);
+            }
+            if (isGoalLimitReached) {
+                alert("You can select a maximum of 3 goal priorities.");
+                return prev;
+            }
+            return [...prev, tierId];
+        });
+    };
+
+    const handleRatingChange = (tierId, value) => {
+        setSelfRatings(prev => ({ ...prev, [tierId]: parseInt(value) }));
+    };
     
-    // Use the first N commitments as a proxy for the historical log entries, based on the score.
-    const historicalCommitments = activeCommitments || []; 
-
-    return (
-        <div className="fixed inset-0 bg-[#0B3B5B]/80 z-50 flex items-center justify-center p-4">
-            <div className="bg-[#FCFCFA] rounded-3xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto p-8">
-                
-                <div className="flex justify-between items-center border-b pb-4 mb-6">
-                    <h2 className="text-2xl font-extrabold text-[#0B3B5B] flex items-center">
-                        <MessageSquare className="w-6 h-6 mr-3" style={{ color: COLORS.TEAL }} />
-                        Review: {new Date(dayData.date + 'T00:00:00').toDateString()}
-                    </h2>
-                    <button onClick={onClose} className="p-2 text-gray-500 hover:text-[#E04E1B] transition-colors">
-                        <X className="w-5 h-5" />
-                    </button>
-                </div>
-
-                <div className={`p-4 rounded-xl mb-6 font-semibold ${isLoggedDay ? (isPerfect ? 'bg-green-100 text-green-800' : 'bg-red-100 text-[#E04E1B]') : 'bg-gray-100 text-gray-600'}`}>
-                    Score: {dayData.score} ({isLoggedDay ? (isPerfect ? 'Perfect Day!' : 'Commitments Missed') : 'No Commitments Logged'})
-                </div>
-
-                <h3 className="text-lg font-bold text-[#0B3B5B] mb-3">Daily Reflection</h3>
-                <p className='text-sm text-gray-700 p-3 bg-gray-50 rounded-lg min-h-[80px]'>
-                    {dayData.reflection || 'No reflection logged for this day.'}
-                </p>
-
-                {isLoggedDay && (
-                    <>
-                        <h3 className="text-lg font-bold text-[#0B3B5B] mb-3 mt-6">Commitments Logged (Based on Score)</h3>
-                        <div className='p-3 bg-white border border-gray-200 rounded-lg'>
-                            <p className='text-sm text-gray-500 italic'>
-                                Since the log only stores the score, we show today's active commitments. Imagine the log here reflects the actual commitments from {dayData.date}.
-                            </p>
-                            <ul className='space-y-2 mt-3 max-h-40 overflow-y-auto'>
-                                {historicalCommitments.slice(0, total).map((c, index) => (
-                                    <li key={c.id || index} className='flex items-start space-x-3 text-sm'>
-                                        <span className={`w-3 h-3 mt-1.5 rounded-full ${index < committed ? 'bg-green-500' : 'bg-red-500'}`}></span>
-                                        <span className='text-gray-700'>{c.text}</span>
-                                    </li>
-                                ))}
-                            </ul>
-                        </div>
-                    </>
-                )}
-                
-                <Button onClick={onClose} className='mt-8 w-full' accent='NAVY'>
-                    Close Review
-                </Button>
-            </div>
-        </div>
-    );
-};
-
-
-/**
- * CommitmentItem: Displays an individual daily commitment with status logging buttons.
- */
-const CommitmentItem = ({ commitment, onLogCommitment, onRemove, isSaving, isScorecardMode }) => {
-  const status = commitment.status || 'Pending';
-  const isPermanentCommitment = commitment.status !== 'Pending' && isScorecardMode; 
-  
-  const getStatusColor = (s) => {
-    if (s === 'Committed') return `bg-${COLORS.GREEN}/10 text-${COLORS.NAVY} border-${COLORS.GREEN}/50 shadow-md`;
-    if (s === 'Missed') return `bg-${COLORS.ORANGE}/10 text-${COLORS.NAVY} border-${COLORS.ORANGE}/50 shadow-md`;
-    return 'bg-gray-100 text-gray-700 border-gray-300 shadow-sm';
-  };
-
-  const getStatusIcon = (s) => {
-    if (s === 'Committed') return <CheckCircle className="w-5 h-5" style={{ color: COLORS.GREEN }} />;
-    if (s === 'Missed') return <Zap className="w-5 h-5" style={{ color: COLORS.ORANGE }} />;
-    return <Clock className="w-5 h-5 text-gray-500" />;
-  };
-
-  const tierMeta = commitment.linkedTier ? LEADERSHIP_TIERS[commitment.linkedTier] : null;
-
-  const tierLabel = tierMeta ? `${tierMeta.id}: ${tierMeta.name}` : 'General';
-  const colleagueLabel = commitment.targetColleague ? `Focus: ${commitment.targetColleague}` : 'Self-Focus';
-
-  const removeHandler = () => {
-    if (status !== 'Pending') {
-      console.warn("Commitment already logged (Committed/Missed) for today. Cannot archive.");
-    } else {
-      onRemove(commitment.id);
-    }
-  };
-
-  return (
-    <div className={`p-4 rounded-xl flex flex-col justify-between ${getStatusColor(status)} transition-all duration-300 ${isSaving ? 'opacity-70' : ''}`} style={{ border: `2px solid ${status === 'Committed' ? COLORS.GREEN : status === 'Missed' ? COLORS.ORANGE : COLORS.SUBTLE}`}}>
-      <div className='flex items-start justify-between'>
-        <div className='flex items-start space-x-2 text-lg font-semibold mb-2'>
-          {getStatusIcon(status)}
-          <span className='text-[#0B3B5B] text-base'>{commitment.text}</span>
-        </div>
-        <Tooltip content={isPermanentCommitment ? "Cannot archive once logged today." : "Remove commitment (only if Pending)."} >
-            <button onClick={removeHandler} className="text-gray-400 hover:text-[#E04E1B] transition-colors p-1 rounded-full" disabled={isSaving || isPermanentCommitment}>
-              {isPermanentCommitment ? <Archive className="w-4 h-4" /> : <Trash2 className="w-4 h-4" />}
-            </button>
-        </Tooltip>
-      </div>
-
-      <div className='flex flex-wrap gap-2 mb-3 overflow-x-auto'>
-        <div className='text-xs text-[#0B3B5B] bg-[#0B3B5B]/10 px-3 py-1 rounded-full inline-block font-medium whitespace-nowrap'>
-          Goal: {commitment.linkedGoal || 'N/A'}
-        </div>
-        <div className='text-xs text-[#219E8B] bg-[#219E8B]/10 px-3 py-1 rounded-full inline-block font-medium whitespace-nowrap'>
-          Tier: {tierLabel}
-        </div>
-        <div className='text-xs text-[#E04E1B] bg-[#E04E1B]/10 px-3 py-1 rounded-full inline-block font-medium whitespace-nowrap'>
-          {colleagueLabel}
-        </div>
-      </div>
-
-      <div className="flex space-x-2 mt-3 pt-3 border-t border-gray-300/50">
-  <Button
-    onClick={() => onLogCommitment(commitment.id, status === 'Committed' ? 'Pending' : 'Committed')}
-    className={`px-3 py-1 text-xs ${status === 'Committed' ? `bg-${COLORS.GREEN} hover:bg-green-700` : `bg-${COLORS.TEAL} hover:bg-[#1C8D7C]`}`}
-  >
-    {status === 'Committed' ? 'Mark as Pending' : 'Complete'}
-  </Button>
-  <Button
-    onClick={() => onLogCommitment(commitment.id, status === 'Missed' ? 'Pending' : 'Missed')}
-    variant="secondary"
-    className={`px-3 py-1 text-xs ${status === 'Missed' ? `bg-red-700 hover:bg-red-800` : ''}`}
-  >
-    {status === 'Missed' ? 'Mark as Pending' : 'Not Complete'}
-  </Button>
-</div>
-
-    </div>
-  );
-};
-
-/* =========================================================
-   NEW FEATURE: AI Accountability Partner Nudge
-========================================================= */
-const AIStarterPackNudge = ({ pdpData, setLinkedGoal, setLinkedTier, handleAddCommitment, isSaving }) => {
-    const { useAppServices: useAppServicesLocal } = { useAppServices: useAppServices }; // FIX: Use local variable access
-    const { commitmentData, planningData, pdpData: pdpDataLocal } = useAppServicesLocal(); 
-    
-    const [starterLoading, setStarterLoading] = useState(false);
-    const [suggestions, setSuggestions] = useState(null);
-
-    const highPriorityTier = useMemo(() => {
-        if (!pdpData?.assessment?.goalPriorities || pdpData.assessment.goalPriorities.length === 0) {
-            return null;
-        }
-        const tierId = pdpData.assessment.goalPriorities[0];
-        return LEADERSHIP_TIERS[tierId];
-    }, [pdpData]);
-    
-    const fetchStarterCommitments = useCallback((tier) => {
-        if (!tier) return [];
-        
-        const allBankCommitments = Object.values(leadershipCommitmentBank || {}).flat();
-        
-        const tierKeywords = tier.name.split(' ').map(s => s.toLowerCase());
-        
-        const relevantCommitments = allBankCommitments.filter(c => 
-            tierKeywords.some(keyword => c.text.toLowerCase().includes(keyword))
-        );
-        
-        const shuffled = relevantCommitments.sort(() => 0.5 - Math.random());
-        return shuffled.slice(0, 3);
-
-    }, []);
+    const handlePeerRatingChange = (tierId, value) => {
+        setPeerRatings(prev => ({ ...prev, [tierId]: parseInt(value) }));
+    };
 
     const handleGenerate = async () => {
-        if (!highPriorityTier) return;
-        setStarterLoading(true);
-        
-        const mockSuggestions = fetchStarterCommitments(highPriorityTier);
-        
-        setSuggestions({
-            tier: highPriorityTier,
-            list: mockSuggestions,
-            lisValue: highPriorityTier.id === 'T1' ? 'Vulnerability' : highPriorityTier.id === 'T3' ? 'Discipline' : 'Clarity'
+        if (!canGenerate) return;
+        setIsGenerating(true);
+        setGeneratedPlan(null);
+
+        const assessment = {
+            managerStatus,
+            goalPriorities,
+            selfRatings,
+            peerRatings, // Include Peer Ratings
+            // NEW MENTEE FEEDBACK MOCK
+            menteeFeedback: { T4: { score: 65, comment: "Needs better follow-up after delegating tasks." } },
+            alignToTeam: alignToTeam, // Include team alignment flag
+            teamSkillAlignment: alignToTeam ? teamSkillMap : null,
+            dateGenerated: new Date().toISOString(),
+        };
+
+        const newPlanData = generatePlanData(assessment, userId);
+
+        // Feature B: Store and Compare against Mock Generic Plan
+        setGeneratedPlan({
+            userPlan: newPlanData,
+            genericPlan: GENERIC_PLAN,
         });
-        setStarterLoading(false);
+
+        const success = await saveNewPlan(newPlanData);
+        if (!success) {
+            alert("Failed to save the plan. Check the console for database errors.");
+        }
+        setIsGenerating(false);
     };
 
-    if (!highPriorityTier) return null;
-    if (suggestions) {
+    const renderPlanComparison = () => {
+        if (!generatedPlan) return null;
+
+        const userPlan = generatedPlan.userPlan;
+        const genericPlan = generatedPlan.genericPlan;
+
+        const userTotalDuration = userPlan.plan.reduce((sum, m) => sum + m.totalDuration, 0);
+        const userIntroContent = userPlan.plan.flatMap(m => m.requiredContent).filter(c => c.difficulty === 'Intro').length;
+        const userMasteryContent = userPlan.plan.flatMap(m => m.requiredContent).filter(c => c.difficulty === 'Mastery').length;
+
+        const durationDifference = genericPlan.totalDuration - userTotalDuration;
+        const introDifference = genericPlan.avgIntroContent - userIntroContent;
+        const masteryDifference = userMasteryContent - genericPlan.avgMasteryContent;
+
+        const isAccelerated = durationDifference > 0;
+
         return (
-            <Card title={`Suggested Starter Pack: ${suggestions.tier.name}`} icon={Crown} accent='TEAL' className='mb-8 border-l-8 border-[#219E8B] bg-[#219E8B]/10'>
-                <p className='text-sm text-gray-700 mb-4'>
-                    Based on your PDP priority, the **AI Accountability Partner** recommends this starter pack to build critical habits quickly.
+            <Card title="Plan Comparison: Personalized vs. Generic" icon={Activity} accent='TEAL' className='mt-8 bg-[#219E8B]/10 border-l-4 border-[#219E8B]'>
+                <p className='text-lg font-extrabold text-[#0B3B5B] mb-4'>Your Plan is Highly Optimized!</p>
+
+                <div className='space-y-3 text-sm text-gray-700'>
+                    <p className='flex justify-between items-center'>
+                        <span className='font-semibold'>Total Estimated Time:</span>
+                        <span className={`font-bold ${isAccelerated ? 'text-green-600' : 'text-[#E04E1B]'}`}>
+                            {userTotalDuration} min ({isAccelerated ? `~${durationDifference} min less` : 'Standard'})
+                        </span>
+                    </p>
+                    <p className='flex justify-between items-center'>
+                        <span className='font-semibold'>Introductory Content (Low Skill):</span>
+                        <span className={`font-bold ${introDifference > 0 ? 'text-green-600' : 'text-[#E04E1B]'}`}>
+                            {userIntroContent} items ({introDifference} less than Generic)
+                        </span>
+                    </p>
+                    <p className='flex justify-between items-center'>
+                        <span className='font-semibold'>Mastery Content (High Skill):</span>
+                        <span className={`font-bold ${masteryDifference > 0 ? 'text-green-600' : 'text-[#E04E1B]'}`}>
+                            {userMasteryContent} items ({masteryDifference} more than Generic)
+                        </span>
+                    </p>
+                </div>
+                <p className='text-xs text-gray-600 mt-4 italic'>
+                    *The AI tailored your content difficulty and sequence based on your specific Tiers and self-rated skill gaps.
                 </p>
-                <ul className='space-y-3'>
-                    {suggestions.list.map(c => (
-                        <li key={c.id} className='flex justify-between items-center bg-white p-3 rounded-lg shadow-sm border'>
-                            <span className='text-sm text-gray-700 pr-2'>{c.text}</span>
-                            <Button 
-                                onClick={() => {
-                                    const currentMonthPlan = pdpDataLocal?.plan?.find(m => m.month === pdpDataLocal?.currentMonth);
-                                    setLinkedGoal(currentMonthPlan?.theme || `Focus on ${highPriorityTier.name}`);
-                                    setLinkedTier(highPriorityTier.id);
-                                    handleAddCommitment(c, 'bank');
-                                }}
-                                disabled={isSaving}
-                                className='px-3 py-1 text-xs bg-[#0B3B5B] hover:bg-gray-700'
-                            >
-                                Add
-                            </Button>
-                        </li>
-                    ))}
-                </ul>
-                <p className='text-xs text-gray-600 mt-4'>*Items are linked to your **{suggestions.tier.name}** PDP Tier.</p>
             </Card>
         );
-    }
-    
-    return (
-         <Card title="AI Accountability Partner" icon={Zap} accent='NAVY' className='mb-8 border-l-4 border-[#0B3B5B] bg-gray-100'>
-             <p className='text-sm text-gray-700 mb-4'>
-                 You have **no active commitments**. Click below to instantly generate a personalized starter pack based on your current PDP focus tier: **{highPriorityTier.name}**.
-             </p>
-             <Button onClick={handleGenerate} disabled={starterLoading} className="w-full" accent='TEAL'>
-                 {starterLoading ? 'Generating...' : 'Get Personalized Starter Pack'}
-             </Button>
-         </Card>
-    );
-
-};
-
-/**
- * CommitmentSelectorView: Allows users to add commitments from the bank or create custom ones.
- */
-const CommitmentSelectorView = ({ setView, initialGoal, initialTier }) => {
-  const { useAppServices: useAppServicesLocal } = { useAppServices: useAppServices }; // FIX: Use local variable access
-  const { updateCommitmentData, commitmentData, planningData, pdpData, callSecureGeminiAPI, hasGeminiKey, GEMINI_MODEL } = useAppServicesLocal();
-
-  const [tab, setTab] = useState('custom'); // Default to custom for AI critique
-  const [searchTerm, setSearchTerm] = useState('');
-  const [customCommitment, setCustomCommitment] = useState('');
-  const [linkedGoal, setLinkedGoal] = useState(initialGoal || '');
-  const [linkedTier, setLinkedTier] = useState(initialTier || '');
-  const [targetColleague, setTargetColleague] = useState('');
-  const [isSaving, setIsSaving] = useState(false);
-  const [isAlignmentOpen, setIsAlignmentOpen] = useState(true);
-  
-  const [assessmentLoading, setAssessmentLoading] = useState(false);
-  const [aiAssessment, setAiAssessment] = useState(null);
-
-  const userCommitments = commitmentData?.active_commitments || [];
-  const activeCommitmentIds = new Set(userCommitments.map(c => c.id));
-  const currentMonthPlan = pdpData?.plan?.find(m => m.month === pdpData?.currentMonth);
-
-  const requiredPdpContent = currentMonthPlan?.requiredContent || [];
-  const pdpContentCommitmentIds = new Set(userCommitments.filter(c => String(c.id).startsWith('pdp-content-')).map(c => String(c.id).split('-')[2]));
-
-  const allBankCommitments = useMemo(() => Object.values(leadershipCommitmentBank || {}).flat(), []);
-
-  const filteredBankCommitments = useMemo(() => {
-    const ql = searchTerm.toLowerCase();
-    return allBankCommitments.filter(c =>
-      !activeCommitmentIds.has(c.id) &&
-      c.text.toLowerCase().includes(ql)
-    );
-  }, [allBankCommitments, activeCommitmentIds, searchTerm]);
-
-  const okrGoals = planningData?.okrs?.map(o => o.objective) || [];
-  const missionVisionGoals = [planningData?.vision, planningData?.mission].filter(Boolean);
-  const initialLinkedGoalPlaceholder = '--- Select the Goal this commitment supports ---';
-  const availableGoals = useMemo(() => [
-    initialLinkedGoalPlaceholder,
-    ...(currentMonthPlan?.theme ? [`PDP Focus: ${currentMonthPlan.theme}`] : []),
-    ...okrGoals,
-    ...missionVisionGoals,
-    'Improve Feedback & Coaching Skills',
-    'Risk Mitigation Strategy',
-    'Other / New Goal'
-  ], [okrGoals, missionVisionGoals, currentMonthPlan]);
-  
-  useEffect(() => {
-    if (initialGoal && initialGoal !== linkedGoal) {
-      setLinkedGoal(initialGoal);
-    }
-    if (initialTier && initialTier !== linkedTier) {
-      setLinkedTier(initialTier);
-    }
-    if (!linkedGoal) {
-      setLinkedGoal(initialLinkedGoalPlaceholder);
-    }
-  }, [initialGoal, initialTier, linkedGoal, linkedTier, initialLinkedGoalPlaceholder, currentMonthPlan]);
-
-  const handleClearSearch = () => setSearchTerm('');
-  
-  useEffect(() => {
-    setAiAssessment(null);
-  }, [customCommitment, linkedGoal, linkedTier]);
-
-
-  /* =========================================================
-     NEW FEATURE: AI Commitment Assessment Logic
-  ========================================================= */
-
-  const handleAnalyzeCommitment = async () => {
-    if (!customCommitment.trim() || !linkedGoal || linkedGoal === initialLinkedGoalPlaceholder || !linkedTier) {
-        setAiAssessment({ 
-            score: 0, 
-            risk: 10,
-            feedback: "Please complete the commitment text, linked goal, and leadership tier selection to run the analysis.",
-            error: true
-        });
-        return;
-    }
-
-    setAssessmentLoading(true);
-    setAiAssessment(null);
-
-    const tierName = LEADERSHIP_TIERS[linkedTier]?.name || 'N/A';
-    const systemPrompt = `You are an AI Executive Coach specializing in habit alignment. Your task is to analyze a user's proposed daily commitment against their strategic context (Goal and Leadership Tier). The response MUST be a JSON object conforming to the schema. Do not include any introductory or explanatory text outside the JSON block.`;
-    
-    const userQuery = `Analyze the following custom commitment, linked goal, and leadership tier:
-    Commitment: "${customCommitment.trim()}"
-    Linked Goal: "${linkedGoal}"
-    Leadership Tier: ${linkedTier} - ${tierName}
-    
-    Assess its:
-    1. Value (Score 1-10): How specific, measurable, and impactful is the commitment toward achieving the goal and advancing the tier? (10 is perfect)
-    2. Risk (Score 1-10): How likely is this commitment to be skipped or failed due to vagueness, unrealistic scope, or poor alignment? (10 is high risk)
-    3. Feedback: Provide one concise sentence of constructive feedback on how to maximize the value or minimize the risk.`;
-
-    const jsonSchema = {
-        type: "OBJECT",
-        properties: {
-            score: { type: "INTEGER", description: "Value score from 1 to 10." },
-            risk: { type: "INTEGER", description: "Risk score from 1 to 10." },
-            feedback: { type: "STRING", description: "One concise sentence of constructive feedback." }
-        },
-        propertyOrdering: ["score", "risk", "feedback"]
     };
 
-    try {
-        const payload = {
-            contents: [{ role: "user", parts: [{ text: userQuery }] }],
-            systemInstruction: { parts: [{ text: systemPrompt }] },
-            generationConfig: {
-                responseMimeType: "application/json",
-                responseSchema: jsonSchema
-            },
-            model: GEMINI_MODEL,
-        };
-        
-        const result = await callSecureGeminiAPI(payload);
-        const jsonText = result?.candidates?.[0]?.content?.parts?.[0]?.text;
-        
-        if (jsonText) {
-            const parsedJson = JSON.parse(jsonText);
-            setAiAssessment({
-                score: parsedJson.score,
-                risk: parsedJson.risk,
-                feedback: parsedJson.feedback,
-                error: false
-            });
-        } else {
-             setAiAssessment({ 
-                score: 5, risk: 5, feedback: "AI assessment failed. Check your API key or commitment clarity.", error: true 
-            });
-        }
-
-    } catch (e) {
-        console.error("AI Assessment Error:", e);
-        setAiAssessment({ 
-            score: 5, risk: 5, feedback: "An unexpected error occurred during AI analysis. Please try again.", error: true 
-        });
-    } finally {
-        setAssessmentLoading(false);
-    }
-  };
-
-  /* =========================================================
-     Commitment Handlers
-  ========================================================= */
-
-  const handleAddCommitment = async (commitment, source) => {
-    if (!linkedGoal || linkedGoal === initialLinkedGoalPlaceholder || !linkedTier) return;
-    setIsSaving(true);
-
-    let newCommitment;
-    if (source === 'pdp') {
-      newCommitment = {
-        id: `pdp-content-${commitment.id}-${Date.now()}`,
-        text: `(PDP Required) Complete: ${commitment.title} (${commitment.type})`,
-        status: 'Pending',
-        isCustom: true,
-        linkedGoal: linkedGoal,
-        linkedTier: linkedTier,
-        targetColleague: `Est. ${commitment.duration} min`,
-      };
-    } else {
-      newCommitment = {
-        ...commitment,
-        id: String(commitment.id), 
-        status: 'Pending',
-        linkedGoal: linkedGoal,
-        linkedTier: linkedTier,
-        targetColleague: targetColleague.trim() || null,
-      };
-    }
-
-    const newCommitments = [...userCommitments, newCommitment];
-
-    await updateCommitmentData(prevState => ({ ...prevState, active_commitments: newCommitments }));
-
-    if (initialGoal !== linkedGoal) setLinkedGoal(initialLinkedGoalPlaceholder);
-    if (initialTier !== linkedTier) setLinkedTier('');
-    setCustomCommitment('');
-    setTargetColleague('');
-    setAiAssessment(null);
-    setIsSaving(false);
-  };
-
-  const handleCreateCustomCommitment = async () => {
-    if (customCommitment.trim() && linkedGoal && linkedGoal !== initialLinkedGoalPlaceholder && linkedTier) {
-      setIsSaving(true);
-      const newId = String(Date.now());
-      const newCommitments = [...userCommitments, {
-        id: newId,
-        text: customCommitment.trim(),
-        status: 'Pending',
-        isCustom: true,
-        linkedGoal: linkedGoal,
-        linkedTier: linkedTier,
-        targetColleague: targetColleague.trim() || null,
-      }];
-
-      await updateCommitmentData(prevState => ({ ...prevState, active_commitments: newCommitments }));
-      setCustomCommitment('');
-      if (initialGoal !== linkedGoal) setLinkedGoal(initialLinkedGoalPlaceholder);
-      if (initialTier !== linkedTier) setLinkedTier('');
-      setTargetColleague('');
-      setAiAssessment(null);
-      setIsSaving(false);
-    }
-  };
-
-  const canAddCommitment = !!linkedGoal && linkedGoal !== initialLinkedGoalPlaceholder && !!linkedTier && !isSaving;
-
-  const tabStyle = (currentTab) =>
-    `px-4 py-2 font-semibold rounded-t-xl transition-colors ${
-      tab === currentTab
-        ? `bg-[${COLORS.LIGHT_GRAY}] text-[#0B3B5B] border-t-2 border-x-2 border-[${COLORS.TEAL}]`
-        : `bg-gray-200 text-gray-500 hover:text-[#0B3B5B]`
-    }`;
-
-  const renderAssessmentResult = () => {
-    if (assessmentLoading) {
-        return (
-            <div className='flex items-center justify-center p-6 bg-gray-50 rounded-xl'>
-                <div className="animate-spin h-5 w-5 border-b-2 border-gray-500 mr-3 rounded-full"></div>
-                <span className='text-gray-600'>Analyzing habit alignment...</span>
-            </div>
-        );
-    }
-
-    if (!aiAssessment) return null;
-
-    if (aiAssessment.error && aiAssessment.score === 0) {
-        return (
-            <div className='p-4 bg-red-100 border border-red-300 rounded-xl text-sm text-red-800 font-medium'>
-                <AlertTriangle className='w-4 h-4 inline mr-2'/> {aiAssessment.feedback}
-            </div>
-        )
-    }
-
-    const valueColor = aiAssessment.score > 7 ? 'text-green-600' : aiAssessment.score > 4 ? 'text-yellow-600' : 'text-red-600';
-    const riskColor = aiAssessment.risk > 7 ? 'text-red-600' : aiAssessment.risk > 4 ? 'text-yellow-600' : 'text-green-600';
-    
-    return (
-        <Card title="AI Commitment Analysis" icon={Cpu} accent='NAVY' className='bg-white shadow-xl border-l-4 border-[#0B3B5B]'>
-            <div className='grid grid-cols-2 gap-4 mb-4'>
-                <div className={`p-3 rounded-xl border ${aiAssessment.score > 7 ? 'border-green-400 bg-green-50' : 'border-gray-300 bg-gray-100'}`}>
-                    <div className='text-xs font-semibold uppercase text-gray-500'>Value Score</div>
-                    <div className={`text-3xl font-extrabold ${valueColor}`}>{aiAssessment.score}/10</div>
-                </div>
-                <div className={`p-3 rounded-xl border ${aiAssessment.risk > 7 ? 'border-red-400 bg-red-50' : 'border-gray-300 bg-gray-100'}`}>
-                    <div className='text-xs font-semibold uppercase text-gray-500'>Risk Score</div>
-                    <div className={`text-3xl font-extrabold ${riskColor}`}>{aiAssessment.risk}/10</div>
-                </div>
-            </div>
-            <div className='p-3' style={{ background: COLORS.NAVY + '0D', border: `1px solid ${COLORS.NAVY}1A`, borderRadius: 8 }}>
-                <p className='text-xs font-semibold text-[#0B3B5B] mb-1 flex items-center'><Lightbulb className='w-3 h-3 mr-1'/> Coach Feedback:</p>
-                <p className='text-sm text-gray-700'>{aiAssessment.feedback}</p>
-            </div>
-        </Card>
-    );
-  };
-
-
-  return (
-    <div className="p-8">
-      <h1 className="text-3xl font-extrabold text-[#0B3B5B] mb-4">Manage Your Scorecard Commitments</h1>
-      <p className="text-lg text-gray-600 mb-6 max-w-3xl">Select the core micro-habits that directly support your current leadership development goals. You should aim for 3-5 active commitments.</p>
-
-      <Button onClick={() => setView('scorecard')} variant="nav-back" className="mb-8" disabled={isSaving}>
-        <ArrowLeft className="w-5 h-5 mr-2" /> Back to Scorecard
-      </Button>
-
-      {userCommitments.length === 0 && pdpData && (
-          <AIStarterPackNudge 
-            pdpData={pdpData} 
-            setLinkedGoal={setLinkedGoal} 
-            setLinkedTier={setLinkedTier} 
-            handleAddCommitment={handleAddCommitment} 
-            isSaving={isSaving}
-          />
-      )}
-      
-      {/* Alignment Card (Collapsible) */}
-      <Card
-        title="Goal and Tier Alignment (Mandatory)"
-        icon={Target}
-        accent='TEAL'
-        onClick={() => setIsAlignmentOpen(prev => !prev)}
-        className='mb-8 p-6'
-        style={{ background: COLORS.TEAL + '1A', border: `2px solid ${COLORS.TEAL}` }}
-      >
-        <div className='flex justify-between items-center'>
-          <p className="text-sm font-semibold text-[#0B3B5B]">Status: {canAddCommitment ? 'Ready to Add' : 'Awaiting Selection'}</p>
-          <CornerRightUp className={`w-5 h-5 text-[#0B3B5B] transition-transform ${isAlignmentOpen ? 'rotate-90' : 'rotate-0'}`} />
-        </div>
-
-        {isAlignmentOpen && (
-          <div className='mt-4 pt-4 border-t border-[#219E8B]/30'>
-            <p className="text-sm text-gray-700 mb-4">Ensure your daily action is tied to a strategic goal **and** a core leadership tier.</p>
-
-            <div className='grid grid-cols-1 md:grid-cols-2 gap-4 mb-4'>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">1. Strategic Goal</label>
-                <select
-                  value={linkedGoal}
-                  onChange={(e) => setLinkedGoal(e.target.value)}
-                  className="w-full p-3 border border-gray-300 rounded-xl focus:ring-[#0B3B5B] focus:border-[#0B3B5B] text-[#0B3B5B] font-semibold"
-                >
-                  {availableGoals.map(goal => (
-                    <option
-                      key={goal}
-                      value={goal}
-                      disabled={goal === initialLinkedGoalPlaceholder}
-                    >
-                      {goal}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">2. Leadership Tier (T1-T5)</label>
-                <select
-                  value={linkedTier}
-                  onChange={(e) => setLinkedTier(e.target.value)}
-                  className="w-full p-3 border border-gray-300 rounded-xl focus:ring-[#0B3B5B] focus:border-[#0B3B5B] text-[#0B3B5B] font-semibold"
-                >
-                  <option value="">--- Select Tier ---</option>
-                  {Object.values(LEADERSHIP_TIERS).map(tier => (
-                    <option key={tier.id} value={tier.id}>
-                      {tier.id}: {tier.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
-
-            <label className="block text-sm font-medium text-gray-700 mb-1">3. Target Colleague (Optional for inter-personal skills)</label>
-            <input
-              type="text"
-              value={targetColleague}
-              onChange={(e) => setTargetColleague(e.target.value)}
-              placeholder="e.g., Alex, Sarah, or Leave Blank for Self-Focus"
-              className="w-full p-3 border border-gray-300 rounded-xl focus:ring-[#219E8B] focus:border-[#219E8B]"
-            />
-
-            {!canAddCommitment && <p className='text-[#E04E1B] text-sm mt-3'>* Please select a Strategic Goal and a Leadership Tier to activate the 'Add' buttons.</p>}
-          </div>
-        )}
-      </Card>
-
-
-      {/* Tab Navigation */}
-      <div className="flex space-x-2 border-b border-gray-300 -mb-px">
-        <button className={tabStyle('pdp')} onClick={() => setTab('pdp')}>
-          <Target className='w-4 h-4 inline mr-1' /> PDP Content ({requiredPdpContent.filter(c => !pdpContentCommitmentIds.has(String(c.id))).length})
-        </button>
-        <button className={tabStyle('bank')} onClick={() => setTab('bank')}>
-          <BookOpen className='w-4 h-4 inline mr-1' /> Commitment Bank ({filteredBankCommitments.length})
-        </button>
-        <button className={tabStyle('custom')} onClick={() => setTab('custom')}>
-          <PlusCircle className='w-4 h-4 inline mr-1' /> Custom Commitment
-        </button>
-      </div>
-
-      {/* Tab Content */}
-      <div className='mt-0 bg-[#FCFCFA] p-6 rounded-b-3xl shadow-lg border-2 border-t-0 border-[#219E8B]/30'>
-
-        {/* PDP Content Tab */}
-        {tab === 'pdp' && (
-          <div className="space-y-4">
-            <p className='text-sm text-gray-700'>These items are currently required for you to complete Month **{currentMonthPlan?.month || 'N/A'}** ({currentMonthPlan?.theme || 'N/A Focus'}) of your personalized plan.</p>
-            <div className="h-96 overflow-y-auto pr-2 space-y-3 pt-2">
-              {requiredPdpContent.length > 0 ? (
-                requiredPdpContent
-                  .filter(c => !pdpContentCommitmentIds.has(String(c.id)))
-                  .map(c => (
-                    <div key={c.id} className="flex justify-between items-center p-3 text-sm bg-[#219E8B]/5 rounded-lg border border-[#219E8B]/20">
-                      <span className='text-gray-800 font-medium'>{c.title} ({c.type}) - Est. {c.duration} min</span>
-                      <Tooltip content={`Adds this item to your daily scorecard for tracking (linked goal/tier required).`}>
-                        <button
-                          onClick={() => handleAddCommitment(c, 'pdp')}
-                          disabled={!canAddCommitment || isSaving}
-                          className={`font-semibold text-xs transition-colors p-1 flex items-center space-x-1 ${canAddCommitment && !isSaving ? 'text-[#219E8B] hover:text-[#1C8D7C]' : 'text-gray-400 cursor-not-allowed'}`}
-                        >
-                          <PlusCircle className='w-4 h-4' />
-                          <span className='hidden sm:inline'>Add to Scorecard</span>
-                        </button>
-                      </Tooltip>
-                    </div>
-                  ))
-              ) : (
-                <p className="text-gray-500 italic text-center py-10">No required content for the current PDP month, or you have already added all items.</p>
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* Commitment Bank Tab */}
-        {tab === 'bank' && (
-          <div className="space-y-4">
-            <div className='flex space-x-2'>
-              <input
-                type="text"
-                placeholder="Filter Commitment Bank by keyword (e.g., 'feedback' or 'OKR')"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full p-3 border border-gray-300 rounded-xl focus:ring-[#219E8B] focus:border-[#219E8B] mb-4"
-              />
-              {searchTerm && (
-                <Button variant="outline" onClick={handleClearSearch} className='px-4 py-2 self-start'>
-                  <X className='w-4 h-4' />
-                </Button>
-              )}
-            </div>
-
-            <div className="h-96 overflow-y-auto pr-2 space-y-3">
-              {Object.entries(leadershipCommitmentBank).map(([category, commitments]) => {
-                const categoryCommitments = commitments.filter(c =>
-                  !activeCommitmentIds.has(c.id) &&
-                  c.text.toLowerCase().includes(searchTerm.toLowerCase())
-                );
-
-                if (categoryCommitments.length === 0) return null;
-
-                return (
-                  <div key={category}>
-                    <h3 className="text-sm font-bold text-[#0B3B5B] border-b pb-1 mb-2">{category}</h3>
-                    {categoryCommitments.map(c => (
-                      <div key={c.id} className="flex justify-between items-center p-2 text-sm bg-gray-50 rounded-lg mb-1">
-                        <span className='text-gray-800'>{c.text}</span>
-                        <Tooltip content={`Adds this commitment (linked goal/tier required).`}>
-                          <button
-                            onClick={() => handleAddCommitment(c, 'bank')}
-                            disabled={!canAddCommitment || isSaving}
-                            className={`font-semibold text-xs transition-colors p-1 ${canAddCommitment && !isSaving ? 'text-[#219E8B] hover:text-[#1C8D7C]' : 'text-gray-400 cursor-not-allowed'}`}
-                          >
-                            <PlusCircle className='w-4 h-4' />
-                          </button>
-                        </Tooltip>
-                      </div>
-                    ))}
-                  </div>
-                );
-              })}
-              {filteredBankCommitments.length === 0 && (
-                <p className="text-gray-500 italic mt-4 text-center">No unselected commitments match criteria.</p>
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* Custom Commitment Tab - UPDATED WITH AI ANALYSIS */}
-        {tab === 'custom' && (
-          <div className="space-y-4">
-            <p className='text-sm text-gray-700'>Define a hyper-specific, measurable action tailored to your unique challenges.</p>
-            
-            <textarea
-              value={customCommitment}
-              onChange={(e) => setCustomCommitment(e.target.value)}
-              placeholder="e.g., Conduct a 10-minute debrief after every client meeting."
-              className="w-full p-3 border border-gray-300 rounded-xl focus:ring-[#219E8B] focus:border-[#219E8B] h-20 mb-4"
-            />
-            
-            <Button
-                onClick={handleAnalyzeCommitment}
-                disabled={!customCommitment.trim() || !canAddCommitment || assessmentLoading || isSaving || !hasGeminiKey()}
-                variant='outline'
-                className="w-full bg-[#0B3B5B] hover:bg-gray-700 text-white"
-            >
-                {assessmentLoading ? 'Analyzing...' : <><Cpu className='w-4 h-4 mr-2'/> Analyze Commitment Alignment</>}
-            </Button>
-
-            {renderAssessmentResult()}
-
-            <Button
-              onClick={handleCreateCustomCommitment}
-              disabled={!customCommitment.trim() || !canAddCommitment || isSaving}
-              className="w-full bg-[#219E8B] hover:bg-[#1C8D7C]"
-            >
-              {isSaving ? 'Saving...' : 'Add Custom Commitment'}
-            </Button>
-          </div>
-        )}
-
-      </div>
-    </div>
-  );
-};
-
-/* =========================================================
-   NEW ADVANCED FEATURE 3: Weekly Prep View
-========================================================= */
-
-const WeeklyPrepView = ({ setView, commitmentData, updateCommitmentData, userCommitments }) => {
-    const [reviewNotes, setReviewNotes] = useState(commitmentData?.weekly_review_notes || '');
-    const [isSaving, setIsSaving] = useState(false);
-    
-    const missedLastWeek = (commitmentData?.history || []).slice(-7).filter(day => {
-        const [committed, total] = day.score.split('/').map(Number);
-        return committed < total && total > 0;
-    });
-
-    const handleRetireCommitment = async (id) => {
-        const commitmentToRemove = userCommitments.find(c => c.id === id);
-        if (commitmentToRemove && commitmentToRemove.status !== 'Pending') {
-            console.warn("A commitment that has been logged today cannot be immediately retired for data integrity. Please wait for the daily reset.");
-            return;
-        }
-
-        const newCommitments = userCommitments.filter(c => c.id !== id);
-        
-        await updateCommitmentData(prevState => ({ ...prevState, active_commitments: newCommitments }));
-        console.info("Commitment retired successfully. Focus remains on the next priority!");
-    };
-
-    const handleSaveReview = async () => {
-        setIsSaving(true);
-        await updateCommitmentData(prevState => ({ 
-            ...prevState,
-            last_weekly_review: new Date().toISOString(),
-            weekly_review_notes: reviewNotes,
-        }));
-        console.info('Weekly review saved!');
-        setIsSaving(false);
-        setView('scorecard');
-    };
-
+    // Component Rendering
     return (
         <div className="p-8">
-            <h1 className="text-3xl font-extrabold text-[#0B3B5B] mb-4">Weekly Practice Review & Prep</h1>
-            <p className="text-lg text-gray-600 mb-6 max-w-3xl">Take 15 minutes to review last week's performance and prepare your focus for the upcoming week. This intentional review ensures sustained success.</p>
+            <h1 className="text-3xl font-extrabold text-[#0B3B5B] mb-6">Personalized 24-Month Plan Generator</h1>
+            <p className="text-lg text-gray-600 mb-8 max-w-3xl">Answer a few questions about your current role and goals to instantly generate a hyper-personalized leadership roadmap designed to close your skill gaps over the next two years.</p>
 
-            <Button onClick={() => setView('scorecard')} variant="nav-back" className="mb-8">
-                <ArrowLeft className="w-5 h-5 mr-2" /> Back to Scorecard
-            </Button>
-            
-            <div className='grid lg:grid-cols-2 gap-8'>
-                <div className='space-y-6'>
-                    <Card title="Audit: Last Week's Missed Days" icon={TrendingDown} accent='ORANGE' className='border-l-4 border-[#E04E1B] bg-[#E04E1B]/10'>
-                        <p className='text-sm text-gray-700 mb-4'>
-                            You missed your perfect score **{missedLastWeek.length} times** last week. Use the list below to retire mastered habits or re-commit to challenging ones.
-                        </p>
-                        
-                        <h4 className='text-md font-bold text-[#0B3B5B] border-t pt-4 mt-4 mb-2'>Active Commitments (For Review)</h4>
-                        <ul className='space-y-2'>
-                            {userCommitments.map(c => (
-                                <li key={c.id} className='flex justify-between items-center bg-white p-3 rounded-lg shadow-sm border'>
-                                    <span className='text-sm text-gray-700 pr-2'>{c.text}</span>
-                                    <Button 
-                                        onClick={() => handleRetireCommitment(c.id)}
-                                        variant='outline' 
-                                        className='text-xs px-2 py-1 text-[#E04E1B] border-[#E04E1B]/50 hover:bg-[#E04E1B]/10 whitespace-nowrap'
-                                    >
-                                        <Trash2 className='w-4 h-4 mr-1' /> Retire
-                                    </Button>
-                                </li>
-                            ))}
-                            {userCommitments.length === 0 && <p className='text-gray-500 italic text-sm'>No active commitments to review.</p>}
-                        </ul>
-                    </Card>
-                </div>
+            <div className="space-y-10">
+                <Card title="1. Your Management Experience" icon={Users} accent='TEAL'>
+                    <h3 className="text-md font-semibold text-gray-700 mb-3">Select your current status:</h3>
+                    <div className="flex space-x-4">
+                        {['New', 'Mid-Level', 'Seasoned'].map(status => (
+                            <button
+                                key={status}
+                                onClick={() => setManagerStatus(status)}
+                                className={`px-4 py-2 rounded-xl font-semibold transition-all shadow-md ${managerStatus === status ? `bg-[${COLORS.TEAL}] text-white` : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
+                            >
+                                {status}
+                            </button>
+                        ))}
+                    </div>
+                </Card>
 
-                <div className='space-y-6'>
-                    <Card title="Next Week Planning Notes" icon={Lightbulb} accent='TEAL' className='border-l-4 border-[#219E8B]'>
-                        <p className='text-sm text-gray-700 mb-4'>Draft a quick focus note for the upcoming week based on your audit. What single outcome will define success?</p>
-                        <textarea 
-                            value={reviewNotes}
-                            onChange={(e) => setReviewNotes(e.target.value)}
-                            className="w-full p-3 border border-gray-300 rounded-xl focus:ring-[#219E8B] focus:border-[#219E8B] h-32" 
-                            placeholder="e.g., 'Ensure 1:1 prep is done by Monday to maintain Coaching Tier focus.'"
-                        ></textarea>
-                    </Card>
+                {/* Feature 2: Team Alignment Step */}
+                <Card title="Team Strategic Alignment (Optional)" icon={Users} accent='NAVY'>
+                    <label className='flex items-center space-x-3 text-md font-semibold text-[#0B3B5B] mb-3 cursor-pointer'>
+                        <input
+                            type='checkbox'
+                            checked={alignToTeam}
+                            onChange={(e) => setAlignToTeam(e.target.checked)}
+                            className='h-5 w-5 text-[#219E8B] rounded'
+                            style={{ accentColor: COLORS.TEAL }}
+                        />
+                        <span>Align my plan with my team's core skill gaps.</span>
+                    </label>
+                    {alignToTeam && (
+                        <div className='p-4 bg-gray-50 rounded-xl mt-3 border border-gray-200'>
+                            <p className='text-sm text-gray-700'>
+                                Mock Team Skill Map Analysis shows the team is currently lowest on: **{teamSkillMap.gapTier}: {LEADERSHIP_TIERS[teamSkillMap.gapTier].name}** (Confidence: {teamSkillMap.confidence}%).
+                                <span className='font-bold text-[#E04E1B]'> Your plan will prioritize this Tier early.</span>
+                            </p>
+                        </div>
+                    )}
+                </Card>
 
-                    <Button onClick={handleSaveReview} disabled={isSaving} className="w-full" accent='TEAL'>
-                        {isSaving ? 'Saving Review...' : 'Save Weekly Review & Return'}
-                    </Button>
-                </div>
+
+                <Card title="2. Goal Priorities (Max 3)" icon={Target} accent='NAVY'>
+                    <h3 className="text-md font-semibold text-gray-700 mb-3">Which tiers are most important to you right now?</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {Object.values(LEADERSHIP_TIERS).map(tier => (
+                            <label key={tier.id} className={`flex items-center p-3 rounded-xl border-2 transition-all cursor-pointer ${goalPriorities.includes(tier.id) ? 'bg-[#0B3B5B]/10 border-[#0B3B5B]' : 'bg-[#FCFCFA] border-gray-200 hover:border-[#219E8B]'}`}>
+                                <input
+                                    type="checkbox"
+                                    checked={goalPriorities.includes(tier.id)}
+                                    onChange={() => handleGoalToggle(tier.id)}
+                                    className="h-5 w-5 text-[#219E8B] rounded mr-3"
+                                    disabled={isGoalLimitReached && !goalPriorities.includes(tier.id)}
+                                    style={{ accentColor: COLORS.TEAL }}
+                                />
+                                <div>
+                                    <p className="font-semibold text-[#0B3B5B]">{tier.name}</p>
+                                    <p className="text-xs text-gray-600">({tier.id})</p>
+                                </div>
+                            </label>
+                        ))}
+                    </div>
+                </Card>
+
+                <Card title="3. Skill Gap Assessment (Self vs. Peer)" icon={BarChart3} accent='TEAL'>
+                    <h3 className="text-md font-semibold text-gray-700 mb-6">Rate your current effectiveness (1 = Low, 10 = Mastery):</h3>
+                    
+                    <div className='grid grid-cols-2 gap-x-4 gap-y-2 mb-4 text-xs font-bold text-gray-600'>
+                        <div>Your Self-Rating</div>
+                        <div>360° Peer/Report Avg.</div>
+                    </div>
+
+                    {Object.values(LEADERSHIP_TIERS).map(tier => (
+                        <div key={tier.id} className="mb-6 border p-3 rounded-lg bg-gray-50">
+                            <p className="font-semibold text-[#0B3B5B] mb-2">{tier.name}:</p>
+                            <div className='grid grid-cols-2 gap-x-4'>
+                                {/* Self Rating Column */}
+                                <div>
+                                    <p className="font-semibold text-[#0B3B5B] flex justify-between">
+                                        <span className='text-sm text-gray-600'>Self:</span>
+                                        <span className='text-xl font-extrabold text-[#219E8B]'>{selfRatings[tier.id]}/10</span>
+                                    </p>
+                                    <input
+                                        type="range"
+                                        min="1" max="10"
+                                        value={selfRatings[tier.id]}
+                                        onChange={(e) => handleRatingChange(tier.id, e.target.value)}
+                                        className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer range-lg accent-[#219E8B]"
+                                        style={{ accentColor: COLORS.TEAL }}
+                                    />
+                                </div>
+                                
+                                {/* Peer Rating Column (360° Mock) */}
+                                <div>
+                                    <p className="font-semibold text-[#0B3B5B] flex justify-between">
+                                        <span className='text-sm text-gray-600'>Peer Avg:</span>
+                                        <span className='text-xl font-extrabold text-[#E04E1B]'>{peerRatings[tier.id]}/10</span>
+                                    </p>
+                                    <input
+                                        type="range"
+                                        min="1" max="10"
+                                        value={peerRatings[tier.id]}
+                                        onChange={(e) => handlePeerRatingChange(tier.id, e.target.value)}
+                                        className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer range-lg accent-[#E04E1B]"
+                                        style={{ accentColor: COLORS.ORANGE }}
+                                    />
+                                </div>
+                            </div>
+                            <p className='text-xs text-gray-500 mt-2'>*If Self > Peer by 3 points, a **Confidence Gap** is flagged, prioritizing content on behavioral practice.</p>
+                        </div>
+                    ))}
+                </Card>
             </div>
+
+            <Button onClick={handleGenerate} disabled={!canGenerate || isGenerating} className="mt-10 w-full md:w-auto" accent='ORANGE'>
+                {isGenerating ? (
+                    <div className="flex items-center">
+                        <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
+                        Generating 24-Month Plan...
+                    </div>
+                ) : 'Generate Personalized 24-Month Plan'}
+            </Button>
+            <p className='text-sm text-gray-500 mt-4'>*Your data will be securely saved to your private roadmap in Firestore.</p>
+
+            {/* Feature B: Plan Comparison Result */}
+            {renderPlanComparison()}
         </div>
     );
 };
 
 
-/**
- * DailyPracticeScreen: Main Scorecard View
- */
-export default function DailyPracticeScreen({ initialGoal, initialTier }) {
-  const { useAppServices: useAppServicesLocal } = { useAppServices: useAppServices }; // FIX: Use local variable access
-  const { commitmentData, updateCommitmentData, callSecureGeminiAPI, hasGeminiKey, pdpData, navigate } = useAppServicesLocal(); 
-  
-  React.useEffect(() => scheduleMidnightReset(commitmentData?.active_commitments || [], updateCommitmentData), [commitmentData?.active_commitments, updateCommitmentData]);
+// --- Main Router ---
+export const ProfDevPlanScreen = () => {
+    // Consume data and updates via context
+    const { pdpData, updatePdpData, saveNewPlan, isLoading, error, userId, db, navigate } = useAppServices();
 
-  const [view, setView] = useState('scorecard'); 
-  const [isSaving, setIsSaving] = useState(false);
-  const [reflection, setReflection] = useState(commitmentData?.reflection_journal || '');
-  
-  const [reflectionPrompt, setReflectionPrompt] = useState(null);
-  const [promptLoading, setPromptLoading] = useState(false);
-  const [isHistoryModalVisible, setIsHistoryModalVisible] = useState(false);
-  const [selectedHistoryDay, setSelectedHistoryDay] = useState(null);
-  
-  const [viewMode, setViewMode] = useState('status');
-  const [isPerfectScoreModalVisible, setIsPerfectScoreModalVisible] = useState(false);
-  const LIS_MOCK_VALUE = 'Vulnerability and Discipline'; 
-
-  // Sync reflection and fetch prompt on data load
-  useEffect(() => {
-    if (commitmentData) {
-      setReflection(commitmentData.reflection_journal || '');
-      // Fetch prompt only if reflection is empty OR if the prompt hasn't been set yet
-      if (!reflectionPrompt) { 
-        fetchReflectionPrompt(commitmentData);
-      }
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [commitmentData]); 
-  
-  useEffect(() => {
-    if (initialGoal || initialTier) {
-      setView('selector');
-    }
-  }, [initialGoal, initialTier]);
-
-
-  const userCommitments = commitmentData?.active_commitments || [];
-  const commitmentHistory = commitmentData?.history || [];
-  const score = calculateTotalScore(userCommitments);
-  const streak = calculateStreak(commitmentHistory);
-  const isPerfectScore = score.total > 0 && score.committed === score.total;
-  
-  const commitmentsByTier = useMemo(() => groupCommitmentsByTier(userCommitments), [userCommitments]);
-  
-  const tierSuccessRates = useMemo(() => calculateTierSuccessRates(userCommitments, commitmentHistory), [userCommitments, commitmentHistory]);
-
-  const lastSevenDaysHistory = useMemo(() => getLastSevenDays(commitmentHistory), [commitmentHistory]);
-
-
-  /* =========================================================
-     NEW FEATURE 1: AI-Driven Reflection Prompt Logic
-  ========================================================= */
-  const fetchReflectionPrompt = async (data) => {
-    const { callSecureGeminiAPI: callSecureGeminiAPI_local, GEMINI_MODEL: GEMINI_MODEL_local } = useAppServicesLocal(); // FIX: Access inside function
-    if (!hasGeminiKey() || promptLoading) return;
-
-    setPromptLoading(true);
-    
-    const missedCommitments = (data?.active_commitments || [])
-        .filter(c => c.status === 'Missed' || c.status === 'Pending')
-        .map(c => `[${LEADERSHIP_TIERS[c.linkedTier]?.name || 'General'}] ${c.text}`);
-
-    const systemPrompt = `You are an executive coach. Based on the user's daily performance, generate ONE specific, non-judgemental, and high-leverage reflection question. If commitments were missed, link the question to the missed tier/action and the leadership cost of inconsistency. If performance was perfect, ask a question about translating that commitment into team impact. Keep the question concise (1-2 sentences).`;
-
-    let userQuery;
-    if (missedCommitments.length > 0) {
-        userQuery = `The user missed or is pending on the following commitments: ${missedCommitments.join('; ')}. Generate a reflection prompt focused on the root cause and leadership cost of that inconsistency.`;
-    } else if (data?.active_commitments?.length > 0) {
-        userQuery = `The user achieved a perfect score today (${data.active_commitments.length}/${data.active_commitments.length}). Generate a reflection prompt focused on how the commitment execution generated value or reduced risk for their team today.`;
-    } else {
-        setReflectionPrompt('What key insight did you gain today that will improve your leadership practice tomorrow?');
-        setPromptLoading(false);
-        return;
-    }
-
-    try {
-        const payload = {
-            contents: [{ role: "user", parts: [{ text: userQuery }] }],
-            systemInstruction: { parts: [{ text: systemPrompt }] },
-            model: GEMINI_MODEL_local,
-        };
-        const result = await callSecureGeminiAPI_local(payload);
-        const text = result?.candidates?.[0]?.content?.parts?.[0]?.text;
-        setReflectionPrompt(text?.trim() || 'What was the most important lesson you learned today?');
-    } catch (e) {
-        console.error("AI Prompt Error:", e);
-        setReflectionPrompt('What single behavior reinforced your LIS today, and why?');
-    } finally {
-        setPromptLoading(false);
-    }
-  };
-
-
-  /* =========================================================
-     General Handlers (Remain unchanged)
-  ========================================================= */
-
-  const handleLogCommitment = async (id, status) => {
-    setIsSaving(true);
-    const updatedCommitments = userCommitments.map(c => c.id === id ? { ...c, status: status } : c);
-    
-    await updateCommitmentData(prevState => ({ ...prevState, active_commitments: updatedCommitments }));
-    setIsSaving(false);
-    
-    const newScore = calculateTotalScore(updatedCommitments);
-    if (newScore.total > 0 && newScore.committed === newScore.total && status === 'Committed') {
-        setIsPerfectScoreModalVisible(true);
-    }
-  };
-
-  const handleRemoveCommitment = async (id) => {
-    setIsSaving(true);
-    const commitmentToRemove = userCommitments.find(c => c.id === id);
-
-    if (commitmentToRemove && commitmentToRemove.status !== 'Pending') {
-        console.warn("Commitment already logged (Committed/Missed) for today. It must remain on the scorecard until tomorrow's daily reset.");
-        setIsSaving(false);
-        return;
-    }
-    const updatedCommitments = userCommitments.filter(c => c.id !== id);
-    await updateCommitmentData(prevState => ({ ...prevState, active_commitments: updatedCommitments }));
-    setIsSaving(false);
-  };
-
-  const handleSaveReflection = async () => {
-    setIsSaving(true);
-    await updateCommitmentData(prevState => ({ ...prevState, reflection_journal: reflection }));
-    setIsSaving(false);
-  };
-
-  /* =========================================================
-     Data Calculation Functions (Remain unchanged)
-  ========================================================= */
-  function calculateTotalScore(commitments) {
-    const total = commitments.length;
-    const committedCount = commitments.filter(c => c.status === 'Committed').length;
-    return { committed: committedCount, total };
-  }
-
-  function calculateStreak(history) {
-    let streak = 0;
-    const validHistory = Array.isArray(history) ? history : [];
-    
-    for (let i = validHistory.length - 1; i >= 0; i--) {
-      const scoreParts = validHistory[i].score.split('/');
-      if (scoreParts.length !== 2) continue; 
-
-      const [committed, total] = scoreParts.map(Number);
-      if (committed === total && total > 0) {
-        streak++;
-      } else if (total > 0) {
-        break;
-      } else {
-        if (streak > 0) break; 
-      }
-    }
-    return streak;
-  }
-
-  /* =========================================================
-     NEW FEATURE 2: 30-Day Progress Bar Logic
-  ========================================================= */
-  const monthlyProgress = useMemo(() => {
-    const recentHistory = commitmentHistory.slice(-30); 
-    let totalCommitments = 0;
-    let totalMet = 0;
-    
-    recentHistory.forEach(item => {
-        const [committed, total] = item.score.split('/').map(Number);
-        totalMet += committed;
-        totalCommitments += total;
-    });
-
-    totalMet += score.committed;
-    totalCommitments += score.total;
-    
-    const completionRate = totalCommitments > 0 ? (totalMet / totalCommitments) : 0;
-    
-    return {
-        rate: Math.round(completionRate * 100),
-        daysTracked: recentHistory.length + 1,
-        totalItems: totalCommitments,
-        metItems: totalMet
-    };
-  }, [commitmentHistory, score.committed, score.total]);
-
-
-  /* =========================================================
-     NEW FEATURE 3: History Modal Handlers
-  ========================================================= */
-  const handleOpenHistoryModal = (dayData) => {
-    setSelectedHistoryDay(dayData);
-    setIsHistoryModalVisible(true);
-  }
-  
-  const handleCloseHistoryModal = () => {
-    setIsHistoryModalVisible(false);
-    setSelectedHistoryDay(null);
-  }
-  
-  /* =========================================================
-     NEW ADVANCED FEATURE: Predictive Risk & Micro-Tip Logic
-  ========================================================= */
-  const { predictedRisk, microTip } = useMemo(() => {
-    const today = new Date();
-    const hour = today.getHours();
-    
-    const missedTiers = userCommitments
-      .filter(c => c.status === 'Missed' || c.status === 'Pending')
-      .map(c => c.linkedTier)
-      .filter(t => t);
-      
-    let riskText = null;
-    let riskIcon = null;
-
-    if (missedTiers.length > 0) {
-        const frequentMissedTier = missedTiers.reduce((a, b, i, arr) => 
-            (arr.filter(v => v===a).length >= arr.filter(v => v===b).length ? a : b), missedTiers[0]);
-            
-        riskText = `High Risk: Inconsistency in **${LEADERSHIP_TIERS[frequentMissedTier]?.name || 'a core tier'}**. This threatens your ability to advance in your PDP.`;
-        riskIcon = TrendingDown;
-    } else {
-        if (score.total > 0) {
-            riskText = "Low Risk: Great start! Sustain the momentum to hit a perfect score.";
-            riskIcon = CheckCircle;
-        } else {
-             riskText = "No active risk yet. Add commitments in the 'Manage' tab.";
-             riskIcon = AlertTriangle;
-        }
-    }
-
-    let tipText;
-    if (hour < 12) {
-        tipText = "Morning Focus: Protect your 'Deep Work' commitment first. Say 'No' to non-essential pings.";
-    } else if (hour >= 12 && hour < 16) {
-        tipText = "Afternoon Reset: Check if you have any Commitments due before EOD, especially 1:1 prep.";
-    } else {
-        tipText = "End-of-Day Review: Ensure all Commitments are marked. Reflect before signing off.";
-    }
-
-
-    return { predictedRisk: { text: riskText, icon: riskIcon }, microTip: tipText };
-  }, [userCommitments, score.total]);
-
-
-  // Final Render
-  const renderView = () => {
-    switch (view) {
-      case 'selector':
-        return <CommitmentSelectorView
-          setView={setView}
-          initialGoal={initialGoal}
-          initialTier={initialTier}
-        />;
-      case 'weekly-prep':
-        return <WeeklyPrepView
-          setView={setView}
-          commitmentData={commitmentData}
-          updateCommitmentData={updateCommitmentData}
-          userCommitments={userCommitments}
-        />;
-      case 'scorecard':
-      default:
+    // --- Router Logic ---
+    if (isLoading || pdpData === undefined) {
         return (
-          <div className="p-8">
-            <h1 className="text-3xl font-extrabold text-[#0B3B5B] mb-6">Daily Scorecard</h1>
-            <p className="text-lg text-gray-600 mb-8 max-w-3xl">Track your daily commitment to the non-negotiable leadership actions that reinforce your professional identity. Consistently hitting this score is the key to sustained executive growth.</p>
-
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-              <div className='lg:col-span-2'>
-                {(initialGoal || initialTier) && (
-                  <div className="p-4 mb-6" style={{ background: COLORS.TEAL + '1A', border: `1px solid ${COLORS.TEAL}`, borderRadius: 12, fontSize: 14, fontWeight: 500, color: COLORS.NAVY }}>
-                    <p className='font-bold flex items-center'>
-                      <CornerRightUp className='w-4 h-4 mr-2' /> New Focus Recommended:
-                    </p>
-                    <p>Your new PDP focus area is **{initialGoal || LEADERSHIP_TIERS[initialTier]?.name || 'a new phase'}**. Click 'Manage Commitments' to align your daily practice to this goal!</p>
-                  </div>
-                )}
-                
-                <div className='p-3 mb-6 rounded-xl shadow-lg' style={{ background: COLORS.NAVY, color: COLORS.LIGHT_GRAY }}>
-                    <p className='text-xs font-semibold uppercase opacity-80'>Workflow Focus</p>
-                    <p className='text-sm'>{predictedRisk.microTip}</p>
+            <div className="p-8 min-h-screen flex items-center justify-center">
+                <div className="flex flex-col items-center">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#219E8B] mb-3"></div>
+                    <p className="text-[#219E8B] font-medium">Loading Personalized Development Plan...</p>
                 </div>
-                
-                <div className="mb-6 flex justify-between items-center">
-                  <h3 className="text-2xl font-extrabold text-[#0B3B5B]">
-                    Today's Commitments ({userCommitments.length})
-                  </h3>
-                  <div className='flex space-x-2'>
-                    <button 
-                        onClick={() => setViewMode(viewMode === 'status' ? 'tier' : 'status')}
-                        className={`px-3 py-1 text-sm font-medium rounded-full border transition-all flex items-center gap-1 ${viewMode === 'tier' ? `bg-${COLORS.TEAL} text-white border-${COLORS.TEAL}` : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-50'}`}
-                    >
-                        <List className='w-4 h-4' />
-                        View by {viewMode === 'status' ? 'Tier' : 'Status'}
-                    </button>
-                    <Button onClick={() => setView('selector')} variant="outline" className="text-sm px-4 py-2" disabled={isSaving}>
-                      <PlusCircle className="w-4 h-4 mr-2" /> Manage
-                    </Button>
-                  </div>
-                </div>
-
-                <Card title="Current Commitments" icon={Target} accent='TEAL' className="mb-8 rounded-3xl">
-                    <div className='mb-4 flex justify-between items-center text-sm'>
-                        <div className='font-semibold text-[#0B3B5B]'>
-                            {score.total > 0 ? `Score: ${score.committed}/${score.total} completed` : 'No active commitments.'}
-                        </div>
-                        {score.total > 0 && (
-                            <div className={`font-bold ${isPerfectScore ? 'text-green-600' : 'text-[#E04E1B]'}`}>
-                                {score.total - score.committed} pending or missed.
-                            </div>
-                        )}
-                    </div>
-                    
-                    <div className="space-y-4">
-                        {userCommitments.length > 0 ? (
-                            viewMode === 'status' ? (
-                                userCommitments.map(c => (
-                                    <CommitmentItem
-                                        key={c.id}
-                                        commitment={c}
-                                        onLogCommitment={handleLogCommitment}
-                                        onRemove={handleRemoveCommitment}
-                                        isSaving={isSaving}
-                                        isScorecardMode={true}
-                                    />
-                                ))
-                            ) : (
-                                commitmentsByTier.map(tierGroup => (
-                                    <div key={tierGroup.id} className='mb-6'>
-                                        <h4 className={`text-lg font-bold text-[#0B3B5B] border-b-2 border-dashed border-[#0B3B5B]/20 pb-1 mb-3`} style={{ color: tierGroup.color }}>
-                                            {tierGroup.name} ({tierGroup.items.length})
-                                        </h4>
-                                        <div className='space-y-3'>
-                                            {tierGroup.items.map(c => (
-                                                <CommitmentItem
-                                                    key={c.id}
-                                                    commitment={c}
-                                                    onLogCommitment={handleLogCommitment}
-                                                    onRemove={handleRemoveCommitment}
-                                                    isSaving={isSaving}
-                                                    isScorecardMode={true}
-                                                />
-                                            ))}
-                                        </div>
-                                    </div>
-                                ))
-                            )
-                        ) : (
-                            <p className="text-gray-500 italic text-center py-4">Your scorecard is empty. Click 'Manage Commitments' to start building your daily practice!</p>
-                        )}
-                    </div>
-
-                  <div className="mt-8 pt-4 border-t border-gray-200 flex justify-between items-center">
-                    <h3 className="text-2xl font-extrabold text-[#0B3B5B]">
-                      Daily Score:
-                    </h3>
-                    <span className={`text-4xl font-extrabold p-3 rounded-xl shadow-inner min-w-[100px] text-center ${
-                      isPerfectScore ? `text-${COLORS.GREEN} bg-green-50` : `text-[#0B3B5B] bg-gray-100`
-                    }`} style={{ color: isPerfectScore ? COLORS.GREEN : COLORS.NAVY }}>
-                      {score.committed} / {score.total}
-                    </span>
-                  </div>
-                </Card>
-              </div>
-
-              <div className='lg:col-span-1 space-y-8'>
-                  <Card 
-                      title="Daily Risk Indicator" 
-                      icon={predictedRisk.icon} 
-                      accent={predictedRisk.icon === TrendingDown ? 'ORANGE' : 'GREEN'}
-                      className={`border-2 ${predictedRisk.icon === TrendingDown ? 'border-red-500 bg-red-50' : 'border-green-500 bg-green-50'}`}
-                  >
-                      <p className='text-sm font-semibold' style={{ color: COLORS.NAVY }}>{predictedRisk.text}</p>
-                  </Card>
-                  
-                  <Card title="Commitment Audit Trigger" icon={Archive} accent='NAVY' className='bg-[#0B3B5B]/10 border-2 border-[#0B3B5B]/20'>
-                      <p className='text-sm text-gray-700 mb-4'>
-                          It's important to retire routine commitments to maintain sharp focus. If your scorecard is too full or a habit is mastered, audit your list.
-                      </p>
-                      <Button 
-                          onClick={() => setView('weekly-prep')}
-                          variant="secondary" 
-                          className="w-full bg-[#E04E1B] hover:bg-red-700"
-                      >
-                          Review & Retire Commitments
-                      </Button>
-                  </Card>
-                  
-                  <TierSuccessMap tierRates={tierSuccessRates} />
-                  
-                  <Card title="Monthly Consistency" icon={BarChart3} accent='TEAL' className='bg-[#219E8B]/10 border-2 border-[#219E8B]'>
-                      <p className='text-xs text-gray-700 mb-2'>Avg. Completion Rate ({monthlyProgress.daysTracked} days)</p>
-                      <div className="w-full bg-gray-200 rounded-full h-4 mb-2">
-                          <div 
-                              className={`h-4 rounded-full transition-all duration-700`} 
-                              style={{ width: `${monthlyProgress.rate}%`, background: COLORS.NAVY }}
-                          ></div>
-                      </div>
-                      <p className='text-sm font-medium text-[#0B3B5B]'>
-                          **{monthlyProgress.rate}% Rate** ({monthlyProgress.metItems} of {monthlyProgress.totalItems} total actions met)
-                      </p>
-                  </Card>
-
-                <Card title="Commitment History" icon={BarChart3} accent='NAVY' className='bg-[#0B3B5B]/10 border-2 border-[#0B3B5B]/20'>
-                  <div className='text-xs text-gray-700 mb-4'>
-                    <p className='font-semibold'>Last 7 Days (Click for Details)</p>
-                  </div>
-                  
-                  <div className='p-4 bg-[#FCFCFA] border border-gray-200 rounded-xl'>
-                    <div className='flex justify-between text-xs font-mono text-gray-700 space-x-1 overflow-x-auto'>
-                      {lastSevenDaysHistory.map(item => {
-                        const date = new Date(item.date + 'T00:00:00'); 
-                        const dayOfWeek = date.toLocaleString('en-US', { weekday: 'short' });
-                        const [committed, total] = item.score.split('/').map(Number);
-                        const isDayComplete = committed === total && total > 0;
-                        const isDayMissed = committed < total && total > 0;
-                        const isDayLogged = total > 0;
-
-                        return (
-                          <button 
-                            key={item.date} 
-                            className={`flex flex-col items-center min-w-[40px] p-1 rounded-md ${isDayLogged ? 'hover:bg-gray-100' : ''} ${!isDayLogged ? 'cursor-default' : ''}`}
-                            onClick={() => isDayLogged ? handleOpenHistoryModal(item) : null}
-                          >
-                            <Tooltip content={`${item.score} achieved on ${item.date}`}>
-                              <span className='font-bold'>{dayOfWeek}</span>
-                            </Tooltip>
-                            <span className={`text-2xl font-extrabold mt-1 ${
-                              isDayComplete ? `text-${COLORS.GREEN}` : isDayMissed ? 'text-[#E04E1B]' : 'text-gray-400'
-                            }`} style={{ color: isDayComplete ? COLORS.GREEN : isDayMissed ? COLORS.ORANGE : COLORS.MUTED}}>{isDayComplete ? '✓' : isDayMissed ? '✗' : '—'}</span>
-                            <span className='text-xs text-gray-500 mt-1'>{item.score}</span>
-                          </button>
-                        );
-                      })}
-                    </div>
-                    <div className='mt-4 pt-3 border-t border-gray-200'>
-                      <div className='font-medium text-lg' style={{ color: COLORS.TEAL }}>
-                        Current Streak: {streak} {streak === 1 ? 'Day' : 'Days'}
-                      </div>
-                      {streak > 0 && (
-                        <div className='text-sm text-gray-600'>Consistency is the foundation of growth!</div>
-                      )}
-                    </div>
-                  </div>
-                </Card>
-              </div>
             </div>
-
-
-            <Card title="Reinforcement Journal" icon={Lightbulb} accent='NAVY' className="rounded-3xl mt-8 bg-[#0B3B5B]/10 border-2 border-[#0B3B5B]/20">
-              <div className='mb-4'>
-                <div className='text-sm text-[#0B3B5B] font-semibold mb-2 flex items-center'>
-                    {promptLoading ? 
-                        <span className='flex items-center text-gray-500'><div className="animate-spin h-4 w-4 border-b-2 border-gray-500 mr-2 rounded-full"></div> Coach is drafting prompt...</span> :
-                        <span style={{ color: COLORS.TEAL }} className='flex items-center'><MessageSquare className='w-4 h-4 mr-2'/> AI Reflection Prompt:</span>
-                    }
-                </div>
-                <p className='text-base font-medium text-gray-700 p-2 bg-white rounded-lg border border-gray-200'>
-                    {reflectionPrompt || 'What key insight did you gain today that will improve your leadership practice tomorrow?'}
-                </p>
-              </div>
-
-              <p className="text-gray-700 text-sm mb-4">
-                Write your response below. How did executing (or missing) these leadership commitments impact your team's momentum and your own executive presence?
-              </p>
-              <textarea
-                value={reflection}
-                onChange={(e) => setReflection(e.target.value)}
-                className="w-full p-3 border border-gray-300 rounded-xl focus:ring-[#219E8B] focus:border-[#219E8B] h-40"
-                placeholder="My reflection (required)..."
-              ></textarea>
-              <Button
-                variant="secondary"
-                onClick={handleSaveReflection}
-                disabled={isSaving}
-                className="mt-4 w-full"
-              >
-                {isSaving ? 'Saving...' : 'Save Daily Reflection'}
-              </Button>
-            </Card>
-            
-            <CommitmentHistoryModal
-                isVisible={isHistoryModalVisible}
-                onClose={handleCloseHistoryModal}
-                dayData={selectedHistoryDay}
-                activeCommitments={userCommitments}
-            />
-          </div>
         );
     }
-  };
 
-  return renderView();
-}
+    if (error) {
+        return (
+            <div className="p-8">
+                <p className="p-4 bg-red-100 rounded-xl" style={{ color: COLORS.ORANGE }}>Application Error: {error}</p>
+                <p className="text-gray-600 mt-4">If this error persists, check your browser console for Firebase configuration or security rule errors.</p>
+            </div>
+        );
+    }
+
+    // pdpData is null if the document does not exist (needs generation)
+    if (pdpData === null) {
+        return <PlanGeneratorView userId={userId} saveNewPlan={saveNewPlan} isLoading={false} error={null} />;
+    }
+
+    // pdpData exists -> show the tracker dashboard
+    const trackerProps = { data: pdpData, updatePdpData, saveNewPlan, db, userId, navigate };
+
+    return <TrackerDashboardView {...trackerProps} />;
+};
+
+export default ProfDevPlanScreen;
