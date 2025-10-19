@@ -28,8 +28,6 @@ import { callSecureGeminiAPI, hasGeminiKey, GEMINI_MODEL, API_KEY } from './util
 /* =========================================================
    MOCK GLOBAL UTILITIES (To satisfy external component dependencies)
 ========================================================= */
-// FIX: Moved 'notepad' mock to the top of the file to ensure it is defined before 
-// any imported screen component attempts to access it, resolving the ReferenceError.
 if (typeof window !== 'undefined' && typeof window.notepad === 'undefined') {
     window.notepad = { 
         // Mock the essential functions needed to avoid crashes
@@ -41,19 +39,15 @@ if (typeof window !== 'undefined' && typeof window.notepad === 'undefined') {
 
 
 // Screens
-// FIX: We must remove QuickStartScreen and AppSettingsScreen from this import.
-// They are now defined locally as placeholders to fix the "already declared" error.
 import DashboardScreen from './components/screens/Dashboard.jsx'; 
 import ProfDevPlanScreen from './components/screens/DevPlan';
 import Labs from './components/screens/Labs';
 import DailyPracticeScreen from './components/screens/DailyPractice.jsx';
 import PlanningHubScreen from './components/screens/PlanningHub.jsx';
 import BusinessReadingsScreen from './components/screens/BusinessReadings.jsx';
-// NOTE: This import remains commented out, and the component is defined below.
-// import ExecutiveReflection from './components/screens/ExecutiveReflection.jsx'; 
 
 // Icons used in the new NavSidebar
-import { BarChart3, Bell, BookOpen, Briefcase, CalendarClock, Clock, CornerRightUp, HeartPulse, Home, LogOut, Menu, Mic, Settings, ShieldCheck, Target, Trello, TrendingUp, User, Users, X, Zap } from 'lucide-react';
+import { BarChart3, Bell, BookOpen, Briefcase, CalendarClock, Clock, CornerRightUp, HeartPulse, Home, LogOut, Menu, Settings, ShieldCheck, Target, Trello, TrendingUp, User, Users, X, Zap, Mic } from 'lucide-react';
 
 const CoachingLabScreen = Labs;
 
@@ -527,176 +521,6 @@ const NavSidebar = ({ currentScreen, setCurrentScreen, user, isMobileOpen, close
 
 
 /* =========================================================
-   MAIN APP (REAL)
-========================================================= */
-const App = ({ initialState }) => {
-  console.log('Boot', {
-    hasConfig: typeof window !== 'undefined' && !!window.__firebase_config,
-    configKeys: typeof window !== 'undefined' && window.__firebase_config ? Object.keys(window.__firebase_config) : [],
-    DEBUG_MODE,
-  });
-
-  const [user, setUser] = useState(
-    DEBUG_MODE ? { name: 'Debugger', userId: 'mock-debugger-123', email: 'debug@leaderreps.com' } : null
-  );
-  const [currentScreen, setCurrentScreen] = useState(initialState?.screen || 'dashboard');
-  const [firebaseServices, setFirebaseServices] = useState({ db: null, auth: null });
-  const [userId, setUserId] = useState(DEBUG_MODE ? 'mock-debugger-123' : null);
-  const [isAuthReady, setIsAuthReady] = useState(DEBUG_MODE);
-  const [navParams, setNavParams] = useState(initialState?.params || {});
-  const [authRequired, setAuthRequired] = useState(!DEBUG_MODE);
-  const [isMobileOpen, setIsMobileOpen] = useState(false); // NEW: Mobile menu state
-
-  const [initStage, setInitStage] = useState('init'); // 'init' | 'ok' | 'error'
-  const [initError, setInitError] = useState('');
-
-  const navigate = useCallback((screen, params = {}) => {
-    setNavParams(params);
-    setCurrentScreen(screen);
-  }, []);
-
-  useEffect(() => {
-    let app, firestore, authentication;
-
-    if (DEBUG_MODE) {
-      try {
-        const firebaseConfig = { apiKey: 'mock', authDomain: 'mock', projectId: 'mock' };
-        app = initializeApp(firebaseConfig);
-        firestore = getFirestore(app);
-        authentication = getAuth(app);
-        setFirebaseServices({ db: firestore, auth: authentication });
-        setIsAuthReady(true);
-        setInitStage('ok');
-        return;
-      } catch {
-        try {
-          const existing = getApp();
-          firestore = getFirestore(existing);
-          authentication = getAuth(existing);
-          setFirebaseServices({ db: firestore, auth: authentication });
-        } catch {}
-        setIsAuthReady(true);
-        setInitStage('ok');
-        return;
-      }
-    }
-
-    try {
-      let firebaseConfig = {};
-if (typeof window !== 'undefined' && window.__firebase_config) {
-  const cfg = window.__firebase_config;
-  firebaseConfig = (typeof cfg === 'string') ? JSON.parse(cfg) : cfg; // <-- handles both
-} else if (typeof __firebase_config !== 'undefined') {
-  let s = String(__firebase_config).trim();
-  if (s.startsWith("'") && s.endsWith("'")) s = s.slice(1, -1);
-  firebaseConfig = JSON.parse(s.replace(/'/g, '"'));
-} else {
-  setInitError('window.__firebase_config is missing. Ensure VITE_FIREBASE_CONFIG is set and parsed in main.jsx.');
-  setIsAuthReady(true);
-  setInitStage('error');
-  return;
-}
-
-      app = initializeApp(firebaseConfig);
-      firestore = getFirestore(app);
-      authentication = getAuth(app);
-
-      setLogLevel('debug');
-      setFirebaseServices({ db: firestore, auth: authentication });
-
-      const unsubscribe = onAuthStateChanged(authentication, (currentUser) => {
-        if (currentUser) {
-          const uid = currentUser.uid;
-          setUserId(uid);
-          setUser({ name: currentUser.email || 'Canvas User', email: currentUser.email || '', userId: uid });
-          setAuthRequired(false);
-        } else {
-          setUser(null);
-          setUserId(null);
-          setAuthRequired(true);
-        }
-        setIsAuthReady(true);
-        setInitStage('ok');
-      });
-
-      if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-        signInWithCustomToken(authentication, __initial_auth_token)
-          .catch(err => console.error('Custom token auth failed; waiting for user login:', err));
-      }
-
-      return () => unsubscribe();
-    } catch (e) {
-      console.error('Firebase setup failed:', e);
-      setInitError(e?.message || 'Firebase initialization failed.');
-      setIsAuthReady(true);
-      setInitStage('error');
-    }
-  }, []);
-
-  // Auth Gate (only when not in DEBUG)
-  if (!DEBUG_MODE) {
-    if (initStage === 'init') {
-      return (
-        // FIX: Improved Loading Spinner style
-        <div className="min-h-screen flex items-center justify-center bg-gray-100">
-          <div className="flex flex-col items-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-4 border-t-4 border-gray-200 border-t-[#47A88D] mb-3"></div>
-            <p className="text-[#002E47] font-semibold">Initializing Authentication…</p>
-          </div>
-        </div>
-      );
-    }
-    if (initStage === 'error') {
-      return (
-        <>
-          <ConfigError message={initError} />
-          <DebugOverlay stage={initStage} authRequired={authRequired} isAuthReady={isAuthReady} user={user} userId={userId} initError={initError} />
-        </>
-      );
-    }
-    if (!user) {
-      return (
-        <>
-          <LoginPanel
-            auth={firebaseServices.auth}
-            onSuccess={() => {
-              setAuthRequired(false);
-              setTimeout(() => navigate('dashboard'), 0);
-            }}
-            allowAnonymous={false}
-          />
-          <DebugOverlay stage={initStage} authRequired={authRequired} isAuthReady={isAuthReady} user={user} userId={userId} />
-        </>
-      );
-    }
-  }
-
-  // App (DEBUG or signed-in)
-  return (
-    <>
-      <DataProvider
-        firebaseServices={firebaseServices}
-        userId={userId}
-        isAuthReady={isAuthReady}
-        navigate={navigate}
-        user={user}
-      >
-        <AppContent
-          currentScreen={currentScreen}
-          setCurrentScreen={navigate}
-          user={user}
-          navParams={navParams}
-          // NEW: Pass state setters for mobile menu
-          isMobileOpen={isMobileOpen}
-          setIsMobileOpen={setIsMobileOpen}
-        />
-      </DataProvider>
-      <DebugOverlay stage={initStage} authRequired={authRequired} isAuthReady={isAuthReady} user={user} userId={userId} />
-    </>
-  );
-};
-
-/* =========================================================
    MOCK COMPONENTS FOR DASHBOARD.JSX EXPORTS
 ========================================================= */
 
@@ -716,16 +540,6 @@ const AppSettingsScreen = () => (
         <h1 className="text-3xl font-bold text-[#002E47]">App Settings</h1>
         <p className="mt-2 text-gray-600">
             This screen is a placeholder. User and API settings configuration goes here.
-        </p>
-    </div>
-);
-
-// FIX: Mock Executive Reflection component (as previously done)
-const ExecutiveReflection = () => (
-    <div className="p-6">
-        <h1 className="text-3xl font-bold text-[#002E47]">Executive Reflection</h1>
-        <p className="mt-2 text-gray-600">
-            This screen is currently a placeholder. Please add the actual component code when available.
         </p>
     </div>
 );
@@ -772,13 +586,10 @@ const ScreenRouter = ({ currentScreen, navParams }) => {
     case 'business-readings':
       return <BusinessReadingsScreen />;
     case 'quick-start-accelerator':
-      // Now using the QuickStartScreen defined locally
       return <QuickStartScreen />;
     case 'app-settings':
-      // Now using the AppSettingsScreen defined locally
       return <AppSettingsScreen />;
-    case 'reflection': 
-      return <ExecutiveReflection />;
+    // REMOVED 'reflection' case which was causing the ReferenceError
     case 'dashboard':
     default:
       return <DashboardScreen />;
