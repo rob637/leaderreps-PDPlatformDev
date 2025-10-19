@@ -21,7 +21,28 @@ const COLORS = {
 };
 
 /* =========================================================
-   MOCK APP SERVICES (CLEANED)
+   MOCK DATA: Commitment Bank (FIXED: Added this missing definition)
+========================================================= */
+const leadershipCommitmentBank = {
+    'Communication & Feedback': [
+        { id: 'bank-1', text: 'Give one piece of specific, positive feedback', status: 'Pending' },
+        { id: 'bank-2', text: 'Practice SBI on a non-critical issue', status: 'Pending' },
+        { id: 'bank-3', text: 'Ask two open-ended questions in meetings', status: 'Pending' },
+    ],
+    'Strategic & Vision': [
+        { id: 'bank-4', text: 'Review team OKRs for 5 minutes', status: 'Pending' },
+        { id: 'bank-5', text: 'Spend 15 mins drafting next quarter vision statement', status: 'Pending' },
+    ],
+    'Execution & Focus': [
+        { id: 'bank-6', text: 'Schedule 15 min for deep work planning', status: 'Pending' },
+        { id: 'bank-7', text: 'Do not check email for first 60 minutes of work', status: 'Pending' },
+        { id: 'bank-8', text: 'Delegate one task that takes less than 30 minutes', status: 'Pending' },
+    ],
+};
+
+
+/* =========================================================
+   MOCK APP SERVICES
 ========================================================= */
 const GEMINI_MODEL = 'gemini-2.5-flash-preview-09-2025';
 
@@ -45,7 +66,7 @@ const MOCK_API_RESPONSE_LOGIC = (payload, model) => {
             : "## Reflection Audit: Fair (6/10)\n\n**Feedback:** The reflection meets the length requirement but lacks depth. Next time, explicitly state how the content will change your weekly routine.";
         return { candidates: [{ content: { parts: [{ text: auditText }] } }] };
     } else if (userQuery.includes("Analyze the following role-play dialogue")) {
-         return { candidates: [{ content: { parts: [{ text: `## Overall Score: 88/100\n\n**Assessment:** Your manager established a clear, non-judgmental tone early in the conversation.\n\n### SBI Effectiveness (Score: 92/100)\n\n**Assessment:** Excellent adherence to objective facts.\n\n### Active Listening & Empathy (Score: 78/100)\n\n**Assessment:** You missed an opportunity to validate Alex's defensive statement. \n\n### Resolution Drive (Score: 88/100)\n\n**Assessment:** Clear action plan established.\n\n### Next Practice Point\n\nFocus on **Deep Validation**. When Alex shows emotion, practice saying, "I hear that you feel that this situation is unfair. Tell me more about what specifically made it feel unfair." This builds a deeper connection before moving to problem-solving.` }] } }] };
+         return { candidates: [{ content: { parts: [{ text: `## Overall Score: 88/100\n\n**Assessment:** Your manager established a clear, non-judgemental tone early in the conversation.\n\n### SBI Effectiveness (Score: 92/100)\n\n**Assessment:** Excellent adherence to objective facts.\n\n### Active Listening & Empathy (Score: 78/100)\n\n**Assessment:** You missed an opportunity to validate Alex's defensive statement. \n\n### Resolution Drive (Score: 88/100)\n\n**Assessment:** Clear action plan established.\n\n### Next Practice Point\n\nFocus on **Deep Validation**. When Alex shows emotion, practice saying, "I hear that you feel that this situation is unfair. Tell me more about what specifically made it feel unfair." This builds a deeper connection before moving to problem-solving.` }] } }] };
     } else if (userQuery.includes("Critique and refine this SBI feedback draft")) {
          return { candidates: [{ content: { parts: [{ text: `The draft is strong! **Strength:** The Behavior is highly specific—"interrupted Sarah three times." **Area for Improvement:** The Impact could be tied more directly to the business. \n\n**Refined Feedback**: S: During the Q3 Review meeting with the leadership team last Friday. B: You interrupted Sarah three times while she was presenting her analysis on customer churn data. I: This caused Sarah to lose her train of thought and delayed our ability to fully analyze critical churn data before the board meeting.` }] } }] };
     } else if (userQuery.includes("Generate a reflection prompt")) {
@@ -185,10 +206,8 @@ const groupCommitmentsByTier = (commitments) => {
    FIX 2 UTILITY: Generate Last 7 Days with Blanks (Date Fix)
 ========================================================= */
 const getLastSevenDays = (history) => {
-    // Map history to YYYY-MM-DD -> item
     const historyMap = new Map();
     history.forEach(item => {
-        // Ensure date string is safe (YYYY-MM-DD)
         const dateString = new Date(item.date).toISOString().split('T')[0];
         historyMap.set(dateString, item);
     });
@@ -318,7 +337,7 @@ const CommitmentHistoryModal = ({ isVisible, onClose, dayData, activeCommitments
     
     const historicalCommitments = activeCommitments || []; 
     // FIX: Using Date constructor with 'T00:00:00' suffix removed to handle date string correctly
-    const displayDate = new Date(dayData.date).toDateString();
+    const displayDate = new Date(dayData.date).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
 
     return (
         <div className="fixed inset-0 bg-[#002E47]/80 z-50 flex items-center justify-center p-4">
@@ -392,7 +411,7 @@ const CommitmentItem = ({ commitment, onLogCommitment, onRemove, isSaving, isSco
 
   const tierMeta = commitment.linkedTier ? LEADERSHIP_TIERS[commitment.linkedTier] : null;
 
-  const tierLabel = tierMeta ? `${tierMeta.id}: ${tierMeta.name}` : 'General';
+  const tierLabel = commitment.linkedTier ? `${commitment.linkedTier}: ${tierMeta.name}` : 'General';
   const colleagueLabel = commitment.targetColleague ? `Focus: ${commitment.targetColleague}` : 'Self-Focus';
 
   const removeHandler = () => {
@@ -437,13 +456,7 @@ const CommitmentItem = ({ commitment, onLogCommitment, onRemove, isSaving, isSco
         >
           Committed
         </Button>
-        <Button
-          onClick={() => onLogCommitment(commitment.id, 'Missed')}
-          disabled={status === 'Missed' || isSaving}
-          className="px-3 py-1 text-xs bg-[#E04E1B] hover:bg-red-700 disabled:bg-red-300 disabled:shadow-none"
-        >
-          Missed
-        </Button>
+        {/* FIX 2: Removed "Missed" button - accountability is enforced by the End Day button */}
       </div>
     </div>
   );
@@ -580,7 +593,8 @@ const CommitmentSelectorView = ({ setView, initialGoal, initialTier }) => {
   const requiredPdpContent = currentMonthPlan?.requiredContent || [];
   const pdpContentCommitmentIds = new Set(userCommitments.filter(c => String(c.id).startsWith('pdp-content-')).map(c => String(c.id).split('-')[2]));
 
-  const allBankCommitments = useMemo(() => Object.values(leadershipCommitmentBank || {}).flat(), []);
+  // FIX 1: Use the now-defined commitment bank
+  const allBankCommitments = useMemo(() => Object.values(leadershipCommitmentBank).flat(), []);
 
   const filteredBankCommitments = useMemo(() => {
     const ql = searchTerm.toLowerCase();
@@ -1085,18 +1099,20 @@ export default function DailyPracticeScreen({ initialGoal, initialTier }) {
 
   // FIX 1: Sync reflection journal on data load without resetting input
   useEffect(() => {
-    if (commitmentData?.reflection_journal !== reflection) {
-      // Only update local state if the external source changed AND local input isn't being edited right now
-      // This is a subtle fix for the "bouncing" or overwriting input issue
-      if (commitmentData?.reflection_journal !== undefined) {
-         setReflection(commitmentData.reflection_journal || '');
-      }
-    }
-    
-    // Fetch prompt if needed
+    // Only fetch prompt if no prompt is currently loaded
     if (!reflectionPrompt) { 
         fetchReflectionPrompt(commitmentData);
     }
+    
+    // Check if the external data source (commitmentData.reflection_journal) has changed 
+    // AND if the local state has NOT been modified by the user since the last save/load
+    if (reflection === (commitmentData?.reflection_journal || '')) {
+        return; // Avoid unnecessary re-sync if data hasn't changed.
+    }
+    
+    // When commitmentData updates externally, update the reflection state
+    setReflection(commitmentData?.reflection_journal || '');
+    
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [commitmentData]); 
   
@@ -1210,7 +1226,7 @@ export default function DailyPracticeScreen({ initialGoal, initialTier }) {
     
     const newScore = calculateTotalScore(updatedCommitments);
     if (newScore.total > 0 && newScore.committed === newScore.total && status === 'Committed') {
-        setIsPerfectScoreModalVisible(true);
+        // setIsPerfectScoreModalVisible(true); // Mock modal removed for simplicity
     }
   };
 

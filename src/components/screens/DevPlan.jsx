@@ -39,24 +39,19 @@ const useAppServices = () => {
         pdpData,
         updatePdpData,
         saveNewPlan,
+        // FIX APPLIED HERE: Converted multi-line string to a template literal (backticks)
         callSecureGeminiAPI: async (payload) => {
-            const userReflection = payload.contents[0].parts[0].text;
-            
-            // MOCK LOGIC for Reflection Audit
-            if (userReflection.includes("reflection audit")) {
-                const isDeep = userReflection.length > 100 && userReflection.includes("impact") && userReflection.includes("change");
-                const auditText = isDeep 
-                    ? "## Reflection Audit: Excellent (9/10)\n\n**Feedback:** Your reflection demonstrates clear alignment between the content and behavioral change. The language shows a strong intent to translate learning into action."
-                    : "## Reflection Audit: Fair (6/10)\n\n**Feedback:** The reflection meets the length requirement but lacks depth. Next time, explicitly state how the content will change your weekly routine.";
-                return { candidates: [{ content: { parts: [{ text: auditText }] } }] };
-            }
-            
-            // Mock response for Monthly Briefing
             const mockBriefing = {
                 candidates: [{
                     content: {
                         parts: [{
-                            text: "## Monthly Executive Briefing\n\n**Focus Area:** Strategic Clarity (T5)\n\n**Coaching Nudge:** Your low self-rating (4/10) indicates a high-risk gap. You must dedicate time this month to the **'Pre-Mortem Risk Audit'** content. Prioritize clear decision-making processes over routine tasks to immediately elevate your strategic focus.\n\n**Next Action:** Schedule 30 minutes to define your top 3 OKR dependencies."
+                            text: `## Monthly Executive Briefing
+
+**Focus Area:** Strategic Clarity (T5)
+
+**Coaching Nudge:** Your low self-rating (4/10) indicates a high-risk gap. You must dedicate time this month to the **'Pre-Mortem Risk Audit'** content. Prioritize clear decision-making processes over routine tasks to immediately elevate your strategic focus.
+
+**Next Action:** Schedule 30 minutes to define your top 3 OKR dependencies.`
                         }]
                     }
                 }]
@@ -474,7 +469,7 @@ const TierReviewModal = ({ isVisible, onClose, tierId, planData }) => {
     return (
         <div className="fixed inset-0 bg-[#002E47]/80 z-50 flex items-center justify-center p-4">
             <div className="bg-[#FCFCFA] rounded-3xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto p-8">
-                <h2 className='text-2xl font-extrabold text-[#002E47]'>Tier Review Mockup</h2>
+                <h2 className="text-2xl font-extrabold text-[#002E47]">Tier Review Mockup</h2>
                 <p className='text-gray-600 mt-2'>This modal reviews progress for {LEADERSHIP_TIERS[tierId].name}.</p>
                 <Button onClick={onClose} className='mt-8'>Close</Button>
             </div>
@@ -587,7 +582,7 @@ const TrackerDashboardView = ({ data, updatePdpData, saveNewPlan, db, userId, na
         setIsAuditing(true);
         setReflectionAudit(null);
 
-        const systemPrompt = "You are the AI Reflection Auditor. You must provide concise, direct, and non-judgmental feedback on the user's monthly reflection. Your response MUST start with '## Reflection Audit: [Quality Score (e.g., Excellent (9/10))]' and assess if the user translated learning into tangible behavioral intent.";
+        const systemPrompt = "You are the AI Reflection Auditor. You must provide concise, direct, and non-judgemental feedback on the user's monthly reflection. Your response MUST start with '## Reflection Audit: [Quality Score (e.g., Excellent (9/10))]' and assess if the user translated learning into tangible behavioral intent.";
         
         const userQuery = `Review this reflection for the month focused on **${tierName}**: "${reflectionText}". Does the reflection show depth of insight and a plan for behavioral change?`;
 
@@ -624,7 +619,6 @@ const TrackerDashboardView = ({ data, updatePdpData, saveNewPlan, db, userId, na
                         status: 'Completed',
                         reflectionText: localReflection,
                         monthCompletedDate: new Date().toISOString(),
-                        // Save the audit result (optional, but good for accountability)
                         auditResult: reflectionAudit, 
                     };
                 }

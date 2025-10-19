@@ -68,6 +68,8 @@ import {
   TrendingDown, // Added for negative trend indicator
 } from 'lucide-react';
 
+
+
 /* ---------------------------------------
    Small UI helpers
 ----------------------------------------*/
@@ -420,6 +422,13 @@ const DashboardScreen = () => {
             </div>
 
         </div>
+
+            {/* EXECUTIVE REFLECTION (Embedded) */}
+            <div className='rounded-2xl border border-gray-200 bg-white p-6 shadow-2xl mt-8'>
+                <h2 className="text-2xl font-bold text-[#002E47] mb-5">Executive Reflection</h2>
+                <ExecutiveReflection />
+            </div>
+
       </div>
     </div>
   );
