@@ -91,16 +91,27 @@ const useAppServices = () => ({
 });
 
 import { 
-    Home, Zap, HeartPulse, BookOpen, Users, Settings, Briefcase,
-    TrendingUp, Target, Mic, ArrowLeft, CheckCircle, Lightbulb, Clock, PlusCircle, X, BarChart3, MessageSquare, AlertTriangle, ShieldCheck, CornerRightUp, Play, Info, Eye
-} from 'lucide-react';
+    Home, Zap, HeartPulse, BookOpen, Users, Settings, Briefcase, TrendingUp, Target, Mic, ArrowLeft, CheckCircle, Lightbulb, Clock, PlusCircle, X, BarChart3, MessageSquare, AlertTriangle, ShieldCheck, CornerRightUp, Play, Info, Eye, Cpu} from 'lucide-react';
 
-// --- COLOR PALETTE (From App.jsx) ---
+// --- COLOR PALETTE (High-contrast, aligned with BusinessReadings) ---
 const COLORS = {
-    NAVY: '#002E47',
-    TEAL: '#47A88D',
-    ORANGE: '#E04E1B',
-    LIGHT_GRAY: '#FCFCFA',
+  // Core
+  BG: '#FFFFFF',
+  SURFACE: '#FFFFFF',
+  BORDER: '#1F2937',
+  SUBTLE: '#E5E7EB',
+  TEXT: '#0F172A',
+  MUTED: '#4B5563',
+  // Accents
+  NAVY: '#0B3B5B',
+  TEAL: '#219E8B',
+  BLUE: '#2563EB',
+  ORANGE: '#E04E1B',
+  GREEN: '#10B981',
+  AMBER: '#F59E0B',
+  RED: '#EF4444',
+  // Back‑compat keys used elsewhere in Labs.jsx
+  LIGHT_GRAY: '#F9FAFB'
 };
 
 // --- Custom/Placeholder UI Components (Replicated for self-contained file) ---
@@ -121,21 +132,25 @@ const Button = ({ children, onClick, disabled = false, variant = 'primary', clas
 };
 
 const Card = ({ children, title, icon: Icon, className = '', onClick }) => {
-    const interactive = !!onClick;
-    const Tag = interactive ? 'button' : 'div';
-
-    return (
-        <Tag 
-            role={interactive ? "button" : undefined}
-            tabIndex={interactive ? 0 : undefined}
-            className={`bg-[${COLORS.LIGHT_GRAY}] p-6 rounded-3xl shadow-xl hover:shadow-2xl transition-all duration-300 ${interactive ? `cursor-pointer hover:border-[${COLORS.NAVY}] border-2 border-transparent` : ''} ${className}`}
-            onClick={onClick}
-        >
-            {Icon && <Icon className="w-8 h-8 text-[#47A88D] mb-4" />}
-            {title && <h2 className="text-xl font-bold text-[#002E47] mb-2">{title}</h2>}
-            {children}
-        </Tag>
-    );
+  const interactive = !!onClick;
+  const Tag = interactive ? 'button' : 'div';
+  return (
+    <Tag
+      role={interactive ? 'button' : undefined}
+      tabIndex={interactive ? 0 : undefined}
+      className={`p-6 rounded-2xl border-2 shadow-xl hover:shadow-2xl transition-all duration-300 text-left ${className}`}
+      style={{ background: COLORS.SURFACE, borderColor: COLORS.SUBTLE, color: COLORS.TEXT }}
+      onClick={onClick}
+    >
+      {Icon && (
+        <div className="w-10 h-10 rounded-lg flex items-center justify-center border mb-3" style={{ borderColor: COLORS.SUBTLE, background: '#F3F4F6' }}>
+          <Icon className="w-5 h-5" style={{ color: COLORS.TEAL }} />
+        </div>
+      )}
+      {title && <h2 className="text-xl font-extrabold mb-2" style={{ color: COLORS.NAVY }}>{title}</h2>}
+      {children}
+    </Tag>
+  );
 };
 
 const Tooltip = ({ content, children }) => {
@@ -1590,8 +1605,7 @@ export default function CoachingLabScreen() {
                     /> 
                     : <ScenarioLibraryView {...viewProps} />;
             case 'feedback-prep':
-                // Deprecated view: redirect to library or home
-                return <FeedbackPrepToolView setCoachingLabView={setView} />;
+                return <FeedbackPrepToolView setCoachingLabView={setView} setPreparedSBI={setPreparedSBI} />;
             case 'active-listening':
                 return <ActiveListeningView setCoachingLabView={setView} />;
             case 'coaching-lab-home':
@@ -1626,5 +1640,38 @@ export default function CoachingLabScreen() {
         }
     };
 
-    return renderView();
+    const [showDbg, setShowDbg] = useState(() => {
+      try { return typeof window !== 'undefined' && /[?&]dbg=1\b/.test(window.location.search); }
+      catch { return false; }
+    });
+    const [debugStamp] = useState(() => new Date().toLocaleString());
+    return (
+      <div className="p-6 md:p-10 min-h-screen" style={{ background: COLORS.BG, color: COLORS.TEXT }}>
+        {showDbg && (
+          <div
+            style={{
+              position: 'sticky',
+              top: 0,
+              zIndex: 1000,
+              background: '#111827',
+              color: '#FFFFFF',
+              border: `2px solid ${COLORS.AMBER}`,
+              borderRadius: 8,
+              padding: '8px 12px',
+              marginBottom: 12
+            }}
+          >
+            <strong>Debug:</strong> Labs.jsx (pretty formatting patch) mounted at {debugStamp}.
+            <button
+              onClick={() => setShowDbg(false)}
+              style={{ float: 'right', background: 'transparent', color: '#FFFFFF', border: 'none', fontWeight: 700, cursor: 'pointer' }}
+              aria-label="Dismiss debug banner"
+            >
+              ×
+            </button>
+          </div>
+        )}
+        {renderView()}
+      </div>
+    );
 }
