@@ -27,7 +27,7 @@ import {
 import { getFirestore, setLogLevel } from 'firebase/firestore';
 
 // NOTE: These are local mocks/placeholders needed for the component definitions
-const IconMap = {}; // Mock IconMap
+const IconMap = {}; 
 const SECRET_SIGNUP_CODE = 'mock-code-123';
 const PDP_COLLECTION = 'leadership_plan';
 const PDP_DOCUMENT = 'roadmap';
@@ -68,7 +68,6 @@ const COLORS = {
 
 /* =========================================================
    STEP 1: LAZY LOAD SCREEN COMPONENTS
-   FIX: These are the definitive definitions, placed here to avoid re-declaration.
 ========================================================= */
 const DashboardScreen = lazy(() => import('./components/screens/Dashboard.jsx')); 
 const ProfDevPlanScreen = lazy(() => import('./components/screens/DevPlan'));
@@ -81,7 +80,7 @@ const ExecutiveReflection = lazy(() => import('./components/screens/ExecutiveRef
 
 
 /* =========================================================
-   CONTEXT + SAFE DEFAULTS (Omitted for brevity)
+   CONTEXT + SAFE DEFAULTS
 ========================================================= */
 const AppServiceContext = createContext(null);
 const DEFAULT_SERVICES = {
@@ -291,14 +290,7 @@ const NavSidebar = ({ currentScreen, setCurrentScreen, user, isMobileOpen, close
 /* =========================================================
    PLACEHOLDERS + ROUTER
 ========================================================= */
-const QuickStartScreenPlaceholder = () => (
-    <div className="p-6">
-        <h1 className="text-3xl font-bold text-[#002E47]">QuickStart Accelerator</h1>
-        <p className="mt-2 text-gray-600">
-            (Placeholder) Add your fast-track PDP setup content here.
-        </p>
-    </div>
-);
+// FIX: Redundant placeholder definitions are removed to fix the Esbuild error.
 
 const AppSettingsScreen = () => (
     <div className="p-6">
@@ -322,7 +314,6 @@ const ScreenRouter = ({ currentScreen, navParams }) => {
     case 'business-readings':
       return <BusinessReadingsScreen />;
     case 'quick-start-accelerator':
-      // FIX: Use the lazily imported QuickStartScreen
       return <QuickStartScreen />;
     case 'app-settings':
       return <AppSettingsScreen />;
@@ -342,7 +333,7 @@ const AppContent = ({ currentScreen, setCurrentScreen, user, navParams, isMobile
                 setCurrentScreen={setCurrentScreen}
                 user={user}
                 isMobileOpen={isMobileOpen}
-                closeMobileMenu={() => setIsMobileOpen(false)}
+                closeMobileMenu={() => setIsMobileMenu(false)}
             />
             <main className="flex-1 overflow-y-auto">
                 <div className="md:hidden sticky top-0 bg-white/95 backdrop-blur-sm shadow-md p-4 flex justify-between items-center z-40">
@@ -351,6 +342,7 @@ const AppContent = ({ currentScreen, setCurrentScreen, user, navParams, isMobile
                         <Menu className="w-6 h-6" />
                     </button>
                 </div>
+                {/* Ensure ALL main screen components are wrapped in this Suspense boundary */}
                 <Suspense fallback={
                      <div className="p-8"><div className="animate-spin rounded-full h-12 w-12 border-4 border-t-4 border-gray-200 border-t-[#47A88D] mb-3"></div><p className="text-[#002E47] font-semibold">Loading Screen...</p></div>
                 }>
