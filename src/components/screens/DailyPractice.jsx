@@ -7,16 +7,17 @@ import {
 const useAppServices = () => ({
   commitmentData: {
     active_commitments: [
-      { id: 1, text: 'Schedule 15 min for deep work planning', status: 'Committed', linkedGoal: 'OKR Q4: Launch MVP', linkedTier: 'T3' },
-      { id: 2, text: 'Give one piece of specific, positive feedback', status: 'Pending', linkedGoal: 'Improve Feedback Skills', linkedTier: 'T4' },
-      { id: 3, text: 'Review team risk mitigation plan', status: 'Missed', linkedGoal: 'Risk Mitigation Strategy', linkedTier: 'T2' },
+      // FIX 1: Ensuring IDs are strings to prevent 'id.startsWith is not a function' error
+      { id: '1', text: 'Schedule 15 min for deep work planning', status: 'Committed', linkedGoal: 'OKR Q4: Launch MVP', linkedTier: 'T3' },
+      { id: '2', text: 'Give one piece of specific, positive feedback', status: 'Pending', linkedGoal: 'Improve Feedback Skills', linkedTier: 'T4' },
+      { id: '3', text: 'Review team risk mitigation plan', status: 'Missed', linkedGoal: 'Risk Mitigation Strategy', linkedTier: 'T2' },
     ],
+    // FIX 3: Updated mock history dates for accurate display in the calendar view
     history: [
       { date: '2025-10-14', score: '3/3', reflection: 'Perfect day! My focus on T3 planning led directly to two successful decisions.' },
       { date: '2025-10-15', score: '2/3', reflection: 'Missed my T4 commitment. Must prioritize people over tasks tomorrow.' },
       { date: '2025-10-16', score: '3/3', reflection: 'Back on track. Used the AI prompt to focus on team value which helped.' },
-      // Blank day for testing FIX 2
-      { date: '2025-10-18', score: '1/3', reflection: 'High risk day due to emergency. Focused only on T2 core tasks.' },
+      { date: '2025-10-17', score: '1/3', reflection: 'High risk day due to emergency. Focused only on T2 core tasks.' },
     ],
     reflection_journal: '',
     weekly_review_notes: 'Initial notes for weekly review.',
@@ -95,12 +96,12 @@ const LEADERSHIP_TIERS = {
 };
 const leadershipCommitmentBank = {
     'T3: Strategy & Execution': [
-        { id: 101, text: 'Review monthly OKR progress for 30 min', linkedTier: 'T3' },
-        { id: 102, text: 'Translate strategic goal into 3 team actions', linkedTier: 'T3' },
+        { id: '101', text: 'Review monthly OKR progress for 30 min', linkedTier: 'T3' }, // FIX 1: ID to string
+        { id: '102', text: 'Translate strategic goal into 3 team actions', linkedTier: 'T3' }, // FIX 1: ID to string
     ],
     'T4: Team & Culture': [
-        { id: 201, text: 'Provide one piece of specific, positive feedback', linkedTier: 'T4' },
-        { id: 202, text: 'Ask one team member about their long-term growth', linkedTier: 'T4' },
+        { id: '201', text: 'Provide one piece of specific, positive feedback', linkedTier: 'T4' }, // FIX 1: ID to string
+        { id: '202', text: 'Ask one team member about their long-term growth', linkedTier: 'T4' }, // FIX 1: ID to string
     ],
 };
 const GEMINI_MODEL = 'gemini-2.5-flash-preview-09-2025';
@@ -146,8 +147,11 @@ const getLastSevenDays = (history) => {
 
     const lastSevenDays = [];
     const today = new Date();
-    
-    // Loop backwards from 6 days ago (for the first day of the 7-day window) up to today (i=0)
+    today.setHours(0, 0, 0, 0); // Normalize to midnight
+
+    // Loop backwards from 6 days ago up to yesterday (i=1), and include today (i=0) if data exists
+    // We only need the last 7 *past* entries (yesterday and 6 days before it), or fill with blanks.
+    // Let's generate dates for the last 7 full days (i.e., today through 6 days ago).
     for (let i = 6; i >= 0; i--) {
         const date = new Date(today);
         date.setDate(today.getDate() - i);
@@ -162,8 +166,8 @@ const getLastSevenDays = (history) => {
             reflection: 'No log was submitted for this day.',
         });
     }
-
-    // Filter out today's placeholder unless data exists for today (handled by active score, so keep this logic for past 7 days)
+    
+    // We only want the last 7 items in order (oldest to newest)
     return lastSevenDays;
 };
 
@@ -395,28 +399,21 @@ const CommitmentItem = ({ commitment, onLogCommitment, onRemove, isSaving, isSco
       <div className="flex space-x-2 mt-3 pt-3 border-t border-gray-300/50">
         <Button
           onClick={() => onLogCommitment(commitment.id, 'Committed')}
-          disabled={status === 'Committed' || isSaving}
+          // Only disable if already Committed
+          disabled={status === 'Committed' || isSaving} 
           className="px-3 py-1 text-xs bg-[#47A88D] hover:bg-[#349881] disabled:bg-green-300 disabled:shadow-none"
         >
           Committed
         </Button>
         <Button
           onClick={() => onLogCommitment(commitment.id, 'Missed')}
+          // Only disable if already Missed
           disabled={status === 'Missed' || isSaving}
           className="px-3 py-1 text-xs bg-[#E04E1B] hover:bg-red-700 disabled:bg-red-300 disabled:shadow-none"
         >
           Missed
         </Button>
-        {status !== 'Pending' && (
-          <Button
-            onClick={() => onLogCommitment(commitment.id, 'Pending')}
-            variant="outline"
-            className="px-3 py-1 text-xs border-gray-400 text-gray-700 hover:bg-gray-200"
-            disabled={isSaving}
-          >
-            Reset
-          </Button>
-        )}
+        {/* FIX 2: Removed Reset button as the external system should handle daily reset. */}
       </div>
     </div>
   );
@@ -550,7 +547,8 @@ const CommitmentSelectorView = ({ setView, initialGoal, initialTier }) => {
   // PDP Content Calculation
   const requiredPdpContent = currentMonthPlan?.requiredContent || [];
   // Prefix PDP IDs to prevent accidental collision with commitment bank IDs
-  const pdpContentCommitmentIds = new Set(userCommitments.filter(c => c.id.startsWith('pdp-content-')).map(c => c.id.split('-')[2]));
+  // FIX 1: The map function now correctly ensures commitment IDs are strings before using startsWith
+  const pdpContentCommitmentIds = new Set(userCommitments.filter(c => String(c.id).startsWith('pdp-content-')).map(c => String(c.id).split('-')[2]));
   const hasUnaddedPdpContent = requiredPdpContent.some(c => !pdpContentCommitmentIds.has(String(c.id)));
 
   // Combine all commitments from the bank into a flat array
@@ -701,7 +699,9 @@ const CommitmentSelectorView = ({ setView, initialGoal, initialTier }) => {
       };
     } else {
       newCommitment = {
+        // FIX 1: Ensure ID is a string for all commitments added from the bank
         ...commitment,
+        id: String(commitment.id), 
         status: 'Pending',
         linkedGoal: linkedGoal,
         linkedTier: linkedTier,
@@ -727,7 +727,7 @@ const CommitmentSelectorView = ({ setView, initialGoal, initialTier }) => {
     // but the presence of the assessment could be a prerequisite for saving.
     if (customCommitment.trim() && linkedGoal && linkedGoal !== initialLinkedGoalPlaceholder && linkedTier) {
       setIsSaving(true);
-      const newId = Date.now();
+      const newId = String(Date.now()); // FIX 1: Ensure new ID is a string
       const newCommitments = [...userCommitments, {
         id: newId,
         text: customCommitment.trim(),
@@ -1185,7 +1185,7 @@ export default function DailyPracticeScreen({ initialGoal, initialTier }) {
   // NEW ADVANCED FEATURE 1: Tier Success Rates
   const tierSuccessRates = useMemo(() => calculateTierSuccessRates(userCommitments, commitmentHistory), [userCommitments, commitmentHistory]);
 
-  // FIX 2: Generate robust 7-day history calendar
+  // FIX 3: Generate robust 7-day history calendar
   const lastSevenDaysHistory = useMemo(() => getLastSevenDays(commitmentHistory), [commitmentHistory]);
 
 
@@ -1266,7 +1266,7 @@ export default function DailyPracticeScreen({ initialGoal, initialTier }) {
     setIsSaving(false);
   };
 
-  // FIX 3: Save Daily Reflection (correctly saving to the current day's journal field)
+  // FIX 4: Save Daily Reflection (correctly saving to the current day's journal field)
   const handleSaveReflection = async () => {
     setIsSaving(true);
     // Note: The logic for moving this 'reflection_journal' field into the immutable 'history' array
@@ -1578,7 +1578,8 @@ export default function DailyPracticeScreen({ initialGoal, initialTier }) {
                     <div className='flex justify-between text-xs font-mono text-gray-700 space-x-1 overflow-x-auto'>
                       {/* Only display the last 7 items for a focused view */}
                       {lastSevenDaysHistory.map(item => { // Changed to use lastSevenDaysHistory
-                        const date = new Date(item.date + 'T00:00:00'); // Add time to ensure correct date object creation
+                        // Use a safe date constructor to handle the YYYY-MM-DD string
+                        const date = new Date(item.date + 'T00:00:00'); 
                         const dayOfWeek = date.toLocaleString('en-US', { weekday: 'short' });
                         const [committed, total] = item.score.split('/').map(Number);
                         const isDayComplete = committed === total && total > 0;
