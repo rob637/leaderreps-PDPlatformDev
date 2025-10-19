@@ -1,10 +1,9 @@
-
 /* eslint-disable no-console */
 import React, { useState, useMemo, useRef, useEffect, useCallback, useLayoutEffect } from 'react';
 import { useAppServices } from '../../App.jsx';
 import {
   BookOpen, Target, CheckCircle, Clock, AlertTriangle,
-  MessageSquare, Filter, TrendingUp, Star, Search as SearchIcon
+  MessageSquare, Filter, TrendingUp, Star, Search as SearchIcon, Minimize2
 } from 'lucide-react';
 
 /* =========================================================
@@ -33,7 +32,7 @@ const COMPLEXITY_MAP = {
 };
 
 /* =========================================================
-   SAFETY: Ensure ExecSwitch exists (prevents "not defined" at runtime)
+   SAFETY: ExecSwitch (No changes needed)
 ========================================================= */
 const ExecSwitch = (function defineExecSwitch(){
   const Component = function ExecSwitch({ checked, onChange }) {
@@ -155,154 +154,147 @@ function sanitizeHTML(dirty) {
 }
 
 /* =========================================================
-   AI COACH (LOCAL TIPS FALLBACK)
+   AI COACH (MOCK RESPONSE)
 ========================================================= */
 const mockAIResponse = (bookTitle, focusAreas, query) => {
   const q = (query || '').toLowerCase();
+  
+  // --- E-Myth Revisited ---
   if (bookTitle.includes('E-Myth')) {
     if (q.includes('delegate') || q.includes('system') || q.includes('hand off')) {
-      return `Design a **5-step checklist** and delegate the checklist—not the task. Move from people-dependency to **system-dependency**.`;
+      return `The core principle is **Systemization**. To safely delegate (or hand off) any task, you must first document the process in a clear, 3-to-5-step checklist. You delegate the *system*, not the person. The next action is: **Draft a Process Map for your most time-consuming weekly task.**`;
     }
-    if (q.includes('growth') || q.includes('scaling')) {
-      return `Map three core processes (sales, ops, finance). Scale the processes first; then plug people into them.`;
+    if (q.includes('manager') || q.includes('owner')) {
+      return `Gerber defines three roles: Entrepreneur (vision), Manager (process), Technician (doing). If you're stuck doing the work, you're the Technician. **Action:** Spend 3 hours this week on the **Manager** role: documenting or refining a critical system.`;
     }
-    return `Separate roles: Entrepreneur (vision), Manager (process), Technician (execution). Build the system that does the work.`;
   }
+  
+  // --- Good to Great ---
   if (bookTitle.includes('Good to Great')) {
     if (q.includes('hedgehog') || q.includes('core')) {
-      return `Hedgehog = **Passion ∩ Best in the World ∩ Economic Engine**. If it misses one, stop doing it.`;
+      return `The **Hedgehog Concept** is the convergence of **Passion**, **Best in the World**, and **Economic Engine**. If your project doesn't hit all three, it's distraction. **Action:** Audit your team's top three priorities against these three circles. Eliminate the weakest one.`;
     }
     if (q.includes('leader') || q.includes('culture') || q.includes('management')) {
-      return `Start with **Level 5 Leadership** and **First Who, Then What**. Fix the people system before the plan.`;
+      return `**First Who, Then What.** Focus on Level 5 leaders—humble yet fiercely dedicated. **Action:** Focus your next 1:1 with a potential leader on understanding their personal ambitions (passion) and their long-term resolve (will).`;
     }
-    return `Apply disciplined people, thought, and action. Get the “who” right, then push the flywheel.`;
   }
+
+  // --- Radical Candor ---
   if (bookTitle.includes('Radical Candor')) {
     if (q.includes('feedback') || q.includes('difficult')) {
-      return `Aim for **Caring Personally + Challenging Directly**. Be specific, timely, and discuss behavior, not identity.`;
+      return `Aim for the sweet spot: **Care Personally and Challenge Directly**. When giving criticism, make it immediate and specific to the behavior, not the person. **Action:** Prepare for your next difficult conversation by writing down the exact action you want to change, and why you care about the person's success.`;
     }
-    if (q.includes('criticism') || q.includes('praise')) {
-      return `Ask for criticism first, then model candor in the way you give it.`;
-    }
-    return `Reinforce the relationship, then deliver the direct challenge.`;
   }
+
+  // --- Atomic Habits ---
   if (bookTitle.includes('Atomic Habits')) {
     if (q.includes('start') || q.includes('new habit') || q.includes('consistency')) {
-      return `Use the **2-Minute Rule**; stack on an existing habit; add an immediate reward.`;
+      return `Use the **2-Minute Rule** (Make it Easy). Your new habit should take less than two minutes to start. **Action:** Define the "starting ritual" for your new habit (e.g., "After I finish my coffee, I will open my laptop for 2 minutes of focus").`;
     }
-    if (q.includes('break') || q.includes('stop')) {
-      return `Invert the Four Laws: make it **Invisible, Unattractive, Difficult, Unsatisfying**—add friction and remove cues.`;
-    }
-    return `Shift identity: “What would a disciplined person do right now?”`;
   }
-  return `Define the outcome, then apply **${(focusAreas && focusAreas[0]) || 'core'}** principles to design the smallest repeatable action.`;
+  
+  // --- Default General Response (If no specific logic matches) ---
+  return `That's a key application question. The ${bookTitle} framework focuses on **${focusAreas[0]}**. The best approach is to apply the "Law of Small Changes": Break your problem down and address it using a micro-action guided by ${focusAreas[0]}. **Action:** Identify one small step you can take today related to your question.`;
 };
 
+
 /* =========================================================
-   POSTER FLYER (fallback HTML; condensed when exec brief ON)
+   AI FLYER GENERATOR (Relies on AI or Mock to generate detailed HTML)
 ========================================================= */
-function generatePosterFlyerHTML(book, tier, isExecutiveBrief) {
-  const focus = (book.focus || '').split(',').map(s => s.trim()).filter(Boolean);
-  if (isExecutiveBrief) {
+function generateMockFlyerContent(book, tier, isExecutiveBrief) {
+    const complexityData = COMPLEXITY_MAP[book.complexity] || COMPLEXITY_MAP.Medium;
+    
+    // --- EXECUTIVE BRIEF CONTENT (New Focus on Strategic Value) ---
+    if (isExecutiveBrief) {
+      return `
+        <div style="padding:20px; border-left:6px solid ${COLORS.ORANGE}; background:#F9FAFB; border-radius:8px">
+            <h3 style="margin-top:0; color:${COLORS.NAVY}; font-weight:800; font-size:20px; display:flex; align-items:center; gap:8px">
+                <span style="color:${COLORS.ORANGE}"><i data-lucide="minimize-2" style="width:20px;height:20px"></i></span> Strategic Brief: 3 Core Shifts
+            </h3>
+            <ul style="margin:10px 0 0 20px; padding:0; list-style:disc; font-size:16px; color:${COLORS.TEXT}">
+                <li>**Core Idea:** You must separate yourself from the work. ${book.title} provides a foundational roadmap for system-building.</li>
+                <li>**Managerial Focus:** The 80/20 rule dictates ${book.complexity === 'High' ? 'deep' : 'swift'} focus on ${book.focus.split(',')[0].trim()}.</li>
+                <li>**Key Pitfall:** The biggest mistake is acting like a **Technician** rather than a **Manager**—avoid doing tasks that should be delegated.</li>
+            </ul>
+            <p style="margin:16px 0 0 0; padding:12px; background:#FEF3C7; border-radius:6px; font-weight:600; font-size:15px; color:#92400E">
+                **IMMEDIATE ACTION:** Schedule a 30-minute block this week to audit your current time allocation.
+            </p>
+        </div>
+      `;
+    }
+    
+    // --- DETAILED FLYER CONTENT (Rich, structured output) ---
+    const frameworks = book.title.includes('E-Myth') ? 'E-Myth Triad (Entrepreneur, Manager, Technician)' :
+                       book.title.includes('Good to Great') ? 'Hedgehog Concept, Level 5 Leadership' :
+                       book.title.includes('Radical Candor') ? 'Care Personally vs. Challenge Directly Quadrants' :
+                       'Core principles from the author.';
+                       
     return `
-      <div style="display:flex;flex-direction:column;gap:12px">
-        <header style="border-bottom:3px solid ${COLORS.ORANGE};padding-bottom:10px">
-          <p style="margin:0 0 4px 0;font-size:12px;letter-spacing:.13em;color:${COLORS.TEAL};font-weight:800;text-transform:uppercase">${tier} Competency</p>
-          <h2 style="margin:0;color:${COLORS.NAVY};font-weight:900;font-size:30px;line-height:1.05;letter-spacing:-.02em;text-shadow:0 1px 0 #fff">${book.title}</h2>
-          <p style="margin:6px 0 0 0;color:${COLORS.ORANGE};font-weight:800">by ${book.author}</p>
-        </header>
-        <p style="margin:0;color:${COLORS.TEXT}">${book.theme || 'Practical ideas you can apply this week.'}</p>
-        <ul style="margin:0 0 0 18px;color:${COLORS.TEXT}">
-          <li><strong>Focus:</strong> ${focus[0] || 'Apply one core behavior daily'}</li>
-          <li><strong>Next action:</strong> schedule a 20‑minute practice block today</li>
-        </ul>
-      </div>
+        <div style="display:flex; flex-direction:column; gap:20px; font-size:16px;">
+            <header style="padding:15px; background:${COLORS.NAVY}; color:white; border-radius:12px; box-shadow:0 6px 15px rgba(0,0,0,.15)">
+                <h3 style="margin:0; font-weight:900; font-size:24px; display:flex; align-items:center; gap:8px">
+                    <span style="color:${COLORS.TEAL}"><i data-lucide="feather" style="width:24px;height:24px"></i></span> Rich Synopsis
+                </h3>
+                <p style="margin-top:8px; margin-bottom:0; font-size:15px; line-height:1.6">
+                    ${book.theme}. This book is essential for transitioning from individual contribution to scalable leadership. It provides a blueprint for consistency, quality, and sustainable organizational growth through **process design**.
+                </p>
+            </header>
+
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:15px">
+                <div style="padding:15px; border:2px solid ${COLORS.TEAL}; border-radius:12px; background:#F0FAF9; box-shadow:0 2px 4px rgba(0,0,0,.04)">
+                    <h4 style="margin-top:0; color:${COLORS.NAVY}; font-weight:800; font-size:18px">Key Frameworks</h4>
+                    <ul style="margin:0 0 0 20px; padding:0; list-style:disc; color:${COLORS.TEXT}">
+                        <li>**Primary Focus:** ${book.focus.split(',')[0].trim()}</li>
+                        <li>**Core Models:** ${frameworks}</li>
+                        <li>**Learning Style:** Best for ${complexityData.label} learners who need structure.</li>
+                    </ul>
+                </div>
+
+                <div style="padding:15px; border:2px solid ${COLORS.ORANGE}; border-radius:12px; background:#FBF6F0; box-shadow:0 2px 4px rgba(0,0,0,.04)">
+                    <h4 style="margin-top:0; color:${COLORS.NAVY}; font-weight:800; font-size:18px">Actionable Steps</h4>
+                    <p style="margin-top:5px; margin-bottom:0; font-size:15px; color:${COLORS.TEXT}">
+                        **Manager's 90-Day Plan:**
+                    </p>
+                    <ol style="margin:5px 0 0 20px; padding:0; list-style:decimal; color:${COLORS.TEXT}">
+                        <li>**Day 30:** Document your top 3 delegated processes.</li>
+                        <li>**Day 60:** Train one team member on all 3 processes.</li>
+                        <li>**Day 90:** Measure quality scores of the delegated tasks.</li>
+                    </ol>
+                </div>
+            </div>
+        </div>
     `;
-  }
-  const skills = focus.map(f => `<li style="margin:6px 0">${f}</li>`).join('');
-  const posterBg = `linear-gradient(180deg, #ffffff 0%, #FAFAFB 100%)`;
-  const posterTexture = `repeating-linear-gradient(0deg, rgba(0,0,0,.018) 0, rgba(0,0,0,.018) 2px, transparent 2px, transparent 5px)`;
-  return `
-    <div style="display:flex;flex-direction:column;gap:18px;
-                background:${posterBg};background-image:${posterBg}, ${posterTexture};
-                border:1px solid ${COLORS.SUBTLE}; border-radius:16px; padding:18px;
-                box-shadow:0 10px 30px rgba(0,0,0,.05)">
-
-      <header style="padding-bottom:12px; position:relative">
-        <p style="margin:0 0 6px 0;font-size:12px;letter-spacing:.14em;color:${COLORS.TEAL};font-weight:900;text-transform:uppercase">${tier} Competency</p>
-        <h2 style="margin:0;color:${COLORS.NAVY};font-weight:900;font-size:34px;line-height:1.04;letter-spacing:-.02em;text-shadow:0 1px 0 #fff">
-          ${book.title}
-        </h2>
-        <p style="margin:6px 0 0 0;color:${COLORS.ORANGE};font-weight:800">by ${book.author}</p>
-        <div style="height:6px;width:120px;background:${COLORS.ORANGE};border-radius:6px; margin-top:10px"></div>
-      </header>
-
-      <section style="display:grid;grid-template-columns:1fr 1fr;gap:18px;align-items:start;
-                      background-image: linear-gradient(to bottom, ${COLORS.SUBTLE} 0, ${COLORS.SUBTLE} 100%);
-                      background-size: 1px calc(100% - 24px);
-                      background-position: calc(50%) 12px;
-                      background-repeat: no-repeat;">
-
-        <div style="padding:14px;border:1px solid ${COLORS.SUBTLE};border-radius:12px;background:#FFFFFF">
-          <h3 style="margin:0 0 10px 0;color:${COLORS.NAVY};font-weight:900;letter-spacing:.01em">Summary</h3>
-          <p style="margin:0;color:${COLORS.TEXT};line-height:1.65">
-            ${book.theme || 'A concise, practical set of ideas you can apply immediately.'}
-          </p>
-        </div>
-
-        <div style="padding:14px;border:1px solid ${COLORS.SUBTLE};border-radius:12px;background:#FFFFFF">
-          <h3 style="margin:0 0 10px 0;color:${COLORS.NAVY};font-weight:900;letter-spacing:.01em">Book Metrics</h3>
-          <div style="display:flex;gap:14px;flex-wrap:wrap;color:${COLORS.TEXT}">
-            <div><strong>Est. Minutes:</strong> ${book.duration}</div>
-            <div><strong>Complexity:</strong> <span style="color:${COMPLEXITY_MAP[book.complexity]?.hex || COLORS.AMBER};font-weight:900">${COMPLEXITY_MAP[book.complexity]?.label || 'Intermediate'}</span></div>
-          </div>
-        </div>
-
-        <div style="padding:14px;border:1px solid ${COLORS.SUBTLE};border-radius:12px;background:#FFFFFF">
-          <h3 style="margin:0 0 10px 0;color:${COLORS.NAVY};font-weight:900;letter-spacing:.01em">Core Skills</h3>
-          <ul style="margin:0 0 0 18px;color:${COLORS.TEXT}">${skills || '<li>Define one concrete outcome you can repeat</li>'}</ul>
-        </div>
-
-        <div style="padding:14px;border:1px solid ${COLORS.SUBTLE};border-radius:12px;background:#FFFFFF">
-          <h3 style="margin:0 0 10px 0;color:${COLORS.NAVY};font-weight:900;letter-spacing:.01em">Suggested Action Plan</h3>
-          <ul style="margin:0 0 0 18px;color:${COLORS.TEXT}">
-            <li><strong>Pace:</strong> nine 20‑minute sessions</li>
-            <li><strong>Reflect:</strong> one note per chapter; share with a peer</li>
-          </ul>
-        </div>
-      </section>
-    </div>
-  `;
 }
 
-/* =========================================================
-   AI FLYER GENERATOR
-========================================================= */
 async function buildAIFlyerHTML({ book, tier, executive, callSecureGeminiAPI }) {
-  if (!callSecureGeminiAPI) return generatePosterFlyerHTML(book, tier, executive);
+  // Use AI or Fallback to generate the content (which is now much richer)
+  if (!callSecureGeminiAPI) return generateMockFlyerContent(book, tier, executive);
+  
+  const focus = (book.focus || '').split(',').map(s => s.trim()).filter(Boolean).join(', ');
+  
   const baseInstruction = executive
-    ? `Write an EXECUTIVE BRIEF for the book below in 120–180 words max, bullet-first…`
-    : `Create a one-page BOOK FLYER (Key Ideas, Frameworks, Quotes, Manager's 30/60/90, Metrics, Pitfalls)…`;
+    ? `Write a highly condensed strategic brief for a CEO/VP, focusing only on the 3 most critical, actionable takeaways and 1 clear next step. Use bolded headers. Do not use Markdown headings like # or ##.`
+    : `Generate a detailed, single-page book summary for a professional learning hub. Include a Rich Synopsis, Key Frameworks (3 points), and a detailed 30/60/90 Day Action Plan (3 steps). Format with strong paragraph spacing and use bolding for clarity.`;
 
-  const systemPrompt = `You are the LeaderReps AI Researcher. Provide accurate, practical guidance.`;
+  const systemPrompt = `You are the LeaderReps AI Researcher. Provide professional, well-structured, and highly actionable content suitable for management training.`;
   const userPrompt =
-    `${baseInstruction}\n\nBook: ${book.title} by ${book.author}\nFocus: ${(book.focus || '')}\nComplexity: ${book.complexity}\nMinutes: ${book.duration}\nTier: ${tier}`;
+    `${baseInstruction}\n\nBook: ${book.title} by ${book.author}\nFocus: ${focus}\nComplexity: ${book.complexity}\nMinutes: ${book.duration}\nTier: ${tier}`;
 
   try {
     let out = await callSecureGeminiAPI({ systemPrompt, userPrompt });
-    if (!out) out = await callSecureGeminiAPI(`${systemPrompt}\n\n${userPrompt}`);
     let html = '';
     if (typeof out === 'string') html = out;
     else if (out?.text) html = out.text;
     else if (out?.response) html = out.response;
     else if (Array.isArray(out?.candidates) && out.candidates[0]?.text) html = out.candidates[0].text;
     else html = JSON.stringify(out);
+    
     html = sanitizeHTML(html);
     if (!/[<][a-zA-Z]/.test(html)) html = `<div><p>${html.replace(/\n/g, '<br/>')}</p></div>`;
     return html;
   } catch (e) {
-    console.error('AI flyer error (fallback to poster):', e);
-    return generatePosterFlyerHTML(book, tier, executive);
+    console.error('AI flyer error (fallback to mock):', e);
+    return generateMockFlyerContent(book, tier, executive);
   }
 }
 
@@ -319,12 +311,6 @@ export default function BusinessReadingsScreen() {
     hasGeminiKey,
   } = services;
 
-  const [showDbg, setShowDbg] = useState(() => {
-    try { return typeof window !== 'undefined' && /[?&]dbg=1\b/.test(window.location.search); }
-    catch { return false; }
-  });
-  const [debugStamp] = useState(() => new Date().toLocaleString());
-
   const [selectedBook, setSelectedBook] = useState(null);
   const [htmlFlyer, setHtmlFlyer] = useState('');
   const [selectedTier, setSelectedTier] = useState('');
@@ -340,15 +326,6 @@ export default function BusinessReadingsScreen() {
   const [focusedField, setFocusedField] = useState(null);
   const lastSelSearch = useRef({ start: null, end: null });
   const lastSelCoach = useRef({ start: null, end: null });
-
-  useEffect(() => {
-    try {
-      if (globalThis.notepad?.addContent) {
-        globalThis.notepad.setTitle('LeaderReps Notepad');
-        globalThis.notepad.addContent('📚 BusinessReadings mounted.');
-      }
-    } catch {}
-  }, []);
 
   const allBooks = Object.keys(contextBooks).length ? contextBooks : MOCK_ALL_BOOKS;
 
@@ -380,20 +357,14 @@ export default function BusinessReadingsScreen() {
       if (hasGeminiKey?.() && typeof callSecureGeminiAPI === 'function') {
         html = await buildAIFlyerHTML({ book: selectedBook, tier: tierKey, executive: isExecutiveBrief, callSecureGeminiAPI });
       } else {
-        html = generatePosterFlyerHTML(selectedBook, tierKey, isExecutiveBrief);
+        // Updated mock fallback
+        html = generateMockFlyerContent(selectedBook, tierKey, isExecutiveBrief);
       }
       if (!cancelled) setHtmlFlyer(html);
     })();
     return () => { cancelled = true; };
   }, [selectedBook, selectedTier, isExecutiveBrief, allBooks]);
 
-  useEffect(() => {
-    if (selectedBook) {
-      setIsExecutiveBrief(false);
-      setAiQuery('');
-      setAiResponse('');
-    }
-  }, [selectedBook]);
 
   const rememberCaret = (ref, store) => {
     try {
@@ -427,35 +398,47 @@ export default function BusinessReadingsScreen() {
     e.preventDefault();
     const q = aiQuery.trim();
     if (!selectedBook || !q) return;
+    
+    // Clear query, set loading state
+    setAiQuery('');
     setAiResponse('Thinking…');
+    
     const focusAreas = (selectedBook.focus || '').split(',').map(s => s.trim()).filter(Boolean);
+    
     try {
       if (hasGeminiKey?.() && typeof callSecureGeminiAPI === 'function') {
         const systemPrompt =
           `You are the LeaderReps AI Coach.\n` +
           `- Book: ${selectedBook.title} by ${selectedBook.author}\n` +
           `- Focus areas: ${focusAreas.join(', ') || '—'}\n` +
-          `Respond in 3–5 sentences plus 1–2 concrete next actions.`;
+          `Respond to the user's direct application question in 3–5 sentences, giving 1–2 concrete next actions.`;
         const userPrompt = q;
+        
         let out = await callSecureGeminiAPI({ systemPrompt, userPrompt });
-        if (!out) out = await callSecureGeminiAPI(`${systemPrompt}\n\nUser: ${userPrompt}`);
         let text = '';
         if (typeof out === 'string') text = out;
         else if (out?.text) text = out.text;
         else if (out?.response) text = out.response;
-        else if (Array.isArray(out?.candidates) && out.candidates[0]?.content) text = out.candidates[0].content;
         else if (Array.isArray(out?.candidates) && out.candidates[0]?.text) text = out.candidates[0].text;
         else text = JSON.stringify(out);
+        
         setAiResponse(text || 'No response.');
       } else {
+        // MOCK AI RESPONSE (Improved)
         const tip = mockAIResponse(selectedBook.title, focusAreas, q);
         setAiResponse(tip);
       }
     } catch (err) {
       console.error('AI error:', err);
       const tip = mockAIResponse(selectedBook.title, focusAreas, q);
-      setAiResponse(`(AI error; using local tips)\n\n${tip}`);
+      setAiResponse(`(AI service error; using local tips)\n\n${tip}`);
     }
+    
+    // Restore focus to input after response
+    setTimeout(() => {
+      if (aiInputRef.current) aiInputRef.current.focus();
+    }, 100); 
+
   }, [aiQuery, selectedBook, callSecureGeminiAPI, hasGeminiKey]);
 
   const handleCommitment = (book) => {
@@ -694,7 +677,8 @@ export default function BusinessReadingsScreen() {
               <ExecSwitch checked={isExecutiveBrief} onChange={setIsExecutiveBrief} />
             </div>
           </div>
-
+          
+          {/* FLYER CONTENT RENDERED HERE */}
           <div className="max-w-none space-y-4" style={{ color: COLORS.TEXT }} dangerouslySetInnerHTML={{ __html: htmlFlyer }} />
 
           <div className="mt-8 pt-4" style={{ borderTop: `1px solid ${COLORS.SUBTLE}` }}>
@@ -704,7 +688,7 @@ export default function BusinessReadingsScreen() {
 
             {aiResponse && (
               <div className="p-4 mb-4 rounded" style={{ background: '#EFF6FF', border: '1px solid #93C5FD', color: COLORS.TEXT }}>
-                <p className="text-sm font-semibold" style={{ color: '#1D4ED8' }}>AI Coach:</p>
+                <p className="text-sm font-semibold" style={{ color: COLORS.BLUE }}>AI Coach:</p>
                 <p className="text-base" style={{ whiteSpace: 'pre-wrap' }}>{aiResponse}</p>
               </div>
             )}
@@ -719,7 +703,7 @@ export default function BusinessReadingsScreen() {
                 onChange={(e) => { rememberCaret(aiInputRef, lastSelCoach.current); setAiQuery(e.target.value); }}
                 onInput={(e) => { rememberCaret(aiInputRef, lastSelCoach.current); setAiQuery(e.target.value); }}
                 placeholder={`Ask how to apply ${selectedBook.title} at work (e.g., "How do I delegate?")`}
-                className="flex-grow p-3 border rounded"
+                className="flex-grow p-3 border rounded text-base"
                 style={{ borderColor: COLORS.SUBTLE, color: COLORS.TEXT }}
                 required
               />
@@ -733,7 +717,7 @@ export default function BusinessReadingsScreen() {
                 }}
                 disabled={!aiQuery.trim()}
               >
-                <MessageSquare className="w-5 h-5" /> Ask
+                <Send className="w-5 h-5" /> Ask
               </button>
             </form>
           </div>
@@ -769,31 +753,6 @@ export default function BusinessReadingsScreen() {
 
   return (
     <div className="p-6 md:p-10 min-h-screen" style={{ background: COLORS.BG, color: COLORS.TEXT }}>
-      {showDbg && (
-        <div
-          style={{
-            position: 'sticky',
-            top: 0,
-            zIndex: 1000,
-            background: '#111827',
-            color: '#FFFFFF',
-            border: `2px solid ${COLORS.AMBER}`,
-            borderRadius: 8,
-            padding: '8px 12px',
-            marginBottom: 12
-          }}
-        >
-          <strong>Debug:</strong> BusinessReadings.jsx (v6.1 switch fix) mounted at {debugStamp}.
-          <button
-            onClick={() => setShowDbg(false)}
-            style={{ float: 'right', background: 'transparent', color: '#FFFFFF', border: 'none', fontWeight: 700, cursor: 'pointer' }}
-            aria-label="Dismiss debug banner"
-          >
-            ×
-          </button>
-        </div>
-      )}
-
       <h1 className="text-4xl font-extrabold mb-10" style={{ color: COLORS.NAVY }}>Professional Reading Hub</h1>
       {!selectedBook && <BookList />}
       {selectedBook && <BookFlyer />}
