@@ -1,5 +1,5 @@
 /* eslint-disable no-console */
-import React, { useState, useMemo, useRef } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { useAppServices } from '../../App.jsx';
 import { 
     BookOpen, Target, CheckCircle, Clock, Feather, Aperture, Briefcase, Zap, Star, 
@@ -101,6 +101,51 @@ const mockAIResponse = (bookTitle, focusAreas, query) => {
 };
 
 
+
+
+// Accessible, inline-styled Executive Brief switch (no Tailwind dynamic classes)
+function ExecSwitch({ checked, onChange }) {
+  const toggle = () => onChange(!checked);
+  const onKey = (e) => {
+    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle(); }
+  };
+  return (
+    <div className="flex items-center gap-2">
+      <button
+        type="button"
+        role="switch"
+        aria-checked={checked}
+        onClick={toggle}
+        onKeyDown={onKey}
+        className="relative inline-flex items-center"
+        style={{ width: 46, height: 26 }}
+      >
+        <span
+          style={{
+            position: 'absolute',
+            inset: 0,
+            background: checked ? '#E04E1B' : '#9CA3AF',
+            borderRadius: 9999,
+            transition: 'background .15s ease'
+          }}
+        />
+        <span
+          style={{
+            position: 'relative',
+            left: checked ? 22 : 2,
+            width: 22,
+            height: 22,
+            background: '#FFFFFF',
+            borderRadius: '9999px',
+            boxShadow: '0 1px 2px rgba(0,0,0,.2)',
+            transition: 'left .15s ease'
+          }}
+        />
+      </button>
+      <span style={{ color: '#002E47', fontWeight: 600 }}>Executive Brief</span>
+    </div>
+  );
+}
 // --- MAIN COMPONENT ---
 export default function BusinessReadingsScreen() {
     const { allBooks: contextBooks = {}, updateCommitmentData, navigate } = useAppServices();
@@ -149,7 +194,10 @@ export default function BusinessReadingsScreen() {
     }, [allBooks, filters]);
 
     // Trigger flyer generation when a book or the toggle is changed
-    useMemo(async () => {
+    useEffect(() => {
+        let cancelled = false;
+        (async () => {
+            
         if (selectedBook) {
             const tierKey = selectedTier || Object.keys(allBooks).find(key => 
                 (allBooks[key] || []).some(b => b.id === selectedBook.id)
@@ -162,6 +210,9 @@ export default function BusinessReadingsScreen() {
         } else {
             setHtmlFlyer('');
         }
+    
+        })();
+        return () => { cancelled = true; };
     }, [selectedBook, selectedTier, allBooks, isExecutiveBrief]); 
     
     // Reset states when selecting a new book
@@ -189,9 +240,6 @@ export default function BusinessReadingsScreen() {
             setAiResponse(response);
             
             // Maintain focus on the input field after response (CRITICAL FIX)
-            if (aiInputRef.current) {
-                aiInputRef.current.focus();
-            }
         }, 800); 
     };
 
@@ -199,9 +247,6 @@ export default function BusinessReadingsScreen() {
     const handleSearchChange = (e) => {
         setFilters({...filters, search: e.target.value});
         // CRITICAL FIX: Ensure focus is maintained after state update (needed if the parent re-renders)
-        if (searchInputRef.current) {
-            searchInputRef.current.focus();
-        }
     };
 
 
@@ -243,26 +288,26 @@ export default function BusinessReadingsScreen() {
     ---------------------------------------------------- */
     const BookList = () => (
         <div className="space-y-10">
-            <h2 className="text-3xl font-extrabold text-[${COLORS.NAVY}] flex items-center gap-3 border-b-4 border-[${COLORS.ORANGE}] pb-2">
-                <BookOpen className="w-7 h-7 text-[${COLORS.TEAL}]" /> LeaderReps Curated Reading Library
+            <h2 className="text-3xl font-extrabold  flex items-center gap-3 border-b-4  pb-2">
+                <BookOpen className="w-7 h-7 " /> LeaderReps Curated Reading Library
             </h2>
             
             {/* --- PERSONALIZATION: FILTER & SEARCH BAR --- */}
-            <div className='bg-[${COLORS.OFF_WHITE}] p-5 rounded-xl shadow-xl border border-gray-100'>
-                <h3 className="text-xl font-bold text-[${COLORS.NAVY}] flex items-center gap-2 mb-4">
+            <div className=' p-5 rounded-xl shadow-xl border border-gray-100'>
+                <h3 className="text-xl font-bold  flex items-center gap-2 mb-4">
                     <Filter className='w-5 h-5 text-[${COLORS.ORANGE}]'/> Personalize Your Search
                 </h3>
                 
                 {/* Search Input (Now uses ref) */}
                 <div className="mb-6">
-                    <label className='block text-sm font-medium text-gray-700 mb-1 flex items-center gap-1'><Search className='w-4 h-4 text-[${COLORS.TEAL}]'/> Search by Title, Author, or Key Focus (e.g., "Delegation")</label>
+                    <label className='block text-sm font-medium text-gray-700 mb-1 flex items-center gap-1'><Search className='w-4 h-4 '/> Search by Title, Author, or Key Focus (e.g., "Delegation")</label>
                     <input
                         type="text"
                         ref={searchInputRef}
                         value={filters.search}
                         onChange={handleSearchChange}
                         placeholder="Start typing to find a book..."
-                        className="w-full p-3 border border-gray-300 rounded-lg shadow-sm focus:ring-[${COLORS.ORANGE}] focus:border-[${COLORS.ORANGE}]"
+                        className="w-full p-3 border border-gray-300 rounded-lg shadow-sm focus:ring-[${COLORS.ORANGE}] focus:"
                     />
                 </div>
 
@@ -272,7 +317,7 @@ export default function BusinessReadingsScreen() {
                         <select
                             value={filters.complexity}
                             onChange={(e) => setFilters({...filters, complexity: e.target.value})}
-                            className="w-full p-2 border border-gray-300 rounded-lg shadow-sm focus:ring-[${COLORS.TEAL}] focus:border-[${COLORS.TEAL}]"
+                            className="w-full p-2 border border-gray-300 rounded-lg shadow-sm focus:ring-[${COLORS.TEAL}] focus:"
                         >
                             <option value="All">All Levels</option>
                             {Object.keys(COMPLEXITY_MAP).map(key => (
@@ -303,12 +348,12 @@ export default function BusinessReadingsScreen() {
             {/* --- BOOK LIST --- */}
             <div className="space-y-12">
                 {Object.entries(filteredBooks).map(([tier, books]) => (
-                    <div key={tier} className='bg-[${COLORS.OFF_WHITE}] rounded-2xl shadow-xl border-2 border-[${COLORS.NAVY}]/10 overflow-hidden'>
+                    <div key={tier} className=' rounded-2xl shadow-xl border-2 border-[${COLORS.NAVY}]/10 overflow-hidden'>
                         
                         {/* Category Header (Strong NAVY Background) */}
-                        <div className='p-6 border-l-8 border-[${COLORS.ORANGE}] bg-[${COLORS.NAVY}]'>
+                        <div className='p-6 border-l-8  '>
                             <h3 className="text-2xl font-bold text-white flex items-center gap-2">
-                                <Aperture className="w-6 h-6 text-[${COLORS.TEAL}]" /> {tier}
+                                <Aperture className="w-6 h-6 " /> {tier}
                             </h3>
                             <p className="text-base text-gray-200 mt-1">Foundational books for mastering this core leadership competency. ({books.length} available)</p>
                         </div>
@@ -329,11 +374,11 @@ export default function BusinessReadingsScreen() {
                                             }}
                                             className={`p-5 border-2 rounded-xl shadow-lg text-left transition-all w-full h-full block
                                                 ${selectedBook?.id === book.id
-                                                    ? 'bg-[${COLORS.TEAL}]/10 border-[${COLORS.TEAL}] ring-4 ring-[${COLORS.TEAL}]/50'
-                                                    : 'bg-white border-gray-200 hover:shadow-xl hover:border-[${COLORS.ORANGE}]'
+                                                    ? '  ring-4 '
+                                                    : 'bg-white border-gray-200 hover:shadow-xl hover:'
                                                 }`}
                                         >
-                                            <p className="font-extrabold text-xl text-[${COLORS.NAVY}] leading-snug mb-1">{book.title}</p>
+                                            <p className="font-extrabold text-xl  leading-snug mb-1">{book.title}</p>
                                             <p className="text-sm text-gray-600 italic mb-3">by {book.author}</p>
                                             
                                             <div className='h-px bg-gray-200 mb-3'></div>
@@ -354,7 +399,7 @@ export default function BusinessReadingsScreen() {
 
                                             {/* Focus Badges */}
                                             <div className='mt-4 pt-3 border-t border-gray-100'>
-                                                <p className='text-xs font-semibold text-[${COLORS.TEAL}] mb-1'>Key Focus:</p>
+                                                <p className='text-xs font-semibold  mb-1'>Key Focus:</p>
                                                 <div className='flex flex-wrap gap-1'>
                                                     {book.focus.split(',').slice(0, 2).map((focus, index) => (
                                                         <span key={index} className='px-2 py-0.5 text-xs font-medium rounded-full bg-gray-100 text-gray-600'>
@@ -407,12 +452,12 @@ export default function BusinessReadingsScreen() {
         return (
             <div className="space-y-8">
                 <div className='flex justify-between items-center pb-4 border-b border-gray-200'>
-                    <h2 className="text-3xl font-bold text-[${COLORS.NAVY}] flex items-center gap-3">
+                    <h2 className="text-3xl font-bold  flex items-center gap-3">
                         <Star className="w-7 h-7 text-[${COLORS.ORANGE}]" /> Focus Flyer: {selectedBook.title}
                     </h2>
                     <button 
                         onClick={() => setSelectedBook(null)} 
-                        className='text-base font-semibold text-[${COLORS.NAVY}] hover:text-[${COLORS.ORANGE}] transition-colors flex items-center gap-1 p-2 rounded-lg border border-transparent hover:border-gray-200'
+                        className='text-base font-semibold  hover:text-[${COLORS.ORANGE}] transition-colors flex items-center gap-1 p-2 rounded-lg border border-transparent hover:border-gray-200'
                     >
                         &larr; Back to Library
                     </button>
@@ -424,7 +469,7 @@ export default function BusinessReadingsScreen() {
                     <div className='flex justify-between mb-4'>
                         {/* Progress Indicator */}
                         <div className='flex items-center gap-3 p-2 bg-gray-50 rounded-lg border border-gray-200'>
-                            <TrendingUp className='w-5 h-5 text-[${COLORS.TEAL}]'/>
+                            <TrendingUp className='w-5 h-5 '/>
                             <div>
                                 <p className='text-xs font-medium text-gray-600'>YOUR COMMITMENT STATUS</p>
                                 <div className='flex items-center gap-2'>
@@ -434,25 +479,13 @@ export default function BusinessReadingsScreen() {
                                             style={{ width: `${mockProgress.progressPercent > 100 ? 100 : mockProgress.progressPercent}%` }}
                                         ></div>
                                     </div>
-                                    <span className='text-sm font-bold text-[${COLORS.NAVY}]'>{mockProgress.progressPercent}% Complete</span>
+                                    <span className='text-sm font-bold '>{mockProgress.progressPercent}% Complete</span>
                                 </div>
                             </div>
                         </div>
 
                         {/* Executive Brief Toggle */}
-                        <label className="relative inline-flex items-center cursor-pointer">
-                            <input 
-                                type="checkbox" 
-                                value="" 
-                                className="sr-only peer" 
-                                checked={isExecutiveBrief} 
-                                onChange={() => setIsExecutiveBrief(!isExecutiveBrief)}
-                            />
-                            <div className={`w-11 h-6 ${isExecutiveBrief ? 'bg-[${COLORS.ORANGE}]' : 'bg-gray-400'} peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-[${COLORS.ORANGE}]/30 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all`}></div>
-                            <span className="ml-3 text-sm font-medium text-[${COLORS.NAVY}] flex items-center gap-1">
-                                <Minimize2 className='w-4 h-4'/> Executive Brief
-                            </span>
-                        </label>
+                        <ExecSwitch checked={isExecutiveBrief} onChange={setIsExecutiveBrief} />
                     </div>
 
                     <div 
@@ -462,7 +495,7 @@ export default function BusinessReadingsScreen() {
                     
                     {/* --- AI COACH IMPLEMENTATION (FIXED) --- */}
                     <div className='mt-8 pt-4 border-t border-gray-200'>
-                        <h3 className="text-2xl font-bold text-[${COLORS.NAVY}] flex items-center gap-3 mb-4">
+                        <h3 className="text-2xl font-bold  flex items-center gap-3 mb-4">
                             <MessageSquare className='w-6 h-6 text-blue-600'/> AI Coach: Instant Application
                         </h3>
 
@@ -482,7 +515,7 @@ export default function BusinessReadingsScreen() {
                                 value={aiQuery}
                                 onChange={(e) => setAiQuery(e.target.value)}
                                 placeholder={`Ask how to apply ${selectedBook.title} concepts to your job... (e.g., "How do I delegate?")`}
-                                className='flex-grow p-3 border border-gray-300 rounded-lg focus:ring-[${COLORS.TEAL}] focus:border-[${COLORS.TEAL}] text-base'
+                                className='flex-grow p-3 border border-gray-300 rounded-lg focus:ring-[${COLORS.TEAL}] focus: text-base'
                                 required
                             />
                             <button
@@ -513,7 +546,7 @@ export default function BusinessReadingsScreen() {
                         </button>
                         <button 
                             onClick={() => handleCommitment(selectedBook)}
-                            className="flex items-center gap-2 px-6 py-3 bg-[${COLORS.ORANGE}] text-white font-semibold rounded-xl hover:bg-red-700 transition-colors shadow-lg shadow-[${COLORS.ORANGE}]/40"
+                            className="flex items-center gap-2 px-6 py-3  text-white font-semibold rounded-xl hover:bg-red-700 transition-colors shadow-lg shadow-[${COLORS.ORANGE}]/40"
                         >
                             <TrendingUp className="w-5 h-5" /> Add to Daily Practice Commitment
                         </button>
@@ -525,7 +558,7 @@ export default function BusinessReadingsScreen() {
 
     return (
         <div className="p-6 md:p-10 min-h-screen" style={{ backgroundColor: COLORS.LIGHT_GRAY }}>
-            <h1 className="text-4xl font-extrabold text-[${COLORS.NAVY}] mb-10">Professional Reading Hub</h1>
+            <h1 className="text-4xl font-extrabold  mb-10" style={{ color: COLORS.NAVY }}>Professional Reading Hub</h1>
 
             {!selectedBook && <BookList />}
             {selectedBook && <BookFlyer />}
