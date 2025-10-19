@@ -3,7 +3,9 @@ import React, { useState, useMemo, useRef, useEffect, useCallback, useLayoutEffe
 import { useAppServices } from '../../App.jsx';
 import {
   BookOpen, Target, CheckCircle, Clock, AlertTriangle,
-  MessageSquare, Filter, TrendingUp, Star, Search as SearchIcon, Minimize2
+  MessageSquare, Filter, TrendingUp, Star, Search as SearchIcon,
+  // --- FIX: ALL missing icons imported to prevent ReferenceErrors on render ---
+  Send, Minimize2, CornerDownRight, Feather, Aperture, Briefcase, Zap, Users
 } from 'lucide-react';
 
 /* =========================================================
@@ -32,7 +34,7 @@ const COMPLEXITY_MAP = {
 };
 
 /* =========================================================
-   SAFETY: ExecSwitch (No changes needed)
+   SAFETY: ExecSwitch
 ========================================================= */
 const ExecSwitch = (function defineExecSwitch(){
   const Component = function ExecSwitch({ checked, onChange }) {
@@ -150,11 +152,13 @@ function sanitizeHTML(dirty) {
   clean = clean.replace(/\son\w+='[^']*'/gi, '');
   clean = clean.replace(/(href|src)\s*=\s*"(javascript:[^"]*)"/gi, '$1="#"');
   clean = clean.replace(/(href|src)\s*=\s*'(javascript:[^']*)'/gi, '$1="#"');
+  // Final cleaning step: ensure all double quotes inside styles or attributes are safe
+  clean = clean.replace(/style="([^"]*)"/gi, (match, p1) => `style="${p1.replace(/"/g, "'")}"`);
   return clean;
 }
 
 /* =========================================================
-   AI COACH (MOCK RESPONSE)
+   AI COACH (MOCK RESPONSE - IMPROVED LOGIC)
 ========================================================= */
 const mockAIResponse = (bookTitle, focusAreas, query) => {
   const q = (query || '').toLowerCase();
@@ -167,15 +171,21 @@ const mockAIResponse = (bookTitle, focusAreas, query) => {
     if (q.includes('manager') || q.includes('owner')) {
       return `Gerber defines three roles: Entrepreneur (vision), Manager (process), Technician (doing). If you're stuck doing the work, you're the Technician. **Action:** Spend 3 hours this week on the **Manager** role: documenting or refining a critical system.`;
     }
+    if (q.includes('hiring') || q.includes('train')) {
+      return `Hiring must come after documentation. **Action:** Create the job description based on your documented system, not on a person's prior experience. This ensures the new hire fits the process, not the other way around.`;
+    }
   }
   
   // --- Good to Great ---
   if (bookTitle.includes('Good to Great')) {
     if (q.includes('hedgehog') || q.includes('core')) {
-      return `The **Hedgehog Concept** is the convergence of **Passion**, **Best in the World**, and **Economic Engine**. If your project doesn't hit all three, it's distraction. **Action:** Audit your team's top three priorities against these three circles. Eliminate the weakest one.`;
+      return `The **Hedgehog Concept** is the convergence of **Passion**, **Best in the World**, and **Economic Engine**. If your current strategy doesn't hit all three circles, it's distraction. **Action:** Audit your team's top three priorities against these three circles. Eliminate the weakest one.`;
     }
     if (q.includes('leader') || q.includes('culture') || q.includes('management')) {
       return `**First Who, Then What.** Focus on Level 5 leaders—humble yet fiercely dedicated. **Action:** Focus your next 1:1 with a potential leader on understanding their personal ambitions (passion) and their long-term resolve (will).`;
+    }
+    if (q.includes('flywheel') || q.includes('momentum')) {
+        return `The **Flywheel** builds momentum slowly. **Action:** Identify the 3-5 biggest "pushes" your organization needs to build momentum, and ensure 80% of resources are focused on those. Do not attempt to push the flywheel in six directions at once.`;
     }
   }
 
@@ -184,6 +194,9 @@ const mockAIResponse = (bookTitle, focusAreas, query) => {
     if (q.includes('feedback') || q.includes('difficult')) {
       return `Aim for the sweet spot: **Care Personally and Challenge Directly**. When giving criticism, make it immediate and specific to the behavior, not the person. **Action:** Prepare for your next difficult conversation by writing down the exact action you want to change, and why you care about the person's success.`;
     }
+    if (q.includes('team') || q.includes('culture')) {
+      return `Model candor by **asking for criticism first**. This proves you are open to being challenged. **Action:** In your next team meeting, specifically ask your team members, "What could I do to make this team better, that I'm currently not doing?"`;
+    }
   }
 
   // --- Atomic Habits ---
@@ -191,20 +204,25 @@ const mockAIResponse = (bookTitle, focusAreas, query) => {
     if (q.includes('start') || q.includes('new habit') || q.includes('consistency')) {
       return `Use the **2-Minute Rule** (Make it Easy). Your new habit should take less than two minutes to start. **Action:** Define the "starting ritual" for your new habit (e.g., "After I finish my coffee, I will open my laptop for 2 minutes of focus").`;
     }
+    if (q.includes('break') || q.includes('stop')) {
+      return `Invert the Four Laws: make it **Invisible, Unattractive, Difficult, Unsatisfying**—add friction and remove cues. **Action:** To stop checking email constantly, remove the notification badge (make it invisible) and log out of the desktop client (make it difficult).`;
+    }
   }
   
   // --- Default General Response (If no specific logic matches) ---
-  return `That's a key application question. The ${bookTitle} framework focuses on **${focusAreas[0]}**. The best approach is to apply the "Law of Small Changes": Break your problem down and address it using a micro-action guided by ${focusAreas[0]}. **Action:** Identify one small step you can take today related to your question.`;
+  return `That's a very practical application question. The ${bookTitle} framework focuses on **${focusAreas[0]}**. The best approach is to break your problem down and address it using a micro-action guided by ${focusAreas[0]}. **Action:** Identify the smallest possible step related to your question and implement it consistently for one week.`;
 };
 
 
 /* =========================================================
-   AI FLYER GENERATOR (Relies on AI or Mock to generate detailed HTML)
+   AI FLYER GENERATOR (New implementation for richer content)
 ========================================================= */
 function generateMockFlyerContent(book, tier, isExecutiveBrief) {
     const complexityData = COMPLEXITY_MAP[book.complexity] || COMPLEXITY_MAP.Medium;
-    
-    // --- EXECUTIVE BRIEF CONTENT (New Focus on Strategic Value) ---
+    const focus = book.focus.split(',').map(s => s.trim()).filter(Boolean);
+    const primaryFocus = focus[0];
+
+    // --- EXECUTIVE BRIEF CONTENT (Strategic Value Focused) ---
     if (isExecutiveBrief) {
       return `
         <div style="padding:20px; border-left:6px solid ${COLORS.ORANGE}; background:#F9FAFB; border-radius:8px">
@@ -212,12 +230,12 @@ function generateMockFlyerContent(book, tier, isExecutiveBrief) {
                 <span style="color:${COLORS.ORANGE}"><i data-lucide="minimize-2" style="width:20px;height:20px"></i></span> Strategic Brief: 3 Core Shifts
             </h3>
             <ul style="margin:10px 0 0 20px; padding:0; list-style:disc; font-size:16px; color:${COLORS.TEXT}">
-                <li>**Core Idea:** You must separate yourself from the work. ${book.title} provides a foundational roadmap for system-building.</li>
-                <li>**Managerial Focus:** The 80/20 rule dictates ${book.complexity === 'High' ? 'deep' : 'swift'} focus on ${book.focus.split(',')[0].trim()}.</li>
-                <li>**Key Pitfall:** The biggest mistake is acting like a **Technician** rather than a **Manager**—avoid doing tasks that should be delegated.</li>
+                <li>**Shift 1 (Strategy):** ${book.title} demands you move from ${book.complexity === 'High' ? 'complex' : 'reactive'} problem-solving to **${primaryFocus}** planning.</li>
+                <li>**Shift 2 (Leadership):** The book's core lesson is delegating authority, not just tasks, to build capacity in others.</li>
+                <li>**Shift 3 (Action):** The ultimate measure of success is the consistency of your **management systems**, not personal output.</li>
             </ul>
             <p style="margin:16px 0 0 0; padding:12px; background:#FEF3C7; border-radius:6px; font-weight:600; font-size:15px; color:#92400E">
-                **IMMEDIATE ACTION:** Schedule a 30-minute block this week to audit your current time allocation.
+                **IMMEDIATE ACTION:** Identify the single most critical decision you face this week and apply the **${primaryFocus}** lens before moving forward.
             </p>
         </div>
       `;
@@ -236,7 +254,7 @@ function generateMockFlyerContent(book, tier, isExecutiveBrief) {
                     <span style="color:${COLORS.TEAL}"><i data-lucide="feather" style="width:24px;height:24px"></i></span> Rich Synopsis
                 </h3>
                 <p style="margin-top:8px; margin-bottom:0; font-size:15px; line-height:1.6">
-                    ${book.theme}. This book is essential for transitioning from individual contribution to scalable leadership. It provides a blueprint for consistency, quality, and sustainable organizational growth through **process design**.
+                    **Executive Summary:** ${book.theme}. This book is essential for transitioning from individual contribution to scalable leadership. It provides a blueprint for consistency, quality, and sustainable organizational growth through **process design**.
                 </p>
             </header>
 
@@ -244,7 +262,7 @@ function generateMockFlyerContent(book, tier, isExecutiveBrief) {
                 <div style="padding:15px; border:2px solid ${COLORS.TEAL}; border-radius:12px; background:#F0FAF9; box-shadow:0 2px 4px rgba(0,0,0,.04)">
                     <h4 style="margin-top:0; color:${COLORS.NAVY}; font-weight:800; font-size:18px">Key Frameworks</h4>
                     <ul style="margin:0 0 0 20px; padding:0; list-style:disc; color:${COLORS.TEXT}">
-                        <li>**Primary Focus:** ${book.focus.split(',')[0].trim()}</li>
+                        <li>**Primary Focus:** ${primaryFocus}</li>
                         <li>**Core Models:** ${frameworks}</li>
                         <li>**Learning Style:** Best for ${complexityData.label} learners who need structure.</li>
                     </ul>
@@ -253,7 +271,7 @@ function generateMockFlyerContent(book, tier, isExecutiveBrief) {
                 <div style="padding:15px; border:2px solid ${COLORS.ORANGE}; border-radius:12px; background:#FBF6F0; box-shadow:0 2px 4px rgba(0,0,0,.04)">
                     <h4 style="margin-top:0; color:${COLORS.NAVY}; font-weight:800; font-size:18px">Actionable Steps</h4>
                     <p style="margin-top:5px; margin-bottom:0; font-size:15px; color:${COLORS.TEXT}">
-                        **Manager's 90-Day Plan:**
+                        **High-Impact Steps:**
                     </p>
                     <ol style="margin:5px 0 0 20px; padding:0; list-style:decimal; color:${COLORS.TEXT}">
                         <li>**Day 30:** Document your top 3 delegated processes.</li>
@@ -267,7 +285,6 @@ function generateMockFlyerContent(book, tier, isExecutiveBrief) {
 }
 
 async function buildAIFlyerHTML({ book, tier, executive, callSecureGeminiAPI }) {
-  // Use AI or Fallback to generate the content (which is now much richer)
   if (!callSecureGeminiAPI) return generateMockFlyerContent(book, tier, executive);
   
   const focus = (book.focus || '').split(',').map(s => s.trim()).filter(Boolean).join(', ');
@@ -290,7 +307,10 @@ async function buildAIFlyerHTML({ book, tier, executive, callSecureGeminiAPI }) 
     else html = JSON.stringify(out);
     
     html = sanitizeHTML(html);
-    if (!/[<][a-zA-Z]/.test(html)) html = `<div><p>${html.replace(/\n/g, '<br/>')}</p></div>`;
+    // Fallback: If AI returns raw text, wrap it to prevent rendering issues
+    if (!/[<][a-zA-Z]/.test(html)) {
+        html = `<div style="padding:15px; background:#F0FAF9; border-radius:12px; border:1px solid ${COLORS.TEAL};"><p style="white-space:pre-wrap;margin:0;font-size:15px;">${html}</p></div>`;
+    }
     return html;
   } catch (e) {
     console.error('AI flyer error (fallback to mock):', e);
@@ -352,19 +372,16 @@ export default function BusinessReadingsScreen() {
     (async () => {
       if (!selectedBook) { setHtmlFlyer(''); return; }
       const tierKey = selectedTier || Object.keys(allBooks).find(k => (allBooks[k] || []).some(b => b.id === selectedBook.id)) || 'Strategy & Execution';
-      setHtmlFlyer(`<div style="padding:12px;border:1px dashed ${COLORS.SUBTLE};border-radius:12px;color:${COLORS.MUTED}">Generating ${isExecutiveBrief ? 'executive brief' : 'book flyer'}…</div>`);
+      setHtmlFlyer(`<div style="padding:12px;border:1px dashed ${COLORS.SUBTLE};border-radius:12px;color:${COLORS.MUTED}">Generating ${isExecutiveBrief ? 'executive brief' : 'detailed flyer'}…</div>`);
       let html;
-      if (hasGeminiKey?.() && typeof callSecureGeminiAPI === 'function') {
-        html = await buildAIFlyerHTML({ book: selectedBook, tier: tierKey, executive: isExecutiveBrief, callSecureGeminiAPI });
-      } else {
-        // Updated mock fallback
-        html = generateMockFlyerContent(selectedBook, tierKey, isExecutiveBrief);
-      }
+      
+      // Use the dedicated AI function
+      html = await buildAIFlyerHTML({ book: selectedBook, tier: tierKey, executive: isExecutiveBrief, callSecureGeminiAPI });
+      
       if (!cancelled) setHtmlFlyer(html);
     })();
     return () => { cancelled = true; };
-  }, [selectedBook, selectedTier, isExecutiveBrief, allBooks]);
-
+  }, [selectedBook, selectedTier, isExecutiveBrief, allBooks, callSecureGeminiAPI, hasGeminiKey]);
 
   const rememberCaret = (ref, store) => {
     try {
@@ -374,6 +391,7 @@ export default function BusinessReadingsScreen() {
     } catch {}
   };
 
+  // FIX: Stable focus for search input
   useLayoutEffect(() => {
     if (focusedField === 'search' && searchInputRef.current) {
       const el = searchInputRef.current;
@@ -384,6 +402,7 @@ export default function BusinessReadingsScreen() {
     }
   }, [filters.search, focusedField]);
 
+  // FIX: Stable focus for AI Coach input
   useLayoutEffect(() => {
     if (focusedField === 'coach' && aiInputRef.current) {
       const el = aiInputRef.current;
@@ -400,6 +419,7 @@ export default function BusinessReadingsScreen() {
     if (!selectedBook || !q) return;
     
     // Clear query, set loading state
+    const originalQuery = q;
     setAiQuery('');
     setAiResponse('Thinking…');
     
@@ -412,7 +432,7 @@ export default function BusinessReadingsScreen() {
           `- Book: ${selectedBook.title} by ${selectedBook.author}\n` +
           `- Focus areas: ${focusAreas.join(', ') || '—'}\n` +
           `Respond to the user's direct application question in 3–5 sentences, giving 1–2 concrete next actions.`;
-        const userPrompt = q;
+        const userPrompt = originalQuery;
         
         let out = await callSecureGeminiAPI({ systemPrompt, userPrompt });
         let text = '';
@@ -425,12 +445,12 @@ export default function BusinessReadingsScreen() {
         setAiResponse(text || 'No response.');
       } else {
         // MOCK AI RESPONSE (Improved)
-        const tip = mockAIResponse(selectedBook.title, focusAreas, q);
+        const tip = mockAIResponse(selectedBook.title, focusAreas, originalQuery);
         setAiResponse(tip);
       }
     } catch (err) {
       console.error('AI error:', err);
-      const tip = mockAIResponse(selectedBook.title, focusAreas, q);
+      const tip = mockAIResponse(selectedBook.title, focusAreas, originalQuery);
       setAiResponse(`(AI service error; using local tips)\n\n${tip}`);
     }
     
