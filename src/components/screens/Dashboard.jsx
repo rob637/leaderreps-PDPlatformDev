@@ -215,8 +215,10 @@ const DashboardScreen = () => {
         hasPendingDailyPractice,
         callSecureGeminiAPI,
         hasGeminiKey,
-        LEADERSHIP_TIERS,
+        LEADERSHIP_TIERS: svcLEADERSHIP_TIERS,
     } = useAppServices();
+
+    const TIER_MAP = svcLEADERSHIP_TIERS || LEADERSHIP_TIERS;
 
     const safeNavigate = useCallback((screen, params) => {
         // FIX: Ensure this calls the app-level navigate function
@@ -242,7 +244,7 @@ const DashboardScreen = () => {
 
         if (!weakestId) return null;
 
-        const meta = LEADERSHIP_TIERS[weakestId];
+        const meta = TIER_MAP[weakestId];
         return {
         id: weakestId,
         name: meta?.name || 'Unknown',
@@ -250,7 +252,7 @@ const DashboardScreen = () => {
         color: meta?.color || 'bg-red-100 text-red-700',
         icon: AlertTriangle,
         };
-    }, [pdpData, LEADERSHIP_TIERS]);
+    }, [pdpData, TIER_MAP]);
 
     // --- Daily Tip (Gemini) - Implemented for rotation (Update 2) ---
     const [tipLoading, setTipLoading] = useState(false);
