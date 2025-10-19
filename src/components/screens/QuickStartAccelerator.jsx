@@ -4,7 +4,7 @@ import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import {
   Zap, ShieldCheck, ArrowLeft, Target, Briefcase, Clock, Users, CornerRightUp, X, Activity, Cpu, Eye, CheckCircle, AlertTriangle, Lightbulb
 } from 'lucide-react';
-import { useAppServices } from '../../App.jsx'; // Correct relative import
+import { useAppServices } from '../../services/useAppServices.jsx'; // Correct relative import
 
 // --- MOCK UTILITIES (Replicated for component self-reliance) ---
 const IconMap = {
