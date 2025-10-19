@@ -68,8 +68,6 @@ import {
   TrendingDown, // Added for negative trend indicator
 } from 'lucide-react';
 
-
-
 /* ---------------------------------------
    Small UI helpers
 ----------------------------------------*/
@@ -367,13 +365,7 @@ const DashboardScreen = () => {
                         onClick={() => navigate('coaching-lab')}
                     />
                     {/* RESOURCE HUBS */}
-                    <Tile
-                        icon={Star}
-                        title="Executive Reflection"
-                        desc="Analyze your aggregated practice data, goal trends, and leadership growth patterns."
-                        onClick={() => navigate('reflection')}
-                    />
-                    <Tile
+<Tile
                         icon={TrendingUp}
                         title="Planning Hub (OKRs)"
                         desc="Draft Objectives and Key Results, set vision, and run pre-mortem risk audits."
@@ -422,13 +414,6 @@ const DashboardScreen = () => {
             </div>
 
         </div>
-
-            {/* EXECUTIVE REFLECTION (Embedded) */}
-            <div className='rounded-2xl border border-gray-200 bg-white p-6 shadow-2xl mt-8'>
-                <h2 className="text-2xl font-bold text-[#002E47] mb-5">Executive Reflection</h2>
-                <ExecutiveReflection />
-            </div>
-
       </div>
     </div>
   );
