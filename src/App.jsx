@@ -247,7 +247,7 @@ function LoginScreen({ auth, setAuthView, onSuccess }) {
 }
 
 // 2. SIGN UP SCREEN (Invitation & Name Capture)
-function SignUpScreen({ auth, setAuthView }) {
+function SignUpScreen({ auth, setAuthView, onSuccess }) {
     const [name, setName] = useState('');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
@@ -443,11 +443,12 @@ const NavSidebar = ({ currentScreen, setCurrentScreen, user, isMobileOpen, close
     const coreNav = [
         { screen: 'dashboard', label: 'Dashboard', icon: Home },
         { screen: 'quick-start-accelerator', label: 'QuickStart Accelerator', icon: Zap, badge: 'New' },
-        { screen: 'daily-practice', label: 'Daily Practice', icon: Clock, notify: hasPendingDailyPractice }, 
     ];
     
     // 2. TOOLS & HUBS (Consolidated)
+    // FIX: Moved Daily Practice from coreNav to toolsHubsNav
     const toolsHubsNav = [
+        { screen: 'daily-practice', label: 'Daily Practice', icon: Clock, notify: hasPendingDailyPractice },
         { screen: 'prof-dev-plan', label: 'Development Plan', icon: Briefcase },
         { screen: 'coaching-lab', label: 'Coaching Lab', icon: Mic },
         { screen: 'planning-hub', label: 'Planning Hub (OKRs)', icon: Trello }, 
@@ -490,8 +491,9 @@ const NavSidebar = ({ currentScreen, setCurrentScreen, user, isMobileOpen, close
                     key={item.screen}
                     onClick={() => handleNavigate(item.screen)}
                     className={`flex items-center w-full px-4 py-3 rounded-xl font-semibold relative transition-colors duration-200 ${
+                        // FIX: Changed active style color from NAVY to TEAL/WHITE to match the high-contrast dashboard
                         isActive
-                            ? 'bg-[#47A88D] text-[#002E47] shadow-lg'
+                            ? 'bg-[#47A88D] text-white shadow-lg'
                             : 'text-indigo-200 hover:bg-[#47A88D]/20 hover:text-white'
                     }`}
                 >
@@ -575,7 +577,7 @@ const NavSidebar = ({ currentScreen, setCurrentScreen, user, isMobileOpen, close
                     className="flex items-center w-full p-2 rounded-xl text-sm font-semibold transition-colors hover:bg-[#47A88D]/20 focus:outline-none focus:ring-2 focus:ring-[#47A88D]"
                 >
                     <User className="w-5 h-5 mr-3 text-indigo-300" />
-                    <span className='truncate'>{user?.email || 'User Profile'}</span>
+                    <span className='truncate'>{user?.name || 'User Profile'}</span>
                 </button>
                 
                 {/* Profile Flyout (Mocked) */}
