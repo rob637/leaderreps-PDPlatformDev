@@ -33,6 +33,55 @@ const COMPLEXITY_MAP = {
 };
 
 /* =========================================================
+   SAFETY: Ensure ExecSwitch exists (prevents "not defined" at runtime)
+========================================================= */
+const ExecSwitch = (function defineExecSwitch(){
+  const Component = function ExecSwitch({ checked, onChange }) {
+    const toggle = () => onChange(!checked);
+    const onKey = (e) => {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle(); }
+    };
+    return (
+      <div className="flex items-center gap-2">
+        <button
+          type="button"
+          role="switch"
+          aria-checked={checked}
+          onClick={toggle}
+          onKeyDown={onKey}
+          className="relative inline-flex items-center"
+          style={{ width: 46, height: 26 }}
+        >
+          <span
+            style={{
+              position: 'absolute',
+              inset: 0,
+              background: checked ? COLORS.ORANGE : '#9CA3AF',
+              borderRadius: 9999,
+              transition: 'background .15s ease'
+            }}
+          />
+          <span
+            style={{
+              position: 'relative',
+              left: checked ? 22 : 2,
+              width: 22,
+              height: 22,
+              background: '#FFFFFF',
+              borderRadius: '9999px',
+              boxShadow: '0 1px 2px rgba(0,0,0,.2)',
+              transition: 'left .15s ease'
+            }}
+          />
+        </button>
+        <span style={{ color: COLORS.NAVY, fontWeight: 600 }}>Executive Brief</span>
+      </div>
+    );
+  };
+  return Component;
+})();
+
+/* =========================================================
    MOCK BOOKS (fallback if context has none)
 ========================================================= */
 const MOCK_ALL_BOOKS = {
@@ -97,9 +146,7 @@ const MOCK_ALL_BOOKS = {
 ========================================================= */
 function sanitizeHTML(dirty) {
   if (!dirty || typeof dirty !== 'string') return '';
-  // Remove script/style tags entirely
   let clean = dirty.replace(/<\/?(script|style)[^>]*>/gi, '');
-  // Drop on* attributes and javascript: URLs
   clean = clean.replace(/\son\w+="[^"]*"/gi, '');
   clean = clean.replace(/\son\w+='[^']*'/gi, '');
   clean = clean.replace(/(href|src)\s*=\s*"(javascript:[^"]*)"/gi, '$1="#"');
@@ -112,7 +159,6 @@ function sanitizeHTML(dirty) {
 ========================================================= */
 const mockAIResponse = (bookTitle, focusAreas, query) => {
   const q = (query || '').toLowerCase();
-
   if (bookTitle.includes('E-Myth')) {
     if (q.includes('delegate') || q.includes('system') || q.includes('hand off')) {
       return `Design a **5-step checklist** and delegate the checklist—not the task. Move from people-dependency to **system-dependency**.`;
@@ -122,7 +168,6 @@ const mockAIResponse = (bookTitle, focusAreas, query) => {
     }
     return `Separate roles: Entrepreneur (vision), Manager (process), Technician (execution). Build the system that does the work.`;
   }
-
   if (bookTitle.includes('Good to Great')) {
     if (q.includes('hedgehog') || q.includes('core')) {
       return `Hedgehog = **Passion ∩ Best in the World ∩ Economic Engine**. If it misses one, stop doing it.`;
@@ -132,7 +177,6 @@ const mockAIResponse = (bookTitle, focusAreas, query) => {
     }
     return `Apply disciplined people, thought, and action. Get the “who” right, then push the flywheel.`;
   }
-
   if (bookTitle.includes('Radical Candor')) {
     if (q.includes('feedback') || q.includes('difficult')) {
       return `Aim for **Caring Personally + Challenging Directly**. Be specific, timely, and discuss behavior, not identity.`;
@@ -142,7 +186,6 @@ const mockAIResponse = (bookTitle, focusAreas, query) => {
     }
     return `Reinforce the relationship, then deliver the direct challenge.`;
   }
-
   if (bookTitle.includes('Atomic Habits')) {
     if (q.includes('start') || q.includes('new habit') || q.includes('consistency')) {
       return `Use the **2-Minute Rule**; stack on an existing habit; add an immediate reward.`;
@@ -152,7 +195,6 @@ const mockAIResponse = (bookTitle, focusAreas, query) => {
     }
     return `Shift identity: “What would a disciplined person do right now?”`;
   }
-
   return `Define the outcome, then apply **${(focusAreas && focusAreas[0]) || 'core'}** principles to design the smallest repeatable action.`;
 };
 
@@ -161,10 +203,7 @@ const mockAIResponse = (bookTitle, focusAreas, query) => {
 ========================================================= */
 function generatePosterFlyerHTML(book, tier, isExecutiveBrief) {
   const focus = (book.focus || '').split(',').map(s => s.trim()).filter(Boolean);
-  const c = COMPLEXITY_MAP[book.complexity] || COMPLEXITY_MAP.Medium;
-
   if (isExecutiveBrief) {
-    // Condensed: just a couple sentences or bullets
     return `
       <div style="display:flex;flex-direction:column;gap:12px">
         <header style="border-bottom:3px solid ${COLORS.ORANGE};padding-bottom:10px">
@@ -180,14 +219,9 @@ function generatePosterFlyerHTML(book, tier, isExecutiveBrief) {
       </div>
     `;
   }
-
-  // Full poster: elegant two-column layout + subtle texture background
   const skills = focus.map(f => `<li style="margin:6px 0">${f}</li>`).join('');
-
-  // Subtle paper-like texture using layered gradients (no external images)
   const posterBg = `linear-gradient(180deg, #ffffff 0%, #FAFAFB 100%)`;
   const posterTexture = `repeating-linear-gradient(0deg, rgba(0,0,0,.018) 0, rgba(0,0,0,.018) 2px, transparent 2px, transparent 5px)`;
-
   return `
     <div style="display:flex;flex-direction:column;gap:18px;
                 background:${posterBg};background-image:${posterBg}, ${posterTexture};
@@ -243,40 +277,28 @@ function generatePosterFlyerHTML(book, tier, isExecutiveBrief) {
 
 /* =========================================================
    AI FLYER GENERATOR
-   - Uses callSecureGeminiAPI (if available) to produce rich HTML
-   - Falls back to poster HTML above
 ========================================================= */
 async function buildAIFlyerHTML({ book, tier, executive, callSecureGeminiAPI }) {
   if (!callSecureGeminiAPI) return generatePosterFlyerHTML(book, tier, executive);
   const baseInstruction = executive
-    ? `Write an EXECUTIVE BRIEF for the book below in 120–180 words max, bullet-first. Focus on the 3–5 most consequential ideas, and one concrete next action. Output clean, minimal HTML using only: <h2>, <h3>, <p>, <ul>, <li>, <strong>, <em>, <blockquote>, <div>, <span>. No external links, images, scripts, or styles.`
-    : `Create a one-page BOOK FLYER for the book below that feels like a professional, poster-style summary. Use 2 columns worth of content structure (but keep within a single container). Include sections: Key Ideas, Mental Models/Frameworks, Memorable Quotes (2–3 short quotes), Manager's Playbook (30/60/90 day plan), Metrics to Watch, Common Pitfalls. Output semantic, compact HTML with headings and lists only; use these tags only: <h2>, <h3>, <p>, <ul>, <li>, <strong>, <em>, <blockquote>, <div>, <span>. No external links, images, scripts, or styles.`;
+    ? `Write an EXECUTIVE BRIEF for the book below in 120–180 words max, bullet-first…`
+    : `Create a one-page BOOK FLYER (Key Ideas, Frameworks, Quotes, Manager's 30/60/90, Metrics, Pitfalls)…`;
 
-  const systemPrompt =
-    `You are the LeaderReps AI Researcher. Summarize accurately and concisely with practical guidance. Stick to verified, widely known themes for this title.`;
-
+  const systemPrompt = `You are the LeaderReps AI Researcher. Provide accurate, practical guidance.`;
   const userPrompt =
-    `${baseInstruction}\n\nBook: ${book.title} by ${book.author}\nPrimary focus areas: ${(book.focus || '')}\nComplexity: ${book.complexity}\nEst. Minutes: ${book.duration}\nTier: ${tier}`;
+    `${baseInstruction}\n\nBook: ${book.title} by ${book.author}\nFocus: ${(book.focus || '')}\nComplexity: ${book.complexity}\nMinutes: ${book.duration}\nTier: ${tier}`;
 
   try {
-    // Try object-signature, then string-signature
     let out = await callSecureGeminiAPI({ systemPrompt, userPrompt });
     if (!out) out = await callSecureGeminiAPI(`${systemPrompt}\n\n${userPrompt}`);
-
     let html = '';
     if (typeof out === 'string') html = out;
     else if (out?.text) html = out.text;
     else if (out?.response) html = out.response;
-    else if (Array.isArray(out?.candidates) && out.candidates[0]?.content) html = out.candidates[0].content;
     else if (Array.isArray(out?.candidates) && out.candidates[0]?.text) html = out.candidates[0].text;
     else html = JSON.stringify(out);
-
-    // Sanitize
     html = sanitizeHTML(html);
-    // Minimal wrap if model returned plain text
-    if (!/[<][a-zA-Z]/.test(html)) {
-      html = `<div><p>${html.replace(/\n/g, '<br/>')}</p></div>`;
-    }
+    if (!/[<][a-zA-Z]/.test(html)) html = `<div><p>${html.replace(/\n/g, '<br/>')}</p></div>`;
     return html;
   } catch (e) {
     console.error('AI flyer error (fallback to poster):', e);
@@ -297,7 +319,6 @@ export default function BusinessReadingsScreen() {
     hasGeminiKey,
   } = services;
 
-  // Optional debug banner (?dbg=1 to show)
   const [showDbg, setShowDbg] = useState(() => {
     try { return typeof window !== 'undefined' && /[?&]dbg=1\b/.test(window.location.search); }
     catch { return false; }
@@ -316,14 +337,13 @@ export default function BusinessReadingsScreen() {
   const [aiResponse, setAiResponse] = useState('');
   const aiInputRef = useRef(null);
   const searchInputRef = useRef(null);
-  const [focusedField, setFocusedField] = useState(null); // 'search' | 'coach' | null
+  const [focusedField, setFocusedField] = useState(null);
   const lastSelSearch = useRef({ start: null, end: null });
   const lastSelCoach = useRef({ start: null, end: null });
 
-  // Optional notepad taps for quick confirmation
   useEffect(() => {
     try {
-      if (globalThis.notepad && typeof globalThis.notepad.addContent === 'function') {
+      if (globalThis.notepad?.addContent) {
         globalThis.notepad.setTitle('LeaderReps Notepad');
         globalThis.notepad.addContent('📚 BusinessReadings mounted.');
       }
@@ -332,13 +352,11 @@ export default function BusinessReadingsScreen() {
 
   const allBooks = Object.keys(contextBooks).length ? contextBooks : MOCK_ALL_BOOKS;
 
-  /* ---------- Filtering ---------- */
   const filteredBooks = useMemo(() => {
     const flat = Object.entries(allBooks).flatMap(([tier, books]) =>
       (books || []).map(b => ({ ...b, tier }))
     );
     const s = (filters.search || '').toLowerCase();
-
     return flat
       .filter(b => {
         const cOK = filters.complexity === 'All' || b.complexity === filters.complexity;
@@ -352,18 +370,14 @@ export default function BusinessReadingsScreen() {
       }, {});
   }, [allBooks, filters]);
 
-  /* ---------- Flyer generation (AI then fallback) ---------- */
   useEffect(() => {
     let cancelled = false;
     (async () => {
       if (!selectedBook) { setHtmlFlyer(''); return; }
       const tierKey = selectedTier || Object.keys(allBooks).find(k => (allBooks[k] || []).some(b => b.id === selectedBook.id)) || 'Strategy & Execution';
-
-      // Show placeholder while generating
       setHtmlFlyer(`<div style="padding:12px;border:1px dashed ${COLORS.SUBTLE};border-radius:12px;color:${COLORS.MUTED}">Generating ${isExecutiveBrief ? 'executive brief' : 'book flyer'}…</div>`);
-
       let html;
-      if (hasGeminiKey && typeof hasGeminiKey === 'function' && hasGeminiKey() && typeof callSecureGeminiAPI === 'function') {
+      if (hasGeminiKey?.() && typeof callSecureGeminiAPI === 'function') {
         html = await buildAIFlyerHTML({ book: selectedBook, tier: tierKey, executive: isExecutiveBrief, callSecureGeminiAPI });
       } else {
         html = generatePosterFlyerHTML(selectedBook, tierKey, isExecutiveBrief);
@@ -373,7 +387,6 @@ export default function BusinessReadingsScreen() {
     return () => { cancelled = true; };
   }, [selectedBook, selectedTier, isExecutiveBrief, allBooks]);
 
-  /* ---------- Reset contextual state when changing book ---------- */
   useEffect(() => {
     if (selectedBook) {
       setIsExecutiveBrief(false);
@@ -382,13 +395,12 @@ export default function BusinessReadingsScreen() {
     }
   }, [selectedBook]);
 
-  /* ---------- Focus retention for Search & AI inputs ---------- */
   const rememberCaret = (ref, store) => {
     try {
       if (!ref.current) return;
       store.start = ref.current.selectionStart;
       store.end = ref.current.selectionEnd;
-    } catch { /* ignore */ }
+    } catch {}
   };
 
   useLayoutEffect(() => {
@@ -396,7 +408,7 @@ export default function BusinessReadingsScreen() {
       const el = searchInputRef.current;
       if (document.activeElement !== el) el.focus();
       if (lastSelSearch.current.start != null) {
-        try { el.setSelectionRange(lastSelSearch.current.start, lastSelSearch.current.end); } catch { /* ignore */ }
+        try { el.setSelectionRange(lastSelSearch.current.start, lastSelSearch.current.end); } catch {}
       }
     }
   }, [filters.search, focusedField]);
@@ -406,34 +418,27 @@ export default function BusinessReadingsScreen() {
       const el = aiInputRef.current;
       if (document.activeElement !== el) el.focus();
       if (lastSelCoach.current.start != null) {
-        try { el.setSelectionRange(lastSelCoach.current.start, lastSelCoach.current.end); } catch { /* ignore */ }
+        try { el.setSelectionRange(lastSelCoach.current.start, lastSelCoach.current.end); } catch {}
       }
     }
   }, [aiQuery, focusedField]);
 
-  /* ---------- AI Coach (real model if available, mock otherwise) ---------- */
   const handleAiSubmit = useCallback(async (e) => {
     e.preventDefault();
     const q = aiQuery.trim();
     if (!selectedBook || !q) return;
-
     setAiResponse('Thinking…');
-
     const focusAreas = (selectedBook.focus || '').split(',').map(s => s.trim()).filter(Boolean);
-
     try {
-      if (hasGeminiKey && typeof hasGeminiKey === 'function' && hasGeminiKey() && typeof callSecureGeminiAPI === 'function') {
+      if (hasGeminiKey?.() && typeof callSecureGeminiAPI === 'function') {
         const systemPrompt =
           `You are the LeaderReps AI Coach.\n` +
-          `Context:\n` +
           `- Book: ${selectedBook.title} by ${selectedBook.author}\n` +
           `- Focus areas: ${focusAreas.join(', ') || '—'}\n` +
           `Respond in 3–5 sentences plus 1–2 concrete next actions.`;
         const userPrompt = q;
-
         let out = await callSecureGeminiAPI({ systemPrompt, userPrompt });
         if (!out) out = await callSecureGeminiAPI(`${systemPrompt}\n\nUser: ${userPrompt}`);
-
         let text = '';
         if (typeof out === 'string') text = out;
         else if (out?.text) text = out.text;
@@ -441,7 +446,6 @@ export default function BusinessReadingsScreen() {
         else if (Array.isArray(out?.candidates) && out.candidates[0]?.content) text = out.candidates[0].content;
         else if (Array.isArray(out?.candidates) && out.candidates[0]?.text) text = out.candidates[0].text;
         else text = JSON.stringify(out);
-
         setAiResponse(text || 'No response.');
       } else {
         const tip = mockAIResponse(selectedBook.title, focusAreas, q);
@@ -454,7 +458,6 @@ export default function BusinessReadingsScreen() {
     }
   }, [aiQuery, selectedBook, callSecureGeminiAPI, hasGeminiKey]);
 
-  /* ---------- Actions ---------- */
   const handleCommitment = (book) => {
     const newCommitment = {
       id: book.id,
@@ -476,9 +479,6 @@ export default function BusinessReadingsScreen() {
     setSavedBooks(prev => ({ ...prev, [bookId]: !prev[bookId] }));
   };
 
-  /* =========================================================
-     SUBCOMPONENTS
-  ========================================================== */
   const BookList = () => (
     <div className="space-y-10">
       <h2 className="text-3xl font-extrabold flex items-center gap-3 border-b-4 pb-2"
@@ -486,7 +486,6 @@ export default function BusinessReadingsScreen() {
         <BookOpen className="w-7 h-7" style={{ color: COLORS.TEAL }}/> LeaderReps Curated Reading Library
       </h2>
 
-      {/* Controls */}
       <div className="p-5 rounded-xl shadow-xl border" style={{ background: COLORS.SURFACE, borderColor: COLORS.SUBTLE }}>
         <h3 className="text-xl font-bold flex items-center gap-2 mb-4" style={{ color: COLORS.NAVY }}>
           <Filter className="w-5 h-5" style={{ color: COLORS.ORANGE }}/> Personalize Your Search
@@ -547,13 +546,11 @@ export default function BusinessReadingsScreen() {
         </div>
       </div>
 
-      {/* Book groups */}
       <div className="space-y-12">
         {Object.entries(filteredBooks).map(([tier, books]) => (
           <div key={tier}
                className="rounded-2xl shadow-xl overflow-hidden border-2"
                style={{ background: COLORS.SURFACE, borderColor: COLORS.SUBTLE }}>
-            {/* Header */}
             <div className="p-6" style={{ background: COLORS.NAVY }}>
               <h3 className="text-2xl font-bold flex items-center gap-2" style={{ color: COLORS.SURFACE }}>
                 {tier}
@@ -563,7 +560,6 @@ export default function BusinessReadingsScreen() {
               </p>
             </div>
 
-            {/* Cards (stronger visuals, no images) */}
             <div className="p-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
               {(books || []).map((book) => {
                 const c = COMPLEXITY_MAP[book.complexity] || COMPLEXITY_MAP.Medium;
@@ -631,7 +627,6 @@ export default function BusinessReadingsScreen() {
                       </div>
                     </button>
 
-                    {/* Save */}
                     <button
                       onClick={(e) => { e.stopPropagation(); handleSaveForLater(book.id); }}
                       aria-label={isSaved ? 'Remove from Saved' : 'Save for Later'}
@@ -681,7 +676,6 @@ export default function BusinessReadingsScreen() {
         </div>
 
         <div className="rounded-2xl shadow-2xl p-8 border" style={{ background: COLORS.SURFACE, borderColor: COLORS.SUBTLE }}>
-          {/* Progress + Exec Brief */}
           <div className="flex flex-col md:flex-row justify-between gap-4 mb-4">
             <div className="flex items-center gap-3 p-3 rounded border" style={{ background: '#F9FAFB', borderColor: COLORS.SUBTLE }}>
               <TrendingUp className="w-5 h-5" style={{ color: COLORS.TEAL }}/>
@@ -701,10 +695,8 @@ export default function BusinessReadingsScreen() {
             </div>
           </div>
 
-          {/* Rendered Flyer (HTML) */}
           <div className="max-w-none space-y-4" style={{ color: COLORS.TEXT }} dangerouslySetInnerHTML={{ __html: htmlFlyer }} />
 
-          {/* AI Coach */}
           <div className="mt-8 pt-4" style={{ borderTop: `1px solid ${COLORS.SUBTLE}` }}>
             <h3 className="text-2xl font-bold mb-4 flex items-center gap-3" style={{ color: COLORS.NAVY }}>
               <MessageSquare className="text-2xl w-6 h-6" style={{ color: COLORS.BLUE }}/> AI Coach: Instant Application
@@ -746,7 +738,6 @@ export default function BusinessReadingsScreen() {
             </form>
           </div>
 
-          {/* Commit actions */}
           <div className="mt-10 pt-6 flex justify-end gap-4" style={{ borderTop: `1px solid ${COLORS.SUBTLE}` }}>
             <button
               onClick={() => handleSaveForLater(selectedBook.id)}
@@ -792,7 +783,7 @@ export default function BusinessReadingsScreen() {
             marginBottom: 12
           }}
         >
-          <strong>Debug:</strong> BusinessReadings.jsx (v6 AI flyer + focus lock) mounted at {debugStamp}.
+          <strong>Debug:</strong> BusinessReadings.jsx (v6.1 switch fix) mounted at {debugStamp}.
           <button
             onClick={() => setShowDbg(false)}
             style={{ float: 'right', background: 'transparent', color: '#FFFFFF', border: 'none', fontWeight: 700, cursor: 'pointer' }}
