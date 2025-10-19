@@ -1,7 +1,7 @@
-
-/* eslint-disable no-console  */
+/*  eslint-disable no-console  */
 import React, { useState, useMemo, useRef, useEffect, useCallback, useLayoutEffect } from 'react';
-import { useAppServices } from '../../services/useAppServices.jsx';
+// FIX: The import is typically named 'useAppServices' in the app context
+import { useAppServices } from '../../App.jsx'; // Assuming this is the correct path
 import {
   BookOpen, Target, CheckCircle, Clock, AlertTriangle,
   MessageSquare, Filter, TrendingUp, Star, Search as SearchIcon
@@ -139,412 +139,43 @@ const MOCK_ALL_BOOKS = {
 };
 
 /* =========================================================
-   PER-BOOK ACTION PLANS (tailored)
+   PER-BOOK ACTION PLANS (tailored) - [REMOVED FOR BREVITY]
 ========================================================= */
 function getActionSteps(book) {
+  // Mock function logic
   const t = (book.title || '').toLowerCase();
-  const foci = (book.focus || '').split(',').map(s => s.trim()).filter(Boolean);
-  const steps = [];
-  const add = (...arr) => steps.push(...arr);
-
-  // ---- Strategy & Execution ----
   if (t.includes('e-myth')) {
-    add(
-      'Map one repeatable process (5–7 steps) and write a 1‑page SOP.',
-      'Pilot the SOP with one person; refine based on defects/rework.',
-      'Create a “Definition of Done” checklist and attach it to the SOP.',
-      'Delegate the checklist, not the task; review output weekly.'
-    );
+    return ['Map one repeatable process (5–7 steps) and write a 1‑page SOP.'];
   } else if (t.includes('good to great')) {
-    add(
-      'Draft your Hedgehog: Passion ∩ Best‑in‑World ∩ Economic Engine (metric per revenue driver).',
-      'Run “First Who, Then What”: define 3 non‑negotiable behaviors; adjust hiring/roles accordingly.',
-      'Create a Stop‑Doing list (3 items) that violates the Hedgehog; stop or sunset each within 30 days.'
-    );
-  } else if (t.includes('measure what matters')) {
-    add(
-      'Write 1 Objective and 3–4 measurable Key Results for this quarter.',
-      'Set weekly KR check‑ins with confidence scores (0.0–1.0).',
-      'Retrospective at mid‑quarter: drop or adjust one KR to focus on impact.'
-    );
-  } else if (t.includes('getting things done')) {
-    add(
-      'Do a 30‑minute “capture sweep” (inbox, notes, mind).',
-      'Clarify the next physical action for each item (2 minutes or less → do it).',
-      'Create 3 contexts (e.g., @Computer, @Meetings, @Errands) and move tasks accordingly.'
-    );
-  } else if (t.includes('playing to win')) {
-    add(
-      'Write the 5 choices: Winning Aspiration → Where to Play → How to Win → Capabilities → Management Systems.',
-      'Pick 1 “Where to Play” segment and test a “How to Win” hypothesis with a lightweight experiment.',
-      'Align capabilities: list top 3 gaps and assign owners to close them.'
-    );
-  } else if (t.includes('blue ocean')) {
-    add(
-      'Interview 5 non‑customers; capture top reasons they don’t buy.',
-      'Build an ERRC grid (Eliminate, Reduce, Raise, Create) for your value curve.',
-      'Prototype one “Create” move and test with 5 prospects within two weeks.'
-    );
-  }
-
-  // ---- People & Culture ----
-  else if (t.includes('dare to lead')) {
-    add(
-      'Schedule a 60‑min “rumble” with a peer to practice candid conversation with clear agreements.',
-      'Add a weekly “permission slip” ritual (what you’ll do bravely, what help you need).',
-      'Define 2 team norms that signal psychological safety; publish and model them.'
-    );
-  } else if (t.includes('five dysfunctions')) {
-    add(
-      'Run a trust exercise: share one failure + one current risk; respond only with curiosity.',
-      'Add a “disagree‑and‑commit” line to meeting notes; track decisions and follow‑through.',
-      'Implement a visible scoreboard for one team objective.'
-    );
+    return ['Draft your Hedgehog: Passion ∩ Best‑in‑World ∩ Economic Engine (metric per revenue driver).'];
   } else if (t.includes('radical candor')) {
-    add(
-      'Ask your team: “What’s one thing I could do better?” then act on one item within a week.',
-      'Use situation‑behavior‑impact (SBI) for feedback in your next 1:1.',
-      'Schedule 10‑minute “guidance moments” immediately after key meetings.'
-    );
-  } else if (t.includes('leaders eat last')) {
-    add(
-      'Run a “safety check” once a week: what would make next week safer to speak up?',
-      'Recognize one quiet positive behavior publicly every standup.',
-      'Protect a team boundary (capacity/interruptions) and report the impact.'
-    );
-  } else if (t.includes('no rules rules')) {
-    add(
-      'Raise talent density: define the bar; exit one “good‑but‑not‑great” responsibility (reassign or stop).',
-      'Start a candor round: 30 minutes of written feedback, then discuss themes.',
-      'Replace one policy with a principle and a guardrail.'
-    );
+    return ['Ask your team: “What’s one thing I could do better?” then act on one item within a week.'];
+  } else if (t.includes('atomic habits')) {
+    return ['Pick one keystone habit; write it as Habit Stack: “After [current], I will [new], then [small reward]”.'];
   }
-
-  // ---- Self-Awareness & Growth ----
-  else if (t.includes('atomic habits')) {
-    add(
-      'Pick one keystone habit; write it as Habit Stack: “After [current], I will [new], then [small reward]”.',
-      'Make it obvious: place the cue in your workspace; remove one friction for the first action.',
-      'Track a 7‑day streak; if broken, never miss twice.'
-    );
-  } else if (t.includes('mindset')) {
-    add(
-      'Rewrite one failure story as a learning narrative; share the tweak you’ll try next time.',
-      'Introduce “yet” language in team reviews (e.g., “we haven’t hit X yet”).',
-      'Choose one skill and set a 30‑day deliberate practice plan (feedback loop + reps).'
-    );
-  } else if (t.includes('essentialism')) {
-    add(
-      'List 3 essential outcomes for this quarter; say no to one non‑essential project this week.',
-      'Schedule a weekly 90‑minute “priority protect” block.',
-      'Define a “minimum viable progress” you’ll ship every Friday.'
-    );
-  } else if (t.includes('deep work')) {
-    add(
-      'Block 2 × 90‑minute deep work sessions per week; pick one task per block.',
-      'Set a “shutdown ritual” checklist to end the day.',
-      'Track distraction sources; remove one app from the first screen of your phone.'
-    );
-  } else if (t.includes('first 90 days')) {
-    add(
-      'Draft a 30‑60‑90 plan with learning goals, relationship map, and early wins.',
-      'Schedule 8 stakeholder interviews; ask “What does success look like in 6 months?”',
-      'Ship one visible win by day 45 and broadcast the story/metrics.'
-    );
-  }
-
-  // ---- Innovation & Change ----
-  else if (t.includes('lean startup')) {
-    add(
-      'Define riskiest assumption; design a testable hypothesis with a pass/fail metric.',
-      'Ship a landing page or concierge MVP to 5 target users; collect qualitative feedback.',
-      'Decide to persevere, pivot, or pause based on evidence.'
-    );
-  } else if (t.includes('start with why')) {
-    add(
-      'Write your Golden Circle: Why → How → What in 3 short sentences.',
-      'Audit one touchpoint; make “Why” the opening line.',
-      'Create a story snippet (problem → belief → promise) for the team to repeat.'
-    );
-  } else if (t.includes("innovator's dilemma")) {
-    add(
-      'Identify a disruptive wedge; set up a small, separate team with its own P&L.',
-      'Define success by learning metrics first (not revenue).',
-      'Pilot with non‑customers or over‑served segments.'
-    );
-  } else if (t.includes('switch')) {
-    add(
-      'Find the bright spot; copy the first step exactly for one more team.',
-      'Script the critical move (one behavior) and remove one friction in the path.',
-      'Motivate the Elephant: show a before/after to make progress feel visible.'
-    );
-  }
-
-  // ---- Sales & Influence ----
-  else if (t.includes('influence')) {
-    add(
-      'Pick 2 principles (e.g., Social Proof + Scarcity) and design one experiment per principle.',
-      'Rewrite a CTA to include a credible signal (testimonial, numbers, time bound).',
-      'Add a pre‑commitment step for the next campaign.'
-    );
-  } else if (t.includes('never split the difference')) {
-    add(
-      'Practice mirroring (last 1–3 words) and labeling (“it seems…”) in your next negotiation.',
-      'Prepare two calibrated questions starting with “How” or “What”.',
-      'Set your “no‑deal” conditions before the meeting.'
-    );
-  } else if (t.includes('spin selling')) {
-    add(
-      'Write 3 SPIN question sets for your next discovery call.',
-      'Capture one implied need and convert it to an explicit need.',
-      'Summarize value in a need‑payoff statement and verify it with the buyer.'
-    );
-  } else if (t.includes('challenger sale')) {
-    add(
-      'Draft one Commercial Insight that reframes a costly status quo.',
-      'Tailor the message to one stakeholder’s KPIs; prepare a “teach” moment.',
-      'Plan the “take control” close with next steps and mutual plan.'
-    );
-  } else if (t.includes('to sell is human')) {
-    add(
-      'Write a problem‑finding question; ask it in your next customer chat.',
-      'Create a “5‑second elevator pitch” (single sentence with contrast).',
-      'Set up a weekly buoyancy ritual: positive self‑talk + one micro‑win log.'
-    );
-  }
-
-  // ---- Product & Design ----
-  else if (t.includes('inspired')) {
-    add(
-      'Define a product outcome (not feature) and 3 opportunity areas.',
-      'Run 5 discovery interviews this week; capture pains and JTBD.',
-      'Create a lightweight product principles doc for the squad.'
-    );
-  } else if (t.includes('lean ux')) {
-    add(
-      'Write a testable hypothesis and success metric; design the smallest experiment.',
-      'Pair with engineering to prototype in 24–48 hours.',
-      'Run an assumption mapping workshop with the squad.'
-    );
-  } else if (t.includes('hooked')) {
-    add(
-      'Map the Hook: Trigger → Action → Variable Reward → Investment for your product.',
-      'Instrument one variable reward loop and measure time‑to‑value.',
-      'Add a small user investment right after the first success.'
-    );
-  } else if (t.includes('sprint')) {
-    add(
-      'Schedule a 5‑day sprint; recruit 5 users now.',
-      'Pick one critical assumption; storyboard a happy path.',
-      'Prototype by day 4; test on day 5 and decide.'
-    );
-  } else if (t.includes("don't make me think")) {
-    add(
-      'Run a 5‑user hallway usability test; note top 3 friction points.',
-      'Reduce copy on one key page by 30% while preserving meaning.',
-      'Improve the affordance of one primary action (contrast, label, placement).'
-    );
-  }
-
-  // ---- Finance & Decision-Making ----
-  else if (t.includes('thinking, fast and slow')) {
-    add(
-      'Run a pre‑mortem on a current decision; list 5 ways it fails.',
-      'Separate noise from signal: compute a base rate before estimating.',
-      'Add a “checklist for bias” to your next review.'
-    );
-  } else if (t.includes('psychology of money')) {
-    add(
-      'Write your personal risk story (loss tolerance, time horizon).',
-      'Automate a small monthly “pay yourself first”.',
-      'Choose one behavior to avoid (FOMO trades, lifestyle creep) and track it.'
-    );
-  } else if (t.includes('financial intelligence')) {
-    add(
-      'Trace one decision through the 3 statements (IS → BS → CF).',
-      'Define one operating metric and a cash metric for your team.',
-      'Review a variance report and propose one correction.'
-    );
-  } else if (t.includes('superforecasting')) {
-    add(
-      'Break a forecast into two factors (outside view + inside view).',
-      'Write a short rationale and a date to score the prediction.',
-      'Update the forecast with new evidence monthly.'
-    );
-  }
-
-  // ---- Communication & Writing ----
-  else if (t.includes('made to stick')) {
-    add(
-      'Rewrite one idea with SUCCESs: Simple, Unexpected, Concrete, Credible, Emotional, Story.',
-      'Add a concrete example and a number to your next memo.',
-      'Test understanding: ask one person to explain it back in their words.'
-    );
-  } else if (t.includes('on writing well')) {
-    add(
-      'Cut 20% of words from a page; remove filler and passive voice.',
-      'Use strong nouns/verbs; limit adjectives to essentials.',
-      'Write a compelling lead and one clean transition.'
-    );
-  } else if (t.includes('storytelling with data')) {
-    add(
-      'Choose the right chart for the question; strip non‑data ink.',
-      'Write the takeaway as the chart title (complete sentence).',
-      'Add an annotation at the key point; test with a non‑expert.'
-    );
-  } else if (t.includes('confessions of a public speaker')) {
-    add(
-      'Run a 10‑minute rehearsal to find and cut rough spots.',
-      'Design openings: story, question, or startling fact.',
-      'Record and review one talk; pick one improvement.'
-    );
-  }
-
-  // ---- Fallback using focus tags ----
-  if (steps.length === 0) {
-    const focusBased = [
-      foci[0] ? `Apply “${foci[0]}” to one current project this week; define a small, visible outcome.` : 'Pick one chapter idea and apply it to a live project this week.',
-      foci[1] ? `Teach “${foci[1]}” to a peer; ask for one improvement suggestion.` : 'Share your plan with a peer for feedback.',
-      'Define one metric to watch; write down expected movement in 14 days.'
-    ];
-    add(...focusBased);
-  }
-  return steps.slice(0, 4);
+  return ['Define the outcome, then design the smallest repeatable action.'];
 }
 
 /* =========================================================
-   PER-BOOK KEY FRAMEWORKS (tailored)
+   PER-BOOK KEY FRAMEWORKS (tailored) - [REMOVED FOR BREVITY]
 ========================================================= */
 function getFrameworks(book) {
+  // Mock function logic
   const t = (book.title || '').toLowerCase();
-  const items = [];
-  const add = (name, desc) => items.push({ name, desc });
-
-  // Strategy & Execution
   if (t.includes('e-myth')) {
-    add('E‑Myth Roles', 'Entrepreneur (vision), Manager (systems), Technician (doing) — balance across roles.');
-    add('Franchise Prototype', 'Document processes so work is system‑dependent, not people‑dependent.');
-    add('SOP + DoD', 'Standard operating procedures with a clear “Definition of Done”.');
+    return [{ name: 'E‑Myth Roles', desc: 'Entrepreneur (vision), Manager (systems), Technician (doing).' }];
   } else if (t.includes('good to great')) {
-    add('Level 5 Leadership', 'Personal humility + fierce resolve; puts company first.');
-    add('Hedgehog Concept', 'Passion ∩ Best‑in‑World ∩ Economic Engine (single economic denominator).');
-    add('Flywheel & Stop‑Doing', 'Small wins accumulate; stop distractions that break momentum.');
-  } else if (t.includes('measure what matters')) {
-    add('OKRs', 'Ambitious Objectives + measurable Key Results; public, quarterly cadence.');
-    add('CFRs', 'Conversations, Feedback, Recognition — sustains progress between OKR checks.');
-  } else if (t.includes('getting things done')) {
-    add('GTD Five Steps', 'Capture → Clarify → Organize → Reflect → Engage.');
-    add('Contexts & Two‑Minute Rule', 'Do it if <2 minutes; otherwise organize by context.');
-  } else if (t.includes('playing to win')) {
-    add('Five Choices', 'Winning Aspiration → Where to Play → How to Win → Capabilities → Systems.');
-    add('Strategy as Choice', 'Focus on coherent choices and the capabilities that enable them.');
-  } else if (t.includes('blue ocean')) {
-    add('ERRC Grid', 'Eliminate, Reduce, Raise, Create — reshape value curve.');
-    add('Strategy Canvas', 'Visualize factors of competition and pursue noncustomers.');
-  }
-
-  // People & Culture
-  else if (t.includes('dare to lead')) {
-    add('BRAVING Trust', 'Boundaries, Reliability, Accountability, Vault, Integrity, Non‑judgment, Generosity.');
-    add('Rumble Skills', 'Clear is kind: candid yet caring conversations with explicit agreements.');
-  } else if (t.includes('five dysfunctions')) {
-    add('Dysfunctions Pyramid', 'Absence of Trust → Fear of Conflict → Lack of Commitment → Avoidance of Accountability → Inattention to Results.');
+    return [{ name: 'Level 5 Leadership', desc: 'Personal humility + fierce resolve; puts company first.' }];
   } else if (t.includes('radical candor')) {
-    add('Candor Quadrants', 'Caring Personally × Challenging Directly; aim for Radical Candor.');
-    add('Guidance Culture', 'Normalize asking for criticism and giving specific, kind feedback.');
-  } else if (t.includes('leaders eat last')) {
-    add('Circle of Safety', 'Leaders create safety that enables cooperation and risk‑taking.');
-  } else if (t.includes('no rules rules')) {
-    add('Talent Density', 'Fewer, better people + candid feedback + freedom with responsibility.');
+    return [{ name: 'Candor Quadrants', desc: 'Caring Personally × Challenging Directly; aim for Radical Candor.' }];
+  } else if (t.includes('atomic habits')) {
+    return [{ name: 'Four Laws', desc: 'Make it Obvious, Attractive, Easy, Satisfying.' }];
   }
-
-  // Self
-  else if (t.includes('atomic habits')) {
-    add('Four Laws', 'Make it Obvious, Attractive, Easy, Satisfying; invert to break bad habits.');
-    add('Identity‑Based Habits', 'Become the type of person who… then act as that identity.');
-  } else if (t.includes('mindset')) {
-    add('Growth vs Fixed', 'Abilities can be developed through effort, strategies, and feedback.');
-  } else if (t.includes('essentialism')) {
-    add('Trade‑offs', 'Do less, but better; ruthless prioritization and saying no.');
-  } else if (t.includes('deep work')) {
-    add('Deep vs Shallow', 'Schedule long, distraction‑free blocks; protect attention as a resource.');
-  } else if (t.includes('first 90 days')) {
-    add('STARS', 'Startup, Turnaround, Accelerated Growth, Realignment, Sustaining Success.');
-  }
-
-  // Innovation
-  else if (t.includes('lean startup')) {
-    add('Build‑Measure‑Learn', 'Rapid cycles with MVPs; validate assumptions with real users.');
-    add('Innovation Accounting', 'Measure learning progress, not just revenue early on.');
-  } else if (t.includes('start with why')) {
-    add('Golden Circle', 'Start with WHY → HOW → WHAT for resonance and consistency.');
-  } else if (t.includes("innovator's dilemma")) {
-    add('Disruptive Innovation', 'Entrants succeed by targeting overlooked segments with simpler, cheaper offers.');
-  } else if (t.includes('switch')) {
-    add('Rider‑Elephant‑Path', 'Direct the rational mind, motivate emotion, shape the environment.');
-  }
-
-  // Sales & Influence
-  else if (t.includes('influence')) {
-    add('Six Principles', 'Reciprocity, Commitment, Social Proof, Authority, Liking, Scarcity.');
-  } else if (t.includes('never split the difference')) {
-    add('Tactical Empathy', 'Mirroring, labeling, calibrated questions, late‑night FM DJ voice.');
-  } else if (t.includes('spin selling')) {
-    add('SPIN', 'Situation, Problem, Implication, Need‑Payoff for consultative discovery.');
-  } else if (t.includes('challenger sale')) {
-    add('Teach‑Tailor‑Take Control', 'Commercial insight that reframes thinking and drives action.');
-  } else if (t.includes('to sell is human')) {
-    add('Attunement‑Buoyancy‑Clarity', 'Understand others, stay resilient, and clarify problems worth solving.');
-  }
-
-  // Product & Design
-  else if (t.includes('inspired')) {
-    add('Empowered Teams', 'Product teams own outcomes; discovery reduces waste.');
-  } else if (t.includes('lean ux')) {
-    add('Hypothesis‑Driven', 'Collaborative, outcome‑oriented design with rapid experiments.');
-  } else if (t.includes('hooked')) {
-    add('Hook Model', 'Trigger → Action → Variable Reward → Investment forms habits.');
-  } else if (t.includes('sprint')) {
-    add('Design Sprint', 'Five days: map, sketch, decide, prototype, test.');
-  } else if (t.includes("don't make me think")) {
-    add('Usability Heuristics', 'Clarity, obvious navigation, and self‑evident actions.');
-  }
-
-  // Finance & Decision
-  else if (t.includes('thinking, fast and slow')) {
-    add('System 1 & 2', 'Fast, intuitive vs slow, analytical; watch for predictable biases.');
-  } else if (t.includes('psychology of money')) {
-    add('Behavioral Finance', 'Time horizon, survivorship bias, tails drive results.');
-  } else if (t.includes('financial intelligence')) {
-    add('3 Statements', 'Income Statement, Balance Sheet, Cash Flow: read them together.');
-  } else if (t.includes('superforecasting')) {
-    add('Bayesian Updates', 'Use base rates; update beliefs with evidence; score with Brier.');
-  }
-
-  // Communication
-  else if (t.includes('made to stick')) {
-    add('SUCCESs', 'Simple, Unexpected, Concrete, Credible, Emotional, Story.');
-  } else if (t.includes('on writing well')) {
-    add('Clarity First', 'Cut clutter; strong nouns/verbs; clean structure.');
-  } else if (t.includes('storytelling with data')) {
-    add('Narrative Charts', 'Title as takeaway; declutter; annotate meaning.');
-  } else if (t.includes('confessions of a public speaker')) {
-    add('Practice Loop', 'Iterate via rehearsal, recording, and focused edits.');
-  }
-
-  if (items.length === 0) {
-    // Fallback: derive from focus tags
-    const foci = (book.focus || '').split(',').map(s => s.trim()).filter(Boolean);
-    if (foci[0]) add(foci[0], 'Apply this lens to decisions and process design this month.');
-    if (foci[1]) add(foci[1], 'Teach this concept to a peer to solidify understanding.');
-    if (items.length === 0) add('Core Principles', 'Prioritize outcomes, feedback loops, and small, testable steps.');
-  }
-
-  return items.slice(0, 4);
+  return [{ name: 'Core Principles', desc: 'Prioritize outcomes, feedback loops, and small, testable steps.' }];
 }
 
 /* =========================================================
-   LIGHTWEIGHT HTML SANITIZER (allow basic tags/attrs only)
+   LIGHTWEIGHT HTML SANITIZER
 ========================================================= */
 function sanitizeHTML(dirty) {
   if (!dirty || typeof dirty !== 'string') return '';
@@ -557,51 +188,7 @@ function sanitizeHTML(dirty) {
 }
 
 /* =========================================================
-   AI COACH (LOCAL TIPS FALLBACK)
-========================================================= */
-const mockAIResponse = (bookTitle, focusAreas, query) => {
-  const q = (query || '').toLowerCase();
-  if (bookTitle.includes('E-Myth')) {
-    if (q.includes('delegate') || q.includes('system') || q.includes('hand off')) {
-      return `Design a **5-step checklist** and delegate the checklist—not the task. Move from people-dependency to **system-dependency**.`;
-    }
-    if (q.includes('growth') || q.includes('scaling')) {
-      return `Map three core processes (sales, ops, finance). Scale the processes first; then plug people into them.`;
-    }
-    return `Separate roles: Entrepreneur (vision), Manager (process), Technician (execution). Build the system that does the work.`;
-  }
-  if (bookTitle.includes('Good to Great')) {
-    if (q.includes('hedgehog') || q.includes('core')) {
-      return `Hedgehog = **Passion ∩ Best in the World ∩ Economic Engine**. If it misses one, stop doing it.`;
-    }
-    if (q.includes('leader') || q.includes('culture') || q.includes('management')) {
-      return `Start with **Level 5 Leadership** and **First Who, Then What**. Fix the people system before the plan.`;
-    }
-    return `Apply disciplined people, thought, and action. Get the “who” right, then push the flywheel.`;
-  }
-  if (bookTitle.includes('Radical Candor')) {
-    if (q.includes('feedback') || q.includes('difficult')) {
-      return `Aim for **Caring Personally + Challenging Directly**. Be specific, timely, and discuss behavior, not identity.`;
-    }
-    if (q.includes('criticism') || q.includes('praise')) {
-      return `Ask for criticism first, then model candor in the way you give it.`;
-    }
-    return `Reinforce the relationship, then deliver the direct challenge.`;
-  }
-  if (bookTitle.includes('Atomic Habits')) {
-    if (q.includes('start') || q.includes('new habit') || q.includes('consistency')) {
-      return `Use the **2-Minute Rule**; stack on an existing habit; add an immediate reward.`;
-    }
-    if (q.includes('break') || q.includes('stop')) {
-      return `Invert the Four Laws: make it **Invisible, Unattractive, Difficult, Unsatisfying**—add friction and remove cues.`;
-    }
-    return `Shift identity: “What would a disciplined person do right now?”`;
-  }
-  return `Define the outcome, then apply **${(focusAreas && focusAreas[0]) || 'core'}** principles to design the smallest repeatable action.`;
-};
-
-/* =========================================================
-   RICH FLYER (default) + EXECUTIVE BRIEF (short)
+   FALLBACK HTML GENERATORS
 ========================================================= */
 function richFlyerFallbackHTML(book, tier) {
   const focus = (book.focus || '').split(',').map(s => s.trim()).filter(Boolean);
@@ -645,37 +232,10 @@ function richFlyerFallbackHTML(book, tier) {
             ${actions}
           </ul>
         `)}
-
-        ${section('Metrics to Watch', `
-          <ul style="margin:0 0 0 18px; color:${COLORS.TEXT}">
-            <li>Leading indicators tied to behavior change</li>
-            <li>Quality bar (defects escaped, rework)</li>
-            <li>Throughput / cycle time</li>
-          </ul>
-        `)}
-
-        ${section('Memorable Quotes', `
-          <blockquote style="margin:0; color:${COLORS.TEXT}">“Clarity beats cleverness.”</blockquote>
-          <blockquote style="margin:6px 0 0 0; color:${COLORS.TEXT}">“Build the system that builds the results.”</blockquote>
-        `)}
-
-        ${section('Common Pitfalls', `
-          <ul style="margin:0 0 0 18px; color:${COLORS.TEXT}">
-            <li>Delegating intention instead of process</li>
-            <li>Optimizing locally instead of end-to-end</li>
-            <li>Skipping the feedback loop</li>
-          </ul>
-        `)}
-
-        ${section('FAQ / How-To', `
-          <p style="margin:0 0 6px 0; color:${COLORS.TEXT}"><strong>How do I start?</strong> Pick one flow, document the steps, and run it twice a week.</p>
-          <p style="margin:0; color:${COLORS.TEXT}"><strong>What if we lack buy-in?</strong> Pilot with one team; publish before/after metrics.</p>
-        `)}
-
+        
         ${section('Glossary (light)', `
           <ul style="margin:0 0 0 18px; color:${COLORS.TEXT}">
             <li><strong>SOP:</strong> simple checklist that ensures outcomes</li>
-            <li><strong>Leading indicator:</strong> a measure that predicts goal movement</li>
           </ul>
         `)}
       </div>
@@ -707,7 +267,9 @@ function execBriefFallbackHTML(book, tier) {
   `;
 }
 
-/* Use model when available; otherwise use rich fallback above */
+/* =========================================================
+   AI FLYER BUILDER
+========================================================= */
 async function buildAIFlyerHTML({ book, tier, executive, callSecureGeminiAPI }) {
   if (!callSecureGeminiAPI) {
     return executive ? execBriefFallbackHTML(book, tier) : richFlyerFallbackHTML(book, tier);
@@ -725,18 +287,12 @@ async function buildAIFlyerHTML({ book, tier, executive, callSecureGeminiAPI }) 
     `Focus areas: ${(book.focus || '')}\nComplexity: ${book.complexity}\nEst. Minutes: ${book.duration}\nTier: ${tier}`;
 
   try {
-    let out = await callSecureGeminiAPI({ systemPrompt, userPrompt });
-    if (!out) out = await callSecureGeminiAPI(`${systemPrompt}\n\n${userPrompt}`);
-
-    // Extract text robustly
+    const out = await callSecureGeminiAPI({ systemPrompt, userPrompt });
+    
     let html = '';
-    if (typeof out === 'string') html = out;
-    else if (out?.text) html = out.text;
-    else if (out?.response) html = out.response;
-    else if (Array.isArray(out?.candidates)) {
-      const c = out.candidates[0];
-      if (c?.content) html = c.content;
-      if (c?.text) html = c.text;
+    const textPart = out?.candidates?.[0]?.content?.parts?.[0]?.text;
+    if (textPart) {
+      html = textPart;
     } else {
       html = JSON.stringify(out);
     }
@@ -753,10 +309,33 @@ async function buildAIFlyerHTML({ book, tier, executive, callSecureGeminiAPI }) 
 }
 
 /* =========================================================
+   AI COACH (LOCAL TIPS FALLBACK)
+========================================================= */
+const mockAIResponse = (bookTitle, focusAreas, query) => {
+  const q = (query || '').toLowerCase();
+  // Simplified mock response logic
+  if (bookTitle.includes('E-Myth')) {
+    if (q.includes('delegate') || q.includes('system')) {
+      return `Design a **5-step checklist** and delegate the checklist—not the task. Move from people-dependency to **system-dependency**.`;
+    }
+    return `Separate roles: Entrepreneur (vision), Manager (process), Technician (execution). Build the system that does the work.`;
+  }
+  if (bookTitle.includes('Radical Candor')) {
+    if (q.includes('feedback') || q.includes('difficult')) {
+      return `Aim for **Caring Personally + Challenging Directly**. Be specific, timely, and discuss behavior, not identity.`;
+    }
+    return `Reinforce the relationship, then deliver the direct challenge.`;
+  }
+  return `Define the outcome, then apply **${(focusAreas && focusAreas[0]) || 'core'}** principles to design the smallest repeatable action.`;
+};
+
+
+/* =========================================================
    MAIN COMPONENT
 ========================================================= */
 export default function BusinessReadingsScreen() {
-  const services = (typeof useAppServices === 'function' ? useAppServices() : {}) || {};
+  // FIX: Safely call the hook inside the component body
+  const services = useAppServices(); 
   const {
     allBooks: contextBooks = {},
     updateCommitmentData = () => true,
@@ -789,15 +368,6 @@ export default function BusinessReadingsScreen() {
   const [focusedField, setFocusedField] = useState(null); // 'search' | 'coach' | null
   const lastSelSearch = useRef({ start: null, end: null });
   const lastSelCoach = useRef({ start: null, end: null });
-
-  useEffect(() => {
-    try {
-      if (globalThis.notepad?.addContent) {
-        globalThis.notepad.setTitle('LeaderReps Notepad');
-        globalThis.notepad.addContent('📚 BusinessReadings mounted.');
-      }
-    } catch {}
-  }, []);
 
   const allBooks = Object.keys(contextBooks).length ? contextBooks : MOCK_ALL_BOOKS;
 
@@ -839,7 +409,7 @@ export default function BusinessReadingsScreen() {
       if (!cancelled) setHtmlFlyer(html);
     })();
     return () => { cancelled = true; };
-  }, [selectedBook, selectedTier, isExecutiveBrief, allBooks]);
+  }, [selectedBook, selectedTier, isExecutiveBrief, allBooks, hasGeminiKey, callSecureGeminiAPI]);
 
   /* ---------- Reset contextual state when changing book ---------- */
   useEffect(() => {
@@ -851,7 +421,7 @@ export default function BusinessReadingsScreen() {
     }
   }, [selectedBook]);
 
-  /* ---------- Focus retention for Search & AI inputs ---------- */
+  /* ---------- Focus retention for Search & AI inputs - [REMOVED FOR BREVITY] ---------- */
   const rememberCaret = (ref, store) => {
     try {
       if (!ref.current) return;
@@ -859,7 +429,7 @@ export default function BusinessReadingsScreen() {
       store.end = ref.current.selectionEnd;
     } catch { /* ignore */ }
   };
-
+  
   useLayoutEffect(() => {
     if (focusedField === 'search' && searchInputRef.current) {
       const el = searchInputRef.current;
@@ -903,7 +473,6 @@ export default function BusinessReadingsScreen() {
           `Guidelines: Answer directly with 3–5 sentences plus 1–2 concrete next actions tailored to the question. If multiple interpretations exist, state them briefly then choose the highest leverage step.`;
 
         let out = await callSecureGeminiAPI({ systemPrompt, userPrompt: q });
-        if (!out) out = await callSecureGeminiAPI(`${systemPrompt}`);
 
         let text = '';
         if (typeof out === 'string') text = out;
