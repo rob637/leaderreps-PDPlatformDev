@@ -101,7 +101,7 @@ const mockAIResponse = (bookTitle, focusAreas, query) => {
 };
 
 
-// --- HELPER: GENERATE BOOK FLYER CONTENT (Includes Adaptive Path Placeholder) ---
+// --- HELPER: GENERATE BOOK FLYER CONTENT (Includes Adaptive Path Placeholder and better rendering) ---
 const generateBookFlyerMarkdown = (book, tier, isExecutiveBrief) => {
     const focusAreas = book.focus.split(',').map(f => f.trim());
     const complexityData = COMPLEXITY_MAP[book.complexity] || COMPLEXITY_MAP['Medium'];
@@ -235,7 +235,7 @@ export default function BusinessReadingsScreen() {
     const [selectedTier, setSelectedTier] = useState('');
     const [savedBooks, setSavedBooks] = useState({});
     const [isExecutiveBrief, setIsExecutiveBrief] = useState(false);
-    const [filters, setFilters] = useState({ complexity: 'All', maxDuration: 300, search: '' }); // Added search filter
+    const [filters, setFilters] = useState({ complexity: 'All', maxDuration: 300, search: '' });
 
     // --- AI COACH STATES & REFS ---
     const [aiQuery, setAiQuery] = useState('');
@@ -257,7 +257,7 @@ export default function BusinessReadingsScreen() {
             const complexityMatch = filters.complexity === 'All' || book.complexity === filters.complexity;
             const durationMatch = book.duration <= filters.maxDuration;
             
-            // New search filter: matches title, author, or focus areas
+            // Search filter: matches title, author, or focus areas
             const searchMatch = !searchTerm || 
                 book.title.toLowerCase().includes(searchTerm) ||
                 book.author.toLowerCase().includes(searchTerm) ||
@@ -366,7 +366,7 @@ export default function BusinessReadingsScreen() {
                     <Filter className='w-5 h-5 text-[${COLORS.ORANGE}]'/> Personalize Your Search
                 </h3>
                 
-                {/* Search Input (New World-Class Feature) */}
+                {/* Search Input */}
                 <div className="mb-6">
                     <label className='block text-sm font-medium text-gray-700 mb-1 flex items-center gap-1'><Search className='w-4 h-4 text-[${COLORS.TEAL}]'/> Search by Title, Author, or Key Focus (e.g., "Delegation")</label>
                     <input
@@ -532,9 +532,9 @@ export default function BusinessReadingsScreen() {
 
                 <div className='bg-white rounded-2xl shadow-2xl p-8 border-4 border-[${COLORS.NAVY}]/10'>
                     
-                    {/* --- EXECUTIVE BRIEF TOGGLE --- */}
+                    {/* --- EXECUTIVE BRIEF TOGGLE & PROGRESS INDICATOR --- */}
                     <div className='flex justify-between mb-4'>
-                        {/* Progress Indicator (New World-Class Feature) */}
+                        {/* Progress Indicator */}
                         <div className='flex items-center gap-3 p-2 bg-gray-50 rounded-lg border border-gray-200'>
                             <TrendingUp className='w-5 h-5 text-[${COLORS.TEAL}]'/>
                             <div>
@@ -551,7 +551,7 @@ export default function BusinessReadingsScreen() {
                             </div>
                         </div>
 
-
+                        {/* Executive Brief Toggle */}
                         <label className="relative inline-flex items-center cursor-pointer">
                             <input 
                                 type="checkbox" 
@@ -572,7 +572,7 @@ export default function BusinessReadingsScreen() {
                         dangerouslySetInnerHTML={{ __html: htmlFlyer }} 
                     />
                     
-                    {/* --- AI COACH IMPLEMENTATION (FIXED FOR FOCUS & ENHANCED RESPONSE) --- */}
+                    {/* --- AI COACH IMPLEMENTATION (FIXED) --- */}
                     <div className='mt-8 pt-4 border-t border-gray-200'>
                         <h3 className="text-2xl font-bold text-[${COLORS.NAVY}] flex items-center gap-3 mb-4">
                             <MessageSquare className='w-6 h-6 text-blue-600'/> AI Coach: Instant Application
@@ -590,7 +590,7 @@ export default function BusinessReadingsScreen() {
                         <form onSubmit={handleAiQuery} className='flex gap-2'>
                             <input
                                 type='text'
-                                ref={aiInputRef} // Attach ref for focus
+                                ref={aiInputRef} // Ref for stable focus
                                 value={aiQuery}
                                 onChange={(e) => setAiQuery(e.target.value)}
                                 placeholder={`Ask how to apply ${selectedBook.title} concepts to your job... (e.g., "How do I delegate?")`}
