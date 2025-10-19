@@ -50,180 +50,54 @@ const MOCK_ALL_BOOKS = {
 
 // --- HELPER: SIMULATE AI RESPONSE (Refined logic) ---
 const mockAIResponse = (bookTitle, focusAreas, query) => {
-    query = query.toLowerCase();
-    
-    // --- E-Myth Revisited ---
-    if (bookTitle.includes('E-Myth')) {
-        if (query.includes('delegate') || query.includes('system') || query.includes('hand off')) {
-            return `The E-Myth teaches that you must **systemize your business** to make it scalable. To delegate a task like a recurring report, document the procedure in a 5-step checklist. This converts the work from a personal skill to a replicable system, making delegation safe and repeatable.`;
-        }
-        if (query.includes('growth') || query.includes('scaling')) {
-            return `Scaling, according to Gerber, requires thinking like the Entrepreneur, Manager, and Technician simultaneously. Focus on the **Manager** role first: establish the three most critical, documented **Process Maps** for sales, operations, and finance before hiring new staff.`;
-        }
-        return `Regarding the E-Myth, the primary focus is separating your roles (Entrepreneur, Manager, Technician). Your query about '${query}' suggests a need for a system. Stop performing the task and start **designing the system** that performs the task.`;
+  const q = (query || "").toLowerCase();
+
+  // E-Myth Revisited
+  if (bookTitle.includes('E-Myth')) {
+    if (q.includes('delegate') || q.includes('system') || q.includes('hand off')) {
+      return `Design a **5-step checklist** for the task, then delegate the checklist—not the task. That’s the move from people-dependency to **system-dependency**.`;
     }
-    
-    // --- Good to Great ---
-    if (bookTitle.includes('Good to Great')) {
-        if (query.includes('hedgehog') || query.includes('core')) {
-            return `The Hedgehog Concept is the intersection of 1) **Passion**, 2) **Best in the World**, and 3) **Economic Engine**. If your current strategy doesn't hit all three circles, you must stop it. The actionable step is a formal, honest assessment of whether you can truly be the best in the world at '${query}'.`;
-        }
-        if (query.includes('leader') || query.includes('culture') || query.includes('management')) {
-            return `Jim Collins stresses **Level 5 Leadership**: competence and fierce resolve mixed with personal humility. For a toxic manager, the advice is 'First Who, Then What.' You must address the **people** issue (Level 5 qualities) before attempting to fix the strategy or culture.`;
-        }
-        return `In the context of 'Good to Great,' the principle for '${query}' revolves around **disciplined people, disciplined thought, and disciplined action**. Start by ensuring you have the right people ('who') with Level 5 qualities before applying complex solutions.`;
+    if (q.includes('growth') || q.includes('scaling')) {
+      return `Before hiring, draw three **process maps** (sales, ops, finance). Scale the processes, then plug people into them.`;
     }
+    return `Separate roles: Entrepreneur (vision), Manager (process), Technician (execution). Build the **system** that performs the task.`;
+  }
 
-    // --- Radical Candor ---
-    if (bookTitle.includes('Radical Candor')) {
-        if (query.includes('feedback') || query.includes('difficult conversation')) {
-            return `When giving feedback on a sensitive issue like '${query}', ensure you are in the **Radical Candor** quadrant: **Caring Personally** and **Challenging Directly**. Be specific, immediate, and about the behavior, not the person. Avoid 'Ruinous Empathy' (being nice but unhelpful).`;
-        }
-        if (query.includes('criticism') || query.includes('praise')) {
-            return `Candor must flow in both directions. To encourage candid feedback on your own performance, Kim Scott advises you to **Ask for Criticism First**. This demonstrates humility and opens the door for others to speak truthfully about topics like '${query}'.`;
-        }
-        return `The core framework for your question on '${query}' is ensuring you demonstrate personal care. When addressing a challenge, start by reinforcing your relationship before delivering the direct challenge.`;
+  // Good to Great
+  if (bookTitle.includes('Good to Great')) {
+    if (q.includes('hedgehog') || q.includes('core')) {
+      return `Hedgehog = **Passion ∩ Best in the World ∩ Economic Engine**. If it misses a circle, stop doing it.`;
     }
-
-    // --- Atomic Habits ---
-    if (bookTitle.includes('Atomic Habits')) {
-        if (query.includes('start') || query.includes('new habit') || query.includes('consistency')) {
-            return `To start a new habit like '${query}', apply the **Four Laws**: 1. Make it Obvious (Habit Stacking), 2. Make it Attractive (Pairing), 3. Make it Easy (2-Minute Rule), and 4. Make it Satisfying (Immediate Reward). Use the 2-Minute Rule to ensure you never miss a day.`;
-        }
-        if (query.includes('break') || query.includes('stop')) {
-            return `To break a bad habit like '${query}', invert the Four Laws: Make it Invisible, Unattractive, Difficult, and Unsatisfying. For instance, make the bad habit difficult by adding 'Friction'—if you waste time on social media, delete the apps every night.`;
-        }
-        return `The key to your question about '${query}' is focusing on **Identity**: stop trying to achieve a result and focus on becoming the person who achieves that result. Ask yourself: 'What would a disciplined person do right now?'`;
+    if (q.includes('leader') || q.includes('culture') || q.includes('management')) {
+      return `Start with **Level 5 Leadership** and “**First Who, Then What**.” Fix the people system before the plan.`;
     }
+    return `Apply **disciplined people, thought, and action**. Get “who” right, then focus the flywheel.`;
+  }
 
-    // --- Default General Response ---
-    return `That’s a very relevant question for ${bookTitle}. Based on its focus on **${focusAreas[0]}**, the book's core advice would be to first **define the ideal outcome** and then use the principles of ${focusAreas[0]} to design a small, repeatable action toward that goal.`;
-};
+  // Radical Candor
+  if (bookTitle.includes('Radical Candor')) {
+    if (q.includes('feedback') || q.includes('difficult')) {
+      return `Aim for **Caring Personally + Challenging Directly**. Be specific, timely, and address behavior, not identity.`;
+    }
+    if (q.includes('criticism') || q.includes('praise')) {
+      return `Ask for criticism first. Model candor, then give it.`;
+    }
+    return `Reinforce the relationship, then deliver the direct challenge.`;
+  }
 
+  // Atomic Habits
+  if (bookTitle.includes('Atomic Habits')) {
+    if (q.includes('start') || q.includes('new habit') || q.includes('consistency')) {
+      return `Use the **2-Minute Rule**, stack on an existing habit, and add an immediate reward.`;
+    }
+    if (q.includes('break') || q.includes('stop')) {
+      return `Invert the Four Laws: make it **Invisible, Unattractive, Difficult, Unsatisfying**. Add friction.`;
+    }
+    return `Shift identity: “What would a disciplined person do right now?”`;
+  }
 
-// --- HELPER: GENERATE BOOK FLYER CONTENT (Completely redesigned for vertical flow and contrast) ---
-const generateBookFlyerMarkdown = (book, tier, isExecutiveBrief) => {
-    const focusAreas = book.focus.split(',').map(f => f.trim());
-    const complexityData = COMPLEXITY_MAP[book.complexity] || COMPLEXITY_MAP['Medium'];
-
-    // SIMULATED EXTERNAL/AI RICH SUMMARY
-    const richSummary = `
-**${book.title}** is the definitive text on **${focusAreas[0]}**. The core argument is that the key to success is building **self-managing systems**, not just hiring talented people. It provides a clear, step-by-step roadmap for business owners and managers to transition from working *in* their business to working *on* it. By focusing on **${focusAreas[1] || 'core philosophy'}**, you can productize your knowledge and ensure consistent, high-quality output, regardless of who is performing the task. This is a foundational reading for anyone serious about **scaling without chaos**.
-`;
-
-    // EXECUTIVE BRIEF CONTENT
-    const executiveSummary = `
-<div class="p-5 bg-[${COLORS.NAVY}]/10 rounded-lg border-l-4 border-[${COLORS.ORANGE}]">
-    <h4 class="text-xl font-bold text-[${COLORS.NAVY}] flex items-center gap-2 mb-3"><Minimize2 class="w-5 h-5 text-[${COLORS.ORANGE}]"/> Executive Brief: 3 Core Shifts</h4>
-    <ul class="list-disc ml-6 text-gray-800 text-base space-y-2">
-        <li>1. **Systemization is Key:** Build processes that work independently of specific individuals.</li>
-        <li>2. **Separate Roles:** Learn to distinguish between the Entrepreneur (Visionary), Manager (Process), and Technician (Doer).</li>
-        <li>3. **Primary Action:** Create and document your first **Process Map** this week, delegating tasks you currently perform.</li>
-    </ul>
-</div>
-`;
-    // ADAPTIVE PATH CONTENT
-    const adaptivePathContent = book.complexity === 'High' 
-        ? `<div class="p-3 mt-4 bg-red-50 border-l-4 border-red-500 rounded-lg text-base">
-            <p class="font-semibold text-red-800">Adaptive Path: Expert Level</p>
-            <p class="text-gray-700">Focus on the most complex chapters (5, 7, 9). Use the AI Coach primarily for cross-domain application questions.</p>
-        </div>`
-        : `<div class="p-3 mt-4 bg-green-50 border-l-4 border-green-500 rounded-lg text-base">
-            <p class="font-semibold text-green-800">Adaptive Path: Novice/Intermediate</p>
-            <p class="text-gray-700">Follow chapters sequentially. Complete all suggested Action Plan items before moving to the next section.</p>
-        </div>`;
-
-
-    // Core Content Assembly (Simplified for better rendering)
-    const summarySection = isExecutiveBrief ? executiveSummary : `
-        <section class="p-5 bg-[${COLORS.NAVY}]/5 rounded-lg border border-gray-200 shadow-sm">
-            <h3 class="text-xl font-bold text-[${COLORS.NAVY}] mb-2 flex items-center gap-2"><Feather class="w-5 h-5 text-[${COLORS.ORANGE}]"/> Rich Synopsis</h3>
-            <p class="text-base text-gray-800">${richSummary}</p>
-        </section>
-        ${adaptivePathContent}
-    `;
-
-    const detailsSection = `
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
-            <div class="space-y-3 p-4 border border-[${COLORS.TEAL}] rounded-lg bg-[${COLORS.TEAL}]/5 shadow-md">
-                <h3 class="text-lg font-semibold text-[${COLORS.DARK_TEXT}] flex items-center gap-2"><Briefcase class="w-5 h-5 text-[${COLORS.TEAL}]"/> Core Skills to Master</h3>
-                <ul class="list-none ml-0 text-gray-700 text-base space-y-2">
-                    ${focusAreas.map(f => `
-                        <li class="flex items-start gap-2">
-                            <CornerDownRight class="w-4 h-4 flex-shrink-0 mt-1 text-[${COLORS.ORANGE}]"/>
-                            <span class="font-medium">**${f}**: Deep dive into this core competency.</span>
-                        </li>
-                    `).join('')}
-                </ul>
-            </div>
-
-            <div class="space-y-3 p-4 border border-[${COLORS.ORANGE}] rounded-lg bg-[${COLORS.ORANGE}]/5 shadow-md">
-                <h3 class="text-lg font-semibold text-[${COLORS.DARK_TEXT}] flex items-center gap-2"><Zap class="w-5 h-5 text-[${COLORS.ORANGE}]"/> Suggested Action Plan</h3>
-                <ul class="list-none ml-0 text-gray-700 text-base space-y-2">
-                    <li class="flex items-start gap-2">
-                        <CornerDownRight class="w-4 h-4 flex-shrink-0 mt-1 text-[${COLORS.TEAL}]"/>
-                        <span class="font-medium">**Pace:** Break reading into (9) 20-minute, high-focus sessions.</span>
-                    </li>
-                    <li class="flex items-start gap-2">
-                         <CornerDownRight class="w-4 h-4 flex-shrink-0 mt-1 text-[${COLORS.TEAL}]"/>
-                        <span class="font-medium">**Reflect:** Journal on one core idea per chapter and discuss with a colleague.</span>
-                    </li>
-                </ul>
-            </div>
-        </div>
-    `;
-
-
-    return `
-<div class="grid grid-cols-1 gap-8 p-4">
-
-    <header class="pb-3 border-b border-gray-200">
-        <p class="text-xs font-semibold uppercase text-[${COLORS.TEAL}] mb-1">${tier} Competency</p>
-        <h2 class="text-4xl font-extrabold text-[${COLORS.NAVY}] leading-tight">${book.title}</h2>
-        <p class="text-lg font-medium text-[${COLORS.ORANGE}] mt-1">by ${book.author}</p>
-    </header>
-
-    <div class="lg:grid lg:grid-cols-3 lg:gap-6 items-start">
-        <div class="lg:col-span-1 mb-6 lg:mb-0">
-            <img class="w-full h-auto object-cover rounded-xl shadow-xl border-4 border-gray-100" 
-                src="${book.image_url}" 
-                alt="Related image for ${book.title}" 
-                onerror="this.onerror=null;this.src='https://placehold.co/300x200/${COLORS.NAVY.slice(1)}/ffffff?text=Visual+Concept'"
-            />
-        </div>
-        
-        <div class="lg:col-span-2 flex flex-col justify-center space-y-3 p-4 bg-gray-50 rounded-xl border border-gray-200 shadow-sm">
-            <h3 class="text-xl font-bold text-[${COLORS.NAVY}] mb-1">Book Metrics</h3>
-            <div class="flex flex-col space-y-2 text-base">
-                <div class="flex justify-between items-center text-gray-700 border-b pb-2">
-                    <span class="font-semibold flex items-center"><Clock class="w-5 h-5 mr-2 text-[${COLORS.ORANGE}]"/> Est. Learning Minutes</span>
-                    <span class="font-bold text-[${COLORS.NAVY}]">${book.duration} min</span>
-                </div>
-                <div class="flex justify-between items-center text-gray-700">
-                    <span class="font-semibold flex items-center"><${complexityData.icon.name} class="w-5 h-5 mr-2 ${complexityData.color.replace('bg-', 'text-')}" /> Complexity Level</span>
-                    <span class="font-bold flex items-center gap-1 ${complexityData.color.replace('bg-', 'text-')}">${complexityData.label}</span>
-                </div>
-            </div>
-        </div>
-    </div>
-    
-    <div class="space-y-6">
-        ${summarySection}
-        ${detailsSection}
-    </div>
-
-    <div class="mt-4 pt-4 border-t border-gray-200">
-        <div class="flex items-start p-3 bg-teal-50 rounded-lg border border-teal-300 shadow-sm">
-            <Users className="w-5 h-5 text-[${COLORS.TEAL}] flex-shrink-0 mt-1"/>
-            <div class="ml-3">
-                <p class="text-sm text-[${COLORS.NAVY}] font-semibold">Peer Accountability Group</p>
-                <p class="text-xs text-gray-700">Join a "Huddle" to discuss application and track shared progress.</p>
-            </div>
-        </div>
-    </div>
-
-</div>
-`;
+  // Default
+  return `Define the target outcome, then apply **${(focusAreas && focusAreas[0]) || 'core'}** principles to design the smallest repeatable action.`;
 };
 
 
