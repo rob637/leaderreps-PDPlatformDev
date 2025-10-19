@@ -24,7 +24,7 @@ const MOCK_COMMITMENT_DATA = { active_commitments: [{ id: 1, status: 'Pending' }
 // Mocking useAppServices hook logic for isolated file readability
 const useAppServices = () => ({
     navigate: (screen, params) => console.log(`Navigating to ${screen} with:`, params),
-    user: { email: 'executive@leaderreps.com', userId: 'usr-1234', name: 'Executive' }, // Added name mock
+    user: { email: 'executive@leaderreps.com', userId: 'usr-1234' },
     pdpData: MOCK_PDP_DATA,
     planningData: { okrs: [{ id: 1 }, { id: 2 }] },
     commitmentData: MOCK_COMMITMENT_DATA,
@@ -137,6 +137,21 @@ const ProgressKMI = ({ title, value, icon: Icon, colorClass = 'text-[#47A88D]' }
 );
 
 /* ---------------------------------------
+   Gemini helper: extract text robustly
+----------------------------------------*/
+function extractGeminiText(resp) {
+  if (!resp) return '';
+  if (typeof resp === 'string') return resp;
+  if (resp.text) return String(resp.text);
+  const c = resp.candidates?.[0];
+  const parts = c?.content?.parts;
+  if (Array.isArray(parts)) {
+    return parts.map(p => p?.text).filter(Boolean).join('\n\n');
+  }
+  return '';
+}
+
+/* ---------------------------------------
    Dashboard (default export)
 ----------------------------------------*/
 const DashboardScreen = () => {
@@ -221,7 +236,7 @@ const DashboardScreen = () => {
           <Home size={32} className="text-[#47A88D]" /> Executive Dashboard
         </h1>
         <p className="text-gray-600 text-base mt-2">
-          Welcome back, <span className="font-semibold text-[#002E47]">{user?.name ? user.name.split(' ')[0] : (user?.email ? user.email.split('@')[0] : 'Leader')}</span>. Your strategic overview for today.
+          Welcome back, <span className="font-semibold text-[#002E47]">{user?.email ? user.email.split('@')[0] : 'Leader'}</span>. Your strategic overview for today.
         </p>
       </div>
 
@@ -290,7 +305,7 @@ const DashboardScreen = () => {
               {/* Subtle background glow on hover */}
               <div className='absolute inset-0 rounded-2xl bg-[#47A88D] opacity-0 group-hover:opacity-5 transition-opacity duration-500 pointer-events-none'></div>
               <div className="flex items-center justify-between mb-4 relative z-10">
-                <h2 className="text-xl font-bold text-[#002E47] flex items-center gap-2">
+                <h2 className="text-xl font-bold flex items-center gap-2 text-[#002E47]">
                   <Target size={20} className='text-[#47A88D]' /> Strategic Nudge
                 </h2>
                 <button
@@ -328,7 +343,7 @@ const DashboardScreen = () => {
                         icon={Zap}
                         title="QuickStart Accelerator"
                         desc="Start your journey. Use AI to draft your first Development Plan goals in minutes."
-                        onClick={() => navigate('quick-start-accelerator')} 
+                        onClick={() => navigate('quick-start-accelerator')}
                         primary={true}
                     />
                     <Tile
@@ -350,7 +365,13 @@ const DashboardScreen = () => {
                         onClick={() => navigate('coaching-lab')}
                     />
                     {/* RESOURCE HUBS */}
-<Tile
+                    <Tile
+                        icon={Star}
+                        title="Executive Reflection"
+                        desc="Analyze your aggregated practice data, goal trends, and leadership growth patterns."
+                        onClick={() => navigate('reflection')}
+                    />
+                    <Tile
                         icon={TrendingUp}
                         title="Planning Hub (OKRs)"
                         desc="Draft Objectives and Key Results, set vision, and run pre-mortem risk audits."
