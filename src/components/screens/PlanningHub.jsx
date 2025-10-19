@@ -3,35 +3,32 @@ import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useAppServices } from '../../App.jsx'; 
 import { 
     ArrowLeft, CheckCircle, PlusCircle, X, TrendingUp, Target, AlertTriangle, Lightbulb, 
-    ShieldCheck, Cpu, Trash2, Zap, MessageSquare, BookOpen, Clock, CornerRightUp, Award
+    ShieldCheck, Cpu, Trash2, Zap, MessageSquare, BookOpen, Clock, CornerRightUp, Award, Activity, Link
 } from 'lucide-react';
-//  Assuming the utility functions are correctly imported
-import { mdToHtml, hasGeminiKey, callSecureGeminiAPI } from '../../utils/ApiHelpers.js'; 
 
 // ---  COLOR PALETTE (For consistency across modules) ---
 const COLORS = {
-  BG: '#FFFFFF',
-  SURFACE: '#FFFFFF',
-  BORDER: '#1F2937',
-  SUBTLE: '#E5E7EB',
-  TEXT: '#0F172A',
-  MUTED: '#4B5563',
-  NAVY: '#0B3B5B', // Deep Navy
-  TEAL: '#219E8B', // Leadership Teal
-  BLUE: '#2563EB',
-  ORANGE: '#E04E1B', // High-Impact Orange
+  NAVY: '#002E47',      
+  TEAL: '#47A88D',      
+  SUBTLE_TEAL: '#349881', 
+  ORANGE: '#E04E1B',    
   GREEN: '#10B981',
-  AMBER: '#F59E0B',
-  RED: '#EF4444',
-  LIGHT_GRAY: '#FCFCFA'
+  AMBER: '#F5A800',
+  RED: '#E04E1B',
+  LIGHT_GRAY: '#FCFCFA',
+  OFF_WHITE: '#FFFFFF', 
+  SUBTLE: '#E5E7EB',
+  TEXT: '#002E47',
+  MUTED: '#4B5355',
+  BLUE: '#2563EB',
 };
 
 // --- Custom/Placeholder UI Components (Replicated for consistency) ---
 const Button = ({ children, onClick, disabled = false, variant = 'primary', className = '', ...rest }) => {
   let baseStyle = "px-6 py-3 rounded-xl font-semibold transition-all shadow-xl focus:outline-none focus:ring-4 text-white flex items-center justify-center";
-  if (variant === 'primary') { baseStyle += ` bg-[${COLORS.TEAL}] hover:bg-[#1C8D7C] focus:ring-[${COLORS.TEAL}]/50`; }
-  else if (variant === 'secondary') { baseStyle += ` bg-[${COLORS.ORANGE}] hover:bg-red-700 focus:ring-[${COLORS.ORANGE}]/50`; }
-  else if (variant === 'outline') { baseStyle = `px-6 py-3 rounded-xl font-semibold transition-all shadow-md border-2 border-[${COLORS.TEAL}] text-[${COLORS.TEAL}] hover:bg-[${COLORS.TEAL}]/10 focus:ring-4 focus:ring-[${COLORS.TEAL}]/50 bg-[${COLORS.LIGHT_GRAY}] flex items-center justify-center`; }
+  if (variant === 'primary') { baseStyle += ` bg-[${COLORS.TEAL}] hover:bg-[#349881] focus:ring-[#47A88D]/50`; }
+  else if (variant === 'secondary') { baseStyle += ` bg-[${COLORS.ORANGE}] hover:bg-red-700 focus:ring-[#E04E1B]/50`; }
+  else if (variant === 'outline') { baseStyle = `px-6 py-3 rounded-xl font-semibold transition-all shadow-md border-2 border-[${COLORS.TEAL}] text-[${COLORS.TEAL}] hover:bg-[#47A88D]/10 focus:ring-4 focus:ring-[#47A88D]/50 bg-[${COLORS.LIGHT_GRAY}] flex items-center justify-center`; }
   else if (variant === 'nav-back') { baseStyle = `px-4 py-2 rounded-lg font-medium transition-all shadow-sm border-2 border-gray-300 text-gray-700 hover:bg-gray-100 flex items-center justify-center`; }
   if (disabled) { baseStyle = "px-6 py-3 rounded-xl font-semibold bg-gray-300 text-gray-500 cursor-not-allowed shadow-inner transition-none flex items-center justify-center"; }
   return (
@@ -44,7 +41,7 @@ const Button = ({ children, onClick, disabled = false, variant = 'primary', clas
 const Card = ({ children, title, icon: Icon, className = '', onClick, accent = 'TEAL' }) => {
   const interactive = !!onClick;
   const Tag = interactive ? 'button' : 'div';
-  const accentColor = COLORS[accent] || COLORS.ORANGE;
+  const accentColor = COLORS[accent] || COLORS.TEAL;
   const handleKeyDown = (e) => {
     if (!interactive) return;
     if (e.key === 'Enter' || e.key === ' ') {
@@ -57,14 +54,14 @@ const Card = ({ children, title, icon: Icon, className = '', onClick, accent = '
       role={interactive ? 'button' : undefined}
       tabIndex={interactive ? 0 : undefined}
       onKeyDown={handleKeyDown}
-      className={`relative p-6 rounded-2xl border-2 shadow-xl hover:shadow-2xl transition-all duration-300 text-left ${className}`}
+      className={`relative p-6 rounded-2xl border-2 shadow-2xl hover:shadow-xl transition-all duration-300 text-left ${className}`}
       style={{ background: 'linear-gradient(180deg,#FFFFFF,#F9FAFB)', borderColor: COLORS.SUBTLE, color: COLORS.TEXT }}
       onClick={onClick}
     >
       <span style={{ position:'absolute', top:0, left:0, right:0, height:6, background: accentColor, borderTopLeftRadius:14, borderTopRightRadius:14 }} />
 
       {Icon && (
-        <div className="w-10 h-10 rounded-lg flex items-center justify-center border mb-3" style={{ borderColor: COLORS.SUBTLE, background: '#F3F4F6' }}>
+        <div className="w-10 h-10 rounded-lg flex items-center justify-center border mb-3" style={{ borderColor: COLORS.SUBTLE, background: COLORS.LIGHT_GRAY }}>
           <Icon className="w-5 h-5" style={{ color: COLORS.TEAL }} />
         </div>
       )}
@@ -76,29 +73,45 @@ const Card = ({ children, title, icon: Icon, className = '', onClick, accent = '
 
 const Tooltip = ({ content, children }) => {
     const [isVisible, setIsVisible] = useState(false);
-    
     return (
-        <div 
+        <div
             className="relative inline-block"
             onMouseEnter={() => setIsVisible(true)}
             onMouseLeave={() => setIsVisible(false)}
         >
             {children}
             {isVisible && (
-                <div className="absolute z-10 w-64 p-3 -mt-2 -ml-32 text-xs text-white bg-[#0B3B5B] rounded-lg shadow-lg bottom-full left-1/2 transform translate-x-1/2">
+                <div className="absolute z-10 w-64 p-3 -mt-2 -ml-32 text-xs text-white bg-[#002E47] rounded-lg shadow-lg bottom-full left-1/2 transform translate-x-1/2">
                     {content}
-                    <div className="absolute left-1/2 transform -translate-x-1/2 bottom-[-4px] w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-[#0B3B5B]"></div>
+                    <div className="absolute left-1/2 transform -translate-x-1/2 bottom-[-4px] w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-[#002E47]"></div>
                 </div>
             )}
         </div>
     );
 };
-// --- END Custom UI Components ---
+
+const mdToHtml = async (md) => {
+    let html = md;
+    html = html.replace(/## (.*$)/gim, '<h2 class="text-2xl font-extrabold text-[#E04E1B] mb-3">$1</h2>');
+    html = html.replace(/### (.*$)/gim, '<h3 class="text-xl font-bold text-[#47A88D] mt-4 mb-2">$1</h3>');
+    html = html.replace(/\*\*(.*)\*\*/gim, '<strong>$1</strong>');
+    html = html.replace(/\n\n/g, '</p><p class="text-sm text-gray-700 mt-2">');
+    html = html.replace(/\* (.*)/gim, '<li class="text-sm text-gray-700">$1</li>');
+    html = html.replace(/<li>/g, '<ul><li>').replace(/<\/li>(?!<ul>)/g, '</li></ul>');
+    return `<p class="text-sm text-gray-700">${html}</p>`;
+};
+
+// Mock data
+const LEADERSHIP_TIERS = {
+    T1: { id: 'T1', name: 'Self-Awareness & Trust', icon: 'HeartPulse', color: 'indigo-500' },
+    T5: { id: 'T5', name: 'Vision & Strategic Clarity', icon: 'TrendingUp', color: 'red-600' },
+};
+
 
 // --- Planning Hub Views ---
 
 const PreMortemView = ({ setPlanningView }) => {
-    const { planningData, updatePlanningData, updateCommitmentData, navigate } = useAppServices();
+    const { planningData, updatePlanningData, updateCommitmentData, navigate, callSecureGeminiAPI, hasGeminiKey } = useAppServices();
     
     // Fallback/initial data (using optional chaining for safety)
     const [decision, setDecision] = useState(planningData?.last_premortem_decision || 'Should we launch a new product feature aimed at the enterprise market next quarter?');
@@ -122,14 +135,14 @@ const PreMortemView = ({ setPlanningView }) => {
         (async () => setAuditHtml(await mdToHtml(auditResult)))();
         
         // Attempt to parse Mitigation Strategy for commitment button
-        const mitigationMatch = auditResult.match(/### Mitigation Strategy\s*([\s\S]*)/i);
+        const mitigationMatch = auditResult.match(/### Mitigation Strategy\s*([^]*?)(?:##|$)/i);
         if (mitigationMatch && mitigationMatch[1]) {
             // Extract and clean the first key action
             const strategy = mitigationMatch[1].trim().split('\n').slice(0, 3).join(' ').replace(/[\*\-]/g, '').trim();
             setMitigationText(strategy);
             
             // NEW: Mock parsing the highest-leverage risk for scenario creation
-            const riskMatch = auditResult.match(/Risk Amplification\s*([\s\S]*)/i);
+            const riskMatch = auditResult.match(/Risk Amplification\s*([^]*?)(?:##|$)/i);
             const primaryRisk = riskMatch ? riskMatch[1].trim().split('\n')[0].replace(/[\*\-]/g, '').trim() : 'Unforeseen Regulatory Breach';
             setRiskScenario(primaryRisk);
         }
@@ -167,7 +180,8 @@ const PreMortemView = ({ setPlanningView }) => {
         }
 
         const userQuery = `**Decision:** ${decision}\n**Desired Outcome:** ${outcome}\n**Identified Risks:** ${primaryRisks.join('; ')}`;
-        const systemPrompt = "You are the Decision-Making Auditor, acting as the 'Devil's Advocate' and a strategic planning expert. Your task is to perform a pre-mortem analysis. Critique the user's inputs based on: 1) **Unforeseen Blind Spots (Top 2-3 new risks)**: Identify risks the user is likely missing. 2) **Risk Amplification**: Select the user's biggest risk and explain how it could be worse. 3) **Mitigation Strategy**: Suggest a concrete action plan (1-2 steps) for the highest combined risk (yours or the user's). Use clear Markdown headings and bold key points. Use the following structure: ## Pre-Mortem Audit Results; ### Unforeseen Blind Spots; ### Risk Amplification; ### Mitigation Strategy";
+        // CRITICAL FIX: Ensure prompt forces the structured output for reliable parsing.
+        const systemPrompt = "You are the Decision-Making Auditor, acting as the 'Devil's Advocate' and a strategic planning expert. Your task is to perform a pre-mortem analysis. Critique the user's inputs based on: 1) **Unforeseen Blind Spots (Top 2-3 new risks)**: Identify risks the user is likely missing. 2) **Risk Amplification**: Select the user's biggest risk and explain how it could be worse. 3) **Mitigation Strategy**: Suggest a concrete action plan (1-2 steps) for the highest combined risk (yours or the user's). Use clear Markdown headings and bold key points. Use this exact structure: ## Pre-Mortem Audit Results; ### Unforeseen Blind Spots; ### Risk Amplification; ### Mitigation Strategy";
 
         try {
             const payload = {
@@ -229,7 +243,7 @@ const PreMortemView = ({ setPlanningView }) => {
 
     return (
         <div className="p-8">
-            <h1 className="text-3xl font-extrabold text-[#0B3B5B] mb-4">Decision-Making Matrix (Pre-Mortem Audit)</h1>
+            <h1 className="text-3xl font-extrabold text-[#002E47] mb-4">Decision-Making Matrix (Pre-Mortem Audit)</h1>
             <p className="text-lg text-gray-600 mb-6 max-w-3xl">Analyze high-stakes decisions by actively looking for failure points. The AI acts as your **Devil's Advocate**, identifying critical risks you may have missed. **(Requires API Key)**</p>
             
             <Button onClick={() => setPlanningView('planning-home')} variant="nav-back" className="mb-8">
@@ -242,12 +256,12 @@ const PreMortemView = ({ setPlanningView }) => {
                     <textarea 
                         value={decision} 
                         onChange={(e) => setDecision(e.target.value)} 
-                        className="w-full p-3 mb-4 border border-gray-300 rounded-xl focus:ring-[#219E8B] focus:border-[#219E8B] h-20 text-gray-800" 
-                        placeholder="e.g., Should we expand into the European market next quarter?"
+                        className="w-full p-3 mb-4 border border-gray-300 rounded-xl focus:ring-[#47A88D] focus:border-[#47A88D] h-20 text-gray-800" 
+                        placeholder="e.g., Should we launch a new product feature aimed at the enterprise market next quarter?"
                     ></textarea>
                     
                     <p className="text-gray-700 text-sm mb-2 font-semibold">What is the specific desired outcome (the success state)?</p>
-                    <input type="text" value={outcome} onChange={(e) => setOutcome(e.target.value)} className="w-full p-3 border border-gray-300 rounded-xl focus:ring-[#219E8B] focus:border-[#219E8B] text-gray-800" placeholder="e.g., Achieve $500k in ARR from the new region in Q4."/>
+                    <input type="text" value={outcome} onChange={(e) => setOutcome(e.target.value)} className="w-full p-3 border border-gray-300 rounded-xl focus:ring-[#47A88D] focus:border-[#47A88D] text-gray-800" placeholder="e.g., Achieve $500k in ARR from the new region in Q4."/>
                 </Card>
 
                 <Card title="2. Identify Initial Risks" icon={AlertTriangle} accent='ORANGE'>
@@ -269,7 +283,7 @@ const PreMortemView = ({ setPlanningView }) => {
                             </div>
                         ))}
                     </div>
-                    <Button onClick={handleAddRisk} variant="outline" className="mt-4 text-sm px-4 py-2 border-dashed border-[#0B3B5B]/30 text-[#0B3B5B] hover:bg-[#0B3B5B]/10">
+                    <Button onClick={handleAddRisk} variant="outline" className="mt-4 text-sm px-4 py-2 border-dashed border-[#002E47]/30 text-[#002E47] hover:bg-[#002E47]/10">
                         <PlusCircle className='w-4 h-4 mr-2'/> Add Failure Mode
                     </Button>
                 </Card>
@@ -292,15 +306,15 @@ const PreMortemView = ({ setPlanningView }) => {
             </Tooltip>
 
             {auditHtml && (
-                <Card title="AI Audit Results & Mitigation" icon={ShieldCheck} accent='NAVY' className="mt-8 bg-[#0B3B5B]/5 border-4 border-[#0B3B5B]/10 rounded-3xl">
-                    <div className="prose max-w-none prose-h2:text-[#0B3B5B] prose-h2:text-2xl prose-h3:text-[#219E8B] prose-p:text-gray-700 prose-ul:space-y-2">
+                <Card title="AI Audit Results & Mitigation" icon={ShieldCheck} accent='NAVY' className="mt-8 bg-[#002E47]/5 border-4 border-[#002E47]/10 rounded-3xl">
+                    <div className="prose max-w-none prose-h2:text-[#002E47] prose-h2:text-2xl prose-h3:text-[#47A88D] prose-p:text-gray-700 prose-ul:space-y-2">
                         <div dangerouslySetInnerHTML={{ __html: auditHtml }} />
                     </div>
                     
                     {mitigationText && hasGeminiKey() && (
                         <div className='mt-6 pt-4 border-t border-gray-300 space-y-3'>
-                            <p className='text-sm font-semibold text-[#0B3B5B] flex items-center'><Award className='w-4 h-4 mr-1 text-[#219E8B]'/> Actionable Next Steps:</p>
-                            <Button onClick={handleCommitmentCreation} className="w-full bg-[#219E8B] hover:bg-[#1C8D7C]">
+                            <p className='text-sm font-semibold text-[#002E47] flex items-center'><Award className="w-4 h-4 mr-1 text-[#47A88D]" /> Actionable Next Steps:</p>
+                            <Button onClick={handleCommitmentCreation} className="w-full bg-[#47A88D] hover:bg-[#349881]">
                                 <PlusCircle className='w-5 h-5 mr-2' /> Turn Mitigation into Daily Commitment (Tier 5)
                             </Button>
                             
@@ -339,7 +353,7 @@ const VisionBuilderView = ({ setPlanningView }) => {
 
     return (
         <div className="p-8">
-            <h1 className="text-3xl font-extrabold text-[#0B3B5B] mb-4">Vision & Mission Statement Builder</h1>
+            <h1 className="text-3xl font-extrabold text-[#002E47] mb-4">Vision & Mission Statement Builder</h1>
             <p className="text-lg text-gray-600 mb-6 max-w-3xl">Define your aspirational 3-5 year leadership and team Vision and Mission, setting your strategic **North Star**. **(Data is persistent)**</p>
             
             <Button onClick={() => setPlanningView('planning-home')} variant="nav-back" className="mb-8">
@@ -362,12 +376,12 @@ const VisionBuilderView = ({ setPlanningView }) => {
                     <textarea 
                         value={mission} 
                         onChange={(e) => setMission(e.target.value)} 
-                        className="w-full p-3 mt-4 border border-gray-300 rounded-xl focus:ring-[#219E8B] focus:border-[#219E8B] h-24 text-gray-800" 
+                        className="w-full p-3 mt-4 border border-gray-300 rounded-xl focus:ring-[#47A88D] focus:border-[#47A88D] h-24 text-gray-800" 
                         placeholder="e.g., 'To cultivate a culture of psychological safety that drives continuous improvement and world-class product delivery.'"
                     ></textarea>
                 </Card>
                 
-                <Card title="Vision/Mission Quality Check" icon={CheckCircle} accent='NAVY' className='bg-[#0B3B5B]/5'>
+                <Card title="Vision/Mission Quality Check" icon={CheckCircle} accent='NAVY' className='bg-[#002E47]/5'>
                     <ul className='list-disc pl-5 text-sm text-gray-700 space-y-1'>
                         <li>Is your Vision **concise** (under 20 words) and aspirational?</li>
                         <li>Is your Mission clearly articulated (defines current **purpose**)?</li>
@@ -386,7 +400,7 @@ const VisionBuilderView = ({ setPlanningView }) => {
 };
 
 const OKRDraftingView = ({ setPlanningView }) => {
-    const { planningData, updatePlanningData, callSecureGeminiAPI } = useAppServices();
+    const { planningData, updatePlanningData, callSecureGeminiAPI, hasGeminiKey } = useAppServices();
 
     // Set initial state from planningData, safely defaulting to an empty array if undefined
     const [okrs, setOkrs] = useState(planningData?.okrs || []);
@@ -511,7 +525,7 @@ const OKRDraftingView = ({ setPlanningView }) => {
 
     return (
         <div className="p-8">
-            <h1 className="text-3xl font-extrabold text-[#0B3B5B] mb-4">Quarterly OKR Drafting Tool</h1>
+            <h1 className="text-3xl font-extrabold text-[#002E47] mb-4">Quarterly OKR Drafting Tool</h1>
             <p className="text-lg text-gray-600 mb-6 max-w-3xl">Set 3-5 ambitious Objectives (What) and 3-4 Key Results (How) for the current quarter, directly tied to your Vision. Use the **AI Auditor** to ensure your KRs are measurable and high-impact. **(Data is persistent)**</p>
             
             <Button onClick={() => setPlanningView('planning-home')} variant="nav-back" className="mb-8">
@@ -520,7 +534,7 @@ const OKRDraftingView = ({ setPlanningView }) => {
 
             <div className="space-y-8">
                 {okrs.map(obj => (
-                    <Card key={obj.id} title={`Objective: ${obj.objective || 'New Objective'}`} icon={Target} accent='NAVY' className="border-l-4 border-[#0B3B5B] rounded-3xl">
+                    <Card key={obj.id} title={`Objective: ${obj.objective || 'New Objective'}`} icon={Target} accent='NAVY' className="border-l-4 border-[#002E47] rounded-3xl">
                         <div className='flex justify-between items-center mb-4'>
                             <p className="text-gray-700 text-sm font-semibold">Objective (What to achieve? Must be **Inspiring**)</p>
                             <button onClick={() => removeObjective(obj.id)} className='text-gray-400 hover:text-[#E04E1B] transition-colors p-1'>
@@ -531,13 +545,13 @@ const OKRDraftingView = ({ setPlanningView }) => {
                             type="text"
                             value={obj.objective}
                             onChange={(e) => updateObjective(obj.id, e.target.value)}
-                            className="w-full p-3 border border-gray-300 rounded-xl focus:ring-[#219E8B] focus:border-[#219E8B] mb-4 text-gray-800"
+                            className="w-full p-3 border border-gray-300 rounded-xl focus:ring-[#47A88D] focus:border-[#47A88D] mb-4 text-gray-800"
                             placeholder="e.g., Dramatically improve team execution quality and velocity"
                         />
                         
                         {/* NEW: Succession Dependency Field (Mock Toggle for demonstration) */}
-                        <div className='flex justify-between items-center mb-6 p-2 rounded-lg' style={{ background: obj.successionDependency ? '#F0FFF4' : '#F9FAFB', border: `1px dashed ${obj.successionDependency ? COLORS.GREEN : COLORS.SUBTLE}`}}>
-                            <p className='text-sm font-semibold flex items-center' style={{ color: obj.successionDependency ? COLORS.GREEN : COLORS.MUTED }}>
+                        <div className='flex justify-between items-center mb-6 p-2 rounded-lg bg-[#47A88D]/10 border border-[#47A88D]/30'>
+                            <p className='text-sm font-semibold flex items-center text-[#47A88D]'>
                                 <CornerRightUp className='w-4 h-4 mr-2'/> Succession Dependency:
                             </p>
                             <select
@@ -552,7 +566,7 @@ const OKRDraftingView = ({ setPlanningView }) => {
                         </div>
 
 
-                        <h3 className="text-lg font-extrabold text-[#219E8B] mb-3 border-b border-dashed border-[#219E8B]/30 pb-1">Key Results (How to measure it? Must be 'from X to Y')</h3>
+                        <h3 className="text-lg font-extrabold text-[#47A88D] mb-3 border-b border-dashed border-[#47A88D]/30 pb-1">Key Results (How to measure it? Must be 'from X to Y')</h3>
                         <div className="space-y-3">
                             {(obj.keyResults || []).map((kr, index) => (
                                 <div key={kr.id} className='flex items-center space-x-2'>
@@ -570,7 +584,7 @@ const OKRDraftingView = ({ setPlanningView }) => {
                                 </div>
                             ))}
                         </div>
-                        <Button onClick={() => addKR(obj.id)} variant="outline" className="mt-4 text-sm px-4 py-2 border-dashed border-[#219E8B] text-[#219E8B] hover:bg-[#219E8B]/10">
+                        <Button onClick={() => addKR(obj.id)} variant="outline" className="mt-4 text-sm px-4 py-2 border-dashed border-[#47A88D] text-[#47A88D] hover:bg-[#47A88D]/10">
                             <PlusCircle className='w-4 h-4 mr-2'/> Add Key Result
                         </Button>
                     </Card>
@@ -578,7 +592,7 @@ const OKRDraftingView = ({ setPlanningView }) => {
             </div>
 
             <div className='flex space-x-4 mt-8'>
-                <Button onClick={addObjective} variant="outline" className="w-full md:w-auto px-6 py-3 border-[#0B3B5B] text-[#0B3B5B] hover:bg-[#0B3B5B]/10">
+                <Button onClick={addObjective} variant="outline" className="w-full md:w-auto px-6 py-3 border-[#002E47] text-[#002E47] hover:bg-[#002E47]/10">
                     <PlusCircle className='w-5 h-5 mr-2'/> Add New Objective
                 </Button>
                 <Button onClick={handleSave} disabled={isSaving} className="w-full md:w-auto">
@@ -591,7 +605,7 @@ const OKRDraftingView = ({ setPlanningView }) => {
                 </Button>
             </div>
             
-            <Card title="OKR Auditor (AI Critique)" icon={Cpu} accent='TEAL' className='mt-8 bg-[#219E8B]/10 border-2 border-[#219E8B]'>
+            <Card title="OKR Auditor (AI Critique)" icon={Cpu} accent='TEAL' className='mt-8 bg-[#47A88D]/10 border-2 border-[#47A88D]'>
                 <p className='text-gray-700 text-sm mb-4'>Use the AI coach to review your drafted OKRs against industry best practices for measurability, ambition, and alignment. **(Requires API Key)**</p>
                 
                 <Tooltip
@@ -600,7 +614,7 @@ const OKRDraftingView = ({ setPlanningView }) => {
                         : "Requires Gemini API Key to run. Check App Settings."
                     }
                 >
-                    <Button onClick={critiqueOKRs} disabled={isCritiquing} className="w-full bg-[#0B3B5B] hover:bg-gray-700">
+                    <Button onClick={critiqueOKRs} disabled={isCritiquing} className="w-full bg-[#002E47] hover:bg-gray-700">
                         {isCritiquing ? (
                             <div className="flex items-center justify-center">
                                 <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
@@ -611,8 +625,8 @@ const OKRDraftingView = ({ setPlanningView }) => {
                 </Tooltip>
 
                 {critiqueHtml && (
-                    <div className="mt-6 pt-4 border-t border-[#219E8B]/30">
-                        <div className="prose max-w-none prose-h3:text-[#0B3B5B] prose-p:text-gray-700 prose-ul:space-y-2">
+                    <div className="mt-6 pt-4 border-t border-[#47A88D]/30">
+                        <div className="prose max-w-none prose-h3:text-[#002E47] prose-p:text-gray-700 prose-ul:space-y-2">
                             <div dangerouslySetInnerHTML={{ __html: critiqueHtml }} />
                         </div>
                     </div>
@@ -666,7 +680,7 @@ const AlignmentTrackerView = ({ setPlanningView }) => {
 
     return (
         <div className="p-8">
-            <h1 className="text-3xl font-extrabold text-[#0B3B5B] mb-4">Strategic Alignment Tracker</h1>
+            <h1 className="text-3xl font-extrabold text-[#002E47] mb-4">Strategic Alignment Tracker</h1>
             <p className="text-lg text-gray-600 mb-6 max-w-3xl">Review your current OKR progress and ensure your daily activity is aligned with your long-term Vision. Focus on **leading indicators** and course correction.</p>
             
             <Button onClick={() => setPlanningView('planning-home')} variant="nav-back" className="mb-8">
@@ -674,31 +688,31 @@ const AlignmentTrackerView = ({ setPlanningView }) => {
             </Button>
 
             <div className="space-y-6">
-                <h2 className='text-2xl font-extrabold text-[#0B3B5B] border-b-2 border-[#219E8B] pb-2'>Quarterly Objective Progress</h2>
+                <h2 className='text-2xl font-extrabold text-[#002E47] border-b-2 border-[#47A88D] pb-2'>Quarterly Objective Progress</h2>
                 {objectives.map(obj => (
-                    <Card key={obj.id} title={obj.title} icon={CheckCircle} accent='TEAL' className="rounded-3xl shadow-lg border-l-4 border-[#219E8B]">
+                    <Card key={obj.id} title={obj.title} icon={CheckCircle} accent='TEAL' className="rounded-3xl shadow-lg border-l-4 border-[#47A88D]">
                         <div className="flex items-center justify-between">
                             <p className="text-sm text-gray-700 font-semibold">Progress: {Math.round(obj.progress * 100)}%</p>
                             <span className={`text-xs font-bold px-3 py-1 rounded-full ${
-                                obj.status === 'On Track' ? 'bg-[#219E8B]/20 text-[#219E8B]' :
-                                obj.status === 'Ahead of Schedule' ? 'bg-[#0B3B5B]/20 text-[#0B3B5B]' :
+                                obj.status === 'On Track' ? 'bg-[#47A88D]/20 text-[#47A88D]' :
+                                obj.status === 'Ahead of Schedule' ? 'bg-[#002E47]/20 text-[#002E47]' :
                                 'bg-[#E04E1B]/20 text-[#E04E1B]'
                             }`}>{obj.status}</span>
                         </div>
                         <div className="w-full bg-gray-200 rounded-full h-2.5 mt-2">
                             <div className={`h-2.5 rounded-full transition-all duration-500 ${
-                                obj.status === 'Ahead of Schedule' ? 'bg-[#0B3B5B]' : obj.status === 'At Risk' ? 'bg-[#E04E1B]' : 'bg-[#219E8B]'
+                                obj.status === 'Ahead of Schedule' ? 'bg-[#002E47]' : obj.status === 'At Risk' ? 'bg-[#E04E1B]' : 'bg-[#47A88D]'
                             }`} style={{ width: `${obj.progress * 100}%` }}></div>
                         </div>
                         
                         {obj.successionDependency && (
-                            <div className='mt-4 p-2 rounded-lg text-sm flex items-center' style={{ background: '#F0FFF4', border: `1px dashed ${COLORS.GREEN}`}}>
-                                <CornerRightUp className='w-4 h-4 mr-2 flex-shrink-0 text-[#219E8B]'/> 
-                                <span className='font-semibold text-[#0B3B5B]'>Succession Critical:</span> This objective is blocked by a necessary **{obj.successionDependency}** leadership development gap.
+                            <div className='mt-4 p-2 rounded-lg text-sm flex items-center bg-[#47A88D]/10 border border-[#47A88D]/30'>
+                                <CornerRightUp className='w-4 h-4 mr-2 flex-shrink-0 text-[#47A88D]'/> 
+                                <span className='font-semibold text-[#002E47]'>Succession Critical:</span> This objective is blocked by a necessary **{obj.successionDependency}** leadership development gap.
                             </div>
                         )}
                         
-                        <h3 className="text-lg font-extrabold text-[#0B3B5B] mt-4 mb-2 border-t pt-2">Course Correction Notes</h3>
+                        <h3 className="text-lg font-extrabold text-[#002E47] mt-4 mb-2 border-t pt-2">Course Correction Notes</h3>
                         <p className="text-sm text-gray-700">
                             <strong>Key Results Met:</strong> $2/4$ KRs are currently green.
                         </p>
@@ -735,8 +749,8 @@ export default function PlanningHubScreen() {
         return (
             <div className="p-8 min-h-screen flex items-center justify-center" style={{ background: COLORS.LIGHT_GRAY }}>
                 <div className="flex flex-col items-center">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#219E8B] mb-3"></div>
-                    <p className="text-[#219E8B] font-medium">Loading Strategic Planning Hub...</p>
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#47A88D] mb-3"></div>
+                    <p className="text-[#47A88D] font-medium">Loading Strategic Planning Hub...</p>
                 </div>
             </div>
         );
@@ -763,20 +777,20 @@ export default function PlanningHubScreen() {
             default:
                 return (
                     <div className="p-8">
-                        <h1 className="text-4xl font-extrabold text-[#0B3B5B] mb-4">Vision, Goal, & Decision Hub</h1>
+                        <h1 className="text-4xl font-extrabold text-[#002E47] mb-4">Vision, Goal, & Decision Hub</h1>
                         <p className="text-lg text-gray-600 mb-8 max-w-3xl">Transform abstract ideas into actionable, accountable goals. Build a clear Vision, draft measurable OKRs, and vet high-stakes decisions with AI audit tools.</p>
 
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                            <Card title="Vision & Mission Builder" icon={BookOpen} onClick={() => setPlanningView('vision-builder')} accent='TEAL' className="rounded-3xl hover:border-[#219E8B] border-l-4 border-[#219E8B]/50">
+                            <Card title="Vision & Mission Builder" icon={BookOpen} onClick={() => setPlanningView('vision-builder')} accent='TEAL' className="rounded-3xl hover:border-[#47A88D] border-l-4 border-[#47A88D]/50">
                                 <p className="text-gray-700 text-sm">Define your 3-5 year Vision and Mission Statement. Get clarity on your strategic **North Star**.</p>
-                                <div className="mt-4 text-[#219E8B] font-extrabold flex items-center">
+                                <div className="mt-4 text-[#47A88D] font-extrabold flex items-center">
                                     Launch Tool &rarr;
                                 </div>
                             </Card>
 
-                            <Card title="OKR Drafting Tool" icon={Target} onClick={() => setPlanningView('okr-drafting')} accent='NAVY' className="rounded-3xl hover:border-[#0B3B5B] border-l-4 border-[#0B3B5B]/50">
+                            <Card title="OKR Drafting Tool" icon={Target} onClick={() => setPlanningView('okr-drafting')} accent='NAVY' className="rounded-3xl hover:border-[#002E47] border-l-4 border-[#002E47]/50">
                                 <p className="text-gray-700 text-sm">Structured templates for creating Quarterly Objectives and Key Results (KRs) with **AI Audit**.</p>
-                                <div className="mt-4 text-[#0B3B5B] font-extrabold flex items-center">
+                                <div className="mt-4 text-[#002E47] font-extrabold flex items-center">
                                     Launch Tool &rarr;
                                 </div>
                             </Card>
@@ -788,9 +802,9 @@ export default function PlanningHubScreen() {
                                 </div>
                             </Card>
 
-                            <Card title="Strategic Alignment Tracker" icon={Zap} onClick={() => setPlanningView('alignment-tracker')} accent='TEAL' className="rounded-3xl hover:border-[#219E8B] border-l-4 border-[#219E8B]/50">
+                            <Card title="Strategic Alignment Tracker" icon={Zap} onClick={() => setPlanningView('alignment-tracker')} accent='TEAL' className="rounded-3xl hover:border-[#47A88D] border-l-4 border-[#47A88D]/50">
                                 <p className="text-gray-700 text-sm">Review your OKR progress, conduct quarterly reflections, and track how daily priorities map to your goals.</p>
-                                <div className="mt-4 text-[#219E8B] font-extrabold flex items-center">
+                                <div className="mt-4 text-[#47A88D] font-extrabold flex items-center">
                                     Launch Tracker &rarr;
                                 </div>
                             </Card>
