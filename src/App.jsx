@@ -253,11 +253,15 @@ const NavSidebar = ({ currentScreen, setCurrentScreen, user, isMobileOpen, close
         { screen: 'business-readings', label: 'Business Readings', icon: BookOpen },
     ];
     
-    // REMOVED SETTINGS: The systemNav array is now commented out/removed.
+    // RE-INSERTING SETTINGS HERE
+    const systemNav = [
+        { screen: 'app-settings', label: 'App Settings', icon: Settings }, 
+    ];
+
     const menuSections = [
         { title: 'CORE NAVIGATION', items: coreNav },
         { title: 'TOOLS & HUBS', items: toolsHubsNav },
-        // { title: 'SYSTEM', items: systemNav }, <-- Removed
+        { title: 'SYSTEM', items: systemNav }, // Re-inserted SYSTEM section
     ];
 
     const handleSignOut = async () => {
@@ -284,14 +288,16 @@ const NavSidebar = ({ currentScreen, setCurrentScreen, user, isMobileOpen, close
                 <button
                     key={item.screen}
                     onClick={() => handleNavigate(item.screen)}
-                    // FIX: Improved contrast, 3D effect on hover, and clear active state
+                    // FIX: Surgical styling for clear delineation and 3D effect
                     className={`flex items-center w-full px-4 py-3 rounded-xl font-semibold relative transition-all duration-200 
                         ${isActive
-                            ? `bg-white text-[${NAVY}] shadow-lg transform translate-x-1 ring-2 ring-[${TEAL}]` // Active: Navy text, white background, lifted
-                            : `text-white hover:bg-[${TEAL}]/20 hover:text-white hover:shadow-md hover:scale-[1.02]`} // Inactive: White text, subtle teal hover, subtle lift
+                            // Active State: White background, lifted effect, strong Teal icon
+                            ? `bg-white text-[${NAVY}] shadow-lg transform translate-x-1 ring-2 ring-[${TEAL}]` 
+                            // Inactive State: Subtle Navy background, White text/Icon, 3D lift on hover
+                            : `text-white hover:bg-[${TEAL}]/20 hover:text-white hover:shadow-md hover:scale-[1.02] bg-[${NAVY}]/5 border border-[${TEAL}]/10 `}
                     `}
                 >
-                    <Icon className={`w-5 h-5 mr-3 ${isActive ? `text-[${TEAL}]` : 'text-indigo-300'}`} />
+                    <Icon className={`w-5 h-5 mr-3 ${isActive ? `text-[${TEAL}]` : 'text-gray-200'}`} />
                     <span className="flex-1 text-left">{item.label}</span>
                     
                     {item.badge && (
@@ -522,19 +528,19 @@ const App = ({ initialState }) => {
             <div className="animate-spin rounded-full h-12 w-12 border-4 border-t-4 border-gray-200 border-t-[#47A88D] mb-3"></div>
             <p className="text-[#002E47] font-semibold">Initializing Authentication…</p>
           </div>
-        </div>
+        </React.Fragment>
       );
     }
     if (initStage === 'error') {
       return (
-        <>
+        <React.Fragment>
           <ConfigError message={initError} />
-        </>
+        </React.Fragment>
       );
     }
     if (!user) {
       return (
-        <>
+        <React.Fragment>
           <LoginPanel
             auth={firebaseServices.auth}
             onSuccess={() => {
@@ -543,13 +549,13 @@ const App = ({ initialState }) => {
             }}
             allowAnonymous={false}
           />
-        </>
+        </React.Fragment>
       );
     }
   }
 
   return (
-    <>
+    <React.Fragment>
       <DataProvider
         firebaseServices={firebaseServices}
         userId={userId}
@@ -576,7 +582,7 @@ const App = ({ initialState }) => {
             />
         </Suspense>
       </DataProvider>
-    </>
+    </React.Fragment>
   );
 };
 
