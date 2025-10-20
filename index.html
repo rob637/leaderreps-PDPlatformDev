@@ -6,13 +6,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>LeaderReps</title>
 
-    <!-- IMPORTANT: Must be a module script for import.meta.env to work -->
+    <!-- IMPORTANT: No secrets in client. Tell the app to use serverless. -->
     <script type="module">
-      // Expose to your app (DEV ONLY — this puts the key in the client bundle)
-      // Prefer the serverless option below for production.
-      window.__GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY || '';
-      window.__GEMINI_MODEL   = import.meta.env.VITE_GEMINI_MODEL   || 'gemini-1.5-flash';
-      window.__GEMINI_MODE    = import.meta.env.VITE_GEMINI_MODE    || 'direct'; // 'direct' | 'serverless'
+      // Your services hook should call "/.netlify/functions/gemini" in this mode.
+      window.__GEMINI_MODE  = 'serverless';               // 'serverless' | 'direct'
+      window.__GEMINI_MODEL = 'gemini-2.5-flash';         // optional, safe to expose
     </script>
   </head>
   <body>

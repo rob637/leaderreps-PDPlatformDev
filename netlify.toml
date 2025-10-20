@@ -5,8 +5,12 @@
 [build.environment]
   NODE_VERSION = "20"
 
+# NEW: Tell Netlify where your serverless functions are and how to bundle them
+[functions]
+  directory = "netlify/functions"
+  node_bundler = "esbuild"
+
 [[redirects]]
   from = "/*"
   to = "/index.html"
   status = 200
-
