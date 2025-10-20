@@ -22,16 +22,19 @@ function translatePayload(sdkPayload, useSnakeCase) {
   // 1. Translate systemInstruction (SDK object -> REST string)
   const sdkSystemInstruction = sdkPayload.systemInstruction;
   if (sdkSystemInstruction?.parts?.[0]?.text) {
-    // Both v1 (camelCase) and v1beta (snake_case) support system instruction
-    // as a top-level string field.
-    const key = useSnakeCase ? 'system_instruction' : 'systemInstruction';
-    body[key] = sdkSystemInstruction.parts[0].text;
+    // FIX: Only set the system instruction field if we are NOT using the v1beta endpoint.
+    // The v1beta endpoint often rejects the top-level system_instruction string field
+    // with "Invalid value," requiring us to rely only on the prompt in 'contents'.
+    if (!useSnakeCase) { 
+        const key = 'systemInstruction'; // Use camelCase key for v1
+        body[key] = sdkSystemInstruction.parts[0].text;
+    }
   }
   
   // 2. Translate tools (SDK array -> REST top-level tools array)
   if (sdkPayload.tools && sdkPayload.tools.length > 0) {
-    // FIX: Tools must be a top-level field, NOT nested inside generation_config.
-    const toolKey = useSnakeCase ? 'tools' : 'tools'; // Key name is 'tools' for both versions
+    // Tools must be a top-level field for both versions.
+    const toolKey = 'tools'; // Key name is 'tools' for both versions
     
     const translatedTools = sdkPayload.tools.map(tool => {
         if (tool.google_search) {
