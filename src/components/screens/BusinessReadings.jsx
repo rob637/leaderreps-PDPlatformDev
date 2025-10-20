@@ -61,140 +61,136 @@ const Button = ({ children, onClick, disabled = false, variant = 'primary', clas
 ========================================================= */
 const MOCK_ALL_BOOKS = {
   'Strategy & Execution': [
-    { id: 's_e_1', title: 'The E-Myth Revisited', author: 'Michael E. Gerber', theme: 'Why most small businesses fail and how to build a scalable system.', complexity: 'Medium', duration: 180, focus: 'Delegation, Process Mapping, Systemization' },
-    { id: 's_e_2', title: 'Good to Great', author: 'Jim Collins', theme: 'The factors that allow companies to make the leap from good results to sustained great ones.', complexity: 'High', duration: 240, focus: 'Level 5 Leadership, Hedgehog Concept, Culture of Discipline' },
-    { id: 's_e_3', title: 'Measure What Matters', author: 'John Doerr', theme: 'Achieving ambitious goals using OKRs.', complexity: 'Medium', duration: 200, focus: 'Goal Setting, Quarterly Planning, Accountability' },
-    { id: 's_e_4', title: 'The 7 Habits', author: 'Stephen Covey', theme: 'Principles for personal and professional effectiveness.', complexity: 'Low', duration: 220, focus: 'Proactivity, Prioritization, Synergy, Sharpen the Saw' },
-    { id: 's_e_5', title: 'Getting Things Done (GTD)', author: 'David Allen', theme: 'A stress-free system for organizing tasks and projects.', complexity: 'Medium', duration: 210, focus: 'Workflow Management, Capture, Organize, Engage' },
-    { id: 's_e_6', title: 'Deep Work', author: 'Cal Newport', theme: 'The value of focused, distraction-free concentration on cognitively demanding tasks.', complexity: 'Medium', duration: 190, focus: 'Focus, Productivity, Attention Management, Monastic Approach' },
-    { id: 's_e_7', title: 'The Goal', author: 'Eliyahu Goldratt', theme: 'The process of ongoing improvement using the Theory of Constraints.', complexity: 'High', duration: 260, focus: 'Theory of Constraints, Bottlenecks, Throughput' },
+    { id: 's_e_1', title: 'The E-Myth Revisited', author: 'Michael E. Gerber', theme: 'Why most small businesses fail and how to build a scalable system.', complexity: 'Medium', duration: 180, focus: 'Delegation, Process Mapping, Systemization, Standard Operating Procedures, Entrepreneurial Vision, Managerial Structure' },
+    { id: 's_e_2', title: 'Good to Great', author: 'Jim Collins', theme: 'The factors that allow companies to make the leap from good results to sustained great ones.', complexity: 'High', duration: 240, focus: 'Level 5 Leadership, Hedgehog Concept, Culture of Discipline, Technology Accelerators, Flywheel Effect, Stockdale Paradox' },
+    { id: 's_e_3', title: 'Measure What Matters', author: 'John Doerr', theme: 'Achieving ambitious goals using OKRs.', complexity: 'Medium', duration: 200, focus: 'Goal Setting, Quarterly Planning, Accountability, Transparency, Stretch Goals, Feedback Cycles' },
+    { id: 's_e_4', title: 'The 7 Habits', author: 'Stephen Covey', theme: 'Principles for personal and professional effectiveness.', complexity: 'Low', duration: 220, focus: 'Proactivity, Prioritization, Synergy, Sharpen the Saw, Win/Win, Habit Stacking, Time Management Matrix' },
+    { id: 's_e_5', title: 'Getting Things Done (GTD)', author: 'David Allen', theme: 'A stress-free system for organizing tasks and projects.', complexity: 'Medium', duration: 210, focus: 'Workflow Management, Capture, Organize, Engage, Next Actions, Two-Minute Rule, Weekly Review' },
+    { id: 's_e_6', title: 'Deep Work', author: 'Cal Newport', theme: 'The value of focused, distraction-free concentration on cognitively demanding tasks.', complexity: 'Medium', duration: 190, focus: 'Focus, Productivity, Attention Management, Monastic Approach, High-Value Tasks, Metrics of Depth, Batch Processing' },
+    { id: 's_e_7', title: 'The Goal', author: 'Eliyahu Goldratt', theme: 'The process of ongoing improvement using the Theory of Constraints.', complexity: 'High', duration: 260, focus: 'Theory of Constraints, Bottlenecks, Throughput, Drum-Buffer-Rope, Process Improvement, Optimization' },
   ],
   'People & Culture': [
-    { id: 'p_c_1', title: 'Dare to Lead', author: 'Brené Brown', theme: 'Courageous leadership by embracing vulnerability and trust.', complexity: 'Medium', duration: 210, focus: 'Psychological Safety, Feedback, Vulnerability' },
-    { id: 'p_c_2', title: 'Turn the Ship Around!', author: 'L. David Marquet', theme: 'Creating a leader-leader organization over a leader-follower one.', complexity: 'Medium', duration: 190, focus: 'Intent-Based Leadership, Decentralization, Ownership' },
-    { id: 'p_c_3', title: 'Radical Candor', author: 'Kim Scott', theme: 'Challenging directly while caring personally.', complexity: 'Medium', duration: 190, focus: 'Feedback Delivery, Coaching, Guidance' },
-    { id: 'p_c_4', title: 'The Culture Code', author: 'Daniel Coyle', theme: 'Building highly successful groups through belonging, safety, and shared purpose.', complexity: 'Low', duration: 230, focus: 'Group Cohesion, Vulnerability Loops, Shared Identity' },
-    { id: 'p_c_5', title: 'Start with Why', author: 'Simon Sinek', theme: 'Great leaders inspire action by communicating from the inside out (The Golden Circle).', complexity: 'Low', duration: 180, focus: 'Purpose, Vision, The Golden Circle, Mass Influence' },
-    { id: 'p_c_6', title: 'Team of Teams', author: 'General Stanley McChrystal', theme: 'How a decentralized command structure can beat highly effective, organized threats.', complexity: 'High', duration: 250, focus: 'Shared Consciousness, Empowered Execution, Adaptability' },
+    { id: 'p_c_1', title: 'Dare to Lead', author: 'Brené Brown', theme: 'Courageous leadership by embracing vulnerability and trust.', complexity: 'Medium', duration: 210, focus: 'Psychological Safety, Feedback, Vulnerability, Rumbling with Vulnerability, Armored Leadership, Empathy' },
+    { id: 'p_c_2', title: 'Turn the Ship Around!', author: 'L. David Marquet', theme: 'Creating a leader-leader organization over a leader-follower one.', complexity: 'Medium', duration: 190, focus: 'Intent-Based Leadership, Decentralization, Ownership, Competence, Clarity, Control' },
+    { id: 'p_c_3', title: 'Radical Candor', author: 'Kim Scott', theme: 'Challenging directly while caring personally.', complexity: 'Medium', duration: 190, focus: 'Feedback Delivery, Coaching, Guidance, Caring Personally, Challenging Directly, Get Stuff Done Wheel' },
+    { id: 'p_c_4', title: 'The Culture Code', author: 'Daniel Coyle', theme: 'Building highly successful groups through belonging, safety, and shared purpose.', complexity: 'Low', duration: 230, focus: 'Group Cohesion, Vulnerability Loops, Shared Identity, Safety, Vulnerability, Purpose' },
+    { id: 'p_c_5', title: 'Start with Why', author: 'Simon Sinek', theme: 'Great leaders inspire action by communicating from the inside out (The Golden Circle).', complexity: 'Low', duration: 180, focus: 'Purpose, Vision, The Golden Circle, Mass Influence, Trust, Why/How/What' },
+    { id: 'p_c_6', title: 'Team of Teams', author: 'General Stanley McChrystal', theme: 'How a decentralized command structure can beat highly effective, organized threats.', complexity: 'High', duration: 250, focus: 'Shared Consciousness, Empowered Execution, Adaptability, Decentralization, Liaison Officers, Trust' },
   ],
   'Self-Awareness & Growth': [
-    { id: 's_a_1', title: 'Atomic Habits', author: 'James Clear', theme: 'Build good habits by tiny improvements.', complexity: 'Low', duration: 180, focus: 'Habit Formation, Self-Discipline, Identity' },
-    { id: 's_a_2', title: 'Mindset', author: 'Carol Dweck', theme: 'The difference between growth and fixed mindsets in success.', complexity: 'Medium', duration: 190, focus: 'Growth Mindset, Fixed Mindset, Effort vs. Talent' },
-    { id: 's_a_3', title: 'Drive', author: 'Daniel H. Pink', theme: 'The new operating system for business based on intrinsic motivation (Autonomy, Mastery, Purpose).', complexity: 'Medium', duration: 170, focus: 'Intrinsic Motivation, Autonomy, Mastery, Purpose' },
-    { id: 's_a_4', title: 'Emotional Intelligence 2.0', author: 'Travis Bradberry', theme: 'Practical strategies for increasing self-awareness and self-management.', complexity: 'Low', duration: 160, focus: 'Self-Awareness, Self-Management, Social Awareness, Relationship Management' },
-    { id: 's_a_5', title: 'Thinking, Fast and Slow', author: 'Daniel Kahneman', theme: 'Dual-process model of the brain (System 1 and System 2) and cognitive biases.', complexity: 'High', duration: 280, focus: 'Cognitive Biases, System 1/System 2, Decision Making' },
+    { id: 's_a_1', title: 'Atomic Habits', author: 'James Clear', theme: 'Build good habits by tiny improvements.', complexity: 'Low', duration: 180, focus: 'Habit Formation, Self-Discipline, Identity, Four Laws, Habit Stacking, Two-Minute Rule, Environment Design' },
+    { id: 's_a_2', title: 'Mindset', author: 'Carol Dweck', theme: 'The difference between growth and fixed mindsets in success.', complexity: 'Medium', duration: 190, focus: 'Growth Mindset, Fixed Mindset, Effort vs. Talent, Praise for Effort, Neuroscience of Change' },
+    { id: 's_a_3', title: 'Drive', author: 'Daniel H. Pink', theme: 'The new operating system for business based on intrinsic motivation (Autonomy, Mastery, Purpose).', complexity: 'Medium', duration: 170, focus: 'Intrinsic Motivation, Autonomy, Mastery, Purpose, Type I vs Type X Behavior, Flow State, Goldilocks Tasks' },
+    { id: 's_a_4', title: 'Emotional Intelligence 2.0', author: 'Travis Bradberry', theme: 'Practical strategies for increasing self-awareness and self-management.', complexity: 'Low', duration: 160, focus: 'Self-Awareness, Self-Management, Social Awareness, Relationship Management, EQ Assessment, Delaying Gratification' },
+    { id: 's_a_5', title: 'Thinking, Fast and Slow', author: 'Daniel Kahneman', theme: 'Dual-process model of the brain (System 1 and System 2) and cognitive biases.', complexity: 'High', duration: 280, focus: 'Cognitive Biases, System 1/System 2, Decision Making, Anchoring Effect, Loss Aversion, Prospect Theory' },
   ],
   'Innovation & Change': [ 
-    { id: 'i_c_1', title: 'The Lean Startup', author: 'Eric Ries', theme: 'Build-measure-learn with continuous innovation.', complexity: 'High', duration: 250, focus: 'MVP, Build-Measure-Learn, Iteration' },
-    { id: 'i_c_2', title: 'Innovator\'s Dilemma', author: 'Clayton Christensen', theme: 'Why great companies fail by being too good at what they do.', complexity: 'High', duration: 270, focus: 'Disruptive Innovation, Sustaining Technology, Value Networks' },
-    { id: 'i_c_3', title: 'Crossing the Chasm', author: 'Geoffrey A. Moore', theme: 'Marketing high-tech products to mainstream customers.', complexity: 'Medium', duration: 230, focus: 'Technology Adoption Lifecycle, Chasm Strategy, Bowling Pin' },
-    { id: 'i_c_4', title: 'Zero to One', author: 'Peter Thiel', theme: 'The secret to building a better future is to create new things, not copy existing ones.', complexity: 'Medium', duration: 200, focus: 'Monopolies, Vertical Progress, Last Mover Advantage' },
+    { id: 'i_c_1', title: 'The Lean Startup', author: 'Eric Ries', theme: 'Build-measure-learn with continuous innovation.', complexity: 'High', duration: 250, focus: 'MVP, Build-Measure-Learn, Iteration, Pivot or Persevere, Validated Learning, Innovation Accounting' },
+    { id: 'i_c_2', title: 'Innovator\'s Dilemma', author: 'Clayton Christensen', theme: 'Why great companies fail by being too good at what they do.', complexity: 'High', duration: 270, focus: 'Disruptive Innovation, Sustaining Technology, Value Networks, Resource Dependence, Small Markets' },
+    { id: 'i_c_3', title: 'Crossing the Chasm', author: 'Geoffrey A. Moore', theme: 'Marketing high-tech products to mainstream customers.', complexity: 'Medium', duration: 230, focus: 'Technology Adoption Lifecycle, Chasm Strategy, Bowling Pin, Early Adopters, Mainstream Market' },
+    { id: 'i_c_4', title: 'Zero to One', author: 'Peter Thiel', theme: 'The secret to building a better future is to create new things, not copy existing ones.', complexity: 'Medium', duration: 200, focus: 'Monopolies, Vertical Progress, Last Mover Advantage, Secret, Peter Thiel\'s Seven Questions' },
   ],
 };
 
 /* =========================================================
-   LOCAL FALLBACK UTILITIES (Omitted for brevity)
+   LOCAL FALLBACK UTILITIES (ONLY FOR STRUCTURE/CONTEXT)
 ========================================================= */
-function getActionSteps(book) { /* ... */ 
+function getActionSteps(book) { 
   const t = (book.title || '').toLowerCase();
-  if (t.includes('e-myth')) { return ['Map one repeatable process (5–7 steps) and write a 1-page SOP.', 'Delegate the checklist, not the task.', 'Analyze your time allocation: Technician, Manager, or Entrepreneur Role?'];}
-  if (t.includes('radical candor')) { return ['Ask your team: “What’s one thing I could do better?” then act on one item within a week.', 'Draft corrective feedback using the SBI framework (Situation, Behavior, Impact).', 'Use a 5:1 positive-to-negative feedback ratio.'];}
-  if (t.includes('atomic habits')) { return ['Pick one keystone habit; write it as Habit Stack: “After [current], I will [new], then [small reward]”.', 'Use the 2-Minute Rule to start any new habit.', 'Audit your environment to make good habits obvious and bad habits invisible.'];}
-  if (t.includes('good to great')) { return ['Identify one "Hedgehog" area where your company can be the best.', 'Implement a "Stop Doing" list to enforce a Culture of Discipline.', 'Find a "Level 5" leader on your team and mentor them.'];}
+  if (t.includes('e-myth')) { return ['Map one repeatable process (5–7 steps) and write a 1-page SOP.', 'Delegate the checklist, not the task.', 'Analyze your time allocation: Technician, Manager, or Entrepreneur Role?', 'Design a comprehensive organizational chart based on function, not personality.', 'Schedule a weekly "Manager Hat" block for system review.'];}
+  if (t.includes('radical candor')) { return ['Ask your team: “What’s one thing I could do better?” then act on one item within a week.', 'Draft corrective feedback using the SBI framework (Situation, Behavior, Impact).', 'Use a 5:1 positive-to-negative feedback ratio in your next 1:1s.', 'Create a team norm that makes challenging the boss an expected, not punished, behavior.', 'Commit to giving one immediate, in-the-moment praise and one immediate, in-the-moment correction this week.'];}
+  if (t.includes('atomic habits')) { return ['Pick one keystone habit; write it as Habit Stack: “After [current], I will [new], then [small reward]”.', 'Use the 2-Minute Rule to start any new habit.', 'Audit your environment to make good habits obvious and bad habits invisible.', 'Conduct a Habit Scorecard for your daily routine.', 'Start a "motion vs. action" journal to focus on outcome-producing activities.'];}
+  if (t.includes('good to great')) { return ['Identify one "Hedgehog" area where your company can be the best.', 'Implement a "Stop Doing" list to enforce a Culture of Discipline.', 'Find a "Level 5" leader on your team and mentor them.', 'Start every executive meeting with a review of a current "Brutal Fact" (Stockdale Paradox).', 'Ensure the right people are on the bus before deciding where to drive it.'];}
+  if (t.includes('getting things done')) { return ['Establish an "In-Basket" system for capturing all open loops.', 'Complete the "Mind Sweep" process and list every open commitment.', 'Set up context-specific "Next Actions" lists (e.g., @computer, @calls).', 'Perform a comprehensive Weekly Review.', 'Apply the Natural Planning Model to a large, complex project you are currently managing.'];}
   return ['Define the outcome, then design the smallest repeatable action.'];
 }
 
-function getFrameworks(book) { /* ... */
+function getFrameworks(book) { 
   const t = (book.title || '').toLowerCase();
   if (t.includes('e-myth')) { return [{ name: 'E-Myth Roles', desc: 'Entrepreneur (vision), Manager (systems), Technician (doing).' }, { name: 'Systemization', desc: 'Build the business as if it were a franchise prototype.' }];}
   if (t.includes('radical candor')) { return [{ name: 'Candor Quadrants', desc: 'Caring Personally × Challenging Directly; aim for Radical Candor.' }, { name: 'Gives-and-Gets', desc: 'Focus on what you give (feedback) and get (results).' }];}
   if (t.includes('atomic habits')) { return [{ name: 'Four Laws', desc: 'Make it Obvious, Attractive, Easy, Satisfying.' }, { name: 'Habit Stacking', desc: 'Pair a new habit with an old one (e.g., After X, I will Y).' }];}
   if (t.includes('good to great')) { return [{ name: 'Hedgehog Concept', desc: 'Intersection of passion, best-in-the-world, and economic engine.' }, { name: 'Level 5 Leadership', desc: 'Ambitious for the company, not for themselves.' }];}
+  if (t.includes('getting things done')) { return [{ name: 'The 5 Steps', desc: 'Capture, Clarify, Organize, Reflect, Engage.' }, { name: 'The Two-Minute Rule', desc: 'If an action takes less than two minutes, do it immediately.' }];}
   return [{ name: 'Core Principles', desc: 'Prioritize outcomes, feedback loops, and small, testable steps.' }];
 }
 
-function richFlyerFallbackHTML(book, tier) { /* ... */
+function richFlyerFallbackHTML(book, tier) { 
+    // NOTE: This serves as a structure guide for the AI-generated HTML
     const focus = (book.focus || '').split(',').map(s => s.trim()).filter(Boolean);
     const chips = focus.slice(0, 6).map(f => `<span style="display:inline-block; padding:4px 8px; margin:2px; border-radius:9999px; background:#F3F4F6; color:#374151; font-size:12px">${f}</span>`).join('');
     const actions = getActionSteps(book);
     const frameworks = getFrameworks(book);
-
+    
+    // Default/Structured HTML for AI to use as a template
     return `
     <div style="padding: 16px;">
-        <header style="padding-bottom: 12px; margin-bottom: 8px; border-bottom: 4px solid ${COLORS.ORANGE}">
-            <p style="margin:0 0 4px 0; font-size: 12px; color:${COLORS.TEAL}; font-weight: 900; text-transform: uppercase">${tier} Competency</p>
-            <h2 style="margin:0; color:${COLORS.NAVY}; font-weight:900; font-size:32px;">${book.title}</h2>
-            <p style="margin:6px 0 0 0; color:${COLORS.ORANGE}; font-weight:800">by ${book.author}</p>
-            <div style="margin-top:8px">${chips}</div>
+        <header style="padding-bottom: 12px; margin-bottom: 20px; border-bottom: 5px solid ${COLORS.ORANGE}">
+            <p style="margin:0 0 4px 0; font-size: 14px; color:${COLORS.TEAL}; font-weight: 900; text-transform: uppercase">Leadership Tier: ${tier}</p>
+            <h2 style="margin:0; color:${COLORS.NAVY}; font-weight:900; font-size:40px;">${book.title}</h2>
+            <p style="margin:6px 0 0 0; color:${COLORS.ORANGE}; font-weight:800; font-size: 20px;">by ${book.author} — Est. Reading: ${book.duration} min</p>
+            <div style="margin-top:10px; border-top: 1px dashed ${COLORS.SUBTLE}; padding-top: 10px;">${chips}</div>
         </header>
+        
+        <p style="color:${COLORS.RED}; font-size: 18px; margin-top: 15px;">**AI CONTENT GENERATION FAILED**: Placeholder content below. Ensure Gemini API key is valid.</p>
 
-        <section style="margin-bottom: 20px;">
-            <h3 style="color:${COLORS.NAVY}; font-weight:800; font-size: 20px;">Key Ideas & Core Insight</h3>
-            <p style="color:${COLORS.TEXT}; font-size: 16px;">
-                ${book.theme} The book details how this concept is crucial for executive performance by outlining several core principles, including the importance of **${focus[0]}** and the strategic value of **${focus[1]}**. This framework directly applies to the challenges faced at the **${tier}** level.
-            </p>
-            <p style="color:${COLORS.TEXT}; font-size: 16px; margin-top: 10px;">
-                The central thesis revolves around achieving **${focus[2] || 'sustained excellence'}** by focusing on **${focus[3] || 'disciplined action'}**. It provides a roadmap for leaders to transition from simply managing to truly leading transformative change within their organizations.
-            </p>
-        </section>
-
-        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px;">
-            <section>
-                <h3 style="color:${COLORS.NAVY}; font-weight:800; font-size: 20px;">Key Frameworks</h3>
-                <ul style="margin: 0 0 0 18px; padding-left: 0; list-style: none;">
-                    ${frameworks.map(f => `
-                        <li style="margin-bottom: 10px; padding-left: 10px; border-left: 3px solid ${COLORS.TEAL};">
-                            <strong style="color: ${COLORS.NAVY};">${f.name}:</strong> 
-                            <span style="color: ${COLORS.MUTED}; font-size: 14px;">${f.desc}</span>
-                        </li>
-                    `).join('')}
-                </ul>
+        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 40px; margin-bottom: 30px;">
+            <section style="padding: 20px; border-radius: 12px; background: ${COLORS.BG}; border: 1px solid ${COLORS.SUBTLE}">
+                <h3 style="color:${COLORS.NAVY}; font-weight:900; font-size: 24px; margin-top:0;">Core Insight & Overview</h3>
+                <p style="color:${COLORS.TEXT}; font-size: 16px; margin-top: 15px;">
+                    ${book.theme} The shift from managing people to managing systems is the first major revelation this book offers. It outlines the transition required to move past chaos into a state of **structured maturity**.
+                </p>
             </section>
-            
-            <section>
-                <h3 style="color:${COLORS.NAVY}; font-weight:800; font-size: 20px;">Action Plan (4 Steps)</h3>
-                <ul style="margin:0 0 0 18px; color:${COLORS.TEXT}">${actions.slice(0, 4).map(s => `
-                    <li style="margin-bottom: 8px;">
-                        <span style="color: ${COLORS.ORANGE}; font-weight: 800; margin-right: 5px;">&rarr;</span> 
-                        ${s}
+            <section style="padding: 20px; border-radius: 12px; background: ${COLORS.BG}; border: 1px solid ${COLORS.SUBTLE}">
+                <h3 style="color:${COLORS.NAVY}; font-weight:900; font-size: 24px; margin-top:0;">Deep Dive: Critical Takeaways</h3>
+                <ul style="margin: 0 0 0 18px; padding-left: 0; list-style: none;">
+                    <li style="margin-bottom: 15px; padding-left: 10px; border-left: 4px solid ${COLORS.ORANGE};">
+                        <strong style="color: ${COLORS.NAVY}; display: block; margin-bottom: 4px;">Key Principle:</strong> 
+                        <span style="color: ${COLORS.MUTED}; font-size: 15px;">Focus on repeatable SOPs to scale beyond individual effort.</span>
                     </li>
-                `).join('')}</ul>
-                <p style="margin-top: 15px; font-size: 14px; color: ${COLORS.MUTED};">These steps are designed to immediately apply ${frameworks[0].name} to your current role.</p>
+                </ul>
             </section>
         </div>
     </div>
     `;
 }
 
-function execBriefFallbackHTML(book, tier) { /* ... */
-    const actions = getActionSteps(book).slice(0, 1);
-    const frameworks = getFrameworks(book).slice(0, 1);
+function execBriefFallbackHTML(book, tier) { 
+    // NOTE: This serves as a structure guide for the AI-generated HTML
+    const actions = getActionSteps(book).slice(0, 2);
+    const frameworks = getFrameworks(book).slice(0, 2);
+    const focus = (book.focus || '').split(',').map(s => s.trim()).filter(Boolean);
     
+    // Default/Structured HTML for AI to use as a template
     return `
         <div style="padding: 16px;">
-            <h2 style="color:${COLORS.NAVY}; font-weight:800; font-size: 24px;">Executive Brief: ${book.title}</h2>
-            <p style="color:${COLORS.TEXT}; font-size: 16px; margin-bottom: 15px;">
-                **Core Insight**: ${book.theme} The book argues that executive focus should shift from **${frameworks[0].name.split(' ')[0] || 'process'}** to **${actions[0].split(' ')[0] || 'outcomes'}**.
+            <h2 style="color:${COLORS.NAVY}; font-weight:900; font-size: 32px; border-bottom: 3px solid ${COLORS.TEAL}; padding-bottom: 8px;">EXECUTIVE BRIEF: ${book.title}</h2>
+            
+            <p style="color:${COLORS.RED}; font-size: 18px; margin-top: 15px;">**AI CONTENT GENERATION FAILED**: Placeholder content below. Ensure Gemini API key is valid.</p>
+
+            <p style="color:${COLORS.TEXT}; font-size: 16px; margin-top: 15px; line-height: 1.6;">
+                **Core Insight**: ${book.theme} To lead effectively at the **${tier}** level, you must employ frameworks like the **${frameworks[0].name || 'Core Principle'}** to delegate authority, not just tasks, and establish **predictable outcomes**.
             </p>
-            <p style="color:${COLORS.NAVY}; font-weight:800; font-size: 18px;">Top Priority</p>
-            <ul style="margin: 5px 0 0 20px; color:${COLORS.TEXT}">
-                <li>**Framework**: ${frameworks[0].name} - ${frameworks[0].desc}</li>
-                <li>**Action**: ${actions[0]}</li>
-            </ul>
+            
+            <div style="margin-top: 20px; padding-top: 15px; border-top: 1px dashed ${COLORS.SUBTLE};">
+                <h3 style="color:${COLORS.ORANGE}; font-weight:800; font-size: 20px; margin-top:0;">Priority Actions for This Week</h3>
+                <ul style="margin: 5px 0 0 20px; color:${COLORS.NAVY}; font-size: 16px; list-style-type: disc;">
+                    <li>**Action 1**: ${actions[0].replace('.', '')}.</li>
+                    <li>**Action 2**: ${actions[1].replace('.', '')}.</li>
+                </ul>
+            </div>
         </div>
     `;
 }
 
 /* =========================================================
-   AI FLYER BUILDER & QUESTION SCORING (Omitted for brevity)
+   AI FLYER BUILDER & QUESTION SCORING (PRODUCTION FOCUS)
 ========================================================= */
 async function buildAIFlyerHTML({ book, tier, executive, callSecureGeminiAPI }) {
-  if (!callSecureGeminiAPI) {
-    return executive ? execBriefFallbackHTML(book, tier) : richFlyerFallbackHTML(book, tier);
-  }
+  // Production-Ready: Attempt API call directly. Fallback is static content on error.
   
   const baseInstruction = executive
-    ? `Write a crisp EXECUTIVE BRIEF (80-120 words). Include a short "Key Frameworks" list (1 named model, 1 sentence summary) and 1 specific, actionable step. Output clean, styled HTML using only h2, h3, p, ul, li, strong, em, and inline CSS for presentation. The total content should fit in one paragraph and one bulleted list.`
+    ? `Write a robust EXECUTIVE BRIEF (150-200 words, split into 2 paragraphs). The brief must address the book's core insight, its relevance to the leader's specific tier, and one clear takeaway action. Output clean, styled HTML using only h2, h3, p, ul, li, strong, em, and inline CSS for presentation. The two paragraphs should be separate <p> tags and follow an H2 title.`
     : `Create a robust, long-form BOOK FLYER (400-500 words total). Sections must include: **Key Ideas**, **Core Insights for Your Tier**, **Key Frameworks** (with one-line descriptions), and **Action Plan (4 Steps)**. Ensure high detail, multiple paragraphs, and professional tone. Output clean, styled HTML using only h2, h3, p, ul, li, strong, em, and inline CSS for presentation.`;
 
   const systemPrompt =
@@ -205,22 +201,29 @@ async function buildAIFlyerHTML({ book, tier, executive, callSecureGeminiAPI }) 
     `Focus areas: ${(book.focus || '')}\nComplexity: ${book.complexity}\nTier: ${tier}`;
 
   try {
-    const out = await callSecureGeminiAPI({ systemInstruction: { parts: [{ text: systemPrompt }] }, contents: [{ role: "user", parts: [{ text: userPrompt }] }] });
+    const out = await callSecureGeminiAPI({ 
+      systemInstruction: { parts: [{ text: systemPrompt }] }, 
+      contents: [{ role: "user", parts: [{ text: userPrompt }] }] 
+    });
     
     let html = out?.candidates?.[0]?.content?.parts?.[0]?.text || '';
     
-    if (!html || html.toLowerCase().includes('mock response')) {
-      return executive ? execBriefFallbackHTML(book, tier) : richFlyerFallbackHTML(book, tier);
+    // Check if Gemini returned a usable response
+    if (html && !html.toLowerCase().includes('error')) {
+        // Apply inline styles to the AI-generated HTML for consistent branding
+        html = html.replace(/<h2/g, `<h2 style="color:${COLORS.ORANGE};font-size:24px;border-bottom:2px solid ${COLORS.SUBTLE};padding-bottom:5px;margin-top:15px;"`);
+        html = html.replace(/<h3/g, `<h3 style="color:${COLORS.NAVY};font-size:20px;margin-top:10px;"`);
+        html = html.replace(/<p/g, `<p style="color:#374151;font-size:16px;"`);
+        html = html.replace(/<ul/g, `<ul style="list-style:disc;margin-left:20px;color:#374151;"`);
+        return html;
     }
     
-    html = html.replace(/<h2/g, `<h2 style="color:${COLORS.ORANGE};font-size:24px;border-bottom:2px solid ${COLORS.SUBTLE};padding-bottom:5px;margin-top:15px;"`);
-    html = html.replace(/<h3/g, `<h3 style="color:${COLORS.NAVY};font-size:20px;margin-top:10px;"`);
-    html = html.replace(/<p/g, `<p style="color:#374151;font-size:16px;"`);
-    html = html.replace(/<ul/g, `<ul style="list-style:disc;margin-left:20px;color:#374151;"`);
-    
-    return html;
+    // FALLBACK ON API FAILURE
+    console.error("AI Flyer Generation failed or returned empty. Using structured fallback.");
+    return executive ? execBriefFallbackHTML(book, tier) : richFlyerFallbackHTML(book, tier);
   } catch (e) {
-    console.error('AI flyer error (using local fallback):', e);
+    console.error('AI flyer generation failed. Ensure API key is configured.', e);
+    // FALLBACK ON API EXCEPTION
     return executive ? execBriefFallbackHTML(book, tier) : richFlyerFallbackHTML(book, tier);
   }
 }
@@ -250,80 +253,47 @@ const getQuestionScore = (query, bookTitle) => {
 };
 
 /* =========================================================
-   AI COACH - NEW MOCK RESPONSE FACTORY
+   AI COACH - PRODUCTION FOCUS
 ========================================================= */
-
-// FIX: Enhanced Local AI Response Factory for contextual mock responses
-function generateMockAIResponse(question, book, frameworks, actions) {
-    const q = question.toLowerCase();
-    const f = frameworks[0]?.name || 'a core principle';
-    const a = actions[0];
-    const contextKeyword = q.includes('delegate') ? 'streamlining workflow' : (q.includes('team') ? 'improving psychological safety' : 'achieving strategic focus');
-
-    // Sentence 1: Acknowledgment and Context
-    let response = `That is a high-leverage question, directly addressing the core tension of **${book.title}**. The best approach, according to this book, is found by viewing your ${q.substring(0, 30)}... challenge through the lens of the **${f}** model.`;
-    
-    // Sentence 2: Core Insight
-    if (q.includes('how do i')) {
-        response += ` The core insight suggests that for **${contextKeyword}**, you must first secure **behavioral buy-in** by initiating the exact counter-action that ${book.author} recommends.`;
-    } else {
-         response += ` The central message reinforces that focusing on ${f} will reduce the friction you are experiencing by challenging the status quo around ${contextKeyword}.`;
-    }
-
-    // Sentence 3/Next Step: Specific, Actionable Step
-    response += `\n\nYour concrete next step is to initiate a **disciplined action** by: ${a.replace('.', '')} and rigorously tracking the initial two outcomes. This will immediately test the applicability of the **${f}** framework in your current ${q.includes('situation') ? 'situation' : 'environment'}.`;
-
-    return response;
-}
-
-// FIX 3: Updated handleAiSubmit to use the local mock factory
 async function handleAiSubmit(e, services, selectedBook, aiQuery, setIsSubmitting, setAiResponse) {
     e.preventDefault();
     if (e.target.disabled) return; 
 
     const q = aiQuery.trim();
     if (!selectedBook || !q) return;
+    if (!services.callSecureGeminiAPI) {
+        setAiResponse("ERROR: API Service is missing. Cannot call Gemini. Check `useAppServices` implementation.");
+        setIsSubmitting(false);
+        return;
+    }
 
     setIsSubmitting(true);
     setAiResponse('The AI Coach is analyzing the book\'s core principles and formulating an actionable response...');
 
     try {
-        // --- MOCK LOGIC FOR CONTEXTUAL RESPONSE ---
-        if (!services.callSecureGeminiAPI || !services.hasGeminiKey()) {
-            const frameworks = getFrameworks(selectedBook);
-            const actions = getActionSteps(selectedBook);
-            const mockText = generateMockAIResponse(q, selectedBook, frameworks, actions);
-            
-            // Simulate AI delay for better UX
-            await new Promise(resolve => setTimeout(resolve, 800)); 
-            
-            setAiResponse(mockText);
-            return;
-        }
-        // --- END MOCK LOGIC ---
-        
-        // --- REAL AI LOGIC (Unchanged) ---
+        // PRODUCTION LOGIC: Use book data to ground the AI response
         const actionableContext = `
             **Book's Key Frameworks:** ${getFrameworks(selectedBook).map(f => f.name).join(', ')}.
             **Book's Key Actions:** ${getActionSteps(selectedBook).join(' | ')}.
+            **User's Current Question:** ${q}
         `;
 
         const systemPrompt =
             `You are the LeaderReps AI Coach. Your sole purpose is to answer the user's question by referencing the provided book's principles ONLY. Do not use outside knowledge. Your response must be direct, actionable, and reference the book's frameworks.
             ${actionableContext}
-            Guidelines: Answer directly with 3–5 sentences. Include one concrete next action that applies the book's principle to the user's situation.`;
+            Guidelines: Answer directly with 3–5 sentences. Include one concrete next action that applies the book's principle to the user's situation. Do not use markdown other than **bold** for emphasis.`;
 
         let out = await services.callSecureGeminiAPI({ 
             systemInstruction: { parts: [{ text: systemPrompt }] }, 
             contents: [{ role: "user", parts: [{ text: q }] }] 
         });
 
-        const text = out?.candidates?.[0]?.content?.parts?.[0]?.text || 'No response found. Please rephrase your question or check your API key.';
+        const text = out?.candidates?.[0]?.content?.parts?.[0]?.text || 'No response was received from the AI. Please ensure your API key is valid and the service is operational.';
         setAiResponse(text);
 
     } catch (err) {
         console.error('AI coach error:', err);
-        setAiResponse(`(AI error) Please check your network connection or API Key configuration.`);
+        setAiResponse(`**CRITICAL AI ERROR**: Failed to connect to or receive a response from the API. Please ensure the 'callSecureGeminiAPI' hook is correctly implemented and the API key is valid for production.`);
     } finally {
         setIsSubmitting(false);
     }
@@ -660,6 +630,7 @@ function BookFlyerStable({
 }
 
 export default function BusinessReadingsScreen() {
+  // NOTE: The real useAppServices hook is mocked/passed in the actual environment
   const services = useAppServices(); 
   const {
     updateCommitmentData = () => true,
@@ -734,10 +705,10 @@ export default function BusinessReadingsScreen() {
 
       // Show loading state immediately
       setHtmlFlyer(`<div style="padding:12px;border:1px dashed ${COLORS.SUBTLE};border-radius:12px;color:${COLORS.MUTED}">
-                      <div class="animate-pulse flex items-center gap-2"><Cpu class="w-5 h-5"/> Generating ${isExecutiveBrief ? 'EXECUTIVE BRIEF' : 'FULL FLYER'}...</div>
+                      <div class="animate-pulse flex items-center gap-2"><Cpu class="w-5 h-5"/> **PRODUCTION AI ACTIVE**: Generating ${isExecutiveBrief ? 'EXECUTIVE BRIEF' : 'FULL FLYER'}...</div>
                     </div>`);
 
-      // FIX 2: Call the function that handles mock response fallback
+      // Call the production-focused function
       const html = await buildAIFlyerHTML({ 
         book: selectedBook, 
         tier: tierKey, 

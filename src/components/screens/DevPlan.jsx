@@ -1,48 +1,58 @@
-// src/components/screens/DevPlan.jsx
+// src/components/screens/DevPlan.jsx (Modified to drop alignment/peer ratings)
 
 import { Home, Settings, Zap, Clock, Briefcase, Mic, Trello, BookOpen, BarChart3, TrendingUp, TrendingDown, CheckCircle, Star, Target, Users, HeartPulse, CornerRightUp, X, ArrowLeft, Activity, Link, Lightbulb, AlertTriangle, Eye, PlusCircle, Cpu, MessageSquare, Check } from 'lucide-react';
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-// FIX: Mocking useAppServices since the environment can't resolve relative paths
-const useAppServices = () => ({
-    // Mocked core services for local testing
-    pdpData: null, // Start with null to show the generator view by default
-    updatePdpData: async (updater) => {
-        const oldData = { currentMonth: 0, plan: [], assessment: {} }; // Simplified mock for state updates
-        const newData = updater(oldData);
-        // In a real app, this would update the context state and force a re-render.
-        // Mocking successful update:
-        console.log("Mock PDP Data Updated:", newData);
+
+// =========================================================
+// MOCKED SERVICES (Enhanced for State Management)
+// =========================================================
+const useAppServices = (localPdpData, setLocalPdpData) => {
+    // This function will now update the local state managed by the router
+    const updatePdpData = async (updater) => {
+        setLocalPdpData(prevData => {
+            const newData = updater(prevData);
+            console.log("Mock PDP Data Updated:", newData);
+            return newData;
+        });
         return true;
-    },
-    saveNewPlan: async (plan) => {
-        // Mock success, return true
+    };
+    
+    const saveNewPlan = async (plan) => {
+        // Saving a new plan just updates the local state directly for the Generator/Review flow
+        await updatePdpData(() => plan);
         console.log("Mock Plan Saved:", plan);
         return true;
-    },
-    callSecureGeminiAPI: async (payload) => {
-        // Mock response for Monthly Briefing
-        const mockBriefing = {
-            candidates: [{
-                content: {
-                    parts: [{
-                        text: "## Monthly Executive Briefing\n\n**Focus Area:** Strategic Clarity (T5)\n\n**Coaching Nudge:** Your low self-rating (4/10) indicates a high-risk gap. You must dedicate time this month to the 'Pre-Mortem Risk Audit' content. Prioritize clear decision-making processes over routine tasks to immediately elevate your strategic focus.\n\n**Next Action:** Schedule 30 minutes to define your top 3 OKR dependencies."
-                    }]
-                }
-            }]
-        };
-        return mockBriefing;
-    },
-    hasGeminiKey: () => true,
-    navigate: (screen, params) => console.log(`Navigating to ${screen} with params:`, params),
-    userId: 'mock-user-123',
-    db: {}, // Mock Firestore instance
-    isLoading: false,
-    error: null,
-    // Mocked values needed for the Generator View logic
-    commitmentData: { active_commitments: [] },
-    planningData: { okrs: [{ objective: 'OKR Q4: Launch MVP' }] },
-    GEMINI_MODEL: 'gemini-2.5-flash-preview-09-2025',
-});
+    };
+
+    return {
+        // Use the managed local state as the source of truth
+        pdpData: localPdpData, 
+        updatePdpData: updatePdpData,
+        saveNewPlan: saveNewPlan,
+        callSecureGeminiAPI: async (payload) => {
+            // Mock response for Monthly Briefing (simplified for brevity)
+            const mockBriefing = {
+                candidates: [{
+                    content: {
+                        parts: [{
+                            text: "## Monthly Executive Briefing\n\n**Focus Area:** Strategic Clarity (T5)\n\n**Coaching Nudge:** Your low self-rating (4/10) indicates a high-risk gap. You must dedicate time this month to the 'Pre-Mortem Risk Audit' content. Prioritize clear decision-making processes over routine tasks to immediately elevate your strategic focus.\n\n**Next Action:** Schedule 30 minutes to define your top 3 OKR dependencies."
+                        }]
+                    }
+                }]
+            };
+            return mockBriefing;
+        },
+        hasGeminiKey: () => true,
+        navigate: (screen, params) => console.log(`Navigating to ${screen} with params:`, params),
+        userId: 'mock-user-123',
+        db: {}, 
+        isLoading: false, // Always false in this mock
+        error: null,
+        commitmentData: { active_commitments: [] },
+        planningData: { okrs: [{ objective: 'OKR Q4: Launch MVP' }] },
+        GEMINI_MODEL: 'gemini-2.5-flash-preview-09-2025',
+    };
+};
 
 /* =========================================================
    HIGH-CONTRAST PALETTE (Centralized for Consistency)
@@ -53,7 +63,7 @@ const COLORS = {
   SUBTLE_TEAL: '#349881', 
   ORANGE: '#E04E1B',    
   GREEN: '#10B981',
-  AMBER: '#F5A500', // Adjusted amber shade for contrast
+  AMBER: '#F5A500', 
   RED: '#E04E1B',
   LIGHT_GRAY: '#FCFCFA',
   OFF_WHITE: '#FFFFFF', 
@@ -61,8 +71,8 @@ const COLORS = {
   TEXT: '#002E47',
   MUTED: '#4B5355',
   BLUE: '#2563EB',
-  BG: '#F9FAFB', // Matches BusinessReadings
-  PURPLE: '#7C3AED', // Matches BusinessReadings
+  BG: '#F9FAFB', 
+  PURPLE: '#7C3AED', 
 };
 
 // Mock UI components (Standardized)
@@ -372,10 +382,9 @@ const adjustDuration = (rating, duration) => {
 };
 
 const generatePlanData = (assessment, ownerUid) => {
-    const { managerStatus, goalPriorities, selfRatings, peerRatings, menteeFeedback, teamSkillAlignment } = assessment;
+    // UPDATED: Removed peerRatings, teamSkillAlignment, alignToTeam from destructuring/logic
+    const { managerStatus, goalPriorities, selfRatings, menteeFeedback } = assessment;
     const allTiers = Object.keys(LEADERSHIP_TIERS);
-
-    let initialTierIndex = managerStatus === 'New' ? 0 : managerStatus === 'Mid-Level' ? 2 : 4;
 
     const plan = [];
     const usedContentIds = new Set();
@@ -394,31 +403,12 @@ const generatePlanData = (assessment, ownerUid) => {
         if (!tierRotationQueue.includes(tier)) tierRotationQueue.push(tier);
     });
 
-    // Inject specialized needs
-    const teamGapTier = teamSkillAlignment?.gapTier;
-    if (assessment.alignToTeam && teamGapTier && !tierRotationQueue.includes(teamGapTier)) {
-        tierRotationQueue.splice(1, 0, teamGapTier);
-    }
-    
+    // Special injection for New Managers
     if (managerStatus === 'New' && tierRotationQueue[0] !== 'T1') {
          tierRotationQueue.unshift('T1');
     }
     
-    let peerGapTier = null;
-    if (peerRatings) {
-        for (const tierId of allTiers) {
-            const self = selfRatings[tierId];
-            const peer = peerRatings[tierId];
-            if (self - peer >= 3) { 
-                peerGapTier = tierId;
-                break; 
-            }
-        }
-    }
-    if (peerGapTier && !tierRotationQueue.includes(peerGapTier)) {
-        tierRotationQueue.splice(1, 0, peerGapTier);
-    }
-
+    // Special injection for Mentee Feedback Gap (still kept T4 for conflict)
     if (menteeFeedback?.T4?.score < 70 && !tierRotationQueue.includes('T4')) {
          tierRotationQueue.splice(1, 0, 'T4');
     }
@@ -451,6 +441,20 @@ const generatePlanData = (assessment, ownerUid) => {
                 count++;
             }
         }
+        
+        // Ensure every month has at least one item, if the initial filter was empty
+        if (requiredContent.length === 0) {
+             const backupItem = CONTENT_LIBRARY.find(item => item.tier === currentTier && !usedContentIds.has(item.id));
+             if (backupItem) {
+                 requiredContent.push({
+                    ...backupItem,
+                    duration: adjustDuration(rating, backupItem.duration),
+                    status: 'Pending',
+                });
+                usedContentIds.add(backupItem.id);
+             }
+        }
+
 
         plan.push({
             month,
@@ -651,8 +655,9 @@ const RoadmapTimeline = ({ data, currentMonth, navigateToMonth }) => {
 
 
 // --- Component 2: Tracker Dashboard View ---
+// This is the main component you asked to access and manage.
 const TrackerDashboardView = ({ data, updatePdpData, saveNewPlan, db, userId, navigate }) => {
-    const { callSecureGeminiAPI, hasGeminiKey, GEMINI_MODEL } = useAppServices();
+    const { callSecureGeminiAPI, hasGeminiKey, GEMINI_MODEL } = useAppServices(data);
 
     const [viewMonth, setViewMonth] = useState(data.currentMonth); // State for Timeline Navigation
     const currentMonth = data.currentMonth;
@@ -671,16 +676,17 @@ const TrackerDashboardView = ({ data, updatePdpData, saveNewPlan, db, userId, na
     const [reviewTierId, setReviewTierId] = useState(null);
     const [isContentModalVisible, setIsContentModalVisible] = useState(false);
     const [selectedContent, setSelectedContent] = useState(null);
-    const [isShareModalVisible, setIsShareModalVisible] = useState(false); // Feature 1: Share Modal
+    const [isShareModalVisible, setIsShareModalVisible] = useState(false); 
     const [localReflection, setLocalReflection] = useState(monthPlan?.reflectionText || '');
     const [isSaving, setIsSaving] = useState(false);
     const [briefing, setBriefing] = useState(null); 
     const [briefingLoading, setBriefingLoading] = useState(false);
 
-
     // --- AI Monthly Briefing Logic ---
     const fetchMonthlyBriefing = useCallback(async (plan, assessment) => {
-        if (briefing || briefingLoading || !hasGeminiKey()) return;
+        // Reset briefing when switching to a new current month
+        if (viewMonth === currentMonth && briefing) return; 
+        if (briefingLoading || !hasGeminiKey()) return;
 
         setBriefingLoading(true);
         const currentTier = LEADERSHIP_TIERS[plan.tier];
@@ -691,31 +697,38 @@ const TrackerDashboardView = ({ data, updatePdpData, saveNewPlan, db, userId, na
         const userQuery = `Generate a monthly briefing for the user's current focus: ${plan.theme}. Required content includes: ${plan.requiredContent.map(c => c.title).join(', ')}.`;
 
         try {
-            const payload = {
-                contents: [{ role: "user", parts: [{ text: userQuery }] }],
-                systemInstruction: { parts: [{ text: systemPrompt }] },
-            };
-            const result = await callSecureGeminiAPI(payload);
+            // Mock API call returns fixed mock data from useAppServices
+            const result = await useAppServices().callSecureGeminiAPI({ /* ... */ });
             const text = result?.candidates?.[0]?.content?.parts?.[0]?.text;
-            setBriefing(text);
+            
+            // To prevent Gemini mock from running on historical view, use stored brief:
+            if (!isCurrentView && monthPlan.briefingText) {
+                 setBriefing(monthPlan.briefingText);
+            } else {
+                 setBriefing(text);
+            }
+
         } catch (e) {
             console.error("AI Briefing Error:", e);
             setBriefing("AI coach unavailable. Focus on completing your required content first.");
         } finally {
             setBriefingLoading(false);
         }
-    }, [briefing, briefingLoading, hasGeminiKey, callSecureGeminiAPI]);
+    }, [briefing, briefingLoading, hasGeminiKey, callSecureGeminiAPI, viewMonth, currentMonth, isCurrentView, monthPlan?.briefingText]);
 
 
     useEffect(() => {
         // Reset state when changing viewMonth or loading new overall data
         if (monthPlan && assessment) {
             setLocalReflection(monthPlan.reflectionText || '');
-            if (isCurrentView && !briefing) {
-                fetchMonthlyBriefing(monthPlan, assessment);
-            } else if (!isCurrentView) {
-                // If viewing a historical month, use saved reflection/briefing
-                setBriefing(`**HISTORICAL VIEW**: This is the focus for Month ${viewMonth}. The reflection below was saved upon completion.`);
+            setBriefing(monthPlan.briefingText || null); // Load saved briefing/reflection for historical months
+            
+            if (isCurrentView) {
+                // Only fetch new briefing for the CURRENT month if it hasn't been fetched
+                fetchMonthlyBriefing(monthPlan, assessment); 
+            } else {
+                // Historical view
+                 setBriefing(`## Month ${viewMonth} Historical Briefing\n\n**Focus:** ${monthPlan.theme}`);
             }
         }
     }, [monthPlan, assessment, fetchMonthlyBriefing, viewMonth, isCurrentView]);
@@ -725,9 +738,19 @@ const TrackerDashboardView = ({ data, updatePdpData, saveNewPlan, db, userId, na
     const handleCompleteMonth = async () => {
         setIsSaving(true);
         
+        // This is the management step: updatePdpData mutates the main state object
         await updatePdpData(oldData => {
+            // Ensure the brief is saved before advancing
+            const briefingToSave = briefing.replace('## Monthly Executive Briefing', '## Saved Executive Briefing');
+            
             const updatedPlan = oldData.plan.map(m => 
-                m.month === oldData.currentMonth ? { ...m, status: 'Completed', reflectionText: localReflection, monthCompletedDate: new Date().toISOString() } : m
+                m.month === oldData.currentMonth ? { 
+                    ...m, 
+                    status: 'Completed', 
+                    reflectionText: localReflection, 
+                    monthCompletedDate: new Date().toISOString(),
+                    briefingText: briefingToSave, // Save the brief
+                } : m
             );
             return {
                 ...oldData,
@@ -748,8 +771,9 @@ const TrackerDashboardView = ({ data, updatePdpData, saveNewPlan, db, userId, na
     };
 
     const handleResetPlan = async () => {
+        // Resetting the plan means setting the pdpData back to null to trigger 'generator' view
+        await updatePdpData(() => null); 
         console.log("Plan successfully reset! Loading generator...");
-        navigate('prof-dev-plan', { view: 'generator' });
     };
 
     const handleContentStatusToggle = (contentId) => {
@@ -759,16 +783,32 @@ const TrackerDashboardView = ({ data, updatePdpData, saveNewPlan, db, userId, na
             item.id === contentId ? { ...item, status: item.status === 'Completed' ? 'Pending' : 'Completed' } : item
         );
 
-        const updatedPlan = data.plan.map(m =>
-            m.month === currentMonth ? { ...m, requiredContent: updatedContent } : m
-        );
-        
-        updatePdpData({ ...data, plan: updatedPlan });
+        // Update the plan data via the state setter function
+        updatePdpData(oldData => {
+            const updatedPlan = oldData.plan.map(m =>
+                m.month === currentMonth ? { ...m, requiredContent: updatedContent } : m
+            );
+            return { ...oldData, plan: updatedPlan };
+        });
     };
 
     const handleOpenContentModal = (contentItem) => {
         setSelectedContent(contentItem);
         setIsContentModalVisible(true);
+    };
+
+    // Handler to save the reflection manually without advancing
+    const handleSaveReflection = () => {
+        setIsSaving(true);
+        updatePdpData(oldData => {
+            const updatedPlan = oldData.plan.map(m =>
+                m.month === currentMonth ? { ...m, reflectionText: localReflection } : m
+            );
+            return { ...oldData, plan: updatedPlan };
+        }).then(() => {
+            setIsSaving(false);
+            console.log('Reflection saved successfully.');
+        });
     };
     
     // --- Data Calculation ---
@@ -788,7 +828,7 @@ const TrackerDashboardView = ({ data, updatePdpData, saveNewPlan, db, userId, na
     }, [data.plan, currentTierId]);
 
     const lowRatingFlag = currentTierId && assessment.selfRatings[currentTierId] <= 4;
-    const peerGapFlag = currentTierId && assessment.peerRatings && assessment.selfRatings[currentTierId] - assessment.peerRatings[currentTierId] >= 3;
+    // NOTE: peerGapFlag removed as requested
 
     const progressPercentage = Math.min(100, (currentMonth / 24) * 100);
     const TierIcon = LEADERSHIP_TIERS[currentTierId]?.icon ? IconMap[LEADERSHIP_TIERS[currentTierId].icon] : Target;
@@ -796,7 +836,10 @@ const TrackerDashboardView = ({ data, updatePdpData, saveNewPlan, db, userId, na
 
     const allContentCompleted = monthPlan?.requiredContent?.every(item => item.status === 'Completed');
     const isReadyToComplete = allContentCompleted && localReflection.length >= 50;
-
+    
+    // =========================================================
+    // RENDER: TRACKER DASHBOARD VIEW
+    // =========================================================
     return (
         <div className="p-6 md:p-10 min-h-screen" style={{ background: COLORS.BG, color: COLORS.TEXT }}>
             <div className='flex items-center gap-4 border-b-2 pb-2 mb-8' style={{borderColor: COLORS.PURPLE+'30'}}>
@@ -889,14 +932,10 @@ const TrackerDashboardView = ({ data, updatePdpData, saveNewPlan, db, userId, na
                                     <AlertTriangle className='w-4 h-4 mr-1' /> HIGH RISK TIER: Prioritize Content Completion.
                                 </p>
                             )}
-                            {peerGapFlag && (
-                                <p className='font-semibold mt-1 flex items-center text-red-600'>
-                                    <AlertTriangle className='w-4 h-4 mr-1' /> CONFIDENCE GAP: Peer rating is significantly lower. Focus on behavioral practice.
-                                </p>
-                            )}
+                            {/* NOTE: peerGapFlag removed */}
                         </div>
 
-                        <h3 className='text-xl font-bold text-[#002E47] border-t pt-4 mt-4'>Required Content Items</h3>
+                        <h3 className='text-xl font-bold text-[#002E47] border-t pt-4 mt-4'>Required Content Items (Lessons)</h3>
                         <div className='space-y-3 mt-4'>
                             {monthPlan?.requiredContent.map(item => {
                                 const isCompleted = item.status === 'Completed';
@@ -958,14 +997,20 @@ const TrackerDashboardView = ({ data, updatePdpData, saveNewPlan, db, userId, na
                         <textarea
                             value={monthPlan?.reflectionText || localReflection}
                             onChange={(e) => setLocalReflection(e.target.value)}
+                            onBlur={handleSaveReflection} // Auto-save on blur
                             className="w-full p-3 border border-gray-300 rounded-xl focus:ring-[#47A88D] focus:border-[#47A88D] h-40"
                             placeholder="My reflection (required)..."
                             readOnly={!isCurrentView} // Read-only on historical view
                         ></textarea>
                         {isCurrentView && (
-                            <p className={`text-xs mt-1 ${localReflection.length < 50 ? 'text-[#E04E1B]' : 'text-[#47A88D]'}`}>
-                                {localReflection.length} / 50 characters written.
-                            </p>
+                            <div className='flex justify-between items-center mt-1'>
+                                <p className={`text-xs ${localReflection.length < 50 ? 'text-[#E04E1B]' : 'text-[#47A88D]'}`}>
+                                    {localReflection.length} / 50 characters written.
+                                </p>
+                                <span className={`text-xs font-semibold ${isSaving ? 'text-gray-500' : 'text-[#47A88D]'}`}>
+                                    {isSaving ? 'Saving...' : 'Reflection ready'}
+                                </span>
+                            </div>
                         )}
                     </Card>
 
@@ -975,7 +1020,7 @@ const TrackerDashboardView = ({ data, updatePdpData, saveNewPlan, db, userId, na
                                 Feel like you've mastered this tier? Re-run your initial **Self-Ratings** to check your progress and generate an **accelerated, revised roadmap** to match your new skill level.
                             </p>
                             <Button
-                                onClick={() => navigate('prof-dev-plan', { view: 'generator' })}
+                                onClick={() => handleResetPlan()} // Resets pdpData to null, triggering Generator view
                                 variant="secondary"
                                 className='w-full bg-[#E04E1B] hover:bg-red-700'
                             >
@@ -994,7 +1039,7 @@ const TrackerDashboardView = ({ data, updatePdpData, saveNewPlan, db, userId, na
                                 disabled={isSaving || !isReadyToComplete}
                                 className='w-full bg-[#47A88D] hover:bg-[#349881]'
                             >
-                                {isSaving ? 'Processing...' : `Complete Month ${currentMonth}`}
+                                {isSaving ? 'Processing...' : `Complete Month ${currentMonth} and Advance`}
                             </Button>
                             {!allContentCompleted && (
                                 <p className='text-[#E04E1B] text-xs mt-2'>* Finish all content items first.</p>
@@ -1032,21 +1077,17 @@ const TrackerDashboardView = ({ data, updatePdpData, saveNewPlan, db, userId, na
 
 // --- Component 1: Plan Generator View ---
 const PlanGeneratorView = ({ userId, saveNewPlan, isLoading, error, navigate, setGeneratedPlanData }) => {
-    const [managerStatus, setManagerStatus] = useState('New');
-    const [goalPriorities, setGoalPriorities] = useState([]);
-    const [selfRatings, setSelfRatings] = useState({ T1: 5, T2: 5, T3: 5, T4: 5, T5: 5 });
-    const [peerRatings, setPeerRatings] = useState({ T1: 6, T2: 6, T3: 5, T4: 5, T5: 5 }); 
-    const [alignToTeam, setAlignToTeam] = useState(false); 
+    const [managerStatus, setManagerStatus] = useState('Mid-Level'); // Default to Mid-Level for easy testing
+    const [goalPriorities, setGoalPriorities] = useState(['T5', 'T4', 'T1']); // Default goals for testing
+    // UPDATED: Removed peerRatings state
+    const [selfRatings, setSelfRatings] = useState({ T1: 4, T2: 6, T3: 5, T4: 4, T5: 3 }); // Default low ratings to trigger flags
+    // UPDATED: Removed alignToTeam state
     const [isGenerating, setIsGenerating] = useState(false);
     
     const isGoalLimitReached = goalPriorities.length >= 3;
     const canGenerate = managerStatus && goalPriorities.length > 0 && !isGenerating;
 
-    const teamSkillMap = useMemo(() => ({ 
-        gapTier: 'T3',
-        gapSkill: 'Execution',
-        confidence: 35,
-    }), []);
+    // UPDATED: Removed teamSkillMap memo
 
     const handleGoalToggle = (tierId) => {
         setGoalPriorities(prev => {
@@ -1065,22 +1106,18 @@ const PlanGeneratorView = ({ userId, saveNewPlan, isLoading, error, navigate, se
         setSelfRatings(prev => ({ ...prev, [tierId]: parseInt(value) }));
     };
     
-    const handlePeerRatingChange = (tierId, value) => {
-        setPeerRatings(prev => ({ ...prev, [tierId]: parseInt(value) }));
-    };
+    // UPDATED: Removed handlePeerRatingChange
 
     const handleGenerate = async () => {
         if (!canGenerate) return;
         setIsGenerating(true);
 
+        // UPDATED: Removed peerRatings, alignToTeam, teamSkillAlignment from assessment
         const assessment = {
             managerStatus,
             goalPriorities,
             selfRatings,
-            peerRatings, 
             menteeFeedback: { T4: { score: 65, comment: "Needs better follow-up after delegating tasks." } },
-            alignToTeam: alignToTeam, 
-            teamSkillAlignment: alignToTeam ? teamSkillMap : null,
             dateGenerated: new Date().toISOString(),
         };
         
@@ -1089,7 +1126,6 @@ const PlanGeneratorView = ({ userId, saveNewPlan, isLoading, error, navigate, se
 
         const newPlanData = generatePlanData(assessment, userId);
 
-        // Feature B: Store and Compare against Mock Generic Plan
         const generatedPlan = {
             userPlan: newPlanData,
             genericPlan: GENERIC_PLAN,
@@ -1099,8 +1135,6 @@ const PlanGeneratorView = ({ userId, saveNewPlan, isLoading, error, navigate, se
         
         setIsGenerating(false);
 
-        // FIX: Instead of navigating to dashboard, pass the data to the router 
-        // to show the Review Screen immediately.
         if (success) {
             setGeneratedPlanData(generatedPlan);
         }
@@ -1113,7 +1147,7 @@ const PlanGeneratorView = ({ userId, saveNewPlan, isLoading, error, navigate, se
                 <Briefcase className='w-10 h-10' style={{color: COLORS.PURPLE}}/>
                 <h1 className="text-4xl font-extrabold" style={{ color: COLORS.NAVY }}>Personalized 24-Month Plan Generator</h1>
             </div>
-            <p className="text-lg text-gray-600 mb-8 max-w-3xl">Answer a few questions about your current role and goals to instantly generate a hyper-personalized leadership roadmap designed to close your skill gaps over the next two years.</p>
+            <p className="text-lg text-gray-600 mb-8 max-w-3xl">Answer a few questions about your current role and goals to instantly generate a hyper-personalized leadership roadmap designed to close your skill gaps over the next two years. **(Pre-filled for demonstration)**</p>
 
             <div className="space-y-10">
                 <Card title="1. Your Management Experience" icon={Users} accent='TEAL'>
@@ -1131,27 +1165,7 @@ const PlanGeneratorView = ({ userId, saveNewPlan, isLoading, error, navigate, se
                     </div>
                 </Card>
 
-                {/* Feature 2: Team Alignment Step */}
-                <Card title="Team Strategic Alignment (Optional)" icon={Users} accent='NAVY'>
-                    <label className='flex items-center space-x-3 text-md font-semibold text-[#002E47] mb-3 cursor-pointer'>
-                        <input
-                            type='checkbox'
-                            checked={alignToTeam}
-                            onChange={(e) => setAlignToTeam(e.target.checked)}
-                            className='h-5 w-5 text-[#47A88D] rounded'
-                            style={{ accentColor: COLORS.TEAL }}
-                        />
-                        <span>Align my plan with my team's core skill gaps.</span>
-                    </label>
-                    {alignToTeam && (
-                        <div className='p-4 bg-gray-50 rounded-xl mt-3 border border-gray-200'>
-                            <p className='text-sm text-gray-700'>
-                                Mock Team Skill Map Analysis shows the team is currently lowest on: **{teamSkillMap.gapTier}: {LEADERSHIP_TIERS[teamSkillMap.gapTier].name}** (Confidence: {teamSkillMap.confidence}%).
-                                <span className='font-bold text-[#E04E1B]'> Your plan will prioritize this Tier early.</span>
-                            </p>
-                        </div>
-                    )}
-                </Card>
+                {/* UPDATED: Removed Team Strategic Alignment card (Feature 2) */}
 
 
                 <Card title="2. Goal Priorities (Max 3)" icon={Target} accent='NAVY'>
@@ -1176,39 +1190,31 @@ const PlanGeneratorView = ({ userId, saveNewPlan, isLoading, error, navigate, se
                     </div>
                 </Card>
 
-                <Card title="3. Skill Gap Assessment (Self vs. Peer)" icon={BarChart3} accent='TEAL'>
+                <Card title="3. Skill Gap Assessment (Self-Rating)" icon={BarChart3} accent='TEAL'>
                     <h3 className="text-md font-semibold text-gray-700 mb-6">Rate your current effectiveness (1 = Low, 10 = Mastery):</h3>
                     
-                    <div className='grid grid-cols-2 gap-x-4 gap-y-2 mb-4 text-xs font-bold text-gray-600'>
+                    {/* UPDATED: Removed Peer/360 column header */}
+                    <div className='grid grid-cols-1 gap-y-2 mb-4 text-xs font-bold text-gray-600'>
                         <div>Your Self-Rating</div>
-                        <div>360° Peer/Report Avg.</div>
                     </div>
 
                     {Object.values(LEADERSHIP_TIERS).map(tier => {
                         const selfRating = selfRatings[tier.id];
-                        const peerRating = peerRatings[tier.id];
-                        const ratingDiff = selfRating - peerRating;
-
+                        
                         // Enhanced Visual Feedback
                         const selfScoreColor = selfRating >= 8 ? COLORS.GREEN : selfRating <= 4 ? COLORS.RED : COLORS.AMBER;
-                        const peerGapIcon = ratingDiff >= 3 ? AlertTriangle : CheckCircle;
-                        const peerGapColor = ratingDiff >= 3 ? COLORS.ORANGE : COLORS.TEAL;
-
+                        
                         return (
                             <div key={tier.id} className="mb-6 border p-3 rounded-lg bg-gray-50">
                                 <p className="font-semibold text-[#002E47] mb-2 flex items-center justify-between">
                                     <span>{tier.name}:</span>
-                                    <Tooltip content={ratingDiff >= 3 ? 'You rated yourself significantly higher than your peers/reports. The plan will prioritize practical application to close this Confidence Gap.' : 'Your self-assessment is closely aligned with 360° feedback.'}>
-                                        <span className={`text-xs font-medium px-2 py-1 rounded-full`} style={{ color: COLORS.OFF_WHITE, backgroundColor: peerGapColor }}>
-                                            <peerGapIcon className='w-4 h-4 inline-block mr-1' /> {ratingDiff >= 3 ? 'Gap Detected' : 'Aligned'}
-                                        </span>
-                                    </Tooltip>
                                 </p>
-                                <div className='grid grid-cols-2 gap-x-4'>
+                                {/* UPDATED: Grid changed to 1 column */}
+                                <div className='grid grid-cols-1'>
                                     {/* Self Rating Column */}
                                     <div>
                                         <p className="font-semibold text-[#002E47] flex justify-between">
-                                            <span className='text-sm text-gray-600'>Self:</span>
+                                            <span className='text-sm text-gray-600'>Self-Rating:</span>
                                             <span className='text-xl font-extrabold' style={{ color: selfScoreColor }}>{selfRating}/10</span>
                                         </p>
                                         <input
@@ -1221,23 +1227,9 @@ const PlanGeneratorView = ({ userId, saveNewPlan, isLoading, error, navigate, se
                                         />
                                     </div>
                                     
-                                    {/* Peer Rating Column (360° Mock) */}
-                                    <div>
-                                        <p className="font-semibold text-[#002E47] flex justify-between">
-                                            <span className='text-sm text-gray-600'>Peer Avg:</span>
-                                            <span className='text-xl font-extrabold text-[#E04E1B]'>{peerRating}/10</span>
-                                        </p>
-                                        <input
-                                            type="range"
-                                            min="1" max="10"
-                                            value={peerRating}
-                                            onChange={(e) => handlePeerRatingChange(tier.id, e.target.value)}
-                                            className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer range-lg"
-                                            style={{ accentColor: COLORS.ORANGE }}
-                                        />
-                                    </div>
+                                    {/* UPDATED: Removed Peer Rating Column */}
                                 </div>
-                                <p className='text-xs text-gray-500 mt-2'>*If Self > Peer by 3 points, a **Confidence Gap** is flagged, prioritizing content on behavioral practice.</p>
+                                <p className='text-xs text-gray-500 mt-2'>*Low scores (4 or less) will prioritize **Intro** content to build foundational skills quickly.</p>
                             </div>
                         );
                     })}
@@ -1258,7 +1250,7 @@ const PlanGeneratorView = ({ userId, saveNewPlan, isLoading, error, navigate, se
 };
 
 // --- NEW Component 3: Plan Review Screen ---
-const PlanReviewScreen = ({ generatedPlan, saveNewPlan, navigate, clearReviewData }) => {
+const PlanReviewScreen = ({ generatedPlan, navigate, clearReviewData }) => {
     if (!generatedPlan) return null;
 
     const userPlan = generatedPlan.userPlan;
@@ -1290,8 +1282,8 @@ const PlanReviewScreen = ({ generatedPlan, saveNewPlan, navigate, clearReviewDat
     // Handler to finalize and navigate
     const handleFinalize = async () => {
         console.log("Plan review complete. Finalizing plan and redirecting to Dashboard...");
-        clearReviewData(); // Clear the temporary review state
-        navigate('prof-dev-plan'); // Navigate back to PDP route which will now load the Tracker View
+        clearReviewData(); // Clears the temporary review state. pdpData is already set by PlanGeneratorView.
+        navigate('prof-dev-plan'); // This is a mock function, but it signals the end of this flow.
     };
     
     const handleStartOver = () => {
@@ -1350,13 +1342,16 @@ const PlanReviewScreen = ({ generatedPlan, saveNewPlan, navigate, clearReviewDat
 };
 
 
-// --- Main Router ---
+// --- Main Router (Enhanced with internal state) ---
 export const ProfDevPlanScreen = () => {
-    const { pdpData, updatePdpData, saveNewPlan, isLoading, error, userId, db, navigate } = useAppServices();
-    
-    // NEW STATE: Holds the generated plan data temporarily for the Review Screen
+    // INTERNAL STATE: Use local state to manage PDP data since the mock useAppServices is static.
+    const [localPdpData, setLocalPdpData] = useState(null); 
     const [generatedPlanData, setGeneratedPlanData] = useState(null); 
     
+    // Pass the state and setter to the mock services
+    const services = useAppServices(localPdpData, setLocalPdpData);
+    const { pdpData, isLoading, error, userId, db, navigate, updatePdpData, saveNewPlan } = services;
+
     // Function to clear the temporary state
     const clearReviewData = useCallback(() => {
         setGeneratedPlanData(null);
@@ -1400,7 +1395,6 @@ export const ProfDevPlanScreen = () => {
         return (
             <PlanReviewScreen 
                 generatedPlan={generatedPlanData} 
-                saveNewPlan={saveNewPlan} 
                 navigate={navigate} 
                 clearReviewData={clearReviewData} 
             />
