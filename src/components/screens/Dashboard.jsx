@@ -364,69 +364,70 @@ const nextNudge = useCallback(() => {
             {/* Left Column - Executive Action Hub (Now lg:col-span-2 and first in order for prominence) */}
             <div className="lg:col-span-2 space-y-8 order-2 lg:order-1"> {/* Order change for prominence (Update 3) */}
 
-                 {/* EXECUTIVE ACTION HUB (Consolidated) - Increased prominence styling (Update 3) */}
+                 {/* EXECUTIVE ACTION HUB (Consolidated) - Fancier styling (FIX: Removed Settings) */}
                  <div className='rounded-3xl border-4 border-[#002E47] bg-[#F7FCFF] p-8 shadow-2xl relative'>
                     <h2 className="text-3xl font-extrabold text-[#002E47] mb-6 border-b-2 pb-4 border-gray-300 flex items-center gap-3">
                         <Zap size={28} className='text-[#E04E1B]'/> Executive Action Hub
                     </h2>
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                        {/* CORE ACTIONS - Buttons now correctly navigate (FIX: onClick added) */}
+                        {/* CORE ACTIONS - Fixed onClick/Navigation */}
                         <Button
                             onClick={() => safeNavigate('quick-start-accelerator')}
                             variant='primary'
-                            className='p-3 text-lg rounded-xl bg-gradient-to-r from-[#47A88D] to-[#349881] text-white shadow-lg hover:shadow-xl transition-all ring-1 ring-white/20 hover:-translate-y-[1px]'
+                            className='p-3 text-lg rounded-xl bg-gradient-to-r from-[#47A88D] to-[#349881] text-white shadow-lg hover:shadow-2xl transition-all ring-2 ring-white/30 hover:-translate-y-[2px]'
                         >
                             <Zap className='w-5 h-5 mr-2'/> Accelerator
                         </Button>
                         <Button
                             onClick={() => safeNavigate('prof-dev-plan')}
                             variant='primary'
-                            className='p-3 text-lg rounded-xl bg-gradient-to-r from-[#47A88D] to-[#349881] text-white shadow-lg hover:shadow-xl transition-all ring-1 ring-white/20 hover:-translate-y-[1px]'
+                            className='p-3 text-lg rounded-xl bg-gradient-to-r from-[#47A88D] to-[#349881] text-white shadow-lg hover:shadow-2xl transition-all ring-2 ring-white/30 hover:-translate-y-[2px]'
                         >
                             <Briefcase className='w-5 h-5 mr-2'/> Dev Plan
                         </Button>
                         <Button
                             onClick={() => safeNavigate('daily-practice')}
                             variant='primary'
-                            className='p-3 text-lg rounded-xl bg-gradient-to-r from-[#47A88D] to-[#349881] text-white shadow-lg hover:shadow-xl transition-all ring-1 ring-white/20 hover:-translate-y-[1px]'
+                            className='p-3 text-lg rounded-xl bg-gradient-to-r from-[#47A88D] to-[#349881] text-white shadow-lg hover:shadow-2xl transition-all ring-2 ring-white/30 hover:-translate-y-[2px]'
                         >
                             <ClockIcon className='w-5 h-5 mr-2'/> Daily Scorecard
                         </Button>
                         <Button
                             onClick={() => safeNavigate('coaching-lab')}
                             variant='primary'
-                            className='p-3 text-lg rounded-xl bg-gradient-to-r from-[#47A88D] to-[#349881] text-white shadow-lg hover:shadow-xl transition-all ring-1 ring-white/20 hover:-translate-y-[1px]'
+                            className='p-3 text-lg rounded-xl bg-gradient-to-r from-[#47A88D] to-[#349881] text-white shadow-lg hover:shadow-2xl transition-all ring-2 ring-white/30 hover:-translate-y-[2px]'
                         >
                             <Mic className='w-5 h-5 mr-2'/> Coaching Lab
                         </Button>
-                        {/* RESOURCE HUBS - Buttons now correctly navigate (FIX: onClick added) */}
+                        {/* RESOURCE HUBS - Fixed onClick/Navigation */}
                         <Button
                             onClick={() => safeNavigate('reflection')}
                             variant='primary'
-                            className='p-3 text-lg rounded-xl bg-gradient-to-r from-[#47A88D] to-[#349881] text-white shadow-lg hover:shadow-xl transition-all ring-1 ring-white/20 hover:-translate-y-[1px]'
+                            className='p-3 text-lg rounded-xl bg-gradient-to-r from-[#47A88D] to-[#349881] text-white shadow-lg hover:shadow-2xl transition-all ring-2 ring-white/30 hover:-translate-y-[2px]'
                         >
                             <Star className='w-5 h-5 mr-2'/> Reflection
                         </Button>
                         <Button
                             onClick={() => safeNavigate('planning-hub')}
                             variant='primary'
-                            className='p-3 text-lg rounded-xl bg-gradient-to-r from-[#47A88D] to-[#349881] text-white shadow-lg hover:shadow-xl transition-all ring-1 ring-white/20 hover:-translate-y-[1px]'
+                            className='p-3 text-lg rounded-xl bg-gradient-to-r from-[#47A88D] to-[#349881] text-white shadow-lg hover:shadow-2xl transition-all ring-2 ring-white/30 hover:-translate-y-[2px]'
                         >
                             <TrendingUp className='w-5 h-5 mr-2'/> Planning Hub
                         </Button>
                         <Button
                             onClick={() => safeNavigate('business-readings')}
                             variant='primary'
-                            className='p-3 text-lg rounded-xl bg-gradient-to-r from-[#47A88D] to-[#349881] text-white shadow-lg hover:shadow-xl transition-all ring-1 ring-white/20 hover:-translate-y-[1px]'
+                            className='p-3 text-lg rounded-xl bg-gradient-to-r from-[#47A88D] to-[#349881] text-white shadow-lg hover:shadow-2xl transition-all ring-2 ring-white/30 hover:-translate-y-[2px]'
                         >
                             <BookOpen className='w-5 h-5 mr-2'/> Readings
                         </Button>
                          <Button
-                            onClick={() => safeNavigate('app-settings')} // New hypothetical navigation for consistency
+                            // Removed Settings button, using this slot for the remaining secondary action
+                            onClick={() => safeNavigate('executive-reflection')} 
                             variant='secondary'
-                            className='bg-[#E04E1B] hover:bg-[#C33E12] p-3 text-lg'
+                            className='bg-[#E04E1B] hover:bg-[#C33E12] p-3 text-lg shadow-lg hover:shadow-2xl transition-all ring-2 ring-white/30 hover:-translate-y-[2px]'
                         >
-                            <LayoutDashboard className='w-5 h-5 mr-2'/> Settings
+                            <LayoutDashboard className='w-5 h-5 mr-2'/> Analytics
                         </Button>
                     </div>
                 </div>
@@ -441,25 +442,25 @@ const nextNudge = useCallback(() => {
                             title="Commits Completed (Total)"
                             value={completedCommitsCount}
                             icon={CalendarClock}
-                            colorClass='text-[#47A88D]'
+                            colorHex={COLORS.TEAL}
                         />
                         <ProgressKMI
                             title="Leadership Tier Focus"
                             value={weakestTier?.name || 'N/A'}
                             icon={Target}
-                            colorClass='text-red-600'
+                            colorHex={COLORS.ORANGE}
                         />
                         <ProgressKMI
                             title="Total Active OKRs"
                             value={plansCount}
                             icon={Trello}
-                            colorClass='text-indigo-600'
+                            colorHex={COLORS.BLUE}
                         />
                         <ProgressKMI
                             title="PDP Months Remaining"
                             value={24 - goalsCount}
                             icon={Briefcase}
-                            colorClass='text-[#002E47]'
+                            colorHex={COLORS.NAVY}
                         />
                     </div>
                 </div>

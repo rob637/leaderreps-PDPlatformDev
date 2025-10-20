@@ -681,10 +681,10 @@ export default function BusinessReadingsScreen() {
       
       const tierKey = selectedTier || Object.keys(allBooks).find(k => (allBooks[k] || []).some(b => b.id === selectedBook.id)) || 'Strategy & Execution';
 
-      // V2 FIX: SIMPLIFY LOADING MESSAGE (Single line, non-obtrusive, minimal animation)
+      // V2 FIX: SIMPLIFY LOADING MESSAGE (No spinning)
       setHtmlFlyer(`<div style="padding:12px;border:1px dashed ${COLORS.SUBTLE};border-radius:12px;color:${COLORS.MUTED};text-align:center;">
                       <div class="flex items-center justify-center gap-2" style="color: ${COLORS.PURPLE}">
-                          <Cpu class="w-5 h-5 animate-spin"/> 
+                          <Cpu class="w-5 h-5"/> 
                           Flyer being generated.
                       </div>
                     </div>`);
