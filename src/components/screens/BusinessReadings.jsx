@@ -65,7 +65,6 @@ const Button = ({ children, onClick, disabled = false, variant = 'primary', clas
     let baseStyle = "px-6 py-3 rounded-xl font-semibold transition-all shadow-lg focus:outline-none focus:ring-4 text-white";
     if (variant === 'primary') { baseStyle += ` bg-[${COLORS.TEAL}] hover:bg-[${COLORS.SUBTLE_TEAL}] focus:ring-[${COLORS.TEAL}]/50`; }
     else if (variant === 'secondary') { baseStyle += ` bg-[${COLORS.ORANGE}] hover:bg-[#C33E12] focus:ring-[${COLORS.ORANGE}]/50`; }
-    else if (variant === 'outline') { baseStyle = `px-6 py-3 rounded-xl font-semibold transition-all shadow-md border-2 border-[${COLORS.TEAL}] text-[${COLORS.TEAL}] hover:bg-[${COLORS.TEAL}]/10 focus:ring-4 focus:ring-[${COLORS.TEAL}]/50 bg-[${COLORS.LIGHT_GRAY}]`; }
     if (disabled) { baseStyle = "px-6 py-3 rounded-xl font-semibold bg-gray-300 text-gray-500 cursor-not-allowed shadow-inner transition-none"; }
     return (<button {...rest} onClick={onClick} disabled={disabled} className={`${baseStyle} ${className}`}>{children}</button>);
 };
@@ -216,15 +215,10 @@ function execBriefFallbackHTML(book, tier) {
 ========================================================= */
 async function buildAIFlyerHTML({ book, tier, executive, callSecureGeminiAPI }) {
   // Check if API key is present AND if the API call is configured to return a non-mock response.
-  // NOTE: For a real app, you would check `hasGeminiKey()` and rely on a real API call.
-  // Since the mock API returns "mock response", we force the fallback if it's not ready.
   if (!callSecureGeminiAPI) {
     return executive ? execBriefFallbackHTML(book, tier) : richFlyerFallbackHTML(book, tier);
   }
   
-  // NOTE: We will assume the Gemini call should happen, but if it returns the generic mock,
-  // we will still fall back to the rich local content to satisfy the "flyer is not appearing" request.
-
   const baseInstruction = executive
     ? `Write a crisp EXECUTIVE BRIEF (80-120 words). Include a short "Key Frameworks" list (1 named model, 1 sentence summary) and 1 specific, actionable step. Output clean, styled HTML using only h2, h3, p, ul, li, strong, em, and inline CSS for presentation. The total content should fit in one paragraph and one bulleted list.`
     : `Create a robust, long-form BOOK FLYER (400-500 words total). Sections must include: **Key Ideas**, **Core Insights for Your Tier**, **Key Frameworks** (with one-line descriptions), and **Action Plan (4 Steps)**. Ensure high detail, multiple paragraphs, and professional tone. Output clean, styled HTML using only h2, h3, p, ul, li, strong, em, and inline CSS for presentation.`;
@@ -336,6 +330,29 @@ async function handleAiSubmit(e, services, selectedBook, aiQuery, setIsSubmittin
     }
 }
 
+
+// =========================================================
+// NEW DEDICATED SEARCH INPUT COMPONENT FOR ISOLATION
+// =========================================================
+const SearchInput = React.memo(({ filters, handleSearchChange }) => {
+    return (
+        <div>
+            <label className="block text-sm font-medium mb-1 flex items-center gap-1" style={{ color: COLORS.MUTED }}>
+                <SearchIcon className="w-4 h-4" style={{ color: COLORS.TEAL }}/> Search by Title, Author, or Focus
+            </label>
+            <input 
+                type="text" 
+                value={filters.search} 
+                onChange={handleSearchChange} 
+                placeholder="Start typing to find a book..." 
+                className="w-full p-3 border rounded-lg shadow-sm focus:outline-none"
+            />
+        </div>
+    );
+});
+SearchInput.displayName = 'SearchInput';
+
+
 /* =========================================================
    MAIN COMPONENT
 ========================================================= */
@@ -376,17 +393,19 @@ export default function BusinessReadingsScreen() {
   }, []);
 
   const handleSearchChange = useCallback((e) => {
+    // FIX: Only update the search key in state
     setFilters(prev => ({ ...prev, search: e.target.value }));
   }, []);
 
   const handleAiQueryChange = useCallback((e) => {
+    // FIX: Only update the aiQuery state
     setAiQuery(e.target.value);
   }, []);
   
   // --- END FIX 1 ---
 
 
-  /* ---------- Filtering ---------- */
+  /* ---------- Filtering (Memoized for performance) ---------- */
   const filteredBooks = useMemo(() => {
     const flat = Object.entries(allBooks).flatMap(([tier, books]) =>
       (books || []).map(b => ({ ...b, tier }))
@@ -493,16 +512,10 @@ export default function BusinessReadingsScreen() {
         
         {/* Simplified search and filter controls */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div>
-             <label className="block text-sm font-medium mb-1 flex items-center gap-1" style={{ color: COLORS.MUTED }}><SearchIcon className="w-4 h-4" style={{ color: COLORS.TEAL }}/> Search by Title, Author, or Focus</label>
-             <input 
-                type="text" 
-                value={filters.search} 
-                onChange={handleSearchChange} // Use memoized handler
-                placeholder="Start typing to find a book..." 
-                className="w-full p-3 border rounded-lg shadow-sm focus:outline-none"
-             />
-          </div>
+          
+          {/* FIX: Use the dedicated SearchInput component here */}
+          <SearchInput filters={filters} handleSearchChange={handleSearchChange} />
+          
           <div>
             <label className="block text-sm font-medium mb-1" style={{ color: COLORS.MUTED }}>Complexity Level</label>
             <select 
@@ -723,7 +736,7 @@ export default function BusinessReadingsScreen() {
                     <input
                         type="text"
                         value={aiQuery}
-                        onChange={handleAiQueryChange} // Use memoized handler
+                        onChange={handleAiQueryChange} // FIX: Already using memoized handler
                         placeholder={`Ask how to apply ${selectedBook.title} at work (e.g., "How do I delegate?")`}
                         className="flex-grow p-3 border rounded-xl"
                         style={{ borderColor: COLORS.SUBTLE, color: COLORS.TEXT }}
