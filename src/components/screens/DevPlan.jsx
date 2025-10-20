@@ -1,13 +1,13 @@
 // src/components/screens/DevPlan.jsx
 
-import { Home, Zap, Clock, Briefcase, Mic, Trello, BookOpen, Settings, BarChart3, TrendingUp, TrendingDown, CheckCircle, Star, Target, Users, HeartPulse, CornerRightUp, X, ArrowLeft, Activity, Link, Lightbulb, AlertTriangle, Eye, PlusCircle, Cpu, MessageSquare } from 'lucide-react';
+import { Home, Zap, Clock, Briefcase, Mic, Trello, BookOpen, Settings, BarChart3, TrendingUp, TrendingDown, CheckCircle, Star, Target, Users, HeartPulse, CornerRightUp, X, ArrowLeft, Activity, Link, Lightbulb, AlertTriangle, Eye, PlusCircle, Cpu, MessageSquare, Check } from 'lucide-react';
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-// FIX:  Mocking useAppServices since the environment can't resolve relative paths
+// FIX: Mocking useAppServices since the environment can't resolve relative paths
 const useAppServices = () => ({
     // Mocked core services for local testing
     pdpData: null, // Start with null to show the generator view by default
     updatePdpData: async (updater) => {
-        const oldData = { currentMonth: 0 }; // Simplified mock for state updates
+        const oldData = { currentMonth: 0, plan: [], assessment: {} }; // Simplified mock for state updates
         const newData = updater(oldData);
         // In a real app, this would update the context state and force a re-render.
         // Mocking successful update:
@@ -74,7 +74,6 @@ const Button = ({ children, onClick, disabled = false, variant = 'primary', clas
   else if (variant === 'nav-back') { baseStyle = `px-4 py-2 rounded-lg font-medium transition-all shadow-sm border-2 border-gray-300 text-gray-700 hover:bg-gray-100 flex items-center justify-center`; }
   if (disabled) { baseStyle = "px-6 py-3 rounded-xl font-semibold bg-gray-300 text-gray-500 cursor-not-allowed shadow-inner transition-none flex items-center justify-center"; }
   return (
-    // FIX: Changed closing tag from </Button> to </button>
     <button {...rest} onClick={onClick} disabled={disabled} className={`${baseStyle} ${className}`}>
       {children}
     </button>
@@ -145,7 +144,7 @@ const mdToHtml = async (md) => {
     return `<p class="text-sm text-gray-700">${html}</p>`;
 };
 const IconMap = {
-    Zap: Zap, Users: Users, Briefcase: Briefcase, Target: Target, BarChart3: BarChart3, Clock: Clock, Eye: Eye, BookOpen: BookOpen, Lightbulb: Lightbulb, X: X, ArrowLeft: ArrowLeft, CornerRightUp: CornerRightUp, AlertTriangle: AlertTriangle, CheckCircle: CheckCircle, PlusCircle: PlusCircle, HeartPulse: HeartPulse, TrendingUp: TrendingUp, TrendingDown: TrendingDown, Activity: Activity, Link: Link, Cpu: Cpu, Star: Star, Mic: Mic, Trello: Trello, Settings: Settings, Home: Home, MessageSquare: MessageSquare
+    Zap: Zap, Users: Users, Briefcase: Briefcase, Target: Target, BarChart3: BarChart3, Clock: Clock, Eye: Eye, BookOpen: BookOpen, Lightbulb: Lightbulb, X: X, ArrowLeft: ArrowLeft, CornerRightUp: CornerRightUp, AlertTriangle: AlertTriangle, CheckCircle: CheckCircle, PlusCircle: PlusCircle, HeartPulse: HeartPulse, TrendingUp: TrendingUp, TrendingDown: TrendingDown, Activity: Activity, Link: Link, Cpu: Cpu, Star: Star, Mic: Mic, Trello: Trello, Settings: Settings, Home: Home, MessageSquare: MessageSquare, Check: Check
 };
 
 
@@ -334,7 +333,9 @@ const SharePlanModal = ({ isVisible, onClose, currentMonthPlan, data }) => { /* 
         el.select();
         document.execCommand('copy');
         document.body.removeChild(el);
-        alert('Share content copied to clipboard!');
+        // FIX: Replaced alert with console log for mock success
+        console.log('Share content copied to clipboard!');
+        // NOTE: In a real app, this would trigger a visible toast notification.
     };
     return (
         <div className="fixed inset-0 bg-[#002E47]/80 z-50 flex items-center justify-center p-4">
@@ -391,7 +392,8 @@ const ContentDetailsModal = ({ isVisible, onClose, content }) => { /* ... */
         setIsLogging(true);
         console.log(`Mock: Logging learning for ${content.title} with rating ${rating}/5.`);
         await new Promise(r => setTimeout(r, 800));
-        alert(`Learning logged! Your ${rating}/5 rating will influence future plan revisions.`);
+        // FIX: Replaced alert with console log for mock success
+        console.log(`Learning logged! Your ${rating}/5 rating will influence future plan revisions.`);
         setIsLogging(false);
         onClose();
     };
@@ -524,8 +526,7 @@ const TrackerDashboardView = ({ data, updatePdpData, saveNewPlan, db, userId, na
     // --- Handlers (Advance, Reset, Toggle) ---
     const handleCompleteMonth = async () => {
         setIsSaving(true);
-        // Mocking persistence for month completion
-        // In a real app, this would save the reflection, mark the current month as 'Completed', and increment currentMonth.
+        
         await updatePdpData(oldData => {
             const updatedPlan = oldData.plan.map(m => 
                 m.month === oldData.currentMonth ? { ...m, status: 'Completed', reflectionText: localReflection, monthCompletedDate: new Date().toISOString() } : m
@@ -538,7 +539,8 @@ const TrackerDashboardView = ({ data, updatePdpData, saveNewPlan, db, userId, na
         });
         setIsSaving(false);
 
-        alert('Month successfully completed! Advancing to the next phase.');
+        // FIX: Replaced alert with console log for mock success
+        console.log('Month successfully completed! Advancing to the next phase.');
 
         // Interconnection: Navigate to Daily Practice to set commitments for the new month's focus
         if (nextMonthFocus) {
@@ -550,7 +552,8 @@ const TrackerDashboardView = ({ data, updatePdpData, saveNewPlan, db, userId, na
     };
 
     const handleResetPlan = async () => {
-        alert("Plan successfully reset! Loading generator...");
+        // FIX: Replaced alert with console log for mock success
+        console.log("Plan successfully reset! Loading generator...");
         navigate('prof-dev-plan', { view: 'generator' });
     };
 
@@ -673,34 +676,45 @@ const TrackerDashboardView = ({ data, updatePdpData, saveNewPlan, db, userId, na
 
                         <h3 className='text-xl font-bold text-[#002E47] border-t pt-4 mt-4'>Required Content Items</h3>
                         <div className='space-y-3 mt-4'>
-                            {currentMonthPlan?.requiredContent.map(item => (
-                                <div key={item.id} className='flex items-center justify-between p-3 bg-gray-50 rounded-xl shadow-sm'>
-                                    <div className='flex flex-col'>
-                                        <p className={`font-semibold text-sm ${item.status === 'Completed' ? 'line-through text-gray-500' : 'text-[#002E47]'}`}>
-                                            {item.title} ({item.type})
-                                            {lowRatingFlag && <span className='ml-2 text-xs text-[#E04E1B] font-extrabold'>(CRITICAL)</span>}
-                                        </p>
-                                        <p className='text-xs text-gray-600'>~{item.duration} min | Difficulty: {item.difficulty}</p>
+                            {currentMonthPlan?.requiredContent.map(item => {
+                                const isCompleted = item.status === 'Completed';
+                                const [isToggling, setIsToggling] = useState(false);
+
+                                const handleToggle = () => {
+                                    setIsToggling(true);
+                                    handleContentStatusToggle(item.id);
+                                    setTimeout(() => setIsToggling(false), 500); // Simulate animation time
+                                };
+
+                                return (
+                                    <div key={item.id} className='flex items-center justify-between p-3 bg-gray-50 rounded-xl shadow-sm'>
+                                        <div className='flex flex-col'>
+                                            <p className={`font-semibold text-sm ${isCompleted ? 'line-through text-gray-500' : 'text-[#002E47]'}`}>
+                                                {item.title} ({item.type})
+                                                {lowRatingFlag && <span className='ml-2 text-xs text-[#E04E1B] font-extrabold'>(CRITICAL)</span>}
+                                            </p>
+                                            <p className='text-xs text-gray-600'>~{item.duration} min | Difficulty: {item.difficulty}</p>
+                                        </div>
+                                        <div className='flex space-x-2'>
+                                            <Button
+                                                onClick={() => handleOpenContentModal(item)}
+                                                className='px-3 py-1 text-xs'
+                                                variant='outline'
+                                            >
+                                                <Eye className='w-4 h-4' />
+                                            </Button>
+                                            <Button
+                                                onClick={handleToggle}
+                                                className={`px-3 py-1 text-xs transition-colors duration-300 ${isToggling ? 'opacity-50' : ''}`}
+                                                variant={isCompleted ? 'secondary' : 'primary'}
+                                                disabled={isSaving || isToggling}
+                                            >
+                                                {isToggling ? 'Updating...' : isCompleted ? 'Done ✓' : 'Mark Complete'}
+                                            </Button>
+                                        </div>
                                     </div>
-                                    <div className='flex space-x-2'>
-                                        <Button
-                                            onClick={() => handleOpenContentModal(item)}
-                                            className='px-3 py-1 text-xs'
-                                            variant='outline'
-                                        >
-                                            <Eye className='w-4 h-4' />
-                                        </Button>
-                                        <Button
-                                            onClick={() => handleContentStatusToggle(item.id)}
-                                            className='px-3 py-1 text-xs'
-                                            variant={item.status === 'Completed' ? 'secondary' : 'primary'}
-                                            disabled={isSaving}
-                                        >
-                                            {item.status === 'Completed' ? 'Done ✓' : 'Mark Complete'}
-                                        </Button>
-                                    </div>
-                                </div>
-                            ))}
+                                );
+                            })}
                         </div>
                     </Card>
 
@@ -835,7 +849,8 @@ const PlanGeneratorView = ({ userId, saveNewPlan, isLoading, error, navigate }) 
                 return prev.filter(id => id !== tierId);
             }
             if (isGoalLimitReached) {
-                alert("You can select a maximum of 3 goal priorities.");
+                // FIX: Replaced alert with console log for mock success
+                console.log("You can select a maximum of 3 goal priorities.");
                 return prev;
             }
             return [...prev, tierId];
@@ -882,9 +897,10 @@ const PlanGeneratorView = ({ userId, saveNewPlan, isLoading, error, navigate }) 
         
         setIsGenerating(false);
 
-        // FIX 2: Navigate back to the dashboard/tracker view after successful save
+        // FIX: Navigate back to the dashboard/tracker view after successful save
         if (success) {
-            alert("Plan successfully generated and saved! Redirecting to tracker...");
+            // FIX: Replaced alert with console log for mock success
+            console.log("Plan successfully generated and saved! Redirecting to tracker...");
             // The main App component will see that pdpData is no longer null and switch to the Tracker view
             navigate('dashboard'); 
         }
@@ -1035,45 +1051,63 @@ const PlanGeneratorView = ({ userId, saveNewPlan, isLoading, error, navigate }) 
                         <div>360° Peer/Report Avg.</div>
                     </div>
 
-                    {Object.values(LEADERSHIP_TIERS).map(tier => (
-                        <div key={tier.id} className="mb-6 border p-3 rounded-lg bg-gray-50">
-                            <p className="font-semibold text-[#002E47] mb-2">{tier.name}:</p>
-                            <div className='grid grid-cols-2 gap-x-4'>
-                                {/* Self Rating Column */}
-                                <div>
-                                    <p className="font-semibold text-[#002E47] flex justify-between">
-                                        <span className='text-sm text-gray-600'>Self:</span>
-                                        <span className='text-xl font-extrabold text-[#47A88D]'>{selfRatings[tier.id]}/10</span>
-                                    </p>
-                                    <input
-                                        type="range"
-                                        min="1" max="10"
-                                        value={selfRatings[tier.id]}
-                                        onChange={(e) => handleRatingChange(tier.id, e.target.value)}
-                                        className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer range-lg"
-                                        style={{ accentColor: COLORS.TEAL }}
-                                    />
+                    {Object.values(LEADERSHIP_TIERS).map(tier => {
+                        const selfRating = selfRatings[tier.id];
+                        const peerRating = peerRatings[tier.id];
+                        const ratingDiff = selfRating - peerRating;
+
+                        // Enhanced Visual Feedback
+                        const selfScoreColor = selfRating >= 8 ? COLORS.GREEN : selfRating <= 4 ? COLORS.RED : COLORS.AMBER;
+                        const peerGapIcon = ratingDiff >= 3 ? AlertTriangle : CheckCircle;
+                        const peerGapColor = ratingDiff >= 3 ? COLORS.ORANGE : COLORS.TEAL;
+
+                        return (
+                            <div key={tier.id} className="mb-6 border p-3 rounded-lg bg-gray-50">
+                                <p className="font-semibold text-[#002E47] mb-2 flex items-center justify-between">
+                                    <span>{tier.name}:</span>
+                                    <Tooltip content={ratingDiff >= 3 ? 'You rated yourself significantly higher than your peers/reports. The plan will prioritize practical application to close this Confidence Gap.' : 'Your self-assessment is closely aligned with 360° feedback.'}>
+                                        <span className={`text-xs font-medium px-2 py-1 rounded-full`} style={{ color: COLORS.OFF_WHITE, backgroundColor: peerGapColor }}>
+                                            <peerGapIcon className='w-4 h-4 inline-block mr-1' /> {ratingDiff >= 3 ? 'Gap Detected' : 'Aligned'}
+                                        </span>
+                                    </Tooltip>
+                                </p>
+                                <div className='grid grid-cols-2 gap-x-4'>
+                                    {/* Self Rating Column */}
+                                    <div>
+                                        <p className="font-semibold text-[#002E47] flex justify-between">
+                                            <span className='text-sm text-gray-600'>Self:</span>
+                                            <span className='text-xl font-extrabold' style={{ color: selfScoreColor }}>{selfRating}/10</span>
+                                        </p>
+                                        <input
+                                            type="range"
+                                            min="1" max="10"
+                                            value={selfRating}
+                                            onChange={(e) => handleRatingChange(tier.id, e.target.value)}
+                                            className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer range-lg"
+                                            style={{ accentColor: selfScoreColor }}
+                                        />
+                                    </div>
+                                    
+                                    {/* Peer Rating Column (360° Mock) */}
+                                    <div>
+                                        <p className="font-semibold text-[#002E47] flex justify-between">
+                                            <span className='text-sm text-gray-600'>Peer Avg:</span>
+                                            <span className='text-xl font-extrabold text-[#E04E1B]'>{peerRating}/10</span>
+                                        </p>
+                                        <input
+                                            type="range"
+                                            min="1" max="10"
+                                            value={peerRating}
+                                            onChange={(e) => handlePeerRatingChange(tier.id, e.target.value)}
+                                            className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer range-lg"
+                                            style={{ accentColor: COLORS.ORANGE }}
+                                        />
+                                    </div>
                                 </div>
-                                
-                                {/* Peer Rating Column (360° Mock) */}
-                                <div>
-                                    <p className="font-semibold text-[#002E47] flex justify-between">
-                                        <span className='text-sm text-gray-600'>Peer Avg:</span>
-                                        <span className='text-xl font-extrabold text-[#E04E1B]'>{peerRatings[tier.id]}/10</span>
-                                    </p>
-                                    <input
-                                        type="range"
-                                        min="1" max="10"
-                                        value={peerRatings[tier.id]}
-                                        onChange={(e) => handlePeerRatingChange(tier.id, e.target.value)}
-                                        className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer range-lg"
-                                        style={{ accentColor: COLORS.ORANGE }}
-                                    />
-                                </div>
+                                <p className='text-xs text-gray-500 mt-2'>*If Self > Peer by 3 points, a **Confidence Gap** is flagged, prioritizing content on behavioral practice.</p>
                             </div>
-                            <p className='text-xs text-gray-500 mt-2'>*If Self > Peer by 3 points, a **Confidence Gap** is flagged, prioritizing content on behavioral practice.</p>
-                        </div>
-                    ))}
+                        );
+                    })}
                 </Card>
             </div>
 
