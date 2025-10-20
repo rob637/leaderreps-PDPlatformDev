@@ -133,19 +133,21 @@ const LISAuditorView = ({ setQuickStartView }) => {
 
     return (
         <div className="p-6 md:p-10 min-h-screen" style={{ background: COLORS.BG }}>
-            {/* Header Alignment */}
-            <div className='flex items-center gap-4 border-b-2 pb-2 mb-8' style={{borderColor: COLORS.TEAL+'30'}}>
-                <ShieldCheck className='w-10 h-10' style={{color: COLORS.TEAL}}/>
+            {/* Header Alignment - Executive Look */}
+            <div className='flex items-center gap-4 border-b-2 pb-2 mb-8' style={{borderColor: COLORS.NAVY+'30'}}>
+                <ShieldCheck className='w-10 h-10' style={{color: COLORS.NAVY}}/>
                 <h1 className="text-4xl font-extrabold" style={{ color: COLORS.NAVY }}>Leadership Identity Statement (LIS) Auditor</h1>
             </div>
 
             <p className="text-lg text-gray-600 mb-6 max-w-3xl">Your LIS is the foundation of your leadership. Get expert feedback to ensure your statement is specific, actionable, and truly aligned with your highest self.</p>
             
-            <button onClick={() => setQuickStartView('quick-start-home')} className="mb-8 px-4 py-2 font-semibold rounded-lg transition-colors bg-white text-[#002E47] border border-gray-300 hover:bg-gray-100">
+            {/* Back Button - Styled for consistency */}
+            <button onClick={() => setQuickStartView('quick-start-home')} className="mb-8 px-4 py-2 font-semibold rounded-lg transition-colors bg-white text-[#002E47] border border-gray-300 hover:bg-gray-100 shadow-md">
                 <ArrowLeft className="w-5 h-5 mr-2 inline" /> Back to QuickStart
             </button>
 
             <div className='lg:grid lg:grid-cols-2 gap-8'>
+                {/* Input Card - Sharp Navy Accent */}
                 <Card title="Draft Your Leadership Identity Statement" icon={ShieldCheck} accent='NAVY' className='border-l-4 border-[#002E47]'>
                     <p className="text-gray-700 text-sm mb-2">Write your LIS below. It should define who you are when you're leading at your absolute best.</p>
                     <textarea 
@@ -158,7 +160,9 @@ const LISAuditorView = ({ setQuickStartView }) => {
                     <button 
                         onClick={generateCritique} 
                         disabled={isGenerating || !lisDraft.trim()} 
-                        className="mt-4 w-full px-4 py-2 font-semibold rounded-lg transition-colors bg-[#002E47] text-white hover:bg-gray-700 shadow-lg"
+                        // FIX: Changed button to ORANGE accent to highlight the primary tool action
+                        className="mt-4 w-full px-4 py-2 font-semibold rounded-lg transition-colors bg-[${COLORS.ORANGE}] text-white hover:bg-[#C33E12] shadow-lg"
+                        style={{ background: COLORS.ORANGE }}
                     >
                         {isGenerating ? (
                             <span className="flex items-center justify-center">
@@ -169,7 +173,7 @@ const LISAuditorView = ({ setQuickStartView }) => {
                     </button>
                 </Card>
 
-                {/* Critique Preview */}
+                {/* Critique Preview Card - Teal Accent */}
                 {critiqueHtml && (
                     <Card title="AI Coach Preview" icon={Cpu} accent='TEAL' className='border-l-4 border-[#47A88D]'>
                         <div className="prose max-w-none prose-h3:text-[#47A88D] prose-p:text-gray-700 prose-ul:space-y-2">
@@ -205,17 +209,19 @@ const QuickStartAcceleratorScreen = () => {
             default:
                 return (
                     <div className="p-6 md:p-10 min-h-screen" style={{ background: COLORS.BG }}>
-                        {/* Header Alignment */}
-                        <div className='flex items-center gap-4 border-b-2 pb-2 mb-8' style={{borderColor: COLORS.TEAL+'30'}}>
+                        {/* Header Alignment - Executive Look */}
+                        <div className='flex items-center gap-4 border-b-2 pb-2 mb-8' style={{borderColor: COLORS.NAVY+'30'}}>
+                            {/* FIX: Set Zap Icon color to ORANGE for brand accent */}
                             <Zap className='w-10 h-10' style={{color: COLORS.ORANGE}}/>
                             <h1 className="text-4xl font-extrabold" style={{ color: COLORS.NAVY }}>4-Session QuickStart Program</h1>
                         </div>
                         
                         <p className="text-lg text-gray-600 mb-8 max-w-2xl">This program is the foundational accelerator for the LeaderReps methodology. Review the sessions, core focus, and pre-work below.</p>
 
+                        {/* LIS Auditor Launch Card - Strong Accent */}
                         <button 
                             onClick={() => setQuickStartView('lis-auditor')}
-                            className='w-full text-left p-6 rounded-2xl border-4 shadow-xl mb-8 bg-[#47A88D]/10 border-[#47A88D] hover:shadow-2xl transition-all duration-300'
+                            className='w-full text-left p-6 rounded-2xl border-4 shadow-xl mb-8 bg-white border-[#47A88D] hover:shadow-2xl transition-all duration-300'
                         >
                             <h3 className='text-2xl font-extrabold text-[#002E47] flex items-center'>
                                 <ShieldCheck className='w-6 h-6 mr-3 text-[#47A88D]'/> Draft & Refine Your Leadership Identity
@@ -228,7 +234,8 @@ const QuickStartAcceleratorScreen = () => {
 
                         <div className="space-y-6">
                             {sessions.map(session => (
-                                <Card key={session.id} title={`Session ${session.id}: ${session.title}`} icon={BookOpen} accent={COLORS.NAVY} className="p-6 rounded-2xl border-l-8 border-[#002E47] shadow-lg bg-white">
+                                {/* Session Card - Navy accent border for serious look */}
+                                <Card key={session.id} title={`Session ${session.id}: ${session.title}`} icon={BookOpen} accent={COLORS.NAVY} className="rounded-2xl border-l-8 border-[#002E47] shadow-lg bg-white">
                                     <p className='text-md font-semibold text-[#002E47] mb-4 border-b border-gray-200 pb-2'>Why this session matters:</p>
                                     
                                     <blockquote className="border-l-4 border-[#47A88D] pl-4 py-1 mb-4 text-sm italic text-gray-600">

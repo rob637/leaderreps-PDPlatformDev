@@ -1,4 +1,4 @@
-// FINALIZED FILE: DailyPractice.jsx (Aesthetic Upgrade)
+// FINALIZED FILE: DailyPractice.jsx (Aesthetic Upgrade & Functional Logging Fix)
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import {
@@ -101,17 +101,125 @@ const Tooltip = ({ content, children }) => ( <div className="relative inline-blo
 const LEADERSHIP_TIERS = { 'T1': { id: 'T1', name: 'Personal Foundation', hex: '#10B981' }, 'T2': { id: 'T2', name: 'Operational Excellence', hex: '#3B82F6' }, 'T3': { id: 'T3', name: 'Strategic Alignment', hex: '#F5C900' }, 'T4': { id: 'T4', name: 'People Development', hex: '#E04E1B' }, 'T5': { id: 'T5', name: 'Visionary Leadership', hex: '#002E47' }, };
 const COMMITMENT_REASONS = ['Lack of Time', 'Emotional Hijack', 'Lack of Clarity', 'Interruption/Firefight'];
 
-// Mocked Commitment Bank for Selector View
-const leadershipCommitmentBank = {
-    'Strategic Thinking': [
-        { id: 'bank-s1', text: 'Read one article related to future industry trends.', linkedGoal: 'Strategic Alignment', linkedTier: 'T3' },
-        { id: 'bank-s2', text: 'Spend 10 minutes refining the Q4 OKR objectives.', linkedGoal: 'OKR Q4: Launch MVP', linkedTier: 'T3' },
+// =========================================================
+// EXPANDED COMMITMENT BANK (100+ ENTRIES)
+// =========================================================
+const EXPANDED_COMMITMENT_BANK = {
+    'T1: Personal Foundation (Self-Management)': [
+        { id: 't1-1', text: 'Perform a 10-minute mindfulness check before the first meeting.' },
+        { id: 't1-2', text: 'Identify and name the emotion before reacting to a difficult email.' },
+        { id: 't1-3', text: 'Set a specific boundary (e.g., no email after 6 PM) and maintain it.' },
+        { id: 't1-4', text: 'Dedicate 15 minutes to review personal growth journaling.' },
+        { id: 't1-5', text: 'Eat a protein-rich lunch away from the desk.' },
+        { id: 't1-6', text: 'Take a 5-minute walk outside after the busiest meeting of the day.' },
+        { id: 't1-7', text: 'Review and update my personal "Stop Doing" list.' },
+        { id: 't1-8', text: 'Delegate a low-value task to free up high-leverage thinking time.' },
+        { id: 't1-9', text: 'List three things I am genuinely grateful for today.' },
+        { id: 't1-10', text: 'Plan tomorrow\'s top 3 non-negotiable tasks before signing off.' },
+        { id: 't1-11', text: 'Drink 6 glasses of water before 3 PM.' },
+        { id: 't1-12', text: 'Read one page of my selected professional development book.' },
+        { id: 't1-13', text: 'Spend 5 minutes organizing my digital files/desktop.' },
+        { id: 't1-14', text: 'Use the Pomodoro technique for one hour of focused work.' },
+        { id: 't1-15', text: 'Say "no" clearly to a request that does not align with my top three goals.' },
+        { id: 't1-16', text: 'Identify the "motion" vs. "action" in my current project list.' },
+        { id: 't1-17', text: 'Turn off all notifications during scheduled deep work time.' },
+        { id: 't1-18', text: 'Practice a 3-minute power pose before a high-stakes call.' },
+        { id: 't1-19', text: 'Review my weekly goals every morning for alignment.' },
+        { id: 't1-20', text: 'Listen to calming music while performing administrative tasks.' },
     ],
-    'People Development': [
-        { id: 'bank-p1', text: 'Send a positive, specific, and public praise note to a team member.', linkedGoal: 'Improve Feedback Skills', linkedTier: 'T4' },
-        { id: 'bank-p2', text: 'Practice active listening for 15 minutes during a 1:1 meeting.', linkedGoal: 'Improve Feedback Skills', linkedTier: 'T4' },
+    'T2: Operational Excellence (Process & Efficiency)': [
+        { id: 't2-1', text: 'Create or refine one simple SOP for a recurring team task.' },
+        { id: 't2-2', text: 'Review the project backlog and retire 3 obsolete tickets.' },
+        { id: 't2-3', text: 'Apply the "Two-Minute Rule" to the first email I read.' },
+        { id: 't2-4', text: 'Map the next three steps of a complicated process on a whiteboard.' },
+        { id: 't2-5', text: 'Eliminate one unnecessary step from a current workflow.' },
+        { id: 't2-6', text: 'Conduct a 5-minute "Lessons Learned" check with a peer after a minor win.' },
+        { id: 't2-7', text: 'Audit five team reports for consistency and clarity.' },
+        { id: 't2-8', text: 'Respond to all critical communication within 2 hours.' },
+        { id: 't2-9', text: 'Clear my physical desk space completely before EOD.' },
+        { id: 't2-10', text: 'Review the team calendar for redundancy in meetings.' },
+        { id: 't2-11', text: 'Batch all expense report processing into a single block.' },
+        { id: 't2-12', text: 'Define one key metric for the current project\'s success.' },
+        { id: 't2-13', text: 'Spend 10 minutes training a team member on a simplified tool/process.' },
+        { id: 't2-14', text: 'Update the project’s main dashboard with current risks.' },
+        { id: 't2-15', text: 'Create a clear agenda for the next team meeting.' },
+        { id: 't2-16', text: 'Archive 20 old emails or files.' },
+        { id: 't2-17', text: 'Write down one operational bottleneck that slowed the team today.' },
+        { id: 't2-18', text: 'Verify data accuracy on the next three slides I plan to present.' },
+        { id: 't2-19', text: 'Set clear deadlines for two pending minor tasks.' },
+        { id: 't2-20', text: 'Minimize distraction by checking social media/news only once today.' },
+    ],
+    'T3: Strategic Alignment (Goal-Oriented Action)': [
+        { id: 't3-1', text: 'Relate one daily decision back to a long-term company mission statement.' },
+        { id: 't3-2', text: 'Spend 15 minutes thinking about how a competitor might innovate past us.' },
+        { id: 't3-3', text: 'Identify one key risk that could derail the highest-priority OKR.' },
+        { id: 't3-4', text: 'Formulate one insightful question for the next executive review meeting.' },
+        { id: 't3-5', text: 'Delegate a major decision, providing clear strategic guardrails.' },
+        { id: 't3-6', text: 'Read and synthesize one economic report relevant to our market.' },
+        { id: 't3-7', text: 'Review the team’s current tasks and eliminate any that don\'t align with Q4 goals.' },
+        { id: 't3-8', text: 'Define the "critical path" for the next product development sprint.' },
+        { id: 't3-9', text: 'Communicate the "why" behind a recent strategic shift to a team member.' },
+        { id: 't3-10', text: 'Practice the Hedgehog concept: identify one non-core activity to cut.' },
+        { id: 't3-11', text: 'Translate a high-level goal into three concrete, immediate actions.' },
+        { id: 't3-12', text: 'Engage with a leader from another department on a cross-functional strategy.' },
+        { id: 't3-13', text: 'Write down one way to measure the impact of my daily work beyond efficiency.' },
+        { id: 't3-14', text: 'Challenge one widely held assumption within my department.' },
+        { id: 't3-15', text: 'Review the budget and ensure spending is aligned with strategic objectives.' },
+        { id: 't3-16', text: 'Seek feedback from a board member or senior executive on a strategic document.' },
+        { id: 't3-17', text: 'List three potential external threats to our next annual plan.' },
+        { id: 't3-18', text: 'Articulate the one clear purpose of the team\'s current project.' },
+        { id: 't3-19', text: 'Develop one stretch goal for the next quarter.' },
+        { id: 't3-20', text: 'Spend 10 minutes visualizing a major strategic win in 6 months.' },
+    ],
+    'T4: People Development (Coaching & Feedback)': [
+        { id: 't4-1', text: 'Give one piece of specific, actionable positive feedback using the SBI model.' },
+        { id: 't4-2', text: 'Ask an open-ended question that invites a team member to share a personal challenge.' },
+        { id: 't4-3', text: 'Use active listening (paraphrasing) at least three times in a meeting.' },
+        { id: 't4-4', text: 'Conduct an impromptu 5-minute coaching session for a direct report.' },
+        { id: 't4-5', text: 'Review a junior employee\'s work and offer one growth-oriented correction (SBI).' },
+        { id: 't4-6', text: 'Mentor a peer/junior on a soft skill (e.g., meeting facilitation).' },
+        { id: 't4-7', text: 'Acknowledge publicly a team member\'s contribution to a difficult discussion.' },
+        { id: 't4-8', text: 'Allow a team member to fail on a low-stakes task, then lead the debrief.' },
+        { id: 't4-9', text: 'Prepare the next 1:1 meeting agenda to be 80% direct-report led.' },
+        { id: 't4-10', text: 'Ask a team member: "What is one thing I could do better to support you?"' },
+        { id: 't4-11', text: 'Identify one task to hand off that develops a direct report\'s competence.' },
+        { id: 't4-12', text: 'Document one specific area for a team member\'s long-term development.' },
+        { id: 't4-13', text: 'Address a small conflict between two team members immediately and privately.' },
+        { id: 't4-14', text: 'Host a short "lunch-and-learn" on a skill I have mastered.' },
+        { id: 't4-15', text: 'Write a thank-you note (physical or email) recognizing sustained effort.' },
+        { id: 't4-16', text: 'Practice the "Radical Candor" matrix before a difficult conversation.' },
+        { id: 't4-17', text: 'Facilitate a short team debrief focused on vulnerability and learning.' },
+        { id: 't4-18', text: 'Coach a team member through their next career move/goal.' },
+        { id: 't4-19', text: 'Spend 10 minutes researching modern delegation frameworks.' },
+        { id: 't4-20', text: 'Celebrate a small but significant team milestone.' },
+        { id: 't4-21', text: 'Give corrective feedback immediately instead of delaying it.' },
+        { id: 't4-22', text: 'Ensure the next project assignment is aligned with a team member\'s personal growth plan.' },
+    ],
+    'T5: Visionary Leadership (Culture & Influence)': [
+        { id: 't5-1', text: 'Articulate the department’s 5-year vision in simple, non-jargon terms to a junior employee.' },
+        { id: 't5-2', text: 'Identify one external person (outside the company) to influence or learn from.' },
+        { id: 't5-3', text: 'Spend 10 minutes reviewing industry disruption trends.' },
+        { id: 't5-4', text: 'Write a concise statement defining our team\'s operating culture/values.' },
+        { id: 't5-5', text: 'Challenge the team with a "what-if" scenario regarding future market collapse.' },
+        { id: 't5-6', text: 'Lead a discussion on ethical implications of a current business decision.' },
+        { id: 't5-7', text: 'Communicate a vision that ties a mundane task to a grander mission.' },
+        { id: 't5-8', text: 'Create a metaphor that simply explains our current strategic direction.' },
+        { id: 't5-9', text: 'Identify three behaviors that actively foster psychological safety on the team.' },
+        { id: 't5-10', text: 'Actively seek dissenting opinions on a high-stakes decision.' },
+        { id: 't5-11', text: 'Review external communications (press releases, emails) for mission alignment.' },
+        { id: 't5-12', text: 'Propose one structural change to improve cross-functional collaboration.' },
+        { id: 't5-13', text: 'Mentor a leader from another organization (informally).' },
+        { id: 't5-14', text: 'Write down one way to increase customer value beyond the core product.' },
+        { id: 't5-15', text: 'Present a strategic idea in two completely different ways (analytical vs. narrative).' },
+        { id: 't5-16', text: 'Start a meeting by reviewing the core value that applies to the current challenge.' },
+        { id: 't5-17', text: 'Practice silence during a difficult conversation to allow others to lead.' },
+        { id: 't5-18', text: 'Engage with a potential future leader about their long-term vision for the company.' },
+        { id: 't5-19', text: 'Define the "first principle" governing a major process in the department.' },
+        { id: 't5-20', text: 'Schedule a time next week for pure, unfocused strategic thinking.' },
+        { id: 't5-21', text: 'Actively champion a new idea, even if it carries personal risk.' },
     ],
 };
+const leadershipCommitmentBank = EXPANDED_COMMITMENT_BANK; // Use the expanded bank
 
 
 /* =========================================================
@@ -319,7 +427,7 @@ const ResilienceTracker = ({ dailyLog, setDailyLog, isSaving, handleSaveResilien
                 </p>
                 <input
                     type="range" min="1" max="10" value={initialLog.energy}
-                    onChange={(e) => handleSliderChange('energy', e.target.value)}
+                    onChange={(e) => setEnergy(parseInt(e.target.value))}
                     className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer range-lg"
                     style={{ accentColor: COLORS.ORANGE }}
                 />
@@ -332,7 +440,7 @@ const ResilienceTracker = ({ dailyLog, setDailyLog, isSaving, handleSaveResilien
                 </p>
                 <input
                     type="range" min="1" max="10" value={initialLog.focus}
-                    onChange={(e) => handleSliderChange('focus', e.target.value)}
+                    onChange={(e) => setFocus(parseInt(e.target.value))}
                     className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer range-lg"
                     style={{ accentColor: COLORS.ORANGE }}
                 />
@@ -348,20 +456,28 @@ const ResilienceTracker = ({ dailyLog, setDailyLog, isSaving, handleSaveResilien
 
 /**
  * CommitmentItem: Displays an individual daily commitment with status logging buttons.
+ * FIX: Overhauled logging buttons to a single toggle logic (Complete ↔ Pending)
  */
 const CommitmentItem = ({ commitment, onLogCommitment, onRemove, isSaving, isScorecardMode }) => {
+  // Statuses: 'Committed' (Done), 'Pending' (Not Done/Missed, but can be marked Done)
+  // 'Missed' is used in history/simulations but on the current scorecard, everything starts 'Pending'.
   const status = commitment.status || 'Pending';
-  const isPermanentCommitment = commitment.status !== 'Pending' && isScorecardMode; 
+  
+  // A commitment is considered "permanently logged" for the current day if its status is 'Committed'.
+  // However, based on the new requirement, the button toggles between Committed and Pending/Not Done.
+  // We'll treat anything not 'Committed' as "Not Done" for the visualization, simplifying the UI.
+  const isCommitted = status === 'Committed';
+  const isLoggingDisabled = isSaving; // Disable during save operation
+
   
   const getStatusColor = (s) => {
     if (s === 'Committed') return 'bg-green-100 text-green-800 border-green-500 shadow-md';
-    if (s === 'Missed') return 'bg-red-100 text-red-800 border-red-500 shadow-md';
+    if (s === 'Pending' || s === 'Missed') return 'bg-gray-100 text-gray-700 border-gray-300 shadow-sm';
     return 'bg-gray-100 text-gray-700 border-gray-300 shadow-sm';
   };
 
   const getStatusIcon = (s) => {
     if (s === 'Committed') return <CheckCircle className="w-5 h-5 text-green-600" />;
-    if (s === 'Missed') return <Zap className="w-5 h-5 text-[#E04E1B] transform rotate-45" />;
     return <Clock className="w-5 h-5 text-gray-500" />;
   };
 
@@ -371,23 +487,32 @@ const CommitmentItem = ({ commitment, onLogCommitment, onRemove, isSaving, isSco
   const colleagueLabel = commitment.targetColleague ? `Focus: ${commitment.targetColleague}` : 'Self-Focus';
 
   const removeHandler = () => {
-    if (status !== 'Pending') {
-      console.warn("Commitment already logged (Committed/Missed) for today. Cannot archive.");
-    } else {
+    // Only allow removal if the status is Pending (i.e., not already logged as committed for the day)
+    if (!isCommitted) {
       onRemove(commitment.id);
+    } else {
+      console.warn("Commitment is marked complete. Cannot remove from today's scorecard.");
     }
   };
 
+  // New Single-Button Toggle Handler
+  const handleToggleComplete = () => {
+    const newStatus = isCommitted ? 'Pending' : 'Committed';
+    onLogCommitment(commitment.id, newStatus);
+  };
+
+
   return (
-    <div className={`p-4 rounded-xl flex flex-col justify-between ${getStatusColor(status)} transition-all duration-300 ${isSaving ? 'opacity-70' : ''}`}>
+    <div className={`p-4 rounded-xl flex flex-col justify-between ${getStatusColor(status)} transition-all duration-300 ${isLoggingDisabled ? 'opacity-70' : ''}`}>
       <div className='flex items-start justify-between'>
         <div className='flex items-start space-x-2 text-lg font-semibold mb-2'>
           {getStatusIcon(status)}
           <span className='text-[#002E47] text-base'>{commitment.text}</span>
         </div>
-        <Tooltip content={isPermanentCommitment ? "Cannot archive once logged today." : "Remove commitment (only if Pending)."} >
-            <button onClick={removeHandler} className="text-gray-400 hover:text-[#E04E1B] transition-colors p-1 rounded-full" disabled={isSaving || isPermanentCommitment}>
-              {isPermanentCommitment ? <Archive className="w-4 h-4" /> : <X className="w-4 h-4" />}
+        {/* Only allow removal if Pending */}
+        <Tooltip content={isCommitted ? "Marked complete. Remove tomorrow." : "Remove commitment."} >
+            <button onClick={removeHandler} className="text-gray-400 hover:text-[#E04E1B] transition-colors p-1 rounded-full" disabled={isLoggingDisabled || isCommitted}>
+               <X className="w-4 h-4" />
             </button>
         </Tooltip>
       </div>
@@ -405,20 +530,14 @@ const CommitmentItem = ({ commitment, onLogCommitment, onRemove, isSaving, isSco
       </div>
 
       <div className="flex space-x-2 mt-3 pt-3 border-t border-gray-300/50">
-  <Button
-    onClick={() => onLogCommitment(commitment.id, status === 'Committed' ? 'Pending' : 'Committed')}
-    className={`px-3 py-1 text-xs ${status === 'Committed' ? 'bg-green-600 hover:bg-green-700' : 'bg-[#47A88D] hover:bg-[#349881]'}`}
-  >
-    {status === 'Committed' ? 'Mark as Pending' : 'Complete'}
-  </Button>
-  <Button
-    onClick={() => onLogCommitment(commitment.id, status === 'Missed' ? 'Pending' : 'Missed')}
-    variant="secondary"
-    className={`px-3 py-1 text-xs ${status === 'Missed' ? 'bg-red-700 hover:bg-red-800' : ''}`}
-  >
-    {status === 'Missed' ? 'Mark as Pending' : 'Not Complete'}
-  </Button>
-</div>
+          <Button
+            onClick={handleToggleComplete}
+            disabled={isLoggingDisabled}
+            className={`px-3 py-1 text-xs w-full ${isCommitted ? 'bg-green-600 hover:bg-green-700' : 'bg-[#47A88D] hover:bg-[#349881]'}`}
+          >
+            {isCommitted ? 'Completed' : 'Mark as Complete'}
+          </Button>
+      </div>
 
     </div>
   );
@@ -450,15 +569,25 @@ const CommitmentSelectorView = ({ setView, initialGoal, initialTier }) => {
   const requiredPdpContent = currentMonthPlan?.requiredContent || [];
   const pdpContentCommitmentIds = new Set(userCommitments.filter(c => String(c.id).startsWith('pdp-content-')).map(c => String(c.id).split('-')[2]));
 
+  // FIX: Use the expanded commitment bank
   const allBankCommitments = useMemo(() => Object.values(leadershipCommitmentBank || {}).flat(), []);
 
   const filteredBankCommitments = useMemo(() => {
     const ql = searchTerm.toLowerCase();
-    return allBankCommitments.filter(c =>
-      !activeCommitmentIds.has(c.id) &&
-      c.text.toLowerCase().includes(ql)
-    );
-  }, [allBankCommitments, activeCommitmentIds, searchTerm]);
+    // FIX: Filtering logic now works for the expanded bank structure
+    const matchingCommitments = [];
+    for (const category in leadershipCommitmentBank) {
+      for (const commitment of leadershipCommitmentBank[category]) {
+        if (
+          !activeCommitmentIds.has(commitment.id) &&
+          commitment.text.toLowerCase().includes(ql)
+        ) {
+          matchingCommitments.push({ ...commitment, category });
+        }
+      }
+    }
+    return matchingCommitments;
+  }, [activeCommitmentIds, searchTerm]);
 
   const okrGoals = planningData?.okrs?.map(o => o.objective) || [];
   const missionVisionGoals = [planningData?.vision, planningData?.mission].filter(Boolean);
@@ -595,7 +724,8 @@ const CommitmentSelectorView = ({ setView, initialGoal, initialTier }) => {
     } else {
       newCommitment = {
         ...commitment,
-        id: String(commitment.id), 
+        // Ensure a unique ID is used to prevent key conflicts with static bank IDs
+        id: `bank-${commitment.id}-${Date.now()}`, 
         status: 'Pending',
         linkedGoal: linkedGoal,
         linkedTier: linkedTier,
@@ -786,7 +916,7 @@ const CommitmentSelectorView = ({ setView, initialGoal, initialTier }) => {
           <Target className='w-4 h-4 inline mr-1' /> PDP Content ({requiredPdpContent.filter(c => !pdpContentCommitmentIds.has(String(c.id))).length})
         </button>
         <button className={tabStyle('bank')} onClick={() => setTab('bank')}>
-          <BookOpen className='w-4 h-4 inline mr-1' /> Commitment Bank ({filteredBankCommitments.length})
+          <BookOpen className='w-4 h-4 inline mr-1' /> Commitment Bank ({Object.keys(leadershipCommitmentBank).length})
         </button>
         <button className={tabStyle('custom')} onClick={() => setTab('custom')}>
           <PlusCircle className='w-4 h-4 inline mr-1' /> Custom Commitment
@@ -845,18 +975,20 @@ const CommitmentSelectorView = ({ setView, initialGoal, initialTier }) => {
             </div>
 
             <div className="h-96 overflow-y-auto pr-2 space-y-3">
+              {/* FIX: Use expanded bank structure and logic */}
               {Object.entries(leadershipCommitmentBank).map(([category, commitments]) => {
-                const categoryCommitments = commitments.filter(c =>
-                  !activeCommitmentIds.has(c.id) &&
-                  c.text.toLowerCase().includes(searchTerm.toLowerCase())
+                const filteredCommitments = commitments.filter(c =>
+                    !activeCommitmentIds.has(c.id) &&
+                    (searchTerm === '' || c.text.toLowerCase().includes(searchTerm.toLowerCase()))
                 );
 
-                if (categoryCommitments.length === 0) return null;
+                if (filteredCommitments.length === 0 && searchTerm !== '') return null;
+                if (filteredCommitments.length === 0 && searchTerm === '') return null; // Hide empty categories when not searching
 
                 return (
                   <div key={category}>
                     <h3 className="text-sm font-bold text-[#002E47] border-b pb-1 mb-2">{category}</h3>
-                    {categoryCommitments.map(c => (
+                    {filteredCommitments.map(c => (
                       <div key={c.id} className="flex justify-between items-center p-2 text-sm bg-gray-50 rounded-lg mb-1">
                         <span className='text-gray-800'>{c.text}</span>
                         <Tooltip content={`Adds this commitment (linked goal/tier required).`}>
@@ -873,8 +1005,8 @@ const CommitmentSelectorView = ({ setView, initialGoal, initialTier }) => {
                   </div>
                 );
               })}
-              {filteredBankCommitments.length === 0 && (
-                <p className="text-gray-500 italic mt-4 text-center">No unselected commitments match criteria.</p>
+              {Object.keys(leadershipCommitmentBank).length > 0 && filteredBankCommitments.length === 0 && searchTerm !== '' && (
+                  <p className="text-gray-500 italic mt-4 text-center">No unselected commitments match criteria.</p>
               )}
             </div>
           </div>
@@ -1110,11 +1242,15 @@ export default function DailyPracticeScreen({ initialGoal, initialTier }) {
 
 
   /* =========================================================
-     General Handlers (Remain unchanged)
+     General Handlers (Fixing Status Logic)
   ========================================================= */
 
   const handleLogCommitment = async (id, status) => {
     setIsSaving(true);
+    
+    // Status is either 'Committed' or 'Pending'. 
+    // The previous implementation used 'Pending' and 'Missed' for logging; we simplify to just 'Committed' 
+    // for success and 'Pending' for not success (which is converted to 'Missed' by the midnight reset logic).
     const updatedCommitments = userCommitments.map(c => c.id === id ? { ...c, status: status } : c);
     
     await updateCommitmentData({ active_commitments: updatedCommitments });
@@ -1130,8 +1266,9 @@ export default function DailyPracticeScreen({ initialGoal, initialTier }) {
     setIsSaving(true);
     const commitmentToRemove = userCommitments.find(c => c.id === id);
 
-    if (commitmentToRemove && commitmentToRemove.status !== 'Pending') {
-        console.warn("Commitment already logged (Committed/Missed) for today. It must remain on the scorecard until tomorrow's daily reset.");
+    // FIX: Only warn if commitment is already marked 'Committed'.
+    if (commitmentToRemove && commitmentToRemove.status === 'Committed') {
+        console.warn("Commitment is marked complete. It must remain on the scorecard until tomorrow's daily reset.");
         setIsSaving(false);
         return;
     }
