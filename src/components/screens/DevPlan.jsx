@@ -53,7 +53,7 @@ const COLORS = {
   SUBTLE_TEAL: '#349881', 
   ORANGE: '#E04E1B',    
   GREEN: '#10B981',
-  AMBER: '#F5A800',
+  AMBER: '#F5A500', // Adjusted amber shade for contrast
   RED: '#E04E1B',
   LIGHT_GRAY: '#FCFCFA',
   OFF_WHITE: '#FFFFFF', 
@@ -61,8 +61,8 @@ const COLORS = {
   TEXT: '#002E47',
   MUTED: '#4B5355',
   BLUE: '#2563EB',
-  BG: '#F9FAFB', // Matches BusinessReadings
-  PURPLE: '#7C3AED', // Matches BusinessReadings
+  BG: '#F9FAFB', 
+  PURPLE: '#7C3AED', 
 };
 
 // Mock UI components (Standardized)
@@ -154,56 +154,71 @@ const appId = 'default-app-id'; // Mock value for app id
 
 // --- PDP Content Model ---
 const LEADERSHIP_TIERS = {
-    T1: { id: 'T1', name: 'Self-Awareness & Trust', icon: 'HeartPulse', color: 'indigo-500' },
-    T2: { id: 'T2', name: 'Communication & Feedback', icon: 'Mic', color: 'cyan-600' },
-    T3: { id: 'T3', name: 'Execution & Delegation', icon: 'Briefcase', color: 'green-600' },
-    T4: { id: 'T4', name: 'Talent & People Development', icon: 'Users', color: 'yellow-600' },
-    T5: { id: 'T5', name: 'Vision & Strategic Clarity', icon: 'TrendingUp', color: 'red-600' },
+    T1: { id: 'T1', name: 'Lead Self & Mindsets', icon: 'HeartPulse', color: 'indigo-500' },
+    T2: { id: 'T2', name: 'Lead Work & Execution', icon: 'Briefcase', color: 'green-600' },
+    T3: { id: 'T3', name: 'Lead People & Coaching', icon: 'Users', color: 'yellow-600' },
+    T4: { id: 'T4', name: 'Conflict & Team Health', icon: 'AlertTriangle', color: 'red-600' },
+    T5: { id: 'T5', name: 'Strategy & Vision', icon: 'TrendingUp', color: 'cyan-600' },
 };
 
+// Content Library (Updated to use all course concepts)
 const CONTENT_LIBRARY = [
-    // T1: Self-Awareness & Trust
-    { id: 101, tier: 'T1', skill: 'Trust', type: 'Reading', title: 'Article: Vulnerability-Based Trust', duration: 30, difficulty: 'Intro' },
-    { id: 102, tier: 'T1', skill: 'Identity', type: 'Exercise', title: 'Drafting Your LIS', duration: 45, difficulty: 'Core' },
-    { id: 106, tier: 'T1', skill: 'Trust', type: 'Case Study', title: 'Trust Collapse Scenario Analysis', duration: 60, difficulty: 'Mastery' },
-    // T2: Communication & Feedback
-    { id: 201, tier: 'T2', skill: 'Feedback', type: 'Exercise', title: 'SBI Feedback Practice (Lab)', duration: 30, difficulty: 'Core' },
-    { id: 203, tier: 'T2', skill: 'Crucial', type: 'Role-Play', title: 'Practice: Deflecting the Blame-Shifter', duration: 40, difficulty: 'Core' },
-    { id: 207, tier: 'T2', skill: 'Crucial', type: 'Case Study', title: 'Firing for Cultural Fit Scenario', duration: 60, difficulty: 'Mastery' },
-    // T3: Execution & Delegation
-    { id: 302, tier: 'T3', skill: 'Execution', type: 'Exercise', title: 'Time Blocking for High Leverage', duration: 30, difficulty: 'Core' },
-    { id: 303, tier: 'T3', skill: 'Delegation', type: 'Exercise', title: 'RACI Matrix Practice', duration: 45, difficulty: 'Core' },
-    { id: 305, tier: 'T3', skill: 'Process', type: 'Case Study', title: 'Process Bottleneck Audit', duration: 50, difficulty: 'Mastery' },
-    // T4: Talent & People Development
-    { id: 401, tier: 'T4', skill: 'Coaching', type: 'Exercise', title: 'Grow Model Practice', duration: 35, difficulty: 'Core' },
-    { id: 403, tier: 'T4', skill: 'Talent', type: 'Exercise', title: 'Succession Planning Draft', duration: 60, difficulty: 'Mastery' },
-    { id: 404, tier: 'T4', skill: 'Coaching', type: 'Role-Play', title: 'Practice: Coaching a High Performer', duration: 40, difficulty: 'Core' },
-    // T5: Vision & Strategic Clarity
+    // T1: Lead Self & Mindsets
+    { id: 101, tier: 'T1', skill: 'Shift to Coach', type: 'Exercise', title: 'Player-to-Coach Delegation Framework', duration: 45, difficulty: 'Core' },
+    { id: 102, tier: 'T1', skill: 'Motive', type: 'Reading', title: 'Leadership Motive - Servant Leadership Primer', duration: 30, difficulty: 'Intro' },
+    { id: 103, tier: 'T1', skill: 'Identity', type: 'Tool', title: 'Defining Your Leadership Identity (LIS)', duration: 60, difficulty: 'Mastery' },
+    { id: 104, tier: 'T1', skill: 'Ownership', type: 'Case Study', title: 'Ownership and Accountability Audit', duration: 50, difficulty: 'Core' },
+    { id: 105, tier: 'T1', skill: 'Boss', type: 'Reading', title: 'Relationship with Boss: Managing Upward', duration: 30, difficulty: 'Intro' },
+    { id: 106, tier: 'T1', skill: 'V-B Trust', type: 'Reading', title: 'Leading the Way: Go 1st with V-B Trust', duration: 40, difficulty: 'Intro' },
+    
+    // T2: Lead Work & Execution
+    { id: 201, tier: 'T2', skill: 'Goals', type: 'Exercise', title: 'Goals & OKR Prioritization Workshop', duration: 60, difficulty: 'Mastery' },
+    { id: 202, tier: 'T2', skill: 'Expectations', type: 'Reading', title: 'Setting Clear Expectations Protocol', duration: 25, difficulty: 'Intro' },
+    { id: 203, tier: 'T2', skill: 'Metrics', type: 'Tool', title: 'Leading & Lagging Metrics Dashboard Setup', duration: 40, difficulty: 'Core' },
+    { id: 204, tier: 'T2', skill: 'Delegation', type: 'Exercise', title: 'Effective Delegation using Delegation Matrix', duration: 45, difficulty: 'Core' },
+    { id: 205, tier: 'T2', skill: 'Meetings', type: 'Tool', title: 'Effective Meetings: Decision-Focused Agenda', duration: 30, difficulty: 'Intro' },
+    { id: 206, tier: 'T2', skill: 'Decisions', type: 'Case Study', title: 'Decision-Making / Problem Solving Framework', duration: 55, difficulty: 'Mastery' },
+    
+    // T3: Lead People & Coaching
+    { id: 301, tier: 'T3', skill: '1:1s', type: 'Tool', title: 'Effective 1:1s: Coaching-First Structure', duration: 30, difficulty: 'Core' },
+    { id: 302, tier: 'T3', skill: 'Coaching', type: 'Role-Play', title: 'Practice: Coaching using the GROW Model', duration: 45, difficulty: 'Core' },
+    { id: 303, tier: 'T3', skill: 'Recognition', type: 'Reading', title: 'Recognition and Motivation Principles', duration: 25, difficulty: 'Intro' },
+    { id: 304, tier: 'T3', skill: 'Feedback', type: 'Exercise', title: 'Delivering Effective Feedback (Radical Candor)', duration: 40, difficulty: 'Core' },
+    { id: 305, tier: 'T3', skill: 'Motivation', type: 'Case Study', title: 'Intrinsic Motivation and Team Engagement', duration: 50, difficulty: 'Mastery' },
+    
+    // T4: Conflict & Team Health
+    { id: 401, tier: 'T4', skill: 'Conflict', type: 'Exercise', title: 'Conflict Management Style Quiz & Strategy', duration: 30, difficulty: 'Core' },
+    { id: 402, tier: 'T4', skill: 'Commitment', type: 'Tool', title: 'Team Health: Consensual Commitment Framework', duration: 40, difficulty: 'Core' },
+    { id: 403, tier: 'T4', skill: 'Accountability', type: 'Exercise', title: 'Team Health: Peer Accountability Implementation', duration: 55, difficulty: 'Mastery' },
+    { id: 404, tier: 'T4', skill: 'Crucial', type: 'Role-Play', title: 'Crucial Conversations / Conflict Mgmt Practice', duration: 60, difficulty: 'Mastery' },
+    { id: 405, tier: 'T4', skill: 'Trust', type: 'Case Study', title: 'Team Health: Repairing V-B Trust', duration: 45, difficulty: 'Intro' },
+
+    // T5: Strategy & Vision
     { id: 501, tier: 'T5', skill: 'Vision', type: 'Exercise', title: 'Vision Statement Workshop', duration: 45, difficulty: 'Core' },
-    { id: 503, tier: 'T5', skill: 'Strategic', type: 'Tool', title: 'Pre-Mortem Risk Audit', duration: 30, difficulty: 'Mastery' },
-    { id: 507, tier: 'T5', skill: 'Strategic', type: 'Case Study', title: 'Market Disruption Response Plan', duration: 60, difficulty: 'Mastery' },
+    { id: 502, tier: 'T5', skill: 'Strategic', type: 'Tool', title: 'Pre-Mortem Risk Audit', duration: 30, difficulty: 'Mastery' },
+    { id: 503, tier: 'T5', skill: 'Planning', type: 'Reading', title: 'Long-Range Strategic Planning Principles', duration: 40, difficulty: 'Intro' },
 ];
 
+// MOCK_CONTENT_DETAILS (UPDATED to reflect the specific courses)
 const MOCK_CONTENT_DETAILS = {
-    'Reading': (title, skill) => `### Core Concepts of ${title}\n\n**Focus Skill:** ${skill}\n\nThis article highlights the importance of asynchronous communication, creating clear documentation, and setting "done" criteria upfront to reduce execution drag. Your primary takeaway should be the principle: **Clear is Kind, Vague is Cruel.**\n\n* **Action Item:** Schedule 30 minutes for process mapping.\n* **Key Term:** Psychological Safety.`,
-    'Exercise': (title, skill) => `### Guided Practice: ${title}\n\n**Focus Skill:** ${skill}\n\nThis exercise requires you to journal or draft statements based on a self-reflective prompt. Use the questions below as a starting point. Your goal is to identify a core belief and define a corresponding measurable behavior.\n\n* **Prompt 1:** When was the last time you felt truly in integrity with your stated values?\n* **Prompt 2:** What is the most difficult piece of feedback you have successfully processed and implemented?`,
-    'Case Study': (title, skill) => `### Case Study Setup: ${title}\n\n**Focus Skill:** ${skill}\n\nReview the following scenario description and prepare a 5-step action plan before running the simulation or discussing with your coach. The scenario involves a failure to delegate a crucial task to a capable subordinate, leading to team burnout and missed deadlines.`,
-    'Role-Play': (title, skill) => `### Role-Play Briefing: ${title}\n\n**Focus Skill:** ${skill}\n\nThis is a simulation using the Coaching Lab. Your goal is to use the SBI model to deliver tough feedback to an employee who is likely to respond defensively. **Preparation is key!**\n\n* **Mindset:** Lead with curiosity, not judgment.\n* **Goal:** End the conversation with a measurable, agreed-upon next step.`,
-    'Tool': (title, skill) => `### Tool Overview: ${title}\n\n**Focus Skill:** ${skill}\n\nThis module guides you through a new framework. The current focus is risk identification and mitigation planning. The objective of this tool is to formalize risk assessment across your strategic goals.`,
+    'Reading': (title, skill) => `### Core Concepts: ${title}\n\n**Learning Goal:** Understand the foundational theory behind **${skill}** management.\n\nThis reading material provides the philosophical context for your leadership actions. For example, understanding Servant Leadership means viewing your role as one of support, not control.\n\n* **Primary Takeaway:** Clear is Kind, Vague is Cruel.\n* **Key Term:** Autonomy, Mastery, Purpose.`,
+    'Exercise': (title, skill) => `### Guided Practice: ${title}\n\n**Action Focus:** ${skill}\n\nThis is a structured journaling or drafting activity designed to solidify abstract concepts into personal behaviors. The **'Player-to-Coach'** exercise, for instance, requires you to document your immediate response to a problem and then re-write it as a coaching question. \n\n* **Outcome:** Create a single, measurable behavior change.\n* **Required Time:** 45 minutes of uninterrupted focus.`,
+    'Case Study': (title, skill) => `### Executive Analysis: ${title}\n\n**Application Focus:** ${skill}\n\nReview the provided scenario outlining a complex organizational breakdown (e.g., a failure in accountability) and prepare a 5-step strategic action plan. This module is designed to test your **decision-making** under pressure, applying principles like the **Ownership** mindset.\n\n* **Goal:** Prepare a defense for your plan before submitting it for coach review.\n* **Scenario Type:** Cross-functional failure.`,
+    'Role-Play': (title, skill) => `### Practice Simulation: ${title}\n\n**Behavioral Focus:** ${skill}\n\nThis is a high-impact preparation module for the Coaching Lab. You will simulate a difficult conversation (e.g., **Crucial Conversations**) or a coaching session. The system will guide you through the initial steps: identifying the facts, defining the shared goal, and stating your intent. \n\n* **Method:** Use the SBI (Situation-Behavior-Impact) feedback model.\n* **Goal:** End the simulation with a measurable, agreed-upon next step and maintain the relationship.`,
+    'Tool': (title, skill) => `### Tool Implementation: ${title}\n\n**Implementation Goal:** Systematize **${skill}**\n\nThis module delivers a framework (e.g., LIS, Metrics Dashboard, Pre-Mortem Audit) for immediate use in your role. The objective is to formally integrate a new system—like tracking **Leading vs. Lagging Metrics**—into your weekly workflow, reducing reliance on manual effort.\n\n* **System:** Downloadable checklist/template included.\n* **Integration:** Must be used once in a real meeting/process this week.`,
 };
 
-// Mock data for the "Generic Manager" Plan Comparison
+// ... (Rest of the DevPlan.jsx logic remains the same, using the updated constants)
+
 const GENERIC_PLAN = {
-    avgIntroContent: 8, // Average 8 intro pieces
-    avgMasteryContent: 3, // Average 3 mastery pieces
-    totalDuration: 1200, // Total duration in minutes
+    avgIntroContent: 8, 
+    avgMasteryContent: 3, 
+    totalDuration: 1200, 
 };
 
 const getTargetDifficulty = (rating) => rating >= 8 ? 'Mastery' : rating >= 5 ? 'Core' : 'Intro';
 const adjustDuration = (rating, duration) => {
-    // If rating is high, slightly reduce duration (faster comprehension)
     if (rating >= 8) return Math.round(duration * 0.9);
-    // If rating is low, slightly increase duration (more focus needed)
     if (rating <= 4) return Math.round(duration * 1.1);
     return duration;
 };
@@ -220,49 +235,42 @@ const generatePlanData = (assessment, ownerUid) => {
 
     let tierRotationQueue = [];
 
-    // Prioritize low-rated tiers first
+    // Prioritization logic: Low Rating > Goal Priority > General Rotation
     lowRatedTiers.forEach(tier => {
         if (!tierRotationQueue.includes(tier)) tierRotationQueue.push(tier);
     });
-    // Add goal priorities next
     goalPriorities.forEach(tier => {
         if (!tierRotationQueue.includes(tier)) tierRotationQueue.push(tier);
     });
-    // Fill the rest of the queue with all tiers to ensure full coverage
     allTiers.forEach(tier => {
         if (!tierRotationQueue.includes(tier)) tierRotationQueue.push(tier);
     });
 
-    // If Team Skill Alignment is active and a team gap exists, prioritize that tier
+    // Inject specialized needs
     const teamGapTier = teamSkillAlignment?.gapTier;
     if (assessment.alignToTeam && teamGapTier && !tierRotationQueue.includes(teamGapTier)) {
-        // Inject team gap priority early
         tierRotationQueue.splice(1, 0, teamGapTier);
     }
     
-    // Ensure T1 is always at the front if the user is 'New'
     if (managerStatus === 'New' && tierRotationQueue[0] !== 'T1') {
          tierRotationQueue.unshift('T1');
     }
     
-    // Check for Confidence/Competence Gap (Self vs. Peer Rating Discrepancy)
     let peerGapTier = null;
     if (peerRatings) {
         for (const tierId of allTiers) {
             const self = selfRatings[tierId];
             const peer = peerRatings[tierId];
-            if (self - peer >= 3) { // Self rates 3+ points higher than peers
+            if (self - peer >= 3) { 
                 peerGapTier = tierId;
                 break; 
             }
         }
     }
     if (peerGapTier && !tierRotationQueue.includes(peerGapTier)) {
-        // Inject gap-closing tier immediately after the first priority tier
         tierRotationQueue.splice(1, 0, peerGapTier);
     }
 
-    // Check for Mentee Feedback Gap (Targeted T4/T5 Coaching Skills - Organizational Scaling)
     if (menteeFeedback?.T4?.score < 70 && !tierRotationQueue.includes('T4')) {
          tierRotationQueue.splice(1, 0, 'T4');
     }
@@ -270,11 +278,9 @@ const generatePlanData = (assessment, ownerUid) => {
 
     // --- Core 24-Month Loop ---
     for (let month = 1; month <= 24; month++) {
-        // Rotate through the unique tier queue
         let currentTier = tierRotationQueue[(month - 1) % tierRotationQueue.length];
-
         const tierMeta = LEADERSHIP_TIERS[currentTier];
-        const theme = `Focus on ${tierMeta.name}`;
+        const theme = `Deep Dive: ${tierMeta.name}`;
 
         const rating = selfRatings[currentTier];
         const targetDifficulty = getTargetDifficulty(rating);
@@ -320,7 +326,7 @@ const generatePlanData = (assessment, ownerUid) => {
     };
 };
 
-// --- Modals ---
+// --- Modals (omitted for brevity - content remains the same) ---
 const SharePlanModal = ({ isVisible, onClose, currentMonthPlan, data }) => { /* ... */
     if (!isVisible || !currentMonthPlan) return null;
     const tierName = LEADERSHIP_TIERS[currentMonthPlan.tier].name;
@@ -333,9 +339,7 @@ const SharePlanModal = ({ isVisible, onClose, currentMonthPlan, data }) => { /* 
         el.select();
         document.execCommand('copy');
         document.body.removeChild(el);
-        // FIX: Replaced alert with console log for mock success
         console.log('Share content copied to clipboard!');
-        // NOTE: In a real app, this would trigger a visible toast notification.
     };
     return (
         <div className="fixed inset-0 bg-[#002E47]/80 z-50 flex items-center justify-center p-4">
@@ -388,11 +392,10 @@ const ContentDetailsModal = ({ isVisible, onClose, content }) => { /* ... */
     }, [content.id, mockDetail]);
 
     const handleLogLearning = async () => {
-        if (rating === 0) { alert('Please provide a 5-star rating before logging.'); return; }
+        if (rating === 0) { console.log('Please provide a 5-star rating before logging.'); return; }
         setIsLogging(true);
         console.log(`Mock: Logging learning for ${content.title} with rating ${rating}/5.`);
         await new Promise(r => setTimeout(r, 800));
-        // FIX: Replaced alert with console log for mock success
         console.log(`Learning logged! Your ${rating}/5 rating will influence future plan revisions.`);
         setIsLogging(false);
         onClose();
@@ -463,12 +466,53 @@ const TierReviewModal = ({ isVisible, onClose, tierId, planData }) => {
 };
 
 
+// --- Component 3: Roadmap Timeline View (NEW) ---
+const RoadmapTimeline = ({ data, currentMonth, navigateToMonth }) => {
+    return (
+        <Card title="24-Month Roadmap Timeline" icon={Trello} accent="PURPLE" className='lg:sticky lg:top-4 bg-white shadow-2xl border-l-4 border-[#7C3AED]'>
+            <p className='text-sm text-gray-600 mb-4'>Review your full two-year journey. Click a month to review its content and reflection.</p>
+            <div className='max-h-96 overflow-y-auto space-y-2 pr-2'>
+                {data.plan.map(monthData => {
+                    const isCurrent = monthData.month === currentMonth;
+                    const isCompleted = monthData.status === 'Completed';
+                    const borderColor = isCurrent ? COLORS.PURPLE : (isCompleted ? COLORS.TEAL : COLORS.MUTED);
+
+                    return (
+                        <div key={monthData.month}
+                             className={`p-3 rounded-lg border flex justify-between items-center transition-all cursor-pointer shadow-sm
+                                         ${isCurrent ? 'bg-[#7C3AED]/20 border-[#7C3AED] font-extrabold' : isCompleted ? 'bg-[#47A88D]/10 border-[#47A88D]' : 'bg-gray-50 border-gray-200 hover:bg-gray-100'}`
+                             }
+                             onClick={() => navigateToMonth(monthData.month)}
+                        >
+                            <span className={`text-sm ${isCurrent ? 'text-[#7C3AED]' : 'text-[#002E47]'}`}>
+                                **Month {monthData.month}**: {monthData.theme}
+                            </span>
+                            <span className="flex items-center space-x-1 text-xs">
+                                <Check size={16} className={isCompleted ? 'text-green-600' : 'text-gray-400'} />
+                                <span className={isCompleted ? 'text-green-600' : 'text-gray-400'}>
+                                    {isCurrent ? 'CURRENT' : isCompleted ? 'COMPLETED' : 'PENDING'}
+                                </span>
+                            </span>
+                        </div>
+                    );
+                })}
+            </div>
+        </Card>
+    );
+};
+
+
 // --- Component 2: Tracker Dashboard View ---
 const TrackerDashboardView = ({ data, updatePdpData, saveNewPlan, db, userId, navigate }) => {
     const { callSecureGeminiAPI, hasGeminiKey, GEMINI_MODEL } = useAppServices();
 
+    const [viewMonth, setViewMonth] = useState(data.currentMonth); // State for Timeline Navigation
     const currentMonth = data.currentMonth;
-    const currentMonthPlan = data.plan.find(m => m.month === currentMonth);
+    
+    // Use viewMonth to get the plan data
+    const monthPlan = data.plan.find(m => m.month === viewMonth);
+    const isCurrentView = viewMonth === currentMonth; 
+    
     const nextMonthPlan = data.plan.find(m => m.month === currentMonth + 1);
     const nextMonthFocus = nextMonthPlan ? LEADERSHIP_TIERS[nextMonthPlan.tier].name : null;
     const nextMonthTier = nextMonthPlan ? nextMonthPlan.tier : null;
@@ -480,9 +524,9 @@ const TrackerDashboardView = ({ data, updatePdpData, saveNewPlan, db, userId, na
     const [isContentModalVisible, setIsContentModalVisible] = useState(false);
     const [selectedContent, setSelectedContent] = useState(null);
     const [isShareModalVisible, setIsShareModalVisible] = useState(false); // Feature 1: Share Modal
-    const [localReflection, setLocalReflection] = useState(currentMonthPlan?.reflectionText || '');
+    const [localReflection, setLocalReflection] = useState(monthPlan?.reflectionText || '');
     const [isSaving, setIsSaving] = useState(false);
-    const [briefing, setBriefing] = useState(null); // Feature A: AI Briefing
+    const [briefing, setBriefing] = useState(null); 
     const [briefingLoading, setBriefingLoading] = useState(false);
 
 
@@ -512,15 +556,21 @@ const TrackerDashboardView = ({ data, updatePdpData, saveNewPlan, db, userId, na
         } finally {
             setBriefingLoading(false);
         }
-    }, [briefing, briefingLoading, hasGeminiKey, callSecureGeminiAPI]); // Added callSecureGeminiAPI to deps
+    }, [briefing, briefingLoading, hasGeminiKey, callSecureGeminiAPI]);
 
 
     useEffect(() => {
-        if (currentMonthPlan && assessment) {
-            setLocalReflection(currentMonthPlan.reflectionText || '');
-            fetchMonthlyBriefing(currentMonthPlan, assessment);
+        // Reset state when changing viewMonth or loading new overall data
+        if (monthPlan && assessment) {
+            setLocalReflection(monthPlan.reflectionText || '');
+            if (isCurrentView && !briefing) {
+                fetchMonthlyBriefing(monthPlan, assessment);
+            } else if (!isCurrentView) {
+                // If viewing a historical month, use saved reflection/briefing
+                setBriefing(`**HISTORICAL VIEW**: This is the focus for Month ${viewMonth}. The reflection below was saved upon completion.`);
+            }
         }
-    }, [currentMonthPlan, assessment, fetchMonthlyBriefing]);
+    }, [monthPlan, assessment, fetchMonthlyBriefing, viewMonth, isCurrentView]);
 
 
     // --- Handlers (Advance, Reset, Toggle) ---
@@ -539,27 +589,25 @@ const TrackerDashboardView = ({ data, updatePdpData, saveNewPlan, db, userId, na
         });
         setIsSaving(false);
 
-        // FIX: Replaced alert with console log for mock success
         console.log('Month successfully completed! Advancing to the next phase.');
 
-        // Interconnection: Navigate to Daily Practice to set commitments for the new month's focus
         if (nextMonthFocus) {
             navigate('daily-practice', {
                 initialGoal: nextMonthFocus,
-                initialTier: nextMonthTier // Pass the tier for easy selection
+                initialTier: nextMonthTier 
             });
         }
     };
 
     const handleResetPlan = async () => {
-        // FIX: Replaced alert with console log for mock success
         console.log("Plan successfully reset! Loading generator...");
         navigate('prof-dev-plan', { view: 'generator' });
     };
 
     const handleContentStatusToggle = (contentId) => {
-        // Mock toggling status locally
-        const updatedContent = currentMonthPlan.requiredContent.map(item =>
+        if (!isCurrentView) return; // Only allow modification on current month
+
+        const updatedContent = monthPlan.requiredContent.map(item =>
             item.id === contentId ? { ...item, status: item.status === 'Completed' ? 'Pending' : 'Completed' } : item
         );
 
@@ -567,7 +615,6 @@ const TrackerDashboardView = ({ data, updatePdpData, saveNewPlan, db, userId, na
             m.month === currentMonth ? { ...m, requiredContent: updatedContent } : m
         );
         
-        // Mock update to the context/database
         updatePdpData({ ...data, plan: updatedPlan });
     };
 
@@ -577,7 +624,8 @@ const TrackerDashboardView = ({ data, updatePdpData, saveNewPlan, db, userId, na
     };
 
     // --- Data Calculation ---
-    const currentTierId = currentMonthPlan?.tier;
+    const currentTierId = monthPlan?.tier;
+
     const tierProgress = useMemo(() => {
         if (!currentTierId || !data.plan) return { completed: 0, total: 0, percentage: 0 };
         const totalContent = data.plan.filter(m => m.tier === currentTierId).flatMap(m => m.requiredContent).length;
@@ -597,19 +645,8 @@ const TrackerDashboardView = ({ data, updatePdpData, saveNewPlan, db, userId, na
     const progressPercentage = Math.min(100, (currentMonth / 24) * 100);
     const TierIcon = LEADERSHIP_TIERS[currentTierId]?.icon ? IconMap[LEADERSHIP_TIERS[currentTierId].icon] : Target;
 
-    if (!currentMonthPlan) { 
-        return (
-            <div className="p-8">
-                <h1 className="text-3xl font-extrabold text-[#002E47]">Roadmap Complete! 🎉</h1>
-                <p className="text-lg text-gray-600 mt-2">Congratulations on completing your 24-Month Personalized Development Plan. Re-run your assessment to generate a new, advanced roadmap.</p>
-                <Button onClick={() => navigate('prof-dev-plan', { view: 'generator' })} className='mt-8'>
-                    <Star className='w-5 h-5 mr-2' /> Start New Assessment
-                </Button>
-            </div>
-        ); 
-    }
 
-    const allContentCompleted = currentMonthPlan?.requiredContent?.every(item => item.status === 'Completed');
+    const allContentCompleted = monthPlan?.requiredContent?.every(item => item.status === 'Completed');
     const isReadyToComplete = allContentCompleted && localReflection.length >= 50;
 
     return (
@@ -634,7 +671,6 @@ const TrackerDashboardView = ({ data, updatePdpData, saveNewPlan, db, userId, na
                     <Button onClick={handleResetPlan} variant='outline' className='text-xs px-4 py-2 text-[#E04E1B] border-[#E04E1B]/50 hover:bg-[#E04E1B]/10'>
                         Start Over / Re-Generate Plan
                     </Button>
-                    {/* Feature 1: Share Plan Button */}
                     <Button onClick={() => setIsShareModalVisible(true)} variant='outline' className='text-xs px-4 py-2 border-[#002E47] text-[#002E47] hover:bg-[#002E47]/10'>
                         <Link className="w-4 h-4 mr-1" /> Share Monthly Focus
                     </Button>
@@ -642,9 +678,47 @@ const TrackerDashboardView = ({ data, updatePdpData, saveNewPlan, db, userId, na
             </Card>
 
             {/* Current Month Plan */}
-            <div className='lg:grid lg:grid-cols-3 lg:gap-8'>
-                <div className='lg:col-span-2 space-y-8'>
-                    <Card title={`Current Focus: ${currentMonthPlan?.theme}`} icon={TierIcon} accent='TEAL' className='border-l-8 border-[#47A88D]'>
+            <div className='lg:grid lg:grid-cols-4 lg:gap-8'>
+                
+                {/* Timeline Column (New Placement - Col 1) */}
+                <div className='lg:col-span-1 space-y-8 order-1'>
+                    <RoadmapTimeline 
+                        data={data}
+                        currentMonth={currentMonth} 
+                        navigateToMonth={setViewMonth} 
+                    />
+                    
+                    {/* Tier Mastery Status Card moved here */}
+                    <Card title={`Tier Mastery Status (${currentTierId})`} icon={Star} accent='NAVY' className='bg-[#FCFCFA] border-l-4 border-[#002E47] text-center'>
+                        <div className="relative w-32 h-32 mx-auto mb-4">
+                            <svg viewBox="0 0 36 36" className="w-full h-full transform -rotate-90">
+                                <path className="text-gray-300" fill="none" stroke="currentColor" strokeWidth="3.8" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
+                                <path className="text-[#47A88D]" fill="none" stroke="currentColor" strokeWidth="3.8" strokeDasharray={`${tierProgress.overallPercentage}, 100`} d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
+                            </svg>
+                            <div className="absolute top-0 left-0 w-full h-full flex items-center justify-center">
+                                <span className="text-3xl font-extrabold text-[#002E47]">{tierProgress.overallPercentage}%</span>
+                            </div>
+                        </div>
+                        <p className='text-md font-semibold text-[#002E47] mb-1'>{tierProgress.completedContent} / {tierProgress.totalContent} Content Items Completed</p>
+                        <p className='text-xs text-gray-600'>For Tier: **{LEADERSHIP_TIERS[currentTierId]?.name}**</p>
+                    </Card>
+
+                </div>
+
+
+                {/* Main Content Column (Cols 2-4) */}
+                <div className='lg:col-span-3 space-y-8 order-2'>
+                    
+                    {/* VIEWING HISTORICAL MONTH WARNING */}
+                    {!isCurrentView && (
+                        <div className='p-4 rounded-xl bg-yellow-100 border-2 border-yellow-400 shadow-md text-yellow-800 font-semibold flex items-center gap-3'>
+                            <AlertTriangle className='w-5 h-5'/> 
+                            Viewing **Historical Month {viewMonth}**. Content and Reflection are read-only.
+                        </div>
+                    )}
+
+
+                    <Card title={`Focus: ${monthPlan?.theme} (Month ${viewMonth})`} icon={TierIcon} accent='TEAL' className='border-l-8 border-[#47A88D]'>
 
                         {/* AI Monthly Briefing */}
                         <div className='mb-4 p-4 rounded-xl bg-[#002E47]/10 border border-[#002E47]/20'>
@@ -676,11 +750,12 @@ const TrackerDashboardView = ({ data, updatePdpData, saveNewPlan, db, userId, na
 
                         <h3 className='text-xl font-bold text-[#002E47] border-t pt-4 mt-4'>Required Content Items</h3>
                         <div className='space-y-3 mt-4'>
-                            {currentMonthPlan?.requiredContent.map(item => {
+                            {monthPlan?.requiredContent.map(item => {
                                 const isCompleted = item.status === 'Completed';
                                 const [isToggling, setIsToggling] = useState(false);
 
                                 const handleToggle = () => {
+                                    if (!isCurrentView) return; // Block changes on historical view
                                     setIsToggling(true);
                                     handleContentStatusToggle(item.id);
                                     setTimeout(() => setIsToggling(false), 500); // Simulate animation time
@@ -707,7 +782,7 @@ const TrackerDashboardView = ({ data, updatePdpData, saveNewPlan, db, userId, na
                                                 onClick={handleToggle}
                                                 className={`px-3 py-1 text-xs transition-colors duration-300 ${isToggling ? 'opacity-50' : ''}`}
                                                 variant={isCompleted ? 'secondary' : 'primary'}
-                                                disabled={isSaving || isToggling}
+                                                disabled={isSaving || isToggling || !isCurrentView} // Disable on historical view
                                             >
                                                 {isToggling ? 'Updating...' : isCompleted ? 'Done ✓' : 'Mark Complete'}
                                             </Button>
@@ -723,79 +798,54 @@ const TrackerDashboardView = ({ data, updatePdpData, saveNewPlan, db, userId, na
                             Reflect on the growth you achieved this month. How did the content impact your daily leadership behavior? (**Minimum 50 characters required**)
                         </p>
                         <textarea
-                            value={localReflection}
+                            value={monthPlan?.reflectionText || localReflection}
                             onChange={(e) => setLocalReflection(e.target.value)}
                             className="w-full p-3 border border-gray-300 rounded-xl focus:ring-[#47A88D] focus:border-[#47A88D] h-40"
                             placeholder="My reflection (required)..."
+                            readOnly={!isCurrentView} // Read-only on historical view
                         ></textarea>
-                        <p className={`text-xs mt-1 ${localReflection.length < 50 ? 'text-[#E04E1B]' : 'text-[#47A88D]'}`}>
-                            {localReflection.length} / 50 characters written.
-                        </p>
-                    </Card>
-                </div>
-
-                <div className='lg:col-span-1 space-y-8'>
-
-                    {/* Feature 3: Tier Mastery Visualizer */}
-                    <Card title={`Tier Mastery Status (${currentTierId})`} icon={Star} accent='NAVY' className='bg-[#FCFCFA] border-l-4 border-[#002E47] text-center'>
-                        <div className="relative w-32 h-32 mx-auto mb-4">
-                            <svg viewBox="0 0 36 36" className="w-full h-full transform -rotate-90">
-                                <path
-                                    className="text-gray-300"
-                                    fill="none"
-                                    stroke="currentColor"
-                                    strokeWidth="3.8"
-                                    d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-                                />
-                                <path
-                                    className="text-[#47A88D]"
-                                    fill="none"
-                                    stroke="currentColor"
-                                    strokeWidth="3.8"
-                                    strokeDasharray={`${tierProgress.overallPercentage}, 100`}
-                                    d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-                                />
-                            </svg>
-                            <div className="absolute top-0 left-0 w-full h-full flex items-center justify-center">
-                                <span className="text-3xl font-extrabold text-[#002E47]">{tierProgress.overallPercentage}%</span>
-                            </div>
-                        </div>
-                        <p className='text-md font-semibold text-[#002E47] mb-1'>{tierProgress.completedContent} / {tierProgress.totalContent} Content Items Completed</p>
-                        <p className='text-xs text-gray-600'>For Tier: **{LEADERSHIP_TIERS[currentTierId]?.name}**</p>
-                    </Card>
-
-                    <Card title="Recalibrate Skill Assessment" icon={Activity} accent='ORANGE' className='bg-[#E04E1B]/10 border-4 border-[#E04E1B]'>
-                        <p className='text-sm text-gray-700 mb-4'>
-                            Feel like you've mastered this tier? Re-run your initial **Self-Ratings** to check your progress and generate an **accelerated, revised roadmap** to match your new skill level.
-                        </p>
-                        <Button
-                            onClick={() => navigate('prof-dev-plan', { view: 'generator' })}
-                            variant="secondary"
-                            className='w-full bg-[#E04E1B] hover:bg-red-700'
-                        >
-                            <Target className='w-4 h-4 mr-2' /> Re-Run Assessment
-                        </Button>
-                    </Card>
-
-                    <Card title="Advance Roadmap" icon={CornerRightUp} accent='TEAL' className='bg-[#47A88D]/10 border-4 border-[#47A88D]'>
-                        <p className='text-sm text-gray-700 mb-4'>
-                            Once all content and your reflection are complete, lock in your progress and move to **Month {currentMonth + 1}** of your plan.
-                        </p>
-                        <Button
-                            onClick={handleCompleteMonth}
-                            disabled={isSaving || !isReadyToComplete}
-                            className='w-full bg-[#47A88D] hover:bg-[#349881]'
-                        >
-                            {isSaving ? 'Processing...' : `Complete Month ${currentMonth}`}
-                        </Button>
-                        {!allContentCompleted && (
-                            <p className='text-[#E04E1B] text-xs mt-2'>* Finish all content items first.</p>
-                        )}
-                        {allContentCompleted && localReflection.length < 50 && (
-                            <p className='text-[#E04E1B] text-xs mt-2'>* Reflection required (50 chars min).</p>
+                        {isCurrentView && (
+                            <p className={`text-xs mt-1 ${localReflection.length < 50 ? 'text-[#E04E1B]' : 'text-[#47A88D]'}`}>
+                                {localReflection.length} / 50 characters written.
+                            </p>
                         )}
                     </Card>
 
+                    {isCurrentView && (
+                        <Card title="Recalibrate Skill Assessment" icon={Activity} accent='ORANGE' className='bg-[#E04E1B]/10 border-4 border-[#E04E1B]'>
+                            <p className='text-sm text-gray-700 mb-4'>
+                                Feel like you've mastered this tier? Re-run your initial **Self-Ratings** to check your progress and generate an **accelerated, revised roadmap** to match your new skill level.
+                            </p>
+                            <Button
+                                onClick={() => navigate('prof-dev-plan', { view: 'generator' })}
+                                variant="secondary"
+                                className='w-full bg-[#E04E1B] hover:bg-red-700'
+                            >
+                                <Target className='w-4 h-4 mr-2' /> Re-Run Assessment
+                            </Button>
+                        </Card>
+                    )}
+                    
+                    {isCurrentView && (
+                        <Card title="Advance Roadmap" icon={CornerRightUp} accent='TEAL' className='bg-[#47A88D]/10 border-4 border-[#47A88D]'>
+                            <p className='text-sm text-gray-700 mb-4'>
+                                Once all content and your reflection are complete, lock in your progress and move to **Month {currentMonth + 1}** of your plan.
+                            </p>
+                            <Button
+                                onClick={handleCompleteMonth}
+                                disabled={isSaving || !isReadyToComplete}
+                                className='w-full bg-[#47A88D] hover:bg-[#349881]'
+                            >
+                                {isSaving ? 'Processing...' : `Complete Month ${currentMonth}`}
+                            </Button>
+                            {!allContentCompleted && (
+                                <p className='text-[#E04E1B] text-xs mt-2'>* Finish all content items first.</p>
+                            )}
+                            {allContentCompleted && localReflection.length < 50 && (
+                                <p className='text-[#E04E1B] text-xs mt-2'>* Reflection required (50 chars min).</p>
+                            )}
+                        </Card>
+                    )}
                 </div>
             </div>
 
@@ -814,7 +864,7 @@ const TrackerDashboardView = ({ data, updatePdpData, saveNewPlan, db, userId, na
             <SharePlanModal
                 isVisible={isShareModalVisible}
                 onClose={() => setIsShareModalVisible(false)}
-                currentMonthPlan={currentMonthPlan}
+                currentMonthPlan={monthPlan}
                 data={data}
             />
         </div>
@@ -849,7 +899,6 @@ const PlanGeneratorView = ({ userId, saveNewPlan, isLoading, error, navigate }) 
                 return prev.filter(id => id !== tierId);
             }
             if (isGoalLimitReached) {
-                // FIX: Replaced alert with console log for mock success
                 console.log("You can select a maximum of 3 goal priorities.");
                 return prev;
             }
@@ -897,11 +946,9 @@ const PlanGeneratorView = ({ userId, saveNewPlan, isLoading, error, navigate }) 
         
         setIsGenerating(false);
 
-        // FIX: Navigate back to the dashboard/tracker view after successful save
+        // Navigate back to the dashboard/tracker view after successful save
         if (success) {
-            // FIX: Replaced alert with console log for mock success
             console.log("Plan successfully generated and saved! Redirecting to tracker...");
-            // The main App component will see that pdpData is no longer null and switch to the Tracker view
             navigate('dashboard'); 
         }
     };
