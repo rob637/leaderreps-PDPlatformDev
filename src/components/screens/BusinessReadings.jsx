@@ -187,6 +187,10 @@ async function buildAIFlyerHTML({ book, tier, executive, callSecureGeminiAPI }) 
   } catch (e) {
     // 4. FALLBACK ON EXCEPTION (API call failed)
     console.error('AI flyer generation failed due to API exception.', e);
+    // V3 FIX: Check for the 504 pattern and provide a more informative error message.
+    if (e.message && e.message.includes('504')) {
+        return API_ERROR_HTML(executive, book).replace('CRITICAL API ERROR', 'TIMEOUT ERROR (504)');
+    }
     return API_ERROR_HTML(executive, book);
   }
 }
@@ -253,9 +257,10 @@ async function handleAiSubmit(e, services, selectedBook, aiQuery, setIsSubmittin
       ${actionableContext}
       Guidelines: Answer directly with 3–5 sentences. Include one concrete next action that applies the book's principle to the user's situation. Do not use markdown other than **bold** for emphasis. Ensure the response flows naturally like coaching advice.`;
 
+    // V1 FIX: Explicitly include the book title in the user's primary content prompt.
     const out = await services.callSecureGeminiAPI({
       systemInstruction: { parts: [{ text: systemPrompt }] },
-      contents: [{ role: 'user', parts: [{ text: q }] }],
+      contents: [{ role: 'user', parts: [{ text: `Regarding "${selectedBook.title}": ${q}` }] }],
       tools: [{ google_search: {} }],
     });
 
@@ -322,7 +327,8 @@ const AICoachInput = React.memo(({ aiQuery, handleAiQueryChange, submitHandler, 
                     type="text"
                     value={aiQuery}
                     onChange={handleAiQueryChange}
-                    placeholder={`Ask how to apply ${selectedBookTitle} at work (e.g., "How do I delegate?")`}
+                    // --- FIX 2: CONTEXTUALIZE PLACEHOLDER ---
+                    placeholder={`Ask Coach how to apply principles from "${selectedBookTitle}"...`}
                     className="flex-grow p-3 border rounded-xl"
                     style={{ borderColor: COLORS.SUBTLE, color: COLORS.TEXT }}
                     required
@@ -675,10 +681,14 @@ export default function BusinessReadingsScreen() {
       
       const tierKey = selectedTier || Object.keys(allBooks).find(k => (allBooks[k] || []).some(b => b.id === selectedBook.id)) || 'Strategy & Execution';
 
-      // Show a professional loading state
-      setHtmlFlyer(`<div style="padding:12px;border:1px dashed ${COLORS.SUBTLE};border-radius:12px;color:${COLORS.MUTED}">
-                      <div class="animate-pulse flex items-center gap-2"><Cpu class="w-5 h-5"/> **PRODUCTION AI ACTIVE**: Generating ${isExecutiveBrief ? 'EXECUTIVE BRIEF' : 'FULL FLYER'}...</div>
+      // V2 FIX: SIMPLIFY LOADING MESSAGE (Single line, non-obtrusive, minimal animation)
+      setHtmlFlyer(`<div style="padding:12px;border:1px dashed ${COLORS.SUBTLE};border-radius:12px;color:${COLORS.MUTED};text-align:center;">
+                      <div class="flex items-center justify-center gap-2" style="color: ${COLORS.PURPLE}">
+                          <Cpu class="w-5 h-5 animate-spin"/> 
+                          Flyer being generated. Building ${isExecutiveBrief ? 'Executive Brief' : 'Full Flyer'}...
+                      </div>
                     </div>`);
+      // END V2 FIX
 
       // Call the production-focused function with secure error handling
       const html = await buildAIFlyerHTML({ 
