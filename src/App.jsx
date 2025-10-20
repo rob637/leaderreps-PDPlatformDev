@@ -11,7 +11,10 @@ import React, {
   lazy,
 } from 'react';
 
-import { initializeApp, getApp } from 'firebase/app';
+import {
+  initializeApp,
+  getApp
+} from 'firebase/app';
 import {
   getAuth,
   onAuthStateChanged,
@@ -35,10 +38,65 @@ const LEADERSHIP_TIERS = {};
 const usePDPData = (db, userId, isAuthReady) => ({pdpData: {assessment:{selfRatings:{T3: 6}}}, isLoading: false, error: null, updatePdpData: async () => true, saveNewPlan: async () => true});
 const useCommitmentData = (db, userId, isAuthReady) => ({commitmentData: {active_commitments: []}, isLoading: false, error: null, updateCommitmentData: async () => true});
 const usePlanningData = (db, userId, isAuthReady) => ({planningData: {okrs: []}, isLoading: false, error: null, updatePlanningData: async () => true});
-const callSecureGeminiAPI = async () => ({ candidates: [{ content: { parts: [{ text: 'mock response' }] } }] });
-const hasGeminiKey = () => true;
+
+// --- PRODUCTION GEMINI CONFIGURATION ---
+
+// 1. Retrieve the live key securely from the environment
 const GEMINI_MODEL = 'gemini-2.5-flash-preview-09-2025';
-const API_KEY = 'mock_api_key';
+const API_KEY = (typeof __GEMINI_API_KEY !== 'undefined' ? __GEMINI_API_KEY : ''); // Uses injected global variable
+
+/**
+ * Executes an authenticated request to the Gemini API.
+ * This function is critical for all AI-powered features (Flyer, Coach).
+ * Implements exponential backoff for network resilience.
+ */
+const callSecureGeminiAPI = async (payload, maxRetries = 3, delay = 1000) => {
+    if (!API_KEY) {
+        throw new Error("Gemini API Key is missing or invalid. Check environment configuration.");
+    }
+    
+    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${API_KEY}`;
+    
+    for (let attempt = 0; attempt < maxRetries; attempt++) {
+        try {
+            const response = await fetch(apiUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            if (response.ok) {
+                return response.json();
+            }
+
+            // Handle API specific errors (like 429 Rate Limit or 5xx)
+            if (response.status === 429 || response.status >= 500) {
+                if (attempt < maxRetries - 1) {
+                    await new Promise(resolve => setTimeout(resolve, delay * Math.pow(2, attempt)));
+                    continue; // Retry
+                }
+            }
+
+            // Throw non-retryable errors
+            const errorBody = await response.text();
+            throw new Error(`API Request Failed: HTTP ${response.status} - ${errorBody}`);
+
+        } catch (error) {
+            if (attempt === maxRetries - 1) {
+                 throw new Error(`Network Error after ${maxRetries} attempts: ${error.message}`);
+            }
+            // Non-HTTP errors (network issues) are retried with backoff
+            await new Promise(resolve => setTimeout(resolve, delay * Math.pow(2, attempt)));
+        }
+    }
+};
+
+/**
+ * Validates if the Gemini API Key is loaded.
+ */
+const hasGeminiKey = () => (!!API_KEY);
+
+// --- END PRODUCTION GEMINI CONFIGURATION ---
 
 
 // Icons used in the new NavSidebar
@@ -145,8 +203,8 @@ const DataProvider = ({ children, firebaseServices, userId, isAuthReady, navigat
     error,
     appId,
     IconMap: IconMap,
-    callSecureGeminiAPI,
-    hasGeminiKey: () => false,
+    callSecureGeminiAPI, // Now uses the live/retrying implementation
+    hasGeminiKey,       // Now uses the check for API_KEY presence
     GEMINI_MODEL,
     API_KEY,
     hasPendingDailyPractice, 

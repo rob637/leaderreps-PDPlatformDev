@@ -5,6 +5,14 @@
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>package.json</title>
+<script>
+  // CRITICAL: This line reads the variable exposed by your Vite/Netlify build 
+  // and assigns it to the exact global name your App.jsx is looking for.
+  window.__GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY || '';
+
+  // NOTE: If you are not using a Vite build system, the line above might be:
+  // window.__GEMINI_API_KEY = process.env.VITE_GEMINI_API_KEY || ''; 
+</script>
   </head>
   <body>
     <div id="root"></div>
