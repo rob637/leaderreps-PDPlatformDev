@@ -116,13 +116,13 @@ function getFrameworks(book) {
 }
 
 function richFlyerFallbackHTML(book, tier) { 
-    // NOTE: This serves as a structure guide for the AI-generated HTML
+    // NOTE: This serves as the high-quality, contextual fallback structure.
     const focus = (book.focus || '').split(',').map(s => s.trim()).filter(Boolean);
     const chips = focus.slice(0, 6).map(f => `<span style="display:inline-block; padding:4px 8px; margin:2px; border-radius:9999px; background:#F3F4F6; color:#374151; font-size:12px">${f}</span>`).join('');
     const actions = getActionSteps(book);
     const frameworks = getFrameworks(book);
     
-    // Default/Structured HTML for AI to use as a template
+    // Fallback/Demonstration HTML for the full flyer
     return `
     <div style="padding: 16px;">
         <header style="padding-bottom: 12px; margin-bottom: 20px; border-bottom: 5px solid ${COLORS.ORANGE}">
@@ -131,24 +131,76 @@ function richFlyerFallbackHTML(book, tier) {
             <p style="margin:6px 0 0 0; color:${COLORS.ORANGE}; font-weight:800; font-size: 20px;">by ${book.author} — Est. Reading: ${book.duration} min</p>
             <div style="margin-top:10px; border-top: 1px dashed ${COLORS.SUBTLE}; padding-top: 10px;">${chips}</div>
         </header>
-        
-        <p style="color:${COLORS.RED}; font-size: 18px; margin-top: 15px;">**AI CONTENT GENERATION FAILED**: Placeholder content below. Ensure Gemini API key is valid.</p>
+
+        <p style="color:${COLORS.AMBER}; font-size: 18px; margin-top: 15px;">**FALLBACK CONTENT ACTIVE**: The live AI call failed or timed out. Displaying high-quality structural content.</p>
 
         <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 40px; margin-bottom: 30px;">
             <section style="padding: 20px; border-radius: 12px; background: ${COLORS.BG}; border: 1px solid ${COLORS.SUBTLE}">
                 <h3 style="color:${COLORS.NAVY}; font-weight:900; font-size: 24px; margin-top:0;">Core Insight & Overview</h3>
                 <p style="color:${COLORS.TEXT}; font-size: 16px; margin-top: 15px;">
-                    ${book.theme} The shift from managing people to managing systems is the first major revelation this book offers. It outlines the transition required to move past chaos into a state of **structured maturity**.
+                    ${book.theme} This work is considered essential reading for any executive striving for **sustained, repeatable success**. The author presents a compelling argument that organizational friction often stems not from people problems, but from fundamental **system and process failures**. The shift in perspective from managing people to managing systems is the first major revelation this book offers.
+                </p>
+                <p style="color:${COLORS.TEXT}; font-size: 16px; margin-top: 10px;">
+                    It explicitly outlines the necessary transition required for a growing business to move past the initial entrepreneurial chaos into a state of **structured maturity**. The application of **${focus[0] || 'core concepts'}** ensures that leadership can scale beyond the individual founder/manager.
                 </p>
             </section>
+
             <section style="padding: 20px; border-radius: 12px; background: ${COLORS.BG}; border: 1px solid ${COLORS.SUBTLE}">
                 <h3 style="color:${COLORS.NAVY}; font-weight:900; font-size: 24px; margin-top:0;">Deep Dive: Critical Takeaways</h3>
                 <ul style="margin: 0 0 0 18px; padding-left: 0; list-style: none;">
                     <li style="margin-bottom: 15px; padding-left: 10px; border-left: 4px solid ${COLORS.ORANGE};">
-                        <strong style="color: ${COLORS.NAVY}; display: block; margin-bottom: 4px;">Key Principle:</strong> 
-                        <span style="color: ${COLORS.MUTED}; font-size: 15px;">Focus on repeatable SOPs to scale beyond individual effort.</span>
+                        <strong style="color: ${COLORS.NAVY}; display: block; margin-bottom: 4px;">${focus[1] || 'Defining Vision'} Principle:</strong> 
+                        <span style="color: ${COLORS.MUTED}; font-size: 15px;">
+                            The long-term value of a business is directly tied to its ability to operate **independently of its creator**. You must focus time on designing the business *as* a franchise prototype, not working *in* it as the primary technician.
+                        </span>
+                    </li>
+                    <li style="margin-bottom: 15px; padding-left: 10px; border-left: 4px solid ${COLORS.ORANGE};">
+                        <strong style="color: ${COLORS.NAVY}; display: block; margin-bottom: 4px;">Leadership Cadence on ${focus[2] || 'Process Mapping'}:</strong> 
+                        <span style="color: ${COLORS.MUTED}; font-size: 15px;">
+                            Superior results are generated from superior systems. Identify the **three most common points of failure** in your department, and immediately draft a detailed SOP for each, ensuring standardization and quality control.
+                        </span>
+                    </li>
+                    <li style="padding-left: 10px; border-left: 4px solid ${COLORS.ORANGE};">
+                        <strong style="color: ${COLORS.NAVY}; display: block; margin-bottom: 4px;">The Danger of ${focus[3] || 'Technical Mastery'}:</strong> 
+                        <span style="color: ${COLORS.MUTED}; font-size: 15px;">
+                            For mid-level leaders, the tendency to revert to technical work is a primary obstacle to growth. The book provides tools for **ruthless delegation** and empowering subordinates to own outcomes.
+                        </span>
                     </li>
                 </ul>
+            </section>
+        </div>
+
+        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 40px; border-top: 2px dashed ${COLORS.SUBTLE}; padding-top: 30px;">
+            <section>
+                <h3 style="color:${COLORS.NAVY}; font-weight:900; font-size: 24px; margin-top:0;">Key Frameworks & Models</h3>
+                <p style="color:${COLORS.TEXT}; font-size: 16px; margin-bottom: 20px;">
+                    These models provide the structural tools necessary to translate the book's philosophy into daily management practice, driving predictability and scalability.
+                </p>
+                <ul style="margin: 0 0 0 18px; padding-left: 0; list-style: none;">
+                    ${frameworks.map(f => `
+                        <li style="margin-bottom: 15px; padding: 10px; background: ${COLORS.LIGHT_GRAY}; border-radius: 8px;">
+                            <strong style="color: ${COLORS.TEAL}; display: block; font-size: 18px;">${f.name}:</strong> 
+                            <span style="color: ${COLORS.MUTED}; font-size: 15px;">${f.desc}</span>
+                        </li>
+                    `).join('')}
+                </ul>
+            </section>
+            
+            <section>
+                <h3 style="color:${COLORS.NAVY}; font-weight:900; font-size: 24px; margin-top:0;">Immediate 4-Week Action Plan</h3>
+                <p style="color:${COLORS.TEXT}; font-size: 16px; margin-bottom: 20px;">
+                    Based on your **${tier}** focus, complete these highly specific steps this month to begin applying the core principles immediately.
+                </p>
+                <ol style="list-style:decimal; margin:0 0 0 25px; color:${COLORS.TEXT}; font-size: 16px; font-weight: 500;">
+                    ${actions.slice(0, 4).map(s => `
+                        <li style="margin-bottom: 15px; padding: 10px; border-left: 4px solid ${COLORS.TEAL}; background: #E6F3EF; border-radius: 4px;"> 
+                            ${s}
+                        </li>
+                    `).join('')}
+                </ol>
+                <p style="margin-top: 25px; font-size: 14px; color: ${COLORS.MUTED}; font-style: italic;">
+                    Success is measured by adoption, not completion. Integrate one step into your weekly calendar and track the quantitative impact.
+                </p>
             </section>
         </div>
     </div>
@@ -156,27 +208,31 @@ function richFlyerFallbackHTML(book, tier) {
 }
 
 function execBriefFallbackHTML(book, tier) { 
-    // NOTE: This serves as a structure guide for the AI-generated HTML
+    // NOTE: This serves as the high-quality, contextual fallback structure.
     const actions = getActionSteps(book).slice(0, 2);
     const frameworks = getFrameworks(book).slice(0, 2);
     const focus = (book.focus || '').split(',').map(s => s.trim()).filter(Boolean);
     
-    // Default/Structured HTML for AI to use as a template
+    // Fallback/Demonstration HTML for the Executive Brief
     return `
         <div style="padding: 16px;">
             <h2 style="color:${COLORS.NAVY}; font-weight:900; font-size: 32px; border-bottom: 3px solid ${COLORS.TEAL}; padding-bottom: 8px;">EXECUTIVE BRIEF: ${book.title}</h2>
             
-            <p style="color:${COLORS.RED}; font-size: 18px; margin-top: 15px;">**AI CONTENT GENERATION FAILED**: Placeholder content below. Ensure Gemini API key is valid.</p>
+            <p style="color:${COLORS.AMBER}; font-size: 18px; margin-top: 15px;">**FALLBACK CONTENT ACTIVE**: The live AI call failed or timed out. Displaying high-quality structural content.</p>
 
             <p style="color:${COLORS.TEXT}; font-size: 16px; margin-top: 15px; line-height: 1.6;">
-                **Core Insight**: ${book.theme} To lead effectively at the **${tier}** level, you must employ frameworks like the **${frameworks[0].name || 'Core Principle'}** to delegate authority, not just tasks, and establish **predictable outcomes**.
+                **Core Insight**: ${book.theme} This book delivers an imperative for leaders at the **${tier}** level to shift their focus from **personal output** to **systematic scalability**. The central thesis argues that the most effective way to eliminate organizational chaos and increase speed is by standardizing processes and focusing intensely on the **${focus[0] || 'structural framework'}**.
+            </p>
+
+            <p style="color:${COLORS.TEXT}; font-size: 16px; margin-top: 15px; line-height: 1.6;">
+                The primary challenge addressed here is the tendency to revert to being a **technician**. To lead effectively, you must employ frameworks like the **${frameworks[0].name || 'Core Principle'}** to delegate authority, not just tasks, and establish **predictable outcomes**. This strategic pivot is necessary to free up executive time for genuine high-leverage work like **${focus[1] || 'vision casting'}** and **${focus[2] || 'strategic decision-making'}**.
             </p>
             
             <div style="margin-top: 20px; padding-top: 15px; border-top: 1px dashed ${COLORS.SUBTLE};">
                 <h3 style="color:${COLORS.ORANGE}; font-weight:800; font-size: 20px; margin-top:0;">Priority Actions for This Week</h3>
                 <ul style="margin: 5px 0 0 20px; color:${COLORS.NAVY}; font-size: 16px; list-style-type: disc;">
-                    <li>**Action 1**: ${actions[0].replace('.', '')}.</li>
-                    <li>**Action 2**: ${actions[1].replace('.', '')}.</li>
+                    <li>**Action 1**: ${actions[0].replace('.', '')}. (Tests ${frameworks[0].name})</li>
+                    <li>**Action 2**: ${actions[1].replace('.', '')}. (Focuses on ${focus[3] || 'system health'})</li>
                 </ul>
             </div>
         </div>
@@ -184,10 +240,9 @@ function execBriefFallbackHTML(book, tier) {
 }
 
 /* =========================================================
-   AI FLYER BUILDER & QUESTION SCORING (PRODUCTION FOCUS)
+   AI FLYER BUILDER & QUESTION SCORING (PRODUCTION/FALLBACK)
 ========================================================= */
 async function buildAIFlyerHTML({ book, tier, executive, callSecureGeminiAPI }) {
-  // Production-Ready: Attempt API call directly. Fallback is static content on error.
   
   const baseInstruction = executive
     ? `Write a robust EXECUTIVE BRIEF (150-200 words, split into 2 paragraphs). The brief must address the book's core insight, its relevance to the leader's specific tier, and one clear takeaway action. Output clean, styled HTML using only h2, h3, p, ul, li, strong, em, and inline CSS for presentation. The two paragraphs should be separate <p> tags and follow an H2 title.`
@@ -201,6 +256,7 @@ async function buildAIFlyerHTML({ book, tier, executive, callSecureGeminiAPI }) 
     `Focus areas: ${(book.focus || '')}\nComplexity: ${book.complexity}\nTier: ${tier}`;
 
   try {
+    // 1. ATTEMPT LIVE API CALL
     const out = await callSecureGeminiAPI({ 
       systemInstruction: { parts: [{ text: systemPrompt }] }, 
       contents: [{ role: "user", parts: [{ text: userPrompt }] }] 
@@ -208,7 +264,7 @@ async function buildAIFlyerHTML({ book, tier, executive, callSecureGeminiAPI }) 
     
     let html = out?.candidates?.[0]?.content?.parts?.[0]?.text || '';
     
-    // Check if Gemini returned a usable response
+    // 2. PROCESS SUCCESSFUL RESPONSE
     if (html && !html.toLowerCase().includes('error')) {
         // Apply inline styles to the AI-generated HTML for consistent branding
         html = html.replace(/<h2/g, `<h2 style="color:${COLORS.ORANGE};font-size:24px;border-bottom:2px solid ${COLORS.SUBTLE};padding-bottom:5px;margin-top:15px;"`);
@@ -218,12 +274,12 @@ async function buildAIFlyerHTML({ book, tier, executive, callSecureGeminiAPI }) 
         return html;
     }
     
-    // FALLBACK ON API FAILURE
-    console.error("AI Flyer Generation failed or returned empty. Using structured fallback.");
+    // 3. FALLBACK ON FAILURE (Response was empty, mock, or error)
+    console.warn("AI Flyer Generation failed. Using high-quality contextual fallback.");
     return executive ? execBriefFallbackHTML(book, tier) : richFlyerFallbackHTML(book, tier);
   } catch (e) {
-    console.error('AI flyer generation failed. Ensure API key is configured.', e);
-    // FALLBACK ON API EXCEPTION
+    // 4. FALLBACK ON EXCEPTION (API call failed)
+    console.error('AI flyer generation failed due to API exception. Using high-quality contextual fallback.', e);
     return executive ? execBriefFallbackHTML(book, tier) : richFlyerFallbackHTML(book, tier);
   }
 }
@@ -253,22 +309,64 @@ const getQuestionScore = (query, bookTitle) => {
 };
 
 /* =========================================================
-   AI COACH - PRODUCTION FOCUS
+   AI COACH - CONTEXTUAL FALLBACK FACTORY
 ========================================================= */
+
+// FIX: This robust mock factory is now the secure fallback layer.
+function generateContextualAIResponse(question, book, frameworks, actions) {
+    const q = question.toLowerCase();
+    const fName = frameworks[0]?.name || 'a core principle';
+    const fDesc = frameworks[0]?.desc || 'detailed analysis';
+    const a = actions[0];
+    const focusAreas = (book.focus || '').split(',').map(s => s.trim()).filter(Boolean);
+    
+    // Determine context for a more specific response
+    let topic = 'general application of the principles';
+    let specificAction = a;
+
+    if (q.includes('delegate') || q.includes('system')) {
+        topic = `delegation and the importance of ${focusAreas[1] || 'process mapping'}`;
+        specificAction = `Map the full workflow for the task you mentioned and delegate the **Standard Operating Procedure (SOP)**, not the result.`;
+    } else if (q.includes('team') || q.includes('conflict')) {
+        topic = `team dynamics using the ${focusAreas[0] || 'accountability'} model`;
+        specificAction = `Initiate a "Rumble" conversation (Dare to Lead) or set up a clear **Challenging Directly** feedback session (Radical Candor).`;
+    } else if (q.includes('goal') || q.includes('strategy')) {
+         topic = `strategic clarity and achieving the **${focusAreas[2] || 'Hedgehog Concept'}**`;
+         specificAction = `Review your current top goal and apply the **Two-Minute Rule (GTD)** or ensure it has an attached **Key Result (OKRs)**.`;
+    }
+
+    // Paragraph 1: Acknowledgment, Core Insight, and Framework
+    let response = `(FALLBACK RESPONSE) That is a high-leverage question, directly addressing the core tension of **${book.title}** regarding ${topic}. The best path forward, according to ${book.author}, is often found by simplifying the problem and viewing it through the lens of the **${fName}** model. The core insight suggests that to overcome the challenge of '${q.substring(0, Math.min(q.length, 30))}...' you must first secure a **structural clarity** by embracing the model's guidance on ${fDesc}.`;
+    
+    // Paragraph 2: Specific, Actionable Step & Conclusion
+    response += `\n\nYour concrete next step is to initiate a **disciplined, system-level action**. The book recommends you: ${specificAction.replace('.', '')} and rigorously track the initial two outcomes. This will immediately test the applicability of the **${fName}** framework in your current ${q.includes('situation') ? 'situation' : 'environment'} and shift the bottleneck from human action to system design.`;
+
+    return response;
+}
+
 async function handleAiSubmit(e, services, selectedBook, aiQuery, setIsSubmitting, setAiResponse) {
     e.preventDefault();
     if (e.target.disabled) return; 
 
     const q = aiQuery.trim();
     if (!selectedBook || !q) return;
-    if (!services.callSecureGeminiAPI) {
-        setAiResponse("ERROR: API Service is missing. Cannot call Gemini. Check `useAppServices` implementation.");
+
+    setIsSubmitting(true);
+    setAiResponse('The AI Coach is analyzing the book\'s core principles and formulating an actionable response...');
+
+    // SANITY CHECK: Ensure the core API function is available before proceeding
+    if (!services.callSecureGeminiAPI || !services.hasGeminiKey()) {
+        const frameworks = getFrameworks(selectedBook);
+        const actions = getActionSteps(selectedBook);
+        const mockText = generateContextualAIResponse(q, selectedBook, frameworks, actions);
+        
+        await new Promise(resolve => setTimeout(resolve, 1200)); // Simulate delay
+        
+        setAiResponse(`**AI OFFLINE/KEY MISSING**:\n\n${mockText}`);
         setIsSubmitting(false);
         return;
     }
 
-    setIsSubmitting(true);
-    setAiResponse('The AI Coach is analyzing the book\'s core principles and formulating an actionable response...');
 
     try {
         // PRODUCTION LOGIC: Use book data to ground the AI response
@@ -289,11 +387,23 @@ async function handleAiSubmit(e, services, selectedBook, aiQuery, setIsSubmittin
         });
 
         const text = out?.candidates?.[0]?.content?.parts?.[0]?.text || 'No response was received from the AI. Please ensure your API key is valid and the service is operational.';
+        
+        // Final Check: If the API returns a clearly empty or mock response, use the fallback
+        if (!text || text.includes('(FALLBACK RESPONSE)')) {
+            throw new Error("Live API returned empty or mock response.");
+        }
+        
         setAiResponse(text);
 
     } catch (err) {
-        console.error('AI coach error:', err);
-        setAiResponse(`**CRITICAL AI ERROR**: Failed to connect to or receive a response from the API. Please ensure the 'callSecureGeminiAPI' hook is correctly implemented and the API key is valid for production.`);
+        console.error('AI coach production call failed. Falling back to contextual mock.', err);
+        
+        // FALLBACK TO HIGH-QUALITY MOCK ON PRODUCTION FAILURE
+        const frameworks = getFrameworks(selectedBook);
+        const actions = getActionSteps(selectedBook);
+        const mockText = generateContextualAIResponse(q, selectedBook, frameworks, actions);
+
+        setAiResponse(`**PRODUCTION CALL FAILED** (Check console for error):\n\n${mockText}`);
     } finally {
         setIsSubmitting(false);
     }
@@ -703,12 +813,12 @@ export default function BusinessReadingsScreen() {
       
       const tierKey = selectedTier || Object.keys(allBooks).find(k => (allBooks[k] || []).some(b => b.id === selectedBook.id)) || 'Strategy & Execution';
 
-      // Show loading state immediately
+      // Show a professional loading state
       setHtmlFlyer(`<div style="padding:12px;border:1px dashed ${COLORS.SUBTLE};border-radius:12px;color:${COLORS.MUTED}">
                       <div class="animate-pulse flex items-center gap-2"><Cpu class="w-5 h-5"/> **PRODUCTION AI ACTIVE**: Generating ${isExecutiveBrief ? 'EXECUTIVE BRIEF' : 'FULL FLYER'}...</div>
                     </div>`);
 
-      // Call the production-focused function
+      // Call the production-focused function with secure fallback
       const html = await buildAIFlyerHTML({ 
         book: selectedBook, 
         tier: tierKey, 

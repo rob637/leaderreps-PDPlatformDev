@@ -1,11 +1,8 @@
-// src/components/screens/DevPlan.jsx (Modified to drop alignment/peer ratings)
+// src/components/screens/DevPlan.jsx
 
 import { Home, Settings, Zap, Clock, Briefcase, Mic, Trello, BookOpen, BarChart3, TrendingUp, TrendingDown, CheckCircle, Star, Target, Users, HeartPulse, CornerRightUp, X, ArrowLeft, Activity, Link, Lightbulb, AlertTriangle, Eye, PlusCircle, Cpu, MessageSquare, Check } from 'lucide-react';
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-
-// =========================================================
-// MOCKED SERVICES (Enhanced for State Management)
-// =========================================================
+// FIX: Mocking useAppServices since the environment can't resolve relative paths
 const useAppServices = (localPdpData, setLocalPdpData) => {
     // This function will now update the local state managed by the router
     const updatePdpData = async (updater) => {
@@ -63,7 +60,7 @@ const COLORS = {
   SUBTLE_TEAL: '#349881', 
   ORANGE: '#E04E1B',    
   GREEN: '#10B981',
-  AMBER: '#F5A500', 
+  AMBER: '#F5A500', // Adjusted amber shade for contrast
   RED: '#E04E1B',
   LIGHT_GRAY: '#FCFCFA',
   OFF_WHITE: '#FFFFFF', 
@@ -71,8 +68,8 @@ const COLORS = {
   TEXT: '#002E47',
   MUTED: '#4B5355',
   BLUE: '#2563EB',
-  BG: '#F9FAFB', 
-  PURPLE: '#7C3AED', 
+  BG: '#F9FAFB', // Matches BusinessReadings
+  PURPLE: '#7C3AED', // Matches BusinessReadings
 };
 
 // Mock UI components (Standardized)
@@ -381,8 +378,8 @@ const adjustDuration = (rating, duration) => {
     return duration;
 };
 
+// UPDATED: generatePlanData simplified to remove peer/team inputs
 const generatePlanData = (assessment, ownerUid) => {
-    // UPDATED: Removed peerRatings, teamSkillAlignment, alignToTeam from destructuring/logic
     const { managerStatus, goalPriorities, selfRatings, menteeFeedback } = assessment;
     const allTiers = Object.keys(LEADERSHIP_TIERS);
 
@@ -412,7 +409,6 @@ const generatePlanData = (assessment, ownerUid) => {
     if (menteeFeedback?.T4?.score < 70 && !tierRotationQueue.includes('T4')) {
          tierRotationQueue.splice(1, 0, 'T4');
     }
-
 
     // --- Core 24-Month Loop ---
     for (let month = 1; month <= 24; month++) {
@@ -454,7 +450,6 @@ const generatePlanData = (assessment, ownerUid) => {
                 usedContentIds.add(backupItem.id);
              }
         }
-
 
         plan.push({
             month,
@@ -655,8 +650,8 @@ const RoadmapTimeline = ({ data, currentMonth, navigateToMonth }) => {
 
 
 // --- Component 2: Tracker Dashboard View ---
-// This is the main component you asked to access and manage.
 const TrackerDashboardView = ({ data, updatePdpData, saveNewPlan, db, userId, navigate }) => {
+    // FIX: Use the local context function for fetching data
     const { callSecureGeminiAPI, hasGeminiKey, GEMINI_MODEL } = useAppServices(data);
 
     const [viewMonth, setViewMonth] = useState(data.currentMonth); // State for Timeline Navigation
@@ -682,6 +677,7 @@ const TrackerDashboardView = ({ data, updatePdpData, saveNewPlan, db, userId, na
     const [briefing, setBriefing] = useState(null); 
     const [briefingLoading, setBriefingLoading] = useState(false);
 
+
     // --- AI Monthly Briefing Logic ---
     const fetchMonthlyBriefing = useCallback(async (plan, assessment) => {
         // Reset briefing when switching to a new current month
@@ -698,7 +694,7 @@ const TrackerDashboardView = ({ data, updatePdpData, saveNewPlan, db, userId, na
 
         try {
             // Mock API call returns fixed mock data from useAppServices
-            const result = await useAppServices().callSecureGeminiAPI({ /* ... */ });
+            const result = await callSecureGeminiAPI({ systemInstruction: { parts: [{ text: systemPrompt }] }, contents: [{ role: "user", parts: [{ text: userQuery }] }] });
             const text = result?.candidates?.[0]?.content?.parts?.[0]?.text;
             
             // To prevent Gemini mock from running on historical view, use stored brief:
@@ -741,7 +737,7 @@ const TrackerDashboardView = ({ data, updatePdpData, saveNewPlan, db, userId, na
         // This is the management step: updatePdpData mutates the main state object
         await updatePdpData(oldData => {
             // Ensure the brief is saved before advancing
-            const briefingToSave = briefing.replace('## Monthly Executive Briefing', '## Saved Executive Briefing');
+            const briefingToSave = briefing ? briefing.replace('## Monthly Executive Briefing', '## Saved Executive Briefing') : '';
             
             const updatedPlan = oldData.plan.map(m => 
                 m.month === oldData.currentMonth ? { 
@@ -932,7 +928,6 @@ const TrackerDashboardView = ({ data, updatePdpData, saveNewPlan, db, userId, na
                                     <AlertTriangle className='w-4 h-4 mr-1' /> HIGH RISK TIER: Prioritize Content Completion.
                                 </p>
                             )}
-                            {/* NOTE: peerGapFlag removed */}
                         </div>
 
                         <h3 className='text-xl font-bold text-[#002E47] border-t pt-4 mt-4'>Required Content Items (Lessons)</h3>
@@ -1131,10 +1126,12 @@ const PlanGeneratorView = ({ userId, saveNewPlan, isLoading, error, navigate, se
             genericPlan: GENERIC_PLAN,
         };
 
+        // Saving plan here updates the localPdpData state in the router.
         const success = await saveNewPlan(newPlanData);
         
         setIsGenerating(false);
 
+        // This setter triggers the 'review' view in the router.
         if (success) {
             setGeneratedPlanData(generatedPlan);
         }
@@ -1282,8 +1279,9 @@ const PlanReviewScreen = ({ generatedPlan, navigate, clearReviewData }) => {
     // Handler to finalize and navigate
     const handleFinalize = async () => {
         console.log("Plan review complete. Finalizing plan and redirecting to Dashboard...");
-        clearReviewData(); // Clears the temporary review state. pdpData is already set by PlanGeneratorView.
-        navigate('prof-dev-plan'); // This is a mock function, but it signals the end of this flow.
+        clearReviewData(); // Clears the temporary review state. This is CRITICAL.
+        // Navigate back to the PDP route. Since pdpData is now populated, it will render the TrackerDashboardView.
+        navigate('prof-dev-plan'); 
     };
     
     const handleStartOver = () => {
@@ -1345,6 +1343,7 @@ const PlanReviewScreen = ({ generatedPlan, navigate, clearReviewData }) => {
 // --- Main Router (Enhanced with internal state) ---
 export const ProfDevPlanScreen = () => {
     // INTERNAL STATE: Use local state to manage PDP data since the mock useAppServices is static.
+    // In a production app, this state would typically be initialized by fetching from Firestore.
     const [localPdpData, setLocalPdpData] = useState(null); 
     const [generatedPlanData, setGeneratedPlanData] = useState(null); 
     
