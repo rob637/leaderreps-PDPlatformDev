@@ -4,6 +4,7 @@ import './globals/notepad.js';
 import React, { Suspense, lazy } from 'react';
 import { createRoot } from 'react-dom/client';
 import './index.css';
+import { AppServicesProvider } from './services/useAppServices.jsx';
 
 /**
  * Inject Firebase config from Vite env into a global BEFORE App loads.
@@ -47,8 +48,10 @@ if (!container) {
 
 createRoot(container).render(
   <React.StrictMode>
-    <Suspense fallback={<div className="p-8 text-center">Loading…</div>}>
-      <App />
-    </Suspense>
+    <AppServicesProvider>
+      <Suspense fallback={<div className="p-8 text-center">Loading…</div>}>
+        <App />
+      </Suspense>
+    </AppServicesProvider>
   </React.StrictMode>
 );

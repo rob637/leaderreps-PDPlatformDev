@@ -1,6 +1,6 @@
 /* eslint-disable no-console */
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { useAppServices } from '../../App.jsx'; 
+import { useAppServices } from '../../services/useAppServices.jsx';
 import { 
     ArrowLeft, CheckCircle, PlusCircle, X, TrendingUp, Target, AlertTriangle, Lightbulb, 
     ShieldCheck, Cpu, Trash2, Zap, MessageSquare, BookOpen, Clock, CornerRightUp, Award, Activity, Link
