@@ -368,6 +368,259 @@ AICoachInput.displayName = 'AICoachInput';
 /* =========================================================
    MAIN COMPONENT
 ========================================================= */
+
+/* ========= FIX: Stable, top-level components to prevent input focus loss ========= */
+
+function BookListStable({
+  COLORS,
+  COMPLEXITY_MAP,
+  filters,
+  filteredBooks,
+  savedBooks,
+  selectedBook,
+  onSelectBook,
+  onToggleSave,
+  handleSearchChange,
+  handleFilterChange,
+}) {
+  return (
+    <div className="space-y-10">
+      <h2 className="text-3xl font-extrabold flex items-center gap-3 border-b-4 pb-2"
+          style={{ color: COLORS.NAVY, borderColor: COLORS.ORANGE }}>
+        <BookOpen className="w-7 h-7" style={{ color: COLORS.TEAL }}/> LeaderReps Curated Reading Library
+      </h2>
+
+      <div className="p-5 rounded-xl shadow-xl border" style={{ background: COLORS.OFF_WHITE, borderColor: COLORS.SUBTLE }}>
+        <h3 className="text-xl font-bold flex items-center gap-2 mb-4" style={{ color: COLORS.NAVY }}>
+          <Filter className="w-5 h-5" style={{ color: COLORS.ORANGE }}/> Personalize Your Search
+        </h3>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <SearchInput value={filters.search} onChange={handleSearchChange} />
+          <div>
+            <label className="block text-sm font-medium mb-1" style={{ color: COLORS.MUTED }}>Complexity Level</label>
+            <select
+              value={filters.complexity}
+              onChange={(e) => handleFilterChange('complexity', e.target.value)}
+              className="w-full p-2 border rounded-lg shadow-sm focus:outline-none"
+            >
+              <option value="All">All Levels</option>
+              {Object.keys(COMPLEXITY_MAP).map(k => (<option key={k} value={k}>{COMPLEXITY_MAP[k].label}</option>))}
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm font-medium mb-1" style={{ color: COLORS.MUTED }}>Max Est. Minutes</label>
+            <input
+              type="range" min="150" max="300" step="10"
+              value={filters.maxDuration}
+              onChange={(e) => handleFilterChange('maxDuration', parseInt(e.target.value, 10))}
+              className="w-full"
+            />
+            <div className="flex justify-between text-xs mt-1" style={{ color: COLORS.MUTED }}><span>150 min</span><span>300 min</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div className="space-y-12">
+        {Object.entries(filteredBooks).map(([tier, books]) => (
+          <div key={tier}
+               className="rounded-2xl shadow-xl overflow-hidden border-2"
+               style={{ background: COLORS.OFF_WHITE, borderColor: COLORS.SUBTLE }}>
+            <div className="p-6" style={{ background: COLORS.NAVY }}>
+              <h3 className="text-2xl font-bold flex items-center gap-2" style={{ color: COLORS.OFF_WHITE }}>{tier}</h3>
+              <p className="text-base mt-1" style={{ color: '#E5E7EB' }}>Foundational books for this competency. ({books.length} available)</p>
+            </div>
+
+            <div className="p-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              {(books || []).map((book) => {
+                const c = COMPLEXITY_MAP[book.complexity] || COMPLEXITY_MAP.Medium;
+                const ComplexityIcon = c.icon;
+                const isSaved = !!savedBooks[book.id];
+                const isSelected = selectedBook?.id === book.id;
+
+                return (
+                  <div key={book.id} className="relative">
+                    <button
+                      onClick={() => { onSelectBook(book, tier); }}
+                      className="p-5 text-left w-full h-full block rounded-2xl border-2 transition-all"
+                      style={{
+                        background: 'linear-gradient(180deg,#FFFFFF,#F9FAFB)',
+                        borderColor: isSelected ? COLORS.TEAL : COLORS.SUBTLE,
+                        boxShadow: isSelected ? '0 12px 30px rgba(0,0,0,.12)' : '0 2px 8px rgba(0,0,0,.06)',
+                        color: COLORS.TEXT,
+                        position: 'relative'
+                      }}
+                    >
+                      <span style={{ position:'absolute',top:0,left:0,right:0,height:6,
+                        background: isSelected ? COLORS.TEAL : COLORS.ORANGE,
+                        borderTopLeftRadius:14,borderTopRightRadius:14 }} />
+
+                      <div className="flex gap-3 items-start">
+                        <div className="w-10 h-10 rounded-lg flex items-center justify-center border" style={{ borderColor: COLORS.SUBTLE, background: '#F3F4F6' }}>
+                          <BookOpen className="w-5 h-5" style={{ color: COLORS.TEAL }} />
+                        </div>
+                        <div className="min-w-0">
+                          <p className="font-extrabold text-lg" style={{ color: COLORS.NAVY }}>{book.title}</p>
+                          <p className="text-sm italic" style={{ color: COLORS.MUTED }}>by {book.author}</p>
+                        </div>
+                      </div>
+
+                      <div className="my-3" style={{ height: 1, background: COLORS.SUBTLE }} />
+
+                      <div className="flex items-center text-sm gap-2" style={{ color: COLORS.TEXT }}>
+                        <Clock className="w-4 h-4" style={{ color: COLORS.ORANGE, marginRight: 8 }}/> 
+                        <span className="font-semibold">Learning Mins:</span>
+                        <span className="ml-auto font-bold">{book.duration} min</span>
+                      </div>
+                      <div className="flex items-center text-sm gap-2" style={{ color: COLORS.TEXT }}>
+                        <ComplexityIcon className="w-4 h-4" style={{ color: c.hex, marginRight: 8 }}/> 
+                        <span className="font-semibold">Complexity:</span>
+                        <span className="ml-auto font-bold" style={{ color: c.hex }}>{c.label}</span>
+                      </div>
+
+                      <div className="mt-3 pt-3" style={{ borderTop: '1px solid #F3F4F6' }}>
+                        <p className="text-xs font-semibold" style={{ color: COLORS.TEAL }}>Key Focus</p>
+                        <div className="flex flex-wrap gap-1 mt-1">
+                          {(book.focus || '').split(',').slice(0, 3).map((f, i) => (
+                            <span key={i} className="px-2 py-0.5 text-xs font-medium rounded-full"
+                                  style={{ background: '#F3F4F6', color: '#4B5563' }}>{f.trim()}</span>
+                          ))}
+                        </div>
+                      </div>
+                    </button>
+
+                    <button
+                      onClick={(e) => { e.stopPropagation(); onToggleSave(book.id); }}
+                      aria-label={isSaved ? 'Remove from Saved' : 'Save for Later'}
+                      className="absolute top-2 right-2 p-2 rounded-full"
+                      style={{ background: isSaved ? COLORS.AMBER : '#FFFFFFCC', color: isSaved ? '#FFFFFF' : '#9CA3AF', boxShadow: '0 1px 2px rgba(0,0,0,.2)' }}
+                    >
+                      <Star className="w-4 h-4" fill={isSaved ? 'currentColor' : 'none'} />
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+
+            {books.length === 0 && (
+              <div className="p-6 text-center" style={{ color: COLORS.MUTED }}>
+                No books match the current filters in this category.
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function BookFlyerStable({
+  COLORS,
+  selectedBook,
+  htmlFlyer,
+  isExecutiveBrief,
+  setIsExecutiveBrief,
+  questionFeedback,
+  aiResponse,
+  aiQuery,
+  handleAiQueryChange,
+  submitHandler,
+  savedBooks,
+  onToggleSave,
+  onCommit,
+  isCommitted,
+  isSubmitting,
+}) {
+  const progressMinutes = 45;
+  const total = selectedBook.duration;
+  const pct = Math.min(100, Math.round((progressMinutes / total) * 100));
+
+  return (
+    <div className="space-y-8">
+      <div className="flex justify-between items-center pb-4" style={{ borderBottom: `1px solid ${COLORS.SUBTLE}` }}>
+        <h2 className="text-3xl font-bold flex items-center gap-3" style={{ color: COLORS.NAVY }}>
+          Focus Flyer: {selectedBook.title}
+        </h2>
+        <button
+          onClick={() => window.dispatchEvent(new CustomEvent('lr-close-flyer'))}
+          className="font-semibold px-3 py-2 rounded-xl border-2"
+          style={{ color: COLORS.NAVY, borderColor: COLORS.SUBTLE }}
+        >
+          ← Back to Library
+        </button>
+      </div>
+
+      <div className="rounded-2xl shadow-2xl p-8 border" style={{ background: COLORS.OFF_WHITE, borderColor: COLORS.SUBTLE }}>
+        <div className="flex flex-col md:flex-row justify-between gap-4 mb-4">
+          <div className="flex items-center gap-3 p-3 rounded-xl border" style={{ background: COLORS.LIGHT_GRAY, borderColor: COLORS.SUBTLE }}>
+            <TrendingUp className="w-5 h-5" style={{ color: COLORS.TEAL }}/>
+            <div>
+              <p className="text-xs font-medium" style={{ color: COLORS.MUTED }}>YOUR COMMITMENT STATUS</p>
+              <div className="flex items-center gap-2">
+                <div className="w-40 h-2 rounded-full" style={{ background: COLORS.SUBTLE }}>
+                  <div className="h-2 rounded-full" style={{ width: `${pct}%`, background: COLORS.TEAL }} />
+                </div>
+                <span className="text-sm font-bold" style={{ color: COLORS.NAVY }}>{pct}% Complete</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <ExecSwitch checked={isExecutiveBrief} onChange={setIsExecutiveBrief} />
+          </div>
+        </div>
+
+        <div className="max-w-none space-y-4" style={{ color: COLORS.TEXT }} dangerouslySetInnerHTML={{ __html: htmlFlyer }} />
+
+        <div className="mt-8 pt-4" style={{ borderTop: `1px solid ${COLORS.SUBTLE}` }}>
+          <h3 className="text-2xl font-bold mb-4 flex items-center gap-3" style={{ color: COLORS.NAVY }}>
+            <MessageSquare className="text-2xl w-6 h-6" style={{ color: COLORS.PURPLE }}/> AI Coach: Instant Application
+          </h3>
+
+          {aiResponse && (
+            <div className="p-4 mb-4 rounded-xl shadow-lg border-l-4" style={{ background: '#F0F5FF', borderLeftColor: COLORS.PURPLE, color: COLORS.TEXT }}>
+              <p className="text-sm font-semibold flex items-center gap-2" style={{ color: COLORS.NAVY }}>
+                <Cpu className="w-4 h-4"/> AI Coach Response:
+              </p>
+              <p className="text-base mt-1" style={{ whiteSpace: 'pre-wrap' }}>{aiResponse}</p>
+            </div>
+          )}
+
+          <AICoachInput
+            aiQuery={aiQuery}
+            handleAiQueryChange={handleAiQueryChange}
+            submitHandler={submitHandler}
+            isSubmitting={isSubmitting}
+            questionFeedback={questionFeedback}
+            selectedBookTitle={selectedBook.title}
+          />
+        </div>
+
+        <div className="mt-10 pt-6 flex justify-end gap-4" style={{ borderTop: `1px solid ${COLORS.SUBTLE}` }}>
+          <button
+            onClick={() => onToggleSave(selectedBook.id)}
+            className="flex items-center gap-2 px-6 py-3 font-semibold rounded-xl border-2"
+            style={{ background: COLORS.OFF_WHITE, borderColor: savedBooks[selectedBook.id] ? COLORS.AMBER : COLORS.SUBTLE, color: savedBooks[selectedBook.id] ? '#B45309' : COLORS.MUTED }}
+          >
+            <Star className="w-5 h-5" fill={savedBooks[selectedBook.id] ? 'currentColor' : 'none'}/>
+            {savedBooks[selectedBook.id] ? 'Saved to Library' : 'Save for Later'}
+          </button>
+          <button
+            onClick={onCommit}
+            className="flex items-center gap-2 px-6 py-3 font-semibold rounded-xl"
+            style={{ background: isCommitted ? COLORS.GREEN : COLORS.ORANGE, color: '#FFF', boxShadow: `0 8px 24px ${isCommitted ? COLORS.GREEN : COLORS.ORANGE}45` }}
+            disabled={isCommitted}
+          >
+            {isCommitted ? (<><Check className="w-5 h-5" /> Committed!</>) : (<><TrendingUp className="w-5 h-5" /> Add to Daily Practice Commitment</>)}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ========= END FIX ========= */
+
 export default function BusinessReadingsScreen() {
   const services = useAppServices(); 
   const {
@@ -473,6 +726,13 @@ export default function BusinessReadingsScreen() {
       setIsCommitted(false); // Reset commitment status
     }
   }, [selectedBook]);
+
+  useEffect(() => {
+    const handler = () => setSelectedBook(null);
+    window.addEventListener('lr-close-flyer', handler);
+    return () => window.removeEventListener('lr-close-flyer', handler);
+  }, []);
+
 
 
   /* ---------- Actions ---------- */
@@ -779,8 +1039,8 @@ export default function BusinessReadingsScreen() {
           <h1 className="text-4xl font-extrabold" style={{ color: COLORS.NAVY }}>Professional Reading Hub</h1>
       </div>
       
-      {!selectedBook && <BookList />}
-      {selectedBook && <BookFlyer />}
+      {!selectedBook && <BookListStable COLORS={COLORS} COMPLEXITY_MAP={COMPLEXITY_MAP} filters={filters} filteredBooks={filteredBooks} savedBooks={savedBooks} selectedBook={selectedBook} onSelectBook={(book, tier) => { setSelectedBook(book); setSelectedTier(tier); }} onToggleSave={handleSaveForLater} handleSearchChange={handleSearchChange} handleFilterChange={handleFilterChange} />}
+      {selectedBook && <BookFlyerStable COLORS={COLORS} selectedBook={selectedBook} htmlFlyer={htmlFlyer} isExecutiveBrief={isExecutiveBrief} setIsExecutiveBrief={setIsExecutiveBrief} questionFeedback={questionFeedback} aiResponse={aiResponse} aiQuery={aiQuery} handleAiQueryChange={handleAiQueryChange} submitHandler={submitHandler} savedBooks={savedBooks} onToggleSave={handleSaveForLater} onCommit={() => handleCommitment(selectedBook)} isCommitted={isCommitted} isSubmitting={isSubmitting} />}
     </div>
   );
 }
