@@ -1,92 +1,22 @@
 /* =========================================================
-   CORRECTED FILE: Labs.jsx 
-   FIX: Encapsulated mock API call logic and all hook calls 
-   within components/functions to prevent TDZ error.
+   PRODUCTION READY FILE: Labs.jsx 
+   FIX: Removed all mock services and internal API logic. 
+   Now relies on external useAppServices for live API calls.
 ========================================================= */
 /* eslint-disable no-console */
 import React, { useState, useEffect, useMemo, useCallback, useLayoutEffect } from 'react';
+// FIX: Import the real useAppServices from the standard path.
+import { useAppServices } from '../../services/useAppServices.jsx'; 
 import { AlertTriangle, ArrowLeft, BarChart3, BookOpen, Briefcase, CheckCircle, Clock, CornerRightUp, Cpu, Eye, HeartPulse, Icon, Info, Lightbulb, Mic, Play, PlusCircle, Send, ShieldCheck, Star, Target, TrendingUp, Users, X, Zap, TrendingDown } from 'lucide-react';
-/* =========================================================
-   MOCK APP SERVICES (CLEANED)
-========================================================= */
-const GEMINI_MODEL = 'gemini-2.5-flash-preview-09-2025';
 
-//  Mock array to store completed practice sessions (for PracticeLogView)
+/* =========================================================
+   MOCK DATA (Only non-API data remains)
+========================================================= */
+// Global array to store completed practice sessions (for PracticeLogView)
 const MOCK_PRACTICE_SESSIONS = [
     { id: 1, title: 'The Underperformer', date: 'Oct 15, 2025', score: 88, takeaway: 'Focus on Deep Validation.', difficulty: 'Medium' },
     { id: 2, title: 'The Boundary Pusher', date: 'Oct 10, 2025', score: 72, takeaway: 'Improve objective Behavior statement.', difficulty: 'High' },
 ];
-
-// FIX: This function remains as a mock utility
-const MOCK_API_RESPONSE_LOGIC = (payload, model) => {
-    const userQuery = payload.contents[0].parts[0].text;
-    
-    // --- ENHANCED ACTIVE LISTENING CRITIQUE MOCK LOGIC ---
-    if (userQuery.includes("Critique the following active listening responses")) {
-        const paraphraseMatch = userQuery.match(/The manager's draft paraphrase is: \"(.*?)\"/);
-        const inquiryMatch = userQuery.match(/The manager's draft open-ended question is: \"(.*?)\"/);
-        
-        const userParaphrase = paraphraseMatch ? paraphraseMatch[1].trim() : 'a generic paraphrase';
-        const userInquiry = inquiryMatch ? inquiryMatch[1].trim() : 'a generic question';
-        
-        const paraphraseScore = userParaphrase.toLowerCase().includes('so you are saying') ? 95 : 75;
-        const inquiryScore = userInquiry.includes('?') && !userInquiry.toLowerCase().includes('you agree') ? 88 : 65;
-
-        const pFeedback = paraphraseScore > 80 
-            ? `Your paraphrase, **"${userParaphrase}"**, is **Excellent**. It successfully reflects the emotion and facts without offering advice.`
-            : `Your paraphrase, **"${userParaphrase}"**, is **Fair**. It introduced judgment. A better option would be: "So, the heavy deadline load is making you feel overwhelmed."`;
-
-        const iFeedback = inquiryScore > 80
-            ? `Your question, **"${userInquiry}"**, is **Strong**. It is open-ended and invites deeper insight.`
-            : `Your question, **"${userInquiry}"**, is **Weak**. It can be answered with a simple "yes" or "no". Refine it to start with "What" or "How."`;
-
-        return { candidates: [{ content: { parts: [{ text: 
-            `## The Paraphrase Audit (Score: ${paraphraseScore}/100)\n\n${pFeedback}\n\n## The Inquiry Audit (Score: ${inquiryScore}/100)\n\n${iFeedback}\n\n### Core Skill Focus\n\nPractice pausing for a full three seconds after the employee speaks. The space is often more powerful than the words.` 
-        }] } }] };
-
-    } else if (userQuery.includes("Audit the Rewritten Response")) {
-        const score = Math.floor(Math.random() * 20) + 75;
-        const feedback = score > 85 ? "Exceptional! Your rewrite incorporated validation and avoided all judgmental language. This is ready for a real conversation." : "Strong attempt, but your response still contained a passive solution. Remember to focus on confirmation only.";
-        return { candidates: [{ content: { parts: [{ text: `## Correction Audit: ${score}/100\n\n**Analysis:** ${feedback}\n\n### Final Score:\n\nYour corrected response achieved a score of ${score}/100, demonstrating strong self-correction ability.` }] } }] };
-    } else if (userQuery.includes("Analyze the following role-play dialogue")) {
-         return { candidates: [{ content: { parts: [{ text: `## Overall Score: 88/100\n\n**Assessment:** Your manager established a clear, non-judgmental tone early in the conversation.\n\n### SBI Effectiveness (Score: 92/100)\n\n**Assessment:** Excellent adherence to objective facts.\n\n### Active Listening & Empathy (Score: 78/100)\n\n**Assessment:** You missed an opportunity to validate Alex's defensive statement. \n\n### Resolution Drive (Score: 88/100)\n\n**Assessment:** Clear action plan established.\n\n### Next Practice Point\n\nFocus on **Deep Validation**. When Alex shows emotion, practice saying, "I hear that you feel that this situation is unfair. Tell me more about what specifically made it feel unfair." This builds a deeper connection before moving to problem-solving.` }] } }] };
-    } else if (userQuery.includes("Critique and refine this SBI feedback draft")) {
-         return { candidates: [{ content: { parts: [{ text: `The draft is strong! **Strength:** The Behavior is highly specific—"interrupted Sarah three times." **Area for Improvement:** The Impact could be tied more directly to the business. \n\n**Refined Feedback**: S: During the Q3 Review meeting with the leadership team last Friday. B: You interrupted Sarah three times while she was presenting her analysis on customer churn data. I: This caused Sarah to lose her train of thought and delayed our ability to fully analyze critical churn data before the board meeting.` }] } }] };
-    } else if (userQuery.includes("The best reply to Alex's last defense")) {
-         return { candidates: [{ content: { parts: [{ text: "The best reply to Alex's last defense ('It's not fair') would have been a **paraphrase/validation statement** before asking a follow-up question. For example: 'I hear that you feel a sense of unfairness about the situation. Can you tell me what specific resources you felt were missing?' This validates the emotion without agreeing with the premise." }] } }] };
-    } else if (userQuery.includes("Generate a 1-sentence Priming Nudge")) {
-         return { candidates: [{ content: { parts: [{ text: "High stress compromises neutrality. Your chosen mindset is key; start by taking three deep breaths before speaking to Alex. Prioritize listening over planning your reply." }] } }] };
-    } else if (userQuery.includes("Perform a Reflective Analysis")) {
-        return { candidates: [{ content: { parts: [{ text: `## Reflection Audit: High Insight\n\n**Analysis:** Your reflection accurately pinpoints 'missing the validation phase' as the core problem. Your stated plan to 'use a reflective pause' directly addresses the Next Practice Point.\n\n**Confidence Rating:** Excellent (95%). This shows strong capacity for self-correction. Focus on immediate practice to cement this learning.` }] } }] };
-    } else if (userQuery.includes("Base Scenario:")) {
-        return { candidates: [{ content: { parts: [{ text: 
-            `## Generated Scenario\n\n### Title: The High-Stakes Financial Audit\n\n### Description: A high-potential team member is consistently missing deadlines due to distraction, and is currently under pressure from a difficult family situation. This adaptation forces you to handle **personal boundaries and deflection** simultaneously.\n\n### Persona: The Emotional Reactor (Highly Resistant)` 
-        }] } }] };
-    }
-    
-    const defaultResponse = userQuery.includes("Alex") ? 
-        "I am finding this conversation difficult, manager. I need more empathy before I can commit to anything." : 
-        "I'm not sure how to respond to that. Can you focus on the facts?";
-
-    return { candidates: [{ content: { parts: [{ text: defaultResponse }] } }] };
-};
-
-// FIX: The actual mock hook definition should be simple and return the necessary functions.
-// We must *not* call callSecureGeminiAPI() inside the mock itself, but only return a reference to it.
-const useAppServices = () => ({
-  commitmentData: { active_commitments: [], history: [], reflection_journal: '' },
-  updateCommitmentData: async (data) => new Promise(resolve => setTimeout(resolve, 300)),
-  planningData: { okrs: [], vision: '', mission: '' },
-  navigate: (view, params) => console.log(`Navigating to ${view} with params:`, params),
-  // FIX: This returns the MOCK_API_RESPONSE_LOGIC function reference, which is safe.
-  callSecureGeminiAPI: async (payload) => MOCK_API_RESPONSE_LOGIC(payload), 
-  hasGeminiKey: () => true,
-  GEMINI_MODEL: GEMINI_MODEL,
-});
-// FIX: We must use the original name (useAppServices) for the components to access it, 
-// or use the original name and call it inside the component functions.
-const useAppServicesOriginal = useAppServices;
-
 
 /* =========================================================
    HIGH-CONTRAST PALETTE
@@ -115,8 +45,9 @@ const COMPLEXITY_MAP = {
 };
 
 /* =========================================================
-   UI Components (CLEANED)
+   UI Components
 ========================================================= */
+// ... (Button, Card, Tooltip components remain unchanged) ...
 const Button = ({ children, onClick, disabled = false, variant = 'primary', className = '', ...rest }) => {
     let baseStyle = "px-6 py-3 rounded-xl font-semibold transition-all shadow-xl focus:outline-none focus:ring-4 text-white";
 
@@ -224,11 +155,14 @@ const Message = ({ sender, text, isAI }) => (
 );
 
 /* =========================================================
-   COACHING LAB VIEWS
+   COACHING LAB VIEWS (UPDATED FOR PRODUCTION API CALLS)
 ========================================================= */
 
 const FollowUpCoach = ({ history, setView }) => {
-    const { callSecureGeminiAPI, hasGeminiKey, GEMINI_MODEL } = useAppServicesOriginal();
+    // FIX: Use real hook
+    const services = useAppServices(); 
+    const { callSecureGeminiAPI, hasGeminiKey, GEMINI_MODEL, navigate } = services;
+
     const [followUpHistory, setFollowUpHistory] = useState([]);
     const [inputText, setInputText] = useState('');
     const [isGenerating, setIsGenerating] = useState(false);
@@ -327,8 +261,9 @@ ${fullConversation}
 };
 
 const RolePlayCritique = ({ history, setView, preparedSBI, scenario, difficultyLevel }) => {
-    // FIX: Access hooks inside component
-    const { callSecureGeminiAPI, hasGeminiKey, navigate, updateCommitmentData, GEMINI_MODEL } = useAppServicesOriginal(); 
+    // FIX: Use real hook
+    const services = useAppServices(); 
+    const { callSecureGeminiAPI, hasGeminiKey, navigate, updateCommitmentData, GEMINI_MODEL } = services; 
 
     const [critique, setCritique] = useState('');
     const [critiqueHtml, setCritiqueHtml] = useState('');
@@ -460,10 +395,7 @@ const RolePlayCritique = ({ history, setView, preparedSBI, scenario, difficultyL
         };
 
         try {
-            await updateCommitmentData(data => {
-                const existingCommitments = data?.active_commitments || [];
-                return { active_commitments: [...existingCommitments, newCommitment] };
-            });
+            await updateCommitmentData(newCommitment);
             console.info("Commitment created successfully!");
             navigate('daily-practice', { 
                 initialGoal: newCommitment.linkedGoal, 
@@ -664,10 +596,11 @@ const RolePlayCritique = ({ history, setView, preparedSBI, scenario, difficultyL
 
 };
 
-// --- ROLE PLAY SIMULATOR VIEW (No changes needed) ---
+// --- ROLE PLAY SIMULATOR VIEW ---
 const RolePlayView = ({ scenario, setCoachingLabView, preparedSBI, difficultyLevel }) => {
-    // FIX: Access hook inside component
-    const { navigate, callSecureGeminiAPI, hasGeminiKey, GEMINI_MODEL } = useAppServicesOriginal(); 
+    // FIX: Use real hook
+    const services = useAppServices(); 
+    const { navigate, callSecureGeminiAPI, hasGeminiKey, GEMINI_MODEL } = services; 
 
     const [chatHistory, setChatHistory] = useState([]);
     const [inputText, setInputText] = useState('');
@@ -814,7 +747,8 @@ const RolePlayView = ({ scenario, setCoachingLabView, preparedSBI, difficultyLev
 
     const handlePrimingCheckIn = async () => {
         setIsPrimingLoading(true);
-        const GEMINI_MODEL_LOCAL = useAppServicesOriginal().GEMINI_MODEL; // FIX: Access inside function
+        // FIX: Access GEMINI_MODEL directly from services
+        const { GEMINI_MODEL } = services; 
         
         const userQuery = `Generate a 1-sentence Priming Nudge based on this self-assessment: Stress: ${stressLevel}%. Mindset: ${intentionalMindset}. The scenario is ${scenario.title} where Alex is ${scenario.persona}. Priming Nudge:`;
         
@@ -822,7 +756,7 @@ const RolePlayView = ({ scenario, setCoachingLabView, preparedSBI, difficultyLev
             const payload = {
                 contents: [{ role: "user", parts: [{ text: userQuery }] }],
                 systemInstruction: { parts: [{ text: "You are an AI coach. Provide only the concise, actionable nudge in plain text." }] },
-                model: GEMINI_MODEL_LOCAL,
+                model: GEMINI_MODEL,
             };
             const result = await callSecureGeminiAPI(payload);
             const nudgeText = result?.candidates?.[0]?.content?.parts?.[0]?.text;
@@ -997,10 +931,11 @@ const RolePlayView = ({ scenario, setCoachingLabView, preparedSBI, difficultyLev
     );
 };
 
-// --- LEAN FEEDBACK PREP VIEW (Dedicated for instant SBI audit) ---
+// --- LEAN FEEDBACK PREP VIEW ---
 const LeanFeedbackPrepView = ({ setCoachingLabView, setPreparedSBI }) => {
-    // FIX: Access hook inside component
-    const { callSecureGeminiAPI, hasGeminiKey, GEMINI_MODEL } = useAppServicesOriginal(); 
+    // FIX: Use real hook
+    const services = useAppServices(); 
+    const { callSecureGeminiAPI, hasGeminiKey, GEMINI_MODEL } = services; 
 
     const [situation, setSituation] = useState('');
     const [behavior, setBehavior] = useState('');
@@ -1135,9 +1070,10 @@ const LeanFeedbackPrepView = ({ setCoachingLabView, setPreparedSBI }) => {
     );
 };
 
-// --- PRACTICE LOG VIEW (Integrated Mock Session Data) ---
+// --- PRACTICE LOG VIEW ---
 const PracticeLogView = ({ setCoachingLabView }) => {
-    const { navigate } = useAppServicesOriginal();
+    // FIX: Use real hook
+    const { navigate } = useAppServices();
     
     return (
         <div className="p-8">
@@ -1165,10 +1101,11 @@ const PracticeLogView = ({ setCoachingLabView }) => {
 };
 
 
-// --- SCENARIO PREP VIEW (No changes needed) ---
+// --- SCENARIO PREP VIEW ---
 const ScenarioPreparationView = ({ scenario, setCoachingLabView, setPreparedSBI }) => {
-    // FIX: Access hook inside component
-    const { callSecureGeminiAPI, hasGeminiKey, GEMINI_MODEL, navigate } = useAppServicesOriginal();
+    // FIX: Use real hook
+    const services = useAppServices();
+    const { callSecureGeminiAPI, hasGeminiKey, GEMINI_MODEL, navigate } = services;
 
     const [situation, setSituation] = useState('');
     const [behavior, setBehavior] = useState('');
@@ -1373,10 +1310,11 @@ const ScenarioPreparationView = ({ scenario, setCoachingLabView, setPreparedSBI 
     );
 };
 
-// --- ACTIVE LISTENING VIEW (With Rewrite Challenge) ---
+// --- ACTIVE LISTENING VIEW ---
 const ActiveListeningView = ({ setCoachingLabView }) => {
-    // FIX: Access hook inside component
-    const { callSecureGeminiAPI, hasGeminiKey, navigate } = useAppServicesOriginal();
+    // FIX: Use real hook
+    const services = useAppServices();
+    const { callSecureGeminiAPI, hasGeminiKey } = services;
 
     const [responses, setResponses] = useState({ q1: '', q2: '' });
     const [critique, setCritique] = useState(null);
@@ -1439,7 +1377,7 @@ Critique Guidelines (Use Markdown):
             const payload = {
                 contents: [{ role: "user", parts: [{ text: userQuery }] }],
                 systemInstruction: { parts: [{ text: systemPrompt }] },
-                model: GEMINI_MODEL,
+                model: services.GEMINI_MODEL,
             };
 
             const result = await callSecureGeminiAPI(payload);
@@ -1475,7 +1413,7 @@ Critique Guidelines (Use Markdown):
             const payload = {
                 contents: [{ role: "user", parts: [{ text: userQuery }] }],
                 systemInstruction: { parts: [{ text: systemPrompt }] },
-                model: GEMINI_MODEL,
+                model: services.GEMINI_MODEL,
             };
 
             const result = await callSecureGeminiAPI(payload);
@@ -1590,7 +1528,8 @@ Critique Guidelines (Use Markdown):
 
 // --- MAIN COACHING LAB ROUTER ---
 export default function CoachingLabScreen() {
-    const { navigate } = useAppServicesOriginal();
+    // FIX: Use real hook
+    const { navigate } = useAppServices();
 
     const [view, setView] = useState('coaching-lab-home');
     const [selectedScenario, setSelectedScenario] = useState(null);
@@ -1650,7 +1589,7 @@ export default function CoachingLabScreen() {
                                 </div>
                             </Card>
                             <Card accent="BLUE" title="Practice History Log" icon={BarChart3} onClick={() => setView('practice-log')} className="border-l-4 border-[#2563EB] rounded-3xl">
-                                <p className className="text-gray-700 text-sm">Review your past session scores, track your skill growth over time, and revisit key takeaways.</p>
+                                <p className="text-gray-700 text-sm">Review your past session scores, track your skill growth over time, and revisit key takeaways.</p>
                                 <div className="mt-4 text-[#2563EB] font-semibold flex items-center">
                                     View Log &rarr;
                                 </div>
@@ -1677,8 +1616,9 @@ export default function CoachingLabScreen() {
 // --- The rest of the ScenarioLibraryView, DynamicScenarioGenerator, etc. follow here ---
 
 const DynamicScenarioGenerator = ({ setCoachingLabView, setSelectedScenario }) => {
-    // FIX: Access hook inside component
-    const { callSecureGeminiAPI, GEMINI_MODEL } = useAppServicesOriginal();
+    // FIX: Use real hook
+    const services = useAppServices();
+    const { callSecureGeminiAPI, GEMINI_MODEL } = services;
 
     const baseScenarios = [
         { id: 1, title: 'The Missing Deadline', description: 'Consistently missing reports.', persona: 'The Deflector' },
@@ -1829,7 +1769,7 @@ const DynamicScenarioGenerator = ({ setCoachingLabView, setSelectedScenario }) =
 };
 
 
-// --- SCENARIO LIBRARY VIEW (No changes needed) ---
+// --- SCENARIO LIBRARY VIEW ---
 const ScenarioLibraryView = ({ setCoachingLabView, setSelectedScenario }) => {
     const [isDynamicGeneratorVisible, setIsDynamicGeneratorVisible] = useState(false);
     
