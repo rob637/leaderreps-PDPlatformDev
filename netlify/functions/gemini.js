@@ -1,6 +1,5 @@
 // netlify/functions/gemini.js
-// Robust Gemini proxy with auto-fallback between v1 (camelCase) and v1beta (snake_case).
-// Fixes "GenerateContentRequest.model: unexpected model name format" by normalizing paths.
+// Gemini proxy with model-path normalization and v1↔v1beta fallback.
 
 const API_KEY = process.env.GEMINI_API_KEY;
 const DEFAULT_MODEL = String(process.env.GEMINI_MODEL || 'gemini-2.5-flash');
@@ -10,19 +9,24 @@ exports.handler = async (event) => {
     if (!API_KEY) return { statusCode: 500, body: 'Missing GEMINI_API_KEY env var.' };
     if (event.httpMethod !== 'POST') return { statusCode: 405, body: 'Method Not Allowed' };
 
-    // ---- Parse and normalize payload ----
+    // Parse body
     let payload;
     try { payload = JSON.parse(event.body || '{}'); }
     catch (e) { return { statusCode: 400, body: `Bad JSON: ${e.message}` }; }
 
-    // Normalize model: strip any leading "models/" then rebuild the URL path consistently.
-    const rawModel = (payload.model || DEFAULT_MODEL).trim();
-    const modelId  = rawModel.replace(/^models\//, '').replace(/^tunedModels\//, '');
-    // We never include "model" in the body; URL only.
+    // ---- Normalize model & choose correct path segment ----
+    const raw = String((payload.model || DEFAULT_MODEL)).trim();
+    // remove any accidental leading prefixes; normalize case
+    const cleaned = raw.replace(/^models\//i, '').replace(/^tunedmodels\//i, '');
+    const isTuned = /^tunedmodels\//i.test(raw);
+    const modelId = isTuned ? cleaned : cleaned.toLowerCase(); // stock models are lowercase
+    const modelPath = isTuned ? `tunedModels/${modelId}` : `models/${modelId}`;
+
+    // never send model in body
     delete payload.model;
 
-    // Builders for body styles:
-    const camelBody = (p) => {
+    // Build bodies for v1 (camelCase) and v1beta (snake_case)
+    const toCamel = (p) => {
       const b = {
         contents: p.contents,
         systemInstruction: p.systemInstruction ?? p.system_instruction,
@@ -36,7 +40,7 @@ exports.handler = async (event) => {
       return b;
     };
 
-    const snakeBody = (p) => {
+    const toSnake = (p) => {
       const b = {
         contents: p.contents,
         system_instruction: p.systemInstruction ?? p.system_instruction,
@@ -50,56 +54,44 @@ exports.handler = async (event) => {
       return b;
     };
 
-    // Core caller
+    if (!payload.contents) {
+      return { statusCode: 400, body: 'Missing required field: contents' };
+    }
+    if (typeof fetch !== 'function') {
+      return { statusCode: 500, body: 'Global fetch is unavailable. Use Node 18+.' };
+    }
+
     const call = async (version, style) => {
-      const modelPath = `models/${modelId}`;
       const url = `https://generativelanguage.googleapis.com/${version}/${modelPath}:generateContent?key=${API_KEY}`;
-      const body = style === 'camel' ? camelBody(payload) : snakeBody(payload);
-
-      if (!body.contents) {
-        return { ok: false, status: 400, text: 'Missing required field: contents', url };
-      }
-      if (typeof fetch !== 'function') {
-        return { ok: false, status: 500, text: 'Global fetch is unavailable. Use Node 18+.', url };
-      }
-
-      const res = await fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
-      });
+      const body = style === 'camel' ? toCamel(payload) : toSnake(payload);
+      const res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
       const text = await res.text().catch(() => '');
       return { ok: res.ok, status: res.status, text, url };
     };
 
-    // Try v1 (camelCase) first
+    // Try v1 first (camelCase fields)
     let r = await call('v1', 'camel');
 
-    // If that fails with common schema/version errors, fall back to v1beta (snake_case)
+    // Fallback to v1beta (snake_case) on schema/version-style errors
     if (!r.ok) {
       const msg = (r.text || '').toLowerCase();
       const shouldFallback =
         r.status === 400 ||
         msg.includes('unexpected model name format') ||
-        msg.includes('unknown name "systeminstruction"') ||
-        msg.includes('not found for api version v1') ||
-        msg.includes('cannot find field');
+        msg.includes('cannot find field') ||
+        msg.includes('unknown name') ||
+        msg.includes('not found for api version v1');
 
-      if (shouldFallback) {
-        r = await call('v1beta', 'snake');
-      }
+      if (shouldFallback) r = await call('v1beta', 'snake');
     }
 
     if (!r.ok) {
-      // Surface exact upstream error and the URL we used (to spot model path issues quickly)
-      return { statusCode: r.status, body: r.text || `Gemini error (empty body). URL: ${r.url}` };
+      // Return exact upstream error + the URL we used
+      const body = r.text || 'Gemini error (empty body)';
+      return { statusCode: r.status, body: `${body}\n\n[debug url] ${r.url}` };
     }
 
-    return {
-      statusCode: 200,
-      headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
-      body: r.text,
-    };
+    return { statusCode: 200, headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' }, body: r.text };
   } catch (err) {
     return { statusCode: 500, body: `Function error: ${err.message}` };
   }
