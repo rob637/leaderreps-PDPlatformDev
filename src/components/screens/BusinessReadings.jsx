@@ -1,7 +1,7 @@
 /* eslint-disable no-console  */
 import React, { useState, useMemo, useRef, useEffect, useCallback, useLayoutEffect } from 'react';
 // FIX: The import is typically named 'useAppServices' in the app context
-import { useAppServices } from '../../App.jsx'; 
+import { useAppServices } from '../../services/useAppServices.jsx';
 import {
   BookOpen, Target, CheckCircle, Clock, AlertTriangle,
   MessageSquare, Filter, TrendingUp, Star, Search as SearchIcon, Cpu, Zap, Info, Check
