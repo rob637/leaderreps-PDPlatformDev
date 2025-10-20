@@ -9,11 +9,7 @@ const DEFAULT_MODEL = 'gemini-2.5-flash';
 
 /**
  * Translates the SDK-style payload (used by the frontend) into a REST API compliant body.
- * The REST API requires:
- * - systemInstruction as a string (not an object with 'parts').
- * - tools/google_search to be nested and camelCased (googleSearch) inside a 'config' object.
- *
- * @param {object} sdkPayload - The payload received from the frontend (SDK format).
+ * * @param {object} sdkPayload - The payload received from the frontend (SDK format).
  * @param {boolean} useSnakeCase - True to use snake_case keys (for v1beta).
  * @returns {object} The compliant REST API payload.
  */
@@ -26,54 +22,48 @@ function translatePayload(sdkPayload, useSnakeCase) {
   // 1. Translate systemInstruction (SDK object -> REST string)
   const sdkSystemInstruction = sdkPayload.systemInstruction;
   if (sdkSystemInstruction?.parts?.[0]?.text) {
+    // Both v1 (camelCase) and v1beta (snake_case) support system instruction
+    // as a top-level string field.
     const key = useSnakeCase ? 'system_instruction' : 'systemInstruction';
     body[key] = sdkSystemInstruction.parts[0].text;
   }
-  // NOTE: The frontend used a key 'systemInstruction' with an object value. 
-  // We extract the string and map it to the REST API's string field.
-
-  // 2. Translate tools (SDK array -> REST config.tools array)
+  
+  // 2. Translate tools (SDK array -> REST top-level tools array)
   if (sdkPayload.tools && sdkPayload.tools.length > 0) {
-    const configKey = useSnakeCase ? 'generation_config' : 'generationConfig';
+    // FIX: Tools must be a top-level field, NOT nested inside generation_config.
+    const toolKey = useSnakeCase ? 'tools' : 'tools'; // Key name is 'tools' for both versions
     
-    // The Gemini REST API uses 'googleSearch', not 'google_search' 
-    // and nests tools under a config object.
     const translatedTools = sdkPayload.tools.map(tool => {
         if (tool.google_search) {
-            return { googleSearch: {} }; // Correct REST name
+            // FIX: 'google_search' must be camelCase 'googleSearch' for the object content
+            return { googleSearch: {} }; 
         }
         return tool;
     });
 
-    body[configKey] = {
-      tools: translatedTools,
-      // You can also add temperature, topP, etc. here if passed in the payload
-    };
+    body[toolKey] = translatedTools; // Add the tools array as a top-level field
   }
 
-  // 3. Handle other potential fields if needed, ensuring correct casing/structure.
+  // 3. (Optional) Add generation config fields (temperature, topP, etc.) if needed
+  // Note: Only add if you have other generation parameters to pass, otherwise omit.
   
   return body;
 }
 
 
-// --- 2. MODEL PATH NORMALIZATION (Fixing the bug) ---
+// --- 2. MODEL PATH NORMALIZATION (No changes needed, this logic is correct) ---
 
 // Normalize ANY model string into a proper path segment for the URL
 function normalizeModelPath(rawIn) {
   const raw = String(rawIn || '').trim();
 
-  // FIX: The error indicated the frontend was passing a string like "gemini_model = gemini-2.5-flash"
-  // This line strips any surrounding variable assignments, spaces, and model prefixes.
+  // FIX: This section correctly handles model assignment strings like 'gemini_model = ...'
   const cleaned = raw
-    .replace(/^.+?=\s*/, '') // Remove 'gemini_model =' if present
-    .replace(/^(?:models\/|tunedmodels\/)+/i, '') // Strip common prefixes
+    .replace(/^.+?=\s*/, '') 
+    .replace(/^(?:models\/|tunedmodels\/)+/i, '') 
     .trim();
 
-  // If the original referenced tunedModels/, keep tuned; otherwise treat as stock model
   const isTuned = /^tunedmodels\//i.test(raw);
-
-  // Stock model IDs are lowercase; tuned IDs often preserve case
   const id = isTuned ? cleaned : cleaned.toLowerCase();
 
   return isTuned ? `tunedModels/${id}` : `models/${id}`;
@@ -96,9 +86,8 @@ exports.handler = async (event) => {
 
     // Compute URL model path
     const chosenModel = (payload.model || DEFAULT_MODEL).trim();
-    // Use the normalized model path for the URL
     const modelPath = normalizeModelPath(chosenModel); 
-    delete payload.model; // Ensure 'model' is not sent in the body
+    delete payload.model; 
 
     if (!payload.contents) {
       return { statusCode: 400, body: 'Missing required field: contents' };
@@ -107,7 +96,7 @@ exports.handler = async (event) => {
     // Core caller function
     async function call(version, useSnakeCase) {
       const url = `https://generativelanguage.googleapis.com/${version}/${modelPath}:generateContent?key=${API_KEY}`;
-      // Use the new, robust translation helper
+      // Use the corrected translation helper
       const body = translatePayload(payload, useSnakeCase); 
       
       const res = await fetch(url, { 
@@ -125,6 +114,7 @@ exports.handler = async (event) => {
     // Fallback logic
     if (!r.ok) {
       const msg = (r.text || '').toLowerCase();
+      // Only fallback if the error suggests a version/casing issue
       const shouldFallback =
         r.status === 400 || 
         msg.includes('unexpected model name format') ||
