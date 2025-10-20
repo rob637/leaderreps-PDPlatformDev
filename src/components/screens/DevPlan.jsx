@@ -1,6 +1,6 @@
 // src/components/screens/DevPlan.jsx
 
-import { Home, Zap, Clock, Briefcase, Mic, Trello, BookOpen, Settings, BarChart3, TrendingUp, TrendingDown, CheckCircle, Star, Target, Users, HeartPulse, CornerRightUp, X, ArrowLeft, Activity, Link, Lightbulb, AlertTriangle, Eye, PlusCircle, Cpu, MessageSquare, Check } from 'lucide-react';
+import { Zap, Clock, Briefcase, Mic, Trello, BookOpen, BarChart3, TrendingUp, TrendingDown, CheckCircle, Star, Target, Users, HeartPulse, CornerRightUp, X, ArrowLeft, Activity, Link, Lightbulb, AlertTriangle, Eye, PlusCircle, Cpu, MessageSquare, Check } from 'lucide-react';
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 // FIX: Mocking useAppServices since the environment can't resolve relative paths
 const useAppServices = () => ({
@@ -61,8 +61,8 @@ const COLORS = {
   TEXT: '#002E47',
   MUTED: '#4B5355',
   BLUE: '#2563EB',
-  BG: '#F9FAFB', 
-  PURPLE: '#7C3AED', 
+  BG: '#F9FAFB', // Matches BusinessReadings
+  PURPLE: '#7C3AED', // Matches BusinessReadings
 };
 
 // Mock UI components (Standardized)
@@ -161,55 +161,203 @@ const LEADERSHIP_TIERS = {
     T5: { id: 'T5', name: 'Strategy & Vision', icon: 'TrendingUp', color: 'cyan-600' },
 };
 
-// Content Library (Updated to use all course concepts)
+// Content Library (EXPANDED TO PROVIDE 24 MONTHS OF UNIQUE CONTENT)
 const CONTENT_LIBRARY = [
-    // T1: Lead Self & Mindsets
+    // T1: Lead Self & Mindsets (6 unique items per difficulty: Intro, Core, Mastery)
     { id: 101, tier: 'T1', skill: 'Shift to Coach', type: 'Exercise', title: 'Player-to-Coach Delegation Framework', duration: 45, difficulty: 'Core' },
     { id: 102, tier: 'T1', skill: 'Motive', type: 'Reading', title: 'Leadership Motive - Servant Leadership Primer', duration: 30, difficulty: 'Intro' },
     { id: 103, tier: 'T1', skill: 'Identity', type: 'Tool', title: 'Defining Your Leadership Identity (LIS)', duration: 60, difficulty: 'Mastery' },
     { id: 104, tier: 'T1', skill: 'Ownership', type: 'Case Study', title: 'Ownership and Accountability Audit', duration: 50, difficulty: 'Core' },
     { id: 105, tier: 'T1', skill: 'Boss', type: 'Reading', title: 'Relationship with Boss: Managing Upward', duration: 30, difficulty: 'Intro' },
     { id: 106, tier: 'T1', skill: 'V-B Trust', type: 'Reading', title: 'Leading the Way: Go 1st with V-B Trust', duration: 40, difficulty: 'Intro' },
+    { id: 107, tier: 'T1', skill: 'Shift to Coach', type: 'Role-Play', title: 'Sim: Delegating a High-Stakes Task', duration: 55, difficulty: 'Mastery' },
+    { id: 108, tier: 'T1', skill: 'Motive', type: 'Exercise', title: 'Journal: Motive vs. Reward', duration: 30, difficulty: 'Core' },
+    { id: 109, tier: 'T1', skill: 'Identity', type: 'Case Study', title: 'Case: Identity Conflict & Team Morale', duration: 60, difficulty: 'Mastery' },
+    { id: 110, tier: 'T1', skill: 'Ownership', type: 'Tool', title: 'Accountability Scorecard Setup', duration: 45, difficulty: 'Core' },
+    { id: 111, tier: 'T1', skill: 'Boss', type: 'Role-Play', title: 'Sim: Delivering Bad News to Your Boss', duration: 50, difficulty: 'Mastery' },
+    { id: 112, tier: 'T1', skill: 'V-B Trust', type: 'Exercise', title: 'Vulnerability Loop Practice', duration: 35, difficulty: 'Core' },
+    { id: 113, tier: 'T1', skill: 'Shift to Coach', type: 'Case Study', title: 'Case: Over-Involvement Failure', duration: 50, difficulty: 'Intro' },
+    { id: 114, tier: 'T1', skill: 'Identity', type: 'Reading', title: 'Article: The Pitfalls of the "Hero" Identity', duration: 25, difficulty: 'Intro' },
+    { id: 115, tier: 'T1', skill: 'Ownership', type: 'Role-Play', title: 'Sim: Refusing Excuses', duration: 45, difficulty: 'Mastery' },
+    { id: 116, tier: 'T1', skill: 'Motive', type: 'Case Study', title: 'Case: Purpose vs. Profit Alignment', duration: 60, difficulty: 'Mastery' },
+    { id: 117, tier: 'T1', skill: 'V-B Trust', type: 'Tool', title: 'Tool: Trust Building Checklist', duration: 30, difficulty: 'Intro' },
+    { id: 118, tier: 'T1', skill: 'Boss', type: 'Exercise', title: 'Journal: Boss Expectation Alignment', duration: 40, difficulty: 'Core' },
     
-    // T2: Lead Work & Execution
+    // T2: Lead Work & Execution (6 unique items per difficulty)
     { id: 201, tier: 'T2', skill: 'Goals', type: 'Exercise', title: 'Goals & OKR Prioritization Workshop', duration: 60, difficulty: 'Mastery' },
     { id: 202, tier: 'T2', skill: 'Expectations', type: 'Reading', title: 'Setting Clear Expectations Protocol', duration: 25, difficulty: 'Intro' },
     { id: 203, tier: 'T2', skill: 'Metrics', type: 'Tool', title: 'Leading & Lagging Metrics Dashboard Setup', duration: 40, difficulty: 'Core' },
     { id: 204, tier: 'T2', skill: 'Delegation', type: 'Exercise', title: 'Effective Delegation using Delegation Matrix', duration: 45, difficulty: 'Core' },
     { id: 205, tier: 'T2', skill: 'Meetings', type: 'Tool', title: 'Effective Meetings: Decision-Focused Agenda', duration: 30, difficulty: 'Intro' },
     { id: 206, tier: 'T2', skill: 'Decisions', type: 'Case Study', title: 'Decision-Making / Problem Solving Framework', duration: 55, difficulty: 'Mastery' },
+    { id: 207, tier: 'T2', skill: 'Goals', type: 'Reading', title: 'Article: From Activity to Outcome', duration: 20, difficulty: 'Intro' },
+    { id: 208, tier: 'T2', skill: 'Expectations', type: 'Exercise', title: 'Tool: Stakeholder Expectation Mapping', duration: 40, difficulty: 'Core' },
+    { id: 209, tier: 'T2', skill: 'Metrics', type: 'Case Study', title: 'Case: Metrics Misalignment Disaster', duration: 60, difficulty: 'Mastery' },
+    { id: 210, tier: 'T2', skill: 'Delegation', type: 'Role-Play', title: 'Sim: Delegating a Creative Task', duration: 50, difficulty: 'Core' },
+    { id: 211, tier: 'T2', skill: 'Meetings', type: 'Case Study', title: 'Case: Post-Mortem on a Bad Meeting', duration: 45, difficulty: 'Mastery' },
+    { id: 212, tier: 'T2', skill: 'Decisions', type: 'Reading', title: 'Article: When to Use the DICE Model', duration: 30, difficulty: 'Intro' },
+    { id: 213, tier: 'T2', skill: 'Goals', type: 'Role-Play', title: 'Sim: Challenging a Vague Goal', duration: 55, difficulty: 'Mastery' },
+    { id: 214, tier: 'T2', skill: 'Expectations', type: 'Case Study', title: 'Case: The Unspoken Expectation Failure', duration: 45, difficulty: 'Intro' },
+    { id: 215, tier: 'T2', skill: 'Delegation', type: 'Tool', title: 'Delegation Audit & Follow-up Checklist', duration: 35, difficulty: 'Core' },
+    { id: 216, tier: 'T2', skill: 'Meetings', type: 'Exercise', title: 'Exercise: Defining Meeting Success', duration: 30, difficulty: 'Intro' },
     
-    // T3: Lead People & Coaching
+    // T3: Lead People & Coaching (5 unique items per difficulty)
     { id: 301, tier: 'T3', skill: '1:1s', type: 'Tool', title: 'Effective 1:1s: Coaching-First Structure', duration: 30, difficulty: 'Core' },
-    { id: 302, tier: 'T3', skill: 'Coaching', type: 'Role-Play', title: 'Practice: Coaching using the GROW Model', duration: 45, difficulty: 'Core' },
+    { id: 302, tier: 'T3', skill: 'Coaching', type: 'Role-Play', title: 'Practice: GROW Model Coaching Session', duration: 45, difficulty: 'Core' },
     { id: 303, tier: 'T3', skill: 'Recognition', type: 'Reading', title: 'Recognition and Motivation Principles', duration: 25, difficulty: 'Intro' },
     { id: 304, tier: 'T3', skill: 'Feedback', type: 'Exercise', title: 'Delivering Effective Feedback (Radical Candor)', duration: 40, difficulty: 'Core' },
     { id: 305, tier: 'T3', skill: 'Motivation', type: 'Case Study', title: 'Intrinsic Motivation and Team Engagement', duration: 50, difficulty: 'Mastery' },
+    { id: 306, tier: 'T3', skill: '1:1s', type: 'Case Study', title: 'Case: 1:1s as Performance Intervention', duration: 55, difficulty: 'Mastery' },
+    { id: 307, tier: 'T3', skill: 'Coaching', type: 'Reading', title: 'Article: The Non-Directive Coaching Stance', duration: 20, difficulty: 'Intro' },
+    { id: 308, tier: 'T3', skill: 'Recognition', type: 'Exercise', title: 'Tool: Customizing Recognition', duration: 35, difficulty: 'Core' },
+    { id: 309, tier: 'T3', skill: 'Feedback', type: 'Role-Play', title: 'Sim: Receiving and Processing Tough Feedback', duration: 45, difficulty: 'Mastery' },
+    { id: 310, tier: 'T3', skill: 'Motivation', type: 'Tool', title: 'Motivation Diagnostic Checklist', duration: 30, difficulty: 'Intro' },
+    { id: 311, tier: 'T3', skill: '1:1s', type: 'Reading', title: 'Article: Frequency vs. Quality in 1:1s', duration: 25, difficulty: 'Intro' },
+    { id: 312, tier: 'T3', skill: 'Coaching', type: 'Case Study', title: 'Case: When Coaching Fails to Motivate', duration: 60, difficulty: 'Mastery' },
     
-    // T4: Conflict & Team Health
+    // T4: Conflict & Team Health (5 unique items per difficulty)
     { id: 401, tier: 'T4', skill: 'Conflict', type: 'Exercise', title: 'Conflict Management Style Quiz & Strategy', duration: 30, difficulty: 'Core' },
     { id: 402, tier: 'T4', skill: 'Commitment', type: 'Tool', title: 'Team Health: Consensual Commitment Framework', duration: 40, difficulty: 'Core' },
     { id: 403, tier: 'T4', skill: 'Accountability', type: 'Exercise', title: 'Team Health: Peer Accountability Implementation', duration: 55, difficulty: 'Mastery' },
     { id: 404, tier: 'T4', skill: 'Crucial', type: 'Role-Play', title: 'Crucial Conversations / Conflict Mgmt Practice', duration: 60, difficulty: 'Mastery' },
     { id: 405, tier: 'T4', skill: 'Trust', type: 'Case Study', title: 'Team Health: Repairing V-B Trust', duration: 45, difficulty: 'Intro' },
+    { id: 406, tier: 'T4', skill: 'Conflict', type: 'Reading', title: 'Article: The Value of Productive Conflict', duration: 20, difficulty: 'Intro' },
+    { id: 407, tier: 'T4', skill: 'Commitment', type: 'Case Study', title: 'Case: Ambiguity and Failure to Commit', duration: 50, difficulty: 'Mastery' },
+    { id: 408, tier: 'T4', skill: 'Accountability', type: 'Reading', title: 'Article: The Link Between Ownership and Trust', duration: 25, difficulty: 'Intro' },
+    { id: 409, tier: 'T4', skill: 'Crucial', type: 'Exercise', title: 'Tool: Conflict Resolution Scripting', duration: 35, difficulty: 'Core' },
+    { id: 410, tier: 'T4', skill: 'Trust', type: 'Tool', title: 'Trust Builder Team Exercise', duration: 40, difficulty: 'Core' },
+    { id: 411, tier: 'T4', skill: 'Conflict', type: 'Case Study', title: 'Case: Mediating Personality Clashes', duration: 55, difficulty: 'Mastery' },
+    { id: 412, tier: 'T4', skill: 'Commitment', type: 'Reading', title: 'Article: The Two Types of Buy-In', duration: 20, difficulty: 'Intro' },
 
-    // T5: Strategy & Vision
+    // T5: Strategy & Vision (3 unique items per difficulty)
     { id: 501, tier: 'T5', skill: 'Vision', type: 'Exercise', title: 'Vision Statement Workshop', duration: 45, difficulty: 'Core' },
     { id: 502, tier: 'T5', skill: 'Strategic', type: 'Tool', title: 'Pre-Mortem Risk Audit', duration: 30, difficulty: 'Mastery' },
     { id: 503, tier: 'T5', skill: 'Planning', type: 'Reading', title: 'Long-Range Strategic Planning Principles', duration: 40, difficulty: 'Intro' },
+    { id: 504, tier: 'T5', skill: 'Vision', type: 'Case Study', title: 'Case: Communicating Vision in Crisis', duration: 50, difficulty: 'Mastery' },
+    { id: 505, tier: 'T5', skill: 'Strategic', type: 'Reading', title: 'Article: Cascading Goals Downstream', duration: 25, difficulty: 'Intro' },
+    { id: 506, tier: 'T5', skill: 'Planning', type: 'Exercise', title: 'Tool: Defining Strategic Pillars', duration: 35, difficulty: 'Core' },
+    { id: 507, tier: 'T5', skill: 'Vision', type: 'Tool', title: 'Vision Alignment Diagnostic', duration: 30, difficulty: 'Core' },
+    { id: 508, tier: 'T5', skill: 'Strategic', type: 'Exercise', title: 'Exercise: Scenario Planning', duration: 60, difficulty: 'Mastery' },
+    { id: 509, tier: 'T5', skill: 'Planning', type: 'Case Study', title: 'Case: Resource Allocation Failure', duration: 45, difficulty: 'Intro' },
 ];
 
-// MOCK_CONTENT_DETAILS (UPDATED to reflect the specific courses)
+
 const MOCK_CONTENT_DETAILS = {
-    'Reading': (title, skill) => `### Core Concepts: ${title}\n\n**Learning Goal:** Understand the foundational theory behind **${skill}** management.\n\nThis reading material provides the philosophical context for your leadership actions. For example, understanding Servant Leadership means viewing your role as one of support, not control.\n\n* **Primary Takeaway:** Clear is Kind, Vague is Cruel.\n* **Key Term:** Autonomy, Mastery, Purpose.`,
-    'Exercise': (title, skill) => `### Guided Practice: ${title}\n\n**Action Focus:** ${skill}\n\nThis is a structured journaling or drafting activity designed to solidify abstract concepts into personal behaviors. The **'Player-to-Coach'** exercise, for instance, requires you to document your immediate response to a problem and then re-write it as a coaching question. \n\n* **Outcome:** Create a single, measurable behavior change.\n* **Required Time:** 45 minutes of uninterrupted focus.`,
-    'Case Study': (title, skill) => `### Executive Analysis: ${title}\n\n**Application Focus:** ${skill}\n\nReview the provided scenario outlining a complex organizational breakdown (e.g., a failure in accountability) and prepare a 5-step strategic action plan. This module is designed to test your **decision-making** under pressure, applying principles like the **Ownership** mindset.\n\n* **Goal:** Prepare a defense for your plan before submitting it for coach review.\n* **Scenario Type:** Cross-functional failure.`,
-    'Role-Play': (title, skill) => `### Practice Simulation: ${title}\n\n**Behavioral Focus:** ${skill}\n\nThis is a high-impact preparation module for the Coaching Lab. You will simulate a difficult conversation (e.g., **Crucial Conversations**) or a coaching session. The system will guide you through the initial steps: identifying the facts, defining the shared goal, and stating your intent. \n\n* **Method:** Use the SBI (Situation-Behavior-Impact) feedback model.\n* **Goal:** End the simulation with a measurable, agreed-upon next step and maintain the relationship.`,
-    'Tool': (title, skill) => `### Tool Implementation: ${title}\n\n**Implementation Goal:** Systematize **${skill}**\n\nThis module delivers a framework (e.g., LIS, Metrics Dashboard, Pre-Mortem Audit) for immediate use in your role. The objective is to formally integrate a new system—like tracking **Leading vs. Lagging Metrics**—into your weekly workflow, reducing reliance on manual effort.\n\n* **System:** Downloadable checklist/template included.\n* **Integration:** Must be used once in a real meeting/process this week.`,
+    // ----------------------------------------------------
+    // TYPE: READING (Focus: Foundational Theory & Motive)
+    // ----------------------------------------------------
+    'Reading': (title, skill) => {
+        let takeaway = "Understanding your motive transforms supervision into leadership.";
+        let focus = "philosophical context";
+        if (skill === 'Motive') focus = "the shift from ego-driven to purpose-driven leadership.";
+        if (skill === 'Boss') focus = "the power dynamics in the manager-subordinate relationship.";
+        
+        return `
+            ## Reading: ${title} (Time Commitment: ~30-40 min)
+            
+            ### Primary Focus: ${skill} Theory
+            
+            **Learning Goal:** Understand the foundational **${skill}** theory and its impact on team trust.
+            
+            This module provides the philosophical and psychological context for your leadership actions. ${title} is critical for establishing a sustainable leadership model, emphasizing ${focus}.
+            
+            * **Weekly Focus:** Analyze how this theory applies to your next scheduled team interaction.
+            * **Actionable Deliverable:** A draft of your personal 'Why Lead' statement or a documented 'Managing Upward' matrix.
+            * **Primary Takeaway:** Clear is Kind, Vague is Cruel.
+        `;
+    },
+
+    // ----------------------------------------------------
+    // TYPE: EXERCISE (Focus: Journaling, Drafting, Habit Building)
+    // ----------------------------------------------------
+    'Exercise': (title, skill) => {
+        let outcome = "Create a single, measurable behavior change and define its trigger.";
+        let deliverable = "A pre-scripted Coaching Question to replace your most common 'fix-it' instinct.";
+        
+        if (skill === 'Goals') {
+            deliverable = "A finalized set of 3 quarterly OKRs, each linked to a specific key result and prioritization tier.";
+        } else if (skill === 'Conflict') {
+            deliverable = "A completed Conflict Management Style assessment and strategy guide.";
+        }
+        
+        return `
+            ## Guided Practice: ${title} (Time Commitment: ~30-45 min)
+            
+            ### Action Focus: ${skill}
+            
+            This is a structured, private drafting activity designed to solidify abstract concepts into personal behaviors. The output is a personalized artifact ready for implementation.
+            
+            * **Weekly Focus:** Convert one reactive habit into a proactive coaching behavior.
+            * **Actionable Deliverable:** ${deliverable}
+            * **Required Time:** 45 minutes of uninterrupted focus.
+        `;
+    },
+
+    // ----------------------------------------------------
+    // TYPE: ROLE-PLAY (Focus: High-Stakes Behavioral Practice)
+    // ----------------------------------------------------
+    'Role-Play': (title, skill) => {
+        let method = "SBI (Situation-Behavior-Impact) feedback model";
+        if (skill === 'Crucial') method = "State My Path framework (Identify Facts, Tell Story, Ask)";
+        
+        return `
+            ## Practice Simulation: ${title} (Time Commitment: ~45-60 min)
+            
+            ### Behavioral Focus: ${skill}
+            
+            This is a high-impact preparation module for the Coaching Lab, simulating a difficult or complex leadership interaction. The goal is to successfully navigate high-stakes moments.
+            
+            * **Weekly Focus:** Practice the initial 5 minutes of the difficult conversation until fluent.
+            * **Method:** Utilize the **${method}** in your response to the simulated employee/peer.
+            * **Actionable Deliverable:** A post-simulation debrief note logged in your PDP journal detailing three things you would change in a live scenario.
+        `;
+    },
+
+    // ----------------------------------------------------
+    // TYPE: CASE STUDY (Focus: Executive Analysis & Strategy)
+    // ----------------------------------------------------
+    'Case Study': (title, skill) => {
+        let goal = "test your strategic resilience and problem-solving under pressure.";
+        if (skill === 'Trust') goal = "diagnose the root cause of systemic low-trust within a peer group and draft a vulnerability-based repair plan.";
+        if (skill === 'Decisions') goal = "evaluate decision-making under uncertainty, applying the problem-solving framework.";
+
+        return `
+            ## Executive Analysis: ${title} (Time Commitment: ~45-60 min)
+            
+            ### Application Focus: ${skill}
+            
+            Review the provided scenario outlining a complex organizational breakdown (e.g., a cross-functional failure or accountability crisis). This module is designed to ${goal}.
+            
+            * **Weekly Focus:** Analyze the scenario, identify the failure point, and select two key frameworks from this month's content to solve the issue.
+            * **Task:** Prepare a 5-step action plan and a one-page defense for your solution.
+            * **Actionable Deliverable:** A final 5-step implementation plan saved, ready to present to your mentor/coach.
+        `;
+    },
+    
+    // ----------------------------------------------------
+    // TYPE: TOOL (Focus: Systematizing Process)
+    // ----------------------------------------------------
+    'Tool': (title, skill) => {
+        let deliverable = "A formalized system documented and integrated into your weekly workflow.";
+        let integration = "formally integrate a new system";
+        if (skill === 'Identity') integration = "establish a formalized Leadership Identity Statement (LIS)";
+        if (skill === 'Metrics') integration = "set up a dashboard to track leading indicators";
+        
+        return `
+            ## Tool Implementation: ${title} (Time Commitment: ~30-40 min)
+            
+            ### Implementation Goal: Systematize ${skill}
+            
+            This module delivers a framework (e.g., RACI Matrix, LIS, Pre-Mortem Audit) for immediate use in your role. The objective is to **${integration}** into your weekly workflow, reducing reliance on manual effort and intuition.
+            
+            * **Weekly Focus:** Customize the template for your current team/project and define clear ownership.
+            * **Actionable Deliverable:** The completed **${skill}** tool/framework used once in a real meeting or delegation process this week for full completion credit.
+            * **System:** Downloadable checklist/template included (e.g., Delegation Matrix).
+        `;
+    },
 };
 
-// ... (Rest of the DevPlan.jsx logic remains the same, using the updated constants)
-
+// Mock data for the "Generic Manager" Plan Comparison
 const GENERIC_PLAN = {
     avgIntroContent: 8, 
     avgMasteryContent: 3, 
@@ -327,11 +475,11 @@ const generatePlanData = (assessment, ownerUid) => {
 };
 
 // --- Modals (omitted for brevity - content remains the same) ---
-const SharePlanModal = ({ isVisible, onClose, currentMonthPlan, data }) => { /* ... */
+const SharePlanModal = ({ isVisible, onClose, currentMonthPlan, data }) => { 
     if (!isVisible || !currentMonthPlan) return null;
     const tierName = LEADERSHIP_TIERS[currentMonthPlan.tier].name;
     const shareLink = `https://leaderreps.com/pdp/view/${data.ownerUid}/${data.currentMonth}`;
-    const shareText = `[PDP Monthly Focus]\n\nHello Manager, here is my focus for Month ${currentMonthPlan.month}:\n\n- **Current Tier Priority:** ${tierName}\n- **Theme:** ${currentMonthPlan.theme}\n- **Required Content:** ${currentMonthPlan.requiredContent.map(c => c.title).join(', ')}.\n\nMy primary skill gap is in ${tierName} (Self-Rating: ${data.assessment.selfRatings[currentMonthPlan.tier]}/10). My goal this month is to close this gap by completing all content.\n\nView my full progress: ${shareLink}\n\nManager Acknowledgment: [ ] I have reviewed and aligned with this plan.`; // Organizational Scaling Mock
+    const shareText = `[PDP Monthly Focus]\n\nHello Manager, here is my focus for Month ${currentMonthPlan.month}:\n\n- **Current Tier Priority:** ${tierName}\n- **Theme:** ${currentMonthPlan.theme}\n- **Required Content:** ${currentMonthPlan.requiredContent.map(c => c.title).join(', ')}.\n\nMy primary skill gap is in ${tierName} (Self-Rating: ${data.assessment.selfRatings[currentMonthPlan.tier]}/10). My goal this month is to close this gap by completing all content.\n\nView my full progress: ${shareLink}\n\nManager Acknowledgment: [ ] I have reviewed and aligned with this plan.`; 
     const copyToClipboard = () => {
         const el = document.createElement('textarea');
         el.value = shareText;
@@ -376,7 +524,7 @@ const SharePlanModal = ({ isVisible, onClose, currentMonthPlan, data }) => { /* 
     );
 };
 
-const ContentDetailsModal = ({ isVisible, onClose, content }) => { /* ... */
+const ContentDetailsModal = ({ isVisible, onClose, content }) => { 
     if (!isVisible || !content) return null;
     const [htmlContent, setHtmlContent] = useState('');
     const [rating, setRating] = useState(0); 
@@ -466,7 +614,7 @@ const TierReviewModal = ({ isVisible, onClose, tierId, planData }) => {
 };
 
 
-// --- Component 3: Roadmap Timeline View (NEW) ---
+// --- Component 3: Roadmap Timeline View ---
 const RoadmapTimeline = ({ data, currentMonth, navigateToMonth }) => {
     return (
         <Card title="24-Month Roadmap Timeline" icon={Trello} accent="PURPLE" className='lg:sticky lg:top-4 bg-white shadow-2xl border-l-4 border-[#7C3AED]'>
@@ -622,7 +770,7 @@ const TrackerDashboardView = ({ data, updatePdpData, saveNewPlan, db, userId, na
         setSelectedContent(contentItem);
         setIsContentModalVisible(true);
     };
-
+    
     // --- Data Calculation ---
     const currentTierId = monthPlan?.tier;
 
@@ -761,6 +909,8 @@ const TrackerDashboardView = ({ data, updatePdpData, saveNewPlan, db, userId, na
                                     setTimeout(() => setIsToggling(false), 500); // Simulate animation time
                                 };
 
+                                const actionButtonText = (item.type === 'Role-Play' || item.type === 'Exercise' || item.type === 'Tool') ? 'Go to Practice' : 'View Content';
+
                                 return (
                                     <div key={item.id} className='flex items-center justify-between p-3 bg-gray-50 rounded-xl shadow-sm'>
                                         <div className='flex flex-col'>
@@ -772,12 +922,20 @@ const TrackerDashboardView = ({ data, updatePdpData, saveNewPlan, db, userId, na
                                         </div>
                                         <div className='flex space-x-2'>
                                             <Button
-                                                onClick={() => handleOpenContentModal(item)}
+                                                onClick={() => {
+                                                    if (item.type === 'Role-Play' || item.type === 'Exercise' || item.type === 'Tool') {
+                                                        // CRUCIAL: Direct link to the Daily Practice/Lab to perform the work
+                                                        navigate('daily-practice', { contentId: item.id, tier: item.tier });
+                                                    } else {
+                                                        handleOpenContentModal(item);
+                                                    }
+                                                }}
                                                 className='px-3 py-1 text-xs'
-                                                variant='outline'
+                                                variant='primary'
                                             >
-                                                <Eye className='w-4 h-4' />
+                                                {actionButtonText}
                                             </Button>
+
                                             <Button
                                                 onClick={handleToggle}
                                                 className={`px-3 py-1 text-xs transition-colors duration-300 ${isToggling ? 'opacity-50' : ''}`}
@@ -873,27 +1031,24 @@ const TrackerDashboardView = ({ data, updatePdpData, saveNewPlan, db, userId, na
 
 
 // --- Component 1: Plan Generator View ---
-const PlanGeneratorView = ({ userId, saveNewPlan, isLoading, error, navigate }) => {
+const PlanGeneratorView = ({ userId, saveNewPlan, isLoading, error, navigate, setGeneratedPlanData }) => {
     const [managerStatus, setManagerStatus] = useState('New');
     const [goalPriorities, setGoalPriorities] = useState([]);
     const [selfRatings, setSelfRatings] = useState({ T1: 5, T2: 5, T3: 5, T4: 5, T5: 5 });
-    // NEW: 360 Feedback inputs
     const [peerRatings, setPeerRatings] = useState({ T1: 6, T2: 6, T3: 5, T4: 5, T5: 5 }); 
-    const [alignToTeam, setAlignToTeam] = useState(false); // Feature 2: Team Alignment Toggle
+    const [alignToTeam, setAlignToTeam] = useState(false); 
     const [isGenerating, setIsGenerating] = useState(false);
-    const [generatedPlan, setGeneratedPlan] = useState(null); // Feature B: Plan Comparison State
-
+    
     const isGoalLimitReached = goalPriorities.length >= 3;
     const canGenerate = managerStatus && goalPriorities.length > 0 && !isGenerating;
 
-    const teamSkillMap = useMemo(() => ({ // Mocked Team Data
+    const teamSkillMap = useMemo(() => ({ 
         gapTier: 'T3',
         gapSkill: 'Execution',
-        confidence: 35, // 35% Confidence
+        confidence: 35,
     }), []);
 
     const handleGoalToggle = (tierId) => {
-        // ... (Logic remains the same)
         setGoalPriorities(prev => {
             if (prev.includes(tierId)) {
                 return prev.filter(id => id !== tierId);
@@ -917,16 +1072,14 @@ const PlanGeneratorView = ({ userId, saveNewPlan, isLoading, error, navigate }) 
     const handleGenerate = async () => {
         if (!canGenerate) return;
         setIsGenerating(true);
-        setGeneratedPlan(null);
 
         const assessment = {
             managerStatus,
             goalPriorities,
             selfRatings,
-            peerRatings, // Include Peer Ratings
-            // NEW MENTEE FEEDBACK MOCK (for T4 coaching gap)
+            peerRatings, 
             menteeFeedback: { T4: { score: 65, comment: "Needs better follow-up after delegating tasks." } },
-            alignToTeam: alignToTeam, // Include team alignment flag
+            alignToTeam: alignToTeam, 
             teamSkillAlignment: alignToTeam ? teamSkillMap : null,
             dateGenerated: new Date().toISOString(),
         };
@@ -937,87 +1090,20 @@ const PlanGeneratorView = ({ userId, saveNewPlan, isLoading, error, navigate }) 
         const newPlanData = generatePlanData(assessment, userId);
 
         // Feature B: Store and Compare against Mock Generic Plan
-        setGeneratedPlan({
+        const generatedPlan = {
             userPlan: newPlanData,
             genericPlan: GENERIC_PLAN,
-        });
+        };
 
         const success = await saveNewPlan(newPlanData);
         
         setIsGenerating(false);
 
-        // Navigate back to the dashboard/tracker view after successful save
+        // FIX: Instead of navigating to dashboard, pass the data to the router 
+        // to show the Review Screen immediately.
         if (success) {
-            console.log("Plan successfully generated and saved! Redirecting to tracker...");
-            navigate('dashboard'); 
+            setGeneratedPlanData(generatedPlan);
         }
-    };
-
-    const renderPlanComparison = () => {
-        if (!generatedPlan) return null;
-
-        const userPlan = generatedPlan.userPlan;
-        const genericPlan = generatedPlan.genericPlan;
-
-        const userTotalDuration = userPlan.plan.reduce((sum, m) => sum + m.totalDuration, 0);
-        const userIntroContent = userPlan.plan.flatMap(m => m.requiredContent).filter(c => c.difficulty === 'Intro').length;
-        const userMasteryContent = userPlan.plan.flatMap(m => m.requiredContent).filter(c => c.difficulty === 'Mastery').length;
-
-        const durationDifference = genericPlan.totalDuration - userTotalDuration;
-        const introDifference = genericPlan.avgIntroContent - userIntroContent;
-        const masteryDifference = userMasteryContent - genericPlan.avgMasteryContent;
-
-        const isAccelerated = durationDifference > 0;
-
-        const StatItem = ({ label, value, diff, unit = '', isPositiveBetter = true }) => {
-            const isGood = isPositiveBetter ? diff > 0 : diff < 0;
-            const diffColor = diff === 0 ? COLORS.MUTED : isGood ? COLORS.GREEN : COLORS.RED;
-            const diffSign = diff > 0 ? '+' : '';
-            return (
-                <div className='flex justify-between items-center py-2 border-b border-gray-200'>
-                    <span className='font-semibold'>{label}:</span>
-                    <div className='text-right'>
-                        <span className={`font-bold text-lg mr-2`} style={{color: COLORS.NAVY}}>{value} {unit}</span>
-                        <span className={`text-xs font-semibold`} style={{ color: diffColor }}>({diffSign}{diff} {unit})</span>
-                    </div>
-                </div>
-            );
-        };
-
-        return (
-            <Card title="Plan Comparison: Personalized vs. Generic" icon={Activity} accent='TEAL' className='mt-8 border-l-4 border-[#47A88D] bg-[#47A88D]/10'>
-                <p className='text-lg font-extrabold text-[#002E47] mb-4'>Your Plan is Highly Optimized!</p>
-                <div className='space-y-1 text-sm text-gray-700'>
-                    <StatItem 
-                        label="Total Estimated Time" 
-                        value={userTotalDuration} 
-                        unit="min" 
-                        diff={durationDifference} 
-                        isPositiveBetter={false} 
-                    />
-                    <StatItem 
-                        label="Mastery Content (High Skill)" 
-                        value={userMasteryContent} 
-                        unit="items" 
-                        diff={masteryDifference} 
-                        isPositiveBetter={true} 
-                    />
-                    <StatItem 
-                        label="Introductory Content (Low Skill)" 
-                        value={userIntroContent} 
-                        unit="items" 
-                        diff={introDifference} 
-                        isPositiveBetter={false} // Less intro content is better for non-new managers
-                    />
-                </div>
-                <p className='text-xs text-gray-600 mt-4 italic'>
-                    *The AI tailored your content difficulty and sequence based on your specific Tiers and self-rated skill gaps.
-                </p>
-                <Button onClick={() => navigate('dashboard')} className='mt-6 w-full'>
-                    Go to Tracker Dashboard
-                </Button>
-            </Card>
-        );
     };
 
     // Component Rendering
@@ -1167,9 +1253,98 @@ const PlanGeneratorView = ({ userId, saveNewPlan, isLoading, error, navigate }) 
                 ) : 'Generate Personalized 24-Month Plan'}
             </Button>
             <p className='text-sm text-gray-500 mt-4'>*Your data will be securely saved to your private roadmap in Firestore.</p>
+        </div>
+    );
+};
 
-            {/* Feature B: Plan Comparison Result */}
-            {renderPlanComparison()}
+// --- NEW Component 3: Plan Review Screen ---
+const PlanReviewScreen = ({ generatedPlan, saveNewPlan, navigate, clearReviewData }) => {
+    if (!generatedPlan) return null;
+
+    const userPlan = generatedPlan.userPlan;
+    const genericPlan = generatedPlan.genericPlan;
+
+    const userTotalDuration = userPlan.plan.reduce((sum, m) => sum + m.totalDuration, 0);
+    const userIntroContent = userPlan.plan.flatMap(m => m.requiredContent).filter(c => c.difficulty === 'Intro').length;
+    const userMasteryContent = userPlan.plan.flatMap(m => m.requiredContent).filter(c => c.difficulty === 'Mastery').length;
+
+    const durationDifference = genericPlan.totalDuration - userTotalDuration;
+    const introDifference = genericPlan.avgIntroContent - userIntroContent;
+    const masteryDifference = userMasteryContent - genericPlan.avgMasteryContent;
+
+    const StatItem = ({ label, value, diff, unit = '', isPositiveBetter = true }) => {
+        const isGood = isPositiveBetter ? diff > 0 : diff < 0;
+        const diffColor = diff === 0 ? COLORS.MUTED : isGood ? COLORS.GREEN : COLORS.RED;
+        const diffSign = diff > 0 ? '+' : '';
+        return (
+            <div className='flex justify-between items-center py-2 border-b border-gray-200'>
+                <span className='font-semibold'>{label}:</span>
+                <div className='text-right'>
+                    <span className={`font-bold text-lg mr-2`} style={{color: COLORS.NAVY}}>{value} {unit}</span>
+                    <span className={`text-xs font-semibold`} style={{ color: diffColor }}>({diffSign}{diff} {unit})</span>
+                </div>
+            </div>
+        );
+    };
+    
+    // Handler to finalize and navigate
+    const handleFinalize = async () => {
+        console.log("Plan review complete. Finalizing plan and redirecting to Dashboard...");
+        clearReviewData(); // Clear the temporary review state
+        navigate('prof-dev-plan'); // Navigate back to PDP route which will now load the Tracker View
+    };
+    
+    const handleStartOver = () => {
+        clearReviewData(); // Clear the temporary review state
+        // The component will naturally re-render the PlanGeneratorView
+    };
+
+    return (
+        <div className="p-6 md:p-10 min-h-screen" style={{ background: COLORS.BG, color: COLORS.TEXT }}>
+            <div className='flex items-center gap-4 border-b-2 pb-2 mb-8' style={{borderColor: COLORS.GREEN+'30'}}>
+                <CheckCircle className='w-10 h-10' style={{color: COLORS.GREEN}}/>
+                <h1 className="text-4xl font-extrabold" style={{ color: COLORS.NAVY }}>Plan Successfully Generated!</h1>
+            </div>
+            <p className="text-lg text-gray-600 mb-8 max-w-3xl">Review your personalized plan highlights below. Your full 24-month roadmap has been created and is ready to view in the Tracker Dashboard.</p>
+
+            <Card title="Plan Comparison: Personalized vs. Generic" icon={Activity} accent='TEAL' className='mt-8 border-l-4 border-[#47A88D] bg-[#47A88D]/10'>
+                <p className='text-lg font-extrabold text-[#002E47] mb-4'>Your Plan is Highly Optimized!</p>
+                <div className='space-y-1 text-sm text-gray-700'>
+                    <StatItem 
+                        label="Total Estimated Time" 
+                        value={userTotalDuration} 
+                        unit="min" 
+                        diff={durationDifference} 
+                        isPositiveBetter={false} 
+                    />
+                    <StatItem 
+                        label="Mastery Content (High Skill)" 
+                        value={userMasteryContent} 
+                        unit="items" 
+                        diff={masteryDifference} 
+                        isPositiveBetter={true} 
+                    />
+                    <StatItem 
+                        label="Introductory Content (Low Skill)" 
+                        value={userIntroContent} 
+                        unit="items" 
+                        diff={introDifference} 
+                        isPositiveBetter={false} // Less intro content is better for non-new managers
+                    />
+                </div>
+                <p className='text-xs text-gray-600 mt-4 italic'>
+                    *The AI tailored your content difficulty and sequence based on your specific Tiers and self-rated skill gaps.
+                </p>
+                
+                <div className='flex justify-between space-x-4 mt-6'>
+                    <Button onClick={handleStartOver} variant='outline' className='text-xs px-4 py-2 text-[#E04E1B] border-[#E04E1B]/50 hover:bg-[#E04E1B]/10'>
+                        <X className='w-4 h-4 mr-1'/> Start Over / Re-Generate
+                    </Button>
+                    <Button onClick={handleFinalize} variant='primary'>
+                        <CornerRightUp className='w-4 h-4 mr-1'/> Go to Tracker Dashboard
+                    </Button>
+                </div>
+            </Card>
         </div>
     );
 };
@@ -1177,13 +1352,31 @@ const PlanGeneratorView = ({ userId, saveNewPlan, isLoading, error, navigate }) 
 
 // --- Main Router ---
 export const ProfDevPlanScreen = () => {
-    // Consume data and updates via context
     const { pdpData, updatePdpData, saveNewPlan, isLoading, error, userId, db, navigate } = useAppServices();
+    
+    // NEW STATE: Holds the generated plan data temporarily for the Review Screen
+    const [generatedPlanData, setGeneratedPlanData] = useState(null); 
+    
+    // Function to clear the temporary state
+    const clearReviewData = useCallback(() => {
+        setGeneratedPlanData(null);
+    }, []);
 
-    // Determine current view based on pdpData existence
-    const currentView = pdpData ? 'tracker' : 'generator';
-
+    // Determine current view state
+    let currentView = 'loading';
     if (isLoading || pdpData === undefined) {
+        currentView = 'loading';
+    } else if (error) {
+        currentView = 'error';
+    } else if (generatedPlanData) {
+        currentView = 'review'; // Show review screen immediately after generation
+    } else if (pdpData === null) {
+        currentView = 'generator';
+    } else {
+        currentView = 'tracker';
+    }
+
+    if (currentView === 'loading') {
         return (
             <div className="p-8 min-h-screen flex items-center justify-center">
                 <div className="flex flex-col items-center">
@@ -1194,7 +1387,7 @@ export const ProfDevPlanScreen = () => {
         );
     }
 
-    if (error) {
+    if (currentView === 'error') {
         return (
             <div className="p-8">
                 <p className="p-4 bg-red-100 rounded-xl text-[#E04E1B]">Application Error: {error}</p>
@@ -1203,15 +1396,30 @@ export const ProfDevPlanScreen = () => {
         );
     }
 
-    // pdpData is null if the document does not exist (needs generation)
-    if (pdpData === null || currentView === 'generator') {
-        return <PlanGeneratorView userId={userId} saveNewPlan={saveNewPlan} isLoading={false} error={null} navigate={navigate} />;
+    if (currentView === 'review') {
+        return (
+            <PlanReviewScreen 
+                generatedPlan={generatedPlanData} 
+                saveNewPlan={saveNewPlan} 
+                navigate={navigate} 
+                clearReviewData={clearReviewData} 
+            />
+        );
     }
 
-    // pdpData exists -> show the tracker dashboard
-    const trackerProps = { data: pdpData, updatePdpData, saveNewPlan, db, userId, navigate };
+    if (currentView === 'generator') {
+        return <PlanGeneratorView 
+            userId={userId} 
+            saveNewPlan={saveNewPlan} 
+            isLoading={false} 
+            error={null} 
+            navigate={navigate}
+            setGeneratedPlanData={setGeneratedPlanData} // Pass the setter function
+        />;
+    }
 
-    // FIX: Render the actual TrackerDashboardView with the new props
+    // currentView === 'tracker'
+    const trackerProps = { data: pdpData, updatePdpData, saveNewPlan, db, userId, navigate };
     return <TrackerDashboardView {...trackerProps} />;
 };
 
