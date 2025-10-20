@@ -253,14 +253,11 @@ const NavSidebar = ({ currentScreen, setCurrentScreen, user, isMobileOpen, close
         { screen: 'business-readings', label: 'Business Readings', icon: BookOpen },
     ];
     
-    const systemNav = [
-        { screen: 'app-settings', label: 'App Settings', icon: Settings }, 
-    ];
-
+    // REMOVED SETTINGS: The systemNav array is now commented out/removed.
     const menuSections = [
         { title: 'CORE NAVIGATION', items: coreNav },
         { title: 'TOOLS & HUBS', items: toolsHubsNav },
-        { title: 'SYSTEM', items: systemNav },
+        // { title: 'SYSTEM', items: systemNav }, <-- Removed
     ];
 
     const handleSignOut = async () => {
@@ -287,13 +284,14 @@ const NavSidebar = ({ currentScreen, setCurrentScreen, user, isMobileOpen, close
                 <button
                     key={item.screen}
                     onClick={() => handleNavigate(item.screen)}
-                    className={`flex items-center w-full px-4 py-3 rounded-xl font-semibold relative transition-colors duration-200 ${
-                        isActive
-                            ? `bg-white text-[#002E47] shadow-lg`
-                            : `text-indigo-200 hover:bg-[#47A88D]/20 hover:text-white`
-                    }`}
+                    // FIX: Improved contrast, 3D effect on hover, and clear active state
+                    className={`flex items-center w-full px-4 py-3 rounded-xl font-semibold relative transition-all duration-200 
+                        ${isActive
+                            ? `bg-white text-[${NAVY}] shadow-lg transform translate-x-1 ring-2 ring-[${TEAL}]` // Active: Navy text, white background, lifted
+                            : `text-white hover:bg-[${TEAL}]/20 hover:text-white hover:shadow-md hover:scale-[1.02]`} // Inactive: White text, subtle teal hover, subtle lift
+                    `}
                 >
-                    <Icon className="w-5 h-5 mr-3" />
+                    <Icon className={`w-5 h-5 mr-3 ${isActive ? `text-[${TEAL}]` : 'text-indigo-300'}`} />
                     <span className="flex-1 text-left">{item.label}</span>
                     
                     {item.badge && (
@@ -322,8 +320,11 @@ const NavSidebar = ({ currentScreen, setCurrentScreen, user, isMobileOpen, close
             <nav className="flex-1 space-y-4">
                 {menuSections.map(section => (
                     <div key={section.title} className='space-y-3'>
-                        <p className='text-xs font-semibold uppercase tracking-wider text-indigo-300 pl-4 mb-1'>{section.title}</p>
-                        <div className="space-y-1">
+                        {/* FIX: Improved delineation with background on title */}
+                        <p className={`text-xs font-extrabold uppercase tracking-widest text-white px-2 py-1 rounded bg-[${TEAL}]/10`}>
+                            {section.title}
+                        </p>
+                        <div className="space-y-1.5"> {/* Increased vertical separation slightly */}
                             {renderNavItems(section.items)}
                         </div>
                     </div>
