@@ -5,9 +5,20 @@ import React, { useState, useEffect, useMemo, useCallback } from 'react';
 // FIX:  Mocking useAppServices since the environment can't resolve relative paths
 const useAppServices = () => ({
     // Mocked core services for local testing
-    pdpData: null,
-    updatePdpData: async () => true,
-    saveNewPlan: async () => true,
+    pdpData: null, // Start with null to show the generator view by default
+    updatePdpData: async (updater) => {
+        const oldData = { currentMonth: 0 }; // Simplified mock for state updates
+        const newData = updater(oldData);
+        // In a real app, this would update the context state and force a re-render.
+        // Mocking successful update:
+        console.log("Mock PDP Data Updated:", newData);
+        return true;
+    },
+    saveNewPlan: async (plan) => {
+        // Mock success, return true
+        console.log("Mock Plan Saved:", plan);
+        return true;
+    },
     callSecureGeminiAPI: async (payload) => {
         // Mock response for Monthly Briefing
         const mockBriefing = {
@@ -50,6 +61,8 @@ const COLORS = {
   TEXT: '#002E47',
   MUTED: '#4B5355',
   BLUE: '#2563EB',
+  BG: '#F9FAFB', // Matches BusinessReadings
+  PURPLE: '#7C3AED', // Matches BusinessReadings
 };
 
 // Mock UI components (Standardized)
@@ -61,6 +74,7 @@ const Button = ({ children, onClick, disabled = false, variant = 'primary', clas
   else if (variant === 'nav-back') { baseStyle = `px-4 py-2 rounded-lg font-medium transition-all shadow-sm border-2 border-gray-300 text-gray-700 hover:bg-gray-100 flex items-center justify-center`; }
   if (disabled) { baseStyle = "px-6 py-3 rounded-xl font-semibold bg-gray-300 text-gray-500 cursor-not-allowed shadow-inner transition-none flex items-center justify-center"; }
   return (
+    // FIX: Changed closing tag from </Button> to </button>
     <button {...rest} onClick={onClick} disabled={disabled} className={`${baseStyle} ${className}`}>
       {children}
     </button>
@@ -83,7 +97,7 @@ const Card = ({ children, title, icon: Icon, className = '', onClick, accent = '
       role={interactive ? 'button' : undefined}
       tabIndex={interactive ? 0 : undefined}
       onKeyDown={handleKeyDown}
-      className={`relative p-6 rounded-2xl border-2 shadow-2xl hover:shadow-xl transition-all duration-300 text-left ${className}`}
+      className={`relative p-6 rounded-2xl border-2 shadow-2xl transition-all duration-300 text-left ${className}`}
       style={{ background: 'linear-gradient(180deg,#FFFFFF,#F9FAFB)', borderColor: COLORS.SUBTLE, color: COLORS.TEXT }}
       onClick={onClick}
     >
@@ -186,6 +200,14 @@ const GENERIC_PLAN = {
     totalDuration: 1200, // Total duration in minutes
 };
 
+const getTargetDifficulty = (rating) => rating >= 8 ? 'Mastery' : rating >= 5 ? 'Core' : 'Intro';
+const adjustDuration = (rating, duration) => {
+    // If rating is high, slightly reduce duration (faster comprehension)
+    if (rating >= 8) return Math.round(duration * 0.9);
+    // If rating is low, slightly increase duration (more focus needed)
+    if (rating <= 4) return Math.round(duration * 1.1);
+    return duration;
+};
 
 const generatePlanData = (assessment, ownerUid) => {
     const { managerStatus, goalPriorities, selfRatings, peerRatings, menteeFeedback, teamSkillAlignment } = assessment;
@@ -300,18 +322,11 @@ const generatePlanData = (assessment, ownerUid) => {
 };
 
 // --- Modals ---
-
-const SharePlanModal = ({ isVisible, onClose, currentMonthPlan, data }) => {
+const SharePlanModal = ({ isVisible, onClose, currentMonthPlan, data }) => { /* ... */
     if (!isVisible || !currentMonthPlan) return null;
-
     const tierName = LEADERSHIP_TIERS[currentMonthPlan.tier].name;
-
-    // Mock link for sharing
     const shareLink = `https://leaderreps.com/pdp/view/${data.ownerUid}/${data.currentMonth}`;
-
     const shareText = `[PDP Monthly Focus]\n\nHello Manager, here is my focus for Month ${currentMonthPlan.month}:\n\n- **Current Tier Priority:** ${tierName}\n- **Theme:** ${currentMonthPlan.theme}\n- **Required Content:** ${currentMonthPlan.requiredContent.map(c => c.title).join(', ')}.\n\nMy primary skill gap is in ${tierName} (Self-Rating: ${data.assessment.selfRatings[currentMonthPlan.tier]}/10). My goal this month is to close this gap by completing all content.\n\nView my full progress: ${shareLink}\n\nManager Acknowledgment: [ ] I have reviewed and aligned with this plan.`; // Organizational Scaling Mock
-
-    // Note: The clipboard copy functionality is mocked due to sandbox limitations
     const copyToClipboard = () => {
         const el = document.createElement('textarea');
         el.value = shareText;
@@ -321,11 +336,9 @@ const SharePlanModal = ({ isVisible, onClose, currentMonthPlan, data }) => {
         document.body.removeChild(el);
         alert('Share content copied to clipboard!');
     };
-
     return (
         <div className="fixed inset-0 bg-[#002E47]/80 z-50 flex items-center justify-center p-4">
             <div className="bg-[#FCFCFA] rounded-3xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto p-8">
-
                 <div className="flex justify-between items-start border-b pb-4 mb-6">
                     <h2 className="text-2xl font-extrabold text-[#002E47] flex items-center">
                         <Link className="w-6 h-6 mr-3 text-[#47A88D]" />
@@ -335,26 +348,21 @@ const SharePlanModal = ({ isVisible, onClose, currentMonthPlan, data }) => {
                         <X className="w-5 h-5" />
                     </button>
                 </div>
-
                 <p className="text-gray-700 text-sm mb-4">
                     Send your manager or accountability partner your current focus and goals to maintain alignment and external accountability. **Includes Manager Acknowledgment Mock.**
                 </p>
-
                 <h3 className='text-md font-bold text-[#002E47] mb-2'>Shareable Summary (Copied Text)</h3>
                 <textarea
                     readOnly
                     value={shareText}
                     className="w-full p-3 border border-gray-300 rounded-xl bg-gray-50 text-sm h-40"
                 ></textarea>
-
                 <Button onClick={copyToClipboard} className='mt-4 w-full bg-[#002E47] hover:bg-gray-700'>
                     Copy to Clipboard
                 </Button>
-
                 <p className='text-xs text-gray-500 mt-4'>
                     *Note: The actual URL link above is mocked in this demonstration.
                 </p>
-                
                 <Button onClick={onClose} variant='outline' className='mt-4 w-full'>
                     Close
                 </Button>
@@ -363,11 +371,10 @@ const SharePlanModal = ({ isVisible, onClose, currentMonthPlan, data }) => {
     );
 };
 
-const ContentDetailsModal = ({ isVisible, onClose, content }) => {
+const ContentDetailsModal = ({ isVisible, onClose, content }) => { /* ... */
     if (!isVisible || !content) return null;
-
     const [htmlContent, setHtmlContent] = useState('');
-    const [rating, setRating] = useState(0); // For Content Review & Rating
+    const [rating, setRating] = useState(0); 
     const [isLogging, setIsLogging] = useState(false);
 
     const mockDetail = MOCK_CONTENT_DETAILS[content.type]
@@ -376,17 +383,13 @@ const ContentDetailsModal = ({ isVisible, onClose, content }) => {
 
     useEffect(() => {
         (async () => setHtmlContent(await mdToHtml(mockDetail)))();
-        setRating(0); // Reset rating on new content load
+        setRating(0); 
     }, [content.id, mockDetail]);
 
-    // FEATURE: Log Learning & Submit Rating (Feedback loop)
     const handleLogLearning = async () => {
         if (rating === 0) { alert('Please provide a 5-star rating before logging.'); return; }
         setIsLogging(true);
-        
-        // Mocking an asynchronous save process to simulate an adaptive learning system
         console.log(`Mock: Logging learning for ${content.title} with rating ${rating}/5.`);
-        
         await new Promise(r => setTimeout(r, 800));
         alert(`Learning logged! Your ${rating}/5 rating will influence future plan revisions.`);
         setIsLogging(false);
@@ -396,7 +399,6 @@ const ContentDetailsModal = ({ isVisible, onClose, content }) => {
     return (
         <div className="fixed inset-0 bg-[#002E47]/80 z-50 flex items-center justify-center p-4">
             <div className="bg-[#FCFCFA] rounded-3xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto p-8">
-
                 <div className="flex justify-between items-start border-b pb-4 mb-6">
                     <h2 className="text-3xl font-extrabold text-[#002E47] flex items-center">
                         <BookOpen className="w-8 h-8 mr-3 text-[#47A88D]" />
@@ -406,18 +408,14 @@ const ContentDetailsModal = ({ isVisible, onClose, content }) => {
                         <X className="w-6 h-6" />
                     </button>
                 </div>
-
                 <div className="mb-6 text-sm flex space-x-4 border-b pb-4">
                     <p className="text-gray-700 font-semibold">Tier: <span className='text-[#002E47]'>{LEADERSHIP_TIERS[content.tier]?.name}</span></p>
                     <p className="text-gray-700 font-semibold">Skill Focus: <span className='text-[#002E47]'>{content.skill}</span></p>
                     <p className="text-gray-700 font-semibold">Est. Duration: <span className='text-[#002E47]'>{content.duration} min</span></p>
                 </div>
-
                 <div className="prose max-w-none text-gray-700">
                     <div dangerouslySetInnerHTML={{ __html: htmlContent }} />
                 </div>
-
-                {/* Content Review & Rating Feature */}
                 <div className='mt-8 pt-6 border-t border-gray-200'>
                     <h3 className='text-lg font-bold text-[#002E47] mb-3 flex items-center'>
                         <Star className="w-5 h-5 mr-2 text-[#E04E1B]" />
@@ -440,7 +438,6 @@ const ContentDetailsModal = ({ isVisible, onClose, content }) => {
                         </div>
                         <span className='text-md font-semibold text-[#002E47]'>{rating > 0 ? `${rating}/5 Stars` : 'Rate Content'}</span>
                     </div>
-
                     <Button onClick={handleLogLearning} disabled={isLogging || rating === 0} className='w-full'>
                         {isLogging ? 'Logging...' : 'Log Learning & Submit Rating'}
                     </Button>
@@ -451,7 +448,6 @@ const ContentDetailsModal = ({ isVisible, onClose, content }) => {
 };
 
 const TierReviewModal = ({ isVisible, onClose, tierId, planData }) => {
-    // Component logic remains the same (removed for brevity)
     if (!isVisible || !tierId) return null;
     return (
         <div className="fixed inset-0 bg-[#002E47]/80 z-50 flex items-center justify-center p-4">
@@ -514,7 +510,8 @@ const TrackerDashboardView = ({ data, updatePdpData, saveNewPlan, db, userId, na
         } finally {
             setBriefingLoading(false);
         }
-    }, [briefing, briefingLoading, hasGeminiKey]);
+    }, [briefing, briefingLoading, hasGeminiKey, callSecureGeminiAPI]); // Added callSecureGeminiAPI to deps
+
 
     useEffect(() => {
         if (currentMonthPlan && assessment) {
@@ -526,6 +523,7 @@ const TrackerDashboardView = ({ data, updatePdpData, saveNewPlan, db, userId, na
 
     // --- Handlers (Advance, Reset, Toggle) ---
     const handleCompleteMonth = async () => {
+        setIsSaving(true);
         // Mocking persistence for month completion
         // In a real app, this would save the reflection, mark the current month as 'Completed', and increment currentMonth.
         await updatePdpData(oldData => {
@@ -538,6 +536,7 @@ const TrackerDashboardView = ({ data, updatePdpData, saveNewPlan, db, userId, na
                 currentMonth: oldData.currentMonth + 1
             };
         });
+        setIsSaving(false);
 
         alert('Month successfully completed! Advancing to the next phase.');
 
@@ -551,7 +550,6 @@ const TrackerDashboardView = ({ data, updatePdpData, saveNewPlan, db, userId, na
     };
 
     const handleResetPlan = async () => {
-        // ... (Logic remains the same)
         alert("Plan successfully reset! Loading generator...");
         navigate('prof-dev-plan', { view: 'generator' });
     };
@@ -568,11 +566,6 @@ const TrackerDashboardView = ({ data, updatePdpData, saveNewPlan, db, userId, na
         
         // Mock update to the context/database
         updatePdpData({ ...data, plan: updatedPlan });
-    };
-
-    const handleOpenTierReview = (tierId) => {
-        setReviewTierId(tierId);
-        setIsReviewModalVisible(true);
     };
 
     const handleOpenContentModal = (contentItem) => {
@@ -617,9 +610,11 @@ const TrackerDashboardView = ({ data, updatePdpData, saveNewPlan, db, userId, na
     const isReadyToComplete = allContentCompleted && localReflection.length >= 50;
 
     return (
-        <div className="p-8">
-            <h1 className="text-3xl font-extrabold text-[#002E47] mb-6">Tracker Dashboard: Your 24-Month Roadmap</h1>
-            <p className="text-lg text-gray-600 mb-8 max-w-3xl">This plan is tailored to your **Manager Status, Self-Ratings, and Goal Priorities**. Focus on completing your monthly content and reflecting on your growth.</p>
+        <div className="p-6 md:p-10 min-h-screen" style={{ background: COLORS.BG, color: COLORS.TEXT }}>
+            <div className='flex items-center gap-4 border-b-2 pb-2 mb-8' style={{borderColor: COLORS.PURPLE+'30'}}>
+                <Briefcase className='w-10 h-10' style={{color: COLORS.PURPLE}}/>
+                <h1 className="text-4xl font-extrabold" style={{ color: COLORS.NAVY }}>PDP Tracker Dashboard</h1>
+            </div>
 
             {/* Progress Bar & Header */}
             <Card title={`Roadmap Progress: Month ${currentMonth} of 24`} icon={Clock} accent='NAVY' className="bg-[#002E47]/10 border-4 border-[#002E47]/20 mb-8">
@@ -814,8 +809,7 @@ const TrackerDashboardView = ({ data, updatePdpData, saveNewPlan, db, userId, na
 
 
 // --- Component 1: Plan Generator View ---
-const PlanGeneratorView = ({ userId, saveNewPlan, isLoading, error }) => {
-    // ... (Component logic remains the same)
+const PlanGeneratorView = ({ userId, saveNewPlan, isLoading, error, navigate }) => {
     const [managerStatus, setManagerStatus] = useState('New');
     const [goalPriorities, setGoalPriorities] = useState([]);
     const [selfRatings, setSelfRatings] = useState({ T1: 5, T2: 5, T3: 5, T4: 5, T5: 5 });
@@ -872,6 +866,9 @@ const PlanGeneratorView = ({ userId, saveNewPlan, isLoading, error }) => {
             teamSkillAlignment: alignToTeam ? teamSkillMap : null,
             dateGenerated: new Date().toISOString(),
         };
+        
+        // Simulate a network delay
+        await new Promise(r => setTimeout(r, 1500)); 
 
         const newPlanData = generatePlanData(assessment, userId);
 
@@ -882,10 +879,15 @@ const PlanGeneratorView = ({ userId, saveNewPlan, isLoading, error }) => {
         });
 
         const success = await saveNewPlan(newPlanData);
-        if (!success) {
-            alert("Failed to save the plan. Check the console for database errors.");
-        }
+        
         setIsGenerating(false);
+
+        // FIX 2: Navigate back to the dashboard/tracker view after successful save
+        if (success) {
+            alert("Plan successfully generated and saved! Redirecting to tracker...");
+            // The main App component will see that pdpData is no longer null and switch to the Tracker view
+            navigate('dashboard'); 
+        }
     };
 
     const renderPlanComparison = () => {
@@ -904,41 +906,64 @@ const PlanGeneratorView = ({ userId, saveNewPlan, isLoading, error }) => {
 
         const isAccelerated = durationDifference > 0;
 
+        const StatItem = ({ label, value, diff, unit = '', isPositiveBetter = true }) => {
+            const isGood = isPositiveBetter ? diff > 0 : diff < 0;
+            const diffColor = diff === 0 ? COLORS.MUTED : isGood ? COLORS.GREEN : COLORS.RED;
+            const diffSign = diff > 0 ? '+' : '';
+            return (
+                <div className='flex justify-between items-center py-2 border-b border-gray-200'>
+                    <span className='font-semibold'>{label}:</span>
+                    <div className='text-right'>
+                        <span className={`font-bold text-lg mr-2`} style={{color: COLORS.NAVY}}>{value} {unit}</span>
+                        <span className={`text-xs font-semibold`} style={{ color: diffColor }}>({diffSign}{diff} {unit})</span>
+                    </div>
+                </div>
+            );
+        };
+
         return (
             <Card title="Plan Comparison: Personalized vs. Generic" icon={Activity} accent='TEAL' className='mt-8 border-l-4 border-[#47A88D] bg-[#47A88D]/10'>
                 <p className='text-lg font-extrabold text-[#002E47] mb-4'>Your Plan is Highly Optimized!</p>
-
-                <div className='space-y-3 text-sm text-gray-700'>
-                    <p className='flex justify-between items-center'>
-                        <span className='font-semibold'>Total Estimated Time:</span>
-                        <span className={`font-bold ${isAccelerated ? 'text-green-600' : 'text-[#E04E1B]'}`}>
-                            {userTotalDuration} min ({isAccelerated ? `~${durationDifference} min less` : 'Standard'})
-                        </span>
-                    </p>
-                    <p className='flex justify-between items-center'>
-                        <span className='font-semibold'>Introductory Content (Low Skill):</span>
-                        <span className={`font-bold ${introDifference > 0 ? 'text-green-600' : 'text-[#E04E1B]'}`}>
-                            {userIntroContent} items ({introDifference} less than Generic)
-                        </span>
-                    </p>
-                    <p className='flex justify-between items-center'>
-                        <span className='font-semibold'>Mastery Content (High Skill):</span>
-                        <span className={`font-bold ${masteryDifference > 0 ? 'text-green-600' : 'text-[#E04E1B]'}`}>
-                            {userMasteryContent} items ({masteryDifference} more than Generic)
-                        </span>
-                    </p>
+                <div className='space-y-1 text-sm text-gray-700'>
+                    <StatItem 
+                        label="Total Estimated Time" 
+                        value={userTotalDuration} 
+                        unit="min" 
+                        diff={durationDifference} 
+                        isPositiveBetter={false} 
+                    />
+                    <StatItem 
+                        label="Mastery Content (High Skill)" 
+                        value={userMasteryContent} 
+                        unit="items" 
+                        diff={masteryDifference} 
+                        isPositiveBetter={true} 
+                    />
+                    <StatItem 
+                        label="Introductory Content (Low Skill)" 
+                        value={userIntroContent} 
+                        unit="items" 
+                        diff={introDifference} 
+                        isPositiveBetter={false} // Less intro content is better for non-new managers
+                    />
                 </div>
                 <p className='text-xs text-gray-600 mt-4 italic'>
                     *The AI tailored your content difficulty and sequence based on your specific Tiers and self-rated skill gaps.
                 </p>
+                <Button onClick={() => navigate('dashboard')} className='mt-6 w-full'>
+                    Go to Tracker Dashboard
+                </Button>
             </Card>
         );
     };
 
     // Component Rendering
     return (
-        <div className="p-8">
-            <h1 className="text-3xl font-extrabold text-[#002E47] mb-6">Personalized 24-Month Plan Generator</h1>
+        <div className="p-6 md:p-10 min-h-screen" style={{ background: COLORS.BG, color: COLORS.TEXT }}>
+            <div className='flex items-center gap-4 border-b-2 pb-2 mb-8' style={{borderColor: COLORS.PURPLE+'30'}}>
+                <Briefcase className='w-10 h-10' style={{color: COLORS.PURPLE}}/>
+                <h1 className="text-4xl font-extrabold" style={{ color: COLORS.NAVY }}>Personalized 24-Month Plan Generator</h1>
+            </div>
             <p className="text-lg text-gray-600 mb-8 max-w-3xl">Answer a few questions about your current role and goals to instantly generate a hyper-personalized leadership roadmap designed to close your skill gaps over the next two years.</p>
 
             <div className="space-y-10">
@@ -1074,7 +1099,9 @@ export const ProfDevPlanScreen = () => {
     // Consume data and updates via context
     const { pdpData, updatePdpData, saveNewPlan, isLoading, error, userId, db, navigate } = useAppServices();
 
-    // --- Router Logic ---
+    // Determine current view based on pdpData existence
+    const currentView = pdpData ? 'tracker' : 'generator';
+
     if (isLoading || pdpData === undefined) {
         return (
             <div className="p-8 min-h-screen flex items-center justify-center">
@@ -1096,21 +1123,14 @@ export const ProfDevPlanScreen = () => {
     }
 
     // pdpData is null if the document does not exist (needs generation)
-    if (pdpData === null) {
-        return <PlanGeneratorView userId={userId} saveNewPlan={saveNewPlan} isLoading={false} error={null} />;
+    if (pdpData === null || currentView === 'generator') {
+        return <PlanGeneratorView userId={userId} saveNewPlan={saveNewPlan} isLoading={false} error={null} navigate={navigate} />;
     }
 
     // pdpData exists -> show the tracker dashboard
     const trackerProps = { data: pdpData, updatePdpData, saveNewPlan, db, userId, navigate };
 
-    // Placeholder for TrackerDashboardView, assuming it exists outside this block
-    const TrackerDashboardView = ({data, updatePdpData, saveNewPlan, db, userId, navigate}) => (
-        <div className='p-8'>
-            <h2 className='text-2xl font-extrabold text-[#47A88D]'>PDP Tracker Dashboard (Full Logic Ready)</h2>
-            <p className='text-sm text-gray-600 mt-2'>Tracker View is omitted for brevity, but all components are integrated.</p>
-        </div>
-    );
-
+    // FIX: Render the actual TrackerDashboardView with the new props
     return <TrackerDashboardView {...trackerProps} />;
 };
 

@@ -253,21 +253,25 @@ const getQuestionScore = (query, bookTitle) => {
    AI COACH - NEW MOCK RESPONSE FACTORY
 ========================================================= */
 
-// FIX 3: Local AI Response Factory for contextual mock responses
+// FIX: Enhanced Local AI Response Factory for contextual mock responses
 function generateMockAIResponse(question, book, frameworks, actions) {
     const q = question.toLowerCase();
     const f = frameworks[0]?.name || 'a core principle';
     const a = actions[0];
+    const contextKeyword = q.includes('delegate') ? 'streamlining workflow' : (q.includes('team') ? 'improving psychological safety' : 'achieving strategic focus');
 
-    let response = `That's a key challenge this book addresses. According to **${book.title}**, the issue of ${q.includes('delegate') ? 'delegation' : (q.includes('team') ? 'team dynamics' : 'strategic execution')} is best viewed through the lens of the **${f}** model.`;
+    // Sentence 1: Acknowledgment and Context
+    let response = `That is a high-leverage question, directly addressing the core tension of **${book.title}**. The best approach, according to this book, is found by viewing your ${q.substring(0, 30)}... challenge through the lens of the **${f}** model.`;
     
+    // Sentence 2: Core Insight
     if (q.includes('how do i')) {
-        response += ` The core insight suggests that you must first secure **buy-in from your stakeholders** and then communicate your intention clearly.`;
-        response += `\n\nYour concrete next step should be to apply the **${f}** by: ${a.replace('.', '')} and noting the initial friction.`;
+        response += ` The core insight suggests that for **${contextKeyword}**, you must first secure **behavioral buy-in** by initiating the exact counter-action that ${book.author} recommends.`;
     } else {
-         response += ` The core message reinforces that focusing on ${f} will reduce the friction you are experiencing.`;
-         response += `\n\nYour concrete next step is to initiate **disciplined action** by: ${a.replace('.', '')} and observing the resulting shift in team behavior.`;
+         response += ` The central message reinforces that focusing on ${f} will reduce the friction you are experiencing by challenging the status quo around ${contextKeyword}.`;
     }
+
+    // Sentence 3/Next Step: Specific, Actionable Step
+    response += `\n\nYour concrete next step is to initiate a **disciplined action** by: ${a.replace('.', '')} and rigorously tracking the initial two outcomes. This will immediately test the applicability of the **${f}** framework in your current ${q.includes('situation') ? 'situation' : 'environment'}.`;
 
     return response;
 }
