@@ -215,10 +215,16 @@ function execBriefFallbackHTML(book, tier) {
    AI FLYER BUILDER - EXPANDED CONTENT PROMPT (Unchanged Logic)
 ========================================================= */
 async function buildAIFlyerHTML({ book, tier, executive, callSecureGeminiAPI }) {
+  // Check if API key is present AND if the API call is configured to return a non-mock response.
+  // NOTE: For a real app, you would check `hasGeminiKey()` and rely on a real API call.
+  // Since the mock API returns "mock response", we force the fallback if it's not ready.
   if (!callSecureGeminiAPI) {
     return executive ? execBriefFallbackHTML(book, tier) : richFlyerFallbackHTML(book, tier);
   }
   
+  // NOTE: We will assume the Gemini call should happen, but if it returns the generic mock,
+  // we will still fall back to the rich local content to satisfy the "flyer is not appearing" request.
+
   const baseInstruction = executive
     ? `Write a crisp EXECUTIVE BRIEF (80-120 words). Include a short "Key Frameworks" list (1 named model, 1 sentence summary) and 1 specific, actionable step. Output clean, styled HTML using only h2, h3, p, ul, li, strong, em, and inline CSS for presentation. The total content should fit in one paragraph and one bulleted list.`
     : `Create a robust, long-form BOOK FLYER (400-500 words total). Sections must include: **Key Ideas**, **Core Insights for Your Tier**, **Key Frameworks** (with one-line descriptions), and **Action Plan (4 Steps)**. Ensure high detail, multiple paragraphs, and professional tone. Output clean, styled HTML using only h2, h3, p, ul, li, strong, em, and inline CSS for presentation.`;
@@ -235,13 +241,17 @@ async function buildAIFlyerHTML({ book, tier, executive, callSecureGeminiAPI }) 
     
     let html = out?.candidates?.[0]?.content?.parts?.[0]?.text || '';
     
+    // CRITICAL FIX: If the response is the known mock response ("mock response"),
+    // or if it's empty, use the rich local fallback instead.
+    if (!html || html.toLowerCase().includes('mock response')) {
+      return executive ? execBriefFallbackHTML(book, tier) : richFlyerFallbackHTML(book, tier);
+    }
+    
     // Apply visual styles to the raw HTML output
     html = html.replace(/<h2/g, `<h2 style="color:${COLORS.ORANGE};font-size:24px;border-bottom:2px solid ${COLORS.SUBTLE};padding-bottom:5px;margin-top:15px;"`);
     html = html.replace(/<h3/g, `<h3 style="color:${COLORS.NAVY};font-size:20px;margin-top:10px;"`);
     html = html.replace(/<p/g, `<p style="color:#374151;font-size:16px;"`);
     html = html.replace(/<ul/g, `<ul style="list-style:disc;margin-left:20px;color:#374151;"`);
-    
-    if (!html) throw new Error("Empty AI response.");
     
     return html;
   } catch (e) {
@@ -359,6 +369,23 @@ export default function BusinessReadingsScreen() {
   }, [aiQuery, selectedBook]);
 
 
+  // --- FIX 1: MEMOIZE HANDLERS TO PREVENT CURSOR BOUNCE ---
+
+  const handleFilterChange = useCallback((key, value) => {
+    setFilters(prev => ({ ...prev, [key]: value }));
+  }, []);
+
+  const handleSearchChange = useCallback((e) => {
+    setFilters(prev => ({ ...prev, search: e.target.value }));
+  }, []);
+
+  const handleAiQueryChange = useCallback((e) => {
+    setAiQuery(e.target.value);
+  }, []);
+  
+  // --- END FIX 1 ---
+
+
   /* ---------- Filtering ---------- */
   const filteredBooks = useMemo(() => {
     const flat = Object.entries(allBooks).flatMap(([tier, books]) =>
@@ -387,10 +414,12 @@ export default function BusinessReadingsScreen() {
       
       const tierKey = selectedTier || Object.keys(allBooks).find(k => (allBooks[k] || []).some(b => b.id === selectedBook.id)) || 'Strategy & Execution';
 
+      // Show loading state immediately
       setHtmlFlyer(`<div style="padding:12px;border:1px dashed ${COLORS.SUBTLE};border-radius:12px;color:${COLORS.MUTED}">
                       <div class="animate-pulse flex items-center gap-2"><Cpu class="w-5 h-5"/> Generating ${isExecutiveBrief ? 'EXECUTIVE BRIEF' : 'FULL FLYER'}...</div>
                     </div>`);
 
+      // FIX 2: Call the function that handles mock response fallback
       const html = await buildAIFlyerHTML({ 
         book: selectedBook, 
         tier: tierKey, 
@@ -466,18 +495,34 @@ export default function BusinessReadingsScreen() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div>
              <label className="block text-sm font-medium mb-1 flex items-center gap-1" style={{ color: COLORS.MUTED }}><SearchIcon className="w-4 h-4" style={{ color: COLORS.TEAL }}/> Search by Title, Author, or Focus</label>
-             <input type="text" value={filters.search} onChange={(e) => setFilters(prev => ({ ...prev, search: e.target.value }))} placeholder="Start typing to find a book..." className="w-full p-3 border rounded-lg shadow-sm focus:outline-none"/>
+             <input 
+                type="text" 
+                value={filters.search} 
+                onChange={handleSearchChange} // Use memoized handler
+                placeholder="Start typing to find a book..." 
+                className="w-full p-3 border rounded-lg shadow-sm focus:outline-none"
+             />
           </div>
           <div>
             <label className="block text-sm font-medium mb-1" style={{ color: COLORS.MUTED }}>Complexity Level</label>
-            <select value={filters.complexity} onChange={(e) => setFilters({ ...filters, complexity: e.target.value })} className="w-full p-2 border rounded-lg shadow-sm focus:outline-none">
+            <select 
+                value={filters.complexity} 
+                onChange={(e) => handleFilterChange('complexity', e.target.value)} // Use memoized handler
+                className="w-full p-2 border rounded-lg shadow-sm focus:outline-none"
+            >
               <option value="All">All Levels</option>
               {Object.keys(COMPLEXITY_MAP).map(k => (<option key={k} value={k}>{COMPLEXITY_MAP[k].label}</option>))}
             </select>
           </div>
           <div>
             <label className="block text-sm font-medium mb-1" style={{ color: COLORS.MUTED }}>Max Est. Minutes</label>
-            <input type="range" min="150" max="300" step="10" value={filters.maxDuration} onChange={(e) => setFilters({ ...filters, maxDuration: parseInt(e.target.value, 10) })} className="w-full"/>
+            <input 
+                type="range" 
+                min="150" max="300" step="10" 
+                value={filters.maxDuration} 
+                onChange={(e) => handleFilterChange('maxDuration', parseInt(e.target.value, 10))} // Use memoized handler
+                className="w-full"
+            />
             <div className="flex justify-between text-xs mt-1" style={{ color: COLORS.MUTED }}><span>150 min</span><span>300 min</span></div>
           </div>
         </div>
@@ -678,7 +723,7 @@ export default function BusinessReadingsScreen() {
                     <input
                         type="text"
                         value={aiQuery}
-                        onChange={(e) => { setAiQuery(e.target.value); }}
+                        onChange={handleAiQueryChange} // Use memoized handler
                         placeholder={`Ask how to apply ${selectedBook.title} at work (e.g., "How do I delegate?")`}
                         className="flex-grow p-3 border rounded-xl"
                         style={{ borderColor: COLORS.SUBTLE, color: COLORS.TEXT }}
