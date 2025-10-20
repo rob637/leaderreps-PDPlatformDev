@@ -1,11 +1,11 @@
 [build]
-  command = "node -v && npm ci && npm run build -- --debug && echo '--- ls dist ---' && ls -la dist"
+  base = "LR_PD_Plat_dev"
+  command = "npm ci --no-audit --no-fund && npm run build"
   publish = "dist"
 
 [build.environment]
   NODE_VERSION = "20"
 
-# NEW: Tell Netlify where your serverless functions are and how to bundle them
 [functions]
   directory = "netlify/functions"
   node_bundler = "esbuild"
