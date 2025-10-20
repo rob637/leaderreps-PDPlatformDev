@@ -1,48 +1,55 @@
 // netlify/functions/gemini.js
-// Runs on Netlify Functions (AWS Lambda). Node 18+ has global fetch.
-const API_KEY = process.env.GEMINI_API_KEY;        // <-- set in Netlify UI (server-only)
-const MODEL   = process.env.GEMINI_MODEL || 'gemini-1.5-flash';
+// Robust Gemini proxy (Node 18/20). Uses v1 + returns upstream errors verbatim.
 
-export async function handler(event) {
+const API_VERSION   = 'v1';
+const DEFAULT_MODEL = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
+const API_KEY       = process.env.GEMINI_API_KEY;
+
+exports.handler = async (event) => {
   try {
-    if (!API_KEY) {
-      return { statusCode: 500, body: 'Missing GEMINI_API_KEY env var.' };
+    if (!API_KEY) return { statusCode: 500, body: 'Missing GEMINI_API_KEY env var.' };
+    if (event.httpMethod !== 'POST') return { statusCode: 405, body: 'Method Not Allowed' };
+
+    let payload;
+    try {
+      payload = JSON.parse(event.body || '{}');
+    } catch (e) {
+      return { statusCode: 400, body: `Bad JSON: ${e.message}` };
     }
-    if (event.httpMethod !== 'POST') {
-      return { statusCode: 405, body: 'Method Not Allowed' };
+
+    const model = (payload.model || DEFAULT_MODEL).trim();
+    const url = `https://generativelanguage.googleapis.com/${API_VERSION}/models/${model}:generateContent?key=${API_KEY}`;
+
+    // v1 expects camelCase systemInstruction
+    const body = {
+      systemInstruction: payload.systemInstruction,
+      contents: payload.contents,
+    };
+    if (payload.tools) body.tools = payload.tools; // optional
+
+    if (typeof fetch !== 'function') {
+      // Netlify/Node 18+ should always have fetch; helpful message if not.
+      return { statusCode: 500, body: 'Global fetch is unavailable. Use Node 18+.' };
     }
 
-    // Your UI should POST: { systemInstruction, contents, tools }
-    const payload = JSON.parse(event.body || '{}');
-
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${API_KEY}`;
-
-    const upstream = await fetch(url, {
+    const res = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        system_instruction: payload.systemInstruction,
-        contents: payload.contents,
-        tools: payload.tools, // safe to omit if unused
-      }),
+      body: JSON.stringify(body),
     });
 
-    const bodyText = await upstream.text();
-
-    // Pass through upstream failures so your UI can show a clear error
-    if (!upstream.ok) {
-      return { statusCode: upstream.status, body: bodyText || 'Gemini error (empty body)' };
+    const text = await res.text().catch(() => '');
+    if (!res.ok) {
+      return { statusCode: res.status, body: text || 'Gemini error (empty body)' };
     }
 
     return {
       statusCode: 200,
-      headers: {
-        'Content-Type': 'application/json',
-        'Cache-Control': 'no-store',
-      },
-      body: bodyText, // already JSON
+      headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
+      body: text,
     };
   } catch (err) {
+    console.error('Function error:', err);
     return { statusCode: 500, body: `Function error: ${err.message}` };
   }
-}
+};

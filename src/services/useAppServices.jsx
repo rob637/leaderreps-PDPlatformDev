@@ -1,9 +1,19 @@
 // src/services/useAppServices.jsx
 import React, { createContext, useContext, useMemo } from 'react';
 
-// Serverless is the default (recommended). Set VITE_GEMINI_MODE=direct only for local dev.
-const MODE = import.meta.env.VITE_GEMINI_MODE || 'serverless'; // 'serverless' | 'direct'
-const DIRECT_KEY = import.meta.env.VITE_GEMINI_KEY || '';      // Only used in 'direct' mode
+// Default to serverless (production-safe). Use VITE_GEMINI_MODE=direct only for local dev.
+const MODE =
+  (import.meta.env?.VITE_GEMINI_MODE || globalThis?.window?.__GEMINI_MODE || 'serverless').trim(); // 'serverless' | 'direct'
+
+// Dev-only key sources (never required in serverless)
+const DIRECT_KEY = (
+  import.meta.env?.VITE_GEMINI_KEY ||
+  import.meta.env?.VITE_GEMINI_API_KEY ||     // tolerate either name locally
+  globalThis?.window?.__GEMINI_API_KEY || ''  // optional window fallback in dev
+).trim();
+
+const DEFAULT_MODEL =
+  (import.meta.env?.VITE_GEMINI_MODEL || globalThis?.window?.__GEMINI_MODEL || 'gemini-1.5-flash').trim();
 
 const AppServicesContext = createContext(null);
 
@@ -14,13 +24,13 @@ export function useAppServices() {
 }
 
 function createServiceValue() {
-  // If we're in serverless mode, we don't need a browser key at all.
+  // In serverless mode, browser never needs a key
   const hasGeminiKey = () => MODE === 'serverless' || Boolean(DIRECT_KEY);
 
-  // This is the *only* function your UI should call for AI:
-  const callSecureGeminiAPI = async (payload) => {
+  // Single AI entrypoint used by your screens
+  const callSecureGeminiAPI = async (payload = {}) => {
     if (MODE === 'serverless') {
-      // Hits a Netlify function (see gemini.js below)
+      // Hits Netlify Function at /.netlify/functions/gemini
       const res = await fetch('/.netlify/functions/gemini', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -30,32 +40,40 @@ function createServiceValue() {
         const text = await res.text().catch(() => '');
         throw new Error(`Serverless call failed (${res.status}): ${text || 'no body'}`);
       }
-      return await res.json();
+      return res.json();
     }
 
-    // DIRECT mode (dev only; never commit/use in production)
-    if (!DIRECT_KEY) throw new Error('Direct mode selected but VITE_GEMINI_KEY is empty.');
-    const model = import.meta.env.VITE_GEMINI_MODEL || 'gemini-1.5-flash';
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${DIRECT_KEY}`;
+    // DIRECT mode (dev only; do not use in production)
+    if (!DIRECT_KEY) {
+      throw new Error('Direct mode selected but VITE_GEMINI_KEY/VITE_GEMINI_API_KEY is empty.');
+    }
+
+    const model = (payload.model || DEFAULT_MODEL).trim();
+
+    // ✅ Use v1 (not v1beta), or you’ll get 404 “model not found for v1beta”
+    const url = `https://generativelanguage.googleapis.com/v1/models/${model}:generateContent?key=${DIRECT_KEY}`;
+
+    // ✅ v1 expects camelCase "systemInstruction"
+    const body = {
+      systemInstruction: payload.systemInstruction,
+      contents: payload.contents,
+    };
+    if (payload.tools) body.tools = payload.tools; // optional
 
     const res = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      // Pass through your existing shape: { systemInstruction, contents, tools }
-      body: JSON.stringify({
-        system_instruction: payload.systemInstruction,
-        contents: payload.contents,
-        tools: payload.tools,
-      }),
+      body: JSON.stringify(body),
     });
+
+    const text = await res.text().catch(() => '');
     if (!res.ok) {
-      const text = await res.text().catch(() => '');
       throw new Error(`Gemini API error (${res.status}): ${text || 'no body'}`);
     }
-    return await res.json();
+    return JSON.parse(text || '{}');
   };
 
-  // Mocked stubs you already depend on
+  // Stubs your UI depends on (unchanged)
   const updateCommitmentData = (commitment) => { console.log('Commitment Added:', commitment.title); return true; };
   const navigate = (path) => { console.log('Navigating to:', path); };
 
