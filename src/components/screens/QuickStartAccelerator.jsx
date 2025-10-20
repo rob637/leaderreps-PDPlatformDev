@@ -128,11 +128,7 @@ const LISAuditorView = ({ setQuickStartView }) => {
                             </span>
                         ) : 'Run LIS Audit'}
                     </button>
-                    {critiqueHtml && (
-                        <button className='w-full text-center text-sm font-semibold text-[#47A88D] mt-3 hover:underline' onClick={() => setQuickStartView('lis-auditor-critique')}>
-                            View Full Critique &rarr;
-                        </button>
-                    )}
+                    {/* FIX: Removed the non-functional "View Full Critique" button */}
                 </SimpleCard>
 
                 {/* Critique Preview */}
