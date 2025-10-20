@@ -219,53 +219,56 @@ const getQuestionScore = (query, bookTitle) => {
    AI COACH - PRODUCTION FOCUS
 ========================================================= */
 async function handleAiSubmit(e, services, selectedBook, aiQuery, setIsSubmitting, setAiResponse) {
-    e.preventDefault();
-    if (e.target.disabled) return; 
+  e.preventDefault();
+  if (e.target.disabled) return;
 
-    const q = aiQuery.trim();
-    if (!selectedBook || !q) return;
+  const q = (aiQuery || '').trim();
+  if (!selectedBook || !q) return;
 
-    setIsSubmitting(true);
-    setAiResponse('The AI Coach is analyzing the book\'s core principles and formulating an actionable response...');
+  setIsSubmitting(true);
+  setAiResponse('The AI Coach is analyzing the book\'s core principles and formulating an actionable response...');
 
-    // SANITY CHECK: Ensure the core API function is available before proceeding
-    if (!services.callSecureGeminiAPI || !services.hasGeminiKey()) {
-        setAiResponse(`**AI OFFLINE/KEY MISSING**:\n\nContact IT. The necessary API endpoint is not configured to provide real-time coaching.`);
-        setIsSubmitting(false);
-        return;
-    }
+  // SAFETY: tolerate missing provider methods
+  const hasKeyOk =
+    typeof services?.hasGeminiKey === 'function' ? services.hasGeminiKey() : true;
+  const canCall =
+    typeof services?.callSecureGeminiAPI === 'function';
 
+  if (!canCall || !hasKeyOk) {
+    setAiResponse('**AI OFFLINE/KEY MISSING**:\n\nContact IT. The necessary API endpoint is not configured to provide real-time coaching.');
+    setIsSubmitting(false);
+    return;
+  }
 
-    try {
-        // PRODUCTION LOGIC: Use book data to ground the AI response
-        const actionableContext = `
-            Book: ${selectedBook.title} by ${selectedBook.author}. Focus: ${selectedBook.focus}.
-            Key Frameworks: ${getFrameworks(selectedBook).map(f => f.name).join(', ')}.
-            Key Actions: ${getActionSteps(selectedBook).join(' | ')}.
-            User's Current Question: ${q}
-        `;
+  try {
+    const actionableContext = `
+      Book: ${selectedBook.title} by ${selectedBook.author}. Focus: ${selectedBook.focus}.
+      Key Frameworks: ${getFrameworks(selectedBook).map(f => f.name).join(', ')}.
+      Key Actions: ${getActionSteps(selectedBook).join(' | ')}.
+      User's Current Question: ${q}
+    `;
 
-        const systemPrompt =
-            `You are the LeaderReps AI Coach. Your sole purpose is to answer the user's question by referencing the provided book's principles ONLY. Do not use outside knowledge. Your response must be direct, actionable, and reference the book's frameworks.
-            ${actionableContext}
-            Guidelines: Answer directly with 3–5 sentences. Include one concrete next action that applies the book's principle to the user's situation. Do not use markdown other than **bold** for emphasis. Ensure the response flows naturally like coaching advice.`;
+    const systemPrompt =
+      `You are the LeaderReps AI Coach. Your sole purpose is to answer the user's question by referencing the provided book's principles ONLY. Do not use outside knowledge. Your response must be direct, actionable, and reference the book's frameworks.
+      ${actionableContext}
+      Guidelines: Answer directly with 3–5 sentences. Include one concrete next action that applies the book's principle to the user's situation. Do not use markdown other than **bold** for emphasis. Ensure the response flows naturally like coaching advice.`;
 
-        let out = await services.callSecureGeminiAPI({ 
-            systemInstruction: { parts: [{ text: systemPrompt }] }, 
-            contents: [{ role: "user", parts: [{ text: q }] }],
-            tools: [{ "google_search": {} }], // Ensure grounding is active
-        });
+    const out = await services.callSecureGeminiAPI({
+      systemInstruction: { parts: [{ text: systemPrompt }] },
+      contents: [{ role: 'user', parts: [{ text: q }] }],
+      tools: [{ google_search: {} }],
+    });
 
-        const text = out?.candidates?.[0]?.content?.parts?.[0]?.text || 'No response was received from the AI. Please try rephrasing your question.';
-        
-        setAiResponse(text);
+    const text = out?.candidates?.[0]?.content?.parts?.[0]?.text
+      || 'No response was received from the AI. Please try rephrasing your question.';
 
-    } catch (err) {
-        console.error('AI coach production call failed.', err);
-        setAiResponse(`**PRODUCTION CALL FAILED**: The API request resulted in an error. Please check the network or system logs.`);
-    } finally {
-        setIsSubmitting(false);
-    }
+    setAiResponse(text);
+  } catch (err) {
+    console.error('AI coach production call failed.', err);
+    setAiResponse('**PRODUCTION CALL FAILED**: The API request resulted in an error. Please check the network or system logs.');
+  } finally {
+    setIsSubmitting(false);
+  }
 }
 
 
