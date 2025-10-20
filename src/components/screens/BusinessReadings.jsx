@@ -35,26 +35,13 @@ const COMPLEXITY_MAP = {
 };
 
 /* =========================================================
-   UI COMPONENTS (Mocked from uiKit) - Only essential mocks kept
+   UI COMPONENTS (Mocks omitted for brevity)
 ========================================================= */
-const ExecSwitch = ({ checked, onChange }) => {
-  const toggle = () => onChange(!checked);
-  return (
+const ExecSwitch = ({ checked, onChange }) => { /* ... */ return (
     <div className="flex items-center gap-2">
-      <button
-        type="button"
-        role="switch"
-        aria-checked={checked}
-        onClick={toggle}
-        className="relative inline-flex items-center"
-        style={{ width: 46, height: 26 }}
-      >
-        <span
-          style={{
-            position: 'absolute', inset: 0, background: checked ? COLORS.ORANGE : '#9CA3AF',
-            borderRadius: 9999, transition: 'background .15s ease'
-          }}
-        />
+      <button type="button" role="switch" aria-checked={checked} onClick={() => onChange(!checked)}
+        className="relative inline-flex items-center" style={{ width: 46, height: 26 }} >
+        <span style={{ position: 'absolute', inset: 0, background: checked ? COLORS.ORANGE : '#9CA3AF', borderRadius: 9999, transition: 'background .15s ease'}} />
         <span style={{ position: 'relative', left: checked ? 22 : 2, width: 22, height: 22, background: '#FFFFFF', borderRadius: '9999px', boxShadow: '0 1px 2px rgba(0,0,0,.2)', transition: 'left .15s ease' }} />
       </button>
       <span style={{ color: COLORS.NAVY, fontWeight: 600 }}>Executive Brief</span>
@@ -70,7 +57,7 @@ const Button = ({ children, onClick, disabled = false, variant = 'primary', clas
 };
 
 /* =========================================================
-   MOCK BOOKS (From previous step)
+   MOCK BOOKS (Omitted for brevity)
 ========================================================= */
 const MOCK_ALL_BOOKS = {
   'Strategy & Execution': [
@@ -106,38 +93,27 @@ const MOCK_ALL_BOOKS = {
 };
 
 /* =========================================================
-   LOCAL FALLBACK UTILITIES 
+   LOCAL FALLBACK UTILITIES (Omitted for brevity)
 ========================================================= */
-function getActionSteps(book) {
+function getActionSteps(book) { /* ... */ 
   const t = (book.title || '').toLowerCase();
-  if (t.includes('e-myth')) {
-    return ['Map one repeatable process (5–7 steps) and write a 1-page SOP.', 'Delegate the checklist, not the task.', 'Analyze your time allocation: Technician, Manager, or Entrepreneur Role?'];
-  } else if (t.includes('radical candor')) {
-    return ['Ask your team: “What’s one thing I could do better?” then act on one item within a week.', 'Draft corrective feedback using the SBI framework (Situation, Behavior, Impact).', 'Use a 5:1 positive-to-negative feedback ratio.'];
-  } else if (t.includes('atomic habits')) {
-    return ['Pick one keystone habit; write it as Habit Stack: “After [current], I will [new], then [small reward]”.', 'Use the 2-Minute Rule to start any new habit.', 'Audit your environment to make good habits obvious and bad habits invisible.'];
-  } else if (t.includes('good to great')) {
-    return ['Identify one "Hedgehog" area where your company can be the best.', 'Implement a "Stop Doing" list to enforce a Culture of Discipline.', 'Find a "Level 5" leader on your team and mentor them.'];
-  }
+  if (t.includes('e-myth')) { return ['Map one repeatable process (5–7 steps) and write a 1-page SOP.', 'Delegate the checklist, not the task.', 'Analyze your time allocation: Technician, Manager, or Entrepreneur Role?'];}
+  if (t.includes('radical candor')) { return ['Ask your team: “What’s one thing I could do better?” then act on one item within a week.', 'Draft corrective feedback using the SBI framework (Situation, Behavior, Impact).', 'Use a 5:1 positive-to-negative feedback ratio.'];}
+  if (t.includes('atomic habits')) { return ['Pick one keystone habit; write it as Habit Stack: “After [current], I will [new], then [small reward]”.', 'Use the 2-Minute Rule to start any new habit.', 'Audit your environment to make good habits obvious and bad habits invisible.'];}
+  if (t.includes('good to great')) { return ['Identify one "Hedgehog" area where your company can be the best.', 'Implement a "Stop Doing" list to enforce a Culture of Discipline.', 'Find a "Level 5" leader on your team and mentor them.'];}
   return ['Define the outcome, then design the smallest repeatable action.'];
 }
 
-function getFrameworks(book) {
+function getFrameworks(book) { /* ... */
   const t = (book.title || '').toLowerCase();
-  if (t.includes('e-myth')) {
-    return [{ name: 'E-Myth Roles', desc: 'Entrepreneur (vision), Manager (systems), Technician (doing).' }, { name: 'Systemization', desc: 'Build the business as if it were a franchise prototype.' }];
-  } else if (t.includes('radical candor')) {
-    return [{ name: 'Candor Quadrants', desc: 'Caring Personally × Challenging Directly; aim for Radical Candor.' }, { name: 'Gives-and-Gets', desc: 'Focus on what you give (feedback) and get (results).' }];
-  } else if (t.includes('atomic habits')) {
-    return [{ name: 'Four Laws', desc: 'Make it Obvious, Attractive, Easy, Satisfying.' }, { name: 'Habit Stacking', desc: 'Pair a new habit with an old one (e.g., After X, I will Y).' }];
-  } else if (t.includes('good to great')) {
-    return [{ name: 'Hedgehog Concept', desc: 'Intersection of passion, best-in-the-world, and economic engine.' }, { name: 'Level 5 Leadership', desc: 'Ambitious for the company, not for themselves.' }];
-  }
+  if (t.includes('e-myth')) { return [{ name: 'E-Myth Roles', desc: 'Entrepreneur (vision), Manager (systems), Technician (doing).' }, { name: 'Systemization', desc: 'Build the business as if it were a franchise prototype.' }];}
+  if (t.includes('radical candor')) { return [{ name: 'Candor Quadrants', desc: 'Caring Personally × Challenging Directly; aim for Radical Candor.' }, { name: 'Gives-and-Gets', desc: 'Focus on what you give (feedback) and get (results).' }];}
+  if (t.includes('atomic habits')) { return [{ name: 'Four Laws', desc: 'Make it Obvious, Attractive, Easy, Satisfying.' }, { name: 'Habit Stacking', desc: 'Pair a new habit with an old one (e.g., After X, I will Y).' }];}
+  if (t.includes('good to great')) { return [{ name: 'Hedgehog Concept', desc: 'Intersection of passion, best-in-the-world, and economic engine.' }, { name: 'Level 5 Leadership', desc: 'Ambitious for the company, not for themselves.' }];}
   return [{ name: 'Core Principles', desc: 'Prioritize outcomes, feedback loops, and small, testable steps.' }];
 }
 
-// Function to generate a much richer fallback for the full flyer
-function richFlyerFallbackHTML(book, tier) {
+function richFlyerFallbackHTML(book, tier) { /* ... */
     const focus = (book.focus || '').split(',').map(s => s.trim()).filter(Boolean);
     const chips = focus.slice(0, 6).map(f => `<span style="display:inline-block; padding:4px 8px; margin:2px; border-radius:9999px; background:#F3F4F6; color:#374151; font-size:12px">${f}</span>`).join('');
     const actions = getActionSteps(book);
@@ -190,8 +166,7 @@ function richFlyerFallbackHTML(book, tier) {
     `;
 }
 
-// Function to generate the much shorter executive brief
-function execBriefFallbackHTML(book, tier) {
+function execBriefFallbackHTML(book, tier) { /* ... */
     const actions = getActionSteps(book).slice(0, 1);
     const frameworks = getFrameworks(book).slice(0, 1);
     
@@ -211,10 +186,9 @@ function execBriefFallbackHTML(book, tier) {
 }
 
 /* =========================================================
-   AI FLYER BUILDER - EXPANDED CONTENT PROMPT (Unchanged Logic)
+   AI FLYER BUILDER & QUESTION SCORING (Omitted for brevity)
 ========================================================= */
 async function buildAIFlyerHTML({ book, tier, executive, callSecureGeminiAPI }) {
-  // Check if API key is present AND if the API call is configured to return a non-mock response.
   if (!callSecureGeminiAPI) {
     return executive ? execBriefFallbackHTML(book, tier) : richFlyerFallbackHTML(book, tier);
   }
@@ -235,13 +209,10 @@ async function buildAIFlyerHTML({ book, tier, executive, callSecureGeminiAPI }) 
     
     let html = out?.candidates?.[0]?.content?.parts?.[0]?.text || '';
     
-    // CRITICAL FIX: If the response is the known mock response ("mock response"),
-    // or if it's empty, use the rich local fallback instead.
     if (!html || html.toLowerCase().includes('mock response')) {
       return executive ? execBriefFallbackHTML(book, tier) : richFlyerFallbackHTML(book, tier);
     }
     
-    // Apply visual styles to the raw HTML output
     html = html.replace(/<h2/g, `<h2 style="color:${COLORS.ORANGE};font-size:24px;border-bottom:2px solid ${COLORS.SUBTLE};padding-bottom:5px;margin-top:15px;"`);
     html = html.replace(/<h3/g, `<h3 style="color:${COLORS.NAVY};font-size:20px;margin-top:10px;"`);
     html = html.replace(/<p/g, `<p style="color:#374151;font-size:16px;"`);
@@ -254,25 +225,16 @@ async function buildAIFlyerHTML({ book, tier, executive, callSecureGeminiAPI }) 
   }
 }
 
-/* =========================================================
-   NEW: AI QUESTION SCORING LOGIC
-========================================================= */
-
 const getQuestionScore = (query, bookTitle) => {
     const q = query.toLowerCase().trim();
     if (q.length < 15) return { score: 0, tip: 'Question is too short. Be specific about your challenge.' };
     
     let score = 0;
     let feedback = 'Question could be more specific.';
-
-    // Check for high-value application keywords
     const applicationKeywords = ['how do i', 'apply', 'implement', 'what is the first step', 'next step', 'my team', 'colleague', 'delegate', 'situation'];
     const hasApplication = applicationKeywords.some(keyword => q.includes(keyword));
-
-    // Check for context and length
     const hasContext = q.length > 50;
     
-    // Scoring logic
     if (hasApplication && hasContext) {
         score = 3;
         feedback = `Excellent query! Ready to apply ${bookTitle}.`;
@@ -287,10 +249,7 @@ const getQuestionScore = (query, bookTitle) => {
     return { score, tip: feedback };
 };
 
-/* =========================================================
-   AI COACH - CONTEXTUAL FIX 
-========================================================= */
-async function handleAiSubmit(e, services, selectedBook, aiQuery, setIsSubmitting, setAiResponse) {
+async function handleAiSubmit(e, services, selectedBook, aiQuery, setIsSubmitting, setAiResponse) { /* ... */
     e.preventDefault();
     if (e.target.disabled) return; 
 
@@ -298,7 +257,6 @@ async function handleAiSubmit(e, services, selectedBook, aiQuery, setIsSubmittin
     if (!selectedBook || !q) return;
 
     setIsSubmitting(true);
-    // Setting a visual loading message for better UX
     setAiResponse('The AI Coach is analyzing the book\'s core principles and formulating an actionable response...');
 
     const actionableContext = `
@@ -332,9 +290,11 @@ async function handleAiSubmit(e, services, selectedBook, aiQuery, setIsSubmittin
 
 
 // =========================================================
-// NEW DEDICATED SEARCH INPUT COMPONENT FOR ISOLATION
+// ISOLATED, MEMOIZED INPUT COMPONENTS (THE FIX)
 // =========================================================
-const SearchInput = React.memo(({ filters, handleSearchChange }) => {
+
+// Fix 1: Search Input (Isolated and Memoized)
+const SearchInput = React.memo(({ value, onChange }) => {
     return (
         <div>
             <label className="block text-sm font-medium mb-1 flex items-center gap-1" style={{ color: COLORS.MUTED }}>
@@ -342,8 +302,8 @@ const SearchInput = React.memo(({ filters, handleSearchChange }) => {
             </label>
             <input 
                 type="text" 
-                value={filters.search} 
-                onChange={handleSearchChange} 
+                value={value} 
+                onChange={onChange} 
                 placeholder="Start typing to find a book..." 
                 className="w-full p-3 border rounded-lg shadow-sm focus:outline-none"
             />
@@ -351,6 +311,58 @@ const SearchInput = React.memo(({ filters, handleSearchChange }) => {
     );
 });
 SearchInput.displayName = 'SearchInput';
+
+
+// Fix 2: AI Coach Input (Isolated and Memoized)
+const AICoachInput = React.memo(({ aiQuery, handleAiQueryChange, submitHandler, isSubmitting, questionFeedback, selectedBookTitle }) => {
+    
+    // Determine AI Coach message colors and icons based on props
+    const coachBgColor = questionFeedback.score === 3 ? '#D1FAE5' : (questionFeedback.score === 2 ? '#FEF3C7' : '#FEE2E2');
+    const coachBorderColor = questionFeedback.score === 3 ? '#34D399' : (questionFeedback.score === 2 ? '#FBBF24' : '#F87171');
+    const coachTextColor = questionFeedback.score === 3 ? '#065F46' : (questionFeedback.score === 2 ? '#B45309' : '#991B1B');
+    const CoachIcon = questionFeedback.score === 3 ? Zap : (questionFeedback.score === 2 ? AlertTriangle : Info);
+    
+    return (
+        <form onSubmit={submitHandler} className="flex flex-col gap-2">
+            {/* Live Feedback Bar */}
+            {aiQuery.trim().length > 0 && (
+                <div className="p-2 rounded-lg text-sm flex items-center gap-2 transition-all duration-300 shadow-inner" 
+                        style={{ background: coachBgColor, border: `1px solid ${coachBorderColor}`, color: coachTextColor }}>
+                    <CoachIcon className="w-4 h-4 flex-shrink-0" />
+                    <span className="font-semibold">Query Quality Score {questionFeedback.score}/3:</span> 
+                    <span className="flex-1">{questionFeedback.tip}</span>
+                </div>
+            )}
+            
+            <div className="flex gap-2">
+                <input
+                    type="text"
+                    value={aiQuery}
+                    onChange={handleAiQueryChange}
+                    placeholder={`Ask how to apply ${selectedBookTitle} at work (e.g., "How do I delegate?")`}
+                    className="flex-grow p-3 border rounded-xl"
+                    style={{ borderColor: COLORS.SUBTLE, color: COLORS.TEXT }}
+                    required
+                />
+                <button
+                    type="submit"
+                    className="px-4 rounded-xl font-semibold flex items-center gap-1 shadow-lg"
+                    style={{
+                        background: isSubmitting ? '#9CA3AF' : COLORS.PURPLE,
+                        color: '#FFFFFF',
+                        cursor: (aiQuery.trim() && !isSubmitting) ? 'pointer' : 'not-allowed',
+                        opacity: isSubmitting ? 0.9 : 1
+                    }}
+                    disabled={!aiQuery.trim() || isSubmitting}
+                    aria-busy={isSubmitting ? 'true' : 'false'}
+                >
+                    <MessageSquare className="w-5 h-5" /> {isSubmitting ? 'Working…' : 'Ask Coach'}
+                </button>
+            </div>
+        </form>
+    );
+});
+AICoachInput.displayName = 'AICoachInput';
 
 
 /* =========================================================
@@ -514,7 +526,7 @@ export default function BusinessReadingsScreen() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           
           {/* FIX: Use the dedicated SearchInput component here */}
-          <SearchInput filters={filters} handleSearchChange={handleSearchChange} />
+          <SearchInput filters={filters} value={filters.search} onChange={handleSearchChange} />
           
           <div>
             <label className="block text-sm font-medium mb-1" style={{ color: COLORS.MUTED }}>Complexity Level</label>
@@ -659,9 +671,6 @@ export default function BusinessReadingsScreen() {
     const coachBorderColor = questionFeedback.score === 3 ? '#34D399' : (questionFeedback.score === 2 ? '#FBBF24' : '#F87171');
     const coachTextColor = questionFeedback.score === 3 ? '#065F46' : (questionFeedback.score === 2 ? '#B45309' : '#991B1B');
 
-    // Icon for AI Coach status
-    const CoachIcon = questionFeedback.score === 3 ? Zap : (questionFeedback.score === 2 ? AlertTriangle : Info);
-
     return (
       <div className="space-y-8">
         <div className="flex justify-between items-center pb-4" style={{ borderBottom: `1px solid ${COLORS.SUBTLE}` }}>
@@ -720,44 +729,15 @@ export default function BusinessReadingsScreen() {
               </div>
             )}
 
-            {/* AI Input Form with live feedback */}
-            <form onSubmit={submitHandler} className="flex flex-col gap-2">
-                {/* Live Feedback Bar */}
-                {aiQuery.trim().length > 0 && (
-                    <div className="p-2 rounded-lg text-sm flex items-center gap-2 transition-all duration-300 shadow-inner" 
-                         style={{ background: coachBgColor, border: `1px solid ${coachBorderColor}`, color: coachTextColor }}>
-                        <CoachIcon className="w-4 h-4 flex-shrink-0" />
-                        <span className="font-semibold">Query Quality Score {questionFeedback.score}/3:</span> 
-                        <span className="flex-1">{questionFeedback.tip}</span>
-                    </div>
-                )}
-                
-                <div className="flex gap-2">
-                    <input
-                        type="text"
-                        value={aiQuery}
-                        onChange={handleAiQueryChange} // FIX: Already using memoized handler
-                        placeholder={`Ask how to apply ${selectedBook.title} at work (e.g., "How do I delegate?")`}
-                        className="flex-grow p-3 border rounded-xl"
-                        style={{ borderColor: COLORS.SUBTLE, color: COLORS.TEXT }}
-                        required
-                    />
-                    <button
-                        type="submit"
-                        className="px-4 rounded-xl font-semibold flex items-center gap-1 shadow-lg"
-                        style={{
-                            background: isSubmitting ? '#9CA3AF' : COLORS.PURPLE,
-                            color: '#FFFFFF',
-                            cursor: (aiQuery.trim() && !isSubmitting) ? 'pointer' : 'not-allowed',
-                            opacity: isSubmitting ? 0.9 : 1
-                        }}
-                        disabled={!aiQuery.trim() || isSubmitting}
-                        aria-busy={isSubmitting ? 'true' : 'false'}
-                    >
-                        <MessageSquare className="w-5 h-5" /> {isSubmitting ? 'Working…' : 'Ask Coach'}
-                    </button>
-                </div>
-            </form>
+            {/* FIX: Use the dedicated AICoachInput component here */}
+            <AICoachInput
+                aiQuery={aiQuery}
+                handleAiQueryChange={handleAiQueryChange}
+                submitHandler={submitHandler}
+                isSubmitting={isSubmitting}
+                questionFeedback={questionFeedback}
+                selectedBookTitle={selectedBook.title}
+            />
           </div>
 
           {/* Commit actions */}
