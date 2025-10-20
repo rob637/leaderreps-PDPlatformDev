@@ -4,7 +4,7 @@ import React, { useState, useMemo, useRef, useEffect, useCallback, useLayoutEffe
 import { useAppServices } from '../../App.jsx'; 
 import {
   BookOpen, Target, CheckCircle, Clock, AlertTriangle,
-  MessageSquare, Filter, TrendingUp, Star, Search as SearchIcon, Users, Cpu, ChevronRight, Info
+  MessageSquare, Filter, TrendingUp, Star, Search as SearchIcon, Cpu, Zap, Info, Check
 } from 'lucide-react';
 
 /* =========================================================
@@ -22,9 +22,10 @@ const COLORS = {
   OFF_WHITE: '#FFFFFF',
   MUTED: '#4B5563',
   SUBTLE: '#E5E7EB',
-  // ADDED: referenced later in styles
   TEXT: '#374151',
   BLUE: '#2563EB',
+  BG: '#F9FAFB', 
+  PURPLE: '#7C3AED', // Used for premium AI branding
 };
 
 const COMPLEXITY_MAP = {
@@ -34,7 +35,7 @@ const COMPLEXITY_MAP = {
 };
 
 /* =========================================================
-   UI COMPONENTS (Mocked from uiKit)
+   UI COMPONENTS (Mocked from uiKit) - Only essential mocks kept
 ========================================================= */
 const ExecSwitch = ({ checked, onChange }) => {
   const toggle = () => onChange(!checked);
@@ -68,53 +69,45 @@ const Button = ({ children, onClick, disabled = false, variant = 'primary', clas
     if (disabled) { baseStyle = "px-6 py-3 rounded-xl font-semibold bg-gray-300 text-gray-500 cursor-not-allowed shadow-inner transition-none"; }
     return (<button {...rest} onClick={onClick} disabled={disabled} className={`${baseStyle} ${className}`}>{children}</button>);
 };
-const Card = ({ children, title, icon: Icon, className = '', onClick, accent = 'TEAL' }) => {
-  const interactive = !!onClick;
-  const Tag = interactive ? 'button' : 'div';
-  const accentColor = COLORS[accent] || COLORS.TEAL;
 
-  return (
-    <Tag
-      role={interactive ? 'button' : undefined}
-      tabIndex={interactive ? 0 : undefined}
-      className={`relative p-6 rounded-2xl border-2 shadow-2xl hover:shadow-xl transition-all duration-300 text-left ${className}`}
-      style={{ background: 'linear-gradient(180deg,#FFFFFF, #FCFCFA)', borderColor: '#E5E7EB', color: COLORS.NAVY }}
-      onClick={onClick}
-    >
-      <span style={{ position:'absolute', top:0, left:0, right:0, height:6, background: accentColor, borderTopLeftRadius:14, borderTopRightRadius:14 }} />
-      
-      {Icon && (
-        <div className="w-10 h-10 rounded-lg flex items-center justify-center border mb-3" style={{ borderColor: '#E5E7EB', background: COLORS.LIGHT_GRAY }}>
-          <Icon className="w-5 h-5" style={{ color: COLORS.TEAL }} />
-        </div>
-      )}
-      {title && <h2 className="text-xl font-extrabold mb-2" style={{ color: COLORS.NAVY }}>{title}</h2>}
-      {children}
-    </Tag>
-  );
-};
 /* =========================================================
-   MOCK BOOKS (fallback if context has none)
+   MOCK BOOKS (From previous step)
 ========================================================= */
 const MOCK_ALL_BOOKS = {
   'Strategy & Execution': [
     { id: 's_e_1', title: 'The E-Myth Revisited', author: 'Michael E. Gerber', theme: 'Why most small businesses fail and how to build a scalable system.', complexity: 'Medium', duration: 180, focus: 'Delegation, Process Mapping, Systemization' },
+    { id: 's_e_2', title: 'Good to Great', author: 'Jim Collins', theme: 'The factors that allow companies to make the leap from good results to sustained great ones.', complexity: 'High', duration: 240, focus: 'Level 5 Leadership, Hedgehog Concept, Culture of Discipline' },
     { id: 's_e_3', title: 'Measure What Matters', author: 'John Doerr', theme: 'Achieving ambitious goals using OKRs.', complexity: 'Medium', duration: 200, focus: 'Goal Setting, Quarterly Planning, Accountability' },
+    { id: 's_e_4', title: 'The 7 Habits', author: 'Stephen Covey', theme: 'Principles for personal and professional effectiveness.', complexity: 'Low', duration: 220, focus: 'Proactivity, Prioritization, Synergy, Sharpen the Saw' },
+    { id: 's_e_5', title: 'Getting Things Done (GTD)', author: 'David Allen', theme: 'A stress-free system for organizing tasks and projects.', complexity: 'Medium', duration: 210, focus: 'Workflow Management, Capture, Organize, Engage' },
+    { id: 's_e_6', title: 'Deep Work', author: 'Cal Newport', theme: 'The value of focused, distraction-free concentration on cognitively demanding tasks.', complexity: 'Medium', duration: 190, focus: 'Focus, Productivity, Attention Management, Monastic Approach' },
+    { id: 's_e_7', title: 'The Goal', author: 'Eliyahu Goldratt', theme: 'The process of ongoing improvement using the Theory of Constraints.', complexity: 'High', duration: 260, focus: 'Theory of Constraints, Bottlenecks, Throughput' },
   ],
   'People & Culture': [
     { id: 'p_c_1', title: 'Dare to Lead', author: 'Brené Brown', theme: 'Courageous leadership by embracing vulnerability and trust.', complexity: 'Medium', duration: 210, focus: 'Psychological Safety, Feedback, Vulnerability' },
+    { id: 'p_c_2', title: 'Turn the Ship Around!', author: 'L. David Marquet', theme: 'Creating a leader-leader organization over a leader-follower one.', complexity: 'Medium', duration: 190, focus: 'Intent-Based Leadership, Decentralization, Ownership' },
     { id: 'p_c_3', title: 'Radical Candor', author: 'Kim Scott', theme: 'Challenging directly while caring personally.', complexity: 'Medium', duration: 190, focus: 'Feedback Delivery, Coaching, Guidance' },
+    { id: 'p_c_4', title: 'The Culture Code', author: 'Daniel Coyle', theme: 'Building highly successful groups through belonging, safety, and shared purpose.', complexity: 'Low', duration: 230, focus: 'Group Cohesion, Vulnerability Loops, Shared Identity' },
+    { id: 'p_c_5', title: 'Start with Why', author: 'Simon Sinek', theme: 'Great leaders inspire action by communicating from the inside out (The Golden Circle).', complexity: 'Low', duration: 180, focus: 'Purpose, Vision, The Golden Circle, Mass Influence' },
+    { id: 'p_c_6', title: 'Team of Teams', author: 'General Stanley McChrystal', theme: 'How a decentralized command structure can beat highly effective, organized threats.', complexity: 'High', duration: 250, focus: 'Shared Consciousness, Empowered Execution, Adaptability' },
   ],
   'Self-Awareness & Growth': [
     { id: 's_a_1', title: 'Atomic Habits', author: 'James Clear', theme: 'Build good habits by tiny improvements.', complexity: 'Low', duration: 180, focus: 'Habit Formation, Self-Discipline, Identity' },
+    { id: 's_a_2', title: 'Mindset', author: 'Carol Dweck', theme: 'The difference between growth and fixed mindsets in success.', complexity: 'Medium', duration: 190, focus: 'Growth Mindset, Fixed Mindset, Effort vs. Talent' },
+    { id: 's_a_3', title: 'Drive', author: 'Daniel H. Pink', theme: 'The new operating system for business based on intrinsic motivation (Autonomy, Mastery, Purpose).', complexity: 'Medium', duration: 170, focus: 'Intrinsic Motivation, Autonomy, Mastery, Purpose' },
+    { id: 's_a_4', title: 'Emotional Intelligence 2.0', author: 'Travis Bradberry', theme: 'Practical strategies for increasing self-awareness and self-management.', complexity: 'Low', duration: 160, focus: 'Self-Awareness, Self-Management, Social Awareness, Relationship Management' },
+    { id: 's_a_5', title: 'Thinking, Fast and Slow', author: 'Daniel Kahneman', theme: 'Dual-process model of the brain (System 1 and System 2) and cognitive biases.', complexity: 'High', duration: 280, focus: 'Cognitive Biases, System 1/System 2, Decision Making' },
   ],
-  'Innovation & Change': [
+  'Innovation & Change': [ 
     { id: 'i_c_1', title: 'The Lean Startup', author: 'Eric Ries', theme: 'Build-measure-learn with continuous innovation.', complexity: 'High', duration: 250, focus: 'MVP, Build-Measure-Learn, Iteration' },
+    { id: 'i_c_2', title: 'Innovator\'s Dilemma', author: 'Clayton Christensen', theme: 'Why great companies fail by being too good at what they do.', complexity: 'High', duration: 270, focus: 'Disruptive Innovation, Sustaining Technology, Value Networks' },
+    { id: 'i_c_3', title: 'Crossing the Chasm', author: 'Geoffrey A. Moore', theme: 'Marketing high-tech products to mainstream customers.', complexity: 'Medium', duration: 230, focus: 'Technology Adoption Lifecycle, Chasm Strategy, Bowling Pin' },
+    { id: 'i_c_4', title: 'Zero to One', author: 'Peter Thiel', theme: 'The secret to building a better future is to create new things, not copy existing ones.', complexity: 'Medium', duration: 200, focus: 'Monopolies, Vertical Progress, Last Mover Advantage' },
   ],
 };
 
 /* =========================================================
-   LOCAL FALLBACK UTILITIES (Used to inject rich context)
+   LOCAL FALLBACK UTILITIES 
 ========================================================= */
 function getActionSteps(book) {
   const t = (book.title || '').toLowerCase();
@@ -124,6 +117,8 @@ function getActionSteps(book) {
     return ['Ask your team: “What’s one thing I could do better?” then act on one item within a week.', 'Draft corrective feedback using the SBI framework (Situation, Behavior, Impact).', 'Use a 5:1 positive-to-negative feedback ratio.'];
   } else if (t.includes('atomic habits')) {
     return ['Pick one keystone habit; write it as Habit Stack: “After [current], I will [new], then [small reward]”.', 'Use the 2-Minute Rule to start any new habit.', 'Audit your environment to make good habits obvious and bad habits invisible.'];
+  } else if (t.includes('good to great')) {
+    return ['Identify one "Hedgehog" area where your company can be the best.', 'Implement a "Stop Doing" list to enforce a Culture of Discipline.', 'Find a "Level 5" leader on your team and mentor them.'];
   }
   return ['Define the outcome, then design the smallest repeatable action.'];
 }
@@ -136,67 +131,100 @@ function getFrameworks(book) {
     return [{ name: 'Candor Quadrants', desc: 'Caring Personally × Challenging Directly; aim for Radical Candor.' }, { name: 'Gives-and-Gets', desc: 'Focus on what you give (feedback) and get (results).' }];
   } else if (t.includes('atomic habits')) {
     return [{ name: 'Four Laws', desc: 'Make it Obvious, Attractive, Easy, Satisfying.' }, { name: 'Habit Stacking', desc: 'Pair a new habit with an old one (e.g., After X, I will Y).' }];
+  } else if (t.includes('good to great')) {
+    return [{ name: 'Hedgehog Concept', desc: 'Intersection of passion, best-in-the-world, and economic engine.' }, { name: 'Level 5 Leadership', desc: 'Ambitious for the company, not for themselves.' }];
   }
   return [{ name: 'Core Principles', desc: 'Prioritize outcomes, feedback loops, and small, testable steps.' }];
 }
 
-function sanitizeHTML(dirty) {
-  if (!dirty || typeof dirty !== 'string') return '';
-  let clean = dirty.replace(/<\/?(script|style)[^>]*>/gi, '');
-  clean = clean.replace(/\son\w+="[^"]*"/gi, '');
-  clean = clean.replace(/\son\w+='[^']*'/gi, '');
-  clean = clean.replace(/(href|src)\s*=\s*"(javascript:[^"]*)"/gi, '$1="#"');
-  clean = clean.replace(/(href|src)\s*=\s*'(javascript:[^']*)'/gi, '$1="#"');
-  return clean;
-}
-
-/* =========================================================
-   FALLBACK HTML GENERATORS (Simplified)
-========================================================= */
+// Function to generate a much richer fallback for the full flyer
 function richFlyerFallbackHTML(book, tier) {
-  const focus = (book.focus || '').split(',').map(s => s.trim()).filter(Boolean);
-  const chips = focus.slice(0, 6).map(f => `<span style="display:inline-block; padding:4px 8px; margin:2px; border-radius:9999px; background:#F3F4F6; color:#374151; font-size:12px">${f}</span>`).join('');
+    const focus = (book.focus || '').split(',').map(s => s.trim()).filter(Boolean);
+    const chips = focus.slice(0, 6).map(f => `<span style="display:inline-block; padding:4px 8px; margin:2px; border-radius:9999px; background:#F3F4F6; color:#374151; font-size:12px">${f}</span>`).join('');
+    const actions = getActionSteps(book);
+    const frameworks = getFrameworks(book);
 
-  return `
+    return `
     <div style="padding: 16px;">
-      <header style="padding-bottom: 12px; margin-bottom: 8px; border-bottom: 4px solid ${COLORS.ORANGE}">
-        <p style="margin:0 0 4px 0; font-size: 12px; color:${COLORS.TEAL}; font-weight: 900; text-transform: uppercase">${tier} Competency</p>
-        <h2 style="margin:0; color:${COLORS.NAVY}; font-weight:900; font-size:32px;">${book.title}</h2>
-        <p style="margin:6px 0 0 0; color:${COLORS.ORANGE}; font-weight:800">by ${book.author}</p>
-        <div style="margin-top:8px">${chips}</div>
-      </header>
-      <div style="column-count: 2; column-gap: 18px">
-        <section>
-          <h3 style="color:${COLORS.NAVY}; font-weight:800">Key Ideas</h3>
-          <p style="color:${COLORS.TEXT}">${book.theme}</p>
+        <header style="padding-bottom: 12px; margin-bottom: 8px; border-bottom: 4px solid ${COLORS.ORANGE}">
+            <p style="margin:0 0 4px 0; font-size: 12px; color:${COLORS.TEAL}; font-weight: 900; text-transform: uppercase">${tier} Competency</p>
+            <h2 style="margin:0; color:${COLORS.NAVY}; font-weight:900; font-size:32px;">${book.title}</h2>
+            <p style="margin:6px 0 0 0; color:${COLORS.ORANGE}; font-weight:800">by ${book.author}</p>
+            <div style="margin-top:8px">${chips}</div>
+        </header>
+
+        <section style="margin-bottom: 20px;">
+            <h3 style="color:${COLORS.NAVY}; font-weight:800; font-size: 20px;">Key Ideas & Core Insight</h3>
+            <p style="color:${COLORS.TEXT}; font-size: 16px;">
+                ${book.theme} The book details how this concept is crucial for executive performance by outlining several core principles, including the importance of **${focus[0]}** and the strategic value of **${focus[1]}**. This framework directly applies to the challenges faced at the **${tier}** level.
+            </p>
+            <p style="color:${COLORS.TEXT}; font-size: 16px; margin-top: 10px;">
+                The central thesis revolves around achieving **${focus[2] || 'sustained excellence'}** by focusing on **${focus[3] || 'disciplined action'}**. It provides a roadmap for leaders to transition from simply managing to truly leading transformative change within their organizations.
+            </p>
         </section>
-        <section>
-          <h3 style="color:${COLORS.NAVY}; font-weight:800">Action Plan (Local Mock)</h3>
-          <ul style="margin:0 0 0 18px; color:${COLORS.TEXT}">${getActionSteps(book).map(s => `<li>${s}</li>`).join('')}</ul>
-        </section>
-      </div>
+
+        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px;">
+            <section>
+                <h3 style="color:${COLORS.NAVY}; font-weight:800; font-size: 20px;">Key Frameworks</h3>
+                <ul style="margin: 0 0 0 18px; padding-left: 0; list-style: none;">
+                    ${frameworks.map(f => `
+                        <li style="margin-bottom: 10px; padding-left: 10px; border-left: 3px solid ${COLORS.TEAL};">
+                            <strong style="color: ${COLORS.NAVY};">${f.name}:</strong> 
+                            <span style="color: ${COLORS.MUTED}; font-size: 14px;">${f.desc}</span>
+                        </li>
+                    `).join('')}
+                </ul>
+            </section>
+            
+            <section>
+                <h3 style="color:${COLORS.NAVY}; font-weight:800; font-size: 20px;">Action Plan (4 Steps)</h3>
+                <ul style="margin:0 0 0 18px; color:${COLORS.TEXT}">${actions.slice(0, 4).map(s => `
+                    <li style="margin-bottom: 8px;">
+                        <span style="color: ${COLORS.ORANGE}; font-weight: 800; margin-right: 5px;">&rarr;</span> 
+                        ${s}
+                    </li>
+                `).join('')}</ul>
+                <p style="margin-top: 15px; font-size: 14px; color: ${COLORS.MUTED};">These steps are designed to immediately apply ${frameworks[0].name} to your current role.</p>
+            </section>
+        </div>
     </div>
-  `;
+    `;
 }
+
+// Function to generate the much shorter executive brief
 function execBriefFallbackHTML(book, tier) {
-    return `<h2>Executive Brief: ${book.title}</h2><p>AI unavailable. Focus: ${book.focus}</p>`;
+    const actions = getActionSteps(book).slice(0, 1);
+    const frameworks = getFrameworks(book).slice(0, 1);
+    
+    return `
+        <div style="padding: 16px;">
+            <h2 style="color:${COLORS.NAVY}; font-weight:800; font-size: 24px;">Executive Brief: ${book.title}</h2>
+            <p style="color:${COLORS.TEXT}; font-size: 16px; margin-bottom: 15px;">
+                **Core Insight**: ${book.theme} The book argues that executive focus should shift from **${frameworks[0].name.split(' ')[0] || 'process'}** to **${actions[0].split(' ')[0] || 'outcomes'}**.
+            </p>
+            <p style="color:${COLORS.NAVY}; font-weight:800; font-size: 18px;">Top Priority</p>
+            <ul style="margin: 5px 0 0 20px; color:${COLORS.TEXT}">
+                <li>**Framework**: ${frameworks[0].name} - ${frameworks[0].desc}</li>
+                <li>**Action**: ${actions[0]}</li>
+            </ul>
+        </div>
+    `;
 }
 
 /* =========================================================
-   AI FLYER BUILDER - EXPANDED CONTENT PROMPT
+   AI FLYER BUILDER - EXPANDED CONTENT PROMPT (Unchanged Logic)
 ========================================================= */
 async function buildAIFlyerHTML({ book, tier, executive, callSecureGeminiAPI }) {
   if (!callSecureGeminiAPI) {
     return executive ? execBriefFallbackHTML(book, tier) : richFlyerFallbackHTML(book, tier);
   }
   
-  // *** CRITICAL CHANGE: Increased word count and added structure enforcement ***
   const baseInstruction = executive
-    ? `Write a crisp EXECUTIVE BRIEF (150-200 words). Include a short "Key Frameworks" list that names the book's models (e.g., Candor Quadrants) and 3 specific, actionable steps. Output clean, styled HTML using only h2, h3, p, ul, li, strong, em, and inline CSS for presentation.`
-    : `Create a robust, long-form BOOK FLYER (300-400 words total). Sections must include: **Key Ideas**, **Core Insights for Your Tier**, **Key Frameworks** (with one-line descriptions), and **Action Plan (3 Steps)**. Ensure high detail and professional tone. Output clean, styled HTML using only h2, h3, p, ul, li, strong, em, and inline CSS for presentation.`;
+    ? `Write a crisp EXECUTIVE BRIEF (80-120 words). Include a short "Key Frameworks" list (1 named model, 1 sentence summary) and 1 specific, actionable step. Output clean, styled HTML using only h2, h3, p, ul, li, strong, em, and inline CSS for presentation. The total content should fit in one paragraph and one bulleted list.`
+    : `Create a robust, long-form BOOK FLYER (400-500 words total). Sections must include: **Key Ideas**, **Core Insights for Your Tier**, **Key Frameworks** (with one-line descriptions), and **Action Plan (4 Steps)**. Ensure high detail, multiple paragraphs, and professional tone. Output clean, styled HTML using only h2, h3, p, ul, li, strong, em, and inline CSS for presentation.`;
 
   const systemPrompt =
-    `You are the LeaderReps Researcher and Content Generator. Your goal is to produce a detailed, premium marketing flyer. You must adhere to the word count and sectional requirements. Frameworks and actions must clearly reference the book’s named models when they exist.`;
+    `You are the LeaderReps Researcher and Content Generator. Your goal is to produce a detailed, premium content piece. You must adhere to the word count and sectional requirements. Frameworks and actions must clearly reference the book’s named models when they exist.`;
 
   const userPrompt =
     `${baseInstruction}\n\nBook: ${book.title} by ${book.author}\n` +
@@ -223,20 +251,52 @@ async function buildAIFlyerHTML({ book, tier, executive, callSecureGeminiAPI }) 
 }
 
 /* =========================================================
-   AI COACH - CONTEXTUAL FIX (Primary bug fix)
+   NEW: AI QUESTION SCORING LOGIC
 ========================================================= */
-// FIX: remove the stray "async" in the parameter list
+
+const getQuestionScore = (query, bookTitle) => {
+    const q = query.toLowerCase().trim();
+    if (q.length < 15) return { score: 0, tip: 'Question is too short. Be specific about your challenge.' };
+    
+    let score = 0;
+    let feedback = 'Question could be more specific.';
+
+    // Check for high-value application keywords
+    const applicationKeywords = ['how do i', 'apply', 'implement', 'what is the first step', 'next step', 'my team', 'colleague', 'delegate', 'situation'];
+    const hasApplication = applicationKeywords.some(keyword => q.includes(keyword));
+
+    // Check for context and length
+    const hasContext = q.length > 50;
+    
+    // Scoring logic
+    if (hasApplication && hasContext) {
+        score = 3;
+        feedback = `Excellent query! Ready to apply ${bookTitle}.`;
+    } else if (hasApplication || hasContext) {
+        score = 2;
+        feedback = hasApplication ? 'Good start. Add more context about your current situation.' : 'The context is great, now phrase it as an actionable "how-to" question.';
+    } else {
+        score = 1;
+        feedback = 'Try to phrase your question in a way that relates this book to a specific work challenge.';
+    }
+
+    return { score, tip: feedback };
+};
+
+/* =========================================================
+   AI COACH - CONTEXTUAL FIX 
+========================================================= */
 async function handleAiSubmit(e, services, selectedBook, aiQuery, setIsSubmitting, setAiResponse) {
     e.preventDefault();
-    // Prevent double submit handled by caller
+    if (e.target.disabled) return; 
 
     const q = aiQuery.trim();
     if (!selectedBook || !q) return;
 
     setIsSubmitting(true);
-    setAiResponse('Thinking…');
+    // Setting a visual loading message for better UX
+    setAiResponse('The AI Coach is analyzing the book\'s core principles and formulating an actionable response...');
 
-    // **CRITICAL FIX:** Inject the specific, actionable content from the book into the prompt context
     const actionableContext = `
         **Book's Key Frameworks:** ${getFrameworks(selectedBook).map(f => f.name).join(', ')}.
         **Book's Key Actions:** ${getActionSteps(selectedBook).join(' | ')}.
@@ -265,8 +325,9 @@ async function handleAiSubmit(e, services, selectedBook, aiQuery, setIsSubmittin
         setIsSubmitting(false);
     }
 }
+
 /* =========================================================
-   MAIN COMPONENT (Aesthetic remains in place)
+   MAIN COMPONENT
 ========================================================= */
 export default function BusinessReadingsScreen() {
   const services = useAppServices(); 
@@ -282,21 +343,21 @@ export default function BusinessReadingsScreen() {
   const [selectedTier, setSelectedTier] = useState('');
   const [savedBooks, setSavedBooks] = useState({});
   const [isExecutiveBrief, setIsExecutiveBrief] = useState(false);
+  const [isCommitted, setIsCommitted] = useState(false); // New state for commitment feedback
 
   const [filters, setFilters] = useState({ complexity: 'All', maxDuration: 300, search: '' });
-  const [hoveredId, setHoveredId] = useState(null);
-
   const [aiQuery, setAiQuery] = useState('');
   const [aiResponse, setAiResponse] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const aiInputRef = useRef(null);
-  const searchInputRef = useRef(null);
-  const lastSelSearch = useRef({ start: null, end: null });
-  const lastSelCoach = useRef({ start: null, end: null });
-  // ADDED: referenced by inputs' onFocus / onBlur
-  const [focusedField, setFocusedField] = useState(null);
 
-  const allBooks = MOCK_ALL_BOOKS; // Using mock for reliable execution
+  const allBooks = MOCK_ALL_BOOKS; 
+
+  /* New: Question Feedback Hook */
+  const questionFeedback = useMemo(() => {
+    if (!selectedBook) return { score: 0, tip: '' };
+    return getQuestionScore(aiQuery, selectedBook.title);
+  }, [aiQuery, selectedBook]);
+
 
   /* ---------- Filtering ---------- */
   const filteredBooks = useMemo(() => {
@@ -323,11 +384,19 @@ export default function BusinessReadingsScreen() {
     let cancelled = false;
     (async () => {
       if (!selectedBook) { setHtmlFlyer(''); return; }
+      
       const tierKey = selectedTier || Object.keys(allBooks).find(k => (allBooks[k] || []).some(b => b.id === selectedBook.id)) || 'Strategy & Execution';
 
-      setHtmlFlyer(`<div style="padding:12px;border:1px dashed ${COLORS.SUBTLE};border-radius:12px;color:${COLORS.MUTED}">Generating ${isExecutiveBrief ? 'executive brief' : 'full flyer'}…</div>`);
+      setHtmlFlyer(`<div style="padding:12px;border:1px dashed ${COLORS.SUBTLE};border-radius:12px;color:${COLORS.MUTED}">
+                      <div class="animate-pulse flex items-center gap-2"><Cpu class="w-5 h-5"/> Generating ${isExecutiveBrief ? 'EXECUTIVE BRIEF' : 'FULL FLYER'}...</div>
+                    </div>`);
 
-      const html = await buildAIFlyerHTML({ book: selectedBook, tier: tierKey, executive: isExecutiveBrief, callSecureGeminiAPI });
+      const html = await buildAIFlyerHTML({ 
+        book: selectedBook, 
+        tier: tierKey, 
+        executive: isExecutiveBrief, 
+        callSecureGeminiAPI 
+      });
       
       if (!cancelled) setHtmlFlyer(html);
     })();
@@ -341,6 +410,7 @@ export default function BusinessReadingsScreen() {
       setAiQuery('');
       setAiResponse('');
       setIsSubmitting(false);
+      setIsCommitted(false); // Reset commitment status
     }
   }, [selectedBook]);
 
@@ -359,8 +429,10 @@ export default function BusinessReadingsScreen() {
       createdAt: new Date().toISOString(),
     };
     const ok = updateCommitmentData(newCommitment);
-    if (ok) navigate('daily-practice');
-    else console.error('Failed to add commitment.');
+    if (ok) {
+        setIsCommitted(true);
+        setTimeout(() => navigate('daily-practice'), 1500); // Navigate after brief confirmation
+    } else console.error('Failed to add commitment.');
   };
 
   const handleSaveForLater = (bookId) => {
@@ -378,7 +450,7 @@ export default function BusinessReadingsScreen() {
   ========================================================== */
   const BookList = () => (
     <div className="space-y-10">
-      {/* ... (omitted List UI for brevity - it remains functional) */}
+      {/* Aesthetic Header */}
       <h2 className="text-3xl font-extrabold flex items-center gap-3 border-b-4 pb-2"
           style={{ color: COLORS.NAVY, borderColor: COLORS.ORANGE }}>
         <BookOpen className="w-7 h-7" style={{ color: COLORS.TEAL }}/> LeaderReps Curated Reading Library
@@ -428,7 +500,7 @@ export default function BusinessReadingsScreen() {
             <div className="p-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
               {(books || []).map((book) => {
                 const c = COMPLEXITY_MAP[book.complexity] || COMPLEXITY_MAP.Medium;
-                const ComplexityIcon = c.icon; // FIX: dynamic JSX component
+                const ComplexityIcon = c.icon;
                 const isSaved = !!savedBooks[book.id];
                 const isSelected = selectedBook?.id === book.id;
 
@@ -524,6 +596,14 @@ export default function BusinessReadingsScreen() {
     const total = selectedBook.duration;
     const pct = Math.min(100, Math.round((progressMinutes / total) * 100));
 
+    // Determine AI Coach message color
+    const coachBgColor = questionFeedback.score === 3 ? '#D1FAE5' : (questionFeedback.score === 2 ? '#FEF3C7' : '#FEE2E2');
+    const coachBorderColor = questionFeedback.score === 3 ? '#34D399' : (questionFeedback.score === 2 ? '#FBBF24' : '#F87171');
+    const coachTextColor = questionFeedback.score === 3 ? '#065F46' : (questionFeedback.score === 2 ? '#B45309' : '#991B1B');
+
+    // Icon for AI Coach status
+    const CoachIcon = questionFeedback.score === 3 ? Zap : (questionFeedback.score === 2 ? AlertTriangle : Info);
+
     return (
       <div className="space-y-8">
         <div className="flex justify-between items-center pb-4" style={{ borderBottom: `1px solid ${COLORS.SUBTLE}` }}>
@@ -563,46 +643,62 @@ export default function BusinessReadingsScreen() {
           {/* Rendered Flyer (HTML) */}
           <div className="max-w-none space-y-4" style={{ color: COLORS.TEXT }} dangerouslySetInnerHTML={{ __html: htmlFlyer }} />
 
-          {/* AI Coach */}
+          {/* AI Coach - World Class Interactive Section */}
           <div className="mt-8 pt-4" style={{ borderTop: `1px solid ${COLORS.SUBTLE}` }}>
             <h3 className="text-2xl font-bold mb-4 flex items-center gap-3" style={{ color: COLORS.NAVY }}>
-              <MessageSquare className="text-2xl w-6 h-6" style={{ color: COLORS.BLUE }}/> AI Coach: Instant Application
+              <MessageSquare className="text-2xl w-6 h-6" style={{ color: COLORS.PURPLE }}/> AI Coach: Instant Application
             </h3>
+            <p className="text-sm mb-4" style={{ color: COLORS.MUTED }}>
+                Ask a **specific, action-oriented question** related to applying a principle from **{selectedBook.title}** to your current challenge.
+            </p>
 
+            {/* AI Response Display */}
             {aiResponse && (
-              <div className="p-4 mb-4 rounded-xl" style={{ background: '#EFF6FF', border: '1px solid #93C5FD', color: COLORS.TEXT }}>
-                <p className="text-sm font-semibold" style={{ color: '#1D4ED8' }}>AI Coach:</p>
-                <p className="text-base" style={{ whiteSpace: 'pre-wrap' }}>{aiResponse}</p>
+              <div className="p-4 mb-4 rounded-xl shadow-lg border-l-4" style={{ background: '#F0F5FF', borderLeftColor: COLORS.PURPLE, color: COLORS.TEXT }}>
+                <p className="text-sm font-semibold flex items-center gap-2" style={{ color: COLORS.NAVY }}>
+                    <Cpu className="w-4 h-4"/> AI Coach Response:
+                </p>
+                <p className="text-base mt-1" style={{ whiteSpace: 'pre-wrap' }}>{aiResponse}</p>
               </div>
             )}
 
-            <form onSubmit={submitHandler} className="flex gap-2">
-              <input
-                type="text"
-                ref={aiInputRef}
-                value={aiQuery}
-                onFocus={() => setFocusedField('coach')}
-                onBlur={() => setFocusedField(null)}
-                onChange={(e) => { setAiQuery(e.target.value); }}
-                placeholder={`Ask how to apply ${selectedBook.title} at work (e.g., "How do I delegate?")`}
-                className="flex-grow p-3 border rounded-xl"
-                style={{ borderColor: COLORS.SUBTLE, color: COLORS.TEXT }}
-                required
-              />
-              <button
-                type="submit"
-                className="px-4 rounded-xl font-semibold flex items-center gap-1"
-                style={{
-                  background: isSubmitting ? '#9CA3AF' : (aiQuery.trim() ? COLORS.BLUE : '#D1D5DB'),
-                  color: aiQuery.trim() ? '#FFFFFF' : '#6B7280',
-                  cursor: (aiQuery.trim() && !isSubmitting) ? 'pointer' : 'not-allowed',
-                  opacity: isSubmitting ? 0.8 : 1
-                }}
-                disabled={!aiQuery.trim() || isSubmitting}
-                aria-busy={isSubmitting ? 'true' : 'false'}
-              >
-                <MessageSquare className="w-5 h-5" /> {isSubmitting ? 'Working…' : 'Ask'}
-              </button>
+            {/* AI Input Form with live feedback */}
+            <form onSubmit={submitHandler} className="flex flex-col gap-2">
+                {/* Live Feedback Bar */}
+                {aiQuery.trim().length > 0 && (
+                    <div className="p-2 rounded-lg text-sm flex items-center gap-2 transition-all duration-300 shadow-inner" 
+                         style={{ background: coachBgColor, border: `1px solid ${coachBorderColor}`, color: coachTextColor }}>
+                        <CoachIcon className="w-4 h-4 flex-shrink-0" />
+                        <span className="font-semibold">Query Quality Score {questionFeedback.score}/3:</span> 
+                        <span className="flex-1">{questionFeedback.tip}</span>
+                    </div>
+                )}
+                
+                <div className="flex gap-2">
+                    <input
+                        type="text"
+                        value={aiQuery}
+                        onChange={(e) => { setAiQuery(e.target.value); }}
+                        placeholder={`Ask how to apply ${selectedBook.title} at work (e.g., "How do I delegate?")`}
+                        className="flex-grow p-3 border rounded-xl"
+                        style={{ borderColor: COLORS.SUBTLE, color: COLORS.TEXT }}
+                        required
+                    />
+                    <button
+                        type="submit"
+                        className="px-4 rounded-xl font-semibold flex items-center gap-1 shadow-lg"
+                        style={{
+                            background: isSubmitting ? '#9CA3AF' : COLORS.PURPLE,
+                            color: '#FFFFFF',
+                            cursor: (aiQuery.trim() && !isSubmitting) ? 'pointer' : 'not-allowed',
+                            opacity: isSubmitting ? 0.9 : 1
+                        }}
+                        disabled={!aiQuery.trim() || isSubmitting}
+                        aria-busy={isSubmitting ? 'true' : 'false'}
+                    >
+                        <MessageSquare className="w-5 h-5" /> {isSubmitting ? 'Working…' : 'Ask Coach'}
+                    </button>
+                </div>
             </form>
           </div>
 
@@ -624,11 +720,13 @@ export default function BusinessReadingsScreen() {
               onClick={() => handleCommitment(selectedBook)}
               className="flex items-center gap-2 px-6 py-3 font-semibold rounded-xl"
               style={{
-                background: COLORS.ORANGE, color: '#FFF',
-                boxShadow: `0 8px 24px ${COLORS.ORANGE}45`
+                background: isCommitted ? COLORS.GREEN : COLORS.ORANGE, 
+                color: '#FFF',
+                boxShadow: `0 8px 24px ${isCommitted ? COLORS.GREEN : COLORS.ORANGE}45`
               }}
+              disabled={isCommitted}
             >
-              <TrendingUp className="w-5 h-5" /> Add to Daily Practice Commitment
+              {isCommitted ? <><Check className="w-5 h-5" /> Committed!</> : <><TrendingUp className="w-5 h-5" /> Add to Daily Practice Commitment</>}
             </button>
           </div>
         </div>
@@ -638,7 +736,11 @@ export default function BusinessReadingsScreen() {
 
   return (
     <div className="p-6 md:p-10 min-h-screen" style={{ background: COLORS.BG, color: COLORS.TEXT }}>
-      <h1 className="text-4xl font-extrabold mb-10" style={{ color: COLORS.NAVY }}>Professional Reading Hub</h1>
+      <div className='flex items-center gap-4 border-b-2 pb-2 mb-8' style={{borderColor: COLORS.PURPLE+'30'}}>
+          <BookOpen className='w-10 h-10' style={{color: COLORS.PURPLE}}/>
+          <h1 className="text-4xl font-extrabold" style={{ color: COLORS.NAVY }}>Professional Reading Hub</h1>
+      </div>
+      
       {!selectedBook && <BookList />}
       {selectedBook && <BookFlyer />}
     </div>
