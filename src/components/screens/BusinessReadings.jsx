@@ -685,7 +685,7 @@ export default function BusinessReadingsScreen() {
       setHtmlFlyer(`<div style="padding:12px;border:1px dashed ${COLORS.SUBTLE};border-radius:12px;color:${COLORS.MUTED};text-align:center;">
                       <div class="flex items-center justify-center gap-2" style="color: ${COLORS.PURPLE}">
                           <Cpu class="w-5 h-5 animate-spin"/> 
-                          Flyer being generated. Building ${isExecutiveBrief ? 'Executive Brief' : 'Full Flyer'}...
+                          Flyer being generated.
                       </div>
                     </div>`);
       // END V2 FIX
