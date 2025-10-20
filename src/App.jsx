@@ -528,7 +528,7 @@ const App = ({ initialState }) => {
             <div className="animate-spin rounded-full h-12 w-12 border-4 border-t-4 border-gray-200 border-t-[#47A88D] mb-3"></div>
             <p className="text-[#002E47] font-semibold">Initializing Authentication…</p>
           </div>
-        </React.Fragment>
+        </div>
       );
     }
     if (initStage === 'error') {
