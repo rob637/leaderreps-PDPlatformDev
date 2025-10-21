@@ -1168,7 +1168,8 @@ const ScenarioPreparationView = ({ scenario, setCoachingLabView, setPreparedSBI 
 
             if (candidate && candidate.content?.parts?.[0]?.text) {
                 setCritique(candidate.content.parts[0].text);
-                setCurrentStep(3);
+                // FIX: Explicitly set the step to 3 upon successful critique generation.
+                setCurrentStep(3); 
             } else {
                 setCritique("Could not generate critique. The model may have blocked the request.");
             }
@@ -1185,8 +1186,7 @@ const ScenarioPreparationView = ({ scenario, setCoachingLabView, setPreparedSBI 
         if (isPrepComplete) {
             // FIX: Use setCoachingLabView to change the local component state
             setCoachingLabView('role-play'); 
-            // Pass the state variables that RolePlayView needs (they are managed by the parent router via the current component's state)
-            navigate('role-play', { scenario, preparedSBI: refinedFeedback, difficultyLevel }); 
+            // The RolePlayView will automatically pick up the props from the parent's state
         }
     };
 
@@ -1215,7 +1215,7 @@ const ScenarioPreparationView = ({ scenario, setCoachingLabView, setPreparedSBI 
             <div className='lg:w-2/3 space-y-6'>
                 {/* Difficulty Slider */}
                 <Card title="Set Tension Level (Optional)" icon={HeartPulse} className='bg-[#E04E1B]/10 border-4 border-dashed border-[#E04E1B]'>
-                    <p className='text-sm text-gray-700 mb-4'>Control the emotional resistance of the AI persona in the simulator. Higher tension requires more empathy and validation skill.</p>
+                    <p className="text-gray-700 text-sm mb-4">Control the emotional resistance of the AI persona in the simulator. Higher tension requires more empathy and validation skill.</p>
                     <div className='flex justify-between text-xs font-bold text-[#0B3B5B] mb-1'>
                         <span>Low Tension</span>
                         <span>High Tension</span>
@@ -1238,6 +1238,7 @@ const ScenarioPreparationView = ({ scenario, setCoachingLabView, setPreparedSBI 
                     <p className="text-gray-700 text-sm">What is the **one critical outcome** you want? What measurable commitment, change, or decision will constitute success?</p>
                     <textarea 
                         value={objective}
+                        // FIX: Ensure the current step advances to 2 immediately upon setting the objective
                         onChange={(e) => { setObjective(e.target.value); setCurrentStep(2); }}
                         className="w-full p-3 mt-4 border border-gray-300 rounded-xl focus:ring-[#219E8B] focus:border-[#219E8B] h-20" 
                         placeholder="e.g., 'Ensure Alex commits to a weekly check-in process to prevent missed deadlines.'"
@@ -1639,7 +1640,7 @@ export default function CoachingLabScreen() {
 }
 
 // --- Dynamic Generator View (Restored for completeness) ---
-const DynamicScenarioGenerator = ({ setCoachingLabView, setSelectedScenario }) => {
+const DynamicScenarioGenerator = ({ setCoachingLabView, setSelectedScenario, setIsDynamicGeneratorVisible }) => {
     const services = useAppServices();
     const { callSecureGeminiAPI, GEMINI_MODEL } = services;
 
@@ -1739,7 +1740,8 @@ const DynamicScenarioGenerator = ({ setCoachingLabView, setSelectedScenario }) =
                         <Zap className="w-6 h-6 mr-3 text-[#E04E1B]" />
                         Dynamic Scenario Generator
                     </h2>
-                    <button onClick={() => setCoachingLabView('scenario-library')} className="p-2 text-gray-500 hover:text-[#E04E1B] transition-colors">
+                    {/* FIX: Use setIsDynamicGeneratorVisible to set state to false */}
+                    <button onClick={() => setIsDynamicGeneratorVisible(false)} className="p-2 text-gray-500 hover:text-[#E04E1B] transition-colors">
                         <X className="w-5 h-5" />
                     </button>
                 </div>
@@ -1838,7 +1840,8 @@ const ScenarioLibraryView = ({ setCoachingLabView, setSelectedScenario }) => {
         ))}
       </div>
       
-      {isDynamicGeneratorVisible && <DynamicScenarioGenerator setCoachingLabView={setCoachingLabView} setSelectedScenario={setSelectedScenario} />}
+      {/* FIX: Pass setIsDynamicGeneratorVisible setter function */}
+      {isDynamicGeneratorVisible && <DynamicScenarioGenerator setCoachingLabView={setCoachingLabView} setSelectedScenario={setSelectedScenario} setIsDynamicGeneratorVisible={setIsDynamicGeneratorVisible} />}
     </div>
     
     

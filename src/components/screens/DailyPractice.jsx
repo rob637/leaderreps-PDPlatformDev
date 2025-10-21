@@ -41,9 +41,12 @@ const useAppServices = () => {
       { date: '2025-10-15', score: '2/3', reflection: 'Missed my T4 commitment. Must prioritize people over tasks tomorrow.' },
       { date: '2025-10-16', score: '3/3', reflection: 'Back on track. Used the AI prompt to focus on team value which helped.' },
       { date: '2025-10-17', score: '1/3', reflection: 'High risk day due to emergency. Focused only on T2 core tasks.' },
+      // FIX 3: Added a recent history entry for better chart context
+      { date: '2025-10-20', score: '3/5', reflection: 'Yesterday was a struggle to maintain focus due to a network outage. Only core tasks completed.' },
     ],
     reflection_journal: '',
-    resilience_log: { '2025-10-18': { energy: 7, focus: 8 } },
+    // This mock initial log is set to an old date, so the check appears unsaved today.
+    resilience_log: { '2025-10-18': { energy: 7, focus: 8, saved: true } }, 
   });
 
   // CRITICAL FIX: Simulated API/DB update
@@ -275,6 +278,8 @@ function calculateTierSuccessRates(commitments, history) {
             // Mock success rate based on committed status for simplicity
             const committedCount = tierCommitments.filter(c => c.status === 'Committed').length;
             rates[tierId] = { rate: Math.round((committedCount / total) * 100), total: total };
+        } else {
+             rates[tierId] = { rate: 0, total: 0 };
         }
     });
     return rates;
@@ -283,15 +288,27 @@ function calculateTierSuccessRates(commitments, history) {
 // FIX 3: Resolves "ReferenceError: getLastSevenDays is not defined"
 function getLastSevenDays(history) {
     const mockDates = [];
-    // Mock the last 7 days of history for rendering the chart/log
+    const today = new Date().toISOString().split('T')[0];
+
+    // Get a list of the last 7 calendar dates
+    const lastSevenDates = [];
     for (let i = 0; i < 7; i++) {
         const date = new Date();
         date.setDate(date.getDate() - i);
-        const score = history.find(h => h.date === date.toISOString().split('T')[0])?.score || `${(i % 3) + 1}/3`;
-        mockDates.push({ date: date.toISOString().split('T')[0], score: score });
+        lastSevenDates.push(date.toISOString().split('T')[0]);
     }
-    return mockDates;
+
+    // Map history to the last 7 days (including days with no entry)
+    for (const date of lastSevenDates) {
+        const entry = history.find(h => h.date === date);
+        const score = entry ? entry.score : '0/0'; // Default score if no log entry
+        const reflection = entry ? entry.reflection : 'N/A';
+        mockDates.push({ date, score, reflection });
+    }
+    // Return them in chronological order (oldest to newest)
+    return mockDates.reverse();
 }
+
 
 // FIX 4: Resolves "ReferenceError: monthlyProgress is not defined"
 const monthlyProgress = { daysTracked: 15, metItems: 35, totalItems: 45, rate: 78 }; 
@@ -300,23 +317,24 @@ const monthlyProgress = { daysTracked: 15, metItems: 35, totalItems: 45, rate: 7
 // FIX FOR ISSUE 1: Implement mock daily reset to flip committed items back to pending.
 const scheduleMidnightReset = (commitments, updateFn) => {
     // This mock simulates the nightly job: If commitments are not all 'Pending', we simulate the reset.
-    const allPending = commitments.every(c => c.status === 'Pending');
+    const allPending = (commitments || []).every(c => c.status === 'Pending');
 
-    if (commitments.length > 0 && !allPending) {
+    if ((commitments || []).length > 0 && !allPending) {
+        // NOTE: This logic is commented out because calling updateFn inside a component's 
+        // useEffect can cause an infinite loop in a sandbox environment. 
+        // The mock is defined, but not actively executed here.
+        
+        /*
         console.log('Mock midnight reset initiated: Flipping all active commitments to Pending for next day.');
         
-        // This is a simplification. A real app would:
-        // 1. Calculate final score for yesterday.
-        // 2. Log final score/reflection to history.
-        // 3. Reset all active commitments' status to 'Pending' (the action below).
         const updatedCommitments = commitments.map(c => ({
             ...c,
             status: 'Pending', 
         }));
-
-        // NOTE: We do NOT call updateFn here because this is a UI-only component 
-        // and calling it during render/effect phase causes an infinite update loop 
-        // with the parent component's useEffect that runs this mock.
+        
+        // This line is the one that would trigger the update in a real app
+        // updateFn({ active_commitments: updatedCommitments }); 
+        */
     } else {
         // console.log('Mock midnight reset placeholder: Commitments already pending or none active.');
     }
@@ -334,15 +352,18 @@ const TierSuccessMap = ({ tierRates }) => {
             <p className='text-sm text-gray-700 mb-2'>Success Rate by Leadership Tier</p>
             {Object.entries(tierRates).length > 0 ? (
                 Object.entries(tierRates).map(([tier, data]) => (
-                    <div key={tier} className='mb-1'>
-                        <div className='flex justify-between text-xs font-semibold text-[#002E47]'>
-                            <span>{LEADERSHIP_TIERS[tier]?.name || tier} ({data.total})</span>
-                            <span className={`font-bold ${data.rate > 70 ? 'text-green-600' : 'text-orange-600'}`}>{data.rate}%</span>
+                    // Only display tiers where commitments exist
+                    data.total > 0 && (
+                        <div key={tier} className='mb-1'>
+                            <div className='flex justify-between text-xs font-semibold text-[#002E47]'>
+                                <span>{LEADERSHIP_TIERS[tier]?.name || tier} ({data.total})</span>
+                                <span className={`font-bold ${data.rate > 70 ? 'text-green-600' : 'text-orange-600'}`}>{data.rate}%</span>
+                            </div>
+                            <div className="w-full bg-gray-200 rounded-full h-2">
+                                <div className="h-2 rounded-full" style={{ width: `${data.rate}%`, backgroundColor: LEADERSHIP_TIERS[tier]?.hex || COLORS.TEAL }}></div>
+                            </div>
                         </div>
-                        <div className="w-full bg-gray-200 rounded-full h-2">
-                            <div className="h-2 rounded-full" style={{ width: `${data.rate}%`, backgroundColor: LEADERSHIP_TIERS[tier]?.hex || COLORS.TEAL }}></div>
-                        </div>
-                    </div>
+                    )
                 ))
             ) : (
                 <p className="text-gray-500 italic text-sm">No trackable tier data yet.</p>
@@ -402,15 +423,37 @@ function calculateStreak(history) {
     let streak = 0;
     const validHistory = Array.isArray(history) ? history : [];
     
-    for (let i = validHistory.length - 1; i >= 0; i--) {
-      const scoreParts = validHistory[i].score.split('/');
-      if (scoreParts.length !== 2) continue; 
+    // Sort history by date descending
+    const sortedHistory = [...validHistory].sort((a, b) => new Date(b.date) - new Date(a.date));
 
-      const [committed, total] = scoreParts.map(Number);
-      if (committed === total && total > 0) {
-        streak++;
-      } else if (total > 0) {
-        if (streak > 0) break; 
+    // Get the set of dates that have an entry
+    const loggedDates = new Set(sortedHistory.map(h => h.date));
+    
+    // Start checking from yesterday backwards
+    let yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    
+    for (let i = 0; i < 7; i++) { // Check up to the last 7 days
+      const checkDate = new Date(yesterday);
+      checkDate.setDate(yesterday.getDate() - i);
+      const dateString = checkDate.toISOString().split('T')[0];
+      
+      const historyEntry = sortedHistory.find(h => h.date === dateString);
+
+      if (historyEntry) {
+        const scoreParts = historyEntry.score.split('/');
+        if (scoreParts.length === 2) {
+          const [committed, total] = scoreParts.map(Number);
+          if (committed === total && total > 0) {
+            streak++;
+          } else {
+            // Found an incomplete day, streak ends
+            break; 
+          }
+        }
+      } else {
+        // No log for this day, break streak
+        break;
       }
     }
     return streak;
@@ -466,15 +509,23 @@ const useGoalDriftAnalysis = (activeCommitments) => {
 
 /* =========================================================
    ResilienceTracker (Aesthetic Upgrade)
+   FIX 1: Added confirmation state and button logic.
 ========================================================= */
-const ResilienceTracker = ({ dailyLog, setDailyLog, isSaving, handleSaveResilience }) => {
+const ResilienceTracker = ({ dailyLog, isSaving, handleSaveResilience }) => {
     const today = new Date().toISOString().split('T')[0];
-    const initialLog = dailyLog[today] || { energy: 5, focus: 5 };
+    const initialLog = dailyLog[today] || { energy: 5, focus: 5, saved: false }; // Added 'saved' flag
     const [energy, setEnergy] = useState(initialLog.energy);
     const [focus, setFocus] = useState(initialLog.focus);
-    const [localIsSaving, setLocalIsSaving] = useState(false); // Local saving state for spinner
+    const [localIsSaving, setLocalIsSaving] = useState(false);
+    const [isSavedConfirmation, setIsSavedConfirmation] = useState(initialLog.saved);
 
-    // Mock setDailyLog and use local state for immediate slider feedback
+    // Sync state if initialLog changes (e.g., after nightly reset)
+    useEffect(() => {
+        setEnergy(initialLog.energy);
+        setFocus(initialLog.focus);
+        setIsSavedConfirmation(initialLog.saved);
+    }, [initialLog.energy, initialLog.focus, initialLog.saved]);
+
     const handleSliderChange = (key, value) => {
         if (key === 'energy') setEnergy(value);
         if (key === 'focus') setFocus(value);
@@ -482,10 +533,13 @@ const ResilienceTracker = ({ dailyLog, setDailyLog, isSaving, handleSaveResilien
 
     const handleSave = async () => {
         setLocalIsSaving(true);
-        // This simulates passing the data back to the parent and triggering the save function.
-        await handleSaveResilience({ ...initialLog, energy, focus }); // Pass new data up
+        // CRITICAL FIX: Pass 'saved: true' to the parent to persist the completion status
+        await handleSaveResilience({ energy, focus, saved: true }); 
+        setIsSavedConfirmation(true); // Set local confirmation flag
         setLocalIsSaving(false);
     };
+
+    const isCheckSaved = initialLog.saved || isSavedConfirmation;
 
     return (
         <Card title="Daily Resilience Check" icon={HeartPulse} accent='ORANGE' className='bg-[#E04E1B]/10 border-4 border-dashed border-[#E04E1B]/20'>
@@ -501,6 +555,7 @@ const ResilienceTracker = ({ dailyLog, setDailyLog, isSaving, handleSaveResilien
                     onChange={(e) => handleSliderChange('energy', parseInt(e.target.value))}
                     className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer range-lg"
                     style={{ accentColor: COLORS.ORANGE }}
+                    disabled={isCheckSaved}
                 />
             </div>
             
@@ -514,17 +569,24 @@ const ResilienceTracker = ({ dailyLog, setDailyLog, isSaving, handleSaveResilien
                     onChange={(e) => handleSliderChange('focus', parseInt(e.target.value))}
                     className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer range-lg"
                     style={{ accentColor: COLORS.ORANGE }}
+                    disabled={isCheckSaved}
                 />
             </div>
 
-            <Button onClick={handleSave} disabled={localIsSaving} className={`w-full bg-[${COLORS.ORANGE}] hover:bg-[#C33E12]`}>
-                {localIsSaving ? (
-                    <div className="flex items-center">
-                        <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
-                        Saving...
-                    </div>
-                ) : 'Save Daily Check'}
-            </Button>
+            {isCheckSaved ? (
+                <div className='w-full p-3 bg-green-100 border border-green-400 rounded-xl flex items-center justify-center font-bold text-green-700'>
+                    <CheckCircle className='w-5 h-5 mr-2'/> Check Saved for Today!
+                </div>
+            ) : (
+                <Button onClick={handleSave} disabled={localIsSaving} className={`w-full bg-[${COLORS.ORANGE}] hover:bg-[#C33E12]`}>
+                    {localIsSaving ? (
+                        <div className="flex items-center">
+                            <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
+                            Saving...
+                        </div>
+                    ) : 'Save Daily Check'}
+                </Button>
+            )}
         </Card>
     );
 };
@@ -659,7 +721,8 @@ const CommitmentSelectorView = ({ setView, initialGoal, initialTier }) => {
     for (const category in leadershipCommitmentBank) {
       for (const commitment of leadershipCommitmentBank[category]) {
         if (
-          !activeCommitmentIds.has(commitment.id) &&
+          // CRITICAL: Check against unique ID, not bank ID, for filtering logic
+          !userCommitments.some(c => c.text === commitment.text) && // Check if text already exists on active commitments (simpler uniqueness check for demo)
           commitment.text.toLowerCase().includes(ql)
         ) {
           matchingCommitments.push({ ...commitment, category });
@@ -667,7 +730,7 @@ const CommitmentSelectorView = ({ setView, initialGoal, initialTier }) => {
       }
     }
     return matchingCommitments;
-  }, [activeCommitmentIds, searchTerm]);
+  }, [userCommitments, searchTerm]);
 
   const okrGoals = planningData?.okrs?.map(o => o.objective) || [];
   const missionVisionGoals = [planningData?.vision, planningData?.mission].filter(Boolean);
@@ -760,7 +823,10 @@ const CommitmentSelectorView = ({ setView, initialGoal, initialTier }) => {
         const jsonText = result?.candidates?.[0]?.content?.parts?.[0]?.text;
         
         if (jsonText) {
-            const parsedJson = JSON.parse(jsonText);
+            // FIX: Robust JSON parsing (try to strip possible pre-text)
+            const cleanJsonText = jsonText.trim().replace(/^[^\{]*/, ''); 
+            const parsedJson = JSON.parse(cleanJsonText);
+
             setAiAssessment({
                 score: parsedJson.score,
                 risk: parsedJson.risk,
@@ -831,7 +897,7 @@ const CommitmentSelectorView = ({ setView, initialGoal, initialTier }) => {
   };
 
   const handleCreateCustomCommitment = async () => {
-    // FIX FOR ISSUE 2: Ensure logic is sound
+    // FIX FOR ISSUE 5: Ensure logic is sound
     if (customCommitment.trim() && linkedGoal && linkedGoal !== initialLinkedGoalPlaceholder && linkedTier) {
       setIsSaving(true);
       const newId = String(Date.now());
@@ -1065,10 +1131,11 @@ const CommitmentSelectorView = ({ setView, initialGoal, initialTier }) => {
             </div>
 
             <div className="h-96 overflow-y-auto pr-2 space-y-3">
-              {/* FIX FOR ISSUE 2: Added onClick handler to the button to add the commitment */}
+              {/* FIX FOR ISSUE 4: Added onClick handler to the button to add the commitment */}
               {Object.entries(leadershipCommitmentBank).map(([category, commitments]) => {
                 const filteredCommitments = commitments.filter(c =>
-                    !activeCommitmentIds.has(c.id) &&
+                    // Check if commitment text is NOT already in active commitments
+                    !userCommitments.some(activeC => activeC.text === c.text) &&
                     (searchTerm === '' || c.text.toLowerCase().includes(searchTerm.toLowerCase()))
                 );
 
@@ -1083,9 +1150,9 @@ const CommitmentSelectorView = ({ setView, initialGoal, initialTier }) => {
                         <span className='text-gray-800'>{c.text}</span>
                         <Tooltip content={`Adds this commitment (linked goal/tier required).`}>
                           <button
-                            onClick={() => handleAddCommitment(c, 'bank')} // <--- ADDED onClick
+                            onClick={() => handleAddCommitment(c, 'bank')} // <--- FIX: ADDED onClick
                             disabled={!canAddCommitment || isSaving}
-                            className={`font-semibold text-xs transition-colors p-1 ${canAddCommitment && !isSaving ? 'text-[#47A88D] hover:text-[#349881]' : 'text-gray-400 cursor-not-allowed'}`}
+                            className={`font-semibold text-xs transition-colors p-1 flex items-center space-x-1 ${canAddCommitment && !isSaving ? 'text-[#47A88D] hover:text-[#349881]' : 'text-gray-400 cursor-not-allowed'}`}
                           >
                             <PlusCircle className='w-4 h-4' />
                           </button>
@@ -1126,7 +1193,7 @@ const CommitmentSelectorView = ({ setView, initialGoal, initialTier }) => {
             {renderAssessmentResult()}
 
             <Button
-              onClick={handleCreateCustomCommitment}
+              onClick={handleCreateCustomCommitment} // FIX: ADDED onClick
               disabled={!customCommitment.trim() || !canAddCommitment || isSaving}
               className="w-full bg-[#47A88D] hover:bg-[#349881]"
             >
@@ -1163,7 +1230,7 @@ const WeeklyPrepView = ({ setView, commitmentData, updateCommitmentData, userCom
         const newCommitments = userCommitments.filter(c => c.id !== id);
         
         // This is where the update happens in a real-world scenario
-        await updateCommitmentData({ active_commitments: newCommitments }); 
+        await updateCommitmentData(data => ({ active_commitments: newCommitments })); 
         console.info("Commitment retired successfully. Focus remains on the next priority!");
     };
 
@@ -1262,12 +1329,13 @@ export default function DailyPracticeScreen({ initialGoal, initialTier }) {
   const handleSaveResilience = async (newLogData) => { 
       setIsSaving(true); 
       const today = new Date().toISOString().split('T')[0];
-      await updateCommitmentData({ 
+      // FIX 2: Ensure we update the log correctly, including the 'saved' flag.
+      await updateCommitmentData(data => ({ 
           resilience_log: { 
-              ...commitmentData.resilience_log, 
-              [today]: newLogData 
+              ...data.resilience_log, 
+              [today]: { ...newLogData, saved: true } // Explicitly set saved:true
           } 
-      }); 
+      })); 
       setIsSaving(false);
       console.log("Resilience Log Saved.");
   };
@@ -1394,9 +1462,12 @@ export default function DailyPracticeScreen({ initialGoal, initialTier }) {
   };
 
   const handleSaveReflection = async () => {
+    // FIX 1: Ensure the saving state and data update are atomic and correctly managed
     setIsSaving(true);
-    await updateCommitmentData({ reflection_journal: reflection });
+    // CRITICAL FIX: Use functional update to ensure we read the latest state and only update the journal
+    await updateCommitmentData(data => ({ ...data, reflection_journal: reflection }));
     setIsSaving(false);
+    console.log("Daily Reflection Saved.");
   };
   
   const handleOpenHistoryModal = (dayData) => {
@@ -1477,15 +1548,18 @@ export default function DailyPracticeScreen({ initialGoal, initialTier }) {
                 <p className='text-sm text-gray-700 mb-2'>Success Rate by Leadership Tier</p>
                 {Object.entries(tierRates).length > 0 ? (
                     Object.entries(tierRates).map(([tier, data]) => (
-                        <div key={tier} className='mb-1'>
-                            <div className='flex justify-between text-xs font-semibold text-[#002E47]'>
-                                <span>{LEADERSHIP_TIERS[tier]?.name || tier} ({data.total})</span>
-                                <span className={`font-bold ${data.rate > 70 ? 'text-green-600' : 'text-orange-600'}`}>{data.rate}%</span>
+                        // Only display tiers where commitments exist
+                        data.total > 0 && (
+                            <div key={tier} className='mb-1'>
+                                <div className='flex justify-between text-xs font-semibold text-[#002E47]'>
+                                    <span>{LEADERSHIP_TIERS[tier]?.name || tier} ({data.total})</span>
+                                    <span className={`font-bold ${data.rate > 70 ? 'text-green-600' : 'text-orange-600'}`}>{data.rate}%</span>
+                                </div>
+                                <div className="w-full bg-gray-200 rounded-full h-2">
+                                    <div className="h-2 rounded-full" style={{ width: `${data.rate}%`, backgroundColor: LEADERSHIP_TIERS[tier]?.hex || COLORS.TEAL }}></div>
+                                </div>
                             </div>
-                            <div className="w-full bg-gray-200 rounded-full h-2">
-                                <div className="h-2 rounded-full" style={{ width: `${data.rate}%`, backgroundColor: LEADERSHIP_TIERS[tier]?.hex || COLORS.TEAL }}></div>
-                            </div>
-                        </div>
+                        )
                     ))
                 ) : (
                     <p className="text-gray-500 italic text-sm">No trackable tier data yet.</p>
@@ -1494,67 +1568,6 @@ export default function DailyPracticeScreen({ initialGoal, initialTier }) {
         );
     };
 
-    const ResilienceTracker = ({ dailyLog, setDailyLog, isSaving, handleSaveResilience }) => {
-        const today = new Date().toISOString().split('T')[0];
-        const initialLog = dailyLog[today] || { energy: 5, focus: 5 };
-        const [energy, setEnergy] = useState(initialLog.energy);
-        const [focus, setFocus] = useState(initialLog.focus);
-        const [localIsSaving, setLocalIsSaving] = useState(false); // Local saving state for spinner
-
-        // Mock setDailyLog and use local state for immediate slider feedback
-        const handleSliderChange = (key, value) => {
-            if (key === 'energy') setEnergy(value);
-            if (key === 'focus') setFocus(value);
-        };
-
-        const handleSave = async () => {
-            setLocalIsSaving(true);
-            // This simulates passing the data back to the parent and triggering the save function.
-            await handleSaveResilience({ ...initialLog, energy, focus }); // Pass new data up
-            setLocalIsSaving(false);
-        };
-
-        return (
-            <Card title="Daily Resilience Check" icon={HeartPulse} accent='ORANGE' className='bg-[#E04E1B]/10 border-4 border-dashed border-[#E04E1B]/20'>
-                <p className='text-sm text-gray-700 mb-4'>Rate your capacity for high-leverage work today (1 = Low, 10 = High).</p>
-
-                <div className='mb-4'>
-                    <p className='font-semibold text-[#002E47] flex justify-between'>
-                        <span>Energy Level:</span>
-                        <span className={`text-xl font-extrabold text-[${COLORS.ORANGE}]`}>{energy}/10</span>
-                    </p>
-                    <input
-                        type="range" min="1" max="10" value={energy}
-                        onChange={(e) => handleSliderChange('energy', parseInt(e.target.value))}
-                        className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer range-lg"
-                        style={{ accentColor: COLORS.ORANGE }}
-                    />
-                </div>
-                
-                <div className='mb-4'>
-                    <p className='font-semibold text-[#002E47] flex justify-between'>
-                        <span>Focus Level:</span>
-                        <span className={`text-xl font-extrabold text-[${COLORS.ORANGE}]`}>{focus}/10</span>
-                    </p>
-                    <input
-                        type="range" min="1" max="10" value={focus}
-                        onChange={(e) => handleSliderChange('focus', parseInt(e.target.value))}
-                        className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer range-lg"
-                        style={{ accentColor: COLORS.ORANGE }}
-                    />
-                </div>
-
-                <Button onClick={handleSave} disabled={localIsSaving} className={`w-full bg-[${COLORS.ORANGE}] hover:bg-[#C33E12]`}>
-                    {localIsSaving ? (
-                         <div className="flex items-center">
-                            <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
-                            Saving...
-                        </div>
-                    ) : 'Save Daily Check'}
-                </Button>
-            </Card>
-        );
-    };
 
     const AIStarterPackNudge = ({ pdpData, setLinkedGoal, setLinkedTier, handleAddCommitment, isSaving }) => {
         const primaryGoal = pdpData?.plan?.[0]?.theme || 'Improve Discipline';
@@ -1711,7 +1724,7 @@ export default function DailyPracticeScreen({ initialGoal, initialTier }) {
 
               <div className='lg:col-span-1 space-y-8'>
                   {/* FIX: Use the component with local save state */}
-                  <ResilienceTracker dailyLog={resilienceLog} setDailyLog={setResilienceLog} handleSaveResilience={handleSaveResilience}/>
+                  <ResilienceTracker dailyLog={resilienceLog} handleSaveResilience={handleSaveResilience}/>
                   
                   <Card 
                       title="Daily Risk Indicator" 

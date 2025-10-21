@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import {
     Users, MessageSquare, Briefcase, Bell, PlusCircle, User, ArrowLeft, Target, Settings, Filter, Clock,
-    Star, CheckCircle // FIX: CheckCircle imported to resolve ReferenceError
+    Star, CheckCircle
 } from 'lucide-react';
 // FIX: Mocking useAppServices since the environment can't resolve relative paths
 const useAppServices = () => ({
@@ -68,11 +68,11 @@ const MOCK_THREADS = [
       latestReply: 'Latest Reply: "Deep Work" by Cal Newport is essential for protecting focus, a core T1 asset.' }, // Owned
 ];
 
-const CommunityHomeView = ({ setView, user, currentTierFilter, setCurrentTierFilter }) => {
-    const filteredThreads = MOCK_THREADS.filter(thread => 
-        currentTierFilter === 'All' || thread.tier === currentTierFilter
-    );
-
+// ------------------------------------------------------------------
+// CommunityHomeView updated to accept filteredThreads as a prop
+// ------------------------------------------------------------------
+const CommunityHomeView = ({ setView, user, currentTierFilter, setCurrentTierFilter, filteredThreads }) => {
+    // FIX: Removed local filtering, now using filteredThreads prop
     const [expandedThreadId, setExpandedThreadId] = useState(null);
 
     return (
@@ -112,12 +112,19 @@ const CommunityHomeView = ({ setView, user, currentTierFilter, setCurrentTierFil
             <div className="space-y-3">
                 {filteredThreads.map(thread => {
                     const isExpanded = thread.id === expandedThreadId;
+                    const isMyThread = thread.ownerId === user.id; // B1 Check
+                    
+                    // B1: Adjust border color for owned threads
+                    const threadBorderColor = isMyThread 
+                        ? LEADERSHIP_TIERS_META[thread.tier].hex || COLORS.TEAL // Use tier color for owned threads
+                        : thread.impact ? COLORS.ORANGE : COLORS.TEAL; // Use impact/default for others
+
                     return (
                         <div 
                             key={thread.id} 
                             onClick={() => setExpandedThreadId(isExpanded ? null : thread.id)}
                             className="p-4 rounded-xl border-l-4 shadow-md transition-all duration-300 cursor-pointer" 
-                            style={{ borderColor: thread.impact ? COLORS.ORANGE : COLORS.TEAL, backgroundColor: COLORS.OFF_WHITE }}
+                            style={{ borderColor: threadBorderColor, backgroundColor: COLORS.OFF_WHITE }}
                         >
                             <div className="flex justify-between items-start">
                                 <div className="flex-1">
@@ -126,14 +133,21 @@ const CommunityHomeView = ({ setView, user, currentTierFilter, setCurrentTierFil
                                         **Focus Tier:** <span className='font-medium'>{thread.tier}</span> | {thread.replies} Replies | Last active {thread.lastActive}
                                     </p>
                                 </div>
-                                {thread.impact && (
-                                    <span className="text-xs font-bold px-3 py-1 rounded-full text-white ml-4 flex-shrink-0" style={{ backgroundColor: COLORS.ORANGE }}>
-                                        <Star className='w-3 h-3 inline mr-1'/> High-Impact
-                                    </span>
-                                )}
+                                <div className='flex items-center gap-2 ml-4 flex-shrink-0'>
+                                    {isMyThread && ( // B1: Show "Your Post" tag
+                                        <span className="text-xs font-bold px-3 py-1 rounded-full text-white" style={{ backgroundColor: threadBorderColor }}>
+                                            <Briefcase className='w-3 h-3 inline mr-1'/> Your Post
+                                        </span>
+                                    )}
+                                    {thread.impact && (
+                                        <span className="text-xs font-bold px-3 py-1 rounded-full text-white" style={{ backgroundColor: COLORS.ORANGE }}>
+                                            <Star className='w-3 h-3 inline mr-1'/> High-Impact
+                                        </span>
+                                    )}
+                                </div>
                             </div>
                             
-                            {/* EXPANDED CONTENT (Issue 2 Fix) */}
+                            {/* EXPANDED CONTENT */}
                             <div className={`mt-3 overflow-hidden transition-all duration-500 ${isExpanded ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'}`}>
                                 <div className='p-3 bg-gray-50 border border-gray-200 rounded-lg'>
                                     <p className='text-sm font-medium text-[#002E47] mb-2'>Original Post:</p>
@@ -303,6 +317,16 @@ const CommunityScreen = () => {
     const [view, setView] = useState('home');
     const [currentTierFilter, setCurrentTierFilter] = useState('All');
 
+    // ------------------------------------------------------------------
+    // A. Centralize/Optimize Thread Filtering using useMemo
+    // ------------------------------------------------------------------
+    const filteredThreads = useMemo(() => {
+        return MOCK_THREADS.filter(thread => 
+            currentTierFilter === 'All' || thread.tier === currentTierFilter
+        );
+    }, [currentTierFilter]);
+
+
     const navItems = [
         { screen: 'home', label: 'Global Feed', icon: MessageSquare },
         { screen: 'my-threads', label: 'My Threads', icon: Briefcase },
@@ -327,6 +351,7 @@ const CommunityScreen = () => {
                     user={user} 
                     currentTierFilter={currentTierFilter} 
                     setCurrentTierFilter={setCurrentTierFilter}
+                    filteredThreads={filteredThreads} // Pass centralized data
                 />;
         }
     };

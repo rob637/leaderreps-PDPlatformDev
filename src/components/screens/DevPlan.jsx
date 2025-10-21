@@ -260,7 +260,18 @@ const MOCK_CONTENT_DETAILS = {
         let focus = "philosophical context";
         if (skill === 'Motive') focus = "the shift from ego-driven to purpose-driven leadership.";
         if (skill === 'Boss') focus = "the power dynamics in the manager-subordinate relationship.";
-        
+        if (skill === 'V-B Trust') focus = "the essential role of vulnerability in rapidly building team trust.";
+        if (skill === 'Goals') focus = "the necessity of shifting focus from easy-to-track activities to hard-to-measure outcomes for executive clarity.";
+        if (skill === 'Decisions') focus = "when and how to deploy the **DICE** (Depth, Identity, Commitment, Execution) decision-making model for high-stakes projects.";
+        if (skill === 'Recognition') focus = "the principles of psychological safety and how specific recognition fuels intrinsic motivation over extrinsic reward.";
+        if (skill === 'Coaching') focus = "adopting the non-directive stance: asking powerful questions rather than prescribing solutions to foster ownership.";
+        if (skill === 'Conflict') focus = "the strategic necessity of allowing productive conflict to surface for the long-term health and innovation of the team.";
+        if (skill === 'Commitment') focus = "the difference between mere **compliance** (which is fragile) and **consensual commitment** (which is resilient) within a peer group.";
+        if (skill === 'Accountability') focus = "the inextricable link between the trust (Vulnerability-Based) and accountability (Ownership) that defines high-performing teams.";
+        if (skill === 'Strategic') focus = "the methods for aligning all departmental activities to a core strategic mission, focusing on cascading goals downwards.";
+        if (skill === 'Planning') focus = "best practices for long-range strategic planning, ensuring resources are aligned with visionary goals 3-5 years out.";
+        if (skill === 'Identity') focus = "the psychological traps of the 'Hero' identity and how it hinders team development and succession planning.";
+
         return `
             ## Reading: ${title} (Time Commitment: ~30-40 min)
             
@@ -268,7 +279,7 @@ const MOCK_CONTENT_DETAILS = {
             
             **Learning Goal:** Understand the foundational **${skill}** theory and its impact on team trust.
             
-            This module provides the philosophical and psychological context for your leadership actions. ${title} is critical for establishing a sustainable leadership model, emphasizing ${focus}.
+            This module provides the philosophical and psychological context for your leadership actions. ${title} is critical for establishing a sustainable leadership model, emphasizing **${focus}**.
             
             * **Weekly Focus:** Analyze how this theory applies to your next scheduled team interaction.
             * **Actionable Deliverable:** A draft of your personal 'Why Lead' statement or a documented 'Managing Upward' matrix.
@@ -283,12 +294,36 @@ const MOCK_CONTENT_DETAILS = {
         let outcome = "Create a single, measurable behavior change and define its trigger.";
         let deliverable = "A pre-scripted Coaching Question to replace your most common 'fix-it' instinct.";
         
-        if (skill === 'Goals') {
+        if (skill === 'Shift to Coach') {
+            deliverable = "A written **Player-to-Coach** script for your next delegation moment.";
+        } else if (skill === 'Motive') {
+            deliverable = "A journal entry detailing the core motive and anticipated reward for your next major project.";
+        } else if (skill === 'V-B Trust') {
+             deliverable = "A list of 3 small, safe professional vulnerabilities to share with your team this week.";
+        } else if (skill === 'Boss') {
+             deliverable = "A 5-point action plan for improving alignment with your manager’s priorities.";
+        } else if (skill === 'Goals') {
             deliverable = "A finalized set of 3 quarterly OKRs, each linked to a specific key result and prioritization tier.";
+        } else if (skill === 'Expectations') {
+             deliverable = "A completed Stakeholder Expectation Map for your current project, identifying 5 unstated assumptions.";
+        } else if (skill === 'Delegation') {
+             deliverable = "The **Delegation Matrix** filled out for your highest priority task this week.";
+        } else if (skill === 'Meetings') {
+             deliverable = "A new 3-point agenda focused purely on achieving one decision in your next team meeting.";
+        } else if (skill === 'Recognition') {
+             deliverable = "A customized recognition strategy for your most recent high-performer, tailored to their intrinsic motivation.";
+        } else if (skill === 'Feedback') {
+             deliverable = "A 3-part script for delivering **Radical Candor** feedback to a direct report, balancing challenge and care.";
         } else if (skill === 'Conflict') {
             deliverable = "A completed Conflict Management Style assessment and strategy guide.";
+        } else if (skill === 'Crucial') {
+             deliverable = "A clear script using the **STATE** framework to address an ongoing team conflict.";
+        } else if (skill === 'Planning') {
+             deliverable = "The 'Strategic Pillars' defined for your department's next annual cycle.";
+        } else if (skill === 'Strategic') {
+             deliverable = "A completed **Scenario Planning** analysis for three market disruptions.";
         }
-        
+
         return `
             ## Guided Practice: ${title} (Time Commitment: ~30-45 min)
             
@@ -297,7 +332,7 @@ const MOCK_CONTENT_DETAILS = {
             This is a structured, private drafting activity designed to solidify abstract concepts into personal behaviors. The output is a personalized artifact ready for implementation.
             
             * **Weekly Focus:** Convert one reactive habit into a proactive coaching behavior.
-            * **Actionable Deliverable:** ${deliverable}
+            * **Actionable Deliverable:** **${deliverable}**
             * **Required Time:** 45 minutes of uninterrupted focus.
         `;
     },
@@ -307,14 +342,22 @@ const MOCK_CONTENT_DETAILS = {
     // ----------------------------------------------------
     'Role-Play': (title, skill) => {
         let method = "SBI (Situation-Behavior-Impact) feedback model";
-        if (skill === 'Crucial') method = "State My Path framework (Identify Facts, Tell Story, Ask)";
-        
+        let context = "a difficult performance conversation";
+        if (skill === 'Shift to Coach') context = "delegating a complex, high-stakes task using the Player-to-Coach model.";
+        if (skill === 'Boss') context = "a high-stakes conversation with your manager where you must deliver unexpected bad news regarding a project deadline.";
+        if (skill === 'Delegation') context = "delegating a creative but non-critical task to an unmotivated team member, focusing on inspiring buy-in.";
+        if (skill === 'Goals') context = "challenging a senior peer's vague quarterly objective to ensure cross-functional alignment.";
+        if (skill === 'Coaching') context = "a formal coaching session using the **GROW** (Goal, Reality, Options, Will) model to help a direct report overcome a career block.";
+        if (skill === 'Feedback') context = "receiving and processing tough, critical feedback from your manager or a peer without becoming defensive.";
+        if (skill === 'Crucial') context = "mediating an emotional dispute between two high-performing subordinates.";
+        if (skill === 'Ownership') context = "a meeting where you must shut down excuses and reinforce strict ownership over a failed initiative.";
+
         return `
             ## Practice Simulation: ${title} (Time Commitment: ~45-60 min)
             
             ### Behavioral Focus: ${skill}
             
-            This is a high-impact preparation module for the Coaching Lab, simulating a difficult or complex leadership interaction. The goal is to successfully navigate high-stakes moments.
+            This is a high-impact preparation module for the Coaching Lab, simulating **${context}**. The goal is to successfully navigate high-stakes moments.
             
             * **Weekly Focus:** Practice the initial 5 minutes of the difficult conversation until fluent.
             * **Method:** Utilize the **${method}** in your response to the simulated employee/peer.
@@ -327,15 +370,55 @@ const MOCK_CONTENT_DETAILS = {
     // ----------------------------------------------------
     'Case Study': (title, skill) => {
         let goal = "test your strategic resilience and problem-solving under pressure.";
-        if (skill === 'Trust') goal = "diagnose the root cause of systemic low-trust within a peer group and draft a vulnerability-based repair plan.";
-        if (skill === 'Decisions') goal = "evaluate decision-making under uncertainty, applying the problem-solving framework.";
-
+        let scenario = "a cross-functional accountability crisis where metrics were misunderstood.";
+        
+        if (skill === 'Ownership') {
+             scenario = "a failed project where every team member blames external factors. Your task is to re-establish a culture of accountability.";
+             goal = "diagnose the root cause of systemic low-trust and draft a vulnerability-based repair plan.";
+        } else if (skill === 'Identity') {
+             scenario = "a star performer who struggles to transition into a management role, leading to high team turnover.";
+             goal = "analyze the conflict between the 'doer' identity and the 'leader' identity, drafting a personal intervention plan.";
+        } else if (skill === 'Shift to Coach') {
+             scenario = "a failure due to your own over-involvement in a delegated task.";
+             goal = "pinpoint the moment you shifted from coach to player and what the structural cost was.";
+        } else if (skill === 'Metrics') {
+            scenario = "a severe misallocation of resources after reporting vanity metrics instead of core leading indicators.";
+            goal = "evaluate the metrics failure, drafting a new dashboard based on leading indicators only.";
+        } else if (skill === 'Decisions') {
+            scenario = "a critical error made by a junior leader using the wrong problem-solving framework under pressure.";
+            goal = "evaluate decision-making under uncertainty, applying the problem-solving framework correctly.";
+        } else if (skill === 'Meetings') {
+            scenario = "a project delay caused by a series of unproductive, aimless team meetings.";
+            goal = "perform a post-mortem on the meeting failure and redesign the decision process for the next phase.";
+        } else if (skill === 'Motivation') {
+             scenario = "a high-performing, high-paid team that exhibits low intrinsic motivation and low engagement scores.";
+             goal = "diagnose the root cause of the motivation failure and draft an engagement plan focused on autonomy and purpose.";
+        } else if (skill === '1:1s') {
+             scenario = "a critical performance intervention that failed because the manager only used the 1:1 format for bad news.";
+             goal = "re-engineer the 1:1 system to balance performance review with coaching and development.";
+        } else if (skill === 'Coaching') {
+             scenario = "a team member whose performance is stable but refuses to engage in future-oriented coaching discussions.";
+             goal = "diagnose why coaching fails to motivate and craft a personalized motivational strategy.";
+        } else if (skill === 'Commitment') {
+             scenario = "a scenario where the team verbally agreed to a plan but failed to execute due to passive resistance and ambiguity.";
+             goal = "analyze the failure to commit, identifying where consensus broke down.";
+        } else if (skill === 'Conflict') {
+             scenario = "an ongoing, corrosive personality clash between two key players that is paralyzing cross-functional work.";
+             goal = "mediate the conflict, applying the principles of productive conflict to re-align their goals.";
+        } else if (skill === 'Planning') {
+             scenario = "a dramatic resource allocation failure stemming from poor long-range planning and a focus on short-term gains.";
+             goal = "identify the long-term planning flaws and propose a new capital allocation model.";
+        } else if (skill === 'Vision') {
+             scenario = "a scenario where a sudden market event requires immediate, decisive communication to re-assure stakeholders of the long-term vision.";
+             goal = "craft a powerful, values-driven message to stabilize the team and re-align priorities in crisis.";
+        }
+        
         return `
             ## Executive Analysis: ${title} (Time Commitment: ~45-60 min)
             
             ### Application Focus: ${skill}
             
-            Review the provided scenario outlining a complex organizational breakdown (e.g., a cross-functional failure or accountability crisis). This module is designed to ${goal}.
+            Review the provided scenario outlining **${scenario}**. This module is designed to **${goal}**.
             
             * **Weekly Focus:** Analyze the scenario, identify the failure point, and select two key frameworks from this month's content to solve the issue.
             * **Task:** Prepare a 5-step action plan and a one-page defense for your solution.
@@ -349,15 +432,46 @@ const MOCK_CONTENT_DETAILS = {
     'Tool': (title, skill) => {
         let deliverable = "A formalized system documented and integrated into your weekly workflow.";
         let integration = "formally integrate a new system";
-        if (skill === 'Identity') integration = "establish a formalized Leadership Identity Statement (LIS)";
-        if (skill === 'Metrics') integration = "set up a dashboard to track leading indicators";
+        let outcome = "reducing reliance on manual effort and intuition.";
+
+        if (skill === 'Identity') {
+             integration = "establish a formalized **Leadership Identity Statement (LIS)**";
+             outcome = "provide a stable, consistent foundation for your decision-making and delegation.";
+        } else if (skill === 'Metrics') {
+             integration = "set up a dashboard to track **leading indicators** only";
+             outcome = "ensure your team is focused on future-looking actions, not historical results.";
+        } else if (skill === 'Meetings') {
+             integration = "implement the **Decision-Focused Agenda** template";
+             outcome = "ensure every meeting ends with a clear decision or an assigned owner for the next step.";
+        } else if (skill === 'Delegation') {
+             integration = "use the **Delegation Audit & Follow-up Checklist**";
+             outcome = "ensure complete clarity on delegated authority and follow-up cadence, eliminating accidental 'player' behaviors.";
+        } else if (skill === 'Motivation') {
+             integration = "use the **Motivation Diagnostic Checklist**";
+             outcome = "help you quickly pinpoint whether motivation issues stem from competence, clarity, or context.";
+        } else if (skill === '1:1s') {
+             integration = "implement the **Coaching-First 1:1 Structure**";
+             outcome = "shift the burden of the conversation onto the direct report, fostering ownership and development.";
+        } else if (skill === 'Commitment') {
+             integration = "implement the **Consensual Commitment Framework**";
+             outcome = "ensure full buy-in on all major decisions, significantly reducing implementation risk.";
+        } else if (skill === 'Trust') {
+             integration = "run the **Trust Builder Team Exercise**";
+             outcome = "surface hidden resentments and vulnerabilities in a controlled, psychological safe environment.";
+        } else if (skill === 'Strategic') {
+             integration = "conduct a **Pre-Mortem Risk Audit**";
+             outcome = "proactively identify major, unforeseen failure points in your strategy by assuming the project has already failed.";
+        } else if (skill === 'Vision') {
+             integration = "use the **Vision Alignment Diagnostic**";
+             outcome = "audit whether every task in the department directly contributes to the 5-year vision.";
+        }
         
         return `
             ## Tool Implementation: ${title} (Time Commitment: ~30-40 min)
             
             ### Implementation Goal: Systematize ${skill}
             
-            This module delivers a framework (e.g., RACI Matrix, LIS, Pre-Mortum Audit) for immediate use in your role. The objective is to **${integration}** into your weekly workflow, reducing reliance on manual effort and intuition.
+            This module delivers a framework (e.g., RACI Matrix, LIS, Pre-Mortum Audit) for immediate use in your role. The objective is to **${integration}** into your weekly workflow, **${outcome}**.
             
             * **Weekly Focus:** Customize the template for your current team/project and define clear ownership.
             * **Actionable Deliverable:** The completed **${skill}** tool/framework used once in a real meeting or delegation process this week for full completion credit.
@@ -418,7 +532,7 @@ const generatePlanData = (assessment, ownerUid) => {
         const tierMeta = LEADERSHIP_TIERS[currentTier];
         const theme = `Deep Dive: ${tierMeta.name}`;
 
-        const rating = selfRatings[currentTier];
+        const rating = selfRatings[currentTier] || 5; // Default to 5 if missing
         const targetDifficulty = getTargetDifficulty(rating);
 
         const requiredContent = [];
@@ -526,14 +640,18 @@ const SharePlanModal = ({ isVisible, onClose, currentMonthPlan, data }) => {
 };
 
 const ContentDetailsModal = ({ isVisible, onClose, content }) => { 
+    const [localContent, setLocalContent] = useState(null);
     if (!isVisible || !content) return null;
     const [htmlContent, setHtmlContent] = useState('');
     const [rating, setRating] = useState(0); 
     const [isLogging, setIsLogging] = useState(false);
-
-    const mockDetail = MOCK_CONTENT_DETAILS[content.type]
-        ? MOCK_CONTENT_DETAILS[content.type](content.title, content.skill)
-        : `### Content Unavailable\n\nNo detailed mock content available for type: **${content.type}**`;
+    
+    // Find the full content details from the CONTENT_LIBRARY based on the requiredContent item
+    const fullContentItem = CONTENT_LIBRARY.find(item => item.id === content.id && item.tier === content.tier);
+    
+    const mockDetail = fullContentItem && MOCK_CONTENT_DETAILS[fullContentItem.type]
+        ? MOCK_CONTENT_DETAILS[fullContentItem.type](fullContentItem.title, fullContentItem.skill)
+        : `## Content Unavailable\n\nNo detailed content available for **${content.title}** (Type: ${content.type}).`;
 
     useEffect(() => {
         (async () => setHtmlContent(await mdToHtml(mockDetail)))();
@@ -625,15 +743,17 @@ const RoadmapTimeline = ({ data, currentMonth, navigateToMonth }) => {
                     const isCurrent = monthData.month === currentMonth;
                     const isFuture = monthData.month > currentMonth; 
                     const isCompleted = monthData.status === 'Completed';
+                    // FIX 1: Allow navigation to all months (future included)
+                    const isClickable = true; 
 
                     return (
                         <div key={monthData.month}
                              className={`p-3 rounded-lg border flex justify-between items-center transition-all cursor-pointer shadow-sm
                                          ${isCurrent ? 'bg-[#7C3AED]/20 border-[#7C3AED] font-extrabold' : isCompleted ? 'bg-[#47A88D]/10 border-[#47A88D]' : 'bg-gray-50 border-gray-200 hover:bg-gray-100'}
-                                         ${isFuture ? 'opacity-70 cursor-not-allowed' : 'hover:bg-gray-100'}`
+                                         ${isFuture ? 'opacity-80' : ''}` // Removed cursor-not-allowed
                              }
                              onClick={() => {
-                                 if (!isFuture) navigateToMonth(monthData.month); // FIX: Ensure navigation only happens to past/current months
+                                 if (isClickable) navigateToMonth(monthData.month); // FIX: Navigation now always works
                              }}
                         >
                             <span className={`text-sm ${isCurrent ? 'text-[#7C3AED]' : 'text-[#002E47]'}`}>
@@ -654,6 +774,86 @@ const RoadmapTimeline = ({ data, currentMonth, navigateToMonth }) => {
 };
 
 
+// --- Feature: Request Feedback Modal ---
+const RequestFeedbackModal = ({ isVisible, onClose, monthPlan, assessment }) => {
+    if (!isVisible || !monthPlan) return null;
+    
+    const tierId = monthPlan.tier;
+    const tierName = LEADERSHIP_TIERS[tierId]?.name;
+    const selfRating = assessment.selfRatings[tierId];
+    
+    // Find the lowest rated tier among the primary goals (T1-T5) to suggest a specific area for feedback
+    const skillGapTierId = Object.entries(assessment.selfRatings)
+        .reduce((lowest, [tier, rating]) => {
+            if (rating < lowest.rating) return { tier, rating };
+            return lowest;
+        }, { tier: 'T1', rating: 10 }).tier;
+    
+    const skillGapTierName = LEADERSHIP_TIERS[skillGapTierId]?.name;
+    const skillGapRating = assessment.selfRatings[skillGapTierId];
+
+    const feedbackRequestText = `
+Hi [Manager/Peer Name],
+
+I'm focused on accelerating my development plan this month (Month ${monthPlan.month}) in the area of **${tierName}** (Tier ${tierId}).
+
+My biggest self-identified skill gap is currently in **${skillGapTierName}** (Self-Rating: ${skillGapRating}/10).
+
+Could you please provide me with one piece of **specific, actionable** feedback related to this area? A good format would be SBI (Situation, Behavior, Impact).
+
+Thank you for your candid input!
+    `.trim();
+
+    const copyToClipboard = () => {
+        const el = document.createElement('textarea');
+        el.value = feedbackRequestText;
+        document.body.appendChild(el);
+        el.select();
+        document.execCommand('copy');
+        document.body.removeChild(el);
+        console.log('Feedback request copied to clipboard!');
+        onClose();
+    };
+
+    return (
+        <div className="fixed inset-0 bg-[#002E47]/80 z-50 flex items-center justify-center p-4">
+            <div className="bg-[#FCFCFA] rounded-3xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto p-8">
+                <div className="flex justify-between items-start border-b pb-4 mb-6">
+                    <h2 className="text-2xl font-extrabold text-[#002E47] flex items-center">
+                        <MessageSquare className="w-6 h-6 mr-3 text-[#E04E1B]" />
+                        Request Targeted Feedback
+                    </h2>
+                    <button onClick={onClose} className="p-2 text-gray-500 hover:text-[#E04E1B] transition-colors">
+                        <X className="w-5 h-5" />
+                    </button>
+                </div>
+                
+                <h3 className='text-md font-bold text-[#47A88D] mb-2'>Targeted Request Focus</h3>
+                <p className='text-sm text-gray-700 mb-4 border-l-2 pl-3 border-[#47A88D]'>
+                    Your current month's focus is on **{tierName}**. The AI suggests requesting feedback on **{skillGapTierName}** to close your biggest self-identified skill gap.
+                </p>
+
+                <h3 className='text-md font-bold text-[#002E47] mb-2'>Copy-Paste Feedback Email</h3>
+                <textarea
+                    readOnly
+                    value={feedbackRequestText}
+                    className="w-full p-3 border border-gray-300 rounded-xl bg-gray-50 text-sm h-60"
+                ></textarea>
+
+                <Button onClick={copyToClipboard} className='mt-4 w-full bg-[#E04E1B] hover:bg-[#C33E12]'>
+                    <Copy className='w-5 h-5 mr-2'/> Copy Request to Clipboard
+                </Button>
+                <Button onClick={onClose} variant='outline' className='mt-4 w-full'>
+                    Close
+                </Button>
+            </div>
+        </div>
+    );
+};
+// FIX: Added Icon for Copy to Clipboard in the RequestFeedbackModal
+const Copy = ({ className }) => <svg xmlns="http://www.w3.org/2000/svg" className={className} width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>;
+
+
 // --- Component 2: Tracker Dashboard View ---
 const TrackerDashboardView = ({ data, updatePdpData, saveNewPlan, db, userId, navigate }) => {
     const [viewMonth, setViewMonth] = useState(data.currentMonth); 
@@ -661,6 +861,7 @@ const TrackerDashboardView = ({ data, updatePdpData, saveNewPlan, db, userId, na
     
     const monthPlan = data.plan.find(m => m.month === viewMonth);
     const isCurrentView = viewMonth === currentMonth; 
+    // FIX 1: isPastOrCurrent is used to determine if actions are editable, not clickable in timeline.
     const isPastOrCurrent = viewMonth <= currentMonth; 
     
     const assessment = data.assessment;
@@ -669,6 +870,11 @@ const TrackerDashboardView = ({ data, updatePdpData, saveNewPlan, db, userId, na
     const [isSaving, setIsSaving] = useState(false);
     const [briefing, setBriefing] = useState(null); 
     const [briefingLoading, setBriefingLoading] = useState(false);
+    
+    const [isContentModalVisible, setIsContentModalVisible] = useState(false);
+    const [selectedContent, setSelectedContent] = useState(null);
+    const [isFeedbackModalVisible, setIsFeedbackModalVisible] = useState(false); // NEW STATE FOR FEEDBACK MODAL
+
 
     const { callSecureGeminiAPI, hasGeminiKey } = useAppServices(data);
 
@@ -730,6 +936,7 @@ const TrackerDashboardView = ({ data, updatePdpData, saveNewPlan, db, userId, na
             return { ...oldData, plan: updatedPlan, currentMonth: oldData.currentMonth + 1 };
         });
         setIsSaving(false);
+        setViewMonth(currentMonth + 1); // Move to the next month after completing current one
     };
 
     const handleResetPlan = async () => {
@@ -749,10 +956,14 @@ const TrackerDashboardView = ({ data, updatePdpData, saveNewPlan, db, userId, na
         });
     };
 
-    const handleOpenContentModal = (contentItem) => { /* ... */ };
+    const handleOpenContentModal = (contentItem) => { 
+        setSelectedContent(contentItem);
+        setIsContentModalVisible(true);
+    };
 
+    // FIX 3: Separated state update (onChange) from persistence (Save button)
     const handleSaveReflection = () => {
-        if (!isCurrentView || localReflection === monthPlan?.reflectionText) return;
+        if (!isCurrentView || localReflection === monthPlan?.reflectionText || localReflection.length === 0) return;
 
         setIsSaving(true);
         updatePdpData(oldData => {
@@ -762,6 +973,10 @@ const TrackerDashboardView = ({ data, updatePdpData, saveNewPlan, db, userId, na
             return { ...oldData, plan: updatedPlan };
         }).then(() => {
             setIsSaving(false);
+            console.log("Reflection Saved.");
+        }).catch((e) => {
+             console.error("Reflection Save Failed:", e);
+             setIsSaving(false);
         });
     };
     
@@ -771,10 +986,13 @@ const TrackerDashboardView = ({ data, updatePdpData, saveNewPlan, db, userId, na
     const allContentCompleted = monthPlan?.requiredContent?.every(item => item.status === 'Completed');
     const isReadyToComplete = allContentCompleted && localReflection.length >= 50;
     const requiredContent = monthPlan?.requiredContent || [];
-    // ... (Other calculations remain the same) ...
-    const progressPercentage = 50; // Mock calculation
+    // Mock calculation for progress
+    const totalDuration = data.plan.reduce((sum, m) => sum + m.totalDuration, 0);
+    const completedDuration = data.plan.filter(m => m.month < currentMonth).reduce((sum, m) => sum + m.totalDuration, 0);
+    const progressPercentage = totalDuration > 0 ? Math.round((completedDuration / totalDuration) * 100) : 0;
     const TierIcon = IconMap[LEADERSHIP_TIERS[currentTierId]?.icon || 'Target']; // Safe icon lookup
-    const tierProgress = { overallPercentage: 50, completedContent: 2, totalContent: 4 }; // Mock data
+    const completedItems = requiredContent.filter(item => item.status === 'Completed').length;
+    const tierProgress = { overallPercentage: Math.round((completedItems / requiredContent.length) * 100) || 0, completedContent: completedItems, totalContent: requiredContent.length }; // Mock data
 
     if (!monthPlan) {
         return (
@@ -809,6 +1027,9 @@ const TrackerDashboardView = ({ data, updatePdpData, saveNewPlan, db, userId, na
                     </Button>
                     <Button onClick={() => console.log('Share')} variant='outline' className='text-xs px-4 py-2 border-[#002E47] text-[#002E47] hover:bg-[#002E47]/10'>
                         <Link className="w-4 h-4 mr-1" /> Share Monthly Focus
+                    </Button>
+                    <Button onClick={() => setIsFeedbackModalVisible(true)} variant='primary' className='text-xs px-4 py-2'>
+                        <MessageSquare className="w-4 h-4 mr-1" /> Request Peer Feedback
                     </Button>
                 </div>
             </Card>
@@ -905,16 +1126,12 @@ const TrackerDashboardView = ({ data, updatePdpData, saveNewPlan, db, userId, na
                                         <div className='flex space-x-2'>
                                             <Button
                                                 onClick={() => {
-                                                    if (!isPastOrCurrent) { /* Only show modal for future */ } 
-                                                    if (item.type === 'Role-Play' || item.type === 'Exercise' || item.type === 'Tool') {
-                                                        navigate('daily-practice', { contentId: item.id, tier: item.tier });
-                                                    } else {
-                                                        console.log('Opening content modal');
-                                                    }
+                                                    // FIX 2: Open content modal for all viewable items
+                                                    handleOpenContentModal(item);
                                                 }}
                                                 className='px-3 py-1 text-xs'
                                                 variant='primary'
-                                                disabled={!isPastOrCurrent}
+                                                disabled={!isPastOrCurrent && !isCurrentView} // Only disabled for true future view of future months
                                             >
                                                 {actionButtonText}
                                             </Button>
@@ -941,7 +1158,7 @@ const TrackerDashboardView = ({ data, updatePdpData, saveNewPlan, db, userId, na
                         <textarea
                             value={localReflection} 
                             onChange={(e) => setLocalReflection(e.target.value)}
-                            onBlur={handleSaveReflection} 
+                            // FIX 3: Removed onBlur save and rely on explicit Save button
                             className="w-full p-3 border border-gray-300 rounded-xl focus:ring-[#47A88D] focus:border-[#47A88D] h-40"
                             placeholder="My reflection (required)..."
                             readOnly={!isCurrentView}
@@ -957,6 +1174,16 @@ const TrackerDashboardView = ({ data, updatePdpData, saveNewPlan, db, userId, na
                             </div>
                         )}
                         {!isCurrentView && <p className='text-xs text-gray-500 mt-2'>Reflection is read-only for this month.</p>}
+                        
+                        {isCurrentView && (
+                             <Button
+                                onClick={handleSaveReflection}
+                                disabled={isSaving || localReflection === monthPlan?.reflectionText}
+                                className='w-full mt-4 bg-[#002E47] hover:bg-gray-700'
+                            >
+                                {isSaving ? 'Saving Reflection...' : 'Save Reflection'}
+                            </Button>
+                        )}
                     </Card>
 
                     {isCurrentView && (
@@ -996,7 +1223,20 @@ const TrackerDashboardView = ({ data, updatePdpData, saveNewPlan, db, userId, na
                     )}
                 </div>
             </div>
-            {/* --- Modals (omitted for brevity) --- */}
+            
+            <ContentDetailsModal 
+                isVisible={isContentModalVisible} 
+                onClose={() => setIsContentModalVisible(false)} 
+                content={selectedContent}
+            />
+            
+            <RequestFeedbackModal
+                isVisible={isFeedbackModalVisible}
+                onClose={() => setIsFeedbackModalVisible(false)}
+                monthPlan={monthPlan}
+                assessment={assessment}
+            />
+
         </div>
     );
 };

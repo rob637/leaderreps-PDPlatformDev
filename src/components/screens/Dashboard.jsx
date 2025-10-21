@@ -101,26 +101,19 @@ const ThreeDButton = ({ children, onClick, color = COLORS.TEAL, accentColor = CO
     const defaultAccent = accentColor; // For the 'bottom' shadow effect
 
     const buttonStyle = {
-        background: `linear-gradient(180deg, ${defaultColor} 0%, ${defaultColor} 80%, ${defaultAccent} 100%)`,
+        background: defaultColor, // Use solid color for base
         boxShadow: `0 4px 0px 0px ${defaultAccent}, 0 6px 12px rgba(0,0,0,0.2)`,
         transition: 'all 0.1s ease-out',
         transform: 'translateY(0px)',
     };
-
-    const hoverStyle = {
-        transform: 'translateY(-2px)',
-        boxShadow: `0 6px 0px 0px ${defaultAccent}, 0 8px 16px rgba(0,0,0,0.3)`,
-    };
-
-    const activeStyle = {
-        transform: 'translateY(2px)',
-        boxShadow: `0 2px 0px 0px ${defaultAccent}, 0 4px 8px rgba(0,0,0,0.15)`,
-    };
+    
+    // FIX: Define dynamic styles as functions or use state for real 3D effect
+    const getBoxShadow = (offset) => `0 ${offset}px 0px 0px ${defaultAccent}, 0 ${offset + 2}px ${offset * 2}px rgba(0,0,0,0.2)`;
 
     return (
         <button
             {...rest}
-            onClick={onClick} // FIX: Ensure onClick is directly bound to the button element
+            onClick={onClick} // FIX: onClick is directly bound and functional
             className={`
                 relative px-6 py-3 rounded-xl font-bold text-white text-lg
                 flex items-center justify-center whitespace-nowrap
@@ -129,20 +122,21 @@ const ThreeDButton = ({ children, onClick, color = COLORS.TEAL, accentColor = CO
             `}
             style={buttonStyle}
             onMouseEnter={e => {
-                e.currentTarget.style.transform = hoverStyle.transform;
-                e.currentTarget.style.boxShadow = hoverStyle.boxShadow;
+                e.currentTarget.style.transform = 'translateY(-2px)';
+                e.currentTarget.style.boxShadow = getBoxShadow(6);
             }}
             onMouseLeave={e => {
-                e.currentTarget.style.transform = buttonStyle.transform;
-                e.currentTarget.style.boxShadow = buttonStyle.boxShadow;
+                e.currentTarget.style.transform = 'translateY(0px)';
+                e.currentTarget.style.boxShadow = getBoxShadow(4);
             }}
             onMouseDown={e => {
-                e.currentTarget.style.transform = activeStyle.transform;
-                e.currentTarget.style.boxShadow = activeStyle.boxShadow;
+                e.currentTarget.style.transform = 'translateY(2px)';
+                e.currentTarget.style.boxShadow = getBoxShadow(2);
             }}
             onMouseUp={e => {
-                e.currentTarget.style.transform = hoverStyle.transform; // Return to hover state after click
-                e.currentTarget.style.boxShadow = hoverStyle.boxShadow;
+                // Return to hover state after mouse up
+                e.currentTarget.style.transform = 'translateY(-2px)';
+                e.currentTarget.style.boxShadow = getBoxShadow(6);
             }}
         >
             {children}
@@ -305,7 +299,7 @@ function extractGeminiText(resp) {
   if (resp.text) return String(resp.text);
   const c = resp.candidates?.[0];
   const parts = c?.content?.parts;
-  if (ArrayArray(parts)) {
+  if (Array.isArray(parts)) {
     return parts.map(p => p?.text).filter(Boolean).join('\n\n');
   }
   return '';
@@ -317,23 +311,41 @@ const TIP_CACHE = {
     timestamp: 0,
     TTL: 4 * 60 * 60 * 1000, // FIX: Changed TTL to 4 hours
 };
+const mdToHtml = async (md) => {
+    // Simple markdown-to-HTML parser for mock content display
+    let html = md;
+    html = html.replace(/\*\*(.*)\*\*/gim, '<strong>$1</strong>'); // Bold
+    html = html.replace(/\> (.*)/gim, '<blockquote class="text-sm border-l-4 border-gray-400 pl-3 italic text-gray-700">$1</blockquote>'); // Blockquote
+    // Ensure all remaining text is wrapped in <p> tags
+    html = html.split('\n').map(line => line.trim()).filter(line => line.length > 0).map(line => {
+        if (!line.startsWith('<')) return `<p class="text-sm text-gray-700">${line}</p>`;
+        return line;
+    }).join('');
+    return html;
+};
 
 /* ---------------------------------------
    Dashboard (default export)
 ----------------------------------------*/
 const DashboardScreen = () => {
+    // FIX: Using actual useAppServices hook
     const {
         navigate,
         user,
-        pdpData,
-        planningData,
-        commitmentData,
+        pdpData: svcPdpData,
+        planningData: svcPlanningData,
+        commitmentData: svcCommitmentData,
         hasPendingDailyPractice,
         callSecureGeminiAPI,
         hasGeminiKey,
         LEADERSHIP_TIERS: svcLEADERSHIP_TIERS,
     } = useAppServices();
 
+    // Use mock data as fallback if service data is not yet loaded (isLoading is false but data is null)
+    const pdpData = svcPdpData || MOCK_PDP_DATA;
+    const planningData = svcPlanningData; // Planning data often loads last, no robust mock needed here
+    const commitmentData = svcCommitmentData || MOCK_COMMITMENT_DATA;
+    
     const TIER_MAP = svcLEADERSHIP_TIERS || LEADERSHIP_TIERS;
 
     const safeNavigate = useCallback((screen, params) => {
@@ -380,11 +392,10 @@ const DashboardScreen = () => {
 
     // --- Daily Tip (Gemini) ---
     const [tipLoading, setTipLoading] = useState(false);
-    const [nudgeIndex, setNudgeIndex] = useState(0);
     const [tipHtml, setTipHtml] = useState('');
 
     const getDailyTip = useCallback(async (force = false) => {
-        // FIX: Implement the 6-hour cache logic
+        // FIX: Implement the 4-hour cache logic
         const now = Date.now();
         if (!force && TIP_CACHE.content && (now - TIP_CACHE.timestamp < TIP_CACHE.TTL)) {
             setTipHtml(TIP_CACHE.content);
@@ -604,12 +615,12 @@ const DashboardScreen = () => {
                 {/* 5. Daily Tip (Strategic Nudge) - Enhanced with Tier Icon */}
                 <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-xl transition-all duration-300 hover:shadow-2xl hover:bg-white/95 relative group">
                 
-                <div className className='absolute inset-0 rounded-2xl' style={{ background: `${weakestTier?.hex || COLORS.TEAL}1A`, opacity: 0.1 }}></div>
+                <div className='absolute inset-0 rounded-2xl' style={{ background: `${weakestTier?.hex || COLORS.TEAL}1A`, opacity: 0.1 }}></div>
                 
                 <div className="flex items-center justify-between mb-4 relative z-10">
                     <h2 className={`text-xl font-bold flex items-center gap-2`} style={{color: weakestTier?.hex || COLORS.NAVY}}>
                     <Target size={20} className={`text-white p-1 rounded-full`} style={{backgroundColor: weakestTier?.hex || COLORS.TEAL}}/> 
-                    {weakestTier?.id || 'T-X'} Strategy Focus
+                    {weakestTier?.name || 'T-X'} Strategy Focus
                     </h2>
                     <button
                     className="rounded-full border border-gray-200 px-3 py-1 text-sm hover:bg-gray-100 flex items-center gap-1 transition-colors"

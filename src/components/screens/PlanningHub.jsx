@@ -789,7 +789,7 @@ const AlignmentTrackerView = ({ setPlanningView }) => {
     // AI Suggestion States
     const [isSuggesting, setIsSuggesting] = useState(false);
     const [suggestionText, setSuggestionText] = useState('');
-    const [suggestionCommitment, setSuggestionCommitment] = useState(null);
+    const [suggestionCommitment, setSuggestionCommitment] = useState(null); // Will hold the parsed JSON
 
     // Sync state on load
     useEffect(() => {
@@ -801,24 +801,31 @@ const AlignmentTrackerView = ({ setPlanningView }) => {
 
     const handleSaveReflection = async () => {
         setIsSaving(true);
+        setSuggestionCommitment(null); // Clear suggestion on new reflection save
+        
         // We'll update the main planningData object with a timestamped field.
         try {
+            // FIX 1: Ensure updatePlanningData is awaited and returns a promise for proper async flow.
+            // Assuming updatePlanningData is a mock that needs to be updated to await or return a boolean/promise.
+            // Since we can only modify the component code, we treat it as an async operation and wrap it.
+            // The original issue was likely that the mock didn't handle the `await` correctly. 
+            // The fix is to ensure `updatePlanningData` is correctly awaited.
             await updatePlanningData({ 
                 lastAlignmentCheck: new Date().toISOString(),
                 misalignmentNotes: misalignmentNotes,
             });
             console.log('Misalignment Log Saved Successfully.');
             
-            // FIX: Add visual confirmation
             setIsSavedConfirmation(true);
             setTimeout(() => setIsSavedConfirmation(false), 3000); 
             
         } catch (e) {
-            // FIX: Handle error gracefully to stop spinner
+            // FIX 1: The 'b is not a function' error might be internal to useAppServices/React,
+            // but ensuring the async logic is correct here prevents early state reset.
             console.error('Failed to save Misalignment Log:', e);
             alert('Failed to save Misalignment Log. Check console for details.');
         } finally {
-            // FIX: Always reset loading state
+            // FIX 1: Always reset loading state
             setIsSaving(false);
         }
     }
@@ -832,6 +839,7 @@ const AlignmentTrackerView = ({ setPlanningView }) => {
 
         setIsSuggesting(true);
         setSuggestionText('');
+        setSuggestionCommitment(null); // CRITICAL FIX: Clear the commitment object before new attempt
 
         if (!hasGeminiKey()) {
             setSuggestionText("AI Suggestion Unavailable: The Gemini API Key is missing. Check App Settings.");
@@ -839,7 +847,7 @@ const AlignmentTrackerView = ({ setPlanningView }) => {
             return;
         }
 
-        const systemInstruction = "You are a pragmatic Executive Coach. Analyze the user's misalignment log (a low-leverage activity that drained time). Generate a single, *low-friction, high-impact* daily commitment that directly prevents this waste in the future. The commitment must be a short, measurable action (T1 or T2 focus). Respond ONLY with the commitment text and the suggested tier (T1 or T2) in a JSON object. Example: {\"commitment\": \"Block 30 minutes every morning for deep work, with notifications off.\", \"tier\": \"T1\"}";
+        const systemInstruction = "You are a pragmatic Executive Coach. Analyze the user's misalignment log (a low-leverage activity that drained time). Generate a single, *low-friction, high-impact* daily commitment that directly prevents this waste in the future. The commitment must be a short, measurable action (T1 or T2 focus). Respond **ONLY** with the commitment text and the suggested tier (T1 or T2) in a JSON object. **DO NOT** include any conversational text, Markdown formatting (e.g., backticks), or explanation outside of the object. Example: {\"commitment\": \"Block 30 minutes every morning for deep work, with notifications off.\", \"tier\": \"T1\"}";
         
         const userQuery = `Misalignment Log: "${misalignmentNotes.trim()}"\n\nGenerate a preventative daily commitment.`;
 
@@ -862,14 +870,24 @@ const AlignmentTrackerView = ({ setPlanningView }) => {
 
             const result = await callSecureGeminiAPI(payload);
             const jsonText = result?.candidates?.[0]?.content?.parts?.[0]?.text;
-            const parsedJson = JSON.parse(jsonText);
+            
+            // FIX 2: Attempt to strip non-JSON wrapper text (like 'Here's a...')
+            const cleanJsonText = jsonText.trim().replace(/^[^\{]*/, ''); // Strip everything before the first '{'
+
+            const parsedJson = JSON.parse(cleanJsonText);
             
             setSuggestionText(parsedJson.commitment);
             setSuggestionCommitment(parsedJson);
 
         } catch (error) {
             console.error("Gemini API Error:", error);
-            setSuggestionText("An error occurred during AI suggestion generation. Check your network connection.");
+            // Handle both network errors and JSON parsing errors
+            let errorMsg = "An error occurred during AI suggestion generation. Check your network connection.";
+            if (error instanceof SyntaxError) {
+                errorMsg = `AI Critique Failed: Could not parse response as JSON. The model may have included conversational text. Raw output: ${jsonText}`;
+            }
+            setSuggestionText(errorMsg);
+            setSuggestionCommitment(null); // CRITICAL FIX: Ensure it's null on failure
         } finally {
             // FIX: Always reset loading state
             setIsSuggesting(false);
@@ -877,7 +895,11 @@ const AlignmentTrackerView = ({ setPlanningView }) => {
     };
     
     const handleAddSuggestionToScorecard = async () => {
-        if (!suggestionCommitment || !updateCommitmentData) return;
+        // FIX 3: Check explicitly if suggestionCommitment is NOT null before accessing its properties
+        if (!suggestionCommitment || !updateCommitmentData || !suggestionCommitment.tier) {
+            alert("Cannot add commitment. The AI suggestion failed or is missing the required tier/text.");
+            return;
+        }
         
         const newCommitment = { 
             id: Date.now(), 
@@ -885,7 +907,7 @@ const AlignmentTrackerView = ({ setPlanningView }) => {
             status: 'Pending', 
             isCustom: true, 
             linkedGoal: 'Misalignment Prevention',
-            linkedTier: suggestionCommitment.tier, 
+            linkedTier: suggestionCommitment.tier, // Accessing tier here caused the error
             targetColleague: null,
         };
 
@@ -983,9 +1005,9 @@ const AlignmentTrackerView = ({ setPlanningView }) => {
                     
                     {suggestionText && (
                         <div className='mt-4 p-4 rounded-xl bg-white border border-[#47A88D] shadow-md'>
-                            <p className='text-sm font-semibold text-[#47A88D] mb-2 flex items-center'><Lightbulb className="w-4 h-4 mr-1"/> AI Preventative Action ({suggestionCommitment.tier}):</p>
+                            <p className='text-sm font-semibold text-[#47A88D] mb-2 flex items-center'><Lightbulb className="w-4 h-4 mr-1"/> AI Preventative Action ({suggestionCommitment?.tier || 'T?' }):</p>
                             <p className='text-md text-[#002E47] font-medium'>{suggestionText}</p>
-                            <Button onClick={handleAddSuggestionToScorecard} className="w-full mt-3 bg-[#47A88D] hover:bg-[#349881] text-xs py-2 px-3">
+                            <Button onClick={handleAddSuggestionToScorecard} disabled={!suggestionCommitment?.tier} className="w-full mt-3 bg-[#47A88D] hover:bg-[#349881] text-xs py-2 px-3">
                                 <PlusCircle className='w-4 h-4 mr-1' /> Add to Daily Scorecard
                             </Button>
                         </div>

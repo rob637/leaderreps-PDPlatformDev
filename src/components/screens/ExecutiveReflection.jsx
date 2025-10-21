@@ -1,11 +1,16 @@
 import React, { useMemo } from 'react';
 // src/components/screens/ExecutiveReflection.jsx
-// FIX: Removed useAppServices import to simplify and eliminate module loading errors
 import { BarChart3, TrendingUp, Target, ShieldCheck, Zap, TrendingDown, Cpu, Star, MessageSquare, HeartPulse, Users, Lightbulb } from 'lucide-react';
+// PRODUCTION INTEGRATION: Uncomment this line when deploying to production with a real service hook
+// import { useAppServices } from '../../services/useAppServices.jsx'; 
+
 
 /* =========================================================
-   MOCK/DATA INJECTION (Used instead of useAppServices for stability)
+   PRODUCTION SERVICE INTEGRATION POINTS
+   (REPLACE THE ENTIRETY OF THIS SECTION BEFORE GOING LIVE)
 ========================================================= */
+// NOTE: These mock definitions stand in for the live data fetched by useAppServices.
+
 const MOCK_COMMITMENT_DATA = {
     history: [
         { date: '2025-07-20', score: '3/3' }, { date: '2025-07-21', score: '2/3' },
@@ -18,6 +23,15 @@ const MOCK_COMMITMENT_DATA = {
 };
 const MOCK_PDP_DATA = { assessment: { selfRatings: { T3: 6 }, menteeFeedback: { T4: { score: 75, comment: "Follow-up is inconsistent." } } } };
 const MOCK_PLANNING_DATA = { riskAudits: 15, okrFailures: 2 };
+
+// PRODUCTION INTEGRATION: This must be replaced with your actual useAppServices hook
+const useMockServices = () => ({
+    navigate: (screen, params) => console.log(`Navigating to ${screen} with params:`, params),
+    // PRODUCTION: Add the rest of your app services here if needed
+});
+/* =========================================================
+   END INTEGRATION SECTION
+========================================================= */
 
 
 /* =========================================================
@@ -101,7 +115,9 @@ const useLongitudinalData = (commitmentData, pdpData, planningData) => {
 ========================================================= */
 
 export default function ExecutiveReflection() {
-    // FIX: Using local MOCK data instead of useAppServices() to resolve build errors
+    // Inject mock services and data
+    const { navigate } = useMockServices();
+    // PRODUCTION: In a live environment, these variables would be retrieved from your useAppServices() hook.
     const commitmentData = MOCK_COMMITMENT_DATA;
     const pdpData = MOCK_PDP_DATA;
     const planningData = MOCK_PLANNING_DATA; 
@@ -178,7 +194,12 @@ export default function ExecutiveReflection() {
                          <p className='font-semibold flex items-center' style={{ color: ORANGE }}><TrendingDown className='w-4 h-4 mr-2'/> Mentee Feedback Score (T4):</p>
                          <p className='text-sm mt-1 text-gray-700'>Score: **{data.menteeFeedback.score}/100** ({data.menteeFeedback.comment})</p>
                      </div>
-                     <Button className='mt-4 w-full' variant='primary'>
+                     {/* FIX: Wired to navigation */}
+                     <Button 
+                         onClick={() => navigate('prof-dev-plan', { view: 'feedback-review', tier: 'T4' })}
+                         className='mt-4 w-full' 
+                         variant='primary'
+                     >
                          Review Full Mentee Feedback &rarr;
                      </Button>
                 </Card>
@@ -196,7 +217,12 @@ export default function ExecutiveReflection() {
                              Project Cycle Time: <span className='font-extrabold' style={{ color: ORANGE }}>+5 Days</span>
                          </p>
                      </div>
-                     <Button className='mt-6 w-full' variant='secondary'>
+                     {/* FIX: Wired to navigation */}
+                     <Button 
+                         onClick={() => navigate('planning-hub', { view: 'roi-report' })}
+                         className='mt-6 w-full' 
+                         variant='secondary'
+                     >
                          Generate Management ROI Report
                      </Button>
                 </Card>
