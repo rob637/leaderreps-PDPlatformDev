@@ -1,6 +1,6 @@
 // src/services/useAppServices.jsx
 
-import React, { createContext, useContext, useMemo, useState } from 'react';
+import React, { createContext, useContext, useMemo, useState, useEffect } from 'react'; // <-- FIXED IMPORT
 // IMPORT FIREBASE CORE MODULES
 import { getFirestore, doc, onSnapshot } from 'firebase/firestore'; 
 import { getAuth } from 'firebase/auth'; 
