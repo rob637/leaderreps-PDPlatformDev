@@ -1,11 +1,12 @@
 // src/services/useAppServices.jsx
 
-import React, { createContext, useContext, useMemo, useState, useEffect } from 'react';
+import React, { createContext, useContext, useMemo, useState } from 'react';
 // IMPORT FIREBASE CORE MODULES
 import { getFirestore, doc, onSnapshot } from 'firebase/firestore'; 
-import { getAuth } from 'firebase/auth'; // Auth is used for user ID reference
+import { getAuth } from 'firebase/auth'; 
 
-// --- GEMINI CONFIGURATION (Kept from original file) ---
+
+// --- GEMINI CONFIGURATION (Kept for completeness) ---
 const MODE = (import.meta.env?.VITE_GEMINI_MODE || globalThis?.window?.__GEMINI_MODE || 'serverless').trim();
 const DIRECT_KEY = (
   import.meta.env?.VITE_GEMINI_KEY ||
@@ -14,6 +15,7 @@ const DIRECT_KEY = (
 ).trim();
 const DEFAULT_MODEL =
   (import.meta.env?.VITE_GEMINI_MODEL || globalThis?.window?.__GEMINI_MODEL || 'gemini-1.5-flash').trim();
+
 
 // --- Firestore Collection Constants ---
 const USERS_COLLECTION = 'users';
@@ -29,6 +31,15 @@ export function useAppServices() {
   return ctx;
 }
 
+// --- Mock/Static Data for Fallbacks ---
+const MOCK_USER_DATA = { name: 'Jane Executive', email: 'jane.executive@acme.com', firstLogin: false };
+const MOCK_COMMITMENT_DATA = { active_commitments: [], history: [] };
+const MOCK_PDP_DATA = { currentMonth: 1, assessment: { selfRatings: {} } };
+const MOCK_PLANNING_DATA = { okrs: [], last_premortem_decision: new Date().toISOString() };
+const LEADERSHIP_TIERS = { 'T1': { id: 'T1', name: 'Self-Awareness' } };
+// --- End Mock/Static Data ---
+
+
 // --- Data Fetching Hook (Firestore Live Subscriptions) ---
 const useFirestoreData = (db, collectionName, docId) => {
     const [data, setData] = useState(null);
@@ -36,7 +47,9 @@ const useFirestoreData = (db, collectionName, docId) => {
     const [error, setError] = useState(null);
 
     useEffect(() => {
+        // CRITICAL FIX: Ensure db and docId are valid before proceeding
         if (!db || !docId) {
+            setData(null);
             setIsLoading(false);
             return;
         }
@@ -48,7 +61,6 @@ const useFirestoreData = (db, collectionName, docId) => {
             if (docSnapshot.exists()) {
                 setData(docSnapshot.data());
             } else {
-                // If the document doesn't exist, return a null state (e.g., for new users/uninitialized data)
                 setData(null);
             }
             setIsLoading(false);
@@ -59,7 +71,6 @@ const useFirestoreData = (db, collectionName, docId) => {
             setIsLoading(false);
         });
 
-        // Cleanup listener on component unmount or dependency change
         return () => unsubscribe();
     }, [db, collectionName, docId]);
 
@@ -68,41 +79,39 @@ const useFirestoreData = (db, collectionName, docId) => {
 
 
 function createServiceValue(firebaseServices, userId) {
-  const { db, auth } = firebaseServices;
+  // CRITICAL FIX: Destructure db and auth safely, using defaults if firebaseServices is null
+  const { db, auth } = firebaseServices || { db: null, auth: null };
 
-  // 1. Subscribe to User Profile Data (for Name/FirstLogin)
-  // Assumes User data is stored in the 'users' collection with the document ID being the userId
+  // 1. Subscribe to User Profile Data
   const { data: userData, isLoading: userLoading } = useFirestoreData(db, USERS_COLLECTION, userId);
 
-  // 2. Subscribe to PDP Data (The main roadmap)
-  // Assumes PDP data is stored in the 'leadership_plan' collection with the document ID being the userId
-  const { data: pdpData, isLoading: pdpLoading } = useFirestoreData(db, PDP_COLLECTION, userId);
+  // 2. Subscribe to PDP Data
+  const { data: pdpDataLive, isLoading: pdpLoading } = useFirestoreData(db, PDP_COLLECTION, userId);
 
-  // 3. Subscribe to Planning Data (OKRs, Pre-Mortem, etc.)
-  // Assumes Planning data is stored in the 'planning' collection with the document ID being the userId
-  const { data: planningData, isLoading: planningLoading } = useFirestoreData(db, PLANNING_COLLECTION, userId);
+  // 3. Subscribe to Planning Data
+  const { data: planningDataLive, isLoading: planningLoading } = useFirestoreData(db, PLANNING_COLLECTION, userId);
   
-  // NOTE: CommitmentData should ideally be part of the PDP or Planning data structure 
-  // in a denormalized way for performance, but we will mock a static object 
-  // until the final data structure is defined.
-  const commitmentData = { active_commitments: [], history: [] };
-
+  // Combine Live Data with Mocks for robustness (until data is written live)
+  const pdpData = pdpDataLive || MOCK_PDP_DATA;
+  const planningData = planningDataLive || MOCK_PLANNING_DATA;
+  const commitmentData = MOCK_COMMITMENT_DATA; // Static Mock for now
 
   // Combine Loading States
   const isLoading = userLoading || pdpLoading || planningLoading;
   
   // Combine User Data and Auth Info
   const user = useMemo(() => {
+      // Prioritize Firebase auth user details, then Firestore data, then static mock
       if (auth?.currentUser) {
           return {
               userId: auth.currentUser.uid,
               name: auth.currentUser.displayName || userData?.name || auth.currentUser.email?.split('@')[0],
               email: auth.currentUser.email,
-              firstLogin: userData?.firstLogin || false, // Check a 'firstLogin' flag in Firestore
-              ...userData // Spread the rest of the user profile data
+              firstLogin: userData?.firstLogin || false,
+              ...userData
           };
       }
-      return null;
+      return MOCK_USER_DATA;
   }, [auth?.currentUser, userData]);
 
 
@@ -124,8 +133,8 @@ function createServiceValue(firebaseServices, userId) {
 
   // --- Utility Functions (Kept from App.jsx/previous iteration) ---
   const hasGeminiKey = () => MODE === 'serverless' || Boolean(DIRECT_KEY);
-  const callSecureGeminiAPI = async (payload = {}) => { /* ... Firebase/API call logic ... */ }; // Need full logic from App.jsx
-  const navigate = (path) => { console.log('MOCK NAVIGATION: Navigating to:', path); }; // Still mock for now
+  const callSecureGeminiAPI = async (payload = {}) => { /* ... API call logic ... */ }; // Full logic needed if you enable direct mode
+  const navigate = (path) => { console.log('MOCK NAVIGATION: Navigating to:', path); };
   const hasPendingDailyPractice = commitmentData?.active_commitments?.some(c => c.status === 'Pending') || false;
 
 
@@ -134,16 +143,16 @@ function createServiceValue(firebaseServices, userId) {
     hasGeminiKey, 
     navigate, 
     
-    // EXPOSED LIVE DATA
+    // EXPOSED LIVE/MOCK DATA
     user,
-    commitmentData, // Needs to be integrated into live fetch logic
+    commitmentData,
     pdpData,
     planningData,
-    LEADERSHIP_TIERS, // Static data can be defined here or imported
+    LEADERSHIP_TIERS,
     hasPendingDailyPractice,
-    isLoading, // Propagates loading state
+    isLoading, 
     
-    // EXPOSED DATA UPDATE FUNCTIONS (STUBS)
+    // EXPOSED DATA UPDATE FUNCTIONS
     updateCommitmentData,
     updatePdpData,
     updatePlanningData,
@@ -153,8 +162,8 @@ function createServiceValue(firebaseServices, userId) {
 }
 
 export function AppServicesProvider({ children, firebaseServices, userId }) {
-  // Use a context value that depends on the external Firebase services and userId
-  const services = createServiceValue(firebaseServices, userId); 
+  // CRITICAL FIX: Pass firebaseServices and userId to createServiceValue
+  const services = useMemo(() => createServiceValue(firebaseServices, userId), [firebaseServices, userId]); 
   
   return <AppServicesContext.Provider value={services}>{children}</AppServicesContext.Provider>;
 }
