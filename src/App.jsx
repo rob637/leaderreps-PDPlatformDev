@@ -246,10 +246,10 @@ const NavSidebar = ({ currentScreen, setCurrentScreen, user, isMobileOpen, close
         { screen: 'reflection', label: 'Executive Reflection', icon: BarChart3 }, 
     ];
     
+    // FIX: Swapping the order of 'Development Plan' and 'Daily Practice'
     const toolsHubsNav = [
-        // FIX: Daily Practice moved to TOOLS & HUBS
-        { screen: 'daily-practice', label: 'Daily Practice', icon: Clock, notify: hasPendingDailyPractice }, 
-        { screen: 'prof-dev-plan', label: 'Development Plan', icon: Briefcase },
+        { screen: 'prof-dev-plan', label: 'Development Plan', icon: Briefcase }, // Moved UP
+        { screen: 'daily-practice', label: 'Daily Practice', icon: Clock, notify: hasPendingDailyPractice }, // Moved DOWN
         { screen: 'coaching-lab', label: 'Coaching Lab', icon: Mic },
         { screen: 'planning-hub', label: 'Planning Hub (OKRs)', icon: Trello }, 
         { screen: 'business-readings', label: 'Business Readings', icon: BookOpen },
@@ -418,7 +418,12 @@ const AppContent = ({ currentScreen, setCurrentScreen, user, navParams, isMobile
                 </div>
                 {/* Router wrapped in Suspense (provided by the parent component, App) */}
                 <Suspense fallback={
-                     <div className="p-8"><div className="animate-spin rounded-full h-12 w-12 border-4 border-t-4 border-gray-200 border-t-[#47A88D] mb-3"></div><p className="text-[#002E47] font-semibold">Loading Screen...</p></div>
+                     <div className="min-h-screen flex items-center justify-center bg-gray-100">
+                        <div className="flex flex-col items-center">
+                            <div className="animate-spin rounded-full h-12 w-12 border-4 border-t-4 border-gray-200 border-t-[#47A88D] mb-3"></div>
+                            <p className="text-[#002E47] font-semibold">Loading App Content...</p>
+                        </div>
+                     </div>
                 }>
                     <ScreenRouter currentScreen={currentScreen} navParams={navParams} />
                 </Suspense>

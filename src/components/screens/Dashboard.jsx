@@ -120,7 +120,7 @@ const ThreeDButton = ({ children, onClick, color = COLORS.TEAL, accentColor = CO
     return (
         <button
             {...rest}
-            onClick={onClick}
+            onClick={onClick} // FIX: Ensure onClick is directly bound to the button element
             className={`
                 relative px-6 py-3 rounded-xl font-bold text-white text-lg
                 flex items-center justify-center whitespace-nowrap
@@ -305,7 +305,7 @@ function extractGeminiText(resp) {
   if (resp.text) return String(resp.text);
   const c = resp.candidates?.[0];
   const parts = c?.content?.parts;
-  if (Array.isArray(parts)) {
+  if (ArrayArray(parts)) {
     return parts.map(p => p?.text).filter(Boolean).join('\n\n');
   }
   return '';
@@ -315,7 +315,7 @@ function extractGeminiText(resp) {
 const TIP_CACHE = {
     content: null,
     timestamp: 0,
-    TTL: 6 * 60 * 60 * 1000, // 6 hours in milliseconds
+    TTL: 4 * 60 * 60 * 1000, // FIX: Changed TTL to 4 hours
 };
 
 /* ---------------------------------------
@@ -421,24 +421,22 @@ const DashboardScreen = () => {
         }
     }
     , [weakestTier, callSecureGeminiAPI, hasGeminiKey]);
-const nextNudge = useCallback(() => {
-        if (typeof hasGeminiKey === 'function' && hasGeminiKey()) {
-            getDailyTip(true);
-            return;
-        }
-        setTipLoading(true);
-        setTimeout(() => {
-            const next = (nudgeIndex + 1) % (NUDGE_CONTENT?.length || 1);
-            const text = NUDGE_CONTENT?.[next] || 'Focus on one high-leverage action today.';
-            setNudgeIndex(next);
-            setTipHtml(`<p>${text}</p>`);
-            setTipLoading(false);
-        }, 200);
-    }, [getDailyTip, hasGeminiKey, nudgeIndex]);
 
-    // Fetch tip on mount
+    const nextNudge = useCallback(() => {
+        // Force manual refresh of the tip (bypassing the 4-hour TTL temporarily)
+        getDailyTip(true); 
+    }, [getDailyTip]);
+
+    // Automatic 4-hour rotation
     useEffect(() => {
+        // Initial fetch on mount
         getDailyTip();
+
+        const intervalId = setInterval(() => {
+            getDailyTip(true); // Force refresh every 4 hours
+        }, 4 * 60 * 60 * 1000);
+
+        return () => clearInterval(intervalId);
     }, [getDailyTip]);
 
 
@@ -466,7 +464,7 @@ const nextNudge = useCallback(() => {
                         <Zap size={28} className='text-[#E04E1B]'/> Executive Action Hub
                     </h2>
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                        {/* CORE ACTIONS (DO) */}
+                        {/* CORE ACTIONS (DO) - Now 3D and Functional */}
                         <ThreeDButton
                             onClick={() => safeNavigate('quick-start-accelerator')}
                             color={COLORS.TEAL}
@@ -495,7 +493,7 @@ const nextNudge = useCallback(() => {
                         >
                             <Mic className='w-5 h-5 mr-2'/> Coaching Lab
                         </ThreeDButton>
-                        {/* ANALYZE / PLAN ACTIONS (Secondary Functions) */}
+                        {/* ANALYZE / PLAN ACTIONS (Secondary Functions) - Now 3D and Functional */}
                         <ThreeDButton
                             onClick={() => safeNavigate('reflection')}
                             color={COLORS.TEAL}
@@ -606,7 +604,7 @@ const nextNudge = useCallback(() => {
                 {/* 5. Daily Tip (Strategic Nudge) - Enhanced with Tier Icon */}
                 <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-xl transition-all duration-300 hover:shadow-2xl hover:bg-white/95 relative group">
                 
-                <div className='absolute inset-0 rounded-2xl' style={{ background: `${weakestTier?.hex || COLORS.TEAL}1A`, opacity: 0.1 }}></div>
+                <div className className='absolute inset-0 rounded-2xl' style={{ background: `${weakestTier?.hex || COLORS.TEAL}1A`, opacity: 0.1 }}></div>
                 
                 <div className="flex items-center justify-between mb-4 relative z-10">
                     <h2 className={`text-xl font-bold flex items-center gap-2`} style={{color: weakestTier?.hex || COLORS.NAVY}}>
@@ -615,12 +613,12 @@ const nextNudge = useCallback(() => {
                     </h2>
                     <button
                     className="rounded-full border border-gray-200 px-3 py-1 text-sm hover:bg-gray-100 flex items-center gap-1 transition-colors"
-                    onClick={nextNudge} // FIX: Force true to bypass 6-hour cache
+                    onClick={nextNudge} // FIX: Changed logic to call nextNudge
                     disabled={tipLoading}
                     type="button"
                     >
                     {tipLoading ? <Loader size={16} className='animate-spin text-gray-500' /> : <ClockIcon size={16} className='text-gray-500' />}
-                    Rotate
+                    Next Nudge
                     </button>
                 </div>
                 
@@ -629,7 +627,7 @@ const nextNudge = useCallback(() => {
                     <div className="prose prose-sm max-w-none relative z-10">
                         {tipHtml
                         ? <div dangerouslySetInnerHTML={{ __html: tipHtml }} />
-                        : <p className="text-gray-600 text-sm">Tap Rotate to get a fresh, powerful nudge from your AI Coach.</p>}
+                        : <p className="text-gray-600 text-sm">Tap Next Nudge to get a fresh, powerful nudge from your AI Coach.</p>}
                     </div>
                 </div>
                 </div>
