@@ -241,7 +241,7 @@ const DataProvider = ({ children, firebaseServices, userId, isAuthReady, navigat
 function LoginPanel({ auth, onSuccess, allowAnonymous = false }) { /* ... */ return null; }
 function ConfigError({ message }) { /* ... */ return null; }
 
-const NavSidebar = ({ currentScreen, setCurrentScreen, user, isMobileOpen, closeMobileMenu }) => {
+const NavSidebar = ({ currentScreen, setCurrentScreen, user, isMobileOpen, closeMobileMenu, isAuthRequired }) => {
     const { auth, hasPendingDailyPractice } = useAppServices();
     const [isProfileOpen, setIsProfileOpen] = useState(false);
 
@@ -335,6 +335,11 @@ const NavSidebar = ({ currentScreen, setCurrentScreen, user, isMobileOpen, close
     );
 
     // --- Desktop Sidebar ---
+    // FIX 2: Hide the sidebar if authentication is required (i.e., user is not logged in)
+    if (isAuthRequired) {
+        return null;
+    }
+    
     return (
         // FIX 1: Changed container to md:fixed h-full and added overflow-y-auto
         <div className={`hidden md:fixed md:flex flex-col w-64 h-full bg-[${NAVY}] text-white p-4 shadow-2xl overflow-y-auto`}>
@@ -361,7 +366,8 @@ const NavSidebar = ({ currentScreen, setCurrentScreen, user, isMobileOpen, close
             <div className={`pt-4 border-t border-[${TEAL}]/50 mt-4 relative flex-shrink-0`}>
                 <button 
                     onClick={() => setIsProfileOpen(!isProfileOpen)} 
-                    className={`flex items-center w-full p-2 rounded-xl text-sm font-semibold transition-colors hover:bg-[${TEAL}]/20 focus:outline-none focus:ring-2 focus:ring-[${TEAL}]`}
+                    // FIX 1: Explicitly set a dark subtle background when inactive
+                    className={`flex items-center w-full p-2 rounded-xl text-sm font-semibold transition-colors hover:bg-[${TEAL}]/20 focus:outline-none focus:ring-2 focus:ring-[${TEAL}] bg-white/5`}
                 >
                     <User className="w-5 h-5 mr-3 text-indigo-300" />
                     <span className='truncate'>{user?.email || 'User Profile'}</span>
@@ -419,7 +425,7 @@ const ScreenRouter = ({ currentScreen, navParams }) => {
   }
 };
 
-const AppContent = ({ currentScreen, setCurrentScreen, user, navParams, isMobileOpen, setIsMobileOpen }) => {
+const AppContent = ({ currentScreen, setCurrentScreen, user, navParams, isMobileOpen, setIsMobileOpen, isAuthRequired }) => {
     return (
         <div className="min-h-screen flex bg-gray-100 font-sans antialiased">
             {/* NavSidebar is now fixed, taking up 64px width */}
@@ -429,6 +435,7 @@ const AppContent = ({ currentScreen, setCurrentScreen, user, navParams, isMobile
                 user={user}
                 isMobileOpen={isMobileOpen}
                 closeMobileMenu={() => setIsMobileOpen(false)}
+                isAuthRequired={isAuthRequired}
             />
             
             {/* Main content area must account for the sidebar width */}
@@ -623,6 +630,7 @@ const App = ({ initialState }) => {
               navParams={navParams}
               isMobileOpen={isMobileOpen}
               setIsMobileOpen={setIsMobileOpen}
+              isAuthRequired={authRequired} // Pass auth status
             />
         </Suspense>
       </DataProvider>
