@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>LeaderReps PDP — Firebase Diagnostics</title>
+  <style>
+    :root { font: 14px/1.45 system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Arial, "Apple Color Emoji", "Segoe UI Emoji"; }
+    body { margin:0; background:#0b1220; color:#e5eef9; }
+    .wrap { max-width: 920px; margin: 32px auto; padding: 0 16px; }
+    h1 { font-size: 20px; margin: 0 0 16px; }
+    .card { background:#0f1a2c; border:1px solid #1f2a44; border-radius:12px; padding:16px; margin-bottom:16px; }
+    .row { display:flex; align-items:flex-start; gap:12px; margin:8px 0; }
+    .badge { display:inline-block; padding:2px 8px; border-radius:999px; font-weight:600; }
+    .ok { background:#103d17; color:#b7ffbe; border:1px solid #1f7a2e; }
+    .fail { background:#3d1010; color:#ffb7b7; border:1px solid #7a1f1f; }
+    code { background:#0b1426; color:#cbd8ff; padding:2px 6px; border-radius:6px; }
+    button { background:#1a2b49; color:#e5eef9; border:1px solid #30446e; border-radius:8px; padding:8px 12px; cursor:pointer; }
+    button:hover { background:#223659; }
+    pre { background:#0b1426; padding:12px; border-radius:8px; overflow:auto; }
+    a { color:#8ec0ff; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>LeaderReps PDP — Firebase Diagnostics</h1>
+    <div class="card">
+      <div class="row"><strong>Step 1:</strong> Check for runtime config (<code>window.__firebase_config</code>)</div>
+      <div class="row" id="cfgStatus"></div>
+      <div class="row"><small>If this shows missing, either inject config in <code>index.html</code> or via Vite <code>define</code> at build time.</small></div>
+    </div>
+
+    <div class="card">
+      <div class="row"><strong>Step 2:</strong> Initialize Firebase and try anonymous auth</div>
+      <div class="row" id="initStatus"></div>
+      <div class="row">
+        <button id="btnInit">Initialize App</button>
+        <button id="btnAnon" disabled>Sign In Anonymously</button>
+      </div>
+      <div class="row" id="authStatus"></div>
+    </div>
+
+    <div class="card">
+      <div class="row"><strong>Console & Error Hooks</strong></div>
+      <div class="row"><small>Open DevTools → Console. Global errors and unhandled promise rejections will be logged with a <code>[diag]</code> prefix.</small></div>
+      <pre id="log"></pre>
+    </div>
+
+    <div class="card">
+      <div class="row"><strong>Tip:</strong> Your Firebase <code>storageBucket</code> should usually end with <code>.appspot.com</code> in the config.</div>
+    </div>
+  </div>
+
+  <!-- Firebase (compat builds for simplicity) -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
+
+  <script>
+    // Global diagnostics logging
+    const logEl = document.getElementById('log');
+    const log = (...args) => {
+      console.log('[diag]', ...args);
+      const line = args.map(a => {
+        try { return typeof a === 'string' ? a : JSON.stringify(a, null, 2); }
+        catch { return String(a); }
+      }).join(' ');
+      logEl.textContent += line + '\\n';
+    };
+    window.addEventListener('error', e => log('window.error:', e.message, e.filename, e.lineno, e.colno));
+    window.addEventListener('unhandledrejection', e => log('unhandledrejection:', e.reason));
+
+    // Step 1 — Config presence
+    const cfgStatus = document.getElementById('cfgStatus');
+    function showStatus(el, ok, text) {
+      el.innerHTML = '<span class="badge ' + (ok ? 'ok' : 'fail') + '">' + (ok ? 'OK' : 'FAIL') + '</span> ' + text;
+    }
+    const hasWindowCfg = !!window.__firebase_config;
+    showStatus(cfgStatus, hasWindowCfg, hasWindowCfg
+      ? 'Found window.__firebase_config'
+      : 'Missing window.__firebase_config');
+
+    // Step 2 — Firebase init & anon auth
+    const btnInit = document.getElementById('btnInit');
+    const btnAnon = document.getElementById('btnAnon');
+    const initStatus = document.getElementById('initStatus');
+    const authStatus = document.getElementById('authStatus');
+    let app = null;
+
+    btnInit.addEventListener('click', () => {
+      try {
+        if (!window.__firebase_config) {
+          showStatus(initStatus, false, 'Cannot init: missing window.__firebase_config');
+          return;
+        }
+        app = firebase.initializeApp(window.__firebase_config);
+        showStatus(initStatus, true, 'Firebase initialized with projectId=' + window.__firebase_config.projectId);
+        btnAnon.disabled = false;
+        log('Firebase apps:', firebase.apps.length);
+      } catch (e) {
+        showStatus(initStatus, false, 'Init error: ' + e.message);
+        log(e);
+      }
+    });
+
+    btnAnon.addEventListener('click', async () => {
+      try {
+        const auth = firebase.auth();
+        const cred = await auth.signInAnonymously();
+        showStatus(authStatus, true, 'Anonymous sign-in OK: uid=' + cred.user.uid);
+        log('Auth user:', { uid: cred.user.uid });
+      } catch (e) {
+        showStatus(authStatus, false, 'Auth error: ' + e.code + ' — ' + e.message);
+        log(e);
+      }
+    });
+  </script>
+</body>
+</html>

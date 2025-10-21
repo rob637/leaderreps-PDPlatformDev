@@ -4,17 +4,17 @@ import react from '@vitejs/plugin-react'
 
 export default defineConfig({
   plugins: [react()],
+
   // If your index.html is at the repo root, leave `root` out.
-  // If your app lives in a subfolder (e.g. "LR_PD_Plat_dev"), set:
-  // root: 'LR_PD_Plat_dev',
+  // If your app lives in a subfolder, set e.g.: root: 'LR_PD_Plat_dev',
 
   build: {
-    outDir: 'dist',       // <- Netlify expects this
+    outDir: 'dist',       // Netlify "Publish directory" should be dist
     emptyOutDir: true,    // clean before build
-    sourcemap: false
+    sourcemap: true       // << turned ON: better stack traces in prod
   },
 
-  // Nice-to-haves for local dev:
+  // Dev / preview niceties
   server: { port: 5173, open: true },
   preview: { port: 4173 }
 })
