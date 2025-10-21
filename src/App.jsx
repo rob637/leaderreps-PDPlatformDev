@@ -638,7 +638,6 @@ const NavSidebar = ({ currentScreen, setCurrentScreen, user, isMobileOpen, close
             <nav className="flex-1 space-y-3"> {/* Removed overflow-y-auto */}
                 {menuSections.map(section => (
                     <div key={section.title} className='space-y-1'> {/* Reduced spacing */}
-                        {/* FIX: Improved delineation with background on title */}
                         <p className={`text-xs font-extrabold uppercase tracking-widest text-white px-2 py-1 rounded bg-[${TEAL}]/10`}>
                             {section.title}
                         </p>
