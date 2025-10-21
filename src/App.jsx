@@ -100,7 +100,7 @@ const hasGeminiKey = () => (!!API_KEY);
 
 
 // Icons used in the new NavSidebar
-import { Home, Zap, ShieldCheck, TrendingUp, Mic, BookOpen, Settings, X, Menu, LogOut, CornerRightUp, Clock, Briefcase, Target, Users, BarChart3, HeartPulse, User, Bell, Trello, CalendarClock } from 'lucide-react';
+import { Home, Zap, ShieldCheck, TrendingUp, Mic, BookOpen, Settings, X, Menu, LogOut, CornerRightUp, Clock, Briefcase, Target, Users, BarChart3, HeartPulse, User, Bell, Trello, CalendarClock, Globe } from 'lucide-react';
 
 // FIX: Setting up a global mock for notepad since components rely on it
 if (typeof window !== 'undefined' && typeof window.notepad === 'undefined') {
@@ -135,6 +135,8 @@ const PlanningHubScreen = lazy(() => import('./components/screens/PlanningHub.js
 const BusinessReadingsScreen = lazy(() => import('./components/screens/BusinessReadings.jsx'));
 const QuickStartScreen = lazy(() => import('./components/screens/QuickStartAccelerator.jsx')); 
 const ExecutiveReflection = lazy(() => import('./components/screens/ExecutiveReflection.jsx'));
+// NEW MODULE: Community
+const CommunityScreen = lazy(() => import('./components/screens/CommunityScreen.jsx'));
 
 
 /* =========================================================
@@ -251,6 +253,7 @@ const NavSidebar = ({ currentScreen, setCurrentScreen, user, isMobileOpen, close
         { screen: 'coaching-lab', label: 'Coaching Lab', icon: Mic },
         { screen: 'planning-hub', label: 'Planning Hub (OKRs)', icon: Trello }, 
         { screen: 'business-readings', label: 'Business Readings', icon: BookOpen },
+        { screen: 'community', label: 'Community & Peer Support', icon: Users, badge: 'New' }, // NEW: Community Link
     ];
     
     // RE-INSERTING SETTINGS HERE
@@ -388,6 +391,8 @@ const ScreenRouter = ({ currentScreen, navParams }) => {
       return <AppSettingsScreen key={uniqueKey} />;
     case 'reflection': 
       return <ExecutiveReflection key={uniqueKey} />;
+    case 'community': // NEW ROUTE
+      return <CommunityScreen key={uniqueKey} />;
     case 'dashboard':
     default:
       return <DashboardScreen key={uniqueKey} />;
