@@ -1149,8 +1149,9 @@ const CommitmentSelectorView = ({ setView, initialGoal, initialTier }) => {
                       <div key={c.id} className="flex justify-between items-center p-2 text-sm bg-gray-50 rounded-lg mb-1">
                         <span className='text-gray-800'>{c.text}</span>
                         <Tooltip content={`Adds this commitment (linked goal/tier required).`}>
+                          {/* FIX 1: CRITICAL WIRING FIX: The button must call handleAddCommitment */}
                           <button
-                            onClick={() => handleAddCommitment(c, 'bank')} // <--- FIX: ADDED onClick
+                            onClick={() => handleAddCommitment(c, 'bank')} 
                             disabled={!canAddCommitment || isSaving}
                             className={`font-semibold text-xs transition-colors p-1 flex items-center space-x-1 ${canAddCommitment && !isSaving ? 'text-[#47A88D] hover:text-[#349881]' : 'text-gray-400 cursor-not-allowed'}`}
                           >
@@ -1193,7 +1194,7 @@ const CommitmentSelectorView = ({ setView, initialGoal, initialTier }) => {
             {renderAssessmentResult()}
 
             <Button
-              onClick={handleCreateCustomCommitment} // FIX: ADDED onClick
+              onClick={handleCreateCustomCommitment} // FIX 2: CRITICAL WIRING FIX: The button must call handleCreateCustomCommitment
               disabled={!customCommitment.trim() || !canAddCommitment || isSaving}
               className="w-full bg-[#47A88D] hover:bg-[#349881]"
             >
