@@ -322,6 +322,10 @@ const MOCK_CONTENT_DETAILS = {
              deliverable = "The 'Strategic Pillars' defined for your department's next annual cycle.";
         } else if (skill === 'Strategic') {
              deliverable = "A completed **Scenario Planning** analysis for three market disruptions.";
+        } else if (skill === 'Accountability') {
+            deliverable = "A formalized **Peer Accountability Implementation** plan for a cross-functional team meeting.";
+        } else if (skill === 'Ownership') {
+            deliverable = "A completed **Accountability Audit** scorecard for a recently missed deadline.";
         }
 
         return `
@@ -411,6 +415,12 @@ const MOCK_CONTENT_DETAILS = {
         } else if (skill === 'Vision') {
              scenario = "a scenario where a sudden market event requires immediate, decisive communication to re-assure stakeholders of the long-term vision.";
              goal = "craft a powerful, values-driven message to stabilize the team and re-align priorities in crisis.";
+        } else if (skill === 'Expectations') {
+             scenario = "a project that failed due to unspoken, misaligned expectations between two key departments.";
+             goal = "use the stakeholder mapping framework to identify and resolve the unspoken expectation failure.";
+        } else if (skill === 'Trust') {
+            scenario = "a scenario where a manager must repair team trust after a major ethical lapse by a leadership peer.";
+            goal = "develop and execute a public plan to repair vulnerability-based trust with the team.";
         }
         
         return `
@@ -464,6 +474,12 @@ const MOCK_CONTENT_DETAILS = {
         } else if (skill === 'Vision') {
              integration = "use the **Vision Alignment Diagnostic**";
              outcome = "audit whether every task in the department directly contributes to the 5-year vision.";
+        } else if (skill === 'Ownership') {
+            integration = "implement the **Accountability Scorecard**";
+            outcome = "quantify and track individual team accountability for key initiatives.";
+        } else if (skill === 'Conflict') {
+            integration = "use the **Conflict Management Style Quiz**";
+            outcome = "determine the conflict styles of team members for better mediation strategies.";
         }
         
         return `
@@ -640,8 +656,9 @@ const SharePlanModal = ({ isVisible, onClose, currentMonthPlan, data }) => {
 };
 
 const ContentDetailsModal = ({ isVisible, onClose, content }) => { 
-    const [localContent, setLocalContent] = useState(null);
     if (!isVisible || !content) return null;
+    
+    // FIX 1: Removed unused state and moved it outside of rendering logic
     const [htmlContent, setHtmlContent] = useState('');
     const [rating, setRating] = useState(0); 
     const [isLogging, setIsLogging] = useState(false);
@@ -653,10 +670,26 @@ const ContentDetailsModal = ({ isVisible, onClose, content }) => {
         ? MOCK_CONTENT_DETAILS[fullContentItem.type](fullContentItem.title, fullContentItem.skill)
         : `## Content Unavailable\n\nNo detailed content available for **${content.title}** (Type: ${content.type}).`;
 
+    // FIX 2: Use useMemo to prevent re-generation of the mockDetail and pass mockDetail as a dependency to useEffect
+    const memoizedMockDetail = useMemo(() => mockDetail, [content.id, content.tier]); 
+
+    // FIX 3: Use useEffect to run the async conversion safely, setting the dependency array correctly.
     useEffect(() => {
-        (async () => setHtmlContent(await mdToHtml(mockDetail)))();
-        setRating(0); 
-    }, [content.id, mockDetail]);
+        let isCancelled = false;
+        setHtmlContent(''); // Clear content while fetching
+        setRating(0); // Reset rating
+
+        (async () => {
+            const html = await mdToHtml(memoizedMockDetail);
+            if (!isCancelled) {
+                setHtmlContent(html);
+            }
+        })();
+
+        return () => {
+            isCancelled = true;
+        };
+    }, [memoizedMockDetail]); // Depend only on the memoized detail string
 
     const handleLogLearning = async () => {
         if (rating === 0) { console.log('Please provide a 5-star rating before logging.'); return; }
@@ -664,9 +697,13 @@ const ContentDetailsModal = ({ isVisible, onClose, content }) => {
         console.log(`Mock: Logging learning for ${content.title} with rating ${rating}/5.`);
         await new Promise(r => setTimeout(r, 800));
         console.log(`Learning logged! Your ${rating}/5 rating will influence future plan revisions.`);
+        // NOTE: In a real app, you would dispatch a data update here.
         setIsLogging(false);
         onClose();
     };
+    
+    // Safety check for tier data
+    const tierData = LEADERSHIP_TIERS[content.tier] || { name: 'Unknown Tier' };
 
     return (
         <div className="fixed inset-0 bg-[#002E47]/80 z-50 flex items-center justify-center p-4">
@@ -681,12 +718,19 @@ const ContentDetailsModal = ({ isVisible, onClose, content }) => {
                     </button>
                 </div>
                 <div className="mb-6 text-sm flex space-x-4 border-b pb-4">
-                    <p className="text-gray-700 font-semibold">Tier: <span className='text-[#002E47]'>{LEADERSHIP_TIERS[content.tier]?.name}</span></p>
+                    <p className="text-gray-700 font-semibold">Tier: <span className='text-[#002E47]'>{tierData.name}</span></p>
                     <p className="text-gray-700 font-semibold">Skill Focus: <span className='text-[#002E47]'>{content.skill}</span></p>
                     <p className="text-gray-700 font-semibold">Est. Duration: <span className='text-[#002E47]'>{content.duration} min</span></p>
                 </div>
                 <div className="prose max-w-none text-gray-700">
-                    <div dangerouslySetInnerHTML={{ __html: htmlContent }} />
+                    {htmlContent ? (
+                        <div dangerouslySetInnerHTML={{ __html: htmlContent }} />
+                    ) : (
+                        <p className='text-gray-500 flex items-center'>
+                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-500 mr-2"></div>
+                            Loading content details...
+                        </p>
+                    )}
                 </div>
                 <div className='mt-8 pt-6 border-t border-gray-200'>
                     <h3 className='text-lg font-bold text-[#002E47] mb-3 flex items-center'>
