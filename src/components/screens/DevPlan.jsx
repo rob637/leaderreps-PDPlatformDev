@@ -632,7 +632,10 @@ const RoadmapTimeline = ({ data, currentMonth, navigateToMonth }) => {
                                          ${isCurrent ? 'bg-[#7C3AED]/20 border-[#7C3AED] font-extrabold' : isCompleted ? 'bg-[#47A88D]/10 border-[#47A88D]' : 'bg-gray-50 border-gray-200 hover:bg-gray-100'}
                                          ${isFuture ? 'opacity-70 cursor-not-allowed' : ''}` // VISUAL FIX: Dim future months
                              }
-                             onClick={() => navigateToMonth(monthData.month)}
+                             // FIX: Only allow navigation to past or current months
+                             onClick={() => {
+                                 if (!isFuture) navigateToMonth(monthData.month);
+                             }}
                         >
                             <span className={`text-sm ${isCurrent ? 'text-[#7C3AED]' : 'text-[#002E47]'}`}>
                                 **Month {monthData.month}**: {monthData.theme}
@@ -640,7 +643,7 @@ const RoadmapTimeline = ({ data, currentMonth, navigateToMonth }) => {
                             <span className="flex items-center space-x-1 text-xs">
                                 <Check size={16} className={isCompleted ? 'text-green-600' : 'text-gray-400'} />
                                 <span className={isCompleted ? 'text-green-600' : 'text-gray-400'}>
-                                    {isCurrent ? 'CURRENT' : isCompleted ? 'COMPLETED' : 'PENDING'}
+                                    {isCurrent ? 'CURRENT' : isCompleted ? 'COMPLETED' : isFuture ? 'FUTURE' : 'PENDING'}
                                 </span>
                             </span>
                         </div>
@@ -813,8 +816,9 @@ const TrackerDashboardView = ({ data, updatePdpData, saveNewPlan, db, userId, na
     // --- Data Calculation ---
     const currentTierId = monthPlan?.tier;
 
+    // Use safe navigation to prevent error #300 if monthPlan is null for a future month
     const tierProgress = useMemo(() => {
-        if (!currentTierId || !data.plan) return { completed: 0, total: 0, percentage: 0 };
+        if (!currentTierId || !data.plan || !monthPlan) return { completed: 0, total: 0, percentage: 0 };
         const totalContent = data.plan.filter(m => m.tier === currentTierId).flatMap(m => m.requiredContent).length;
         const completedContent = data.plan.filter(m => m.tier === currentTierId).flatMap(m => m.requiredContent).filter(c => c.status === 'Completed').length;
         const contentPercentage = totalContent > 0 ? Math.round((completedContent / totalContent) * 100) : 0;
@@ -824,21 +828,35 @@ const TrackerDashboardView = ({ data, updatePdpData, saveNewPlan, db, userId, na
             totalContent,
             overallPercentage: contentPercentage,
         };
-    }, [data.plan, currentTierId]);
+    }, [data.plan, currentTierId, monthPlan]);
 
-    const lowRatingFlag = currentTierId && assessment.selfRatings[currentTierId] <= 4;
-    // NOTE: peerGapFlag removed as requested
-
+    // Use safe navigation for assessment ratings
+    const lowRatingFlag = currentTierId && assessment?.selfRatings?.[currentTierId] <= 4;
+    
     const progressPercentage = Math.min(100, (currentMonth / 24) * 100);
     const TierIcon = LEADERSHIP_TIERS[currentTierId]?.icon ? IconMap[LEADERSHIP_TIERS[currentTierId].icon] : Target;
 
 
+    // CRITICAL FIX: Safe navigation for requiredContent
     const allContentCompleted = monthPlan?.requiredContent?.every(item => item.status === 'Completed');
     const isReadyToComplete = allContentCompleted && localReflection.length >= 50;
     
     // =========================================================
     // RENDER: TRACKER DASHBOARD VIEW
     // =========================================================
+    // FIX: Render nothing if monthPlan is missing (e.g., trying to render month 50)
+    if (!monthPlan) {
+        return (
+            <div className="p-6 md:p-10 min-h-screen flex items-center justify-center">
+                <p className="text-xl text-[#E04E1B] font-bold">Error: Plan data not found for Month {viewMonth}.</p>
+                <Button onClick={() => setViewMonth(currentMonth)} variant="nav-back" className='ml-4'>Go to Current Month {currentMonth}</Button>
+            </div>
+        );
+    }
+    
+    // Use monthPlan.requiredContent safely, defaulting to []
+    const requiredContent = monthPlan.requiredContent || [];
+
     return (
         <div className="p-6 md:p-10 min-h-screen" style={{ background: COLORS.BG, color: COLORS.TEXT }}>
             <div className='flex items-center gap-4 border-b-2 pb-2 mb-8' style={{borderColor: COLORS.PURPLE+'30'}}>
@@ -931,7 +949,7 @@ const TrackerDashboardView = ({ data, updatePdpData, saveNewPlan, db, userId, na
                         {/* Status / Difficulty */}
                         <div className='mb-4 text-sm border-t pt-4'>
                             <p className='font-bold text-[#002E47]'>Tier: {LEADERSHIP_TIERS[currentTierId]?.name}</p>
-                            <p className='text-gray-600'>Target Difficulty: **{assessment?.selfRatings[currentTierId] >= 8 ? 'Mastery' : assessment?.selfRatings[currentTierId] >= 5 ? 'Core' : 'Intro'}** (Self-Rating: {assessment?.selfRatings[currentTierId]}/10)</p>
+                            <p className='text-gray-600'>Target Difficulty: **{assessment?.selfRatings?.[currentTierId] >= 8 ? 'Mastery' : assessment?.selfRatings?.[currentTierId] >= 5 ? 'Core' : 'Intro'}** (Self-Rating: {assessment?.selfRatings?.[currentTierId]}/10)</p>
                             {lowRatingFlag && (
                                 <p className='font-semibold mt-1 flex items-center text-[#E04E1B]'>
                                     <AlertTriangle className='w-4 h-4 mr-1' /> HIGH RISK TIER: Prioritize Content Completion.
@@ -941,7 +959,7 @@ const TrackerDashboardView = ({ data, updatePdpData, saveNewPlan, db, userId, na
 
                         <h3 className='text-xl font-bold text-[#002E47] border-t pt-4 mt-4'>Required Content Items (Lessons)</h3>
                         <div className='space-y-3 mt-4'>
-                            {monthPlan?.requiredContent.map(item => {
+                            {requiredContent.map(item => {
                                 const isCompleted = item.status === 'Completed';
                                 const [isToggling, setIsToggling] = useState(false);
 
@@ -952,12 +970,15 @@ const TrackerDashboardView = ({ data, updatePdpData, saveNewPlan, db, userId, na
                                     setTimeout(() => setIsToggling(false), 500); // Simulate animation time
                                 };
 
-                                const actionButtonText = (item.type === 'Role-Play' || item.type === 'Exercise' || item.type === 'Tool') ? 'Go to Practice' : 'View Content';
+                                // FIX: Button text and disable state for future months
+                                const actionButtonText = isPastOrCurrent ? 
+                                    ((item.type === 'Role-Play' || item.type === 'Exercise' || item.type === 'Tool') ? 'Go to Practice' : 'View Content') :
+                                    'View Content'; 
 
                                 return (
                                     <div key={item.id} className='flex items-center justify-between p-3 bg-gray-50 rounded-xl shadow-sm'>
                                         <div className='flex flex-col'>
-                                            <p className={`font-semibold text-sm ${isCompleted ? 'line-through text-gray-500' : 'text-[#002E47]'}`}>
+                                            <p className={`font-semibold text-sm ${isCompleted && isPastOrCurrent ? 'line-through text-gray-500' : 'text-[#002E47]'}`}>
                                                 {item.title} ({item.type})
                                                 {lowRatingFlag && <span className='ml-2 text-xs text-[#E04E1B] font-extrabold'>(CRITICAL)</span>}
                                             </p>
@@ -966,6 +987,9 @@ const TrackerDashboardView = ({ data, updatePdpData, saveNewPlan, db, userId, na
                                         <div className='flex space-x-2'>
                                             <Button
                                                 onClick={() => {
+                                                    // FIX: Suppress navigation for future content
+                                                    if (!isPastOrCurrent) { handleOpenContentModal(item); return; } 
+                                                    
                                                     if (item.type === 'Role-Play' || item.type === 'Exercise' || item.type === 'Tool') {
                                                         // CRUCIAL: Direct link to the Daily Practice/Lab to perform the work
                                                         navigate('daily-practice', { contentId: item.id, tier: item.tier });

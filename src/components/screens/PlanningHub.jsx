@@ -104,6 +104,7 @@ const mdToHtml = async (md) => {
 // Mock data
 const LEADERSHIP_TIERS = {
     T1: { id: 'T1', name: 'Self-Awareness & Trust', icon: 'HeartPulse', color: 'indigo-500' },
+    T2: { id: 'T2', name: 'Operational Excellence', icon: 'Zap', color: 'yellow-500' },
     T5: { id: 'T5', name: 'Vision & Strategic Clarity', icon: 'TrendingUp', color: 'red-600' },
 };
 
@@ -330,11 +331,17 @@ const PreMortemView = ({ setPlanningView }) => {
 };
 
 const VisionBuilderView = ({ setPlanningView }) => {
-    const { planningData, updatePlanningData } = useAppServices();
+    const { planningData, updatePlanningData, callSecureGeminiAPI, hasGeminiKey } = useAppServices();
 
     const [vision, setVision] = useState(planningData?.vision || '');
     const [mission, setMission] = useState(planningData?.mission || '');
     const [isSaving, setIsSaving] = useState(false);
+    const [isSavedConfirmation, setIsSavedConfirmation] = useState(false); // NEW: Save confirmation state
+    
+    // AI Critique States
+    const [isCritiquing, setIsCritiquing] = useState(false);
+    const [critiqueResult, setCritiqueResult] = useState('');
+    const [critiqueHtml, setCritiqueHtml] = useState('');
 
     useEffect(() => {
         if (planningData) {
@@ -342,6 +349,12 @@ const VisionBuilderView = ({ setPlanningView }) => {
             setMission(planningData.mission);
         }
     }, [planningData]);
+    
+    useEffect(() => {
+        if (!critiqueResult) { setCritiqueHtml(''); return; }
+        (async () => setCritiqueHtml(await mdToHtml(critiqueResult)))();
+    }, [critiqueResult]);
+
 
     const handleSave = async () => {
         if (!vision || !mission) return;
@@ -351,12 +364,55 @@ const VisionBuilderView = ({ setPlanningView }) => {
             // Persist only vision and mission fields
             await updatePlanningData({ vision: vision, mission: mission });
             console.log('Vision & Mission Saved Successfully.');
+            
+            // FIX: Add visual confirmation
+            setIsSavedConfirmation(true);
+            setTimeout(() => setIsSavedConfirmation(false), 3000); 
+
         } catch (e) {
             console.error('Failed to save Vision/Mission:', e);
             alert('Failed to save Vision & Mission. Check console for details.');
         } finally {
-            // FIX: This ensures the spinner stops regardless of success or failure.
             setIsSaving(false);
+        }
+    };
+    
+    // ENHANCEMENT: AI Critique Function
+    const critiqueVision = async () => {
+        if (!vision.trim() || !mission.trim()) {
+            alert("Please fill in both the Vision and Mission before running the critique.");
+            return;
+        }
+
+        setIsCritiquing(true);
+        setCritiqueResult('');
+
+        if (!hasGeminiKey()) {
+            setCritiqueResult("## AI Critique Unavailable\n\n**ERROR**: The Gemini API Key is missing. Please check App Settings.");
+            setIsCritiquing(false);
+            return;
+        }
+
+        const systemPrompt = "You are a T5 Visionary Leadership Coach and Strategic Communications expert. Your task is to critique the user's drafted Vision and Mission statements. Provide feedback based on: 1) **Clarity & Conciseness**: Is the language clear, jargon-free, and inspiring? 2) **Strategic Alignment**: Does the mission support the achievement of the vision? 3) **Actionability**: Does the mission imply specific, high-leverage daily actions? Use clear Markdown headings and bold key phrases. Use this exact structure: ## Vision/Mission Critique; ### Clarity & Conciseness; ### Strategic Alignment; ### Actionability";
+        
+        const userQuery = `Critique the following statements:
+        Vision: "${vision.trim()}"
+        Mission: "${mission.trim()}"`;
+
+        try {
+            const payload = {
+                contents: [{ role: "user", parts: [{ text: userQuery }] }],
+                systemInstruction: { parts: [{ text: systemPrompt }] },
+            };
+
+            const result = await callSecureGeminiAPI(payload);
+            const text = result?.candidates?.[0]?.content?.parts?.[0]?.text || "Critique failed to generate results.";
+            setCritiqueResult(text);
+        } catch (error) {
+            console.error("Gemini API Error:", error);
+            setCritiqueResult("An error occurred during the AI Critique. Please check your network connection.");
+        } finally {
+            setIsCritiquing(false);
         }
     };
 
@@ -398,12 +454,49 @@ const VisionBuilderView = ({ setPlanningView }) => {
                     </ul>
                 </Card>
             </div>
+            
+            <div className='flex space-x-4 mt-8'>
+                <Button onClick={handleSave} disabled={isSaving || !vision || !mission} className="w-full md:w-auto">
+                    {isSaving ? (
+                        <><div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div> Saving...</>
+                    ) : <><CheckCircle className="w-5 h-5 mr-2" /> Save Vision & Mission</>}
+                </Button>
+                
+                {isSavedConfirmation && (
+                    <div className='flex items-center text-[#47A88D] font-bold'>
+                        <CheckCircle className='w-5 h-5 mr-1'/> Saved!
+                    </div>
+                )}
+            </div>
+            
+            {/* AI Critique Section */}
+            <Card title="AI Vision Auditor" icon={Cpu} accent='NAVY' className='mt-8 bg-[#002E47]/10 border-2 border-[#002E47]/20'>
+                <p className='text-gray-700 text-sm mb-4'>Use the AI coach to critique your Vision/Mission for strategic clarity, conciseness, and actionability (T5 focus). **(Requires API Key)**</p>
+                
+                <Tooltip
+                    content={hasGeminiKey() 
+                        ? "Submits your Vision/Mission to the AI Auditor." 
+                        : "Requires Gemini API Key to run. Check App Settings."
+                    }
+                >
+                    <Button onClick={critiqueVision} disabled={isCritiquing || !vision || !mission} className="w-full bg-[#E04E1B] hover:bg-red-700">
+                        {isCritiquing ? (
+                            <div className="flex items-center justify-center">
+                                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
+                                Auditing Vision...
+                            </div>
+                        ) : <><MessageSquare className='w-5 h-5 mr-2'/> Run Vision Critique</>}
+                    </Button>
+                </Tooltip>
 
-            <Button onClick={handleSave} disabled={isSaving || !vision || !mission} className="mt-8 w-full md:w-auto">
-                {isSaving ? (
-                    <><div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div> Saving...</>
-                ) : <><CheckCircle className="w-5 h-5 mr-2" /> Save Vision & Mission</>}
-            </Button>
+                {critiqueHtml && (
+                    <div className="mt-6 pt-4 border-t border-gray-300">
+                        <div className="prose max-w-none prose-h3:text-[#47A88D] prose-p:text-gray-700 prose-ul:space-y-2">
+                            <div dangerouslySetInnerHTML={{ __html: critiqueHtml }} />
+                        </div>
+                    </div>
+                )}
+            </Card>
         </div>
     );
 };
@@ -655,7 +748,7 @@ const OKRDraftingView = ({ setPlanningView }) => {
 };
 
 const AlignmentTrackerView = ({ setPlanningView }) => {
-    const { planningData, updatePlanningData } = useAppServices();
+    const { planningData, updatePlanningData, updateCommitmentData, navigate, callSecureGeminiAPI, hasGeminiKey } = useAppServices();
 
     // Mock progress data for visualization, using loaded objectives for titles
     const objectives = planningData?.okrs?.map((o, index) => {
@@ -680,12 +773,25 @@ const AlignmentTrackerView = ({ setPlanningView }) => {
         { id: 3, title: 'Develop Cross-Functional Skills (Mock)', progress: 0.30, status: 'At Risk', successionDependency: null },
     ];
     
-    const [misalignmentNotes, setMisalignmentNotes] = useState('');
+    const [misalignmentNotes, setMisalignmentNotes] = useState(planningData?.misalignmentNotes || '');
     const [isSaving, setIsSaving] = useState(false);
+    const [isSavedConfirmation, setIsSavedConfirmation] = useState(false); // NEW: Save confirmation state
     
+    // AI Suggestion States
+    const [isSuggesting, setIsSuggesting] = useState(false);
+    const [suggestionText, setSuggestionText] = useState('');
+    const [suggestionCommitment, setSuggestionCommitment] = useState(null);
+
+    // Sync state on load
+    useEffect(() => {
+        if (planningData) {
+            setMisalignmentNotes(planningData.misalignmentNotes || '');
+        }
+    }, [planningData]);
+
+
     const handleSaveReflection = async () => {
         setIsSaving(true);
-        // Assuming there is a field for saving these notes, otherwise we mock it.
         // We'll update the main planningData object with a timestamped field.
         try {
             await updatePlanningData({ 
@@ -693,11 +799,97 @@ const AlignmentTrackerView = ({ setPlanningView }) => {
                 misalignmentNotes: misalignmentNotes,
             });
             console.log('Misalignment Log Saved Successfully.');
+            
+            // FIX: Add visual confirmation
+            setIsSavedConfirmation(true);
+            setTimeout(() => setIsSavedConfirmation(false), 3000); 
+            
         } catch (e) {
             console.error('Failed to save Misalignment Log:', e);
             alert('Failed to save Misalignment Log. Check console for details.');
         } finally {
             setIsSaving(false);
+        }
+    }
+    
+    // ENHANCEMENT: AI Suggestion Function
+    const critiqueMisalignment = async () => {
+        if (!misalignmentNotes.trim() || misalignmentNotes.trim().length < 20) {
+            alert("Please describe your misalignment issue with at least 20 characters first.");
+            return;
+        }
+
+        setIsSuggesting(true);
+        setSuggestionText('');
+
+        if (!hasGeminiKey()) {
+            setSuggestionText("AI Suggestion Unavailable: The Gemini API Key is missing. Check App Settings.");
+            setIsSuggesting(false);
+            return;
+        }
+
+        const systemInstruction = "You are a pragmatic Executive Coach. Analyze the user's misalignment log (a low-leverage activity that drained time). Generate a single, *low-friction, high-impact* daily commitment that directly prevents this waste in the future. The commitment must be a short, measurable action (T1 or T2 focus). Respond ONLY with the commitment text and the suggested tier (T1 or T2) in a JSON object. Example: {\"commitment\": \"Block 30 minutes every morning for deep work, with notifications off.\", \"tier\": \"T1\"}";
+        
+        const userQuery = `Misalignment Log: "${misalignmentNotes.trim()}"\n\nGenerate a preventative daily commitment.`;
+
+        try {
+            const payload = {
+                contents: [{ role: "user", parts: [{ text: userQuery }] }],
+                systemInstruction: { parts: [{ text: systemInstruction }] },
+                generationConfig: {
+                    responseMimeType: "application/json",
+                    responseSchema: {
+                        type: "OBJECT",
+                        properties: {
+                            commitment: { type: "STRING" },
+                            tier: { type: "STRING", enum: ["T1", "T2"] }
+                        },
+                        required: ["commitment", "tier"]
+                    }
+                }
+            };
+
+            const result = await callSecureGeminiAPI(payload);
+            const jsonText = result?.candidates?.[0]?.content?.parts?.[0]?.text;
+            const parsedJson = JSON.parse(jsonText);
+            
+            setSuggestionText(parsedJson.commitment);
+            setSuggestionCommitment(parsedJson);
+
+        } catch (error) {
+            console.error("Gemini API Error:", error);
+            setSuggestionText("An error occurred during AI suggestion generation. Check your network connection.");
+        } finally {
+            setIsSuggesting(false);
+        }
+    };
+    
+    const handleAddSuggestionToScorecard = async () => {
+        if (!suggestionCommitment || !updateCommitmentData) return;
+        
+        const newCommitment = { 
+            id: Date.now(), 
+            text: `(AI Preventative) ${suggestionCommitment.commitment}`, 
+            status: 'Pending', 
+            isCustom: true, 
+            linkedGoal: 'Misalignment Prevention',
+            linkedTier: suggestionCommitment.tier, 
+            targetColleague: null,
+        };
+
+        const success = await updateCommitmentData(data => {
+            const existingCommitments = data?.active_commitments || [];
+            return { active_commitments: [...existingCommitments, newCommitment] };
+        });
+
+        if (success) {
+            alert("AI Preventative Commitment added! Check your Daily Practice Scorecard.");
+            navigate('daily-practice', { 
+                initialGoal: newCommitment.linkedGoal, 
+                initialTier: newCommitment.linkedTier 
+            }); 
+        } else {
+            alert("Failed to save new commitment.");
         }
     }
 
@@ -755,9 +947,37 @@ const AlignmentTrackerView = ({ setPlanningView }) => {
                         onChange={(e) => setMisalignmentNotes(e.target.value)}
                         className="w-full p-3 mt-4 border border-gray-300 rounded-xl focus:ring-[#E04E1B] focus:focus:border-[#E04E1B] h-24 text-gray-800" 
                         placeholder="e.g., 'Spent 5 hours responding to low-priority emails that could be automated. This is blocking my strategic thinking time.'"></textarea>
-                    <Button onClick={handleSaveReflection} disabled={isSaving} variant="secondary" className="mt-4 w-full">
-                        {isSaving ? 'Saving Reflection...' : <><CheckCircle className='w-5 h-5 mr-2'/> Save Misalignment Log</>}
+                    
+                    <div className='flex justify-between space-x-4 mt-4'>
+                        <Button onClick={handleSaveReflection} disabled={isSaving} variant="secondary" className="w-full">
+                            {isSaving ? 'Saving Reflection...' : <><CheckCircle className='w-5 h-5 mr-2'/> Save Misalignment Log</>}
+                        </Button>
+                        {isSavedConfirmation && (
+                            <div className='flex items-center text-[#E04E1B] font-bold'>
+                                <CheckCircle className='w-5 h-5 mr-1'/> Logged!
+                            </div>
+                        )}
+                    </div>
+                    
+                    {/* ENHANCEMENT: AI Suggestion Button */}
+                    <Button onClick={critiqueMisalignment} disabled={isSuggesting || !misalignmentNotes} variant="outline" className="w-full mt-4 text-[#002E47] border-[#002E47] hover:bg-[#002E47]/10">
+                        {isSuggesting ? 
+                            <div className="flex items-center justify-center">
+                                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-[#002E47] mr-2"></div>
+                                Generating Commitment...
+                            </div>
+                        : <><Cpu className='w-5 h-5 mr-2'/> Get AI Preventative Commitment</>}
                     </Button>
+                    
+                    {suggestionText && (
+                        <div className='mt-4 p-4 rounded-xl bg-white border border-[#47A88D] shadow-md'>
+                            <p className='text-sm font-semibold text-[#47A88D] mb-2 flex items-center'><Lightbulb className="w-4 h-4 mr-1"/> AI Preventative Action ({suggestionCommitment.tier}):</p>
+                            <p className='text-md text-[#002E47] font-medium'>{suggestionText}</p>
+                            <Button onClick={handleAddSuggestionToScorecard} className="w-full mt-3 bg-[#47A88D] hover:bg-[#349881] text-xs py-2 px-3">
+                                <PlusCircle className='w-4 h-4 mr-1' /> Add to Daily Scorecard
+                            </Button>
+                        </div>
+                    )}
                 </Card>
             </div>
         </div>

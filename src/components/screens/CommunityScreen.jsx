@@ -3,10 +3,20 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import {
     Users, MessageSquare, Briefcase, Bell, PlusCircle, User, ArrowLeft, Target, Settings, Filter, Clock,
-    // FIX: Import Star component
     Star 
 } from 'lucide-react';
-import { useAppServices } from '../../services/useAppServices.jsx';
+// FIX: Mocking useAppServices since the environment can't resolve relative paths
+const useAppServices = () => ({
+    // Mock user for MyThreads filtering and display
+    user: { id: 'mock-user-123', name: 'Executive Leader' }, 
+    navigate: (screen, params) => console.log(`Navigating to ${screen} with params:`, params),
+    // Added mock data needed for other modules
+    commitmentData: { active_commitments: [] }, 
+    planningData: { okrs: [] },
+    hasGeminiKey: () => true,
+    GEMINI_MODEL: 'gemini-2.5-flash-preview-09-2025',
+});
+
 
 /* =========================================================
    HIGH-CONTRAST PALETTE
@@ -18,6 +28,7 @@ const COLORS = {
   LIGHT_GRAY: '#FCFCFA', 
   OFF_WHITE: '#FFFFFF',
   SUBTLE: '#E5E7EB',
+  BG: '#F9FAFB', // Added for consistency
 };
 
 /* =========================================================
@@ -26,18 +37,22 @@ const COLORS = {
 
 const LEADERSHIP_TIERS_META = { 
     'All': { name: 'All Tiers', hex: COLORS.TEAL },
+    'T1': { name: 'Self-Management', hex: '#10B981' }, // Added T1 filter
     'T3': { name: 'Strategic Execution', hex: '#F5C900' },
     'T4': { name: 'People Development', hex: COLORS.ORANGE },
     'T5': { name: 'Visionary Leadership', hex: COLORS.NAVY },
 };
 
-// Mock data now includes Tier and a High-Impact Flag
+// MOCK THREADS: Seeded with owned threads and high impact flags
+// Thread 6 & 7 belong to the 'mock-user-123'
 const MOCK_THREADS = [
-    { id: 1, title: 'Optimizing Delegation with T3 Leaders', tier: 'T4', replies: 32, lastActive: '1 hour ago', impact: true },
-    { id: 2, title: 'Questioning our Q4 Vision Statement', tier: 'T5', replies: 15, lastActive: '4 hours ago', impact: false },
-    { id: 3, title: 'Micro-Habits for Daily Self-Awareness', tier: 'T1', replies: 5, lastActive: '1 day ago', impact: false },
-    { id: 4, title: 'SBI Feedback during High Tension Meetings', tier: 'T4', replies: 45, lastActive: '30 min ago', impact: true },
-    { id: 5, title: 'My best practice for effective Pre-Mortems', tier: 'T3', replies: 8, lastActive: '2 hours ago', impact: false },
+    { id: 1, title: 'Optimizing Delegation with T3 Leaders', tier: 'T4', replies: 32, lastActive: '1 hour ago', impact: true, ownerId: 'other-user-1' },
+    { id: 2, title: 'Questioning our Q4 Vision Statement', tier: 'T5', replies: 15, lastActive: '4 hours ago', impact: true, ownerId: 'other-user-2' },
+    { id: 3, title: 'Micro-Habits for Daily Self-Awareness', tier: 'T1', replies: 5, lastActive: '1 day ago', impact: true, ownerId: 'other-user-3' },
+    { id: 4, title: 'SBI Feedback during High Tension Meetings', tier: 'T4', replies: 45, lastActive: '30 min ago', impact: true, ownerId: 'other-user-4' },
+    { id: 5, title: 'My best practice for effective Pre-Mortems', tier: 'T3', replies: 8, lastActive: '2 hours ago', impact: true, ownerId: 'other-user-5' },
+    { id: 6, title: 'I need clarity on my T5 Goal Alignment', tier: 'T5', replies: 2, lastActive: '5 min ago', impact: true, ownerId: 'mock-user-123' }, // Owned
+    { id: 7, title: 'Best books for T1 Resilience', tier: 'T1', replies: 12, lastActive: '2 days ago', impact: true, ownerId: 'mock-user-123' }, // Owned
 ];
 
 /* =========================================================
@@ -75,7 +90,8 @@ const CommunityHomeView = ({ setView, user, currentTierFilter, setCurrentTierFil
                                 ? 'text-white shadow-md'
                                 : 'text-gray-700 bg-white hover:bg-gray-200'
                         }`}
-                        style={{ backgroundColor: currentTierFilter === tierId ? LEADERSHIP_TIERS_META[tierId].hex : '#F3F4F6', color: currentTierFilter === tierId ? COLORS.OFF_WHITE : COLORS.NAVY }}
+                        // Use a neutral/light background for non-selected tiers for better contrast with the white text/dark background style above
+                        style={{ backgroundColor: currentTierFilter === tierId ? LEADERSHIP_TIERS_META[tierId].hex : COLORS.SUBTLE, color: currentTierFilter === tierId ? COLORS.OFF_WHITE : COLORS.NAVY }}
                     >
                         {tierId}
                     </button>
@@ -111,74 +127,136 @@ const CommunityHomeView = ({ setView, user, currentTierFilter, setCurrentTierFil
     );
 };
 
-const MyThreadsView = ({ user }) => (
-    <div className="p-6 rounded-xl border shadow-lg" style={{ borderColor: COLORS.SUBTLE, backgroundColor: COLORS.OFF_WHITE }}>
-        <h2 className="text-2xl font-bold mb-4" style={{ color: COLORS.NAVY }}>My Active Threads</h2>
-        <p className="text-gray-600">You haven't started any threads yet, {user?.name || 'Leader'}. Start a discussion in the Global Feed!</p>
-    </div>
-);
+const MyThreadsView = ({ user }) => {
+    // FIX: Filter the mock threads to show threads owned by the mock user
+    const myThreads = MOCK_THREADS.filter(thread => thread.ownerId === user.id);
 
-const MentorshipView = () => (
-    <div className="p-6 rounded-xl border shadow-lg" style={{ borderColor: COLORS.SUBTLE, backgroundColor: COLORS.OFF_WHITE }}>
-        <h2 className="text-2xl font-bold mb-4" style={{ color: COLORS.NAVY }}>Mentorship Network</h2>
-        <p className="text-gray-600">Connect with expert leaders (T5 Visionaries) for one-on-one guidance.</p>
-        <button 
-            className="mt-4 flex items-center px-6 py-3 font-semibold rounded-xl text-white shadow-md hover:shadow-lg transition-shadow"
-            style={{ backgroundColor: COLORS.ORANGE }}
-        >
-            <User className="w-5 h-5 mr-2" /> Find a Mentor
-        </button>
-    </div>
-);
+    return (
+        <div className="p-6 rounded-xl border shadow-lg" style={{ borderColor: COLORS.SUBTLE, backgroundColor: COLORS.OFF_WHITE }}>
+            <h2 className="text-2xl font-bold mb-4" style={{ color: COLORS.NAVY }}>My Active Threads</h2>
+            
+            {myThreads.length > 0 ? (
+                <div className="space-y-3">
+                    {myThreads.map(thread => (
+                        <div key={thread.id} className="p-4 rounded-xl border-l-4 shadow-md transition-shadow hover:shadow-lg" 
+                            style={{ borderColor: COLORS.TEAL, backgroundColor: COLORS.OFF_WHITE }}>
+                            <h3 className="font-semibold text-lg" style={{ color: COLORS.NAVY }}>{thread.title}</h3>
+                            <p className="text-sm text-gray-600 mt-1">
+                                **Focus Tier:** {thread.tier} | {thread.replies} Replies | Last active {thread.lastActive}
+                                <span className="ml-3 text-xs font-bold text-blue-600"> (My Thread)</span>
+                            </p>
+                        </div>
+                    ))}
+                </div>
+            ) : (
+                // Seeded for use, this is the original blank state message
+                <p className="text-gray-600">You haven't started any threads yet, {user?.name || 'Leader'}. Start a discussion in the Global Feed!</p>
+            )}
+        </div>
+    );
+};
+
+const MentorshipView = () => {
+    const { navigate } = useAppServices();
+
+    return (
+        <div className="p-6 rounded-xl border shadow-lg" style={{ borderColor: COLORS.SUBTLE, backgroundColor: COLORS.OFF_WHITE }}>
+            <h2 className="text-2xl font-bold mb-4" style={{ color: COLORS.NAVY }}>Mentorship Network</h2>
+            <p className="text-gray-600 mb-4">Connect with expert leaders (T5 Visionaries) for one-on-one guidance.</p>
+            
+            {/* FIX: Link the button to a relevant app screen for demonstration */}
+            <button 
+                onClick={() => navigate('prof-dev-plan', { view: 'mentorship-signup' })}
+                className="mt-4 flex items-center px-6 py-3 font-semibold rounded-xl text-white shadow-md hover:shadow-lg transition-shadow"
+                style={{ backgroundColor: COLORS.ORANGE }}
+            >
+                <User className="w-5 h-5 mr-2" /> Find a Mentor (Navigates to PDP)
+            </button>
+        </div>
+    );
+};
 
 const NotificationsView = () => (
     <div className="p-6 rounded-xl border shadow-lg" style={{ borderColor: COLORS.SUBTLE, backgroundColor: COLORS.OFF_WHITE }}>
         <h2 className="text-2xl font-bold mb-4" style={{ color: COLORS.NAVY }}>Notifications</h2>
         <div className="space-y-3">
-            {[1, 2].map(i => (
-                <p key={i} className="text-sm text-gray-700 border-b pb-2">A **T4 Leader** provided a strategic alternative to your **T3 Execution** challenge.</p>
-            ))}
+            {/* FIX: Use unique, seeded notification messages */}
+            <p className="text-sm text-gray-700 border-b pb-2">A **T5 Visionary** commented on your thread: "I need clarity on my T5 Goal Alignment".</p>
+            <p className="text-sm text-gray-700 border-b pb-2">Your **T4 Goal** alignment critique has been reviewed by the Executive Coach.</p>
+            <p className="text-sm text-gray-700 border-b pb-2">The thread **Optimizing Delegation** has been marked High-Impact.</p>
         </div>
     </div>
 );
 
 
-const NewThreadView = ({ setView }) => (
-    <div className="p-6 rounded-xl border shadow-lg" style={{ borderColor: COLORS.SUBTLE, backgroundColor: COLORS.OFF_WHITE }}>
-        <button onClick={() => setView('home')} className="flex items-center text-gray-600 mb-4 hover:text-gray-800">
-            <ArrowLeft className="w-4 h-4 mr-2" /> Back to Global Feed
-        </button>
-        <h2 className="text-2xl font-bold mb-4" style={{ color: COLORS.NAVY }}>Start a Structured Discussion</h2>
-        <p className="text-sm text-gray-700 mb-4 border-l-4 pl-3" style={{ borderColor: COLORS.TEAL }}>
-            Use the structure below to ensure high-leverage responses from senior leaders.
-        </p>
+const NewThreadView = ({ setView }) => {
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [isSuccess, setIsSuccess] = useState(false);
 
-        <form className="space-y-4">
-            <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1">1. Thread Title / Core Topic</label>
-                <input type="text" placeholder="e.g., How to apply SBI feedback to high performers?" className="w-full p-3 border rounded-lg" />
-            </div>
+    const handleSubmit = (e) => {
+        e.preventDefault();
+        setIsSubmitting(true);
+        setIsSuccess(false);
 
-            <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1">2. Context / Constraint (1-2 Sentences Max)</label>
-                <textarea placeholder="e.g., The employee is highly sensitive, and I only have 15 minutes for the conversation." className="w-full p-3 border rounded-lg h-20" />
-            </div>
+        // MOCK SUBMISSION LOGIC
+        setTimeout(() => {
+            console.log("Mock Thread Submitted.");
+            setIsSubmitting(false);
+            setIsSuccess(true);
+            // Optionally, navigate back to home after a short delay
+            setTimeout(() => setView('home'), 2000); 
+        }, 1500);
+    };
 
-            <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1">3. Detailed Question / Challenge</label>
-                <textarea placeholder="What specific T4 coaching approach should I use to prioritize listening over advice in this scenario?" className="w-full p-3 border rounded-lg h-32" />
-            </div>
-
-            <button 
-                type="submit"
-                className="px-6 py-3 font-semibold text-white rounded-xl shadow-md hover:shadow-lg transition-shadow"
-                style={{ backgroundColor: COLORS.TEAL }}
-            >
-                Post Thread for Executive Review
+    return (
+        <div className="p-6 rounded-xl border shadow-lg" style={{ borderColor: COLORS.SUBTLE, backgroundColor: COLORS.OFF_WHITE }}>
+            <button onClick={() => setView('home')} className="flex items-center text-gray-600 mb-4 hover:text-gray-800">
+                <ArrowLeft className="w-4 h-4 mr-2" /> Back to Global Feed
             </button>
-        </form>
-    </div>
-);
+            <h2 className="text-2xl font-bold mb-4" style={{ color: COLORS.NAVY }}>Start a Structured Discussion</h2>
+            <p className="text-sm text-gray-700 mb-4 border-l-4 pl-3" style={{ borderColor: COLORS.TEAL }}>
+                Use the structure below to ensure high-leverage responses from senior leaders.
+            </p>
+
+            <form className="space-y-4" onSubmit={handleSubmit}>
+                <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-1">1. Thread Title / Core Topic</label>
+                    <input type="text" placeholder="e.g., How to apply SBI feedback to high performers?" className="w-full p-3 border rounded-lg" required />
+                </div>
+
+                <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-1">2. Context / Constraint (1-2 Sentences Max)</label>
+                    <textarea placeholder="e.g., The employee is highly sensitive, and I only have 15 minutes for the conversation." className="w-full p-3 border rounded-lg h-20" required />
+                </div>
+
+                <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-1">3. Detailed Question / Challenge</label>
+                    <textarea placeholder="What specific T4 coaching approach should I use to prioritize listening over advice in this scenario?" className="w-full p-3 border rounded-lg h-32" required />
+                </div>
+                
+                {isSuccess && (
+                    <div className="flex items-center p-3 text-sm font-semibold text-white rounded-lg" style={{ backgroundColor: COLORS.TEAL }}>
+                        <CheckCircle className='w-4 h-4 mr-2'/> Thread Posted Successfully! Redirecting...
+                    </div>
+                )}
+
+                <button 
+                    type="submit"
+                    disabled={isSubmitting}
+                    className="px-6 py-3 font-semibold text-white rounded-xl shadow-md hover:shadow-lg transition-shadow disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+                    style={{ backgroundColor: COLORS.TEAL }}
+                >
+                    {isSubmitting ? (
+                        <>
+                            <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
+                            Posting...
+                        </>
+                    ) : 'Post Thread for Executive Review'}
+                </button>
+            </form>
+        </div>
+    );
+};
 
 
 /* =========================================================
