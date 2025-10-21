@@ -2,7 +2,9 @@
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import {
-    Users, MessageSquare, Briefcase, Bell, PlusCircle, User, ArrowLeft, Target, Settings, Filter, Clock
+    Users, MessageSquare, Briefcase, Bell, PlusCircle, User, ArrowLeft, Target, Settings, Filter, Clock,
+    // FIX: Import Star component
+    Star 
 } from 'lucide-react';
 import { useAppServices } from '../../services/useAppServices.jsx';
 

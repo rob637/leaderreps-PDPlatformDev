@@ -7,7 +7,7 @@ const useAppServices = (localPdpData, setLocalPdpData) => {
     // This function will now update the local state managed by the router
     const updatePdpData = async (updater) => {
         setLocalPdpData(prevData => {
-            const newData = updater(prevData);
+            const newData = typeof updater === 'function' ? updater(prevData) : updater;
             console.log("Mock PDP Data Updated:", newData);
             return newData;
         });
@@ -186,7 +186,7 @@ const CONTENT_LIBRARY = [
     { id: 113, tier: 'T1', skill: 'Shift to Coach', type: 'Case Study', title: 'Case: Over-Involvement Failure', duration: 50, difficulty: 'Intro' },
     { id: 114, tier: 'T1', skill: 'Identity', type: 'Reading', title: 'Article: The Pitfalls of the "Hero" Identity', duration: 25, difficulty: 'Intro' },
     { id: 115, tier: 'T1', skill: 'Ownership', type: 'Role-Play', title: 'Sim: Refusing Excuses', duration: 45, difficulty: 'Mastery' },
-    { id: 116, tier: 'T1', skill: 'Motive', type: 'Case Study', title: 'Case: Purpose vs. Profit Alignment', duration: 60, difficulty: 'Mastery' },
+    { id: '116', tier: 'T1', skill: 'Motive', type: 'Case Study', title: 'Case: Purpose vs. Profit Alignment', duration: 60, difficulty: 'Mastery' },
     { id: 117, tier: 'T1', skill: 'V-B Trust', type: 'Tool', title: 'Tool: Trust Building Checklist', duration: 30, difficulty: 'Intro' },
     { id: 118, tier: 'T1', skill: 'Boss', type: 'Exercise', title: 'Journal: Boss Expectation Alignment', duration: 40, difficulty: 'Core' },
     
@@ -621,13 +621,16 @@ const RoadmapTimeline = ({ data, currentMonth, navigateToMonth }) => {
             <div className='max-h-96 overflow-y-auto space-y-2 pr-2'>
                 {data.plan.map(monthData => {
                     const isCurrent = monthData.month === currentMonth;
+                    // FIX: Future months are anything > currentMonth
+                    const isFuture = monthData.month > currentMonth; 
                     const isCompleted = monthData.status === 'Completed';
                     const borderColor = isCurrent ? COLORS.PURPLE : (isCompleted ? COLORS.TEAL : COLORS.MUTED);
 
                     return (
                         <div key={monthData.month}
                              className={`p-3 rounded-lg border flex justify-between items-center transition-all cursor-pointer shadow-sm
-                                         ${isCurrent ? 'bg-[#7C3AED]/20 border-[#7C3AED] font-extrabold' : isCompleted ? 'bg-[#47A88D]/10 border-[#47A88D]' : 'bg-gray-50 border-gray-200 hover:bg-gray-100'}`
+                                         ${isCurrent ? 'bg-[#7C3AED]/20 border-[#7C3AED] font-extrabold' : isCompleted ? 'bg-[#47A88D]/10 border-[#47A88D]' : 'bg-gray-50 border-gray-200 hover:bg-gray-100'}
+                                         ${isFuture ? 'opacity-70 cursor-not-allowed' : ''}` // VISUAL FIX: Dim future months
                              }
                              onClick={() => navigateToMonth(monthData.month)}
                         >
@@ -651,15 +654,15 @@ const RoadmapTimeline = ({ data, currentMonth, navigateToMonth }) => {
 
 // --- Component 2: Tracker Dashboard View ---
 const TrackerDashboardView = ({ data, updatePdpData, saveNewPlan, db, userId, navigate }) => {
-    // FIX: Use the local context function for fetching data
-    const { callSecureGeminiAPI, hasGeminiKey, GEMINI_MODEL } = useAppServices(data);
-
-    const [viewMonth, setViewMonth] = useState(data.currentMonth); // State for Timeline Navigation
+    // FIX: Use currentMonth for initialization, allowing external navigation to historical months
+    const [viewMonth, setViewMonth] = useState(data.currentMonth); 
     const currentMonth = data.currentMonth;
     
     // Use viewMonth to get the plan data
     const monthPlan = data.plan.find(m => m.month === viewMonth);
     const isCurrentView = viewMonth === currentMonth; 
+    // FIX FOR ISSUE 3: Disable actions on future months, which is implicit if viewMonth > currentMonth.
+    const isPastOrCurrent = viewMonth <= currentMonth; 
     
     const nextMonthPlan = data.plan.find(m => m.month === currentMonth + 1);
     const nextMonthFocus = nextMonthPlan ? LEADERSHIP_TIERS[nextMonthPlan.tier].name : null;
@@ -672,17 +675,18 @@ const TrackerDashboardView = ({ data, updatePdpData, saveNewPlan, db, userId, na
     const [isContentModalVisible, setIsContentModalVisible] = useState(false);
     const [selectedContent, setSelectedContent] = useState(null);
     const [isShareModalVisible, setIsShareModalVisible] = useState(false); 
+    
+    // FIX FOR ISSUE 1: Bind reflection input to localReflection state for correct React control
     const [localReflection, setLocalReflection] = useState(monthPlan?.reflectionText || '');
     const [isSaving, setIsSaving] = useState(false);
     const [briefing, setBriefing] = useState(null); 
     const [briefingLoading, setBriefingLoading] = useState(false);
 
-
     // --- AI Monthly Briefing Logic ---
+    const { callSecureGeminiAPI, hasGeminiKey, GEMINI_MODEL } = useAppServices(data);
+
     const fetchMonthlyBriefing = useCallback(async (plan, assessment) => {
-        // Reset briefing when switching to a new current month
-        if (viewMonth === currentMonth && briefing) return; 
-        if (briefingLoading || !hasGeminiKey()) return;
+        if (briefingLoading || !hasGeminiKey() || !isCurrentView) return;
 
         setBriefingLoading(true);
         const currentTier = LEADERSHIP_TIERS[plan.tier];
@@ -696,13 +700,7 @@ const TrackerDashboardView = ({ data, updatePdpData, saveNewPlan, db, userId, na
             // Mock API call returns fixed mock data from useAppServices
             const result = await callSecureGeminiAPI({ systemInstruction: { parts: [{ text: systemPrompt }] }, contents: [{ role: "user", parts: [{ text: userQuery }] }] });
             const text = result?.candidates?.[0]?.content?.parts?.[0]?.text;
-            
-            // To prevent Gemini mock from running on historical view, use stored brief:
-            if (!isCurrentView && monthPlan.briefingText) {
-                 setBriefing(monthPlan.briefingText);
-            } else {
-                 setBriefing(text);
-            }
+            setBriefing(text);
 
         } catch (e) {
             console.error("AI Briefing Error:", e);
@@ -710,21 +708,24 @@ const TrackerDashboardView = ({ data, updatePdpData, saveNewPlan, db, userId, na
         } finally {
             setBriefingLoading(false);
         }
-    }, [briefing, briefingLoading, hasGeminiKey, callSecureGeminiAPI, viewMonth, currentMonth, isCurrentView, monthPlan?.briefingText]);
+    }, [briefingLoading, hasGeminiKey, callSecureGeminiAPI, isCurrentView]);
 
 
     useEffect(() => {
         // Reset state when changing viewMonth or loading new overall data
         if (monthPlan && assessment) {
+            // FIX FOR ISSUE 1: Initialize local reflection state from the monthPlan's persistent data
             setLocalReflection(monthPlan.reflectionText || '');
-            setBriefing(monthPlan.briefingText || null); // Load saved briefing/reflection for historical months
             
-            if (isCurrentView) {
-                // Only fetch new briefing for the CURRENT month if it hasn't been fetched
-                fetchMonthlyBriefing(monthPlan, assessment); 
+            // FIX FOR ISSUE 3: Handle briefing display based on current/historical view
+            if (!isCurrentView && monthPlan.briefingText) {
+                 setBriefing(monthPlan.briefingText);
+            } else if (isCurrentView) {
+                 // Only fetch new briefing for the CURRENT month if it hasn't been fetched/saved
+                 fetchMonthlyBriefing(monthPlan, assessment); 
             } else {
-                // Historical view
-                 setBriefing(`## Month ${viewMonth} Historical Briefing\n\n**Focus:** ${monthPlan.theme}`);
+                // Default historical message if no brief was saved
+                 setBriefing(`## Month ${viewMonth} Historical Briefing\n\n**Focus:** ${monthPlan.theme}\n\n*The full coaching brief was not saved for this historical month.*`);
             }
         }
     }, [monthPlan, assessment, fetchMonthlyBriefing, viewMonth, isCurrentView]);
@@ -795,6 +796,8 @@ const TrackerDashboardView = ({ data, updatePdpData, saveNewPlan, db, userId, na
 
     // Handler to save the reflection manually without advancing
     const handleSaveReflection = () => {
+        if (!isCurrentView || localReflection === monthPlan?.reflectionText) return; // Only save if current view and text changed
+
         setIsSaving(true);
         updatePdpData(oldData => {
             const updatedPlan = oldData.plan.map(m =>
@@ -896,10 +899,16 @@ const TrackerDashboardView = ({ data, updatePdpData, saveNewPlan, db, userId, na
                 {/* Main Content Column (Cols 2-4) */}
                 <div className='lg:col-span-3 space-y-8 order-2'>
                     
-                    {/* VIEWING HISTORICAL MONTH WARNING */}
-                    {!isCurrentView && (
+                    {/* VIEWING HISTORICAL/FUTURE MONTH WARNING */}
+                    {!isPastOrCurrent && (
                         <div className='p-4 rounded-xl bg-yellow-100 border-2 border-yellow-400 shadow-md text-yellow-800 font-semibold flex items-center gap-3'>
                             <AlertTriangle className='w-5 h-5'/> 
+                            Viewing **Future Month {viewMonth}**. You must complete Month **{currentMonth}** before accessing this content. Content is read-only.
+                        </div>
+                    )}
+                    {!isCurrentView && isPastOrCurrent && (
+                        <div className='p-4 rounded-xl bg-gray-100 border-2 border-gray-400 shadow-md text-gray-800 font-semibold flex items-center gap-3'>
+                            <Clock className='w-5 h-5'/> 
                             Viewing **Historical Month {viewMonth}**. Content and Reflection are read-only.
                         </div>
                     )}
@@ -966,6 +975,7 @@ const TrackerDashboardView = ({ data, updatePdpData, saveNewPlan, db, userId, na
                                                 }}
                                                 className='px-3 py-1 text-xs'
                                                 variant='primary'
+                                                disabled={!isPastOrCurrent} // Disable viewing/practicing future content
                                             >
                                                 {actionButtonText}
                                             </Button>
@@ -974,7 +984,7 @@ const TrackerDashboardView = ({ data, updatePdpData, saveNewPlan, db, userId, na
                                                 onClick={handleToggle}
                                                 className={`px-3 py-1 text-xs transition-colors duration-300 ${isToggling ? 'opacity-50' : ''}`}
                                                 variant={isCompleted ? 'secondary' : 'primary'}
-                                                disabled={isSaving || isToggling || !isCurrentView} // Disable on historical view
+                                                disabled={isSaving || isToggling || !isCurrentView} // Disable toggling on historical/future view
                                             >
                                                 {isToggling ? 'Updating...' : isCompleted ? 'Done ✓' : 'Mark Complete'}
                                             </Button>
@@ -990,12 +1000,13 @@ const TrackerDashboardView = ({ data, updatePdpData, saveNewPlan, db, userId, na
                             Reflect on the growth you achieved this month. How did the content impact your daily leadership behavior? (**Minimum 50 characters required**)
                         </p>
                         <textarea
-                            value={monthPlan?.reflectionText || localReflection}
+                            // FIX FOR ISSUE 1: Value is now bound to the local state, which is initialized in useEffect
+                            value={localReflection} 
                             onChange={(e) => setLocalReflection(e.target.value)}
                             onBlur={handleSaveReflection} // Auto-save on blur
                             className="w-full p-3 border border-gray-300 rounded-xl focus:ring-[#47A88D] focus:border-[#47A88D] h-40"
                             placeholder="My reflection (required)..."
-                            readOnly={!isCurrentView} // Read-only on historical view
+                            readOnly={!isCurrentView} // Read-only on historical/future view
                         ></textarea>
                         {isCurrentView && (
                             <div className='flex justify-between items-center mt-1'>
@@ -1007,6 +1018,7 @@ const TrackerDashboardView = ({ data, updatePdpData, saveNewPlan, db, userId, na
                                 </span>
                             </div>
                         )}
+                        {!isCurrentView && <p className='text-xs text-gray-500 mt-2'>Reflection is read-only for this month.</p>}
                     </Card>
 
                     {isCurrentView && (
@@ -1072,17 +1084,16 @@ const TrackerDashboardView = ({ data, updatePdpData, saveNewPlan, db, userId, na
 
 // --- Component 1: Plan Generator View ---
 const PlanGeneratorView = ({ userId, saveNewPlan, isLoading, error, navigate, setGeneratedPlanData }) => {
-    const [managerStatus, setManagerStatus] = useState('Mid-Level'); // Default to Mid-Level for easy testing
-    const [goalPriorities, setGoalPriorities] = useState(['T5', 'T4', 'T1']); // Default goals for testing
-    // UPDATED: Removed peerRatings state
-    const [selfRatings, setSelfRatings] = useState({ T1: 4, T2: 6, T3: 5, T4: 4, T5: 3 }); // Default low ratings to trigger flags
-    // UPDATED: Removed alignToTeam state
+    // FIX FOR ISSUE 4: Initialize to neutral states
+    const [managerStatus, setManagerStatus] = useState(null); 
+    const [goalPriorities, setGoalPriorities] = useState([]); 
+    const [selfRatings, setSelfRatings] = useState({ T1: 5, T2: 5, T3: 5, T4: 5, T5: 5 }); // Default neutral ratings
     const [isGenerating, setIsGenerating] = useState(false);
     
+    // FIX: Check if all inputs are ready
     const isGoalLimitReached = goalPriorities.length >= 3;
-    const canGenerate = managerStatus && goalPriorities.length > 0 && !isGenerating;
-
-    // UPDATED: Removed teamSkillMap memo
+    const isSelfRatingComplete = Object.keys(selfRatings).length === Object.keys(LEADERSHIP_TIERS).length;
+    const canGenerate = managerStatus && goalPriorities.length > 0 && isSelfRatingComplete && !isGenerating;
 
     const handleGoalToggle = (tierId) => {
         setGoalPriorities(prev => {
@@ -1100,14 +1111,11 @@ const PlanGeneratorView = ({ userId, saveNewPlan, isLoading, error, navigate, se
     const handleRatingChange = (tierId, value) => {
         setSelfRatings(prev => ({ ...prev, [tierId]: parseInt(value) }));
     };
-    
-    // UPDATED: Removed handlePeerRatingChange
 
     const handleGenerate = async () => {
         if (!canGenerate) return;
         setIsGenerating(true);
 
-        // UPDATED: Removed peerRatings, alignToTeam, teamSkillAlignment from assessment
         const assessment = {
             managerStatus,
             goalPriorities,
@@ -1144,7 +1152,7 @@ const PlanGeneratorView = ({ userId, saveNewPlan, isLoading, error, navigate, se
                 <Briefcase className='w-10 h-10' style={{color: COLORS.PURPLE}}/>
                 <h1 className="text-4xl font-extrabold" style={{ color: COLORS.NAVY }}>Personalized 24-Month Plan Generator</h1>
             </div>
-            <p className="text-lg text-gray-600 mb-8 max-w-3xl">Answer a few questions about your current role and goals to instantly generate a hyper-personalized leadership roadmap designed to close your skill gaps over the next two years. **(Pre-filled for demonstration)**</p>
+            <p className="text-lg text-gray-600 mb-8 max-w-3xl">Answer a few questions about your current role and goals to instantly generate a hyper-personalized leadership roadmap designed to close your skill gaps over the next two years.</p>
 
             <div className="space-y-10">
                 <Card title="1. Your Management Experience" icon={Users} accent='TEAL'>
@@ -1154,16 +1162,15 @@ const PlanGeneratorView = ({ userId, saveNewPlan, isLoading, error, navigate, se
                             <button
                                 key={status}
                                 onClick={() => setManagerStatus(status)}
+                                // FIX FOR ISSUE 4: Neutral button state when not selected
                                 className={`px-4 py-2 rounded-xl font-semibold transition-all shadow-md ${managerStatus === status ? 'bg-[#47A88D] text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
                             >
                                 {status}
                             </button>
                         ))}
                     </div>
+                    {managerStatus === null && <p className='text-[#E04E1B] text-xs mt-2'>* Please select your management status.</p>}
                 </Card>
-
-                {/* UPDATED: Removed Team Strategic Alignment card (Feature 2) */}
-
 
                 <Card title="2. Goal Priorities (Max 3)" icon={Target} accent='NAVY'>
                     <h3 className="text-md font-semibold text-gray-700 mb-3">Which tiers are most important to you right now?</h3>
@@ -1185,18 +1192,18 @@ const PlanGeneratorView = ({ userId, saveNewPlan, isLoading, error, navigate, se
                             </label>
                         ))}
                     </div>
+                    {goalPriorities.length === 0 && <p className='text-[#E04E1B] text-xs mt-2'>* Please select at least one goal priority.</p>}
                 </Card>
 
                 <Card title="3. Skill Gap Assessment (Self-Rating)" icon={BarChart3} accent='TEAL'>
                     <h3 className="text-md font-semibold text-gray-700 mb-6">Rate your current effectiveness (1 = Low, 10 = Mastery):</h3>
                     
-                    {/* UPDATED: Removed Peer/360 column header */}
                     <div className='grid grid-cols-1 gap-y-2 mb-4 text-xs font-bold text-gray-600'>
                         <div>Your Self-Rating</div>
                     </div>
 
                     {Object.values(LEADERSHIP_TIERS).map(tier => {
-                        const selfRating = selfRatings[tier.id];
+                        const selfRating = selfRatings[tier.id] || 5; // Default to 5 if not set
                         
                         // Enhanced Visual Feedback
                         const selfScoreColor = selfRating >= 8 ? COLORS.GREEN : selfRating <= 4 ? COLORS.RED : COLORS.AMBER;
@@ -1206,7 +1213,6 @@ const PlanGeneratorView = ({ userId, saveNewPlan, isLoading, error, navigate, se
                                 <p className="font-semibold text-[#002E47] mb-2 flex items-center justify-between">
                                     <span>{tier.name}:</span>
                                 </p>
-                                {/* UPDATED: Grid changed to 1 column */}
                                 <div className='grid grid-cols-1'>
                                     {/* Self Rating Column */}
                                     <div>
@@ -1223,8 +1229,6 @@ const PlanGeneratorView = ({ userId, saveNewPlan, isLoading, error, navigate, se
                                             style={{ accentColor: selfScoreColor }}
                                         />
                                     </div>
-                                    
-                                    {/* UPDATED: Removed Peer Rating Column */}
                                 </div>
                                 <p className='text-xs text-gray-500 mt-2'>*Low scores (4 or less) will prioritize **Intro** content to build foundational skills quickly.</p>
                             </div>
@@ -1280,7 +1284,8 @@ const PlanReviewScreen = ({ generatedPlan, navigate, clearReviewData }) => {
     const handleFinalize = async () => {
         console.log("Plan review complete. Finalizing plan and redirecting to Dashboard...");
         clearReviewData(); // Clears the temporary review state. This is CRITICAL.
-        // Navigate back to the PDP route. Since pdpData is now populated, it will render the TrackerDashboardView.
+        // FIX FOR ISSUE 2: Since the main router state (`localPdpData`) is already updated via saveNewPlan,
+        // navigating will cause the main component to render the TrackerDashboardView.
         navigate('prof-dev-plan'); 
     };
     

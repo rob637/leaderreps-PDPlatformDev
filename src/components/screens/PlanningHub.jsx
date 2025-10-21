@@ -346,9 +346,18 @@ const VisionBuilderView = ({ setPlanningView }) => {
     const handleSave = async () => {
         if (!vision || !mission) return;
         setIsSaving(true);
-        // Persist only vision and mission fields
-        await updatePlanningData({ vision: vision, mission: mission });
-        setIsSaving(false);
+        
+        try {
+            // Persist only vision and mission fields
+            await updatePlanningData({ vision: vision, mission: mission });
+            console.log('Vision & Mission Saved Successfully.');
+        } catch (e) {
+            console.error('Failed to save Vision/Mission:', e);
+            alert('Failed to save Vision & Mission. Check console for details.');
+        } finally {
+            // FIX: This ensures the spinner stops regardless of success or failure.
+            setIsSaving(false);
+        }
     };
 
     return (
@@ -472,8 +481,17 @@ const OKRDraftingView = ({ setPlanningView }) => {
         setIsSaving(true);
         // Filter out objectives/KRs that are completely empty before saving
         const validOkrs = okrs.filter(o => o.objective.trim() && o.keyResults.some(kr => kr.kr.trim()));
-        await updatePlanningData({ okrs: validOkrs });
-        setIsSaving(false);
+        
+        try {
+            await updatePlanningData({ okrs: validOkrs });
+            console.log('OKRs Saved Successfully.');
+        } catch (e) {
+            console.error('Failed to save OKRs:', e);
+            alert('Failed to save OKRs. Check console for details.');
+        } finally {
+            // FIX: This ensures the spinner stops regardless of success or failure.
+            setIsSaving(false);
+        }
     };
 
     const critiqueOKRs = async () => {
@@ -669,12 +687,18 @@ const AlignmentTrackerView = ({ setPlanningView }) => {
         setIsSaving(true);
         // Assuming there is a field for saving these notes, otherwise we mock it.
         // We'll update the main planningData object with a timestamped field.
-        await updatePlanningData({ 
-            lastAlignmentCheck: new Date().toISOString(),
-            misalignmentNotes: misalignmentNotes,
-        });
-        setIsSaving(false);
-        // Note: In a real app, this should clear after saving. Leaving for persistence check.
+        try {
+            await updatePlanningData({ 
+                lastAlignmentCheck: new Date().toISOString(),
+                misalignmentNotes: misalignmentNotes,
+            });
+            console.log('Misalignment Log Saved Successfully.');
+        } catch (e) {
+            console.error('Failed to save Misalignment Log:', e);
+            alert('Failed to save Misalignment Log. Check console for details.');
+        } finally {
+            setIsSaving(false);
+        }
     }
 
 
