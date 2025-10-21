@@ -143,16 +143,19 @@ export function createServiceValue(firebaseServices, userId) {
       // This MUST be replaced with your actual router function (e.g., react-router-dom history.push)
       console.log('MOCK NAVIGATION: Navigating to:', path); 
   };
-  const hasPendingDailyPractice = useMemo(() => {
-  const active = commitment.commitmentData?.active_commitments || [];
-  const isPending = active.some(c => c.status === 'Pending');
+// Safe pending/daily-practice flag based on commitmentData
+const hasPendingDailyPractice = useMemo(() => {
+  const active = Array.isArray(commitmentData?.active_commitments)
+    ? commitmentData.active_commitments
+    : [];
 
-  const r = commitment.commitmentData?.reflection_journal;
-  // Treat non-strings as "missing"
+  const pending = active.some(c => c && c.status === 'Pending');
+
+  const r = commitmentData?.reflection_journal;
   const reflectionMissing = (typeof r !== 'string') || r.trim().length === 0;
 
-  return active.length > 0 && (isPending || reflectionMissing);
-}, [commitment.commitmentData]);
+  return active.length > 0 && (pending || reflectionMissing);
+}, [commitmentData]);
 
 
   return { 
