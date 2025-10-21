@@ -41,6 +41,15 @@ const MOCK_PLANNING_DATA = {
     last_premortem_decision: new Date('2025-10-10').toISOString(),
 };
 
+// Local Nudges (Used for instant, non-API refresh)
+const LOCAL_NUDGES = [
+    'Focus today on deep listening; practice paraphrasing your colleague\'s needs before offering solutions.',
+    'Before starting a task, ask: "Will this activity move us closer to our one-year vision?" If not, delegate it.',
+    'Schedule 30 minutes of "maker time" today—no meetings, no email. Protect it fiercely.',
+    'Use the SBI framework for your next piece of critical feedback (Situation, Behavior, Impact).',
+    'Review your personal calendar: Is the ratio of strategic to operational work 3:1 or better?',
+];
+
 // Streak calculation utility (Pulled from DailyPractice.jsx logic)
 function calculateStreak(history) {
     let streak = 0;
@@ -352,6 +361,8 @@ const TIP_CACHE = {
     content: null,
     timestamp: 0,
     TTL: 4 * 60 * 60 * 1000, // TTL to 4 hours
+    // NEW: Used to hold the last AI-generated tip
+    lastAITip: null,
 };
 const mdToHtml = async (md) => {
     // Simple markdown-to-HTML parser for mock content display
@@ -405,7 +416,6 @@ const DashboardScreen = () => {
     
     // NEW FIX: Determine the Greeting based on the mock 'firstLogin' property
     const greeting = useMemo(() => {
-        // Mocking: If user?.firstLogin is false/null, treat as a new user.
         if (user?.firstLogin) { 
             return 'Welcome back,';
         }
@@ -480,19 +490,13 @@ const DashboardScreen = () => {
 
     // --- Daily Tip (Gemini) ---
     const [tipLoading, setTipLoading] = useState(false);
+    // NEW: tipContent holds the *plain text* of the current tip (either AI or local)
+    const [tipContent, setTipContent] = useState('Tap "Next Nudge" for your first strategic focus point.'); 
     const [tipHtml, setTipHtml] = useState('');
 
-    const getDailyTip = useCallback(async (force = false) => {
-        const now = Date.now();
-        if (!force && TIP_CACHE.content && (now - TIP_CACHE.timestamp < TIP_CACHE.TTL)) {
-            setTipHtml(TIP_CACHE.content);
-            return;
-        }
-
-        if (!hasGeminiKey()) {
-            setTipHtml(await mdToHtml('>⚠️ **AI Coach Unavailable.** Set API Key in App Settings.'));
-            return;
-        }
+    // CRITICAL FIX: Initial AI fetch on load
+    const getInitialAITip = useCallback(async () => {
+        if (!hasGeminiKey()) return;
         
         setTipLoading(true);
         try {
@@ -501,35 +505,50 @@ const DashboardScreen = () => {
 
             const payload = { contents: [{ parts: [{ text: prompt }] }] };
             const resp = await callSecureGeminiAPI(payload);
-            const text = extractGeminiText(resp) || 'No strategic guidance available right now.';
-            const html = await mdToHtml(text);
+            const text = extractGeminiText(resp) || LOCAL_NUDGES[0]; // Fallback to local if API is blank
             
-            TIP_CACHE.content = html;
-            TIP_CACHE.timestamp = now;
-            setTipHtml(html);
+            // Store the initial AI tip and display it
+            TIP_CACHE.lastAITip = text; 
+            setTipContent(text);
+            setTipHtml(await mdToHtml(text));
+
         } catch (e) {
             console.error('AI tip fetch error:', e);
-            setTipHtml(await mdToHtml(`**Error:** Failed to fetch tip. (Check console for details)`));
+            const fallbackText = LOCAL_NUDGES[0];
+            TIP_CACHE.lastAITip = fallbackText;
+            setTipContent(fallbackText);
+            setTipHtml(await mdToHtml(`**Error**: AI connection failed. Using local tip. ${fallbackText}`));
         } finally {
             setTipLoading(false);
         }
-    }
-    , [weakestTier, callSecureGeminiAPI, hasGeminiKey]);
+    }, [weakestTier, callSecureGeminiAPI, hasGeminiKey]);
 
-    const nextNudge = useCallback(() => {
-        // Force manual refresh of the tip (bypassing the 4-hour TTL temporarily)
-        getDailyTip(true); 
-    }, [getDailyTip]);
+    // CRITICAL FIX: Instant and Randomized Next Nudge
+    const nextNudge = useCallback(async () => {
+        let nextTip = '';
+        if (tipLoading) return;
 
-    // Automatic 4-hour rotation
+        // Start with AI's tip if available, otherwise use local nudges
+        const availableNudges = TIP_CACHE.lastAITip ? [TIP_CACHE.lastAITip, ...LOCAL_NUDGES] : LOCAL_NUDGES;
+        
+        // Ensure the new tip is different from the current one (if possible)
+        let newIndex;
+        let attempts = 0;
+        do {
+            newIndex = Math.floor(Math.random() * availableNudges.length);
+            nextTip = availableNudges[newIndex];
+            attempts++;
+        } while (nextTip === tipContent && attempts < 5); 
+
+        setTipContent(nextTip);
+        setTipHtml(await mdToHtml(nextTip));
+
+    }, [tipContent, tipLoading]);
+
+    // Initial load effects
     useEffect(() => {
-        getDailyTip();
-        const intervalId = setInterval(() => {
-            getDailyTip(true); 
-        }, 4 * 60 * 60 * 1000);
-
-        return () => clearInterval(intervalId);
-    }, [getDailyTip]);
+        getInitialAITip();
+    }, [getInitialAITip]);
 
 
     return (
@@ -584,52 +603,60 @@ const DashboardScreen = () => {
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                         
                         {/* Development Plan Button */}
-                        <ThreeDButton
-                            onClick={() => safeNavigate('prof-dev-plan')}
-                            color={COLORS.NAVY}
-                            accentColor={COLORS.TEAL}
-                            className="h-28 flex-col px-3 py-2" // Smaller/Tighter button style
-                        >
-                            <Briefcase className='w-5 h-5 mb-1'/> 
-                            <span className='text-sm font-extrabold'>Development Plan</span>
-                            <p className='text-xs font-light text-center mt-1 opacity-80'>This is a 24-Month Roadmap designed to close your skill gaps. It uses AI-generated, hyper-personalized content to accelerate executive growth.</p> 
-                        </ThreeDButton>
+                        <div className='flex flex-col space-y-2'>
+                            <ThreeDButton
+                                onClick={() => safeNavigate('prof-dev-plan')}
+                                color={COLORS.NAVY}
+                                accentColor={COLORS.TEAL}
+                                className="h-16 flex-row px-3 py-2"
+                            >
+                                <Briefcase className='w-5 h-5 mr-2'/> 
+                                <span className='text-md font-extrabold'>Development Plan</span>
+                            </ThreeDButton>
+                            <p className='text-xs font-light text-gray-600'>This is a **24-Month Roadmap** designed to close your skill gaps. It uses AI-generated, hyper-personalized content to accelerate executive growth.</p> 
+                        </div>
 
                         {/* Daily Practice Button */}
-                        <ThreeDButton
-                            onClick={() => safeNavigate('daily-practice')}
-                            color={COLORS.NAVY}
-                            accentColor={COLORS.TEAL}
-                            className="h-28 flex-col px-3 py-2" 
-                        >
-                            <ClockIcon className='w-5 h-5 mb-1'/> 
-                            <span className='text-sm font-extrabold'>Daily Practice</span>
-                            <p className='text-xs font-light text-center mt-1 opacity-80'>This Daily Scorecard tracks your commitment to non-negotiable leadership micro-habits. Hitting your score is the key to sustained executive growth.</p>
-                        </ThreeDButton>
+                         <div className='flex flex-col space-y-2'>
+                            <ThreeDButton
+                                onClick={() => safeNavigate('daily-practice')}
+                                color={COLORS.NAVY}
+                                accentColor={COLORS.TEAL}
+                                className="h-16 flex-row px-3 py-2"
+                            >
+                                <ClockIcon className='w-5 h-5 mr-2'/> 
+                                <span className='text-md font-extrabold'>Daily Practice</span>
+                            </ThreeDButton>
+                            <p className='text-xs font-light text-gray-600'>This **Daily Scorecard** tracks your commitment to non-negotiable leadership micro-habits. Hitting your score is the key to sustained executive growth.</p>
+                        </div>
 
                         {/* Coaching Lab Button */}
-                        <ThreeDButton
-                            onClick={() => safeNavigate('coaching-lab')}
-                            color={COLORS.NAVY}
-                            accentColor={COLORS.TEAL}
-                            className="h-28 flex-col px-3 py-2" 
-                        >
-                            <Mic className='w-5 h-5 mb-1'/> 
-                            <span className='text-sm font-extrabold'>Coaching Lab</span>
-                            <p className='text-xs font-light text-center mt-1 opacity-80'>Practice key leadership interactions, such as crucial conversations, using guided AI tools and receive real-time critique to sharpen your skills.</p>
-                        </ThreeDButton>
+                         <div className='flex flex-col space-y-2'>
+                            <ThreeDButton
+                                onClick={() => safeNavigate('coaching-lab')}
+                                color={COLORS.NAVY}
+                                accentColor={COLORS.TEAL}
+                                className="h-16 flex-row px-3 py-2" 
+                            >
+                                <Mic className='w-5 h-5 mr-2'/> 
+                                <span className='text-md font-extrabold'>Coaching Lab</span>
+                            </ThreeDButton>
+                            <p className='text-xs font-light text-gray-600'>**Practice key leadership interactions**, such as crucial conversations, using guided AI tools and receive real-time critique to sharpen your skills.</p>
+                        </div>
 
                         {/* Planning Hub Button */}
-                        <ThreeDButton
-                            onClick={() => safeNavigate('planning-hub')}
-                            color={COLORS.NAVY}
-                            accentColor={COLORS.TEAL}
-                            className="h-28 flex-col px-3 py-2" 
-                        >
-                            <TrendingUp className='w-5 h-5 mb-1'/> 
-                            <span className='text-sm font-extrabold'>Planning Hub</span>
-                            <p className='text-xs font-light text-center mt-1 opacity-80'>This hub helps you transform abstract ideas into actionable, accountable goals. You can build a clear Vision, draft measurable OKRs, and vet high-stakes decisions with AI audit tools.</p>
-                        </ThreeDButton>
+                         <div className='flex flex-col space-y-2'>
+                            <ThreeDButton
+                                onClick={() => safeNavigate('planning-hub')}
+                                color={COLORS.NAVY}
+                                accentColor={COLORS.TEAL}
+                                className="h-16 flex-row px-3 py-2" 
+                            >
+                                <TrendingUp className='w-5 h-5 mr-2'/> 
+                                <span className='text-md font-extrabold'>Planning Hub</span>
+                            </ThreeDButton>
+                            <p className='text-xs font-light text-gray-600'>This hub helps you transform abstract ideas into **actionable, accountable goals**. You can build a clear Vision, draft measurable OKRs, and vet high-stakes decisions with AI audit tools.</p>
+                        </div>
                         
                     </div>
                 </div>
@@ -642,40 +669,46 @@ const DashboardScreen = () => {
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                         
                         {/* Applied Leadership Button */}
-                        <ThreeDButton
-                            onClick={() => safeNavigate('applied-leadership')}
-                            color={COLORS.TEAL}
-                            accentColor={COLORS.NAVY}
-                            className="h-28 flex-col px-3 py-2 lg:col-span-1" 
-                        >
-                            <Lightbulb className='w-5 h-5 mb-1'/> 
-                            <span className='text-sm font-extrabold'>Applied Leadership</span>
-                            <p className='text-xs font-light text-center mt-1 opacity-80'>Access micro-habits and AI coaching tailored to your specific industry, identity, or high-stakes operational context for high-leverage guidance.</p>
-                        </ThreeDButton>
+                        <div className='flex flex-col space-y-2'>
+                            <ThreeDButton
+                                onClick={() => safeNavigate('applied-leadership')}
+                                color={COLORS.TEAL}
+                                accentColor={COLORS.NAVY}
+                                className="h-16 flex-row px-3 py-2 lg:col-span-1" 
+                            >
+                                <Lightbulb className='w-5 h-5 mr-2'/> 
+                                <span className='text-md font-extrabold'>Applied Leadership</span>
+                            </ThreeDButton>
+                            <p className='text-xs font-light text-gray-600'>Access micro-habits and **AI coaching tailored to your specific industry**, identity, or high-stakes operational context for high-leverage guidance.</p>
+                        </div>
 
                         {/* Business Readings Button */}
-                        <ThreeDButton
-                            onClick={() => safeNavigate('business-readings')}
-                            color={COLORS.TEAL}
-                            accentColor={COLORS.NAVY}
-                            className="h-28 flex-col px-3 py-2 lg:col-span-1" 
-                        >
-                            <BookOpen className='w-5 h-5 mb-1'/> 
-                            <span className='text-sm font-extrabold'>Business Readings</span>
-                            <p className='text-xs font-light text-center mt-1 opacity-80'>A curated library of business book flyers with key frameworks, executive summaries, and AI-driven commitment plans to simplify learning.</p>
-                        </ThreeDButton>
+                        <div className='flex flex-col space-y-2'>
+                            <ThreeDButton
+                                onClick={() => safeNavigate('business-readings')}
+                                color={COLORS.TEAL}
+                                accentColor={COLORS.NAVY}
+                                className="h-16 flex-row px-3 py-2 lg:col-span-1" 
+                            >
+                                <BookOpen className='w-5 h-5 mr-2'/> 
+                                <span className='text-md font-extrabold'>Business Readings</span>
+                            </ThreeDButton>
+                            <p className='text-xs font-light text-gray-600'>A curated library of business book flyers with key frameworks, executive summaries, and **AI-driven commitment plans** to simplify learning.</p>
+                        </div>
 
                         {/* Community & Peer Support Button */}
-                        <ThreeDButton
-                            onClick={() => safeNavigate('community')}
-                            color={COLORS.TEAL}
-                            accentColor={COLORS.NAVY}
-                            className="h-28 flex-col px-3 py-2 lg:col-span-2" 
-                        >
-                            <CommunityIcon className='w-5 h-5 mb-1'/> 
-                            <span className='text-sm font-extrabold'>Community & Peer Support</span>
-                            <p className='text-xs font-light text-center mt-1 opacity-80'>Connect with executive peers for advice, discuss difficult scenarios, and access the Mentorship Network for one-on-one guidance.</p>
-                        </ThreeDButton>
+                        <div className='flex flex-col space-y-2 lg:col-span-2'>
+                            <ThreeDButton
+                                onClick={() => safeNavigate('community')}
+                                color={COLORS.TEAL}
+                                accentColor={COLORS.NAVY}
+                                className="h-16 flex-row px-3 py-2" 
+                            >
+                                <CommunityIcon className='w-5 h-5 mr-2'/> 
+                                <span className='text-md font-extrabold'>Community & Peer Support</span>
+                            </ThreeDButton>
+                            <p className='text-xs font-light text-gray-600'>**Connect with executive peers** for advice, discuss difficult scenarios, and access the Mentorship Network for one-on-one guidance.</p>
+                        </div>
                         
                     </div>
                 </div>
@@ -768,7 +801,9 @@ const DashboardScreen = () => {
                         </div>
                     </div>
                 </div>
+
             </div>
+
 
             {/* Column 3: HEALTH SCORE & NUDGE (lg:col-span-1, order 1) */}
             <div className="space-y-8 lg:col-span-1 order-1">
@@ -794,7 +829,7 @@ const DashboardScreen = () => {
                     </h2>
                     <button
                     className="rounded-full border border-gray-200 px-3 py-1 text-sm hover:bg-gray-100 flex items-center gap-1 transition-colors"
-                    onClick={nextNudge} 
+                    onClick={nextNudge} // CRITICAL FIX: Calls fast, local randomizer
                     disabled={tipLoading}
                     type="button"
                     >
@@ -814,7 +849,7 @@ const DashboardScreen = () => {
                 </div>
             </div>
         </div>
-        </div> // CRITICAL FIX: Ensure this final closing tag is present for the main container
+        </div>
     );
 };
 
