@@ -6,15 +6,64 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>LeaderReps</title>
 
-    <!-- IMPORTANT: No secrets in client. Tell the app to use serverless. -->
+    <!-- DEBUG OVERLAY + global error hooks (remove later if you want) -->
+    <script>
+      (function () {
+        const steps = [];
+        function mark(s) { steps.push(s); console.log('[BOOT]', s); }
+        function overlay(msg) {
+          const div = document.createElement('div');
+          div.id = '__boot_overlay__';
+          div.style.cssText = 'position:fixed;inset:0;background:#0b1220cc;color:#fff;backdrop-filter:blur(2px);display:flex;align-items:center;justify-content:center;z-index:999999;padding:24px;font:14px/1.45 monospace;white-space:pre-wrap';
+          div.textContent = msg + '\nSteps: ' + steps.join(' → ');
+          document.addEventListener('DOMContentLoaded', () => document.body.appendChild(div));
+        }
+        window.__BOOTMARK__ = { mark, steps, overlay };
+
+        window.addEventListener('error', e => {
+          console.error('[window.error]', e.message, e.filename, e.lineno, e.colno, e.error);
+          overlay('JS error: ' + e.message);
+        });
+        window.addEventListener('unhandledrejection', e => {
+          console.error('[unhandledrejection]', e.reason);
+          overlay('Unhandled rejection: ' + (e.reason && (e.reason.message || e.reason) || 'unknown'));
+        });
+
+        mark('html-loaded');
+      }());
+    </script>
+
+    <!-- RUNTIME CONFIG via Vite HTML env replacement -->
+    <!-- Set these on Netlify: VITE_FIREBASE_* and VITE_GEMINI_API_KEY -->
+    <script>
+      window.__firebase_config = {
+        apiKey: "%VITE_FIREBASE_API_KEY%",
+        authDomain: "%VITE_FIREBASE_AUTH_DOMAIN%",
+        projectId: "%VITE_FIREBASE_PROJECT_ID%",
+        appId: "%VITE_FIREBASE_APP_ID%",
+        storageBucket: "%VITE_FIREBASE_STORAGE_BUCKET%",
+        messagingSenderId: "%VITE_FIREBASE_MESSAGING_SENDER_ID%"
+      };
+      window.__GEMINI_API_KEY = "%VITE_GEMINI_API_KEY%";
+      window.__BOOTMARK__ && window.__BOOTMARK__.mark('config ' + (!!window.__firebase_config));
+      if (!window.__firebase_config || !window.__firebase_config.apiKey) {
+        console.warn('[BOOT] Firebase env values appear missing.');
+      }
+    </script>
+
+    <!-- IMPORTANT: No secrets in client. Tell the app to use serverless. (kept from your file) -->
     <script type="module">
-      // Your services hook should call "/.netlify/functions/gemini" in this mode.
-      window.__GEMINI_MODE  = 'serverless';               // 'serverless' | 'direct'
-      window.__GEMINI_MODEL = 'gemini-2.5-flash';         // optional, safe to expose
+      window.__GEMINI_MODE  = 'serverless';       // 'serverless' | 'direct'
+      window.__GEMINI_MODEL = 'gemini-2.5-flash'; // optional hint
+      window.__BOOTMARK__ && window.__BOOTMARK__.mark('pre-app-scripts-ready');
     </script>
   </head>
   <body>
     <div id="root"></div>
-    <script type="module" src="/src/main.jsx"></script>
+    <script
+      type="module"
+      src="/src/main.jsx"
+      onload="window.__BOOTMARK__&&window.__BOOTMARK__.mark('main-loaded')">
+    </script>
   </body>
 </html>
