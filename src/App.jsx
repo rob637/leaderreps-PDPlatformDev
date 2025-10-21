@@ -112,7 +112,6 @@ const hasGeminiKey = () => (!!API_KEY);
 // Icons used in the new NavSidebar
 import { 
   Home, Zap, ShieldCheck, TrendingUp, Mic, BookOpen, Settings, User, LogOut, CornerRightUp, Clock, Briefcase, Target, Users, BarChart3, Globe, Code, Bell, Lock, Download, Trash2, Mail, Link, Menu,
-  // CRITICAL FIX: Trello was correctly imported in the provided file. No change needed here.
   Trello 
 } from 'lucide-react';
 
@@ -151,7 +150,7 @@ const QuickStartScreen = lazy(() => import('./components/screens/QuickStartAccel
 const ExecutiveReflection = lazy(() => import('./components/screens/ExecutiveReflection.jsx'));
 // NEW MODULE: Community
 const CommunityScreen = lazy(() => import('./components/screens/CommunityScreen.jsx'));
-// NEW MODULE: Applied Leadership - Added this lazy load
+// NEW MODULE: Applied Leadership
 const AppliedLeadershipScreen = lazy(() => import('./components/screens/AppliedLeadership.jsx')); 
 
 
@@ -709,6 +708,12 @@ const ScreenRouter = ({ currentScreen, navParams }) => {
 };
 
 const AppContent = ({ currentScreen, setCurrentScreen, user, navParams, isMobileOpen, setIsMobileOpen, isAuthRequired }) => {
+    
+    // FIX (Issue 1): Define the correct handler for closing the menu
+    const closeMobileMenu = useCallback(() => {
+        setIsMobileOpen(false);
+    }, [setIsMobileOpen]);
+    
     return (
         // FIX: Removed min-h-screen and overflow properties from outer div.
         <div className="flex bg-gray-100 font-sans antialiased">
@@ -718,7 +723,7 @@ const AppContent = ({ currentScreen, setCurrentScreen, user, navParams, isMobile
                 setCurrentScreen={setCurrentScreen}
                 user={user}
                 isMobileOpen={isMobileOpen}
-                closeMobileMenu={() => setIsMobileOpen(false)}
+                closeMobileMenu={closeMobileMenu} // Use the correctly defined handler
                 isAuthRequired={isAuthRequired}
             />
             
@@ -762,7 +767,7 @@ const App = ({ initialState }) => {
   const [navParams, setNavParams] = useState(initialState?.params || {});
   // Initial set to TRUE to show loading/auth panel for a moment
   const [authRequired, setAuthRequired] = useState(!DEBUG_MODE); 
-  const [isMobileOpen, setIsMobileOpen] = useState(false);
+  const [isMobileOpen, setIsMobileOpen] = useState(false); // Correct state variable
 
   const [initStage, setInitStage] = useState('init');
   const [initError, setInitError] = useState('');
@@ -775,7 +780,6 @@ const App = ({ initialState }) => {
   // Bridge: expose real navigate so services can forward to it
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      // CRITICAL FIX FOR PERSISTENCE (Issue 1): Provide a global navigator for DevPlan.jsx's mock hook.
       window.__appNavigate = navigate;
     }
     return () => {

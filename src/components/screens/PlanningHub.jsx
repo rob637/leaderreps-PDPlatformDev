@@ -1,4 +1,6 @@
 /* eslint-disable no-console */
+// src/components/screens/PlanningHub.jsx
+
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useAppServices } from '../../services/useAppServices.jsx';
 import { 
