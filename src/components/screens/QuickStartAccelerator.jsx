@@ -60,7 +60,7 @@ const Card = ({ children, title, icon: Icon, className = '', accent = 'NAVY' }) 
       )}
       {title && <h2 className="text-xl font-extrabold mb-2" style={{ color: COLORS.NAVY }}>{title}</h2>}
       {children}
-    </div>
+    </div >
   );
 };
 // --- END MOCK UTILITIES ---
@@ -160,7 +160,7 @@ const LISAuditorView = ({ setQuickStartView }) => {
                     <button 
                         onClick={generateCritique} 
                         disabled={isGenerating || !lisDraft.trim()} 
-                        // FIX: Corrected the button styling syntax (line 238 equivalent)
+                        // FIX: Corrected the button styling syntax
                         className={`mt-4 w-full px-4 py-2 font-semibold rounded-lg transition-colors shadow-lg`}
                         style={{ background: COLORS.ORANGE, color: COLORS.OFF_WHITE }}
                     >
@@ -234,7 +234,7 @@ const QuickStartAcceleratorScreen = () => {
 
                         <div className="space-y-6">
                             {sessions.map(session => (
-                                {/* Session Card - Navy accent border for serious look */}
+                                {/* FIX: Removed redundant braces around Card component */}
                                 <Card key={session.id} title={`Session ${session.id}: ${session.title}`} icon={BookOpen} accent={COLORS.NAVY} className="rounded-2xl border-l-8 border-[#002E47] shadow-lg bg-white">
                                     <p className='text-md font-semibold text-[#002E47] mb-4 border-b border-gray-200 pb-2'>Why this session matters:</p>
                                     
