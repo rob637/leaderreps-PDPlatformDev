@@ -337,9 +337,8 @@ const hasPendingDailyPractice = useMemo(() => {
     hasPendingDailyPractice, 
     // Ensure all services from the creation function are included for other modules
     ...appServices,
-  }), [
-    navigate, user, firebaseServices, userId, isAuthReady, isLoading, error, pdp, commitment, planning, hasPendingDailyPractice, appServices
-  ]);
+  }), [navigate, user, firebaseServices, userId, isAuthReady,
+    pdp, commitment, planning, hasPendingDailyPractice, appServices]);
 
   if (!isAuthReady) return null;
 

@@ -148,13 +148,12 @@ const hasPendingDailyPractice = useMemo(() => {
   const active = Array.isArray(commitmentData?.active_commitments)
     ? commitmentData.active_commitments
     : [];
+  const isPending = active.some(c => c?.status === 'Pending');
 
-  const pending = active.some(c => c && c.status === 'Pending');
+  // Coerce to string to avoid "reading 'length' of undefined"
+  const reflectionMissing = String(commitmentData?.reflection_journal ?? '').trim().length === 0;
 
-  const r = commitmentData?.reflection_journal;
-  const reflectionMissing = (typeof r !== 'string') || r.trim().length === 0;
-
-  return active.length > 0 && (pending || reflectionMissing);
+  return active.length > 0 && (isPending || reflectionMissing);
 }, [commitmentData]);
 
 
