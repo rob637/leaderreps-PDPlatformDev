@@ -12,15 +12,13 @@ import React, {
 } from 'react';
 
 // =========================================================
-// !!! CRITICAL FIX: Import the Context and creator function from the service file !!!
+// !!! CRITICAL FIX: Split Firebase imports into correct modules !!!
 // =========================================================
-import { createServiceValue, useAppServices, AppServicesContext } from './services/useAppServices.jsx'; 
-
 
 // 1. CORE APP IMPORTS
 import {
-  initializeApp, 
-  getApp        
+  initializeApp, // <- MOVED HERE from 'firebase/auth'
+  getApp        // <- MOVED HERE from 'firebase/auth'
 } from 'firebase/app'; 
 
 
@@ -40,15 +38,12 @@ import { getFirestore, setLogLevel } from 'firebase/firestore';
 // =========================================================
 
 // =========================================================
-// --- FIXED GLOBAL DEFINITIONS ---
-// CRITICAL FIX: Define appId globally using __app_id fallback
-const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+// --- EXISTING MOCK/PLACEHOLDER DEFINITIONS (Keep these) ---
 const IconMap = {}; 
 const SECRET_SIGNUP_CODE = 'mock-code-123';
 const PDP_COLLECTION = 'leadership_plan';
 const PDP_DOCUMENT = 'roadmap';
 const LEADERSHIP_TIERS = {};
-// CRITICAL SAFETY FIX: Ensure mock data structures return minimal, defined objects/arrays.
 const usePDPData = (db, userId, isAuthReady) => ({pdpData: {assessment:{selfRatings:{T3: 6}}}, isLoading: false, error: null, updatePdpData: async () => true, saveNewPlan: async () => true});
 const useCommitmentData = (db, userId, isAuthReady) => ({commitmentData: {active_commitments: []}, isLoading: false, error: null, updateCommitmentData: async () => true});
 const usePlanningData = (db, userId, isAuthReady) => ({planningData: {okrs: []}, isLoading: false, error: null, updatePlanningData: async () => true});
@@ -176,9 +171,7 @@ const SettingsCard = ({ title, icon: Icon, children }) => (
 );
 
 const AppSettingsScreen = () => {
-    // CRITICAL: Must use the imported useAppServices from the global context hook
-    const { user, API_KEY, auth } = useAppServices(); 
-    
+    const { user, API_KEY, auth } = useAppServices();
     const handleResetPassword = async () => {
         if (!user?.email) {
             alert('Cannot reset password: User email is unknown.');
@@ -280,46 +273,45 @@ const AppSettingsScreen = () => {
    STEP 3: CONTEXT + DATA PROVIDER
 ========================================================= */
 
-// NOTE: The useAppServices hook is defined in useAppServices.jsx and imported above.
-const DEFAULT_SERVICES = {}; // Placeholder; actual default is in useAppServices.jsx
+const AppServiceContext = createContext(null);
+const DEFAULT_SERVICES = {
+  navigate: () => {}, user: null, db: null, auth: null, userId: null, isAuthReady: false,
+  updatePdpData: () => {}, saveNewPlan: () => {}, updateCommitmentData: () => {}, updatePlanningData: () => {},
+  pdpData: null, commitmentData: null, planningData: null, isLoading: false, error: null,
+  appId: 'default-app-id', IconMap: {}, callSecureGeminiAPI: async () => { throw new Error('Gemini not configured.'); },
+  hasGeminiKey: () => false, GEMINI_MODEL, API_KEY,
+};
+export const useAppServices = () => useContext(AppServiceContext) ?? DEFAULT_SERVICES;
+
+const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
 
 
 const DataProvider = ({ children, firebaseServices, userId, isAuthReady, navigate, user }) => {
   const { db } = firebaseServices;
 
-  // CRITICAL FIX: createServiceValue calculates the app services object
-  const appServices = useMemo(() => createServiceValue(firebaseServices, userId), [firebaseServices, userId]);
-
-  // FIX: These mock calls are still needed but must be null-safe in case db/userId are not ready
   const pdp = usePDPData(db, userId, isAuthReady);
   const commitment = useCommitmentData(db, userId, isAuthReady);
   const planning = usePlanningData(db, userId, isAuthReady);
 
-  const isLoading =
-  Boolean(pdp?.isLoading) ||
-  Boolean(commitment?.isLoading) ||
-  Boolean(planning?.isLoading) ||
-  Boolean(appServices?.isLoading); // Check appServices loading too
-  const error = pdp.error || commitment.error || planning.error || appServices.error;
+  const isLoading = pdp.isLoading || commitment.isLoading || planning.isLoading;
+  const error = pdp.error || commitment.error || planning.error;
 
-const hasPendingDailyPractice = useMemo(() => {
-  const cd = (commitment && commitment.commitmentData) ? commitment.commitmentData : {};
-  const active = Array.isArray(cd.active_commitments) ? cd.active_commitments : [];
-  const isPending = active.some(c => c && c.status === 'Pending');
+  const hasPendingDailyPractice = useMemo(() => {
+    const active = (commitment && commitment.commitmentData && Array.isArray(commitment.commitmentData.active_commitments))
+  ? commitment.commitmentData.active_commitments
+  : [];
+const isPending = Array.isArray(active) && active.some(c => c && c.status === 'Pending');
+const rj = (commitment && commitment.commitmentData) ? commitment.commitmentData.reflection_journal : undefined;
+const reflectionMissing = (typeof rj === 'string') ? (rj.trim() === '') : true;
+const hasActive = Array.isArray(active) ? active.length > 0 : false;
+if (typeof window !== 'undefined' && window.__DEBUG_HAS_PENDING) {
+  console.log('[hasPendingDailyPractice]', { activeCount: hasActive ? active.length : 0, isPending, reflectionType: typeof rj, sample: rj });
+}
+return (hasActive) && (isPending || reflectionMissing);
+  }, [commitment.commitmentData]);
 
-  // Only treat as "has reflection" if it's a string with non-whitespace chars
-  let reflectionMissing = true;
-  const r = cd.reflection_journal;
-  if (typeof r === 'string') {
-    reflectionMissing = (r.trim() === '');
-  } else {
-    reflectionMissing = true;
-  }
 
-  return active.length > 0 && (isPending || reflectionMissing);
-}, [commitment?.commitmentData]);
-
-  const finalServices = useMemo(() => ({
+  const appServices = useMemo(() => ({
     navigate,
     user,
     ...firebaseServices,
@@ -334,25 +326,23 @@ const hasPendingDailyPractice = useMemo(() => {
     planningData: planning.planningData,
     isLoading,
     error,
-    appId: appId,
+    appId,
     IconMap: IconMap,
     callSecureGeminiAPI, 
     hasGeminiKey,       
     GEMINI_MODEL,
     API_KEY,
     hasPendingDailyPractice, 
-    // Ensure all services from the creation function are included for other modules
-    ...appServices,
-  }), [navigate, user, firebaseServices, userId, isAuthReady,
-    pdp, commitment, planning, hasPendingDailyPractice, appServices]);
+  }), [
+    navigate, user, firebaseServices, userId, isAuthReady, isLoading, error, pdp, commitment, planning, hasPendingDailyPractice
+  ]);
 
   if (!isAuthReady) return null;
 
   return (
-    // FIX 2: AppServicesContext is correctly imported from useAppServices.jsx
-    <AppServicesContext.Provider value={finalServices}> 
+    <AppServiceContext.Provider value={appServices}>
       {children}
-    </AppServicesContext.Provider>
+    </AppServiceContext.Provider>
   );
 };
 
@@ -365,7 +355,6 @@ function ConfigError({ message }) { /* ... */ return null; }
 
 // REPLACED: AnonymousLoginPanel is now the comprehensive AuthPanel
 function AuthPanel({ auth, onSuccess, setInitStage, navigate }) {
-    // ... (AuthPanel implementation remains the same) ...
     const [mode, setMode] = useState('login'); // 'login', 'signup', 'reset'
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
@@ -445,7 +434,7 @@ function AuthPanel({ auth, onSuccess, setInitStage, navigate }) {
                     placeholder="Email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                        className={`w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[${TEAL}] focus:border-[${TEAL}]`}
+                    className={`w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[${TEAL}] focus:border-[${TEAL}]`}
                     disabled={isLoading}
                 />
                 
@@ -652,6 +641,7 @@ const NavSidebar = ({ currentScreen, setCurrentScreen, user, isMobileOpen, close
             <nav className="flex-1 space-y-3"> {/* Removed overflow-y-auto */}
                 {menuSections.map(section => (
                     <div key={section.title} className='space-y-1'> {/* Reduced spacing */}
+                        {/* FIX: Improved delineation with background on title */}
                         <p className={`text-xs font-extrabold uppercase tracking-widest text-white px-2 py-1 rounded bg-[${TEAL}]/10`}>
                             {section.title}
                         </p>
@@ -727,7 +717,7 @@ const ScreenRouter = ({ currentScreen, navParams }) => {
 
 const AppContent = ({ currentScreen, setCurrentScreen, user, navParams, isMobileOpen, setIsMobileOpen, isAuthRequired }) => {
     return (
-        // FIX 3 (CRITICAL): The main wrapping element was missing a closing tag in previous versions.
+        // FIX: Removed min-h-screen and overflow properties from outer div.
         <div className="flex bg-gray-100 font-sans antialiased">
             {/* NavSidebar is now a standard flex item */}
             <NavSidebar
@@ -735,7 +725,7 @@ const AppContent = ({ currentScreen, setCurrentScreen, user, navParams, isMobile
                 setCurrentScreen={setCurrentScreen}
                 user={user}
                 isMobileOpen={isMobileOpen}
-                closeMobileMenu={() => setIsMobileOpen(false)}
+                closeMobileMenu={() => setIsMobileMenu(false)}
                 isAuthRequired={isAuthRequired}
             />
             
@@ -760,7 +750,7 @@ const AppContent = ({ currentScreen, setCurrentScreen, user, navParams, isMobile
                     <ScreenRouter currentScreen={currentScreen} navParams={navParams} />
                 </Suspense>
             </main>
-        </div> // <-- FINAL CLOSING DIV FOR AppContent
+        </div>
     );
 };
 
@@ -805,7 +795,7 @@ const App = ({ initialState }) => {
         return;
       } catch {
         try {
-          // This line now calls the REAL getApp() imported above
+          // This line now uses the REAL getApp() imported above
           const existing = getApp(); 
           firestore = getFirestore(existing);
           authentication = getAuth(existing);
@@ -955,7 +945,7 @@ const App = ({ initialState }) => {
               user={user}
               navParams={navParams}
               isMobileOpen={isMobileOpen}
-              setIsMobileOpen={setIsMobileOpen} // FIX: Updated setter name
+              setIsMobileOpen={setIsMobileOpen}
               isAuthRequired={authRequired} // Pass auth status
             />
         </Suspense>
