@@ -303,7 +303,7 @@ function extractGeminiText(resp) {
   if (resp.text) return String(resp.text);
   const c = resp.candidates?.[0];
   const parts = c?.content?.parts;
-  if (ArrayOf(parts)) {
+  if (Array(parts)) {
     return parts.map(p => p?.text).filter(Boolean).join('\n\n');
   }
   return '';
@@ -468,7 +468,8 @@ const DashboardScreen = () => {
             <Home size={32} style={{ color: COLORS.TEAL }} /> Executive Dashboard
             </h1>
             <p className="text-gray-600 text-base mt-2">
-            Welcome back, <span className={`font-semibold text-[${COLORS.NAVY}]`}>{user?.email ? user.email.split('@')[0] : 'Leader'}</span>. Your primary focus is **{weakestTier?.name || 'Getting Started'}**.
+            {/* UPDATED: Use user?.name or fallback to email part */}
+            Welcome back, <span className={`font-semibold text-[${COLORS.NAVY}]`}>{user?.name || (user?.email ? user.email.split('@')[0] : 'Leader')}</span>. Your primary focus is **{weakestTier?.name || 'Getting Started'}**.
             </p>
         </div>
 
