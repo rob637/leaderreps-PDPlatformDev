@@ -160,9 +160,9 @@ const LISAuditorView = ({ setQuickStartView }) => {
                     <button 
                         onClick={generateCritique} 
                         disabled={isGenerating || !lisDraft.trim()} 
-                        // FIX: Changed button to ORANGE accent to highlight the primary tool action
-                        className="mt-4 w-full px-4 py-2 font-semibold rounded-lg transition-colors bg-[${COLORS.ORANGE}] text-white hover:bg-[#C33E12] shadow-lg"
-                        style={{ background: COLORS.ORANGE }}
+                        // FIX: Corrected the button styling syntax (line 238 equivalent)
+                        className={`mt-4 w-full px-4 py-2 font-semibold rounded-lg transition-colors shadow-lg`}
+                        style={{ background: COLORS.ORANGE, color: COLORS.OFF_WHITE }}
                     >
                         {isGenerating ? (
                             <span className="flex items-center justify-center">
