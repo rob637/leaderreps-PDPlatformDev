@@ -1,6 +1,6 @@
 // src/components/screens/DevPlan.jsx
 
-import { Home, Settings, Zap, Clock, Briefcase, Mic, Trello, BookOpen, BarChart3, TrendingUp, TrendingDown, CheckCircle, Star, Target, Users, HeartPulse, CornerRightUp, X, ArrowLeft, Activity, Link, Lightbulb, AlertTriangle, Eye, PlusCircle, Cpu, MessageSquare, Check } from 'lucide-react';
+import { Home, Settings, Zap, Clock, Briefcase, Mic, Trello, BookOpen, BarChart3, TrendingUp, TrendingDown, CheckCircle, Star, Target, Users, HeartPulse, CornerRightUp, X, ArrowLeft, Activity, Link, Lightbulb, AlertTriangle, Eye, PlusCircle, Cpu, MessageSquare, Check, Calendar } from 'lucide-react';
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 
 // NOTE: In a production environment, this file must use the 'useAppServices' 
@@ -1471,7 +1471,7 @@ const TrackerDashboardView = ({ data, updatePdpData, saveNewPlan, db, userId, na
             
             <RequestFeedbackModal
                 isVisible={isFeedbackModalVisible}
-                onClose={() => setIsContentModalVisible(false)}
+                onClose={() => setIsFeedbackModalVisible(false)}
                 monthPlan={monthPlan}
                 assessment={assessment}
             />
