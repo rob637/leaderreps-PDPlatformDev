@@ -295,7 +295,11 @@ const DataProvider = ({ children, firebaseServices, userId, isAuthReady, navigat
   const commitment = useCommitmentData(db, userId, isAuthReady);
   const planning = usePlanningData(db, userId, isAuthReady);
 
-  const isLoading = pdp.isLoading || commitment.isLoading || planning.isLoading || appServices.isLoading; // Check appServices loading too
+  const isLoading =
+  Boolean(pdp?.isLoading) ||
+  Boolean(commitment?.isLoading) ||
+  Boolean(planning?.isLoading) ||
+  Boolean(appServices?.isLoading); // Check appServices loading too
   const error = pdp.error || commitment.error || planning.error || appServices.error;
 
 const hasPendingDailyPractice = useMemo(() => {
@@ -303,7 +307,7 @@ const hasPendingDailyPractice = useMemo(() => {
   const active = Array.isArray(cd.active_commitments) ? cd.active_commitments : [];
   const isPending = active.some(c => c?.status === 'Pending');
 
-  // Never call .length or .trim on undefined/null/non-strings
+  // Always coerce to a string before trim/length to avoid crashes
   const reflectionMissing = String(cd.reflection_journal ?? '').trim().length === 0;
 
   return active.length > 0 && (isPending || reflectionMissing);
