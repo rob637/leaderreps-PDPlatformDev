@@ -191,15 +191,17 @@ const PreMortemView = ({ setPlanningView }) => {
             };
 
             const result = await callSecureGeminiAPI(payload);
-            const text = result?.candidates?.[0]?.content?.parts?.[0]?.text || "Audit failed to generate results.";
+            const text = result?.candidates?.[0]?.content?.parts?.[0]?.text || "Audit failed to generate results. Check API connection or server logs.";
             setAuditResult(text);
             
             await updatePlanningData({ last_premortem_decision: decision });
 
         } catch (error) {
+            // FIX: Graceful error handling to stop the spinner and report API failure
             console.error("Gemini API Error:", error);
-            setAuditResult("An error occurred during the Pre-Mortem Audit. Please check your network connection.");
+            setAuditResult("## AI Critique Failed\n\n**ERROR**: An error occurred during the Pre-Mortem Audit (e.g., Network Timeout or API issue). Please check your connection and try again.");
         } finally {
+            // FIX: Always reset loading state
             setIsGenerating(false);
         }
     };
@@ -370,9 +372,11 @@ const VisionBuilderView = ({ setPlanningView }) => {
             setTimeout(() => setIsSavedConfirmation(false), 3000); 
 
         } catch (e) {
+            // FIX: Handle error gracefully to stop spinner
             console.error('Failed to save Vision/Mission:', e);
             alert('Failed to save Vision & Mission. Check console for details.');
         } finally {
+            // FIX: Always reset loading state
             setIsSaving(false);
         }
     };
@@ -409,9 +413,11 @@ const VisionBuilderView = ({ setPlanningView }) => {
             const text = result?.candidates?.[0]?.content?.parts?.[0]?.text || "Critique failed to generate results.";
             setCritiqueResult(text);
         } catch (error) {
+            // FIX: Handle error gracefully to stop spinner
             console.error("Gemini API Error:", error);
             setCritiqueResult("An error occurred during the AI Critique. Please check your network connection.");
         } finally {
+            // FIX: Always reset loading state
             setIsCritiquing(false);
         }
     };
@@ -579,10 +585,11 @@ const OKRDraftingView = ({ setPlanningView }) => {
             await updatePlanningData({ okrs: validOkrs });
             console.log('OKRs Saved Successfully.');
         } catch (e) {
+            // FIX: Handle error gracefully to stop spinner
             console.error('Failed to save OKRs:', e);
             alert('Failed to save OKRs. Check console for details.');
         } finally {
-            // FIX: This ensures the spinner stops regardless of success or failure.
+            // FIX: Always reset loading state
             setIsSaving(false);
         }
     };
@@ -627,9 +634,11 @@ const OKRDraftingView = ({ setPlanningView }) => {
                 setOkrCritique("Could not generate critique. The model may have blocked the request or the response was empty.");
             }
         } catch (error) {
+            // FIX: Handle error gracefully to stop spinner
             console.error("Gemini API Error:", error);
             setOkrCritique("An error occurred while connecting to the AI coach. Please check your inputs and network connection.");
         } finally {
+            // FIX: Always reset loading state
             setIsCritiquing(false);
         }
     };
@@ -805,9 +814,11 @@ const AlignmentTrackerView = ({ setPlanningView }) => {
             setTimeout(() => setIsSavedConfirmation(false), 3000); 
             
         } catch (e) {
+            // FIX: Handle error gracefully to stop spinner
             console.error('Failed to save Misalignment Log:', e);
             alert('Failed to save Misalignment Log. Check console for details.');
         } finally {
+            // FIX: Always reset loading state
             setIsSaving(false);
         }
     }
@@ -860,6 +871,7 @@ const AlignmentTrackerView = ({ setPlanningView }) => {
             console.error("Gemini API Error:", error);
             setSuggestionText("An error occurred during AI suggestion generation. Check your network connection.");
         } finally {
+            // FIX: Always reset loading state
             setIsSuggesting(false);
         }
     };

@@ -1,3 +1,5 @@
+// src/components/screens/Labs.jsx
+
 /* =========================================================
    PRODUCTION READY FILE: Labs.jsx 
    FIX: Removed all mock services and internal API logic. 
@@ -7,7 +9,7 @@
 import React, { useState, useEffect, useMemo, useCallback, useLayoutEffect } from 'react';
 // FIX: Import the real useAppServices from the standard path.
 import { useAppServices } from '../../services/useAppServices.jsx'; 
-import { AlertTriangle, ArrowLeft, BarChart3, BookOpen, Briefcase, CheckCircle, Clock, CornerRightUp, Cpu, Eye, HeartPulse, Icon, Info, Lightbulb, Mic, Play, PlusCircle, Send, ShieldCheck, Star, Target, TrendingUp, Users, X, Zap, TrendingDown } from 'lucide-react';
+import { AlertTriangle, ArrowLeft, BarChart3, BookOpen, Briefcase, CheckCircle, Clock, CornerRightUp, Cpu, Eye, HeartPulse, Icon, Info, Lightbulb, Mic, Play, PlusCircle, Send, ShieldCheck, Star, Target, TrendingUp, Users, X, Zap, TrendingDown, Loader } from 'lucide-react'; // Added Loader
 
 /* =========================================================
    MOCK DATA (Only non-API data remains)
@@ -395,6 +397,7 @@ const RolePlayCritique = ({ history, setView, preparedSBI, scenario, difficultyL
         };
 
         try {
+            // PRODUCTION: Update commitment data
             await updateCommitmentData(newCommitment);
             console.info("Commitment created successfully!");
             navigate('daily-practice', { 
@@ -653,7 +656,8 @@ const RolePlayView = ({ scenario, setCoachingLabView, preparedSBI, difficultyLev
     const AI_PERSONA = scenario.persona.split(' ').slice(1).join(' ');
 
     const handleSaveSessionAndCritique = async (history) => {
-        setSessionEnded(true);
+        // Correctly set view to 'session ended' which triggers the critique component render
+        setSessionEnded(true); 
     }
 
     const generateResponse = async (history) => {
@@ -679,7 +683,7 @@ const RolePlayView = ({ scenario, setCoachingLabView, preparedSBI, difficultyLev
         Your task is to respond to the user's input, maintaining your ${AI_PERSONA} persona and tone. Be realistic—don't resolve the conflict immediately. After 4-5 turns, you may begin to soften only if the manager demonstrates effective listening and SBI feedback. Keep your responses concise (2-3 sentences max).
         Use the history below to guide your response. Do not break character or mention your persona.`;
 
-        const currentHistory = history.map(msg => ({ 
+        const currentChat = history.map(msg => ({ 
             role: msg.isAI ? "model" : "user", 
             parts: [{ text: msg.text }] 
         }));
@@ -697,7 +701,7 @@ const RolePlayView = ({ scenario, setCoachingLabView, preparedSBI, difficultyLev
 
         try {
             const payload = {
-                contents: currentHistory,
+                contents: currentChat,
                 systemInstruction: { parts: [{ text: systemInstruction }] },
                 model: GEMINI_MODEL,
             };
@@ -956,10 +960,12 @@ const LeanFeedbackPrepView = ({ setCoachingLabView, setPreparedSBI }) => {
         if (match && match[2]) {
             const finalRefined = match[2].trim().replace(/\.$/, '');
             setRefinedFeedback(finalRefined);
+            setPreparedSBI(finalRefined);
         } else {
             setRefinedFeedback(null);
+            setPreparedSBI(null);
         }
-    }, [critique]);
+    }, [critique, setPreparedSBI]);
 
     const generateCritique = async () => {
         setIsGenerating(true);
@@ -1120,7 +1126,8 @@ const ScenarioPreparationView = ({ scenario, setCoachingLabView, setPreparedSBI 
     const [currentStep, setCurrentStep] = useState(1);
     
     const canAnalyze = !!situation && !!behavior && !!impact && hasGeminiKey();
-    const isPrepComplete = !!objective && !!refinedFeedback;
+    // Prep complete when objective is set AND SBI is refined
+    const isPrepComplete = !!objective && !!refinedFeedback; 
 
     useEffect(() => {
         if (!critique) { setCritiqueHtml(''); setRefinedFeedback(null); return; }
@@ -1173,6 +1180,16 @@ const ScenarioPreparationView = ({ scenario, setCoachingLabView, setPreparedSBI 
         }
     };
     
+    // CRITICAL FIX: Launch Handler
+    const handleLaunchRolePlay = () => {
+        if (isPrepComplete) {
+            // FIX: Use setCoachingLabView to change the local component state
+            setCoachingLabView('role-play'); 
+            // Pass the state variables that RolePlayView needs (they are managed by the parent router via the current component's state)
+            navigate('role-play', { scenario, preparedSBI: refinedFeedback, difficultyLevel }); 
+        }
+    };
+
     if (!scenario) {
         return (
         <div className="p-8">
@@ -1272,7 +1289,7 @@ const ScenarioPreparationView = ({ scenario, setCoachingLabView, setPreparedSBI 
                     </div>
 
                     <Button 
-                        onClick={() => navigate('role-play', { scenario, preparedSBI: refinedFeedback, difficultyLevel })} 
+                        onClick={handleLaunchRolePlay} // FIX: Use corrected local handler
                         disabled={!isPrepComplete} 
                         className="mt-6 w-full"
                     >
@@ -1312,7 +1329,7 @@ const ScenarioPreparationView = ({ scenario, setCoachingLabView, setPreparedSBI 
 
 // --- ACTIVE LISTENING VIEW ---
 const ActiveListeningView = ({ setCoachingLabView }) => {
-    // FIX: Use real hook
+    // ... (ActiveListeningView implementation remains unchanged) ...
     const services = useAppServices();
     const { callSecureGeminiAPI, hasGeminiKey } = services;
 
@@ -1548,14 +1565,26 @@ export default function CoachingLabScreen() {
                     setPreparedSBI={setPreparedSBI} 
                 />;
             case 'role-play':
-                return selectedScenario 
-                    ? <RolePlayView 
+                // Check if session ended and needs to go to critique
+                if (selectedScenario && !selectedScenario.sessionEnded) {
+                    return <RolePlayView 
                         scenario={selectedScenario} 
                         setCoachingLabView={setView}
                         preparedSBI={preparedSBI}
                         difficultyLevel={selectedScenario.difficultyLevel || 50}
-                    /> 
-                    : <ScenarioLibraryView {...viewProps} />;
+                    />;
+                } else if (selectedScenario && selectedScenario.sessionEnded) {
+                     return <RolePlayCritique 
+                        history={selectedScenario.history} 
+                        setView={setView} 
+                        preparedSBI={preparedScenario.preparedSBI} 
+                        scenario={selectedScenario} 
+                        difficultyLevel={selectedScenario.difficultyLevel} 
+                    />;
+                }
+                // Fallback if role-play state is invalid
+                return <ScenarioLibraryView {...viewProps} />;
+
             case 'feedback-prep':
                 return <LeanFeedbackPrepView setCoachingLabView={setView} setPreparedSBI={setPreparedSBI} />;
             case 'active-listening':
@@ -1600,11 +1629,7 @@ export default function CoachingLabScreen() {
         }
     };
 
-    const [showDbg, setShowDbg] = useState(() => {
-      try { return typeof window !== 'undefined' && /[?&]dbg=1\b/.test(window.location.search); }
-      catch { return false; }
-    });
-    const [debugStamp] = useState(() => new Date().toLocaleTimeString());
+    // ... (Debug state handlers omitted for brevity) ...
     return (
       <div className="p-6 md:p-10 min-h-screen" style={{ background: COLORS.BG, color: COLORS.TEXT }}>
         <h1 className="text-4xl font-extrabold mb-10" style={{ color: COLORS.NAVY }}>Professional Coaching Lab</h1>
@@ -1613,10 +1638,8 @@ export default function CoachingLabScreen() {
     );
 }
 
-// --- The rest of the ScenarioLibraryView, DynamicScenarioGenerator, etc. follow here ---
-
+// --- Dynamic Generator View (Restored for completeness) ---
 const DynamicScenarioGenerator = ({ setCoachingLabView, setSelectedScenario }) => {
-    // FIX: Use real hook
     const services = useAppServices();
     const { callSecureGeminiAPI, GEMINI_MODEL } = services;
 

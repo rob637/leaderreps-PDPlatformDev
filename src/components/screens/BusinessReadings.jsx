@@ -4,7 +4,7 @@ import React, { useState, useMemo, useRef, useEffect, useCallback, useLayoutEffe
 import { useAppServices } from '../../services/useAppServices.jsx';
 import {
   BookOpen, Target, CheckCircle, Clock, AlertTriangle,
-  MessageSquare, Filter, TrendingUp, Star, Search as SearchIcon, Cpu, Zap, Info, Check
+  MessageSquare, Filter, TrendingUp, Star, Search as SearchIcon, Cpu, Zap, Info, Check, Loader
 } from 'lucide-react';
 
 /* =========================================================
@@ -50,7 +50,7 @@ const ExecSwitch = ({ checked, onChange }) => { /* ... */ return (
 };
 const Button = ({ children, onClick, disabled = false, variant = 'primary', className = '', ...rest }) => {
     let baseStyle = "px-6 py-3 rounded-xl font-semibold transition-all shadow-lg focus:outline-none focus:ring-4 text-white";
-    if (variant === 'primary') { baseStyle += ` bg-[${COLORS.TEAL}] hover:bg-[${COLORS.SUBTLE_TEAL}] focus:ring-[${COLORS.TEAL}]/50`; }
+    if (variant === 'primary') { baseStyle += ` bg-[${COLORS.TEAL}] hover:bg-[#349881] focus:ring-[${COLORS.TEAL}]/50`; }
     else if (variant === 'secondary') { baseStyle += ` bg-[${COLORS.ORANGE}] hover:bg-[#C33E12] focus:ring-[${COLORS.ORANGE}]/50`; }
     if (disabled) { baseStyle = "px-6 py-3 rounded-xl font-semibold bg-gray-300 text-gray-500 cursor-not-allowed shadow-inner transition-none"; }
     return (<button {...rest} onClick={onClick} disabled={disabled} className={`${baseStyle} ${className}`}>{children}</button>);
@@ -95,7 +95,6 @@ const MOCK_ALL_BOOKS = {
 /* =========================================================
    LOCAL FALLBACK UTILITIES (ONLY FOR STRUCTURE/CONTEXT)
 ========================================================= */
-// NOTE: These are kept for reference, but the core app logic is now production-focused
 function getActionSteps(book) { 
   const t = (book.title || '').toLowerCase();
   if (t.includes('e-myth')) { return ['Map one repeatable process (5–7 steps) and write a 1-page SOP.', 'Delegate the checklist, not the task.', 'Analyze your time allocation: Technician, Manager, or Entrepreneur Role?', 'Design a comprehensive organizational chart based on function, not personality.', 'Schedule a weekly "Manager Hat" block for system review.'];}
@@ -149,9 +148,11 @@ const API_ERROR_HTML = (executive, book) => {
 ========================================================= */
 async function buildAIFlyerHTML({ book, tier, executive, callSecureGeminiAPI }) {
   
+  // STRATEGIC FIX: Reduced word count and complexity for the main flyer 
+  // to avoid 504 Timeouts. The Executive Brief remains concise.
   const baseInstruction = executive
     ? `Write a robust EXECUTIVE BRIEF (150-200 words, split into 2 paragraphs). The brief must address the book's core insight, its relevance to the leader's specific tier, and two clear takeaway actions presented in a brief, bulleted list. Output clean, styled HTML using only h2, h3, p, ul, li, strong, em, and inline CSS for presentation. The two paragraphs should be separate <p> tags, followed by an H3 and a <ul> with 2 <li> items.`
-    : `Create a robust, long-form, one-page BOOK FLYER (400-500 words total). The structure must use a single main DIV container with internal CSS for a responsive 2-column layout. The content must include four specific sections: **1. Core Insight & Overview**, **2. Deep Dive (3 Critical Takeaways as a list)**, **3. Key Frameworks (with short descriptions)**, and **4. Immediate 4-Week Action Plan (4 bullet points)**. Ensure high detail and professional tone. Output ONLY clean, styled HTML using h2, h3, p, ul, li, strong, em, and inline CSS for presentation. DO NOT include any plain text outside the HTML tags.`;
+    : `Create a comprehensive BOOK FLYER (300-350 words total). The content must include four specific sections: **1. Core Insight & Overview**, **2. Deep Dive (3 Critical Takeaways as a list)**, **3. Key Frameworks (with short descriptions)**, and **4. Immediate 4-Week Action Plan (4 bullet points)**. Ensure high detail and professional tone. Output ONLY clean, styled HTML using h2, h3, p, ul, li, strong, em, and inline CSS for presentation. DO NOT include any plain text outside the HTML tags.`;
 
   const systemPrompt =
     `You are the LeaderReps Researcher and Content Generator. Your goal is to produce a detailed, premium, high-value content piece based on the provided book and the user's Leadership Tier. You MUST adhere to all structural and word count requirements. Frameworks and actions must clearly reference the book’s named models and concepts. Use Google Search grounding to ensure accuracy.`;
@@ -396,7 +397,7 @@ function BookListStable({
             </select>
           </div>
           <div>
-            <label className="block text-sm font-medium mb-1" style={{ color: COLORS.MUTED }}>Max Est. Minutes</label>
+            <label className="block text-sm font-medium mb-1" style={{ color: COLORS.MUTED }}>Max Est. Minutes ({filters.maxDuration} min)</label>
             <input
               type="range" min="150" max="300" step="10"
               value={filters.maxDuration}
@@ -558,7 +559,25 @@ function BookFlyerStable({
           </div>
         </div>
 
-        <div className="max-w-none space-y-4" style={{ color: COLORS.TEXT }} dangerouslySetInnerHTML={{ __html: htmlFlyer }} />
+        {/* FIX: Check if HTML Flyer is loading and apply desired effect */}
+        {htmlFlyer.includes('Flyer being generated') ? (
+            <div className="p-4 rounded-xl border border-gray-300 shadow-inner text-center" style={{ background: '#F0F5FF' }}>
+                <div className="flex items-center justify-center gap-2" style={{ color: COLORS.PURPLE, animation: 'pulse 1.5s infinite' }}>
+                    <Loader className='w-5 h-5 animate-spin'/>
+                    <span className="font-semibold whitespace-nowrap">Flyer being generated...</span>
+                </div>
+                <style jsx>{`
+                    @keyframes pulse {
+                        0%, 100% { opacity: 1; }
+                        50% { opacity: 0.5; }
+                    }
+                    div[style*="animation: pulse"] { animation: pulse 1.5s infinite; }
+                `}</style>
+            </div>
+        ) : (
+            <div className="max-w-none space-y-4" style={{ color: COLORS.TEXT }} dangerouslySetInnerHTML={{ __html: htmlFlyer }} />
+        )}
+        {/* END FIX */}
 
         <div className="mt-8 pt-4" style={{ borderTop: `1px solid ${COLORS.SUBTLE}` }}>
           <h3 className="text-2xl font-bold mb-4 flex items-center gap-3" style={{ color: COLORS.NAVY }}>
@@ -685,7 +704,7 @@ export default function BusinessReadingsScreen() {
       setHtmlFlyer(`<div style="padding:12px;border:1px dashed ${COLORS.SUBTLE};border-radius:12px;color:${COLORS.MUTED};text-align:center;">
                       <div class="flex items-center justify-center gap-2" style="color: ${COLORS.PURPLE}">
                           <Cpu class="w-5 h-5"/> 
-                          Flyer being generated.
+                          Flyer being generated...
                       </div>
                     </div>`);
       // END V2 FIX

@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import {
     Users, MessageSquare, Briefcase, Bell, PlusCircle, User, ArrowLeft, Target, Settings, Filter, Clock,
-    Star 
+    Star, CheckCircle // FIX: CheckCircle imported to resolve ReferenceError
 } from 'lucide-react';
 // FIX: Mocking useAppServices since the environment can't resolve relative paths
 const useAppServices = () => ({
@@ -44,25 +44,36 @@ const LEADERSHIP_TIERS_META = {
 };
 
 // MOCK THREADS: Seeded with owned threads and high impact flags
-// Thread 6 & 7 belong to the 'mock-user-123'
 const MOCK_THREADS = [
-    { id: 1, title: 'Optimizing Delegation with T3 Leaders', tier: 'T4', replies: 32, lastActive: '1 hour ago', impact: true, ownerId: 'other-user-1' },
-    { id: 2, title: 'Questioning our Q4 Vision Statement', tier: 'T5', replies: 15, lastActive: '4 hours ago', impact: true, ownerId: 'other-user-2' },
-    { id: 3, title: 'Micro-Habits for Daily Self-Awareness', tier: 'T1', replies: 5, lastActive: '1 day ago', impact: true, ownerId: 'other-user-3' },
-    { id: 4, title: 'SBI Feedback during High Tension Meetings', tier: 'T4', replies: 45, lastActive: '30 min ago', impact: true, ownerId: 'other-user-4' },
-    { id: 5, title: 'My best practice for effective Pre-Mortems', tier: 'T3', replies: 8, lastActive: '2 hours ago', impact: true, ownerId: 'other-user-5' },
-    { id: 6, title: 'I need clarity on my T5 Goal Alignment', tier: 'T5', replies: 2, lastActive: '5 min ago', impact: true, ownerId: 'mock-user-123' }, // Owned
-    { id: 7, title: 'Best books for T1 Resilience', tier: 'T1', replies: 12, lastActive: '2 days ago', impact: true, ownerId: 'mock-user-123' }, // Owned
+    { id: 1, title: 'Optimizing Delegation with T3 Leaders', tier: 'T4', replies: 32, lastActive: '1 hour ago', impact: true, ownerId: 'other-user-1',
+      details: 'Seeking advice: I need to delegate a critical marketing campaign objective (T3 Execution) but fear my team lacks confidence. How do I maintain T4 trust while ensuring accountability?',
+      latestReply: 'Latest Reply: Use the Player-to-Coach framework: explicitly delegate the outcome (what) but let them own the process (how). Set a clear safety net.' },
+    { id: 2, title: 'Questioning our Q4 Vision Statement', tier: 'T5', replies: 15, lastActive: '4 hours ago', impact: true, ownerId: 'other-user-2',
+      details: 'Our current 5-year vision feels stale and lacks purpose. What tactical habits should I adopt daily to better connect my team to a higher strategic mission?',
+      latestReply: 'Latest Reply: Start every daily standup by asking each person to state one micro-action that supports the long-term vision. This reinforces T5 commitment.' },
+    { id: 3, title: 'Micro-Habits for Daily Self-Awareness', tier: 'T1', replies: 5, lastActive: '1 day ago', impact: true, ownerId: 'other-user-3',
+      details: 'What are the best 5-minute techniques for emotional regulation before a high-stakes call (T1 Resilience)?',
+      latestReply: 'Latest Reply: The 4-7-8 breathing technique is highly effective for resetting the vagus nerve and maintaining T1 composure.' },
+    { id: 4, title: 'SBI Feedback during High Tension Meetings', tier: 'T4', replies: 45, lastActive: '30 min ago', impact: true, ownerId: 'other-user-4',
+      details: 'How do you successfully deliver SBI (Situation-Behavior-Impact) feedback when the recipient is clearly emotionally hijacked or defensive?',
+      latestReply: 'Latest Reply: You must delay the feedback. Acknowledge the emotion (T1 skill) first, and reschedule the T4 conversation for when the brain is calm.' },
+    { id: 5, title: 'My best practice for effective Pre-Mortems', tier: 'T3', replies: 8, lastActive: '2 hours ago', impact: true, ownerId: 'other-user-5',
+      details: 'Share your templates or tips for running a successful pre-mortem session to identify risks that could derail T3 OKR execution.',
+      latestReply: 'Latest Reply: Always frame the outcome as a catastrophic failure in the past tense ("We failed because...") to encourage vulnerability and T3 risk identification.' },
+    { id: 6, title: 'I need clarity on my T5 Goal Alignment', tier: 'T5', replies: 2, lastActive: '5 min ago', impact: true, ownerId: 'mock-user-123',
+      details: 'As a new executive, how do I link the department\'s tactical Q3 goals directly to the company\'s overall T5 Vision?',
+      latestReply: 'Latest Reply: Try using the "First Principles" model to decompose the vision into two non-negotiable strategic pillars.' }, // Owned
+    { id: 7, title: 'Best books for T1 Resilience', tier: 'T1', replies: 12, lastActive: '2 days ago', impact: true, ownerId: 'mock-user-123',
+      details: 'Looking for recommended reading to improve my personal resilience and executive self-management habits (T1).',
+      latestReply: 'Latest Reply: "Deep Work" by Cal Newport is essential for protecting focus, a core T1 asset.' }, // Owned
 ];
-
-/* =========================================================
-   MOCK/PLACEHOLDER SCREENS
-========================================================= */
 
 const CommunityHomeView = ({ setView, user, currentTierFilter, setCurrentTierFilter }) => {
     const filteredThreads = MOCK_THREADS.filter(thread => 
         currentTierFilter === 'All' || thread.tier === currentTierFilter
     );
+
+    const [expandedThreadId, setExpandedThreadId] = useState(null);
 
     return (
         <div className="space-y-6">
@@ -90,7 +101,6 @@ const CommunityHomeView = ({ setView, user, currentTierFilter, setCurrentTierFil
                                 ? 'text-white shadow-md'
                                 : 'text-gray-700 bg-white hover:bg-gray-200'
                         }`}
-                        // Use a neutral/light background for non-selected tiers for better contrast with the white text/dark background style above
                         style={{ backgroundColor: currentTierFilter === tierId ? LEADERSHIP_TIERS_META[tierId].hex : COLORS.SUBTLE, color: currentTierFilter === tierId ? COLORS.OFF_WHITE : COLORS.NAVY }}
                     >
                         {tierId}
@@ -100,23 +110,45 @@ const CommunityHomeView = ({ setView, user, currentTierFilter, setCurrentTierFil
 
             {/* Thread List */}
             <div className="space-y-3">
-                {filteredThreads.map(thread => (
-                    <div key={thread.id} className="p-4 rounded-xl border-l-4 shadow-md transition-shadow hover:shadow-lg" 
-                        style={{ borderColor: thread.impact ? COLORS.ORANGE : COLORS.TEAL, backgroundColor: COLORS.OFF_WHITE }}>
-                        
-                        <div className="flex justify-between items-center">
-                            <h3 className="font-semibold text-lg" style={{ color: COLORS.NAVY }}>{thread.title}</h3>
-                            {thread.impact && (
-                                <span className="text-xs font-bold px-3 py-1 rounded-full text-white" style={{ backgroundColor: COLORS.ORANGE }}>
-                                    <Star className='w-3 h-3 inline mr-1'/> High-Impact
-                                </span>
-                            )}
+                {filteredThreads.map(thread => {
+                    const isExpanded = thread.id === expandedThreadId;
+                    return (
+                        <div 
+                            key={thread.id} 
+                            onClick={() => setExpandedThreadId(isExpanded ? null : thread.id)}
+                            className="p-4 rounded-xl border-l-4 shadow-md transition-all duration-300 cursor-pointer" 
+                            style={{ borderColor: thread.impact ? COLORS.ORANGE : COLORS.TEAL, backgroundColor: COLORS.OFF_WHITE }}
+                        >
+                            <div className="flex justify-between items-start">
+                                <div className="flex-1">
+                                    <h3 className="font-semibold text-lg" style={{ color: COLORS.NAVY }}>{thread.title}</h3>
+                                    <p className="text-sm text-gray-600 mt-1">
+                                        **Focus Tier:** <span className='font-medium'>{thread.tier}</span> | {thread.replies} Replies | Last active {thread.lastActive}
+                                    </p>
+                                </div>
+                                {thread.impact && (
+                                    <span className="text-xs font-bold px-3 py-1 rounded-full text-white ml-4 flex-shrink-0" style={{ backgroundColor: COLORS.ORANGE }}>
+                                        <Star className='w-3 h-3 inline mr-1'/> High-Impact
+                                    </span>
+                                )}
+                            </div>
+                            
+                            {/* EXPANDED CONTENT (Issue 2 Fix) */}
+                            <div className={`mt-3 overflow-hidden transition-all duration-500 ${isExpanded ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'}`}>
+                                <div className='p-3 bg-gray-50 border border-gray-200 rounded-lg'>
+                                    <p className='text-sm font-medium text-[#002E47] mb-2'>Original Post:</p>
+                                    <p className='text-sm text-gray-700'>{thread.details}</p>
+                                    
+                                    <p className='text-sm font-medium text-[#002E47] mt-3 mb-1'>Latest Expert Reply:</p>
+                                    <p className='text-xs italic text-gray-600 border-l-2 pl-2 border-gray-300'>{thread.latestReply}</p>
+                                </div>
+                                <button className='text-xs font-semibold text-blue-600 mt-2 hover:underline'>
+                                    View Full Discussion & Reply &rarr;
+                                </button>
+                            </div>
                         </div>
-                        <p className="text-sm text-gray-600 mt-1">
-                            **Focus Tier:** {thread.tier} | {thread.replies} Replies | Last active {thread.lastActive}
-                        </p>
-                    </div>
-                ))}
+                    );
+                })}
             </div>
             {filteredThreads.length === 0 && (
                 <div className="p-6 text-center text-gray-500 italic border rounded-xl" style={{ borderColor: COLORS.SUBTLE, backgroundColor: COLORS.OFF_WHITE }}>
@@ -166,7 +198,10 @@ const MentorshipView = () => {
             
             {/* FIX: Link the button to a relevant app screen for demonstration */}
             <button 
-                onClick={() => navigate('prof-dev-plan', { view: 'mentorship-signup' })}
+                onClick={() => {
+                    console.log("Navigating to Mentorship Sign-Up/PDP Screen.");
+                    navigate('prof-dev-plan', { view: 'mentorship-signup' });
+                }}
                 className="mt-4 flex items-center px-6 py-3 font-semibold rounded-xl text-white shadow-md hover:shadow-lg transition-shadow"
                 style={{ backgroundColor: COLORS.ORANGE }}
             >
@@ -301,7 +336,7 @@ const CommunityScreen = () => {
             {/* Header */}
             <div className='flex items-center gap-4 border-b-2 pb-2 mb-8' style={{borderColor: COLORS.NAVY+'30'}}>
                 <Users className='w-10 h-10' style={{color: COLORS.TEAL}}/>
-                <h1 className="text-4xl font-extrabold" style={{ color: COLORS.NAVY }}>Executive Community</h1>
+                <h1 className="text-4xl font-extrabold" style={{ color: COLORS.NAVY }}>Leadership Community</h1>
             </div>
 
             <div className="grid lg:grid-cols-4 gap-8">
