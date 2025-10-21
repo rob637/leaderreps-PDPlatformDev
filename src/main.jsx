@@ -1,4 +1,4 @@
-// IMPORTANT: run global notepad BEFORE anything else 
+// IMPORTANT: run global notepad BEFORE anything else
 import './globals/notepad.js';
 
 import React, { Suspense, lazy } from 'react';
@@ -15,7 +15,9 @@ import { AppServicesProvider } from './services/useAppServices.jsx';
   const raw = import.meta.env.VITE_FIREBASE_CONFIG;
 
   if (!raw) {
-    console.error('VITE_FIREBASE_CONFIG is missing. Set it in Netlify → Site settings → Environment.');
+    // Flag the specific error so our ConfigGate can display it
+    window.__firebase_config_error = 'VITE_FIREBASE_CONFIG is missing. Set it in Netlify → Site settings → Environment.';
+    console.error(window.__firebase_config_error);
     return;
   }
 
@@ -25,33 +27,31 @@ import { AppServicesProvider } from './services/useAppServices.jsx';
   } catch (e1) {
     // Fallback: sanitize common issues (single quotes/newlines)
     try {
-      const cleaned = String(raw)
-        .trim()
-        .replace(/(\r\n|\n|\r)/g, '')
-        .replace(/'/g, '"');
+      const cleaned = String(raw).trim().replace(/(\r\n|\n|\r)/g, '').replace(/'/g, '"');
       window.__firebase_config = JSON.parse(cleaned);
       console.warn('VITE_FIREBASE_CONFIG required sanitizing (quotes/newlines). Parsed successfully.');
     } catch (e2) {
-      console.error('VITE_FIREBASE_CONFIG is not valid JSON. Received:', raw, '\nError:', e2);
+      window.__firebase_config_error = `VITE_FIREBASE_CONFIG is not valid JSON. Received: ${String(raw)}`;
+      console.error(window.__firebase_config_error, '\nError:', e2);
     }
   }
 })();
 
-// Lazy-load the app AFTER config injection
-const App = lazy(() => import('./App.jsx'));
+//** OPTIONAL: seed safe defaults so first-time visitors don't crash on missing globals */
+// --- Safe defaults so first-time visitors don't crash on missing globals ---
+(function seedSafeGlobals() {
+  const DEFAULT_PDP_DATA = { profile: { name: '', tier: 'Beginner' }, plans: [], settings: {} };
 
-// Mount
-const container = document.getElementById('root');
-if (!container) {
-  throw new Error('Root element with id="root" not found. Ensure <div id="root"></div> exists in index.html.');
-}
+  if (typeof window !== 'undefined') {
+    try {
+      const raw = window.localStorage ? localStorage.getItem('pdpData') : null;
+      const parsed = raw ? JSON.parse(raw) : null;
 
-createRoot(container).render(
-  <React.StrictMode>
-    <AppServicesProvider>
-      <Suspense fallback={<div className="p-8 text-center">Loading…</div>}>
-        <App />
-      </Suspense>
-    </AppServicesProvider>
-  </React.StrictMode>
-);
+      if (!window.pdpData) {
+        window.pdpData = parsed || DEFAULT_PDP_DATA;
+      }
+    } catch (_) {
+      window.pdpData = DEFAULT_PDP_DATA;
+    }
+  }
+})(); // <-- don't forget this!
