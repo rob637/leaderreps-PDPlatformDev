@@ -1,6 +1,7 @@
 /* eslint-disable no-console  */
+// src/components/screens/BusinessReadings.jsx
+
 import React, { useState, useMemo, useRef, useEffect, useCallback, useLayoutEffect } from 'react';
-// FIX: The import is typically named 'useAppServices' in the app context
 import { useAppServices } from '../../services/useAppServices.jsx';
 import {
   BookOpen, Target, CheckCircle, Clock, AlertTriangle,
@@ -11,21 +12,7 @@ import {
    HIGH-CONTRAST PALETTE (From uiKit)
 ========================================================= */
 const COLORS = {
-  NAVY: '#002E47',
-  TEAL: '#47A88D',
-  SUBTLE_TEAL: '#349881',
-  ORANGE: '#E04E1B',
-  GREEN: '#10B981',
-  AMBER: '#F59E0B',
-  RED: '#E04E1B',
-  LIGHT_GRAY: '#FCFCFA',
-  OFF_WHITE: '#FFFFFF',
-  MUTED: '#4B5563',
-  SUBTLE: '#E5E7EB',
-  TEXT: '#374151',
-  BLUE: '#2563EB',
-  BG: '#F9FAFB', 
-  PURPLE: '#7C3AED', // Used for premium AI branding
+  NAVY: '#002E47', TEAL: '#47A88D', SUBTLE_TEAL: '#349881', ORANGE: '#E04E1B', GREEN: '#10B981', AMBER: '#F59E0B', RED: '#E04E1B', LIGHT_GRAY: '#FCFCFA', OFF_WHITE: '#FFFFFF', MUTED: '#4B5563', SUBTLE: '#E5E7EB', TEXT: '#374151', BLUE: '#2563EB', BG: '#F9FAFB', PURPLE: '#7C3AED',
 };
 
 const COMPLEXITY_MAP = {
@@ -110,7 +97,7 @@ function getFrameworks(book) {
   if (t.includes('e-myth')) { return [{ name: 'E-Myth Roles', desc: 'Entrepreneur (vision), Manager (systems), Technician (doing).' }, { name: 'Systemization', desc: 'Build the business as if it were a franchise prototype.' }];}
   if (t.includes('radical candor')) { return [{ name: 'Candor Quadrants', desc: 'Caring Personally × Challenging Directly; aim for Radical Candor.' }, { name: 'Gives-and-Gets', desc: 'Focus on what you give (feedback) and get (results).' }];}
   if (t.includes('atomic habits')) { return [{ name: 'Four Laws', desc: 'Make it Obvious, Attractive, Easy, Satisfying.' }, { name: 'Habit Stacking', desc: 'Pair a new habit with an old one (e.g., After X, I will Y).' }];}
-  if (t.includes('good to great')) { return [{ name: 'Hedgehog Concept', desc: 'Intersection of passion, best-in-the-world, and economic engine.' }, { name: 'Level 5 Leadership', desc: 'Ambitious for the company, not for themselves.' }];}
+  if (t.includes('good to great')) { return [{ name: 'Hedgehog Concept', desc: 'Intersection of passion, best-in-world, and economic engine.' }, { name: 'Level 5 Leadership', desc: 'Ambitious for the company, not for themselves.' }];}
   if (t.includes('getting things done')) { return [{ name: 'The 5 Steps', desc: 'Capture, Clarify, Organize, Reflect, Engage.' }, { name: 'The Two-Minute Rule', desc: 'If an action takes less than two minutes, do it immediately.' }];}
   return [{ name: 'Core Principles', desc: 'Prioritize outcomes, feedback loops, and small, testable steps.' }];
 }
@@ -118,29 +105,29 @@ function getFrameworks(book) {
 
 // --- ERROR DISPLAY FUNCTIONS (Used when AI fails) ---
 
+// FIX 1: This is the robust, styled content returned when the API fails
 const API_ERROR_HTML = (executive, book) => {
     const errorTitle = executive ? "EXECUTIVE BRIEFING UNAVAILABLE" : "FULL FLYER UNAVAILABLE";
-    const recoverySteps = `
-        <div style="padding: 16px;">
-            <h2 style="color:${COLORS.NAVY}; font-weight:900; font-size: 32px; border-bottom: 3px solid ${COLORS.RED}; padding-bottom: 8px;">${errorTitle}</h2>
-            
-            <p style="color:${COLORS.RED}; font-size: 18px; margin-top: 15px; line-height: 1.6;">
-                **CRITICAL API ERROR**: The live connection to the content generation service failed.
-            </p>
-
-            <p style="color:${COLORS.MUTED}; font-size: 16px; margin-top: 15px; line-height: 1.6;">
-                **Root Cause Check**: This failure often means the 'callSecureGeminiAPI' implementation is missing, the Gemini API key is invalid, or the request was throttled.
-            </p>
-            
-            <div style="margin-top: 20px; padding-top: 15px; border-top: 1px dashed ${COLORS.SUBTLE};">
-                <h3 style="color:${COLORS.NAVY}; font-weight:800; font-size: 20px; margin-top:0;">Static Summary (for Reference)</h3>
-                <p style="color:${COLORS.TEXT}; font-size: 16px; margin-top: 5px;">
-                    ${book.theme} The complexity is ${book.complexity}. Key focus areas include: ${book.focus}.
-                </p>
-            </div>
-        </div>
-    `;
-    return recoverySteps;
+    const baseContent = executive 
+        ? `<p style="color:${COLORS.RED}; font-size: 18px; margin-top: 15px; line-height: 1.6;">**CRITICAL API ERROR**: The live connection to the content generation service failed (e.g., **Timeout 504** or **Missing API Key**). The feature is currently disabled.</p>
+           <h3 style="color:${COLORS.NAVY}; font-weight:800; font-size: 20px; margin-top:20px;">Static Summary (for Reference)</h3>
+           <p style="color:#374151; font-size: 16px; margin-top: 5px;">This briefing would have covered: ${book.theme}. Focus areas: ${book.focus.split(',').slice(0, 3).join(', ')}.</p>
+           <h3 style="color:${COLORS.NAVY}; font-weight:800; font-size: 20px; margin-top:20px;">Manual Action Item</h3>
+           <ul style="list-style:disc;margin-left:20px;color:#374151;font-size:16px;">
+              <li>Read the book's Chapter 3 summary before your next meeting.</li>
+           </ul>`
+        : `<p style="color:${COLORS.RED}; font-size: 18px; margin-top: 15px; line-height: 1.6;">**CRITICAL API ERROR**: The content generator failed to respond. This is usually due to a **server timeout** or an invalid configuration.</p>
+           <h3 style="color:${COLORS.NAVY}; font-weight:800; font-size: 20px; margin-top:20px;">Root Cause Check</h3>
+           <ul style="list-style:disc;margin-left:20px;color:#374151;font-size:16px;">
+              <li>Verify the **Gemini API Key** in App Settings is correctly loaded.</li>
+              <li>Check the developer console for network (504) or authentication (400) errors.</li>
+              <li>The system will attempt to auto-recover on the next page load.</li>
+           </ul>
+           <h3 style="color:${COLORS.NAVY}; font-weight:800; font-size: 20px; margin-top:20px;">Static Takeaways</h3>
+           <p style="color:#374151; font-size: 16px; margin-top: 5px;">Key frameworks include: ${getFrameworks(book).map(f => f.name).join(', ')}.</p>
+        `;
+        
+    return `<div style="padding: 16px;"><h2 style="color:${COLORS.NAVY}; font-weight:900; font-size: 24px; border-bottom: 3px solid ${COLORS.RED}; padding-bottom: 8px;">${errorTitle}</h2>${baseContent}</div>`;
 };
 
 /* =========================================================
@@ -148,8 +135,6 @@ const API_ERROR_HTML = (executive, book) => {
 ========================================================= */
 async function buildAIFlyerHTML({ book, tier, executive, callSecureGeminiAPI }) {
   
-  // STRATEGIC FIX: Reduced word count and complexity for the main flyer 
-  // to avoid 504 Timeouts. The Executive Brief remains concise.
   const baseInstruction = executive
     ? `Write a robust EXECUTIVE BRIEF (150-200 words, split into 2 paragraphs). The brief must address the book's core insight, its relevance to the leader's specific tier, and two clear takeaway actions presented in a brief, bulleted list. Output clean, styled HTML using only h2, h3, p, ul, li, strong, em, and inline CSS for presentation. The two paragraphs should be separate <p> tags, followed by an H3 and a <ul> with 2 <li> items.`
     : `Create a comprehensive BOOK FLYER (300-350 words total). The content must include four specific sections: **1. Core Insight & Overview**, **2. Deep Dive (3 Critical Takeaways as a list)**, **3. Key Frameworks (with short descriptions)**, and **4. Immediate 4-Week Action Plan (4 bullet points)**. Ensure high detail and professional tone. Output ONLY clean, styled HTML using h2, h3, p, ul, li, strong, em, and inline CSS for presentation. DO NOT include any plain text outside the HTML tags.`;
@@ -184,18 +169,15 @@ async function buildAIFlyerHTML({ book, tier, executive, callSecureGeminiAPI }) 
     
     // 3. FALLBACK ON FAILURE (Response was empty, mock, or error)
     console.error("AI Flyer Generation failed. Returning structured error message.");
-    return API_ERROR_HTML(executive, book);
+    return API_ERROR_HTML(executive, book); // Use the guaranteed error content
   } catch (e) {
-    // 4. FALLBACK ON EXCEPTION (API call failed)
+    // 4. FALLBACK ON EXCEPTION (API call failed - network/key issue)
     console.error('AI flyer generation failed due to API exception.', e);
-    // V3 FIX: Check for the 504 pattern and provide a more informative error message.
-    if (e.message && e.message.includes('504')) {
-        return API_ERROR_HTML(executive, book).replace('CRITICAL API ERROR', 'TIMEOUT ERROR (504)');
-    }
-    return API_ERROR_HTML(executive, book);
+    return API_ERROR_HTML(executive, book); // Use the guaranteed error content
   }
 }
 
+// ... (rest of the file remains the same, including getQuestionScore and handleAiSubmit)
 const getQuestionScore = (query, bookTitle) => {
     const q = query.toLowerCase().trim();
     if (q.length < 15) return { score: 0, tip: 'Question is too short. Be specific about your challenge.' };
@@ -220,9 +202,6 @@ const getQuestionScore = (query, bookTitle) => {
     return { score, tip: feedback };
 };
 
-/* =========================================================
-   AI COACH - PRODUCTION FOCUS
-========================================================= */
 async function handleAiSubmit(e, services, selectedBook, aiQuery, setIsSubmitting, setAiResponse) {
   e.preventDefault();
   if (e.target.disabled) return;
@@ -233,7 +212,6 @@ async function handleAiSubmit(e, services, selectedBook, aiQuery, setIsSubmittin
   setIsSubmitting(true);
   setAiResponse('The AI Coach is analyzing the book\'s core principles and formulating an actionable response...');
 
-  // SAFETY: tolerate missing provider methods
   const hasKeyOk =
     typeof services?.hasGeminiKey === 'function' ? services.hasGeminiKey() : true;
   const canCall =
@@ -258,7 +236,6 @@ async function handleAiSubmit(e, services, selectedBook, aiQuery, setIsSubmittin
       ${actionableContext}
       Guidelines: Answer directly with 3–5 sentences. Include one concrete next action that applies the book's principle to the user's situation. Do not use markdown other than **bold** for emphasis. Ensure the response flows naturally like coaching advice.`;
 
-    // V1 FIX: Explicitly include the book title in the user's primary content prompt.
     const out = await services.callSecureGeminiAPI({
       systemInstruction: { parts: [{ text: systemPrompt }] },
       contents: [{ role: 'user', parts: [{ text: `Regarding "${selectedBook.title}": ${q}` }] }],
@@ -277,10 +254,7 @@ async function handleAiSubmit(e, services, selectedBook, aiQuery, setIsSubmittin
   }
 }
 
-
-// =========================================================
-// ISOLATED, MEMOIZED INPUT COMPONENTS 
-// =========================================================
+// ... (Rest of the BookListStable and BookFlyerStable components, which are mostly UI)
 
 // Fix 1: Search Input (Isolated and Memoized)
 const SearchInput = React.memo(({ value, onChange }) => {
@@ -354,10 +328,6 @@ const AICoachInput = React.memo(({ aiQuery, handleAiQueryChange, submitHandler, 
 });
 AICoachInput.displayName = 'AICoachInput';
 
-
-/* =========================================================
-   MAIN COMPONENT
-========================================================= */
 
 function BookListStable({
   COLORS,
@@ -560,11 +530,11 @@ function BookFlyerStable({
         </div>
 
         {/* FIX: Check if HTML Flyer is loading and apply desired effect */}
-        {htmlFlyer.includes('Flyer being generated') ? (
+        {htmlFlyer.includes('Flyer being generated') || htmlFlyer.includes('CRITICAL API ERROR') ? (
             <div className="p-4 rounded-xl border border-gray-300 shadow-inner text-center" style={{ background: '#F0F5FF' }}>
                 <div className="flex items-center justify-center gap-2" style={{ color: COLORS.PURPLE, animation: 'pulse 1.5s infinite' }}>
-                    <Loader className='w-5 h-5 animate-spin'/>
-                    <span className="font-semibold whitespace-nowrap">Flyer being generated...</span>
+                    {htmlFlyer.includes('CRITICAL API ERROR') ? <AlertTriangle className='w-5 h-5'/> : <Loader className='w-5 h-5 animate-spin'/>}
+                    <span className="font-semibold whitespace-nowrap">{htmlFlyer.includes('CRITICAL API ERROR') ? 'API Error (See Below)' : 'Flyer being generated...'}</span>
                 </div>
                 <style jsx>{`
                     @keyframes pulse {
@@ -573,6 +543,7 @@ function BookFlyerStable({
                     }
                     div[style*="animation: pulse"] { animation: pulse 1.5s infinite; }
                 `}</style>
+                 <div className="max-w-none space-y-4 pt-4" style={{ color: COLORS.TEXT }} dangerouslySetInnerHTML={{ __html: htmlFlyer }} />
             </div>
         ) : (
             <div className="max-w-none space-y-4" style={{ color: COLORS.TEXT }} dangerouslySetInnerHTML={{ __html: htmlFlyer }} />
@@ -627,7 +598,6 @@ function BookFlyerStable({
 }
 
 export default function BusinessReadingsScreen() {
-  // NOTE: The real useAppServices hook is mocked/passed in the actual environment
   const services = useAppServices(); 
   const {
     updateCommitmentData = () => true,
@@ -754,7 +724,10 @@ export default function BusinessReadingsScreen() {
       totalDuration: book.duration,
       createdAt: new Date().toISOString(),
     };
-    const ok = updateCommitmentData(newCommitment);
+    // The real updateCommitmentData must handle adding the new commitment to the active_commitments array
+    const ok = updateCommitmentData(data => ({
+        active_commitments: [...(data?.active_commitments || []), newCommitment]
+    }));
     if (ok) {
         setIsCommitted(true);
         setTimeout(() => navigate('daily-practice'), 1500); // Navigate after brief confirmation
