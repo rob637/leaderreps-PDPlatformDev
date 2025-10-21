@@ -1,6 +1,6 @@
-// src/components/screens/Dashboard.jsx 
+//  src/components/screens/Dashboard.jsx 
 import React, { useMemo, useState, useEffect, useCallback } from 'react';
-import { useAppServices } from '../../services/useAppServices.jsx';
+import { useAppServices } from '../../App.jsx';
 
 // --- MOCK IMPORTS for self-contained file ---
 const LEADERSHIP_TIERS = {
