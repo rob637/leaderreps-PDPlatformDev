@@ -563,34 +563,36 @@ const DashboardScreen = () => {
             </p>
         </div>
         
-        {/* --- DEDICATED PDP ROADMAP HIGHLIGHT (FIX 1: HEADER SIZE & BORDER) --- */}
-        <div className="rounded-3xl p-[2px]" style={{ boxShadow: '0 0 0 4px #002E47 inset' }}>
-  <Card onClick={() => safeNavigate('prof-dev-plan')} className="w-full shadow-2xl hover:shadow-3xl border-0"> safeNavigate('prof-dev-plan')} className="w-full shadow-2xl hover:shadow-3xl border-4 border-[#002E47]">
-            <h2 className="text-3xl font-extrabold text-[#002E47] mb-6 border-b-2 pb-4 border-gray-300 flex items-center gap-3">
-                <Map size={28} className='text-[#7C3AED]'/> My Executive Roadmap
-            </h2>
-            <p className="text-sm text-gray-700 mb-4">
-                Your **Personalized Development Plan (PDP)** is designed to close your skill gaps. Track your progress below and hit your monthly learning targets.
-            </p>
-            <div className="grid grid-cols-3 gap-4">
-                <div className='p-3 rounded-xl bg-[#002E47]/5 border border-gray-200'>
-                    <p className='text-xs font-medium text-gray-600'>Current Month</p>
-                    <p className='text-xl font-extrabold text-[#002E47] mt-1'>{goalsCount} / 24</p>
-                </div>
-                <div className='p-3 rounded-xl bg-[#002E47]/5 border border-gray-200'>
-                    <p className='text-xs font-medium text-gray-600'>Weakest Tier Focus</p>
-                    <p className='text-xl font-extrabold text-[#E04E1B] mt-1'>{weakestTier?.name || 'N/A'}</p>
-                </div>
-                 <div className='p-3 rounded-xl bg-[#002E47]/5 border border-gray-200'>
-                    <p className='text-xs font-medium text-gray-600'>Tier Mastery Projection</p>
-                    <p className='text-xl font-extrabold text-[#47A88D] mt-1'>{tierMasteryProjection} Days</p>
-                </div>
-            </div>
-             <Button onClick={() => safeNavigate('prof-dev-plan')} variant='primary' className='mt-4 w-full'>
-                <Briefcase className='w-5 h-5 mr-2'/> Go to Development Plan Tracker
-            </Button>
-        </Card></div>
-        {/* --- END PDP ROADMAP HIGHLIGHT --- */}
+        {/* --- DEDICATED PDP ROADMAP HIGHLIGHT (FIX 1: HEADER SIZE & BORDER) --- */
+<div className="rounded-3xl border-4 border-[#002E47] bg-[#F7FCFF] p-8 shadow-2xl relative">
+  <h2 className="text-3xl font-extrabold text-[#002E47] mb-6 border-b-2 pb-4 border-gray-300 flex items-center gap-3">
+    <Map size={28} className="text-[#7C3AED]" /> My Executive Roadmap
+  </h2>
+
+  <p className="text-sm text-gray-700 mb-4">
+    Your <strong>Personalized Development Plan (PDP)</strong> is designed to close your skill gaps. Track your progress below and hit your monthly learning targets.
+  </p>
+
+  <div className="grid grid-cols-3 gap-4">
+    <div className="p-3 rounded-xl bg-[#002E47]/5 border border-gray-200">
+      <p className="text-xs font-medium text-gray-600">Current Month</p>
+      <p className="text-xl font-extrabold text-[#002E47] mt-1">{goalsCount} / 24</p>
+    </div>
+    <div className="p-3 rounded-xl bg-[#002E47]/5 border border-gray-200">
+      <p className="text-xs font-medium text-gray-600">Weakest Tier Focus</p>
+      <p className="text-xl font-extrabold text-[#E04E1B] mt-1">{weakestTier?.name || 'N/A'}</p>
+    </div>
+    <div className="p-3 rounded-xl bg-[#002E47]/5 border border-gray-200">
+      <p className="text-xs font-medium text-gray-600">Tier Mastery Projection</p>
+      <p className="text-xl font-extrabold text-[#47A88D] mt-1">{tierMasteryProjection} Days</p>
+    </div>
+  </div>
+
+  <Button onClick={() => safeNavigate('prof-dev-plan')} variant="primary" className="mt-4 w-full">
+    <Briefcase className="w-5 h-5 mr-2" /> Go to Development Plan Tracker
+  </Button>
+</div>
+/* --- END PDP ROADMAP HIGHLIGHT --- */}
 
 
         {/* --- MAIN GRID CONTAINER --- */}
