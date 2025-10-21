@@ -12,21 +12,29 @@ import React, {
 } from 'react';
 
 // =========================================================
-// !!! CRITICAL FIX: CORRECT FIREBASE V9 MODULAR IMPORTS !!!
-// The original file was missing these actual imports, causing the 'getProvider' error.
+// !!! CRITICAL FIX: Split Firebase imports into correct modules !!!
+// =========================================================
+
+// 1. CORE APP IMPORTS
+import {
+  initializeApp, // <- MOVED HERE from 'firebase/auth'
+  getApp        // <- MOVED HERE from 'firebase/auth'
+} from 'firebase/app'; 
+
+
+// 2. AUTHENTICATION IMPORTS
 import { 
-  initializeApp, 
-  getApp, 
   getAuth, 
   onAuthStateChanged, 
   signInWithCustomToken, 
   signOut,
-  // NOTE: If you use Google, Facebook, or other social logins, 
-  // you MUST import their Provider class here:
-  // GoogleAuthProvider // <- UNCOMMENT IF YOU USE GOOGLE AUTH
+  // GoogleAuthProvider, // Keep this if you use it in other components
 } from 'firebase/auth';
 
-import { getFirestore, setLogLevel } from 'firebase/firestore';
+// 3. FIRESTORE IMPORTS (This was already correct)
+import { getFirestore, setLogLevel } from 'firebase/firestore'; 
+
+// =========================================================
 
 // =========================================================
 // --- EXISTING MOCK/PLACEHOLDER DEFINITIONS (Keep these) ---
