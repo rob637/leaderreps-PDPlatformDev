@@ -12,20 +12,7 @@ import React, {
 } from 'react';
 
 import {
-  initializeApp,
-  getApp
-} from 'firebase/app';
-import {
-  getAuth,
-  onAuthStateChanged,
-  signInWithCustomToken,
-  signInWithEmailAndPassword,
-  createUserWithEmailAndPassword,
-  sendPasswordResetEmail,
-  EmailAuthProvider,
-  linkWithCredential,
-  signInAnonymously,
-  signOut,
+// ... existing firebase imports
 } from 'firebase/auth';
 import { getFirestore, setLogLevel } from 'firebase/firestore';
 
@@ -137,6 +124,8 @@ const QuickStartScreen = lazy(() => import('./components/screens/QuickStartAccel
 const ExecutiveReflection = lazy(() => import('./components/screens/ExecutiveReflection.jsx'));
 // NEW MODULE: Community
 const CommunityScreen = lazy(() => import('./components/screens/CommunityScreen.jsx'));
+// NEW MODULE: Applied Leadership - Added this lazy load
+const AppliedLeadershipScreen = lazy(() => import('./components/screens/AppliedLeadership.jsx')); 
 
 
 /* =========================================================
@@ -250,6 +239,7 @@ const NavSidebar = ({ currentScreen, setCurrentScreen, user, isMobileOpen, close
     const toolsHubsNav = [
         { screen: 'prof-dev-plan', label: 'Development Plan', icon: Briefcase }, // Moved UP
         { screen: 'daily-practice', label: 'Daily Practice', icon: Clock, notify: hasPendingDailyPractice }, // Moved DOWN
+        { screen: 'applied-leadership', label: 'Applied Leadership', icon: ShieldCheck }, // NEW: Applied Leadership
         { screen: 'coaching-lab', label: 'Coaching Lab', icon: Mic },
         { screen: 'planning-hub', label: 'Planning Hub (OKRs)', icon: Trello }, 
         { screen: 'business-readings', label: 'Business Readings', icon: BookOpen },
@@ -391,8 +381,10 @@ const ScreenRouter = ({ currentScreen, navParams }) => {
       return <AppSettingsScreen key={uniqueKey} />;
     case 'reflection': 
       return <ExecutiveReflection key={uniqueKey} />;
-    case 'community': // NEW ROUTE
+    case 'community': 
       return <CommunityScreen key={uniqueKey} />;
+    case 'applied-leadership': // NEW ROUTE: Applied Leadership
+      return <AppliedLeadershipScreen key={uniqueKey} />;
     case 'dashboard':
     default:
       return <DashboardScreen key={uniqueKey} />;
@@ -433,6 +425,7 @@ const AppContent = ({ currentScreen, setCurrentScreen, user, navParams, isMobile
 };
 
 const App = ({ initialState }) => {
+// ... (rest of App component logic remains the same)
   const [user, setUser] = useState(
     DEBUG_MODE ? { name: 'Debugger', userId: 'mock-debugger-123', email: 'debug@leaderreps.com' } : null
   );
