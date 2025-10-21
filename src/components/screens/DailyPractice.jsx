@@ -37,12 +37,14 @@ const useAppServices = () => {
       { id: '5', text: 'Process SOP', status: 'Pending', linkedGoal: 'Process Mapping', linkedTier: 'T2', timeContext: 'Morning' },
     ],
     history: [
-      { date: '2025-10-14', score: '3/3', reflection: 'Perfect day! My focus on T3 planning led directly to two successful decisions.' },
-      { date: '2025-10-15', score: '2/3', reflection: 'Missed my T4 commitment. Must prioritize people over tasks tomorrow.' },
-      { date: '2025-10-16', score: '3/3', reflection: 'Back on track. Used the AI prompt to focus on team value which helped.' },
-      { date: '2025-10-17', score: '1/3', reflection: 'High risk day due to emergency. Focused only on T2 core tasks.' },
-      // FIX 3: Added a recent history entry for better chart context
-      { date: '2025-10-20', score: '3/5', reflection: 'Yesterday was a struggle to maintain focus due to a network outage. Only core tasks completed.' },
+      { date: '2025-10-15', score: '3/3', reflection: 'Perfect day! My focus on T3 planning led directly to two successful decisions.' },
+      { date: '2025-10-16', score: '2/3', reflection: 'Missed my T4 commitment. Must prioritize people over tasks tomorrow.' },
+      { date: '2025-10-17', score: '3/3', reflection: 'Back on track. Used the AI prompt to focus on team value which helped.' },
+      // FIX 3: Updated history to be closer to current date
+      { date: '2025-10-18', score: '1/3', reflection: 'High risk day due to emergency. Focused only on T2 core tasks.' },
+      { date: '2025-10-19', score: '4/5', reflection: 'Strong day, but still missed one T5 visionary task.' },
+      { date: '2025-10-20', score: '5/5', reflection: 'Perfect day! Maintained deep work focus despite interruptions.' },
+      { date: '2025-10-21', score: '3/5', reflection: 'Struggled to maintain focus due to a network outage. Only core tasks completed.' },
     ],
     reflection_journal: '',
     // This mock initial log is set to an old date, so the check appears unsaved today.
@@ -288,22 +290,22 @@ function calculateTierSuccessRates(commitments, history) {
 // FIX 3: Resolves "ReferenceError: getLastSevenDays is not defined"
 function getLastSevenDays(history) {
     const mockDates = [];
-    const today = new Date().toISOString().split('T')[0];
-
-    // Get a list of the last 7 calendar dates
+    const today = new Date();
+    
+    // Get a list of the last 7 calendar dates (YYYY-MM-DD format)
     const lastSevenDates = [];
     for (let i = 0; i < 7; i++) {
-        const date = new Date();
-        date.setDate(date.getDate() - i);
+        const date = new Date(today);
+        date.setDate(today.getDate() - i);
         lastSevenDates.push(date.toISOString().split('T')[0]);
     }
 
     // Map history to the last 7 days (including days with no entry)
-    for (const date of lastSevenDates) {
-        const entry = history.find(h => h.date === date);
+    for (const dateString of lastSevenDates) {
+        const entry = history.find(h => h.date === dateString);
         const score = entry ? entry.score : '0/0'; // Default score if no log entry
         const reflection = entry ? entry.reflection : 'N/A';
-        mockDates.push({ date, score, reflection });
+        mockDates.push({ date: dateString, score, reflection });
     }
     // Return them in chronological order (oldest to newest)
     return mockDates.reverse();
@@ -703,6 +705,7 @@ const CommitmentSelectorView = ({ setView, initialGoal, initialTier }) => {
   
   const [assessmentLoading, setAssessmentLoading] = useState(false);
   const [aiAssessment, setAiAssessment] = useState(null);
+  const [isCustomCommitmentSaved, setIsCustomCommitmentSaved] = useState(false); // Fix 3: Custom commit confirmation
 
   const userCommitments = commitmentData?.active_commitments || [];
   const activeCommitmentIds = new Set(userCommitments.map(c => c.id));
@@ -857,6 +860,7 @@ const CommitmentSelectorView = ({ setView, initialGoal, initialTier }) => {
     // FIX FOR ISSUE 2: Ensure logic is sound
     if (!linkedGoal || linkedGoal === initialLinkedGoalPlaceholder || !linkedTier) return;
     setIsSaving(true);
+    setIsCustomCommitmentSaved(false); // Reset confirmation
 
     let newCommitment;
     if (source === 'pdp') {
@@ -894,12 +898,17 @@ const CommitmentSelectorView = ({ setView, initialGoal, initialTier }) => {
     setTargetColleague('');
     setAiAssessment(null);
     setIsSaving(false);
+    
+    // FIX 3: Add confirmation for bank commitment addition (use timeout for reset)
+    setIsCustomCommitmentSaved(true);
+    setTimeout(() => setIsCustomCommitmentSaved(false), 3000);
   };
 
   const handleCreateCustomCommitment = async () => {
     // FIX FOR ISSUE 5: Ensure logic is sound
     if (customCommitment.trim() && linkedGoal && linkedGoal !== initialLinkedGoalPlaceholder && linkedTier) {
       setIsSaving(true);
+      setIsCustomCommitmentSaved(false); // Reset confirmation
       const newId = String(Date.now());
       const newCommitment = {
         id: `custom-${newId}`,
@@ -922,6 +931,10 @@ const CommitmentSelectorView = ({ setView, initialGoal, initialTier }) => {
       setTargetColleague('');
       setAiAssessment(null);
       setIsSaving(false);
+      
+      // Fix 3: Add visible confirmation
+      setIsCustomCommitmentSaved(true);
+      setTimeout(() => setIsCustomCommitmentSaved(false), 3000);
     }
   };
 
@@ -1199,6 +1212,12 @@ const CommitmentSelectorView = ({ setView, initialGoal, initialTier }) => {
             </Button>
 
             {renderAssessmentResult()}
+            
+            {isCustomCommitmentSaved && (
+                <div className='flex items-center p-3 text-sm font-semibold text-white rounded-lg bg-green-500'>
+                    <CheckCircle className='w-4 h-4 mr-2'/> Commitment Added!
+                </div>
+            )}
 
             <Button
               onClick={handleCreateCustomCommitment} // FIX 2: CRITICAL WIRING FIX: The button must call handleCreateCustomCommitment
@@ -1322,6 +1341,7 @@ export default function DailyPracticeScreen({ initialGoal, initialTier }) {
   const [view, setView] = useState('scorecard'); 
   const [isSaving, setIsSaving] = useState(false); // Global saving for reflection/resilience
   const [reflection, setReflection] = useState(commitmentData?.reflection_journal || '');
+  const [isReflectionSaved, setIsReflectionSaved] = useState(false); // NEW: Reflection confirmation
   
   const [reflectionPrompt, setReflectionPrompt] = useState(null);
   const [promptLoading, setPromptLoading] = useState(false);
@@ -1472,9 +1492,14 @@ export default function DailyPracticeScreen({ initialGoal, initialTier }) {
   const handleSaveReflection = async () => {
     // FIX 1: Ensure the saving state and data update are atomic and correctly managed
     setIsSaving(true);
+    setIsReflectionSaved(false); // Reset prior to save
+    
     // CRITICAL FIX: Use functional update to ensure we read the latest state and only update the journal
     await updateCommitmentData(data => ({ ...data, reflection_journal: reflection }));
+    
     setIsSaving(false);
+    setIsReflectionSaved(true); // Confirmation on success
+    setTimeout(() => setIsReflectionSaved(false), 3000);
     console.log("Daily Reflection Saved.");
   };
   
@@ -1814,6 +1839,16 @@ export default function DailyPracticeScreen({ initialGoal, initialTier }) {
                 className="w-full p-3 border border-gray-300 rounded-xl focus:ring-[#47A88D] focus:border-[#47A88D] h-40"
                 placeholder="My reflection (required)..."
               ></textarea>
+              <div className='flex justify-between items-center mt-1'>
+                <p className={`text-xs ${reflection.length < 50 ? 'text-[#E04E1B]' : 'text-[#47A88D]'}`}>
+                    {reflection.length} / 50 characters written.
+                </p>
+                {isReflectionSaved && (
+                    <div className='flex items-center text-xs font-semibold text-green-600'>
+                        <CheckCircle className='w-4 h-4 mr-1'/> Reflection Saved!
+                    </div>
+                )}
+            </div>
               <Button
                 variant="secondary"
                 onClick={handleSaveReflection}
