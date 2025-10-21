@@ -631,7 +631,7 @@ const CommitmentItem = ({ commitment, onLogCommitment, onRemove, isSaving, isSco
  * CommitmentSelectorView: Allows users to add commitments from the bank or create custom ones.
  */
 const CommitmentSelectorView = ({ setView, initialGoal, initialTier }) => {
-  const { updateCommitmentData, commitmentData, planningData, pdpData, callSecureGeminiAPI, hasGeminiKey } = useAppServices(); // FIX: Call hook inside component
+  const { updateCommitmentData, commitmentData, planningData, pdpData, callSecureGeminiAPI, hasGeminiKey, GEMINI_MODEL} = useAppServices(); // FIX: Call hook inside component
 
   const [tab, setTab] = useState('bank');
   const [searchTerm, setSearchTerm] = useState('');
@@ -725,9 +725,8 @@ const CommitmentSelectorView = ({ setView, initialGoal, initialTier }) => {
 
     setAssessmentLoading(true);
     setAiAssessment(null);
-    const { GEMINI_MODEL } = useAppServices();
-
-    const tierName = LEADERSHIP_TIERS[linkedTier]?.name || 'N/A';
+    // GEMINI_MODEL available from top-level hook
+const tierName = LEADERSHIP_TIERS[linkedTier]?.name || 'N/A';
     // FIX: Ensure JSON output is enforced for reliable data
     const systemPrompt = `You are an AI Executive Coach specializing in habit alignment. Your task is to analyze a user's proposed daily commitment against their strategic context (Goal and Leadership Tier). The response MUST be a JSON object conforming to the schema. Do not include any introductory or explanatory text outside the JSON block.`;
     
@@ -754,7 +753,7 @@ const CommitmentSelectorView = ({ setView, initialGoal, initialTier }) => {
     try {
         const payload = {
             contents: [{ role: "user", parts: [{ text: userQuery }] }],
-            systemInstruction: { parts: [{ text: systemPrompt }] },
+            system_instruction: { parts: [{ text: systemPrompt }] },
             generationConfig: {
                 responseMimeType: "application/json",
                 responseSchema: jsonSchema
@@ -1278,7 +1277,7 @@ const WeeklyPrepView = ({ setView, commitmentData, updateCommitmentData, userCom
  */
 export default function DailyPracticeScreen({ initialGoal, initialTier }) {
   // CRITICAL FIX: Use useAppServices to get the state manager and data
-  const { commitmentData, updateCommitmentData, callSecureGeminiAPI, hasGeminiKey, pdpData, navigate } = useAppServices(); 
+  const { commitmentData, updateCommitmentData, callSecureGeminiAPI, hasGeminiKey, pdpData, navigate, GEMINI_MODEL} = useAppServices(); 
   
   // FIX: Call the mock scheduleMidnightReset function
   // NOTE: This runs the logic but prevents the component from getting stuck in an update loop
@@ -1353,8 +1352,8 @@ export default function DailyPracticeScreen({ initialGoal, initialTier }) {
      FIX: Integrated the resilient API call structure
   ========================================================= */
   const fetchReflectionPrompt = async (data) => {
-    const { GEMINI_MODEL } = useAppServices(); // FIX: Access inside function
-    if (!hasGeminiKey() || promptLoading) return;
+    // GEMINI_MODEL available from top-level hook
+if (!hasGeminiKey() || promptLoading) return;
 
     setPromptLoading(true);
     
@@ -1379,7 +1378,7 @@ export default function DailyPracticeScreen({ initialGoal, initialTier }) {
     try {
         const payload = {
             contents: [{ role: "user", parts: [{ text: userQuery }] }],
-            systemInstruction: { parts: [{ text: systemPrompt }] },
+            system_instruction: { parts: [{ text: systemPrompt }] },
             model: GEMINI_MODEL,
         };
         const result = await callSecureGeminiAPI(payload);
