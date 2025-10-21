@@ -40,7 +40,9 @@ import { getFirestore, setLogLevel } from 'firebase/firestore';
 // =========================================================
 
 // =========================================================
-// --- EXISTING MOCK/PLACEHOLDER DEFINITIONS (Keep these) ---
+// --- FIXED GLOBAL DEFINITIONS ---
+// CRITICAL FIX: Define appId globally using __app_id fallback
+const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
 const IconMap = {}; 
 const SECRET_SIGNUP_CODE = 'mock-code-123';
 const PDP_COLLECTION = 'leadership_plan';
@@ -720,7 +722,7 @@ const AppContent = ({ currentScreen, setCurrentScreen, user, navParams, isMobile
                 setCurrentScreen={setCurrentScreen}
                 user={user}
                 isMobileOpen={isMobileOpen}
-                closeMobileMenu={() => setIsMobileOpen(false)}
+                closeMobileMenu={() => setIsMobileMenu(false)}
                 isAuthRequired={isAuthRequired}
             />
             
