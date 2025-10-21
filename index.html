@@ -33,7 +33,7 @@
       }());
     </script>
 
-    <!-- RUNTIME CONFIG via Vite HTML env replacement -->
+    <!-- RUNTIME CONFIG via Vite HTML env replacement (Firebase only; Gemini key lives on server as GEMINI_API_KEY) -->
     <!-- Set these on Netlify: VITE_FIREBASE_* and VITE_GEMINI_API_KEY -->
     <script>
       window.__firebase_config = {
@@ -52,8 +52,8 @@
 
     <!-- IMPORTANT: No secrets in client. Tell the app to use serverless. (kept from your file) -->
     <script type="module">
-      window.__GEMINI_MODE  = 'serverless';       // 'serverless' | 'direct'
-      window.__GEMINI_MODEL = 'gemini-2.5-flash'; // optional hint
+      window.__GEMINI_MODE = 'serverless';       // 'serverless' | 'direct'
+      window.__GEMINI_MODEL = 'gemini-1.5-flash-latest'; // optional hint
       window.__BOOTMARK__ && window.__BOOTMARK__.mark('pre-app-scripts-ready');
     </script>
   </head>
