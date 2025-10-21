@@ -44,14 +44,14 @@ async function mdToHtml(md) {
 }
 
 // Global Standardized Card Component for Consistency
-const Card = ({ children, title, icon: Icon, className = '', accent = 'NAVY' }) => {
-  const accentColor = COLORS[accent] || COLORS.NAVY;
+const Card = ({ children, title, icon: Icon, className='', accent='NAVY', accentColor }) => {
+  const barColor = accentColor ?? COLORS[accent] ?? COLORS.NAVY;
   return (
     <div
       className={`relative p-6 rounded-2xl border-2 shadow-2xl transition-all duration-300 text-left ${className}`}
       style={{ background: 'linear-gradient(180deg,#FFFFFF, #FCFCFA)', borderColor: COLORS.SUBTLE, color: COLORS.NAVY }}
     >
-      <span style={{ position:'absolute', top:0, left:0, right:0, height:6, background: accentColor, borderTopLeftRadius:14, borderTopRightRadius:14 }} />
+      <span style={{ /* ... */ background: barColor }} />
 
       {Icon && (
         <div className="w-10 h-10 rounded-lg flex items-center justify-center border mb-3" style={{ borderColor: COLORS.SUBTLE, background: COLORS.LIGHT_GRAY }}>
@@ -233,33 +233,44 @@ const QuickStartAcceleratorScreen = () => {
                         </button>
 
                         <div className="space-y-6">
-                            {sessions.map(session => (
-                                {/* FIX: Removed redundant braces that caused the build error */}
-                                <Card key={session.id} title={`Session ${session.id}: ${session.title}`} icon={BookOpen} accent={COLORS.NAVY} className="rounded-2xl border-l-8 border-[#002E47] shadow-lg bg-white">
-                                    <p className='text-md font-semibold text-[#002E47] mb-4 border-b border-gray-200 pb-2'>Why this session matters:</p>
-                                    
-                                    <blockquote className="border-l-4 border-[#47A88D] pl-4 py-1 mb-4 text-sm italic text-gray-600">
-                                        {session.keyRationale}
-                                    </blockquote>
-                                    
-                                    <div className="grid md:grid-cols-2 gap-4 pt-4 border-t border-gray-200">
-                                        <div>
-                                            <h3 className="text-lg font-semibold text-[#47A88D] mb-2 flex items-center"><Target className='w-5 h-5 mr-1'/> Core Focus</h3>
-                                            <p className="text-gray-700 text-sm">{session.focus}</p>
-                                        </div>
-                                        <div>
-                                            <h3 className="text-lg font-semibold text-[#47A88D] mb-2 flex items-center"><Clock className='w-5 h-5 mr-1'/> Pre-Work Checklist</h3>
-                                            <ul className="list-disc pl-5 text-gray-700 space-y-1 text-sm">
-                                                {session.preWork.map((item, index) => (
-                                                    <li key={index} className="text-sm">{item}</li>
-                                                ))}
-                                            </ul>
-                                        </div>
-                                    </div>
-                                </Card>
-                            ))}
-                        </div>
-                    </div>
+  {sessions.map((session) => (
+    <Card
+      key={session.id}
+      title={`Session ${session.id}: ${session.title}`}
+      icon={BookOpen}
+      accent="NAVY"   // <-- was accent={COLORS.NAVY}
+      className="rounded-2xl border-l-8 border-[#002E47] shadow-lg bg-white"
+    >
+      <p className="text-md font-semibold text-[#002E47] mb-4 border-b border-gray-200 pb-2">
+        Why this session matters:
+      </p>
+
+      <blockquote className="border-l-4 border-[#47A88D] pl-4 py-1 mb-4 text-sm italic text-gray-600">
+        {session.keyRationale}
+      </blockquote>
+
+      <div className="grid md:grid-cols-2 gap-4 pt-4 border-t border-gray-200">
+        <div>
+          <h3 className="text-lg font-semibold text-[#47A88D] mb-2 flex items-center">
+            <Target className="w-5 h-5 mr-1" /> Core Focus
+          </h3>
+          <p className="text-gray-700 text-sm">{session.focus}</p>
+        </div>
+        <div>
+          <h3 className="text-lg font-semibold text-[#47A88D] mb-2 flex items-center">
+            <Clock className="w-5 h-5 mr-1" /> Pre-Work Checklist
+          </h3>
+          <ul className="list-disc pl-5 text-gray-700 space-y-1 text-sm">
+            {session.preWork.map((item, i) => (
+              <li key={i} className="text-sm">{item}</li>
+            ))}
+          </ul>
+        </div>
+      </div>
+    </Card>
+  ))}
+</div>
+
                 );
         }
     };
