@@ -1137,18 +1137,29 @@ const TrackerDashboardView = ({ data, updatePdpData, saveNewPlan, db, userId, na
     }, [briefingLoading, hasGeminiKey, callSecureGeminiAPI, isCurrentView]);
 
 
+    // CRITICAL FIX FOR INFINITE LOOP:
+    // This useEffect must only call setBriefing if the value is different, 
+    // especially for non-current months where the text is static/historical.
     useEffect(() => {
         if (monthPlan && assessment) {
             
-            if (!isCurrentView && monthPlan.briefingText) {
-                 setBriefing(monthPlan.briefingText);
-            } else if (isCurrentView) {
+            if (isCurrentView) {
+                 // 1. Current Month: Always try to fetch AI brief (handled by fetchMonthlyBriefing memoized function)
                  fetchMonthlyBriefing(monthPlan, assessment); 
+            } else if (monthPlan.briefingText) {
+                 // 2. Past Month with Saved Briefing: Use the saved briefing text
+                 if (briefing !== monthPlan.briefingText) {
+                    setBriefing(monthPlan.briefingText);
+                 }
             } else {
-                 setBriefing(`## Month ${viewMonth} Historical Briefing\n\n**Focus:** ${monthPlan.theme}\n\n*The full coaching brief was not saved for this historical month.*`);
+                 // 3. Historical/Future Month with NO Saved Briefing: Use static fallback text
+                 const historicalBriefingText = `## Month ${viewMonth} Historical Briefing\n\n**Focus:** ${monthPlan.theme}\n\n*The full coaching brief was not saved for this historical month.*`;
+                 if (briefing !== historicalBriefingText) {
+                     setBriefing(historicalBriefingText);
+                 }
             }
         }
-    }, [monthPlan, assessment, fetchMonthlyBriefing, viewMonth, isCurrentView]);
+    }, [monthPlan, assessment, fetchMonthlyBriefing, viewMonth, isCurrentView, briefing]); // Added briefing to dependency array to support the check
 
 
     // --- Handlers (Advance, Reset, Toggle, Save) ---
@@ -1320,7 +1331,7 @@ const TrackerDashboardView = ({ data, updatePdpData, saveNewPlan, db, userId, na
                             {/* AI Monthly Briefing */}
                             <div className='mb-4 p-4 rounded-xl bg-[#002E47]/10 border border-[#002E47]/20'>
                                 <h3 className='font-bold text-[#002E47] mb-1 flex items-center'><Activity className="w-4 h-4 mr-2 text-[#47A88D]" /> Monthly Executive Briefing</h3>
-                                {briefingLoading ? (
+                                {briefingLoading && isCurrentView ? (
                                     <p className='text-sm text-gray-600 flex items-center'><div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-500 mr-2 rounded-full"></div> Drafting advice...</p>
                                 ) : (
                                     <div className="prose max-w-none text-gray-700">
