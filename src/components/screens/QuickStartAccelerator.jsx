@@ -234,7 +234,7 @@ const QuickStartAcceleratorScreen = () => {
 
                         <div className="space-y-6">
                             {sessions.map(session => (
-                                {/* FIX: Removed redundant braces around Card component */}
+                                {/* FIX: Removed redundant braces that caused the build error */}
                                 <Card key={session.id} title={`Session ${session.id}: ${session.title}`} icon={BookOpen} accent={COLORS.NAVY} className="rounded-2xl border-l-8 border-[#002E47] shadow-lg bg-white">
                                     <p className='text-md font-semibold text-[#002E47] mb-4 border-b border-gray-200 pb-2'>Why this session matters:</p>
                                     
