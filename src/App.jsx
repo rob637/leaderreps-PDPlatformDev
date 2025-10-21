@@ -432,6 +432,7 @@ const NavSidebar = ({ currentScreen, setCurrentScreen, user, isMobileOpen, close
     
     // SYSTEM
     const systemNav = [
+        // CRITICAL FIX: Keeping App Settings visible and navigating correctly.
         { screen: 'app-settings', label: 'App Settings', icon: Settings }, 
     ];
 
@@ -528,7 +529,7 @@ const NavSidebar = ({ currentScreen, setCurrentScreen, user, isMobileOpen, close
                     // FIX 1: Explicitly set a dark subtle background when inactive
                     className={`flex items-center w-full p-2 rounded-xl text-sm font-semibold transition-colors hover:bg-[${TEAL}]/20 focus:outline-none focus:ring-2 focus:ring-[${TEAL}] bg-white/5`}
                 >
-                    {/* The user icon and display logic updated for Anonymous */}
+                    {/* The user icon and display logic updated for non-anonymous */}
                     <User className="w-5 h-5 mr-3 text-indigo-300" />
                     <span className='truncate'>{user?.email || `Guest User`}</span>
                 </button>
@@ -634,6 +635,7 @@ const App = ({ initialState }) => {
   const [user, setUser] = useState(
     DEBUG_MODE ? { name: 'Debugger', userId: 'mock-debugger-123', email: 'debug@leaderreps.com' } : null
   );
+  // CRITICAL FIX 1: Set default screen to 'dashboard'
   const [currentScreen, setCurrentScreen] = useState(initialState?.screen || 'dashboard');
   const [firebaseServices, setFirebaseServices] = useState({ db: null, auth: null });
   const [userId, setUserId] = useState(DEBUG_MODE ? 'mock-debugger-123' : null);
@@ -705,10 +707,10 @@ const App = ({ initialState }) => {
       
       // These lines now call the REAL imported functions
       const unsubscribe = onAuthStateChanged(authentication, (currentUser) => {
-        if (currentUser) {
+        // CRITICAL FIX 2: Only allow users with an email address. This ensures NO anonymous/guest login.
+        if (currentUser && currentUser.email) { 
           const uid = currentUser.uid;
-          // Set user email, defaulting to a placeholder if none exists (e.g., from a migrated anonymous user)
-          const email = currentUser.email || `guest-${uid.substring(0, 8)}@leaderreps.com`;
+          const email = currentUser.email;
           setUserId(uid);
           setUser({ name: email, email: email, userId: uid });
           setAuthRequired(false);
@@ -732,6 +734,27 @@ const App = ({ initialState }) => {
       setInitStage('error');
     }
   }, []);
+
+  // CRITICAL FIX 3: Logout on window/tab close
+  useEffect(() => {
+    const handleBeforeUnload = async () => {
+        const authInstance = firebaseServices.auth;
+        if (authInstance) {
+            // NOTE: signOut is synchronous on the client, but the effect uses async
+            await signOut(authInstance); 
+            console.log('User signed out due to window close.');
+            // We don't need to prevent default (like for unsaved changes) since we want the sign-out to happen.
+        }
+    };
+    
+    // Attach listener for the window/tab closing event
+    window.addEventListener('beforeunload', handleBeforeUnload);
+
+    // Cleanup: remove the event listener when the component unmounts
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
+  }, [firebaseServices.auth]); // Re-run effect if auth object changes
 
   if (!DEBUG_MODE) {
     if (initStage === 'init') {
@@ -757,7 +780,7 @@ const App = ({ initialState }) => {
         <React.Fragment>
           <AuthPanel
             auth={firebaseServices.auth}
-            // onSuccess is a necessary fallback/guarantee but auth listener should handle the actual user
+            // CRITICAL FIX 4: Ensure navigation is explicitly to 'dashboard' after successful login
             onSuccess={() => {
                 setAuthRequired(false);
                 setTimeout(() => navigate('dashboard'), 0);
