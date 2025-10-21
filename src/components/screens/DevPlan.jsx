@@ -8,9 +8,39 @@ import React, { useState, useEffect, useMemo, useCallback } from 'react';
 // The code below simulates the structure and flow expected by the router.
 
 // --- SERVICE LAYER TEMPLATE (REPLACE MOCK CODE WITH PRODUCTION CALLS) ---
-const useAppServices = (localPdpData, setLocalPdpData) => {
-    // 1. PRODUCTION INJECTION POINT: Replace the useState logic here.
+
+// CRITICAL FIX: Define the session storage key outside the hook
+const PDP_STORAGE_KEY = 'mock_pdp_data_v1';
+
+const useAppServices = () => { // Removed localPdpData, setLocalPdpData from arguments, managing internally
     
+    // CRITICAL FIX 1: Initialize state from Session Storage for mock persistence
+    const getInitialData = () => {
+        try {
+            const storedData = sessionStorage.getItem(PDP_STORAGE_KEY);
+            return storedData ? JSON.parse(storedData) : null;
+        } catch (e) {
+            console.error("Could not load PDP data from session storage:", e);
+            return null;
+        }
+    };
+    
+    const [localPdpData, setLocalPdpData] = useState(getInitialData);
+    
+    // CRITICAL FIX 2: Create a side effect to write to Session Storage on every data change
+    useEffect(() => {
+        try {
+            if (localPdpData === null) {
+                sessionStorage.removeItem(PDP_STORAGE_KEY);
+            } else {
+                sessionStorage.setItem(PDP_STORAGE_KEY, JSON.stringify(localPdpData));
+            }
+        } catch (e) {
+            console.error("Could not save PDP data to session storage:", e);
+        }
+    }, [localPdpData]);
+
+
     const updatePdpData = async (updater) => {
         // 2. PRODUCTION INJECTION POINT: Replace this entire block with your
         // actual database WRITE logic (e.g., Firebase `setDoc`).
@@ -20,6 +50,7 @@ const useAppServices = (localPdpData, setLocalPdpData) => {
         
         setLocalPdpData(prevData => {
             const newData = typeof updater === 'function' ? updater(prevData) : updater;
+            // The useEffect hook handles writing newData to sessionStorage.
             return newData;
         });
         return true;
@@ -35,7 +66,7 @@ const useAppServices = (localPdpData, setLocalPdpData) => {
     };
 
     return {
-        // NOTE: pdpData is managed by the router and passed in as `localPdpData`
+        // NOTE: pdpData is now managed internally by this hook
         pdpData: localPdpData, 
         updatePdpData: updatePdpData,
         saveNewPlan: saveNewPlan,
@@ -923,7 +954,7 @@ const TrackerDashboardView = ({ data, updatePdpData, saveNewPlan, db, userId, na
     const [isFeedbackModalVisible, setIsFeedbackModalVisible] = useState(false); // NEW STATE FOR FEEDBACK MODAL
 
 
-    const { callSecureGeminiAPI, hasGeminiKey } = useAppServices(data);
+    const { callSecureGeminiAPI, hasGeminiKey } = useAppServices(); // No props needed here anymore
 
     // CRITICAL FIX: Synchronize local reflection state when the viewed month changes.
     useEffect(() => {
@@ -992,6 +1023,7 @@ const TrackerDashboardView = ({ data, updatePdpData, saveNewPlan, db, userId, na
     };
 
     const handleResetPlan = async () => {
+        // This will now clear Session Storage via the hook's useEffect.
         await updatePdpData(() => null); 
     };
 
@@ -1250,7 +1282,7 @@ const TrackerDashboardView = ({ data, updatePdpData, saveNewPlan, db, userId, na
                                 Feel like you've mastered this tier? Re-run your initial **Self-Ratings** to check your progress and generate an **accelerated, revised roadmap** to match your new skill level.
                             </p>
                             <Button
-                                onClick={() => handleResetPlan()} 
+                                onClick={handleResetPlan} 
                                 variant="secondary"
                                 className='w-full bg-[#E04E1B] hover:bg-red-700'
                             >
@@ -1290,7 +1322,7 @@ const TrackerDashboardView = ({ data, updatePdpData, saveNewPlan, db, userId, na
             
             <RequestFeedbackModal
                 isVisible={isFeedbackModalVisible}
-                onClose={() => setIsFeedbackModalVisible(false)}
+                onClose={() => setIsContentModalVisible(false)}
                 monthPlan={monthPlan}
                 assessment={assessment}
             />
@@ -1546,10 +1578,11 @@ const PlanReviewScreen = ({ generatedPlan, navigate, clearReviewData }) => {
 
 // --- Main Router (Enhanced with internal state) ---
 export const ProfDevPlanScreen = () => {
-    const [localPdpData, setLocalPdpData] = useState(null); 
+    // No longer initializing or managing localPdpData/setLocalPdpData here
     const [generatedPlanData, setGeneratedPlanData] = useState(null); 
     
-    const services = useAppServices(localPdpData, setLocalPdpData);
+    // Services now handles its own state persistence via SessionStorage
+    const services = useAppServices(); 
     const { pdpData, isLoading, error, userId, navigate, updatePdpData, saveNewPlan } = services;
 
     const clearReviewData = useCallback(() => {
@@ -1563,8 +1596,7 @@ export const ProfDevPlanScreen = () => {
     } else if (error) {
         currentView = 'error';
     } else if (pdpData !== null) { 
-        // CRITICAL CHANGE: If pdpData exists (meaning a plan was saved), go straight to tracker.
-        // This takes priority over the temporary 'review' screen if pdpData exists.
+        // CRITICAL: If pdpData exists (loaded from Session Storage), go straight to tracker.
         currentView = 'tracker';
     } else if (generatedPlanData) {
         currentView = 'review';
