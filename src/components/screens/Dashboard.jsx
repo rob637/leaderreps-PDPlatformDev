@@ -1,6 +1,6 @@
-//  src/components/screens/Dashboard.jsx 
+// src/components/screens/Dashboard.jsx 
 import React, { useMemo, useState, useEffect, useCallback } from 'react';
-import { useAppServices } from '../../services/useAppServices.jsx';
+import { useAppServices } from '../../services/useAppServices.jsx'; // Final Stable Path
 
 // --- MOCK IMPORTS for self-contained file ---
 const LEADERSHIP_TIERS = {
@@ -423,13 +423,14 @@ const DashboardScreen = () => {
     }, [user?.firstLogin]);
 
 
-    // PATCH 3: Added tiny guard and log around navigate
+    // FINAL FIX for button navigation assurance: Logs the exact call.
     const safeNavigate = useCallback((screen, params) => {
         if (typeof navigate !== 'function') {
-            console.error('navigate() is not available from useAppServices');
+            console.error('CRITICAL ERROR: navigate() is not available from useAppServices.');
             return;
         }
-        console.log('[Dashboard] navigate ->', screen, params || {});
+        // This log confirms the button correctly executed this component's logic.
+        console.log('[Dashboard] NAVIGATION EXECUTED ->', screen, params || {});
         navigate(screen, params);
     }, [navigate]);
     
@@ -563,7 +564,7 @@ const DashboardScreen = () => {
         </div>
         
         {/* --- DEDICATED PDP ROADMAP HIGHLIGHT (FIX 1: HEADER SIZE & BORDER) --- */}
-        <Card onClick={() => safeNavigate('prof-dev-plan')} className="w-full shadow-2xl hover:shadow-3xl border-4 border-[#7C3AED]">
+        <Card onClick={() => safeNavigate('prof-dev-plan')} className="w-full shadow-2xl hover:shadow-3xl border-4 border-[#002E47]">
             <h2 className="text-3xl font-extrabold text-[#002E47] mb-6 border-b-2 pb-4 border-gray-300 flex items-center gap-3">
                 <Map size={28} className='text-[#7C3AED]'/> My Executive Roadmap
             </h2>
@@ -615,7 +616,7 @@ const DashboardScreen = () => {
                                 <Briefcase className='w-5 h-5 mr-2'/> 
                                 <span className='text-md font-extrabold'>Development Plan</span>
                             </ThreeDButton>
-                            <p className='text-xs font-light text-gray-600'>This is a **24-Month Roadmap** designed to close your skill gaps. It uses AI-generated, hyper-personalized content to accelerate executive growth.</p> 
+                            <p className='text-xs font-light text-gray-600'>This is a **24-Month Roadmap** designed to close your skill gaps. It uses AI-generated, hyper-personalized content to accelerate executive growth [cite: Dashboard.jsx, DevPlan.jsx].</p> 
                         </div>
 
                         {/* Daily Practice Button */}
@@ -629,7 +630,7 @@ const DashboardScreen = () => {
                                 <ClockIcon className='w-5 h-5 mr-2'/> 
                                 <span className='text-md font-extrabold'>Daily Practice</span>
                             </ThreeDButton>
-                            <p className='text-xs font-light text-gray-600'>This **Daily Scorecard** tracks your commitment to non-negotiable leadership micro-habits. Hitting your score is the key to sustained executive growth.</p>
+                            <p className='text-xs font-light text-gray-600'>This **Daily Scorecard** tracks your commitment to non-negotiable leadership micro-habits. Hitting your score is the key to sustained executive growth [cite: Dashboard.jsx, DailyPractice.jsx].</p>
                         </div>
 
                         {/* Coaching Lab Button */}
@@ -643,7 +644,7 @@ const DashboardScreen = () => {
                                 <Mic className='w-5 h-5 mr-2'/> 
                                 <span className='text-md font-extrabold'>Coaching Lab</span>
                             </ThreeDButton>
-                            <p className='text-xs font-light text-gray-600'>**Practice key leadership interactions**, such as crucial conversations, using guided AI tools and receive real-time critique to sharpen your skills.</p>
+                            <p className='text-xs font-light text-gray-600'>**Practice key leadership interactions**, such as crucial conversations, using guided AI tools and receive real-time critique to sharpen your skills [cite: Dashboard.jsx, Labs.jsx].</p>
                         </div>
 
                         {/* Planning Hub Button */}
@@ -657,7 +658,7 @@ const DashboardScreen = () => {
                                 <TrendingUp className='w-5 h-5 mr-2'/> 
                                 <span className='text-md font-extrabold'>Planning Hub</span>
                             </ThreeDButton>
-                            <p className='text-xs font-light text-gray-600'>This hub helps you transform abstract ideas into **actionable, accountable goals**. You can build a clear Vision, draft measurable OKRs, and vet high-stakes decisions with AI audit tools.</p>
+                            <p className='text-xs font-light text-gray-600'>This hub helps you transform abstract ideas into **actionable, accountable goals**. You can build a clear Vision, draft measurable OKRs, and vet high-stakes decisions with AI audit tools [cite: Dashboard.jsx, PlanningHub.jsx].</p>
                         </div>
                         
                     </div>
@@ -681,7 +682,7 @@ const DashboardScreen = () => {
                                 <Lightbulb className='w-5 h-5 mr-2'/> 
                                 <span className='text-md font-extrabold'>Applied Leadership</span>
                             </ThreeDButton>
-                            <p className='text-xs font-light text-gray-600'>Access micro-habits and **AI coaching tailored to your specific industry**, identity, or high-stakes operational context for high-leverage guidance.</p>
+                            <p className='text-xs font-light text-gray-600'>Access micro-habits and **AI coaching tailored to your specific industry**, identity, or high-stakes operational context for high-leverage guidance [cite: Dashboard.jsx].</p>
                         </div>
 
                         {/* Business Readings Button */}
@@ -695,7 +696,7 @@ const DashboardScreen = () => {
                                 <BookOpen className='w-5 h-5 mr-2'/> 
                                 <span className='text-md font-extrabold'>Business Readings</span>
                             </ThreeDButton>
-                            <p className='text-xs font-light text-gray-600'>A curated library of business book flyers with key frameworks, executive summaries, and **AI-driven commitment plans** to simplify learning.</p>
+                            <p className='text-xs font-light text-gray-600'>A curated library of business book flyers with key frameworks, executive summaries, and **AI-driven commitment plans** to simplify learning [cite: Dashboard.jsx].</p>
                         </div>
 
                         {/* Community & Peer Support Button */}
@@ -709,7 +710,7 @@ const DashboardScreen = () => {
                                 <CommunityIcon className='w-5 h-5 mr-2'/> 
                                 <span className='text-md font-extrabold'>Community & Peer Support</span>
                             </ThreeDButton>
-                            <p className='text-xs font-light text-gray-600'>**Connect with executive peers** for advice, discuss difficult scenarios, and access the Mentorship Network for one-on-one guidance.</p>
+                            <p className='text-xs font-light text-gray-600'>**Connect with executive peers** for advice, discuss difficult scenarios, and access the Mentorship Network for one-on-one guidance [cite: Dashboard.jsx].</p>
                         </div>
                         
                     </div>

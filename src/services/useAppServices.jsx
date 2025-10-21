@@ -22,33 +22,19 @@ const PDP_COLLECTION = 'leadership_plan';
 const PLANNING_COLLECTION = 'planning'; 
 
 // --- App Context Setup ---
-const AppServicesContext = createContext(null);
-
-// Default service object to safely destructure against if the context is null
-const DEFAULT_SERVICES = {
-    navigate: () => {}, 
-    user: {},
-    commitmentData: {},
-    pdpData: {},
-    planningData: {},
-    LEADERSHIP_TIERS: {},
-    hasPendingDailyPractice: false,
-    isLoading: true, // Indicates loading until real services take over
-    callSecureGeminiAPI: () => {}, 
-    hasGeminiKey: () => false,
-    // Add all other required function stubs
-    updateCommitmentData: () => {},
-    updatePdpData: () => {},
-    updatePlanningData: () => {},
-    GEMINI_MODEL: DEFAULT_MODEL,
-};
+// CRITICAL FIX: Exporting the context object itself for App.jsx to consume.
+export const AppServicesContext = createContext(null);
 
 export function useAppServices() {
   const ctx = useContext(AppServicesContext);
-  // CRITICAL FIX: Return a safe default object if context is not yet set (or is null)
-  return ctx || DEFAULT_SERVICES; 
+  // CRITICAL FIX for null destructuring: Return a safe default object if context is not yet set
+  return ctx || {
+    navigate: () => {}, user: {}, commitmentData: {}, pdpData: {}, planningData: {}, 
+    LEADERSHIP_TIERS: {}, hasPendingDailyPractice: false, isLoading: true, 
+    callSecureGeminiAPI: () => {}, hasGeminiKey: () => false, updateCommitmentData: () => {},
+    updatePdpData: () => {}, updatePlanningData: () => {}, GEMINI_MODEL: DEFAULT_MODEL,
+  }; 
 }
-
 
 // --- Mock/Static Data for Fallbacks ---
 const MOCK_USER_DATA = { name: 'Jane Executive', email: 'jane.executive@acme.com', firstLogin: true };
@@ -96,7 +82,7 @@ const useFirestoreData = (db, collectionName, docId) => {
 
 
 /**
- * The core function that provides the global state and services, designed to be called 
+ * The core function that calculates the global state and services, designed to be called 
  * once inside App.jsx's DataProvider component.
  */
 export function createServiceValue(firebaseServices, userId) {
@@ -153,7 +139,10 @@ export function createServiceValue(firebaseServices, userId) {
       console.log("PRODUCTION STUB: callSecureGeminiAPI called.");
       return {}; 
   }; 
-  const navigate = (path) => { console.log('MOCK NAVIGATION: Navigating to:', path); };
+  const navigate = (path) => { 
+      // This MUST be replaced with your actual router function (e.g., react-router-dom history.push)
+      console.log('MOCK NAVIGATION: Navigating to:', path); 
+  };
   const hasPendingDailyPractice = commitmentData?.active_commitments?.some(c => c.status === 'Pending') || false;
 
 
@@ -180,7 +169,10 @@ export function createServiceValue(firebaseServices, userId) {
   };
 }
 
-// Placeholder to satisfy main.jsx import (as previously identified)
+/**
+ * FINAL FIX: Re-exporting this empty provider component to satisfy the main.jsx import.
+ * The real provider is DataProvider in App.jsx.
+ */
 export function AppServicesProvider({ children }) {
     return <React.Fragment>{children}</React.Fragment>;
 }
