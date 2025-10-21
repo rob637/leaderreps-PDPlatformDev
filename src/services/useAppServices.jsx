@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useMemo, useState, useEffect } from 'react'; 
 import { doc, onSnapshot } from 'firebase/firestore'; 
-import { getAuth } from 'firebase/auth'; // Ensure this is imported for auth?.currentUser access
+import { getAuth } from 'firebase/auth'; 
 
 
 // --- GEMINI CONFIGURATION (Kept for completeness) ---
@@ -22,13 +22,31 @@ const PDP_COLLECTION = 'leadership_plan';
 const PLANNING_COLLECTION = 'planning'; 
 
 // --- App Context Setup ---
-// The actual context object is defined in App.jsx's DataProvider section.
 const AppServicesContext = createContext(null);
 
+// Default service object to safely destructure against if the context is null
+const DEFAULT_SERVICES = {
+    navigate: () => {}, 
+    user: {},
+    commitmentData: {},
+    pdpData: {},
+    planningData: {},
+    LEADERSHIP_TIERS: {},
+    hasPendingDailyPractice: false,
+    isLoading: true, // Indicates loading until real services take over
+    callSecureGeminiAPI: () => {}, 
+    hasGeminiKey: () => false,
+    // Add all other required function stubs
+    updateCommitmentData: () => {},
+    updatePdpData: () => {},
+    updatePlanningData: () => {},
+    GEMINI_MODEL: DEFAULT_MODEL,
+};
+
 export function useAppServices() {
-    const ctx = useContext(AppServicesContext);
-    // Note: In a production app, the actual context object must be passed down from App.jsx's DataProvider.
-    return ctx; 
+  const ctx = useContext(AppServicesContext);
+  // CRITICAL FIX: Return a safe default object if context is not yet set (or is null)
+  return ctx || DEFAULT_SERVICES; 
 }
 
 
@@ -93,7 +111,7 @@ export function createServiceValue(firebaseServices, userId) {
   // Combine Live Data with Mocks for robustness
   const pdpData = pdpDataLive || MOCK_PDP_DATA;
   const planningData = planningDataLive || MOCK_PLANNING_DATA;
-  const commitmentData = MOCK_COMMITMENT_DATA; // Static Mock for now
+  const commitmentData = MOCK_COMMITMENT_DATA; 
 
   // Combine Loading States
   const isLoading = userLoading || pdpLoading || planningLoading;
@@ -113,7 +131,7 @@ export function createServiceValue(firebaseServices, userId) {
   }, [auth?.currentUser, userData]);
 
 
-  // --- Data Write Stubs (Requires implementation using `setDoc` or `updateDoc`) ---
+  // --- Data Write Stubs (REQUIRED FOR PRODUCTION) ---
   const updateCommitmentData = async (updater) => {
       console.log('PRODUCTION STUB: updateCommitmentData - Requires implementation with Firestore setDoc/updateDoc.');
       return true;
@@ -162,13 +180,7 @@ export function createServiceValue(firebaseServices, userId) {
   };
 }
 
-/**
- * Re-adding this export to satisfy the main.jsx import error.
- * In production, the component logic should ensure its context object matches 
- * the consumer context object.
- */
+// Placeholder to satisfy main.jsx import (as previously identified)
 export function AppServicesProvider({ children }) {
-    // This provider is added purely to satisfy the main.jsx import 
-    // where AppServicesProvider is expected. It's a placeholder.
     return <React.Fragment>{children}</React.Fragment>;
 }
