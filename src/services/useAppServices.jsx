@@ -77,13 +77,36 @@ export function useAppServices() {
   };
 
   // Merge defaults with context; override AI funcs with safe versions; keep navigate present
+  
+  // Unified AI caller: prefer context, fall back to default; always return a shaped response
+  const callSecureGeminiAPI = async (payload = {}) => {
+    try {
+      if (ctx && typeof ctx.callSecureGeminiAPI === 'function') {
+        const out = await ctx.callSecureGeminiAPI(payload);
+        const parts = out?.candidates?.[0]?.content?.parts || [];
+        const text = parts.map(p => (typeof p === 'string' ? p : (p?.text || ''))).join('\n').trim();
+        if (text) return out;
+        console.warn('[AI] Context call returned empty text; using default fallback.');
+      }
+    } catch (e) {
+      console.warn('[AI] Context call failed; using default fallback.', e);
+    }
+    // Default fallback (may forward to window.__callSecureGeminiAPI internally)
+    const out = await DEFAULT_SERVICES.callSecureGeminiAPI(payload);
+    const parts = out?.candidates?.[0]?.content?.parts || [];
+    const text = parts.map(p => (typeof p === 'string' ? p : (p?.text || ''))).join('\n').trim();
+    if (text) return out;
+    // Ultimate fallback: shaped minimal response
+    return { candidates: [{ content: { parts: [{ text: 'AI unavailable. Showing a minimal fallback.' }] } }] };
+  };
+
   return {
     ...DEFAULT_SERVICES,
     ...(ctx || {}),
     navigate: (ctx && typeof ctx.navigate==='function') ? ctx.navigate : DEFAULT_SERVICES.navigate,
-    callSecureGeminiAPI: safeCallSecureGeminiAPI,
-    hasGeminiKey: safeHasGeminiKey,
+    callSecureGeminiAPI,
   };
+
 }
 
 
