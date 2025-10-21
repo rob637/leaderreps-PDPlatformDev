@@ -145,13 +145,17 @@ export function createServiceValue(firebaseServices, userId) {
   };
 // Safe pending/daily-practice flag based on commitmentData
 const hasPendingDailyPractice = useMemo(() => {
-  const active = Array.isArray(commitmentData?.active_commitments)
-    ? commitmentData.active_commitments
-    : [];
-  const isPending = active.some(c => c?.status === 'Pending');
+  const cd = commitmentData || {};
+  const active = Array.isArray(cd.active_commitments) ? cd.active_commitments : [];
+  const isPending = active.some(c => c && c.status === 'Pending');
 
-  // Coerce to string to avoid "reading 'length' of undefined"
-  const reflectionMissing = String(commitmentData?.reflection_journal ?? '').trim().length === 0;
+  let reflectionMissing = true;
+  const r = cd.reflection_journal;
+  if (typeof r === 'string') {
+    reflectionMissing = (r.trim() === '');
+  } else {
+    reflectionMissing = true;
+  }
 
   return active.length > 0 && (isPending || reflectionMissing);
 }, [commitmentData]);

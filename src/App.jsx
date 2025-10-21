@@ -303,12 +303,18 @@ const DataProvider = ({ children, firebaseServices, userId, isAuthReady, navigat
   const error = pdp.error || commitment.error || planning.error || appServices.error;
 
 const hasPendingDailyPractice = useMemo(() => {
-  const cd = commitment?.commitmentData ?? {};
+  const cd = (commitment && commitment.commitmentData) ? commitment.commitmentData : {};
   const active = Array.isArray(cd.active_commitments) ? cd.active_commitments : [];
-  const isPending = active.some(c => c?.status === 'Pending');
+  const isPending = active.some(c => c && c.status === 'Pending');
 
-  // Always coerce to a string before trim/length to avoid crashes
-  const reflectionMissing = String(cd.reflection_journal ?? '').trim().length === 0;
+  // Only treat as "has reflection" if it's a string with non-whitespace chars
+  let reflectionMissing = true;
+  const r = cd.reflection_journal;
+  if (typeof r === 'string') {
+    reflectionMissing = (r.trim() === '');
+  } else {
+    reflectionMissing = true;
+  }
 
   return active.length > 0 && (isPending || reflectionMissing);
 }, [commitment?.commitmentData]);
