@@ -341,14 +341,19 @@ const NavSidebar = ({ currentScreen, setCurrentScreen, user, isMobileOpen, close
     }
     
     return (
-        // FIX 1: Fixed NavSidebar styling (fixed height, independent scroll)
-        <div className={`hidden md:fixed md:flex flex-col w-64 h-full bg-[${NAVY}] text-white p-4 shadow-2xl overflow-y-auto`}
-             style={{ 
-                 // Hide scrollbar for Webkit (Chrome, Safari)
-                 WebkitOverflowScrolling: 'touch',
-                 msOverflowStyle: 'none', // IE and Edge
-                 scrollbarWidth: 'none', // Firefox
-             }}
+        // FIX: Applied scrollbar hiding styles to the top level container
+        <div 
+            className={`hidden md:fixed md:flex flex-col w-64 h-full bg-[${NAVY}] text-white p-4 shadow-2xl overflow-y-auto`}
+            style={{ 
+                // Hide scrollbar for Webkit (Chrome, Safari)
+                msOverflowStyle: 'none', // IE and Edge
+                scrollbarWidth: 'none', // Firefox
+                // Webkit specific scrollbar hiding
+                WebkitOverflowScrolling: 'touch',
+                overflow: 'hidden', // Hide scrollbar initially
+            }}
+            onMouseEnter={e => e.currentTarget.style.overflow = 'auto'} // Show on hover
+            onMouseLeave={e => e.currentTarget.style.overflow = 'hidden'} // Hide on leave
         >
             <div className={`flex items-center justify-center h-16 border-b border-[${TEAL}]/50 mb-6 flex-shrink-0`}>
                 <h1 className="text-2xl font-extrabold flex items-center">
@@ -434,7 +439,14 @@ const ScreenRouter = ({ currentScreen, navParams }) => {
 
 const AppContent = ({ currentScreen, setCurrentScreen, user, navParams, isMobileOpen, setIsMobileOpen, isAuthRequired }) => {
     return (
-        <div className="min-h-screen flex bg-gray-100 font-sans antialiased">
+        // CRITICAL FIX: The entire outer container should be scrollable vertically.
+        <div className="min-h-screen flex bg-gray-100 font-sans antialiased overflow-y-auto overflow-x-hidden" 
+            style={{ 
+                // Hide scrollbar for Webkit (Chrome, Safari) - this is applied to the main viewport 
+                msOverflowStyle: 'none', 
+                scrollbarWidth: 'none', 
+            }}
+        >
             {/* NavSidebar is now fixed, taking up 64px width */}
             <NavSidebar
                 currentScreen={currentScreen}
@@ -446,7 +458,7 @@ const AppContent = ({ currentScreen, setCurrentScreen, user, navParams, isMobile
             />
             
             {/* Main content area must account for the sidebar width */}
-            <main className="flex-1 md:ml-64 overflow-y-auto overflow-x-hidden"> {/* FIX: Added overflow-x-hidden */}
+            <main className="flex-1 md:ml-64">
                 {/* Mobile Header */}
                 <div className="md:hidden sticky top-0 bg-white/95 backdrop-blur-sm shadow-md p-4 flex justify-between items-center z-40">
                     <h1 className="text-xl font-bold text-[#002E47]">LeaderReps</h1>
