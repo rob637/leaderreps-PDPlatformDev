@@ -725,7 +725,7 @@ const AppContent = ({ currentScreen, setCurrentScreen, user, navParams, isMobile
                 setCurrentScreen={setCurrentScreen}
                 user={user}
                 isMobileOpen={isMobileOpen}
-                closeMobileMenu={() => setIsMobileMenu(false)}
+                closeMobileMenu={() => setIsMobileOpen(false)}
                 isAuthRequired={isAuthRequired}
             />
             
