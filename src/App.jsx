@@ -110,7 +110,11 @@ const hasGeminiKey = () => (!!API_KEY);
 
 
 // Icons used in the new NavSidebar
-import { Home, Zap, ShieldCheck, TrendingUp, Mic, BookOpen, Settings, User, LogOut, CornerRightUp, Clock, Briefcase, Target, Users, BarChart3, Globe, Code, Bell, Lock, Download, Trash2, Mail, Link, Menu } from 'lucide-react';
+import { 
+  Home, Zap, ShieldCheck, TrendingUp, Mic, BookOpen, Settings, User, LogOut, CornerRightUp, Clock, Briefcase, Target, Users, BarChart3, Globe, Code, Bell, Lock, Download, Trash2, Mail, Link, Menu,
+  // CRITICAL FIX: Trello was missing from the import list, causing the ReferenceError
+  Trello 
+} from 'lucide-react';
 
 // FIX: Setting up a global mock for notepad since components rely on it
 if (typeof window !== 'undefined' && typeof window.notepad === 'undefined') {
@@ -536,9 +540,9 @@ const NavSidebar = ({ currentScreen, setCurrentScreen, user, isMobileOpen, close
     // TOOLS & HUBS - Focus on active management tools
     const toolsHubsNav = [
         { screen: 'prof-dev-plan', label: 'Development Plan', icon: Briefcase },
-        { screen: 'daily-practice', label: 'Daily Practice', icon: Clock, notify: hasPendingDailyPractice },
+        { screen: 'daily-practice', label: 'Daily Practice', icon: Clock}, // Clock is imported
         { screen: 'coaching-lab', label: 'Coaching Lab', icon: Mic },
-        { screen: 'planning-hub', label: 'Planning Hub (OKRs)', icon: Trello }, 
+        { screen: 'planning-hub', label: 'Planning Hub (OKRs)', icon: Trello }, // Trello is now defined
     ];
     
     // NEW SECTION: RESOURCES & COMMUNITY - For learning, application, and peer support
