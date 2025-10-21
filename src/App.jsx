@@ -26,7 +26,8 @@ import {
 import { 
   getAuth, 
   onAuthStateChanged, 
-  signInWithCustomToken, 
+  // REMOVED: signInWithCustomToken, // NO LONGER USED
+  signInAnonymously, // ADDED: For Anonymous Login
   signOut,
   // GoogleAuthProvider, // Keep this if you use it in other components
 } from 'firebase/auth';
@@ -240,49 +241,40 @@ const DataProvider = ({ children, firebaseServices, userId, isAuthReady, navigat
 
 function ConfigError({ message }) { /* ... */ return null; }
 
-// FIX: Implemented a basic LoginPanel that auto-signs in a mock user
-function LoginPanel({ auth, onSuccess, allowAnonymous = false }) {
+// REMOVED: LoginPanel is no longer needed as we auto-authenticate
+function AnonymousLoginPanel({ auth, onSuccess }) {
+    // This panel is now a guaranteed screen-in-the-way, but 
+    // it's kept simple to show auth is happening.
     useEffect(() => {
-        // CRITICAL FIX: Use a guaranteed timeout to call onSuccess after the sign-in attempt
-        const mockSignInAndSuccess = () => {
-            // This relies on the success path regardless of Firebase's response.
-            // We use the timer to guarantee progression after the splash screen is seen.
-            const timer = setTimeout(onSuccess, 1500); 
-            
-            // Attempt token sign-in (for completeness, though it's likely failing)
-            if (auth) {
-                const mockToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1aWQiOiJtb2NrLWluY29nbml0by0xMjMiLCJlbWFpbCI6ImluY29nbml0b0Bsb2dpbi5jb20iLCJpYXQiOjE2ODAwMDAwMDB9.iGgY0w2_sD3hG_1sU_1sD_1sY_1sE_1sT_1s';
-                signInWithCustomToken(auth, mockToken).catch(console.error);
-            }
-            
-            return () => clearTimeout(timer);
-        };
-        
-        return mockSignInAndSuccess();
-    }, [onSuccess]); // Removed 'auth' dependency since we no longer call signInWithCustomToken
-
-    const handleManualBypass = () => {
-        // This is the action for the new button
-        onSuccess();
-    };
+        if (auth) {
+            // CRITICAL: Call Anonymous Sign-in
+            signInAnonymously(auth)
+                .then(() => {
+                    // Success is handled by the onAuthStateChanged listener in App.jsx
+                    console.log('Anonymous sign-in successful. Waiting for state update.');
+                })
+                .catch((error) => {
+                    console.error('Anonymous sign-in failed:', error);
+                    // Fallback to manual success to proceed with a blank user
+                    setTimeout(onSuccess, 1500); 
+                });
+        } else {
+            // Fallback for missing auth object
+            setTimeout(onSuccess, 1500);
+        }
+    }, [auth, onSuccess]);
 
     return (
         <div className="min-h-screen flex items-center justify-center bg-gray-100">
             <div className="p-8 bg-white rounded-xl shadow-lg text-center w-full max-w-sm">
-                <h2 className="text-xl font-extrabold text-[#002E47] mb-2">Authenticating Session</h2>
-                <p className='text-sm text-gray-600 mt-2'>Loading credentials for secure access.</p>
+                <h2 className="text-xl font-extrabold text-[#002E47] mb-2">Anonymous Session</h2>
+                <p className='text-sm text-gray-600 mt-2'>
+                    Establishing secure, anonymous credentials for demo access.
+                </p>
                 
                 <div className='mt-4 mb-6'>
                     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#47A88D] mx-auto"></div>
                 </div>
-                
-                {/* Manual Bypass Button */}
-                <button 
-                    onClick={handleManualBypass}
-                    className="w-full px-4 py-2 text-sm font-semibold text-white bg-[#E04E1B] rounded-lg hover:bg-red-700 transition-colors shadow-md"
-                >
-                    Skip Authentication (Demo Access)
-                </button>
             </div>
         </div>
     );
@@ -417,15 +409,16 @@ const NavSidebar = ({ currentScreen, setCurrentScreen, user, isMobileOpen, close
                     // FIX 1: Explicitly set a dark subtle background when inactive
                     className={`flex items-center w-full p-2 rounded-xl text-sm font-semibold transition-colors hover:bg-[${TEAL}]/20 focus:outline-none focus:ring-2 focus:ring-[${TEAL}] bg-white/5`}
                 >
+                    {/* The user icon and display logic updated for Anonymous */}
                     <User className="w-5 h-5 mr-3 text-indigo-300" />
-                    <span className='truncate'>{user?.email || 'User Profile'}</span>
+                    <span className='truncate'>{user?.email || `Anonymous User`}</span>
                 </button>
                 
                 {isProfileOpen && (
                     <div className={`absolute bottom-full left-0 mb-3 w-full p-4 rounded-xl shadow-2xl bg-[${NAVY}] border border-[${TEAL}]/50 z-10 animate-in fade-in slide-in-from-bottom-2`}>
                         <p className='text-xs font-medium uppercase text-indigo-300 mb-1'>Account Info</p>
-                        <p className='text-sm font-semibold truncate mb-2 text-white' title={user?.email}>{user?.email}</p>
-                        <p className='text-xs text-gray-400 break-words mb-4'>UID: {user?.userId}</p>
+                        <p className='text-sm font-semibold truncate mb-2 text-white' title={user?.email}>{user?.email || 'anonymous'}</p>
+                        <p className='text-xs text-gray-400 break-words mb-4'>UID: {user?.userId || 'N/A'}</p>
                         <button
                             onClick={handleSignOut}
                             className={`flex items-center w-full px-4 py-2 rounded-lg text-sm font-semibold transition-colors bg-[${ORANGE}] text-white hover:bg-red-700`}
@@ -483,7 +476,7 @@ const AppContent = ({ currentScreen, setCurrentScreen, user, navParams, isMobile
                 setCurrentScreen={setCurrentScreen}
                 user={user}
                 isMobileOpen={isMobileOpen}
-                closeMobileMenu={() => setIsMobileOpen(false)}
+                closeMobileMenu={() => setIsMobileMenu(false)}
                 isAuthRequired={isAuthRequired}
             />
             
@@ -527,7 +520,8 @@ const App = ({ initialState }) => {
   const [userId, setUserId] = useState(DEBUG_MODE ? 'mock-debugger-123' : null);
   const [isAuthReady, setIsAuthReady] = useState(DEBUG_MODE);
   const [navParams, setNavParams] = useState(initialState?.params || {});
-  const [authRequired, setAuthRequired] = useState(!DEBUG_MODE);
+  // Initial set to TRUE to show loading/auth panel for a moment
+  const [authRequired, setAuthRequired] = useState(!DEBUG_MODE); 
   const [isMobileOpen, setIsMobileOpen] = useState(false);
 
   const [initStage, setInitStage] = useState('init');
@@ -576,7 +570,7 @@ const App = ({ initialState }) => {
         if (s.startsWith("'") && s.endsWith("'")) s = s.slice(1, -1);
         firebaseConfig = JSON.parse(s.replace(/'/g, '"'));
       } else {
-        setInitError('window.__firebase_config is missing. Ensure VITE_FIREBASE_CONFIG is set and parsed in main.jsx.');
+        setInitError('window.__firebase_config is missing. Ensure Firebase config is available.');
         setIsAuthReady(true);
         setInitStage('error');
         return;
@@ -594,22 +588,27 @@ const App = ({ initialState }) => {
       const unsubscribe = onAuthStateChanged(authentication, (currentUser) => {
         if (currentUser) {
           const uid = currentUser.uid;
+          // Set a default 'anonymous' email for the anonymous user
+          const email = currentUser.isAnonymous ? `anon-${uid.substring(0, 8)}@leaderreps.com` : currentUser.email;
           setUserId(uid);
-          setUser({ name: currentUser.email || 'Canvas User', email: currentUser.email || '', userId: uid });
+          setUser({ name: email, email: email, userId: uid });
           setAuthRequired(false);
+          setInitStage('ok'); // Move to 'ok' as soon as a user (even anon) is found
         } else {
           setUser(null);
           setUserId(null);
-          setAuthRequired(true);
+          setAuthRequired(true); // Will trigger the AnonymousLoginPanel
         }
         setIsAuthReady(true);
-        setInitStage('ok');
       });
 
+      // REMOVED: Custom token sign-in logic is removed for anonymous flow
+      /*
       if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
         signInWithCustomToken(authentication, __initial_auth_token) // REAL imported function
           .catch(err => console.error('Custom token auth failed; waiting for user login:', err));
       }
+      */
 
       return () => unsubscribe();
     } catch (e) {
@@ -638,16 +637,17 @@ const App = ({ initialState }) => {
         </React.Fragment>
       );
     }
-    if (!user) {
+    // CRITICAL: If isAuthReady but no user, trigger Anonymous sign-in panel
+    if (!user && isAuthReady) {
       return (
         <React.Fragment>
-          <LoginPanel
+          <AnonymousLoginPanel
             auth={firebaseServices.auth}
+            // onSuccess is a necessary fallback/guarantee but auth listener should handle the actual user
             onSuccess={() => {
-              setAuthRequired(false);
-              setTimeout(() => navigate('dashboard'), 0);
+                setAuthRequired(false);
+                setTimeout(() => navigate('dashboard'), 0);
             }}
-            allowAnonymous={false}
           />
         </React.Fragment>
       );
