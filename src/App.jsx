@@ -82,17 +82,6 @@ const callSecureGeminiAPI = async (payload, maxRetries = 3, delay = 1000) => {
 
 const hasGeminiKey = () => (!!API_KEY);
 
-// Bridge: expose the real Gemini caller so services can forward to it
-useEffect(() => {
-  if (typeof window !== 'undefined') {
-    window.__callSecureGeminiAPI = callSecureGeminiAPI;
-  }
-  return () => {
-    if (typeof window !== 'undefined') delete window.__callSecureGeminiAPI;
-  };
-}, [callSecureGeminiAPI]);
-
-
 // --- END PRODUCTION GEMINI CONFIGURATION ---
 
 // --- EXISTING MOCK/PLACEHOLDER DEFINITIONS (Keep these) ---
@@ -511,6 +500,13 @@ const App = ({ initialState }) => {
   const [initError, setInitError] = useState('');
 
   const navigate = useCallback((screen, params = {}) => { setNavParams(params); setCurrentScreen(screen); }, []);
+
+  // Bridge: expose the real Gemini caller so services can forward to it (inside component)
+  useEffect(() => {
+    if (typeof window !== 'undefined') window.__callSecureGeminiAPI = callSecureGeminiAPI;
+    return () => { if (typeof window !== 'undefined') delete window.__callSecureGeminiAPI; };
+  }, [callSecureGeminiAPI]);
+
 
   useEffect(() => {
     if (typeof window !== 'undefined') { window.__appNavigate = navigate; }
