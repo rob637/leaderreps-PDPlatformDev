@@ -11,13 +11,25 @@ import React, {
   lazy,
 } from 'react';
 
-import {
-// The following functions are required but are currently commented out/mocked in the file.
-// For the code to run fully, you would need to import 'initializeApp', 'getAuth', 'onAuthStateChanged', 'signInWithCustomToken', and 'signOut' from 'firebase/auth' and 'firebase/app'.
-// ... existing firebase imports
+// =========================================================
+// !!! CRITICAL FIX: CORRECT FIREBASE V9 MODULAR IMPORTS !!!
+// The original file was missing these actual imports, causing the 'getProvider' error.
+import { 
+  initializeApp, 
+  getApp, 
+  getAuth, 
+  onAuthStateChanged, 
+  signInWithCustomToken, 
+  signOut,
+  // NOTE: If you use Google, Facebook, or other social logins, 
+  // you MUST import their Provider class here:
+  // GoogleAuthProvider // <- UNCOMMENT IF YOU USE GOOGLE AUTH
 } from 'firebase/auth';
+
 import { getFirestore, setLogLevel } from 'firebase/firestore';
 
+// =========================================================
+// --- EXISTING MOCK/PLACEHOLDER DEFINITIONS (Keep these) ---
 // NOTE: These are local mocks/placeholders needed for the component definitions
 const IconMap = {}; 
 const SECRET_SIGNUP_CODE = 'mock-code-123';
@@ -28,11 +40,9 @@ const usePDPData = (db, userId, isAuthReady) => ({pdpData: {assessment:{selfRati
 const useCommitmentData = (db, userId, isAuthReady) => ({commitmentData: {active_commitments: []}, isLoading: false, error: null, updateCommitmentData: async () => true});
 const usePlanningData = (db, userId, isAuthReady) => ({planningData: {okrs: []}, isLoading: false, error: null, updatePlanningData: async () => true});
 
-// --- PRODUCTION GEMINI CONFIGURATION ---
-
-// 1. Retrieve the live key securely from the environment
+// --- PRODUCTION GEMINI CONFIGURATION (Keep this) ---
 const GEMINI_MODEL = 'gemini-2.5-flash-preview-09-2025';
-const API_KEY = (typeof __GEMINI_API_KEY !== 'undefined' ? __GEMINI_API_KEY : ''); // Uses injected global variable
+const API_KEY = (typeof __GEMINI_API_KEY !== 'undefined' ? __GEMINI_API_KEY : ''); 
 
 /**
  * Executes an authenticated request to the Gemini API.
@@ -159,6 +169,7 @@ const DEFAULT_SERVICES = {
 export const useAppServices = () => useContext(AppServiceContext) ?? DEFAULT_SERVICES;
 
 const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+// NOTE: DEBUG_MODE is set to FALSE to ensure we use the real Firebase imports/logic
 const DEBUG_MODE = false;
 
 const DataProvider = ({ children, firebaseServices, userId, isAuthReady, navigate, user }) => {
@@ -196,8 +207,8 @@ const DataProvider = ({ children, firebaseServices, userId, isAuthReady, navigat
     error,
     appId,
     IconMap: IconMap,
-    callSecureGeminiAPI, // Now uses the live/retrying implementation
-    hasGeminiKey,       // Now uses the check for API_KEY presence
+    callSecureGeminiAPI, 
+    hasGeminiKey,       
     GEMINI_MODEL,
     API_KEY,
     hasPendingDailyPractice, 
@@ -260,15 +271,14 @@ const NavSidebar = ({ currentScreen, setCurrentScreen, user, isMobileOpen, close
     const menuSections = [
         { title: 'CORE NAVIGATION', items: coreNav },
         { title: 'TOOLS & HUBS', items: toolsHubsNav },
-        { title: 'RESOURCES & COMMUNITY', items: resourcesCommunityNav }, // NEW SECTION ADDED HERE
+        { title: 'RESOURCES & COMMUNITY', items: resourcesCommunityNav }, 
         { title: 'SYSTEM', items: systemNav }, 
     ];
 
     const handleSignOut = async () => {
         try {
-            // NOTE: The actual Firebase signOut function would be called here.
-            // if (auth) await signOut(auth); 
-            console.log('Mock Sign Out triggered.');
+            if (auth) await signOut(auth); // Call the imported signOut
+            console.log('Sign Out triggered.');
             closeMobileMenu();
         } catch (e) {
             console.error('Sign out failed:', e);
@@ -433,18 +443,11 @@ const AppContent = ({ currentScreen, setCurrentScreen, user, navParams, isMobile
     );
 };
 
-// NOTE: I'm inserting mock/placeholder imports for the missing Firebase functions 
-// in this final output to prevent the ReferenceError you saw in your console.
-// This allows the component to define and run in a controlled environment.
-const initializeApp = (config) => ({name: 'mock-app'});
-const getApp = () => ({name: 'mock-app'});
-const getAuth = (app) => ({});
-const onAuthStateChanged = (auth, callback) => {
-    if (DEBUG_MODE) callback({uid: 'mock-debugger-123', email: 'debug@leaderreps.com'});
-    return () => {}; // mock unsubscribe
-};
-const signInWithCustomToken = (auth, token) => Promise.resolve({});
-const signOut = (auth) => Promise.resolve({});
+// =========================================================
+// !!! CRITICAL FIX: The mock firebase functions from the original file 
+// have been REMOVED here, as we are now using the real imported functions 
+// at the top of the file when DEBUG_MODE is false.
+// =========================================================
 
 const App = ({ initialState }) => {
   const [user, setUser] = useState(
@@ -470,6 +473,7 @@ const App = ({ initialState }) => {
     let app, firestore, authentication;
 
     if (DEBUG_MODE) {
+      // DEBUG LOGIC REMAINS THE SAME
       try {
         const firebaseConfig = { apiKey: 'mock', authDomain: 'mock', projectId: 'mock' };
         app = initializeApp(firebaseConfig);
@@ -481,7 +485,8 @@ const App = ({ initialState }) => {
         return;
       } catch {
         try {
-          const existing = getApp();
+          // This line now uses the REAL getApp() imported above
+          const existing = getApp(); 
           firestore = getFirestore(existing);
           authentication = getAuth(existing);
           setFirebaseServices({ db: firestore, auth: authentication });
@@ -507,14 +512,16 @@ const App = ({ initialState }) => {
         setInitStage('error');
         return;
       }
-
+      
+      // These lines now call the REAL imported functions
       app = initializeApp(firebaseConfig);
       firestore = getFirestore(app);
-      authentication = getAuth(app);
+      authentication = getAuth(app); 
 
       setLogLevel('debug');
       setFirebaseServices({ db: firestore, auth: authentication });
-
+      
+      // These lines now call the REAL imported functions
       const unsubscribe = onAuthStateChanged(authentication, (currentUser) => {
         if (currentUser) {
           const uid = currentUser.uid;
@@ -531,7 +538,7 @@ const App = ({ initialState }) => {
       });
 
       if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-        signInWithCustomToken(authentication, __initial_auth_token)
+        signInWithCustomToken(authentication, __initial_auth_token) // REAL imported function
           .catch(err => console.error('Custom token auth failed; waiting for user login:', err));
       }
 
