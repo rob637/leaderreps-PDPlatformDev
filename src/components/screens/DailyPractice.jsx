@@ -997,17 +997,24 @@ const CommitmentSelectorView = ({ setView, initialGoal, initialTier }) => {
           />
       )}
       
-      {/* Alignment Card (Collapsible) */}
-      <Card
-        title="Goal and Tier Alignment (Mandatory)"
-        icon={Target}
-        onClick={() => setIsAlignmentOpen(prev => !prev)}
-        className='mb-8 p-6 bg-[#47A88D]/10 border-2 border-[#47A88D] cursor-pointer'
+      {/* Alignment Card (Converted to div/button structure to prevent collapse on select) */}
+      <div
+        className='relative p-6 rounded-2xl border-2 shadow-2xl mb-8 bg-[#47A88D]/10 border-2 border-[#47A88D]'
       >
-        <div className='flex justify-between items-center'>
-          <p className="text-sm font-semibold text-[#002E47]">Status: {canAddCommitment ? 'Ready to Add' : 'Awaiting Selection'}</p>
-          <CornerRightUp className={`w-5 h-5 text-[#002E47] transition-transform ${isAlignmentOpen ? 'rotate-90' : 'rotate-0'}`} />
-        </div>
+        <span style={{ position:'absolute', top:0, left:0, right:0, height:6, background: COLORS.NAVY, borderTopLeftRadius:14, borderTopRightRadius:14 }} />
+          
+        {/* Clickable Header for Collapsible Behavior */}
+        <button
+            onClick={() => setIsAlignmentOpen(prev => !prev)}
+            className='flex justify-between items-center w-full text-left'
+        >
+            <div className='flex items-center space-x-3'>
+                <Target className="w-5 h-5" style={{ color: COLORS.TEAL }} />
+                <h2 className="text-xl font-extrabold" style={{ color: COLORS.NAVY }}>Goal and Tier Alignment (Mandatory)</h2>
+            </div>
+            <CornerRightUp className={`w-5 h-5 text-[#002E47] transition-transform ${isAlignmentOpen ? 'rotate-90' : 'rotate-0'}`} />
+        </button>
+
 
         {isAlignmentOpen && (
           <div className='mt-4 pt-4 border-t border-[#47A88D]/30'>
@@ -1063,7 +1070,7 @@ const CommitmentSelectorView = ({ setView, initialGoal, initialTier }) => {
             {!canAddCommitment && <p className='text-[#E04E1B] text-sm mt-3'>* Please select a Strategic Goal and a Leadership Tier to activate the 'Add' buttons.</p>}
           </div>
         )}
-      </Card>
+      </div>
 
 
       {/* Tab Navigation */}
