@@ -235,18 +235,22 @@ const NavSidebar = ({ currentScreen, setCurrentScreen, user, isMobileOpen, close
         { screen: 'reflection', label: 'Executive Reflection', icon: BarChart3 }, 
     ];
     
-    // FIX: Swapping the order of 'Development Plan' and 'Daily Practice'
+    // TOOLS & HUBS - Focus on active management tools
     const toolsHubsNav = [
-        { screen: 'prof-dev-plan', label: 'Development Plan', icon: Briefcase }, // Moved UP
-        { screen: 'daily-practice', label: 'Daily Practice', icon: Clock, notify: hasPendingDailyPractice }, // Moved DOWN
-        { screen: 'applied-leadership', label: 'Applied Leadership', icon: ShieldCheck }, // NEW: Applied Leadership
+        { screen: 'prof-dev-plan', label: 'Development Plan', icon: Briefcase },
+        { screen: 'daily-practice', label: 'Daily Practice', icon: Clock, notify: hasPendingDailyPractice },
         { screen: 'coaching-lab', label: 'Coaching Lab', icon: Mic },
         { screen: 'planning-hub', label: 'Planning Hub (OKRs)', icon: Trello }, 
-        { screen: 'business-readings', label: 'Business Readings', icon: BookOpen },
-        { screen: 'community', label: 'Community & Peer Support', icon: Users, badge: 'New' }, // NEW: Community Link
     ];
     
-    // RE-INSERTING SETTINGS HERE
+    // NEW SECTION: RESOURCES & COMMUNITY - For learning, application, and peer support
+    const resourcesCommunityNav = [
+        { screen: 'applied-leadership', label: 'Applied Leadership', icon: ShieldCheck }, 
+        { screen: 'business-readings', label: 'Business Readings', icon: BookOpen },
+        { screen: 'community', label: 'Community & Peer Support', icon: Users, badge: 'New' }, 
+    ];
+    
+    // SYSTEM
     const systemNav = [
         { screen: 'app-settings', label: 'App Settings', icon: Settings }, 
     ];
@@ -254,7 +258,8 @@ const NavSidebar = ({ currentScreen, setCurrentScreen, user, isMobileOpen, close
     const menuSections = [
         { title: 'CORE NAVIGATION', items: coreNav },
         { title: 'TOOLS & HUBS', items: toolsHubsNav },
-        { title: 'SYSTEM', items: systemNav }, // Re-inserted SYSTEM section
+        { title: 'RESOURCES & COMMUNITY', items: resourcesCommunityNav }, // NEW SECTION ADDED
+        { title: 'SYSTEM', items: systemNav }, 
     ];
 
     const handleSignOut = async () => {
