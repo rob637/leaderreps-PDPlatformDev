@@ -4,46 +4,33 @@ import { useAppServices } from '../../services/useAppServices.jsx';
 
 // --- MOCK IMPORTS for self-contained file ---
 const LEADERSHIP_TIERS = {
-    'T1': { id: 'T1', name: 'Self-Awareness', icon: 'Target', color: 'bg-blue-100 text-blue-700' },
-    'T2': { id: 'T2', name: 'Communication', icon: 'Mic', color: 'bg-cyan-100 text-cyan-700' },
-    'T3': { id: 'T3', name: 'Execution', icon: 'Briefcase', color: 'bg-green-100 text-green-700' },
-    'T4': { id: 'T4', name: 'People Dev', icon: 'Users', color: 'bg-yellow-100 text-yellow-700' },
-    'T5': { id: 'T5', name: 'Vision', icon: 'TrendingUp', color: 'bg-red-100 text-red-700' },
+    'T1': { id: 'T1', name: 'Self-Awareness', icon: 'Target', color: 'bg-blue-100 text-blue-700', hex: '#2563EB' },
+    'T2': { id: 'T2', name: 'Operational Excellence', icon: 'Mic', color: 'bg-cyan-100 text-cyan-700', hex: '#06B6D4' },
+    'T3': { id: 'T3', name: 'Strategic Execution', icon: 'Briefcase', color: 'bg-green-100 text-green-700', hex: '#10B981' },
+    'T4': { id: 'T4', name: 'People Development', icon: 'Users', color: 'bg-yellow-100 text-yellow-700', hex: '#F5A800' },
+    'T5': { id: 'T5', name: 'Visionary Leadership', icon: 'TrendingUp', color: 'bg-red-100 text-red-700', hex: '#E04E1B' },
 };
 
 const MOCK_PDP_DATA = {
     currentMonth: 4,
-    // Note: T2 is the weakest score (3) to test the focus logic.
     assessment: { selfRatings: { T1: 8, T2: 3, T3: 6, T4: 7, T5: 5 } }, 
     plan: [{month:'Current', theme: 'Mastering Strategy', requiredContent: []}]
 };
 const MOCK_COMMITMENT_DATA = { 
     active_commitments: [
         { id: 1, status: 'Pending', linkedTier: 'T2' }, 
-        { id: 2, status: 'Committed', linkedTier: 'T5' }
+        { id: 2, status: 'Committed', linkedTier: 'T5' },
+        { id: 3, status: 'Pending', linkedTier: 'T2' },
+        { id: 4, status: 'Committed', linkedTier: 'T3' },
     ],
-    resilience_log: { '2025-10-19': { energy: 4, focus: 7 } } // Mock Low Energy
+    resilience_log: { '2025-10-19': { energy: 4, focus: 7 } }
 };
 
-// --- START: NUDGE CONTENT FOR ROTATION (Update 2) ---
-// This array is now used as a fallback/example, not the primary source.
 const NUDGE_CONTENT = [
     'Focus today on deep listening; practice paraphrasing your colleague\'s needs before offering solutions.',
     'Before starting a task, ask: "Will this activity move us closer to our one-year vision?" If not, delegate it.',
     'Schedule 30 minutes of "maker time" today—no meetings, no email. Protect it fiercely.',
-    'Identify a high-performer on your team and spend five minutes explicitly praising their recent strategic work.',
-    'Review your last three major decisions. Did you rely on data or intuition? Challenge your bias today.',
-    'Leadership is about capacity, not control. What task can you delegate today to build team capacity?',
 ];
-// --- END: NUDGE CONTENT ---
-
-
-
-async function mdToHtml(md) {
-    let html = md.replace(/\*\*(.*)\*\*/gim, '<strong>$1</strong>');
-    html = html.replace(/>\s*(.*)/gim, '<div class="mt-2 text-base text-gray-800 border-l-4 border-[#47A88D] pl-3 italic">“$1”</div>');
-    return Promise.resolve(html);
-}
 // --- END MOCK IMPORTS ---
 
 
@@ -68,6 +55,9 @@ import {
   TrendingDown,
   MessageSquare,
   User,
+  Activity,
+  CheckCircle,
+  Users,
 } from 'lucide-react';
 
 /* =========================================================
@@ -94,7 +84,7 @@ const COLORS = {
 const Button = ({ children, onClick, disabled = false, variant = 'primary', className = '', ...rest }) => {
   let baseStyle = "px-6 py-3 rounded-xl font-semibold transition-all shadow-xl focus:outline-none focus:ring-4 text-white flex items-center justify-center";
   if (variant === 'primary') { baseStyle += ` bg-[${COLORS.TEAL}] hover:bg-[#349881] focus:ring-[${COLORS.TEAL}]/50`; }
-  else if (variant === 'secondary') { baseStyle += ` bg-[${COLORS.ORANGE}] hover:bg-[#C33E12] focus:ring-[${COLORS.ORANGE}]/50`; }
+  else if (variant === 'secondary') { baseStyle += ` bg-[${COLORS.ORANGE}] hover:bg-red-700 focus:ring-[${COLORS.ORANGE}]/50`; }
   else if (variant === 'outline') { baseStyle = `px-6 py-3 rounded-xl font-semibold transition-all shadow-md border-2 border-[${COLORS.TEAL}] text-[${COLORS.TEAL}] hover:bg-[${COLORS.TEAL}]/10 focus:ring-4 focus:ring-[${COLORS.TEAL}]/50 bg-[${COLORS.LIGHT_GRAY}] flex items-center justify-center`; }
   else if (variant === 'nav-back') { baseStyle = `px-4 py-2 rounded-lg font-medium transition-all shadow-sm border-2 border-gray-300 text-gray-700 hover:bg-gray-100 flex items-center justify-center`; }
   if (disabled) { baseStyle = "px-6 py-3 rounded-xl font-semibold bg-gray-300 text-gray-500 cursor-not-allowed shadow-inner transition-none flex items-center justify-center"; }
@@ -104,6 +94,62 @@ const Button = ({ children, onClick, disabled = false, variant = 'primary', clas
     </button>
   );
 };
+
+// NEW COMPONENT: 3D-inspired Button
+const ThreeDButton = ({ children, onClick, color = COLORS.TEAL, accentColor = COLORS.NAVY, className = '', ...rest }) => {
+    const defaultColor = color;
+    const defaultAccent = accentColor; // For the 'bottom' shadow effect
+
+    const buttonStyle = {
+        background: `linear-gradient(180deg, ${defaultColor} 0%, ${defaultColor} 80%, ${defaultAccent} 100%)`,
+        boxShadow: `0 4px 0px 0px ${defaultAccent}, 0 6px 12px rgba(0,0,0,0.2)`,
+        transition: 'all 0.1s ease-out',
+        transform: 'translateY(0px)',
+    };
+
+    const hoverStyle = {
+        transform: 'translateY(-2px)',
+        boxShadow: `0 6px 0px 0px ${defaultAccent}, 0 8px 16px rgba(0,0,0,0.3)`,
+    };
+
+    const activeStyle = {
+        transform: 'translateY(2px)',
+        boxShadow: `0 2px 0px 0px ${defaultAccent}, 0 4px 8px rgba(0,0,0,0.15)`,
+    };
+
+    return (
+        <button
+            {...rest}
+            onClick={onClick}
+            className={`
+                relative px-6 py-3 rounded-xl font-bold text-white text-lg
+                flex items-center justify-center whitespace-nowrap
+                focus:outline-none focus:ring-4 focus:ring-opacity-50 focus:ring-[${defaultColor}]/70
+                ${className}
+            `}
+            style={buttonStyle}
+            onMouseEnter={e => {
+                e.currentTarget.style.transform = hoverStyle.transform;
+                e.currentTarget.style.boxShadow = hoverStyle.boxShadow;
+            }}
+            onMouseLeave={e => {
+                e.currentTarget.style.transform = buttonStyle.transform;
+                e.currentTarget.style.boxShadow = buttonStyle.boxShadow;
+            }}
+            onMouseDown={e => {
+                e.currentTarget.style.transform = activeStyle.transform;
+                e.currentTarget.style.boxShadow = activeStyle.boxShadow;
+            }}
+            onMouseUp={e => {
+                e.currentTarget.style.transform = hoverStyle.transform; // Return to hover state after click
+                e.currentTarget.style.boxShadow = hoverStyle.boxShadow;
+            }}
+        >
+            {children}
+        </button>
+    );
+};
+
 
 const Card = ({ children, title, icon: Icon, className = '', onClick, accent = 'NAVY' }) => {
   const interactive = !!onClick;
@@ -146,7 +192,8 @@ const StatCard = ({ icon: Icon, label, value, onClick, colorHex = COLORS.TEAL, t
     return (
         <Card 
             icon={Icon} 
-            title={value} 
+            // FIX: Conditional value for Dev Plan start state
+            title={label === "Development Plan Progress" && value === '0 / 24 Months' ? 'Start Now' : value}
             onClick={onClick} 
             className={`w-full ${isPrimary ? 'shadow-2xl' : ''}`}
             accent={isPrimary ? (trend > 0 ? 'TEAL' : 'ORANGE') : 'NAVY'}
@@ -182,6 +229,75 @@ const ProgressKMI = ({ title, value, icon: Icon, colorHex = COLORS.TEAL }) => (
     </div>
 );
 
+// NEW COMPONENT: Stacked Progress Rings for visual impact
+const ProgressRings = ({ dailyPercent, monthlyPercent, careerPercent, tierHex, commitsDue }) => {
+    // Determine the color for the Daily Ring (Red if pending, Green if perfect)
+    const dailyColor = commitsDue > 0 ? COLORS.ORANGE : COLORS.TEAL;
+    
+    // Scale factor for the viewBox to center rings (36 36 is 100% circle circumference)
+    const viewBoxSize = 36;
+    const radius = 15.9155;
+    
+    // Convert percentages to strokeDashoffset
+    const dailyOffset = radius * 2 * Math.PI * (1 - dailyPercent / 100);
+    const monthlyOffset = radius * 2 * Math.PI * (1 - monthlyPercent / 100);
+    const careerOffset = radius * 2 * Math.PI * (1 - careerPercent / 100);
+
+    // Composite Health Score (Example Calculation)
+    const healthScore = Math.round(
+        (monthlyPercent * 0.4) + 
+        (careerPercent * 0.3) + 
+        ((100 - commitsDue * 5) * 0.3) // Weight commits due against 100
+    );
+
+    return (
+        <Card 
+            title="Leadership Health Score" 
+            icon={Activity} 
+            accent={COLORS.NAVY} 
+            className="lg:col-span-1 shadow-2xl bg-[#002E47]/10 border-4 border-[#002E47]/20"
+        >
+            <div className="flex items-center space-x-4">
+                {/* Gauge for Health Score */}
+                <div className="relative w-28 h-28 flex-shrink-0">
+                    <svg viewBox={`0 0 ${viewBoxSize} ${viewBoxSize}`} className="w-full h-full transform -rotate-90">
+                        {/* Background for Health Score Arc */}
+                        <circle className="text-gray-300" strokeWidth="3" stroke="currentColor" fill="transparent" r={radius} cx="18" cy="18" />
+                        {/* Health Score Arc (Orange if < 70%, Teal otherwise) */}
+                        <circle
+                            className="transition-all duration-1000"
+                            strokeWidth="3"
+                            stroke={healthScore < 70 ? COLORS.ORANGE : COLORS.TEAL}
+                            fill="transparent"
+                            r={radius}
+                            cx="18"
+                            cy="18"
+                            style={{
+                                strokeDasharray: `${radius * 2 * Math.PI}`,
+                                strokeDashoffset: radius * 2 * Math.PI * (1 - healthScore / 100),
+                            }}
+                        />
+                    </svg>
+                    <div className="absolute top-0 left-0 w-full h-full flex items-center justify-center">
+                        <span className={`text-3xl font-extrabold`} style={{color: healthScore < 70 ? COLORS.ORANGE : COLORS.TEAL}}>{healthScore}%</span>
+                    </div>
+                </div>
+                
+                {/* Ring Descriptions */}
+                <div className="flex-1 space-y-2">
+                    <p className='text-sm font-bold text-[#002E47]'>Composite Index</p>
+                    <div className='text-xs text-gray-700 font-medium space-y-1'>
+                        <div className='flex items-center'><span className={`w-2 h-2 rounded-full mr-2`} style={{backgroundColor: dailyColor}}/> **Daily Discipline:** {dailyPercent}%</div>
+                        <div className='flex items-center'><span className={`w-2 h-2 rounded-full mr-2`} style={{backgroundColor: tierHex}}/> **Monthly Learning:** {monthlyPercent}%</div>
+                        <div className='flex items-center'><span className={`w-2 h-2 rounded-full mr-2`} style={{backgroundColor: COLORS.NAVY}}/> **Career Roadmap:** {careerPercent}%</div>
+                    </div>
+                </div>
+            </div>
+            
+            <p className='text-xs text-gray-500 mt-3'>*Composite score of discipline, learning, and roadmap completion.</p>
+        </Card>
+    );
+};
 
 function extractGeminiText(resp) {
   if (!resp) return '';
@@ -228,8 +344,14 @@ const DashboardScreen = () => {
     // --- Data Calculations ---
     const goalsCount = useMemo(() => pdpData?.currentMonth || 0, [pdpData]);
     const plansCount = useMemo(() => planningData?.okrs?.length || 0, [planningData]);
-    const commitsCount = useMemo(() => commitmentData?.active_commitments?.length || 0, [commitmentData]);
-    const completedCommitsCount = useMemo(() => 17, []); 
+    const commitsTotal = useMemo(() => commitmentData?.active_commitments?.length || 0, [commitmentData]);
+    const commitsCompleted = useMemo(() => commitmentData?.active_commitments?.filter(c => c.status === 'Committed').length || 0, [commitmentData]);
+    const commitsDue = commitsTotal - commitsCompleted;
+    
+    // Derived Progress Percentages for Rings
+    const dailyPercent = commitsTotal > 0 ? Math.round((commitsCompleted / commitsTotal) * 100) : 0;
+    const monthlyPercent = goalsCount > 0 ? Math.round(((goalsCount - 1) % 4) * 25 + (commitsCompleted / commitsTotal || 0) * 25) : 0; // Mock: 25% progress per month in a tier cycle
+    const careerPercent = Math.round((goalsCount / 24) * 100);
 
     // --- AI Skill Gap Highlight ---
     const weakestTier = useMemo(() => {
@@ -240,7 +362,8 @@ const DashboardScreen = () => {
         const sortedTiers = Object.entries(ratings)
         .sort(([, a], [, b]) => a - b);
 
-        const weakestId = sortedTiers[0]?.[0];
+        const weakestEntry = sortedTiers[0];
+        const weakestId = weakestEntry?.[0];
 
         if (!weakestId) return null;
 
@@ -250,11 +373,12 @@ const DashboardScreen = () => {
         name: meta?.name || 'Unknown',
         rating: ratings[weakestId],
         color: meta?.color || 'bg-red-100 text-red-700',
+        hex: meta?.hex || COLORS.ORANGE, // Added hex for visual use
         icon: AlertTriangle,
         };
     }, [pdpData, TIER_MAP]);
 
-    // --- Daily Tip (Gemini) - Implemented for rotation (Update 2) ---
+    // --- Daily Tip (Gemini) ---
     const [tipLoading, setTipLoading] = useState(false);
     const [nudgeIndex, setNudgeIndex] = useState(0);
     const [tipHtml, setTipHtml] = useState('');
@@ -320,119 +444,118 @@ const nextNudge = useCallback(() => {
 
     return (
         <div className={`p-6 space-y-8 bg-[${COLORS.LIGHT_GRAY}] min-h-screen`}>
-        {/* Header with improved styling */}
+        {/* Header with enhanced Personalization */}
         <div className={`border-b border-gray-200 pb-5 bg-[${COLORS.OFF_WHITE}] p-6 -mx-6 -mt-6 mb-8 rounded-b-xl shadow-md`}>
             <h1 className={`text-4xl font-extrabold text-[${COLORS.NAVY}] flex items-center gap-3`}>
             <Home size={32} style={{ color: COLORS.TEAL }} /> Executive Dashboard
             </h1>
             <p className="text-gray-600 text-base mt-2">
-            Welcome back, <span className={`font-semibold text-[${COLORS.NAVY}]`}>{user?.email ? user.email.split('@')[0] : 'Leader'}</span>. Your strategic overview for today.
+            Welcome back, <span className={`font-semibold text-[${COLORS.NAVY}]`}>{user?.email ? user.email.split('@')[0] : 'Leader'}</span>. Your primary focus is **{weakestTier?.name || 'Getting Started'}**.
             </p>
         </div>
 
-        {/* Top Stats - World Class Styling */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            <StatCard
-                icon={Briefcase}
-                label="Development Plan Progress"
-                value={goalsCount > 0 ? `${pdpData?.currentMonth || 1} / 24 Months` : 'Start Now'}
-                onClick={() => safeNavigate('prof-dev-plan')}
-                colorClass='bg-[#002E47]/10 text-[#002E47]'
-                trend={12} 
-            />
-            <StatCard
-                icon={CalendarClock}
-                label="Daily Commitments Due"
-                value={commitsCount}
-                onClick={() => safeNavigate('daily-practice')}
-                colorClass={hasPendingDailyPractice ? 'bg-[#E04E1B]/20 text-[#E04E1B] animate-pulse' : 'bg-[#47A88D]/20 text-[#47A88D]'}
-                trend={-4} 
-            />
-            <StatCard
-                icon={Trello}
-                label="Objectives (OKRs) Drafted"
-                value={plansCount}
-                onClick={() => safeNavigate('planning-hub')}
-                colorClass='bg-indigo-100 text-indigo-700'
-                trend={25} 
-            />
-        </div>
+        {/* --- MAIN GRID CONTAINER --- */}
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
 
-        {/* Main grid: 2/3 (Actions - More Prominent) | 1/3 (Focus) - Adjusted Grid Order (Update 3) */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 pt-4">
+            {/* Column 1 & 2: ACTION HUB & KMI PROGRESS (Primary User Focus) */}
+            <div className="lg:col-span-3 space-y-8 order-2 lg:order-1">
 
-            {/* Left Column - Executive Action Hub (Now lg:col-span-2 and first in order for prominence) */}
-            <div className="lg:col-span-2 space-y-8 order-2 lg:order-1"> {/* Order change for prominence (Update 3) */}
-
-                 {/* EXECUTIVE ACTION HUB (Consolidated) - Fancier styling (FIX: Removed Settings) */}
+                 {/* 1. EXECUTIVE ACTION HUB (MOVED TO TOP) */}
                  <div className='rounded-3xl border-4 border-[#002E47] bg-[#F7FCFF] p-8 shadow-2xl relative'>
                     <h2 className="text-3xl font-extrabold text-[#002E47] mb-6 border-b-2 pb-4 border-gray-300 flex items-center gap-3">
                         <Zap size={28} className='text-[#E04E1B]'/> Executive Action Hub
                     </h2>
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                        {/* CORE ACTIONS - Fixed onClick/Navigation */}
-                        <Button
+                        {/* CORE ACTIONS (DO) */}
+                        <ThreeDButton
                             onClick={() => safeNavigate('quick-start-accelerator')}
-                            variant='primary'
-                            className='p-3 text-lg rounded-xl bg-gradient-to-r from-[#47A88D] to-[#349881] text-white shadow-lg hover:shadow-2xl transition-all ring-2 ring-white/30 hover:-translate-y-[2px]'
+                            color={COLORS.TEAL}
+                            accentColor={COLORS.NAVY}
                         >
                             <Zap className='w-5 h-5 mr-2'/> Accelerator
-                        </Button>
-                        <Button
+                        </ThreeDButton>
+                        <ThreeDButton
                             onClick={() => safeNavigate('prof-dev-plan')}
-                            variant='primary'
-                            className='p-3 text-lg rounded-xl bg-gradient-to-r from-[#47A88D] to-[#349881] text-white shadow-lg hover:shadow-2xl transition-all ring-2 ring-white/30 hover:-translate-y-[2px]'
+                            color={COLORS.TEAL}
+                            accentColor={COLORS.NAVY}
                         >
                             <Briefcase className='w-5 h-5 mr-2'/> Dev Plan
-                        </Button>
-                        <Button
+                        </ThreeDButton>
+                        <ThreeDButton
                             onClick={() => safeNavigate('daily-practice')}
-                            variant='primary'
-                            className='p-3 text-lg rounded-xl bg-gradient-to-r from-[#47A88D] to-[#349881] text-white shadow-lg hover:shadow-2xl transition-all ring-2 ring-white/30 hover:-translate-y-[2px]'
+                            color={COLORS.TEAL}
+                            accentColor={COLORS.NAVY}
                         >
                             <ClockIcon className='w-5 h-5 mr-2'/> Daily Scorecard
-                        </Button>
-                        <Button
+                        </ThreeDButton>
+                        <ThreeDButton
                             onClick={() => safeNavigate('coaching-lab')}
-                            variant='primary'
-                            className='p-3 text-lg rounded-xl bg-gradient-to-r from-[#47A88D] to-[#349881] text-white shadow-lg hover:shadow-2xl transition-all ring-2 ring-white/30 hover:-translate-y-[2px]'
+                            color={COLORS.TEAL}
+                            accentColor={COLORS.NAVY}
                         >
                             <Mic className='w-5 h-5 mr-2'/> Coaching Lab
-                        </Button>
-                        {/* RESOURCE HUBS - Fixed onClick/Navigation */}
-                        <Button
+                        </ThreeDButton>
+                        {/* ANALYZE / PLAN ACTIONS (Secondary Functions) */}
+                        <ThreeDButton
                             onClick={() => safeNavigate('reflection')}
-                            variant='primary'
-                            className='p-3 text-lg rounded-xl bg-gradient-to-r from-[#47A88D] to-[#349881] text-white shadow-lg hover:shadow-2xl transition-all ring-2 ring-white/30 hover:-translate-y-[2px]'
+                            color={COLORS.TEAL}
+                            accentColor={COLORS.NAVY}
                         >
                             <Star className='w-5 h-5 mr-2'/> Reflection
-                        </Button>
-                        <Button
+                        </ThreeDButton>
+                        <ThreeDButton
                             onClick={() => safeNavigate('planning-hub')}
-                            variant='primary'
-                            className='p-3 text-lg rounded-xl bg-gradient-to-r from-[#47A88D] to-[#349881] text-white shadow-lg hover:shadow-2xl transition-all ring-2 ring-white/30 hover:-translate-y-[2px]'
+                            color={COLORS.TEAL}
+                            accentColor={COLORS.NAVY}
                         >
                             <TrendingUp className='w-5 h-5 mr-2'/> Planning Hub
-                        </Button>
-                        <Button
+                        </ThreeDButton>
+                        <ThreeDButton
                             onClick={() => safeNavigate('business-readings')}
-                            variant='primary'
-                            className='p-3 text-lg rounded-xl bg-gradient-to-r from-[#47A88D] to-[#349881] text-white shadow-lg hover:shadow-2xl transition-all ring-2 ring-white/30 hover:-translate-y-[2px]'
+                            color={COLORS.TEAL}
+                            accentColor={COLORS.NAVY}
                         >
                             <BookOpen className='w-5 h-5 mr-2'/> Readings
-                        </Button>
-                         <Button
-                            // Removed Settings button, using this slot for the remaining secondary action
+                        </ThreeDButton>
+                         <ThreeDButton
                             onClick={() => safeNavigate('executive-reflection')} 
-                            variant='secondary'
-                            className='bg-[#E04E1B] hover:bg-[#C33E12] p-3 text-lg shadow-lg hover:shadow-2xl transition-all ring-2 ring-white/30 hover:-translate-y-[2px]'
+                            color={COLORS.TEAL}
+                            accentColor={COLORS.NAVY}
                         >
                             <LayoutDashboard className='w-5 h-5 mr-2'/> Analytics
-                        </Button>
+                        </ThreeDButton>
                     </div>
                 </div>
 
-                {/* PROGRESS SNAPSHOT (KMI Focus) */}
+                {/* 2. TOP STATS CARDS (Below Action Hub) */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <StatCard
+                        icon={Briefcase}
+                        label="Development Plan Progress"
+                        value={goalsCount > 0 ? `${pdpData?.currentMonth || 1} / 24 Months` : 'Start Now'}
+                        onClick={() => safeNavigate('prof-dev-plan')}
+                        colorClass='bg-[#002E47]/10 text-[#002E47]'
+                        trend={12} 
+                    />
+                    <StatCard
+                        icon={CalendarClock}
+                        label="Daily Commitments Due"
+                        value={commitsDue}
+                        onClick={() => safeNavigate('daily-practice')}
+                        colorClass={hasPendingDailyPractice ? 'bg-[#E04E1B]/20 text-[#E04E1B] animate-pulse' : 'bg-[#47A88D]/20 text-[#47A88D]'}
+                        trend={-4} 
+                    />
+                    <StatCard
+                        icon={Trello}
+                        label="Objectives (OKRs) Drafted"
+                        value={plansCount}
+                        onClick={() => safeNavigate('planning-hub')}
+                        colorClass='bg-indigo-100 text-indigo-700'
+                        trend={25} 
+                    />
+                </div>
+                
+                {/* 3. PROGRESS SNAPSHOT (KMI Focus) */}
                 <div className='rounded-2xl border border-gray-200 bg-gray-50 p-6 shadow-xl'>
                     <h2 className="text-2xl font-bold text-[#002E47] mb-5 flex items-center gap-2">
                         <LayoutDashboard size={24} className='text-[#002E47]'/> Key Progress Indicators
@@ -440,8 +563,8 @@ const nextNudge = useCallback(() => {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <ProgressKMI
                             title="Commits Completed (Total)"
-                            value={completedCommitsCount}
-                            icon={CalendarClock}
+                            value={commitsCompleted}
+                            icon={CheckCircle}
                             colorHex={COLORS.TEAL}
                         />
                         <ProgressKMI
@@ -468,42 +591,27 @@ const nextNudge = useCallback(() => {
             </div>
 
 
-            {/* Right Column (Focus & Nudge) - Now lg:col-span-1 and second in order */}
-            <div className="space-y-8 lg:col-span-1 order-1 lg:order-2">
+            {/* Column 3: HEALTH SCORE & NUDGE (lg:col-span-1, order 1) */}
+            <div className="space-y-8 lg:col-span-1 order-1">
 
-                {/* AI Skill Gap Highlight Card */}
-                {weakestTier && (
-                <div className={`rounded-2xl border-4 border-dashed p-6 shadow-xl transition-all duration-300 ${weakestTier.rating < 5 ? 'border-[#E04E1B] bg-red-50' : 'border-[#47A88D] bg-white'}`}>
-                    <div className='flex items-center justify-between mb-4'>
-                        <h2 className="text-xl font-bold flex items-center gap-2 text-[#002E47]">
-                        <AlertTriangle size={24} className={weakestTier.rating < 5 ? 'text-[#E04E1B]' : 'text-[#47A88D]'} /> Development Focus
-                        </h2>
-                        <span className={`px-4 py-1 text-sm font-bold rounded-full ${weakestTier.rating < 5 ? 'bg-[#E04E1B] text-white shadow-md' : 'bg-[#47A88D] text-white shadow-md'}`}>
-                            Score: {weakestTier.rating}/10
-                        </span>
-                    </div>
-                    <p className='text-md font-semibold text-gray-800'>
-                        Your primary growth area is currently **{weakestTier.name}** ({weakestTier.id}).
-                    </p>
-                    <p className='text-sm text-gray-600 mt-2'>
-                        All personalized content is weighted toward this skill to accelerate impact.
-                    </p>
-                    <button
-                        onClick={() => safeNavigate('prof-dev-plan')} // FIX: Link is now functional
-                        className='text-[#47A88D] font-bold text-sm mt-4 block underline hover:text-[#002E47]'
-                    >
-                        Review Deep Dive Content &rarr;
-                    </button>
-                </div>
-                )}
+                {/* 4. HEALTH SCORE RING */}
+                <ProgressRings
+                    dailyPercent={dailyPercent}
+                    monthlyPercent={monthlyPercent}
+                    careerPercent={careerPercent}
+                    tierHex={weakestTier?.hex || COLORS.TEAL}
+                    commitsDue={commitsDue}
+                />
 
-                {/* Daily Tip (Strategic Nudge) - Updated for rotation (FIX: Use force param) */}
+                {/* 5. Daily Tip (Strategic Nudge) - Enhanced with Tier Icon */}
                 <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-xl transition-all duration-300 hover:shadow-2xl hover:bg-white/95 relative group">
-                {/* Subtle background glow on hover */}
-                <div className='absolute inset-0 rounded-2xl bg-[#47A88D] opacity-0 group-hover:opacity-5 transition-opacity duration-500 pointer-events-none'></div>
+                
+                <div className='absolute inset-0 rounded-2xl' style={{ background: `${weakestTier?.hex || COLORS.TEAL}1A`, opacity: 0.1 }}></div>
+                
                 <div className="flex items-center justify-between mb-4 relative z-10">
-                    <h2 className="text-xl font-bold flex items-center gap-2 text-[#002E47]">
-                    <Target size={20} className='text-[#47A88D]' /> Strategic Nudge
+                    <h2 className={`text-xl font-bold flex items-center gap-2`} style={{color: weakestTier?.hex || COLORS.NAVY}}>
+                    <Target size={20} className={`text-white p-1 rounded-full`} style={{backgroundColor: weakestTier?.hex || COLORS.TEAL}}/> 
+                    {weakestTier?.id || 'T-X'} Strategy Focus
                     </h2>
                     <button
                     className="rounded-full border border-gray-200 px-3 py-1 text-sm hover:bg-gray-100 flex items-center gap-1 transition-colors"
