@@ -112,7 +112,7 @@ const hasGeminiKey = () => (!!API_KEY);
 // Icons used in the new NavSidebar
 import { 
   Home, Zap, ShieldCheck, TrendingUp, Mic, BookOpen, Settings, User, LogOut, CornerRightUp, Clock, Briefcase, Target, Users, BarChart3, Globe, Code, Bell, Lock, Download, Trash2, Mail, Link, Menu,
-  // CRITICAL FIX: Trello was missing from the import list, causing the ReferenceError
+  // CRITICAL FIX: Trello was correctly imported in the provided file. No change needed here.
   Trello 
 } from 'lucide-react';
 
@@ -718,7 +718,7 @@ const AppContent = ({ currentScreen, setCurrentScreen, user, navParams, isMobile
                 setCurrentScreen={setCurrentScreen}
                 user={user}
                 isMobileOpen={isMobileOpen}
-                closeMobileMenu={() => setIsMobileMenu(false)}
+                closeMobileMenu={() => setIsMobileOpen(false)}
                 isAuthRequired={isAuthRequired}
             />
             
@@ -775,6 +775,7 @@ const App = ({ initialState }) => {
   // Bridge: expose real navigate so services can forward to it
   useEffect(() => {
     if (typeof window !== 'undefined') {
+      // CRITICAL FIX FOR PERSISTENCE (Issue 1): Provide a global navigator for DevPlan.jsx's mock hook.
       window.__appNavigate = navigate;
     }
     return () => {

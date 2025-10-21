@@ -73,7 +73,13 @@ const useAppServices = () => { // Removed localPdpData, setLocalPdpData from arg
         // AI Services are assumed to be correctly configured in App.jsx
         callSecureGeminiAPI: async (payload) => { /* ... PRODUCTION AI LOGIC ... */ return { candidates: [{ content: { parts: [{ text: "## Monthly Executive Briefing\n\n**Focus Area:** Strategic Clarity (T5)\n\n**Coaching Nudge:** Prioritize clear decision-making processes." }] } }] }; },
         hasGeminiKey: () => true,
-        navigate: (screen, params) => console.log(`Navigating to ${screen} with params:`, params),
+        navigate: (screen, params) => {
+            console.log(`Navigating to ${screen} with params:`, params);
+            // FIX for persistence: In the mock environment, directly call the global navigator if available
+            if (typeof window !== 'undefined' && window.__appNavigate) {
+                window.__appNavigate(screen, params);
+            }
+        },
         userId: 'mock-user-123',
         isLoading: false, 
         error: null,
@@ -1137,7 +1143,7 @@ const TrackerDashboardView = ({ data, updatePdpData, saveNewPlan, db, userId, na
     }, [briefingLoading, hasGeminiKey, callSecureGeminiAPI, isCurrentView]);
 
 
-    // CRITICAL FIX FOR INFINITE LOOP:
+    // CRITICAL FIX FOR INFINITE LOOP (React Error #300):
     // This useEffect must only call setBriefing if the value is different, 
     // especially for non-current months where the text is static/historical.
     useEffect(() => {
@@ -1154,7 +1160,8 @@ const TrackerDashboardView = ({ data, updatePdpData, saveNewPlan, db, userId, na
             } else {
                  // 3. Historical/Future Month with NO Saved Briefing: Use static fallback text
                  const historicalBriefingText = `## Month ${viewMonth} Historical Briefing\n\n**Focus:** ${monthPlan.theme}\n\n*The full coaching brief was not saved for this historical month.*`;
-                 if (briefing !== historicalBriefingText) {
+                 // CRITICAL FIX: Only update state if the current briefing state is NOT the historical briefing, AND it doesn't match the new required historical briefing text.
+                 if (briefing !== historicalBriefingText && !briefing?.includes(`Month ${viewMonth} Historical Briefing`)) {
                      setBriefing(historicalBriefingText);
                  }
             }
@@ -1185,6 +1192,8 @@ const TrackerDashboardView = ({ data, updatePdpData, saveNewPlan, db, userId, na
     const handleResetPlan = async () => {
         // This will now clear Session Storage via the hook's useEffect.
         await updatePdpData(() => null); 
+        // FIX: Navigate back to the generator screen after reset
+        navigate('prof-dev-plan'); 
     };
 
     const handleContentStatusToggle = (contentId) => {
@@ -1249,7 +1258,8 @@ const TrackerDashboardView = ({ data, updatePdpData, saveNewPlan, db, userId, na
     }
     
     // CRITICAL FIX 2: Safely access briefing content (which may be null/undefined/an object)
-    const safeBriefing = typeof briefing === 'string' ? briefing : (briefing?.text || `## Month ${viewMonth} Historical Briefing\n\n**Focus:** ${monthPlan.theme}\n\n*The full coaching brief was not saved for this historical month.*`);
+    // The useEffect ensures 'briefing' is a string or null/loading.
+    const safeBriefing = typeof briefing === 'string' ? briefing : (briefingLoading ? 'Loading AI Briefing...' : `## Month ${viewMonth} Historical Briefing\n\n**Focus:** ${monthPlan.theme}\n\n*The full coaching brief was not saved for this historical month.*`);
 
 
     return (
@@ -1535,15 +1545,16 @@ const PlanGeneratorView = ({ userId, saveNewPlan, isLoading, error, navigate, se
 
         const newPlanData = generatePlanData(assessment, userId);
 
-        const generatedPlan = { userPlan: newPlanData, genericPlan: GENERIC_PLAN };
+        // const generatedPlan = { userPlan: newPlanData, genericPlan: GENERIC_PLAN }; // Removed: Only need to set pdpData
 
-        // CRITICAL CHANGE: Ensure saveNewPlan updates localPdpData, which drives the main routing logic
+        // CRITICAL FIX FOR PERSISTENCE (Issue 1): Save the new plan directly and rely on routing change.
         const success = await saveNewPlan(newPlanData);
         
         setIsGenerating(false);
 
         if (success) {
-            setGeneratedPlanData(generatedPlan);
+            // setGeneratedPlanData(generatedPlan); // REMOVED: No longer relying on this local state for routing
+            navigate('prof-dev-plan'); // CRITICAL FIX: Navigate to force a re-render of ProfDevPlanScreen, which will now see pdpData != null.
         }
     };
 
@@ -1761,7 +1772,7 @@ export const ProfDevPlanScreen = () => {
     } else if (error) {
         currentView = 'error';
     } else if (pdpData !== null) { 
-        // CRITICAL: If pdpData exists (loaded from Session Storage), go straight to tracker.
+        // CRITICAL FIX FOR PERSISTENCE (Issue 1): If pdpData exists (loaded from Session Storage), go straight to tracker.
         currentView = 'tracker';
     } else if (generatedPlanData) {
         currentView = 'review';
