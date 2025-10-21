@@ -298,15 +298,16 @@ const DataProvider = ({ children, firebaseServices, userId, isAuthReady, navigat
   const isLoading = pdp.isLoading || commitment.isLoading || planning.isLoading || appServices.isLoading; // Check appServices loading too
   const error = pdp.error || commitment.error || planning.error || appServices.error;
 
-  const hasPendingDailyPractice = useMemo(() => {
-    // CRITICAL SAFETY FIX FOR LENGTH ERROR: Use the || [] to guarantee active is an array
-    const active = commitment.commitmentData?.active_commitments || [];
-    const isPending = active.some(c => c.status === 'Pending');
-    // CRITICAL SAFETY FIX: Check reflection string against empty string
-    const reflectionMissing = !(commitment.commitmentData?.reflection_journal || '').trim();
-    return active.length > 0 && (isPending || reflectionMissing);
-  }, [commitment.commitmentData]);
+const hasPendingDailyPractice = useMemo(() => {
+  const cd = commitment?.commitmentData ?? {};
+  const active = Array.isArray(cd.active_commitments) ? cd.active_commitments : [];
+  const isPending = active.some(c => c?.status === 'Pending');
 
+  // Never call .length or .trim on undefined/null/non-strings
+  const reflectionMissing = String(cd.reflection_journal ?? '').trim().length === 0;
+
+  return active.length > 0 && (isPending || reflectionMissing);
+}, [commitment?.commitmentData]);
 
   const finalServices = useMemo(() => ({
     navigate,
