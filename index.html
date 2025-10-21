@@ -44,7 +44,6 @@
         storageBucket: "%VITE_FIREBASE_STORAGE_BUCKET%",
         messagingSenderId: "%VITE_FIREBASE_MESSAGING_SENDER_ID%"
       };
-      window.__GEMINI_API_KEY = "%VITE_GEMINI_API_KEY%";
       window.__BOOTMARK__ && window.__BOOTMARK__.mark('config ' + (!!window.__firebase_config));
       if (!window.__firebase_config || !window.__firebase_config.apiKey) {
         console.warn('[BOOT] Firebase env values appear missing.');
