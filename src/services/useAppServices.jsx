@@ -26,7 +26,14 @@ const AppServicesContext = createContext(null);
 
 // Default service object to safely destructure against if the context is null
 const DEFAULT_SERVICES = {
-    navigate: () => {}, 
+    navigate: (path, params) => {
+        if (typeof window !== 'undefined' && typeof window.__appNavigate === 'function') {
+            window.__appNavigate(path, params);
+        } else {
+            console.log('MOCK NAVIGATION:', path, params);
+        }
+    },
+ 
     user: {},
     commitmentData: {},
     pdpData: {},
@@ -91,7 +98,8 @@ const useFirestoreData = (db, collectionName, docId) => {
         return () => unsubscribe();
     }, [db, collectionName, docId]);
 
-    return { data, isLoading, error };
+    return {     navigate,
+data, isLoading, error };
 };
 
 
