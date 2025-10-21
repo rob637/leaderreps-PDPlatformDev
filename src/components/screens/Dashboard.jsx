@@ -564,7 +564,8 @@ const DashboardScreen = () => {
         </div>
         
         {/* --- DEDICATED PDP ROADMAP HIGHLIGHT (FIX 1: HEADER SIZE & BORDER) --- */}
-        <Card onClick={() => safeNavigate('prof-dev-plan')} className="w-full shadow-2xl hover:shadow-3xl border-4 border-[#002E47]">
+        <div className="rounded-3xl p-[2px]" style={{ boxShadow: '0 0 0 4px #002E47 inset' }}>
+  <Card onClick={() => safeNavigate('prof-dev-plan')} className="w-full shadow-2xl hover:shadow-3xl border-0"> safeNavigate('prof-dev-plan')} className="w-full shadow-2xl hover:shadow-3xl border-4 border-[#002E47]">
             <h2 className="text-3xl font-extrabold text-[#002E47] mb-6 border-b-2 pb-4 border-gray-300 flex items-center gap-3">
                 <Map size={28} className='text-[#7C3AED]'/> My Executive Roadmap
             </h2>
@@ -588,7 +589,7 @@ const DashboardScreen = () => {
              <Button onClick={() => safeNavigate('prof-dev-plan')} variant='primary' className='mt-4 w-full'>
                 <Briefcase className='w-5 h-5 mr-2'/> Go to Development Plan Tracker
             </Button>
-        </Card>
+        </Card></div>
         {/* --- END PDP ROADMAP HIGHLIGHT --- */}
 
 
@@ -597,7 +598,6 @@ const DashboardScreen = () => {
 
             {/* Column 1 & 2: ACTION HUBS (Primary User Focus) */}
             <div className="lg:col-span-3 space-y-8 order-2 lg:order-1">
-
                  {/* 1. LEADER TOOLS & HUBS (REPLACES OLD ACTION HUB) */}
                  <div className='rounded-3xl border-4 border-[#002E47] bg-[#F7FCFF] p-8 shadow-2xl relative'>
                     <h2 className="text-3xl font-extrabold text-[#002E47] mb-6 border-b-2 pb-4 border-gray-300 flex items-center gap-3">
