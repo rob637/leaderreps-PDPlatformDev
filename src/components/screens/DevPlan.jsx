@@ -673,7 +673,7 @@ const ContentDetailsModal = ({ isVisible, onClose, content }) => {
     // FIX 2: Use useMemo to prevent re-generation of the mockDetail and pass mockDetail as a dependency to useEffect
     const memoizedMockDetail = useMemo(() => mockDetail, [content.id, content.tier]); 
 
-    // FIX 3: Use useEffect to run the async conversion safely, setting the dependency array correctly.
+    // FIX 3 (CRITICAL): Use useEffect to run the async conversion safely, setting the dependency array correctly. This prevents the Error #310 loop.
     useEffect(() => {
         let isCancelled = false;
         setHtmlContent(''); // Clear content while fetching
@@ -690,7 +690,7 @@ const ContentDetailsModal = ({ isVisible, onClose, content }) => {
             isCancelled = true;
         };
     }, [memoizedMockDetail]); // Depend only on the memoized detail string
-
+    
     const handleLogLearning = async () => {
         if (rating === 0) { console.log('Please provide a 5-star rating before logging.'); return; }
         setIsLogging(true);
@@ -1339,6 +1339,7 @@ const PlanGeneratorView = ({ userId, saveNewPlan, isLoading, error, navigate, se
 
         const generatedPlan = { userPlan: newPlanData, genericPlan: GENERIC_PLAN };
 
+        // CRITICAL CHANGE: Ensure saveNewPlan updates localPdpData, which drives the main routing logic
         const success = await saveNewPlan(newPlanData);
         
         setIsGenerating(false);
@@ -1479,6 +1480,9 @@ const PlanReviewScreen = ({ generatedPlan, navigate, clearReviewData }) => {
         );
     };
     
+    // CRITICAL CHANGE: handleFinalize clears temporary review data and navigates.
+    // The main router logic (ProfDevPlanScreen) will now see the stored plan (pdpData)
+    // and route directly to the 'tracker' view on the next render.
     const handleFinalize = async () => {
         console.log("Plan review complete. Finalizing plan and redirecting to Dashboard...");
         clearReviewData(); 
@@ -1558,12 +1562,14 @@ export const ProfDevPlanScreen = () => {
         currentView = 'loading';
     } else if (error) {
         currentView = 'error';
+    } else if (pdpData !== null) { 
+        // CRITICAL CHANGE: If pdpData exists (meaning a plan was saved), go straight to tracker.
+        // This takes priority over the temporary 'review' screen if pdpData exists.
+        currentView = 'tracker';
     } else if (generatedPlanData) {
         currentView = 'review';
-    } else if (pdpData === null) { 
+    } else { // pdpData is null, and no plan has been generated yet.
         currentView = 'generator';
-    } else { // pdpData is an object (plan exists)
-        currentView = 'tracker';
     }
 
     if (currentView === 'loading') { 
