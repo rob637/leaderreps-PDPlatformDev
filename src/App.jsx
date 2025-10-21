@@ -29,50 +29,68 @@ import { getFirestore, setLogLevel } from 'firebase/firestore';
 
 // =========================================================
 // --- PRODUCTION GEMINI CONFIGURATION ---
-const GEMINI_MODEL = 'gemini-2.5-flash-preview-09-2025';
+const GEMINI_MODEL = 'gemini-1.5-flash-latest';
+const GEMINI_API_VERSION = 'v1';
+// Prefer serverless; allow override via window.__GEMINI_MODE = 'direct'
+const USE_SERVERLESS = (typeof window !== 'undefined' && window.__GEMINI_MODE === 'direct') ? false : true;
 // NOTE: API_KEY must be defined in your environment (e.g., Netlify/Vite)
-const API_KEY = (typeof __GEMINI_API_KEY !== 'undefined' ? __GEMINI_API_KEY : ''); 
+const API_KEY = (typeof __GEMINI_API_KEY !== 'undefined' ? __GEMINI_API_KEY : (USE_SERVERLESS ? 'SERVERLESS' : '')); 
 
 const DEBUG_MODE = false;
 
 /**
  * Executes an authenticated request to the Gemini API with backoff.
  */
+
 const callSecureGeminiAPI = async (payload, maxRetries = 3, delay = 1000) => {
-    if (!API_KEY) {
-        // CRITICAL: Throw a clear error if the key is missing in production
-        throw new Error("Gemini API Key is missing. Check your environment configuration (API_KEY is empty).");
+    // Normalize payload for Google API
+    const norm = (p = {}) => {
+        const out = { ...p };
+        if (out.systemInstruction && !out.system_instruction) {
+            out.system_instruction = out.systemInstruction;
+            delete out.systemInstruction;
+        }
+        if (Array.isArray(out.tools)) delete out.tools;
+        out.model = out.model || GEMINI_MODEL;
+        return out;
+    };
+    const body = JSON.stringify(norm(payload));
+
+    // Choose endpoint
+    let apiUrl = '';
+    if (USE_SERVERLESS) {
+        apiUrl = '/.netlify/functions/gemini';
+    } else {
+        const directKey = (typeof __GEMINI_API_KEY !== 'undefined' ? __GEMINI_API_KEY : '');
+        if (!directKey) throw new Error("Gemini API Key is missing for direct mode. Set __GEMINI_API_KEY or use serverless.");
+        apiUrl = `https://generativelanguage.googleapis.com/${GEMINI_API_VERSION}/models/${GEMINI_MODEL}:generateContent?key=${directKey}`;
     }
-    
-    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${API_KEY}`;
-    
+
     for (let attempt = 0; attempt < maxRetries; attempt++) {
         try {
             const response = await fetch(apiUrl, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
+                body
             });
 
             if (response.ok) {
                 return response.json();
             }
 
-            // Retry on Rate Limit (429) or Server Errors (5xx)
             if (response.status === 429 || response.status >= 500) {
                 if (attempt < maxRetries - 1) {
                     await new Promise(resolve => setTimeout(resolve, delay * Math.pow(2, attempt)));
-                    continue; 
+                    continue;
                 }
             }
 
-            // Throw non-retryable errors (e.g., 400 Bad Request)
             const errorBody = await response.text();
             throw new Error(`API Request Failed: HTTP ${response.status} - ${errorBody}`);
 
         } catch (error) {
             if (attempt === maxRetries - 1) {
-                 throw new Error(`Network Error after ${maxRetries} attempts: ${error.message}`);
+                throw new Error(`Network Error after ${maxRetries} attempts: ${error.message}`);
             }
             await new Promise(resolve => setTimeout(resolve, delay * Math.pow(2, attempt)));
         }
@@ -80,7 +98,8 @@ const callSecureGeminiAPI = async (payload, maxRetries = 3, delay = 1000) => {
     throw new Error('Maximum retries exceeded.');
 };
 
-const hasGeminiKey = () => (!!API_KEY);
+
+const hasGeminiKey = () => (USE_SERVERLESS ? true : !!(typeof __GEMINI_API_KEY !== 'undefined' && __GEMINI_API_KEY));
 
 // --- END PRODUCTION GEMINI CONFIGURATION ---
 
