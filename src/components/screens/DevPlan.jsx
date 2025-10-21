@@ -734,13 +734,14 @@ const TierReviewModal = ({ isVisible, onClose, tierId, planData }) => {
 
 
 // --- Component 3: Roadmap Timeline View ---
-const RoadmapTimeline = ({ data, currentMonth, navigateToMonth }) => {
+const RoadmapTimeline = ({ data, currentMonth, navigateToMonth, viewMonth }) => {
     return (
         <Card title="24-Month Roadmap Timeline" icon={Trello} accent="PURPLE" className='lg:sticky lg:top-4 bg-white shadow-2xl border-l-4 border-[#7C3AED]'>
             <p className='text-sm text-gray-600 mb-4'>Review your full two-year journey. Click a month to review its content and reflection.</p>
             <div className='max-h-96 overflow-y-auto space-y-2 pr-2'>
                 {data.plan.map(monthData => {
-                    const isCurrent = monthData.month === currentMonth;
+                    // FIX 1: Use viewMonth to apply the highlight/current style
+                    const isCurrentView = monthData.month === viewMonth; 
                     const isFuture = monthData.month > currentMonth; 
                     const isCompleted = monthData.status === 'Completed';
                     // FIX 1: Allow navigation to all months (future included)
@@ -749,20 +750,20 @@ const RoadmapTimeline = ({ data, currentMonth, navigateToMonth }) => {
                     return (
                         <div key={monthData.month}
                              className={`p-3 rounded-lg border flex justify-between items-center transition-all cursor-pointer shadow-sm
-                                         ${isCurrent ? 'bg-[#7C3AED]/20 border-[#7C3AED] font-extrabold' : isCompleted ? 'bg-[#47A88D]/10 border-[#47A88D]' : 'bg-gray-50 border-gray-200 hover:bg-gray-100'}
-                                         ${isFuture ? 'opacity-80' : ''}` // Removed cursor-not-allowed
+                                         ${isCurrentView ? 'bg-[#7C3AED]/20 border-[#7C3AED] font-extrabold' : isCompleted ? 'bg-[#47A88D]/10 border-[#47A88D]' : 'bg-gray-50 border-gray-200 hover:bg-gray-100'}
+                                         ${isFuture && !isCurrentView ? 'opacity-80' : ''}` 
                              }
                              onClick={() => {
-                                 if (isClickable) navigateToMonth(monthData.month); // FIX: Navigation now always works
+                                 if (isClickable) navigateToMonth(monthData.month); 
                              }}
                         >
-                            <span className={`text-sm ${isCurrent ? 'text-[#7C3AED]' : 'text-[#002E47]'}`}>
+                            <span className={`text-sm ${isCurrentView ? 'text-[#7C3AED]' : 'text-[#002E47]'}`}>
                                 **Month {monthData.month}**: {monthData.theme}
                             </span>
                             <span className="flex items-center space-x-1 text-xs">
                                 <Check size={16} className={isCompleted ? 'text-green-600' : 'text-gray-400'} />
                                 <span className={isCompleted ? 'text-green-600' : 'text-gray-400'}>
-                                    {isCurrent ? 'CURRENT' : isCompleted ? 'COMPLETED' : isFuture ? 'FUTURE' : 'PENDING'}
+                                    {monthData.month === currentMonth ? 'CURRENT' : isCompleted ? 'COMPLETED' : isFuture ? 'FUTURE' : 'PENDING'}
                                 </span>
                             </span>
                         </div>
@@ -886,11 +887,12 @@ const TrackerDashboardView = ({ data, updatePdpData, saveNewPlan, db, userId, na
     }, [monthPlan]);
     
     const fetchMonthlyBriefing = useCallback(async (plan, assessment) => {
-        if (briefingLoading || !hasGeminiKey() || !isCurrentView) return;
+        if (briefingLoading || !hasGeminiKey() || !plan || !assessment || !isCurrentView) return; // Added safety checks
 
         setBriefingLoading(true);
         const currentTier = LEADERSHIP_TIERS[plan.tier];
-        const rating = assessment.selfRatings[plan.tier];
+        // FIX: Safely retrieve rating, defaulting to 5 if not found
+        const rating = assessment.selfRatings?.[plan.tier] || 5; 
 
         const systemPrompt = `You are a concise Executive Coach. Analyze the user's current PDP phase. Given their focus tier (${currentTier.name}) and their initial self-rating (${rating}/10), provide: 1) A 1-sentence **Executive Summary** of the goal. 2) A 1-sentence **Coaching Nudge** on how to prioritize the month's learning based on their skill gap. Use bold markdown for key phrases.`;
 
@@ -987,8 +989,10 @@ const TrackerDashboardView = ({ data, updatePdpData, saveNewPlan, db, userId, na
     };
     
     // --- Data Calculation (Ensuring safety for current/future/past logic) ---
+    // CRITICAL FIX: Base all calculations on the viewed month's plan data (monthPlan)
     const currentTierId = monthPlan?.tier;
-    const lowRatingFlag = currentTierId && assessment?.selfRatings?.[currentTierId] <= 4;
+    const selfRating = assessment?.selfRatings?.[currentTierId] || 5; // Default to 5 if not found
+    const lowRatingFlag = currentTierId && selfRating <= 4;
     const allContentCompleted = monthPlan?.requiredContent?.every(item => item.status === 'Completed');
     const isReadyToComplete = allContentCompleted && localReflection.length >= 50;
     const requiredContent = monthPlan?.requiredContent || [];
@@ -1008,6 +1012,9 @@ const TrackerDashboardView = ({ data, updatePdpData, saveNewPlan, db, userId, na
         );
     }
     
+    // CRITICAL FIX 2: Safely access briefing content (which may be null/undefined/an object)
+    const safeBriefing = typeof briefing === 'string' ? briefing : (briefing?.text || `## Month ${viewMonth} Historical Briefing\n\n**Focus:** ${monthPlan.theme}\n\n*The full coaching brief was not saved for this historical month.*`);
+
 
     return (
         <div className="p-6 md:p-10 min-h-screen" style={{ background: COLORS.BG, color: COLORS.TEXT }}>
@@ -1044,7 +1051,7 @@ const TrackerDashboardView = ({ data, updatePdpData, saveNewPlan, db, userId, na
             <div className='lg:grid lg:grid-cols-4 lg:gap-8'>
                 
                 <div className='lg:col-span-1 space-y-8 order-1'>
-                    <RoadmapTimeline data={data} currentMonth={currentMonth} navigateToMonth={setViewMonth} />
+                    <RoadmapTimeline data={data} currentMonth={currentMonth} navigateToMonth={setViewMonth} viewMonth={viewMonth} />
                     
                     <Card title={`Tier Mastery Status (${currentTierId})`} icon={Star} accent='NAVY' className='bg-[#FCFCFA] border-l-4 border-[#002E47] text-center'>
                          <div className="relative w-32 h-32 mx-auto mb-4">
@@ -1089,7 +1096,8 @@ const TrackerDashboardView = ({ data, updatePdpData, saveNewPlan, db, userId, na
                                 <p className='text-sm text-gray-600 flex items-center'><div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-500 mr-2 rounded-full"></div> Drafting advice...</p>
                             ) : (
                                 <div className="prose max-w-none text-gray-700">
-                                    <div dangerouslySetInnerHTML={{ __html: briefing }} />
+                                    {/* FIX 2: Use safeBriefing to prevent error when briefing is not a string */}
+                                    <div dangerouslySetInnerHTML={{ __html: safeBriefing }} /> 
                                 </div>
                             )}
                         </div>
@@ -1097,7 +1105,7 @@ const TrackerDashboardView = ({ data, updatePdpData, saveNewPlan, db, userId, na
                         {/* Status / Difficulty */}
                         <div className='mb-4 text-sm border-t pt-4'>
                             <p className='font-bold text-[#002E47]'>Tier: {LEADERSHIP_TIERS[currentTierId]?.name}</p>
-                            <p className='text-gray-600'>Target Difficulty: **{assessment?.selfRatings?.[currentTierId] >= 8 ? 'Mastery' : assessment?.selfRatings?.[currentTierId] >= 5 ? 'Core' : 'Intro'}** (Self-Rating: {assessment?.selfRatings?.[currentTierId]}/10)</p>
+                            <p className='text-gray-600'>Target Difficulty: **{selfRating >= 8 ? 'Mastery' : selfRating >= 5 ? 'Core' : 'Intro'}** (Self-Rating: {selfRating}/10)</p>
                             {lowRatingFlag && (
                                 <p className='font-semibold mt-1 flex items-center text-[#E04E1B]'>
                                     <AlertTriangle className='w-4 h-4 mr-1' /> HIGH RISK TIER: Prioritize Content Completion.
