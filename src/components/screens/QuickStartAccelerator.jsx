@@ -44,14 +44,14 @@ async function mdToHtml(md) {
 }
 
 // Global Standardized Card Component for Consistency
-const Card = ({ children, title, icon: Icon, className='', accent='NAVY', accentColor }) => {
-  const barColor = accentColor ?? COLORS[accent] ?? COLORS.NAVY;
+const Card = ({ children, title, icon: Icon, className = '', accent = 'NAVY' }) => {
+  const accentColor = COLORS[accent] || COLORS.NAVY;
   return (
     <div
       className={`relative p-6 rounded-2xl border-2 shadow-2xl transition-all duration-300 text-left ${className}`}
       style={{ background: 'linear-gradient(180deg,#FFFFFF, #FCFCFA)', borderColor: COLORS.SUBTLE, color: COLORS.NAVY }}
     >
-      <span style={{ /* ... */ background: barColor }} />
+      <span style={{ position:'absolute', top:0, left:0, right:0, height:6, background: accentColor, borderTopLeftRadius:14, borderTopRightRadius:14 }} />
 
       {Icon && (
         <div className="w-10 h-10 rounded-lg flex items-center justify-center border mb-3" style={{ borderColor: COLORS.SUBTLE, background: COLORS.LIGHT_GRAY }}>
@@ -133,21 +133,20 @@ const LISAuditorView = ({ setQuickStartView }) => {
 
     return (
         <div className="p-6 md:p-10 min-h-screen" style={{ background: COLORS.BG }}>
-            {/* Header Alignment - Executive Look */}
+
             <div className='flex items-center gap-4 border-b-2 pb-2 mb-8' style={{borderColor: COLORS.NAVY+'30'}}>
                 <ShieldCheck className='w-10 h-10' style={{color: COLORS.NAVY}}/>
                 <h1 className="text-4xl font-extrabold" style={{ color: COLORS.NAVY }}>Leadership Identity Statement (LIS) Auditor</h1>
             </div>
 
             <p className="text-lg text-gray-600 mb-6 max-w-3xl">Your LIS is the foundation of your leadership. Get expert feedback to ensure your statement is specific, actionable, and truly aligned with your highest self.</p>
-            
-            {/* Back Button - Styled for consistency */}
+
             <button onClick={() => setQuickStartView('quick-start-home')} className="mb-8 px-4 py-2 font-semibold rounded-lg transition-colors bg-white text-[#002E47] border border-gray-300 hover:bg-gray-100 shadow-md">
                 <ArrowLeft className="w-5 h-5 mr-2 inline" /> Back to QuickStart
             </button>
 
             <div className='lg:grid lg:grid-cols-2 gap-8'>
-                {/* Input Card - Sharp Navy Accent */}
+
                 <Card title="Draft Your Leadership Identity Statement" icon={ShieldCheck} accent='NAVY' className='border-l-4 border-[#002E47]'>
                     <p className="text-gray-700 text-sm mb-2">Write your LIS below. It should define who you are when you're leading at your absolute best.</p>
                     <textarea 
@@ -173,7 +172,6 @@ const LISAuditorView = ({ setQuickStartView }) => {
                     </button>
                 </Card>
 
-                {/* Critique Preview Card - Teal Accent */}
                 {critiqueHtml && (
                     <Card title="AI Coach Preview" icon={Cpu} accent='TEAL' className='border-l-4 border-[#47A88D]'>
                         <div className="prose max-w-none prose-h3:text-[#47A88D] prose-p:text-gray-700 prose-ul:space-y-2">
@@ -209,16 +207,15 @@ const QuickStartAcceleratorScreen = () => {
             default:
                 return (
                     <div className="p-6 md:p-10 min-h-screen" style={{ background: COLORS.BG }}>
-                        {/* Header Alignment - Executive Look */}
+
                         <div className='flex items-center gap-4 border-b-2 pb-2 mb-8' style={{borderColor: COLORS.NAVY+'30'}}>
-                            {/* FIX: Set Zap Icon color to ORANGE for brand accent */}
+
                             <Zap className='w-10 h-10' style={{color: COLORS.ORANGE}}/>
                             <h1 className="text-4xl font-extrabold" style={{ color: COLORS.NAVY }}>4-Session QuickStart Program</h1>
                         </div>
                         
                         <p className="text-lg text-gray-600 mb-8 max-w-2xl">This program is the foundational accelerator for the LeaderReps methodology. Review the sessions, core focus, and pre-work below.</p>
 
-                        {/* LIS Auditor Launch Card - Strong Accent */}
                         <button 
                             onClick={() => setQuickStartView('lis-auditor')}
                             className='w-full text-left p-6 rounded-2xl border-4 shadow-xl mb-8 bg-white border-[#47A88D] hover:shadow-2xl transition-all duration-300'
@@ -233,49 +230,42 @@ const QuickStartAcceleratorScreen = () => {
                         </button>
 
                         <div className="space-y-6">
-  {sessions.map((session) => (
-    <Card
-      key={session.id}
-      title={`Session ${session.id}: ${session.title}`}
-      icon={BookOpen}
-      accent="NAVY"   // <-- was accent={COLORS.NAVY}
-      className="rounded-2xl border-l-8 border-[#002E47] shadow-lg bg-white"
-    >
-      <p className="text-md font-semibold text-[#002E47] mb-4 border-b border-gray-200 pb-2">
-        Why this session matters:
-      </p>
+                            {sessions.map(session => (
 
-      <blockquote className="border-l-4 border-[#47A88D] pl-4 py-1 mb-4 text-sm italic text-gray-600">
-        {session.keyRationale}
-      </blockquote>
-
-      <div className="grid md:grid-cols-2 gap-4 pt-4 border-t border-gray-200">
-        <div>
-          <h3 className="text-lg font-semibold text-[#47A88D] mb-2 flex items-center">
-            <Target className="w-5 h-5 mr-1" /> Core Focus
-          </h3>
-          <p className="text-gray-700 text-sm">{session.focus}</p>
-        </div>
-        <div>
-          <h3 className="text-lg font-semibold text-[#47A88D] mb-2 flex items-center">
-            <Clock className="w-5 h-5 mr-1" /> Pre-Work Checklist
-          </h3>
-          <ul className="list-disc pl-5 text-gray-700 space-y-1 text-sm">
-            {session.preWork.map((item, i) => (
-              <li key={i} className="text-sm">{item}</li>
-            ))}
-          </ul>
-        </div>
-      </div>
-    </Card>
-  ))}
-</div>
-
+                                <Card key={session.id} title={`Session ${session.id}: ${session.title}`} icon={BookOpen} accent="NAVY" className="rounded-2xl border-l-8 border-[#002E47] shadow-lg bg-white">
+                                    <p className='text-md font-semibold text-[#002E47] mb-4 border-b border-gray-200 pb-2'>Why this session matters:</p>
+                                    
+                                    <blockquote className="border-l-4 border-[#47A88D] pl-4 py-1 mb-4 text-sm italic text-gray-600">
+                                        {session.keyRationale}
+                                    </blockquote>
+                                    
+                                    <div className="grid md:grid-cols-2 gap-4 pt-4 border-t border-gray-200">
+                                        <div>
+                                            <h3 className="text-lg font-semibold text-[#47A88D] mb-2 flex items-center"><Target className='w-5 h-5 mr-1'/> Core Focus</h3>
+                                            <p className="text-gray-700 text-sm">{session.focus}</p>
+                                        </div>
+                                        <div>
+                                            <h3 className="text-lg font-semibold text-[#47A88D] mb-2 flex items-center"><Clock className='w-5 h-5 mr-1'/> Pre-Work Checklist</h3>
+                                            <ul className="list-disc pl-5 text-gray-700 space-y-1 text-sm">
+                                                {session.preWork.map((item, index) => (
+                                                    <li key={index} className="text-sm">{item}</li>
+                                                ))}
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </Card>
+                            ))}
+                        </div>
+                    </div>
                 );
         }
     };
 
-    return renderView();
+    return (
+      <div className="p-6 md:p-10 min-h-screen" style={{ background: COLORS.BG }}>
+        {renderView()}
+      </div>
+    );
 };
 
 export default QuickStartAcceleratorScreen;
