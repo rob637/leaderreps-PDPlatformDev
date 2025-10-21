@@ -26,14 +26,10 @@ import {
 import { 
   getAuth, 
   onAuthStateChanged, 
-  // REMOVED: signInWithCustomToken, // NO LONGER USED
-  // signInAnonymously, // REMOVED: No longer using anonymous flow
   signOut,
-  // ADDED: For Email/Password and account management
   createUserWithEmailAndPassword, 
   signInWithEmailAndPassword, 
   sendPasswordResetEmail,
-  // GoogleAuthProvider, // Keep this if you use it in other components
 } from 'firebase/auth';
 
 // 3. FIRESTORE IMPORTS (This was already correct)
@@ -43,7 +39,6 @@ import { getFirestore, setLogLevel } from 'firebase/firestore';
 
 // =========================================================
 // --- EXISTING MOCK/PLACEHOLDER DEFINITIONS (Keep these) ---
-// NOTE: These are local mocks/placeholders needed for the component definitions
 const IconMap = {}; 
 const SECRET_SIGNUP_CODE = 'mock-code-123';
 const PDP_COLLECTION = 'leadership_plan';
@@ -56,6 +51,9 @@ const usePlanningData = (db, userId, isAuthReady) => ({planningData: {okrs: []},
 // --- PRODUCTION GEMINI CONFIGURATION (Keep this) ---
 const GEMINI_MODEL = 'gemini-2.5-flash-preview-09-2025';
 const API_KEY = (typeof __GEMINI_API_KEY !== 'undefined' ? __GEMINI_API_KEY : ''); 
+
+// CRITICAL FIX: Ensure DEBUG_MODE is explicitly defined and available at the top level
+const DEBUG_MODE = false;
 
 /**
  * Executes an authenticated request to the Gemini API.
@@ -112,7 +110,7 @@ const hasGeminiKey = () => (!!API_KEY);
 
 
 // Icons used in the new NavSidebar
-import { Home, Zap, ShieldCheck, TrendingUp, Mic, BookOpen, Settings, User, LogOut, CornerRightUp, Clock, Briefcase, Target, Users, BarChart3, Globe, Code, Bell, Lock, Download, Trash2, Mail, Link } from 'lucide-react';
+import { Home, Zap, ShieldCheck, TrendingUp, Mic, BookOpen, Settings, User, LogOut, CornerRightUp, Clock, Briefcase, Target, Users, BarChart3, Globe, Code, Bell, Lock, Download, Trash2, Mail, Link, Menu } from 'lucide-react';
 
 // FIX: Setting up a global mock for notepad since components rely on it
 if (typeof window !== 'undefined' && typeof window.notepad === 'undefined') {
@@ -176,6 +174,7 @@ const AppSettingsScreen = () => {
             return;
         }
         try {
+            // FIX: Using imported sendPasswordResetEmail function
             await sendPasswordResetEmail(auth, user.email);
             alert(`Password reset email sent to ${user.email}. Check your inbox!`);
         } catch (error) {
@@ -268,17 +267,23 @@ const AppSettingsScreen = () => {
 
 /* =========================================================
    STEP 3: CONTEXT + DATA PROVIDER
-// ... (rest of DataProvider remains the same)
-*/
+========================================================= */
+
+const AppServiceContext = createContext(null);
+const DEFAULT_SERVICES = {
+  navigate: () => {}, user: null, db: null, auth: null, userId: null, isAuthReady: false,
+  updatePdpData: () => {}, saveNewPlan: () => {}, updateCommitmentData: () => {}, updatePlanningData: () => {},
+  pdpData: null, commitmentData: null, planningData: null, isLoading: false, error: null,
+  appId: 'default-app-id', IconMap: {}, callSecureGeminiAPI: async () => { throw new Error('Gemini not configured.'); },
+  hasGeminiKey: () => false, GEMINI_MODEL, API_KEY,
+};
+export const useAppServices = () => useContext(AppServiceContext) ?? DEFAULT_SERVICES;
+
+const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+
 
 const DataProvider = ({ children, firebaseServices, userId, isAuthReady, navigate, user }) => {
-// ... (rest of DataProvider remains the same)
-// ... (rest of DataProvider remains the same)
-// ... (rest of DataProvider remains the same)
-// ... (rest of DataProvider remains the same)
-// ... (rest of DataProvider remains the same)
-// ... (rest of DataProvider remains the same)
-// ... (rest of DataProvider remains the same)
+  const { db } = firebaseServices;
 
   const pdp = usePDPData(db, userId, isAuthReady);
   const commitment = useCommitmentData(db, userId, isAuthReady);
@@ -739,10 +744,6 @@ const AppContent = ({ currentScreen, setCurrentScreen, user, navParams, isMobile
 };
 
 // =========================================================
-// !!! CRITICAL FIX: The mock firebase functions from the original file 
-// have been REMOVED here, as we are now using the real imported functions 
-// at the top of the file when DEBUG_MODE is false.
-// =========================================================
 
 const App = ({ initialState }) => {
   const [user, setUser] = useState(
@@ -873,6 +874,7 @@ const App = ({ initialState }) => {
     };
   }, [firebaseServices.auth]); // Re-run effect if auth object changes
 
+  // CRITICAL FIX: The logic here depends on the top-level DEBUG_MODE constant
   if (!DEBUG_MODE) {
     if (initStage === 'init') {
       return (
