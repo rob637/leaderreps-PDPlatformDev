@@ -149,7 +149,7 @@ async function buildAIFlyerHTML({ book, tier, executive, callSecureGeminiAPI }) 
   try {
     // 1. ATTEMPT LIVE API CALL with Google Search grounding
     const out = await callSecureGeminiAPI({ 
-      systemInstruction: { parts: [{ text: systemPrompt }] }, 
+      system_instruction: { parts: [{ text: systemPrompt }] }, 
       contents: [{ role: "user", parts: [{ text: userPrompt }] }], // Ensure grounding is active
     });
     
@@ -236,7 +236,7 @@ async function handleAiSubmit(e, services, selectedBook, aiQuery, setIsSubmittin
       Guidelines: Answer directly with 3–5 sentences. Include one concrete next action that applies the book's principle to the user's situation. Do not use markdown other than **bold** for emphasis. Ensure the response flows naturally like coaching advice.`;
 
     const out = await services.callSecureGeminiAPI({
-      systemInstruction: { parts: [{ text: systemPrompt }] },
+      system_instruction: { parts: [{ text: systemPrompt }] },
       contents: [{ role: 'user', parts: [{ text: `Regarding "${selectedBook.title}": ${q}` }] }],
     });
 

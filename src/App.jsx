@@ -82,6 +82,17 @@ const callSecureGeminiAPI = async (payload, maxRetries = 3, delay = 1000) => {
 
 const hasGeminiKey = () => (!!API_KEY);
 
+// Bridge: expose the real Gemini caller so services can forward to it
+useEffect(() => {
+  if (typeof window !== 'undefined') {
+    window.__callSecureGeminiAPI = callSecureGeminiAPI;
+  }
+  return () => {
+    if (typeof window !== 'undefined') delete window.__callSecureGeminiAPI;
+  };
+}, [callSecureGeminiAPI]);
+
+
 // --- END PRODUCTION GEMINI CONFIGURATION ---
 
 // --- EXISTING MOCK/PLACEHOLDER DEFINITIONS (Keep these) ---
