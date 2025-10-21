@@ -597,7 +597,8 @@ const App = ({ initialState }) => {
         } else {
           setUser(null);
           setUserId(null);
-          setAuthRequired(true); // Will trigger the AnonymousLoginPanel
+          setAuthRequired(true); // Will trigger the AnonymousLoginPanel;
+          setInitStage('ok');     // << ADD THIS so the UI can leave the spinner
         }
         setIsAuthReady(true);
       });
