@@ -27,8 +27,12 @@ import {
   getAuth, 
   onAuthStateChanged, 
   // REMOVED: signInWithCustomToken, // NO LONGER USED
-  signInAnonymously, // ADDED: For Anonymous Login
+  // signInAnonymously, // REMOVED: No longer using anonymous flow
   signOut,
+  // ADDED: For Email/Password and account management
+  createUserWithEmailAndPassword, 
+  signInWithEmailAndPassword, 
+  sendPasswordResetEmail,
   // GoogleAuthProvider, // Keep this if you use it in other components
 } from 'firebase/auth';
 
@@ -241,39 +245,154 @@ const DataProvider = ({ children, firebaseServices, userId, isAuthReady, navigat
 
 function ConfigError({ message }) { /* ... */ return null; }
 
-// REMOVED: LoginPanel is no longer needed as we auto-authenticate
-function AnonymousLoginPanel({ auth, onSuccess }) {
-    // This panel is now a guaranteed screen-in-the-way, but 
-    // it's kept simple to show auth is happening.
-    useEffect(() => {
-        if (auth) {
-            // CRITICAL: Call Anonymous Sign-in
-            signInAnonymously(auth)
-                .then(() => {
-                    // Success is handled by the onAuthStateChanged listener in App.jsx
-                    console.log('Anonymous sign-in successful. Waiting for state update.');
-                })
-                .catch((error) => {
-                    console.error('Anonymous sign-in failed:', error);
-                    // Fallback to manual success to proceed with a blank user
-                    setTimeout(onSuccess, 1500); 
-                });
-        } else {
-            // Fallback for missing auth object
-            setTimeout(onSuccess, 1500);
+// REPLACED: AnonymousLoginPanel is now the comprehensive AuthPanel
+function AuthPanel({ auth, onSuccess, setInitStage, navigate }) {
+    const [mode, setMode] = useState('login'); // 'login', 'signup', 'reset'
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
+    const [secretCode, setSecretCode] = useState('');
+    const [statusMessage, setStatusMessage] = useState('');
+    const [isLoading, setIsLoading] = useState(false);
+    
+    // Constants from App.jsx
+    const NAVY = COLORS.NAVY;
+    const TEAL = COLORS.TEAL;
+    const ORANGE = COLORS.ORANGE;
+    const SECRET_SIGNUP_CODE = 'mock-code-123'; // Copied from top of file
+
+    const handleAction = async () => {
+        if (!auth || isLoading) return;
+        setIsLoading(true);
+        setStatusMessage('');
+
+        try {
+            if (mode === 'login') {
+                // CRITICAL: Call Email/Password Sign-in
+                await signInWithEmailAndPassword(auth, email, password);
+                // Success is handled by the onAuthStateChanged listener in App.jsx
+                console.log('Sign-in successful. Waiting for state update.');
+            } else if (mode === 'signup') {
+                if (secretCode !== SECRET_SIGNUP_CODE) {
+                    throw new Error('Invalid secret sign-up code.');
+                }
+                // CRITICAL: Call Create User
+                await createUserWithEmailAndPassword(auth, email, password);
+                // Success is handled by the onAuthStateChanged listener
+                console.log('Sign-up successful. Waiting for state update.');
+            } else if (mode === 'reset') {
+                // CRITICAL: Call Password Reset
+                await sendPasswordResetEmail(auth, email);
+                setStatusMessage('Password reset email sent. Check your inbox.');
+                setMode('login'); // Go back to login after sending
+            }
+        } catch (error) {
+            console.error(`${mode} failed:`, error);
+            const msg = error.message.replace(/Firebase:/g, '').replace('Error (auth/', '').replace(').', '').trim();
+            setStatusMessage(msg || `An error occurred during ${mode}.`);
+        } finally {
+            setIsLoading(false);
         }
-    }, [auth, onSuccess]);
+    };
+
+    const renderForm = () => {
+        const isLogin = mode === 'login';
+        const isSignUp = mode === 'signup';
+        const isReset = mode === 'reset';
+
+        return (
+            <div className='space-y-4'>
+                <input
+                    type="email"
+                    placeholder="Email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className={`w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[${TEAL}] focus:border-[${TEAL}]`}
+                    disabled={isLoading}
+                />
+                
+                {!isReset && (
+                    <input
+                        type="password"
+                        placeholder="Password"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        className={`w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[${TEAL}] focus:border-[${TEAL}]`}
+                        disabled={isLoading}
+                    />
+                )}
+
+                {isSignUp && (
+                    <input
+                        type="text"
+                        placeholder="Secret Sign-up Code"
+                        value={secretCode}
+                        onChange={(e) => setSecretCode(e.target.value)}
+                        className={`w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[${TEAL}] focus:border-[${TEAL}]`}
+                        disabled={isLoading}
+                    />
+                )}
+                
+                <button
+                    onClick={handleAction}
+                    disabled={isLoading || !email || (!isReset && !password) || (isSignUp && !secretCode)}
+                    className={`w-full py-3 rounded-lg font-bold text-white transition-colors 
+                        ${isLoading || !email || (!isReset && !password) || (isSignUp && !secretCode)
+                            ? 'bg-gray-400 cursor-not-allowed'
+                            : `bg-[${TEAL}] hover:bg-[${NAVY}]`
+                        }
+                    `}
+                >
+                    {isLoading ? 'Processing...' : (
+                        isLogin ? 'Sign In' : isSignUp ? 'Sign Up' : 'Send Reset Email'
+                    )}
+                </button>
+                
+                {statusMessage && (
+                    <p className={`text-sm text-center font-medium mt-3 ${statusMessage.includes('sent') ? `text-[${TEAL}]` : `text-[${ORANGE}]`}`}>
+                        {statusMessage}
+                    </p>
+                )}
+            </div>
+        );
+    };
 
     return (
         <div className="min-h-screen flex items-center justify-center bg-gray-100">
-            <div className="p-8 bg-white rounded-xl shadow-lg text-center w-full max-w-sm">
-                <h2 className="text-xl font-extrabold text-[#002E47] mb-2">Anonymous Session</h2>
-                <p className='text-sm text-gray-600 mt-2'>
-                    Establishing secure, anonymous credentials for demo access.
+            <div className="p-8 bg-white rounded-xl shadow-2xl text-center w-full max-w-sm border-t-4 border-[${TEAL}]">
+                <h2 className="text-2xl font-extrabold text-[${NAVY}] mb-4">
+                    {mode === 'login' ? 'Sign In' : mode === 'signup' ? 'Create Account' : 'Reset Password'}
+                </h2>
+                <p className='text-sm text-gray-600 mb-6'>
+                    {mode === 'reset' ? 'Enter your email to receive a password reset link.' : 'Log in to access your leadership development platform.'}
                 </p>
                 
-                <div className='mt-4 mb-6'>
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#47A88D] mx-auto"></div>
+                {renderForm()}
+                
+                <div className='mt-6 border-t pt-4 border-gray-200 space-y-2'>
+                    {mode !== 'signup' && (
+                        <button 
+                            onClick={() => { setMode('signup'); setStatusMessage(''); }} 
+                            className={`text-sm text-[${TEAL}] hover:text-[${NAVY}] font-semibold block w-full`}
+                        >
+                            Need an account? Sign up
+                        </button>
+                    )}
+                    {mode !== 'login' && (
+                        <button 
+                            onClick={() => { setMode('login'); setStatusMessage(''); }} 
+                            className="text-sm text-gray-500 hover:text-[${NAVY}] block w-full"
+                        >
+                            Back to Sign In
+                        </button>
+                    )}
+                    {mode === 'login' && (
+                        <button 
+                            onClick={() => { setMode('reset'); setStatusMessage(''); }} 
+                            className={`text-sm text-gray-500 hover:text-[${ORANGE}] block w-full`}
+                        >
+                            Forgot Password?
+                        </button>
+                    )}
                 </div>
             </div>
         </div>
@@ -411,13 +530,13 @@ const NavSidebar = ({ currentScreen, setCurrentScreen, user, isMobileOpen, close
                 >
                     {/* The user icon and display logic updated for Anonymous */}
                     <User className="w-5 h-5 mr-3 text-indigo-300" />
-                    <span className='truncate'>{user?.email || `Anonymous User`}</span>
+                    <span className='truncate'>{user?.email || `Guest User`}</span>
                 </button>
                 
                 {isProfileOpen && (
                     <div className={`absolute bottom-full left-0 mb-3 w-full p-4 rounded-xl shadow-2xl bg-[${NAVY}] border border-[${TEAL}]/50 z-10 animate-in fade-in slide-in-from-bottom-2`}>
                         <p className='text-xs font-medium uppercase text-indigo-300 mb-1'>Account Info</p>
-                        <p className='text-sm font-semibold truncate mb-2 text-white' title={user?.email}>{user?.email || 'anonymous'}</p>
+                        <p className='text-sm font-semibold truncate mb-2 text-white' title={user?.email}>{user?.email || 'N/A'}</p>
                         <p className='text-xs text-gray-400 break-words mb-4'>UID: {user?.userId || 'N/A'}</p>
                         <button
                             onClick={handleSignOut}
@@ -588,28 +707,22 @@ const App = ({ initialState }) => {
       const unsubscribe = onAuthStateChanged(authentication, (currentUser) => {
         if (currentUser) {
           const uid = currentUser.uid;
-          // Set a default 'anonymous' email for the anonymous user
-          const email = currentUser.isAnonymous ? `anon-${uid.substring(0, 8)}@leaderreps.com` : currentUser.email;
+          // Set user email, defaulting to a placeholder if none exists (e.g., from a migrated anonymous user)
+          const email = currentUser.email || `guest-${uid.substring(0, 8)}@leaderreps.com`;
           setUserId(uid);
           setUser({ name: email, email: email, userId: uid });
           setAuthRequired(false);
-          setInitStage('ok'); // Move to 'ok' as soon as a user (even anon) is found
+          setInitStage('ok'); // Move to 'ok' as soon as a user is found
         } else {
           setUser(null);
           setUserId(null);
-          setAuthRequired(true); // Will trigger the AnonymousLoginPanel;
-          setInitStage('ok');     // << ADD THIS so the UI can leave the spinner
+          setAuthRequired(true); // Will trigger the AuthPanel;
+          setInitStage('ok');     // Allow UI to leave the spinner and show auth panel
         }
         setIsAuthReady(true);
       });
 
-      // REMOVED: Custom token sign-in logic is removed for anonymous flow
-      /*
-      if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-        signInWithCustomToken(authentication, __initial_auth_token) // REAL imported function
-          .catch(err => console.error('Custom token auth failed; waiting for user login:', err));
-      }
-      */
+      // Removed: Custom token sign-in logic is removed, we only rely on email/password flow now.
 
       return () => unsubscribe();
     } catch (e) {
@@ -638,11 +751,11 @@ const App = ({ initialState }) => {
         </React.Fragment>
       );
     }
-    // CRITICAL: If isAuthReady but no user, trigger Anonymous sign-in panel
+    // CRITICAL: If isAuthReady but no user, trigger the secure AuthPanel
     if (!user && isAuthReady) {
       return (
         <React.Fragment>
-          <AnonymousLoginPanel
+          <AuthPanel
             auth={firebaseServices.auth}
             // onSuccess is a necessary fallback/guarantee but auth listener should handle the actual user
             onSuccess={() => {
