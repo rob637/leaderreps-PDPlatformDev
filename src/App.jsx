@@ -48,6 +48,7 @@ const SECRET_SIGNUP_CODE = 'mock-code-123';
 const PDP_COLLECTION = 'leadership_plan';
 const PDP_DOCUMENT = 'roadmap';
 const LEADERSHIP_TIERS = {};
+// CRITICAL SAFETY FIX: Ensure mock data structures return minimal, defined objects/arrays.
 const usePDPData = (db, userId, isAuthReady) => ({pdpData: {assessment:{selfRatings:{T3: 6}}}, isLoading: false, error: null, updatePdpData: async () => true, saveNewPlan: async () => true});
 const useCommitmentData = (db, userId, isAuthReady) => ({commitmentData: {active_commitments: []}, isLoading: false, error: null, updateCommitmentData: async () => true});
 const usePlanningData = (db, userId, isAuthReady) => ({planningData: {okrs: []}, isLoading: false, error: null, updatePlanningData: async () => true});
@@ -289,6 +290,7 @@ const DataProvider = ({ children, firebaseServices, userId, isAuthReady, navigat
   // CRITICAL FIX: createServiceValue calculates the app services object
   const appServices = useMemo(() => createServiceValue(firebaseServices, userId), [firebaseServices, userId]);
 
+  // FIX: These mock calls are still needed but must be null-safe in case db/userId are not ready
   const pdp = usePDPData(db, userId, isAuthReady);
   const commitment = useCommitmentData(db, userId, isAuthReady);
   const planning = usePlanningData(db, userId, isAuthReady);
@@ -297,9 +299,11 @@ const DataProvider = ({ children, firebaseServices, userId, isAuthReady, navigat
   const error = pdp.error || commitment.error || planning.error || appServices.error;
 
   const hasPendingDailyPractice = useMemo(() => {
+    // CRITICAL SAFETY FIX FOR LENGTH ERROR: Use the || [] to guarantee active is an array
     const active = commitment.commitmentData?.active_commitments || [];
     const isPending = active.some(c => c.status === 'Pending');
-    const reflectionMissing = !commitment.commitmentData?.reflection_journal?.trim();
+    // CRITICAL SAFETY FIX: Check reflection string against empty string
+    const reflectionMissing = !(commitment.commitmentData?.reflection_journal || '').trim();
     return active.length > 0 && (isPending || reflectionMissing);
   }, [commitment.commitmentData]);
 
