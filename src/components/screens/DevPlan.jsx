@@ -184,7 +184,7 @@ const mdToHtml = async (md) => {
     return `<p class="text-sm text-gray-700">${html}</p>`;
 };
 const IconMap = {
-    Zap: Zap, Users: Users, Briefcase: Briefcase, Target: Target, BarChart3: BarChart3, Clock: Clock, Eye: Eye, BookOpen: BookOpen, Lightbulb: Lightbulb, X: X, ArrowLeft: ArrowLeft, CornerRightUp: CornerRightUp, AlertTriangle: AlertTriangle, CheckCircle: CheckCircle, PlusCircle: PlusCircle, HeartPulse: HeartPulse, TrendingUp: TrendingUp, TrendingDown: TrendingDown, Activity: Activity, Link: Link, Cpu: Cpu, Star: Star, Mic: Mic, Trello: Trello, Settings: Settings, Home: Home, MessageSquare: MessageSquare, Check: Check
+    Zap: Zap, Users: Users, Briefcase: Briefcase, Target: Target, BarChart3: BarChart3, Clock: Clock, Eye: Eye, BookOpen: BookOpen, Lightbulb: Lightbulb, X: X, ArrowLeft: ArrowLeft, CornerRightUp: CornerRightUp, AlertTriangle: AlertTriangle, CheckCircle: CheckCircle, PlusCircle: PlusCircle, HeartPulse: HeartPulse, TrendingUp: TrendingUp, TrendingDown: TrendingDown, Activity: Activity, Link: Link, Cpu: Cpu, Star: Star, Mic: Mic, Trello: Trello, Settings: Settings, Home: Home, MessageSquare: MessageSquare, Check: Check, Calendar: Calendar
 };
 
 
@@ -525,9 +525,90 @@ const MOCK_CONTENT_DETAILS = {
             * **System:** Downloadable checklist/template included (e.g., Delegation Matrix).
         `;
     },
+    
+    // ----------------------------------------------------
+    // TYPE: Video (MOCK - Assuming external platform links)
+    // ----------------------------------------------------
+    'Video': (title, skill) => {
+        let callToAction = "This video provides a tactical breakdown of how executive behavior drives team culture.";
+        if (skill === 'Shift to Coach') callToAction = "Watch the breakdown of the 'Player' vs. 'Coach' mindset and how to effectively transition your behavior.";
+        if (skill === 'Goals') callToAction = "Watch this lesson on the difference between vanity metrics and true executive outcomes.";
+        if (skill === 'Decisions') callToAction = "This video breaks down a simple, repeatable framework for complex, high-stakes decision-making.";
+        if (skill === 'Conflict') callToAction = "View the key principles for managing productive conflict and when to intervene in team disputes.";
+        if (skill === 'Vision') callToAction = "Learn how to use narrative storytelling to communicate and reinforce the long-term vision to large organizations.";
+        
+        return `
+            ## Executive Briefing: ${title} (Time Commitment: ~8-15 min)
+            
+            ### Delivery Format: Video Lesson
+            
+            ${callToAction} This content is designed to be concise and immediately actionable. Focus on modeling the observed behavior immediately.
+            
+            * **Weekly Focus:** Observe a specific behavior demonstrated in the video and attempt to replicate it twice this week.
+            * **Actionable Deliverable:** A single note in your PDP journal capturing the one key takeaway phrase or framework.
+        `;
+    },
+    
+    // ----------------------------------------------------
+    // TYPE: 1:1 Session (MOCK - Simulating human interaction)
+    // ----------------------------------------------------
+    '1:1 Session': (title, skill) => {
+        let focus = "real-time application of a coaching model";
+        if (skill === 'Boss') focus = "reviewing your **Managing Upward Matrix** for blind spots and priority alignment with your executive manager.";
+        if (skill === 'Planning') focus = "a critical 60-minute review of your **Legacy Definition** and five-year strategic impact.";
+        if (skill === 'Conflict') focus = "live, mentored role-playing of a crucial conversation you need to have this week.";
+        
+        return `
+            ## Mentored Session: ${title} (Time Commitment: 30-60 min)
+            
+            ### Engagement Focus: ${skill} (Live Coaching)
+            
+            This module schedules a direct, protected interaction with your assigned LeaderReps Executive Coach. The session is dedicated to **${focus}**.
+            
+            * **Preparation Requirement:** You must bring a specific, real-world case, scenario, or artifact (e.g., a process document or a reflection note) for the discussion.
+            * **Actionable Deliverable:** Completion of the live session is required. The coach will provide a formal post-session summary that is automatically logged.
+        `;
+    },
+    
+    // ----------------------------------------------------
+    // TYPE: Coaching (MOCK - Simulating AI/Chat interaction)
+    // ----------------------------------------------------
+    'Coaching': (title, skill) => {
+        let outcome = "immediate, personalized feedback on a drafted script or planned action.";
+        if (skill === 'Feedback') outcome = "practice delivering feedback (Radical Candor model) and receive immediate AI-driven feedback on tone and specificity.";
+        if (skill === 'Coaching') outcome = "use the AI to guide you through the GROW model, ensuring your questions are non-directive and outcome-focused.";
+        if (skill === 'Motive') outcome = "challenge your 'Why' statement against a scenario where purpose and profit are in direct conflict.";
+        
+        return `
+            ## AI Coaching Lab: ${title} (Time Commitment: ~15-20 min)
+            
+            ### Interactive Focus: ${skill} (Tactical Feedback)
+            
+            This is a private, iterative coaching environment. You will be asked to input a scenario or script (e.g., delegation instructions, feedback delivery) to receive **${outcome}**.
+            
+            * **Tool:** Use the Coaching Lab screen to submit your script.
+            * **Actionable Deliverable:** Generate and save a final, approved script for immediate use.
+        `;
+    },
 };
 
-// Mock data for the "Generic Manager" Plan Comparison
+
+const MOCK_CONTENT_DETAILS_VIDEO = {
+    // A video placeholder function, ensuring it aligns with the updated mock details structure
+    'Video': MOCK_CONTENT_DETAILS.Video,
+    '1:1 Session': MOCK_CONTENT_DETAILS['1:1 Session'],
+    'Coaching': MOCK_CONTENT_DETAILS.Coaching,
+    'Reading': MOCK_CONTENT_DETAILS.Reading,
+    'Exercise': MOCK_CONTENT_DETAILS.Exercise,
+    'Role-Play': MOCK_CONTENT_DETAILS['Role-Play'],
+    'Case Study': MOCK_CONTENT_DETAILS['Case Study'],
+    'Tool': MOCK_CONTENT_DETAILS.Tool,
+};
+
+
+const MOCK_CONTENT_DETAILS_FINAL = { ...MOCK_CONTENT_DETAILS, ...MOCK_CONTENT_DETAILS_VIDEO };
+
+
 const GENERIC_PLAN = {
     avgIntroContent: 8, 
     avgMasteryContent: 3, 
@@ -541,56 +622,123 @@ const adjustDuration = (rating, duration) => {
     return duration;
 };
 
-// UPDATED: generatePlanData simplified to remove peer/team inputs
+// NEW/UPDATED CRITICAL FUNCTION: generatePlanData now applies dynamic duration and density based on assessment.
 const generatePlanData = (assessment, ownerUid) => {
     const { managerStatus, goalPriorities, selfRatings, menteeFeedback } = assessment;
     const allTiers = Object.keys(LEADERSHIP_TIERS);
 
-    const plan = [];
-    const usedContentIds = new Set();
-    const lowRatedTiers = Object.entries(selfRatings).filter(([, rating]) => rating <= 4).map(([id]) => id);
+    // --- 1. CALCULATE MONTHLY TIER ASSIGNMENT (Dynamic Duration) ---
+    const calculateTierMonths = (ratings) => {
+        let monthsMap = {};
+        const tiers = Object.keys(ratings);
+        // Calculate Inverse Score: High score means low need (1 point), low score means high need (10 points).
+        let totalInverseScore = tiers.reduce((sum, t) => sum + (11 - ratings[t]), 0); 
+        if (totalInverseScore === 0) totalInverseScore = 55; // Safety check
 
-    let tierRotationQueue = [];
+        let currentMonth = 0;
+        // Base allocation: minimum 2 months per tier for review/maintenance
+        tiers.forEach(t => monthsMap[t] = 2); 
+        let remainingSlots = 24 - (tiers.length * 2); // 24 - 10 = 14 slots left
 
-    // Prioritization logic: Low Rating > Goal Priority > General Rotation
-    lowRatedTiers.forEach(tier => {
-        if (!tierRotationQueue.includes(tier)) tierRotationQueue.push(tier);
-    });
-    goalPriorities.forEach(tier => {
-        if (!tierRotationQueue.includes(tier)) tierRotationQueue.push(tier);
-    });
-    allTiers.forEach(tier => {
-        if (!tierRotationQueue.includes(tier)) tierRotationQueue.push(tier);
-    });
+        // Distribute remaining slots based on proportional inverse score
+        for (const tier of tiers) {
+            const inverseScore = 11 - ratings[tier];
+            // Proportional slots ensures the "weakest" tiers get the bulk of the extra time
+            const proportionalSlots = Math.round(remainingSlots * (inverseScore / totalInverseScore));
+            monthsMap[tier] += proportionalSlots;
+        }
+        
+        // Final balance adjustment to ensure total is exactly 24 (due to rounding)
+        const currentTotal = tiers.reduce((sum, t) => sum + monthsMap[t], 0);
+        let difference = 24 - currentTotal;
+        
+        // Distribute or subtract the difference to the most deserving tiers (lowest rated/highest rated)
+        const sortedTiersByRating = tiers.sort((a, b) => ratings[a] - ratings[b]); // Ascending: Weakest first
+        
+        let i = 0;
+        while (difference !== 0) {
+            const tier = difference > 0 
+                ? sortedTiersByRating[i % tiers.length]   // Add months to the weakest tiers
+                : sortedTiersByRating.slice().reverse()[i % tiers.length]; // Subtract from the strongest tiers (highest index)
+            
+            if (difference > 0) {
+                monthsMap[tier]++;
+                difference--;
+            } else if (monthsMap[tier] > 2) { // Ensure minimum of 2 months is maintained
+                monthsMap[tier]--;
+                difference++;
+            }
+            i++;
+        }
+        
+        return monthsMap;
+    };
+    
+    const tierMonths = calculateTierMonths(selfRatings); 
 
-    // Special injection for New Managers
-    if (managerStatus === 'New' && tierRotationQueue[0] !== 'T1') {
-         tierRotationQueue.unshift('T1');
+    // --- 2. BUILD PRIORITY ROTATION QUEUE (Order of Tiers) ---
+    
+    // Sort tiers by lowest rating first (high priority), then apply goal priorities at the front
+    const sortedTiersByRating = allTiers.sort((a, b) => selfRatings[a] - selfRatings[b]); 
+    
+    // 1. Weakest Tiers
+    const highPriorityTiers = sortedTiersByRating.filter(t => selfRatings[t] <= 4);
+    
+    // 2. User Goal Tiers (if not already high priority)
+    const goalPriorityTiers = goalPriorities.filter(t => !highPriorityTiers.includes(t));
+    
+    // 3. Remaining Tiers (Core/Strong)
+    const remainingTiers = sortedTiersByRating.filter(t => !highPriorityTiers.includes(t) && !goalPriorities.includes(t));
+
+    // Define the core rotation order
+    const rotationOrder = [...highPriorityTiers, ...goalPriorityTiers, ...remainingTiers];
+    
+    // Fill the 24 slots using the prioritized rotation order and the calculated durations
+    const monthlyTierAssignment = [];
+    const monthsRemainingInTier = { ...tierMonths };
+    
+    for (let i = 0; i < 24; i++) {
+        // Find the next tier in the prioritized rotation that still has months remaining
+        const nextTier = rotationOrder.find(t => monthsRemainingInTier[t] > 0);
+        
+        if (nextTier) {
+            monthlyTierAssignment.push(nextTier);
+            monthsRemainingInTier[nextTier]--;
+        } else {
+            // Fallback (Should be rare due to balancing logic)
+            monthlyTierAssignment.push(allTiers[i % allTiers.length]);
+        }
     }
     
-    // Special injection for Mentee Feedback Gap (still kept T4 for conflict)
-    if (menteeFeedback?.T4?.score < 70 && !tierRotationQueue.includes('T4')) {
-         tierRotationQueue.splice(1, 0, 'T4');
-    }
-
-    // --- Core 24-Month Loop ---
+    // --- 3. CORE 24-MONTH PLAN GENERATION (Dynamic Content Density) ---
+    const plan = [];
+    const usedContentIds = new Set();
+    
+    const getDynamicMaxContent = (rating) => {
+        if (rating <= 4) return 6;    // Weak: Max 6 items (High Density/Investment)
+        if (rating <= 7) return 4;    // Core: Max 4 items (Standard Density)
+        return 3;                     // Strong: Max 3 items (Maintenance/Review)
+    };
+    
     for (let month = 1; month <= 24; month++) {
-        let currentTier = tierRotationQueue[(month - 1) % tierRotationQueue.length];
+        const currentTier = monthlyTierAssignment[month - 1];
         const tierMeta = LEADERSHIP_TIERS[currentTier];
-        const theme = `Deep Dive: ${tierMeta.name}`;
+        const theme = `Strategic Focus: ${tierMeta.name}`;
 
-        const rating = selfRatings[currentTier] || 5; // Default to 5 if missing
+        const rating = selfRatings[currentTier] || 5; 
         const targetDifficulty = getTargetDifficulty(rating);
-
+        const maxContent = getDynamicMaxContent(rating); // Dynamic volume
+        
+        // Filter content based on Tier, Difficulty, and ensure no repetition
         const requiredContent = [];
         const contentPool = CONTENT_LIBRARY.filter(item =>
             item.tier === currentTier && item.difficulty === targetDifficulty && !usedContentIds.has(item.id)
         );
 
-        // Pull up to 4 items
+        // Pull dynamic number of items (up to maxContent)
         let count = 0;
         for (const item of contentPool) {
-            if (count < 4) {
+            if (count < maxContent) {
                 requiredContent.push({
                     ...item,
                     duration: adjustDuration(rating, item.duration),
@@ -601,7 +749,7 @@ const generatePlanData = (assessment, ownerUid) => {
             }
         }
         
-        // Ensure every month has at least one item, if the initial filter was empty
+        // Fallback: If pool is exhausted for the ideal difficulty, use any remaining content
         if (requiredContent.length === 0) {
              const backupItem = CONTENT_LIBRARY.find(item => item.tier === currentTier && !usedContentIds.has(item.id));
              if (backupItem) {
@@ -697,12 +845,13 @@ const ContentDetailsModal = ({ isVisible, onClose, content }) => {
     // Find the full content details from the CONTENT_LIBRARY based on the requiredContent item
     const fullContentItem = CONTENT_LIBRARY.find(item => item.id === content.id && item.tier === content.tier);
     
-    const mockDetail = fullContentItem && MOCK_CONTENT_DETAILS[fullContentItem.type]
-        ? MOCK_CONTENT_DETAILS[fullContentItem.type](fullContentItem.title, fullContentItem.skill)
+    // CRITICAL FIX: Use the final mock content details object
+    const mockDetail = fullContentItem && MOCK_CONTENT_DETAILS_FINAL[fullContentItem.type]
+        ? MOCK_CONTENT_DETAILS_FINAL[fullContentItem.type](fullContentItem.title, fullContentItem.skill)
         : `## Content Unavailable\n\nNo detailed content available for **${content.title}** (Type: ${content.type}).`;
 
     // FIX 2: Use useMemo to prevent re-generation of the mockDetail and pass mockDetail as a dependency to useEffect
-    const memoizedMockDetail = useMemo(() => mockDetail, [content.id, content.tier]); 
+    const memoizedMockDetail = useMemo(() => mockDetail, [content.id, content.tier, content.title, content.skill]); 
 
     // FIX 3 (CRITICAL): Use useEffect to run the async conversion safely, setting the dependency array correctly. This prevents the Error #310 loop.
     useEffect(() => {
