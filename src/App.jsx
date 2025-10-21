@@ -342,7 +342,14 @@ const NavSidebar = ({ currentScreen, setCurrentScreen, user, isMobileOpen, close
     
     return (
         // FIX 1: Fixed NavSidebar styling (fixed height, independent scroll)
-        <div className={`hidden md:fixed md:flex flex-col w-64 h-full bg-[${NAVY}] text-white p-4 shadow-2xl overflow-y-auto`}>
+        <div className={`hidden md:fixed md:flex flex-col w-64 h-full bg-[${NAVY}] text-white p-4 shadow-2xl overflow-y-auto`}
+             style={{ 
+                 // Hide scrollbar for Webkit (Chrome, Safari)
+                 WebkitOverflowScrolling: 'touch',
+                 msOverflowStyle: 'none', // IE and Edge
+                 scrollbarWidth: 'none', // Firefox
+             }}
+        >
             <div className={`flex items-center justify-center h-16 border-b border-[${TEAL}]/50 mb-6 flex-shrink-0`}>
                 <h1 className="text-2xl font-extrabold flex items-center">
                     <CornerRightUp className={`w-7 h-7 mr-2 text-[${TEAL}]`} /> LeaderReps
