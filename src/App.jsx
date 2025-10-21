@@ -336,14 +336,15 @@ const NavSidebar = ({ currentScreen, setCurrentScreen, user, isMobileOpen, close
 
     // --- Desktop Sidebar ---
     return (
-        <div className={`hidden md:flex flex-col w-64 min-h-screen bg-[${NAVY}] text-white p-4 shadow-2xl sticky top-0`}>
-            <div className={`flex items-center justify-center h-16 border-b border-[${TEAL}]/50 mb-6`}>
+        // FIX 1: Changed container to md:fixed h-full and added overflow-y-auto
+        <div className={`hidden md:fixed md:flex flex-col w-64 h-full bg-[${NAVY}] text-white p-4 shadow-2xl overflow-y-auto`}>
+            <div className={`flex items-center justify-center h-16 border-b border-[${TEAL}]/50 mb-6 flex-shrink-0`}>
                 <h1 className="text-2xl font-extrabold flex items-center">
                     <CornerRightUp className={`w-7 h-7 mr-2 text-[${TEAL}]`} /> LeaderReps
                 </h1>
             </div>
 
-            <nav className="flex-1 space-y-4">
+            <nav className="flex-1 space-y-4 overflow-y-auto">
                 {menuSections.map(section => (
                     <div key={section.title} className='space-y-3'>
                         {/* FIX: Improved delineation with background on title */}
@@ -357,7 +358,7 @@ const NavSidebar = ({ currentScreen, setCurrentScreen, user, isMobileOpen, close
                 ))}
             </nav>
 
-            <div className={`pt-4 border-t border-[${TEAL}]/50 mt-4 relative`}>
+            <div className={`pt-4 border-t border-[${TEAL}]/50 mt-4 relative flex-shrink-0`}>
                 <button 
                     onClick={() => setIsProfileOpen(!isProfileOpen)} 
                     className={`flex items-center w-full p-2 rounded-xl text-sm font-semibold transition-colors hover:bg-[${TEAL}]/20 focus:outline-none focus:ring-2 focus:ring-[${TEAL}]`}
@@ -421,6 +422,7 @@ const ScreenRouter = ({ currentScreen, navParams }) => {
 const AppContent = ({ currentScreen, setCurrentScreen, user, navParams, isMobileOpen, setIsMobileOpen }) => {
     return (
         <div className="min-h-screen flex bg-gray-100 font-sans antialiased">
+            {/* NavSidebar is now fixed, taking up 64px width */}
             <NavSidebar
                 currentScreen={currentScreen}
                 setCurrentScreen={setCurrentScreen}
@@ -428,7 +430,10 @@ const AppContent = ({ currentScreen, setCurrentScreen, user, navParams, isMobile
                 isMobileOpen={isMobileOpen}
                 closeMobileMenu={() => setIsMobileOpen(false)}
             />
-            <main className="flex-1 overflow-y-auto">
+            
+            {/* Main content area must account for the sidebar width */}
+            <main className="flex-1 md:ml-64 overflow-y-auto">
+                {/* Mobile Header */}
                 <div className="md:hidden sticky top-0 bg-white/95 backdrop-blur-sm shadow-md p-4 flex justify-between items-center z-40">
                     <h1 className="text-xl font-bold text-[#002E47]">LeaderReps</h1>
                     <button onClick={() => setIsMobileOpen(true)} className="p-2 text-[#002E47] hover:text-[#47A88D]">

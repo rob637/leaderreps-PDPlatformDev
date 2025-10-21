@@ -859,7 +859,9 @@ const TrackerDashboardView = ({ data, updatePdpData, saveNewPlan, db, userId, na
     const [viewMonth, setViewMonth] = useState(data.currentMonth); 
     const currentMonth = data.currentMonth;
     
-    const monthPlan = data.plan.find(m => m.month === viewMonth);
+    // CRITICAL FIX: Use useMemo to reliably find the month plan based on viewMonth
+    const monthPlan = useMemo(() => data.plan.find(m => m.month === viewMonth), [data.plan, viewMonth]);
+    
     const isCurrentView = viewMonth === currentMonth; 
     // FIX 1: isPastOrCurrent is used to determine if actions are editable, not clickable in timeline.
     const isPastOrCurrent = viewMonth <= currentMonth; 
@@ -878,6 +880,11 @@ const TrackerDashboardView = ({ data, updatePdpData, saveNewPlan, db, userId, na
 
     const { callSecureGeminiAPI, hasGeminiKey } = useAppServices(data);
 
+    // CRITICAL FIX: Synchronize local reflection state when the viewed month changes.
+    useEffect(() => {
+        setLocalReflection(monthPlan?.reflectionText || '');
+    }, [monthPlan]);
+    
     const fetchMonthlyBriefing = useCallback(async (plan, assessment) => {
         if (briefingLoading || !hasGeminiKey() || !isCurrentView) return;
 
@@ -906,7 +913,6 @@ const TrackerDashboardView = ({ data, updatePdpData, saveNewPlan, db, userId, na
 
     useEffect(() => {
         if (monthPlan && assessment) {
-            setLocalReflection(monthPlan.reflectionText || '');
             
             if (!isCurrentView && monthPlan.briefingText) {
                  setBriefing(monthPlan.briefingText);

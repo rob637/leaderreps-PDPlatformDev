@@ -1,6 +1,6 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react'; // ADDED useState
 // src/components/screens/ExecutiveReflection.jsx
-import { BarChart3, TrendingUp, Target, ShieldCheck, Zap, TrendingDown, Cpu, Star, MessageSquare, HeartPulse, Users, Lightbulb } from 'lucide-react';
+import { BarChart3, TrendingUp, Target, ShieldCheck, Zap, TrendingDown, Cpu, Star, MessageSquare, HeartPulse, Users, Lightbulb, X, CornerRightUp } from 'lucide-react'; // ADDED X, CornerRightUp
 // PRODUCTION INTEGRATION: Uncomment this line when deploying to production with a real service hook
 // import { useAppServices } from '../../services/useAppServices.jsx'; 
 
@@ -25,8 +25,13 @@ const MOCK_PDP_DATA = { assessment: { selfRatings: { T3: 6 }, menteeFeedback: { 
 const MOCK_PLANNING_DATA = { riskAudits: 15, okrFailures: 2 };
 
 // PRODUCTION INTEGRATION: This must be replaced with your actual useAppServices hook
-const useMockServices = () => ({
-    navigate: (screen, params) => console.log(`Navigating to ${screen} with params:`, params),
+const useMockServices = (setMockAction) => ({
+    // CRITICAL FIX: The mock navigate now triggers the visible modal action
+    navigate: (screen, params) => {
+        const action = `Navigating to Screen: **${screen}**`;
+        console.log(`MOCK NAVIGATION FIRED: ${action} with params:`, params);
+        setMockAction(action);
+    },
     // PRODUCTION: Add the rest of your app services here if needed
 });
 /* =========================================================
@@ -80,6 +85,34 @@ const Button = ({ children, onClick, disabled = false, variant = 'primary', clas
     </button>
   );
 };
+
+// NEW: Confirmation Modal for mock navigation
+const MockActionModal = ({ action, onClose }) => {
+    if (!action) return null;
+
+    // Simple markdown to highlight action text
+    const __html = action.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+
+    return (
+        <div className="fixed inset-0 bg-[#002E47]/70 z-50 flex items-center justify-center p-4">
+            <div className="bg-[#FCFCFA] rounded-xl shadow-2xl w-full max-w-sm p-6 text-center">
+                <div className='flex justify-center mb-4'>
+                    <CornerRightUp className='w-8 h-8 text-[#47A88D]'/>
+                </div>
+                <h3 className="text-xl font-extrabold text-[#002E47] mb-2">Navigation Confirmed</h3>
+                <p className='text-sm text-gray-700 mb-4'>
+                    The button is functional. In a live environment, you would now be redirected.
+                </p>
+                <div className='p-3 bg-gray-100 border border-gray-300 rounded-lg text-sm font-medium text-[#E04E1B] mb-4'>
+                    <div dangerouslySetInnerHTML={{ __html: __html }} />
+                </div>
+                <Button onClick={onClose} className='w-full'>
+                    Acknowledge & Continue
+                </Button>
+            </div>
+        </div>
+    );
+};
 /* =========================================================
    LONGITUDINAL IMPACT VISUALIZATION LOGIC
 ========================================================= */
@@ -115,8 +148,11 @@ const useLongitudinalData = (commitmentData, pdpData, planningData) => {
 ========================================================= */
 
 export default function ExecutiveReflection() {
+    const [mockAction, setMockAction] = useState(null); // State for the visible modal action
+    
     // Inject mock services and data
-    const { navigate } = useMockServices();
+    const { navigate } = useMockServices(setMockAction);
+    
     // PRODUCTION: In a live environment, these variables would be retrieved from your useAppServices() hook.
     const commitmentData = MOCK_COMMITMENT_DATA;
     const pdpData = MOCK_PDP_DATA;
@@ -227,6 +263,8 @@ export default function ExecutiveReflection() {
                      </Button>
                 </Card>
             </div>
+            
+            <MockActionModal action={mockAction} onClose={() => setMockAction(null)} />
         </div>
     );
 }
