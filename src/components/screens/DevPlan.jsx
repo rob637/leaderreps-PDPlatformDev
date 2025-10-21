@@ -1298,7 +1298,7 @@ const TrackerDashboardView = ({ data, updatePdpData, saveNewPlan, db, userId, na
                 <div className='lg:col-span-3 space-y-8 order-2'>
                     
                     {/* VIEWING WARNINGS */}
-                    {!isPastOrCurrent && (
+                    {viewMonth > currentMonth && ( // Check if viewing a future month
                         <div className='p-4 rounded-xl bg-yellow-100 border-2 border-yellow-400 shadow-md text-yellow-800 font-semibold flex items-center gap-3'>
                             <AlertTriangle className='w-5 h-5'/> 
                             Viewing **Future Month {viewMonth}**. You must complete Month **{currentMonth}** before accessing this content. Content is read-only.
@@ -1311,155 +1311,161 @@ const TrackerDashboardView = ({ data, updatePdpData, saveNewPlan, db, userId, na
                         </div>
                     )}
 
+                    {/* CRITICAL FIX 3: Early return for future months to prevent rendering complex content components */}
+                    {viewMonth > currentMonth ? null : (
+                    // START: COMPLEX MONTHLY CONTENT (Only renders for current or past months)
+                    <> 
+                        <Card title={`Focus: ${monthPlan?.theme} (Month ${viewMonth})`} icon={TierIcon} accent='TEAL' className='border-l-8 border-[#47A88D]'>
 
-                    <Card title={`Focus: ${monthPlan?.theme} (Month ${viewMonth})`} icon={TierIcon} accent='TEAL' className='border-l-8 border-[#47A88D]'>
+                            {/* AI Monthly Briefing */}
+                            <div className='mb-4 p-4 rounded-xl bg-[#002E47]/10 border border-[#002E47]/20'>
+                                <h3 className='font-bold text-[#002E47] mb-1 flex items-center'><Activity className="w-4 h-4 mr-2 text-[#47A88D]" /> Monthly Executive Briefing</h3>
+                                {briefingLoading ? (
+                                    <p className='text-sm text-gray-600 flex items-center'><div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-500 mr-2 rounded-full"></div> Drafting advice...</p>
+                                ) : (
+                                    <div className="prose max-w-none text-gray-700">
+                                        {/* FIX 2: Use safeBriefing to prevent error when briefing is not a string */}
+                                        <div dangerouslySetInnerHTML={{ __html: safeBriefing }} /> 
+                                    </div>
+                                )}
+                            </div>
+                            
+                            {/* Status / Difficulty */}
+                            <div className='mb-4 text-sm border-t pt-4'>
+                                <p className='font-bold text-[#002E47]'>Tier: {LEADERSHIP_TIERS[currentTierId]?.name}</p>
+                                <p className='text-gray-600'>Target Difficulty: **{selfRating >= 8 ? 'Mastery' : selfRating >= 5 ? 'Core' : 'Intro'}** (Self-Rating: {selfRating}/10)</p>
+                                {lowRatingFlag && (
+                                    <p className='font-semibold mt-1 flex items-center text-[#E04E1B]'>
+                                        <AlertTriangle className='w-4 h-4 mr-1' /> HIGH RISK TIER: Prioritize Content Completion.
+                                    </p>
+                                )}
+                            </div>
 
-                        {/* AI Monthly Briefing */}
-                        <div className='mb-4 p-4 rounded-xl bg-[#002E47]/10 border border-[#002E47]/20'>
-                            <h3 className='font-bold text-[#002E47] mb-1 flex items-center'><Activity className="w-4 h-4 mr-2 text-[#47A88D]" /> Monthly Executive Briefing</h3>
-                            {briefingLoading ? (
-                                <p className='text-sm text-gray-600 flex items-center'><div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-500 mr-2 rounded-full"></div> Drafting advice...</p>
-                            ) : (
-                                <div className="prose max-w-none text-gray-700">
-                                    {/* FIX 2: Use safeBriefing to prevent error when briefing is not a string */}
-                                    <div dangerouslySetInnerHTML={{ __html: safeBriefing }} /> 
+                            <h3 className='text-xl font-bold text-[#002E47] border-t pt-4 mt-4'>Required Content Items (Lessons)</h3>
+                            <div className='space-y-3 mt-4'>
+                                {requiredContent.map(item => {
+                                    const isCompleted = item.status === 'Completed';
+                                    const [isToggling, setIsToggling] = useState(false);
+
+                                    const handleToggle = () => {
+                                        if (!isCurrentView) return; 
+                                        setIsToggling(true);
+                                        handleContentStatusToggle(item.id);
+                                        setTimeout(() => setIsToggling(false), 500); 
+                                    };
+
+                                    const actionButtonText = isPastOrCurrent ? ((item.type === 'Role-Play' || item.type === 'Exercise' || item.type === 'Tool') ? 'Go to Practice' : 'View Content') : 'View Content'; 
+
+                                    return (
+                                        <div key={item.id} className='flex items-center justify-between p-3 bg-gray-50 rounded-xl shadow-sm'>
+                                            <div className='flex flex-col'>
+                                                <p className={`font-semibold text-sm ${isCompleted && isPastOrCurrent ? 'line-through text-gray-500' : 'text-[#002E47]'}`}>
+                                                    {item.title} ({item.type})
+                                                    {lowRatingFlag && <span className='ml-2 text-xs text-[#E04E1B] font-extrabold'>(CRITICAL)</span>}
+                                                </p>
+                                                <p className='text-xs text-gray-600'>~{item.duration} min | Difficulty: {item.difficulty}</p>
+                                            </div>
+                                            <div className='flex space-x-2'>
+                                                <Button
+                                                    onClick={() => {
+                                                        // FIX 2: Open content modal for all viewable items
+                                                        handleOpenContentModal(item);
+                                                    }}
+                                                    className='px-3 py-1 text-xs'
+                                                    variant='primary'
+                                                    disabled={!isPastOrCurrent && !isCurrentView} // Only disabled for true future view of future months
+                                                >
+                                                    {actionButtonText}
+                                                </Button>
+
+                                                <Button
+                                                    onClick={handleToggle}
+                                                    className={`px-3 py-1 text-xs transition-colors duration-300 ${isToggling ? 'opacity-50' : ''}`}
+                                                    variant={isCompleted ? 'secondary' : 'primary'}
+                                                    disabled={isSaving || isToggling || !isCurrentView}
+                                                >
+                                                    {isToggling ? 'Updating...' : isCompleted ? 'Done ✓' : 'Mark Complete'}
+                                                </Button>
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </Card>
+
+                        <Card title="Monthly Reflection" icon={Lightbulb} accent="NAVY" className='bg-[#002E47]/10 border-2 border-[#002E47]/20'>
+                            <p className="text-gray-700 text-sm mb-4">
+                                Reflect on the growth you achieved this month. How did the content impact your daily leadership behavior? (**Minimum 50 characters required**)
+                            </p>
+                            <textarea
+                                value={localReflection} 
+                                onChange={(e) => setLocalReflection(e.target.value)}
+                                // FIX 3: Removed onBlur save and rely on explicit Save button
+                                className="w-full p-3 border border-gray-300 rounded-xl focus:ring-[#47A88D] focus:border-[#47A88D] h-40"
+                                placeholder="My reflection (required)..."
+                                readOnly={!isCurrentView}
+                            ></textarea>
+                            {isCurrentView && (
+                                <div className='flex justify-between items-center mt-1'>
+                                    <p className={`text-xs ${localReflection.length < 50 ? 'text-[#E04E1B]' : 'text-[#47A88D]'}`}>
+                                        {localReflection.length} / 50 characters written.
+                                    </p>
+                                    <span className={`text-xs font-semibold ${isSaving ? 'text-gray-500' : 'text-[#47A88D]'}`}>
+                                        {isSaving ? 'Saving...' : 'Reflection ready'}
+                                    </span>
                                 </div>
                             )}
-                        </div>
-                        
-                        {/* Status / Difficulty */}
-                        <div className='mb-4 text-sm border-t pt-4'>
-                            <p className='font-bold text-[#002E47]'>Tier: {LEADERSHIP_TIERS[currentTierId]?.name}</p>
-                            <p className='text-gray-600'>Target Difficulty: **{selfRating >= 8 ? 'Mastery' : selfRating >= 5 ? 'Core' : 'Intro'}** (Self-Rating: {selfRating}/10)</p>
-                            {lowRatingFlag && (
-                                <p className='font-semibold mt-1 flex items-center text-[#E04E1B]'>
-                                    <AlertTriangle className='w-4 h-4 mr-1' /> HIGH RISK TIER: Prioritize Content Completion.
-                                </p>
-                            )}
-                        </div>
-
-                        <h3 className='text-xl font-bold text-[#002E47] border-t pt-4 mt-4'>Required Content Items (Lessons)</h3>
-                        <div className='space-y-3 mt-4'>
-                            {requiredContent.map(item => {
-                                const isCompleted = item.status === 'Completed';
-                                const [isToggling, setIsToggling] = useState(false);
-
-                                const handleToggle = () => {
-                                    if (!isCurrentView) return; 
-                                    setIsToggling(true);
-                                    handleContentStatusToggle(item.id);
-                                    setTimeout(() => setIsToggling(false), 500); 
-                                };
-
-                                const actionButtonText = isPastOrCurrent ? ((item.type === 'Role-Play' || item.type === 'Exercise' || item.type === 'Tool') ? 'Go to Practice' : 'View Content') : 'View Content'; 
-
-                                return (
-                                    <div key={item.id} className='flex items-center justify-between p-3 bg-gray-50 rounded-xl shadow-sm'>
-                                        <div className='flex flex-col'>
-                                            <p className={`font-semibold text-sm ${isCompleted && isPastOrCurrent ? 'line-through text-gray-500' : 'text-[#002E47]'}`}>
-                                                {item.title} ({item.type})
-                                                {lowRatingFlag && <span className='ml-2 text-xs text-[#E04E1B] font-extrabold'>(CRITICAL)</span>}
-                                            </p>
-                                            <p className='text-xs text-gray-600'>~{item.duration} min | Difficulty: {item.difficulty}</p>
-                                        </div>
-                                        <div className='flex space-x-2'>
-                                            <Button
-                                                onClick={() => {
-                                                    // FIX 2: Open content modal for all viewable items
-                                                    handleOpenContentModal(item);
-                                                }}
-                                                className='px-3 py-1 text-xs'
-                                                variant='primary'
-                                                disabled={!isPastOrCurrent && !isCurrentView} // Only disabled for true future view of future months
-                                            >
-                                                {actionButtonText}
-                                            </Button>
-
-                                            <Button
-                                                onClick={handleToggle}
-                                                className={`px-3 py-1 text-xs transition-colors duration-300 ${isToggling ? 'opacity-50' : ''}`}
-                                                variant={isCompleted ? 'secondary' : 'primary'}
-                                                disabled={isSaving || isToggling || !isCurrentView}
-                                            >
-                                                {isToggling ? 'Updating...' : isCompleted ? 'Done ✓' : 'Mark Complete'}
-                                            </Button>
-                                        </div>
-                                    </div>
-                                );
-                            })}
-                        </div>
-                    </Card>
-
-                    <Card title="Monthly Reflection" icon={Lightbulb} accent="NAVY" className='bg-[#002E47]/10 border-2 border-[#002E47]/20'>
-                        <p className="text-gray-700 text-sm mb-4">
-                            Reflect on the growth you achieved this month. How did the content impact your daily leadership behavior? (**Minimum 50 characters required**)
-                        </p>
-                        <textarea
-                            value={localReflection} 
-                            onChange={(e) => setLocalReflection(e.target.value)}
-                            // FIX 3: Removed onBlur save and rely on explicit Save button
-                            className="w-full p-3 border border-gray-300 rounded-xl focus:ring-[#47A88D] focus:border-[#47A88D] h-40"
-                            placeholder="My reflection (required)..."
-                            readOnly={!isCurrentView}
-                        ></textarea>
-                        {isCurrentView && (
-                            <div className='flex justify-between items-center mt-1'>
-                                <p className={`text-xs ${localReflection.length < 50 ? 'text-[#E04E1B]' : 'text-[#47A88D]'}`}>
-                                    {localReflection.length} / 50 characters written.
-                                </p>
-                                <span className={`text-xs font-semibold ${isSaving ? 'text-gray-500' : 'text-[#47A88D]'}`}>
-                                    {isSaving ? 'Saving...' : 'Reflection ready'}
-                                </span>
-                            </div>
-                        )}
-                        {!isCurrentView && <p className='text-xs text-gray-500 mt-2'>Reflection is read-only for this month.</p>}
-                        
-                        {isCurrentView && (
-                             <Button
-                                onClick={handleSaveReflection}
-                                disabled={isSaving || localReflection === monthPlan?.reflectionText}
-                                className='w-full mt-4 bg-[#002E47] hover:bg-gray-700'
-                            >
-                                {isSaving ? 'Saving Reflection...' : 'Save Reflection'}
-                            </Button>
-                        )}
-                    </Card>
-
-                    {isCurrentView && (
-                        <Card title="Recalibrate Skill Assessment" icon={Activity} accent='ORANGE' className='bg-[#E04E1B]/10 border-4 border-[#E04E1B]'>
-                            <p className='text-sm text-gray-700 mb-4'>
-                                Feel like you've mastered this tier? Re-run your initial **Self-Ratings** to check your progress and generate an **accelerated, revised roadmap** to match your new skill level.
-                            </p>
-                            <Button
-                                onClick={handleResetPlan} 
-                                variant="secondary"
-                                className='w-full bg-[#E04E1B] hover:bg-red-700'
-                            >
-                                <Target className='w-4 h-4 mr-2' /> Re-Run Assessment
-                            </Button>
-                        </Card>
-                    )}
-                    
-                    {isCurrentView && (
-                        <Card title="Advance Roadmap" icon={CornerRightUp} accent='TEAL' className='bg-[#47A88D]/10 border-4 border-[#47A88D]'>
-                            <p className='text-sm text-gray-700 mb-4'>
-                                Once all content and your reflection are complete, lock in your progress and move to **Month {currentMonth + 1}** of your plan.
-                            </p>
-                            <Button
-                                onClick={handleCompleteMonth}
-                                disabled={isSaving || !isReadyToComplete}
-                                className='w-full bg-[#47A88D] hover:bg-[#349881]'
-                            >
-                                {isSaving ? 'Processing...' : `Complete Month ${currentMonth} and Advance`}
-                            </Button>
-                            {!allContentCompleted && (
-                                <p className='text-[#E04E1B] text-xs mt-2'>* Finish all content items first.</p>
-                            )}
-                            {allContentCompleted && localReflection.length < 50 && (
-                                <p className='text-[#E04E1B] text-xs mt-2'>* Reflection required (50 chars min).</p>
+                            {!isCurrentView && <p className='text-xs text-gray-500 mt-2'>Reflection is read-only for this month.</p>}
+                            
+                            {isCurrentView && (
+                                 <Button
+                                    onClick={handleSaveReflection}
+                                    disabled={isSaving || localReflection === monthPlan?.reflectionText}
+                                    className='w-full mt-4 bg-[#002E47] hover:bg-gray-700'
+                                >
+                                    {isSaving ? 'Saving Reflection...' : 'Save Reflection'}
+                                </Button>
                             )}
                         </Card>
-                    )}
+
+                        {isCurrentView && (
+                            <Card title="Recalibrate Skill Assessment" icon={Activity} accent='ORANGE' className='bg-[#E04E1B]/10 border-4 border-[#E04E1B]'>
+                                <p className='text-sm text-gray-700 mb-4'>
+                                    Feel like you've mastered this tier? Re-run your initial **Self-Ratings** to check your progress and generate an **accelerated, revised roadmap** to match your new skill level.
+                                </p>
+                                <Button
+                                    onClick={handleResetPlan} 
+                                    variant="secondary"
+                                    className='w-full bg-[#E04E1B] hover:bg-red-700'
+                                >
+                                    <Target className='w-4 h-4 mr-2' /> Re-Run Assessment
+                                </Button>
+                            </Card>
+                        )}
+                        
+                        {isCurrentView && (
+                            <Card title="Advance Roadmap" icon={CornerRightUp} accent='TEAL' className='bg-[#47A88D]/10 border-4 border-[#47A88D]'>
+                                <p className='text-sm text-gray-700 mb-4'>
+                                    Once all content and your reflection are complete, lock in your progress and move to **Month {currentMonth + 1}** of your plan.
+                                </p>
+                                <Button
+                                    onClick={handleCompleteMonth}
+                                    disabled={isSaving || !isReadyToComplete}
+                                    className='w-full bg-[#47A88D] hover:bg-[#349881]'
+                                >
+                                    {isSaving ? 'Processing...' : `Complete Month ${currentMonth} and Advance`}
+                                </Button>
+                                {!allContentCompleted && (
+                                    <p className='text-[#E04E1B] text-xs mt-2'>* Finish all content items first.</p>
+                                )}
+                                {allContentCompleted && localReflection.length < 50 && (
+                                    <p className='text-[#E04E1B] text-xs mt-2'>* Reflection required (50 chars min).</p>
+                                )}
+                            </Card>
+                        )}
+                    </>
+                    // END: COMPLEX MONTHLY CONTENT
+                    )} 
                 </div>
             </div>
             
@@ -1661,13 +1667,12 @@ const PlanReviewScreen = ({ generatedPlan, navigate, clearReviewData }) => {
         );
     };
     
-    // CRITICAL CHANGE: handleFinalize clears temporary review data and navigates.
-    // The main router logic (ProfDevPlanScreen) will now see the stored plan (pdpData)
-    // and route directly to the 'tracker' view on the next render.
+    // CRITICAL FIX 4: Scroll to top after finalizing the plan.
     const handleFinalize = async () => {
         console.log("Plan review complete. Finalizing plan and redirecting to Dashboard...");
         clearReviewData(); 
         navigate('prof-dev-plan'); 
+        window.scrollTo(0, 0); // Scroll to the top of the new view
     };
     
     const handleStartOver = () => {
