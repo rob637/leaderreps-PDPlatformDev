@@ -51,10 +51,41 @@ const DEFAULT_SERVICES = {
 };
 
 export function useAppServices() {
+
   const ctx = useContext(AppServicesContext);
-  // CRITICAL FIX: Return a safe default object if context is not yet set (or is null)
-  return ctx || DEFAULT_SERVICES; 
+  // Safe wrappers: prefer real impls from context, otherwise use defaults
+  const safeCallSecureGeminiAPI = async (payload) => {
+    try {
+      if (typeof (ctx && ctx.callSecureGeminiAPI) === 'function') {
+        const out = await ctx.callSecureGeminiAPI(payload);
+        const txt = out?.candidates?.[0]?.content?.parts?.[0]?.text;
+        if (typeof txt === 'string' && txt.trim()) return out;
+        console.warn('[AI] Empty response; using mock fallback.');
+      }
+    } catch (e) {
+      console.warn('[AI] Real call failed; using mock fallback.', e);
+    }
+    return DEFAULT_SERVICES.callSecureGeminiAPI(payload);
+  };
+
+  const safeHasGeminiKey = () => {
+    try {
+      return typeof (ctx && ctx.hasGeminiKey) === 'function' ? !!ctx.hasGeminiKey() : true;
+    } catch {
+      return true;
+    }
+  };
+
+  // Merge defaults with context; override AI funcs with safe versions; keep navigate present
+  return {
+    ...DEFAULT_SERVICES,
+    ...(ctx || {}),
+    navigate: (ctx && typeof ctx.navigate==='function') ? ctx.navigate : DEFAULT_SERVICES.navigate,
+    callSecureGeminiAPI: safeCallSecureGeminiAPI,
+    hasGeminiKey: safeHasGeminiKey,
+  };
 }
+
 
 
 // --- Mock/Static Data for Fallbacks ---

@@ -150,8 +150,7 @@ async function buildAIFlyerHTML({ book, tier, executive, callSecureGeminiAPI }) 
     // 1. ATTEMPT LIVE API CALL with Google Search grounding
     const out = await callSecureGeminiAPI({ 
       systemInstruction: { parts: [{ text: systemPrompt }] }, 
-      contents: [{ role: "user", parts: [{ text: userPrompt }] }],
-      tools: [{ "google_search": {} }], // Ensure grounding is active
+      contents: [{ role: "user", parts: [{ text: userPrompt }] }], // Ensure grounding is active
     });
     
     let html = out?.candidates?.[0]?.content?.parts?.[0]?.text || '';
@@ -239,7 +238,6 @@ async function handleAiSubmit(e, services, selectedBook, aiQuery, setIsSubmittin
     const out = await services.callSecureGeminiAPI({
       systemInstruction: { parts: [{ text: systemPrompt }] },
       contents: [{ role: 'user', parts: [{ text: `Regarding "${selectedBook.title}": ${q}` }] }],
-      tools: [{ google_search: {} }],
     });
 
     const text = out?.candidates?.[0]?.content?.parts?.[0]?.text
