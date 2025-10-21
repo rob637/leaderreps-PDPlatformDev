@@ -297,17 +297,10 @@ const DataProvider = ({ children, firebaseServices, userId, isAuthReady, navigat
   const error = pdp.error || commitment.error || planning.error;
 
   const hasPendingDailyPractice = useMemo(() => {
-    const active = (commitment && commitment.commitmentData && Array.isArray(commitment.commitmentData.active_commitments))
-  ? commitment.commitmentData.active_commitments
-  : [];
-const isPending = Array.isArray(active) && active.some(c => c && c.status === 'Pending');
-const rj = (commitment && commitment.commitmentData) ? commitment.commitmentData.reflection_journal : undefined;
-const reflectionMissing = (typeof rj === 'string') ? (rj.trim() === '') : true;
-const hasActive = Array.isArray(active) ? active.length > 0 : false;
-if (typeof window !== 'undefined' && window.__DEBUG_HAS_PENDING) {
-  console.log('[hasPendingDailyPractice]', { activeCount: hasActive ? active.length : 0, isPending, reflectionType: typeof rj, sample: rj });
-}
-return (hasActive) && (isPending || reflectionMissing);
+    const active = commitment.commitmentData?.active_commitments || [];
+    const isPending = active.some(c => c.status === 'Pending');
+    const reflectionMissing = !commitment.commitmentData?.reflection_journal?.trim();
+    return active.length > 0 && (isPending || reflectionMissing);
   }, [commitment.commitmentData]);
 
 
@@ -778,6 +771,17 @@ const App = ({ initialState }) => {
     setNavParams(params);
     setCurrentScreen(screen);
   }, []);
+
+  // Bridge: expose real navigate so services can forward to it
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      window.__appNavigate = navigate;
+    }
+    return () => {
+      if (typeof window !== 'undefined') delete window.__appNavigate;
+    };
+  }, [navigate]);
+
 
   useEffect(() => {
     let app, firestore, authentication;
