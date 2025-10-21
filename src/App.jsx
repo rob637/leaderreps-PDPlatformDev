@@ -242,51 +242,44 @@ function ConfigError({ message }) { /* ... */ return null; }
 
 // FIX: Implemented a basic LoginPanel that auto-signs in a mock user
 function LoginPanel({ auth, onSuccess, allowAnonymous = false }) {
-    const [isManualLogin, setIsManualLogin] = useState(false);
-    
     useEffect(() => {
-        // Only run automatic sign-in if not using manual bypass
-        if (!isManualLogin) {
-             // CRITICAL FIX: Use a guaranteed timeout to call onSuccess after the sign-in attempt
-            const mockSignInAndSuccess = () => {
-                // This relies on the success path regardless of Firebase's response.
-                // We use the timer to guarantee progression after the splash screen is seen.
-                const timer = setTimeout(onSuccess, 1500); 
-                
-                // Attempt token sign-in (for completeness, though it's likely failing)
-                if (auth) {
-                    const mockToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1aWQiOiJtb2NrLWluY29nbml0by0xMjMiLCJlbWFpbCI6ImluY29nbml0b0Bsb2dpbi5jb20iLCJpYXQiOjE2ODAwMDAwMDB9.iGgY0w2_sD3hG_1sU_1sD_1sY_1sE_1sT_1s';
-                    signInWithCustomToken(auth, mockToken).catch(console.error);
-                }
-                
-                return () => clearTimeout(timer);
-            };
+        // CRITICAL FIX: Use a guaranteed timeout to call onSuccess after the sign-in attempt
+        const mockSignInAndSuccess = () => {
+            // This relies on the success path regardless of Firebase's response.
+            // We use the timer to guarantee progression after the splash screen is seen.
+            const timer = setTimeout(onSuccess, 1500); 
             
-            return mockSignInAndSuccess();
-        }
-    }, [onSuccess, isManualLogin]);
-    
-    // FIX: Manual Bypass logic
+            // Attempt token sign-in (for completeness, though it's likely failing)
+            if (auth) {
+                const mockToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1aWQiOiJtb2NrLWluY29nbml0by0xMjMiLCJlbWFpbCI6ImluY29nbml0b0Bsb2dpbi5jb20iLCJpYXQiOjE2ODAwMDAwMDB9.iGgY0w2_sD3hG_1sU_1sD_1sY_1sE_1sT_1s';
+                signInWithCustomToken(auth, mockToken).catch(console.error);
+            }
+            
+            return () => clearTimeout(timer);
+        };
+        
+        return mockSignInAndSuccess();
+    }, [onSuccess]); // Removed 'auth' dependency since we no longer call signInWithCustomToken
+
     const handleManualBypass = () => {
-        setIsManualLogin(true);
+        // This is the action for the new button
         onSuccess();
     };
-
 
     return (
         <div className="min-h-screen flex items-center justify-center bg-gray-100">
             <div className="p-8 bg-white rounded-xl shadow-lg text-center w-full max-w-sm">
                 <h2 className="text-xl font-extrabold text-[#002E47] mb-2">Authenticating Session</h2>
-                <p className='text-sm text-gray-600'>Loading credentials for secure access.</p>
+                <p className='text-sm text-gray-600 mt-2'>Loading credentials for secure access.</p>
                 
-                <div className='mt-4'>
+                <div className='mt-4 mb-6'>
                     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#47A88D] mx-auto"></div>
                 </div>
                 
                 {/* Manual Bypass Button */}
                 <button 
                     onClick={handleManualBypass}
-                    className="mt-6 w-full px-4 py-2 text-sm font-semibold text-white bg-[#E04E1B] rounded-lg hover:bg-red-700 transition-colors shadow-md"
+                    className="w-full px-4 py-2 text-sm font-semibold text-white bg-[#E04E1B] rounded-lg hover:bg-red-700 transition-colors shadow-md"
                 >
                     Skip Authentication (Demo Access)
                 </button>

@@ -113,7 +113,9 @@ const ThreeDButton = ({ children, onClick, color = COLORS.TEAL, accentColor = CO
     return (
         <button
             {...rest}
-            onClick={onClick} // FIX: onClick is directly bound and functional
+            onClick={onClick}
+            // PATCH 1: Add explicit type="button"
+            type="button" 
             className={`
                 relative px-6 py-3 rounded-xl font-bold text-white text-lg
                 flex items-center justify-center whitespace-nowrap
@@ -158,6 +160,8 @@ const Card = ({ children, title, icon: Icon, className = '', onClick, accent = '
   };
   return (
     <Tag
+      // PATCH 2: Pass type="button" when interactive
+      {...(interactive ? { type: 'button' } : {})}
       role={interactive ? 'button' : undefined}
       tabIndex={interactive ? 0 : undefined}
       onKeyDown={handleKeyDown}
@@ -295,11 +299,11 @@ const ProgressRings = ({ dailyPercent, monthlyPercent, careerPercent, tierHex, c
 
 function extractGeminiText(resp) {
   if (!resp) return '';
-  if (typeof resp === 'string') return resp;
+  if (typeof resp === 'string') return String(resp);
   if (resp.text) return String(resp.text);
   const c = resp.candidates?.[0];
   const parts = c?.content?.parts;
-  if (Array.isArray(parts)) {
+  if (ArrayOf(parts)) {
     return parts.map(p => p?.text).filter(Boolean).join('\n\n');
   }
   return '';
@@ -348,9 +352,14 @@ const DashboardScreen = () => {
     
     const TIER_MAP = svcLEADERSHIP_TIERS || LEADERSHIP_TIERS;
 
+    // PATCH 3: Added tiny guard and log around navigate
     const safeNavigate = useCallback((screen, params) => {
-        // FIX: Ensure this calls the app-level navigate function
-        navigate(screen, params); 
+        if (typeof navigate !== 'function') {
+            console.error('navigate() is not available from useAppServices');
+            return;
+        }
+        console.log('[Dashboard] navigate ->', screen, params || {});
+        navigate(screen, params);
     }, [navigate]);
     
     // --- Data Calculations ---
