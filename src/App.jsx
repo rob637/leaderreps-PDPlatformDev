@@ -309,7 +309,7 @@ const NavSidebar = ({ currentScreen, setCurrentScreen, user, isMobileOpen, close
                     key={item.screen}
                     onClick={() => handleNavigate(item.screen)}
                     // FIX: Surgical styling for clear delineation and 3D effect
-                    className={`flex items-center w-full px-4 py-3 rounded-xl font-semibold relative transition-all duration-200 
+                    className={`flex items-center w-full px-4 py-2.5 rounded-xl font-semibold relative transition-all duration-200 
                         ${isActive
                             // Active State: White background, lifted effect, strong Teal icon
                             ? `bg-white text-[${NAVY}] shadow-lg transform translate-x-1 ring-2 ring-[${TEAL}]` 
@@ -341,7 +341,7 @@ const NavSidebar = ({ currentScreen, setCurrentScreen, user, isMobileOpen, close
     }
     
     return (
-        // FIX 1: Changed container to md:fixed h-full and added overflow-y-auto
+        // FIX 1: Fixed NavSidebar styling (fixed height, independent scroll)
         <div className={`hidden md:fixed md:flex flex-col w-64 h-full bg-[${NAVY}] text-white p-4 shadow-2xl overflow-y-auto`}>
             <div className={`flex items-center justify-center h-16 border-b border-[${TEAL}]/50 mb-6 flex-shrink-0`}>
                 <h1 className="text-2xl font-extrabold flex items-center">
@@ -349,14 +349,14 @@ const NavSidebar = ({ currentScreen, setCurrentScreen, user, isMobileOpen, close
                 </h1>
             </div>
 
-            <nav className="flex-1 space-y-4 overflow-y-auto">
+            <nav className="flex-1 space-y-3 overflow-y-auto"> {/* Reduced spacing */}
                 {menuSections.map(section => (
-                    <div key={section.title} className='space-y-3'>
+                    <div key={section.title} className='space-y-1'> {/* Reduced spacing */}
                         {/* FIX: Improved delineation with background on title */}
                         <p className={`text-xs font-extrabold uppercase tracking-widest text-white px-2 py-1 rounded bg-[${TEAL}]/10`}>
                             {section.title}
                         </p>
-                        <div className="space-y-1.5"> {/* Increased vertical separation slightly */}
+                        <div className="space-y-1"> {/* Reduced vertical separation slightly */}
                             {renderNavItems(section.items)}
                         </div>
                     </div>
@@ -439,7 +439,7 @@ const AppContent = ({ currentScreen, setCurrentScreen, user, navParams, isMobile
             />
             
             {/* Main content area must account for the sidebar width */}
-            <main className="flex-1 md:ml-64 overflow-y-auto">
+            <main className="flex-1 md:ml-64 overflow-y-auto overflow-x-hidden"> {/* FIX: Added overflow-x-hidden */}
                 {/* Mobile Header */}
                 <div className="md:hidden sticky top-0 bg-white/95 backdrop-blur-sm shadow-md p-4 flex justify-between items-center z-40">
                     <h1 className="text-xl font-bold text-[#002E47]">LeaderReps</h1>
