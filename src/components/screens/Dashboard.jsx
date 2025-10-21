@@ -23,14 +23,60 @@ const MOCK_COMMITMENT_DATA = {
         { id: 3, status: 'Pending', linkedTier: 'T2' },
         { id: 4, status: 'Committed', linkedTier: 'T3' },
     ],
+    // Mock history to calculate a streak (3 days, since last one is 4/5)
+    history: [
+        { date: '2025-10-14', score: '3/3', reflection: 'Perfect day!' },
+        { date: '2025-10-15', score: '3/3', reflection: 'Perfect day!' },
+        { date: '2025-10-16', score: '3/3', reflection: 'Perfect day!' },
+        { date: '2025-10-17', score: '4/5', reflection: 'Missed one.' }, 
+    ],
     resilience_log: { '2025-10-19': { energy: 4, focus: 7 } }
 };
 
-const NUDGE_CONTENT = [
-    'Focus today on deep listening; practice paraphrasing your colleague\'s needs before offering solutions.',
-    'Before starting a task, ask: "Will this activity move us closer to our one-year vision?" If not, delegate it.',
-    'Schedule 30 minutes of "maker time" today—no meetings, no email. Protect it fiercely.',
-];
+const MOCK_PLANNING_DATA = {
+    okrs: [
+        { id: 1, objective: 'Improve Execution Quality', daysHeld: 45 },
+        { id: 2, objective: 'Expand Market Share', daysHeld: 15 },
+    ],
+    last_premortem_decision: new Date('2025-10-10').toISOString(),
+};
+
+// Streak calculation utility (Pulled from DailyPractice.jsx logic)
+function calculateStreak(history) {
+    let streak = 0;
+    const validHistory = Array.isArray(history) ? history : [];
+    
+    // Sort history by date descending
+    const sortedHistory = [...validHistory].sort((a, b) => new Date(b.date) - new Date(a.date));
+    
+    let yesterday = new Date();
+    // Start checking from yesterday backwards (to see if today's score is done)
+    yesterday.setDate(yesterday.getDate() - 1); 
+    
+    for (let i = 0; i < 7; i++) { 
+      const checkDate = new Date(yesterday);
+      checkDate.setDate(yesterday.getDate() - i);
+      const dateString = checkDate.toISOString().split('T')[0];
+      
+      const historyEntry = sortedHistory.find(h => h.date === dateString);
+
+      if (historyEntry) {
+        const scoreParts = historyEntry.score.split('/');
+        if (scoreParts.length === 2) {
+          const [committed, total] = scoreParts.map(Number);
+          if (committed === total && total > 0) {
+            streak++;
+          } else {
+            break; // Found an incomplete day, streak ends
+          }
+        }
+      } else {
+        break; // No log for this day, break streak
+      }
+    }
+    return streak;
+}
+
 // --- END MOCK IMPORTS ---
 
 
@@ -58,6 +104,11 @@ import {
   Activity,
   CheckCircle,
   Users,
+  Lightbulb, 
+  Link as CommunityIcon, 
+  Archive, 
+  ShieldCheck, 
+  Map, 
 } from 'lucide-react';
 
 /* =========================================================
@@ -76,16 +127,18 @@ const COLORS = {
   SUBTLE: '#E5E7EB',
   TEXT: '#002E47',
   MUTED: '#4B5355',
+  PURPLE: '#7C3AED',
 };
 
 /* ---------------------------------------
    UI Components (Standardized)
 ----------------------------------------*/
+// Standard Button (kept for legacy/non-3D use)
 const Button = ({ children, onClick, disabled = false, variant = 'primary', className = '', ...rest }) => {
   let baseStyle = "px-6 py-3 rounded-xl font-semibold transition-all shadow-xl focus:outline-none focus:ring-4 text-white flex items-center justify-center";
   if (variant === 'primary') { baseStyle += ` bg-[${COLORS.TEAL}] hover:bg-[#349881] focus:ring-[${COLORS.TEAL}]/50`; }
   else if (variant === 'secondary') { baseStyle += ` bg-[${COLORS.ORANGE}] hover:bg-red-700 focus:ring-[${COLORS.ORANGE}]/50`; }
-  else if (variant === 'outline') { baseStyle = `px-6 py-3 rounded-xl font-semibold transition-all shadow-md border-2 border-[${COLORS.TEAL}] text-[${COLORS.TEAL}] hover:bg-[${COLORS.TEAL}]/10 focus:ring-4 focus:ring-[${COLORS.TEAL}]/50 bg-[${COLORS.LIGHT_GRAY}] flex items-center justify-center`; }
+  else if (variant === 'outline') { baseStyle = `px-6 py-3 rounded-xl font-semibold transition-all shadow-md border-2 border-[${COLORS.TEAL}] text-[${COLORS.TEAL}] hover:bg-[#47A88D]/10 focus:ring-4 focus:ring-[${COLORS.TEAL}]/50 bg-[${COLORS.LIGHT_GRAY}] flex items-center justify-center`; }
   else if (variant === 'nav-back') { baseStyle = `px-4 py-2 rounded-lg font-medium transition-all shadow-sm border-2 border-gray-300 text-gray-700 hover:bg-gray-100 flex items-center justify-center`; }
   if (disabled) { baseStyle = "px-6 py-3 rounded-xl font-semibold bg-gray-300 text-gray-500 cursor-not-allowed shadow-inner transition-none flex items-center justify-center"; }
   return (
@@ -95,26 +148,24 @@ const Button = ({ children, onClick, disabled = false, variant = 'primary', clas
   );
 };
 
-// NEW COMPONENT: 3D-inspired Button
+// 3D-inspired Button
 const ThreeDButton = ({ children, onClick, color = COLORS.TEAL, accentColor = COLORS.NAVY, className = '', ...rest }) => {
     const defaultColor = color;
-    const defaultAccent = accentColor; // For the 'bottom' shadow effect
+    const defaultAccent = accentColor; 
 
     const buttonStyle = {
-        background: defaultColor, // Use solid color for base
+        background: defaultColor, 
         boxShadow: `0 4px 0px 0px ${defaultAccent}, 0 6px 12px rgba(0,0,0,0.2)`,
         transition: 'all 0.1s ease-out',
         transform: 'translateY(0px)',
     };
     
-    // FIX: Define dynamic styles as functions or use state for real 3D effect
     const getBoxShadow = (offset) => `0 ${offset}px 0px 0px ${defaultAccent}, 0 ${offset + 2}px ${offset * 2}px rgba(0,0,0,0.2)`;
 
     return (
         <button
             {...rest}
             onClick={onClick}
-            // PATCH 1: Add explicit type="button"
             type="button" 
             className={`
                 relative px-6 py-3 rounded-xl font-bold text-white text-lg
@@ -136,7 +187,6 @@ const ThreeDButton = ({ children, onClick, color = COLORS.TEAL, accentColor = CO
                 e.currentTarget.style.boxShadow = getBoxShadow(2);
             }}
             onMouseUp={e => {
-                // Return to hover state after mouse up
                 e.currentTarget.style.transform = 'translateY(-2px)';
                 e.currentTarget.style.boxShadow = getBoxShadow(6);
             }}
@@ -160,7 +210,6 @@ const Card = ({ children, title, icon: Icon, className = '', onClick, accent = '
   };
   return (
     <Tag
-      // PATCH 2: Pass type="button" when interactive
       {...(interactive ? { type: 'button' } : {})}
       role={interactive ? 'button' : undefined}
       tabIndex={interactive ? 0 : undefined}
@@ -182,19 +231,26 @@ const Card = ({ children, title, icon: Icon, className = '', onClick, accent = '
   );
 };
 
-const StatCard = ({ icon: Icon, label, value, onClick, colorHex = COLORS.TEAL, trend = 0 }) => {
+const StatCard = ({ icon: Icon, label, value, onClick, trend = 0, colorHex }) => {
     const trendIcon = trend > 0 ? TrendingUp : TrendingDown;
     const trendColor = trend > 0 ? COLORS.TEAL : trend < 0 ? COLORS.ORANGE : COLORS.MUTED;
     const isPrimary = label === "Daily Commitments Due"; 
     
+    // Determine card accent based on importance/context
+    let accent = 'NAVY';
+    if (label === "Daily Commitments Due") { accent = 'TEAL'; }
+    if (label === "Weakest PDP Tier Score") { accent = 'ORANGE'; }
+    if (label === "Current Perfect Score Streak") { accent = 'GREEN'; }
+    if (label === "Last Pre-Mortem Audit Date") { accent = 'PURPLE'; }
+
+
     return (
         <Card 
             icon={Icon} 
-            // FIX: Conditional value for Dev Plan start state
             title={label === "Development Plan Progress" && value === '0 / 24 Months' ? 'Start Now' : value}
             onClick={onClick} 
             className={`w-full ${isPrimary ? 'shadow-2xl' : ''}`}
-            accent={isPrimary ? (trend > 0 ? 'TEAL' : 'ORANGE') : 'NAVY'}
+            accent={accent}
         >
             <div className="flex justify-between items-center -mt-1">
                 <div className="flex-1">
@@ -206,7 +262,7 @@ const StatCard = ({ icon: Icon, label, value, onClick, colorHex = COLORS.TEAL, t
                             <span className='block leading-none'><trendIcon size={14} /></span>
                         </span>
                     )}
-                    {trend !== 0 ? <span className='font-bold'>{Math.abs(trend)}%</span> : 'Status Quo'}
+                    {trend !== 0 ? <span className='font-bold'>{Math.abs(trend)}%</span> : ''}
                 </div>
             </div>
             <CornerRightUp className="absolute top-8 right-8 text-gray-400" size={20} />
@@ -215,19 +271,6 @@ const StatCard = ({ icon: Icon, label, value, onClick, colorHex = COLORS.TEAL, t
 };
 
 
-const ProgressKMI = ({ title, value, icon: Icon, colorHex = COLORS.TEAL }) => (
-    <div className={`flex items-center space-x-4 p-4 rounded-xl bg-[${COLORS.OFF_WHITE}] shadow-sm border border-gray-100 transition-all duration-300 animate-in fade-in-0 hover:shadow-lg hover:ring-2 ring-opacity-20 ring-[${COLORS.TEAL}]`}>
-        <div className={`p-3 rounded-xl bg-opacity-10 flex-shrink-0`} style={{ background: colorHex + '1A'}}>
-            <Icon size={20} style={{ color: colorHex }} />
-        </div>
-        <div className='truncate'>
-            <p className="text-sm text-gray-500 font-medium truncate">{title}</p>
-            <p className={`text-xl font-extrabold mt-0.5`} style={{ color: colorHex }}>{value}</p>
-        </div>
-    </div>
-);
-
-// NEW COMPONENT: Stacked Progress Rings for visual impact
 const ProgressRings = ({ dailyPercent, monthlyPercent, careerPercent, tierHex, commitsDue }) => {
     // Determine the color for the Daily Ring (Red if pending, Green if perfect)
     const dailyColor = commitsDue > 0 ? COLORS.ORANGE : COLORS.TEAL;
@@ -236,11 +279,6 @@ const ProgressRings = ({ dailyPercent, monthlyPercent, careerPercent, tierHex, c
     const viewBoxSize = 36;
     const radius = 15.9155;
     
-    // Convert percentages to strokeDashoffset
-    const dailyOffset = radius * 2 * Math.PI * (1 - dailyPercent / 100);
-    const monthlyOffset = radius * 2 * Math.PI * (1 - monthlyPercent / 100);
-    const careerOffset = radius * 2 * Math.PI * (1 - careerPercent / 100);
-
     // Composite Health Score (Example Calculation)
     const healthScore = Math.round(
         (monthlyPercent * 0.4) + 
@@ -313,7 +351,7 @@ function extractGeminiText(resp) {
 const TIP_CACHE = {
     content: null,
     timestamp: 0,
-    TTL: 4 * 60 * 60 * 1000, // FIX: Changed TTL to 4 hours
+    TTL: 4 * 60 * 60 * 1000, // TTL to 4 hours
 };
 const mdToHtml = async (md) => {
     // Simple markdown-to-HTML parser for mock content display
@@ -332,7 +370,6 @@ const mdToHtml = async (md) => {
    Dashboard (default export)
 ----------------------------------------*/
 const DashboardScreen = () => {
-    // FIX: Using actual useAppServices hook
     const {
         navigate,
         user,
@@ -346,11 +383,35 @@ const DashboardScreen = () => {
     } = useAppServices();
 
     // Use mock data as fallback if service data is not yet loaded (isLoading is false but data is null)
+    // NOTE: Merging mock data to simulate complex service output
     const pdpData = svcPdpData || MOCK_PDP_DATA;
-    const planningData = svcPlanningData; // Planning data often loads last, no robust mock needed here
     const commitmentData = svcCommitmentData || MOCK_COMMITMENT_DATA;
+    const planningData = svcPlanningData || MOCK_PLANNING_DATA; 
     
     const TIER_MAP = svcLEADERSHIP_TIERS || LEADERSHIP_TIERS;
+
+    // FIX 1: Robust User Name determination
+    const displayedUserName = useMemo(() => {
+        if (user?.name) {
+            return user.name;
+        }
+        if (user?.email) {
+            // Capitalize the part of the email before the @
+            const emailName = user.email.split('@')[0];
+            return emailName.charAt(0).toUpperCase() + emailName.slice(1);
+        }
+        return 'Leader';
+    }, [user?.name, user?.email]);
+    
+    // NEW FIX: Determine the Greeting based on the mock 'firstLogin' property
+    const greeting = useMemo(() => {
+        // Mocking: If user?.firstLogin is false/null, treat as a new user.
+        if (user?.firstLogin) { 
+            return 'Welcome back,';
+        }
+        return 'Welcome,';
+    }, [user?.firstLogin]);
+
 
     // PATCH 3: Added tiny guard and log around navigate
     const safeNavigate = useCallback((screen, params) => {
@@ -364,10 +425,22 @@ const DashboardScreen = () => {
     
     // --- Data Calculations ---
     const goalsCount = useMemo(() => pdpData?.currentMonth || 0, [pdpData]);
-    const plansCount = useMemo(() => planningData?.okrs?.length || 0, [planningData]);
+    const okrs = useMemo(() => planningData?.okrs || MOCK_PLANNING_DATA.okrs, [planningData]);
     const commitsTotal = useMemo(() => commitmentData?.active_commitments?.length || 0, [commitmentData]);
     const commitsCompleted = useMemo(() => commitmentData?.active_commitments?.filter(c => c.status === 'Committed').length || 0, [commitmentData]);
     const commitsDue = commitsTotal - commitsCompleted;
+    
+    // NEW KPI CALCULATIONS
+    const perfectStreak = useMemo(() => calculateStreak(commitmentData?.history || []), [commitmentData?.history]);
+    const longestHeldOKR = useMemo(() => {
+        const longest = okrs.reduce((max, okr) => (okr.daysHeld > max.daysHeld ? okr : max), { daysHeld: 0, objective: 'N/A' });
+        return { days: longest.daysHeld, objective: longest.objective };
+    }, [okrs]);
+    const lastPreMortemDate = useMemo(() => {
+        const dateString = planningData?.last_premortem_decision || '2025-01-01'; // Default if none run
+        const date = new Date(dateString);
+        return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    }, [planningData?.last_premortem_decision]);
     
     // Derived Progress Percentages for Rings
     const dailyPercent = commitsTotal > 0 ? Math.round((commitsCompleted / commitsTotal) * 100) : 0;
@@ -398,13 +471,18 @@ const DashboardScreen = () => {
         icon: AlertTriangle,
         };
     }, [pdpData, TIER_MAP]);
+    
+    // MOCK: Tier Mastery Projection (from ExecutiveReflection.jsx logic)
+    const tierMasteryProjection = useMemo(() => {
+        const dailySuccessRate = 68; // Mocked rate from ExecReflection logic
+        return Math.round(180 - dailySuccessRate * 1.5); // Example calculation
+    }, []);
 
     // --- Daily Tip (Gemini) ---
     const [tipLoading, setTipLoading] = useState(false);
     const [tipHtml, setTipHtml] = useState('');
 
     const getDailyTip = useCallback(async (force = false) => {
-        // FIX: Implement the 4-hour cache logic
         const now = Date.now();
         if (!force && TIP_CACHE.content && (now - TIP_CACHE.timestamp < TIP_CACHE.TTL)) {
             setTipHtml(TIP_CACHE.content);
@@ -418,18 +496,14 @@ const DashboardScreen = () => {
         
         setTipLoading(true);
         try {
-            // FIX: Use the actual weakest tier in the prompt
             const weakestSkill = weakestTier?.name || 'General Leadership';
-            const prompt = `Give a concise, actionable leadership practice for the day (3 sentences max).
-            Focus the tip explicitly on improving the skill: ${weakestSkill}.
-            Tone: encouraging, strategic, direct.`;
+            const prompt = `Give a concise, actionable leadership practice for the day (3 sentences max). Focus the tip explicitly on improving the skill: ${weakestSkill}. Tone: encouraging, strategic, direct.`;
 
             const payload = { contents: [{ parts: [{ text: prompt }] }] };
             const resp = await callSecureGeminiAPI(payload);
             const text = extractGeminiText(resp) || 'No strategic guidance available right now.';
             const html = await mdToHtml(text);
             
-            // Update cache and state
             TIP_CACHE.content = html;
             TIP_CACHE.timestamp = now;
             setTipHtml(html);
@@ -449,11 +523,9 @@ const DashboardScreen = () => {
 
     // Automatic 4-hour rotation
     useEffect(() => {
-        // Initial fetch on mount
         getDailyTip();
-
         const intervalId = setInterval(() => {
-            getDailyTip(true); // Force refresh every 4 hours
+            getDailyTip(true); 
         }, 4 * 60 * 60 * 1000);
 
         return () => clearInterval(intervalId);
@@ -468,152 +540,240 @@ const DashboardScreen = () => {
             <Home size={32} style={{ color: COLORS.TEAL }} /> Executive Dashboard
             </h1>
             <p className="text-gray-600 text-base mt-2">
-            {/* UPDATED: Use user?.name or fallback to email part */}
-            Welcome back, <span className={`font-semibold text-[${COLORS.NAVY}]`}>{user?.name || (user?.email ? user.email.split('@')[0] : 'Leader')}</span>. Your primary focus is **{weakestTier?.name || 'Getting Started'}**.
+            {greeting} <span className={`font-semibold text-[${COLORS.NAVY}]`}>{displayedUserName}</span>. Your primary focus is **{weakestTier?.name || 'Getting Started'}**.
             </p>
         </div>
+        
+        {/* --- DEDICATED PDP ROADMAP HIGHLIGHT --- */}
+        <Card title="My Executive Roadmap" icon={Map} accent='PURPLE' onClick={() => safeNavigate('prof-dev-plan')} className="w-full shadow-2xl hover:shadow-3xl border-4 border-[#7C3AED]/20">
+            <p className="text-sm text-gray-700 mb-4">
+                Your **Personalized Development Plan (PDP)** is designed to close your skill gaps. Track your progress below and hit your monthly learning targets.
+            </p>
+            <div className="grid grid-cols-3 gap-4">
+                <div className='p-3 rounded-xl bg-[#002E47]/5 border border-gray-200'>
+                    <p className='text-xs font-medium text-gray-600'>Current Month</p>
+                    <p className='text-xl font-extrabold text-[#002E47] mt-1'>{goalsCount} / 24</p>
+                </div>
+                <div className='p-3 rounded-xl bg-[#002E47]/5 border border-gray-200'>
+                    <p className='text-xs font-medium text-gray-600'>Weakest Tier Focus</p>
+                    <p className='text-xl font-extrabold text-[#E04E1B] mt-1'>{weakestTier?.name || 'N/A'}</p>
+                </div>
+                 <div className='p-3 rounded-xl bg-[#002E47]/5 border border-gray-200'>
+                    <p className='text-xs font-medium text-gray-600'>Tier Mastery Projection</p>
+                    <p className='text-xl font-extrabold text-[#47A88D] mt-1'>{tierMasteryProjection} Days</p>
+                </div>
+            </div>
+             <Button onClick={() => safeNavigate('prof-dev-plan')} variant='primary' className='mt-4 w-full'>
+                <Briefcase className='w-5 h-5 mr-2'/> Go to Development Plan Tracker
+            </Button>
+        </Card>
+        {/* --- END PDP ROADMAP HIGHLIGHT --- */}
+
 
         {/* --- MAIN GRID CONTAINER --- */}
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
 
-            {/* Column 1 & 2: ACTION HUB & KMI PROGRESS (Primary User Focus) */}
+            {/* Column 1 & 2: ACTION HUBS (Primary User Focus) */}
             <div className="lg:col-span-3 space-y-8 order-2 lg:order-1">
 
-                 {/* 1. EXECUTIVE ACTION HUB (MOVED TO TOP) */}
+                 {/* 1. LEADER TOOLS & HUBS (REPLACES OLD ACTION HUB) */}
                  <div className='rounded-3xl border-4 border-[#002E47] bg-[#F7FCFF] p-8 shadow-2xl relative'>
                     <h2 className="text-3xl font-extrabold text-[#002E47] mb-6 border-b-2 pb-4 border-gray-300 flex items-center gap-3">
-                        <Zap size={28} className='text-[#E04E1B]'/> Executive Action Hub
+                        <Zap size={28} className='text-[#E04E1B]'/> Leader Tools & Hubs (Core Action)
                     </h2>
-                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                        {/* CORE ACTIONS (DO) - Now 3D and Functional */}
-                        <ThreeDButton
-                            onClick={() => safeNavigate('quick-start-accelerator')}
-                            color={COLORS.TEAL}
-                            accentColor={COLORS.NAVY}
-                        >
-                            <Zap className='w-5 h-5 mr-2'/> Accelerator
-                        </ThreeDButton>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                        
+                        {/* Development Plan Button */}
                         <ThreeDButton
                             onClick={() => safeNavigate('prof-dev-plan')}
-                            color={COLORS.TEAL}
-                            accentColor={COLORS.NAVY}
+                            color={COLORS.NAVY}
+                            accentColor={COLORS.TEAL}
+                            className="h-28 flex-col px-3 py-2" // Smaller/Tighter button style
                         >
-                            <Briefcase className='w-5 h-5 mr-2'/> Dev Plan
+                            <Briefcase className='w-5 h-5 mb-1'/> 
+                            <span className='text-sm font-extrabold'>Development Plan</span>
+                            <p className='text-xs font-light text-center mt-1 opacity-80'>This is a 24-Month Roadmap designed to close your skill gaps. It uses AI-generated, hyper-personalized content to accelerate executive growth.</p> 
                         </ThreeDButton>
+
+                        {/* Daily Practice Button */}
                         <ThreeDButton
                             onClick={() => safeNavigate('daily-practice')}
-                            color={COLORS.TEAL}
-                            accentColor={COLORS.NAVY}
+                            color={COLORS.NAVY}
+                            accentColor={COLORS.TEAL}
+                            className="h-28 flex-col px-3 py-2" 
                         >
-                            <ClockIcon className='w-5 h-5 mr-2'/> Daily Scorecard
+                            <ClockIcon className='w-5 h-5 mb-1'/> 
+                            <span className='text-sm font-extrabold'>Daily Practice</span>
+                            <p className='text-xs font-light text-center mt-1 opacity-80'>This Daily Scorecard tracks your commitment to non-negotiable leadership micro-habits. Hitting your score is the key to sustained executive growth.</p>
                         </ThreeDButton>
+
+                        {/* Coaching Lab Button */}
                         <ThreeDButton
                             onClick={() => safeNavigate('coaching-lab')}
-                            color={COLORS.TEAL}
-                            accentColor={COLORS.NAVY}
+                            color={COLORS.NAVY}
+                            accentColor={COLORS.TEAL}
+                            className="h-28 flex-col px-3 py-2" 
                         >
-                            <Mic className='w-5 h-5 mr-2'/> Coaching Lab
+                            <Mic className='w-5 h-5 mb-1'/> 
+                            <span className='text-sm font-extrabold'>Coaching Lab</span>
+                            <p className='text-xs font-light text-center mt-1 opacity-80'>Practice key leadership interactions, such as crucial conversations, using guided AI tools and receive real-time critique to sharpen your skills.</p>
                         </ThreeDButton>
-                        {/* ANALYZE / PLAN ACTIONS (Secondary Functions) - Now 3D and Functional */}
-                        <ThreeDButton
-                            onClick={() => safeNavigate('reflection')}
-                            color={COLORS.TEAL}
-                            accentColor={COLORS.NAVY}
-                        >
-                            <Star className='w-5 h-5 mr-2'/> Reflection
-                        </ThreeDButton>
+
+                        {/* Planning Hub Button */}
                         <ThreeDButton
                             onClick={() => safeNavigate('planning-hub')}
+                            color={COLORS.NAVY}
+                            accentColor={COLORS.TEAL}
+                            className="h-28 flex-col px-3 py-2" 
+                        >
+                            <TrendingUp className='w-5 h-5 mb-1'/> 
+                            <span className='text-sm font-extrabold'>Planning Hub</span>
+                            <p className='text-xs font-light text-center mt-1 opacity-80'>This hub helps you transform abstract ideas into actionable, accountable goals. You can build a clear Vision, draft measurable OKRs, and vet high-stakes decisions with AI audit tools.</p>
+                        </ThreeDButton>
+                        
+                    </div>
+                </div>
+
+                 {/* 2. RESOURCES & COMMUNITY (NEW SECTION) */}
+                 <div className='rounded-3xl border-4 border-[#47A88D] bg-[#F7FCFF] p-8 shadow-2xl relative'>
+                    <h2 className="text-3xl font-extrabold text-[#002E47] mb-6 border-b-2 pb-4 border-gray-300 flex items-center gap-3">
+                        <Users size={28} className='text-[#47A88D]'/> Resources & Community (Engagement)
+                    </h2>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                        
+                        {/* Applied Leadership Button */}
+                        <ThreeDButton
+                            onClick={() => safeNavigate('applied-leadership')}
                             color={COLORS.TEAL}
                             accentColor={COLORS.NAVY}
+                            className="h-28 flex-col px-3 py-2 lg:col-span-1" 
                         >
-                            <TrendingUp className='w-5 h-5 mr-2'/> Planning Hub
+                            <Lightbulb className='w-5 h-5 mb-1'/> 
+                            <span className='text-sm font-extrabold'>Applied Leadership</span>
+                            <p className='text-xs font-light text-center mt-1 opacity-80'>Access micro-habits and AI coaching tailored to your specific industry, identity, or high-stakes operational context for high-leverage guidance.</p>
                         </ThreeDButton>
+
+                        {/* Business Readings Button */}
                         <ThreeDButton
                             onClick={() => safeNavigate('business-readings')}
                             color={COLORS.TEAL}
                             accentColor={COLORS.NAVY}
+                            className="h-28 flex-col px-3 py-2 lg:col-span-1" 
                         >
-                            <BookOpen className='w-5 h-5 mr-2'/> Readings
+                            <BookOpen className='w-5 h-5 mb-1'/> 
+                            <span className='text-sm font-extrabold'>Business Readings</span>
+                            <p className='text-xs font-light text-center mt-1 opacity-80'>A curated library of business book flyers with key frameworks, executive summaries, and AI-driven commitment plans to simplify learning.</p>
                         </ThreeDButton>
-                         <ThreeDButton
-                            onClick={() => safeNavigate('executive-reflection')} 
+
+                        {/* Community & Peer Support Button */}
+                        <ThreeDButton
+                            onClick={() => safeNavigate('community')}
                             color={COLORS.TEAL}
                             accentColor={COLORS.NAVY}
+                            className="h-28 flex-col px-3 py-2 lg:col-span-2" 
                         >
-                            <LayoutDashboard className='w-5 h-5 mr-2'/> Analytics
+                            <CommunityIcon className='w-5 h-5 mb-1'/> 
+                            <span className='text-sm font-extrabold'>Community & Peer Support</span>
+                            <p className='text-xs font-light text-center mt-1 opacity-80'>Connect with executive peers for advice, discuss difficult scenarios, and access the Mentorship Network for one-on-one guidance.</p>
                         </ThreeDButton>
+                        
                     </div>
                 </div>
 
-                {/* 2. TOP STATS CARDS (Below Action Hub) */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+
+                {/* 3. TOP STATS CARDS (Below Action Hubs) */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                    {/* NEW KPI 1: Perfect Score Streak */}
                     <StatCard
-                        icon={Briefcase}
-                        label="Development Plan Progress"
-                        value={goalsCount > 0 ? `${pdpData?.currentMonth || 1} / 24 Months` : 'Start Now'}
-                        onClick={() => safeNavigate('prof-dev-plan')}
-                        colorClass='bg-[#002E47]/10 text-[#002E47]'
-                        trend={12} 
-                    />
-                    <StatCard
-                        icon={CalendarClock}
-                        label="Daily Commitments Due"
-                        value={commitsDue}
+                        icon={Star}
+                        label="Current Perfect Score Streak"
+                        value={`${perfectStreak} Days`}
                         onClick={() => safeNavigate('daily-practice')}
-                        colorClass={hasPendingDailyPractice ? 'bg-[#E04E1B]/20 text-[#E04E1B] animate-pulse' : 'bg-[#47A88D]/20 text-[#47A88D]'}
-                        trend={-4} 
+                        trend={perfectStreak >= 3 ? 5 : 0} 
+                        colorHex={COLORS.GREEN}
                     />
+
+                    {/* NEW KPI 2: Weakest PDP Tier */}
                     <StatCard
-                        icon={Trello}
-                        label="Objectives (OKRs) Drafted"
-                        value={plansCount}
+                        icon={AlertTriangle}
+                        label="Weakest PDP Tier Score"
+                        value={`${weakestTier?.name || 'T-X'} (${weakestTier?.rating}/10)`}
+                        onClick={() => safeNavigate('prof-dev-plan')}
+                        trend={-12} 
+                        colorHex={COLORS.ORANGE}
+                    />
+                    
+                    {/* NEW KPI 3: Longest Held OKR */}
+                    <StatCard
+                        icon={Archive}
+                        label="Longest-Held OKR"
+                        value={`${longestHeldOKR.days} Days (${longestHeldOKR.objective})`}
                         onClick={() => safeNavigate('planning-hub')}
-                        colorClass='bg-indigo-100 text-indigo-700'
-                        trend={25} 
+                        trend={5} 
+                        colorHex={COLORS.NAVY}
+                    />
+                    
+                    {/* NEW KPI 4: Last Pre-Mortem Audit Date */}
+                    <StatCard
+                        icon={ShieldCheck}
+                        label="Last Pre-Mortem Audit Date"
+                        value={lastPreMortemDate}
+                        onClick={() => safeNavigate('planning-hub')}
+                        trend={20} 
+                        colorHex={COLORS.PURPLE}
                     />
                 </div>
                 
-                {/* 3. PROGRESS SNAPSHOT (KMI Focus) */}
+                {/* 4. PROGRESS SNAPSHOT (KMI Focus) */}
                 <div className='rounded-2xl border border-gray-200 bg-gray-50 p-6 shadow-xl'>
                     <h2 className="text-2xl font-bold text-[#002E47] mb-5 flex items-center gap-2">
                         <LayoutDashboard size={24} className='text-[#002E47]'/> Key Progress Indicators
                     </h2>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <ProgressKMI
-                            title="Commits Completed (Total)"
-                            value={commitsCompleted}
-                            icon={CheckCircle}
-                            colorHex={COLORS.TEAL}
-                        />
-                        <ProgressKMI
-                            title="Leadership Tier Focus"
-                            value={weakestTier?.name || 'N/A'}
-                            icon={Target}
-                            colorHex={COLORS.ORANGE}
-                        />
-                        <ProgressKMI
-                            title="Total Active OKRs"
-                            value={plansCount}
-                            icon={Trello}
-                            colorHex={COLORS.BLUE}
-                        />
-                        <ProgressKMI
-                            title="PDP Months Remaining"
-                            value={24 - goalsCount}
-                            icon={Briefcase}
-                            colorHex={COLORS.NAVY}
-                        />
+                         <div className={`flex items-center space-x-4 p-4 rounded-xl bg-[${COLORS.OFF_WHITE}] shadow-sm border border-gray-100 transition-all duration-300 animate-in fade-in-0 hover:shadow-lg hover:ring-2 ring-opacity-20 ring-[${COLORS.TEAL}]`}>
+                            <div className={`p-3 rounded-xl bg-opacity-10 flex-shrink-0`} style={{ background: COLORS.TEAL + '1A'}}>
+                                <CheckCircle size={20} style={{ color: COLORS.TEAL }} />
+                            </div>
+                            <div className='truncate'>
+                                <p className="text-sm text-gray-500 font-medium truncate">Commits Completed (Total)</p>
+                                <p className={`text-xl font-extrabold mt-0.5`} style={{ color: COLORS.TEAL }}>{commitsCompleted} of {commitsTotal}</p>
+                            </div>
+                        </div>
+                        <div className={`flex items-center space-x-4 p-4 rounded-xl bg-[${COLORS.OFF_WHITE}] shadow-sm border border-gray-100 transition-all duration-300 animate-in fade-in-0 hover:shadow-lg hover:ring-2 ring-opacity-20 ring-[${COLORS.ORANGE}]`}>
+                            <div className={`p-3 rounded-xl bg-opacity-10 flex-shrink-0`} style={{ background: COLORS.ORANGE + '1A'}}>
+                                <Target size={20} style={{ color: COLORS.ORANGE }} />
+                            </div>
+                            <div className='truncate'>
+                                <p className="text-sm text-gray-500 font-medium truncate">Leadership Tier Focus</p>
+                                <p className={`text-xl font-extrabold mt-0.5`} style={{ color: COLORS.ORANGE }}>{weakestTier?.name || 'N/A'}</p>
+                            </div>
+                        </div>
+                         <div className={`flex items-center space-x-4 p-4 rounded-xl bg-[${COLORS.OFF_WHITE}] shadow-sm border border-gray-100 transition-all duration-300 animate-in fade-in-0 hover:shadow-lg hover:ring-2 ring-opacity-20 ring-[${COLORS.BLUE}]`}>
+                            <div className={`p-3 rounded-xl bg-opacity-10 flex-shrink-0`} style={{ background: COLORS.BLUE + '1A'}}>
+                                <Trello size={20} style={{ color: COLORS.BLUE }} />
+                            </div>
+                            <div className='truncate'>
+                                <p className="text-sm text-gray-500 font-medium truncate">Total Active OKRs</p>
+                                <p className={`text-xl font-extrabold mt-0.5`} style={{ color: COLORS.BLUE }}>{okrs.length}</p>
+                            </div>
+                        </div>
+                         <div className={`flex items-center space-x-4 p-4 rounded-xl bg-[${COLORS.OFF_WHITE}] shadow-sm border border-gray-100 transition-all duration-300 animate-in fade-in-0 hover:shadow-lg hover:ring-2 ring-opacity-20 ring-[${COLORS.NAVY}]`}>
+                            <div className={`p-3 rounded-xl bg-opacity-10 flex-shrink-0`} style={{ background: COLORS.NAVY + '1A'}}>
+                                <Briefcase size={20} style={{ color: COLORS.NAVY }} />
+                            </div>
+                            <div className='truncate'>
+                                <p className="text-sm text-gray-500 font-medium truncate">PDP Months Remaining</p>
+                                <p className={`text-xl font-extrabold mt-0.5`} style={{ color: COLORS.NAVY }}>{24 - goalsCount}</p>
+                            </div>
+                        </div>
                     </div>
                 </div>
-
             </div>
-
 
             {/* Column 3: HEALTH SCORE & NUDGE (lg:col-span-1, order 1) */}
             <div className="space-y-8 lg:col-span-1 order-1">
 
-                {/* 4. HEALTH SCORE RING */}
+                {/* 5. HEALTH SCORE RING */}
                 <ProgressRings
                     dailyPercent={dailyPercent}
                     monthlyPercent={monthlyPercent}
@@ -622,7 +782,7 @@ const DashboardScreen = () => {
                     commitsDue={commitsDue}
                 />
 
-                {/* 5. Daily Tip (Strategic Nudge) - Enhanced with Tier Icon */}
+                {/* 6. Daily Tip (Strategic Nudge) - Enhanced with Tier Icon */}
                 <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-xl transition-all duration-300 hover:shadow-2xl hover:bg-white/95 relative group">
                 
                 <div className='absolute inset-0 rounded-2xl' style={{ background: `${weakestTier?.hex || COLORS.TEAL}1A`, opacity: 0.1 }}></div>
@@ -634,7 +794,7 @@ const DashboardScreen = () => {
                     </h2>
                     <button
                     className="rounded-full border border-gray-200 px-3 py-1 text-sm hover:bg-gray-100 flex items-center gap-1 transition-colors"
-                    onClick={nextNudge} // FIX: Changed logic to call nextNudge
+                    onClick={nextNudge} 
                     disabled={tipLoading}
                     type="button"
                     >
@@ -654,7 +814,7 @@ const DashboardScreen = () => {
                 </div>
             </div>
         </div>
-        </div>
+        </div> // CRITICAL FIX: Ensure this final closing tag is present for the main container
     );
 };
 
