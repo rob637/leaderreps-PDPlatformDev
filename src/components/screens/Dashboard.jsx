@@ -41,6 +41,15 @@ const MOCK_PLANNING_DATA = {
     last_premortem_decision: new Date('2025-10-10').toISOString(),
 };
 
+// Local Nudges (Used for instant, non-API refresh)
+const LOCAL_NUDGES = [
+    'Focus today on deep listening; practice paraphrasing your colleague\'s needs before offering solutions.',
+    'Before starting a task, ask: "Will this activity move us closer to our one-year vision?" If not, delegate it.',
+    'Schedule 30 minutes of "maker time" today—no meetings, no email. Protect it fiercely.',
+    'Use the SBI framework for your next piece of critical feedback (Situation, Behavior, Impact).',
+    'Review your personal calendar: Is the ratio of strategic to operational work 3:1 or better?',
+];
+
 // Streak calculation utility (Pulled from DailyPractice.jsx logic)
 function calculateStreak(history) {
     let streak = 0;
@@ -76,15 +85,6 @@ function calculateStreak(history) {
     }
     return streak;
 }
-
-// Local Nudges (Used for instant, non-API refresh)
-const LOCAL_NUDGES = [
-    'Focus today on deep listening; practice paraphrasing your colleague\'s needs before offering solutions.',
-    'Before starting a task, ask: "Will this activity move us closer to our one-year vision?" If not, delegate it.',
-    'Schedule 30 minutes of "maker time" today—no meetings, no email. Protect it fiercely.',
-    'Use the SBI framework for your next piece of critical feedback (Situation, Behavior, Impact).',
-    'Review your personal calendar: Is the ratio of strategic to operational work 3:1 or better?',
-];
 
 // --- END MOCK IMPORTS ---
 
@@ -562,8 +562,8 @@ const DashboardScreen = () => {
             </p>
         </div>
         
-        {/* --- DEDICATED PDP ROADMAP HIGHLIGHT (FIX 1: HEADER SIZE) --- */}
-        <Card onClick={() => safeNavigate('prof-dev-plan')} className="w-full shadow-2xl hover:shadow-3xl border-4 border-[#7C3AED]/20">
+        {/* --- DEDICATED PDP ROADMAP HIGHLIGHT (FIX 1: HEADER SIZE & BORDER) --- */}
+        <Card onClick={() => safeNavigate('prof-dev-plan')} className="w-full shadow-2xl hover:shadow-3xl border-4 border-[#7C3AED]">
             <h2 className="text-3xl font-extrabold text-[#002E47] mb-6 border-b-2 pb-4 border-gray-300 flex items-center gap-3">
                 <Map size={28} className='text-[#7C3AED]'/> My Executive Roadmap
             </h2>
@@ -621,7 +621,7 @@ const DashboardScreen = () => {
                         {/* Daily Practice Button */}
                          <div className='flex flex-col space-y-2'>
                             <ThreeDButton
-                                onClick={() => safeNavigate('daily-practice')} // FIX 2: Navigation confirmed
+                                onClick={() => safeNavigate('daily-practice')} 
                                 color={COLORS.NAVY}
                                 accentColor={COLORS.TEAL}
                                 className="h-16 flex-row px-3 py-2"
@@ -635,7 +635,7 @@ const DashboardScreen = () => {
                         {/* Coaching Lab Button */}
                          <div className='flex flex-col space-y-2'>
                             <ThreeDButton
-                                onClick={() => safeNavigate('coaching-lab')} // FIX 2: Navigation confirmed
+                                onClick={() => safeNavigate('coaching-lab')} 
                                 color={COLORS.NAVY}
                                 accentColor={COLORS.TEAL}
                                 className="h-16 flex-row px-3 py-2" 
@@ -649,7 +649,7 @@ const DashboardScreen = () => {
                         {/* Planning Hub Button */}
                          <div className='flex flex-col space-y-2'>
                             <ThreeDButton
-                                onClick={() => safeNavigate('planning-hub')} // FIX 2: Navigation confirmed
+                                onClick={() => safeNavigate('planning-hub')} 
                                 color={COLORS.NAVY}
                                 accentColor={COLORS.TEAL}
                                 className="h-16 flex-row px-3 py-2" 
@@ -673,7 +673,7 @@ const DashboardScreen = () => {
                         {/* Applied Leadership Button */}
                         <div className='flex flex-col space-y-2'>
                             <ThreeDButton
-                                onClick={() => safeNavigate('applied-leadership')} // FIX 2: Navigation confirmed
+                                onClick={() => safeNavigate('applied-leadership')} 
                                 color={COLORS.TEAL}
                                 accentColor={COLORS.NAVY}
                                 className="h-16 flex-row px-3 py-2 lg:col-span-1" 
@@ -687,7 +687,7 @@ const DashboardScreen = () => {
                         {/* Business Readings Button */}
                         <div className='flex flex-col space-y-2'>
                             <ThreeDButton
-                                onClick={() => safeNavigate('business-readings')} // FIX 2: Navigation confirmed
+                                onClick={() => safeNavigate('business-readings')} 
                                 color={COLORS.TEAL}
                                 accentColor={COLORS.NAVY}
                                 className="h-16 flex-row px-3 py-2 lg:col-span-1" 
@@ -701,7 +701,7 @@ const DashboardScreen = () => {
                         {/* Community & Peer Support Button */}
                         <div className='flex flex-col space-y-2 lg:col-span-2'>
                             <ThreeDButton
-                                onClick={() => safeNavigate('community')} // FIX 2: Navigation confirmed
+                                onClick={() => safeNavigate('community')} 
                                 color={COLORS.TEAL}
                                 accentColor={COLORS.NAVY}
                                 className="h-16 flex-row px-3 py-2" 
