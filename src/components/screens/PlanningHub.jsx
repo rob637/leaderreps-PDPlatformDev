@@ -1,4 +1,3 @@
-/* eslint-disable no-console */
 // src/components/screens/PlanningHub.jsx
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
@@ -104,7 +103,7 @@ const LEADERSHIP_TIERS = {
 
 const PreMortemView = ({ setPlanningView }) => {
     // FIX: Destructure services from the correctly imported context hook
-    const { planningData, updatePlanningData, updateCommitmentData, navigate, callSecureGeminiAPI, hasGeminiKey } = useAppServices();
+    const { planningData, updatePlanningData, updateCommitmentData, navigate, callSecureGeminiAPI, hasGeminiKey, GEMINI_MODEL } = useAppServices();
     
     // Fallback/initial data (using optional chaining for safety)
     const [decision, setDecision] = useState(planningData?.last_premortem_decision || 'Should we launch a new product feature aimed at the enterprise market next quarter?');
@@ -180,6 +179,7 @@ const PreMortemView = ({ setPlanningView }) => {
             const payload = {
                 contents: [{ role: "user", parts: [{ text: userQuery }] }],
                 systemInstruction: { parts: [{ text: systemPrompt }] },
+                model: GEMINI_MODEL, // Pass model explicitly
             };
 
             const result = await callSecureGeminiAPI(payload);
@@ -325,7 +325,7 @@ const PreMortemView = ({ setPlanningView }) => {
 };
 
 const VisionBuilderView = ({ setPlanningView }) => {
-    const { planningData, updatePlanningData, callSecureGeminiAPI, hasGeminiKey } = useAppServices();
+    const { planningData, updatePlanningData, callSecureGeminiAPI, hasGeminiKey, GEMINI_MODEL } = useAppServices();
 
     const [vision, setVision] = useState(planningData?.vision || '');
     const [mission, setMission] = useState(planningData?.mission || '');
@@ -399,6 +399,7 @@ const VisionBuilderView = ({ setPlanningView }) => {
             const payload = {
                 contents: [{ role: "user", parts: [{ text: userQuery }] }],
                 systemInstruction: { parts: [{ text: systemPrompt }] },
+                model: GEMINI_MODEL, // Pass model explicitly
             };
 
             const result = await callSecureGeminiAPI(payload);
@@ -500,7 +501,7 @@ const VisionBuilderView = ({ setPlanningView }) => {
 };
 
 const OKRDraftingView = ({ setPlanningView }) => {
-    const { planningData, updatePlanningData, callSecureGeminiAPI, hasGeminiKey } = useAppServices();
+    const { planningData, updatePlanningData, callSecureGeminiAPI, hasGeminiKey, GEMINI_MODEL } = useAppServices();
 
     // Set initial state from planningData, safely defaulting to an empty array if undefined
     const [okrs, setOkrs] = useState(planningData?.okrs || []);
@@ -614,6 +615,7 @@ const OKRDraftingView = ({ setPlanningView }) => {
             const payload = {
                 contents: [{ role: "user", parts: [{ text: userQuery }] }],
                 systemInstruction: { parts: [{ text: systemPrompt }] },
+                model: GEMINI_MODEL, // Pass model explicitly
             };
 
             const result = await callSecureGeminiAPI(payload);
@@ -749,7 +751,7 @@ const OKRDraftingView = ({ setPlanningView }) => {
 };
 
 const AlignmentTrackerView = ({ setPlanningView }) => {
-    const { planningData, updatePlanningData, updateCommitmentData, navigate, callSecureGeminiAPI, hasGeminiKey } = useAppServices();
+    const { planningData, updatePlanningData, updateCommitmentData, navigate, callSecureGeminiAPI, hasGeminiKey, GEMINI_MODEL } = useAppServices();
 
     // Mock progress data for visualization, using loaded objectives for titles
     const objectives = planningData?.okrs?.map((o, index) => {
@@ -782,6 +784,7 @@ const AlignmentTrackerView = ({ setPlanningView }) => {
     const [isSuggesting, setIsSuggesting] = useState(false);
     const [suggestionText, setSuggestionText] = useState('');
     const [suggestionCommitment, setSuggestionCommitment] = useState(null); // Will hold the parsed JSON
+    const [lastJsonText, setLastJsonText] = useState(''); // For debugging JSON error
 
     // Sync state on load
     useEffect(() => {
@@ -853,11 +856,13 @@ const AlignmentTrackerView = ({ setPlanningView }) => {
                         },
                         required: ["commitment", "tier"]
                     }
-                }
+                },
+                model: GEMINI_MODEL, // Pass model explicitly
             };
 
             const result = await callSecureGeminiAPI(payload);
             const jsonText = result?.candidates?.[0]?.content?.parts?.[0]?.text;
+            setLastJsonText(jsonText); // Store for debugging
             
             // FIX 2: Attempt to strip non-JSON wrapper text (like 'Here's a...')
             const cleanJsonText = jsonText.trim().replace(/^[^\{]*/, ''); // Strip everything before the first '{'
@@ -872,7 +877,7 @@ const AlignmentTrackerView = ({ setPlanningView }) => {
             // Handle both network errors and JSON parsing errors
             let errorMsg = "An error occurred during AI suggestion generation. Check your network connection.";
             if (error instanceof SyntaxError) {
-                errorMsg = `AI Critique Failed: Could not parse response as JSON. The model may have included conversational text. Raw output: ${jsonText}`;
+                errorMsg = `AI Critique Failed: Could not parse response as JSON. The model may have included conversational text. Raw output: ${lastJsonText}`;
             }
             setSuggestionText(errorMsg);
             setSuggestionCommitment(null); // CRITICAL FIX: Ensure it's null on failure

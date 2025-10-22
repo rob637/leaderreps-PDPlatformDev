@@ -67,6 +67,32 @@ const useAppServices = () => {
     return true;
   });
 
+  /* CRITICAL FIX: Removed the simulated API Key Failure. 
+    In a real application, this function would likely be a proxy for 
+    a serverless function or an authenticated backend endpoint that 
+    securely calls the Google Gemini API with the actual API Key. 
+    The current mock returns a SUCCESSFUL response.
+  */
+  const callSecureGeminiAPI = async (payload) => {
+    // NOTE: This is a successful MOCK. Replace this with your actual, secure API call.
+    console.log('Production Mock: callSecureGeminiAPI (Simulating SUCCESSFUL call).');
+
+    // MOCK RESPONSE LOGIC (Should be replaced by a secure backend call)
+    if (payload.generationConfig?.responseMimeType === 'application/json') {
+      const score = Math.floor(Math.random() * 5) + 6;
+      const risk = 10 - score;
+      const feedback = score > 7 ? "Excellent specificity and alignment! Maintain this clarity." : "Slightly vague. Specify the time or location to reduce risk.";
+      return { candidates: [{ content: { parts: [{ text: JSON.stringify({ score, risk, feedback }) }] } }] };
+    } else {
+      const isPerfect = (localCommitmentData?.active_commitments || []).every(c => c.status === 'Committed');
+      const text = isPerfect 
+        ? 'Given your perfect performance, how can you mentor a peer to adopt your scheduling discipline this week?'
+        : 'Based on the pending items, what was the single biggest distraction that prevented completion today?';
+      return { candidates: [{ content: { parts: [{ text: text }] } }] };
+    }
+  };
+
+
   return {
     commitmentData: localCommitmentData,
     updateCommitmentData: updateCommitmentData,
@@ -80,24 +106,8 @@ const useAppServices = () => {
       assessment: { goalPriorities: ['T3', 'T4', 'T5'] },
       plan: [{ month: 'October', theme: 'Mastering Discipline', requiredContent: [{ id: 1, title: 'Deep Work: The Foundation', type: 'Video', duration: 30 }] }]
     },
-    // FIX: Using the App.jsx callSecureGeminiAPI directly (or a local mock that matches its signature)
-    callSecureGeminiAPI: async (payload) => {
-      // NOTE: This mock is simplified but retains the key error/success logic for production testing.
-      if (typeof window !== 'undefined' && window.location.hostname.includes('netlify')) {
-           // Simulate a common failure for this specific module
-           throw new Error("Simulated API Key Failure for DailyPractice"); 
-      }
-      
-      if (payload.generationConfig?.responseMimeType === 'application/json') {
-        const score = Math.floor(Math.random() * 5) + 6;
-        const risk = 10 - score;
-        const feedback = score > 7 ? "Excellent specificity and alignment! Maintain this clarity." : "Slightly vague. Specify the time or location to reduce risk.";
-        return { candidates: [{ content: { parts: [{ text: JSON.stringify({ score, risk, feedback }) }] } }] };
-      } else {
-        return { candidates: [{ content: { parts: [{ text: 'Given your strong performance in Tier 3, how can you mentor a peer to adopt your scheduling discipline this week?' }] } }] };
-      }
-    },
-    hasGeminiKey: () => true,
+    callSecureGeminiAPI: callSecureGeminiAPI, // Now uses the successful mock
+    hasGeminiKey: () => true, // Assuming the key is available on the backend
     navigate: (screen, params) => console.log(`Navigating to ${screen} with params:`, params),
     GEMINI_MODEL: 'gemini-2.5-flash', // Added for selector view reference
   };
@@ -422,7 +432,7 @@ const useGoalDriftAnalysis = (activeCommitments) => {
         });
         
         const total = tacticalCount + strategicCount;
-        if (total === 0) return null;
+        if (total === 0) return { isDrifting: false, ratio: 0, message: "Add commitments to track your focus.", accent: 'SUBTLE', icon: Lightbulb };
         
         const tacticalRatio = tacticalCount / total;
 
@@ -787,7 +797,7 @@ const tierName = LEADERSHIP_TIERS[linkedTier]?.name || 'N/A';
         setAiAssessment({ 
             score: 0, 
             risk: 10, 
-            feedback: "CRITICAL API FAILURE: The AI Analysis service is currently unavailable. Check your API key or network connection.", 
+            feedback: "CRITICAL API FAILURE: The AI Analysis service is currently unavailable. Check your network connection.", 
             error: true 
         });
     } finally {
@@ -1630,10 +1640,10 @@ if (!hasGeminiKey() || promptLoading) return;
                     icon={predictedRisk.icon} 
                     accent={predictedRisk.icon === TrendingDown ? 'ORANGE' : 'TEAL'} 
                     className='mb-6 shadow-2xl' 
-                    style={{ background: COLORS.ORANGE + '1A', border: `2px solid ${COLORS.ORANGE}` }}
+                    style={{ background: predictedRisk.icon === TrendingDown ? COLORS.ORANGE + '1A' : COLORS.TEAL + '1A', border: `2px solid ${predictedRisk.icon === TrendingDown ? COLORS.ORANGE : COLORS.TEAL}` }}
                 >
                     <p className='text-base font-medium text-gray-700'>
-                        {predictedRisk.text}
+                        {predictedRisk.message}
                     </p>
                 </Card>
                 
