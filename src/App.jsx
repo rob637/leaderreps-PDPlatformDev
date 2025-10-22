@@ -383,7 +383,9 @@ function AuthPanel({ auth, onSuccess }) {
 
 
 const NavSidebar = ({ currentScreen, setCurrentScreen, user, closeMobileMenu, isAuthRequired }) => {
-    const { auth } = useAppServices();
+    // FIX: Destructure navigate from useAppServices (or rely on passed props)
+    // Relying on props here is cleaner if App.jsx is the source of truth for navigation.
+    const { auth } = useAppServices(); 
     const [isProfileOpen, setIsProfileOpen] = useState(false);
 
     const NAVY = COLORS.NAVY;
@@ -402,8 +404,12 @@ const NavSidebar = ({ currentScreen, setCurrentScreen, user, closeMobileMenu, is
         } catch (e) { console.error('Sign out failed:', e); }
     };
 
-    // CRITICAL FIX 4: Use a stable handler for navigation
-    const handleNavigate = useCallback((screen) => { setCurrentScreen(screen); closeMobileMenu(); }, [setCurrentScreen, closeMobileMenu]);
+    // CRITICAL FIX: The handler must call the setCurrentScreen prop, which is the navigate function.
+    const handleNavigate = useCallback((screen) => { 
+        // setCurrentScreen is actually the 'navigate' function from App.jsx's state.
+        setCurrentScreen(screen); // This works because setCurrentScreen prop receives the navigate function
+        closeMobileMenu(); 
+    }, [setCurrentScreen, closeMobileMenu]);
     
     const renderNavItems = (items) => (
         items.map((item) => {
@@ -494,7 +500,7 @@ const AppContent = ({ currentScreen, setCurrentScreen, user, navParams, isMobile
         <div className="flex bg-gray-100 font-sans antialiased">
             <NavSidebar
                 currentScreen={currentScreen}
-                setCurrentScreen={setCurrentScreen}
+                setCurrentScreen={setCurrentScreen} // Passes the navigate function (which is aliased as setCurrentScreen)
                 user={user}
                 isMobileOpen={isMobileOpen}
                 closeMobileMenu={closeMobileMenu} 
@@ -631,7 +637,13 @@ const App = ({ initialState }) => {
              <div className="min-h-screen flex items-center justify-center bg-gray-100"><div className="flex flex-col items-center"><div className="animate-spin rounded-full h-12 w-12 border-4 border-t-4 border-gray-200 border-t-[#47A88D] mb-3"></div><p className="text-[#002E47] font-semibold">Loading App Content...</p></div></div>
         }>
             <AppContent
-              currentScreen={currentScreen} setCurrentScreen={navigate} user={user} navParams={navParams} isMobileOpen={isMobileOpen} setIsMobileOpen={setIsMobileOpen} isAuthRequired={authRequired} 
+              currentScreen={currentScreen} 
+              setCurrentScreen={navigate} // CRITICAL FIX: Pass the navigate function here
+              user={user} 
+              navParams={navParams} 
+              isMobileOpen={isMobileOpen} 
+              setIsMobileOpen={setIsMobileOpen} 
+              isAuthRequired={authRequired} 
             />
         </Suspense>
       </DataProvider>

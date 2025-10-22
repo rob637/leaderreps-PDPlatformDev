@@ -413,6 +413,22 @@ const CommitmentItem = ({ commitment, onLogCommitment, onRemove, isSaving, isSco
   );
 };
 
+// FIX 11: Added the missing component definition for AIStarterPackNudge
+const AIStarterPackNudge = ({ pdpData, setLinkedGoal, setLinkedTier, handleAddCommitment, isSaving }) => {
+    // Safely access primary goal/tier
+    const primaryGoal = pdpData?.plan?.[0]?.theme || 'Improve Discipline';
+    const primaryTier = pdpData?.assessment?.goalPriorities?.[0] || 'T3';
+
+    return (
+        <Card title="AI Starter Pack Nudge" icon={Cpu} className='mb-6 bg-[#47A88D]/10 border-2 border-[#47A88D]'>
+            <p className='text-sm text-gray-700'>
+                You have no active commitments. AI suggests starting with your PDP's primary focus: **{primaryGoal}** ({primaryTier}). 
+                Click 'Manage' and select this Goal/Tier combination to auto-fill the alignment fields.
+            </p>
+        </Card>
+    );
+};
+
 
 /**
  * CommitmentSelectorView: Allows users to add commitments from the bank or create custom ones.
@@ -1326,22 +1342,7 @@ const sortedCommitments = useMemo(() => {
         );
     };
 
-
-    const AIStarterPackNudge = ({ pdpData, setLinkedGoal, setLinkedTier, handleAddCommitment, isSaving }) => {
-        // FIX 9: Safely access primary goal/tier
-        const primaryGoal = pdpData?.plan?.[0]?.theme || 'Improve Discipline';
-        const primaryTier = pdpData?.assessment?.goalPriorities?.[0] || 'T3';
-
-        return (
-            <Card title="AI Starter Pack Nudge" icon={Cpu} className='mb-6 bg-[#47A88D]/10 border-2 border-[#47A88D]'>
-                <p className='text-sm text-gray-700'>
-                    You have no active commitments. AI suggests starting with your PDP's primary focus: **{primaryGoal}** ({primaryTier}). 
-                    Click 'Manage' and select this Goal/Tier combination to auto-fill the alignment fields.
-                </p>
-            </Card>
-        );
-    };
-
+    // FIX 12: Added the missing component definition for CommitmentHistoryModal
     const CommitmentHistoryModal = ({ isVisible, onClose, dayData, activeCommitments }) => {
         if (!isVisible || !dayData) return null;
         return (
@@ -1567,4 +1568,5 @@ const PerfectScoreModal = ({ onClose }) => (
             </Button>
         </div>
     </div>
-);}
+);
+};
