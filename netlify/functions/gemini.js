@@ -2,7 +2,7 @@
 
 // ESM export signature for Netlify Functions
 export async function handler(event) {
-  // ---- CORS (adjust origin if you want to lock it down) ----
+  // ---- CORS (adjust origin if you want to restrict) ----
   const corsHeaders = {
     'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Methods': 'POST,OPTIONS',
@@ -35,25 +35,23 @@ export async function handler(event) {
 
     const base = 'https://generativelanguage.googleapis.com';
 
-    // Parse client payload
-    /** Expected shape:
-     * {
-     *   model?: "gemini-1.5-flash" | "models/gemini-1.5-flash" | "gemini-2.0-flash" | "tunedModels/..."
-     *   contents: [{ parts: [{ text: "..." }] }]
-     *   systemInstruction? / system_instruction?
-     *   tools?: [{ google_search?: {...} | googleSearch?: {...} }]
-     *   ...other Gemini fields...
-     * }
-     */
+    // Parse incoming payload
+    // Expected:
+    // {
+    //   model?: 'gemini-2.0-flash' | 'gemini-1.5-flash' | 'models/...' | 'tunedModels/...'
+    //   contents: [{ parts: [{ text: '...' }] }],
+    //   systemInstruction? / system_instruction?,
+    //   tools?: [{ google_search?: {...} | googleSearch?: {...} }],
+    //   ...
+    // }
     const req = JSON.parse(event.body || '{}');
 
-    // --- normalize model ---
-    const DEFAULT_MODEL = 'gemini-1.5-flash';
+    // --- normalize model (strip -latest alias) ---
+    const DEFAULT_MODEL = 'gemini-2.0-flash';
     const chosenModelRaw = String(req.model || DEFAULT_MODEL).trim().replace(/-latest$/, '');
-    const modelPath = normalizeModelPath(chosenModelRaw);
-    delete req.model; // model goes in URL, not body
+    delete req.model; // model goes in the URL, not the body
 
-    // --- normalize payload for v1 vs v1beta quirks ---
+    // --- normalizers for payload quirks across API versions ---
     const translateForV1 = (payload) => {
       const p = shallowClone(payload);
       // v1 prefers camelCase "systemInstruction"
@@ -63,9 +61,7 @@ export async function handler(event) {
       }
       // normalize tools.google_search -> tools.googleSearch
       if (Array.isArray(p.tools)) {
-        p.tools = p.tools.map((t) =>
-          t && t.google_search ? { googleSearch: t.google_search } : t
-        );
+        p.tools = p.tools.map(t => (t?.google_search ? { googleSearch: t.google_search } : t));
       }
       return p;
     };
@@ -77,60 +73,82 @@ export async function handler(event) {
         p.system_instruction = p.systemInstruction;
         delete p.systemInstruction;
       }
-      // normalize tools.google_search -> tools.googleSearch (v1beta also uses googleSearch)
+      // normalize tools.google_search -> tools.googleSearch (v1beta uses googleSearch too)
       if (Array.isArray(p.tools)) {
-        p.tools = p.tools.map((t) =>
-          t && t.google_search ? { googleSearch: t.google_search } : t
-        );
+        p.tools = p.tools.map(t => (t?.google_search ? { googleSearch: t.google_search } : t));
       }
       return p;
     };
 
-    // --- 1) Try v1 first ---
-    let url = `${base}/v1/${modelPath}:generateContent?key=${API_KEY}`;
-    let res = await fetch(url, {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify(translateForV1(req)),
-    });
-    let text = await res.text();
+    // --- model candidates: caller's choice + stable fallbacks ---
+    const candidates = Array.from(new Set([
+      chosenModelRaw,           // what caller asked for (already stripped -latest)
+      'gemini-2.0-flash',       // very widely available
+      'gemini-1.5-flash-002',   // stable 1.5 flash variant
+      'gemini-1.5-pro',         // last resort
+    ]));
 
-    // --- 2) Fallback to v1beta on model/method errors ---
-    if (!res.ok && shouldFallbackToV1beta(res.status, text)) {
-      url = `${base}/v1beta/${modelPath}:generateContent?key=${API_KEY}`;
+    let res, text, url;
+
+    // Try each candidate on v1, then v1beta (only on model/method errors)
+    for (const m of candidates) {
+      const modelPathV1 = normalizeModelPath(m);
+
+      // 1) try v1
+      url = `${base}/v1/${modelPathV1}:generateContent?key=${API_KEY}`;
       res = await fetch(url, {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify(translateForV1beta(req)),
+        body: JSON.stringify(translateForV1(req)),
       });
       text = await res.text();
+      if (res.ok) break;
+
+      // 2) fallback to v1beta on clear model/method availability errors
+      if (shouldFallbackToV1beta(res.status, text)) {
+        const modelPathV1b = normalizeModelPath(m);
+        url = `${base}/v1beta/${modelPathV1b}:generateContent?key=${API_KEY}`;
+        res = await fetch(url, {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify(translateForV1beta(req)),
+        });
+        text = await res.text();
+        if (res.ok) break;
+      }
     }
 
-    // --- redact key if error and echo minimal debug ---
+    // Redact key in any error echo
     const redactedUrl = redactKey(url);
-    if (!res.ok) {
+
+    if (!res?.ok) {
       try {
         const json = JSON.parse(text || '{}');
-        json.debug = { endpoint: redactedUrl, status: res.status };
+        json.debug = { endpoint: redactedUrl, status: res?.status ?? 500 };
         return {
-          statusCode: res.status,
+          statusCode: res?.status ?? 500,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
           body: JSON.stringify(json),
         };
       } catch {
         return {
-          statusCode: res.status,
+          statusCode: res?.status ?? 500,
           headers: { ...corsHeaders, 'Content-Type': 'text/plain' },
           body: (text || 'Gemini error') + `\n\n[debug] ${redactedUrl}`,
         };
       }
     }
 
-    return { statusCode: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' }, body: text };
+    // Success
+    return {
+      statusCode: 200,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      body: text,
+    };
   } catch (err) {
     return {
       statusCode: 500,
-      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       body: JSON.stringify({ error: 'Server error', details: String(err?.message || err) }),
     };
   }
@@ -140,7 +158,7 @@ export async function handler(event) {
 
 function shallowClone(obj) {
   if (!obj || typeof obj !== 'object') return obj;
-  if (Array.isArray(obj)) return obj.map((x) => x);
+  if (Array.isArray(obj)) return obj.map(x => x);
   return { ...obj };
 }
 
@@ -154,7 +172,6 @@ function shallowClone(obj) {
  */
 function normalizeModelPath(model) {
   const cleaned = model.replace(/^models\//, '').replace(/^tunedModels\//, '');
-  // If original started with tunedModels/, keep tunedModels
   if (/^tunedModels\//.test(model)) return `tunedModels/${cleaned}`;
   return `models/${cleaned}`;
 }
@@ -165,7 +182,7 @@ function normalizeModelPath(model) {
  */
 function shouldFallbackToV1beta(status, bodyText) {
   if (status === 404 || status === 400 || status === 501) return true;
-  // Some edge responses embed hints in the payload; keep it simple for now.
+  // Some edge responses may contain hints; keep it simple for now.
   return false;
 }
 
