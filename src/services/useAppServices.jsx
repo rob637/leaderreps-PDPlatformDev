@@ -50,7 +50,7 @@ const DEFAULT_SERVICES = {
 };
 
 // --- CONTEXT CREATION ---
-const AppServiceContext = createContext(null);
+export const AppServiceContext = createContext(DEFAULT_SERVICES);
 
 // ====================================================================
 // --- 1. CORE DATA HOOKS (No Functional Change) ---

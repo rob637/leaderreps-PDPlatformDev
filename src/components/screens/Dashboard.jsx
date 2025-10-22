@@ -55,7 +55,7 @@ const LOCAL_NUDGES = [
 function calculateStreak(history) {
     let streak = 0;
     const validHistory = Array.isArray(history) ? history : [];
-    const sortedHistory = [...validHistory].sort((a, b) => new Date(b.date) - new Date(a.date));
+const sortedHistory = [...validHistory].sort((a, b) => new Date(b.date) - new Date(a.date));
     let yesterday = new Date();
     yesterday.setDate(yesterday.getDate() - 1); 
     for (let i = 0; i < 7; i++) { 

@@ -5,11 +5,10 @@ import React, {
   useEffect,
   useMemo,
   useCallback,
-  createContext,
-  useContext,
   Suspense,
   lazy,
 } from 'react';
+import { AppServiceContext, usePDPData, useCommitmentData, usePlanningData } from './services/useAppServices.jsx';
 
 import {
   initializeApp, 
@@ -110,11 +109,6 @@ const hasGeminiKey = () => (USE_SERVERLESS ? true : !!(typeof __GEMINI_API_KEY !
 const MOCK_PDP_DATA = { currentMonth: 1, assessment: { selfRatings: { T1: 5, T2: 5, T3: 5, T4: 5, T5: 5 } }, plan: [{ month: 1, tier: 'T3', theme: 'Initial Focus', requiredContent: [], reflectionText: '', briefingText: '' }] };
 const MOCK_COMMITMENT_DATA = { active_commitments: [] };
 const MOCK_PLANNING_DATA = { okrs: [] };
-
-// CRITICAL FIX 2: Ensure these mocks are returning valid structures for initial rendering
-const usePDPData = (db, userId, isAuthReady) => ({pdpData: MOCK_PDP_DATA, isLoading: false, error: null, updatePdpData: async () => true, saveNewPlan: async () => true});
-const useCommitmentData = (db, userId, isAuthReady) => ({commitmentData: MOCK_COMMITMENT_DATA, isLoading: false, error: null, updateCommitmentData: async () => true});
-const usePlanningData = (db, userId, isAuthReady) => ({planningData: MOCK_PLANNING_DATA, isLoading: false, error: null, updatePlanningData: async () => true});
 
 const IconMap = {}; 
 const SECRET_SIGNUP_CODE = 'mock-code-123';
@@ -237,8 +231,6 @@ const AppSettingsScreen = () => {
 /* =========================================================
    STEP 3: CONTEXT + DATA PROVIDER
 ========================================================= */
-
-const AppServiceContext = createContext(null);
 
 // NOTE: DEFAULT_SERVICES definition is now ONLY in useAppServices.jsx
 // and imported via the hook.
@@ -536,7 +528,7 @@ const AppContent = ({ currentScreen, setCurrentScreen, user, navParams, isMobile
             <main className="flex-1">
                 <div className="md:hidden sticky top-0 bg-white/95 backdrop-blur-sm shadow-md p-4 flex justify-between items-center z-40">
                     <h1 className="text-xl font-bold text-[#002E47]">LeaderReps</h1>
-                    <button onClick={() => setIsMobileMenu(true)} className="p-2 text-[#002E47] hover:text-[#47A88D]"><Menu className="w-6 h-6" /></button>
+                    <button onClick={() => setIsMobileOpen(true)} className="p-2 text-[#002E47] hover:text-[#47A88D]"><Menu className="w-6 h-6" /></button>
                 </div>
                 <Suspense fallback={
                      <div className="min-h-screen flex items-center justify-center bg-gray-100">
