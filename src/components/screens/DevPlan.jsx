@@ -1655,20 +1655,21 @@ const PlanReviewScreen = ({ generatedPlan, navigate, clearReviewData }) => {
         );
     };
     
-    // CRITICAL FIX 4: Scroll to top after finalizing the plan.
+    // CRITICAL FIX: Removed window.location.reload() and ensure clean state/navigation
     const handleFinalize = async () => {
         console.log("Plan review complete. Finalizing plan and redirecting to Tracker Dashboard...");
+        
+        // 1. Clear the ephemeral state
         clearReviewData(); 
         
-        // CRITICAL FIX: Removed window.location.reload(). 
-        // This ensures the navigation works within the router context.
-        // It relies on the main router logic in ProfDevPlanScreen detecting the saved pdpData.
+        // 2. Navigate explicitly to the base development plan route.
         navigate('prof-dev-plan'); 
         
         window.scrollTo(0, 0); 
     };
 
-    const handleStartOver = () => {
+    // FIX: This ensures only ONE declaration of handleStartOver exists.
+    const handleStartOver = () => { 
         clearReviewData(); 
         navigate('prof-dev-plan'); // Navigating here forces the main component to re-evaluate to the generator view
     };

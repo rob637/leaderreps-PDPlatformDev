@@ -1,4 +1,4 @@
-// src/components/screens/DailyPractice.jsx
+// src/components/screens/DailyPractice.jsx - Commitment Fixes
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import {
@@ -639,22 +639,27 @@ const CommitmentSelectorView = ({ setView, initialGoal, initialTier }) => {
     }
 
     // CRITICAL FIX 2: Ensure existing data is preserved using the spread operator
-    await updateCommitmentData(data => ({ 
+    const success = await updateCommitmentData(data => ({ 
         ...data, 
         active_commitments: [...(data?.active_commitments || []), newCommitment] 
     }));
 
-    // Reset fields and navigate
-    setCustomCommitment('');
-    setTargetColleague('');
-    setAiAssessment(null);
-    setIsSaving(false);
-    
-    setIsCustomCommitmentSaved(true);
-    setTimeout(() => setIsCustomCommitmentSaved(false), 3000);
+    // CRITICAL FIX 7: Only reset local state and navigate if persistence was successful
+    if (success) {
+        setCustomCommitment('');
+        setTargetColleague('');
+        setAiAssessment(null);
+        setIsSaving(false);
+        
+        setIsCustomCommitmentSaved(true);
+        setTimeout(() => setIsCustomCommitmentSaved(false), 3000);
 
-    // CRITICAL FIX 3: Navigate back to the Scorecard view after adding
-    setView('scorecard'); 
+        // CRITICAL FIX 3: Navigate back to the Scorecard view after adding
+        setView('scorecard');
+    } else {
+        setIsSaving(false);
+        console.error("Failed to save commitment.");
+    }
   };
 
   const handleCreateCustomCommitment = async () => {
@@ -679,22 +684,27 @@ const CommitmentSelectorView = ({ setView, initialGoal, initialTier }) => {
       };
 
       // CRITICAL FIX 5: Ensure existing data is preserved using the spread operator
-      await updateCommitmentData(data => ({ 
+      const success = await updateCommitmentData(data => ({ 
           ...data, 
           active_commitments: [...(data?.active_commitments || []), newCommitment] 
       }));
 
-      // Reset fields and navigate
-      setCustomCommitment('');
-      setTargetColleague('');
-      setAiAssessment(null);
-      setIsSaving(false);
-      
-      setIsCustomCommitmentSaved(true);
-      setTimeout(() => setIsCustomCommitmentSaved(false), 3000);
-      
-      // CRITICAL FIX 6: Navigate back to the Scorecard view after adding
-      setView('scorecard');
+      // CRITICAL FIX 8: Only reset local state and navigate if persistence was successful
+      if (success) {
+        setCustomCommitment('');
+        setTargetColleague('');
+        setAiAssessment(null);
+        setIsSaving(false);
+        
+        setIsCustomCommitmentSaved(true);
+        setTimeout(() => setIsCustomCommitmentSaved(false), 3000);
+        
+        // CRITICAL FIX 6: Navigate back to the Scorecard view after adding
+        setView('scorecard');
+      } else {
+        setIsSaving(false);
+        console.error("Failed to save custom commitment.");
+      }
     }
   };
 
