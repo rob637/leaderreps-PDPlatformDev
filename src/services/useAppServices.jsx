@@ -9,7 +9,7 @@ export function useAppServices() {
   const DIRECT_KEY = import.meta.env.VITE_GEMINI_API_KEY || '';
 
   const hasGeminiKey = () =>
-    typeof window !== 'undefined' && typeof window.__callSecureGeminiAPI === 'function'
+    (typeof window !== 'undefined' && typeof window.__callSecureGeminiAPI === 'function')
     || MODE === 'serverless'
     || Boolean(DIRECT_KEY);
 
