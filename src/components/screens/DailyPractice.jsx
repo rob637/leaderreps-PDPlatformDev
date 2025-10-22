@@ -120,48 +120,35 @@ function calculateStreak(history) {
 }
 
 // FIX 4: Implemented mock daily reset function (serverless simulation)
-const scheduleMidnightReset = (commitments, history, updateFn) => {
-    const todayString = new Date().toISOString().split('T')[0];
-    const needsReset = (commitments || []).some(c => c.status === 'Committed');
+// Reset statuses once per day and log YESTERDAY's score
+const resetIfNewDay = (data, updateFn) => {
+  const today = new Date();
+  const todayStr = today.toISOString().split('T')[0];
+  const last = data?.last_reset_date;
+  if (last === todayStr) return;
 
-    if (needsReset) {
-        const score = calculateTotalScore(commitments);
-        const newHistoryEntry = {
-            date: todayString,
-            score: `${score.committed}/${score.total}`,
-            reflection: "Daily actions logged automatically upon server reset."
-        };
-        
-        // This simulates what a serverless function would do after midnight:
-        // 1. Log the full day's score to history
-        // 2. Reset all active commitments to 'Pending' status
-        updateFn(data => {
-            // Check if today's entry already exists in history (to prevent double logging during the window)
-            const existingEntry = (data.history || []).find(h => h.date === todayString);
-            
-            const updatedHistory = existingEntry 
-                ? data.history 
-                : [...(data.history || []), newHistoryEntry];
-                
-            const resetCommitments = (data.active_commitments || []).map(c => ({
-                ...c,
-                status: 'Pending' // Reset for the new day
-            }));
+  const y = new Date(today);
+  y.setDate(today.getDate() - 1);
+  const yStr = y.toISOString().split('T')[0];
 
-            // Only execute if the score is actually marked
-            if(score.total > 0 && !existingEntry) {
-                 console.log(`[Scheduler Mock] Logging Score for ${todayString}: ${score.committed}/${score.total}.`);
-            }
-            
-            return { 
-                ...data, 
-                active_commitments: resetCommitments,
-                history: updatedHistory,
-            };
-        });
-    }
+  const commitments = data?.active_commitments || [];
+  const { committed, total } = calculateTotalScore(commitments);
+
+  updateFn(prev => {
+    const alreadyLogged = (prev.history || []).some(h => h.date === yStr);
+    return {
+      ...prev,
+      last_reset_date: todayStr,
+      history: alreadyLogged
+        ? prev.history
+        : [
+            ...(prev.history || []),
+            { date: yStr, score: `${committed}/${total}`, reflection: prev.reflection_journal || '' }
+          ],
+      active_commitments: commitments.map(c => ({ ...c, status: 'Pending' })),
+    };
+  });
 };
-
 // --- END MOCK UTILITIES ---
 
 
@@ -1175,16 +1162,10 @@ export default function DailyPracticeScreen({ initialGoal, initialTier }) {
   
   // FIX: Call the mock scheduleMidnightReset function to simulate nightly log/reset
   // This must be done inside useEffect to be safe.
-  React.useEffect(() => {
-      // Create a function that calls the simulation reset
-      const runReset = () => {
-          scheduleMidnightReset(commitmentData?.active_commitments || [], commitmentData?.history || [], updateCommitmentData);
-      };
-      
-      // We run the check once on mount (simulating a serverless ping)
-      runReset();
-
-  }, [commitmentData?.active_commitments, commitmentData?.history, updateCommitmentData]);
+useEffect(() => {
+  if (!commitmentData) return;
+  resetIfNewDay(commitmentData, updateCommitmentData);
+}, [commitmentData?.last_reset_date, updateCommitmentData]);
 
   const [view, setView] = useState('scorecard'); 
   const [isSaving, setIsSaving] = useState(false); // Global saving for reflection/resilience
@@ -1197,7 +1178,7 @@ export default function DailyPracticeScreen({ initialGoal, initialTier }) {
   const [selectedHistoryDay, setSelectedHistoryDay] = useState(null);
   
   // FIX: State for view toggle
-  const [viewMode, setViewMode] = useState('status'); 
+  const [viewMode, setViewMode] = useState('tier'); 
   const [isPerfectScoreModalVisible, setIsPerfectScoreModalVisible] = useState(false);
   const resilienceLog = commitmentData?.resilience_log || {};
   
@@ -1219,16 +1200,12 @@ export default function DailyPracticeScreen({ initialGoal, initialTier }) {
 
   const setResilienceLog = () => {}; // Placeholder for the local state in ResilienceTracker
 
-  // Sync reflection and fetch prompt on data load
+   // Sync reflection + fetch a fresh prompt when data changes
   useEffect(() => {
-    if (commitmentData) {
-      setReflection(commitmentData.reflection_journal || '');
-      if (!reflectionPrompt) { 
-        fetchReflectionPrompt(commitmentData);
-      }
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [commitmentData]); 
+    setReflection(commitmentData?.reflection_journal || '');
+    fetchReflectionPrompt(commitmentData);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [commitmentData]);
   
   useEffect(() => {
     if (initialGoal || initialTier) {
