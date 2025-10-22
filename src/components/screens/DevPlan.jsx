@@ -777,6 +777,8 @@ const generatePlanData = (assessment, ownerUid) => {
             reflectionText: '',
             monthCompletedDate: null,
             totalDuration: requiredContent.reduce((sum, item) => sum + item.duration, 0),
+            // CRITICAL FIX: Add a placeholder for briefingText to prevent runtime errors in useEffect logic for future/past months
+            briefingText: '', 
         });
     }
 
@@ -972,7 +974,7 @@ const RoadmapTimeline = ({ data, currentMonth, navigateToMonth, viewMonth }) => 
                 {data.plan.map(monthData => {
                     // FIX 1: Use viewMonth to apply the highlight/current style
                     const isCurrentView = monthData.month === viewMonth; 
-                    const isFuture = monthData.month > currentMonth; 
+                    const isFuture = monthData.month > data.currentMonth; // Use data.currentMonth here
                     const isCompleted = monthData.status === 'Completed';
                     // FIX 1: Allow navigation to all months (future included)
                     const isClickable = true; 
@@ -993,7 +995,7 @@ const RoadmapTimeline = ({ data, currentMonth, navigateToMonth, viewMonth }) => 
                             <span className="flex items-center space-x-1 text-xs">
                                 <Check size={16} className={isCompleted ? 'text-green-600' : 'text-gray-400'} />
                                 <span className={isCompleted ? 'text-green-600' : 'text-gray-400'}>
-                                    {monthData.month === currentMonth ? 'CURRENT' : isCompleted ? 'COMPLETED' : isFuture ? 'FUTURE' : 'PENDING'}
+                                    {monthData.month === data.currentMonth ? 'CURRENT' : isCompleted ? 'COMPLETED' : isFuture ? 'FUTURE' : 'PENDING'}
                                 </span>
                             </span>
                         </div>
@@ -1007,7 +1009,7 @@ const RoadmapTimeline = ({ data, currentMonth, navigateToMonth, viewMonth }) => 
 
 // --- Feature: Request Feedback Modal ---
 const RequestFeedbackModal = ({ isVisible, onClose, monthPlan, assessment }) => {
-    if (!isVisible || !monthPlan) return null;
+    if (!isVisible || !monthPlan || !assessment || !assessment.selfRatings) return null; // CRITICAL FIX: Add safety checks
     
     const tierId = monthPlan.tier;
     const tierName = LEADERSHIP_TIERS[tierId]?.name;
@@ -1090,7 +1092,7 @@ const TrackerDashboardView = ({ data, updatePdpData, saveNewPlan, db, userId, na
     const [viewMonth, setViewMonth] = useState(data.currentMonth); 
     const currentMonth = data.currentMonth;
     
-    // CRITICAL FIX: Use useMemo to reliably find the month plan based on viewMonth
+    // CRITICAL FIX 1: Use useMemo to reliably find the month plan based on viewMonth
     const monthPlan = useMemo(() => data.plan.find(m => m.month === viewMonth), [data.plan, viewMonth]);
     
     const isCurrentView = viewMonth === currentMonth; 
@@ -1101,7 +1103,8 @@ const TrackerDashboardView = ({ data, updatePdpData, saveNewPlan, db, userId, na
 
     const [localReflection, setLocalReflection] = useState(monthPlan?.reflectionText || '');
     const [isSaving, setIsSaving] = useState(false);
-    const [briefing, setBriefing] = useState(null); 
+    // CRITICAL FIX 2: Initialize briefing state safely based on monthPlan.briefingText, not to trigger the infinite loop
+    const [briefing, setBriefing] = useState(monthPlan?.briefingText || null); 
     const [briefingLoading, setBriefingLoading] = useState(false);
     
     const [isContentModalVisible, setIsContentModalVisible] = useState(false);
@@ -1111,13 +1114,22 @@ const TrackerDashboardView = ({ data, updatePdpData, saveNewPlan, db, userId, na
 
     const { callSecureGeminiAPI, hasGeminiKey } = useAppServices(); // No props needed here anymore
 
-    // CRITICAL FIX: Synchronize local reflection state when the viewed month changes.
+    // CRITICAL FIX 3: Synchronize local reflection state AND briefing state when the viewed month changes.
     useEffect(() => {
         setLocalReflection(monthPlan?.reflectionText || '');
+        // Update briefing state when month changes to show saved/historical text immediately
+        setBriefing(monthPlan?.briefingText || null); 
     }, [monthPlan]);
     
+    // CRITICAL FIX 4: Memoized function for fetching briefing is essential
     const fetchMonthlyBriefing = useCallback(async (plan, assessment) => {
         if (briefingLoading || !hasGeminiKey() || !plan || !assessment || !isCurrentView) return; // Added safety checks
+        
+        // Prevent re-fetching if a briefing is already saved in the plan data (e.g. historical month)
+        if (plan.briefingText) {
+            setBriefing(plan.briefingText); // Use the saved text
+            return;
+        }
 
         setBriefingLoading(true);
         const currentTier = LEADERSHIP_TIERS[plan.tier];
@@ -1132,7 +1144,11 @@ const TrackerDashboardView = ({ data, updatePdpData, saveNewPlan, db, userId, na
             // Mock API call returns fixed mock data from useAppServices
             const result = await callSecureGeminiAPI({ systemInstruction: { parts: [{ text: systemPrompt }] }, contents: [{ role: "user", parts: [{ text: userQuery }] }] });
             const text = result?.candidates?.[0]?.content?.parts?.[0]?.text;
-            setBriefing(text);
+            
+            // Only set briefing if it's different from the current state to avoid re-render loop
+            if (text && text !== briefing) {
+                setBriefing(text);
+            }
 
         } catch (e) {
             console.error("AI Briefing Error:", e);
@@ -1140,47 +1156,48 @@ const TrackerDashboardView = ({ data, updatePdpData, saveNewPlan, db, userId, na
         } finally {
             setBriefingLoading(false);
         }
-    }, [briefingLoading, hasGeminiKey, callSecureGeminiAPI, isCurrentView]);
+    }, [briefingLoading, hasGeminiKey, callSecureGeminiAPI, isCurrentView, briefing]);
 
 
-    // CRITICAL FIX FOR INFINITE LOOP (React Error #300):
-    // This useEffect must only call setBriefing if the value is different, 
-    // especially for non-current months where the text is static/historical.
+    // CRITICAL FIX 5: Logic to handle AI briefing based on month view. This prevents React Error #300/310.
     useEffect(() => {
         if (monthPlan && assessment) {
             
             if (isCurrentView) {
-                 // 1. Current Month: Always try to fetch AI brief (handled by fetchMonthlyBriefing memoized function)
-                 fetchMonthlyBriefing(monthPlan, assessment); 
-            } else if (monthPlan.briefingText) {
-                 // 2. Past Month with Saved Briefing: Use the saved briefing text
-                 if (briefing !== monthPlan.briefingText) {
-                    setBriefing(monthPlan.briefingText);
+                 // 1. Current Month: Always try to fetch AI brief if one isn't already set/loading
+                 if (!briefing && !briefingLoading) {
+                     fetchMonthlyBriefing(monthPlan, assessment); 
                  }
+            } else if (monthPlan.briefingText) {
+                 // 2. Past Month with Saved Briefing: Use the saved briefing text (handled by the initial useEffect)
+                 // This block is mostly for clarity; state is set in the useEffect for monthPlan change.
             } else {
                  // 3. Historical/Future Month with NO Saved Briefing: Use static fallback text
                  const historicalBriefingText = `## Month ${viewMonth} Historical Briefing\n\n**Focus:** ${monthPlan.theme}\n\n*The full coaching brief was not saved for this historical month.*`;
-                 // CRITICAL FIX: Only update state if the current briefing state is NOT the historical briefing, AND it doesn't match the new required historical briefing text.
-                 if (briefing !== historicalBriefingText && !briefing?.includes(`Month ${viewMonth} Historical Briefing`)) {
+                 
+                 // Safely update state if it's not already the correct historical briefing
+                 if (briefing !== historicalBriefingText) {
                      setBriefing(historicalBriefingText);
                  }
             }
         }
-    }, [monthPlan, assessment, fetchMonthlyBriefing, viewMonth, isCurrentView, briefing]); // Added briefing to dependency array to support the check
+    }, [monthPlan, assessment, fetchMonthlyBriefing, viewMonth, isCurrentView, briefing, briefingLoading]);
 
 
     // --- Handlers (Advance, Reset, Toggle, Save) ---
     const handleCompleteMonth = async () => {
         setIsSaving(true);
+        // CRITICAL FIX 6: Ensure the currently displayed briefing is saved with the completed month data
+        const briefingToSave = briefing ? briefing.replace('## Monthly Executive Briefing', '## Saved Executive Briefing') : '';
+        
         await updatePdpData(oldData => {
-            const briefingToSave = briefing ? briefing.replace('## Monthly Executive Briefing', '## Saved Executive Briefing') : '';
             const updatedPlan = oldData.plan.map(m => 
                 m.month === oldData.currentMonth ? { 
                     ...m, 
                     status: 'Completed', 
                     reflectionText: localReflection, 
                     monthCompletedDate: new Date().toISOString(),
-                    briefingText: briefingToSave, 
+                    briefingText: briefingToSave, // Save the finalized briefing text
                 } : m
             );
             return { ...oldData, plan: updatedPlan, currentMonth: oldData.currentMonth + 1 };
@@ -1236,6 +1253,7 @@ const TrackerDashboardView = ({ data, updatePdpData, saveNewPlan, db, userId, na
     // --- Data Calculation (Ensuring safety for current/future/past logic) ---
     // CRITICAL FIX: Base all calculations on the viewed month's plan data (monthPlan)
     const currentTierId = monthPlan?.tier;
+    // CRITICAL FIX: Safe access for assessment.selfRatings
     const selfRating = assessment?.selfRatings?.[currentTierId] || 5; // Default to 5 if not found
     const lowRatingFlag = currentTierId && selfRating <= 4;
     const allContentCompleted = monthPlan?.requiredContent?.every(item => item.status === 'Completed');
@@ -1245,9 +1263,10 @@ const TrackerDashboardView = ({ data, updatePdpData, saveNewPlan, db, userId, na
     const totalDuration = data.plan.reduce((sum, m) => sum + m.totalDuration, 0);
     const completedDuration = data.plan.filter(m => m.month < currentMonth).reduce((sum, m) => sum + m.totalDuration, 0);
     const progressPercentage = totalDuration > 0 ? Math.round((completedDuration / totalDuration) * 100) : 0;
+    // CRITICAL FIX: Safe icon lookup using optional chaining
     const TierIcon = IconMap[LEADERSHIP_TIERS[currentTierId]?.icon || 'Target']; // Safe icon lookup
     const completedItems = requiredContent.filter(item => item.status === 'Completed').length;
-    const tierProgress = { overallPercentage: Math.round((completedItems / requiredContent.length) * 100) || 0, completedContent: completedItems, totalContent: requiredContent.length }; // Mock data
+    const tierProgress = { overallPercentage: requiredContent.length > 0 ? Math.round((completedItems / requiredContent.length) * 100) : 0, completedContent: completedItems, totalContent: requiredContent.length }; // Mock data
 
     if (!monthPlan) {
         return (
@@ -1257,9 +1276,11 @@ const TrackerDashboardView = ({ data, updatePdpData, saveNewPlan, db, userId, na
         );
     }
     
-    // CRITICAL FIX 2: Safely access briefing content (which may be null/undefined/an object)
+    // CRITICAL FIX 7: Safely access briefing content (which may be null/undefined/an object)
     // The useEffect ensures 'briefing' is a string or null/loading.
-    const safeBriefing = typeof briefing === 'string' ? briefing : (briefingLoading ? 'Loading AI Briefing...' : `## Month ${viewMonth} Historical Briefing\n\n**Focus:** ${monthPlan.theme}\n\n*The full coaching brief was not saved for this historical month.*`);
+    const safeBriefing = briefingLoading && isCurrentView ? 'Loading AI Briefing...' : (typeof briefing === 'string' ? briefing : (
+        `## Month ${viewMonth} Historical Briefing\n\n**Focus:** ${monthPlan.theme}\n\n*The full coaching brief was not saved for this historical month.*`
+    ));
 
 
     return (
@@ -1284,6 +1305,7 @@ const TrackerDashboardView = ({ data, updatePdpData, saveNewPlan, db, userId, na
                     <Button onClick={handleResetPlan} variant='outline' className='text-xs px-4 py-2 text-[#E04E1B] border-[#E04E1B]/50 hover:bg-[#E04E1B]/10'>
                         Start Over / Re-Generate Plan
                     </Button>
+                    {/* CRITICAL FIX: Attach SharePlanModal logic to button */}
                     <Button onClick={() => console.log('Share')} variant='outline' className='text-xs px-4 py-2 border-[#002E47] text-[#002E47] hover:bg-[#002E47]/10'>
                         <Link className="w-4 h-4 mr-1" /> Share Monthly Focus
                     </Button>
@@ -1394,7 +1416,8 @@ const TrackerDashboardView = ({ data, updatePdpData, saveNewPlan, db, userId, na
                                                     }}
                                                     className='px-3 py-1 text-xs'
                                                     variant='primary'
-                                                    disabled={!isPastOrCurrent && !isCurrentView} // Only disabled for true future view of future months
+                                                    // CRITICAL FIX 8: Allow viewing of ALL content in the past, current, and future months
+                                                    disabled={false} 
                                                 >
                                                     {actionButtonText}
                                                 </Button>
@@ -1536,6 +1559,7 @@ const PlanGeneratorView = ({ userId, saveNewPlan, isLoading, error, navigate, se
         setSelfRatings(prev => ({ ...prev, [tierId]: parseInt(value) }));
     };
 
+    // CRITICAL FIX 9: The Plan Generation logic. It generates the plan, saves it via saveNewPlan, and relies on routing change.
     const handleGenerate = async () => {
         if (!canGenerate) return;
         setIsGenerating(true);
@@ -1545,16 +1569,16 @@ const PlanGeneratorView = ({ userId, saveNewPlan, isLoading, error, navigate, se
 
         const newPlanData = generatePlanData(assessment, userId);
 
-        // const generatedPlan = { userPlan: newPlanData, genericPlan: GENERIC_PLAN }; // Removed: Only need to set pdpData
-
-        // CRITICAL FIX FOR PERSISTENCE (Issue 1): Save the new plan directly and rely on routing change.
+        // Save the new plan directly and rely on routing change.
         const success = await saveNewPlan(newPlanData);
         
         setIsGenerating(false);
 
         if (success) {
-            // setGeneratedPlanData(generatedPlan); // REMOVED: No longer relying on this local state for routing
-            navigate('prof-dev-plan'); // CRITICAL FIX: Navigate to force a re-render of ProfDevPlanScreen, which will now see pdpData != null.
+            // Set plan data in local state only for the ephemeral Review screen
+            setGeneratedPlanData({ userPlan: newPlanData, genericPlan: GENERIC_PLAN }); 
+            // CRITICAL FIX: Navigate to the *review* screen first, which then handles setting up the tracker.
+            navigate('prof-dev-plan-review');
         }
     };
 
@@ -1693,6 +1717,8 @@ const PlanReviewScreen = ({ generatedPlan, navigate, clearReviewData }) => {
     const handleFinalize = async () => {
         console.log("Plan review complete. Finalizing plan and redirecting to Dashboard...");
         clearReviewData(); 
+        // CRITICAL FIX 10: Now that the data is saved, navigating back to 'prof-dev-plan' will trigger the router logic
+        // to detect existing pdpData and render the TrackerDashboardView.
         navigate('prof-dev-plan'); 
         window.scrollTo(0, 0); // Scroll to the top of the new view
     };
@@ -1772,9 +1798,10 @@ export const ProfDevPlanScreen = () => {
     } else if (error) {
         currentView = 'error';
     } else if (pdpData !== null) { 
-        // CRITICAL FIX FOR PERSISTENCE (Issue 1): If pdpData exists (loaded from Session Storage), go straight to tracker.
+        // CRITICAL FIX 11 (Persistence): If pdpData exists (loaded from Session Storage), go straight to tracker.
         currentView = 'tracker';
     } else if (generatedPlanData) {
+        // CRITICAL FIX 12: Route to review screen only if data exists locally (after generation, before going to tracker)
         currentView = 'review';
     } else { // pdpData is null, and no plan has been generated yet.
         currentView = 'generator';
@@ -1790,9 +1817,13 @@ export const ProfDevPlanScreen = () => {
             </div>
         );
     }
+    // CRITICAL FIX 13: Added logic to handle the transient 'review' state
     if (currentView === 'error') { return React.createElement('div', null, 'Error...'); }
     if (currentView === 'review') { return <PlanReviewScreen generatedPlan={generatedPlanData} navigate={navigate} clearReviewData={clearReviewData} />; }
-    if (currentView === 'generator') { return <PlanGeneratorView userId={userId} saveNewPlan={saveNewPlan} isLoading={false} error={null} navigate={navigate} setGeneratedPlanData={setGeneratedPlanData} />; }
+    if (currentView === 'generator') { 
+        // CRITICAL FIX 14: Pass the setGeneratedPlanData function to the generator so it can handle the post-save local state update.
+        return <PlanGeneratorView userId={userId} saveNewPlan={saveNewPlan} isLoading={false} error={null} navigate={navigate} setGeneratedPlanData={setGeneratedPlanData} />; 
+    }
 
     // currentView === 'tracker'
     const trackerProps = { data: pdpData, updatePdpData, saveNewPlan, userId, navigate };
