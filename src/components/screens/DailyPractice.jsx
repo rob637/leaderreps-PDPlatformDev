@@ -1571,4 +1571,8 @@ const sortedCommitments = useMemo(() => {
           </div>
         );
     }
-}}
+  }; // <-- CLOSES THE renderView FUNCTION
+
+  // CRITICAL FIX: The main component MUST return its content.
+  return renderView();
+} // <-- CLOSES THE DailyPracticeScreen FUNCTION

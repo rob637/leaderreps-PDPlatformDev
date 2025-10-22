@@ -1656,17 +1656,21 @@ const PlanReviewScreen = ({ generatedPlan, navigate, clearReviewData }) => {
     };
     
     // CRITICAL FIX 4: Scroll to top after finalizing the plan.
-    const handleFinalize = async () => {
+const handleFinalize = async () => {
         console.log("Plan review complete. Finalizing plan and redirecting to Tracker Dashboard...");
-        clearReviewData();
-        // CRITICAL FIX 10: Now that the data is saved in PlanGenerator, we navigate back to the base screen. 
-        // This causes the ProfDevPlanScreen router to hit currentView = 'tracker' (due to pdpData being non-null).
-       navigate('prof-dev-plan'); 
-        window.location.reload(); // <--- HARD RELOAD ADDED TO FORCE DATA SYNC
+        clearReviewData(); 
+        
+        // 1. Navigate to the base screen
+        navigate('prof-dev-plan'); 
+        
+        // CRITICAL FIX: Force a hard page reload to ensure App.jsx remounts
+        // and re-fetches the saved pdpData from persistent storage immediately, 
+        // breaking the generator loop and resolving Issue 2.
+        window.location.reload(); 
         
         window.scrollTo(0, 0); 
     };
-    
+
     const handleStartOver = () => {
         clearReviewData(); 
         navigate('prof-dev-plan'); // Navigating here forces the main component to re-evaluate to the generator view
