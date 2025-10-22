@@ -1,8 +1,8 @@
 import React, { Suspense, lazy } from 'react';
 import { createRoot } from 'react-dom/client';
 import './index.css';
-// FIX: Import the AppServicesProvider from the correct path.
-import { AppServicesProvider } from './services/useAppServices.jsx'; 
+// FIX: Removed the unnecessary import of AppServicesProvider since DataProvider is used in App.jsx.
+// import { AppServicesProvider } from './services/useAppServices.jsx'; 
 
 /** Error boundary so crashes don’t white-screen */
 class ErrorBoundary extends React.Component {

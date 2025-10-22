@@ -106,8 +106,6 @@ const hasGeminiKey = () => (USE_SERVERLESS ? true : !!(typeof __GEMINI_API_KEY !
 // --- END PRODUCTION GEMINI CONFIGURATION ---
 
 // --- EXISTING MOCK/PLACEHOLDER DEFINITIONS (Keep these) ---
-// Note: These hooks must return data and have isLoading=false immediately to prevent the PlanningHub/other spinners.
-// MOCK DATA: Since this is production-bound code, these MUST be configured to return valid initial states quickly.
 // CRITICAL FIX 1: Mock data initialization in App.jsx must ensure components render properly before real data loads.
 const MOCK_PDP_DATA = { currentMonth: 1, assessment: { selfRatings: { T1: 5, T2: 5, T3: 5, T4: 5, T5: 5 } }, plan: [{ month: 1, tier: 'T3', theme: 'Initial Focus', requiredContent: [], reflectionText: '', briefingText: '' }] };
 const MOCK_COMMITMENT_DATA = { active_commitments: [] };
@@ -166,6 +164,10 @@ const AppliedLeadershipScreen = lazy(() => import('./components/screens/AppliedL
 /* =========================================================
    STEP 2: MOCK/PLACEHOLDER COMPONENTS
 ========================================================= */
+
+// NOTE: Since AppSettingsScreen uses useAppServices(), we must ensure we import it
+// from the useAppServices.jsx file to avoid conflicts.
+import { useAppServices } from './services/useAppServices.jsx'; 
 
 // SettingsCard and AppSettingsScreen definitions... (omitted for brevity)
 const SettingsCard = ({ title, icon: Icon, children }) => (
@@ -237,16 +239,10 @@ const AppSettingsScreen = () => {
 ========================================================= */
 
 const AppServiceContext = createContext(null);
-const DEFAULT_SERVICES = {
-  navigate: () => {}, user: null, db: null, auth: null, userId: null, isAuthReady: false,
-  updatePdpData: () => {}, saveNewPlan: () => {}, updateCommitmentData: () => {}, updatePlanningData: () => {},
-  // CRITICAL FIX 3: Default data structures for services
-  pdpData: MOCK_PDP_DATA, commitmentData: MOCK_COMMITMENT_DATA, planningData: MOCK_PLANNING_DATA, isLoading: false, error: null, 
-  appId: 'default-app-id', IconMap: {}, callSecureGeminiAPI: async () => { throw new Error('Gemini not configured.'); },
-  hasGeminiKey: () => false, GEMINI_MODEL, API_KEY, LEADERSHIP_TIERS, 
-};
-// FIX: Export useAppServices directly for components to use
-export const useAppServices = () => useContext(AppServiceContext) ?? DEFAULT_SERVICES;
+
+// NOTE: DEFAULT_SERVICES definition is now ONLY in useAppServices.jsx
+// and imported via the hook.
+// CRITICAL FIX: Removed the conflicting DEFAULT_SERVICES and useAppServices export from App.jsx
 
 const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
 
@@ -570,14 +566,18 @@ const App = ({ initialState }) => {
 
     try {
       let firebaseConfig = {};
+      
+      // CRITICAL FIX for Netlify: Rely on main.jsx to set window.__firebase_config
       if (typeof window !== 'undefined' && window.__firebase_config) {
         const cfg = window.__firebase_config;
+        // Parse if it's a string, use directly if it's already an object
         firebaseConfig = (typeof cfg === 'string') ? JSON.parse(cfg) : cfg;
-      } else if (typeof __firebase_config !== 'undefined') {
-        let s = String(__firebase_config).trim();
-        if (s.startsWith("'") && s.endsWith("'")) s = s.slice(1, -1);
-        firebaseConfig = JSON.parse(s.replace(/'/g, '"'));
-      } else { setInitError('window.__firebase_config is missing.'); setIsAuthReady(true); setInitStage('error'); return; }
+      } else { 
+        setInitError('Firebase configuration is missing from the window object. Check VITE_FIREBASE_CONFIG in Netlify/Vite.'); 
+        setIsAuthReady(true); 
+        setInitStage('error'); 
+        return; 
+      }
       
       app = initializeApp(firebaseConfig);
       firestore = getFirestore(app);
