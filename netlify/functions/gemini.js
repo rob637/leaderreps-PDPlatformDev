@@ -3,7 +3,7 @@
 
 const API_KEY = process.env.GEMINI_API_KEY;
 // IMPORTANT: Model path must be clean for the URL
-const DEFAULT_MODEL = 'gemini-2.5-flash'; 
+const DEFAULT_MODEL = 'gemini-1.5-flash';  // safe, widely available default
 
 // --- 1. CORE TRANSLATION HELPERS ---
 
@@ -88,8 +88,8 @@ exports.handler = async (event) => {
     }
 
     // Compute URL model path
-    const chosenModel = (payload.model || DEFAULT_MODEL).trim();
-    const modelPath = normalizeModelPath(chosenModel); 
+const chosenModel = (payload.model || DEFAULT_MODEL).trim().replace(/-latest$/, '');
+const modelPath = normalizeModelPath(chosenModel);
     delete payload.model; 
 
     if (!payload.contents) {
@@ -130,16 +130,19 @@ exports.handler = async (event) => {
       }
     }
 
-    if (!r.ok) {
-      // Return error with debug info
-      try {
-        const json = JSON.parse(r.text || '{}');
-        json.debugUrl = r.url;
-        return { statusCode: r.status, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(json) };
-      } catch {
-        return { statusCode: r.status, body: (r.text || 'Gemini error (empty body)') + `\n\n[debug url] ${r.url}` };
-      }
-    }
+   if (!r.ok) {
+  try {
+    const json = JSON.parse(r.text || '{}');
+    // redact any key=value in the URL
+    const redactedUrl = String(r.url || '').replace(/(key=)[^&]+/i, '$1[redacted]');
+    // include minimal debug without leaking secrets
+    json.debug = { endpoint: redactedUrl, status: r.status };
+    return { statusCode: r.status, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(json) };
+  } catch {
+    const redactedUrl = String(r.url || '').replace(/(key=)[^&]+/i, '$1[redacted]');
+    return { statusCode: r.status, body: (r.text || 'Gemini error (empty body)') + `\n\n[debug] ${redactedUrl}` };
+  }
+}
 
     return { 
       statusCode: 200, 

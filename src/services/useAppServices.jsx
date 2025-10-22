@@ -2,7 +2,7 @@
 /* eslint-disable no-console */
 import React from 'react';
 
-const DEFAULT_MODEL = 'gemini-2.5-flash';
+const DEFAULT_MODEL = 'gemini-1.5-flash';
 
 export function useAppServices() {
   const MODE = import.meta.env.VITE_GEMINI_MODE || 'serverless';
