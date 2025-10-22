@@ -150,37 +150,25 @@ const Button = ({ children, onClick, disabled = false, variant = 'primary', clas
 const ThreeDButton = ({ children, onClick, color = COLORS.TEAL, accentColor = COLORS.NAVY, className = '', ...rest }) => {
   const defaultColor = color;
   const defaultAccent = accentColor; 
+  
+  // FIX: Simplified style to rely on CSS :active / :hover in a real environment
+  // and removed manual JS event handlers that could be swallowing or delaying the click event.
   const buttonStyle = {
     background: defaultColor, 
+    // Simplified shadow/z-depth for the static state
     boxShadow: `0 4px 0px 0px ${defaultAccent}, 0 6px 12px rgba(0,0,0,0.2)`,
     transition: 'all 0.1s ease-out',
     transform: 'translateY(0px)',
   };
-  const getBoxShadow = (offset) => `0 ${offset}px 0px 0px ${defaultAccent}, 0 ${offset + 2}px ${offset * 2}px rgba(0,0,0,0.2)`;
 
   return (
     <button
       {...rest}
-      onClick={onClick}
+      onClick={onClick} // CRITICAL: This is now the ONLY trigger for navigation
       type="button"
-      className={className}
+      className={`${className} flex items-center justify-center p-3 rounded-xl font-extrabold text-white cursor-pointer transition-all duration-100`}
       style={buttonStyle}
-      onMouseEnter={e => {
-        e.currentTarget.style.transform = 'translateY(-2px)';
-        e.currentTarget.style.boxShadow = getBoxShadow(6);
-      }}
-      onMouseLeave={e => {
-        e.currentTarget.style.transform = 'translateY(0px)';
-        e.currentTarget.style.boxShadow = getBoxShadow(4);
-      }}
-      onMouseDown={e => {
-        e.currentTarget.style.transform = 'translateY(2px)';
-        e.currentTarget.style.boxShadow = getBoxShadow(2);
-      }}
-      onMouseUp={e => {
-        e.currentTarget.style.transform = 'translateY(-2px)';
-        e.currentTarget.style.boxShadow = getBoxShadow(6);
-      }}
+      // Removed: onMouseEnter, onMouseLeave, onMouseDown, onMouseUp
     >
       {children}
     </button>
@@ -223,7 +211,7 @@ const Card = ({ children, title, icon: Icon, className = '', onClick, accent = '
 };
 
 const StatCard = ({ icon: Icon, label, value, onClick, trend = 0, colorHex }) => {
-  const TrendIcon = trend > 0 ? TrendingUp : TrendingDown;   // << fixed casing for component
+  const TrendIcon = trend > 0 ? TrendingUp : TrendingDown;
   const trendColor = trend > 0 ? COLORS.TEAL : trend < 0 ? COLORS.ORANGE : COLORS.MUTED;
   const isPrimary = label === "Daily Commitments Due"; 
   let accent = 'NAVY';

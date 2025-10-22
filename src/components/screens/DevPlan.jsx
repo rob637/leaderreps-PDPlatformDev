@@ -1013,7 +1013,7 @@ const Copy = ({ className }) => <svg xmlns="http://www.w3.org/2000/svg" classNam
 
 
 // --- Component 2: Tracker Dashboard View ---
-const TrackerDashboardView = ({ data, updatePdpData, saveNewPlan, db, userId, navigate }) => {
+const TrackerDashboardView = ({ data, updatePdpData, saveNewPlan, userId, navigate }) => {
     // FIX 1: Initialize viewMonth from router/prop if available, otherwise data.currentMonth
     const [viewMonth, setViewMonth] = useState(data.currentMonth); 
     const currentMonth = data.currentMonth;
@@ -1656,17 +1656,14 @@ const PlanReviewScreen = ({ generatedPlan, navigate, clearReviewData }) => {
     };
     
     // CRITICAL FIX 4: Scroll to top after finalizing the plan.
-const handleFinalize = async () => {
+    const handleFinalize = async () => {
         console.log("Plan review complete. Finalizing plan and redirecting to Tracker Dashboard...");
         clearReviewData(); 
         
-        // 1. Navigate to the base screen
+        // CRITICAL FIX: Removed window.location.reload(). 
+        // This ensures the navigation works within the router context.
+        // It relies on the main router logic in ProfDevPlanScreen detecting the saved pdpData.
         navigate('prof-dev-plan'); 
-        
-        // CRITICAL FIX: Force a hard page reload to ensure App.jsx remounts
-        // and re-fetches the saved pdpData from persistent storage immediately, 
-        // breaking the generator loop and resolving Issue 2.
-        window.location.reload(); 
         
         window.scrollTo(0, 0); 
     };

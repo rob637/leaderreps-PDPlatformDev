@@ -346,8 +346,26 @@ function AuthPanel({ auth, onSuccess }) {
             <div className='space-y-4'>
                 <form onSubmit={(e) => { e.preventDefault(); handleAction(); }}>
                     {isSignUp && (<input type="text" placeholder="Your Full Name" value={name} onChange={(e) => setName(e.target.value)} className={`w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[${TEAL}] focus:border-[${TEAL}]`} disabled={isLoading}/>)}
-                    <input type="email" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} className={`w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[${TEAL}] focus:border-[${TEAL}]`} disabled={isLoading}/>
-                    {!isReset && (<input type="password" placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} className={`w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[${TEAL}] focus:border-[${TEAL}]`} disabled={isLoading}/>)}
+                    <input 
+                        type="email" 
+                        placeholder="Email" 
+                        value={email} 
+                        onChange={(e) => setEmail(e.target.value)} 
+                        className={`w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[${TEAL}] focus:border-[${TEAL}]`} 
+                        disabled={isLoading}
+                        autocomplete="email" // FIX: Added autocomplete for email
+                    />
+                    {!isReset && (
+                        <input 
+                            type="password" 
+                            placeholder="Password" 
+                            value={password} 
+                            onChange={(e) => setPassword(e.target.value)} 
+                            className={`w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[${TEAL}] focus:border-[${TEAL}]`} 
+                            disabled={isLoading}
+                            autocomplete={isLogin ? "current-password" : "new-password"} // FIX: Added autocomplete for password
+                        />
+                    )}
                     {isSignUp && (<input type="text" placeholder="Secret Sign-up Code" value={secretCode} onChange={(e) => setSecretCode(e.target.value)} className={`w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[${TEAL}] focus:border-[${TEAL}]`} disabled={isLoading}/>)}
                     
                     {/* CRITICAL FIX: Ensure the submit button is inside the form and targets handleAction */}

@@ -607,7 +607,12 @@ const CommitmentSelectorView = ({ setView, initialGoal, initialTier }) => {
   ========================================================= */
 
   const handleAddCommitment = async (commitment, source) => {
-    if (!linkedGoal || linkedGoal === initialLinkedGoalPlaceholder || !linkedTier) return;
+    // FIX 1: Add checks to prevent adding if required fields are missing
+    if (!linkedGoal || linkedGoal === initialLinkedGoalPlaceholder || !linkedTier) {
+        console.warn("Cannot add commitment: Goal and Tier must be selected.");
+        return;
+    }
+
     setIsSaving(true);
     setIsCustomCommitmentSaved(false); // Reset confirmation
 
@@ -633,13 +638,13 @@ const CommitmentSelectorView = ({ setView, initialGoal, initialTier }) => {
       };
     }
 
+    // CRITICAL FIX 2: Ensure existing data is preserved using the spread operator
     await updateCommitmentData(data => ({ 
-        ...data, // FIX 5: Ensure other properties are spread
+        ...data, 
         active_commitments: [...(data?.active_commitments || []), newCommitment] 
     }));
 
-    if (initialGoal !== linkedGoal) setLinkedGoal(initialLinkedGoalPlaceholder);
-    if (initialTier !== linkedTier) setLinkedTier('');
+    // Reset fields and navigate
     setCustomCommitment('');
     setTargetColleague('');
     setAiAssessment(null);
@@ -647,9 +652,18 @@ const CommitmentSelectorView = ({ setView, initialGoal, initialTier }) => {
     
     setIsCustomCommitmentSaved(true);
     setTimeout(() => setIsCustomCommitmentSaved(false), 3000);
+
+    // CRITICAL FIX 3: Navigate back to the Scorecard view after adding
+    setView('scorecard'); 
   };
 
   const handleCreateCustomCommitment = async () => {
+    // FIX 4: Add checks to prevent adding if required fields are missing
+    if (!customCommitment.trim() || !linkedGoal || linkedGoal === initialLinkedGoalPlaceholder || !linkedTier) {
+        console.warn("Cannot create custom commitment: Text, Goal, and Tier must be selected.");
+        return;
+    }
+    
     if (customCommitment.trim() && linkedGoal && linkedGoal !== initialLinkedGoalPlaceholder && linkedTier) {
       setIsSaving(true);
       setIsCustomCommitmentSaved(false); // Reset confirmation
@@ -664,20 +678,23 @@ const CommitmentSelectorView = ({ setView, initialGoal, initialTier }) => {
         targetColleague: targetColleague.trim() || null,
       };
 
+      // CRITICAL FIX 5: Ensure existing data is preserved using the spread operator
       await updateCommitmentData(data => ({ 
-          ...data, // FIX 6: Ensure other properties are spread
+          ...data, 
           active_commitments: [...(data?.active_commitments || []), newCommitment] 
       }));
 
+      // Reset fields and navigate
       setCustomCommitment('');
-      if (initialGoal !== linkedGoal) setLinkedGoal(initialLinkedGoalPlaceholder);
-      if (initialTier !== linkedTier) setLinkedTier('');
       setTargetColleague('');
       setAiAssessment(null);
       setIsSaving(false);
       
       setIsCustomCommitmentSaved(true);
       setTimeout(() => setIsCustomCommitmentSaved(false), 3000);
+      
+      // CRITICAL FIX 6: Navigate back to the Scorecard view after adding
+      setView('scorecard');
     }
   };
 
