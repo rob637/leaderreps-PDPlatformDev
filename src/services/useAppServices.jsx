@@ -12,20 +12,52 @@ const LEADERSHIP_TIERS = {
     T5: { id: 'T5', name: 'Strategy & Vision', icon: 'TrendingUp', color: 'cyan-600' },
 };
 
+// --- CORE MOCK DATA DEFINITIONS (Derived from App.jsx's MOCK_DATA) ---
+const MOCK_PDP_DATA = { currentMonth: 1, assessment: { selfRatings: { T1: 5, T2: 5, T3: 5, T4: 5, T5: 5 } }, plan: [] };
+const MOCK_COMMITMENT_DATA = { active_commitments: [], history: [], reflection_journal: '' };
+const MOCK_PLANNING_DATA = { okrs: [], last_premortem_decision: '2025-01-01' };
+
+// --- 0. DEFAULT SERVICES FALLBACK (CRITICAL FIX for Destructuring Error) ---
+const DEFAULT_SERVICES = {
+    // Core Functions (No-op)
+    navigate: () => { console.warn("Navigation called before context initialization."); },
+    callSecureGeminiAPI: async () => ({ candidates: [{ content: { parts: [{ text: "API Not Configured" }] } }] }),
+    updatePdpData: async () => true, 
+    saveNewPlan: async () => true, 
+    updateCommitmentData: async () => true, 
+    updatePlanningData: async () => true,
+    hasGeminiKey: () => false,
+    
+    // Core Data/State (Safe Defaults)
+    user: null, 
+    userId: null, 
+    db: null, 
+    auth: null, 
+    isAuthReady: false,
+    pdpData: MOCK_PDP_DATA, 
+    commitmentData: MOCK_COMMITMENT_DATA, 
+    planningData: MOCK_PLANNING_DATA, 
+    isLoading: false, 
+    error: null,
+    hasPendingDailyPractice: false,
+
+    // Constants
+    appId: 'default-app-id', 
+    IconMap: {}, 
+    GEMINI_MODEL, 
+    API_KEY: '',
+    LEADERSHIP_TIERS, 
+};
+
 // --- CONTEXT CREATION ---
-// This context will be defined and provided in App.jsx, but needs a definition here for components to use.
 const AppServiceContext = createContext(null);
 
-// --- 1. CORE DATA HOOKS (MOCKED FOR LOCAL DEVELOPMENT/TESTING) ---
-// In a real production environment, these functions would contain Firebase/Firestore logic.
+// ====================================================================
+// --- 1. CORE DATA HOOKS (No Functional Change) ---
+// ====================================================================
 
 export const usePDPData = (db, userId, isAuthReady) => {
-    // FIX 1: Provide basic but non-null mock data for data provider to consume.
-    const mockPdpData = useMemo(() => ({
-        currentMonth: 1, 
-        assessment: { selfRatings: { T1: 5, T2: 5, T3: 5, T4: 5, T5: 5 } }, 
-        plan: [] 
-    }), []);
+    const mockPdpData = useMemo(() => MOCK_PDP_DATA, []);
 
     const updatePdpData = useCallback(async (updater) => { 
         console.log('Mock PDP Update triggered.'); 
@@ -34,13 +66,12 @@ export const usePDPData = (db, userId, isAuthReady) => {
 
     const saveNewPlan = useCallback(async (plan) => { 
         console.log('Mock PDP Save triggered.'); 
-        // In reality, this triggers a data refresh and populates pdpData in the context.
         return true; 
     }, []);
     
     return {
         pdpData: mockPdpData, 
-        isLoading: false, // Must be false to prevent Dashboard hanging
+        isLoading: false, 
         error: null, 
         updatePdpData, 
         saveNewPlan
@@ -48,12 +79,7 @@ export const usePDPData = (db, userId, isAuthReady) => {
 };
 
 export const useCommitmentData = (db, userId, isAuthReady) => {
-    // FIX 2: Provide default, safe commitment data.
-    const mockCommitmentData = useMemo(() => ({
-        active_commitments: [], 
-        history: [],
-        reflection_journal: '' 
-    }), []);
+    const mockCommitmentData = useMemo(() => MOCK_COMMITMENT_DATA, []);
 
     const updateCommitmentData = useCallback(async (updater) => { 
         console.log('Mock Commitment Update triggered.'); 
@@ -69,11 +95,7 @@ export const useCommitmentData = (db, userId, isAuthReady) => {
 };
 
 export const usePlanningData = (db, userId, isAuthReady) => {
-    // FIX 3: Provide default, safe planning data.
-    const mockPlanningData = useMemo(() => ({
-        okrs: [], 
-        last_premortem_decision: '2025-01-01' 
-    }), []);
+    const mockPlanningData = useMemo(() => MOCK_PLANNING_DATA, []);
     
     const updatePlanningData = useCallback(async (updater) => { 
         console.log('Mock Planning Update triggered.'); 
@@ -88,35 +110,27 @@ export const usePlanningData = (db, userId, isAuthReady) => {
     };
 };
 
+// ====================================================================
+// --- 2. MAIN CONTEXT CONSUMER HOOK (Structural/Safety Change) ---
+// ====================================================================
 
-// --- 2. MAIN CONTEXT CONSUMER HOOK ---
-// This hook provides ALL application services and data, consumed by all screens.
 export function useAppServices() {
-    // FIX 4: Use a default value to prevent crash if consumed outside of provider
     const context = useContext(AppServiceContext);
-    if (context === undefined) {
-        // Fallback or throw an error for debugging (depending on preference)
-        console.error("useAppServices must be used within an AppServiceContext.Provider.");
-        return { 
-            isLoading: false, 
-            LEADERSHIP_TIERS,
-            // Provide no-op functions for safety
-            navigate: () => {}, 
-            // CRITICAL FIX 5: Corrected syntax error by replacing the misplaced ']' with '}'
-            callSecureGeminiAPI: async () => ({ candidates: [{ content: { parts: [{ text: "API Not Configured" }] } }] }),
-            hasGeminiKey: () => false,
-            // ... rest of the mock defaults
-        }; 
+    
+    // CRITICAL FIX: Use the complete DEFAULT_SERVICES object as a fallback
+    // to prevent destructuring errors when the component is not yet wrapped by the Provider.
+    if (context === null || context === undefined) {
+        console.error("useAppServices called outside AppServiceContext.Provider. Returning default services.");
+        return DEFAULT_SERVICES; 
     }
     return context;
 }
 
-// --- 3. EXPORT FOR APP.JSX USE ---
+// ====================================================================
+// --- 3. EXPORT FOR APP.JSX USE (No Functional Change) ---
+// ====================================================================
 
-// FIX 6: The App.jsx structure assumes the Context Provider logic is separate.
-// We must export AppServicesProvider if it's meant to wrap the app. 
 export function AppServicesProvider({ children }) {
-    // NOTE: The actual Provider component logic is inside DataProvider in App.jsx,
-    // which handles combining data hooks with Firebase context.
+    // This is a placeholder since the actual provider logic lives in DataProvider in App.jsx
     return children;
 }
