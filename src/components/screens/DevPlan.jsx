@@ -1657,10 +1657,10 @@ const PlanReviewScreen = ({ generatedPlan, navigate, clearReviewData }) => {
     
     // CRITICAL FIX 4: Scroll to top after finalizing the plan.
     const handleFinalize = async () => {
-        console.log("Plan review complete. Finalizing plan and redirecting to Dashboard...");
+        console.log("Plan review complete. Finalizing plan and redirecting to Tracker Dashboard...");
         clearReviewData(); 
-        // CRITICAL FIX 10: Now that the data is saved, navigating back to 'prof-dev-plan' will trigger the router logic
-        // to detect existing pdpData and render the TrackerDashboardView.
+        // CRITICAL FIX 10: Now that the data is saved in PlanGenerator, we navigate back to the base screen. 
+        // This causes the ProfDevPlanScreen router to hit currentView = 'tracker' (due to pdpData being non-null).
         navigate('prof-dev-plan'); 
         window.scrollTo(0, 0); // Scroll to the top of the new view
     };
@@ -1728,6 +1728,7 @@ export const ProfDevPlanScreen = ({ initialScreen }) => {
     
     // Services now handles its own state persistence via SessionStorage
     const services = useAppServices(); 
+    // CRITICAL: Destructure all required context values
     const { pdpData, isLoading, error, userId, navigate, updatePdpData, saveNewPlan } = services;
 
     const clearReviewData = useCallback(() => {
@@ -1742,7 +1743,7 @@ export const ProfDevPlanScreen = ({ initialScreen }) => {
     } else if (error) {
         currentView = 'error';
     } else if (pdpData !== null && pdpData.plan && pdpData.plan.length > 0) { 
-        // CRITICAL FIX 11 (Persistence): If pdpData exists (loaded from Session Storage), go straight to tracker.
+        // CRITICAL FIX 11 (Persistence): If pdpData exists (loaded from Session Storage OR JUST SAVED), go straight to tracker.
         currentView = 'tracker';
     } else if (generatedPlanData || initialScreen === 'prof-dev-plan-review') {
         // CRITICAL FIX 12: Route to review screen only if data exists locally (after generation, before going to tracker)

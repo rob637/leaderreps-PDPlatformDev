@@ -1071,6 +1071,74 @@ const WeeklyPrepView = ({ setView, commitmentData, updateCommitmentData, userCom
 };
 
 
+// UI COMPONENTS (Moved to global scope for fix)
+
+// TierSuccessMap Component Definition
+const TierSuccessMap = ({ tierRates }) => {
+    return (
+        <Card title="Tier Success Map" icon={BarChart3} accent='TEAL' className='bg-[#47A88D]/10 border-2 border-[#47A88D]'>
+            <p className='text-sm text-gray-700 mb-2'>Success Rate by Leadership Tier</p>
+            {Object.entries(tierRates).length > 0 ? (
+                Object.entries(tierRates).map(([tier, data]) => (
+                    data.total > 0 && (
+                        <div key={tier} className='mb-1'>
+                            <div className='flex justify-between text-xs font-semibold text-[#002E47]'>
+                                <span>{LEADERSHIP_TIERS_META[tier]?.name || tier} ({data.total})</span>
+                                <span className={`font-bold ${data.rate > 70 ? 'text-green-600' : 'text-orange-600'}`}>{data.rate}%</span>
+                            </div>
+                            <div className="w-full bg-gray-200 rounded-full h-2">
+                                <div className="h-2 rounded-full" style={{ width: `${data.rate}%`, backgroundColor: LEADERSHIP_TIERS_META[tier]?.hex || COLORS.TEAL }}></div>
+                            </div>
+                        </div>
+                    )
+                ))
+            ) : (
+                <p className="text-gray-500 italic text-sm">No trackable tier data yet.</p>
+            )}
+        </Card>
+    );
+};
+
+// CommitmentHistoryModal Component Definition
+const CommitmentHistoryModal = ({ isVisible, onClose, dayData, activeCommitments }) => {
+    if (!isVisible || !dayData) return null;
+    return (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+            <div className="bg-white p-6 rounded-xl shadow-2xl w-full max-w-md">
+                <div className="flex justify-between items-center border-b pb-2 mb-4">
+                    <h3 className="text-xl font-bold">Scorecard History: {dayData.date}</h3>
+                    <button onClick={onClose} className="text-gray-400 hover:text-gray-700"><X className="w-5 h-5"/></button>
+                </div>
+                
+                <p className="text-lg font-extrabold mb-3">Score: {dayData.score}</p>
+                <p className="text-sm text-gray-700 font-semibold mb-2">Reflection Log:</p>
+                <div className="p-3 bg-gray-50 border rounded-lg h-32 overflow-y-auto text-sm italic text-gray-600">
+                    {dayData.reflection || 'No reflection logged for this day.'}
+                </div>
+                
+                <Button onClick={onClose} className="mt-4 w-full">Close Details</Button>
+            </div>
+        </div>
+    );
+};
+
+// PerfectScoreModal Component Definition
+const PerfectScoreModal = ({ onClose }) => (
+    <div className="fixed inset-0 bg-[#002E47]/70 z-50 flex items-center justify-center p-4">
+        <div className="bg-[#FCFCFA] rounded-xl shadow-2xl w-full max-w-sm p-6 text-center">
+            <Crown className='w-12 h-12 text-green-600 mx-auto mb-4'/>
+            <h3 className="text-2xl font-extrabold text-[#002E47] mb-2">Perfect Score!</h3>
+            <p className='text-sm text-gray-700 mb-4'>
+                You executed all commitments today. Sustain this discipline!
+            </p>
+            <Button onClick={onClose} className='w-full bg-green-600 hover:bg-green-700'>
+                Acknowledge
+            </Button>
+        </div>
+    </div>
+);
+
+
 /**
  * DailyPracticeScreen: Main Scorecard View
  */
@@ -1316,56 +1384,6 @@ const sortedCommitments = useMemo(() => {
   // Final Render
   const renderView = () => {
     
-    // UI COMPONENTS (Defined locally to resolve reference errors)
-    const TierSuccessMap = ({ tierRates }) => {
-        return (
-            <Card title="Tier Success Map" icon={BarChart3} accent='TEAL' className='bg-[#47A88D]/10 border-2 border-[#47A88D]'>
-                <p className='text-sm text-gray-700 mb-2'>Success Rate by Leadership Tier</p>
-                {Object.entries(tierRates).length > 0 ? (
-                    Object.entries(tierRates).map(([tier, data]) => (
-                        data.total > 0 && (
-                            <div key={tier} className='mb-1'>
-                                <div className='flex justify-between text-xs font-semibold text-[#002E47]'>
-                                    <span>{LEADERSHIP_TIERS_META[tier]?.name || tier} ({data.total})</span>
-                                    <span className={`font-bold ${data.rate > 70 ? 'text-green-600' : 'text-orange-600'}`}>{data.rate}%</span>
-                                </div>
-                                <div className="w-full bg-gray-200 rounded-full h-2">
-                                    <div className="h-2 rounded-full" style={{ width: `${data.rate}%`, backgroundColor: LEADERSHIP_TIERS_META[tier]?.hex || COLORS.TEAL }}></div>
-                                </div>
-                            </div>
-                        )
-                    ))
-                ) : (
-                    <p className="text-gray-500 italic text-sm">No trackable tier data yet.</p>
-                )}
-            </Card>
-        );
-    };
-
-    // FIX 12: Added the missing component definition for CommitmentHistoryModal
-    const CommitmentHistoryModal = ({ isVisible, onClose, dayData, activeCommitments }) => {
-        if (!isVisible || !dayData) return null;
-        return (
-            <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-                <div className="bg-white p-6 rounded-xl shadow-2xl w-full max-w-md">
-                    <div className="flex justify-between items-center border-b pb-2 mb-4">
-                        <h3 className="text-xl font-bold">Scorecard History: {dayData.date}</h3>
-                        <button onClick={onClose} className="text-gray-400 hover:text-gray-700"><X className="w-5 h-5"/></button>
-                    </div>
-                    
-                    <p className="text-lg font-extrabold mb-3">Score: {dayData.score}</p>
-                    <p className="text-sm text-gray-700 font-semibold mb-2">Reflection Log:</p>
-                    <div className="p-3 bg-gray-50 border rounded-lg h-32 overflow-y-auto text-sm italic text-gray-600">
-                        {dayData.reflection || 'No reflection logged for this day.'}
-                    </div>
-                    
-                    <Button onClick={onClose} className="mt-4 w-full">Close Details</Button>
-                </div>
-            </div>
-        );
-    };
-
-
     // Mock progress data for visualization
     const monthlyProgress = { daysTracked: 15, metItems: 35, totalItems: 45, rate: 78 }; 
 
@@ -1553,20 +1571,4 @@ const sortedCommitments = useMemo(() => {
           </div>
         );
     }
-}
-// FIX 10: Component definition for PerfectScoreModal
-const PerfectScoreModal = ({ onClose }) => (
-    <div className="fixed inset-0 bg-[#002E47]/70 z-50 flex items-center justify-center p-4">
-        <div className="bg-[#FCFCFA] rounded-xl shadow-2xl w-full max-w-sm p-6 text-center">
-            <Crown className='w-12 h-12 text-green-600 mx-auto mb-4'/>
-            <h3 className="text-2xl font-extrabold text-[#002E47] mb-2">Perfect Score!</h3>
-            <p className='text-sm text-gray-700 mb-4'>
-                You executed all commitments today. Sustain this discipline!
-            </p>
-            <Button onClick={onClose} className='w-full bg-green-600 hover:bg-green-700'>
-                Acknowledge
-            </Button>
-        </div>
-    </div>
-);
-};
+}}

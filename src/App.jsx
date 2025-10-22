@@ -518,7 +518,7 @@ const AppContent = ({ currentScreen, setCurrentScreen, user, navParams, isMobile
             <main className="flex-1">
                 <div className="md:hidden sticky top-0 bg-white/95 backdrop-blur-sm shadow-md p-4 flex justify-between items-center z-40">
                     <h1 className="text-xl font-bold text-[#002E47]">LeaderReps</h1>
-                    <button onClick={() => setIsMobileOpen(true)} className="p-2 text-[#002E47] hover:text-[#47A88D]"><Menu className="w-6 h-6" /></button>
+                    <button onClick={() => setIsMobileMenu(true)} className="p-2 text-[#002E47] hover:text-[#47A88D]"><Menu className="w-6 h-6" /></button>
                 </div>
                 <Suspense fallback={
                      <div className="min-h-screen flex items-center justify-center bg-gray-100">
