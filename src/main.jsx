@@ -78,12 +78,11 @@ createRoot(container).render(
   <React.StrictMode>
     <ErrorBoundary>
       <ConfigGate>
-        <AppServicesProvider>
-          <Suspense fallback={<div className="p-8 text-center">Loading…</div>}>
-            <App />
-          </Suspense>
-        </AppServicesProvider>
+        <Suspense fallback={<div className="p-8 text-center">Loading…</div>}>
+          <App />
+        </Suspense>
       </ConfigGate>
     </ErrorBoundary>
   </React.StrictMode>
 );
+

@@ -40,7 +40,17 @@ const Button = ({ children, onClick, disabled = false, variant = 'primary', clas
     if (variant === 'primary') { baseStyle += ` bg-[${COLORS.TEAL}] hover:bg-[#349881] focus:ring-[${COLORS.TEAL}]/50`; }
     else if (variant === 'secondary') { baseStyle += ` bg-[${COLORS.ORANGE}] hover:bg-[#C33E12] focus:ring-[${COLORS.ORANGE}]/50`; }
     if (disabled) { baseStyle = "px-6 py-3 rounded-xl font-semibold bg-gray-300 text-gray-500 cursor-not-allowed shadow-inner transition-none"; }
-    return (<button {...rest} onClick={onClick} disabled={disabled} className={`${baseStyle} ${className}`}>{children}</button>);
+return (
+  <button
+    {...rest}
+    onClick={onClick}
+    disabled={disabled}
+    className={`${baseStyle} ${className}`}
+    type="button"
+  >
+    {children}
+  </button>
+);
 };
 
 /* =========================================================

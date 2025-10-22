@@ -1512,8 +1512,8 @@ if (!hasGeminiKey() || promptLoading) return;
   }, [userCommitments, score.total]);
 
   // View Mode Sorting Logic
-  const sortedCommitments = useMemo(() => {
-      const active = [...userCommitments];
+const sortedCommitments = useMemo(() => {
+  const active = [...userCommitments];
       if (viewMode === 'status') {
           return active.sort((a, b) => {
               if (a.status === 'Pending' && b.status !== 'Pending') return -1;
@@ -1528,7 +1528,7 @@ if (!hasGeminiKey() || promptLoading) return;
           });
       }
       return active;
-  }, [userCommitments, viewMode]);
+ }, [userCommitments, viewMode]);
 
 
   // Final Render

@@ -21,11 +21,18 @@ const Button = ({ children, onClick, disabled = false, variant = 'primary', clas
   else if (variant === 'outline') { baseStyle = `px-6 py-3 rounded-xl font-semibold transition-all shadow-md border-2 border-[${COLORS.TEAL}] text-[${COLORS.TEAL}] hover:bg-[#47A88D]/10 focus:ring-4 focus:ring-[#47A88D]/50 bg-[${COLORS.LIGHT_GRAY}] flex items-center justify-center`; }
   else if (variant === 'nav-back') { baseStyle = `px-4 py-2 rounded-lg font-medium transition-all shadow-sm border-2 border-gray-300 text-gray-700 hover:bg-gray-100 flex items-center justify-center`; }
   if (disabled) { baseStyle = "px-6 py-3 rounded-xl font-semibold bg-gray-300 text-gray-500 cursor-not-allowed shadow-inner transition-none flex items-center justify-center"; }
-  return (
-    <button {...rest} onClick={onClick} disabled={disabled} className={`${baseStyle} ${className}`}>
-      {children}
-    </button>
-  );
+return (
+  <button
+    {...rest}
+    onClick={onClick}
+    disabled={disabled}
+    className={`${baseStyle} ${className}`}
+    type="button"
+  >
+    {children}
+  </button>
+);
+
 };
 
 const Card = ({ children, title, icon: Icon, className = '', onClick, accent = 'TEAL' }) => {

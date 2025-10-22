@@ -334,16 +334,16 @@ function AuthPanel({ auth, onSuccess }) {
                 {!isReset && (<input type="password" placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} className={`w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[${TEAL}] focus:border-[${TEAL}]`} disabled={isLoading}/>)}
                 {isSignUp && (<input type="text" placeholder="Secret Sign-up Code" value={secretCode} onChange={(e) => setSecretCode(e.target.value)} className={`w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[${TEAL}] focus:border-[${TEAL}]`} disabled={isLoading}/>)}
                 
-                <button
-                    onClick={handleAction}
-                    disabled={isLoading || !email || (!isReset && !password) || (isSignUp && (!secretCode || !name))}
-                    className={`w-full py-3 rounded-lg font-bold text-white transition-colors 
-                        ${isLoading || !email || (!isReset && !password) || (isSignUp && (!secretCode || !name))
-                            ? 'bg-gray-400 cursor-not-allowed' : `bg-[${TEAL}] hover:bg-[${NAVY}]` }
-                    `}
-                >
-                    {isLoading ? 'Processing...' : (isLogin ? 'Sign In' : isSignUp ? 'Sign Up' : 'Send Reset Email')}
-                </button>
+                <form onSubmit={(e) => { e.preventDefault(); handleAction(); }}>
+  {/* ... your Email, Password, Name inputs exactly as-is ... */}
+  <button
+    type="submit"
+    disabled={isLoading}
+    className="w-full p-3 bg-[#47A88D] text-white rounded-lg hover:bg-[#349881] focus:ring-2 focus:ring-[#47A88D]"
+  >
+    {mode === 'login' ? 'Sign In' : 'Create Account'}
+  </button>
+</form>
                 
                 {statusMessage && (<p className={`text-sm text-center font-medium mt-3 ${statusMessage.includes('sent') ? `text-[${TEAL}]` : `text-[${ORANGE}]`}`}>{statusMessage}</p>)}
             </div>

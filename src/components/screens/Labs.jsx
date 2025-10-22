@@ -59,11 +59,18 @@ const Button = ({ children, onClick, disabled = false, variant = 'primary', clas
 
     if (disabled) { baseStyle = "px-6 py-3 rounded-xl font-semibold bg-gray-300 text-gray-500 cursor-not-allowed shadow-inner transition-none"; }
 
-    return (
-        <button {...rest} onClick={onClick} disabled={disabled} className={`${baseStyle} ${className}`}>
-            {children}
-        </button>
-    );
+return (
+  <button
+    {...rest}
+    onClick={onClick}
+    disabled={disabled}
+    className={`${baseStyle} ${className}`}
+    type="button"
+  >
+    {children}
+  </button>
+);
+
 };
 
 const Card = ({ children, title, icon: Icon, className = '', onClick, accent = 'ORANGE' }) => {
