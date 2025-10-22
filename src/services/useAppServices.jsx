@@ -1,6 +1,6 @@
 // src/services/useAppServices.jsx
 
-import { useMemo, useCallback, useContext, createContext, useState } from 'react';
+import { useMemo, useCallback, useContext, createContext, useState, useEffect } from 'react';
 
 // --- MOCK CONSTANTS (Duplicated from App.jsx for independent hook compilation) ---
 const GEMINI_MODEL = 'gemini-1.5-flash-latest';
@@ -55,64 +55,119 @@ export const AppServiceContext = createContext(DEFAULT_SERVICES);
 // ====================================================================
 // --- 1. CORE DATA HOOKS (No Functional Change) ---
 // ====================================================================
+// Planning data hook (mock + local persistence)
+export const usePlanningData = (db, userId, isAuthReady) => {
+  const STORAGE_KEY = `lrpd:planning:${userId || 'anon'}`;
 
-export const usePDPData = (db, userId, isAuthReady) => {
-    const mockPdpData = useMemo(() => MOCK_PDP_DATA, []);
+  // useState/useEffect must be imported at the top:
+  // import { useMemo, useCallback, useContext, createContext, useState, useEffect } from 'react';
 
-    const updatePdpData = useCallback(async (updater) => { 
-        console.log('Mock PDP Update triggered.'); 
-        return true; 
-    }, []); 
+  const [planningData, setPlanningData] = useState(() => {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      return raw ? JSON.parse(raw) : MOCK_PLANNING_DATA;
+    } catch {
+      return MOCK_PLANNING_DATA;
+    }
+  });
 
-    const saveNewPlan = useCallback(async (plan) => { 
-        console.log('Mock PDP Save triggered.'); 
-        return true; 
-    }, []);
-    
-    return {
-        pdpData: mockPdpData, 
-        isLoading: false, 
-        error: null, 
-        updatePdpData, 
-        saveNewPlan
-    };
-};
+  useEffect(() => {
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(planningData)); } catch {}
+  }, [STORAGE_KEY, planningData]);
 
-export const useCommitmentData = (db, userId, isAuthReady) => {
-  // keep a live, in-memory copy so UI updates
-  const [mockCommitmentData, setMockCommitmentData] = useState(MOCK_COMMITMENT_DATA);
-
-  const updateCommitmentData = useCallback(async (updater) => {
-    setMockCommitmentData(prev =>
-      typeof updater === 'function' ? updater(prev) : updater
-    );
+  // Accepts either (prev) => next or a full object
+  const updatePlanningData = useCallback(async (updater) => {
+    setPlanningData(prev => (typeof updater === 'function' ? updater(prev) : updater) ?? prev);
     return true;
   }, []);
 
-  return {
-    commitmentData: mockCommitmentData,
-    isLoading: false,
-    error: null,
-    updateCommitmentData
+  return { planningData, isLoading: false, error: null, updatePlanningData };
+};
+
+export const usePDPData = (db, userId, isAuthReady) => {
+ const STORAGE_KEY = `pdp:${userId || 'anon'}`;
+  const [pdpData, setPdpData] = useState(() => {
+    try {
+      const cached = sessionStorage.getItem(STORAGE_KEY);
+      // Start with null so the generator shows until a plan exists.
+      return cached ? JSON.parse(cached) : null;
+    } catch {
+      return null;
+    }
+  });
+
+  // Reload cached plan when user changes (or first mount)
+  useEffect(() => {
+    try {
+      const cached = sessionStorage.getItem(STORAGE_KEY);
+      if (cached) setPdpData(JSON.parse(cached));
+    } catch {}
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userId]);
+
+  const persist = (data) => {
+    if (data === null) {
+      sessionStorage.removeItem(STORAGE_KEY);
+    } else {
+      sessionStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    }
   };
-};
 
-export const usePlanningData = (db, userId, isAuthReady) => {
-    const mockPlanningData = useMemo(() => MOCK_PLANNING_DATA, []);
-    
-    const updatePlanningData = useCallback(async (updater) => { 
-        console.log('Mock Planning Update triggered.'); 
-        return true; 
-    }, []);
-
-    return {
-        planningData: mockPlanningData, 
-        isLoading: false, 
-        error: null, 
-        updatePlanningData
+  const saveNewPlan = useCallback(async (planObj) => {
+    // planObj is what your generator returns: { ownerUid, assessment, plan, currentMonth, ... }
+    const next = {
+      ...planObj,
+      ownerUid: userId || planObj.ownerUid,
+      lastUpdate: new Date().toISOString(),
     };
-};
+    setPdpData(next);
+    persist(next);
+    return true;
+  }, [userId]);
 
+  const updatePdpData = useCallback(async (updater) => {
+    setPdpData((prev) => {
+      const next = typeof updater === 'function' ? updater(prev) : updater;
+      persist(next);
+      return next;
+    });
+    return true;
+  }, []);
+
+  return { pdpData, isLoading: false, error: null, saveNewPlan, updatePdpData };
+};
+export const useCommitmentData = (db, userId, isAuthReady) => {
+  const STORAGE_KEY = `lrpd:commitments:${userId || 'anon'}`;
+
+  const [commitmentData, setCommitmentData] = useState(() => {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      return raw ? JSON.parse(raw) : MOCK_COMMITMENT_DATA;
+    } catch {
+      return MOCK_COMMITMENT_DATA;
+    }
+  });
+
+  // Persist on every change
+  useEffect(() => {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(commitmentData));
+    } catch {
+      /* ignore quota errors */
+    }
+  }, [STORAGE_KEY, commitmentData]);
+
+  // Updater API mirrors your current usage: accepts either a function(prev)=>next or a full object
+  const updateCommitmentData = useCallback(async (updater) => {
+    setCommitmentData(prev => {
+      const next = (typeof updater === 'function') ? updater(prev) : updater;
+      return next ?? prev;
+    });
+    return true; // keep your current callers happy
+  }, []);
+
+  return { commitmentData, isLoading: false, error: null, updateCommitmentData };
+};
 // ====================================================================
 // --- 2. MAIN CONTEXT CONSUMER HOOK (Structural/Safety Change) ---
 // ====================================================================

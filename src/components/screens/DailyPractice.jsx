@@ -639,9 +639,9 @@ const CommitmentSelectorView = ({ setView, initialGoal, initialTier }) => {
     }
 
     // CRITICAL FIX 2: Ensure existing data is preserved using the spread operator
- const success = await updateCommitmentData(prev => ({
-  ...prev,
-  active_commitments: [...(prev?.active_commitments || []), newCommitment],
+const success = await updateCommitmentData(data => ({ 
+  ...data,
+  active_commitments: [ ...(data?.active_commitments || []), newCommitment ]
 }));
 
     // CRITICAL FIX 7: Only reset local state and navigate if persistence was successful

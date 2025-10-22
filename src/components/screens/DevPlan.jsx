@@ -1520,7 +1520,7 @@ const PlanGeneratorView = ({ userId, saveNewPlan, isLoading, error, navigate, se
             // Set plan data in local state only for the ephemeral Review screen
             setGeneratedPlanData({ userPlan: newPlanData, genericPlan: GENERIC_PLAN }); 
             // CRITICAL FIX: Navigate to the *review* screen first, which then handles setting up the tracker.
-            navigate('prof-dev-plan-review');
+            navigate('prof-dev-plan');
         }
     };
 

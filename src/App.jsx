@@ -106,9 +106,9 @@ const hasGeminiKey = () => (USE_SERVERLESS ? true : !!(typeof __GEMINI_API_KEY !
 
 // --- EXISTING MOCK/PLACEHOLDER DEFINITIONS (Keep these) ---
 // CRITICAL FIX 1: Mock data initialization in App.jsx must ensure components render properly before real data loads.
-const MOCK_PDP_DATA = { currentMonth: 1, assessment: { selfRatings: { T1: 5, T2: 5, T3: 5, T4: 5, T5: 5 } }, plan: [{ month: 1, tier: 'T3', theme: 'Initial Focus', requiredContent: [], reflectionText: '', briefingText: '' }] };
-const MOCK_COMMITMENT_DATA = { active_commitments: [] };
-const MOCK_PLANNING_DATA = { okrs: [] };
+//const MOCK_PDP_DATA = { currentMonth: 1, assessment: { selfRatings: { T1: 5, T2: 5, T3: 5, T4: 5, T5: 5 } }, plan: [{ month: 1, tier: 'T3', theme: 'Initial Focus', requiredContent: [], reflectionText: '', briefingText: '' }] };
+//const MOCK_COMMITMENT_DATA = { active_commitments: [] };
+//const MOCK_PLANNING_DATA = { okrs: [] };
 
 const IconMap = {}; 
 const SECRET_SIGNUP_CODE = 'mock-code-123';
