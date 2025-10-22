@@ -383,8 +383,8 @@ function AuthPanel({ auth, onSuccess }) {
 
 
 const NavSidebar = ({ currentScreen, setCurrentScreen, user, closeMobileMenu, isAuthRequired }) => {
-    // FIX: Destructure navigate from useAppServices (or rely on passed props)
     // Relying on props here is cleaner if App.jsx is the source of truth for navigation.
+    // NOTE: This auth comes from appServices, which holds the firebase auth instance.
     const { auth } = useAppServices(); 
     const [isProfileOpen, setIsProfileOpen] = useState(false);
 
@@ -400,8 +400,16 @@ const NavSidebar = ({ currentScreen, setCurrentScreen, user, closeMobileMenu, is
     const menuSections = [{ title: 'CORE NAVIGATION', items: coreNav }, { title: 'TOOLS & HUBS', items: toolsHubsNav }, { title: 'RESOURCES & COMMUNITY', items: resourcesCommunityNav }, { title: 'SYSTEM', items: systemNav }];
 
     const handleSignOut = async () => {
-        try { if (auth) await signOut(auth); console.log('Sign Out triggered.'); closeMobileMenu();
-        } catch (e) { console.error('Sign out failed:', e); }
+        try { 
+            if (auth) {
+                // FIX: Correctly call the imported Firebase signOut function
+                await signOut(auth); 
+                console.log('Sign Out successful.'); 
+            }
+            closeMobileMenu();
+        } catch (e) { 
+            console.error('Sign out failed:', e); 
+        }
     };
 
     // CRITICAL FIX: The handler must call the setCurrentScreen prop, which is the navigate function.

@@ -351,7 +351,7 @@ const mdToHtml = async (md) => {
 ----------------------------------------*/
 const DashboardScreen = () => {
   const {
-    navigate,
+    navigate, // CRITICAL: This is the navigate function from App.jsx
     user,
     pdpData: svcPdpData,
     planningData: svcPlanningData,
@@ -380,6 +380,7 @@ const DashboardScreen = () => {
   
   const greeting = useMemo(() => (user?.firstLogin ? 'Welcome back,' : 'Welcome,'), [user?.firstLogin]);
 
+  // CRITICAL FIX 1: Create a stable navigation wrapper using the context navigate
   const safeNavigate = useCallback((screen, params) => {
     if (typeof navigate !== 'function') {
       console.error('CRITICAL ERROR: navigate() is not available from useAppServices.');
@@ -439,7 +440,9 @@ const DashboardScreen = () => {
   const [tipHtml, setTipHtml] = useState('');
 
   const getInitialAITip = useCallback(async () => {
-    if (!hasGeminiKey()) return;
+    // Only run if the AI key is ready and tip hasn't been set yet
+    if (!hasGeminiKey() || tipContent !== 'Tap "Next Nudge" for your first strategic focus point.') return;
+    
     setTipLoading(true);
     try {
       const weakestSkill = weakestTier?.name || 'General Leadership';
@@ -459,7 +462,7 @@ const DashboardScreen = () => {
     } finally {
       setTipLoading(false);
     }
-  }, [weakestTier?.name, callSecureGeminiAPI, hasGeminiKey]);
+  }, [weakestTier?.name, callSecureGeminiAPI, hasGeminiKey, tipContent]); // Added tipContent to re-run if state changes.
 
   const nextNudge = useCallback(async () => {
     let nextTip = '';
@@ -475,7 +478,12 @@ const DashboardScreen = () => {
     setTipHtml(await mdToHtml(nextTip));
   }, [tipContent, tipLoading]);
 
-  useEffect(() => { getInitialAITip(); }, [getInitialAITip]);
+  // CRITICAL FIX 2: Call getInitialAITip when AI dependencies are ready (hasGeminiKey)
+  useEffect(() => { 
+    if (hasGeminiKey() && weakestTier) { // Wait for core data to load
+        getInitialAITip(); 
+    }
+  }, [getInitialAITip, hasGeminiKey, weakestTier]);
 
   return (
     <div className={`p-6 space-y-8 bg-[${COLORS.LIGHT_GRAY}] min-h-screen`}>
@@ -525,20 +533,20 @@ const DashboardScreen = () => {
 
         {/* Column 1 & 2: ACTION HUBS (Primary User Focus) */}
         <div className="lg:col-span-3 space-y-8 order-2 lg:order-1">
-          {/* 1. LEADER TOOLS & HUBS (REPLACES OLD ACTION HUB) */}
+          {/* 1. LEADER TOOLS & HUBS (Primary Action Hub - REVERSED COLORS to TEAL BACKGROUND) */}
           <div className='rounded-3xl border-4 border-[#002E47] bg-[#F7FCFF] p-8 shadow-2xl relative'>
             <h2 className="text-3xl font-extrabold text-[#002E47] mb-6 border-b-2 pb-4 border-gray-300 flex items-center gap-3">
               <Zap size={28} className='text-[#E04E1B]'/> Leader Tools & Hubs (Core Action)
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               
-              {/* Development Plan Button */}
+              {/* Development Plan Button (NAVY ACCENT / TEAL COLOR SWAPPED) */}
               <div className='flex flex-col space-y-2'>
                 <ThreeDButton
                   onClick={() => safeNavigate('prof-dev-plan')}
-                  color={COLORS.NAVY}
-                  accentColor={COLORS.TEAL}
-                  className="h-16 flex-row px-3 py-2"
+                  color={COLORS.TEAL} // <--- COLOR SWAP
+                  accentColor={COLORS.NAVY} // <--- ACCENT SWAP
+                  className="h-16 flex-row px-3 py-2 text-white" 
                 >
                   <Briefcase className='w-5 h-5 mr-2'/> 
                   <span className='text-md font-extrabold'>Development Plan</span>
@@ -546,13 +554,13 @@ const DashboardScreen = () => {
                 <p className='text-xs font-light text-gray-600'>This is a **24-Month Roadmap** designed to close your skill gaps. It uses AI-generated, hyper-personalized content to accelerate executive growth.</p> 
               </div>
 
-              {/* Daily Practice Button */}
+              {/* Daily Practice Button (NAVY ACCENT / TEAL COLOR SWAPPED) */}
               <div className='flex flex-col space-y-2'>
                 <ThreeDButton
                   onClick={() => safeNavigate('daily-practice')} 
-                  color={COLORS.NAVY}
-                  accentColor={COLORS.TEAL}
-                  className="h-16 flex-row px-3 py-2"
+                  color={COLORS.TEAL} // <--- COLOR SWAP
+                  accentColor={COLORS.NAVY} // <--- ACCENT SWAP
+                  className="h-16 flex-row px-3 py-2 text-white"
                 >
                   <ClockIcon className='w-5 h-5 mr-2'/> 
                   <span className='text-md font-extrabold'>Daily Practice</span>
@@ -560,13 +568,13 @@ const DashboardScreen = () => {
                 <p className='text-xs font-light text-gray-600'>This **Daily Scorecard** tracks your commitment to non-negotiable leadership micro-habits. Hitting your score is the key to sustained executive growth.</p>
               </div>
 
-              {/* Coaching Lab Button */}
+              {/* Coaching Lab Button (NAVY ACCENT / TEAL COLOR SWAPPED) */}
               <div className='flex flex-col space-y-2'>
                 <ThreeDButton
                   onClick={() => safeNavigate('coaching-lab')} 
-                  color={COLORS.NAVY}
-                  accentColor={COLORS.TEAL}
-                  className="h-16 flex-row px-3 py-2" 
+                  color={COLORS.TEAL} // <--- COLOR SWAP
+                  accentColor={COLORS.NAVY} // <--- ACCENT SWAP
+                  className="h-16 flex-row px-3 py-2 text-white" 
                 >
                   <Mic className='w-5 h-5 mr-2'/> 
                   <span className='text-md font-extrabold'>Coaching Lab</span>
@@ -574,13 +582,13 @@ const DashboardScreen = () => {
                 <p className='text-xs font-light text-gray-600'>**Practice key leadership interactions**, such as crucial conversations, using guided AI tools and receive real-time critique to sharpen your skills.</p>
               </div>
 
-              {/* Planning Hub Button */}
+              {/* Planning Hub Button (NAVY ACCENT / TEAL COLOR SWAPPED) */}
               <div className='flex flex-col space-y-2'>
                 <ThreeDButton
                   onClick={() => safeNavigate('planning-hub')} 
-                  color={COLORS.NAVY}
-                  accentColor={COLORS.TEAL}
-                  className="h-16 flex-row px-3 py-2" 
+                  color={COLORS.TEAL} // <--- COLOR SWAP
+                  accentColor={COLORS.NAVY} // <--- ACCENT SWAP
+                  className="h-16 flex-row px-3 py-2 text-white"
                 >
                   <TrendingUp className='w-5 h-5 mr-2'/> 
                   <span className='text-md font-extrabold'>Planning Hub</span>
@@ -591,20 +599,20 @@ const DashboardScreen = () => {
             </div>
           </div>
 
-          {/* 2. RESOURCES & COMMUNITY (NEW SECTION) */}
+          {/* 2. RESOURCES & COMMUNITY (NAVY BACKGROUND / TEAL ACCENT - FIX: Equal Sizing) */}
           <div className='rounded-3xl border-4 border-[#47A88D] bg-[#F7FCFF] p-8 shadow-2xl relative'>
             <h2 className="text-3xl font-extrabold text-[#002E47] mb-6 border-b-2 pb-4 border-gray-300 flex items-center gap-3">
               <Users size={28} className='text-[#47A88D]'/> Resources & Community (Engagement)
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               
-              {/* Applied Leadership Button */}
+              {/* Applied Leadership Button (NAVY COLOR / TEAL ACCENT) */}
               <div className='flex flex-col space-y-2'>
                 <ThreeDButton
                   onClick={() => safeNavigate('applied-leadership')} 
-                  color={COLORS.TEAL}
-                  accentColor={COLORS.NAVY}
-                  className="h-16 flex-row px-3 py-2 lg:col-span-1" 
+                  color={COLORS.NAVY} // <--- COLOR SWAP
+                  accentColor={COLORS.TEAL} // <--- ACCENT SWAP
+                  className="h-16 flex-row px-3 py-2 text-white" 
                 >
                   <Lightbulb className='w-5 h-5 mr-2'/> 
                   <span className='text-md font-extrabold'>Applied Leadership</span>
@@ -612,13 +620,13 @@ const DashboardScreen = () => {
                 <p className='text-xs font-light text-gray-600'>Access micro-habits and **AI coaching tailored to your specific industry**, identity, or high-stakes operational context for high-leverage guidance.</p>
               </div>
 
-              {/* Business Readings Button */}
+              {/* Business Readings Button (NAVY COLOR / TEAL ACCENT) */}
               <div className='flex flex-col space-y-2'>
                 <ThreeDButton
                   onClick={() => safeNavigate('business-readings')} 
-                  color={COLORS.TEAL}
-                  accentColor={COLORS.NAVY}
-                  className="h-16 flex-row px-3 py-2 lg:col-span-1" 
+                  color={COLORS.NAVY} // <--- COLOR SWAP
+                  accentColor={COLORS.TEAL} // <--- ACCENT SWAP
+                  className="h-16 flex-row px-3 py-2 text-white" 
                 >
                   <BookOpen className='w-5 h-5 mr-2'/> 
                   <span className='text-md font-extrabold'>Business Readings</span>
@@ -626,18 +634,32 @@ const DashboardScreen = () => {
                 <p className='text-xs font-light text-gray-600'>A curated library of business book flyers with key frameworks, executive summaries, and **AI-driven commitment plans** to simplify learning.</p>
               </div>
 
-              {/* Community & Peer Support Button */}
-              <div className='flex flex-col space-y-2 lg:col-span-2'>
+              {/* Community & Peer Support Button (FIX: Removed lg:col-span-2 for uniform size) */}
+              <div className='flex flex-col space-y-2'> 
                 <ThreeDButton
                   onClick={() => safeNavigate('community')} 
-                  color={COLORS.TEAL}
-                  accentColor={COLORS.NAVY}
-                  className="h-16 flex-row px-3 py-2" 
+                  color={COLORS.NAVY} // <--- COLOR SWAP
+                  accentColor={COLORS.TEAL} // <--- ACCENT SWAP
+                  className="h-16 flex-row px-3 py-2 text-white" 
                 >
                   <CommunityIcon className='w-5 h-5 mr-2'/> 
                   <span className='text-md font-extrabold'>Community & Peer Support</span>
                 </ThreeDButton>
                 <p className='text-xs font-light text-gray-600'>**Connect with executive peers** for advice, discuss difficult scenarios, and access the Mentorship Network for one-on-one guidance.</p>
+              </div>
+
+               {/* Add a fourth placeholder/button to maintain grid symmetry in LG screens */}
+              <div className='flex flex-col space-y-2'>
+                <ThreeDButton
+                  onClick={() => safeNavigate('quick-start-accelerator')}
+                  color={COLORS.NAVY}
+                  accentColor={COLORS.TEAL}
+                  className="h-16 flex-row px-3 py-2 text-white" 
+                >
+                  <Zap className='w-5 h-5 mr-2'/> 
+                  <span className='text-md font-extrabold'>Quick Start</span>
+                </ThreeDButton>
+                <p className='text-xs font-light text-gray-600'>Jumpstart your usage with the **accelerator module** to align your profile and set initial goals rapidly.</p>
               </div>
               
             </div>
