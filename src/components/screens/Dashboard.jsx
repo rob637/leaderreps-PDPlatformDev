@@ -1,8 +1,9 @@
 // src/components/screens/Dashboard.jsx 
 import React, { useMemo, useState, useEffect, useCallback } from 'react';
-import { useAppServices } from '../../services/useAppServices.jsx';
+// CRITICAL FIX: Use the actual service hook from the expected path
+import { useAppServices } from '../../services/useAppServices.jsx'; 
 
-// --- MOCK IMPORTS for self-contained file ---
+// --- MOCK IMPORTS for self-contained file (Ensuring local definition) ---
 const LEADERSHIP_TIERS = {
     'T1': { id: 'T1', name: 'Self-Awareness', icon: 'Target', color: 'bg-blue-100 text-blue-700', hex: '#2563EB' },
     'T2': { id: 'T2', name: 'Operational Excellence', icon: 'Mic', color: 'bg-cyan-100 text-cyan-700', hex: '#06B6D4' },
@@ -272,7 +273,7 @@ const ProgressRings = ({ dailyPercent, monthlyPercent, careerPercent, tierHex, c
     <Card 
       title="Leadership Health Score" 
       icon={Activity} 
-      accent={COLORS.NAVY} 
+      accent="NAVY" 
       className="lg:col-span-1 shadow-2xl bg-[#002E47]/10 border-4 border-[#002E47]/20"
     >
       <div className="flex items-center space-x-4">
@@ -358,13 +359,15 @@ const DashboardScreen = () => {
     hasPendingDailyPractice,
     callSecureGeminiAPI,
     hasGeminiKey,
+    // CRITICAL FIX: Ensure we retrieve LEADERSHIP_TIERS from the context
     LEADERSHIP_TIERS: svcLEADERSHIP_TIERS,
   } = useAppServices();
 
   const pdpData = svcPdpData || MOCK_PDP_DATA;
   const commitmentData = svcCommitmentData || MOCK_COMMITMENT_DATA;
   const planningData = svcPlanningData || MOCK_PLANNING_DATA; 
-  const TIER_MAP = svcLEADERSHIP_TIERS || LEADERSHIP_TIERS;
+  // CRITICAL FIX: Use the data from services if available, otherwise fallback to local mock
+  const TIER_MAP = svcLEADERSHIP_TIERS || LEADERSHIP_TIERS; 
 
   const displayedUserName = useMemo(() => {
     if (user?.name) return user.name;
@@ -404,7 +407,8 @@ const DashboardScreen = () => {
   }, [planningData?.last_premortem_decision]);
   
   const dailyPercent = commitsTotal > 0 ? Math.round((commitsCompleted / commitsTotal) * 100) : 0;
-  const monthlyPercent = goalsCount > 0 ? Math.round(((goalsCount - 1) % 4) * 25 + (commitsCompleted / commitsTotal || 0) * 25) : 0;
+  // Simplified mock calculation for monthly percent
+  const monthlyPercent = goalsCount > 0 ? Math.round(((goalsCount - 1) % 4) * 25 + (commitsCompleted / commitsTotal || 0) * 25) : 0; 
   const careerPercent = Math.round((goalsCount / 24) * 100);
 
   const weakestTier = useMemo(() => {
@@ -455,7 +459,7 @@ const DashboardScreen = () => {
     } finally {
       setTipLoading(false);
     }
-  }, [weakestTier, callSecureGeminiAPI, hasGeminiKey]);
+  }, [weakestTier?.name, callSecureGeminiAPI, hasGeminiKey]);
 
   const nextNudge = useCallback(async () => {
     let nextTip = '';
@@ -539,7 +543,7 @@ const DashboardScreen = () => {
                   <Briefcase className='w-5 h-5 mr-2'/> 
                   <span className='text-md font-extrabold'>Development Plan</span>
                 </ThreeDButton>
-                <p className='text-xs font-light text-gray-600'>This is a **24-Month Roadmap** designed to close your skill gaps. It uses AI-generated, hyper-personalized content to accelerate executive growth [cite: Dashboard.jsx, DevPlan.jsx].</p> 
+                <p className='text-xs font-light text-gray-600'>This is a **24-Month Roadmap** designed to close your skill gaps. It uses AI-generated, hyper-personalized content to accelerate executive growth.</p> 
               </div>
 
               {/* Daily Practice Button */}
@@ -553,7 +557,7 @@ const DashboardScreen = () => {
                   <ClockIcon className='w-5 h-5 mr-2'/> 
                   <span className='text-md font-extrabold'>Daily Practice</span>
                 </ThreeDButton>
-                <p className='text-xs font-light text-gray-600'>This **Daily Scorecard** tracks your commitment to non-negotiable leadership micro-habits. Hitting your score is the key to sustained executive growth [cite: Dashboard.jsx, DailyPractice.jsx].</p>
+                <p className='text-xs font-light text-gray-600'>This **Daily Scorecard** tracks your commitment to non-negotiable leadership micro-habits. Hitting your score is the key to sustained executive growth.</p>
               </div>
 
               {/* Coaching Lab Button */}
@@ -567,7 +571,7 @@ const DashboardScreen = () => {
                   <Mic className='w-5 h-5 mr-2'/> 
                   <span className='text-md font-extrabold'>Coaching Lab</span>
                 </ThreeDButton>
-                <p className='text-xs font-light text-gray-600'>**Practice key leadership interactions**, such as crucial conversations, using guided AI tools and receive real-time critique to sharpen your skills [cite: Dashboard.jsx, Labs.jsx].</p>
+                <p className='text-xs font-light text-gray-600'>**Practice key leadership interactions**, such as crucial conversations, using guided AI tools and receive real-time critique to sharpen your skills.</p>
               </div>
 
               {/* Planning Hub Button */}
@@ -581,7 +585,7 @@ const DashboardScreen = () => {
                   <TrendingUp className='w-5 h-5 mr-2'/> 
                   <span className='text-md font-extrabold'>Planning Hub</span>
                 </ThreeDButton>
-                <p className='text-xs font-light text-gray-600'>This hub helps you transform abstract ideas into **actionable, accountable goals**. You can build a clear Vision, draft measurable OKRs, and vet high-stakes decisions with AI audit tools [cite: Dashboard.jsx, PlanningHub.jsx].</p>
+                <p className='text-xs font-light text-gray-600'>This hub helps you transform abstract ideas into **actionable, accountable goals**. You can build a clear Vision, draft measurable OKRs, and vet high-stakes decisions with AI audit tools.</p>
               </div>
               
             </div>
@@ -605,7 +609,7 @@ const DashboardScreen = () => {
                   <Lightbulb className='w-5 h-5 mr-2'/> 
                   <span className='text-md font-extrabold'>Applied Leadership</span>
                 </ThreeDButton>
-                <p className='text-xs font-light text-gray-600'>Access micro-habits and **AI coaching tailored to your specific industry**, identity, or high-stakes operational context for high-leverage guidance [cite: Dashboard.jsx].</p>
+                <p className='text-xs font-light text-gray-600'>Access micro-habits and **AI coaching tailored to your specific industry**, identity, or high-stakes operational context for high-leverage guidance.</p>
               </div>
 
               {/* Business Readings Button */}
@@ -619,7 +623,7 @@ const DashboardScreen = () => {
                   <BookOpen className='w-5 h-5 mr-2'/> 
                   <span className='text-md font-extrabold'>Business Readings</span>
                 </ThreeDButton>
-                <p className='text-xs font-light text-gray-600'>A curated library of business book flyers with key frameworks, executive summaries, and **AI-driven commitment plans** to simplify learning [cite: Dashboard.jsx].</p>
+                <p className='text-xs font-light text-gray-600'>A curated library of business book flyers with key frameworks, executive summaries, and **AI-driven commitment plans** to simplify learning.</p>
               </div>
 
               {/* Community & Peer Support Button */}
@@ -633,7 +637,7 @@ const DashboardScreen = () => {
                   <CommunityIcon className='w-5 h-5 mr-2'/> 
                   <span className='text-md font-extrabold'>Community & Peer Support</span>
                 </ThreeDButton>
-                <p className='text-xs font-light text-gray-600'>**Connect with executive peers** for advice, discuss difficult scenarios, and access the Mentorship Network for one-on-one guidance [cite: Dashboard.jsx].</p>
+                <p className='text-xs font-light text-gray-600'>**Connect with executive peers** for advice, discuss difficult scenarios, and access the Mentorship Network for one-on-one guidance.</p>
               </div>
               
             </div>

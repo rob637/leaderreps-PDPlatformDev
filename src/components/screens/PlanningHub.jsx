@@ -5,7 +5,7 @@ import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useAppServices } from '../../services/useAppServices.jsx'; 
 import { 
     ArrowLeft, CheckCircle, PlusCircle, X, TrendingUp, Target, AlertTriangle, Lightbulb, 
-    ShieldCheck, Cpu, Trash2, Zap, MessageSquare, BookOpen, Clock, CornerRightUp, Award, Activity, Link
+    ShieldCheck, Cpu, Trash2, Zap, MessageSquare, BookOpen, Clock, CornerRightUp, Award, Activity, Link, CornerDownRight
 } from 'lucide-react';
 
 // ---  COLOR PALETTE (For consistency across modules) ---
@@ -102,6 +102,8 @@ const mdToHtml = async (md) => {
 const LEADERSHIP_TIERS = {
     T1: { id: 'T1', name: 'Self-Awareness & Trust', icon: 'HeartPulse', color: 'indigo-500' },
     T2: { id: 'T2', name: 'Operational Excellence', icon: 'Zap', color: 'yellow-500' },
+    T3: { id: 'T3', name: 'Lead People & Coaching', icon: 'Users', color: 'yellow-600' },
+    T4: { id: 'T4', name: 'Conflict & Team Health', icon: 'AlertTriangle', color: 'red-600' },
     T5: { id: 'T5', name: 'Vision & Strategic Clarity', icon: 'TrendingUp', color: 'red-600' },
 };
 
@@ -113,21 +115,26 @@ const PreMortemView = ({ setPlanningView }) => {
     const { planningData, updatePlanningData, updateCommitmentData, navigate, callSecureGeminiAPI, hasGeminiKey, GEMINI_MODEL } = useAppServices();
     
     // Fallback/initial data (using optional chaining for safety)
+    // FIX 1: Provide safe defaults for initial state if planningData is null/empty
     const [decision, setDecision] = useState(planningData?.last_premortem_decision || 'Should we launch a new product feature aimed at the enterprise market next quarter?');
     const [outcome, setOutcome] = useState('Successfully launch the feature and secure 5 new enterprise customers.'); 
-    const [risks, setRisks] = useState(['Misalignment between sales and product teams on target customer.', 'Feature dependencies delay launch by 4 weeks.']); 
+    const [risks, setRisks] = useState(planningData?.risks || ['Misalignment between sales and product teams on target customer.', 'Feature dependencies delay launch by 4 weeks.']); 
 
     const [isGenerating, setIsGenerating] = useState(false);
     const [auditResult, setAuditResult] = useState('');
     const [auditHtml, setAuditHtml] = useState('');
     const [mitigationText, setMitigationText] = useState(''); 
-    const [riskScenario, setRiskScenario] = useState(''); // NEW: Mock for risk scenario creation
+    const [riskScenario, setRiskScenario] = useState(''); 
 
     useEffect(() => {
-        if (planningData?.last_premortem_decision) {
+        // Only attempt to set decision/risks if planningData exists and the local state is still at default or empty
+        if (planningData && planningData.last_premortem_decision && decision.length < 100) {
              setDecision(planningData.last_premortem_decision);
         }
-    }, [planningData?.last_premortem_decision]);
+        if (planningData?.risks && planningData.risks.length > 0) {
+            setRisks(planningData.risks);
+        }
+    }, [planningData]);
 
     useEffect(() => {
         if (!auditResult) { setAuditHtml(''); setMitigationText(''); setRiskScenario(''); return; }
@@ -179,10 +186,11 @@ const PreMortemView = ({ setPlanningView }) => {
         }
 
         const userQuery = `**Decision:** ${decision}\n**Desired Outcome:** ${outcome}\n**Identified Risks:** ${primaryRisks.join('; ')}`;
-        // CRITICAL FIX: Ensure prompt forces the structured output for reliable parsing.
+        // CRITICAL FIX 2: Ensure prompt forces the structured output for reliable parsing.
         const systemPrompt = "You are the Decision-Making Auditor, acting as the 'Devil's Advocate' and a strategic planning expert. Your task is to perform a pre-mortem analysis. Critique the user's inputs based on: 1) **Unforeseen Blind Spots (Top 2-3 new risks)**: Identify risks the user is likely missing. 2) **Risk Amplification**: Select the user's biggest risk and explain how it could be worse. 3) **Mitigation Strategy**: Suggest a concrete action plan (1-2 steps) for the highest combined risk (yours or the user's). Use clear Markdown headings and bold key points. Use this exact structure: ## Pre-Mortem Audit Results; ### Unforeseen Blind Spots; ### Risk Amplification; ### Mitigation Strategy";
 
         try {
+            // CRITICAL FIX 3: Correct payload structure for callSecureGeminiAPI wrapper
             const payload = {
                 contents: [{ role: "user", parts: [{ text: userQuery }] }],
                 systemInstruction: { parts: [{ text: systemPrompt }] },
@@ -193,7 +201,11 @@ const PreMortemView = ({ setPlanningView }) => {
             const text = result?.candidates?.[0]?.content?.parts?.[0]?.text || "Audit failed to generate results. Check API connection or server logs.";
             setAuditResult(text);
             
-            await updatePlanningData({ last_premortem_decision: decision });
+            // FIX 4: Save decision and risks to planningData upon successful audit
+            await updatePlanningData({
+                last_premortem_decision: decision,
+                risks: risks
+            });
 
         } catch (error) {
             // FIX: Graceful error handling to stop the spinner and report API failure
@@ -220,9 +232,11 @@ const PreMortemView = ({ setPlanningView }) => {
             targetColleague: null,
         };
 
+        // FIX 5: updateCommitmentData takes an updater function that merges the data structure
+        // CRITICAL FIX 5: Use spread operator on outer data object to preserve other fields
         const success = await updateCommitmentData(data => {
             const existingCommitments = data?.active_commitments || [];
-            return { active_commitments: [...existingCommitments, newCommitment] };
+            return { ...data, active_commitments: [...existingCommitments, newCommitment] };
         });
 
         if (success) {
@@ -317,7 +331,7 @@ const PreMortemView = ({ setPlanningView }) => {
                         <div className='mt-6 pt-4 border-t border-gray-300 space-y-3'>
                             <p className='text-sm font-semibold text-[#002E47] flex items-center'><Award className="w-4 h-4 mr-1 text-[#47A88D]" /> Actionable Next Steps:</p>
                             <Button onClick={handleCommitmentCreation} className="w-full bg-[#47A88D] hover:bg-[#349881]">
-                                <PlusCircle className='w-5 h-5 mr-2' /> Turn Mitigation into Daily Commitment (Tier 5)
+                                <PlusCircle className='w-5 h-5 mr-2' /> Turn Mitigation into Daily Commitment (T5)
                             </Button>
                             
                             <Button onClick={handleCreateScenario} variant="outline" className="w-full text-[#E04E1B] border-[#E04E1B] hover:bg-[#E04E1B]/10">
@@ -334,6 +348,7 @@ const PreMortemView = ({ setPlanningView }) => {
 const VisionBuilderView = ({ setPlanningView }) => {
     const { planningData, updatePlanningData, callSecureGeminiAPI, hasGeminiKey, GEMINI_MODEL } = useAppServices();
 
+    // FIX 6: Ensure initial state defaults to empty string if planningData is null
     const [vision, setVision] = useState(planningData?.vision || '');
     const [mission, setMission] = useState(planningData?.mission || '');
     const [isSaving, setIsSaving] = useState(false);
@@ -403,6 +418,7 @@ const VisionBuilderView = ({ setPlanningView }) => {
         Mission: "${mission.trim()}"`;
 
         try {
+            // CRITICAL FIX 7: Correct payload structure for callSecureGeminiAPI wrapper
             const payload = {
                 contents: [{ role: "user", parts: [{ text: userQuery }] }],
                 systemInstruction: { parts: [{ text: systemPrompt }] },
@@ -485,7 +501,7 @@ const VisionBuilderView = ({ setPlanningView }) => {
                         : "Requires Gemini API Key to run. Check App Settings."
                     }
                 >
-                    <Button onClick={critiqueVision} disabled={isCritiquing || !vision || !mission} className="w-full bg-[#E04E1B] hover:bg-red-700">
+                    <Button onClick={critiqueVision} disabled={isCritiquing} className="w-full bg-[#E04E1B] hover:bg-red-700">
                         {isCritiquing ? (
                             <div className="flex items-center justify-center">
                                 <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
@@ -619,6 +635,7 @@ const OKRDraftingView = ({ setPlanningView }) => {
         const userQuery = `Critique this set of Quarterly OKRs:\n\n${draftedOKRs}`;
 
         try {
+            // CRITICAL FIX 8: Correct payload structure for callSecureGeminiAPI wrapper
             const payload = {
                 contents: [{ role: "user", parts: [{ text: userQuery }] }],
                 systemInstruction: { parts: [{ text: systemPrompt }] },
@@ -761,7 +778,8 @@ const AlignmentTrackerView = ({ setPlanningView }) => {
     const { planningData, updatePlanningData, updateCommitmentData, navigate, callSecureGeminiAPI, hasGeminiKey, GEMINI_MODEL } = useAppServices();
 
     // Mock progress data for visualization, using loaded objectives for titles
-    const objectives = planningData?.okrs?.map((o, index) => {
+    // FIX 12: Safely access planningData.okrs, defaulting to an empty array for mapping
+    const objectives = (planningData?.okrs || []).map((o, index) => {
         // Use a persistent way to mock progress based on ID if real data is missing
         const seed = String(o.id).slice(-2);
         let progress = 0;
@@ -783,6 +801,7 @@ const AlignmentTrackerView = ({ setPlanningView }) => {
         { id: 3, title: 'Develop Cross-Functional Skills (Mock)', progress: 0.30, status: 'At Risk', successionDependency: null },
     ];
     
+    // FIX 9: Ensure initial state defaults to empty string if planningData is null
     const [misalignmentNotes, setMisalignmentNotes] = useState(planningData?.misalignmentNotes || '');
     const [isSaving, setIsSaving] = useState(false);
     const [isSavedConfirmation, setIsSavedConfirmation] = useState(false); // NEW: Save confirmation state
@@ -808,10 +827,11 @@ const AlignmentTrackerView = ({ setPlanningView }) => {
         // We'll update the main planningData object with a timestamped field.
         try {
             // FIX 1: Ensure updatePlanningData is awaited and returns a promise for proper async flow.
-            await updatePlanningData({ 
+            await updatePlanningData(data => ({ 
+                ...data, // CRITICAL FIX: Ensure existing data is spread
                 lastAlignmentCheck: new Date().toISOString(),
                 misalignmentNotes: misalignmentNotes,
-            });
+            }));
             console.log('Misalignment Log Saved Successfully.');
             
             setIsSavedConfirmation(true);
@@ -850,6 +870,7 @@ const AlignmentTrackerView = ({ setPlanningView }) => {
         const userQuery = `Misalignment Log: "${misalignmentNotes.trim()}"\n\nGenerate a preventative daily commitment.`;
 
         try {
+            // CRITICAL FIX 10: Correct payload structure for callSecureGeminiAPI wrapper
             const payload = {
                 contents: [{ role: "user", parts: [{ text: userQuery }] }],
                 systemInstruction: { parts: [{ text: systemInstruction }] },
@@ -880,8 +901,8 @@ const AlignmentTrackerView = ({ setPlanningView }) => {
             setSuggestionCommitment(parsedJson);
 
         } catch (error) {
+            // FIX 3: Handle both network errors and JSON parsing errors
             console.error("Gemini API Error:", error);
-            // Handle both network errors and JSON parsing errors
             let errorMsg = "An error occurred during AI suggestion generation. Check your network connection.";
             if (error instanceof SyntaxError) {
                 errorMsg = `AI Critique Failed: Could not parse response as JSON. The model may have included conversational text. Raw output: ${lastJsonText}`;
@@ -913,7 +934,7 @@ const AlignmentTrackerView = ({ setPlanningView }) => {
 
         const success = await updateCommitmentData(data => {
             const existingCommitments = data?.active_commitments || [];
-            return { active_commitments: [...existingCommitments, newCommitment] };
+            return { ...data, active_commitments: [...existingCommitments, newCommitment] };
         });
 
         if (success) {
@@ -1007,7 +1028,7 @@ const AlignmentTrackerView = ({ setPlanningView }) => {
                         <div className='mt-4 p-4 rounded-xl bg-white border border-[#47A88D] shadow-md'>
                             <p className='text-sm font-semibold text-[#47A88D] mb-2 flex items-center'><Lightbulb className="w-4 h-4 mr-1"/> AI Preventative Action ({suggestionCommitment?.tier || 'T?' }):</p>
                             <p className='text-md text-[#002E47] font-medium'>{suggestionText}</p>
-                            <Button onClick={handleAddSuggestionToScorecard} disabled={!suggestionCommitment?.tier} className="w-full mt-3 bg-[#47A88D] hover:bg-[#349881] text-xs py-2 px-3">
+                            <Button onClick={handleAddSuggestionToScorecard} disabled={!suggestionCommitment?.tier} variant='primary' className="w-full mt-3 text-xs py-2 px-3">
                                 <PlusCircle className='w-4 h-4 mr-1' /> Add to Daily Scorecard
                             </Button>
                         </div>
@@ -1021,7 +1042,7 @@ const AlignmentTrackerView = ({ setPlanningView }) => {
 
 // --- MAIN ROUTER ---
 export default function PlanningHubScreen() {
-    // FIX: Use useAppServices from the correctly loaded context
+    // FIX 11: Use useAppServices from the correctly loaded context
     const { isLoading, error } = useAppServices();
 
     if (isLoading) {

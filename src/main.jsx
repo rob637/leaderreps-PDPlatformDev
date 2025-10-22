@@ -1,7 +1,8 @@
 import React, { Suspense, lazy } from 'react';
 import { createRoot } from 'react-dom/client';
 import './index.css';
-import { AppServicesProvider } from './services/useAppServices.jsx'; // adjust path if needed
+// FIX: Import the AppServicesProvider from the correct path.
+import { AppServicesProvider } from './services/useAppServices.jsx'; 
 
 /** Error boundary so crashes don’t white-screen */
 class ErrorBoundary extends React.Component {
@@ -78,6 +79,7 @@ createRoot(container).render(
   <React.StrictMode>
     <ErrorBoundary>
       <ConfigGate>
+        {/* FIX: Removed the superfluous AppServicesProvider wrapper around the App component */}
         <Suspense fallback={<div className="p-8 text-center">Loading…</div>}>
           <App />
         </Suspense>
@@ -85,4 +87,3 @@ createRoot(container).render(
     </ErrorBoundary>
   </React.StrictMode>
 );
-

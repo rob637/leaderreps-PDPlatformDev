@@ -5,17 +5,8 @@ import {
     Users, MessageSquare, Briefcase, Bell, PlusCircle, User, ArrowLeft, Target, Settings, Filter, Clock,
     Star, CheckCircle
 } from 'lucide-react';
-// FIX: Mocking useAppServices since the environment can't resolve relative paths
-const useAppServices = () => ({
-    // Mock user for MyThreads filtering and display
-    user: { id: 'mock-user-123', name: 'Executive Leader' }, 
-    navigate: (screen, params) => console.log(`Navigating to ${screen} with params:`, params),
-    // Added mock data needed for other modules
-    commitmentData: { active_commitments: [] }, 
-    planningData: { okrs: [] },
-    hasGeminiKey: () => true,
-    GEMINI_MODEL: 'gemini-2.5-flash-preview-09-2025',
-});
+// CRITICAL FIX: Import the actual service hook
+import { useAppServices } from '../../services/useAppServices.jsx'; 
 
 
 /* =========================================================
@@ -72,7 +63,6 @@ const MOCK_THREADS = [
 // CommunityHomeView updated to accept filteredThreads as a prop
 // ------------------------------------------------------------------
 const CommunityHomeView = ({ setView, user, currentTierFilter, setCurrentTierFilter, filteredThreads }) => {
-    // FIX: Removed local filtering, now using filteredThreads prop
     const [expandedThreadId, setExpandedThreadId] = useState(null);
 
     return (
@@ -112,11 +102,12 @@ const CommunityHomeView = ({ setView, user, currentTierFilter, setCurrentTierFil
             <div className="space-y-3">
                 {filteredThreads.map(thread => {
                     const isExpanded = thread.id === expandedThreadId;
-                    const isMyThread = thread.ownerId === user.id; // B1 Check
+                    // CRITICAL FIX 1: Ensure safe access to user.id (which can be null/undefined)
+                    const isMyThread = user?.id && thread.ownerId === user.id; 
                     
                     // B1: Adjust border color for owned threads
                     const threadBorderColor = isMyThread 
-                        ? LEADERSHIP_TIERS_META[thread.tier].hex || COLORS.TEAL // Use tier color for owned threads
+                        ? LEADERSHIP_TIERS_META[thread.tier]?.hex || COLORS.TEAL // Use tier color for owned threads
                         : thread.impact ? COLORS.ORANGE : COLORS.TEAL; // Use impact/default for others
 
                     return (
@@ -148,7 +139,7 @@ const CommunityHomeView = ({ setView, user, currentTierFilter, setCurrentTierFil
                             </div>
                             
                             {/* EXPANDED CONTENT */}
-                            <div className={`mt-3 overflow-hidden transition-all duration-500 ${isExpanded ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'}`}>
+                            <div className className={`mt-3 overflow-hidden transition-all duration-500 ${isExpanded ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'}`}>
                                 <div className='p-3 bg-gray-50 border border-gray-200 rounded-lg'>
                                     <p className='text-sm font-medium text-[#002E47] mb-2'>Original Post:</p>
                                     <p className='text-sm text-gray-700'>{thread.details}</p>
@@ -174,8 +165,9 @@ const CommunityHomeView = ({ setView, user, currentTierFilter, setCurrentTierFil
 };
 
 const MyThreadsView = ({ user }) => {
-    // FIX: Filter the mock threads to show threads owned by the mock user
-    const myThreads = MOCK_THREADS.filter(thread => thread.ownerId === user.id);
+    // CRITICAL FIX 2: Ensure user access is safe before filtering
+    const userId = user?.id || 'NO_USER_ID';
+    const myThreads = MOCK_THREADS.filter(thread => thread.ownerId === userId);
 
     return (
         <div className="p-6 rounded-xl border shadow-lg" style={{ borderColor: COLORS.SUBTLE, backgroundColor: COLORS.OFF_WHITE }}>
@@ -313,7 +305,11 @@ const NewThreadView = ({ setView }) => {
 ========================================================= */
 
 const CommunityScreen = () => {
-    const { user, navigate } = useAppServices();
+    // CRITICAL FIX 3: Safely use the hook and provide a mock user structure if the context is null
+    const services = useAppServices();
+    const { user, navigate } = services;
+    const safeUser = user || { id: 'mock-user-123', name: 'Executive Leader' };
+
     const [view, setView] = useState('home');
     const [currentTierFilter, setCurrentTierFilter] = useState('All');
 
@@ -337,7 +333,7 @@ const CommunityScreen = () => {
     const renderContent = () => {
         switch(view) {
             case 'my-threads':
-                return <MyThreadsView user={user} />;
+                return <MyThreadsView user={safeUser} />;
             case 'mentorship':
                 return <MentorshipView />;
             case 'notifications':
@@ -348,7 +344,7 @@ const CommunityScreen = () => {
             default:
                 return <CommunityHomeView 
                     setView={setView} 
-                    user={user} 
+                    user={safeUser} 
                     currentTierFilter={currentTierFilter} 
                     setCurrentTierFilter={setCurrentTierFilter}
                     filteredThreads={filteredThreads} // Pass centralized data

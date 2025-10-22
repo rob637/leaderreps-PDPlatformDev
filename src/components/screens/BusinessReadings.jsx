@@ -22,7 +22,7 @@ const COMPLEXITY_MAP = {
 };
 
 /* =========================================================
-   UI COMPONENTS (Mocks omitted for brevity)
+   UI COMPONENTS (Standardized)
 ========================================================= */
 const ExecSwitch = ({ checked, onChange }) => { /* ... */ return (
     <div className="flex items-center gap-2">
@@ -115,7 +115,6 @@ function getFrameworks(book) {
 
 // --- ERROR DISPLAY FUNCTIONS (Used when AI fails) ---
 
-// FIX 1: This is the robust, styled content returned when the API fails
 const API_ERROR_HTML = (executive, book) => {
     const errorTitle = executive ? "EXECUTIVE BRIEFING UNAVAILABLE" : "FULL FLYER UNAVAILABLE";
     const baseContent = executive 
@@ -159,10 +158,13 @@ async function buildAIFlyerHTML({ book, tier, executive, callSecureGeminiAPI }) 
   try {
     // 1. ATTEMPT LIVE API CALL with Google Search grounding
     const out = await callSecureGeminiAPI({ 
-      system_instruction: { parts: [{ text: systemPrompt }] }, 
-      contents: [{ role: "user", parts: [{ text: userPrompt }] }], // Ensure grounding is active
+      // CRITICAL FIX: Ensure the systemInstruction is in the correct nested format for the App.jsx caller
+      systemInstruction: { parts: [{ text: systemPrompt }] }, 
+      // NOTE: callSecureGeminiAPI handles model and grounding. The contents array is correct.
+      contents: [{ role: "user", parts: [{ text: userPrompt }] }], 
     });
     
+    // FIX 2: Safely extract text, handling potential non-text parts or missing candidates
     let html = out?.candidates?.[0]?.content?.parts?.[0]?.text || '';
     
     // 2. PROCESS SUCCESSFUL RESPONSE
@@ -186,7 +188,7 @@ async function buildAIFlyerHTML({ book, tier, executive, callSecureGeminiAPI }) 
   }
 }
 
-// ... (rest of the file remains the same, including getQuestionScore and handleAiSubmit)
+// ... (rest of the file remains the same, including getQuestionScore)
 const getQuestionScore = (query, bookTitle) => {
     const q = query.toLowerCase().trim();
     if (q.length < 15) return { score: 0, tip: 'Question is too short. Be specific about your challenge.' };
@@ -246,7 +248,8 @@ async function handleAiSubmit(e, services, selectedBook, aiQuery, setIsSubmittin
       Guidelines: Answer directly with 3–5 sentences. Include one concrete next action that applies the book's principle to the user's situation. Do not use markdown other than **bold** for emphasis. Ensure the response flows naturally like coaching advice.`;
 
     const out = await services.callSecureGeminiAPI({
-      system_instruction: { parts: [{ text: systemPrompt }] },
+      // CRITICAL FIX: Ensure the systemInstruction is in the correct nested format for the App.jsx caller
+      systemInstruction: { parts: [{ text: systemPrompt }] },
       contents: [{ role: 'user', parts: [{ text: `Regarding "${selectedBook.title}": ${q}` }] }],
     });
 
@@ -261,8 +264,6 @@ async function handleAiSubmit(e, services, selectedBook, aiQuery, setIsSubmittin
     setIsSubmitting(false);
   }
 }
-
-// ... (Rest of the BookListStable and BookFlyerStable components, which are mostly UI)
 
 // Fix 1: Search Input (Isolated and Memoized)
 const SearchInput = React.memo(({ value, onChange }) => {
@@ -727,13 +728,14 @@ export default function BusinessReadingsScreen() {
       category: 'Reading',
       tier: selectedTier,
       notes: `Flyer theme: ${book.theme}. Est. ${book.duration} min.`,
-      status: 'Active',
+      status: 'Pending',
       progressMinutes: 0,
       totalDuration: book.duration,
       createdAt: new Date().toISOString(),
     };
     // The real updateCommitmentData must handle adding the new commitment to the active_commitments array
     const ok = updateCommitmentData(data => ({
+        ...data, // CRITICAL FIX 4: Spread existing data when updating commitments
         active_commitments: [...(data?.active_commitments || []), newCommitment]
     }));
     if (ok) {

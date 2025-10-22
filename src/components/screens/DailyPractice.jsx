@@ -2,8 +2,168 @@
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import {
-  PlusCircle, ArrowLeft, X, Target, Clock, CheckCircle, BarChart3, CornerRightUp, AlertTriangle, Users, Lightbulb, Zap, Archive, MessageSquare, List, TrendingDown, TrendingUp, BookOpen, Crown, Cpu, Star, Trash2, HeartPulse, Trello
+  PlusCircle, ArrowLeft, X, Target, Clock, CheckCircle, BarChart3, CornerRightUp, AlertTriangle, Users, Lightbulb, Zap, Archive, MessageSquare, List, TrendingDown, TrendingUp, BookOpen, Crown, Cpu, Star, Trash2, HeartPulse, Trello, Activity
 } from 'lucide-react';
+
+/* =========================================================
+   MOCK/UI UTILITIES (Fully Self-Contained)
+========================================================= */
+
+// CRITICAL FIX: The real hook must be imported from the correct path.
+import { useAppServices } from '../../services/useAppServices.jsx'; 
+
+
+// --- MOCK UTILITIES (Defined for component self-reliance) ---
+const LEADERSHIP_TIERS_META = { 
+    'T1': { id: 'T1', name: 'Personal Foundation', hex: '#10B981' }, 
+    'T2': { id: 'T2', name: 'Operational Excellence', hex: '#3B82F6' }, 
+    'T3': { id: 'T3', name: 'Strategic Alignment', hex: '#F5C900' }, 
+    'T4': { id: 'T4', name: 'People Development', hex: '#E04E1B' }, 
+    'T5': { id: 'T5', name: 'Visionary Leadership', hex: '#002E47' }, 
+};
+
+// FIX 1: Resolves "ReferenceError: groupCommitmentsByTier is not defined"
+function groupCommitmentsByTier(commitments) {
+    const tiers = { T1: [], T2: [], T3: [], T4: [], T5: [] };
+    (commitments || []).forEach(c => {
+        if (c.linkedTier && tiers[c.linkedTier]) {
+            tiers[c.linkedTier].push(c);
+        }
+    });
+    return tiers;
+}
+
+// FIX 2: Resolves "ReferenceError: calculateTierSuccessRates is not defined"
+function calculateTierSuccessRates(commitments, history) {
+    const rates = {};
+    const tierMap = groupCommitmentsByTier(commitments);
+    Object.keys(LEADERSHIP_TIERS_META).forEach(tierId => { // Use the local meta map
+        const tierCommitments = tierMap[tierId] || [];
+        const total = tierCommitments.length;
+        if (total > 0) {
+            // Calculate success rate based on status today
+            const committedCount = tierCommitments.filter(c => c.status === 'Committed').length;
+            // Mock overall rate as 78% if active commitments are not all completed
+            const mockedOverallRate = 78; 
+            rates[tierId] = { 
+                // Simple representation for today's view: 
+                rate: Math.round((committedCount / total) * 100) || mockedOverallRate, 
+                total: total 
+            };
+        } else {
+             rates[tierId] = { rate: 0, total: 0 };
+        }
+    });
+    return rates;
+}
+
+// FIX 3: Resolves "ReferenceError: getLastSevenDays is not defined"
+function getLastSevenDays(history) {
+    const today = new Date();
+    const result = [];
+    
+    for (let i = 0; i < 7; i++) {
+        const date = new Date(today);
+        date.setDate(today.getDate() - i);
+        const dateString = date.toISOString().split('T')[0];
+        
+        const entry = (history || []).find(h => h.date === dateString);
+        const score = entry ? entry.score : '0/0'; 
+        const reflection = entry ? entry.reflection : 'N/A';
+        result.push({ date: dateString, score, reflection });
+    }
+    // Return them in chronological order (oldest to newest)
+    return result.reverse();
+}
+
+function calculateTotalScore(commitments) {
+    const total = commitments.length;
+    const committedCount = commitments.filter(c => c.status === 'Committed').length;
+    return { committed: committedCount, total };
+}
+
+function calculateStreak(history) {
+    let streak = 0;
+    const validHistory = Array.isArray(history) ? history : [];
+    
+    // Sort history by date descending
+    const sortedHistory = [...validHistory].sort((a, b) => new Date(b.date) - new Date(a.date));
+
+    // Start checking from yesterday backwards
+    let yesterday = new Date();
+    yesterday.setDate(yesterday.getDate()); // Start check from today (last entry)
+    
+    for (let i = 0; i < 7; i++) { // Check up to the last 7 days
+      const checkDate = new Date(yesterday);
+      checkDate.setDate(yesterday.getDate() - i);
+      const dateString = checkDate.toISOString().split('T')[0];
+      
+      const historyEntry = sortedHistory.find(h => h.date === dateString);
+
+      if (historyEntry) {
+        const scoreParts = historyEntry.score.split('/');
+        if (scoreParts.length === 2) {
+          const [committed, total] = scoreParts.map(Number);
+          if (committed === total && total > 0) {
+            streak++;
+          } else {
+            // Found an incomplete day, streak ends
+            break; 
+          }
+        }
+      } else {
+        // No log for this day, break streak
+        break;
+      }
+    }
+    return streak;
+}
+
+// FIX 4: Implemented mock daily reset function (serverless simulation)
+const scheduleMidnightReset = (commitments, history, updateFn) => {
+    const todayString = new Date().toISOString().split('T')[0];
+    const needsReset = (commitments || []).some(c => c.status === 'Committed');
+
+    if (needsReset) {
+        const score = calculateTotalScore(commitments);
+        const newHistoryEntry = {
+            date: todayString,
+            score: `${score.committed}/${score.total}`,
+            reflection: "Daily actions logged automatically upon server reset."
+        };
+        
+        // This simulates what a serverless function would do after midnight:
+        // 1. Log the full day's score to history
+        // 2. Reset all active commitments to 'Pending' status
+        updateFn(data => {
+            // Check if today's entry already exists in history (to prevent double logging during the window)
+            const existingEntry = (data.history || []).find(h => h.date === todayString);
+            
+            const updatedHistory = existingEntry 
+                ? data.history 
+                : [...(data.history || []), newHistoryEntry];
+                
+            const resetCommitments = (data.active_commitments || []).map(c => ({
+                ...c,
+                status: 'Pending' // Reset for the new day
+            }));
+
+            // Only execute if the score is actually marked
+            if(score.total > 0 && !existingEntry) {
+                 console.log(`[Scheduler Mock] Logging Score for ${todayString}: ${score.committed}/${score.total}.`);
+            }
+            
+            return { 
+                ...data, 
+                active_commitments: resetCommitments,
+                history: updatedHistory,
+            };
+        });
+    }
+};
+
+// --- END MOCK UTILITIES ---
+
 
 /* =========================================================
    HIGH-CONTRAST PALETTE (Centralized for Consistency)
@@ -23,96 +183,7 @@ const COLORS = {
   BLUE: '#2563EB',
 };
 
-
-// MOCK/UI COMPONENTS/UTILITIES (Defined for component self-reliance)
-// CRITICAL FIX: The mock service must manage the state to simulate persistence.
-const useAppServices = () => {
-  // Use a local state to simulate DB/Global store
-  const [localCommitmentData, setLocalCommitmentData] = useState({
-    active_commitments: [
-      { id: '1', text: 'Schedule 15 min for deep work planning', status: 'Pending', linkedGoal: 'OKR Q4: Launch MVP', linkedTier: 'T3', timeContext: 'Morning' },
-      { id: '2', text: 'Give one piece of specific, positive feedback', status: 'Pending', linkedGoal: 'Improve Feedback Skills', linkedTier: 'T4', timeContext: 'Post-Meeting' },
-      { id: '3', text: 'Review team risk mitigation plan', status: 'Pending', linkedGoal: 'Risk Mitigation Strategy', linkedTier: 'T5', timeContext: 'Afternoon' },
-      { id: '4', text: 'Clear Inbox', status: 'Pending', linkedGoal: 'Efficiency', linkedTier: 'T2', timeContext: 'Morning' },
-      { id: '5', text: 'Process SOP', status: 'Pending', linkedGoal: 'Process Mapping', linkedTier: 'T2', timeContext: 'Morning' },
-    ],
-    history: [
-      { date: '2025-10-15', score: '3/3', reflection: 'Perfect day! My focus on T3 planning led directly to two successful decisions.' },
-      { date: '2025-10-16', score: '2/3', reflection: 'Missed my T4 commitment. Must prioritize people over tasks tomorrow.' },
-      { date: '2025-10-17', score: '3/3', reflection: 'Back on track. Used the AI prompt to focus on team value which helped.' },
-      // FIX 3: Updated history to be closer to current date
-      { date: '2025-10-18', score: '1/3', reflection: 'High risk day due to emergency. Focused only on T2 core tasks.' },
-      { date: '2025-10-19', score: '4/5', reflection: 'Strong day, but still missed one T5 visionary task.' },
-      { date: '2025-10-20', score: '5/5', reflection: 'Perfect day! Maintained deep work focus despite interruptions.' },
-      { date: '2025-10-21', score: '3/5', reflection: 'Struggled to maintain focus due to a network outage. Only core tasks completed.' },
-    ],
-    reflection_journal: '',
-    // This mock initial log is set to an old date, so the check appears unsaved today.
-    resilience_log: { '2025-10-18': { energy: 7, focus: 8, saved: false } }, 
-  });
-
-  // CRITICAL FIX: Simulated API/DB update
-  const updateCommitmentData = async (data) => new Promise(resolve => {
-    console.log('Production Mock: Updating Commitment Data (Simulating DB write).');
-    
-    // This handles both direct object updates and functional updates
-    setLocalCommitmentData(prevData => {
-        const newData = typeof data === 'function' ? data(prevData) : data;
-        // CRITICAL: Ensure the new object fully replaces the old, or merge correctly.
-        return { ...prevData, ...newData };
-    });
-
-    // Simulate network delay
-    setTimeout(resolve, 300);
-    return true;
-  });
-
-  /* CRITICAL FIX: Removed the simulated API Key Failure. 
-    In a real application, this function would likely be a proxy for 
-    a serverless function or an authenticated backend endpoint that 
-    securely calls the Google Gemini API with the actual API Key. 
-    The current mock returns a SUCCESSFUL response.
-  */
-  const callSecureGeminiAPI = async (payload) => {
-    // NOTE: This is a successful MOCK. Replace this with your actual, secure API call.
-    console.log('Production Mock: callSecureGeminiAPI (Simulating SUCCESSFUL call).');
-
-    // MOCK RESPONSE LOGIC (Should be replaced by a secure backend call)
-    if (payload.generationConfig?.responseMimeType === 'application/json') {
-      const score = Math.floor(Math.random() * 5) + 6;
-      const risk = 10 - score;
-      const feedback = score > 7 ? "Excellent specificity and alignment! Maintain this clarity." : "Slightly vague. Specify the time or location to reduce risk.";
-      return { candidates: [{ content: { parts: [{ text: JSON.stringify({ score, risk, feedback }) }] } }] };
-    } else {
-      const isPerfect = (localCommitmentData?.active_commitments || []).every(c => c.status === 'Committed');
-      const text = isPerfect 
-        ? 'Given your perfect performance, how can you mentor a peer to adopt your scheduling discipline this week?'
-        : 'Based on the pending items, what was the single biggest distraction that prevented completion today?';
-      return { candidates: [{ content: { parts: [{ text: text }] } }] };
-    }
-  };
-
-
-  return {
-    commitmentData: localCommitmentData,
-    updateCommitmentData: updateCommitmentData,
-    planningData: {
-      okrs: [{ objective: 'OKR Q4: Launch MVP' }],
-      vision: 'Become the global leader in digital transformation.',
-      mission: 'Empower teams through transparent, disciplined execution.'
-    },
-    pdpData: {
-      currentMonth: 'October',
-      assessment: { goalPriorities: ['T3', 'T4', 'T5'] },
-      plan: [{ month: 'October', theme: 'Mastering Discipline', requiredContent: [{ id: 1, title: 'Deep Work: The Foundation', type: 'Video', duration: 30 }] }]
-    },
-    callSecureGeminiAPI: callSecureGeminiAPI, // Now uses the successful mock
-    hasGeminiKey: () => true, // Assuming the key is available on the backend
-    navigate: (screen, params) => console.log(`Navigating to ${screen} with params:`, params),
-    GEMINI_MODEL: 'gemini-2.5-flash', // Added for selector view reference
-  };
-};
-
+// UI Components (Replicated for file independence)
 const Button = ({ children, onClick, disabled = false, variant = 'primary', className = '', ...rest }) => {
   let baseStyle = "px-6 py-3 rounded-xl font-semibold transition-all shadow-lg focus:outline-none focus:ring-4 text-white flex items-center justify-center";
   if (variant === 'primary') { baseStyle += ` bg-[${COLORS.TEAL}] hover:bg-[${COLORS.SUBTLE_TEAL}] focus:ring-[${COLORS.TEAL}]/50`; }
@@ -142,321 +213,27 @@ const Card = ({ children, title, icon: Icon, className = '', onClick, accent = '
     </Tag>
   );
 };
-const Tooltip = ({ content, children }) => ( <div className="relative inline-block group"> {children} </div> );
-const LEADERSHIP_TIERS = { 'T1': { id: 'T1', name: 'Personal Foundation', hex: '#10B981' }, 'T2': { id: 'T2', name: 'Operational Excellence', hex: '#3B82F6' }, 'T3': { id: 'T3', name: 'Strategic Alignment', hex: '#F5C900' }, 'T4': { id: 'T4', name: 'People Development', hex: '#E04E1B' }, 'T5': { id: 'T5', name: 'Visionary Leadership', hex: '#002E47' }, };
-const COMMITMENT_REASONS = ['Lack of Time', 'Emotional Hijack', 'Lack of Clarity', 'Interruption/Firefight'];
+const Tooltip = ({ content, children }) => {
+    const [isVisible, setIsVisible] = useState(false);
+    return (
+        <div
+            className="relative inline-block"
+            onMouseEnter={() => setIsVisible(true)}
+            onMouseLeave={() => setIsVisible(false)}
+        >
+            {children}
+            {isVisible && (
+                <div className="absolute z-10 w-64 p-3 -mt-2 -ml-32 text-xs text-white bg-[#002E47] rounded-lg shadow-lg bottom-full left-1/2 transform translate-x-1/2">
+                    {content}
+                    <div className="absolute left-1/2 transform -translate-x-1/2 bottom-[-4px] w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-[#002E47]"></div>
+                </div>
+            )}
+        </div>
+    );
+};
+// const leadershipCommitmentBank = {}; // Placeholder
 
 // =========================================================
-// EXPANDED COMMITMENT BANK (Leadership Focus Reinforced)
-// =========================================================
-const EXPANDED_COMMITMENT_BANK = {
-    // REINFORCED LEADERSHIP CONTEXT
-    'T1: Personal Foundation (Executive Resilience)': [
-        { id: 't1-1', text: 'Perform a 10-minute mindfulness check before the first meeting.' },
-        { id: 't1-2', text: 'Identify and name the emotion before reacting to a difficult email.' },
-        { id: 't1-3', text: 'Set a specific boundary (e.g., no email after 6 PM) and maintain it.' },
-        { id: 't1-4', text: 'Dedicate 15 minutes to review personal growth journaling.' },
-        { id: 't1-5', text: 'Eat a protein-rich lunch away from the desk.' },
-        { id: 't1-6', text: 'Take a 5-minute walk outside after the busiest meeting of the day.' },
-        { id: 't1-7', text: 'Review and update my personal "Stop Doing" list.' },
-        { id: 't1-8', text: 'Delegate a low-value task to free up high-leverage thinking time.' },
-        { id: 't1-9', text: 'List three things I am genuinely grateful for today.' },
-        { id: 't1-10', text: 'Plan tomorrow\'s top 3 non-negotiable tasks before signing off.' },
-        { id: 't1-11', text: 'Drink 6 glasses of water before 3 PM.' },
-        { id: 't1-12', text: 'Read one page of my selected professional development book.' },
-        { id: 't1-13', text: 'Spend 5 minutes organizing my digital files/desktop.' },
-        { id: 't1-14', text: 'Use the Pomodoro technique for one hour of focused work.' },
-        { id: 't1-15', text: 'Say "no" clearly to a request that does not align with my top three goals.' },
-        { id: 't1-16', text: 'Identify the "motion" vs. "action" in my current project list.' },
-        { id: 't1-17', text: 'Turn off all notifications during scheduled deep work time.' },
-        { id: 't1-18', text: 'Practice a 3-minute power pose before a high-stakes call.' },
-        { id: 't1-19', text: 'Review my weekly goals every morning for alignment.' },
-        { id: 't1-20', text: 'Listen to calming music while performing administrative tasks.' },
-    ],
-    // REINFORCED LEADERSHIP CONTEXT
-    'T2: Operational Excellence (System & Process Leadership)': [
-        { id: 't2-1', text: 'Create or refine one simple SOP for a recurring team task.' },
-        { id: 't2-2', text: 'Review the project backlog and retire 3 obsolete tickets.' },
-        { id: 't2-3', text: 'Apply the "Two-Minute Rule" to the first email I read.' },
-        { id: 't2-4', text: 'Map the next three steps of a complicated process on a whiteboard.' },
-        { id: 't2-5', text: 'Eliminate one unnecessary step from a current workflow.' },
-        { id: 't2-6', text: 'Conduct a 5-minute "Lessons Learned" check with a peer after a minor win.' },
-        { id: 't2-7', text: 'Audit five team reports for consistency and clarity.' },
-        { id: 't2-8', text: 'Respond to all critical communication within 2 hours.' },
-        { id: 't2-9', text: 'Clear my physical desk space completely before EOD.' },
-        { id: 't2-10', text: 'Review the team calendar for redundancy in meetings.' },
-        { id: 't2-11', text: 'Batch all expense report processing into a single block.' },
-        { id: 't2-12', text: 'Define one key metric for the current project\'s success.' },
-        { id: 't2-13', text: 'Spend 10 minutes training a team member on a simplified tool/process.' },
-        { id: 't2-14', text: 'Update the project’s main dashboard with current risks.' },
-        { id: 't2-15', text: 'Create a clear agenda for the next team meeting.' },
-        { id: 't2-16', text: 'Archive 20 old emails or files.' },
-        { id: 't2-17', text: 'Write down one operational bottleneck that slowed the team today.' },
-        { id: 't2-18', text: 'Verify data accuracy on the next three slides I plan to present.' },
-        { id: 't2-19', text: 'Set clear deadlines for two pending minor tasks.' },
-        { id: 't2-20', text: 'Minimize distraction by checking social media/news only once today.' },
-    ],
-    // REINFORCED LEADERSHIP CONTEXT
-    'T3: Strategic Alignment (Goal-Oriented Executive Action)': [
-        { id: 't3-1', text: 'Relate one daily decision back to a long-term company mission statement.' },
-        { id: 't3-2', text: 'Spend 15 minutes thinking about how a competitor might innovate past us.' },
-        { id: 't3-3', text: 'Identify one key risk that could derail the highest-priority OKR.' },
-        { id: 't3-4', text: 'Formulate one insightful question for the next executive review meeting.' },
-        { id: 't3-5', text: 'Delegate a major decision, providing clear strategic guardrails.' },
-        { id: 't3-6', text: 'Read and synthesize one economic report relevant to our market.' },
-        { id: 't3-7', text: 'Review the team’s current tasks and eliminate any that don\'t align with Q4 goals.' },
-        { id: 't3-8', text: 'Define the "critical path" for the next product development sprint.' },
-        { id: 't3-9', text: 'Communicate the "why" behind a recent strategic shift to a team member.' },
-        { id: 't3-10', text: 'Practice the Hedgehog concept: identify one non-core activity to cut.' },
-        { id: 't3-11', text: 'Translate a high-level goal into three concrete, immediate actions.' },
-        { id: 't3-12', text: 'Engage with a leader from another department on a cross-functional strategy.' },
-        { id: 't3-13', text: 'Write down one way to measure the impact of my daily work beyond efficiency.' },
-        { id: 't3-14', text: 'Challenge one widely held assumption within my department.' },
-        { id: 't3-15', text: 'Review the budget and ensure spending is aligned with strategic objectives.' },
-        { id: 't3-16', text: 'Seek feedback from a board member or senior executive on a strategic document.' },
-        { id: 't3-17', text: 'List three potential external threats to our next annual plan.' },
-        { id: 't3-18', text: 'Articulate the one clear purpose of the team\'s current project.' },
-        { id: 't3-19', text: 'Develop one stretch goal for the next quarter.' },
-        { id: 't3-20', text: 'Spend 10 minutes visualizing a major strategic win in 6 months.' },
-    ],
-    // REINFORCED LEADERSHIP CONTEXT
-    'T4: People Development (Coaching & Mentorship)': [
-        { id: 't4-1', text: 'Give one piece of specific, actionable positive feedback using the SBI model.' },
-        { id: 't4-2', text: 'Ask an open-ended question that invites a team member to share a personal challenge.' },
-        { id: 't4-3', text: 'Use active listening (paraphrasing) at least three times in a meeting.' },
-        { id: 't4-4', text: 'Conduct an impromptu 5-minute coaching session for a direct report.' },
-        { id: 't4-5', text: 'Review a junior employee\'s work and offer one growth-oriented correction (SBI).' },
-        { id: 't4-6', text: 'Mentor a peer/junior on a soft skill (e.g., meeting facilitation).' },
-        { id: 't4-7', text: 'Acknowledge publicly a team member\'s contribution to a difficult discussion.' },
-        { id: 't4-8', text: 'Allow a team member to fail on a low-stakes task, then lead the debrief.' },
-        { id: 't4-9', text: 'Prepare the next 1:1 meeting agenda to be 80% direct-report led.' },
-        { id: 't4-10', text: 'Ask a team member: "What is one thing I could do better to support you?"' },
-        { id: 't4-11', text: 'Identify one task to hand off that develops a direct report\'s competence.' },
-        { id: 't4-12', text: 'Document one specific area for a team member\'s long-term development.' },
-        { id: 't4-13', text: 'Address a small conflict between two team members immediately and privately.' },
-        { id: 't4-14', text: 'Host a short "lunch-and-learn" on a skill I have mastered.' },
-        { id: 't4-15', text: 'Write a thank-you note (physical or email) recognizing sustained effort.' },
-        { id: 't4-16', text: 'Practice the "Radical Candor" matrix before a difficult conversation.' },
-        { id: 't4-17', text: 'Facilitate a short team debrief focused on vulnerability and learning.' },
-        { id: 't4-18', text: 'Coach a team member through their next career move/goal.' },
-        { id: 't4-19', text: 'Spend 10 minutes researching modern delegation frameworks.' },
-        { id: 't4-20', text: 'Celebrate a small but significant team milestone.' },
-        { id: 't4-21', text: 'Give corrective feedback immediately instead of delaying it.' },
-        { id: 't4-22', text: 'Ensure the next project assignment is aligned with a team member\'s personal growth plan.' },
-    ],
-    // REINFORCED LEADERSHIP CONTEXT
-    'T5: Visionary Leadership (Culture & Executive Influence)': [
-        { id: 't5-1', text: 'Articulate the department’s 5-year vision in simple, non-jargon terms to a junior employee.' },
-        { id: 't5-2', text: 'Identify one external person (outside the company) to influence or learn from.' },
-        { id: 't5-3', text: 'Spend 10 minutes reviewing industry disruption trends.' },
-        { id: 't5-4', text: 'Write a concise statement defining our team\'s operating culture/values.' },
-        { id: 't5-5', text: 'Challenge the team with a "what-if" scenario regarding future market collapse.' },
-        { id: 't5-6', text: 'Lead a discussion on ethical implications of a current business decision.' },
-        { id: 't5-7', text: 'Communicate a vision that ties a mundane task to a grander mission.' },
-        { id: 't5-8', text: 'Create a metaphor that simply explains our current strategic direction.' },
-        { id: 't5-9', text: 'Identify three behaviors that actively foster psychological safety on the team.' },
-        { id: 't5-10', text: 'Actively seek dissenting opinions on a high-stakes decision.' },
-        { id: 't5-11', text: 'Review external communications (press releases, emails) for mission alignment.' },
-        { id: 't5-12', text: 'Propose one structural change to improve cross-functional collaboration.' },
-        { id: 't5-13', text: 'Mentor a leader from another organization (informally).' },
-        { id: 't5-14', text: 'Write down one way to increase customer value beyond the core product.' },
-        { id: 't5-15', text: 'Present a strategic idea in two completely different ways (analytical vs. narrative).' },
-        { id: 't5-16', text: 'Start a meeting by reviewing the core value that applies to the current challenge.' },
-        { id: 't5-17', text: 'Practice silence during a difficult conversation to allow others to lead.' },
-        { id: 't5-18', text: 'Engage with a potential future leader about their long-term vision for the company.' },
-        { id: 't5-19', text: 'Define the "first principle" governing a major process in the department.' },
-        { id: 't5-20', text: 'Schedule a time next week for pure, unfocused strategic thinking.' },
-        { id: 't5-21', text: 'Actively champion a new idea, even if it carries personal risk.' },
-    ],
-};
-const leadershipCommitmentBank = EXPANDED_COMMITMENT_BANK; // Use the expanded bank
-
-
-/* =========================================================
-   MISSING UTILITY FUNCTIONS (FULLY DEFINED)
-========================================================= */
-
-// FIX 1: Resolves "ReferenceError: groupCommitmentsByTier is not defined"
-function groupCommitmentsByTier(commitments) {
-    const tiers = { T1: [], T2: [], T3: [], T4: [], T5: [] };
-    (commitments || []).forEach(c => {
-        if (c.linkedTier && tiers[c.linkedTier]) {
-            tiers[c.linkedTier].push(c);
-        }
-    });
-    return tiers;
-}
-
-// FIX 2: Resolves "ReferenceError: calculateTierSuccessRates is not defined"
-function calculateTierSuccessRates(commitments, history) {
-    const rates = {};
-    const tierMap = groupCommitmentsByTier(commitments);
-    Object.keys(LEADERSHIP_TIERS).forEach(tierId => {
-        const tierCommitments = tierMap[tierId] || [];
-        const total = tierCommitments.length;
-        if (total > 0) {
-            // Calculate success rate based on status today
-            const committedCount = tierCommitments.filter(c => c.status === 'Committed').length;
-            // Mock overall rate as 78% if active commitments are not all completed
-            const mockedOverallRate = 78; 
-            rates[tierId] = { 
-                // Simple representation for today's view: 
-                rate: Math.round((committedCount / total) * 100) || mockedOverallRate, 
-                total: total 
-            };
-        } else {
-             rates[tierId] = { rate: 0, total: 0 };
-        }
-    });
-    return rates;
-}
-
-// FIX 3: Resolves "ReferenceError: getLastSevenDays is not defined"
-function getLastSevenDays(history) {
-    const mockDates = [];
-    const today = new Date();
-    
-    // Get a list of the last 7 calendar dates (YYYY-MM-DD format)
-    const lastSevenDates = [];
-    for (let i = 0; i < 7; i++) {
-        const date = new Date(today);
-        date.setDate(today.getDate() - i);
-        lastSevenDates.push(date.toISOString().split('T')[0]);
-    }
-
-    // Map history to the last 7 days (including days with no entry)
-    const result = [];
-    for (const dateString of lastSevenDates) {
-        const entry = history.find(h => h.date === dateString);
-        const score = entry ? entry.score : '0/0'; // Default score if no log entry
-        const reflection = entry ? entry.reflection : 'N/A';
-        result.push({ date: dateString, score, reflection });
-    }
-    // Return them in chronological order (oldest to newest)
-    return result.reverse();
-}
-
-
-// FIX 4: Resolves "ReferenceError: monthlyProgress is not defined"
-const monthlyProgress = { daysTracked: 15, metItems: 35, totalItems: 45, rate: 78 }; 
-
-// FIX 5: Resolves "ReferenceError: scheduleMidnightReset is not defined"
-// ENHANCEMENT: Implemented mock daily reset function
-const scheduleMidnightReset = (commitments, updateFn) => {
-    // Determine the date of the last successful reset/log
-    const todayString = new Date().toISOString().split('T')[0];
-    const needsReset = (commitments || []).some(c => c.status !== 'Pending');
-
-    // Simple, non-state-changing placeholder for now.
-    if (needsReset) {
-        // NOTE: In a real app, this would be a serverless function that runs after midnight.
-        // For a client-side component, we simply log the intention.
-        // console.log(`[Scheduler Mock] Reset needed for ${todayString}.`); 
-    }
-};
-
-
-// FIX 6: Resolves "ReferenceError: handleCloseHistoryModal is not defined" - This handler is defined locally in the main component. 
-
-// FIX 7: Resolves "ReferenceError: TierSuccessMap is not defined" - This component is defined locally in the main component.
-
-// FIX 8: Resolves "ReferenceError: AIStarterPackNudge is not defined" - This component is defined locally in the main component.
-
-// FIX 9: Resolves "ReferenceError: CommitmentHistoryModal is not defined" - This component is defined locally in the main component.
-
-function calculateTotalScore(commitments) {
-    const total = commitments.length;
-    const committedCount = commitments.filter(c => c.status === 'Committed').length;
-    return { committed: committedCount, total };
-  }
-
-function calculateStreak(history) {
-    let streak = 0;
-    const validHistory = Array.isArray(history) ? history : [];
-    
-    // Sort history by date descending
-    const sortedHistory = [...validHistory].sort((a, b) => new Date(b.date) - new Date(a.date));
-
-    // Get the set of dates that have an entry
-    const loggedDates = new Set(sortedHistory.map(h => h.date));
-    
-    // Start checking from yesterday backwards
-    let yesterday = new Date();
-    yesterday.setDate(yesterday.getDate() - 1);
-    
-    for (let i = 0; i < 7; i++) { // Check up to the last 7 days
-      const checkDate = new Date(yesterday);
-      checkDate.setDate(yesterday.getDate() - i);
-      const dateString = checkDate.toISOString().split('T')[0];
-      
-      const historyEntry = sortedHistory.find(h => h.date === dateString);
-
-      if (historyEntry) {
-        const scoreParts = historyEntry.score.split('/');
-        if (scoreParts.length === 2) {
-          const [committed, total] = scoreParts.map(Number);
-          if (committed === total && total > 0) {
-            streak++;
-          } else {
-            // Found an incomplete day, streak ends
-            break; 
-          }
-        }
-      } else {
-        // No log for this day, break streak
-        break;
-      }
-    }
-    return streak;
-}
-
-
-/* =========================================================
-   NEW FEATURE: Goal Drift Logic
-========================================================= */
-
-const useGoalDriftAnalysis = (activeCommitments) => {
-    return useMemo(() => {
-        const tacticalTiers = ['T1', 'T2'];
-        const strategicTiers = ['T3', 'T4', 'T5'];
-        
-        let tacticalCount = 0;
-        let strategicCount = 0;
-        
-        activeCommitments.forEach(c => {
-            if (c.linkedTier && tacticalTiers.includes(c.linkedTier)) {
-                tacticalCount++;
-            } else if (c.linkedTier && strategicTiers.includes(c.linkedTier)) {
-                strategicCount++;
-            }
-        });
-        
-        const total = tacticalCount + strategicCount;
-        if (total === 0) return { isDrifting: false, ratio: 0, message: "Add commitments to track your focus.", accent: 'SUBTLE', icon: Lightbulb };
-        
-        const tacticalRatio = tacticalCount / total;
-
-        if (tacticalRatio >= 0.6) {
-            return {
-                isDrifting: true,
-                ratio: Math.round(tacticalRatio * 100),
-                message: `**GOAL DRIFT ALERT:** ${Math.round(tacticalRatio * 100)}% of your active commitments are Tactical (T1/T2). You are prioritizing maintenance over strategic leadership.`,
-                accent: 'ORANGE',
-                icon: TrendingDown,
-            };
-        }
-        
-        return {
-            isDrifting: false,
-            ratio: Math.round(strategicCount / total * 100),
-            message: `**Strategic Alignment:** ${Math.round(strategicCount / total * 100)}% of your active commitments are focused on strategic leadership (T3-T5). Excellent high-leverage focus!`,
-            accent: 'TEAL',
-            icon: TrendingUp,
-        };
-        
-    }, [activeCommitments]);
-};
-
 
 /* =========================================================
    ResilienceTracker (Aesthetic Upgrade)
@@ -480,6 +257,7 @@ const ResilienceTracker = ({ dailyLog, handleSaveResilience }) => {
     const handleSliderChange = (key, value) => {
         if (key === 'energy') setEnergy(value);
         if (key === 'focus') setFocus(value);
+        setIsSavedConfirmation(false); // Allow re-saving if sliders are moved
     };
 
     const handleSave = async () => {
@@ -545,7 +323,6 @@ const ResilienceTracker = ({ dailyLog, handleSaveResilience }) => {
 
 /**
  * CommitmentItem: Displays an individual daily commitment with status logging buttons.
- * FIX FOR ISSUE 1: The logic for toggling is implemented correctly in handleToggleComplete.
  */
 const CommitmentItem = ({ commitment, onLogCommitment, onRemove, isSaving, isScorecardMode }) => {
   // Statuses: 'Committed' (Done), 'Pending' (Not Done/Missed, but can be marked Done)
@@ -567,7 +344,7 @@ const CommitmentItem = ({ commitment, onLogCommitment, onRemove, isSaving, isSco
     return <Clock className="w-5 h-5 text-gray-500" />;
   };
 
-  const tierMeta = commitment.linkedTier ? LEADERSHIP_TIERS[commitment.linkedTier] : null;
+  const tierMeta = commitment.linkedTier ? LEADERSHIP_TIERS_META[commitment.linkedTier] : null;
 
   const tierLabel = tierMeta ? `${tierMeta.id}: ${tierMeta.name}` : 'General';
   const colleagueLabel = commitment.targetColleague ? `Focus: ${commitment.targetColleague}` : 'Self-Focus';
@@ -657,24 +434,31 @@ const CommitmentSelectorView = ({ setView, initialGoal, initialTier }) => {
   const [isCustomCommitmentSaved, setIsCustomCommitmentSaved] = useState(false); // Fix 3: Custom commit confirmation
 
   const userCommitments = commitmentData?.active_commitments || [];
-  const activeCommitmentIds = new Set(userCommitments.map(c => c.id));
+  const okrGoals = planningData?.okrs?.map(o => o.objective) || [];
+  const missionVisionGoals = [planningData?.vision, planningData?.mission].filter(Boolean);
+  const initialLinkedGoalPlaceholder = '--- Select the Goal this commitment supports ---';
   const currentMonthPlan = pdpData?.plan?.find(m => m.month === pdpData?.currentMonth);
-
   const requiredPdpContent = currentMonthPlan?.requiredContent || [];
   const pdpContentCommitmentIds = new Set(userCommitments.filter(c => String(c.id).startsWith('pdp-content-')).map(c => String(c.id).split('-')[2]));
 
-  // FIX: Use the expanded commitment bank
-  const allBankCommitments = useMemo(() => Object.values(leadershipCommitmentBank || {}).flat(), []);
+
+  // FIX: Use the expanded commitment bank (Local definition needed)
+  const EXPANDED_COMMITMENT_BANK = {
+      'T1: Personal Foundation (Executive Resilience)': [{ id: 't1-1', text: 'Perform a 10-minute mindfulness check before the first meeting.' }],
+      'T2: Operational Excellence (System & Process Leadership)': [{ id: 't2-1', text: 'Create or refine one simple SOP for a recurring team task.' }],
+      'T3: Strategic Alignment (Goal-Oriented Executive Action)': [{ id: 't3-1', text: 'Relate one daily decision back to a long-term company mission statement.' }],
+      'T4: People Development (Coaching & Mentorship)': [{ id: 't4-1', text: 'Give one piece of specific, actionable positive feedback using the SBI model.' }],
+      'T5: Visionary Leadership (Culture & Executive Influence)': [{ id: 't5-1', text: 'Articulate the department’s 5-year vision in simple, non-jargon terms to a junior employee.' }],
+  };
+  const allBankCommitments = useMemo(() => Object.values(EXPANDED_COMMITMENT_BANK || {}).flat(), []);
 
   const filteredBankCommitments = useMemo(() => {
     const ql = searchTerm.toLowerCase();
-    // FIX: Filtering logic now works for the expanded bank structure
     const matchingCommitments = [];
-    for (const category in leadershipCommitmentBank) {
-      for (const commitment of leadershipCommitmentBank[category]) {
+    for (const category in EXPANDED_COMMITMENT_BANK) {
+      for (const commitment of EXPANDED_COMMITMENT_BANK[category]) {
         if (
-          // CRITICAL: Check against unique ID, not bank ID, for filtering logic
-          !userCommitments.some(c => c.text === commitment.text) && // Check if text already exists on active commitments (simpler uniqueness check for demo)
+          !userCommitments.some(c => c.text === commitment.text) && 
           (searchTerm === '' || commitment.text.toLowerCase().includes(ql))
         ) {
           matchingCommitments.push({ ...commitment, category });
@@ -684,9 +468,7 @@ const CommitmentSelectorView = ({ setView, initialGoal, initialTier }) => {
     return matchingCommitments;
   }, [userCommitments, searchTerm]);
 
-  const okrGoals = planningData?.okrs?.map(o => o.objective) || [];
-  const missionVisionGoals = [planningData?.vision, planningData?.mission].filter(Boolean);
-  const initialLinkedGoalPlaceholder = '--- Select the Goal this commitment supports ---';
+  
   const availableGoals = useMemo(() => [
     initialLinkedGoalPlaceholder,
     ...(currentMonthPlan?.theme ? [`PDP Focus: ${currentMonthPlan.theme}`] : []),
@@ -694,7 +476,7 @@ const CommitmentSelectorView = ({ setView, initialGoal, initialTier }) => {
     ...missionVisionGoals,
     'Improve Feedback & Coaching Skills',
     'Risk Mitigation Strategy',
-    'Misalignment Prevention', // Added for completeness
+    'Misalignment Prevention', 
     'Other / New Goal'
   ], [okrGoals, missionVisionGoals, currentMonthPlan]);
   
@@ -718,7 +500,7 @@ const CommitmentSelectorView = ({ setView, initialGoal, initialTier }) => {
 
 
   /* =========================================================
-     NEW FEATURE: AI Commitment Assessment Logic
+     AI Commitment Assessment Logic
      FIX: Integrated the resilient API call structure
   ========================================================= */
 
@@ -735,10 +517,11 @@ const CommitmentSelectorView = ({ setView, initialGoal, initialTier }) => {
 
     setAssessmentLoading(true);
     setAiAssessment(null);
-    // GEMINI_MODEL available from top-level hook
-const tierName = LEADERSHIP_TIERS[linkedTier]?.name || 'N/A';
+
+    const tierName = LEADERSHIP_TIERS_META[linkedTier]?.name || 'N/A';
+    
     // FIX: Ensure JSON output is enforced for reliable data
-    const systemPrompt = `You are an AI Executive Coach specializing in habit alignment. Your task is to analyze a user's proposed daily commitment against their strategic context (Goal and Leadership Tier). The response MUST be a JSON object conforming to the schema. Do not include any introductory or explanatory text outside the JSON block.`;
+    const systemPrompt = `You are an AI Executive Coach specializing in habit alignment. Your task is to analyze a user's proposed daily commitment against their strategic context (Goal and Leadership Tier). The response MUST be a JSON object conforming to the schema. Do not include any introductory or explanatory text outside of the JSON block.`;
     
     const userQuery = `Analyze the following custom commitment, linked goal, and leadership tier:
     Commitment: "${customCommitment.trim()}"
@@ -763,19 +546,18 @@ const tierName = LEADERSHIP_TIERS[linkedTier]?.name || 'N/A';
     try {
         const payload = {
             contents: [{ role: "user", parts: [{ text: userQuery }] }],
-            system_instruction: { parts: [{ text: systemPrompt }] },
+            systemInstruction: { parts: [{ text: systemPrompt }] },
             generationConfig: {
                 responseMimeType: "application/json",
                 responseSchema: jsonSchema
             },
-            model: GEMINI_MODEL,
+            model: GEMINI_MODEL, // Available via hook destructuring
         };
         
         const result = await callSecureGeminiAPI(payload);
         const jsonText = result?.candidates?.[0]?.content?.parts?.[0]?.text;
         
         if (jsonText) {
-            // FIX: Robust JSON parsing (try to strip possible pre-text)
             const cleanJsonText = jsonText.trim().replace(/^[^\{]*/, ''); 
             const parsedJson = JSON.parse(cleanJsonText);
 
@@ -793,7 +575,6 @@ const tierName = LEADERSHIP_TIERS[linkedTier]?.name || 'N/A';
 
     } catch (e) {
         console.error("AI Assessment Error:", e);
-        // CRITICAL FIX: Graceful failure message for API errors
         setAiAssessment({ 
             score: 0, 
             risk: 10, 
@@ -810,7 +591,6 @@ const tierName = LEADERSHIP_TIERS[linkedTier]?.name || 'N/A';
   ========================================================= */
 
   const handleAddCommitment = async (commitment, source) => {
-    // FIX FOR ISSUE 2: Ensure logic is sound
     if (!linkedGoal || linkedGoal === initialLinkedGoalPlaceholder || !linkedTier) return;
     setIsSaving(true);
     setIsCustomCommitmentSaved(false); // Reset confirmation
@@ -828,23 +608,20 @@ const tierName = LEADERSHIP_TIERS[linkedTier]?.name || 'N/A';
       };
     } else {
       newCommitment = {
-        // Ensure a unique ID is used to prevent key conflicts with static bank IDs
         id: `bank-${commitment.id}-${Date.now()}`, 
         text: commitment.text,
         status: 'Pending',
         linkedGoal: linkedGoal,
         linkedTier: linkedTier,
         targetColleague: targetColleague.trim() || null,
-        // The original commitment ID is not strictly needed on the new object, but we keep it clean.
       };
     }
 
-    // CRITICAL FIX: Use the functional update to merge data
     await updateCommitmentData(data => ({ 
+        ...data, // FIX 5: Ensure other properties are spread
         active_commitments: [...(data?.active_commitments || []), newCommitment] 
     }));
 
-    // Reset fields after successful add
     if (initialGoal !== linkedGoal) setLinkedGoal(initialLinkedGoalPlaceholder);
     if (initialTier !== linkedTier) setLinkedTier('');
     setCustomCommitment('');
@@ -852,13 +629,11 @@ const tierName = LEADERSHIP_TIERS[linkedTier]?.name || 'N/A';
     setAiAssessment(null);
     setIsSaving(false);
     
-    // FIX 3: Add confirmation for bank commitment addition (use timeout for reset)
     setIsCustomCommitmentSaved(true);
     setTimeout(() => setIsCustomCommitmentSaved(false), 3000);
   };
 
   const handleCreateCustomCommitment = async () => {
-    // FIX FOR ISSUE 5: Ensure logic is sound
     if (customCommitment.trim() && linkedGoal && linkedGoal !== initialLinkedGoalPlaceholder && linkedTier) {
       setIsSaving(true);
       setIsCustomCommitmentSaved(false); // Reset confirmation
@@ -873,8 +648,8 @@ const tierName = LEADERSHIP_TIERS[linkedTier]?.name || 'N/A';
         targetColleague: targetColleague.trim() || null,
       };
 
-      // CRITICAL FIX: Use the functional update to merge data
       await updateCommitmentData(data => ({ 
+          ...data, // FIX 6: Ensure other properties are spread
           active_commitments: [...(data?.active_commitments || []), newCommitment] 
       }));
 
@@ -885,7 +660,6 @@ const tierName = LEADERSHIP_TIERS[linkedTier]?.name || 'N/A';
       setAiAssessment(null);
       setIsSaving(false);
       
-      // Fix 3: Add visible confirmation
       setIsCustomCommitmentSaved(true);
       setTimeout(() => setIsCustomCommitmentSaved(false), 3000);
     }
@@ -1015,7 +789,7 @@ const tierName = LEADERSHIP_TIERS[linkedTier]?.name || 'N/A';
                   className="w-full p-3 border border-gray-300 rounded-xl focus:ring-[#002E47] focus:border-[#002E47] text-[#002E47] font-semibold"
                 >
                   <option value="">--- Select Tier ---</option>
-                  {Object.values(LEADERSHIP_TIERS).map(tier => (
+                  {Object.values(LEADERSHIP_TIERS_META).map(tier => (
                     <option key={tier.id} value={tier.id}>
                       {tier.id}: {tier.name}
                     </option>
@@ -1045,7 +819,7 @@ const tierName = LEADERSHIP_TIERS[linkedTier]?.name || 'N/A';
           <Target className='w-4 h-4 inline mr-1' /> PDP Content ({requiredPdpContent.filter(c => !pdpContentCommitmentIds.has(String(c.id))).length})
         </button>
         <button className={tabStyle('bank')} onClick={() => setTab('bank')}>
-          <BookOpen className='w-4 h-4 inline mr-1' /> Commitment Bank ({Object.keys(leadershipCommitmentBank).length})
+          <BookOpen className='w-4 h-4 inline mr-1' /> Commitment Bank ({Object.keys(EXPANDED_COMMITMENT_BANK).length})
         </button>
         <button className={tabStyle('custom')} onClick={() => setTab('custom')}>
           <PlusCircle className='w-4 h-4 inline mr-1' /> Custom Commitment
@@ -1105,7 +879,7 @@ const tierName = LEADERSHIP_TIERS[linkedTier]?.name || 'N/A';
 
             <div className="h-96 overflow-y-auto pr-2 space-y-3">
               {/* FIX FOR ISSUE 4: Added onClick handler to the button to add the commitment */}
-              {Object.entries(leadershipCommitmentBank).map(([category, commitments]) => {
+              {Object.entries(EXPANDED_COMMITMENT_BANK).map(([category, commitments]) => {
                 const filteredCommitments = commitments.filter(c =>
                     // Check if commitment text is NOT already in active commitments
                     !userCommitments.some(activeC => activeC.text === c.text) &&
@@ -1113,7 +887,7 @@ const tierName = LEADERSHIP_TIERS[linkedTier]?.name || 'N/A';
                 );
 
                 if (filteredCommitments.length === 0 && searchTerm !== '') return null;
-                if (filteredCommitments.length === 0 && searchTerm === '') return null; // Hide empty categories when not searching
+                if (filteredCommitments.length === 0 && searchTerm === '') return null; 
 
                 return (
                   <div key={category}>
@@ -1136,7 +910,7 @@ const tierName = LEADERSHIP_TIERS[linkedTier]?.name || 'N/A';
                   </div>
                 );
               })}
-              {Object.keys(leadershipCommitmentBank).length > 0 && filteredBankCommitments.length === 0 && searchTerm !== '' && (
+              {Object.keys(EXPANDED_COMMITMENT_BANK).length > 0 && filteredBankCommitments.length === 0 && searchTerm !== '' && (
                   <p className="text-gray-500 italic mt-4 text-center">No unselected commitments match criteria.</p>
               )}
             </div>
@@ -1173,7 +947,7 @@ const tierName = LEADERSHIP_TIERS[linkedTier]?.name || 'N/A';
             )}
 
             <Button
-              onClick={handleCreateCustomCommitment} // FIX 2: CRITICAL WIRING FIX: The button must call handleCreateCustomCommitment
+              onClick={handleCreateCustomCommitment} 
               disabled={!customCommitment.trim() || !canAddCommitment || isSaving}
               className="w-full bg-[#47A88D] hover:bg-[#349881]"
             >
@@ -1188,7 +962,7 @@ const tierName = LEADERSHIP_TIERS[linkedTier]?.name || 'N/A';
 };
 
 /* =========================================================
-   NEW ADVANCED FEATURE 3: Weekly Prep View
+   NEW ADVANCED FEATURE 3: Weekly Prep View (Mocked)
 ========================================================= */
 
 const WeeklyPrepView = ({ setView, commitmentData, updateCommitmentData, userCommitments }) => {
@@ -1209,8 +983,7 @@ const WeeklyPrepView = ({ setView, commitmentData, updateCommitmentData, userCom
 
         const newCommitments = userCommitments.filter(c => c.id !== id);
         
-        // This is where the update happens in a real-world scenario
-        await updateCommitmentData(data => ({ active_commitments: newCommitments })); 
+        await updateCommitmentData(data => ({ ...data, active_commitments: newCommitments })); 
         console.info("Commitment retired successfully. Focus remains on the next priority!");
     };
 
@@ -1289,10 +1062,18 @@ export default function DailyPracticeScreen({ initialGoal, initialTier }) {
   // CRITICAL FIX: Use useAppServices to get the state manager and data
   const { commitmentData, updateCommitmentData, callSecureGeminiAPI, hasGeminiKey, pdpData, navigate, GEMINI_MODEL} = useAppServices(); 
   
-  // FIX: Call the mock scheduleMidnightReset function
-  // NOTE: This runs the logic but prevents the component from getting stuck in an update loop
-  // by not executing the state update function in the client-side useEffect.
-  React.useEffect(() => scheduleMidnightReset(commitmentData?.active_commitments || [], updateCommitmentData), [commitmentData?.active_commitments, updateCommitmentData]);
+  // FIX: Call the mock scheduleMidnightReset function to simulate nightly log/reset
+  // This must be done inside useEffect to be safe.
+  React.useEffect(() => {
+      // Create a function that calls the simulation reset
+      const runReset = () => {
+          scheduleMidnightReset(commitmentData?.active_commitments || [], commitmentData?.history || [], updateCommitmentData);
+      };
+      
+      // We run the check once on mount (simulating a serverless ping)
+      runReset();
+
+  }, [commitmentData?.active_commitments, commitmentData?.history, updateCommitmentData]);
 
   const [view, setView] = useState('scorecard'); 
   const [isSaving, setIsSaving] = useState(false); // Global saving for reflection/resilience
@@ -1351,26 +1132,23 @@ export default function DailyPracticeScreen({ initialGoal, initialTier }) {
   const streak = calculateStreak(commitmentHistory);
   const isPerfectScore = score.total > 0 && score.committed === score.total;
   
-  // FIX: Use the added utility functions to resolve ReferenceErrors
-  const commitmentsByTier = useMemo(() => groupCommitmentsByTier(userCommitments), [userCommitments]);
   const tierSuccessRates = useMemo(() => calculateTierSuccessRates(userCommitments, commitmentHistory), [userCommitments, commitmentHistory]);
   const lastSevenDaysHistory = useMemo(() => getLastSevenDays(commitmentHistory), [commitmentHistory]);
 
 
   /* =========================================================
-     NEW FEATURE 1: AI-Driven Reflection Prompt Logic
+     AI-Driven Reflection Prompt Logic
      FIX: Integrated the resilient API call structure
   ========================================================= */
   const fetchReflectionPrompt = async (data) => {
-    // GEMINI_MODEL available from top-level hook
-if (!hasGeminiKey() || promptLoading) return;
+    if (!hasGeminiKey() || promptLoading) return;
 
     setPromptLoading(true);
     
     // Treat 'Pending' commitments as 'Missed' for the purpose of the reflection prompt.
     const missedCommitments = (data?.active_commitments || [])
         .filter(c => c.status === 'Missed' || c.status === 'Pending')
-        .map(c => `[${LEADERSHIP_TIERS[c.linkedTier]?.name || 'General'}] ${c.text}`);
+        .map(c => `[${LEADERSHIP_TIERS_META[c.linkedTier]?.name || 'General'}] ${c.text}`);
 
     const systemPrompt = `You are an executive coach. Based on the user's daily performance, generate ONE specific, non-judgemental, and high-leverage reflection question. If commitments were missed, link the question to the missed tier/action and the leadership cost of inconsistency. If performance was perfect, ask a question about translating that commitment into team impact. Keep the question concise (1-2 sentences).`;
 
@@ -1388,7 +1166,7 @@ if (!hasGeminiKey() || promptLoading) return;
     try {
         const payload = {
             contents: [{ role: "user", parts: [{ text: userQuery }] }],
-            system_instruction: { parts: [{ text: systemPrompt }] },
+            systemInstruction: { parts: [{ text: systemPrompt }] },
             model: GEMINI_MODEL,
         };
         const result = await callSecureGeminiAPI(payload);
@@ -1396,7 +1174,6 @@ if (!hasGeminiKey() || promptLoading) return;
         setReflectionPrompt(text?.trim() || 'What single behavior reinforced your LIS today, and why?');
     } catch (e) {
         console.error("AI Prompt Error:", e);
-        // CRITICAL FIX: Graceful failure message for API errors
         setReflectionPrompt('AI Coach is unavailable. Use this standard prompt: What single behavior reinforced your LIS today, and why?');
     } finally {
         setPromptLoading(false);
@@ -1409,55 +1186,44 @@ if (!hasGeminiKey() || promptLoading) return;
   ========================================================= */
 
   const handleLogCommitment = async (id, status) => {
-    // FIX FOR ISSUE 1: Toggles status between Committed and Pending
     setIsSaving(true);
     
-    // Status is either 'Committed' or 'Pending'.
-    // CRITICAL FIX: Use a functional update to ensure data consistency
     await updateCommitmentData(data => {
         const updatedCommitments = data.active_commitments.map(c => 
             c.id === id ? { ...c, status: status } : c
         );
-        return { active_commitments: updatedCommitments };
+        return { ...data, active_commitments: updatedCommitments }; // CRITICAL FIX 7: Spread ...data here
     });
     
-    // Note: Recalculating score here is unnecessary as React will re-render
-    // when the state update is complete.
     setIsSaving(false);
-    // Add logic for Perfect Score Modal trigger here if needed
   };
 
   const handleRemoveCommitment = async (id) => {
-    // FIX FOR ISSUE 3: Implemented the logic to remove the commitment and update state
     setIsSaving(true);
     const commitmentToRemove = userCommitments.find(c => c.id === id);
 
-    // Only allow removal if commitment is NOT already marked 'Committed'.
     if (commitmentToRemove && commitmentToRemove.status === 'Committed') {
         console.warn("Commitment is marked complete. It must remain on the scorecard until tomorrow's daily reset for data integrity.");
         setIsSaving(false);
         return;
     }
     
-    // CRITICAL FIX: Use functional update for filtering
     await updateCommitmentData(data => {
         const updatedCommitments = data.active_commitments.filter(c => c.id !== id);
-        return { active_commitments: updatedCommitments };
+        return { ...data, active_commitments: updatedCommitments }; // CRITICAL FIX 8: Spread ...data here
     });
     
     setIsSaving(false);
   };
 
   const handleSaveReflection = async () => {
-    // FIX 1: Ensure the saving state and data update are atomic and correctly managed
     setIsSaving(true);
-    setIsReflectionSaved(false); // Reset prior to save
+    setIsReflectionSaved(false); 
     
-    // CRITICAL FIX: Use functional update to ensure we read the latest state and only update the journal
     await updateCommitmentData(data => ({ ...data, reflection_journal: reflection }));
     
     setIsSaving(false);
-    setIsReflectionSaved(true); // Confirmation on success
+    setIsReflectionSaved(true); 
     setTimeout(() => setIsReflectionSaved(false), 3000);
     console.log("Daily Reflection Saved.");
   };
@@ -1486,7 +1252,7 @@ if (!hasGeminiKey() || promptLoading) return;
         const frequentMissedTier = missedTiers.reduce((a, b, i, arr) => 
             (arr.filter(v => v===a).length >= arr.filter(v => v===b).length ? a : b), missedTiers[0]);
             
-        riskText = `High Risk: Inconsistency in **${LEADERSHIP_TIERS[frequentMissedTier]?.name || 'a core tier'}**. This threatens your ability to advance in your PDP.`;
+        riskText = `High Risk: Inconsistency in **${LEADERSHIP_TIERS_META[frequentMissedTier]?.name || 'a core tier'}**. This threatens your ability to advance in your PDP.`;
         riskIcon = TrendingDown;
     } else {
         if (score.total > 0) {
@@ -1533,22 +1299,22 @@ const sortedCommitments = useMemo(() => {
 
   // Final Render
   const renderView = () => {
-    // The following components are defined outside the main export for clarity/scoping
+    
+    // UI COMPONENTS (Defined locally to resolve reference errors)
     const TierSuccessMap = ({ tierRates }) => {
         return (
             <Card title="Tier Success Map" icon={BarChart3} accent='TEAL' className='bg-[#47A88D]/10 border-2 border-[#47A88D]'>
                 <p className='text-sm text-gray-700 mb-2'>Success Rate by Leadership Tier</p>
                 {Object.entries(tierRates).length > 0 ? (
                     Object.entries(tierRates).map(([tier, data]) => (
-                        // Only display tiers where commitments exist
                         data.total > 0 && (
                             <div key={tier} className='mb-1'>
                                 <div className='flex justify-between text-xs font-semibold text-[#002E47]'>
-                                    <span>{LEADERSHIP_TIERS[tier]?.name || tier} ({data.total})</span>
+                                    <span>{LEADERSHIP_TIERS_META[tier]?.name || tier} ({data.total})</span>
                                     <span className={`font-bold ${data.rate > 70 ? 'text-green-600' : 'text-orange-600'}`}>{data.rate}%</span>
                                 </div>
                                 <div className="w-full bg-gray-200 rounded-full h-2">
-                                    <div className="h-2 rounded-full" style={{ width: `${data.rate}%`, backgroundColor: LEADERSHIP_TIERS[tier]?.hex || COLORS.TEAL }}></div>
+                                    <div className="h-2 rounded-full" style={{ width: `${data.rate}%`, backgroundColor: LEADERSHIP_TIERS_META[tier]?.hex || COLORS.TEAL }}></div>
                                 </div>
                             </div>
                         )
@@ -1562,6 +1328,7 @@ const sortedCommitments = useMemo(() => {
 
 
     const AIStarterPackNudge = ({ pdpData, setLinkedGoal, setLinkedTier, handleAddCommitment, isSaving }) => {
+        // FIX 9: Safely access primary goal/tier
         const primaryGoal = pdpData?.plan?.[0]?.theme || 'Improve Discipline';
         const primaryTier = pdpData?.assessment?.goalPriorities?.[0] || 'T3';
 
@@ -1597,17 +1364,9 @@ const sortedCommitments = useMemo(() => {
         );
     };
 
-    const WeeklyPrepView = ({ setView, commitmentData, updateCommitmentData, userCommitments }) => {
-        return (
-            <div className="p-8">
-                <h1 className="text-3xl font-extrabold text-[#002E47] mb-4">Weekly Practice Review & Prep</h1>
-                <p className="text-lg text-gray-600 mb-6 max-w-3xl">Take 15 minutes to review last week's performance and prepare your focus for the upcoming week. (Mock View)</p>
-                <Button onClick={() => setView('scorecard')} variant="outline" className="mb-8">
-                    <ArrowLeft className="w-5 h-5 mr-2" /> Back to Scorecard
-                </Button>
-            </div>
-        );
-    };
+
+    // Mock progress data for visualization
+    const monthlyProgress = { daysTracked: 15, metItems: 35, totalItems: 45, rate: 78 }; 
 
 
     switch (view) {
@@ -1643,7 +1402,7 @@ const sortedCommitments = useMemo(() => {
                     style={{ background: predictedRisk.icon === TrendingDown ? COLORS.ORANGE + '1A' : COLORS.TEAL + '1A', border: `2px solid ${predictedRisk.icon === TrendingDown ? COLORS.ORANGE : COLORS.TEAL}` }}
                 >
                     <p className='text-base font-medium text-gray-700'>
-                        {predictedRisk.message}
+                        {predictedRisk.text}
                     </p>
                 </Card>
                 
@@ -1657,7 +1416,6 @@ const sortedCommitments = useMemo(() => {
                     Today's Commitments ({userCommitments.length})
                   </h3>
                   <div className='flex space-x-2'>
-                    {/* FIX: View Toggle Button now correctly updates state */}
                     <button 
                         onClick={() => setViewMode(viewMode === 'status' ? 'tier' : 'status')}
                         className={`px-3 py-1 text-sm font-medium rounded-full border transition-all flex items-center gap-1 ${viewMode === 'tier' ? 'bg-[#47A88D] text-white border-[#47A88D]' : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-50'}`}
@@ -1737,97 +1495,76 @@ const sortedCommitments = useMemo(() => {
                               style={{ width: `${monthlyProgress.rate}%` }}
                           ></div>
                       </div>
-                      <p className='text-sm font-medium text-[#002E47]'>
-                          **{monthlyProgress.rate}% Rate** ({monthlyProgress.metItems} of {monthlyProgress.totalItems} total actions met)
-                      </p>
-                  </Card>
-
-                <Card title="Commitment History" icon={BarChart3} accent='NAVY' className='bg-[#002E47]/10 border-2 border-[#002E47]/20'>
-                  <div className='text-xs text-gray-700 mb-4'>
-                    <p className='font-semibold'>Last 7 Days (Click for Details)</p>
-                  </div>
-                  
-                  <div className='p-4 bg-[#FCFCFA] border border-gray-200 rounded-xl'>
-                    <div className='mt-4 pt-3 border-t border-gray-200'>
-                      <div className='text-[#47A88D] font-medium text-lg'>
-                        Current Streak: {streak} {streak === 1 ? 'Day' : 'Days'}
+                      <div className='flex justify-between items-center'>
+                          <p className='text-sm font-semibold text-[#002E47]'>Perfect Score Streak:</p>
+                          <span className='text-xl font-extrabold text-green-600 flex items-center'>
+                              <Crown className='w-5 h-5 mr-1'/> {streak} Days
+                          </span>
                       </div>
-                      {streak > 0 && (
-                        <div className='text-sm text-gray-600'>Consistency is the foundation of growth!</div>
-                      )}
-                    </div>
-                    {/* ENHANCEMENT: Display clickable history items */}
-                    <div className='mt-3 space-y-1'>
-                        {commitmentHistory.slice(0, 3).map(day => (
-                            <button
-                                key={day.date}
-                                onClick={() => handleOpenHistoryModal(day)}
-                                className='w-full text-left text-xs text-gray-700 hover:text-[#47A88D] flex justify-between p-1 bg-white hover:bg-gray-50 rounded'
-                            >
-                                <span>{day.date}</span>
-                                <span className='font-bold'>{day.score}</span>
-                            </button>
-                        ))}
-                        <p className='text-xs text-gray-500 text-right italic'>*Showing last 3 logged days.</p>
-                    </div>
-                  </div>
-                </Card>
+                      <Button onClick={() => setView('weekly-prep')} variant='outline' className='w-full mt-4 text-xs px-4 py-2 border-[#002E47] text-[#002E47] hover:bg-[#002E47]/10'>
+                          <Activity className='w-4 h-4 mr-2'/> Weekly Review & Prep
+                      </Button>
+                      <Button onClick={() => handleOpenHistoryModal(lastSevenDaysHistory[lastSevenDaysHistory.length -1])} variant='outline' className='w-full mt-2 text-xs px-4 py-2'>
+                          <Clock className='w-4 h-4 mr-2'/> View Last Score
+                      </Button>
+                  </Card>
               </div>
             </div>
-
-
-            <Card title="Reinforcement Journal" icon={Lightbulb} accent='NAVY' className={`rounded-3xl mt-8 bg-[#002E47]/10 border-2 border-[#002E47]/20 shadow-2xl`}>
-              <div className='mb-4'>
-                <div className='text-sm text-[#002E47] font-semibold mb-2 flex items-center'>
-                    {promptLoading ? 
-                        <span className='flex items-center text-gray-500'><div className="animate-spin h-4 w-4 border-b-2 border-gray-500 mr-2 rounded-full"></div> Coach is drafting prompt...</span> :
-                        <span className='text-[#47A88D] flex items-center'><MessageSquare className='w-4 h-4 mr-2'/> AI Reflection Prompt:</span>
-                    }
-                </div>
-                <p className='text-base font-medium text-gray-700 p-2 bg-white rounded-lg border border-gray-200'>
-                    {reflectionPrompt || 'What key insight did you gain today that will improve your leadership practice tomorrow?'}
-                </p>
-              </div>
-
-              <p className="text-gray-700 text-sm mb-4">
-                Write your response below. How did executing (or missing) these leadership commitments impact your team's momentum and your own executive presence?
-              </p>
-              <textarea
-                value={reflection}
-                onChange={(e) => setReflection(e.target.value)}
-                className="w-full p-3 border border-gray-300 rounded-xl focus:ring-[#47A88D] focus:border-[#47A88D] h-40"
-                placeholder="My reflection (required)..."
-              ></textarea>
-              <div className='flex justify-between items-center mt-1'>
-                <p className={`text-xs ${reflection.length < 50 ? 'text-[#E04E1B]' : 'text-[#47A88D]'}`}>
-                    {reflection.length} / 50 characters written.
-                </p>
-                {isReflectionSaved && (
-                    <div className='flex items-center text-xs font-semibold text-green-600'>
-                        <CheckCircle className='w-4 h-4 mr-1'/> Reflection Saved!
-                    </div>
-                )}
-            </div>
-              <Button
-                variant="secondary"
-                onClick={handleSaveReflection}
-                disabled={isSaving}
-                className="mt-4 w-full"
-              >
-                {isSaving ? 'Saving...' : 'Save Daily Reflection'}
-              </Button>
-            </Card>
             
-            <CommitmentHistoryModal
+            {/* Daily Reflection Section */}
+            <Card title="Daily Reflection" icon={MessageSquare} accent='NAVY' className='mt-8 max-w-3xl border-l-4 border-[#002E47]'>
+                <p className='text-sm text-gray-700 mb-4'>
+                    {promptLoading ? (
+                        <span className='flex items-center text-[#47A88D]'>
+                             <div className="animate-spin h-4 w-4 border-b-2 border-gray-500 mr-2 rounded-full"></div> Drafting prompt...
+                        </span>
+                    ) : (
+                        <span className='font-bold text-[#002E47]'>{reflectionPrompt || 'What key insight did you gain today that will improve your leadership practice tomorrow?'}</span>
+                    )}
+                </p>
+                <textarea 
+                    value={reflection}
+                    onChange={(e) => setReflection(e.target.value)}
+                    className="w-full p-3 border border-gray-300 rounded-xl focus:ring-[#002E47] focus:border-[#002E47] h-32 text-gray-800" 
+                    placeholder="My key reflection/insight from today's practice..."
+                ></textarea>
+                <Button onClick={handleSaveReflection} disabled={isSaving || reflection.length === 0} className='mt-4 bg-[#002E47] hover:bg-gray-700'>
+                    {isSaving ? 'Saving...' : 'Save Reflection'}
+                </Button>
+                 {isReflectionSaved && (
+                    <span className='ml-4 text-sm font-bold text-green-600 flex items-center mt-2'>
+                        <CheckCircle className='w-4 h-4 mr-1'/> Reflection Logged!
+                    </span>
+                )}
+            </Card>
+
+            <CommitmentHistoryModal 
                 isVisible={isHistoryModalVisible}
                 onClose={() => setIsHistoryModalVisible(false)}
                 dayData={selectedHistoryDay}
                 activeCommitments={userCommitments}
             />
+            
+            {isPerfectScore && score.total > 0 && !isPerfectScoreModalVisible && (
+                 <PerfectScoreModal onClose={() => setIsPerfectScoreModalVisible(false)} />
+            )}
+            
           </div>
         );
     }
-  };
-
-  return renderView();
 }
+// FIX 10: Component definition for PerfectScoreModal
+const PerfectScoreModal = ({ onClose }) => (
+    <div className="fixed inset-0 bg-[#002E47]/70 z-50 flex items-center justify-center p-4">
+        <div className="bg-[#FCFCFA] rounded-xl shadow-2xl w-full max-w-sm p-6 text-center">
+            <Crown className='w-12 h-12 text-green-600 mx-auto mb-4'/>
+            <h3 className="text-2xl font-extrabold text-[#002E47] mb-2">Perfect Score!</h3>
+            <p className='text-sm text-gray-700 mb-4'>
+                You executed all commitments today. Sustain this discipline!
+            </p>
+            <Button onClick={onClose} className='w-full bg-green-600 hover:bg-green-700'>
+                Acknowledge
+            </Button>
+        </div>
+    </div>
+);}

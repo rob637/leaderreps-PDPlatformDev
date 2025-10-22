@@ -4,6 +4,9 @@ import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import {
     Briefcase, Aperture, Users, Heart, Gavel, Code, PiggyBank, GraduationCap, X, ChevronRight, Zap, Target, CornerRightUp, Lightbulb, Mic, MessageSquare, Compass, Network, Globe, TrendingDown, Clock, Cpu, CornerDownRight, ArrowLeft, BookOpen, Download
 } from 'lucide-react';
+// CRITICAL FIX: Use the actual service hook from the context
+import { useAppServices } from '../../services/useAppServices.jsx'; 
+
 
 /* =========================================================
    MOCK/UI UTILITIES 
@@ -15,36 +18,10 @@ const COLORS = {
     LIGHT_GRAY: '#FCFCFA',
     OFF_WHITE: '#FFFFFF',
     SUBTLE: '#E5E7EB',
+    BG: '#F9FAFB',
 };
 
-// Mocking useAppServices assuming Gemini API setup from App.jsx is robust
-const useAppServices = () => ({
-    navigate: (screen, params) => console.log(`Navigating to ${screen} with params:`, params),
-    callSecureGeminiAPI: async (payload) => {
-        const query = payload.contents[0].parts[0].text;
-        
-        if (payload.generationConfig?.responseMimeType === 'application/json') {
-            return { candidates: [{ content: { parts: [{ text: JSON.stringify([
-                "Schedule one 15-minute 1:1 with an intern to discuss their long-term career path (T4).",
-                "Start every team communication by linking it to the organization's overarching mission (T5).",
-                "Practice silence for 10 seconds after asking a difficult question in a board meeting (T1)."
-            ]) }] } }] };
-        } 
-        
-        // Highly contextual mock response based on Core Tension (Fallback if API is down)
-        const feedback = query.includes("Scarcity Mindset") 
-            ? "EXECUTIVE COACHING INSIGHT: Your operational thinking is constrained by the **Scarcity Mindset**. Reframe your challenge from 'lack of resources' to 'prioritizing leverage.' Delegate budgeting to free up 5 hours for strategic partner engagement (T5)."
-            : query.includes("Digital Distance")
-            ? "EXECUTIVE COACHING INSIGHT: The **Digital Distance** requires over-indexing on written clarity. Structure your next complex decision in a single, high-fidelity document before discussing it live (T2)."
-            : "VISIONARY INSIGHT: The greatest leverage point in your scenario is to redefine success metrics away from vanity metrics towards core social impact. How does your leadership team reflect that mandate?";
-
-        return { candidates: [{ content: { parts: [{ text: feedback }] } }] };
-    },
-    hasGeminiKey: () => true,
-    GEMINI_MODEL: 'gemini-2.5-flash-preview-09-2025',
-});
-
-
+// FIX 1: Defined Card and Button components locally to resolve any potential ReferenceError
 const Card = ({ children, title, icon: Icon, className = '', onClick, accent = 'TEAL' }) => {
     const accentColor = COLORS[accent] || COLORS.TEAL;
     return (
@@ -306,7 +283,8 @@ In the first 48 hours, the urge is to communicate instantly without full facts. 
 ========================================================= */
 
 const AICoachingSimulator = ({ domain }) => {
-    const { callSecureGeminiAPI, hasGeminiKey, navigate } = useAppServices();
+    // FIX 1: Accessing services from useAppServices
+    const { callSecureGeminiAPI, hasGeminiKey, navigate, GEMINI_MODEL, updateCommitmentData } = useAppServices();
     const [scenario, setScenario] = useState('');
     const [result, setResult] = useState(null);
     const [isLoading, setIsLoading] = useState(false);
@@ -323,10 +301,13 @@ const AICoachingSimulator = ({ domain }) => {
         // --- END PROMPT ---
 
         try {
+            // FIX 2: Final payload structure for Gemini call
             const payload = {
                 contents: [{ parts: [{ text: userQuery }] }],
                 systemInstruction: { parts: [{ text: systemPrompt }] },
-                tools: [{ "google_search": {} }], // Enable grounding for world-class advice
+                // FIX 3: Removed google_search tool for consistency across files unless explicitly required
+                // tools: [{ "google_search": {} }], 
+                model: GEMINI_MODEL,
             };
             const response = await callSecureGeminiAPI(payload);
             const text = response?.candidates?.[0]?.content?.parts?.[0]?.text;
@@ -346,7 +327,7 @@ const AICoachingSimulator = ({ domain }) => {
         setResult(null);
 
         const systemPrompt = `You are an AI habit architect. Based on the domain ${domain.title}, generate an array of 3 hyper-specific, actionable micro-habits that could be added to a daily scorecard. The response MUST be a JSON array of strings.`;
-        const userQuery = `Generate 3 micro-habits for the domain: ${domain.title}. Ensure they include a Tier focus (T1-T5) in parentheses.`;
+        const userQuery = `Generate 3 micro-habits for the domain: ${domain.title}. Ensure they include a Tier focus (T1-T5) in parentheses, e.g., "(T4)".`;
 
         const jsonSchema = {
             type: "ARRAY",
@@ -354,6 +335,7 @@ const AICoachingSimulator = ({ domain }) => {
         };
 
         try {
+            // FIX 4: Final payload structure for Gemini call
             const payload = {
                 contents: [{ parts: [{ text: userQuery }] }],
                 systemInstruction: { parts: [{ text: systemPrompt }] },
@@ -361,10 +343,14 @@ const AICoachingSimulator = ({ domain }) => {
                     responseMimeType: "application/json",
                     responseSchema: jsonSchema
                 },
+                model: GEMINI_MODEL,
             };
             const response = await callSecureGeminiAPI(payload);
             const jsonText = response?.candidates?.[0]?.content?.parts?.[0]?.text;
-            const habits = JSON.parse(jsonText);
+            
+            const cleanJsonText = jsonText.trim().replace(/^[^\[]*/, '').replace(/[^\]]*$/, '').trim(); // Robustly clean JSON array wrapper
+
+            const habits = JSON.parse(cleanJsonText);
             
             setResult(
                 <div className='mt-4 p-4 bg-white rounded-xl border border-dashed border-gray-300'>
@@ -372,7 +358,7 @@ const AICoachingSimulator = ({ domain }) => {
                     <ul className='list-disc list-inside space-y-1 text-sm text-gray-700'>
                         {habits.map((h, i) => <li key={i}>{h}</li>)}
                     </ul>
-                    <Button onClick={() => navigate('daily-practice', { initialGoal: domain.title, initialTier: 'T3' })} variant='outline' className='mt-4 text-xs px-3 py-1 w-full'>
+                    <Button onClick={() => handleAddHabitsToScorecard(habits)} variant='outline' className='mt-4 text-xs px-3 py-1 w-full'>
                         <Clock className='w-3 h-3 mr-1'/> Add to Daily Practice
                     </Button>
                 </div>
@@ -380,9 +366,43 @@ const AICoachingSimulator = ({ domain }) => {
 
         } catch (e) {
             console.error("Habit Suggestion Error:", e);
-            setResult("Failed to generate habits. Please check API or try again.");
+            setResult("Failed to generate habits. Please check API or try again. Raw error: " + e.message);
         } finally {
             setIsLoading(false);
+        }
+    }
+
+    // FIX 5: New handler to process AI-generated habits and commit them
+    const handleAddHabitsToScorecard = async (habits) => {
+        if (!updateCommitmentData) return;
+        
+        const newCommitments = habits.map((text, index) => {
+            // Simple logic to extract T-tier for linking (e.g., "(T4)")
+            const tierMatch = text.match(/\((T[1-5])\)/);
+            const linkedTier = tierMatch ? tierMatch[1] : 'T3'; 
+            
+            return {
+                id: `applied-${domain.id}-${Date.now()}-${index}`,
+                text: text,
+                status: 'Pending',
+                isCustom: true,
+                linkedGoal: domain.title,
+                linkedTier: linkedTier,
+                targetColleague: 'Self-Directed Practice',
+            };
+        });
+
+        // Use the commitment update service
+        const success = await updateCommitmentData(data => ({ 
+            ...data, // Preserve other data in the commitment object
+            active_commitments: [...(data?.active_commitments || []), ...newCommitments] 
+        }));
+
+        if (success) {
+            alert("3 Micro-Habits added to your Daily Practice Scorecard!");
+            navigate('daily-practice'); 
+        } else {
+            alert("Failed to save new commitments.");
         }
     }
 
@@ -413,7 +433,7 @@ const AICoachingSimulator = ({ domain }) => {
                 <div className='mt-6 p-4 rounded-xl border-l-4 border-[#002E47] bg-white shadow-inner'>
                     <p className='text-xs font-semibold uppercase text-[#002E47] mb-1'>Coach's Insight</p>
                     <div className='text-sm text-gray-700 font-medium'>
-                        {result}
+                        {typeof result === 'string' ? result : result}
                     </div>
                 </div>
             )}

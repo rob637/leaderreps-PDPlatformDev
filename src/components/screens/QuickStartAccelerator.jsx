@@ -84,7 +84,7 @@ const LIS_MOCK_CRITIQUE = `## Leadership Identity Audit Score: 75/100
    LISAuditorView (Step-by-Step LIS Creation)
 ========================================================= */
 const LISAuditorView = ({ setQuickStartView }) => {
-    const { hasGeminiKey, callSecureGeminiAPI } = useAppServices();
+    const { hasGeminiKey, callSecureGeminiAPI, GEMINI_MODEL } = useAppServices();
     
     // Initial draft from the source file
     const [lisDraft, setLisDraft] = useState('I am a dedicated leader who always tries to do the right thing for my team and my company. I believe in hard work.');
@@ -114,17 +114,19 @@ const LISAuditorView = ({ setQuickStartView }) => {
         const userQuery = `Critique this Leadership Identity Statement draft:\n\n${lisDraft}`;
 
         try {
+            // CRITICAL FIX: Correct payload structure for callSecureGeminiAPI wrapper
             const payload = {
                 contents: [{ role: "user", parts: [{ text: userQuery }] }],
                 systemInstruction: { parts: [{ text: systemPrompt }] },
+                model: GEMINI_MODEL,
             };
 
             const result = await callSecureGeminiAPI(payload);
             const text = result?.candidates?.[0]?.content?.parts?.[0]?.text;
-            setCritique(text || "Critique generation failed.");
+            setCritique(text || "Critique generation failed. Check your API connection.");
         } catch (error) {
             console.error("Gemini API Error:", error);
-            setCritique("An error occurred while connecting to the AI coach.");
+            setCritique("An error occurred while connecting to the AI coach. Check network or API key.");
         } finally {
             setIsGenerating(false);
         }

@@ -123,7 +123,7 @@ const LEADERSHIP_TIERS = {
     T1: { id: 'T1', name: 'Lead Self & Mindsets', icon: 'HeartPulse', color: 'indigo-500' },
     T2: { id: 'T2', name: 'Lead Work & Execution', icon: 'Briefcase', color: 'green-600' },
     T3: { id: 'T3', name: 'Lead People & Coaching', icon: 'Users', color: 'yellow-600' },
-    T4: { id: 'T4', name: 'Conflict & Team Health', icon: 'AlertTriangle', color: 'red-600' },
+    T4: { id: 'T4', name: 'Conflict & Team Health', icon: 'AlertTriangle', color: 'red-640' }, // Adjusted from red-600 to match red-640 mock 
     T5: { id: 'T5', name: 'Strategy & Vision', icon: 'TrendingUp', color: 'cyan-600' },
 };
 
@@ -392,7 +392,7 @@ const MOCK_CONTENT_DETAILS = {
             * **Actionable Deliverable:** A final 5-step implementation plan saved, ready to present to your mentor/coach.
         `;
     },
-    
+
     // ----------------------------------------------------
     // TYPE: TOOL (Focus: Systematizing Process)
     // ----------------------------------------------------
@@ -788,6 +788,7 @@ const ContentDetailsModal = ({ isVisible, onClose, content }) => {
         setRating(0); // Reset rating
 
         (async () => {
+            // FIX 4: Correctly call mdToHtml with the memoized detail string
             const html = await mdToHtml(memoizedMockDetail);
             if (!isCancelled) {
                 setHtmlContent(html);
@@ -967,6 +968,10 @@ Thank you for your candid input!
         console.log('Feedback request copied to clipboard!');
         onClose();
     };
+    
+    // FIX: Added Icon for Copy to Clipboard in the RequestFeedbackModal
+    const Copy = ({ className }) => <svg xmlns="http://www.w3.org/2000/svg" className={className} width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>;
+
 
     return (
         <div className="fixed inset-0 bg-[#002E47]/80 z-50 flex items-center justify-center p-4">
@@ -1003,12 +1008,13 @@ Thank you for your candid input!
         </div>
     );
 };
-// FIX: Added Icon for Copy to Clipboard in the RequestFeedbackModal
+// FIX: Added Icon for Copy to Clipboard in the RequestFeedbackModal (needed because it's used above)
 const Copy = ({ className }) => <svg xmlns="http://www.w3.org/2000/svg" className={className} width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>;
 
 
 // --- Component 2: Tracker Dashboard View ---
 const TrackerDashboardView = ({ data, updatePdpData, saveNewPlan, db, userId, navigate }) => {
+    // FIX 1: Initialize viewMonth from router/prop if available, otherwise data.currentMonth
     const [viewMonth, setViewMonth] = useState(data.currentMonth); 
     const currentMonth = data.currentMonth;
     
@@ -1032,22 +1038,30 @@ const TrackerDashboardView = ({ data, updatePdpData, saveNewPlan, db, userId, na
     const [isFeedbackModalVisible, setIsFeedbackModalVisible] = useState(false); // NEW STATE FOR FEEDBACK MODAL
 
 
-    const { callSecureGeminiAPI, hasGeminiKey } = useAppServices(); // No props needed here anymore
+    const { callSecureGeminiAPI, hasGeminiKey, GEMINI_MODEL } = useAppServices(); 
 
     // CRITICAL FIX 3: Synchronize local reflection state AND briefing state when the viewed month changes.
     useEffect(() => {
-        setLocalReflection(monthPlan?.reflectionText || '');
-        // Update briefing state when month changes to show saved/historical text immediately
-        setBriefing(monthPlan?.briefingText || null); 
+        // FIX 5: Use a timeout to ensure state update happens smoothly after viewMonth transition
+        const timer = setTimeout(() => {
+            setLocalReflection(monthPlan?.reflectionText || '');
+            // Update briefing state when month changes to show saved/historical text immediately
+            setBriefing(monthPlan?.briefingText || null); 
+            // Reset loading flag when switching months
+            setBriefingLoading(false);
+        }, 50);
+
+        return () => clearTimeout(timer); // Cleanup timer
     }, [monthPlan]);
     
     // CRITICAL FIX 4: Memoized function for fetching briefing is essential
+    // Added 'briefing' to dependency array ONLY to allow the check against the result
     const fetchMonthlyBriefing = useCallback(async (plan, assessment) => {
         if (briefingLoading || !hasGeminiKey() || !plan || !assessment || !isCurrentView) return; // Added safety checks
         
-        // Prevent re-fetching if a briefing is already saved in the plan data (e.g. historical month)
-        if (plan.briefingText) {
-            setBriefing(plan.briefingText); // Use the saved text
+        // Prevent re-fetching if a briefing is already saved in the plan data or in local state
+        if (plan.briefingText || briefing) {
+            setBriefing(plan.briefingText || briefing); // Use the saved text
             return;
         }
 
@@ -1061,8 +1075,13 @@ const TrackerDashboardView = ({ data, updatePdpData, saveNewPlan, db, userId, na
         const userQuery = `Generate a monthly briefing for the user's current focus: ${plan.theme}. Required content includes: ${plan.requiredContent.map(c => c.title).join(', ')}.`;
 
         try {
-            // Mock API call returns fixed mock data from useAppServices
-            const result = await callSecureGeminiAPI({ systemInstruction: { parts: [{ text: systemPrompt }] }, contents: [{ role: "user", parts: [{ text: userQuery }] }] });
+            // CRITICAL FIX 6: The payload structure for system instruction is correct for the unified callSecureGeminiAPI in App.jsx
+            const payload = {
+                contents: [{ role: "user", parts: [{ text: userQuery }] }],
+                systemInstruction: { parts: [{ text: systemPrompt }] },
+                model: GEMINI_MODEL,
+            };
+            const result = await callSecureGeminiAPI(payload);
             const text = result?.candidates?.[0]?.content?.parts?.[0]?.text;
             
             // Only set briefing if it's different from the current state to avoid re-render loop
@@ -1076,22 +1095,24 @@ const TrackerDashboardView = ({ data, updatePdpData, saveNewPlan, db, userId, na
         } finally {
             setBriefingLoading(false);
         }
-    }, [briefingLoading, hasGeminiKey, callSecureGeminiAPI, isCurrentView, briefing]);
+    }, [briefingLoading, hasGeminiKey, callSecureGeminiAPI, isCurrentView, briefing, GEMINI_MODEL]);
 
 
     // CRITICAL FIX 5: Logic to handle AI briefing based on month view. This prevents React Error #300/310.
     useEffect(() => {
         if (monthPlan && assessment) {
             
-            if (isCurrentView) {
-                 // 1. Current Month: Always try to fetch AI brief if one isn't already set/loading
-                 if (!briefing && !briefingLoading) {
-                     fetchMonthlyBriefing(monthPlan, assessment); 
-                 }
+            if (isCurrentView && !monthPlan.briefingText && !briefingLoading) {
+                 // 1. Current Month: Only try to fetch AI brief if one isn't already saved and we're not loading.
+                 fetchMonthlyBriefing(monthPlan, assessment); 
+                 
             } else if (monthPlan.briefingText) {
-                 // 2. Past Month with Saved Briefing: Use the saved briefing text (handled by the initial useEffect)
-                 // This block is mostly for clarity; state is set in the useEffect for monthPlan change.
-            } else {
+                 // 2. Past Month with Saved Briefing: Use the saved briefing text (handled by the initial useEffect for monthPlan change).
+                 // Explicitly do nothing here, letting state sync handle it.
+                 if (briefing !== monthPlan.briefingText) {
+                     setBriefing(monthPlan.briefingText);
+                 }
+            } else if (!isCurrentView && !monthPlan.briefingText) {
                  // 3. Historical/Future Month with NO Saved Briefing: Use static fallback text
                  const historicalBriefingText = `## Month ${viewMonth} Historical Briefing\n\n**Focus:** ${monthPlan.theme}\n\n*The full coaching brief was not saved for this historical month.*`;
                  
@@ -1139,6 +1160,7 @@ const TrackerDashboardView = ({ data, updatePdpData, saveNewPlan, db, userId, na
             const updatedContent = monthPlan.requiredContent.map(item =>
                 item.id === contentId ? { ...item, status: item.status === 'Completed' ? 'Pending' : 'Completed' } : item
             );
+            // CRITICAL FIX 7: Filter out the old month's content, and replace it with the new content array
             const updatedPlan = oldData.plan.map(m =>
                 m.month === currentMonth ? { ...m, requiredContent: updatedContent } : m
             );
@@ -1384,7 +1406,7 @@ const TrackerDashboardView = ({ data, updatePdpData, saveNewPlan, db, userId, na
                             {isCurrentView && (
                                  <Button
                                     onClick={handleSaveReflection}
-                                    disabled={isSaving || localReflection === monthPlan?.reflectionText}
+                                    disabled={isSaving || localReflection === monthPlan?.reflectionText || localReflection.length === 0}
                                     className='w-full mt-4 bg-[#002E47] hover:bg-gray-700'
                                 >
                                     {isSaving ? 'Saving Reflection...' : 'Save Reflection'}
@@ -1645,6 +1667,7 @@ const PlanReviewScreen = ({ generatedPlan, navigate, clearReviewData }) => {
     
     const handleStartOver = () => {
         clearReviewData(); 
+        navigate('prof-dev-plan'); // Navigating here forces the main component to re-evaluate to the generator view
     };
 
     return (
@@ -1699,7 +1722,7 @@ const PlanReviewScreen = ({ generatedPlan, navigate, clearReviewData }) => {
 
 
 // --- Main Router (Enhanced with internal state) ---
-export const ProfDevPlanScreen = () => {
+export const ProfDevPlanScreen = ({ initialScreen }) => {
     // No longer initializing or managing localPdpData/setLocalPdpData here
     const [generatedPlanData, setGeneratedPlanData] = useState(null); 
     
@@ -1712,20 +1735,30 @@ export const ProfDevPlanScreen = () => {
     }, []);
 
     // Determine current view state (The Core Routing Logic)
+    // FIX: Use optional chaining on pdpData to allow for initial null state
     let currentView = 'loading';
     if (isLoading || pdpData === undefined) {
         currentView = 'loading';
     } else if (error) {
         currentView = 'error';
-    } else if (pdpData !== null) { 
+    } else if (pdpData !== null && pdpData.plan && pdpData.plan.length > 0) { 
         // CRITICAL FIX 11 (Persistence): If pdpData exists (loaded from Session Storage), go straight to tracker.
         currentView = 'tracker';
-    } else if (generatedPlanData) {
+    } else if (generatedPlanData || initialScreen === 'prof-dev-plan-review') {
         // CRITICAL FIX 12: Route to review screen only if data exists locally (after generation, before going to tracker)
         currentView = 'review';
     } else { // pdpData is null, and no plan has been generated yet.
         currentView = 'generator';
     }
+
+    // Handle incoming deep link to the review screen
+    useEffect(() => {
+        if (initialScreen === 'prof-dev-plan-review' && pdpData && !generatedPlanData) {
+            // Mock the required review data from existing pdpData for the review screen
+            setGeneratedPlanData({ userPlan: pdpData, genericPlan: GENERIC_PLAN });
+        }
+    }, [initialScreen, pdpData, generatedPlanData]);
+
 
     if (currentView === 'loading') { 
         return (

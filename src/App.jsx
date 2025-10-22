@@ -59,8 +59,10 @@ const callSecureGeminiAPI = async (payload, maxRetries = 3, delay = 1000) => {
     // Choose endpoint
     let apiUrl = '';
     if (USE_SERVERLESS) {
+        // Netlify Functions Endpoint
         apiUrl = '/.netlify/functions/gemini';
     } else {
+        // Direct API Endpoint
         const directKey = (typeof __GEMINI_API_KEY !== 'undefined' ? __GEMINI_API_KEY : '');
         if (!directKey) throw new Error("Gemini API Key is missing for direct mode. Set __GEMINI_API_KEY or use serverless.");
         apiUrl = `https://generativelanguage.googleapis.com/${GEMINI_API_VERSION}/models/${GEMINI_MODEL}:generateContent?key=${directKey}`;
@@ -104,15 +106,29 @@ const hasGeminiKey = () => (USE_SERVERLESS ? true : !!(typeof __GEMINI_API_KEY !
 // --- END PRODUCTION GEMINI CONFIGURATION ---
 
 // --- EXISTING MOCK/PLACEHOLDER DEFINITIONS (Keep these) ---
-// NOTE: These hooks must return data and have isLoading=false immediately to prevent the PlanningHub/other spinners.
-const usePDPData = (db, userId, isAuthReady) => ({pdpData: {assessment:{selfRatings:{T3: 6}}}, isLoading: false, error: null, updatePdpData: async () => true, saveNewPlan: async () => true});
-const useCommitmentData = (db, userId, isAuthReady) => ({commitmentData: {active_commitments: []}, isLoading: false, error: null, updateCommitmentData: async () => true});
-const usePlanningData = (db, userId, isAuthReady) => ({planningData: {okrs: []}, isLoading: false, error: null, updatePlanningData: async () => true});
+// Note: These hooks must return data and have isLoading=false immediately to prevent the PlanningHub/other spinners.
+// MOCK DATA: Since this is production-bound code, these MUST be configured to return valid initial states quickly.
+// CRITICAL FIX 1: Mock data initialization in App.jsx must ensure components render properly before real data loads.
+const MOCK_PDP_DATA = { currentMonth: 1, assessment: { selfRatings: { T1: 5, T2: 5, T3: 5, T4: 5, T5: 5 } }, plan: [{ month: 1, tier: 'T3', theme: 'Initial Focus', requiredContent: [], reflectionText: '', briefingText: '' }] };
+const MOCK_COMMITMENT_DATA = { active_commitments: [] };
+const MOCK_PLANNING_DATA = { okrs: [] };
+
+// CRITICAL FIX 2: Ensure these mocks are returning valid structures for initial rendering
+const usePDPData = (db, userId, isAuthReady) => ({pdpData: MOCK_PDP_DATA, isLoading: false, error: null, updatePdpData: async () => true, saveNewPlan: async () => true});
+const useCommitmentData = (db, userId, isAuthReady) => ({commitmentData: MOCK_COMMITMENT_DATA, isLoading: false, error: null, updateCommitmentData: async () => true});
+const usePlanningData = (db, userId, isAuthReady) => ({planningData: MOCK_PLANNING_DATA, isLoading: false, error: null, updatePlanningData: async () => true});
+
 const IconMap = {}; 
 const SECRET_SIGNUP_CODE = 'mock-code-123';
 const PDP_COLLECTION = 'leadership_plan';
 const PDP_DOCUMENT = 'roadmap';
-const LEADERSHIP_TIERS = {};
+const LEADERSHIP_TIERS = {
+    T1: { id: 'T1', name: 'Lead Self & Mindsets', icon: 'HeartPulse', color: 'indigo-500' },
+    T2: { id: 'T2', name: 'Lead Work & Execution', icon: 'Briefcase', color: 'green-600' },
+    T3: { id: 'T3', name: 'Lead People & Coaching', icon: 'Users', color: 'yellow-600' },
+    T4: { id: 'T4', name: 'Conflict & Team Health', icon: 'AlertTriangle', color: 'red-600' },
+    T5: { id: 'T5', name: 'Strategy & Vision', icon: 'TrendingUp', color: 'cyan-600' },
+};
 // Global notepad mock for compatibility
 if (typeof window !== 'undefined' && typeof window.notepad === 'undefined') {
     window.notepad = { setTitle: () => {}, addContent: () => {}, getContent: () => {} };
@@ -224,10 +240,12 @@ const AppServiceContext = createContext(null);
 const DEFAULT_SERVICES = {
   navigate: () => {}, user: null, db: null, auth: null, userId: null, isAuthReady: false,
   updatePdpData: () => {}, saveNewPlan: () => {}, updateCommitmentData: () => {}, updatePlanningData: () => {},
-  pdpData: null, commitmentData: null, planningData: null, isLoading: false, error: null,
+  // CRITICAL FIX 3: Default data structures for services
+  pdpData: MOCK_PDP_DATA, commitmentData: MOCK_COMMITMENT_DATA, planningData: MOCK_PLANNING_DATA, isLoading: false, error: null, 
   appId: 'default-app-id', IconMap: {}, callSecureGeminiAPI: async () => { throw new Error('Gemini not configured.'); },
-  hasGeminiKey: () => false, GEMINI_MODEL, API_KEY,
+  hasGeminiKey: () => false, GEMINI_MODEL, API_KEY, LEADERSHIP_TIERS, 
 };
+// FIX: Export useAppServices directly for components to use
 export const useAppServices = () => useContext(AppServiceContext) ?? DEFAULT_SERVICES;
 
 const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
@@ -236,6 +254,7 @@ const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
 const DataProvider = ({ children, firebaseServices, userId, isAuthReady, navigate, user }) => {
   const { db } = firebaseServices;
 
+  // These function calls must return mock data or real data from the imports
   const pdp = usePDPData(db, userId, isAuthReady);
   const commitment = useCommitmentData(db, userId, isAuthReady);
   const planning = usePlanningData(db, userId, isAuthReady);
@@ -257,7 +276,7 @@ const DataProvider = ({ children, firebaseServices, userId, isAuthReady, navigat
     updatePdpData: pdp.updatePdpData, saveNewPlan: pdp.saveNewPlan,
     updateCommitmentData: commitment.updateCommitmentData, updatePlanningData: planning.updatePlanningData,
     pdpData: pdp.pdpData, commitmentData: commitment.commitmentData, planningData: planning.planningData,
-    isLoading, error, appId, IconMap: IconMap, callSecureGeminiAPI, hasGeminiKey, GEMINI_MODEL, API_KEY,
+    isLoading, error, appId, IconMap: IconMap, callSecureGeminiAPI, hasGeminiKey, GEMINI_MODEL, API_KEY, LEADERSHIP_TIERS, 
     hasPendingDailyPractice, 
   }), [
     navigate, user, firebaseServices, userId, isAuthReady, isLoading, error, pdp, commitment, planning, hasPendingDailyPractice
@@ -329,21 +348,21 @@ function AuthPanel({ auth, onSuccess }) {
 
         return (
             <div className='space-y-4'>
-                {isSignUp && (<input type="text" placeholder="Your Full Name" value={name} onChange={(e) => setName(e.target.value)} className={`w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[${TEAL}] focus:border-[${TEAL}]`} disabled={isLoading}/>)}
-                <input type="email" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} className={`w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[${TEAL}] focus:border-[${TEAL}]`} disabled={isLoading}/>
-                {!isReset && (<input type="password" placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} className={`w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[${TEAL}] focus:border-[${TEAL}]`} disabled={isLoading}/>)}
-                {isSignUp && (<input type="text" placeholder="Secret Sign-up Code" value={secretCode} onChange={(e) => setSecretCode(e.target.value)} className={`w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[${TEAL}] focus:border-[${TEAL}]`} disabled={isLoading}/>)}
-                
                 <form onSubmit={(e) => { e.preventDefault(); handleAction(); }}>
-  {/* ... your Email, Password, Name inputs exactly as-is ... */}
-  <button
-    type="submit"
-    disabled={isLoading}
-    className="w-full p-3 bg-[#47A88D] text-white rounded-lg hover:bg-[#349881] focus:ring-2 focus:ring-[#47A88D]"
-  >
-    {mode === 'login' ? 'Sign In' : 'Create Account'}
-  </button>
-</form>
+                    {isSignUp && (<input type="text" placeholder="Your Full Name" value={name} onChange={(e) => setName(e.target.value)} className={`w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[${TEAL}] focus:border-[${TEAL}]`} disabled={isLoading}/>)}
+                    <input type="email" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} className={`w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[${TEAL}] focus:border-[${TEAL}]`} disabled={isLoading}/>
+                    {!isReset && (<input type="password" placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} className={`w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[${TEAL}] focus:border-[${TEAL}]`} disabled={isLoading}/>)}
+                    {isSignUp && (<input type="text" placeholder="Secret Sign-up Code" value={secretCode} onChange={(e) => setSecretCode(e.target.value)} className={`w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[${TEAL}] focus:border-[${TEAL}]`} disabled={isLoading}/>)}
+                    
+                    {/* CRITICAL FIX: Ensure the submit button is inside the form and targets handleAction */}
+                    <button
+                        type="submit"
+                        disabled={isLoading}
+                        className="w-full p-3 bg-[#47A88D] text-white rounded-lg hover:bg-[#349881] focus:ring-2 focus:ring-[#47A88D]"
+                    >
+                        {mode === 'login' ? 'Sign In' : mode === 'signup' ? 'Create Account' : 'Send Reset Link'}
+                    </button>
+                </form>
                 
                 {statusMessage && (<p className={`text-sm text-center font-medium mt-3 ${statusMessage.includes('sent') ? `text-[${TEAL}]` : `text-[${ORANGE}]`}`}>{statusMessage}</p>)}
             </div>
@@ -352,8 +371,8 @@ function AuthPanel({ auth, onSuccess }) {
 
     return (
         <div className="min-h-screen flex items-center justify-center bg-gray-100">
-            <div className="p-8 bg-white rounded-xl shadow-2xl text-center w-full max-w-sm border-t-4 border-[${TEAL}]">
-                <h2 className="text-2xl font-extrabold text-[${NAVY}] mb-4">{mode === 'login' ? 'Sign In' : mode === 'signup' ? 'Create Account' : 'Reset Password'}</h2>
+            <div className={`p-8 bg-white rounded-xl shadow-2xl text-center w-full max-w-sm border-t-4 border-[${TEAL}]`}>
+                <h2 className={`text-2xl font-extrabold text-[${NAVY}] mb-4`}>{mode === 'login' ? 'Sign In' : mode === 'signup' ? 'Create Account' : 'Reset Password'}</h2>
                 <p className='text-sm text-gray-600 mb-6'>{mode === 'reset' ? 'Enter your email to receive a password reset link.' : 'Log in to access your leadership development platform.'}</p>
                 {renderForm()}
                 <div className='mt-6 border-t pt-4 border-gray-200 space-y-2'>
@@ -387,7 +406,8 @@ const NavSidebar = ({ currentScreen, setCurrentScreen, user, closeMobileMenu, is
         } catch (e) { console.error('Sign out failed:', e); }
     };
 
-    const handleNavigate = (screen) => { setCurrentScreen(screen); closeMobileMenu(); };
+    // CRITICAL FIX 4: Use a stable handler for navigation
+    const handleNavigate = useCallback((screen) => { setCurrentScreen(screen); closeMobileMenu(); }, [setCurrentScreen, closeMobileMenu]);
     
     const renderNavItems = (items) => (
         items.map((item) => {
@@ -453,7 +473,9 @@ const ScreenRouter = ({ currentScreen, navParams }) => {
   const uniqueKey = currentScreen;
   
   switch (currentScreen) {
-    case 'prof-dev-plan': return <ProfDevPlanScreen key={uniqueKey} />;
+    case 'prof-dev-plan': 
+    case 'prof-dev-plan-review': // Added router path for the review screen
+        return <ProfDevPlanScreen key={uniqueKey} initialScreen={currentScreen} />;
     case 'daily-practice': return <DailyPracticeScreen key={uniqueKey} initialGoal={navParams.initialGoal} initialTier={navParams.initialTier} />;
     case 'coaching-lab': return <CoachingLabScreen key={uniqueKey} />;
     case 'planning-hub': return <PlanningHubScreen key={uniqueKey} />;
@@ -518,7 +540,12 @@ const App = ({ initialState }) => {
   const [initStage, setInitStage] = useState('init');
   const [initError, setInitError] = useState('');
 
-  const navigate = useCallback((screen, params = {}) => { setNavParams(params); setCurrentScreen(screen); }, []);
+  // CRITICAL FIX 5: Use useCallback to ensure navigate is a stable function reference
+  const navigate = useCallback((screen, params = {}) => { 
+      // Ensure params is an object before setting
+      setNavParams(typeof params === 'object' && params !== null ? params : {}); 
+      setCurrentScreen(screen); 
+  }, []);
 
   // Bridge: expose the real Gemini caller so services can forward to it (inside component)
   useEffect(() => {
@@ -528,7 +555,7 @@ const App = ({ initialState }) => {
 
 
   useEffect(() => {
-    if (typeof window !== 'undefined') { window.__appNavigate = navigate; }
+    if (typeof window !== 'undefined') window.__appNavigate = navigate;
     return () => { if (typeof window !== 'undefined') delete window.__appNavigate; };
   }, [navigate]);
 
@@ -583,17 +610,10 @@ const App = ({ initialState }) => {
     }
   }, []);
 
+  // CRITICAL FIX: Removed the handleBeforeUnload logic that was forcing signout on window close (Issue 12)
   useEffect(() => {
-    const handleBeforeUnload = async () => {
-        const authInstance = firebaseServices.auth;
-        if (authInstance) {
-            await signOut(authInstance); 
-            console.log('User signed out due to window close.');
-        }
-    };
-    window.addEventListener('beforeunload', handleBeforeUnload);
-    return () => { window.removeEventListener('beforeunload', handleBeforeUnload); };
-  }, [firebaseServices.auth]); 
+    return () => {}; // Empty cleanup, session persistence is managed by Firebase Auth settings
+  }, []); 
 
   if (!DEBUG_MODE) {
     if (initStage === 'init') { return (<div className="min-h-screen flex items-center justify-center bg-gray-100"><div className="flex flex-col items-center"><div className="animate-spin rounded-full h-12 w-12 border-4 border-t-4 border-gray-200 border-t-[#47A88D] mb-3"></div><p className="text-[#002E47] font-semibold">Initializing Authentication…</p></div></div>); }
