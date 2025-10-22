@@ -477,7 +477,7 @@ const CommitmentSelectorView = ({ setView, initialGoal, initialTier }) => {
           !userCommitments.some(c => c.text === commitment.text) && 
           (searchTerm === '' || commitment.text.toLowerCase().includes(ql))
         ) {
-          matchingCommitments.push({ ...commitment, category });
+ matchingCommitments.push({ ...commitment, category });
         }
       }
     }
@@ -486,15 +486,15 @@ const CommitmentSelectorView = ({ setView, initialGoal, initialTier }) => {
 
   
   const availableGoals = useMemo(() => [
-    initialLinkedGoalPlaceholder,
-    ...(currentMonthPlan?.theme ? [`PDP Focus: ${currentMonthPlan.theme}`] : []),
-    ...okrGoals,
-    ...missionVisionGoals,
-    'Improve Feedback & Coaching Skills',
-    'Risk Mitigation Strategy',
-    'Misalignment Prevention', 
-    'Other / New Goal'
-  ], [okrGoals, missionVisionGoals, currentMonthPlan]);
+  initialLinkedGoalPlaceholder,
+  ...(currentMonthPlan?.theme ? [`PDP Focus: ${currentMonthPlan.theme}`] : []),
+  ...okrGoals,
+  ...missionVisionGoals,
+  'Improve Feedback & Coaching Skills',
+  'Risk Mitigation Strategy',
+  'Misalignment Prevention',
+  'Other / New Goal'
+], [okrGoals, missionVisionGoals, currentMonthPlan]);
   
   useEffect(() => {
     if (initialGoal && initialGoal !== linkedGoal) {
@@ -639,10 +639,10 @@ const CommitmentSelectorView = ({ setView, initialGoal, initialTier }) => {
     }
 
     // CRITICAL FIX 2: Ensure existing data is preserved using the spread operator
-    const success = await updateCommitmentData(data => ({ 
-        ...data, 
-        active_commitments: [...(data?.active_commitments || []), newCommitment] 
-    }));
+ const success = await updateCommitmentData(prev => ({
+  ...prev,
+  active_commitments: [...(prev?.active_commitments || []), newCommitment],
+}));
 
     // CRITICAL FIX 7: Only reset local state and navigate if persistence was successful
     if (success) {
@@ -684,10 +684,10 @@ const CommitmentSelectorView = ({ setView, initialGoal, initialTier }) => {
       };
 
       // CRITICAL FIX 5: Ensure existing data is preserved using the spread operator
-      const success = await updateCommitmentData(data => ({ 
-          ...data, 
-          active_commitments: [...(data?.active_commitments || []), newCommitment] 
-      }));
+const success = await updateCommitmentData(prev => ({
+  ...prev,
+  active_commitments: [...(prev?.active_commitments || []), newCommitment],
+}));
 
       // CRITICAL FIX 8: Only reset local state and navigate if persistence was successful
       if (success) {
@@ -1405,7 +1405,7 @@ const sortedCommitments = useMemo(() => {
           });
       }
       return active;
- }, [userCommitments, viewMode]);
+}, [userCommitments, viewMode]);
 
 
   // Final Render

@@ -1,6 +1,6 @@
 // src/services/useAppServices.jsx
 
-import { useMemo, useCallback, useContext, createContext } from 'react';
+import { useMemo, useCallback, useContext, createContext, useState } from 'react';
 
 // --- MOCK CONSTANTS (Duplicated from App.jsx for independent hook compilation) ---
 const GEMINI_MODEL = 'gemini-1.5-flash-latest';
@@ -79,19 +79,22 @@ export const usePDPData = (db, userId, isAuthReady) => {
 };
 
 export const useCommitmentData = (db, userId, isAuthReady) => {
-    const mockCommitmentData = useMemo(() => MOCK_COMMITMENT_DATA, []);
+  // keep a live, in-memory copy so UI updates
+  const [mockCommitmentData, setMockCommitmentData] = useState(MOCK_COMMITMENT_DATA);
 
-    const updateCommitmentData = useCallback(async (updater) => { 
-        console.log('Mock Commitment Update triggered.'); 
-        return true; 
-    }, []);
-    
-    return {
-        commitmentData: mockCommitmentData, 
-        isLoading: false, 
-        error: null, 
-        updateCommitmentData
-    };
+  const updateCommitmentData = useCallback(async (updater) => {
+    setMockCommitmentData(prev =>
+      typeof updater === 'function' ? updater(prev) : updater
+    );
+    return true;
+  }, []);
+
+  return {
+    commitmentData: mockCommitmentData,
+    isLoading: false,
+    error: null,
+    updateCommitmentData
+  };
 };
 
 export const usePlanningData = (db, userId, isAuthReady) => {
