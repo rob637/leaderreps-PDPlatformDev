@@ -1037,6 +1037,19 @@ const TrackerDashboardView = ({ data, updatePdpData, saveNewPlan, userId, naviga
     const [selectedContent, setSelectedContent] = useState(null);
     const [isFeedbackModalVisible, setIsFeedbackModalVisible] = useState(false); // NEW STATE FOR FEEDBACK MODAL
 
+    // Track rows that are temporarily 'toggling' so we can disable buttons/spinners without hooks-in-loops
+    const [togglingIds, setTogglingIds] = useState(() => new Set());
+
+    const toggleContent = useCallback((id) => {
+        if (!isPastOrCurrent) return; // block edits for future months
+        setTogglingIds(prev => { const n = new Set(prev); n.add(id); return n; });
+        handleContentStatusToggle(id);
+        setTimeout(() => {
+            setTogglingIds(prev => { const n = new Set(prev); n.delete(id); return n; });
+        }, 400);
+    }, [isPastOrCurrent, handleContentStatusToggle]);
+
+
 
     const { callSecureGeminiAPI, hasGeminiKey, GEMINI_MODEL } = useAppServices(); 
 
@@ -1330,16 +1343,8 @@ const TrackerDashboardView = ({ data, updatePdpData, saveNewPlan, userId, naviga
                             <div className='space-y-3 mt-4'>
                                 {requiredContent.map(item => {
                                     const isCompleted = item.status === 'Completed';
-                                    const [isToggling, setIsToggling] = useState(false);
-
-                                    const handleToggle = () => {
-                                        if (!isCurrentView) return; 
-                                        setIsToggling(true);
-                                        handleContentStatusToggle(item.id);
-                                        setTimeout(() => setIsToggling(false), 500); 
-                                    };
-
-                                    const actionButtonText = isPastOrCurrent ? ((item.type === 'Role-Play' || item.type === 'Exercise' || item.type === 'Tool') ? 'Go to Practice' : 'View Content') : 'View Content'; 
+    const isToggling = togglingIds.has(item.id);
+const actionButtonText = isPastOrCurrent ? ((item.type === 'Role-Play' || item.type === 'Exercise' || item.type === 'Tool') ? 'Go to Practice' : 'View Content') : 'View Content'; 
 
                                     return (
                                         <div key={item.id} className='flex items-center justify-between p-3 bg-gray-50 rounded-xl shadow-sm'>
@@ -1365,7 +1370,7 @@ const TrackerDashboardView = ({ data, updatePdpData, saveNewPlan, userId, naviga
                                                 </Button>
 
                                                 <Button
-                                                    onClick={handleToggle}
+                                                    onClick={() => toggleContent(item.id)}
                                                     className={`px-3 py-1 text-xs transition-colors duration-300 ${isToggling ? 'opacity-50' : ''}`}
                                                     variant={isCompleted ? 'secondary' : 'primary'}
                                                     disabled={isSaving || isToggling || !isCurrentView}

@@ -85,58 +85,36 @@ export const usePlanningData = (db, userId, isAuthReady) => {
 };
 
 export const usePDPData = (db, userId, isAuthReady) => {
- const STORAGE_KEY = `pdp:${userId || 'anon'}`;
+ const key = useMemo(() => `lrpdp_${userId || 'anon'}`, [userId]);
+
   const [pdpData, setPdpData] = useState(() => {
     try {
-      const cached = sessionStorage.getItem(STORAGE_KEY);
-      // Start with null so the generator shows until a plan exists.
-      return cached ? JSON.parse(cached) : null;
+      const raw = sessionStorage.getItem(key);
+      return raw ? JSON.parse(raw) : null;        // null = no plan yet
     } catch {
       return null;
     }
   });
 
-  // Reload cached plan when user changes (or first mount)
   useEffect(() => {
     try {
-      const cached = sessionStorage.getItem(STORAGE_KEY);
-      if (cached) setPdpData(JSON.parse(cached));
-    } catch {}
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [userId]);
-
-  const persist = (data) => {
-    if (data === null) {
-      sessionStorage.removeItem(STORAGE_KEY);
-    } else {
-      sessionStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-    }
-  };
-
-  const saveNewPlan = useCallback(async (planObj) => {
-    // planObj is what your generator returns: { ownerUid, assessment, plan, currentMonth, ... }
-    const next = {
-      ...planObj,
-      ownerUid: userId || planObj.ownerUid,
-      lastUpdate: new Date().toISOString(),
-    };
-    setPdpData(next);
-    persist(next);
-    return true;
-  }, [userId]);
+      if (pdpData === null) sessionStorage.removeItem(key);
+      else sessionStorage.setItem(key, JSON.stringify(pdpData));
+    } catch {/* ignore storage errors */}
+  }, [key, pdpData]);
 
   const updatePdpData = useCallback(async (updater) => {
-    setPdpData((prev) => {
-      const next = typeof updater === 'function' ? updater(prev) : updater;
-      persist(next);
-      return next;
-    });
+    setPdpData(prev => (typeof updater === 'function' ? updater(prev) : updater));
     return true;
   }, []);
 
-  return { pdpData, isLoading: false, error: null, saveNewPlan, updatePdpData };
-};
-export const useCommitmentData = (db, userId, isAuthReady) => {
+  const saveNewPlan = useCallback(async (newPlan) => {
+    setPdpData(newPlan);
+    return true;
+  }, []);
+
+  return { pdpData, isLoading: false, error: null, updatePdpData, saveNewPlan };
+};export const useCommitmentData = (db, userId, isAuthReady) => {
   const STORAGE_KEY = `lrpd:commitments:${userId || 'anon'}`;
 
   const [commitmentData, setCommitmentData] = useState(() => {
