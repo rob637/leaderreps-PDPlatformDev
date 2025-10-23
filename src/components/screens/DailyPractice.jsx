@@ -722,11 +722,11 @@ await updateCommitmentData(prev => ({
             <div className='grid grid-cols-2 gap-4 mb-4'>
                 <div className={`p-3 rounded-xl border ${aiAssessment.score > 7 ? 'border-green-400 bg-green-50' : 'border-gray-300 bg-gray-100'}`}>
                     <div className='text-xs font-semibold uppercase text-gray-500'>Value Score</div>
-                    <div className={`text-3xl font-extrabold ${valueColor}`}>{aiAssessment.score}/10</div>
+                    <div className={`text-3xl font-extrabold ${valueColor}`}>{aiAssessment.score}/10}</div>
                 </div>
                 <div className={`p-3 rounded-xl border ${aiAssessment.risk > 7 ? 'border-red-400 bg-red-50' : 'border-gray-300 bg-gray-100'}`}>
                     <div className='text-xs font-semibold uppercase text-gray-500'>Risk Score</div>
-                    <div className={`text-3xl font-extrabold ${riskColor}`}>{aiAssessment.risk}/10</div>
+                    <div className={`text-3xl font-extrabold ${riskColor}`}>{aiAssessment.risk}/10}</div>
                 </div>
             </div>
             <div className='p-3 bg-[#002E47]/5 rounded-lg border border-[#002E47]/10'>
@@ -1164,6 +1164,9 @@ export default function DailyPracticeScreen({ initialGoal, initialTier }) {
   // CRITICAL FIX: Use useAppServices to get the state manager and data
   const { commitmentData, updateCommitmentData, callSecureGeminiAPI, hasGeminiKey, pdpData, navigate, GEMINI_MODEL} = useAppServices(); 
   
+  // ADDITION 1: New state to track if we've handled the initial navigation
+  const [hasNavigatedInitial, setHasNavigatedInitial] = useState(false); 
+
   // FIX: Call the mock scheduleMidnightReset function to simulate nightly log/reset
   // This must be done inside useEffect to be safe.
 useEffect(() => {
@@ -1186,6 +1189,19 @@ useEffect(() => {
   const [isPerfectScoreModalVisible, setIsPerfectScoreModalVisible] = useState(false);
   const resilienceLog = commitmentData?.resilience_log || {};
   
+  // MODIFIED useEffect: Only navigate to selector if initial props exist AND we haven't done it yet.
+  useEffect(() => {
+    // FIX 9: Prevent initialGoal/initialTier from re-navigating to the selector after a successful add.
+    if (!hasNavigatedInitial && (initialGoal || initialTier)) {
+      setView('selector');
+      setHasNavigatedInitial(true); // Mark as done
+    } else if (view === 'selector' && !hasNavigatedInitial && !initialGoal && !initialTier) {
+       // If we start on selector without props (e.g., from a deep link), also mark as handled.
+       setHasNavigatedInitial(true);
+    }
+  }, [initialGoal, initialTier, hasNavigatedInitial, view]); 
+
+
   // CRITICAL FIX: Resilience save handler now correctly uses updateCommitmentData
   const handleSaveResilience = async (newLogData) => { 
       setIsSaving(true); 
@@ -1211,11 +1227,7 @@ useEffect(() => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [commitmentData]);
   
-  useEffect(() => {
-    if (initialGoal || initialTier) {
-      setView('selector');
-    }
-  }, [initialGoal, initialTier]);
+  // Removed redundant useEffect for initialGoal/initialTier navigation, replaced by the unified useEffect.
 
 
   const userCommitments = commitmentData?.active_commitments || [];
