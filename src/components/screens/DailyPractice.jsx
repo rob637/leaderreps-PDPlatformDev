@@ -1,4 +1,4 @@
-// src/components/screens/DailyPractice...jsx - Commitment Fixes
+// src/components/screens/DailyPractice.jsx - Commitment Fixes
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import {
@@ -9,7 +9,8 @@ import {
    MOCK/UI UTILITIES (Fully Self-Contained)
 ========================================================= */
 
-// CRITICAL FIX: Use the canonical hook path so all views share the same store...import { useAppServices } from '../../services/useAppServices...jsx';
+// CRITICAL FIX: Use the canonical hook path so all views share the same store.
+import { useAppServices } from '../../services/useAppServices.jsx';
 
 
 // --- MOCK UTILITIES (Defined for component self-reliance) ---
@@ -24,9 +25,9 @@ const LEADERSHIP_TIERS_META = {
 // FIX 1: Resolves "ReferenceError: groupCommitmentsByTier is not defined"
 function groupCommitmentsByTier(commitments) {
     const tiers = { T1: [], T2: [], T3: [], T4: [], T5: [] };
-    (commitments || [])...forEach(c => {
-        if (c...linkedTier && tiers[c...linkedTier]) {
-            tiers[c...linkedTier]...push(c);
+    (commitments || []).forEach(c => {
+        if (c.linkedTier && tiers[c.linkedTier]) {
+            tiers[c.linkedTier].push(c);
         }
     });
     return tiers;
@@ -36,17 +37,17 @@ function groupCommitmentsByTier(commitments) {
 function calculateTierSuccessRates(commitments, history) {
     const rates = {};
     const tierMap = groupCommitmentsByTier(commitments);
-    Object...keys(LEADERSHIP_TIERS_META)...forEach(tierId => { // Use the local meta map
+    Object.keys(LEADERSHIP_TIERS_META).forEach(tierId => { // Use the local meta map
         const tierCommitments = tierMap[tierId] || [];
-        const total = tierCommitments...length;
+        const total = tierCommitments.length;
         if (total > 0) {
             // Calculate success rate based on status today
-            const committedCount = tierCommitments...filter(c => c...status === 'Committed')...length;
+            const committedCount = tierCommitments.filter(c => c.status === 'Committed').length;
             // Mock overall rate as 78% if active commitments are not all completed
             const mockedOverallRate = 78; 
             rates[tierId] = { 
                 // Simple representation for today's view: 
-                rate: Math...round((committedCount / total) * 100) || mockedOverallRate, 
+                rate: Math.round((committedCount / total) * 100) || mockedOverallRate, 
                 total: total 
             };
         } else {
@@ -63,46 +64,46 @@ function getLastSevenDays(history) {
     
     for (let i = 0; i < 7; i++) {
         const date = new Date(today);
-        date...setDate(today...getDate() - i);
-        const dateString = date...toISOString()...split('T')[0];
+        date.setDate(today.getDate() - i);
+        const dateString = date.toISOString().split('T')[0];
         
-        const entry = (history || [])...find(h => h...date === dateString);
-        const score = entry ? entry...score : '0/0'; 
-        const reflection = entry ? entry...reflection : 'N/A';
-        result...push({ date: dateString, score, reflection });
+        const entry = (history || []).find(h => h.date === dateString);
+        const score = entry ? entry.score : '0/0'; 
+        const reflection = entry ? entry.reflection : 'N/A';
+        result.push({ date: dateString, score, reflection });
     }
     // Return them in chronological order (oldest to newest)
-    return result...reverse();
+    return result.reverse();
 }
 
 function calculateTotalScore(commitments) {
-    const total = commitments...length;
-    const committedCount = commitments...filter(c => c...status === 'Committed')...length;
+    const total = commitments.length;
+    const committedCount = commitments.filter(c => c.status === 'Committed').length;
     return { committed: committedCount, total };
 }
 
 function calculateStreak(history) {
     let streak = 0;
-    const validHistory = Array...isArray(history) ? history : [];
+    const validHistory = Array.isArray(history) ? history : [];
     
     // Sort history by date descending
-    const sortedHistory = [.....validHistory]...sort((a, b) => new Date(b...date) - new Date(a...date));
+    const sortedHistory = [...validHistory].sort((a, b) => new Date(b.date) - new Date(a.date));
 
     // Start checking from yesterday backwards
     let yesterday = new Date();
-    yesterday...setDate(yesterday...getDate()); // Start check from today (last entry)
+    yesterday.setDate(yesterday.getDate()); // Start check from today (last entry)
     
     for (let i = 0; i < 7; i++) { // Check up to the last 7 days
       const checkDate = new Date(yesterday);
-      checkDate...setDate(yesterday...getDate() - i);
-      const dateString = checkDate...toISOString()...split('T')[0];
+      checkDate.setDate(yesterday.getDate() - i);
+      const dateString = checkDate.toISOString().split('T')[0];
       
-      const historyEntry = sortedHistory...find(h => h...date === dateString);
+      const historyEntry = sortedHistory.find(h => h.date === dateString);
 
       if (historyEntry) {
-        const scoreParts = historyEntry...score...split('/');
-        if (scoreParts...length === 2) {
-          const [committed, total] = scoreParts...map(Number);
+        const scoreParts = historyEntry.score.split('/');
+        if (scoreParts.length === 2) {
+          const [committed, total] = scoreParts.map(Number);
           if (committed === total && total > 0) {
             streak++;
           } else {
@@ -122,29 +123,29 @@ function calculateStreak(history) {
 // Reset statuses once per day and log YESTERDAY's score
 const resetIfNewDay = (data, updateFn) => {
   const today = new Date();
-  const todayStr = today...toISOString()...split('T')[0];
-  const last = data?...last_reset_date;
+  const todayStr = today.toISOString().split('T')[0];
+  const last = data?.last_reset_date;
   if (last === todayStr) return;
 
   const y = new Date(today);
-  y...setDate(today...getDate() - 1);
-  const yStr = y...toISOString()...split('T')[0];
+  y.setDate(today.getDate() - 1);
+  const yStr = y.toISOString().split('T')[0];
 
-  const commitments = data?...active_commitments || [];
+  const commitments = data?.active_commitments || [];
   const { committed, total } = calculateTotalScore(commitments);
 
   updateFn(prev => {
-    const alreadyLogged = (prev...history || [])...some(h => h...date === yStr);
+    const alreadyLogged = (prev.history || []).some(h => h.date === yStr);
     return {
-      .......prev,
+      ...prev,
       last_reset_date: todayStr,
       history: alreadyLogged
-        ? prev...history
+        ? prev.history
         : [
-            .......(prev...history || []),
-            { date: yStr, score: `${committed}/${total}`, reflection: prev...reflection_journal || '' }
+            ...(prev.history || []),
+            { date: yStr, score: `${committed}/${total}`, reflection: prev.reflection_journal || '' }
           ],
-      active_commitments: commitments...map(c => ({ .....c, status: 'Pending' })),
+      active_commitments: commitments.map(c => ({ ...c, status: 'Pending' })),
     };
   });
 };
@@ -170,31 +171,31 @@ const COLORS = {
 };
 
 // UI Components (Replicated for file independence)
-const Button = ({ children, onClick, disabled = false, variant = 'primary', className = '', .....rest }) => {
+const Button = ({ children, onClick, disabled = false, variant = 'primary', className = '', ...rest }) => {
   let baseStyle = "px-6 py-3 rounded-xl font-semibold transition-all shadow-lg focus:outline-none focus:ring-4 text-white flex items-center justify-center";
-  if (variant === 'primary') { baseStyle += ` bg-[${COLORS...TEAL}] hover:bg-[${COLORS...SUBTLE_TEAL}] focus:ring-[${COLORS...TEAL}]/50`; }
-  else if (variant === 'secondary') { baseStyle += ` bg-[${COLORS...ORANGE}] hover:bg-[#C33E12] focus:ring-[${COLORS...ORANGE}]/50`; }
-  else if (variant === 'outline') { baseStyle = `px-6 py-3 rounded-xl font-semibold transition-all shadow-md border-2 border-[${COLORS...TEAL}] text-[${COLORS...TEAL}] hover:bg-[${COLORS...TEAL}]/10 focus:ring-4 focus:ring-[${COLORS...TEAL}]/50 bg-[${COLORS...LIGHT_GRAY}] flex items-center justify-center`; }
+  if (variant === 'primary') { baseStyle += ` bg-[${COLORS.TEAL}] hover:bg-[${COLORS.SUBTLE_TEAL}] focus:ring-[${COLORS.TEAL}]/50`; }
+  else if (variant === 'secondary') { baseStyle += ` bg-[${COLORS.ORANGE}] hover:bg-[#C33E12] focus:ring-[${COLORS.ORANGE}]/50`; }
+  else if (variant === 'outline') { baseStyle = `px-6 py-3 rounded-xl font-semibold transition-all shadow-md border-2 border-[${COLORS.TEAL}] text-[${COLORS.TEAL}] hover:bg-[${COLORS.TEAL}]/10 focus:ring-4 focus:ring-[${COLORS.TEAL}]/50 bg-[${COLORS.LIGHT_GRAY}] flex items-center justify-center`; }
   else if (variant === 'nav-back') { baseStyle = `px-4 py-2 rounded-lg font-medium transition-all shadow-sm border-2 border-gray-300 text-gray-700 hover:bg-gray-100 flex items-center justify-center`; }
   if (disabled) { baseStyle = "px-6 py-3 rounded-xl font-semibold bg-gray-300 text-gray-500 cursor-not-allowed shadow-inner transition-none flex items-center justify-center"; }
-  return (<button {.....rest} onClick={onClick} disabled={disabled} className={`${baseStyle} ${className}`}>{children}</button>);
+  return (<button {...rest} onClick={onClick} disabled={disabled} className={`${baseStyle} ${className}`}>{children}</button>);
 };
 
 const Card = ({ children, title, icon: Icon, className = '', onClick, accent = 'TEAL' }) => {
   const interactive = !!onClick;
   const Tag = interactive ? 'button' : 'div';
-  const accentColor = COLORS[accent] || COLORS...TEAL;
+  const accentColor = COLORS[accent] || COLORS.TEAL;
   return (
     <Tag
       role={interactive ? 'button' : undefined}
       tabIndex={interactive ? 0 : undefined}
       className={`relative p-6 rounded-2xl border-2 shadow-2xl hover:shadow-xl transition-all duration-300 text-left ${className}`}
-      style={{ background: 'linear-gradient(180deg,#FFFFFF, #FCFCFA)', borderColor: COLORS...SUBTLE, color: COLORS...NAVY }}
+      style={{ background: 'linear-gradient(180deg,#FFFFFF, #FCFCFA)', borderColor: COLORS.SUBTLE, color: COLORS.NAVY }}
       onClick={onClick}
     >
       <span style={{ position:'absolute', top:0, left:0, right:0, height:6, background: accentColor, borderTopLeftRadius:14, borderTopRightRadius:14 }} />
-      {Icon && (<div className="w-10 h-10 rounded-lg flex items-center justify-center border mb-3" style={{ borderColor: COLORS...SUBTLE, background: COLORS...LIGHT_GRAY }}><Icon className="w-5 h-5" style={{ color: COLORS...TEAL }} /></div>)}
-      {title && <h2 className="text-xl font-extrabold mb-2" style={{ color: COLORS...NAVY }}>{title}</h2>}
+      {Icon && (<div className="w-10 h-10 rounded-lg flex items-center justify-center border mb-3" style={{ borderColor: COLORS.SUBTLE, background: COLORS.LIGHT_GRAY }}><Icon className="w-5 h-5" style={{ color: COLORS.TEAL }} /></div>)}
+      {title && <h2 className="text-xl font-extrabold mb-2" style={{ color: COLORS.NAVY }}>{title}</h2>}
       {children}
     </Tag>
   );
@@ -226,19 +227,19 @@ const Tooltip = ({ content, children }) => {
    FIX 1: Added confirmation state and button logic.
 ========================================================= */
 const ResilienceTracker = ({ dailyLog, handleSaveResilience }) => {
-    const today = new Date()...toISOString()...split('T')[0];
+    const today = new Date().toISOString().split('T')[0];
     const initialLog = dailyLog[today] || { energy: 5, focus: 5, saved: false }; // Added 'saved' flag
-    const [energy, setEnergy] = useState(initialLog...energy);
-    const [focus, setFocus] = useState(initialLog...focus);
+    const [energy, setEnergy] = useState(initialLog.energy);
+    const [focus, setFocus] = useState(initialLog.focus);
     const [localIsSaving, setLocalIsSaving] = useState(false);
-    const [isSavedConfirmation, setIsSavedConfirmation] = useState(initialLog...saved);
+    const [isSavedConfirmation, setIsSavedConfirmation] = useState(initialLog.saved);
 
-    // Sync state if initialLog changes (e...g., after nightly reset)
+    // Sync state if initialLog changes (e.g., after nightly reset)
     useEffect(() => {
-        setEnergy(initialLog...energy);
-        setFocus(initialLog...focus);
-        setIsSavedConfirmation(initialLog...saved);
-    }, [initialLog...energy, initialLog...focus, initialLog...saved]);
+        setEnergy(initialLog.energy);
+        setFocus(initialLog.focus);
+        setIsSavedConfirmation(initialLog.saved);
+    }, [initialLog.energy, initialLog.focus, initialLog.saved]);
 
     const handleSliderChange = (key, value) => {
         if (key === 'energy') setEnergy(value);
@@ -254,7 +255,7 @@ const ResilienceTracker = ({ dailyLog, handleSaveResilience }) => {
         setLocalIsSaving(false);
     };
 
-    const isCheckSaved = initialLog...saved || isSavedConfirmation;
+    const isCheckSaved = initialLog.saved || isSavedConfirmation;
 
     return (
         <Card title="Daily Resilience Check" icon={HeartPulse} accent='ORANGE' className='bg-[#E04E1B]/10 border-4 border-dashed border-[#E04E1B]/20'>
@@ -263,13 +264,13 @@ const ResilienceTracker = ({ dailyLog, handleSaveResilience }) => {
             <div className='mb-4'>
                 <p className='font-semibold text-[#002E47] flex justify-between'>
                     <span>Energy Level:</span>
-                    <span className={`text-xl font-extrabold text-[${COLORS...ORANGE}]`}>{energy}/10</span>
+                    <span className={`text-xl font-extrabold text-[${COLORS.ORANGE}]`}>{energy}/10</span>
                 </p>
                 <input
                     type="range" min="1" max="10" value={energy}
-                    onChange={(e) => handleSliderChange('energy', parseInt(e...target...value))}
+                    onChange={(e) => handleSliderChange('energy', parseInt(e.target.value))}
                     className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer range-lg"
-                    style={{ accentColor: COLORS...ORANGE }}
+                    style={{ accentColor: COLORS.ORANGE }}
                     disabled={isCheckSaved}
                 />
             </div>
@@ -277,13 +278,13 @@ const ResilienceTracker = ({ dailyLog, handleSaveResilience }) => {
             <div className='mb-4'>
                 <p className='font-semibold text-[#002E47] flex justify-between'>
                     <span>Focus Level:</span>
-                    <span className={`text-xl font-extrabold text-[${COLORS...ORANGE}]`}>{focus}/10</span>
+                    <span className={`text-xl font-extrabold text-[${COLORS.ORANGE}]`}>{focus}/10</span>
                 </p>
                 <input
                     type="range" min="1" max="10" value={focus}
-                    onChange={(e) => handleSliderChange('focus', parseInt(e...target...value))}
+                    onChange={(e) => handleSliderChange('focus', parseInt(e.target.value))}
                     className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer range-lg"
-                    style={{ accentColor: COLORS...ORANGE }}
+                    style={{ accentColor: COLORS.ORANGE }}
                     disabled={isCheckSaved}
                 />
             </div>
@@ -293,7 +294,7 @@ const ResilienceTracker = ({ dailyLog, handleSaveResilience }) => {
                     <CheckCircle className='w-5 h-5 mr-2'/> Check Saved for Today!
                 </div>
             ) : (
-                <Button onClick={handleSave} disabled={localIsSaving} className={`w-full bg-[${COLORS...ORANGE}] hover:bg-[#C33E12]`}>
+                <Button onClick={handleSave} disabled={localIsSaving} className={`w-full bg-[${COLORS.ORANGE}] hover:bg-[#C33E12]`}>
                     {localIsSaving ? (
                         <div className="flex items-center">
                             <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
@@ -312,7 +313,7 @@ const ResilienceTracker = ({ dailyLog, handleSaveResilience }) => {
  */
 const CommitmentItem = ({ commitment, onLogCommitment, onRemove, isSaving, isScorecardMode }) => {
   // Statuses: 'Committed' (Done), 'Pending' (Not Done/Missed, but can be marked Done)
-  const status = commitment...status || 'Pending';
+  const status = commitment.status || 'Pending';
   
   const isCommitted = status === 'Committed';
   const isLoggingDisabled = isSaving; // Disable during save operation
@@ -330,17 +331,17 @@ const CommitmentItem = ({ commitment, onLogCommitment, onRemove, isSaving, isSco
     return <Clock className="w-5 h-5 text-gray-500" />;
   };
 
-  const tierMeta = commitment...linkedTier ? LEADERSHIP_TIERS_META[commitment...linkedTier] : null;
+  const tierMeta = commitment.linkedTier ? LEADERSHIP_TIERS_META[commitment.linkedTier] : null;
 
-  const tierLabel = tierMeta ? `${tierMeta...id}: ${tierMeta...name}` : 'General';
-  const colleagueLabel = commitment...targetColleague ? `Focus: ${commitment...targetColleague}` : 'Self-Focus';
+  const tierLabel = tierMeta ? `${tierMeta.id}: ${tierMeta.name}` : 'General';
+  const colleagueLabel = commitment.targetColleague ? `Focus: ${commitment.targetColleague}` : 'Self-Focus';
 
   const removeHandler = () => {
     // Only allow removal if the status is Pending
     if (!isCommitted) {
-      onRemove(commitment...id);
+      onRemove(commitment.id);
     } else {
-      console...warn("Commitment is marked complete...Cannot remove from today's scorecard.");
+      console.warn("Commitment is marked complete. Cannot remove from today's scorecard.");
     }
   };
 
@@ -349,7 +350,7 @@ const CommitmentItem = ({ commitment, onLogCommitment, onRemove, isSaving, isSco
     // FIX FOR ISSUE 1: Toggles status between Committed and Pending
     const newStatus = isCommitted ? 'Pending' : 'Committed';
     // CRITICAL: Call the parent function to trigger state update
-    onLogCommitment(commitment...id, newStatus); 
+    onLogCommitment(commitment.id, newStatus); 
   };
 
 
@@ -358,10 +359,10 @@ const CommitmentItem = ({ commitment, onLogCommitment, onRemove, isSaving, isSco
       <div className='flex items-start justify-between'>
         <div className='flex items-start space-x-2 text-lg font-semibold mb-2'>
           {getStatusIcon(status)}
-          <span className='text-[#002E47] text-base'>{commitment...text}</span>
+          <span className='text-[#002E47] text-base'>{commitment.text}</span>
         </div>
         {/* Only allow removal if Pending */}
-        <Tooltip content={isCommitted ? "Marked complete...Remove tomorrow." : "Remove commitment."} >
+        <Tooltip content={isCommitted ? "Marked complete. Remove tomorrow." : "Remove commitment."} >
             <button 
                 onClick={removeHandler} 
                 className="text-gray-400 hover:text-[#E04E1B] transition-colors p-1 rounded-full" 
@@ -374,7 +375,7 @@ const CommitmentItem = ({ commitment, onLogCommitment, onRemove, isSaving, isSco
 
       <div className='flex flex-wrap gap-2 mb-3 overflow-x-auto'>
         <div className='text-xs text-[#002E47] bg-[#002E47]/10 px-3 py-1 rounded-full inline-block font-medium whitespace-nowrap'>
-          Goal: {commitment...linkedGoal || 'N/A'}
+          Goal: {commitment.linkedGoal || 'N/A'}
         </div>
         <div className='text-xs text-[#47A88D] bg-[#47A88D]/10 px-3 py-1 rounded-full inline-block font-medium whitespace-nowrap'>
           Tier: {tierLabel}
@@ -402,13 +403,14 @@ const CommitmentItem = ({ commitment, onLogCommitment, onRemove, isSaving, isSco
 // FIX 11: Added the missing component definition for AIStarterPackNudge
 const AIStarterPackNudge = ({ pdpData, setLinkedGoal, setLinkedTier, handleAddCommitment, isSaving }) => {
     // Safely access primary goal/tier
-    const primaryGoal = pdpData?...plan?.[0]?...theme || 'Improve Discipline';
-    const primaryTier = pdpData?...assessment?...goalPriorities?.[0] || 'T3';
+    const primaryGoal = pdpData?.plan?.[0]?.theme || 'Improve Discipline';
+    const primaryTier = pdpData?.assessment?.goalPriorities?.[0] || 'T3';
 
     return (
         <Card title="AI Starter Pack Nudge" icon={Cpu} className='mb-6 bg-[#47A88D]/10 border-2 border-[#47A88D]'>
             <p className='text-sm text-gray-700'>
-                You have no active commitments...AI suggests starting with your PDP's primary focus: **{primaryGoal}** ({primaryTier})...Click 'Manage' and select this Goal/Tier combination to auto-fill the alignment fields.
+                You have no active commitments. AI suggests starting with your PDP's primary focus: **{primaryGoal}** ({primaryTier}). 
+                Click 'Manage' and select this Goal/Tier combination to auto-fill the alignment fields.
             </p>
         </Card>
     );
@@ -434,13 +436,13 @@ const CommitmentSelectorView = ({ setView, initialGoal, initialTier }) => {
   const [aiAssessment, setAiAssessment] = useState(null);
   const [isCustomCommitmentSaved, setIsCustomCommitmentSaved] = useState(false); // Fix 3: Custom commit confirmation
 
-  const userCommitments = commitmentData?...active_commitments || [];
-  const okrGoals = planningData?...okrs?...map(o => o...objective) || [];
-  const missionVisionGoals = [planningData?...vision, planningData?...mission]...filter(Boolean);
+  const userCommitments = commitmentData?.active_commitments || [];
+  const okrGoals = planningData?.okrs?.map(o => o.objective) || [];
+  const missionVisionGoals = [planningData?.vision, planningData?.mission].filter(Boolean);
   const initialLinkedGoalPlaceholder = '--- Select the Goal this commitment supports ---';
-  const currentMonthPlan = pdpData?...plan?...find(m => m...month === pdpData?...currentMonth);
-  const requiredPdpContent = currentMonthPlan?...requiredContent || [];
-  const pdpContentCommitmentIds = new Set(userCommitments...filter(c => String(c...id)...startsWith('pdp-content-'))...map(c => String(c...id)...split('-')[2]));
+  const currentMonthPlan = pdpData?.plan?.find(m => m.month === pdpData?.currentMonth);
+  const requiredPdpContent = currentMonthPlan?.requiredContent || [];
+  const pdpContentCommitmentIds = new Set(userCommitments.filter(c => String(c.id).startsWith('pdp-content-')).map(c => String(c.id).split('-')[2]));
 
 
   // FIX: Use the expanded commitment bank (Local definition needed)
@@ -451,18 +453,18 @@ const CommitmentSelectorView = ({ setView, initialGoal, initialTier }) => {
       'T4: People Development (Coaching & Mentorship)': [{ id: 't4-1', text: 'Give one piece of specific, actionable positive feedback using the SBI model.' }],
       'T5: Visionary Leadership (Culture & Executive Influence)': [{ id: 't5-1', text: 'Articulate the department’s 5-year vision in simple, non-jargon terms to a junior employee.' }],
   };
-  const allBankCommitments = useMemo(() => Object...values(EXPANDED_COMMITMENT_BANK || {})...flat(), []);
+  const allBankCommitments = useMemo(() => Object.values(EXPANDED_COMMITMENT_BANK || {}).flat(), []);
 
   const filteredBankCommitments = useMemo(() => {
-    const ql = searchTerm...toLowerCase();
+    const ql = searchTerm.toLowerCase();
     const matchingCommitments = [];
     for (const category in EXPANDED_COMMITMENT_BANK) {
       for (const commitment of EXPANDED_COMMITMENT_BANK[category]) {
         if (
-          !userCommitments...some(c => c...text === commitment...text) && 
-          (searchTerm === '' || commitment...text...toLowerCase()...includes(ql))
+          !userCommitments.some(c => c.text === commitment.text) && 
+          (searchTerm === '' || commitment.text.toLowerCase().includes(ql))
         ) {
- matchingCommitments...push({ .....commitment, category });
+ matchingCommitments.push({ ...commitment, category });
         }
       }
     }
@@ -472,9 +474,9 @@ const CommitmentSelectorView = ({ setView, initialGoal, initialTier }) => {
   
   const availableGoals = useMemo(() => [
   initialLinkedGoalPlaceholder,
-  .......(currentMonthPlan?...theme ? [`PDP Focus: ${currentMonthPlan...theme}`] : []),
-  .....okrGoals,
-  .....missionVisionGoals,
+  ...(currentMonthPlan?.theme ? [`PDP Focus: ${currentMonthPlan.theme}`] : []),
+  ...okrGoals,
+  ...missionVisionGoals,
   'Improve Feedback & Coaching Skills',
   'Risk Mitigation Strategy',
   'Misalignment Prevention',
@@ -493,13 +495,13 @@ const CommitmentSelectorView = ({ setView, initialGoal, initialTier }) => {
     }
     if (!linkedGoal) {
       const fallbackGoal =
-        (currentMonthPlan?...theme ? `PDP Focus: ${currentMonthPlan...theme}` : null) ??
-        (okrGoals && okrGoals...length > 0 ? okrGoals[0] : null) ??
+        (currentMonthPlan?.theme ? `PDP Focus: ${currentMonthPlan.theme}` : null) ??
+        (okrGoals && okrGoals.length > 0 ? okrGoals[0] : null) ??
         'Other / New Goal';
       setLinkedGoal(fallbackGoal);
     }
     if (!linkedTier) {
-      const fallbackTier = pdpData?...assessment?...goalPriorities?.[0] || 'T3';
+      const fallbackTier = pdpData?.assessment?.goalPriorities?.[0] || 'T3';
       setLinkedTier(fallbackTier);
     }
   }, [
@@ -525,7 +527,7 @@ const CommitmentSelectorView = ({ setView, initialGoal, initialTier }) => {
   ========================================================= */
 
   const handleAnalyzeCommitment = async () => {
-    if (!customCommitment...trim() || !linkedGoal || linkedGoal === initialLinkedGoalPlaceholder || !linkedTier) {
+    if (!customCommitment.trim() || !linkedGoal || linkedGoal === initialLinkedGoalPlaceholder || !linkedTier) {
         setAiAssessment({ 
             score: 0, 
             risk: 10,
@@ -538,20 +540,20 @@ const CommitmentSelectorView = ({ setView, initialGoal, initialTier }) => {
     setAssessmentLoading(true);
     setAiAssessment(null);
 
-    const tierName = LEADERSHIP_TIERS_META[linkedTier]?...name || 'N/A';
+    const tierName = LEADERSHIP_TIERS_META[linkedTier]?.name || 'N/A';
     
     // FIX: Ensure JSON output is enforced for reliable data
-    const systemPrompt = `You are an AI Executive Coach specializing in habit alignment...Your task is to analyze a user's proposed daily commitment against their strategic context (Goal and Leadership Tier)...The response MUST be a JSON object conforming to the schema...Do not include any introductory or explanatory text outside of the JSON block.`;
+    const systemPrompt = `You are an AI Executive Coach specializing in habit alignment. Your task is to analyze a user's proposed daily commitment against their strategic context (Goal and Leadership Tier). The response MUST be a JSON object conforming to the schema. Do not include any introductory or explanatory text outside of the JSON block.`;
     
     const userQuery = `Analyze the following custom commitment, linked goal, and leadership tier:
-    Commitment: "${customCommitment...trim()}"
+    Commitment: "${customCommitment.trim()}"
     Linked Goal: "${linkedGoal}"
     Leadership Tier: ${linkedTier} - ${tierName}
     
     Assess its:
-    1...Value (Score 1-10): How specific, measurable, and impactful is the commitment toward achieving the goal and advancing the tier? (10 is perfect)
-    2...Risk (Score 1-10): How likely is this commitment to be skipped or failed due to vagueness, unrealistic scope, or poor alignment? (10 is high risk)
-    3...Feedback: Provide one concise sentence of constructive feedback on how to maximize the value or minimize the risk.`;
+    1. Value (Score 1-10): How specific, measurable, and impactful is the commitment toward achieving the goal and advancing the tier? (10 is perfect)
+    2. Risk (Score 1-10): How likely is this commitment to be skipped or failed due to vagueness, unrealistic scope, or poor alignment? (10 is high risk)
+    3. Feedback: Provide one concise sentence of constructive feedback on how to maximize the value or minimize the risk.`;
 
     const jsonSchema = {
         type: "OBJECT",
@@ -575,30 +577,30 @@ const CommitmentSelectorView = ({ setView, initialGoal, initialTier }) => {
         };
         
         const result = await callSecureGeminiAPI(payload);
-        const jsonText = result?...candidates?.[0]?...content?...parts?.[0]?...text;
+        const jsonText = result?.candidates?.[0]?.content?.parts?.[0]?.text;
         
         if (jsonText) {
-            const cleanJsonText = jsonText...trim()...replace(/^[^\{]*/, ''); 
-            const parsedJson = JSON...parse(cleanJsonText);
+            const cleanJsonText = jsonText.trim().replace(/^[^\{]*/, ''); 
+            const parsedJson = JSON.parse(cleanJsonText);
 
             setAiAssessment({
-                score: parsedJson...score,
-                risk: parsedJson...risk,
-                feedback: parsedJson...feedback,
+                score: parsedJson.score,
+                risk: parsedJson.risk,
+                feedback: parsedJson.feedback,
                 error: false
             });
         } else {
              setAiAssessment({ 
-                score: 5, risk: 5, feedback: "AI assessment failed...Check your API key or commitment clarity.", error: true 
+                score: 5, risk: 5, feedback: "AI assessment failed. Check your API key or commitment clarity.", error: true 
             });
         }
 
     } catch (e) {
-        console...error("AI Assessment Error:", e);
+        console.error("AI Assessment Error:", e);
         setAiAssessment({ 
             score: 0, 
             risk: 10, 
-            feedback: "CRITICAL API FAILURE: The AI Analysis service is currently unavailable...Check your network connection.", 
+            feedback: "CRITICAL API FAILURE: The AI Analysis service is currently unavailable. Check your network connection.", 
             error: true 
         });
     } finally {
@@ -613,7 +615,7 @@ const CommitmentSelectorView = ({ setView, initialGoal, initialTier }) => {
   const handleAddCommitment = async (commitment, source) => {
     // FIX 1: Add checks to prevent adding if required fields are missing
     if (!linkedGoal || linkedGoal === initialLinkedGoalPlaceholder || !linkedTier) {
-        console...warn("Cannot add commitment: Goal and Tier must be selected.");
+        console.warn("Cannot add commitment: Goal and Tier must be selected.");
         return;
     }
 
@@ -623,31 +625,33 @@ const CommitmentSelectorView = ({ setView, initialGoal, initialTier }) => {
     let newCommitment;
     if (source === 'pdp') {
       newCommitment = {
-        id: `pdp-content-${commitment...id}-${Date...now()}`,
-        text: `(PDP Required) Complete: ${commitment...title} (${commitment...type})`,
+        id: `pdp-content-${commitment.id}-${Date.now()}`,
+        text: `(PDP Required) Complete: ${commitment.title} (${commitment.type})`,
         status: 'Pending',
         isCustom: true,
         linkedGoal: linkedGoal,
         linkedTier: linkedTier,
-        targetColleague: `Est. ${commitment...duration} min`,
+        targetColleague: `Est. ${commitment.duration} min`,
       };
     } else {
       newCommitment = {
-        id: `bank-${commitment...id}-${Date...now()}`, 
-        text: commitment...text,
+        id: `bank-${commitment.id}-${Date.now()}`, 
+        text: commitment.text,
         status: 'Pending',
         linkedGoal: linkedGoal,
         linkedTier: linkedTier,
-        targetColleague: targetColleague...trim() || null,
+        targetColleague: targetColleague.trim() || null,
       };
     }
 
     // CRITICAL FIX 2: Ensure existing data is preserved using the spread operator
 await updateCommitmentData(data => ({ 
-  .....data,
-  active_commitments: [ .......(data?...active_commitments || []), newCommitment ],
+  ...data,
+  active_commitments: [ ...(data?.active_commitments || []), newCommitment ],
   }));
-// Optimistic UI: assume success after await...setCustomCommitment('');
+// Optimistic UI: assume success after await.
+
+        setCustomCommitment('');
         setTargetColleague('');
         setAiAssessment(null);
         setIsSaving(false);
@@ -661,35 +665,37 @@ await updateCommitmentData(data => ({
 
   const handleCreateCustomCommitment = async () => {
     // FIX 4: Add checks to prevent adding if required fields are missing
-    if (!customCommitment...trim() || !linkedGoal || linkedGoal === initialLinkedGoalPlaceholder || !linkedTier) {
-        console...warn("Cannot create custom commitment: Text, Goal, and Tier must be selected.");
+    if (!customCommitment.trim() || !linkedGoal || linkedGoal === initialLinkedGoalPlaceholder || !linkedTier) {
+        console.warn("Cannot create custom commitment: Text, Goal, and Tier must be selected.");
         return;
     }
     
-    if (customCommitment...trim() && linkedGoal && linkedGoal !== initialLinkedGoalPlaceholder && linkedTier) {
+    if (customCommitment.trim() && linkedGoal && linkedGoal !== initialLinkedGoalPlaceholder && linkedTier) {
       setIsSaving(true);
       setIsCustomCommitmentSaved(false); // Reset confirmation
-      const newId = String(Date...now());
+      const newId = String(Date.now());
       const newCommitment = {
         id: `custom-${newId}`,
-        text: customCommitment...trim(),
+        text: customCommitment.trim(),
         status: 'Pending',
         isCustom: true,
         linkedGoal: linkedGoal,
         linkedTier: linkedTier,
-        targetColleague: targetColleague...trim() || null,
+        targetColleague: targetColleague.trim() || null,
       };
 
       // CRITICAL FIX 5: Ensure existing data is preserved using the spread operator
 // Ensure we properly append to active_commitments (preserving the rest of the doc)
       await updateCommitmentData(prev => ({
-        .......prev,
+        ...prev,
         active_commitments: [
-          .......(prev?...active_commitments || []),
+          ...(prev?.active_commitments || []),
           newCommitment
         ],
       }));
-// Optimistic UI: assume success after await...setCustomCommitment('');
+// Optimistic UI: assume success after await.
+
+        setCustomCommitment('');
         setTargetColleague('');
         setAiAssessment(null);
         setIsSaving(false);
@@ -723,32 +729,32 @@ await updateCommitmentData(data => ({
 
     if (!aiAssessment) return null;
 
-    if (aiAssessment...error && aiAssessment...score === 0) {
+    if (aiAssessment.error && aiAssessment.score === 0) {
         return (
             <div className='p-4 bg-red-100 border border-red-300 rounded-xl text-sm text-red-800 font-medium'>
-                <AlertTriangle className='w-4 h-4 inline mr-2'/> {aiAssessment...feedback}
+                <AlertTriangle className='w-4 h-4 inline mr-2'/> {aiAssessment.feedback}
             </div>
         )
     }
 
-    const valueColor = aiAssessment...score > 7 ? 'text-green-600' : aiAssessment...score > 4 ? 'text-yellow-600' : 'text-red-600';
-    const riskColor = aiAssessment...risk > 7 ? 'text-red-600' : aiAssessment...risk > 4 ? 'text-yellow-600' : 'text-green-600';
+    const valueColor = aiAssessment.score > 7 ? 'text-green-600' : aiAssessment.score > 4 ? 'text-yellow-600' : 'text-red-600';
+    const riskColor = aiAssessment.risk > 7 ? 'text-red-600' : aiAssessment.risk > 4 ? 'text-yellow-600' : 'text-green-600';
     
     return (
         <Card title="AI Commitment Analysis" icon={Cpu} className='bg-white shadow-xl border-l-4 border-[#002E47]'>
             <div className='grid grid-cols-2 gap-4 mb-4'>
-                <div className={`p-3 rounded-xl border ${aiAssessment...score > 7 ? 'border-green-400 bg-green-50' : 'border-gray-300 bg-gray-100'}`}>
+                <div className={`p-3 rounded-xl border ${aiAssessment.score > 7 ? 'border-green-400 bg-green-50' : 'border-gray-300 bg-gray-100'}`}>
                     <div className='text-xs font-semibold uppercase text-gray-500'>Value Score</div>
-                    <div className={`text-3xl font-extrabold ${valueColor}`}>{aiAssessment...score}/10}</div>
+                    <div className={`text-3xl font-extrabold ${valueColor}`}>{aiAssessment.score}/10}</div>
                 </div>
-                <div className={`p-3 rounded-xl border ${aiAssessment...risk > 7 ? 'border-red-400 bg-red-50' : 'border-gray-300 bg-gray-100'}`}>
+                <div className={`p-3 rounded-xl border ${aiAssessment.risk > 7 ? 'border-red-400 bg-red-50' : 'border-gray-300 bg-gray-100'}`}>
                     <div className='text-xs font-semibold uppercase text-gray-500'>Risk Score</div>
-                    <div className={`text-3xl font-extrabold ${riskColor}`}>{aiAssessment...risk}/10}</div>
+                    <div className={`text-3xl font-extrabold ${riskColor}`}>{aiAssessment.risk}/10}</div>
                 </div>
             </div>
             <div className='p-3 bg-[#002E47]/5 rounded-lg border border-[#002E47]/10'>
                 <p className='text-xs font-semibold text-[#002E47] mb-1 flex items-center'><Lightbulb className='w-3 h-3 mr-1'/> Coach Feedback:</p>
-                <p className='text-sm text-gray-700'>{aiAssessment...feedback}</p>
+                <p className='text-sm text-gray-700'>{aiAssessment.feedback}</p>
             </div>
         </Card>
     );
@@ -758,13 +764,13 @@ await updateCommitmentData(data => ({
   return (
     <div className="p-8">
       <h1 className="text-3xl font-extrabold text-[#002E47] mb-4">Manage Your Scorecard Commitments</h1>
-      <p className="text-lg text-gray-600 mb-6 max-w-3xl">Select the core micro-habits that directly support your current leadership development goals...You should aim for 3-5 active commitments.</p>
+      <p className="text-lg text-gray-600 mb-6 max-w-3xl">Select the core micro-habits that directly support your current leadership development goals. You should aim for 3-5 active commitments.</p>
 
       <Button onClick={() => setView('scorecard')} variant="secondary" className="mb-8" disabled={isSaving}>
         <ArrowLeft className="w-5 h-5 mr-2" /> Back to Scorecard
       </Button>
 
-      {userCommitments...length === 0 && pdpData && (
+      {userCommitments.length === 0 && pdpData && (
           <AIStarterPackNudge 
             pdpData={pdpData} 
             setLinkedGoal={setLinkedGoal} 
@@ -778,7 +784,7 @@ await updateCommitmentData(data => ({
       <div
         className='relative p-6 rounded-2xl border-2 shadow-2xl mb-8 bg-[#47A88D]/10 border-2 border-[#47A88D]'
       >
-        <span style={{ position:'absolute', top:0, left:0, right:0, height:6, background: COLORS...NAVY, borderTopLeftRadius:14, borderTopRightRadius:14 }} />
+        <span style={{ position:'absolute', top:0, left:0, right:0, height:6, background: COLORS.NAVY, borderTopLeftRadius:14, borderTopRightRadius:14 }} />
           
         {/* Clickable Header for Collapsible Behavior */}
         <button
@@ -786,8 +792,8 @@ await updateCommitmentData(data => ({
             className='flex justify-between items-center w-full text-left'
         >
             <div className='flex items-center space-x-3'>
-                <Target className="w-5 h-5" style={{ color: COLORS...TEAL }} />
-                <h2 className="text-xl font-extrabold" style={{ color: COLORS...NAVY }}>Goal and Tier Alignment (Mandatory)</h2>
+                <Target className="w-5 h-5" style={{ color: COLORS.TEAL }} />
+                <h2 className="text-xl font-extrabold" style={{ color: COLORS.NAVY }}>Goal and Tier Alignment (Mandatory)</h2>
             </div>
             <CornerRightUp className={`w-5 h-5 text-[#002E47] transition-transform ${isAlignmentOpen ? 'rotate-90' : 'rotate-0'}`} />
         </button>
@@ -799,14 +805,14 @@ await updateCommitmentData(data => ({
 
             <div className='grid grid-cols-1 md:grid-cols-2 gap-4 mb-4'>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">1...Strategic Goal</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">1. Strategic Goal</label>
                 <select
                   value={linkedGoal}
-                  onChange={(e) => setLinkedGoal(e...target...value)}
+                  onChange={(e) => setLinkedGoal(e.target.value)}
                   className="w-full p-3 border border-gray-300 rounded-xl focus:ring-[#002E47] focus:border-[#002E47] text-[#002E47] font-semibold"
                 >
                   <option value="">--- Select Goal ---</option>
-                  {availableGoals...map(goal => (
+                  {availableGoals.map(goal => (
                     <option
                       key={goal}
                       value={goal}
@@ -819,28 +825,28 @@ await updateCommitmentData(data => ({
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">2...Leadership Tier (T1-T5)</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">2. Leadership Tier (T1-T5)</label>
                 <select
                   value={linkedTier}
-                  onChange={(e) => setLinkedTier(e...target...value)}
+                  onChange={(e) => setLinkedTier(e.target.value)}
                   className="w-full p-3 border border-gray-300 rounded-xl focus:ring-[#002E47] focus:border-[#002E47] text-[#002E47] font-semibold"
                 >
                   <option value="">--- Select Tier ---</option>
-                  {Object...values(LEADERSHIP_TIERS_META)...map(tier => (
-                    <option key={tier...id} value={tier...id}>
-                      {tier...id}: {tier...name}
+                  {Object.values(LEADERSHIP_TIERS_META).map(tier => (
+                    <option key={tier.id} value={tier.id}>
+                      {tier.id}: {tier.name}
                     </option>
                   ))}
                 </select>
               </div>
             </div>
 
-            <label className="block text-sm font-medium text-gray-700 mb-1">3...Target Colleague (Optional for inter-personal skills)</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">3. Target Colleague (Optional for inter-personal skills)</label>
             <input
               type="text"
               value={targetColleague}
-              onChange={(e) => setTargetColleague(e...target...value)}
-              placeholder="e...g., Alex, Sarah, or Leave Blank for Self-Focus"
+              onChange={(e) => setTargetColleague(e.target.value)}
+              placeholder="e.g., Alex, Sarah, or Leave Blank for Self-Focus"
               className="w-full p-3 border border-gray-300 rounded-xl focus:ring-[#47A88D] focus:border-[#47A88D]"
             />
 
@@ -853,10 +859,10 @@ await updateCommitmentData(data => ({
       {/* Tab Navigation */}
       <div className="flex space-x-2 border-b border-gray-300 -mb-px">
         <button className={tabStyle('pdp')} onClick={() => setTab('pdp')}>
-          <Target className='w-4 h-4 inline mr-1' /> PDP Content ({requiredPdpContent...filter(c => !pdpContentCommitmentIds...has(String(c...id)))...length})
+          <Target className='w-4 h-4 inline mr-1' /> PDP Content ({requiredPdpContent.filter(c => !pdpContentCommitmentIds.has(String(c.id))).length})
         </button>
         <button className={tabStyle('bank')} onClick={() => setTab('bank')}>
-          <BookOpen className='w-4 h-4 inline mr-1' /> Commitment Bank ({Object...keys(EXPANDED_COMMITMENT_BANK)...length})
+          <BookOpen className='w-4 h-4 inline mr-1' /> Commitment Bank ({Object.keys(EXPANDED_COMMITMENT_BANK).length})
         </button>
         <button className={tabStyle('custom')} onClick={() => setTab('custom')}>
           <PlusCircle className='w-4 h-4 inline mr-1' /> Custom Commitment
@@ -869,14 +875,14 @@ await updateCommitmentData(data => ({
         {/* PDP Content Tab */}
         {tab === 'pdp' && (
           <div className="space-y-4">
-            <p className='text-sm text-gray-700'>These items are currently required for you to complete Month **{currentMonthPlan?...month || 'N/A'}** ({currentMonthPlan?...theme || 'N/A Focus'}) of your personalized plan.</p>
+            <p className='text-sm text-gray-700'>These items are currently required for you to complete Month **{currentMonthPlan?.month || 'N/A'}** ({currentMonthPlan?.theme || 'N/A Focus'}) of your personalized plan.</p>
             <div className="h-96 overflow-y-auto pr-2 space-y-3 pt-2">
-              {requiredPdpContent...length > 0 ? (
+              {requiredPdpContent.length > 0 ? (
                 requiredPdpContent
-                  ...filter(c => !pdpContentCommitmentIds...has(String(c...id)))
-                  ...map(c => (
-                    <div key={c...id} className="flex justify-between items-center p-3 text-sm bg-[#47A88D]/5 rounded-lg border border-[#47A88D]/20">
-                      <span className='text-gray-800 font-medium'>{c...title} ({c...type}) - Est. {c...duration} min</span>
+                  .filter(c => !pdpContentCommitmentIds.has(String(c.id)))
+                  .map(c => (
+                    <div key={c.id} className="flex justify-between items-center p-3 text-sm bg-[#47A88D]/5 rounded-lg border border-[#47A88D]/20">
+                      <span className='text-gray-800 font-medium'>{c.title} ({c.type}) - Est. {c.duration} min</span>
                       <Tooltip content={`Adds this item to your daily scorecard for tracking (linked goal/tier required).`}>
                         <button
                           onClick={() => handleAddCommitment(c, 'pdp')}
@@ -902,9 +908,9 @@ await updateCommitmentData(data => ({
             <div className='flex space-x-2'>
               <input
                 type="text"
-                placeholder="Filter Commitment Bank by keyword (e...g., 'feedback' or 'OKR')"
+                placeholder="Filter Commitment Bank by keyword (e.g., 'feedback' or 'OKR')"
                 value={searchTerm}
-                onChange={(e) => setSearchTerm(e...target...value)}
+                onChange={(e) => setSearchTerm(e.target.value)}
                 className="w-full p-3 border border-gray-300 rounded-xl focus:ring-[#47A88D] focus:border-[#47A88D] mb-4"
               />
               {searchTerm && (
@@ -916,22 +922,22 @@ await updateCommitmentData(data => ({
 
             <div className="h-96 overflow-y-auto pr-2 space-y-3">
               {/* FIX FOR ISSUE 4: Added onClick handler to the button to add the commitment */}
-              {Object...entries(EXPANDED_COMMITMENT_BANK)...map(([category, commitments]) => {
-                const filteredCommitments = commitments...filter(c =>
+              {Object.entries(EXPANDED_COMMITMENT_BANK).map(([category, commitments]) => {
+                const filteredCommitments = commitments.filter(c =>
                     // Check if commitment text is NOT already in active commitments
-                    !userCommitments...some(activeC => activeC...text === c...text) &&
-                    (searchTerm === '' || c...text...toLowerCase()...includes(searchTerm...toLowerCase()))
+                    !userCommitments.some(activeC => activeC.text === c.text) &&
+                    (searchTerm === '' || c.text.toLowerCase().includes(searchTerm.toLowerCase()))
                 );
 
-                if (filteredCommitments...length === 0 && searchTerm !== '') return null;
-                if (filteredCommitments...length === 0 && searchTerm === '') return null; 
+                if (filteredCommitments.length === 0 && searchTerm !== '') return null;
+                if (filteredCommitments.length === 0 && searchTerm === '') return null; 
 
                 return (
                   <div key={category}>
                     <h3 className="text-sm font-bold text-[#002E47] border-b pb-1 mb-2">{category}</h3>
-                    {filteredCommitments...map(c => (
-                      <div key={c...id} className="flex justify-between items-center p-2 text-sm bg-gray-50 rounded-lg mb-1">
-                        <span className='text-gray-800'>{c...text}</span>
+                    {filteredCommitments.map(c => (
+                      <div key={c.id} className="flex justify-between items-center p-2 text-sm bg-gray-50 rounded-lg mb-1">
+                        <span className='text-gray-800'>{c.text}</span>
                         <Tooltip content={`Adds this commitment (linked goal/tier required).`}>
                           {/* FIX 1: CRITICAL WIRING FIX: The button must call handleAddCommitment */}
                           <button
@@ -947,7 +953,7 @@ await updateCommitmentData(data => ({
                   </div>
                 );
               })}
-              {Object...keys(EXPANDED_COMMITMENT_BANK)...length > 0 && filteredBankCommitments...length === 0 && searchTerm !== '' && (
+              {Object.keys(EXPANDED_COMMITMENT_BANK).length > 0 && filteredBankCommitments.length === 0 && searchTerm !== '' && (
                   <p className="text-gray-500 italic mt-4 text-center">No unselected commitments match criteria.</p>
               )}
             </div>
@@ -961,14 +967,14 @@ await updateCommitmentData(data => ({
             
             <textarea
               value={customCommitment}
-              onChange={(e) => setCustomCommitment(e...target...value)}
-              placeholder="e...g., Conduct a 10-minute debrief after every client meeting."
+              onChange={(e) => setCustomCommitment(e.target.value)}
+              placeholder="e.g., Conduct a 10-minute debrief after every client meeting."
               className="w-full p-3 border border-gray-300 rounded-xl focus:ring-[#47A88D] focus:border-[#47A88D] h-20 mb-4"
             />
             
             <Button
                 onClick={handleAnalyzeCommitment}
-                disabled={!customCommitment...trim() || !canAddCommitment || assessmentLoading || isSaving || !hasGeminiKey()}
+                disabled={!customCommitment.trim() || !canAddCommitment || assessmentLoading || isSaving || !hasGeminiKey()}
                 variant='outline'
                 className="w-full bg-[#002E47] hover:bg-gray-700 text-white"
             >
@@ -985,7 +991,7 @@ await updateCommitmentData(data => ({
 
             <Button
               onClick={handleCreateCustomCommitment} 
-              disabled={!customCommitment...trim() || !canAddCommitment || isSaving}
+              disabled={!customCommitment.trim() || !canAddCommitment || isSaving}
               className="w-full bg-[#47A88D] hover:bg-[#349881]"
             >
               {isSaving ? 'Saving...' : 'Add Custom Commitment'}
@@ -1003,35 +1009,35 @@ await updateCommitmentData(data => ({
 ========================================================= */
 
 const WeeklyPrepView = ({ setView, commitmentData, updateCommitmentData, userCommitments }) => {
-    const [reviewNotes, setReviewNotes] = useState(commitmentData?...weekly_review_notes || '');
+    const [reviewNotes, setReviewNotes] = useState(commitmentData?.weekly_review_notes || '');
     const [isSaving, setIsSaving] = useState(false);
     
-    const missedLastWeek = (commitmentData?...history || [])...slice(-7)...filter(day => {
-        const [committed, total] = day...score...split('/')...map(Number);
+    const missedLastWeek = (commitmentData?.history || []).slice(-7).filter(day => {
+        const [committed, total] = day.score.split('/').map(Number);
         return committed < total && total > 0;
     });
 
     const handleRetireCommitment = async (id) => {
-        const commitmentToRemove = userCommitments...find(c => c...id === id);
-        if (commitmentToRemove && commitmentToRemove...status !== 'Pending') {
-            console...warn("A commitment that has been logged today cannot be immediately retired for data integrity...Please wait for the daily reset.");
+        const commitmentToRemove = userCommitments.find(c => c.id === id);
+        if (commitmentToRemove && commitmentToRemove.status !== 'Pending') {
+            console.warn("A commitment that has been logged today cannot be immediately retired for data integrity. Please wait for the daily reset.");
             return;
         }
 
-        const newCommitments = userCommitments...filter(c => c...id !== id);
+        const newCommitments = userCommitments.filter(c => c.id !== id);
         
-        await updateCommitmentData(data => ({ .....data, active_commitments: newCommitments })); 
-        console...info("Commitment retired successfully...Focus remains on the next priority!");
+        await updateCommitmentData(data => ({ ...data, active_commitments: newCommitments })); 
+        console.info("Commitment retired successfully. Focus remains on the next priority!");
     };
 
     const handleSaveReview = async () => {
         setIsSaving(true);
         await updateCommitmentData(data => ({ 
-            .....data,
-            last_weekly_review: new Date()...toISOString(),
+            ...data,
+            last_weekly_review: new Date().toISOString(),
             weekly_review_notes: reviewNotes,
         }));
-        console...info('Weekly review saved!');
+        console.info('Weekly review saved!');
         setIsSaving(false);
         setView('scorecard');
     };
@@ -1039,7 +1045,7 @@ const WeeklyPrepView = ({ setView, commitmentData, updateCommitmentData, userCom
     return (
         <div className="p-8">
             <h1 className="text-3xl font-extrabold text-[#002E47] mb-4">Weekly Practice Review & Prep</h1>
-            <p className="text-lg text-gray-600 mb-6 max-w-3xl">Take 15 minutes to review last week's performance and prepare your focus for the upcoming week...This intentional review ensures sustained success.</p>
+            <p className="text-lg text-gray-600 mb-6 max-w-3xl">Take 15 minutes to review last week's performance and prepare your focus for the upcoming week. This intentional review ensures sustained success.</p>
 
             <Button onClick={() => setView('scorecard')} variant="outline" className="mb-8">
                 <ArrowLeft className="w-5 h-5 mr-2" /> Back to Scorecard
@@ -1049,16 +1055,16 @@ const WeeklyPrepView = ({ setView, commitmentData, updateCommitmentData, userCom
                 <div className='space-y-6'>
                     <Card title="Audit: Last Week's Missed Days" icon={TrendingDown} accent='ORANGE' className='border-l-4 border-[#E04E1B] bg-[#E04E1B]/10'>
                         <p className='text-sm text-gray-700 mb-4'>
-                            You missed your perfect score **{missedLastWeek...length} times** last week...Use the list below to retire mastered habits or re-commit to challenging ones.
+                            You missed your perfect score **{missedLastWeek.length} times** last week. Use the list below to retire mastered habits or re-commit to challenging ones.
                         </p>
                         
                         <h4 className='text-md font-bold text-[#002E47] border-t pt-4 mt-4 mb-2'>Active Commitments (For Review)</h4>
                         <ul className='space-y-2'>
-                            {userCommitments...map(c => (
-                                <li key={c...id} className='flex justify-between items-center bg-white p-3 rounded-lg shadow-sm border'>
-                                    <span className='text-sm text-gray-700 pr-2'>{c...text}</span>
+                            {userCommitments.map(c => (
+                                <li key={c.id} className='flex justify-between items-center bg-white p-3 rounded-lg shadow-sm border'>
+                                    <span className='text-sm text-gray-700 pr-2'>{c.text}</span>
                                     <Button 
-                                        onClick={() => handleRetireCommitment(c...id)}
+                                        onClick={() => handleRetireCommitment(c.id)}
                                         variant='outline' 
                                         className='text-xs px-2 py-1 text-[#E04E1B] border-[#E04E1B]/50 hover:bg-[#E04E1B]/10 whitespace-nowrap'
                                     >
@@ -1066,19 +1072,19 @@ const WeeklyPrepView = ({ setView, commitmentData, updateCommitmentData, userCom
                                     </Button>
                                 </li>
                             ))}
-                            {userCommitments...length === 0 && <p className='text-gray-500 italic text-sm'>No active commitments to review.</p>}
+                            {userCommitments.length === 0 && <p className='text-gray-500 italic text-sm'>No active commitments to review.</p>}
                         </ul>
                     </Card>
                 </div>
 
                 <div className='space-y-6'>
                     <Card title="Next Week Planning Notes" icon={Lightbulb} accent='TEAL' className='border-l-4 border-[#47A88D]'>
-                        <p className='text-sm text-gray-700 mb-4'>Draft a quick focus note for the upcoming week based on your audit...What single outcome will define success?</p>
+                        <p className='text-sm text-gray-700 mb-4'>Draft a quick focus note for the upcoming week based on your audit. What single outcome will define success?</p>
                         <textarea 
                             value={reviewNotes}
-                            onChange={(e) => setReviewNotes(e...target...value)}
+                            onChange={(e) => setReviewNotes(e.target.value)}
                             className="w-full p-3 border border-gray-300 rounded-xl focus:ring-[#47A88D] focus:border-[#47A88D] h-32" 
-                            placeholder="e...g., 'Ensure 1:1 prep is done by Monday to maintain Coaching Tier focus.'"
+                            placeholder="e.g., 'Ensure 1:1 prep is done by Monday to maintain Coaching Tier focus.'"
                         ></textarea>
                     </Card>
 
@@ -1099,16 +1105,16 @@ const TierSuccessMap = ({ tierRates }) => {
     return (
         <Card title="Tier Success Map" icon={BarChart3} accent='TEAL' className='bg-[#47A88D]/10 border-2 border-[#47A88D]'>
             <p className='text-sm text-gray-700 mb-2'>Success Rate by Leadership Tier</p>
-            {Object...entries(tierRates)...length > 0 ? (
-                Object...entries(tierRates)...map(([tier, data]) => (
-                    data...total > 0 && (
+            {Object.entries(tierRates).length > 0 ? (
+                Object.entries(tierRates).map(([tier, data]) => (
+                    data.total > 0 && (
                         <div key={tier} className='mb-1'>
                             <div className='flex justify-between text-xs font-semibold text-[#002E47]'>
-                                <span>{LEADERSHIP_TIERS_META[tier]?...name || tier} ({data...total})</span>
-                                <span className={`font-bold ${data...rate > 70 ? 'text-green-600' : 'text-orange-600'}`}>{data...rate}%</span>
+                                <span>{LEADERSHIP_TIERS_META[tier]?.name || tier} ({data.total})</span>
+                                <span className={`font-bold ${data.rate > 70 ? 'text-green-600' : 'text-orange-600'}`}>{data.rate}%</span>
                             </div>
                             <div className="w-full bg-gray-200 rounded-full h-2">
-                                <div className="h-2 rounded-full" style={{ width: `${data...rate}%`, backgroundColor: LEADERSHIP_TIERS_META[tier]?...hex || COLORS...TEAL }}></div>
+                                <div className="h-2 rounded-full" style={{ width: `${data.rate}%`, backgroundColor: LEADERSHIP_TIERS_META[tier]?.hex || COLORS.TEAL }}></div>
                             </div>
                         </div>
                     )
@@ -1127,14 +1133,14 @@ const CommitmentHistoryModal = ({ isVisible, onClose, dayData, activeCommitments
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
             <div className="bg-white p-6 rounded-xl shadow-2xl w-full max-w-md">
                 <div className="flex justify-between items-center border-b pb-2 mb-4">
-                    <h3 className="text-xl font-bold">Scorecard History: {dayData...date}</h3>
+                    <h3 className="text-xl font-bold">Scorecard History: {dayData.date}</h3>
                     <button onClick={onClose} className="text-gray-400 hover:text-gray-700"><X className="w-5 h-5"/></button>
                 </div>
                 
-                <p className="text-lg font-extrabold mb-3">Score: {dayData...score}</p>
+                <p className="text-lg font-extrabold mb-3">Score: {dayData.score}</p>
                 <p className="text-sm text-gray-700 font-semibold mb-2">Reflection Log:</p>
                 <div className="p-3 bg-gray-50 border rounded-lg h-32 overflow-y-auto text-sm italic text-gray-600">
-                    {dayData...reflection || 'No reflection logged for this day.'}
+                    {dayData.reflection || 'No reflection logged for this day.'}
                 </div>
                 
                 <Button onClick={onClose} className="mt-4 w-full">Close Details</Button>
@@ -1147,7 +1153,7 @@ const CommitmentHistoryModal = ({ isVisible, onClose, dayData, activeCommitments
 const PerfectScoreModal = ({ onClose }) => (
   <div
     className="fixed inset-0 bg-[#002E47]/70 z-50 flex items-center justify-center p-4"
-    onClick={(e) => { if (e...target === e...currentTarget) onClose(); }}
+    onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     role="dialog"
     aria-modal="true"
     aria-label="Perfect Score"
@@ -1164,7 +1170,7 @@ const PerfectScoreModal = ({ onClose }) => (
       <Crown className="w-12 h-12 text-green-600 mx-auto mb-4" />
       <h3 className="text-2xl font-extrabold text-[#002E47] mb-2">Perfect Score!</h3>
       <p className="text-sm text-gray-700 mb-4">
-        You executed all commitments today...Sustain this discipline!
+        You executed all commitments today. Sustain this discipline!
       </p>
       <Button onClick={onClose} className="w-full bg-green-600 hover:bg-green-700">
         Acknowledge
@@ -1185,14 +1191,15 @@ export default function DailyPracticeScreen({ initialGoal, initialTier }) {
   const [hasNavigatedInitial, setHasNavigatedInitial] = useState(false); 
 
   // FIX: Call the mock scheduleMidnightReset function to simulate nightly log/reset
-  // This must be done inside useEffect to be safe...useEffect(() => {
+  // This must be done inside useEffect to be safe.
+useEffect(() => {
   if (!commitmentData) return;
   resetIfNewDay(commitmentData, updateCommitmentData);
-}, [commitmentData?...last_reset_date, updateCommitmentData]);
+}, [commitmentData?.last_reset_date, updateCommitmentData]);
 
   const [view, setView] = useState('scorecard'); 
   const [isSaving, setIsSaving] = useState(false); // Global saving for reflection/resilience
-  const [reflection, setReflection] = useState(commitmentData?...reflection_journal || '');
+  const [reflection, setReflection] = useState(commitmentData?.reflection_journal || '');
   const [isReflectionSaved, setIsReflectionSaved] = useState(false); // NEW: Reflection confirmation
   
   const [reflectionPrompt, setReflectionPrompt] = useState(null);
@@ -1203,14 +1210,17 @@ export default function DailyPracticeScreen({ initialGoal, initialTier }) {
   // FIX: State for view toggle
   const [viewMode, setViewMode] = useState('tier'); 
   const [isPerfectScoreModalVisible, setIsPerfectScoreModalVisible] = useState(false);
-  const resilienceLog = commitmentData?...resilience_log || {};
+  const resilienceLog = commitmentData?.resilience_log || {};
   
-  // MODIFIED useEffect: Only navigate to selector if initial props exist AND we haven't done it yet...useEffect(() => {
-    // FIX 9: Prevent initialGoal/initialTier from re-navigating to the selector after a successful add...if (!hasNavigatedInitial && (initialGoal || initialTier)) {
+  // MODIFIED useEffect: Only navigate to selector if initial props exist AND we haven't done it yet.
+  useEffect(() => {
+    // FIX 9: Prevent initialGoal/initialTier from re-navigating to the selector after a successful add.
+    if (!hasNavigatedInitial && (initialGoal || initialTier)) {
       setView('selector');
       setHasNavigatedInitial(true); // Mark as done
     } else if (view === 'selector' && !hasNavigatedInitial && !initialGoal && !initialTier) {
-       // If we start on selector without props (e...g., from a deep link), also mark as handled...setHasNavigatedInitial(true);
+       // If we start on selector without props (e.g., from a deep link), also mark as handled.
+       setHasNavigatedInitial(true);
     }
   }, [initialGoal, initialTier, hasNavigatedInitial, view]); 
 
@@ -1218,32 +1228,36 @@ export default function DailyPracticeScreen({ initialGoal, initialTier }) {
   // CRITICAL FIX: Resilience save handler now correctly uses updateCommitmentData
   const handleSaveResilience = async (newLogData) => { 
       setIsSaving(true); 
-      const today = new Date()...toISOString()...split('T')[0];
-      // FIX 2: Ensure we update the log correctly, including the 'saved' flag...await updateCommitmentData(data => ({ 
-          .....data, // Spread data here to ensure other fields are preserved (important for API calls)
+      const today = new Date().toISOString().split('T')[0];
+      // FIX 2: Ensure we update the log correctly, including the 'saved' flag.
+      await updateCommitmentData(data => ({ 
+          ...data, // Spread data here to ensure other fields are preserved (important for API calls)
           resilience_log: { 
-              .....data...resilience_log, 
-              [today]: { .....newLogData, saved: true } // Explicitly set saved:true
+              ...data.resilience_log, 
+              [today]: { ...newLogData, saved: true } // Explicitly set saved:true
           } 
       })); 
       setIsSaving(false);
-      console...log("Resilience Log Saved.");
+      console.log("Resilience Log Saved.");
   };
 
   const setResilienceLog = () => {}; // Placeholder for the local state in ResilienceTracker
 
    // Sync reflection + fetch a fresh prompt when data changes
   useEffect(() => {
-    setReflection(commitmentData?...reflection_journal || '');
+    setReflection(commitmentData?.reflection_journal || '');
     fetchReflectionPrompt(commitmentData);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [commitmentData]);
   
-  // Removed redundant useEffect for initialGoal/initialTier navigation, replaced by the unified useEffect...const userCommitments = commitmentData?...active_commitments || [];
-  const commitmentHistory = commitmentData?...history || [];
+  // Removed redundant useEffect for initialGoal/initialTier navigation, replaced by the unified useEffect.
+
+
+  const userCommitments = commitmentData?.active_commitments || [];
+  const commitmentHistory = commitmentData?.history || [];
   const score = calculateTotalScore(userCommitments);
   const streak = calculateStreak(commitmentHistory);
-  const isPerfectScore = score...total > 0 && score...committed === score...total;
+  const isPerfectScore = score.total > 0 && score.committed === score.total;
 
 // Open the modal the first time today's score becomes perfect
 useEffect(() => {
@@ -1253,9 +1267,9 @@ useEffect(() => {
 // Allow closing with ESC
 useEffect(() => {
   if (!isPerfectScoreModalVisible) return;
-  const onKey = (e) => { if (e...key === 'Escape') setIsPerfectScoreModalVisible(false); };
-  window...addEventListener('keydown', onKey);
-  return () => window...removeEventListener('keydown', onKey);
+  const onKey = (e) => { if (e.key === 'Escape') setIsPerfectScoreModalVisible(false); };
+  window.addEventListener('keydown', onKey);
+  return () => window.removeEventListener('keydown', onKey);
 }, [isPerfectScoreModalVisible]);
 
   
@@ -1272,17 +1286,18 @@ useEffect(() => {
 
     setPromptLoading(true);
     
-    // Treat 'Pending' commitments as 'Missed' for the purpose of the reflection prompt...const missedCommitments = (data?...active_commitments || [])
-        ...filter(c => c...status === 'Missed' || c...status === 'Pending')
-        ...map(c => `[${LEADERSHIP_TIERS_META[c...linkedTier]?...name || 'General'}] ${c...text}`);
+    // Treat 'Pending' commitments as 'Missed' for the purpose of the reflection prompt.
+    const missedCommitments = (data?.active_commitments || [])
+        .filter(c => c.status === 'Missed' || c.status === 'Pending')
+        .map(c => `[${LEADERSHIP_TIERS_META[c.linkedTier]?.name || 'General'}] ${c.text}`);
 
-    const systemPrompt = `You are an executive coach...Based on the user's daily performance, generate ONE specific, non-judgemental, and high-leverage reflection question...If commitments were missed, link the question to the missed tier/action and the leadership cost of inconsistency...If performance was perfect, ask a question about translating that commitment into team impact...Keep the question concise (1-2 sentences).`;
+    const systemPrompt = `You are an executive coach. Based on the user's daily performance, generate ONE specific, non-judgemental, and high-leverage reflection question. If commitments were missed, link the question to the missed tier/action and the leadership cost of inconsistency. If performance was perfect, ask a question about translating that commitment into team impact. Keep the question concise (1-2 sentences).`;
 
     let userQuery;
-    if (missedCommitments...length > 0) {
-        userQuery = `The user missed or is pending on the following commitments: ${missedCommitments...join('; ')}...Generate a reflection prompt focused on the root cause and leadership cost of that inconsistency.`;
-    } else if (data?...active_commitments?...length > 0) {
-        userQuery = `The user achieved a perfect score today (${data...active_commitments...length}/${data...active_commitments...length})...Generate a reflection prompt focused on how the commitment execution generated value or reduced risk for their team today.`;
+    if (missedCommitments.length > 0) {
+        userQuery = `The user missed or is pending on the following commitments: ${missedCommitments.join('; ')}. Generate a reflection prompt focused on the root cause and leadership cost of that inconsistency.`;
+    } else if (data?.active_commitments?.length > 0) {
+        userQuery = `The user achieved a perfect score today (${data.active_commitments.length}/${data.active_commitments.length}). Generate a reflection prompt focused on how the commitment execution generated value or reduced risk for their team today.`;
     } else {
         setReflectionPrompt('What key insight did you gain today that will improve your leadership practice tomorrow?');
         setPromptLoading(false);
@@ -1296,11 +1311,11 @@ useEffect(() => {
             model: GEMINI_MODEL,
         };
         const result = await callSecureGeminiAPI(payload);
-        const text = result?...candidates?.[0]?...content?...parts?.[0]?...text;
-        setReflectionPrompt(text?...trim() || 'What single behavior reinforced your LIS today, and why?');
+        const text = result?.candidates?.[0]?.content?.parts?.[0]?.text;
+        setReflectionPrompt(text?.trim() || 'What single behavior reinforced your LIS today, and why?');
     } catch (e) {
-        console...error("AI Prompt Error:", e);
-        setReflectionPrompt('AI Coach is unavailable...Use this standard prompt: What single behavior reinforced your LIS today, and why?');
+        console.error("AI Prompt Error:", e);
+        setReflectionPrompt('AI Coach is unavailable. Use this standard prompt: What single behavior reinforced your LIS today, and why?');
     } finally {
         setPromptLoading(false);
     }
@@ -1315,10 +1330,10 @@ useEffect(() => {
     setIsSaving(true);
     
     await updateCommitmentData(data => {
-        const updatedCommitments = data...active_commitments...map(c => 
-            c...id === id ? { .....c, status: status } : c
+        const updatedCommitments = data.active_commitments.map(c => 
+            c.id === id ? { ...c, status: status } : c
         );
-        return { .....data, active_commitments: updatedCommitments }; // CRITICAL FIX 7: Spread .....data here
+        return { ...data, active_commitments: updatedCommitments }; // CRITICAL FIX 7: Spread ...data here
     });
     
     setIsSaving(false);
@@ -1326,17 +1341,17 @@ useEffect(() => {
 
   const handleRemoveCommitment = async (id) => {
     setIsSaving(true);
-    const commitmentToRemove = userCommitments...find(c => c...id === id);
+    const commitmentToRemove = userCommitments.find(c => c.id === id);
 
-    if (commitmentToRemove && commitmentToRemove...status === 'Committed') {
-        console...warn("Commitment is marked complete...It must remain on the scorecard until tomorrow's daily reset for data integrity.");
+    if (commitmentToRemove && commitmentToRemove.status === 'Committed') {
+        console.warn("Commitment is marked complete. It must remain on the scorecard until tomorrow's daily reset for data integrity.");
         setIsSaving(false);
         return;
     }
     
     await updateCommitmentData(data => {
-        const updatedCommitments = data...active_commitments...filter(c => c...id !== id);
-        return { .....data, active_commitments: updatedCommitments }; // CRITICAL FIX 8: Spread .....data here
+        const updatedCommitments = data.active_commitments.filter(c => c.id !== id);
+        return { ...data, active_commitments: updatedCommitments }; // CRITICAL FIX 8: Spread ...data here
     });
     
     setIsSaving(false);
@@ -1346,12 +1361,12 @@ useEffect(() => {
     setIsSaving(true);
     setIsReflectionSaved(false); 
     
-    await updateCommitmentData(data => ({ .....data, reflection_journal: reflection }));
+    await updateCommitmentData(data => ({ ...data, reflection_journal: reflection }));
     
     setIsSaving(false);
     setIsReflectionSaved(true); 
     setTimeout(() => setIsReflectionSaved(false), 3000);
-    console...log("Daily Reflection Saved.");
+    console.log("Daily Reflection Saved.");
   };
   
   const handleOpenHistoryModal = (dayData) => {
@@ -1364,59 +1379,59 @@ useEffect(() => {
   ========================================================= */
   const { predictedRisk, microTip } = useMemo(() => {
     const today = new Date();
-    const hour = today...getHours();
+    const hour = today.getHours();
     
     const missedTiers = userCommitments
-      ...filter(c => c...status === 'Missed' || c...status === 'Pending')
-      ...map(c => c...linkedTier)
-      ...filter(t => t);
+      .filter(c => c.status === 'Missed' || c.status === 'Pending')
+      .map(c => c.linkedTier)
+      .filter(t => t);
       
     let riskText = null;
     let riskIcon = null;
 
-    if (missedTiers...length > 0) {
-        const frequentMissedTier = missedTiers...reduce((a, b, i, arr) => 
-            (arr...filter(v => v===a)...length >= arr...filter(v => v===b)...length ? a : b), missedTiers[0]);
+    if (missedTiers.length > 0) {
+        const frequentMissedTier = missedTiers.reduce((a, b, i, arr) => 
+            (arr.filter(v => v===a).length >= arr.filter(v => v===b).length ? a : b), missedTiers[0]);
             
-        riskText = `High Risk: Inconsistency in **${LEADERSHIP_TIERS_META[frequentMissedTier]?...name || 'a core tier'}**...This threatens your ability to advance in your PDP.`;
+        riskText = `High Risk: Inconsistency in **${LEADERSHIP_TIERS_META[frequentMissedTier]?.name || 'a core tier'}**. This threatens your ability to advance in your PDP.`;
         riskIcon = TrendingDown;
     } else {
-        if (score...total > 0) {
+        if (score.total > 0) {
             riskText = "Low Risk: Great start! Sustain the momentum to hit a perfect score.";
             riskIcon = CheckCircle;
         } else {
-             riskText = "No active risk yet...Add commitments in the 'Manage' tab.";
+             riskText = "No active risk yet. Add commitments in the 'Manage' tab.";
              riskIcon = AlertTriangle;
         }
     }
 
     let tipText;
     if (hour < 12) {
-        tipText = "Morning Focus: Protect your 'Deep Work' commitment first...Say 'No' to non-essential pings.";
+        tipText = "Morning Focus: Protect your 'Deep Work' commitment first. Say 'No' to non-essential pings.";
     } else if (hour >= 12 && hour < 16) {
         tipText = "Afternoon Reset: Check if you have any Commitments due before EOD, especially 1:1 prep.";
     } else {
-        tipText = "End-of-Day Review: Ensure all Commitments are marked...Reflect before signing off.";
+        tipText = "End-of-Day Review: Ensure all Commitments are marked. Reflect before signing off.";
     }
 
 
     return { predictedRisk: { text: riskText, icon: riskIcon }, microTip: tipText };
-  }, [userCommitments, score...total]);
+  }, [userCommitments, score.total]);
 
   // View Mode Sorting Logic
 const sortedCommitments = useMemo(() => {
-  const active = [.....userCommitments];
+  const active = [...userCommitments];
       if (viewMode === 'status') {
-          return active...sort((a, b) => {
-              if (a...status === 'Pending' && b...status !== 'Pending') return -1;
-              if (a...status !== 'Pending' && b...status === 'Pending') return 1;
+          return active.sort((a, b) => {
+              if (a.status === 'Pending' && b.status !== 'Pending') return -1;
+              if (a.status !== 'Pending' && b.status === 'Pending') return 1;
               return 0;
           });
       }
       if (viewMode === 'tier') {
           const tierOrder = ['T5', 'T4', 'T3', 'T2', 'T1']; // Sort by highest leverage first
-          return active...sort((a, b) => {
-              return tierOrder...indexOf(a...linkedTier) - tierOrder...indexOf(b...linkedTier);
+          return active.sort((a, b) => {
+              return tierOrder.indexOf(a.linkedTier) - tierOrder.indexOf(b.linkedTier);
           });
       }
       return active;
@@ -1449,7 +1464,7 @@ const sortedCommitments = useMemo(() => {
         return (
           <div className="p-8">
             <h1 className="text-3xl font-extrabold text-[#002E47] mb-6">Daily Scorecard</h1>
-            <p className="text-lg text-gray-600 mb-8 max-w-3xl">Track your daily commitment to the non-negotiable leadership actions that reinforce your professional identity...Consistently hitting this score is the key to sustained executive growth.</p>
+            <p className="text-lg text-gray-600 mb-8 max-w-3xl">Track your daily commitment to the non-negotiable leadership actions that reinforce your professional identity. Consistently hitting this score is the key to sustained executive growth.</p>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
               <div className='lg:col-span-2'>
@@ -1457,13 +1472,13 @@ const sortedCommitments = useMemo(() => {
                 {/* Goal Drift Analysis Mock (The visual card remains the same) */}
                 <Card 
                     title="Goal Drift Analysis" 
-                    icon={predictedRisk...icon} 
-                    accent={predictedRisk...icon === TrendingDown ? 'ORANGE' : 'TEAL'} 
+                    icon={predictedRisk.icon} 
+                    accent={predictedRisk.icon === TrendingDown ? 'ORANGE' : 'TEAL'} 
                     className='mb-6 shadow-2xl' 
-                    style={{ background: predictedRisk...icon === TrendingDown ? COLORS...ORANGE + '1A' : COLORS...TEAL + '1A', border: `2px solid ${predictedRisk...icon === TrendingDown ? COLORS...ORANGE : COLORS...TEAL}` }}
+                    style={{ background: predictedRisk.icon === TrendingDown ? COLORS.ORANGE + '1A' : COLORS.TEAL + '1A', border: `2px solid ${predictedRisk.icon === TrendingDown ? COLORS.ORANGE : COLORS.TEAL}` }}
                 >
                     <p className='text-base font-medium text-gray-700'>
-                        {predictedRisk...text}
+                        {predictedRisk.text}
                     </p>
                 </Card>
                 
@@ -1474,7 +1489,7 @@ const sortedCommitments = useMemo(() => {
                 
                 <div className="mb-6 flex justify-between items-center">
                   <h3 className="text-2xl font-extrabold text-[#002E47]">
-                    Today's Commitments ({userCommitments...length})
+                    Today's Commitments ({userCommitments.length})
                   </h3>
                   <div className='flex space-x-2'>
                     <button 
@@ -1493,21 +1508,21 @@ const sortedCommitments = useMemo(() => {
                 <Card title="Current Commitments" icon={Target} accent='TEAL' className="mb-8 border-l-4 border-[#47A88D] rounded-3xl">
                     <div className='mb-4 flex justify-between items-center text-sm'>
                         <div className='font-semibold text-[#002E47]'>
-                            {score...total > 0 ? `Score: ${score...committed}/${score...total} completed` : 'No active commitments.'}
+                            {score.total > 0 ? `Score: ${score.committed}/${score.total} completed` : 'No active commitments.'}
                         </div>
-                        {score...total > 0 && (
+                        {score.total > 0 && (
                             <div className={`font-bold ${isPerfectScore ? 'text-green-600' : 'text-[#E04E1B]'}`}>
-                                {score...total - score...committed} pending or missed.
+                                {score.total - score.committed} pending or missed.
                             </div>
                         )}
                     </div>
                     
                     <div className="space-y-4">
-                        {sortedCommitments...length > 0 ? (
+                        {sortedCommitments.length > 0 ? (
                             // Use sorted commitments for rendering
-                            sortedCommitments...map(c => (
+                            sortedCommitments.map(c => (
                                 <CommitmentItem
-                                    key={c...id}
+                                    key={c.id}
                                     commitment={c}
                                     onLogCommitment={handleLogCommitment}
                                     onRemove={handleRemoveCommitment} // Passed down for removal functionality
@@ -1516,7 +1531,7 @@ const sortedCommitments = useMemo(() => {
                                 />
                             ))
                         ) : (
-                            <p className="text-gray-500 italic text-center py-4">Your scorecard is empty...Click 'Manage Commitments' to start building your daily practice!</p>
+                            <p className="text-gray-500 italic text-center py-4">Your scorecard is empty. Click 'Manage Commitments' to start building your daily practice!</p>
                         )}
                     </div>
 
@@ -1527,7 +1542,7 @@ const sortedCommitments = useMemo(() => {
                     <span className={`text-4xl font-extrabold p-3 rounded-xl shadow-inner min-w-[100px] text-center ${
                       isPerfectScore ? 'text-green-600 bg-green-50' : 'text-[#002E47] bg-gray-100'
                     }`}>
-                      {score...committed} / {score...total}
+                      {score.committed} / {score.total}
                     </span>
                   </div>
                 </Card>
@@ -1539,21 +1554,21 @@ const sortedCommitments = useMemo(() => {
                   
                   <Card 
                       title="Daily Risk Indicator" 
-                      icon={predictedRisk...icon} 
-                      accent={predictedRisk...icon === TrendingDown ? 'ORANGE' : 'TEAL'}
+                      icon={predictedRisk.icon} 
+                      accent={predictedRisk.icon === TrendingDown ? 'ORANGE' : 'TEAL'}
                       className={`border-2 shadow-2xl`}
                   >
-                      <p className='text-sm font-semibold text-[#002E47]'>{predictedRisk...text}</p>
+                      <p className='text-sm font-semibold text-[#002E47]'>{predictedRisk.text}</p>
                   </Card>
                   
                   <TierSuccessMap tierRates={tierSuccessRates} />
                   
                   <Card title="Monthly Consistency" icon={BarChart3} accent='TEAL' className='bg-[#47A88D]/10 border-2 border-[#47A88D]'>
-                      <p className='text-xs text-gray-700 mb-2'>Avg...Completion Rate ({monthlyProgress...daysTracked} days)</p>
+                      <p className='text-xs text-gray-700 mb-2'>Avg. Completion Rate ({monthlyProgress.daysTracked} days)</p>
                       <div className="w-full bg-gray-200 rounded-full h-4 mb-2">
                           <div 
                               className="bg-[#002E47] h-4 rounded-full transition-all duration-700" 
-                              style={{ width: `${monthlyProgress...rate}%` }}
+                              style={{ width: `${monthlyProgress.rate}%` }}
                           ></div>
                       </div>
                       <div className='flex justify-between items-center'>
@@ -1565,7 +1580,7 @@ const sortedCommitments = useMemo(() => {
                       <Button onClick={() => setView('weekly-prep')} variant='outline' className='w-full mt-4 text-xs px-4 py-2 border-[#002E47] text-[#002E47] hover:bg-[#002E47]/10'>
                           <Activity className='w-4 h-4 mr-2'/> Weekly Review & Prep
                       </Button>
-                      <Button onClick={() => handleOpenHistoryModal(lastSevenDaysHistory[lastSevenDaysHistory...length -1])} variant='outline' className='w-full mt-2 text-xs px-4 py-2'>
+                      <Button onClick={() => handleOpenHistoryModal(lastSevenDaysHistory[lastSevenDaysHistory.length -1])} variant='outline' className='w-full mt-2 text-xs px-4 py-2'>
                           <Clock className='w-4 h-4 mr-2'/> View Last Score
                       </Button>
                   </Card>
@@ -1585,11 +1600,11 @@ const sortedCommitments = useMemo(() => {
                 </p>
                 <textarea 
                     value={reflection}
-                    onChange={(e) => setReflection(e...target...value)}
+                    onChange={(e) => setReflection(e.target.value)}
                     className="w-full p-3 border border-gray-300 rounded-xl focus:ring-[#002E47] focus:border-[#002E47] h-32 text-gray-800" 
                     placeholder="My key reflection/insight from today's practice..."
                 ></textarea>
-                <Button onClick={handleSaveReflection} disabled={isSaving || reflection...length === 0} className='mt-4 bg-[#002E47] hover:bg-gray-700'>
+                <Button onClick={handleSaveReflection} disabled={isSaving || reflection.length === 0} className='mt-4 bg-[#002E47] hover:bg-gray-700'>
                     {isSaving ? 'Saving...' : 'Save Reflection'}
                 </Button>
                  {isReflectionSaved && (
@@ -1606,7 +1621,7 @@ const sortedCommitments = useMemo(() => {
                 activeCommitments={userCommitments}
             />
             
-            {isPerfectScore && score...total > 0 && !isPerfectScoreModalVisible && (
+            {isPerfectScore && score.total > 0 && !isPerfectScoreModalVisible && (
                  <PerfectScoreModal onClose={() => setIsPerfectScoreModalVisible(false)} />
             )}
             
@@ -1615,5 +1630,6 @@ const sortedCommitments = useMemo(() => {
     }
   }; // <-- CLOSES the renderView function
 
-  // CRITICAL FIX: The main component MUST return its content to render...return renderView();
+  // CRITICAL FIX: The main component MUST return its content to render.
+  return renderView();
 } // <-- CLOSES the DailyPracticeScreen function
