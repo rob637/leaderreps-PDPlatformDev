@@ -26,8 +26,8 @@ const LEADERSHIP_TIERS_META = {
 function groupCommitmentsByTier(commitments) {
     const tiers = { T1: [], T2: [], T3: [], T4: [], T5: [] };
     (commitments || []).forEach(c => {
-        if (c.linkedTier && tiers[c.linkedTier]) {
-            tiers[c.linkedTier].push(c);
+        if (c?.linkedTier && tiers[c?.linkedTier]) {
+            tiers[c?.linkedTier].push(c);
         }
     });
     return tiers;
@@ -645,10 +645,10 @@ const CommitmentSelectorView = ({ setView, initialGoal, initialTier }) => {
     }
 
     // CRITICAL FIX 2: Ensure existing data is preserved using the spread operator
-await updateCommitmentData(data => ({ 
-  ...data,
-  active_commitments: [ ...(data?.active_commitments || []), newCommitment ],
-  }));
+await updateCommitmentData(prev => ( 
+  ...prev,
+  active_commitments: [ ...(prev?.active_commitments || []), newCommitment ],
+  ));
 // Optimistic UI: assume success after await.
 
         setCustomCommitment('');
@@ -686,8 +686,7 @@ await updateCommitmentData(data => ({
 
       // CRITICAL FIX 5: Ensure existing data is preserved using the spread operator
 // Ensure we properly append to active_commitments (preserving the rest of the doc)
-      await updateCommitmentData(prev => ({
-        ...prev,
+      await updateCommitmentData(prev => ({ ...(prev || {}),
         active_commitments: [
           ...(prev?.active_commitments || []),
           newCommitment
@@ -1026,17 +1025,17 @@ const WeeklyPrepView = ({ setView, commitmentData, updateCommitmentData, userCom
 
         const newCommitments = userCommitments.filter(c => c.id !== id);
         
-        await updateCommitmentData(data => ({ ...data, active_commitments: newCommitments })); 
+        await updateCommitmentData(prev => ( ...prev, active_commitments: newCommitments )); 
         console.info("Commitment retired successfully. Focus remains on the next priority!");
     };
 
     const handleSaveReview = async () => {
         setIsSaving(true);
-        await updateCommitmentData(data => ({ 
-            ...data,
+        await updateCommitmentData(prev => ( 
+            ...prev,
             last_weekly_review: new Date().toISOString(),
             weekly_review_notes: reviewNotes,
-        }));
+        ));
         console.info('Weekly review saved!');
         setIsSaving(false);
         setView('scorecard');
@@ -1230,13 +1229,12 @@ useEffect(() => {
       setIsSaving(true); 
       const today = new Date().toISOString().split('T')[0];
       // FIX 2: Ensure we update the log correctly, including the 'saved' flag.
-      await updateCommitmentData(data => ({ 
-          ...data, // Spread data here to ensure other fields are preserved (important for API calls)
-          resilience_log: { 
-              ...data.resilience_log, 
+      await updateCommitmentData(prev => ( 
+          ...prev, // Spread prev here to ensure other fields are preserved (important for API calls)
+          resilience_log: { ...(prev || {}).resilience_log, 
               [today]: { ...newLogData, saved: true } // Explicitly set saved:true
           } 
-      })); 
+      )); 
       setIsSaving(false);
       console.log("Resilience Log Saved.");
   };
@@ -1329,11 +1327,11 @@ useEffect(() => {
   const handleLogCommitment = async (id, status) => {
     setIsSaving(true);
     
-    await updateCommitmentData(data => {
-        const updatedCommitments = data.active_commitments.map(c => 
+    await updateCommitmentData(prev => {
+        const updatedCommitments = (prev?.active_commitments || []).map(c => 
             c.id === id ? { ...c, status: status } : c
         );
-        return { ...data, active_commitments: updatedCommitments }; // CRITICAL FIX 7: Spread ...data here
+        return { ...(prev || {}), active_commitments: updatedCommitments }; // CRITICAL FIX 7: Spread ...prev here
     });
     
     setIsSaving(false);
@@ -1349,9 +1347,9 @@ useEffect(() => {
         return;
     }
     
-    await updateCommitmentData(data => {
-        const updatedCommitments = data.active_commitments.filter(c => c.id !== id);
-        return { ...data, active_commitments: updatedCommitments }; // CRITICAL FIX 8: Spread ...data here
+    await updateCommitmentData(prev => {
+        const updatedCommitments = (prev?.active_commitments || []).filter(c => c.id !== id);
+        return { ...(prev || {}), active_commitments: updatedCommitments }; // CRITICAL FIX 8: Spread ...prev here
     });
     
     setIsSaving(false);
@@ -1361,7 +1359,7 @@ useEffect(() => {
     setIsSaving(true);
     setIsReflectionSaved(false); 
     
-    await updateCommitmentData(data => ({ ...data, reflection_journal: reflection }));
+    await updateCommitmentData(prev => ( ...prev, reflection_journal: reflection ));
     
     setIsSaving(false);
     setIsReflectionSaved(true); 
