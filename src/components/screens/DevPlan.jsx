@@ -82,6 +82,18 @@ const Card = ({ children, title, icon: Icon, className = '', onClick, accent = '
 // --- CRITICAL FIX: Moved Copy icon definition to top level to resolve ReferenceError in RequestFeedbackModal ---
 const Copy = ({ className }) => <svg xmlns="http://www.w3.org/2000/svg" className={className} width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>;
 
+// --- Clipboard Utility ---
+const copyToClipboard = (text) => {
+    const el = document.createElement('textarea');
+    el.value = text;
+    document.body.appendChild(el);
+    el.select();
+    document.execCommand('copy');
+    document.body.removeChild(el);
+    console.log('Content copied to clipboard!');
+};
+// --- End Clipboard Utility ---
+
 const Tooltip = ({ content, children }) => {
     const [isVisible, setIsVisible] = useState(false);
     return (
@@ -961,16 +973,7 @@ Could you please provide me with one piece of **specific, actionable** feedback 
 Thank you for your candid input!
     `.trim();
 
-    const copyToClipboard = () => {
-        const el = document.createElement('textarea');
-        el.value = feedbackRequestText;
-        document.body.appendChild(el);
-        el.select();
-        document.execCommand('copy');
-        document.body.removeChild(el);
-        console.log('Feedback request copied to clipboard!');
-        onClose();
-    };
+
     
     
     return (
@@ -998,11 +1001,11 @@ Thank you for your candid input!
                     className="w-full p-3 border border-gray-300 rounded-xl bg-gray-50 text-sm h-60"
                 ></textarea>
 
-                <Button onClick={copyToClipboard} className='mt-4 w-full bg-[#E04E1B] hover:bg-[#C33E12]'>
+                <Button onClick={() => {
+                    copyToClipboard(feedbackRequestText); // Use the global function
+                    onClose(); // Add the modal closure logic here
+                }} className='mt-4 w-full bg-[#E04E1B] hover:bg-[#C33E12]'>
                     <Copy className='w-5 h-5 mr-2'/> Copy Request to Clipboard
-                </Button>
-                <Button onClick={onClose} variant='outline' className='mt-4 w-full'>
-                    Close
                 </Button>
             </div>
         </div>
