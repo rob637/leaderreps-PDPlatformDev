@@ -947,7 +947,8 @@ const TrackerDashboardView = ({ data, updatePdpData, saveNewPlan, userId, naviga
 
     // --- Handlers (Memoized functions) ---
     const handleContentStatusToggle = useCallback((contentId) => {
-        if (!canEdit) return; 
+        // Only allow toggling if it's the current month
+        if (!isCurrentView) return; 
         updatePdpData(oldData => {
             const updatedContent = monthPlan.requiredContent.map(item =>
                 item.id === contentId ? { ...item, status: item.status === 'Completed' ? 'Pending' : 'Completed' } : item
@@ -1170,7 +1171,7 @@ const TrackerDashboardView = ({ data, updatePdpData, saveNewPlan, userId, naviga
 
                 <div className='lg:col-span-3 space-y-8 order-2'>
                     
-                    {/* VIEWING WARNINGS */}
+                    {/* VIEWING WARNINGS - THESE DISPLAY FOR FUTURE/PAST MONTHS */}
                     {viewMonth > currentMonth && ( // Check if viewing a future month
                         <div className='p-4 rounded-xl bg-yellow-100 border-2 border-yellow-400 shadow-md text-yellow-800 font-semibold flex items-center gap-3'>
                             <AlertTriangle className='w-5 h-5'/> 
@@ -1184,81 +1185,81 @@ const TrackerDashboardView = ({ data, updatePdpData, saveNewPlan, userId, naviga
                         </div>
                     )}
 
-                    {/* CRITICAL FIX 3: Early return for future months to prevent rendering complex content components */}
-                    {viewMonth > currentMonth ? null : (
-                    // START: COMPLEX MONTHLY CONTENT (Only renders for current or past months)
-                    <> 
-                        <Card title={`Focus: ${monthPlan?.theme} (Month ${viewMonth})`} icon={TierIcon} accent='TEAL' className='border-l-8 border-[#47A88D]'>
+                    {/* CONTENT CARD (Always Renders) */}
+                    <Card title={`Focus: ${monthPlan?.theme} (Month ${viewMonth})`} icon={TierIcon} accent='TEAL' className='border-l-8 border-[#47A88D]'>
 
-                            {/* AI Monthly Briefing */}
-                            <div className='mb-4 p-4 rounded-xl bg-[#002E47]/10 border border-[#002E47]/20'>
-                                <h3 className='font-bold text-[#002E47] mb-1 flex items-center'><Activity className="w-4 h-4 mr-2 text-[#47A88D]" /> Monthly Executive Briefing</h3>
-                                {briefingLoading && isCurrentView ? (
-                                    <p className='text-sm text-gray-600 flex items-center'><div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-500 mr-2 rounded-full"></div> Drafting advice...</p>
-                                ) : (
-                                    <div className="prose max-w-none text-gray-700">
-                                        <div dangerouslySetInnerHTML={{ __html: safeBriefing }} /> 
-                                    </div>
-                                )}
-                            </div>
-                            
-                            {/* Status / Difficulty */}
-                            <div className='mb-4 text-sm border-t pt-4'>
-                                <p className='font-bold text-[#002E47]'>Tier: {LEADERSHIP_TIERS[currentTierId]?.name}</p>
-                                <p className='text-gray-600'>Target Difficulty: **{selfRating >= 8 ? 'Mastery' : selfRating >= 5 ? 'Core' : 'Intro'}** (Self-Rating: {selfRating}/10)</p>
-                                {lowRatingFlag && (
-                                    <p className='font-semibold mt-1 flex items-center text-[#E04E1B]'>
-                                        <AlertTriangle className='w-4 h-4 mr-1' /> HIGH RISK TIER: Prioritize Content Completion.
-                                    </p>
-                                )}
-                            </div>
+                        {/* AI Monthly Briefing (Renders for all months) */}
+                        <div className='mb-4 p-4 rounded-xl bg-[#002E47]/10 border border-[#002E47]/20'>
+                            <h3 className='font-bold text-[#002E47] mb-1 flex items-center'><Activity className="w-4 h-4 mr-2 text-[#47A88D]" /> Monthly Executive Briefing</h3>
+                            {briefingLoading && isCurrentView ? (
+                                <p className='text-sm text-gray-600 flex items-center'><div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-500 mr-2 rounded-full"></div> Drafting advice...</p>
+                            ) : (
+                                <div className="prose max-w-none text-gray-700">
+                                    <div dangerouslySetInnerHTML={{ __html: safeBriefing }} /> 
+                                </div>
+                            )}
+                        </div>
+                        
+                        {/* Status / Difficulty (Renders for all months) */}
+                        <div className='mb-4 text-sm border-t pt-4'>
+                            <p className='font-bold text-[#002E47]'>Tier: {LEADERSHIP_TIERS[currentTierId]?.name}</p>
+                            <p className='text-gray-600'>Target Difficulty: **{selfRating >= 8 ? 'Mastery' : selfRating >= 5 ? 'Core' : 'Intro'}** (Self-Rating: {selfRating}/10)</p>
+                            {lowRatingFlag && (
+                                <p className='font-semibold mt-1 flex items-center text-[#E04E1B]'>
+                                    <AlertTriangle className='w-4 h-4 mr-1' /> HIGH RISK TIER: Prioritize Content Completion.
+                                </p>
+                            )}
+                        </div>
 
-                            <h3 className='text-xl font-bold text-[#002E47] border-t pt-4 mt-4'>Required Content Items (Lessons)</h3>
-                            <div className='space-y-3 mt-4'>
-                                {requiredContent.map(item => {
-                                    const isCompleted = item.status === 'Completed';
-                                    const isToggling = togglingIds.has(item.id);
-                                    // UPGRADE 2: Action button text is always "View Content" or "Go to Practice" regardless of month status
-                                    const actionButtonText = (item.type === 'Role-Play' || item.type === 'Exercise' || item.type === 'Tool') ? 'Go to Practice' : 'View Content'; 
+                        <h3 className='text-xl font-bold text-[#002E47] border-t pt-4 mt-4'>Required Content Items (Lessons)</h3>
+                        <div className='space-y-3 mt-4'>
+                            {requiredContent.map(item => {
+                                const isCompleted = item.status === 'Completed';
+                                const isToggling = togglingIds.has(item.id);
+                                // UPGRADE 2: Action button text is always "View Content" or "Go to Practice" regardless of month status
+                                const actionButtonText = (item.type === 'Role-Play' || item.type === 'Exercise' || item.type === 'Tool') ? 'Go to Practice' : 'View Content'; 
 
-                                    return (
-                                        <div key={item.id} className='flex items-center justify-between p-3 bg-gray-50 rounded-xl shadow-sm'>
-                                            <div className='flex flex-col'>
-                                                <p className={`font-semibold text-sm ${isCompleted && isPastOrCurrent ? 'line-through text-gray-500' : 'text-[#002E47]'}`}>
-                                                    {item.title} ({item.type})
-                                                    {lowRatingFlag && <span className='ml-2 text-xs text-[#E04E1B] font-extrabold'>(CRITICAL)</span>}
-                                                </p>
-                                                <p className='text-xs text-gray-600'>~{item.duration} min | Difficulty: {item.difficulty}</p>
-                                            </div>
-                                            <div className='flex space-x-2'>
-                                                <Button
-                                                    onClick={() => {
-                                                        // UPGRADE 2: Allow viewing of ALL content in future, current, and past months
-                                                        handleOpenContentModal(item);
-                                                    }}
-                                                    className='px-3 py-1 text-xs'
-                                                    variant='primary'
-                                                    disabled={false} // Always enabled for viewing
-                                                >
-                                                    {actionButtonText}
-                                                </Button>
-
-                                                <Button
-                                                    onClick={() => toggleContent(item.id)}
-                                                    className={`px-3 py-1 text-xs transition-colors duration-300 ${isToggling ? 'opacity-50' : ''}`}
-                                                    variant={isCompleted ? 'secondary' : 'primary'}
-                                                    // UPGRADE 2: Only enabled for the current month.
-                                                    disabled={isSaving || isToggling || !isCurrentView}
-                                                >
-                                                    {isToggling ? 'Updating...' : isCompleted ? 'Done ✓' : 'Mark Complete'}
-                                                </Button>
-                                            </div>
+                                return (
+                                    <div key={item.id} className='flex items-center justify-between p-3 bg-gray-50 rounded-xl shadow-sm'>
+                                        <div className='flex flex-col'>
+                                            <p className={`font-semibold text-sm ${isCompleted && isPastOrCurrent ? 'line-through text-gray-500' : 'text-[#002E47]'}`}>
+                                                {item.title} ({item.type})
+                                                {lowRatingFlag && <span className='ml-2 text-xs text-[#E04E1B] font-extrabold'>(CRITICAL)</span>}
+                                            </p>
+                                            <p className='text-xs text-gray-600'>~{item.duration} min | Difficulty: {item.difficulty}</p>
                                         </div>
-                                    );
-                                })}
-                            </div>
-                        </Card>
+                                        <div className='flex space-x-2'>
+                                            <Button
+                                                onClick={() => {
+                                                    // UPGRADE 2: Allow viewing of ALL content in future, current, and past months
+                                                    handleOpenContentModal(item);
+                                                }}
+                                                className='px-3 py-1 text-xs'
+                                                variant='primary'
+                                                disabled={false} // Always enabled for viewing
+                                            >
+                                                {actionButtonText}
+                                            </Button>
 
+                                            <Button
+                                                onClick={() => toggleContent(item.id)}
+                                                className={`px-3 py-1 text-xs transition-colors duration-300 ${isToggling ? 'opacity-50' : ''}`}
+                                                variant={isCompleted ? 'secondary' : 'primary'}
+                                                // UPGRADE 2: Only enabled for the current month.
+                                                disabled={isSaving || isToggling || !isCurrentView}
+                                            >
+                                                {isToggling ? 'Updating...' : isCompleted ? 'Done ✓' : 'Mark Complete'}
+                                            </Button>
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    </Card>
+
+                    {/* REFLECTION AND ADVANCEMENT CARDS (Only render if current month) */}
+                    {isCurrentView && (
+                    <>
                         <Card title="Monthly Reflection" icon={Lightbulb} accent="NAVY" className='bg-[#002E47]/10 border-2 border-[#002E47]/20'>
                             <p className="text-gray-700 text-sm mb-4">
                                 Reflect on the growth you achieved this month. How did the content impact your daily leadership behavior? (**Minimum 50 characters required**)
@@ -1293,41 +1294,37 @@ const TrackerDashboardView = ({ data, updatePdpData, saveNewPlan, userId, naviga
                             )}
                         </Card>
 
-                        {isCurrentView && (
-                            <Card title="Recalibrate Skill Assessment" icon={Activity} accent='ORANGE' className='bg-[#E04E1B]/10 border-4 border-[#E04E1B]'>
-                                <p className='text-sm text-gray-700 mb-4'>
-                                    Feel like you've mastered this tier? Re-run your initial **Self-Ratings** to check your progress and generate an **accelerated, revised roadmap** to match your new skill level.
-                                </p>
-                                <Button
-                                    onClick={handleResetPlan} 
-                                    variant="secondary"
-                                    className='w-full bg-[#E04E1B] hover:bg-red-700'
-                                >
-                                    <Target className='w-4 h-4 mr-2' /> Re-Run Assessment
-                                </Button>
-                            </Card>
-                        )}
+                        <Card title="Recalibrate Skill Assessment" icon={Activity} accent='ORANGE' className='bg-[#E04E1B]/10 border-4 border-[#E04E1B]'>
+                            <p className='text-sm text-gray-700 mb-4'>
+                                Feel like you've mastered this tier? Re-run your initial **Self-Ratings** to check your progress and generate an **accelerated, revised roadmap** to match your new skill level.
+                            </p>
+                            <Button
+                                onClick={handleResetPlan} 
+                                variant="secondary"
+                                className='w-full bg-[#E04E1B] hover:bg-red-700'
+                            >
+                                <Target className='w-4 h-4 mr-2' /> Re-Run Assessment
+                            </Button>
+                        </Card>
                         
-                        {isCurrentView && (
-                            <Card title="Advance Roadmap" icon={CornerRightUp} accent='TEAL' className='bg-[#47A88D]/10 border-4 border-[#47A88D]'>
-                                <p className='text-sm text-gray-700 mb-4'>
-                                    Once all content and your reflection are complete, lock in your progress and move to **Month {currentMonth + 1}** of your plan.
-                                </p>
-                                <Button
-                                    onClick={handleCompleteMonth}
-                                    disabled={isSaving || !isReadyToComplete}
-                                    className='w-full bg-[#47A88D] hover:bg-[#349881]'
-                                >
-                                    {isSaving ? 'Processing...' : `Complete Month ${currentMonth} and Advance`}
-                                </Button>
-                                {!allContentCompleted && (
-                                    <p className='text-[#E04E1B] text-xs mt-2'>* Finish all content items first.</p>
-                                )}
-                                {allContentCompleted && localReflection.length < 50 && (
-                                    <p className='text-[#E04E1B] text-xs mt-2'>* Reflection required (50 chars min).</p>
-                                )}
-                            </Card>
-                        )}
+                        <Card title="Advance Roadmap" icon={CornerRightUp} accent='TEAL' className='bg-[#47A88D]/10 border-4 border-[#47A88D]'>
+                            <p className='text-sm text-gray-700 mb-4'>
+                                Once all content and your reflection are complete, lock in your progress and move to **Month {currentMonth + 1}** of your plan.
+                            </p>
+                            <Button
+                                onClick={handleCompleteMonth}
+                                disabled={isSaving || !isReadyToComplete}
+                                className='w-full bg-[#47A88D] hover:bg-[#349881]'
+                            >
+                                {isSaving ? 'Processing...' : `Complete Month ${currentMonth} and Advance`}
+                            </Button>
+                            {!allContentCompleted && (
+                                <p className='text-[#E04E1B] text-xs mt-2'>* Finish all content items first.</p>
+                            )}
+                            {allContentCompleted && localReflection.length < 50 && (
+                                <p className='text-[#E04E1B] text-xs mt-2'>* Reflection required (50 chars min).</p>
+                            )}
+                        </Card>
                     </>
                     )} 
                 </div>
