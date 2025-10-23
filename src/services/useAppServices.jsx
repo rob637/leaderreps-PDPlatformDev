@@ -95,19 +95,39 @@ export const usePDPData = (db, userId, isAuthReady) => {
 
 
 export const useCommitmentData = (db, userId, isAuthReady) => {
-    const mockCommitmentData = useMemo(() => MOCK_COMMITMENT_DATA, []);
+  // Persist commitments locally for now (works whether or not a Provider is mounted)
+  const key = useMemo(() => `lrcommit_${userId || 'anon'}`, [userId]);
 
-    const updateCommitmentData = useCallback(async (updater) => { 
-        console.log('Mock Commitment Update triggered.'); 
-        return true; 
-    }, []);
-    
-    return {
-        commitmentData: mockCommitmentData, 
-        isLoading: false, 
-        error: null, 
-        updateCommitmentData
-    };
+  const [commitmentData, setCommitmentData] = useState(() => {
+    try {
+      const raw = localStorage.getItem(key);
+      return raw ? JSON.parse(raw) : { ...MOCK_COMMITMENT_DATA };
+    } catch {
+      return { ...MOCK_COMMITMENT_DATA };
+    }
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(key, JSON.stringify(commitmentData));
+    } catch {}
+  }, [key, commitmentData]);
+
+  const updateCommitmentData = useCallback(async (updater) => {
+    setCommitmentData(prev => {
+      const next = (typeof updater === 'function') ? updater(prev || {}) : updater;
+      // Guard against null/undefined updates
+      return next ?? prev;
+    });
+    return true;
+  }, []);
+
+  return {
+    commitmentData,
+    isLoading: false,
+    error: null,
+    updateCommitmentData,
+  };
 };
 
 export const usePlanningData = (db, userId, isAuthReady) => {
