@@ -139,6 +139,17 @@ const LEADERSHIP_TIERS = {
     T5: { id: 'T5', name: 'Strategy & Vision', icon: 'TrendingUp', color: 'cyan-600' },
 };
 
+// src/components/screens/DevPlan.jsx (Around line 165)
+
+// --- Utility: Generate Share Text (Extracted for Minification Safety) ---
+const generateShareText = (currentMonthPlan, data) => {
+    const tierName = LEADERSHIP_TIERS[currentMonthPlan.tier].name;
+    const shareLink = `https://leaderreps.com/pdp/view/${data.ownerUid}/${data.currentMonth}`;
+    
+    return `[PDP Monthly Focus]\n\nHello Manager, here is my focus for Month ${currentMonthPlan.month}:\n\n- **Current Tier Priority:** ${tierName}\n- **Theme:** ${currentMonthPlan.theme}\n- **Required Content:** ${currentMonthPlan.requiredContent.map(c => c.title).join(', ')}.\n\nMy primary skill gap is in ${data.assessment.selfRatings[currentMonthPlan.tier]}/10). My goal this month is to close this gap by completing all content.\n\nView my full progress: ${shareLink}\n\nManager Acknowledgment: [ ] I have reviewed and aligned with this plan.`;
+};
+// --- End Utility ---
+
 // Content Library (EXPANDED TO PROVIDE 24 MONTHS OF UNIQUE CONTENT)
 const CONTENT_LIBRARY = [
     // T1: Lead Self & Mindsets (6 unique items per difficulty: Intro, Core, Mastery)
@@ -727,10 +738,10 @@ const generatePlanData = (assessment, ownerUid) => {
 // --- Modals (omitted for brevity - content remains the same) ---
 const SharePlanModal = ({ isVisible, onClose, currentMonthPlan, data }) => { 
     if (!isVisible || !currentMonthPlan) return null;
-    const tierName = LEADERSHIP_TIERS[currentMonthPlan.tier].name;
-    const shareLink = `https://leaderreps.com/pdp/view/${data.ownerUid}/${data.currentMonth}`;
-    const shareText = `[PDP Monthly Focus]\n\nHello Manager, here is my focus for Month ${currentMonthPlan.month}:\n\n- **Current Tier Priority:** ${tierName}\n- **Theme:** ${currentMonthPlan.theme}\n- **Required Content:** ${currentMonthPlan.requiredContent.map(c => c.title).join(', ')}.\n\nMy primary skill gap is in ${data.assessment.selfRatings[currentMonthPlan.tier]}/10). My goal this month is to close this gap by completing all content.\n\nView my full progress: ${shareLink}\n\nManager Acknowledgment: [ ] I have reviewed and aligned with this plan.`; 
-    
+    // SharePlanModal (Around line 917)
+
+const shareText = generateShareText(currentMonthPlan, data);
+const shareLink = `https://leaderreps.com/pdp/view/${data.ownerUid}/${data.currentMonth}`; // Keep shareLink if still needed for display 
     
     return (
         <div className="fixed inset-0 bg-[#002E47]/80 z-50 flex items-center justify-center p-4">
