@@ -740,9 +740,9 @@ const SharePlanModal = ({ isVisible, onClose, currentMonthPlan, data }) => {
     if (!isVisible || !currentMonthPlan) return null;
     // SharePlanModal (Around line 917)
 
-const shareText = generateShareText(currentMonthPlan, data);
-const shareLink = `https://leaderreps.com/pdp/view/${data.ownerUid}/${data.currentMonth}`; // Keep shareLink if still needed for display 
-    
+const shareText = useMemo(() => generateShareText(currentMonthPlan, data), [currentMonthPlan, data]);
+const shareLink = useMemo(() => `https://leaderreps.com/pdp/view/${data.ownerUid}/${data.currentMonth}`, [data]);
+
     return (
         <div className="fixed inset-0 bg-[#002E47]/80 z-50 flex items-center justify-center p-4">
             <div className="bg-[#FCFCFA] rounded-3xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto p-8">
