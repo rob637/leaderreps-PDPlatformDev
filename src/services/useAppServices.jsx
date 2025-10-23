@@ -3,7 +3,7 @@
 import { useMemo, useCallback, useContext, createContext, useState, useEffect } from 'react';
 
 // --- MOCK CONSTANTS (Duplicated from App.jsx for independent hook compilation) ---
-const GEMINI_MODEL = 'gemini-1.5-flash-latest';
+const GEMINI_MODEL = 'gemini-2.5-flash'; // or 'gemini-2.5-pro'
 const LEADERSHIP_TIERS = {
     T1: { id: 'T1', name: 'Lead Self & Mindsets', icon: 'HeartPulse', color: 'indigo-500' },
     T2: { id: 'T2', name: 'Lead Work & Execution', icon: 'Briefcase', color: 'green-600' },

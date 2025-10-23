@@ -28,8 +28,8 @@ import { getFirestore, setLogLevel } from 'firebase/firestore';
 
 // =========================================================
 // --- PRODUCTION GEMINI CONFIGURATION ---
-const GEMINI_MODEL = 'gemini-1.5-flash-latest';
-const GEMINI_API_VERSION = 'v1';
+const GEMINI_MODEL = 'gemini-2.5-flash'; // or 'gemini-2.5-pro'
+const GEMINI_API_VERSION = 'v1beta';
 // Prefer serverless; allow override via window.__GEMINI_MODE = 'direct'
 const USE_SERVERLESS = (typeof window !== 'undefined' && window.__GEMINI_MODE === 'direct') ? false : true;
 // NOTE: API_KEY must be defined in your environment (e.g., Netlify/Vite)
