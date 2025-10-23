@@ -664,13 +664,14 @@ const App = ({ initialState }) => {
         <Suspense fallback={
              <div className="min-h-screen flex items-center justify-center bg-gray-100"><div className="flex flex-col items-center"><div className="animate-spin rounded-full h-12 w-12 border-4 border-t-4 border-gray-200 border-t-[#47A88D] mb-3"></div><p className="text-[#002E47] font-semibold">Loading App Content...</p></div></div>
         }>
+// App.jsx (Inside the final return block)
             <AppContent
               currentScreen={currentScreen} 
-              setCurrentScreen={navigate} // CRITICAL FIX: Pass the navigate function here
+              setCurrentScreen={navigate}
               user={user} 
               navParams={navParams} 
               isMobileOpen={isMobileOpen} 
-              setIsMobileOpen={setIsMobileMenuOpen} 
+              setIsMobileOpen={setIsMobileOpen} // FIX: Correctly reference the declared setter
               isAuthRequired={authRequired} 
             />
         </Suspense>
