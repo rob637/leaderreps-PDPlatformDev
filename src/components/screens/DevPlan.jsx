@@ -79,38 +79,7 @@ const Card = ({ children, title, icon: Icon, className = '', onClick, accent = '
   );
 };
 
-// --- CRITICAL FIX: Moved Copy icon definition to top level to resolve ReferenceError in RequestFeedbackModal ---
-const Copy = ({ className }) => <svg xmlns="http://www.w3.org/2000/svg" className={className} width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>;
-
-// --- Clipboard Utility ---
-const copyToClipboard = (text) => {
-    const el = document.createElement('textarea');
-    el.value = text;
-    document.body.appendChild(el);
-    el.select();
-    document.execCommand('copy');
-    document.body.removeChild(el);
-    console.log('Content copied to clipboard!');
-};
-// --- End Clipboard Utility ---
-
-// src/components/screens/DevPlan.jsx (Around line 85, after copyToClipboard)
-
-// --- Utility: Find Lowest Rated Tier for Feedback ---
-const findLowestRatedTier = (selfRatings) => {
-    if (!selfRatings || typeof selfRatings !== 'object') return { tier: 'T1', rating: 10 };
-    
-    return Object.entries(selfRatings)
-        .reduce((lowest, [tier, rating]) => {
-            // Safety check for rating being a number
-            const currentRating = typeof rating === 'number' ? rating : 10;
-            
-            if (currentRating < lowest.rating) return { tier, rating: currentRating };
-            return lowest;
-        }, { tier: 'T1', rating: 10 });
-};
-// --- End Utility ---
-
+// --- Tooltip Component ---
 const Tooltip = ({ content, children }) => {
     const [isVisible, setIsVisible] = useState(false);
     return (
@@ -750,6 +719,8 @@ const SharePlanModal = ({ isVisible, onClose, currentMonthPlan, data }) => {
     const tierName = LEADERSHIP_TIERS[currentMonthPlan.tier].name;
     const shareLink = `https://leaderreps.com/pdp/view/${data.ownerUid}/${data.currentMonth}`;
     const shareText = `[PDP Monthly Focus]\n\nHello Manager, here is my focus for Month ${currentMonthPlan.month}:\n\n- **Current Tier Priority:** ${tierName}\n- **Theme:** ${currentMonthPlan.theme}\n- **Required Content:** ${currentMonthPlan.requiredContent.map(c => c.title).join(', ')}.\n\nMy primary skill gap is in ${data.assessment.selfRatings[currentMonthPlan.tier]}/10). My goal this month is to close this gap by completing all content.\n\nView my full progress: ${shareLink}\n\nManager Acknowledgment: [ ] I have reviewed and aligned with this plan.`; 
+    
+    // Local copyToClipboard function for this specific modal
     const copyToClipboard = () => {
         const el = document.createElement('textarea');
         el.value = shareText;
@@ -759,6 +730,7 @@ const SharePlanModal = ({ isVisible, onClose, currentMonthPlan, data }) => {
         document.body.removeChild(el);
         console.log('Share content copied to clipboard!');
     };
+    
     return (
         <div className="fixed inset-0 bg-[#002E47]/80 z-50 flex items-center justify-center p-4">
             <div className="bg-[#FCFCFA] rounded-3xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto p-8">
@@ -960,91 +932,6 @@ const RoadmapTimeline = ({ data, currentMonth, navigateToMonth, viewMonth }) => 
 };
 
 
-// --- Feature: Request Feedback Modal ---
-const RequestFeedbackModal = ({ isVisible, onClose, monthPlan, assessment }) => {
-    if (!isVisible || !monthPlan || !assessment || !assessment.selfRatings) return null; // CRITICAL FIX: Add safety checks
-    
-    const tierId = monthPlan.tier;
-    const tierName = LEADERSHIP_TIERS[tierId]?.name;
-    const selfRating = assessment.selfRatings[tierId];
-    
-useEffect(() => {
-    if (isVisible) {
-        // DEBUGGER: This will pause execution when the modal tries to render
-        // The pause happens in the browser's DevTools "Sources" panel.
-        // WARNING: REMOVE THIS BEFORE FINAL PRODUCTION BUILD.
-        // debugger; 
-
-        console.log('DEBUG: RequestFeedbackModal is mounting/updating.');
-        console.log(`DEBUG: Tier ID: ${tierId}, Skill Gap Tier ID: ${skillGapTierId}`);
-        console.log(`DEBUG: Final Request Text Length: ${feedbackRequestText.length}`);
-
-        // Temporary measure to help avoid the crash on render:
-        // Force the browser to render the modal *only* when all dependencies are ready.
-        if (!tierName || !skillGapTierName) {
-            console.error("DEBUG: Modal missing required tier names. This may be the source of the crash.");
-        }
-    }
-}, [isVisible, tierId, skillGapTierId, tierName, skillGapTierName, feedbackRequestText.length]);
-
-// CRITICAL FIX: Use global utility to prevent local hoisting/minification conflict
-const lowestTier = findLowestRatedTier(assessment.selfRatings);
-const skillGapTierId = lowestTier.tier;
-const skillGapTierName = LEADERSHIP_TIERS[skillGapTierId]?.name;
-const skillGapRating = lowestTier.rating;
-
-    const feedbackRequestText = `
-Hi [Manager/Peer Name],
-
-I'm focused on accelerating my development plan this month (Month ${monthPlan.month}) in the area of **${tierName}** (Tier ${tierId}).
-
-My biggest self-identified skill gap is currently in **${skillGapTierName}** (Self-Rating: ${skillGapRating}/10).
-
-Could you please provide me with one piece of **specific, actionable** feedback related to this area? A good format would be SBI (Situation, Behavior, Impact).
-
-Thank you for your candid input!
-    `.trim();
-
-
-    
-    
-    return (
-        <div className="fixed inset-0 bg-[#002E47]/80 z-50 flex items-center justify-center p-4">
-            <div className="bg-[#FCFCFA] rounded-3xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto p-8">
-                <div className="flex justify-between items-start border-b pb-4 mb-6">
-                    <h2 className="text-2xl font-extrabold text-[#002E47] flex items-center">
-                        <MessageSquare className="w-6 h-6 mr-3 text-[#E04E1B]" />
-                        Request Targeted Feedback
-                    </h2>
-                    <button onClick={onClose} className="p-2 text-gray-500 hover:text-[#E04E1B] transition-colors">
-                        <X className="w-5 h-5" />
-                    </button>
-                </div>
-                
-                <h3 className='text-md font-bold text-[#47A88D] mb-2'>Targeted Request Focus</h3>
-                <p className='text-sm text-gray-700 mb-4 border-l-2 pl-3 border-[#47A88D]'>
-                    Your current month's focus is on **{tierName}**. The AI suggests requesting feedback on **{skillGapTierName}** to close your biggest self-identified skill gap.
-                </p>
-
-                <h3 className='text-md font-bold text-[#002E47] mb-2'>Copy-Paste Feedback Email</h3>
-                <textarea
-                    readOnly
-                    value={feedbackRequestText}
-                    className="w-full p-3 border border-gray-300 rounded-xl bg-gray-50 text-sm h-60"
-                ></textarea>
-
-                <Button onClick={() => {
-                    copyToClipboard(feedbackRequestText); // Use the global function
-                    onClose(); // Add the modal closure logic here
-                }} className='mt-4 w-full bg-[#E04E1B] hover:bg-[#C33E12]'>
-                    <Copy className='w-5 h-5 mr-2'/> Copy Request to Clipboard
-                </Button>
-            </div>
-        </div>
-    );
-};
-
-
 // --- Component 2: Tracker Dashboard View ---
 const TrackerDashboardView = ({ data, updatePdpData, saveNewPlan, userId, navigate }) => {
     // FIX 1: Initialize viewMonth from router/prop if available, otherwise data.currentMonth
@@ -1068,7 +955,7 @@ const TrackerDashboardView = ({ data, updatePdpData, saveNewPlan, userId, naviga
     
     const [isContentModalVisible, setIsContentModalVisible] = useState(false);
     const [selectedContent, setSelectedContent] = useState(null);
-    const [isFeedbackModalVisible, setIsFeedbackModalVisible] = useState(false); // NEW STATE FOR FEEDBACK MODAL
+    // REMOVED: [isFeedbackModalVisible, setIsFeedbackModalVisible] state
 
     // Track rows that are temporarily 'toggling' so we can disable buttons/spinners without hooks-in-loops
     const [togglingIds, setTogglingIds] = useState(() => new Set());
@@ -1297,9 +1184,9 @@ const TrackerDashboardView = ({ data, updatePdpData, saveNewPlan, userId, naviga
                     <Button onClick={() => console.log('Share')} variant='outline' className='text-xs px-4 py-2 border-[#002E47] text-[#002E47] hover:bg-[#002E47]/10'>
                         <Link className="w-4 h-4 mr-1" /> Share Monthly Focus
                     </Button>
-                    <Button onClick={() => setIsFeedbackModalVisible(true)} variant='primary' className='text-xs px-4 py-2'>
+                    {/* BUTTON REMOVED: <Button onClick={() => setIsFeedbackModalVisible(true)} variant='primary' className='text-xs px-4 py-2'>
                         <MessageSquare className="w-4 h-4 mr-1" /> Request Peer Feedback
-                    </Button>
+                    </Button> */}
                 </div>
             </Card>
 
@@ -1499,12 +1386,7 @@ const actionButtonText = isPastOrCurrent ? ((item.type === 'Role-Play' || item.t
                 content={selectedContent}
             />
             
-            <RequestFeedbackModal
-                isVisible={isFeedbackModalVisible}
-                onClose={() => setIsFeedbackModalVisible(false)}
-                monthPlan={monthPlan}
-                assessment={assessment}
-            />
+            {/* REMOVED: <RequestFeedbackModal /> */}
 
         </div>
     );
