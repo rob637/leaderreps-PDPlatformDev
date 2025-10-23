@@ -106,7 +106,8 @@ import {
   Link as CommunityIcon, 
   Archive, 
   ShieldCheck, 
-  Map, 
+  Map,
+  Film // NEW ICON
 } from 'lucide-react';
 
 /* =========================================================
@@ -424,8 +425,20 @@ const DashboardScreen = () => {
   }, []);
 
   const [tipLoading, setTipLoading] = useState(false);
-  const [tipContent, setTipContent] = useState('Tap "Next Nudge" for your first strategic focus point.'); 
+  const [tipContent, setTipContent] = useState(LOCAL_NUDGES[0]); 
   const [tipHtml, setTipHtml] = useState('');
+useEffect(() => {
+  (async () => {
+    try {
+      if (!tipHtml && tipContent) {
+        setTipHtml(await mdToHtml(tipContent));
+        TIP_CACHE.lastAITip = tipContent;
+      }
+    } catch {}
+  })();
+// eslint-disable-next-line react-hooks/exhaustive-deps
+}, []);
+
 
   const getInitialAITip = useCallback(async () => {
     // Only run if the AI key is ready and tip hasn't been set yet
@@ -622,7 +635,21 @@ const DashboardScreen = () => {
                 <p className='text-xs font-light text-gray-600'>A curated library of business book flyers with key frameworks, executive summaries, and **AI-driven commitment plans** to simplify learning.</p>
               </div>
 
-              {/* Community & Peer Support Button (FIX: Removed lg:col-span-2 for uniform size) */}
+              {/* Leadership Videos Button (NEW) */}
+              <div className='flex flex-col space-y-2'> 
+                <ThreeDButton
+                  onClick={() => safeNavigate('leadership-videos')} 
+                  color={COLORS.NAVY} // <--- COLOR SWAP
+                  accentColor={COLORS.TEAL} // <--- ACCENT SWAP
+                  className="h-16 flex-row px-3 py-2 text-white" 
+                >
+                  <Film className='w-5 h-5 mr-2'/> 
+                  <span className='text-md font-extrabold'>Leadership Videos</span>
+                </ThreeDButton>
+                <p className='text-xs font-light text-gray-600'>A curated library of **inspirational and actionable YouTube videos** from top CEOs, coaches, and thought leaders.</p>
+              </div>
+
+              {/* Community & Peer Support Button (NAVY COLOR / TEAL ACCENT) */}
               <div className='flex flex-col space-y-2'> 
                 <ThreeDButton
                   onClick={() => safeNavigate('community')} 
@@ -630,24 +657,10 @@ const DashboardScreen = () => {
                   accentColor={COLORS.TEAL} // <--- ACCENT SWAP
                   className="h-16 flex-row px-3 py-2 text-white" 
                 >
-                  <CommunityIcon className='w-5 h-5 mr-2'/> 
+                  <Users className='w-5 h-5 mr-2'/> 
                   <span className='text-md font-extrabold'>Community & Peer Support</span>
                 </ThreeDButton>
                 <p className='text-xs font-light text-gray-600'>**Connect with executive peers** for advice, discuss difficult scenarios, and access the Mentorship Network for one-on-one guidance.</p>
-              </div>
-
-               {/* Add a fourth placeholder/button to maintain grid symmetry in LG screens */}
-              <div className='flex flex-col space-y-2'>
-                <ThreeDButton
-                  onClick={() => safeNavigate('quick-start-accelerator')}
-                  color={COLORS.NAVY}
-                  accentColor={COLORS.TEAL}
-                  className="h-16 flex-row px-3 py-2 text-white" 
-                >
-                  <Zap className='w-5 h-5 mr-2'/> 
-                  <span className='text-md font-extrabold'>Quick Start</span>
-                </ThreeDButton>
-                <p className='text-xs font-light text-gray-600'>Jumpstart your usage with the **accelerator module** to align your profile and set initial goals rapidly.</p>
               </div>
               
             </div>

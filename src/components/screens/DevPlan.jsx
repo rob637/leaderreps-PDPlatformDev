@@ -107,7 +107,7 @@ const mdToHtml = async (md) => {
     return `<p class="text-sm text-gray-700">${html}</p>`;
 };
 const IconMap = {
-    Zap: Zap, Users: Users, Briefcase: Briefcase, Target: Target, BarChart3: BarChart3, Clock: Clock, Eye: Eye, BookOpen: BookOpen, Lightbulb: Lightbulb, X: X, ArrowLeft: ArrowLeft, CornerRightUp: CornerRightUp, AlertTriangle: AlertTriangle, CheckCircle: CheckCircle, PlusCircle: PlusCircle, HeartPulse: HeartPulse, TrendingUp: TrendingUp, TrendingDown: TrendingDown, Activity: Activity, Link: Link, Cpu: Cpu, Star: Star, Mic: Mic, Trello: Trello, Settings: Settings, Home: Home, MessageSquare: MessageSquare, Check: Check, Calendar: Calendar
+    Zap: Zap, Users: Users, Briefcase: Briefcase, Target: Target, BarChart3: BarChart3, Clock: Clock, Eye: Eye, BookOpen: BookOpen, Lightbulb: Lightbulb, X: X, ArrowLeft: ArrowLeft, CornerRightUp: CornerRightUp, AlertTriangle: AlertTriangle, CheckCircle: CheckCircle, PlusCircle: PlusCircle, Cpu: Cpu, Star: Star, Mic: Mic, Trello: Trello, Settings: Settings, Home: Home, MessageSquare: MessageSquare, Check: Check, Calendar: Calendar, HeartPulse: HeartPulse, TrendingUp: TrendingUp, TrendingDown: TrendingDown, Activity: Activity, Link: Link
 };
 
 // --- Utility: Global Copy to Clipboard (Using modern API for clean code) ---
@@ -1490,7 +1490,7 @@ const PlanGeneratorView = ({ userId, saveNewPlan, isLoading, error, navigate, se
 };
 
 // --- Plan Review Screen ---
-const PlanReviewScreen = ({ generatedPlan, navigate, clearReviewData }) => {
+const PlanReviewScreen = ({ generatedPlan, navigate, clearReviewData }) => { // FIX: Removed stray characters and unnecessary props
     if (!generatedPlan) return null;
 
     const userPlan = generatedPlan.userPlan;
@@ -1524,8 +1524,8 @@ const PlanReviewScreen = ({ generatedPlan, navigate, clearReviewData }) => {
         
         clearReviewData(); 
         
-        try { await saveNewPlan(generatedPlanData ?? planData ?? plan); } catch (e) {}
-navigate('prof-dev-plan'); 
+        // Removed unnecessary, complex/buggy saveNewPlan call from here, as persistence is handled upstream
+        navigate('prof-dev-plan'); 
         
         window.scrollTo(0, 0); // UPGRADE 1: Scroll to top after generating plan
     };

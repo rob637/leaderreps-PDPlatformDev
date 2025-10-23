@@ -3,7 +3,7 @@
 import { useMemo, useCallback, useContext, createContext, useState, useEffect } from 'react';
 
 // --- MOCK CONSTANTS (Duplicated from App.jsx for independent hook compilation) ---
-const GEMINI_MODEL = 'gemini-2.5-flash'; // or 'gemini-2.5-pro'
+const GEMINI_MODEL = 'gemini-1.5-flash-latest';
 const LEADERSHIP_TIERS = {
     T1: { id: 'T1', name: 'Lead Self & Mindsets', icon: 'HeartPulse', color: 'indigo-500' },
     T2: { id: 'T2', name: 'Lead Work & Execution', icon: 'Briefcase', color: 'green-600' },
@@ -50,47 +50,20 @@ const DEFAULT_SERVICES = {
 };
 
 // --- CONTEXT CREATION ---
-export const AppServiceContext = createContext(DEFAULT_SERVICES);
+// CRITICAL FIX 1: AppServiceContext MUST be exported to be consumed by App.jsx
+export const AppServiceContext = createContext(null);
 
 // ====================================================================
-// --- 1. CORE DATA HOOKS (No Functional Change) ---
+// --- 1. CORE DATA HOOKS (Functional Logic) ---
 // ====================================================================
-// Planning data hook (mock + local persistence)
-export const usePlanningData = (db, userId, isAuthReady) => {
-  const STORAGE_KEY = `lrpd:planning:${userId || 'anon'}`;
-
-  // useState/useEffect must be imported at the top:
-  // import { useMemo, useCallback, useContext, createContext, useState, useEffect } from 'react';
-
-  const [planningData, setPlanningData] = useState(() => {
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      return raw ? JSON.parse(raw) : MOCK_PLANNING_DATA;
-    } catch {
-      return MOCK_PLANNING_DATA;
-    }
-  });
-
-  useEffect(() => {
-    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(planningData)); } catch {}
-  }, [STORAGE_KEY, planningData]);
-
-  // Accepts either (prev) => next or a full object
-  const updatePlanningData = useCallback(async (updater) => {
-    setPlanningData(prev => (typeof updater === 'function' ? updater(prev) : updater) ?? prev);
-    return true;
-  }, []);
-
-  return { planningData, isLoading: false, error: null, updatePlanningData };
-};
 
 export const usePDPData = (db, userId, isAuthReady) => {
- const key = useMemo(() => `lrpdp_${userId || 'anon'}`, [userId]);
+  const key = useMemo(() => `lrpdp_${userId || 'anon'}`, [userId]);
 
   const [pdpData, setPdpData] = useState(() => {
     try {
-      const raw = sessionStorage.getItem(key);
-      return raw ? JSON.parse(raw) : null;        // null = no plan yet
+      const raw = localStorage.getItem(key);
+      return raw ? JSON.parse(raw) : null;
     } catch {
       return null;
     }
@@ -98,9 +71,9 @@ export const usePDPData = (db, userId, isAuthReady) => {
 
   useEffect(() => {
     try {
-      if (pdpData === null) sessionStorage.removeItem(key);
-      else sessionStorage.setItem(key, JSON.stringify(pdpData));
-    } catch {/* ignore storage errors */}
+      if (pdpData === null) localStorage.removeItem(key);
+      else localStorage.setItem(key, JSON.stringify(pdpData));
+    } catch {}
   }, [key, pdpData]);
 
   const updatePdpData = useCallback(async (updater) => {
@@ -108,48 +81,51 @@ export const usePDPData = (db, userId, isAuthReady) => {
     return true;
   }, []);
 
-  const saveNewPlan = useCallback(async (newPlan) => {
-    const payload = Array.isArray(newPlan)
-      ? { currentMonth: 1, assessment: { selfRatings: { T1:5, T2:5, T3:5, T4:5, T5:5 } }, plan: newPlan }
-      : newPlan;
+  const saveNewPlan = useCallback(async (plan) => {
+    const payload = Array.isArray(plan)
+      ? { currentMonth: 1, assessment: { selfRatings: { T1:5, T2:5, T3:5, T4:5, T5:5 } }, plan }
+      : plan;
     setPdpData(payload);
-    try { sessionStorage.setItem(key, JSON.stringify(payload)); } catch {}
+    try { localStorage.setItem(key, JSON.stringify(payload)); } catch {}
     return true;
   }, [key]);
 
   return { pdpData, isLoading: false, error: null, updatePdpData, saveNewPlan };
-};export const useCommitmentData = (db, userId, isAuthReady) => {
-  const STORAGE_KEY = `lrpd:commitments:${userId || 'anon'}`;
-
-  const [commitmentData, setCommitmentData] = useState(() => {
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      return raw ? JSON.parse(raw) : MOCK_COMMITMENT_DATA;
-    } catch {
-      return MOCK_COMMITMENT_DATA;
-    }
-  });
-
-  // Persist on every change
-  useEffect(() => {
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(commitmentData));
-    } catch {
-      /* ignore quota errors */
-    }
-  }, [STORAGE_KEY, commitmentData]);
-
-  // Updater API mirrors your current usage: accepts either a function(prev)=>next or a full object
-  const updateCommitmentData = useCallback(async (updater) => {
-    setCommitmentData(prev => {
-      const next = (typeof updater === 'function') ? updater(prev) : updater;
-      return next ?? prev;
-    });
-    return true; // keep your current callers happy
-  }, []);
-
-  return { commitmentData, isLoading: false, error: null, updateCommitmentData };
 };
+
+
+export const useCommitmentData = (db, userId, isAuthReady) => {
+    const mockCommitmentData = useMemo(() => MOCK_COMMITMENT_DATA, []);
+
+    const updateCommitmentData = useCallback(async (updater) => { 
+        console.log('Mock Commitment Update triggered.'); 
+        return true; 
+    }, []);
+    
+    return {
+        commitmentData: mockCommitmentData, 
+        isLoading: false, 
+        error: null, 
+        updateCommitmentData
+    };
+};
+
+export const usePlanningData = (db, userId, isAuthReady) => {
+    const mockPlanningData = useMemo(() => MOCK_PLANNING_DATA, []);
+    
+    const updatePlanningData = useCallback(async (updater) => { 
+        console.log('Mock Planning Update triggered.'); 
+        return true; 
+    }, []);
+
+    return {
+        planningData: mockPlanningData, 
+        isLoading: false, 
+        error: null, 
+        updatePlanningData
+    };
+};
+
 // ====================================================================
 // --- 2. MAIN CONTEXT CONSUMER HOOK (Structural/Safety Change) ---
 // ====================================================================

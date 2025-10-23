@@ -131,7 +131,7 @@ const notepad = (typeof globalThis !== 'undefined' ? globalThis.notepad : (typeo
 // Icons used in the new NavSidebar
 import { 
   Home, Zap, ShieldCheck, TrendingUp, Mic, BookOpen, Settings, User, LogOut, CornerRightUp, Clock, Briefcase, Target, Users, BarChart3, Globe, Code, Bell, Lock, Download, Trash2, Mail, Link, Menu,
-  Trello 
+  Trello, Film
 } from 'lucide-react';
 
 // --- GLOBAL COLOR PALETTE ---
@@ -153,6 +153,8 @@ const QuickStartScreen = lazy(() => import('./components/screens/QuickStartAccel
 const ExecutiveReflection = lazy(() => import('./components/screens/ExecutiveReflection.jsx'));
 const CommunityScreen = lazy(() => import('./components/screens/CommunityScreen.jsx'));
 const AppliedLeadershipScreen = lazy(() => import('./components/screens/AppliedLeadership.jsx')); 
+// --- NEW MODULE ---
+const LeadershipVideosScreen = lazy(() => import('./components/screens/LeadershipVideos.jsx'));
 
 
 /* =========================================================
@@ -404,7 +406,13 @@ const NavSidebar = ({ currentScreen, setCurrentScreen, user, closeMobileMenu, is
 
     const coreNav = [{ screen: 'dashboard', label: 'Dashboard', icon: Home }, { screen: 'quick-start-accelerator', label: 'QuickStart Accelerator', icon: Zap, badge: 'New' }, { screen: 'reflection', label: 'Executive Reflection', icon: BarChart3 }];
     const toolsHubsNav = [{ screen: 'prof-dev-plan', label: 'Development Plan', icon: Briefcase }, { screen: 'daily-practice', label: 'Daily Practice', icon: Clock}, { screen: 'coaching-lab', label: 'Coaching Lab', icon: Mic }, { screen: 'planning-hub', label: 'Planning Hub (OKRs)', icon: Trello }];
-    const resourcesCommunityNav = [{ screen: 'applied-leadership', label: 'Applied Leadership', icon: ShieldCheck }, { screen: 'business-readings', label: 'Business Readings', icon: BookOpen }, { screen: 'community', label: 'Community & Peer Support', icon: Users, badge: 'New' }];
+    // --- UPDATED NAVIGATION ---
+    const resourcesCommunityNav = [
+        { screen: 'applied-leadership', label: 'Applied Leadership', icon: ShieldCheck }, 
+        { screen: 'business-readings', label: 'Business Readings', icon: BookOpen }, 
+        { screen: 'leadership-videos', label: 'Leadership Videos', icon: Film, badge: 'New' }, // NEW
+        { screen: 'community', label: 'Community & Peer Support', icon: Users, badge: 'New' }
+    ];
     const systemNav = [{ screen: 'app-settings', label: 'App Settings', icon: Settings }];
 
     const menuSections = [{ title: 'CORE NAVIGATION', items: coreNav }, { title: 'TOOLS & HUBS', items: toolsHubsNav }, { title: 'RESOURCES & COMMUNITY', items: resourcesCommunityNav }, { title: 'SYSTEM', items: systemNav }];
@@ -500,6 +508,8 @@ const ScreenRouter = ({ currentScreen, navParams }) => {
     case 'coaching-lab': return <CoachingLabScreen key={uniqueKey} />;
     case 'planning-hub': return <PlanningHubScreen key={uniqueKey} />;
     case 'business-readings': return <BusinessReadingsScreen key={uniqueKey} />;
+    // --- NEW ROUTE ---
+    case 'leadership-videos': return <LeadershipVideosScreen key={uniqueKey} />;
     case 'quick-start-accelerator': return <QuickStartScreen key={uniqueKey} />;
     case 'app-settings': return <AppSettingsScreen key={uniqueKey} />;
     case 'reflection': return <ExecutiveReflection key={uniqueKey} />;
