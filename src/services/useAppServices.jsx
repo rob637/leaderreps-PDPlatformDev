@@ -109,9 +109,13 @@ export const usePDPData = (db, userId, isAuthReady) => {
   }, []);
 
   const saveNewPlan = useCallback(async (newPlan) => {
-    setPdpData(newPlan);
+    const payload = Array.isArray(newPlan)
+      ? { currentMonth: 1, assessment: { selfRatings: { T1:5, T2:5, T3:5, T4:5, T5:5 } }, plan: newPlan }
+      : newPlan;
+    setPdpData(payload);
+    try { sessionStorage.setItem(key, JSON.stringify(payload)); } catch {}
     return true;
-  }, []);
+  }, [key]);
 
   return { pdpData, isLoading: false, error: null, updatePdpData, saveNewPlan };
 };export const useCommitmentData = (db, userId, isAuthReady) => {

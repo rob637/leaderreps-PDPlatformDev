@@ -1138,18 +1138,32 @@ const CommitmentHistoryModal = ({ isVisible, onClose, dayData, activeCommitments
 
 // PerfectScoreModal Component Definition
 const PerfectScoreModal = ({ onClose }) => (
-    <div className="fixed inset-0 bg-[#002E47]/70 z-50 flex items-center justify-center p-4">
-        <div className="bg-[#FCFCFA] rounded-xl shadow-2xl w-full max-w-sm p-6 text-center">
-            <Crown className='w-12 h-12 text-green-600 mx-auto mb-4'/>
-            <h3 className="text-2xl font-extrabold text-[#002E47] mb-2">Perfect Score!</h3>
-            <p className='text-sm text-gray-700 mb-4'>
-                You executed all commitments today. Sustain this discipline!
-            </p>
-            <Button onClick={onClose} className='w-full bg-green-600 hover:bg-green-700'>
-                Acknowledge
-            </Button>
-        </div>
+  <div
+    className="fixed inset-0 bg-[#002E47]/70 z-50 flex items-center justify-center p-4"
+    onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+    role="dialog"
+    aria-modal="true"
+    aria-label="Perfect Score"
+  >
+    <div className="relative bg-[#FCFCFA] rounded-xl shadow-2xl w-full max-w-sm p-6 text-center">
+      <button
+        aria-label="Close"
+        onClick={onClose}
+        className="absolute top-3 right-3 p-2 rounded-full hover:bg-gray-100"
+      >
+        <X className="w-5 h-5" />
+      </button>
+
+      <Crown className="w-12 h-12 text-green-600 mx-auto mb-4" />
+      <h3 className="text-2xl font-extrabold text-[#002E47] mb-2">Perfect Score!</h3>
+      <p className="text-sm text-gray-700 mb-4">
+        You executed all commitments today. Sustain this discipline!
+      </p>
+      <Button onClick={onClose} className="w-full bg-green-600 hover:bg-green-700">
+        Acknowledge
+      </Button>
     </div>
+  </div>
 );
 
 
@@ -1219,6 +1233,20 @@ useEffect(() => {
   const score = calculateTotalScore(userCommitments);
   const streak = calculateStreak(commitmentHistory);
   const isPerfectScore = score.total > 0 && score.committed === score.total;
+
+// Open the modal the first time today's score becomes perfect
+useEffect(() => {
+  if (isPerfectScore) setIsPerfectScoreModalVisible(true);
+}, [isPerfectScore]);
+
+// Allow closing with ESC
+useEffect(() => {
+  if (!isPerfectScoreModalVisible) return;
+  const onKey = (e) => { if (e.key === 'Escape') setIsPerfectScoreModalVisible(false); };
+  window.addEventListener('keydown', onKey);
+  return () => window.removeEventListener('keydown', onKey);
+}, [isPerfectScoreModalVisible]);
+
   
   const tierSuccessRates = useMemo(() => calculateTierSuccessRates(userCommitments, commitmentHistory), [userCommitments, commitmentHistory]);
   const lastSevenDaysHistory = useMemo(() => getLastSevenDays(commitmentHistory), [commitmentHistory]);

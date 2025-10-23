@@ -144,8 +144,8 @@ const COLORS = {
    STEP 1: LAZY LOAD SCREEN COMPONENTS
 ========================================================= */
 const DashboardScreen = lazy(() => import('./components/screens/Dashboard.jsx')); 
-const ProfDevPlanScreen = lazy(() => import('./components/screens/DevPlan'));
-const CoachingLabScreen = lazy(() => import('./components/screens/Labs'));
+const ProfDevPlanScreen = lazy(() => import('./components/screens/DevPlan.jsx'));
+const CoachingLabScreen = lazy(() => import('./components/screens/Labs.jsx'));
 const DailyPracticeScreen = lazy(() => import('./components/screens/DailyPractice.jsx'));
 const PlanningHubScreen = lazy(() => import('./components/screens/PlanningHub.jsx'));
 const BusinessReadingsScreen = lazy(() => import('./components/screens/BusinessReadings.jsx'));
