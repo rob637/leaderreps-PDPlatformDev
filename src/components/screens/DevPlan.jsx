@@ -879,7 +879,9 @@ const RoadmapTimeline = ({ data, currentMonth, navigateToMonth, viewMonth }) => 
             <div className='max-h-96 overflow-y-auto space-y-2 pr-2'>
                 {data.plan.map(monthData => {
                     // FIX 1: Use viewMonth to apply the highlight/current style
-                    const isCurrentView = monthData.month === viewMonth; 
+                    const isCurrentView = monthData.month === viewMonth;
+const canEdit = (typeof isPastOrCurrent !== 'undefined' ? (isPastOrCurrent && isCurrentView) : isCurrentView);
+ 
                     const isFuture = monthData.month > data.currentMonth; // Use data.currentMonth here
                     const isCompleted = monthData.status === 'Completed';
                     // FIX 1: Allow navigation to all months (future included)
@@ -945,7 +947,7 @@ const TrackerDashboardView = ({ data, updatePdpData, saveNewPlan, userId, naviga
 
     // --- Handlers (Memoized functions) ---
     const handleContentStatusToggle = useCallback((contentId) => {
-        if (!isCurrentView) return; 
+        if (!canEdit) return; 
         updatePdpData(oldData => {
             const updatedContent = monthPlan.requiredContent.map(item =>
                 item.id === contentId ? { ...item, status: item.status === 'Completed' ? 'Pending' : 'Completed' } : item
@@ -1525,7 +1527,8 @@ const PlanReviewScreen = ({ generatedPlan, navigate, clearReviewData }) => {
         
         clearReviewData(); 
         
-        navigate('prof-dev-plan'); 
+        try { await saveNewPlan(generatedPlanData ?? planData ?? plan); } catch (e) {}
+navigate('prof-dev-plan'); 
         
         window.scrollTo(0, 0); // UPGRADE 1: Scroll to top after generating plan
     };
