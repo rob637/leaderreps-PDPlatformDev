@@ -87,7 +87,8 @@ function calculateStreak(history) {
     const validHistory = Array.isArray(history) ? history : [];
     
     // Sort history by date descending
-    const sortedHistory = [...validHistory].sort((a, b) => new Date(b.date) - new Date(a.date});
+    const sortedHistory = [...validHistory].sort((a, b) => new Date(b.date) - new Date(a.date));
+
     // Start checking from yesterday backwards
     let yesterday = new Date();
     yesterday.setDate(yesterday.getDate()); // Start check from today (last entry)
@@ -441,7 +442,9 @@ const CommitmentSelectorView = ({ setView, initialGoal, initialTier }) => {
   const initialLinkedGoalPlaceholder = '--- Select the Goal this commitment supports ---';
   const currentMonthPlan = pdpData?.plan?.find(m => m.month === pdpData?.currentMonth);
   const requiredPdpContent = currentMonthPlan?.requiredContent || [];
-  const pdpContentCommitmentIds = new Set(userCommitments.filter(c => String(c.id).startsWith('pdp-content-')).map(c => String(c.id).split('-')[2]});
+  const pdpContentCommitmentIds = new Set(userCommitments.filter(c => String(c.id).startsWith('pdp-content-')).map(c => String(c.id).split('-')[2]));
+
+
   // FIX: Use the expanded commitment bank (Local definition needed)
   const EXPANDED_COMMITMENT_BANK = {
       'T1: Personal Foundation (Executive Resilience)': [{ id: 't1-1', text: 'Perform a 10-minute mindfulness check before the first meeting.' }],
@@ -645,7 +648,7 @@ const CommitmentSelectorView = ({ setView, initialGoal, initialTier }) => {
 await updateCommitmentData(data => ({ 
   ...data,
   active_commitments: [ ...(data?.active_commitments || []), newCommitment ],
-  }});
+  }));
 // Optimistic UI: assume success after await.
 
         setCustomCommitment('');
@@ -670,7 +673,7 @@ await updateCommitmentData(data => ({
     if (customCommitment.trim() && linkedGoal && linkedGoal !== initialLinkedGoalPlaceholder && linkedTier) {
       setIsSaving(true);
       setIsCustomCommitmentSaved(false); // Reset confirmation
-      const newId = String(Date.now(});
+      const newId = String(Date.now());
       const newCommitment = {
         id: `custom-${newId}`,
         text: customCommitment.trim(),
@@ -683,7 +686,13 @@ await updateCommitmentData(data => ({
 
       // CRITICAL FIX 5: Ensure existing data is preserved using the spread operator
 // Ensure we properly append to active_commitments (preserving the rest of the doc)
-      await updateCommitmentData(prev => ({});
+      await updateCommitmentData(prev => ({
+        ...prev,
+        active_commitments: [
+          ...(prev?.active_commitments || []),
+          newCommitment
+        ],
+      }));
 // Optimistic UI: assume success after await.
 
         setCustomCommitment('');
@@ -917,7 +926,9 @@ await updateCommitmentData(data => ({
                 const filteredCommitments = commitments.filter(c =>
                     // Check if commitment text is NOT already in active commitments
                     !userCommitments.some(activeC => activeC.text === c.text) &&
-                    (searchTerm === '' || c.text.toLowerCase().includes(searchTerm.toLowerCase())});
+                    (searchTerm === '' || c.text.toLowerCase().includes(searchTerm.toLowerCase()))
+                );
+
                 if (filteredCommitments.length === 0 && searchTerm !== '') return null;
                 if (filteredCommitments.length === 0 && searchTerm === '') return null; 
 
@@ -1015,7 +1026,7 @@ const WeeklyPrepView = ({ setView, commitmentData, updateCommitmentData, userCom
 
         const newCommitments = userCommitments.filter(c => c.id !== id);
         
-        await updateCommitmentData(data => ({ ...data, active_commitments: newCommitments }});
+        await updateCommitmentData(data => ({ ...data, active_commitments: newCommitments })); 
         console.info("Commitment retired successfully. Focus remains on the next priority!");
     };
 
@@ -1025,7 +1036,7 @@ const WeeklyPrepView = ({ setView, commitmentData, updateCommitmentData, userCom
             ...data,
             last_weekly_review: new Date().toISOString(),
             weekly_review_notes: reviewNotes,
-        }});
+        }));
         console.info('Weekly review saved!');
         setIsSaving(false);
         setView('scorecard');
@@ -1225,7 +1236,7 @@ useEffect(() => {
               ...data.resilience_log, 
               [today]: { ...newLogData, saved: true } // Explicitly set saved:true
           } 
-      }});
+      })); 
       setIsSaving(false);
       console.log("Resilience Log Saved.");
   };
@@ -1350,7 +1361,8 @@ useEffect(() => {
     setIsSaving(true);
     setIsReflectionSaved(false); 
     
-    await updateCommitmentData(data => ({ ...data, reflection_journal: reflection }});
+    await updateCommitmentData(data => ({ ...data, reflection_journal: reflection }));
+    
     setIsSaving(false);
     setIsReflectionSaved(true); 
     setTimeout(() => setIsReflectionSaved(false), 3000);
