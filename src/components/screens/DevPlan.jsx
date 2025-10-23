@@ -3,10 +3,6 @@
 import { Home, Settings, Zap, Clock, Briefcase, Mic, Trello, BookOpen, BarChart3, TrendingUp, TrendingDown, CheckCircle, Star, Target, Users, HeartPulse, CornerRightUp, X, ArrowLeft, Activity, Link, Lightbulb, AlertTriangle, Eye, PlusCircle, Cpu, MessageSquare, Check, Calendar } from 'lucide-react';
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 
-// NOTE: In a production environment, this file must use the 'useAppServices' 
-// from your actual services directory, which handles Firebase/API connections.
-// The code below simulates the structure and flow expected by the router.
-
 // --- SERVICES (production) ---
 import { useAppServices } from '../../services/useAppServices.jsx';
 
@@ -19,7 +15,7 @@ const COLORS = {
   SUBTLE_TEAL: '#349881', 
   ORANGE: '#E04E1B',    
   GREEN: '#10B981',
-  AMBER: '#F5A500', // Adjusted amber shade for contrast
+  AMBER: '#F5A500', 
   RED: '#E04E1B',
   LIGHT_GRAY: '#FCFCFA',
   OFF_WHITE: '#FFFFFF', 
@@ -27,8 +23,8 @@ const COLORS = {
   TEXT: '#002E47',
   MUTED: '#4B5355',
   BLUE: '#2563EB',
-  BG: '#F9FAFB', // Matches BusinessReadings
-  PURPLE: '#7C3AED', // Matches BusinessReadings
+  BG: '#F9FAFB', 
+  PURPLE: '#7C3AED', 
 };
 
 // Mock UI components (Standardized)
@@ -135,11 +131,9 @@ const LEADERSHIP_TIERS = {
     T1: { id: 'T1', name: 'Lead Self & Mindsets', icon: 'HeartPulse', color: 'indigo-500' },
     T2: { id: 'T2', name: 'Lead Work & Execution', icon: 'Briefcase', color: 'green-600' },
     T3: { id: 'T3', name: 'Lead People & Coaching', icon: 'Users', color: 'yellow-600' },
-    T4: { id: 'T4', name: 'Conflict & Team Health', icon: 'AlertTriangle', color: 'red-640' }, // Adjusted from red-600 to match red-640 mock 
+    T4: { id: 'T4', name: 'Conflict & Team Health', icon: 'AlertTriangle', color: 'red-640' },
     T5: { id: 'T5', name: 'Strategy & Vision', icon: 'TrendingUp', color: 'cyan-600' },
 };
-
-// src/components/screens/DevPlan.jsx (Around line 165)
 
 // --- Utility: Generate Share Text (Extracted for Minification Safety) ---
 const generateShareText = (currentMonthPlan, data) => {
@@ -232,9 +226,7 @@ const CONTENT_LIBRARY = [
 
 
 const MOCK_CONTENT_DETAILS = {
-    // ----------------------------------------------------
-    // TYPE: READING (Focus: Foundational Theory & Motive)
-    // ----------------------------------------------------
+    // Content details functions (omitted for brevity, structure remains the same)
     'Reading': (title, skill) => {
         let takeaway = "Understanding your motive transforms supervision into leadership.";
         let focus = "philosophical context";
@@ -266,10 +258,6 @@ const MOCK_CONTENT_DETAILS = {
             * **Primary Takeaway:** Clear is Kind, Vague is Cruel.
         `;
     },
-
-    // ----------------------------------------------------
-    // TYPE: EXERCISE (Focus: Journaling, Drafting, Habit Building)
-    // ----------------------------------------------------
     'Exercise': (title, skill) => {
         let outcome = "Create a single, measurable behavior change and define its trigger.";
         let deliverable = "A pre-scripted Coaching Question to replace your most common 'fix-it' instinct.";
@@ -320,10 +308,6 @@ const MOCK_CONTENT_DETAILS = {
             * **Required Time:** 45 minutes of uninterrupted focus.
         `;
     },
-
-    // ----------------------------------------------------
-    // TYPE: ROLE-PLAY (Focus: High-Stakes Behavioral Practice)
-    // ----------------------------------------------------
     'Role-Play': (title, skill) => {
         let method = "SBI (Situation-Behavior-Impact) feedback model";
         let context = "a difficult performance conversation";
@@ -348,10 +332,6 @@ const MOCK_CONTENT_DETAILS = {
             * **Actionable Deliverable:** A post-simulation debrief note logged in your PDP journal detailing three things you would change in a live scenario.
         `;
     },
-
-    // ----------------------------------------------------
-    // TYPE: CASE STUDY (Focus: Executive Analysis & Strategy)
-    // ----------------------------------------------------
     'Case Study': (title, skill) => {
         let goal = "test your strategic resilience and problem-solving under pressure.";
         let scenario = "a cross-functional accountability crisis where metrics were misunderstood.";
@@ -415,10 +395,6 @@ const MOCK_CONTENT_DETAILS = {
             * **Actionable Deliverable:** A final 5-step implementation plan saved, ready to present to your mentor/coach.
         `;
     },
-
-    // ----------------------------------------------------
-    // TYPE: TOOL (Focus: Systematizing Process)
-    // ----------------------------------------------------
     'Tool': (title, skill) => {
         let deliverable = "A formalized system documented and integrated into your weekly workflow.";
         let integration = "formally integrate a new system";
@@ -474,10 +450,6 @@ const MOCK_CONTENT_DETAILS = {
             * **System:** Downloadable checklist/template included (e.g., Delegation Matrix).
         `;
     },
-    
-    // ----------------------------------------------------
-    // TYPE: Video (MOCK - Assuming external platform links)
-    // ----------------------------------------------------
     'Video': (title, skill) => {
         let callToAction = "This video provides a tactical breakdown of how executive behavior drives team culture.";
         if (skill === 'Shift to Coach') callToAction = "Watch the breakdown of the 'Player' vs. 'Coach' mindset and how to effectively transition your behavior.";
@@ -497,10 +469,6 @@ const MOCK_CONTENT_DETAILS = {
             * **Actionable Deliverable:** A single note in your PDP journal capturing the one key takeaway phrase or framework.
         `;
     },
-    
-    // ----------------------------------------------------
-    // TYPE: 1:1 Session (MOCK - Simulating human interaction)
-    // ----------------------------------------------------
     '1:1 Session': (title, skill) => {
         let focus = "real-time application of a coaching model";
         if (skill === 'Boss') focus = "reviewing your **Managing Upward Matrix** for blind spots and priority alignment with your executive manager.";
@@ -518,10 +486,6 @@ const MOCK_CONTENT_DETAILS = {
             * **Actionable Deliverable:** Completion of the live session is required. The coach will provide a formal post-session summary that is automatically logged.
         `;
     },
-    
-    // ----------------------------------------------------
-    // TYPE: Coaching (MOCK - Simulating AI/Chat interaction)
-    // ----------------------------------------------------
     'Coaching': (title, skill) => {
         let outcome = "immediate, personalized feedback on a drafted script or planned action.";
         if (skill === 'Feedback') outcome = "practice delivering feedback (Radical Candor model) and receive immediate AI-driven feedback on tone and specificity.";
@@ -738,10 +702,10 @@ const generatePlanData = (assessment, ownerUid) => {
 // --- Modals (omitted for brevity - content remains the same) ---
 const SharePlanModal = ({ isVisible, onClose, currentMonthPlan, data }) => { 
     if (!isVisible || !currentMonthPlan) return null;
-    // SharePlanModal (Around line 917)
-
-const shareText = useMemo(() => generateShareText(currentMonthPlan, data), [currentMonthPlan, data]);
-const shareLink = useMemo(() => `https://leaderreps.com/pdp/view/${data.ownerUid}/${data.currentMonth}`, [data]);
+    
+    // CRITICAL FIX: Wrap all local variables in useMemo for minification safety
+    const shareText = useMemo(() => generateShareText(currentMonthPlan, data), [currentMonthPlan, data]);
+    const shareLink = useMemo(() => `https://leaderreps.com/pdp/view/${data.ownerUid}/${data.currentMonth}`, [data]);
 
     return (
         <div className="fixed inset-0 bg-[#002E47]/80 z-50 flex items-center justify-center p-4">
@@ -764,9 +728,9 @@ const shareLink = useMemo(() => `https://leaderreps.com/pdp/view/${data.ownerUid
                     value={shareText}
                     className="w-full p-3 border border-gray-300 rounded-xl bg-gray-50 text-sm h-40"
                 ></textarea>
-<Button onClick={() => copyToClipboard(shareText)} className='mt-4 w-full bg-[#002E47] hover:bg-gray-700'>
-    Copy to Clipboard
-</Button>
+                <Button onClick={() => copyToClipboard(shareText)} className='mt-4 w-full bg-[#002E47] hover:bg-gray-700'>
+                    Copy to Clipboard
+                </Button>
                 <p className='text-xs text-gray-500 mt-4'>
                     *Note: The actual URL link above is mocked in this demonstration.
                 </p>
@@ -781,30 +745,42 @@ const shareLink = useMemo(() => `https://leaderreps.com/pdp/view/${data.ownerUid
 const ContentDetailsModal = ({ isVisible, onClose, content }) => { 
     if (!isVisible || !content) return null;
     
-    // FIX 1: Removed unused state and moved it outside of rendering logic
+    // --- State Declarations (Grouped at the top for stability) ---
     const [htmlContent, setHtmlContent] = useState('');
     const [rating, setRating] = useState(0); 
     const [isLogging, setIsLogging] = useState(false);
     
-    // Find the full content details from the CONTENT_LIBRARY based on the requiredContent item
+    // --- Variable Lookups ---
     const fullContentItem = CONTENT_LIBRARY.find(item => item.id === content.id && item.tier === content.tier);
-    
-    // CRITICAL FIX: Use the final mock content details object
+    const tierData = LEADERSHIP_TIERS[content.tier] || { name: 'Unknown Tier' };
+
+    // --- Memoized Logic ---
     const mockDetail = fullContentItem && MOCK_CONTENT_DETAILS_FINAL[fullContentItem.type]
         ? MOCK_CONTENT_DETAILS_FINAL[fullContentItem.type](fullContentItem.title, fullContentItem.skill)
         : `## Content Unavailable\n\nNo detailed content available for **${content.title}** (Type: ${content.type}).`;
 
-    // FIX 2: Use useMemo to prevent re-generation of the mockDetail and pass mockDetail as a dependency to useEffect
     const memoizedMockDetail = useMemo(() => mockDetail, [content.id, content.tier, content.title, content.skill]); 
+    
+    // --- Handlers (Defined before effects/return) ---
+    const handleLogLearning = async () => {
+        if (rating === 0) { console.log('Please provide a 5-star rating before logging.'); return; }
+        setIsLogging(true);
+        console.log(`Mock: Logging learning for ${content.title} with rating ${rating}/5.`);
+        await new Promise(r => setTimeout(r, 800));
+        console.log(`Learning logged! Your ${rating}/5 rating will influence future plan revisions.`);
+        // NOTE: In a real app, you would dispatch a data update here.
+        setIsLogging(false);
+        onClose();
+    };
 
-    // FIX 3 (CRITICAL): Use useEffect to run the async conversion safely, setting the dependency array correctly. This prevents the Error #310 loop.
+
+    // --- Effects (Last) ---
     useEffect(() => {
         let isCancelled = false;
         setHtmlContent(''); // Clear content while fetching
         setRating(0); // Reset rating
 
         (async () => {
-            // FIX 4: Correctly call mdToHtml with the memoized detail string
             const html = await mdToHtml(memoizedMockDetail);
             if (!isCancelled) {
                 setHtmlContent(html);
@@ -816,20 +792,6 @@ const ContentDetailsModal = ({ isVisible, onClose, content }) => {
         };
     }, [memoizedMockDetail]); // Depend only on the memoized detail string
     
-    const handleLogLearning = async () => {
-        if (rating === 0) { console.log('Please provide a 5-star rating before logging.'); return; }
-        setIsLogging(true);
-        console.log(`Mock: Logging learning for ${content.title} with rating ${rating}/5.`);
-        await new Promise(r => setTimeout(r, 800));
-        console.log(`Learning logged! Your ${rating}/5 rating will influence future plan revisions.`);
-        // NOTE: In a real app, you would dispatch a data update here.
-        setIsLogging(false);
-        onClose();
-    };
-    
-    // Safety check for tier data
-    const tierData = LEADERSHIP_TIERS[content.tier] || { name: 'Unknown Tier' };
-
     return (
         <div className="fixed inset-0 bg-[#002E47]/80 z-50 flex items-center justify-center p-4">
             <div className="bg-[#FCFCFA] rounded-3xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto p-8">
@@ -972,6 +934,23 @@ const TrackerDashboardView = ({ data, updatePdpData, saveNewPlan, userId, naviga
     // Track rows that are temporarily 'toggling' so we can disable buttons/spinners without hooks-in-loops
     const [togglingIds, setTogglingIds] = useState(() => new Set());
 
+    const { callSecureGeminiAPI, hasGeminiKey, GEMINI_MODEL } = useAppServices(); 
+
+    // --- Handlers (Memoized functions) ---
+    const handleContentStatusToggle = useCallback((contentId) => {
+        if (!isCurrentView) return; 
+        updatePdpData(oldData => {
+            const updatedContent = monthPlan.requiredContent.map(item =>
+                item.id === contentId ? { ...item, status: item.status === 'Completed' ? 'Pending' : 'Completed' } : item
+            );
+            // CRITICAL FIX 7: Filter out the old month's content, and replace it with the new content array
+            const updatedPlan = oldData.plan.map(m =>
+                m.month === currentMonth ? { ...m, requiredContent: updatedContent } : m
+            );
+            return { ...oldData, plan: updatedPlan };
+        });
+    }, [isCurrentView, updatePdpData, monthPlan, currentMonth]);
+
     const toggleContent = useCallback((id) => {
         if (!isPastOrCurrent) return; // block edits for future months
         setTogglingIds(prev => { const n = new Set(prev); n.add(id); return n; });
@@ -981,38 +960,16 @@ const TrackerDashboardView = ({ data, updatePdpData, saveNewPlan, userId, naviga
         }, 400);
     }, [isPastOrCurrent, handleContentStatusToggle]);
 
-
-
-    const { callSecureGeminiAPI, hasGeminiKey, GEMINI_MODEL } = useAppServices(); 
-
-    // CRITICAL FIX 3: Synchronize local reflection state AND briefing state when the viewed month changes.
-    useEffect(() => {
-        // FIX 5: Use a timeout to ensure state update happens smoothly after viewMonth transition
-        const timer = setTimeout(() => {
-            setLocalReflection(monthPlan?.reflectionText || '');
-            // Update briefing state when month changes to show saved/historical text immediately
-            setBriefing(monthPlan?.briefingText || null); 
-            // Reset loading flag when switching months
-            setBriefingLoading(false);
-        }, 50);
-
-        return () => clearTimeout(timer); // Cleanup timer
-    }, [monthPlan]);
-    
-    // CRITICAL FIX 4: Memoized function for fetching briefing is essential
-    // Added 'briefing' to dependency array ONLY to allow the check against the result
     const fetchMonthlyBriefing = useCallback(async (plan, assessment) => {
-        if (briefingLoading || !hasGeminiKey() || !plan || !assessment || !isCurrentView) return; // Added safety checks
+        if (briefingLoading || !hasGeminiKey() || !plan || !assessment || !isCurrentView) return;
         
-        // Prevent re-fetching if a briefing is already saved in the plan data or in local state
         if (plan.briefingText || briefing) {
-            setBriefing(plan.briefingText || briefing); // Use the saved text
+            setBriefing(plan.briefingText || briefing);
             return;
         }
 
         setBriefingLoading(true);
         const currentTier = LEADERSHIP_TIERS[plan.tier];
-        // FIX: Safely retrieve rating, defaulting to 5 if not found
         const rating = assessment.selfRatings?.[plan.tier] || 5; 
 
         const systemPrompt = `You are a concise Executive Coach. Analyze the user's current PDP phase. Given their focus tier (${currentTier.name}) and their initial self-rating (${rating}/10), provide: 1) A 1-sentence **Executive Summary** of the goal. 2) A 1-sentence **Coaching Nudge** on how to prioritize the month's learning based on their skill gap. Use bold markdown for key phrases.`;
@@ -1020,7 +977,6 @@ const TrackerDashboardView = ({ data, updatePdpData, saveNewPlan, userId, naviga
         const userQuery = `Generate a monthly briefing for the user's current focus: ${plan.theme}. Required content includes: ${plan.requiredContent.map(c => c.title).join(', ')}.`;
 
         try {
-            // CRITICAL FIX 6: The payload structure for system instruction is correct for the unified callSecureGeminiAPI in App.jsx
             const payload = {
                 contents: [{ role: "user", parts: [{ text: userQuery }] }],
                 systemInstruction: { parts: [{ text: systemPrompt }] },
@@ -1029,7 +985,6 @@ const TrackerDashboardView = ({ data, updatePdpData, saveNewPlan, userId, naviga
             const result = await callSecureGeminiAPI(payload);
             const text = result?.candidates?.[0]?.content?.parts?.[0]?.text;
             
-            // Only set briefing if it's different from the current state to avoid re-render loop
             if (text && text !== briefing) {
                 setBriefing(text);
             }
@@ -1043,37 +998,8 @@ const TrackerDashboardView = ({ data, updatePdpData, saveNewPlan, userId, naviga
     }, [briefingLoading, hasGeminiKey, callSecureGeminiAPI, isCurrentView, briefing, GEMINI_MODEL]);
 
 
-    // CRITICAL FIX 5: Logic to handle AI briefing based on month view. This prevents React Error #300/310.
-    useEffect(() => {
-        if (monthPlan && assessment) {
-            
-            if (isCurrentView && !monthPlan.briefingText && !briefingLoading) {
-                 // 1. Current Month: Only try to fetch AI brief if one isn't already saved and we're not loading.
-                 fetchMonthlyBriefing(monthPlan, assessment); 
-                 
-            } else if (monthPlan.briefingText) {
-                 // 2. Past Month with Saved Briefing: Use the saved briefing text (handled by the initial useEffect for monthPlan change).
-                 // Explicitly do nothing here, letting state sync handle it.
-                 if (briefing !== monthPlan.briefingText) {
-                     setBriefing(monthPlan.briefingText);
-                 }
-            } else if (!isCurrentView && !monthPlan.briefingText) {
-                 // 3. Historical/Future Month with NO Saved Briefing: Use static fallback text
-                 const historicalBriefingText = `## Month ${viewMonth} Historical Briefing\n\n**Focus:** ${monthPlan.theme}\n\n*The full coaching brief was not saved for this historical month.*`;
-                 
-                 // Safely update state if it's not already the correct historical briefing
-                 if (briefing !== historicalBriefingText) {
-                     setBriefing(historicalBriefingText);
-                 }
-            }
-        }
-    }, [monthPlan, assessment, fetchMonthlyBriefing, viewMonth, isCurrentView, briefing, briefingLoading]);
-
-
-    // --- Handlers (Advance, Reset, Toggle, Save) ---
     const handleCompleteMonth = async () => {
         setIsSaving(true);
-        // CRITICAL FIX 6: Ensure the currently displayed briefing is saved with the completed month data
         const briefingToSave = briefing ? briefing.replace('## Monthly Executive Briefing', '## Saved Executive Briefing') : '';
         
         await updatePdpData(oldData => {
@@ -1083,34 +1009,18 @@ const TrackerDashboardView = ({ data, updatePdpData, saveNewPlan, userId, naviga
                     status: 'Completed', 
                     reflectionText: localReflection, 
                     monthCompletedDate: new Date().toISOString(),
-                    briefingText: briefingToSave, // Save the finalized briefing text
+                    briefingText: briefingToSave, 
                 } : m
             );
             return { ...oldData, plan: updatedPlan, currentMonth: oldData.currentMonth + 1 };
         });
         setIsSaving(false);
-        setViewMonth(currentMonth + 1); // Move to the next month after completing current one
+        setViewMonth(currentMonth + 1);
     };
 
     const handleResetPlan = async () => {
-        // This will now clear Session Storage via the hook's useEffect.
         await updatePdpData(() => null); 
-        // FIX: Navigate back to the generator screen after reset
         navigate('prof-dev-plan'); 
-    };
-
-    const handleContentStatusToggle = (contentId) => {
-        if (!isCurrentView) return; 
-        updatePdpData(oldData => {
-            const updatedContent = monthPlan.requiredContent.map(item =>
-                item.id === contentId ? { ...item, status: item.status === 'Completed' ? 'Pending' : 'Completed' } : item
-            );
-            // CRITICAL FIX 7: Filter out the old month's content, and replace it with the new content array
-            const updatedPlan = oldData.plan.map(m =>
-                m.month === currentMonth ? { ...m, requiredContent: updatedContent } : m
-            );
-            return { ...oldData, plan: updatedPlan };
-        });
     };
 
     const handleOpenContentModal = (contentItem) => { 
@@ -1118,7 +1028,6 @@ const TrackerDashboardView = ({ data, updatePdpData, saveNewPlan, userId, naviga
         setIsContentModalVisible(true);
     };
 
-    // FIX 3: Separated state update (onChange) from persistence (Save button)
     const handleSaveReflection = () => {
         if (!isCurrentView || localReflection === monthPlan?.reflectionText || localReflection.length === 0) return;
 
@@ -1137,23 +1046,51 @@ const TrackerDashboardView = ({ data, updatePdpData, saveNewPlan, userId, naviga
         });
     };
     
+    // --- Effects (Last) ---
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            setLocalReflection(monthPlan?.reflectionText || '');
+            setBriefing(monthPlan?.briefingText || null); 
+            setBriefingLoading(false);
+        }, 50);
+
+        return () => clearTimeout(timer);
+    }, [monthPlan]);
+    
+    useEffect(() => {
+        if (monthPlan && assessment) {
+            
+            if (isCurrentView && !monthPlan.briefingText && !briefingLoading) {
+                 fetchMonthlyBriefing(monthPlan, assessment); 
+                 
+            } else if (monthPlan.briefingText) {
+                 if (briefing !== monthPlan.briefingText) {
+                     setBriefing(monthPlan.briefingText);
+                 }
+            } else if (!isCurrentView && !monthPlan.briefingText) {
+                 const historicalBriefingText = `## Month ${viewMonth} Historical Briefing\n\n**Focus:** ${monthPlan.theme}\n\n*The full coaching brief was not saved for this historical month.*`;
+                 
+                 if (briefing !== historicalBriefingText) {
+                     setBriefing(historicalBriefingText);
+                 }
+            }
+        }
+    }, [monthPlan, assessment, fetchMonthlyBriefing, viewMonth, isCurrentView, briefing, briefingLoading]);
+
+
     // --- Data Calculation (Ensuring safety for current/future/past logic) ---
-    // CRITICAL FIX: Base all calculations on the viewed month's plan data (monthPlan)
     const currentTierId = monthPlan?.tier;
-    // CRITICAL FIX: Safe access for assessment.selfRatings
-    const selfRating = assessment?.selfRatings?.[currentTierId] || 5; // Default to 5 if not found
+    const selfRating = assessment?.selfRatings?.[currentTierId] || 5; 
     const lowRatingFlag = currentTierId && selfRating <= 4;
     const allContentCompleted = monthPlan?.requiredContent?.every(item => item.status === 'Completed');
     const isReadyToComplete = allContentCompleted && localReflection.length >= 50;
     const requiredContent = monthPlan?.requiredContent || [];
-    // Mock calculation for progress
     const totalDuration = data.plan.reduce((sum, m) => sum + m.totalDuration, 0);
     const completedDuration = data.plan.filter(m => m.month < currentMonth).reduce((sum, m) => sum + m.totalDuration, 0);
     const progressPercentage = totalDuration > 0 ? Math.round((completedDuration / totalDuration) * 100) : 0;
-    // CRITICAL FIX: Safe icon lookup using optional chaining
-    const TierIcon = IconMap[LEADERSHIP_TIERS[currentTierId]?.icon || 'Target']; // Safe icon lookup
+    const TierIcon = IconMap[LEADERSHIP_TIERS[currentTierId]?.icon || 'Target'];
     const completedItems = requiredContent.filter(item => item.status === 'Completed').length;
-    const tierProgress = { overallPercentage: requiredContent.length > 0 ? Math.round((completedItems / requiredContent.length) * 100) : 0, completedContent: completedItems, totalContent: requiredContent.length }; // Mock data
+    const tierProgress = { overallPercentage: requiredContent.length > 0 ? Math.round((completedItems / requiredContent.length) * 100) : 0, completedContent: completedItems, totalContent: requiredContent.length }; 
 
     if (!monthPlan) {
         return (
@@ -1163,8 +1100,6 @@ const TrackerDashboardView = ({ data, updatePdpData, saveNewPlan, userId, naviga
         );
     }
     
-    // CRITICAL FIX 7: Safely access briefing content (which may be null/undefined/an object)
-    // The useEffect ensures 'briefing' is a string or null/loading.
     const safeBriefing = briefingLoading && isCurrentView ? 'Loading AI Briefing...' : (typeof briefing === 'string' ? briefing : (
         `## Month ${viewMonth} Historical Briefing\n\n**Focus:** ${monthPlan.theme}\n\n*The full coaching brief was not saved for this historical month.*`
     ));
@@ -1196,9 +1131,6 @@ const TrackerDashboardView = ({ data, updatePdpData, saveNewPlan, userId, naviga
                     <Button onClick={() => console.log('Share')} variant='outline' className='text-xs px-4 py-2 border-[#002E47] text-[#002E47] hover:bg-[#002E47]/10'>
                         <Link className="w-4 h-4 mr-1" /> Share Monthly Focus
                     </Button>
-                    {/* BUTTON REMOVED: <Button onClick={() => setIsFeedbackModalVisible(true)} variant='primary' className='text-xs px-4 py-2'>
-                        <MessageSquare className="w-4 h-4 mr-1" /> Request Peer Feedback
-                    </Button> */}
                 </div>
             </Card>
 
@@ -1254,7 +1186,6 @@ const TrackerDashboardView = ({ data, updatePdpData, saveNewPlan, userId, naviga
                                     <p className='text-sm text-gray-600 flex items-center'><div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-500 mr-2 rounded-full"></div> Drafting advice...</p>
                                 ) : (
                                     <div className="prose max-w-none text-gray-700">
-                                        {/* FIX 2: Use safeBriefing to prevent error when briefing is not a string */}
                                         <div dangerouslySetInnerHTML={{ __html: safeBriefing }} /> 
                                     </div>
                                 )}
@@ -1275,8 +1206,8 @@ const TrackerDashboardView = ({ data, updatePdpData, saveNewPlan, userId, naviga
                             <div className='space-y-3 mt-4'>
                                 {requiredContent.map(item => {
                                     const isCompleted = item.status === 'Completed';
-    const isToggling = togglingIds.has(item.id);
-const actionButtonText = isPastOrCurrent ? ((item.type === 'Role-Play' || item.type === 'Exercise' || item.type === 'Tool') ? 'Go to Practice' : 'View Content') : 'View Content'; 
+                                    const isToggling = togglingIds.has(item.id);
+                                    const actionButtonText = isPastOrCurrent ? ((item.type === 'Role-Play' || item.type === 'Exercise' || item.type === 'Tool') ? 'Go to Practice' : 'View Content') : 'View Content'; 
 
                                     return (
                                         <div key={item.id} className='flex items-center justify-between p-3 bg-gray-50 rounded-xl shadow-sm'>
@@ -1290,12 +1221,10 @@ const actionButtonText = isPastOrCurrent ? ((item.type === 'Role-Play' || item.t
                                             <div className='flex space-x-2'>
                                                 <Button
                                                     onClick={() => {
-                                                        // FIX 2: Open content modal for all viewable items
                                                         handleOpenContentModal(item);
                                                     }}
                                                     className='px-3 py-1 text-xs'
                                                     variant='primary'
-                                                    // CRITICAL FIX 8: Allow viewing of ALL content in the past, current, and future months
                                                     disabled={false} 
                                                 >
                                                     {actionButtonText}
@@ -1323,7 +1252,6 @@ const actionButtonText = isPastOrCurrent ? ((item.type === 'Role-Play' || item.t
                             <textarea
                                 value={localReflection} 
                                 onChange={(e) => setLocalReflection(e.target.value)}
-                                // FIX 3: Removed onBlur save and rely on explicit Save button
                                 className="w-full p-3 border border-gray-300 rounded-xl focus:ring-[#47A88D] focus:border-[#47A88D] h-40"
                                 placeholder="My reflection (required)..."
                                 readOnly={!isCurrentView}
@@ -1387,7 +1315,6 @@ const actionButtonText = isPastOrCurrent ? ((item.type === 'Role-Play' || item.t
                             </Card>
                         )}
                     </>
-                    // END: COMPLEX MONTHLY CONTENT
                     )} 
                 </div>
             </div>
@@ -1397,8 +1324,6 @@ const actionButtonText = isPastOrCurrent ? ((item.type === 'Role-Play' || item.t
                 onClose={() => setIsContentModalVisible(false)} 
                 content={selectedContent}
             />
-            
-            {/* REMOVED: <RequestFeedbackModal /> */}
 
         </div>
     );
@@ -1433,7 +1358,6 @@ const PlanGeneratorView = ({ userId, saveNewPlan, isLoading, error, navigate, se
         setSelfRatings(prev => ({ ...prev, [tierId]: parseInt(value) }));
     };
 
-    // CRITICAL FIX 9: The Plan Generation logic. It generates the plan, saves it via saveNewPlan, and relies on routing change.
     const handleGenerate = async () => {
         if (!canGenerate) return;
         setIsGenerating(true);
@@ -1443,15 +1367,12 @@ const PlanGeneratorView = ({ userId, saveNewPlan, isLoading, error, navigate, se
 
         const newPlanData = generatePlanData(assessment, userId);
 
-        // Save the new plan directly and rely on routing change.
         const success = await saveNewPlan(newPlanData);
         
         setIsGenerating(false);
 
         if (success) {
-            // Set plan data in local state only for the ephemeral Review screen
             setGeneratedPlanData({ userPlan: newPlanData, genericPlan: GENERIC_PLAN }); 
-            // CRITICAL FIX: Navigate to the *review* screen first, which then handles setting up the tracker.
             navigate('prof-dev-plan');
         }
     };
@@ -1512,7 +1433,7 @@ const PlanGeneratorView = ({ userId, saveNewPlan, isLoading, error, navigate, se
                     </div>
 
                     {Object.values(LEADERSHIP_TIERS).map(tier => {
-                        const selfRating = selfRatings[tier.id] || 5; // Default to 5 if not set
+                        const selfRating = selfRatings[tier.id] || 5; 
                         
                         const selfScoreColor = selfRating >= 8 ? COLORS.GREEN : selfRating <= 4 ? COLORS.RED : COLORS.AMBER;
                         
@@ -1587,23 +1508,19 @@ const PlanReviewScreen = ({ generatedPlan, navigate, clearReviewData }) => {
         );
     };
     
-    // CRITICAL FIX: Removed window.location.reload() and ensure clean state/navigation
     const handleFinalize = async () => {
         console.log("Plan review complete. Finalizing plan and redirecting to Tracker Dashboard...");
         
-        // 1. Clear the ephemeral state
         clearReviewData(); 
         
-        // 2. Navigate explicitly to the base development plan route.
         navigate('prof-dev-plan'); 
         
         window.scrollTo(0, 0); 
     };
 
-    // FIX: This ensures only ONE declaration of handleStartOver exists.
     const handleStartOver = () => { 
         clearReviewData(); 
-        navigate('prof-dev-plan'); // Navigating here forces the main component to re-evaluate to the generator view
+        navigate('prof-dev-plan');
     };
 
     return (
@@ -1659,39 +1576,30 @@ const PlanReviewScreen = ({ generatedPlan, navigate, clearReviewData }) => {
 
 // --- Main Router (Enhanced with internal state) ---
 export const ProfDevPlanScreen = ({ initialScreen }) => {
-    // No longer initializing or managing localPdpData/setLocalPdpData here
     const [generatedPlanData, setGeneratedPlanData] = useState(null); 
     
-    // Services now handles its own state persistence via SessionStorage
     const services = useAppServices(); 
-    // CRITICAL: Destructure all required context values
     const { pdpData, isLoading, error, userId, navigate, updatePdpData, saveNewPlan } = services;
 
     const clearReviewData = useCallback(() => {
         setGeneratedPlanData(null);
     }, []);
 
-    // Determine current view state (The Core Routing Logic)
-    // FIX: Use optional chaining on pdpData to allow for initial null state
     let currentView = 'loading';
     if (isLoading || pdpData === undefined) {
         currentView = 'loading';
     } else if (error) {
         currentView = 'error';
     } else if (pdpData !== null && pdpData.plan && pdpData.plan.length > 0) { 
-        // CRITICAL FIX 11 (Persistence): If pdpData exists (loaded from Session Storage OR JUST SAVED), go straight to tracker.
         currentView = 'tracker';
     } else if (generatedPlanData || initialScreen === 'prof-dev-plan-review') {
-        // CRITICAL FIX 12: Route to review screen only if data exists locally (after generation, before going to tracker)
         currentView = 'review';
-    } else { // pdpData is null, and no plan has been generated yet.
+    } else {
         currentView = 'generator';
     }
 
-    // Handle incoming deep link to the review screen
     useEffect(() => {
         if (initialScreen === 'prof-dev-plan-review' && pdpData && !generatedPlanData) {
-            // Mock the required review data from existing pdpData for the review screen
             setGeneratedPlanData({ userPlan: pdpData, genericPlan: GENERIC_PLAN });
         }
     }, [initialScreen, pdpData, generatedPlanData]);
@@ -1707,11 +1615,9 @@ export const ProfDevPlanScreen = ({ initialScreen }) => {
             </div>
         );
     }
-    // CRITICAL FIX 13: Added logic to handle the transient 'review' state
     if (currentView === 'error') { return React.createElement('div', null, 'Error...'); }
     if (currentView === 'review') { return <PlanReviewScreen generatedPlan={generatedPlanData} navigate={navigate} clearReviewData={clearReviewData} />; }
     if (currentView === 'generator') { 
-        // CRITICAL FIX 14: Pass the setGeneratedPlanData function to the generator so it can handle the post-save local state update.
         return <PlanGeneratorView userId={userId} saveNewPlan={saveNewPlan} isLoading={false} error={null} navigate={navigate} setGeneratedPlanData={setGeneratedPlanData} />; 
     }
 
