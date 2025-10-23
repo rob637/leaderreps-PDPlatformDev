@@ -349,18 +349,17 @@ function AuthPanel({ auth, onSuccess }) {
                         disabled={isLoading}
                         autocomplete="email" // FIX: Added autocomplete for email
                     />
-                    {!isReset && (
+{!isReset && (
                         <input 
                             type="password" 
                             placeholder="Password" 
                             value={password} 
                             onChange={(e) => setPassword(e.target.value)} 
-                            className={`w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[${TEAL}] focus:border-[${TECAL}]`} 
+                            className={`w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[${TEAL}] focus:border-[${TEAL}]`} 
                             disabled={isLoading}
                             autocomplete={isLogin ? "current-password" : "new-password"} // FIX: Added autocomplete for password
                         />
-                    )}
-                    {isSignUp && (<input type="text" placeholder="Secret Sign-up Code" value={secretCode} onChange={(e) => setSecretCode(e.target.value)} className={`w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[${TEAL}] focus:border-[${TEAL}]`} disabled={isLoading}/>)}
+                    )}                    {isSignUp && (<input type="text" placeholder="Secret Sign-up Code" value={secretCode} onChange={(e) => setSecretCode(e.target.value)} className={`w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[${TEAL}] focus:border-[${TEAL}]`} disabled={isLoading}/>)}
                     
                     {/* CRITICAL FIX: Ensure the submit button is inside the form and targets handleAction */}
                     <button

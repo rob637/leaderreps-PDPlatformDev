@@ -650,14 +650,31 @@ const generatePlanData = (assessment, ownerUid) => {
         const maxContent = getDynamicMaxContent(rating); // Dynamic volume
         
         // Filter content based on Tier, Difficulty, and ensure no repetition
+        // Filter content based on Tier, Difficulty, and ensure no repetition
         const requiredContent = [];
-        const contentPool = CONTENT_LIBRARY.filter(item =>
+        
+        // 1. Prioritize content matching the target difficulty
+        let primaryPool = CONTENT_LIBRARY.filter(item =>
             item.tier === currentTier && item.difficulty === targetDifficulty && !usedContentIds.has(item.id)
         );
+        
+        // 2. Create a secondary pool of ALL unused content for this tier
+        let secondaryPool = CONTENT_LIBRARY.filter(item =>
+            item.tier === currentTier && item.difficulty !== targetDifficulty && !usedContentIds.has(item.id)
+        );
+
+        // Combine pools, prioritizing the primary pool
+        let finalPool = [...primaryPool, ...secondaryPool];
+        
+        // Ensure a variety of types by sorting: Tool, Exercise, Reading, Case Study, Role-Play
+        finalPool.sort((a, b) => {
+            const order = { 'Tool': 1, 'Exercise': 2, 'Role-Play': 3, 'Reading': 4, 'Case Study': 5, 'Coaching': 6, 'Video': 7 };
+            return (order[a.type] || 9) - (order[b.type] || 9);
+        });
 
         // Pull dynamic number of items (up to maxContent)
         let count = 0;
-        for (const item of contentPool) {
+        for (const item of finalPool) {
             if (count < maxContent) {
                 requiredContent.push({
                     ...item,
@@ -669,18 +686,7 @@ const generatePlanData = (assessment, ownerUid) => {
             }
         }
         
-        // Fallback: If pool is exhausted for the ideal difficulty, use any remaining content
-        if (requiredContent.length === 0) {
-             const backupItem = CONTENT_LIBRARY.find(item => item.tier === currentTier && !usedContentIds.has(item.id));
-             if (backupItem) {
-                 requiredContent.push({
-                    ...backupItem,
-                    duration: adjustDuration(rating, backupItem.duration),
-                    status: 'Pending',
-                });
-                usedContentIds.add(backupItem.id);
-             }
-        }
+        // Fallback is no longer needed since finalPool includes all unused content.
 
         plan.push({
             month,
