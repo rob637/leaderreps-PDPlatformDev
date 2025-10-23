@@ -114,6 +114,17 @@ const IconMap = {
     Zap: Zap, Users: Users, Briefcase: Briefcase, Target: Target, BarChart3: BarChart3, Clock: Clock, Eye: Eye, BookOpen: BookOpen, Lightbulb: Lightbulb, X: X, ArrowLeft: ArrowLeft, CornerRightUp: CornerRightUp, AlertTriangle: AlertTriangle, CheckCircle: CheckCircle, PlusCircle: PlusCircle, HeartPulse: HeartPulse, TrendingUp: TrendingUp, TrendingDown: TrendingDown, Activity: Activity, Link: Link, Cpu: Cpu, Star: Star, Mic: Mic, Trello: Trello, Settings: Settings, Home: Home, MessageSquare: MessageSquare, Check: Check, Calendar: Calendar
 };
 
+// --- Utility: Global Copy to Clipboard (Extracted for Minification Safety) ---
+const copyToClipboard = (text) => {
+    const el = document.createElement('textarea');
+    el.value = text;
+    document.body.appendChild(el);
+    el.select();
+    document.execCommand('copy');
+    document.body.removeChild(el);
+    console.log('Content copied to clipboard!');
+};
+// --- End Utility ---
 
 const PDP_COLLECTION = 'leadership_plan';
 const PDP_DOCUMENT = 'roadmap';
@@ -720,16 +731,6 @@ const SharePlanModal = ({ isVisible, onClose, currentMonthPlan, data }) => {
     const shareLink = `https://leaderreps.com/pdp/view/${data.ownerUid}/${data.currentMonth}`;
     const shareText = `[PDP Monthly Focus]\n\nHello Manager, here is my focus for Month ${currentMonthPlan.month}:\n\n- **Current Tier Priority:** ${tierName}\n- **Theme:** ${currentMonthPlan.theme}\n- **Required Content:** ${currentMonthPlan.requiredContent.map(c => c.title).join(', ')}.\n\nMy primary skill gap is in ${data.assessment.selfRatings[currentMonthPlan.tier]}/10). My goal this month is to close this gap by completing all content.\n\nView my full progress: ${shareLink}\n\nManager Acknowledgment: [ ] I have reviewed and aligned with this plan.`; 
     
-    // Local copyToClipboard function for this specific modal
-    const copyToClipboard = () => {
-        const el = document.createElement('textarea');
-        el.value = shareText;
-        document.body.appendChild(el);
-        el.select();
-        document.execCommand('copy');
-        document.body.removeChild(el);
-        console.log('Share content copied to clipboard!');
-    };
     
     return (
         <div className="fixed inset-0 bg-[#002E47]/80 z-50 flex items-center justify-center p-4">
@@ -752,9 +753,9 @@ const SharePlanModal = ({ isVisible, onClose, currentMonthPlan, data }) => {
                     value={shareText}
                     className="w-full p-3 border border-gray-300 rounded-xl bg-gray-50 text-sm h-40"
                 ></textarea>
-                <Button onClick={copyToClipboard} className='mt-4 w-full bg-[#002E47] hover:bg-gray-700'>
-                    Copy to Clipboard
-                </Button>
+<Button onClick={() => copyToClipboard(shareText)} className='mt-4 w-full bg-[#002E47] hover:bg-gray-700'>
+    Copy to Clipboard
+</Button>
                 <p className='text-xs text-gray-500 mt-4'>
                     *Note: The actual URL link above is mocked in this demonstration.
                 </p>
