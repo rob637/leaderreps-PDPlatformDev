@@ -110,15 +110,22 @@ const IconMap = {
     Zap: Zap, Users: Users, Briefcase: Briefcase, Target: Target, BarChart3: BarChart3, Clock: Clock, Eye: Eye, BookOpen: BookOpen, Lightbulb: Lightbulb, X: X, ArrowLeft: ArrowLeft, CornerRightUp: CornerRightUp, AlertTriangle: AlertTriangle, CheckCircle: CheckCircle, PlusCircle: PlusCircle, HeartPulse: HeartPulse, TrendingUp: TrendingUp, TrendingDown: TrendingDown, Activity: Activity, Link: Link, Cpu: Cpu, Star: Star, Mic: Mic, Trello: Trello, Settings: Settings, Home: Home, MessageSquare: MessageSquare, Check: Check, Calendar: Calendar
 };
 
-// --- Utility: Global Copy to Clipboard (Extracted for Minification Safety) ---
+// --- Utility: Global Copy to Clipboard (Using modern API for clean code) ---
 const copyToClipboard = (text) => {
-    const el = document.createElement('textarea');
-    el.value = text;
-    document.body.appendChild(el);
-    el.select();
-    document.execCommand('copy');
-    document.body.removeChild(el);
-    console.log('Content copied to clipboard!');
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text)
+            .then(() => console.log('Content copied to clipboard via modern API!'))
+            .catch(err => console.error('Could not copy text: ', err));
+    } else {
+        // Fallback for older browsers
+        const el = document.createElement('textarea');
+        el.value = text;
+        document.body.appendChild(el);
+        el.select();
+        document.execCommand('copy');
+        document.body.removeChild(el);
+        console.log('Content copied to clipboard via fallback!');
+    }
 };
 // --- End Utility ---
 
@@ -855,9 +862,9 @@ const TierReviewModal = ({ isVisible, onClose, tierId, planData }) => {
     return (
         <div className="fixed inset-0 bg-[#002E47]/80 z-50 flex items-center justify-center p-4">
             <div className="bg-[#FCFCFA] rounded-3xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto p-8">
-                <h2 className='text-2xl font-extrabold text-[#002E47]'>Tier Review Mockup</h2>
-                <p className='text-gray-600 mt-2'>This modal reviews progress for {LEADERSHIP_TIERS[tierId].name}.</p>
-                <Button onClick={onClose} className='mt-8'>Close</Button>
+                <h2 className="text-2xl font-extrabold text-[#002E47]">Tier Review Mockup</h2>
+                <p className="text-gray-600 mt-2">This modal reviews progress for {LEADERSHIP_TIERS[tierId].name}.</p>
+                <Button onClick={onClose} className="mt-8">Close</Button>
             </div>
         </div>
     );
@@ -1016,6 +1023,7 @@ const TrackerDashboardView = ({ data, updatePdpData, saveNewPlan, userId, naviga
         });
         setIsSaving(false);
         setViewMonth(currentMonth + 1);
+        window.scrollTo(0, 0); // UPGRADE 1: Scroll to top after advancing month
     };
 
     const handleResetPlan = async () => {
@@ -1052,6 +1060,7 @@ const TrackerDashboardView = ({ data, updatePdpData, saveNewPlan, userId, naviga
             setLocalReflection(monthPlan?.reflectionText || '');
             setBriefing(monthPlan?.briefingText || null); 
             setBriefingLoading(false);
+            window.scrollTo(0, 0); // UPGRADE 1: Scroll to top when month view changes
         }, 50);
 
         return () => clearTimeout(timer);
@@ -1207,7 +1216,8 @@ const TrackerDashboardView = ({ data, updatePdpData, saveNewPlan, userId, naviga
                                 {requiredContent.map(item => {
                                     const isCompleted = item.status === 'Completed';
                                     const isToggling = togglingIds.has(item.id);
-                                    const actionButtonText = isPastOrCurrent ? ((item.type === 'Role-Play' || item.type === 'Exercise' || item.type === 'Tool') ? 'Go to Practice' : 'View Content') : 'View Content'; 
+                                    // UPGRADE 2: Action button text is always "View Content" or "Go to Practice" regardless of month status
+                                    const actionButtonText = (item.type === 'Role-Play' || item.type === 'Exercise' || item.type === 'Tool') ? 'Go to Practice' : 'View Content'; 
 
                                     return (
                                         <div key={item.id} className='flex items-center justify-between p-3 bg-gray-50 rounded-xl shadow-sm'>
@@ -1221,11 +1231,12 @@ const TrackerDashboardView = ({ data, updatePdpData, saveNewPlan, userId, naviga
                                             <div className='flex space-x-2'>
                                                 <Button
                                                     onClick={() => {
+                                                        // UPGRADE 2: Allow viewing of ALL content in future, current, and past months
                                                         handleOpenContentModal(item);
                                                     }}
                                                     className='px-3 py-1 text-xs'
                                                     variant='primary'
-                                                    disabled={false} 
+                                                    disabled={false} // Always enabled for viewing
                                                 >
                                                     {actionButtonText}
                                                 </Button>
@@ -1234,6 +1245,7 @@ const TrackerDashboardView = ({ data, updatePdpData, saveNewPlan, userId, naviga
                                                     onClick={() => toggleContent(item.id)}
                                                     className={`px-3 py-1 text-xs transition-colors duration-300 ${isToggling ? 'opacity-50' : ''}`}
                                                     variant={isCompleted ? 'secondary' : 'primary'}
+                                                    // UPGRADE 2: Only enabled for the current month.
                                                     disabled={isSaving || isToggling || !isCurrentView}
                                                 >
                                                     {isToggling ? 'Updating...' : isCompleted ? 'Done ✓' : 'Mark Complete'}
@@ -1515,7 +1527,7 @@ const PlanReviewScreen = ({ generatedPlan, navigate, clearReviewData }) => {
         
         navigate('prof-dev-plan'); 
         
-        window.scrollTo(0, 0); 
+        window.scrollTo(0, 0); // UPGRADE 1: Scroll to top after generating plan
     };
 
     const handleStartOver = () => { 
