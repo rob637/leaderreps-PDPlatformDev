@@ -968,15 +968,30 @@ const RequestFeedbackModal = ({ isVisible, onClose, monthPlan, assessment }) => 
     const tierName = LEADERSHIP_TIERS[tierId]?.name;
     const selfRating = assessment.selfRatings[tierId];
     
-// Find the lowest rated tier among the primary goals (T1-T5) to suggest a specific area for feedback
-    const skillGapTierId = Object.entries(assessment.selfRatings)
-        .reduce((lowest, [tier, rating]) => {
-            if (rating < lowest.rating) return { tier, rating };
-            return lowest;
-        }, { tier: 'T1', rating: 10 }).tier;
-    
+useEffect(() => {
+    if (isVisible) {
+        // DEBUGGER: This will pause execution when the modal tries to render
+        // The pause happens in the browser's DevTools "Sources" panel.
+        // WARNING: REMOVE THIS BEFORE FINAL PRODUCTION BUILD.
+        // debugger; 
+
+        console.log('DEBUG: RequestFeedbackModal is mounting/updating.');
+        console.log(`DEBUG: Tier ID: ${tierId}, Skill Gap Tier ID: ${skillGapTierId}`);
+        console.log(`DEBUG: Final Request Text Length: ${feedbackRequestText.length}`);
+
+        // Temporary measure to help avoid the crash on render:
+        // Force the browser to render the modal *only* when all dependencies are ready.
+        if (!tierName || !skillGapTierName) {
+            console.error("DEBUG: Modal missing required tier names. This may be the source of the crash.");
+        }
+    }
+}, [isVisible, tierId, skillGapTierId, tierName, skillGapTierName, feedbackRequestText.length]);
+
+// CRITICAL FIX: Use global utility to prevent local hoisting/minification conflict
+const lowestTier = findLowestRatedTier(assessment.selfRatings);
+const skillGapTierId = lowestTier.tier;
 const skillGapTierName = LEADERSHIP_TIERS[skillGapTierId]?.name;
-    const skillGapRating = assessment.selfRatings[skillGapTierId];
+const skillGapRating = lowestTier.rating;
 
     const feedbackRequestText = `
 Hi [Manager/Peer Name],
