@@ -626,13 +626,12 @@ const CommitmentSelectorView = ({ setView, initialGoal, initialTier }) => {
     }
 
     // CRITICAL FIX 2: Ensure existing data is preserved using the spread operator
-const success = await updateCommitmentData(data => ({ 
+await updateCommitmentData(data => ({ 
   ...data,
-  active_commitments: [ ...(data?.active_commitments || []), newCommitment ]
-}));
+  active_commitments: [ ...(data?.active_commitments || []), newCommitment ],
+  }));
+// Optimistic UI: assume success after await.
 
-    // CRITICAL FIX 7: Only reset local state and navigate if persistence was successful
-    if (success) {
         setCustomCommitment('');
         setTargetColleague('');
         setAiAssessment(null);
@@ -643,10 +642,6 @@ const success = await updateCommitmentData(data => ({
 
         // CRITICAL FIX 3: Navigate back to the Scorecard view after adding
         setView('scorecard');
-    } else {
-        setIsSaving(false);
-        console.error("Failed to save commitment.");
-    }
   };
 
   const handleCreateCustomCommitment = async () => {
@@ -671,13 +666,12 @@ const success = await updateCommitmentData(data => ({
       };
 
       // CRITICAL FIX 5: Ensure existing data is preserved using the spread operator
-const success = await updateCommitmentData(prev => ({
+await updateCommitmentData(prev => ({
   ...prev,
-  active_commitments: [...(prev?.active_commitments || []), newCommitment],
-}));
+  active_commitments: [...(prev?.active_commitments || []), newCommitment ],
+  }));
+// Optimistic UI: assume success after await.
 
-      // CRITICAL FIX 8: Only reset local state and navigate if persistence was successful
-      if (success) {
         setCustomCommitment('');
         setTargetColleague('');
         setAiAssessment(null);
@@ -688,10 +682,6 @@ const success = await updateCommitmentData(prev => ({
         
         // CRITICAL FIX 6: Navigate back to the Scorecard view after adding
         setView('scorecard');
-      } else {
-        setIsSaving(false);
-        console.error("Failed to save custom commitment.");
-      }
     }
   };
 
