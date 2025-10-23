@@ -4,6 +4,7 @@ import react from '@vitejs/plugin-react'
 
 export default defineConfig({
   plugins: [react()],
+  resolve: { dedupe: ['react', 'react-dom'] },
 
   // If your index.html is at the repo root, leave `root` out.
   // If your app lives in a subfolder, set e.g.: root: 'LR_PD_Plat_dev',
