@@ -24,6 +24,21 @@ const COLORS = {
   BG: '#F9FAFB',
 };
 
+// --- FIX: LOCAL COMPONENT DEFINITIONS ---
+const Button = ({ children, onClick, disabled = false, variant = 'primary', className = '', ...rest }) => {
+  let baseStyle = "px-6 py-3 rounded-xl font-semibold transition-all shadow-xl focus:outline-none focus:ring-4 text-white flex items-center justify-center";
+  if (variant === 'primary') { baseStyle += ` bg-[${COLORS.TEAL}] hover:bg-[${COLORS.SUBTLE_TEAL}] focus:ring-[${COLORS.TEAL}]/50`; }
+  else if (variant === 'secondary') { baseStyle += ` bg-[${COLORS.ORANGE}] hover:bg-[#C33E12] focus:ring-[${COLORS.ORANGE}]/50`; }
+  else if (variant === 'outline') { baseStyle = `px-6 py-3 rounded-xl font-semibold transition-all shadow-md border-2 border-[${COLORS.TEAL}] text-[${COLORS.TEAL}] hover:bg-[${COLORS.TEAL}]/10 focus:ring-4 focus:ring-[${COLORS.TEAL}]/50 bg-[${COLORS.LIGHT_GRAY}] flex items-center justify-center`; }
+  if (disabled) { baseStyle = "px-6 py-3 rounded-xl font-semibold bg-gray-300 text-gray-500 cursor-not-allowed shadow-inner transition-none flex items-center justify-center"; }
+  return (
+    <button {...rest} onClick={onClick} disabled={disabled} className={`${baseStyle} ${className}`}>
+      {children}
+    </button>
+  );
+};
+// --- END LOCAL COMPONENT DEFINITIONS ---
+
 // UI Component Placeholder (Card adapted for video listings)
 const VideoCard = ({ title, speaker, duration, url, description, icon: Icon, accent }) => {
     const accentColor = COLORS[accent] || COLORS.NAVY;

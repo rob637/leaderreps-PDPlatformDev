@@ -355,7 +355,7 @@ function AuthPanel({ auth, onSuccess }) {
                             placeholder="Password" 
                             value={password} 
                             onChange={(e) => setPassword(e.target.value)} 
-                            className={`w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[${TEAL}] focus:border-[${TEAL}]`} 
+                            className={`w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[${TEAL}] focus:border-[${TECAL}]`} 
                             disabled={isLoading}
                             autocomplete={isLogin ? "current-password" : "new-password"} // FIX: Added autocomplete for password
                         />
@@ -670,7 +670,7 @@ const App = ({ initialState }) => {
               user={user} 
               navParams={navParams} 
               isMobileOpen={isMobileOpen} 
-              setIsMobileOpen={setIsMobileOpen} 
+              setIsMobileOpen={setIsMobileMenuOpen} 
               isAuthRequired={authRequired} 
             />
         </Suspense>
