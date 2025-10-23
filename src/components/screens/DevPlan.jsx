@@ -94,6 +94,23 @@ const copyToClipboard = (text) => {
 };
 // --- End Clipboard Utility ---
 
+// src/components/screens/DevPlan.jsx (Around line 85, after copyToClipboard)
+
+// --- Utility: Find Lowest Rated Tier for Feedback ---
+const findLowestRatedTier = (selfRatings) => {
+    if (!selfRatings || typeof selfRatings !== 'object') return { tier: 'T1', rating: 10 };
+    
+    return Object.entries(selfRatings)
+        .reduce((lowest, [tier, rating]) => {
+            // Safety check for rating being a number
+            const currentRating = typeof rating === 'number' ? rating : 10;
+            
+            if (currentRating < lowest.rating) return { tier, rating: currentRating };
+            return lowest;
+        }, { tier: 'T1', rating: 10 });
+};
+// --- End Utility ---
+
 const Tooltip = ({ content, children }) => {
     const [isVisible, setIsVisible] = useState(false);
     return (
@@ -951,14 +968,14 @@ const RequestFeedbackModal = ({ isVisible, onClose, monthPlan, assessment }) => 
     const tierName = LEADERSHIP_TIERS[tierId]?.name;
     const selfRating = assessment.selfRatings[tierId];
     
-    // Find the lowest rated tier among the primary goals (T1-T5) to suggest a specific area for feedback
+// Find the lowest rated tier among the primary goals (T1-T5) to suggest a specific area for feedback
     const skillGapTierId = Object.entries(assessment.selfRatings)
         .reduce((lowest, [tier, rating]) => {
             if (rating < lowest.rating) return { tier, rating };
             return lowest;
         }, { tier: 'T1', rating: 10 }).tier;
     
-    const skillGapTierName = LEADERSHIP_TIERS[skillGapTierId]?.name;
+const skillGapTierName = LEADERSHIP_TIERS[skillGapTierId]?.name;
     const skillGapRating = assessment.selfRatings[skillGapTierId];
 
     const feedbackRequestText = `
