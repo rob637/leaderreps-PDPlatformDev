@@ -486,6 +486,7 @@ function BookFlyerStable({
   COLORS,
   selectedBook,
   htmlFlyer,
+  isFlyerLoading,
   isExecutiveBrief,
   setIsExecutiveBrief,
   questionFeedback,
@@ -539,25 +540,27 @@ function BookFlyerStable({
         </div>
 
         {/* FIX: Check if HTML Flyer is loading and apply desired effect */}
-        {htmlFlyer.includes('Flyer being generated') || htmlFlyer.includes('CRITICAL API ERROR') ? (
+        {isFlyerLoading ? (
             <div className="p-4 rounded-xl border border-gray-300 shadow-inner text-center" style={{ background: '#F0F5FF' }}>
-                <div className="flex items-center justify-center gap-2" style={{ color: COLORS.PURPLE, animation: 'pulse 1.5s infinite' }}>
-                    {htmlFlyer.includes('CRITICAL API ERROR') ? <AlertTriangle className='w-5 h-5'/> : <Loader className='w-5 h-5 animate-spin'/>}
-                    <span className="font-semibold whitespace-nowrap">{htmlFlyer.includes('CRITICAL API ERROR') ? 'API Error (See Below)' : 'Flyer being generated...'}</span>
+                <div className="flex items-center justify-center gap-2" style={{ color: COLORS.PURPLE }}>
+                    <Loader className='w-5 h-5 animate-spin'/>
+                    <span className="font-semibold whitespace-nowrap">Flyer being generated...</span>
                 </div>
-                <style jsx>{`
-                    @keyframes pulse {
-                        0%, 100% { opacity: 1; }
-                        50% { opacity: 0.5; }
-                    }
-                    div[style*="animation: pulse"] { animation: pulse 1.5s infinite; }
-                `}</style>
-                 <div className="max-w-none space-y-4 pt-4" style={{ color: COLORS.TEXT }} dangerouslySetInnerHTML={{ __html: htmlFlyer }} />
             </div>
         ) : (
-            <div className="max-w-none space-y-4" style={{ color: COLORS.TEXT }} dangerouslySetInnerHTML={{ __html: htmlFlyer }} />
+            htmlFlyer.includes('CRITICAL API ERROR') ? (
+                <div className="p-4 rounded-xl border border-gray-300 shadow-inner" style={{ background: '#FFF7F7' }}>
+                    <div className="flex items-center justify-center gap-2 mb-3" style={{ color: COLORS.RED }}>
+                        <AlertTriangle className='w-5 h-5'/>
+                        <span className="font-semibold">API Error</span>
+                    </div>
+                    <div className="max-w-none space-y-4" style={{ color: COLORS.TEXT }} dangerouslySetInnerHTML={{ __html: htmlFlyer }} />
+                </div>
+            ) : (
+                <div className="max-w-none space-y-4" style={{ color: COLORS.TEXT }} dangerouslySetInnerHTML={{ __html: htmlFlyer }} />
+            )
         )}
-        {/* END FIX */}
+        {/* END FIX */}}
 
         <div className="mt-8 pt-4" style={{ borderTop: `1px solid ${COLORS.SUBTLE}` }}>
           <h3 className="text-2xl font-bold mb-4 flex items-center gap-3" style={{ color: COLORS.NAVY }}>
@@ -618,6 +621,7 @@ export default function BusinessReadingsScreen() {
   const [selectedBook, setSelectedBook] = useState(null);
   const [htmlFlyer, setHtmlFlyer] = useState('');
   const [selectedTier, setSelectedTier] = useState('');
+  const [isFlyerLoading, setIsFlyerLoading] = useState(false);
   const [savedBooks, setSavedBooks] = useState({});
   const [isExecutiveBrief, setIsExecutiveBrief] = useState(false);
   const [isCommitted, setIsCommitted] = useState(false);
@@ -675,19 +679,11 @@ export default function BusinessReadingsScreen() {
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      if (!selectedBook) { setHtmlFlyer(''); return; }
-      
+      if (!selectedBook) { setHtmlFlyer(''); setIsFlyerLoading(false); return; }
       const tierKey = selectedTier || Object.keys(allBooks).find(k => (allBooks[k] || []).some(b => b.id === selectedBook.id)) || 'Strategy & Execution';
-
-      // V2 FIX: SIMPLIFY LOADING MESSAGE (No spinning)
-      setHtmlFlyer(`<div style="padding:12px;border:1px dashed ${COLORS.SUBTLE};border-radius:12px;color:${COLORS.MUTED};text-align:center;">
-                      <div class="flex items-center justify-center gap-2" style="color: ${COLORS.PURPLE}">
-                          <Cpu class="w-5 h-5"/> 
-                          Flyer being generated...
-                      </div>
-                    </div>`);
-      // END V2 FIX
-
+      // Start loading
+      setIsFlyerLoading(true);
+      setHtmlFlyer('');
       // Call the production-focused function with secure error handling
       const html = await buildAIFlyerHTML({ 
         book: selectedBook, 
@@ -695,8 +691,7 @@ export default function BusinessReadingsScreen() {
         executive: isExecutiveBrief, 
         callSecureGeminiAPI 
       });
-      
-      if (!cancelled) setHtmlFlyer(html);
+      if (!cancelled) { setHtmlFlyer(html); setIsFlyerLoading(false); }
     })();
     return () => { cancelled = true; };
   }, [selectedBook, selectedTier, isExecutiveBrief, allBooks, callSecureGeminiAPI]);
@@ -775,8 +770,9 @@ export default function BusinessReadingsScreen() {
       />}
       {selectedBook && <BookFlyerStable 
           COLORS={COLORS} 
-          selectedBook={selectedBook} 
-          htmlFlyer={htmlFlyer} 
+          selectedBook={selectedBook}
+          htmlFlyer={htmlFlyer}
+          isFlyerLoading={isFlyerLoading}
           isExecutiveBrief={isExecutiveBrief} 
           setIsExecutiveBrief={setIsExecutiveBrief} 
           questionFeedback={questionFeedback} 
