@@ -9,8 +9,8 @@ import {
    MOCK/UI UTILITIES (Fully Self-Contained)
 ========================================================= */
 
-// CRITICAL FIX: The real hook must be imported from the correct path.
-import { useAppServices } from '../../services/useAppServices.jsx'; 
+// CRITICAL FIX: Use the canonical hook path so all views share the same store.
+import { useAppServices } from '../../services/useAppServices.jsx';
 
 
 // --- MOCK UTILITIES (Defined for component self-reliance) ---
@@ -483,6 +483,9 @@ const CommitmentSelectorView = ({ setView, initialGoal, initialTier }) => {
   'Other / New Goal'
 ], [okrGoals, missionVisionGoals, currentMonthPlan]);
   
+// DEFAULT SELECTIONS so "Add" never no-ops:
+  // - Goal: PDP Focus (if present) → first OKR → fall back to "Other / New Goal"
+  // - Tier: first PDP goal priority → fall back to T3
   useEffect(() => {
     if (initialGoal && initialGoal !== linkedGoal) {
       setLinkedGoal(initialGoal);
@@ -491,9 +494,25 @@ const CommitmentSelectorView = ({ setView, initialGoal, initialTier }) => {
       setLinkedTier(initialTier);
     }
     if (!linkedGoal) {
-      setLinkedGoal(initialLinkedGoalPlaceholder);
+      const fallbackGoal =
+        (currentMonthPlan?.theme ? `PDP Focus: ${currentMonthPlan.theme}` : null) ??
+        (okrGoals && okrGoals.length > 0 ? okrGoals[0] : null) ??
+        'Other / New Goal';
+      setLinkedGoal(fallbackGoal);
     }
-  }, [initialGoal, initialTier, linkedGoal, linkedTier, initialLinkedGoalPlaceholder, currentMonthPlan]);
+    if (!linkedTier) {
+      const fallbackTier = pdpData?.assessment?.goalPriorities?.[0] || 'T3';
+      setLinkedTier(fallbackTier);
+    }
+  }, [
+    initialGoal,
+    initialTier,
+    linkedGoal,
+    linkedTier,
+    okrGoals,
+    currentMonthPlan,
+    pdpData
+  ]);
 
   const handleClearSearch = () => setSearchTerm('');
   
@@ -666,10 +685,14 @@ await updateCommitmentData(data => ({
       };
 
       // CRITICAL FIX 5: Ensure existing data is preserved using the spread operator
-await updateCommitmentData(prev => ({
-  ...prev,
-  active_commitments: [...(prev?.active_commitments || []), newCommitment ],
-  }));
+// Ensure we properly append to active_commitments (preserving the rest of the doc)
+      await updateCommitmentData(prev => ({
+        ...prev,
+        active_commitments: [
+          ...(prev?.active_commitments || []),
+          newCommitment
+        ],
+      }));
 // Optimistic UI: assume success after await.
 
         setCustomCommitment('');
