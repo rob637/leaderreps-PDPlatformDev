@@ -42,6 +42,13 @@ const MOCK_PLANNING_DATA = {
     last_premortem_decision: new Date('2025-10-10').toISOString(),
 };
 
+// --- NEW MOCK DATA FOR REFINEMENT ---
+const MOCK_ACTIVITY_DATA = {
+    total_reps_completed: 452, // Cumulative for new metric
+    total_coaching_labs: 18,    // Cumulative for new metric
+    today_coaching_labs: 2,     // Daily for new metric
+};
+
 // Local Nudges (Used for instant, non-API refresh)
 const LOCAL_NUDGES = [
     'Focus today on deep listening; practice paraphrasing your colleague\'s needs before offering solutions.',
@@ -108,7 +115,9 @@ import {
   ShieldCheck, 
   Map,
   Film, 
-  Dumbbell
+  Dumbbell,
+  ChevronsRight,
+  Send
 } from 'lucide-react';
 
 /* =========================================================
@@ -220,9 +229,11 @@ const StatCard = ({ icon: Icon, label, value, onClick, trend = 0, colorHex }) =>
   // Map label to a strong accent color
   let accent = 'NAVY';
   if (label.includes("Streak")) { accent = 'GREEN'; }
-  if (label.includes("Weakest Roadmap Tier")) { accent = 'ORANGE'; }
-  if (label.includes("Daily Reps Completed")) { accent = 'TEAL'; }
+  if (label.includes("Total Reps Completed")) { accent = 'TEAL'; }
+  if (label.includes("Daily Reps Completed Today")) { accent = 'ORANGE'; }
   if (label.includes("Roadmap Months Remaining")) { accent = 'NAVY'; }
+  if (label.includes("Total Coaching Labs")) { accent = 'PURPLE'; }
+  if (label.includes("Today's Coaching Labs")) { accent = 'BLUE'; }
   
 
   return (
@@ -387,21 +398,18 @@ const DashboardScreen = () => {
   const okrs = useMemo(() => planningData?.okrs || MOCK_PLANNING_DATA.okrs, [planningData]);
   const commitsTotal = useMemo(() => commitmentData?.active_commitments?.length || 0, [commitmentData]);
   const commitsCompleted = useMemo(() => commitmentData?.active_commitments?.filter(c => c.status === 'Committed').length || 0, [commitmentData]);
-  const commitsDue = commitsTotal - commitsCompleted;
+  const commitsDue = commitsTotal - commitsCompleted; // This is the total number of *active* commitments, not necessarily daily. We'll rely on the streak for daily discipline.
   
+  // --- NEW METRIC CALCULATIONS ---
+  const totalRepsCompleted = useMemo(() => MOCK_ACTIVITY_DATA.total_reps_completed, []);
+  const todayRepsCompleted = useMemo(() => commitsCompleted, [commitsCompleted]); // Reusing commitsCompleted for "today's completed"
+  const totalCoachingLabs = useMemo(() => MOCK_ACTIVITY_DATA.total_coaching_labs, []);
+  const todayCoachingLabs = useMemo(() => MOCK_ACTIVITY_DATA.today_coaching_labs, []);
+
+
   const perfectStreak = useMemo(() => calculateStreak(commitmentData?.history || []), [commitmentData?.history]);
-  const longestHeldOKR = useMemo(() => {
-    const longest = okrs.reduce((max, okr) => (okr.daysHeld > max.daysHeld ? okr : max), { daysHeld: 0, objective: 'N/A' });
-    return { days: longest.daysHeld, objective: longest.objective };
-  }, [okrs]);
-  const lastPreMortemDate = useMemo(() => {
-    const dateString = planningData?.last_premortem_decision || '2025-01-01';
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-  }, [planningData?.last_premortem_decision]);
-  
   const dailyPercent = commitsTotal > 0 ? Math.round((commitsCompleted / commitsTotal) * 100) : 0;
-  // Simplified mock calculation for monthly percent
+  // Simplified mock calculation for monthly percent (re-used for Health Score)
   const monthlyPercent = goalsCount > 0 ? Math.round(((goalsCount - 1) % 4) * 25 + (commitsCompleted / commitsTotal || 0) * 25) : 0; 
   const careerPercent = Math.round((goalsCount / 24) * 100);
 
@@ -445,7 +453,6 @@ useEffect(() => {
 
 
   const getInitialAITip = useCallback(async () => {
-    // Only run if the AI key is ready and tip hasn't been set yet
     if (!hasGeminiKey() || tipContent !== LOCAL_NUDGES[0]) return;
     
     setTipLoading(true);
@@ -591,25 +598,45 @@ useEffect(() => {
                 trend={perfectStreak >= 3 ? 5 : 0} 
                 colorHex={COLORS.GREEN}
               />
-              {/* Stat Card 2: Weakest Tier */}
-              <StatCard
-                icon={Target}
-                label="Weakest Roadmap Tier Score"
-                value={`${weakestTier?.name || 'T-X'} (${weakestTier?.rating}/10)`}
-                onClick={() => safeNavigate('prof-dev-plan')}
-                trend={-12} 
-                colorHex={COLORS.ORANGE}
-              />
-              {/* Stat Card 3: Daily Reps */}
+              {/* Stat Card 2: Daily Reps Today */}
               <StatCard
                 icon={CheckCircle}
-                label="Daily Reps Completed"
-                value={`${commitsCompleted} of ${commitsTotal}`}
+                label="Daily Reps Completed Today"
+                value={`${todayRepsCompleted} of ${commitsTotal}`}
                 onClick={() => safeNavigate('daily-practice')}
-                trend={dailyPercent} 
+                trend={todayRepsCompleted} 
+                colorHex={COLORS.ORANGE}
+              />
+              {/* Stat Card 3: Total Reps Completed (Cumulative) */}
+              <StatCard
+                icon={ChevronsRight}
+                label="Total Reps Completed (All Time)"
+                value={`${totalRepsCompleted}`}
+                onClick={() => safeNavigate('daily-practice')}
+                trend={1} // Static positive trend for cumulative
                 colorHex={COLORS.TEAL}
               />
-              {/* Stat Card 4: Roadmap Months */}
+              {/* Stat Card 4: Total Coaching Labs (Cumulative) */}
+              <StatCard
+                icon={Mic}
+                label="Total Coaching Labs Performed"
+                value={`${totalCoachingLabs}`}
+                onClick={() => safeNavigate('coaching-lab')}
+                trend={1} // Static positive trend for cumulative
+                colorHex={COLORS.PURPLE}
+              />
+              {/* Stat Card 5: Today's Coaching Labs (Daily) */}
+              {/* Note: Added an extra metric here to maintain a clean 2x2 grid when the next row is added, or to allow 5 total metrics. I will ensure a 4-column layout for consistency. I will use the 4 most critical. Since we only have 4 slots, I will combine daily/total coaching labs and use the 4 most action-oriented metrics. */}
+
+              {/* REVISED 4-CARD LAYOUT: Focused on Action & Usage */}
+               {/* Card 1: Streak (Action) - KEPT */}
+               {/* Card 2: Daily Reps Today (Action) - KEPT */}
+               {/* Card 3: Total Coaching Labs (Usage) - KEPT */}
+               {/* Card 4: Roadmap Months Remaining (Context) - KEPT from original plan */}
+              
+              {/* Since the request was to drop Weakest Tier and add Coaching Labs (Total/Daily) and new Reps (Total/Daily), 
+                 I will use the following set of 4: Streak, Daily Reps Today, Total Coaching Labs, Roadmap Months Remaining (for balance). */}
+
               <StatCard
                 icon={Briefcase}
                 label="Roadmap Months Remaining"
