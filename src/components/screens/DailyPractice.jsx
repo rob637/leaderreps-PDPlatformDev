@@ -1,8 +1,8 @@
-// src/components/screens/DailyPractice.jsx - Commitment Fixes
+// src/components/screens/DailyPractice.jsx - Finalized Rep Tracker Logic
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import {
-  PlusCircle, ArrowLeft, X, Target, Clock, CheckCircle, BarChart3, CornerRightUp, AlertTriangle, Users, Lightbulb, Zap, Archive, MessageSquare, List, TrendingDown, TrendingUp, BookOpen, Crown, Cpu, Star, Trash2, HeartPulse, Trello, Activity, Dumbbell, Flag, User, Send
+  PlusCircle, ArrowLeft, X, Target, Clock, CheckCircle, BarChart3, CornerRightUp, AlertTriangle, Users, Lightbulb, Zap, Archive, MessageSquare, List, TrendingDown, TrendingUp, BookOpen, Crown, Cpu, Star, Trash2, HeartPulse, Trello, Activity, Dumbbell, Flag, User, Send, Mic
 } from 'lucide-react';
 
 /* =========================================================
@@ -29,6 +29,8 @@ const LEADERSHIP_TIERS_META = {
 const MOCK_ACTIVITY_DATA = {
     // This is the core target for Feature 1
     daily_target_rep: "Give one reinforcing feedback statement to a direct report.",
+    // Feature 1: The 'what good looks like' definition
+    daily_target_definition: "What good looks like: Name the behavior, name the impact, invite more of it. (e.g., 'Nice job getting the report out on time, that boosted our credibility. Keep it up!')",
     // This is the Identity Anchor for Feature 2 & 8
     identity_statement: "I am the kind of leader who coaches in the moment and owns accountability.",
     daily_challenge_rep: "Send one quick thank-you Slack message right now.", // For 2-Minute Challenge
@@ -162,7 +164,7 @@ const resetIfNewDay = (data, updateFn) => {
             ...(prev.history || []),
             { date: yStr, score: `${committed}/${total}`, reflection: prev.reflection_journal || '' }
           ],
-      active_commitments: commitments.map(c => ({ ...c, status: 'Pending' })),
+      active_commitments: commitments.map(c => ({ ...c, status: 'Pending', note: '' })), // Reset notes too
     };
   });
 };
@@ -327,8 +329,9 @@ const ResilienceTracker = ({ dailyLog, handleSaveResilience }) => {
 
 /**
  * CommitmentItem: Displays an individual daily commitment with status logging buttons.
+ * UPDATED: Includes per-rep journal note capture.
  */
-const CommitmentItem = ({ commitment, onLogCommitment, onRemove, isSaving, isScorecardMode }) => {
+const CommitmentItem = ({ commitment, onLogCommitment, onRemove, isSaving, loggedMessage, onNoteChange }) => {
   // Statuses: 'Committed' (Done), 'Pending' (Not Done/Missed, but can be marked Done)
   const status = commitment.status || 'Pending';
   
@@ -364,11 +367,13 @@ const CommitmentItem = ({ commitment, onLogCommitment, onRemove, isSaving, isSco
 
   // New Single-Button Toggle Handler
   const handleToggleComplete = () => {
-    // FIX FOR ISSUE 1: Toggles status between Committed and Pending
     const newStatus = isCommitted ? 'Pending' : 'Committed';
-    // CRITICAL: Call the parent function to trigger state update
-    onLogCommitment(commitment.id, newStatus); 
+    onLogCommitment(commitment.id, newStatus, commitment.note); // Pass existing note
   };
+  
+  const handleNoteChangeLocal = (e) => {
+      onNoteChange(commitment.id, e.target.value);
+  }
 
 
   return (
@@ -402,16 +407,33 @@ const CommitmentItem = ({ commitment, onLogCommitment, onRemove, isSaving, isSco
         </div>
       </div>
 
+      {isCommitted && (
+          <div className='mt-2'>
+              <textarea
+                  value={commitment.note || ''}
+                  onChange={handleNoteChangeLocal}
+                  placeholder="Optional journal note: What did I notice? (Feature 4)"
+                  className="w-full p-2 text-xs border border-gray-300 rounded-lg focus:ring-[#47A88D] focus:border-[#47A88D] h-12 text-gray-800"
+              />
+          </div>
+      )}
+
       <div className="flex space-x-2 mt-3 pt-3 border-t border-gray-300/50">
           <Button
             onClick={handleToggleComplete}
             disabled={isLoggingDisabled}
             className={`px-3 py-1 text-xs w-full ${isCommitted ? 'bg-green-600 hover:bg-green-700' : 'bg-[#47A88D] hover:bg-[#349881]'}`}
           >
-            {/* FIX: Ensure button text correctly reflects next action */}
             {isLoggingDisabled ? 'Saving...' : isCommitted ? 'Rep Completed' : 'Mark Rep Complete'}
           </Button>
       </div>
+      
+      {/* Feature 4: Micro-Celebration Message */}
+      {isCommitted && loggedMessage && (
+          <p className='text-xs font-bold text-center text-green-700 mt-2 animate-pulse'>
+              {loggedMessage} 🎉
+          </p>
+      )}
 
     </div>
   );
@@ -436,6 +458,7 @@ const AIStarterPackNudge = ({ pdpData, setLinkedGoal, setLinkedTier, handleAddCo
 
 /**
  * CommitmentSelectorView: Allows users to add commitments from the bank or create custom ones.
+ * (Logic simplified and placeholders used for demonstration)
  */
 const CommitmentSelectorView = ({ setView, initialGoal, initialTier }) => {
   const { updateCommitmentData, commitmentData, planningData, pdpData, callSecureGeminiAPI, hasGeminiKey, GEMINI_MODEL} = useAppServices(); // FIX: Call hook inside component
@@ -540,7 +563,7 @@ const CommitmentSelectorView = ({ setView, initialGoal, initialTier }) => {
 
   /* =========================================================
      AI Commitment Assessment Logic
-     FIX: Integrated the resilient API call structure
+     (Simplified placeholders)
   ========================================================= */
 
   const handleAnalyzeCommitment = async () => {
@@ -1073,7 +1096,7 @@ const PerfectScoreModal = ({ onClose }) => (
 
 
 // --- NEW COMPONENT: Daily Rep Target Card (Features 1, 2, 6, 8) ---
-const DailyRepTargetCard = ({ targetRep, microTip, identityStatement, handleLogTargetRep }) => {
+const DailyRepTargetCard = ({ targetRep, targetDefinition, microTip, identityStatement, handleLogTargetRep, handleAddYourWhy }) => {
     // Determine the relevant Tier based on the target rep (simple mock logic)
     const tierMatch = Object.values(LEADERSHIP_TIERS_META).find(t => targetRep.includes(t.id));
     const accentColor = tierMatch ? tierMatch.hex : COLORS.ORANGE;
@@ -1089,14 +1112,23 @@ const DailyRepTargetCard = ({ targetRep, microTip, identityStatement, handleLogT
             <p className='text-sm font-semibold text-[#002E47] mb-2 uppercase tracking-wide flex items-center gap-2'>
                 <Target className='w-4 h-4 text-red-500'/> Action:
             </p>
-            <p className='text-xl font-extrabold text-[#E04E1B] mb-4'>
+            <p className='text-xl font-extrabold text-[#E04E1B] mb-2'>
                 {targetRep}
+            </p>
+            
+            {/* Feature 1: "What good looks like" Definition */}
+            <p className='text-xs text-gray-600 italic mb-4 p-2 rounded-lg bg-gray-50 border border-gray-200'>
+                {targetDefinition}
             </p>
             
             {/* Why It Matters / Identity Shift Card Integration (Feature 2 & 8) */}
             <div className='p-3 rounded-lg border border-gray-200 bg-white shadow-inner'>
-                <p className='text-xs font-semibold text-gray-600 mb-1 flex items-center gap-1'>
-                    <User className='w-3 h-3 text-gray-500'/> Your Identity Anchor (Why it Matters):
+                <p className='text-xs font-semibold text-gray-600 mb-1 flex items-center justify-between'>
+                    <span><User className='w-3 h-3 text-gray-500'/> Your Identity Anchor (Why it Matters):</span>
+                    {/* Feature 2: Add your own why mock button */}
+                    <button onClick={handleAddYourWhy} className='text-xs font-bold text-blue-600 hover:text-blue-800 flex items-center'>
+                        💡 Add your own why
+                    </button>
                 </p>
                 <p className='text-sm italic text-gray-800 font-medium'>
                     "{identityStatement}"
@@ -1183,6 +1215,7 @@ export default function DailyPracticeScreen({ initialGoal, initialTier, quickLog
   const [hasNavigatedInitial, setHasNavigatedInitial] = useState(false); 
   const [isChallengeModalVisible, setIsChallengeModalVisible] = useState(false); // NEW: Challenge Modal State (Feature 3)
   const [isPostLogPromptVisible, setIsPostLogPromptVisible] = useState(false); // NEW: Post-Log Modal State (Feature 3)
+  const [loggedRepMessage, setLoggedRepMessage] = useState(null); // Feature 4: Micro-celebration state
 
   // FIX: Call the mock scheduleMidnightReset function to simulate nightly log/reset
 useEffect(() => {
@@ -1245,6 +1278,7 @@ useEffect(() => {
   
   // --- NEW DATA HOOKS (Features 1, 2, 8) ---
   const dailyTargetRep = useMemo(() => MOCK_ACTIVITY_DATA.daily_target_rep, []);
+  const dailyTargetDefinition = useMemo(() => MOCK_ACTIVITY_DATA.daily_target_definition, []); // Feature 1
   const identityStatement = useMemo(() => MOCK_ACTIVITY_DATA.identity_statement, []);
   // --- END NEW DATA HOOKS ---
 
@@ -1317,24 +1351,50 @@ useEffect(() => {
      General Handlers (Fixing Status Logic & Removal)
   ========================================================= */
 
-  const handleLogCommitment = async (id, status) => {
+  const handleLogCommitment = async (id, status, note = '') => {
     setIsSaving(true);
     
     await updateCommitmentData(data => {
         const updatedCommitments = data.active_commitments.map(c => 
-            c.id === id ? { ...c, status: status } : c
+            c.id === id ? { ...c, status: status, note: note } : c // Update note too
         );
         return { ...data, active_commitments: updatedCommitments }; // CRITICAL FIX 7: Spread ...data here
     });
     
+    // Feature 4: Micro-celebration
+    if (status === 'Committed') {
+        setLoggedRepMessage('Nice rep!');
+        setTimeout(() => setLoggedRepMessage(null), 2000);
+    }
+
     setIsSaving(false);
     
     // NEW LOGIC (Feature 3): If the strategic rep was just completed, prompt for Micro-Action
-    // This assumes the target rep is the first in the list, matching the Dashboard setup.
     if (id === userCommitments?.[0]?.id && status === 'Committed') {
         setIsPostLogPromptVisible(true);
     }
   };
+  
+  // Feature 4: Handle inline note change
+  const handleNoteChange = async (id, newNote) => {
+      await updateCommitmentData(data => {
+          const updatedCommitments = data.active_commitments.map(c => 
+              c.id === id ? { ...c, note: newNote } : c
+          );
+          return { ...data, active_commitments: updatedCommitments };
+      });
+  };
+  
+  // Feature 3: Micro-Challenge Log Success Handler
+  const handleMicroLogSuccess = async (newCommitment) => {
+      // Optional: Log the fact that a quick rep was completed
+      setLoggedRepMessage('Micro-Action Rep Logged! Nice momentum.');
+      setTimeout(() => setLoggedRepMessage(null), 2000);
+      
+      // Since the modal already saved to state, we just need to ensure the parent re-renders 
+      // with the new score and possibly trigger the PerfectScoreModal check.
+      // The dependency array on useEffect for PerfectScoreModal handles the check automatically.
+  }
 
   const handleRemoveCommitment = async (id) => {
     setIsSaving(true);
@@ -1467,6 +1527,7 @@ const sortedCommitments = useMemo(() => {
   const handleAddCommitment = () => { console.log("Add Commitment (Mocked)"); };
   const handleCreateCustomCommitment = () => { console.log("Create Custom Commitment (Mocked)"); };
   const tabStyle = (tabName) => `px-4 py-2 text-sm font-semibold transition-colors ${view === tabName ? 'border-[#47A88D] border-b-4 text-[#002E47]' : 'border-transparent text-gray-500 hover:text-[#002E47]'}`;
+  const handleAddYourWhy = () => { alert("Feature 2: 'Add your own why' clicked. Opens a text editor to set personal motivation."); };
 
 
   // Final Render
@@ -1504,10 +1565,11 @@ const sortedCommitments = useMemo(() => {
                 {/* Daily Target Rep Card (Features 1, 2, 6, 8) */}
                 <DailyRepTargetCard
                     targetRep={dailyTargetRep}
+                    targetDefinition={dailyTargetDefinition} // Feature 1: "What good looks like"
                     microTip={microTipText}
                     identityStatement={identityStatement}
-                    // CRITICAL: Wires the log button to complete the FIRST active commitment (the target rep)
                     handleLogTargetRep={() => handleLogCommitment(userCommitments?.[0]?.id, 'Committed')} 
+                    handleAddYourWhy={handleAddYourWhy} // Feature 2: Add your own why
                 />
                 
                 <div className="mb-6 flex justify-between items-center">
@@ -1548,9 +1610,10 @@ const sortedCommitments = useMemo(() => {
                                     key={c.id}
                                     commitment={c}
                                     onLogCommitment={handleLogCommitment}
+                                    onNoteChange={handleNoteChange} // Feature 4: Pass note handler
                                     onRemove={handleRemoveCommitment} // Passed down for removal functionality
                                     isSaving={isSaving}
-                                    isScorecardMode={true}
+                                    loggedMessage={loggedRepMessage} // Feature 4: Pass micro-celebration message
                                 />
                             ))
                         ) : (
@@ -1633,9 +1696,15 @@ const sortedCommitments = useMemo(() => {
                     className="w-full p-3 border border-gray-300 rounded-xl focus:ring-[#002E47] focus:border-[#002E47] h-32 text-gray-800" 
                     placeholder="My key reflection/insight from today's practice..."
                 ></textarea>
-                <Button onClick={handleSaveReflection} disabled={isSaving || reflection.length === 0} className='mt-4 bg-[#002E47] hover:bg-gray-700'>
-                    {isSaving ? 'Saving...' : 'Save Reflection'}
-                </Button>
+                <div className='flex justify-between items-center mt-4'>
+                    {/* Feature 8: Audio/Video Reflection Mock */}
+                    <button className='text-xs font-bold text-gray-500 hover:text-gray-700 flex items-center'>
+                        <Mic className='w-4 h-4 mr-1'/> Record 30-sec Reflection
+                    </button>
+                    <Button onClick={handleSaveReflection} disabled={isSaving || reflection.length === 0} className='bg-[#002E47] hover:bg-gray-700'>
+                        {isSaving ? 'Saving...' : 'Save Reflection'}
+                    </Button>
+                </div>
                  {isReflectionSaved && (
                     <span className='ml-4 text-sm font-bold text-green-600 flex items-center mt-2'>
                         <CheckCircle className='w-4 h-4 mr-1'/> Reflection Logged!
@@ -1661,6 +1730,7 @@ const sortedCommitments = useMemo(() => {
                     isVisible={isChallengeModalVisible}
                     onClose={() => setIsChallengeModalVisible(false)}
                     sourceScreen={quickLog === true ? 'dashboard' : view} 
+                    onLogSuccess={handleMicroLogSuccess} // Pass success handler
                 />
             )}
             

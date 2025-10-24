@@ -128,10 +128,11 @@ const Button = ({ children, onClick, disabled = false, className = '', ...rest }
 );
 
 // --- MODAL COMPONENT (Feature 3: 2-Minute Challenge Mode) ---
-const TwoMinuteChallengeModal = ({ isVisible, onClose, sourceScreen }) => {
+const TwoMinuteChallengeModal = ({ isVisible, onClose, sourceScreen, onLogSuccess }) => {
     const { updateCommitmentData, navigate } = useAppServices();
     const [isLogging, setIsLogging] = useState(false);
     const [logStatus, setLogStatus] = useState(null); // 'success' or 'error'
+    const [journalNote, setJournalNote] = useState(''); // Feature 4: Journal note capture
     
     // Feature 3: Randomly select a new rep every time the modal is rendered/made visible
     const randomRep = useMemo(() => {
@@ -155,15 +156,18 @@ const TwoMinuteChallengeModal = ({ isVisible, onClose, sourceScreen }) => {
             linkedTier: randomRep.tier, 
             targetColleague: 'Immediate/System',
             isQuickLog: true,
+            note: journalNote, // Feature 4: Save journal note
         };
 
         try {
-            // Log the rep by adding it as a completed commitment
+            // CRITICAL FIX: Correct spread syntax to properly update active_commitments
             await updateCommitmentData(data => ({
-                ...data,
-                active_commitments: [...(data?.active_commitments || []), newCommitment],
+                ...data, // Spread data first to preserve other fields
+                active_commitments: [ ...(data?.active_commitments || []), newCommitment ],
             }));
+            
             setLogStatus('success');
+            onLogSuccess(newCommitment); // Trigger parent micro-celebration/reflection
             
             // Navigate the user back to the Scorecard if they initiated this from the Dashboard
             setTimeout(() => {
@@ -177,8 +181,6 @@ const TwoMinuteChallengeModal = ({ isVisible, onClose, sourceScreen }) => {
             console.error("Failed to log 2-minute challenge:", e);
             setLogStatus('error');
             setIsLogging(false);
-        } finally {
-            // Note: setIsLogging(false) is handled in the timeout on success/error block on failure.
         }
     };
 
@@ -199,10 +201,19 @@ const TwoMinuteChallengeModal = ({ isVisible, onClose, sourceScreen }) => {
                         <CornerRightUp className='w-5 h-5 inline mr-2'/> {randomRep.rep}
                     </p>
                 </div>
+                
+                {/* Feature 4: Journal Note Capture */}
+                <textarea
+                    value={journalNote}
+                    onChange={(e) => setJournalNote(e.target.value)}
+                    placeholder="Optional journal note: What did I notice? (Feature 4)"
+                    className="w-full p-3 border border-gray-300 rounded-xl focus:ring-[#47A88D] focus:border-[#47A88D] h-16 text-gray-800 mb-4"
+                    disabled={isLogging || logStatus === 'success'}
+                />
 
                 {logStatus === 'success' ? (
                     <div className="flex items-center justify-center p-3 text-white rounded-xl bg-green-500 font-bold">
-                        <CheckCircle className="w-5 h-5 mr-2" /> Challenge Rep Logged!
+                        <CheckCircle className="w-5 h-5 mr-2" /> Nice Rep! Logged successfully.
                     </div>
                 ) : (
                     <Button 

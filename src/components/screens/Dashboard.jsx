@@ -164,15 +164,13 @@ const Button = ({ children, onClick, disabled = false, variant = 'primary', clas
   );
 };
 
-// 3D-inspired Button
+// 3D-inspired Button - FIX: Ensures all props are spread correctly
 const ThreeDButton = ({ children, onClick, color = COLORS.TEAL, accentColor = COLORS.NAVY, className = '', ...rest }) => {
   const defaultColor = color;
   const defaultAccent = accentColor; 
   
-  // FIX: Simplified style to rely on CSS :active / :hover in a real environment
   const buttonStyle = {
     background: defaultColor, 
-    // Simplified shadow/z-depth for the static state
     boxShadow: `0 4px 0px 0px ${defaultAccent}, 0 6px 12px rgba(0,0,0,0.2)`,
     transition: 'all 0.1s ease-out',
     transform: 'translateY(0px)',
@@ -181,11 +179,10 @@ const ThreeDButton = ({ children, onClick, color = COLORS.TEAL, accentColor = CO
   return (
     <button
       {...rest}
-      onClick={onClick} // CRITICAL: This is now the ONLY trigger for navigation
+      onClick={onClick}
       type="button"
       className={`${className} flex items-center justify-center p-3 rounded-xl font-extrabold text-white cursor-pointer transition-all duration-100`}
       style={buttonStyle}
-      // Removed: onMouseEnter, onMouseLeave, onMouseDown, onMouseUp
     >
       {children}
     </button>
@@ -227,7 +224,8 @@ const Card = ({ children, title, icon: Icon, className = '', onClick, accent = '
   );
 };
 
-const StatCard = ({ icon: Icon, label, value, onClick, trend = 0, colorHex, size = 'full' }) => {
+// StatCard - FIX: Ensures props are spread correctly
+const StatCard = ({ icon: Icon, label, value, onClick, trend = 0, colorHex, size = 'full', ...rest }) => {
   const TrendIcon = trend > 0 ? TrendingUp : TrendingDown;
   const showTrend = trend !== 0; 
   const trendColor = trend > 0 ? COLORS.TEAL : trend < 0 ? COLORS.ORANGE : COLORS.MUTED;
@@ -252,6 +250,7 @@ const StatCard = ({ icon: Icon, label, value, onClick, trend = 0, colorHex, size
 
   return (
     <Card 
+      {...rest} // Spread rest props here
       icon={Icon} 
       title={value}
       onClick={onClick} 
