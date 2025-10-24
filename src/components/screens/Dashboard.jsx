@@ -233,6 +233,10 @@ const StatCard = ({ icon: Icon, label, value, onClick, trend = 0, colorHex, size
   if (label.includes("Roadmap Months Remaining")) { accent = 'NAVY'; }
   if (label.includes("Total Coaching Labs")) { accent = 'PURPLE'; }
   if (label.includes("Labs Today")) { accent = 'BLUE'; }
+  if (label.includes("Weakest Tier Focus")) { accent = 'AMBER'; }
+  if (label.includes("Longest-Held OKR")) { accent = 'BLUE'; }
+
+
   
   // Set width based on size prop
   let widthClass = 'w-full';
@@ -403,6 +407,13 @@ const DashboardScreen = () => {
   const commitsCompleted = useMemo(() => commitmentData?.active_commitments?.filter(c => c.status === 'Committed').length || 0, [commitmentData]);
   const commitsDue = commitsTotal - commitsCompleted; 
   
+  // --- RE-ADDED MISSING CALCULATION ---
+  const longestHeldOKR = useMemo(() => {
+    const longest = okrs.reduce((max, okr) => (okr.daysHeld > max.daysHeld ? okr : max), { daysHeld: 0, objective: 'N/A' });
+    return { days: longest.daysHeld, objective: longest.objective };
+  }, [okrs]);
+  // --- END RE-ADDED CALCULATION ---
+  
   // --- NEW METRIC CALCULATIONS ---
   const totalRepsCompleted = useMemo(() => MOCK_ACTIVITY_DATA.total_reps_completed, []);
   const todayRepsCompleted = useMemo(() => commitsCompleted, [commitsCompleted]); 
@@ -420,7 +431,6 @@ const DashboardScreen = () => {
     const ratings = pdpData?.assessment?.selfRatings;
     if (!ratings) return null;
     const sortedTiers = Object.entries(ratings).sort(([, a], [, b]) => a - b);
-    const weakestEntry = sortedTiers[0];
     const weakestId = sortedTiers[0]?.[0]; // Ensure safe access
     if (!weakestId) return null;
     const meta = TIER_MAP[weakestId];
@@ -653,14 +663,14 @@ useEffect(() => {
                         trend={1} 
                         colorHex={COLORS.PURPLE}
                     />
-                    {/* Metric: Placeholder for future Coaching KPI */}
+                    {/* Metric: Placeholder for future Coaching KPI - We'll put Daily Reps Completion Rate here for context */}
                     <StatCard
-                        icon={Users}
-                        label="Peer Feedback Exchanges"
-                        value={`8`}
-                        onClick={() => safeNavigate('community')}
-                        trend={2} 
-                        colorHex={COLORS.NAVY}
+                        icon={TrendingUp}
+                        label="Daily Completion Rate"
+                        value={`${dailyPercent}%`}
+                        onClick={() => safeNavigate('daily-practice')}
+                        trend={dailyPercent > 50 ? 5 : -5} 
+                        colorHex={COLORS.ORANGE}
                     />
                 </div>
             </div>
@@ -687,7 +697,7 @@ useEffect(() => {
                         value={`${weakestTier?.name || 'N/A'}`}
                         onClick={() => safeNavigate('prof-dev-plan')}
                         trend={0} 
-                        colorHex={COLORS.ORANGE}
+                        colorHex={COLORS.AMBER}
                     />
                     {/* Metric: Longest Held OKR (Context) */}
                     <StatCard
