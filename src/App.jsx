@@ -105,10 +105,6 @@ const hasGeminiKey = () => (USE_SERVERLESS ? true : !!(typeof __GEMINI_API_KEY !
 // --- END PRODUCTION GEMINI CONFIGURATION ---
 
 // --- EXISTING MOCK/PLACEHOLDER DEFINITIONS (Keep these) ---
-// CRITICAL FIX 1: Mock data initialization in App.jsx must ensure components render properly before real data loads.
-//const MOCK_PDP_DATA = { currentMonth: 1, assessment: { selfRatings: { T1: 5, T2: 5, T3: 5, T4: 5, T5: 5 } }, plan: [{ month: 1, tier: 'T3', theme: 'Initial Focus', requiredContent: [], reflectionText: '', briefingText: '' }] };
-//const MOCK_COMMITMENT_DATA = { active_commitments: [] };
-//const MOCK_PLANNING_DATA = { okrs: [] };
 
 const IconMap = {}; 
 const SECRET_SIGNUP_CODE = 'mock-code-123';
@@ -142,27 +138,22 @@ const COLORS = {
 
 /* =========================================================
    STEP 1: LAZY LOAD SCREEN COMPONENTS
+   CRITICAL FIX: Define the ScreenMap to resolve the ReferenceError in ScreenRouter
 ========================================================= */
-const DashboardScreen = lazy(() => import('./components/screens/Dashboard.jsx')); 
-const ProfDevPlanScreen = lazy(() => import('./components/screens/DevPlan.jsx'));
-// RENAMED: CoachingLabScreen -> CoachingPillarScreen
-const CoachingPillarScreen = lazy(() => import('./components/screens/Labs.jsx'));
-const DailyPracticeScreen = lazy(() => import('./components/screens/DailyPractice.jsx'));
-// RENAMED: PlanningHubScreen -> ContentToolingScreen (for strategic content)
-const ContentToolingScreen = lazy(() => import('./components/screens/PlanningHub.jsx')); 
-const BusinessReadingsScreen = lazy(() => import('./components/screens/BusinessReadings.jsx'));
-// RENAMED: QuickStartScreen -> BootcampScreen
-const BootcampScreen = lazy(() => import('./components/screens/QuickStartAccelerator.jsx')); 
-const ExecutiveReflection = lazy(() => import('./components/screens/ExecutiveReflection.jsx'));
-const CommunityScreen = lazy(() => import('./components/screens/CommunityScreen.jsx'));
-const AppliedLeadershipScreen = lazy(() => import('./components/screens/AppliedLeadership.jsx')); 
-// RENAMED: LeadershipVideosScreen -> ContentLibraryScreen
-const ContentLibraryScreen = lazy(() => import('./components/screens/LeadershipVideos.jsx'));
-
-
-/* =========================================================
-   STEP 2: MOCK/PLACEHOLDER COMPONENTS
-========================================================= */
+const ScreenMap = {
+    dashboard: lazy(() => import('./components/screens/Dashboard.jsx')),
+    'prof-dev-plan': lazy(() => import('./components/screens/DevPlan.jsx')),
+    'coaching-lab': lazy(() => import('./components/screens/Labs.jsx')), // CoachingPillarScreen
+    'daily-practice': lazy(() => import('./components/screens/DailyPractice.jsx')),
+    'planning-hub': lazy(() => import('./components/screens/PlanningHub.jsx')), // ContentToolingScreen
+    'business-readings': lazy(() => import('./components/screens/BusinessReadings.jsx')),
+    'quick-start-accelerator': lazy(() => import('./components/screens/QuickStartAccelerator.jsx')), // BootcampScreen
+    'reflection': lazy(() => import('./components/screens/ExecutiveReflection.jsx')), // ExecutiveReflection
+    'community': lazy(() => import('./components/screens/CommunityScreen.jsx')),
+    'applied-leadership': lazy(() => import('./components/screens/AppliedLeadership.jsx')),
+    'leadership-videos': lazy(() => import('./components/screens/LeadershipVideos.jsx')), // ContentLibraryScreen
+    'app-settings': lazy(() => import('./components/screens/Settings.jsx')), // Assuming Settings.jsx will be created or AppSettingsScreen replaces it.
+};
 
 // NOTE: Since AppSettingsScreen uses useAppServices(), we must ensure we import it
 // from the useAppServices.jsx file to avoid conflicts.
@@ -178,11 +169,20 @@ const SettingsCard = ({ title, icon: Icon, children }) => (
         {children}
     </div>
 );
+// Re-implemented AppSettingsScreen here to ensure no lazy conflict, 
+// using the name that was referenced in the original file (if it was external)
 const AppSettingsScreen = () => {
     const { user, API_KEY, auth } = useAppServices();
     const handleResetPassword = async () => {
         if (!user?.email) { alert('Cannot reset password: User email is unknown.'); return; }
-        try { await sendPasswordResetEmail(auth, user.email); alert(`Password reset email sent to ${user.email}. Check your inbox!`);
+        try { 
+            // FIX: Ensure auth is checked before use
+            if (auth) {
+                 await sendPasswordResetEmail(auth, user.email); 
+                 alert(`Password reset email sent to ${user.email}. Check your inbox!`);
+            } else {
+                 alert('Authentication service is not available.');
+            }
         } catch (error) { alert(`Failed to send reset email: ${error.message}`); }
     };
     
@@ -236,10 +236,6 @@ const AppSettingsScreen = () => {
 /* =========================================================
    STEP 3: CONTEXT + DATA PROVIDER
 ========================================================= */
-
-// NOTE: DEFAULT_SERVICES definition is now ONLY in useAppServices.jsx
-// and imported via the hook.
-// CRITICAL FIX: Removed the conflicting DEFAULT_SERVICES and useAppServices export from App.jsx
 
 const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
 
@@ -350,7 +346,7 @@ function AuthPanel({ auth, onSuccess }) {
                         onChange={(e) => setEmail(e.target.value)} 
                         className={`w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[${TEAL}] focus:border-[${TEAL}]`} 
                         disabled={isLoading}
-                        autocomplete="email" // FIX: Added autocomplete for email
+                        autoComplete="email" // FIX: Added autocomplete for email
                     />
 {!isReset && (
                         <input 
@@ -360,7 +356,7 @@ function AuthPanel({ auth, onSuccess }) {
                             onChange={(e) => setPassword(e.target.value)} 
                             className={`w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[${TEAL}] focus:border-[${TEAL}]`} 
                             disabled={isLoading}
-                            autocomplete={isLogin ? "current-password" : "new-password"} // FIX: Added autocomplete for password
+                            autoComplete={isLogin ? "current-password" : "new-password"} // FIX: Added autocomplete for password
                         />
                     )}                    {isSignUp && (<input type="text" placeholder="Secret Sign-up Code" value={secretCode} onChange={(e) => setSecretCode(e.target.value)} className={`w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[${TEAL}] focus:border-[${TEAL}]`} disabled={isLoading}/>)}
                     
@@ -525,29 +521,30 @@ const NavSidebar = ({ currentScreen, setCurrentScreen, user, closeMobileMenu, is
 };
 
 const ScreenRouter = ({ currentScreen, navParams }) => {
-  const uniqueKey = currentScreen;
-  
-  switch (currentScreen) {
-    case 'prof-dev-plan': 
-    case 'prof-dev-plan-review': 
-        return <ProfDevPlanScreen key={uniqueKey} initialScreen={currentScreen} />;
-    case 'daily-practice': return <DailyPracticeScreen key={uniqueKey} initialGoal={navParams.initialGoal} initialTier={navParams.initialTier} />;
-    // RENAMED: coaching-lab -> coaching-lab
-    case 'coaching-lab': return <CoachingPillarScreen key={uniqueKey} />;
-    // RENAMED: planning-hub -> strategic-content-tools
-    case 'planning-hub': return <ContentToolingScreen key={uniqueKey} />;
-    case 'business-readings': return <BusinessReadingsScreen key={uniqueKey} />;
-    // RENAMED: leadership-videos -> content-leader-talks
-    case 'leadership-videos': return <ContentLibraryScreen key={uniqueKey} />;
-    // RENAMED: quick-start-accelerator -> bootcamp
-    case 'quick-start-accelerator': return <BootcampScreen key={uniqueKey} />;
-    case 'app-settings': return <AppSettingsScreen key={uniqueKey} />;
-    // RENAMED: reflection -> roi-report
-    case 'reflection': return <ExecutiveReflection key={uniqueKey} />;
-    case 'community': return <CommunityScreen key={uniqueKey} />;
-    case 'applied-leadership': return <AppliedLeadershipScreen key={uniqueKey} />;
-    case 'dashboard': default: return <DashboardScreen key={uniqueKey} />;
-  }
+    const uniqueKey = currentScreen;
+    const Component = ScreenMap[currentScreen] || ScreenMap.dashboard;
+
+    // FIX: Pass the initialScreen prop for screens that need it (like ProfDevPlanScreen)
+    if (currentScreen === 'prof-dev-plan') {
+        return <Component key={uniqueKey} initialScreen={currentScreen} />;
+    }
+    
+    // FIX: Pass initialGoal/initialTier params for DailyPracticeScreen
+    if (currentScreen === 'daily-practice') {
+        return <Component 
+            key={uniqueKey} 
+            initialGoal={navParams.initialGoal} 
+            initialTier={navParams.initialTier} 
+        />;
+    }
+    
+    // FIX: Handle AppSettingsScreen separately as it's not lazy loaded 
+    if (currentScreen === 'app-settings') {
+        return <AppSettingsScreen key={uniqueKey} />;
+    }
+    
+    // FIX: Use the component found in the ScreenMap directly
+    return <Component key={uniqueKey} />;
 };
 
 const AppContent = ({ currentScreen, setCurrentScreen, user, navParams, isMobileOpen, setIsMobileOpen, isAuthRequired }) => {
