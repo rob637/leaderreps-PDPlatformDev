@@ -44,12 +44,12 @@ const MOCK_PLANNING_DATA = {
 
 // --- NEW MOCK DATA FOR REFINEMENT (Rep Tracker Integration) ---
 const MOCK_ACTIVITY_DATA = {
-    // New data point: The single, clear target behavior for the day
     daily_target_rep: "Give one reinforcing feedback statement to a direct report.",
-    total_reps_completed: 452, // Cumulative for new metric
-    total_coaching_labs: 18,    // Cumulative for new metric
-    today_coaching_labs: 2,     // Daily for new metric
-    identity_statement: "I am the kind of leader who coaches in the moment and owns accountability.", // Updated for visibility
+    daily_challenge_rep: "Send one thank-you Slack message right now.", // For 2-Minute Challenge
+    total_reps_completed: 452,
+    total_coaching_labs: 18,
+    today_coaching_labs: 2,
+    identity_statement: "I am the kind of leader who coaches in the moment and owns accountability.",
 };
 
 // Local Nudges (Used for instant, non-API refresh)
@@ -121,7 +121,9 @@ import {
   Dumbbell,
   ChevronsRight,
   Send,
-  Flag
+  Flag,
+  CornerDownRight,
+  Sparkles
 } from 'lucide-react';
 
 /* =========================================================
@@ -420,6 +422,7 @@ const DashboardScreen = () => {
   
   // --- NEW METRIC CALCULATIONS ---
   const dailyTargetRep = useMemo(() => MOCK_ACTIVITY_DATA.daily_target_rep, []);
+  const dailyChallengeRep = useMemo(() => MOCK_ACTIVITY_DATA.daily_challenge_rep, []);
   const identityStatement = useMemo(() => MOCK_ACTIVITY_DATA.identity_statement, []);
   const totalRepsCompleted = useMemo(() => MOCK_ACTIVITY_DATA.total_reps_completed, []);
   const todayRepsCompleted = useMemo(() => commitsCompleted, [commitsCompleted]); 
@@ -533,81 +536,68 @@ useEffect(() => {
         </p>
       </div>
       
-      {/* --- 2. ACTION & HEALTH HUB (The Launchpad) --- */}
+      {/* --- 2. THE REP TRACKER LAUNCHPAD (HIGH PRIORITY) --- */}
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
         
-        {/* BIG ACTION BUTTONS (lg:col-span-3) */}
-        <div className="lg:col-span-3 space-y-6">
-          <h2 className="text-2xl font-extrabold text-[#002E47] flex items-center gap-3">
-              <Zap size={24} className='text-[#E04E1B]'/> Launchpad: Today's Non-Negotiables
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              
-              {/* Daily Practice */}
-              <div className='md:col-span-1 flex flex-col space-y-2'>
-                <ThreeDButton
-                  onClick={() => safeNavigate('daily-practice')} 
-                  color={COLORS.TEAL}
-                  accentColor={COLORS.NAVY}
-                  className="h-20 flex-col px-3 py-2 text-white" 
-                >
-                  <ClockIcon className='w-6 h-6 mb-1'/> 
-                  <span className='text-lg font-extrabold'>Daily Practice Scorecard</span>
-                </ThreeDButton>
-                <p className='text-xs font-light text-gray-600'>**Your daily reps:** Log micro-habits to build consistency and track your **{perfectStreak} day streak**.</p>
-              </div>
-
-              {/* Development Roadmap */}
-              <div className='md:col-span-1 flex flex-col space-y-2'>
-                <ThreeDButton
-                  onClick={() => safeNavigate('prof-dev-plan')} 
-                  color={COLORS.ORANGE}
-                  accentColor={COLORS.NAVY}
-                  className="h-20 flex-col px-3 py-2 text-white" 
-                >
-                  <Briefcase className='w-6 h-6 mb-1'/> 
-                  <span className='text-lg font-extrabold'>24-Month Roadmap Check</span>
-                </ThreeDButton>
-                <p className='text-xs font-light text-gray-600'>**Your strategy:** Review content and complete assessments for your current focus: **{weakestTier?.name || 'T-X'}**.</p>
-              </div>
-
-              {/* Coaching Lab */}
-              <div className='md:col-span-1 flex flex-col space-y-2'>
-                <ThreeDButton
-                  onClick={() => safeNavigate('coaching-lab')} 
-                  color={COLORS.PURPLE}
-                  accentColor={COLORS.NAVY}
-                  className="h-20 flex-col px-3 py-2 text-white" 
-                >
-                  <Mic className='w-6 h-6 mb-1'/> 
-                  <span className='text-lg font-extrabold'>AI Coaching Lab</span>
-                </ThreeDButton>
-                <p className='text-xs font-light text-gray-600'>**Your practice field:** Simulate critical conversations and receive objective, real-time critique.</p>
-              </div>
-          </div>
+        {/* DAILY REP FOCUS CARD (lg:col-span-3) */}
+        <div className="lg:col-span-3 space-y-4">
+            <h2 className="text-2xl font-extrabold text-[#002E47] flex items-center gap-3">
+                <Flag size={24} className='text-[#E04E1B]'/> Today's Mission: The Single Rep
+            </h2>
+            <Card title={dailyTargetRep} icon={Flag} accent='RED' className="border-4 border-[#E04E1B]/50 shadow-2xl">
+                <p className='text-sm font-semibold text-gray-700 mb-3'>
+                    **Goal:** You always know the single skill you’re training today. **Rep Status:** {todayRepsCompleted} / {commitsTotal} completed.
+                </p>
+                <div className='flex space-x-4 mt-3'>
+                    <Button 
+                        onClick={() => safeNavigate('daily-practice')} 
+                        color={COLORS.TEAL}
+                        className="flex-1 px-4 py-2 text-lg"
+                    >
+                        <ClockIcon className='w-5 h-5 mr-2'/> Go to Rep Scorecard
+                    </Button>
+                    <Button 
+                        onClick={() => safeNavigate('daily-practice', { initialGoal: 'Frictionless Start Goal' })} 
+                        color={COLORS.BLUE}
+                        className="w-1/3 px-3 py-2 text-sm bg-[#2563EB] hover:bg-[#1E40AF]"
+                    >
+                        <Zap className='w-4 h-4 mr-2'/> 2-Minute Start
+                    </Button>
+                </div>
+            </Card>
         </div>
 
-        {/* HEALTH SCORE RING (lg:col-span-1) */}
-        <div className="lg:col-span-1">
-          <ProgressRings
-            dailyPercent={dailyPercent}
-            monthlyPercent={monthlyPercent}
-            careerPercent={careerPercent}
-            tierHex={weakestTier?.hex || COLORS.TEAL}
-            commitsDue={commitsDue}
-          />
+        {/* IDENTITY ANCHOR + HEALTH SCORE RING (lg:col-span-1) */}
+        <div className="lg:col-span-1 space-y-4">
+            <Card title="Your Leadership Anchor" icon={User} accent='NAVY' className="bg-white/90 border-2 border-dashed border-[#002E47]/50">
+                <p className='text-sm italic text-gray-800 font-medium'>
+                    "{identityStatement}"
+                </p>
+                <CornerDownRight className="w-5 h-5 text-gray-400 absolute top-4 right-4" />
+                <Button onClick={() => safeNavigate('profile')} variant='outline' className='w-full mt-4 text-xs px-4 py-2 border-[#002E47] text-[#002E47] hover:bg-[#002E47]/10'>
+                   <User className='w-4 h-4 mr-2'/> View/Edit Identity
+                </Button>
+            </Card>
+            <ProgressRings
+                dailyPercent={dailyPercent}
+                monthlyPercent={monthlyPercent}
+                careerPercent={careerPercent}
+                tierHex={weakestTier?.hex || COLORS.TEAL}
+                commitsDue={commitsDue}
+            />
         </div>
       </div>
       
-      {/* --- 3. METRICS SCORECARD & NUDGE --- */}
+      {/* --- 3. METRICS SCORECARD & NUDGE (Secondary Content) --- */}
+      <h2 className="text-2xl font-extrabold text-[#002E47] flex items-center gap-3 pt-6 border-t border-gray-200">
+          <BarChart3 size={24} className='text-[#47A88D]'/> Performance Scorecard
+      </h2>
+
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
         
         {/* Progress Snapshot (The Scorecard: lg:col-span-3) */}
         <div className="lg:col-span-3 space-y-6">
-          <h2 className="text-2xl font-extrabold text-[#002E47] flex items-center gap-3 mb-4">
-              <BarChart3 size={24} className='text-[#47A88D]'/> Performance Scorecard
-          </h2>
-
+          
           <div className="space-y-6">
             {/* PILLAR: CONTENT */}
             <div className='p-6 rounded-2xl border-4 border-[#47A88D]/20 bg-[#F7FCFF]'>
@@ -615,15 +605,6 @@ useEffect(() => {
                     <BookOpen size={20}/> PILLAR: Content & Discipline
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                    {/* Metric: Today's Target Rep (New Metric 1: Clarity) */}
-                    <StatCard
-                        icon={Flag}
-                        label="Today's Target Rep"
-                        value={dailyTargetRep}
-                        onClick={() => safeNavigate('daily-practice')}
-                        trend={0} 
-                        colorHex={COLORS.RED} // Using RED/ORANGE for high visibility
-                    />
                     {/* Metric: Daily Reps Completed Today */}
                     <StatCard
                         icon={CheckCircle}
@@ -650,6 +631,15 @@ useEffect(() => {
                         onClick={() => safeNavigate('daily-practice')}
                         trend={perfectStreak >= 3 ? 5 : 0} 
                         colorHex={COLORS.GREEN}
+                    />
+                     {/* Metric: Weakest Tier Focus (Roadmap context) - Moved here for alignment */}
+                     <StatCard
+                        icon={Target}
+                        label="Weakest Tier Focus"
+                        value={`${weakestTier?.name || 'N/A'}`}
+                        onClick={() => safeNavigate('prof-dev-plan')}
+                        trend={0} 
+                        colorHex={COLORS.AMBER}
                     />
                 </div>
             </div>
@@ -702,18 +692,9 @@ useEffect(() => {
             {/* PILLAR: COMMUNITY */}
             <div className='p-6 rounded-2xl border-4 border-[#002E47]/20 bg-[#F7FCFF]'>
                 <h3 className='text-xl font-extrabold text-[#002E47] mb-4 flex items-center gap-2'>
-                    <Dumbbell size={20}/> PILLAR: Community & Identity
+                    <Dumbbell size={20}/> PILLAR: Community & Roadmap
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                    {/* Metric: Identity Shift (New Metric 8) */}
-                    <StatCard
-                        icon={User}
-                        label="I Am... Identity Statement"
-                        value={identityStatement.substring(0, 30) + '...'}
-                        onClick={() => safeNavigate('profile')}
-                        trend={0} 
-                        colorHex={COLORS.NAVY}
-                    />
                     {/* Metric: Roadmap Months Remaining */}
                     <StatCard
                         icon={Briefcase}
@@ -723,14 +704,14 @@ useEffect(() => {
                         trend={24 - goalsCount > 0 ? -4 : 0} 
                         colorHex={COLORS.NAVY}
                     />
-                    {/* Metric: Weakest Tier Focus (Roadmap context) */}
+                    {/* Metric: Social Accountability Nudge */}
                      <StatCard
-                        icon={Target}
-                        label="Weakest Tier Focus"
-                        value={`${weakestTier?.name || 'N/A'}`}
-                        onClick={() => safeNavigate('prof-dev-plan')}
-                        trend={0} 
-                        colorHex={COLORS.AMBER}
+                        icon={Users}
+                        label="Accountability Pod"
+                        value={`2 New Shares`}
+                        onClick={() => safeNavigate('community')}
+                        trend={10} 
+                        colorHex={COLORS.TEAL}
                     />
                     {/* Metric: Longest Held OKR (Context) */}
                     <StatCard
@@ -740,6 +721,15 @@ useEffect(() => {
                         onClick={() => safeNavigate('planning-hub')}
                         trend={5} 
                         colorHex={COLORS.BLUE}
+                    />
+                     {/* Metric: Placeholder for a Community Gamification Metric */}
+                    <StatCard
+                        icon={Sparkles}
+                        label="Rep Streak Coins Earned"
+                        value={`1 Coin`}
+                        onClick={() => safeNavigate('profile')}
+                        trend={3} 
+                        colorHex={COLORS.PURPLE}
                     />
                 </div>
             </div>
