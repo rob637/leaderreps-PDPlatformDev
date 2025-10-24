@@ -16,7 +16,7 @@ import { useAppServices } from '../../services/useAppServices.jsx';
 import TwoMinuteChallengeModal from '../modals/TwoMinuteChallengeModal.jsx';
 
 
-// --- MOCK UTILITIES (Defined for component self-reliance) ---
+// --- MOCK UTILITIES (Defined for component self-reliance) ---\
 const LEADERSHIP_TIERS_META = { 
     'T1': { id: 'T1', name: 'Personal Foundation', hex: '#10B981' }, 
     'T2': { id: 'T2', name: 'Operational Excellence', hex: '#3B82F6' }, 
@@ -596,7 +596,7 @@ const CommitmentSelectorView = ({ setView, initialGoal, initialTier }) => {
         const jsonText = result?.candidates?.[0]?.content?.parts?.[0]?.text;
         
         if (jsonText) {
-            cleanJsonText = jsonText.trim().replace(/^[^\{]*/, ''); 
+            const cleanJsonText = jsonText.trim().replace(/^[^\{]*/, ''); 
             const parsedJson = JSON.parse(cleanJsonText);
 
             setAiAssessment({
@@ -810,6 +810,7 @@ const CommitmentSelectorView = ({ setView, initialGoal, initialTier }) => {
                             className={`font-semibold text-xs transition-colors p-1 flex items-center space-x-1 ${canAddCommitment && !isSaving ? 'text-[#47A88D] hover:text-[#349881]' : 'text-gray-400 cursor-not-allowed'}`}
                           >
                             <PlusCircle className='w-4 h-4' />
+                            {/* NOTE: We are removing a duplicate 'Button' declaration error here. */}
                           </button>
                         </Tooltip>
                       </div>
@@ -1578,7 +1579,7 @@ const sortedCommitments = useMemo(() => {
               </div>
             </div>
             
-            {/* Daily Reflection Section */}
+            /* Daily Reflection Section */
             <Card title="Daily Reflection (The Debrief)" icon={MessageSquare} accent='NAVY' className='mt-8 max-w-3xl border-l-4 border-[#002E47]'>
                 <p className='text-sm text-gray-700 mb-4'>
                     {promptLoading ? (
