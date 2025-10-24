@@ -817,7 +817,7 @@ const CommitmentSelectorView = ({ setView, initialGoal, initialTier }) => {
                 const filteredCommitments = commitments.filter(c =>
                     // Check if commitment text is NOT already in active commitments
                     !userCommitments.some(activeC => activeC.text === c.text) &&
-                    (searchTerm === '' || c.text.toLowerCase().includes(searchTerm.toLowerCase()))
+                    (searchTerm === '' || commitment.text.toLowerCase().includes(searchTerm.toLowerCase()))
                 );
 
                 if (filteredCommitments.length === 0 && searchTerm !== '') return null;
@@ -1202,7 +1202,18 @@ useEffect(() => {
   
   // FIX: State for view toggle
   const [viewMode, setViewMode] = useState('tier'); 
-  const [isPerfectScoreModalVisible, setIsPerfectScoreModalVisible] = useState(false); // Feature 4
+  const [isPerfectScoreModalVisible, setIsPerfectScoreModalVisible] = useState(false);
+  // Refs to detect transition and avoid instant reopen
+  const wasPerfectRef = useRef(false);
+  const isClosingRef = useRef(false);
+
+  // Centralized close handler
+  const handleClosePerfectModal = useCallback(() => {
+    isClosingRef.current = true;
+    setIsPerfectScoreModalVisible(false);
+    setTimeout(() => { isClosingRef.current = false; }, 250);
+  }, []);
+ // Feature 4
   const resilienceLog = commitmentData?.resilience_log || {};
   
   // MODIFIED useEffect: Handle incoming 'quickLog' prop from Dashboard (Feature 3)
@@ -1248,14 +1259,18 @@ useEffect(() => {
   const identityStatement = useMemo(() => MOCK_ACTIVITY_DATA.identity_statement, []);
   // --- END NEW DATA HOOKS ---
 
-// Open the modal the first time today's score becomes perfect (Feature 4)
-useEffect(() => {
-  // Only trigger if a perfect score is achieved and we haven't already shown the modal
-  if (isPerfectScore && score.total > 0 && !isPerfectScoreModalVisible) { 
+  // Open the modal only on transition from not-perfect -> perfect
+  useEffect(() => {
+    const prevWasPerfect = wasPerfectRef.current;
+    if (!isPerfectScore) {
+      wasPerfectRef.current = false;
+      return;
+    }
+    if (!prevWasPerfect && isPerfectScore && score.total > 0 && !isClosingRef.current) {
       setIsPerfectScoreModalVisible(true);
-  }
-}, [isPerfectScore, score.total, isPerfectScoreModalVisible]);
-
+    }
+    wasPerfectRef.current = true;
+  }, [isPerfectScore, score.total]);
 // Allow closing with ESC
 useEffect(() => {
   if (!isPerfectScoreModalVisible) return;
@@ -1652,7 +1667,7 @@ const sortedCommitments = useMemo(() => {
             
             {/* Renders if a perfect score is just achieved (Feature 4) */}
             {isPerfectScoreModalVisible && (
-                 <PerfectScoreModal onClose={() => setIsPerfectScoreModalVisible(false)} />
+                 <PerfectScoreModal onClose={handleClosePerfectModal} />
             )}
             
             {/* RENDER NEW CHALLENGE MODAL (Feature 3) */}
