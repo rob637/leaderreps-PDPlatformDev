@@ -27,8 +27,9 @@ const LEADERSHIP_TIERS_META = {
 
 // --- NEW MOCK DATA (Implementing the new Daily Target Rep and Identity) ---
 const MOCK_ACTIVITY_DATA = {
-    // These data points now reflect the core focus of the new Rep Tracker
+    // This is the core target for Feature 1
     daily_target_rep: "Give one reinforcing feedback statement to a direct report.",
+    // This is the Identity Anchor for Feature 2 & 8
     identity_statement: "I am the kind of leader who coaches in the moment and owns accountability.",
     daily_challenge_rep: "Send one quick thank-you Slack message right now.", // For 2-Minute Challenge
     total_reps_completed: 452, 
@@ -624,6 +625,32 @@ const CommitmentSelectorView = ({ setView, initialGoal, initialTier }) => {
     }
   };
 
+    // Placeholder function for CommitmentSelectorView
+    const renderAssessmentResult = () => {
+        if (!aiAssessment) return null;
+
+        const { score, risk, feedback, error } = aiAssessment;
+        const isGood = score >= 7 && risk <= 4 && !error;
+        const color = isGood ? 'bg-green-100 border-green-400 text-green-700' : 'bg-red-100 border-red-400 text-red-700';
+        const icon = isGood ? <CheckCircle className='w-5 h-5 mr-2'/> : <AlertTriangle className='w-5 h-5 mr-2'/>;
+
+        return (
+            <div className={`p-4 rounded-xl border-2 mb-4 ${color}`}>
+                <p className='font-semibold text-lg flex items-center mb-1'>{icon} AI Alignment Analysis</p>
+                <div className='flex justify-between text-sm mb-2'>
+                    <span>Value Score: <span className='font-extrabold'>{score}/10</span></span>
+                    <span>Risk Score: <span className='font-extrabold'>{risk}/10</span></span>
+                </div>
+                <p className='text-sm italic font-medium'>{feedback}</p>
+            </div>
+        );
+    };
+
+    const handleAddCommitment = () => { console.log("Add Commitment (Mocked)"); };
+    const handleCreateCustomCommitment = () => { console.log("Create Custom Commitment (Mocked)"); };
+    const tabStyle = (tabName) => `px-4 py-2 text-sm font-semibold transition-colors ${tab === tabName ? 'border-[#47A88D] border-b-4 text-[#002E47]' : 'border-transparent text-gray-500 hover:text-[#002E47]'}`;
+    const canAddCommitment = linkedGoal && linkedGoal !== initialLinkedGoalPlaceholder && linkedTier;
+
 
   return (
     <div className="p-8">
@@ -870,13 +897,14 @@ const CommitmentSelectorView = ({ setView, initialGoal, initialTier }) => {
 };
 
 /* =========================================================
-   NEW ADVANCED FEATURE 3: Weekly Prep View (Mocked)
+   NEW ADVANCED FEATURE 7: Weekly Prep View (Mocked)
 ========================================================= */
 
 const WeeklyPrepView = ({ setView, commitmentData, updateCommitmentData, userCommitments }) => {
     const [reviewNotes, setReviewNotes] = useState(commitmentData?.weekly_review_notes || '');
     const [isSaving, setIsSaving] = useState(false);
     
+    // Feature 7: Audit of missed reps (part of the weekly recap)
     const missedLastWeek = (commitmentData?.history || []).slice(-7).filter(day => {
         const [committed, total] = day.score.split('/').map(Number);
         return committed < total && total > 0;
@@ -885,11 +913,7 @@ const WeeklyPrepView = ({ setView, commitmentData, updateCommitmentData, userCom
     const handleRetireCommitment = async (id) => {
         const commitmentToRemove = userCommitments.find(c => c.id === id);
         if (commitmentToRemove && commitmentToRemove.status === 'Committed') {
-            // FIX: Allow retiring committed reps if they are no longer active, 
-            // but we'll use a simple filter for the sake of the mock flow here.
-            
             // To prevent confusion, only allow retiring of 'Pending' reps for now.
-            // If the commitment is 'Committed' today, it will be cleaned up tomorrow.
             console.warn("Please wait for the daily reset to retire a committed rep.");
             return;
         }
@@ -1017,7 +1041,7 @@ const CommitmentHistoryModal = ({ isVisible, onClose, dayData, activeCommitments
     );
 };
 
-// PerfectScoreModal Component Definition
+// PerfectScoreModal Component Definition (Feature 4)
 const PerfectScoreModal = ({ onClose }) => (
   <div
     className="fixed inset-0 bg-[#002E47]/70 z-50 flex items-center justify-center p-4"
@@ -1048,7 +1072,7 @@ const PerfectScoreModal = ({ onClose }) => (
 );
 
 
-// --- NEW COMPONENT: Daily Rep Target Card (Integrates Clarity & Micro-Tip) ---
+// --- NEW COMPONENT: Daily Rep Target Card (Features 1, 2, 6, 8) ---
 const DailyRepTargetCard = ({ targetRep, microTip, identityStatement, handleLogTargetRep }) => {
     // Determine the relevant Tier based on the target rep (simple mock logic)
     const tierMatch = Object.values(LEADERSHIP_TIERS_META).find(t => targetRep.includes(t.id));
@@ -1069,32 +1093,32 @@ const DailyRepTargetCard = ({ targetRep, microTip, identityStatement, handleLogT
                 {targetRep}
             </p>
             
-            {/* Why It Matters / Identity Shift Card Integration */}
+            {/* Why It Matters / Identity Shift Card Integration (Feature 2 & 8) */}
             <div className='p-3 rounded-lg border border-gray-200 bg-white shadow-inner'>
                 <p className='text-xs font-semibold text-gray-600 mb-1 flex items-center gap-1'>
-                    <User className='w-3 h-3 text-gray-500'/> Your Identity Anchor:
+                    <User className='w-3 h-3 text-gray-500'/> Your Identity Anchor (Why it Matters):
                 </p>
                 <p className='text-sm italic text-gray-800 font-medium'>
                     "{identityStatement}"
                 </p>
             </div>
 
-            {/* Log Target Rep Action (Unified) */}
+            {/* Log Target Rep Action (Feature 1) */}
             <div className='mt-4 pt-4 border-t border-gray-100'>
                 <p className='text-xs font-semibold text-gray-600 mb-2 uppercase tracking-wide flex items-center gap-1'>
-                    <Clock className='w-3 h-3 text-gray-500'/> Environmental Trigger:
+                    <Clock className='w-3 h-3 text-gray-500'/> Environmental Trigger (Feature 6):
                 </p>
                  <p className='text-sm text-gray-700 font-medium mb-3'>
-                    Log your rep right after the action is complete. Tip: {microTip}
+                    Log your rep right after the action is complete. Tip: **{microTip}**
                 </p>
                 
-                {/* PRIMARY ACTION: LOG TARGET REP */}
+                {/* CRITICAL BUTTON FIX: LOG TARGET REP */}
                 <Button 
                     onClick={handleLogTargetRep} 
                     variant='primary' 
                     className='w-full px-3 py-2 text-lg bg-[#47A88D] hover:bg-[#349881]'
                 >
-                    <CheckCircle className='w-5 h-5 mr-2'/> Log Today's Strategic Rep
+                    <CheckCircle className='w-5 h-5 mr-2'/> Complete Rep (Log Now)
                 </Button>
             </div>
         </Card>
@@ -1122,7 +1146,7 @@ const SocialAccountabilityNudge = () => {
     );
 }
 
-// --- NEW COMPONENT: Post-Log Micro-Action Prompt ---
+// --- NEW COMPONENT: Post-Log Micro-Action Prompt (Feature 3 momentum) ---
 const MicroActionPromptModal = ({ isVisible, onClose, onMicroActionClick }) => {
     if (!isVisible) return null;
     return (
@@ -1137,7 +1161,7 @@ const MicroActionPromptModal = ({ isVisible, onClose, onMicroActionClick }) => {
                     onClick={onMicroActionClick} 
                     className="w-full text-lg bg-[#2563EB] hover:bg-[#1E40AF]"
                 >
-                    <Zap className='w-4 h-4 mr-2'/> Grab a Micro-Action Rep
+                    <Zap className='w-4 h-4 mr-2'/> Grab a 2-Minute Challenge Rep
                 </Button>
                 <button onClick={onClose} className='text-sm text-gray-500 mt-3 hover:text-gray-700 block w-full'>
                     No thanks, I'll stick to the Scorecard.
@@ -1157,11 +1181,10 @@ export default function DailyPracticeScreen({ initialGoal, initialTier, quickLog
   
   // ADDITION 1: New state to track if we've handled the initial navigation
   const [hasNavigatedInitial, setHasNavigatedInitial] = useState(false); 
-  const [isChallengeModalVisible, setIsChallengeModalVisible] = useState(false); // NEW: Challenge Modal State
-  const [isPostLogPromptVisible, setIsPostLogPromptVisible] = useState(false); // NEW: Post-Log Modal State
+  const [isChallengeModalVisible, setIsChallengeModalVisible] = useState(false); // NEW: Challenge Modal State (Feature 3)
+  const [isPostLogPromptVisible, setIsPostLogPromptVisible] = useState(false); // NEW: Post-Log Modal State (Feature 3)
 
   // FIX: Call the mock scheduleMidnightReset function to simulate nightly log/reset
-  // This must be done inside useEffect to be safe.
 useEffect(() => {
   if (!commitmentData) return;
   resetIfNewDay(commitmentData, updateCommitmentData);
@@ -1179,22 +1202,20 @@ useEffect(() => {
   
   // FIX: State for view toggle
   const [viewMode, setViewMode] = useState('tier'); 
-  const [isPerfectScoreModalVisible, setIsPerfectScoreModalVisible] = useState(false);
+  const [isPerfectScoreModalVisible, setIsPerfectScoreModalVisible] = useState(false); // Feature 4
   const resilienceLog = commitmentData?.resilience_log || {};
   
-  // MODIFIED useEffect: Handle incoming 'quickLog' prop from Dashboard
+  // MODIFIED useEffect: Handle incoming 'quickLog' prop from Dashboard (Feature 3)
   useEffect(() => {
     // If navigated from the Dashboard's Micro-Action button, immediately open the modal.
     if (quickLog === true) {
       setIsChallengeModalVisible(true);
     }
     
-    // FIX 9: Prevent initialGoal/initialTier from re-navigating to the selector after a successful add.
     if (!hasNavigatedInitial && (initialGoal || initialTier)) {
       setView('selector');
       setHasNavigatedInitial(true); // Mark as done
     } else if (view === 'selector' && !hasNavigatedInitial && !initialGoal && !initialTier) {
-       // If we start on selector without props (e.g., from a deep link), also mark as handled.
        setHasNavigatedInitial(true);
     }
   }, [initialGoal, initialTier, hasNavigatedInitial, view, quickLog]); 
@@ -1216,34 +1237,24 @@ useEffect(() => {
       console.log("Resilience Log Saved.");
   };
 
-  const setResilienceLog = () => {}; // Placeholder for the local state in ResilienceTracker
-
-   // Sync reflection + fetch a fresh prompt when data changes
-  useEffect(() => {
-    setReflection(commitmentData?.reflection_journal || '');
-    fetchReflectionPrompt(commitmentData);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [commitmentData]);
-  
-  // Removed redundant useEffect for initialGoal/initialTier navigation, replaced by the unified useEffect.
-
-
   const userCommitments = commitmentData?.active_commitments || [];
   const commitmentHistory = commitmentData?.history || [];
   const score = calculateTotalScore(userCommitments);
   const streak = calculateStreak(commitmentHistory);
   const isPerfectScore = score.total > 0 && score.committed === score.total;
   
-  // --- NEW DATA HOOKS (Implemented Functionality) ---
+  // --- NEW DATA HOOKS (Features 1, 2, 8) ---
   const dailyTargetRep = useMemo(() => MOCK_ACTIVITY_DATA.daily_target_rep, []);
   const identityStatement = useMemo(() => MOCK_ACTIVITY_DATA.identity_statement, []);
-  const dailyChallengeRep = useMemo(() => MOCK_ACTIVITY_DATA.daily_challenge_rep, []);
   // --- END NEW DATA HOOKS ---
 
-// Open the modal the first time today's score becomes perfect
+// Open the modal the first time today's score becomes perfect (Feature 4)
 useEffect(() => {
-  if (isPerfectScore) setIsPerfectScoreModalVisible(true);
-}, [isPerfectScore]);
+  // Only trigger if a perfect score is achieved and we haven't already shown the modal
+  if (isPerfectScore && score.total > 0 && !isPerfectScoreModalVisible) { 
+      setIsPerfectScoreModalVisible(true);
+  }
+}, [isPerfectScore, score.total, isPerfectScoreModalVisible]);
 
 // Allow closing with ESC
 useEffect(() => {
@@ -1259,8 +1270,7 @@ useEffect(() => {
 
 
   /* =========================================================
-     AI-Driven Reflection Prompt Logic
-     FIX: Integrated the resilient API call structure
+     AI-Driven Reflection Prompt Logic (Bonus Feature)
   ========================================================= */
   const fetchReflectionPrompt = async (data) => {
     if (!hasGeminiKey() || promptLoading) return;
@@ -1319,8 +1329,8 @@ useEffect(() => {
     
     setIsSaving(false);
     
-    // NEW LOGIC: If the strategic rep was just completed, prompt for Micro-Action
-    // Assuming the Target Rep is always the first active commitment for simplicity in this mock.
+    // NEW LOGIC (Feature 3): If the strategic rep was just completed, prompt for Micro-Action
+    // This assumes the target rep is the first in the list, matching the Dashboard setup.
     if (id === userCommitments?.[0]?.id && status === 'Committed') {
         setIsPostLogPromptVisible(true);
     }
@@ -1362,7 +1372,6 @@ useEffect(() => {
   };
   
   /* --- NEW FEATURE: 2-MINUTE CHALLENGE LOGIC (Feature 3) --- */
-  // Used by the Post-Log Modal and the Dashboard Button to OPEN the modal.
   const handleOpenChallengeModal = () => {
       setIsChallengeModalVisible(true);
   };
@@ -1370,8 +1379,7 @@ useEffect(() => {
 
 
   /* =========================================================
-     NEW ADVANCED FEATURE: Predictive Risk & Micro-Tip Logic
-     (Refactored to support the single Rep Target Card)
+     NEW ADVANCED FEATURE: Predictive Risk & Micro-Tip Logic (Feature 6)
   ========================================================= */
   const { predictiveRisk, microTipText } = useMemo(() => {
     const today = new Date();
@@ -1402,6 +1410,7 @@ useEffect(() => {
     }
 
     let tipText;
+    // Feature 6: Anchor Setup - Simulated Contextual Tip
     if (hour < 10) { // Before 10 AM
         tipText = "Morning Anchor: Tie your first rep to your morning routine or first 1:1. (After my coffee...)";
     } else if (hour >= 10 && hour < 15) { // Mid-day
@@ -1434,7 +1443,7 @@ const sortedCommitments = useMemo(() => {
 }, [userCommitments, viewMode]);
 
 
-  // Placeholder function for CommitmentSelectorView
+  // Placeholder functions for CommitmentSelectorView to avoid errors
   const renderAssessmentResult = () => {
     if (!aiAssessment) return null;
 
@@ -1455,7 +1464,6 @@ const sortedCommitments = useMemo(() => {
     );
   };
   
-  // Placeholder for CommitmentSelectorView
   const handleAddCommitment = () => { console.log("Add Commitment (Mocked)"); };
   const handleCreateCustomCommitment = () => { console.log("Create Custom Commitment (Mocked)"); };
   const tabStyle = (tabName) => `px-4 py-2 text-sm font-semibold transition-colors ${view === tabName ? 'border-[#47A88D] border-b-4 text-[#002E47]' : 'border-transparent text-gray-500 hover:text-[#002E47]'}`;
@@ -1476,6 +1484,7 @@ const sortedCommitments = useMemo(() => {
           initialTier={initialTier}
         />;
       case 'weekly-prep':
+        // Feature 7: Weekly Recap
         return <WeeklyPrepView
           setView={setView}
           commitmentData={commitmentData}
@@ -1492,13 +1501,12 @@ const sortedCommitments = useMemo(() => {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
               <div className='lg:col-span-2'>
                 
-                {/* NEW FEATURE: Daily Single Rep Target Card (Features 1, 2, 3, 6) */}
+                {/* Daily Target Rep Card (Features 1, 2, 6, 8) */}
                 <DailyRepTargetCard
                     targetRep={dailyTargetRep}
                     microTip={microTipText}
                     identityStatement={identityStatement}
-                    // FIX: Direct log of the first commitment (Target Rep)
-                    // This button handles the primary logging action.
+                    // CRITICAL: Wires the log button to complete the FIRST active commitment (the target rep)
                     handleLogTargetRep={() => handleLogCommitment(userCommitments?.[0]?.id, 'Committed')} 
                 />
                 
@@ -1550,6 +1558,7 @@ const sortedCommitments = useMemo(() => {
                         )}
                     </div>
 
+                  {/* Score Display (Feature 4) */}
                   <div className="mt-8 pt-4 border-t border-gray-200 flex justify-between items-center">
                     <h3 className="text-2xl font-extrabold text-[#002E47]">
                       Daily Rep Score:
@@ -1564,13 +1573,13 @@ const sortedCommitments = useMemo(() => {
               </div>
 
               <div className='lg:col-span-1 space-y-8'>
-                  {/* FIX: Use the component with local save state */}
+                  {/* T1 Resilience Check */}
                   <ResilienceTracker dailyLog={resilienceLog} handleSaveResilience={handleSaveResilience}/>
                   
-                  {/* NEW FEATURE: Social Accountability Nudge (Feature 5 Mock) */}
+                  {/* Social Accountability Nudge (Feature 5) */}
                   <SocialAccountabilityNudge />
 
-                  {/* Goal Drift Indicator (moved to sidebar) */}
+                  {/* Goal Drift Indicator */}
                   <Card 
                       title="Progress Risk Indicator" 
                       icon={predictiveRisk.icon} 
@@ -1582,6 +1591,7 @@ const sortedCommitments = useMemo(() => {
                   
                   <TierSuccessMap tierRates={tierSuccessRates} />
                   
+                  {/* Monthly Consistency & Streak (Feature 4) */}
                   <Card title="Monthly Consistency" icon={BarChart3} accent='TEAL' className='bg-[#47A88D]/10 border-2 border-[#47A88D]'>
                       <p className='text-xs text-gray-700 mb-2'>Avg. Rep Completion Rate ({monthlyProgress.daysTracked} days)</p>
                       <div className="w-full bg-gray-200 rounded-full h-4 mb-2">
@@ -1606,7 +1616,7 @@ const sortedCommitments = useMemo(() => {
               </div>
             </div>
             
-            /* Daily Reflection Section */
+            {/* Daily Reflection Section (Feature 7 / AI Bonus) */}
             <Card title="Daily Reflection (The Debrief)" icon={MessageSquare} accent='NAVY' className='mt-8 max-w-3xl border-l-4 border-[#002E47]'>
                 <p className='text-sm text-gray-700 mb-4'>
                     {promptLoading ? (
@@ -1640,11 +1650,12 @@ const sortedCommitments = useMemo(() => {
                 activeCommitments={userCommitments}
             />
             
-            {isPerfectScore && score.total > 0 && !isPerfectScoreModalVisible && (
+            {/* Renders if a perfect score is just achieved (Feature 4) */}
+            {isPerfectScoreModalVisible && (
                  <PerfectScoreModal onClose={() => setIsPerfectScoreModalVisible(false)} />
             )}
             
-            {/* RENDER NEW CHALLENGE MODAL */}
+            {/* RENDER NEW CHALLENGE MODAL (Feature 3) */}
             {isChallengeModalVisible && (
                 <TwoMinuteChallengeModal
                     isVisible={isChallengeModalVisible}
@@ -1653,7 +1664,7 @@ const sortedCommitments = useMemo(() => {
                 />
             )}
             
-            {/* RENDER POST-LOG MICRO-ACTION PROMPT */}
+            {/* RENDER POST-LOG MICRO-ACTION PROMPT (Feature 3 momentum) */}
             {isPostLogPromptVisible && (
                 <MicroActionPromptModal
                     isVisible={isPostLogPromptVisible}

@@ -44,6 +44,7 @@ const MOCK_PLANNING_DATA = {
 
 // --- NEW MOCK DATA FOR REFINEMENT (Rep Tracker Integration) ---
 const MOCK_ACTIVITY_DATA = {
+    // These reps simulate being pulled from a daily schedule or generator:
     daily_target_rep: "Give one reinforcing feedback statement to a direct report.",
     daily_challenge_rep: "Send one thank-you Slack message right now.", // For 2-Minute Challenge
     total_reps_completed: 452,
@@ -404,6 +405,7 @@ const DashboardScreen = () => {
       return;
     }
     console.log('[Dashboard] NAVIGATION EXECUTED ->', screen, params || {});
+    // When navigating to daily-practice with quickLog, it immediately opens the modal (Feature 3)
     navigate(screen, params);
   }, [navigate]);
   
@@ -421,6 +423,7 @@ const DashboardScreen = () => {
   // --- END RE-ADDED CALCULATION ---
   
   // --- NEW METRIC CALCULATIONS ---
+  // MOCK_ACTIVITY_DATA provides the stable "daily" content (Features 1, 2, 8)
   const dailyTargetRep = useMemo(() => MOCK_ACTIVITY_DATA.daily_target_rep, []);
   const dailyChallengeRep = useMemo(() => MOCK_ACTIVITY_DATA.daily_challenge_rep, []);
   const identityStatement = useMemo(() => MOCK_ACTIVITY_DATA.identity_statement, []);
@@ -537,7 +540,6 @@ useEffect(() => {
       </div>
       
       {/* --- 2. THE REP TRACKER LAUNCHPAD (HIGH PRIORITY) --- */}
-      {/* This section is simplified to just core actions and top-level health metrics */}
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6"> 
         
         {/* LAUNCHPAD BUTTONS (lg:col-span-3) */}
@@ -559,7 +561,7 @@ useEffect(() => {
                     <span className='text-xs font-light mt-1'>Reps: {todayRepsCompleted}/{commitsTotal}</span>
                 </ThreeDButton>
 
-                {/* PRIMARY ACTION 2: 2-Min Micro-Action Start (Frictionless Rep) */}
+                {/* PRIMARY ACTION 2: 2-Min Micro-Action Start (Frictionless Rep) - Feature 3 */}
                 <ThreeDButton 
                     onClick={() => safeNavigate('daily-practice', { quickLog: true, source: 'dashboard' })} 
                     color={COLORS.BLUE}
@@ -584,12 +586,12 @@ useEffect(() => {
                 </ThreeDButton>
             </div>
             
-            {/* New Simplified Rep/Identity Info Card */}
+            {/* New Simplified Rep/Identity Info Card - Features 1, 2, 8 */}
             <Card title="Today's Strategic Focus" icon={Target} accent='NAVY' className="border-4 border-[#002E47]/10 bg-white/95">
                 <div className='grid md:grid-cols-2 gap-4'>
                     <div>
                         <p className='text-sm font-semibold text-gray-700 mb-2 uppercase tracking-wide flex items-center gap-2'>
-                            <Flag className='w-4 h-4 text-red-500'/> Target Rep:
+                            <Flag className='w-4 h-4 text-red-500'/> Target Rep (Clarity of Behavior):
                         </p>
                         <p className='text-md font-bold text-[#E04E1B]'>
                             {dailyTargetRep}
@@ -597,7 +599,7 @@ useEffect(() => {
                     </div>
                     <div>
                          <p className='text-sm font-semibold text-gray-700 mb-2 uppercase tracking-wide flex items-center gap-2'>
-                            <User className='w-4 h-4 text-gray-500'/> Identity Anchor:
+                            <User className='w-4 h-4 text-gray-500'/> Identity Anchor (Emotional Relevance):
                         </p>
                         <p className='text-md italic text-[#002E47]'>
                             "{identityStatement.substring(0, 60) + '...'}"
@@ -614,7 +616,7 @@ useEffect(() => {
                 <Activity size={24} className='text-[#47A88D]'/> Health & Focus
             </h2>
             
-            {/* Grouped Health and Nudge for density */}
+            {/* Grouped Health and Nudge for density - Feature 4 */}
             <ProgressRings
                 dailyPercent={dailyPercent}
                 monthlyPercent={monthlyPercent}
@@ -622,6 +624,7 @@ useEffect(() => {
                 tierHex={weakestTier?.hex || COLORS.TEAL}
                 commitsDue={commitsDue}
             />
+            {/* Strategic Nudge / AI Reflection Coach */}
             <div className="min-h-full">
                 <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-xl relative group min-h-full flex flex-col justify-between" style={{ background: `${weakestTier?.hex || COLORS.TEAL}1A`, opacity: 0.9 }}>
                     <div className="flex items-center justify-between mb-4 relative z-10">
@@ -687,7 +690,7 @@ useEffect(() => {
                         trend={1}
                         colorHex={COLORS.TEAL}
                     />
-                    {/* Metric: Current Streak */}
+                    {/* Metric: Current Streak - Feature 4 */}
                     <StatCard
                         icon={Star}
                         label="Current Perfect Score Streak"
@@ -696,7 +699,7 @@ useEffect(() => {
                         trend={perfectStreak >= 3 ? 5 : 0} 
                         colorHex={COLORS.GREEN}
                     />
-                     {/* Metric: Weakest Tier Focus (Roadmap context) - Moved here for alignment */}
+                     {/* Metric: Weakest Tier Focus (Roadmap context) */}
                      <StatCard
                         icon={Target}
                         label="Weakest Tier Focus"
@@ -768,7 +771,7 @@ useEffect(() => {
                         trend={24 - goalsCount > 0 ? -4 : 0} 
                         colorHex={COLORS.NAVY}
                     />
-                    {/* Metric: Social Accountability Nudge */}
+                    {/* Metric: Social Accountability Nudge - Feature 5 */}
                      <StatCard
                         icon={Users}
                         label="Accountability Pod"
@@ -786,7 +789,7 @@ useEffect(() => {
                         trend={5} 
                         colorHex={COLORS.BLUE}
                     />
-                     {/* Metric: Placeholder for a Community Gamification Metric */}
+                     {/* Metric: Placeholder for a Community Gamification Metric (Streak Coin) */}
                     <StatCard
                         icon={Sparkles}
                         label="Rep Streak Coins Earned"

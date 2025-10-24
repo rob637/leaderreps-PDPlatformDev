@@ -127,13 +127,13 @@ const Button = ({ children, onClick, disabled = false, className = '', ...rest }
     </button>
 );
 
-// --- MODAL COMPONENT (UPDATED) ---
+// --- MODAL COMPONENT (Feature 3: 2-Minute Challenge Mode) ---
 const TwoMinuteChallengeModal = ({ isVisible, onClose, sourceScreen }) => {
     const { updateCommitmentData, navigate } = useAppServices();
     const [isLogging, setIsLogging] = useState(false);
     const [logStatus, setLogStatus] = useState(null); // 'success' or 'error'
     
-    // FIX 2: Randomly select a new rep every time the modal is rendered/made visible
+    // Feature 3: Randomly select a new rep every time the modal is rendered/made visible
     const randomRep = useMemo(() => {
         const randomIndex = Math.floor(Math.random() * QUICK_CHALLENGE_CATALOG.length);
         return QUICK_CHALLENGE_CATALOG[randomIndex];
@@ -158,18 +158,19 @@ const TwoMinuteChallengeModal = ({ isVisible, onClose, sourceScreen }) => {
         };
 
         try {
+            // Log the rep by adding it as a completed commitment
             await updateCommitmentData(data => ({
                 ...data,
                 active_commitments: [...(data?.active_commitments || []), newCommitment],
             }));
             setLogStatus('success');
             
-            // FIX 1: Conditional Navigation (Navigate only if source was Dashboard)
+            // Navigate the user back to the Scorecard if they initiated this from the Dashboard
             setTimeout(() => {
                 if (sourceScreen === 'dashboard' && navigate) {
-                    navigate('daily-practice'); // Navigate to DP scorecard
+                    navigate('daily-practice'); 
                 }
-                onClose(); // Close the modal (will stay on DP if navigated from DP)
+                onClose(); // Close the modal
             }, 1500); 
 
         } catch (e) {
@@ -190,7 +191,7 @@ const TwoMinuteChallengeModal = ({ isVisible, onClose, sourceScreen }) => {
 
                 <Zap className={`w-12 h-12 text-[${COLORS.BLUE}] mx-auto mb-4`} />
                 <h3 className="text-2xl font-extrabold text-[#002E47] mb-2">Grab a Micro-Action Rep</h3>
-                <p className="text-lg text-gray-600 mb-6">Frictionless training for momentum! Complete this action quickly.</p>
+                <p className="text-lg text-gray-600 mb-6">Frictionless training for momentum! Complete this action quickly (Feature 3).</p>
 
                 <div className={`p-4 rounded-xl border-2 mb-6 ${logStatus === 'success' ? 'border-green-400 bg-green-50' : 'border-gray-300 bg-gray-100'}`}>
                     <p className='text-sm font-semibold text-gray-700 mb-1'>Today's Micro-Action ({randomRep.tier}):</p>
