@@ -25,17 +25,50 @@ const LEADERSHIP_TIERS_META = {
     'T5': { id: 'T5', name: 'Visionary Leadership', hex: '#002E47' }, 
 };
 
-// --- NEW MOCK DATA (Implementing the new Daily Target Rep and Identity) ---
+/* --- ENHANCEMENT: DEEP, RICH REP CATALOG (40+ items) --- */
+const LEADERSHIP_REP_CATALOG = [
+    // T1: Self-Awareness & Resilience
+    { id: 'T1-1', text: "Conduct a 5-minute mindfulness exercise before your first meeting.", tier: 'T1' },
+    { id: 'T1-2', text: "Log your focus and energy levels before and after lunch.", tier: 'T1' },
+    { id: 'T1-3', text: "Identify one cognitive bias that influenced a decision today.", tier: 'T1' },
+    { id: 'T1-4', text: "Block 30 minutes of 'maker time' with notifications off.", tier: 'T1' },
+    { id: 'T1-5', text: "Say 'no' politely but firmly to one new, non-essential request.", tier: 'T1' },
+    // T2: Operational Excellence & Execution
+    { id: 'T2-1', text: "Clarify the 'Definition of Done' for one ambiguous task on your team.", tier: 'T2' },
+    { id: 'T2-2', text: "Eliminate one redundant status report or meeting agenda item.", tier: 'T2' },
+    { id: 'T2-3', text: "Practice deep work for 45 minutes on a single, high-leverage task.", tier: 'T2' },
+    { id: 'T2-4', text: "Document a simple Standard Operating Procedure (SOP) for a recurring task.", tier: 'T2' },
+    { id: 'T2-5', text: "Use the '5 Whys' technique to identify the root cause of a recent failure.", tier: 'T2' },
+    // T3: Strategic Alignment & Goal Setting
+    { id: 'T3-1', text: "Relate one major decision today back to a quarterly OKR.", tier: 'T3' },
+    { id: 'T3-2', text: "Ask one team member how their work ties to the company mission.", tier: 'T3' },
+    { id: 'T3-3', text: "Spend 15 minutes mapping out potential roadblocks for a future project (pre-mortem).", tier: 'T3' },
+    { id: 'T3-4', text: "Articulate the team's top three priorities in one sentence.", tier: 'T3' },
+    { id: 'T3-5', text: "Review the mission/vision statement and update one personal goal to align.", tier: 'T3' },
+    // T4: People Development & Coaching
+    { id: 'T4-1', text: "Give one specific, reinforcing feedback statement to a direct report.", tier: 'T4' }, // Daily Target Rep
+    { id: 'T4-2', text: "Ask 3 open-ended, non-judgmental coaching questions during a 1:1.", tier: 'T4' },
+    { id: 'T4-3', text: "Delegate a task with high growth potential, not just high urgency.", tier: 'T4' },
+    { id: 'T4-4', text: "Use the SBI model (Situation, Behavior, Impact) for corrective feedback.", tier: 'T4' },
+    { id: 'T4-5', text: "Praise a team member publicly for a specific courageous action.", tier: 'T4' },
+    // T5: Visionary Leadership & Culture
+    { id: 'T5-1', text: "Share a concise, non-jargon update on the 5-year vision with a junior team member.", tier: 'T5' },
+    { id: 'T5-2', text: "Acknowledge one team member's mistake publicly and model vulnerability.", tier: 'T5' },
+    { id: 'T5-3', text: "Spend 10 minutes observing team dynamics without intervening.", tier: 'T5' },
+    { id: 'T5-4', text: "Define one cultural norm you want to reinforce through your actions this week.", tier: 'T5' },
+    { id: 'T5-5', text: "Connect an external industry trend to your team's immediate workload.", tier: 'T5' },
+];
+
+// --- MOCK DATA (Pulls first rep from catalog for default) ---
 const MOCK_ACTIVITY_DATA = {
-    // These data points now reflect the core focus of the new Rep Tracker
-    daily_target_rep: "Give one reinforcing feedback statement to a direct report.",
+    daily_target_rep: LEADERSHIP_REP_CATALOG[16].text, // T4-1 (Feedback rep)
     identity_statement: "I am the kind of leader who coaches in the moment and owns accountability.",
     daily_challenge_rep: "Send one quick thank-you Slack message right now.", // For 2-Minute Challenge
     total_reps_completed: 452, 
     total_coaching_labs: 18,    
     today_coaching_labs: 2,     
 };
-// --- END NEW MOCK DATA ---
+// --- END MOCK DATA ---
 
 
 // FIX 1: Resolves "ReferenceError: groupCommitmentsByTier is not defined"
@@ -1132,6 +1165,7 @@ export default function DailyPracticeScreen({ initialGoal, initialTier }) {
   
   // ADDITION 1: New state to track if we've handled the initial navigation
   const [hasNavigatedInitial, setHasNavigatedInitial] = useState(false); 
+  const [isChallengeModalVisible, setIsChallengeModalVisible] = useState(false); // NEW: Challenge Modal State
 
   // FIX: Call the mock scheduleMidnightReset function to simulate nightly log/reset
   // This must be done inside useEffect to be safe.
@@ -1324,28 +1358,16 @@ useEffect(() => {
   };
   
   /* --- NEW FEATURE: 2-MINUTE CHALLENGE LOGIC (Feature 3) --- */
+  const handleOpenChallengeModal = () => {
+      setIsChallengeModalVisible(true);
+  };
+
   const handleLogChallenge = async () => {
-      setIsSaving(true);
-      
-      // MOCK LOGIC: Adds a dummy rep to simulate the quick log functionality
-      const newCommitment = {
-        id: `challenge-${Date.now()}`,
-        text: dailyChallengeRep,
-        status: 'Committed',
-        isCustom: true,
-        linkedGoal: 'Frictionless Start Goal',
-        linkedTier: 'T1',
-        targetColleague: 'Immediate',
-      };
-      
-      await updateCommitmentData(data => ({ 
-        ...data,
-        active_commitments: [ ...(data?.active_commitments || []), newCommitment ],
-      }));
-      
-      setIsSaving(false);
-      console.log('2-Minute Challenge Rep Logged!');
-  }
+      // Logic for 2-Min Start is handled inside the modal, 
+      // but we use this mock function for the DailyRepTargetCard 
+      // to open the modal.
+      setIsChallengeModalVisible(true);
+  };
   /* --- END NEW FEATURE --- */
 
 
@@ -1593,6 +1615,15 @@ const sortedCommitments = useMemo(() => {
             
             {isPerfectScore && score.total > 0 && !isPerfectScoreModalVisible && (
                  <PerfectScoreModal onClose={() => setIsPerfectScoreModalVisible(false)} />
+            )}
+            
+            {/* RENDER NEW CHALLENGE MODAL */}
+            {isChallengeModalVisible && (
+                <TwoMinuteChallengeModal
+                    isVisible={isChallengeModalVisible}
+                    onClose={() => setIsChallengeModalVisible(false)}
+                    repText={dailyChallengeRep}
+                />
             )}
             
           </div>
