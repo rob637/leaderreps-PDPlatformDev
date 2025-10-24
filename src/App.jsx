@@ -152,7 +152,7 @@ const ScreenMap = {
     'community': lazy(() => import('./components/screens/CommunityScreen.jsx')),
     'applied-leadership': lazy(() => import('./components/screens/AppliedLeadership.jsx')),
     'leadership-videos': lazy(() => import('./components/screens/LeadershipVideos.jsx')), // ContentLibraryScreen
-    'app-settings': lazy(() => import('./components/screens/Settings.jsx')), // Assuming Settings.jsx will be created or AppSettingsScreen replaces it.
+    // 'app-settings' is handled directly by AppSettingsScreen defined below.
 };
 
 // NOTE: Since AppSettingsScreen uses useAppServices(), we must ensure we import it
@@ -522,14 +522,16 @@ const NavSidebar = ({ currentScreen, setCurrentScreen, user, closeMobileMenu, is
 
 const ScreenRouter = ({ currentScreen, navParams }) => {
     const uniqueKey = currentScreen;
+    
+    // Fallback to Dashboard if the screen is not found in the map
     const Component = ScreenMap[currentScreen] || ScreenMap.dashboard;
 
-    // FIX: Pass the initialScreen prop for screens that need it (like ProfDevPlanScreen)
+    // Handle specific screen prop requirements
+    // Note: AppSettingsScreen is handled via its direct component definition below.
     if (currentScreen === 'prof-dev-plan') {
         return <Component key={uniqueKey} initialScreen={currentScreen} />;
     }
     
-    // FIX: Pass initialGoal/initialTier params for DailyPracticeScreen
     if (currentScreen === 'daily-practice') {
         return <Component 
             key={uniqueKey} 
@@ -538,12 +540,11 @@ const ScreenRouter = ({ currentScreen, navParams }) => {
         />;
     }
     
-    // FIX: Handle AppSettingsScreen separately as it's not lazy loaded 
     if (currentScreen === 'app-settings') {
         return <AppSettingsScreen key={uniqueKey} />;
     }
-    
-    // FIX: Use the component found in the ScreenMap directly
+
+    // Default route for lazy-loaded components
     return <Component key={uniqueKey} />;
 };
 
@@ -692,7 +693,6 @@ const App = ({ initialState }) => {
         <Suspense fallback={
              <div className="min-h-screen flex items-center justify-center bg-gray-100"><div className="flex flex-col items-center"><div className="animate-spin rounded-full h-12 w-12 border-4 border-t-4 border-gray-200 border-t-[#47A88D] mb-3"></div><p className="text-[#002E47] font-semibold">Loading App Content...</p></div></div>
         }>
-// App.jsx (Inside the final return block)
             <AppContent
               currentScreen={currentScreen} 
               setCurrentScreen={navigate}
