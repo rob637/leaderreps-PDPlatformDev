@@ -525,9 +525,9 @@ useEffect(() => {
   ========================================================= */
 
   return (
-    <div className={`p-6 space-y-8 bg-[${COLORS.LIGHT_GRAY}] min-h-screen`}>
+    <div className={`p-6 space-y-4 bg-[${COLORS.LIGHT_GRAY}] min-h-screen`}> 
       {/* 1. Header with enhanced Personalization */}
-      <div className={`border-b border-gray-200 pb-5 bg-[${COLORS.OFF_WHITE}] p-6 -mx-6 -mt-6 mb-8 rounded-b-xl shadow-md`}>
+      <div className={`border-b border-gray-200 pb-5 bg-[${COLORS.OFF_WHITE}] p-6 -mx-6 -mt-6 mb-4 rounded-b-xl shadow-md`}>
         <h1 className={`text-4xl font-extrabold text-[${COLORS.NAVY}] flex items-center gap-3`}>
           <Home size={32} style={{ color: COLORS.TEAL }} /> The Arena Dashboard
         </h1>
@@ -537,66 +537,104 @@ useEffect(() => {
       </div>
       
       {/* --- 2. THE REP TRACKER LAUNCHPAD (HIGH PRIORITY) --- */}
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+      {/* Reduced outer gap from space-y-8 to space-y-4 */}
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6"> 
         
-        {/* DAILY REP FOCUS CARD (lg:col-span-3) */}
-        <div className="lg:col-span-3 space-y-4">
+        {/* DAILY REP FOCUS CARD (lg:col-span-2) - Increased span to make it the primary focus */}
+        <div className="lg:col-span-2 space-y-3"> 
             <h2 className="text-2xl font-extrabold text-[#002E47] flex items-center gap-3">
                 <Flag size={24} className='text-[#E04E1B]'/> Today's Mission: The Single Rep
             </h2>
-            <Card title={dailyTargetRep} icon={Flag} accent='RED' className="border-4 border-[#E04E1B]/50 shadow-2xl">
+            {/* CARD: Combines Mission (1), Emotional Relevance (2), and Frictionless Start (3) */}
+            <Card title={dailyTargetRep} icon={Flag} accent='RED' className="border-4 border-[#E04E1B]/50 shadow-2xl h-full">
                 <p className='text-sm font-semibold text-gray-700 mb-3'>
                     **Goal:** You always know the single skill you’re training today. **Rep Status:** {todayRepsCompleted} / {commitsTotal} completed.
                 </p>
-                <div className='flex space-x-4 mt-3'>
+                <div className='p-3 rounded-lg border border-gray-200 bg-white shadow-inner mb-4'>
+                    <p className='text-xs font-semibold text-gray-600 mb-1 flex items-center gap-1'>
+                        <User className='w-3 h-3 text-gray-500'/> Your Identity Anchor (Why It Matters):
+                    </p>
+                    <p className='text-sm italic text-gray-800 font-medium'>
+                        "{identityStatement.substring(0, 70) + '...'}"
+                    </p>
+                </div>
+                
+                <div className='flex space-x-4 mt-auto pt-4 border-t border-gray-100'>
                     <Button 
                         onClick={() => safeNavigate('daily-practice')} 
                         color={COLORS.TEAL}
-                        className="flex-1 px-4 py-2 text-lg"
+                        className="flex-1 px-4 py-3 text-lg font-extrabold"
                     >
                         <ClockIcon className='w-5 h-5 mr-2'/> Go to Rep Scorecard
                     </Button>
+                    {/* Frictionless Start/2-Minute Challenge Button */}
                     <Button 
                         onClick={() => safeNavigate('daily-practice', { initialGoal: 'Frictionless Start Goal' })} 
                         color={COLORS.BLUE}
                         className="w-1/3 px-3 py-2 text-sm bg-[#2563EB] hover:bg-[#1E40AF]"
                     >
-                        <Zap className='w-4 h-4 mr-2'/> 2-Minute Start
+                        <Zap className='w-4 h-4 mr-2'/> 2-Min Start
                     </Button>
                 </div>
             </Card>
         </div>
 
-        {/* IDENTITY ANCHOR + HEALTH SCORE RING (lg:col-span-1) */}
-        <div className="lg:col-span-1 space-y-4">
-            <Card title="Your Leadership Anchor" icon={User} accent='NAVY' className="bg-white/90 border-2 border-dashed border-[#002E47]/50">
-                <p className='text-sm italic text-gray-800 font-medium'>
-                    "{identityStatement}"
-                </p>
-                <CornerDownRight className="w-5 h-5 text-gray-400 absolute top-4 right-4" />
-                <Button onClick={() => safeNavigate('profile')} variant='outline' className='w-full mt-4 text-xs px-4 py-2 border-[#002E47] text-[#002E47] hover:bg-[#002E47]/10'>
-                   <User className='w-4 h-4 mr-2'/> View/Edit Identity
-                </Button>
-            </Card>
-            <ProgressRings
-                dailyPercent={dailyPercent}
-                monthlyPercent={monthlyPercent}
-                careerPercent={careerPercent}
-                tierHex={weakestTier?.hex || COLORS.TEAL}
-                commitsDue={commitsDue}
-            />
+        {/* HEALTH SCORE AND NUDGE COLUMN (lg:col-span-2) */}
+        <div className="lg:col-span-2 space-y-3"> 
+             <h2 className="text-2xl font-extrabold text-[#002E47] flex items-center gap-3">
+                <Activity size={24} className='text-[#47A88D]'/> Health & Focus
+            </h2>
+            <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
+                {/* Health Score Ring */}
+                <ProgressRings
+                    dailyPercent={dailyPercent}
+                    monthlyPercent={monthlyPercent}
+                    careerPercent={careerPercent}
+                    tierHex={weakestTier?.hex || COLORS.TEAL}
+                    commitsDue={commitsDue}
+                />
+                
+                {/* Strategic Nudge (Fits neatly beside the ring) */}
+                <div className="min-h-full">
+                    <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-xl relative group min-h-full flex flex-col justify-between" style={{ background: `${weakestTier?.hex || COLORS.TEAL}1A`, opacity: 0.9 }}>
+                        <div className="flex items-center justify-between mb-4 relative z-10">
+                            <h2 className={`text-xl font-bold flex items-center gap-2`} style={{color: weakestTier?.hex || COLORS.NAVY}}>
+                                <Lightbulb size={20} className={`text-white p-1 rounded-full`} style={{backgroundColor: weakestTier?.hex || COLORS.TEAL}}/> 
+                                Strategic Nudge
+                            </h2>
+                        </div>
+                        <div className={`p-4 rounded-xl bg-gray-50 border border-gray-100 mt-3 shadow-inner flex-1`}>
+                            <div className="prose prose-sm max-w-none relative z-10">
+                                {tipHtml
+                                    ? <div dangerouslySetInnerHTML={{ __html: tipHtml }} />
+                                    : <p className="text-gray-600 text-sm">Tap Next Rep to get a fresh, powerful focus point from your AI Coach.</p>}
+                            </div>
+                        </div>
+                         <button
+                            className="rounded-xl mt-4 px-3 py-2 text-sm font-semibold bg-[#002E47] text-white hover:bg-gray-700 transition-colors flex items-center justify-center gap-1"
+                            onClick={nextNudge}
+                            disabled={tipLoading}
+                            type="button"
+                        >
+                            {tipLoading ? <Loader size={16} className='animate-spin text-white' /> : <Sparkles size={16} />}
+                            Next Coaching Nudge
+                        </button>
+                    </div>
+                </div>
+
+            </div>
         </div>
       </div>
       
-      {/* --- 3. METRICS SCORECARD & NUDGE (Secondary Content) --- */}
+      {/* --- 3. METRICS SCORECARD (SECONDARY CONTENT) --- */}
       <h2 className="text-2xl font-extrabold text-[#002E47] flex items-center gap-3 pt-6 border-t border-gray-200">
           <BarChart3 size={24} className='text-[#47A88D]'/> Performance Scorecard
       </h2>
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
         
-        {/* Progress Snapshot (The Scorecard: lg:col-span-3) */}
-        <div className="lg:col-span-3 space-y-6">
+        {/* Progress Snapshot (The Scorecard: lg:col-span-4) - Span full width now */}
+        <div className="lg:col-span-4 space-y-6">
           
           <div className="space-y-6">
             {/* PILLAR: CONTENT */}
@@ -732,35 +770,6 @@ useEffect(() => {
                         colorHex={COLORS.PURPLE}
                     />
                 </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Daily Tip (Strategic Nudge: lg:col-span-1) */}
-        <div className="lg:col-span-1">
-          <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-xl transition-all duration-300 hover:shadow-2xl hover:bg-white/95 relative group">
-            <div className='absolute inset-0 rounded-2xl' style={{ background: `${weakestTier?.hex || COLORS.TEAL}1A`, opacity: 0.1 }} />
-            <div className="flex items-center justify-between mb-4 relative z-10">
-              <h2 className={`text-xl font-bold flex items-center gap-2`} style={{color: weakestTier?.hex || COLORS.NAVY}}>
-                <Lightbulb size={20} className={`text-white p-1 rounded-full`} style={{backgroundColor: weakestTier?.hex || COLORS.TEAL}}/> 
-                Strategic Nudge
-              </h2>
-              <button
-                className="rounded-full border border-gray-200 px-3 py-1 text-sm hover:bg-gray-100 flex items-center gap-1 transition-colors"
-                onClick={nextNudge}
-                disabled={tipLoading}
-                type="button"
-              >
-                {tipLoading ? <Loader size={16} className='animate-spin text-gray-500' /> : <ClockIcon size={16} className='text-gray-500' />}
-                Next Rep
-              </button>
-            </div>
-            <div className={`p-4 rounded-xl bg-gray-50 border border-gray-100 mt-3 shadow-inner`}>
-              <div className="prose prose-sm max-w-none relative z-10">
-                {tipHtml
-                  ? <div dangerouslySetInnerHTML={{ __html: tipHtml }} />
-                  : <p className="text-gray-600 text-sm">Tap Next Rep to get a fresh, powerful focus point from your AI Coach.</p>}
-              </div>
             </div>
           </div>
         </div>
