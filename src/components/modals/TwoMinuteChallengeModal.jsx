@@ -127,12 +127,13 @@ const Button = ({ children, onClick, disabled = false, className = '', ...rest }
     </button>
 );
 
-const TwoMinuteChallengeModal = ({ isVisible, onClose }) => {
-    const { updateCommitmentData } = useAppServices();
+// --- MODAL COMPONENT (UPDATED) ---
+const TwoMinuteChallengeModal = ({ isVisible, onClose, sourceScreen }) => {
+    const { updateCommitmentData, navigate } = useAppServices();
     const [isLogging, setIsLogging] = useState(false);
     const [logStatus, setLogStatus] = useState(null); // 'success' or 'error'
     
-    // FIX 1: Randomly select a new rep every time the modal is rendered/made visible
+    // FIX 2: Randomly select a new rep every time the modal is rendered/made visible
     const randomRep = useMemo(() => {
         const randomIndex = Math.floor(Math.random() * QUICK_CHALLENGE_CATALOG.length);
         return QUICK_CHALLENGE_CATALOG[randomIndex];
@@ -144,13 +145,13 @@ const TwoMinuteChallengeModal = ({ isVisible, onClose }) => {
         setIsLogging(true);
         setLogStatus(null);
         
-        // --- MOCK LOGIC FOR QUICK LOG ---
+        // --- LOGIC FOR QUICK LOG ---
         const newCommitment = {
             id: `quick-log-${Date.now()}`,
             text: randomRep.rep, 
             status: 'Committed',
             isCustom: true,
-            linkedGoal: `2-Minute Quick Rep (${randomRep.tier})`,
+            linkedGoal: `Momentum Rep (Quick Log)`,
             linkedTier: randomRep.tier, 
             targetColleague: 'Immediate/System',
             isQuickLog: true,
@@ -162,26 +163,34 @@ const TwoMinuteChallengeModal = ({ isVisible, onClose }) => {
                 active_commitments: [...(data?.active_commitments || []), newCommitment],
             }));
             setLogStatus('success');
-            // Simulate celebration before closing
-            setTimeout(onClose, 1500); 
+            
+            // FIX 1: Conditional Navigation (Navigate only if source was Dashboard)
+            setTimeout(() => {
+                if (sourceScreen === 'dashboard' && navigate) {
+                    navigate('dashboard'); // Navigate back to dashboard
+                }
+                onClose(); // Close the modal (will stay on DP if navigated from DP)
+            }, 1500); 
+
         } catch (e) {
             console.error("Failed to log 2-minute challenge:", e);
             setLogStatus('error');
-        } finally {
             setIsLogging(false);
+        } finally {
+            // Note: setIsLogging(false) is handled in the timeout on success/error block on failure.
         }
     };
 
     return (
         <div className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4"> 
             <div className={`relative bg-[${COLORS.OFF_WHITE}] rounded-xl shadow-2xl w-full max-w-lg p-8 text-center border-t-8 border-[${COLORS.BLUE}]`}>
-                <button onClick={onClose} className="absolute top-4 right-4 text-gray-400 hover:text-gray-700">
+                <button onClick={onClose} disabled={isLogging} className="absolute top-4 right-4 text-gray-400 hover:text-gray-700">
                     <X className="w-6 h-6" />
                 </button>
 
                 <Zap className={`w-12 h-12 text-[${COLORS.BLUE}] mx-auto mb-4`} />
-                <h3 className="text-2xl font-extrabold text-[#002E47] mb-2">2-Minute Challenge Rep</h3>
-                <p className="text-lg text-gray-600 mb-6">Frictionless training! Complete this micro-action right now to build momentum.</p>
+                <h3 className="text-2xl font-extrabold text-[#002E47] mb-2">Grab a Micro-Action Rep</h3>
+                <p className="text-lg text-gray-600 mb-6">Frictionless training for momentum! Complete this action quickly.</p>
 
                 <div className={`p-4 rounded-xl border-2 mb-6 ${logStatus === 'success' ? 'border-green-400 bg-green-50' : 'border-gray-300 bg-gray-100'}`}>
                     <p className='text-sm font-semibold text-gray-700 mb-1'>Today's Micro-Action ({randomRep.tier}):</p>

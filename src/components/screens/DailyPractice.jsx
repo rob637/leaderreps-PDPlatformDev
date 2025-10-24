@@ -25,50 +25,17 @@ const LEADERSHIP_TIERS_META = {
     'T5': { id: 'T5', name: 'Visionary Leadership', hex: '#002E47' }, 
 };
 
-/* --- ENHANCEMENT: DEEP, RICH REP CATALOG (40+ items) --- */
-const LEADERSHIP_REP_CATALOG = [
-    // T1: Self-Awareness & Resilience
-    { id: 'T1-1', text: "Conduct a 5-minute mindfulness exercise before your first meeting.", tier: 'T1' },
-    { id: 'T1-2', text: "Log your focus and energy levels before and after lunch.", tier: 'T1' },
-    { id: 'T1-3', text: "Identify one cognitive bias that influenced a decision today.", tier: 'T1' },
-    { id: 'T1-4', text: "Block 30 minutes of 'maker time' with notifications off.", tier: 'T1' },
-    { id: 'T1-5', text: "Say 'no' politely but firmly to one new, non-essential request.", tier: 'T1' },
-    // T2: Operational Excellence & Execution
-    { id: 'T2-1', text: "Clarify the 'Definition of Done' for one ambiguous task on your team.", tier: 'T2' },
-    { id: 'T2-2', text: "Eliminate one redundant status report or meeting agenda item.", tier: 'T2' },
-    { id: 'T2-3', text: "Practice deep work for 45 minutes on a single, high-leverage task.", tier: 'T2' },
-    { id: 'T2-4', text: "Document a simple Standard Operating Procedure (SOP) for a recurring task.", tier: 'T2' },
-    { id: 'T2-5', text: "Use the '5 Whys' technique to identify the root cause of a recent failure.", tier: 'T2' },
-    // T3: Strategic Alignment & Goal Setting
-    { id: 'T3-1', text: "Relate one major decision today back to a quarterly OKR.", tier: 'T3' },
-    { id: 'T3-2', text: "Ask one team member how their work ties to the company mission.", tier: 'T3' },
-    { id: 'T3-3', text: "Spend 15 minutes mapping out potential roadblocks for a future project (pre-mortem).", tier: 'T3' },
-    { id: 'T3-4', text: "Articulate the team's top three priorities in one sentence.", tier: 'T3' },
-    { id: 'T3-5', text: "Review the mission/vision statement and update one personal goal to align.", tier: 'T3' },
-    // T4: People Development & Coaching
-    { id: 'T4-1', text: "Give one specific, reinforcing feedback statement to a direct report.", tier: 'T4' }, // Daily Target Rep
-    { id: 'T4-2', text: "Ask 3 open-ended, non-judgmental coaching questions during a 1:1.", tier: 'T4' },
-    { id: 'T4-3', text: "Delegate a task with high growth potential, not just high urgency.", tier: 'T4' },
-    { id: 'T4-4', text: "Use the SBI model (Situation, Behavior, Impact) for corrective feedback.", tier: 'T4' },
-    { id: 'T4-5', text: "Praise a team member publicly for a specific courageous action.", tier: 'T4' },
-    // T5: Visionary Leadership & Culture
-    { id: 'T5-1', text: "Share a concise, non-jargon update on the 5-year vision with a junior team member.", tier: 'T5' },
-    { id: 'T5-2', text: "Acknowledge one team member's mistake publicly and model vulnerability.", tier: 'T5' },
-    { id: 'T5-3', text: "Spend 10 minutes observing team dynamics without intervening.", tier: 'T5' },
-    { id: 'T5-4', text: "Define one cultural norm you want to reinforce through your actions this week.", tier: 'T5' },
-    { id: 'T5-5', text: "Connect an external industry trend to your team's immediate workload.", tier: 'T5' },
-];
-
-// --- MOCK DATA (Pulls first rep from catalog for default) ---
+// --- NEW MOCK DATA (Implementing the new Daily Target Rep and Identity) ---
 const MOCK_ACTIVITY_DATA = {
-    daily_target_rep: LEADERSHIP_REP_CATALOG[16].text, // T4-1 (Feedback rep)
+    // These data points now reflect the core focus of the new Rep Tracker
+    daily_target_rep: "Give one reinforcing feedback statement to a direct report.",
     identity_statement: "I am the kind of leader who coaches in the moment and owns accountability.",
     daily_challenge_rep: "Send one quick thank-you Slack message right now.", // For 2-Minute Challenge
     total_reps_completed: 452, 
     total_coaching_labs: 18,    
     today_coaching_labs: 2,     
 };
-// --- END MOCK DATA ---
+// --- END NEW MOCK DATA ---
 
 
 // FIX 1: Resolves "ReferenceError: groupCommitmentsByTier is not defined"
@@ -224,7 +191,7 @@ const Button = ({ children, onClick, disabled = false, variant = 'primary', clas
   let baseStyle = "px-6 py-3 rounded-xl font-semibold transition-all shadow-lg focus:outline-none focus:ring-4 text-white flex items-center justify-center";
   if (variant === 'primary') { baseStyle += ` bg-[${COLORS.TEAL}] hover:bg-[${COLORS.SUBTLE_TEAL}] focus:ring-[${COLORS.TEAL}]/50`; }
   else if (variant === 'secondary') { baseStyle += ` bg-[${COLORS.ORANGE}] hover:bg-[#C33E12] focus:ring-[${COLORS.ORANGE}]/50`; }
-  else if (variant === 'outline') { baseStyle = `px-6 py-3 rounded-xl font-semibold transition-all shadow-md border-2 border-[${COLORS.TEAL}] text-[${COLORS.TEAL}] hover:bg-[${COLORS.TEAL}]/10 focus:ring-4 focus:ring-[${COLORS.TEAL}]/50 bg-[${COLORS.LIGHT_GRAY}] flex items-center justify-center`; }
+  else if (variant === 'outline') { baseStyle = `px-6 py-3 rounded-xl font-semibold transition-all shadow-md border-2 border-[${COLORS.TEAL}] text-[${COLORS.TEAL}] hover:bg-[${COLORS.TEAL}]/10 focus:ring-4 focus:ring-[${COLORS.TEAL}]/50 bg-[${COLORS.LIGHT_GRAY}] flex items-center justify-content`; }
   else if (variant === 'nav-back') { baseStyle = `px-4 py-2 rounded-lg font-medium transition-all shadow-sm border-2 border-gray-300 text-gray-700 hover:bg-gray-100 flex items-center justify-center`; }
   if (disabled) { baseStyle = "px-6 py-3 rounded-xl font-semibold bg-gray-300 text-gray-500 cursor-not-allowed shadow-inner transition-none flex items-center justify-center"; }
   return (<button {...rest} onClick={onClick} disabled={disabled} className={`${baseStyle} ${className}`}>{children}</button>);
@@ -823,7 +790,7 @@ const CommitmentSelectorView = ({ setView, initialGoal, initialTier }) => {
                 const filteredCommitments = commitments.filter(c =>
                     // Check if commitment text is NOT already in active commitments
                     !userCommitments.some(activeC => activeC.text === c.text) &&
-                    (searchTerm === '' || c.text.toLowerCase().includes(searchTerm.toLowerCase()))
+                    (searchTerm === '' || commitment.text.toLowerCase().includes(searchTerm.toLowerCase()))
                 );
 
                 if (filteredCommitments.length === 0 && searchTerm !== '') return null;
@@ -1081,7 +1048,7 @@ const PerfectScoreModal = ({ onClose }) => (
 
 
 // --- NEW COMPONENT: Daily Rep Target Card (Integrates Clarity & Micro-Tip) ---
-const DailyRepTargetCard = ({ targetRep, microTip, identityStatement, handleLogChallenge }) => {
+const DailyRepTargetCard = ({ targetRep, microTip, identityStatement, handleLogTargetRep }) => {
     // Determine the relevant Tier based on the target rep (simple mock logic)
     const tierMatch = Object.values(LEADERSHIP_TIERS_META).find(t => targetRep.includes(t.id));
     const accentColor = tierMatch ? tierMatch.hex : COLORS.ORANGE;
@@ -1111,24 +1078,23 @@ const DailyRepTargetCard = ({ targetRep, microTip, identityStatement, handleLogC
                 </p>
             </div>
 
-            {/* Micro-Tip / Environmental Trigger Integration (Features 3 & 6) */}
+            {/* Log Target Rep Action (Unified) */}
             <div className='mt-4 pt-4 border-t border-gray-100'>
-                <p className='text-xs font-semibold text-gray-600 mb-1 uppercase tracking-wide flex items-center gap-1'>
+                <p className='text-xs font-semibold text-gray-600 mb-2 uppercase tracking-wide flex items-center gap-1'>
                     <Clock className='w-3 h-3 text-gray-500'/> Environmental Trigger:
                 </p>
-                <p className='text-sm text-gray-700 font-medium'>
-                    {microTip}
+                 <p className='text-sm text-gray-700 font-medium mb-3'>
+                    Log your rep right after the action is complete. Tip: {microTip}
                 </p>
                 
-                {/* 2-Minute Challenge Mock (Feature 3) */}
+                {/* PRIMARY ACTION: LOG TARGET REP */}
                 <Button 
-                    onClick={handleLogChallenge} 
+                    onClick={handleLogTargetRep} 
                     variant='primary' 
-                    className='w-full mt-3 px-3 py-2 text-xs bg-[#2563EB] hover:bg-[#1E40AF]'
+                    className='w-full px-3 py-2 text-lg bg-[#47A88D] hover:bg-[#349881]'
                 >
-                    <Zap className='w-4 h-4 mr-2'/> Log 2-Minute Challenge Rep
+                    <CheckCircle className='w-5 h-5 mr-2'/> Log Today's Strategic Rep
                 </Button>
-                <p className='text-xs text-gray-500 mt-1'>* One tap logging for micro-actions. Removes friction.</p>
             </div>
         </Card>
     );
@@ -1155,17 +1121,43 @@ const SocialAccountabilityNudge = () => {
     );
 }
 
+// --- NEW COMPONENT: Post-Log Micro-Action Prompt ---
+const MicroActionPromptModal = ({ isVisible, onClose, onMicroActionClick }) => {
+    if (!isVisible) return null;
+    return (
+        <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4">
+            <div className={`relative bg-white rounded-xl shadow-2xl w-full max-w-sm p-6 text-center border-t-8 border-[${COLORS.TEAL}]`}>
+                <Zap className={`w-10 h-10 text-[${COLORS.TEAL}] mx-auto mb-3`} />
+                <h3 className="text-xl font-extrabold text-[#002E47] mb-2">Rep Logged! Want More Momentum?</h3>
+                <p className="text-sm text-gray-600 mb-5">
+                    Your strategic rep is complete. To lock in this discipline, quickly grab a **Micro-Action Rep** now!
+                </p>
+                <Button 
+                    onClick={onMicroActionClick} 
+                    className="w-full text-lg bg-[#2563EB] hover:bg-[#1E40AF]"
+                >
+                    <Zap className='w-4 h-4 mr-2'/> Grab a Micro-Action Rep
+                </Button>
+                <button onClick={onClose} className='text-sm text-gray-500 mt-3 hover:text-gray-700 block w-full'>
+                    No thanks, I'll stick to the Scorecard.
+                </button>
+            </div>
+        </div>
+    );
+};
+
 
 /**
  * DailyPracticeScreen: Main Scorecard View
  */
-export default function DailyPracticeScreen({ initialGoal, initialTier }) {
+export default function DailyPracticeScreen({ initialGoal, initialTier, quickLog, source }) {
   // CRITICAL FIX: Use useAppServices to get the state manager and data
   const { commitmentData, updateCommitmentData, callSecureGeminiAPI, hasGeminiKey, pdpData, navigate, GEMINI_MODEL} = useAppServices(); 
   
   // ADDITION 1: New state to track if we've handled the initial navigation
   const [hasNavigatedInitial, setHasNavigatedInitial] = useState(false); 
   const [isChallengeModalVisible, setIsChallengeModalVisible] = useState(false); // NEW: Challenge Modal State
+  const [isPostLogPromptVisible, setIsPostLogPromptVisible] = useState(false); // NEW: Post-Log Modal State
 
   // FIX: Call the mock scheduleMidnightReset function to simulate nightly log/reset
   // This must be done inside useEffect to be safe.
@@ -1189,8 +1181,13 @@ useEffect(() => {
   const [isPerfectScoreModalVisible, setIsPerfectScoreModalVisible] = useState(false);
   const resilienceLog = commitmentData?.resilience_log || {};
   
-  // MODIFIED useEffect: Only navigate to selector if initial props exist AND we haven't done it yet.
+  // MODIFIED useEffect: Handle incoming 'quickLog' prop from Dashboard
   useEffect(() => {
+    // If navigated from the Dashboard's Micro-Action button, immediately open the modal.
+    if (quickLog === true) {
+      setIsChallengeModalVisible(true);
+    }
+    
     // FIX 9: Prevent initialGoal/initialTier from re-navigating to the selector after a successful add.
     if (!hasNavigatedInitial && (initialGoal || initialTier)) {
       setView('selector');
@@ -1199,7 +1196,7 @@ useEffect(() => {
        // If we start on selector without props (e.g., from a deep link), also mark as handled.
        setHasNavigatedInitial(true);
     }
-  }, [initialGoal, initialTier, hasNavigatedInitial, view]); 
+  }, [initialGoal, initialTier, hasNavigatedInitial, view, quickLog]); 
 
 
   // CRITICAL FIX: Resilience save handler now correctly uses updateCommitmentData
@@ -1320,6 +1317,12 @@ useEffect(() => {
     });
     
     setIsSaving(false);
+    
+    // NEW LOGIC: If the strategic rep was just completed, prompt for Micro-Action
+    // Assuming the Target Rep is always the first active commitment for simplicity in this mock.
+    if (id === userCommitments?.[0]?.id && status === 'Committed') {
+        setIsPostLogPromptVisible(true);
+    }
   };
 
   const handleRemoveCommitment = async (id) => {
@@ -1358,14 +1361,8 @@ useEffect(() => {
   };
   
   /* --- NEW FEATURE: 2-MINUTE CHALLENGE LOGIC (Feature 3) --- */
+  // Used by the Post-Log Modal and the Dashboard Button to OPEN the modal.
   const handleOpenChallengeModal = () => {
-      setIsChallengeModalVisible(true);
-  };
-
-  const handleLogChallenge = async () => {
-      // Logic for 2-Min Start is handled inside the modal, 
-      // but we use this mock function for the DailyRepTargetCard 
-      // to open the modal.
       setIsChallengeModalVisible(true);
   };
   /* --- END NEW FEATURE --- */
@@ -1472,7 +1469,9 @@ const sortedCommitments = useMemo(() => {
                     targetRep={dailyTargetRep}
                     microTip={microTipText}
                     identityStatement={identityStatement}
-                    handleLogChallenge={handleLogChallenge} // New Handler
+                    // FIX: Direct log of the first commitment (Target Rep)
+                    // This button handles the primary logging action.
+                    handleLogTargetRep={() => handleLogCommitment(userCommitments?.[0]?.id, 'Committed')} 
                 />
                 
                 <div className="mb-6 flex justify-between items-center">
@@ -1587,7 +1586,7 @@ const sortedCommitments = useMemo(() => {
                              <div className="animate-spin h-4 w-4 border-b-2 border-gray-500 mr-2 rounded-full"></div> Drafting prompt...
                         </span>
                     ) : (
-                        <span className='font-bold text-[#002E47]'>{reflectionPrompt || 'What key insight did you gain today that will improve your leadership practice tomorrow?'}</span>
+                        <span className='font-bold text-[#002E47]'>{reflectionPrompt || 'What key insight did you gained today that will improve your leadership practice tomorrow?'}</span>
                     )}
                 </p>
                 <textarea 
@@ -1622,7 +1621,20 @@ const sortedCommitments = useMemo(() => {
                 <TwoMinuteChallengeModal
                     isVisible={isChallengeModalVisible}
                     onClose={() => setIsChallengeModalVisible(false)}
-                    repText={dailyChallengeRep}
+                    // Source indicates where the user will be returned after log/close
+                    sourceScreen={quickLog === true ? 'dashboard' : view} 
+                />
+            )}
+            
+            {/* RENDER POST-LOG MICRO-ACTION PROMPT */}
+            {isPostLogPromptVisible && (
+                <MicroActionPromptModal
+                    isVisible={isPostLogPromptVisible}
+                    onClose={() => setIsPostLogPromptVisible(false)}
+                    onMicroActionClick={() => {
+                        setIsPostLogPromptVisible(false); // Close prompt
+                        handleOpenChallengeModal(); // Open the main challenge modal
+                    }}
                 />
             )}
             
