@@ -596,7 +596,7 @@ const CommitmentSelectorView = ({ setView, initialGoal, initialTier }) => {
         const jsonText = result?.candidates?.[0]?.content?.parts?.[0]?.text;
         
         if (jsonText) {
-            const cleanJsonText = jsonText.trim().replace(/^[^\{]*/, ''); 
+            cleanJsonText = jsonText.trim().replace(/^[^\{]*/, ''); 
             const parsedJson = JSON.parse(cleanJsonText);
 
             setAiAssessment({
@@ -1621,7 +1621,6 @@ const sortedCommitments = useMemo(() => {
                 <TwoMinuteChallengeModal
                     isVisible={isChallengeModalVisible}
                     onClose={() => setIsChallengeModalVisible(false)}
-                    // Source indicates where the user will be returned after log/close
                     sourceScreen={quickLog === true ? 'dashboard' : view} 
                 />
             )}

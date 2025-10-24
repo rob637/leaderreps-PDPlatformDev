@@ -537,94 +537,118 @@ useEffect(() => {
       </div>
       
       {/* --- 2. THE REP TRACKER LAUNCHPAD (HIGH PRIORITY) --- */}
-      {/* Reduced outer gap from space-y-8 to space-y-4 */}
+      {/* This section is simplified to just core actions and top-level health metrics */}
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6"> 
         
-        {/* DAILY REP FOCUS CARD (lg:col-span-2) - Increased span to make it the primary focus */}
-        <div className="lg:col-span-2 space-y-3"> 
+        {/* LAUNCHPAD BUTTONS (lg:col-span-3) */}
+        <div className="lg:col-span-3 space-y-3"> 
             <h2 className="text-2xl font-extrabold text-[#002E47] flex items-center gap-3">
-                <Flag size={24} className='text-[#E04E1B]'/> Today's Mission: The Single Rep
+                <Zap size={24} className='text-[#E04E1B]'/> Launchpad: Today's Focus
             </h2>
-            {/* CARD: Combines Mission (1), Emotional Relevance (2), and Frictionless Start (3) */}
-            <Card title={dailyTargetRep} icon={Flag} accent='RED' className="border-4 border-[#E04E1B]/50 shadow-2xl h-full">
-                <p className='text-sm font-semibold text-gray-700 mb-3'>
-                    **Goal:** You always know the single skill you’re training today. **Rep Status:** {todayRepsCompleted} / {commitsTotal} completed.
-                </p>
-                <div className='p-3 rounded-lg border border-gray-200 bg-white shadow-inner mb-4'>
-                    <p className='text-xs font-semibold text-gray-600 mb-1 flex items-center gap-1'>
-                        <User className='w-3 h-3 text-gray-500'/> Your Identity Anchor (Why It Matters):
-                    </p>
-                    <p className='text-sm italic text-gray-800 font-medium'>
-                        "{identityStatement.substring(0, 70) + '...'}"
-                    </p>
-                </div>
+            
+            <div className='grid grid-cols-1 md:grid-cols-3 gap-4'>
+                 {/* PRIMARY ACTION 1: Daily Practice Scorecard */}
+                <ThreeDButton
+                    onClick={() => safeNavigate('daily-practice')} 
+                    color={COLORS.TEAL}
+                    accentColor={COLORS.NAVY}
+                    className="h-24 flex-col px-3 py-2 text-white" 
+                >
+                    <ClockIcon className='w-6 h-6 mb-1'/> 
+                    <span className='text-lg font-extrabold'>Daily Practice Scorecard</span>
+                    <span className='text-xs font-light mt-1'>Reps: {todayRepsCompleted}/{commitsTotal}</span>
+                </ThreeDButton>
+
+                {/* PRIMARY ACTION 2: 2-Min Micro-Action Start (Frictionless Rep) */}
+                <ThreeDButton 
+                    onClick={() => safeNavigate('daily-practice', { quickLog: true, source: 'dashboard' })} 
+                    color={COLORS.BLUE}
+                    accentColor={COLORS.NAVY}
+                    className="h-24 flex-col px-3 py-2 text-white"
+                >
+                    <Zap className='w-6 h-6 mb-1'/> 
+                    <span className='text-lg font-extrabold'>2-Min Start (Momentum Rep)</span>
+                    <span className='text-xs font-light mt-1'>Grab a quick win to build streak</span>
+                </ThreeDButton>
                 
-                <div className='flex space-x-4 mt-auto pt-4 border-t border-gray-100'>
-                    <Button 
-                        // NAVIGATES TO DAILY PRACTICE (SCORECARD) AND PROMPT TO LOG
-                        onClick={() => safeNavigate('daily-practice')} 
-                        color={COLORS.TEAL}
-                        className="flex-1 px-4 py-3 text-lg font-extrabold"
-                    >
-                        <ClockIcon className='w-5 h-5 mr-2'/> Go to Rep Scorecard
-                    </Button>
-                    {/* NEW PRIMARY ACTION: 2-Min Start Button (Momentum Rep) */}
-                    <Button 
-                        // NAVIGATES TO DAILY PRACTICE AND OPENS THE CHALLENGE MODAL (Source is Dashboard)
-                        onClick={() => safeNavigate('daily-practice', { quickLog: true, source: 'dashboard' })} 
-                        color={COLORS.BLUE}
-                        className="w-1/3 px-3 py-2 text-sm bg-[#2563EB] hover:bg-[#1E40AF]"
-                    >
-                        <Zap className='w-4 h-4 mr-2'/> 2-Min Start
-                    </Button>
+                 {/* PRIMARY ACTION 3: Development Roadmap */}
+                <ThreeDButton
+                    onClick={() => safeNavigate('prof-dev-plan')} 
+                    color={COLORS.ORANGE}
+                    accentColor={COLORS.NAVY}
+                    className="h-24 flex-col px-3 py-2 text-white" 
+                >
+                    <Briefcase className='w-6 h-6 mb-1'/> 
+                    <span className='text-lg font-extrabold'>24-Month Roadmap Check</span>
+                    <span className='text-xs font-light mt-1'>Current Focus: {weakestTier?.name}</span>
+                </ThreeDButton>
+            </div>
+            
+            {/* New Simplified Rep/Identity Info Card */}
+            <Card title="Today's Strategic Focus" icon={Target} accent='NAVY' className="border-4 border-[#002E47]/10 bg-white/95">
+                <div className='grid md:grid-cols-2 gap-4'>
+                    <div>
+                        <p className='text-sm font-semibold text-gray-700 mb-2 uppercase tracking-wide flex items-center gap-2'>
+                            <Flag className='w-4 h-4 text-red-500'/> Target Rep:
+                        </p>
+                        <p className='text-md font-bold text-[#E04E1B]'>
+                            {dailyTargetRep}
+                        </p>
+                    </div>
+                    <div>
+                         <p className='text-sm font-semibold text-gray-700 mb-2 uppercase tracking-wide flex items-center gap-2'>
+                            <User className='w-4 h-4 text-gray-500'/> Identity Anchor:
+                        </p>
+                        <p className='text-md italic text-[#002E47]'>
+                            "{identityStatement.substring(0, 60) + '...'}"
+                        </p>
+                    </div>
                 </div>
             </Card>
+
         </div>
 
-        {/* HEALTH SCORE AND NUDGE COLUMN (lg:col-span-2) */}
-        <div className="lg:col-span-2 space-y-3"> 
+        {/* HEALTH SCORE AND NUDGE COLUMN (lg:col-span-1) */}
+        <div className="lg:col-span-1 space-y-4"> 
              <h2 className="text-2xl font-extrabold text-[#002E47] flex items-center gap-3">
                 <Activity size={24} className='text-[#47A88D]'/> Health & Focus
             </h2>
-            <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
-                {/* Health Score Ring */}
-                <ProgressRings
-                    dailyPercent={dailyPercent}
-                    monthlyPercent={monthlyPercent}
-                    careerPercent={careerPercent}
-                    tierHex={weakestTier?.hex || COLORS.TEAL}
-                    commitsDue={commitsDue}
-                />
-                
-                {/* Strategic Nudge (Fits neatly beside the ring) */}
-                <div className="min-h-full">
-                    <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-xl relative group min-h-full flex flex-col justify-between" style={{ background: `${weakestTier?.hex || COLORS.TEAL}1A`, opacity: 0.9 }}>
-                        <div className="flex items-center justify-between mb-4 relative z-10">
-                            <h2 className={`text-xl font-bold flex items-center gap-2`} style={{color: weakestTier?.hex || COLORS.NAVY}}>
-                                <Lightbulb size={20} className={`text-white p-1 rounded-full`} style={{backgroundColor: weakestTier?.hex || COLORS.TEAL}}/> 
-                                Strategic Nudge
-                            </h2>
-                        </div>
-                        <div className={`p-4 rounded-xl bg-gray-50 border border-gray-100 mt-3 shadow-inner flex-1`}>
-                            <div className="prose prose-sm max-w-none relative z-10">
-                                {tipHtml
-                                    ? <div dangerouslySetInnerHTML={{ __html: tipHtml }} />
-                                    : <p className="text-gray-600 text-sm">Tap Next Rep to get a fresh, powerful focus point from your AI Coach.</p>}
-                            </div>
-                        </div>
-                         <button
-                            className="rounded-xl mt-4 px-3 py-2 text-sm font-semibold bg-[#002E47] text-white hover:bg-gray-700 transition-colors flex items-center justify-center gap-1"
-                            onClick={nextNudge}
-                            disabled={tipLoading}
-                            type="button"
-                        >
-                            {tipLoading ? <Loader size={16} className='animate-spin text-white' /> : <Sparkles size={16} />}
-                            Next Coaching Nudge
-                        </button>
+            
+            {/* Grouped Health and Nudge for density */}
+            <ProgressRings
+                dailyPercent={dailyPercent}
+                monthlyPercent={monthlyPercent}
+                careerPercent={careerPercent}
+                tierHex={weakestTier?.hex || COLORS.TEAL}
+                commitsDue={commitsDue}
+            />
+            <div className="min-h-full">
+                <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-xl relative group min-h-full flex flex-col justify-between" style={{ background: `${weakestTier?.hex || COLORS.TEAL}1A`, opacity: 0.9 }}>
+                    <div className="flex items-center justify-between mb-4 relative z-10">
+                        <h2 className={`text-xl font-bold flex items-center gap-2`} style={{color: weakestTier?.hex || COLORS.NAVY}}>
+                            <Lightbulb size={20} className={`text-white p-1 rounded-full`} style={{backgroundColor: weakestTier?.hex || COLORS.TEAL}}/> 
+                            Strategic Nudge
+                        </h2>
                     </div>
+                    <div className={`p-4 rounded-xl bg-gray-50 border border-gray-100 mt-3 shadow-inner flex-1`}>
+                        <div className="prose prose-sm max-w-none relative z-10">
+                            {tipHtml
+                                ? <div dangerouslySetInnerHTML={{ __html: tipHtml }} />
+                                : <p className="text-gray-600 text-sm">Tap Next Rep to get a fresh, powerful focus point from your AI Coach.</p>}
+                        </div>
+                    </div>
+                     <button
+                        className="rounded-xl mt-4 px-3 py-2 text-sm font-semibold bg-[#002E47] text-white hover:bg-gray-700 transition-colors flex items-center justify-center gap-1"
+                        onClick={nextNudge}
+                        disabled={tipLoading}
+                        type="button"
+                    >
+                        {tipLoading ? <Loader size={16} className='animate-spin text-white' /> : <Sparkles size={16} />}
+                        Next Coaching Nudge
+                    </button>
                 </div>
-
             </div>
+
         </div>
       </div>
       
