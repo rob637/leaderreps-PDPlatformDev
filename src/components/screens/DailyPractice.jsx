@@ -1434,6 +1434,33 @@ const sortedCommitments = useMemo(() => {
 }, [userCommitments, viewMode]);
 
 
+  // Placeholder function for CommitmentSelectorView
+  const renderAssessmentResult = () => {
+    if (!aiAssessment) return null;
+
+    const { score, risk, feedback, error } = aiAssessment;
+    const isGood = score >= 7 && risk <= 4 && !error;
+    const color = isGood ? 'bg-green-100 border-green-400 text-green-700' : 'bg-red-100 border-red-400 text-red-700';
+    const icon = isGood ? <CheckCircle className='w-5 h-5 mr-2'/> : <AlertTriangle className='w-5 h-5 mr-2'/>;
+
+    return (
+        <div className={`p-4 rounded-xl border-2 mb-4 ${color}`}>
+            <p className='font-semibold text-lg flex items-center mb-1'>{icon} AI Alignment Analysis</p>
+            <div className='flex justify-between text-sm mb-2'>
+                <span>Value Score: <span className='font-extrabold'>{score}/10</span></span>
+                <span>Risk Score: <span className='font-extrabold'>{risk}/10</span></span>
+            </div>
+            <p className='text-sm italic font-medium'>{feedback}</p>
+        </div>
+    );
+  };
+  
+  // Placeholder for CommitmentSelectorView
+  const handleAddCommitment = () => { console.log("Add Commitment (Mocked)"); };
+  const handleCreateCustomCommitment = () => { console.log("Create Custom Commitment (Mocked)"); };
+  const tabStyle = (tabName) => `px-4 py-2 text-sm font-semibold transition-colors ${view === tabName ? 'border-[#47A88D] border-b-4 text-[#002E47]' : 'border-transparent text-gray-500 hover:text-[#002E47]'}`;
+
+
   // Final Render
   const renderView = () => {
     

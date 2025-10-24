@@ -167,7 +167,7 @@ const TwoMinuteChallengeModal = ({ isVisible, onClose, sourceScreen }) => {
             // FIX 1: Conditional Navigation (Navigate only if source was Dashboard)
             setTimeout(() => {
                 if (sourceScreen === 'dashboard' && navigate) {
-                    navigate('dashboard'); // Navigate back to dashboard
+                    navigate('daily-practice'); // Navigate to DP scorecard
                 }
                 onClose(); // Close the modal (will stay on DP if navigated from DP)
             }, 1500); 
