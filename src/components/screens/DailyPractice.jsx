@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import {
-  PlusCircle, ArrowLeft, X, Target, Clock, CheckCircle, BarChart3, CornerRightUp, AlertTriangle, Users, Lightbulb, Zap, Archive, MessageSquare, List, TrendingDown, TrendingUp, BookOpen, Crown, Cpu, Star, Trash2, HeartPulse, Trello, Activity, Dumbbell
+  PlusCircle, ArrowLeft, X, Target, Clock, CheckCircle, BarChart3, CornerRightUp, AlertTriangle, Users, Lightbulb, Zap, Archive, MessageSquare, List, TrendingDown, TrendingUp, BookOpen, Crown, Cpu, Star, Trash2, HeartPulse, Trello, Activity, Dumbbell, Flag, User
 } from 'lucide-react';
 
 /* =========================================================
@@ -21,6 +21,18 @@ const LEADERSHIP_TIERS_META = {
     'T4': { id: 'T4', name: 'People Development', hex: '#E04E1B' }, 
     'T5': { id: 'T5', name: 'Visionary Leadership', hex: '#002E47' }, 
 };
+
+// --- NEW MOCK DATA (Implementing the new Daily Target Rep and Identity) ---
+const MOCK_ACTIVITY_DATA = {
+    // These data points now reflect the core focus of the new Rep Tracker
+    daily_target_rep: "Give one reinforcing feedback statement to a direct report.",
+    identity_statement: "I am the kind of leader who coaches in the moment and owns accountability.",
+    total_reps_completed: 452, 
+    total_coaching_labs: 18,    
+    today_coaching_labs: 2,     
+};
+// --- END NEW MOCK DATA ---
+
 
 // FIX 1: Resolves "ReferenceError: groupCommitmentsByTier is not defined"
 function groupCommitmentsByTier(commitments) {
@@ -745,11 +757,11 @@ await updateCommitmentData(data => ({
             <div className='grid grid-cols-2 gap-4 mb-4'>
                 <div className={`p-3 rounded-xl border ${aiAssessment.score > 7 ? 'border-green-400 bg-green-50' : 'border-gray-300 bg-gray-100'}`}>
                     <div className='text-xs font-semibold uppercase text-gray-500'>Value Score</div>
-                    <div className={`text-3xl font-extrabold ${valueColor}`}>{aiAssessment.score}/10}</div>
+                    <div className={`text-3xl font-extrabold ${valueColor}`}>{aiAssessment.score}/10</div>
                 </div>
                 <div className={`p-3 rounded-xl border ${aiAssessment.risk > 7 ? 'border-red-400 bg-red-50' : 'border-gray-300 bg-gray-100'}`}>
                     <div className='text-xs font-semibold uppercase text-gray-500'>Risk Score</div>
-                    <div className={`text-3xl font-extrabold ${riskColor}`}>{aiAssessment.risk}/10}</div>
+                    <div className={`text-3xl font-extrabold ${riskColor}`}>{aiAssessment.risk}/10</div>
                 </div>
             </div>
             <div className='p-3 bg-[#002E47]/5 rounded-lg border border-[#002E47]/10'>
@@ -762,874 +774,262 @@ await updateCommitmentData(data => ({
 
 
   return (
-    <div className="p-8">
-      <h1 className="text-3xl font-extrabold text-[#002E47] mb-4">Manage Your Reps (Micro-Habits)</h1>
-      <p className="text-lg text-gray-600 mb-6 max-w-3xl">Select the core micro-habits (**reps**) that directly support your current leadership training goals. You should aim for **3-5 active commitments** for optimal **Progressive Overload**.</p>
-
-      <Button onClick={() => setView('scorecard')} variant="secondary" className="mb-8" disabled={isSaving}>
-        <ArrowLeft className="w-5 h-5 mr-2" /> Back to Daily Reps Scorecard
-      </Button>
-
-      {userCommitments.length === 0 && pdpData && (
-          <AIStarterPackNudge 
-            pdpData={pdpData} 
-            setLinkedGoal={setLinkedGoal} 
-            setLinkedTier={setLinkedTier} 
-            handleAddCommitment={handleAddCommitment} 
-            isSaving={isSaving}
-          />
-      )}
+    <div className={`p-6 space-y-8 bg-[${COLORS.LIGHT_GRAY}] min-h-screen`}>
+      {/* 1. Header with enhanced Personalization */}
+      <div className={`border-b border-gray-200 pb-5 bg-[${COLORS.OFF_WHITE}] p-6 -mx-6 -mt-6 mb-8 rounded-b-xl shadow-md`}>
+        <h1 className={`text-4xl font-extrabold text-[${COLORS.NAVY}] flex items-center gap-3`}>
+          <Home size={32} style={{ color: COLORS.TEAL }} /> The Arena Dashboard
+        </h1>
+        <p className="text-gray-600 text-base mt-2">
+          {greeting} <span className={`font-semibold text-[${COLORS.NAVY}]`}>{displayedUserName}</span>. Your focus is **{weakestTier?.name || 'Getting Started'}**—consistency over intensity.
+        </p>
+      </div>
       
-      {/* Alignment Card (Converted to div/button structure to prevent collapse on select) */}
-      <div
-        className='relative p-6 rounded-2xl border-2 shadow-2xl mb-8 bg-[#47A88D]/10 border-2 border-[#47A88D]'
-      >
-        <span style={{ position:'absolute', top:0, left:0, right:0, height:6, background: COLORS.NAVY, borderTopLeftRadius:14, borderTopRightRadius:14 }} />
-          
-        {/* Clickable Header for Collapsible Behavior */}
-        <button
-            onClick={() => setIsAlignmentOpen(prev => !prev)}
-            className='flex justify-between items-center w-full text-left'
-        >
-            <div className='flex items-center space-x-3'>
-                <Target className="w-5 h-5" style={{ color: COLORS.TEAL }} />
-                <h2 className="text-xl font-extrabold" style={{ color: COLORS.NAVY }}>Rep Alignment (Mandatory)</h2>
-            </div>
-            <CornerRightUp className={`w-5 h-5 text-[#002E47] transition-transform ${isAlignmentOpen ? 'rotate-90' : 'rotate-0'}`} />
-        </button>
-
-
-        {isAlignmentOpen && (
-          <div className='mt-4 pt-4 border-t border-[#47A88D]/30'>
-            <p className="text-sm text-gray-700 mb-4">Ensure your daily action is tied to a strategic goal **and** a core leadership tier.</p>
-
-            <div className='grid grid-cols-1 md:grid-cols-2 gap-4 mb-4'>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">1. Strategic Goal</label>
-                <select
-                  value={linkedGoal}
-                  onChange={(e) => setLinkedGoal(e.target.value)}
-                  className="w-full p-3 border border-gray-300 rounded-xl focus:ring-[#002E47] focus:border-[#002E47] text-[#002E47] font-semibold"
+      {/* --- 2. ACTION & HEALTH HUB (The Launchpad) --- */}
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+        
+        {/* BIG ACTION BUTTONS (lg:col-span-3) */}
+        <div className="lg:col-span-3 space-y-6">
+          <h2 className="text-2xl font-extrabold text-[#002E47] flex items-center gap-3">
+              <Zap size={24} className='text-[#E04E1B]'/> Launchpad: Today's Non-Negotiables
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              
+              {/* Daily Practice */}
+              <div className='md:col-span-1 flex flex-col space-y-2'>
+                <ThreeDButton
+                  onClick={() => safeNavigate('daily-practice')} 
+                  color={COLORS.TEAL}
+                  accentColor={COLORS.NAVY}
+                  className="h-20 flex-col px-3 py-2 text-white" 
                 >
-                  <option value="">--- Select Goal ---</option>
-                  {availableGoals.map(goal => (
-                    <option
-                      key={goal}
-                      value={goal}
-                      disabled={goal === initialLinkedGoalPlaceholder}
-                    >
-                      {goal}
-                    </option>
-                  ))}
-                </select>
+                  <ClockIcon className='w-6 h-6 mb-1'/> 
+                  <span className='text-lg font-extrabold'>Daily Practice Scorecard</span>
+                </ThreeDButton>
+                <p className='text-xs font-light text-gray-600'>**Your daily reps:** Log micro-habits to build consistency and track your **{perfectStreak} day streak**.</p>
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">2. Leadership Tier (T1-T5)</label>
-                <select
-                  value={linkedTier}
-                  onChange={(e) => setLinkedTier(e.target.value)}
-                  className="w-full p-3 border border-gray-300 rounded-xl focus:ring-[#002E47] focus:border-[#002E47] text-[#002E47] font-semibold"
+              {/* Development Roadmap */}
+              <div className='md:col-span-1 flex flex-col space-y-2'>
+                <ThreeDButton
+                  onClick={() => safeNavigate('prof-dev-plan')} 
+                  color={COLORS.ORANGE}
+                  accentColor={COLORS.NAVY}
+                  className="h-20 flex-col px-3 py-2 text-white" 
                 >
-                  <option value="">--- Select Tier ---</option>
-                  {Object.values(LEADERSHIP_TIERS_META).map(tier => (
-                    <option key={tier.id} value={tier.id}>
-                      {tier.id}: {tier.name}
-                    </option>
-                  ))}
-                </select>
+                  <Briefcase className='w-6 h-6 mb-1'/> 
+                  <span className='text-lg font-extrabold'>24-Month Roadmap Check</span>
+                </ThreeDButton>
+                <p className='text-xs font-light text-gray-600'>**Your strategy:** Review content and complete assessments for your current focus: **{weakestTier?.name || 'T-X'}**.</p>
               </div>
-            </div>
 
-            <label className="block text-sm font-medium text-gray-700 mb-1">3. Target Colleague (Optional for inter-personal skills)</label>
-            <input
-              type="text"
-              value={targetColleague}
-              onChange={(e) => setTargetColleague(e.target.value)}
-              placeholder="e.g., Alex, Sarah, or Leave Blank for Self-Focus"
-              className="w-full p-3 border border-gray-300 rounded-xl focus:ring-[#47A88D] focus:border-[#47A88D]"
-            />
-
-            {!canAddCommitment && <p className='text-[#E04E1B] text-sm mt-3'>* Please select a Strategic Goal and a Leadership Tier to activate the 'Add' buttons.</p>}
+              {/* Coaching Lab */}
+              <div className='md:col-span-1 flex flex-col space-y-2'>
+                <ThreeDButton
+                  onClick={() => safeNavigate('coaching-lab')} 
+                  color={COLORS.PURPLE}
+                  accentColor={COLORS.NAVY}
+                  className="h-20 flex-col px-3 py-2 text-white" 
+                >
+                  <Mic className='w-6 h-6 mb-1'/> 
+                  <span className='text-lg font-extrabold'>AI Coaching Lab</span>
+                </ThreeDButton>
+                <p className='text-xs font-light text-gray-600'>**Your practice field:** Simulate critical conversations and receive objective, real-time critique.</p>
+              </div>
           </div>
-        )}
+        </div>
+
+        {/* HEALTH SCORE RING (lg:col-span-1) */}
+        <div className="lg:col-span-1">
+          <ProgressRings
+            dailyPercent={dailyPercent}
+            monthlyPercent={monthlyPercent}
+            careerPercent={careerPercent}
+            tierHex={weakestTier?.hex || COLORS.TEAL}
+            commitsDue={commitsDue}
+          />
+        </div>
       </div>
+      
+      {/* --- 3. METRICS SCORECARD & NUDGE --- */}
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+        
+        {/* Progress Snapshot (The Scorecard: lg:col-span-3) */}
+        <div className="lg:col-span-3 space-y-6">
+          <h2 className="text-2xl font-extrabold text-[#002E47] flex items-center gap-3 mb-4">
+              <BarChart3 size={24} className='text-[#47A88D]'/> Performance Scorecard
+          </h2>
 
-
-      {/* Tab Navigation */}
-      <div className="flex space-x-2 border-b border-gray-300 -mb-px">
-        <button className={tabStyle('pdp')} onClick={() => setTab('pdp')}>
-          <Target className='w-4 h-4 inline mr-1' /> Roadmap Reps ({requiredPdpContent.filter(c => !pdpContentCommitmentIds.has(String(c.id))).length})
-        </button>
-        <button className={tabStyle('bank')} onClick={() => setTab('bank')}>
-          <BookOpen className='w-4 h-4 inline mr-1' /> Rep Bank ({Object.keys(EXPANDED_COMMITMENT_BANK).length})
-        </button>
-        <button className={tabStyle('custom')} onClick={() => setTab('custom')}>
-          <PlusCircle className='w-4 h-4 inline mr-1' /> Custom Rep
-        </button>
-      </div>
-
-      {/* Tab Content */}
-      <div className='mt-0 bg-[#FCFCFA] p-6 rounded-b-3xl shadow-lg border-2 border-t-0 border-[#47A88D]/30'>
-
-        {/* PDP Content Tab */}
-        {tab === 'pdp' && (
-          <div className="space-y-4">
-            <p className='text-sm text-gray-700'>These items are currently required for you to complete Training Month **{currentMonthPlan?.month || 'N/A'}** ({currentMonthPlan?.theme || 'N/A Focus'}) of your personalized Roadmap.</p>
-            <div className="h-96 overflow-y-auto pr-2 space-y-3 pt-2">
-              {requiredPdpContent.length > 0 ? (
-                requiredPdpContent
-                  .filter(c => !pdpContentCommitmentIds.has(String(c.id)))
-                  .map(c => (
-                    <div key={c.id} className="flex justify-between items-center p-3 text-sm bg-[#47A88D]/5 rounded-lg border border-[#47A88D]/20">
-                      <span className='text-gray-800 font-medium'>{c.title} ({c.type}) - Est. {c.duration} min</span>
-                      <Tooltip content={`Adds this item to your daily scorecard for tracking (linked goal/tier required).`}>
-                        <button
-                          onClick={() => handleAddCommitment(c, 'pdp')}
-                          disabled={!canAddCommitment || isSaving}
-                          className={`font-semibold text-xs transition-colors p-1 flex items-center space-x-1 ${canAddCommitment && !isSaving ? 'text-[#47A88D] hover:text-[#349881]' : 'text-gray-400 cursor-not-allowed'}`}
-                        >
-                          <PlusCircle className='w-4 h-4' />
-                          <span className='hidden sm:inline'>Add Rep</span>
-                        </button>
-                      </Tooltip>
-                    </div>
-                  ))
-              ) : (
-                <p className="text-gray-500 italic text-center py-10">No required content for the current Roadmap month, or you have already added all items.</p>
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* Commitment Bank Tab */}
-        {tab === 'bank' && (
-          <div className="space-y-4">
-            <div className='flex space-x-2'>
-              <input
-                type="text"
-                placeholder="Filter Rep Bank by keyword (e.g., 'feedback' or 'OKR')"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full p-3 border border-gray-300 rounded-xl focus:ring-[#47A88D] focus:border-[#47A88D] mb-4"
-              />
-              {searchTerm && (
-                <Button variant="outline" onClick={handleClearSearch} className='px-4 py-2 self-start'>
-                  <X className='w-4 h-4' />
-                </Button>
-              )}
-            </div>
-
-            <div className="h-96 overflow-y-auto pr-2 space-y-3">
-              {/* FIX FOR ISSUE 4: Added onClick handler to the button to add the commitment */}
-              {Object.entries(EXPANDED_COMMITMENT_BANK).map(([category, commitments]) => {
-                const filteredCommitments = commitments.filter(c =>
-                    // Check if commitment text is NOT already in active commitments
-                    !userCommitments.some(activeC => activeC.text === c.text) &&
-                    (searchTerm === '' || c.text.toLowerCase().includes(searchTerm.toLowerCase()))
-                );
-
-                if (filteredCommitments.length === 0 && searchTerm !== '') return null;
-                if (filteredCommitments.length === 0 && searchTerm === '') return null; 
-
-                return (
-                  <div key={category}>
-                    <h3 className="text-sm font-bold text-[#002E47] border-b pb-1 mb-2">{category}</h3>
-                    {filteredCommitments.map(c => (
-                      <div key={c.id} className="flex justify-between items-center p-2 text-sm bg-gray-50 rounded-lg mb-1">
-                        <span className='text-gray-800'>{c.text}</span>
-                        <Tooltip content={`Adds this commitment (linked goal/tier required).`}>
-                          {/* FIX 1: CRITICAL WIRING FIX: The button must call handleAddCommitment */}
-                          <button
-                            onClick={() => handleAddCommitment(c, 'bank')} 
-                            disabled={!canAddCommitment || isSaving}
-                            className={`font-semibold text-xs transition-colors p-1 flex items-center space-x-1 ${canAddCommitment && !isSaving ? 'text-[#47A88D] hover:text-[#349881]' : 'text-gray-400 cursor-not-allowed'}`}
-                          >
-                            <PlusCircle className='w-4 h-4' />
-                          </button>
-                        </Tooltip>
-                      </div>
-                    ))}
-                  </div>
-                );
-              })}
-              {Object.keys(EXPANDED_COMMITMENT_BANK).length > 0 && filteredBankCommitments.length === 0 && searchTerm !== '' && (
-                  <p className="text-gray-500 italic mt-4 text-center">No unselected commitments match criteria.</p>
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* Custom Commitment Tab - UPDATED WITH AI ANALYSIS */}
-        {tab === 'custom' && (
-          <div className="space-y-4">
-            <p className='text-sm text-gray-700'>Define a hyper-specific, measurable action tailored to your unique challenges (a custom **Rep**).</p>
-            
-            <textarea
-              value={customCommitment}
-              onChange={(e) => setCustomCommitment(e.target.value)}
-              placeholder="e.g., Conduct a 10-minute debrief after every client meeting."
-              className="w-full p-3 border border-gray-300 rounded-xl focus:ring-[#47A88D] focus:border-[#47A88D] h-20 mb-4"
-            />
-            
-            <Button
-                onClick={handleAnalyzeCommitment}
-                disabled={!customCommitment.trim() || !canAddCommitment || assessmentLoading || isSaving || !hasGeminiKey()}
-                variant='outline'
-                className="w-full bg-[#002E47] hover:bg-gray-700 text-white"
-            >
-                {assessmentLoading ? 'Analyzing...' : <><Cpu className='w-4 h-4 mr-2'/> Analyze Rep Alignment</>}
-            </Button>
-
-            {renderAssessmentResult()}
-            
-            {isCustomCommitmentSaved && (
-                <div className='flex items-center p-3 text-sm font-semibold text-white rounded-lg bg-green-500'>
-                    <CheckCircle className='w-4 h-4 mr-2'/> Custom Rep Added!
+          <div className="space-y-6">
+            {/* PILLAR: CONTENT */}
+            <div className='p-6 rounded-2xl border-4 border-[#47A88D]/20 bg-[#F7FCFF]'>
+                <h3 className='text-xl font-extrabold text-[#47A88D] mb-4 flex items-center gap-2'>
+                    <BookOpen size={20}/> PILLAR: Content & Discipline
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                    {/* Metric: Today's Target Rep (New Metric 1: Clarity) */}
+                    <StatCard
+                        icon={Flag}
+                        label="Today's Target Rep"
+                        value={dailyTargetRep}
+                        onClick={() => safeNavigate('daily-practice')}
+                        trend={0} 
+                        colorHex={COLORS.RED} // Using RED/ORANGE for high visibility
+                    />
+                    {/* Metric: Daily Reps Completed Today */}
+                    <StatCard
+                        icon={CheckCircle}
+                        label="Daily Reps Completed Today"
+                        value={`${todayRepsCompleted} / ${commitsTotal}`}
+                        onClick={() => safeNavigate('daily-practice')}
+                        trend={todayRepsCompleted} 
+                        colorHex={COLORS.ORANGE}
+                    />
+                    {/* Metric: Total Reps Completed (Cumulative) */}
+                    <StatCard
+                        icon={ChevronsRight}
+                        label="Total Reps Completed (All Time)"
+                        value={`${totalRepsCompleted}`}
+                        onClick={() => safeNavigate('daily-practice')}
+                        trend={1}
+                        colorHex={COLORS.TEAL}
+                    />
+                    {/* Metric: Current Streak */}
+                    <StatCard
+                        icon={Star}
+                        label="Current Perfect Score Streak"
+                        value={`${perfectStreak} Days`}
+                        onClick={() => safeNavigate('daily-practice')}
+                        trend={perfectStreak >= 3 ? 5 : 0} 
+                        colorHex={COLORS.GREEN}
+                    />
                 </div>
-            )}
+            </div>
 
-            <Button
-              onClick={handleCreateCustomCommitment} 
-              disabled={!customCommitment.trim() || !canAddCommitment || isSaving}
-              className="w-full bg-[#47A88D] hover:bg-[#349881]"
-            >
-              {isSaving ? 'Saving...' : 'Add Custom Rep'}
-            </Button>
+            {/* PILLAR: COACHING */}
+            <div className='p-6 rounded-2xl border-4 border-[#7C3AED]/20 bg-[#F7FCFF]'>
+                <h3 className='text-xl font-extrabold text-[#7C3AED] mb-4 flex items-center gap-2'>
+                    <Mic size={20}/> PILLAR: Coaching & Practice
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                    {/* Metric: Labs Completed Today (Daily Coaching) */}
+                    <StatCard
+                        icon={Send}
+                        label="Labs Completed Today"
+                        value={`${todayCoachingLabs}`}
+                        onClick={() => safeNavigate('coaching-lab')}
+                        trend={todayCoachingLabs} 
+                        colorHex={COLORS.BLUE}
+                    />
+                    {/* Metric: Total Coaching Labs (Cumulative) */}
+                    <StatCard
+                        icon={Mic}
+                        label="Total Coaching Labs Performed"
+                        value={`${totalCoachingLabs}`}
+                        onClick={() => safeNavigate('coaching-lab')}
+                        trend={1} 
+                        colorHex={COLORS.PURPLE}
+                    />
+                    {/* Metric: Daily Reps Completion Rate (Context) */}
+                    <StatCard
+                        icon={TrendingUp}
+                        label="Daily Completion Rate"
+                        value={`${dailyPercent}%`}
+                        onClick={() => safeNavigate('daily-practice')}
+                        trend={dailyPercent > 50 ? 5 : -5} 
+                        colorHex={COLORS.ORANGE}
+                    />
+                     {/* Metric: Placeholder for AI Reflection Coach summary */}
+                    <StatCard
+                        icon={Lightbulb}
+                        label="AI Reflection Summary"
+                        value={`Ready`}
+                        onClick={() => safeNavigate('coaching-lab')}
+                        trend={0} 
+                        colorHex={COLORS.NAVY}
+                    />
+                </div>
+            </div>
+            
+            {/* PILLAR: COMMUNITY */}
+            <div className='p-6 rounded-2xl border-4 border-[#002E47]/20 bg-[#F7FCFF]'>
+                <h3 className='text-xl font-extrabold text-[#002E47] mb-4 flex items-center gap-2'>
+                    <Dumbbell size={20}/> PILLAR: Community & Identity
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                    {/* Metric: Identity Shift (New Metric 8) */}
+                    <StatCard
+                        icon={User}
+                        label="I Am... Identity Statement"
+                        value={identityStatement.substring(0, 30) + '...'}
+                        onClick={() => safeNavigate('profile')}
+                        trend={0} 
+                        colorHex={COLORS.NAVY}
+                    />
+                    {/* Metric: Roadmap Months Remaining */}
+                    <StatCard
+                        icon={Briefcase}
+                        label="Roadmap Months Remaining"
+                        value={`${24 - goalsCount}`}
+                        onClick={() => safeNavigate('prof-dev-plan')}
+                        trend={24 - goalsCount > 0 ? -4 : 0} 
+                        colorHex={COLORS.NAVY}
+                    />
+                    {/* Metric: Weakest Tier Focus (Roadmap context) */}
+                     <StatCard
+                        icon={Target}
+                        label="Weakest Tier Focus"
+                        value={`${weakestTier?.name || 'N/A'}`}
+                        onClick={() => safeNavigate('prof-dev-plan')}
+                        trend={0} 
+                        colorHex={COLORS.AMBER}
+                    />
+                    {/* Metric: Longest Held OKR (Context) */}
+                    <StatCard
+                        icon={Archive}
+                        label="Longest-Held OKR (Days)"
+                        value={`${longestHeldOKR.days} Days`}
+                        onClick={() => safeNavigate('planning-hub')}
+                        trend={5} 
+                        colorHex={COLORS.BLUE}
+                    />
+                </div>
+            </div>
           </div>
-        )}
+        </div>
 
+        {/* Daily Tip (Strategic Nudge: lg:col-span-1) */}
+        <div className="lg:col-span-1">
+          <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-xl transition-all duration-300 hover:shadow-2xl hover:bg-white/95 relative group">
+            <div className='absolute inset-0 rounded-2xl' style={{ background: `${weakestTier?.hex || COLORS.TEAL}1A`, opacity: 0.1 }} />
+            <div className="flex items-center justify-between mb-4 relative z-10">
+              <h2 className={`text-xl font-bold flex items-center gap-2`} style={{color: weakestTier?.hex || COLORS.NAVY}}>
+                <Lightbulb size={20} className={`text-white p-1 rounded-full`} style={{backgroundColor: weakestTier?.hex || COLORS.TEAL}}/> 
+                Strategic Nudge
+              </h2>
+              <button
+                className="rounded-full border border-gray-200 px-3 py-1 text-sm hover:bg-gray-100 flex items-center gap-1 transition-colors"
+                onClick={nextNudge}
+                disabled={tipLoading}
+                type="button"
+              >
+                {tipLoading ? <Loader size={16} className='animate-spin text-gray-500' /> : <ClockIcon size={16} className='text-gray-500' />}
+                Next Rep
+              </button>
+            </div>
+            <div className={`p-4 rounded-xl bg-gray-50 border border-gray-100 mt-3 shadow-inner`}>
+              <div className="prose prose-sm max-w-none relative z-10">
+                {tipHtml
+                  ? <div dangerouslySetInnerHTML={{ __html: tipHtml }} />
+                  : <p className="text-gray-600 text-sm">Tap Next Rep to get a fresh, powerful focus point from your AI Coach.</p>}
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
+      
     </div>
   );
 };
 
-/* =========================================================
-   NEW ADVANCED FEATURE 3: Weekly Prep View (Mocked)
-========================================================= */
-
-const WeeklyPrepView = ({ setView, commitmentData, updateCommitmentData, userCommitments }) => {
-    const [reviewNotes, setReviewNotes] = useState(commitmentData?.weekly_review_notes || '');
-    const [isSaving, setIsSaving] = useState(false);
-    
-    const missedLastWeek = (commitmentData?.history || []).slice(-7).filter(day => {
-        const [committed, total] = day.score.split('/').map(Number);
-        return committed < total && total > 0;
-    });
-
-    const handleRetireCommitment = async (id) => {
-        const commitmentToRemove = userCommitments.find(c => c.id === id);
-        if (commitmentToRemove && commitmentToRemove.status !== 'Pending') {
-            console.warn("A commitment that has been logged today cannot be immediately retired for data integrity. Please wait for the daily reset.");
-            return;
-        }
-
-        const newCommitments = userCommitments.filter(c => c.id !== id);
-        
-        await updateCommitmentData(data => ({ ...data, active_commitments: newCommitments })); 
-        console.info("Rep retired successfully. Focus remains on the next priority!");
-    };
-
-    const handleSaveReview = async () => {
-        setIsSaving(true);
-        await updateCommitmentData(data => ({ 
-            ...data,
-            last_weekly_review: new Date().toISOString(),
-            weekly_review_notes: reviewNotes,
-        }));
-        console.info('Weekly review saved!');
-        setIsSaving(false);
-        setView('scorecard');
-    };
-
-    return (
-        <div className="p-8">
-            <h1 className="text-3xl font-extrabold text-[#002E47] mb-4">Weekly Rep Review & Progressive Overload Prep</h1>
-            <p className="text-lg text-gray-600 mb-6 max-w-3xl">Take 15 minutes to review last week's performance (reps) and prepare your focus for the upcoming week. This intentional review ensures sustained success through **consistency over intensity**.</p>
-
-            <Button onClick={() => setView('scorecard')} variant="outline" className="mb-8">
-                <ArrowLeft className="w-5 h-5 mr-2" /> Back to Daily Reps Scorecard
-            </Button>
-            
-            <div className='grid lg:grid-cols-2 gap-8'>
-                <div className='space-y-6'>
-                    <Card title="Audit: Last Week's Missed Reps" icon={TrendingDown} accent='ORANGE' className='border-l-4 border-[#E04E1B] bg-[#E04E1B]/10'>
-                        <p className='text-sm text-gray-700 mb-4'>
-                            You missed your perfect score **{missedLastWeek.length} times** last week. Use the list below to retire **mastered reps** or re-commit to challenging ones.
-                        </p>
-                        
-                        <h4 className='text-md font-bold text-[#002E47] border-t pt-4 mt-4 mb-2'>Active Reps (For Review)</h4>
-                        <ul className='space-y-2'>
-                            {userCommitments.map(c => (
-                                <li key={c.id} className='flex justify-between items-center bg-white p-3 rounded-lg shadow-sm border'>
-                                    <span className='text-sm text-gray-700 pr-2'>{c.text}</span>
-                                    <Button 
-                                        onClick={() => handleRetireCommitment(c.id)}
-                                        variant='outline' 
-                                        className='text-xs px-2 py-1 text-[#E04E1B] border-[#E04E1B]/50 hover:bg-[#E04E1B]/10 whitespace-nowrap'
-                                    >
-                                        <Archive className='w-4 h-4 mr-1' /> Retire Rep
-                                    </Button>
-                                </li>
-                            ))}
-                            {userCommitments.length === 0 && <p className='text-gray-500 italic text-sm'>No active commitments to review.</p>}
-                        </ul>
-                    </Card>
-                </div>
-
-                <div className='space-y-6'>
-                    <Card title="Next Week Planning Notes" icon={Lightbulb} accent='TEAL' className='border-l-4 border-[#47A88D]'>
-                        <p className='text-sm text-gray-700 mb-4'>Draft a quick focus note for the upcoming week based on your audit. What single outcome will define success?</p>
-                        <textarea 
-                            value={reviewNotes}
-                            onChange={(e) => setReviewNotes(e.target.value)}
-                            className="w-full p-3 border border-gray-300 rounded-xl focus:ring-[#47A88D] focus:border-[#47A88D] h-32" 
-                            placeholder="e.g., 'Ensure 1:1 prep is done by Monday to maintain Coaching Tier focus.'"
-                        ></textarea>
-                    </Card>
-
-                    <Button onClick={handleSaveReview} disabled={isSaving} className="w-full">
-                        {isSaving ? 'Saving Review...' : 'Save Weekly Review & Return'}
-                    </Button>
-                </div>
-            </div>
-        </div>
-    );
-};
-
-
-// UI COMPONENTS (Moved to global scope for fix)
-
-// TierSuccessMap Component Definition
-const TierSuccessMap = ({ tierRates }) => {
-    return (
-        <Card title="Tier Rep Success Map" icon={BarChart3} accent='TEAL' className='bg-[#47A88D]/10 border-2 border-[#47A88D]'>
-            <p className='text-sm text-gray-700 mb-2'>Success Rate by Leadership Tier</p>
-            {Object.entries(tierRates).length > 0 ? (
-                Object.entries(tierRates).map(([tier, data]) => (
-                    data.total > 0 && (
-                        <div key={tier} className='mb-1'>
-                            <div className='flex justify-between text-xs font-semibold text-[#002E47]'>
-                                <span>{LEADERSHIP_TIERS_META[tier]?.name || tier} ({data.total} Reps)</span>
-                                <span className={`font-bold ${data.rate > 70 ? 'text-green-600' : 'text-orange-600'}`}>{data.rate}%</span>
-                            </div>
-                            <div className="w-full bg-gray-200 rounded-full h-2">
-                                <div className="h-2 rounded-full" style={{ width: `${data.rate}%`, backgroundColor: LEADERSHIP_TIERS_META[tier]?.hex || COLORS.TEAL }}></div>
-                            </div>
-                        </div>
-                    )
-                ))
-            ) : (
-                <p className="text-gray-500 italic text-sm">No trackable tier data yet. Add reps to begin.</p>
-            )}
-        </Card>
-    );
-};
-
-// CommitmentHistoryModal Component Definition
-const CommitmentHistoryModal = ({ isVisible, onClose, dayData, activeCommitments }) => {
-    if (!isVisible || !dayData) return null;
-    return (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-            <div className="bg-white p-6 rounded-xl shadow-2xl w-full max-w-md">
-                <div className="flex justify-between items-center border-b pb-2 mb-4">
-                    <h3 className="text-xl font-bold">Reps History: {dayData.date}</h3>
-                    <button onClick={onClose} className="text-gray-400 hover:text-gray-700"><X className="w-5 h-5"/></button>
-                </div>
-                
-                <p className="text-lg font-extrabold mb-3">Score: {dayData.score}</p>
-                <p className="text-sm text-gray-700 font-semibold mb-2">Reflection Log:</p>
-                <div className="p-3 bg-gray-50 border rounded-lg h-32 overflow-y-auto text-sm italic text-gray-600">
-                    {dayData.reflection || 'No reflection logged for this day.'}
-                </div>
-                
-                <Button onClick={onClose} className="mt-4 w-full">Close Details</Button>
-            </div>
-        </div>
-    );
-};
-
-// PerfectScoreModal Component Definition
-const PerfectScoreModal = ({ onClose }) => (
-  <div
-    className="fixed inset-0 bg-[#002E47]/70 z-50 flex items-center justify-center p-4"
-    onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
-    role="dialog"
-    aria-modal="true"
-    aria-label="Perfect Score"
-  >
-    <div className="relative bg-[#FCFCFA] rounded-xl shadow-2xl w-full max-w-sm p-6 text-center">
-      <button
-        aria-label="Close"
-        onClick={onClose}
-        className="absolute top-3 right-3 p-2 rounded-full hover:bg-gray-100"
-      >
-        <X className="w-5 h-5" />
-      </button>
-
-      <Crown className="w-12 h-12 text-green-600 mx-auto mb-4" />
-      <h3 className="text-2xl font-extrabold text-[#002E47] mb-2">Perfect Rep Score!</h3>
-      <p className="text-sm text-gray-700 mb-4">
-        You executed all your leadership reps today. Sustain this discipline!
-      </p>
-      <Button onClick={onClose} className="w-full bg-green-600 hover:bg-green-700">
-        Acknowledge
-      </Button>
-    </div>
-  </div>
-);
-
-
-/**
- * DailyPracticeScreen: Main Scorecard View
- */
-export default function DailyPracticeScreen({ initialGoal, initialTier }) {
-  // CRITICAL FIX: Use useAppServices to get the state manager and data
-  const { commitmentData, updateCommitmentData, callSecureGeminiAPI, hasGeminiKey, pdpData, navigate, GEMINI_MODEL} = useAppServices(); 
-  
-  // ADDITION 1: New state to track if we've handled the initial navigation
-  const [hasNavigatedInitial, setHasNavigatedInitial] = useState(false); 
-
-  // FIX: Call the mock scheduleMidnightReset function to simulate nightly log/reset
-  // This must be done inside useEffect to be safe.
-useEffect(() => {
-  if (!commitmentData) return;
-  resetIfNewDay(commitmentData, updateCommitmentData);
-}, [commitmentData?.last_reset_date, updateCommitmentData]);
-
-  const [view, setView] = useState('scorecard'); 
-  const [isSaving, setIsSaving] = useState(false); // Global saving for reflection/resilience
-  const [reflection, setReflection] = useState(commitmentData?.reflection_journal || '');
-  const [isReflectionSaved, setIsReflectionSaved] = useState(false); // NEW: Reflection confirmation
-  
-  const [reflectionPrompt, setReflectionPrompt] = useState(null);
-  const [promptLoading, setPromptLoading] = useState(false);
-  const [isHistoryModalVisible, setIsHistoryModalVisible] = useState(false);
-  const [selectedHistoryDay, setSelectedHistoryDay] = useState(null);
-  
-  // FIX: State for view toggle
-  const [viewMode, setViewMode] = useState('tier'); 
-  const [isPerfectScoreModalVisible, setIsPerfectScoreModalVisible] = useState(false);
-  const resilienceLog = commitmentData?.resilience_log || {};
-  
-  // MODIFIED useEffect: Only navigate to selector if initial props exist AND we haven't done it yet.
-  useEffect(() => {
-    // FIX 9: Prevent initialGoal/initialTier from re-navigating to the selector after a successful add.
-    if (!hasNavigatedInitial && (initialGoal || initialTier)) {
-      setView('selector');
-      setHasNavigatedInitial(true); // Mark as done
-    } else if (view === 'selector' && !hasNavigatedInitial && !initialGoal && !initialTier) {
-       // If we start on selector without props (e.g., from a deep link), also mark as handled.
-       setHasNavigatedInitial(true);
-    }
-  }, [initialGoal, initialTier, hasNavigatedInitial, view]); 
-
-
-  // CRITICAL FIX: Resilience save handler now correctly uses updateCommitmentData
-  const handleSaveResilience = async (newLogData) => { 
-      setIsSaving(true); 
-      const today = new Date().toISOString().split('T')[0];
-      // FIX 2: Ensure we update the log correctly, including the 'saved' flag.
-      await updateCommitmentData(data => ({ 
-          ...data, // Spread data here to ensure other fields are preserved (important for API calls)
-          resilience_log: { 
-              ...data.resilience_log, 
-              [today]: { ...newLogData, saved: true } // Explicitly set saved:true
-          } 
-      })); 
-      setIsSaving(false);
-      console.log("Resilience Log Saved.");
-  };
-
-  const setResilienceLog = () => {}; // Placeholder for the local state in ResilienceTracker
-
-   // Sync reflection + fetch a fresh prompt when data changes
-  useEffect(() => {
-    setReflection(commitmentData?.reflection_journal || '');
-    fetchReflectionPrompt(commitmentData);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [commitmentData]);
-  
-  // Removed redundant useEffect for initialGoal/initialTier navigation, replaced by the unified useEffect.
-
-
-  const userCommitments = commitmentData?.active_commitments || [];
-  const commitmentHistory = commitmentData?.history || [];
-  const score = calculateTotalScore(userCommitments);
-  const streak = calculateStreak(commitmentHistory);
-  const isPerfectScore = score.total > 0 && score.committed === score.total;
-
-// Open the modal the first time today's score becomes perfect
-useEffect(() => {
-  if (isPerfectScore) setIsPerfectScoreModalVisible(true);
-}, [isPerfectScore]);
-
-// Allow closing with ESC
-useEffect(() => {
-  if (!isPerfectScoreModalVisible) return;
-  const onKey = (e) => { if (e.key === 'Escape') setIsPerfectScoreModalVisible(false); };
-  window.addEventListener('keydown', onKey);
-  return () => window.removeEventListener('keydown', onKey);
-}, [isPerfectScoreModalVisible]);
-
-  
-  const tierSuccessRates = useMemo(() => calculateTierSuccessRates(userCommitments, commitmentHistory), [userCommitments, commitmentHistory]);
-  const lastSevenDaysHistory = useMemo(() => getLastSevenDays(commitmentHistory), [commitmentHistory]);
-
-
-  /* =========================================================
-     AI-Driven Reflection Prompt Logic
-     FIX: Integrated the resilient API call structure
-  ========================================================= */
-  const fetchReflectionPrompt = async (data) => {
-    if (!hasGeminiKey() || promptLoading) return;
-
-    setPromptLoading(true);
-    
-    // Treat 'Pending' commitments as 'Missed' for the purpose of the reflection prompt.
-    const missedCommitments = (data?.active_commitments || [])
-        .filter(c => c.status === 'Missed' || c.status === 'Pending')
-        .map(c => `[${LEADERSHIP_TIERS_META[c.linkedTier]?.name || 'General'}] ${c.text}`);
-
-    const systemPrompt = `You are an executive coach. Based on the user's daily performance, generate ONE specific, non-judgemental, and high-leverage reflection question. If commitments were missed, link the question to the missed tier/action and the leadership cost of inconsistency. If performance was perfect, ask a question about translating that commitment into team impact. Keep the question concise (1-2 sentences).`;
-
-    let userQuery;
-    if (missedCommitments.length > 0) {
-        userQuery = `The user missed or is pending on the following commitments: ${missedCommitments.join('; ')}. Generate a reflection prompt focused on the root cause and leadership cost of that inconsistency.`;
-    } else if (data?.active_commitments?.length > 0) {
-        userQuery = `The user achieved a perfect score today (${data.active_commitments.length}/${data.active_commitments.length}). Generate a reflection prompt focused on how the commitment execution generated value or reduced risk for their team today.`;
-    } else {
-        setReflectionPrompt('What key insight did you gain today that will improve your leadership practice tomorrow?');
-        setPromptLoading(false);
-        return;
-    }
-
-    try {
-        const payload = {
-            contents: [{ role: "user", parts: [{ text: userQuery }] }],
-            systemInstruction: { parts: [{ text: systemPrompt }] },
-            model: GEMINI_MODEL,
-        };
-        const result = await callSecureGeminiAPI(payload);
-        const text = result?.candidates?.[0]?.content?.parts?.[0]?.text;
-        setReflectionPrompt(text?.trim() || 'What single behavior reinforced your LIS today, and why?');
-    } catch (e) {
-        console.error("AI Prompt Error:", e);
-        setReflectionPrompt('AI Coach is unavailable. Use this standard prompt: What single behavior reinforced your LIS today, and why?');
-    } finally {
-        setPromptLoading(false);
-    }
-  };
-
-
-  /* =========================================================
-     General Handlers (Fixing Status Logic & Removal)
-  ========================================================= */
-
-  const handleLogCommitment = async (id, status) => {
-    setIsSaving(true);
-    
-    await updateCommitmentData(data => {
-        const updatedCommitments = data.active_commitments.map(c => 
-            c.id === id ? { ...c, status: status } : c
-        );
-        return { ...data, active_commitments: updatedCommitments }; // CRITICAL FIX 7: Spread ...data here
-    });
-    
-    setIsSaving(false);
-  };
-
-  const handleRemoveCommitment = async (id) => {
-    setIsSaving(true);
-    const commitmentToRemove = userCommitments.find(c => c.id === id);
-
-    if (commitmentToRemove && commitmentToRemove.status === 'Committed') {
-        console.warn("Commitment is marked complete. It must remain on the scorecard until tomorrow's daily reset for data integrity.");
-        setIsSaving(false);
-        return;
-    }
-    
-    await updateCommitmentData(data => {
-        const updatedCommitments = data.active_commitments.filter(c => c.id !== id);
-        return { ...data, active_commitments: updatedCommitments }; // CRITICAL FIX 8: Spread ...data here
-    });
-    
-    setIsSaving(false);
-  };
-
-  const handleSaveReflection = async () => {
-    setIsSaving(true);
-    setIsReflectionSaved(false); 
-    
-    await updateCommitmentData(data => ({ ...data, reflection_journal: reflection }));
-    
-    setIsSaving(false);
-    setIsReflectionSaved(true); 
-    setTimeout(() => setIsReflectionSaved(false), 3000);
-    console.log("Daily Reflection Saved.");
-  };
-  
-  const handleOpenHistoryModal = (dayData) => {
-      setSelectedHistoryDay(dayData);
-      setIsHistoryModalVisible(true);
-  };
-
-  /* =========================================================
-     NEW ADVANCED FEATURE: Predictive Risk & Micro-Tip Logic
-  ========================================================= */
-  const { predictedRisk, microTip } = useMemo(() => {
-    const today = new Date();
-    const hour = today.getHours();
-    
-    const missedTiers = userCommitments
-      .filter(c => c.status === 'Missed' || c.status === 'Pending')
-      .map(c => c.linkedTier)
-      .filter(t => t);
-      
-    let riskText = null;
-    let riskIcon = null;
-
-    if (missedTiers.length > 0) {
-        const frequentMissedTier = missedTiers.reduce((a, b, i, arr) => 
-            (arr.filter(v => v===a).length >= arr.filter(v => v===b).length ? a : b), missedTiers[0]);
-            
-        riskText = `High Risk: Inconsistency in **${LEADERSHIP_TIERS_META[frequentMissedTier]?.name || 'a core tier'}** reps. This threatens your ability to advance in your Roadmap.`;
-        riskIcon = TrendingDown;
-    } else {
-        if (score.total > 0) {
-            riskText = "Low Risk: Great start! Sustain the momentum to hit a perfect rep score.";
-            riskIcon = CheckCircle;
-        } else {
-             riskText = "No active risk yet. Add commitments in the 'Manage' tab.";
-             riskIcon = AlertTriangle;
-        }
-    }
-
-    let tipText;
-    if (hour < 12) {
-        tipText = "Morning Rep Focus: Protect your 'Deep Work' commitment first. Say 'No' to non-essential pings.";
-    } else if (hour >= 12 && hour < 16) {
-        tipText = "Afternoon Rep Reset: Check if you have any Reps due before EOD, especially 1:1 prep.";
-    } else {
-        tipText = "End-of-Day Review: Ensure all Reps are marked complete. Reflect before signing off.";
-    }
-
-
-    return { predictedRisk: { text: riskText, icon: riskIcon }, microTip: tipText };
-  }, [userCommitments, score.total]);
-
-  // View Mode Sorting Logic
-const sortedCommitments = useMemo(() => {
-  const active = [...userCommitments];
-      if (viewMode === 'status') {
-          return active.sort((a, b) => {
-              if (a.status === 'Pending' && b.status !== 'Pending') return -1;
-              if (a.status !== 'Pending' && b.status === 'Pending') return 1;
-              return 0;
-          });
-      }
-      if (viewMode === 'tier') {
-          const tierOrder = ['T5', 'T4', 'T3', 'T2', 'T1']; // Sort by highest leverage first
-          return active.sort((a, b) => {
-              return tierOrder.indexOf(a.linkedTier) - tierOrder.indexOf(b.linkedTier);
-          });
-      }
-      return active;
-}, [userCommitments, viewMode]);
-
-
-  // Final Render
-  const renderView = () => {
-    
-    // Mock progress data for visualization
-    const monthlyProgress = { daysTracked: 15, metItems: 35, totalItems: 45, rate: 78 }; 
-
-
-    switch (view) {
-      case 'selector':
-        return <CommitmentSelectorView
-          setView={setView}
-          initialGoal={initialGoal}
-          initialTier={initialTier}
-        />;
-      case 'weekly-prep':
-        return <WeeklyPrepView
-          setView={setView}
-          commitmentData={commitmentData}
-          updateCommitmentData={updateCommitmentData}
-          userCommitments={userCommitments}
-        />;
-      case 'scorecard':
-      default:
-        return (
-          <div className="p-8">
-            <h1 className="text-3xl font-extrabold text-[#002E47] mb-6">Daily Reps Scorecard</h1>
-            <p className="text-lg text-gray-600 mb-8 max-w-3xl">Track your daily commitment to the non-negotiable leadership actions (**reps**) that reinforce your professional identity. **Consistency over intensity** is the key to sustained executive growth.</p>
-
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-              <div className='lg:col-span-2'>
-                
-                {/* Goal Drift Analysis Mock (The visual card remains the same) */}
-                <Card 
-                    title="Goal Drift Analysis" 
-                    icon={predictedRisk.icon} 
-                    accent={predictedRisk.icon === TrendingDown ? 'ORANGE' : 'TEAL'} 
-                    className='mb-6 shadow-2xl' 
-                    style={{ background: predictedRisk.icon === TrendingDown ? COLORS.ORANGE + '1A' : COLORS.TEAL + '1A', border: `2px solid ${predictedRisk.icon === TrendingDown ? COLORS.ORANGE : COLORS.TEAL}` }}
-                >
-                    <p className='text-base font-medium text-gray-700'>
-                        {predictedRisk.text}
-                    </p>
-                </Card>
-                
-                <div className='p-3 mb-6 bg-[#002E47] rounded-xl text-white shadow-lg'>
-                    <p className='text-xs font-semibold uppercase opacity-80'>Workflow Rep Focus</p>
-                    <p className='text-sm'>{microTip}</p>
-                </div>
-                
-                <div className="mb-6 flex justify-between items-center">
-                  <h3 className="text-2xl font-extrabold text-[#002E47]">
-                    Today's Reps ({userCommitments.length})
-                  </h3>
-                  <div className='flex space-x-2'>
-                    <button 
-                        onClick={() => setViewMode(viewMode === 'status' ? 'tier' : 'status')}
-                        className={`px-3 py-1 text-sm font-medium rounded-full border transition-all flex items-center gap-1 ${viewMode === 'tier' ? 'bg-[#47A88D] text-white border-[#47A88D]' : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-50'}`}
-                    >
-                        <List className='w-4 h-4' />
-                        View by {viewMode === 'status' ? 'Tier' : 'Status'}
-                    </button>
-                    <Button onClick={() => setView('selector')} variant="outline" className="text-sm px-4 py-2" disabled={isSaving}>
-                      <PlusCircle className="w-4 h-4 mr-2" /> Manage Reps
-                    </Button>
-                  </div>
-                </div>
-
-                <Card title="Current Reps" icon={Target} accent='TEAL' className="mb-8 border-l-4 border-[#47A88D] rounded-3xl">
-                    <div className='mb-4 flex justify-between items-center text-sm'>
-                        <div className='font-semibold text-[#002E47]'>
-                            {score.total > 0 ? `Score: ${score.committed}/${score.total} completed reps` : 'No active reps.'}
-                        </div>
-                        {score.total > 0 && (
-                            <div className={`font-bold ${isPerfectScore ? 'text-green-600' : 'text-[#E04E1B]'}`}>
-                                {score.total - score.committed} pending or missed.
-                            </div>
-                        )}
-                    </div>
-                    
-                    <div className="space-y-4">
-                        {sortedCommitments.length > 0 ? (
-                            // Use sorted commitments for rendering
-                            sortedCommitments.map(c => (
-                                <CommitmentItem
-                                    key={c.id}
-                                    commitment={c}
-                                    onLogCommitment={handleLogCommitment}
-                                    onRemove={handleRemoveCommitment} // Passed down for removal functionality
-                                    isSaving={isSaving}
-                                    isScorecardMode={true}
-                                />
-                            ))
-                        ) : (
-                            <p className="text-gray-500 italic text-center py-4">Your scorecard is empty. Click 'Manage Reps' to start building your daily practice!</p>
-                        )}
-                    </div>
-
-                  <div className="mt-8 pt-4 border-t border-gray-200 flex justify-between items-center">
-                    <h3 className="text-2xl font-extrabold text-[#002E47]">
-                      Daily Rep Score:
-                    </h3>
-                    <span className={`text-4xl font-extrabold p-3 rounded-xl shadow-inner min-w-[100px] text-center ${
-                      isPerfectScore ? 'text-green-600 bg-green-50' : 'text-[#002E47] bg-gray-100'
-                    }`}>
-                      {score.committed} / {score.total}
-                    </span>
-                  </div>
-                </Card>
-              </div>
-
-              <div className='lg:col-span-1 space-y-8'>
-                  {/* FIX: Use the component with local save state */}
-                  <ResilienceTracker dailyLog={resilienceLog} handleSaveResilience={handleSaveResilience}/>
-                  
-                  <Card 
-                      title="Goal Drift Indicator" 
-                      icon={predictedRisk.icon} 
-                      accent={predictedRisk.icon === TrendingDown ? 'ORANGE' : 'TEAL'}
-                      className={`border-2 shadow-2xl`}
-                  >
-                      <p className='text-sm font-semibold text-[#002E47]'>{predictedRisk.text}</p>
-                  </Card>
-                  
-                  <TierSuccessMap tierRates={tierSuccessRates} />
-                  
-                  <Card title="Monthly Consistency" icon={BarChart3} accent='TEAL' className='bg-[#47A88D]/10 border-2 border-[#47A88D]'>
-                      <p className='text-xs text-gray-700 mb-2'>Avg. Rep Completion Rate ({monthlyProgress.daysTracked} days)</p>
-                      <div className="w-full bg-gray-200 rounded-full h-4 mb-2">
-                          <div 
-                              className="bg-[#002E47] h-4 rounded-full transition-all duration-700" 
-                              style={{ width: `${monthlyProgress.rate}%` }}
-                          ></div>
-                      </div>
-                      <div className='flex justify-between items-center'>
-                          <p className='text-sm font-semibold text-[#002E47]'>Perfect Rep Streak:</p>
-                          <span className='text-xl font-extrabold text-green-600 flex items-center'>
-                              <Crown className='w-5 h-5 mr-1'/> {streak} Days
-                          </span>
-                      </div>
-                      <Button onClick={() => setView('weekly-prep')} variant='outline' className='w-full mt-4 text-xs px-4 py-2 border-[#002E47] text-[#002E47] hover:bg-[#002E47]/10'>
-                          <Activity className='w-4 h-4 mr-2'/> Weekly Rep Review
-                      </Button>
-                      <Button onClick={() => handleOpenHistoryModal(lastSevenDaysHistory[lastSevenDaysHistory.length -1])} variant='outline' className='w-full mt-2 text-xs px-4 py-2'>
-                          <Clock className='w-4 h-4 mr-2'/> View Last Score
-                      </Button>
-                  </Card>
-              </div>
-            </div>
-            
-            {/* Daily Reflection Section */}
-            <Card title="Daily Reflection (The Debrief)" icon={MessageSquare} accent='NAVY' className='mt-8 max-w-3xl border-l-4 border-[#002E47]'>
-                <p className='text-sm text-gray-700 mb-4'>
-                    {promptLoading ? (
-                        <span className='flex items-center text-[#47A88D]'>
-                             <div className="animate-spin h-4 w-4 border-b-2 border-gray-500 mr-2 rounded-full"></div> Drafting prompt...
-                        </span>
-                    ) : (
-                        <span className='font-bold text-[#002E47]'>{reflectionPrompt || 'What key insight did you gain today that will improve your leadership practice tomorrow?'}</span>
-                    )}
-                </p>
-                <textarea 
-                    value={reflection}
-                    onChange={(e) => setReflection(e.target.value)}
-                    className="w-full p-3 border border-gray-300 rounded-xl focus:ring-[#002E47] focus:border-[#002E47] h-32 text-gray-800" 
-                    placeholder="My key reflection/insight from today's practice..."
-                ></textarea>
-                <Button onClick={handleSaveReflection} disabled={isSaving || reflection.length === 0} className='mt-4 bg-[#002E47] hover:bg-gray-700'>
-                    {isSaving ? 'Saving...' : 'Save Reflection'}
-                </Button>
-                 {isReflectionSaved && (
-                    <span className='ml-4 text-sm font-bold text-green-600 flex items-center mt-2'>
-                        <CheckCircle className='w-4 h-4 mr-1'/> Reflection Logged!
-                    </span>
-                )}
-            </Card>
-
-            <CommitmentHistoryModal 
-                isVisible={isHistoryModalVisible}
-                onClose={() => setIsHistoryModalVisible(false)}
-                dayData={selectedHistoryDay}
-                activeCommitments={userCommitments}
-            />
-            
-            {isPerfectScore && score.total > 0 && !isPerfectScoreModalVisible && (
-                 <PerfectScoreModal onClose={() => setIsPerfectScoreModalVisible(false)} />
-            )}
-            
-          </div>
-        );
-    }
-  }; // <-- CLOSES the renderView function
-
-  // CRITICAL FIX: The main component MUST return its content to render.
-  return renderView();
-} // <-- CLOSES the DailyPracticeScreen function
+export default DashboardScreen;

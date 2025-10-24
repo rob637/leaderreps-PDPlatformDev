@@ -12,10 +12,19 @@ const LEADERSHIP_TIERS = {
     T5: { id: 'T5', name: 'Strategy & Vision', icon: 'TrendingUp', color: 'cyan-600' },
 };
 
-// --- CORE MOCK DATA DEFINITIONS (Derived from App.jsx's MOCK_DATA) ---
+// --- CORE MOCK DATA DEFINITIONS ---
 const MOCK_PDP_DATA = { currentMonth: 1, assessment: { selfRatings: { T1: 5, T2: 5, T3: 5, T4: 5, T5: 5 } }, plan: [] };
-const MOCK_COMMITMENT_DATA = { active_commitments: [], history: [], reflection_journal: '' };
+const MOCK_COMMITMENT_DATA = { active_commitments: [], history: [], reflection_journal: '', resilience_log: {} };
 const MOCK_PLANNING_DATA = { okrs: [], last_premortem_decision: '2025-01-01' };
+
+// --- NEW MOCK ACTIVITY DATA STRUCTURE ---
+const MOCK_ACTIVITY_DATA = {
+    daily_target_rep: "Give one reinforcing feedback statement to a direct report.",
+    identity_statement: "I am the kind of leader who coaches in the moment and owns accountability.",
+    total_reps_completed: 452, 
+    total_coaching_labs: 18,    
+    today_coaching_labs: 2,     
+};
 
 // --- 0. DEFAULT SERVICES FALLBACK (CRITICAL FIX for Destructuring Error) ---
 const DEFAULT_SERVICES = {
@@ -41,16 +50,16 @@ const DEFAULT_SERVICES = {
     error: null,
     hasPendingDailyPractice: false,
 
-    // Constants
+    // Constants & Mock Data Access (Used by Dashboard/DailyPractice)
     appId: 'default-app-id', 
     IconMap: {}, 
     GEMINI_MODEL, 
     API_KEY: '',
     LEADERSHIP_TIERS, 
+    MOCK_ACTIVITY_DATA, // EXPOSE MOCK ACTIVITY DATA
 };
 
 // --- CONTEXT CREATION ---
-// CRITICAL FIX 1: AppServiceContext MUST be exported to be consumed by App.jsx
 export const AppServiceContext = createContext(null);
 
 // ====================================================================
@@ -101,6 +110,7 @@ export const useCommitmentData = (db, userId, isAuthReady) => {
   const [commitmentData, setCommitmentData] = useState(() => {
     try {
       const raw = localStorage.getItem(key);
+      // Use the mock data structure that includes new fields like resilience_log
       return raw ? JSON.parse(raw) : { ...MOCK_COMMITMENT_DATA };
     } catch {
       return { ...MOCK_COMMITMENT_DATA };
@@ -154,7 +164,6 @@ export function useAppServices() {
     const context = useContext(AppServiceContext);
     
     // CRITICAL FIX: Use the complete DEFAULT_SERVICES object as a fallback
-    // to prevent destructuring errors when the component is not yet wrapped by the Provider.
     if (context === null || context === undefined) {
         console.error("useAppServices called outside AppServiceContext.Provider. Returning default services.");
         return DEFAULT_SERVICES; 

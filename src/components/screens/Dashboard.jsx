@@ -42,11 +42,14 @@ const MOCK_PLANNING_DATA = {
     last_premortem_decision: new Date('2025-10-10').toISOString(),
 };
 
-// --- NEW MOCK DATA FOR REFINEMENT ---
+// --- NEW MOCK DATA FOR REFINEMENT (Rep Tracker Integration) ---
 const MOCK_ACTIVITY_DATA = {
+    // New data point: The single, clear target behavior for the day
+    daily_target_rep: "Give one reinforcing feedback statement to a direct report.",
     total_reps_completed: 452, // Cumulative for new metric
     total_coaching_labs: 18,    // Cumulative for new metric
     today_coaching_labs: 2,     // Daily for new metric
+    identity_statement: "I am the kind of leader who coaches in the moment and owns accountability.", // Updated for visibility
 };
 
 // Local Nudges (Used for instant, non-API refresh)
@@ -117,7 +120,8 @@ import {
   Film, 
   Dumbbell,
   ChevronsRight,
-  Send
+  Send,
+  Flag
 } from 'lucide-react';
 
 /* =========================================================
@@ -235,7 +239,7 @@ const StatCard = ({ icon: Icon, label, value, onClick, trend = 0, colorHex, size
   if (label.includes("Labs Today")) { accent = 'BLUE'; }
   if (label.includes("Weakest Tier Focus")) { accent = 'AMBER'; }
   if (label.includes("Longest-Held OKR")) { accent = 'BLUE'; }
-
+  if (label.includes("Today's Target Rep")) { accent = 'RED'; } // Highlight new feature
 
   
   // Set width based on size prop
@@ -415,6 +419,8 @@ const DashboardScreen = () => {
   // --- END RE-ADDED CALCULATION ---
   
   // --- NEW METRIC CALCULATIONS ---
+  const dailyTargetRep = useMemo(() => MOCK_ACTIVITY_DATA.daily_target_rep, []);
+  const identityStatement = useMemo(() => MOCK_ACTIVITY_DATA.identity_statement, []);
   const totalRepsCompleted = useMemo(() => MOCK_ACTIVITY_DATA.total_reps_completed, []);
   const todayRepsCompleted = useMemo(() => commitsCompleted, [commitsCompleted]); 
   const totalCoachingLabs = useMemo(() => MOCK_ACTIVITY_DATA.total_coaching_labs, []);
@@ -608,7 +614,16 @@ useEffect(() => {
                 <h3 className='text-xl font-extrabold text-[#47A88D] mb-4 flex items-center gap-2'>
                     <BookOpen size={20}/> PILLAR: Content & Discipline
                 </h3>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                    {/* Metric: Today's Target Rep (New Metric 1: Clarity) */}
+                    <StatCard
+                        icon={Flag}
+                        label="Today's Target Rep"
+                        value={dailyTargetRep}
+                        onClick={() => safeNavigate('daily-practice')}
+                        trend={0} 
+                        colorHex={COLORS.RED} // Using RED/ORANGE for high visibility
+                    />
                     {/* Metric: Daily Reps Completed Today */}
                     <StatCard
                         icon={CheckCircle}
@@ -644,8 +659,8 @@ useEffect(() => {
                 <h3 className='text-xl font-extrabold text-[#7C3AED] mb-4 flex items-center gap-2'>
                     <Mic size={20}/> PILLAR: Coaching & Practice
                 </h3>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    {/* Metric: Today's Coaching Labs */}
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                    {/* Metric: Labs Completed Today (Daily Coaching) */}
                     <StatCard
                         icon={Send}
                         label="Labs Completed Today"
@@ -663,7 +678,7 @@ useEffect(() => {
                         trend={1} 
                         colorHex={COLORS.PURPLE}
                     />
-                    {/* Metric: Placeholder for future Coaching KPI - We'll put Daily Reps Completion Rate here for context */}
+                    {/* Metric: Daily Reps Completion Rate (Context) */}
                     <StatCard
                         icon={TrendingUp}
                         label="Daily Completion Rate"
@@ -672,15 +687,33 @@ useEffect(() => {
                         trend={dailyPercent > 50 ? 5 : -5} 
                         colorHex={COLORS.ORANGE}
                     />
+                     {/* Metric: Placeholder for AI Reflection Coach summary */}
+                    <StatCard
+                        icon={Lightbulb}
+                        label="AI Reflection Summary"
+                        value={`Ready`}
+                        onClick={() => safeNavigate('coaching-lab')}
+                        trend={0} 
+                        colorHex={COLORS.NAVY}
+                    />
                 </div>
             </div>
             
             {/* PILLAR: COMMUNITY */}
             <div className='p-6 rounded-2xl border-4 border-[#002E47]/20 bg-[#F7FCFF]'>
                 <h3 className='text-xl font-extrabold text-[#002E47] mb-4 flex items-center gap-2'>
-                    <Dumbbell size={20}/> PILLAR: Community & Roadmap
+                    <Dumbbell size={20}/> PILLAR: Community & Identity
                 </h3>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                    {/* Metric: Identity Shift (New Metric 8) */}
+                    <StatCard
+                        icon={User}
+                        label="I Am... Identity Statement"
+                        value={identityStatement.substring(0, 30) + '...'}
+                        onClick={() => safeNavigate('profile')}
+                        trend={0} 
+                        colorHex={COLORS.NAVY}
+                    />
                     {/* Metric: Roadmap Months Remaining */}
                     <StatCard
                         icon={Briefcase}
@@ -690,7 +723,7 @@ useEffect(() => {
                         trend={24 - goalsCount > 0 ? -4 : 0} 
                         colorHex={COLORS.NAVY}
                     />
-                    {/* Metric: Weakest Tier Focus (Re-added as a Roadmap metric) */}
+                    {/* Metric: Weakest Tier Focus (Roadmap context) */}
                      <StatCard
                         icon={Target}
                         label="Weakest Tier Focus"
