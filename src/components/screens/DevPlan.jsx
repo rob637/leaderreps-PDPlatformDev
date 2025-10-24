@@ -1,6 +1,6 @@
 // src/components/screens/DevPlan.jsx
 
-import { Home, Settings, Zap, Clock, Briefcase, Mic, Trello, BookOpen, BarChart3, TrendingUp, TrendingDown, CheckCircle, Star, Target, Users, HeartPulse, CornerRightUp, X, ArrowLeft, Activity, Link, Lightbulb, AlertTriangle, Eye, PlusCircle, Cpu, MessageSquare, Check, Calendar } from 'lucide-react';
+import { Home, Settings, Zap, Clock, Briefcase, Mic, Trello, BookOpen, BarChart3, TrendingUp, TrendingDown, CheckCircle, Star, Target, Users, HeartPulse, CornerRightUp, X, ArrowLeft, Activity, Link, Lightbulb, AlertTriangle, Eye, PlusCircle, Cpu, MessageSquare, Check, Calendar, Dumbbell } from 'lucide-react';
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 
 // --- SERVICES (production) ---
@@ -107,7 +107,7 @@ const mdToHtml = async (md) => {
     return `<p class="text-sm text-gray-700">${html}</p>`;
 };
 const IconMap = {
-    Zap: Zap, Users: Users, Briefcase: Briefcase, Target: Target, BarChart3: BarChart3, Clock: Clock, Eye: Eye, BookOpen: BookOpen, Lightbulb: Lightbulb, X: X, ArrowLeft: ArrowLeft, CornerRightUp: CornerRightUp, AlertTriangle: AlertTriangle, CheckCircle: CheckCircle, PlusCircle: PlusCircle, Cpu: Cpu, Star: Star, Mic: Mic, Trello: Trello, Settings: Settings, Home: Home, MessageSquare: MessageSquare, Check: Check, Calendar: Calendar, HeartPulse: HeartPulse, TrendingUp: TrendingUp, TrendingDown: TrendingDown, Activity: Activity, Link: Link
+    Zap: Zap, Users: Users, Briefcase: Briefcase, Target: Target, BarChart3: BarChart3, Clock: Clock, Eye: Eye, BookOpen: BookOpen, Lightbulb: Lightbulb, X: X, ArrowLeft: ArrowLeft, CornerRightUp: CornerRightUp, AlertTriangle: AlertTriangle, CheckCircle: CheckCircle, PlusCircle: PlusCircle, Cpu: Cpu, Star: Star, Mic: Mic, Trello: Trello, Settings: Settings, Home: Home, MessageSquare: MessageSquare, Check: Check, Calendar: Calendar, HeartPulse: HeartPulse, TrendingUp: TrendingUp, TrendingDown: TrendingDown, Activity: Activity, Link: Link, Dumbbell: Dumbbell
 };
 
 // --- Utility: Global Copy to Clipboard (Using modern API for clean code) ---
@@ -147,7 +147,7 @@ const generateShareText = (currentMonthPlan, data) => {
     const tierName = LEADERSHIP_TIERS[currentMonthPlan.tier].name;
     const shareLink = `https://leaderreps.com/pdp/view/${data.ownerUid}/${data.currentMonth}`;
     
-    return `[PDP Monthly Focus]\n\nHello Manager, here is my focus for Month ${currentMonthPlan.month}:\n\n- **Current Tier Priority:** ${tierName}\n- **Theme:** ${currentMonthPlan.theme}\n- **Required Content:** ${currentMonthPlan.requiredContent.map(c => c.title).join(', ')}.\n\nMy primary skill gap is in ${data.assessment.selfRatings[currentMonthPlan.tier]}/10). My goal this month is to close this gap by completing all content.\n\nView my full progress: ${shareLink}\n\nManager Acknowledgment: [ ] I have reviewed and aligned with this plan.`;
+    return `[Roadmap Monthly Focus]\n\nHello Manager, here is my focus for Training Month ${currentMonthPlan.month}:\n\n- **Current Tier Priority:** ${tierName}\n- **Theme:** ${currentMonthPlan.theme}\n- **Required Content/Reps:** ${currentMonthPlan.requiredContent.map(c => c.title).join(', ')}.\n\nMy primary skill gap is in ${data.assessment.selfRatings[currentMonthPlan.tier]}/10). My goal this month is to close this gap by completing all content (reps).\n\nView my full progress: ${shareLink}\n\nManager Acknowledgment: [ ] I have reviewed and aligned with this plan.`;
 };
 // --- End Utility ---
 
@@ -631,6 +631,7 @@ const generatePlanData = (assessment, ownerUid) => {
     }
     
     // --- 3. CORE 24-MONTH PLAN GENERATION (Dynamic Content Density) ---
+    // This is where "Progressive Overload" is implemented: increasing difficulty (density) in weaker areas.
     const plan = [];
     const usedContentIds = new Set();
     
@@ -904,7 +905,7 @@ const canEdit = (typeof isPastOrCurrent !== 'undefined' ? (isPastOrCurrent && is
                              }}
                         >
                             <span className={`text-sm ${isCurrentView ? 'text-[#7C3AED]' : 'text-[#002E47]'}`}>
-                                **Month {monthData.month}**: {monthData.theme}
+                                **Training Month {monthData.month}**: {monthData.theme}
                             </span>
                             <span className="flex items-center space-x-1 text-xs">
                                 <Check size={16} className={isCompleted ? 'text-green-600' : 'text-gray-400'} />
@@ -988,9 +989,9 @@ const TrackerDashboardView = ({ data, updatePdpData, saveNewPlan, userId, naviga
         const currentTier = LEADERSHIP_TIERS[plan.tier];
         const rating = assessment.selfRatings?.[plan.tier] || 5; 
 
-        const systemPrompt = `You are a concise Executive Coach. Analyze the user's current PDP phase. Given their focus tier (${currentTier.name}) and their initial self-rating (${rating}/10), provide: 1) A 1-sentence **Executive Summary** of the goal. 2) A 1-sentence **Coaching Nudge** on how to prioritize the month's learning based on their skill gap. Use bold markdown for key phrases.`;
+        const systemPrompt = `You are a concise Executive Coach. Analyze the user's current Roadmap phase (fitness training). Given their focus tier (${currentTier.name}) and their initial self-rating (${rating}/10), provide: 1) A 1-sentence **Executive Summary** of the goal (the rep/skill). 2) A 1-sentence **Coaching Nudge** on how to prioritize the month's learning based on their skill gap. Use bold markdown for key phrases.`;
 
-        const userQuery = `Generate a monthly briefing for the user's current focus: ${plan.theme}. Required content includes: ${plan.requiredContent.map(c => c.title).join(', ')}.`;
+        const userQuery = `Generate a monthly briefing for the user's current focus: ${plan.theme}. Required content/reps includes: ${plan.requiredContent.map(c => c.title).join(', ')}.`;
 
         try {
             const payload = {
@@ -1086,7 +1087,7 @@ const TrackerDashboardView = ({ data, updatePdpData, saveNewPlan, userId, naviga
                      setBriefing(monthPlan.briefingText);
                  }
             } else if (!isCurrentView && !monthPlan.briefingText) {
-                 const historicalBriefingText = `## Month ${viewMonth} Historical Briefing\n\n**Focus:** ${monthPlan.theme}\n\n*The full coaching brief was not saved for this historical month.*`;
+                 const historicalBriefingText = `## Training Month ${viewMonth} Historical Briefing\n\n**Focus:** ${monthPlan.theme}\n\n*The full coaching brief was not saved for this historical month.*`;
                  
                  if (briefing !== historicalBriefingText) {
                      setBriefing(historicalBriefingText);
@@ -1113,25 +1114,25 @@ const TrackerDashboardView = ({ data, updatePdpData, saveNewPlan, userId, naviga
     if (!monthPlan) {
         return (
             <div className="p-6 md:p-10 min-h-screen flex items-center justify-center">
-                <p className="text-xl text-[#E04E1B] font-bold">Error: Plan data not found for Month {viewMonth}.</p>
+                <p className="text-xl text-[#E04E1B] font-bold">Error: Roadmap data not found for Month {viewMonth}.</p>
             </div>
         );
     }
     
     const safeBriefing = briefingLoading && isCurrentView ? 'Loading AI Briefing...' : (typeof briefing === 'string' ? briefing : (
-        `## Month ${viewMonth} Historical Briefing\n\n**Focus:** ${monthPlan.theme}\n\n*The full coaching brief was not saved for this historical month.*`
+        `## Training Month ${viewMonth} Historical Briefing\n\n**Focus:** ${monthPlan.theme}\n\n*The full coaching brief was not saved for this historical month.*`
     ));
 
 
     return (
         <div className="p-6 md:p-10 min-h-screen" style={{ background: COLORS.BG, color: COLORS.TEXT }}>
             <div className='flex items-center gap-4 border-b-2 pb-2 mb-8' style={{borderColor: COLORS.PURPLE+'30'}}>
-                <Briefcase className='w-10 h-10' style={{color: COLORS.PURPLE}}/>
-                <h1 className="text-4xl font-extrabold" style={{ color: COLORS.NAVY }}>PDP Tracker Dashboard</h1>
+                <Dumbbell className='w-10 h-10' style={{color: COLORS.PURPLE}}/>
+                <h1 className="text-4xl font-extrabold" style={{ color: COLORS.NAVY }}>Development Roadmap Tracker</h1>
             </div>
 
             {/* Progress Bar & Header */}
-            <Card title={`Roadmap Progress: Month ${currentMonth} of 24`} icon={Clock} accent='NAVY' className="bg-[#002E47]/10 border-4 border-[#002E47]/20 mb-8">
+            <Card title={`Roadmap Progress: Training Month ${currentMonth} of 24`} icon={Clock} accent='NAVY' className="bg-[#002E47]/10 border-4 border-[#002E47]/20 mb-8">
                 <div className="w-full bg-gray-200 rounded-full h-4 mb-2">
                     <div
                         className="bg-[#47A88D] h-4 rounded-full transition-all duration-700"
@@ -1143,7 +1144,7 @@ const TrackerDashboardView = ({ data, updatePdpData, saveNewPlan, userId, naviga
                 </p>
                 <div className='flex space-x-4 mt-4'>
                     <Button onClick={handleResetPlan} variant='outline' className='text-xs px-4 py-2 text-[#E04E1B] border-[#E04E1B]/50 hover:bg-[#E04E1B]/10'>
-                        Start Over / Re-Generate Plan
+                        Start Over / Re-Run Assessment
                     </Button>
                     {/* CRITICAL FIX: Attach SharePlanModal logic to button */}
                     <Button onClick={() => console.log('Share')} variant='outline' className='text-xs px-4 py-2 border-[#002E47] text-[#002E47] hover:bg-[#002E47]/10'>
@@ -1168,7 +1169,7 @@ const TrackerDashboardView = ({ data, updatePdpData, saveNewPlan, userId, naviga
                                 <span className="text-3xl font-extrabold text-[#002E47]">{tierProgress.overallPercentage}%</span>
                             </div>
                         </div>
-                        <p className='text-md font-semibold text-[#002E47] mb-1'>{tierProgress.completedContent} / {tierProgress.totalContent} Content Items Completed</p>
+                        <p className='text-md font-semibold text-[#002E47] mb-1'>{tierProgress.completedContent} / {tierProgress.totalContent} Content Reps Completed</p>
                         <p className='text-xs text-gray-600'>For Tier: **{LEADERSHIP_TIERS[currentTierId]?.name}**</p>
                     </Card>
 
@@ -1181,18 +1182,18 @@ const TrackerDashboardView = ({ data, updatePdpData, saveNewPlan, userId, naviga
                     {viewMonth > currentMonth && ( // Check if viewing a future month
                         <div className='p-4 rounded-xl bg-yellow-100 border-2 border-yellow-400 shadow-md text-yellow-800 font-semibold flex items-center gap-3'>
                             <AlertTriangle className='w-5 h-5'/> 
-                            Viewing **Future Month {viewMonth}**. You must complete Month **{currentMonth}** before accessing this content. Content is read-only.
+                            Viewing **Future Training Month {viewMonth}**. You must complete Month **{currentMonth}** before accessing this content. Content is read-only.
                         </div>
                     )}
                     {!isCurrentView && isPastOrCurrent && (
                         <div className='p-4 rounded-xl bg-gray-100 border-2 border-gray-400 shadow-md text-gray-800 font-semibold flex items-center gap-3'>
                             <Clock className='w-5 h-5'/> 
-                            Viewing **Historical Month {viewMonth}**. Content and Reflection are read-only.
+                            Viewing **Historical Training Month {viewMonth}**. Content and Reflection are read-only.
                         </div>
                     )}
 
                     {/* CONTENT CARD (Always Renders) */}
-                    <Card title={`Focus: ${monthPlan?.theme} (Month ${viewMonth})`} icon={TierIcon} accent='TEAL' className='border-l-8 border-[#47A88D]'>
+                    <Card title={`Focus: ${monthPlan?.theme} (Training Month ${viewMonth})`} icon={TierIcon} accent='TEAL' className='border-l-8 border-[#47A88D]'>
 
                         {/* AI Monthly Briefing (Renders for all months) */}
                         <div className='mb-4 p-4 rounded-xl bg-[#002E47]/10 border border-[#002E47]/20'>
@@ -1217,13 +1218,13 @@ const TrackerDashboardView = ({ data, updatePdpData, saveNewPlan, userId, naviga
                             )}
                         </div>
 
-                        <h3 className='text-xl font-bold text-[#002E47] border-t pt-4 mt-4'>Required Content Items (Lessons)</h3>
+                        <h3 className='text-xl font-bold text-[#002E47] border-t pt-4 mt-4'>Required Content Reps (Lessons)</h3>
                         <div className='space-y-3 mt-4'>
                             {requiredContent.map(item => {
                                 const isCompleted = item.status === 'Completed';
                                 const isToggling = togglingIds.has(item.id);
                                 // UPGRADE 2: Action button text is always "View Content" or "Go to Practice" regardless of month status
-                                const actionButtonText = (item.type === 'Role-Play' || item.type === 'Exercise' || item.type === 'Tool') ? 'Go to Practice' : 'View Content'; 
+                                const actionButtonText = (item.type === 'Role-Play' || item.type === 'Exercise' || item.type === 'Tool') ? 'Go to Practice' : 'View Content/Rep'; 
 
                                 return (
                                     <div key={item.id} className='flex items-center justify-between p-3 bg-gray-50 rounded-xl shadow-sm'>
@@ -1254,7 +1255,7 @@ const TrackerDashboardView = ({ data, updatePdpData, saveNewPlan, userId, naviga
                                                 // UPGRADE 2: Only enabled for the current month.
                                                 disabled={isSaving || isToggling || !isCurrentView}
                                             >
-                                                {isToggling ? 'Updating...' : isCompleted ? 'Done ✓' : 'Mark Complete'}
+                                                {isToggling ? 'Updating...' : isCompleted ? 'Rep Completed ✓' : 'Mark Complete'}
                                             </Button>
                                         </div>
                                     </div>
@@ -1268,7 +1269,7 @@ const TrackerDashboardView = ({ data, updatePdpData, saveNewPlan, userId, naviga
                     <>
                         <Card title="Monthly Reflection" icon={Lightbulb} accent="NAVY" className='bg-[#002E47]/10 border-2 border-[#002E47]/20'>
                             <p className="text-gray-700 text-sm mb-4">
-                                Reflect on the growth you achieved this month. How did the content impact your daily leadership behavior? (**Minimum 50 characters required**)
+                                Reflect on the growth you achieved this month. How did the content/reps impact your daily leadership behavior? (**Minimum 50 characters required**)
                             </p>
                             <textarea
                                 value={localReflection} 
@@ -1315,7 +1316,7 @@ const TrackerDashboardView = ({ data, updatePdpData, saveNewPlan, userId, naviga
                         
                         <Card title="Advance Roadmap" icon={CornerRightUp} accent='TEAL' className='bg-[#47A88D]/10 border-4 border-[#47A88D]'>
                             <p className='text-sm text-gray-700 mb-4'>
-                                Once all content and your reflection are complete, lock in your progress and move to **Month {currentMonth + 1}** of your plan.
+                                Once all content and your reflection are complete, lock in your progress and move to **Training Month {currentMonth + 1}** of your Roadmap (Progressive Overload).
                             </p>
                             <Button
                                 onClick={handleCompleteMonth}
@@ -1325,7 +1326,7 @@ const TrackerDashboardView = ({ data, updatePdpData, saveNewPlan, userId, naviga
                                 {isSaving ? 'Processing...' : `Complete Month ${currentMonth} and Advance`}
                             </Button>
                             {!allContentCompleted && (
-                                <p className='text-[#E04E1B] text-xs mt-2'>* Finish all content items first.</p>
+                                <p className='text-[#E04E1B] text-xs mt-2'>* Finish all content reps first.</p>
                             )}
                             {allContentCompleted && localReflection.length < 50 && (
                                 <p className='text-[#E04E1B] text-xs mt-2'>* Reflection required (50 chars min).</p>
@@ -1397,10 +1398,10 @@ const PlanGeneratorView = ({ userId, saveNewPlan, isLoading, error, navigate, se
     return (
         <div className="p-6 md:p-10 min-h-screen" style={{ background: COLORS.BG, color: COLORS.TEXT }}>
             <div className='flex items-center gap-4 border-b-2 pb-2 mb-8' style={{borderColor: COLORS.PURPLE+'30'}}>
-                <Briefcase className='w-10 h-10' style={{color: COLORS.PURPLE}}/>
-                <h1 className="text-4xl font-extrabold" style={{ color: COLORS.NAVY }}>Personalized 24-Month Plan Generator</h1>
+                <Dumbbell className='w-10 h-10' style={{color: COLORS.PURPLE}}/>
+                <h1 className="text-4xl font-extrabold" style={{ color: COLORS.NAVY }}>Personalized 24-Month Roadmap Generator</h1>
             </div>
-            <p className="text-lg text-gray-600 mb-8 max-w-3xl">Answer a few questions about your current role and goals to instantly generate a hyper-personalized leadership roadmap designed to close your skill gaps over the next two years.</p>
+            <p className="text-lg text-gray-600 mb-8 max-w-3xl">Apply the principle of **Progressive Overload**. Answer a few questions about your current role and goals to instantly generate a hyper-personalized leadership roadmap designed to close your skill gaps over the next two years.</p>
 
             <div className="space-y-10">
                 <Card title="1. Your Management Experience" icon={Users} accent='TEAL'>
@@ -1486,9 +1487,9 @@ const PlanGeneratorView = ({ userId, saveNewPlan, isLoading, error, navigate, se
                 {isGenerating ? (
                     <div className="flex items-center">
                         <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
-                        Generating 24-Month Plan...
+                        Generating 24-Month Roadmap...
                     </div>
-                ) : 'Generate Personalized 24-Month Plan'}
+                ) : 'Generate Personalized 24-Month Roadmap'}
             </Button>
             <p className='text-sm text-gray-500 mt-4'>*Your data will be securely saved to your private roadmap in Firestore.</p>
         </div>
@@ -1526,7 +1527,7 @@ const PlanReviewScreen = ({ generatedPlan, navigate, clearReviewData }) => { // 
     };
     
     const handleFinalize = async () => {
-        console.log("Plan review complete. Finalizing plan and redirecting to Tracker Dashboard...");
+        console.log("Roadmap review complete. Finalizing plan and redirecting to Tracker Dashboard...");
         
         clearReviewData(); 
         
@@ -1545,29 +1546,29 @@ const PlanReviewScreen = ({ generatedPlan, navigate, clearReviewData }) => { // 
         <div className="p-6 md:p-10 min-h-screen" style={{ background: COLORS.BG, color: COLORS.TEXT }}>
             <div className='flex items-center gap-4 border-b-2 pb-2 mb-8' style={{borderColor: COLORS.GREEN+'30'}}>
                 <CheckCircle className='w-10 h-10' style={{color: COLORS.GREEN}}/>
-                <h1 className="text-4xl font-extrabold" style={{ color: COLORS.NAVY }}>Plan Successfully Generated!</h1>
+                <h1 className="text-4xl font-extrabold" style={{ color: COLORS.NAVY }}>Roadmap Successfully Generated!</h1>
             </div>
-            <p className="text-lg text-gray-600 mb-8 max-w-3xl">Review your personalized plan highlights below. Your full 24-month roadmap has been created and is ready to view in the Tracker Dashboard.</p>
+            <p className="text-lg text-gray-600 mb-8 max-w-3xl">Review your personalized Roadmap highlights below. Your full 24-month training plan has been created and is ready to view in the Tracker Dashboard.</p>
 
-            <Card title="Plan Comparison: Personalized vs. Generic" icon={Activity} accent='TEAL' className='mt-8 border-l-4 border-[#47A88D] bg-[#47A88D]/10'>
-                <p className='text-lg font-extrabold text-[#002E47] mb-4'>Your Plan is Highly Optimized!</p>
+            <Card title="Roadmap Comparison: Personalized vs. Generic" icon={Activity} accent='TEAL' className='mt-8 border-l-4 border-[#47A88D] bg-[#47A88D]/10'>
+                <p className='text-lg font-extrabold text-[#002E47] mb-4'>Your Roadmap is Highly Optimized!</p>
                 <div className='space-y-1 text-sm text-gray-700'>
                     <StatItem 
-                        label="Total Estimated Time" 
+                        label="Total Estimated Training Time" 
                         value={userTotalDuration} 
                         unit="min" 
                         diff={durationDifference} 
                         isPositiveBetter={false} 
                     />
                     <StatItem 
-                        label="Mastery Content (High Skill)" 
+                        label="Mastery Reps (High Skill)" 
                         value={userMasteryContent} 
                         unit="items" 
                         diff={masteryDifference} 
                         isPositiveBetter={true} 
                     />
                     <StatItem 
-                        label="Introductory Content (Low Skill)" 
+                        label="Introductory Reps (Low Skill)" 
                         value={userIntroContent} 
                         unit="items" 
                         diff={introDifference} 
@@ -1575,15 +1576,15 @@ const PlanReviewScreen = ({ generatedPlan, navigate, clearReviewData }) => { // 
                     />
                 </div>
                 <p className='text-xs text-gray-600 mt-4 italic'>
-                    *The AI tailored your content difficulty and sequence based on your specific Tiers and self-rated skill gaps.
+                    *The AI tailored your content difficulty and sequence based on your specific Tiers and self-rated skill gaps to apply **Progressive Overload**.
                 </p>
                 
                 <div className='flex justify-between space-x-4 mt-6'>
                     <Button onClick={handleStartOver} variant='outline' className='text-xs px-4 py-2 text-[#E04E1B] border-[#E04E1B]/50 hover:bg-[#E04E1B]/10'>
-                        <X className='w-4 h-4 mr-1'/> Start Over / Re-Generate
+                        <X className='w-4 h-4 mr-1'/> Start Over / Re-Run Assessment
                     </Button>
                     <Button onClick={handleFinalize} variant='primary'>
-                        <CornerRightUp className='w-4 h-4 mr-1'/> Go to Tracker Dashboard
+                        <CornerRightUp className='w-4 h-4 mr-1'/> Go to Roadmap Tracker
                     </Button>
                 </div>
             </Card>
@@ -1628,7 +1629,7 @@ export const ProfDevPlanScreen = ({ initialScreen }) => {
             <div className="p-8 min-h-screen flex items-center justify-center">
                 <div className="flex flex-col items-center">
                     <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#47A88D] mb-3"></div>
-                    <p className="text-[#47A88D] font-medium">Loading Personalized Development Plan...</p>
+                    <p className="text-[#47A88D] font-medium">Loading Personalized Development Roadmap...</p>
                 </div>
             </div>
         );

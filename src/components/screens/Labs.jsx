@@ -1008,7 +1008,7 @@ const LeanFeedbackPrepView = ({ setCoachingLabView, setPreparedSBI }) => {
             <p className="text-lg text-gray-600 mb-6 max-w-3xl">Get immediate AI critique and refinement for your real-world feedback drafts. This tool prioritizes speed and clarity for crucial conversations.</p>
             
             <Button onClick={() => setCoachingLabView('coaching-lab-home')} variant="outline" className="mb-8">
-                <ArrowLeft className="w-5 h-5 mr-2" /> Back to Coaching Lab
+                <ArrowLeft className="w-5 h-5 mr-2" /> Back to AI Coaching Lab
             </Button>
             
             <div className='flex flex-col lg:flex-row space-y-8 lg:space-y-0 lg:space-x-8'>
@@ -1052,7 +1052,7 @@ const LeanFeedbackPrepView = ({ setCoachingLabView, setPreparedSBI }) => {
                                 {refinedFeedback}
                             </p>
                             <Button 
-                                onClick={() => navigator.clipboard.writeText(refinedFeedback)} 
+                                onClick={() => copyToClipboard(refinedFeedback)} 
                                 className="mt-4 w-full bg-[#E04E1B] hover:bg-red-700"
                             >
                                 <CornerRightUp className='w-4 h-4 mr-2' /> Copy Refined SBI to Clipboard
@@ -1087,7 +1087,7 @@ const PracticeLogView = ({ setCoachingLabView }) => {
             <p className="text-lg text-gray-600 mb-6 max-w-3xl">Review your past Role-Play sessions, see your scores, and track your progress against key takeaways.</p>
             
             <Button onClick={() => setCoachingLabView('coaching-lab-home')} variant="outline" className="mb-8">
-                <ArrowLeft className="w-5 h-5 mr-2" /> Back to Coaching Lab
+                <ArrowLeft className="w-5 h-5 mr-2" /> Back to AI Coaching Lab
             </Button>
             
             <div className="space-y-4">
@@ -1216,7 +1216,7 @@ const ScenarioPreparationView = ({ scenario, setCoachingLabView, setPreparedSBI 
                 {/* Difficulty Slider */}
                 <Card title="Set Tension Level (Optional)" icon={HeartPulse} className='bg-[#E04E1B]/10 border-4 border-dashed border-[#E04E1B]'>
                     <p className="text-gray-700 text-sm mb-4">Control the emotional resistance of the AI persona in the simulator. Higher tension requires more empathy and validation skill.</p>
-                    <div className='flex justify-between text-xs font-bold text-[#0B3B5B] mb-1'>
+                    <div className='flex justify-between text-xs font-bold text-gray-600 mb-1'>
                         <span>Low Tension</span>
                         <span>High Tension</span>
                     </div>
@@ -1456,7 +1456,7 @@ Critique Guidelines (Use Markdown):
     <h1 className="text-3xl font-extrabold text-[#0B3B5B] mb-4">Active Listening & Reflection Prompts</h1>
     <p className="text-lg text-gray-600 mb-6 max-w-3xl">Active listening means validating emotion and confirming understanding before attempting to solve the problem. Practice the two pillars below to build empathy and psychological safety in high-stakes conversations.</p>
     <Button onClick={() => setCoachingLabView('coaching-lab-home')} variant="outline" className="mb-8">
-    <ArrowLeft className="w-5 h-5 mr-2" /> Back to Coaching Lab
+    <ArrowLeft className="w-5 h-5 mr-2" /> Back to AI Coaching Lab
     </Button>
     
       <div className="space-y-8">
@@ -1578,7 +1578,7 @@ export default function CoachingLabScreen() {
                      return <RolePlayCritique 
                         history={selectedScenario.history} 
                         setView={setView} 
-                        preparedSBI={preparedScenario.preparedSBI} 
+                        preparedSBI={selectedScenario.preparedSBI} // FIX: Use selectedScenario prop
                         scenario={selectedScenario} 
                         difficultyLevel={selectedScenario.difficultyLevel} 
                     />;
@@ -1596,8 +1596,8 @@ export default function CoachingLabScreen() {
             default:
                 return (
                     <div className="p-8">
-                        <h1 className="text-3xl font-extrabold text-[#0B3B5B] mb-4">Coaching & Crucial Conversations Lab</h1>
-                        <p className="text-lg text-gray-600 mb-8 max-w-3xl">Practice key leadership interactions using guided tools and receive real-time AI critique to sharpen your skills.</p>
+                        <h1 className="text-3xl font-extrabold text-[#0B3B5B] mb-4">AI Coaching Lab (Practice & Feedback)</h1>
+                        <p className="text-lg text-gray-600 mb-8 max-w-3xl">**Development through practice.** Use AI tools to simulate crucial conversations and receive real-time, personalized critique to sharpen your skills.</p>
 
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                             <Card title="Scenario Library & Prep Pipeline" icon={Users} onClick={() => setView('scenario-library')} className="border-l-4 border-[#219E8B] rounded-3xl">
@@ -1813,7 +1813,7 @@ const ScenarioLibraryView = ({ setCoachingLabView, setSelectedScenario }) => {
     <h1 className="text-3xl font-extrabold text-[#0B3B5B] mb-4">Scenario Library: Practice Conversations</h1>
     <p className="text-lg text-gray-600 mb-6">Select a high-stakes scenario to practice your preparation process. Each scenario includes a unique persona for the AI simulator.</p>
     <Button onClick={() => setCoachingLabView('coaching-lab-home')} variant="outline" className="mb-8">
-    <ArrowLeft className="w-5 h-5 mr-2" /> Back to Coaching Lab
+    <ArrowLeft className="w-5 h-5 mr-2" /> Back to AI Coaching Lab
     </Button>
     
       <Card title="Dynamic Scenario Generator" icon={Zap} className="mb-6 bg-[#0B3B5B]/10 border-l-4 border-[#E04E1B] rounded-3xl" onClick={() => setIsDynamicGeneratorVisible(true)}>

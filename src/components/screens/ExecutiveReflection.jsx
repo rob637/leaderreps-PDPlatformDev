@@ -248,19 +248,19 @@ export default function ExecutiveReflection() {
 
     return (
         <div className={`p-8 bg-[${COLORS.LIGHT_GRAY}] min-h-screen`}>
-            <h1 className={`text-3xl font-extrabold text-[${NAVY}] mb-4`}>Executive Reflection & Growth Analytics</h1>
-            <p className="text-lg text-gray-600 mb-8 max-w-3xl">A data-driven view of your leadership behavior, skill mastery, and growth trends over the last 90 days. This is your personal **Leadership ROI Report**.</p>
+            <h1 className={`text-3xl font-extrabold text-[${NAVY}] mb-4`}>Executive ROI Report (Practice Over Theory)</h1>
+            <p className="text-lg text-gray-600 mb-8 max-w-3xl">This report is the **final metric of training**. It provides a data-driven view of how your daily practice (reps) translates to leadership behavior, skill mastery, and strategic impact over the last 90 days.</p>
             <div className='grid lg:grid-cols-3 gap-8'>
                 {/* 1. Confidence vs. Competence Map */}
                 <Card title="Confidence vs. Competence Map" icon={Target} accent='TEAL' className='lg:col-span-2 shadow-2xl'>
-                    <p className='text-sm text-gray-700 mb-4'>Tracks your self-perception (Confidence: PDP Rating) against your proven capability (Competence: Daily Scorecard Success Rate).</p>
+                    <p className='text-sm text-gray-700 mb-4'>Tracks your self-perception (Confidence: Roadmap Rating) against your proven capability (Competence: Daily Scorecard Success Rate).</p>
                     <div className='grid grid-cols-2 gap-4 text-center'>
                         <div className={`p-4 rounded-xl border-2 bg-[${COLORS.OFF_WHITE}]`} style={{ borderColor: NAVY }}>
-                            <p className='text-xs font-semibold uppercase text-gray-500'>Confidence (Self-Rating)</p>
+                            <p className='text-xs font-semibold uppercase text-gray-500'>Confidence (Roadmap Rating)</p>
                             <p className={`text-4xl font-extrabold text-[${NAVY}]`}>{data.confidence}/10</p>
                         </div>
                         <div className={`p-4 rounded-xl border-2 bg-[${COLORS.OFF_WHITE}]`} style={{ borderColor: TEAL }}>
-                            <p className='text-xs font-semibold uppercase text-gray-500'>Competence (Execution Rate)</p>
+                            <p className='text-xs font-semibold uppercase text-gray-500'>Competence (Daily Reps Execution Rate)</p>
                             <p className={`text-4xl font-extrabold text-[${TEAL}]`}>{data.competence}%</p>
                         </div>
                     </div>
@@ -285,13 +285,13 @@ export default function ExecutiveReflection() {
                     <div className='mt-4 pt-4 border-t border-gray-200'>
                         <p className='text-sm font-semibold' style={{ color: NAVY }}>Projection:</p>
                         <p className='text-base text-gray-700'>
-                            Estimated **{data.tierMasteryProjection} days** to achieve full mastery of your next PDP Tier ({weakestTierMeta.name}).
+                            Estimated **{data.tierMasteryProjection} days** to achieve full mastery of your next Roadmap Tier ({weakestTierMeta.name}).
                         </p>
                     </div>
                 </Card>
                 {/* 3. Performance vs. Well-being Analysis */}
                 <Card title="Performance vs. Well-being" icon={HeartPulse} accent='ORANGE' className='shadow-2xl'>
-                     <p className='text-sm text-gray-700 mb-4'>Analyzes the correlation between your daily self-reported energy/focus and your final Daily Scorecard result.</p>
+                     <p className='text-sm text-gray-700 mb-4'>Analyzes the correlation between your daily self-reported energy/focus and your final Daily Scorecard result (reps).</p>
                      <div className={`mt-2 p-4 rounded-xl border border-[${NAVY}]/50`} style={{ background: NAVY + '1A', color: NAVY }}>
                          <p className='font-semibold flex items-center'><MessageSquare className='w-4 h-4 mr-2'/> AI Well-being Insight:</p>
                          <p className='text-sm mt-1 text-gray-700'>{wellnessInsight}</p>
@@ -310,7 +310,7 @@ export default function ExecutiveReflection() {
                      </div>
                      {/* FIX: Wired to navigation */}
                      <Button 
-                         onClick={() => handleNavigation('prof-dev-plan', { view: 'feedback-review', tier: 'T4' })}
+                         onClick={() => handleNavigation('coaching-lab', { view: 'feedback-review', tier: 'T4' })}
                          className='mt-4 w-full' 
                          variant='primary'
                      >

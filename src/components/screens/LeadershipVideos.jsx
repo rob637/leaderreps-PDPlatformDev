@@ -27,9 +27,9 @@ const COLORS = {
 // --- FIX: LOCAL COMPONENT DEFINITIONS ---
 const Button = ({ children, onClick, disabled = false, variant = 'primary', className = '', ...rest }) => {
   let baseStyle = "px-6 py-3 rounded-xl font-semibold transition-all shadow-xl focus:outline-none focus:ring-4 text-white flex items-center justify-center";
-  if (variant === 'primary') { baseStyle += ` bg-[${COLORS.TEAL}] hover:bg-[${COLORS.SUBTLE_TEAL}] focus:ring-[${COLORS.TEAL}]/50`; }
+  if (variant === 'primary') { baseStyle += ` bg-[${COLORS.TEAL}] hover:bg-[#349881] focus:ring-[${COLORS.TEAL}]/50`; }
   else if (variant === 'secondary') { baseStyle += ` bg-[${COLORS.ORANGE}] hover:bg-[#C33E12] focus:ring-[${COLORS.ORANGE}]/50`; }
-  else if (variant === 'outline') { baseStyle = `px-6 py-3 rounded-xl font-semibold transition-all shadow-md border-2 border-[${COLORS.TEAL}] text-[${COLORS.TEAL}] hover:bg-[${COLORS.TEAL}]/10 focus:ring-4 focus:ring-[${COLORS.TEAL}]/50 bg-[${COLORS.LIGHT_GRAY}] flex items-center justify-center`; }
+  else if (variant === 'outline') { baseStyle = `px-6 py-3 rounded-xl font-semibold transition-all shadow-md border-2 border-[${COLORS.TEAL}] text-[${COLORS.TEAL}] hover:bg-[#47A88D]/10 focus:ring-4 focus:ring-[${COLORS.TEAL}]/50 bg-[${COLORS.LIGHT_GRAY}] flex items-center justify-center`; }
   if (disabled) { baseStyle = "px-6 py-3 rounded-xl font-semibold bg-gray-300 text-gray-500 cursor-not-allowed shadow-inner transition-none flex items-center justify-center"; }
   return (
     <button {...rest} onClick={onClick} disabled={disabled} className={`${baseStyle} ${className}`}>
@@ -198,15 +198,15 @@ const LeadershipVideosScreen = () => {
         <div className="p-6 md:p-10 min-h-screen" style={{ background: COLORS.BG, color: COLORS.TEXT }}>
             <div className='flex items-center gap-4 border-b-2 pb-2 mb-8' style={{borderColor: COLORS.PURPLE+'30'}}>
                 <Film className='w-10 h-10' style={{color: COLORS.PURPLE}}/>
-                <h1 className="text-4xl font-extrabold" style={{ color: COLORS.NAVY }}>Executive Leadership Videos</h1>
+                <h1 className="text-4xl font-extrabold" style={{ color: COLORS.NAVY }}>Content: Leader Talks (Pillar 1)</h1>
             </div>
             <p className="text-lg text-gray-600 mb-8 max-w-3xl">
-                A curated library of essential video content to inspire your thinking and provide actionable techniques for team leadership.
+                The **Content Pillar** includes on-demand "Leader Talks"—curated video lessons to inspire your philosophical thinking and provide actionable techniques for team leadership.
             </p>
 
             {/* --- SECTION 1: INSPIRATIONAL & PHILOSOPHY --- */}
             <h2 className="text-3xl font-bold text-[#002E47] mb-6 border-l-4 border-[#E04E1B] pl-3 flex items-center">
-                <Zap className='w-6 h-6 mr-3 text-[#E04E1B]'/> Great Leaders & Philosophical Insights
+                <Zap className='w-6 h-6 mr-3 text-[#E04E1B]'/> Philosophical Insights & Mindset (On-Demand Content)
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
                 {VIDEO_LISTS.INSPIRATIONAL.map((video, index) => (
@@ -224,7 +224,7 @@ const LeadershipVideosScreen = () => {
 
             {/* --- SECTION 2: ACTIONABLE & PRACTICAL --- */}
             <h2 className="text-3xl font-bold text-[#002E47] mb-6 border-l-4 border-[#47A88D] pl-3 flex items-center">
-                <Briefcase className='w-6 h-6 mr-3 text-[#47A88D]'/> Actionable Leadership Examples
+                <Briefcase className='w-6 h-6 mr-3 text-[#47A88D]'/> Actionable Leadership Examples (Practical Reps)
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {VIDEO_LISTS.ACTIONABLE.map((video, index) => (

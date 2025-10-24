@@ -5,7 +5,7 @@ import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useAppServices } from '../../services/useAppServices.jsx'; 
 import { 
     ArrowLeft, CheckCircle, PlusCircle, X, TrendingUp, Target, AlertTriangle, Lightbulb, 
-    ShieldCheck, Cpu, Trash2, Zap, MessageSquare, BookOpen, Clock, CornerRightUp, Award, Activity, Link, CornerDownRight
+    ShieldCheck, Cpu, Trash2, Zap, MessageSquare, BookOpen, Clock, CornerRightUp, Award, Activity, Link, CornerDownRight, Dumbbell
 } from 'lucide-react';
 
 // ---  COLOR PALETTE (For consistency across modules) ---
@@ -187,7 +187,7 @@ const PreMortemView = ({ setPlanningView }) => {
 
         const userQuery = `**Decision:** ${decision}\n**Desired Outcome:** ${outcome}\n**Identified Risks:** ${primaryRisks.join('; ')}`;
         // CRITICAL FIX 2: Ensure prompt forces the structured output for reliable parsing.
-        const systemPrompt = "You are the Decision-Making Auditor, acting as the 'Devil's Advocate' and a strategic planning expert. Your task is to perform a pre-mortem analysis. Critique the user's inputs based on: 1) **Unforeseen Blind Spots (Top 2-3 new risks)**: Identify risks the user is likely missing. 2) **Risk Amplification**: Select the user's biggest risk and explain how it could be worse. 3) **Mitigation Strategy**: Suggest a concrete action plan (1-2 steps) for the highest combined risk (yours or the user's). Use clear Markdown headings and bold key points. Use this exact structure: ## Pre-Mortem Audit Results; ### Unforeseen Blind Spots; ### Risk Amplification; ### Mitigation Strategy";
+        const systemPrompt = "You are the Decision-Making Auditor, acting as the 'Devil's Advocate' and a strategic planning expert. Your task is to perform a pre-mortem analysis. Critique the user's inputs based on: 1) **Unforeseen Blind Spots (Top 2-3 new risks)**: Identify risks the user is likely missing. 2) **Risk Amplification**: Select the user's biggest risk and explain how it could be worse. 3) **Mitigation Strategy**: Suggest a concrete action plan (1-2 steps) for the highest combined risk (yours or the user's). Use clear Markdown headings and bold key phrases. Use this exact structure: ## Pre-Mortem Audit Results; ### Unforeseen Blind Spots; ### Risk Amplification; ### Mitigation Strategy";
 
         try {
             // CRITICAL FIX 3: Correct payload structure for callSecureGeminiAPI wrapper
@@ -259,11 +259,11 @@ const PreMortemView = ({ setPlanningView }) => {
 
     return (
         <div className="p-8">
-            <h1 className="text-3xl font-extrabold text-[#002E47] mb-4">Decision-Making Matrix (Pre-Mortem Audit)</h1>
-            <p className="text-lg text-gray-600 mb-6 max-w-3xl">Analyze high-stakes decisions by actively looking for failure points. The AI acts as your **Devil's Advocate**, identifying critical risks you may have missed. **(Requires API Key)**</p>
+            <h1 className="text-3xl font-extrabold text-[#002E47] mb-4">Strategic Content Tool: Decision-Making Audit</h1>
+            <p className="text-lg text-gray-600 mb-6 max-w-3xl">Analyze high-stakes decisions by actively looking for failure points. The AI acts as your **Devil's Advocate**, identifying critical risks you may have missed. **(Content Pillar Tool)**</p>
             
             <Button onClick={() => setPlanningView('planning-home')} variant="nav-back" className="mb-8">
-                <ArrowLeft className="w-5 h-5 mr-2" /> Back to Planning Hub
+                <ArrowLeft className="w-5 h-5 mr-2" /> Back to Strategic Content Tools
             </Button>
 
             <div className="space-y-6">
@@ -331,7 +331,7 @@ const PreMortemView = ({ setPlanningView }) => {
                         <div className='mt-6 pt-4 border-t border-gray-300 space-y-3'>
                             <p className='text-sm font-semibold text-[#002E47] flex items-center'><Award className="w-4 h-4 mr-1 text-[#47A88D]" /> Actionable Next Steps:</p>
                             <Button onClick={handleCommitmentCreation} className="w-full bg-[#47A88D] hover:bg-[#349881]">
-                                <PlusCircle className='w-5 h-5 mr-2' /> Turn Mitigation into Daily Commitment (T5)
+                                <PlusCircle className='w-5 h-5 mr-2' /> Turn Mitigation into Daily Commitment (T5 Rep)
                             </Button>
                             
                             <Button onClick={handleCreateScenario} variant="outline" className="w-full text-[#E04E1B] border-[#E04E1B] hover:bg-[#E04E1B]/10">
@@ -431,7 +431,7 @@ const VisionBuilderView = ({ setPlanningView }) => {
         } catch (error) {
             // FIX: Handle error gracefully to stop spinner
             console.error("Gemini API Error:", error);
-            setCritiqueResult("An error occurred during the AI Critique. Please check your network connection.");
+            setCritiqueResult("An error occurred during the AI Critique. Check your network connection.");
         } finally {
             // FIX: Always reset loading state
             setIsCritiquing(false);
@@ -440,11 +440,11 @@ const VisionBuilderView = ({ setPlanningView }) => {
 
     return (
         <div className="p-8">
-            <h1 className="text-3xl font-extrabold text-[#002E47] mb-4">Vision & Mission Statement Builder</h1>
-            <p className="text-lg text-gray-600 mb-6 max-w-3xl">Define your aspirational 3-5 year leadership and team Vision and Mission, setting your strategic **North Star**. **(Data is persistent)**</p>
+            <h1 className="text-3xl font-extrabold text-[#002E47] mb-4">Strategic Content Tool: Vision & Mission Builder</h1>
+            <p className="text-lg text-gray-600 mb-6 max-w-3xl">Define your aspirational 3-5 year leadership and team Vision and Mission, setting your strategic **North Star**. **(Content Pillar Tool)**</p>
             
             <Button onClick={() => setPlanningView('planning-home')} variant="nav-back" className="mb-8">
-                <ArrowLeft className="w-5 h-5 mr-2" /> Back to Planning Hub
+                <ArrowLeft className="w-5 h-5 mr-2" /> Back to Strategic Content Tools
             </Button>
 
             <div className="space-y-6">
@@ -663,11 +663,11 @@ const OKRDraftingView = ({ setPlanningView }) => {
 
     return (
         <div className="p-8">
-            <h1 className="text-3xl font-extrabold text-[#002E47] mb-4">Quarterly OKR Drafting Tool</h1>
-            <p className="text-lg text-gray-600 mb-6 max-w-3xl">Set 3-5 ambitious Objectives (What) and 3-4 Key Results (How) for the current quarter, directly tied to your Vision. Use the **AI Auditor** to ensure your KRs are measurable and high-impact. **(Data is persistent)**</p>
+            <h1 className="text-3xl font-extrabold text-[#002E47] mb-4">Strategic Content Tool: OKR Drafting & Audit</h1>
+            <p className="text-lg text-gray-600 mb-6 max-w-3xl">Set 3-5 ambitious Objectives (What) and 3-4 Key Results (How) for the current quarter, directly tied to your Vision. Use the **AI Auditor** to ensure your KRs are measurable and high-impact. **(Content Pillar Tool)**</p>
             
             <Button onClick={() => setPlanningView('planning-home')} variant="nav-back" className="mb-8">
-                <ArrowLeft className="w-5 h-5 mr-2" /> Back to Planning Hub
+                <ArrowLeft className="w-5 h-5 mr-2" /> Back to Strategic Content Tools
             </Button>
 
             <div className="space-y-8">
@@ -951,11 +951,11 @@ const AlignmentTrackerView = ({ setPlanningView }) => {
 
     return (
         <div className="p-8">
-            <h1 className="text-3xl font-extrabold text-[#002E47] mb-4">Strategic Alignment Tracker</h1>
+            <h1 className="text-3xl font-extrabold text-[#002E47] mb-4">Strategic Content Tool: Alignment Tracker</h1>
             <p className="text-lg text-gray-600 mb-6 max-w-3xl">Review your current OKR progress and ensure your daily activity is aligned with your long-term Vision. Focus on **leading indicators** and course correction.</p>
             
             <Button onClick={() => setPlanningView('planning-home')} variant="nav-back" className="mb-8">
-                <ArrowLeft className="w-5 h-5 mr-2" /> Back to Planning Hub
+                <ArrowLeft className="w-5 h-5 mr-2" /> Back to Strategic Content Tools
             </Button>
 
             <div className="space-y-6">
@@ -1029,7 +1029,7 @@ const AlignmentTrackerView = ({ setPlanningView }) => {
                             <p className='text-sm font-semibold text-[#47A88D] mb-2 flex items-center'><Lightbulb className="w-4 h-4 mr-1"/> AI Preventative Action ({suggestionCommitment?.tier || 'T?' }):</p>
                             <p className='text-md text-[#002E47] font-medium'>{suggestionText}</p>
                             <Button onClick={handleAddSuggestionToScorecard} disabled={!suggestionCommitment?.tier} variant='primary' className="w-full mt-3 text-xs py-2 px-3">
-                                <PlusCircle className='w-4 h-4 mr-1' /> Add to Daily Scorecard
+                                <PlusCircle className='w-4 h-4 mr-1' /> Add to Daily Scorecard (T{suggestionCommitment?.tier} Rep)
                             </Button>
                         </div>
                     )}
@@ -1052,7 +1052,7 @@ export default function PlanningHubScreen() {
             <div className="p-8 min-h-screen flex items-center justify-center" style={{ background: COLORS.LIGHT_GRAY }}>
                 <div className="flex flex-col items-center">
                     <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#47A88D] mb-3"></div>
-                    <p className="text-[#47A88D] font-medium">Loading Strategic Planning Hub...</p>
+                    <p className="text-[#47A88D] font-medium">Loading Strategic Content Tools...</p>
                 </div>
             </div>
         );
@@ -1079,8 +1079,8 @@ export default function PlanningHubScreen() {
             default:
                 return (
                     <div className="p-8">
-                        <h1 className="text-4xl font-extrabold text-[#002E47] mb-4">Vision, Goal, & Decision Hub</h1>
-                        <p className="text-lg text-gray-600 mb-8 max-w-3xl">Transform abstract ideas into actionable, accountable goals. Build a clear Vision, draft measurable OKRs, and vet high-stakes decisions with AI audit tools.</p>
+                        <h1 className="text-4xl font-extrabold text-[#002E47] mb-4">Strategic Content Tools (Pillar 1)</h1>
+                        <p className="text-lg text-gray-600 mb-8 max-w-3xl">This is the **Content Pillar** hub for high-leverage strategic planning. Convert abstract ideas into actionable, accountable goals, supported by AI audit tools for clarity and risk reduction.</p>
 
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                             <Card title="Vision & Mission Builder" icon={BookOpen} onClick={() => setPlanningView('vision-builder')} accent='TEAL' className="rounded-3xl hover:border-[#47A88D] border-l-4 border-[#47A88D]/50">
