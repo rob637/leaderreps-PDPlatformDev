@@ -607,9 +607,9 @@ export default function AppliedLeadershipScreen() {
     // Main Domain Grid Renderer
     const renderDomainGrid = () => (
         <div className="p-8">
-            <h1 className="text-4xl font-extrabold text-[#002E47] mb-4">Applied Leadership Domains</h1>
+            <h1 className="text-4xl font-extrabold text-[#002E47] mb-4">Applied Content Library (Pillar 1)</h1>
             <p className="text-xl text-gray-600 mb-10 max-w-4xl">
-                Go beyond generic advice. Access micro-habits, resources, and AI coaching tailored to your specific industry, identity, or high-stakes operational context.
+                Go beyond generic advice. Access micro-habits, resources, and AI coaching tailored to your specific industry, identity, or high-stakes operational context. **Practice over theory.**
             </p>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
