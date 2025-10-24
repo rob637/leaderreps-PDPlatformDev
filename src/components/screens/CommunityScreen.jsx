@@ -26,44 +26,28 @@ const COLORS = {
    UTILITIES & MOCKS
 ========================================================= */
 
-const LEADERSHIP_TIERS_META = { 
-    'All': { name: 'All Tiers', hex: COLORS.TEAL },
-    'T1': { name: 'Self-Management', hex: '#10B981' }, // Added T1 filter
-    'T3': { name: 'Strategic Execution', hex: '#F5C900' },
-    'T4': { name: 'People Development', hex: COLORS.ORANGE },
-    'T5': { name: 'Visionary Leadership', hex: COLORS.NAVY },
-};
-
-// MOCK THREADS: Seeded with owned threads and high impact flags
-const MOCK_THREADS = [
-    { id: 1, title: 'Optimizing Delegation with T3 Leaders', tier: 'T4', replies: 32, lastActive: '1 hour ago', impact: true, ownerId: 'other-user-1',
-      details: 'Seeking advice: I need to delegate a critical marketing campaign objective (T3 Execution) but fear my team lacks confidence. How do I maintain T4 trust while ensuring accountability?',
-      latestReply: 'Latest Reply: Use the Player-to-Coach framework: explicitly delegate the outcome (what) but let them own the process (how). Set a clear safety net.' },
-    { id: 2, title: 'Questioning our Q4 Vision Statement', tier: 'T5', replies: 15, lastActive: '4 hours ago', impact: true, ownerId: 'other-user-2',
-      details: 'Our current 5-year vision feels stale and lacks purpose. What tactical habits should I adopt daily to better connect my team to a higher strategic mission?',
-      latestReply: 'Latest Reply: Start every daily standup by asking each person to state one micro-action that supports the long-term vision. This reinforces T5 commitment.' },
-    { id: 3, title: 'Micro-Habits for Daily Self-Awareness', tier: 'T1', replies: 5, lastActive: '1 day ago', impact: true, ownerId: 'other-user-3',
-      details: 'What are the best 5-minute techniques for emotional regulation before a high-stakes call (T1 Resilience)?',
-      latestReply: 'Latest Reply: The 4-7-8 breathing technique is highly effective for resetting the vagus nerve and maintaining T1 composure.' },
-    { id: 4, title: 'SBI Feedback during High Tension Meetings', tier: 'T4', replies: 45, lastActive: '30 min ago', impact: true, ownerId: 'other-user-4',
-      details: 'How do you successfully deliver SBI (Situation-Behavior-Impact) feedback when the recipient is clearly emotionally hijacked or defensive?',
-      latestReply: 'Latest Reply: You must delay the feedback. Acknowledge the emotion (T1 skill) first, and reschedule the T4 conversation for when the brain is calm.' },
-    { id: 5, title: 'My best practice for effective Pre-Mortems', tier: 'T3', replies: 8, lastActive: '2 hours ago', impact: true, ownerId: 'other-user-5',
-      details: 'Share your templates or tips for running a successful pre-mortem session to identify risks that could derail T3 OKR execution.',
-      latestReply: 'Latest Reply: Always frame the outcome as a catastrophic failure in the past tense ("We failed because...") to encourage vulnerability and T3 risk identification.' },
-    { id: 6, title: 'I need clarity on my T5 Goal Alignment', tier: 'T5', replies: 2, lastActive: '5 min ago', impact: true, ownerId: 'mock-user-123',
-      details: 'As a new executive, how do I link the department\'s tactical Q3 goals directly to the company\'s overall T5 Vision?',
-      latestReply: 'Latest Reply: Try using the "First Principles" model to decompose the vision into two non-negotiable strategic pillars.' }, // Owned
-    { id: 7, title: 'Best books for T1 Resilience', tier: 'T1', replies: 12, lastActive: '2 days ago', impact: true, ownerId: 'mock-user-123',
-      details: 'Looking for recommended reading to improve my personal resilience and executive self-management habits (T1).',
-      latestReply: 'Latest Reply: "Deep Work" by Cal Newport is essential for protecting focus, a core T1 asset.' }, // Owned
+// --- MOCK DATA DELETED: Threads must be loaded from service now ---
+// We use a safe fallback array for rendering if the service hasn't populated the data yet.
+const MOCK_THREADS_FALLBACK = [
+    { id: 1, title: 'Optimizing Delegation', tier: 'T4', replies: 32, lastActive: '1 hour ago', impact: true, ownerId: 'mock-user-456',
+      details: 'Seeking advice on delegating critical marketing campaigns.', latestReply: 'Use the Player-to-Coach framework.' },
 ];
+
+// --- TIER METADATA DELETED: Now loads from useAppServices() ---
+const LEADERSHIP_TIERS_META_FALLBACK = { 
+    'All': { name: 'All Tiers', hex: COLORS.TEAL },
+    'T1': { name: 'Self-Management', hex: '#10B981' }, 
+    'T4': { name: 'People Development', hex: COLORS.ORANGE },
+};
 
 // ------------------------------------------------------------------
 // CommunityHomeView updated to accept filteredThreads as a prop
 // ------------------------------------------------------------------
-const CommunityHomeView = ({ setView, user, currentTierFilter, setCurrentTierFilter, filteredThreads }) => {
+const CommunityHomeView = ({ setView, user, currentTierFilter, setCurrentTierFilter, filteredThreads, tierMeta }) => {
     const [expandedThreadId, setExpandedThreadId] = useState(null);
+
+    // CRITICAL FIX: Ensure safe fallback if tierMeta is still loading
+    const safeTierMeta = tierMeta || LEADERSHIP_TIERS_META_FALLBACK;
 
     return (
         <div className="space-y-6">
@@ -82,7 +66,7 @@ const CommunityHomeView = ({ setView, user, currentTierFilter, setCurrentTierFil
             <div className="flex space-x-3 p-3 rounded-xl border" style={{ borderColor: COLORS.SUBTLE, backgroundColor: COLORS.LIGHT_GRAY }}>
                 <Filter className="w-5 h-5" style={{ color: COLORS.NAVY }} />
                 <span className="text-sm font-semibold" style={{ color: COLORS.NAVY }}>Filter by Executive Tier:</span>
-                {Object.keys(LEADERSHIP_TIERS_META).map(tierId => (
+                {Object.keys(safeTierMeta).map(tierId => (
                     <button
                         key={tierId}
                         onClick={() => setCurrentTierFilter(tierId)}
@@ -91,7 +75,7 @@ const CommunityHomeView = ({ setView, user, currentTierFilter, setCurrentTierFil
                                 ? 'text-white shadow-md'
                                 : 'text-gray-700 bg-white hover:bg-gray-200'
                         }`}
-                        style={{ backgroundColor: currentTierFilter === tierId ? LEADERSHIP_TIERS_META[tierId].hex : COLORS.SUBTLE, color: currentTierFilter === tierId ? COLORS.OFF_WHITE : COLORS.NAVY }}
+                        style={{ backgroundColor: currentTierFilter === tierId ? safeTierMeta[tierId].hex : COLORS.SUBTLE, color: currentTierFilter === tierId ? COLORS.OFF_WHITE : COLORS.NAVY }}
                     >
                         {tierId}
                     </button>
@@ -102,12 +86,12 @@ const CommunityHomeView = ({ setView, user, currentTierFilter, setCurrentTierFil
             <div className="space-y-3">
                 {filteredThreads.map(thread => {
                     const isExpanded = thread.id === expandedThreadId;
-                    // CRITICAL FIX 1: Ensure safe access to user.id (which can be null/undefined)
+                    // CRITICAL FIX 1: Ensure safe access to user.id 
                     const isMyThread = user?.id && thread.ownerId === user.id; 
                     
                     // B1: Adjust border color for owned threads
                     const threadBorderColor = isMyThread 
-                        ? LEADERSHIP_TIERS_META[thread.tier]?.hex || COLORS.TEAL // Use tier color for owned threads
+                        ? safeTierMeta[thread.tier]?.hex || COLORS.TEAL // Use tier color for owned threads
                         : thread.impact ? COLORS.ORANGE : COLORS.TEAL; // Use impact/default for others
 
                     return (
@@ -164,10 +148,10 @@ const CommunityHomeView = ({ setView, user, currentTierFilter, setCurrentTierFil
     );
 };
 
-const MyThreadsView = ({ user }) => {
+const MyThreadsView = ({ user, MOCK_THREADS_SERVICE }) => {
     // CRITICAL FIX 2: Ensure user access is safe before filtering
     const userId = user?.id || 'NO_USER_ID';
-    const myThreads = MOCK_THREADS.filter(thread => thread.ownerId === userId);
+    const myThreads = (MOCK_THREADS_SERVICE || MOCK_THREADS_FALLBACK).filter(thread => thread.ownerId === userId);
 
     return (
         <div className="p-6 rounded-xl border shadow-lg" style={{ borderColor: COLORS.SUBTLE, backgroundColor: COLORS.OFF_WHITE }}>
@@ -307,8 +291,12 @@ const NewThreadView = ({ setView }) => {
 const CommunityScreen = () => {
     // CRITICAL FIX 3: Safely use the hook and provide a mock user structure if the context is null
     const services = useAppServices();
-    const { user, navigate } = services;
+    const { user, navigate, LEADERSHIP_TIERS, MOCK_THREADS: MOCK_THREADS_SERVICE } = services;
     const safeUser = user || { id: 'mock-user-123', name: 'Executive Leader' };
+    
+    // Use service data for tiers and threads, falling back to local mocks if needed
+    const tierMeta = LEADERSHIP_TIERS || LEADERSHIP_TIERS_META_FALLBACK;
+    const allThreads = MOCK_THREADS_SERVICE || MOCK_THREADS_FALLBACK;
 
     const [view, setView] = useState('home');
     const [currentTierFilter, setCurrentTierFilter] = useState('All');
@@ -317,10 +305,10 @@ const CommunityScreen = () => {
     // A. Centralize/Optimize Thread Filtering using useMemo
     // ------------------------------------------------------------------
     const filteredThreads = useMemo(() => {
-        return MOCK_THREADS.filter(thread => 
+        return allThreads.filter(thread => 
             currentTierFilter === 'All' || thread.tier === currentTierFilter
         );
-    }, [currentTierFilter]);
+    }, [currentTierFilter, allThreads]);
 
 
     const navItems = [
@@ -333,7 +321,7 @@ const CommunityScreen = () => {
     const renderContent = () => {
         switch(view) {
             case 'my-threads':
-                return <MyThreadsView user={safeUser} />;
+                return <MyThreadsView user={safeUser} MOCK_THREADS_SERVICE={allThreads} />;
             case 'mentorship':
                 return <MentorshipView />;
             case 'notifications':
@@ -348,6 +336,7 @@ const CommunityScreen = () => {
                     currentTierFilter={currentTierFilter} 
                     setCurrentTierFilter={setCurrentTierFilter}
                     filteredThreads={filteredThreads} // Pass centralized data
+                    tierMeta={tierMeta}
                 />;
         }
     };

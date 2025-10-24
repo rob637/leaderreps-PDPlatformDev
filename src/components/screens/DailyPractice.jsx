@@ -16,28 +16,14 @@ import { useAppServices } from '../../services/useAppServices.jsx';
 import TwoMinuteChallengeModal from '../modals/TwoMinuteChallengeModal.jsx';
 
 
-// --- MOCK UTILITIES (Defined for component self-reliance) ---\
-const LEADERSHIP_TIERS_META = { 
+// --- MOCK UTILITIES (All internal mocks removed and replaced with service access) ---
+// Note: These placeholder functions must now rely on data passed from the service hook.
+
+// Placeholder to be replaced by service data
+const LEADERSHIP_TIERS_META_FALLBACK = { 
     'T1': { id: 'T1', name: 'Personal Foundation', hex: '#10B981' }, 
-    'T2': { id: 'T2', name: 'Operational Excellence', hex: '#3B82F6' }, 
-    'T3': { id: 'T3', name: 'Strategic Alignment', hex: '#F5C900' }, 
-    'T4': { id: 'T4', name: 'People Development', hex: '#E04E1B' }, 
     'T5': { id: 'T5', name: 'Visionary Leadership', hex: '#002E47' }, 
 };
-
-// --- NEW MOCK DATA (Implementing the new Daily Target Rep and Identity) ---
-const MOCK_ACTIVITY_DATA = {
-    // This is the core target for Feature 1
-    daily_target_rep: "Give one reinforcing feedback statement to a direct report.",
-    // This is the Identity Anchor for Feature 2 & 8
-    identity_statement: "I am the kind of leader who coaches in the moment and owns accountability.",
-    daily_challenge_rep: "Send one quick thank-you Slack message right now.", // For 2-Minute Challenge
-    total_reps_completed: 452, 
-    total_coaching_labs: 18,    
-    today_coaching_labs: 2,     
-};
-// --- END NEW MOCK DATA ---
-
 
 // FIX 1: Resolves "ReferenceError: groupCommitmentsByTier is not defined"
 function groupCommitmentsByTier(commitments) {
@@ -51,19 +37,18 @@ function groupCommitmentsByTier(commitments) {
 }
 
 // FIX 2: Resolves "ReferenceError: calculateTierSuccessRates is not defined"
-function calculateTierSuccessRates(commitments, history) {
+function calculateTierSuccessRates(commitments, history, tierMeta) {
     const rates = {};
     const tierMap = groupCommitmentsByTier(commitments);
-    Object.keys(LEADERSHIP_TIERS_META).forEach(tierId => { // Use the local meta map
+    const tierIds = Object.keys(tierMeta || LEADERSHIP_TIERS_META_FALLBACK); // Use passed tiers or safe fallback
+    
+    tierIds.forEach(tierId => { 
         const tierCommitments = tierMap[tierId] || [];
         const total = tierCommitments.length;
         if (total > 0) {
-            // Calculate success rate based on status today
             const committedCount = tierCommitments.filter(c => c.status === 'Committed').length;
-            // Mock overall rate as 78% if active commitments are not all completed
             const mockedOverallRate = 78; 
             rates[tierId] = { 
-                // Simple representation for today's view: 
                 rate: Math.round((committedCount / total) * 100) || mockedOverallRate, 
                 total: total 
             };
@@ -106,7 +91,6 @@ function calculateStreak(history) {
     // Sort history by date descending
     const sortedHistory = [...validHistory].sort((a, b) => new Date(b.date) - new Date(a.date));
 
-    // Start checking from yesterday backwards
     let yesterday = new Date();
     yesterday.setDate(yesterday.getDate()); // Start check from today (last entry)
     
@@ -137,7 +121,6 @@ function calculateStreak(history) {
 }
 
 // FIX 4: Implemented mock daily reset function (serverless simulation)
-// Reset statuses once per day and log YESTERDAY's score
 const resetIfNewDay = (data, updateFn) => {
   const today = new Date();
   const todayStr = today.toISOString().split('T')[0];
@@ -328,7 +311,7 @@ const ResilienceTracker = ({ dailyLog, handleSaveResilience }) => {
 /**
  * CommitmentItem: Displays an individual daily commitment with status logging buttons.
  */
-const CommitmentItem = ({ commitment, onLogCommitment, onRemove, isSaving, isScorecardMode }) => {
+const CommitmentItem = ({ commitment, onLogCommitment, onRemove, isSaving, tierMeta }) => {
   // Statuses: 'Committed' (Done), 'Pending' (Not Done/Missed, but can be marked Done)
   const status = commitment.status || 'Pending';
   
@@ -348,9 +331,7 @@ const CommitmentItem = ({ commitment, onLogCommitment, onRemove, isSaving, isSco
     return <Clock className="w-5 h-5 text-gray-500" />;
   };
 
-  const tierMeta = commitment.linkedTier ? LEADERSHIP_TIERS_META[commitment.linkedTier] : null;
-
-  const tierLabel = tierMeta ? `${tierMeta.id}: ${tierMeta.name}` : 'General';
+  const tierLabel = commitment.linkedTier ? `${commitment.linkedTier}: ${tierMeta[commitment.linkedTier]?.name || 'N/A'}` : 'General';
   const colleagueLabel = commitment.targetColleague ? `Focus: ${commitment.targetColleague}` : 'Self-Focus';
 
   const removeHandler = () => {
@@ -418,7 +399,7 @@ const CommitmentItem = ({ commitment, onLogCommitment, onRemove, isSaving, isSco
 };
 
 // FIX 11: Added the missing component definition for AIStarterPackNudge
-const AIStarterPackNudge = ({ pdpData, setLinkedGoal, setLinkedTier, handleAddCommitment, isSaving }) => {
+const AIStarterPackNudge = ({ pdpData, setLinkedGoal, setLinkedTier, isSaving }) => {
     // Safely access primary goal/tier
     const primaryGoal = pdpData?.plan?.[0]?.theme || 'Improve Discipline';
     const primaryTier = pdpData?.assessment?.goalPriorities?.[0] || 'T3';
@@ -437,7 +418,7 @@ const AIStarterPackNudge = ({ pdpData, setLinkedGoal, setLinkedTier, handleAddCo
 /**
  * CommitmentSelectorView: Allows users to add commitments from the bank or create custom ones.
  */
-const CommitmentSelectorView = ({ setView, initialGoal, initialTier }) => {
+const CommitmentSelectorView = ({ setView, initialGoal, initialTier, tierMeta, commitmentBank }) => {
   const { updateCommitmentData, commitmentData, planningData, pdpData, callSecureGeminiAPI, hasGeminiKey, GEMINI_MODEL} = useAppServices(); // FIX: Call hook inside component
 
   const [tab, setTab] = useState('bank');
@@ -462,15 +443,9 @@ const CommitmentSelectorView = ({ setView, initialGoal, initialTier }) => {
   const pdpContentCommitmentIds = new Set(userCommitments.filter(c => String(c.id).startsWith('pdp-content-')).map(c => String(c.id).split('-')[2]));
 
 
-  // FIX: Use the expanded commitment bank (Local definition needed)
-  const EXPANDED_COMMITMENT_BANK = {
-      'T1: Personal Foundation (Executive Resilience)': [{ id: 't1-1', text: 'Perform a 10-minute mindfulness check before the first meeting.' }],
-      'T2: Operational Excellence (System & Process Leadership)': [{ id: 't2-1', text: 'Create or refine one simple SOP for a recurring team task.' }],
-      'T3: Strategic Alignment (Goal-Oriented Executive Action)': [{ id: 't3-1', text: 'Relate one daily decision back to a long-term company mission statement.' }],
-      'T4: People Development (Coaching & Mentorship)': [{ id: 't4-1', text: 'Give one piece of specific, actionable positive feedback using the SBI model.' }],
-      'T5: Visionary Leadership (Culture & Executive Influence)': [{ id: 't5-1', text: 'Articulate the department’s 5-year vision in simple, non-jargon terms to a junior employee.' }],
-  };
-  const allBankCommitments = useMemo(() => Object.values(EXPANDED_COMMITMENT_BANK || {}).flat(), []);
+  // EXPANDED_COMMITMENT_BANK is now passed via props (commitmentBank)
+  const EXPANDED_COMMITMENT_BANK = commitmentBank || {}; 
+  const allBankCommitments = useMemo(() => Object.values(EXPANDED_COMMITMENT_BANK || {}).flat(), [EXPANDED_COMMITMENT_BANK]);
 
   const filteredBankCommitments = useMemo(() => {
     const ql = searchTerm.toLowerCase();
@@ -486,7 +461,7 @@ const CommitmentSelectorView = ({ setView, initialGoal, initialTier }) => {
       }
     }
     return matchingCommitments;
-  }, [userCommitments, searchTerm]);
+  }, [userCommitments, searchTerm, EXPANDED_COMMITMENT_BANK]);
 
   
   const availableGoals = useMemo(() => [
@@ -557,7 +532,7 @@ const CommitmentSelectorView = ({ setView, initialGoal, initialTier }) => {
     setAssessmentLoading(true);
     setAiAssessment(null);
 
-    const tierName = LEADERSHIP_TIERS_META[linkedTier]?.name || 'N/A';
+    const tierName = tierMeta[linkedTier]?.name || 'N/A';
     
     // FIX: Ensure JSON output is enforced for reliable data
     const systemPrompt = `You are an AI Executive Coach specializing in habit alignment. Your task is to analyze a user's proposed daily commitment against their strategic context (Goal and Leadership Tier). The response MUST be a JSON object conforming to the schema. Do not include any introductory or explanatory text outside of the JSON block.`;
@@ -646,8 +621,48 @@ const CommitmentSelectorView = ({ setView, initialGoal, initialTier }) => {
         );
     };
 
-    const handleAddCommitment = () => { console.log("Add Commitment (Mocked)"); };
-    const handleCreateCustomCommitment = () => { console.log("Create Custom Commitment (Mocked)"); };
+    // CRITICAL: New handler to save commitment data
+    const handleAddCommitment = (item, source) => { 
+        if (!linkedGoal || linkedGoal === initialLinkedGoalPlaceholder || !linkedTier) {
+            alert("Please select a Goal and Tier before adding a commitment.");
+            return;
+        }
+
+        setIsSaving(true);
+        const newCommitment = {
+            id: item.id || `custom-${Date.now()}`,
+            text: item.text || item.title || customCommitment, 
+            status: 'Pending',
+            isCustom: source === 'custom',
+            linkedGoal: linkedGoal,
+            linkedTier: linkedTier,
+            targetColleague: targetColleague || 'Self-Focus',
+            duration: item.duration || 0,
+        };
+
+        updateCommitmentData(data => ({
+            ...data,
+            active_commitments: [...(data?.active_commitments || []), newCommitment]
+        }))
+        .then(() => {
+            setIsSaving(false);
+            setCustomCommitment('');
+            setIsCustomCommitmentSaved(source === 'custom');
+            if (source === 'custom') setTimeout(() => setIsCustomCommitmentSaved(false), 3000);
+            if (source !== 'custom') alert(`Added "${newCommitment.text}" to your scorecard!`);
+        })
+        .catch(e => {
+            console.error("Failed to add commitment:", e);
+            setIsSaving(false);
+            alert("Failed to save commitment. Check the database connection.");
+        });
+    };
+    
+    // Wire the custom commitment save to the main handler
+    const handleCreateCustomCommitment = () => {
+        handleAddCommitment({ text: customCommitment }, 'custom');
+    };
+
     const tabStyle = (tabName) => `px-4 py-2 text-sm font-semibold transition-colors ${tab === tabName ? 'border-[#47A88D] border-b-4 text-[#002E47]' : 'border-transparent text-gray-500 hover:text-[#002E47]'}`;
     const canAddCommitment = linkedGoal && linkedGoal !== initialLinkedGoalPlaceholder && linkedTier;
 
@@ -666,7 +681,6 @@ const CommitmentSelectorView = ({ setView, initialGoal, initialTier }) => {
             pdpData={pdpData} 
             setLinkedGoal={setLinkedGoal} 
             setLinkedTier={setLinkedTier} 
-            handleAddCommitment={handleAddCommitment} 
             isSaving={isSaving}
           />
       )}
@@ -723,7 +737,7 @@ const CommitmentSelectorView = ({ setView, initialGoal, initialTier }) => {
                   className="w-full p-3 border border-gray-300 rounded-xl focus:ring-[#002E47] focus:border-[#002E47] text-[#002E47] font-semibold"
                 >
                   <option value="">--- Select Tier ---</option>
-                  {Object.values(LEADERSHIP_TIERS_META).map(tier => (
+                  {Object.values(tierMeta).map(tier => (
                     <option key={tier.id} value={tier.id}>
                       {tier.id}: {tier.name}
                     </option>
@@ -817,7 +831,7 @@ const CommitmentSelectorView = ({ setView, initialGoal, initialTier }) => {
                 const filteredCommitments = commitments.filter(c =>
                     // Check if commitment text is NOT already in active commitments
                     !userCommitments.some(activeC => activeC.text === c.text) &&
-                    (searchTerm === '' || commitment.text.toLowerCase().includes(searchTerm.toLowerCase()))
+                    (searchTerm === '' || c.text.toLowerCase().includes(searchTerm.toLowerCase()))
                 );
 
                 if (filteredCommitments.length === 0 && searchTerm !== '') return null;
@@ -837,7 +851,6 @@ const CommitmentSelectorView = ({ setView, initialGoal, initialTier }) => {
                             className={`font-semibold text-xs transition-colors p-1 flex items-center space-x-1 ${canAddCommitment && !isSaving ? 'text-[#47A88D] hover:text-[#349881]' : 'text-gray-400 cursor-not-allowed'}`}
                           >
                             <PlusCircle className='w-4 h-4' />
-                            {/* NOTE: We are removing a duplicate 'Button' declaration error here. */}
                           </button>
                         </Tooltip>
                       </div>
@@ -993,7 +1006,7 @@ const WeeklyPrepView = ({ setView, commitmentData, updateCommitmentData, userCom
 
 
 // TierSuccessMap Component Definition
-const TierSuccessMap = ({ tierRates }) => {
+const TierSuccessMap = ({ tierRates, tierMeta }) => {
     return (
         <Card title="Tier Rep Success Map" icon={BarChart3} accent='TEAL' className='bg-[#47A88D]/10 border-2 border-[#47A88D]'>
             <p className='text-sm text-gray-700 mb-2'>Success Rate by Leadership Tier</p>
@@ -1002,11 +1015,11 @@ const TierSuccessMap = ({ tierRates }) => {
                     data.total > 0 && (
                         <div key={tier} className='mb-1'>
                             <div className='flex justify-between text-xs font-semibold text-[#002E47]'>
-                                <span>{LEADERSHIP_TIERS_META[tier]?.name || tier} ({data.total} Reps)</span>
+                                <span>{tierMeta[tier]?.name || tier} ({data.total} Reps)</span>
                                 <span className={`font-bold ${data.rate > 70 ? 'text-green-600' : 'text-orange-600'}`}>{data.rate}%</span>
                             </div>
                             <div className="w-full bg-gray-200 rounded-full h-2">
-                                <div className="h-2 rounded-full" style={{ width: `${data.rate}%`, backgroundColor: LEADERSHIP_TIERS_META[tier]?.hex || COLORS.TEAL }}></div>
+                                <div className="h-2 rounded-full" style={{ width: `${data.rate}%`, backgroundColor: tierMeta[tier]?.hex || COLORS.TEAL }}></div>
                             </div>
                         </div>
                     )
@@ -1019,7 +1032,7 @@ const TierSuccessMap = ({ tierRates }) => {
 };
 
 // CommitmentHistoryModal Component Definition
-const CommitmentHistoryModal = ({ isVisible, onClose, dayData, activeCommitments }) => {
+const CommitmentHistoryModal = ({ isVisible, onClose, dayData }) => {
     if (!isVisible || !dayData) return null;
     return (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
@@ -1075,9 +1088,8 @@ const PerfectScoreModal = ({ onClose }) => (
 // --- NEW COMPONENT: Daily Rep Target Card (Features 1, 2, 6, 8) ---
 const DailyRepTargetCard = ({ targetRep, microTip, identityStatement, handleLogTargetRep }) => {
     // Determine the relevant Tier based on the target rep (simple mock logic)
-    const tierMatch = Object.values(LEADERSHIP_TIERS_META).find(t => targetRep.includes(t.id));
-    const accentColor = tierMatch ? tierMatch.hex : COLORS.ORANGE;
-
+    const accentColor = COLORS.ORANGE; // Use default
+    
     return (
         <Card 
             title="Today's Single Rep Target" 
@@ -1126,9 +1138,7 @@ const DailyRepTargetCard = ({ targetRep, microTip, identityStatement, handleLogT
 };
 
 // --- NEW COMPONENT: Social Accountability Nudge (Feature 5 Mock) ---
-const SocialAccountabilityNudge = () => {
-    const { navigate } = useAppServices();
-
+const SocialAccountabilityNudge = ({ navigate }) => {
     return (
         <Card title="Social Accountability Pod" icon={Users} accent='BLUE' className='border-4 border-[#2563EB]/20 bg-[#2563EB]/10'>
             <p className='text-sm text-gray-700 mb-4'>
@@ -1177,12 +1187,15 @@ const MicroActionPromptModal = ({ isVisible, onClose, onMicroActionClick }) => {
  */
 export default function DailyPracticeScreen({ initialGoal, initialTier, quickLog, source }) {
   // CRITICAL FIX: Use useAppServices to get the state manager and data
-  const { commitmentData, updateCommitmentData, callSecureGeminiAPI, hasGeminiKey, pdpData, navigate, GEMINI_MODEL} = useAppServices(); 
+  const { commitmentData, updateCommitmentData, callSecureGeminiAPI, hasGeminiKey, pdpData, navigate, GEMINI_MODEL, LEADERSHIP_TIERS, MOCK_ACTIVITY_DATA, COMMITMENT_BANK} = useAppServices(); 
   
   // ADDITION 1: New state to track if we've handled the initial navigation
   const [hasNavigatedInitial, setHasNavigatedInitial] = useState(false); 
   const [isChallengeModalVisible, setIsChallengeModalVisible] = useState(false); // NEW: Challenge Modal State (Feature 3)
   const [isPostLogPromptVisible, setIsPostLogPromptVisible] = useState(false); // NEW: Post-Log Modal State (Feature 3)
+
+  const tierMeta = LEADERSHIP_TIERS || LEADERSHIP_TIERS_META_FALLBACK; // Use service data or fallback
+  const commitmentBank = COMMITMENT_BANK; // Use service data
 
   // FIX: Call the mock scheduleMidnightReset function to simulate nightly log/reset
 useEffect(() => {
@@ -1255,8 +1268,8 @@ useEffect(() => {
   const isPerfectScore = score.total > 0 && score.committed === score.total;
   
   // --- NEW DATA HOOKS (Features 1, 2, 8) ---
-  const dailyTargetRep = useMemo(() => MOCK_ACTIVITY_DATA.daily_target_rep, []);
-  const identityStatement = useMemo(() => MOCK_ACTIVITY_DATA.identity_statement, []);
+  const dailyTargetRep = useMemo(() => MOCK_ACTIVITY_DATA?.daily_target_rep || 'Define your target rep.', [MOCK_ACTIVITY_DATA]);
+  const identityStatement = useMemo(() => MOCK_ACTIVITY_DATA?.identity_statement || 'I am a principled leader.', [MOCK_ACTIVITY_DATA]);
   // --- END NEW DATA HOOKS ---
 
   // Open the modal only on transition from not-perfect -> perfect
@@ -1280,7 +1293,7 @@ useEffect(() => {
 }, [isPerfectScoreModalVisible]);
 
   
-  const tierSuccessRates = useMemo(() => calculateTierSuccessRates(userCommitments, commitmentHistory), [userCommitments, commitmentHistory]);
+  const tierSuccessRates = useMemo(() => calculateTierSuccessRates(userCommitments, commitmentHistory, tierMeta), [userCommitments, commitmentHistory, tierMeta]);
   const lastSevenDaysHistory = useMemo(() => getLastSevenDays(commitmentHistory), [commitmentHistory]);
 
 
@@ -1295,7 +1308,7 @@ useEffect(() => {
     // Treat 'Pending' commitments as 'Missed' for the purpose of the reflection prompt.
     const missedCommitments = (data?.active_commitments || [])
         .filter(c => c.status === 'Missed' || c.status === 'Pending')
-        .map(c => `[${LEADERSHIP_TIERS_META[c.linkedTier]?.name || 'General'}] ${c.text}`);
+        .map(c => `[${tierMeta[c.linkedTier]?.name || 'General'}] ${c.text}`);
 
     const systemPrompt = `You are an executive coach. Based on the user's daily performance, generate ONE specific, non-judgemental, and high-leverage reflection question. If commitments were missed, link the question to the missed tier/action and the leadership cost of inconsistency. If performance was perfect, ask a question about translating that commitment into team impact. Keep the question concise (1-2 sentences).`;
 
@@ -1412,7 +1425,7 @@ useEffect(() => {
         const frequentMissedTier = missedTiers.reduce((a, b, i, arr) => 
             (arr.filter(v => v===a).length >= arr.filter(v => v===b).length ? a : b), missedTiers[0]);
             
-        riskText = `High Risk: Inconsistency in **${LEADERSHIP_TIERS_META[frequentMissedTier]?.name || 'a core tier'}** reps. This threatens your ability to advance in your Roadmap.`;
+        riskText = `High Risk: Inconsistency in **${tierMeta[frequentMissedTier]?.name || 'a core tier'}** reps. This threatens your ability to advance in your Roadmap.`;
         riskIcon = TrendingDown;
     } else {
         if (score.total > 0) {
@@ -1436,7 +1449,7 @@ useEffect(() => {
 
 
     return { predictiveRisk: { text: riskText, icon: riskIcon }, microTipText: tipText };
-  }, [userCommitments, score.total]);
+  }, [userCommitments, score.total, tierMeta]);
 
   // View Mode Sorting Logic
 const sortedCommitments = useMemo(() => {
@@ -1458,32 +1471,6 @@ const sortedCommitments = useMemo(() => {
 }, [userCommitments, viewMode]);
 
 
-  // Placeholder functions for CommitmentSelectorView to avoid errors
-  const renderAssessmentResult = () => {
-    if (!aiAssessment) return null;
-
-    const { score, risk, feedback, error } = aiAssessment;
-    const isGood = score >= 7 && risk <= 4 && !error;
-    const color = isGood ? 'bg-green-100 border-green-400 text-green-700' : 'bg-red-100 border-red-400 text-red-700';
-    const icon = isGood ? <CheckCircle className='w-5 h-5 mr-2'/> : <AlertTriangle className='w-5 h-5 mr-2'/>;
-
-    return (
-        <div className={`p-4 rounded-xl border-2 mb-4 ${color}`}>
-            <p className='font-semibold text-lg flex items-center mb-1'>{icon} AI Alignment Analysis</p>
-            <div className='flex justify-between text-sm mb-2'>
-                <span>Value Score: <span className='font-extrabold'>{score}/10</span></span>
-                <span>Risk Score: <span className='font-extrabold'>{risk}/10</span></span>
-            </div>
-            <p className='text-sm italic font-medium'>{feedback}</p>
-        </div>
-    );
-  };
-  
-  const handleAddCommitment = () => { console.log("Add Commitment (Mocked)"); };
-  const handleCreateCustomCommitment = () => { console.log("Create Custom Commitment (Mocked)"); };
-  const tabStyle = (tabName) => `px-4 py-2 text-sm font-semibold transition-colors ${view === tabName ? 'border-[#47A88D] border-b-4 text-[#002E47]' : 'border-transparent text-gray-500 hover:text-[#002E47]'}`;
-
-
   // Final Render
   const renderView = () => {
     
@@ -1497,6 +1484,8 @@ const sortedCommitments = useMemo(() => {
           setView={setView}
           initialGoal={initialGoal}
           initialTier={initialTier}
+          tierMeta={tierMeta}
+          commitmentBank={commitmentBank}
         />;
       case 'weekly-prep':
         // Feature 7: Weekly Recap
@@ -1565,7 +1554,7 @@ const sortedCommitments = useMemo(() => {
                                     onLogCommitment={handleLogCommitment}
                                     onRemove={handleRemoveCommitment} // Passed down for removal functionality
                                     isSaving={isSaving}
-                                    isScorecardMode={true}
+                                    tierMeta={tierMeta}
                                 />
                             ))
                         ) : (
@@ -1592,7 +1581,7 @@ const sortedCommitments = useMemo(() => {
                   <ResilienceTracker dailyLog={resilienceLog} handleSaveResilience={handleSaveResilience}/>
                   
                   {/* Social Accountability Nudge (Feature 5) */}
-                  <SocialAccountabilityNudge />
+                  <SocialAccountabilityNudge navigate={navigate} />
 
                   {/* Goal Drift Indicator */}
                   <Card 
@@ -1604,7 +1593,7 @@ const sortedCommitments = useMemo(() => {
                       <p className='text-sm font-semibold text-[#002E47]'>{predictiveRisk.text}</p>
                   </Card>
                   
-                  <TierSuccessMap tierRates={tierSuccessRates} />
+                  <TierSuccessMap tierRates={tierSuccessRates} tierMeta={tierMeta} />
                   
                   {/* Monthly Consistency & Streak (Feature 4) */}
                   <Card title="Monthly Consistency" icon={BarChart3} accent='TEAL' className='bg-[#47A88D]/10 border-2 border-[#47A88D]'>
@@ -1636,7 +1625,7 @@ const sortedCommitments = useMemo(() => {
                 <p className='text-sm text-gray-700 mb-4'>
                     {promptLoading ? (
                         <span className='flex items-center text-[#47A88D]'>
-                             <div className="animate-spin h-4 w-4 border-b-2 border-gray-500 mr-2 rounded-full"></div> Drafting prompt...
+                             <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-500 mr-2 rounded-full"></div> Drafting prompt...
                         </span>
                     ) : (
                         <span className='font-bold text-[#002E47]'>{reflectionPrompt || 'What key insight did you gained today that will improve your leadership practice tomorrow?'}</span>
@@ -1662,7 +1651,6 @@ const sortedCommitments = useMemo(() => {
                 isVisible={isHistoryModalVisible}
                 onClose={() => setIsHistoryModalVisible(false)}
                 dayData={selectedHistoryDay}
-                activeCommitments={userCommitments}
             />
             
             {/* Renders if a perfect score is just achieved (Feature 4) */}
@@ -1676,6 +1664,7 @@ const sortedCommitments = useMemo(() => {
                     isVisible={isChallengeModalVisible}
                     onClose={() => setIsChallengeModalVisible(false)}
                     sourceScreen={quickLog === true ? 'dashboard' : view} 
+                    onLogSuccess={() => {}} // Placeholder for micro-celebration logic
                 />
             )}
             

@@ -22,6 +22,20 @@ const COMPLEXITY_MAP = {
 };
 
 /* =========================================================
+   MOCK BOOKS (DELETED: Replaced by fallbacks)
+========================================================= */
+
+// --- FALLBACK MOCK DATA ---
+const MOCK_ALL_BOOKS_FALLBACK = {
+    'Strategy & Execution': [
+        { id: 's_e_1', title: 'The E-Myth Revisited (Fallback)', author: 'Michael E. Gerber', theme: 'Why most small businesses fail.', complexity: 'Medium', duration: 180, focus: 'Delegation, Process Mapping, Systemization' },
+    ],
+    'People & Culture': [
+        { id: 'p_c_1', title: 'Dare to Lead (Fallback)', author: 'Brené Brown', theme: 'Courageous leadership by embracing vulnerability and trust.', complexity: 'Medium', duration: 210, focus: 'Psychological Safety, Feedback, Vulnerability' },
+    ]
+};
+
+/* =========================================================
    UI COMPONENTS (Standardized)
 ========================================================= */
 const ExecSwitch = ({ checked, onChange }) => { /* ... */ return (
@@ -54,44 +68,11 @@ return (
 };
 
 /* =========================================================
-   MOCK BOOKS (Using these only for data population)
-========================================================= */
-const MOCK_ALL_BOOKS = {
-  'Strategy & Execution': [
-    { id: 's_e_1', title: 'The E-Myth Revisited', author: 'Michael E. Gerber', theme: 'Why most small businesses fail and how to build a scalable system.', complexity: 'Medium', duration: 180, focus: 'Delegation, Process Mapping, Systemization, Standard Operating Procedures, Entrepreneurial Vision, Managerial Structure' },
-    { id: 's_e_2', title: 'Good to Great', author: 'Jim Collins', theme: 'The factors that allow companies to make the leap from good results to sustained great ones.', complexity: 'High', duration: 240, focus: 'Level 5 Leadership, Hedgehog Concept, Culture of Discipline, Technology Accelerators, Flywheel Effect, Stockdale Paradox' },
-    { id: 's_e_3', title: 'Measure What Matters', author: 'John Doerr', theme: 'Achieving ambitious goals using OKRs.', complexity: 'Medium', duration: 200, focus: 'Goal Setting, Quarterly Planning, Accountability, Transparency, Stretch Goals, Feedback Cycles' },
-    { id: 's_e_4', title: 'The 7 Habits', author: 'Stephen Covey', theme: 'Principles for personal and professional effectiveness.', complexity: 'Low', duration: 220, focus: 'Proactivity, Prioritization, Synergy, Sharpen the Saw, Win/Win, Habit Stacking, Time Management Matrix' },
-    { id: 's_e_5', title: 'Getting Things Done (GTD)', author: 'David Allen', theme: 'A stress-free system for organizing tasks and projects.', complexity: 'Medium', duration: 210, focus: 'Workflow Management, Capture, Organize, Engage, Next Actions, Two-Minute Rule, Weekly Review' },
-    { id: 's_e_6', title: 'Deep Work', author: 'Cal Newport', theme: 'The value of focused, distraction-free concentration on cognitively demanding tasks.', complexity: 'Medium', duration: 190, focus: 'Focus, Productivity, Attention Management, Monastic Approach, High-Value Tasks, Metrics of Depth, Batch Processing' },
-    { id: 's_e_7', title: 'The Goal', author: 'Eliyahu Goldratt', theme: 'The process of ongoing improvement using the Theory of Constraints.', complexity: 'High', duration: 260, focus: 'Theory of Constraints, Bottlenecks, Throughput, Drum-Buffer-Rope, Process Improvement, Optimization' },
-  ],
-  'People & Culture': [
-    { id: 'p_c_1', title: 'Dare to Lead', author: 'Brené Brown', theme: 'Courageous leadership by embracing vulnerability and trust.', complexity: 'Medium', duration: 210, focus: 'Psychological Safety, Feedback, Vulnerability, Rumbling with Vulnerability, Armored Leadership, Empathy' },
-    { id: 'p_c_2', title: 'Turn the Ship Around!', author: 'L. David Marquet', theme: 'Creating a leader-leader organization over a leader-follower one.', complexity: 'Medium', duration: 190, focus: 'Intent-Based Leadership, Decentralization, Ownership, Competence, Clarity, Control' },
-    { id: 'p_c_3', title: 'Radical Candor', author: 'Kim Scott', theme: 'Challenging directly while caring personally.', complexity: 'Medium', duration: 190, focus: 'Feedback Delivery, Coaching, Guidance, Caring Personally, Challenging Directly, Get Stuff Done Wheel' },
-    { id: 'p_c_4', title: 'The Culture Code', author: 'Daniel Coyle', theme: 'Building highly successful groups through belonging, safety, and shared purpose.', complexity: 'Low', duration: 230, focus: 'Group Cohesion, Vulnerability Loops, Shared Identity, Safety, Vulnerability, Purpose' },
-    { id: 'p_c_5', title: 'Start with Why', author: 'Simon Sinek', theme: 'Great leaders inspire action by communicating from the inside out (The Golden Circle).', complexity: 'Low', duration: 180, focus: 'Purpose, Vision, The Golden Circle, Mass Influence, Trust, Why/How/What' },
-    { id: 'p_c_6', title: 'Team of Teams', author: 'General Stanley McChrystal', theme: 'How a decentralized command structure can beat highly effective, organized threats.', complexity: 'High', duration: 250, focus: 'Shared Consciousness, Empowered Execution, Adaptability, Decentralization, Liaison Officers, Trust' },
-  ],
-  'Self-Awareness & Growth': [
-    { id: 's_a_1', title: 'Atomic Habits', author: 'James Clear', theme: 'Build good habits by tiny improvements.', complexity: 'Low', duration: 180, focus: 'Habit Formation, Self-Discipline, Identity, Four Laws, Habit Stacking, Two-Minute Rule, Environment Design' },
-    { id: 's_a_2', title: 'Mindset', author: 'Carol Dweck', theme: 'The difference between growth and fixed mindsets in success.', complexity: 'Medium', duration: 190, focus: 'Growth Mindset, Fixed Mindset, Effort vs. Talent, Praise for Effort, Neuroscience of Change' },
-    { id: 's_a_3', title: 'Drive', author: 'Daniel H. Pink', theme: 'The new operating system for business based on intrinsic motivation (Autonomy, Mastery, Purpose).', complexity: 'Medium', duration: 170, focus: 'Intrinsic Motivation, Autonomy, Mastery, Purpose, Type I vs Type X Behavior, Flow State, Goldilocks Tasks' },
-    { id: 's_a_4', title: 'Emotional Intelligence 2.0', author: 'Travis Bradberry', theme: 'Practical strategies for increasing self-awareness and self-management.', complexity: 'Low', duration: 160, focus: 'Self-Awareness, Self-Management, Social Awareness, Relationship Management, EQ Assessment, Delaying Gratification' },
-    { id: 's_a_5', title: 'Thinking, Fast and Slow', author: 'Daniel Kahneman', theme: 'Dual-process model of the brain (System 1 and System 2) and cognitive biases.', complexity: 'High', duration: 280, focus: 'Cognitive Biases, System 1/System 2, Decision Making, Anchoring Effect, Loss Aversion, Prospect Theory' },
-  ],
-  'Innovation & Change': [ 
-    { id: 'i_c_1', title: 'The Lean Startup', author: 'Eric Ries', theme: 'Build-measure-learn with continuous innovation.', complexity: 'High', duration: 250, focus: 'MVP, Build-Measure-Learn, Iteration, Pivot or Persevere, Validated Learning, Innovation Accounting' },
-    { id: 'i_c_2', title: 'Innovator\'s Dilemma', author: 'Clayton Christensen', theme: 'Why great companies fail by being too good at what they do.', complexity: 'High', duration: 270, focus: 'Disruptive Innovation, Sustaining Technology, Value Networks, Resource Dependence, Small Markets' },
-    { id: 'i_c_3', title: 'Crossing the Chasm', author: 'Geoffrey A. Moore', theme: 'Marketing high-tech products to mainstream customers.', complexity: 'Medium', duration: 230, focus: 'Technology Adoption Lifecycle, Chasm Strategy, Bowling Pin, Early Adopters, Mainstream Market' },
-    { id: 'i_c_4', title: 'Zero to One', author: 'Peter Thiel', theme: 'The secret to building a better future is to create new things, not copy existing ones.', complexity: 'Medium', duration: 200, focus: 'Monopolies, Vertical Progress, Last Mover Advantage, Secret, Peter Thiel\'s Seven Questions' },
-  ],
-};
-
-/* =========================================================
    LOCAL FALLBACK UTILITIES (ONLY FOR STRUCTURE/CONTEXT)
 ========================================================= */
+// NOTE: These utility functions use data from the book object passed to them, 
+// which is sufficient even with the MOCK_ALL_BOOKS replaced by MOCK_ALL_BOOKS_FALLBACK.
+
 function getActionSteps(book) { 
   const t = (book.title || '').toLowerCase();
   if (t.includes('e-myth')) { return ['Map one repeatable process (5–7 steps) and write a 1-page SOP.', 'Delegate the checklist, not the task.', 'Analyze your time allocation: Technician, Manager, or Entrepreneur Role?', 'Design a comprehensive organizational chart based on function, not personality.', 'Schedule a weekly "Manager Hat" block for system review.'];}
@@ -158,13 +139,10 @@ async function buildAIFlyerHTML({ book, tier, executive, callSecureGeminiAPI }) 
   try {
     // 1. ATTEMPT LIVE API CALL with Google Search grounding
     const out = await callSecureGeminiAPI({ 
-      // CRITICAL FIX: Ensure the systemInstruction is in the correct nested format for the App.jsx caller
       systemInstruction: { parts: [{ text: systemPrompt }] }, 
-      // NOTE: callSecureGeminiAPI handles model and grounding. The contents array is correct.
       contents: [{ role: "user", parts: [{ text: userPrompt }] }], 
     });
     
-    // FIX 2: Safely extract text, handling potential non-text parts or missing candidates
     let html = out?.candidates?.[0]?.content?.parts?.[0]?.text || '';
     
     // 2. PROCESS SUCCESSFUL RESPONSE
@@ -188,7 +166,6 @@ async function buildAIFlyerHTML({ book, tier, executive, callSecureGeminiAPI }) 
   }
 }
 
-// ... (rest of the file remains the same, including getQuestionScore)
 const getQuestionScore = (query, bookTitle) => {
     const q = query.toLowerCase().trim();
     if (q.length < 15) return { score: 0, tip: 'Question is too short. Be specific about your challenge.' };
@@ -238,7 +215,7 @@ async function handleAiSubmit(e, services, selectedBook, aiQuery, setIsSubmittin
     const actionableContext = `
       Book: ${selectedBook.title} by ${selectedBook.author}. Focus: ${selectedBook.focus}.
       Key Frameworks: ${getFrameworks(selectedBook).map(f => f.name).join(', ')}.
-      Key Actions: ${getActionSteps(selectedBook).join(' | ')}.
+      Key Actions: ${getActionSteps(selectedBook).map(a => a.substring(0, 50)).join(' | ')}.
       User's Current Question: ${q}
     `;
 
@@ -248,7 +225,6 @@ async function handleAiSubmit(e, services, selectedBook, aiQuery, setIsSubmittin
       Guidelines: Answer directly with 3–5 sentences. Include one concrete next action that applies the book's principle to the user's situation. Do not use markdown other than **bold** for emphasis. Ensure the response flows naturally like coaching advice.`;
 
     const out = await services.callSecureGeminiAPI({
-      // CRITICAL FIX: Ensure the systemInstruction is in the correct nested format for the App.jsx caller
       systemInstruction: { parts: [{ text: systemPrompt }] },
       contents: [{ role: 'user', parts: [{ text: `Regarding "${selectedBook.title}": ${q}` }] }],
     });
@@ -560,7 +536,7 @@ function BookFlyerStable({
                 <div className="max-w-none space-y-4" style={{ color: COLORS.TEXT }} dangerouslySetInnerHTML={{ __html: htmlFlyer }} />
             )
         )}
-        {/* END FIX */}}
+        {/* END FIX */}
 
         <div className="mt-8 pt-4" style={{ borderTop: `1px solid ${COLORS.SUBTLE}` }}>
           <h3 className="text-2xl font-bold mb-4 flex items-center gap-3" style={{ color: COLORS.NAVY }}>
@@ -616,7 +592,12 @@ export default function BusinessReadingsScreen() {
     navigate = () => {},
     callSecureGeminiAPI,
     hasGeminiKey,
+    // CRITICAL: MOCK_ALL_BOOKS is removed, we use a custom key from the service context
+    READING_CATALOG_SERVICE 
   } = services;
+
+  // CRITICAL FIX: Use service data or fallback
+  const allBooks = READING_CATALOG_SERVICE || MOCK_ALL_BOOKS_FALLBACK; 
 
   const [selectedBook, setSelectedBook] = useState(null);
   const [htmlFlyer, setHtmlFlyer] = useState('');
@@ -630,8 +611,6 @@ export default function BusinessReadingsScreen() {
   const [aiQuery, setAiQuery] = useState('');
   const [aiResponse, setAiResponse] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
-
-  const allBooks = MOCK_ALL_BOOKS; 
 
   /* New: Question Feedback Hook */
   const questionFeedback = useMemo(() => {
@@ -657,6 +636,9 @@ export default function BusinessReadingsScreen() {
 
   /* ---------- Filtering (Memoized for performance) ---------- */
   const filteredBooks = useMemo(() => {
+    // Check if the service data is empty before attempting flatMap
+    if (Object.keys(allBooks).length === 0) return {}; 
+
     const flat = Object.entries(allBooks).flatMap(([tier, books]) =>
       (books || []).map(b => ({ ...b, tier }))
     );
@@ -680,11 +662,13 @@ export default function BusinessReadingsScreen() {
     let cancelled = false;
     (async () => {
       if (!selectedBook) { setHtmlFlyer(''); setIsFlyerLoading(false); return; }
+      
       const tierKey = selectedTier || Object.keys(allBooks).find(k => (allBooks[k] || []).some(b => b.id === selectedBook.id)) || 'Strategy & Execution';
+      
       // Start loading
       setIsFlyerLoading(true);
       setHtmlFlyer('');
-      // Call the production-focused function with secure error handling
+      
       const html = await buildAIFlyerHTML({ 
         book: selectedBook, 
         tier: tierKey, 

@@ -17,10 +17,12 @@
   "dependencies": {
     "dompurify": "^3.3.0",
     "firebase": "^10.14.1",
+    "firebase-admin": "^13.5.0",
     "lucide-react": "^0.395.0",
     "marked": "^13.0.3",
     "react": "^18.3.1",
-    "react-dom": "^18.3.1"
+    "react-dom": "^18.3.1",
+    "win-ca": "^3.5.1"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.1.14",

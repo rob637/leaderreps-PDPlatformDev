@@ -1,0 +1,530 @@
+{
+  "metadata": {
+    "config": {
+      "leadership_tiers": {
+        "T1": {
+          "id": "T1",
+          "name": "Self-Awareness",
+          "icon": "Target",
+          "color": "bg-blue-100 text-blue-700",
+          "hex": "#2563EB"
+        },
+        "T2": {
+          "id": "T2",
+          "name": "Operational Excellence",
+          "icon": "Mic",
+          "color": "bg-cyan-100 text-cyan-700",
+          "hex": "#06B6D4"
+        },
+        "T3": {
+          "id": "T3",
+          "name": "Strategic Execution",
+          "icon": "Briefcase",
+          "color": "bg-green-100 text-green-700",
+          "hex": "#10B981"
+        },
+        "T4": {
+          "id": "T4",
+          "name": "People Development",
+          "icon": "Users",
+          "color": "bg-yellow-100 text-yellow-700",
+          "hex": "#F5A800"
+        },
+        "T5": {
+          "id": "T5",
+          "name": "Visionary Leadership",
+          "icon": "TrendingUp",
+          "color": "bg-red-100 text-red-700",
+          "hex": "#E04E1B"
+        }
+      },
+      "commitment_bank": {
+        "T1: Personal Foundation (Executive Resilience)": [
+          {
+            "id": "t1-1",
+            "text": "Perform a 10-minute mindfulness check before the first meeting."
+          }
+        ],
+        "T2: Operational Excellence (System & Process Leadership)": [
+          {
+            "id": "t2-1",
+            "text": "Create or refine one simple SOP for a recurring team task."
+          }
+        ],
+        "T3: Strategic Alignment (Goal-Oriented Executive Action)": [
+          {
+            "id": "t3-1",
+            "text": "Relate one daily decision back to a long-term company mission statement."
+          }
+        ],
+        "T4: People Development (Coaching & Mentorship)": [
+          {
+            "id": "t4-1",
+            "text": "Give one piece of specific, actionable positive feedback using the SBI model."
+          }
+        ],
+        "T5: Visionary Leadership (Culture & Executive Influence)": [
+          {
+            "id": "t5-1",
+            "text": "Articulate the department\u2019s 5-year vision in simple, non-jargon terms to a junior employee."
+          }
+        ]
+      },
+      "quick_challenge_catalog": [
+        {
+          "rep": "Take three deep, deliberate breaths before checking your first email.",
+          "tier": "T1"
+        },
+        {
+          "rep": "Write down three things you are grateful for right now.",
+          "tier": "T1"
+        },
+        {
+          "rep": "Check one meeting on your calendar has a clear agenda.",
+          "tier": "T2"
+        },
+        {
+          "rep": "Send a 3-sentence summary of an idea instead of scheduling a call.",
+          "tier": "T2"
+        },
+        {
+          "rep": "Connect one current project to a 5-year company vision statement.",
+          "tier": "T3"
+        },
+        {
+          "rep": "Ask yourself: 'Is this decision mission-critical or merely urgent?'",
+          "tier": "T3"
+        },
+        {
+          "rep": "Send one quick thank-you Slack message right now.",
+          "tier": "T4"
+        },
+        {
+          "rep": "Acknowledge one team member for effort, not just outcome.",
+          "tier": "T4"
+        },
+        {
+          "rep": "Jot down two behaviors that reinforce the team's sense of psychological safety.",
+          "tier": "T5"
+        },
+        {
+          "rep": "Send a 1-sentence message re-affirming team vision.",
+          "tier": "T5"
+        }
+      ],
+      "scenario_library": [
+        {
+          "id": 1,
+          "title": "The Underperformer",
+          "description": "A high-potential team member is consistently missing deadlines due to distraction.",
+          "persona": "The Deflector",
+          "difficultyLevel": 60
+        },
+        {
+          "id": 2,
+          "title": "The Boundary Pusher",
+          "description": "An employee repeatedly oversteps their authority when dealing with clients, creating tension.",
+          "persona": "The Defender",
+          "difficultyLevel": 75
+        },
+        {
+          "id": 3,
+          "title": "The Silent Withdrawal",
+          "description": "A direct report has become quiet and disengaged in meetings following a minor project failure.",
+          "persona": "The Silent Stonewall",
+          "difficultyLevel": 45
+        },
+        {
+          "id": 4,
+          "title": "The Emotional Reaction",
+          "description": "You need to deliver corrective feedback, and the employee is highly likely to become defensive or tearful.",
+          "persona": "The Emotional Reactor",
+          "difficultyLevel": 90
+        }
+      ],
+      "video_library": {
+        "INSPIRATIONAL": [
+          {
+            "title": "How great leaders inspire action",
+            "speaker": "Simon Sinek (TED Talk)",
+            "duration": "18 min",
+            "url": "https://www.youtube.com/watch?v=7zFeuSagktM",
+            "description": "The foundational concept of starting with 'Why' (The Golden Circle) to build loyalty and inspire action. A must-watch for defining purpose."
+          },
+          {
+            "title": "Your Body Language May Shape Who You Are",
+            "speaker": "Amy Cuddy (TED Talk)",
+            "duration": "21 min",
+            "url": "https://www.youtube.com/watch?v=Ks-_Mh1QhMc",
+            "description": "Examines how 'power posing'\u2014changing your body language\u2014can change the chemicals in your brain and impact your leadership confidence and performance."
+          }
+        ],
+        "ACTIONABLE": [
+          {
+            "title": "The Key to Effective Leadership: Micro-Behaviors",
+            "speaker": "Simon Sinek",
+            "duration": "3 min",
+            "url": "https://www.youtube.com/watch?v=C2Tko2rKwVs",
+            "description": "Practical demonstration of small actions (eye contact, putting the phone away) that leaders must perform consistently to build trust and culture."
+          },
+          {
+            "title": "Giving Feedback: The SBI Method",
+            "speaker": "Training Industry",
+            "duration": "3 min",
+            "url": "https://www.youtube.com/watch?v=1rA5-n7a0wE",
+            "description": "A clear, concise breakdown of the Situation, Behavior, Impact (SBI) feedback model for structured, non-judgmental performance discussions."
+          }
+        ]
+      },
+      "leadership_domains": [
+        {
+          "id": "women-exec",
+          "title": "Executive Edge: Women\u2019s Track",
+          "subtitle": "Mastering influence, negotiation, and executive presence to accelerate advancement.",
+          "coreTension": "The **Double Bind** requires balancing competence with likability; leadership must be intentional and sponsorship-focused, not mentorship-reliant.",
+          "focus": [
+            "Sponsorship vs. Mentorship Leverage",
+            "Strategic Negotiation Tactics",
+            "Cultivating Executive Presence",
+            "Managing Systemic Bias & Microaggressions"
+          ],
+          "color": "ORANGE"
+        },
+        {
+          "id": "lgbtqia-leader",
+          "title": "Inclusion & Identity: LGBTQIA+",
+          "subtitle": "Leading authentically, championing intersectional inclusion, and influencing organizational culture.",
+          "coreTension": "The pressure to conform inhibits genuine influence. High-impact leadership requires **vulnerability** as a tool to build psychological safety for others.",
+          "focus": [
+            "Authentic Leadership & Vulnerability",
+            "Sponsorship & Advocacy",
+            "Navigating Disclosure",
+            "Creating Psychological Safety"
+          ],
+          "color": "NAVY"
+        },
+        {
+          "id": "poc-leader",
+          "title": "Culture & Identity: Leaders of Color",
+          "subtitle": "Strategies for navigating unique cultural expectations, leveraging diverse perspectives, and combating microaggressions.",
+          "coreTension": "The **\"Cultural Tax\"** drains strategic bandwidth. Leadership must focus on mitigating microaggressions while strategically leveraging diverse insights.",
+          "focus": [
+            "Mitigating the \"Cultural Tax\"",
+            "Leveraging Diverse Networks",
+            "Strategic Communication",
+            "Sponsorship & Visibility"
+          ],
+          "color": "TEAL"
+        },
+        {
+          "id": "non-profit",
+          "title": "Impact & Mission Mastery (Non-Profit)",
+          "subtitle": "Leading with resource scarcity, maximizing social impact, and managing diverse boards and volunteer teams.",
+          "coreTension": "The **Scarcity Mindset** is endemic. Effective leadership balances mission fidelity with rigorous financial stewardship and measurable social impact.",
+          "focus": [
+            "Social Impact Measurement & KPIs",
+            "Resource Stewardship & Grant Maximization",
+            "High-Stakes Board Dynamics",
+            "Volunteer Motivation & Retention"
+          ],
+          "color": "TEAL"
+        },
+        {
+          "id": "public-sector",
+          "title": "Public Sector & Governance",
+          "subtitle": "Navigating bureaucracy, driving large-scale policy implementation, and managing political stakeholders.",
+          "coreTension": "The **Accountability Vacuum** demands precise communication. Influence requires managing complex inter-agency politics and maintaining transparency.",
+          "focus": [
+            "Policy Implementation Strategy",
+            "Navigating Bureaucracy",
+            "Public Accountability & Transparency",
+            "Cross-Agency Collaboration"
+          ],
+          "color": "ORANGE"
+        },
+        {
+          "id": "tech-lead",
+          "title": "Leading the Technical Edge",
+          "subtitle": "Translating code debt into business risk, managing innovation velocity, and retaining top tech talent.",
+          "coreTension": "The **Translation Gap** means technical risks are invisible to the executive suite. Leadership must connect agile process to quantifiable business outcomes.",
+          "focus": [
+            "Agile Leadership & Innovation Velocity",
+            "Translating Technical Debt to Business Risk",
+            "Data Governance & Ethics",
+            "Talent Retention in Hyper-Competitive Markets"
+          ],
+          "color": "NAVY"
+        },
+        {
+          "id": "global-remote",
+          "title": "Distributed & Global Influence",
+          "subtitle": "Mastering cultural competency, leading asynchronously, and maintaining team cohesion across time zones.",
+          "coreTension": "The **Digital Distance** erodes trust. Leadership must proactively engineer cohesion, enforce asynchronous communication, and build cultural competency across borders.",
+          "focus": [
+            "Asynchronous Management Protocols",
+            "Cross-Cultural Communication",
+            "Building Digital Trust",
+            "Global Talent Management"
+          ],
+          "color": "TEAL"
+        },
+        {
+          "id": "crisis-turnaround",
+          "title": "Crisis & Turnaround Strategy",
+          "subtitle": "Rapid decision-making, stakeholder containment, and maintaining leadership resilience under existential pressure.",
+          "coreTension": "The **Urgency Bias** mandates action over analysis. Leadership must enforce disciplined decision triage to ensure short-term survival does not jeopardize long-term recovery.",
+          "focus": [
+            "High-Stakes Decision Triage",
+            "Crisis Communication Playbook",
+            "Emotional Triage for Teams",
+            "Ethical Recovery Planning"
+          ],
+          "color": "ORANGE"
+        },
+        {
+          "id": "emerging-leader",
+          "title": "The Emerging Leader Playbook",
+          "subtitle": "Transitioning from individual contributor to first-time manager: delegation, difficult feedback, and team motivation.",
+          "coreTension": "The **\"Doer Identity\"** must be retired. Success depends on shifting focus from personal execution to coaching and empowering former peers.",
+          "focus": [
+            "Retiring the \"Doer\" Identity",
+            "Foundational Coaching Skills",
+            "Mastering Effective Delegation",
+            "Defining a Leadership Philosophy"
+          ],
+          "color": "NAVY"
+        },
+        {
+          "id": "veteran-leader",
+          "title": "Military to Executive (Veteran\u2019s Track)",
+          "subtitle": "Translating military precision and discipline into corporate agility and complex organizational management.",
+          "coreTension": "The **Pacing Conflict** arises from differing operational tempos. Leadership must translate disciplined planning into agile strategy adapted for decentralized corporate environments.",
+          "focus": [
+            "Translating Military Skills to Corporate KPIs",
+            "Navigating Corporate Culture & Pacing",
+            "Adaptive Planning & Resilience",
+            "Building New Mentorship Networks"
+          ],
+          "color": "ORANGE"
+        }
+      ],
+      "resource_library": {
+        "women-exec": [
+          {
+            "title": "Playbook: The Intentional Sponsorship Matrix",
+            "type": "Playbook",
+            "description": "A structured tool for identifying and cultivating sponsors (not just mentors) to drive career advancement.",
+            "content": "## The Intentional Sponsorship Matrix: Your Strategy for Advancement\n\n### The Mentorship Trap vs. The Sponsorship Ladder\nMentors offer advice (passive support). **Sponsors** offer advocacy, visibility, and high-leverage assignments (active support). To overcome the Double Bind, you must maximize sponsorship.\n\n### How to Build Your Matrix\n1.  **Identify Advocates (The A-Team):** List 3-5 senior leaders (internal/external) who have power, respect your work, and are willing to take risks on you.\n2.  **Define High-Leverage Projects (HLP):** List 2-3 projects that directly impact the company P&L or mission and provide maximum visibility.\n3.  **Monthly Advocacy Habit (MAH):** Commit to one monthly action where you proactively share **metrics of success** (not effort) with your A-Team. Never wait for an annual review.\n\n* **Primary Takeaway:** Sponsorship requires evidence (quantifiable impact), not just relationship. Lead with data showing competence and impact."
+          }
+        ],
+        "non-profit": [
+          {
+            "title": "Playbook: Financial Stewardship for Mission Fidelity",
+            "type": "Playbook",
+            "description": "Techniques for rigorous budgeting and balancing program expansion with limited donor funds.",
+            "content": "## The Lean Mission Budgeting Playbook\n\n### Overcoming the Scarcity Mindset\nThe Scarcity Mindset causes mission drift and burnout. **Solution:** Enforce a \"mission-first, budget-aligned\" approach, treating every program as a cost center that must justify its existence against core strategic impact goals.\n\n### The 80/20 Rule for Program Evaluation\n1.  **Identify 20% of Programs** that deliver 80% of the measurable social impact.\n2.  **Identify 20% of Costs** that deliver 80% of administrative burden/mission misalignment (e.g., outdated software, inefficient fundraising channels).\n3.  **Action:** Proactively retire or significantly streamline non-core 20% programs to reallocate resources to the high-impact core.\n\n* **Primary Takeaway:** Focus funding on the activities that deliver the highest measurable impact, ruthlessly cutting administrative \"motion.\""
+          }
+        ],
+        "tech-lead": [
+          {
+            "title": "Playbook: Quantifying Technical Debt as Business Risk",
+            "type": "Playbook",
+            "description": "A model to translate engineering priorities into clear financial and strategic metrics for executive consumption.",
+            "content": "## The Technical Translation Model: From Code to Capital Risk\n\n### The Translation Gap\nExecutive leadership does not understand \"technical debt\" (TD). They understand **risk and cost**. The goal is to translate engineering concepts into the language of the C-Suite.\n\n### Translation Framework (The 3 Cs)\n1.  **Cost of Delay (CoD):** Calculate the lost revenue or increased operational cost incurred *per month* until the debt is paid.\n2.  **Compliance Risk (CR):** Link specific TD items to regulatory failure points (e.g., GDPR, SOC 2).\n3.  **Competitor Velocity (CV):** Show how long TD will block your team from releasing a feature already deployed by a key competitor.\n\n* **Primary Takeaway:** Never ask for permission to fix debt; present it as a **mitigation strategy** to a quantifiable business threat."
+          }
+        ],
+        "emerging-leader": [
+          {
+            "title": "Toolkit: Mastering the Delegation Matrix",
+            "type": "Toolkit",
+            "description": "A practical tool to assess direct reports' readiness for delegation and manage follow-up without micromanagement.",
+            "content": "## Toolkit: The Empowerment Delegation Matrix\n\n### Retiring the \"Doer\" Identity\nYour success is now measured by your team's execution, not your own. Delegation is not abdication; it is empowerment.\n\n### The 4-Stage Readiness Model\n1.  **Direct (R1 - Low Readiness):** Delegate the process (How), maintain tight follow-up. Used for new or low-skill reports.\n2.  **Coach (R2 - Moderate Readiness):** Delegate the task (What), maintain scheduled check-ins.\n3.  **Support (R3 - High Readiness):** Delegate the outcome (Why), check in only when asked.\n4.  **Delegate (R4 - Mastery):** Delegate the strategic problem; they own the entire solution, including informing you of progress.\n\n* **Primary Takeaway:** Never delegate the \"How\" to an R3/R4 report. Delegate the \"Why\" and allow them to own the intellectual property of the solution."
+          }
+        ],
+        "veteran-leader": [
+          {
+            "title": "Guide: Translating Military Discipline to Corporate Agility",
+            "type": "Guide",
+            "description": "A lexicon and framework for adapting formal planning (TTPs) into agile corporate execution.",
+            "content": "## The Pacing Conflict: Adapting TTPs to the Corporate World\n\n### Core Tension: Precision vs. Speed\nMilitary discipline (standard operating procedures, TTPs) conflicts with corporate agility (fail fast, iterate).\n\n### Translation Lexicon\n* **TTP (Tactics, Techniques, Procedures) $\\rightarrow$ SOP (Standard Operating Procedures):** Use SOPs for repeatable maintenance tasks, not strategic decisions.\n* **Commander's Intent $\\rightarrow$ Strategic Vision:** Use the intent to empower decentralized decision-making (Leader-Leader Model).\n* **AAR (After Action Review) $\\rightarrow$ Blameless Post-Mortem:** Shift focus from \"Who failed?\" to \"What failed in the process?\"\n\n* **Primary Takeaway:** Use the rigor of military planning to create clarity and trust, but allow the **agility of the field** to dictate pace and execution within clear guardrails."
+          }
+        ],
+        "crisis-turnaround": [
+          {
+            "title": "Playbook: The 48-Hour Crisis Communication Triage",
+            "type": "Playbook",
+            "description": "A step-by-step guide for rapid decision-making, stakeholder containment, and maintaining leadership resilience under existential pressure.",
+            "content": "## Crisis Communication Triage: The First 48 Hours\n\n### Countering the Urgency Bias\nIn the first 48 hours, the urge is to communicate instantly without full facts. This leads to compounding trust failures.\n\n### The Communication Triage\n1.  **Internal (Hour 1):** Communicate **what you know** and **what you are doing** to find the rest. Establish a single, immediate source of truth (e.g., a dedicated slack channel).\n2.  **Stakeholder (Hour 6):** Deliver a brief, factual statement of impact and commitment to recovery. Over-communicate stability, under-communicate future guarantees.\n3.  **External (Hour 24+):** Be seen, be transparent, and own the immediate impact. Avoid legal jargon; use human language.\n\n* **Primary Takeaway:** Don't wait for perfect information to communicate. Communicate your **process of seeking information** and your **commitment to ownership.**"
+          }
+        ],
+        "lgbtqia-leader": [
+          {
+            "title": "Guide: Leading with Authentic Vulnerability (Strategy)",
+            "type": "Guide",
+            "description": "A framework for strategic disclosure to build team trust and champion safety without compromising personal boundaries.",
+            "content": "## Strategic Vulnerability: Building the Safety Net\n\n**Tension:** Conformity vs. Influence. Leadership requires authenticity.\n\n* **Actionable Steps:**\n    * Define your \"vulnerability zone\" (what you share and what you keep private).\n    * Share one personal, high-leverage challenge you are currently facing (e.g., work/life balance).\n    * Actively advocate for an employee who has less power than you. This models safety for others."
+          }
+        ],
+        "poc-leader": [
+          {
+            "title": "Toolkit: Mitigating the Microaggression Cascade",
+            "type": "Toolkit",
+            "description": "Scripts and practice scenarios for responding effectively to microaggressions in real-time.",
+            "content": "## The Microaggression Intervention Toolkit\n\n**Tension:** The Cultural Tax. Mitigation requires immediate, low-emotion response.\n\n* **The \"Ouch-Say-Do\" Script:**\n    * **Ouch:** Acknowledge the feeling (\"Ouch, that comment made me pause.\"). \n    * **Say:** State the objective impact (\"The implication that only men can lead this project is inappropriate.\"). \n    * **Do:** Redirect to the expected standard (\"I expect all team members to be assessed solely on merit.\")."
+          }
+        ],
+        "public-sector": [
+          {
+            "title": "Report: Policy Implementation vs. Political Reality",
+            "type": "Report",
+            "description": "Analysis of implementation failure points and how to secure cross-agency buy-in.",
+            "content": "## Overcoming the Policy-to-Practice Gap\n\n**Tension:** Accountability Vacuum. Successful policy requires buy-in from competing agencies.\n\n* **Strategy:** Treat every internal agency as an external client. Map their specific success metrics. Present your policy not as a mandate, but as a lever that helps *them* achieve *their* goals. Influence is key; direct authority is limited."
+          }
+        ],
+        "global-remote": [
+          {
+            "title": "Guide: Asynchronous Management Protocol",
+            "type": "Guide",
+            "description": "Rules for minimizing real-time meetings and maximizing output using written communication and documentation.",
+            "content": "## The Asynchronous Team Charter\n\n**Tension:** Digital Distance. Real-time meetings should be the exception, not the rule.\n\n* **Rule 1:** Default to Documentation (DR): All decisions must be written down and searchable.\n* **Rule 2:** High-Friction Communication (HFC): If a decision takes more than 5 Slack/Email messages, schedule a 15-minute call.\n* **Rule 3:** Asynchronous 1:1s (A-1s): Use recorded video updates or shared written documents for routine check-ins to respect time zones."
+          }
+        ]
+      },
+      "mock_activity_data": {
+        "daily_target_rep": "Give one reinforcing feedback statement to a direct report.",
+        "identity_statement": "I am the kind of leader who coaches in the moment and owns accountability.",
+        "total_reps_completed": 452,
+        "total_coaching_labs": 18,
+        "today_coaching_labs": 2
+      }
+    },
+    "initial_data": {
+      "user_template": {
+        "commitment_data": {
+          "active_commitments": [
+            {
+              "id": 1,
+              "status": "Pending",
+              "linkedTier": "T2",
+              "text": "Identify the one system bottleneck that costs your team 2 hours per week."
+            },
+            {
+              "id": 2,
+              "status": "Committed",
+              "linkedTier": "T5",
+              "text": "Articulate the department\u2019s 5-year vision in simple, non-jargon terms to a junior employee."
+            },
+            {
+              "id": 3,
+              "status": "Pending",
+              "linkedTier": "T2",
+              "text": "Create or refine one simple SOP for a recurring team task."
+            },
+            {
+              "id": 4,
+              "status": "Committed",
+              "linkedTier": "T3",
+              "text": "Relate one daily decision back to a long-term company mission statement."
+            }
+          ],
+          "history": [
+            {
+              "date": "2025-10-14",
+              "score": "3/3",
+              "reflection": "Perfect day! Managed to protect my focus time."
+            },
+            {
+              "date": "2025-10-15",
+              "score": "3/3",
+              "reflection": "Strong execution on T2 systemization."
+            },
+            {
+              "date": "2025-10-16",
+              "score": "3/3",
+              "reflection": "Hit all reps. Feeling disciplined."
+            },
+            {
+              "date": "2025-10-17",
+              "score": "4/5",
+              "reflection": "Missed the feedback rep, need to be more intentional."
+            }
+          ],
+          "resilience_log": {
+            "2025-10-19": {
+              "energy": 4,
+              "focus": 7
+            }
+          },
+          "reflection_journal": "",
+          "last_reset_date": ""
+        },
+        "pdp_data": {
+          "currentMonth": 4,
+          "assessment": {
+            "selfRatings": {
+              "T1": 8,
+              "T2": 3,
+              "T3": 6,
+              "T4": 7,
+              "T5": 5
+            }
+          },
+          "plan": [
+            {
+              "month": "Current",
+              "theme": "Mastering Strategy",
+              "requiredContent": []
+            }
+          ],
+          "practice_sessions": [
+            {
+              "id": 1,
+              "title": "The Underperformer",
+              "date": "Oct 15, 2025",
+              "score": 88,
+              "takeaway": "Focus on Deep Validation.",
+              "difficulty": "Medium"
+            },
+            {
+              "id": 2,
+              "title": "The Boundary Pusher",
+              "date": "Oct 10, 2025",
+              "score": 72,
+              "takeaway": "Improve objective Behavior statement.",
+              "difficulty": "High"
+            }
+          ]
+        },
+        "planning_data": {
+          "okrs": [
+            {
+              "id": 1,
+              "objective": "Improve Execution Quality by 25%",
+              "daysHeld": 45
+            },
+            {
+              "id": 2,
+              "objective": "Expand Market Share in APAC by 10%",
+              "daysHeld": 15
+            }
+          ],
+          "last_premortem_decision": "2025-10-10T00:00:00.000Z"
+        }
+      }
+    }
+  },
+  "initial_data": {
+    "user_template": {
+      "profile": {
+        "displayName": "Template User",
+        "createdAt": "2025-10-24T20:42:14.312083Z"
+      },
+      "settings": {
+        "theme": "light"
+      },
+      "onboarding": {
+        "completed": false
+      }
+    }
+  }
+}

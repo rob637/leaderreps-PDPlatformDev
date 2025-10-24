@@ -40,7 +40,7 @@ const Button = ({ children, onClick, disabled = false, variant = 'primary', clas
 // --- END LOCAL COMPONENT DEFINITIONS ---
 
 // UI Component Placeholder (Card adapted for video listings)
-const VideoCard = ({ title, speaker, duration, url, description, icon: Icon, accent }) => {
+const VideoCard = ({ title, speaker, duration, url, description, accent }) => {
     const accentColor = COLORS[accent] || COLORS.NAVY;
     
     return (
@@ -71,128 +71,30 @@ const VideoCard = ({ title, speaker, duration, url, description, icon: Icon, acc
     );
 };
 
-// --- CURATED VIDEO LISTS ---
-const VIDEO_LISTS = {
-    INSPIRATIONAL: [
-        { 
-            title: "How great leaders inspire action", 
+// --- CURATED VIDEO LISTS DELETED ---
+// Fallback data structure if service data is not available
+const VIDEO_LISTS_FALLBACK = {
+    INSPIRATIONAL: [{ 
+            title: "Fallback: How great leaders inspire action", 
             speaker: "Simon Sinek (TED Talk)", 
             duration: "18 min", 
-            url: "https://www.youtube.com/watch?v=7zFeuSagktM", 
-            description: "The foundational concept of starting with 'Why' (The Golden Circle) to build loyalty and inspire action. A must-watch for defining purpose." 
-        },
-        { 
-            title: "The Infinite Game: The Trap Leaders Must Avoid", 
-            speaker: "Simon Sinek", 
-            duration: "11 min", 
-            url: "https://www.youtube.com/watch?v=RyTQ5-SQYTo", 
-            description: "How to shift your mindset from playing to win (finite) to playing to advance your cause (infinite), focusing on resilience and long-term vision." 
-        },
-        { 
-            title: "Your Body Language May Shape Who You Are", 
-            speaker: "Amy Cuddy (TED Talk)", 
-            duration: "21 min", 
-            url: "https://www.youtube.com/watch?v=Ks-_Mh1QhMc", 
-            description: "Examines how 'power posing'—changing your body language—can change the chemicals in your brain and impact your leadership confidence and performance." 
-        },
-        { 
-            title: "Good leaders talk last", 
-            speaker: "Ty Wiggins (CEO Coach)", 
-            duration: "10 min", 
-            url: "https://www.youtube.com/watch?v=EcdNFn0BNXM", 
-            description: "A coach shares the critical communication skill new CEOs must learn: listening to and prioritizing the team's input before giving direction." 
-        },
-        { 
-            title: "The power of vulnerability", 
-            speaker: "Brené Brown (TED Talk)", 
-            duration: "20 min", 
-            url: "https://www.youtube.com/watch?v=iCvmsMYoE_A", 
-            description: "A powerful talk on how vulnerability is not weakness, but the birthplace of innovation, creativity, and deeper, vulnerability-based trust." 
-        },
-        { 
-            title: "What 140 CEOs Said About the Future of Leadership", 
-            speaker: "Jacob Morgan", 
-            duration: "9 min", 
-            url: "https://www.youtube.com/watch?v=a65oFN8rUPA", 
-            description: "A summary of research on the skills and mindsets leaders need for the future, including clarity, humility, and the ability to define leadership itself." 
-        },
-        { 
-            title: "How to Build a Company Where the Best Ideas Win", 
-            speaker: "Ray Dalio (Bridgewater Founder)", 
-            duration: "5 min", 
-            url: "https://www.youtube.com/watch?v=r0XWd4Q5iB8", 
-            description: "The founder of the world's largest hedge fund discusses creating an 'idea meritocracy' where radical truth and radical transparency rule." 
-        },
-        { 
-            title: "The Key to Success? Grit", 
-            speaker: "Angela Lee Duckworth (TED Talk)", 
-            duration: "6 min", 
-            url: "https://www.youtube.com/watch?v=BNY3Jt_uXFw", 
-            description: "Explains that the secret to outstanding achievement is not genius, but a special blend of passion and persistence called 'grit'." 
-        }
-    ],
-    ACTIONABLE: [
-        { 
-            title: "The Key to Effective Leadership: Micro-Behaviors", 
+            url: "#", 
+            description: "Data loading failure. Please check Firestore 'video_library/INSPIRATIONAL'." 
+        }],
+    ACTIONABLE: [{ 
+            title: "Fallback: The Key to Effective Leadership", 
             speaker: "Simon Sinek", 
             duration: "3 min", 
-            url: "https://www.youtube.com/watch?v=C2Tko2rKwVs", 
-            description: "Practical demonstration of small actions (eye contact, putting the phone away) that leaders must perform consistently to build trust and culture." 
-        },
-        { 
-            title: "Transform Your Team: The Power of Positive Leadership", 
-            speaker: "Simon Sinek", 
-            duration: "6 min", 
-            url: "https://www.youtube.com/watch?v=uNtOiqp1Tzs", 
-            description: "Actionable advice on using positive reinforcement ('catching people doing things right') to build confidence in underperformers." 
-        },
-        { 
-            title: "The New Way to Lead Your Team Without Burning Out", 
-            speaker: "ProcessDriven", 
-            duration: "17 min", 
-            url: "https://www.youtube.com/watch?v=HsvqN5fCbSg", 
-            description: "7 steps for managers to change team work habits, including ritualizing successful behaviors and correctly delegating responsibility to avoid manager burnout." 
-        },
-        { 
-            title: "How to Become a Leader at Work in 4 Ways", 
-            speaker: "Alexander Lyon", 
-            duration: "17 min", 
-            url: "https://www.youtube.com/watch?v=b0-YhEHYnOY", 
-            description: "Focuses on four observable behaviors that demonstrate leadership regardless of title, primarily centered on solution-oriented communication." 
-        },
-        { 
-            title: "5 Levels of Delegation and How to Use Them", 
-            speaker: "ProjectManager", 
-            duration: "7 min", 
-            url: "https://www.youtube.com/watch?v=wX-jO8g047A", 
-            description: "A practical guide to the 5 key levels of delegation (Tell, Sell, Consult, Agree, Empower) and choosing the right level for the right task." 
-        },
-        { 
-            title: "Mastering the Art of Conflict Management", 
-            speaker: "Harvard Business Review", 
-            duration: "4 min", 
-            url: "https://www.youtube.com/watch?v=Q-dO0rE-4oQ", 
-            description: "A quick, actionable overview of the Thomas-Kilmann Conflict Mode Instrument (TKI) and how to choose between competing, collaborating, and compromising." 
-        },
-        { 
-            title: "Giving Feedback: The SBI Method", 
-            speaker: "Training Industry", 
-            duration: "3 min", 
-            url: "https://www.youtube.com/watch?v=1rA5-n7a0wE", 
-            description: "A clear, concise breakdown of the Situation, Behavior, Impact (SBI) feedback model for structured, non-judgmental performance discussions." 
-        },
-        { 
-            title: "How to Speak Like a CEO in Meetings", 
-            speaker: "Executive Impressions", 
-            duration: "10 min", 
-            url: "https://www.youtube.com/watch?v=wh5rLnsc8LU", 
-            description: "Tactical communication tips on speaking with clarity, enthusiasm, and confidence to ensure your message is heard and taken seriously by senior leaders." 
-        }
-    ]
+            url: "#", 
+            description: "Data loading failure. Please check Firestore 'video_library/ACTIONABLE'." 
+        }],
 };
 
 const LeadershipVideosScreen = () => {
-    const { navigate } = useAppServices();
+    const { navigate, VIDEO_CATALOG } = useAppServices();
+
+    // CRITICAL FIX: Use service data (VIDEO_CATALOG), falling back to local mocks if necessary
+    const VIDEO_LISTS = VIDEO_CATALOG || VIDEO_LISTS_FALLBACK;
 
     return (
         <div className="p-6 md:p-10 min-h-screen" style={{ background: COLORS.BG, color: COLORS.TEXT }}>
@@ -209,7 +111,7 @@ const LeadershipVideosScreen = () => {
                 <Zap className='w-6 h-6 mr-3 text-[#E04E1B]'/> Philosophical Insights & Mindset (On-Demand Content)
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
-                {VIDEO_LISTS.INSPIRATIONAL.map((video, index) => (
+                {VIDEO_LISTS.INSPIRATIONAL?.map((video, index) => (
                     <VideoCard 
                         key={index}
                         title={video.title}
@@ -227,7 +129,7 @@ const LeadershipVideosScreen = () => {
                 <Briefcase className='w-6 h-6 mr-3 text-[#47A88D]'/> Actionable Leadership Examples (Practical Reps)
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {VIDEO_LISTS.ACTIONABLE.map((video, index) => (
+                {VIDEO_LISTS.ACTIONABLE?.map((video, index) => (
                     <VideoCard 
                         key={index}
                         title={video.title}

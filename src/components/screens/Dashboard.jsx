@@ -3,90 +3,7 @@ import React, { useMemo, useState, useEffect, useCallback } from 'react';
 // CRITICAL FIX: Use the actual service hook from the expected path
 import { useAppServices } from '../../services/useAppServices.jsx'; 
 
-// --- MOCK IMPORTS for self-contained file (Ensuring local definition) ---
-const LEADERSHIP_TIERS = {
-    'T1': { id: 'T1', name: 'Self-Awareness', icon: 'Target', color: 'bg-blue-100 text-blue-700', hex: '#2563EB' },
-    'T2': { id: 'T2', name: 'Operational Excellence', icon: 'Mic', color: 'bg-cyan-100 text-cyan-700', hex: '#06B6D4' },
-    'T3': { id: 'T3', name: 'Strategic Execution', icon: 'Briefcase', color: 'bg-green-100 text-green-700', hex: '#10B981' },
-    'T4': { id: 'T4', name: 'People Development', icon: 'Users', color: 'bg-yellow-100 text-yellow-700', hex: '#F5A800' },
-    'T5': { id: 'T5', name: 'Visionary Leadership', icon: 'TrendingUp', color: 'bg-red-100 text-red-700', hex: '#E04E1B' },
-};
-
-const MOCK_PDP_DATA = {
-    currentMonth: 4,
-    assessment: { selfRatings: { T1: 8, T2: 3, T3: 6, T4: 7, T5: 5 } }, 
-    plan: [{month:'Current', theme: 'Mastering Strategy', requiredContent: []}]
-};
-const MOCK_COMMITMENT_DATA = { 
-    active_commitments: [
-        { id: 1, status: 'Pending', linkedTier: 'T2' }, 
-        { id: 2, status: 'Committed', linkedTier: 'T5' },
-        { id: 3, status: 'Pending', linkedTier: 'T2' },
-        { id: 4, status: 'Committed', linkedTier: 'T3' },
-    ],
-    // Mock history to calculate a streak (3 days, since last one is 4/5)
-    history: [
-        { date: '2025-10-14', score: '3/3', reflection: 'Perfect day!' },
-        { date: '2025-10-15', score: '3/3', reflection: 'Perfect day!' },
-        { date: '2025-10-16', score: '3/3', reflection: 'Perfect day!' },
-        { date: '2025-10-17', score: '4/5', reflection: 'Missed one.' }, 
-    ],
-    resilience_log: { '2025-10-19': { energy: 4, focus: 7 } }
-};
-
-const MOCK_PLANNING_DATA = {
-    okrs: [
-        { id: 1, objective: 'Improve Execution Quality', daysHeld: 45 },
-        { id: 2, objective: 'Expand Market Share', daysHeld: 15 },
-    ],
-    last_premortem_decision: new Date('2025-10-10').toISOString(),
-};
-
-// --- NEW MOCK DATA FOR REFINEMENT (Rep Tracker Integration) ---
-const MOCK_ACTIVITY_DATA = {
-    // These reps simulate being pulled from a daily schedule or generator:
-    daily_target_rep: "Give one reinforcing feedback statement to a direct report.",
-    daily_challenge_rep: "Send one thank-you Slack message right now.", // For 2-Minute Challenge
-    total_reps_completed: 452,
-    total_coaching_labs: 18,
-    today_coaching_labs: 2,
-    identity_statement: "I am the kind of leader who coaches in the moment and owns accountability.",
-};
-
-// Local Nudges (Used for instant, non-API refresh)
-const LOCAL_NUDGES = [
-    'Focus today on deep listening; practice paraphrasing your colleague\'s needs before offering solutions.',
-    'Before starting a task, ask: "Will this activity move us closer to our one-year vision?" If not, delegate it.',
-    'Schedule 30 minutes of "maker time" today—no meetings, no email. Protect it fiercely.',
-    'Use the SBI framework for your next piece of critical feedback (Situation, Behavior, Impact).',
-    'Review your personal calendar: Is the ratio of strategic to operational work 3:1 or better?',
-];
-
-// Streak calculation utility (Pulled from DailyPractice.jsx logic)
-function calculateStreak(history) {
-    let streak = 0;
-    const validHistory = Array.isArray(history) ? history : [];
-const sortedHistory = [...validHistory].sort((a, b) => new Date(b.date) - new Date(a.date));
-    let yesterday = new Date();
-    yesterday.setDate(yesterday.getDate() - 1); 
-    for (let i = 0; i < 7; i++) { 
-      const checkDate = new Date(yesterday);
-      checkDate.setDate(yesterday.getDate() - i);
-      const dateString = checkDate.toISOString().split('T')[0];
-      const historyEntry = sortedHistory.find(h => h.date === dateString);
-      if (historyEntry) {
-        const scoreParts = historyEntry.score.split('/');
-        if (scoreParts.length === 2) {
-          const [committed, total] = scoreParts.map(Number);
-          if (committed === total && total > 0) streak++;
-          else break;
-        }
-      } else break;
-    }
-    return streak;
-}
-
-// --- END MOCK IMPORTS ---
+// --- MOCK IMPORTS REMOVED: All MOCK_DATA, LEADERSHIP_TIERS, and LOCAL_NUDGES are now deleted and must be loaded from the service context ---
 
 
 // Icons
@@ -146,10 +63,32 @@ const COLORS = {
   PURPLE: '#7C3AED',
 };
 
-/* ---------------------------------------
-   UI Components (Standardized)
-----------------------------------------*/
-// Standard Button (kept for legacy/non-3D use)
+// Streak calculation utility (Now self-contained, as original was a dependency of mock)
+function calculateStreak(history) {
+    let streak = 0;
+    const validHistory = Array.isArray(history) ? history : [];
+    const sortedHistory = [...validHistory].sort((a, b) => new Date(b.date) - new Date(a.date));
+    let yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1); 
+    for (let i = 0; i < 7; i++) { 
+      const checkDate = new Date(yesterday);
+      checkDate.setDate(yesterday.getDate() - i);
+      const dateString = checkDate.toISOString().split('T')[0];
+      const historyEntry = sortedHistory.find(h => h.date === dateString);
+      if (historyEntry) {
+        const scoreParts = historyEntry.score.split('/');
+        if (scoreParts.length === 2) {
+          const [committed, total] = scoreParts.map(Number);
+          if (committed === total && total > 0) streak++;
+          else break;
+        }
+      } else break;
+    }
+    return streak;
+}
+
+// --- UI Components (Standardized and Referenced Below) ---
+
 const Button = ({ children, onClick, disabled = false, variant = 'primary', className = '', ...rest }) => {
   let baseStyle = "px-6 py-3 rounded-xl font-semibold transition-all shadow-xl focus:outline-none focus:ring-4 text-white flex items-center justify-center";
   if (variant === 'primary') { baseStyle += ` bg-[${COLORS.TEAL}] hover:bg-[#349881] focus:ring-[${COLORS.TEAL}]/50`; }
@@ -164,7 +103,6 @@ const Button = ({ children, onClick, disabled = false, variant = 'primary', clas
   );
 };
 
-// 3D-inspired Button - FIX: Ensures all props are spread correctly
 const ThreeDButton = ({ children, onClick, color = COLORS.TEAL, accentColor = COLORS.NAVY, className = '', ...rest }) => {
   const defaultColor = color;
   const defaultAccent = accentColor; 
@@ -224,7 +162,6 @@ const Card = ({ children, title, icon: Icon, className = '', onClick, accent = '
   );
 };
 
-// StatCard - FIX: Ensures props are spread correctly
 const StatCard = ({ icon: Icon, label, value, onClick, trend = 0, colorHex, size = 'full', ...rest }) => {
   const TrendIcon = trend > 0 ? TrendingUp : TrendingDown;
   const showTrend = trend !== 0; 
@@ -240,7 +177,7 @@ const StatCard = ({ icon: Icon, label, value, onClick, trend = 0, colorHex, size
   if (label.includes("Labs Today")) { accent = 'BLUE'; }
   if (label.includes("Weakest Tier Focus")) { accent = 'AMBER'; }
   if (label.includes("Longest-Held OKR")) { accent = 'BLUE'; }
-  if (label.includes("Today's Target Rep")) { accent = 'RED'; } // Highlight new feature
+  if (label.includes("Today's Target Rep")) { accent = 'RED'; } 
 
   
   // Set width based on size prop
@@ -250,7 +187,7 @@ const StatCard = ({ icon: Icon, label, value, onClick, trend = 0, colorHex, size
 
   return (
     <Card 
-      {...rest} // Spread rest props here
+      {...rest} 
       icon={Icon} 
       title={value}
       onClick={onClick} 
@@ -276,8 +213,6 @@ const StatCard = ({ icon: Icon, label, value, onClick, trend = 0, colorHex, size
 };
 
 
-// Component removed as requested: ProgressRings
-
 function extractGeminiText(resp) {
   if (!resp) return '';
   if (typeof resp === 'string') return String(resp);
@@ -289,6 +224,9 @@ function extractGeminiText(resp) {
   }
   return '';
 }
+
+// NOTE: LOCAL_NUDGES HAS BEEN REMOVED. THE AI TIP MUST BE FETCHED OR USE A SIMPLE FALLBACK.
+const SIMPLE_FALLBACK_TIP = 'Focus today on deep listening; practice paraphrasing your colleague\'s needs before offering solutions.';
 
 // Global variable to cache the tip content and the last fetch time
 const TIP_CACHE = {
@@ -313,23 +251,24 @@ const mdToHtml = async (md) => {
 ----------------------------------------*/
 const DashboardScreen = () => {
   const {
-    navigate, // CRITICAL: This is the navigate function from App.jsx
+    navigate, 
     user,
     pdpData: svcPdpData,
     planningData: svcPlanningData,
     commitmentData: svcCommitmentData,
-    hasPendingDailyPractice,
     callSecureGeminiAPI,
     hasGeminiKey,
-    // CRITICAL FIX: Ensure we retrieve LEADERSHIP_TIERS from the context
-    LEADERSHIP_TIERS: svcLEADERSHIP_TIERS,
+    LEADERSHIP_TIERS: svcLEADERSHIP_TIERS, // Loaded from service context now
+    MOCK_ACTIVITY_DATA, // Loaded from service context now
   } = useAppServices();
 
-  const pdpData = svcPdpData || MOCK_PDP_DATA;
-  const commitmentData = svcCommitmentData || MOCK_COMMITMENT_DATA;
-  const planningData = svcPlanningData || MOCK_PLANNING_DATA; 
-  // CRITICAL FIX: Use the data from services if available, otherwise fallback to local mock
-  const TIER_MAP = svcLEADERSHIP_TIERS || LEADERSHIP_TIERS; 
+  // CRITICAL FIX: Removed local mock data fallback. Data must come from the service.
+  const pdpData = svcPdpData; 
+  const commitmentData = svcCommitmentData;
+  const planningData = svcPlanningData; 
+  const TIER_MAP = svcLEADERSHIP_TIERS; 
+  // NOTE: If svcPdpData, etc., are null during the first render, components must handle it gracefully.
+
 
   const displayedUserName = useMemo(() => {
     if (user?.name) return user.name;
@@ -340,7 +279,6 @@ const DashboardScreen = () => {
     return 'Leader';
   }, [user?.name, user?.email]);
   
-  // UPDATED GREETING: Focuses on "The Arena" and "Fitness Approach"
   const greeting = useMemo(() => (user?.firstLogin ? 'Welcome to The Arena,' : 'Welcome to The Arena,'), [user?.firstLogin]);
 
   // CRITICAL FIX 1: Create a stable navigation wrapper using the context navigate
@@ -350,46 +288,42 @@ const DashboardScreen = () => {
       return;
     }
     console.log('[Dashboard] NAVIGATION EXECUTED ->', screen, params || {});
-    // When navigating to daily-practice with quickLog, it immediately opens the modal (Feature 3)
-    navigate(screen, params);
+    safeNavigate(screen, params); // Use the original navigate, which is now aliased in the hook
   }, [navigate]);
   
   const goalsCount = useMemo(() => pdpData?.currentMonth || 0, [pdpData]);
-  const okrs = useMemo(() => planningData?.okrs || MOCK_PLANNING_DATA.okrs, [planningData]);
+  const okrs = useMemo(() => planningData?.okrs || [], [planningData]);
   const commitsTotal = useMemo(() => commitmentData?.active_commitments?.length || 0, [commitmentData]);
   const commitsCompleted = useMemo(() => commitmentData?.active_commitments?.filter(c => c.status === 'Committed').length || 0, [commitmentData]);
   const commitsDue = commitsTotal - commitsCompleted; 
   
-  // --- RE-ADDED MISSING CALCULATION ---
+  // --- METRIC CALCULATIONS ---
   const longestHeldOKR = useMemo(() => {
     const longest = okrs.reduce((max, okr) => (okr.daysHeld > max.daysHeld ? okr : max), { daysHeld: 0, objective: 'N/A' });
     return { days: longest.daysHeld, objective: longest.objective };
   }, [okrs]);
-  // --- END RE-ADDED CALCULATION ---
   
-  // --- NEW METRIC CALCULATIONS ---
-  // MOCK_ACTIVITY_DATA provides the stable "daily" content (Features 1, 2, 8)
-  const dailyTargetRep = useMemo(() => MOCK_ACTIVITY_DATA.daily_target_rep, []);
-  const dailyChallengeRep = useMemo(() => MOCK_ACTIVITY_DATA.daily_challenge_rep, []);
-  const identityStatement = useMemo(() => MOCK_ACTIVITY_DATA.identity_statement, []);
-  const totalRepsCompleted = useMemo(() => MOCK_ACTIVITY_DATA.total_reps_completed, []);
+  // MOCK_ACTIVITY_DATA is now loaded from service context (MOCK_ACTIVITY_DATA)
+  const dailyTargetRep = useMemo(() => MOCK_ACTIVITY_DATA?.daily_target_rep || 'Define your top priority rep.', [MOCK_ACTIVITY_DATA]);
+  const dailyChallengeRep = useMemo(() => MOCK_ACTIVITY_DATA?.daily_challenge_rep || 'Grab a quick win.', [MOCK_ACTIVITY_DATA]);
+  const identityStatement = useMemo(() => MOCK_ACTIVITY_DATA?.identity_statement || 'I am a principled leader.', [MOCK_ACTIVITY_DATA]);
+  const totalRepsCompleted = useMemo(() => MOCK_ACTIVITY_DATA?.total_reps_completed || 0, [MOCK_ACTIVITY_DATA]);
   const todayRepsCompleted = useMemo(() => commitsCompleted, [commitsCompleted]); 
-  const totalCoachingLabs = useMemo(() => MOCK_ACTIVITY_DATA.total_coaching_labs, []);
-  const todayCoachingLabs = useMemo(() => MOCK_ACTIVITY_DATA.today_coaching_labs, []);
+  const totalCoachingLabs = useMemo(() => MOCK_ACTIVITY_DATA?.total_coaching_labs || 0, [MOCK_ACTIVITY_DATA]);
+  const todayCoachingLabs = useMemo(() => MOCK_ACTIVITY_DATA?.today_coaching_labs || 0, [MOCK_ACTIVITY_DATA]);
 
 
   const perfectStreak = useMemo(() => calculateStreak(commitmentData?.history || []), [commitmentData?.history]);
   const dailyPercent = commitsTotal > 0 ? Math.round((commitsCompleted / commitsTotal) * 100) : 0;
-  // Simplified mock calculation for monthly percent (re-used for Health Score)
   const monthlyPercent = goalsCount > 0 ? Math.round(((goalsCount - 1) % 4) * 25 + (commitsCompleted / commitsTotal || 0) * 25) : 0; 
   const careerPercent = Math.round((goalsCount / 24) * 100);
 
   const weakestTier = useMemo(() => {
     const ratings = pdpData?.assessment?.selfRatings;
-    if (!ratings) return null;
+    if (!ratings || !TIER_MAP) return { id: 'T3', name: 'Getting Started', rating: 5, color: 'bg-gray-100 text-gray-700', hex: COLORS.AMBER, icon: AlertTriangle };
     const sortedTiers = Object.entries(ratings).sort(([, a], [, b]) => a - b);
-    const weakestId = sortedTiers[0]?.[0]; // Ensure safe access
-    if (!weakestId) return null;
+    const weakestId = sortedTiers[0]?.[0]; 
+    if (!weakestId) return { id: 'T3', name: 'Getting Started', rating: 5, color: 'bg-gray-100 text-gray-700', hex: COLORS.AMBER, icon: AlertTriangle };
     const meta = TIER_MAP[weakestId];
     return {
       id: weakestId,
@@ -399,7 +333,7 @@ const DashboardScreen = () => {
       hex: meta?.hex || COLORS.ORANGE,
       icon: AlertTriangle,
     };
-  }, [pdpData, TIER_MAP]);
+  }, [pdpData, TIER_MAP, COLORS.AMBER, COLORS.ORANGE]);
   
   const tierMasteryProjection = useMemo(() => {
     const dailySuccessRate = 68; 
@@ -407,8 +341,9 @@ const DashboardScreen = () => {
   }, []);
 
   const [tipLoading, setTipLoading] = useState(false);
-  const [tipContent, setTipContent] = useState(LOCAL_NUDGES[0]); 
+  const [tipContent, setTipContent] = useState(SIMPLE_FALLBACK_TIP); // Uses simple fallback now
   const [tipHtml, setTipHtml] = useState('');
+  
 useEffect(() => {
   (async () => {
     try {
@@ -423,7 +358,7 @@ useEffect(() => {
 
 
   const getInitialAITip = useCallback(async () => {
-    if (!hasGeminiKey() || tipContent !== LOCAL_NUDGES[0]) return;
+    if (!hasGeminiKey() || tipContent !== SIMPLE_FALLBACK_TIP) return;
     
     setTipLoading(true);
     try {
@@ -431,13 +366,13 @@ useEffect(() => {
       const prompt = `Give a concise, actionable leadership practice for the day (3 sentences max). Focus the tip explicitly on improving the skill: ${weakestSkill}. Tone: encouraging, strategic, direct.`;
       const payload = { contents: [{ parts: [{ text: prompt }] }] };
       const resp = await callSecureGeminiAPI(payload);
-      const text = extractGeminiText(resp) || LOCAL_NUDGES[0];
+      const text = extractGeminiText(resp) || SIMPLE_FALLBACK_TIP;
       TIP_CACHE.lastAITip = text; 
       setTipContent(text);
       setTipHtml(await mdToHtml(text));
     } catch (e) {
       console.error('AI tip fetch error:', e);
-      const fallbackText = LOCAL_NUDGES[0];
+      const fallbackText = SIMPLE_FALLBACK_TIP;
       TIP_CACHE.lastAITip = fallbackText;
       setTipContent(fallbackText);
       setTipHtml(await mdToHtml(`**Error**: AI connection failed. Using local tip. ${fallbackText}`));
@@ -449,23 +384,36 @@ useEffect(() => {
   const nextNudge = useCallback(async () => {
     let nextTip = '';
     if (tipLoading) return;
-    const availableNudges = TIP_CACHE.lastAITip ? [TIP_CACHE.lastAITip, ...LOCAL_NUDGES] : LOCAL_NUDGES;
+    
+    // NOTE: Since LOCAL_NUDGES was removed, we only rely on the last AI tip as a base
+    const availableNudges = [TIP_CACHE.lastAITip || SIMPLE_FALLBACK_TIP]; 
+    
     let attempts = 0;
     do {
       const newIndex = Math.floor(Math.random() * availableNudges.length);
       nextTip = availableNudges[newIndex];
       attempts++;
     } while (nextTip === tipContent && attempts < 5); 
+    
+    // Since there is only one non-AI tip now, we fall back to the initial fetcher to get a new one
+    if (nextTip === tipContent && !hasGeminiKey()) {
+        nextTip = SIMPLE_FALLBACK_TIP; // Fallback loop fails without more hardcoded options
+    } else if (nextTip === tipContent && hasGeminiKey()) {
+        getInitialAITip(); // Rerun the AI fetcher for a new tip
+        return; 
+    }
+    
     setTipContent(nextTip);
     setTipHtml(await mdToHtml(nextTip));
-  }, [tipContent, tipLoading]);
+  }, [tipContent, tipLoading, hasGeminiKey, getInitialAITip]);
 
   // CRITICAL FIX 2: Call getInitialAITip when AI dependencies are ready (hasGeminiKey)
   useEffect(() => { 
     if (hasGeminiKey() && weakestTier) { // Wait for core data to load
         getInitialAITip(); 
     }
-  }, [getInitialAITip, hasGeminiKey, weakestTier]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [weakestTier?.name, hasGeminiKey]); // Call getInitialAITip when AI dependencies are ready (hasGeminiKey)
 
 
   /* =========================================================
@@ -520,10 +468,6 @@ useEffect(() => {
                     </button>
                 </div>
             </div>
-            
-            {/* Removed: ProgressRings component */}
-            {/* <ProgressRings ... /> */}
-
         </div>
 
         {/* LAUNCHPAD BUTTONS (lg:col-span-3) */}
