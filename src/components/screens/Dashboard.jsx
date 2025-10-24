@@ -276,61 +276,7 @@ const StatCard = ({ icon: Icon, label, value, onClick, trend = 0, colorHex, size
 };
 
 
-const ProgressRings = ({ dailyPercent, monthlyPercent, careerPercent, tierHex, commitsDue }) => {
-  const dailyColor = commitsDue > 0 ? COLORS.ORANGE : COLORS.TEAL;
-  const viewBoxSize = 36;
-  const radius = 15.9155;
-  // Simplified calculation for Leadership Health Score
-  const healthScore = Math.round(
-    (dailyPercent * 0.4) + 
-    (monthlyPercent * 0.3) + 
-    (careerPercent * 0.3)
-  );
-
-  return (
-    <Card 
-      title="Leadership Health Score" 
-      icon={Activity} 
-      accent="NAVY" 
-      className="shadow-2xl bg-[#002E47]/10 border-4 border-[#002E47]/20"
-    >
-      <div className="flex items-center space-x-4">
-        {/* Gauge for Health Score */}
-        <div className="relative w-28 h-28 flex-shrink-0">
-          <svg viewBox={`0 0 ${viewBoxSize} ${viewBoxSize}`} className="w-full h-full transform -rotate-90">
-            <circle className="text-gray-300" strokeWidth="3" stroke="currentColor" fill="transparent" r={radius} cx="18" cy="18" />
-            <circle
-              className="transition-all duration-1000"
-              strokeWidth="3"
-              stroke={healthScore < 70 ? COLORS.ORANGE : COLORS.TEAL}
-              fill="transparent"
-              r={radius}
-              cx="18"
-              cy="18"
-              style={{
-                strokeDasharray: `${radius * 2 * Math.PI}`,
-                strokeDashoffset: radius * 2 * Math.PI * (1 - healthScore / 100),
-              }}
-            />
-          </svg>
-          <div className="absolute top-0 left-0 w-full h-full flex items-center justify-center">
-            <span className={`text-3xl font-extrabold`} style={{color: healthScore < 70 ? COLORS.ORANGE : COLORS.TEAL}}>{healthScore}%</span>
-          </div>
-        </div>
-        
-        {/* Ring Descriptions */}
-        <div className="flex-1 space-y-2">
-          <p className='text-sm font-bold text-[#002E47]'>Composite Index Breakdown:</p>
-          <div className='text-xs text-gray-700 font-medium space-y-1'>
-            <div className='flex items-center'><span className={`w-2 h-2 rounded-full mr-2`} style={{backgroundColor: dailyColor}}/> **Daily Discipline:** {dailyPercent}%</div>
-            <div className='flex items-center'><span className={`w-2 h-2 rounded-full mr-2`} style={{backgroundColor: tierHex}}/> **Monthly Learning:** {monthlyPercent}%</div>
-            <div className='flex items-center'><span className={`w-2 h-2 rounded-full mr-2`} style={{backgroundColor: COLORS.NAVY}}/> **Career Roadmap:** {careerPercent}%</div>
-          </div>
-        </div>
-      </div>
-    </Card>
-  );
-};
+// Component removed as requested: ProgressRings
 
 function extractGeminiText(resp) {
   if (!resp) return '';
@@ -542,20 +488,12 @@ useEffect(() => {
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6"> 
         
         {/* HEALTH SCORE AND NUDGE COLUMN (lg:col-span-1) */}
-        <div className="lg:col-span-1 space-y-4 order-1 lg:order-2"> {/* ORDER SWAP: Move Health to right on desktop */}
+        <div className="lg:col-span-1 space-y-4 order-1 lg:order-2"> {/* ORDER SWAP: Health & Nudge on right */}
              <h2 className="text-2xl font-extrabold text-[#002E47] flex items-center gap-3">
-                <Activity size={24} className='text-[#47A88D]'/> Health & Focus
+                <Activity size={24} className='text-[#47A88D]'/> Focus Nudge
             </h2>
             
-            {/* Grouped Health and Nudge for density - Feature 4 */}
-            <ProgressRings
-                dailyPercent={dailyPercent}
-                monthlyPercent={monthlyPercent}
-                careerPercent={careerPercent}
-                tierHex={weakestTier?.hex || COLORS.TEAL}
-                commitsDue={commitsDue}
-            />
-            {/* Strategic Nudge / AI Reflection Coach */}
+            {/* Strategic Nudge / AI Reflection Coach (Moved up) */}
             <div className="min-h-full">
                 <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-xl relative group min-h-full flex flex-col justify-between" style={{ background: `${weakestTier?.hex || COLORS.TEAL}1A`, opacity: 0.9 }}>
                     <div className="flex items-center justify-between mb-4 relative z-10">
@@ -582,11 +520,14 @@ useEffect(() => {
                     </button>
                 </div>
             </div>
+            
+            {/* Removed: ProgressRings component */}
+            {/* <ProgressRings ... /> */}
 
         </div>
 
         {/* LAUNCHPAD BUTTONS (lg:col-span-3) */}
-        <div className="lg:col-span-3 space-y-3 order-2 lg:order-1"> {/* ORDER SWAP: Move Launchpad to left on desktop */}
+        <div className="lg:col-span-3 space-y-3 order-2 lg:order-1"> {/* ORDER SWAP: Launchpad on left */}
             <h2 className="text-2xl font-extrabold text-[#002E47] flex items-center gap-3">
                 <Zap size={24} className='text-[#E04E1B]'/> Launchpad: Today's Focus
             </h2>
