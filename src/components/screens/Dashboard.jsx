@@ -569,7 +569,9 @@ useEffect(() => {
                     </Button>
                     {/* Frictionless Start/2-Minute Challenge Button */}
                     <Button 
-                        onClick={() => safeNavigate('daily-practice', { initialGoal: 'Frictionless Start Goal' })} 
+                        // FIX: Simplified navigation to just pass the quickLog flag, 
+                        // relying on DailyPractice.jsx to handle the modal opening.
+                        onClick={() => safeNavigate('daily-practice', { quickLog: true })} 
                         color={COLORS.BLUE}
                         className="w-1/3 px-3 py-2 text-sm bg-[#2563EB] hover:bg-[#1E40AF]"
                     >
