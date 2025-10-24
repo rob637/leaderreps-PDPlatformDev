@@ -203,7 +203,7 @@ const AppSettingsScreen = () => {
                     <div className='pt-2'><p className='text-xs text-gray-500'>Time Zone: <span className='font-medium'>America/New_York (UTC-4)</span></p></div>
                 </SettingsCard>
                 <SettingsCard title="Security" icon={Lock}>
-                    <p className='text-sm text-gray-700'>**2FA Status:** <span className='font-semibold text-red-500'>Disabled</span></p>
+                    <p className='text-sm text-gray-700'>**2FA Status:** <span className className='font-semibold text-red-500'>Disabled</span></p>
                     <p className='text-sm text-gray-700'>**Last Sign In:** <span className='font-semibold'>{new Date().toLocaleString()}</span></p>
                     <button className={`text-sm font-semibold text-[${COLORS.NAVY}] hover:text-[${COLORS.TEAL}] mt-2`}>
                         Sign Out From All Devices
@@ -621,24 +621,62 @@ const App = ({ initialState }) => {
 
   useEffect(() => {
     let app, firestore, authentication;
+    let unsubscribeAuth = null;
+    let timerId = null;
 
     if (DEBUG_MODE) {
-      try { const firebaseConfig = { apiKey: 'mock', authDomain: 'mock', projectId: 'mock' }; app = initializeApp(firebaseConfig); firestore = getFirestore(app); authentication = getAuth(app); setFirebaseServices({ db: firestore, auth: authentication }); setIsAuthReady(true); setInitStage('ok'); return; } 
-      catch { try { const existing = getApp(); firestore = getFirestore(existing); authentication = getAuth(existing); setFirebaseServices({ db: firestore, auth: authentication }); } catch {} setIsAuthReady(true); setInitStage('ok'); return; }
+        // ... (Debug mode logic remains unchanged)
+        try { 
+            const firebaseConfig = { apiKey: 'mock', authDomain: 'mock', projectId: 'mock' }; 
+            app = initializeApp(firebaseConfig); 
+            firestore = getFirestore(app); 
+            authentication = getAuth(app); 
+            setFirebaseServices({ db: firestore, auth: authentication }); 
+        } catch { 
+            try { 
+                const existing = getApp(); 
+                firestore = getFirestore(existing); 
+                authentication = getAuth(existing); 
+                setFirebaseServices({ db: firestore, auth: authentication }); 
+            } catch {} 
+        }
+        setIsAuthReady(true); 
+        setInitStage('ok'); 
+        return; 
     }
+    
+    // --- FASTER INITIALIZATION SEQUENCE (Production Logic) ---
+    
+    // A flag to ensure we only finalize the ready state once
+    let isInitialized = false; 
+    const FAST_TIMEOUT = 1500; // Time in ms to wait before assuming no user is logged in
+
+    const finalizeInit = (success = true, errorMsg = '') => {
+        if (isInitialized) return;
+        isInitialized = true;
+        
+        if (timerId) clearTimeout(timerId);
+
+        if (success) {
+             setInitStage('ok');
+        } else {
+             console.error("Auth Finalization Error:", errorMsg);
+             setInitError(errorMsg || 'Authentication service failed to initialize.');
+             setInitStage('error');
+        }
+        // CRITICAL: Immediately signal that the authentication state process is complete
+        setIsAuthReady(true);
+    };
+
 
     try {
       let firebaseConfig = {};
       
-      // CRITICAL FIX for Netlify: Rely on main.jsx to set window.__firebase_config
       if (typeof window !== 'undefined' && window.__firebase_config) {
         const cfg = window.__firebase_config;
-        // Parse if it's a string, use directly if it's already an object
         firebaseConfig = (typeof cfg === 'string') ? JSON.parse(cfg) : cfg;
       } else { 
-        setInitError('Firebase configuration is missing from the window object. Check VITE_FIREBASE_CONFIG in Netlify/Vite.'); 
-        setIsAuthReady(true); 
-        setInitStage('error'); 
+        finalizeInit(false, 'Firebase configuration is missing from the environment.');
         return; 
       }
       
@@ -649,7 +687,22 @@ const App = ({ initialState }) => {
       setLogLevel('debug');
       setFirebaseServices({ db: firestore, auth: authentication });
       
-      const unsubscribe = onAuthStateChanged(authentication, (currentUser) => {
+      // Start the FAST_TIMEOUT timer
+      // If the listener hasn't fired in 1.5 seconds, finalize the state to ready (unauthenticated)
+      timerId = setTimeout(() => {
+          if (!user && initStage === 'init') { // Only finalize if no user was found yet
+              console.warn("Auth check timed out (1.5s). Rendering login screen proactively.");
+              // Set to unauthenticated ready state
+              finalizeInit(true); 
+          }
+      }, FAST_TIMEOUT);
+      
+      // The listener handles the final state transition when the network returns
+      unsubscribeAuth = onAuthStateChanged(authentication, (currentUser) => {
+        
+        // This network call succeeded, so stop the proactive timer
+        if (timerId) clearTimeout(timerId); 
+
         if (currentUser && currentUser.email) { 
           const uid = currentUser.uid;
           const email = currentUser.email;
@@ -657,21 +710,25 @@ const App = ({ initialState }) => {
           setUserId(uid);
           setUser({ name: name, email: email, userId: uid }); 
           setAuthRequired(false);
-          setInitStage('ok'); 
         } else {
-          setUser(null); setUserId(null); setAuthRequired(true); setInitStage('ok'); 
+          setUser(null); setUserId(null); setAuthRequired(true); 
         }
-        setIsAuthReady(true);
+        
+        // Finalize state after the first (and only) call from the listener
+        finalizeInit(true);
       });
 
-      return () => unsubscribe();
+      // Cleanup function returns the listener unsubscribe and clears the timer
+      return () => { 
+          if (unsubscribeAuth) unsubscribeAuth(); 
+          if (timerId) clearTimeout(timerId);
+      };
+      
     } catch (e) {
       console.error('Firebase setup failed:', e);
-      setInitError(e?.message || 'Firebase initialization failed.');
-      setIsAuthReady(true);
-      setInitStage('error');
+      finalizeInit(false, e?.message || 'Firebase SDK threw an error.');
     }
-  }, []);
+  }, []); // Empty dependency array ensures this runs only once
 
   // CRITICAL FIX: Removed the handleBeforeUnload logic that was forcing signout on window close (Issue 12)
   useEffect(() => {
@@ -679,8 +736,13 @@ const App = ({ initialState }) => {
   }, []); 
 
   if (!DEBUG_MODE) {
-    if (initStage === 'init') { return (<div className="min-h-screen flex items-center justify-center bg-gray-100"><div className="flex flex-col items-center"><div className="animate-spin rounded-full h-12 w-12 border-4 border-t-4 border-gray-200 border-t-[#47A88D] mb-3"></div><p className="text-[#002E47] font-semibold">Initializing Authentication…</p></div></div>); }
+    if (initStage === 'init') { 
+        // Display the loading spinner while initStage is 'init' and we are not yet ready
+        return (<div className="min-h-screen flex items-center justify-center bg-gray-100"><div className="flex flex-col items-center"><div className="animate-spin rounded-full h-12 w-12 border-4 border-t-4 border-gray-200 border-t-[#47A88D] mb-3"></div><p className="text-[#002E47] font-semibold">Initializing Authentication…</p></div></div>); 
+    }
     if (initStage === 'error') { return (<React.Fragment><ConfigError message={initError} /></React.Fragment>); }
+    
+    // Once initStage is 'ok' AND isAuthReady is true, the app is ready to render AuthPanel or AppContent
     if (!user && isAuthReady) {
       return (<React.Fragment><AuthPanel auth={firebaseServices.auth} onSuccess={() => { setAuthRequired(false); setTimeout(() => navigate('dashboard'), 0); }}/></React.Fragment>);
     }
