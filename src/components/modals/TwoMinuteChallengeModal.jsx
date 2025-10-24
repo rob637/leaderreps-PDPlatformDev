@@ -187,7 +187,11 @@ const TwoMinuteChallengeModal = ({ isVisible, onClose, sourceScreen, onLogSucces
     return (
         <div className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4"> 
             <div className={`relative bg-[${COLORS.OFF_WHITE}] rounded-xl shadow-2xl w-full max-w-lg p-8 text-center border-t-8 border-[${COLORS.BLUE}]`}>
-                <button onClick={onClose} disabled={isLogging} className="absolute top-4 right-4 text-gray-400 hover:text-gray-700">
+                <button 
+                    onClick={onClose} // CRITICAL FIX: Wire the button to the handler
+                    disabled={isLogging} 
+                    className="absolute top-4 right-4 text-gray-400 hover:text-gray-700"
+                >
                     <X className="w-6 h-6" />
                 </button>
 

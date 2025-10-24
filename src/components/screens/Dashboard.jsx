@@ -541,76 +541,8 @@ useEffect(() => {
       {/* --- 2. THE REP TRACKER LAUNCHPAD (HIGH PRIORITY) --- */}
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6"> 
         
-        {/* LAUNCHPAD BUTTONS (lg:col-span-3) */}
-        <div className="lg:col-span-3 space-y-3"> 
-            <h2 className="text-2xl font-extrabold text-[#002E47] flex items-center gap-3">
-                <Zap size={24} className='text-[#E04E1B]'/> Launchpad: Today's Focus
-            </h2>
-            
-            <div className='grid grid-cols-1 md:grid-cols-3 gap-4'>
-                 {/* PRIMARY ACTION 1: Daily Practice Scorecard */}
-                <ThreeDButton
-                    onClick={() => safeNavigate('daily-practice')} 
-                    color={COLORS.TEAL}
-                    accentColor={COLORS.NAVY}
-                    className="h-24 flex-col px-3 py-2 text-white" 
-                >
-                    <ClockIcon className='w-6 h-6 mb-1'/> 
-                    <span className='text-lg font-extrabold'>Daily Practice Scorecard</span>
-                    <span className='text-xs font-light mt-1'>Reps: {todayRepsCompleted}/{commitsTotal}</span>
-                </ThreeDButton>
-
-                {/* PRIMARY ACTION 2: 2-Min Micro-Action Start (Frictionless Rep) - Feature 3 */}
-                <ThreeDButton 
-                    onClick={() => safeNavigate('daily-practice', { quickLog: true, source: 'dashboard' })} 
-                    color={COLORS.BLUE}
-                    accentColor={COLORS.NAVY}
-                    className="h-24 flex-col px-3 py-2 text-white"
-                >
-                    <Zap className='w-6 h-6 mb-1'/> 
-                    <span className='text-lg font-extrabold'>2-Min Start (Momentum Rep)</span>
-                    <span className='text-xs font-light mt-1'>Grab a quick win to build streak</span>
-                </ThreeDButton>
-                
-                 {/* PRIMARY ACTION 3: Development Roadmap */}
-                <ThreeDButton
-                    onClick={() => safeNavigate('prof-dev-plan')} 
-                    color={COLORS.ORANGE}
-                    accentColor={COLORS.NAVY}
-                    className="h-24 flex-col px-3 py-2 text-white" 
-                >
-                    <Briefcase className='w-6 h-6 mb-1'/> 
-                    <span className='text-lg font-extrabold'>24-Month Roadmap Check</span>
-                    <span className='text-xs font-light mt-1'>Current Focus: {weakestTier?.name}</span>
-                </ThreeDButton>
-            </div>
-            
-            {/* New Simplified Rep/Identity Info Card - Features 1, 2, 8 */}
-            <Card title="Today's Strategic Focus" icon={Target} accent='NAVY' className="border-4 border-[#002E47]/10 bg-white/95">
-                <div className='grid md:grid-cols-2 gap-4'>
-                    <div>
-                        <p className='text-sm font-semibold text-gray-700 mb-2 uppercase tracking-wide flex items-center gap-2'>
-                            <Flag className='w-4 h-4 text-red-500'/> Target Rep (Clarity of Behavior):
-                        </p>
-                        <p className='text-md font-bold text-[#E04E1B]'>
-                            {dailyTargetRep}
-                        </p>
-                    </div>
-                    <div>
-                         <p className='text-sm font-semibold text-gray-700 mb-2 uppercase tracking-wide flex items-center gap-2'>
-                            <User className='w-4 h-4 text-gray-500'/> Identity Anchor (Emotional Relevance):
-                        </p>
-                        <p className='text-md italic text-[#002E47]'>
-                            "{identityStatement.substring(0, 60) + '...'}"
-                        </p>
-                    </div>
-                </div>
-            </Card>
-
-        </div>
-
         {/* HEALTH SCORE AND NUDGE COLUMN (lg:col-span-1) */}
-        <div className="lg:col-span-1 space-y-4"> 
+        <div className="lg:col-span-1 space-y-4 order-1 lg:order-2"> {/* ORDER SWAP: Move Health to right on desktop */}
              <h2 className="text-2xl font-extrabold text-[#002E47] flex items-center gap-3">
                 <Activity size={24} className='text-[#47A88D]'/> Health & Focus
             </h2>
@@ -650,6 +582,75 @@ useEffect(() => {
                     </button>
                 </div>
             </div>
+
+        </div>
+
+        {/* LAUNCHPAD BUTTONS (lg:col-span-3) */}
+        <div className="lg:col-span-3 space-y-3 order-2 lg:order-1"> {/* ORDER SWAP: Move Launchpad to left on desktop */}
+            <h2 className="text-2xl font-extrabold text-[#002E47] flex items-center gap-3">
+                <Zap size={24} className='text-[#E04E1B]'/> Launchpad: Today's Focus
+            </h2>
+            
+            {/* New Simplified Rep/Identity Info Card - Features 1, 2, 8 */}
+            <Card title="Today's Strategic Focus" icon={Target} accent='NAVY' className="border-4 border-[#002E47]/10 bg-white/95">
+                <div className='grid md:grid-cols-2 gap-4'>
+                    <div>
+                        <p className='text-sm font-semibold text-gray-700 mb-2 uppercase tracking-wide flex items-center gap-2'>
+                            <Flag className='w-4 h-4 text-red-500'/> Target Rep (Clarity of Behavior):
+                        </p>
+                        <p className='text-md font-bold text-[#E04E1B]'>
+                            {dailyTargetRep}
+                        </p>
+                    </div>
+                    <div>
+                         <p className='text-sm font-semibold text-gray-700 mb-2 uppercase tracking-wide flex items-center gap-2'>
+                            <User className='w-4 h-4 text-gray-500'/> Identity Anchor (Emotional Relevance):
+                        </p>
+                        <p className='text-md italic text-[#002E47]'>
+                            "{identityStatement.substring(0, 60) + '...'}"
+                        </p>
+                    </div>
+                </div>
+            </Card>
+            
+            <div className='grid grid-cols-1 md:grid-cols-3 gap-4'>
+                 {/* PRIMARY ACTION 1: Daily Practice Scorecard */}
+                <ThreeDButton
+                    onClick={() => safeNavigate('daily-practice')} 
+                    color={COLORS.TEAL}
+                    accentColor={COLORS.NAVY}
+                    className="h-24 flex-col px-3 py-2 text-white" 
+                >
+                    <ClockIcon className='w-6 h-6 mb-1'/> 
+                    <span className='text-lg font-extrabold'>Daily Practice Scorecard</span>
+                    <span className='text-xs font-light mt-1'>Reps: {todayRepsCompleted}/{commitsTotal}</span>
+                </ThreeDButton>
+
+                {/* PRIMARY ACTION 2: 2-Min Micro-Action Start (Frictionless Rep) - Feature 3 */}
+                <ThreeDButton 
+                    onClick={() => safeNavigate('daily-practice', { quickLog: true, source: 'dashboard' })} 
+                    color={COLORS.BLUE}
+                    accentColor={COLORS.NAVY}
+                    className="h-24 flex-col px-3 py-2 text-white"
+                >
+                    <Zap className='w-6 h-6 mb-1'/> 
+                    <span className='text-lg font-extrabold'>2-Min Start (Momentum Rep)</span>
+                    <span className='text-xs font-light mt-1'>Grab a quick win to build streak</span>
+                </ThreeDButton>
+                
+                 {/* PRIMARY ACTION 3: Development Roadmap */}
+                <ThreeDButton
+                    onClick={() => safeNavigate('prof-dev-plan')} 
+                    color={COLORS.ORANGE}
+                    accentColor={COLORS.NAVY}
+                    className="h-24 flex-col px-3 py-2 text-white" 
+                >
+                    <Briefcase className='w-6 h-6 mb-1'/> 
+                    <span className='text-lg font-extrabold'>24-Month Roadmap Check</span>
+                    <span className='text-xs font-light mt-1'>Current Focus: {weakestTier?.name}</span>
+                </ThreeDButton>
+            </div>
+
 
         </div>
       </div>

@@ -860,7 +860,7 @@ const CommitmentSelectorView = ({ setView, initialGoal, initialTier }) => {
                             className={`font-semibold text-xs transition-colors p-1 flex items-center space-x-1 ${canAddCommitment && !isSaving ? 'text-[#47A88D] hover:text-[#349881]' : 'text-gray-400 cursor-not-allowed'}`}
                           >
                             <PlusCircle className='w-4 h-4' />
-                            {/* NOTE: We are removing a duplicate 'Button' declaration error here. */}
+                            <span className='hidden sm:inline'>Add Rep</span>
                           </button>
                         </Tooltip>
                       </div>
@@ -1064,7 +1064,7 @@ const CommitmentHistoryModal = ({ isVisible, onClose, dayData, activeCommitments
     );
 };
 
-// PerfectScoreModal Component Definition (Feature 4)
+// PerfectScoreModal Component Definition (Feature 4) - FIX: Wire 'X' button to onClose
 const PerfectScoreModal = ({ onClose }) => (
   <div
     className="fixed inset-0 bg-[#002E47]/70 z-50 flex items-center justify-center p-4"
@@ -1076,7 +1076,7 @@ const PerfectScoreModal = ({ onClose }) => (
     <div className="relative bg-[#FCFCFA] rounded-xl shadow-2xl w-full max-w-sm p-6 text-center">
       <button
         aria-label="Close"
-        onClick={onClose}
+        onClick={onClose} // CRITICAL FIX: Wire the button to the handler
         className="absolute top-3 right-3 p-2 rounded-full hover:bg-gray-100"
       >
         <X className="w-5 h-5" />
@@ -1179,11 +1179,19 @@ const SocialAccountabilityNudge = () => {
 }
 
 // --- NEW COMPONENT: Post-Log Micro-Action Prompt (Feature 3 momentum) ---
+// FIX: Wire 'X' button to onClose
 const MicroActionPromptModal = ({ isVisible, onClose, onMicroActionClick }) => {
     if (!isVisible) return null;
     return (
         <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4">
             <div className={`relative bg-white rounded-xl shadow-2xl w-full max-w-sm p-6 text-center border-t-8 border-[${COLORS.TEAL}]`}>
+                <button
+                    aria-label="Close"
+                    onClick={onClose} // CRITICAL FIX: Wire the button to the handler
+                    className="absolute top-3 right-3 p-2 rounded-full hover:bg-gray-100"
+                >
+                    <X className="w-5 h-5" />
+                </button>
                 <Zap className={`w-10 h-10 text-[${COLORS.TEAL}] mx-auto mb-3`} />
                 <h3 className="text-xl font-extrabold text-[#002E47] mb-2">Rep Logged! Want More Momentum?</h3>
                 <p className="text-sm text-gray-600 mb-5">
