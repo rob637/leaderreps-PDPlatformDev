@@ -220,9 +220,8 @@ const Card = ({ children, title, icon: Icon, className = '', onClick, accent = '
   );
 };
 
-const StatCard = ({ icon: Icon, label, value, onClick, trend = 0, colorHex }) => {
+const StatCard = ({ icon: Icon, label, value, onClick, trend = 0, colorHex, size = 'full' }) => {
   const TrendIcon = trend > 0 ? TrendingUp : TrendingDown;
-  // Use a simple boolean check for trend display in this simplified card
   const showTrend = trend !== 0; 
   const trendColor = trend > 0 ? COLORS.TEAL : trend < 0 ? COLORS.ORANGE : COLORS.MUTED;
   
@@ -233,15 +232,19 @@ const StatCard = ({ icon: Icon, label, value, onClick, trend = 0, colorHex }) =>
   if (label.includes("Daily Reps Completed Today")) { accent = 'ORANGE'; }
   if (label.includes("Roadmap Months Remaining")) { accent = 'NAVY'; }
   if (label.includes("Total Coaching Labs")) { accent = 'PURPLE'; }
-  if (label.includes("Today's Coaching Labs")) { accent = 'BLUE'; }
+  if (label.includes("Labs Today")) { accent = 'BLUE'; }
   
+  // Set width based on size prop
+  let widthClass = 'w-full';
+  if (size === 'half') widthClass = 'md:w-1/2';
+  if (size === 'third') widthClass = 'md:w-1/3';
 
   return (
     <Card 
       icon={Icon} 
       title={value}
       onClick={onClick} 
-      className={`w-full`}
+      className={`${widthClass}`}
       accent={accent}
     >
       <div className="flex justify-between items-center -mt-1">
@@ -398,11 +401,11 @@ const DashboardScreen = () => {
   const okrs = useMemo(() => planningData?.okrs || MOCK_PLANNING_DATA.okrs, [planningData]);
   const commitsTotal = useMemo(() => commitmentData?.active_commitments?.length || 0, [commitmentData]);
   const commitsCompleted = useMemo(() => commitmentData?.active_commitments?.filter(c => c.status === 'Committed').length || 0, [commitmentData]);
-  const commitsDue = commitsTotal - commitsCompleted; // This is the total number of *active* commitments, not necessarily daily. We'll rely on the streak for daily discipline.
+  const commitsDue = commitsTotal - commitsCompleted; 
   
   // --- NEW METRIC CALCULATIONS ---
   const totalRepsCompleted = useMemo(() => MOCK_ACTIVITY_DATA.total_reps_completed, []);
-  const todayRepsCompleted = useMemo(() => commitsCompleted, [commitsCompleted]); // Reusing commitsCompleted for "today's completed"
+  const todayRepsCompleted = useMemo(() => commitsCompleted, [commitsCompleted]); 
   const totalCoachingLabs = useMemo(() => MOCK_ACTIVITY_DATA.total_coaching_labs, []);
   const todayCoachingLabs = useMemo(() => MOCK_ACTIVITY_DATA.today_coaching_labs, []);
 
@@ -418,7 +421,7 @@ const DashboardScreen = () => {
     if (!ratings) return null;
     const sortedTiers = Object.entries(ratings).sort(([, a], [, b]) => a - b);
     const weakestEntry = sortedTiers[0];
-    const weakestId = weakestEntry?.[0];
+    const weakestId = sortedTiers[0]?.[0]; // Ensure safe access
     if (!weakestId) return null;
     const meta = TIER_MAP[weakestId];
     return {
@@ -585,66 +588,118 @@ useEffect(() => {
         
         {/* Progress Snapshot (The Scorecard: lg:col-span-3) */}
         <div className="lg:col-span-3 space-y-6">
-          <h2 className="text-2xl font-extrabold text-[#002E47] flex items-center gap-3">
+          <h2 className="text-2xl font-extrabold text-[#002E47] flex items-center gap-3 mb-4">
               <BarChart3 size={24} className='text-[#47A88D]'/> Performance Scorecard
           </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              {/* Stat Card 1: Streak */}
-              <StatCard
-                icon={Star}
-                label="Current Perfect Score Streak"
-                value={`${perfectStreak} Days`}
-                onClick={() => safeNavigate('daily-practice')}
-                trend={perfectStreak >= 3 ? 5 : 0} 
-                colorHex={COLORS.GREEN}
-              />
-              {/* Stat Card 2: Daily Reps Today */}
-              <StatCard
-                icon={CheckCircle}
-                label="Daily Reps Completed Today"
-                value={`${todayRepsCompleted} of ${commitsTotal}`}
-                onClick={() => safeNavigate('daily-practice')}
-                trend={todayRepsCompleted} 
-                colorHex={COLORS.ORANGE}
-              />
-              {/* Stat Card 3: Total Reps Completed (Cumulative) */}
-              <StatCard
-                icon={ChevronsRight}
-                label="Total Reps Completed (All Time)"
-                value={`${totalRepsCompleted}`}
-                onClick={() => safeNavigate('daily-practice')}
-                trend={1} // Static positive trend for cumulative
-                colorHex={COLORS.TEAL}
-              />
-              {/* Stat Card 4: Total Coaching Labs (Cumulative) */}
-              <StatCard
-                icon={Mic}
-                label="Total Coaching Labs Performed"
-                value={`${totalCoachingLabs}`}
-                onClick={() => safeNavigate('coaching-lab')}
-                trend={1} // Static positive trend for cumulative
-                colorHex={COLORS.PURPLE}
-              />
-              {/* Stat Card 5: Today's Coaching Labs (Daily) */}
-              {/* Note: Added an extra metric here to maintain a clean 2x2 grid when the next row is added, or to allow 5 total metrics. I will ensure a 4-column layout for consistency. I will use the 4 most critical. Since we only have 4 slots, I will combine daily/total coaching labs and use the 4 most action-oriented metrics. */}
 
-              {/* REVISED 4-CARD LAYOUT: Focused on Action & Usage */}
-               {/* Card 1: Streak (Action) - KEPT */}
-               {/* Card 2: Daily Reps Today (Action) - KEPT */}
-               {/* Card 3: Total Coaching Labs (Usage) - KEPT */}
-               {/* Card 4: Roadmap Months Remaining (Context) - KEPT from original plan */}
-              
-              {/* Since the request was to drop Weakest Tier and add Coaching Labs (Total/Daily) and new Reps (Total/Daily), 
-                 I will use the following set of 4: Streak, Daily Reps Today, Total Coaching Labs, Roadmap Months Remaining (for balance). */}
+          <div className="space-y-6">
+            {/* PILLAR: CONTENT */}
+            <div className='p-6 rounded-2xl border-4 border-[#47A88D]/20 bg-[#F7FCFF]'>
+                <h3 className='text-xl font-extrabold text-[#47A88D] mb-4 flex items-center gap-2'>
+                    <BookOpen size={20}/> PILLAR: Content & Discipline
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    {/* Metric: Daily Reps Completed Today */}
+                    <StatCard
+                        icon={CheckCircle}
+                        label="Daily Reps Completed Today"
+                        value={`${todayRepsCompleted} / ${commitsTotal}`}
+                        onClick={() => safeNavigate('daily-practice')}
+                        trend={todayRepsCompleted} 
+                        colorHex={COLORS.ORANGE}
+                    />
+                    {/* Metric: Total Reps Completed (Cumulative) */}
+                    <StatCard
+                        icon={ChevronsRight}
+                        label="Total Reps Completed (All Time)"
+                        value={`${totalRepsCompleted}`}
+                        onClick={() => safeNavigate('daily-practice')}
+                        trend={1}
+                        colorHex={COLORS.TEAL}
+                    />
+                    {/* Metric: Current Streak */}
+                    <StatCard
+                        icon={Star}
+                        label="Current Perfect Score Streak"
+                        value={`${perfectStreak} Days`}
+                        onClick={() => safeNavigate('daily-practice')}
+                        trend={perfectStreak >= 3 ? 5 : 0} 
+                        colorHex={COLORS.GREEN}
+                    />
+                </div>
+            </div>
 
-              <StatCard
-                icon={Briefcase}
-                label="Roadmap Months Remaining"
-                value={`${24 - goalsCount}`}
-                onClick={() => safeNavigate('prof-dev-plan')}
-                trend={24 - goalsCount > 0 ? -4 : 0} 
-                colorHex={COLORS.NAVY}
-              />
+            {/* PILLAR: COACHING */}
+            <div className='p-6 rounded-2xl border-4 border-[#7C3AED]/20 bg-[#F7FCFF]'>
+                <h3 className='text-xl font-extrabold text-[#7C3AED] mb-4 flex items-center gap-2'>
+                    <Mic size={20}/> PILLAR: Coaching & Practice
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    {/* Metric: Today's Coaching Labs */}
+                    <StatCard
+                        icon={Send}
+                        label="Labs Completed Today"
+                        value={`${todayCoachingLabs}`}
+                        onClick={() => safeNavigate('coaching-lab')}
+                        trend={todayCoachingLabs} 
+                        colorHex={COLORS.BLUE}
+                    />
+                    {/* Metric: Total Coaching Labs (Cumulative) */}
+                    <StatCard
+                        icon={Mic}
+                        label="Total Coaching Labs Performed"
+                        value={`${totalCoachingLabs}`}
+                        onClick={() => safeNavigate('coaching-lab')}
+                        trend={1} 
+                        colorHex={COLORS.PURPLE}
+                    />
+                    {/* Metric: Placeholder for future Coaching KPI */}
+                    <StatCard
+                        icon={Users}
+                        label="Peer Feedback Exchanges"
+                        value={`8`}
+                        onClick={() => safeNavigate('community')}
+                        trend={2} 
+                        colorHex={COLORS.NAVY}
+                    />
+                </div>
+            </div>
+            
+            {/* PILLAR: COMMUNITY */}
+            <div className='p-6 rounded-2xl border-4 border-[#002E47]/20 bg-[#F7FCFF]'>
+                <h3 className='text-xl font-extrabold text-[#002E47] mb-4 flex items-center gap-2'>
+                    <Dumbbell size={20}/> PILLAR: Community & Roadmap
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    {/* Metric: Roadmap Months Remaining */}
+                    <StatCard
+                        icon={Briefcase}
+                        label="Roadmap Months Remaining"
+                        value={`${24 - goalsCount}`}
+                        onClick={() => safeNavigate('prof-dev-plan')}
+                        trend={24 - goalsCount > 0 ? -4 : 0} 
+                        colorHex={COLORS.NAVY}
+                    />
+                    {/* Metric: Weakest Tier Focus (Re-added as a Roadmap metric) */}
+                     <StatCard
+                        icon={Target}
+                        label="Weakest Tier Focus"
+                        value={`${weakestTier?.name || 'N/A'}`}
+                        onClick={() => safeNavigate('prof-dev-plan')}
+                        trend={0} 
+                        colorHex={COLORS.ORANGE}
+                    />
+                    {/* Metric: Longest Held OKR (Context) */}
+                    <StatCard
+                        icon={Archive}
+                        label="Longest-Held OKR (Days)"
+                        value={`${longestHeldOKR.days} Days`}
+                        onClick={() => safeNavigate('planning-hub')}
+                        trend={5} 
+                        colorHex={COLORS.BLUE}
+                    />
+                </div>
+            </div>
           </div>
         </div>
 
