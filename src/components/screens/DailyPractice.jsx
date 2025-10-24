@@ -12,6 +12,9 @@ import {
 // CRITICAL FIX: Use the canonical hook path so all views share the same store.
 import { useAppServices } from '../../services/useAppServices.jsx';
 
+// --- NEW COMPONENT IMPORT ---
+import TwoMinuteChallengeModal from '../modals/TwoMinuteChallengeModal.jsx';
+
 
 // --- MOCK UTILITIES (Defined for component self-reliance) ---
 const LEADERSHIP_TIERS_META = { 
@@ -621,158 +624,6 @@ const CommitmentSelectorView = ({ setView, initialGoal, initialTier }) => {
     }
   };
 
-  /* =========================================================
-     Commitment Handlers
-  ========================================================= */
-
-  const handleAddCommitment = async (commitment, source) => {
-    // FIX 1: Add checks to prevent adding if required fields are missing
-    if (!linkedGoal || linkedGoal === initialLinkedGoalPlaceholder || !linkedTier) {
-        console.warn("Cannot add commitment: Goal and Tier must be selected.");
-        return;
-    }
-
-    setIsSaving(true);
-    setIsCustomCommitmentSaved(false); // Reset confirmation
-
-    let newCommitment;
-    if (source === 'pdp') {
-      newCommitment = {
-        id: `pdp-content-${commitment.id}-${Date.now()}`,
-        text: `(Roadmap Rep) Complete: ${commitment.title} (${commitment.type})`,
-        status: 'Pending',
-        isCustom: true,
-        linkedGoal: linkedGoal,
-        linkedTier: linkedTier,
-        targetColleague: `Est. ${commitment.duration} min`,
-      };
-    } else {
-      newCommitment = {
-        id: `bank-${commitment.id}-${Date.now()}`, 
-        text: commitment.text,
-        status: 'Pending',
-        linkedGoal: linkedGoal,
-        linkedTier: linkedTier,
-        targetColleague: targetColleague.trim() || null,
-      };
-    }
-
-    // CRITICAL FIX 2: Ensure existing data is preserved using the spread operator
-await updateCommitmentData(data => ({ 
-  ...data,
-  active_commitments: [ ...(data?.active_commitments || []), newCommitment ],
-  }));
-// Optimistic UI: assume success after await.
-
-        setCustomCommitment('');
-        setTargetColleague('');
-        setAiAssessment(null);
-        setIsSaving(false);
-        
-        setIsCustomCommitmentSaved(true);
-        setTimeout(() => setIsCustomCommitmentSaved(false), 3000);
-
-        // CRITICAL FIX 3: Navigate back to the Scorecard view after adding
-        setView('scorecard');
-  };
-
-  const handleCreateCustomCommitment = async () => {
-    // FIX 4: Add checks to prevent adding if required fields are missing
-    if (!customCommitment.trim() || !linkedGoal || linkedGoal === initialLinkedGoalPlaceholder || !linkedTier) {
-        console.warn("Cannot create custom commitment: Text, Goal, and Tier must be selected.");
-        return;
-    }
-    
-    if (customCommitment.trim() && linkedGoal && linkedGoal !== initialLinkedGoalPlaceholder && linkedTier) {
-      setIsSaving(true);
-      setIsCustomCommitmentSaved(false); // Reset confirmation
-      const newId = String(Date.now());
-      const newCommitment = {
-        id: `custom-${newId}`,
-        text: customCommitment.trim(),
-        status: 'Pending',
-        isCustom: true,
-        linkedGoal: linkedGoal,
-        linkedTier: linkedTier,
-        targetColleague: targetColleague.trim() || null,
-      };
-
-      // CRITICAL FIX 5: Ensure existing data is preserved using the spread operator
-// Ensure we properly append to active_commitments (preserving the rest of the doc)
-      await updateCommitmentData(prev => ({
-        ...prev,
-        active_commitments: [
-          ...(prev?.active_commitments || []),
-          newCommitment
-        ],
-      }));
-// Optimistic UI: assume success after await.
-
-        setCustomCommitment('');
-        setTargetColleague('');
-        setAiAssessment(null);
-        setIsSaving(false);
-        
-        setIsCustomCommitmentSaved(true);
-        setTimeout(() => setIsCustomCommitmentSaved(false), 3000);
-        
-        // CRITICAL FIX 6: Navigate back to the Scorecard view after adding
-        setView('scorecard');
-    }
-  };
-
-  const canAddCommitment = !!linkedGoal && linkedGoal !== initialLinkedGoalPlaceholder && !!linkedTier && !isSaving;
-
-  const tabStyle = (currentTab) =>
-    `px-4 py-2 font-semibold rounded-t-xl transition-colors ${
-      tab === currentTab
-        ? 'bg-[#FCFCFA] text-[#002E47] border-t-2 border-x-2 border-[#47A88D]'
-        : 'bg-gray-200 text-gray-500 hover:text-[#002E47]'
-    }`;
-
-  const renderAssessmentResult = () => {
-    if (assessmentLoading) {
-        return (
-            <div className='flex items-center justify-center p-6 bg-gray-50 rounded-xl'>
-                <div className="animate-spin h-5 w-5 border-b-2 border-gray-500 mr-3 rounded-full"></div>
-                <span className='text-gray-600'>Analyzing habit alignment...</span>
-            </div>
-        );
-    }
-
-    if (!aiAssessment) return null;
-
-    if (aiAssessment.error && aiAssessment.score === 0) {
-        return (
-            <div className='p-4 bg-red-100 border border-red-300 rounded-xl text-sm text-red-800 font-medium'>
-                <AlertTriangle className='w-4 h-4 inline mr-2'/> {aiAssessment.feedback}
-            </div>
-        )
-    }
-
-    const valueColor = aiAssessment.score > 7 ? 'text-green-600' : aiAssessment.score > 4 ? 'text-yellow-600' : 'text-red-600';
-    const riskColor = aiAssessment.risk > 7 ? 'text-red-600' : aiAssessment.risk > 4 ? 'text-yellow-600' : 'text-green-600';
-    
-    return (
-        <Card title="AI Commitment Analysis" icon={Cpu} className='bg-white shadow-xl border-l-4 border-[#002E47]'>
-            <div className='grid grid-cols-2 gap-4 mb-4'>
-                <div className={`p-3 rounded-xl border ${aiAssessment.score > 7 ? 'border-green-400 bg-green-50' : 'border-gray-300 bg-gray-100'}`}>
-                    <div className='text-xs font-semibold uppercase text-gray-500'>Value Score</div>
-                    <div className={`text-3xl font-extrabold ${valueColor}`}>{aiAssessment.score}/10</div>
-                </div>
-                <div className={`p-3 rounded-xl border ${aiAssessment.risk > 7 ? 'border-red-400 bg-red-50' : 'border-gray-300 bg-gray-100'}`}>
-                    <div className='text-xs font-semibold uppercase text-gray-500'>Risk Score</div>
-                    <div className={`text-3xl font-extrabold ${riskColor}`}>{aiAssessment.risk}/10</div>
-                </div>
-            </div>
-            <div className='p-3 bg-[#002E47]/5 rounded-lg border border-[#002E47]/10'>
-                <p className='text-xs font-semibold text-[#002E47] mb-1 flex items-center'><Lightbulb className='w-3 h-3 mr-1'/> Coach Feedback:</p>
-                <p className='text-sm text-gray-700'>{aiAssessment.feedback}</p>
-            </div>
-        </Card>
-    );
-  };
-
 
   return (
     <div className="p-8">
@@ -1252,6 +1103,8 @@ const DailyRepTargetCard = ({ targetRep, microTip, identityStatement, handleLogC
 
 // --- NEW COMPONENT: Social Accountability Nudge (Feature 5 Mock) ---
 const SocialAccountabilityNudge = () => {
+    const { navigate } = useAppServices();
+
     return (
         <Card title="Social Accountability Pod" icon={Users} accent='BLUE' className='border-4 border-[#2563EB]/20 bg-[#2563EB]/10'>
             <p className='text-sm text-gray-700 mb-4'>
@@ -1261,7 +1114,7 @@ const SocialAccountabilityNudge = () => {
                 <Send className='w-4 h-4 text-[#2563EB]'/>
                 <span className='text-sm text-gray-600'>Alex just shared: "Gave my feedback rep today!"</span>
             </div>
-            <Button variant='outline' className='w-full mt-4 text-sm text-[#2563EB] border-[#2563EB]/50 hover:bg-[#2563EB]/10'>
+            <Button onClick={() => navigate('community')} variant='outline' className='w-full mt-4 text-sm text-[#2563EB] border-[#2563EB]/50 hover:bg-[#2563EB]/10'>
                 Share Your Latest Rep
             </Button>
             <p className='text-xs text-gray-500 mt-2'>* Solo Mode is active. Switch in settings for team visibility.</p>
