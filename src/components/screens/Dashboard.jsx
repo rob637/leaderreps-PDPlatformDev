@@ -107,7 +107,7 @@ import {
   Archive, 
   ShieldCheck, 
   Map,
-  Film, // NEW ICON
+  Film, 
   Dumbbell
 } from 'lucide-react';
 
@@ -154,7 +154,6 @@ const ThreeDButton = ({ children, onClick, color = COLORS.TEAL, accentColor = CO
   const defaultAccent = accentColor; 
   
   // FIX: Simplified style to rely on CSS :active / :hover in a real environment
-  // and removed manual JS event handlers that could be swallowing or delaying the click event.
   const buttonStyle = {
     background: defaultColor, 
     // Simplified shadow/z-depth for the static state
@@ -214,34 +213,38 @@ const Card = ({ children, title, icon: Icon, className = '', onClick, accent = '
 
 const StatCard = ({ icon: Icon, label, value, onClick, trend = 0, colorHex }) => {
   const TrendIcon = trend > 0 ? TrendingUp : TrendingDown;
+  // Use a simple boolean check for trend display in this simplified card
+  const showTrend = trend !== 0; 
   const trendColor = trend > 0 ? COLORS.TEAL : trend < 0 ? COLORS.ORANGE : COLORS.MUTED;
-  const isPrimary = label === "Daily Commitments Due"; 
+  
+  // Map label to a strong accent color
   let accent = 'NAVY';
-  if (label === "Daily Commitments Due") { accent = 'TEAL'; }
-  if (label === "Weakest PDP Tier Score") { accent = 'ORANGE'; }
-  if (label === "Current Perfect Score Streak") { accent = 'GREEN'; }
-  if (label === "Last Pre-Mortem Audit Date") { accent = 'PURPLE'; }
+  if (label.includes("Streak")) { accent = 'GREEN'; }
+  if (label.includes("Weakest Roadmap Tier")) { accent = 'ORANGE'; }
+  if (label.includes("Daily Reps Completed")) { accent = 'TEAL'; }
+  if (label.includes("Roadmap Months Remaining")) { accent = 'NAVY'; }
+  
 
   return (
     <Card 
       icon={Icon} 
-      title={label === "Development Plan Progress" && value === '0 / 24 Months' ? 'Start Now' : value}
+      title={value}
       onClick={onClick} 
-      className={`w-full ${isPrimary ? 'shadow-2xl' : ''}`}
+      className={`w-full`}
       accent={accent}
     >
       <div className="flex justify-between items-center -mt-1">
         <div className="flex-1">
           <div className="text-sm font-medium text-gray-500">{label}</div>
         </div>
-        <div className={`text-sm font-semibold flex items-center gap-1`} style={{ color: trendColor }}>
-          {trend !== 0 && (
-            <span className={`p-1 rounded-full`} style={{ background: trend > 0 ? COLORS.TEAL + '1A' : COLORS.ORANGE + '1A' }}>
-              <span className='block leading-none'><TrendIcon size={14} /></span>
-            </span>
-          )}
-          {trend !== 0 ? <span className='font-bold'>{Math.abs(trend)}%</span> : ''}
-        </div>
+        {showTrend && (
+            <div className={`text-sm font-semibold flex items-center gap-1`} style={{ color: trendColor }}>
+                <span className={`p-1 rounded-full`} style={{ background: trend > 0 ? COLORS.TEAL + '1A' : COLORS.ORANGE + '1A' }}>
+                <span className='block leading-none'><TrendIcon size={14} /></span>
+                </span>
+                <span className='font-bold'>{Math.abs(trend)}{label.includes("Reps") ? '%' : ''}</span>
+            </div>
+        )}
       </div>
       <CornerRightUp className="absolute top-8 right-8 text-gray-400" size={20} />
     </Card>
@@ -253,10 +256,11 @@ const ProgressRings = ({ dailyPercent, monthlyPercent, careerPercent, tierHex, c
   const dailyColor = commitsDue > 0 ? COLORS.ORANGE : COLORS.TEAL;
   const viewBoxSize = 36;
   const radius = 15.9155;
+  // Simplified calculation for Leadership Health Score
   const healthScore = Math.round(
-    (monthlyPercent * 0.4) + 
-    (careerPercent * 0.3) + 
-    ((100 - commitsDue * 5) * 0.3)
+    (dailyPercent * 0.4) + 
+    (monthlyPercent * 0.3) + 
+    (careerPercent * 0.3)
   );
 
   return (
@@ -264,7 +268,7 @@ const ProgressRings = ({ dailyPercent, monthlyPercent, careerPercent, tierHex, c
       title="Leadership Health Score" 
       icon={Activity} 
       accent="NAVY" 
-      className="lg:col-span-1 shadow-2xl bg-[#002E47]/10 border-4 border-[#002E47]/20"
+      className="shadow-2xl bg-[#002E47]/10 border-4 border-[#002E47]/20"
     >
       <div className="flex items-center space-x-4">
         {/* Gauge for Health Score */}
@@ -292,7 +296,7 @@ const ProgressRings = ({ dailyPercent, monthlyPercent, careerPercent, tierHex, c
         
         {/* Ring Descriptions */}
         <div className="flex-1 space-y-2">
-          <p className='text-sm font-bold text-[#002E47]'>Composite Index</p>
+          <p className='text-sm font-bold text-[#002E47]'>Composite Index Breakdown:</p>
           <div className='text-xs text-gray-700 font-medium space-y-1'>
             <div className='flex items-center'><span className={`w-2 h-2 rounded-full mr-2`} style={{backgroundColor: dailyColor}}/> **Daily Discipline:** {dailyPercent}%</div>
             <div className='flex items-center'><span className={`w-2 h-2 rounded-full mr-2`} style={{backgroundColor: tierHex}}/> **Monthly Learning:** {monthlyPercent}%</div>
@@ -300,8 +304,6 @@ const ProgressRings = ({ dailyPercent, monthlyPercent, careerPercent, tierHex, c
           </div>
         </div>
       </div>
-      
-      <p className='text-xs text-gray-500 mt-3'>*Composite score of discipline, learning, and roadmap completion.</p>
     </Card>
   );
 };
@@ -439,12 +441,12 @@ useEffect(() => {
     } catch {}
   })();
 // eslint-disable-next-line react-hooks/exhaustive-deps
-}, []);
+}, [tipContent]);
 
 
   const getInitialAITip = useCallback(async () => {
     // Only run if the AI key is ready and tip hasn't been set yet
-    if (!hasGeminiKey() || tipContent !== 'Tap "Next Nudge" for your first strategic focus point.') return;
+    if (!hasGeminiKey() || tipContent !== LOCAL_NUDGES[0]) return;
     
     setTipLoading(true);
     try {
@@ -465,7 +467,7 @@ useEffect(() => {
     } finally {
       setTipLoading(false);
     }
-  }, [weakestTier?.name, callSecureGeminiAPI, hasGeminiKey, tipContent]); // Added tipContent to re-run if state changes.
+  }, [weakestTier?.name, callSecureGeminiAPI, hasGeminiKey, tipContent]);
 
   const nextNudge = useCallback(async () => {
     let nextTip = '';
@@ -488,274 +490,79 @@ useEffect(() => {
     }
   }, [getInitialAITip, hasGeminiKey, weakestTier]);
 
+
+  /* =========================================================
+     SIMPLIFIED RENDER: FOCUS ON DAILY ACTIONS & SCORECARD
+  ========================================================= */
+
   return (
     <div className={`p-6 space-y-8 bg-[${COLORS.LIGHT_GRAY}] min-h-screen`}>
-      {/* Header with enhanced Personalization */}
+      {/* 1. Header with enhanced Personalization */}
       <div className={`border-b border-gray-200 pb-5 bg-[${COLORS.OFF_WHITE}] p-6 -mx-6 -mt-6 mb-8 rounded-b-xl shadow-md`}>
         <h1 className={`text-4xl font-extrabold text-[${COLORS.NAVY}] flex items-center gap-3`}>
           <Home size={32} style={{ color: COLORS.TEAL }} /> The Arena Dashboard
         </h1>
         <p className="text-gray-600 text-base mt-2">
-          {greeting} <span className={`font-semibold text-[${COLORS.NAVY}]`}>{displayedUserName}</span>. Your current practice is **{weakestTier?.name || 'Getting Started'}**—focus on consistency over intensity.
+          {greeting} <span className={`font-semibold text-[${COLORS.NAVY}]`}>{displayedUserName}</span>. Your focus is **{weakestTier?.name || 'Getting Started'}**—consistency over intensity.
         </p>
       </div>
       
-      {/* --- DEDICATED PDP ROADMAP HIGHLIGHT (FIX 1: HEADER SIZE & BORDER) --- */}
-      <div className="rounded-3xl border-4 border-[#002E47] bg-[#F7FCFF] p-8 shadow-2xl relative">
-        <h2 className="text-3xl font-extrabold text-[#002E47] mb-6 border-b-2 pb-4 border-gray-300 flex items-center gap-3">
-          <Dumbbell size={28} className="text-[#7C3AED]" /> Your 24-Month Training Roadmap
-        </h2>
-
-        <p className="text-sm text-gray-700 mb-4">
-          Your **Development Roadmap** applies the principle of **Progressive Overload** to close your skill gaps. Track your progress below and hit your monthly learning targets to achieve mastery.
-        </p>
-
-        <div className="grid grid-cols-3 gap-4">
-          <div className="p-3 rounded-xl bg-[#002E47]/5 border border-gray-200">
-            <p className="text-xs font-medium text-gray-600">Training Month</p>
-            <p className="text-xl font-extrabold text-[#002E47] mt-1">{goalsCount} / 24</p>
-          </div>
-          <div className="p-3 rounded-xl bg-[#002E47]/5 border border-gray-200">
-            <p className="text-xs font-medium text-gray-600">Weakest Tier Focus</p>
-            <p className="text-xl font-extrabold text-[#E04E1B] mt-1">{weakestTier?.name || 'N/A'}</p>
-          </div>
-          <div className="p-3 rounded-xl bg-[#002E47]/5 border border-gray-200">
-            <p className="text-xs font-medium text-gray-600">Mastery Projection</p>
-            <p className="text-xl font-extrabold text-[#47A88D] mt-1">{tierMasteryProjection} Days</p>
-          </div>
-        </div>
-
-        <Button onClick={() => safeNavigate('prof-dev-plan')} variant="primary" className="mt-4 w-full">
-          <Briefcase className="w-5 h-5 mr-2" /> Go to Development Roadmap
-        </Button>
-      </div>
-      {/* --- END PDP ROADMAP HIGHLIGHT --- */}
-
-      {/* --- MAIN GRID CONTAINER --- */}
+      {/* --- 2. ACTION & HEALTH HUB (The Launchpad) --- */}
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-
-        {/* Column 1 & 2: ACTION HUBS (Primary User Focus) */}
-        <div className="lg:col-span-3 space-y-8 order-2 lg:order-1">
-          {/* 1. PILLAR 2: COACHING (PRACTICE & FEEDBACK) */}
-          <div className='rounded-3xl border-4 border-[#002E47] bg-[#F7FCFF] p-8 shadow-2xl relative'>
-            <h2 className="text-3xl font-extrabold text-[#002E47] mb-6 border-b-2 pb-4 border-gray-300 flex items-center gap-3">
-              <Mic size={28} className='text-[#E04E1B]'/> PILLAR 2: Coaching (Practice & Feedback)
-            </h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        
+        {/* BIG ACTION BUTTONS (lg:col-span-3) */}
+        <div className="lg:col-span-3 space-y-6">
+          <h2 className="text-2xl font-extrabold text-[#002E47] flex items-center gap-3">
+              <Zap size={24} className='text-[#E04E1B]'/> Launchpad: Today's Non-Negotiables
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               
-              {/* Daily Practice Button (NAVY ACCENT / TEAL COLOR SWAPPED) */}
-              <div className='flex flex-col space-y-2'>
+              {/* Daily Practice */}
+              <div className='md:col-span-1 flex flex-col space-y-2'>
                 <ThreeDButton
                   onClick={() => safeNavigate('daily-practice')} 
-                  color={COLORS.TEAL} // <--- COLOR SWAP
-                  accentColor={COLORS.NAVY} // <--- ACCENT SWAP
-                  className="h-16 flex-row px-3 py-2 text-white"
+                  color={COLORS.TEAL}
+                  accentColor={COLORS.NAVY}
+                  className="h-20 flex-col px-3 py-2 text-white" 
                 >
-                  <ClockIcon className='w-5 h-5 mr-2'/> 
-                  <span className='text-md font-extrabold'>Daily Practice Scorecard</span>
+                  <ClockIcon className='w-6 h-6 mb-1'/> 
+                  <span className='text-lg font-extrabold'>Daily Practice Scorecard</span>
                 </ThreeDButton>
-                <p className='text-xs font-light text-gray-600'>This **Daily Scorecard** tracks your commitment to non-negotiable leadership micro-habits—your daily reps. Consistency over intensity.</p>
+                <p className='text-xs font-light text-gray-600'>**Your daily reps:** Log micro-habits to build consistency and track your **{perfectStreak} day streak**.</p>
               </div>
 
-              {/* Coaching Lab Button (NAVY ACCENT / TEAL COLOR SWAPPED) */}
-              <div className='flex flex-col space-y-2'>
+              {/* Development Roadmap */}
+              <div className='md:col-span-1 flex flex-col space-y-2'>
+                <ThreeDButton
+                  onClick={() => safeNavigate('prof-dev-plan')} 
+                  color={COLORS.ORANGE}
+                  accentColor={COLORS.NAVY}
+                  className="h-20 flex-col px-3 py-2 text-white" 
+                >
+                  <Briefcase className='w-6 h-6 mb-1'/> 
+                  <span className='text-lg font-extrabold'>24-Month Roadmap Check</span>
+                </ThreeDButton>
+                <p className='text-xs font-light text-gray-600'>**Your strategy:** Review content and complete assessments for your current focus: **{weakestTier?.name || 'T-X'}**.</p>
+              </div>
+
+              {/* Coaching Lab */}
+              <div className='md:col-span-1 flex flex-col space-y-2'>
                 <ThreeDButton
                   onClick={() => safeNavigate('coaching-lab')} 
-                  color={COLORS.TEAL} // <--- COLOR SWAP
-                  accentColor={COLORS.NAVY} // <--- ACCENT SWAP
-                  className="h-16 flex-row px-3 py-2 text-white" 
+                  color={COLORS.PURPLE}
+                  accentColor={COLORS.NAVY}
+                  className="h-20 flex-col px-3 py-2 text-white" 
                 >
-                  <Mic className='w-5 h-5 mr-2'/> 
-                  <span className='text-md font-extrabold'>AI Coaching & Practice Lab</span>
+                  <Mic className='w-6 h-6 mb-1'/> 
+                  <span className='text-lg font-extrabold'>AI Coaching Lab</span>
                 </ThreeDButton>
-                <p className='text-xs font-light text-gray-600'>**Development through practice.** Use AI role-play tools to simulate crucial conversations and receive real-time, objective critique.</p>
+                <p className='text-xs font-light text-gray-600'>**Your practice field:** Simulate critical conversations and receive objective, real-time critique.</p>
               </div>
-
-              {/* Development Plan Button (NAVY ACCENT / TEAL COLOR SWAPPED) - MOVED TO CONTENT PILLAR */}
-              <div className='flex flex-col space-y-2'>
-                <ThreeDButton
-                  onClick={() => safeNavigate('reflection')}
-                  color={COLORS.TEAL} // <--- COLOR SWAP
-                  accentColor={COLORS.NAVY} // <--- ACCENT SWAP
-                  className="h-16 flex-row px-3 py-2 text-white" 
-                >
-                  <BarChart3 className='w-5 h-5 mr-2'/> 
-                  <span className='text-md font-extrabold'>Executive ROI Report</span>
-                </ThreeDButton>
-                <p className='text-xs font-light text-gray-600'>**Practice over theory.** Get a data-driven report on how your training translates to competency, risk reduction, and well-being alignment.</p>
-              </div>
-              
-              {/* QuickStart: Bootcamp (NAVY ACCENT / TEAL COLOR SWAPPED) - MOVED HERE AS AN ENTRY POINT */}
-              <div className='flex flex-col space-y-2'>
-                <ThreeDButton
-                  onClick={() => safeNavigate('quick-start-accelerator')} 
-                  color={COLORS.TEAL} // <--- COLOR SWAP
-                  accentColor={COLORS.NAVY} // <--- ACCENT SWAP
-                  className="h-16 flex-row px-3 py-2 text-white" 
-                >
-                  <Zap className='w-5 h-5 mr-2'/> 
-                  <span className='text-md font-extrabold'>QuickStart: Bootcamp</span>
-                </ThreeDButton>
-                <p className='text-xs font-light text-gray-600'>The **Bootcamp entry point** to quickly internalize the foundational "moves" (skills) needed for effective executive action.</p>
-              </div>
-              
-            </div>
           </div>
-
-          {/* 2. PILLAR 1: CONTENT (LEARN & PREP) & PILLAR 3: COMMUNITY */}
-          <div className='rounded-3xl border-4 border-[#47A88D] bg-[#F7FCFF] p-8 shadow-2xl relative'>
-            <h2 className="text-3xl font-extrabold text-[#002E47] mb-6 border-b-2 pb-4 border-gray-300 flex items-center gap-3">
-              <BookOpen size={28} className='text-[#47A88D]'/> PILLAR 1: Content & PILLAR 3: Community
-            </h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              
-              {/* Strategic Content Tool (NAVY COLOR / TEAL ACCENT) */}
-              <div className='flex flex-col space-y-2'>
-                <ThreeDButton
-                  onClick={() => safeNavigate('planning-hub')} 
-                  color={COLORS.NAVY} // <--- COLOR SWAP
-                  accentColor={COLORS.TEAL} // <--- ACCENT SWAP
-                  className="h-16 flex-row px-3 py-2 text-white" 
-                >
-                  <Trello className='w-5 h-5 mr-2'/> 
-                  <span className='text-md font-extrabold'>Strategic Content Tools</span>
-                </ThreeDButton>
-                <p className='text-xs font-light text-gray-600'>Convert abstract vision into **actionable OKRs** and vet high-stakes decisions using the Pre-Mortem Audit tool.</p>
-              </div>
-
-              {/* Content Library: Read & Reps (NAVY COLOR / TEAL ACCENT) */}
-              <div className='flex flex-col space-y-2'>
-                <ThreeDButton
-                  onClick={() => safeNavigate('business-readings')} 
-                  color={COLORS.NAVY} // <--- COLOR SWAP
-                  accentColor={COLORS.TEAL} // <--- ACCENT SWAP
-                  className="h-16 flex-row px-3 py-2 text-white" 
-                >
-                  <BookOpen className='w-5 h-5 mr-2'/> 
-                  <span className='text-md font-extrabold'>Content: Read & Reps</span>
-                </ThreeDButton>
-                <p className='text-xs font-light text-gray-600'>Access key frameworks, executive summaries, and **AI-driven commitment plans** to simplify behavioral science learning.</p>
-              </div>
-
-              {/* Content Library: Leader Talks (NAVY COLOR / TEAL ACCENT) */}
-              <div className='flex flex-col space-y-2'> 
-                <ThreeDButton
-                  onClick={() => safeNavigate('leadership-videos')} 
-                  color={COLORS.NAVY} // <--- COLOR SWAP
-                  accentColor={COLORS.TEAL} // <--- ACCENT SWAP
-                  className="h-16 flex-row px-3 py-2 text-white" 
-                >
-                  <Film className='w-5 h-5 mr-2'/> 
-                  <span className='text-md font-extrabold'>Content: Leader Talks</span>
-                </ThreeDButton>
-                <p className='text-xs font-light text-gray-600'>A curated library of **inspirational and actionable video lessons** from top CEOs, coaches, and thought leaders.</p>
-              </div>
-
-              {/* Community & Peer Support Button (NAVY COLOR / TEAL ACCENT) */}
-              <div className='flex flex-col space-y-2'> 
-                <ThreeDButton
-                  onClick={() => safeNavigate('community')} 
-                  color={COLORS.NAVY} // <--- COLOR SWAP
-                  accentColor={COLORS.TEAL} // <--- ACCENT SWAP
-                  className="h-16 flex-row px-3 py-2 text-white" 
-                >
-                  <Users className='w-5 h-5 mr-2'/> 
-                  <span className='text-md font-extrabold'>Community: Leader Circles</span>
-                </ThreeDButton>
-                <p className='text-xs font-light text-gray-600'>**Accountability and long-term growth** via peer connection, facilitated Leader Circles, and idea sharing.</p>
-              </div>
-              
-            </div>
-          </div>
-
-
-          {/* 3. TOP STATS CARDS (Below Action Hubs) */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            <StatCard
-              icon={Star}
-              label="Current Perfect Score Streak"
-              value={`${perfectStreak} Days`}
-              onClick={() => safeNavigate('daily-practice')}
-              trend={perfectStreak >= 3 ? 5 : 0} 
-              colorHex={COLORS.GREEN}
-            />
-            <StatCard
-              icon={AlertTriangle}
-              label="Weakest Roadmap Tier Score"
-              value={`${weakestTier?.name || 'T-X'} (${weakestTier?.rating}/10)`}
-              onClick={() => safeNavigate('prof-dev-plan')}
-              trend={-12} 
-              colorHex={COLORS.ORANGE}
-            />
-            <StatCard
-              icon={Archive}
-              label="Longest-Held OKR"
-              value={`${longestHeldOKR.days} Days (${longestHeldOKR.objective})`}
-              onClick={() => safeNavigate('planning-hub')}
-              trend={5} 
-              colorHex={COLORS.NAVY}
-            />
-            <StatCard
-              icon={ShieldCheck}
-              label="Last Pre-Mortem Audit Date"
-              value={lastPreMortemDate}
-              onClick={() => safeNavigate('planning-hub')}
-              trend={20} 
-              colorHex={COLORS.PURPLE}
-            />
-          </div>
-          
-          {/* 4. PROGRESS SNAPSHOT (KMI Focus) */}
-          <div className='rounded-2xl border border-gray-200 bg-gray-50 p-6 shadow-xl'>
-            <h2 className="text-2xl font-bold text-[#002E47] mb-5 flex items-center gap-2">
-              <LayoutDashboard size={24} className='text-[#002E47]'/> Key Progress Indicators (The Reps Tracker)
-            </h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className={`flex items-center space-x-4 p-4 rounded-xl bg-[${COLORS.OFF_WHITE}] shadow-sm border border-gray-100 transition-all duration-300 animate-in fade-in-0 hover:shadow-lg hover:ring-2 ring-opacity-20 ring-[${COLORS.TEAL}]`}>
-                <div className={`p-3 rounded-xl bg-opacity-10 flex-shrink-0`} style={{ background: COLORS.TEAL + '1A'}}>
-                  <CheckCircle size={20} style={{ color: COLORS.TEAL }} />
-                </div>
-                <div className='truncate'>
-                  <p className="text-sm text-gray-500 font-medium truncate">Daily Reps Completed</p>
-                  <p className={`text-xl font-extrabold mt-0.5`} style={{ color: COLORS.TEAL }}>{commitsCompleted} of {commitsTotal}</p>
-                </div>
-              </div>
-              <div className={`flex items-center space-x-4 p-4 rounded-xl bg-[${COLORS.OFF_WHITE}] shadow-sm border border-gray-100 transition-all duration-300 animate-in fade-in-0 hover:shadow-lg hover:ring-2 ring-opacity-20 ring-[${COLORS.ORANGE}]`}>
-                <div className={`p-3 rounded-xl bg-opacity-10 flex-shrink-0`} style={{ background: COLORS.ORANGE + '1A'}}>
-                  <Target size={20} style={{ color: COLORS.ORANGE }} />
-                </div>
-                <div className='truncate'>
-                  <p className="text-sm text-gray-500 font-medium truncate">Roadmap Tier Focus</p>
-                  <p className={`text-xl font-extrabold mt-0.5`} style={{ color: COLORS.ORANGE }}>{weakestTier?.name || 'N/A'}</p>
-                </div>
-              </div>
-              <div className={`flex items-center space-x-4 p-4 rounded-xl bg-[${COLORS.OFF_WHITE}] shadow-sm border border-gray-100 transition-all duration-300 animate-in fade-in-0 hover:shadow-lg hover:ring-2 ring-opacity-20 ring-[${COLORS.BLUE}]`}>
-                <div className={`p-3 rounded-xl bg-opacity-10 flex-shrink-0`} style={{ background: COLORS.BLUE + '1A'}}>
-                  <Trello size={20} style={{ color: COLORS.BLUE }} />
-                </div>
-                <div className='truncate'>
-                  <p className="text-sm text-gray-500 font-medium truncate">Total Active OKRs</p>
-                  <p className={`text-xl font-extrabold mt-0.5`} style={{ color: COLORS.BLUE }}>{okrs.length}</p>
-                </div>
-              </div>
-              <div className={`flex items-center space-x-4 p-4 rounded-xl bg-[${COLORS.OFF_WHITE}] shadow-sm border border-gray-100 transition-all duration-300 animate-in fade-in-0 hover:shadow-lg hover:ring-2 ring-opacity-20 ring-[${COLORS.NAVY}]`}>
-                <div className={`p-3 rounded-xl bg-opacity-10 flex-shrink-0`} style={{ background: COLORS.NAVY + '1A'}}>
-                  <Briefcase size={20} style={{ color: COLORS.NAVY }} />
-                </div>
-                <div className='truncate'>
-                  <p className="text-sm text-gray-500 font-medium truncate">Roadmap Months Remaining</p>
-                  <p className={`text-xl font-extrabold mt-0.5`} style={{ color: COLORS.NAVY }}>{24 - goalsCount}</p>
-                </div>
-              </div>
-            </div>
-          </div>
-
         </div>
 
-        {/* Column 3: HEALTH SCORE & NUDGE (lg:col-span-1, order 1) */}
-        <div className="space-y-8 lg:col-span-1 order-1">
-
-          {/* 5. HEALTH SCORE RING */}
+        {/* HEALTH SCORE RING (lg:col-span-1) */}
+        <div className="lg:col-span-1">
           <ProgressRings
             dailyPercent={dailyPercent}
             monthlyPercent={monthlyPercent}
@@ -763,14 +570,65 @@ useEffect(() => {
             tierHex={weakestTier?.hex || COLORS.TEAL}
             commitsDue={commitsDue}
           />
+        </div>
+      </div>
+      
+      {/* --- 3. METRICS SCORECARD & NUDGE --- */}
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+        
+        {/* Progress Snapshot (The Scorecard: lg:col-span-3) */}
+        <div className="lg:col-span-3 space-y-6">
+          <h2 className="text-2xl font-extrabold text-[#002E47] flex items-center gap-3">
+              <BarChart3 size={24} className='text-[#47A88D]'/> Performance Scorecard
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              {/* Stat Card 1: Streak */}
+              <StatCard
+                icon={Star}
+                label="Current Perfect Score Streak"
+                value={`${perfectStreak} Days`}
+                onClick={() => safeNavigate('daily-practice')}
+                trend={perfectStreak >= 3 ? 5 : 0} 
+                colorHex={COLORS.GREEN}
+              />
+              {/* Stat Card 2: Weakest Tier */}
+              <StatCard
+                icon={Target}
+                label="Weakest Roadmap Tier Score"
+                value={`${weakestTier?.name || 'T-X'} (${weakestTier?.rating}/10)`}
+                onClick={() => safeNavigate('prof-dev-plan')}
+                trend={-12} 
+                colorHex={COLORS.ORANGE}
+              />
+              {/* Stat Card 3: Daily Reps */}
+              <StatCard
+                icon={CheckCircle}
+                label="Daily Reps Completed"
+                value={`${commitsCompleted} of ${commitsTotal}`}
+                onClick={() => safeNavigate('daily-practice')}
+                trend={dailyPercent} 
+                colorHex={COLORS.TEAL}
+              />
+              {/* Stat Card 4: Roadmap Months */}
+              <StatCard
+                icon={Briefcase}
+                label="Roadmap Months Remaining"
+                value={`${24 - goalsCount}`}
+                onClick={() => safeNavigate('prof-dev-plan')}
+                trend={24 - goalsCount > 0 ? -4 : 0} 
+                colorHex={COLORS.NAVY}
+              />
+          </div>
+        </div>
 
-          {/* 6. Daily Tip (Strategic Nudge) - Enhanced with Tier Icon */}
+        {/* Daily Tip (Strategic Nudge: lg:col-span-1) */}
+        <div className="lg:col-span-1">
           <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-xl transition-all duration-300 hover:shadow-2xl hover:bg-white/95 relative group">
             <div className='absolute inset-0 rounded-2xl' style={{ background: `${weakestTier?.hex || COLORS.TEAL}1A`, opacity: 0.1 }} />
             <div className="flex items-center justify-between mb-4 relative z-10">
               <h2 className={`text-xl font-bold flex items-center gap-2`} style={{color: weakestTier?.hex || COLORS.NAVY}}>
-                <Target size={20} className={`text-white p-1 rounded-full`} style={{backgroundColor: weakestTier?.hex || COLORS.TEAL}}/> 
-                {weakestTier?.name || 'T-X'} Strategic Rep
+                <Lightbulb size={20} className={`text-white p-1 rounded-full`} style={{backgroundColor: weakestTier?.hex || COLORS.TEAL}}/> 
+                Strategic Nudge
               </h2>
               <button
                 className="rounded-full border border-gray-200 px-3 py-1 text-sm hover:bg-gray-100 flex items-center gap-1 transition-colors"
@@ -792,6 +650,7 @@ useEffect(() => {
           </div>
         </div>
       </div>
+      
     </div>
   );
 };
