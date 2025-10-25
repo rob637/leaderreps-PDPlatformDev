@@ -1347,9 +1347,22 @@ const GlobalDataEditor = ({ globalMetadata, updateGlobalMetadata, db, navigate }
 
     
     const [localGlobalData, setLocalGlobalData] = useState(globalMetadata || {});
-    
 
-  // Diagnostics: log what the editor actually received
+// Auto-pick a populated tab on first data load
+const computeFirstTab = (data) => {
+  if (!data) return 'reading';
+  const countItems = (obj) => Object.values(obj || {}).flat().length;
+  if ((data.LEADERSHIP_DOMAINS || []).length) return 'domains';
+  if (countItems(data.RESOURCE_LIBRARY || data.RESOURCE_CONTENT_LIBRARY || {}) > 0) return 'resources';
+  if ((data.TARGET_REP_CATALOG || []).length) return 'target-reps';
+  if ((data.QUICK_CHALLENGE_CATALOG || []).length) return 'quick-challenges';
+  if ((data.COMMITMENT_BANK || []).length) return 'commitment';
+  if ((data.SCENARIO_CATALOG || []).length) return 'scenarios';
+  if (data.READING_CATALOG_SERVICE && Object.keys(data.READING_CATALOG_SERVICE).length) return 'reading';
+  return 'reading';
+};
+const [tabAutoSelected, setTabAutoSelected] = useState(false);
+// Diagnostics: log what the editor actually received
   React.useEffect(() => {
     try {
       const lib = (localGlobalData && (localGlobalData.RESOURCE_LIBRARY || localGlobalData.RESOURCE_CONTENT_LIBRARY)) || {};
@@ -1384,10 +1397,17 @@ const GlobalDataEditor = ({ globalMetadata, updateGlobalMetadata, db, navigate }
     // Include the deep, computed dependency to force synchronization when data changes.
     // The component will re-run the effect if either the shallow reference (globalMetadata) 
     // or the deep key structure (readingCatalogKeys) changes.
-    }, [globalMetadata, readingCatalogKeys]); 
+    } , [globalMetadata, readingCatalogKeys]);
 
-
-    // --- FINAL DATABASE WRITE HANDLER ---
+    // Once data arrives the first time, auto-select a visible tab if current is empty
+    useEffect(() => {
+      if (!tabAutoSelected && localGlobalData && Object.keys(localGlobalData || {}).length) {
+        const next = computeFirstTab(localGlobalData);
+        setCurrentTab(next);
+        setTabAutoSelected(true);
+      }
+    }, [localGlobalData, tabAutoSelected]);
+// --- FINAL DATABASE WRITE HANDLER ---
     const handleFinalSave = async () => {
         setIsSaving(true);
         setStatus(null);
