@@ -382,7 +382,8 @@ function AuthPanel({ auth, onSuccess }) {
                         placeholder="Email" 
                         value={email} 
                         onChange={(e) => setEmail(e.target.value)} 
-                        className={`w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[${TEAL}] focus:border-[${TETAL}]`} 
+                        // CRITICAL FIX: Removed "TETAL" typo here
+                        className={`w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[${TEAL}] focus:border-[${TEAL}]`} 
                         disabled={isLoading}
                         autoComplete="email" 
                     />
@@ -484,7 +485,7 @@ const NavSidebar = ({ currentScreen, setCurrentScreen, user, closeMobileMenu, is
             if (auth) {
                 // FIX: Correctly call the imported Firebase signOut function
                 await signOut(auth); 
-                console.log('Sign Out successful.'); 
+                console.log('Sign Out successful. Waiting for state update.'); 
             }
             closeMobileMenu();
         } catch (e) { 
@@ -594,7 +595,7 @@ const ScreenRouter = ({ currentScreen, navParams, navigate }) => {
 const AppContent = ({ currentScreen, setCurrentScreen, user, navParams, isMobileOpen, setIsMobileOpen, isAuthRequired }) => {
     
     // FIX (Issue 1): Define the correct handler for closing the menu
-    const closeMobileMenu = useCallback(() => { setIsMobileOpen(false); }, [setIsMobileOpen]);
+    const closeMobileMenu = useCallback(() => { setIsMobileOpen(false); }, [setIsMobileMenu]);
     
     const { navigate } = useAppServices(); // Get the navigate function from context
     

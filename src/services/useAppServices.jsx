@@ -119,12 +119,11 @@ const useFirestoreData = (db, userId, isAuthReady, docName, mockData, keySuffix)
             setIsLoading(false); 
         });
 
-        // Add a safety timeout to ensure loading state resolves even if mockOnSnapshot fails/is slow
+        // ADDED 5s TIMEOUT TOLERANCE
         const safetyTimer = setTimeout(() => {
              console.warn(`Firestore subscription timeout for ${docName}. Forcing load state to false.`);
              setIsLoading(false);
-        }, 1500);
-
+        }, 5000); // Increased from 1500ms to 5000ms
 
         return () => { 
             unsubscribe(); 
@@ -224,16 +223,7 @@ export const useGlobalMetadata = (db, isAuthReady) => {
         const unsubscribe = mockOnSnapshot(docRef, (doc) => {
             if (doc.exists()) {
                 const data = doc.data();
-                setMetadata({
-                    LEADERSHIP_TIERS: data.leadership_tiers,
-                    COMMITMENT_BANK: data.commitment_bank,
-                    QUICK_CHALLENGE_CATALOG: data.quick_challenge_catalog,
-                    SCENARIO_CATALOG: data.scenario_library,
-                    VIDEO_CATALOG: data.video_library,
-                    LEADERSHIP_DOMAINS: data.leadership_domains,
-                    RESOURCE_LIBRARY: data.resource_library,
-                    MOCK_ACTIVITY_DATA: data.mock_activity_data,
-                });
+                setMetadata(data); // Using the raw data object for simplicity in this flow
             } else {
                 console.error("CRITICAL: Global metadata document 'metadata/config' not found. Using fallbacks.");
                 setMetadata({}); 
@@ -242,11 +232,11 @@ export const useGlobalMetadata = (db, isAuthReady) => {
             setLoading(false);
         });
         
-        // Add safety timeout to resolve loading state
+        // ADDED 5s TIMEOUT TOLERANCE
         const safetyTimer = setTimeout(() => {
              console.warn(`Global Metadata subscription timeout. Forcing load state to false.`);
              setLoading(false);
-        }, 1500);
+        }, 5000); // Increased from 1500ms to 5000ms
 
         return () => { 
             unsubscribe();
