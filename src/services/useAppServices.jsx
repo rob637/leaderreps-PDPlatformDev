@@ -378,36 +378,44 @@ export const useGlobalMetadata = (db, isAuthReady) => {
         // 🟢 DEBUG: Start Snapshot Process 🟢
         console.groupCollapsed(`[DEBUG: Global Metadata Snapshot] Received update from ${pathConfig}`);
         
-        const configData = doc.exists() ? doc.data() : {};
-        
-        // Asynchronously fetch the large catalog document
-        const catalogDoc = await getDocEx(db, pathCatalog);
-        const catalogData = catalogDoc.exists() ? catalogDoc.data() : {};
-        
-        const mergedData = { 
-            ...configData, 
-            READING_CATALOG_SERVICE: catalogData 
-        };
-        
-        // 🟢 DEBUG: Final Merge Result 🟢
-        console.log(`[DEBUG FINAL MERGE] Merged data from 2 documents. Total keys: ${Object.keys(mergedData).length}`);
-        console.log("Merged Object:", mergedData);
-        
-        if (isMounted && mergedData && Object.keys(mergedData).length > 0) {
+        try { // 🛑 NEW TRY BLOCK 🛑 (Added to previous response)
+            const configData = doc.exists() ? doc.data() : {};
             
-            const resolved = resolveGlobalMetadata(mergedData);
+            // Asynchronously fetch the large catalog document
+            const catalogDoc = await getDocEx(db, pathCatalog);
+            const catalogData = catalogDoc.exists() ? catalogDoc.data() : {};
             
-            // 🟢 DEBUG: Resolved Metadata Result 🟢
-            console.log(`[DEBUG RESOLVED METADATA] Keys after normalization: ${Object.keys(resolved).length}`);
-            console.log("Resolved Object (Set to State):", resolved);
+            const mergedData = { 
+                ...configData, 
+                READING_CATALOG_SERVICE: catalogData 
+            };
+            
+            // 🟢 DEBUG: Final Merge Result 🟢
+            console.log(`[DEBUG FINAL MERGE] Merged data from 2 documents. Total keys: ${Object.keys(mergedData).length}`);
+            console.log("Merged Object:", mergedData);
+            
+            if (isMounted && mergedData && Object.keys(mergedData).length > 0) {
+                
+                const resolved = resolveGlobalMetadata(mergedData);
+                
+                // 🟢 DEBUG: Resolved Metadata Result 🟢
+                console.log(`[DEBUG RESOLVED METADATA] Keys after normalization: ${Object.keys(resolved).length}`);
+                console.log("Resolved Object (Set to State):", resolved);
 
-            setMetadata(resolved);
-            setLoading(false);
-            setError(null);
-            console.log('[GLOBAL SNAPSHOT - ONSNAPSHOT]', 'Update received and merged.');
-        } else if (isMounted) {
-             setLoading(false); // Finished loading even if empty
-             console.log('[GLOBAL SNAPSHOT - ONSNAPSHOT]', 'Update resolved to empty object.');
+                setMetadata(resolved);
+                setLoading(false);
+                setError(null);
+                console.log('[GLOBAL SNAPSHOT - ONSNAPSHOT]', 'Update received and merged.');
+            } else if (isMounted) {
+                 setLoading(false); // Finished loading even if empty
+                 console.log('[GLOBAL SNAPSHOT - ONSNAPSHOT]', 'Update resolved to empty object.');
+            }
+        } catch (e) { // 🛑 NEW CATCH BLOCK 🛑 (Added to previous response)
+            console.error("[CRITICAL READ FAIL] Failed during merge/set state.", e);
+            if (isMounted) {
+                setError(e);
+                setLoading(false);
+            }
         }
         
         console.groupEnd();
