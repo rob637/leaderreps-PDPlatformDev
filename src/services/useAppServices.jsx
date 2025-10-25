@@ -1,4 +1,4 @@
-// src/services/useAppServices.jsx (Absolute Final Fix for Blank Global Data)
+// src/services/useAppServices.jsx (INSTRUMENTED FOR DEBUGGING)
 
 import React, {
   useMemo,
@@ -145,7 +145,6 @@ const looksEmptyGlobal = (obj) => {
   const hasKnown = known.some((k) => Object.prototype.hasOwnProperty.call(obj, k));
   
   if (hasKnown) {
-      // If known keys exist, only consider it empty if they are all empty lists/objects
       return known.filter(k => Object.prototype.hasOwnProperty.call(obj, k)).every(k => {
           const v = obj[k];
           if (Array.isArray(v)) return v.length === 0;
@@ -153,7 +152,6 @@ const looksEmptyGlobal = (obj) => {
           return false;
       });
   }
-  // Otherwise, if no known keys exist, check if there are any keys at all.
   return Object.keys(obj).length === 0;
 };
 
@@ -167,13 +165,12 @@ const traceCallsite = (label = 'updateGlobalMetadata') => {
 
 
 /* =========================================================
-   User-data hooks
+   User-data hooks (Unchanged)
 ========================================================= */
 const SUBCOLLECTION_NAME = 'profile'; 
-const MAX_LOAD_TIMEOUT = 1500; // 1.5 seconds max wait for the initial snapshot
+const MAX_LOAD_TIMEOUT = 1500; 
 
 const useFirestoreUserData = (db, userId, isAuthReady, collection, document, mockData) => {
-  // FIX: Path must be 4 segments: Collection / User ID / Subcollection / Document Name
   const path = userId && `${collection}/${userId}/${SUBCOLLECTION_NAME}/${document}`; 
   const [data, setData] = useState(mockData);
   const [loading, setLoading] = useState(true);
@@ -198,19 +195,17 @@ const useFirestoreUserData = (db, userId, isAuthReady, collection, document, moc
         }
     };
     
-    // Set a timeout to resolve loading if the snapshot doesn't arrive quickly
     timeoutId = setTimeout(() => {
         console.warn(`[USER DATA TIMEOUT] Hook for ${document} timed out (${MAX_LOAD_TIMEOUT}ms). Resolving with available data.`);
         resolveLoad(false); 
     }, MAX_LOAD_TIMEOUT);
 
     let unsubscribe = onSnapshotEx(db, path, (snap) => {
-        resolveLoad(); // Resolve loading immediately upon first snapshot (success or failure)
+        resolveLoad(); 
         if (snap.exists()) {
             setData(snap.data());
             setError(null);
         } else {
-            // Document doesn't exist, use mock/fallback state
             setData(mockData);
             setError(null);
         }
@@ -242,11 +237,10 @@ export const usePDPData = (db, userId, isAuthReady) => {
   const { roadmapData, isLoading, error, updateData: updatePdpData } = useFirestoreUserData(db, userId, isAuthReady, 'leadership_plan', 'roadmap', MOCK_PDP_DATA);
   
   const saveNewPlan = useCallback(async (newPlanData) => {
-    // FIX: Must use a 4-segment path (Collection/User ID/Subcollection/Document)
     if (!db || !userId) return;
     const path = `${'leadership_plan'}/${userId}/${SUBCOLLECTION_NAME}/${'roadmap'}`; 
     try {
-      await setDocEx(db, path, newPlanData); // No merge (overwrite)
+      await setDocEx(db, path, newPlanData); 
       console.log(`[USER SAVE] PDP roadmap overwritten successfully.`, newPlanData);
     } catch (e) {
       console.error(`[USER SAVE FAILED] PDP roadmap`, e);
@@ -269,7 +263,7 @@ export const usePlanningData = (db, userId, isAuthReady) => {
 
 
 /* =========================================================
-   Global metadata (read) - REBUILT TO ELIMINATE RACE CONDITIONS
+   Global metadata (read) - CRITICAL INSTRUMENTATION ADDED
 ========================================================= */
 export const useGlobalMetadata = (db, isAuthReady) => {
   const [metadata, setMetadata] = useState({});
@@ -279,7 +273,6 @@ export const useGlobalMetadata = (db, isAuthReady) => {
   const pathConfig = mockDoc(db, 'metadata', 'config');
   const pathCatalog = mockDoc(db, 'metadata', 'reading_catalog');
 
-  // 🛑 NEW LOGIC: Use one-time fetch (GetDoc) for both documents.
   useEffect(() => {
     if (!isAuthReady) {
       setLoading(false);
@@ -295,17 +288,26 @@ export const useGlobalMetadata = (db, isAuthReady) => {
           getDocEx(db, pathConfig),
           getDocEx(db, pathCatalog)
         ]);
+        
+        // --- STEP 1: LOG RAW SNAPSHOT STATUS ---
+        console.log(`[DEBUG GLOBAL] Config Doc Exists: ${configSnap.exists()}. Path: ${pathConfig}`);
+        console.log(`[DEBUG GLOBAL] Catalog Doc Exists: ${catalogSnap.exists()}. Path: ${pathCatalog}`);
 
         const configData = configSnap.exists() ? configSnap.data() : {};
         const catalogData = catalogSnap.exists() ? catalogSnap.data() : {};
         
+        // --- STEP 2: LOG RAW DATA RETURNED ---
+        console.log(`[DEBUG GLOBAL] Raw Config Data:`, configData);
+        console.log(`[DEBUG GLOBAL] Raw Catalog Data:`, catalogData);
+        
         // CRITICAL FIX: Direct merge of all data with the catalog nested as expected
-        // We ensure that if either data object is null/undefined (which shouldn't happen after snap.data() || {}), 
-        // the merge still works.
         finalData = { 
             ...(configData || {}), 
             READING_CATALOG_SERVICE: (catalogData || {}) 
         };
+        
+        // --- STEP 3: LOG MERGED DATA ---
+        console.log(`[DEBUG GLOBAL] Merged Data (Before Fallback):`, finalData);
         
         // Apply fallback tiers ONLY if the entire config document was empty
         if (Object.keys(configData || {}).length === 0) {
@@ -313,8 +315,11 @@ export const useGlobalMetadata = (db, isAuthReady) => {
             console.warn('[REBUILD READ RESOLVE] Config data was empty. Applied LEADERSHIP_TIERS_FALLBACK.');
         }
         
-        setMetadata(finalData); // SET THE STATE WITH THE MERGED DATA
+        setMetadata(finalData); 
         setError(null);
+        
+        // --- STEP 4: LOG FINAL STATE ---
+        console.log(`[DEBUG GLOBAL] FINAL METADATA STATE SET:`, finalData);
         
       } catch (e) {
           console.error("[CRITICAL REBUILD READ FAIL] Document fetch failed.", e);
@@ -327,14 +332,13 @@ export const useGlobalMetadata = (db, isAuthReady) => {
 
     fetchMetadata();
     
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [db, isAuthReady]); 
 
   return { metadata, isLoading: loading, error };
 };
 
 /* =========================================================
-   Global writer (safe merge + optional force overwrite) (RE-ADDED BODY)
+   Global writer (safe merge + optional force overwrite) (Unchanged)
 ========================================================= */
 export const updateGlobalMetadata = async (
   db,
@@ -351,20 +355,14 @@ export const updateGlobalMetadata = async (
   let path;
   let payload = { ...data };
 
-  // CRITICAL: Determine which document to write to (config or reading_catalog)
   if (forceDocument === 'catalog' || (payload.READING_CATALOG_SERVICE && forceDocument !== 'config')) {
       path = mockDoc(db, 'metadata', 'reading_catalog');
-      // If writing to catalog, the payload is the content of the catalog document
       payload = payload.READING_CATALOG_SERVICE || payload; 
-      // Ensure the catalog data is an object if it's the target document
       if (!payload || typeof payload !== 'object' || Array.isArray(payload)) {
-          // If the payload is just the array of items, wrap it in a 'catalog' field for consistency
           payload = { catalog: Array.isArray(payload) ? payload : [] };
       }
   } else {
-      // Default to config document
       path = mockDoc(db, 'metadata', 'config');
-      // Ensure the catalog isn't accidentally written to the config doc
       if (payload.READING_CATALOG_SERVICE) delete payload.READING_CATALOG_SERVICE;
   }
 
@@ -388,7 +386,7 @@ export const updateGlobalMetadata = async (
 };
 
 /* =========================================================
-   Provider factory
+   Provider factory (Unchanged)
 ========================================================= */
 export const createAppServices = ({
   user, userId, auth, db, isAuthReady, navigate,
