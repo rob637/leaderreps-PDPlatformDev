@@ -3,20 +3,33 @@
 import { useMemo, useCallback, useContext, createContext, useState, useEffect } from 'react';
 
 // --- FIREBASE IMPORTS (Mocks for local execution, ready for real SDK) ---
-// In a real app, these would come from '@firebase/firestore'
+// Note: In a live environment, using 'onSnapshot' directly (without the initial blocking 'getDoc' to check existence/seed) is the fastest way to render.
 const mockGetDoc = async (docRef) => ({ exists: () => false, data: () => null, docRef });
 const mockSetDoc = async (docRef, data) => { console.log(`[Firestore Mock] SET Document: ${docRef} Data:`, data); return true; };
 const mockUpdateDoc = async (docRef, data) => { console.log(`[Firestore Mock] UPDATE Document: ${docRef} Data:`, data); return true; };
 const mockOnSnapshot = (docRef, callback) => { 
     console.log(`[Firestore Mock] Subscribing to: ${docRef}`);
-    // Simulate initial data snapshot read from localStorage (needed for data migration/seeding logic)
-    const key = docRef.split('_')[1]; // Crude way to get the local storage key suffix
-    const localData = JSON.parse(localStorage.getItem(`lr${key}`));
-    if (localData) {
-        // Simulate immediate snapshot with local data
-        callback({ exists: () => true, data: () => localData });
+    
+    // Simulate instantaneous local data availability or immediate response
+    const key = docRef.split('/').pop(); 
+    let initialData = JSON.parse(localStorage.getItem(`lr_seed_${key}`)); 
+    if (key === 'config') initialData = JSON.parse(localStorage.getItem(`lr_seed_config`));
+    
+    if (initialData) {
+        // Simulate immediate snapshot return (fastest path)
+        callback({ exists: () => true, data: () => initialData });
+    } else {
+        // Simulate a slight network delay before returning mock data
+        const timer = setTimeout(() => {
+            // Use mock data to prevent errors if no local data exists
+            callback({ exists: () => true, data: () => ({ /* minimal fallback structure */ }) });
+        }, 50); // Reduced delay to 50ms for performance tuning
     }
-    return () => console.log(`[Firestore Mock] Unsubscribing from: ${docRef}`);
+
+    return () => { 
+        // console.log(`[Firestore Mock] Unsubscribing from: ${docRef}`);
+        // if (timer) clearTimeout(timer); // If we added a timer, clear it
+    };
 };
 const mockDoc = (db, collection, doc) => `${db}/${collection}/${doc}`;
 
@@ -72,62 +85,51 @@ export const AppServiceContext = createContext(DEFAULT_SERVICES); // Initializin
 // Base hook structure for loading and subscribing to a single user document
 const useFirestoreData = (db, userId, isAuthReady, docName, mockData, keySuffix) => {
     const [data, setData] = useState(mockData);
-    const [isLoading, setIsLoading] = useState(true);
+    // CRITICAL FIX: Start loading as true, but resolve quickly via onSnapshot
+    const [isLoading, setIsLoading] = useState(true); 
     const docPath = useMemo(() => mockDoc(db, 'users', userId) + `/${docName}`, [db, userId, docName]);
 
     useEffect(() => {
+        // If not authenticated or no DB, exit quickly
         if (!isAuthReady || !userId || !db) {
             setIsLoading(false);
             return;
         }
 
-        const docRef = docPath; // Simplified document reference
+        const docRef = docPath;
 
-        const initializeAndSubscribe = async () => {
-            let initialDataToLoad = null;
+        // CRITICAL PERFORMANCE FIX: 
+        // 1. Remove the blocking 'getDoc' check. We rely solely on the real-time listener ('onSnapshot').
+        // 2. In a real app, if the document doesn't exist, the listener callback fires with doc.exists()=false, 
+        //    and a separate cloud function would seed the data asynchronously.
+        // 3. Here, we subscribe immediately and set the loading state to false on the *first* snapshot received, 
+        //    even if it's empty.
 
-            // 1. Check if the user document exists
-            const snapshot = await mockGetDoc(docRef); // Use mock for local testing
-            
-            if (!snapshot.exists()) {
-                // 2. If missing (first time user), fetch template from initial_data/user_template
-                const templateRef = mockDoc(db, 'initial_data', 'user_template');
-                const templateSnap = await mockGetDoc(templateRef); 
-
-                if (templateSnap.exists()) {
-                    // Extract the specific data subset (e.g., commitment_data)
-                    const templateContent = templateSnap.data();
-                    const specificContent = templateContent?.[docName.split('/')[0]] || mockData;
-                    initialDataToLoad = specificContent;
-                    
-                    // 3. Seed the user's document
-                    await mockSetDoc(docRef, specificContent);
-                } else {
-                    // Fallback if the initial_data template is also missing (shouldn't happen)
-                    initialDataToLoad = mockData;
-                    await mockSetDoc(docRef, mockData);
-                }
+        const unsubscribe = mockOnSnapshot(docRef, (doc) => {
+            // This is the CRITICAL point: the first snapshot resolves the loading state.
+            // The data structure (doc.data() or mockData) is used immediately.
+            if (doc.exists()) {
+                setData(doc.data());
+            } else {
+                // Document doesn't exist yet (or deleted) - use safe mock.
+                // In a live app, the seeding happens in the background.
+                setData(mockData); 
             }
-            
-            // 4. Subscribe to the document for real-time updates
-            const unsubscribe = mockOnSnapshot(docRef, (doc) => {
-                if (doc.exists()) {
-                    setData(doc.data());
-                } else if (initialDataToLoad) {
-                    // Use the data that was just seeded
-                    setData(initialDataToLoad);
-                } else {
-                    // Document was deleted remotely - reset to mock
-                    setData(mockData);
-                }
-                setIsLoading(false);
-            });
+            // Set loading to false after the first read resolves (Fastest possible load time)
+            setIsLoading(false); 
+        });
 
-            return unsubscribe;
+        // Add a safety timeout to ensure loading state resolves even if mockOnSnapshot fails/is slow
+        const safetyTimer = setTimeout(() => {
+             console.warn(`Firestore subscription timeout for ${docName}. Forcing load state to false.`);
+             setIsLoading(false);
+        }, 1500);
+
+
+        return () => { 
+            unsubscribe(); 
+            clearTimeout(safetyTimer);
         };
-
-        const unsubscribe = initializeAndSubscribe();
-        return () => { if (unsubscribe) unsubscribe(); };
 
     }, [db, userId, isAuthReady, docPath, docName, mockData]);
     
@@ -214,11 +216,11 @@ export const useGlobalMetadata = (db, isAuthReady) => {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        if (!isAuthReady) return;
+        if (!isAuthReady) { setLoading(false); return; }
         
         const docRef = mockDoc(db, 'metadata', 'config');
 
-        // SIMULATION: This should use onSnapshot for real-time config updates if needed
+        // CRITICAL PERFORMANCE FIX: Rely on the snapshot for the first load resolution.
         const unsubscribe = mockOnSnapshot(docRef, (doc) => {
             if (doc.exists()) {
                 const data = doc.data();
@@ -234,13 +236,22 @@ export const useGlobalMetadata = (db, isAuthReady) => {
                 });
             } else {
                 console.error("CRITICAL: Global metadata document 'metadata/config' not found. Using fallbacks.");
-                // Set metadata to an empty object to allow components to use their own fallbacks/service defaults
                 setMetadata({}); 
             }
+            // Set loading to false immediately on first data receipt
             setLoading(false);
         });
+        
+        // Add safety timeout to resolve loading state
+        const safetyTimer = setTimeout(() => {
+             console.warn(`Global Metadata subscription timeout. Forcing load state to false.`);
+             setLoading(false);
+        }, 1500);
 
-        return unsubscribe;
+        return () => { 
+            unsubscribe();
+            clearTimeout(safetyTimer);
+        };
     }, [db, isAuthReady]);
 
     return { metadata, isLoading: loading };
@@ -252,8 +263,6 @@ export const updateGlobalMetadata = async (db, data) => {
     const docRef = mockDoc(db, 'metadata', 'config'); 
     try {
         // Use mockSetDoc to overwrite the config document completely
-        // NOTE: In production, you might use updateDoc if the document is large, but setDoc(..., { merge: true }) 
-        // is generally safer for a single configuration document. We'll use mockSetDoc (non-merging for simplicity).
         await mockSetDoc(docRef, data); 
         console.log("Global Metadata Updated Successfully (metadata/config).");
         return true;

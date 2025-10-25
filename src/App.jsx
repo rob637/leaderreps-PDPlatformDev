@@ -260,6 +260,7 @@ const DataProvider = ({ children, firebaseServices, userId, isAuthReady, navigat
   const { db } = firebaseServices;
 
   // 1. Fetch User Data (PDP, Commitment, Planning)
+  // CRITICAL: These run concurrently and resolve their internal loading state quickly (in useAppServices.jsx)
   const pdp = usePDPData(db, userId, isAuthReady);
   const commitment = useCommitmentData(db, userId, isAuthReady);
   const planning = usePlanningData(db, userId, isAuthReady);
@@ -268,7 +269,8 @@ const DataProvider = ({ children, firebaseServices, userId, isAuthReady, navigat
   const global = useGlobalMetadata(db, isAuthReady); // <-- NEW
 
   // CRITICAL: isLoading is derived from all data sources
-  const isLoading = pdp.isLoading || commitment.isLoading || planning.isLoading || global.isLoading; // <-- UPDATED
+  // The hooks resolve isLoading=false on first snapshot (even if empty), allowing faster UI display.
+  const isLoading = pdp.isLoading || commitment.isLoading || planning.isLoading || global.isLoading; 
   const error = pdp.error || commitment.error || planning.error || global.error; // <-- UPDATED
 
   const hasPendingDailyPractice = useMemo(() => {
@@ -299,6 +301,7 @@ const DataProvider = ({ children, firebaseServices, userId, isAuthReady, navigat
 
   // Display initial loading spinner if global metadata is still loading (i.e., global.isLoading)
   if (isLoading) {
+      // The overall loading state must resolve within the target 5 seconds.
       return (
           <div className="min-h-screen flex items-center justify-center bg-gray-100">
               <div className="flex flex-col items-center">
@@ -690,7 +693,8 @@ const App = ({ initialState }) => {
     
     // A flag to ensure we only finalize the ready state once
     let isInitialized = false; 
-    const FAST_TIMEOUT = 1500; // Time in ms to wait before assuming no user is logged in
+    // CRITICAL PERFORMANCE FIX: Reduced the initial timeout to aggressively render the login screen
+    const FAST_TIMEOUT = 500; // Time in ms to wait before assuming no user is logged in
 
     const finalizeInit = (success = true, errorMsg = '') => {
         if (isInitialized) return;
@@ -729,11 +733,10 @@ const App = ({ initialState }) => {
       setFirebaseServices({ db: firestore, auth: authentication });
       
       // Start the FAST_TIMEOUT timer
-      // If the listener hasn't fired in 1.5 seconds, finalize the state to ready (unauthenticated)
+      // If the listener hasn't fired in 0.5 seconds, finalize the state to ready (unauthenticated)
       timerId = setTimeout(() => {
-          if (!user && initStage === 'init') { // Only finalize if no user was found yet
-              console.warn("Auth check timed out (1.5s). Rendering login screen proactively.");
-              // Set to unauthenticated ready state
+          if (!user && initStage === 'init') { 
+              console.warn("Auth check timed out (0.5s). Rendering login screen proactively.");
               finalizeInit(true); 
           }
       }, FAST_TIMEOUT);
@@ -741,7 +744,6 @@ const App = ({ initialState }) => {
       // The listener handles the final state transition when the network returns
       unsubscribeAuth = onAuthStateChanged(authentication, (currentUser) => {
         
-        // This network call succeeded, so stop the proactive timer
         if (timerId) clearTimeout(timerId); 
 
         if (currentUser && currentUser.email) { 
