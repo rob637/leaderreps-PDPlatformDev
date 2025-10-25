@@ -1,4 +1,4 @@
-// src/components/screens/AdminDataMaintenance.jsx (FINAL & FULLY COMMENTED)
+// src/components/screens/AdminDataMaintenance.jsx (FINAL STABLE VERSION)
 
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useAppServices } from '../../services/useAppServices.jsx';
@@ -589,7 +589,7 @@ const ReadingHubTableEditor = ({ catalog, isSaving, setGlobalData }) => {
         focus: 'Focus 1, Focus 2',
         isNew: true 
     };
-    // Ensure 'Uncategorized' is treated as a valid category for adding
+    // Ensures 'Uncategorized' is treated as a valid category for adding
     const cat = currentCategory === 'Uncategorized' && categoryKeys.length > 0 ? categoryKeys[0] : currentCategory;
     setGlobalData(prevGlobal => {
       const newCatalog = JSON.parse(JSON.stringify(prevGlobal.READING_CATALOG_SERVICE || {}));
@@ -1109,7 +1109,7 @@ const LeadershipDomainsTableEditor = ({ data, isSaving, setGlobalData, idKey = '
         <Button onClick={handleAddNewDomain} disabled={isSaving} className={`bg-[${COLORS.ORANGE}] hover:bg-red-700`}>
           <Plus className='w-5 h-5 mr-2'/> Add New Domain
         </Button>
-        <CSVUploadComponent
+        <DataUploadComponent
           onDataParsed={handleDomainDataParsed}
           expectedFields={fields.concat({ key: 'id', type: 'text' })}
           isSaving={isSaving}
@@ -1232,11 +1232,11 @@ const ResourceLibraryTableEditor = ({ data, isSaving, setGlobalData, idKey = 'id
         ))}
       </div>
 
-      <div className='mt-4 flex space-x-3'>
+      <div className='mt-4 flex justify-between items-center'>
         <Button onClick={handleAddNewResource} disabled={isSaving} className={`bg-[${COLORS.ORANGE}] hover:bg-red-700`}>
           <Plus className='w-5 h-5 mr-2'/> Add New Resource
         </Button>
-        <CSVUploadComponent
+        <DataUploadComponent
           onDataParsed={handleDataParsed}
           expectedFields={fields.concat({ key: 'id', type: 'text' }, { key: 'domainId', type: 'text' }, { key: 'content', type: 'text' })}
           isSaving={isSaving}
@@ -1354,7 +1354,7 @@ const GlobalDataEditor = ({ globalMetadata, updateGlobalMetadata, db, navigate }
   const [tabAutoSelected, setTabAutoSelected] = useState(false);
 
   useEffect(() => {
-    // ... (logic to set initial tab remains the same)
+    // Logic to set initial tab remains the same
   }, [localGlobalData, tabAutoSelected]);
 
   // Memoized counts for navigation badges
@@ -1486,6 +1486,7 @@ const GlobalDataEditor = ({ globalMetadata, updateGlobalMetadata, db, navigate }
     setIsSaving(true);
     setStatus(null);
     try {
+      // Calls the multi-document write function
       const ok = await updateGlobalMetadata(localGlobalData, { merge: true, source: 'AdminFinalize' });
       if (ok) setStatus({ type: 'success', message: 'ALL global configurations successfully saved to Firestore.' });
       else setStatus({ type: 'error', message: 'Database write failed. Check console logs.' });
