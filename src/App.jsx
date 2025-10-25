@@ -154,6 +154,8 @@ const ScreenMap = {
     'leadership-videos': lazy(() => import('./components/screens/LeadershipVideos.jsx')), // ContentLibraryScreen
     // ADD NEW ADMIN SCREEN
     'data-maintenance': lazy(() => import('./components/screens/AdminDataMaintenance.jsx')), 
+    // ADD DEBUG SCREEN
+    'debug-data': lazy(() => import('./components/screens/DebugDataViewer.jsx')), // <-- NEW
     // 'app-settings' is handled directly by AppSettingsScreen defined below.
 };
 
@@ -234,6 +236,13 @@ const AppSettingsScreen = ({ navigate }) => {
                         className={`text-sm font-semibold text-[${COLORS.ORANGE}] hover:text-red-700 mt-2 flex items-center`}
                     >
                         <Settings size={14} className='inline-block mr-1'/> Launch JSON Editor
+                    </button>
+                    {/* ADD DEBUG LINK HERE */}
+                    <button 
+                        onClick={() => navigate('debug-data')} 
+                        className={`text-sm font-semibold text-blue-600 hover:text-blue-800 mt-2 flex items-center`}
+                    >
+                        <Code size={14} className='inline-block mr-1'/> Launch RAW Debug Viewer
                     </button>
                 </SettingsCard>
             </div>
@@ -586,6 +595,10 @@ const ScreenRouter = ({ currentScreen, navParams, navigate }) => {
         return <AppSettingsScreen key={uniqueKey} navigate={navigate} />; // Pass navigate to allow access to maintenance screen
     }
     if (currentScreen === 'data-maintenance') {
+        return <Component key={uniqueKey} navigate={navigate} />; // Pass navigate
+    }
+    // NEW: Handle the Debug Screen
+    if (currentScreen === 'debug-data') {
         return <Component key={uniqueKey} navigate={navigate} />; // Pass navigate
     }
 

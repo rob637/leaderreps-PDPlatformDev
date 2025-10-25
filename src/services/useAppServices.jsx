@@ -1,4 +1,4 @@
-// src/services/useAppServices.jsx (Final Fix for Blank Data)
+// src/services/useAppServices.jsx (Final Absolute Fix for Data Fetch)
 
 import React, {
   useMemo,
@@ -134,25 +134,29 @@ export const useAppServices = () => useContext(AppServiceContext);
 /* =========================================================
    Helpers (guards + tracing)
 ========================================================= */
-// NOTE: We will keep resolveGlobalMetadata simple to prevent future conflicts
+// RESOLVER SIMPLIFIED TO JUST RETURN META
 const resolveGlobalMetadata = (meta) => {
   if (!meta || typeof meta !== 'object') return {};
-  // For safety, just return the merged object. The DataProvider handles tier fallback.
   return meta;
 };
 
+// LOOKS EMPTY SIMPLIFIED TO CHECK IF NO KNOWN OR ANY KEYS EXIST
 const looksEmptyGlobal = (obj) => {
   if (!obj || typeof obj !== 'object') return true;
-  const sections = [ 'LEADERSHIP_TIERS', 'COMMITMENT_BANK', 'SCENARIO_CATALOG', 'READING_CATALOG_SERVICE' ];
-  const present = sections.filter((k) => Object.prototype.hasOwnProperty.call(obj, k));
-  // If there are no known keys, check if the object has *any* keys at all.
-  if (!present.length) return Object.keys(obj).length === 0;
-  return present.every((k) => {
-    const v = obj[k];
-    if (Array.isArray(v)) return v.length === 0;
-    if (v && typeof v === 'object') return Object.keys(v).length === 0;
-    return false;
-  });
+  const known = [ 'LEADERSHIP_TIERS', 'COMMITMENT_BANK', 'SCENARIO_CATALOG', 'READING_CATALOG_SERVICE' ];
+  const hasKnown = known.some((k) => Object.prototype.hasOwnProperty.call(obj, k));
+  
+  if (hasKnown) {
+      // If known keys exist, only consider it empty if they are all empty lists/objects
+      return known.filter(k => Object.prototype.hasOwnProperty.call(obj, k)).every(k => {
+          const v = obj[k];
+          if (Array.isArray(v)) return v.length === 0;
+          if (v && typeof v === 'object') return Object.keys(v).length === 0;
+          return false;
+      });
+  }
+  // Otherwise, if no known keys exist, check if there are any keys at all.
+  return Object.keys(obj).length === 0;
 };
 
 const traceCallsite = (label = 'updateGlobalMetadata') => {
@@ -303,16 +307,13 @@ export const useGlobalMetadata = (db, isAuthReady) => {
             READING_CATALOG_SERVICE: catalogData 
         };
         
-        // Apply fallback tiers ONLY if the entire merged object (excluding catalog) is empty
-        if (looksEmptyGlobal(finalData)) {
-            // Check config data specifically
-            if (Object.keys(configData).length === 0) {
-                 finalData.LEADERSHIP_TIERS = LEADERSHIP_TIERS_FALLBACK;
-                 console.warn('[REBUILD READ RESOLVE] Config data empty. Applied LEADERSHIP_TIERS_FALLBACK.');
-            }
+        // Apply fallback tiers ONLY if the entire config document was empty
+        if (Object.keys(configData).length === 0) {
+            finalData.LEADERSHIP_TIERS = LEADERSHIP_TIERS_FALLBACK;
+            console.warn('[REBUILD READ RESOLVE] Config data was empty. Applied LEADERSHIP_TIERS_FALLBACK.');
         }
         
-        setMetadata(finalData);
+        setMetadata(finalData); // SET THE STATE WITH THE MERGED DATA
         setError(null);
         
       } catch (e) {
