@@ -2,36 +2,63 @@
 
 import { useMemo, useCallback, useContext, createContext, useState, useEffect } from 'react';
 
-// --- FIREBASE IMPORTS (Mocks for local execution, ready for real SDK) ---
-// Note: In a live environment, using 'onSnapshot' directly (without the initial blocking 'getDoc' to check existence/seed) is the fastest way to render.
-const mockGetDoc = async (docRef) => ({ exists: () => false, data: () => null, docRef });
-const mockSetDoc = async (docRef, data) => { console.log(`[Firestore Mock] SET Document: ${docRef} Data:`, data); return true; };
-const mockUpdateDoc = async (docRef, data) => { console.log(`[Firestore Mock] UPDATE Document: ${docRef} Data:`, data); return true; };
+// ====================================================================
+// --- CRITICAL FIX: MOCK FIREBASE PERSISTENCE LAYER ---
+// This global object simulates the Firestore cache and ensures data survives component remounts.
+const __firestore_mock_store = typeof window !== 'undefined' ? (window.__firestore_mock_store || {}) : {};
+if (typeof window !== 'undefined') window.__firestore_mock_store = __firestore_mock_store;
+
+// Helper to set data in the mock store and return a mock snapshot object
+const createMockSnapshot = (docPath, data, exists = true) => {
+    __firestore_mock_store[docPath] = data; // Persist data
+    return {
+        exists: () => exists,
+        data: () => data,
+        docRef: docPath,
+    };
+};
+
+// Mock functions now use the persistent store
+const mockGetDoc = async (docRef) => {
+    const data = __firestore_mock_store[docRef];
+    return createMockSnapshot(docRef, data, !!data);
+};
+
+const mockSetDoc = async (docRef, data) => { 
+    createMockSnapshot(docRef, data, true); // Overwrite entire document
+    console.log(`[Firestore Mock] SET Document: ${docRef} Data saved to persistent mock store.`); 
+    return true; 
+};
+
+const mockUpdateDoc = async (docRef, data) => { 
+    const currentData = __firestore_mock_store[docRef] || {};
+    const newData = { ...currentData, ...data };
+    createMockSnapshot(docRef, newData, true); // Merge data
+    console.log(`[Firestore Mock] UPDATE Document: ${docRef} Data merged into persistent mock store.`); 
+    return true; 
+};
+
 const mockOnSnapshot = (docRef, callback) => { 
     console.log(`[Firestore Mock] Subscribing to: ${docRef}`);
     
-    // Simulate instantaneous local data availability or immediate response
-    const key = docRef.split('/').pop(); 
-    let initialData = JSON.parse(localStorage.getItem(`lr_seed_${key}`)); 
-    if (key === 'config') initialData = JSON.parse(localStorage.getItem(`lr_seed_config`));
+    // Read directly from the persistent mock store
+    const initialData = __firestore_mock_store[docRef];
     
     if (initialData) {
-        // Simulate immediate snapshot return (fastest path)
-        callback({ exists: () => true, data: () => initialData });
+        // Return existing data immediately
+        callback(createMockSnapshot(docRef, initialData, true));
     } else {
-        // Simulate a slight network delay before returning mock data
-        const timer = setTimeout(() => {
-            // Use mock data to prevent errors if no local data exists
-            callback({ exists: () => true, data: () => ({ /* minimal fallback structure */ }) });
-        }, 50); // Reduced delay to 50ms for performance tuning
+        // Return empty mock if not found (simulating a document that doesn't exist yet)
+        callback(createMockSnapshot(docRef, {}, false)); 
     }
-
+    
+    // In a real app, this would return the unsubscribe function.
     return () => { 
-        // console.log(`[Firestore Mock] Unsubscribing from: ${docRef}`);
-        // if (timer) clearTimeout(timer); // If we added a timer, clear it
+        // Mock Unsubscribe
     };
 };
-const mockDoc = (db, collection, doc) => `${db}/${collection}/${doc}`;
+
+const mockDoc = (db, collection, doc) => `${collection}/${doc}`;
 
 
 // --- MOCK CONSTANTS (Kept for fallback/initial definitions) ---
@@ -55,7 +82,6 @@ const MOCK_ACTIVITY_DATA = {
 
 // --- 0. DEFAULT SERVICES FALLBACK ---
 const DEFAULT_SERVICES = {
-    // ... (rest of DEFAULT_SERVICES structure remains the same) ...
     navigate: () => { console.warn("Navigation called before context initialization."); },
     callSecureGeminiAPI: async () => ({ candidates: [{ content: { parts: [{ text: "API Not Configured" }] } }] }),
     updatePdpData: async () => true, 
