@@ -148,9 +148,10 @@ const GenericRowEditor = ({ item: initialItem = null, onUpdate, onDelete, isSavi
     const [isStaged, setIsStaged] = useState(Boolean(safeItem.isNew));
     
     useEffect(() => {
-        setItem(initialItem);
-        setIsEditing(initialItem.isNew || false);
-        setIsStaged(initialItem.isNew || false);
+        const next = initialItem ?? {};
+        setItem(next);
+        setIsEditing(Boolean(next.isNew));
+        setIsStaged(Boolean(next.isNew));
     }, [initialItem]);
     
     const handleChange = (field, value, type) => {
@@ -171,7 +172,7 @@ const GenericRowEditor = ({ item: initialItem = null, onUpdate, onDelete, isSavi
     };
 
     const handleCancel = () => {
-        if (initialItem.isNew) {
+        if (Boolean((safeItem).isNew)) {
             onDelete(safeItem[idKey]); 
         } else {
             setItem(initialItem); 
@@ -190,7 +191,7 @@ const GenericRowEditor = ({ item: initialItem = null, onUpdate, onDelete, isSavi
         <div className={`grid ${gridColumns} gap-4 items-center p-2 border-b transition-colors ${isStaged ? 'bg-yellow-50' : 'hover:bg-gray-50'}`}>
             {/* ID Column */}
             <div className="truncate">
-                {isEditing && initialItem.isNew ? (
+                {isEditing && safeItem.isNew ? (
                     <input
                         type="text"
                         value={item[idKey] || ''}
@@ -200,7 +201,7 @@ const GenericRowEditor = ({ item: initialItem = null, onUpdate, onDelete, isSavi
                         disabled={isSaving}
                     />
                 ) : (
-                    <p className='w-full p-1.5 text-xs font-mono text-gray-500 truncate'>{initialItem[idKey]}</p>
+                    <p className='w-full p-1.5 text-xs font-mono text-gray-500 truncate'>{safeItem[idKey]}</p>
                 )}
             </div>
 
@@ -355,16 +356,18 @@ const CSVUploadComponent = ({ onDataParsed, expectedFields, isSaving, buttonText
 
 
 // --- READING HUB EDITOR (No changes to logic, just structure) ---
-const BookRowEditor = ({ book: initialBook, categoryKey, onUpdate, onDelete, isSaving }) => {
+const BookRowEditor = ({ book: initialBook = null, categoryKey, onUpdate, onDelete, isSaving }) => {
     // ... (BookRowEditor implementation is as before) ...
-    const [book, setBook] = useState(initialBook);
-    const [isEditing, setIsEditing] = useState(initialBook.isNew || false); 
-    const [isStaged, setIsStaged] = useState(initialBook.isNew || false);
+    const safeBook = initialBook ?? {};
+    const [book, setBook] = useState(safeBook);
+    const [isEditing, setIsEditing] = useState(Boolean(safeBook.isNew)); 
+    const [isStaged, setIsStaged]   = useState(Boolean(safeBook.isNew));
     
     useEffect(() => {
-        setBook(initialBook);
-        setIsEditing(initialBook.isNew || false);
-        setIsStaged(initialBook.isNew || false);
+        const next = initialBook ?? {};
+        setBook(next);
+        setIsEditing(Boolean(next.isNew));
+        setIsStaged(Boolean(next.isNew));
     }, [initialBook]);
     
     const handleChange = (field, value, type) => {
@@ -456,6 +459,8 @@ const ReadingHubTableEditor = ({ catalog, isSaving, setGlobalData, navigate }) =
 
     const books = useMemo(() => safeCatalog[currentCategory] || [], [safeCatalog, currentCategory]);
 
+    const booksList = useMemo(() => (Array.isArray(books) ? books : []).filter(Boolean), [books]);
+
     const handleUpdateBook = useCallback((category, updatedBook) => {
         setGlobalData(prevGlobal => {
             const newCatalog = JSON.parse(JSON.stringify(prevGlobal.READING_CATALOG_SERVICE || {}));
@@ -544,7 +549,7 @@ const ReadingHubTableEditor = ({ catalog, isSaving, setGlobalData, navigate }) =
 
             {/* Book Table Editor (Main Content) */}
             <div className='flex-1 pl-6'>
-                <p className='text-lg font-extrabold mb-2' style={{color: COLORS.NAVY}}>{currentCategory} ({books.length} Books)</p>
+                <p className='text-lg font-extrabold mb-2' style={{color: COLORS.NAVY}}>{currentCategory} ({booksList.length} Books)</p>
                 <p className='text-sm text-gray-700 mb-4'>
                     Use the table below for CRUD operations. Edits are staged until the **Finalize & Write** button is clicked.
                 </p>
