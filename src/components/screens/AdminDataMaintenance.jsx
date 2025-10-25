@@ -1164,7 +1164,7 @@ const handleDeleteResourceLibraryItem = (setGlobalData) => useCallback((itemId) 
 
 
 const ResourceLibraryTableEditor = ({ data, isSaving, setGlobalData, idKey = 'id' }) => {
-    const library = data.RESOURCE_LIBRARY || {};
+    const library = data.RESOURCE_LIBRARY || data.RESOURCE_CONTENT_LIBRARY || {};
     const domains = data.LEADERSHIP_DOMAINS || [];
     const flatLibrary = useMemo(() => flattenResourceLibrary(library), [library]);
 
@@ -1339,7 +1339,24 @@ const RawConfigEditor = ({ catalog, isSaving, setGlobalData, currentEditorKey })
 
 
 // --- MAIN ROUTER (GlobalDataEditor) ---
-const GlobalDataEditor = ({ globalMetadata, updateGlobalMetadata, navigate }) => {
+
+\1
+  // Diagnostics: log what the editor actually received
+  React.useEffect(() => {
+    try {
+      const lib = (localGlobalData && (localGlobalData.RESOURCE_LIBRARY || localGlobalData.RESOURCE_CONTENT_LIBRARY)) || {};
+      const domains = Object.keys(lib);
+      const total = Object.values(lib).flat().length;
+      console.groupCollapsed('[MaintenanceHub] incoming globalMetadata');
+      console.log('top-level keys:', Object.keys(localGlobalData || {}));
+      console.log('RESOURCE_LIBRARY present?', !!(localGlobalData && localGlobalData.RESOURCE_LIBRARY));
+      console.log('RESOURCE_CONTENT_LIBRARY present?', !!(localGlobalData && localGlobalData.RESOURCE_CONTENT_LIBRARY));
+      console.log('library domain keys:', domains);
+      console.log('library total items:', total);
+      console.groupEnd();
+    } catch (e) { console.warn('[MaintenanceHub] debug failed', e); }
+  }, [localGlobalData]);
+
     
     const [localGlobalData, setLocalGlobalData] = useState(globalMetadata || {});
     // CRITICAL: Set initial tab to a valid, easily populated tab (like Reading Hub)
@@ -1394,7 +1411,8 @@ const GlobalDataEditor = ({ globalMetadata, updateGlobalMetadata, navigate }) =>
     // CRITICAL: Grouped navItems array by application pillar structure
     const navItems = useMemo(() => {
         const domainsCount = (localGlobalData.LEADERSHIP_DOMAINS || []).length;
-        const resourcesCount = countItems(localGlobalData.RESOURCE_LIBRARY);
+        const libForCount = (localGlobalData.RESOURCE_LIBRARY || localGlobalData.RESOURCE_CONTENT_LIBRARY || {});
+  const resourcesCount = countItems(libForCount);
         const totalReadingItems = countItems(localGlobalData.READING_CATALOG_SERVICE);
         const totalCommitmentItems = countItems(localGlobalData.COMMITMENT_BANK);
         const totalScenarioItems = (localGlobalData.SCENARIO_CATALOG || []).length;

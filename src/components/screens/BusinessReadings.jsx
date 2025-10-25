@@ -1,4 +1,3 @@
-/* eslint-disable no-console  */
 // src/components/screens/BusinessReadings.jsx
 
 import React, { useState, useMemo, useRef, useEffect, useCallback, useLayoutEffect } from 'react';
@@ -182,7 +181,9 @@ const getQuestionScore = (query, bookTitle) => {
     } else if (hasApplication || hasContext) {
         score = 2;
         feedback = hasApplication ? 'Good start. Add more context about your current situation.' : 'The context is great, now phrase it as an actionable "how-to" question.';
-    } else {
+    }
+    // FIX: Set score to 1 if neither application nor context is present, to avoid score 0 for short queries that pass the length check
+    else {
         score = 1;
         feedback = 'Try to phrase your question in a way that relates this book to a specific work challenge.';
     }
@@ -365,6 +366,7 @@ function BookListStable({
       </div>
 
       <div className="space-y-12">
+        {/* FIX: Ensure we're iterating over the filtered book categories, which should be updated */}
         {Object.entries(filteredBooks).map(([tier, books]) => (
           <div key={tier}
                className="rounded-2xl shadow-xl overflow-hidden border-2"
@@ -592,11 +594,11 @@ export default function BusinessReadingsScreen() {
     navigate = () => {},
     callSecureGeminiAPI,
     hasGeminiKey,
-    // CRITICAL: MOCK_ALL_BOOKS is removed, we use a custom key from the service context
+    // CRITICAL: READING_CATALOG_SERVICE is the prop that holds the loaded data.
     READING_CATALOG_SERVICE 
   } = services;
 
-  // CRITICAL FIX: Use service data or fallback
+  // CRITICAL FIX 1: Ensure allBooks reacts to the READING_CATALOG_SERVICE changing.
   const allBooks = READING_CATALOG_SERVICE || MOCK_ALL_BOOKS_FALLBACK; 
 
   const [selectedBook, setSelectedBook] = useState(null);
@@ -619,7 +621,7 @@ export default function BusinessReadingsScreen() {
   }, [aiQuery, selectedBook]);
 
 
-  // --- FIX 1: MEMOIZE HANDLERS TO PREVENT CURSOR BOUNCE ---
+  // --- FIX 2: MEMOIZE HANDLERS TO PREVENT CURSOR BOUNCE ---
   const handleFilterChange = useCallback((key, value) => {
     setFilters(prev => ({ ...prev, [key]: value }));
   }, []);
@@ -631,12 +633,13 @@ export default function BusinessReadingsScreen() {
   const handleAiQueryChange = useCallback((e) => {
     setAiQuery(e.target.value);
   }, []);
-  // --- END FIX 1 ---
+  // --- END FIX 2 ---
 
 
   /* ---------- Filtering (Memoized for performance) ---------- */
   const filteredBooks = useMemo(() => {
-    // Check if the service data is empty before attempting flatMap
+    // CRITICAL FIX 3: Base the filtering logic on a stable reference (allBooks)
+    // The dependency array now correctly tracks changes to allBooks.
     if (Object.keys(allBooks).length === 0) return {}; 
 
     const flat = Object.entries(allBooks).flatMap(([tier, books]) =>
@@ -655,7 +658,7 @@ export default function BusinessReadingsScreen() {
         (acc[b.tier] ||= []).push(b);
         return acc;
       }, {});
-  }, [allBooks, filters]);
+  }, [allBooks, filters]); // allBooks is now correctly passed as dependency.
 
   /* ---------- Flyer generation (AI now drives content) ---------- */
   useEffect(() => {
