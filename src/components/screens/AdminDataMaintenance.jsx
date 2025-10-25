@@ -1,7 +1,6 @@
-// src/components/screens/AdminDataMaintenance.jsx
+// src/components/screens/AdminDataMaintenance.jsx (Final, Cleaned State Population)
 
 import React, { useState, useMemo, useEffect, useRef } from 'react'; 
-// Path assumes this file is screens/AdminDataMaintenance.jsx and useAppServices is in services/
 import { useAppServices } from '../../services/useAppServices'; 
 import { ChevronsLeft, AlertTriangle, Save, Lock, Cpu, RotateCcw } from 'lucide-react';
 
@@ -12,24 +11,27 @@ const TEAL = '#47A88D';
 
 const JSONEditor = ({ data, setData, label, isSaving, setModified }) => {
     // Stringifies the current object data for the editor
-    const initialJsonText = useMemo(() => JSON.stringify(data, null, 2), [data]);
+    // Ensure data is always an object for JSON.stringify to work
+    const safeData = data && typeof data === 'object' ? data : {}; 
+    const initialJsonText = useMemo(() => JSON.stringify(safeData, null, 2), [safeData]);
     const [jsonText, setJsonText] = useState(initialJsonText);
     const [isError, setIsError] = useState(false);
-
-    // Reset local state when external data changes (e.g., initial load or manual reset)
+    
+    // ... (useEffect for reset remains the same)
     useEffect(() => {
         setJsonText(initialJsonText);
         setIsError(false);
     }, [initialJsonText]);
-
+    
+    // ... (handleTextChange and handleReset remain the same)
     const handleTextChange = (e) => {
         const newText = e.target.value;
         setJsonText(newText);
-        setModified(true); // Mark as modified
+        setModified(true);
         
         try {
             const parsed = JSON.parse(newText);
-            setData(parsed); // Update the parent state with parsed object
+            setData(parsed);
             setIsError(false);
         } catch (error) {
             setIsError(true);
@@ -38,15 +40,15 @@ const JSONEditor = ({ data, setData, label, isSaving, setModified }) => {
 
     const handleReset = () => {
         setJsonText(initialJsonText);
-        // Ensure reset doesn't break if initialJsonText parsing fails
         try {
-             setData(JSON.parse(initialJsonText)); // Reset parent state
+             setData(JSON.parse(initialJsonText));
         } catch (e) {
              console.error("Reset failed: Could not parse initial JSON text.");
         }
         setIsError(false);
         setModified(false);
     };
+
 
     return (
         <div className="space-y-2">
@@ -70,7 +72,6 @@ const JSONEditor = ({ data, setData, label, isSaving, setModified }) => {
 
 
 const AdminDataMaintenance = ({ navigate }) => {
-    // Destructure db directly from the context hook
     const { metadata, isLoading, error, updateGlobalMetadata, db } = useAppServices(); 
     
     // --- State for Screen Logic ---
@@ -79,44 +80,39 @@ const AdminDataMaintenance = ({ navigate }) => {
     const [isSaving, setIsSaving] = useState(false);
     const [saveStatus, setSaveStatus] = useState('');
     
-    // Initialize local state with empty objects
+    // The source of the configuration data and catalog data for the editors
     const [configData, setConfigData] = useState({});
     const [catalogData, setCatalogData] = useState({});
     
-    // Track if either editor has been modified
     const [isConfigModified, setIsConfigModified] = useState(false);
     const [isCatalogModified, setIsCatalogModified] = useState(false);
     
-    // Ref to track if data has been successfully loaded/populated once
-    const isDataPopulated = useRef(false);
+    // Use a ref to ensure we don't spam the initial population logic
+    const isInitialPopulated = useRef(false);
 
-
-    // FIX: Modified useEffect to handle both initial load and post-save updates correctly.
+    
+    // CRITICAL FIX: Use useEffect to populate the config/catalog data ONLY when metadata changes
     useEffect(() => {
-        // CRITICAL FIX: Ensure metadata is an object before checking keys
-        if (!metadata) {
-            return; 
+        if (!metadata || Object.keys(metadata).length === 0) {
+            return;
         }
 
-        // 1. Initial Data Population (Runs once when data first arrives and component is new)
-        // Check if data is not empty AND either we haven't run before OR data has just finished loading
-        if (Object.keys(metadata).length > 0) {
+        // Only populate the state once, or if the data changes from the database (e.g., successful save)
+        if (!isInitialPopulated.current) {
             
+            // Safely split the metadata object
             const { READING_CATALOG_SERVICE = {}, ...configMetadata } = metadata;
             
-            // Only set the data if it hasn't been populated OR if the app is currently loading
-            // (meaning this is the first successful fetch finishing the loading state)
-            if (!isDataPopulated.current || !isLoading) {
-                 setConfigData(configMetadata);
-                 setCatalogData(READING_CATALOG_SERVICE);
-                 isDataPopulated.current = true;
-            }
+            // Set the initial states for the editors
+            setConfigData(configMetadata);
+            setCatalogData(READING_CATALOG_SERVICE);
+            
+            isInitialPopulated.current = true;
+            console.log("[ADMIN DEBUG] Initial data populated into editors.");
         }
         
-        // 2. Reset Modification Flags (Runs on subsequent updates, like a successful save)
+        // Reset flags after a successful save (when isLoading goes from true->false)
         if (!isLoading) {
-             // We only reset the flags when the background loading process is complete, 
-             // which happens after the initial fetch AND after any save operation.
              setIsConfigModified(false);
              setIsCatalogModified(false);
         }
@@ -141,7 +137,6 @@ const AdminDataMaintenance = ({ navigate }) => {
         setIsSaving(true);
         const results = [];
         
-        // Ensure JSON is valid before attempting to save
         if (!db) {
              setSaveStatus('❌ Save failed: Firestore database connection is missing.');
              setIsSaving(false);
@@ -149,7 +144,6 @@ const AdminDataMaintenance = ({ navigate }) => {
         }
 
         try {
-            // 1. Save Config Document (only if modified)
             if (isConfigModified) {
                 console.log("Saving Config Document...");
                 const configResult = await updateGlobalMetadata(
@@ -160,13 +154,12 @@ const AdminDataMaintenance = ({ navigate }) => {
                 results.push(`Config Updated (${Object.keys(configResult).length} keys)`);
             }
             
-            // 2. Save Catalog Document (only if modified)
             if (isCatalogModified) {
                  console.log("Saving Catalog Document...");
                  const catalogResult = await updateGlobalMetadata(
                     db, 
-                    { READING_CATALOG_SERVICE: catalogData }, // Pass as an object with the key
-                    { source: 'Admin Maintenance (catalog)', forceDocument: 'catalog' } // Force catalog write
+                    { READING_CATALOG_SERVICE: catalogData },
+                    { source: 'Admin Maintenance (catalog)', forceDocument: 'catalog' }
                 );
                 results.push(`Catalog Updated (${Object.keys(catalogResult).length} keys)`);
             }
@@ -217,7 +210,8 @@ const AdminDataMaintenance = ({ navigate }) => {
     
     // --- Authenticated View ---
     
-    if (isLoading && !isDataPopulated.current) {
+    // We display the spinner only if loading AND we haven't populated the data yet.
+    if (isLoading && !isInitialPopulated.current) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-gray-100">
                 <div className="animate-spin rounded-full h-12 w-12 border-4 border-t-4 border-gray-200 border-t-[#47A88D] mb-3"></div>
