@@ -1,4 +1,4 @@
-// src/components/screens/AdminDataMaintenance.jsx (FINAL COMPLETE & RESTORED VERSION)
+// src/components/screens/AdminDataMaintenance.jsx (FINAL DEBUG VERSION)
 
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useAppServices } from '../../services/useAppServices.jsx';
@@ -368,7 +368,7 @@ const DataUploadComponent = ({ onDataParsed, expectedFields, isSaving }) => {
                 placeholder="[ { id: 'a1', title: 'Test' }, {...} ]"
             />
             <Button onClick={handleJsonPaste} isSmall={true} disabled={isSaving || !jsonText.trim()} className="bg-green-600 hover:bg-green-700 w-full">
-                <Check className='w-4 h-4 mr-1' /> Stage Pasted Data
+                <CheckCircle className='w-4 h-4 mr-1' /> Stage Pasted Data
             </Button>
         </div>
       )}
@@ -1251,14 +1251,36 @@ const ResourceLibraryTableEditor = ({ data, isSaving, setGlobalData, idKey = 'id
 ===================== */
 // This editor is for managing the entire metadata structure as a single object.
 const RawConfigEditor = ({ catalog, isSaving, setGlobalData, currentEditorKey }) => {
-  const initialJson = useMemo(() => {
-    try { return JSON.stringify(catalog || {}, null, 2); } catch { return JSON.stringify({}); }
-  }, [catalog]);
-
-  const [jsonText, setJsonText] = useState(initialJson);
+  // CRITICAL FIX: Ensure useState initializes correctly and is updated via useEffect
+  const [jsonText, setJsonText] = useState(() => {
+    try { 
+      // Initialize with data if available, otherwise just {}
+      return JSON.stringify(catalog || {}, null, 2); 
+    } catch { 
+      return JSON.stringify({}); 
+    }
+  });
+  
   const [status, setStatus] = useState(null);
 
-  useEffect(() => { setJsonText(initialJson); }, [initialJson]);
+  // This effect ensures that when the parent component receives the ASYNCHRONOUSLY
+  // loaded catalog data, the jsonText state is updated.
+  useEffect(() => { 
+    try {
+      // Only update if the catalog has keys (i.e., we received the real data)
+      if (catalog && Object.keys(catalog || {}).length > 0) {
+        // 🟢 DEBUG: Raw Editor Sync 🟢
+        console.groupCollapsed(`[DEBUG: Raw Editor Sync] Data received. Keys: ${Object.keys(catalog).length}`);
+        console.log("Raw Catalog Object:", catalog);
+        console.groupEnd();
+        
+        setJsonText(JSON.stringify(catalog, null, 2)); 
+      }
+    } catch (e) {
+      console.error("Failed to stringify loaded catalog for Raw Editor", e);
+      setJsonText(JSON.stringify({ error: "Failed to load data to editor" }));
+    }
+  }, [catalog]);
 
   const isJsonValid = useMemo(() => { try { JSON.parse(jsonText); return true; } catch { return false; } }, [jsonText]);
 
@@ -1267,6 +1289,11 @@ const RawConfigEditor = ({ catalog, isSaving, setGlobalData, currentEditorKey })
     try {
       const parsedData = JSON.parse(jsonText);
       if (currentEditorKey === 'RAW_CONFIG') {
+        // 🟢 DEBUG: Raw Editor Staging 🟢
+        console.groupCollapsed(`[DEBUG: Raw Editor Staging] Setting new global data. Keys: ${Object.keys(parsedData).length}`);
+        console.log("Staged Data:", parsedData);
+        console.groupEnd();
+        
         setGlobalData(() => parsedData);
         // Updated message to reflect managing the full configuration
         setStatus({ type: 'success', message: 'Configuration successfully staged for replacement. (Ready to write).' });
@@ -1339,9 +1366,17 @@ const GlobalDataEditor = ({ globalMetadata, updateGlobalMetadata, db, navigate }
     try {
       // Only update if globalMetadata is an object and has keys (i.e., it's loaded)
       if (globalMetadata && Object.keys(globalMetadata || {}).length > 0) {
+        
+        // 🟢 DEBUG: Local State Sync 🟢
+        console.groupCollapsed(`[DEBUG: GlobalDataEditor Sync] New data received from API hook. Keys: ${Object.keys(globalMetadata).length}`);
+        console.log("Incoming globalMetadata:", globalMetadata);
+        console.log("Old localGlobalData keys:", Object.keys(localGlobalData || {}).length);
+        console.groupEnd();
+        
         setLocalGlobalData(globalMetadata);
       }
     } catch {}
+    // The explicit dependency array is already correct for React hooks
   }, [globalMetadata]);
 
   // Computes which tab to open first based on loaded data
@@ -1352,7 +1387,7 @@ const GlobalDataEditor = ({ globalMetadata, updateGlobalMetadata, db, navigate }
     if (countItems(data.RESOURCE_LIBRARY || data.RESOURCE_CONTENT_LIBRARY || {}) > 0) return 'resources';
     if ((data.TARGET_REP_CATALOG || []).length) return 'target-reps';
     if ((data.QUICK_CHALLENGE_CATALOG || []).length) return 'quick-challenges';
-    if ((data.COMMITMENT_BANK || []).length) return 'commitment';
+    if (countItems(data.COMMITMENT_BANK) > 0) return 'bank'; // FIX: Check count of nested commitments
     if ((data.SCENARIO_CATALOG || []).length) return 'scenarios';
     if (data.READING_CATALOG_SERVICE && Object.keys(data.READING_CATALOG_SERVICE).length) return 'reading';
     return 'reading';
@@ -1363,6 +1398,8 @@ const GlobalDataEditor = ({ globalMetadata, updateGlobalMetadata, db, navigate }
       const next = computeFirstTab(localGlobalData);
       setCurrentTab(next);
       setTabAutoSelected(true);
+      // 🟢 DEBUG: Tab Auto Select 🟢
+      console.log(`[DEBUG: Tab Auto Select] Set to: ${next}`);
     }
   }, [localGlobalData, tabAutoSelected]);
 
@@ -1372,6 +1409,9 @@ const GlobalDataEditor = ({ globalMetadata, updateGlobalMetadata, db, navigate }
 
   // Memoized navigation items with counts
   const navItems = useMemo(() => {
+    // 🟢 DEBUG: Nav Item Count 🟢
+    console.log(`[DEBUG: Nav Item Count] Recalculating counts...`);
+    
     const domainsCount = (localGlobalData.LEADERSHIP_DOMAINS || []).length;
     const libForCount = (localGlobalData.RESOURCE_LIBRARY || localGlobalData.RESOURCE_CONTENT_LIBRARY || {});
     const resourcesCount = countItems(libForCount);
@@ -1379,6 +1419,9 @@ const GlobalDataEditor = ({ globalMetadata, updateGlobalMetadata, db, navigate }
     const totalCommitmentItems = countItems(localGlobalData.COMMITMENT_BANK);
     const totalScenarioItems = (localGlobalData.SCENARIO_CATALOG || []).length;
     const totalRepItems = (localGlobalData.TARGET_REP_CATALOG || []).length;
+
+    // 🟢 DEBUG: Final Counts Check 🟢
+    console.log(`[DEBUG: Counts] Reading: ${totalReadingItems}, Scenarios: ${totalScenarioItems}, Tiers: ${countTiers(localGlobalData.LEADERSHIP_TIERS)}`);
 
     return [
       { group: 'Content: Learn & Prep', key: 'reading', label: 'Reading Hub (Books/Articles)', icon: BookOpen, accent: 'TEAL', count: totalReadingItems },
@@ -1496,6 +1539,11 @@ const GlobalDataEditor = ({ globalMetadata, updateGlobalMetadata, db, navigate }
     setIsSaving(true);
     setStatus(null);
     try {
+      // 🟢 DEBUG: Final Save Payload 🟢
+      console.groupCollapsed(`[DEBUG: Final Save] Sending payload with ${Object.keys(localGlobalData).length} keys...`);
+      console.log("Payload:", localGlobalData);
+      console.groupEnd();
+      
       // Calls the multi-document write function
       const ok = await updateGlobalMetadata(localGlobalData, { merge: true, source: 'AdminFinalize' });
       if (ok) setStatus({ type: 'success', message: 'ALL global configurations successfully saved to Firestore.' });
@@ -1616,8 +1664,24 @@ export default function AdminDataMaintenanceScreen({ navigate }) {
     );
   }
 
+  // 🟢 DEBUG VISUAL BANNER START 🟡
+  const resolvedMetadata = resolveGlobalMetadata(metadata);
+  const metadataKeys = Object.keys(resolvedMetadata || {});
+
   return (
     <div className="p-6 md:p-10 min-h-screen" style={{ background: COLORS.LIGHT_GRAY }}>
+      {
+        metadataKeys.length > 0 ? 
+        <div className="p-2 border border-green-500 bg-green-100 text-xs font-mono mb-4 text-green-800 font-semibold">
+          ✅ Data Sync OK. Metadata Keys Loaded: {metadataKeys.join(', ')}
+        </div>
+        : 
+        <div className="p-2 border border-yellow-500 bg-yellow-100 text-xs font-mono mb-4 text-yellow-800 font-semibold">
+          ⚠️ Waiting for Metadata. Is Loading: {String(isMetadataLoading)}. Keys received: {metadataKeys.length}.
+        </div>
+      } 
+      {/* 🟢 DEBUG VISUAL BANNER END 🟡 */}
+
       <div className='flex items-center gap-4 border-b-2 pb-2 mb-8' style={{borderColor: COLORS.NAVY+'30'}}>
         <Cpu className='w-10 h-10' style={{color: COLORS.NAVY}}/>
         <h1 className="text-4xl font-extrabold" style={{ color: COLORS.NAVY }}>Global Data Maintenance Hub</h1>
@@ -1625,7 +1689,7 @@ export default function AdminDataMaintenanceScreen({ navigate }) {
       <p className="text-lg text-gray-600 mb-8 max-w-3xl">Admin Tools: Directly manage all non-user application data (tiers, catalogs) stored in the Firebase collection <strong>metadata</strong>.</p>
 
       <GlobalDataEditor
-        globalMetadata={resolveGlobalMetadata(metadata)}
+        globalMetadata={resolvedMetadata}
         updateGlobalMetadata={updateGlobalMetadata}
         db={db}
       />

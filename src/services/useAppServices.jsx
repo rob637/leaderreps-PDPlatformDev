@@ -1,4 +1,4 @@
-// src/services/useAppServices.jsx (FINAL TWO-DOCUMENT READ - UNIFIED STREAM FIX)
+// src/services/useAppServices.jsx (FINAL DEBUG VERSION)
 
 import React, {
   useMemo,
@@ -349,7 +349,7 @@ export const usePlanningData = (db, userId, isAuthReady) => {
 };
 
 /* =========================================================
-   Global metadata (read) - UNIFIED STREAM FIX
+   Global metadata (read) - UNIFIED STREAM FIX + DEBUGGING
 ========================================================= */
 export const useGlobalMetadata = (db, isAuthReady) => {
   const [metadata, setMetadata] = useState({});
@@ -375,9 +375,12 @@ export const useGlobalMetadata = (db, isAuthReady) => {
     const handleConfigSnapshot = async (doc) => {
         if (!isMounted) return;
 
+        // 🟢 DEBUG: Start Snapshot Process 🟢
+        console.groupCollapsed(`[DEBUG: Global Metadata Snapshot] Received update from ${pathConfig}`);
+        
         const configData = doc.exists() ? doc.data() : {};
         
-        // Asynchronously fetch the large catalog document (the data is too big for the main config)
+        // Asynchronously fetch the large catalog document
         const catalogDoc = await getDocEx(db, pathCatalog);
         const catalogData = catalogDoc.exists() ? catalogDoc.data() : {};
         
@@ -385,25 +388,29 @@ export const useGlobalMetadata = (db, isAuthReady) => {
             ...configData, 
             READING_CATALOG_SERVICE: catalogData 
         };
-
+        
+        // 🟢 DEBUG: Final Merge Result 🟢
+        console.log(`[DEBUG FINAL MERGE] Merged data from 2 documents. Total keys: ${Object.keys(mergedData).length}`);
+        console.log("Merged Object:", mergedData);
+        
         if (isMounted && mergedData && Object.keys(mergedData).length > 0) {
-            // Log for diagnostics
-            try {
-              console.log('[GLOBAL SNAPSHOT - MERGED/LIVE]', {
-                configKeys: Object.keys(configData || {}),
-                catalogKeys: Object.keys(catalogData || {}),
-                configSize: JSON.stringify(configData || {}).length,
-                catalogSize: JSON.stringify(catalogData || {}).length,
-              });
-            } catch {}
+            
+            const resolved = resolveGlobalMetadata(mergedData);
+            
+            // 🟢 DEBUG: Resolved Metadata Result 🟢
+            console.log(`[DEBUG RESOLVED METADATA] Keys after normalization: ${Object.keys(resolved).length}`);
+            console.log("Resolved Object (Set to State):", resolved);
 
-            setMetadata(resolveGlobalMetadata(mergedData));
+            setMetadata(resolved);
             setLoading(false);
             setError(null);
             console.log('[GLOBAL SNAPSHOT - ONSNAPSHOT]', 'Update received and merged.');
         } else if (isMounted) {
              setLoading(false); // Finished loading even if empty
+             console.log('[GLOBAL SNAPSHOT - ONSNAPSHOT]', 'Update resolved to empty object.');
         }
+        
+        console.groupEnd();
     };
     
     // Attach the listener to the main config document
