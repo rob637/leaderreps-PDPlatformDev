@@ -2,7 +2,8 @@
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useAppServices } from '../../services/useAppServices.jsx';
-import { ArrowLeft, Cpu, Lock, CheckCircle, AlertTriangle, CornerRightUp, Settings, BarChart3, TrendingUp, Download, Code, List, BookOpen, Target, Users } from 'lucide-react';
+// FIX: Added ShieldCheck to the import list
+import { ArrowLeft, Cpu, Lock, CheckCircle, AlertTriangle, CornerRightUp, Settings, BarChart3, TrendingUp, Download, Code, List, BookOpen, Target, Users, ShieldCheck } from 'lucide-react';
 
 /* =========================================================
    HIGH-CONTRAST PALETTE (Centralized for Consistency)
@@ -50,7 +51,7 @@ const Button = ({ children, onClick, disabled = false, variant = 'primary', clas
 };
 
 // --- DATA EDITOR COMPONENT: Reading Hub Tab ---
-const ReadingHubEditor = ({ catalog, isSaving, setGlobalData, navigate, currentEditorKey }) => { // currentEditorKey prop is added
+const ReadingHubEditor = ({ catalog, isSaving, setGlobalData, navigate, currentEditorKey }) => { 
     
     // CRITICAL FIX 1: Ensure JSON.stringify uses an empty object if catalog is null/undefined
     const initialJson = useMemo(() => {
@@ -92,11 +93,11 @@ const ReadingHubEditor = ({ catalog, isSaving, setGlobalData, navigate, currentE
 
             if (currentEditorKey === 'READING_CATALOG_SERVICE') {
                  updateObject.READING_CATALOG_SERVICE = parsedData;
-                 setStatus({ type: 'success', message: 'Reading Catalog staged locally. Click "Finalize & Write" to commit.' });
+                 setStatus({ type: 'success', message: 'Reading Catalog staged for global save. (Ready to write).' });
             } else if (currentEditorKey === 'RAW_CONFIG') {
                  // For the raw tab, replace the entire object with the parsed data
                  setGlobalData(() => parsedData);
-                 setStatus({ type: 'success', message: 'Raw Config staged locally. Click "Finalize & Write" to commit.' });
+                 setStatus({ type: 'success', message: 'Raw Config staged locally. (Ready to write).' });
                  return; // Exit early as setGlobalData was called with the full object
             } else {
                  setStatus({ type: 'error', message: 'Unknown editor key. Stage operation failed.' });
@@ -114,24 +115,28 @@ const ReadingHubEditor = ({ catalog, isSaving, setGlobalData, navigate, currentE
         }
     };
     
+    // UX FIX: Dynamic title based on tab
     const editorTitle = currentEditorKey === 'READING_CATALOG_SERVICE' 
-        ? 'Reading Catalog JSON (Key: READING_CATALOG_SERVICE)'
-        : 'FULL Global Config JSON (Key: metadata/config)';
+        ? 'Content Editor: Book & Category Data'
+        : 'Advanced: Raw Global Configuration';
 
     return (
         <div className='mt-4'>
             <p className='text-sm font-bold text-[#002E47] mb-2'>{editorTitle}</p>
             <p className='text-sm text-gray-700 mb-4'>
-                Ensure your data is structured as a valid JSON object. For the Reading Hub, the top level keys should be the category names (e.g., "Strategy & Execution").
+                {/* FIX: Corrected the string escaping issue */}
+                Use the mass editor below to paste your full data set. Ensure the format is: **{"{"}"Category Name": [{"{"}book_object{"}"}, ...], ...{"}"}**
             </p>
             <textarea
                 value={jsonText}
                 onChange={(e) => {setJsonText(e.target.value); setStatus(null);}}
                 className="w-full p-4 border border-gray-300 rounded-lg focus:ring-[#E04E1B] focus:border-[#E04E1B] h-[400px] font-mono text-sm resize-y"
                 disabled={isSaving}
+                // UX FIX: Placeholder now guides the user on the expected structure
+                placeholder={`Paste your JSON object here. Example: {"Strategy & Execution": [{ "id": 1, "title": "Good to Great", "author": "Jim Collins", ... }]}`}
             />
             {status && (
-                <div className className={`mt-4 p-3 rounded-lg font-semibold flex items-center gap-2 ${
+                <div className={`mt-4 p-3 rounded-lg font-semibold flex items-center gap-2 ${
                     status.type === 'success' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
                 }`}>
                     {status.type === 'success' ? <CheckCircle className='w-5 h-5'/> : <AlertTriangle className='w-5 h-5'/>}
@@ -153,7 +158,7 @@ const GlobalDataEditor = ({ globalMetadata, updateGlobalMetadata, db, navigate }
     // CRITICAL: We maintain a local copy of ALL metadata to be written to the database
     // CRITICAL FIX 2: Ensure globalMetadata defaults to an empty object for safe destructuring/use
     const [localGlobalData, setLocalGlobalData] = useState(globalMetadata || {});
-    const [currentTab, setCurrentTab] = useState('summary');
+    const [currentTab, setCurrentTab] = useState('reading'); // UX FIX: Default to the most common editing task
     const [isSaving, setIsSaving] = useState(false);
     const [status, setStatus] = useState(null); // Save status for the final write
 
@@ -171,6 +176,7 @@ const GlobalDataEditor = ({ globalMetadata, updateGlobalMetadata, db, navigate }
         
         try {
             // Write the merged local object back to the metadata/config document
+            // NOTE: We update the database using the raw local object.
             const success = await updateGlobalMetadata(db, localGlobalData);
 
             if (success) {
@@ -188,11 +194,12 @@ const GlobalDataEditor = ({ globalMetadata, updateGlobalMetadata, db, navigate }
     // CRITICAL FIX 3: Add safe guarding for accessing nested catalog data
     const countItems = (obj) => Object.values(obj || {}).flat().length;
 
+    // UX FIX: Updated labels for clarity
     const navItems = useMemo(() => [
-        { key: 'summary', label: 'Summary', icon: BarChart3, accent: 'NAVY' },
         { key: 'reading', label: 'Content Editor (Reading Hub)', icon: BookOpen, accent: 'TEAL', count: countItems(localGlobalData.READING_CATALOG_SERVICE) },
         { key: 'tiers', label: 'Tiers & Goals', icon: Target, accent: 'ORANGE', count: Object.keys(localGlobalData.LEADERSHIP_TIERS || {}).length },
         { key: 'scenarios', label: 'Coaching Scenarios', icon: Users, accent: 'BLUE', count: countItems(localGlobalData.SCENARIO_CATALOG) },
+        { key: 'summary', label: 'Summary', icon: BarChart3, accent: 'NAVY' },
         { key: 'raw', label: 'Advanced: Raw Config', icon: Code, accent: 'RED' },
     ], [localGlobalData]);
 
