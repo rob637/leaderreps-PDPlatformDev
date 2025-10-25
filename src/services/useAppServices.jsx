@@ -170,7 +170,15 @@ const resolveGlobalMetadata = (meta) => {
   if (payload && !payload.RESOURCE_LIBRARY && meta.RESOURCE_CONTENT_LIBRARY) {
     payload = { ...payload, RESOURCE_LIBRARY: meta.RESOURCE_CONTENT_LIBRARY };
   }
-  return payload || {};
+  
+  // Alias support for reading catalog variants
+  if (payload && !payload.READING_CATALOG_SERVICE && meta.READING_CATALOG) {
+    payload = { ...payload, READING_CATALOG_SERVICE: meta.READING_CATALOG };
+  }
+  if (payload && !payload.READING_CATALOG_SERVICE && meta.READING_LIBRARY) {
+    payload = { ...payload, READING_CATALOG_SERVICE: meta.READING_LIBRARY };
+  }
+return payload || {};
 };
 
 const looksEmptyGlobal = (obj) => {
@@ -536,6 +544,10 @@ export const createAppServices = ({
       // merge all global metadata into the service context (so Admin editor sees it)
       LEADERSHIP_TIERS: global.metadata.LEADERSHIP_TIERS || LEADERSHIP_TIERS_FALLBACK,
       ...resolveGlobalMetadata(global.metadata),
+      // Expose full (resolved) metadata object and its loading state to consumers
+      metadata: global.metadata,
+      isMetadataLoading: global.isLoading,
+
 
       hasPendingDailyPractice,
     }),
