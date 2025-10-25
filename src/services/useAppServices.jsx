@@ -1,4 +1,4 @@
-// src/services/useAppServices.jsx (INSTRUMENTED FOR DEBUGGING)
+// src/services/useAppServices.jsx (FORCE DEBUG OUTPUT)
 
 import React, {
   useMemo,
@@ -38,7 +38,6 @@ const mockGetDoc = async (docPath) => {
   const d = __firestore_mock_store[docPath];
   return createMockSnapshot(docPath, d || {}, !!d);
 };
-// Updated mockDoc to handle simple pathing for global metadata
 const mockDoc = (db, c, d) => (c === 'metadata' ? `${c}/${d}` : `${c}/${d}`);
 
 /* =========================================================
@@ -46,9 +45,8 @@ const mockDoc = (db, c, d) => (c === 'metadata' ? `${c}/${d}` : `${c}/${d}`);
 ========================================================= */
 const toDocRef = (db, path) => fsDoc(db, ...path.split('/'));
 
-// onSnapshotEx is maintained but ONLY used for User Data
 const onSnapshotEx = (db, path, cb) => {
-  if (!db) return () => {}; // No mock necessary if only used for live user data
+  if (!db) return () => {};
   return fsOnSnapshot(
     toDocRef(db, path),
     { includeMetadataChanges: true },
@@ -263,7 +261,7 @@ export const usePlanningData = (db, userId, isAuthReady) => {
 
 
 /* =========================================================
-   Global metadata (read) - CRITICAL INSTRUMENTATION ADDED
+   Global metadata (read) - CRITICAL INSTRUMENTATION MODIFIED
 ========================================================= */
 export const useGlobalMetadata = (db, isAuthReady) => {
   const [metadata, setMetadata] = useState({});
@@ -279,26 +277,28 @@ export const useGlobalMetadata = (db, isAuthReady) => {
       return;
     }
     setLoading(true);
+    
+    // --- STEP 0: LOG START ---
+    console.log(`[*** ABSOLUTE DEBUG START ***] Fetching Global Metadata from: ${pathConfig} and ${pathCatalog}`);
 
     const fetchMetadata = async () => {
-      console.groupCollapsed(`[REBUILD READ] Starting concurrent fetch for config/catalog.`);
       let finalData = {};
       try {
         const [configSnap, catalogSnap] = await Promise.all([
           getDocEx(db, pathConfig),
           getDocEx(db, pathCatalog)
         ]);
-        
+
         // --- STEP 1: LOG RAW SNAPSHOT STATUS ---
-        console.log(`[DEBUG GLOBAL] Config Doc Exists: ${configSnap.exists()}. Path: ${pathConfig}`);
-        console.log(`[DEBUG GLOBAL] Catalog Doc Exists: ${catalogSnap.exists()}. Path: ${pathCatalog}`);
+        console.log(`[DEBUG SNAPSHOT] Config Doc Exists: ${configSnap.exists()}. Catalog Doc Exists: ${catalogSnap.exists()}`);
 
         const configData = configSnap.exists() ? configSnap.data() : {};
         const catalogData = catalogSnap.exists() ? catalogSnap.data() : {};
         
-        // --- STEP 2: LOG RAW DATA RETURNED ---
-        console.log(`[DEBUG GLOBAL] Raw Config Data:`, configData);
-        console.log(`[DEBUG GLOBAL] Raw Catalog Data:`, catalogData);
+        // --- STEP 2: LOG RAW DATA RETURNED (BYPASSING OBJECT LOGGING FOR SAFETY) ---
+        // We use JSON.stringify to ensure the raw object structure is logged as plain text.
+        console.log(`[DEBUG RAW DATA] RAW CONFIG: ${JSON.stringify(configData)}`);
+        console.log(`[DEBUG RAW DATA] RAW CATALOG: ${JSON.stringify(catalogData)}`);
         
         // CRITICAL FIX: Direct merge of all data with the catalog nested as expected
         finalData = { 
@@ -307,7 +307,7 @@ export const useGlobalMetadata = (db, isAuthReady) => {
         };
         
         // --- STEP 3: LOG MERGED DATA ---
-        console.log(`[DEBUG GLOBAL] Merged Data (Before Fallback):`, finalData);
+        console.log(`[DEBUG MERGED] MERGED DATA: ${JSON.stringify(finalData)}`);
         
         // Apply fallback tiers ONLY if the entire config document was empty
         if (Object.keys(configData || {}).length === 0) {
@@ -315,18 +315,18 @@ export const useGlobalMetadata = (db, isAuthReady) => {
             console.warn('[REBUILD READ RESOLVE] Config data was empty. Applied LEADERSHIP_TIERS_FALLBACK.');
         }
         
-        setMetadata(finalData); 
+        setMetadata(finalData);
         setError(null);
         
         // --- STEP 4: LOG FINAL STATE ---
-        console.log(`[DEBUG GLOBAL] FINAL METADATA STATE SET:`, finalData);
+        console.log(`[DEBUG FINAL] FINAL METADATA STATE SET: ${JSON.stringify(finalData)}`);
         
       } catch (e) {
           console.error("[CRITICAL REBUILD READ FAIL] Document fetch failed.", e);
           setError(e);
       } finally {
           setLoading(false);
-          console.groupEnd();
+          // console.groupEnd(); // Removed group to avoid hiding logs
       }
     };
 
