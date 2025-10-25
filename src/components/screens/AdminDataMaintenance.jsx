@@ -1620,9 +1620,10 @@ export default function AdminDataMaintenanceScreen({ navigate }) {
             <p className="text-lg text-gray-600 mb-8 max-w-3xl">Admin Tools: Directly manage all non-user application data (tiers, catalogs) stored in the Firebase collection **`metadata`**.</p>
             
             <GlobalDataEditor 
-                // CRITICAL FIX: Add the key prop to force component re-mount/reset 
-                // when metadata object reference changes (i.e., new data is loaded).
-                key={metadata ? Object.keys(metadata).length : 'empty'}
+                // CRITICAL FIX: Using JSON.stringify of the entire metadata object as the key 
+                // ensures a complete component reset whenever the data changes deeply.
+                // This forces the GlobalDataEditor's useState(globalMetadata) to re-run and see the new data.
+                key={metadata ? JSON.stringify(metadata) : 'empty'}
                 globalMetadata={metadata} 
                 updateGlobalMetadata={updateGlobalMetadata} 
                 db={db}
