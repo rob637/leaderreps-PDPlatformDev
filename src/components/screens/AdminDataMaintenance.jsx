@@ -141,10 +141,11 @@ const useArrayDataCRUD = (dataKey, setGlobalData, idKey = 'id') => {
 
 
 // --- GENERIC ROW EDITOR COMPONENT ---
-const GenericRowEditor = ({ item: initialItem, onUpdate, onDelete, isSaving, fields, idKey = 'id', extraDisplay = {} }) => {
-    const [item, setItem] = useState(initialItem);
-    const [isEditing, setIsEditing] = useState(initialItem.isNew || false); 
-    const [isStaged, setIsStaged] = useState(initialItem.isNew || false);
+const GenericRowEditor = ({ item: initialItem = null, onUpdate, onDelete, isSaving, fields, idKey = 'id', extraDisplay = {} }) => {
+    const safeItem = initialItem ?? {};
+    const [item, setItem] = useState(safeItem);
+    const [isEditing, setIsEditing] = useState(Boolean(safeItem.isNew)); 
+    const [isStaged, setIsStaged] = useState(Boolean(safeItem.isNew));
     
     useEffect(() => {
         setItem(initialItem);
@@ -171,7 +172,7 @@ const GenericRowEditor = ({ item: initialItem, onUpdate, onDelete, isSaving, fie
 
     const handleCancel = () => {
         if (initialItem.isNew) {
-            onDelete(initialItem[idKey]); 
+            onDelete(safeItem[idKey]); 
         } else {
             setItem(initialItem); 
             setIsEditing(false);
@@ -206,7 +207,7 @@ const GenericRowEditor = ({ item: initialItem, onUpdate, onDelete, isSaving, fie
             {/* Extra Display Column (e.g., Parent Key Name) */}
             {extraDisplay.key && (
                 <div className='truncate'>
-                    <p className='w-full p-1.5 text-xs font-mono text-gray-700 truncate bg-gray-100 rounded-sm'>{initialItem[extraDisplay.key]}</p>
+                    <p className='w-full p-1.5 text-xs font-mono text-gray-700 truncate bg-gray-100 rounded-sm'>{safeItem[extraDisplay.key]}</p>
                 </div>
             )}
 
@@ -244,7 +245,7 @@ const GenericRowEditor = ({ item: initialItem, onUpdate, onDelete, isSaving, fie
                         <Button onClick={() => setIsEditing(true)} isSmall disabled={isSaving} variant='outline'>
                             <Settings className='w-4 h-4' />
                         </Button>
-                        <Button onClick={() => onDelete(initialItem[idKey])} isSmall variant='secondary' disabled={isSaving}>
+                        <Button onClick={() => onDelete(safeItem[idKey])} isSmall variant='secondary' disabled={(isSaving || !safeItem[idKey] || !(safeItem && safeItem[idKey]))}>
                             <Trash2 className='w-4 h-4' />
                         </Button>
                     </>
