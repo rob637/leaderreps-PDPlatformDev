@@ -1348,6 +1348,19 @@ const GlobalDataEditor = ({ globalMetadata, updateGlobalMetadata, db, navigate }
     
     const [localGlobalData, setLocalGlobalData] = useState(globalMetadata || {});
 
+
+  {/* Debug HUD */}
+            <div className="mb-4 p-3 rounded border border-gray-200 bg-gray-50 text-xs text-gray-700">
+              <div className="flex flex-wrap gap-4">
+                <div>meta keys: {Object.keys(localGlobalData||{}).length}</div>
+                <div>lib total: {Object.values((localGlobalData?.RESOURCE_LIBRARY||localGlobalData?.RESOURCE_CONTENT_LIBRARY||{})).flat().length}</div>
+                <div>domains: {(localGlobalData?.LEADERSHIP_DOMAINS||[]).length}</div>
+                <div>target reps: {(localGlobalData?.TARGET_REP_CATALOG||[]).length}</div>
+                <div>quick challenges: {(localGlobalData?.QUICK_CHALLENGE_CATALOG||[]).length}</div>
+              </div>
+            </div>
+            
+  
 // Auto-pick a populated tab on first data load
 const computeFirstTab = (data) => {
   if (!data) return 'reading';
@@ -1696,17 +1709,7 @@ export default function AdminDataMaintenanceScreen({ navigate }) {
         <div className="p-6 md:p-10 min-h-screen" style={{ background: COLORS.BG }}>
             <div className='flex items-center gap-4 border-b-2 pb-2 mb-8' style={{borderColor: COLORS.NAVY+'30'}}>
                 <Cpu className='w-10 h-10' style={{color: COLORS.NAVY}}/>
-                {/* Debug HUD */}
-            <div className="mb-4 p-3 rounded border border-gray-200 bg-gray-50 text-xs text-gray-700">
-              <div className="flex flex-wrap gap-4">
-                <div>meta keys: {Object.keys(localGlobalData||{}).length}</div>
-                <div>lib total: {Object.values((localGlobalData?.RESOURCE_LIBRARY||localGlobalData?.RESOURCE_CONTENT_LIBRARY||{})).flat().length}</div>
-                <div>domains: {(localGlobalData?.LEADERSHIP_DOMAINS||[]).length}</div>
-                <div>target reps: {(localGlobalData?.TARGET_REP_CATALOG||[]).length}</div>
-                <div>quick challenges: {(localGlobalData?.QUICK_CHALLENGE_CATALOG||[]).length}</div>
-              </div>
-            </div>
-            <h1 className="text-4xl font-extrabold" style={{ color: COLORS.NAVY }}>Global Data Maintenance Hub</h1>
+                <h1 className="text-4xl font-extrabold" style={{ color: COLORS.NAVY }}>Global Data Maintenance Hub</h1>
             </div>
             <p className="text-lg text-gray-600 mb-8 max-w-3xl">Admin Tools: Directly manage all non-user application data (tiers, catalogs) stored in the Firebase collection **`metadata`**.</p>
             
