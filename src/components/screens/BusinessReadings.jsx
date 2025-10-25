@@ -34,6 +34,18 @@ const MOCK_ALL_BOOKS_FALLBACK = {
     ]
 };
 
+// --- NEW UTILITY FOR DEEP DEPENDENCY TRACKING ---
+function getDeepDataSignature(booksObject) {
+    if (!booksObject) return '';
+    // This creates a string that changes if: a) a category is added/removed, or b) the total number of books changes.
+    try {
+        return Object.keys(booksObject).sort().join(',') + '-' + Object.values(booksObject).flat().length;
+    } catch {
+        return 'error';
+    }
+}
+// --- END NEW UTILITY ---
+
 /* =========================================================
    UI COMPONENTS (Standardized)
 ========================================================= */
@@ -628,6 +640,9 @@ export default function BusinessReadingsScreen() {
   // CRITICAL FIX 1: Ensure allBooks reacts to the READING_CATALOG_SERVICE changing.
   const allBooks = READING_CATALOG_SERVICE || MOCK_ALL_BOOKS_FALLBACK; 
 
+  // NEW: Deep dependency for the useMemo below
+  const deepDataSignature = useMemo(() => getDeepDataSignature(allBooks), [allBooks]);
+
   const [selectedBook, setSelectedBook] = useState(null);
   const [htmlFlyer, setHtmlFlyer] = useState('');
   const [selectedTier, setSelectedTier] = useState('');
@@ -685,7 +700,7 @@ export default function BusinessReadingsScreen() {
         (acc[b.tier] ||= []).push(b);
         return acc;
       }, {});
-  }, [allBooks, filters]); // allBooks is now correctly passed as dependency.
+  }, [allBooks, filters, deepDataSignature]); // <-- CRITICAL FIX: ADDED DEEP SIGNATURE HERE
 
   /* ---------- Flyer generation (AI now drives content) ---------- */
   useEffect(() => {
