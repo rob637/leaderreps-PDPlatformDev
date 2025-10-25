@@ -1,6 +1,6 @@
 // src/components/screens/AdminDataMaintenance.jsx
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 // Path assumes this file is screens/AdminDataMaintenance.jsx and useAppServices is in services/
 import { useAppServices } from '../../services/useAppServices'; 
 import { ChevronsLeft, AlertTriangle, Save, Lock, Cpu, RotateCcw } from 'lucide-react';
@@ -38,7 +38,12 @@ const JSONEditor = ({ data, setData, label, isSaving, setModified }) => {
 
     const handleReset = () => {
         setJsonText(initialJsonText);
-        setData(JSON.parse(initialJsonText)); // Reset parent state
+        // Ensure reset doesn't break if initialJsonText parsing fails
+        try {
+             setData(JSON.parse(initialJsonText)); // Reset parent state
+        } catch (e) {
+             console.error("Reset failed: Could not parse initial JSON text.");
+        }
         setIsError(false);
         setModified(false);
     };
@@ -65,7 +70,8 @@ const JSONEditor = ({ data, setData, label, isSaving, setModified }) => {
 
 
 const AdminDataMaintenance = ({ navigate }) => {
-    const { metadata, isLoading, error, updateGlobalMetadata } = useAppServices();
+    // FIX: Destructure db directly from the context hook
+    const { metadata, isLoading, error, updateGlobalMetadata, db } = useAppServices(); 
     
     // Split the fetched metadata into the two main documents for editing
     const { READING_CATALOG_SERVICE = {}, ...configMetadata } = metadata;
@@ -112,12 +118,19 @@ const AdminDataMaintenance = ({ navigate }) => {
         setIsSaving(true);
         const results = [];
         
+        // Ensure JSON is valid before attempting to save
+        if (!db) {
+             setSaveStatus('❌ Save failed: Firestore database connection is missing.');
+             setIsSaving(false);
+             return;
+        }
+
         try {
             // 1. Save Config Document (only if modified)
             if (isConfigModified) {
                 console.log("Saving Config Document...");
                 const configResult = await updateGlobalMetadata(
-                    metadata.db, // db instance is in metadata from useAppServices
+                    db, // FIXED: Use the destructured 'db'
                     configData, 
                     { source: 'Admin Maintenance (config)', forceDocument: 'config' }
                 );
@@ -128,7 +141,7 @@ const AdminDataMaintenance = ({ navigate }) => {
             if (isCatalogModified) {
                  console.log("Saving Catalog Document...");
                  const catalogResult = await updateGlobalMetadata(
-                    metadata.db, 
+                    db, // FIXED: Use the destructured 'db'
                     { READING_CATALOG_SERVICE: catalogData }, // Pass as an object with the key
                     { source: 'Admin Maintenance (catalog)', forceDocument: 'catalog' } // Force catalog write
                 );

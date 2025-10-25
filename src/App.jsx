@@ -139,7 +139,6 @@ const COLORS = {
 
 /* =========================================================
    STEP 1: LAZY LOAD SCREEN COMPONENTS
-   CRITICAL FIX: Define the ScreenMap to resolve the ReferenceError in ScreenRouter
 ========================================================= */
 const ScreenMap = {
     dashboard: lazy(() => import('./components/screens/Dashboard.jsx')),
@@ -158,9 +157,6 @@ const ScreenMap = {
     // 'app-settings' is handled directly by AppSettingsScreen defined below.
 };
 
-// NOTE: Since AppSettingsScreen uses useAppServices(), we must ensure we import it
-// from the useAppServices.jsx file to avoid conflicts.
-
 // SettingsCard and AppSettingsScreen definitions... 
 const SettingsCard = ({ title, icon: Icon, children }) => (
     <div className={`p-6 rounded-xl border border-gray-200 bg-white shadow-lg space-y-4`}>
@@ -171,8 +167,6 @@ const SettingsCard = ({ title, icon: Icon, children }) => (
         {children}
     </div>
 );
-// Re-implemented AppSettingsScreen here to ensure no lazy conflict, 
-// using the name that was referenced in the original file (if it was external)
 const AppSettingsScreen = ({ navigate }) => {
     // FIX: Must use useAppServices() to get context
     const { user, API_KEY, auth } = useAppServices();
@@ -250,7 +244,6 @@ const AppSettingsScreen = ({ navigate }) => {
 
 /* =========================================================
    STEP 3: CONTEXT + DATA PROVIDER
-   CRITICAL FIX: DataProvider now uses useGlobalMetadata
 ========================================================= */
 
 const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
@@ -260,13 +253,12 @@ const DataProvider = ({ children, firebaseServices, userId, isAuthReady, navigat
   const { db } = firebaseServices;
 
   // 1. Fetch User Data (PDP, Commitment, Planning)
-  // CRITICAL: These run concurrently and resolve their internal loading state quickly (in useAppServices.jsx)
   const pdp = usePDPData(db, userId, isAuthReady);
   const commitment = useCommitmentData(db, userId, isAuthReady);
   const planning = usePlanningData(db, userId, isAuthReady);
   
   // 2. Fetch Global Configuration Data
-  const global = useGlobalMetadata(db, isAuthReady); // <-- NEW
+  const global = useGlobalMetadata(db, isAuthReady); 
 
   // Debug: log each snapshot size/keys
   try {
@@ -277,9 +269,8 @@ const DataProvider = ({ children, firebaseServices, userId, isAuthReady, navigat
 
 
   // CRITICAL: isLoading is derived from all data sources
-  // The hooks resolve isLoading=false on first snapshot (even if empty), allowing faster UI display.
   const isLoading = pdp.isLoading || commitment.isLoading || planning.isLoading || global.isLoading; 
-  const error = pdp.error || commitment.error || planning.error || global.error; // <-- UPDATED
+  const error = pdp.error || commitment.error || planning.error || global.error; 
 
   const hasPendingDailyPractice = useMemo(() => {
     const active = commitment.commitmentData?.active_commitments || [];
@@ -291,6 +282,8 @@ const DataProvider = ({ children, firebaseServices, userId, isAuthReady, navigat
 
   const appServices = useMemo(() => ({
     navigate, user, ...firebaseServices, userId, isAuthReady,
+    // FIX: Expose the Firestore instance directly for Admin Maintenance access
+    db: db, 
     updatePdpData: pdp.updatePdpData, saveNewPlan: pdp.saveNewPlan,
     updateCommitmentData: commitment.updateCommitmentData, updatePlanningData: planning.updatePlanningData,
     updateGlobalMetadata: (data, opts) => updateGlobalMetadata(db, data, { merge: true, source: (opts && opts.source) || 'Provider', userId: user?.uid, ...(opts||{}) }), // NEW: Expose global update function
