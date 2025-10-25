@@ -1,4 +1,4 @@
-// src/services/useAppServices.jsx (CORRECTED FINAL REBUILD)
+// src/services/useAppServices.jsx (Final Fix for Blank Data)
 
 import React, {
   useMemo,
@@ -134,27 +134,19 @@ export const useAppServices = () => useContext(AppServiceContext);
 /* =========================================================
    Helpers (guards + tracing)
 ========================================================= */
+// NOTE: We will keep resolveGlobalMetadata simple to prevent future conflicts
 const resolveGlobalMetadata = (meta) => {
   if (!meta || typeof meta !== 'object') return {};
-  const known = [
-    'LEADERSHIP_DOMAINS', 'RESOURCE_LIBRARY', 'READING_CATALOG_SERVICE', 'COMMITMENT_BANK', 
-    'SCENARIO_CATALOG', 'TARGET_REP_CATALOG', 'LEADERSHIP_TIERS', 'VIDEO_CATALOG', 'GLOBAL_SETTINGS',
-  ];
-  const keys = Object.keys(meta);
-  const hasKnown = keys.some((k) => known.includes(k));
-  let payload = hasKnown ? meta : (meta.config || meta.global || meta.data || meta.payload || {});
-  
-  if (payload && !payload.SCENARIO_CATALOG && Array.isArray(meta.QUICK_CHALLENGE_CATALOG)) {
-    payload = { ...payload, SCENARIO_CATALOG: meta.QUICK_CHALLENGE_CATALOG };
-  }
-  return payload || {};
+  // For safety, just return the merged object. The DataProvider handles tier fallback.
+  return meta;
 };
 
 const looksEmptyGlobal = (obj) => {
   if (!obj || typeof obj !== 'object') return true;
   const sections = [ 'LEADERSHIP_TIERS', 'COMMITMENT_BANK', 'SCENARIO_CATALOG', 'READING_CATALOG_SERVICE' ];
   const present = sections.filter((k) => Object.prototype.hasOwnProperty.call(obj, k));
-  if (!present.length) return false;
+  // If there are no known keys, check if the object has *any* keys at all.
+  if (!present.length) return Object.keys(obj).length === 0;
   return present.every((k) => {
     const v = obj[k];
     if (Array.isArray(v)) return v.length === 0;
@@ -295,6 +287,7 @@ export const useGlobalMetadata = (db, isAuthReady) => {
 
     const fetchMetadata = async () => {
       console.groupCollapsed(`[REBUILD READ] Starting concurrent fetch for config/catalog.`);
+      let finalData = {};
       try {
         const [configSnap, catalogSnap] = await Promise.all([
           getDocEx(db, pathConfig),
@@ -304,22 +297,24 @@ export const useGlobalMetadata = (db, isAuthReady) => {
         const configData = configSnap.exists() ? configSnap.data() : {};
         const catalogData = catalogSnap.exists() ? catalogSnap.data() : {};
         
-        const mergedData = { 
+        // CRITICAL FIX: Direct merge of all data with the catalog nested as expected
+        finalData = { 
             ...configData, 
             READING_CATALOG_SERVICE: catalogData 
         };
         
-        if (Object.keys(mergedData).length > 0) {
-            const resolved = resolveGlobalMetadata(mergedData);
-            
-            if (looksEmptyGlobal(resolved)) {
-                 resolved.LEADERSHIP_TIERS = LEADERSHIP_TIERS_FALLBACK;
-                 console.warn('[REBUILD READ RESOLVE] Fetched empty data. Applied LEADERSHIP_TIERS_FALLBACK.');
+        // Apply fallback tiers ONLY if the entire merged object (excluding catalog) is empty
+        if (looksEmptyGlobal(finalData)) {
+            // Check config data specifically
+            if (Object.keys(configData).length === 0) {
+                 finalData.LEADERSHIP_TIERS = LEADERSHIP_TIERS_FALLBACK;
+                 console.warn('[REBUILD READ RESOLVE] Config data empty. Applied LEADERSHIP_TIERS_FALLBACK.');
             }
-            
-            setMetadata(resolved);
-            setError(null);
         }
+        
+        setMetadata(finalData);
+        setError(null);
+        
       } catch (e) {
           console.error("[CRITICAL REBUILD READ FAIL] Document fetch failed.", e);
           setError(e);
