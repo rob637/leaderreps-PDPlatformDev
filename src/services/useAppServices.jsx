@@ -142,7 +142,7 @@ export const useAppServices = () => useContext(AppServiceContext);
    Helpers (guards + tracing)
 ========================================================= */
 /* ---------- Global metadata resolver (normalizes shape/aliases) ---------- */
-const resolveGlobalMetadata = (meta) => {
+export const resolveGlobalMetadata = (meta) => {
   if (!meta || typeof meta !== 'object') return {};
   const known = [
     'LEADERSHIP_DOMAINS',
@@ -234,6 +234,8 @@ const useFirestoreData = (db, userId, isAuthReady, suffix, mockData) => {
     let unsub = () => {};
     try {
       unsub = onSnapshotEx(db, docPath, (doc) => {
+        if (typeof __timeoutId !== 'undefined' && __timeoutId) clearTimeout(__timeoutId);
+
         if (typeof timeoutId !== 'undefined' && timeoutId) clearTimeout(timeoutId);
 
         const d = doc.exists() ? doc.data() : mockData;
@@ -350,6 +352,8 @@ export const useGlobalMetadata = (db, isAuthReady) => {
     let unsub = () => {};
     try {
       unsub = onSnapshotEx(db, path, (doc) => {
+        if (typeof __timeoutId !== 'undefined' && __timeoutId) clearTimeout(__timeoutId);
+
         if (typeof timeoutId !== 'undefined' && timeoutId) clearTimeout(timeoutId);
 
         const d = doc.exists() ? doc.data() : {};
