@@ -319,41 +319,58 @@ const CSVUploadComponent = ({ onDataParsed, expectedFields, isSaving, buttonText
 /* =====================
    READING HUB EDITOR
 ===================== */
-const BookRowEditor = ({ book: initialBook = {}, categoryKey, onUpdate, onDelete, isSaving }) => {
-  const [book, setBook] = useState(initialBook);
-  const [isEditing, setIsEditing] = useState(Boolean(initialBook?.isNew));
-  const [isStaged, setIsStaged] = useState(Boolean(initialBook?.isNew));
+// --- READING HUB EDITOR (Fixed prop + hardening) ---
+const BookRowEditor = ({
+  initialBook,          // <-- match how it's passed from the list
+  categoryKey,
+  onUpdate,
+  onDelete,
+  isSaving
+}) => {
+  // Safely derive a usable book object even if undefined
+  const safeInitial = useMemo(
+    () => initialBook ?? { id: generateId(), title: '', author: '', pages: 0, isNew: true },
+    [initialBook]
+  );
+
+  const [book, setBook] = useState(safeInitial);
+  const [isEditing, setIsEditing] = useState(Boolean(safeInitial.isNew));
+  const [isStaged, setIsStaged] = useState(Boolean(safeInitial.isNew));
 
   useEffect(() => {
-    const next = initialBook ?? {};
-    setBook(next);
-    setIsEditing(Boolean(next.isNew));
-    setIsStaged(Boolean(next.isNew));
-  }, [initialBook]);
+    setBook(safeInitial);
+    setIsEditing(Boolean(safeInitial.isNew));
+    setIsStaged(Boolean(safeInitial.isNew));
+  }, [safeInitial]);
 
   const handleChange = (field, value, type) => {
-    const parsedValue = type === 'number' ? parseInt(value) || 0 : value;
+    const parsedValue = type === 'number' ? (parseInt(value, 10) || 0) : value;
     setBook(prev => ({ ...prev, [field]: parsedValue }));
     setIsStaged(true);
   };
 
   const handleSave = () => {
+    // Require an id for new items
+    if (book.isNew && (!book.id || !book.id.trim())) {
+      alert('The id field is required for new books.');
+      return;
+    }
     onUpdate(categoryKey, { ...book, isNew: false });
     setIsEditing(false);
     setIsStaged(false);
   };
 
   const handleCancel = () => {
-    if (initialBook && initialBook.isNew) {
-      onDelete(categoryKey, book.id);
+    if (safeInitial.isNew) {
+      onDelete(categoryKey, safeInitial.id);
     } else {
-      setBook(initialBook ?? {});
+      setBook(safeInitial);
       setIsEditing(false);
       setIsStaged(false);
     }
   };
 
-  const inputClass = 'w-full p-1.5 border rounded-lg focus:ring-1 focus:ring-[#E04E1B] text-sm bg-white';
+  const inputClass = "w-full p-1.5 border rounded-lg focus:ring-1 focus:ring-[#E04E1B] text-sm bg-white";
   const fields = [
     { key: 'title', label: 'Title' },
     { key: 'author', label: 'Author' },
@@ -373,10 +390,13 @@ const BookRowEditor = ({ book: initialBook = {}, categoryKey, onUpdate, onDelete
               disabled={isSaving}
             />
           ) : (
-            <p className="w-full p-1.5 text-sm text-gray-700 truncate">{book[field.key] ?? (field.type === 'number' ? 0 : '-')}</p>
+            <p className="w-full p-1.5 text-sm text-gray-700 truncate">
+              {book[field.key] ?? (field.type === 'number' ? 0 : '-')}
+            </p>
           )}
         </div>
       ))}
+
       <div className='flex space-x-2 justify-end'>
         {isEditing ? (
           <>
@@ -415,7 +435,10 @@ const ReadingHubTableEditor = ({ catalog, isSaving, setGlobalData }) => {
     }
   }, [categoryKeys]);
 
-  const books = useMemo(() => safeCatalog[currentCategory] || [], [safeCatalog, currentCategory]);
+const books = useMemo(
+  () => (Array.isArray(safeCatalog[currentCategory]) ? safeCatalog[currentCategory] : []),
+  [safeCatalog, currentCategory]
+);
   const booksList = useMemo(() => (Array.isArray(books) ? books : []).filter(Boolean), [books]);
 
   const handleUpdateBook = useCallback((category, updatedBook) => {
