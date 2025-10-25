@@ -1,4 +1,4 @@
-// src/components/screens/AdminDataMaintenance.jsx (Final Simplification)
+// src/components/screens/AdminDataMaintenance.jsx (Final Direct Initialization)
 
 import React, { useState, useMemo, useEffect, useRef } from 'react'; 
 import { useAppServices } from '../../services/useAppServices'; 
@@ -15,28 +15,28 @@ const JSONEditor = ({ data, setData, label, isSaving, setModified }) => {
     
     // 1. Memoize the current, clean prop data as a string (THE SOURCE OF TRUTH)
     const currentCleanText = useMemo(() => JSON.stringify(safeData, null, 2), [safeData]);
-
-    // 2. Local state to track USER TYPING ONLY (Initialized to the clean prop text)
     const [jsonText, setJsonText] = useState(currentCleanText);
     const [isError, setIsError] = useState(false);
+    
     const hasUserModified = useRef(false);
 
-    // 3. Effect: Synchronize the local text with the prop ONLY if the user hasn't started typing
+    // CRITICAL SYNC: Synchronize the local text with the prop ONLY if the user hasn't modified it.
     useEffect(() => {
-        // If the component hasn't been modified by the user (not typing or reset flag is false) 
-        // AND the clean prop text is different from the current display text, update the display.
+        if (isSaving) return;
+        
+        // Use a flag check OR compare the clean text against the prop's version of the text
         if (!hasUserModified.current && jsonText !== currentCleanText) {
             setJsonText(currentCleanText);
             setIsError(false);
         }
-    }, [currentCleanText]); 
+    }, [currentCleanText, isSaving]);
 
-    // 4. Update the parent state (setData) when the user types
+
     const handleTextChange = (e) => {
         const newText = e.target.value;
         setJsonText(newText);
         setModified(true); 
-        hasUserModified.current = true;
+        hasUserModified.current = true; // User interaction flag
         
         try {
             setData(JSON.parse(newText)); 
@@ -46,13 +46,12 @@ const JSONEditor = ({ data, setData, label, isSaving, setModified }) => {
         }
     };
 
-    // 5. Reset the local state back to the prop's value
     const handleReset = () => {
         setJsonText(currentCleanText);
         setData(safeData); // Update the parent state with the clean object
         setIsError(false);
         setModified(false);
-        hasUserModified.current = false;
+        hasUserModified.current = false; // Reset user interaction flag
     };
 
 
@@ -65,7 +64,7 @@ const JSONEditor = ({ data, setData, label, isSaving, setModified }) => {
                 </button>
             </div>
             <textarea
-                value={jsonText}
+                value={jsonText} 
                 onChange={handleTextChange}
                 rows={20}
                 disabled={isSaving}
@@ -86,48 +85,35 @@ const AdminDataMaintenance = ({ navigate }) => {
     const [isSaving, setIsSaving] = useState(false);
     const [saveStatus, setSaveStatus] = useState('');
     
-    // The source of the configuration data and catalog data for the editors
-    // These must hold the edited state managed by the JSONEditor children
-    const [configData, setConfigData] = useState({});
-    const [catalogData, setCatalogData] = useState({});
     
+    // CRITICAL FIX: Derive the config and catalog objects directly from metadata in useMemo.
+    // This provides the source of truth for the JSONEditor to initialize against.
+    const splitMetadata = useMemo(() => {
+        const safeMetadata = metadata && typeof metadata === 'object' ? metadata : {};
+        const { READING_CATALOG_SERVICE = {}, ...configMetadata } = safeMetadata;
+        return { config: configMetadata, catalog: READING_CATALOG_SERVICE };
+    }, [metadata]);
+
+
+    // Set the initial state using the memoized split data.
+    const [configData, setConfigData] = useState(splitMetadata.config);
+    const [catalogData, setCatalogData] = useState(splitMetadata.catalog);
+
+    
+    // CRITICAL: Ensure the component state is updated when the context data updates.
+    // This is the last synchronization step before it goes into the JSONEditor.
+    useEffect(() => {
+        if (splitMetadata.config !== configData) {
+            setConfigData(splitMetadata.config);
+            setCatalogData(splitMetadata.catalog);
+        }
+    }, [splitMetadata]); // Only re-run when the memoized split changes
+
+
     const [isConfigModified, setIsConfigModified] = useState(false);
     const [isCatalogModified, setIsCatalogModified] = useState(false);
-    
-    // Use a ref to ensure we don't spam the initial population logic
-    const isInitialPopulated = useRef(false);
 
     
-    // CRITICAL: Initialize configData and catalogData from the metadata context
-    useEffect(() => {
-        if (!metadata || Object.keys(metadata).length === 0) {
-            return;
-        }
-
-        // Only populate the state once, or if the data changes from the database (e.g., successful save)
-        // If the component is not yet populated, set the state directly from the incoming prop.
-        if (!isInitialPopulated.current) {
-            
-            // Safely split the metadata object
-            const { READING_CATALOG_SERVICE = {}, ...configMetadata } = metadata;
-            
-            // Set the initial states for the editors
-            setConfigData(configMetadata);
-            setCatalogData(READING_CATALOG_SERVICE);
-            
-            isInitialPopulated.current = true;
-            console.log("[ADMIN DEBUG] Initial data populated into editors.");
-        }
-        
-        // Reset flags after a successful save (when isLoading goes from true->false)
-        if (!isLoading) {
-             setIsConfigModified(false);
-             setIsCatalogModified(false);
-        }
-        
-    }, [metadata, isLoading]); 
-
-
     // --- Handlers ---
     const handleAuth = (e) => {
         e.preventDefault();
@@ -218,8 +204,8 @@ const AdminDataMaintenance = ({ navigate }) => {
     
     // --- Authenticated View ---
     
-    // We display the spinner only if loading AND we haven't populated the data yet.
-    if (isLoading && !isInitialPopulated.current) {
+    // We display the spinner only if loading AND the configuration data has not yet been populated
+    if (isLoading && Object.keys(configData).length === 0) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-gray-100">
                 <div className="animate-spin rounded-full h-12 w-12 border-4 border-t-4 border-gray-200 border-t-[#47A88D] mb-3"></div>
