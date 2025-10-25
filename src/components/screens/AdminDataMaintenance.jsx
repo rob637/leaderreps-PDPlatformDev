@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useAppServices } from '../../services/useAppServices.jsx';
-import { ArrowLeft, Cpu, Lock, CheckCircle, AlertTriangle, CornerRightUp, Settings, BarChart3, TrendingUp, Download, Code, List, BookOpen, Target, Users, ShieldCheck, Plus, Trash2, Save, X, FileText, UploadCloud, Dumbbell, Link, Briefcase } from 'lucide-react';
+import { ArrowLeft, Cpu, Lock, CheckCircle, AlertTriangle, CornerRightUp, Settings, BarChart3, TrendingUp, Download, Code, List, BookOpen, Target, Users, ShieldCheck, Plus, Trash2, Save, X, FileText, UploadCloud, Dumbbell, Link, Briefcase, Mic, Edit, Layers, ChevronRight, Home, Zap, HeartPulse } from 'lucide-react';
 
 /* =========================================================
    HIGH-CONTRAST PALETTE (Centralized for Consistency)
@@ -1314,7 +1314,8 @@ const RawConfigEditor = ({ catalog, isSaving, setGlobalData, currentEditorKey })
 const GlobalDataEditor = ({ globalMetadata, updateGlobalMetadata, navigate }) => {
     
     const [localGlobalData, setLocalGlobalData] = useState(globalMetadata || {});
-    const [currentTab, setCurrentTab] = useState('reading');
+    // CRITICAL: Set initial tab to a valid, easily populated tab (like Reading Hub)
+    const [currentTab, setCurrentTab] = useState('reading'); 
     const [isSaving, setIsSaving] = useState(false);
     const [status, setStatus] = useState(null);
 
@@ -1350,24 +1351,27 @@ const GlobalDataEditor = ({ globalMetadata, updateGlobalMetadata, navigate }) =>
     const countItems = (obj) => Object.values(obj || {}).flat().length;
     const countTiers = (obj) => Object.keys(obj || {}).length;
 
-    // CRITICAL: Added the remaining tabs to the navItems array
-    // We categorize the tabs into two primary groups for visual clarity
+    // CRITICAL: Grouped navItems array by application pillar structure
     const navItems = useMemo(() => {
         const domainsCount = (localGlobalData.LEADERSHIP_DOMAINS || []).length;
         const resourcesCount = countItems(localGlobalData.RESOURCE_LIBRARY);
+        const totalReadingItems = countItems(localGlobalData.READING_CATALOG_SERVICE);
+        const totalCommitmentItems = countItems(localGlobalData.COMMITMENT_BANK);
+        const totalScenarioItems = (localGlobalData.SCENARIO_CATALOG || []).length;
+        const totalRepItems = (localGlobalData.TARGET_REP_CATALOG || []).length;
         
         return [
-            { group: 'Content & Assets', key: 'reading', label: 'Reading Hub (Books/Articles)', icon: BookOpen, accent: 'TEAL', count: countItems(localGlobalData.READING_CATALOG_SERVICE) },
-            { group: 'Content & Assets', key: 'domains', label: `Applied Leadership Domains`, icon: Link, accent: 'NAVY', count: domainsCount },
-            { group: 'Content & Assets', key: 'resources', label: `Resource Content Library`, icon: Briefcase, accent: 'ORANGE', count: resourcesCount },
-            { group: 'Content & Assets', key: 'bank', label: 'Commitment Bank (Master Reps)', icon: List, accent: 'BLUE', count: countItems(localGlobalData.COMMITMENT_BANK) },
+            { group: 'Content: Learn & Prep', key: 'reading', label: 'Reading Hub (Books/Articles)', icon: BookOpen, accent: 'TEAL', count: totalReadingItems },
+            { group: 'Content: Learn & Prep', key: 'domains', label: `Applied Leadership Domains`, icon: Layers, accent: 'NAVY', count: domainsCount },
+            { group: 'Content: Learn & Prep', key: 'resources', label: `Resource Content Library`, icon: Briefcase, accent: 'ORANGE', count: resourcesCount },
             
-            { group: 'System & Structure', key: 'tiers', label: 'Tiers & Goals', icon: Target, accent: 'ORANGE', count: countTiers(localGlobalData.LEADERSHIP_TIERS) },
-            { group: 'System & Structure', key: 'scenarios', label: 'Coaching Scenarios', icon: Users, accent: 'BLUE', count: (localGlobalData.SCENARIO_CATALOG || []).length },
-            { group: 'System & Structure', key: 'target-reps', label: 'Target Reps Catalog', icon: Dumbbell, accent: 'GREEN', count: (localGlobalData.TARGET_REP_CATALOG || []).length }, 
+            { group: 'Coaching: Practice & Feedback', key: 'scenarios', label: 'Coaching Scenarios', icon: Users, accent: 'BLUE', count: totalScenarioItems },
+            { group: 'Coaching: Practice & Feedback', key: 'target-reps', label: 'Target Reps Catalog', icon: Dumbbell, accent: 'GREEN', count: totalRepItems }, 
             
-            { group: 'System', key: 'summary', label: 'Summary', icon: BarChart3, accent: 'NAVY', count: undefined },
-            { group: 'System', key: 'raw', label: 'Advanced: Raw Config', icon: Code, accent: 'RED', count: undefined },
+            { group: 'System & Core', key: 'tiers', label: 'Tiers & Goals', icon: Target, accent: 'ORANGE', count: countTiers(localGlobalData.LEADERSHIP_TIERS) },
+            { group: 'System & Core', key: 'bank', label: 'Commitment Bank (Master Reps)', icon: List, accent: 'BLUE', count: totalCommitmentItems },
+            { group: 'System & Core', key: 'summary', label: 'Summary Dashboard', icon: BarChart3, accent: 'NAVY', count: undefined },
+            { group: 'System & Core', key: 'raw', label: 'Raw Config Editor', icon: Code, accent: 'RED', count: undefined },
         ];
     }, [localGlobalData]);
 
@@ -1462,20 +1466,20 @@ const GlobalDataEditor = ({ globalMetadata, updateGlobalMetadata, navigate }) =>
 
     return (
         <>
-            <div className='flex space-x-6 overflow-x-auto'>
+            <div className='flex flex-col space-y-4'>
                 {/* Dynamically create a navigation group for each section */}
                 {Object.entries(groupedItems).map(([group, items]) => (
                     <div key={group} className="flex flex-col flex-shrink-0">
-                        <h3 className="text-xs font-bold uppercase tracking-wider text-gray-500 mb-2">{group}</h3>
-                        <div className='flex space-x-2 border-b border-gray-300'>
+                        <h3 className="text-sm font-bold uppercase tracking-wider text-gray-500 mb-2 mt-4">{group}</h3>
+                        <div className='flex flex-wrap gap-2'>
                             {items.map(item => (
                                 <button
                                     key={item.key}
                                     onClick={() => setCurrentTab(item.key)}
-                                    className={`flex items-center px-4 py-2 text-sm font-semibold transition-colors whitespace-nowrap ${currentTab === item.key ? 'border-[#47A88D] border-b-4 text-[#002E47]' : 'border-transparent text-gray-500 hover:text-[#002E47]'}`}
+                                    className={`flex items-center px-4 py-2 text-sm font-semibold transition-all rounded-lg whitespace-nowrap border-2 ${currentTab === item.key ? 'bg-[#002E47] text-white border-[#002E47] shadow-md' : 'bg-white text-gray-500 border-gray-300 hover:bg-gray-100'}`}
                                 >
                                     <item.icon className='w-4 h-4 mr-1' />
-                                    {item.label} {item.count !== undefined && `(${item.count})`}
+                                    {item.label} {item.count !== undefined && <span className={`ml-1 px-1.5 py-0.5 text-xs rounded-full ${currentTab === item.key ? 'bg-white text-[#002E47]' : 'bg-gray-200 text-gray-700'}`}>{item.count}</span>}
                                 </button>
                             ))}
                         </div>

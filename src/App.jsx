@@ -382,7 +382,7 @@ function AuthPanel({ auth, onSuccess }) {
                         placeholder="Email" 
                         value={email} 
                         onChange={(e) => setEmail(e.target.value)} 
-                        className={`w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[${TEAL}] focus:border-[${TEAL}]`} 
+                        className={`w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[${TEAL}] focus:border-[${TETAL}]`} 
                         disabled={isLoading}
                         autoComplete="email" 
                     />
@@ -453,7 +453,7 @@ const NavSidebar = ({ currentScreen, setCurrentScreen, user, closeMobileMenu, is
         { screen: 'planning-hub', label: 'Strategic Content Tools', icon: Trello },
         { screen: 'business-readings', label: 'Content: Read & Reps', icon: BookOpen }, 
         { screen: 'leadership-videos', label: 'Content: Leader Talks', icon: Film, badge: 'New' },
-        { screen: 'applied-leadership', label: 'Applied Content Library', icon: ShieldCheck }
+        { screen: 'applied-leadership', label: 'Applied Leadership Library', icon: ShieldCheck } // **FIXED LABEL**
     ];
     
     // Pillar 2: Coaching (The Practice & Feedback Pillar)
