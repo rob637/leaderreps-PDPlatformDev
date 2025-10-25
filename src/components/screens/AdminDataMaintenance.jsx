@@ -1,6 +1,6 @@
-// src/components/screens/AdminDataMaintenance.jsx (Final Fix)
+// src/components/screens/AdminDataMaintenance.jsx
 
-import React, { useState, useMemo, useEffect, useRef } from 'react'; // <-- Added useRef
+import React, { useState, useMemo, useEffect, useRef } from 'react'; 
 // Path assumes this file is screens/AdminDataMaintenance.jsx and useAppServices is in services/
 import { useAppServices } from '../../services/useAppServices'; 
 import { ChevronsLeft, AlertTriangle, Save, Lock, Cpu, RotateCcw } from 'lucide-react';
@@ -9,8 +9,6 @@ import { ChevronsLeft, AlertTriangle, Save, Lock, Cpu, RotateCcw } from 'lucide-
 const ADMIN_PASSWORD = '7777'; 
 const NAVY = '#002E47';
 const TEAL = '#47A88D';
-
-// ... (JSONEditor component remains the same) ...
 
 const JSONEditor = ({ data, setData, label, isSaving, setModified }) => {
     // Stringifies the current object data for the editor
@@ -23,7 +21,7 @@ const JSONEditor = ({ data, setData, label, isSaving, setModified }) => {
         setJsonText(initialJsonText);
         setIsError(false);
     }, [initialJsonText]);
-    // ... (handleTextChange and handleReset remain the same)
+
     const handleTextChange = (e) => {
         const newText = e.target.value;
         setJsonText(newText);
@@ -49,7 +47,6 @@ const JSONEditor = ({ data, setData, label, isSaving, setModified }) => {
         setIsError(false);
         setModified(false);
     };
-
 
     return (
         <div className="space-y-2">
@@ -90,33 +87,36 @@ const AdminDataMaintenance = ({ navigate }) => {
     const [isConfigModified, setIsConfigModified] = useState(false);
     const [isCatalogModified, setIsCatalogModified] = useState(false);
     
-    // NEW: Ref to ensure we only run the initial load once, regardless of modification state
+    // Ref to track if data has been successfully loaded/populated once
     const isDataPopulated = useRef(false);
 
 
-    // FIX 2: Use useEffect to populate local state ONLY when new metadata arrives
+    // FIX: Modified useEffect to handle both initial load and post-save updates correctly.
     useEffect(() => {
-        // Only run if metadata has keys AND it hasn't been populated yet
-        if (Object.keys(metadata).length > 0 && !isDataPopulated.current) {
+        // 1. Initial Data Population (Runs once when data first arrives and component is new)
+        // Check if data is not empty AND either we haven't run before OR data has just finished loading
+        if (Object.keys(metadata).length > 0) {
             
-            // Split the fetched metadata into the two main documents for editing
             const { READING_CATALOG_SERVICE = {}, ...configMetadata } = metadata;
             
-            setConfigData(configMetadata);
-            setCatalogData(READING_CATALOG_SERVICE);
-            
-            // Set the flag to true so this only runs once for initial population
-            isDataPopulated.current = true;
+            // Only set the data if it hasn't been populated OR if the app is currently loading
+            // (meaning this is the first successful fetch finishing the loading state)
+            if (!isDataPopulated.current || !isLoading) {
+                 setConfigData(configMetadata);
+                 setCatalogData(READING_CATALOG_SERVICE);
+                 isDataPopulated.current = true;
+            }
         }
         
-        // Secondary use: If the user saves successfully, this hook will run again.
-        // We need to ensure modification flags are reset when metadata updates from the save.
-        if (metadata && Object.keys(metadata).length > 0 && !isLoading) {
+        // 2. Reset Modification Flags (Runs on subsequent updates, like a successful save)
+        if (!isLoading) {
+             // We only reset the flags when the background loading process is complete, 
+             // which happens after the initial fetch AND after any save operation.
              setIsConfigModified(false);
              setIsCatalogModified(false);
         }
         
-    }, [metadata, isLoading]); // Depend on the fetched metadata object and loading status
+    }, [metadata, isLoading]); 
 
 
     // --- Handlers ---
@@ -168,7 +168,6 @@ const AdminDataMaintenance = ({ navigate }) => {
 
             if (results.length > 0) {
                  setSaveStatus(`✅ Save successful: ${results.join(' | ')}`);
-                 // Note: The modification flags are now reset by the useEffect hook above
             } else {
                  setSaveStatus('Nothing to save. No changes detected.');
             }
@@ -213,7 +212,7 @@ const AdminDataMaintenance = ({ navigate }) => {
     
     // --- Authenticated View ---
     
-    if (isLoading) {
+    if (isLoading && !isDataPopulated.current) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-gray-100">
                 <div className="animate-spin rounded-full h-12 w-12 border-4 border-t-4 border-gray-200 border-t-[#47A88D] mb-3"></div>
