@@ -692,7 +692,7 @@ export default function BusinessReadingsScreen() {
     return flat
       .filter(b => {
         const cOK = filters.complexity === 'All' || b.complexity === filters.complexity;
-        const dOK = b.duration <= filters.maxDuration;
+        const dOK = (typeof b.duration === 'number') ? (b.duration <= filters.maxDuration) : true;
         const sOK = !s || b.title.toLowerCase().includes(s) || b.author.toLowerCase().includes(s) || (b.focus || '').toLowerCase().includes(s);
         return cOK && dOK && sOK;
       })

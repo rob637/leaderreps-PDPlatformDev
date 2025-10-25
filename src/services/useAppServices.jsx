@@ -240,8 +240,10 @@ const useFirestoreData = (db, userId, isAuthReady, suffix, mockData) => {
       return;
     }
     let unsub = () => {};
+    let gotFirstSnap = false;
     try {
       unsub = onSnapshotEx(db, docPath, (doc) => {
+        gotFirstSnap = true;
         const d = doc.exists() ? doc.data() : mockData;
         try {
           const jsonSize = JSON.stringify(d || {}).length;
@@ -262,7 +264,7 @@ const useFirestoreData = (db, userId, isAuthReady, suffix, mockData) => {
       setIsLoading(false);
     }
     const t = setTimeout(() => {
-      if (isLoading) {
+      if (!gotFirstSnap) {
         console.warn(`Subscribe timeout for ${docPath}`);
         setIsLoading(false);
       }
@@ -384,7 +386,7 @@ export const useGlobalMetadata = (db, isAuthReady) => {
     }
 
     const t = setTimeout(() => {
-      if (loading) {
+      if (!gotFirstMeta) {
         console.warn('Global metadata subscribe timeout');
         setLoading(false);
       }
