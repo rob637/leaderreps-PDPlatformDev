@@ -174,7 +174,7 @@ const StatCard = ({ icon: Icon, label, value, onClick, trend = 0, colorHex, size
   if (label.includes("Daily Reps Completed Today")) { accent = 'ORANGE'; }
   if (label.includes("Roadmap Months Remaining")) { accent = 'NAVY'; }
   if (label.includes("Total Coaching Labs")) { accent = 'PURPLE'; }
-  if (label.includes("Labs Today")) { accent = 'BLUE'; }
+  if (label.includes("Daily Labs Completed Today")) { accent = 'BLUE'; }
   if (label.includes("Weakest Tier Focus")) { accent = 'AMBER'; }
   if (label.includes("Longest-Held OKR")) { accent = 'BLUE'; }
   if (label.includes("Today's Target Rep")) { accent = 'RED'; } 
@@ -281,14 +281,14 @@ const DashboardScreen = () => {
   
   const greeting = useMemo(() => (user?.firstLogin ? 'Welcome to The Arena,' : 'Welcome to The Arena,'), [user?.firstLogin]);
 
-  // CRITICAL FIX 1: Create a stable navigation wrapper using the context navigate
+  // CRITICAL FIX 1: Fix the self-referential bug by calling 'navigate' instead of 'safeNavigate'
   const safeNavigate = useCallback((screen, params) => {
     if (typeof navigate !== 'function') {
       console.error('CRITICAL ERROR: navigate() is not available from useAppServices.');
       return;
     }
     console.log('[Dashboard] NAVIGATION EXECUTED ->', screen, params || {});
-    safeNavigate(screen, params); // Use the original navigate, which is now aliased in the hook
+    navigate(screen, params); // <--- CORRECTED: Call the original navigate function
   }, [navigate]);
   
   const goalsCount = useMemo(() => pdpData?.currentMonth || 0, [pdpData]);
