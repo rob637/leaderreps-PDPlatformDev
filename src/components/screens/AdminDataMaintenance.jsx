@@ -1,4 +1,4 @@
-// src/components/screens/AdminDataMaintenance.jsx (FINAL STABLE VERSION with Scope Fix)
+// src/components/screens/AdminDataMaintenance.jsx (FINAL & FULLY COMMENTED)
 
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useAppServices } from '../../services/useAppServices.jsx';
@@ -589,7 +589,7 @@ const ReadingHubTableEditor = ({ catalog, isSaving, setGlobalData }) => {
         focus: 'Focus 1, Focus 2',
         isNew: true 
     };
-    // Ensures 'Uncategorized' is treated as a valid category for adding
+    // Ensure 'Uncategorized' is treated as a valid category for adding
     const cat = currentCategory === 'Uncategorized' && categoryKeys.length > 0 ? categoryKeys[0] : currentCategory;
     setGlobalData(prevGlobal => {
       const newCatalog = JSON.parse(JSON.stringify(prevGlobal.READING_CATALOG_SERVICE || {}));
@@ -1109,7 +1109,7 @@ const LeadershipDomainsTableEditor = ({ data, isSaving, setGlobalData, idKey = '
         <Button onClick={handleAddNewDomain} disabled={isSaving} className={`bg-[${COLORS.ORANGE}] hover:bg-red-700`}>
           <Plus className='w-5 h-5 mr-2'/> Add New Domain
         </Button>
-        <DataUploadComponent
+        <CSVUploadComponent
           onDataParsed={handleDomainDataParsed}
           expectedFields={fields.concat({ key: 'id', type: 'text' })}
           isSaving={isSaving}
@@ -1232,11 +1232,11 @@ const ResourceLibraryTableEditor = ({ data, isSaving, setGlobalData, idKey = 'id
         ))}
       </div>
 
-      <div className='mt-4 flex justify-between items-center'>
+      <div className='mt-4 flex space-x-3'>
         <Button onClick={handleAddNewResource} disabled={isSaving} className={`bg-[${COLORS.ORANGE}] hover:bg-red-700`}>
           <Plus className='w-5 h-5 mr-2'/> Add New Resource
         </Button>
-        <DataUploadComponent
+        <CSVUploadComponent
           onDataParsed={handleDataParsed}
           expectedFields={fields.concat({ key: 'id', type: 'text' }, { key: 'domainId', type: 'text' }, { key: 'content', type: 'text' })}
           isSaving={isSaving}
@@ -1354,7 +1354,7 @@ const GlobalDataEditor = ({ globalMetadata, updateGlobalMetadata, db, navigate }
   const [tabAutoSelected, setTabAutoSelected] = useState(false);
 
   useEffect(() => {
-    // Logic to set initial tab remains the same
+    // ... (logic to set initial tab remains the same)
   }, [localGlobalData, tabAutoSelected]);
 
   // Memoized counts for navigation badges
@@ -1486,7 +1486,6 @@ const GlobalDataEditor = ({ globalMetadata, updateGlobalMetadata, db, navigate }
     setIsSaving(true);
     setStatus(null);
     try {
-      // Calls the multi-document write function
       const ok = await updateGlobalMetadata(localGlobalData, { merge: true, source: 'AdminFinalize' });
       if (ok) setStatus({ type: 'success', message: 'ALL global configurations successfully saved to Firestore.' });
       else setStatus({ type: 'error', message: 'Database write failed. Check console logs.' });
@@ -1508,10 +1507,10 @@ const GlobalDataEditor = ({ globalMetadata, updateGlobalMetadata, db, navigate }
                 <button
                   key={item.key}
                   onClick={() => setCurrentTab(item.key)}
-                  className={`flex items-center px-4 py-2 text-sm font-semibold transition-all rounded-lg whitespace-nowrap border-2 ${item.key === currentTab ? 'bg-[#002E47] text-white border-[#002E47] shadow-md' : 'bg-white text-gray-500 border-gray-300 hover:bg-gray-100'}`}
+                  className={`flex items-center px-4 py-2 text-sm font-semibold transition-all rounded-lg whitespace-nowrap border-2 ${currentTab === item.key ? 'bg-[#002E47] text-white border-[#002E47] shadow-md' : 'bg-white text-gray-500 border-gray-300 hover:bg-gray-100'}`}
                 >
                   <item.icon className='w-4 h-4 mr-1' />
-                  {item.label} {item.count !== undefined && <span className={`ml-1 px-1.5 py-0.5 text-xs rounded-full ${item.key === currentTab ? 'bg-white text-[#002E47]' : 'bg-gray-200 text-gray-700'}`}>{item.count}</span>}
+                  {item.label} {item.count !== undefined && <span className={`ml-1 px-1.5 py-0.5 text-xs rounded-full ${currentTab === item.key ? 'bg-white text-[#002E47]' : 'bg-gray-200 text-gray-700'}`}>{item.count}</span>}
                 </button>
               ))}
             </div>
