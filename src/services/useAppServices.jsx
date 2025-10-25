@@ -124,32 +124,23 @@ const useFirestoreData = (db, userId, isAuthReady, docName, mockData, keySuffix)
 
         const docRef = docPath;
 
-        // CRITICAL PERFORMANCE FIX: 
-        // 1. Remove the blocking 'getDoc' check. We rely solely on the real-time listener ('onSnapshot').
-        // 2. In a real app, if the document doesn't exist, the listener callback fires with doc.exists()=false, 
-        //    and a separate cloud function would seed the data asynchronously.
-        // 3. Here, we subscribe immediately and set the loading state to false on the *first* snapshot received, 
-        //    even if it's empty.
-
         const unsubscribe = mockOnSnapshot(docRef, (doc) => {
             // This is the CRITICAL point: the first snapshot resolves the loading state.
-            // The data structure (doc.data() or mockData) is used immediately.
             if (doc.exists()) {
                 setData(doc.data());
             } else {
                 // Document doesn't exist yet (or deleted) - use safe mock.
-                // In a live app, the seeding happens in the background.
                 setData(mockData); 
             }
             // Set loading to false after the first read resolves (Fastest possible load time)
             setIsLoading(false); 
         });
 
-        // ADDED 5s TIMEOUT TOLERANCE
+        // ADDED 15s TIMEOUT TOLERANCE
         const safetyTimer = setTimeout(() => {
              console.warn(`Firestore subscription timeout for ${docName}. Forcing load state to false.`);
              setIsLoading(false);
-        }, 5000); // Increased from 1500ms to 5000ms
+        }, 15000); // Increased to 15 seconds for stability
 
         return () => { 
             unsubscribe(); 
@@ -258,11 +249,11 @@ export const useGlobalMetadata = (db, isAuthReady) => {
             setLoading(false);
         });
         
-        // ADDED 5s TIMEOUT TOLERANCE
+        // ADDED 15s TIMEOUT TOLERANCE
         const safetyTimer = setTimeout(() => {
              console.warn(`Global Metadata subscription timeout. Forcing load state to false.`);
              setLoading(false);
-        }, 5000); // Increased from 1500ms to 5000ms
+        }, 15000); // Increased to 15 seconds for stability
 
         return () => { 
             unsubscribe();
