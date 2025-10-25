@@ -14,7 +14,7 @@ function resolveGlobalMetadata(meta) {
   if (!meta || typeof meta !== 'object') return {};
   const knownKeys = new Set([
     'LEADERSHIP_DOMAINS','RESOURCE_LIBRARY','READING_CATALOG_SERVICE',
-    'COMMITMENT_BANK','SCENARIO_CATALOG','TARGET_REP_CATALOG','LEADERSHIP_TIERS'
+    'COMMITMENT_BANK','SCENARIO_CATALOG','TARGET_REP_CATALOG','LEADERSHIP_TIERS', 'GLOBAL_SETTINGS', 'VIDEO_CATALOG'
   ]);
   const hasKnown = Object.keys(meta).some(k => knownKeys.has(k));
   let payload = hasKnown ? meta : (meta.config || meta.global || meta.data || meta.payload || {});
@@ -355,6 +355,7 @@ const BookRowEditor = ({
       alert('The id field is required for new books.');
       return;
     }
+    // Pass the category key up along with the book object
     onUpdate(categoryKey, { ...book, isNew: false });
     setIsEditing(false);
     setIsStaged(false);
@@ -372,7 +373,7 @@ const BookRowEditor = ({
 
   const inputClass = "w-full p-1.5 border rounded-lg focus:ring-1 focus:ring-[#E04E1B] text-sm bg-white";
   
-  // ➡️ FIX 1: EXPAND FIELDS ARRAY
+  // FIX 1: EXPAND FIELDS ARRAY
   const fields = [
     { key: 'title', label: 'Title' },
     { key: 'author', label: 'Author' },
@@ -384,8 +385,13 @@ const BookRowEditor = ({
   ];
 
   return (
-    // ➡️ FIX 2: UPDATE GRID LAYOUT TO 9 COLUMNS (7 fields + 2 action columns)
-    <div className={`grid grid-cols-9 gap-4 items-center p-2 border-b transition-colors ${isStaged ? 'bg-yellow-50' : 'hover:bg-gray-50'}`}>
+    // FIX 2: UPDATE GRID LAYOUT TO 10 COLUMNS (1 ID field, 7 data fields, 1 action column group)
+    <div className={`grid grid-cols-10 gap-4 items-center p-2 border-b transition-colors ${isStaged ? 'bg-yellow-50' : 'hover:bg-gray-50'}`}>
+      {/* ID FIELD ADDED TO ROW EDITOR FOR VISIBILITY */}
+      <div className="truncate">
+          <p className='w-full p-1.5 text-xs font-mono text-gray-500 truncate'>{String(initialBook?.id ?? '')}</p>
+      </div>
+
       {fields.map(field => (
         <div key={field.key} className="truncate">
           {isEditing ? (
@@ -419,6 +425,7 @@ const BookRowEditor = ({
             <Button onClick={() => setIsEditing(true)} isSmall disabled={isSaving} variant='outline'>
               <Settings className='w-4 h-4' />
             </Button>
+            {/* Call onDelete with both category and book ID */}
             <Button onClick={() => onDelete(categoryKey, book.id)} isSmall variant='secondary' disabled={isSaving}>
               <Trash2 className='w-4 h-4' />
             </Button>
@@ -434,51 +441,89 @@ const ReadingHubTableEditor = ({ catalog, isSaving, setGlobalData }) => {
   const categoryKeys = useMemo(() => Object.keys(safeCatalog).sort(), [safeCatalog]);
   const [currentCategory, setCurrentCategory] = useState(categoryKeys[0] || 'Uncategorized');
 
-  // ➡️ FIX 3: Category Initialization for Reading Hub Table
+  // FIX 3: Category Initialization for Reading Hub Table
   useEffect(() => {
-    if (categoryKeys.length > 0 && !categoryKeys.includes(currentCategory)) {
+    // Only update if there are keys and the current category is invalid or 'Uncategorized'
+    if (categoryKeys.length > 0 && (!categoryKeys.includes(currentCategory) || currentCategory === 'Uncategorized')) {
       setCurrentCategory(categoryKeys[0]);
     } else if (categoryKeys.length === 0) {
       setCurrentCategory('Uncategorized');
     }
   }, [categoryKeys, currentCategory]);
 
-const books = useMemo(
-  () => (Array.isArray(safeCatalog[currentCategory]) ? safeCatalog[currentCategory] : []),
-  [safeCatalog, currentCategory]
-);
+  const books = useMemo(
+    // CRITICAL FIX: Ensure books are retrieved by key from the catalog
+    () => {
+      const data = safeCatalog[currentCategory];
+      // Final check: if data exists but isn't an array, force it to an empty array
+      if (Array.isArray(data)) {
+        return data;
+      }
+      // If it's a map/object structure, try to convert it (this is a common Firebase issue)
+      if (data && typeof data === 'object') {
+        return Object.values(data);
+      }
+      return [];
+    },
+    [safeCatalog, currentCategory]
+  );
   const booksList = useMemo(() => (Array.isArray(books) ? books : []).filter(Boolean), [books]);
 
+  // FIX 4: Robust onUpdateBook handler
   const handleUpdateBook = useCallback((category, updatedBook) => {
     setGlobalData(prevGlobal => {
       const newCatalog = JSON.parse(JSON.stringify(prevGlobal.READING_CATALOG_SERVICE || {}));
       const targetArray = newCatalog[category] || [];
       const index = targetArray.findIndex(b => b.id === updatedBook.id);
+      
       if (index !== -1) {
+        // Update existing book in its current category
         targetArray[index] = updatedBook;
       } else {
+        // Add new book (should only happen for isNew)
         targetArray.push(updatedBook);
       }
+      
       newCatalog[category] = targetArray;
       return { ...prevGlobal, READING_CATALOG_SERVICE: newCatalog };
     });
   }, [setGlobalData]);
 
+  // FIX 5: Robust onDeleteBook handler
   const handleDeleteBook = useCallback((category, bookId) => {
     if (!window.confirm(`Delete book ID ${bookId} from '${category}'?`)) return;
     setGlobalData(prevGlobal => {
       const newCatalog = JSON.parse(JSON.stringify(prevGlobal.READING_CATALOG_SERVICE || {}));
-      newCatalog[category] = (newCatalog[category] || []).filter(b => b.id !== bookId);
+      // Filter out the book using its ID from the correct category array
+      if (newCatalog[category]) {
+        newCatalog[category] = (newCatalog[category] || []).filter(b => b.id !== bookId);
+        // Clean up empty category
+        if (newCatalog[category].length === 0) delete newCatalog[category];
+      }
       return { ...prevGlobal, READING_CATALOG_SERVICE: newCatalog };
     });
   }, [setGlobalData]);
 
   const handleAddNewBook = () => {
-    const newBook = { id: generateId(), title: 'NEW BOOK', author: 'New Author', pages: 100, isNew: true };
+    const newBook = { 
+        id: generateId(), 
+        title: 'NEW BOOK', 
+        author: 'New Author', 
+        pages: 100, 
+        theme: 'Brief summary of book theme.',
+        complexity: 'Medium',
+        duration: 180,
+        focus: 'Focus 1, Focus 2',
+        isNew: true 
+    };
+    // Ensure 'Uncategorized' is treated as a valid category for adding
+    const cat = currentCategory === 'Uncategorized' && categoryKeys.length > 0 ? categoryKeys[0] : currentCategory;
     setGlobalData(prevGlobal => {
       const newCatalog = JSON.parse(JSON.stringify(prevGlobal.READING_CATALOG_SERVICE || {}));
-      newCatalog[currentCategory] = newCatalog[currentCategory] || [];
-      newCatalog[currentCategory].push(newBook);
+      newCatalog[cat] = newCatalog[cat] || [];
+      newCatalog[cat].push(newBook);
+      // Ensure the active category is set to the one where the book was added
+      setCurrentCategory(cat);
       return { ...prevGlobal, READING_CATALOG_SERVICE: newCatalog };
     });
   };
@@ -514,7 +559,8 @@ const books = useMemo(
           {categoryKeys.map(key => (
             <button
               key={key}
-              onClick={() => setCurrentTab(key)}
+              // CRITICAL: Ensure button click updates the category state correctly
+              onClick={() => setCurrentCategory(key)}
               className={`w-full text-left p-2 rounded-lg text-sm font-medium transition-colors ${currentCategory === key ? 'bg-[#47A88D] text-white' : 'text-gray-700 hover:bg-gray-100'}`}
             >
               {key} ({safeCatalog[key]?.length || 0})
@@ -534,8 +580,9 @@ const books = useMemo(
           Use the table below for CRUD operations. Edits are staged until the <strong>Finalize & Write</strong> button is clicked.
         </p>
 
-        {/* ➡️ FIX 4: UPDATE GRID LAYOUT TO 9 COLUMNS in Header */}
-        <div className="grid grid-cols-9 gap-4 items-center p-2 font-bold border-b-2 text-sm text-[#002E47]">
+        {/* FIX 6: Updated Grid Header to match 10 columns */}
+        <div className="grid grid-cols-10 gap-4 items-center p-2 font-bold border-b-2 text-sm text-[#002E47]">
+          <span className="truncate">ID</span>
           <span className="truncate">Title</span>
           <span className="truncate">Author</span>
           <span className="truncate">Pages</span>
@@ -1195,7 +1242,7 @@ const DataSyncBanner = ({ globalMetadata, localGlobalData }) => {
 const GlobalDataEditor = ({ globalMetadata, updateGlobalMetadata, db, navigate }) => {
   const [localGlobalData, setLocalGlobalData] = useState(globalMetadata || {});
 
-  // ➡️ FIX 5: Reliably rehydrate local state whenever globalMetadata changes
+  // FIX 5: Reliably rehydrate local state whenever globalMetadata changes
   useEffect(() => {
     try {
       // Only update if globalMetadata is an object and has keys (i.e., it's loaded)
