@@ -1,4 +1,4 @@
-// src/services/useAppServices.jsx (FINAL TWO-DOCUMENT READ - FIXED)
+// src/services/useAppServices.jsx (FINAL TWO-DOCUMENT READ - UNIFIED STREAM FIX)
 
 import React, {
   useMemo,
@@ -349,7 +349,7 @@ export const usePlanningData = (db, userId, isAuthReady) => {
 };
 
 /* =========================================================
-   Global metadata (read) - CRITICAL FIX: READ TWO DOCUMENTS
+   Global metadata (read) - UNIFIED STREAM FIX
 ========================================================= */
 export const useGlobalMetadata = (db, isAuthReady) => {
   const [metadata, setMetadata] = useState({});
@@ -360,84 +360,69 @@ export const useGlobalMetadata = (db, isAuthReady) => {
   const pathConfig = mockDoc(db, 'metadata', 'config'); // Main config (smaller fields)
   const pathCatalog = mockDoc(db, 'metadata', 'reading_catalog'); // Books (larger)
 
-  // CRITICAL FIX: Use useEffect to fetch data reliably using getDoc on mount
+  // CRITICAL FIX: Use a single useEffect to handle the initial load AND real-time updates.
+  // The listener fetches the *other* document asynchronously and merges both results.
   useEffect(() => {
     if (!isAuthReady) {
       setLoading(false);
       return;
     }
-    
-    const fetchMetadata = async () => {
-      setLoading(true);
-      try {
-        // 1. Fetch main config (tiers, domains, etc.)
-        const configDoc = await getDocEx(db, pathConfig); 
-        const configData = configDoc.exists() ? configDoc.data() : {};
+    setLoading(true); // Start loading state
+
+    let unsubConfig = () => {};
+    let isMounted = true; // Use a flag to prevent setting state after unmount
+
+    const handleConfigSnapshot = async (doc) => {
+        if (!isMounted) return;
+
+        const configData = doc.exists() ? doc.data() : {};
         
-        // 2. Fetch reading catalog (the large content)
-        const catalogDoc = await getDocEx(db, pathCatalog); 
+        // Asynchronously fetch the large catalog document (the data is too big for the main config)
+        const catalogDoc = await getDocEx(db, pathCatalog);
         const catalogData = catalogDoc.exists() ? catalogDoc.data() : {};
         
-        // 3. Merge data
-        const mergedData = {
-          ...configData, // Includes everything but books
-          // Explicitly map the entire reading catalog map into the required key
-          READING_CATALOG_SERVICE: catalogData, 
+        const mergedData = { 
+            ...configData, 
+            READING_CATALOG_SERVICE: catalogData 
         };
-        
-        // Logging for diagnostics
-        try {
-          console.log('[GLOBAL SNAPSHOT - MERGED]', {
-            configKeys: Object.keys(configData || {}),
-            catalogKeys: Object.keys(catalogData || {}),
-            configSize: JSON.stringify(configData || {}).length,
-            catalogSize: JSON.stringify(catalogData || {}).length,
-          });
-        } catch {}
-        
-        setMetadata(resolveGlobalMetadata(mergedData));
-        setLoading(false);
-        setError(null);
-        
-      } catch (e) {
-        console.error('[GETDOC] metadata fetch failed', e);
-        setMetadata({}); 
-        setError(e);
-        setLoading(false);
-      }
-    };
 
-    fetchMetadata();
+        if (isMounted && mergedData && Object.keys(mergedData).length > 0) {
+            // Log for diagnostics
+            try {
+              console.log('[GLOBAL SNAPSHOT - MERGED/LIVE]', {
+                configKeys: Object.keys(configData || {}),
+                catalogKeys: Object.keys(catalogData || {}),
+                configSize: JSON.stringify(configData || {}).length,
+                catalogSize: JSON.stringify(catalogData || {}).length,
+              });
+            } catch {}
+
+            setMetadata(resolveGlobalMetadata(mergedData));
+            setLoading(false);
+            setError(null);
+            console.log('[GLOBAL SNAPSHOT - ONSNAPSHOT]', 'Update received and merged.');
+        } else if (isMounted) {
+             setLoading(false); // Finished loading even if empty
+        }
+    };
     
-    // The component relies on the Admin Hub's save action to trigger a view refresh.
+    // Attach the listener to the main config document
+    try {
+      unsubConfig = onSnapshotEx(db, pathConfig, handleConfigSnapshot);
+    } catch (e) {
+      console.error('[onSnapshot] Fatal error during listener setup.', e);
+      if (isMounted) {
+          setError(e);
+          setLoading(false);
+      }
+    }
     
+    return () => {
+        isMounted = false; // Cleanup flag
+        unsubConfig();      // Cleanup subscription
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [db, isAuthReady]); 
-
-  // Fallback onSnapshot listener (only for main config, optional for catalog)
-  useEffect(() => {
-    if (!db || !isAuthReady) return;
-    let unsub = () => {};
-    try {
-      unsub = onSnapshotEx(db, pathConfig, async (doc) => {
-        const configData = doc.exists() ? doc.data() : {};
-        // Refetch the catalog to ensure consistency
-        const catalogDoc = await getDocEx(db, pathCatalog);
-        // Corrected: Extract data directly from the catalog snapshot object
-        const catalogData = catalogDoc.exists() ? catalogDoc.data() : {};
-        
-        const mergedData = { ...configData, READING_CATALOG_SERVICE: catalogData };
-        if (mergedData && Object.keys(mergedData).length > 0) {
-            setMetadata(resolveGlobalMetadata(mergedData));
-            console.log('[GLOBAL SNAPSHOT - ONSNAPSHOT]', 'Update received and merged.');
-        }
-      });
-    } catch (e) {
-      console.warn('[onSnapshot] Failed after initial GETDOC. Real-time updates disabled.', e);
-    }
-    return () => unsub();
-  }, [db, isAuthReady, pathConfig, pathCatalog]);
-
 
   return { metadata, isLoading: loading, error };
 };
@@ -478,7 +463,7 @@ export const updateGlobalMetadata = async (
   const now = new Date().toISOString();
   const mainConfigKeys = Object.keys(mainConfigPayload || {});
   
-  // CRITICAL FIX: Conditionally include _force_overwrite to prevent setting 'undefined'
+  // FIX 1: Conditionally include _force_overwrite to prevent setting 'undefined'
   const optionalFields = {};
   if (forceOverwrite) {
     optionalFields._force_overwrite = true; 
