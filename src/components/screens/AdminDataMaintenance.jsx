@@ -18,7 +18,8 @@ const COLORS = {
   TEXT: '#002E47',
 };
 
-const PASSWORD = "7036238835"; // Required password
+// CRITICAL FIX: Password changed to 7777
+const PASSWORD = "7777"; 
 
 const Card = ({ children, title, icon: Icon, className = '', accent = 'NAVY', isSmall = false }) => {
     const accentColor = COLORS[accent] || COLORS.NAVY;
@@ -1350,17 +1351,25 @@ const GlobalDataEditor = ({ globalMetadata, updateGlobalMetadata, navigate }) =>
     const countTiers = (obj) => Object.keys(obj || {}).length;
 
     // CRITICAL: Added the remaining tabs to the navItems array
-    const navItems = useMemo(() => [
-        { key: 'reading', label: 'Content Editor (Reading Hub)', icon: BookOpen, accent: 'TEAL', count: countItems(localGlobalData.READING_CATALOG_SERVICE) },
-        { key: 'domains', label: 'Applied Leadership Domains', icon: Link, accent: 'NAVY', count: (localGlobalData.LEADERSHIP_DOMAINS || []).length },
-        { key: 'resources', label: 'Resource Content Library', icon: Briefcase, accent: 'ORANGE', count: countItems(localGlobalData.RESOURCE_LIBRARY) },
-        { key: 'bank', label: 'Commitment Bank (Master Reps)', icon: List, accent: 'BLUE', count: countItems(localGlobalData.COMMITMENT_BANK) },
-        { key: 'tiers', label: 'Tiers & Goals', icon: Target, accent: 'ORANGE', count: countTiers(localGlobalData.LEADERSHIP_TIERS) },
-        { key: 'scenarios', label: 'Coaching Scenarios', icon: Users, accent: 'BLUE', count: (localGlobalData.SCENARIO_CATALOG || []).length },
-        { key: 'target-reps', label: 'Target Reps Catalog', icon: Dumbbell, accent: 'GREEN', count: (localGlobalData.TARGET_REP_CATALOG || []).length }, 
-        { key: 'summary', label: 'Summary', icon: BarChart3, accent: 'NAVY', count: undefined },
-        { key: 'raw', label: 'Advanced: Raw Config', icon: Code, accent: 'RED', count: undefined },
-    ], [localGlobalData]);
+    // We categorize the tabs into two primary groups for visual clarity
+    const navItems = useMemo(() => {
+        const domainsCount = (localGlobalData.LEADERSHIP_DOMAINS || []).length;
+        const resourcesCount = countItems(localGlobalData.RESOURCE_LIBRARY);
+        
+        return [
+            { group: 'Content & Assets', key: 'reading', label: 'Reading Hub (Books/Articles)', icon: BookOpen, accent: 'TEAL', count: countItems(localGlobalData.READING_CATALOG_SERVICE) },
+            { group: 'Content & Assets', key: 'domains', label: `Applied Leadership Domains`, icon: Link, accent: 'NAVY', count: domainsCount },
+            { group: 'Content & Assets', key: 'resources', label: `Resource Content Library`, icon: Briefcase, accent: 'ORANGE', count: resourcesCount },
+            { group: 'Content & Assets', key: 'bank', label: 'Commitment Bank (Master Reps)', icon: List, accent: 'BLUE', count: countItems(localGlobalData.COMMITMENT_BANK) },
+            
+            { group: 'System & Structure', key: 'tiers', label: 'Tiers & Goals', icon: Target, accent: 'ORANGE', count: countTiers(localGlobalData.LEADERSHIP_TIERS) },
+            { group: 'System & Structure', key: 'scenarios', label: 'Coaching Scenarios', icon: Users, accent: 'BLUE', count: (localGlobalData.SCENARIO_CATALOG || []).length },
+            { group: 'System & Structure', key: 'target-reps', label: 'Target Reps Catalog', icon: Dumbbell, accent: 'GREEN', count: (localGlobalData.TARGET_REP_CATALOG || []).length }, 
+            
+            { group: 'System', key: 'summary', label: 'Summary', icon: BarChart3, accent: 'NAVY', count: undefined },
+            { group: 'System', key: 'raw', label: 'Advanced: Raw Config', icon: Code, accent: 'RED', count: undefined },
+        ];
+    }, [localGlobalData]);
 
     const renderTabContent = () => {
         switch (currentTab) {
@@ -1441,19 +1450,36 @@ const GlobalDataEditor = ({ globalMetadata, updateGlobalMetadata, navigate }) =>
         }
     };
 
+    // Group items for display
+    const groupedItems = useMemo(() => {
+        return navItems.reduce((acc, item) => {
+            acc[item.group] = acc[item.group] || [];
+            acc[item.group].push(item);
+            return acc;
+        }, {});
+    }, [navItems]);
+
 
     return (
         <>
-            <div className='flex space-x-2 border-b border-gray-300 overflow-x-auto'>
-                {navItems.map(item => (
-                    <button
-                        key={item.key}
-                        onClick={() => setCurrentTab(item.key)}
-                        className={`flex items-center px-4 py-2 text-sm font-semibold transition-colors whitespace-nowrap ${currentTab === item.key ? 'border-[#47A88D] border-b-4 text-[#002E47]' : 'border-transparent text-gray-500 hover:text-[#002E47]'}`}
-                    >
-                        <item.icon className='w-4 h-4 mr-1' />
-                        {item.label} {item.count !== undefined && `(${item.count})`}
-                    </button>
+            <div className='flex space-x-6 overflow-x-auto'>
+                {/* Dynamically create a navigation group for each section */}
+                {Object.entries(groupedItems).map(([group, items]) => (
+                    <div key={group} className="flex flex-col flex-shrink-0">
+                        <h3 className="text-xs font-bold uppercase tracking-wider text-gray-500 mb-2">{group}</h3>
+                        <div className='flex space-x-2 border-b border-gray-300'>
+                            {items.map(item => (
+                                <button
+                                    key={item.key}
+                                    onClick={() => setCurrentTab(item.key)}
+                                    className={`flex items-center px-4 py-2 text-sm font-semibold transition-colors whitespace-nowrap ${currentTab === item.key ? 'border-[#47A88D] border-b-4 text-[#002E47]' : 'border-transparent text-gray-500 hover:text-[#002E47]'}`}
+                                >
+                                    <item.icon className='w-4 h-4 mr-1' />
+                                    {item.label} {item.count !== undefined && `(${item.count})`}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
                 ))}
             </div>
 

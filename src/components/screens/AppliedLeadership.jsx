@@ -2,9 +2,8 @@
 
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import {
-    Briefcase, Aperture, Users, Heart, Gavel, Code, PiggyBank, GraduationCap, X, ChevronRight, Zap, Target, CornerRightUp, Lightbulb, Mic, MessageSquare, Compass, Network, Globe, TrendingDown, Clock, Cpu, CornerDownRight, ArrowLeft, BookOpen, Download
+    Briefcase, Aperture, Users, Heart, Gavel, Code, PiggyBank, GraduationCap, X, ChevronRight, Zap, Target, CornerRightUp, Lightbulb, Mic, MessageSquare, Compass, Network, Globe, TrendingDown, Clock, Cpu, CornerDownRight, ArrowLeft, BookOpen, Download, Link
 } from 'lucide-react';
-// CRITICAL FIX: Use the actual service hook from the context
 import { useAppServices } from '../../services/useAppServices.jsx'; 
 
 
@@ -21,7 +20,8 @@ const COLORS = {
     BG: '#F9FAFB',
 };
 
-// FIX 1: Defined Card and Button components locally to resolve any potential ReferenceError
+// ... (Card and Button components remain unchanged for brevity) ...
+
 const Card = ({ children, title, icon: Icon, className = '', onClick, accent = 'TEAL' }) => {
     const accentColor = COLORS[accent] || COLORS.TEAL;
     return (
@@ -53,25 +53,16 @@ async function mdToHtml(md) {
     html = html.replace(/## (.*$)/gim, '<h2 style="font-size: 24px; font-weight: 800; color: #002E47; border-bottom: 2px solid #E5E7EB; padding-bottom: 5px; margin-top: 20px;">$1</h2>');
     html = html.replace(/### (.*$)/gim, '<h3 style="font-size: 18px; font-weight: 700; color: #47A88D; margin-top: 15px;">$1</h3>');
     html = html.replace(/\*\*(.*)\*\*/gim, '<strong>$1</strong>');
-    // Replace double newlines with closing/opening p tags
     html = html.replace(/\n\n/g, '</p><p style="font-size: 16px; color: #374151; margin-top: 10px;">');
-    // Replace single newlines followed by a bullet with <li>
     html = html.replace(/\n\* (.*)/gim, '<li>$1</li>');
-    // Wrap loose <li>s in <ul> tags
     html = html.replace(/(<li>.*<\/li>)+/gim, (match) => `<ul style="list-style: disc; margin-left: 25px; margin-top: 10px; font-size: 16px; color: #374151;">${match}</ul>`);
-    // Final wrap for any remaining text (ensuring we don't double-wrap)
     if (!html.startsWith('<') && html.trim().length > 0) {
         html = `<p style="font-size: 16px; color: #374151;">${html}</p>`;
     }
     return html;
 }
 
-
-/* =========================================================
-   WORLD-CLASS DOMAIN DATA STRUCTURE - DELETED
-========================================================= */
-// Note: LEADERSHIP_DOMAINS and RESOURCE_LIBRARY are deleted.
-// We use icon map here to reference the correct Lucide icon based on the ID string
+// Icon map to link domain ID to Lucide icon
 const IconMap = {
     'women-exec': Users, 'lgbtqia-leader': Heart, 'poc-leader': Network, 
     'non-profit': PiggyBank, 'public-sector': Gavel, 'tech-lead': Code, 
@@ -96,14 +87,10 @@ const AICoachingSimulator = ({ domain, RESOURCES }) => {
         setIsLoading(true);
         setResult(null);
 
-        // --- PRODUCTION AI PROMPT (High-Value Context) ---
         const systemPrompt = `You are a world-class executive coach specializing in ${domain.title}. Your primary focus is on addressing the core leadership tension: "${domain.coreTension}". Provide a single, concise coaching insight based on the user's scenario. Do not use markdown headers or lists. Focus on strategic leverage.`;
-        
         const userQuery = `Context: ${domain.title}. Core Tension: ${domain.coreTension}. Analyze this scenario: "${scenario}". Provide a single, high-leverage coaching insight (1-2 sentences) relevant to this domain's challenges.`;
-        // --- END PROMPT ---
 
         try {
-            // FIX 2: Final payload structure for Gemini call
             const payload = {
                 contents: [{ parts: [{ text: userQuery }] }],
                 systemInstruction: { parts: [{ text: systemPrompt }] },
@@ -135,7 +122,6 @@ const AICoachingSimulator = ({ domain, RESOURCES }) => {
         };
 
         try {
-            // FIX 4: Final payload structure for Gemini call
             const payload = {
                 contents: [{ parts: [{ text: userQuery }] }],
                 systemInstruction: { parts: [{ text: systemPrompt }] },
@@ -301,10 +287,11 @@ const ResourceDetailModal = ({ isVisible, onClose, resource, domain }) => {
 
 export default function AppliedLeadershipScreen() {
     // CRITICAL: Pull all necessary data from the service context
-    const { LEADERSHIP_DOMAINS: DOMAINS, RESOURCE_LIBRARY: RESOURCES } = useAppServices();
+    const { LEADERSHIP_DOMAINS: DOMAINS, RESOURCE_LIBRARY: RESOURCES, isLoading } = useAppServices();
 
     // Use a safe, empty array fallback if data is still loading
-    const safeDomains = DOMAINS || []; 
+    // We convert the object (if it's an object) to an array for safe iteration.
+    const safeDomains = Array.isArray(DOMAINS) ? DOMAINS : []; 
 
     const [selectedDomain, setSelectedDomain] = useState(null);
     const [isModalVisible, setIsModalVisible] = useState(false);
@@ -452,8 +439,16 @@ export default function AppliedLeadershipScreen() {
                     );
                 })}
             </div>
-            {safeDomains.length === 0 && (
-                 <p className="text-gray-500 italic text-center py-10">Loading applied content tracks...</p>
+            {/* CRITICAL FIX: Only show loading if the global service data hasn't finished loading */}
+            {isLoading && safeDomains.length === 0 && (
+                 <p className="text-gray-500 italic text-center py-10 flex items-center justify-center">
+                    <div className="animate-spin h-4 w-4 border-b-2 border-[#47A88D] mr-2 rounded-full"></div>
+                    Loading applied content tracks...
+                </p>
+            )}
+            {/* Show a message if loading is done but the list is empty (indicates config error) */}
+            {!isLoading && safeDomains.length === 0 && (
+                 <p className="text-red-500 italic text-center py-10">Configuration Error: LEADERSHIP\_DOMAINS is empty or missing in the global config. Please check the Admin Hub.</p>
             )}
         </div>
     );
