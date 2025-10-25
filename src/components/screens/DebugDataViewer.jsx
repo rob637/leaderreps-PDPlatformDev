@@ -1,6 +1,6 @@
 // src/components/screens/DebugDataViewer.jsx
 
-import React from 'react';
+import React, { useMemo } from 'react'; // <-- Ensure useMemo is imported
 import { useAppServices } from '../../services/useAppServices';
 import { RefreshCw, Code } from 'lucide-react';
 
@@ -10,7 +10,15 @@ const TEAL = '#47A88D';
 const DebugDataViewer = ({ navigate }) => {
     const { metadata, isLoading, error, pdpData, commitmentData } = useAppServices();
 
-    const formattedMetadata = JSON.stringify(metadata, null, 2);
+    // CRITICAL FIX: Use useMemo to ensure the string is recalculated ONLY when metadata changes.
+    // This forces the text area to update when the context loads the data.
+    const formattedMetadata = useMemo(() => {
+        if (!metadata || Object.keys(metadata).length === 0) {
+            return "{}"; // Display empty object text if data is not yet available
+        }
+        return JSON.stringify(metadata, null, 2);
+    }, [metadata]);
+    
     const formattedPdpData = JSON.stringify(pdpData, null, 2);
     const formattedCommitmentData = JSON.stringify(commitmentData, null, 2);
 
