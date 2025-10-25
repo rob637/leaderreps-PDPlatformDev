@@ -2,8 +2,7 @@
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useAppServices } from '../../services/useAppServices.jsx';
-// FIX: Added ShieldCheck to the import list
-import { ArrowLeft, Cpu, Lock, CheckCircle, AlertTriangle, CornerRightUp, Settings, BarChart3, TrendingUp, Download, Code, List, BookOpen, Target, Users, ShieldCheck } from 'lucide-react';
+import { ArrowLeft, Cpu, Lock, CheckCircle, AlertTriangle, CornerRightUp, Settings, BarChart3, TrendingUp, Download, Code, List, BookOpen, Target, Users, ShieldCheck, Plus, Trash2, Save, X } from 'lucide-react';
 
 /* =========================================================
    HIGH-CONTRAST PALETTE (Centralized for Consistency)
@@ -41,17 +40,362 @@ const Card = ({ children, title, icon: Icon, className = '', accent = 'NAVY', is
     );
 };
 
-const Button = ({ children, onClick, disabled = false, variant = 'primary', className = '', ...rest }) => {
-    let baseStyle = "px-6 py-3 rounded-xl font-semibold transition-all shadow-lg focus:outline-none focus:ring-4 text-white flex items-center justify-center";
+const Button = ({ children, onClick, disabled = false, variant = 'primary', className = '', isSmall = false, ...rest }) => {
+    let baseStyle = `px-${isSmall ? 3 : 6} py-${isSmall ? 1.5 : 3} rounded-xl font-semibold transition-all shadow-lg focus:outline-none focus:ring-4 text-white flex items-center justify-center`;
     if (variant === 'primary') { baseStyle += ` bg-[${COLORS.TEAL}] hover:bg-[#349881] focus:ring-[${COLORS.TEAL}]/50`; }
     else if (variant === 'secondary') { baseStyle += ` bg-[${COLORS.ORANGE}] hover:bg-red-700 focus:ring-[${COLORS.ORANGE}]/50`; }
-    else if (variant === 'outline') { baseStyle = `px-6 py-3 rounded-xl font-semibold transition-all shadow-md border-2 border-[${COLORS.TEAL}] text-[${COLORS.TEAL}] hover:bg-[#47A88D]/10 focus:ring-4 focus:ring-[${COLORS.TEAL}]/50 bg-[${COLORS.LIGHT_GRAY}] flex items-center justify-center`; }
-    if (disabled) { baseStyle = "px-6 py-3 rounded-xl font-semibold bg-gray-300 text-gray-500 cursor-not-allowed shadow-inner transition-none flex items-center justify-center"; }
+    else if (variant === 'outline') { baseStyle = `px-${isSmall ? 3 : 6} py-${isSmall ? 1.5 : 3} rounded-xl font-semibold transition-all shadow-md border-2 border-[${COLORS.TEAL}] text-[${COLORS.TEAL}] hover:bg-[#47A88D]/10 focus:ring-4 focus:ring-[${COLORS.TEAL}]/50 bg-[${COLORS.LIGHT_GRAY}] flex items-center justify-center`; }
+    if (disabled) { baseStyle = `px-${isSmall ? 3 : 6} py-${isSmall ? 1.5 : 3} rounded-xl font-semibold bg-gray-300 text-gray-500 cursor-not-allowed shadow-inner transition-none flex items-center justify-center`; }
     return (<button {...rest} onClick={onClick} disabled={disabled} className={`${baseStyle} ${className}`}>{children}</button>);
 };
 
-// --- DATA EDITOR COMPONENT: Reading Hub Tab ---
-const ReadingHubEditor = ({ catalog, isSaving, setGlobalData, navigate, currentEditorKey }) => { 
+// =========================================================
+// NEW: UTILITIES AND REUSABLE COMPONENTS
+// =========================================================
+
+// Helper to generate a unique ID for new items (basic example)
+const generateId = () => Date.now().toString(36) + Math.random().toString(36).substr(2);
+
+/*
+ * Note: For a real app, the CRUD logic for Tiers/Scenarios would use a generic
+ * TableComponent that accepts a `dataKey` (e.g., LEADERSHIP_TIERS) and an array of `fields`.
+ * For this revision, we will create focused placeholders that utilize the same core
+ * design principles as the ReadingHubTableEditor.
+ */
+
+// --- 1. The Core Book/Row Editor Component ---
+const BookRowEditor = ({ book: initialBook, categoryKey, onUpdate, onDelete, isSaving }) => {
+    const [book, setBook] = useState(initialBook);
+    const [isEditing, setIsEditing] = useState(initialBook.isNew || false); // Start editing if it's new
+    const [isStaged, setIsStaged] = useState(initialBook.isNew || false);
+    
+    // Auto-update local state when prop changes (e.g., category switch or save)
+    useEffect(() => {
+        setBook(initialBook);
+        setIsEditing(initialBook.isNew || false);
+        setIsStaged(initialBook.isNew || false);
+    }, [initialBook]);
+    
+    // Field change handler
+    const handleChange = (field, value) => {
+        setBook(prev => ({ ...prev, [field]: value }));
+        setIsStaged(true);
+    };
+    
+    const handleSave = () => {
+        onUpdate(categoryKey, { ...book, isNew: false }); // Commit changes to parent state
+        setIsEditing(false);
+        setIsStaged(false);
+    };
+
+    const handleCancel = () => {
+        if (initialBook.isNew) {
+            onDelete(categoryKey, book.id); // If new, cancelling means deleting the blank row
+        } else {
+            setBook(initialBook); // Revert to initial state
+            setIsEditing(false);
+            setIsStaged(false);
+        }
+    };
+
+    const inputClass = "w-full p-1.5 border rounded-lg focus:ring-1 focus:ring-[#E04E1B] text-sm bg-white";
+    const displayClass = "w-full p-1.5 text-sm text-gray-700 truncate";
+    
+    const fields = [
+        { key: 'title', label: 'Title' },
+        { key: 'author', label: 'Author' },
+        { key: 'pages', label: 'Pages', type: 'number' },
+        // Add more fields as needed: url, rating, etc.
+    ];
+
+    return (
+        <div className={`grid grid-cols-4 gap-4 items-center p-2 border-b transition-colors ${isStaged ? 'bg-yellow-50' : 'hover:bg-gray-50'}`}>
+            {fields.map(field => (
+                <div key={field.key} className="truncate">
+                    {isEditing ? (
+                        <input
+                            type={field.type || 'text'}
+                            value={book[field.key] || ''}
+                            onChange={(e) => handleChange(field.key, field.type === 'number' ? parseInt(e.target.value) || 0 : e.target.value)}
+                            className={inputClass}
+                            disabled={isSaving}
+                        />
+                    ) : (
+                        <p className={displayClass}>{book[field.key] || '-'}</p>
+                    )}
+                </div>
+            ))}
+            
+            <div className='flex space-x-2 justify-end'>
+                {isEditing ? (
+                    <>
+                        <Button onClick={handleSave} isSmall disabled={isSaving || !isStaged} className="bg-green-600 hover:bg-green-700">
+                            <Save className='w-4 h-4' />
+                        </Button>
+                        <Button onClick={handleCancel} isSmall variant='secondary' disabled={isSaving} className="bg-gray-400 hover:bg-gray-500">
+                            <X className='w-4 h-4' />
+                        </Button>
+                    </>
+                ) : (
+                    <>
+                        <Button onClick={() => setIsEditing(true)} isSmall disabled={isSaving} variant='outline'>
+                            <Settings className='w-4 h-4' />
+                        </Button>
+                        <Button onClick={() => onDelete(categoryKey, book.id)} isSmall variant='secondary' disabled={isSaving}>
+                            <Trash2 className='w-4 h-4' />
+                        </Button>
+                    </>
+                )}
+            </div>
+        </div>
+    );
+};
+
+
+// --- 2. Main Reading Hub Table Editor Component (Combines Category Selector and Book Table) ---
+const ReadingHubTableEditor = ({ catalog, isSaving, setGlobalData, navigate }) => { 
+    
+    const safeCatalog = catalog || {};
+    
+    const categoryKeys = useMemo(() => Object.keys(safeCatalog).sort(), [safeCatalog]);
+    const [currentCategory, setCurrentCategory] = useState(categoryKeys[0] || 'Uncategorized');
+
+    useEffect(() => {
+        if (!categoryKeys.includes(currentCategory) && categoryKeys.length > 0) {
+            setCurrentCategory(categoryKeys[0]);
+        } else if (categoryKeys.length === 0) {
+            setCurrentCategory('Uncategorized');
+        }
+    }, [categoryKeys]);
+
+    const books = useMemo(() => safeCatalog[currentCategory] || [], [safeCatalog, currentCategory]);
+
+    // HANDLER: Update/Edit a Book
+    const handleUpdateBook = useCallback((category, updatedBook) => {
+        setGlobalData(prevGlobal => {
+            const newCatalog = JSON.parse(JSON.stringify(prevGlobal.READING_CATALOG_SERVICE || {}));
+            
+            const targetArray = newCatalog[category] || [];
+            
+            const index = targetArray.findIndex(b => b.id === updatedBook.id);
+
+            if (index !== -1) {
+                targetArray[index] = updatedBook;
+            } else {
+                targetArray.push(updatedBook);
+            }
+
+            newCatalog[category] = targetArray;
+
+            return { 
+                ...prevGlobal, 
+                READING_CATALOG_SERVICE: newCatalog 
+            };
+        });
+    }, [setGlobalData]);
+
+    // HANDLER: Delete a Book
+    const handleDeleteBook = useCallback((category, bookId) => {
+        if (!window.confirm(`Are you sure you want to delete book ID ${bookId} from category ${category}? This is staged for a database write.`)) {
+            return;
+        }
+
+        setGlobalData(prevGlobal => {
+            const newCatalog = JSON.parse(JSON.stringify(prevGlobal.READING_CATALOG_SERVICE || {}));
+            
+            newCatalog[category] = (newCatalog[category] || []).filter(b => b.id !== bookId);
+
+            return { 
+                ...prevGlobal, 
+                READING_CATALOG_SERVICE: newCatalog 
+            };
+        });
+    }, [setGlobalData]);
+
+    // HANDLER: Add a New Book
+    const handleAddNewBook = () => {
+        // Simple structure for a new book
+        const newBook = { id: generateId(), title: 'NEW BOOK', author: 'New Author', pages: 100, isNew: true };
+        
+        setGlobalData(prevGlobal => {
+            const newCatalog = JSON.parse(JSON.stringify(prevGlobal.READING_CATALOG_SERVICE || {}));
+            
+            newCatalog[currentCategory] = newCatalog[currentCategory] || [];
+            newCatalog[currentCategory].push(newBook);
+            
+            return { 
+                ...prevGlobal, 
+                READING_CATALOG_SERVICE: newCatalog 
+            };
+        });
+    };
+    
+    const handleMassUpload = () => {
+        alert('Mass upload logic (CSV parsing) is TBD. For now, use the "Advanced: Raw Config" tab for mass JSON.');
+    };
+
+    return (
+        <div className='mt-4 flex'>
+            {/* Category Selector (Sidebar) */}
+            <div className='w-64 pr-4 border-r border-gray-200'>
+                <p className='text-sm font-bold text-[#002E47] mb-2'>1. Select Category</p>
+                <div className='space-y-1'>
+                    {categoryKeys.map(key => (
+                        <button
+                            key={key}
+                            onClick={() => setCurrentCategory(key)}
+                            className={`w-full text-left p-2 rounded-lg text-sm font-medium transition-colors ${currentCategory === key ? 'bg-[#47A88D] text-white' : 'text-gray-700 hover:bg-gray-100'}`}
+                        >
+                            {key} ({safeCatalog[key].length})
+                        </button>
+                    ))}
+                    <Button isSmall variant='outline' className='w-full mt-2' onClick={() => alert("Logic to create a new category goes here.")}>
+                        <Plus className='w-4 h-4 mr-1' /> New Category
+                    </Button>
+                </div>
+            </div>
+
+            {/* Book Table Editor (Main Content) */}
+            <div className='flex-1 pl-6'>
+                <p className='text-lg font-extrabold mb-2' style={{color: COLORS.NAVY}}>{currentCategory} ({books.length} Books)</p>
+                <p className='text-sm text-gray-700 mb-4'>
+                    Use the table below for CRUD operations. Edits are staged until the **Finalize & Write** button is clicked.
+                </p>
+
+                {/* Table Header */}
+                <div className="grid grid-cols-4 gap-4 items-center p-2 font-bold border-b-2 text-sm text-[#002E47]">
+                    <span className="truncate">Title</span>
+                    <span className="truncate">Author</span>
+                    <span className="truncate">Pages</span>
+                    <span className="text-right">Actions</span>
+                </div>
+                
+                {/* Book Rows Container */}
+                <div className="max-h-[500px] overflow-y-auto border rounded-lg shadow-inner mt-2">
+                    {books.length > 0 ? (
+                        books.map(book => (
+                            <BookRowEditor 
+                                key={book.id} 
+                                initialBook={book} 
+                                categoryKey={currentCategory}
+                                onUpdate={handleUpdateBook}
+                                onDelete={handleDeleteBook}
+                                isSaving={isSaving}
+                                book={book} // Passed to force re-render on external update
+                            />
+                        ))
+                    ) : (
+                        <div className='p-4 text-center text-gray-500'>No books in this category. Click 'Add New Book' below to start.</div>
+                    )}
+                </div>
+                
+                <div className='mt-4 flex space-x-3'>
+                    <Button onClick={handleAddNewBook} disabled={isSaving} className={`bg-[${COLORS.TEAL}] hover:bg-[#349881]`}>
+                        <Plus className='w-5 h-5 mr-2'/> Add New Book to {currentCategory}
+                    </Button>
+                    <Button onClick={handleMassUpload} disabled={isSaving} variant='outline'>
+                        <Download className='w-5 h-5 mr-2'/> Mass CSV Upload (TBD)
+                    </Button>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+
+// --- 3. Placeholder for Tiers & Goals Editor ---
+const TiersGoalsTableEditor = ({ data, isSaving, setGlobalData }) => {
+    // NOTE: This is a placeholder structure. Actual implementation would involve 
+    // row components similar to BookRowEditor, but with different fields.
+    const safeData = data || {};
+    const tiers = Object.values(safeData.LEADERSHIP_TIERS || {}).flat(); // Flatten into an array for table view
+
+    return (
+        <div className='mt-4'>
+            <p className='text-sm font-bold text-[#002E47] mb-2'>Tier & Goal Maintenance ({tiers.length} Tiers)</p>
+            <p className='text-sm text-gray-700 mb-4'>
+                This table will allow direct editing of **LEADERSHIP\_TIERS** properties (e.g., name, required points, bonuses).
+            </p>
+
+            <div className="max-h-[500px] overflow-y-auto border rounded-lg shadow-inner">
+                {/* Header */}
+                <div className="grid grid-cols-4 gap-4 items-center p-2 font-bold border-b-2 text-sm text-[#002E47]">
+                    <span className="truncate">Tier ID</span>
+                    <span className="truncate">Name</span>
+                    <span className="truncate">Points Required</span>
+                    <span className="text-right">Actions</span>
+                </div>
+                {/* Rows */}
+                {tiers.map((tier) => (
+                    <div key={tier.id} className="grid grid-cols-4 gap-4 items-center p-2 border-b hover:bg-gray-50">
+                        <p className="text-sm text-gray-600 truncate">{tier.id}</p>
+                        <input defaultValue={tier.name || ''} className="w-full p-1.5 border rounded-lg text-sm" disabled={isSaving}/>
+                        <input type="number" defaultValue={tier.pointsRequired || 0} className="w-full p-1.5 border rounded-lg text-sm" disabled={isSaving}/>
+                        <div className='flex space-x-2 justify-end'>
+                            <Button isSmall disabled={true}><Save className='w-4 h-4' /></Button>
+                            <Button isSmall variant='secondary' disabled={true}><Trash2 className='w-4 h-4' /></Button>
+                        </div>
+                    </div>
+                ))}
+            </div>
+            
+            <div className='mt-4 flex space-x-3'>
+                <Button onClick={() => alert("Add Tier/Goal logic needed.")} disabled={isSaving} className={`bg-[${COLORS.ORANGE}] hover:bg-red-700`}>
+                    <Plus className='w-5 h-5 mr-2'/> Add New Tier
+                </Button>
+            </div>
+        </div>
+    );
+};
+
+
+// --- 4. Placeholder for Coaching Scenarios Editor ---
+const ScenariosTableEditor = ({ data, isSaving, setGlobalData }) => {
+    // Assuming SCENARIO_CATALOG is a simple array of objects
+    const safeScenarios = data.SCENARIO_CATALOG || [];
+
+    return (
+        <div className='mt-4'>
+            <p className='text-sm font-bold text-[#002E47] mb-2'>Coaching Scenario Maintenance ({safeScenarios.length} Scenarios)</p>
+            <p className='text-sm text-gray-700 mb-4'>
+                This table will allow direct editing of **SCENARIO\_CATALOG** properties (e.g., description, choices, correct answer).
+            </p>
+
+            <div className="max-h-[500px] overflow-y-auto border rounded-lg shadow-inner">
+                {/* Header */}
+                <div className="grid grid-cols-4 gap-4 items-center p-2 font-bold border-b-2 text-sm text-[#002E47]">
+                    <span className="truncate">Scenario ID</span>
+                    <span className="truncate">Short Description</span>
+                    <span className="truncate"># of Choices</span>
+                    <span className="text-right">Actions</span>
+                </div>
+                {/* Rows */}
+                {safeScenarios.map((scenario) => (
+                    <div key={scenario.id} className="grid grid-cols-4 gap-4 items-center p-2 border-b hover:bg-gray-50">
+                        <p className="text-sm text-gray-600 truncate">{scenario.id}</p>
+                        <input defaultValue={scenario.short_desc || ''} className="w-full p-1.5 border rounded-lg text-sm" disabled={isSaving}/>
+                        <p className="text-sm text-gray-600 truncate">{scenario.choices?.length || 0}</p>
+                        <div className='flex space-x-2 justify-end'>
+                            <Button isSmall disabled={true}><Save className='w-4 h-4' /></Button>
+                            <Button isSmall variant='secondary' disabled={true}><Trash2 className='w-4 h-4' /></Button>
+                        </div>
+                    </div>
+                ))}
+            </div>
+            
+            <div className='mt-4 flex space-x-3'>
+                <Button onClick={() => alert("Add Scenario logic needed.")} disabled={isSaving} className={`bg-[${COLORS.ORANGE}] hover:bg-red-700`}>
+                    <Plus className='w-5 h-5 mr-2'/> Add New Scenario
+                </Button>
+            </div>
+        </div>
+    );
+};
+
+// --- ORIGINAL COMPONENTS (Modified to integrate new editor) ---
+
+// The Raw Config Editor is kept separate for the 'Advanced: Raw Config' tab
+const RawConfigEditor = ({ catalog, isSaving, setGlobalData, navigate, currentEditorKey }) => { 
     
     // CRITICAL FIX 1: Ensure JSON.stringify uses an empty object if catalog is null/undefined
     const initialJson = useMemo(() => {
@@ -66,7 +410,6 @@ const ReadingHubEditor = ({ catalog, isSaving, setGlobalData, navigate, currentE
     const [status, setStatus] = useState(null); // null, 'success', 'error'
     
     useEffect(() => {
-        // Reset JSON text when the catalog changes (e.g., switching tabs)
         setJsonText(initialJson);
     }, [initialJson]);
 
@@ -87,53 +430,36 @@ const ReadingHubEditor = ({ catalog, isSaving, setGlobalData, navigate, currentE
         
         try {
             const parsedData = JSON.parse(jsonText);
-
-            // Determine which key to update in the global data object
-            let updateObject = {};
-
-            if (currentEditorKey === 'READING_CATALOG_SERVICE') {
-                 updateObject.READING_CATALOG_SERVICE = parsedData;
-                 setStatus({ type: 'success', message: 'Reading Catalog staged for global save. (Ready to write).' });
-            } else if (currentEditorKey === 'RAW_CONFIG') {
+            
+            if (currentEditorKey === 'RAW_CONFIG') {
                  // For the raw tab, replace the entire object with the parsed data
                  setGlobalData(() => parsedData);
                  setStatus({ type: 'success', message: 'Raw Config staged locally. (Ready to write).' });
-                 return; // Exit early as setGlobalData was called with the full object
+                 return;
             } else {
                  setStatus({ type: 'error', message: 'Unknown editor key. Stage operation failed.' });
                  return;
             }
-            
-            // This calls the main setGlobalData function, which updates the local state
-            setGlobalData(prev => ({ 
-                ...prev, 
-                ...updateObject 
-            }));
             
         } catch (e) {
             setStatus({ type: 'error', message: `Internal error staging data: ${e.message}` });
         }
     };
     
-    // UX FIX: Dynamic title based on tab
-    const editorTitle = currentEditorKey === 'READING_CATALOG_SERVICE' 
-        ? 'Content Editor: Book & Category Data'
-        : 'Advanced: Raw Global Configuration';
+    const editorTitle = 'Advanced: Raw Global Configuration';
 
     return (
         <div className='mt-4'>
             <p className='text-sm font-bold text-[#002E47] mb-2'>{editorTitle}</p>
             <p className='text-sm text-gray-700 mb-4'>
-                {/* FIX: Corrected the string escaping issue */}
-                Use the mass editor below to paste your full data set. Ensure the format is: **{"{"}"Category Name": [{"{"}book_object{"}"}, ...], ...{"}"}**
+                **WARNING**: This replaces the ENTIRE global metadata object. Only use this for mass upload or full configuration replacement.
             </p>
             <textarea
                 value={jsonText}
                 onChange={(e) => {setJsonText(e.target.value); setStatus(null);}}
                 className="w-full p-4 border border-gray-300 rounded-lg focus:ring-[#E04E1B] focus:border-[#E04E1B] h-[400px] font-mono text-sm resize-y"
                 disabled={isSaving}
-                // UX FIX: Placeholder now guides the user on the expected structure
-                placeholder={`Paste your JSON object here. Example: {"Strategy & Execution": [{ "id": 1, "title": "Good to Great", "author": "Jim Collins", ... }]}`}
+                placeholder={`Paste your FULL global JSON object here.`}
             />
             {status && (
                 <div className={`mt-4 p-3 rounded-lg font-semibold flex items-center gap-2 ${
@@ -144,7 +470,7 @@ const ReadingHubEditor = ({ catalog, isSaving, setGlobalData, navigate, currentE
                 </div>
             )}
             <Button onClick={handleSave} disabled={isSaving || !isJsonValid} className={`mt-4 w-full bg-[${COLORS.TEAL}] hover:bg-[#349881]`}>
-                <Code className='w-5 h-5 mr-2'/> Stage Changes for Database Write
+                <Code className='w-5 h-5 mr-2'/> Stage FULL Config Replacement
             </Button>
             {!isJsonValid && <p className='text-xs text-red-500 mt-2'>* Fix JSON syntax before staging changes.</p>}
         </div>
@@ -152,20 +478,17 @@ const ReadingHubEditor = ({ catalog, isSaving, setGlobalData, navigate, currentE
 };
 
 
-// --- MAIN ROUTER ---
+// --- MAIN ROUTER (GlobalDataEditor) ---
 const GlobalDataEditor = ({ globalMetadata, updateGlobalMetadata, db, navigate }) => {
     
-    // CRITICAL: We maintain a local copy of ALL metadata to be written to the database
-    // CRITICAL FIX 2: Ensure globalMetadata defaults to an empty object for safe destructuring/use
     const [localGlobalData, setLocalGlobalData] = useState(globalMetadata || {});
-    const [currentTab, setCurrentTab] = useState('reading'); // UX FIX: Default to the most common editing task
+    const [currentTab, setCurrentTab] = useState('reading');
     const [isSaving, setIsSaving] = useState(false);
-    const [status, setStatus] = useState(null); // Save status for the final write
+    const [status, setStatus] = useState(null);
 
-    // Sync local state when the global metadata object updates from the hook
     useEffect(() => {
         setLocalGlobalData(globalMetadata || {});
-        setStatus(null); // Clear status on external data load
+        setStatus(null);
     }, [globalMetadata]);
 
 
@@ -175,8 +498,6 @@ const GlobalDataEditor = ({ globalMetadata, updateGlobalMetadata, db, navigate }
         setStatus(null);
         
         try {
-            // Write the merged local object back to the metadata/config document
-            // NOTE: We update the database using the raw local object.
             const success = await updateGlobalMetadata(db, localGlobalData);
 
             if (success) {
@@ -191,13 +512,13 @@ const GlobalDataEditor = ({ globalMetadata, updateGlobalMetadata, db, navigate }
         }
     };
     
-    // CRITICAL FIX 3: Add safe guarding for accessing nested catalog data
+    // Add safe guarding for accessing nested catalog data
     const countItems = (obj) => Object.values(obj || {}).flat().length;
+    const countTiers = (obj) => Object.keys(obj || {}).length;
 
-    // UX FIX: Updated labels for clarity
     const navItems = useMemo(() => [
         { key: 'reading', label: 'Content Editor (Reading Hub)', icon: BookOpen, accent: 'TEAL', count: countItems(localGlobalData.READING_CATALOG_SERVICE) },
-        { key: 'tiers', label: 'Tiers & Goals', icon: Target, accent: 'ORANGE', count: Object.keys(localGlobalData.LEADERSHIP_TIERS || {}).length },
+        { key: 'tiers', label: 'Tiers & Goals', icon: Target, accent: 'ORANGE', count: countTiers(localGlobalData.LEADERSHIP_TIERS) },
         { key: 'scenarios', label: 'Coaching Scenarios', icon: Users, accent: 'BLUE', count: countItems(localGlobalData.SCENARIO_CATALOG) },
         { key: 'summary', label: 'Summary', icon: BarChart3, accent: 'NAVY' },
         { key: 'raw', label: 'Advanced: Raw Config', icon: Code, accent: 'RED' },
@@ -206,37 +527,39 @@ const GlobalDataEditor = ({ globalMetadata, updateGlobalMetadata, db, navigate }
     const renderTabContent = () => {
         switch (currentTab) {
             case 'reading':
-                return <ReadingHubEditor 
-                    // CRITICAL FIX 4: Provide safe fallback to the editor
+                return <ReadingHubTableEditor 
                     catalog={localGlobalData.READING_CATALOG_SERVICE || {}}
                     isSaving={isSaving}
                     setGlobalData={setLocalGlobalData}
                     navigate={navigate}
-                    currentEditorKey={'READING_CATALOG_SERVICE'} // Pass specific key
+                />;
+            case 'tiers':
+                return <TiersGoalsTableEditor
+                    data={localGlobalData}
+                    isSaving={isSaving}
+                    setGlobalData={setLocalGlobalData}
+                />;
+            case 'scenarios':
+                return <ScenariosTableEditor
+                    data={localGlobalData}
+                    isSaving={isSaving}
+                    setGlobalData={setLocalGlobalData}
                 />;
             case 'raw':
                 return (
-                    <ReadingHubEditor // Re-use the editor component for raw JSON editing
+                    <RawConfigEditor
                         catalog={localGlobalData}
                         isSaving={isSaving}
                         setGlobalData={setLocalGlobalData}
                         navigate={navigate}
-                        currentEditorKey={'RAW_CONFIG'} // Pass specific key
+                        currentEditorKey={'RAW_CONFIG'}
                     />
                 );
-            case 'tiers':
-                return <Card title="Tier/Goal Editor (Coming Soon)" isSmall={true}>
-                    <p className='text-sm text-gray-600'>This view will allow friendly table editing of the **LEADERSHIP\_TIERS** and **COMMITMENT\_BANK** arrays.</p>
-                </Card>;
-            case 'scenarios':
-                return <Card title="Scenario Editor (Coming Soon)" isSmall={true}>
-                    <p className='text-sm text-gray-600'>This view will allow easy table editing of the **SCENARIO\_CATALOG** array.</p>
-                </Card>;
             case 'summary':
             default:
                 return (
                     <Card title="Database Summary Snapshot" accent='TEAL' isSmall={true}>
-                        <p className='text-sm text-gray-700 mb-4'>Review the current counts before committing changes. *Use the "Stage Changes" buttons in the tabs before saving globally.*</p>
+                        <p className='text-sm text-gray-700 mb-4'>Review the current counts before committing changes. *Use the table editors before saving globally.*</p>
                         <div className='space-y-2'>
                             {navItems.filter(i => i.count !== undefined).map(item => (
                                 <div key={item.key} className='flex justify-between items-center text-sm border-b pb-1'>
