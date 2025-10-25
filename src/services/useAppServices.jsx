@@ -170,15 +170,7 @@ const resolveGlobalMetadata = (meta) => {
   if (payload && !payload.RESOURCE_LIBRARY && meta.RESOURCE_CONTENT_LIBRARY) {
     payload = { ...payload, RESOURCE_LIBRARY: meta.RESOURCE_CONTENT_LIBRARY };
   }
-  
-  // Alias support for reading catalog variants
-  if (payload && !payload.READING_CATALOG_SERVICE && meta.READING_CATALOG) {
-    payload = { ...payload, READING_CATALOG_SERVICE: meta.READING_CATALOG };
-  }
-  if (payload && !payload.READING_CATALOG_SERVICE && meta.READING_LIBRARY) {
-    payload = { ...payload, READING_CATALOG_SERVICE: meta.READING_LIBRARY };
-  }
-return payload || {};
+  return payload || {};
 };
 
 const looksEmptyGlobal = (obj) => {
@@ -263,9 +255,7 @@ const useFirestoreData = (db, userId, isAuthReady, suffix, mockData) => {
       setError(e);
       setIsLoading(false);
     }
-    const t = setTimeout(() => {
-      if (!gotFirstSnap) {
-        console.warn(`Subscribe timeout for ${docPath}`);
+    const t = setTimeout(() => { if (!gotFirstSnap) { console.warn(`Subscribe timeout for ${docPath}`);
         setIsLoading(false);
       }
     }, 15000);
@@ -386,7 +376,7 @@ export const useGlobalMetadata = (db, isAuthReady) => {
     }
 
     const t = setTimeout(() => {
-      if (!gotFirstMeta) {
+      if (loading) {
         console.warn('Global metadata subscribe timeout');
         setLoading(false);
       }
@@ -546,10 +536,6 @@ export const createAppServices = ({
       // merge all global metadata into the service context (so Admin editor sees it)
       LEADERSHIP_TIERS: global.metadata.LEADERSHIP_TIERS || LEADERSHIP_TIERS_FALLBACK,
       ...resolveGlobalMetadata(global.metadata),
-      // Expose full (resolved) metadata object and its loading state to consumers
-      metadata: global.metadata,
-      isMetadataLoading: global.isLoading,
-
 
       hasPendingDailyPractice,
     }),

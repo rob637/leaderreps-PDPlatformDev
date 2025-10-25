@@ -26,6 +26,13 @@ function resolveGlobalMetadata(meta) {
   if (payload && !payload.RESOURCE_LIBRARY && meta.RESOURCE_CONTENT_LIBRARY) {
     payload = { ...payload, RESOURCE_LIBRARY: meta.RESOURCE_CONTENT_LIBRARY };
   }
+  // Alias reading catalog keys to READING_CATALOG_SERVICE for Admin view
+  if (payload && !payload.READING_CATALOG_SERVICE && meta.READING_CATALOG) {
+    payload = { ...payload, READING_CATALOG_SERVICE: meta.READING_CATALOG };
+  }
+  if (payload && !payload.READING_CATALOG_SERVICE && meta.READING_LIBRARY) {
+    payload = { ...payload, RESOURCE_LIBRARY: meta.RESOURCE_CONTENT_LIBRARY };
+  }
   return payload || {};
 }
 
@@ -1338,6 +1345,20 @@ const RawConfigEditor = ({ catalog, isSaving, setGlobalData, currentEditorKey })
 };
 
 
+
+// Helper banner: warns when upstream metadata is present but local editor hasn't synced yet
+const DataSyncBanner = ({ globalMetadata, localGlobalData }) => {
+  const upstreamHasData = globalMetadata && Object.keys(globalMetadata || {}).length > 0;
+  const localIsEmpty = !localGlobalData || Object.keys(localGlobalData || {}).length === 0;
+  if (upstreamHasData && localIsEmpty) {
+    return (
+      <div className="mb-4 p-3 rounded border border-yellow-300 bg-yellow-50 text-sm text-yellow-900">
+        Global data is loaded, but the editor hasn’t synced yet. This will update in a moment.
+      </div>
+    );
+  }
+  return null;
+};
 // --- MAIN ROUTER (GlobalDataEditor) ---
 
 const GlobalDataEditor = ({ globalMetadata, updateGlobalMetadata, db, navigate }) => {
@@ -1349,7 +1370,17 @@ const GlobalDataEditor = ({ globalMetadata, updateGlobalMetadata, db, navigate }
     const [localGlobalData, setLocalGlobalData] = useState(globalMetadata || {});
 
 
-  {/* Debug HUD */}
+  
+// Sync local editor state whenever the upstream global metadata changes (initial load or refresh)
+useEffect(() => {
+  try {
+    if (globalMetadata && Object.keys(globalMetadata).length) {
+      setLocalGlobalData(globalMetadata);
+    }
+  } catch {}
+}, [globalMetadata]);
+<DataSyncBanner globalMetadata={globalMetadata} localGlobalData={localGlobalData} />
+            {/* Debug HUD */}
             <div className="mb-4 p-3 rounded border border-gray-200 bg-gray-50 text-xs text-gray-700">
               <div className="flex flex-wrap gap-4">
                 <div>meta keys: {Object.keys(localGlobalData||{}).length}</div>
@@ -1381,7 +1412,7 @@ const [tabAutoSelected, setTabAutoSelected] = useState(false);
       const lib = (localGlobalData && (localGlobalData.RESOURCE_LIBRARY || localGlobalData.RESOURCE_CONTENT_LIBRARY)) || {};
       const domains = Object.keys(lib);
       const total = Object.values(lib).flat().length;
-      console.groupCollapsed('[MaintenanceHub] incoming globalMetadata');
+      console.groupCollapsed('[MaintenanceHub] incoming localGlobalData');
       console.log('top-level keys:', Object.keys(localGlobalData || {}));
       console.log('RESOURCE_LIBRARY present?', !!(localGlobalData && localGlobalData.RESOURCE_LIBRARY));
       console.log('RESOURCE_CONTENT_LIBRARY present?', !!(localGlobalData && localGlobalData.RESOURCE_CONTENT_LIBRARY));
