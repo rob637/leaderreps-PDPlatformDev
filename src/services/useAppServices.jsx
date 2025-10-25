@@ -49,6 +49,7 @@ const DEFAULT_SERVICES = {
     saveNewPlan: async () => true, 
     updateCommitmentData: async () => true, 
     updatePlanningData: async () => true,
+    updateGlobalMetadata: async () => true, // NEW: Mock update function
     hasGeminiKey: () => false,
     
     user: null, userId: null, db: null, auth: null, isAuthReady: false,
@@ -62,7 +63,7 @@ const DEFAULT_SERVICES = {
 };
 
 // --- CONTEXT CREATION ---
-export const AppServiceContext = createContext(null);
+export const AppServiceContext = createContext(DEFAULT_SERVICES); // Initializing with default services
 
 // ====================================================================
 // --- 1. FIREBASE DATA HOOKS (Migrated from localStorage to Firestore logic) ---
@@ -232,8 +233,9 @@ export const useGlobalMetadata = (db, isAuthReady) => {
                     MOCK_ACTIVITY_DATA: data.mock_activity_data,
                 });
             } else {
-                console.error("CRITICAL: Global metadata document 'metadata/config' not found.");
-                setMetadata(DEFAULT_SERVICES); // Fallback to safe defaults
+                console.error("CRITICAL: Global metadata document 'metadata/config' not found. Using fallbacks.");
+                // Set metadata to an empty object to allow components to use their own fallbacks/service defaults
+                setMetadata({}); 
             }
             setLoading(false);
         });
@@ -242,6 +244,23 @@ export const useGlobalMetadata = (db, isAuthReady) => {
     }, [db, isAuthReady]);
 
     return { metadata, isLoading: loading };
+};
+
+// --- NEW GLOBAL METADATA UPDATE FUNCTION ---
+export const updateGlobalMetadata = async (db, data) => {
+    // This is the absolute path for the global config document
+    const docRef = mockDoc(db, 'metadata', 'config'); 
+    try {
+        // Use mockSetDoc to overwrite the config document completely
+        // NOTE: In production, you might use updateDoc if the document is large, but setDoc(..., { merge: true }) 
+        // is generally safer for a single configuration document. We'll use mockSetDoc (non-merging for simplicity).
+        await mockSetDoc(docRef, data); 
+        console.log("Global Metadata Updated Successfully (metadata/config).");
+        return true;
+    } catch (e) {
+        console.error("Global Metadata Update Failed:", e);
+        return false;
+    }
 };
 
 

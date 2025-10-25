@@ -8,7 +8,8 @@ import React, {
   Suspense,
   lazy,
 } from 'react';
-import { AppServiceContext, usePDPData, useCommitmentData, usePlanningData } from './services/useAppServices.jsx';
+// CRITICAL FIX: The next step is to import useGlobalMetadata and updateGlobalMetadata here in App.jsx
+import { AppServiceContext, usePDPData, useCommitmentData, usePlanningData, useGlobalMetadata, updateGlobalMetadata } from './services/useAppServices.jsx';
 
 import {
   initializeApp, 
@@ -28,7 +29,7 @@ import { getFirestore, setLogLevel } from 'firebase/firestore';
 
 // =========================================================
 // --- PRODUCTION GEMINI CONFIGURATION ---
-const GEMINI_MODEL = 'gemini-2.5-flash'; // or 'gemini-2.5-pro'
+const GEMINI_MODEL = 'gemini-2.5-flash'; 
 const GEMINI_API_VERSION = 'v1beta';
 // Prefer serverless; allow override via window.__GEMINI_MODE = 'direct'
 const USE_SERVERLESS = (typeof window !== 'undefined' && window.__GEMINI_MODE === 'direct') ? false : true;
@@ -127,7 +128,7 @@ const notepad = (typeof globalThis !== 'undefined' ? globalThis.notepad : (typeo
 // Icons used in the new NavSidebar
 import { 
   Home, Zap, ShieldCheck, TrendingUp, Mic, BookOpen, Settings, User, LogOut, CornerRightUp, Clock, Briefcase, Target, Users, BarChart3, Globe, Code, Bell, Lock, Download, Trash2, Mail, Link, Menu,
-  Trello, Film, Dumbbell
+  Trello, Film, Dumbbell, Cpu
 } from 'lucide-react';
 
 // --- GLOBAL COLOR PALETTE ---
@@ -152,14 +153,15 @@ const ScreenMap = {
     'community': lazy(() => import('./components/screens/CommunityScreen.jsx')),
     'applied-leadership': lazy(() => import('./components/screens/AppliedLeadership.jsx')),
     'leadership-videos': lazy(() => import('./components/screens/LeadershipVideos.jsx')), // ContentLibraryScreen
+    // ADD NEW ADMIN SCREEN
+    'data-maintenance': lazy(() => import('./components/screens/AdminDataMaintenance.jsx')), 
     // 'app-settings' is handled directly by AppSettingsScreen defined below.
 };
 
 // NOTE: Since AppSettingsScreen uses useAppServices(), we must ensure we import it
 // from the useAppServices.jsx file to avoid conflicts.
-import { useAppServices } from './services/useAppServices.jsx'; 
 
-// SettingsCard and AppSettingsScreen definitions... (omitted for brevity)
+// SettingsCard and AppSettingsScreen definitions... 
 const SettingsCard = ({ title, icon: Icon, children }) => (
     <div className={`p-6 rounded-xl border border-gray-200 bg-white shadow-lg space-y-4`}>
         <h3 className={`text-xl font-bold flex items-center gap-2 border-b pb-2`} style={{ color: COLORS.NAVY }}>
@@ -171,7 +173,8 @@ const SettingsCard = ({ title, icon: Icon, children }) => (
 );
 // Re-implemented AppSettingsScreen here to ensure no lazy conflict, 
 // using the name that was referenced in the original file (if it was external)
-const AppSettingsScreen = () => {
+const AppSettingsScreen = ({ navigate }) => {
+    // FIX: Must use useAppServices() to get context
     const { user, API_KEY, auth } = useAppServices();
     const handleResetPassword = async () => {
         if (!user?.email) { alert('Cannot reset password: User email is unknown.'); return; }
@@ -227,6 +230,18 @@ const AppSettingsScreen = () => {
                         <Trash2 size={16}/> Permanently Delete Account
                     </button>
                 </SettingsCard>
+                {/* NEW: Admin Data Maintenance Link */}
+                <SettingsCard title="Global Data Maintenance (Admin)" icon={Cpu}>
+                    <p className='text-sm text-gray-700'>
+                        Access the JSON editor for application-wide data (tiers, catalogs). **Requires Admin Password.**
+                    </p>
+                    <button 
+                        onClick={() => navigate('data-maintenance')} 
+                        className={`text-sm font-semibold text-[${COLORS.ORANGE}] hover:text-red-700 mt-2 flex items-center`}
+                    >
+                        <Settings size={14} className='inline-block mr-1'/> Launch JSON Editor
+                    </button>
+                </SettingsCard>
             </div>
         </div>
     );
@@ -235,6 +250,7 @@ const AppSettingsScreen = () => {
 
 /* =========================================================
    STEP 3: CONTEXT + DATA PROVIDER
+   CRITICAL FIX: DataProvider now uses useGlobalMetadata
 ========================================================= */
 
 const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
@@ -243,14 +259,17 @@ const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
 const DataProvider = ({ children, firebaseServices, userId, isAuthReady, navigate, user }) => {
   const { db } = firebaseServices;
 
-  // These function calls must return mock data or real data from the imports
+  // 1. Fetch User Data (PDP, Commitment, Planning)
   const pdp = usePDPData(db, userId, isAuthReady);
   const commitment = useCommitmentData(db, userId, isAuthReady);
   const planning = usePlanningData(db, userId, isAuthReady);
+  
+  // 2. Fetch Global Configuration Data
+  const global = useGlobalMetadata(db, isAuthReady); // <-- NEW
 
   // CRITICAL: isLoading is derived from all data sources
-  const isLoading = pdp.isLoading || commitment.isLoading || planning.isLoading;
-  const error = pdp.error || commitment.error || planning.error;
+  const isLoading = pdp.isLoading || commitment.isLoading || planning.isLoading || global.isLoading; // <-- UPDATED
+  const error = pdp.error || commitment.error || planning.error || global.error; // <-- UPDATED
 
   const hasPendingDailyPractice = useMemo(() => {
     const active = commitment.commitmentData?.active_commitments || [];
@@ -264,14 +283,31 @@ const DataProvider = ({ children, firebaseServices, userId, isAuthReady, navigat
     navigate, user, ...firebaseServices, userId, isAuthReady,
     updatePdpData: pdp.updatePdpData, saveNewPlan: pdp.saveNewPlan,
     updateCommitmentData: commitment.updateCommitmentData, updatePlanningData: planning.updatePlanningData,
+    updateGlobalMetadata: (data) => updateGlobalMetadata(db, data), // NEW: Expose global update function
     pdpData: pdp.pdpData, commitmentData: commitment.commitmentData, planningData: planning.planningData,
-    isLoading, error, appId, IconMap: IconMap, callSecureGeminiAPI, hasGeminiKey, GEMINI_MODEL, API_KEY, LEADERSHIP_TIERS, 
+    isLoading, error, appId, IconMap: IconMap, callSecureGeminiAPI, hasGeminiKey, GEMINI_MODEL, API_KEY, 
+    // CRITICAL: Overwrite placeholder tiers with live metadata
+    LEADERSHIP_TIERS: global.metadata.LEADERSHIP_TIERS || LEADERSHIP_TIERS, // <-- UPDATED
+    // CRITICAL: Merge all global metadata into the service context
+    ...global.metadata, // <-- NEW: Spreads COMMITMENT_BANK, SCENARIO_CATALOG, MOCK_ACTIVITY_DATA, etc.
     hasPendingDailyPractice, 
   }), [
-    navigate, user, firebaseServices, userId, isAuthReady, isLoading, error, pdp, commitment, planning, hasPendingDailyPractice
+    navigate, user, firebaseServices, userId, isAuthReady, isLoading, error, pdp, commitment, planning, global, hasPendingDailyPractice, db
   ]);
 
   if (!isAuthReady) return null;
+
+  // Display initial loading spinner if global metadata is still loading (i.e., global.isLoading)
+  if (isLoading) {
+      return (
+          <div className="min-h-screen flex items-center justify-center bg-gray-100">
+              <div className="flex flex-col items-center">
+                  <div className="animate-spin rounded-full h-12 w-12 border-4 border-t-4 border-gray-200 border-t-[#47A88D] mb-3"></div>
+                  <p className="text-[#002E47] font-semibold">Loading User Data & Global Config...</p>
+              </div>
+          </div>
+      );
+  }
 
   return (
     <AppServiceContext.Provider value={appServices}>
@@ -332,13 +368,12 @@ function AuthPanel({ auth, onSuccess }) {
 
     const renderForm = () => {
         const isLogin = mode === 'login';
-        const isSignUp = mode === 'signup';
         const isReset = mode === 'reset';
 
         return (
             <div className='space-y-4'>
                 <form onSubmit={(e) => { e.preventDefault(); handleAction(); }}>
-                    {isSignUp && (<input type="text" placeholder="Your Full Name" value={name} onChange={(e) => setName(e.target.value)} className={`w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[${TEAL}] focus:border-[${TEAL}]`} disabled={isLoading}/>)}
+                    {mode === 'signup' && (<input type="text" placeholder="Your Full Name" value={name} onChange={(e) => setName(e.target.value)} className={`w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[${TEAL}] focus:border-[${TEAL}]`} disabled={isLoading}/>)}
                     <input 
                         type="email" 
                         placeholder="Email" 
@@ -346,7 +381,7 @@ function AuthPanel({ auth, onSuccess }) {
                         onChange={(e) => setEmail(e.target.value)} 
                         className={`w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[${TEAL}] focus:border-[${TEAL}]`} 
                         disabled={isLoading}
-                        autoComplete="email" // FIX: Added autocomplete for email
+                        autoComplete="email" 
                     />
 {!isReset && (
                         <input 
@@ -356,9 +391,9 @@ function AuthPanel({ auth, onSuccess }) {
                             onChange={(e) => setPassword(e.target.value)} 
                             className={`w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[${TEAL}] focus:border-[${TEAL}]`} 
                             disabled={isLoading}
-                            autoComplete={isLogin ? "current-password" : "new-password"} // FIX: Added autocomplete for password
+                            autoComplete={isLogin ? "current-password" : "new-password"} 
                         />
-                    )}                    {isSignUp && (<input type="text" placeholder="Secret Sign-up Code" value={secretCode} onChange={(e) => setSecretCode(e.target.value)} className={`w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[${TEAL}] focus:border-[${TEAL}]`} disabled={isLoading}/>)}
+                    )}                    {mode === 'signup' && (<input type="text" placeholder="Secret Sign-up Code" value={secretCode} onChange={(e) => setSecretCode(e.target.value)} className={`w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[${TEAL}] focus:border-[${TEAL}]`} disabled={isLoading}/>)}
                     
                     {/* CRITICAL FIX: Ensure the submit button is inside the form and targets handleAction */}
                     <button
@@ -520,7 +555,7 @@ const NavSidebar = ({ currentScreen, setCurrentScreen, user, closeMobileMenu, is
     );
 };
 
-const ScreenRouter = ({ currentScreen, navParams }) => {
+const ScreenRouter = ({ currentScreen, navParams, navigate }) => {
     const uniqueKey = currentScreen;
     
     // Fallback to Dashboard if the screen is not found in the map
@@ -540,8 +575,12 @@ const ScreenRouter = ({ currentScreen, navParams }) => {
         />;
     }
     
+    // CRITICAL: Handle the AppSettingsScreen and the new Admin Maintenance Screen
     if (currentScreen === 'app-settings') {
-        return <AppSettingsScreen key={uniqueKey} />;
+        return <AppSettingsScreen key={uniqueKey} navigate={navigate} />; // Pass navigate to allow access to maintenance screen
+    }
+    if (currentScreen === 'data-maintenance') {
+        return <Component key={uniqueKey} navigate={navigate} />; // Pass navigate
     }
 
     // Default route for lazy-loaded components
@@ -552,6 +591,8 @@ const AppContent = ({ currentScreen, setCurrentScreen, user, navParams, isMobile
     
     // FIX (Issue 1): Define the correct handler for closing the menu
     const closeMobileMenu = useCallback(() => { setIsMobileOpen(false); }, [setIsMobileOpen]);
+    
+    const { navigate } = useAppServices(); // Get the navigate function from context
     
     return (
         <div className="flex bg-gray-100 font-sans antialiased">
@@ -577,7 +618,7 @@ const AppContent = ({ currentScreen, setCurrentScreen, user, navParams, isMobile
                         </div>
                      </div>
                 }>
-                    <ScreenRouter currentScreen={currentScreen} navParams={navParams} />
+                    <ScreenRouter currentScreen={currentScreen} navParams={navParams} navigate={navigate} />
                 </Suspense>
             </main>
         </div>
