@@ -1335,7 +1335,7 @@ const GlobalDataEditor = ({ globalMetadata, updateGlobalMetadata, navigate }) =>
         try {
             // CRITICAL FIX: The updateGlobalMetadata hook exposed by useAppServices
             // expects the data object as the only argument in the component flow.
-            const success = await updateGlobalMetadata(localGlobalData);
+            const success = await updateGlobalMetadata(localGlobalData, { merge: true, source: 'AdminFinalize' });
 
             if (success) {
                 setStatus({ type: 'success', message: 'ALL global configurations successfully saved to Firestore.' });
@@ -1510,6 +1510,40 @@ const GlobalDataEditor = ({ globalMetadata, updateGlobalMetadata, navigate }) =>
         </>
     );
 };
+
+
+// --- Safe finalize write wrapper (prevents empty payload writes) ---
+function safeFinalizeWrite(updateGlobalMetadata, localGlobalData) {
+  const isEmpty = (o) => !o || (typeof o === 'object' && Object.keys(o).length === 0);
+  try {
+    console.groupCollapsed('[Admin] Finalize & Write payload summary');
+    console.log('keys:', Object.keys(localGlobalData||{}));
+    console.log('approxBytes:', JSON.stringify(localGlobalData||{}).length);
+    console.groupEnd();
+  } catch {}
+  if (isEmpty(localGlobalData)) {
+    alert('Cannot save: payload is empty.');
+    console.warn('[Admin] Save blocked: empty payload');
+    return Promise.resolve(false);
+  }
+  return updateGlobalMetadata(localGlobalData, { merge: true, source: 'AdminFinalize' });
+}
+
+
+// --- Optional: destructive replace (merge:false) with double confirm ---
+async function replaceAllGlobal(updateGlobalMetadata, localGlobalData) {
+  const isEmpty = (o) => !o || (typeof o === 'object' && Object.keys(o).length === 0);
+  if (isEmpty(localGlobalData)) { alert('Cannot REPLACE ALL with an empty payload.'); return false; }
+  if (!window.confirm('This will REPLACE the entire metadata/config document. Continue?')) return false;
+  if (!window.confirm('Are you absolutely sure? This is destructive.')) return false;
+  try {
+    console.warn('[Admin] REPLACE ALL write initiated');
+    return await updateGlobalMetadata(localGlobalData, { merge: false, source: 'AdminReplaceAll' });
+  } catch (e) {
+    console.error('[Admin] REPLACE ALL failed', e);
+    return false;
+  }
+}
 
 export default function AdminDataMaintenanceScreen({ navigate }) {
     const { metadata, isLoading: isMetadataLoading, db, updateGlobalMetadata } = useAppServices();

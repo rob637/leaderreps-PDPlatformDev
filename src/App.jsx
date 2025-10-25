@@ -268,6 +268,14 @@ const DataProvider = ({ children, firebaseServices, userId, isAuthReady, navigat
   // 2. Fetch Global Configuration Data
   const global = useGlobalMetadata(db, isAuthReady); // <-- NEW
 
+  // Debug: log each snapshot size/keys
+  try {
+    if (global && typeof global.metadata === 'object') {
+      console.log('[GLOBAL SNAPSHOT]', { keys: Object.keys(global.metadata||{}), size: JSON.stringify(global.metadata||{}).length });
+    }
+  } catch {}
+
+
   // CRITICAL: isLoading is derived from all data sources
   // The hooks resolve isLoading=false on first snapshot (even if empty), allowing faster UI display.
   const isLoading = pdp.isLoading || commitment.isLoading || planning.isLoading || global.isLoading; 
@@ -285,7 +293,7 @@ const DataProvider = ({ children, firebaseServices, userId, isAuthReady, navigat
     navigate, user, ...firebaseServices, userId, isAuthReady,
     updatePdpData: pdp.updatePdpData, saveNewPlan: pdp.saveNewPlan,
     updateCommitmentData: commitment.updateCommitmentData, updatePlanningData: planning.updatePlanningData,
-    updateGlobalMetadata: (data) => updateGlobalMetadata(db, data), // NEW: Expose global update function
+    updateGlobalMetadata: (data, opts) => updateGlobalMetadata(db, data, { merge: true, source: (opts && opts.source) || 'Provider', userId: user?.uid, ...(opts||{}) }), // NEW: Expose global update function
     pdpData: pdp.pdpData, commitmentData: commitment.commitmentData, planningData: planning.planningData,
     isLoading, error, appId, IconMap: IconMap, callSecureGeminiAPI, hasGeminiKey, GEMINI_MODEL, API_KEY, 
     // CRITICAL: Overwrite placeholder tiers with live metadata
