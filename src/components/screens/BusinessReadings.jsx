@@ -327,6 +327,17 @@ function BookListStable({
   handleSearchChange,
   handleFilterChange,
 }) {
+    // CRITICAL FIX 4: Check if there are any books in the original data structure
+    const totalBookCount = useMemo(() => {
+        return Object.values(filteredBooks).flat().length;
+    }, [filteredBooks]);
+
+    // Check if the filtering process returned an empty set, but there are books loaded
+    const allBooksLoaded = totalBookCount > 0;
+    const filteredIsEmpty = totalBookCount === 0 && (filters.search || filters.complexity !== 'All' || filters.maxDuration !== 300);
+
+    const isDataEmpty = Object.keys(filteredBooks).length === 0;
+
   return (
     <div className="space-y-10">
       <h2 className="text-3xl font-extrabold flex items-center gap-3 border-b-4 pb-2"
@@ -364,98 +375,114 @@ function BookListStable({
           </div>
         </div>
       </div>
+      
+      {/* CRITICAL FIX 5: Display a single, clear message if no books are loaded/found */}
+      {isDataEmpty && !filteredIsEmpty && (
+           <div className="p-10 rounded-2xl border-2 shadow-xl bg-white text-center" style={{ borderColor: COLORS.SUBTLE }}>
+                <AlertTriangle className='w-10 h-10 mx-auto mb-4' style={{ color: COLORS.ORANGE }}/>
+                <h3 className="text-xl font-bold" style={{ color: COLORS.NAVY }}>No Books Available</h3>
+                <p className="text-gray-600 mt-2">The reading library catalog is currently empty. Please upload data via the Admin Maintenance Hub.</p>
+           </div>
+      )}
+      
+      {filteredIsEmpty && (
+           <div className="p-8 rounded-2xl border-2 shadow-xl bg-white text-center" style={{ borderColor: COLORS.SUBTLE }}>
+                <SearchIcon className='w-8 h-8 mx-auto mb-3' style={{ color: COLORS.TEAL }}/>
+                <h3 className="text-lg font-bold" style={{ color: COLORS.NAVY }}>No Results Found</h3>
+                <p className="text-gray-600 mt-1">Your current filters returned no books. Try adjusting your search query or removing complexity/duration limits.</p>
+           </div>
+      )}
 
-      <div className="space-y-12">
-        {/* FIX: Ensure we're iterating over the filtered book categories, which should be updated */}
-        {Object.entries(filteredBooks).map(([tier, books]) => (
-          <div key={tier}
-               className="rounded-2xl shadow-xl overflow-hidden border-2"
-               style={{ background: COLORS.OFF_WHITE, borderColor: COLORS.SUBTLE }}>
-            <div className="p-6" style={{ background: COLORS.NAVY }}>
-              <h3 className="text-2xl font-bold flex items-center gap-2" style={{ color: COLORS.OFF_WHITE }}>{tier}</h3>
-              <p className="text-base mt-1" style={{ color: '#E5E7EB' }}>Foundational books for this competency. ({books.length} available)</p>
-            </div>
-
-            <div className="p-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              {(books || []).map((book) => {
-                const c = COMPLEXITY_MAP[book.complexity] || COMPLEXITY_MAP.Medium;
-                const ComplexityIcon = c.icon;
-                const isSaved = !!savedBooks[book.id];
-                const isSelected = selectedBook?.id === book.id;
-
-                return (
-                  <div key={book.id} className="relative">
-                    <button
-                      onClick={() => { onSelectBook(book, tier); }}
-                      className="p-5 text-left w-full h-full block rounded-2xl border-2 transition-all"
-                      style={{
-                        background: 'linear-gradient(180deg,#FFFFFF,#F9FAFB)',
-                        borderColor: isSelected ? COLORS.TEAL : COLORS.SUBTLE,
-                        boxShadow: isSelected ? '0 12px 30px rgba(0,0,0,.12)' : '0 2px 8px rgba(0,0,0,.06)',
-                        color: COLORS.TEXT,
-                        position: 'relative'
-                      }}
-                    >
-                      <span style={{ position:'absolute',top:0,left:0,right:0,height:6,
-                        background: isSelected ? COLORS.TEAL : COLORS.ORANGE,
-                        borderTopLeftRadius:14,borderTopRightRadius:14 }} />
-
-                      <div className="flex gap-3 items-start">
-                        <div className="w-10 h-10 rounded-lg flex items-center justify-center border" style={{ borderColor: COLORS.SUBTLE, background: '#F3F4F6' }}>
-                          <BookOpen className="w-5 h-5" style={{ color: COLORS.TEAL }} />
-                        </div>
-                        <div className="min-w-0">
-                          <p className="font-extrabold text-lg" style={{ color: COLORS.NAVY }}>{book.title}</p>
-                          <p className="text-sm italic" style={{ color: COLORS.MUTED }}>by {book.author}</p>
-                        </div>
-                      </div>
-
-                      <div className="my-3" style={{ height: 1, background: COLORS.SUBTLE }} />
-
-                      <div className="flex items-center text-sm gap-2" style={{ color: COLORS.TEXT }}>
-                        <Clock className="w-4 h-4" style={{ color: COLORS.ORANGE, marginRight: 8 }}/> 
-                        <span className="font-semibold">Learning Mins:</span>
-                        <span className="ml-auto font-bold">{book.duration} min</span>
-                      </div>
-                      <div className="flex items-center text-sm gap-2" style={{ color: COLORS.TEXT }}>
-                        <ComplexityIcon className="w-4 h-4" style={{ color: c.hex, marginRight: 8 }}/> 
-                        <span className="font-semibold">Complexity:</span>
-                        <span className="ml-auto font-bold" style={{ color: c.hex }}>{c.label}</span>
-                      </div>
-
-                      <div className="mt-3 pt-3" style={{ borderTop: '1px solid #F3F4F6' }}>
-                        <p className="text-xs font-semibold" style={{ color: COLORS.TEAL }}>Key Focus</p>
-                        <div className="flex flex-wrap gap-1 mt-1">
-                          {(book.focus || '').split(',').slice(0, 3).map((f, i) => (
-                            <span key={i}
-                                  className="px-2 py-0.5 text-xs font-medium rounded-full"
-                                  style={{ background: '#F3F4F6', color: '#4B5563' }}>{f.trim()}</span>
-                          ))}
-                        </div>
-                      </div>
-                    </button>
-
-                    <button
-                      onClick={(e) => { e.stopPropagation(); onToggleSave(book.id); }}
-                      aria-label={isSaved ? 'Remove from Saved' : 'Save for Later'}
-                      className="absolute top-2 right-2 p-2 rounded-full"
-                      style={{ background: isSaved ? COLORS.AMBER : '#FFFFFFCC', color: isSaved ? '#FFFFFF' : '#9CA3AF', boxShadow: '0 1px 2px rgba(0,0,0,.2)' }}
-                    >
-                      <Star className="w-4 h-4" fill={isSaved ? 'currentColor' : 'none'} />
-                    </button>
-                  </div>
-                );
-              })}
-            </div>
-
-            {books.length === 0 && (
-              <div className="p-6 text-center" style={{ color: COLORS.MUTED }}>
-                No books match the current filters in this category.
+      {/* RENDER BOOKS ONLY IF DATA EXISTS */}
+      {allBooksLoaded && (
+        <div className="space-y-12">
+          {/* FIX: Ensure we're iterating over the filtered book categories, which should be updated */}
+          {Object.entries(filteredBooks).map(([tier, books]) => (
+            <div key={tier}
+                 className="rounded-2xl shadow-xl overflow-hidden border-2"
+                 style={{ background: COLORS.OFF_WHITE, borderColor: COLORS.SUBTLE }}>
+              <div className="p-6" style={{ background: COLORS.NAVY }}>
+                <h3 className="text-2xl font-bold flex items-center gap-2" style={{ color: COLORS.OFF_WHITE }}>{tier}</h3>
+                <p className="text-base mt-1" style={{ color: '#E5E7EB' }}>Foundational books for this competency. ({books.length} available)</p>
               </div>
-            )}
-          </div>
-        ))}
-      </div>
+
+              <div className="p-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                {(books || []).map((book) => {
+                  const c = COMPLEXITY_MAP[book.complexity] || COMPLEXITY_MAP.Medium;
+                  const ComplexityIcon = c.icon;
+                  const isSaved = !!savedBooks[book.id];
+                  const isSelected = selectedBook?.id === book.id;
+
+                  return (
+                    <div key={book.id} className="relative">
+                      <button
+                        onClick={() => { onSelectBook(book, tier); }}
+                        className="p-5 text-left w-full h-full block rounded-2xl border-2 transition-all"
+                        style={{
+                          background: 'linear-gradient(180deg,#FFFFFF,#F9FAFB)',
+                          borderColor: isSelected ? COLORS.TEAL : COLORS.SUBTLE,
+                          boxShadow: isSelected ? '0 12px 30px rgba(0,0,0,.12)' : '0 2px 8px rgba(0,0,0,.06)',
+                          color: COLORS.TEXT,
+                          position: 'relative'
+                        }}
+                      >
+                        <span style={{ position:'absolute',top:0,left:0,right:0,height:6,
+                          background: isSelected ? COLORS.TEAL : COLORS.ORANGE,
+                          borderTopLeftRadius:14,borderTopRightRadius:14 }} />
+
+                        <div className="flex gap-3 items-start">
+                          <div className="w-10 h-10 rounded-lg flex items-center justify-center border" style={{ borderColor: COLORS.SUBTLE, background: '#F3F4F6' }}>
+                            <BookOpen className="w-5 h-5" style={{ color: COLORS.TEAL }} />
+                          </div>
+                          <div className="min-w-0">
+                            <p className="font-extrabold text-lg" style={{ color: COLORS.NAVY }}>{book.title}</p>
+                            <p className="text-sm italic" style={{ color: COLORS.MUTED }}>by {book.author}</p>
+                          </div>
+                        </div>
+
+                        <div className="my-3" style={{ height: 1, background: COLORS.SUBTLE }} />
+
+                        <div className="flex items-center text-sm gap-2" style={{ color: COLORS.TEXT }}>
+                          <Clock className="w-4 h-4" style={{ color: COLORS.ORANGE, marginRight: 8 }}/> 
+                          <span className="font-semibold">Learning Mins:</span>
+                          <span className="ml-auto font-bold">{book.duration} min</span>
+                        </div>
+                        <div className="flex items-center text-sm gap-2" style={{ color: COLORS.TEXT }}>
+                          <ComplexityIcon className="w-4 h-4" style={{ color: c.hex, marginRight: 8 }}/> 
+                          <span className="font-semibold">Complexity:</span>
+                          <span className="ml-auto font-bold" style={{ color: c.hex }}>{c.label}</span>
+                        </div>
+
+                        <div className="mt-3 pt-3" style={{ borderTop: '1px solid #F3F4F6' }}>
+                          <p className="text-xs font-semibold" style={{ color: COLORS.TEAL }}>Key Focus</p>
+                          <div className="flex flex-wrap gap-1 mt-1">
+                            {(book.focus || '').split(',').slice(0, 3).map((f, i) => (
+                              <span key={i}
+                                    className="px-2 py-0.5 text-xs font-medium rounded-full"
+                                    style={{ background: '#F3F4F6', color: '#4B5563' }}>{f.trim()}</span>
+                            ))}
+                          </div>
+                        </div>
+                      </button>
+
+                      <button
+                        onClick={(e) => { e.stopPropagation(); onToggleSave(book.id); }}
+                        aria-label={isSaved ? 'Remove from Saved' : 'Save for Later'}
+                        className="absolute top-2 right-2 p-2 rounded-full"
+                        style={{ background: isSaved ? COLORS.AMBER : '#FFFFFFCC', color: isSaved ? '#FFFFFF' : '#9CA3AF', boxShadow: '0 1px 2px rgba(0,0,0,.2)' }}
+                      >
+                        <Star className="w-4 h-4" fill={isSaved ? 'currentColor' : 'none'} />
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Removed the redundant 'No books match current filters' message here */}
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

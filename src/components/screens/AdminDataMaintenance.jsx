@@ -1347,34 +1347,40 @@ const GlobalDataEditor = ({ globalMetadata, updateGlobalMetadata, db, navigate }
 
     
     const [localGlobalData, setLocalGlobalData] = useState(globalMetadata || {});
+    
 
-
-  {/* Debug HUD */}
-            <div className="mb-4 p-3 rounded border border-gray-200 bg-gray-50 text-xs text-gray-700">
-              <div className="flex flex-wrap gap-4">
-                <div>meta keys: {Object.keys(localGlobalData||{}).length}</div>
-                <div>lib total: {Object.values((localGlobalData?.RESOURCE_LIBRARY||localGlobalData?.RESOURCE_CONTENT_LIBRARY||{})).flat().length}</div>
-                <div>domains: {(localGlobalData?.LEADERSHIP_DOMAINS||[]).length}</div>
-                <div>target reps: {(localGlobalData?.TARGET_REP_CATALOG||[]).length}</div>
-                <div>quick challenges: {(localGlobalData?.QUICK_CHALLENGE_CATALOG||[]).length}</div>
-              </div>
-            </div>
-            
   
-// Auto-pick a populated tab on first data load
-const computeFirstTab = (data) => {
-  if (!data) return 'reading';
-  const countItems = (obj) => Object.values(obj || {}).flat().length;
-  if ((data.LEADERSHIP_DOMAINS || []).length) return 'domains';
-  if (countItems(data.RESOURCE_LIBRARY || data.RESOURCE_CONTENT_LIBRARY || {}) > 0) return 'resources';
-  if ((data.TARGET_REP_CATALOG || []).length) return 'target-reps';
-  if ((data.QUICK_CHALLENGE_CATALOG || []).length) return 'quick-challenges';
-  if ((data.COMMITMENT_BANK || []).length) return 'commitment';
-  if ((data.SCENARIO_CATALOG || []).length) return 'scenarios';
-  if (data.READING_CATALOG_SERVICE && Object.keys(data.READING_CATALOG_SERVICE).length) return 'reading';
-  return 'reading';
-};
-const [tabAutoSelected, setTabAutoSelected] = useState(false);
+  {/* --- Data Snapshot (always visible, safe to leave in) --- */}
+  <section className="mb-4 p-3 rounded border border-amber-300 bg-amber-50 text-[12px] text-amber-800">
+    <div className="font-semibold mb-1">Debug: Data Snapshot</div>
+    <div className="flex flex-wrap gap-3">
+      <div>meta keys: {Object.keys(localGlobalData || {}).length}</div>
+      <div>domains: {(localGlobalData?.LEADERSHIP_DOMAINS || []).length}</div>
+      <div>resources total: {Object.values((localGlobalData?.RESOURCE_LIBRARY || localGlobalData?.RESOURCE_CONTENT_LIBRARY || {})).flat().length}</div>
+      <div>target reps: {(localGlobalData?.TARGET_REP_CATALOG || []).length}</div>
+      <div>quick challenges: {(localGlobalData?.QUICK_CHALLENGE_CATALOG || []).length}</div>
+      <div>commitments: {(localGlobalData?.COMMITMENT_BANK || []).length}</div>
+      <div>scenarios: {(localGlobalData?.SCENARIO_CATALOG || []).length}</div>
+      <div>reading domains: {Object.keys(localGlobalData?.READING_CATALOG_SERVICE || {}).length}</div>
+    </div>
+    <details className="mt-2">
+      <summary className="cursor-pointer">Show a few samples</summary>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mt-2">
+        <pre className="p-2 bg-white border border-amber-200 overflow-auto max-h-40">
+{JSON.stringify((localGlobalData?.LEADERSHIP_DOMAINS || []).slice(0,2), null, 2)}
+        </pre>
+        <pre className="p-2 bg-white border border-amber-200 overflow-auto max-h-40">
+{JSON.stringify(Object.fromEntries(Object.entries(localGlobalData?.READING_CATALOG_SERVICE || {}).slice(0,1)), null, 2)}
+        </pre>
+        <pre className="p-2 bg-white border border-amber-200 overflow-auto max-h-40">
+{JSON.stringify((localGlobalData?.TARGET_REP_CATALOG || []).slice(0,2), null, 2)}
+        </pre>
+        <pre className="p-2 bg-white border border-amber-200 overflow-auto max-h-40">
+{JSON.stringify((localGlobalData?.QUICK_CHALLENGE_CATALOG || []).slice(0,2), null, 2)}
+        </pre>
+      </div>
+    </details>
+  </section>
 // Diagnostics: log what the editor actually received
   React.useEffect(() => {
     try {
@@ -1410,17 +1416,10 @@ const [tabAutoSelected, setTabAutoSelected] = useState(false);
     // Include the deep, computed dependency to force synchronization when data changes.
     // The component will re-run the effect if either the shallow reference (globalMetadata) 
     // or the deep key structure (readingCatalogKeys) changes.
-    } , [globalMetadata, readingCatalogKeys]);
+    }, [globalMetadata, readingCatalogKeys]); 
 
-    // Once data arrives the first time, auto-select a visible tab if current is empty
-    useEffect(() => {
-      if (!tabAutoSelected && localGlobalData && Object.keys(localGlobalData || {}).length) {
-        const next = computeFirstTab(localGlobalData);
-        setCurrentTab(next);
-        setTabAutoSelected(true);
-      }
-    }, [localGlobalData, tabAutoSelected]);
-// --- FINAL DATABASE WRITE HANDLER ---
+
+    // --- FINAL DATABASE WRITE HANDLER ---
     const handleFinalSave = async () => {
         setIsSaving(true);
         setStatus(null);
