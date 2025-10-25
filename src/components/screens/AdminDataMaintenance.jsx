@@ -1,4 +1,4 @@
-// src/components/screens/AdminDataMaintenance.jsx (FINAL STABLE VERSION with Scope Fix)
+// src/components/screens/AdminDataMaintenance.jsx (FINAL COMPLETE & RESTORED VERSION)
 
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useAppServices } from '../../services/useAppServices.jsx';
@@ -873,7 +873,7 @@ const TargetRepTableEditor = ({ data, isSaving, setGlobalData, idKey = 'id' }) =
       const existingIds = new Set(prevGlobal.TARGET_REP_CATALOG?.map(r => r.id) || []);
       const newReps = parsedData.filter(r => !existingIds.has(r.id));
       alert(`Mass upload: ${newReps.length} new Target Reps staged.`);
-      return { ...prevGlobal, TARGET_REP_CATALOG: [...(prevGlobal.TARGET_REP_CATALOG || []), ...newReps] };
+      return { ...prevGlobal, TARGET_REP_REP: [...(prevGlobal.TARGET_REP_CATALOG || []), ...newReps] };
     });
   }, [setGlobalData]);
 
@@ -1327,6 +1327,12 @@ const DataSyncBanner = ({ globalMetadata, localGlobalData }) => {
 ===================== */
 const GlobalDataEditor = ({ globalMetadata, updateGlobalMetadata, db, navigate }) => {
   const [localGlobalData, setLocalGlobalData] = useState(globalMetadata || {});
+  // CRITICAL STATE: This is where the scope error was originating
+  const [currentTab, setCurrentTab] = useState('reading'); 
+  const [isSaving, setIsSaving] = useState(false);
+  const [status, setStatus] = useState(null);
+  const [tabAutoSelected, setTabAutoSelected] = useState(false);
+
 
   // Syncs the local state with the loaded global state
   useEffect(() => {
@@ -1351,7 +1357,6 @@ const GlobalDataEditor = ({ globalMetadata, updateGlobalMetadata, db, navigate }
     if (data.READING_CATALOG_SERVICE && Object.keys(data.READING_CATALOG_SERVICE).length) return 'reading';
     return 'reading';
   };
-  const [tabAutoSelected, setTabAutoSelected] = useState(false);
 
   useEffect(() => {
     if (!tabAutoSelected && localGlobalData && Object.keys(localGlobalData || {}).length) {
@@ -1391,6 +1396,7 @@ const GlobalDataEditor = ({ globalMetadata, updateGlobalMetadata, db, navigate }
   }, [localGlobalData]);
 
   const renderTabContent = () => {
+    // Renders the content based on the selected tab (currentTab)
     switch (currentTab) {
       case 'reading':
         return <ReadingHubTableEditor
@@ -1512,10 +1518,15 @@ const GlobalDataEditor = ({ globalMetadata, updateGlobalMetadata, db, navigate }
                 <button
                   key={item.key}
                   onClick={() => setCurrentTab(item.key)}
+                  // FIX: Correctly reference currentTab for active state
                   className={`flex items-center px-4 py-2 text-sm font-semibold transition-all rounded-lg whitespace-nowrap border-2 ${item.key === currentTab ? 'bg-[#002E47] text-white border-[#002E47] shadow-md' : 'bg-white text-gray-500 border-gray-300 hover:bg-gray-100'}`}
                 >
                   <item.icon className='w-4 h-4 mr-1' />
-                  {item.label} {item.count !== undefined && <span className={`ml-1 px-1.5 py-0.5 text-xs rounded-full ${item.key === currentTab ? 'bg-white text-[#002E47]' : 'bg-gray-200 text-gray-700'}`}>{item.count}</span>}
+                  {item.label} 
+                  {item.count !== undefined && 
+                    // FIX: Correctly reference currentTab for badge color
+                    <span className={`ml-1 px-1.5 py-0.5 text-xs rounded-full ${item.key === currentTab ? 'bg-white text-[#002E47]' : 'bg-gray-200 text-gray-700'}`}>{item.count}</span>
+                  }
                 </button>
               ))}
             </div>
