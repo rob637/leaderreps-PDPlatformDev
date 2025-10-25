@@ -7,6 +7,16 @@ import {
   MessageSquare, Filter, TrendingUp, Star, Search as SearchIcon, Cpu, Zap, Info, Check, Loader
 } from 'lucide-react';
 
+
+// Helper: derive minutes from pages if needed (~1.5 pages/minute)
+function getDerivedDuration(book) {
+  if (typeof book.duration === 'number') return book.duration;
+  if (typeof book.pages === 'number') {
+    return Math.round(book.pages / 1.5);
+  }
+  return null;
+}
+
 /* =========================================================
    HIGH-CONTRAST PALETTE (From uiKit)
 ========================================================= */
@@ -692,7 +702,7 @@ export default function BusinessReadingsScreen() {
     return flat
       .filter(b => {
         const cOK = filters.complexity === 'All' || b.complexity === filters.complexity;
-        const dOK = (typeof b.duration === 'number') ? (b.duration <= filters.maxDuration) : true;
+        const dOK = (typeof b.duration === 'number') ? ((() => { const m = getDerivedDuration(b); return (m === null) ? true : (m <= filters.maxDuration); })()) : true;
         const sOK = !s || b.title.toLowerCase().includes(s) || b.author.toLowerCase().includes(s) || (b.focus || '').toLowerCase().includes(s);
         return cOK && dOK && sOK;
       })

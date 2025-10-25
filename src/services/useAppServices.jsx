@@ -170,7 +170,15 @@ const resolveGlobalMetadata = (meta) => {
   if (payload && !payload.RESOURCE_LIBRARY && meta.RESOURCE_CONTENT_LIBRARY) {
     payload = { ...payload, RESOURCE_LIBRARY: meta.RESOURCE_CONTENT_LIBRARY };
   }
-  return payload || {};
+  
+  // Alias reading catalog keys for compatibility
+  if (payload && !payload.READING_CATALOG_SERVICE && meta.READING_CATALOG) {
+    payload = { ...payload, READING_CATALOG_SERVICE: meta.READING_CATALOG };
+  }
+  if (payload && !payload.READING_CATALOG_SERVICE && meta.READING_LIBRARY) {
+    payload = { ...payload, READING_CATALOG_SERVICE: meta.READING_LIBRARY };
+  }
+return payload || {};
 };
 
 const looksEmptyGlobal = (obj) => {
