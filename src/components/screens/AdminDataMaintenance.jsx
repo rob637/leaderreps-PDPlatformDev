@@ -13,23 +13,20 @@ const JSONEditor = ({ data, setData, label, isSaving, setModified }) => {
     // Ensure data is always an object for JSON.stringify to work
     const safeData = data && typeof data === 'object' ? data : {}; 
     
-    // CRITICAL FIX: The local state must be initialized with the incoming prop data.
-    // It should ONLY change when the user types or the 'Revert' button is clicked.
-    // However, for initialization, we must use the stringified prop value.
+    // CRITICAL FIX: Ensure the string is rebuilt whenever safeData changes
     const initialJsonText = useMemo(() => JSON.stringify(safeData, null, 2), [safeData]);
     const [jsonText, setJsonText] = useState(initialJsonText);
     const [isError, setIsError] = useState(false);
     
-    // CRITICAL FIX: Add a useEffect to synchronize the internal state (jsonText) 
-    // with the external data prop (safeData) ONLY when the external data changes 
-    // and the component is NOT modified. This ensures the initial load works.
+    // Sync the local state (jsonText) with the external prop (safeData) only on external change
     useEffect(() => {
-        // Only update if the component is clean (not modified by the user)
-        if (!isSaving && JSON.stringify(JSON.parse(jsonText || '{}')) !== JSON.stringify(safeData)) {
+        // We only reset the text if the stringified version of the prop is different from the current text
+        if (JSON.stringify(safeData) !== JSON.stringify(JSON.parse(jsonText || '{}'))) {
             setJsonText(initialJsonText);
             setIsError(false);
+            setModified(false); // Reset modification flag on external data load
         }
-    }, [safeData, initialJsonText, isSaving]); // Depend on safeData and initialJsonText (which depends on safeData)
+    }, [initialJsonText, safeData]);
 
 
     const handleTextChange = (e) => {
@@ -110,6 +107,7 @@ const AdminDataMaintenance = ({ navigate }) => {
         if (!isInitialPopulated.current) {
             
             // Safely split the metadata object
+            // This relies on the useAppServices fix to correctly nest the catalog data
             const { READING_CATALOG_SERVICE = {}, ...configMetadata } = metadata;
             
             // Set the initial states for the editors

@@ -1,4 +1,4 @@
-// src/services/useAppServices.jsx (FORCE DEBUG OUTPUT)
+// src/services/useAppServices.jsx (Final Structural Fix)
 
 import React, {
   useMemo,
@@ -38,6 +38,7 @@ const mockGetDoc = async (docPath) => {
   const d = __firestore_mock_store[docPath];
   return createMockSnapshot(docPath, d || {}, !!d);
 };
+// Updated mockDoc to handle simple pathing for global metadata
 const mockDoc = (db, c, d) => (c === 'metadata' ? `${c}/${d}` : `${c}/${d}`);
 
 /* =========================================================
@@ -45,8 +46,9 @@ const mockDoc = (db, c, d) => (c === 'metadata' ? `${c}/${d}` : `${c}/${d}`);
 ========================================================= */
 const toDocRef = (db, path) => fsDoc(db, ...path.split('/'));
 
+// onSnapshotEx is maintained but ONLY used for User Data
 const onSnapshotEx = (db, path, cb) => {
-  if (!db) return () => {};
+  if (!db) return () => {}; // No mock necessary if only used for live user data
   return fsOnSnapshot(
     toDocRef(db, path),
     { includeMetadataChanges: true },
@@ -261,7 +263,7 @@ export const usePlanningData = (db, userId, isAuthReady) => {
 
 
 /* =========================================================
-   Global metadata (read) - CRITICAL INSTRUMENTATION MODIFIED
+   Global metadata (read) - CRITICAL STRUCTURAL FIX
 ========================================================= */
 export const useGlobalMetadata = (db, isAuthReady) => {
   const [metadata, setMetadata] = useState({});
@@ -295,12 +297,13 @@ export const useGlobalMetadata = (db, isAuthReady) => {
         const configData = configSnap.exists() ? configSnap.data() : {};
         const catalogData = catalogSnap.exists() ? catalogSnap.data() : {};
         
-        // --- STEP 2: LOG RAW DATA RETURNED (BYPASSING OBJECT LOGGING FOR SAFETY) ---
-        // We use JSON.stringify to ensure the raw object structure is logged as plain text.
+        // --- STEP 2: LOG RAW DATA RETURNED ---
         console.log(`[DEBUG RAW DATA] RAW CONFIG: ${JSON.stringify(configData)}`);
         console.log(`[DEBUG RAW DATA] RAW CATALOG: ${JSON.stringify(catalogData)}`);
         
-        // CRITICAL FIX: Direct merge of all data with the catalog nested as expected
+        // CRITICAL STRUCTURAL MERGE FIX: 
+        // 1. Merge the main config document content (which includes the VIDEO_CATALOG, etc.)
+        // 2. Explicitly nest the entire catalogData document under READING_CATALOG_SERVICE
         finalData = { 
             ...(configData || {}), 
             READING_CATALOG_SERVICE: (catalogData || {}) 
@@ -315,7 +318,7 @@ export const useGlobalMetadata = (db, isAuthReady) => {
             console.warn('[REBUILD READ RESOLVE] Config data was empty. Applied LEADERSHIP_TIERS_FALLBACK.');
         }
         
-        setMetadata(finalData);
+        setMetadata(finalData); 
         setError(null);
         
         // --- STEP 4: LOG FINAL STATE ---
@@ -326,7 +329,6 @@ export const useGlobalMetadata = (db, isAuthReady) => {
           setError(e);
       } finally {
           setLoading(false);
-          // console.groupEnd(); // Removed group to avoid hiding logs
       }
     };
 
