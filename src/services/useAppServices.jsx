@@ -1,29 +1,52 @@
 // src/services/useAppServices.jsx
-// HARDENED + DEBUG: real Firestore writes, empty-section guards, meta-stamp, tracing.
-// No functionality removed.
+// Regenerated — hardened + instrumented
+// - Real Firestore when `db` exists; mock fallback otherwise
+// - includeMetadataChanges in snapshots
+// - Explicit snapshot logging (keys/bytes/_meta/fromCache/pendingWrites)
+// - Empty-payload + empty-section guards for global config writes
+// - _meta stamp: last_write_ts, last_write_source, last_write_uid, approx_bytes, keys
+// - Callsite tracing for updateGlobalMetadata
+// - Public API unchanged (hooks/exports)
 
 import { useMemo, useCallback, useContext, createContext, useState, useEffect } from 'react';
 import { doc as fsDoc, setDoc as fsSetDoc, onSnapshot as fsOnSnapshot } from 'firebase/firestore';
 
-// ---------------- Mock fallback (only if no db) ----------------
+/* ============================
+   Mock fallback (no db case)
+   ============================ */
 const __firestore_mock_store = typeof window !== 'undefined' ? (window.__firestore_mock_store || {}) : {};
 if (typeof window !== 'undefined') window.__firestore_mock_store = __firestore_mock_store;
+
 const createMockSnapshot = (docPath, data, exists = true) => ({ exists: () => exists, data: () => data, docRef: docPath });
 const mockSetDoc = async (docRef, data) => { __firestore_mock_store[docRef] = data; return true; };
 const mockOnSnapshot = (docRef, cb) => { const d = __firestore_mock_store[docRef]; cb(createMockSnapshot(docRef, d || {}, !!d)); return () => {}; };
 const mockDoc = (_db, c, d) => `${c}/${d}`;
 
-// ---------------- Real wrappers ----------------
+/* ============================
+   Real Firestore wrappers
+   ============================ */
 const toDocRef = (db, path) => fsDoc(db, ...path.split('/'));
-const onSnapshotEx = (db, path, cb) => db
-  ? fsOnSnapshot(toDocRef(db, path), snap => cb({ exists: () => snap.exists(), data: () => snap.data(), docRef: path }))
-  : mockOnSnapshot(path, cb);
-const setDocEx = (db, path, data, merge = false) => db
-  ? fsSetDoc(toDocRef(db, path), data, merge ? { merge: true } : undefined)
-  : mockSetDoc(path, data);
+
+const onSnapshotEx = (db, path, cb) => {
+  if (!db) return mockOnSnapshot(path, cb);
+  return fsOnSnapshot(toDocRef(db, path), { includeMetadataChanges: true }, snap =>
+    cb({
+      exists: () => snap.exists(),
+      data: () => snap.data(),
+      docRef: path,
+      _md: { fromCache: snap.metadata.fromCache, pendingWrites: snap.metadata.hasPendingWrites }
+    })
+  );
+};
+
+const setDocEx = (db, path, data, merge = false) =>
+  db ? fsSetDoc(toDocRef(db, path), data, merge ? { merge: true } : undefined) : mockSetDoc(path, data);
+
 const updateDocEx = (db, path, data) => setDocEx(db, path, data, true);
 
-// ---------------- Defaults ----------------
+/* ============================
+   Defaults / fallbacks
+   ============================ */
 const GEMINI_MODEL = 'gemini-1.5-flash-latest';
 const LEADERSHIP_TIERS_FALLBACK = {
   T1: { id: 'T1', name: 'Lead Self & Mindsets', icon: 'HeartPulse', color: 'indigo-500' },
@@ -35,17 +58,26 @@ const MOCK_PLANNING_DATA   = { okrs: [], last_premortem_decision: '2025-01-01', 
 const MOCK_ACTIVITY_DATA   = { daily_target_rep: 'Define your rep.', identity_statement: 'I am a principled leader.', total_reps_completed: 0, total_coaching_labs: 0, today_coaching_labs: 0 };
 
 const DEFAULT_SERVICES = {
+  // Navigation & AI
   navigate: () => { console.warn('Navigation called before context initialization.'); },
   callSecureGeminiAPI: async () => ({ candidates: [{ content: { parts: [{ text: 'API Not Configured' }] } }] }),
   hasGeminiKey: () => false,
+
+  // Data updaters (set to no-ops here; Provider supplies real)
   updatePdpData: async () => true,
   saveNewPlan: async () => true,
   updateCommitmentData: async () => true,
   updatePlanningData: async () => true,
   updateGlobalMetadata: async () => true,
+
+  // Auth/DB
   user: null, userId: null, db: null, auth: null, isAuthReady: false,
+
+  // Live data defaults
   pdpData: MOCK_PDP_DATA, commitmentData: MOCK_COMMITMENT_DATA, planningData: MOCK_PLANNING_DATA,
   isLoading: false, error: null, hasPendingDailyPractice: false,
+
+  // Misc
   appId: 'default-app-id', IconMap: {}, GEMINI_MODEL, API_KEY: '',
   LEADERSHIP_TIERS: LEADERSHIP_TIERS_FALLBACK, MOCK_ACTIVITY_DATA,
   COMMITMENT_BANK: {}, QUICK_CHALLENGE_CATALOG: [], SCENARIO_CATALOG: [],
@@ -54,91 +86,13 @@ const DEFAULT_SERVICES = {
 
 export const AppServiceContext = createContext(DEFAULT_SERVICES);
 
-// ---------------- Generic user doc hook ----------------
-const useFirestoreData = (db, userId, isAuthReady, suffix, mockData) => {
-  const [data, setData] = useState(mockData);
-  const [isLoading, setIsLoading] = useState(true);
-  const docPath = useMemo(() => mockDoc(db, 'users', userId) + `/${suffix}`, [db, userId, suffix]);
-
-  useEffect(() => {
-    if (!isAuthReady || !userId) { setIsLoading(false); return; }
-    const unsub = onSnapshotEx(db, docPath, (doc) => {
-      const d = doc.exists() ? doc.data() : mockData;
-      try {
-        console.debug('[USER SNAPSHOT]', suffix, { keys: Object.keys(d||{}), size: JSON.stringify(d||{}).length });
-      } catch {}
-      setData(d);
-      setIsLoading(false);
-    });
-    const t = setTimeout(() => { if (isLoading) { console.warn(`Subscribe timeout for ${docPath}`); setIsLoading(false); } }, 15000);
-    return () => { unsub(); clearTimeout(t); };
-  }, [db, userId, isAuthReady, docPath, mockData, isLoading, suffix]);
-
-  const updateData = useCallback(async (updater) => {
-    const next = updater(data);
-    try { await updateDocEx(db, docPath, next); return true; }
-    catch (e) { console.error(`Update failed for ${docPath}`, e); return false; }
-  }, [db, docPath, data]);
-
-  return { data, isLoading, error: null, updateData, docPath };
-};
-
-export const useCommitmentData = (db, userId, isAuthReady) => {
-  const { data: commitmentData, isLoading, error, updateData: updateCommitmentData } =
-    useFirestoreData(db, userId, isAuthReady, 'commitment_data/scorecard', MOCK_COMMITMENT_DATA);
-  return { commitmentData, isLoading, error, updateCommitmentData };
-};
-
-export const usePDPData = (db, userId, isAuthReady) => {
-  const { data: pdpData, isLoading, error, updateData: updatePdpData } =
-    useFirestoreData(db, userId, isAuthReady, 'pdp/roadmap', MOCK_PDP_DATA);
-
-  const saveNewPlan = useCallback(async (plan) => {
-    const path = mockDoc(db, 'users', userId) + '/pdp/roadmap';
-    try { await setDocEx(db, path, plan); return true; }
-    catch (e) { console.error('New plan save failed', e); return false; }
-  }, [db, userId]);
-
-  return { pdpData, isLoading, error, updatePdpData, saveNewPlan };
-};
-
-export const usePlanningData = (db, userId, isAuthReady) => {
-  const { data: planningData, isLoading, error, updateData: updatePlanningData } =
-    useFirestoreData(db, userId, isAuthReady, 'planning_data/hub', MOCK_PLANNING_DATA);
-  return { planningData, isLoading, error, updatePlanningData };
-};
-
-// ---------------- Global metadata ----------------
-export const useGlobalMetadata = (db, isAuthReady) => {
-  const [metadata, setMetadata] = useState({});
-  const [loading, setLoading] = useState(true);
-  const path = mockDoc(db, 'metadata', 'config');
-
-  useEffect(() => {
-    if (!isAuthReady) { setLoading(false); return; }
-    const unsub = onSnapshotEx(db, path, (doc) => {
-      const d = doc.exists() ? doc.data() : {};
-      try {
-        const keys = Object.keys(d||{});
-        const size = JSON.stringify(d||{}).length;
-        console.log('[GLOBAL SNAPSHOT]', { keys, size, _meta: d?._meta || null });
-      } catch {}
-      setMetadata(d);
-      setLoading(false);
-    });
-    const t = setTimeout(() => { if (loading) { console.warn('Global metadata subscribe timeout'); setLoading(false); } }, 15000);
-    return () => { unsub(); clearTimeout(t); };
-  }, [db, isAuthReady, loading, path]);
-
-  return { metadata, isLoading: loading };
-};
-
-// ------------- Guards + meta stamp --------------
+/* ============================
+   Shared helpers
+   ============================ */
 const looksEmptyGlobal = (obj) => {
   if (!obj || typeof obj !== 'object') return true;
   const keys = Object.keys(obj);
   if (keys.length === 0) return true;
-  // If keys exist but every present section is empty, treat as empty
   const sections = [
     'READING_CATALOG_SERVICE','COMMITMENT_BANK','TARGET_REP_CATALOG','LEADERSHIP_DOMAINS',
     'RESOURCE_LIBRARY','SCENARIO_CATALOG','VIDEO_CATALOG','LEADERSHIP_TIERS','GLOBAL_SETTINGS'
@@ -164,25 +118,117 @@ const containsEmptySections = (obj) => {
 
 const traceCallsite = () => { try { console.groupCollapsed('[updateGlobalMetadata] callsite'); console.trace(); console.groupEnd(); } catch {} };
 
+/* ============================
+   Generic user-doc hook
+   ============================ */
+const useFirestoreData = (db, userId, isAuthReady, suffix, mockData) => {
+  const [data, setData] = useState(mockData);
+  const [isLoading, setIsLoading] = useState(true);
+  const docPath = useMemo(() => mockDoc(db, 'users', userId) + `/${suffix}`, [db, userId, suffix]);
+
+  useEffect(() => {
+    if (!isAuthReady || !userId) { setIsLoading(false); return; }
+    const unsub = onSnapshotEx(db, docPath, (doc) => {
+      const d = doc.exists() ? doc.data() : mockData;
+      try {
+        const jsonSize = JSON.stringify(d || {}).length;
+        console.log('[USER SNAPSHOT]', suffix, { fromCache: doc._md?.fromCache, pendingWrites: doc._md?.pendingWrites, keys: Object.keys(d || {}), bytes: jsonSize });
+      } catch {}
+      setData(d);
+      setIsLoading(false);
+    });
+    const t = setTimeout(() => { if (isLoading) { console.warn(`Subscribe timeout for ${docPath}`); setIsLoading(false); } }, 15000);
+    return () => { unsub(); clearTimeout(t); };
+  }, [db, userId, isAuthReady, docPath, mockData, isLoading, suffix]);
+
+  const updateData = useCallback(async (updater) => {
+    const next = updater(data);
+    try { await updateDocEx(db, docPath, next); return true; }
+    catch (e) { console.error(`Update failed for ${docPath}`, e); return false; }
+  }, [db, docPath, data]);
+
+  return { data, isLoading, error: null, updateData, docPath };
+};
+
+/* ============================
+   User-data hooks (API unchanged)
+   ============================ */
+export const useCommitmentData = (db, userId, isAuthReady) => {
+  const { data: commitmentData, isLoading, error, updateData: updateCommitmentData } =
+    useFirestoreData(db, userId, isAuthReady, 'commitment_data/scorecard', MOCK_COMMITMENT_DATA);
+  return { commitmentData, isLoading, error, updateCommitmentData };
+};
+
+export const usePDPData = (db, userId, isAuthReady) => {
+  const { data: pdpData, isLoading, error, updateData: updatePdpData } =
+    useFirestoreData(db, userId, isAuthReady, 'pdp/roadmap', MOCK_PDP_DATA);
+
+  const saveNewPlan = useCallback(async (plan) => {
+    const path = mockDoc(db, 'users', userId) + '/pdp/roadmap';
+    try { await setDocEx(db, path, plan /* overwrite intentionally */); return true; }
+    catch (e) { console.error('New plan save failed', e); return false; }
+  }, [db, userId]);
+
+  return { pdpData, isLoading, error, updatePdpData, saveNewPlan };
+};
+
+export const usePlanningData = (db, userId, isAuthReady) => {
+  const { data: planningData, isLoading, error, updateData: updatePlanningData } =
+    useFirestoreData(db, userId, isAuthReady, 'planning_data/hub', MOCK_PLANNING_DATA);
+  return { planningData, isLoading, error, updatePlanningData };
+};
+
+/* ============================
+   Global metadata
+   ============================ */
+export const useGlobalMetadata = (db, isAuthReady) => {
+  const [metadata, setMetadata] = useState({});
+  const [loading, setLoading] = useState(true);
+  const path = mockDoc(db, 'metadata', 'config'); // 'metadata/config'
+
+  useEffect(() => {
+    if (!isAuthReady) { setLoading(false); return; }
+    const unsub = onSnapshotEx(db, path, (doc) => {
+      const d = doc.exists() ? doc.data() : {};
+      try {
+        const json = JSON.stringify(d || {});
+        const keys = Object.keys(d || {});
+        const info = { fromCache: doc._md?.fromCache, pendingWrites: doc._md?.pendingWrites, keys, bytes: json.length, meta: d?._meta || null };
+        console.log('[GLOBAL SNAPSHOT]', info);
+        if (typeof window !== 'undefined') { window.__lastGlobal = d; window.__lastGlobalInfo = info; }
+      } catch {}
+      setMetadata(d);
+      setLoading(false);
+    });
+    const t = setTimeout(() => { if (loading) { console.warn('Global metadata subscribe timeout'); setLoading(false); } }, 15000);
+    return () => { unsub(); clearTimeout(t); };
+  }, [db, isAuthReady, loading, path]);
+
+  return { metadata, isLoading: loading };
+};
+
+/* ============================
+   Global writer (hardened)
+   ============================ */
 export const updateGlobalMetadata = async (db, data, { merge = true, source = 'unknown', userId = 'unknown', allowEmptySections = false } = {}) => {
   traceCallsite();
   const path = mockDoc(db, 'metadata', 'config');
   const projectId = db?.app?.options?.projectId || 'unknown';
 
-  // Block obvious total-empties
+  // Block total empties
   if (looksEmptyGlobal(data)) {
     console.warn(`[WRITE ABORTED] metadata/config appears empty. project=${projectId} source=${source}`);
     return false;
   }
 
-  // Guard against wiping any provided section to {} unless explicitly allowed
+  // Guard against setting any provided section to {} unless explicitly allowed
   const bad = containsEmptySections(data);
   if (!allowEmptySections && bad.length) {
     console.warn(`[WRITE ABORTED] payload contains empty object sections: ${bad.join(', ')}. Set allowEmptySections=true to override.`);
     return false;
   }
 
-  // Meta stamp
+  // Stamp meta
   const now = new Date().toISOString();
   const approxBytes = (() => { try { return JSON.stringify(data).length; } catch { return -1; } })();
   const keys = Object.keys(data || {});
@@ -200,6 +246,9 @@ export const updateGlobalMetadata = async (db, data, { merge = true, source = 'u
   }
 };
 
+/* ============================
+   Context accessor
+   ============================ */
 export function useAppServices() {
   const ctx = useContext(AppServiceContext);
   return (ctx === null || ctx === undefined) ? DEFAULT_SERVICES : ctx;
