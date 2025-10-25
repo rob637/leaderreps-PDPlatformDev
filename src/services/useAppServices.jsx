@@ -34,7 +34,6 @@ const mockSetDoc = async (docRef, data) => {
   __firestore_mock_store[docRef] = data;
   return true;
 };
-// Removed mockOnSnapshot to simplify logic to match new getDoc focus
 const mockGetDoc = async (docPath) => {
   const d = __firestore_mock_store[docPath];
   return createMockSnapshot(docPath, d || {}, !!d);
@@ -84,7 +83,7 @@ const setDocEx = (db, path, data, merge = false) =>
 const updateDocEx = (db, path, data) => setDocEx(db, path, data, true);
 
 /* =========================================================
-   Defaults / fallbacks (Unchanged)
+   Defaults / fallbacks
 ========================================================= */
 const GEMINI_MODEL = 'gemini-2.5-flash'; 
 const LEADERSHIP_TIERS_FALLBACK = {
@@ -99,37 +98,55 @@ const MOCK_COMMITMENT_DATA = { active_commitments: [], reflection_journal: '' };
 const MOCK_PLANNING_DATA = { drafts: [] };
 
 /* =========================================================
-   Context + API (Unchanged)
+   Context + API
 ========================================================= */
-const DEFAULT_SERVICES = { /* ... */ };
+const DEFAULT_SERVICES = { 
+    navigate: () => console.warn('Navigate not initialized'),
+    user: null, 
+    userId: null,
+    db: null,
+    auth: null,
+    isAuthReady: false,
+    pdpData: MOCK_PDP_DATA,
+    commitmentData: MOCK_COMMITMENT_DATA,
+    planningData: MOCK_PLANNING_DATA,
+    metadata: {},
+    isLoading: true,
+    error: null,
+    appId: 'default-app-id',
+    IconMap: {},
+    callSecureGeminiAPI: async () => ({ candidates: [] }),
+    hasGeminiKey: () => false,
+    GEMINI_MODEL: GEMINI_MODEL,
+    API_KEY: '',
+    LEADERSHIP_TIERS: LEADERSHIP_TIERS_FALLBACK,
+    hasPendingDailyPractice: false,
+    updatePdpData: async () => {},
+    saveNewPlan: async () => {},
+    updateCommitmentData: async () => {},
+    updatePlanningData: async () => {},
+    updateGlobalMetadata: async () => {},
+};
+
 export const AppServiceContext = createContext(DEFAULT_SERVICES);
 export const useAppServices = () => useContext(AppServiceContext);
 
 /* =========================================================
-   Helpers (guards + tracing) (Unchanged)
+   Helpers (guards + tracing)
 ========================================================= */
-/* ---------- Global metadata resolver (normalizes shape/aliases) ---------- */
 const resolveGlobalMetadata = (meta) => {
   if (!meta || typeof meta !== 'object') return {};
   const known = [
-    'LEADERSHIP_DOMAINS',
-    'RESOURCE_LIBRARY',
-    'READING_CATALOG_SERVICE',
-    'COMMITMENT_BANK',
-    'SCENARIO_CATALOG',
-    'TARGET_REP_CATALOG',
-    'LEADERSHIP_TIERS',
-    'VIDEO_CATALOG',
-    'GLOBAL_SETTINGS',
+    'LEADERSHIP_DOMAINS', 'RESOURCE_LIBRARY', 'READING_CATALOG_SERVICE', 'COMMITMENT_BANK', 
+    'SCENARIO_CATALOG', 'TARGET_REP_CATALOG', 'LEADERSHIP_TIERS', 'VIDEO_CATALOG', 'GLOBAL_SETTINGS',
   ];
   const keys = Object.keys(meta);
   const hasKnown = keys.some((k) => known.includes(k));
   let payload = hasKnown ? meta : (meta.config || meta.global || meta.data || meta.payload || {});
-  // ... Alias support
+  
   if (payload && !payload.SCENARIO_CATALOG && Array.isArray(meta.QUICK_CHALLENGE_CATALOG)) {
     payload = { ...payload, SCENARIO_CATALOG: meta.QUICK_CHALLENGE_CATALOG };
   }
-  // ... other aliases
   return payload || {};
 };
 
@@ -158,9 +175,11 @@ const traceCallsite = (label = 'updateGlobalMetadata') => {
 /* =========================================================
    User-data hooks (RE-ADDED to fix App.jsx import error)
 ========================================================= */
-// This is the common core for user-specific data that requires live listeners (onSnapshotEx)
+const SUBCOLLECTION_NAME = 'profile'; 
+
 const useFirestoreUserData = (db, userId, isAuthReady, collection, document, mockData) => {
-  const path = userId && `${collection}/${userId}/${document}`;
+  // FIX: Path must be 4 segments: Collection / User ID / Subcollection / Document Name
+  const path = userId && `${collection}/${userId}/${SUBCOLLECTION_NAME}/${document}`; 
   const [data, setData] = useState(mockData);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -190,9 +209,8 @@ const useFirestoreUserData = (db, userId, isAuthReady, collection, document, moc
     };
   }, [db, userId, isAuthReady, path, mockData]);
 
-  // Expose an update function that updates the specific user document
   const updateData = useCallback(async (updates, opts = {}) => {
-    if (!db || !userId) return;
+    if (!db || !userId || !path) return;
     try {
       await updateDocEx(db, path, updates);
       console.log(`[USER UPDATE] ${document} updated successfully.`, updates);
@@ -210,11 +228,11 @@ export const usePDPData = (db, userId, isAuthReady) => {
   const { roadmapData, isLoading, error, updateData: updatePdpData } = useFirestoreUserData(db, userId, isAuthReady, 'leadership_plan', 'roadmap', MOCK_PDP_DATA);
   
   const saveNewPlan = useCallback(async (newPlanData) => {
-    // PDP has a special save to overwrite the whole document
+    // FIX: Must use a 4-segment path (Collection/User ID/Subcollection/Document)
     if (!db || !userId) return;
-    const path = `${'leadership_plan'}/${userId}/${'roadmap'}`;
+    const path = `${'leadership_plan'}/${userId}/${SUBCOLLECTION_NAME}/${'roadmap'}`; 
     try {
-      await setDocEx(db, path, newPlanData); // No merge
+      await setDocEx(db, path, newPlanData); // No merge (overwrite)
       console.log(`[USER SAVE] PDP roadmap overwritten successfully.`, newPlanData);
     } catch (e) {
       console.error(`[USER SAVE FAILED] PDP roadmap`, e);
@@ -237,7 +255,7 @@ export const usePlanningData = (db, userId, isAuthReady) => {
 
 
 /* =========================================================
-   Global metadata (read) - REBUILT TO ELIMINATE RACE CONDITIONS (Unchanged)
+   Global metadata (read) - REBUILT TO ELIMINATE RACE CONDITIONS
 ========================================================= */
 export const useGlobalMetadata = (db, isAuthReady) => {
   const [metadata, setMetadata] = useState({});
@@ -247,8 +265,7 @@ export const useGlobalMetadata = (db, isAuthReady) => {
   const pathConfig = mockDoc(db, 'metadata', 'config');
   const pathCatalog = mockDoc(db, 'metadata', 'reading_catalog');
 
-  // 🛑 NEW LOGIC: Use one-time fetch (GetDoc) for both documents. 
-  // This eliminates the OnSnapshot race condition that caused state corruption.
+  // 🛑 NEW LOGIC: Use one-time fetch (GetDoc) for both documents.
   useEffect(() => {
     if (!isAuthReady) {
       setLoading(false);
@@ -259,7 +276,6 @@ export const useGlobalMetadata = (db, isAuthReady) => {
     const fetchMetadata = async () => {
       console.groupCollapsed(`[REBUILD READ] Starting concurrent fetch for config/catalog.`);
       try {
-        // Use Promise.all to fetch both documents simultaneously
         const [configSnap, catalogSnap] = await Promise.all([
           getDocEx(db, pathConfig),
           getDocEx(db, pathCatalog)
@@ -273,22 +289,16 @@ export const useGlobalMetadata = (db, isAuthReady) => {
             READING_CATALOG_SERVICE: catalogData 
         };
         
-        console.log(`[REBUILD READ MERGE] Keys from config: ${Object.keys(configData).length}, Keys from catalog: ${Object.keys(catalogData).length}`);
-        
         if (Object.keys(mergedData).length > 0) {
             const resolved = resolveGlobalMetadata(mergedData);
             
-            // Check for emptiness and apply fallback if necessary
             if (looksEmptyGlobal(resolved)) {
                  resolved.LEADERSHIP_TIERS = LEADERSHIP_TIERS_FALLBACK;
                  console.warn('[REBUILD READ RESOLVE] Fetched empty data. Applied LEADERSHIP_TIERS_FALLBACK.');
             }
             
-            console.log(`[REBUILD READ RESOLVE] Final keys: ${Object.keys(resolved).length}`);
             setMetadata(resolved);
             setError(null);
-        } else {
-             console.warn(`[REBUILD READ RESOLVE] Fetched empty data. No fallback applied.`);
         }
       } catch (e) {
           console.error("[CRITICAL REBUILD READ FAIL] Document fetch failed.", e);
@@ -301,7 +311,6 @@ export const useGlobalMetadata = (db, isAuthReady) => {
 
     fetchMetadata();
     
-    // No return cleanup needed since we are not using a continuous listener.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [db, isAuthReady]); 
 
@@ -326,17 +335,18 @@ export const updateGlobalMetadata = async (
   let path;
   let payload = { ...data };
 
-  // CRITICAL: Determine which document to write to
-  if (forceDocument === 'catalog' || payload.READING_CATALOG_SERVICE) {
+  // CRITICAL: Determine which document to write to (config or reading_catalog)
+  if (forceDocument === 'catalog' || (payload.READING_CATALOG_SERVICE && forceDocument !== 'config')) {
       path = mockDoc(db, 'metadata', 'reading_catalog');
-      // If writing to catalog, the payload is the whole catalog document
+      // If writing to catalog, the payload is the content of the catalog document
       payload = payload.READING_CATALOG_SERVICE || payload; 
-      if (typeof payload !== 'object' || Array.isArray(payload)) {
-          // Wrap if it's just an array, or throw
-          payload = { catalog: payload };
+      // Ensure the catalog data is an object if it's the target document
+      if (!payload || typeof payload !== 'object' || Array.isArray(payload)) {
+          // If the payload is just the array of items, wrap it in a 'catalog' field for consistency
+          payload = { catalog: Array.isArray(payload) ? payload : [] };
       }
   } else {
-      // Default to config document (most other metadata)
+      // Default to config document
       path = mockDoc(db, 'metadata', 'config');
       // Ensure the catalog isn't accidentally written to the config doc
       if (payload.READING_CATALOG_SERVICE) delete payload.READING_CATALOG_SERVICE;
@@ -362,18 +372,12 @@ export const updateGlobalMetadata = async (
 };
 
 /* =========================================================
-   Provider factory (Unchanged)
+   Provider factory
 ========================================================= */
 export const createAppServices = ({
-  user,
-  userId,
-  auth,
-  db,
-  isAuthReady,
-  navigate,
+  user, userId, auth, db, isAuthReady, navigate,
   callSecureGeminiAPI = async () => ({ candidates: [] }),
-  hasGeminiKey = () => false,
-  API_KEY = '',
+  hasGeminiKey = () => false, API_KEY = '',
 }) => { /* ... */ };
 
 export default AppServiceContext;
