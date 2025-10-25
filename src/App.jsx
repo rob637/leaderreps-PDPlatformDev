@@ -595,7 +595,7 @@ const ScreenRouter = ({ currentScreen, navParams, navigate }) => {
 const AppContent = ({ currentScreen, setCurrentScreen, user, navParams, isMobileOpen, setIsMobileOpen, isAuthRequired }) => {
     
     // FIX (Issue 1): Define the correct handler for closing the menu
-    const closeMobileMenu = useCallback(() => { setIsMobileMenu(false); }, [setIsMobileMenu]);
+    const closeMobileMenu = useCallback(() => { setIsMobileOpen(false); }, [setIsMobileOpen]);
     
     const { navigate } = useAppServices(); // Get the navigate function from context
     
