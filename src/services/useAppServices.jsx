@@ -62,11 +62,13 @@ const onSnapshotEx = (db, path, cb) => {
       })
   );
 };
-const setDocEx = (db, path, data, merge = false) =>
-  db
-    ? fsSetDoc(toDocRef(db, path), data, merge ? { merge: true } : undefined)
-    : mockSetDoc(path, data);
-
+const setDocEx = (db, path, data, merge = false) => {
+  // Belt & suspenders: never allow writes without a real Firestore db
+  if (!db) {
+    throw new Error('[SAFE-GUARD] No Firestore db — write aborted.');
+  }
+  return fsSetDoc(toDocRef(db, path), data, merge ? { merge: true } : undefined);
+};
 const updateDocEx = (db, path, data) => setDocEx(db, path, data, true);
 
 /* =========================================================
@@ -170,15 +172,7 @@ const resolveGlobalMetadata = (meta) => {
   if (payload && !payload.RESOURCE_LIBRARY && meta.RESOURCE_CONTENT_LIBRARY) {
     payload = { ...payload, RESOURCE_LIBRARY: meta.RESOURCE_CONTENT_LIBRARY };
   }
-  
-  // Alias reading catalog keys for compatibility
-  if (payload && !payload.READING_CATALOG_SERVICE && meta.READING_CATALOG) {
-    payload = { ...payload, READING_CATALOG_SERVICE: meta.READING_CATALOG };
-  }
-  if (payload && !payload.READING_CATALOG_SERVICE && meta.READING_LIBRARY) {
-    payload = { ...payload, READING_CATALOG_SERVICE: meta.READING_LIBRARY };
-  }
-return payload || {};
+  return payload || {};
 };
 
 const looksEmptyGlobal = (obj) => {
@@ -525,13 +519,18 @@ export const createAppServices = ({
       updateCommitmentData: commitment.updateCommitmentData,
       updatePlanningData: planning.updatePlanningData,
 
-      updateGlobalMetadata: (data, opts) =>
-        updateGlobalMetadata(db, data, {
+      updateGlobalMetadata: (data, opts) => {
+        if (!db) {
+          console.error('[SAFE-GUARD] No Firestore db — refusing to write to mock from Admin.');
+          return false;
+        }
+        return updateGlobalMetadata(db, data, {
           merge: true,
           source: (opts && opts.source) || 'Provider',
           userId: user?.uid || 'unknown',
           ...(opts || {}),
-        }),
+        });
+      },
 
       pdpData: pdp.pdpData,
       commitmentData: commitment.commitmentData,

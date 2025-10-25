@@ -31,7 +31,7 @@ function resolveGlobalMetadata(meta) {
     payload = { ...payload, READING_CATALOG_SERVICE: meta.READING_CATALOG };
   }
   if (payload && !payload.READING_CATALOG_SERVICE && meta.READING_LIBRARY) {
-    payload = { ...payload, READING_CATALOG_SERVICE: meta.READING_LIBRARY };
+    payload = { ...payload, RESOURCE_LIBRARY: meta.RESOURCE_CONTENT_LIBRARY };
   }
   return payload || {};
 }
@@ -1379,12 +1379,7 @@ useEffect(() => {
     }
   } catch {}
 }, [globalMetadata]);
-<DataSyncBanner globalMetadata={globalMetadata} localGlobalData={localGlobalData} />
-            {<div className="mb-3 p-2 rounded border text-xs">
-              <strong>Write target:</strong>{' '}
-              {services?.db?.app?.options?.projectId ? services.db.app.options.projectId : 'mock (NO PERSIST)'}
-            </div>
-            /* Debug HUD */}
+            {/* Debug HUD */}
             <div className="mb-4 p-3 rounded border border-gray-200 bg-gray-50 text-xs text-gray-700">
               <div className="flex flex-wrap gap-4">
                 <div>meta keys: {Object.keys(localGlobalData||{}).length}</div>
@@ -1457,11 +1452,12 @@ const [tabAutoSelected, setTabAutoSelected] = useState(false);
     }, [localGlobalData, tabAutoSelected]);
 // --- FINAL DATABASE WRITE HANDLER ---
     const handleFinalSave = async () => {
-  if (!services?.db) {
+        
+  if (!db) {
     setStatus({ type: 'error', message: 'No Firestore connection yet. Refresh/sign in and try again.' });
     return;
   }
-        setIsSaving(true);
+setIsSaving(true);
         setStatus(null);
         
         try {
@@ -1563,14 +1559,23 @@ const [tabAutoSelected, setTabAutoSelected] = useState(false);
                 />;
             case 'raw':
                 return (
-                    <RawConfigEditor
+    <>
+        <RawConfigEditor
                         catalog={localGlobalData}
                         isSaving={isSaving}
                         setGlobalData={setLocalGlobalData}
                         navigate={navigate}
                         currentEditorKey={'RAW_CONFIG'}
                     />
-                );
+        <DataSyncBanner globalMetadata={globalMetadata} localGlobalData={localGlobalData} />
+        <div className="mb-3 p-2 rounded border text-xs">
+
+    <strong>Write target:</strong>{' '}
+    {db?.app?.options?.projectId ? db.app.options.projectId : 'mock (NO PERSIST)'}
+  
+        </div>
+    </>
+);
             case 'summary':
             default:
                 return (
