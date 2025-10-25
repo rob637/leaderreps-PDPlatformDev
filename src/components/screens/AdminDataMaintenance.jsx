@@ -1,4 +1,4 @@
-// src/components/screens/AdminDataMaintenance.jsx
+// src/components/screens/AdminDataMaintenance.jsx (Complete & Corrected)
 
 import React, { useState, useMemo, useEffect } from 'react';
 // Path assumes this file is screens/AdminDataMaintenance.jsx and useAppServices is in services/
@@ -70,35 +70,45 @@ const JSONEditor = ({ data, setData, label, isSaving, setModified }) => {
 
 
 const AdminDataMaintenance = ({ navigate }) => {
-    // FIX: Destructure db directly from the context hook
+    // Destructure db directly from the context hook
     const { metadata, isLoading, error, updateGlobalMetadata, db } = useAppServices(); 
     
-    // Split the fetched metadata into the two main documents for editing
-    const { READING_CATALOG_SERVICE = {}, ...configMetadata } = metadata;
-
     // --- State for Screen Logic ---
     const [isAuthenticated, setIsAuthenticated] = useState(false);
     const [password, setPassword] = useState('');
     const [isSaving, setIsSaving] = useState(false);
     const [saveStatus, setSaveStatus] = useState('');
     
-    // State for the editable data (local copies)
-    const [configData, setConfigData] = useState(configMetadata);
-    const [catalogData, setCatalogData] = useState(READING_CATALOG_SERVICE);
+    // FIX 1: Initialize local state with empty objects
+    const [configData, setConfigData] = useState({});
+    const [catalogData, setCatalogData] = useState({});
     
     // Track if either editor has been modified
     const [isConfigModified, setIsConfigModified] = useState(false);
     const [isCatalogModified, setIsCatalogModified] = useState(false);
 
 
-    // Update local state when global metadata refreshes (e.g., initial load/successful save)
+    // FIX 2: Use useEffect to populate local state ONLY when new metadata arrives
     useEffect(() => {
-        const { READING_CATALOG_SERVICE: newCatalog = {}, ...newConfig } = metadata;
-        setConfigData(newConfig);
-        setCatalogData(newCatalog);
-        setIsConfigModified(false);
-        setIsCatalogModified(false);
-    }, [metadata]);
+        // Ensure metadata is a non-empty object before processing
+        if (metadata && Object.keys(metadata).length > 0) {
+            
+            // Split the fetched metadata into the two main documents for editing
+            const { READING_CATALOG_SERVICE = {}, ...configMetadata } = metadata;
+            
+            // Only update local state if the component hasn't been modified yet
+            // This prevents overwriting unsaved user edits if the global data updates 
+            // from an external source (like another admin user).
+            if (!isConfigModified && !isCatalogModified) {
+                setConfigData(configMetadata);
+                setCatalogData(READING_CATALOG_SERVICE);
+                
+                // Reset modification flags since we just loaded fresh data
+                setIsConfigModified(false);
+                setIsCatalogModified(false);
+            }
+        }
+    }, [metadata]); // Depend only on the fetched metadata object
 
 
     // --- Handlers ---
@@ -130,7 +140,7 @@ const AdminDataMaintenance = ({ navigate }) => {
             if (isConfigModified) {
                 console.log("Saving Config Document...");
                 const configResult = await updateGlobalMetadata(
-                    db, // FIXED: Use the destructured 'db'
+                    db, 
                     configData, 
                     { source: 'Admin Maintenance (config)', forceDocument: 'config' }
                 );
@@ -141,7 +151,7 @@ const AdminDataMaintenance = ({ navigate }) => {
             if (isCatalogModified) {
                  console.log("Saving Catalog Document...");
                  const catalogResult = await updateGlobalMetadata(
-                    db, // FIXED: Use the destructured 'db'
+                    db, 
                     { READING_CATALOG_SERVICE: catalogData }, // Pass as an object with the key
                     { source: 'Admin Maintenance (catalog)', forceDocument: 'catalog' } // Force catalog write
                 );
@@ -150,6 +160,9 @@ const AdminDataMaintenance = ({ navigate }) => {
 
             if (results.length > 0) {
                  setSaveStatus(`✅ Save successful: ${results.join(' | ')}`);
+                 // Reset modification flags after successful save
+                 setIsConfigModified(false);
+                 setIsCatalogModified(false);
             } else {
                  setSaveStatus('Nothing to save. No changes detected.');
             }
