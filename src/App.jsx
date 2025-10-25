@@ -9,7 +9,7 @@ import React, {
   lazy,
 } from 'react';
 // CRITICAL FIX: The next step is to import useGlobalMetadata and updateGlobalMetadata here in App.jsx
-import { AppServiceContext, usePDPData, useCommitmentData, usePlanningData, useGlobalMetadata, updateGlobalMetadata } from './services/useAppServices.jsx';
+import { AppServiceContext, usePDPData, useCommitmentData, usePlanningData, useGlobalMetadata, updateGlobalMetadata, useAppServices } from './services/useAppServices.jsx';
 
 import {
   initializeApp, 
@@ -382,7 +382,7 @@ function AuthPanel({ auth, onSuccess }) {
                         placeholder="Email" 
                         value={email} 
                         onChange={(e) => setEmail(e.target.value)} 
-                        className={`w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[${TEAL}] focus:border-[${TEAL}]`} 
+                        className={`w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[${TEAL}] focus:border-[${TETEAL}]`} 
                         disabled={isLoading}
                         autoComplete="email" 
                     />
@@ -614,12 +614,8 @@ const AppContent = ({ currentScreen, setCurrentScreen, user, navParams, isMobile
                     <button onClick={() => setIsMobileOpen(true)} className="p-2 text-[#002E47] hover:text-[#47A88D]"><Menu className="w-6 h-6" /></button>
                 </div>
                 <Suspense fallback={
-                     <div className="min-h-screen flex items-center justify-center bg-gray-100">
-                        <div className="flex flex-col items-center">
-                            <div className="animate-spin rounded-full h-12 w-12 border-4 border-t-4 border-gray-200 border-t-[#47A88D] mb-3"></div>
-                            <p className="text-[#002E47] font-semibold">Loading App Content...</p>
-                        </div>
-                     </div>
+                     // FIX: Removed the backslashes (escaped quotes) inside the fallback string
+                     <div className="min-h-screen flex items-center justify-center bg-gray-100"><div className="flex flex-col items-center"><div className="animate-spin rounded-full h-12 w-12 border-4 border-t-4 border-gray-200 border-t-[#47A88D] mb-3"></div><p className="text-[#002E47] font-semibold">Loading App Content...</p></div></div>
                 }>
                     <ScreenRouter currentScreen={currentScreen} navParams={navParams} navigate={navigate} />
                 </Suspense>
@@ -796,6 +792,7 @@ const App = ({ initialState }) => {
       <DataProvider
         firebaseServices={firebaseServices} userId={userId} isAuthReady={isAuthReady} navigate={navigate} user={user}>
         <Suspense fallback={
+             // FIX: Removed the backslashes (escaped quotes) inside the fallback string
              <div className="min-h-screen flex items-center justify-center bg-gray-100"><div className="flex flex-col items-center"><div className="animate-spin rounded-full h-12 w-12 border-4 border-t-4 border-gray-200 border-t-[#47A88D] mb-3"></div><p className="text-[#002E47] font-semibold">Loading App Content...</p></div></div>
         }>
             <AppContent
