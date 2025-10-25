@@ -1,4 +1,4 @@
-// src/components/screens/AdminDataMaintenance.jsx
+// src/components/screens/AdminDataMaintenance.jsx (Visual Fix)
 
 import React, { useState, useMemo, useEffect, useRef } from 'react'; 
 import { useAppServices } from '../../services/useAppServices'; 
@@ -20,13 +20,21 @@ const JSONEditor = ({ data, setData, label, isSaving, setModified }) => {
     
     // Sync the local state (jsonText) with the external prop (safeData) only on external change
     useEffect(() => {
-        // We only reset the text if the stringified version of the prop is different from the current text
-        if (JSON.stringify(safeData) !== JSON.stringify(JSON.parse(jsonText || '{}'))) {
+        // If the component is saving, do nothing.
+        if (isSaving) return;
+        
+        // Use initialJsonText (which is memoized based on the prop) to update the local state.
+        // We compare the stringified version of the prop vs the stringified version of the editor's text 
+        // (after safely parsing the editor's text to prevent comparison failure if the user is typing invalid JSON)
+        const currentParsedText = JSON.stringify(JSON.parse(jsonText || '{}'));
+        const propJson = JSON.stringify(safeData);
+
+        if (propJson !== currentParsedText) {
             setJsonText(initialJsonText);
             setIsError(false);
-            setModified(false); // Reset modification flag on external data load
+            // setModified(false); // Only reset modified if we know the change was from a successful save/external event
         }
-    }, [initialJsonText, safeData]);
+    }, [initialJsonText, safeData, isSaving]); // Re-run when prop data or saving status changes
 
 
     const handleTextChange = (e) => {

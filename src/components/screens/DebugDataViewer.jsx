@@ -1,4 +1,4 @@
-// src/components/screens/DebugDataViewer.jsx
+// src/components/screens/DebugDataViewer.jsx (Final Fix)
 
 import React, { useMemo } from 'react'; // <-- Ensure useMemo is imported
 import { useAppServices } from '../../services/useAppServices';
@@ -13,14 +13,16 @@ const DebugDataViewer = ({ navigate }) => {
     // CRITICAL FIX: Use useMemo to ensure the string is recalculated ONLY when metadata changes.
     // This forces the text area to update when the context loads the data.
     const formattedMetadata = useMemo(() => {
-        if (!metadata || Object.keys(metadata).length === 0) {
+        // Use a safe check to ensure metadata is an object before stringifying
+        if (!metadata || typeof metadata !== 'object' || Object.keys(metadata).length === 0) {
             return "{}"; // Display empty object text if data is not yet available
         }
         return JSON.stringify(metadata, null, 2);
     }, [metadata]);
     
-    const formattedPdpData = JSON.stringify(pdpData, null, 2);
-    const formattedCommitmentData = JSON.stringify(commitmentData, null, 2);
+    // Use useMemo for user data too, for consistency and performance
+    const formattedPdpData = useMemo(() => JSON.stringify(pdpData, null, 2), [pdpData]);
+    const formattedCommitmentData = useMemo(() => JSON.stringify(commitmentData, null, 2), [commitmentData]);
 
     return (
         <div className="p-8 space-y-6 max-w-7xl mx-auto">
