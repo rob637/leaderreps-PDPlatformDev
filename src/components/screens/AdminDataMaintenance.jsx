@@ -1340,6 +1340,15 @@ const RawConfigEditor = ({ catalog, isSaving, setGlobalData, currentEditorKey })
 
 // --- MAIN ROUTER (GlobalDataEditor) ---
 
+const GlobalDataEditor = ({ globalMetadata, updateGlobalMetadata, db, navigate }) => {
+
+
+  
+
+    
+    const [localGlobalData, setLocalGlobalData] = useState(globalMetadata || {});
+    
+
   // Diagnostics: log what the editor actually received
   React.useEffect(() => {
     try {
@@ -1355,10 +1364,7 @@ const RawConfigEditor = ({ catalog, isSaving, setGlobalData, currentEditorKey })
       console.groupEnd();
     } catch (e) { console.warn('[MaintenanceHub] debug failed', e); }
   }, [localGlobalData]);
-
-    
-    const [localGlobalData, setLocalGlobalData] = useState(globalMetadata || {});
-    // CRITICAL: Set initial tab to a valid, easily populated tab (like Reading Hub)
+// CRITICAL: Set initial tab to a valid, easily populated tab (like Reading Hub)
     const [currentTab, setCurrentTab] = useState('reading'); 
     const [isSaving, setIsSaving] = useState(false);
     const [status, setStatus] = useState(null);
