@@ -434,13 +434,14 @@ const ReadingHubTableEditor = ({ catalog, isSaving, setGlobalData }) => {
   const categoryKeys = useMemo(() => Object.keys(safeCatalog).sort(), [safeCatalog]);
   const [currentCategory, setCurrentCategory] = useState(categoryKeys[0] || 'Uncategorized');
 
+  // ➡️ FIX 3: Category Initialization for Reading Hub Table
   useEffect(() => {
-    if (!categoryKeys.includes(currentCategory) && categoryKeys.length > 0) {
+    if (categoryKeys.length > 0 && !categoryKeys.includes(currentCategory)) {
       setCurrentCategory(categoryKeys[0]);
     } else if (categoryKeys.length === 0) {
       setCurrentCategory('Uncategorized');
     }
-  }, [categoryKeys]);
+  }, [categoryKeys, currentCategory]);
 
 const books = useMemo(
   () => (Array.isArray(safeCatalog[currentCategory]) ? safeCatalog[currentCategory] : []),
@@ -513,7 +514,7 @@ const books = useMemo(
           {categoryKeys.map(key => (
             <button
               key={key}
-              onClick={() => setCurrentCategory(key)}
+              onClick={() => setCurrentTab(key)}
               className={`w-full text-left p-2 rounded-lg text-sm font-medium transition-colors ${currentCategory === key ? 'bg-[#47A88D] text-white' : 'text-gray-700 hover:bg-gray-100'}`}
             >
               {key} ({safeCatalog[key]?.length || 0})
@@ -533,7 +534,7 @@ const books = useMemo(
           Use the table below for CRUD operations. Edits are staged until the <strong>Finalize & Write</strong> button is clicked.
         </p>
 
-        {/* ➡️ FIX 3: UPDATE GRID LAYOUT TO 9 COLUMNS */}
+        {/* ➡️ FIX 4: UPDATE GRID LAYOUT TO 9 COLUMNS in Header */}
         <div className="grid grid-cols-9 gap-4 items-center p-2 font-bold border-b-2 text-sm text-[#002E47]">
           <span className="truncate">Title</span>
           <span className="truncate">Author</span>
@@ -568,7 +569,7 @@ const books = useMemo(
           </Button>
           <CSVUploadComponent
             onDataParsed={handleBookDataParsed}
-            expectedFields={[{ key: 'id', type: 'text' }, { key: 'title', type: 'text' }, { key: 'author', type: 'text' }, { key: 'pages', type: 'number' }, { key: 'theme', type: 'text' }, { key: 'complexity', type: 'text' }, { key: 'duration', type: 'number' }, { key: 'focus', type: 'text' }]}
+            expectedFields={[{ key: 'id', type: 'text' }, { key: 'title', type: 'text' }, { key: 'author', type: 'text' }, { key: 'pages', type: 'number' }]}
             isSaving={isSaving}
           />
         </div>
@@ -1194,9 +1195,11 @@ const DataSyncBanner = ({ globalMetadata, localGlobalData }) => {
 const GlobalDataEditor = ({ globalMetadata, updateGlobalMetadata, db, navigate }) => {
   const [localGlobalData, setLocalGlobalData] = useState(globalMetadata || {});
 
+  // ➡️ FIX 5: Reliably rehydrate local state whenever globalMetadata changes
   useEffect(() => {
     try {
-      if (globalMetadata && Object.keys(globalMetadata).length) {
+      // Only update if globalMetadata is an object and has keys (i.e., it's loaded)
+      if (globalMetadata && Object.keys(globalMetadata || {}).length > 0) {
         setLocalGlobalData(globalMetadata);
       }
     } catch {}
