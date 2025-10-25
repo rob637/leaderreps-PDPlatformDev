@@ -371,14 +371,21 @@ const BookRowEditor = ({
   };
 
   const inputClass = "w-full p-1.5 border rounded-lg focus:ring-1 focus:ring-[#E04E1B] text-sm bg-white";
+  
+  // ➡️ FIX 1: EXPAND FIELDS ARRAY
   const fields = [
     { key: 'title', label: 'Title' },
     { key: 'author', label: 'Author' },
     { key: 'pages', label: 'Pages', type: 'number' },
+    { key: 'theme', label: 'Theme (Short)', type: 'text' },
+    { key: 'complexity', label: 'Complexity (Low/Med/High)', type: 'text' },
+    { key: 'duration', label: 'Duration (min)', type: 'number' },
+    { key: 'focus', label: 'Focus (Comma List)', type: 'text' },
   ];
 
   return (
-    <div className={`grid grid-cols-4 gap-4 items-center p-2 border-b transition-colors ${isStaged ? 'bg-yellow-50' : 'hover:bg-gray-50'}`}>
+    // ➡️ FIX 2: UPDATE GRID LAYOUT TO 9 COLUMNS (7 fields + 2 action columns)
+    <div className={`grid grid-cols-9 gap-4 items-center p-2 border-b transition-colors ${isStaged ? 'bg-yellow-50' : 'hover:bg-gray-50'}`}>
       {fields.map(field => (
         <div key={field.key} className="truncate">
           {isEditing ? (
@@ -526,10 +533,15 @@ const books = useMemo(
           Use the table below for CRUD operations. Edits are staged until the <strong>Finalize & Write</strong> button is clicked.
         </p>
 
-        <div className="grid grid-cols-4 gap-4 items-center p-2 font-bold border-b-2 text-sm text-[#002E47]">
+        {/* ➡️ FIX 3: UPDATE GRID LAYOUT TO 9 COLUMNS */}
+        <div className="grid grid-cols-9 gap-4 items-center p-2 font-bold border-b-2 text-sm text-[#002E47]">
           <span className="truncate">Title</span>
           <span className="truncate">Author</span>
           <span className="truncate">Pages</span>
+          <span className="truncate">Theme</span>
+          <span className="truncate">Complexity</span>
+          <span className="truncate">Duration</span>
+          <span className="truncate">Focus</span>
           <span className="text-right">Actions</span>
         </div>
 
@@ -556,7 +568,7 @@ const books = useMemo(
           </Button>
           <CSVUploadComponent
             onDataParsed={handleBookDataParsed}
-            expectedFields={[{ key: 'id', type: 'text' }, { key: 'title', type: 'text' }, { key: 'author', type: 'text' }, { key: 'pages', type: 'number' }]}
+            expectedFields={[{ key: 'id', type: 'text' }, { key: 'title', type: 'text' }, { key: 'author', type: 'text' }, { key: 'pages', type: 'number' }, { key: 'theme', type: 'text' }, { key: 'complexity', type: 'text' }, { key: 'duration', type: 'number' }, { key: 'focus', type: 'text' }]}
             isSaving={isSaving}
           />
         </div>
