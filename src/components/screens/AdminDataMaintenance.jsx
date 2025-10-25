@@ -50,12 +50,12 @@ const Button = ({ children, onClick, disabled = false, variant = 'primary', clas
 };
 
 // --- DATA EDITOR COMPONENT: Reading Hub Tab ---
-const ReadingHubEditor = ({ catalog, isSaving, setGlobalData, navigate }) => {
+const ReadingHubEditor = ({ catalog, isSaving, setGlobalData, navigate, currentEditorKey }) => { // currentEditorKey prop is added
     
-    // Convert current catalog to pretty JSON string for display/editing
+    // CRITICAL FIX 1: Ensure JSON.stringify uses an empty object if catalog is null/undefined
     const initialJson = useMemo(() => {
         try {
-            return JSON.stringify(catalog, null, 2);
+            return JSON.stringify(catalog || {}, null, 2);
         } catch {
             return JSON.stringify({});
         }
@@ -65,6 +65,7 @@ const ReadingHubEditor = ({ catalog, isSaving, setGlobalData, navigate }) => {
     const [status, setStatus] = useState(null); // null, 'success', 'error'
     
     useEffect(() => {
+        // Reset JSON text when the catalog changes (e.g., switching tabs)
         setJsonText(initialJson);
     }, [initialJson]);
 
@@ -79,27 +80,49 @@ const ReadingHubEditor = ({ catalog, isSaving, setGlobalData, navigate }) => {
 
     const handleSave = () => {
         if (!isJsonValid) {
-            setStatus({ type: 'error', message: 'Invalid JSON format. Cannot save.' });
+            setStatus({ type: 'error', message: 'Invalid JSON format. Cannot stage changes.' });
             return;
         }
         
         try {
             const parsedData = JSON.parse(jsonText);
-            // This calls the main setGlobalData function, which triggers the final Firestore update
+
+            // Determine which key to update in the global data object
+            let updateObject = {};
+
+            if (currentEditorKey === 'READING_CATALOG_SERVICE') {
+                 updateObject.READING_CATALOG_SERVICE = parsedData;
+                 setStatus({ type: 'success', message: 'Reading Catalog staged locally. Click "Finalize & Write" to commit.' });
+            } else if (currentEditorKey === 'RAW_CONFIG') {
+                 // For the raw tab, replace the entire object with the parsed data
+                 setGlobalData(() => parsedData);
+                 setStatus({ type: 'success', message: 'Raw Config staged locally. Click "Finalize & Write" to commit.' });
+                 return; // Exit early as setGlobalData was called with the full object
+            } else {
+                 setStatus({ type: 'error', message: 'Unknown editor key. Stage operation failed.' });
+                 return;
+            }
+            
+            // This calls the main setGlobalData function, which updates the local state
             setGlobalData(prev => ({ 
                 ...prev, 
-                reading_catalog_service: parsedData, // Update ONLY the reading catalog
+                ...updateObject 
             }));
-            setStatus({ type: 'success', message: 'Reading Catalog staged for global save.' });
+            
         } catch (e) {
             setStatus({ type: 'error', message: `Internal error staging data: ${e.message}` });
         }
     };
+    
+    const editorTitle = currentEditorKey === 'READING_CATALOG_SERVICE' 
+        ? 'Reading Catalog JSON (Key: READING_CATALOG_SERVICE)'
+        : 'FULL Global Config JSON (Key: metadata/config)';
 
     return (
         <div className='mt-4'>
+            <p className='text-sm font-bold text-[#002E47] mb-2'>{editorTitle}</p>
             <p className='text-sm text-gray-700 mb-4'>
-                Edit the data structure for the **Professional Reading Hub** (`reading_catalog_service`). The data must be an object where keys are the reading categories (e.g., "Strategy & Execution") and values are arrays of book objects.
+                Ensure your data is structured as a valid JSON object. For the Reading Hub, the top level keys should be the category names (e.g., "Strategy & Execution").
             </p>
             <textarea
                 value={jsonText}
@@ -108,7 +131,7 @@ const ReadingHubEditor = ({ catalog, isSaving, setGlobalData, navigate }) => {
                 disabled={isSaving}
             />
             {status && (
-                <div className={`mt-4 p-3 rounded-lg font-semibold flex items-center gap-2 ${
+                <div className className={`mt-4 p-3 rounded-lg font-semibold flex items-center gap-2 ${
                     status.type === 'success' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
                 }`}>
                     {status.type === 'success' ? <CheckCircle className='w-5 h-5'/> : <AlertTriangle className='w-5 h-5'/>}
@@ -128,14 +151,15 @@ const ReadingHubEditor = ({ catalog, isSaving, setGlobalData, navigate }) => {
 const GlobalDataEditor = ({ globalMetadata, updateGlobalMetadata, db, navigate }) => {
     
     // CRITICAL: We maintain a local copy of ALL metadata to be written to the database
-    const [localGlobalData, setLocalGlobalData] = useState(globalMetadata);
+    // CRITICAL FIX 2: Ensure globalMetadata defaults to an empty object for safe destructuring/use
+    const [localGlobalData, setLocalGlobalData] = useState(globalMetadata || {});
     const [currentTab, setCurrentTab] = useState('summary');
     const [isSaving, setIsSaving] = useState(false);
     const [status, setStatus] = useState(null); // Save status for the final write
 
     // Sync local state when the global metadata object updates from the hook
     useEffect(() => {
-        setLocalGlobalData(globalMetadata);
+        setLocalGlobalData(globalMetadata || {});
         setStatus(null); // Clear status on external data load
     }, [globalMetadata]);
 
@@ -161,24 +185,27 @@ const GlobalDataEditor = ({ globalMetadata, updateGlobalMetadata, db, navigate }
         }
     };
     
+    // CRITICAL FIX 3: Add safe guarding for accessing nested catalog data
     const countItems = (obj) => Object.values(obj || {}).flat().length;
 
     const navItems = useMemo(() => [
         { key: 'summary', label: 'Summary', icon: BarChart3, accent: 'NAVY' },
-        { key: 'reading', label: 'Reading Hub', icon: BookOpen, accent: 'TEAL', count: countItems(localGlobalData.READING_CATALOG_SERVICE) },
+        { key: 'reading', label: 'Content Editor (Reading Hub)', icon: BookOpen, accent: 'TEAL', count: countItems(localGlobalData.READING_CATALOG_SERVICE) },
         { key: 'tiers', label: 'Tiers & Goals', icon: Target, accent: 'ORANGE', count: Object.keys(localGlobalData.LEADERSHIP_TIERS || {}).length },
         { key: 'scenarios', label: 'Coaching Scenarios', icon: Users, accent: 'BLUE', count: countItems(localGlobalData.SCENARIO_CATALOG) },
-        { key: 'raw', label: 'Raw JSON Editor', icon: Code, accent: 'RED' },
+        { key: 'raw', label: 'Advanced: Raw Config', icon: Code, accent: 'RED' },
     ], [localGlobalData]);
 
     const renderTabContent = () => {
         switch (currentTab) {
             case 'reading':
                 return <ReadingHubEditor 
-                    catalog={localGlobalData.READING_CATALOG_SERVICE}
+                    // CRITICAL FIX 4: Provide safe fallback to the editor
+                    catalog={localGlobalData.READING_CATALOG_SERVICE || {}}
                     isSaving={isSaving}
                     setGlobalData={setLocalGlobalData}
                     navigate={navigate}
+                    currentEditorKey={'READING_CATALOG_SERVICE'} // Pass specific key
                 />;
             case 'raw':
                 return (
@@ -187,6 +214,7 @@ const GlobalDataEditor = ({ globalMetadata, updateGlobalMetadata, db, navigate }
                         isSaving={isSaving}
                         setGlobalData={setLocalGlobalData}
                         navigate={navigate}
+                        currentEditorKey={'RAW_CONFIG'} // Pass specific key
                     />
                 );
             case 'tiers':
