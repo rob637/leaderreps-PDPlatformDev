@@ -173,9 +173,10 @@ const traceCallsite = (label = 'updateGlobalMetadata') => {
 
 
 /* =========================================================
-   User-data hooks (RE-ADDED to fix App.jsx import error)
+   User-data hooks
 ========================================================= */
 const SUBCOLLECTION_NAME = 'profile'; 
+const MAX_LOAD_TIMEOUT = 1500; // 1.5 seconds max wait for the initial snapshot
 
 const useFirestoreUserData = (db, userId, isAuthReady, collection, document, mockData) => {
   // FIX: Path must be 4 segments: Collection / User ID / Subcollection / Document Name
@@ -191,21 +192,40 @@ const useFirestoreUserData = (db, userId, isAuthReady, collection, document, moc
       return;
     }
     setLoading(true);
+    let isMounted = true;
+    let timeoutId;
+    
+    const resolveLoad = (shouldStopTimeout = true) => {
+        if (isMounted) {
+            setLoading(false);
+        }
+        if (shouldStopTimeout && timeoutId) {
+            clearTimeout(timeoutId);
+        }
+    };
+    
+    // Set a timeout to resolve loading if the snapshot doesn't arrive quickly
+    timeoutId = setTimeout(() => {
+        console.warn(`[USER DATA TIMEOUT] Hook for ${document} timed out (${MAX_LOAD_TIMEOUT}ms). Resolving with available data.`);
+        resolveLoad(false); 
+    }, MAX_LOAD_TIMEOUT);
 
     let unsubscribe = onSnapshotEx(db, path, (snap) => {
-      setLoading(false);
-      if (snap.exists()) {
-        setData(snap.data());
-        setError(null);
-      } else {
-        // Document doesn't exist, use mock/fallback state
-        setData(mockData);
-        setError(null);
-      }
+        resolveLoad(); // Resolve loading immediately upon first snapshot (success or failure)
+        if (snap.exists()) {
+            setData(snap.data());
+            setError(null);
+        } else {
+            // Document doesn't exist, use mock/fallback state
+            setData(mockData);
+            setError(null);
+        }
     });
 
     return () => {
-      if (unsubscribe) unsubscribe();
+        isMounted = false;
+        if (unsubscribe) unsubscribe();
+        if (timeoutId) clearTimeout(timeoutId);
     };
   }, [db, userId, isAuthReady, path, mockData]);
 
