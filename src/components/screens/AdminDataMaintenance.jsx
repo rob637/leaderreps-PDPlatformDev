@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useAppServices } from '../../services/useAppServices.jsx';
-import { ArrowLeft, Cpu, Lock, CheckCircle, AlertTriangle, CornerRightUp, Settings, BarChart3, TrendingUp, Download, Code } from 'lucide-react';
+import { ArrowLeft, Cpu, Lock, CheckCircle, AlertTriangle, CornerRightUp, Settings, BarChart3, TrendingUp, Download, Code, List, BookOpen, Target, Users } from 'lucide-react';
 
 /* =========================================================
    HIGH-CONTRAST PALETTE (Centralized for Consistency)
@@ -20,10 +20,11 @@ const COLORS = {
 
 const PASSWORD = "7036238835"; // Required password
 
-const Card = ({ children, title, icon: Icon, className = '', accent = 'NAVY' }) => {
+const Card = ({ children, title, icon: Icon, className = '', accent = 'NAVY', isSmall = false }) => {
     const accentColor = COLORS[accent] || COLORS.NAVY;
+    const Tag = isSmall ? 'div' : 'div';
     return (
-        <div
+        <Tag
             className={`relative p-6 rounded-2xl border-2 shadow-2xl transition-all duration-300 text-left ${className}`}
             style={{ background: 'linear-gradient(180deg,#FFFFFF, #FCFCFA)', borderColor: COLORS.SUBTLE, color: COLORS.TEXT }}
         >
@@ -35,7 +36,7 @@ const Card = ({ children, title, icon: Icon, className = '', accent = 'NAVY' }) 
             )}
             {title && <h2 className="text-xl font-extrabold mb-2" style={{ color: COLORS.NAVY }}>{title}</h2>}
             {children}
-        </div>
+        </Tag>
     );
 };
 
@@ -48,57 +49,25 @@ const Button = ({ children, onClick, disabled = false, variant = 'primary', clas
     return (<button {...rest} onClick={onClick} disabled={disabled} className={`${baseStyle} ${className}`}>{children}</button>);
 };
 
-// --- DATA EDITOR COMPONENT ---
-const GlobalDataEditor = ({ globalMetadata, updateGlobalMetadata, db, navigate }) => {
+// --- DATA EDITOR COMPONENT: Reading Hub Tab ---
+const ReadingHubEditor = ({ catalog, isSaving, setGlobalData, navigate }) => {
     
-    // Convert object to pretty JSON string for display/editing
+    // Convert current catalog to pretty JSON string for display/editing
     const initialJson = useMemo(() => {
         try {
-            return JSON.stringify(globalMetadata, null, 2);
+            return JSON.stringify(catalog, null, 2);
         } catch {
             return JSON.stringify({});
         }
-    }, [globalMetadata]);
-    
-    const [jsonText, setJsonText] = useState(initialJson);
-    const [isSaving, setIsSaving] = useState(false);
-    const [status, setStatus] = useState(null); // null, 'success', 'error'
+    }, [catalog]);
 
-    // Update internal state if the original metadata changes (e.g., initial load completes)
+    const [jsonText, setJsonText] = useState(initialJson);
+    const [status, setStatus] = useState(null); // null, 'success', 'error'
+    
     useEffect(() => {
         setJsonText(initialJson);
     }, [initialJson]);
 
-    const handleSave = async () => {
-        setIsSaving(true);
-        setStatus(null);
-        let parsedData;
-
-        try {
-            // 1. Validate and parse JSON
-            parsedData = JSON.parse(jsonText);
-        } catch (e) {
-            setStatus({ type: 'error', message: `Invalid JSON format: ${e.message}` });
-            setIsSaving(false);
-            return;
-        }
-
-        try {
-            // 2. Write the new object back to Firestore
-            const success = await updateGlobalMetadata(db, parsedData);
-
-            if (success) {
-                setStatus({ type: 'success', message: 'Global Configuration saved successfully! Changes will appear shortly.' });
-            } else {
-                setStatus({ type: 'error', message: 'Database write failed. Check console logs.' });
-            }
-        } catch (e) {
-            setStatus({ type: 'error', message: `Critical error during save: ${e.message}` });
-        } finally {
-            setIsSaving(false);
-        }
-    };
-    
     const isJsonValid = useMemo(() => {
         try {
             JSON.parse(jsonText);
@@ -108,18 +77,164 @@ const GlobalDataEditor = ({ globalMetadata, updateGlobalMetadata, db, navigate }
         }
     }, [jsonText]);
 
+    const handleSave = () => {
+        if (!isJsonValid) {
+            setStatus({ type: 'error', message: 'Invalid JSON format. Cannot save.' });
+            return;
+        }
+        
+        try {
+            const parsedData = JSON.parse(jsonText);
+            // This calls the main setGlobalData function, which triggers the final Firestore update
+            setGlobalData(prev => ({ 
+                ...prev, 
+                reading_catalog_service: parsedData, // Update ONLY the reading catalog
+            }));
+            setStatus({ type: 'success', message: 'Reading Catalog staged for global save.' });
+        } catch (e) {
+            setStatus({ type: 'error', message: `Internal error staging data: ${e.message}` });
+        }
+    };
+
     return (
-        <Card title="Global Configuration Editor (metadata/config)" icon={Code} accent='NAVY' className='mt-8'>
-            <p className='text-sm text-gray-700 mb-4 border-l-4 pl-3' style={{ borderColor: COLORS.ORANGE }}>
-                **DANGER ZONE:** This controls the global data for the entire application (tiers, content catalogs, etc.). Edits must be valid JSON to avoid breaking the app.
+        <div className='mt-4'>
+            <p className='text-sm text-gray-700 mb-4'>
+                Edit the data structure for the **Professional Reading Hub** (`reading_catalog_service`). The data must be an object where keys are the reading categories (e.g., "Strategy & Execution") and values are arrays of book objects.
             </p>
             <textarea
                 value={jsonText}
-                onChange={(e) => setJsonText(e.target.value)}
-                className="w-full p-4 border border-gray-300 rounded-lg focus:ring-[#E04E1B] focus:border-[#E04E1B] h-[500px] font-mono text-sm resize-none"
+                onChange={(e) => {setJsonText(e.target.value); setStatus(null);}}
+                className="w-full p-4 border border-gray-300 rounded-lg focus:ring-[#E04E1B] focus:border-[#E04E1B] h-[400px] font-mono text-sm resize-y"
                 disabled={isSaving}
             />
+            {status && (
+                <div className={`mt-4 p-3 rounded-lg font-semibold flex items-center gap-2 ${
+                    status.type === 'success' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+                }`}>
+                    {status.type === 'success' ? <CheckCircle className='w-5 h-5'/> : <AlertTriangle className='w-5 h-5'/>}
+                    {status.message}
+                </div>
+            )}
+            <Button onClick={handleSave} disabled={isSaving || !isJsonValid} className={`mt-4 w-full bg-[${COLORS.TEAL}] hover:bg-[#349881]`}>
+                <Code className='w-5 h-5 mr-2'/> Stage Changes for Database Write
+            </Button>
+            {!isJsonValid && <p className='text-xs text-red-500 mt-2'>* Fix JSON syntax before staging changes.</p>}
+        </div>
+    );
+};
 
+
+// --- MAIN ROUTER ---
+const GlobalDataEditor = ({ globalMetadata, updateGlobalMetadata, db, navigate }) => {
+    
+    // CRITICAL: We maintain a local copy of ALL metadata to be written to the database
+    const [localGlobalData, setLocalGlobalData] = useState(globalMetadata);
+    const [currentTab, setCurrentTab] = useState('summary');
+    const [isSaving, setIsSaving] = useState(false);
+    const [status, setStatus] = useState(null); // Save status for the final write
+
+    // Sync local state when the global metadata object updates from the hook
+    useEffect(() => {
+        setLocalGlobalData(globalMetadata);
+        setStatus(null); // Clear status on external data load
+    }, [globalMetadata]);
+
+
+    // --- FINAL DATABASE WRITE HANDLER ---
+    const handleFinalSave = async () => {
+        setIsSaving(true);
+        setStatus(null);
+        
+        try {
+            // Write the merged local object back to the metadata/config document
+            const success = await updateGlobalMetadata(db, localGlobalData);
+
+            if (success) {
+                setStatus({ type: 'success', message: 'ALL global configurations successfully saved to Firestore.' });
+            } else {
+                setStatus({ type: 'error', message: 'Database write failed. Check console logs.' });
+            }
+        } catch (e) {
+            setStatus({ type: 'error', message: `Critical error during final save: ${e.message}` });
+        } finally {
+            setIsSaving(false);
+        }
+    };
+    
+    const countItems = (obj) => Object.values(obj || {}).flat().length;
+
+    const navItems = useMemo(() => [
+        { key: 'summary', label: 'Summary', icon: BarChart3, accent: 'NAVY' },
+        { key: 'reading', label: 'Reading Hub', icon: BookOpen, accent: 'TEAL', count: countItems(localGlobalData.READING_CATALOG_SERVICE) },
+        { key: 'tiers', label: 'Tiers & Goals', icon: Target, accent: 'ORANGE', count: Object.keys(localGlobalData.LEADERSHIP_TIERS || {}).length },
+        { key: 'scenarios', label: 'Coaching Scenarios', icon: Users, accent: 'BLUE', count: countItems(localGlobalData.SCENARIO_CATALOG) },
+        { key: 'raw', label: 'Raw JSON Editor', icon: Code, accent: 'RED' },
+    ], [localGlobalData]);
+
+    const renderTabContent = () => {
+        switch (currentTab) {
+            case 'reading':
+                return <ReadingHubEditor 
+                    catalog={localGlobalData.READING_CATALOG_SERVICE}
+                    isSaving={isSaving}
+                    setGlobalData={setLocalGlobalData}
+                    navigate={navigate}
+                />;
+            case 'raw':
+                return (
+                    <ReadingHubEditor // Re-use the editor component for raw JSON editing
+                        catalog={localGlobalData}
+                        isSaving={isSaving}
+                        setGlobalData={setLocalGlobalData}
+                        navigate={navigate}
+                    />
+                );
+            case 'tiers':
+                return <Card title="Tier/Goal Editor (Coming Soon)" isSmall={true}>
+                    <p className='text-sm text-gray-600'>This view will allow friendly table editing of the **LEADERSHIP\_TIERS** and **COMMITMENT\_BANK** arrays.</p>
+                </Card>;
+            case 'scenarios':
+                return <Card title="Scenario Editor (Coming Soon)" isSmall={true}>
+                    <p className='text-sm text-gray-600'>This view will allow easy table editing of the **SCENARIO\_CATALOG** array.</p>
+                </Card>;
+            case 'summary':
+            default:
+                return (
+                    <Card title="Database Summary Snapshot" accent='TEAL' isSmall={true}>
+                        <p className='text-sm text-gray-700 mb-4'>Review the current counts before committing changes. *Use the "Stage Changes" buttons in the tabs before saving globally.*</p>
+                        <div className='space-y-2'>
+                            {navItems.filter(i => i.count !== undefined).map(item => (
+                                <div key={item.key} className='flex justify-between items-center text-sm border-b pb-1'>
+                                    <span className='font-semibold'>{item.label}:</span>
+                                    <span className='font-extrabold text-[#E04E1B]'>{item.count} Items</span>
+                                </div>
+                            ))}
+                        </div>
+                    </Card>
+                );
+        }
+    };
+
+
+    return (
+        <>
+            <div className='flex space-x-2 border-b border-gray-300 overflow-x-auto'>
+                {navItems.map(item => (
+                    <button
+                        key={item.key}
+                        onClick={() => setCurrentTab(item.key)}
+                        className={`flex items-center px-4 py-2 text-sm font-semibold transition-colors whitespace-nowrap ${currentTab === item.key ? 'border-[#47A88D] border-b-4 text-[#002E47]' : 'border-transparent text-gray-500 hover:text-[#002E47]'}`}
+                    >
+                        <item.icon className='w-4 h-4 mr-1' />
+                        {item.label} {item.count !== undefined && `(${item.count})`}
+                    </button>
+                ))}
+            </div>
+
+            <div className='mt-6 p-6 rounded-xl border-2 shadow-lg bg-white'>
+                {renderTabContent()}
+            </div>
+            
             {status && (
                 <div className={`mt-4 p-3 rounded-lg font-semibold flex items-center gap-2 ${
                     status.type === 'success' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
@@ -129,22 +244,15 @@ const GlobalDataEditor = ({ globalMetadata, updateGlobalMetadata, db, navigate }
                 </div>
             )}
 
-            <Button onClick={handleSave} disabled={isSaving || !isJsonValid} className={`mt-4 w-full ${!isJsonValid ? 'bg-gray-500' : 'bg-[#E04E1B] hover:bg-red-700'}`}>
+            <Button onClick={handleFinalSave} disabled={isSaving} className={`mt-8 w-full bg-[#E04E1B] hover:bg-red-700`}>
                 {isSaving ? (
-                    <span className="flex items-center justify-center"><div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div> Saving Configuration...</span>
-                ) : <><TrendingUp className='w-5 h-5 mr-2'/> Save Global Config</>}
+                    <span className="flex items-center justify-center"><div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div> COMMITTING ALL STAGED CHANGES...</span>
+                ) : <><ShieldCheck className='w-5 h-5 mr-2'/> Finalize & Write All Staged Changes to Database</>}
             </Button>
-            
-            {!isJsonValid && <p className='text-xs text-red-500 mt-2'>* Cannot save: Please fix the JSON syntax errors in the editor above.</p>}
-
-            <Button onClick={() => navigate('app-settings')} variant='outline' className='mt-4 w-full'>
-                <ArrowLeft className='w-5 h-5 mr-2'/> Back to App Settings
-            </Button>
-        </Card>
+        </>
     );
 };
 
-// --- MAIN ROUTER ---
 export default function AdminDataMaintenanceScreen({ navigate }) {
     const { metadata, isLoading: isMetadataLoading, db, updateGlobalMetadata } = useAppServices();
     
@@ -209,7 +317,7 @@ export default function AdminDataMaintenanceScreen({ navigate }) {
                 <Cpu className='w-10 h-10' style={{color: COLORS.NAVY}}/>
                 <h1 className="text-4xl font-extrabold" style={{ color: COLORS.NAVY }}>Global Data Maintenance Hub</h1>
             </div>
-            <p className="text-lg text-gray-600 mb-8 max-w-3xl">Admin Tools: Directly manage all non-user application data (tiers, catalogs, mock activities) stored in the Firebase collection **`metadata`**.</p>
+            <p className="text-lg text-gray-600 mb-8 max-w-3xl">Admin Tools: Directly manage all non-user application data (tiers, catalogs) stored in the Firebase collection **`metadata`**.</p>
             
             <GlobalDataEditor 
                 globalMetadata={metadata} 
