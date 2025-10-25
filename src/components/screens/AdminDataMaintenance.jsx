@@ -1,4 +1,4 @@
-// src/components/screens/AdminDataMaintenance.jsx (Visual Fix)
+// src/components/screens/AdminDataMaintenance.jsx (Final Display Fix)
 
 import React, { useState, useMemo, useEffect, useRef } from 'react'; 
 import { useAppServices } from '../../services/useAppServices'; 
@@ -18,23 +18,28 @@ const JSONEditor = ({ data, setData, label, isSaving, setModified }) => {
     const [jsonText, setJsonText] = useState(initialJsonText);
     const [isError, setIsError] = useState(false);
     
+    // FINAL SYNC FIX: Use a simple flag to determine if the local text is different from the prop.
+    // This allows the initial, non-empty data to forcefully overwrite the starting `{}`.
+    const isExternallyDirty = useMemo(() => {
+        try {
+            // Compare the stringified version of the live prop vs the stringified version of the local text
+            return initialJsonText !== JSON.stringify(JSON.parse(jsonText || '{}'), null, 2);
+        } catch (e) {
+            return true; // If local text is invalid JSON, assume it's dirty/needs update from prop
+        }
+    }, [initialJsonText, jsonText]);
+    
     // Sync the local state (jsonText) with the external prop (safeData) only on external change
     useEffect(() => {
-        // If the component is saving, do nothing.
         if (isSaving) return;
         
-        // Use initialJsonText (which is memoized based on the prop) to update the local state.
-        // We compare the stringified version of the prop vs the stringified version of the editor's text 
-        // (after safely parsing the editor's text to prevent comparison failure if the user is typing invalid JSON)
-        const currentParsedText = JSON.stringify(JSON.parse(jsonText || '{}'));
-        const propJson = JSON.stringify(safeData);
-
-        if (propJson !== currentParsedText) {
+        // If the external prop data is different from the internal editor state, reset the editor's text
+        if (isExternallyDirty) {
             setJsonText(initialJsonText);
             setIsError(false);
-            // setModified(false); // Only reset modified if we know the change was from a successful save/external event
+            setModified(false);
         }
-    }, [initialJsonText, safeData, isSaving]); // Re-run when prop data or saving status changes
+    }, [initialJsonText, isExternallyDirty, isSaving]);
 
 
     const handleTextChange = (e) => {
@@ -112,10 +117,9 @@ const AdminDataMaintenance = ({ navigate }) => {
         }
 
         // Only populate the state once, or if the data changes from the database (e.g., successful save)
-        if (!isInitialPopulated.current) {
+        if (!isInitialPopulated.current || !isLoading) {
             
             // Safely split the metadata object
-            // This relies on the useAppServices fix to correctly nest the catalog data
             const { READING_CATALOG_SERVICE = {}, ...configMetadata } = metadata;
             
             // Set the initial states for the editors
