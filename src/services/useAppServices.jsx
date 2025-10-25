@@ -1,4 +1,4 @@
-// src/services/useAppServices.jsx (Final Absolute Fix for Data Fetch)
+// src/services/useAppServices.jsx (Absolute Final Fix for Blank Global Data)
 
 import React, {
   useMemo,
@@ -134,13 +134,11 @@ export const useAppServices = () => useContext(AppServiceContext);
 /* =========================================================
    Helpers (guards + tracing)
 ========================================================= */
-// RESOLVER SIMPLIFIED TO JUST RETURN META
 const resolveGlobalMetadata = (meta) => {
   if (!meta || typeof meta !== 'object') return {};
   return meta;
 };
 
-// LOOKS EMPTY SIMPLIFIED TO CHECK IF NO KNOWN OR ANY KEYS EXIST
 const looksEmptyGlobal = (obj) => {
   if (!obj || typeof obj !== 'object') return true;
   const known = [ 'LEADERSHIP_TIERS', 'COMMITMENT_BANK', 'SCENARIO_CATALOG', 'READING_CATALOG_SERVICE' ];
@@ -302,13 +300,15 @@ export const useGlobalMetadata = (db, isAuthReady) => {
         const catalogData = catalogSnap.exists() ? catalogSnap.data() : {};
         
         // CRITICAL FIX: Direct merge of all data with the catalog nested as expected
+        // We ensure that if either data object is null/undefined (which shouldn't happen after snap.data() || {}), 
+        // the merge still works.
         finalData = { 
-            ...configData, 
-            READING_CATALOG_SERVICE: catalogData 
+            ...(configData || {}), 
+            READING_CATALOG_SERVICE: (catalogData || {}) 
         };
         
         // Apply fallback tiers ONLY if the entire config document was empty
-        if (Object.keys(configData).length === 0) {
+        if (Object.keys(configData || {}).length === 0) {
             finalData.LEADERSHIP_TIERS = LEADERSHIP_TIERS_FALLBACK;
             console.warn('[REBUILD READ RESOLVE] Config data was empty. Applied LEADERSHIP_TIERS_FALLBACK.');
         }
