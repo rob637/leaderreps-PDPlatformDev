@@ -62,13 +62,11 @@ const onSnapshotEx = (db, path, cb) => {
       })
   );
 };
-const setDocEx = (db, path, data, merge = false) => {
-  // Belt & suspenders: never allow writes without a real Firestore db
-  if (!db) {
-    throw new Error('[SAFE-GUARD] No Firestore db — write aborted.');
-  }
-  return fsSetDoc(toDocRef(db, path), data, merge ? { merge: true } : undefined);
-};
+const setDocEx = (db, path, data, merge = false) =>
+  db
+    ? fsSetDoc(toDocRef(db, path), data, merge ? { merge: true } : undefined)
+    : mockSetDoc(path, data);
+
 const updateDocEx = (db, path, data) => setDocEx(db, path, data, true);
 
 /* =========================================================
@@ -234,10 +232,8 @@ const useFirestoreData = (db, userId, isAuthReady, suffix, mockData) => {
       return;
     }
     let unsub = () => {};
-    let gotFirstSnap = false;
     try {
       unsub = onSnapshotEx(db, docPath, (doc) => {
-        gotFirstSnap = true;
         const d = doc.exists() ? doc.data() : mockData;
         try {
           const jsonSize = JSON.stringify(d || {}).length;
@@ -257,7 +253,9 @@ const useFirestoreData = (db, userId, isAuthReady, suffix, mockData) => {
       setError(e);
       setIsLoading(false);
     }
-    const t = setTimeout(() => { if (!gotFirstSnap) { console.warn(`Subscribe timeout for ${docPath}`);
+    const t = setTimeout(() => {
+      if (isLoading) {
+        console.warn(`Subscribe timeout for ${docPath}`);
         setIsLoading(false);
       }
     }, 15000);
@@ -519,18 +517,13 @@ export const createAppServices = ({
       updateCommitmentData: commitment.updateCommitmentData,
       updatePlanningData: planning.updatePlanningData,
 
-      updateGlobalMetadata: (data, opts) => {
-        if (!db) {
-          console.error('[SAFE-GUARD] No Firestore db — refusing to write to mock from Admin.');
-          return false;
-        }
-        return updateGlobalMetadata(db, data, {
+      updateGlobalMetadata: (data, opts) =>
+        updateGlobalMetadata(db, data, {
           merge: true,
           source: (opts && opts.source) || 'Provider',
           userId: user?.uid || 'unknown',
           ...(opts || {}),
-        });
-      },
+        }),
 
       pdpData: pdp.pdpData,
       commitmentData: commitment.commitmentData,
@@ -539,6 +532,9 @@ export const createAppServices = ({
       isLoading,
       error,
       GEMINI_MODEL,
+
+      // >>> ADD: expose normalized global metadata to consumers <<<
+      metadata: global.metadata,
 
       // merge all global metadata into the service context (so Admin editor sees it)
       LEADERSHIP_TIERS: global.metadata.LEADERSHIP_TIERS || LEADERSHIP_TIERS_FALLBACK,
