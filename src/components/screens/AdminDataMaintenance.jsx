@@ -1321,10 +1321,22 @@ const GlobalDataEditor = ({ globalMetadata, updateGlobalMetadata, navigate }) =>
     const [isSaving, setIsSaving] = useState(false);
     const [status, setStatus] = useState(null);
 
+    // CRITICAL FIX: To force state synchronization on deep object changes,
+    // we use a computed value derived from the deep prop data as a dependency.
+    // This value will change if categories/keys inside the Reading Catalog change,
+    // which is the screen showing the problem.
+    const readingCatalogKeys = useMemo(() => {
+        // Safely access keys and join them into a string. If the keys change, this string changes.
+        return globalMetadata?.READING_CATALOG_SERVICE ? Object.keys(globalMetadata.READING_CATALOG_SERVICE).sort().join(',') : '';
+    }, [globalMetadata]);
+    
     useEffect(() => {
         setLocalGlobalData(globalMetadata || {});
         setStatus(null);
-    }, [globalMetadata]);
+    // Include the deep, computed dependency to force synchronization when data changes.
+    // The component will re-run the effect if either the shallow reference (globalMetadata) 
+    // or the deep key structure (readingCatalogKeys) changes.
+    }, [globalMetadata, readingCatalogKeys]); 
 
 
     // --- FINAL DATABASE WRITE HANDLER ---
@@ -1620,10 +1632,8 @@ export default function AdminDataMaintenanceScreen({ navigate }) {
             <p className="text-lg text-gray-600 mb-8 max-w-3xl">Admin Tools: Directly manage all non-user application data (tiers, catalogs) stored in the Firebase collection **`metadata`**.</p>
             
             <GlobalDataEditor 
-                // CRITICAL FIX: Using JSON.stringify of the entire metadata object as the key 
-                // ensures a complete component reset whenever the data changes deeply.
-                // This forces the GlobalDataEditor's useState(globalMetadata) to re-run and see the new data.
-                key={metadata ? JSON.stringify(metadata) : 'empty'}
+                // CRITICAL FIX: The key is REMOVED from the parent to avoid aggressive unneeded re-mounts.
+                // Synchronization is now handled internally in GlobalDataEditor.
                 globalMetadata={metadata} 
                 updateGlobalMetadata={updateGlobalMetadata} 
                 db={db}
