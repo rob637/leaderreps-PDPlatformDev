@@ -20,6 +20,7 @@ const COLORS = {
 
 // CRITICAL FIX: Password changed to 7777
 const PASSWORD = "7777"; 
+const ADMIN_SESSION_KEY = "admin_maintenance_logged_in"; // Session key for persistence
 
 const Card = ({ children, title, icon: Icon, className = '', accent = 'NAVY', isSmall = false }) => {
     const accentColor = COLORS[accent] || COLORS.NAVY;
@@ -223,6 +224,7 @@ const GenericRowEditor = ({ item: initialItem, onUpdate, onDelete, isSaving, fie
 
 // --- NEW: CSV Upload Component (Handles client-side parsing) ---
 const CSVUploadComponent = ({ onDataParsed, expectedFields, isSaving, buttonText = "Mass Upload (.csv)" }) => {
+    // ... (CSVUploadComponent remains the same)
     const fileInputRef = useRef(null);
     const [fileName, setFileName] = useState(null);
     const [status, setStatus] = useState(null); // 'success', 'error', 'pending'
@@ -1362,14 +1364,14 @@ const GlobalDataEditor = ({ globalMetadata, updateGlobalMetadata, navigate }) =>
         
         return [
             { group: 'Content: Learn & Prep', key: 'reading', label: 'Reading Hub (Books/Articles)', icon: BookOpen, accent: 'TEAL', count: totalReadingItems },
-            { group: 'Content: Learn & Prep', key: 'domains', label: `Applied Leadership Domains`, icon: Layers, accent: 'NAVY', count: domainsCount },
-            { group: 'Content: Learn & Prep', key: 'resources', label: `Resource Content Library`, icon: Briefcase, accent: 'ORANGE', count: resourcesCount },
+            { group: 'Content: Learn & Prep', key: 'domains', label: `Applied Leadership Domains`, icon: Link, accent: 'NAVY', count: domainsCount },
+            { group: 'Content: Learn & Prep', key: 'resources', label: 'Resource Content Library', icon: Briefcase, accent: 'ORANGE', count: resourcesCount },
+            
+            { group: 'Habits & Practice', key: 'bank', label: 'Commitment Bank (Master Reps)', icon: List, accent: 'BLUE', count: totalCommitmentItems },
+            { group: 'Habits & Practice', key: 'target-reps', label: 'Target Reps Catalog', icon: Dumbbell, accent: 'GREEN', count: totalRepItems }, 
             
             { group: 'Coaching: Practice & Feedback', key: 'scenarios', label: 'Coaching Scenarios', icon: Users, accent: 'BLUE', count: totalScenarioItems },
-            { group: 'Coaching: Practice & Feedback', key: 'target-reps', label: 'Target Reps Catalog', icon: Dumbbell, accent: 'GREEN', count: totalRepItems }, 
-            
             { group: 'System & Core', key: 'tiers', label: 'Tiers & Goals', icon: Target, accent: 'ORANGE', count: countTiers(localGlobalData.LEADERSHIP_TIERS) },
-            { group: 'System & Core', key: 'bank', label: 'Commitment Bank (Master Reps)', icon: List, accent: 'BLUE', count: totalCommitmentItems },
             { group: 'System & Core', key: 'summary', label: 'Summary Dashboard', icon: BarChart3, accent: 'NAVY', count: undefined },
             { group: 'System & Core', key: 'raw', label: 'Raw Config Editor', icon: Code, accent: 'RED', count: undefined },
         ];
@@ -1520,6 +1522,7 @@ export default function AdminDataMaintenanceScreen({ navigate }) {
         e.preventDefault();
         if (password === PASSWORD) {
             setIsLoggedIn(true);
+            sessionStorage.setItem(ADMIN_SESSION_KEY, 'true'); // Persist login state
             setLoginError(null);
         } else {
             setLoginError('Invalid Administrator Password.');
@@ -1527,6 +1530,13 @@ export default function AdminDataMaintenanceScreen({ navigate }) {
         }
     };
     
+    // CRITICAL FIX: Check sessionStorage on mount
+    useEffect(() => {
+        if (sessionStorage.getItem(ADMIN_SESSION_KEY) === 'true') {
+            setIsLoggedIn(true);
+        }
+    }, []);
+
     // --- PROTECTION SCREEN ---
     if (!isLoggedIn) {
         return (
