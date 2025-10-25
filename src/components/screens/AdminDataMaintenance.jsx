@@ -1,8 +1,13 @@
-// src/components/screens/AdminDataMaintenance.jsx
+// src/components/screens/AdminDataMaintenance.jsx (Updated for Mass Book Upload Fields)
 
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useAppServices } from '../../services/useAppServices.jsx';
-// ... (rest of imports)
+import {
+  ArrowLeft, Cpu, Lock, CheckCircle, AlertTriangle, CornerRightUp, Settings,
+  BarChart3, Code, List, BookOpen, Target, Users,
+  ShieldCheck, Plus, Trash2, Save, X, FileText, UploadCloud, Dumbbell, Link,
+  Briefcase
+} from 'lucide-react';
 
 // ---- Helper: Resolve/normalize global metadata shape ----
 function resolveGlobalMetadata(meta) {
@@ -47,7 +52,189 @@ const COLORS = {
 const PASSWORD = '7777';
 const ADMIN_SESSION_KEY = 'admin_maintenance_logged_in';
 
-// ... (Card, Button, generateId, useArrayDataCRUD, GenericRowEditor remain the same) ...
+const Card = ({ children, title, icon: Icon, className = '', accent = 'NAVY', isSmall = false }) => {
+  const accentColor = COLORS[accent] || COLORS.NAVY;
+  const Tag = isSmall ? 'div' : 'div';
+  return (
+    <Tag
+      className={`relative p-6 rounded-2xl border-2 shadow-2xl transition-all duration-300 text-left ${className}`}
+      style={{ background: 'linear-gradient(180deg,#FFFFFF, #FCFCFA)', borderColor: COLORS.SUBTLE, color: COLORS.TEXT }}
+    >
+      <span style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 6, background: accentColor, borderTopLeftRadius: 14, borderTopRightRadius: 14 }} />
+      {Icon && (
+        <div className="w-10 h-10 rounded-lg flex items-center justify-center border mb-3" style={{ borderColor: COLORS.SUBTLE, background: COLORS.LIGHT_GRAY }}>
+          <Icon className="w-5 h-5" style={{ color: COLORS.TEAL }} />
+        </div>
+      )}
+      {title && <h2 className="text-xl font-extrabold mb-2" style={{ color: COLORS.NAVY }}>{title}</h2>}
+      {children}
+    </Tag>
+  );
+};
+
+const Button = ({ children, onClick, disabled = false, variant = 'primary', className = '', isSmall = false, ...rest }) => {
+  let baseStyle = `px-${isSmall ? 3 : 6} py-${isSmall ? 1.5 : 3} rounded-xl font-semibold transition-all shadow-lg focus:outline-none focus:ring-4 text-white flex items-center justify-center`;
+  if (variant === 'primary') { baseStyle += ` bg-[${COLORS.TEAL}] hover:bg-[#349881] focus:ring-[${COLORS.TEAL}]/50`; }
+  else if (variant === 'secondary') { baseStyle += ` bg-[${COLORS.ORANGE}] hover:bg-red-700 focus:ring-[${COLORS.ORANGE}]/50`; }
+  else if (variant === 'outline') { baseStyle = `px-${isSmall ? 3 : 6} py-${isSmall ? 1.5 : 3} rounded-xl font-semibold transition-all shadow-md border-2 border-[${COLORS.TEAL}] text-[${COLORS.TEAL}] hover:bg-[#47A88D]/10 focus:ring-4 focus:ring-[${COLORS.TEAL}]/50 bg-[${COLORS.LIGHT_GRAY}] flex items-center justify-center`; }
+  if (disabled) { baseStyle = `px-${isSmall ? 3 : 6} py-${isSmall ? 1.5 : 3} rounded-xl font-semibold bg-gray-300 text-gray-500 cursor-not-allowed shadow-inner transition-none flex items-center justify-center`; }
+  return (<button {...rest} onClick={onClick} disabled={disabled} className={`${baseStyle} ${className}`}>{children}</button>);
+};
+
+// Utils
+const generateId = () => Date.now().toString(36) + Math.random().toString(36).substr(2, 5);
+
+// --- GENERIC ARRAY CRUD HOOK ---
+const useArrayDataCRUD = (dataKey, setGlobalData, idKey = 'id') => {
+  const handleUpdateItem = useCallback((updatedItem) => {
+    setGlobalData(prevGlobal => {
+      const newState = JSON.parse(JSON.stringify(prevGlobal));
+      const target = newState[dataKey];
+
+      if (Array.isArray(target)) {
+        const existingIndex = target.findIndex(item => item[idKey] === updatedItem[idKey]);
+        if (existingIndex !== -1) {
+          target[existingIndex] = { ...updatedItem, isNew: false };
+        } else {
+          target.push({ ...updatedItem, isNew: false });
+        }
+      } else if (typeof target === 'object' && target !== null) {
+        target[updatedItem[idKey]] = { ...updatedItem, isNew: false };
+      }
+      return newState;
+    });
+  }, [dataKey, setGlobalData, idKey]);
+
+  const handleDeleteItem = useCallback((itemId) => {
+    if (!window.confirm(`Are you sure you want to delete item ${itemId}? This is staged for a database write.`)) {
+      return;
+    }
+    setGlobalData(prevGlobal => {
+      const newState = JSON.parse(JSON.stringify(prevGlobal));
+      const target = newState[dataKey];
+
+      if (Array.isArray(target)) {
+        newState[dataKey] = target.filter(item => item[idKey] !== itemId);
+      } else if (typeof target === 'object' && target !== null) {
+        delete newState[dataKey][itemId];
+      }
+      return newState;
+    });
+  }, [dataKey, setGlobalData, idKey]);
+
+  return { handleUpdateItem, handleDeleteItem };
+};
+
+// --- GENERIC ROW EDITOR COMPONENT ---
+const GenericRowEditor = ({ item: initialItem = {}, onUpdate, onDelete, isSaving, fields, idKey = 'id', extraDisplay = {} }) => {
+  const [item, setItem] = useState(initialItem);
+  const [isEditing, setIsEditing] = useState(Boolean(initialItem?.isNew));
+  const [isStaged, setIsStaged] = useState(Boolean(initialItem?.isNew));
+
+  useEffect(() => {
+    const next = initialItem ?? {};
+    setItem(next);
+    setIsEditing(Boolean(next.isNew));
+    setIsStaged(Boolean(next.isNew));
+  }, [initialItem]);
+
+  const handleChange = (field, value, type) => {
+    const parsedValue = type === 'number' ? parseInt(value) || 0 : value;
+    setItem(prev => ({ ...prev, [field]: parsedValue }));
+    setIsStaged(true);
+  };
+
+  const handleSave = () => {
+    if (item.isNew && (!item[idKey] || String(item[idKey]).trim() === '')) {
+      alert(`The ${idKey} field is required for new items.`);
+      return;
+    }
+    onUpdate(item);
+    setIsEditing(false);
+    setIsStaged(false);
+  };
+
+  const handleCancel = () => {
+    if (initialItem && initialItem.isNew) {
+      onDelete(item[idKey]);
+    } else {
+      setItem(initialItem ?? {});
+      setIsEditing(false);
+      setIsStaged(false);
+    }
+  };
+
+  const inputClass = 'w-full p-1.5 border rounded-lg focus:ring-1 focus:ring-[#E04E1B] text-sm bg-white';
+  const displayClass = 'w-full p-1.5 text-sm text-gray-700 truncate';
+  const gridColumns = `grid-cols-${fields.length + 2 + (extraDisplay.key ? 1 : 0)}`;
+
+  return (
+    <div className={`grid ${gridColumns} gap-4 items-center p-2 border-b transition-colors ${isStaged ? 'bg-yellow-50' : 'hover:bg-gray-50'}`}>
+      {/* ID */}
+      <div className="truncate">
+        {isEditing && initialItem?.isNew ? (
+          <input
+            type="text"
+            value={item[idKey] || ''}
+            onChange={(e) => handleChange(idKey, e.target.value, 'text')}
+            className={inputClass + ' font-mono text-xs'}
+            placeholder={`Unique ${idKey}`}
+            disabled={isSaving}
+          />
+        ) : (
+          <p className='w-full p-1.5 text-xs font-mono text-gray-500 truncate'>{String(initialItem?.[idKey] ?? '')}</p>
+        )}
+      </div>
+
+      {/* Optional extra display */}
+      {extraDisplay.key && (
+        <div className='truncate'>
+          <p className='w-full p-1.5 text-xs font-mono text-gray-700 truncate bg-gray-100 rounded-sm'>{String((item || {})[extraDisplay.key] ?? '')}</p>
+        </div>
+      )}
+
+      {/* Editable fields */}
+      {fields.map(field => (
+        <div key={field.key} className="truncate">
+          {isEditing ? (
+            <input
+              type={field.type || 'text'}
+              value={item[field.key] ?? (field.type === 'number' ? 0 : '')}
+              onChange={(e) => handleChange(field.key, e.target.value, field.type)}
+              className={inputClass}
+              disabled={isSaving}
+            />
+          ) : (
+            <p className={displayClass}>{item[field.key] ?? (field.type === 'number' ? 0 : '-')}</p>
+          )}
+        </div>
+      ))}
+
+      {/* Actions */}
+      <div className='flex space-x-2 justify-end'>
+        {isEditing ? (
+          <>
+            <Button onClick={handleSave} isSmall disabled={isSaving || !isStaged} className="bg-green-600 hover:bg-green-700">
+              <Save className='w-4 h-4' />
+            </Button>
+            <Button onClick={handleCancel} isSmall variant='secondary' disabled={isSaving} className="bg-gray-400 hover:bg-gray-500">
+              <X className='w-4 h-4' />
+            </Button>
+          </>
+        ) : (
+          <>
+            <Button onClick={() => setIsEditing(true)} isSmall disabled={isSaving} variant='outline'>
+              <Settings className='w-4 h-4' />
+            </Button>
+            <Button onClick={() => onDelete(item[idKey])} isSmall variant='secondary' disabled={isSaving || !item[idKey]}>
+              <Trash2 className='w-4 h-4' />
+            </Button>
+          </>
+        )}
+      </div>
+    </div>
+  );
+};
 
 // --- CSV Upload ---
 const CSVUploadComponent = ({ onDataParsed, expectedFields, isSaving, buttonText = 'Mass Upload (.csv)' }) => {
@@ -451,32 +638,540 @@ const ReadingHubTableEditor = ({ catalog, isSaving, setGlobalData }) => {
 /* =====================
    TIERS & GOALS EDITOR
 ===================== */
-// ... (TiersGoalsTableEditor remains the same) ...
+const TiersGoalsTableEditor = ({ data, isSaving, setGlobalData, idKey = 'id' }) => {
+  const tiersArray = useMemo(() => Object.values(data.LEADERSHIP_TIERS || {}).map(t => ({ ...t, [idKey]: t[idKey] || t.id })), [data.LEADERSHIP_TIERS, idKey]);
+  const { handleDeleteItem } = useArrayDataCRUD('LEADERSHIP_TIERS', setGlobalData, idKey);
+
+  const handleSaveTier = useCallback((updatedTier) => {
+    setGlobalData(prevGlobal => {
+      const newTiers = JSON.parse(JSON.stringify(prevGlobal.LEADERSHIP_TIERS || {}));
+      const existingId = updatedTier[idKey];
+      if (newTiers[existingId] && existingId !== updatedTier.id) {
+        delete newTiers[existingId];
+      }
+      newTiers[updatedTier.id] = { ...updatedTier, isNew: false };
+      return { ...prevGlobal, LEADERSHIP_TIERS: newTiers };
+    });
+  }, [setGlobalData, idKey]);
+
+  const handleAddNewTier = () => {
+    const nextIndex = tiersArray.length + 1;
+    const newTier = { [idKey]: `T${nextIndex}`, id: `T${nextIndex}`, name: `New Tier ${nextIndex}`, icon: 'Briefcase', hex: '#CCCCCC', isNew: true };
+    handleSaveTier(newTier);
+  };
+
+  const handleTierDataParsed = useCallback((parsedData) => {
+    setGlobalData(prevGlobal => {
+      const newTiers = JSON.parse(JSON.stringify(prevGlobal.LEADERSHIP_TIERS || {}));
+      parsedData.forEach(tier => { newTiers[tier.id] = tier; });
+      alert(`${parsedData.length} tiers staged for update/creation.`);
+      return { ...prevGlobal, LEADERSHIP_TIERS: newTiers };
+    });
+  }, [setGlobalData]);
+
+  const fields = [
+    { key: 'name', label: 'Tier Name', type: 'text' },
+    { key: 'icon', label: 'Icon (Lucide Key)', type: 'text' },
+    { key: 'hex', label: 'Color (Hex)', type: 'text' },
+  ];
+  const gridColumns = `grid-cols-${fields.length + 2}`;
+
+  return (
+    <div className='mt-4'>
+      <p className='text-sm font-bold text-[#002E47] mb-2'>Tier & Goal Maintenance ({tiersArray.length} Tiers)</p>
+      <p className='text-sm text-gray-700 mb-4'>Edit core tier metadata. <strong>The ID field must be unique (e.g., T1, T2).</strong> Changes are staged locally.</p>
+
+      <div className={`grid ${gridColumns} gap-4 items-center p-2 font-bold border-b-2 text-sm text-[#002E47]`}>
+        <span className="truncate">Tier ID (Key)</span>
+        {fields.map(f => <span key={f.key} className="truncate">{f.label}</span>)}
+        <span className="text-right">Actions</span>
+      </div>
+
+      <div className="max-h-[500px] overflow-y-auto border rounded-lg shadow-inner">
+        {tiersArray.map((tier) => (
+          <GenericRowEditor
+            key={tier[idKey]}
+            item={tier}
+            onUpdate={handleSaveTier}
+            onDelete={handleDeleteItem}
+            isSaving={isSaving}
+            fields={fields}
+            idKey={idKey}
+          />
+        ))}
+      </div>
+
+      <div className='mt-4 flex space-x-3'>
+        <Button onClick={handleAddNewTier} disabled={isSaving} className={`bg-[${COLORS.ORANGE}] hover:bg-red-700`}>
+          <Plus className='w-5 h-5 mr-2'/> Add New Tier
+        </Button>
+        <CSVUploadComponent
+          onDataParsed={handleTierDataParsed}
+          expectedFields={[{ key: 'id', type: 'text' }, { key: 'name', type: 'text' }, { key: 'icon', type: 'text' }, { key: 'hex', type: 'text' }]}
+          isSaving={isSaving}
+        />
+      </div>
+    </div>
+  );
+};
 
 /* =====================
    SCENARIOS EDITOR
 ===================== */
-// ... (ScenariosTableEditor remains the same) ...
+const ScenariosTableEditor = ({ data, isSaving, setGlobalData, idKey = 'id' }) => {
+  const scenariosArray = data.SCENARIO_CATALOG || [];
+  const { handleUpdateItem, handleDeleteItem } = useArrayDataCRUD('SCENARIO_CATALOG', setGlobalData, idKey);
+
+  const handleAddNewScenario = () => {
+    const newScenario = { [idKey]: generateId(), title: 'New Scenario Title', short_desc: 'Brief description...', persona: 'The Deflector', difficultyLevel: 50, choices: [], isNew: true };
+    handleUpdateItem(newScenario);
+  };
+
+  const handleScenarioDataParsed = useCallback((parsedData) => {
+    setGlobalData(prevGlobal => {
+      const existingIds = new Set(prevGlobal.SCENARIO_CATALOG?.map(s => s.id) || []);
+      const newScenarios = parsedData.filter(s => !existingIds.has(s.id));
+      alert(`Mass upload: ${newScenarios.length} new scenarios staged.`);
+      return { ...prevGlobal, SCENARIO_CATALOG: [...(prevGlobal.SCENARIO_CATALOG || []), ...newScenarios] };
+    });
+  }, [setGlobalData]);
+
+  const fields = [
+    { key: 'title', label: 'Title', type: 'text' },
+    { key: 'short_desc', label: 'Short Description', type: 'text' },
+    { key: 'persona', label: 'Persona', type: 'text' },
+    { key: 'difficultyLevel', label: 'Difficulty (0-100)', type: 'number' },
+  ];
+  const gridColumns = `grid-cols-${fields.length + 2}`;
+
+  return (
+    <div className='mt-4'>
+      <p className='text-sm font-bold text-[#002E47] mb-2'>Coaching Scenario Maintenance ({scenariosArray.length} Scenarios)</p>
+      <p className='text-sm text-gray-700 mb-4'>Edit the pre-seeded coaching scenarios. <strong>Title and Description must be set.</strong> Changes are staged locally.</p>
+
+      <div className={`grid ${gridColumns} gap-4 items-center p-2 font-bold border-b-2 text-sm text-[#002E47]`}>
+        <span className="truncate">ID</span>
+        {fields.map(f => <span key={f.key} className="truncate">{f.label}</span>)}
+        <span className="text-right">Actions</span>
+      </div>
+
+      <div className="max-h-[500px] overflow-y-auto border rounded-lg shadow-inner">
+        {scenariosArray.map((scenario) => (
+          <GenericRowEditor
+            key={scenario[idKey]}
+            item={scenario}
+            onUpdate={handleUpdateItem}
+            onDelete={handleDeleteItem}
+            isSaving={isSaving}
+            fields={fields}
+            idKey={idKey}
+          />
+        ))}
+      </div>
+
+      <div className='mt-4 flex space-x-3'>
+        <Button onClick={handleAddNewScenario} disabled={isSaving} className={`bg-[${COLORS.ORANGE}] hover:bg-red-700`}>
+          <Plus className='w-5 h-5 mr-2'/> Add New Scenario
+        </Button>
+        <CSVUploadComponent
+          onDataParsed={handleScenarioDataParsed}
+          expectedFields={fields.concat({ key: 'id', type: 'text' })}
+          isSaving={isSaving}
+        />
+      </div>
+    </div>
+  );
+};
 
 /* =====================
    TARGET REP CATALOG
 ===================== */
-// ... (TargetRepTableEditor remains the same) ...
+const TargetRepTableEditor = ({ data, isSaving, setGlobalData, idKey = 'id' }) => {
+  const targetRepsArray = data.TARGET_REP_CATALOG || [];
+  const { handleUpdateItem, handleDeleteItem } = useArrayDataCRUD('TARGET_REP_CATALOG', setGlobalData, idKey);
+
+  const handleAddNewTargetRep = () => {
+    const newRep = { [idKey]: generateId(), text: 'New Target Rep - Click Edit to define behavior.', linkedTier: 'T3', linkedGoal: 'Strategic Focus', isNew: true };
+    handleUpdateItem(newRep);
+  };
+
+  const handleTargetRepDataParsed = useCallback((parsedData) => {
+    setGlobalData(prevGlobal => {
+      const existingIds = new Set(prevGlobal.TARGET_REP_CATALOG?.map(r => r.id) || []);
+      const newReps = parsedData.filter(r => !existingIds.has(r.id));
+      alert(`Mass upload: ${newReps.length} new Target Reps staged.`);
+      return { ...prevGlobal, TARGET_REP_CATALOG: [...(prevGlobal.TARGET_REP_CATALOG || []), ...newReps] };
+    });
+  }, [setGlobalData]);
+
+  const fields = [
+    { key: 'text', label: 'Rep Text', type: 'text' },
+    { key: 'linkedTier', label: 'Linked Tier', type: 'text' },
+    { key: 'linkedGoal', label: 'Goal', type: 'text' },
+  ];
+  const gridColumns = `grid-cols-${fields.length + 2}`;
+
+  return (
+    <div className='mt-4'>
+      <p className='text-sm font-bold text-[#002E47] mb-2'>Target Rep Catalog Maintenance ({targetRepsArray.length} Reps)</p>
+      <p className='text-sm text-gray-700 mb-4'>These reps are randomly selected to feature as "Today's Strategic Focus" on the Dashboard.</p>
+
+      <div className={`grid ${gridColumns} gap-4 items-center p-2 font-bold border-b-2 text-sm text-[#002E47]`}>
+        <span className="truncate">ID</span>
+        {fields.map(f => <span key={f.key} className="truncate">{f.label}</span>)}
+        <span className="text-right">Actions</span>
+      </div>
+
+      <div className="max-h-[500px] overflow-y-auto border rounded-lg shadow-inner">
+        {targetRepsArray.map((rep) => (
+          <GenericRowEditor
+            key={rep[idKey]}
+            item={rep}
+            onUpdate={handleUpdateItem}
+            onDelete={handleDeleteItem}
+            isSaving={isSaving}
+            fields={fields}
+            idKey={idKey}
+          />
+        ))}
+      </div>
+
+      <div className='mt-4 flex space-x-3'>
+        <Button onClick={handleAddNewTargetRep} disabled={isSaving} className={`bg-[${COLORS.ORANGE}] hover:bg-red-700`}>
+          <Plus className='w-5 h-5 mr-2'/> Add New Target Rep
+        </Button>
+        <CSVUploadComponent
+          onDataParsed={handleTargetRepDataParsed}
+          expectedFields={fields.concat({ key: 'id', type: 'text' })}
+          isSaving={isSaving}
+          buttonText="Mass Upload Target Reps (.csv)"
+        />
+      </div>
+    </div>
+  );
+};
 
 /* =====================
    COMMITMENT BANK
 ===================== */
-// ... (CommitmentBankTableEditor remains the same) ...
+const flattenCommitmentBank = (bank) => {
+  let flatList = [];
+  for (const category in bank) {
+    flatList = flatList.concat(bank[category].map(item => ({ ...item, category: category, id: item.id || generateId() })));
+  }
+  return flatList;
+};
+
+const handleUpdateCommitmentBank = (setGlobalData) => useCallback((updatedItem) => {
+  setGlobalData(prevGlobal => {
+    const newBank = JSON.parse(JSON.stringify(prevGlobal.COMMITMENT_BANK || {}));
+    const newCategory = updatedItem.category;
+    newBank[newCategory] = newBank[newCategory] || [];
+
+    Object.keys(newBank).forEach(cat => {
+      if (cat !== newCategory) {
+        newBank[cat] = newBank[cat].filter(item => item.id !== updatedItem.id);
+      }
+    });
+
+    const targetArray = newBank[newCategory];
+    const existingIndex = targetArray.findIndex(item => item.id === updatedItem.id);
+    if (existingIndex !== -1) {
+      targetArray[existingIndex] = { ...updatedItem, isNew: false };
+    } else {
+      targetArray.push({ ...updatedItem, isNew: false });
+    }
+
+    Object.keys(newBank).forEach(cat => { if (newBank[cat].length === 0) delete newBank[cat]; });
+
+    return { ...prevGlobal, COMMITMENT_BANK: newBank };
+  });
+}, [setGlobalData]);
+
+const handleDeleteCommitmentBankItem = (setGlobalData) => useCallback((itemId) => {
+  if (!window.confirm(`Are you sure you want to delete item ${itemId}? This is staged for a database write.`)) {
+    return;
+  }
+  setGlobalData(prevGlobal => {
+    const newBank = JSON.parse(JSON.stringify(prevGlobal.COMMITMENT_BANK || {}));
+    Object.keys(newBank).forEach(cat => {
+      newBank[cat] = newBank[cat].filter(item => item.id !== itemId);
+      if (newBank[cat].length === 0) delete newBank[cat];
+    });
+    return { ...prevGlobal, COMMITMENT_BANK: newBank };
+  });
+}, [setGlobalData]);
+
+const CommitmentBankTableEditor = ({ data, isSaving, setGlobalData, idKey = 'id' }) => {
+  const bank = data.COMMITMENT_BANK || {};
+  const flatBank = useMemo(() => flattenCommitmentBank(bank), [bank]);
+
+  const handleUpdate = useMemo(() => handleUpdateCommitmentBank(setGlobalData), [setGlobalData]);
+  const handleDelete = useMemo(() => handleDeleteCommitmentBankItem(setGlobalData), [setGlobalData]);
+
+  const handleAddNewRep = () => {
+    const newRep = { [idKey]: generateId(), text: 'New Commitment Text', linkedTier: 'T3', linkedGoal: 'Strategic Execution', category: 'T3: Strategic Alignment', isNew: true };
+    handleUpdate(newRep);
+  };
+
+  const fields = [
+    { key: 'text', label: 'Commitment Text', type: 'text' },
+    { key: 'linkedTier', label: 'Tier', type: 'text' },
+    { key: 'linkedGoal', label: 'Goal', type: 'text' },
+  ];
+
+  const handleDataParsed = useCallback((parsedData) => {
+    setGlobalData(prevGlobal => {
+      const newBank = JSON.parse(JSON.stringify(prevGlobal.COMMITMENT_BANK || {}));
+      parsedData.forEach(item => {
+        const category = item.category || `${item.linkedTier}: General`;
+        newBank[category] = newBank[category] || [];
+        Object.keys(newBank).forEach(cat => { newBank[cat] = newBank[cat].filter(i => i.id !== item.id); });
+        newBank[category].push(item);
+      });
+      alert(`${parsedData.length} commitments staged for update/creation across categories.`);
+      return { ...prevGlobal, COMMITMENT_BANK: newBank };
+    });
+  }, [setGlobalData]);
+
+  const gridColumns = `grid-cols-${fields.length + 3}`;
+
+  return (
+    <div className='mt-4'>
+      <p className='text-sm font-bold text-[#002E47] mb-2'>Commitment Bank Maintenance ({flatBank.length} Reps in {Object.keys(bank).length} Categories)</p>
+      <p className='text-sm text-gray-700 mb-4'>Edit the master list of suggested micro-habits. <strong>To change the category, edit the "category" field in the row.</strong></p>
+
+      <div className={`grid ${gridColumns} gap-4 items-center p-2 font-bold border-b-2 text-sm text-[#002E47]`}>
+        <span className="truncate">ID</span>
+        <span className="truncate">Category</span>
+        {fields.map(f => <span key={f.key} className="truncate">{f.label}</span>)}
+        <span className="text-right">Actions</span>
+      </div>
+
+      <div className="max-h-[500px] overflow-y-auto border rounded-lg shadow-inner">
+        {flatBank.map((item) => (
+          <GenericRowEditor
+            key={item[idKey]}
+            item={item}
+            onUpdate={handleUpdate}
+            onDelete={handleDelete}
+            isSaving={isSaving}
+            fields={fields.concat({ key: 'category', label: 'Category', type: 'text' })}
+            idKey={idKey}
+            extraDisplay={{ key: 'category', label: 'Category' }}
+          />
+        ))}
+      </div>
+
+      <div className='mt-4 flex space-x-3'>
+        <Button onClick={handleAddNewRep} disabled={isSaving} className={`bg-[${COLORS.ORANGE}] hover:bg-red-700`}>
+          <Plus className='w-5 h-5 mr-2'/> Add New Rep
+        </Button>
+        <CSVUploadComponent
+          onDataParsed={handleDataParsed}
+          expectedFields={fields.concat([{ key: 'id', type: 'text' }, { key: 'category', type: 'text' }])}
+          isSaving={isSaving}
+        />
+      </div>
+    </div>
+  );
+};
 
 /* =====================
    LEADERSHIP DOMAINS
 ===================== */
-// ... (LeadershipDomainsTableEditor remains the same) ...
+const LeadershipDomainsTableEditor = ({ data, isSaving, setGlobalData, idKey = 'id' }) => {
+  const domainsArray = data.LEADERSHIP_DOMAINS || [];
+  const { handleUpdateItem, handleDeleteItem } = useArrayDataCRUD('LEADERSHIP_DOMAINS', setGlobalData, idKey);
+
+  const handleAddNewDomain = () => {
+    const newDomain = { [idKey]: generateId(), title: 'New Domain Track', subtitle: 'Brief description...', coreTension: 'The core tension.', color: 'TEAL', focus: ['Focus 1', 'Focus 2'], isNew: true };
+    handleUpdateItem(newDomain);
+  };
+
+  const handleDomainDataParsed = useCallback((parsedData) => {
+    setGlobalData(prevGlobal => {
+      const existingIds = new Set(prevGlobal.LEADERSHIP_DOMAINS?.map(d => d.id) || []);
+      const newDomains = parsedData.filter(d => !existingIds.has(d.id));
+      alert(`Mass upload: ${newDomains.length} new domains staged.`);
+      return { ...prevGlobal, LEADERSHIP_DOMAINS: [...(prevGlobal.LEADERSHIP_DOMAINS || []), ...newDomains] };
+    });
+  }, [setGlobalData]);
+
+  const fields = [
+    { key: 'title', label: 'Title', type: 'text' },
+    { key: 'subtitle', label: 'Subtitle', type: 'text' },
+    { key: 'coreTension', label: 'Core Tension', type: 'text' },
+    { key: 'color', label: 'Color (Key)', type: 'text' },
+  ];
+
+  const gridColumns = `grid-cols-${fields.length + 2}`;
+
+  return (
+    <div className='mt-4'>
+      <p className='text-sm font-bold text-[#002E47] mb-2'>Leadership Domain Maintenance ({domainsArray.length} Domains)</p>
+      <p className='text-sm text-gray-700 mb-4'>Edit the specialized leadership tracks. Note: Complex fields like "focus" should be edited in the Raw Config Editor, unless you expand this editor.</p>
+
+      <div className={`grid ${gridColumns} gap-4 items-center p-2 font-bold border-b-2 text-sm text-[#002E47]`}>
+        <span className="truncate">ID</span>
+        {fields.map(f => <span key={f.key} className="truncate">{f.label}</span>)}
+        <span className="text-right">Actions</span>
+      </div>
+
+      <div className="max-h-[500px] overflow-y-auto border rounded-lg shadow-inner">
+        {domainsArray.map((domain) => (
+          <GenericRowEditor
+            key={domain[idKey]}
+            item={domain}
+            onUpdate={handleUpdateItem}
+            onDelete={handleDeleteItem}
+            isSaving={isSaving}
+            fields={fields}
+            idKey={idKey}
+          />
+        ))}
+      </div>
+
+      <div className='mt-4 flex space-x-3'>
+        <Button onClick={handleAddNewDomain} disabled={isSaving} className={`bg-[${COLORS.ORANGE}] hover:bg-red-700`}>
+          <Plus className='w-5 h-5 mr-2'/> Add New Domain
+        </Button>
+        <CSVUploadComponent
+          onDataParsed={handleDomainDataParsed}
+          expectedFields={fields.concat({ key: 'id', type: 'text' })}
+          isSaving={isSaving}
+        />
+      </div>
+    </div>
+  );
+};
 
 /* =====================
    RESOURCE LIBRARY
 ===================== */
-// ... (ResourceLibraryTableEditor remains the same) ...
+const flattenResourceLibrary = (library) => {
+  let flatList = [];
+  for (const domainId in library) {
+    flatList = flatList.concat(library[domainId].map(item => ({ ...item, domainId: domainId, id: item.id || generateId() })));
+  }
+  return flatList;
+};
+
+const handleUpdateResourceLibrary = (setGlobalData) => useCallback((updatedItem) => {
+  setGlobalData(prevGlobal => {
+    const newLibrary = JSON.parse(JSON.stringify(prevGlobal.RESOURCE_LIBRARY || {}));
+    const newDomainId = updatedItem.domainId;
+    newLibrary[newDomainId] = newLibrary[newDomainId] || [];
+
+    Object.keys(newLibrary).forEach(domain => {
+      if (domain !== newDomainId) {
+        newLibrary[domain] = newLibrary[domain].filter(item => item.id !== updatedItem.id);
+      }
+    });
+
+    const targetArray = newLibrary[newDomainId];
+    const existingIndex = targetArray.findIndex(item => item.id === updatedItem.id);
+    if (existingIndex !== -1) {
+      targetArray[existingIndex] = { ...updatedItem, isNew: false };
+    } else {
+      targetArray.push({ ...updatedItem, isNew: false });
+    }
+
+    Object.keys(newLibrary).forEach(domain => { if (newLibrary[domain].length === 0) delete newLibrary[domain]; });
+
+    return { ...prevGlobal, RESOURCE_LIBRARY: newLibrary };
+  });
+}, [setGlobalData]);
+
+const handleDeleteResourceLibraryItem = (setGlobalData) => useCallback((itemId) => {
+  if (!window.confirm(`Are you sure you want to delete item ${itemId}? This is staged for a database write.`)) {
+    return;
+  }
+  setGlobalData(prevGlobal => {
+    const newLibrary = JSON.parse(JSON.stringify(prevGlobal.RESOURCE_LIBRARY || {}));
+    Object.keys(newLibrary).forEach(domain => {
+      newLibrary[domain] = newLibrary[domain].filter(item => item.id !== itemId);
+      if (newLibrary[domain].length === 0) delete newLibrary[domain];
+    });
+    return { ...prevGlobal, RESOURCE_LIBRARY: newLibrary };
+  });
+}, [setGlobalData]);
+
+const ResourceLibraryTableEditor = ({ data, isSaving, setGlobalData, idKey = 'id' }) => {
+  const library = data.RESOURCE_LIBRARY || data.RESOURCE_CONTENT_LIBRARY || {};
+  const domains = data.LEADERSHIP_DOMAINS || [];
+  const flatLibrary = useMemo(() => flattenResourceLibrary(library), [library]);
+
+  const handleUpdate = useMemo(() => handleUpdateResourceLibrary(setGlobalData), [setGlobalData]);
+  const handleDelete = useMemo(() => handleDeleteResourceLibraryItem(setGlobalData), [setGlobalData]);
+
+  const handleAddNewResource = () => {
+    const newResource = { [idKey]: generateId(), title: 'New Resource Title', type: 'Report', description: 'Short summary.', domainId: domains[0]?.id || 'uncategorized', content: '## Resource Content\n\n- Write the content here in **Markdown**.', isNew: true };
+    handleUpdate(newResource);
+  };
+
+  const fields = [
+    { key: 'title', label: 'Title', type: 'text' },
+    { key: 'type', label: 'Type', type: 'text' },
+    { key: 'description', label: 'Description', type: 'text' },
+  ];
+
+  const handleDataParsed = useCallback((parsedData) => {
+    setGlobalData(prevGlobal => {
+      const newLibrary = JSON.parse(JSON.stringify(prevGlobal.RESOURCE_LIBRARY || {}));
+      parsedData.forEach(item => {
+        const domainId = item.domainId || domains[0]?.id || 'uncategorized';
+        newLibrary[domainId] = newLibrary[domainId] || [];
+        Object.keys(newLibrary).forEach(dom => { newLibrary[dom] = newLibrary[dom].filter(i => i.id !== item.id); });
+        newLibrary[domainId].push(item);
+      });
+      alert(`${parsedData.length} resources staged for update/creation.`);
+      return { ...prevGlobal, RESOURCE_LIBRARY: newLibrary };
+    });
+  }, [setGlobalData, domains]);
+
+  const gridColumns = `grid-cols-${fields.length + 3}`;
+
+  return (
+    <div className='mt-4'>
+      <p className='text-sm font-bold text-[#002E47] mb-2'>Resource Library Maintenance ({flatLibrary.length} Resources in {Object.keys(library).length} Domains)</p>
+      <p className='text-sm text-gray-700 mb-4'><strong>Warning:</strong> The 'content' field uses Markdown.</p>
+
+      <div className={`grid ${gridColumns} gap-4 items-center p-2 font-bold border-b-2 text-sm text-[#002E47]`}>
+        <span className="truncate">ID</span>
+        <span className="truncate">Domain ID</span>
+        {fields.map(f => <span key={f.key} className="truncate">{f.label}</span>)}
+        <span className="text-right">Actions</span>
+      </div>
+
+      <div className="max-h-[500px] overflow-y-auto border rounded-lg shadow-inner">
+        {flatLibrary.map((item) => (
+          <GenericRowEditor
+            key={item[idKey]}
+            item={item}
+            onUpdate={handleUpdate}
+            onDelete={handleDelete}
+            isSaving={isSaving}
+            fields={fields.concat([{ key: 'domainId', label: 'Domain ID', type: 'text' }, { key: 'content', label: 'Content (Markdown)', type: 'text' }])}
+            idKey={idKey}
+            extraDisplay={{ key: 'domainId', label: 'Domain ID' }}
+          />
+        ))}
+      </div>
+
+      <div className='mt-4 flex space-x-3'>
+        <Button onClick={handleAddNewResource} disabled={isSaving} className={`bg-[${COLORS.ORANGE}] hover:bg-red-700`}>
+          <Plus className='w-5 h-5 mr-2'/> Add New Resource
+        </Button>
+        <CSVUploadComponent
+          onDataParsed={handleDataParsed}
+          expectedFields={fields.concat([{ key: 'id', type: 'text' }, { key: 'domainId', type: 'text' }, { key: 'content', type: 'text' }])}
+          isSaving={isSaving}
+        />
+      </div>
+    </div>
+  );
+};
 
 /* =====================
    RAW CONFIG EDITOR
