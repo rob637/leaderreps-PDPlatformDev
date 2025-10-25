@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useAppServices } from '../../services/useAppServices.jsx';
-import { ArrowLeft, Cpu, Lock, CheckCircle, AlertTriangle, CornerRightUp, Settings, BarChart3, TrendingUp, Download, Code, List, BookOpen, Target, Users, ShieldCheck, Plus, Trash2, Save, X, FileText, UploadCloud, Dumbbell } from 'lucide-react';
+import { ArrowLeft, Cpu, Lock, CheckCircle, AlertTriangle, CornerRightUp, Settings, BarChart3, TrendingUp, Download, Code, List, BookOpen, Target, Users, ShieldCheck, Plus, Trash2, Save, X, FileText, UploadCloud, Dumbbell, Link, Briefcase } from 'lucide-react';
 
 /* =========================================================
    HIGH-CONTRAST PALETTE (Centralized for Consistency)
@@ -106,7 +106,7 @@ const useArrayDataCRUD = (dataKey, setGlobalData, idKey = 'id') => {
 
 
 // --- GENERIC ROW EDITOR COMPONENT ---
-const GenericRowEditor = ({ item: initialItem, onUpdate, onDelete, isSaving, fields, idKey = 'id' }) => {
+const GenericRowEditor = ({ item: initialItem, onUpdate, onDelete, isSaving, fields, idKey = 'id', extraDisplay = {} }) => {
     const [item, setItem] = useState(initialItem);
     const [isEditing, setIsEditing] = useState(initialItem.isNew || false); 
     const [isStaged, setIsStaged] = useState(initialItem.isNew || false);
@@ -148,7 +148,7 @@ const GenericRowEditor = ({ item: initialItem, onUpdate, onDelete, isSaving, fie
     const displayClass = "w-full p-1.5 text-sm text-gray-700 truncate";
     
     // Calculate grid columns: number of fields + 1 for the ID + 1 for actions
-    const gridColumns = `grid-cols-${fields.length + 2}`;
+    const gridColumns = `grid-cols-${fields.length + 2 + (extraDisplay.key ? 1 : 0)}`;
 
     return (
         <div className={`grid ${gridColumns} gap-4 items-center p-2 border-b transition-colors ${isStaged ? 'bg-yellow-50' : 'hover:bg-gray-50'}`}>
@@ -167,6 +167,14 @@ const GenericRowEditor = ({ item: initialItem, onUpdate, onDelete, isSaving, fie
                     <p className='w-full p-1.5 text-xs font-mono text-gray-500 truncate'>{initialItem[idKey]}</p>
                 )}
             </div>
+
+            {/* Extra Display Column (e.g., Parent Key Name) */}
+            {extraDisplay.key && (
+                <div className='truncate'>
+                    <p className='w-full p-1.5 text-xs font-mono text-gray-700 truncate bg-gray-100 rounded-sm'>{initialItem[extraDisplay.key]}</p>
+                </div>
+            )}
+
 
             {/* Editable Fields */}
             {fields.map(field => (
@@ -738,7 +746,7 @@ const TargetRepTableEditor = ({ data, isSaving, setGlobalData, idKey = 'id' }) =
     const handleAddNewTargetRep = () => {
         const newRep = { 
             [idKey]: generateId(), 
-            text: 'Practice the skill: [Your new rep]', 
+            text: 'New Target Rep - Click Edit to define behavior.', 
             linkedTier: 'T3',
             linkedGoal: 'Strategic Focus',
             isNew: true 
@@ -801,6 +809,418 @@ const TargetRepTableEditor = ({ data, isSaving, setGlobalData, idKey = 'id' }) =
                     expectedFields={fields.concat({ key: 'id', type: 'text' })}
                     isSaving={isSaving}
                     buttonText="Mass Upload Target Reps (.csv)"
+                />
+            </div>
+        </div>
+    );
+};
+
+
+// --- NEW COMPONENT: CommitmentBankTableEditor (Nested Categories) ---
+
+// Flattens the nested Commitment Bank structure for table display, including the category key
+const flattenCommitmentBank = (bank) => {
+    let flatList = [];
+    for (const category in bank) {
+        flatList = flatList.concat(bank[category].map(item => ({ 
+            ...item, 
+            category: category, 
+            id: item.id || generateId() 
+        })));
+    }
+    return flatList;
+};
+
+// CRITICAL: This is a complex update handler for the object of arrays structure
+const handleUpdateCommitmentBank = (setGlobalData) => useCallback((updatedItem) => {
+    setGlobalData(prevGlobal => {
+        const newBank = JSON.parse(JSON.stringify(prevGlobal.COMMITMENT_BANK || {}));
+        const newCategory = updatedItem.category;
+        
+        // Ensure new category array exists
+        newBank[newCategory] = newBank[newCategory] || [];
+
+        // 1. Clean up the item from its *old* category (if category or text changed)
+        const allCategories = Object.keys(newBank);
+        allCategories.forEach(cat => {
+            if (cat !== newCategory) {
+                newBank[cat] = newBank[cat].filter(item => item.id !== updatedItem.id);
+            }
+        });
+
+        // 2. Insert or update the item in the target category
+        const targetArray = newBank[newCategory];
+        const existingIndex = targetArray.findIndex(item => item.id === updatedItem.id);
+
+        if (existingIndex !== -1) {
+            targetArray[existingIndex] = { ...updatedItem, isNew: false };
+        } else {
+            targetArray.push({ ...updatedItem, isNew: false });
+        }
+        
+        // Clean up empty categories (optional, but good practice)
+        allCategories.forEach(cat => {
+            if (newBank[cat].length === 0) delete newBank[cat];
+        });
+
+        return { ...prevGlobal, COMMITMENT_BANK: newBank };
+    });
+}, [setGlobalData]);
+
+
+const handleDeleteCommitmentBankItem = (setGlobalData) => useCallback((itemId) => {
+    if (!window.confirm(`Are you sure you want to delete item ${itemId}? This is staged for a database write.`)) {
+        return;
+    }
+
+    setGlobalData(prevGlobal => {
+        const newBank = JSON.parse(JSON.stringify(prevGlobal.COMMITMENT_BANK || {}));
+        const allCategories = Object.keys(newBank);
+
+        allCategories.forEach(cat => {
+            newBank[cat] = newBank[cat].filter(item => item.id !== itemId);
+            // Clean up empty categories
+            if (newBank[cat].length === 0) delete newBank[cat];
+        });
+        
+        return { ...prevGlobal, COMMITMENT_BANK: newBank };
+    });
+}, [setGlobalData]);
+
+
+const CommitmentBankTableEditor = ({ data, isSaving, setGlobalData, idKey = 'id' }) => {
+    const bank = data.COMMITMENT_BANK || {};
+    const tiers = data.LEADERSHIP_TIERS || {};
+    const flatBank = useMemo(() => flattenCommitmentBank(bank), [bank]);
+
+    const handleUpdate = useMemo(() => handleUpdateCommitmentBank(setGlobalData), [setGlobalData]);
+    const handleDelete = useMemo(() => handleDeleteCommitmentBankItem(setGlobalData), [setGlobalData]);
+
+    const handleAddNewRep = () => {
+        const newRep = { 
+            [idKey]: generateId(), 
+            text: 'New Commitment Text', 
+            linkedTier: 'T3',
+            linkedGoal: 'Strategic Execution',
+            category: 'T3: Strategic Alignment',
+            isNew: true 
+        };
+        handleUpdate(newRep);
+    };
+
+    const fields = [
+        { key: 'text', label: 'Commitment Text', type: 'text' },
+        { key: 'linkedTier', label: 'Tier', type: 'text' },
+        { key: 'linkedGoal', label: 'Goal', type: 'text' },
+    ];
+
+    const handleDataParsed = useCallback((parsedData) => {
+        setGlobalData(prevGlobal => {
+            const newBank = JSON.parse(JSON.stringify(prevGlobal.COMMITMENT_BANK || {}));
+            
+            parsedData.forEach(item => {
+                const category = item.category || `${item.linkedTier}: General`;
+                newBank[category] = newBank[category] || [];
+                
+                // Remove item from any existing category to prevent duplication
+                Object.keys(newBank).forEach(cat => {
+                    newBank[cat] = newBank[cat].filter(i => i.id !== item.id);
+                });
+                
+                // Add or update in the designated category
+                newBank[category].push(item);
+            });
+            
+            alert(`${parsedData.length} commitments staged for update/creation across categories.`);
+            return { ...prevGlobal, COMMITMENT_BANK: newBank };
+        });
+    }, [setGlobalData]);
+
+
+    const gridColumns = `grid-cols-${fields.length + 3}`; // +1 for Category
+
+    return (
+        <div className='mt-4'>
+            <p className='text-sm font-bold text-[#002E47] mb-2'>Commitment Bank Maintenance ({flatBank.length} Reps in {Object.keys(bank).length} Categories)</p>
+            <p className='text-sm text-gray-700 mb-4'>
+                Edit the master list of suggested micro-habits. **To change the category, you must edit the 'category' field in the editor.**
+            </p>
+
+            <div className={`grid ${gridColumns} gap-4 items-center p-2 font-bold border-b-2 text-sm text-[#002E47]`}>
+                <span className="truncate">ID</span>
+                <span className="truncate">Category</span>
+                {fields.map(f => <span key={f.key} className="truncate">{f.label}</span>)}
+                <span className="text-right">Actions</span>
+            </div>
+
+            <div className="max-h-[500px] overflow-y-auto border rounded-lg shadow-inner">
+                {flatBank.map((item) => (
+                    <GenericRowEditor 
+                        key={item[idKey]}
+                        item={item}
+                        onUpdate={handleUpdate}
+                        onDelete={handleDelete}
+                        isSaving={isSaving}
+                        fields={fields.concat({ key: 'category', label: 'Category', type: 'text' })} // Temporarily adds category to fields for editing
+                        idKey={idKey}
+                        extraDisplay={{ key: 'category', label: 'Category' }} // Uses category as extra display
+                    />
+                ))}
+            </div>
+            
+            <div className='mt-4 flex space-x-3'>
+                <Button onClick={handleAddNewRep} disabled={isSaving} className={`bg-[${COLORS.ORANGE}] hover:bg-red-700`}>
+                    <Plus className='w-5 h-5 mr-2'/> Add New Rep
+                </Button>
+                <CSVUploadComponent 
+                    onDataParsed={handleDataParsed}
+                    expectedFields={fields.concat([{ key: 'id', type: 'text' }, { key: 'category', type: 'text' }])}
+                    isSaving={isSaving}
+                />
+            </div>
+        </div>
+    );
+};
+
+
+// --- NEW COMPONENT: LeadershipDomainsTableEditor (Flat Array) ---
+const LeadershipDomainsTableEditor = ({ data, isSaving, setGlobalData, idKey = 'id' }) => {
+    const domainsArray = data.LEADERSHIP_DOMAINS || [];
+    
+    // We can use the generic array CRUD hook directly
+    const { handleUpdateItem, handleDeleteItem } = useArrayDataCRUD('LEADERSHIP_DOMAINS', setGlobalData, idKey);
+
+    const handleAddNewDomain = () => {
+        const newDomain = { 
+            [idKey]: generateId(), 
+            title: 'New Domain Track', 
+            subtitle: 'Brief description...', 
+            coreTension: 'The core tension.',
+            color: 'TEAL',
+            focus: ["Focus 1", "Focus 2"], // Ensure arrays for complex fields
+            isNew: true 
+        };
+        handleUpdateItem(newDomain);
+    };
+    
+    const handleDomainDataParsed = useCallback((parsedData) => {
+        // Simple append for domains
+        setGlobalData(prevGlobal => {
+            const existingIds = new Set(prevGlobal.LEADERSHIP_DOMAINS?.map(d => d.id) || []);
+            const newDomains = parsedData.filter(d => !existingIds.has(d.id));
+            alert(`Mass upload: ${newDomains.length} new domains staged.`);
+            return { ...prevGlobal, LEADERSHIP_DOMAINS: [...(prevGlobal.LEADERSHIP_DOMAINS || []), ...newDomains] };
+        });
+    }, [setGlobalData]);
+
+
+    const fields = [
+        { key: 'title', label: 'Title', type: 'text' },
+        { key: 'subtitle', label: 'Subtitle', type: 'text' },
+        { key: 'coreTension', label: 'Core Tension', type: 'text' },
+        { key: 'color', label: 'Color (Key)', type: 'text' },
+    ];
+    const gridColumns = `grid-cols-${fields.length + 2}`;
+
+
+    return (
+        <div className='mt-4'>
+            <p className='text-sm font-bold text-[#002E47] mb-2'>Leadership Domain Maintenance ({domainsArray.length} Domains)</p>
+            <p className='text-sm text-gray-700 mb-4'>
+                Edit the specialized leadership tracks. Note: Complex fields like 'focus' must be edited in the Raw Config Editor, or update the editor code.
+            </p>
+
+            <div className={`grid ${gridColumns} gap-4 items-center p-2 font-bold border-b-2 text-sm text-[#002E47]`}>
+                <span className="truncate">ID</span>
+                {fields.map(f => <span key={f.key} className="truncate">{f.label}</span>)}
+                <span className="text-right">Actions</span>
+            </div>
+
+            <div className="max-h-[500px] overflow-y-auto border rounded-lg shadow-inner">
+                {domainsArray.map((domain) => (
+                    <GenericRowEditor 
+                        key={domain[idKey]}
+                        item={domain}
+                        onUpdate={handleUpdateItem}
+                        onDelete={handleDeleteItem}
+                        isSaving={isSaving}
+                        fields={fields}
+                        idKey={idKey}
+                    />
+                ))}
+            </div>
+            
+            <div className='mt-4 flex space-x-3'>
+                <Button onClick={handleAddNewDomain} disabled={isSaving} className={`bg-[${COLORS.ORANGE}] hover:bg-red-700`}>
+                    <Plus className='w-5 h-5 mr-2'/> Add New Domain
+                </Button>
+                <CSVUploadComponent 
+                    onDataParsed={handleDomainDataParsed}
+                    expectedFields={fields.concat({ key: 'id', type: 'text' })}
+                    isSaving={isSaving}
+                />
+            </div>
+        </div>
+    );
+};
+
+
+// --- NEW COMPONENT: ResourceLibraryTableEditor (Nested by Domain ID) ---
+// Flattens the nested Resource Library structure for table display
+const flattenResourceLibrary = (library) => {
+    let flatList = [];
+    for (const domainId in library) {
+        flatList = flatList.concat(library[domainId].map(item => ({ 
+            ...item, 
+            domainId: domainId, 
+            id: item.id || generateId() 
+        })));
+    }
+    return flatList;
+};
+
+// CRITICAL: This update handler works exactly like the Commitment Bank handler
+const handleUpdateResourceLibrary = (setGlobalData) => useCallback((updatedItem) => {
+    setGlobalData(prevGlobal => {
+        const newLibrary = JSON.parse(JSON.stringify(prevGlobal.RESOURCE_LIBRARY || {}));
+        const newDomainId = updatedItem.domainId;
+        
+        newLibrary[newDomainId] = newLibrary[newDomainId] || [];
+
+        // 1. Clean up the item from its *old* domain (if domainId or text changed)
+        const allDomains = Object.keys(newLibrary);
+        allDomains.forEach(domain => {
+            if (domain !== newDomainId) {
+                newLibrary[domain] = newLibrary[domain].filter(item => item.id !== updatedItem.id);
+            }
+        });
+
+        // 2. Insert or update the item in the target domain
+        const targetArray = newLibrary[newDomainId];
+        const existingIndex = targetArray.findIndex(item => item.id === updatedItem.id);
+
+        if (existingIndex !== -1) {
+            targetArray[existingIndex] = { ...updatedItem, isNew: false };
+        } else {
+            targetArray.push({ ...updatedItem, isNew: false });
+        }
+        
+        // Clean up empty domain arrays (optional)
+        allDomains.forEach(domain => {
+            if (newLibrary[domain].length === 0) delete newLibrary[domain];
+        });
+
+        return { ...prevGlobal, RESOURCE_LIBRARY: newLibrary };
+    });
+}, [setGlobalData]);
+
+
+const handleDeleteResourceLibraryItem = (setGlobalData) => useCallback((itemId) => {
+    if (!window.confirm(`Are you sure you want to delete item ${itemId}? This is staged for a database write.`)) {
+        return;
+    }
+
+    setGlobalData(prevGlobal => {
+        const newLibrary = JSON.parse(JSON.stringify(prevGlobal.RESOURCE_LIBRARY || {}));
+        const allDomains = Object.keys(newLibrary);
+
+        allDomains.forEach(domain => {
+            newLibrary[domain] = newLibrary[domain].filter(item => item.id !== itemId);
+            if (newLibrary[domain].length === 0) delete newLibrary[domain];
+        });
+        
+        return { ...prevGlobal, RESOURCE_LIBRARY: newLibrary };
+    });
+}, [setGlobalData]);
+
+
+const ResourceLibraryTableEditor = ({ data, isSaving, setGlobalData, idKey = 'id' }) => {
+    const library = data.RESOURCE_LIBRARY || {};
+    const domains = data.LEADERSHIP_DOMAINS || [];
+    const flatLibrary = useMemo(() => flattenResourceLibrary(library), [library]);
+
+    const handleUpdate = useMemo(() => handleUpdateResourceLibrary(setGlobalData), [setGlobalData]);
+    const handleDelete = useMemo(() => handleDeleteResourceLibraryItem(setGlobalData), [setGlobalData]);
+
+    const handleAddNewResource = () => {
+        const newResource = { 
+            [idKey]: generateId(), 
+            title: 'New Resource Title', 
+            type: 'Report', 
+            description: 'Short summary.',
+            domainId: domains[0]?.id || 'women-exec', // Default to the first domain
+            content: '## Resource Content\n\n- Write the content here in **Markdown**.',
+            isNew: true 
+        };
+        handleUpdate(newResource);
+    };
+
+    const fields = [
+        { key: 'title', label: 'Title', type: 'text' },
+        { key: 'type', label: 'Type', type: 'text' },
+        { key: 'description', label: 'Description', type: 'text' },
+    ];
+
+    const handleDataParsed = useCallback((parsedData) => {
+        setGlobalData(prevGlobal => {
+            const newLibrary = JSON.parse(JSON.stringify(prevGlobal.RESOURCE_LIBRARY || {}));
+            
+            parsedData.forEach(item => {
+                const domainId = item.domainId || domains[0]?.id || 'uncategorized';
+                newLibrary[domainId] = newLibrary[domainId] || [];
+                
+                Object.keys(newLibrary).forEach(dom => {
+                    newLibrary[dom] = newLibrary[dom].filter(i => i.id !== item.id);
+                });
+                
+                newLibrary[domainId].push(item);
+            });
+            
+            alert(`${parsedData.length} resources staged for update/creation.`);
+            return { ...prevGlobal, RESOURCE_LIBRARY: newLibrary };
+        });
+    }, [setGlobalData, domains]);
+
+
+    const gridColumns = `grid-cols-${fields.length + 3}`; // +1 for Domain ID
+
+    return (
+        <div className='mt-4'>
+            <p className='text-sm font-bold text-[#002E47] mb-2'>Resource Library Maintenance ({flatLibrary.length} Resources in {Object.keys(library).length} Domains)</p>
+            <p className='text-sm text-gray-700 mb-4'>
+                **Warning:** The 'content' field must contain **Markdown** and must be edited directly in the row editor.
+            </p>
+
+            <div className={`grid ${gridColumns} gap-4 items-center p-2 font-bold border-b-2 text-sm text-[#002E47]`}>
+                <span className="truncate">ID</span>
+                <span className="truncate">Domain ID</span>
+                {fields.map(f => <span key={f.key} className="truncate">{f.label}</span>)}
+                <span className="text-right">Actions</span>
+            </div>
+
+            <div className="max-h-[500px] overflow-y-auto border rounded-lg shadow-inner">
+                {flatLibrary.map((item) => (
+                    <GenericRowEditor 
+                        key={item[idKey]}
+                        item={item}
+                        onUpdate={handleUpdate}
+                        onDelete={handleDelete}
+                        isSaving={isSaving}
+                        fields={fields.concat([{ key: 'domainId', label: 'Domain ID', type: 'text' }, { key: 'content', label: 'Content (Markdown)', type: 'text' }])} 
+                        idKey={idKey}
+                        extraDisplay={{ key: 'domainId', label: 'Domain ID' }}
+                    />
+                ))}
+            </div>
+            
+            <div className='mt-4 flex space-x-3'>
+                <Button onClick={handleAddNewResource} disabled={isSaving} className={`bg-[${COLORS.ORANGE}] hover:bg-red-700`}>
+                    <Plus className='w-5 h-5 mr-2'/> Add New Resource
+                </Button>
+                <CSVUploadComponent 
+                    onDataParsed={handleDataParsed}
+                    expectedFields={fields.concat([{ key: 'id', type: 'text' }, { key: 'domainId', type: 'text' }, { key: 'content', type: 'text' }])}
+                    isSaving={isSaving}
                 />
             </div>
         </div>
@@ -929,13 +1349,17 @@ const GlobalDataEditor = ({ globalMetadata, updateGlobalMetadata, navigate }) =>
     const countItems = (obj) => Object.values(obj || {}).flat().length;
     const countTiers = (obj) => Object.keys(obj || {}).length;
 
+    // CRITICAL: Added the remaining tabs to the navItems array
     const navItems = useMemo(() => [
         { key: 'reading', label: 'Content Editor (Reading Hub)', icon: BookOpen, accent: 'TEAL', count: countItems(localGlobalData.READING_CATALOG_SERVICE) },
+        { key: 'domains', label: 'Applied Leadership Domains', icon: Link, accent: 'NAVY', count: (localGlobalData.LEADERSHIP_DOMAINS || []).length },
+        { key: 'resources', label: 'Resource Content Library', icon: Briefcase, accent: 'ORANGE', count: countItems(localGlobalData.RESOURCE_LIBRARY) },
+        { key: 'bank', label: 'Commitment Bank (Master Reps)', icon: List, accent: 'BLUE', count: countItems(localGlobalData.COMMITMENT_BANK) },
         { key: 'tiers', label: 'Tiers & Goals', icon: Target, accent: 'ORANGE', count: countTiers(localGlobalData.LEADERSHIP_TIERS) },
         { key: 'scenarios', label: 'Coaching Scenarios', icon: Users, accent: 'BLUE', count: (localGlobalData.SCENARIO_CATALOG || []).length },
-        { key: 'target-reps', label: 'Target Reps Catalog', icon: Dumbbell, accent: 'GREEN', count: (localGlobalData.TARGET_REP_CATALOG || []).length }, // NEW TAB
-        { key: 'summary', label: 'Summary', icon: BarChart3, accent: 'NAVY' },
-        { key: 'raw', label: 'Advanced: Raw Config', icon: Code, accent: 'RED' },
+        { key: 'target-reps', label: 'Target Reps Catalog', icon: Dumbbell, accent: 'GREEN', count: (localGlobalData.TARGET_REP_CATALOG || []).length }, 
+        { key: 'summary', label: 'Summary', icon: BarChart3, accent: 'NAVY', count: undefined },
+        { key: 'raw', label: 'Advanced: Raw Config', icon: Code, accent: 'RED', count: undefined },
     ], [localGlobalData]);
 
     const renderTabContent = () => {
@@ -946,6 +1370,27 @@ const GlobalDataEditor = ({ globalMetadata, updateGlobalMetadata, navigate }) =>
                     isSaving={isSaving}
                     setGlobalData={setLocalGlobalData}
                     navigate={navigate}
+                />;
+            case 'domains':
+                return <LeadershipDomainsTableEditor
+                    data={localGlobalData}
+                    isSaving={isSaving}
+                    setGlobalData={setLocalGlobalData}
+                    idKey='id'
+                />;
+            case 'resources':
+                return <ResourceLibraryTableEditor
+                    data={localGlobalData}
+                    isSaving={isSaving}
+                    setGlobalData={setLocalGlobalData}
+                    idKey='id'
+                />;
+            case 'bank':
+                return <CommitmentBankTableEditor
+                    data={localGlobalData}
+                    isSaving={isSaving}
+                    setGlobalData={setLocalGlobalData}
+                    idKey='id'
                 />;
             case 'tiers':
                 return <TiersGoalsTableEditor
