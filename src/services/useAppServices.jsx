@@ -1,6 +1,8 @@
 // src/services/useAppServices.jsx
 
 import { useMemo, useCallback, useContext, createContext, useState, useEffect } from 'react';
+// Add real Firestore bindings (used when a real `db` instance is present)
+import { doc as fsDoc, setDoc as fsSetDoc, onSnapshot as fsOnSnapshot } from 'firebase/firestore';
 
 // ====================================================================
 // --- CRITICAL FIX: MOCK FIREBASE PERSISTENCE LAYER ---
@@ -60,6 +62,26 @@ const mockOnSnapshot = (docRef, callback) => {
 
 const mockDoc = (db, collection, doc) => `${collection}/${doc}`;
 
+// ====================================================================
+// --- REAL FIRESTORE WRAPPERS (choose real if db exists, else mock) ---
+// ====================================================================
+const toDocRef = (db, path) => fsDoc(db, ...path.split('/'));
+
+const onSnapshotEx = (db, path, cb) =>
+  db
+    ? fsOnSnapshot(toDocRef(db, path), snap => cb({
+        exists: () => snap.exists(),
+        data: () => snap.data(),
+        docRef: path
+      }))
+    : mockOnSnapshot(path, cb);
+
+const setDocEx = (db, path, data, merge = false) =>
+  db
+    ? fsSetDoc(toDocRef(db, path), data, merge ? { merge: true } : undefined)
+    : mockSetDoc(path, data);
+
+const updateDocEx = (db, path, data) => setDocEx(db, path, data, true);
 
 // --- MOCK CONSTANTS (Kept for fallback/initial definitions) ---
 const GEMINI_MODEL = 'gemini-1.5-flash-latest';
@@ -111,36 +133,35 @@ export const AppServiceContext = createContext(DEFAULT_SERVICES); // Initializin
 // Base hook structure for loading and subscribing to a single user document
 const useFirestoreData = (db, userId, isAuthReady, docName, mockData, keySuffix) => {
     const [data, setData] = useState(mockData);
-    // CRITICAL FIX: Start loading as true, but resolve quickly via onSnapshot
+    // Start loading as true, but resolve quickly via onSnapshot
     const [isLoading, setIsLoading] = useState(true); 
     const docPath = useMemo(() => mockDoc(db, 'users', userId) + `/${docName}`, [db, userId, docName]);
 
     useEffect(() => {
         // If not authenticated or no DB, exit quickly
-        if (!isAuthReady || !userId || !db) {
+        if (!isAuthReady || !userId) {
             setIsLoading(false);
             return;
         }
 
         const docRef = docPath;
 
-        const unsubscribe = mockOnSnapshot(docRef, (doc) => {
-            // This is the CRITICAL point: the first snapshot resolves the loading state.
+        const unsubscribe = onSnapshotEx(db, docRef, (doc) => {
+            // First snapshot resolves the loading state.
             if (doc.exists()) {
                 setData(doc.data());
             } else {
                 // Document doesn't exist yet (or deleted) - use safe mock.
                 setData(mockData); 
             }
-            // Set loading to false after the first read resolves (Fastest possible load time)
             setIsLoading(false); 
         });
 
-        // ADDED 15s TIMEOUT TOLERANCE
+        // 15s safety timeout
         const safetyTimer = setTimeout(() => {
              console.warn(`Firestore subscription timeout for ${docName}. Forcing load state to false.`);
              setIsLoading(false);
-        }, 15000); // Increased to 15 seconds for stability
+        }, 15000);
 
         return () => { 
             unsubscribe(); 
@@ -149,21 +170,19 @@ const useFirestoreData = (db, userId, isAuthReady, docName, mockData, keySuffix)
 
     }, [db, userId, isAuthReady, docPath, docName, mockData]);
     
-    // Function to handle atomic data updates via Firestore
+    // Function to handle atomic data updates (merge) via Firestore
     const updateData = useCallback(async (updater) => {
         const currentData = data;
         const newData = updater(currentData);
-        
-        // 5. Perform non-destructive write to Firestore
         const docRef = docPath;
         try {
-             await mockUpdateDoc(docRef, newData); 
+             await updateDocEx(db, docRef, newData); // merge semantics
              return true;
         } catch (e) {
              console.error(`Firestore update failed for ${docName}:`, e);
              return false;
         }
-    }, [data, docPath, docName]);
+    }, [data, docPath, docName, db]);
 
     return { data, isLoading, error: null, updateData, docPath };
 }
@@ -199,7 +218,7 @@ export const usePDPData = (db, userId, isAuthReady) => {
     const saveNewPlan = useCallback(async (plan) => {
         const docRef = mockDoc(db, 'users', userId) + '/pdp/roadmap';
         try {
-            await mockSetDoc(docRef, plan);
+            await setDocEx(db, docRef, plan); // overwrite
             return true;
         } catch (e) {
             console.error('New plan save failed:', e);
@@ -236,24 +255,23 @@ export const useGlobalMetadata = (db, isAuthReady) => {
         
         const docRef = mockDoc(db, 'metadata', 'config');
 
-        // CRITICAL PERFORMANCE FIX: Rely on the snapshot for the first load resolution.
-        const unsubscribe = mockOnSnapshot(docRef, (doc) => {
+        // Performance: rely on snapshot for first load resolution.
+        const unsubscribe = onSnapshotEx(db, docRef, (doc) => {
             if (doc.exists()) {
                 const data = doc.data();
-                setMetadata(data); // Using the raw data object for simplicity in this flow
+                setMetadata(data);
             } else {
                 console.error("CRITICAL: Global metadata document 'metadata/config' not found. Using fallbacks.");
                 setMetadata({}); 
             }
-            // Set loading to false immediately on first data receipt
             setLoading(false);
         });
         
-        // ADDED 15s TIMEOUT TOLERANCE
+        // 15s safety timeout
         const safetyTimer = setTimeout(() => {
              console.warn(`Global Metadata subscription timeout. Forcing load state to false.`);
              setLoading(false);
-        }, 15000); // Increased to 15 seconds for stability
+        }, 15000);
 
         return () => { 
             unsubscribe();
@@ -264,13 +282,11 @@ export const useGlobalMetadata = (db, isAuthReady) => {
     return { metadata, isLoading: loading };
 };
 
-// --- NEW GLOBAL METADATA UPDATE FUNCTION ---
+// --- GLOBAL METADATA UPDATE FUNCTION (persist to metadata/config) ---
 export const updateGlobalMetadata = async (db, data) => {
-    // This is the absolute path for the global config document
     const docRef = mockDoc(db, 'metadata', 'config'); 
     try {
-        // Use mockSetDoc to overwrite the config document completely
-        await mockSetDoc(docRef, data); 
+        await setDocEx(db, docRef, data); // overwrite
         console.log("Global Metadata Updated Successfully (metadata/config).");
         return true;
     } catch (e) {
