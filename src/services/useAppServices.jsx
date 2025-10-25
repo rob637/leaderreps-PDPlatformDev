@@ -142,7 +142,7 @@ export const useAppServices = () => useContext(AppServiceContext);
    Helpers (guards + tracing)
 ========================================================= */
 /* ---------- Global metadata resolver (normalizes shape/aliases) ---------- */
-export const resolveGlobalMetadata = (meta) => {
+const resolveGlobalMetadata = (meta) => {
   if (!meta || typeof meta !== 'object') return {};
   const known = [
     'LEADERSHIP_DOMAINS',
@@ -234,10 +234,6 @@ const useFirestoreData = (db, userId, isAuthReady, suffix, mockData) => {
     let unsub = () => {};
     try {
       unsub = onSnapshotEx(db, docPath, (doc) => {
-        if (typeof __timeoutId !== 'undefined' && __timeoutId) clearTimeout(__timeoutId);
-
-        if (typeof timeoutId !== 'undefined' && timeoutId) clearTimeout(timeoutId);
-
         const d = doc.exists() ? doc.data() : mockData;
         try {
           const jsonSize = JSON.stringify(d || {}).length;
@@ -257,7 +253,7 @@ const useFirestoreData = (db, userId, isAuthReady, suffix, mockData) => {
       setError(e);
       setIsLoading(false);
     }
-    let timeoutId = setTimeout(() => {
+    const t = setTimeout(() => {
       if (isLoading) {
         console.warn(`Subscribe timeout for ${docPath}`);
         setIsLoading(false);
@@ -265,7 +261,7 @@ const useFirestoreData = (db, userId, isAuthReady, suffix, mockData) => {
     }, 15000);
     return () => {
       unsub();
-      if (timeoutId) clearTimeout(timeoutId);
+      clearTimeout(t);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [db, userId, isAuthReady, docPath]);
@@ -352,10 +348,6 @@ export const useGlobalMetadata = (db, isAuthReady) => {
     let unsub = () => {};
     try {
       unsub = onSnapshotEx(db, path, (doc) => {
-        if (typeof __timeoutId !== 'undefined' && __timeoutId) clearTimeout(__timeoutId);
-
-        if (typeof timeoutId !== 'undefined' && timeoutId) clearTimeout(timeoutId);
-
         const d = doc.exists() ? doc.data() : {};
         try {
           const json = JSON.stringify(d || {});
@@ -383,7 +375,7 @@ export const useGlobalMetadata = (db, isAuthReady) => {
       setLoading(false);
     }
 
-    let timeoutId = setTimeout(() => {
+    const t = setTimeout(() => {
       if (loading) {
         console.warn('Global metadata subscribe timeout');
         setLoading(false);
@@ -391,7 +383,7 @@ export const useGlobalMetadata = (db, isAuthReady) => {
     }, 15000);
     return () => {
       unsub();
-      if (timeoutId) clearTimeout(timeoutId);
+      clearTimeout(t);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [db, isAuthReady]);
