@@ -1,4 +1,4 @@
-// src/components/screens/AdminDataMaintenance.jsx (Final Display Fix)
+// src/components/screens/AdminDataMaintenance.jsx (Final Simplification)
 
 import React, { useState, useMemo, useEffect, useRef } from 'react'; 
 import { useAppServices } from '../../services/useAppServices'; 
@@ -13,58 +13,46 @@ const JSONEditor = ({ data, setData, label, isSaving, setModified }) => {
     // Ensure data is always an object for JSON.stringify to work
     const safeData = data && typeof data === 'object' ? data : {}; 
     
-    // CRITICAL FIX: Ensure the string is rebuilt whenever safeData changes
-    const initialJsonText = useMemo(() => JSON.stringify(safeData, null, 2), [safeData]);
-    const [jsonText, setJsonText] = useState(initialJsonText);
+    // 1. Memoize the current, clean prop data as a string (THE SOURCE OF TRUTH)
+    const currentCleanText = useMemo(() => JSON.stringify(safeData, null, 2), [safeData]);
+
+    // 2. Local state to track USER TYPING ONLY (Initialized to the clean prop text)
+    const [jsonText, setJsonText] = useState(currentCleanText);
     const [isError, setIsError] = useState(false);
-    
-    // FINAL SYNC FIX: Use a simple flag to determine if the local text is different from the prop.
-    // This allows the initial, non-empty data to forcefully overwrite the starting `{}`.
-    const isExternallyDirty = useMemo(() => {
-        try {
-            // Compare the stringified version of the live prop vs the stringified version of the local text
-            return initialJsonText !== JSON.stringify(JSON.parse(jsonText || '{}'), null, 2);
-        } catch (e) {
-            return true; // If local text is invalid JSON, assume it's dirty/needs update from prop
-        }
-    }, [initialJsonText, jsonText]);
-    
-    // Sync the local state (jsonText) with the external prop (safeData) only on external change
+    const hasUserModified = useRef(false);
+
+    // 3. Effect: Synchronize the local text with the prop ONLY if the user hasn't started typing
     useEffect(() => {
-        if (isSaving) return;
-        
-        // If the external prop data is different from the internal editor state, reset the editor's text
-        if (isExternallyDirty) {
-            setJsonText(initialJsonText);
+        // If the component hasn't been modified by the user (not typing or reset flag is false) 
+        // AND the clean prop text is different from the current display text, update the display.
+        if (!hasUserModified.current && jsonText !== currentCleanText) {
+            setJsonText(currentCleanText);
             setIsError(false);
-            setModified(false);
         }
-    }, [initialJsonText, isExternallyDirty, isSaving]);
+    }, [currentCleanText]); 
 
-
+    // 4. Update the parent state (setData) when the user types
     const handleTextChange = (e) => {
         const newText = e.target.value;
         setJsonText(newText);
-        setModified(true); // Flag parent component as modified
+        setModified(true); 
+        hasUserModified.current = true;
         
         try {
-            const parsed = JSON.parse(newText);
-            setData(parsed); // Update the parent state with parsed object
+            setData(JSON.parse(newText)); 
             setIsError(false);
         } catch (error) {
             setIsError(true);
         }
     };
 
+    // 5. Reset the local state back to the prop's value
     const handleReset = () => {
-        setJsonText(initialJsonText);
-        try {
-             setData(JSON.parse(initialJsonText));
-        } catch (e) {
-             console.error("Reset failed: Could not parse initial JSON text.");
-        }
+        setJsonText(currentCleanText);
+        setData(safeData); // Update the parent state with the clean object
         setIsError(false);
         setModified(false);
+        hasUserModified.current = false;
     };
 
 
@@ -77,7 +65,7 @@ const JSONEditor = ({ data, setData, label, isSaving, setModified }) => {
                 </button>
             </div>
             <textarea
-                value={jsonText} // Use the internal state which is initialized by the prop
+                value={jsonText}
                 onChange={handleTextChange}
                 rows={20}
                 disabled={isSaving}
@@ -99,6 +87,7 @@ const AdminDataMaintenance = ({ navigate }) => {
     const [saveStatus, setSaveStatus] = useState('');
     
     // The source of the configuration data and catalog data for the editors
+    // These must hold the edited state managed by the JSONEditor children
     const [configData, setConfigData] = useState({});
     const [catalogData, setCatalogData] = useState({});
     
@@ -109,15 +98,15 @@ const AdminDataMaintenance = ({ navigate }) => {
     const isInitialPopulated = useRef(false);
 
     
-    // CRITICAL FIX: Use useEffect to populate the config/catalog data ONLY when metadata changes
+    // CRITICAL: Initialize configData and catalogData from the metadata context
     useEffect(() => {
-        // The check for Object.keys(metadata).length > 0 is sufficient because we know the metadata is being fetched (size: 26906)
         if (!metadata || Object.keys(metadata).length === 0) {
             return;
         }
 
         // Only populate the state once, or if the data changes from the database (e.g., successful save)
-        if (!isInitialPopulated.current || !isLoading) {
+        // If the component is not yet populated, set the state directly from the incoming prop.
+        if (!isInitialPopulated.current) {
             
             // Safely split the metadata object
             const { READING_CATALOG_SERVICE = {}, ...configMetadata } = metadata;
