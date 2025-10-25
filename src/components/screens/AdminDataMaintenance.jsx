@@ -320,6 +320,7 @@ const DataUploadComponent = ({ onDataParsed, expectedFields, isSaving }) => {
     try {
         const raw = JSON.parse(jsonText);
         if (!Array.isArray(raw)) throw new Error('Pasted data must be an array ([...]) of objects.');
+        // Call the parent component's data staging function
         onDataParsed(raw);
         setStatus('success');
         setShowJsonInput(false);
@@ -433,7 +434,7 @@ const BookRowEditor = ({
     if (safeInitial.isNew) {
       onDelete(categoryKey, safeInitial.id);
     } else {
-      setItem(safeInitial);
+      setBook(safeInitial);
       setIsEditing(false);
       setIsStaged(false);
     }
@@ -515,6 +516,7 @@ const ReadingHubTableEditor = ({ catalog, isSaving, setGlobalData }) => {
 
   // Ensures a valid category is selected when component mounts or data updates
   useEffect(() => {
+    // Only update if there are keys and the current category is invalid or 'Uncategorized'
     if (categoryKeys.length > 0 && (!categoryKeys.includes(currentCategory) || currentCategory === 'Uncategorized')) {
       setCurrentCategory(categoryKeys[0]);
     } else if (categoryKeys.length === 0) {
@@ -526,9 +528,11 @@ const ReadingHubTableEditor = ({ catalog, isSaving, setGlobalData }) => {
   const books = useMemo(
     () => {
       const data = safeCatalog[currentCategory];
+      // Final check: if data exists but isn't an array, force it to an empty array
       if (Array.isArray(data)) {
         return data;
       }
+      // If it's a map/object structure, try to convert it (this is a common Firebase issue)
       if (data && typeof data === 'object') {
         return Object.values(data);
       }
@@ -539,18 +543,76 @@ const ReadingHubTableEditor = ({ catalog, isSaving, setGlobalData }) => {
   const booksList = useMemo(() => (Array.isArray(books) ? books : []).filter(Boolean), [books]);
 
   // Handler to update a book within the global state (used by BookRowEditor's Save)
-  const handleUpdateBook = useCallback((category, updatedBook) => { /* ... */ }, [setGlobalData]);
+  const handleUpdateBook = useCallback((category, updatedBook) => {
+    setGlobalData(prevGlobal => {
+      const newCatalog = JSON.parse(JSON.stringify(prevGlobal.READING_CATALOG_SERVICE || {}));
+      const targetArray = newCatalog[category] || [];
+      const index = targetArray.findIndex(b => b.id === updatedBook.id);
+      
+      if (index !== -1) {
+        // Update existing book in its current category
+        targetArray[index] = updatedBook;
+      } else {
+        // Add new book (should only happen for isNew)
+        targetArray.push(updatedBook);
+      }
+      
+      newCatalog[category] = targetArray;
+      return { ...prevGlobal, READING_CATALOG_SERVICE: newCatalog };
+    });
+  }, [setGlobalData]);
 
   // Handler to delete a book from the global state (used by BookRowEditor's Delete)
-  const handleDeleteBook = useCallback((category, bookId) => { /* ... */ }, [setGlobalData]);
+  const handleDeleteBook = useCallback((category, bookId) => {
+    if (!window.confirm(`Delete book ID ${bookId} from '${category}'?`)) return;
+    setGlobalData(prevGlobal => {
+      const newCatalog = JSON.parse(JSON.stringify(prevGlobal.READING_CATALOG_SERVICE || {}));
+      // Filter out the book using its ID from the correct category array
+      if (newCatalog[category]) {
+        newCatalog[category] = (newCatalog[category] || []).filter(b => b.id !== bookId);
+        // Clean up empty category
+        if (newCatalog[category].length === 0) delete newCatalog[category];
+      }
+      return { ...prevGlobal, READING_CATALOG_SERVICE: newCatalog };
+    });
+  }, [setGlobalData]);
 
-  // Handler to create a new, temporary book record (used by the 'Add New Book' button)
-  const handleAddNewBook = () => { /* ... */ };
+  const handleAddNewBook = () => {
+    const newBook = { 
+        id: generateId(), 
+        title: 'NEW BOOK', 
+        author: 'New Author', 
+        pages: 100, 
+        theme: 'Brief summary of book theme.',
+        complexity: 'Medium',
+        duration: 180,
+        focus: 'Focus 1, Focus 2',
+        isNew: true 
+    };
+    // Ensure 'Uncategorized' is treated as a valid category for adding
+    const cat = currentCategory === 'Uncategorized' && categoryKeys.length > 0 ? categoryKeys[0] : currentCategory;
+    setGlobalData(prevGlobal => {
+      const newCatalog = JSON.parse(JSON.stringify(prevGlobal.READING_CATALOG_SERVICE || {}));
+      newCatalog[cat] = newCatalog[cat] || [];
+      newCatalog[cat].push(newBook);
+      // Ensure the active category is set to the one where the book was added
+      setCurrentCategory(cat);
+      return { ...prevGlobal, READING_CATALOG_SERVICE: newCatalog };
+    });
+  };
 
-  // Handler to create a new empty category
-  const handleCreateCategory = () => { /* ... */ };
+  const handleCreateCategory = () => {
+    const newCatName = prompt("Enter the name for the new category:");
+    if (newCatName && newCatName.trim()) {
+      setGlobalData(prevGlobal => {
+        const newCatalog = JSON.parse(JSON.stringify(prevGlobal.READING_CATALOG_SERVICE || {}));
+        if (!newCatalog[newCatName.trim()]) newCatalog[newCatName.trim()] = [];
+        return { ...prevGlobal, READING_CATALOG_SERVICE: newCatalog };
+      });
+      setCurrentCategory(newCatName.trim());
+    }
+  };
 
-  // Handler for data parsed from CSV/JSON upload (merges into current category array)
   const handleBookDataParsed = useCallback((parsedData) => {
     setGlobalData(prevGlobal => {
       const newCatalog = JSON.parse(JSON.stringify(prevGlobal.READING_CATALOG_SERVICE || {}));
@@ -647,18 +709,68 @@ const ReadingHubTableEditor = ({ catalog, isSaving, setGlobalData }) => {
    TIERS & GOALS EDITOR
 ===================== */
 const TiersGoalsTableEditor = ({ data, isSaving, setGlobalData, idKey = 'id' }) => {
-  // ... (Component setup and CRUD handlers remain the same) ...
-  const handleTierDataParsed = useCallback((parsedData) => { /* ... */ }, [setGlobalData]);
+  const tiersArray = useMemo(() => Object.values(data.LEADERSHIP_TIERS || {}).map(t => ({ ...t, [idKey]: t[idKey] || t.id })), [data.LEADERSHIP_TIERS, idKey]);
+  const { handleDeleteItem } = useArrayDataCRUD('LEADERSHIP_TIERS', setGlobalData, idKey);
+
+  const handleSaveTier = useCallback((updatedTier) => {
+    setGlobalData(prevGlobal => {
+      const newTiers = JSON.parse(JSON.stringify(prevGlobal.LEADERSHIP_TIERS || {}));
+      const existingId = updatedTier[idKey];
+      if (newTiers[existingId] && existingId !== updatedTier.id) {
+        delete newTiers[existingId];
+      }
+      newTiers[updatedTier.id] = { ...updatedTier, isNew: false };
+      return { ...prevGlobal, LEADERSHIP_TIERS: newTiers };
+    });
+  }, [setGlobalData, idKey]);
+
+  const handleAddNewTier = () => {
+    const nextIndex = tiersArray.length + 1;
+    const newTier = { [idKey]: `T${nextIndex}`, id: `T${nextIndex}`, name: `New Tier ${nextIndex}`, icon: 'Briefcase', hex: '#CCCCCC', isNew: true };
+    handleSaveTier(newTier);
+  };
+
+  const handleTierDataParsed = useCallback((parsedData) => {
+    setGlobalData(prevGlobal => {
+      const newTiers = JSON.parse(JSON.stringify(prevGlobal.LEADERSHIP_TIERS || {}));
+      parsedData.forEach(tier => { newTiers[tier.id] = tier; });
+      alert(`${parsedData.length} tiers staged for update/creation.`);
+      return { ...prevGlobal, LEADERSHIP_TIERS: newTiers };
+    });
+  }, [setGlobalData]);
+
   const fields = [
     { key: 'name', label: 'Tier Name', type: 'text' },
     { key: 'icon', label: 'Icon (Lucide Key)', type: 'text' },
     { key: 'hex', label: 'Color (Hex)', type: 'text' },
   ];
-  // ... (Table rendering remains the same) ...
+  const gridColumns = `grid-cols-${fields.length + 2}`;
 
   return (
     <div className='mt-4'>
-      {/* ... (Table content) ... */}
+      <p className='text-sm font-bold text-[#002E47] mb-2'>Tier & Goal Maintenance ({tiersArray.length} Tiers)</p>
+      <p className='text-sm text-gray-700 mb-4'>Edit core tier metadata. <strong>The ID field must be unique (e.g., T1, T2).</strong> Changes are staged locally.</p>
+
+      <div className={`grid ${gridColumns} gap-4 items-center p-2 font-bold border-b-2 text-sm text-[#002E47]`}>
+        <span className="truncate">Tier ID (Key)</span>
+        {fields.map(f => <span key={f.key} className="truncate">{f.label}</span>)}
+        <span className="text-right">Actions</span>
+      </div>
+
+      <div className="max-h-[500px] overflow-y-auto border rounded-lg shadow-inner">
+        {tiersArray.map((tier) => (
+          <GenericRowEditor
+            key={tier[idKey]}
+            item={tier}
+            onUpdate={handleSaveTier}
+            onDelete={handleDeleteItem}
+            isSaving={isSaving}
+            fields={fields}
+            idKey={idKey}
+          />
+        ))}
+      </div>
+
       <div className='mt-4 flex justify-between items-center'>
         <Button onClick={handleAddNewTier} disabled={isSaving} className={`bg-[${COLORS.ORANGE}] hover:bg-red-700`}>
           <Plus className='w-5 h-5 mr-2'/> Add New Tier
@@ -678,19 +790,57 @@ const TiersGoalsTableEditor = ({ data, isSaving, setGlobalData, idKey = 'id' }) 
    SCENARIOS EDITOR
 ===================== */
 const ScenariosTableEditor = ({ data, isSaving, setGlobalData, idKey = 'id' }) => {
-  // ... (Component setup and CRUD handlers remain the same) ...
-  const handleScenarioDataParsed = useCallback((parsedData) => { /* ... */ }, [setGlobalData]);
+  const scenariosArray = data.SCENARIO_CATALOG || [];
+  const { handleUpdateItem, handleDeleteItem } = useArrayDataCRUD('SCENARIO_CATALOG', setGlobalData, idKey);
+
+  const handleAddNewScenario = () => {
+    const newScenario = { [idKey]: generateId(), title: 'New Scenario Title', short_desc: 'Brief description...', persona: 'The Deflector', difficultyLevel: 50, choices: [], isNew: true };
+    handleUpdateItem(newScenario);
+  };
+
+  const handleScenarioDataParsed = useCallback((parsedData) => {
+    setGlobalData(prevGlobal => {
+      const existingIds = new Set(prevGlobal.SCENARIO_CATALOG?.map(s => s.id) || []);
+      // Filter out existing IDs before merging
+      const newScenarios = parsedData.filter(s => !existingIds.has(s.id));
+      alert(`Mass load: ${newScenarios.length} new scenarios staged.`);
+      return { ...prevGlobal, SCENARIO_CATALOG: [...(prevGlobal.SCENARIO_CATALOG || []), ...newScenarios] };
+    });
+  }, [setGlobalData]);
+
   const fields = [
     { key: 'title', label: 'Title', type: 'text' },
     { key: 'short_desc', label: 'Short Description', type: 'text' },
     { key: 'persona', label: 'Persona', type: 'text' },
     { key: 'difficultyLevel', label: 'Difficulty (0-100)', type: 'number' },
   ];
-  // ... (Table rendering remains the same) ...
+  const gridColumns = `grid-cols-${fields.length + 2}`;
 
   return (
     <div className='mt-4'>
-      {/* ... (Table content) ... */}
+      <p className='text-sm font-bold text-[#002E47] mb-2'>Coaching Scenario Maintenance ({scenariosArray.length} Scenarios)</p>
+      <p className='text-sm text-gray-700 mb-4'>Edit the pre-seeded coaching scenarios. <strong>Title and Description must be set.</strong> Changes are staged locally.</p>
+
+      <div className={`grid ${gridColumns} gap-4 items-center p-2 font-bold border-b-2 text-sm text-[#002E47]`}>
+        <span className="truncate">ID</span>
+        {fields.map(f => <span key={f.key} className="truncate">{f.label}</span>)}
+        <span className="text-right">Actions</span>
+      </div>
+
+      <div className="max-h-[500px] overflow-y-auto border rounded-lg shadow-inner">
+        {scenariosArray.map((scenario) => (
+          <GenericRowEditor
+            key={scenario[idKey]}
+            item={scenario}
+            onUpdate={handleUpdateItem}
+            onDelete={handleDeleteItem}
+            isSaving={isSaving}
+            fields={fields}
+            idKey={idKey}
+          />
+        ))}
+      </div>
+
       <div className='mt-4 flex justify-between items-center'>
         <Button onClick={handleAddNewScenario} disabled={isSaving} className={`bg-[${COLORS.ORANGE}] hover:bg-red-700`}>
           <Plus className='w-5 h-5 mr-2'/> Add New Scenario
@@ -710,18 +860,55 @@ const ScenariosTableEditor = ({ data, isSaving, setGlobalData, idKey = 'id' }) =
    TARGET REP CATALOG
 ===================== */
 const TargetRepTableEditor = ({ data, isSaving, setGlobalData, idKey = 'id' }) => {
-  // ... (Component setup and CRUD handlers remain the same) ...
-  const handleTargetRepDataParsed = useCallback((parsedData) => { /* ... */ }, [setGlobalData]);
+  const targetRepsArray = data.TARGET_REP_CATALOG || [];
+  const { handleUpdateItem, handleDeleteItem } = useArrayDataCRUD('TARGET_REP_CATALOG', setGlobalData, idKey);
+
+  const handleAddNewTargetRep = () => {
+    const newRep = { [idKey]: generateId(), text: 'New Target Rep - Click Edit to define behavior.', linkedTier: 'T3', linkedGoal: 'Strategic Focus', isNew: true };
+    handleUpdateItem(newRep);
+  };
+
+  const handleTargetRepDataParsed = useCallback((parsedData) => {
+    setGlobalData(prevGlobal => {
+      const existingIds = new Set(prevGlobal.TARGET_REP_CATALOG?.map(r => r.id) || []);
+      const newReps = parsedData.filter(r => !existingIds.has(r.id));
+      alert(`Mass upload: ${newReps.length} new Target Reps staged.`);
+      return { ...prevGlobal, TARGET_REP_CATALOG: [...(prevGlobal.TARGET_REP_CATALOG || []), ...newReps] };
+    });
+  }, [setGlobalData]);
+
   const fields = [
     { key: 'text', label: 'Rep Text', type: 'text' },
     { key: 'linkedTier', label: 'Linked Tier', type: 'text' },
     { key: 'linkedGoal', label: 'Goal', type: 'text' },
   ];
-  // ... (Table rendering remains the same) ...
+  const gridColumns = `grid-cols-${fields.length + 2}`;
 
   return (
     <div className='mt-4'>
-      {/* ... (Table content) ... */}
+      <p className='text-sm font-bold text-[#002E47] mb-2'>Target Rep Catalog Maintenance ({targetRepsArray.length} Reps)</p>
+      <p className='text-sm text-gray-700 mb-4'>These reps are randomly selected to feature as "Today's Strategic Focus" on the Dashboard.</p>
+
+      <div className={`grid ${gridColumns} gap-4 items-center p-2 font-bold border-b-2 text-sm text-[#002E47]`}>
+        <span className="truncate">ID</span>
+        {fields.map(f => <span key={f.key} className="truncate">{f.label}</span>)}
+        <span className="text-right">Actions</span>
+      </div>
+
+      <div className="max-h-[500px] overflow-y-auto border rounded-lg shadow-inner">
+        {targetRepsArray.map((rep) => (
+          <GenericRowEditor
+            key={rep[idKey]}
+            item={rep}
+            onUpdate={handleUpdateItem}
+            onDelete={handleDeleteItem}
+            isSaving={isSaving}
+            fields={fields}
+            idKey={idKey}
+          />
+        ))}
+      </div>
+
       <div className='mt-4 flex justify-between items-center'>
         <Button onClick={handleAddNewTargetRep} disabled={isSaving} className={`bg-[${COLORS.ORANGE}] hover:bg-red-700`}>
           <Plus className='w-5 h-5 mr-2'/> Add New Rep
@@ -740,19 +927,115 @@ const TargetRepTableEditor = ({ data, isSaving, setGlobalData, idKey = 'id' }) =
 /* =====================
    COMMITMENT BANK
 ===================== */
+const flattenCommitmentBank = (bank) => {
+  let flatList = [];
+  for (const category in bank) {
+    flatList = flatList.concat(bank[category].map(item => ({ ...item, category: category, id: item.id || generateId() })));
+  }
+  return flatList;
+};
+
+const handleUpdateCommitmentBank = (setGlobalData) => useCallback((updatedItem) => {
+  setGlobalData(prevGlobal => {
+    const newBank = JSON.parse(JSON.stringify(prevGlobal.COMMITMENT_BANK || {}));
+    const newCategory = updatedItem.category;
+    newBank[newCategory] = newBank[newCategory] || [];
+
+    Object.keys(newBank).forEach(cat => {
+      if (cat !== newCategory) {
+        newBank[cat] = newBank[cat].filter(item => item.id !== updatedItem.id);
+      }
+    });
+
+    const targetArray = newBank[newCategory];
+    const existingIndex = targetArray.findIndex(item => item.id === updatedItem.id);
+    if (existingIndex !== -1) {
+      targetArray[existingIndex] = { ...updatedItem, isNew: false };
+    } else {
+      targetArray.push({ ...updatedItem, isNew: false });
+    }
+
+    Object.keys(newBank).forEach(cat => { if (newBank[cat].length === 0) delete newBank[cat]; });
+
+    return { ...prevGlobal, COMMITMENT_BANK: newBank };
+  });
+}, [setGlobalData]);
+
+const handleDeleteCommitmentBankItem = (setGlobalData) => useCallback((itemId) => {
+  if (!window.confirm(`Are you sure you want to delete item ${itemId}? This is staged for a database write.`)) {
+    return;
+  }
+  setGlobalData(prevGlobal => {
+    const newBank = JSON.parse(JSON.stringify(prevGlobal.COMMITMENT_BANK || {}));
+    Object.keys(newBank).forEach(cat => {
+      newBank[cat] = newBank[cat].filter(item => item.id !== itemId);
+      if (newBank[cat].length === 0) delete newBank[cat];
+    });
+    return { ...prevGlobal, COMMITMENT_BANK: newBank };
+  });
+}, [setGlobalData]);
+
 const CommitmentBankTableEditor = ({ data, isSaving, setGlobalData, idKey = 'id' }) => {
-  // ... (Component setup and CRUD handlers remain the same) ...
-  const handleDataParsed = useCallback((parsedData) => { /* ... */ }, [setGlobalData]);
+  const bank = data.COMMITMENT_BANK || {};
+  const flatBank = useMemo(() => flattenCommitmentBank(bank), [bank]);
+
+  const handleUpdate = useMemo(() => handleUpdateCommitmentBank(setGlobalData), [setGlobalData]);
+  const handleDelete = useMemo(() => handleDeleteCommitmentBankItem(setGlobalData), [setGlobalData]);
+
+  const handleAddNewRep = () => {
+    const newRep = { [idKey]: generateId(), text: 'New Commitment Text', linkedTier: 'T3', linkedGoal: 'Strategic Execution', category: 'T3: Strategic Alignment', isNew: true };
+    handleUpdate(newRep);
+  };
+
   const fields = [
     { key: 'text', label: 'Commitment Text', type: 'text' },
     { key: 'linkedTier', label: 'Tier', type: 'text' },
     { key: 'linkedGoal', label: 'Goal', type: 'text' },
   ];
-  // ... (Table rendering remains the same) ...
+
+  const handleDataParsed = useCallback((parsedData) => {
+    setGlobalData(prevGlobal => {
+      const newBank = JSON.parse(JSON.stringify(prevGlobal.COMMITMENT_BANK || {}));
+      parsedData.forEach(item => {
+        const category = item.category || `${item.linkedTier}: General`;
+        newBank[category] = newBank[category] || [];
+        Object.keys(newBank).forEach(cat => { newBank[cat] = newBank[cat].filter(i => i.id !== item.id); });
+        newBank[category].push(item);
+      });
+      alert(`${parsedData.length} commitments staged for update/creation across categories.`);
+      return { ...prevGlobal, COMMITMENT_BANK: newBank };
+    });
+  }, [setGlobalData]);
+
+  const gridColumns = `grid-cols-${fields.length + 3}`;
 
   return (
     <div className='mt-4'>
-      {/* ... (Table content) ... */}
+      <p className='text-sm font-bold text-[#002E47] mb-2'>Commitment Bank Maintenance ({flatBank.length} Reps in {Object.keys(bank).length} Categories)</p>
+      <p className='text-sm text-gray-700 mb-4'>Edit the master list of suggested micro-habits. <strong>To change the category, edit the "category" field in the row.</strong></p>
+
+      <div className={`grid ${gridColumns} gap-4 items-center p-2 font-bold border-b-2 text-sm text-[#002E47]`}>
+        <span className="truncate">ID</span>
+        <span className="truncate">Category</span>
+        {fields.map(f => <span key={f.key} className="truncate">{f.label}</span>)}
+        <span className="text-right">Actions</span>
+      </div>
+
+      <div className="max-h-[500px] overflow-y-auto border rounded-lg shadow-inner">
+        {flatBank.map((item) => (
+          <GenericRowEditor
+            key={item[idKey]}
+            item={item}
+            onUpdate={handleUpdate}
+            onDelete={handleDelete}
+            isSaving={isSaving}
+            fields={fields.concat({ key: 'category', label: 'Category', type: 'text' })}
+            idKey={idKey}
+            extraDisplay={{ key: 'category', label: 'Category' }}
+          />
+        ))}
+      </div>
+
       <div className='mt-4 flex justify-between items-center'>
         <Button onClick={handleAddNewRep} disabled={isSaving} className={`bg-[${COLORS.ORANGE}] hover:bg-red-700`}>
           <Plus className='w-5 h-5 mr-2'/> Add New Rep
@@ -767,29 +1050,66 @@ const CommitmentBankTableEditor = ({ data, isSaving, setGlobalData, idKey = 'id'
   );
 };
 
-
 /* =====================
    LEADERSHIP DOMAINS
 ===================== */
 const LeadershipDomainsTableEditor = ({ data, isSaving, setGlobalData, idKey = 'id' }) => {
-  // ... (Component setup and CRUD handlers remain the same) ...
-  const handleDomainDataParsed = useCallback((parsedData) => { /* ... */ }, [setGlobalData]);
+  const domainsArray = data.LEADERSHIP_DOMAINS || [];
+  const { handleUpdateItem, handleDeleteItem } = useArrayDataCRUD('LEADERSHIP_DOMAINS', setGlobalData, idKey);
+
+  const handleAddNewDomain = () => {
+    const newDomain = { [idKey]: generateId(), title: 'New Domain Track', subtitle: 'Brief description...', coreTension: 'The core tension.', color: 'TEAL', focus: ['Focus 1', 'Focus 2'], isNew: true };
+    handleUpdateItem(newDomain);
+  };
+
+  const handleDomainDataParsed = useCallback((parsedData) => {
+    setGlobalData(prevGlobal => {
+      const existingIds = new Set(prevGlobal.LEADERSHIP_DOMAINS?.map(d => d.id) || []);
+      const newDomains = parsedData.filter(d => !existingIds.has(d.id));
+      alert(`Mass upload: ${newDomains.length} new domains staged.`);
+      return { ...prevGlobal, LEADERSHIP_DOMAINS: [...(prevGlobal.LEADERSHIP_DOMAINS || []), ...newDomains] };
+    });
+  }, [setGlobalData]);
+
   const fields = [
     { key: 'title', label: 'Title', type: 'text' },
     { key: 'subtitle', label: 'Subtitle', type: 'text' },
     { key: 'coreTension', label: 'Core Tension', type: 'text' },
     { key: 'color', label: 'Color (Key)', type: 'text' },
   ];
-  // ... (Table rendering remains the same) ...
+
+  const gridColumns = `grid-cols-${fields.length + 2}`;
 
   return (
     <div className='mt-4'>
-      {/* ... (Table content) ... */}
-      <div className='mt-4 flex justify-between items-center'>
+      <p className='text-sm font-bold text-[#002E47] mb-2'>Leadership Domain Maintenance ({domainsArray.length} Domains)</p>
+      <p className='text-sm text-gray-700 mb-4'>Edit the specialized leadership tracks. Note: Complex fields like "focus" should be edited in the Raw Config Editor, unless you expand this editor.</p>
+
+      <div className={`grid ${gridColumns} gap-4 items-center p-2 font-bold border-b-2 text-sm text-[#002E47]`}>
+        <span className="truncate">ID</span>
+        {fields.map(f => <span key={f.key} className="truncate">{f.label}</span>)}
+        <span className="text-right">Actions</span>
+      </div>
+
+      <div className="max-h-[500px] overflow-y-auto border rounded-lg shadow-inner">
+        {domainsArray.map((domain) => (
+          <GenericRowEditor
+            key={domain[idKey]}
+            item={domain}
+            onUpdate={handleUpdateItem}
+            onDelete={handleDeleteItem}
+            isSaving={isSaving}
+            fields={fields}
+            idKey={idKey}
+          />
+        ))}
+      </div>
+
+      <div className='mt-4 flex space-x-3'>
         <Button onClick={handleAddNewDomain} disabled={isSaving} className={`bg-[${COLORS.ORANGE}] hover:bg-red-700`}>
           <Plus className='w-5 h-5 mr-2'/> Add New Domain
         </Button>
-        <DataUploadComponent
+        <CSVUploadComponent
           onDataParsed={handleDomainDataParsed}
           expectedFields={fields.concat({ key: 'id', type: 'text' })}
           isSaving={isSaving}
@@ -799,31 +1119,126 @@ const LeadershipDomainsTableEditor = ({ data, isSaving, setGlobalData, idKey = '
   );
 };
 
-
 /* =====================
    RESOURCE LIBRARY
 ===================== */
+const flattenResourceLibrary = (library) => {
+  let flatList = [];
+  for (const domainId in library) {
+    flatList = flatList.concat(library[domainId].map(item => ({ ...item, domainId: domainId, id: item.id || generateId() })));
+  }
+  return flatList;
+};
+
+const handleUpdateResourceLibrary = (setGlobalData) => useCallback((updatedItem) => {
+  setGlobalData(prevGlobal => {
+    const newLibrary = JSON.parse(JSON.stringify(prevGlobal.RESOURCE_LIBRARY || {}));
+    const newDomainId = updatedItem.domainId;
+    newLibrary[newDomainId] = newLibrary[newDomainId] || [];
+
+    Object.keys(newLibrary).forEach(domain => {
+      if (domain !== newDomainId) {
+        newLibrary[domain] = newLibrary[domain].filter(item => item.id !== updatedItem.id);
+      }
+    });
+
+    const targetArray = newLibrary[newDomainId];
+    const existingIndex = targetArray.findIndex(item => item.id === updatedItem.id);
+    if (existingIndex !== -1) {
+      targetArray[existingIndex] = { ...updatedItem, isNew: false };
+    } else {
+      targetArray.push({ ...updatedItem, isNew: false });
+    }
+
+    Object.keys(newLibrary).forEach(domain => { if (newLibrary[domain].length === 0) delete newLibrary[domain]; });
+
+    return { ...prevGlobal, RESOURCE_LIBRARY: newLibrary };
+  });
+}, [setGlobalData]);
+
+const handleDeleteResourceLibraryItem = (setGlobalData) => useCallback((itemId) => {
+  if (!window.confirm(`Are you sure you want to delete item ${itemId}? This is staged for a database write.`)) {
+    return;
+  }
+  setGlobalData(prevGlobal => {
+    const newLibrary = JSON.parse(JSON.stringify(prevGlobal.RESOURCE_LIBRARY || {}));
+    Object.keys(newLibrary).forEach(domain => {
+      newLibrary[domain] = newLibrary[domain].filter(item => item.id !== itemId);
+      if (newLibrary[domain].length === 0) delete newLibrary[domain];
+    });
+    return { ...prevGlobal, RESOURCE_LIBRARY: newLibrary };
+  });
+}, [setGlobalData]);
+
 const ResourceLibraryTableEditor = ({ data, isSaving, setGlobalData, idKey = 'id' }) => {
-  // ... (Component setup and CRUD handlers remain the same) ...
-  const handleDataParsed = useCallback((parsedData) => { /* ... */ }, [setGlobalData]);
+  const library = data.RESOURCE_LIBRARY || data.RESOURCE_CONTENT_LIBRARY || {};
+  const domains = data.LEADERSHIP_DOMAINS || [];
+  const flatLibrary = useMemo(() => flattenResourceLibrary(library), [library]);
+
+  const handleUpdate = useMemo(() => handleUpdateResourceLibrary(setGlobalData), [setGlobalData]);
+  const handleDelete = useMemo(() => handleDeleteResourceLibraryItem(setGlobalData), [setGlobalData]);
+
+  const handleAddNewResource = () => {
+    const newResource = { [idKey]: generateId(), title: 'New Resource Title', type: 'Report', description: 'Short summary.', domainId: domains[0]?.id || 'uncategorized', content: '## Resource Content\n\n- Write the content here in **Markdown**.', isNew: true };
+    handleUpdate(newResource);
+  };
+
   const fields = [
     { key: 'title', label: 'Title', type: 'text' },
     { key: 'type', label: 'Type', type: 'text' },
     { key: 'description', label: 'Description', type: 'text' },
-    { key: 'content', label: 'Content (Markdown)', type: 'text' },
-    { key: 'domainId', label: 'Domain ID', type: 'text' },
   ];
+
+  const handleDataParsed = useCallback((parsedData) => {
+    setGlobalData(prevGlobal => {
+      const newLibrary = JSON.parse(JSON.stringify(prevGlobal.RESOURCE_LIBRARY || {}));
+      parsedData.forEach(item => {
+        const domainId = item.domainId || domains[0]?.id || 'uncategorized';
+        newLibrary[domainId] = newLibrary[domainId] || [];
+        Object.keys(newLibrary).forEach(dom => { newLibrary[dom] = newLibrary[dom].filter(i => i.id !== item.id); });
+        newLibrary[domainId].push(item);
+      });
+      alert(`${parsedData.length} resources staged for update/creation.`);
+      return { ...prevGlobal, RESOURCE_LIBRARY: newLibrary };
+    });
+  }, [setGlobalData, domains]);
+
+  const gridColumns = `grid-cols-${fields.length + 3}`;
 
   return (
     <div className='mt-4'>
-      {/* ... (Table content) ... */}
+      <p className='text-sm font-bold text-[#002E47] mb-2'>Resource Library Maintenance ({flatLibrary.length} Resources in {Object.keys(library).length} Domains)</p>
+      <p className='text-sm text-gray-700 mb-4'><strong>Warning:</strong> The 'content' field uses Markdown.</p>
+
+      <div className={`grid ${gridColumns} gap-4 items-center p-2 font-bold border-b-2 text-sm text-[#002E47]`}>
+        <span className="truncate">ID</span>
+        <span className="truncate">Domain ID</span>
+        {fields.map(f => <span key={f.key} className="truncate">{f.label}</span>)}
+        <span className="text-right">Actions</span>
+      </div>
+
+      <div className="max-h-[500px] overflow-y-auto border rounded-lg shadow-inner">
+        {flatLibrary.map((item) => (
+          <GenericRowEditor
+            key={item[idKey]}
+            item={item}
+            onUpdate={handleUpdate}
+            onDelete={handleDelete}
+            isSaving={isSaving}
+            fields={fields.concat([{ key: 'domainId', label: 'Domain ID', type: 'text' }, { key: 'content', label: 'Content (Markdown)', type: 'text' }])}
+            idKey={idKey}
+            extraDisplay={{ key: 'domainId', label: 'Domain ID' }}
+          />
+        ))}
+      </div>
+
       <div className='mt-4 flex space-x-3'>
         <Button onClick={handleAddNewResource} disabled={isSaving} className={`bg-[${COLORS.ORANGE}] hover:bg-red-700`}>
           <Plus className='w-5 h-5 mr-2'/> Add New Resource
         </Button>
-        <DataUploadComponent
+        <CSVUploadComponent
           onDataParsed={handleDataParsed}
-          expectedFields={fields}
+          expectedFields={fields.concat({ key: 'id', type: 'text' }, { key: 'domainId', type: 'text' }, { key: 'content', type: 'text' })}
           isSaving={isSaving}
         />
       </div>
@@ -831,9 +1246,8 @@ const ResourceLibraryTableEditor = ({ data, isSaving, setGlobalData, idKey = 'id
   );
 };
 
-
 /* =====================
-   RAW CONFIG EDITOR (RENAME AND RE-FOCUS)
+   RAW CONFIG EDITOR
 ===================== */
 // This editor is for managing the entire metadata structure as a single object.
 const RawConfigEditor = ({ catalog, isSaving, setGlobalData, currentEditorKey }) => {
@@ -849,7 +1263,7 @@ const RawConfigEditor = ({ catalog, isSaving, setGlobalData, currentEditorKey })
   const isJsonValid = useMemo(() => { try { JSON.parse(jsonText); return true; } catch { return false; } }, [jsonText]);
 
   const handleSave = () => {
-    if (!isJsonValid) { setStatus({ type: 'error', message: 'Invalid Data Format. Cannot stage changes.' }); return; }
+    if (!isJsonValid) { setStatus({ type: 'error', message: 'Invalid JSON format. Cannot stage changes.' }); return; }
     try {
       const parsedData = JSON.parse(jsonText);
       if (currentEditorKey === 'RAW_CONFIG') {
@@ -892,6 +1306,21 @@ const RawConfigEditor = ({ catalog, isSaving, setGlobalData, currentEditorKey })
   );
 };
 
+/* =====================
+   Helper banner
+===================== */
+const DataSyncBanner = ({ globalMetadata, localGlobalData }) => {
+  const upstreamHasData = globalMetadata && Object.keys(globalMetadata || {}).length > 0;
+  const localIsEmpty = !localGlobalData || Object.keys(localGlobalData || {}).length === 0;
+  if (upstreamHasData && localIsEmpty) {
+    return (
+      <div className="mb-4 p-3 rounded border border-yellow-300 bg-yellow-50 text-sm text-yellow-900">
+        Global data is loaded, but the editor hasn’t synced yet. This will update in a moment.
+      </div>
+    );
+  }
+  return null;
+};
 
 /* =====================
    MAIN ROUTER
@@ -902,6 +1331,7 @@ const GlobalDataEditor = ({ globalMetadata, updateGlobalMetadata, db, navigate }
   // Syncs the local state with the loaded global state
   useEffect(() => {
     try {
+      // Only update if globalMetadata is an object and has keys (i.e., it's loaded)
       if (globalMetadata && Object.keys(globalMetadata || {}).length > 0) {
         setLocalGlobalData(globalMetadata);
       }
@@ -909,7 +1339,18 @@ const GlobalDataEditor = ({ globalMetadata, updateGlobalMetadata, db, navigate }
   }, [globalMetadata]);
 
   // Computes which tab to open first based on loaded data
-  const computeFirstTab = (data) => { /* ... */ return 'reading'; };
+  const computeFirstTab = (data) => {
+    if (!data) return 'reading';
+    const countItems = (obj) => Object.values(obj || {}).flat().length;
+    if ((data.LEADERSHIP_DOMAINS || []).length) return 'domains';
+    if (countItems(data.RESOURCE_LIBRARY || data.RESOURCE_CONTENT_LIBRARY || {}) > 0) return 'resources';
+    if ((data.TARGET_REP_CATALOG || []).length) return 'target-reps';
+    if ((data.QUICK_CHALLENGE_CATALOG || []).length) return 'quick-challenges';
+    if ((data.COMMITMENT_BANK || []).length) return 'commitment';
+    if ((data.SCENARIO_CATALOG || []).length) return 'scenarios';
+    if (data.READING_CATALOG_SERVICE && Object.keys(data.READING_CATALOG_SERVICE).length) return 'reading';
+    return 'reading';
+  };
   const [tabAutoSelected, setTabAutoSelected] = useState(false);
 
   useEffect(() => {
@@ -922,33 +1363,172 @@ const GlobalDataEditor = ({ globalMetadata, updateGlobalMetadata, db, navigate }
 
   // Memoized navigation items with counts
   const navItems = useMemo(() => {
-    // ... (Calculations for counts remain the same)
+    const domainsCount = (localGlobalData.LEADERSHIP_DOMAINS || []).length;
+    const libForCount = (localGlobalData.RESOURCE_LIBRARY || localGlobalData.RESOURCE_CONTENT_LIBRARY || {});
+    const resourcesCount = countItems(libForCount);
+    const totalReadingItems = countItems(localGlobalData.READING_CATALOG_SERVICE);
+    const totalCommitmentItems = countItems(localGlobalData.COMMITMENT_BANK);
+    const totalScenarioItems = (localGlobalData.SCENARIO_CATALOG || []).length;
+    const totalRepItems = (localGlobalData.TARGET_REP_CATALOG || []).length;
+
     return [
       { group: 'Content: Learn & Prep', key: 'reading', label: 'Reading Hub (Books/Articles)', icon: BookOpen, accent: 'TEAL', count: totalReadingItems },
-      // ... (rest of nav items remain the same)
+      { group: 'Content: Learn & Prep', key: 'domains', label: `Applied Leadership Domains`, icon: Link, accent: 'NAVY', count: domainsCount },
+      { group: 'Content: Learn & Prep', key: 'resources', label: 'Resource Content Library', icon: Briefcase, accent: 'ORANGE', count: resourcesCount },
+
+      { group: 'Habits & Practice', key: 'bank', label: 'Commitment Bank (Master Reps)', icon: List, accent: 'TEAL', count: totalCommitmentItems },
+      { group: 'Habits & Practice', key: 'target-reps', label: 'Target Reps Catalog', icon: Dumbbell, accent: 'GREEN', count: totalRepItems },
+
+      { group: 'Coaching: Practice & Feedback', key: 'scenarios', label: 'Coaching Scenarios', icon: Users, accent: 'TEAL', count: totalScenarioItems },
+      { group: 'System & Core', key: 'tiers', label: 'Tiers & Goals', icon: Target, accent: 'ORANGE', count: countTiers(localGlobalData.LEADERSHIP_TIERS) },
+      { group: 'System & Core', key: 'summary', label: 'Summary Dashboard', icon: BarChart3, accent: 'NAVY', count: undefined },
+      { group: 'System & Core', key: 'raw', label: 'Raw Config Editor', icon: Code, accent: 'ORANGE', count: undefined },
     ];
   }, [localGlobalData]);
 
-  // Renders the content based on the selected tab
-  const renderTabContent = () => { /* ... */ };
+  const renderTabContent = () => {
+    switch (currentTab) {
+      case 'reading':
+        return <ReadingHubTableEditor
+          catalog={localGlobalData.READING_CATALOG_SERVICE || {}}
+          isSaving={isSaving}
+          setGlobalData={setLocalGlobalData}
+        />;
+      case 'domains':
+        return <LeadershipDomainsTableEditor
+          data={localGlobalData}
+          isSaving={isSaving}
+          setGlobalData={setLocalGlobalData}
+          idKey='id'
+        />;
+      case 'resources':
+        return <ResourceLibraryTableEditor
+          data={localGlobalData}
+          isSaving={isSaving}
+          setGlobalData={setLocalGlobalData}
+          idKey='id'
+        />;
+      case 'bank':
+        return <CommitmentBankTableEditor
+          data={localGlobalData}
+          isSaving={isSaving}
+          setGlobalData={setLocalGlobalData}
+          idKey='id'
+        />;
+      case 'tiers':
+        return <TiersGoalsTableEditor
+          data={localGlobalData}
+          isSaving={isSaving}
+          setGlobalData={setLocalGlobalData}
+          idKey='id'
+        />;
+      case 'scenarios':
+        return <ScenariosTableEditor
+          data={localGlobalData}
+          isSaving={isSaving}
+          setGlobalData={setLocalGlobalData}
+          idKey='id'
+        />;
+      case 'target-reps':
+        return <TargetRepTableEditor
+          data={localGlobalData}
+          isSaving={isSaving}
+          setGlobalData={setLocalGlobalData}
+          idKey='id'
+        />;
+      case 'raw':
+        return (
+          <>
+            <RawConfigEditor
+              catalog={localGlobalData}
+              isSaving={isSaving}
+              setGlobalData={setLocalGlobalData}
+              currentEditorKey={'RAW_CONFIG'}
+            />
+            <DataSyncBanner globalMetadata={globalMetadata} localGlobalData={localGlobalData} />
+            <div className="mb-3 p-2 rounded border text-xs">
+              <strong>Write target:</strong>{' '}
+              {db?.app?.options?.projectId ? db.app.options.projectId : 'mock (NO PERSIST)'}
+            </div>
+          </>
+        );
+      case 'summary':
+      default:
+        return (
+          <Card title="Database Summary Snapshot" accent='TEAL' isSmall={true}>
+            <p className='text-sm text-gray-700 mb-4'>Review the current counts before committing changes. <em>Use the table editors before saving globally.</em></p>
+            <div className='space-y-2'>
+              {navItems.filter(i => i.key !== 'raw' && i.count !== undefined).map(item => (
+                <div key={item.key} className='flex justify-between items-center text-sm border-b pb-1'>
+                  <span className='font-semibold'>{item.label}:</span>
+                  <span className='font-extrabold text-[#E04E1B]'>{item.count} Items</span>
+                </div>
+              ))}
+            </div>
+          </Card>
+        );
+    }
+  };
 
-  // Handles the final save operation (calls the updated two-document write)
-  const handleFinalSave = async () => { /* ... */ };
+  const groupedItems = useMemo(() => {
+    return navItems.reduce((acc, item) => {
+      acc[item.group] = acc[item.group] || [];
+      acc[item.group].push(item);
+      return acc;
+    }, {});
+  }, [navItems]);
+
+  const handleFinalSave = async () => {
+    if (!db) {
+      setStatus({ type: 'error', message: 'No Firestore connection yet. Refresh/sign in and try again.' });
+      return;
+    }
+    setIsSaving(true);
+    setStatus(null);
+    try {
+      const ok = await updateGlobalMetadata(localGlobalData, { merge: true, source: 'AdminFinalize' });
+      if (ok) setStatus({ type: 'success', message: 'ALL global configurations successfully saved to Firestore.' });
+      else setStatus({ type: 'error', message: 'Database write failed. Check console logs.' });
+    } catch (e) {
+      setStatus({ type: 'error', message: `Critical error during final save: ${e.message}` });
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   return (
     <>
-      {/* Navigation tabs */}
-      {/* ... */}
+      <div className='flex flex-col space-y-4'>
+        {Object.entries(groupedItems).map(([group, items]) => (
+          <div key={group} className="flex flex-col flex-shrink-0">
+            <h3 className="text-sm font-bold uppercase tracking-wider text-gray-500 mb-2 mt-4">{group}</h3>
+            <div className='flex flex-wrap gap-2'>
+              {items.map(item => (
+                <button
+                  key={item.key}
+                  onClick={() => setCurrentTab(item.key)}
+                  className={`flex items-center px-4 py-2 text-sm font-semibold transition-all rounded-lg whitespace-nowrap border-2 ${currentTab === item.key ? 'bg-[#002E47] text-white border-[#002E47] shadow-md' : 'bg-white text-gray-500 border-gray-300 hover:bg-gray-100'}`}
+                >
+                  <item.icon className='w-4 h-4 mr-1' />
+                  {item.label} {item.count !== undefined && <span className={`ml-1 px-1.5 py-0.5 text-xs rounded-full ${currentTab === item.key ? 'bg-white text-[#002E47]' : 'bg-gray-200 text-gray-700'}`}>{item.count}</span>}
+                </button>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
 
-      {/* Main content area */}
       <div className='mt-6 p-6 rounded-xl border-2 shadow-lg bg-white'>
         {renderTabContent()}
       </div>
 
-      {/* Status banner */}
-      {/* ... */}
+      {status && (
+        <div className={`mt-4 p-3 rounded-lg font-semibold flex items-center gap-2 ${status.type === 'success' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+          {status.type === 'success' ? <CheckCircle className='w-5 h-5'/> : <AlertTriangle className='w-5 h-5'/>}
+          {status.message}
+        </div>
+      )}
 
-      {/* Final Save Button: Triggers the multi-document write */}
       <Button onClick={handleFinalSave} disabled={isSaving} className={`mt-8 w-full bg-[#E04E1B] hover:bg-red-700`}>
         {isSaving ? (
           <span className="flex items-center justify-center"><div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div> COMMITTING ALL STAGED CHANGES...</span>
@@ -959,14 +1539,75 @@ const GlobalDataEditor = ({ globalMetadata, updateGlobalMetadata, db, navigate }
 };
 
 export default function AdminDataMaintenanceScreen({ navigate }) {
-  // ... (Initial setup, password check, and loading state rendering remain the same) ...
-  
+  const { metadata, isLoading: isMetadataLoading, db, updateGlobalMetadata } = useAppServices();
+
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [password, setPassword] = useState('');
+  const [loginError, setLoginError] = useState(null);
+
+  const handleLogin = (e) => {
+    e.preventDefault();
+    if (password === PASSWORD) {
+      setIsLoggedIn(true);
+      sessionStorage.setItem(ADMIN_SESSION_KEY, 'true');
+      setLoginError(null);
+    } else {
+      setLoginError('Invalid Administrator Password.');
+      setPassword('');
+    }
+  };
+
+  useEffect(() => {
+    if (sessionStorage.getItem(ADMIN_SESSION_KEY) === 'true') {
+      setIsLoggedIn(true);
+    }
+  }, []);
+
+  if (!isLoggedIn) {
+    return (
+      <div className="min-h-screen flex items-center justify-center p-4 bg-gray-50">
+        <Card title="Administrator Access Required" icon={Lock} accent='ORANGE' className='w-full max-w-md text-center'>
+          <p className='text-gray-700 mb-4'>Enter the maintenance password to access global configuration data.</p>
+          <form onSubmit={handleLogin} className='space-y-4'>
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => {setPassword(e.target.value); setLoginError(null);}}
+              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-[#E04E1B] focus:border-[#E04E1B] text-gray-800"
+              placeholder="Maintenance Password"
+            />
+            {loginError && <p className='text-sm text-red-500 font-semibold flex items-center justify-center'><AlertTriangle className='w-4 h-4 mr-1'/> {loginError}</p>}
+            <Button type="submit" className='w-full bg-[#E04E1B] hover:bg-red-700'>
+              <CornerRightUp className='w-5 h-5 mr-2'/> Unlock Maintenance Tools
+            </Button>
+            <Button onClick={() => navigate('app-settings')} variant='outline' className='w-full mt-2'>
+              <ArrowLeft className='w-5 h-5 mr-2'/> Return to App Settings
+            </Button>
+          </form>
+        </Card>
+      </div>
+    );
+  }
+
+  if (isMetadataLoading) {
+    return (
+      <div className="p-8 min-h-screen flex items-center justify-center" style={{ background: COLORS.LIGHT_GRAY }}>
+        <div className="flex flex-col items-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#47A88D] mb-3"></div>
+          <p className="text-[#47A88D] font-medium">Loading Global Metadata...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="p-6 md:p-10 min-h-screen" style={{ background: COLORS.LIGHT_GRAY }}>
-      {/* Title/Header */}
-      {/* ... */}
+      <div className='flex items-center gap-4 border-b-2 pb-2 mb-8' style={{borderColor: COLORS.NAVY+'30'}}>
+        <Cpu className='w-10 h-10' style={{color: COLORS.NAVY}}/>
+        <h1 className="text-4xl font-extrabold" style={{ color: COLORS.NAVY }}>Global Data Maintenance Hub</h1>
+      </div>
+      <p className="text-lg text-gray-600 mb-8 max-w-3xl">Admin Tools: Directly manage all non-user application data (tiers, catalogs) stored in the Firebase collection <strong>metadata</strong>.</p>
 
-      {/* Renders the main editor hub */}
       <GlobalDataEditor
         globalMetadata={resolveGlobalMetadata(metadata)}
         updateGlobalMetadata={updateGlobalMetadata}

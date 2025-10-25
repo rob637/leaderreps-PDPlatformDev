@@ -1,5 +1,4 @@
-// src/services/useAppServices.jsx
-// Complete — hardened + instrumented (real Firestore when db exists; mock fallback otherwise)
+// src/services/useAppServices.jsx (FINAL TWO-DOCUMENT READ)
 
 import React, {
   useMemo,
@@ -226,6 +225,7 @@ const containsEmptySections = (obj) => {
   return bad;
 };
 
+// CRITICAL FIX: Removed direct reference to 'metadata' from outside scope
 const traceCallsite = (label = 'updateGlobalMetadata') => {
   try {
     console.groupCollapsed(`[${label}] callsite`);
@@ -357,7 +357,7 @@ export const useGlobalMetadata = (db, isAuthReady) => {
   const [error, setError] = useState(null);
   
   // Define the two document paths
-  const pathConfig = mockDoc(db, 'metadata', 'config'); // Main config (smaller)
+  const pathConfig = mockDoc(db, 'metadata', 'config'); // Main config (smaller fields)
   const pathCatalog = mockDoc(db, 'metadata', 'reading_catalog'); // Books (larger)
 
   // CRITICAL FIX: Use useEffect to fetch data reliably using getDoc on mount
@@ -409,9 +409,7 @@ export const useGlobalMetadata = (db, isAuthReady) => {
 
     fetchMetadata();
     
-    // Note: The Admin Hub's save action will need to update BOTH documents 
-    // in the 'updateGlobalMetadata' function below (currently only updates config).
-    // For now, reading is fixed. Writing still needs care.
+    // The component relies on the Admin Hub's save action to trigger a view refresh.
     
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [db, isAuthReady]); 
@@ -425,6 +423,7 @@ export const useGlobalMetadata = (db, isAuthReady) => {
         const configData = doc.exists() ? doc.data() : {};
         // Refetch the catalog to ensure consistency
         const catalogDoc = await getDocEx(db, pathCatalog);
+        // Corrected: Extract data directly from the catalog snapshot object
         const catalogData = catalogDoc.exists() ? catalogDoc.data() : {};
         
         const mergedData = { ...configData, READING_CATALOG_SERVICE: catalogData };
@@ -462,7 +461,7 @@ export const updateGlobalMetadata = async (
   const pathCatalog = mockDoc(db, 'metadata', 'reading_catalog');
   const projectId = db?.app?.options?.projectId || 'unknown';
 
-  // Extract READING_CATALOG_SERVICE from the main payload
+  // 1. Extract READING_CATALOG_SERVICE from the main payload
   const readingCatalogData = data.READING_CATALOG_SERVICE;
   const mainConfigPayload = { ...data };
   delete mainConfigPayload.READING_CATALOG_SERVICE; // Remove from main config payload
@@ -508,8 +507,6 @@ export const updateGlobalMetadata = async (
     await setDocEx(db, pathConfig, mainConfigWithMeta, merge);
     
     // 2. Write the large catalog data
-    // We wrap the reading catalog payload under a single field for stability if it's huge,
-    // but based on your structure, we write the categories directly to the document root.
     await setDocEx(db, pathCatalog, catalogWithMeta, merge);
 
     console.log(
