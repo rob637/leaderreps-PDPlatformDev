@@ -1,4 +1,4 @@
-// src/components/screens/AdminDataMaintenance.jsx (FINAL STABLE VERSION)
+// src/components/screens/AdminDataMaintenance.jsx (FINAL STABLE VERSION with Scope Fix)
 
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useAppServices } from '../../services/useAppServices.jsx';
@@ -1508,10 +1508,10 @@ const GlobalDataEditor = ({ globalMetadata, updateGlobalMetadata, db, navigate }
                 <button
                   key={item.key}
                   onClick={() => setCurrentTab(item.key)}
-                  className={`flex items-center px-4 py-2 text-sm font-semibold transition-all rounded-lg whitespace-nowrap border-2 ${currentTab === item.key ? 'bg-[#002E47] text-white border-[#002E47] shadow-md' : 'bg-white text-gray-500 border-gray-300 hover:bg-gray-100'}`}
+                  className={`flex items-center px-4 py-2 text-sm font-semibold transition-all rounded-lg whitespace-nowrap border-2 ${item.key === currentTab ? 'bg-[#002E47] text-white border-[#002E47] shadow-md' : 'bg-white text-gray-500 border-gray-300 hover:bg-gray-100'}`}
                 >
                   <item.icon className='w-4 h-4 mr-1' />
-                  {item.label} {item.count !== undefined && <span className={`ml-1 px-1.5 py-0.5 text-xs rounded-full ${currentTab === item.key ? 'bg-white text-[#002E47]' : 'bg-gray-200 text-gray-700'}`}>{item.count}</span>}
+                  {item.label} {item.count !== undefined && <span className={`ml-1 px-1.5 py-0.5 text-xs rounded-full ${item.key === currentTab ? 'bg-white text-[#002E47]' : 'bg-gray-200 text-gray-700'}`}>{item.count}</span>}
                 </button>
               ))}
             </div>
