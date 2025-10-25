@@ -1340,7 +1340,6 @@ const RawConfigEditor = ({ catalog, isSaving, setGlobalData, currentEditorKey })
 
 // --- MAIN ROUTER (GlobalDataEditor) ---
 
-\1
   // Diagnostics: log what the editor actually received
   React.useEffect(() => {
     try {
