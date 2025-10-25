@@ -1,4 +1,4 @@
-// src/services/useAppServices.jsx (FINAL TWO-DOCUMENT READ)
+// src/services/useAppServices.jsx (FINAL TWO-DOCUMENT READ - FIXED)
 
 import React, {
   useMemo,
@@ -477,6 +477,13 @@ export const updateGlobalMetadata = async (
   // Stamp meta + optional rules flag for MAIN config
   const now = new Date().toISOString();
   const mainConfigKeys = Object.keys(mainConfigPayload || {});
+  
+  // CRITICAL FIX: Conditionally include _force_overwrite to prevent setting 'undefined'
+  const optionalFields = {};
+  if (forceOverwrite) {
+    optionalFields._force_overwrite = true; 
+  }
+
   const mainConfigWithMeta = {
     ...mainConfigPayload,
     _meta: {
@@ -485,7 +492,7 @@ export const updateGlobalMetadata = async (
       last_write_uid: userId,
       approx_bytes: JSON.stringify(mainConfigPayload).length,
       keys: mainConfigKeys,
-      _force_overwrite: forceOverwrite || undefined,
+      ...optionalFields, // <--- Correctly spread only if present (not undefined)
     },
   };
   
