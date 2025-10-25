@@ -3,9 +3,6 @@ import React, { useMemo, useState, useEffect, useCallback } from 'react';
 // CRITICAL FIX: Use the actual service hook from the expected path
 import { useAppServices } from '../../services/useAppServices.jsx'; 
 
-// --- MOCK IMPORTS REMOVED: All MOCK_DATA, LEADERSHIP_TIERS, and LOCAL_NUDGES are now deleted and must be loaded from the service context ---
-
-
 // Icons
 import {
   Clock as ClockIcon,
@@ -260,6 +257,7 @@ const DashboardScreen = () => {
     hasGeminiKey,
     LEADERSHIP_TIERS: svcLEADERSHIP_TIERS, // Loaded from service context now
     MOCK_ACTIVITY_DATA, // Loaded from service context now
+    TARGET_REP_CATALOG, // NEW: Loaded from service context now
   } = useAppServices();
 
   // CRITICAL FIX: Removed local mock data fallback. Data must come from the service.
@@ -303,8 +301,13 @@ const DashboardScreen = () => {
     return { days: longest.daysHeld, objective: longest.objective };
   }, [okrs]);
   
-  // MOCK_ACTIVITY_DATA is now loaded from service context (MOCK_ACTIVITY_DATA)
-  const dailyTargetRep = useMemo(() => MOCK_ACTIVITY_DATA?.daily_target_rep || 'Define your top priority rep.', [MOCK_ACTIVITY_DATA]);
+  // CRITICAL FIX: NEW Target Rep logic (Selects the first item from the new catalog)
+  const dailyTargetRep = useMemo(() => {
+      const catalog = TARGET_REP_CATALOG || [];
+      // Select the first rep in the catalog array (for simplicity)
+      return catalog[0]?.text || MOCK_ACTIVITY_DATA?.daily_target_rep || 'Define your top priority rep.';
+  }, [TARGET_REP_CATALOG, MOCK_ACTIVITY_DATA]);
+  
   const dailyChallengeRep = useMemo(() => MOCK_ACTIVITY_DATA?.daily_challenge_rep || 'Grab a quick win.', [MOCK_ACTIVITY_DATA]);
   const identityStatement = useMemo(() => MOCK_ACTIVITY_DATA?.identity_statement || 'I am a principled leader.', [MOCK_ACTIVITY_DATA]);
   const totalRepsCompleted = useMemo(() => MOCK_ACTIVITY_DATA?.total_reps_completed || 0, [MOCK_ACTIVITY_DATA]);

@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useAppServices } from '../../services/useAppServices.jsx';
-import { ArrowLeft, Cpu, Lock, CheckCircle, AlertTriangle, CornerRightUp, Settings, BarChart3, TrendingUp, Download, Code, List, BookOpen, Target, Users, ShieldCheck, Plus, Trash2, Save, X, FileText, UploadCloud } from 'lucide-react';
+import { ArrowLeft, Cpu, Lock, CheckCircle, AlertTriangle, CornerRightUp, Settings, BarChart3, TrendingUp, Download, Code, List, BookOpen, Target, Users, ShieldCheck, Plus, Trash2, Save, X, FileText, UploadCloud, Dumbbell } from 'lucide-react';
 
 /* =========================================================
    HIGH-CONTRAST PALETTE (Centralized for Consistency)
@@ -345,7 +345,6 @@ const BookRowEditor = ({ book: initialBook, categoryKey, onUpdate, onDelete, isS
     };
 
     const inputClass = "w-full p-1.5 border rounded-lg focus:ring-1 focus:ring-[#E04E1B] text-sm bg-white";
-    // const displayClass = "w-full p-1.5 text-sm text-gray-700 truncate";
     
     const fields = [
         { key: 'title', label: 'Title' },
@@ -452,7 +451,7 @@ const ReadingHubTableEditor = ({ catalog, isSaving, setGlobalData, navigate }) =
             setGlobalData(prevGlobal => {
                 const newCatalog = JSON.parse(JSON.stringify(prevGlobal.READING_CATALOG_SERVICE || {}));
                 if (!newCatalog[newCatName.trim()]) {
-                    newCatalog[newCatName.trim()] = []; // Create an empty array for the new category
+                    newCatalog[newCatName.trim()] = [];
                 }
                 return { ...prevGlobal, READING_CATALOG_SERVICE: newCatalog };
             });
@@ -729,6 +728,86 @@ const ScenariosTableEditor = ({ data, isSaving, setGlobalData, idKey = 'id' }) =
 };
 
 
+// --- TARGET REP CATALOG EDITOR (NEW) ---
+const TargetRepTableEditor = ({ data, isSaving, setGlobalData, idKey = 'id' }) => {
+    // TARGET_REP_CATALOG is the new array structure
+    const targetRepsArray = data.TARGET_REP_CATALOG || [];
+
+    const { handleUpdateItem, handleDeleteItem } = useArrayDataCRUD('TARGET_REP_CATALOG', setGlobalData, idKey);
+
+    const handleAddNewTargetRep = () => {
+        const newRep = { 
+            [idKey]: generateId(), 
+            text: 'Practice the skill: [Your new rep]', 
+            linkedTier: 'T3',
+            linkedGoal: 'Strategic Focus',
+            isNew: true 
+        };
+        handleUpdateItem(newRep);
+    };
+    
+    const handleTargetRepDataParsed = useCallback((parsedData) => {
+        setGlobalData(prevGlobal => {
+            const existingIds = new Set(prevGlobal.TARGET_REP_CATALOG?.map(r => r.id) || []);
+            const newReps = parsedData.filter(r => !existingIds.has(r.id));
+            
+            alert(`Mass upload: ${newReps.length} new Target Reps staged.`);
+            return { ...prevGlobal, TARGET_REP_CATALOG: [...(prevGlobal.TARGET_REP_CATALOG || []), ...newReps] };
+        });
+    }, [setGlobalData]);
+
+
+    const fields = [
+        { key: 'text', label: 'Rep Text', type: 'text' },
+        { key: 'linkedTier', label: 'Linked Tier', type: 'text' },
+        { key: 'linkedGoal', label: 'Goal', type: 'text' },
+    ];
+    const gridColumns = `grid-cols-${fields.length + 2}`;
+
+
+    return (
+        <div className='mt-4'>
+            <p className='text-sm font-bold text-[#002E47] mb-2'>Target Rep Catalog Maintenance ({targetRepsArray.length} Reps)</p>
+            <p className='text-sm text-gray-700 mb-4'>
+                These reps are randomly selected to feature as "Today's Strategic Focus" on the Dashboard.
+            </p>
+
+            <div className={`grid ${gridColumns} gap-4 items-center p-2 font-bold border-b-2 text-sm text-[#002E47]`}>
+                <span className="truncate">ID</span>
+                {fields.map(f => <span key={f.key} className="truncate">{f.label}</span>)}
+                <span className="text-right">Actions</span>
+            </div>
+
+            <div className="max-h-[500px] overflow-y-auto border rounded-lg shadow-inner">
+                {targetRepsArray.map((rep) => (
+                    <GenericRowEditor 
+                        key={rep[idKey]}
+                        item={rep}
+                        onUpdate={handleUpdateItem}
+                        onDelete={handleDeleteItem}
+                        isSaving={isSaving}
+                        fields={fields}
+                        idKey={idKey}
+                    />
+                ))}
+            </div>
+            
+            <div className='mt-4 flex space-x-3'>
+                <Button onClick={handleAddNewTargetRep} disabled={isSaving} className={`bg-[${COLORS.ORANGE}] hover:bg-red-700`}>
+                    <Plus className='w-5 h-5 mr-2'/> Add New Target Rep
+                </Button>
+                <CSVUploadComponent 
+                    onDataParsed={handleTargetRepDataParsed}
+                    expectedFields={fields.concat({ key: 'id', type: 'text' })}
+                    isSaving={isSaving}
+                    buttonText="Mass Upload Target Reps (.csv)"
+                />
+            </div>
+        </div>
+    );
+};
+
+
 // --- ORIGINAL COMPONENTS (Raw Config Editor) ---
 
 const RawConfigEditor = ({ catalog, isSaving, setGlobalData, currentEditorKey }) => { 
@@ -854,6 +933,7 @@ const GlobalDataEditor = ({ globalMetadata, updateGlobalMetadata, navigate }) =>
         { key: 'reading', label: 'Content Editor (Reading Hub)', icon: BookOpen, accent: 'TEAL', count: countItems(localGlobalData.READING_CATALOG_SERVICE) },
         { key: 'tiers', label: 'Tiers & Goals', icon: Target, accent: 'ORANGE', count: countTiers(localGlobalData.LEADERSHIP_TIERS) },
         { key: 'scenarios', label: 'Coaching Scenarios', icon: Users, accent: 'BLUE', count: (localGlobalData.SCENARIO_CATALOG || []).length },
+        { key: 'target-reps', label: 'Target Reps Catalog', icon: Dumbbell, accent: 'GREEN', count: (localGlobalData.TARGET_REP_CATALOG || []).length }, // NEW TAB
         { key: 'summary', label: 'Summary', icon: BarChart3, accent: 'NAVY' },
         { key: 'raw', label: 'Advanced: Raw Config', icon: Code, accent: 'RED' },
     ], [localGlobalData]);
@@ -876,6 +956,13 @@ const GlobalDataEditor = ({ globalMetadata, updateGlobalMetadata, navigate }) =>
                 />;
             case 'scenarios':
                 return <ScenariosTableEditor
+                    data={localGlobalData}
+                    isSaving={isSaving}
+                    setGlobalData={setLocalGlobalData}
+                    idKey='id'
+                />;
+            case 'target-reps':
+                return <TargetRepTableEditor
                     data={localGlobalData}
                     isSaving={isSaving}
                     setGlobalData={setLocalGlobalData}

@@ -16,9 +16,6 @@ import { useAppServices } from '../../services/useAppServices.jsx';
 import TwoMinuteChallengeModal from '../modals/TwoMinuteChallengeModal.jsx';
 
 
-// --- MOCK UTILITIES (All internal mocks removed and replaced with service access) ---
-// Note: These placeholder functions must now rely on data passed from the service hook.
-
 // Placeholder to be replaced by service data
 const LEADERSHIP_TIERS_META_FALLBACK = { 
     'T1': { id: 'T1', name: 'Personal Foundation', hex: '#10B981' }, 
@@ -419,7 +416,7 @@ const AIStarterPackNudge = ({ pdpData, setLinkedGoal, setLinkedTier, isSaving })
  * CommitmentSelectorView: Allows users to add commitments from the bank or create custom ones.
  */
 const CommitmentSelectorView = ({ setView, initialGoal, initialTier, tierMeta, commitmentBank }) => {
-  const { updateCommitmentData, commitmentData, planningData, pdpData, callSecureGeminiAPI, hasGeminiKey, GEMINI_MODEL} = useAppServices(); // FIX: Call hook inside component
+  const { updateCommitmentData, commitmentData, planningData, pdpData, callSecureGeminiAPI, hasGeminiKey, GEMINI_MODEL, TARGET_REP_CATALOG} = useAppServices(); // FIX: Call hook inside component
 
   const [tab, setTab] = useState('bank');
   const [searchTerm, setSearchTerm] = useState('');
@@ -1187,7 +1184,7 @@ const MicroActionPromptModal = ({ isVisible, onClose, onMicroActionClick }) => {
  */
 export default function DailyPracticeScreen({ initialGoal, initialTier, quickLog, source }) {
   // CRITICAL FIX: Use useAppServices to get the state manager and data
-  const { commitmentData, updateCommitmentData, callSecureGeminiAPI, hasGeminiKey, pdpData, navigate, GEMINI_MODEL, LEADERSHIP_TIERS, MOCK_ACTIVITY_DATA, COMMITMENT_BANK} = useAppServices(); 
+  const { commitmentData, updateCommitmentData, callSecureGeminiAPI, hasGeminiKey, pdpData, navigate, GEMINI_MODEL, LEADERSHIP_TIERS, MOCK_ACTIVITY_DATA, COMMITMENT_BANK, TARGET_REP_CATALOG} = useAppServices(); 
   
   // ADDITION 1: New state to track if we've handled the initial navigation
   const [hasNavigatedInitial, setHasNavigatedInitial] = useState(false); 
@@ -1267,8 +1264,13 @@ useEffect(() => {
   const streak = calculateStreak(commitmentHistory);
   const isPerfectScore = score.total > 0 && score.committed === score.total;
   
-  // --- NEW DATA HOOKS (Features 1, 2, 8) ---
-  const dailyTargetRep = useMemo(() => MOCK_ACTIVITY_DATA?.daily_target_rep || 'Define your target rep.', [MOCK_ACTIVITY_DATA]);
+  // --- UPDATED TARGET REP HOOKS (Features 1, 2, 8) ---
+  const dailyTargetRep = useMemo(() => {
+      const catalog = TARGET_REP_CATALOG || [];
+      // NEW LOGIC: Select the first item for now
+      return catalog[0]?.text || MOCK_ACTIVITY_DATA?.daily_target_rep || 'Define your top priority rep.';
+  }, [TARGET_REP_CATALOG, MOCK_ACTIVITY_DATA]);
+  
   const identityStatement = useMemo(() => MOCK_ACTIVITY_DATA?.identity_statement || 'I am a principled leader.', [MOCK_ACTIVITY_DATA]);
   // --- END NEW DATA HOOKS ---
 
@@ -1602,7 +1604,7 @@ const sortedCommitments = useMemo(() => {
                           <div 
                               className="bg-[#002E47] h-4 rounded-full transition-all duration-700" 
                               style={{ width: `${monthlyProgress.rate}%` }}
-                          ></div>
+                          ></div >
                       </div>
                       <div className='flex justify-between items-center'>
                           <p className='text-sm font-semibold text-[#002E47]'>Perfect Rep Streak:</p>
