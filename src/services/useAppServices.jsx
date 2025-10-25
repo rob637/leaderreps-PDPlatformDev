@@ -141,6 +141,38 @@ export const useAppServices = () => useContext(AppServiceContext);
 /* =========================================================
    Helpers (guards + tracing)
 ========================================================= */
+/* ---------- Global metadata resolver (normalizes shape/aliases) ---------- */
+const resolveGlobalMetadata = (meta) => {
+  if (!meta || typeof meta !== 'object') return {};
+  const known = [
+    'LEADERSHIP_DOMAINS',
+    'RESOURCE_LIBRARY',
+    'READING_CATALOG_SERVICE',
+    'COMMITMENT_BANK',
+    'SCENARIO_CATALOG',
+    'TARGET_REP_CATALOG',
+    'LEADERSHIP_TIERS',
+    'VIDEO_CATALOG',
+    'GLOBAL_SETTINGS',
+  ];
+  const keys = Object.keys(meta);
+  const hasKnown = keys.some((k) => known.includes(k));
+  // Unwrap if wrapped under common containers
+  let payload = hasKnown ? meta : (meta.config || meta.global || meta.data || meta.payload || {});
+
+  // Alias support for older/newer schema names
+  if (payload && !payload.SCENARIO_CATALOG && Array.isArray(meta.QUICK_CHALLENGE_CATALOG)) {
+    payload = { ...payload, SCENARIO_CATALOG: meta.QUICK_CHALLENGE_CATALOG };
+  }
+  if (payload && !payload.TARGET_REP_CATALOG && Array.isArray(meta.TARGET_REPS)) {
+    payload = { ...payload, TARGET_REP_CATALOG: meta.TARGET_REPS };
+  }
+  if (payload && !payload.RESOURCE_LIBRARY && meta.RESOURCE_CONTENT_LIBRARY) {
+    payload = { ...payload, RESOURCE_LIBRARY: meta.RESOURCE_CONTENT_LIBRARY };
+  }
+  return payload || {};
+};
+
 const looksEmptyGlobal = (obj) => {
   if (!obj || typeof obj !== 'object') return true;
   const keys = Object.keys(obj);
@@ -333,7 +365,7 @@ export const useGlobalMetadata = (db, isAuthReady) => {
             window.__lastGlobalInfo = info;
           }
         } catch {}
-        setMetadata(d);
+        setMetadata(resolveGlobalMetadata(d));
         setLoading(false);
         setError(null);
       });
@@ -503,7 +535,7 @@ export const createAppServices = ({
 
       // merge all global metadata into the service context (so Admin editor sees it)
       LEADERSHIP_TIERS: global.metadata.LEADERSHIP_TIERS || LEADERSHIP_TIERS_FALLBACK,
-      ...global.metadata,
+      ...resolveGlobalMetadata(global.metadata),
 
       hasPendingDailyPractice,
     }),

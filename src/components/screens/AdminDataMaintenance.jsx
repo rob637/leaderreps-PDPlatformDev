@@ -4,6 +4,32 @@ import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import { useAppServices } from '../../services/useAppServices.jsx';
 import { ArrowLeft, Cpu, Lock, CheckCircle, AlertTriangle, CornerRightUp, Settings, BarChart3, TrendingUp, Download, Code, List, BookOpen, Target, Users, ShieldCheck, Plus, Trash2, Save, X, FileText, UploadCloud, Dumbbell, Link, Briefcase, Mic, Edit, Layers, ChevronRight, Home, Zap, HeartPulse } from 'lucide-react';
 
+// ---- Helper: Resolve/normalize global metadata shape ----
+function resolveGlobalMetadata(meta) {
+  if (!meta || typeof meta !== 'object') return {};
+  const knownKeys = new Set([
+    'LEADERSHIP_DOMAINS','RESOURCE_LIBRARY','READING_CATALOG_SERVICE',
+    'COMMITMENT_BANK','SCENARIO_CATALOG','TARGET_REP_CATALOG','LEADERSHIP_TIERS'
+  ]);
+  // If the object already has any known top-level keys, return as-is.
+  const hasKnown = Object.keys(meta).some(k => knownKeys.has(k));
+  let payload = hasKnown ? meta
+              : (meta.config || meta.global || meta.data || meta.payload || {});
+
+  // Fallback aliasing (support older/newer schema variants)
+  if (payload && !payload.SCENARIO_CATALOG && Array.isArray(meta.QUICK_CHALLENGE_CATALOG)) {
+    payload = { ...payload, SCENARIO_CATALOG: meta.QUICK_CHALLENGE_CATALOG };
+  }
+  if (payload && !payload.TARGET_REP_CATALOG && Array.isArray(meta.TARGET_REPS)) {
+    payload = { ...payload, TARGET_REP_CATALOG: meta.TARGET_REPS };
+  }
+  if (payload && !payload.RESOURCE_LIBRARY && meta.RESOURCE_CONTENT_LIBRARY) {
+    payload = { ...payload, RESOURCE_LIBRARY: meta.RESOURCE_CONTENT_LIBRARY };
+  }
+  return payload || {};
+}
+
+
 /* =========================================================
    HIGH-CONTRAST PALETTE (Centralized for Consistency)
 ========================================================= */
@@ -1634,7 +1660,7 @@ export default function AdminDataMaintenanceScreen({ navigate }) {
             <GlobalDataEditor 
                 // CRITICAL FIX: The key is REMOVED from the parent to avoid aggressive unneeded re-mounts.
                 // Synchronization is now handled internally in GlobalDataEditor.
-                globalMetadata={metadata} 
+                globalMetadata={resolveGlobalMetadata(metadata)} 
                 updateGlobalMetadata={updateGlobalMetadata} 
                 db={db}
                 navigate={navigate}
