@@ -82,6 +82,30 @@ const setDocEx = (db, path, data, merge = false) =>
 
 const updateDocEx = (db, path, data) => setDocEx(db, path, data, true);
 
+
+// --- ensureUserDocs: create required per-user docs if missing ---
+export const ensureUserDocs = async (db, uid) => {
+  try {
+    if (!db || !uid) return;
+    const targets = [
+      ['leadership_plan', 'roadmap', { plan_goals: [], last_updated: new Date().toISOString() }],
+      ['user_commitments', 'active', { active_commitments: [], reflection_journal: '' }],
+      ['user_planning', 'drafts', { drafts: [] }],
+    ];
+    for (const [col, docName, defaultData] of targets) {
+      const path = `${col}/${uid}/profile/${docName}`;
+      const snap = await getDocEx(db, path);
+      if (!snap || !snap.exists()) {
+        await setDocEx(db, path, defaultData, true); // merge:true
+        console.log(`[SEED] created ${path}`);
+      }
+    }
+  } catch (err) {
+    console.error('[ensureUserDocs] failed:', err);
+  }
+};
+
+
 /* =========================================================
    Defaults / fallbacks
 ========================================================= */

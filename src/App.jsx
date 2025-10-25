@@ -10,6 +10,7 @@ import React, {
 } from 'react';
 // CRITICAL FIX: The next step is to import useGlobalMetadata and updateGlobalMetadata here in App.jsx
 import { AppServiceContext, usePDPData, useCommitmentData, usePlanningData, useGlobalMetadata, updateGlobalMetadata, useAppServices } from './services/useAppServices.jsx';
+import { ensureUserDocs } from './services/useAppServices.jsx';
 
 import {
   initializeApp, 
@@ -260,6 +261,13 @@ const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
 
 const DataProvider = ({ children, firebaseServices, userId, isAuthReady, navigate, user }) => {
   const { db } = firebaseServices;
+  // Seed required per-user docs if missing (runs once on auth ready)
+  useEffect(() => {
+    if (db && isAuthReady && userId) {
+      ensureUserDocs(db, userId).catch(err => console.error('[SEED ERROR]', err));
+    }
+  }, [db, isAuthReady, userId]);
+
 
   // 1. Fetch User Data (PDP, Commitment, Planning)
   const pdp = usePDPData(db, userId, isAuthReady);
