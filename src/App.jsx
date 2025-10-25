@@ -216,7 +216,7 @@ const AppSettingsScreen = ({ navigate }) => {
                 <SettingsCard title="AI Integration" icon={Code}>
                     <label className='block text-sm font-medium text-gray-700'>Gemini API Key</label>
                     <input type="password" value={API_KEY ? '••••••••••••••••' : ''} readOnly placeholder="Configure in Netlify/Vite environment" className='w-full p-2 border border-gray-300 rounded-lg text-sm bg-gray-50'/>
-                    <p className className='text-xs text-gray-500 mt-1'>
+                    <p className='text-xs text-gray-500 mt-1'>
                         Status: <span className={`font-semibold ${API_KEY ? 'text-green-600' : 'text-red-500'}`}>{API_KEY ? 'Active' : 'Missing'}</span>
                     </p>
                     <button className={`text-sm font-semibold text-[${COLORS.NAVY}] hover:text-[${COLORS.TEAL}] mt-2`}><Link size={14} className='inline-block mr-1'/> Connect External Calendar</button>
@@ -382,7 +382,7 @@ function AuthPanel({ auth, onSuccess }) {
                         placeholder="Email" 
                         value={email} 
                         onChange={(e) => setEmail(e.target.value)} 
-                        // CRITICAL FIX: Removed "TETAL" typo here
+                        // CRITICAL FIX: Typo corrected here
                         className={`w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[${TEAL}] focus:border-[${TEAL}]`} 
                         disabled={isLoading}
                         autoComplete="email" 
@@ -485,7 +485,7 @@ const NavSidebar = ({ currentScreen, setCurrentScreen, user, closeMobileMenu, is
             if (auth) {
                 // FIX: Correctly call the imported Firebase signOut function
                 await signOut(auth); 
-                console.log('Sign Out successful. Waiting for state update.'); 
+                console.log('Sign Out successful.'); 
             }
             closeMobileMenu();
         } catch (e) { 
@@ -595,7 +595,7 @@ const ScreenRouter = ({ currentScreen, navParams, navigate }) => {
 const AppContent = ({ currentScreen, setCurrentScreen, user, navParams, isMobileOpen, setIsMobileOpen, isAuthRequired }) => {
     
     // FIX (Issue 1): Define the correct handler for closing the menu
-    const closeMobileMenu = useCallback(() => { setIsMobileOpen(false); }, [setIsMobileMenu]);
+    const closeMobileMenu = useCallback(() => { setIsMobileMenu(false); }, [setIsMobileMenu]);
     
     const { navigate } = useAppServices(); // Get the navigate function from context
     
