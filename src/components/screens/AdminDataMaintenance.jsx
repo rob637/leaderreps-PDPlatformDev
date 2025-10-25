@@ -1,8 +1,8 @@
 // src/components/screens/AdminDataMaintenance.jsx
 
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useAppServices } from '../../services/useAppServices.jsx';
-import { ArrowLeft, Cpu, Lock, CheckCircle, AlertTriangle, CornerRightUp, Settings, BarChart3, TrendingUp, Download, Code, List, BookOpen, Target, Users, ShieldCheck, Plus, Trash2, Save, X } from 'lucide-react';
+import { ArrowLeft, Cpu, Lock, CheckCircle, AlertTriangle, CornerRightUp, Settings, BarChart3, TrendingUp, Download, Code, List, BookOpen, Target, Users, ShieldCheck, Plus, Trash2, Save, X, FileText, UploadCloud } from 'lucide-react';
 
 /* =========================================================
    HIGH-CONTRAST PALETTE (Centralized for Consistency)
@@ -54,45 +54,91 @@ const Button = ({ children, onClick, disabled = false, variant = 'primary', clas
 // =========================================================
 
 // Helper to generate a unique ID for new items (basic example)
-const generateId = () => Date.now().toString(36) + Math.random().toString(36).substr(2);
+const generateId = () => Date.now().toString(36) + Math.random().toString(36).substr(2, 5);
 
-/*
- * Note: For a real app, the CRUD logic for Tiers/Scenarios would use a generic
- * TableComponent that accepts a `dataKey` (e.g., LEADERSHIP_TIERS) and an array of `fields`.
- * For this revision, we will create focused placeholders that utilize the same core
- * design principles as the ReadingHubTableEditor.
- */
+// --- GENERIC ARRAY CRUD HOOK ---
+const useArrayDataCRUD = (dataKey, setGlobalData, idKey = 'id') => {
 
-// --- 1. The Core Book/Row Editor Component ---
-const BookRowEditor = ({ book: initialBook, categoryKey, onUpdate, onDelete, isSaving }) => {
-    const [book, setBook] = useState(initialBook);
-    const [isEditing, setIsEditing] = useState(initialBook.isNew || false); // Start editing if it's new
-    const [isStaged, setIsStaged] = useState(initialBook.isNew || false);
+    const handleUpdateItem = useCallback((updatedItem) => {
+        setGlobalData(prevGlobal => {
+            // Deep clone the object for safe modification
+            const newState = JSON.parse(JSON.stringify(prevGlobal));
+            const target = newState[dataKey];
+            
+            // Check if the target is an Array or Object (for Tiers)
+            if (Array.isArray(target)) {
+                const existingIndex = target.findIndex(item => item[idKey] === updatedItem[idKey]);
+                if (existingIndex !== -1) {
+                    target[existingIndex] = { ...updatedItem, isNew: false };
+                } else {
+                    target.push({ ...updatedItem, isNew: false });
+                }
+            } else if (typeof target === 'object' && target !== null) {
+                // Special handling for the Tiers object structure: key is the ID
+                target[updatedItem[idKey]] = { ...updatedItem, isNew: false };
+            }
+
+            return newState;
+        });
+    }, [dataKey, setGlobalData, idKey]);
+
+    const handleDeleteItem = useCallback((itemId) => {
+        if (!window.confirm(`Are you sure you want to delete item ${itemId}? This is staged for a database write.`)) {
+            return;
+        }
+
+        setGlobalData(prevGlobal => {
+            const newState = JSON.parse(JSON.stringify(prevGlobal));
+            const target = newState[dataKey];
+            
+            if (Array.isArray(target)) {
+                newState[dataKey] = target.filter(item => item[idKey] !== itemId);
+            } else if (typeof target === 'object' && target !== null) {
+                // Special handling for the Tiers object structure: delete the key
+                delete newState[dataKey][itemId];
+            }
+            return newState;
+        });
+    }, [dataKey, setGlobalData, idKey]);
+
+    return { handleUpdateItem, handleDeleteItem };
+};
+
+
+// --- GENERIC ROW EDITOR COMPONENT ---
+const GenericRowEditor = ({ item: initialItem, onUpdate, onDelete, isSaving, fields, idKey = 'id' }) => {
+    const [item, setItem] = useState(initialItem);
+    const [isEditing, setIsEditing] = useState(initialItem.isNew || false); 
+    const [isStaged, setIsStaged] = useState(initialItem.isNew || false);
     
-    // Auto-update local state when prop changes (e.g., category switch or save)
     useEffect(() => {
-        setBook(initialBook);
-        setIsEditing(initialBook.isNew || false);
-        setIsStaged(initialBook.isNew || false);
-    }, [initialBook]);
+        setItem(initialItem);
+        setIsEditing(initialItem.isNew || false);
+        setIsStaged(initialItem.isNew || false);
+    }, [initialItem]);
     
-    // Field change handler
-    const handleChange = (field, value) => {
-        setBook(prev => ({ ...prev, [field]: value }));
+    const handleChange = (field, value, type) => {
+        const parsedValue = type === 'number' ? parseInt(value) || 0 : value;
+        setItem(prev => ({ ...prev, [field]: parsedValue }));
         setIsStaged(true);
     };
     
     const handleSave = () => {
-        onUpdate(categoryKey, { ...book, isNew: false }); // Commit changes to parent state
+        // Validation check for ID field when creating a new item
+        if (item.isNew && (!item[idKey] || item[idKey].trim() === '')) {
+            alert(`The ${idKey} field is required for new items.`);
+            return;
+        }
+        onUpdate(item); 
         setIsEditing(false);
         setIsStaged(false);
     };
 
     const handleCancel = () => {
-        if (initialBook.isNew) {
-            onDelete(categoryKey, book.id); // If new, cancelling means deleting the blank row
+        if (initialItem.isNew) {
+            onDelete(initialItem[idKey]); 
         } else {
-            setBook(initialBook); // Revert to initial state
+            setItem(initialItem); 
             setIsEditing(false);
             setIsStaged(false);
         }
@@ -101,11 +147,210 @@ const BookRowEditor = ({ book: initialBook, categoryKey, onUpdate, onDelete, isS
     const inputClass = "w-full p-1.5 border rounded-lg focus:ring-1 focus:ring-[#E04E1B] text-sm bg-white";
     const displayClass = "w-full p-1.5 text-sm text-gray-700 truncate";
     
+    // Calculate grid columns: number of fields + 1 for the ID + 1 for actions
+    const gridColumns = `grid-cols-${fields.length + 2}`;
+
+    return (
+        <div className={`grid ${gridColumns} gap-4 items-center p-2 border-b transition-colors ${isStaged ? 'bg-yellow-50' : 'hover:bg-gray-50'}`}>
+            {/* ID Column */}
+            <div className="truncate">
+                {isEditing && initialItem.isNew ? (
+                    <input
+                        type="text"
+                        value={item[idKey] || ''}
+                        onChange={(e) => handleChange(idKey, e.target.value, 'text')}
+                        className={inputClass + ' font-mono text-xs'}
+                        placeholder={`Unique ${idKey}`}
+                        disabled={isSaving}
+                    />
+                ) : (
+                    <p className='w-full p-1.5 text-xs font-mono text-gray-500 truncate'>{initialItem[idKey]}</p>
+                )}
+            </div>
+
+            {/* Editable Fields */}
+            {fields.map(field => (
+                <div key={field.key} className="truncate">
+                    {isEditing ? (
+                        <input
+                            type={field.type || 'text'}
+                            value={item[field.key] || (field.type === 'number' ? 0 : '')}
+                            onChange={(e) => handleChange(field.key, e.target.value, field.type)}
+                            className={inputClass}
+                            disabled={isSaving}
+                        />
+                    ) : (
+                        <p className={displayClass}>{item[field.key] || (field.type === 'number' ? 0 : '-')}</p>
+                    )}
+                </div>
+            ))}
+            
+            {/* Actions */}
+            <div className='flex space-x-2 justify-end'>
+                {isEditing ? (
+                    <>
+                        <Button onClick={handleSave} isSmall disabled={isSaving || !isStaged} className="bg-green-600 hover:bg-green-700">
+                            <Save className='w-4 h-4' />
+                        </Button>
+                        <Button onClick={handleCancel} isSmall variant='secondary' disabled={isSaving} className="bg-gray-400 hover:bg-gray-500">
+                            <X className='w-4 h-4' />
+                        </Button>
+                    </>
+                ) : (
+                    <>
+                        <Button onClick={() => setIsEditing(true)} isSmall disabled={isSaving} variant='outline'>
+                            <Settings className='w-4 h-4' />
+                        </Button>
+                        <Button onClick={() => onDelete(initialItem[idKey])} isSmall variant='secondary' disabled={isSaving}>
+                            <Trash2 className='w-4 h-4' />
+                        </Button>
+                    </>
+                )}
+            </div>
+        </div>
+    );
+};
+
+
+// --- NEW: CSV Upload Component (Handles client-side parsing) ---
+const CSVUploadComponent = ({ onDataParsed, expectedFields, isSaving, buttonText = "Mass Upload (.csv)" }) => {
+    const fileInputRef = useRef(null);
+    const [fileName, setFileName] = useState(null);
+    const [status, setStatus] = useState(null); // 'success', 'error', 'pending'
+
+    const handleFileChange = (event) => {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        setFileName(file.name);
+        setStatus('pending');
+        const reader = new FileReader();
+
+        reader.onload = (e) => {
+            const csvText = e.target.result;
+            try {
+                // Simple CSV parsing using splitting (robust enough for simple key-value sets)
+                const lines = csvText.split('\n').filter(line => line.trim() !== '');
+                if (lines.length <= 1) throw new Error("CSV must contain a header row and at least one data row.");
+                
+                // 1. Extract and sanitize headers
+                const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''));
+                const requiredHeaders = expectedFields.map(f => f.key);
+                const missingHeaders = requiredHeaders.filter(h => !headers.includes(h));
+
+                if (missingHeaders.length > 0) {
+                    throw new Error(`Missing required headers: ${missingHeaders.join(', ')}. Found: ${headers.join(', ')}`);
+                }
+
+                // 2. Parse data rows
+                const data = [];
+                for (let i = 1; i < lines.length; i++) {
+                    const values = lines[i].split(',').map(v => v.trim().replace(/"/g, ''));
+                    const item = {};
+                    headers.forEach((header, index) => {
+                        // Attempt to cast numbers if expected
+                        const fieldType = expectedFields.find(f => f.key === header)?.type;
+                        if (fieldType === 'number') {
+                            item[header] = parseInt(values[index]) || 0;
+                        } else {
+                            item[header] = values[index];
+                        }
+                    });
+                    // Ensure a unique ID is present for merging/updating
+                    if (!item.id) item.id = generateId(); 
+                    data.push(item);
+                }
+
+                onDataParsed(data); // Pass parsed data up to the parent editor
+                setStatus('success');
+            } catch (error) {
+                setStatus('error');
+                console.error("CSV Parsing Error:", error);
+                alert(`Error parsing CSV: ${error.message}`);
+            } finally {
+                event.target.value = null; // Clear file input
+            }
+        };
+
+        reader.readAsText(file);
+    };
+
+    const StatusIcon = status === 'success' ? CheckCircle : status === 'error' ? AlertTriangle : FileText;
+    const StatusColor = status === 'success' ? COLORS.GREEN : status === 'error' ? COLORS.RED : COLORS.TEAL;
+
+    return (
+        <div className='inline-block'>
+            <input
+                type="file"
+                accept=".csv"
+                ref={fileInputRef}
+                onChange={handleFileChange}
+                style={{ display: 'none' }}
+                disabled={isSaving}
+            />
+            <Button 
+                onClick={() => fileInputRef.current.click()} 
+                disabled={isSaving} 
+                variant={status === 'success' ? 'primary' : 'outline'}
+                style={{ borderColor: StatusColor, color: StatusColor }}
+                className='flex items-center justify-center'
+            >
+                <UploadCloud className='w-5 h-5 mr-2'/> 
+                {status === 'success' ? 'Data Staged (Review Now)' : status === 'error' ? 'Parsing Failed (Re-upload)' : buttonText}
+            </Button>
+            {fileName && (
+                <span className={`ml-3 text-sm font-medium flex items-center ${status === 'error' ? 'text-red-500' : 'text-gray-600'}`}>
+                    <StatusIcon className='w-4 h-4 mr-1' style={{ color: StatusColor }}/> 
+                    {fileName}
+                </span>
+            )}
+        </div>
+    );
+};
+
+
+// --- READING HUB EDITOR (No changes to logic, just structure) ---
+const BookRowEditor = ({ book: initialBook, categoryKey, onUpdate, onDelete, isSaving }) => {
+    // ... (BookRowEditor implementation is as before) ...
+    const [book, setBook] = useState(initialBook);
+    const [isEditing, setIsEditing] = useState(initialBook.isNew || false); 
+    const [isStaged, setIsStaged] = useState(initialBook.isNew || false);
+    
+    useEffect(() => {
+        setBook(initialBook);
+        setIsEditing(initialBook.isNew || false);
+        setIsStaged(initialBook.isNew || false);
+    }, [initialBook]);
+    
+    const handleChange = (field, value, type) => {
+        const parsedValue = type === 'number' ? parseInt(value) || 0 : value;
+        setBook(prev => ({ ...prev, [field]: parsedValue }));
+        setIsStaged(true);
+    };
+    
+    const handleSave = () => {
+        onUpdate(categoryKey, { ...book, isNew: false }); 
+        setIsEditing(false);
+        setIsStaged(false);
+    };
+
+    const handleCancel = () => {
+        if (initialBook.isNew) {
+            onDelete(categoryKey, book.id);
+        } else {
+            setBook(initialBook);
+            setIsEditing(false);
+            setIsStaged(false);
+        }
+    };
+
+    const inputClass = "w-full p-1.5 border rounded-lg focus:ring-1 focus:ring-[#E04E1B] text-sm bg-white";
+    // const displayClass = "w-full p-1.5 text-sm text-gray-700 truncate";
+    
     const fields = [
         { key: 'title', label: 'Title' },
         { key: 'author', label: 'Author' },
         { key: 'pages', label: 'Pages', type: 'number' },
-        // Add more fields as needed: url, rating, etc.
     ];
 
     return (
@@ -115,13 +360,13 @@ const BookRowEditor = ({ book: initialBook, categoryKey, onUpdate, onDelete, isS
                     {isEditing ? (
                         <input
                             type={field.type || 'text'}
-                            value={book[field.key] || ''}
-                            onChange={(e) => handleChange(field.key, field.type === 'number' ? parseInt(e.target.value) || 0 : e.target.value)}
+                            value={book[field.key] || (field.type === 'number' ? 0 : '')}
+                            onChange={(e) => handleChange(field.key, e.target.value, field.type)}
                             className={inputClass}
                             disabled={isSaving}
                         />
                     ) : (
-                        <p className={displayClass}>{book[field.key] || '-'}</p>
+                        <p className="w-full p-1.5 text-sm text-gray-700 truncate">{book[field.key] || (field.type === 'number' ? 0 : '-')}</p>
                     )}
                 </div>
             ))}
@@ -151,12 +396,9 @@ const BookRowEditor = ({ book: initialBook, categoryKey, onUpdate, onDelete, isS
     );
 };
 
-
-// --- 2. Main Reading Hub Table Editor Component (Combines Category Selector and Book Table) ---
 const ReadingHubTableEditor = ({ catalog, isSaving, setGlobalData, navigate }) => { 
     
     const safeCatalog = catalog || {};
-    
     const categoryKeys = useMemo(() => Object.keys(safeCatalog).sort(), [safeCatalog]);
     const [currentCategory, setCurrentCategory] = useState(categoryKeys[0] || 'Uncategorized');
 
@@ -170,69 +412,70 @@ const ReadingHubTableEditor = ({ catalog, isSaving, setGlobalData, navigate }) =
 
     const books = useMemo(() => safeCatalog[currentCategory] || [], [safeCatalog, currentCategory]);
 
-    // HANDLER: Update/Edit a Book
     const handleUpdateBook = useCallback((category, updatedBook) => {
         setGlobalData(prevGlobal => {
             const newCatalog = JSON.parse(JSON.stringify(prevGlobal.READING_CATALOG_SERVICE || {}));
-            
             const targetArray = newCatalog[category] || [];
-            
             const index = targetArray.findIndex(b => b.id === updatedBook.id);
-
             if (index !== -1) {
                 targetArray[index] = updatedBook;
             } else {
                 targetArray.push(updatedBook);
             }
-
             newCatalog[category] = targetArray;
-
-            return { 
-                ...prevGlobal, 
-                READING_CATALOG_SERVICE: newCatalog 
-            };
+            return { ...prevGlobal, READING_CATALOG_SERVICE: newCatalog };
         });
     }, [setGlobalData]);
 
-    // HANDLER: Delete a Book
     const handleDeleteBook = useCallback((category, bookId) => {
-        if (!window.confirm(`Are you sure you want to delete book ID ${bookId} from category ${category}? This is staged for a database write.`)) {
-            return;
-        }
-
+        if (!window.confirm(`Are you sure you want to delete book ID ${bookId} from category ${category}? This is staged for a database write.`)) { return; }
         setGlobalData(prevGlobal => {
             const newCatalog = JSON.parse(JSON.stringify(prevGlobal.READING_CATALOG_SERVICE || {}));
-            
             newCatalog[category] = (newCatalog[category] || []).filter(b => b.id !== bookId);
-
-            return { 
-                ...prevGlobal, 
-                READING_CATALOG_SERVICE: newCatalog 
-            };
+            return { ...prevGlobal, READING_CATALOG_SERVICE: newCatalog };
         });
     }, [setGlobalData]);
 
-    // HANDLER: Add a New Book
     const handleAddNewBook = () => {
-        // Simple structure for a new book
         const newBook = { id: generateId(), title: 'NEW BOOK', author: 'New Author', pages: 100, isNew: true };
-        
         setGlobalData(prevGlobal => {
             const newCatalog = JSON.parse(JSON.stringify(prevGlobal.READING_CATALOG_SERVICE || {}));
-            
             newCatalog[currentCategory] = newCatalog[currentCategory] || [];
             newCatalog[currentCategory].push(newBook);
-            
-            return { 
-                ...prevGlobal, 
-                READING_CATALOG_SERVICE: newCatalog 
-            };
+            return { ...prevGlobal, READING_CATALOG_SERVICE: newCatalog };
         });
     };
     
-    const handleMassUpload = () => {
-        alert('Mass upload logic (CSV parsing) is TBD. For now, use the "Advanced: Raw Config" tab for mass JSON.');
+    const handleCreateCategory = () => {
+        const newCatName = prompt("Enter the name for the new category (e.g., 'Team Health'):");
+        if (newCatName && newCatName.trim()) {
+            setGlobalData(prevGlobal => {
+                const newCatalog = JSON.parse(JSON.stringify(prevGlobal.READING_CATALOG_SERVICE || {}));
+                if (!newCatalog[newCatName.trim()]) {
+                    newCatalog[newCatName.trim()] = []; // Create an empty array for the new category
+                }
+                return { ...prevGlobal, READING_CATALOG_SERVICE: newCatalog };
+            });
+            setCurrentCategory(newCatName.trim());
+        }
     };
+    
+    // CSV Upload Handler for Nested Structure
+    const handleBookDataParsed = useCallback((parsedData) => {
+        // Merge parsed data into the current category
+        setGlobalData(prevGlobal => {
+            const newCatalog = JSON.parse(JSON.stringify(prevGlobal.READING_CATALOG_SERVICE || {}));
+            const existingBookIds = new Set(newCatalog[currentCategory]?.map(b => b.id) || []);
+            
+            // Filter out duplicates and merge
+            const newBooks = parsedData.filter(b => !existingBookIds.has(b.id));
+            newCatalog[currentCategory] = [...(newCatalog[currentCategory] || []), ...newBooks];
+            
+            alert(`Mass upload: ${newBooks.length} new books staged in category '${currentCategory}'.`);
+            return { ...prevGlobal, READING_CATALOG_SERVICE: newCatalog };
+        });
+    }, [setGlobalData, currentCategory]);
+
 
     return (
         <div className='mt-4 flex'>
@@ -246,10 +489,10 @@ const ReadingHubTableEditor = ({ catalog, isSaving, setGlobalData, navigate }) =
                             onClick={() => setCurrentCategory(key)}
                             className={`w-full text-left p-2 rounded-lg text-sm font-medium transition-colors ${currentCategory === key ? 'bg-[#47A88D] text-white' : 'text-gray-700 hover:bg-gray-100'}`}
                         >
-                            {key} ({safeCatalog[key].length})
+                            {key} ({safeCatalog[key]?.length || 0})
                         </button>
                     ))}
-                    <Button isSmall variant='outline' className='w-full mt-2' onClick={() => alert("Logic to create a new category goes here.")}>
+                    <Button isSmall variant='outline' className='w-full mt-2' onClick={handleCreateCategory}>
                         <Plus className='w-4 h-4 mr-1' /> New Category
                     </Button>
                 </div>
@@ -281,7 +524,6 @@ const ReadingHubTableEditor = ({ catalog, isSaving, setGlobalData, navigate }) =
                                 onUpdate={handleUpdateBook}
                                 onDelete={handleDeleteBook}
                                 isSaving={isSaving}
-                                book={book} // Passed to force re-render on external update
                             />
                         ))
                     ) : (
@@ -293,9 +535,11 @@ const ReadingHubTableEditor = ({ catalog, isSaving, setGlobalData, navigate }) =
                     <Button onClick={handleAddNewBook} disabled={isSaving} className={`bg-[${COLORS.TEAL}] hover:bg-[#349881]`}>
                         <Plus className='w-5 h-5 mr-2'/> Add New Book to {currentCategory}
                     </Button>
-                    <Button onClick={handleMassUpload} disabled={isSaving} variant='outline'>
-                        <Download className='w-5 h-5 mr-2'/> Mass CSV Upload (TBD)
-                    </Button>
+                    <CSVUploadComponent 
+                        onDataParsed={handleBookDataParsed}
+                        expectedFields={[{ key: 'id', type: 'text' }, { key: 'title', type: 'text' }, { key: 'author', type: 'text' }, { key: 'pages', type: 'number' }]}
+                        isSaving={isSaving}
+                    />
                 </div>
             </div>
         </div>
@@ -303,101 +547,192 @@ const ReadingHubTableEditor = ({ catalog, isSaving, setGlobalData, navigate }) =
 };
 
 
-// --- 3. Placeholder for Tiers & Goals Editor ---
-const TiersGoalsTableEditor = ({ data, isSaving, setGlobalData }) => {
-    // NOTE: This is a placeholder structure. Actual implementation would involve 
-    // row components similar to BookRowEditor, but with different fields.
-    const safeData = data || {};
-    const tiers = Object.values(safeData.LEADERSHIP_TIERS || {}).flat(); // Flatten into an array for table view
+// --- TIERS & GOALS EDITOR (LEADERSHIP_TIERS) ---
+const TiersGoalsTableEditor = ({ data, isSaving, setGlobalData, idKey = 'id' }) => {
+    // CRITICAL: We must transform the object structure {T1: {name:.., hex:..}, T2: {...}} into an array of objects
+    const tiersArray = useMemo(() => Object.values(data.LEADERSHIP_TIERS || {}).map(t => ({ 
+        ...t, 
+        [idKey]: t[idKey] || t.id 
+    })), [data.LEADERSHIP_TIERS, idKey]);
+
+    const { handleDeleteItem } = useArrayDataCRUD('LEADERSHIP_TIERS', setGlobalData, idKey);
+
+    // CRITICAL: Overwrite the handleUpdateItem to also update the object keys when saving.
+    const handleSaveTier = useCallback((updatedTier) => {
+        setGlobalData(prevGlobal => {
+            const newTiers = JSON.parse(JSON.stringify(prevGlobal.LEADERSHIP_TIERS || {}));
+            
+            // 1. Delete the old key if the ID has changed (not fully supported by this simple editor, but for safety)
+            const existingId = updatedTier[idKey];
+            if (newTiers[existingId] && existingId !== updatedTier.id) {
+                 delete newTiers[existingId];
+            }
+            
+            // 2. Add the new/updated tier using its ID as the key
+            newTiers[updatedTier.id] = { ...updatedTier, isNew: false };
+            
+            return { ...prevGlobal, LEADERSHIP_TIERS: newTiers };
+        });
+    }, [setGlobalData, idKey]);
+
+
+    const handleAddNewTier = () => {
+        const newTier = { 
+            [idKey]: `T${tiersArray.length + 1}`, 
+            name: `New Tier ${tiersArray.length + 1}`, 
+            icon: 'Briefcase', 
+            hex: '#CCCCCC', 
+            isNew: true 
+        };
+        handleSaveTier(newTier);
+    };
+    
+    const handleTierDataParsed = useCallback((parsedData) => {
+        setGlobalData(prevGlobal => {
+            const newTiers = JSON.parse(JSON.stringify(prevGlobal.LEADERSHIP_TIERS || {}));
+            parsedData.forEach(tier => {
+                newTiers[tier.id] = tier; // Overwrite or create using ID as key
+            });
+            alert(`${parsedData.length} tiers staged for update/creation.`);
+            return { ...prevGlobal, LEADERSHIP_TIERS: newTiers };
+        });
+    }, [setGlobalData]);
+
+    const fields = [
+        { key: 'name', label: 'Tier Name', type: 'text' },
+        { key: 'icon', label: 'Icon (Lucide Key)', type: 'text' },
+        { key: 'hex', label: 'Color (Hex)', type: 'text' },
+    ];
+    const gridColumns = `grid-cols-${fields.length + 2}`;
 
     return (
         <div className='mt-4'>
-            <p className='text-sm font-bold text-[#002E47] mb-2'>Tier & Goal Maintenance ({tiers.length} Tiers)</p>
+            <p className='text-sm font-bold text-[#002E47] mb-2'>Tier & Goal Maintenance ({tiersArray.length} Tiers)</p>
             <p className='text-sm text-gray-700 mb-4'>
-                This table will allow direct editing of **LEADERSHIP\_TIERS** properties (e.g., name, required points, bonuses).
+                Edit core tier metadata. **The ID field must be unique (e.g., T1, T2).** Changes are staged locally.
             </p>
 
+            <div className={`grid ${gridColumns} gap-4 items-center p-2 font-bold border-b-2 text-sm text-[#002E47]`}>
+                <span className="truncate">Tier ID (Key)</span>
+                {fields.map(f => <span key={f.key} className="truncate">{f.label}</span>)}
+                <span className="text-right">Actions</span>
+            </div>
+
             <div className="max-h-[500px] overflow-y-auto border rounded-lg shadow-inner">
-                {/* Header */}
-                <div className="grid grid-cols-4 gap-4 items-center p-2 font-bold border-b-2 text-sm text-[#002E47]">
-                    <span className="truncate">Tier ID</span>
-                    <span className="truncate">Name</span>
-                    <span className="truncate">Points Required</span>
-                    <span className="text-right">Actions</span>
-                </div>
-                {/* Rows */}
-                {tiers.map((tier) => (
-                    <div key={tier.id} className="grid grid-cols-4 gap-4 items-center p-2 border-b hover:bg-gray-50">
-                        <p className="text-sm text-gray-600 truncate">{tier.id}</p>
-                        <input defaultValue={tier.name || ''} className="w-full p-1.5 border rounded-lg text-sm" disabled={isSaving}/>
-                        <input type="number" defaultValue={tier.pointsRequired || 0} className="w-full p-1.5 border rounded-lg text-sm" disabled={isSaving}/>
-                        <div className='flex space-x-2 justify-end'>
-                            <Button isSmall disabled={true}><Save className='w-4 h-4' /></Button>
-                            <Button isSmall variant='secondary' disabled={true}><Trash2 className='w-4 h-4' /></Button>
-                        </div>
-                    </div>
+                {tiersArray.map((tier) => (
+                    <GenericRowEditor 
+                        key={tier[idKey]}
+                        item={tier}
+                        onUpdate={handleSaveTier}
+                        onDelete={handleDeleteItem}
+                        isSaving={isSaving}
+                        fields={fields}
+                        idKey={idKey}
+                    />
                 ))}
             </div>
             
             <div className='mt-4 flex space-x-3'>
-                <Button onClick={() => alert("Add Tier/Goal logic needed.")} disabled={isSaving} className={`bg-[${COLORS.ORANGE}] hover:bg-red-700`}>
+                <Button onClick={handleAddNewTier} disabled={isSaving} className={`bg-[${COLORS.ORANGE}] hover:bg-red-700`}>
                     <Plus className='w-5 h-5 mr-2'/> Add New Tier
                 </Button>
+                <CSVUploadComponent 
+                    onDataParsed={handleTierDataParsed}
+                    expectedFields={[{ key: 'id', type: 'text' }, { key: 'name', type: 'text' }, { key: 'icon', type: 'text' }, { key: 'hex', type: 'text' }]}
+                    isSaving={isSaving}
+                />
             </div>
         </div>
     );
 };
 
 
-// --- 4. Placeholder for Coaching Scenarios Editor ---
-const ScenariosTableEditor = ({ data, isSaving, setGlobalData }) => {
-    // Assuming SCENARIO_CATALOG is a simple array of objects
-    const safeScenarios = data.SCENARIO_CATALOG || [];
+// --- COACHING SCENARIOS EDITOR (SCENARIO_CATALOG) ---
+const ScenariosTableEditor = ({ data, isSaving, setGlobalData, idKey = 'id' }) => {
+    // SCENARIO_CATALOG is a flat array, perfect for useArrayDataCRUD
+    const scenariosArray = data.SCENARIO_CATALOG || [];
+
+    const { handleUpdateItem, handleDeleteItem } = useArrayDataCRUD('SCENARIO_CATALOG', setGlobalData, idKey);
+
+    const handleAddNewScenario = () => {
+        const newScenario = { 
+            [idKey]: generateId(), 
+            title: 'New Scenario Title', 
+            short_desc: 'Brief description...', 
+            persona: 'The Deflector',
+            difficultyLevel: 50,
+            choices: [], // Ensure array of choices exists
+            isNew: true 
+        };
+        handleUpdateItem(newScenario);
+    };
+    
+    const handleScenarioDataParsed = useCallback((parsedData) => {
+        setGlobalData(prevGlobal => {
+            const existingIds = new Set(prevGlobal.SCENARIO_CATALOG?.map(s => s.id) || []);
+            const newScenarios = parsedData.filter(s => !existingIds.has(s.id));
+            
+            alert(`Mass upload: ${newScenarios.length} new scenarios staged.`);
+            return { ...prevGlobal, SCENARIO_CATALOG: [...(prevGlobal.SCENARIO_CATALOG || []), ...newScenarios] };
+        });
+    }, [setGlobalData]);
+
+
+    const fields = [
+        { key: 'title', label: 'Title', type: 'text' },
+        { key: 'short_desc', label: 'Short Description', type: 'text' },
+        { key: 'persona', label: 'Persona', type: 'text' },
+        { key: 'difficultyLevel', label: 'Difficulty (0-100)', type: 'number' },
+    ];
+    const gridColumns = `grid-cols-${fields.length + 2}`;
+
 
     return (
         <div className='mt-4'>
-            <p className='text-sm font-bold text-[#002E47] mb-2'>Coaching Scenario Maintenance ({safeScenarios.length} Scenarios)</p>
+            <p className='text-sm font-bold text-[#002E47] mb-2'>Coaching Scenario Maintenance ({scenariosArray.length} Scenarios)</p>
             <p className='text-sm text-gray-700 mb-4'>
-                This table will allow direct editing of **SCENARIO\_CATALOG** properties (e.g., description, choices, correct answer).
+                Edit the pre-seeded coaching scenarios. **Title and Description must be set.** Changes are staged locally.
             </p>
 
+            <div className={`grid ${gridColumns} gap-4 items-center p-2 font-bold border-b-2 text-sm text-[#002E47]`}>
+                <span className="truncate">ID</span>
+                {fields.map(f => <span key={f.key} className="truncate">{f.label}</span>)}
+                <span className="text-right">Actions</span>
+            </div>
+
             <div className="max-h-[500px] overflow-y-auto border rounded-lg shadow-inner">
-                {/* Header */}
-                <div className="grid grid-cols-4 gap-4 items-center p-2 font-bold border-b-2 text-sm text-[#002E47]">
-                    <span className="truncate">Scenario ID</span>
-                    <span className="truncate">Short Description</span>
-                    <span className="truncate"># of Choices</span>
-                    <span className="text-right">Actions</span>
-                </div>
-                {/* Rows */}
-                {safeScenarios.map((scenario) => (
-                    <div key={scenario.id} className="grid grid-cols-4 gap-4 items-center p-2 border-b hover:bg-gray-50">
-                        <p className="text-sm text-gray-600 truncate">{scenario.id}</p>
-                        <input defaultValue={scenario.short_desc || ''} className="w-full p-1.5 border rounded-lg text-sm" disabled={isSaving}/>
-                        <p className="text-sm text-gray-600 truncate">{scenario.choices?.length || 0}</p>
-                        <div className='flex space-x-2 justify-end'>
-                            <Button isSmall disabled={true}><Save className='w-4 h-4' /></Button>
-                            <Button isSmall variant='secondary' disabled={true}><Trash2 className='w-4 h-4' /></Button>
-                        </div>
-                    </div>
+                {scenariosArray.map((scenario) => (
+                    <GenericRowEditor 
+                        key={scenario[idKey]}
+                        item={scenario}
+                        onUpdate={handleUpdateItem}
+                        onDelete={handleDeleteItem}
+                        isSaving={isSaving}
+                        fields={fields}
+                        idKey={idKey}
+                    />
                 ))}
             </div>
             
             <div className='mt-4 flex space-x-3'>
-                <Button onClick={() => alert("Add Scenario logic needed.")} disabled={isSaving} className={`bg-[${COLORS.ORANGE}] hover:bg-red-700`}>
+                <Button onClick={handleAddNewScenario} disabled={isSaving} className={`bg-[${COLORS.ORANGE}] hover:bg-red-700`}>
                     <Plus className='w-5 h-5 mr-2'/> Add New Scenario
                 </Button>
+                <CSVUploadComponent 
+                    onDataParsed={handleScenarioDataParsed}
+                    expectedFields={fields.concat({ key: 'id', type: 'text' })}
+                    isSaving={isSaving}
+                />
             </div>
         </div>
     );
 };
 
-// --- ORIGINAL COMPONENTS (Modified to integrate new editor) ---
 
-// The Raw Config Editor is kept separate for the 'Advanced: Raw Config' tab
-const RawConfigEditor = ({ catalog, isSaving, setGlobalData, navigate, currentEditorKey }) => { 
+// --- ORIGINAL COMPONENTS (Raw Config Editor) ---
+
+const RawConfigEditor = ({ catalog, isSaving, setGlobalData, currentEditorKey }) => { 
     
-    // CRITICAL FIX 1: Ensure JSON.stringify uses an empty object if catalog is null/undefined
     const initialJson = useMemo(() => {
         try {
             return JSON.stringify(catalog || {}, null, 2);
@@ -407,7 +742,7 @@ const RawConfigEditor = ({ catalog, isSaving, setGlobalData, navigate, currentEd
     }, [catalog]);
 
     const [jsonText, setJsonText] = useState(initialJson);
-    const [status, setStatus] = useState(null); // null, 'success', 'error'
+    const [status, setStatus] = useState(null); 
     
     useEffect(() => {
         setJsonText(initialJson);
@@ -432,13 +767,10 @@ const RawConfigEditor = ({ catalog, isSaving, setGlobalData, navigate, currentEd
             const parsedData = JSON.parse(jsonText);
             
             if (currentEditorKey === 'RAW_CONFIG') {
-                 // For the raw tab, replace the entire object with the parsed data
                  setGlobalData(() => parsedData);
                  setStatus({ type: 'success', message: 'Raw Config staged locally. (Ready to write).' });
-                 return;
             } else {
                  setStatus({ type: 'error', message: 'Unknown editor key. Stage operation failed.' });
-                 return;
             }
             
         } catch (e) {
@@ -479,7 +811,7 @@ const RawConfigEditor = ({ catalog, isSaving, setGlobalData, navigate, currentEd
 
 
 // --- MAIN ROUTER (GlobalDataEditor) ---
-const GlobalDataEditor = ({ globalMetadata, updateGlobalMetadata, db, navigate }) => {
+const GlobalDataEditor = ({ globalMetadata, updateGlobalMetadata, navigate }) => {
     
     const [localGlobalData, setLocalGlobalData] = useState(globalMetadata || {});
     const [currentTab, setCurrentTab] = useState('reading');
@@ -498,7 +830,9 @@ const GlobalDataEditor = ({ globalMetadata, updateGlobalMetadata, db, navigate }
         setStatus(null);
         
         try {
-            const success = await updateGlobalMetadata(db, localGlobalData);
+            // CRITICAL FIX: The updateGlobalMetadata hook exposed by useAppServices
+            // expects the data object as the only argument in the component flow.
+            const success = await updateGlobalMetadata(localGlobalData);
 
             if (success) {
                 setStatus({ type: 'success', message: 'ALL global configurations successfully saved to Firestore.' });
@@ -519,7 +853,7 @@ const GlobalDataEditor = ({ globalMetadata, updateGlobalMetadata, db, navigate }
     const navItems = useMemo(() => [
         { key: 'reading', label: 'Content Editor (Reading Hub)', icon: BookOpen, accent: 'TEAL', count: countItems(localGlobalData.READING_CATALOG_SERVICE) },
         { key: 'tiers', label: 'Tiers & Goals', icon: Target, accent: 'ORANGE', count: countTiers(localGlobalData.LEADERSHIP_TIERS) },
-        { key: 'scenarios', label: 'Coaching Scenarios', icon: Users, accent: 'BLUE', count: countItems(localGlobalData.SCENARIO_CATALOG) },
+        { key: 'scenarios', label: 'Coaching Scenarios', icon: Users, accent: 'BLUE', count: (localGlobalData.SCENARIO_CATALOG || []).length },
         { key: 'summary', label: 'Summary', icon: BarChart3, accent: 'NAVY' },
         { key: 'raw', label: 'Advanced: Raw Config', icon: Code, accent: 'RED' },
     ], [localGlobalData]);
@@ -538,12 +872,14 @@ const GlobalDataEditor = ({ globalMetadata, updateGlobalMetadata, db, navigate }
                     data={localGlobalData}
                     isSaving={isSaving}
                     setGlobalData={setLocalGlobalData}
+                    idKey='id'
                 />;
             case 'scenarios':
                 return <ScenariosTableEditor
                     data={localGlobalData}
                     isSaving={isSaving}
                     setGlobalData={setLocalGlobalData}
+                    idKey='id'
                 />;
             case 'raw':
                 return (
@@ -561,7 +897,7 @@ const GlobalDataEditor = ({ globalMetadata, updateGlobalMetadata, db, navigate }
                     <Card title="Database Summary Snapshot" accent='TEAL' isSmall={true}>
                         <p className='text-sm text-gray-700 mb-4'>Review the current counts before committing changes. *Use the table editors before saving globally.*</p>
                         <div className='space-y-2'>
-                            {navItems.filter(i => i.count !== undefined).map(item => (
+                            {navItems.filter(i => i.key !== 'raw' && i.count !== undefined).map(item => (
                                 <div key={item.key} className='flex justify-between items-center text-sm border-b pb-1'>
                                     <span className='font-semibold'>{item.label}:</span>
                                     <span className='font-extrabold text-[#E04E1B]'>{item.count} Items</span>
