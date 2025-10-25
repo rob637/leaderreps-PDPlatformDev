@@ -15,7 +15,10 @@ import { AlertTriangle, ArrowLeft, BarChart3, BookOpen, Briefcase, CheckCircle, 
    MOCK DATA (Only non-API data remains)
 ========================================================= */
 // Global array to store completed practice sessions (for PracticeLogView)
-// MOCK_PRACTICE_SESSIONS is removed from here and must be loaded from service context (pdpData.practice_sessions)
+const MOCK_PRACTICE_SESSIONS = [
+    { id: 1, title: 'The Underperformer', date: 'Oct 15, 2025', score: 88, takeaway: 'Focus on Deep Validation.', difficulty: 'Medium' },
+    { id: 2, title: 'The Boundary Pusher', date: 'Oct 10, 2025', score: 72, takeaway: 'Improve objective Behavior statement.', difficulty: 'High' },
+];
 
 /* =========================================================
    HIGH-CONTRAST PALETTE
@@ -46,7 +49,7 @@ const COMPLEXITY_MAP = {
 /* =========================================================
    UI Components
 ========================================================= */
-
+// ... (Button, Card, Tooltip components remain unchanged) ...
 const Button = ({ children, onClick, disabled = false, variant = 'primary', className = '', ...rest }) => {
     let baseStyle = "px-6 py-3 rounded-xl font-semibold transition-all shadow-xl focus:outline-none focus:ring-4 text-white";
 
@@ -233,7 +236,7 @@ ${fullConversation}
                     ))
                 )}
                 {isGenerating && (
-                    <div className className='flex justify-start mb-4'>
+                    <div className='flex justify-start mb-4'>
                         <div className='p-4 max-w-lg rounded-xl bg-[#0B3B5B]/10 text-gray-500 rounded-tl-none'>
                             <div className="animate-pulse text-sm">Coach is analyzing...</div>
                         </div>
@@ -290,8 +293,22 @@ const RolePlayCritique = ({ history, setView, preparedSBI, scenario, difficultyL
         return "Refine empathy and focus on measurable outcomes in your next practice session.";
     };
 
-    // NOTE: MOCK_PRACTICE_SESSIONS dependency is removed; this data is now managed via service context.
-    // The key takeaway is now saved to the Commitment Data service.
+    // FIX: Save session data to mock history for PracticeLogView
+    useEffect(() => {
+        if (scoreBreakdown?.overall) {
+            const sessionData = {
+                id: String(Date.now()),
+                title: scenario.title,
+                date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+                score: scoreBreakdown.overall,
+                takeaway: keyTakeaway,
+                difficulty: difficultyLevel < 25 ? 'Low' : difficultyLevel < 75 ? 'Medium' : 'High',
+            };
+            MOCK_PRACTICE_SESSIONS.push(sessionData);
+        }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [scoreBreakdown?.overall]); 
+
 
     useEffect(() => {
         (async () => {
@@ -380,12 +397,8 @@ const RolePlayCritique = ({ history, setView, preparedSBI, scenario, difficultyL
         };
 
         try {
-            // CRITICAL: Update commitment data using the updater function to preserve state
-            await updateCommitmentData(data => ({
-                ...data,
-                active_commitments: [...(data?.active_commitments || []), newCommitment]
-            }));
-
+            // PRODUCTION: Update commitment data
+            await updateCommitmentData(newCommitment);
             console.info("Commitment created successfully!");
             navigate('daily-practice', { 
                 initialGoal: newCommitment.linkedGoal, 
@@ -509,7 +522,7 @@ const RolePlayCritique = ({ history, setView, preparedSBI, scenario, difficultyL
             <Card title="Skill Breakdown Heatmap & Benchmarking" icon={BarChart3} className=''>
                 {scoreBreakdown?.sbi !== null ? (
                     <>
-                        <div className={`p-3 mb-4 rounded-xl shadow-inner text-center font-semibold border-l-4 ${benchmarkDifference >= 0 ? 'bg-green-100 border-green-500 text-green-700' : 'bg-red-100 border-red-500 text-[#E04E1B]'}`}>
+                        <div className className={`p-3 mb-4 rounded-xl shadow-inner text-center font-semibold border-l-4 ${benchmarkDifference >= 0 ? 'bg-green-100 border-green-500 text-green-700' : 'bg-red-100 border-red-500 text-[#E04E1B]'}`}>
                             <span className='text-lg'>
                                 Global Benchmark: {globalAverage}%
                             </span>
@@ -574,7 +587,7 @@ const RolePlayCritique = ({ history, setView, preparedSBI, scenario, difficultyL
                     </div>
                 )}
                 
-                <Button onClick={() => setView('coaching-lab-home')} variant='outline' className='mt-8 w-full'>
+                <Button onClick={() => navigate('coaching-lab-home')} variant='outline' className='mt-8 w-full'>
                     Return to Coaching Lab Home
                 </Button>
             </Card>
@@ -988,15 +1001,6 @@ const LeanFeedbackPrepView = ({ setCoachingLabView, setPreparedSBI }) => {
         }
     };
     
-    // Simple mock copy to clipboard utility for the modal to use
-    const copyToClipboard = (text) => {
-        if (navigator.clipboard && navigator.clipboard.writeText) {
-            navigator.clipboard.writeText(text);
-        } else {
-            console.warn("Clipboard access denied or unsupported.");
-        }
-    };
-    
 
     return (
         <div className="p-8">
@@ -1004,7 +1008,7 @@ const LeanFeedbackPrepView = ({ setCoachingLabView, setPreparedSBI }) => {
             <p className="text-lg text-gray-600 mb-6 max-w-3xl">Get immediate AI critique and refinement for your real-world feedback drafts. This tool prioritizes speed and clarity for crucial conversations.</p>
             
             <Button onClick={() => setCoachingLabView('coaching-lab-home')} variant="outline" className="mb-8">
-                <ArrowLeft className="w-5 h-5 mr-2" /> Back to AI Coaching Lab
+                <ArrowLeft className="w-5 h-5 mr-2" /> Back to Coaching Lab
             </Button>
             
             <div className='flex flex-col lg:flex-row space-y-8 lg:space-y-0 lg:space-x-8'>
@@ -1048,7 +1052,7 @@ const LeanFeedbackPrepView = ({ setCoachingLabView, setPreparedSBI }) => {
                                 {refinedFeedback}
                             </p>
                             <Button 
-                                onClick={() => copyToClipboard(refinedFeedback)} 
+                                onClick={() => navigator.clipboard.writeText(refinedFeedback)} 
                                 className="mt-4 w-full bg-[#E04E1B] hover:bg-red-700"
                             >
                                 <CornerRightUp className='w-4 h-4 mr-2' /> Copy Refined SBI to Clipboard
@@ -1075,18 +1079,15 @@ const LeanFeedbackPrepView = ({ setCoachingLabView, setPreparedSBI }) => {
 // --- PRACTICE LOG VIEW ---
 const PracticeLogView = ({ setCoachingLabView }) => {
     // FIX: Use real hook
-    const { navigate, pdpData } = useAppServices();
+    const { navigate } = useAppServices();
     
-    // CRITICAL: Load practice sessions from service context
-    const MOCK_PRACTICE_SESSIONS = pdpData?.practice_sessions || [];
-
     return (
         <div className="p-8">
             <h1 className="text-3xl font-extrabold text-[#0B3B5B] mb-4">Practice Log: History & Growth</h1>
             <p className="text-lg text-gray-600 mb-6 max-w-3xl">Review your past Role-Play sessions, see your scores, and track your progress against key takeaways.</p>
             
             <Button onClick={() => setCoachingLabView('coaching-lab-home')} variant="outline" className="mb-8">
-                <ArrowLeft className="w-5 h-5 mr-2" /> Back to AI Coaching Lab
+                <ArrowLeft className="w-5 h-5 mr-2" /> Back to Coaching Lab
             </Button>
             
             <div className="space-y-4">
@@ -1215,7 +1216,7 @@ const ScenarioPreparationView = ({ scenario, setCoachingLabView, setPreparedSBI 
                 {/* Difficulty Slider */}
                 <Card title="Set Tension Level (Optional)" icon={HeartPulse} className='bg-[#E04E1B]/10 border-4 border-dashed border-[#E04E1B]'>
                     <p className="text-gray-700 text-sm mb-4">Control the emotional resistance of the AI persona in the simulator. Higher tension requires more empathy and validation skill.</p>
-                    <div className='flex justify-between text-xs font-bold text-gray-600 mb-1'>
+                    <div className='flex justify-between text-xs font-bold text-[#0B3B5B] mb-1'>
                         <span>Low Tension</span>
                         <span>High Tension</span>
                     </div>
@@ -1455,7 +1456,7 @@ Critique Guidelines (Use Markdown):
     <h1 className="text-3xl font-extrabold text-[#0B3B5B] mb-4">Active Listening & Reflection Prompts</h1>
     <p className="text-lg text-gray-600 mb-6 max-w-3xl">Active listening means validating emotion and confirming understanding before attempting to solve the problem. Practice the two pillars below to build empathy and psychological safety in high-stakes conversations.</p>
     <Button onClick={() => setCoachingLabView('coaching-lab-home')} variant="outline" className="mb-8">
-    <ArrowLeft className="w-5 h-5 mr-2" /> Back to AI Coaching Lab
+    <ArrowLeft className="w-5 h-5 mr-2" /> Back to Coaching Lab
     </Button>
     
       <div className="space-y-8">
@@ -1546,20 +1547,18 @@ Critique Guidelines (Use Markdown):
 // --- MAIN COACHING LAB ROUTER ---
 export default function CoachingLabScreen() {
     // FIX: Use real hook
-    const { navigate, SCENARIO_CATALOG } = useAppServices();
+    const { navigate } = useAppServices();
 
     const [view, setView] = useState('coaching-lab-home');
     const [selectedScenario, setSelectedScenario] = useState(null);
     const [preparedSBI, setPreparedSBI] = useState(null);
-    
-    // NOTE: SCENARIO_CATALOG is loaded from the service context now
 
     const renderView = () => {
         const viewProps = { setCoachingLabView: setView, setSelectedScenario };
 
         switch (view) {
             case 'scenario-library':
-                return <ScenarioLibraryView {...viewProps} SCENARIO_CATALOG={SCENARIO_CATALOG} />;
+                return <ScenarioLibraryView {...viewProps} />;
             case 'scenario-prep':
                 return <ScenarioPreparationView 
                     scenario={selectedScenario} 
@@ -1579,13 +1578,13 @@ export default function CoachingLabScreen() {
                      return <RolePlayCritique 
                         history={selectedScenario.history} 
                         setView={setView} 
-                        preparedSBI={selectedScenario.preparedSBI} // FIX: Use selectedScenario prop
+                        preparedSBI={preparedScenario.preparedSBI} 
                         scenario={selectedScenario} 
                         difficultyLevel={selectedScenario.difficultyLevel} 
                     />;
                 }
                 // Fallback if role-play state is invalid
-                return <ScenarioLibraryView {...viewProps} SCENARIO_CATALOG={SCENARIO_CATALOG} />;
+                return <ScenarioLibraryView {...viewProps} />;
 
             case 'feedback-prep':
                 return <LeanFeedbackPrepView setCoachingLabView={setView} setPreparedSBI={setPreparedSBI} />;
@@ -1597,8 +1596,8 @@ export default function CoachingLabScreen() {
             default:
                 return (
                     <div className="p-8">
-                        <h1 className="text-3xl font-extrabold text-[#0B3B5B] mb-4">AI Coaching Lab (Practice & Feedback)</h1>
-                        <p className="text-lg text-gray-600 mb-8 max-w-3xl">**Development through practice.** Use AI tools to simulate crucial conversations and receive real-time, personalized critique to sharpen your skills.</p>
+                        <h1 className="text-3xl font-extrabold text-[#0B3B5B] mb-4">Coaching & Crucial Conversations Lab</h1>
+                        <p className="text-lg text-gray-600 mb-8 max-w-3xl">Practice key leadership interactions using guided tools and receive real-time AI critique to sharpen your skills.</p>
 
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                             <Card title="Scenario Library & Prep Pipeline" icon={Users} onClick={() => setView('scenario-library')} className="border-l-4 border-[#219E8B] rounded-3xl">
@@ -1641,18 +1640,22 @@ export default function CoachingLabScreen() {
 }
 
 // --- Dynamic Generator View (Restored for completeness) ---
-const DynamicScenarioGenerator = ({ setCoachingLabView, setSelectedScenario, setIsDynamicGeneratorVisible, SCENARIO_CATALOG }) => {
+const DynamicScenarioGenerator = ({ setCoachingLabView, setSelectedScenario, setIsDynamicGeneratorVisible }) => {
     const services = useAppServices();
     const { callSecureGeminiAPI, GEMINI_MODEL } = services;
 
-    const baseScenarios = SCENARIO_CATALOG || [];
+    const baseScenarios = [
+        { id: 1, title: 'The Missing Deadline', description: 'Consistently missing reports.', persona: 'The Deflector' },
+        { id: 2, title: 'The Client Conflict', description: 'Overstepped authority with a client.', persona: 'The Defender' },
+        { id: 3, title: 'The Quiet Worker', description: 'Disengaged and silent in meetings.', persona: 'The Silent Stonewall' },
+    ];
 
-    const [selectedBaseId, setSelectedBaseId] = useState(baseScenarios[0]?.id || 1);
+    const [selectedBaseId, setSelectedBaseId] = useState(1);
     const [modifier, setModifier] = useState('');
-    const [modifiedScenario, setModifiedScenario] = useState(baseScenarios.find(s => s.id === selectedBaseId) || baseScenarios[0]);
+    const [modifiedScenario, setModifiedScenario] = useState(baseScenarios[0]);
     const [isGenerating, setIsGenerating] = useState(false);
     
-    const selectedBase = useMemo(() => baseScenarios.find(s => s.id === selectedBaseId) || baseScenarios[0], [selectedBaseId, baseScenarios]);
+    const selectedBase = useMemo(() => baseScenarios.find(s => s.id === selectedBaseId) || baseScenarios[0], [selectedBaseId]);
 
     const handleGenerate = async () => {
         setIsGenerating(true);
@@ -1692,7 +1695,6 @@ const DynamicScenarioGenerator = ({ setCoachingLabView, setSelectedScenario, set
                     title: titleMatch[1].trim(),
                     description: descMatch[1].trim(),
                     persona: personaMatch[1].trim(),
-                    difficultyLevel: selectedBase.difficultyLevel // Inherit base difficulty
                 });
             } else {
                 console.error("AI parse failed, falling back to local mock.");
@@ -1701,7 +1703,6 @@ const DynamicScenarioGenerator = ({ setCoachingLabView, setSelectedScenario, set
                     title: `${selectedBase.title} (Customized)`,
                     description: `${selectedBase.description} (Modified by: ${modifier})`,
                     persona: selectedBase.persona,
-                    difficultyLevel: selectedBase.difficultyLevel 
                 });
             }
 
@@ -1712,7 +1713,6 @@ const DynamicScenarioGenerator = ({ setCoachingLabView, setSelectedScenario, set
                 title: `${selectedBase.title} (Customized)`,
                 description: `${selectedBase.description} (Modified by: ${modifier})`,
                 persona: selectedBase.persona,
-                difficultyLevel: selectedBase.difficultyLevel
             });
         } finally {
             setIsGenerating(false);
@@ -1754,7 +1754,7 @@ const DynamicScenarioGenerator = ({ setCoachingLabView, setSelectedScenario, set
                         className="w-full p-3 border border-gray-300 rounded-xl"
                         disabled={isGenerating}
                     >
-                        {(baseScenarios || []).map(s => (
+                        {baseScenarios.map(s => (
                             <option key={s.id} value={s.id}>{s.title} (Persona: {s.persona})</option>
                         ))}
                     </select>
@@ -1795,21 +1795,25 @@ const DynamicScenarioGenerator = ({ setCoachingLabView, setSelectedScenario, set
 
 
 // --- SCENARIO LIBRARY VIEW ---
-const ScenarioLibraryView = ({ setCoachingLabView, setSelectedScenario, SCENARIO_CATALOG }) => {
+const ScenarioLibraryView = ({ setCoachingLabView, setSelectedScenario }) => {
     const [isDynamicGeneratorVisible, setIsDynamicGeneratorVisible] = useState(false);
     
-    // CRITICAL: SCENARIO_CATALOG is loaded from the service context now
-    const scenarios = SCENARIO_CATALOG || [];
-
-    // Fallback data if SCENARIO_CATALOG is empty (though it should be loaded from Firestore now)
-    const fallbackScenarios = [{ id: 1, title: 'Fallback Scenario', description: 'Loading scenarios from database failed.', persona: 'The Placeholder', difficultyLevel: 50 }];
-
+    const scenarios = [
+        { id: 1, title: 'The Underperformer', description: 'A high-potential team member is consistently missing deadlines due to distraction.', persona: 'The Deflector', difficultyLevel: 60 },
+        { id: 2, title: 'The Boundary Pusher', description: 'An employee repeatedly oversteps their authority when dealing with clients, creating tension.', persona: 'The Defender', difficultyLevel: 75 },
+        { id: 3, title: 'The Silent Withdrawal', description: 'A direct report has become quiet and disengaged in meetings following a minor project failure.', persona: 'The Silent Stonewall', difficultyLevel: 45 },
+        { id: 4, title: 'The Emotional Reaction', description: 'You need to deliver corrective feedback, and the employee is highly likely to become defensive or tearful.', persona: 'The Emotional Reactor', difficultyLevel: 90 },
+        { id: 5, title: 'The Excessive Apologizer', description: 'A team member makes a small mistake and immediately apologizes repeatedly, paralyzing forward progress.', persona: 'The Over-Apologizer', difficultyLevel: 25 },
+        { id: 6, title: 'The Team Blamer', description: 'An employee frequently attributes project failures to "someone else on the team" instead of taking personal responsibility.', persona: 'The Blame-Shifter', difficultyLevel: 80 },
+        { id: 7, title: 'The Silent Observer', description: 'A highly capable team member consistently fails to speak up or contribute ideas during brainstorms or strategy discussions.', persona: 'The Passive Contributor', difficultyLevel: 50 },
+    ];
+    
     return (
     <div className="p-8">
     <h1 className="text-3xl font-extrabold text-[#0B3B5B] mb-4">Scenario Library: Practice Conversations</h1>
     <p className="text-lg text-gray-600 mb-6">Select a high-stakes scenario to practice your preparation process. Each scenario includes a unique persona for the AI simulator.</p>
     <Button onClick={() => setCoachingLabView('coaching-lab-home')} variant="outline" className="mb-8">
-    <ArrowLeft className="w-5 h-5 mr-2" /> Back to AI Coaching Lab
+    <ArrowLeft className="w-5 h-5 mr-2" /> Back to Coaching Lab
     </Button>
     
       <Card title="Dynamic Scenario Generator" icon={Zap} className="mb-6 bg-[#0B3B5B]/10 border-l-4 border-[#E04E1B] rounded-3xl" onClick={() => setIsDynamicGeneratorVisible(true)}>
@@ -1822,7 +1826,7 @@ const ScenarioLibraryView = ({ setCoachingLabView, setSelectedScenario, SCENARIO
       <h2 className='text-xl font-bold text-[#0B3B5B] mb-4 border-b pb-1'>Pre-Seeded Scenarios</h2>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {(scenarios.length > 0 ? scenarios : fallbackScenarios).map(scenario => (
+        {scenarios.map(scenario => (
           <Card key={scenario.id} title={scenario.title} className="border-l-4 border-[#219E8B] rounded-3xl" onClick={() => {
             setSelectedScenario(scenario);
             setCoachingLabView('scenario-prep');
@@ -1837,7 +1841,7 @@ const ScenarioLibraryView = ({ setCoachingLabView, setSelectedScenario, SCENARIO
       </div>
       
       {/* FIX: Pass setIsDynamicGeneratorVisible setter function */}
-      {isDynamicGeneratorVisible && <DynamicScenarioGenerator setCoachingLabView={setCoachingLabView} setSelectedScenario={setSelectedScenario} setIsDynamicGeneratorVisible={setIsDynamicGeneratorVisible} SCENARIO_CATALOG={SCENARIO_CATALOG} />}
+      {isDynamicGeneratorVisible && <DynamicScenarioGenerator setCoachingLabView={setCoachingLabView} setSelectedScenario={setSelectedScenario} setIsDynamicGeneratorVisible={setIsDynamicGeneratorVisible} />}
     </div>
     
     

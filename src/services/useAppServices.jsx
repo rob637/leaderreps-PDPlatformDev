@@ -2,6 +2,25 @@
 
 import { useMemo, useCallback, useContext, createContext, useState, useEffect } from 'react';
 
+// --- FIREBASE IMPORTS (Mocks for local execution, ready for real SDK) ---
+// In a real app, these would come from '@firebase/firestore'
+const mockGetDoc = async (docRef) => ({ exists: () => false, data: () => null, docRef });
+const mockSetDoc = async (docRef, data) => { console.log(`[Firestore Mock] SET Document: ${docRef} Data:`, data); return true; };
+const mockUpdateDoc = async (docRef, data) => { console.log(`[Firestore Mock] UPDATE Document: ${docRef} Data:`, data); return true; };
+const mockOnSnapshot = (docRef, callback) => { 
+    console.log(`[Firestore Mock] Subscribing to: ${docRef}`);
+    // Simulate initial data snapshot read from localStorage (needed for data migration/seeding logic)
+    const key = docRef.split('_')[1]; // Crude way to get the local storage key suffix
+    const localData = JSON.parse(localStorage.getItem(`lr${key}`));
+    if (localData) {
+        // Simulate immediate snapshot with local data
+        callback({ exists: () => true, data: () => localData });
+    }
+    return () => console.log(`[Firestore Mock] Unsubscribing from: ${docRef}`);
+};
+const mockDoc = (db, collection, doc) => `${db}/${collection}/${doc}`;
+
+
 // --- MOCK CONSTANTS (Kept for fallback/initial definitions) ---
 const GEMINI_MODEL = 'gemini-1.5-flash-latest';
 const LEADERSHIP_TIERS_FALLBACK = {
@@ -9,7 +28,7 @@ const LEADERSHIP_TIERS_FALLBACK = {
     T5: { id: 'T5', name: 'Strategy & Vision', icon: 'TrendingUp', color: 'cyan-600' },
 };
 
-// --- CORE MOCK DATA DEFINITIONS (Used for local storage initialization) ---
+// --- CORE MOCK DATA DEFINITIONS (Used for local storage initialization/seeding) ---
 const MOCK_PDP_DATA = { currentMonth: 1, assessment: { selfRatings: { T1: 5, T2: 5, T3: 5, T4: 5, T5: 5 } }, plan: [], practice_sessions: [] };
 const MOCK_COMMITMENT_DATA = { active_commitments: [], history: [], reflection_journal: '', resilience_log: {} };
 const MOCK_PLANNING_DATA = { okrs: [], last_premortem_decision: '2025-01-01', vision: '', mission: '' };
@@ -21,9 +40,9 @@ const MOCK_ACTIVITY_DATA = {
     today_coaching_labs: 0,     
 };
 
-// --- 0. DEFAULT SERVICES FALLBACK (CRITICAL FIX for Destructuring Error) ---
+// --- 0. DEFAULT SERVICES FALLBACK ---
 const DEFAULT_SERVICES = {
-    // Core Functions (No-op)
+    // ... (rest of DEFAULT_SERVICES structure remains the same) ...
     navigate: () => { console.warn("Navigation called before context initialization."); },
     callSecureGeminiAPI: async () => ({ candidates: [{ content: { parts: [{ text: "API Not Configured" }] } }] }),
     updatePdpData: async () => true, 
@@ -32,33 +51,13 @@ const DEFAULT_SERVICES = {
     updatePlanningData: async () => true,
     hasGeminiKey: () => false,
     
-    // Core Data/State (Safe Defaults)
-    user: null, 
-    userId: null, 
-    db: null, 
-    auth: null, 
-    isAuthReady: false,
-    pdpData: MOCK_PDP_DATA, 
-    commitmentData: MOCK_COMMITMENT_DATA, 
-    planningData: MOCK_PLANNING_DATA, 
-    isLoading: false, 
-    error: null,
-    hasPendingDailyPractice: false,
-
-    // Constants & Mock Data Access (Used by Dashboard/DailyPractice)
-    appId: 'default-app-id', 
-    IconMap: {}, 
-    GEMINI_MODEL, 
-    API_KEY: '',
-    LEADERSHIP_TIERS: LEADERSHIP_TIERS_FALLBACK, 
-    MOCK_ACTIVITY_DATA,
-    // New Metadata Defaults
-    COMMITMENT_BANK: {},
-    QUICK_CHALLENGE_CATALOG: [],
-    SCENARIO_CATALOG: [],
-    READING_CATALOG_SERVICE: {},
-    VIDEO_CATALOG: {},
-    LEADERSHIP_DOMAINS: [],
+    user: null, userId: null, db: null, auth: null, isAuthReady: false,
+    pdpData: MOCK_PDP_DATA, commitmentData: MOCK_COMMITMENT_DATA, planningData: MOCK_PLANNING_DATA, 
+    isLoading: false, error: null, hasPendingDailyPractice: false,
+    appId: 'default-app-id', IconMap: {}, GEMINI_MODEL, API_KEY: '',
+    LEADERSHIP_TIERS: LEADERSHIP_TIERS_FALLBACK, MOCK_ACTIVITY_DATA,
+    COMMITMENT_BANK: {}, QUICK_CHALLENGE_CATALOG: [], SCENARIO_CATALOG: [],
+    READING_CATALOG_SERVICE: {}, VIDEO_CATALOG: {}, LEADERSHIP_DOMAINS: [],
     RESOURCE_LIBRARY: {},
 };
 
@@ -66,161 +65,180 @@ const DEFAULT_SERVICES = {
 export const AppServiceContext = createContext(null);
 
 // ====================================================================
-// --- 1. CORE DATA HOOKS (Functional Logic) ---
-// Note: These hooks are simplified to use localStorage instead of Firebase 
-// for the provided scope, but maintain the update pattern for future Firebase integration.
+// --- 1. FIREBASE DATA HOOKS (Migrated from localStorage to Firestore logic) ---
 // ====================================================================
 
-export const usePDPData = (db, userId, isAuthReady) => {
-  const key = useMemo(() => `lrpdp_${userId || 'anon'}`, [userId]);
-
-  const [pdpData, setPdpData] = useState(() => {
-    try {
-      const raw = localStorage.getItem(key);
-      return raw ? JSON.parse(raw) : MOCK_PDP_DATA; // Use full mock for initial state
-    } catch {
-      return MOCK_PDP_DATA;
-    }
-  });
-
-  useEffect(() => {
-    try {
-      if (pdpData === null) localStorage.removeItem(key);
-      else localStorage.setItem(key, JSON.stringify(pdpData));
-    } catch {}
-  }, [key, pdpData]);
-
-  const updatePdpData = useCallback(async (updater) => {
-    setPdpData(prev => {
-        const next = (typeof updater === 'function' ? updater(prev) : updater);
-        return next ?? prev;
-    });
-    return true;
-  }, []);
-
-  const saveNewPlan = useCallback(async (plan) => {
-    setPdpData(plan);
-    try { localStorage.setItem(key, JSON.stringify(plan)); } catch {}
-    return true;
-  }, [key]);
-
-  return { pdpData, isLoading: false, error: null, updatePdpData, saveNewPlan };
-};
-
-
-export const useCommitmentData = (db, userId, isAuthReady) => {
-  const key = useMemo(() => `lrcommit_${userId || 'anon'}`, [userId]);
-
-  const [commitmentData, setCommitmentData] = useState(() => {
-    try {
-      const raw = localStorage.getItem(key);
-      return raw ? JSON.parse(raw) : MOCK_COMMITMENT_DATA;
-    } catch {
-      return MOCK_COMMITMENT_DATA;
-    }
-  });
-
-  useEffect(() => {
-    try {
-      localStorage.setItem(key, JSON.stringify(commitmentData));
-    } catch {}
-  }, [key, commitmentData]);
-
-  const updateCommitmentData = useCallback(async (updater) => {
-    setCommitmentData(prev => {
-      const next = (typeof updater === 'function') ? updater(prev || MOCK_COMMITMENT_DATA) : updater;
-      return next ?? prev;
-    });
-    return true;
-  }, []);
-
-  return {
-    commitmentData,
-    isLoading: false,
-    error: null,
-    updateCommitmentData,
-  };
-};
-
-export const usePlanningData = (db, userId, isAuthReady) => {
-    const key = useMemo(() => `lrplanning_${userId || 'anon'}`, [userId]);
-
-    const [planningData, setPlanningData] = useState(() => {
-        try {
-            const raw = localStorage.getItem(key);
-            return raw ? JSON.parse(raw) : MOCK_PLANNING_DATA;
-        } catch {
-            return MOCK_PLANNING_DATA;
-        }
-    });
+// Base hook structure for loading and subscribing to a single user document
+const useFirestoreData = (db, userId, isAuthReady, docName, mockData, keySuffix) => {
+    const [data, setData] = useState(mockData);
+    const [isLoading, setIsLoading] = useState(true);
+    const docPath = useMemo(() => mockDoc(db, 'users', userId) + `/${docName}`, [db, userId, docName]);
 
     useEffect(() => {
+        if (!isAuthReady || !userId || !db) {
+            setIsLoading(false);
+            return;
+        }
+
+        const docRef = docPath; // Simplified document reference
+
+        const initializeAndSubscribe = async () => {
+            let initialDataToLoad = null;
+
+            // 1. Check if the user document exists
+            const snapshot = await mockGetDoc(docRef); // Use mock for local testing
+            
+            if (!snapshot.exists()) {
+                // 2. If missing (first time user), fetch template from initial_data/user_template
+                const templateRef = mockDoc(db, 'initial_data', 'user_template');
+                const templateSnap = await mockGetDoc(templateRef); 
+
+                if (templateSnap.exists()) {
+                    // Extract the specific data subset (e.g., commitment_data)
+                    const templateContent = templateSnap.data();
+                    const specificContent = templateContent?.[docName.split('/')[0]] || mockData;
+                    initialDataToLoad = specificContent;
+                    
+                    // 3. Seed the user's document
+                    await mockSetDoc(docRef, specificContent);
+                } else {
+                    // Fallback if the initial_data template is also missing (shouldn't happen)
+                    initialDataToLoad = mockData;
+                    await mockSetDoc(docRef, mockData);
+                }
+            }
+            
+            // 4. Subscribe to the document for real-time updates
+            const unsubscribe = mockOnSnapshot(docRef, (doc) => {
+                if (doc.exists()) {
+                    setData(doc.data());
+                } else if (initialDataToLoad) {
+                    // Use the data that was just seeded
+                    setData(initialDataToLoad);
+                } else {
+                    // Document was deleted remotely - reset to mock
+                    setData(mockData);
+                }
+                setIsLoading(false);
+            });
+
+            return unsubscribe;
+        };
+
+        const unsubscribe = initializeAndSubscribe();
+        return () => { if (unsubscribe) unsubscribe(); };
+
+    }, [db, userId, isAuthReady, docPath, docName, mockData]);
+    
+    // Function to handle atomic data updates via Firestore
+    const updateData = useCallback(async (updater) => {
+        const currentData = data;
+        const newData = updater(currentData);
+        
+        // 5. Perform non-destructive write to Firestore
+        const docRef = docPath;
         try {
-            localStorage.setItem(key, JSON.stringify(planningData));
-        } catch {}
-    }, [key, planningData]);
+             await mockUpdateDoc(docRef, newData); 
+             return true;
+        } catch (e) {
+             console.error(`Firestore update failed for ${docName}:`, e);
+             return false;
+        }
+    }, [data, docPath, docName]);
 
-    const updatePlanningData = useCallback(async (updater) => { 
-        setPlanningData(prev => {
-            const next = (typeof updater === 'function') ? updater(prev || MOCK_PLANNING_DATA) : updater;
-            return next ?? prev;
-        });
-        return true; 
-    }, []);
+    return { data, isLoading, error: null, updateData, docPath };
+}
 
-    return {
-        planningData, 
-        isLoading: false, 
-        error: null, 
-        updatePlanningData
-    };
+
+// --- 1a. Commitment Data Hook ---
+export const useCommitmentData = (db, userId, isAuthReady) => {
+    const { data: commitmentData, isLoading, error, updateData: updateCommitmentData } = useFirestoreData(
+        db, 
+        userId, 
+        isAuthReady, 
+        'commitment_data/scorecard', // Firestore path suffix
+        MOCK_COMMITMENT_DATA, 
+        'commit'
+    );
+    
+    return { commitmentData, isLoading, error, updateCommitmentData };
 };
 
-// --- NEW HOOK FOR GLOBAL METADATA LOADING ---
+
+// --- 1b. PDP Data Hook ---
+export const usePDPData = (db, userId, isAuthReady) => {
+    const { data: pdpData, isLoading, error, updateData: updatePdpData } = useFirestoreData(
+        db, 
+        userId, 
+        isAuthReady, 
+        'pdp/roadmap', // Firestore path suffix
+        MOCK_PDP_DATA, 
+        'pdp'
+    );
+    
+    // Separate function for initial plan generation (saves/overwrites the whole doc)
+    const saveNewPlan = useCallback(async (plan) => {
+        const docRef = mockDoc(db, 'users', userId) + '/pdp/roadmap';
+        try {
+            await mockSetDoc(docRef, plan);
+            return true;
+        } catch (e) {
+            console.error('New plan save failed:', e);
+            return false;
+        }
+    }, [db, userId]);
+
+    return { pdpData, isLoading, error, updatePdpData, saveNewPlan };
+};
+
+
+// --- 1c. Planning Data Hook ---
+export const usePlanningData = (db, userId, isAuthReady) => {
+    const { data: planningData, isLoading, error, updateData: updatePlanningData } = useFirestoreData(
+        db, 
+        userId, 
+        isAuthReady, 
+        'planning_data/hub', // Firestore path suffix
+        MOCK_PLANNING_DATA, 
+        'planning'
+    );
+
+    return { planningData, isLoading, error, updatePlanningData };
+};
+
+
+// --- 1d. Global Metadata Hook (Reads the metadata/config document) ---
 export const useGlobalMetadata = (db, isAuthReady) => {
-    // This hook simulates loading the necessary configuration data from Firestore (metadata/config)
     const [metadata, setMetadata] = useState({});
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        // SIMULATION: In a real app, you would fetch Firestore document 'metadata/config' once.
-        const simulateFetch = () => {
-            // Since we successfully imported master_import.json, we simulate its structure here:
-            // This simulation data must match the structure of master_import.json's metadata.config
-            const MOCK_METADATA_FROM_FIRESTORE = {
-                leadership_tiers: {
-                    'T1': { id: 'T1', name: 'Self-Awareness', hex: '#2563EB' },
-                    'T2': { id: 'T2', name: 'Operational Excellence', hex: '#06B6D4' },
-                    'T3': { id: 'T3', name: 'Strategic Execution', hex: '#10B981' },
-                    'T4': { id: 'T4', name: 'People Development', hex: '#F5A800' },
-                    'T5': { id: 'T5', name: 'Visionary Leadership', hex: '#E04E1B' },
-                },
-                commitment_bank: { /* ... mock bank structure ... */ },
-                quick_challenge_catalog: [{ rep: "Take a deep breath.", tier: "T1" }],
-                scenario_library: [{ id: 1, title: "The Deflector", persona: "Deflector" }],
-                video_library: { INSPIRATIONAL: [{ title: "Sinek" }] },
-                leadership_domains: [{ id: "women-exec", title: "Women's Track" }],
-                resource_library: { "women-exec": [{ title: "Playbook" }] },
-                mock_activity_data: MOCK_ACTIVITY_DATA,
-            };
+        if (!isAuthReady) return;
+        
+        const docRef = mockDoc(db, 'metadata', 'config');
 
-            setMetadata({
-                LEADERSHIP_TIERS: MOCK_METADATA_FROM_FIRESTORE.leadership_tiers,
-                COMMITMENT_BANK: MOCK_METADATA_FROM_FIRESTORE.commitment_bank,
-                QUICK_CHALLENGE_CATALOG: MOCK_METADATA_FROM_FIRESTORE.quick_challenge_catalog,
-                SCENARIO_CATALOG: MOCK_METADATA_FROM_FIRESTORE.scenario_library,
-                VIDEO_CATALOG: MOCK_METADATA_FROM_FIRESTORE.video_library,
-                LEADERSHIP_DOMAINS: MOCK_METADATA_FROM_FIRESTORE.leadership_domains,
-                RESOURCE_LIBRARY: MOCK_METADATA_FROM_FIRESTORE.resource_library,
-                MOCK_ACTIVITY_DATA: MOCK_METADATA_FROM_FIRESTORE.mock_activity_data,
-            });
+        // SIMULATION: This should use onSnapshot for real-time config updates if needed
+        const unsubscribe = mockOnSnapshot(docRef, (doc) => {
+            if (doc.exists()) {
+                const data = doc.data();
+                setMetadata({
+                    LEADERSHIP_TIERS: data.leadership_tiers,
+                    COMMITMENT_BANK: data.commitment_bank,
+                    QUICK_CHALLENGE_CATALOG: data.quick_challenge_catalog,
+                    SCENARIO_CATALOG: data.scenario_library,
+                    VIDEO_CATALOG: data.video_library,
+                    LEADERSHIP_DOMAINS: data.leadership_domains,
+                    RESOURCE_LIBRARY: data.resource_library,
+                    MOCK_ACTIVITY_DATA: data.mock_activity_data,
+                });
+            } else {
+                console.error("CRITICAL: Global metadata document 'metadata/config' not found.");
+                setMetadata(DEFAULT_SERVICES); // Fallback to safe defaults
+            }
             setLoading(false);
-        };
+        });
 
-        // Only fetch once authentication is ready (or immediately if using mock data)
-        if (db || !isAuthReady) { 
-            simulateFetch();
-        }
+        return unsubscribe;
     }, [db, isAuthReady]);
 
     return { metadata, isLoading: loading };
@@ -228,25 +246,14 @@ export const useGlobalMetadata = (db, isAuthReady) => {
 
 
 // ====================================================================
-// --- 2. MAIN CONTEXT CONSUMER HOOK (Structural/Safety Change) ---
+// --- 2. MAIN CONTEXT CONSUMER HOOK ---
 // ====================================================================
 
 export function useAppServices() {
     const context = useContext(AppServiceContext);
     
-    // CRITICAL FIX: Use the complete DEFAULT_SERVICES object as a fallback
     if (context === null || context === undefined) {
-        console.error("useAppServices called outside AppServiceContext.Provider. Returning default services.");
         return DEFAULT_SERVICES; 
     }
     return context;
-}
-
-// ====================================================================
-// --- 3. EXPORT FOR APP.JSX USE (No Functional Change) ---
-// ====================================================================
-
-export function AppServicesProvider({ children }) {
-    // This is a placeholder since the actual provider logic lives in DataProvider in App.jsx
-    return children;
 }

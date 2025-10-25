@@ -445,6 +445,7 @@ export default function AppliedLeadershipScreen() {
                                 <div className='mt-4 flex justify-between items-center border-t pt-3'>
                                     <span className='text-xs font-semibold uppercase' style={{ color: accentColor }}>{domain.focus.length} Key Focus Areas</span>
                                     <ChevronRight className='w-4 h-4' style={{ color: accentColor }}/>
+                                
                                 </div>
                             </div>
                         </button>
