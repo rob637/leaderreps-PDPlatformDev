@@ -1,28 +1,19 @@
 // src/services/useAppServices.jsx
-// COMPLETE drop-in. Uses REAL Firestore when `db` exists (v9 modular SDK).
-// Adds: (1) empty-payload guard for global config, (2) merge:true default for safety,
-// (3) optional call-site tracing to catch accidental double-saves, (4) clean wrappers.
-//
-// No functionality removed. User-data hooks and shapes unchanged.
-//
-// ──────────────────────────────────────────────────────────────────────────────
-// Imports
+// HARDENED + DEBUG: real Firestore writes, empty-section guards, meta-stamp, tracing.
+// No functionality removed.
+
 import { useMemo, useCallback, useContext, createContext, useState, useEffect } from 'react';
 import { doc as fsDoc, setDoc as fsSetDoc, onSnapshot as fsOnSnapshot } from 'firebase/firestore';
 
-// ──────────────────────────────────────────────────────────────────────────────
-// Persistent MOCK fallback (used only if no `db` is provided).
-// Keeps parity with your previous dev behavior while ensuring production uses Firestore.
+// ---------------- Mock fallback (only if no db) ----------------
 const __firestore_mock_store = typeof window !== 'undefined' ? (window.__firestore_mock_store || {}) : {};
 if (typeof window !== 'undefined') window.__firestore_mock_store = __firestore_mock_store;
-
 const createMockSnapshot = (docPath, data, exists = true) => ({ exists: () => exists, data: () => data, docRef: docPath });
 const mockSetDoc = async (docRef, data) => { __firestore_mock_store[docRef] = data; return true; };
 const mockOnSnapshot = (docRef, cb) => { const d = __firestore_mock_store[docRef]; cb(createMockSnapshot(docRef, d || {}, !!d)); return () => {}; };
 const mockDoc = (_db, c, d) => `${c}/${d}`;
 
-// ──────────────────────────────────────────────────────────────────────────────
-// Real Firestore wrappers (choose real if `db` exists; else mock)
+// ---------------- Real wrappers ----------------
 const toDocRef = (db, path) => fsDoc(db, ...path.split('/'));
 const onSnapshotEx = (db, path, cb) => db
   ? fsOnSnapshot(toDocRef(db, path), snap => cb({ exists: () => snap.exists(), data: () => snap.data(), docRef: path }))
@@ -30,10 +21,9 @@ const onSnapshotEx = (db, path, cb) => db
 const setDocEx = (db, path, data, merge = false) => db
   ? fsSetDoc(toDocRef(db, path), data, merge ? { merge: true } : undefined)
   : mockSetDoc(path, data);
-const updateDocEx = (db, path, data) => setDocEx(db, path, data, /*merge*/ true);
+const updateDocEx = (db, path, data) => setDocEx(db, path, data, true);
 
-// ──────────────────────────────────────────────────────────────────────────────
-// Default data (unchanged shapes)
+// ---------------- Defaults ----------------
 const GEMINI_MODEL = 'gemini-1.5-flash-latest';
 const LEADERSHIP_TIERS_FALLBACK = {
   T1: { id: 'T1', name: 'Lead Self & Mindsets', icon: 'HeartPulse', color: 'indigo-500' },
@@ -44,28 +34,18 @@ const MOCK_COMMITMENT_DATA = { active_commitments: [], history: [], reflection_j
 const MOCK_PLANNING_DATA   = { okrs: [], last_premortem_decision: '2025-01-01', vision: '', mission: '' };
 const MOCK_ACTIVITY_DATA   = { daily_target_rep: 'Define your rep.', identity_statement: 'I am a principled leader.', total_reps_completed: 0, total_coaching_labs: 0, today_coaching_labs: 0 };
 
-// ──────────────────────────────────────────────────────────────────────────────
 const DEFAULT_SERVICES = {
-  // Navigation & AI
   navigate: () => { console.warn('Navigation called before context initialization.'); },
   callSecureGeminiAPI: async () => ({ candidates: [{ content: { parts: [{ text: 'API Not Configured' }] } }] }),
   hasGeminiKey: () => false,
-
-  // Data updaters (set to no-ops here; your Provider supplies real ones)
   updatePdpData: async () => true,
   saveNewPlan: async () => true,
   updateCommitmentData: async () => true,
   updatePlanningData: async () => true,
   updateGlobalMetadata: async () => true,
-
-  // Auth/DB
   user: null, userId: null, db: null, auth: null, isAuthReady: false,
-
-  // Live data defaults
   pdpData: MOCK_PDP_DATA, commitmentData: MOCK_COMMITMENT_DATA, planningData: MOCK_PLANNING_DATA,
   isLoading: false, error: null, hasPendingDailyPractice: false,
-
-  // Misc
   appId: 'default-app-id', IconMap: {}, GEMINI_MODEL, API_KEY: '',
   LEADERSHIP_TIERS: LEADERSHIP_TIERS_FALLBACK, MOCK_ACTIVITY_DATA,
   COMMITMENT_BANK: {}, QUICK_CHALLENGE_CATALOG: [], SCENARIO_CATALOG: [],
@@ -74,8 +54,7 @@ const DEFAULT_SERVICES = {
 
 export const AppServiceContext = createContext(DEFAULT_SERVICES);
 
-// ──────────────────────────────────────────────────────────────────────────────
-// Generic user-doc hook (reads live via onSnapshot; merges on update)
+// ---------------- Generic user doc hook ----------------
 const useFirestoreData = (db, userId, isAuthReady, suffix, mockData) => {
   const [data, setData] = useState(mockData);
   const [isLoading, setIsLoading] = useState(true);
@@ -84,12 +63,16 @@ const useFirestoreData = (db, userId, isAuthReady, suffix, mockData) => {
   useEffect(() => {
     if (!isAuthReady || !userId) { setIsLoading(false); return; }
     const unsub = onSnapshotEx(db, docPath, (doc) => {
-      setData(doc.exists() ? doc.data() : mockData);
+      const d = doc.exists() ? doc.data() : mockData;
+      try {
+        console.debug('[USER SNAPSHOT]', suffix, { keys: Object.keys(d||{}), size: JSON.stringify(d||{}).length });
+      } catch {}
+      setData(d);
       setIsLoading(false);
     });
     const t = setTimeout(() => { if (isLoading) { console.warn(`Subscribe timeout for ${docPath}`); setIsLoading(false); } }, 15000);
     return () => { unsub(); clearTimeout(t); };
-  }, [db, userId, isAuthReady, docPath, mockData, isLoading]);
+  }, [db, userId, isAuthReady, docPath, mockData, isLoading, suffix]);
 
   const updateData = useCallback(async (updater) => {
     const next = updater(data);
@@ -100,8 +83,6 @@ const useFirestoreData = (db, userId, isAuthReady, suffix, mockData) => {
   return { data, isLoading, error: null, updateData, docPath };
 };
 
-// ──────────────────────────────────────────────────────────────────────────────
-// User data hooks (unchanged public API)
 export const useCommitmentData = (db, userId, isAuthReady) => {
   const { data: commitmentData, isLoading, error, updateData: updateCommitmentData } =
     useFirestoreData(db, userId, isAuthReady, 'commitment_data/scorecard', MOCK_COMMITMENT_DATA);
@@ -114,7 +95,7 @@ export const usePDPData = (db, userId, isAuthReady) => {
 
   const saveNewPlan = useCallback(async (plan) => {
     const path = mockDoc(db, 'users', userId) + '/pdp/roadmap';
-    try { await setDocEx(db, path, plan /* overwrite intentionally */); return true; }
+    try { await setDocEx(db, path, plan); return true; }
     catch (e) { console.error('New plan save failed', e); return false; }
   }, [db, userId]);
 
@@ -127,21 +108,22 @@ export const usePlanningData = (db, userId, isAuthReady) => {
   return { planningData, isLoading, error, updatePlanningData };
 };
 
-// ──────────────────────────────────────────────────────────────────────────────
-// Global metadata (single doc: metadata/config)
+// ---------------- Global metadata ----------------
 export const useGlobalMetadata = (db, isAuthReady) => {
   const [metadata, setMetadata] = useState({});
   const [loading, setLoading] = useState(true);
-  const path = mockDoc(db, 'metadata', 'config'); // 'metadata/config'
+  const path = mockDoc(db, 'metadata', 'config');
 
   useEffect(() => {
     if (!isAuthReady) { setLoading(false); return; }
     const unsub = onSnapshotEx(db, path, (doc) => {
-      if (doc.exists()) setMetadata(doc.data());
-      else {
-        console.warn("Global metadata not found at 'metadata/config'. Using empty object.");
-        setMetadata({});
-      }
+      const d = doc.exists() ? doc.data() : {};
+      try {
+        const keys = Object.keys(d||{});
+        const size = JSON.stringify(d||{}).length;
+        console.log('[GLOBAL SNAPSHOT]', { keys, size, _meta: d?._meta || null });
+      } catch {}
+      setMetadata(d);
       setLoading(false);
     });
     const t = setTimeout(() => { if (loading) { console.warn('Global metadata subscribe timeout'); setLoading(false); } }, 15000);
@@ -151,13 +133,12 @@ export const useGlobalMetadata = (db, isAuthReady) => {
   return { metadata, isLoading: loading };
 };
 
-// ──────────────────────────────────────────────────────────────────────────────
-// Helpers to block accidental wipes and provide traceable logging
+// ------------- Guards + meta stamp --------------
 const looksEmptyGlobal = (obj) => {
   if (!obj || typeof obj !== 'object') return true;
   const keys = Object.keys(obj);
   if (keys.length === 0) return true;
-  // If known sections exist but are all empty, treat as empty (prevents {} wipes)
+  // If keys exist but every present section is empty, treat as empty
   const sections = [
     'READING_CATALOG_SERVICE','COMMITMENT_BANK','TARGET_REP_CATALOG','LEADERSHIP_DOMAINS',
     'RESOURCE_LIBRARY','SCENARIO_CATALOG','VIDEO_CATALOG','LEADERSHIP_TIERS','GLOBAL_SETTINGS'
@@ -172,29 +153,46 @@ const looksEmptyGlobal = (obj) => {
   });
 };
 
-// Optional: trace who called the writer (helps catch double saves)
-const traceCallsite = () => {
-  try {
-    console.groupCollapsed('[updateGlobalMetadata] callsite');
-    console.trace();
-    console.groupEnd();
-  } catch {}
+const containsEmptySections = (obj) => {
+  if (!obj || typeof obj !== 'object') return false;
+  const bad = [];
+  for (const [k, v] of Object.entries(obj)) {
+    if (v && typeof v === 'object' && !Array.isArray(v) && Object.keys(v).length === 0) bad.push(k);
+  }
+  return bad;
 };
 
-export const updateGlobalMetadata = async (db, data, { merge = true, source = 'unknown' } = {}) => {
+const traceCallsite = () => { try { console.groupCollapsed('[updateGlobalMetadata] callsite'); console.trace(); console.groupEnd(); } catch {} };
+
+export const updateGlobalMetadata = async (db, data, { merge = true, source = 'unknown', userId = 'unknown', allowEmptySections = false } = {}) => {
   traceCallsite();
   const path = mockDoc(db, 'metadata', 'config');
   const projectId = db?.app?.options?.projectId || 'unknown';
 
-  // Block obviously empty payloads (prevents `{}` wipe)
+  // Block obvious total-empties
   if (looksEmptyGlobal(data)) {
-    console.warn(`[WRITE ABORTED] metadata/config payload looks empty; refusing to overwrite. project=${projectId} source=${source}`);
+    console.warn(`[WRITE ABORTED] metadata/config appears empty. project=${projectId} source=${source}`);
     return false;
   }
 
+  // Guard against wiping any provided section to {} unless explicitly allowed
+  const bad = containsEmptySections(data);
+  if (!allowEmptySections && bad.length) {
+    console.warn(`[WRITE ABORTED] payload contains empty object sections: ${bad.join(', ')}. Set allowEmptySections=true to override.`);
+    return false;
+  }
+
+  // Meta stamp
+  const now = new Date().toISOString();
+  const approxBytes = (() => { try { return JSON.stringify(data).length; } catch { return -1; } })();
+  const keys = Object.keys(data || {});
+  const _meta = { last_write_ts: now, last_write_source: source, last_write_uid: userId, approx_bytes: approxBytes, keys };
+
+  const stamped = { ...data, _meta };
+
   try {
-    await setDocEx(db, path, data, merge);
-    console.info(`[WRITE OK] project=${projectId} doc=${path} merge=${merge} source=${source}`);
+    await setDocEx(db, path, stamped, merge);
+    console.info(`[WRITE OK] project=${projectId} doc=${path} merge=${merge} source=${source}`, _meta);
     return true;
   } catch (e) {
     console.error(`[WRITE FAIL] project=${projectId} doc=${path} source=${source}`, e);
@@ -202,8 +200,6 @@ export const updateGlobalMetadata = async (db, data, { merge = true, source = 'u
   }
 };
 
-// ──────────────────────────────────────────────────────────────────────────────
-// Context accessor (unchanged)
 export function useAppServices() {
   const ctx = useContext(AppServiceContext);
   return (ctx === null || ctx === undefined) ? DEFAULT_SERVICES : ctx;
