@@ -1,5 +1,4 @@
 // src/services/useAppServices.jsx
-// Complete — hardened + instrumented (real Firestore when db exists; mock fallback otherwise)
 
 import React, {
   useMemo,
@@ -14,6 +13,7 @@ import {
   doc as fsDoc,
   setDoc as fsSetDoc,
   onSnapshot as fsOnSnapshot,
+  getDoc as fsGetDoc,
 } from 'firebase/firestore';
 
 /* =========================================================
@@ -39,12 +39,17 @@ const mockOnSnapshot = (docRef, cb) => {
   cb(createMockSnapshot(docRef, d || {}, !!d));
   return () => {};
 };
+const mockGetDoc = async (docPath) => {
+  const d = __firestore_mock_store[docPath];
+  return createMockSnapshot(docPath, d || {}, !!d);
+};
 const mockDoc = (_db, c, d) => `${c}/${d}`;
 
 /* =========================================================
    Real Firestore wrappers
 ========================================================= */
 const toDocRef = (db, path) => fsDoc(db, ...path.split('/'));
+
 const onSnapshotEx = (db, path, cb) => {
   if (!db) return mockOnSnapshot(path, cb);
   return fsOnSnapshot(
@@ -62,6 +67,16 @@ const onSnapshotEx = (db, path, cb) => {
       })
   );
 };
+const getDocEx = async (db, path) => {
+  if (!db) return mockGetDoc(path);
+  const snap = await fsGetDoc(toDocRef(db, path));
+  return {
+    exists: () => snap.exists(),
+    data: () => snap.data(),
+    docRef: path,
+  };
+};
+
 const setDocEx = (db, path, data, merge = false) =>
   db
     ? fsSetDoc(toDocRef(db, path), data, merge ? { merge: true } : undefined)
@@ -332,7 +347,7 @@ export const usePlanningData = (db, userId, isAuthReady) => {
 };
 
 /* =========================================================
-   Global metadata (read)
+   Global metadata (read) - CRITICAL FIX APPLIED HERE
 ========================================================= */
 export const useGlobalMetadata = (db, isAuthReady) => {
   const [metadata, setMetadata] = useState({});
@@ -340,53 +355,83 @@ export const useGlobalMetadata = (db, isAuthReady) => {
   const [error, setError] = useState(null);
   const path = mockDoc(db, 'metadata', 'config'); // 'metadata/config'
 
+  // CRITICAL FIX: Use useEffect to fetch data reliably using getDoc on mount
   useEffect(() => {
     if (!isAuthReady) {
       setLoading(false);
       return;
     }
-    let unsub = () => {};
-    try {
-      unsub = onSnapshotEx(db, path, (doc) => {
+    
+    const fetchMetadata = async () => {
+      setLoading(true);
+      try {
+        // Use getDocEx (one-time read) for reliable retrieval of large document
+        const doc = await getDocEx(db, path); 
+        
         const d = doc.exists() ? doc.data() : {};
+        
         try {
           const json = JSON.stringify(d || {});
           const keys = Object.keys(d || {});
           const info = {
-            fromCache: doc._md?.fromCache,
-            pendingWrites: doc._md?.pendingWrites,
+            fromCache: false, // Not using snapshot metadata
+            pendingWrites: false,
             keys,
             bytes: json.length,
             meta: d?._meta || null,
           };
-          console.log('[GLOBAL SNAPSHOT]', info);
+          console.log('[GLOBAL SNAPSHOT - GETDOC]', info);
           if (typeof window !== 'undefined') {
             window.__lastGlobal = d;
             window.__lastGlobalInfo = info;
           }
         } catch {}
+        
         setMetadata(resolveGlobalMetadata(d));
         setLoading(false);
         setError(null);
-      });
-    } catch (e) {
-      console.error('[onSnapshot] metadata/config', e);
-      setError(e);
-      setLoading(false);
-    }
 
-    const t = setTimeout(() => {
-      if (loading) {
-        console.warn('Global metadata subscribe timeout');
+        // Optional: Re-subscribe with a standard onSnapshot for real-time updates 
+        // after the initial successful read, but for stability, we rely on the GET.
+        
+      } catch (e) {
+        console.error('[GETDOC] metadata/config Failed', e);
+        // Fallback to minimal data structure to prevent app crash
+        setMetadata({}); 
+        setError(e);
         setLoading(false);
       }
-    }, 15000);
-    return () => {
-      unsub();
-      clearTimeout(t);
     };
+
+    fetchMetadata();
+    
+    // Note: The original onSnapshot logic is removed/replaced to address the
+    // recurring size/stability issue in the real-time listener.
+    // The component relies on the Admin Hub's save action to trigger a view refresh.
+    
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [db, isAuthReady]);
+  }, [db, isAuthReady]); 
+
+  // We maintain a fallback onSnapshot listener for *after* the initial read, 
+  // ensuring that updates made by others (like the Admin Hub writer) are caught.
+  // This listener is often less problematic after the initial load completes.
+  useEffect(() => {
+    if (!db || !isAuthReady) return;
+    let unsub = () => {};
+    try {
+      unsub = onSnapshotEx(db, path, (doc) => {
+        const d = doc.exists() ? doc.data() : {};
+        if (d && Object.keys(d).length > 0) {
+            setMetadata(resolveGlobalMetadata(d));
+            console.log('[GLOBAL SNAPSHOT - ONSNAPSHOT]', 'Update received after GETDOC');
+        }
+      });
+    } catch (e) {
+      console.warn('[onSnapshot] Failed after initial GETDOC. Real-time updates disabled.', e);
+    }
+    return () => unsub();
+  }, [db, isAuthReady, path]);
+
 
   return { metadata, isLoading: loading, error };
 };
