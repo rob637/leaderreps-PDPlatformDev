@@ -93,6 +93,11 @@ const AdminDataMaintenance = ({ navigate }) => {
 
     // FIX: Modified useEffect to handle both initial load and post-save updates correctly.
     useEffect(() => {
+        // CRITICAL FIX: Ensure metadata is an object before checking keys
+        if (!metadata) {
+            return; 
+        }
+
         // 1. Initial Data Population (Runs once when data first arrives and component is new)
         // Check if data is not empty AND either we haven't run before OR data has just finished loading
         if (Object.keys(metadata).length > 0) {
