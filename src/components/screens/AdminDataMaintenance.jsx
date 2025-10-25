@@ -1,4 +1,4 @@
-// src/components/screens/AdminDataMaintenance.jsx (FINAL DEBUG VERSION)
+// src/components/screens/AdminDataMaintenance.jsx (FINAL SYNCHRONIZATION FIX)
 
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useAppServices } from '../../services/useAppServices.jsx';
@@ -1353,7 +1353,8 @@ const DataSyncBanner = ({ globalMetadata, localGlobalData }) => {
    MAIN ROUTER
 ===================== */
 const GlobalDataEditor = ({ globalMetadata, updateGlobalMetadata, db, navigate }) => {
-  const [localGlobalData, setLocalGlobalData] = useState(globalMetadata || {});
+  // 🛑 FIX 1: Initialize local state to an empty object 🛑
+  const [localGlobalData, setLocalGlobalData] = useState({}); 
   // CRITICAL STATE: This is where the scope error was originating
   const [currentTab, setCurrentTab] = useState('reading'); 
   const [isSaving, setIsSaving] = useState(false);
@@ -1365,6 +1366,7 @@ const GlobalDataEditor = ({ globalMetadata, updateGlobalMetadata, db, navigate }
   useEffect(() => {
     try {
       // Only update if globalMetadata is an object and has keys (i.e., it's loaded)
+      // 🛑 FIX 2: Ensure update occurs if the new incoming data is rich 🛑
       if (globalMetadata && Object.keys(globalMetadata || {}).length > 0) {
         
         // 🟢 DEBUG: Local State Sync 🟢
