@@ -130,8 +130,45 @@ const getStrictWrapperKeyForPath = (path) => {
 
 
 /* ----------------------- CSV helpers ----------------------- */
-const toCSV = (rows) => { /* ... unchanged ... */ };
-const fromCSV = (text) => { /* ... unchanged ... */ };
+const toCSV = (rows) => {
+  if (!rows || !rows.length) return "";
+  const cols = inferColumns(rows);
+  const header = cols.join(",") + "\n";
+  const body = rows.map(row => {
+    return cols.map(col => {
+      let val = row[col];
+      if (val == null) return "";
+      if (typeof val === 'object') {
+        val = JSON.stringify(val); // Stringify nested objects/arrays
+      }
+      let str = String(val);
+      if (str.includes(",") || str.includes('"') || str.includes("\n")) {
+        str = `"${str.replace(/"/g, '""')}"`; // Handle escaping
+      }
+      return str;
+    }).join(",");
+  }).join("\n");
+  return header + body;
+};
+
+const fromCSV = (text) => {
+  const lines = text.trim().split("\n");
+  if (lines.length < 2) return [];
+  const headers = lines.shift().split(",").map(h => h.trim().replace(/^"|"$/g, '')); // Handle quoted headers
+  return lines.filter(Boolean).map((line, idx) => {
+    // Regex to split CSV row, handling quotes
+    const values = line.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
+    const row = { _id: `__import__${idx}` };
+    headers.forEach((h, i) => {
+      let val = (values[i] || "").trim();
+      if (val.startsWith('"') && val.endsWith('"')) {
+        val = val.slice(1, -1).replace(/""/g, '"'); // Unescape
+      }
+      row[h] = coerce(val); // Coerce values back to types
+    });
+    return row;
+  });
+};
 
 
 /* ----------------------- UI components ----------------------- */
@@ -139,6 +176,22 @@ const LoaderSpinner = () => (
     <div className="p-8 text-center text-gray-500 bg-gray-50 rounded-lg flex items-center justify-center">
         <Loader className="w-5 h-5 animate-spin mr-2 text-indigo-500" />
         Loading data...
+    </div>
+);
+
+const AdminWarning = () => (
+    <div className="p-4 bg-yellow-50 border-l-4 border-yellow-400 rounded-r-lg mb-6 shadow-md">
+        <div className="flex">
+            <div className="flex-shrink-0">
+                <AlertTriangle className="h-5 w-5 text-yellow-500" />
+            </div>
+            <div className="ml-3">
+                <h3 className="text-sm font-bold text-yellow-800">Warning: Direct Database Access</h3>
+                <div className="mt-2 text-sm text-yellow-700">
+                    <p>You are using a raw data editor. Actions are immediate and may be irreversible. Be 100% certain of your path and data before clicking Save, Replace, or Delete.</p>
+                </div>
+            </div>
+        </div>
     </div>
 );
 
@@ -361,16 +414,11 @@ export default function AdminDataMaintenance() {
   const setArrayRows = useCallback((nextRowsOrFn) => {
     setDocJson(prevJson => {
         const currentRaw = tryParse(prevJson, {});
-        // Resolve functional updates correctly based on derived arrayRows
-        const currentArrayRows = (() => {
-            let src = [];
-            const targetKey = wrapperKey ? ARRAY_WRAPPER_KEY : activeArray;
-            if (targetKey && currentRaw && Array.isArray(currentRaw[targetKey])) { src = currentRaw[targetKey]; }
-            if (!Array.isArray(src)) return [];
-            return src.map((item, i) => { /* ... mapping logic ... */ }); // Re-derive if needed
-        })();
-
-        const nextRows = typeof nextRowsOrFn === 'function' ? nextRowsOrFn(currentArrayRows) : nextRowsOrFn;
+        
+        // Resolve functional update
+        const nextRows = typeof nextRowsOrFn === 'function' 
+            ? nextRowsOrFn(arrayRows) // Pass the memoized arrayRows to the function
+            : nextRowsOrFn;
 
         // Rebuild the array from the table rows
         const rebuiltArray = nextRows.map(({ _id, ...rest }) => {
@@ -389,12 +437,13 @@ export default function AdminDataMaintenance() {
         }
         return pretty(updatedFullDoc);
     });
-  }, [activeArray, wrapperKey]); // Removed arrayRows dependency to prevent potential loops
+  }, [activeArray, wrapperKey, arrayRows]); // Added arrayRows dependency for functional updates
 
 
   // Collection state
   const [rows, setRows] = useState([]);
   const [selected, setSelected] = useState({});
+  const [limit, setLimit] = useState(500); // <-- NEW: State for query limit
   const cols = useMemo(() => inferColumns(rows), [rows]);
 
   useEffect(() => { window.scrollTo(0, 0); }, []);
@@ -403,12 +452,105 @@ export default function AdminDataMaintenance() {
   const explain = isDocumentPath(path) ? "Path type: 📝 Document" : isCollectionPath(path) ? "Path type: 📚 Collection" : "Enter Path";
 
   /* ---------- document actions ---------- */
-  // Wrap actions in useCallback for stability
-  const readDoc = useCallback(async () => { /* ... unchanged ... */ }, [path, uid, db, isReading, liveUnsub]);
-  const listenDoc = useCallback(() => { /* ... unchanged ... */ }, [path, uid, db, isReading, liveUnsub]);
-  const saveMerge = useCallback(async () => { /* ... unchanged ... */ }, [docJson, path, uid, db, isWriting, liveUnsub, readDoc]);
-  const replaceSet = useCallback(async () => { /* ... unchanged ... */ }, [docJson, path, uid, db, isWriting, liveUnsub, readDoc]);
-  const deleteTheDoc = useCallback(async () => { /* ... unchanged ... */ }, [path, uid, db, isWriting, liveUnsub]);
+  
+  const readDoc = useCallback(async () => {
+    if (isReading) return;
+    if (liveUnsub) { liveUnsub(); setLiveUnsub(null); }
+    setStatus("Reading doc…"); setErr("");
+    try {
+      const p = normalizePath(path, uid);
+      const docRef = doc(db, ...pathParts(p));
+      const docSnap = await getDoc(docRef);
+      if (docSnap.exists()) {
+        setDocJson(pretty(docSnap.data()));
+        setDocExists(true);
+        setStatus(`✅ Read doc: ${p}`);
+      } else {
+        setDocJson("{}");
+        setDocExists(false);
+        setStatus("ⓘ Doc does not exist.");
+      }
+    } catch (e) {
+      setErr(String(e)); setStatus("❌ Error");
+    }
+  }, [path, uid, db, isReading, liveUnsub]);
+
+  const listenDoc = useCallback(() => {
+    if (isReading) return;
+    if (liveUnsub) { liveUnsub(); setLiveUnsub(null); }
+    setStatus("Listening for changes…"); setErr("");
+    try {
+      const p = normalizePath(path, uid);
+      const unsub = onSnapshot(
+        doc(db, ...pathParts(p)),
+        (docSnap) => {
+          if (docSnap.exists()) {
+            setDocJson(pretty(docSnap.data()));
+            setDocExists(true);
+            setStatus(`🎧 Live update: ${p} @ ${nowIso()}`);
+          } else {
+            setDocJson("{}");
+            setDocExists(false);
+            setStatus("ⓘ Watched doc was deleted.");
+          }
+        },
+        (e) => {
+          setErr(String(e)); setStatus("❌ Listener error");
+          if (liveUnsub) { liveUnsub(); setLiveUnsub(null); }
+        }
+      );
+      setLiveUnsub(() => unsub);
+    } catch (e) {
+      setErr(String(e)); setStatus("❌ Error");
+    }
+  }, [path, uid, db, isReading, liveUnsub]);
+
+  const saveMerge = useCallback(async () => {
+    if (isWriting) return;
+    setStatus("Saving (merge)…"); setErr("");
+    try {
+      const data = tryParse(docJson, null);
+      if (data === null) throw new Error("Invalid JSON");
+      const p = normalizePath(path, uid);
+      await setDoc(doc(db, ...pathParts(p)), { ...data, _lastEdited: nowIso() }, { merge: true });
+      setStatus("✅ Saved (merge).");
+      if (!liveUnsub) await readDoc();
+    } catch (e) {
+      setErr(String(e)); setStatus("❌ Error");
+    }
+  }, [docJson, path, uid, db, isWriting, liveUnsub, readDoc]);
+
+  const replaceSet = useCallback(async () => {
+    if (isWriting) return;
+    if (!window.confirm("Replace (Set) will OVERWRITE the entire document. Are you sure?")) return;
+    setStatus("Replacing (set)…"); setErr("");
+    try {
+      const data = tryParse(docJson, null);
+      if (data === null) throw new Error("Invalid JSON");
+      const p = normalizePath(path, uid);
+      await setDoc(doc(db, ...pathParts(p)), { ...data, _lastEdited: nowIso() });
+      setStatus("✅ Replaced (set).");
+      if (!liveUnsub) await readDoc();
+    } catch (e) {
+      setErr(String(e)); setStatus("❌ Error");
+    }
+  }, [docJson, path, uid, db, isWriting, liveUnsub, readDoc]);
+
+  const deleteTheDoc = useCallback(async () => {
+    if (isWriting) return;
+    if (!window.confirm("Are you sure you want to permanently DELETE this document?")) return;
+    setStatus("Deleting doc…"); setErr("");
+    try {
+      const p = normalizePath(path, uid);
+      await deleteDoc(doc(db, ...pathParts(p)));
+      setStatus("✅ Deleted doc.");
+      setDocJson("{}");
+      setDocExists(false);
+      if (liveUnsub) { liveUnsub(); setLiveUnsub(null); }
+    } catch (e) {
+      setErr(String(e)); setStatus("❌ Error");
+    }
+  }, [path, uid, db, isWriting, liveUnsub]);
 
   const saveArray = useCallback(async () => {
     if (isWriting) return;
@@ -433,61 +575,253 @@ export default function AdminDataMaintenance() {
         const dataFromEditor = tryParse(docJson, {});
         const p = normalizePath(path, uid);
         let dataToSave = { ...dataFromEditor };
-        // Determine fields managed by Array editor *at the time of save*
-        const currentRaw = tryParse(docJson, {});
+        
+        // Determine fields managed by Array editor
         const currentWrapperKey = getStrictWrapperKeyForPath(path);
-        const currentArrayFields = Object.keys(currentRaw).filter(k => k !== currentWrapperKey && Array.isArray(currentRaw[k]));
+        const currentArrayFields = Object.keys(dataFromEditor).filter(k => k !== currentWrapperKey && Array.isArray(dataFromEditor[k]));
         const arrayManagedFields = currentWrapperKey ? [ARRAY_WRAPPER_KEY] : currentArrayFields;
 
-        arrayManagedFields.forEach(field => { if (dataToSave.hasOwnProperty(field)) { delete dataToSave[field]; } });
+        // Delete array-managed fields from the object we are about to save
+        arrayManagedFields.forEach(field => { 
+            if (dataToSave.hasOwnProperty(field)) { 
+                delete dataToSave[field]; 
+            } 
+        });
 
-        if (Object.keys(dataToSave).length > 0) {
+        if (Object.keys(dataToSave).length > 0 || !docExists) { // Allow saving KV if doc doesn't exist
             await setDoc(doc(db, ...pathParts(p)), { ...dataToSave, _lastEdited: nowIso() }, { merge: true });
             setStatus("✅ Saved key/values.");
             if (!liveUnsub) await readDoc();
         } else { setStatus("✅ No non-array key/values to save."); }
     } catch (e) { setErr(String(e)); setStatus("❌ Error"); }
-  }, [docJson, path, uid, db, isWriting, liveUnsub, readDoc]); // Removed arrayFields/wrapperKey direct dependencies
+  }, [docJson, path, uid, db, isWriting, liveUnsub, readDoc, docExists]);
 
 
   /* ---------- collection actions ---------- */
-  // (listCollection, addCollectionRow, etc. - using useCallback versions)
-  const listCollection = useCallback(async () => { /* ... */ }, [path, uid, db, isReading]);
+  
+  const listCollection = useCallback(async () => {
+    if (isReading) return;
+    setStatus("Listing collection…"); setErr("");
+    setRows([]); // Clear previous results
+    try {
+      const p = normalizePath(path, uid);
+      const collRef = collection(db, ...pathParts(p));
+      const q = query(collRef, qLimit(limit)); // Using the limit state
+      const snap = await getDocs(q);
+      const data = snap.docs.map((d) => ({ ...flatten(d.data()), _id: d.id }));
+      setRows(data);
+      setSelected({});
+      setStatus(`✅ Listed ${data.length} docs from ${p}. (Limit: ${limit})`);
+    } catch (e) { setErr(String(e)); setStatus("❌ Error"); }
+  }, [path, uid, db, isReading, limit]); // Added limit dependency
+
   const addCollectionRow = useCallback(() => setRows((r) => [{ _id: "__new__" + Math.random().toString(36).slice(2, 8) }, ...r]), []);
   const setCollectionCell = useCallback((id, key, val) => setRows((r) => r.map((x) => (x._id === id ? { ...x, [key]: val } : x))), []);
   const toggleSelection = useCallback((id) => setSelected((s) => ({ ...s, [id]: !s[id] })), []);
-  const toggleAllSelection = useCallback(() => { /* ... */ }, [rows, selected]);
-  const batchSaveCollection = useCallback(async () => { /* ... */ }, [rows, path, uid, db, isWriting]);
-  const deleteSelectedCollection = useCallback(async () => { /* ... */ }, [selected, path, uid, db, isWriting]);
-  const deleteSingleCollectionDoc = useCallback(async (id) => { /* ... */ }, [path, uid, db, isWriting]);
+  
+  const toggleAllSelection = useCallback(() => {
+    const allSelected = rows.length > 0 && Object.keys(selected).length === rows.length && Object.values(selected).every(Boolean);
+    if (allSelected) {
+      setSelected({});
+    } else {
+      setSelected(Object.fromEntries(rows.map(r => [r._id, true])));
+    }
+  }, [rows, selected]);
+
+  const batchSaveCollection = useCallback(async () => {
+    if (isWriting) return;
+    const toSave = rows.filter(r => r._id.startsWith('__new__') || r._id.startsWith('__import__'));
+    const toUpdate = rows.filter(r => selected[r._id] && !r._id.startsWith('__'));
+    
+    if (toSave.length === 0 && toUpdate.length === 0) {
+        setStatus("ⓘ No new/imported rows or selected rows to save.");
+        return;
+    }
+    if (!window.confirm(`This will save/merge ${toSave.length} new/imported docs and update ${toUpdate.length} selected docs. Continue?`)) return;
+
+    setStatus(`Batch saving ${toSave.length + toUpdate.length} docs...`); setErr("");
+    const p = normalizePath(path, uid);
+    const batch = writeBatch(db);
+    
+    try {
+        // Save/merge selected existing docs
+        toUpdate.forEach(r => {
+            const { _id, ...data } = r;
+            const docRef = doc(db, ...pathParts(p).concat(_id));
+            batch.set(docRef, { ...unflatten(data), _lastEdited: nowIso() }, { merge: true });
+        });
+
+        // Save new/imported docs
+        toSave.forEach((r) => {
+            const { _id, ...data } = r;
+            const newId = _id.startsWith('__new__') ? doc(collection(db, 'id_holder')).id : _id.replace('__import__', '');
+            const docRef = doc(db, ...pathParts(p).concat(newId));
+            batch.set(docRef, { ...unflatten(data), _lastEdited: nowIso() });
+        });
+
+        await batch.commit();
+        setStatus(`✅ Batch save complete.`);
+        await listCollection(); // Refresh
+    } catch (e) { setErr(String(e)); setStatus("❌ Error"); }
+  }, [rows, selected, path, uid, db, isWriting, listCollection]);
+
+  const deleteSelectedCollection = useCallback(async () => {
+    if (isWriting) return;
+    const toDelete = Object.keys(selected).filter((id) => selected[id] && !id.startsWith("__"));
+    if (!toDelete.length) { setStatus("ⓘ No existing rows selected to delete."); return; }
+    if (!window.confirm(`Are you sure you want to permanently DELETE ${toDelete.length} document(s)?`)) return;
+
+    setStatus(`Batch deleting ${toDelete.length} docs...`); setErr("");
+    const p = normalizePath(path, uid);
+    const batch = writeBatch(db);
+    try {
+        toDelete.forEach((id) => {
+            batch.delete(doc(db, ...pathParts(p).concat(id)));
+        });
+        await batch.commit();
+        setStatus(`✅ Batch delete complete.`);
+        await listCollection(); // Refresh
+    } catch (e) { setErr(String(e)); setStatus("❌ Error"); }
+  }, [selected, path, uid, db, isWriting, listCollection]);
+
+  const deleteSingleCollectionDoc = useCallback(async (id) => {
+    if (isWriting || id.startsWith("__")) return;
+    if (!window.confirm(`Are you sure you want to permanently DELETE document ${id}?`)) return;
+    setStatus(`Deleting doc ${id}…`); setErr("");
+    try {
+      const p = normalizePath(path, uid);
+      await deleteDoc(doc(db, ...pathParts(p).concat(id)));
+      setStatus(`✅ Deleted doc ${id}.`);
+      await listCollection(); // Refresh
+    } catch (e) { setErr(String(e)); setStatus("❌ Error"); }
+  }, [path, uid, db, isWriting, listCollection]);
 
 
   /* ---------- import / export ---------- */
-  // (exportJSON, importJSON, exportCSV, importCSV - using useCallback versions)
-  const exportJSON = useCallback(() => { /* ... */ }, [docJson, path]);
-  const importJSON = useCallback((e) => { /* ... */ }, [path]);
-  const exportCSV = useCallback(() => { /* ... */ }, [rows, path]); // Uses collection rows
-  const importCSV = useCallback((e) => { /* ... */ }, [path]);
+  
+  const exportJSON = useCallback(() => {
+    const p = normalizePath(path, uid).replaceAll('/', '_');
+    let dataToExport;
+    let fileName;
+
+    // For Doc view
+    if (isDocumentPath(path)) {
+        dataToExport = docJson;
+        fileName = `${p}.json`;
+    }
+    // For Collection view
+    else if (isCollectionPath(path)) {
+        dataToExport = pretty(rows.map(({_id, ...data}) => ({ _id, ...unflatten(data) })));
+        fileName = `${p}_collection.json`;
+    } else {
+        return;
+    }
+    
+    const blob = new Blob([dataToExport], { type: "application/json" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = fileName;
+    a.click();
+    URL.revokeObjectURL(a.href);
+
+  }, [docJson, rows, path, uid]);
+
+  const importJSON = useCallback((e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (evt) => {
+      try {
+        const text = evt.target.result;
+        // For Doc view
+        if (isDocumentPath(path)) {
+          const data = tryParse(text, null);
+          if (data === null) throw new Error("Invalid JSON file");
+          setDocJson(pretty(data));
+          setStatus(`ⓘ Loaded ${file.name}. Click Save/Replace to commit.`);
+        }
+        // For Collection view (imports array of docs)
+        else if (isCollectionPath(path)) {
+          const data = tryParse(text, null);
+          if (!Array.isArray(data)) throw new Error("JSON file is not an array of documents");
+          const importedRows = data.map((doc, idx) => {
+             const id = doc._id || `__import__${idx}`;
+             delete doc._id;
+             return { ...flatten(doc), _id: id };
+          });
+          setRows(importedRows);
+          setStatus(`ⓘ Loaded ${importedRows.length} docs from ${file.name}. Click Batch Save to commit.`);
+        }
+      } catch (err) {
+        setErr(String(err)); setStatus("❌ Error importing file");
+      }
+      e.target.value = ""; // Clear file input
+    };
+    reader.readAsText(file);
+  }, [path]);
+
+  const exportCSV = useCallback(() => {
+    // Only for Collection view
+    if (!isCollectionPath(path) || !rows.length) return;
+    try {
+      const csv = toCSV(rows);
+      const p = normalizePath(path, uid).replaceAll('/', '_');
+      const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = `${p}_collection.csv`;
+      a.click();
+      URL.revokeObjectURL(a.href);
+    } catch (e) {
+      setErr(String(e)); setStatus("❌ Error exporting CSV");
+    }
+  }, [rows, path, uid]);
+
+  const importCSV = useCallback((e) => {
+    // Only for Collection view
+    if (!isCollectionPath(path)) return;
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (evt) => {
+      try {
+        const text = evt.target.result;
+        const importedRows = fromCSV(text);
+        setRows(importedRows);
+        setStatus(`ⓘ Loaded ${importedRows.length} docs from ${file.name}. Click Batch Save to commit.`);
+      } catch (err) {
+        setErr(String(err)); setStatus("❌ Error importing CSV");
+      }
+      e.target.value = ""; // Clear file input
+    };
+    reader.readAsText(file);
+  }, [path]);
 
 
   /* ---------- presets (WITH ALL CATALOGS) ---------- */
   const presets = useMemo(() => [
-    { label: "⚙️ Global Config Root (Doc)", value: "metadata/config" },
-    { label: "🏦 Daily Rep Bank (Doc)", value: "metadata/config/catalog/COMMITMENT_BANK" },
-    { label: "🎯 Target Rep Catalog (Doc)", value: "metadata/config/catalog/TARGET_REP_CATALOG" },
-    { label: "🗺️ Leadership Domains (Doc)", value: "metadata/config/catalog/leadership_domains" },
-    { label: "📚 Resource Library (Doc)", value: "metadata/config/catalog/resource_library" },
-    { label: "⚡ Quick Challenges (Doc)", value: "metadata/config/catalog/quick_challenge_catalog" },
-    { label: "🛠️ Skill Content Library (Doc)", value: "metadata/config/catalog/SKILL_CONTENT_LIBRARY" },
-    { label: "🎬 Scenario Catalog (Doc)", value: "metadata/config/catalog/scenario_catalog" },
-    { label: "🎥 Video Catalog (Doc)", value: "metadata/config/catalog/video_catalog" },
-    { label: "📖 Reading Catalog (Doc - Wrapped)", value: "metadata/reading_catalog" },
-    { label: "👤 User - Current Dev Plan (Doc)", value: "leadership_plan/<uid>/profile/plan" },
-    { label: "📜 User - Dev Plan History (Coll)", value: "leadership_plan/<uid>/plan_history" },
-    { label: "📊 User - Assessment History (Coll)", value: "leadership_plan/<uid>/assessment_history" },
-    { label: "✅ User - Daily Reps / Reflection (Doc)", value: "user_commitments/<uid>/profile/active" },
-    { label: "📝 User - Planning Drafts (Doc)", value: "user_planning/<uid>/profile/drafts" },
+    // --- USER DATA ---
+    { group: "User Data (Development Plan)", label: "👤 Dev Plan (Current)", value: "leadership_plan/<uid>/profile/plan" },
+    { group: "User Data (Development Plan)", label: "📜 Dev Plan History (Coll)", value: "leadership_plan/<uid>/plan_history" },
+    { group: "User Data (Development Plan)", label: "📊 Assessment History (Coll)", value: "leadership_plan/<uid>/assessment_history" },
+    { group: "User Data (Daily Practice)", label: "✅ Daily Reps / Reflection", value: "user_commitments/<uid>/profile/active" },
+    { group: "User Data (Other)", label: "📝 Planning Drafts", value: "user_planning/<uid>/profile/drafts" },
+    
+    // --- APP DATASETS ---
+    { group: "App DataSets (Global)", label: "⚙️ Global Config Root", value: "metadata/config" },
+    { group: "App DataSets (Development Plan)", label: "🗺️ Leadership Domains (Tiers)", value: "metadata/config/catalog/leadership_domains" },
+    { group: "App DataSets (Development Plan)", label: "🛠️ Skill Content Library (Courses)", value: "metadata/config/catalog/SKILL_CONTENT_LIBRARY" },
+    { group: "App DataSets (Daily Practice)", label: "🏦 Daily Rep Bank", value: "metadata/config/catalog/COMMITMENT_BANK" },
+    { group: "App DataSets (Other Features)", label: "🎯 Target Rep Catalog", value: "metadata/config/catalog/TARGET_REP_CATALOG" },
+    { group: "App DataSets (Other Features)", label: "📚 Resource Library", value: "metadata/config/catalog/resource_library" },
+    { group: "App DataSets (Other Features)", label: "⚡ Quick Challenges", value: "metadata/config/catalog/quick_challenge_catalog" },
+    { group: "App DataSets (Other Features)", label: "🎬 Scenario Catalog", value: "metadata/config/catalog/scenario_catalog" },
+    { group: "App DataSets (Other Features)", label: "🎥 Video Catalog", value: "metadata/config/catalog/video_catalog" },
+    { group: "App DataSets (Other Features)", label: "📖 Reading Catalog (Wrapped)", value: "metadata/reading_catalog" },
   ], []);
+
+  // Helper to get unique, ordered groups
+  const presetGroups = useMemo(() => [...new Set(presets.map(p => p.group))], [presets]);
 
 
   /* ----------------------- render ----------------------- */
@@ -495,15 +829,23 @@ export default function AdminDataMaintenance() {
   return (
     <div className="p-6 bg-gray-50 min-h-screen">
       <h1 className="text-3xl font-extrabold text-gray-900 mb-6 border-b pb-2">🔥 Firestore Data Manager (Admin)</h1>
+      
+      <AdminWarning /> {/* <-- NEW: Added Warning */}
 
       {/* Presets */}
-      <div className="flex flex-wrap gap-2 mb-4">
-        <span className="text-sm font-medium text-gray-700 self-center">Quick Access:</span>
-        {presets.map((p) => (
-          <button key={p.value} className="px-3 py-1.5 rounded-full border border-blue-200 text-sm bg-white text-blue-700 hover:bg-blue-50 transition shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
-           onClick={() => { setPath(p.value); readDoc(); }} title={p.value} disabled={isReading || isWriting}>
-            {p.label}
-          </button>
+      <div className="flex flex-col gap-4 mb-4">
+        {presetGroups.map(group => (
+            <div key={group} className="flex flex-wrap items-center gap-2 p-3 bg-white border rounded-lg shadow-sm">
+                <span className="text-sm font-semibold text-gray-800 w-full sm:w-auto sm:min-w-[200px] pr-2">{group}:</span>
+                <div className="flex flex-wrap gap-2">
+                {presets.filter(p => p.group === group).map((p) => (
+                    <button key={p.value} className="px-3 py-1.5 rounded-full border border-blue-200 text-sm bg-white text-blue-700 hover:bg-blue-50 transition shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                    onClick={() => { setPath(p.value); if (isDocumentPath(p.value)) readDoc(); else listCollection(); }} title={p.value} disabled={isReading || isWriting}>
+                        {p.label}
+                    </button>
+                ))}
+                </div>
+            </div>
         ))}
       </div>
 
@@ -561,7 +903,7 @@ export default function AdminDataMaintenance() {
                       <KVEditor
                         value={rawDocObj}
                         // Exclude the strictly defined wrapper key OR the currently selected array field
-                        excludedKeys={wrapperKey ? Object.keys(rawDocObj) : (activeArray ? [activeArray] : [])}
+                        excludedKeys={wrapperKey ? [ARRAY_WRAPPER_KEY] : (activeArray ? [activeArray] : [])}
                         onChange={(obj) => setDocJson(pretty(obj))}
                         onSave={saveKV}
                         isLoading={isReading || isWriting}
@@ -583,8 +925,6 @@ export default function AdminDataMaintenance() {
                            onChange={(e) => setActiveArray(e.target.value)}
                            disabled={isReading || isWriting} // Disable during operations
                         >
-                            {/* Option to deselect? Maybe not needed if auto-select is reliable */}
-                            {/* <option value="">-- Select Array --</option> */}
                             {arrayFields.map((f) => <option key={f} value={f}>{f}</option>)}
                         </select>
                         </div>
@@ -615,7 +955,19 @@ export default function AdminDataMaintenance() {
          <>
             {/* Collection Action Buttons */}
             <div className="flex flex-wrap gap-3 mb-6 p-4 bg-white rounded-lg shadow-md border">
-             <button className="px-4 py-2 rounded-lg bg-indigo-600 text-white font-semibold hover:bg-indigo-700 transition shadow-md disabled:opacity-50" onClick={listCollection} disabled={isReading || isWriting}>📋 List Collection (max 500)</button>
+             <button className="px-4 py-2 rounded-lg bg-indigo-600 text-white font-semibold hover:bg-indigo-700 transition shadow-md disabled:opacity-50" onClick={listCollection} disabled={isReading || isWriting}>📋 List Collection</button>
+             {/* NEW: Editable limit */}
+             <div className="flex items-center gap-1">
+                <label htmlFor="limit" className="text-sm font-medium text-gray-600">Limit:</label>
+                <input
+                    type="number"
+                    id="limit"
+                    value={limit}
+                    onChange={(e) => setLimit(Number(e.target.value) || 500)}
+                    className="w-20 border border-gray-300 rounded-lg px-2 py-1.5 text-sm shadow-inner disabled:bg-gray-100"
+                    disabled={isReading || isWriting}
+                />
+             </div>
              <button className="px-4 py-2 rounded-lg border bg-white hover:bg-gray-100 transition disabled:opacity-50" onClick={addCollectionRow} disabled={isReading || isWriting}>➕ Add New Row (Local)</button>
              <button className="px-4 py-2 rounded-lg border border-green-300 bg-green-50 text-green-700 font-semibold hover:bg-green-100 transition disabled:opacity-50" onClick={batchSaveCollection} disabled={!rows.length || isReading || isWriting}>💾 Batch Save All Changes</button>
              <button className="px-4 py-2 rounded-lg border border-red-600 bg-red-50 text-red-600 font-semibold hover:bg-red-100 transition disabled:opacity-50" onClick={deleteSelectedCollection} disabled={!Object.values(selected).some(Boolean) || isReading || isWriting}>🗑️ Delete Selected</button>
@@ -631,7 +983,15 @@ export default function AdminDataMaintenance() {
                 <table className="min-w-full text-sm">
                    <thead className="bg-gray-100 sticky top-0 z-10"> {/* Added z-index */}
                      <tr>
-                        <th className="p-2 border-b w-10"><input type="checkbox" checked={Object.keys(selected).length === rows.length && rows.length > 0 && Object.values(selected).every(Boolean)} onChange={toggleAllSelection} title="Select All" /></th>
+                        <th className="p-2 border-b w-10">
+                            {/* NEW: Select All Checkbox */}
+                            <input 
+                                type="checkbox" 
+                                checked={rows.length > 0 && Object.keys(selected).length === rows.length && Object.values(selected).every(Boolean)} 
+                                onChange={toggleAllSelection} 
+                                title="Select All" 
+                            />
+                        </th>
                         {cols.map((c) => <th key={c} className="p-3 border-b text-left font-semibold text-gray-700">{c}</th>)}
                         <th className="p-3 border-b font-semibold text-gray-700">Actions</th>
                      </tr>
@@ -639,12 +999,26 @@ export default function AdminDataMaintenance() {
                    <tbody>
                     {!rows.length ? ( <tr><td colSpan={cols.length + 2} className="p-8 text-center text-gray-500">No documents loaded. Click <b>List Collection</b> or <b>Add New Row</b>.</td></tr> )
                     : rows.map((r) => (
-                        <tr key={r._id} className="odd:bg-white even:bg-gray-50 hover:bg-yellow-50 transition">
+                        <tr key={r._id} className={`transition ${selected[r._id] ? 'bg-yellow-100' : 'odd:bg-white even:bg-gray-50'} hover:bg-yellow-50`}>
                             <td className="p-2 border-b align-top text-center"><input type="checkbox" checked={!!selected[r._id]} onChange={() => toggleSelection(r._id)} /></td>
                             {cols.map((c) => (
                                <td key={c} className="p-1.5 border-b align-top">
-                                {c === "_id" ? ( <div className={`px-2 py-1 rounded font-mono text-xs ${r._id.startsWith("__new__") || r._id.startsWith("__import__") ? 'bg-yellow-200 text-yellow-800' : 'bg-gray-100 text-gray-700'}`}>{r._id.startsWith("__") ? 'NEW/IMPORT' : r._id}</div> )
-                                : ( <textarea className="w-full border rounded px-2 py-1 font-mono text-xs h-16 resize-y disabled:bg-gray-50" value={r[c] ?? ""} onChange={(e) => setCollectionCell(r._id, c, e.target.value)} placeholder={c} title={c} rows={1} disabled={isWriting}/> )}
+                                {/* NEW: _id is now read-only */}
+                                {c === "_id" ? ( 
+                                    <div className={`px-2 py-1 rounded font-mono text-xs ${r._id.startsWith("__new__") || r._id.startsWith("__import__") ? 'bg-yellow-200 text-yellow-800' : 'bg-gray-100 text-gray-700'}`}>
+                                        {r._id.startsWith("__") ? 'NEW/IMPORT' : r._id}
+                                    </div> 
+                                ) : ( 
+                                    <textarea 
+                                        className="w-full border rounded px-2 py-1 font-mono text-xs h-16 resize-y disabled:bg-gray-50" 
+                                        value={r[c] ?? ""} 
+                                        onChange={(e) => setCollectionCell(r._id, c, e.target.value)} 
+                                        placeholder={c} 
+                                        title={c} 
+                                        rows={1} 
+                                        disabled={isWriting}
+                                    /> 
+                                )}
                                </td>
                             ))}
                             <td className="p-2 border-b align-top text-center">
