@@ -25,13 +25,13 @@ const pathParts = (p) => p.trim().split("/").filter(Boolean);
 const ARRAY_WRAPPER_KEY = "items"; 
 
 // Paths that are known to contain a single array at the root or are collections of arrays
-// NOTE: These paths MUST be updated to reflect your new singular 'catalog' structure if you want auto-selection to work correctly.
+// NOTE: ALL PATHS CORRECTED TO USE SINGULAR '/catalog/'
 const SINGLE_ARRAY_DOCUMENTS = [
     "metadata/reading_catalog",
     "metadata/config/catalog/COMMITMENT_BANK",
     "metadata/config/catalog/TARGET_REP_CATALOG",
     "metadata/config/catalog/quick_challenge_catalog",
-    // Add other array-at-root documents here
+    "metadata/config/catalog/SKILL_CONTENT_LIBRARY", // NEW: Added the new content library document
 ];
 
 // Standard Firestore path logic (even segments = Document)
@@ -719,6 +719,7 @@ export default function AdminDataMaintenance() {
   const CATALOG_BASE_PATH = "metadata/config/catalog";
 
   const presets = [
+    // FINAL FIX: Using the 4-segment path.
     { label: "✅ Commitment Bank (Doc)", value: `${CATALOG_BASE_PATH}/COMMITMENT_BANK` },
     { label: "🎯 Target Rep Catalog (Doc)", value: `${CATALOG_BASE_PATH}/TARGET_REP_CATALOG` },
     { label: "🗺️ Leadership Domains (Doc)", value: `${CATALOG_BASE_PATH}/leadership_domains` },
@@ -727,7 +728,8 @@ export default function AdminDataMaintenance() {
     { label: "📚 Resource Library (Doc)", value: `${CATALOG_BASE_PATH}/resource_library` },
     { label: "🎬 Scenario Catalog (Doc)", value: `${CATALOG_BASE_PATH}/scenario_catalog` },
     { label: "🎥 Video Catalog (Doc)", value: `${CATALOG_BASE_PATH}/video_catalog` },
-
+    // NEW: Skill Content Library
+    { label: "🛠️ Skill Content Library (Doc)", value: `${CATALOG_BASE_PATH}/SKILL_CONTENT_LIBRARY` }, 
     // Reading Catalog appears to be correct as metadata/reading_catalog (2-segment path)
     { label: "📖 Reading Catalog (Doc)", value: "metadata/reading_catalog" },
   ];

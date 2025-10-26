@@ -176,7 +176,6 @@ const CONTENT_LIBRARY = [
     { skill: 'Vision', type: 'Exercise', duration: 45, tier: 'T5', title: 'Vision Statement Workshop', difficulty: 'Core' },
     { skill: 'StrategicPlanning', type: 'Tool', duration: 30, tier: 'T5', title: 'Pre-Mortem Risk Audit', difficulty: 'Mastery' },
     { skill: 'Influence', type: 'Reading', duration: 40, tier: 'T5', title: 'Long-Range Strategic Planning Principles', difficulty: 'Intro' },
-    // Adding unique IDs for the simplified content to avoid errors
     { skill: 'Accountability', type: 'Reading', duration: 25, tier: 'T4', title: 'Article: The Link Between Ownership and Trust', difficulty: 'Intro', id: '408' },
     { skill: 'Delegation', type: 'Tool', duration: 35, tier: 'T2', title: 'Delegation Audit & Follow-up Checklist', difficulty: 'Core', id: '215' },
     { skill: 'Vision', type: 'Tool', duration: 30, tier: 'T5', title: 'Vision Alignment Diagnostic', difficulty: 'Core', id: '507' },
@@ -184,24 +183,8 @@ const CONTENT_LIBRARY = [
 ];
 
 
-const SKILL_TO_TIER = CONTENT_LIBRARY.reduce((acc, item) => {
-    if (!acc[item.skill]) acc[item.skill] = item.tier;
-    return acc;
-}, {});
-
-const MOCK_CONTENT_DETAILS_FINAL = {
-    Reading: (title, skill) => `## Reading: ${title}\n### Focus: ${skill}\nThis is a reading module focusing on ${skill} theory.`,
-    Exercise: (title, skill) => `## Exercise: ${title}\n### Focus: ${skill}\nThis is a practical exercise for skill ${skill}.`,
-    'Role-Play': (title, skill) => `## Role-Play: ${title}\n### Focus: ${skill}\nThis is a simulation for skill ${skill}.`, // FIX: Quotes added
-    CaseStudy: (title, skill) => `## Executive Analysis: ${title}\n### Focus: ${skill}\nThis is a case study analysis for skill ${skill}.`,
-    Tool: (title, skill) => `## Tool Implementation: ${title}\n### Focus: ${skill}\nThis is a tool implementation module for skill ${skill}.`,
-    Coaching: (title, skill) => `## AI Coaching Lab: ${title}\n### Focus: ${skill}\nThis is an AI coaching session for skill ${skill}.`,
-};
-
-
-const generatePlanData = (assessment, ownerUid) => {
-    const { selfRatings, overallConfidence } = assessment;
-    const allTiers = Object.keys(LEADERSHIP_TIERS);
+const generatePlanData = (assessment, ownerUid, contentLibrary) => {
+    const { selfRatings, overallConfidence, openEndedGoal } = assessment;
 
     // 1. SCORING & PRIORITIZATION
     const dimScores = {}; 
@@ -243,6 +226,7 @@ const generatePlanData = (assessment, ownerUid) => {
         { tier: 'T5', theme: 'Visionary Leadership & Synthesis', primarySkills: ['Vision', 'StrategicPlanning', 'Influence'] },
     ];
     
+    // Logic to select content and assign difficulty/duration
     const getTargetDifficulty = (rating) => rating >= 4.5 ? 'Mastery' : rating >= 3.5 ? 'Core' : 'Intro';
     const adjustDuration = (rating, duration) => {
         if (rating >= 4.5) return Math.round(duration * 0.8); 
@@ -260,7 +244,8 @@ const generatePlanData = (assessment, ownerUid) => {
 
         const requiredContent = [];
         
-        let pool = CONTENT_LIBRARY.filter(item => blockDef.primarySkills.includes(item.skill));
+        // 1. Filter Content Pool: Prioritize items matching the cycle's primary skills
+        let pool = (contentLibrary || CONTENT_LIBRARY).filter(item => blockDef.primarySkills.includes(item.skill));
         
         // Ensure a variety of types (Tool, Exercise, Reading, Case Study, Role-Play)
         pool.sort((a, b) => {
@@ -280,7 +265,7 @@ const generatePlanData = (assessment, ownerUid) => {
                     duration: adjustDuration(currentRating, item.duration),
                     difficulty: targetDifficulty,
                     status: 'Pending',
-                    dateCompleted: null, // NEW: Field to track completion time
+                    dateCompleted: null, 
                 });
                 usedContentIds.add(item.skill);
                 count++;
@@ -288,9 +273,9 @@ const generatePlanData = (assessment, ownerUid) => {
         }
         
         fullPlan.push({
-            month: cycle, // Using cycle number 1-6 as the month number for tracking 6 blocks
+            month: cycle, 
             tier: primaryTier,
-            theme: blockDef.theme,
+            theme: `90-Day Block ${cycle} Focus: ${growthDimensions.join(', ')}`,
             requiredContent: requiredContent,
             status: 'Pending',
             reflectionText: '',
@@ -302,9 +287,10 @@ const generatePlanData = (assessment, ownerUid) => {
 
     return {
         ownerUid,
-        assessment: { ...assessment, selfRatings: selfRatings },
+        assessment: { ...assessment, selfRatings: selfRatings, overallConfidence, openEndedGoal },
         plan: fullPlan,
-        currentMonth: 1, // Start at block 1
+        currentMonth: 1, 
+        progressScans: [], // Initialize the history array for 90-day checkpoints
         latestScenario: null,
         lastUpdate: new Date().toISOString(),
         leadershipProfile: finalScores
@@ -312,8 +298,122 @@ const generatePlanData = (assessment, ownerUid) => {
 };
 
 
+// --- Component 4: PDP Content Details Modal ---
+const ContentDetailsModal = ({ isVisible, onClose, content }) => { 
+    if (!isVisible || !content) return null;
+    
+    const [htmlContent, setHtmlContent] = useState('');
+    const [rating, setRating] = useState(0); 
+    const [isLogging, setIsLogging] = useState(false);
+    
+    const tierData = LEADERSHIP_TIERS[content.tier] || { name: 'Unknown Tier' };
+
+    const MOCK_CONTENT_DETAILS_FINAL = {
+        Reading: (title, skill) => `## Reading: ${title}\n### Focus: ${skill}\nThis is a reading module focusing on ${skill} theory.`,
+        Exercise: (title, skill) => `## Exercise: ${title}\n### Focus: ${skill}\nThis is a practical exercise for skill ${skill}.`,
+        'Role-Play': (title, skill) => `## Role-Play: ${title}\n### Focus: ${skill}\nThis is a simulation for skill ${skill}.`, 
+        CaseStudy: (title, skill) => `## Executive Analysis: ${title}\n### Focus: ${skill}\nThis is a case study analysis for skill ${skill}.`,
+        Tool: (title, skill) => `## Tool Implementation: ${title}\n### Focus: ${skill}\nThis is a tool implementation module for skill ${skill}.`,
+        Coaching: (title, skill) => `## AI Coaching Lab: ${title}\n### Focus: ${skill}\nThis is an AI coaching session for skill ${skill}.`,
+    };
+
+    const mockDetail = MOCK_CONTENT_DETAILS_FINAL[content.type]
+        ? MOCK_CONTENT_DETAILS_FINAL[content.type](content.title, content.skill)
+        : `## Content Unavailable\n\nNo detailed content available for **${content.title}** (Type: ${content.type}).`;
+
+    const memoizedMockDetail = useMemo(() => mockDetail, [content.id, content.tier, content.title, content.skill]); 
+    
+    const handleLogLearning = async () => {
+        if (rating === 0) { console.log('Please provide a 5-star rating before logging.'); return; }
+        setIsLogging(true);
+        console.log(`Mock: Logging learning for ${content.title} with rating ${rating}/5.`);
+        await new Promise(r => setTimeout(r, 800));
+        console.log(`Learning logged! Your ${rating}/5 rating will influence future plan revisions.`);
+        // NOTE: In a real app, you would dispatch a data update here to log learning progress.
+        setIsLogging(false);
+        onClose();
+    };
+
+    useEffect(() => {
+        let isCancelled = false;
+        setHtmlContent('');
+        setRating(0);
+
+        (async () => {
+            const html = await mdToHtml(memoizedMockDetail);
+            if (!isCancelled) {
+                setHtmlContent(html);
+            }
+        })();
+
+        return () => {
+            isCancelled = true;
+        };
+    }, [memoizedMockDetail]);
+    
+    return (
+        <div className="fixed inset-0 bg-[#002E47]/80 z-50 flex items-center justify-center p-4">
+            <div className="bg-[#FCFCFA] rounded-3xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto p-8">
+                <div className="flex justify-between items-start border-b pb-4 mb-6">
+                    <h2 className="text-3xl font-extrabold text-[#002E47] flex items-center">
+                        <BookOpen className="w-8 h-8 mr-3 text-[#47A88D]" />
+                        {content.title} ({content.type})
+                    </h2>
+                    <button onClick={onClose} className="p-2 text-gray-500 hover:text-[#E04E1B] transition-colors">
+                        <X className="w-6 h-6" />
+                    </button>
+                </div>
+                <div className="mb-6 text-sm flex space-x-4 border-b pb-4">
+                    <p className="text-gray-700 font-semibold">Tier: <span className='text-[#002E47]'>{tierData.name}</span></p>
+                    <p className="text-gray-700 font-semibold">Skill Focus: <span className='text-[#002E47]'>{content.skill}</span></p>
+                    <p className="text-gray-700 font-semibold">Est. Duration: <span className='text-[#002E47]'>{content.duration} min</span></p>
+                </div>
+                <div className="prose max-w-none text-gray-700">
+                    {htmlContent ? (
+                        <div dangerouslySetInnerHTML={{ __html: htmlContent }} />
+                    ) : (
+                        <p className='text-gray-500 flex items-center'>
+                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-500 mr-2"></div>
+                            Loading content details...
+                        </p>
+                    )}
+                </div>
+                <div className='mt-8 pt-6 border-t border-gray-200'>
+                    <h3 className='text-lg font-bold text-[#002E47] mb-3 flex items-center'>
+                        <Star className="w-5 h-5 mr-2 text-[#E04E1B]" />
+                        Review & Log Learning
+                    </h3>
+                    <p className="text-sm text-gray-700 mb-4">
+                        Rate the content's quality and helpfulness. This feedback loop helps the AI personalize future modules.
+                    </p>
+                    <div className='flex items-center space-x-4 mb-4'>
+                        <div className='flex space-x-1'>
+                            {[1, 2, 3, 4, 5].map((star) => (
+                                <Star
+                                    key={star}
+                                    className={`w-6 h-6 cursor-pointer transition-colors ${
+                                        star <= rating ? 'text-yellow-500 fill-yellow-500' : 'text-gray-300'
+                                    }`}
+                                    onClick={() => setRating(star)}
+                                />
+                            ))}
+                        </div>
+                        <span className='text-md font-semibold text-[#002E47]'>{rating > 0 ? `${rating}/5 Stars` : 'Rate Content'}</span>
+                    </div>
+                    <Button onClick={handleLogLearning} disabled={isLogging || rating === 0} className='w-full'>
+                        {isLogging ? 'Logging...' : 'Log Learning & Submit Rating'}
+                    </Button>
+                </div>
+            </div>
+        </div>
+    );
+};
+// --- END Component 4 ---
+
+
 // --- Component 3: Roadmap Timeline View (Unchanged) ---
 const RoadmapTimeline = ({ data, currentMonth, navigateToMonth, viewMonth }) => {
+    // Logic remains the same...
     return (
         <Card title="24-Month Roadmap Timeline" icon={Trello} accent="PURPLE" className='lg:sticky lg:top-4 bg-white shadow-2xl border-l-4 border-[#7C3AED]'>
             <p className='text-sm text-gray-600 mb-4'>Review your full two-year journey. Click a month to review its content and reflection.</p>
@@ -421,7 +521,7 @@ const TrackerDashboardView = ({ data, updatePdpData, saveNewPlan, userId, naviga
 
         try {
             const payload = {
-                contents: [{ role: "user", parts: [{ text: systemPrompt }] }],
+                contents: [{ role: "user", parts: [{ text: userQuery }] }],
                 systemInstruction: { parts: [{ text: systemPrompt }] },
                 model: GEMINI_MODEL,
             };
@@ -497,6 +597,7 @@ const TrackerDashboardView = ({ data, updatePdpData, saveNewPlan, userId, naviga
                 month: currentMonth,
                 date: new Date().toISOString(),
                 // NOTE: Use the current assessment scores for the snapshot
+                // Mapping the 10 questions' Likert scores to the dimensions for historical comparison
                 scores: oldData.assessment.selfRatings, 
                 reflection: localReflection,
             };
@@ -761,7 +862,7 @@ const TrackerDashboardView = ({ data, updatePdpData, saveNewPlan, userId, naviga
 
 
 // --- Component 1: Plan Generator View ---
-const PlanGeneratorView = ({ userId, saveNewPlan, isLoading, error, navigate, setGeneratedPlanData }) => {
+const PlanGeneratorView = ({ userId, saveNewPlan, isLoading, error, navigate, setGeneratedPlanData, generatePlanData: generatePlanDataWrapper }) => {
     // Assessment State Management
     const [assessmentAnswers, setAssessmentAnswers] = useState(ASSESSMENT_QUESTIONS.reduce((acc, q) => ({ ...acc, [q.id]: 0 }), {})); // 0 = not answered
     const [openEndedGoal, setOpenEndedGoal] = useState('');
@@ -783,6 +884,7 @@ const PlanGeneratorView = ({ userId, saveNewPlan, isLoading, error, navigate, se
         // 1. Map answers (Likert 1-5) to required structure
         const selfRatings = {};
         ASSESSMENT_QUESTIONS.forEach(q => {
+            // The score ID is the question ID (1-10)
             selfRatings[q.id] = assessmentAnswers[q.id]; 
         });
         
@@ -794,7 +896,7 @@ const PlanGeneratorView = ({ userId, saveNewPlan, isLoading, error, navigate, se
             dateGenerated: new Date().toISOString(),
         };
 
-        const newPlanData = generatePlanData(assessment, userId);
+        const newPlanData = generatePlanDataWrapper(assessment, userId);
 
         const success = await saveNewPlan(newPlanData);
         
@@ -956,7 +1058,7 @@ const PlanReviewScreen = ({ generatedPlan, navigate, clearReviewData }) => {
                  <div className='space-y-3 mb-6'>
                     {leadershipProfile.slice(0, 3).map((d, i) => (
                          <div key={d.dimension} className='p-3 bg-white rounded-lg shadow-sm border border-gray-200'>
-                            <p className='text-sm font-bold text-[#E04E47]'>{i+1}. {d.dimension}</p>
+                            <p className='text-sm font-bold text-[#002E47]'>{i+1}. {d.dimension}</p>
                             <p className='text-xs text-gray-600'>Average Score: {d.score.toFixed(2)} / 5.00</p>
                         </div>
                     ))}
@@ -1009,7 +1111,10 @@ export const ProfDevPlanScreen = ({ initialScreen }) => {
     const [generatedPlanData, setGeneratedPlanData] = useState(null); 
     
     const services = useAppServices(); 
-    const { pdpData, isLoading, error, userId, navigate, updatePdpData, saveNewPlan } = services;
+    const { pdpData, isLoading, error, userId, navigate, updatePdpData, saveNewPlan, SKILL_CONTENT_LIBRARY } = services;
+
+    // Pull the content library from the service, with a safety check
+    const contentLibrary = SKILL_CONTENT_LIBRARY?.items || CONTENT_LIBRARY; 
 
     const clearReviewData = useCallback(() => {
         setGeneratedPlanData(null);
@@ -1027,6 +1132,12 @@ export const ProfDevPlanScreen = ({ initialScreen }) => {
     } else {
         currentView = 'generator';
     }
+    
+    // CRITICAL: Updated generatePlanData to take the library as an argument
+    const generatePlanDataWrapper = useCallback((assessment, ownerUid) => {
+        // Pass the contentLibrary (loaded from service or fallback) to the generator function
+        return generatePlanData(assessment, ownerUid, contentLibrary);
+    }, [contentLibrary]); 
 
     useEffect(() => {
         if (initialScreen === 'prof-dev-plan-review' && pdpData && !generatedPlanData) {
@@ -1048,7 +1159,15 @@ export const ProfDevPlanScreen = ({ initialScreen }) => {
     if (currentView === 'error') { return React.createElement('div', null, 'Error...'); }
     if (currentView === 'review') { return <PlanReviewScreen generatedPlan={generatedPlanData} navigate={navigate} clearReviewData={clearReviewData} />; }
     if (currentView === 'generator') { 
-        return <PlanGeneratorView userId={userId} saveNewPlan={saveNewPlan} isLoading={false} error={null} navigate={navigate} setGeneratedPlanData={setGeneratedPlanData} />; 
+        return <PlanGeneratorView 
+            userId={userId} 
+            saveNewPlan={saveNewPlan} 
+            isLoading={false} 
+            error={null} 
+            navigate={navigate} 
+            setGeneratedPlanData={setGeneratedPlanData} 
+            generatePlanDataWrapper={generatePlanDataWrapper} // Pass the content-aware generator
+        />; 
     }
 
     // currentView === 'tracker'
