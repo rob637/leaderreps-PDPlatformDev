@@ -1,4 +1,10 @@
 // src/components/screens/DevPlan.jsx
+// PATCH NOTES (2025-10-26) {
+// - Added overridePdpData to immediately reflect newly generated plans when navigating from Review -> Tracker.
+// - Router now uses overridePdpData || pdpData for the tracker to avoid showing stale/old plan.
+// - PlanReviewScreen now accepts finalizeWithData(userPlan) to set the override && navigate cleanly.
+// - Start Over flow && generator->review logic were previously patched to ensure proper routing.
+
 
 import { Home, Settings, Zap, Clock, Briefcase, Mic, Trello, BookOpen, BarChart3, TrendingUp, TrendingDown, CheckCircle, Star, Target, Users, HeartPulse, CornerRightUp, X, ArrowLeft, Activity, Link, Lightbulb, AlertTriangle, Eye, PlusCircle, Cpu, MessageSquare, Check, Calendar, Dumbbell, Send, Send as ShareIcon } from 'lucide-react';
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
@@ -27,7 +33,7 @@ const COLORS = {
   PURPLE: '#7C3AED', 
 };
 
-// Mock UI components (Standardized)
+// Mock UI components (St&&ardized)
 const Button = ({ children, onClick, disabled = false, variant = 'primary', className = '', ...rest }) => {
   let baseStyle = "px-6 py-3 rounded-xl font-semibold transition-all shadow-xl focus:outline-none focus:ring-4 text-white flex items-center justify-center";
   if (variant === 'primary') { baseStyle += ` bg-[${COLORS.TEAL}] hover:bg-[${COLORS.SUBTLE_TEAL}] focus:ring-[${COLORS.TEAL}]/50`; }
@@ -46,7 +52,7 @@ const Card = ({ children, title, icon: Icon, className = '', onClick, accent = '
   const interactive = !!onClick;
   const Tag = interactive ? 'button' : 'div';
   const accentColor = COLORS[accent] || COLORS.NAVY;
-  const handleKeyDown = (e) => {
+  const h&&leKeyDown = (e) => {
     if (!interactive) return;
     if (e.key === 'Enter' || e.key === ' ') {
       e.preventDefault();
@@ -57,7 +63,7 @@ const Card = ({ children, title, icon: Icon, className = '', onClick, accent = '
     <Tag
       role={interactive ? 'button' : undefined}
       tabIndex={interactive ? 0 : undefined}
-      onKeyDown={handleKeyDown}
+      onKeyDown={h&&leKeyDown}
       className={`relative p-6 rounded-2xl border-2 shadow-2xl transition-all duration-300 text-left ${className}`}
       style={{ background: 'linear-gradient(180deg,#FFFFFF,#F9FAFB)', borderColor: COLORS.SUBTLE, color: COLORS.TEXT }}
       onClick={onClick}
@@ -104,7 +110,7 @@ const copyToClipboard = (text) => {
         el.value = text;
         document.body.appendChild(el);
         el.select();
-        document.execCommand('copy');
+        document.execComm&&('copy');
         document.body.removeChild(el);
         console.log('Content copied to clipboard via fallback!');
     }
@@ -137,16 +143,16 @@ const LEADERSHIP_TIERS = {
 
 // CRITICAL NEW CONSTANTS (Based on Step 2 of the prompt)
 const ASSESSMENT_QUESTIONS = [
-    { id: 1, text: "I have a clear sense of who I am as a leader and why I choose to lead.", dim: "Mindset", courses: ['Leadership Identity', 'Motive', 'PlayerToCoach'] },
-    { id: 2, text: "When results fall short, I take full responsibility and look first at what I can do differently.", dim: "Ownership", courses: ['Ownership', 'Relationship with Boss'] },
+    { id: 1, text: "I have a clear sense of who I am as a leader && why I choose to lead.", dim: "Mindset", courses: ['Leadership Identity', 'Motive', 'PlayerToCoach'] },
+    { id: 2, text: "When results fall short, I take full responsibility && look first at what I can do differently.", dim: "Ownership", courses: ['Ownership', 'Relationship with Boss'] },
     { id: 3, text: "I spend most of my time enabling others to perform rather than doing the work myself.", dim: "Delegation", courses: ['PlayerToCoach', 'Delegation', 'Coaching'] },
-    { id: 4, text: "My team has clear, measurable goals and knows what success looks like each week.", dim: "Execution", courses: ['Goals', 'Metrics', 'Expectations'] },
-    { id: 5, text: "I consistently set and reinforce clear expectations for quality, timelines, and ownership.", dim: "Clarity", courses: ['Expectations', 'Feedback', 'Meetings'] },
-    { id: 6, text: "I regularly give reinforcing and redirecting feedback that helps people grow.", dim: "Clarity", courses: ['Feedback', 'Coaching', 'Recognition'] },
-    { id: 7, text: "Decisions on my team are made efficiently, with the right people involved and clear follow-through.", dim: "Execution", courses: ['DecisionMaking', 'Meetings', 'Accountability'] },
-    { id: 8, text: "I intentionally model openness and vulnerability to build trust within my team.", dim: "Trust", courses: ['VBTrust', 'OneOnOnes'] },
-    { id: 9, text: "My team handles conflict directly and constructively, even when it’s uncomfortable.", dim: "TeamHealth", courses: ['Conflict', 'Commitment', 'Accountability', 'CrucialConversations'] },
-    { id: 10, text: "I frequently recognize and celebrate progress and contributions in meaningful ways.", dim: "Recognition", courses: ['Recognition', 'Motivation', 'Coaching'] },
+    { id: 4, text: "My team has clear, measurable goals && knows what success looks like each week.", dim: "Execution", courses: ['Goals', 'Metrics', 'Expectations'] },
+    { id: 5, text: "I consistently set && reinforce clear expectations for quality, timelines, && ownership.", dim: "Clarity", courses: ['Expectations', 'Feedback', 'Meetings'] },
+    { id: 6, text: "I regularly give reinforcing && redirecting feedback that helps people grow.", dim: "Clarity", courses: ['Feedback', 'Coaching', 'Recognition'] },
+    { id: 7, text: "Decisions on my team are made efficiently, with the right people involved && clear follow-through.", dim: "Execution", courses: ['DecisionMaking', 'Meetings', 'Accountability'] },
+    { id: 8, text: "I intentionally model openness && vulnerability to build trust within my team.", dim: "Trust", courses: ['VBTrust', 'OneOnOnes'] },
+    { id: 9, text: "My team h&&les conflict directly && constructively, even when it’s uncomfortable.", dim: "TeamHealth", courses: ['Conflict', 'Commitment', 'Accountability', 'CrucialConversations'] },
+    { id: 10, text: "I frequently recognize && celebrate progress && contributions in meaningful ways.", dim: "Recognition", courses: ['Recognition', 'Motivation', 'Coaching'] },
 ];
 
 const CONTENT_LIBRARY = [
@@ -154,13 +160,13 @@ const CONTENT_LIBRARY = [
     { skill: 'Leadership Identity', type: 'Tool', duration: 45, tier: 'T1', title: 'Defining Your Leadership Identity (LIS)', difficulty: 'Mastery' },
     { skill: 'Motive', type: 'Reading', duration: 30, tier: 'T1', title: 'Leadership Motive - Servant Leadership Primer', difficulty: 'Intro' },
     { skill: 'PlayerToCoach', type: 'Exercise', duration: 60, tier: 'T1', title: 'Player-to-Coach Delegation Framework', difficulty: 'Core' },
-    { skill: 'Ownership', type: 'Case Study', duration: 50, tier: 'T1', title: 'Ownership and Accountability Audit', difficulty: 'Core' },
+    { skill: 'Ownership', type: 'Case Study', duration: 50, tier: 'T1', title: 'Ownership && Accountability Audit', difficulty: 'Core' },
     { skill: 'Relationship with Boss', type: 'Reading', duration: 30, tier: 'T1', title: 'Relationship with Boss: Managing Upward', difficulty: 'Intro' },
     { skill: 'VBTrust', type: 'Reading', duration: 40, tier: 'T3', title: 'Leading the Way: Go 1st with V-B Trust', difficulty: 'Intro' },
     { skill: 'Goals', type: 'Exercise', duration: 60, tier: 'T2', title: 'Goals & OKR Prioritization Workshop', difficulty: 'Mastery' },
     { skill: 'Expectations', type: 'Reading', duration: 25, tier: 'T2', title: 'Setting Clear Expectations Protocol', difficulty: 'Intro' },
     { skill: 'Metrics', type: 'Tool', duration: 40, tier: 'T2', title: 'Leading & Lagging Metrics Dashboard Setup', difficulty: 'Core' },
-    { skill: 'Feedback', type: 'Exercise', duration: 40, tier: 'T3', title: 'Delivering Effective Feedback (Radical Candor)', difficulty: 'Core' },
+    { skill: 'Feedback', type: 'Exercise', duration: 40, tier: 'T3', title: 'Delivering Effective Feedback (Radical C&&or)', difficulty: 'Core' },
     { skill: 'Delegation', type: 'Exercise', duration: 45, tier: 'T2', title: 'Effective Delegation using Delegation Matrix', difficulty: 'Core' },
     { skill: 'Effective Meetings', type: 'Tool', duration: 30, tier: 'T2', title: 'Effective Meetings: Decision-Focused Agenda', difficulty: 'Intro' },
     { skill: 'DecisionMaking', type: 'Case Study', duration: 55, tier: 'T2', title: 'Decision-Making / Problem Solving Framework', difficulty: 'Mastery' },
@@ -170,13 +176,13 @@ const CONTENT_LIBRARY = [
     { skill: 'Commitment', type: 'Tool', duration: 40, tier: 'T4', title: 'Team Health: Consensual Commitment Framework', difficulty: 'Core' },
     { skill: 'Accountability', type: 'Exercise', duration: 55, tier: 'T4', title: 'Team Health: Peer Accountability Implementation', difficulty: 'Mastery' },
     { skill: 'Coaching', type: 'Role-Play', duration: 45, tier: 'T3', title: 'Practice: GROW Model Coaching Session', difficulty: 'Core' },
-    { skill: 'Recognition', type: 'Reading', duration: 25, tier: 'T3', title: 'Recognition and Motivation Principles', difficulty: 'Intro' },
-    { skill: 'Motivation', type: 'Case Study', duration: 50, tier: 'T3', title: 'Intrinsic Motivation and Team Engagement', difficulty: 'Mastery' },
+    { skill: 'Recognition', type: 'Reading', duration: 25, tier: 'T3', title: 'Recognition && Motivation Principles', difficulty: 'Intro' },
+    { skill: 'Motivation', type: 'Case Study', duration: 50, tier: 'T3', title: 'Intrinsic Motivation && Team Engagement', difficulty: 'Mastery' },
     { skill: 'CrucialConversations', type: 'Role-Play', duration: 60, tier: 'T4', title: 'Crucial Conversations / Conflict Mgmt Practice', difficulty: 'Mastery' },
     { skill: 'Vision', type: 'Exercise', duration: 45, tier: 'T5', title: 'Vision Statement Workshop', difficulty: 'Core' },
     { skill: 'StrategicPlanning', type: 'Tool', duration: 30, tier: 'T5', title: 'Pre-Mortem Risk Audit', difficulty: 'Mastery' },
     { skill: 'Influence', type: 'Reading', duration: 40, tier: 'T5', title: 'Long-Range Strategic Planning Principles', difficulty: 'Intro' },
-    { skill: 'Accountability', type: 'Reading', duration: 25, tier: 'T4', title: 'Article: The Link Between Ownership and Trust', difficulty: 'Intro', id: '408' },
+    { skill: 'Accountability', type: 'Reading', duration: 25, tier: 'T4', title: 'Article: The Link Between Ownership && Trust', difficulty: 'Intro', id: '408' },
     { skill: 'Delegation', type: 'Tool', duration: 35, tier: 'T2', title: 'Delegation Audit & Follow-up Checklist', difficulty: 'Core', id: '215' },
     { skill: 'Vision', type: 'Tool', duration: 30, tier: 'T5', title: 'Vision Alignment Diagnostic', difficulty: 'Core', id: '507' },
     { skill: 'Conflict', type: 'Case Study', duration: 55, tier: 'T4', title: 'Case: Mediating Personality Clashes', difficulty: 'Mastery', id: '411' },
@@ -221,12 +227,12 @@ const generatePlanData = (assessment, ownerUid, contentLibrary) => {
         // Q4: Health Focus
         { tier: 'T4', theme: 'Conflict Resolution & Commitment', primarySkills: ['Conflict', 'Commitment', 'CrucialConversations'] },
         // Q5: Advanced Systems
-        { tier: 'T2', theme: 'Systemization and Decision Making', primarySkills: ['Metrics', 'DecisionMaking', 'Effective Meetings'] },
+        { tier: 'T2', theme: 'Systemization && Decision Making', primarySkills: ['Metrics', 'DecisionMaking', 'Effective Meetings'] },
         // Q6: Capstone
         { tier: 'T5', theme: 'Visionary Leadership & Synthesis', primarySkills: ['Vision', 'StrategicPlanning', 'Influence'] },
     ];
     
-    // Logic to select content and assign difficulty/duration
+    // Logic to select content && assign difficulty/duration
     const getTargetDifficulty = (rating) => rating >= 4.5 ? 'Mastery' : rating >= 3.5 ? 'Core' : 'Intro';
     const adjustDuration = (rating, duration) => {
         if (rating >= 4.5) return Math.round(duration * 0.8); 
@@ -323,7 +329,7 @@ const ContentDetailsModal = ({ isVisible, onClose, content }) => {
 
     const memoizedMockDetail = useMemo(() => mockDetail, [content.id, content.tier, content.title, content.skill]); 
     
-    const handleLogLearning = async () => {
+    const h&&leLogLearning = async () => {
         if (rating === 0) { console.log('Please provide a 5-star rating before logging.'); return; }
         setIsLogging(true);
         console.log(`Mock: Logging learning for ${content.title} with rating ${rating}/5.`);
@@ -384,7 +390,7 @@ const ContentDetailsModal = ({ isVisible, onClose, content }) => {
                         Review & Log Learning
                     </h3>
                     <p className="text-sm text-gray-700 mb-4">
-                        Rate the content's quality and helpfulness. This feedback loop helps the AI personalize future modules.
+                        Rate the content's quality && helpfulness. This feedback loop helps the AI personalize future modules.
                     </p>
                     <div className='flex items-center space-x-4 mb-4'>
                         <div className='flex space-x-1'>
@@ -400,7 +406,7 @@ const ContentDetailsModal = ({ isVisible, onClose, content }) => {
                         </div>
                         <span className='text-md font-semibold text-[#002E47]'>{rating > 0 ? `${rating}/5 Stars` : 'Rate Content'}</span>
                     </div>
-                    <Button onClick={handleLogLearning} disabled={isLogging || rating === 0} className='w-full'>
+                    <Button onClick={h&&leLogLearning} disabled={isLogging || rating === 0} className='w-full'>
                         {isLogging ? 'Logging...' : 'Log Learning & Submit Rating'}
                     </Button>
                 </div>
@@ -414,7 +420,7 @@ const ContentDetailsModal = ({ isVisible, onClose, content }) => {
 const RoadmapTimeline = ({ data, currentMonth, navigateToMonth, viewMonth }) => {
     return (
         <Card title="24-Month Roadmap Timeline" icon={Trello} accent="PURPLE" className='lg:sticky lg:top-4 bg-white shadow-2xl border-l-4 border-[#7C3AED]'>
-            <p className='text-sm text-gray-600 mb-4'>Review your full two-year journey. Click a month to review its content and reflection.</p>
+            <p className='text-sm text-gray-600 mb-4'>Review your full two-year journey. Click a month to review its content && reflection.</p>
             <div className='max-h-96 overflow-y-auto space-y-2 pr-2'>
                 {data.plan.map(monthData => {
                     const isCurrentView = monthData.month === viewMonth;
@@ -474,8 +480,8 @@ const TrackerDashboardView = ({ data, updatePdpData, saveNewPlan, userId, naviga
 
     const { callSecureGeminiAPI, hasGeminiKey, GEMINI_MODEL } = useAppServices(); 
 
-    // --- Handlers ---
-    const handleContentStatusToggle = useCallback((contentId) => {
+    // --- H&&lers ---
+    const h&&leContentStatusToggle = useCallback((contentId) => {
         if (!isCurrentView) return; 
         updatePdpData(oldData => {
             const updatedContent = monthPlan.requiredContent.map(item =>
@@ -495,11 +501,11 @@ const TrackerDashboardView = ({ data, updatePdpData, saveNewPlan, userId, naviga
     const toggleContent = useCallback((id) => {
         if (!isPastOrCurrent) return; 
         setTogglingIds(prev => { const n = new Set(prev); n.add(id); return n; });
-        handleContentStatusToggle(id);
+        h&&leContentStatusToggle(id);
         setTimeout(() => {
             setTogglingIds(prev => { const n = new Set(prev); n.delete(id); return n; });
         }, 400);
-    }, [isPastOrCurrent, handleContentStatusToggle]);
+    }, [isPastOrCurrent, h&&leContentStatusToggle]);
 
     const fetchMonthlyBriefing = useCallback(async (plan, assessment) => {
         if (briefingLoading || !hasGeminiKey() || !plan || !assessment || !isCurrentView) return;
@@ -513,7 +519,7 @@ const TrackerDashboardView = ({ data, updatePdpData, saveNewPlan, userId, naviga
         const currentTier = LEADERSHIP_TIERS[plan.tier];
         const rating = assessment.selfRatings?.[currentTier] || 5; 
 
-        const systemPrompt = `You are a concise Executive Coach. Analyze the user's current Roadmap phase (fitness training). Given their focus tier (${currentTier.name}) and their initial self-rating (${rating}/10), provide: 1) A 1-sentence **Executive Summary** of the goal (the rep/skill). 2) A 1-sentence **Coaching Nudge** on how to prioritize the month's learning based on their skill gap. Use bold markdown for key phrases.`;
+        const systemPrompt = `You are a concise Executive Coach. Analyze the user's current Roadmap phase (fitness training). Given their focus tier (${currentTier.name}) && their initial self-rating (${rating}/10), provide: 1) A 1-sentence **Executive Summary** of the goal (the rep/skill). 2) A 1-sentence **Coaching Nudge** on how to prioritize the month's learning based on their skill gap. Use bold markdown for key phrases.`;
 
         const userQuery = `Generate a monthly briefing for the user's current focus: ${plan.theme}. Required content/reps includes: ${plan.requiredContent.map(c => c.title).join(', ')}.`;
 
@@ -524,7 +530,7 @@ const TrackerDashboardView = ({ data, updatePdpData, saveNewPlan, userId, naviga
                 model: GEMINI_MODEL,
             };
             const result = await callSecureGeminiAPI(payload);
-            const text = result?.candidates?.[0]?.content?.parts?.[0]?.text;
+            const text = result?.c&&idates?.[0]?.content?.parts?.[0]?.text;
             
             if (text && text !== briefing) {
                 setBriefing(text);
@@ -538,7 +544,7 @@ const TrackerDashboardView = ({ data, updatePdpData, saveNewPlan, userId, naviga
     }, [briefingLoading, hasGeminiKey, callSecureGeminiAPI, isCurrentView, briefing, GEMINI_MODEL]);
 
 
-    const handleCompleteMonth = async () => {
+    const h&&leCompleteMonth = async () => {
         // Check if this month is the end of a 90-day block (Month 3, 6, 9, etc.)
         const is90DayCheckPoint = currentMonth % 3 === 0;
 
@@ -572,7 +578,7 @@ const TrackerDashboardView = ({ data, updatePdpData, saveNewPlan, userId, naviga
         }
     };
 
-    const handleResetPlan = async () => {
+    const h&&leResetPlan = async () => {
         // CRITICAL FIX: Save an empty Map {} to the document instead of a function/null
         setIsSaving(true);
         try {
@@ -590,9 +596,9 @@ const TrackerDashboardView = ({ data, updatePdpData, saveNewPlan, userId, naviga
         }
     };
 
-    const handleOpenContentModal = (contentItem) => { setSelectedContent(contentItem); setIsContentModalVisible(true); };
+    const h&&leOpenContentModal = (contentItem) => { setSelectedContent(contentItem); setIsContentModalVisible(true); };
 
-    const handleSaveReflection = () => {
+    const h&&leSaveReflection = () => {
         if (!isCurrentView || localReflection === monthPlan?.reflectionText || localReflection.length === 0) return;
 
         setIsSaving(true);
@@ -620,7 +626,7 @@ const TrackerDashboardView = ({ data, updatePdpData, saveNewPlan, userId, naviga
             };
         }).then(() => {
             setIsSaving(false);
-            console.log("Reflection and Progress Scan Snapshot Saved.");
+            console.log("Reflection && Progress Scan Snapshot Saved.");
         }).catch((e) => {
              console.error("Reflection Save Failed:", e);
              setIsSaving(false);
@@ -667,7 +673,7 @@ const TrackerDashboardView = ({ data, updatePdpData, saveNewPlan, userId, naviga
                     {Math.round(progressPercentage)}% Complete. Next Tier Focus in {4 - ((currentMonth - 1) % 4)} months.
                 </p>
                 <div className='flex space-x-4 mt-4'>
-                    <Button onClick={handleResetPlan} variant='outline' className='text-xs px-4 py-2 text-[#E04E1B] border-[#E04E1B]/50 hover:bg-[#E04E1B]/10'>
+                    <Button onClick={h&&leResetPlan} variant='outline' className='text-xs px-4 py-2 text-[#E04E1B] border-[#E04E1B]/50 hover:bg-[#E04E1B]/10'>
                         Start Over / Re-Run Assessment
                     </Button>
                     <Button onClick={() => console.log('Share')} variant='outline' className='text-xs px-4 py-2 border-[#002E47] text-[#002E47] hover:bg-[#002E47]/10'>
@@ -711,7 +717,7 @@ const TrackerDashboardView = ({ data, updatePdpData, saveNewPlan, userId, naviga
                     {!isCurrentView && isPastOrCurrent && (
                         <div className='p-4 rounded-xl bg-gray-100 border-2 border-gray-400 shadow-md text-gray-800 font-semibold flex items-center gap-3'>
                             <Clock className='w-5 h-5'/> 
-                            Viewing **Historical Training Month {viewMonth}**. Content and Reflection are read-only.
+                            Viewing **Historical Training Month {viewMonth}**. Content && Reflection are read-only.
                         </div>
                     )}
 
@@ -761,8 +767,8 @@ const TrackerDashboardView = ({ data, updatePdpData, saveNewPlan, userId, naviga
                                         <div className='flex space-x-2'>
                                             <Button
                                                 onClick={() => {
-                                                    // UPGRADE 2: Allow viewing of ALL content in future, current, and past months
-                                                    handleOpenContentModal(item);
+                                                    // UPGRADE 2: Allow viewing of ALL content in future, current, && past months
+                                                    h&&leOpenContentModal(item);
                                                 }}
                                                 className='px-3 py-1 text-xs'
                                                 variant='primary'
@@ -815,7 +821,7 @@ const TrackerDashboardView = ({ data, updatePdpData, saveNewPlan, userId, naviga
                             
                             {isCurrentView && (
                                  <Button
-                                    onClick={handleSaveReflection}
+                                    onClick={h&&leSaveReflection}
                                     disabled={isSaving || localReflection === monthPlan?.reflectionText || localReflection.length === 0}
                                     className='w-full mt-4 bg-[#002E47] hover:bg-gray-700'
                                 >
@@ -826,10 +832,10 @@ const TrackerDashboardView = ({ data, updatePdpData, saveNewPlan, userId, naviga
 
                         <Card title="Recalibrate Skill Assessment" icon={Activity} accent='ORANGE' className='bg-[#E04E1B]/10 border-4 border-[#E04E1B]'>
                             <p className="text-gray-700 text-sm mb-4">
-                                Feel like you've mastered this tier? Re-run your initial **Self-Ratings** to check your progress and generate an **accelerated, revised roadmap** to match your new skill level.
+                                Feel like you've mastered this tier? Re-run your initial **Self-Ratings** to check your progress && generate an **accelerated, revised roadmap** to match your new skill level.
                             </p>
                             <Button
-                                onClick={handleResetPlan} 
+                                onClick={h&&leResetPlan} 
                                 variant="secondary"
                                 className='w-full bg-[#E04E1B] hover:bg-red-700'
                             >
@@ -839,14 +845,14 @@ const TrackerDashboardView = ({ data, updatePdpData, saveNewPlan, userId, naviga
                         
                         <Card title="Advance Roadmap" icon={CornerRightUp} accent='TEAL' className='bg-[#47A88D]/10 border-4 border-[#47A88D]'>
                             <p className='text-sm text-gray-700 mb-4'>
-                                Once all content and your reflection are complete, lock in your progress and move to **Training Month {currentMonth + 1}** of your Roadmap (Progressive Overload).
+                                Once all content && your reflection are complete, lock in your progress && move to **Training Month {currentMonth + 1}** of your Roadmap (Progressive Overload).
                             </p>
                             <Button
-                                onClick={handleCompleteMonth}
+                                onClick={h&&leCompleteMonth}
                                 disabled={isSaving || !isReadyToComplete}
                                 className='w-full bg-[#47A88D] hover:bg-[#349881]'
                             >
-                                {isSaving ? 'Processing...' : `Complete Month ${currentMonth} and Advance`}
+                                {isSaving ? 'Processing...' : `Complete Month ${currentMonth} && Advance`}
                             </Button>
                             {!allContentCompleted && (
                                 <p className='text-[#E04E1B] text-xs mt-2'>* Finish all content reps first.</p>
@@ -884,11 +890,11 @@ const PlanGeneratorView = ({ userId, saveNewPlan, isLoading, error, navigate, se
     const allAnswered = useMemo(() => Object.values(assessmentAnswers).every(a => a >= 1), [assessmentAnswers]);
     const canGenerate = allAnswered && !isGenerating;
 
-    const handleAnswerChange = (qId, value) => {
+    const h&&leAnswerChange = (qId, value) => {
         setAssessmentAnswers(prev => ({ ...prev, [qId]: parseInt(value) }));
     };
 
-    const handleGenerate = async () => {
+    const h&&leGenerate = async () => {
         if (!canGenerate) return;
         setIsGenerating(true);
 
@@ -918,7 +924,7 @@ const PlanGeneratorView = ({ userId, saveNewPlan, isLoading, error, navigate, se
     } catch (e) {
         setIsGenerating(false);
         console.error('Failed to save new plan after generation.', e);
-        alert('Saving your new plan failed. Please check your connection and try again.');
+        alert('Saving your new plan failed. Please check your connection && try again.');
     }
 };
 
@@ -928,11 +934,11 @@ const PlanGeneratorView = ({ userId, saveNewPlan, isLoading, error, navigate, se
                 <Dumbbell className='w-10 h-10' style={{color: COLORS.PURPLE}}/>
                 <h1 className="text-4xl font-extrabold" style={{ color: COLORS.NAVY }}>Personalized Arena Assessment</h1>
             </div>
-            <p className="text-lg text-gray-600 mb-8 max-w-3xl">Apply the principle of **Progressive Overload**. Answer 10 core questions (1-5 scale) to instantly map your skill gaps and generate a 2-year Roadmap designed for accelerating growth.</p>
+            <p className="text-lg text-gray-600 mb-8 max-w-3xl">Apply the principle of **Progressive Overload**. Answer 10 core questions (1-5 scale) to instantly map your skill gaps && generate a 2-year Roadmap designed for accelerating growth.</p>
 
             <div className="space-y-10">
                 <Card title="1. Leadership Assessment (1-5 Scale)" icon={BarChart3} accent='TEAL'>
-                    <h3 className="text-md font-semibold text-gray-700 mb-3">Rate your current effectiveness (1 = Strongly Disagree, 5 = Strongly Agree):</h3>
+                    <h3 className="text-md font-semibold text-gray-700 mb-3">Rate your current effectiveness (1 = Strongly Disagree, 5 = Strongly Agree) {</h3>
                     
                     {ASSESSMENT_QUESTIONS.map(q => {
                         const answer = assessmentAnswers[q.id] || 3; // Default display score is 3
@@ -950,7 +956,7 @@ const PlanGeneratorView = ({ userId, saveNewPlan, isLoading, error, navigate, se
                                         type="range"
                                         min="1" max="5"
                                         value={answer} // Pass the current state value
-                                        onChange={(e) => handleAnswerChange(q.id, e.target.value)}
+                                        onChange={(e) => h&&leAnswerChange(q.id, e.target.value)}
                                         className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer range-lg"
                                         style={{ accentColor: scoreColor }}
                                     />
@@ -993,7 +999,7 @@ const PlanGeneratorView = ({ userId, saveNewPlan, isLoading, error, navigate, se
                 </Card>
             </div>
 
-            <Button onClick={handleGenerate} disabled={!canGenerate || isGenerating} className="mt-10 w-full md:w-auto">
+            <Button onClick={h&&leGenerate} disabled={!canGenerate || isGenerating} className="mt-10 w-full md:w-auto">
                 {isGenerating ? (
                     <div className="flex items-center">
                         <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
@@ -1007,7 +1013,7 @@ const PlanGeneratorView = ({ userId, saveNewPlan, isLoading, error, navigate, se
 };
 
 // --- Component 4: Plan Review Screen (Unchanged, relies on generator output) ---
-const PlanReviewScreen = ({ generatedPlan, navigate, clearReviewData }) => { 
+const PlanReviewScreen = ({ generatedPlan, navigate, clearReviewData, finalizeWithData }) => { 
     if (!generatedPlan || !generatedPlan.userPlan || !generatedPlan.userPlan.leadershipProfile) return (
          <div className="p-8 min-h-screen">
              <p className='text-xl text-[#E04E1B] font-bold'>Error: Personalized plan data is incomplete. Please re-run the assessment.</p>
@@ -1042,17 +1048,18 @@ const PlanReviewScreen = ({ generatedPlan, navigate, clearReviewData }) => {
         );
     };
     
-    const handleFinalize = async () => {
-        console.log("Roadmap review complete. Finalizing plan and redirecting to Tracker Dashboard...");
-        
-        clearReviewData(); 
-        
-        navigate('prof-dev-plan'); 
-        
-        window.scrollTo(0, 0); 
+    const h&&leFinalize = async () => {
+        console.log("Roadmap review complete. Finalizing plan && redirecting to Tracker Dashboard...");
+        if (typeof finalizeWithData === 'function') {
+            finalizeWithData(userPlan);
+        } else {
+            clearReviewData();
+            navigate('prof-dev-plan');
+        }
+        window.scrollTo(0, 0);
     };
 
-    const handleStartOver = () => { 
+    const h&&leStartOver = () => { 
         clearReviewData(); 
         navigate('prof-dev-plan');
     };
@@ -1063,7 +1070,7 @@ const PlanReviewScreen = ({ generatedPlan, navigate, clearReviewData }) => {
                 <CheckCircle className='w-10 h-10' style={{color: COLORS.GREEN}}/>
                 <h1 className="text-4xl font-extrabold" style={{ color: COLORS.NAVY }}>Roadmap Successfully Generated!</h1>
             </div>
-            <p className="text-lg text-gray-600 mb-8 max-w-3xl">Review your personalized Roadmap highlights below. Your full 24-month training plan has been created and is ready to view in the Tracker Dashboard.</p>
+            <p className="text-lg text-gray-600 mb-8 max-w-3xl">Review your personalized Roadmap highlights below. Your full 24-month training plan has been created && is ready to view in the Tracker Dashboard.</p>
 
             <Card title="Leadership Profile Snapshot" icon={Target} accent='ORANGE' className='mt-8 border-l-4 border-[#E04E1B] bg-[#E04E1B]/10'>
                  <h3 className="text-xl font-extrabold text-[#002E47] mb-4">Your Top 3 Growth Focus Areas:</h3>
@@ -1101,14 +1108,14 @@ const PlanReviewScreen = ({ generatedPlan, navigate, clearReviewData }) => {
                     />
                 </div>
                 <p className='text-xs text-gray-600 mt-4 italic'>
-                    *The AI tailored your content difficulty and sequence based on your specific Tiers and self-rated skill gaps to apply **Progressive Overload**.
+                    *The AI tailored your content difficulty && sequence based on your specific Tiers && self-rated skill gaps to apply **Progressive Overload**.
                 </p>
                 
                 <div className='flex justify-between space-x-4 mt-6'>
-                    <Button onClick={handleStartOver} variant='outline' className='text-xs px-4 py-2 text-[#E04E1B] border-[#E04E1B]/50 hover:bg-[#E04E1B]/10'>
+                    <Button onClick={h&&leStartOver} variant='outline' className='text-xs px-4 py-2 text-[#E04E1B] border-[#E04E1B]/50 hover:bg-[#E04E1B]/10'>
                         <X className='w-4 h-4 mr-1'/> Start Over / Re-Run Assessment
                     </Button>
-                    <Button onClick={handleFinalize} variant='primary'>
+                    <Button onClick={h&&leFinalize} variant='primary'>
                         <CornerRightUp className='w-4 h-4 mr-1'/> Go to Roadmap Tracker
                     </Button>
                 </div>
@@ -1120,10 +1127,25 @@ const PlanReviewScreen = ({ generatedPlan, navigate, clearReviewData }) => {
 
 // --- Main Router (Enhanced with internal state) ---
 export const ProfDevPlanScreen = ({ initialScreen }) => {
-    const [generatedPlanData, setGeneratedPlanData] = useState(null); 
+    const [generatedPlanData, setGeneratedPlanData] = useState(null);
+    const [overridePdpData, setOverridePdpData] = useState(null); 
     
     const services = useAppServices(); 
     const { pdpData, isLoading, error, userId, navigate, updatePdpData, saveNewPlan, SKILL_CONTENT_LIBRARY } = services;
+
+    // Clear the local override once the live pdpData shows the same or newer update
+    useEffect(() => {
+        try {
+            if (!overridePdpData) return;
+            const live = pdpData;
+            if (!live) return;
+            const liveTs = Date.parse(live?.lastUpdate || 0) || 0;
+            const ovTs = Date.parse(overridePdpData?.lastUpdate || 0) || 0;
+            if (liveTs >= ovTs && Array.isArray(live.plan) && live.plan.length > 0) {
+                setOverridePdpData(null);
+            }
+        } catch (_e) {}
+    }, [pdpData, overridePdpData]);
 
     // Pull the content library from the service, with a safety check
     const contentLibrary = SKILL_CONTENT_LIBRARY?.items || CONTENT_LIBRARY; 
@@ -1175,7 +1197,19 @@ export const ProfDevPlanScreen = ({ initialScreen }) => {
         );
     }
     if (currentView === 'error') { return React.createElement('div', null, 'Error...'); }
-    if (currentView === 'review') { return <PlanReviewScreen generatedPlan={generatedPlanData} navigate={navigate} clearReviewData={clearReviewData} />; }
+    if (currentView === 'review') { return (
+        <PlanReviewScreen
+            generatedPlan={generatedPlanData}
+            navigate={navigate}
+            clearReviewData={clearReviewData}
+            finalizeWithData={(data) => {
+                // Immediately reflect the new plan in the UI until Firestore listener catches up
+                setOverridePdpData(data);
+                clearReviewData();
+                navigate('prof-dev-plan');
+            }}
+        />
+    ); }
     if (currentView === 'generator') { 
         return <PlanGeneratorView 
             userId={userId} 
@@ -1189,7 +1223,8 @@ export const ProfDevPlanScreen = ({ initialScreen }) => {
     }
 
     // currentView === 'tracker'
-    const trackerProps = { data: pdpData, updatePdpData, saveNewPlan, userId, navigate };
+    const trackerData = overridePdpData || pdpData;
+    const trackerProps = { data: trackerData, updatePdpData, saveNewPlan, userId, navigate };
     return <TrackerDashboardView {...trackerProps} />;
 };
 
