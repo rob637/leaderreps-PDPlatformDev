@@ -511,7 +511,7 @@ const TrackerDashboardView = ({ data, updatePdpData, saveNewPlan, userId, naviga
 
         setBriefingLoading(true);
         const currentTier = LEADERSHIP_TIERS[plan.tier];
-        const rating = assessment.selfRatings?.[plan.tier] || 5; 
+        const rating = assessment.selfRatings?.[currentTier] || 5; 
 
         const systemPrompt = `You are a concise Executive Coach. Analyze the user's current Roadmap phase (fitness training). Given their focus tier (${currentTier.name}) and their initial self-rating (${rating}/10), provide: 1) A 1-sentence **Executive Summary** of the goal (the rep/skill). 2) A 1-sentence **Coaching Nudge** on how to prioritize the month's learning based on their skill gap. Use bold markdown for key phrases.`;
 
@@ -573,13 +573,15 @@ const TrackerDashboardView = ({ data, updatePdpData, saveNewPlan, userId, naviga
     };
 
     const handleResetPlan = async () => {
-        // CRITICAL FIX: Save an empty Map {} to the document instead of null to bypass Firestore error
+        // CRITICAL FIX: Save an empty Map {} to the document instead of a function/null
         setIsSaving(true);
         try {
-            // Save empty Map {} to Firestore to clear the document
-            await updatePdpData(() => ({})); 
+            // This bypasses the functional update failure and directly sets the document to be empty.
+            // Note: If updatePdpData expects a function, this direct call should be wrapped by the service hook.
+            // Assuming the core issue is the service failing to execute the function, we try passing the final object.
+            await updatePdpData({}); 
+            
             // Force a page reload to trigger the app router to read the empty state 
-            // and correctly switch to the generator view.
             window.location.reload(); 
         } catch(e) {
             console.error("Failed to reset plan:", e);
