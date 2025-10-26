@@ -221,6 +221,13 @@ export default function ExecutiveReflection() {
     // CRITICAL FIX 4: Use the mock service hook helper to get data/nav (which uses the real useAppServices internally)
     const { navigate, commitmentData, pdpData, planningData, LEADERSHIP_TIERS } = useMockServices(setMockAction);
     
+    // --- FIX: Scroll to the top when the component mounts/renders ---
+    useEffect(() => {
+        if (typeof window !== 'undefined') {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+    }, []); // Empty dependency array ensures it only runs on mount/initial render
+    
     // Process data using the fixed hook
     const data = useLongitudinalData(commitmentData, pdpData, planningData);
 

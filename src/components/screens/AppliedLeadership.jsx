@@ -8,7 +8,7 @@ import { useAppServices } from '../../services/useAppServices.jsx';
 
 
 /* =========================================================
-   MOCK/UI UTILITIES 
+   MOCK/UI UTILITIES (Unchanged)
 ========================================================= */
 const COLORS = {
     NAVY: '#002E47', 
@@ -20,8 +20,7 @@ const COLORS = {
     BG: '#F9FAFB',
 };
 
-// ... (Card and Button components remain unchanged for brevity) ...
-
+// ... (Card component remains unchanged) ...
 const Card = ({ children, title, icon: Icon, className = '', onClick, accent = 'TEAL' }) => {
     const accentColor = COLORS[accent] || COLORS.TEAL;
     return (
@@ -37,6 +36,7 @@ const Card = ({ children, title, icon: Icon, className = '', onClick, accent = '
     );
 };
 
+// ... (Button component remains unchanged) ...
 const Button = ({ children, onClick, disabled = false, variant = 'primary', className = '', ...rest }) => {
     let baseStyle = "px-6 py-3 rounded-xl font-semibold transition-all shadow-lg focus:outline-none focus:ring-4 text-white flex items-center justify-center";
     if (variant === 'primary') { baseStyle += ` bg-[${COLORS.TEAL}] hover:bg-[#349881] focus:ring-[${COLORS.TEAL}]/50`; }
@@ -47,7 +47,7 @@ const Button = ({ children, onClick, disabled = false, variant = 'primary', clas
     return (<button {...rest} onClick={onClick} disabled={disabled} className={`${baseStyle} ${className}`}>{children}</button>);
 };
 
-// Utility function to convert Markdown to HTML (used in the modal)
+// Utility function to convert Markdown to HTML (used in the modal) (Unchanged)
 async function mdToHtml(md) {
     let html = md;
     html = html.replace(/## (.*$)/gim, '<h2 style="font-size: 24px; font-weight: 800; color: #002E47; border-bottom: 2px solid #E5E7EB; padding-bottom: 5px; margin-top: 20px;">$1</h2>');
@@ -62,7 +62,7 @@ async function mdToHtml(md) {
     return html;
 }
 
-// Icon map to link domain ID to Lucide icon
+// Icon map to link domain ID to Lucide icon (Unchanged)
 const IconMap = {
     'women-exec': Users, 'lgbtqia-leader': Heart, 'poc-leader': Network, 
     'non-profit': PiggyBank, 'public-sector': Gavel, 'tech-lead': Code, 
@@ -72,7 +72,7 @@ const IconMap = {
 
 
 /* =========================================================
-   AI COACHING SIMULATOR (Sub-Component)
+   AI COACHING SIMULATOR (Sub-Component - Unchanged Logic)
 ========================================================= */
 
 const AICoachingSimulator = ({ domain, RESOURCES }) => {
@@ -82,6 +82,7 @@ const AICoachingSimulator = ({ domain, RESOURCES }) => {
     const [result, setResult] = useState(null);
     const [isLoading, setIsLoading] = useState(false);
 
+    // ... (handleSimulate, handleSuggestHabits, handleAddHabitsToScorecard logic is unchanged) ...
     const handleSimulate = async () => {
         if (!scenario.trim()) return;
         setIsLoading(true);
@@ -229,7 +230,7 @@ const AICoachingSimulator = ({ domain, RESOURCES }) => {
 
 
 /* =========================================================
-   NEW FEATURE: Resource Detail Modal
+   NEW FEATURE: Resource Detail Modal (Unchanged)
 ========================================================= */
 
 const ResourceDetailModal = ({ isVisible, onClose, resource, domain }) => {
@@ -282,15 +283,18 @@ const ResourceDetailModal = ({ isVisible, onClose, resource, domain }) => {
 
 
 /* =========================================================
-   MAIN SCREEN COMPONENT
+   MAIN SCREEN COMPONENT (UPDATED)
 ========================================================= */
 
 export default function AppliedLeadershipScreen() {
-    // CRITICAL: Pull all necessary data from the service context
-    const { LEADERSHIP_DOMAINS: DOMAINS, RESOURCE_LIBRARY: RESOURCES, isLoading } = useAppServices();
+    // CRITICAL: Destructure the dedicated loading flag for APPLIED LEADERSHIP data
+    const { 
+        LEADERSHIP_DOMAINS: DOMAINS, 
+        RESOURCE_LIBRARY: RESOURCES, 
+        isAppliedLeadershipLoading: isLoading // Use the specific flag
+    } = useAppServices();
 
     // Use a safe, empty array fallback if data is still loading
-    // We convert the object (if it's an object) to an array for safe iteration.
     const safeDomains = Array.isArray(DOMAINS) ? DOMAINS : []; 
 
     const [selectedDomain, setSelectedDomain] = useState(null);
@@ -308,7 +312,7 @@ export default function AppliedLeadershipScreen() {
         setIsModalVisible(true);
     }, []);
 
-    // Detail View Renderer
+    // Detail View Renderer (Unchanged)
     const renderDomainDetail = () => {
         if (!selectedDomain) return null;
 
@@ -401,7 +405,7 @@ export default function AppliedLeadershipScreen() {
     );
     };
 
-    // Main Domain Grid Renderer
+    // Main Domain Grid Renderer (UPDATED FALLBACKS)
     const renderDomainGrid = () => (
         <div className="p-8">
             <h1 className="text-4xl font-extrabold text-[#002E47] mb-4">Applied Content Library (Pillar 1)</h1>
@@ -439,16 +443,20 @@ export default function AppliedLeadershipScreen() {
                     );
                 })}
             </div>
-            {/* CRITICAL FIX: Only show loading if the global service data hasn't finished loading */}
-            {isLoading && safeDomains.length === 0 && (
+            
+            {/* CRITICAL FIX: Use dedicated loading flag */}
+            {isLoading && (
                  <p className="text-gray-500 italic text-center py-10 flex items-center justify-center">
                     <div className="animate-spin h-4 w-4 border-b-2 border-[#47A88D] mr-2 rounded-full"></div>
                     Loading applied content tracks...
                 </p>
             )}
-            {/* Show a message if loading is done but the list is empty (indicates config error) */}
+            
+            {/* Show a message if loading is done but the list is empty (indicates API/Config error) */}
             {!isLoading && safeDomains.length === 0 && (
-                 <p className="text-red-500 italic text-center py-10">Configuration Error: LEADERSHIP\_DOMAINS is empty or missing in the global config. Please check the Admin Hub.</p>
+                 <p className="text-red-500 italic text-center py-10">
+                    Configuration Error: LEADERSHIP\_DOMAINS is empty. This is likely due to a **failed API call** to `/api/v1/applied-leadership`. Please check the backend service.
+                </p>
             )}
         </div>
     );

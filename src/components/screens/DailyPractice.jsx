@@ -416,6 +416,7 @@ const AIStarterPackNudge = ({ pdpData, setLinkedGoal, setLinkedTier, isSaving })
  * CommitmentSelectorView: Allows users to add commitments from the bank or create custom ones.
  */
 const CommitmentSelectorView = ({ setView, initialGoal, initialTier, tierMeta, commitmentBank }) => {
+  // CRITICAL FIX: Destructure the expanded commitment bank into its sub-components
   const { updateCommitmentData, commitmentData, planningData, pdpData, callSecureGeminiAPI, hasGeminiKey, GEMINI_MODEL, TARGET_REP_CATALOG} = useAppServices(); // FIX: Call hook inside component
 
   const [tab, setTab] = useState('bank');
@@ -440,7 +441,7 @@ const CommitmentSelectorView = ({ setView, initialGoal, initialTier, tierMeta, c
   const pdpContentCommitmentIds = new Set(userCommitments.filter(c => String(c.id).startsWith('pdp-content-')).map(c => String(c.id).split('-')[2]));
 
 
-  // EXPANDED_COMMITMENT_BANK is now passed via props (commitmentBank)
+  // CRITICAL FIX 1: Use the passed commitmentBank prop
   const EXPANDED_COMMITMENT_BANK = commitmentBank || {}; 
   const allBankCommitments = useMemo(() => Object.values(EXPANDED_COMMITMENT_BANK || {}).flat(), [EXPANDED_COMMITMENT_BANK]);
 
@@ -825,6 +826,7 @@ const CommitmentSelectorView = ({ setView, initialGoal, initialTier, tierMeta, c
 
             <div className="h-96 overflow-y-auto pr-2 space-y-3">
               {/* FIX FOR ISSUE 4: Added onClick handler to the button to add the commitment */}
+              {/* CRITICAL FIX 2: Iterate over the expanded commitment bank passed via props */}
               {Object.entries(EXPANDED_COMMITMENT_BANK).map(([category, commitments]) => {
                 const filteredCommitments = commitments.filter(c =>
                     // Check if commitment text is NOT already in active commitments
@@ -833,13 +835,13 @@ const CommitmentSelectorView = ({ setView, initialGoal, initialTier, tierMeta, c
                 );
 
                 if (filteredCommitments.length === 0 && searchTerm !== '') return null;
-                if (filteredCommitments.length === 0 && searchTerm === '') return null; 
+                if (filteredCommitments.length === 0 && searchTerm === '' && allBankCommitments.length > 0) return null; 
 
                 return (
                   <div key={category}>
                     <h3 className="text-sm font-bold text-[#002E47] border-b pb-1 mb-2">{category}</h3>
                     {filteredCommitments.map(c => (
-                      <div key={c.id} className="flex justify-between items-center p-2 text-sm bg-gray-50 rounded-lg mb-1">
+                      <div key={c.id || c.text} className="flex justify-between items-center p-2 text-sm bg-gray-50 rounded-lg mb-1">
                         <span className='text-gray-800'>{c.text}</span>
                         <Tooltip content={`Adds this commitment (linked goal/tier required).`}>
                           {/* FIX 1: CRITICAL WIRING FIX: The button must call handleAddCommitment */}
@@ -859,6 +861,9 @@ const CommitmentSelectorView = ({ setView, initialGoal, initialTier, tierMeta, c
               {Object.keys(EXPANDED_COMMITMENT_BANK).length > 0 && filteredBankCommitments.length === 0 && searchTerm !== '' && (
                   <p className="text-gray-500 italic mt-4 text-center">No unselected commitments match criteria.</p>
               )}
+               {Object.keys(EXPANDED_COMMITMENT_BANK).length === 0 && (
+                   <p className="text-gray-500 italic mt-4 text-center">Commitment Bank data is not loaded. Check global metadata configuration.</p>
+               )}
             </div>
           </div>
         )}
@@ -1243,6 +1248,14 @@ useEffect(() => {
   }, [initialGoal, initialTier, hasNavigatedInitial, view, quickLog]); 
 
 
+  // CRITICAL FIX (Usability): Scroll to the top when the view changes
+  useEffect(() => {
+      if (typeof window !== 'undefined') {
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+  }, [view]);
+
+
   // CRITICAL FIX: Resilience save handler now correctly uses updateCommitmentData
   const handleSaveResilience = async (newLogData) => { 
       setIsSaving(true); 
@@ -1435,13 +1448,16 @@ useEffect(() => {
       .filter(c => c.status === 'Missed' || c.status === 'Pending')
       .map(c => c.linkedTier)
       .filter(t => t);
+
+    // Filter commitments to get unique missed tiers
+    const uniqueMissedTiers = [...new Set(missedTiers)];
       
     let riskText = null;
     let riskIcon = null;
 
-    if (missedTiers.length > 0) {
-        const frequentMissedTier = missedTiers.reduce((a, b, i, arr) => 
-            (arr.filter(v => v===a).length >= arr.filter(v => v===b).length ? a : b), missedTiers[0]);
+    if (uniqueMissedTiers.length > 0) {
+        const frequentMissedTier = uniqueMissedTiers.reduce((a, b, i, arr) => 
+            (arr.filter(v => v===a).length >= arr.filter(v => v===b).length ? a : b), uniqueMissedTiers[0]);
             
         riskText = `High Risk: Inconsistency in **${tierMeta[frequentMissedTier]?.name || 'a core tier'}** reps. This threatens your ability to advance in your Roadmap.`;
         riskIcon = TrendingDown;
@@ -1498,6 +1514,7 @@ const sortedCommitments = useMemo(() => {
 
     switch (view) {
       case 'selector':
+        // CRITICAL FIX 3: Pass commitmentBank to CommitmentSelectorView
         return <CommitmentSelectorView
           setView={setView}
           initialGoal={initialGoal}
@@ -1615,7 +1632,7 @@ const sortedCommitments = useMemo(() => {
                   
                   {/* Monthly Consistency & Streak (Feature 4) */}
                   <Card title="Monthly Consistency" icon={BarChart3} accent='TEAL' className='bg-[#47A88D]/10 border-2 border-[#47A88D]'>
-                      <p className='text-xs text-gray-700 mb-2'>Avg. Rep Completion Rate ({monthlyProgress.daysTracked} days)</p>
+                      <p className='xs text-gray-700 mb-2'>Avg. Rep Completion Rate ({monthlyProgress.daysTracked} days)</p>
                       <div className="w-full bg-gray-200 rounded-full h-4 mb-2">
                           <div 
                               className="bg-[#002E47] h-4 rounded-full transition-all duration-700" 
@@ -1623,15 +1640,15 @@ const sortedCommitments = useMemo(() => {
                           ></div >
                       </div>
                       <div className='flex justify-between items-center'>
-                          <p className='text-sm font-semibold text-[#002E47]'>Perfect Rep Streak:</p>
-                          <span className='text-xl font-extrabold text-green-600 flex items-center'>
+                          <p className='sm font-semibold text-[#002E47]'>Perfect Rep Streak:</p>
+                          <span className='xl font-extrabold text-green-600 flex items-center'>
                               <Crown className='w-5 h-5 mr-1'/> {streak} Days
                           </span>
                       </div>
-                      <Button onClick={() => setView('weekly-prep')} variant='outline' className='w-full mt-4 text-xs px-4 py-2 border-[#002E47] text-[#002E47] hover:bg-[#002E47]/10'>
+                      <Button onClick={() => setView('weekly-prep')} variant='outline' className='w-full mt-4 xs px-4 py-2 border-[#002E47] text-[#002E47] hover:bg-[#002E47]/10'>
                           <Activity className='w-4 h-4 mr-2'/> Weekly Rep Review
                       </Button>
-                      <Button onClick={() => handleOpenHistoryModal(lastSevenDaysHistory[lastSevenDaysHistory.length -1])} variant='outline' className='w-full mt-2 text-xs px-4 py-2'>
+                      <Button onClick={() => handleOpenHistoryModal(lastSevenDaysHistory[lastSevenDaysHistory.length -1])} variant='outline' className='w-full mt-2 xs px-4 py-2'>
                           <Clock className='w-4 h-4 mr-2'/> View Last Score
                       </Button>
                   </Card>

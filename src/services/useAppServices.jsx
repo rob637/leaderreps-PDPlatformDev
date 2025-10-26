@@ -1,4 +1,4 @@
-// src/services/useAppServices.jsx (Structural Fix with Exports Added)
+// src/services/useAppServices.jsx (Final Structural Fix)
 
 import React, {
   useMemo,
@@ -432,14 +432,12 @@ export const updateGlobalMetadata = async (
 /* =========================================================
    NEW HOOK: Applied Leadership Data Fetch (EXPORT ADDED)
 ========================================================= */
-// EXPORT ADDED: Resolves the build error
 export const useAppliedLeadershipData = (isAuthReady) => {
     const [domains, setDomains] = useState(MOCK_DOMAINS);
     const [resources, setResources] = useState(MOCK_RESOURCES);
     const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
-        // Skip fetching if not authenticated or environment is not ready
         if (!isAuthReady) {
             setIsLoading(false);
             return;
@@ -448,13 +446,13 @@ export const useAppliedLeadershipData = (isAuthReady) => {
         const fetchAppliedData = async () => {
             setIsLoading(true);
             try {
-                // ASSUMPTION: Your backend exposes a single endpoint for all applied leadership data
+                // Fetch the data from your new backend endpoint
                 const response = await fetch('/api/v1/applied-leadership');
                 if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
+                    // CRITICAL: Throw an error on non-200 status codes
+                    throw new Error(`API Request Failed: HTTP ${response.status} - Could not load applied leadership data.`);
                 }
                 
-                // ASSUMPTION: The API returns an object { leadership_domains: [...], resource_library: [...] }
                 const { leadership_domains, resource_library } = await response.json();
                 
                 if (Array.isArray(leadership_domains)) {
@@ -464,11 +462,11 @@ export const useAppliedLeadershipData = (isAuthReady) => {
                     setDomains(MOCK_DOMAINS);
                 }
 
-                // CRITICAL TRANSFORMATION: Convert the flat resource array into the { [domainId]: [resources] } object
+                // CRITICAL TRANSFORMATION: Convert flat list to object lookup
                 if (Array.isArray(resource_library)) {
                     const transformedResources = resource_library.reduce((acc, resource) => {
                         const domainId = resource.domain_id;
-                        if (domainId) { // Only add if domain_id exists
+                        if (domainId) { 
                             acc[domainId] = acc[domainId] || [];
                             acc[domainId].push(resource);
                         }
@@ -481,9 +479,11 @@ export const useAppliedLeadershipData = (isAuthReady) => {
                 }
 
             } catch (error) {
+                // If API fails (404/500), this catches it.
                 console.error("[APPLIED LEADERSHIP FAIL] Failed to fetch data:", error);
                 setDomains(MOCK_DOMAINS);
                 setResources(MOCK_RESOURCES);
+                // The component now relies on safeDomains.length === 0 AND isLoading === false
             } finally {
                 setIsLoading(false);
             }
@@ -492,6 +492,7 @@ export const useAppliedLeadershipData = (isAuthReady) => {
         fetchAppliedData();
     }, [isAuthReady]);
 
+    // This is the data structure the component needs.
     return { 
         LEADERSHIP_DOMAINS: domains, 
         RESOURCE_LIBRARY: resources, 
@@ -518,6 +519,7 @@ export const createAppServices = ({
   const appliedLeadershipHook = useAppliedLeadershipData(isAuthReady); 
 
   // Combined loading state: True if any major piece is loading
+  // CRITICAL: Combines all loading flags
   const combinedIsLoading = pdpHook.isLoading || commitmentHook.isLoading || planningHook.isLoading || metadataHook.isLoading || appliedLeadershipHook.isAppliedLeadershipLoading;
 
   const value = useMemo(() => {
@@ -541,7 +543,8 @@ export const createAppServices = ({
       ...pdpHook,
       ...commitmentHook,
       ...planningHook,
-      ...appliedLeadershipHook, // NEW: Applied Leadership Data
+      // CRITICAL: Merges applied leadership data and its loading flag
+      ...appliedLeadershipHook, 
       metadata: resolveGlobalMetadata(metadataHook.metadata),
       
       // Core Configuration

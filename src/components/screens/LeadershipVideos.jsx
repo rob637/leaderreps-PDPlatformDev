@@ -1,6 +1,6 @@
 // src/components/screens/LeadershipVideos.jsx
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Film, User, Zap, CornerRightUp, Briefcase, BookOpen, Clock, Users, ArrowRight } from 'lucide-react';
 import { useAppServices } from '../../services/useAppServices.jsx'; 
 
@@ -193,6 +193,13 @@ const VIDEO_LISTS_FALLBACK = {
 
 const LeadershipVideosScreen = () => {
     const { navigate, VIDEO_CATALOG } = useAppServices();
+
+    // CRITICAL FIX: Scroll to the top when the component mounts
+    useEffect(() => {
+        if (typeof window !== 'undefined') {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+    }, []); // Empty dependency array ensures it only runs on mount
 
     // CRITICAL FIX: Use service data (VIDEO_CATALOG), falling back to local complete data
     // The data is expected to be { INSPIRATIONAL: [...], ACTIONABLE: [...] }

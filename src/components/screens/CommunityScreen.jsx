@@ -23,7 +23,7 @@ const COLORS = {
 };
 
 /* =========================================================
-   UTILITIES & MOCKS
+   UTILITIES & MOCKS (Unchanged)
 ========================================================= */
 
 // --- MOCK DATA DELETED: Threads must be loaded from service now ---
@@ -41,7 +41,7 @@ const LEADERSHIP_TIERS_META_FALLBACK = {
 };
 
 // ------------------------------------------------------------------
-// CommunityHomeView updated to accept filteredThreads as a prop
+// CommunityHomeView updated to accept filteredThreads as a prop (Unchanged)
 // ------------------------------------------------------------------
 const CommunityHomeView = ({ setView, user, currentTierFilter, setCurrentTierFilter, filteredThreads, tierMeta }) => {
     const [expandedThreadId, setExpandedThreadId] = useState(null);
@@ -123,7 +123,7 @@ const CommunityHomeView = ({ setView, user, currentTierFilter, setCurrentTierFil
                             </div>
                             
                             {/* EXPANDED CONTENT */}
-                            <div className className={`mt-3 overflow-hidden transition-all duration-500 ${isExpanded ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'}`}>
+                            <div className={`mt-3 overflow-hidden transition-all duration-500 ${isExpanded ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'}`}>
                                 <div className='p-3 bg-gray-50 border border-gray-200 rounded-lg'>
                                     <p className='text-sm font-medium text-[#002E47] mb-2'>Original Post:</p>
                                     <p className='text-sm text-gray-700'>{thread.details}</p>
@@ -300,6 +300,14 @@ const CommunityScreen = () => {
 
     const [view, setView] = useState('home');
     const [currentTierFilter, setCurrentTierFilter] = useState('All');
+
+    // --- FIX: Scroll to the top when the view changes ---
+    useEffect(() => {
+        if (typeof window !== 'undefined') {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+    }, [view]);
+
 
     // ------------------------------------------------------------------
     // A. Centralize/Optimize Thread Filtering using useMemo
