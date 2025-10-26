@@ -1,278 +1,311 @@
-// src/components/screens/AdminDataMaintenance.jsx (Final Direct Initialization)
+// src/components/screens/AdminDataMaintenance.jsx
+// Admin Data Maintenance — reads/writes Firestore metadata via useAppServices
 
-import React, { useState, useMemo, useEffect, useRef } from 'react'; 
-import { useAppServices } from '../../services/useAppServices.jsx'; 
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { useAppServices } from '../../services/useAppServices.jsx';
 import { ChevronsLeft, AlertTriangle, Save, Lock, Cpu, RotateCcw } from 'lucide-react';
 
-// Admin Password 
-const ADMIN_PASSWORD = '7777'; 
-const NAVY = '#002E47';
-const TEAL = '#47A88D';
+// Simple admin PIN gate (you can swap to env/config)
+const ADMIN_PASSWORD = '7777';
 
-const JSONEditor = ({ data, setData, label, isSaving, setModified }) => {
-    // Ensure data is always an object for JSON.stringify to work
-    const safeData = data && typeof data === 'object' ? data : {}; 
-    
-    // 1. Memoize the current, clean prop data as a string (THE SOURCE OF TRUTH)
-    const currentCleanText = useMemo(() => JSON.stringify(safeData, null, 2), [safeData]);
-    const [jsonText, setJsonText] = useState(currentCleanText);
-    const [isError, setIsError] = useState(false);
-    
-    const hasUserModified = useRef(false);
+const JSONEditor = ({ label, data, setData, isSaving, setModified }) => {
+  // Always stringify an object — avoid crashing on undefined/null/array
+  const safeData = data && typeof data === 'object' && !Array.isArray(data) ? data : {};
 
-    // CRITICAL SYNC: Synchronize the local text with the prop ONLY if the user hasn't modified it.
-    useEffect(() => {
-        if (isSaving) return;
-        
-        // Use a flag check OR compare the clean text against the prop's version of the text
-        if (!hasUserModified.current && jsonText !== currentCleanText) {
-            setJsonText(currentCleanText);
-            setIsError(false);
-        }
-    }, [currentCleanText, isSaving]);
+  // The “source of truth” text derived from clean props
+  const cleanText = useMemo(() => {
+    try {
+      return JSON.stringify(safeData, null, 2);
+    } catch {
+      return '{}';
+    }
+  }, [safeData]);
 
+  // Local editor state
+  const [jsonText, setJsonText] = useState(cleanText);
+  const [isError, setIsError] = useState(false);
+  const userHasTypedRef = useRef(false);
 
-    const handleTextChange = (e) => {
-        const newText = e.target.value;
-        setJsonText(newText);
-        setModified(true); 
-        hasUserModified.current = true; // User interaction flag
-        
-        try {
-            setData(JSON.parse(newText)); 
-            setIsError(false);
-        } catch (error) {
-            setIsError(true);
-        }
-    };
+  // Keep editor in sync with new incoming data until the user types
+  useEffect(() => {
+    if (!userHasTypedRef.current) {
+      setJsonText(cleanText);
+      setIsError(false);
+    }
+  }, [cleanText]);
 
-    const handleReset = () => {
-        setJsonText(currentCleanText);
-        setData(safeData); // Update the parent state with the clean object
-        setIsError(false);
-        setModified(false);
-        hasUserModified.current = false; // Reset user interaction flag
-    };
+  const handleChange = (e) => {
+    const t = e.target.value;
+    setJsonText(t);
+    userHasTypedRef.current = true;
+    setModified?.(true);
 
+    try {
+      const parsed = JSON.parse(t);
+      setData(parsed);
+      setIsError(false);
+    } catch {
+      setIsError(true);
+    }
+  };
 
-    return (
-        <div className="space-y-2">
-            <div className='flex justify-between items-center'>
-                <label className="block text-sm font-medium text-gray-700">{label}</label>
-                <button onClick={handleReset} disabled={isSaving} className='flex items-center text-xs text-gray-500 hover:text-red-500 transition-colors'>
-                    <RotateCcw size={14} className='mr-1'/> Revert Changes
-                </button>
-            </div>
-            <textarea
-                value={jsonText} 
-                onChange={handleTextChange}
-                rows={20}
-                disabled={isSaving}
-                className={`w-full p-3 font-mono text-sm border-2 rounded-lg bg-white shadow-inner ${isError ? 'border-red-500' : 'border-gray-300 focus:border-[${TEAL}]'}`}
-            />
-             {isError && <p className="text-xs text-red-500">⚠️ Invalid JSON format. Please correct the syntax before saving.</p>}
+  const handleReset = () => {
+    setJsonText(cleanText);
+    setData(safeData);
+    setIsError(false);
+    setModified?.(false);
+    userHasTypedRef.current = false;
+  };
+
+  return (
+    <div className="space-y-2">
+      <div className="flex items-center justify-between">
+        <label className="text-sm font-medium text-gray-700">{label}</label>
+        <div className="flex items-center gap-2">
+          {isSaving ? (
+            <span className="text-xs text-gray-500">Saving…</span>
+          ) : isError ? (
+            <span className="flex items-center gap-1 text-xs text-red-600">
+              <AlertTriangle size={14} /> Invalid JSON
+            </span>
+          ) : (
+            <span className="text-xs text-gray-500">OK</span>
+          )}
+          <button
+            type="button"
+            onClick={handleReset}
+            className="text-xs px-2 py-1 rounded bg-gray-100 hover:bg-gray-200 border"
+            title="Reset editor to last clean data"
+          >
+            <span className="inline-flex items-center gap-1">
+              <RotateCcw size={14} /> Reset
+            </span>
+          </button>
         </div>
-    );
+      </div>
+
+      <textarea
+        className={`w-full h-72 font-mono text-sm p-3 border rounded outline-none ${
+          isError ? 'border-red-400 bg-red-50' : 'border-gray-300'
+        }`}
+        value={jsonText}
+        onChange={handleChange}
+        spellCheck={false}
+      />
+    </div>
+  );
 };
 
+export default function AdminDataMaintenance() {
+  // Pull metadata + actions from the shared service hook
+  const services = useAppServices();
 
-const AdminDataMaintenance = ({ navigate }) => {
-    const { metadata, isLoading, error, updateGlobalMetadata, db } = useAppServices(); 
-    
-    // --- State for Screen Logic ---
-    const [isAuthenticated, setIsAuthenticated] = useState(false);
-    const [password, setPassword] = useState('');
-    const [isSaving, setIsSaving] = useState(false);
-    const [saveStatus, setSaveStatus] = useState('');
-    
-    
-    // CRITICAL FIX: Derive the config and catalog objects directly from metadata in useMemo.
-    // This provides the source of truth for the JSONEditor to initialize against.
-    const splitMetadata = useMemo(() => {
-        const safeMetadata = metadata && typeof metadata === 'object' ? metadata : {};
-        const { READING_CATALOG_SERVICE = {}, ...configMetadata } = safeMetadata;
-        return { config: configMetadata, catalog: READING_CATALOG_SERVICE };
-    }, [metadata]);
+  // Readables (use whatever your hook exposes; these names match your logs)
+  const {
+    GLOBAL_SETTINGS,
+    LEADERSHIP_TIERS,
+    COMMITMENT_BANK,
+    TARGET_REP_CATALOG,
+    VIDEO_CATALOG,
+    LEADERSHIP_DOMAINS,
 
+    READING_CATALOG_SERVICE,
+    RESOURCE_LIBRARY,
 
-    // Set the initial state using the memoized split data.
-    const [configData, setConfigData] = useState(splitMetadata.config);
-    const [catalogData, setCatalogData] = useState(splitMetadata.catalog);
+    // Actions
+    writeConfigDoc,
+    writeReadingCatalogDoc,
+    reloadMetadata,
 
-    
-    // CRITICAL: Ensure the component state is updated when the context data updates.
-    // This is the last synchronization step before it goes into the JSONEditor.
-    useEffect(() => {
-        if (splitMetadata.config !== configData) {
-            setConfigData(splitMetadata.config);
-            setCatalogData(splitMetadata.catalog);
-        }
-    }, [splitMetadata]); // Only re-run when the memoized split changes
+    // Saving flags (optional, used to flip button states/spinners)
+    isSavingConfig,
+    isSavingCatalog,
+  } = services || {};
 
+  // If your hook exposes a ready/loading flag, you can use it here
+  // Otherwise we infer “ready” if at least one of the expected keys exists.
+  const metadataReady =
+    !!(GLOBAL_SETTINGS || LEADERSHIP_TIERS || COMMITMENT_BANK || TARGET_REP_CATALOG || VIDEO_CATALOG || LEADERSHIP_DOMAINS);
 
-    const [isConfigModified, setIsConfigModified] = useState(false);
-    const [isCatalogModified, setIsCatalogModified] = useState(false);
+  const catalogReady =
+    !!(READING_CATALOG_SERVICE || RESOURCE_LIBRARY);
 
-    
-    // --- Handlers ---
-    const handleAuth = (e) => {
-        e.preventDefault();
-        if (password === ADMIN_PASSWORD) {
-            setIsAuthenticated(true);
-            setSaveStatus('');
-        } else {
-            setSaveStatus('Incorrect password.');
-            setPassword('');
-        }
-    };
+  // Local editors (mirrors of the live metadata)
+  const [configDraft, setConfigDraft] = useState({
+    GLOBAL_SETTINGS,
+    LEADERSHIP_TIERS,
+    COMMITMENT_BANK,
+    TARGET_REP_CATALOG,
+    VIDEO_CATALOG,
+    LEADERSHIP_DOMAINS,
+  });
 
-    const handleSave = async () => {
-        setSaveStatus('');
-        setIsSaving(true);
-        const results = [];
-        
-        if (!db) {
-             setSaveStatus('❌ Save failed: Firestore database connection is missing.');
-             setIsSaving(false);
-             return;
-        }
+  const [catalogDraft, setCatalogDraft] = useState({
+    READING_CATALOG_SERVICE,
+    RESOURCE_LIBRARY,
+  });
 
-        try {
-            if (isConfigModified) {
-                console.log("Saving Config Document...");
-                const configResult = await updateGlobalMetadata(
-                    db, 
-                    configData, 
-                    { source: 'Admin Maintenance (config)', forceDocument: 'config' }
-                );
-                results.push(`Config Updated (${Object.keys(configResult).length} keys)`);
-            }
-            
-            if (isCatalogModified) {
-                 console.log("Saving Catalog Document...");
-                 const catalogResult = await updateGlobalMetadata(
-                    db, 
-                    { READING_CATALOG_SERVICE: catalogData },
-                    { source: 'Admin Maintenance (catalog)', forceDocument: 'catalog' }
-                );
-                results.push(`Catalog Updated (${Object.keys(catalogResult).length} keys)`);
-            }
+  const [modifiedConfig, setModifiedConfig] = useState(false);
+  const [modifiedCatalog, setModifiedCatalog] = useState(false);
 
-            if (results.length > 0) {
-                 setSaveStatus(`✅ Save successful: ${results.join(' | ')}`);
-            } else {
-                 setSaveStatus('Nothing to save. No changes detected.');
-            }
-            
-        } catch (e) {
-            console.error('Save failed:', e);
-            setSaveStatus(`❌ Save failed: ${e.message}`);
-        } finally {
-            setIsSaving(false);
-        }
-    };
-    
-    const isSaveDisabled = isSaving || (!isConfigModified && !isCatalogModified);
-    const hasError = error || saveStatus.startsWith('❌') || saveStatus.startsWith('⚠️');
+  // Keep local editors in sync when live metadata changes
+  useEffect(() => {
+    setConfigDraft({
+      GLOBAL_SETTINGS,
+      LEADERSHIP_TIERS,
+      COMMITMENT_BANK,
+      TARGET_REP_CATALOG,
+      VIDEO_CATALOG,
+      LEADERSHIP_DOMAINS,
+    });
+    setModifiedConfig(false);
+  }, [
+    GLOBAL_SETTINGS,
+    LEADERSHIP_TIERS,
+    COMMITMENT_BANK,
+    TARGET_REP_CATALOG,
+    VIDEO_CATALOG,
+    LEADERSHIP_DOMAINS,
+  ]);
 
-    if (!isAuthenticated) {
-        return (
-            <div className="min-h-screen flex items-center justify-center bg-gray-100">
-                <form onSubmit={handleAuth} className="p-8 bg-white rounded-xl shadow-2xl text-center w-full max-w-sm border-t-4 border-red-500">
-                    <Lock className="w-8 h-8 mx-auto text-red-500 mb-4" />
-                    <h2 className={`text-2xl font-extrabold text-[${NAVY}] mb-4`}>Admin Access Required</h2>
-                    <input 
-                        type="password" 
-                        placeholder="Admin Code (7777)" 
-                        value={password} 
-                        onChange={(e) => setPassword(e.target.value)} 
-                        className={`w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 mb-4`} 
-                        disabled={isSaving}
-                    />
-                    <button
-                        type="submit"
-                        disabled={isSaving}
-                        className="w-full p-3 bg-red-600 text-white rounded-lg hover:bg-red-700 focus:ring-2 focus:ring-red-500 font-semibold"
-                    >
-                        Authenticate
-                    </button>
-                    {saveStatus && (<p className='text-sm text-center font-medium mt-3 text-red-500'>{saveStatus}</p>)}
-                </form>
-            </div>
-        );
-    }
-    
-    // --- Authenticated View ---
-    
-    // We display the spinner only if loading AND the configuration data has not yet been populated
-    if (isLoading && Object.keys(configData).length === 0) {
-        return (
-            <div className="min-h-screen flex items-center justify-center bg-gray-100">
-                <div className="animate-spin rounded-full h-12 w-12 border-4 border-t-4 border-gray-200 border-t-[#47A88D] mb-3"></div>
-            </div>
-        );
-    }
+  useEffect(() => {
+    setCatalogDraft({
+      READING_CATALOG_SERVICE,
+      RESOURCE_LIBRARY,
+    });
+    setModifiedCatalog(false);
+  }, [READING_CATALOG_SERVICE, RESOURCE_LIBRARY]);
 
-    if (error) {
-        return <div className="p-8 max-w-4xl mx-auto"><h1 className="text-3xl text-red-600">Error Loading Metadata</h1><pre>{error.message}</pre></div>;
-    }
+  // Admin gate
+  const [authed, setAuthed] = useState(false);
+  const [pin, setPin] = useState('');
 
+  const handleSaveConfig = async () => {
+    // writeConfigDoc expects an object that matches the config doc schema
+    await writeConfigDoc?.(configDraft);
+    await reloadMetadata?.();
+    setModifiedConfig(false);
+  };
+
+  const handleSaveCatalog = async () => {
+    // writeReadingCatalogDoc expects an object that matches the catalog doc schema
+    await writeReadingCatalogDoc?.(catalogDraft);
+    await reloadMetadata?.();
+    setModifiedCatalog(false);
+  };
+
+  if (!authed) {
     return (
-        <div className="p-8 space-y-8 max-w-6xl mx-auto">
-            <header className="flex justify-between items-center border-b pb-4">
-                <h1 className="text-4xl font-extrabold text-[#002E47] flex items-center gap-2">
-                    Global Data Maintenance <Cpu size={32} className='text-[#47A88D]' />
-                </h1>
-                <div className='flex space-x-4'>
-                    <button 
-                        onClick={() => navigate('app-settings')} 
-                        className={`flex items-center text-sm font-semibold text-gray-500 hover:text-[${NAVY}] transition-colors`}
-                    >
-                        <ChevronsLeft size={18} className='mr-1' /> Back to Settings
-                    </button>
-                    <button 
-                        onClick={handleSave} 
-                        disabled={isSaveDisabled}
-                        className={`flex items-center px-4 py-2 rounded-lg text-white font-semibold transition-colors ${isSaveDisabled ? 'bg-gray-400 cursor-not-allowed' : 'bg-[#E04E1B] hover:bg-red-700'}`}
-                    >
-                        <Save size={18} className='mr-2' /> {isSaving ? 'Saving...' : 'Save All Changes'}
-                    </button>
-                </div>
-            </header>
-            
-            {saveStatus && (
-                 <div className={`p-3 rounded-lg font-medium ${hasError ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}`}>
-                    {saveStatus}
-                 </div>
-            )}
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className={`space-y-4 p-4 rounded-lg border-2 ${isConfigModified ? 'border-yellow-400 bg-yellow-50' : 'border-gray-200 bg-white'}`}>
-                    <h2 className='text-2xl font-bold text-[#002E47]'>Config Document (metadata/config)</h2>
-                    <p className='text-sm text-gray-600'>Contains Tiers, Domains, Scenarios, etc. {isConfigModified && <span className='font-semibold text-yellow-600'>(Modified)</span>}</p>
-                    <JSONEditor 
-                        data={configData} 
-                        setData={setConfigData} 
-                        label="Editable JSON" 
-                        isSaving={isSaving}
-                        setModified={setIsConfigModified}
-                    />
-                </div>
-                <div className={`space-y-4 p-4 rounded-lg border-2 ${isCatalogModified ? 'border-yellow-400 bg-yellow-50' : 'border-gray-200 bg-white'}`}>
-                    <h2 className='text-2xl font-bold text-[#002E47]'>Catalog Document (metadata/reading_catalog)</h2>
-                    <p className='text-sm text-gray-600'>Contains the array of readings/videos. {isCatalogModified && <span className='font-semibold text-yellow-600'>(Modified)</span>}</p>
-                    <JSONEditor 
-                        data={catalogData} 
-                        setData={setCatalogData} 
-                        label="Editable JSON" 
-                        isSaving={isSaving}
-                        setModified={setIsCatalogModified}
-                    />
-                </div>
-            </div>
-            
+      <div className="max-w-lg mx-auto mt-20 p-6 border rounded-xl shadow-sm">
+        <div className="flex items-center gap-2 mb-3">
+          <Lock size={18} className="text-gray-600" />
+          <h2 className="text-lg font-semibold">Admin Access</h2>
         </div>
+        <p className="text-sm text-gray-600 mb-4">
+          Enter the admin PIN to edit platform metadata and reading catalog.
+        </p>
+        <input
+          type="password"
+          value={pin}
+          onChange={(e) => setPin(e.target.value)}
+          className="w-full px-3 py-2 border rounded mb-3"
+          placeholder="Enter PIN"
+        />
+        <button
+          className="px-4 py-2 rounded bg-black text-white hover:opacity-90"
+          onClick={() => setAuthed(pin === ADMIN_PASSWORD)}
+        >
+          Unlock
+        </button>
+        {pin && pin !== ADMIN_PASSWORD && (
+          <p className="text-xs text-red-600 mt-2">Incorrect PIN.</p>
+        )}
+      </div>
     );
-};
+  }
 
-export default AdminDataMaintenance;
+  // Gentle loader while metadata hydrates
+  if (!metadataReady && !catalogReady) {
+    return (
+      <div className="max-w-xl mx-auto mt-20 p-6 border rounded-xl shadow-sm">
+        <div className="flex items-center gap-2 mb-2">
+          <Cpu size={18} className="text-gray-600" />
+          <h2 className="text-lg font-semibold">Loading admin data…</h2>
+        </div>
+        <p className="text-sm text-gray-600">
+          Fetching configuration and reading catalog from Firestore.
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="max-w-5xl mx-auto p-6 space-y-10">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <ChevronsLeft size={18} className="text-gray-500" />
+          <h1 className="text-xl font-semibold">Admin · Data Maintenance</h1>
+        </div>
+        <button
+          className="px-3 py-1.5 rounded text-sm bg-gray-100 hover:bg-gray-200 border"
+          onClick={() => reloadMetadata?.()}
+          title="Re-fetch metadata from Firestore"
+        >
+          <span className="inline-flex items-center gap-1">
+            <Cpu size={14} /> Reload
+          </span>
+        </button>
+      </div>
+
+      {/* CONFIG DOC */}
+      <section className="space-y-3">
+        <div className="flex items-center justify-between">
+          <h2 className="text-lg font-medium">Metadata · config</h2>
+          <button
+            className={`px-3 py-1.5 rounded text-sm text-white inline-flex items-center gap-1 ${
+              modifiedConfig ? 'bg-black hover:opacity-90' : 'bg-gray-400 cursor-not-allowed'
+            }`}
+            disabled={!modifiedConfig || isSavingConfig}
+            onClick={handleSaveConfig}
+            title={modifiedConfig ? 'Save config' : 'No changes to save'}
+          >
+            <Save size={14} /> Save
+          </button>
+        </div>
+
+        <JSONEditor
+          label="GLOBAL_SETTINGS, LEADERSHIP_TIERS, COMMITMENT_BANK, TARGET_REP_CATALOG, VIDEO_CATALOG, LEADERSHIP_DOMAINS"
+          data={configDraft}
+          setData={setConfigDraft}
+          isSaving={!!isSavingConfig}
+          setModified={setModifiedConfig}
+        />
+      </section>
+
+      {/* READING CATALOG DOC */}
+      <section className="space-y-3">
+        <div className="flex items-center justify-between">
+          <h2 className="text-lg font-medium">Metadata · reading_catalog</h2>
+          <button
+            className={`px-3 py-1.5 rounded text-sm text-white inline-flex items-center gap-1 ${
+              modifiedCatalog ? 'bg-black hover:opacity-90' : 'bg-gray-400 cursor-not-allowed'
+            }`}
+            disabled={!modifiedCatalog || isSavingCatalog}
+            onClick={handleSaveCatalog}
+            title={modifiedCatalog ? 'Save reading catalog' : 'No changes to save'}
+          >
+            <Save size={14} /> Save
+          </button>
+        </div>
+
+        <JSONEditor
+          label="READING_CATALOG_SERVICE, RESOURCE_LIBRARY"
+          data={catalogDraft}
+          setData={setCatalogDraft}
+          isSaving={!!isSavingCatalog}
+          setModified={setModifiedCatalog}
+        />
+      </section>
+    </div>
+  );
+}
