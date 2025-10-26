@@ -321,17 +321,26 @@ const DashboardScreen = () => {
   const monthlyPercent = goalsCount > 0 ? Math.round(((goalsCount - 1) % 4) * 25 + (commitsCompleted / commitsTotal || 0) * 25) : 0; 
   const careerPercent = Math.round((goalsCount / 24) * 100);
 
+  // *** UPDATED ***
+  // Use the new plan structure from pdpData to find the weakest tier.
+  // This logic assumes `pdpData.assessment.scores` exists after the assessment.
   const weakestTier = useMemo(() => {
-    const ratings = pdpData?.assessment?.selfRatings;
-    if (!ratings || !TIER_MAP) return { id: 'T3', name: 'Getting Started', rating: 5, color: 'bg-gray-100 text-gray-700', hex: COLORS.AMBER, icon: AlertTriangle };
-    const sortedTiers = Object.entries(ratings).sort(([, a], [, b]) => a - b);
-    const weakestId = sortedTiers[0]?.[0]; 
-    if (!weakestId) return { id: 'T3', name: 'Getting Started', rating: 5, color: 'bg-gray-100 text-gray-700', hex: COLORS.AMBER, icon: AlertTriangle };
-    const meta = TIER_MAP[weakestId];
+    const scores = pdpData?.assessment?.scores; // Using the new structure
+    if (!scores || !TIER_MAP) return { id: 'T3', name: 'Getting Started', rating: 5, color: 'bg-gray-100 text-gray-700', hex: COLORS.AMBER, icon: AlertTriangle };
+    
+    // Find the dimension with the lowest score
+    const sortedDimensions = Object.values(scores).sort((a, b) => a.score - b.score);
+    const weakest = sortedDimensions[0];
+    if (!weakest) return { id: 'T3', name: 'Getting Started', rating: 5, color: 'bg-gray-100 text-gray-700', hex: COLORS.AMBER, icon: AlertTriangle };
+
+    // Find a matching TIER_MAP entry (this mapping is a bit loose, but follows the spirit)
+    const tierKey = Object.keys(TIER_MAP).find(key => TIER_MAP[key].name.includes(weakest.name.split(' ')[0]));
+    const meta = TIER_MAP[tierKey || 'T1'];
+    
     return {
-      id: weakestId,
-      name: meta?.name || 'Unknown',
-      rating: ratings[weakestId],
+      id: weakest.name,
+      name: weakest.name,
+      rating: weakest.score,
       color: meta?.color || 'bg-red-100 text-red-700',
       hex: meta?.hex || COLORS.ORANGE,
       icon: AlertTriangle,
@@ -526,15 +535,15 @@ useEffect(() => {
                     <span className='text-xs font-light mt-1'>Grab a quick win to build streak</span>
                 </ThreeDButton>
                 
-                 {/* PRIMARY ACTION 3: Development Roadmap */}
+                 {/* *** UPDATED: PRIMARY ACTION 3: Development Roadmap *** */}
                 <ThreeDButton
-                    onClick={() => safeNavigate('roadmap-tracker')} // *** CHANGED TO NEW TRACKER ***
+                    onClick={() => safeNavigate('development-plan')} // *** CHANGED TO NEW SCREEN ***
                     color={COLORS.ORANGE}
                     accentColor={COLORS.NAVY}
                     className="h-24 flex-col px-3 py-2 text-white" 
                 >
                     <Briefcase className='w-6 h-6 mb-1'/> 
-                    <span className='text-lg font-extrabold'>24-Month Roadmap Check</span>
+                    <span className='text-lg font-extrabold'>My Development Plan</span>
                     <span className='text-xs font-light mt-1'>Current Focus: {weakestTier?.name}</span>
                 </ThreeDButton>
             </div>
@@ -587,12 +596,12 @@ useEffect(() => {
                         trend={perfectStreak >= 3 ? 5 : 0} 
                         colorHex={COLORS.GREEN}
                     />
-                     {/* Metric: Weakest Tier Focus (Roadmap context) */}
+                     {/* *** UPDATED: Metric: Weakest Tier Focus *** */}
                      <StatCard
                         icon={Target}
                         label="Weakest Tier Focus"
                         value={`${weakestTier?.name || 'N/A'}`}
-                        onClick={() => safeNavigate('roadmap-tracker')} // *** CHANGED TO NEW TRACKER ***
+                        onClick={() => safeNavigate('development-plan')} // *** CHANGED TO NEW SCREEN ***
                         trend={0} 
                         colorHex={COLORS.AMBER}
                     />
@@ -655,7 +664,7 @@ useEffect(() => {
                         icon={Briefcase}
                         label="Roadmap Months Remaining"
                         value={`${24 - goalsCount}`}
-                        onClick={() => safeNavigate('roadmap-tracker')} // *** CHANGED TO NEW TRACKER ***
+                        onClick={() => safeNavigate('development-plan')} // *** CHANGED TO NEW SCREEN ***
                         trend={24 - goalsCount > 0 ? -4 : 0} 
                         colorHex={COLORS.NAVY}
                     />

@@ -283,12 +283,18 @@ import {
 } from 'lucide-react';
 
 /* -----------------------------------------------------------------------------
-   LAZY ROUTES (Unchanged)
+   LAZY ROUTES (*** UPDATED ***)
 ----------------------------------------------------------------------------- */
 const ScreenMap = {
   dashboard: lazy(() => import('./components/screens/Dashboard.jsx')),
-  'prof-dev-plan': lazy(() => import('./components/screens/DevPlan.jsx')), // Generator/Assessment Screen
-  'roadmap-tracker': lazy(() => import('./components/screens/RoadmapTracker.jsx')), // NEW: Dedicated Tracker Screen
+  
+  // *** NEW UNIFIED DEVELOPMENT PLAN SCREEN ***
+  'development-plan': lazy(() => import('./components/screens/DevelopmentPlan.jsx')), 
+  
+  // *** OLD ROUTES (REMOVED) ***
+  // 'prof-dev-plan': lazy(() => import('./components/screens/DevPlan.jsx')), 
+  // 'roadmap-tracker': lazy(() => import('./components/screens/RoadmapTracker.jsx')), 
+
   'coaching-lab': lazy(() => import('./components/screens/Labs.jsx')),
   'daily-practice': lazy(() => import('./components/screens/DailyPractice.jsx')),
   'planning-hub': lazy(() => import('./components/screens/PlanningHub.jsx')),
@@ -491,7 +497,7 @@ const DataProvider = ({ children, firebaseServices, userId, isAuthReady, navigat
 };
 
 /* -----------------------------------------------------------------------------
-   NAV + ROUTER (Unchanged below here)
+   NAV + ROUTER (*** UPDATED ***)
 ----------------------------------------------------------------------------- */
 function ConfigError({ message }) { /* ... */ return (
     <div className="p-6 max-w-xl mx-auto mt-12 bg-red-50 border border-red-200 rounded-xl text-red-700">
@@ -610,8 +616,13 @@ const NavSidebar = ({ currentScreen, setCurrentScreen, user, closeMobileMenu, is
   ];
 
   const contentPillarNav = [
-    { screen: 'roadmap-tracker', label: 'Development Roadmap Tracker', icon: Briefcase, badge: 'New' }, // NEW TRACKER BUTTON
-    { screen: 'prof-dev-plan', label: 'Development Roadmap (Generator)', icon: Dumbbell, badge: 'Dev Only' }, // OLD GENERATOR (HIDDEN/SECONDARY)
+    // *** NEW UNIFIED LINK ***
+    { screen: 'development-plan', label: 'My Development Plan', icon: Briefcase }, 
+    
+    // *** OLD LINKS (REMOVED) ***
+    // { screen: 'roadmap-tracker', label: 'Development Roadmap Tracker', icon: Briefcase, badge: 'New' }, 
+    // { screen: 'prof-dev-plan', label: 'Development Roadmap (Generator)', icon: Dumbbell, badge: 'Dev Only' }, 
+
     { screen: 'planning-hub', label: 'Strategic Content Tools', icon: Trello },
     { screen: 'business-readings', label: 'Content: Read & Reps', icon: BookOpen },
     { screen: 'leadership-videos', label: 'Content: Leader Talks', icon: Film, badge: 'New' },
@@ -731,7 +742,9 @@ const NavSidebar = ({ currentScreen, setCurrentScreen, user, closeMobileMenu, is
 const ScreenRouter = ({ currentScreen, navParams, navigate }) => { /* ... */ 
   const Component = ScreenMap[currentScreen] || ScreenMap.dashboard;
 
-  if (currentScreen === 'prof-dev-plan') return <Component key={currentScreen} initialScreen={currentScreen} />;
+  // *** REMOVED: Special handling for prof-dev-plan ***
+  // if (currentScreen === 'prof-dev-plan') return <Component key={currentScreen} initialScreen={currentScreen} />;
+  
   if (currentScreen === 'daily-practice')
     return <Component key={currentScreen} initialGoal={navParams.initialGoal} initialTier={navParams.initialTier} />;
   if (currentScreen === 'app-settings') return <AppSettingsScreen key={currentScreen} navigate={navigate} />;
