@@ -25,13 +25,13 @@ const pathParts = (p) => p.trim().split("/").filter(Boolean);
 const ARRAY_WRAPPER_KEY = "items"; 
 
 // Paths that are known to contain a single array at the root or are collections of arrays
-// NOTE: ALL PATHS CORRECTED TO USE SINGULAR '/catalog/'
+// NOTE: These paths MUST be updated to reflect your new singular 'catalog' structure if you want auto-selection to work correctly.
 const SINGLE_ARRAY_DOCUMENTS = [
     "metadata/reading_catalog",
     "metadata/config/catalog/COMMITMENT_BANK",
     "metadata/config/catalog/TARGET_REP_CATALOG",
     "metadata/config/catalog/quick_challenge_catalog",
-    // Assuming other catalogs will use the singular 'catalog' path if they are 4-segment documents
+    // Add other array-at-root documents here
 ];
 
 // Standard Firestore path logic (even segments = Document)
@@ -322,7 +322,11 @@ export default function AdminDataMaintenance() {
   // CRITICAL: Check if we need to UNWRAP the data for display/editing
   const wrapperKey = getWrapperKeyForPath(path);
   // If wrapperKey is active, docObj holds the ARRAY CONTENT; otherwise, it holds the rawDocObj
-  const docObj = wrapperKey ? (rawDocObj[wrapperKey] || {}) : rawDocObj;
+  // FIX: Added explicit check for typeof rawDocObj === 'object' to prevent 't.map is not a function' if rawDocObj is a primitive/null
+  const docObj = useMemo(() => {
+    if (typeof rawDocObj !== 'object' || rawDocObj === null) return {};
+    return wrapperKey ? (rawDocObj[wrapperKey] || {}) : rawDocObj;
+  }, [rawDocObj, wrapperKey]);
 
 
   const arrayFields = useMemo(() => {
@@ -353,11 +357,15 @@ export default function AdminDataMaintenance() {
     let src = [];
     if (wrapperKey && activeArray === wrapperKey) {
         // Source is the array inside the rawDocObj wrapper
+        // FIX: Ensure rawDocObj[wrapperKey] is checked against null/undefined
         src = rawDocObj[wrapperKey] || [];
     } else {
         // Source is a standard nested array
         src = Array.isArray(docObj?.[activeArray]) ? docObj[activeArray] : [];
     }
+    
+    // FIX: Ensure src is always an array before mapping
+    if (!Array.isArray(src)) return []; 
 
     // map primitives -> { value: <primitive> }, objects -> flattened
     return src.map((item, i) =>
