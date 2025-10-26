@@ -279,21 +279,17 @@ import {
   Film,
   Dumbbell,
   Cpu,
+  // --- NEW: ICONS FOR COLLAPSIBLE MENU ---
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react';
 
 /* -----------------------------------------------------------------------------
-   LAZY ROUTES (*** UPDATED ***)
+   LAZY ROUTES (Unchanged)
 ----------------------------------------------------------------------------- */
 const ScreenMap = {
   dashboard: lazy(() => import('./components/screens/Dashboard.jsx')),
-  
-  // *** NEW UNIFIED DEVELOPMENT PLAN SCREEN ***
   'development-plan': lazy(() => import('./components/screens/DevelopmentPlan.jsx')), 
-  
-  // *** OLD ROUTES (REMOVED) ***
-  // 'prof-dev-plan': lazy(() => import('./components/screens/DevPlan.jsx')), 
-  // 'roadmap-tracker': lazy(() => import('./components/screens/RoadmapTracker.jsx')), 
-
   'coaching-lab': lazy(() => import('./components/screens/Labs.jsx')),
   'daily-practice': lazy(() => import('./components/screens/DailyPractice.jsx')),
   'planning-hub': lazy(() => import('./components/screens/PlanningHub.jsx')),
@@ -303,7 +299,6 @@ const ScreenMap = {
   community: lazy(() => import('./components/screens/CommunityScreen.jsx')),
   'applied-leadership': lazy(() => import('./components/screens/AppliedLeadership.jsx')),
   'leadership-videos': lazy(() => import('./components/screens/LeadershipVideos.jsx')),
-  // Admin
   'data-maintenance': lazy(() => import('./components/screens/AdminDataMaintenance.jsx')),
   'debug-data': lazy(() => import('./components/screens/DebugDataViewer.jsx')),
 };
@@ -398,7 +393,7 @@ const AppSettingsScreen = ({ navigate }) => {
 };
 
 /* -----------------------------------------------------------------------------
-   DATA PROVIDER (CRITICALLY UPDATED)
+   DATA PROVIDER (Unchanged)
 ----------------------------------------------------------------------------- */
 const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
 
@@ -411,9 +406,6 @@ const DataProvider = ({ children, firebaseServices, userId, isAuthReady, navigat
   const planning = usePlanningData(db, userId, isAuthReady);
   const global = useGlobalMetadata(db, isAuthReady);
   
-  // NEW: Call the applied leadership data hook // <-- REMOVED
-  // const appliedLeadership = useAppliedLeadershipData(isAuthReady); 
-
   try {
     if (global && typeof global.metadata === 'object') {
       console.log('[GLOBAL SNAPSHOT]', {
@@ -423,7 +415,6 @@ const DataProvider = ({ children, firebaseServices, userId, isAuthReady, navigat
     }
   } catch {}
 
-  // UPDATED: Include the appliedLeadership loading state // <-- REMOVED
   const isLoading = pdp.isLoading || commitment.isLoading || planning.isLoading || global.isLoading;
   const error = pdp.error || commitment.error || planning.error || global.error;
 
@@ -457,12 +448,6 @@ const DataProvider = ({ children, firebaseServices, userId, isAuthReady, navigat
       commitmentData: commitment.commitmentData,
       planningData: planning.planningData,
       
-      // NEW: Merge Applied Leadership Data // <-- REMOVED
-      // LEADERSHIP_DOMAINS: appliedLeadership.LEADERSHIP_DOMAINS, // <-- REMOVED
-      // RESOURCE_LIBRARY: appliedLeadership.RESOURCE_LIBRARY, // <-- REMOVED
-      // The main `isLoading` combines this, but we'll include it for completeness
-      // isAppliedLeadershipLoading: appliedLeadership.isAppliedLeadershipLoading, // <-- REMOVED
-
       isLoading,
       error,
       appId,
@@ -475,7 +460,6 @@ const DataProvider = ({ children, firebaseServices, userId, isAuthReady, navigat
       ...global.metadata, // <-- This spread now correctly includes LEADERSHIP_DOMAINS and RESOURCE_LIBRARY
       hasPendingDailyPractice,
     }),
-    // UPDATED DEPENDENCIES
     [navigate, user, firebaseServices, userId, isAuthReady, isLoading, error, pdp, commitment, planning, global, hasPendingDailyPractice, db]
   );
 
@@ -638,7 +622,8 @@ function AuthPanel({ auth, onSuccess }) { /* ... */
   );
 }
 
-const NavSidebar = ({ currentScreen, setCurrentScreen, user, closeMobileMenu, isAuthRequired }) => { /* ... */ 
+// --- **** NAVSIDEBAR: UPDATED FOR COLLAPSIBLE STATE **** ---
+const NavSidebar = ({ currentScreen, setCurrentScreen, user, closeMobileMenu, isAuthRequired, isNavExpanded, setIsNavExpanded }) => {
   const { auth } = useAppServices();
   const [isProfileOpen, setIsProfileOpen] = useState(false);
 
@@ -652,13 +637,7 @@ const NavSidebar = ({ currentScreen, setCurrentScreen, user, closeMobileMenu, is
   ];
 
   const contentPillarNav = [
-    // *** NEW UNIFIED LINK ***
     { screen: 'development-plan', label: 'My Development Plan', icon: Briefcase }, 
-    
-    // *** OLD LINKS (REMOVED) ***
-    // { screen: 'roadmap-tracker', label: 'Development Roadmap Tracker', icon: Briefcase, badge: 'New' }, 
-    // { screen: 'prof-dev-plan', label: 'Development Roadmap (Generator)', icon: Dumbbell, badge: 'Dev Only' }, 
-
     { screen: 'planning-hub', label: 'Strategic Content Tools', icon: Trello },
     { screen: 'business-readings', label: 'Content: Read & Reps', icon: BookOpen },
     { screen: 'leadership-videos', label: 'Content: Leader Talks', icon: Film, badge: 'New' },
@@ -711,16 +690,19 @@ const NavSidebar = ({ currentScreen, setCurrentScreen, user, closeMobileMenu, is
         <button
           key={item.screen}
           onClick={() => handleNavigate(item.screen)}
+          title={isNavExpanded ? '' : item.label} // Tooltip for collapsed state
           className={`flex items-center w-full px-4 py-2.5 rounded-xl font-semibold relative transition-all duration-200 ${
             isActive
-              ? `bg-white text-[${NAVY}] shadow-lg transform translate-x-1 ring-2 ring-[${TEAL}]`
-              : `text-white hover:bg-[${TEAL}]/20 hover:text-white hover:shadow-md hover:scale-[1.02] bg-[${NAVY}]/5 border border-[${TEAL}]/10 `
-          }`}
+              ? `bg-white text-[${NAVY}] shadow-lg ${isNavExpanded ? 'transform translate-x-1' : ''} ring-2 ring-[${TEAL}]` // Active state
+              : `text-white hover:bg-[${TEAL}]/20 hover:text-white hover:shadow-md ${isNavExpanded ? 'hover:scale-[1.02]' : ''} bg-[${NAVY}]/5 border border-[${TEAL}]/10 ` // Inactive state
+          } ${isNavExpanded ? '' : 'justify-center'}`} // Center icon when collapsed
         >
-          <Icon className={`w-5 h-5 mr-3 ${isActive ? `text-[${TEAL}]` : 'text-gray-200'}`} />
-          <span className="flex-1 text-left">{item.label}</span>
-          {item.badge && (
-            <span className={`ml-2 px-2 py-0.5 text-xs font-bold rounded-full bg-[${ORANGE}] text-white`}>{item.badge}</span>
+          <Icon className={`w-5 h-5 flex-shrink-0 ${isNavExpanded ? 'mr-3' : ''} ${isActive ? `text-[${TEAL}]` : 'text-gray-200'}`} />
+          {isNavExpanded && (
+            <span className="flex-1 text-left animate-in fade-in duration-200">{item.label}</span>
+          )}
+          {isNavExpanded && item.badge && (
+            <span className={`ml-2 px-2 py-0.5 text-xs font-bold rounded-full bg-[${ORANGE}] text-white animate-in fade-in duration-200`}>{item.badge}</span>
           )}
         </button>
       );
@@ -729,36 +711,65 @@ const NavSidebar = ({ currentScreen, setCurrentScreen, user, closeMobileMenu, is
   if (isAuthRequired) return null;
 
   return (
-    <div className={`hidden md:flex flex-col w-64 bg-[${NAVY}] text-white p-4 shadow-2xl`}>
+    // --- UPDATED: Width, transition, and padding ---
+    <div className={`hidden md:flex flex-col ${isNavExpanded ? 'w-64 p-4' : 'w-20 p-3'} bg-[${NAVY}] text-white shadow-2xl transition-all duration-300 ease-in-out`}>
       <div className={`flex items-center justify-center h-16 border-b border-[${TEAL}]/50 mb-6 flex-shrink-0`}>
-        <h1 className="text-2xl font-extrabold flex items-center">
-          <CornerRightUp className={`w-7 h-7 mr-2 text-[${TEAL}]`} /> LeaderReps
-        </h1>
+        {/* --- UPDATED: Show icon only or icon + text --- */}
+        <CornerRightUp className={`w-7 h-7 text-[${TEAL}] ${isNavExpanded ? 'mr-2' : ''} transition-all`} />
+        {isNavExpanded && (
+          <h1 className="text-2xl font-extrabold animate-in fade-in duration-200">
+            LeaderReps
+          </h1>
+        )}
       </div>
 
-      <nav className="flex-1 space-y-3">
-        {menuSections.map((section) => (
-          <div key={section.title} className="space-y-1">
-            <p className={`text-xs font-extrabold uppercase tracking-widest text-white px-2 py-1 rounded bg-[${TEAL}]/10`}>
-              {section.title}
-            </p>
-            <div className="space-y-1">{renderNavItems(section.items)}</div>
-          </div>
-        ))}
+      {/* --- UPDATED: flex-col to position toggle button at bottom --- */}
+      <nav className="flex-1 space-y-3 flex flex-col">
+        {/* Wrapper for nav items */}
+        <div className="flex-1 space-y-3">
+          {menuSections.map((section) => (
+            <div key={section.title} className="space-y-1">
+              {/* --- UPDATED: Show title only if expanded --- */}
+              {isNavExpanded && (
+                <p className={`text-xs font-extrabold uppercase tracking-widest text-white px-2 py-1 rounded bg-[${TEAL}]/10 animate-in fade-in duration-200`}>
+                  {section.title}
+                </p>
+              )}
+              <div className="space-y-1">{renderNavItems(section.items)}</div>
+            </div>
+          ))}
+        </div>
+
+        {/* --- NEW: Toggle Button --- */}
+        <div className="py-2 mt-4">
+          <button
+            onClick={() => setIsNavExpanded(!isNavExpanded)}
+            title={isNavExpanded ? 'Collapse Menu' : 'Expand Menu'}
+            className={`flex items-center w-full px-4 py-2.5 rounded-xl font-semibold transition-all duration-200 text-white hover:bg-[${TEAL}]/20 ${isNavExpanded ? '' : 'justify-center'}`}
+          >
+            {isNavExpanded ? <ChevronLeft className="w-5 h-5 mr-3" /> : <ChevronRight className="w-5 h-5" />}
+            {isNavExpanded && <span className="flex-1 text-left animate-in fade-in duration-200">Collapse</span>}
+          </button>
+        </div>
       </nav>
 
       <div className={`pt-4 border-t border-[${TEAL}]/50 mt-4 relative flex-shrink-0`}>
+        {/* --- UPDATED: Profile button --- */}
         <button
           onClick={() => setIsProfileOpen(!isProfileOpen)}
-          className={`flex items-center w-full p-2 rounded-xl text-sm font-semibold transition-colors hover:bg-[${TEAL}]/20 focus:outline-none focus:ring-2 focus:ring-[${TEAL}] bg-white/5`}
+          title={isNavExpanded ? '' : (user?.name || 'Guest User')} // Tooltip
+          className={`flex items-center w-full p-2 rounded-xl text-sm font-semibold transition-colors hover:bg-[${TEAL}]/20 focus:outline-none focus:ring-2 focus:ring-[${TEAL}] bg-white/5 ${isNavExpanded ? '' : 'justify-center'}`}
         >
-          <User className="w-5 h-5 mr-3 text-indigo-300" />
-          <span className="truncate">{user?.name || `Guest User`}</span>
+          <User className={`w-5 h-5 flex-shrink-0 ${isNavExpanded ? 'mr-3' : ''} text-indigo-300`} />
+          {isNavExpanded && (
+            <span className="truncate animate-in fade-in duration-200">{user?.name || `Guest User`}</span>
+          )}
         </button>
 
+        {/* --- UPDATED: Profile popup position --- */}
         {isProfileOpen && (
           <div
-            className={`absolute bottom-full left-0 mb-3 w-full p-4 rounded-xl shadow-2xl bg-[${NAVY}] border border-[${TEAL}]/50 z-10 animate-in fade-in slide-in-from-bottom-2`}
+            className={`absolute bottom-full ${isNavExpanded ? 'left-0' : 'left-full ml-2'} mb-3 w-64 p-4 rounded-xl shadow-2xl bg-[${NAVY}] border border-[${TEAL}]/50 z-10 animate-in fade-in ${isNavExpanded ? 'slide-in-from-bottom-2' : 'slide-in-from-left-2'}`}
           >
             <p className="text-xs font-medium uppercase text-indigo-300 mb-1">Account Info</p>
             <p className="text-sm font-semibold truncate mb-2 text-white" title={user?.email}>
@@ -778,9 +789,6 @@ const NavSidebar = ({ currentScreen, setCurrentScreen, user, closeMobileMenu, is
 const ScreenRouter = ({ currentScreen, navParams, navigate }) => { /* ... */ 
   const Component = ScreenMap[currentScreen] || ScreenMap.dashboard;
 
-  // *** REMOVED: Special handling for prof-dev-plan ***
-  // if (currentScreen === 'prof-dev-plan') return <Component key={currentScreen} initialScreen={currentScreen} />;
-  
   if (currentScreen === 'daily-practice')
     return <Component key={currentScreen} initialGoal={navParams.initialGoal} initialTier={navParams.initialTier} />;
   if (currentScreen === 'app-settings') return <AppSettingsScreen key={currentScreen} navigate={navigate} />;
@@ -789,12 +797,14 @@ if (currentScreen === 'data-maintenance') return <Component key={currentScreen} 
   return <Component key={currentScreen} />;
 };
 
-const AppContent = ({ currentScreen, setCurrentScreen, user, navParams, isMobileOpen, setIsMobileOpen, isAuthRequired }) => { /* ... */ 
+// --- **** APPCONTENT: UPDATED **** ---
+const AppContent = ({ currentScreen, setCurrentScreen, user, navParams, isMobileOpen, setIsMobileOpen, isAuthRequired, isNavExpanded, setIsNavExpanded }) => {
   const closeMobileMenu = useCallback(() => setIsMobileOpen(false), [setIsMobileOpen]);
   const { navigate } = useAppServices();
 
   return (
-    <div className="flex bg-gray-100 font-sans antialiased">
+    // --- UPDATED: `relative` and `min-h-screen` added for robustness ---
+    <div className="relative min-h-screen flex bg-gray-100 font-sans antialiased">
       <NavSidebar
         currentScreen={currentScreen}
         setCurrentScreen={setCurrentScreen}
@@ -802,8 +812,12 @@ const AppContent = ({ currentScreen, setCurrentScreen, user, navParams, isMobile
         isMobileOpen={isMobileOpen}
         closeMobileMenu={closeMobileMenu}
         isAuthRequired={isAuthRequired}
+        // --- UPDATED: Pass state to sidebar ---
+        isNavExpanded={isNavExpanded}
+        setIsNavExpanded={setIsNavExpanded}
       />
 
+      {/* --- UPDATED: Main content area --- */}
       <main className="flex-1">
         <div className="md:hidden sticky top-0 bg-white/95 backdrop-blur-sm shadow-md p-4 flex justify-between items-center z-40">
           <h1 className="text-xl font-bold text-[#002E47]">LeaderReps</h1>
@@ -823,6 +837,7 @@ const AppContent = ({ currentScreen, setCurrentScreen, user, navParams, isMobile
           }
         >
           <ScreenRouter currentScreen={currentScreen} navParams={navParams} navigate={navigate} />
+        {/* --- THIS IS THE FIX --- */}
         </Suspense>
       </main>
     </div>
@@ -830,7 +845,7 @@ const AppContent = ({ currentScreen, setCurrentScreen, user, navParams, isMobile
 };
 
 /* -----------------------------------------------------------------------------
-   ROOT APP (Unchanged)
+   ROOT APP (*** UPDATED ***)
 ----------------------------------------------------------------------------- */
 const App = ({ initialState }) => {
   const [user, setUser] = useState(null);
@@ -841,6 +856,9 @@ const App = ({ initialState }) => {
   const [navParams, setNavParams] = useState(initialState?.params || {});
   const [authRequired, setAuthRequired] = useState(true);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
+  
+  // --- NEW: State for collapsible nav ---
+  const [isNavExpanded, setIsNavExpanded] = useState(false); // Default to collapsed
 
   const [initStage, setInitStage] = useState('init');
   const [initError, setInitError] = useState('');
@@ -860,7 +878,7 @@ const App = ({ initialState }) => {
     return () => { if (typeof window !== 'undefined') delete window.__appNavigate; };
   }, [navigate]);
 
-  // Firebase init/auth
+  // Firebase init/auth (Unchanged)
   useEffect(() => {
     let app, firestore, authentication;
     let unsubscribeAuth = null;
@@ -926,6 +944,7 @@ const App = ({ initialState }) => {
     }
   }, []); // mount once
 
+  // --- Loading/Auth Screens (Unchanged) ---
   if (initStage === 'init') {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-100">
@@ -968,6 +987,7 @@ const App = ({ initialState }) => {
           </div>
         }
       >
+        {/* --- UPDATED: Pass nav state to AppContent --- */}
         <AppContent
           currentScreen={currentScreen}
           setCurrentScreen={navigate}
@@ -976,6 +996,8 @@ const App = ({ initialState }) => {
           isMobileOpen={isMobileOpen}
           setIsMobileOpen={setIsMobileOpen}
           isAuthRequired={authRequired}
+          isNavExpanded={isNavExpanded}
+          setIsNavExpanded={setIsNavExpanded}
         />
       </Suspense>
     </DataProvider>
