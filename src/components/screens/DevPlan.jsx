@@ -574,7 +574,10 @@ const TrackerDashboardView = ({ data, updatePdpData, saveNewPlan, userId, naviga
     };
 
     const handleResetPlan = async () => {
-        await updatePdpData(() => null); 
+        // CRITICAL FIX: Save an empty Map {} to the document instead of null to bypass Firestore error
+        setIsSaving(true);
+        await updatePdpData(() => ({})); 
+        setIsSaving(false);
         navigate('prof-dev-plan'); 
     };
 
