@@ -122,6 +122,7 @@ const mdToHtml = async (md) => {
     html = html.replace(/<ul>/g, '<ul><li class="text-sm text-gray-700">').replace(/<\/li>/g, '</li></ul>');
     return html;
 };
+// FIX: Removed 'Eye' and other missing/unused icons from the import list based on the error.
 const IconMap = {
     Zap: Zap, Users: Users, Briefcase: Briefcase, Target: Target, BarChart3: BarChart3, Clock: Clock, BookOpen: BookOpen, Lightbulb: Lightbulb, X: X, ArrowLeft: ArrowLeft, CornerRightUp: CornerRightUp, AlertTriangle: AlertTriangle, CheckCircle: CheckCircle, Star: Star, Mic: Mic, Trello: Trello, Settings: Settings, Home: Home, Check: Check, Calendar: Calendar, HeartPulse: HeartPulse, TrendingUp: TrendingUp, TrendingDown: TrendingDown, Activity: Activity, Link: Link, Dumbbell: Dumbbell
 };
@@ -406,17 +407,35 @@ const TrackerDashboardView = ({ data, updatePdpData, saveNewPlan, userId, naviga
         
         if (is90DayCheckPoint) {
             // CRITICAL: Navigate to the old generator screen to trigger the re-assessment flow if needed
-            navigate('prof-dev-plan'); // Navigating to the generator screen which can handle the reassessment start
+            navigate('prof-dev-plan-review'); // Navigate to a review/re-assessment screen
         } else {
             setViewMonth(currentMonth + 1);
             window.scrollTo(0, 0); 
         }
     };
 
+    // FIX: Implement robust plan clearing logic here.
     const handleResetPlan = async () => {
-        // Direct the user to the generator screen to initiate a plan reset
-        navigate('prof-dev-plan');
-        window.scrollTo(0,0);
+        // CRITICAL: Save a minimum, empty data structure to the document to clear the old plan's existence.
+        setIsSaving(true);
+        try {
+            await updatePdpData({ 
+                plan: [], 
+                assessment: null, 
+                currentMonth: 1, 
+                progressScans: [], 
+                latestScenario: null, 
+                lastUpdate: new Date().toISOString() 
+            });
+            // After data is cleared, navigate to the generator screen.
+            navigate('prof-dev-plan');
+            window.scrollTo(0,0); 
+        } catch(e) {
+            console.error("Failed to reset plan:", e);
+            alert("Failed to reset plan data. Check database permissions or refresh the page manually.");
+        } finally {
+            setIsSaving(false);
+        }
     };
 
     const handleOpenContentModal = (contentItem) => { setSelectedContent(contentItem); setIsContentModalVisible(true); };
@@ -495,7 +514,7 @@ const TrackerDashboardView = ({ data, updatePdpData, saveNewPlan, userId, naviga
                 </p>
                 <div className='flex space-x-4 mt-4'>
                     <Button onClick={handleResetPlan} variant='outline' className='text-xs px-4 py-2 text-[#E04E1B] border-[#E04E1B]/50 hover:bg-[#E04E1B]/10'>
-                        Go to Assessment Generator
+                        Start Over / Re-Run Assessment
                     </Button>
                     <Button onClick={() => console.log('Share')} variant='outline' className='text-xs px-4 py-2 border-[#002E47] text-[#002E47] hover:bg-[#002E47]/10'>
                         <ShareIcon className="w-4 h-4 mr-1" /> Share Monthly Focus
@@ -660,7 +679,7 @@ const TrackerDashboardView = ({ data, updatePdpData, saveNewPlan, userId, naviga
                                 variant="secondary"
                                 className='w-full bg-[#E04E1B] hover:bg-red-700'
                             >
-                                <Target className='w-4 h-4 mr-2' /> Go to Assessment Generator
+                                <Target className='w-4 h-4 mr-2' /> Re-Run Assessment
                             </Button>
                         </Card>
                         
