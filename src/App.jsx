@@ -1,14 +1,7 @@
 // src/App.jsx
-import React, {
-  useState,
-  useEffect,
-  useMemo,
-  useCallback,
-  Suspense,
-  lazy,
-} from 'react';
+import React, { useState, useEffect, useMemo, useCallback, Suspense, lazy } from 'react';
 
-// IMPORTANT: useAppServices hooks/context (fetches user docs + global metadata)
+// App services (loads user docs + global metadata)
 import {
   AppServiceContext,
   usePDPData,
@@ -20,7 +13,6 @@ import {
 } from './services/useAppServices.jsx';
 
 import { initializeApp, getApp } from 'firebase/app';
-
 import {
   getAuth,
   onAuthStateChanged,
@@ -45,31 +37,31 @@ import {
   serverTimestamp,
   addDoc,
   collection,
+  getDocs,
 } from 'firebase/firestore';
 
 /* -----------------------------------------------------------------------------
    DEV CONSOLE HELPERS
-   Expose auth/db helpers and a few utilities so you can verify reads/writes and
-   reactivity straight from the browser console.
 ----------------------------------------------------------------------------- */
 try {
-  // Safe attach (don’t clobber if already present)
+  // Make modular Firestore APIs available in the console
   window.getAuth = getAuth;
   window.getFirestore = getFirestore;
   window.doc = doc;
   window.getDoc = getDoc;
   window.setDoc = setDoc;
-  window.onSnapshot = onSnapshot;
   window.updateDoc = updateDoc;
-  window.arrayUnion = arrayUnion;
-  window.arrayRemove = arrayRemove;
+  window.onSnapshot = onSnapshot;
   window.collection = collection;
+  window.getDocs = getDocs;
   window.addDoc = addDoc;
   window.writeBatch = writeBatch;
+  window.arrayUnion = arrayUnion;
+  window.arrayRemove = arrayRemove;
   window.increment = increment;
   window.serverTimestamp = serverTimestamp;
 
-  // Wait for auth resolution (useful right after reload)
+  // Await auth resolution after reloads
   window.fbReady = async function fbReady() {
     const auth = getAuth();
     if (auth.currentUser) return true;
@@ -82,8 +74,19 @@ try {
     return true;
   };
 
-  // Ensure the 3 required docs exist; seed if missing
+  // Path explainer: doc vs collection
   window.fb = window.fb || {};
+  window.fb.pathExplain = function pathExplain(path) {
+    const parts = (path || '').split('/').filter(Boolean);
+    const isCollection = parts.length % 2 === 1; // 1,3,5… segments
+    const kind = isCollection ? 'collection' : 'document';
+    const tip = isCollection
+      ? 'Looks like a collection path. You can list documents here.'
+      : 'Looks like a document path. Remove the last segment to list the parent collection.';
+    return { parts, segments: parts.length, kind, tip };
+  };
+
+  // Ensure the required user docs exist; seed if missing
   window.fb.ensureUserDocs = async function ensureUserDocs() {
     await window.fbReady();
     const auth = getAuth();
@@ -114,13 +117,12 @@ try {
       const snap = await getDoc(ref);
       if (!snap.exists()) {
         await setDoc(ref, seed, { merge: true });
-        // Touch the doc to wake any onSnapshot listeners
         await updateDoc(ref, { __touched: serverTimestamp() }).catch(() => {});
       }
     }
   };
 
-  // Log the 3 user docs (roadmap/active/drafts) in one go
+  // Log the 3 user docs
   window.fb.checkUserDocs = async function checkUserDocs() {
     await window.fbReady();
     const auth = getAuth();
@@ -134,11 +136,7 @@ try {
       drafts: doc(db, 'user_planning', uid, 'profile', 'drafts'),
     };
 
-    const [r, a, d] = await Promise.all([
-      getDoc(refs.roadmap),
-      getDoc(refs.active),
-      getDoc(refs.drafts),
-    ]);
+    const [r, a, d] = await Promise.all([getDoc(refs.roadmap), getDoc(refs.active), getDoc(refs.drafts)]);
     const out = {
       roadmap: r.data() || null,
       active: a.data() || null,
@@ -148,7 +146,7 @@ try {
     return out;
   };
 
-  // Attach 3 live listeners to prove UI reactivity
+  // Attach live listeners to the 3 docs
   window.fb.liveTest = async function liveTest() {
     await window.fbReady();
     const auth = getAuth();
@@ -166,10 +164,7 @@ try {
         console.log('[LIVE] drafts', s.exists(), s.data())
       ),
     ];
-    console.log(
-      '[LIVE] listeners attached; call each function to unsubscribe:',
-      unsubs
-    );
+    console.log('[LIVE] listeners attached; call each function to unsubscribe:', unsubs);
     return unsubs;
   };
 } catch (e) {
@@ -181,17 +176,9 @@ try {
 ----------------------------------------------------------------------------- */
 const GEMINI_MODEL = 'gemini-2.5-flash';
 const GEMINI_API_VERSION = 'v1beta';
-const USE_SERVERLESS =
-  typeof window !== 'undefined' && window.__GEMINI_MODE === 'direct'
-    ? false
-    : true;
+const USE_SERVERLESS = typeof window !== 'undefined' && window.__GEMINI_MODE === 'direct' ? false : true;
 const API_KEY =
-  typeof __GEMINI_API_KEY !== 'undefined'
-    ? __GEMINI_API_KEY
-    : USE_SERVERLESS
-    ? 'SERVERLESS'
-    : '';
-
+  typeof __GEMINI_API_KEY !== 'undefined' ? __GEMINI_API_KEY : USE_SERVERLESS ? 'SERVERLESS' : '';
 const DEBUG_MODE = false;
 
 const callSecureGeminiAPI = async (payload, maxRetries = 3, delay = 1000) => {
@@ -211,63 +198,39 @@ const callSecureGeminiAPI = async (payload, maxRetries = 3, delay = 1000) => {
   if (USE_SERVERLESS) {
     apiUrl = '/.netlify/functions/gemini';
   } else {
-    const directKey =
-      typeof __GEMINI_API_KEY !== 'undefined' ? __GEMINI_API_KEY : '';
-    if (!directKey)
-      throw new Error(
-        'Gemini API Key is missing for direct mode. Set __GEMINI_API_KEY or use serverless.'
-      );
+    const directKey = typeof __GEMINI_API_KEY !== 'undefined' ? __GEMINI_API_KEY : '';
+    if (!directKey) throw new Error('Gemini API Key is missing for direct mode. Set __GEMINI_API_KEY or use serverless.');
     apiUrl = `https://generativelanguage.googleapis.com/${GEMINI_API_VERSION}/models/${GEMINI_MODEL}:generateContent?key=${directKey}`;
   }
 
   for (let attempt = 0; attempt < maxRetries; attempt++) {
     try {
-      const response = await fetch(apiUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body,
-      });
-
+      const response = await fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body });
       if (response.ok) return response.json();
-
       if (response.status === 429 || response.status >= 500) {
         if (attempt < maxRetries - 1) {
-          await new Promise((r) =>
-            setTimeout(r, delay * Math.pow(2, attempt))
-          );
+          await new Promise((r) => setTimeout(r, delay * Math.pow(2, attempt)));
           continue;
         }
       }
-
       const errorBody = await response.text();
-      throw new Error(
-        `API Request Failed: HTTP ${response.status} - ${errorBody}`
-      );
+      throw new Error(`API Request Failed: HTTP ${response.status} - ${errorBody}`);
     } catch (error) {
-      if (attempt === maxRetries - 1) {
-        throw new Error(
-          `Network Error after ${maxRetries} attempts: ${error.message}`
-        );
-      }
+      if (attempt === maxRetries - 1) throw new Error(`Network Error after ${maxRetries} attempts: ${error.message}`);
       await new Promise((r) => setTimeout(r, delay * Math.pow(2, attempt)));
     }
   }
   throw new Error('Maximum retries exceeded.');
 };
 
-const hasGeminiKey = () =>
-  USE_SERVERLESS
-    ? true
-    : !!(typeof __GEMINI_API_KEY !== 'undefined' && __GEMINI_API_KEY);
+const hasGeminiKey = () => (USE_SERVERLESS ? true : !!(typeof __GEMINI_API_KEY !== 'undefined' && __GEMINI_API_KEY));
 
 /* -----------------------------------------------------------------------------
    ICONS & CONSTANTS
 ----------------------------------------------------------------------------- */
 const IconMap = {};
 const SECRET_SIGNUP_CODE = 'mock-code-123';
-const PDP_COLLECTION = 'leadership_plan';
-const PDP_DOCUMENT = 'roadmap';
-const LEADERSHIP_TIERS = {
+const LEADERSHIP_TIERS_FALLBACK = {
   T1: { id: 'T1', name: 'Lead Self & Mindsets', icon: 'HeartPulse', color: 'indigo-500' },
   T2: { id: 'T2', name: 'Lead Work & Execution', icon: 'Briefcase', color: 'green-600' },
   T3: { id: 'T3', name: 'Lead People & Coaching', icon: 'Users', color: 'yellow-600' },
@@ -275,7 +238,7 @@ const LEADERSHIP_TIERS = {
   T5: { id: 'T5', name: 'Strategy & Vision', icon: 'TrendingUp', color: 'cyan-600' },
 };
 
-// Global notepad compatibility
+// tiny notepad compat
 if (typeof window !== 'undefined' && typeof window.notepad === 'undefined') {
   window.notepad = { setTitle: () => {}, addContent: () => {}, getContent: () => {} };
 }
@@ -317,14 +280,6 @@ import {
   Cpu,
 } from 'lucide-react';
 
-const COLORS = {
-  NAVY: '#002E47',
-  TEAL: '#47A88D',
-  ORANGE: '#E04E1B',
-  LIGHT_GRAY: '#FCFCFA',
-  OFF_WHITE: '#FFFFFF',
-};
-
 /* -----------------------------------------------------------------------------
    LAZY ROUTES
 ----------------------------------------------------------------------------- */
@@ -340,20 +295,19 @@ const ScreenMap = {
   community: lazy(() => import('./components/screens/CommunityScreen.jsx')),
   'applied-leadership': lazy(() => import('./components/screens/AppliedLeadership.jsx')),
   'leadership-videos': lazy(() => import('./components/screens/LeadershipVideos.jsx')),
-  // New admin & debug tools
+  // Admin
   'data-maintenance': lazy(() => import('./components/screens/AdminDataMaintenance.jsx')),
   'debug-data': lazy(() => import('./components/screens/DebugDataViewer.jsx')),
 };
 
 /* -----------------------------------------------------------------------------
-   SETTINGS
+   SETTINGS CARD + SCREEN
 ----------------------------------------------------------------------------- */
+const COLORS = { NAVY: '#002E47', TEAL: '#47A88D', ORANGE: '#E04E1B' };
+
 const SettingsCard = ({ title, icon: Icon, children }) => (
-  <div className={`p-6 rounded-xl border border-gray-200 bg-white shadow-lg space-y-4`}>
-    <h3
-      className={`text-xl font-bold flex items-center gap-2 border-b pb-2`}
-      style={{ color: COLORS.NAVY }}
-    >
+  <div className="p-6 rounded-xl border border-gray-200 bg-white shadow-lg space-y-4">
+    <h3 className="text-xl font-bold flex items-center gap-2 border-b pb-2" style={{ color: COLORS.NAVY }}>
       <Icon size={22} style={{ color: COLORS.TEAL }} />
       {title}
     </h3>
@@ -363,18 +317,15 @@ const SettingsCard = ({ title, icon: Icon, children }) => (
 
 const AppSettingsScreen = ({ navigate }) => {
   const { user, API_KEY, auth } = useAppServices();
+
   const handleResetPassword = async () => {
     if (!user?.email) {
       alert('Cannot reset password: User email is unknown.');
       return;
     }
     try {
-      if (auth) {
-        await sendPasswordResetEmail(auth, user.email);
-        alert(`Password reset email sent to ${user.email}. Check your inbox!`);
-      } else {
-        alert('Authentication service is not available.');
-      }
+      await sendPasswordResetEmail(auth, user.email);
+      alert(`Password reset email sent to ${user.email}.`);
     } catch (error) {
       alert(`Failed to send reset email: ${error.message}`);
     }
@@ -393,17 +344,9 @@ const AppSettingsScreen = ({ navigate }) => {
           <p className="text-sm text-gray-700">
             <strong>Email:</strong> <span className="font-semibold">{user?.email || 'N/A'}</span>
           </p>
-          <button
-            onClick={handleResetPassword}
-            className={`text-sm font-semibold text-[${COLORS.ORANGE}] hover:text-red-700 mt-2`}
-          >
+          <button onClick={handleResetPassword} className="text-sm font-semibold text-[#E04E1B] hover:text-red-700 mt-2">
             Change Password (Send Reset Link)
           </button>
-          <div className="pt-2">
-            <p className="text-xs text-gray-500">
-              Time Zone: <span className="font-medium">America/New_York (UTC-4)</span>
-            </p>
-          </div>
         </SettingsCard>
 
         <SettingsCard title="Security" icon={Lock}>
@@ -411,17 +354,9 @@ const AppSettingsScreen = ({ navigate }) => {
             <strong>2FA Status:</strong> <span className="font-semibold text-red-500">Disabled</span>
           </p>
           <p className="text-sm text-gray-700">
-            <strong>Last Sign In:</strong>{' '}
-            <span className="font-semibold">{new Date().toLocaleString()}</span>
+            <strong>Last Sign In:</strong> <span className="font-semibold">{new Date().toLocaleString()}</span>
           </p>
-          <button className={`text-sm font-semibold text-[${COLORS.NAVY}] hover:text-[${COLORS.TEAL}] mt-2`}>
-            Sign Out From All Devices
-          </button>
-          <div className="pt-2">
-            <p className="text-xs text-gray-500">
-              *Your session ends automatically when the tab is closed.
-            </p>
-          </div>
+          <button className="text-sm font-semibold text-[#002E47] hover:text-[#47A88D] mt-2">Sign Out From All Devices</button>
         </SettingsCard>
 
         <SettingsCard title="AI Integration" icon={Code}>
@@ -434,44 +369,18 @@ const AppSettingsScreen = ({ navigate }) => {
             className="w-full p-2 border border-gray-300 rounded-lg text-sm bg-gray-50"
           />
           <p className="text-xs text-gray-500 mt-1">
-            Status:{' '}
-            <span className={`font-semibold ${API_KEY ? 'text-green-600' : 'text-red-500'}`}>
-              {API_KEY ? 'Active' : 'Missing'}
-            </span>
+            Status: <span className={`font-semibold ${API_KEY ? 'text-green-600' : 'text-red-500'}`}>{API_KEY ? 'Active' : 'Missing'}</span>
           </p>
-          <button className={`text-sm font-semibold text-[${COLORS.NAVY}] hover:text-[${COLORS.TEAL}] mt-2`}>
-            <Link size={14} className="inline-block mr-1" /> Connect External Calendar
-          </button>
-        </SettingsCard>
-
-        <SettingsCard title="Data Management" icon={Download}>
-          <button className={`text-sm font-semibold text-[${COLORS.NAVY}] hover:text-[${COLORS.TEAL}]`}>
-            <Download size={14} className="inline-block mr-1" /> Export All Personal Data (JSON)
-          </button>
-          <div className="pt-2">
-            <p className="text-xs text-gray-500">
-              <Mail size={14} className="inline-block mr-1" /> <a href="#" className="underline">Review Privacy Policy</a>
-            </p>
-          </div>
-          <button className={`text-sm font-semibold text-red-600 hover:text-red-900 pt-4 flex items-center gap-1`}>
-            <Trash2 size={16} /> Permanently Delete Account
-          </button>
         </SettingsCard>
 
         <SettingsCard title="Global Data Maintenance (Admin)" icon={Cpu}>
           <p className="text-sm text-gray-700">
-            Access the JSON editor for application-wide data (tiers, catalogs). <strong>Requires Admin Password.</strong>
+            Admin-only tools for editing app-wide JSON and raw Firestore reads.
           </p>
-          <button
-            onClick={() => navigate('data-maintenance')}
-            className={`text-sm font-semibold text-[${COLORS.ORANGE}] hover:text-red-700 mt-2 flex items-center`}
-          >
+          <button onClick={() => navigate('data-maintenance')} className="text-sm font-semibold text-[#E04E1B] hover:text-red-700 mt-2 flex items-center">
             <Settings size={14} className="inline-block mr-1" /> Launch JSON Editor
           </button>
-          <button
-            onClick={() => navigate('debug-data')}
-            className={`text-sm font-semibold text-blue-600 hover:text-blue-800 mt-2 flex items-center`}
-          >
+          <button onClick={() => navigate('debug-data')} className="text-sm font-semibold text-blue-600 hover:text-blue-800 mt-2 flex items-center">
             <Code size={14} className="inline-block mr-1" /> Launch RAW Debug Viewer
           </button>
         </SettingsCard>
@@ -481,22 +390,18 @@ const AppSettingsScreen = ({ navigate }) => {
 };
 
 /* -----------------------------------------------------------------------------
-   DATA PROVIDER (User docs + global metadata)
+   DATA PROVIDER
 ----------------------------------------------------------------------------- */
 const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
 
 const DataProvider = ({ children, firebaseServices, userId, isAuthReady, navigate, user }) => {
   const { db } = firebaseServices;
 
-  // User-scoped docs
   const pdp = usePDPData(db, userId, isAuthReady);
   const commitment = useCommitmentData(db, userId, isAuthReady);
   const planning = usePlanningData(db, userId, isAuthReady);
-
-  // Global metadata (config/library/etc.)
   const global = useGlobalMetadata(db, isAuthReady);
 
-  // Helpful debug snapshot
   try {
     if (global && typeof global.metadata === 'object') {
       console.log('[GLOBAL SNAPSHOT]', {
@@ -506,8 +411,7 @@ const DataProvider = ({ children, firebaseServices, userId, isAuthReady, navigat
     }
   } catch {}
 
-  const isLoading =
-    pdp.isLoading || commitment.isLoading || planning.isLoading || global.isLoading;
+  const isLoading = pdp.isLoading || commitment.isLoading || planning.isLoading || global.isLoading;
   const error = pdp.error || commitment.error || planning.error || global.error;
 
   const hasPendingDailyPractice = useMemo(() => {
@@ -525,13 +429,10 @@ const DataProvider = ({ children, firebaseServices, userId, isAuthReady, navigat
       userId,
       isAuthReady,
       db,
-      // PDP
       updatePdpData: pdp.updatePdpData,
       saveNewPlan: pdp.saveNewPlan,
-      // Commitments + Planning
       updateCommitmentData: commitment.updateCommitmentData,
       updatePlanningData: planning.updatePlanningData,
-      // Global metadata updater (merge by default)
       updateGlobalMetadata: (data, opts) =>
         updateGlobalMetadata(db, data, {
           merge: true,
@@ -539,11 +440,9 @@ const DataProvider = ({ children, firebaseServices, userId, isAuthReady, navigat
           userId: user?.uid,
           ...(opts || {}),
         }),
-      // Access data
       pdpData: pdp.pdpData,
       commitmentData: commitment.commitmentData,
       planningData: planning.planningData,
-      // App
       isLoading,
       error,
       appId,
@@ -552,27 +451,11 @@ const DataProvider = ({ children, firebaseServices, userId, isAuthReady, navigat
       hasGeminiKey,
       GEMINI_MODEL,
       API_KEY,
-      // Prefer server-side tiers if present
-      LEADERSHIP_TIERS: global.metadata.LEADERSHIP_TIERS || LEADERSHIP_TIERS,
-      // Spread entire global metadata for screens
+      LEADERSHIP_TIERS: global.metadata.LEADERSHIP_TIERS || LEADERSHIP_TIERS_FALLBACK,
       ...global.metadata,
       hasPendingDailyPractice,
     }),
-    [
-      navigate,
-      user,
-      firebaseServices,
-      userId,
-      isAuthReady,
-      isLoading,
-      error,
-      pdp,
-      commitment,
-      planning,
-      global,
-      hasPendingDailyPractice,
-      db,
-    ]
+    [navigate, user, firebaseServices, userId, isAuthReady, isLoading, error, pdp, commitment, planning, global, hasPendingDailyPractice, db]
   );
 
   if (!isAuthReady) return null;
@@ -588,11 +471,7 @@ const DataProvider = ({ children, firebaseServices, userId, isAuthReady, navigat
     );
   }
 
-  return (
-    <AppServiceContext.Provider value={appServices}>
-      {children}
-    </AppServiceContext.Provider>
-  );
+  return <AppServiceContext.Provider value={appServices}>{children}</AppServiceContext.Provider>;
 };
 
 /* -----------------------------------------------------------------------------
@@ -616,10 +495,6 @@ function AuthPanel({ auth, onSuccess }) {
   const [statusMessage, setStatusMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
-  const NAVY = COLORS.NAVY;
-  const TEAL = COLORS.TEAL;
-  const ORANGE = COLORS.ORANGE;
-
   const handleAction = async () => {
     if (!auth || isLoading) return;
     setIsLoading(true);
@@ -628,7 +503,7 @@ function AuthPanel({ auth, onSuccess }) {
       if (mode === 'login') {
         await signInWithEmailAndPassword(auth, email, password);
       } else if (mode === 'signup') {
-        if (secretCode !== SECRET_SIGNUP_CODE) throw new Error('Invalid secret sign-up code.');
+        if (secretCode !== 'mock-code-123') throw new Error('Invalid secret sign-up code.');
         if (!name.trim()) throw new Error('Please enter your name.');
         const cred = await createUserWithEmailAndPassword(auth, email, password);
         await cred.user.updateProfile({ displayName: name.trim() });
@@ -646,6 +521,9 @@ function AuthPanel({ auth, onSuccess }) {
     }
   };
 
+  const NAVY = COLORS.NAVY;
+  const TEAL = COLORS.TEAL;
+
   const isReset = mode === 'reset';
   const isLogin = mode === 'login';
 
@@ -656,9 +534,7 @@ function AuthPanel({ auth, onSuccess }) {
           {mode === 'login' ? 'Sign In' : mode === 'signup' ? 'Create Account' : 'Reset Password'}
         </h2>
         <p className="text-sm text-gray-600 mb-6">
-          {isReset
-            ? 'Enter your email to receive a password reset link.'
-            : 'Log in to access your leadership development platform.'}
+          {isReset ? 'Enter your email to receive a password reset link.' : 'Log in to access your leadership platform.'}
         </p>
 
         <div className="space-y-4">
@@ -712,21 +588,13 @@ function AuthPanel({ auth, onSuccess }) {
               />
             )}
 
-            <button
-              type="submit"
-              disabled={isLoading}
-              className="w-full p-3 bg-[#47A88D] text-white rounded-lg hover:bg-[#349881] focus:ring-2 focus:ring-[#47A88D]"
-            >
+            <button type="submit" disabled={isLoading} className="w-full p-3 bg-[#47A88D] text-white rounded-lg hover:bg-[#349881] focus:ring-2 focus:ring-[#47A88D]">
               {mode === 'login' ? 'Sign In' : mode === 'signup' ? 'Create Account' : 'Send Reset Link'}
             </button>
           </form>
 
           {statusMessage && (
-            <p
-              className={`text-sm text-center font-medium mt-3 ${
-                statusMessage.includes('sent') ? `text-[${TEAL}]` : `text-[${ORANGE}]`
-              }`}
-            >
+            <p className={`text-sm text-center font-medium mt-3 ${statusMessage.includes('sent') ? `text-[${TEAL}]` : 'text-[#E04E1B]'}`}>
               {statusMessage}
             </p>
           )}
@@ -734,35 +602,17 @@ function AuthPanel({ auth, onSuccess }) {
 
         <div className="mt-6 border-t pt-4 border-gray-200 space-y-2">
           {mode !== 'signup' && (
-            <button
-              onClick={() => {
-                setMode('signup');
-                setStatusMessage('');
-              }}
-              className={`text-sm text-[${TEAL}] hover:text-[${COLORS.NAVY}] font-semibold block w-full`}
-            >
+            <button onClick={() => { setMode('signup'); setStatusMessage(''); }} className={`text-sm text-[${TEAL}] hover:text-[${COLORS.NAVY}] font-semibold block w-full`}>
               Need an account? Sign up
             </button>
           )}
           {mode !== 'login' && (
-            <button
-              onClick={() => {
-                setMode('login');
-                setStatusMessage('');
-              }}
-              className={`text-sm text-gray-500 hover:text-[${COLORS.NAVY}] block w-full`}
-            >
+            <button onClick={() => { setMode('login'); setStatusMessage(''); }} className={`text-sm text-gray-500 hover:text-[${COLORS.NAVY}] block w-full`}>
               Back to Sign In
             </button>
           )}
           {mode === 'login' && (
-            <button
-              onClick={() => {
-                setMode('reset');
-                setStatusMessage('');
-              }}
-              className={`text-sm text-gray-500 hover:text-[${COLORS.ORANGE}] block w-full`}
-            >
+            <button onClick={() => { setMode('reset'); setStatusMessage(''); }} className={`text-sm text-gray-500 hover:text-[${COLORS.ORANGE}] block w-full`}>
               Forgot Password?
             </button>
           )}
@@ -772,13 +622,7 @@ function AuthPanel({ auth, onSuccess }) {
   );
 }
 
-const NavSidebar = ({
-  currentScreen,
-  setCurrentScreen,
-  user,
-  closeMobileMenu,
-  isAuthRequired,
-}) => {
+const NavSidebar = ({ currentScreen, setCurrentScreen, user, closeMobileMenu, isAuthRequired }) => {
   const { auth } = useAppServices();
   const [isProfileOpen, setIsProfileOpen] = useState(false);
 
@@ -805,9 +649,7 @@ const NavSidebar = ({
     { screen: 'reflection', label: 'Executive ROI Report', icon: BarChart3 },
   ];
 
-  const communityPillarNav = [
-    { screen: 'community', label: 'Peer & Leader Circles', icon: Users, badge: 'New' },
-  ];
+  const communityPillarNav = [{ screen: 'community', label: 'Peer & Leader Circles', icon: Users, badge: 'New' }];
 
   const systemNav = [{ screen: 'app-settings', label: 'App Settings', icon: Settings }];
 
@@ -847,19 +689,16 @@ const NavSidebar = ({
         <button
           key={item.screen}
           onClick={() => handleNavigate(item.screen)}
-          className={`flex items-center w-full px-4 py-2.5 rounded-xl font-semibold relative transition-all duration-200 
-            ${
-              isActive
-                ? `bg-white text-[${NAVY}] shadow-lg transform translate-x-1 ring-2 ring-[${TEAL}]`
-                : `text-white hover:bg-[${TEAL}]/20 hover:text-white hover:shadow-md hover:scale-[1.02] bg-[${NAVY}]/5 border border-[${TEAL}]/10 `
-            }`}
+          className={`flex items-center w-full px-4 py-2.5 rounded-xl font-semibold relative transition-all duration-200 ${
+            isActive
+              ? `bg-white text-[${NAVY}] shadow-lg transform translate-x-1 ring-2 ring-[${TEAL}]`
+              : `text-white hover:bg-[${TEAL}]/20 hover:text-white hover:shadow-md hover:scale-[1.02] bg-[${NAVY}]/5 border border-[${TEAL}]/10 `
+          }`}
         >
           <Icon className={`w-5 h-5 mr-3 ${isActive ? `text-[${TEAL}]` : 'text-gray-200'}`} />
           <span className="flex-1 text-left">{item.label}</span>
           {item.badge && (
-            <span className={`ml-2 px-2 py-0.5 text-xs font-bold rounded-full bg-[${ORANGE}] text-white`}>
-              {item.badge}
-            </span>
+            <span className={`ml-2 px-2 py-0.5 text-xs font-bold rounded-full bg-[${ORANGE}] text-white`}>{item.badge}</span>
           )}
         </button>
       );
@@ -904,10 +743,7 @@ const NavSidebar = ({
               {user?.email || 'N/A'}
             </p>
             <p className="text-xs text-gray-400 break-words mb-4">UID: {user?.userId || 'N/A'}</p>
-            <button
-              onClick={handleSignOut}
-              className={`flex items-center w-full px-4 py-2 rounded-lg text-sm font-semibold transition-colors bg-[${ORANGE}] text-white hover:bg-red-700`}
-            >
+            <button onClick={handleSignOut} className={`flex items-center w-full px-4 py-2 rounded-lg text-sm font-semibold transition-colors bg-[${ORANGE}] text-white hover:bg-red-700`}>
               <LogOut className="w-4 h-4 mr-2" /> Sign Out
             </button>
           </div>
@@ -920,35 +756,16 @@ const NavSidebar = ({
 const ScreenRouter = ({ currentScreen, navParams, navigate }) => {
   const Component = ScreenMap[currentScreen] || ScreenMap.dashboard;
 
-  if (currentScreen === 'prof-dev-plan') {
-    return <Component key={currentScreen} initialScreen={currentScreen} />;
-  }
-  if (currentScreen === 'daily-practice') {
-    return (
-      <Component key={currentScreen} initialGoal={navParams.initialGoal} initialTier={navParams.initialTier} />
-    );
-  }
-  if (currentScreen === 'app-settings') {
-    return <AppSettingsScreen key={currentScreen} navigate={navigate} />;
-  }
-  if (currentScreen === 'data-maintenance') {
-    return <Component key={currentScreen} navigate={navigate} />;
-  }
-  if (currentScreen === 'debug-data') {
-    return <Component key={currentScreen} navigate={navigate} />;
-  }
+  if (currentScreen === 'prof-dev-plan') return <Component key={currentScreen} initialScreen={currentScreen} />;
+  if (currentScreen === 'daily-practice')
+    return <Component key={currentScreen} initialGoal={navParams.initialGoal} initialTier={navParams.initialTier} />;
+  if (currentScreen === 'app-settings') return <AppSettingsScreen key={currentScreen} navigate={navigate} />;
+  if (currentScreen === 'data-maintenance') return <Component key={currentScreen} navigate={navigate} />;
+  if (currentScreen === 'debug-data') return <Component key={currentScreen} navigate={navigate} />;
   return <Component key={currentScreen} />;
 };
 
-const AppContent = ({
-  currentScreen,
-  setCurrentScreen,
-  user,
-  navParams,
-  isMobileOpen,
-  setIsMobileOpen,
-  isAuthRequired,
-}) => {
+const AppContent = ({ currentScreen, setCurrentScreen, user, navParams, isMobileOpen, setIsMobileOpen, isAuthRequired }) => {
   const closeMobileMenu = useCallback(() => setIsMobileOpen(false), [setIsMobileOpen]);
   const { navigate } = useAppServices();
 
@@ -992,78 +809,43 @@ const AppContent = ({
    ROOT APP
 ----------------------------------------------------------------------------- */
 const App = ({ initialState }) => {
-  const [user, setUser] = useState(
-    DEBUG_MODE ? { name: 'Debugger', userId: 'mock-debugger-123', email: 'debug@leaderreps.com' } : null
-  );
+  const [user, setUser] = useState(null);
   const [currentScreen, setCurrentScreen] = useState(initialState?.screen || 'dashboard');
   const [firebaseServices, setFirebaseServices] = useState({ db: null, auth: null });
-  const [userId, setUserId] = useState(DEBUG_MODE ? 'mock-debugger-123' : null);
-  const [isAuthReady, setIsAuthReady] = useState(DEBUG_MODE);
+  const [userId, setUserId] = useState(null);
+  const [isAuthReady, setIsAuthReady] = useState(false);
   const [navParams, setNavParams] = useState(initialState?.params || {});
-  const [authRequired, setAuthRequired] = useState(!DEBUG_MODE);
+  const [authRequired, setAuthRequired] = useState(true);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
 
   const [initStage, setInitStage] = useState('init');
   const [initError, setInitError] = useState('');
 
-  // Stable navigate reference
   const navigate = useCallback((screen, params = {}) => {
     setNavParams(typeof params === 'object' && params !== null ? params : {});
     setCurrentScreen(screen);
   }, []);
 
-  // Expose Gemini caller for services that may forward
+  // Expose Gemini caller + navigate for debugging
   useEffect(() => {
     if (typeof window !== 'undefined') window.__callSecureGeminiAPI = callSecureGeminiAPI;
-    return () => {
-      if (typeof window !== 'undefined') delete window.__callSecureGeminiAPI;
-    };
+    return () => { if (typeof window !== 'undefined') delete window.__callSecureGeminiAPI; };
   }, []);
-
-  // Expose navigate for debugging links
   useEffect(() => {
     if (typeof window !== 'undefined') window.__appNavigate = navigate;
-    return () => {
-      if (typeof window !== 'undefined') delete window.__appNavigate;
-    };
+    return () => { if (typeof window !== 'undefined') delete window.__appNavigate; };
   }, [navigate]);
 
-  // Firebase init / auth resolution
+  // Firebase init/auth
   useEffect(() => {
     let app, firestore, authentication;
     let unsubscribeAuth = null;
     let timerId = null;
 
-    if (DEBUG_MODE) {
-      try {
-        const firebaseConfig = { apiKey: 'mock', authDomain: 'mock', projectId: 'mock' };
-        app = initializeApp(firebaseConfig);
-        firestore = getFirestore(app);
-        authentication = getAuth(app);
-        setFirebaseServices({ db: firestore, auth: authentication });
-      } catch {
-        try {
-          const existing = getApp();
-          firestore = getFirestore(existing);
-          authentication = getAuth(existing);
-          setFirebaseServices({ db: firestore, auth: authentication });
-        } catch {}
-      }
-      setIsAuthReady(true);
-      setInitStage('ok');
-      return;
-    }
-
-    let isInitialized = false;
-    const FAST_TIMEOUT = 500;
-
     const finalizeInit = (success = true, errorMsg = '') => {
-      if (isInitialized) return;
-      isInitialized = true;
       if (timerId) clearTimeout(timerId);
-      if (success) {
-        setInitStage('ok');
-      } else {
+      if (success) setInitStage('ok');
+      else {
         console.error('Auth Finalization Error:', errorMsg);
         setInitError(errorMsg || 'Authentication service failed to initialize.');
         setInitStage('error');
@@ -1087,12 +869,10 @@ const App = ({ initialState }) => {
       setLogLevel('debug');
       setFirebaseServices({ db: firestore, auth: authentication });
 
+      // Render login quickly even if auth callback is a little slow
       timerId = setTimeout(() => {
-        if (!user && initStage === 'init') {
-          console.warn('Auth check timed out (0.5s). Rendering login screen proactively.');
-          finalizeInit(true);
-        }
-      }, FAST_TIMEOUT);
+        if (!user) finalizeInit(true);
+      }, 500);
 
       unsubscribeAuth = onAuthStateChanged(authentication, (currentUser) => {
         if (timerId) clearTimeout(timerId);
@@ -1122,33 +902,28 @@ const App = ({ initialState }) => {
     }
   }, []); // mount once
 
-  // No forced sign-out on unload (let Firebase manage persistence)
-  useEffect(() => () => {}, []);
-
-  if (!DEBUG_MODE) {
-    if (initStage === 'init') {
-      return (
-        <div className="min-h-screen flex items-center justify-center bg-gray-100">
-          <div className="flex flex-col items-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-4 border-t-4 border-gray-200 border-t-[#47A88D] mb-3"></div>
-            <p className="text-[#002E47] font-semibold">Initializing Authentication…</p>
-          </div>
+  if (initStage === 'init') {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-100">
+        <div className="flex flex-col items-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-4 border-t-4 border-gray-200 border-t-[#47A88D] mb-3"></div>
+          <p className="text-[#002E47] font-semibold">Initializing Authentication…</p>
         </div>
-      );
-    }
-    if (initStage === 'error') return <ConfigError message={initError} />;
+      </div>
+    );
+  }
+  if (initStage === 'error') return <ConfigError message={initError} />;
 
-    if (!user && isAuthReady) {
-      return (
-        <AuthPanel
-          auth={firebaseServices.auth}
-          onSuccess={() => {
-            setAuthRequired(false);
-            setTimeout(() => navigate('dashboard'), 0);
-          }}
-        />
-      );
-    }
+  if (!user && isAuthReady) {
+    return (
+      <AuthPanel
+        auth={firebaseServices.auth}
+        onSuccess={() => {
+          setAuthRequired(false);
+          setTimeout(() => navigate('dashboard'), 0);
+        }}
+      />
+    );
   }
 
   return (
@@ -1184,14 +959,11 @@ const App = ({ initialState }) => {
 };
 
 export default function Root(props) {
-  const forceSanity =
-    typeof window !== 'undefined' && /[?&]sanity=1/.test(window.location.search);
+  const forceSanity = typeof window !== 'undefined' && /[?&]sanity=1/.test(window.location.search);
   if (false || forceSanity) {
     return (
       <div style={{ padding: 32, fontSize: 18, lineHeight: 1.4 }}>
-        <div>
-          ✅ <strong>React mounted (Sanity Check)</strong>
-        </div>
+        <div>✅ <strong>React mounted (Sanity Check)</strong></div>
       </div>
     );
   }
