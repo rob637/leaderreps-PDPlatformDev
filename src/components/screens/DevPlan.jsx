@@ -573,17 +573,22 @@ const TrackerDashboardView = ({ data, updatePdpData, saveNewPlan, userId, naviga
     };
 
     const handleResetPlan = async () => {
-        // CRITICAL FIX: Save an empty Map {} to the document instead of a function/null
         setIsSaving(true);
         try {
-            // 1. Save empty Map {} to Firestore to clear the document
-            await updatePdpData({}); 
-            
-            // 2. Force a page reload to trigger the app router to read the empty state 
-            window.location.reload(); 
-        } catch(e) {
+            // Overwrite critical fields so the router treats it as "no plan"
+            await updatePdpData({
+                plan: [],
+                assessment: null,
+                currentMonth: 1,
+                progressScans: [],
+                latestScenario: null,
+                lastUpdate: new Date().toISOString(),
+            });
+            // Return to generator flow; router will route correctly
+            navigate('prof-dev-plan');
+        } catch (e) {
             console.error("Failed to reset plan:", e);
-            alert("Failed to reset plan data. Check database permissions or refresh the page manually.");
+            alert("Failed to reset plan data. Check database permissions.");
         } finally {
             setIsSaving(false);
         }
@@ -1141,16 +1146,16 @@ export const ProfDevPlanScreen = ({ initialScreen }) => {
         currentView = 'loading';
     } else if (error) {
         currentView = 'error';
-    } else if (planExistsAndIsValid) { 
-        // Go to tracker ONLY if the new plan structure is confirmed
+    } else if (generatedPlanData || initialScreen === 'prof-dev-plan-review') {
+        // Prefer the freshly generated plan (review) if present or explicitly requested
+        currentView = 'review';
+    } else if (planExistsAndIsValid) {
+        // Fall back to whatever is saved in Firestore
         currentView = 'tracker';
-    } else if (generatedPlanData || initialScreen === 'prof-dev-plan-review' || (pdpData && !planExistsAndIsValid)) { 
-        // If the old, empty document exists (pdpData is {} or {plan_goals: []}) OR if we just generated a new plan
-        currentView = 'generator'; 
     } else {
-        currentView = 'generator'; // Default to generator for new users
+        // No plan yet -> generator
+        currentView = 'generator';
     }
-    
     // CRITICAL: Updated generatePlanData to take the library as an argument
     const generatePlanDataWrapper = useCallback((assessment, ownerUid) => {
         // Pass the contentLibrary (loaded from service or fallback) to the generator function
