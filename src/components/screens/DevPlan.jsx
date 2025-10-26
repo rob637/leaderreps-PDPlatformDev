@@ -511,7 +511,7 @@ const TrackerDashboardView = ({ data, updatePdpData, saveNewPlan, userId, naviga
 
         setBriefingLoading(true);
         const currentTier = LEADERSHIP_TIERS[plan.tier];
-        const rating = assessment.selfRatings?.[currentTier] || 5; 
+        const rating = assessment.selfRatings?.[plan.tier] || 5; 
 
         const systemPrompt = `You are a concise Executive Coach. Analyze the user's current Roadmap phase (fitness training). Given their focus tier (${currentTier.name}) and their initial self-rating (${rating}/10), provide: 1) A 1-sentence **Executive Summary** of the goal (the rep/skill). 2) A 1-sentence **Coaching Nudge** on how to prioritize the month's learning based on their skill gap. Use bold markdown for key phrases.`;
 
@@ -576,10 +576,10 @@ const TrackerDashboardView = ({ data, updatePdpData, saveNewPlan, userId, naviga
         // CRITICAL FIX: Save an empty Map {} to the document instead of a function/null
         setIsSaving(true);
         try {
-            // 1. Save empty Map {} to Firestore to clear the document
+            // Save empty Map {} to Firestore to clear the document
             await updatePdpData({}); 
             
-            // 2. Force a page reload to trigger the app router to read the empty state 
+            // Force a page reload to trigger the app router to read the empty state 
             // and correctly switch to the generator view.
             window.location.reload(); 
         } catch(e) {
@@ -895,7 +895,7 @@ const PlanGeneratorView = ({ userId, saveNewPlan, isLoading, error, navigate, se
         // 1. Map answers (Likert 1-5) to required structure
         const selfRatings = {};
         ASSESSMENT_QUESTIONS.forEach(q => {
-            // The score ID is the question ID (1-10)
+            // The score ID is the question ID (1-5)
             selfRatings[q.id] = assessmentAnswers[q.id]; 
         });
         
