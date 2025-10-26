@@ -784,7 +784,7 @@ const ScreenRouter = ({ currentScreen, navParams, navigate }) => { /* ... */
   if (currentScreen === 'daily-practice')
     return <Component key={currentScreen} initialGoal={navParams.initialGoal} initialTier={navParams.initialTier} />;
   if (currentScreen === 'app-settings') return <AppSettingsScreen key={currentScreen} navigate={navigate} />;
-  if (currentScreen === 'data-maintenance') return <Component key={currentDDScreen} navigate={navigate} />;
+if (currentScreen === 'data-maintenance') return <Component key={currentScreen} navigate={navigate} />;
   if (currentScreen === 'debug-data') return <Component key={currentScreen} navigate={navigate} />;
   return <Component key={currentScreen} />;
 };
