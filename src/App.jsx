@@ -57,7 +57,8 @@ const GEMINI_MODEL = 'gemini-2.5-flash'; /* ... other Gemini constants ... */ co
 ----------------------------------------------------------------------------- */
 import {
   Home, Zap, ShieldCheck, TrendingUp, Mic, BookOpen, Settings, User, LogOut, CornerRightUp, Clock, Briefcase, Target, Users, BarChart3, Globe, Code, Bell, Lock, Download, Trash2, Mail, Link, Menu, Trello, Film, Dumbbell, Cpu,
-  ChevronLeft, ChevronRight // <-- Icons for sidebar toggle
+  ChevronLeft, ChevronRight, // <-- Icons for sidebar toggle
+  Loader // <-- Added Loader icon
 } from 'lucide-react';
 // ... (IconMap, SECRET_SIGNUP_CODE, LEADERSHIP_TIERS_FALLBACK remain unchanged) ...
 const IconMap = {}; const SECRET_SIGNUP_CODE = 'mock-code-123'; const LEADERSHIP_TIERS_FALLBACK = { /* ... tiers ... */ };
@@ -106,17 +107,78 @@ const AppSettingsScreen = ({ navigate }) => {
 const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id'; const DataProvider = ({ children, firebaseServices, userId, isAuthReady, navigate, user }) => { /* ... data provider logic ... */ };
 
 /* -----------------------------------------------------------------------------
-   NAV + ROUTER (Unchanged components)
+   NAV + ROUTER (*** UPDATED AppContent Fallback ***)
 ----------------------------------------------------------------------------- */
 function ConfigError({ message }) { /* ... unchanged ... */ }
 function AuthPanel({ auth, onSuccess }) { /* ... unchanged ... */ }
 const NavSidebar = ({ currentScreen, setCurrentScreen, user, closeMobileMenu, isAuthRequired, isCollapsed, toggleCollapse }) => { /* ... sidebar jsx ... */ };
 const ScreenRouter = ({ currentScreen, navParams, navigate }) => { /* ... unchanged ... */ };
-const AppContent = ({ currentScreen, setCurrentScreen, user, navParams, isMobileOpen, setIsMobileOpen, isAuthRequired, isSidebarCollapsed, toggleSidebar }) => { /* ... app content jsx ... */ };
 
+// --- UPDATED AppContent ---
+const AppContent = ({
+  currentScreen,
+  setCurrentScreen,
+  user,
+  navParams,
+  isMobileOpen,
+  setIsMobileOpen,
+  isAuthRequired,
+  isSidebarCollapsed, // Receives state
+  toggleSidebar // Receives toggle function
+}) => {
+  const closeMobileMenu = useCallback(() => setIsMobileOpen(false), [setIsMobileOpen]);
+  const { navigate } = useAppServices();
+
+  return (
+    <div className="flex min-h-screen bg-gray-100 font-sans antialiased">
+      {/* Sidebar (Desktop) */}
+      <NavSidebar
+        currentScreen={currentScreen}
+        setCurrentScreen={setCurrentScreen}
+        user={user}
+        closeMobileMenu={closeMobileMenu} // Doesn't really apply here
+        isAuthRequired={isAuthRequired}
+        isCollapsed={isSidebarCollapsed} // Passed down
+        toggleCollapse={toggleSidebar} // Passed down
+      />
+
+      {/* Main Content Area */}
+      <main className={`flex-1 transition-all duration-300 ease-in-out ${isSidebarCollapsed ? 'md:pl-16' : 'md:pl-64'}`}>
+        {/* Mobile Header (unchanged) */}
+        <div className="md:hidden sticky top-0 bg-white/95 backdrop-blur-sm shadow-md p-4 flex justify-between items-center z-10">
+            <h1 className="text-xl font-bold text-[#002E47]">LeaderReps</h1>
+            <button onClick={() => setIsMobileOpen(true)} className="p-2 text-[#002E47] hover:text-[#47A88D]">
+                <Menu className="w-6 h-6" />
+            </button>
+        </div>
+
+        {/* --- UPDATED Suspense Fallback --- */}
+        <Suspense fallback={
+            <div className="min-h-[calc(100vh-64px)] flex items-center justify-center bg-gray-100"> {/* Adjusted min-height */}
+              <div className="flex flex-col items-center">
+                <Loader className="animate-spin text-[#47A88D] h-10 w-10 mb-3" /> {/* Use Loader icon */}
+                <p className="text-[#002E47] font-semibold">Loading Screen...</p>
+              </div>
+            </div>
+          }>
+          <ScreenRouter currentScreen={currentScreen} navParams={navParams} navigate={navigate} />
+        </Suspense>
+        {/* --- END UPDATE --- */}
+
+      </main>
+
+      {/* Mobile Sidebar (Overlay - unchanged logic) */}
+       {isMobileOpen && (
+            <div className="fixed inset-0 z-50 flex md:hidden">
+                {/* ... mobile sidebar overlay ... */}
+            </div>
+        )}
+    </div>
+  );
+};
 
 /* -----------------------------------------------------------------------------
-   ROOT APP (*** UPDATED Suspense Fallback ***)
+   ROOT APP (Unchanged - already starts collapsed)
 ----------------------------------------------------------------------------- */
 const App = ({ initialState }) => {
   const [user, setUser] = useState(null);
@@ -162,12 +224,12 @@ const App = ({ initialState }) => {
       navigate={navigate}
       user={user}
     >
-      {/* --- UPDATED Suspense Fallback --- */}
+      {/* --- Restored Fallback in outer Suspense --- */}
       <Suspense fallback={
           <div className="min-h-screen flex items-center justify-center bg-gray-100">
             <div className="flex flex-col items-center">
-              <div className="animate-spin rounded-full h-12 w-12 border-4 border-t-4 border-gray-200 border-t-[#47A88D] mb-3"></div>
-              <p className="text-[#002E47] font-semibold">Loading App Content...</p>
+              <Loader className="animate-spin text-[#47A88D] h-12 w-12 mb-3" /> {/* Use Loader icon */}
+              <p className="text-[#002E47] font-semibold">Loading App Core...</p> {/* Differentiate text */}
             </div>
           </div>
         }>
