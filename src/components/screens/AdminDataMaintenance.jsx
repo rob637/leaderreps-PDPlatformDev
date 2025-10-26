@@ -317,11 +317,6 @@ export default function AdminDataMaintenance() {
     window.scrollTo(0, 0);
   }, []); 
 
-  useEffect(() => { 
-    if (!activeArray && arrayFields.length) setActiveArray(arrayFields[0]); 
-    // Cleanup live listener when path type changes or component unmounts
-    return () => liveUnsub && liveUnsub();
-  }, [arrayFields, activeArray]); // Add liveUnsub to cleanup effect dependencies
 
   const explain = isDocumentPath(path)
     ? "Path type: 📝 Document — read/listen/edit/replace/delete a single record."
@@ -336,11 +331,35 @@ export default function AdminDataMaintenance() {
     try {
       liveUnsub && liveUnsub(); // Stop any current listener
       setLiveUnsub(null);
+      
       const p = normalizePath(path, uid);
       const ref = doc(db, ...pathParts(p));
       const snap = await getDoc(ref);
       setDocExists(snap.exists());
-      setDocJson(pretty(snap.exists() ? snap.data() : {}));
+      
+      let data = snap.exists() ? snap.data() : {};
+      
+      // Reset active array before reading new data
+      setActiveArray("");
+      
+      // CRITICAL FIX: Aggressively auto-select the most relevant array field
+      if (snap.exists() && typeof data === 'object' && data !== null) {
+        
+        const currentKeys = Object.keys(data);
+        const arrayKey = currentKeys.find(k => Array.isArray(data[k]));
+        
+        // Auto-select the first (or only) top-level array field found
+        if (arrayKey) {
+            setActiveArray(arrayKey);
+        } else if (currentKeys.length === 0) {
+            // Document exists but is empty, clear editor
+            setDocJson(pretty({}));
+            setStatus("✅ Read successful (Document is empty).");
+            return;
+        }
+      }
+      
+      setDocJson(pretty(data));
       setStatus("✅ Read successful.");
     } catch (e) { setErr(String(e)); setStatus("❌ Error"); }
   };
@@ -353,7 +372,12 @@ export default function AdminDataMaintenance() {
       const ref = doc(db, ...pathParts(p));
       const unsub = onSnapshot(ref, (snap) => {
         setDocExists(snap.exists());
-        setDocJson(pretty(snap.exists() ? snap.data() : {}));
+        
+        let data = snap.exists() ? snap.data() : {};
+        // Note: We don't change activeArray in the snapshot handler to avoid 
+        // interrupting user editing if they switch fields manually.
+        
+        setDocJson(pretty(data));
         setStatus("👂 Live listening...");
       }, (e) => { setErr(String(e)); setStatus("❌ Error"); });
       setLiveUnsub(() => unsub);
