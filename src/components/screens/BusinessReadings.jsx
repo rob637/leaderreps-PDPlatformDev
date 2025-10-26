@@ -49,7 +49,8 @@ function getDeepDataSignature(booksObject) {
     if (!booksObject) return '';
     // This creates a string that changes if: a) a category is added/removed, or b) the total number of books changes.
     try {
-        return Object.keys(booksObject).sort().join(',') + '-' + Object.values(booksObject).flat().length;
+        // FIX: Ensure Object.values is only called on a non-null object
+        return Object.keys(booksObject).sort().join(',') + '-' + Object.values(booksObject || {}).flat().length;
     } catch {
         return 'error';
     }
@@ -351,14 +352,15 @@ function BookListStable({
 }) {
     // CRITICAL FIX 4: Check if there are any books in the original data structure
     const totalBookCount = useMemo(() => {
-        return Object.values(filteredBooks).flat().length;
+        // Use Object.values(filteredBooks || {}) to safely handle filteredBooks being null/undefined
+        return Object.values(filteredBooks || {}).flat().length;
     }, [filteredBooks]);
 
     // Check if the filtering process returned an empty set, but there are books loaded
     const allBooksLoaded = totalBookCount > 0;
     const filteredIsEmpty = totalBookCount === 0 && (filters.search || filters.complexity !== 'All' || filters.maxDuration !== 300);
 
-    const isDataEmpty = Object.keys(filteredBooks).length === 0;
+    const isDataEmpty = Object.keys(filteredBooks || {}).length === 0 && !filteredIsEmpty; // Added defensive check
 
   return (
     <div className="space-y-10">
@@ -399,7 +401,7 @@ function BookListStable({
       </div>
       
       {/* CRITICAL FIX 5: Display a single, clear message if no books are loaded/found */}
-      {isDataEmpty && !filteredIsEmpty && (
+      {isDataEmpty && (
            <div className="p-10 rounded-2xl border-2 shadow-xl bg-white text-center" style={{ borderColor: COLORS.SUBTLE }}>
                 <AlertTriangle className='w-10 h-10 mx-auto mb-4' style={{ color: COLORS.ORANGE }}/>
                 <h3 className="text-xl font-bold" style={{ color: COLORS.NAVY }}>No Books Available</h3>
@@ -425,11 +427,12 @@ function BookListStable({
                  style={{ background: COLORS.OFF_WHITE, borderColor: COLORS.SUBTLE }}>
               <div className="p-6" style={{ background: COLORS.NAVY }}>
                 <h3 className="text-2xl font-bold flex items-center gap-2" style={{ color: COLORS.OFF_WHITE }}>{tier}</h3>
-                <p className="text-base mt-1" style={{ color: '#E5E7EB' }}>Foundational books for this competency. ({books.length} available)</p>
+                <p className="text-base mt-1" style={{ color: '#E5E7EB' }}>Foundational books for this competency. ({Array.isArray(books) ? books.length : 0} available)</p>
               </div>
 
               <div className="p-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                {(books || []).map((book) => {
+                {/* CRITICAL FIX 6: Explicitly ensure books is an array before mapping. */}
+                {Array.isArray(books) ? books.map((book) => {
                   const c = COMPLEXITY_MAP[book.complexity] || COMPLEXITY_MAP.Medium;
                   const ComplexityIcon = c.icon;
                   const isSaved = !!savedBooks[book.id];
@@ -498,7 +501,7 @@ function BookListStable({
                       </button>
                     </div>
                   );
-                })}
+                }) : null} {/* If books is not an array, render nothing */}
               </div>
 
               {/* Removed the redundant 'No books match current filters' message here */}
@@ -649,6 +652,7 @@ export default function BusinessReadingsScreen() {
   } = services;
 
   // CRITICAL FIX 1: Ensure allBooks reacts to the READING_CATALOG_SERVICE changing.
+  // CRITICAL FIX 7: Default to an empty object if READING_CATALOG_SERVICE is null/undefined to prevent runtime errors when destructuring.
   const allBooks = READING_CATALOG_SERVICE || MOCK_ALL_BOOKS_FALLBACK; 
 
   // NEW: Deep dependency for the useMemo below
@@ -693,10 +697,11 @@ export default function BusinessReadingsScreen() {
   const filteredBooks = useMemo(() => {
     // CRITICAL FIX 3: Base the filtering logic on a stable reference (allBooks)
     // The dependency array now correctly tracks changes to allBooks.
-    if (Object.keys(allBooks).length === 0) return {}; 
+    // CRITICAL FIX 8: Safely handle if allBooks is null/undefined/non-object.
+    if (!allBooks || typeof allBooks !== 'object') return {}; 
 
     const flat = Object.entries(allBooks).flatMap(([tier, books]) =>
-      (books || []).map(b => ({ ...b, tier }))
+      (Array.isArray(books) ? books : []).map(b => ({ ...b, tier }))
     );
     const s = (filters.search || '').toLowerCase();
 
@@ -719,7 +724,7 @@ export default function BusinessReadingsScreen() {
     (async () => {
       if (!selectedBook) { setHtmlFlyer(''); setIsFlyerLoading(false); return; }
       
-      const tierKey = selectedTier || Object.keys(allBooks).find(k => (allBooks[k] || []).some(b => b.id === selectedBook.id)) || 'Strategy & Execution';
+      const tierKey = selectedTier || Object.keys(allBooks).find(k => (Array.isArray(allBooks[k]) ? allBooks[k] : []).some(b => b.id === selectedBook.id)) || 'Strategy & Execution';
       
       // Start loading
       setIsFlyerLoading(true);

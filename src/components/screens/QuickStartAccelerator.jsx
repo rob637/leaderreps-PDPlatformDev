@@ -84,7 +84,8 @@ const LIS_MOCK_CRITIQUE = `## Leadership Identity Audit Score: 75/100
    LISAuditorView (Step-by-Step LIS Creation)
 ========================================================= */
 const LISAuditorView = ({ setQuickStartView }) => {
-    const { hasGeminiKey, callSecureGeminiAPI, GEMINI_MODEL } = useAppServices();
+    // We import GEMINI_MODEL but will override it in the API call for speed.
+    const { hasGeminiKey, callSecureGeminiAPI, GEMINI_MODEL } = useAppServices(); 
     
     // Initial draft from the source file
     const [lisDraft, setLisDraft] = useState('I am a dedicated leader who always tries to do the right thing for my team and my company. I believe in hard work.');
@@ -118,7 +119,9 @@ const LISAuditorView = ({ setQuickStartView }) => {
             const payload = {
                 contents: [{ role: "user", parts: [{ text: userQuery }] }],
                 systemInstruction: { parts: [{ text: systemPrompt }] },
-                model: GEMINI_MODEL,
+                // 👇 OPTIMIZATION FOR SPEED: Use 'gemini-2.5-flash' for faster response 
+                // on simple text generation/critique tasks.
+                model: 'gemini-2.5-flash',
             };
 
             const result = await callSecureGeminiAPI(payload);

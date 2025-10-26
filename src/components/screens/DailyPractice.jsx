@@ -618,8 +618,8 @@ const CommitmentSelectorView = ({ setView, initialGoal, initialTier, tierMeta, c
         );
     };
 
-    // CRITICAL: New handler to save commitment data
-    const handleAddCommitment = (item, source) => { 
+    // CRITICAL FIX: Refactor to be an async function with proper try/catch/finally
+    const handleAddCommitment = async (item, source) => { 
         if (!linkedGoal || linkedGoal === initialLinkedGoalPlaceholder || !linkedTier) {
             alert("Please select a Goal and Tier before adding a commitment.");
             return;
@@ -637,22 +637,23 @@ const CommitmentSelectorView = ({ setView, initialGoal, initialTier, tierMeta, c
             duration: item.duration || 0,
         };
 
-        updateCommitmentData(data => ({
-            ...data,
-            active_commitments: [...(data?.active_commitments || []), newCommitment]
-        }))
-        .then(() => {
+        try {
+            await updateCommitmentData(data => ({
+                ...data,
+                active_commitments: [...(data?.active_commitments || []), newCommitment]
+            }));
+            
             setIsSaving(false);
             setCustomCommitment('');
             setIsCustomCommitmentSaved(source === 'custom');
             if (source === 'custom') setTimeout(() => setIsCustomCommitmentSaved(false), 3000);
-            if (source !== 'custom') alert(`Added "${newCommitment.text}" to your scorecard!`);
-        })
-        .catch(e => {
+            if (source !== 'custom') console.log(`Added "${newCommitment.text}" to your scorecard!`);
+            
+        } catch(e) {
             console.error("Failed to add commitment:", e);
             setIsSaving(false);
-            alert("Failed to save commitment. Check the database connection.");
-        });
+            alert("Failed to save commitment. Check the database connection."); // Keep existing user-facing error
+        }
     };
     
     // Wire the custom commitment save to the main handler
@@ -1350,12 +1351,17 @@ useEffect(() => {
   const handleLogCommitment = async (id, status) => {
     setIsSaving(true);
     
-    await updateCommitmentData(data => {
-        const updatedCommitments = data.active_commitments.map(c => 
-            c.id === id ? { ...c, status: status } : c
-        );
-        return { ...data, active_commitments: updatedCommitments }; // CRITICAL FIX 7: Spread ...data here
-    });
+    try {
+        await updateCommitmentData(data => {
+            const updatedCommitments = data.active_commitments.map(c => 
+                c.id === id ? { ...c, status: status } : c
+            );
+            return { ...data, active_commitments: updatedCommitments };
+        });
+    } catch (e) {
+        console.error("Failed to log commitment status:", e);
+        alert("Failed to log commitment status. Please try again.");
+    }
     
     setIsSaving(false);
     
@@ -1376,10 +1382,15 @@ useEffect(() => {
         return;
     }
     
-    await updateCommitmentData(data => {
-        const updatedCommitments = data.active_commitments.filter(c => c.id !== id);
-        return { ...data, active_commitments: updatedCommitments }; // CRITICAL FIX 8: Spread ...data here
-    });
+    try {
+        await updateCommitmentData(data => {
+            const updatedCommitments = data.active_commitments.filter(c => c.id !== id);
+            return { ...data, active_commitments: updatedCommitments }; 
+        });
+    } catch (e) {
+        console.error("Failed to remove commitment:", e);
+        alert("Failed to remove commitment. Please try again.");
+    }
     
     setIsSaving(false);
   };
@@ -1388,8 +1399,13 @@ useEffect(() => {
     setIsSaving(true);
     setIsReflectionSaved(false); 
     
-    await updateCommitmentData(data => ({ ...data, reflection_journal: reflection }));
-    
+    try {
+        await updateCommitmentData(data => ({ ...data, reflection_journal: reflection }));
+    } catch (e) {
+        console.error("Failed to save reflection:", e);
+        alert("Failed to save reflection. Please try again.");
+    }
+
     setIsSaving(false);
     setIsReflectionSaved(true); 
     setTimeout(() => setIsReflectionSaved(false), 3000);
