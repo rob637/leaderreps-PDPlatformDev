@@ -1,32 +1,20 @@
-// src/components/screens/AdminDataMaintenance.jsx
-// Admin Data Maintenance — reads/writes Firestore metadata via useAppServices
-
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useAppServices } from '../../services/useAppServices.jsx';
+import { getFirestore, doc, onSnapshot } from 'firebase/firestore';
 import { ChevronsLeft, AlertTriangle, Save, Lock, Cpu, RotateCcw } from 'lucide-react';
 
-// Simple admin PIN gate (you can swap to env/config)
 const ADMIN_PASSWORD = '7777';
 
 const JSONEditor = ({ label, data, setData, isSaving, setModified }) => {
-  // Always stringify an object — avoid crashing on undefined/null/array
   const safeData = data && typeof data === 'object' && !Array.isArray(data) ? data : {};
-
-  // The “source of truth” text derived from clean props
   const cleanText = useMemo(() => {
-    try {
-      return JSON.stringify(safeData, null, 2);
-    } catch {
-      return '{}';
-    }
+    try { return JSON.stringify(safeData, null, 2); } catch { return '{}'; }
   }, [safeData]);
 
-  // Local editor state
   const [jsonText, setJsonText] = useState(cleanText);
   const [isError, setIsError] = useState(false);
   const userHasTypedRef = useRef(false);
 
-  // Keep editor in sync with new incoming data until the user types
   useEffect(() => {
     if (!userHasTypedRef.current) {
       setJsonText(cleanText);
@@ -39,7 +27,6 @@ const JSONEditor = ({ label, data, setData, isSaving, setModified }) => {
     setJsonText(t);
     userHasTypedRef.current = true;
     setModified?.(true);
-
     try {
       const parsed = JSON.parse(t);
       setData(parsed);
@@ -96,11 +83,33 @@ const JSONEditor = ({ label, data, setData, isSaving, setModified }) => {
   );
 };
 
+// Helper to flatten reading catalog doc {Category: [items]} -> array rows
+function flattenReadingCatalog(raw) {
+  if (!raw || typeof raw !== 'object') return [];
+  const skip = new Set(['_meta', 'catalog_data']);
+  const rows = [];
+  for (const [category, list] of Object.entries(raw)) {
+    if (skip.has(category)) continue;
+    if (!Array.isArray(list)) continue;
+    for (const it of list) {
+      rows.push({
+        category,
+        id: it.id || `${category}-${it.title || 'untitled'}`,
+        title: it.title || '',
+        author: it.author || '',
+        duration: it.duration ?? '',
+        complexity: it.complexity || '',
+        focus: it.focus || '',
+        theme: it.theme || '',
+      });
+    }
+  }
+  return rows;
+}
+
 export default function AdminDataMaintenance() {
-  // Pull metadata + actions from the shared service hook
   const services = useAppServices();
 
-  // Readables (use whatever your hook exposes; these names match your logs)
   const {
     GLOBAL_SETTINGS,
     LEADERSHIP_TIERS,
@@ -109,28 +118,32 @@ export default function AdminDataMaintenance() {
     VIDEO_CATALOG,
     LEADERSHIP_DOMAINS,
 
+    // these may or may not include category arrays depending on hook implementation
     READING_CATALOG_SERVICE,
     RESOURCE_LIBRARY,
 
-    // Actions
     writeConfigDoc,
     writeReadingCatalogDoc,
     reloadMetadata,
 
-    // Saving flags (optional, used to flip button states/spinners)
     isSavingConfig,
     isSavingCatalog,
   } = services || {};
 
-  // If your hook exposes a ready/loading flag, you can use it here
-  // Otherwise we infer “ready” if at least one of the expected keys exists.
-  const metadataReady =
-    !!(GLOBAL_SETTINGS || LEADERSHIP_TIERS || COMMITMENT_BANK || TARGET_REP_CATALOG || VIDEO_CATALOG || LEADERSHIP_DOMAINS);
+  // Direct live read of reading_catalog to guarantee visibility in UI tables
+  const [readingRaw, setReadingRaw] = useState(null);
+  useEffect(() => {
+    const db = getFirestore();
+    const ref = doc(db, 'metadata', 'reading_catalog');
+    const unsub = onSnapshot(ref, (snap) => {
+      setReadingRaw(snap.exists() ? snap.data() : null);
+    });
+    return unsub;
+  }, []);
 
-  const catalogReady =
-    !!(READING_CATALOG_SERVICE || RESOURCE_LIBRARY);
+  const readingRows = useMemo(() => flattenReadingCatalog(readingRaw), [readingRaw]);
 
-  // Local editors (mirrors of the live metadata)
+  // Local editors
   const [configDraft, setConfigDraft] = useState({
     GLOBAL_SETTINGS,
     LEADERSHIP_TIERS,
@@ -139,7 +152,6 @@ export default function AdminDataMaintenance() {
     VIDEO_CATALOG,
     LEADERSHIP_DOMAINS,
   });
-
   const [catalogDraft, setCatalogDraft] = useState({
     READING_CATALOG_SERVICE,
     RESOURCE_LIBRARY,
@@ -148,7 +160,6 @@ export default function AdminDataMaintenance() {
   const [modifiedConfig, setModifiedConfig] = useState(false);
   const [modifiedCatalog, setModifiedCatalog] = useState(false);
 
-  // Keep local editors in sync when live metadata changes
   useEffect(() => {
     setConfigDraft({
       GLOBAL_SETTINGS,
@@ -176,23 +187,24 @@ export default function AdminDataMaintenance() {
     setModifiedCatalog(false);
   }, [READING_CATALOG_SERVICE, RESOURCE_LIBRARY]);
 
-  // Admin gate
   const [authed, setAuthed] = useState(false);
   const [pin, setPin] = useState('');
 
   const handleSaveConfig = async () => {
-    // writeConfigDoc expects an object that matches the config doc schema
     await writeConfigDoc?.(configDraft);
     await reloadMetadata?.();
     setModifiedConfig(false);
   };
 
   const handleSaveCatalog = async () => {
-    // writeReadingCatalogDoc expects an object that matches the catalog doc schema
     await writeReadingCatalogDoc?.(catalogDraft);
     await reloadMetadata?.();
     setModifiedCatalog(false);
   };
+
+  const metadataReady =
+    !!(GLOBAL_SETTINGS || LEADERSHIP_TIERS || COMMITMENT_BANK || TARGET_REP_CATALOG || VIDEO_CATALOG || LEADERSHIP_DOMAINS);
+  const catalogReady = !!(READING_CATALOG_SERVICE || RESOURCE_LIBRARY || readingRows.length);
 
   if (!authed) {
     return (
@@ -201,9 +213,7 @@ export default function AdminDataMaintenance() {
           <Lock size={18} className="text-gray-600" />
           <h2 className="text-lg font-semibold">Admin Access</h2>
         </div>
-        <p className="text-sm text-gray-600 mb-4">
-          Enter the admin PIN to edit platform metadata and reading catalog.
-        </p>
+        <p className="text-sm text-gray-600 mb-4">Enter the admin PIN to edit platform metadata and reading catalog.</p>
         <input
           type="password"
           value={pin}
@@ -217,14 +227,11 @@ export default function AdminDataMaintenance() {
         >
           Unlock
         </button>
-        {pin && pin !== ADMIN_PASSWORD && (
-          <p className="text-xs text-red-600 mt-2">Incorrect PIN.</p>
-        )}
+        {pin && pin !== ADMIN_PASSWORD && <p className="text-xs text-red-600 mt-2">Incorrect PIN.</p>}
       </div>
     );
   }
 
-  // Gentle loader while metadata hydrates
   if (!metadataReady && !catalogReady) {
     return (
       <div className="max-w-xl mx-auto mt-20 p-6 border rounded-xl shadow-sm">
@@ -232,15 +239,13 @@ export default function AdminDataMaintenance() {
           <Cpu size={18} className="text-gray-600" />
           <h2 className="text-lg font-semibold">Loading admin data…</h2>
         </div>
-        <p className="text-sm text-gray-600">
-          Fetching configuration and reading catalog from Firestore.
-        </p>
+        <p className="text-sm text-gray-600">Fetching configuration and reading catalog from Firestore.</p>
       </div>
     );
   }
 
   return (
-    <div className="max-w-5xl mx-auto p-6 space-y-10">
+    <div className="max-w-6xl mx-auto p-6 space-y-10">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <ChevronsLeft size={18} className="text-gray-500" />
@@ -267,7 +272,6 @@ export default function AdminDataMaintenance() {
             }`}
             disabled={!modifiedConfig || isSavingConfig}
             onClick={handleSaveConfig}
-            title={modifiedConfig ? 'Save config' : 'No changes to save'}
           >
             <Save size={14} /> Save
           </button>
@@ -280,6 +284,12 @@ export default function AdminDataMaintenance() {
           isSaving={!!isSavingConfig}
           setModified={setModifiedConfig}
         />
+
+        {/* Quick preview to prove data presence */}
+        <div className="mt-2 text-xs text-gray-600">
+          <div>Preview: TIERS = {LEADERSHIP_TIERS ? Object.keys(LEADERSHIP_TIERS).length : 0}</div>
+          <div>Preview: QUICK_CHALLENGE_CATALOG = {Array.isArray(services?.QUICK_CHALLENGE_CATALOG) ? services.QUICK_CHALLENGE_CATALOG.length : 0}</div>
+        </div>
       </section>
 
       {/* READING CATALOG DOC */}
@@ -292,7 +302,6 @@ export default function AdminDataMaintenance() {
             }`}
             disabled={!modifiedCatalog || isSavingCatalog}
             onClick={handleSaveCatalog}
-            title={modifiedCatalog ? 'Save reading catalog' : 'No changes to save'}
           >
             <Save size={14} /> Save
           </button>
@@ -305,6 +314,44 @@ export default function AdminDataMaintenance() {
           isSaving={!!isSavingCatalog}
           setModified={setModifiedCatalog}
         />
+
+        {/* LIVE TABLE PREVIEW from Firestore (guaranteed) */}
+        <div className="mt-6">
+          <h3 className="text-base font-medium mb-2">Live Catalog Preview (from Firestore)</h3>
+          <div className="text-xs text-gray-600 mb-2">
+            Rows: {readingRows.length} (skips <code>_meta</code> and <code>catalog_data</code>)
+          </div>
+          <div className="overflow-auto border rounded">
+            <table className="w-full text-sm">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="text-left p-2">Category</th>
+                  <th className="text-left p-2">Title</th>
+                  <th className="text-left p-2">Author</th>
+                  <th className="text-left p-2">Duration</th>
+                  <th className="text-left p-2">Complexity</th>
+                </tr>
+              </thead>
+              <tbody>
+                {readingRows.slice(0, 20).map((r) => (
+                  <tr key={r.id} className="border-t">
+                    <td className="p-2">{r.category}</td>
+                    <td className="p-2">{r.title}</td>
+                    <td className="p-2">{r.author}</td>
+                    <td className="p-2">{r.duration}</td>
+                    <td className="p-2">{r.complexity}</td>
+                  </tr>
+                ))}
+                {readingRows.length === 0 && (
+                  <tr>
+                    <td className="p-3 text-gray-500" colSpan={5}>No rows found.</td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+          <p className="text-xs text-gray-500 mt-2">Showing first 20 for preview.</p>
+        </div>
       </section>
     </div>
   );
