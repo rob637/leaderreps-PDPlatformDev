@@ -3,13 +3,13 @@ import React, { useState, useEffect, useMemo, useCallback, Suspense, lazy } from
 
 // App services (loads user docs + global metadata)
 import {
-  AppServiceContext,
+AppServiceContext,
   usePDPData,
   useCommitmentData,
   usePlanningData,
   useGlobalMetadata,
   updateGlobalMetadata,
-  useAppServices,
+  useAppServices // <--- Comma removed
   // NEW: Import the applied leadership data hook // <-- REMOVED
 } from './services/useAppServices.jsx';
 

@@ -1,4 +1,4 @@
-// src/components/screens/Dashboard.jsx (Corrected: Complete with Integrations & All Components)
+// src/components/screens/Dashboard.jsx (ATTEMPT 3: Complete + WhyItMatters Modal + Safety Checks)
 import React, { useMemo, useState, useEffect, useCallback } from 'react';
 import { useAppServices } from '../../services/useAppServices.jsx';
 // --- Firestore Imports ---
@@ -30,9 +30,9 @@ const Card = ({ children, title, icon: Icon, className = '', onClick, accent = '
   const accentColor = COLORS[accent] || COLORS.NAVY;
   const handleKeyDown = (e) => { if (!interactive) return; if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onClick?.(); } };
   return (
-    <Tag {...(interactive ? { type: 'button' } : {})} role={interactive ? 'button' : undefined} tabIndex={interactive ? 0 : undefined} onKeyDown={handleKeyDown} className={`relative p-6 rounded-2xl border-2 shadow-2xl hover:shadow-xl transition-all duration-300 text-left ${className}`} style={{ background: 'linear-gradient(180deg,#FFFFFF, #FCFCFA)', borderColor: COLORS.SUBTLE, color: COLORS.TEXT }} onClick={onClick}>
+    <Tag {...(interactive ? { type: 'button' } : {})} role={interactive ? 'button' : undefined} tabIndex={interactive ? 0 : undefined} onKeyDown={handleKeyDown} className={`relative p-6 rounded-2xl border-2 shadow-xl hover:shadow-lg transition-all duration-300 text-left ${className}`} style={{ background: 'linear-gradient(180deg,#FFFFFF, #FCFCFA)', borderColor: COLORS.SUBTLE, color: COLORS.TEXT }} onClick={onClick}>
       <span style={{ position:'absolute', top:0, left:0, right:0, height:6, background: accentColor, borderTopLeftRadius:14, borderTopRightRadius:14 }} />
-      {/* {Icon && (<div className="w-10 h-10 rounded-lg flex items-center justify-center border mb-3" style={{ borderColor: COLORS.SUBTLE, background: COLORS.LIGHT_GRAY }}><Icon className="w-5 h-5" style={{ color: COLORS.TEAL }} /></div>)} */} {/* <-- REMOVED per user request */}
+      {/* Icon removed per previous request */}
       {title && <h2 className="text-xl font-extrabold mb-2" style={{ color: COLORS.NAVY }}>{title}</h2>}
       {children}
     </Tag>
@@ -66,11 +66,11 @@ const CelebrationOverlay = ({ show }) => {
   if (!show) return null;
   return (
     <div className="fixed inset-0 flex items-center justify-center z-[100] pointer-events-none"> {/* Increased z-index */}
-      <div className="bg-black/50 backdrop-blur-sm rounded-full p-8">
-        <div className="text-6xl animate-bounce">🎉</div>
+      <div className="bg-black/50 backdrop-blur-sm rounded-full p-8 animate-ping absolute opacity-75"> {/* Effect */}
+        {/* <div className="text-6xl animate-bounce">🎉</div> */}
       </div>
-       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white p-6 rounded-xl shadow-2xl border-4 border-green-500">
-         <p className="text-2xl font-bold text-gray-800">Nice Rep!</p>
+       <div className="relative bg-white p-6 rounded-xl shadow-2xl border-4 border-green-500 transform scale-100 animate-in zoom-in-50 fade-in duration-300">
+         <p className="text-2xl font-bold text-gray-800">Nice Rep! 🎉</p>
        </div>
     </div>
   );
@@ -91,7 +91,7 @@ const StreakTracker = ({ streakCount = 0, coins = 0 }) => {
       </div>
       {/* Coins */}
       {coins > 0 && (
-        <div className="flex items-center gap-1 border-l pl-3">
+        <div className="flex items-center gap-1 border-l pl-3 ml-1">
            <Trophy className="w-4 h-4 text-amber-500"/>
            <span className="font-semibold text-sm text-amber-600">{coins} Coins</span>
         </div>
@@ -101,12 +101,14 @@ const StreakTracker = ({ streakCount = 0, coins = 0 }) => {
 };
 
 /* =========================================================
-   Why It Matters Component
+   Why It Matters Component (UPDATED)
 ========================================================= */
 const WhyItMattersCard = ({ statement, onPersonalize }) => (
   <Card title="💖 Why It Matters" icon={Heart} accent="ORANGE">
     <p className="text-md italic text-gray-700 mb-4">"{statement || 'Connect your actions to a deeper purpose...'}"</p>
-    <Button onClick={onPersonalize} variant="outline" className="text-sm !py-2 !px-4 w-full"> <Edit3 className="w-4 h-4 mr-2" /> Personalize Your "Why" </Button>
+    <Button onClick={onPersonalize} variant="outline" className="text-sm !py-2 !px-4 w-full">
+        <Edit3 className="w-4 h-4 mr-2" /> Personalize Your "Why"
+    </Button>
   </Card>
 );
 
@@ -117,7 +119,6 @@ const HabitAnchorCard = ({ anchor, onEdit, isDefault }) => (
   <Card title="⚓ Habit Anchor" icon={Anchor} accent="BLUE">
     {isDefault ? ( <p className="text-md font-medium text-gray-500 italic mb-4"> Set a daily cue to build consistency! </p> )
      : ( <> <p className="text-sm font-semibold text-gray-500 uppercase">Your Cue:</p> <p className="text-md font-medium text-gray-800 mb-4">{anchor}</p> </> )}
-    {/* --- UPDATED: Button text changed to "Set Habit Anchor" --- */}
     <Button onClick={onEdit} variant="outline" className="text-sm !py-2 !px-4 w-full"> <Edit3 className="w-4 h-4 mr-2" /> Set Habit Anchor </Button>
   </Card>
 );
@@ -135,19 +136,18 @@ const SocialPodFeed = ({ feed, onShare, isArenaMode }) => {
       {!isArenaMode && ( <div className="mb-4 p-3 bg-indigo-50 border border-indigo-200 rounded-lg text-center"> <p className="text-sm text-indigo-700 font-medium">You are in Solo Mode. Switch to Arena Mode to see and share with your pod.</p> </div> )}
       {isArenaMode && (
         <>
-          <div className="space-y-3 max-h-48 overflow-y-auto pr-2 mb-4">
+          <div className="space-y-3 max-h-48 overflow-y-auto pr-2 mb-4 border-b pb-3">
             {feed.length === 0 && <p className="text-sm text-gray-500 italic text-center py-4">Pod feed is quiet...</p>}
             {feed.map((post) => (
-              <div key={post.id} className="p-3 bg-gray-50 border border-gray-200 rounded-lg">
+              <div key={post.id} className="p-3 bg-gray-50 border border-gray-200 rounded-lg shadow-sm">
                 <p className="text-sm font-medium text-gray-800">{post.text}</p>
-                <span className="text-xs text-gray-500">{post.author} - {post.time}</span>
+                <span className="text-xs text-gray-500 mt-1 block">{post.author} - {post.time}</span>
               </div>
             ))}
           </div>
-          <div className="space-y-2">
-            <textarea value={newPost} onChange={(e) => setNewPost(e.target.value)} className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#7C3AED]" rows="2" placeholder="Share your rep or a win..." />
-            {/* --- UPDATED: Removed inline style to use 'primary' variant (teal) --- */}
-            <Button onClick={handleSubmit} variant="primary" className="w-full text-sm !py-2"> <Share2 className="w-4 h-4 mr-2" /> Share to Pod </Button>
+          <div className="space-y-2 mt-4">
+            <textarea value={newPost} onChange={(e) => setNewPost(e.target.value)} className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[${COLORS.PURPLE}]" rows="2" placeholder="Share your rep or a win..." />
+            <Button onClick={handleSubmit} variant="primary" className="w-full text-sm !py-2" style={{ background: COLORS.PURPLE, focusRing: COLORS.PURPLE }}> <Share2 className="w-4 h-4 mr-2" /> Share to Pod </Button>
           </div>
         </>
       )}
@@ -171,30 +171,30 @@ const EmbeddedDailyReps = ({ commitments, onToggleCommit, isLoading, onCommitMic
         <Button
           onClick={onCommitMicroRep}
           variant="secondary"
-          className="w-full !py-3 text-base mb-4 border-2 border-dashed border-red-300"
+          className="w-full !py-3 text-base mb-4 border-2 border-dashed border-red-300 hover:border-red-400"
           style={{ background: '#FFF1ED', color: COLORS.ORANGE, boxShadow: 'none' }}
         >
           <Award className="w-5 h-5 mr-2" />
           <span className="font-semibold">2-Min Challenge:</span>&nbsp;{microRepText}
         </Button>
       )}
-      {isLoading && <div className="p-4 text-center text-gray-500">Loading reps...</div>}
+      {isLoading && <div className="p-4 text-center text-gray-500 flex items-center justify-center"><Loader className="animate-spin w-4 h-4 mr-2"/>Loading reps...</div>}
       {!isLoading && (!commitments || commitments.length === 0) && (
-        <div className="p-6 text-center border border-dashed border-gray-300 rounded-lg bg-gray-50">
+        <div className="p-6 text-center border-2 border-dashed border-gray-300 rounded-lg bg-gray-50">
           <p className="text-gray-600 font-semibold mb-3">No reps defined for today.</p>
           <Button
             onClick={() => navigate('development-plan')}
             variant="outline"
-            className="text-sm !px-4 !py-2" // Restored correct classes
+            className="text-sm !px-4 !py-2"
           >
             Set Up Plan
           </Button>
         </div>
       )}
       {!isLoading && commitments.length > 0 && commitments.map((commit) => (
-        <div key={commit.id} className={`p-4 rounded-xl flex items-center justify-between transition-all border ${ commit.status === 'Committed' ? 'bg-green-50 border-green-200 shadow-inner' : 'bg-white hover:bg-gray-50'}`}>
+        <div key={commit.id} className={`p-4 rounded-xl flex items-center justify-between transition-all border ${ commit.status === 'Committed' ? 'bg-green-50 border-green-200 shadow-inner' : 'bg-white hover:bg-gray-50/70 border-gray-200 shadow-sm'}`}>
           <div className="flex-1 mr-4">
-            <p className={`font-medium ${commit.status === 'Committed' ? 'text-green-800 line-through' : 'text-[#002E47]'}`}> {commit.text} </p>
+            <p className={`font-medium ${commit.status === 'Committed' ? 'text-green-700 line-through decoration-green-400' : 'text-[#002E47]'}`}> {commit.text} </p>
             {commit.linkedGoal && ( <span className="text-xs text-gray-500 italic block mt-1"> Linked to: {commit.linkedGoal} </span> )}
           </div>
           <button onClick={() => onToggleCommit(commit.id)} className={`w-10 h-10 rounded-full flex items-center justify-center border-2 transition-all focus:outline-none focus:ring-2 focus:ring-offset-1 ${ commit.status === 'Committed' ? `bg-[${COLORS.GREEN}] border-[${COLORS.GREEN}] text-white hover:bg-green-700 focus:ring-[${COLORS.GREEN}]` : `bg-white border-gray-300 text-gray-400 hover:border-[${COLORS.TEAL}] hover:text-[${COLORS.TEAL}] focus:ring-[${COLORS.TEAL}]`}`} aria-label={commit.status === 'Committed' ? 'Undo' : 'Complete'}>
@@ -243,50 +243,32 @@ const ReflectionLogModal = ({ isOpen, onClose, history, isLoading }) => {
 };
 
 /* =========================================================
-   Identity Anchor Modal Component (NEW)
+   Identity Anchor Modal Component (VERIFIED Safety Check)
 ========================================================= */
-const IdentityAnchorModal = ({ isOpen, onClose, currentIdentity, onSave }) => {
+const IdentityAnchorModal = ({ isOpen, onClose, currentIdentity, onSave, suggestions = [] }) => {
   if (!isOpen) return null;
-  
-  // Extract the customizable part of the identity
+
   const prefix = "I'm the kind of leader who ";
+  const defaultPlaceholder = "Define your leader identity...";
   const getEditablePart = (fullIdentity) => {
-    if (fullIdentity && fullIdentity.startsWith(prefix)) {
-      return fullIdentity.substring(prefix.length);
-    }
-    // Handle default/empty state
-    if (fullIdentity === "Define your leader identity...") {
-      return "";
-    }
-    return fullIdentity || "";
+    if (fullIdentity === defaultPlaceholder) return "";
+    return fullIdentity?.startsWith(prefix) ? fullIdentity.substring(prefix.length) : (fullIdentity || "");
   };
 
   const [identityText, setIdentityText] = useState(getEditablePart(currentIdentity));
   const [isSaving, setIsSaving] = useState(false);
 
-  const suggestions = [
-    "trusts my team",
-    "is decisive and clear",
-    "listens actively before speaking",
-    "takes ownership of outcomes",
-    "coaches my people to success",
-  ];
+  // --- VERIFIED: Ensure suggestions is always an array before mapping ---
+  const suggestionItems = Array.isArray(suggestions) ? suggestions : [];
 
   const handleSaveClick = async () => {
-    if (!identityText.trim()) {
-      alert("Please provide an identity statement.");
-      return;
-    }
+    if (!identityText.trim()) { alert("Please provide an identity statement."); return; }
     setIsSaving(true);
     try {
       await onSave(identityText.trim());
-    } catch (e) {
-      console.error("Save failed", e);
-      // Error alert is handled in the parent
-    } finally {
-      setIsSaving(false);
-      // Don't close on save, parent (onSave) will
-    }
+      // Let parent handle close on success
+    } catch (e) { console.error("Save identity failed", e); /* Parent shows alert */ }
+    finally { setIsSaving(false); }
   };
 
   return (
@@ -308,26 +290,174 @@ const IdentityAnchorModal = ({ isOpen, onClose, currentIdentity, onSave }) => {
             rows="3"
             placeholder="...trusts my team."
           />
-          <div>
-            <p className="text-sm font-semibold text-gray-600 mb-2">Or, start with a suggestion:</p>
-            <div className="flex flex-wrap gap-2">
-              {suggestions.map((suggestion) => (
-                <button
-                  key={suggestion}
-                  onClick={() => setIdentityText(suggestion)}
-                  className="px-3 py-1.5 text-sm bg-gray-100 text-gray-700 rounded-full border border-gray-300 hover:bg-gray-200 hover:border-gray-400 transition-colors"
-                >
-                  {suggestion}
-                </button>
-              ))}
+          {/* --- VERIFIED: Check suggestionItems.length --- */}
+          {suggestionItems.length > 0 && (
+            <div>
+              <p className="text-sm font-semibold text-gray-600 mb-2">Or, start with a suggestion:</p>
+              <div className="flex flex-wrap gap-2">
+                {/* --- VERIFIED: Map over suggestionItems --- */}
+                {suggestionItems.map((suggestion, idx) => (
+                  <button
+                    key={`${suggestion}-${idx}`} // Use suggestion text itself + index
+                    onClick={() => setIdentityText(suggestion)} // Assuming suggestions are strings
+                    className="px-3 py-1.5 text-sm bg-gray-100 text-gray-700 rounded-full border border-gray-300 hover:bg-gray-200 hover:border-gray-400 transition-colors"
+                  >
+                    {suggestion}
+                  </button>
+                ))}
+              </div>
             </div>
-          </div>
+          )}
         </div>
         <div className="p-4 bg-gray-50 border-t border-gray-200 rounded-b-2xl flex justify-end items-center gap-4">
           <Button onClick={onClose} variant="outline" className="text-sm !py-2 !px-4"> Cancel </Button>
           <Button onClick={handleSaveClick} variant="primary" className="text-sm !py-2 !px-4" disabled={isSaving || !identityText.trim()}>
             {isSaving ? <Loader className="animate-spin w-4 h-4 mr-2" /> : <Save className="w-4 h-4 mr-2" />}
             Save Anchor
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+
+/* =========================================================
+   Habit Anchor Modal Component (VERIFIED Safety Check)
+========================================================= */
+const HabitAnchorModal = ({ isOpen, onClose, currentAnchor, onSave, suggestions = [], defaultAnchorText }) => {
+  if (!isOpen) return null;
+
+  const getEditablePart = (fullAnchor) => (fullAnchor === defaultAnchorText ? "" : fullAnchor || "");
+  const [anchorText, setAnchorText] = useState(getEditablePart(currentAnchor));
+  const [isSaving, setIsSaving] = useState(false);
+
+  // --- VERIFIED: Ensure suggestions is always an array ---
+  const suggestionItems = Array.isArray(suggestions) ? suggestions : [];
+
+  const handleSaveClick = async () => {
+     if (!anchorText.trim()) { alert("Please provide a habit anchor."); return; }
+     setIsSaving(true);
+     try {
+       await onSave(anchorText.trim());
+       // Let parent handle close
+     } catch (e) { console.error("Save habit failed", e); /* Parent shows alert */ }
+     finally { setIsSaving(false); }
+   };
+
+  return (
+    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4" aria-modal="true" role="dialog">
+      <div className="fixed inset-0 bg-black/60 backdrop-blur-sm animate-in fade-in" onClick={onClose} />
+      <div className="relative w-full max-w-lg bg-white rounded-2xl shadow-2xl z-10 animate-in zoom-in-95 slide-in-from-bottom-4 duration-300">
+        <div className="p-6 border-b border-gray-200 flex justify-between items-center">
+          <h2 className="text-2xl font-extrabold text-[#002E47] flex items-center gap-3"> <Anchor className="text-[#2563EB]" /> Set Habit Anchor </h2>
+          <button onClick={onClose} className="p-1 rounded-full text-gray-400 hover:text-gray-800 hover:bg-gray-100 transition-colors" aria-label="Close modal"> <X className="w-6 h-6" /> </button>
+        </div>
+        <div className="p-6 space-y-4">
+          <div className="p-4 bg-gray-50 border border-gray-200 rounded-lg">
+            <p className="text-md font-medium text-gray-600">Set your daily cue (e.g., "After my morning coffee"):</p>
+          </div>
+          <textarea
+            value={anchorText}
+            onChange={(e) => setAnchorText(e.target.value)}
+            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#2563EB]"
+            rows="3"
+            placeholder="When will you do your daily reps?"
+          />
+          {/* --- VERIFIED: Check suggestionItems.length --- */}
+          {suggestionItems.length > 0 && (
+            <div>
+              <p className="text-sm font-semibold text-gray-600 mb-2">Or, start with a suggestion:</p>
+              <div className="flex flex-wrap gap-2">
+                 {/* --- VERIFIED: Map over suggestionItems --- */}
+                {suggestionItems.map((suggestion, idx) => (
+                  <button
+                    key={`${suggestion}-${idx}`}
+                    onClick={() => setAnchorText(suggestion)} // Assuming suggestions are strings
+                    className="px-3 py-1.5 text-sm bg-gray-100 text-gray-700 rounded-full border border-gray-300 hover:bg-gray-200 hover:border-gray-400 transition-colors"
+                  >
+                    {suggestion}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+        <div className="p-4 bg-gray-50 border-t border-gray-200 rounded-b-2xl flex justify-end items-center gap-4">
+          <Button onClick={onClose} variant="outline" className="text-sm !py-2 !px-4"> Cancel </Button>
+          <Button onClick={handleSaveClick} variant="primary" className="text-sm !py-2 !px-4" disabled={isSaving || !anchorText.trim()}>
+            {isSaving ? <Loader className="animate-spin w-4 h-4 mr-2" /> : <Save className="w-4 h-4 mr-2" />}
+            Save Anchor
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+/* =========================================================
+   Why It Matters Modal Component (VERIFIED Safety Check)
+========================================================= */
+const WhyItMattersModal = ({ isOpen, onClose, currentWhy, onSave, suggestions = [] }) => {
+  if (!isOpen) return null;
+
+  const [whyText, setWhyText] = useState(currentWhy || "");
+  const [isSaving, setIsSaving] = useState(false);
+
+  // --- VERIFIED: Ensure suggestions is always an array ---
+  const suggestionItems = Array.isArray(suggestions) ? suggestions : [];
+
+  const handleSaveClick = async () => {
+    if (!whyText.trim()) { alert("Please provide your 'Why It Matters' statement."); return; }
+    setIsSaving(true);
+    try { await onSave(whyText.trim()); /* Parent handles close */ }
+    catch (e) { console.error("Save Why failed", e); /* Parent shows alert */ }
+    finally { setIsSaving(false); }
+  };
+
+  return (
+    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4" aria-modal="true" role="dialog">
+      <div className="fixed inset-0 bg-black/60 backdrop-blur-sm animate-in fade-in" onClick={onClose} />
+      <div className="relative w-full max-w-lg bg-white rounded-2xl shadow-2xl z-10 animate-in zoom-in-95 slide-in-from-bottom-4 duration-300">
+        <div className="p-6 border-b border-gray-200 flex justify-between items-center">
+          <h2 className="text-2xl font-extrabold text-[#002E47] flex items-center gap-3"> <Heart className="text-[#E04E1B]" /> Personalize Your "Why" </h2>
+          <button onClick={onClose} className="p-1 rounded-full text-gray-400 hover:text-gray-800 hover:bg-gray-100 transition-colors" aria-label="Close modal"> <X className="w-6 h-6" /> </button>
+        </div>
+        <div className="p-6 space-y-4">
+          <div className="p-4 bg-gray-50 border border-gray-200 rounded-lg">
+            <p className="text-md font-medium text-gray-600">Why does achieving your focus goal matter?</p>
+          </div>
+          <textarea
+            value={whyText}
+            onChange={(e) => setWhyText(e.target.value)}
+            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#E04E1B]"
+            rows="4"
+            placeholder="e.g., This will help my team feel more empowered..."
+          />
+           {/* --- VERIFIED: Check suggestionItems.length --- */}
+          {suggestionItems.length > 0 && (
+            <div>
+              <p className="text-sm font-semibold text-gray-600 mb-2">Or, start with a suggestion:</p>
+              <div className="flex flex-wrap gap-2">
+                 {/* --- VERIFIED: Map over suggestionItems --- */}
+                {suggestionItems.map((suggestion, idx) => (
+                  <button
+                     key={`${suggestion}-${idx}`}
+                    onClick={() => setWhyText(suggestion)} // Assuming suggestions are strings
+                    className="px-3 py-1.5 text-sm bg-gray-100 text-gray-700 rounded-full border border-gray-300 hover:bg-gray-200 hover:border-gray-400 transition-colors"
+                  >
+                    {suggestion}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+        <div className="p-4 bg-gray-50 border-t border-gray-200 rounded-b-2xl flex justify-end items-center gap-4">
+          <Button onClick={onClose} variant="outline" className="text-sm !py-2 !px-4"> Cancel </Button>
+          <Button onClick={handleSaveClick} variant="secondary" className="text-sm !py-2 !px-4" disabled={isSaving || !whyText.trim()}>
+            {isSaving ? <Loader className="animate-spin w-4 h-4 mr-2" /> : <Save className="w-4 h-4 mr-2" />}
+            Save "Why"
           </Button>
         </div>
       </div>
@@ -345,21 +475,50 @@ const EmbeddedReflectionForm = ({ db, userId, onOpenLog, onSaveSuccess }) => {
   const [did, setDid] = useState('');
   const [noticed, setNoticed] = useState('');
   const [tryDiff, setTryDiff] = useState('');
-  const [identity, setIdentity] = useState('');
+  const [identity, setIdentity] = useState(''); // Reflection input
 
   const handleSaveReflection = async () => {
-    if (!did.trim() && !noticed.trim() && !tryDiff.trim() && !identity.trim()) { alert("Please fill in at least one reflection field."); return; }
-    if (!db || !userId) { alert("Error: Database connection not available."); return; }
-    setIsSaving(true); setIsSavedConfirmation(false);
-    const reflectionEntry = { did: did.trim(), noticed: noticed.trim(), tryDiff: tryDiff.trim(), identity: identity.trim(), timestamp: serverTimestamp(), date: new Date().toISOString().split('T')[0] };
+    // Basic validation
+    if (!did.trim() && !noticed.trim() && !tryDiff.trim() && !identity.trim()) {
+       alert("Please fill in at least one reflection field.");
+       return;
+    }
+    if (!db || !userId) {
+       alert("Error: Database connection not available.");
+       return;
+    }
+
+    setIsSaving(true);
+    setIsSavedConfirmation(false); // Reset confirmation on new save attempt
+    const reflectionEntry = {
+        did: did.trim(),
+        noticed: noticed.trim(),
+        tryDiff: tryDiff.trim(),
+        identity: identity.trim(), // Save the reflection identity input
+        timestamp: serverTimestamp(),
+        date: new Date().toISOString().split('T')[0] // Store date for easier querying
+    };
+
     try {
       const historyCollectionRef = collection(db, `user_commitments/${userId}/reflection_history`);
-      await addDoc(historyCollectionRef, reflectionEntry);
-      setIsSavedConfirmation(true); setDid(''); setNoticed(''); setTryDiff(''); setIdentity('');
-      if (onSaveSuccess) { onSaveSuccess(reflectionEntry); }
-      setTimeout(() => setIsSavedConfirmation(false), 3000);
-    } catch (e) { console.error("Failed to save reflection to history:", e); alert("Failed to save reflection log."); }
-    finally { setIsSaving(false); }
+      const savedDoc = await addDoc(historyCollectionRef, reflectionEntry); // Get saved doc ref
+      setIsSavedConfirmation(true);
+      // Clear fields on successful save
+      setDid('');
+      setNoticed('');
+      setTryDiff('');
+      setIdentity(''); // Clear reflection identity input
+      if (onSaveSuccess) {
+          // Pass the saved data (or at least the identity part) for potential AI nudge
+          onSaveSuccess({ id: savedDoc.id, ...reflectionEntry, timestamp: new Date() }); // Approximate timestamp locally
+      }
+      setTimeout(() => setIsSavedConfirmation(false), 3000); // Hide confirmation after 3s
+    } catch (e) {
+      console.error("Failed to save reflection to history:", e);
+      alert("Failed to save reflection log. Please check console for details.");
+    } finally {
+      setIsSaving(false);
+    }
   };
   const canSave = did.trim() || noticed.trim() || tryDiff.trim() || identity.trim();
 
@@ -370,14 +529,13 @@ const EmbeddedReflectionForm = ({ db, userId, onOpenLog, onSaveSuccess }) => {
           <div> <label className="block text-sm font-semibold text-[#002E47] mb-1"> <span className="text-[#47A88D]">1.</span> What did I <strong className='text-[#47A88D]'>do</strong>? </label> <textarea value={did} onChange={(e) => setDid(e.target.value)} className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#47A88D]" rows="2" placeholder="e.g., Gave clear feedback..." /> </div>
           <div> <label className="block text-sm font-semibold text-[#002E47] mb-1"> <span className="text-[#47A88D]">2.</span> What did I <strong className='text-[#47A88D]'>notice</strong>? </label> <textarea value={noticed} onChange={(e) => setNoticed(e.target.value)} className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#47A88D]" rows="2" placeholder="e.g., I over-explained..." /> </div>
           <div> <label className="block text-sm font-semibold text-[#002E47] mb-1"> <span className="text-[#47A88D]">3.</span> What will I <strong className='text-[#47A88D]'>try</strong> differently? </label> <textarea value={tryDiff} onChange={(e) => setTryDiff(e.target.value)} className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#47A88D]" rows="2" placeholder="e.g., Let silence work..." /> </div>
-          <div> <label className="block text-sm font-semibold text-[#002E47] mb-1"> <User className="inline-block w-4 h-4 mr-1 text-[#47A88D]" /> "I'm the kind of leader who..." </label> <input type="text" value={identity} onChange={(e) => setIdentity(e.target.value)} className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#47A88D]" placeholder="e.g., trusts my team." /> </div>
+          <div> <label className="block text-sm font-semibold text-[#002E47] mb-1"> <User className="inline-block w-4 h-4 mr-1 text-[#47A88D]" /> "I'm the kind of leader who..." (Reflection) </label> <input type="text" value={identity} onChange={(e) => setIdentity(e.target.value)} className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#47A88D]" placeholder="e.g., trusts my team. (Optional)" title="This reflection field is saved daily. Use 'Set Identity Anchor' for your persistent identity."/> </div>
         </div>
         <div className="mt-6 pt-4 border-t border-gray-200 flex items-center gap-4">
-          {/* --- Attributes Restored --- */}
           <Button onClick={handleSaveReflection} disabled={isSaving || !canSave} variant="primary" className="flex-1 !py-2 text-base">
             {isSaving ? <Loader className="animate-spin w-5 h-5 mr-2" /> : <Save className="w-5 h-5 mr-2" />} {isSaving ? 'Saving...' : 'Save to Log'}
           </Button>
-          {isSavedConfirmation && ( <span className='text-xs font-bold text-green-600 flex items-center'><CheckCircle className='w-4 h-4 mr-1'/> Saved</span> )}
+          {isSavedConfirmation && ( <span className='text-xs font-bold text-green-600 flex items-center shrink-0'><CheckCircle className='w-4 h-4 mr-1'/> Saved</span> )}
         </div>
         <div className="mt-4 flex justify-center">
           <Button onClick={onOpenLog} variant="outline" className="text-sm !py-2 !px-4"> <Archive className="w-4 h-4 mr-2" /> View Full Log </Button>
@@ -394,58 +552,99 @@ const AICoachNudge = ({ lastReflectionEntry, callSecureGeminiAPI, hasGeminiKey }
   const [isLoadingNudge, setIsLoadingNudge] = useState(false);
   const [errorNudge, setErrorNudge] = useState('');
 
+  // UseEffect to generate nudge when lastReflectionEntry changes
   useEffect(() => {
-    if (lastReflectionEntry && callSecureGeminiAPI && hasGeminiKey && hasGeminiKey()) {
+    // Only proceed if we have a recent reflection entry and API capability
+    if (lastReflectionEntry && lastReflectionEntry.id && callSecureGeminiAPI && hasGeminiKey && hasGeminiKey()) {
       const generateNudge = async () => {
-        setIsLoadingNudge(true); setErrorNudge(''); setNudge('');
+        setIsLoadingNudge(true);
+        setErrorNudge('');
+        setNudge(''); // Clear previous nudge
         try {
-          const prompt = `Based on this user's daily reflection:\n- Did: ${lastReflectionEntry.did || 'N/A'}\n- Noticed: ${lastReflectionEntry.noticed || 'N/A'}\n- Will Try: ${lastReflectionEntry.tryDiff || 'N/A'}\n- Identity: ${lastReflectionEntry.identity || 'N/A'}\n\nAsk one brief, insightful follow-up question (under 20 words) to deepen their reflection. Frame it as a coach ("Rin Mode"). Example: "Interesting. What signal showed you that impact?"`;
-          console.log("AI Coach: Sending prompt:", prompt);
-          const response = await callSecureGeminiAPI({ contents: [{ parts: [{ text: prompt }] }], generation_config: { temperature: 0.7, max_output_tokens: 50 } });
+          // Construct prompt using the *last saved* reflection entry data
+          const prompt = `Based on this user's daily reflection:\n- Did: ${lastReflectionEntry.did || 'N/A'}\n- Noticed: ${lastReflectionEntry.noticed || 'N/A'}\n- Will Try: ${lastReflectionEntry.tryDiff || 'N/A'}\n- Identity (Reflection): ${lastReflectionEntry.identity || 'N/A'}\n\nAsk one brief, insightful follow-up question (under 20 words) to deepen their reflection. Frame it as a coach ("Rin Mode"). Example: "Interesting. What signal showed you that impact?"`;
+
+          console.log("AI Coach: Sending prompt based on reflection:", lastReflectionEntry.id, prompt);
+
+          const response = await callSecureGeminiAPI({
+              contents: [{ parts: [{ text: prompt }] }],
+              generation_config: { temperature: 0.7, max_output_tokens: 50 } // Keep it concise
+          });
+
           console.log("AI Coach: Received response:", response);
           const generatedText = response?.candidates?.[0]?.content?.parts?.[0]?.text;
-          if (generatedText) { setNudge(generatedText.trim().replace(/^"|"$/g, '')); }
-          else { throw new Error("API response missing text."); }
-        } catch (error) { console.error("AI Nudge API call failed:", error); setErrorNudge("Failed to get AI nudge."); }
-        finally { setIsLoadingNudge(false); }
-      };
-      const timer = setTimeout(generateNudge, 500);
-      return () => clearTimeout(timer);
-    } else { setNudge(''); setIsLoadingNudge(false); setErrorNudge(''); if (lastReflectionEntry && hasGeminiKey && !hasGeminiKey()) { console.warn("AI Coach: Gemini API key/config missing."); } }
-  }, [lastReflectionEntry, callSecureGeminiAPI, hasGeminiKey]);
 
+          if (generatedText) {
+            // Clean up response (remove quotes, etc.)
+            setNudge(generatedText.trim().replace(/^"|"$/g, '').replace(/\*$/, ''));
+          } else {
+            throw new Error("API response did not contain expected text.");
+          }
+        } catch (error) {
+          console.error("AI Nudge API call failed:", error);
+          setErrorNudge("Couldn't get an AI insight right now.");
+        } finally {
+          setIsLoadingNudge(false);
+        }
+      };
+      // Debounce the call slightly
+      const timer = setTimeout(generateNudge, 300);
+      return () => clearTimeout(timer); // Cleanup timer on unmount or re-trigger
+    } else {
+      // Clear nudge if conditions aren't met
+      setNudge('');
+      setIsLoadingNudge(false);
+      setErrorNudge('');
+      if (lastReflectionEntry && hasGeminiKey && !hasGeminiKey()) {
+        console.warn("AI Coach: Gemini API key/config missing.");
+        // setErrorNudge("AI Coach disabled (API key missing)."); // Optional user-facing message
+      }
+    }
+  // Depend on the ID of the last reflection entry to re-trigger nudge
+  }, [lastReflectionEntry?.id, callSecureGeminiAPI, hasGeminiKey]);
+
+  // Don't render if no nudge, loading, or error
   if (!isLoadingNudge && !nudge && !errorNudge) return null;
 
   return (
     <div className="mt-4 p-4 rounded-xl bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 border border-purple-200 shadow-sm animate-in fade-in duration-500">
        <div className="flex items-start gap-2">
          <Bot className={`w-5 h-5 text-purple-600 flex-shrink-0 mt-0.5 ${isLoadingNudge ? 'animate-pulse' : ''}`}/>
-         {isLoadingNudge && <p className="text-sm font-medium text-purple-600 italic">Thinking...</p>}
-         {errorNudge && <p className="text-sm font-semibold text-red-600">{errorNudge}</p>}
-         {nudge && !isLoadingNudge && <p className="text-sm font-medium text-purple-800 italic"> {nudge} </p>}
+         <div className="flex-1">
+           {isLoadingNudge && <p className="text-sm font-medium text-purple-600 italic">Rin is thinking...</p>}
+           {errorNudge && <p className="text-sm font-semibold text-red-600">{errorNudge}</p>}
+           {nudge && !isLoadingNudge && <p className="text-sm font-medium text-purple-800 italic">Coach Rin: {nudge}</p>}
+         </div>
        </div>
     </div>
   );
 };
 
+
 /* =========================================================
-   MOCK SOCIAL FEED DATA (Placeholder)
+   MOCK SOCIAL FEED DATA (Placeholder - Consider replacing with real data fetch)
 ========================================================= */
 const mockSocialFeedData = [
   { id: 's1', author: 'Coach Rin', text: 'Welcome to the pod! Share your first rep when you\'re ready.', time: '1h ago' },
   { id: 's2', author: 'Alex T.', text: 'Just completed my "Listen without interrupting" rep. Harder than it sounds!', time: '30m ago' },
+  // Add more mock posts if needed
 ];
 
 /* =========================================================
-   Dashboard Screen (Main Export)
+   Dashboard Screen (Main Export - VERIFIED Full Code)
 ========================================================= */
 const DEFAULT_HABIT_ANCHOR = "Set a daily cue!";
+const DEFAULT_WHY_STATEMENT = "Connect your actions to a deeper purpose...";
+const DEFAULT_IDENTITY_PLACEHOLDER = "Define your leader identity..."; // For display
 
 const DashboardScreen = () => {
   const {
     navigate, user, pdpData, commitmentData, planningData, LEADERSHIP_TIERS,
-    updateCommitmentData, isLoading: isAppLoading, db, userId,
-    callSecureGeminiAPI, hasGeminiKey, COMMITMENT_BANK
+    updateCommitmentData, updatePlanningData, // Use correct update function for planning data
+    isLoading: isAppLoading, db, userId,
+    callSecureGeminiAPI, hasGeminiKey, COMMITMENT_BANK,
+    // --- Catalogs from services ---
+    IDENTITY_ANCHOR_CATALOG, HABIT_ANCHOR_CATALOG, WHY_CATALOG
   } = useAppServices();
 
   // --- State ---
@@ -454,15 +653,37 @@ const DashboardScreen = () => {
   const [isLogModalOpen, setIsLogModalOpen] = useState(false);
   const [reflectionHistory, setReflectionHistory] = useState([]);
   const [isHistoryLoading, setIsHistoryLoading] = useState(false);
-  const [podPosts, setPodPosts] = useState(mockSocialFeedData);
+  const [podPosts, setPodPosts] = useState(mockSocialFeedData); // Consider fetching this
   const isArenaMode = useMemo(() => commitmentData?.arena_mode ?? true, [commitmentData]);
   const [isSavingMode, setIsSavingMode] = useState(false);
-  const [lastReflectionEntry, setLastReflectionEntry] = useState(null);
-  // --- NEW: State for Identity Modal ---
+  const [lastReflectionEntry, setLastReflectionEntry] = useState(null); // Used for AI Nudge
+  // --- Modal states ---
   const [isIdentityModalOpen, setIsIdentityModalOpen] = useState(false);
+  const [isHabitModalOpen, setIsHabitModalOpen] = useState(false);
+  const [isWhyModalOpen, setIsWhyModalOpen] = useState(false);
+
 
   // --- Effects & Derived Data ---
-  useEffect(() => { if (isLogModalOpen && db && userId) { const fetch = async () => { setIsHistoryLoading(true); try { const q = query(collection(db,`user_commitments/${userId}/reflection_history`), orderBy("timestamp","desc")); const snap = await getDocs(q); setReflectionHistory(snap.docs.map(d=>({id:d.id,...d.data()}))); } catch(e){console.error(e);} setIsHistoryLoading(false);}; fetch(); } }, [isLogModalOpen, db, userId]);
+  // Fetch reflection history when modal opens
+  useEffect(() => {
+    if (isLogModalOpen && db && userId) {
+       const fetchHistory = async () => {
+         setIsHistoryLoading(true);
+         try {
+           const q = query(collection(db,`user_commitments/${userId}/reflection_history`), orderBy("timestamp","desc"));
+           const snap = await getDocs(q);
+           setReflectionHistory(snap.docs.map(d=>({id:d.id,...d.data(), timestamp: d.data().timestamp?.toDate() }))); // Convert timestamp
+         } catch(e){
+           console.error("Failed to fetch reflection history:", e);
+           setReflectionHistory([]); // Clear on error
+         } finally {
+           setIsHistoryLoading(false);
+         }
+       };
+       fetchHistory();
+    }
+  }, [isLogModalOpen, db, userId]);
+
   const displayedUserName = useMemo(() => user?.name || user?.email?.split('@')[0] || 'Leader', [user]);
   const greeting = useMemo(() => 'Welcome to The Arena,', []);
   const activeCommitments = useMemo(() => commitmentData?.active_commitments || [], [commitmentData]);
@@ -472,27 +693,18 @@ const DashboardScreen = () => {
   const streakCoins = useMemo(() => commitmentData?.streak_coins || 0, [commitmentData]);
   const habitAnchor = useMemo(() => commitmentData?.habit_anchor || DEFAULT_HABIT_ANCHOR, [commitmentData]);
   const isDefaultAnchor = habitAnchor === DEFAULT_HABIT_ANCHOR;
-  const whyStatement = useMemo(() => planningData?.focus_goals?.[0]?.why || "", [planningData]);
-  
-  // --- UPDATED: identityStatement logic now prioritizes commitmentData.identity_anchor ---
-  const identityStatement = useMemo(() => {
-     // 1. Prioritize the new dedicated field
-     if (commitmentData?.identity_anchor) {
-       return `I'm the kind of leader who ${commitmentData.identity_anchor}`;
-     }
-     // 2. Fallback to last reflection (transient)
-     const lastIdentity = lastReflectionEntry?.identity || '';
-     if (lastIdentity) return `I'm the kind of leader who ${lastIdentity}`;
-     
-     // 3. Fallback to parsing the journal (old way)
-     const journalIdentityLine = commitmentData?.reflection_journal?.split('\n').find(l => l.startsWith('Identity:'));
-     const journalIdentity = journalIdentityLine?.substring(9).trim();
-     if (journalIdentity) return `I'm the kind of leader who ${journalIdentity}`;
 
-     // 4. Default
-     return "Define your leader identity...";
-  }, [commitmentData, lastReflectionEntry]);
-  
+  // whyStatement pulls from planningData (which is roadmap doc)
+  const whyStatement = useMemo(() => planningData?.focus_goals?.[0]?.why || DEFAULT_WHY_STATEMENT, [planningData]);
+
+  // identityStatement uses dedicated field from commitmentData
+  const identityStatement = useMemo(() => {
+     return commitmentData?.identity_anchor
+       ? `I'm the kind of leader who ${commitmentData.identity_anchor}`
+       : DEFAULT_IDENTITY_PLACEHOLDER;
+  }, [commitmentData]);
+
+  // dailyTargetRep logic remains the same
   const dailyTargetRep = useMemo(() => {
      const defaultRep = { text: "Define your focus rep.", definition: "Go to your Development Plan.", microRep: "Review your goals." };
      const bank = COMMITMENT_BANK?.items || [];
@@ -504,6 +716,8 @@ const DashboardScreen = () => {
      if (userRepText) { return { text: userRepText, definition: "Complete your custom task.", microRep: "Start your task." }; }
      return defaultRep;
    }, [activeCommitments, COMMITMENT_BANK]);
+
+  // weakestTier logic remains the same
   const weakestTier = useMemo(() => {
      const scores = pdpData?.assessment?.scores; if (!scores || !LEADERSHIP_TIERS) return { name: 'Getting Started', hex: COLORS.AMBER };
      const sorted = Object.values(scores).sort((a, b) => a.score - b.score); const weakest = sorted[0]; if (!weakest) return { name: 'Getting Started', hex: COLORS.AMBER };
@@ -513,114 +727,207 @@ const DashboardScreen = () => {
 
   // --- Handlers ---
   const triggerCelebration = () => { setShowCelebration(true); setTimeout(() => setShowCelebration(false), 1500); };
+
   const handleToggleCommitment = useCallback(async (commitId) => {
       if (isSavingRep) return; setIsSavingRep(true);
       const currentCommits = commitmentData?.active_commitments || [];
-      const targetCommit = currentCommits.find(c => c.id === commitId);
-      if (!targetCommit) { setIsSavingRep(false); return; }
+      const targetCommitIndex = currentCommits.findIndex(c => c.id === commitId);
+      if (targetCommitIndex === -1) { setIsSavingRep(false); return; }
+
+      const targetCommit = currentCommits[targetCommitIndex];
       const newStatus = targetCommit.status === 'Committed' ? 'Pending' : 'Committed';
-      const updatedCommitments = currentCommits.map(c => c.id === commitId ? { ...c, status: newStatus } : c);
+      const updatedCommitments = [
+          ...currentCommits.slice(0, targetCommitIndex),
+          { ...targetCommit, status: newStatus },
+          ...currentCommits.slice(targetCommitIndex + 1)
+      ];
+
       const updates = { active_commitments: updatedCommitments };
+      let updatedStreak = streakCount;
+      let updatedCoins = streakCoins;
+
       try {
         if (newStatus === 'Committed') {
-          const currentStreak = streakCount || 0; const newStreak = currentStreak + 1; updates.streak_count = newStreak;
-          if (newStreak > 0 && newStreak % 7 === 0) { const currentCoins = streakCoins || 0; updates.streak_coins = currentCoins + 2; }
+          updatedStreak = (streakCount || 0) + 1;
+          updates.streak_count = updatedStreak;
+          if (updatedStreak > 0 && updatedStreak % 7 === 0) { // Award coins every 7 days
+            updatedCoins = (streakCoins || 0) + 2;
+            updates.streak_coins = updatedCoins;
+          }
+        } else {
+          // Optional: Logic if undoing completion affects streak (e.g., reset if undone on the same day?)
+          // For simplicity, current logic doesn't penalize unchecking.
         }
+
         await updateCommitmentData(updates);
         if (newStatus === 'Committed') { triggerCelebration(); }
-      } catch (error) { console.error("Failed to update rep status:", error); }
-      finally { setIsSavingRep(false); }
+
+      } catch (error) {
+        console.error("Failed to update rep status:", error);
+        alert("Error updating rep. Please try again.");
+        // Consider reverting local state on error?
+      } finally {
+        setIsSavingRep(false);
+      }
     }, [commitmentData, updateCommitmentData, isSavingRep, streakCount, streakCoins]);
-  const handleCommitMicroRep = () => { console.log("Committing micro-rep!"); triggerCelebration(); };
-  const handleShareToPod = (postText) => { console.log("Sharing to pod:", postText); setPodPosts([{ id:`s${podPosts.length+1}`, author: displayedUserName, text: postText, time:"Just now" }, ...podPosts]); };
-  const handleReflectionSaved = (savedEntry) => { setLastReflectionEntry(savedEntry); setTimeout(() => setLastReflectionEntry(null), 500); };
+
+  const handleCommitMicroRep = () => {
+      console.log("Committing micro-rep action!");
+      // Potentially update state or trigger other actions here
+      triggerCelebration();
+  };
+
+  const handleShareToPod = (postText) => {
+      console.log("Sharing to pod:", postText);
+      // Placeholder: Add to local state. Replace with API/DB call.
+      setPodPosts(prev => [{ id:`local_${Date.now()}`, author: displayedUserName, text: postText, time:"Just now" }, ...prev]);
+  };
+
+  // Called after reflection form saves successfully
+  const handleReflectionSaved = (savedEntry) => {
+      setLastReflectionEntry(savedEntry); // Update state to trigger AI Nudge
+  };
+
   const handleModeToggle = async () => {
-      if (isSavingMode) return; setIsSavingMode(true); const newMode = !isArenaMode;
+      if (isSavingMode) return; setIsSavingMode(true);
+      const newMode = !isArenaMode;
       try { await updateCommitmentData({ arena_mode: newMode }); }
       catch (error) { console.error("Failed to update mode:", error); alert("Could not switch mode."); }
       finally { setIsSavingMode(false); }
     };
 
-  // --- NEW: Save handler for Identity Anchor ---
+  // Save Identity Anchor (updates commitmentData)
   const handleSaveIdentity = async (newIdentity) => {
-    if (!newIdentity.trim()) {
-      alert("Identity cannot be empty.");
-      return;
-    }
+    if (!newIdentity.trim()) { alert("Identity cannot be empty."); return; }
     try {
       await updateCommitmentData({ identity_anchor: newIdentity.trim() });
-      setIsIdentityModalOpen(false);
-    } catch (e) {
-      console.error("Failed to save identity anchor:", e);
-      alert("Failed to save identity.");
-    }
+      setIsIdentityModalOpen(false); // Close modal on success
+    } catch (e) { console.error("Failed to save identity anchor:", e); alert("Failed to save identity."); }
   };
 
+  // Save Habit Anchor (updates commitmentData)
+  const handleSaveHabitAnchor = async (newAnchor) => {
+    if (!newAnchor.trim()) { alert("Habit anchor cannot be empty."); return; }
+    try {
+      await updateCommitmentData({ habit_anchor: newAnchor.trim() });
+      setIsHabitModalOpen(false); // Close modal on success
+    } catch (e) { console.error("Failed to save habit anchor:", e); alert("Failed to save habit anchor."); }
+  };
+
+  // Save Why It Matters (updates planningData)
+  const handleSaveWhy = async (newWhy) => {
+    if (!newWhy.trim()) { alert("'Why' statement cannot be empty."); return; }
+    const currentGoals = planningData?.focus_goals || [];
+    let updatedGoals;
+    if (currentGoals.length > 0) {
+      // Update the 'why' of the first goal
+      updatedGoals = [{ ...currentGoals[0], why: newWhy.trim() }, ...currentGoals.slice(1)];
+    } else {
+      // Create a default goal structure if none exist
+      updatedGoals = [{ id: `goal_${Date.now()}`, text: 'Define in Development Plan', why: newWhy.trim(), status: 'Active' }];
+      console.warn("No focus goal found. Creating default goal to save 'Why'.");
+    }
+    try {
+      await updatePlanningData({ focus_goals: updatedGoals }); // Use the correct update function
+      setIsWhyModalOpen(false); // Close modal on success
+    } catch (e) { console.error("Failed to save 'Why':", e); alert("Failed to save 'Why'."); }
+  };
+
+
   // --- Main Render ---
-  if (isAppLoading && !commitmentData && !pdpData) { return <div className="min-h-screen flex items-center justify-center"> <Loader className="animate-spin text-[#47A88D] h-12 w-12" /> Loading...</div>; }
+  // Check if *any* essential data is still loading
+  if (isAppLoading || !commitmentData || !pdpData || !planningData) {
+     return <div className="min-h-screen flex items-center justify-center bg-gray-50 text-gray-600"><Loader className="animate-spin w-8 h-8 mr-3 text-teal-600"/> Loading your Arena...</div>;
+  }
+
+  // --- VERIFIED: Safely extract suggestion items ---
+  const identitySuggestions = IDENTITY_ANCHOR_CATALOG?.items || [];
+  const habitSuggestions = HABIT_ANCHOR_CATALOG?.items || [];
+  const whySuggestions = WHY_CATALOG?.items || [];
 
   return (
-    <div className={`p-6 space-y-6 bg-[${COLORS.LIGHT_GRAY}] min-h-screen`}>
+    <div className={`p-4 md:p-6 space-y-6 bg-[${COLORS.LIGHT_GRAY}] min-h-screen`}>
       <CelebrationOverlay show={showCelebration} />
       <ReflectionLogModal isOpen={isLogModalOpen} onClose={() => setIsLogModalOpen(false)} history={reflectionHistory} isLoading={isHistoryLoading} />
-      {/* --- NEW: Render Identity Modal --- */}
-      <IdentityAnchorModal 
-        isOpen={isIdentityModalOpen} 
-        onClose={() => setIsIdentityModalOpen(false)} 
+
+      {/* --- Modals --- */}
+      <IdentityAnchorModal
+        isOpen={isIdentityModalOpen}
+        onClose={() => setIsIdentityModalOpen(false)}
         currentIdentity={identityStatement}
-        onSave={handleSaveIdentity} 
+        onSave={handleSaveIdentity}
+        suggestions={identitySuggestions} // Pass extracted items
+      />
+      <HabitAnchorModal
+        isOpen={isHabitModalOpen}
+        onClose={() => setIsHabitModalOpen(false)}
+        currentAnchor={habitAnchor}
+        onSave={handleSaveHabitAnchor}
+        suggestions={habitSuggestions} // Pass extracted items
+        defaultAnchorText={DEFAULT_HABIT_ANCHOR}
+      />
+      <WhyItMattersModal
+        isOpen={isWhyModalOpen}
+        onClose={() => setIsWhyModalOpen(false)}
+        currentWhy={whyStatement === DEFAULT_WHY_STATEMENT ? "" : whyStatement} // Pass empty if default
+        onSave={handleSaveWhy}
+        suggestions={whySuggestions} // Pass extracted items
       />
 
+
       {/* 1. Header */}
-      <div className={`bg-[${COLORS.OFF_WHITE}] p-6 -mx-6 -mt-6 mb-4 rounded-b-xl shadow-md border-b-4 border-[${COLORS.TEAL}]`}>
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <h1 className={`text-3xl font-extrabold text-[${COLORS.NAVY}] flex items-center gap-3`}> <Home size={28} style={{ color: COLORS.TEAL }} /> The Arena </h1>
-          <div className="flex items-center gap-3 flex-wrap">
+      <div className={`bg-[${COLORS.OFF_WHITE}] p-4 md:p-6 -mx-4 md:-mx-6 -mt-4 md:-mt-6 mb-4 rounded-b-xl shadow-md border-b-4 border-[${COLORS.TEAL}]`}>
+         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <h1 className={`text-2xl md:text-3xl font-extrabold text-[${COLORS.NAVY}] flex items-center gap-2`}> <Home size={28} style={{ color: COLORS.TEAL }} /> The Arena </h1>
+          <div className="flex items-center gap-2 flex-wrap">
             <StreakTracker streakCount={streakCount} coins={streakCoins} />
-            <Button onClick={() => navigate('weekly-recap')} variant="outline" className="text-sm !py-2 !px-4"> <Calendar className="w-4 h-4 mr-2" /> Weekly Recap </Button>
+            <Button onClick={() => navigate('weekly-recap')} variant="outline" className="text-sm !py-2 !px-4"> <Calendar className="w-4 h-4 mr-1.5" /> Recap </Button>
             <ModeSwitch isArenaMode={isArenaMode} onToggle={handleModeToggle} isLoading={isSavingMode} />
           </div>
         </div>
-        <p className="text-gray-600 text-base mt-4"> {greeting} <span className={`font-semibold text-[${COLORS.NAVY}]`}>{displayedUserName}</span>. Your focus: <strong style={{ color: weakestTier?.hex || COLORS.NAVY }}>{weakestTier?.name || 'Getting Started'}</strong>. </p>
+        <p className="text-gray-600 text-base mt-3"> {greeting} <span className={`font-semibold text-[${COLORS.NAVY}]`}>{displayedUserName}</span>. Focus: <strong style={{ color: weakestTier?.hex || COLORS.NAVY }}>{weakestTier?.name || 'Getting Started'}</strong>. </p>
       </div>
 
       {/* 2. Main Content Grid */}
-      {/* --- UPDATED: Changed lg:grid-cols-3 to lg:grid-cols-5 --- */}
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
-        
+
         {/* Left Column */}
-        {/* --- UPDATED: Changed lg:col-span-2 to lg:grid-cols-3 --- */}
         <div className="lg:col-span-3 space-y-6">
            <Card title="🎯 Today's Strategic Focus" icon={Target} accent='NAVY'>
-              <div className='grid md:grid-cols-2 gap-6'>
-                 <div> <p className='text-sm font-semibold ...'><Flag /> Target Rep:</p> <p className='text-lg font-bold ...'>{dailyTargetRep.text}</p> </div>
-                 <div> <p className='text-sm font-semibold ...'><CheckCircle /> What Good Looks Like:</p> <p className='text-sm italic ...'>{dailyTargetRep.definition}</p> </div>
+              <div className='grid md:grid-cols-2 gap-4 md:gap-6 mb-4'>
+                 <div> <p className='text-sm font-semibold text-gray-600'><Flag className="inline w-4 h-4 mr-1"/> Target Rep:</p> <p className='text-lg font-bold text-gray-800'>{dailyTargetRep.text}</p> </div>
+                 <div> <p className='text-sm font-semibold text-gray-600'><CheckCircle className="inline w-4 h-4 mr-1"/> What Good Looks Like:</p> <p className='text-sm italic text-gray-700'>{dailyTargetRep.definition}</p> </div>
               </div>
-              {/* --- UPDATED: Added "Set" button for Identity Anchor --- */}
+              {/* Identity Anchor Section */}
               <div className="mt-4 pt-4 border-t border-gray-200">
-                <div className="flex justify-between items-center gap-4">
-                  <div className="flex-1">
-                    <p className='text-sm font-semibold text-gray-600'><User className="inline w-4 h-4 mr-1" /> Identity Anchor:</p> 
-                    <p className='text-md italic text-gray-800 font-medium'>"{identityStatement}"</p> 
+                <div>
+                  <div className="mb-3">
+                    <p className='text-sm font-semibold text-gray-600'><User className="inline w-4 h-4 mr-1" /> Identity Anchor:</p>
+                    <p className='text-md italic text-gray-800 font-medium'>"{identityStatement}"</p>
                   </div>
-                  <Button onClick={() => setIsIdentityModalOpen(true)} variant="outline" className="text-sm !py-2 !px-4 flex-shrink-0">
-                    <Edit3 className="w-4 h-4 mr-2" /> Set
+                  <Button onClick={() => setIsIdentityModalOpen(true)} variant="outline" className="text-sm !py-2 !px-4 w-full">
+                    <Edit3 className="w-4 h-4 mr-2" /> Set Identity Anchor
                   </Button>
                 </div>
               </div>
            </Card>
+
+           {/* Why & Habit Cards */}
            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-             <WhyItMattersCard statement={whyStatement} onPersonalize={() => navigate('development-plan')} />
-             <HabitAnchorCard anchor={habitAnchor} onEdit={() => navigate('settings-anchors')} isDefault={isDefaultAnchor} />
+             <WhyItMattersCard statement={whyStatement} onPersonalize={() => setIsWhyModalOpen(true)} />
+             <HabitAnchorCard anchor={habitAnchor} onEdit={() => setIsHabitModalOpen(true)} isDefault={isDefaultAnchor} />
            </div>
+
+           {/* Daily Reps Card */}
            <Card title={`⏳ Today's Reps (${commitsCompleted}/${commitsTotal})`} icon={Clock} accent='TEAL'>
-             <EmbeddedDailyReps commitments={activeCommitments} onToggleCommit={handleToggleCommitment} isLoading={isSavingRep || (isAppLoading && !commitmentData)} microRepText={dailyTargetRep.microRep} onCommitMicroRep={handleCommitMicroRep} />
+             <EmbeddedDailyReps commitments={activeCommitments} onToggleCommit={handleToggleCommitment} isLoading={isSavingRep} microRepText={dailyTargetRep.microRep} onCommitMicroRep={handleCommitMicroRep} />
            </Card>
+
+           {/* Social Pod Card */}
            <SocialPodFeed feed={podPosts} onShare={handleShareToPod} isArenaMode={isArenaMode} />
         </div>
 
         {/* Right Column */}
-        {/* --- UPDATED: Changed lg:col-span-1 to lg:col-span-2 --- */}
         <div className="lg:col-span-2 space-y-6">
              <EmbeddedReflectionForm db={db} userId={userId} onOpenLog={() => setIsLogModalOpen(true)} onSaveSuccess={handleReflectionSaved} />
              <AICoachNudge lastReflectionEntry={lastReflectionEntry} callSecureGeminiAPI={callSecureGeminiAPI} hasGeminiKey={hasGeminiKey} />

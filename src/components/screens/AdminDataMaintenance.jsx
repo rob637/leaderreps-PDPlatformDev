@@ -805,6 +805,7 @@ export default function AdminDataMaintenance() {
     { group: "User Data (Development Plan)", label: "📜 Dev Plan History (Coll)", value: "leadership_plan/<uid>/plan_history" },
     { group: "User Data (Development Plan)", label: "📊 Assessment History (Coll)", value: "leadership_plan/<uid>/assessment_history" },
     { group: "User Data (Daily Practice)", label: "✅ Daily Reps / Reflection", value: "user_commitments/<uid>/profile/active" },
+    // --- *** REMOVED previous field-based presets *** ---
     { group: "User Data (Other)", label: "📝 Planning Drafts", value: "user_planning/<uid>/profile/drafts" },
     
     // --- APP DATASETS ---
@@ -812,6 +813,10 @@ export default function AdminDataMaintenance() {
     { group: "App DataSets (Development Plan)", label: "🗺️ Leadership Domains (Tiers)", value: "metadata/config/catalog/leadership_domains" },
     { group: "App DataSets (Development Plan)", label: "🛠️ Skill Content Library (Courses)", value: "metadata/config/catalog/SKILL_CONTENT_LIBRARY" },
     { group: "App DataSets (Daily Practice)", label: "🏦 Daily Rep Bank", value: "metadata/config/catalog/COMMITMENT_BANK" },
+    // --- *** ADDED CATALOG PRESETS *** ---
+    { group: "App DataSets (Daily Practice)", label: "👤 Identity Anchor Catalog", value: "metadata/config/catalog/IDENTITY_ANCHOR_CATALOG" },
+    { group: "App DataSets (Daily Practice)", label: "⚓ Habit Anchor Catalog", value: "metadata/config/catalog/HABIT_ANCHOR_CATALOG" },
+    // --- *** END ADDED *** ---
     { group: "App DataSets (Other Features)", label: "🎯 Target Rep Catalog", value: "metadata/config/catalog/TARGET_REP_CATALOG" },
     { group: "App DataSets (Other Features)", label: "📚 Resource Library", value: "metadata/config/catalog/resource_library" },
     { group: "App DataSets (Other Features)", label: "⚡ Quick Challenges", value: "metadata/config/catalog/quick_challenge_catalog" },
