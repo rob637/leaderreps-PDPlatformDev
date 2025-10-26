@@ -275,7 +275,7 @@ const generatePlanData = (assessment, ownerUid, contentLibrary) => {
         fullPlan.push({
             month: cycle, 
             tier: primaryTier,
-            theme: blockDef.theme,
+            theme: `90-Day Block ${cycle} Focus: ${growthDimensions.join(', ')}`,
             requiredContent: requiredContent,
             status: 'Pending',
             reflectionText: '',
@@ -576,9 +576,18 @@ const TrackerDashboardView = ({ data, updatePdpData, saveNewPlan, userId, naviga
     const handleResetPlan = async () => {
         // CRITICAL FIX: Save an empty Map {} to the document instead of null to bypass Firestore error
         setIsSaving(true);
-        await updatePdpData(() => ({})); 
-        setIsSaving(false);
-        navigate('prof-dev-plan'); 
+        try {
+            // Save empty Map {} to Firestore to clear the plan data
+            await updatePdpData(() => ({})); 
+            // Force a page reload to trigger the app router to read the empty state 
+            // and correctly switch to the generator view.
+            window.location.reload(); 
+        } catch(e) {
+            console.error("Failed to reset plan:", e);
+            alert("Failed to reset plan data. Check database permissions or refresh the page manually.");
+        } finally {
+            setIsSaving(false);
+        }
     };
 
     const handleOpenContentModal = (contentItem) => { setSelectedContent(contentItem); setIsContentModalVisible(true); };
@@ -1121,17 +1130,25 @@ export const ProfDevPlanScreen = ({ initialScreen }) => {
         setGeneratedPlanData(null);
     }, []);
 
+    // CRITICAL FIX: Router Logic Check for Plan Integrity
+    const planExistsAndIsValid = useMemo(() => {
+        // A plan is valid only if it exists AND contains the 'plan' array created by the new generator.
+        return pdpData !== null && Array.isArray(pdpData.plan) && pdpData.plan.length > 0;
+    }, [pdpData]);
+
     let currentView = 'loading';
     if (isLoading || pdpData === undefined) {
         currentView = 'loading';
     } else if (error) {
         currentView = 'error';
-    } else if (pdpData !== null && pdpData.plan && pdpData.plan.length > 0) { 
+    } else if (planExistsAndIsValid) { 
+        // Go to tracker ONLY if the new plan structure is confirmed
         currentView = 'tracker';
-    } else if (generatedPlanData || initialScreen === 'prof-dev-plan-review') {
-        currentView = 'review';
+    } else if (generatedPlanData || initialScreen === 'prof-dev-plan-review' || (pdpData && !planExistsAndIsValid)) { 
+        // If the old, empty document exists (pdpData is {} or {plan_goals: []}) OR if we just generated a new plan
+        currentView = 'generator'; 
     } else {
-        currentView = 'generator';
+        currentView = 'generator'; // Default to generator for new users
     }
     
     // CRITICAL: Updated generatePlanData to take the library as an argument
