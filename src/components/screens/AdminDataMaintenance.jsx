@@ -620,6 +620,7 @@ export default function AdminDataMaintenance() {
 
       {isDocumentPath(path) ? (
         <>
+          {/* Action Buttons */}
           <div className="flex flex-wrap gap-3 mb-6 p-4 bg-white rounded-lg shadow-md border">
             <button className="px-4 py-2 rounded-lg bg-indigo-600 text-white font-semibold hover:bg-indigo-700 transition shadow-md" onClick={readDoc}>🔍 Read Doc</button>
             <button className={`px-4 py-2 rounded-lg border ${liveUnsub ? 'bg-red-100 text-red-600 border-red-300 hover:bg-red-200' : 'bg-white text-gray-700 hover:bg-gray-100'}`} onClick={listenDoc}>
@@ -638,62 +639,59 @@ export default function AdminDataMaintenance() {
             </div>
           </div>
 
-          {/* Editors */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Left: JSON */}
+          {/* Editors (Full Width) */}
+          <div className="flex flex-col gap-6 mb-6">
+            {/* Array Editor (Full Width) */}
             <div className="bg-white p-4 rounded-lg shadow-md border">
-              <div className="text-base font-semibold text-gray-800 mb-2">Full Document JSON (Raw Edit)</div>
-              <textarea 
-                className="w-full min-h-[500px] font-mono border border-gray-300 rounded p-3 text-xs bg-gray-50 focus:ring-indigo-500 focus:border-indigo-500" 
-                spellCheck={false} 
-                value={docJson} 
-                onChange={(e) => setDocJson(e.target.value)} 
-                placeholder="Document content will load here. Edit and use 'Save (Merge)' or 'Replace (Set)'."
+              <div className="flex items-center justify-between mb-3">
+                <div className="text-base font-semibold text-gray-800">Array Table Editor (Full Width)</div>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-gray-600">Field:</span>
+                  <select 
+                    className="border border-gray-300 rounded-lg px-2 py-1 text-sm focus:ring-blue-500 focus:border-blue-500" 
+                    value={activeArray} 
+                    onChange={(e) => setActiveArray(e.target.value)}
+                  >
+                    <option value="" disabled>-- Select Array Field --</option>
+                    {arrayFields.map((f) => <option key={f} value={f}>{f}</option>)}
+                  </select>
+                </div>
+              </div>
+              {arrayFields.length ? (
+                <ArrayTable
+                  fieldName={activeArray}
+                  rows={arrayRows}
+                  setRows={setArrayRows}
+                  onSave={saveArray}
+                />
+              ) : (
+                <div className="text-sm text-gray-600 p-4 border rounded bg-gray-50">
+                  No array fields (e.g., lists or arrays of objects) were found in the document. Click **Read Doc** to load an array-containing document.
+                </div>
+              )}
+            </div>
+
+            {/* KV Editor (Full Width) */}
+            <div className="bg-white p-4 rounded-lg shadow-md border">
+              <div className="text-base font-semibold text-gray-800 mb-2">Key/Value Table (Dot-Path Editor - Full Width)</div>
+              <KVEditor
+                value={docObj}
+                onChange={(obj) => setDocJson(pretty(obj))}
+                onSave={saveKV}
               />
             </div>
+          </div>
 
-            {/* Right: Arrays + Key/Value */}
-            <div className="flex flex-col gap-6">
-              {/* Array Editor */}
-              <div className="bg-white p-4 rounded-lg shadow-md border">
-                <div className="flex items-center justify-between mb-3">
-                  <div className="text-base font-semibold text-gray-800">Array Table Editor</div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm text-gray-600">Field:</span>
-                    <select 
-                      className="border border-gray-300 rounded-lg px-2 py-1 text-sm focus:ring-blue-500 focus:border-blue-500" 
-                      value={activeArray} 
-                      onChange={(e) => setActiveArray(e.target.value)}
-                    >
-                      <option value="" disabled>-- Select Array Field --</option>
-                      {arrayFields.map((f) => <option key={f} value={f}>{f}</option>)}
-                    </select>
-                  </div>
-                </div>
-                {arrayFields.length ? (
-                  <ArrayTable
-                    fieldName={activeArray}
-                    rows={arrayRows}
-                    setRows={setArrayRows}
-                    onSave={saveArray}
-                  />
-                ) : (
-                  <div className="text-sm text-gray-600 p-4 border rounded bg-gray-50">
-                    No array fields (e.g., lists or arrays of objects) were found in the document. Click **Read Doc** to load an array-containing document.
-                  </div>
-                )}
-              </div>
-
-              {/* KV Editor */}
-              <div className="bg-white p-4 rounded-lg shadow-md border">
-                <div className="text-base font-semibold text-gray-800 mb-2">Key/Value Table (Dot-Path Editor)</div>
-                <KVEditor
-                  value={docObj}
-                  onChange={(obj) => setDocJson(pretty(obj))}
-                  onSave={saveKV}
-                />
-              </div>
-            </div>
+          {/* JSON Editor (Moved to Bottom, Full Width) */}
+          <div className="bg-white p-4 rounded-lg shadow-md border">
+            <div className="text-base font-semibold text-gray-800 mb-2">Full Document JSON (Raw Edit)</div>
+            <textarea 
+              className="w-full min-h-[500px] font-mono border border-gray-300 rounded p-3 text-xs bg-gray-50 focus:ring-indigo-500 focus:border-indigo-500" 
+              spellCheck={false} 
+              value={docJson} 
+              onChange={(e) => setDocJson(e.target.value)} 
+              placeholder="Document content will load here. Edit and use 'Save (Merge)' or 'Replace (Set)'."
+            />
           </div>
         </>
       ) : isCollectionPath(path) ? (
