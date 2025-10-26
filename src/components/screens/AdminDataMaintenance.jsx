@@ -1,570 +1,670 @@
-/* AdminDataMaintenance.jsx
-   Firestore Admin: Doc Viewer + Collection Grid + Import/Export
-   - No dependency on useAppServices.jsx (fixes "Could not resolve" build error)
-   - Uses only Firebase client SDK (auth + firestore)
-   - Keeps live doc viewer + adds editable collection grid
-*/
-
+/* eslint-disable no-undef */
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import {
-  getFirestore, doc, collection, getDoc, getDocs, onSnapshot,
-  setDoc, addDoc, deleteDoc, writeBatch, query, limit
-} from "firebase/firestore";
-import { getAuth } from "firebase/auth";
-import { Download, Upload, Play, Pause, RefreshCw, Trash2, Save, Plus, Eye, Database } from "lucide-react";
 
-/* ----------------------------- helpers ----------------------------- */
+/**
+ * Firestore Data Manager
+ * - Works with either document paths (even # segments) or collection paths (odd # segments)
+ * - No dependency on local hooks; uses Firebase globals already on window (fbReady, getFirestore, etc.)
+ * - Safe on Netlify build because we avoid importing app-specific modules
+ *
+ * Tip: Presets include <uid>; we’ll expand it to the current user id if available.
+ */
 
-const pathExplain = (path) => {
-  const parts = (path || "").split("/").filter(Boolean);
-  // Firestore alternates: collection / doc / collection / doc ...
-  const kind = parts.length % 2 === 0 ? "collection" : "document";
-  const tip = kind === "collection"
-    ? "This is a collection path. You can list, add, import documents here."
-    : "This is a document path. Use Read/Listen/Save/Replace/Delete on this JSON.";
-  return { parts, kind, tip };
+const presets = [
+  { label: "metadata/config (doc)", value: "metadata/config" },
+  { label: "metadata/reading_catalog (doc)", value: "metadata/reading_catalog" },
+  { label: "leadership_plan/<uid>/profile/roadmap (doc)", value: "leadership_plan/<uid>/profile/roadmap" },
+  { label: "user_commitments/<uid>/profile/active (doc)", value: "user_commitments/<uid>/profile/active" },
+  { label: "user_planning/<uid>/profile/drafts (doc)", value: "user_planning/<uid>/profile/drafts" },
+  { label: "metadata (collection)", value: "metadata" },
+];
+
+const trimSlashes = (s) => s.replace(/^\s+|\s+$/g, "").replace(/^\/+|\/+$/g, "");
+const segs = (p) => trimSlashes(p).split("/").filter(Boolean);
+const pathKind = (p) => {
+  const n = segs(p).length;
+  if (n === 0) return "invalid";
+  return n % 2 === 0 ? "document" : "collection";
 };
+const nowIso = () => new Date().toISOString();
 
-const tryJson = (s) => { try { return JSON.parse(s); } catch { return null; } };
-const isObject = (v) => v && typeof v === "object" && !Array.isArray(v);
-
-const coerce = (v) => {
-  if (v === "null") return null;
-  if (v === "true") return true;
-  if (v === "false") return false;
-  if (typeof v === "string" && v.trim() !== "" && !Number.isNaN(Number(v))) return Number(v);
-  const j = typeof v === "string" ? tryJson(v) : null;
-  return j !== null ? j : v;
+/** CSV helpers (simple but robust enough for admin use) */
+const csvEscape = (v) => {
+  if (v === null || v === undefined) return "";
+  const s = typeof v === "string" ? v : JSON.stringify(v);
+  return /[,"\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
 };
-
-const parseCSV = (text) => {
-  const rows = [];
-  let i = 0, field = "", row = [], inQuotes = false;
-  const pushField = () => { row.push(field); field = ""; };
-  const pushRow = () => { rows.push(row); row = []; };
-
-  while (i < text.length) {
-    const ch = text[i];
-    if (inQuotes) {
-      if (ch === '"') {
-        if (text[i + 1] === '"') { field += '"'; i += 2; continue; }
-        inQuotes = false; i++; continue;
+const rowsToCSV = (rows) => {
+  const keys = Array.from(
+    rows.reduce((acc, r) => {
+      Object.keys(r).forEach((k) => acc.add(k));
+      return acc;
+    }, new Set(["_id"]))
+  );
+  const head = keys.join(",");
+  const body = rows.map((r) => keys.map((k) => csvEscape(r[k])).join(",")).join("\n");
+  return `${head}\n${body}`;
+};
+// Minimal CSV parser (supports quoted cells and commas in quotes)
+const csvToRows = (text) => {
+  const lines = text.replace(/\r/g, "").split("\n").filter((l) => l.length > 0);
+  if (lines.length === 0) return [];
+  const parseLine = (line) => {
+    const out = [];
+    let cur = "";
+    let inQ = false;
+    for (let i = 0; i < line.length; i++) {
+      const ch = line[i];
+      if (inQ) {
+        if (ch === '"' && line[i + 1] === '"') {
+          cur += '"';
+          i++;
+        } else if (ch === '"') {
+          inQ = false;
+        } else {
+          cur += ch;
+        }
+      } else {
+        if (ch === '"') inQ = true;
+        else if (ch === ",") {
+          out.push(cur);
+          cur = "";
+        } else {
+          cur += ch;
+        }
       }
-      field += ch; i++; continue;
-    } else {
-      if (ch === '"') { inQuotes = true; i++; continue; }
-      if (ch === ",") { pushField(); i++; continue; }
-      if (ch === "\r") { i++; continue; }
-      if (ch === "\n") { pushField(); pushRow(); i++; continue; }
-      field += ch; i++; continue;
     }
-  }
-  pushField(); pushRow();
-  return rows.filter(r => r.length > 1 || (r.length === 1 && r[0] !== ""));
-};
-
-const toCSV = (rows, columns) => {
-  const esc = (v) => {
-    const s = typeof v === "string" ? v : JSON.stringify(v ?? "");
-    return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+    out.push(cur);
+    return out;
   };
-  const header = columns.join(",");
-  const lines = rows.map(r => columns.map(c => esc(c === "__id" ? r.__id : r[c])).join(","));
-  return [header, ...lines].join("\n");
+  const header = parseLine(lines[0]);
+  return lines.slice(1).map((ln) => {
+    const cols = parseLine(ln);
+    const row = {};
+    header.forEach((h, i) => {
+      const raw = cols[i] ?? "";
+      // Try to parse numbers/booleans/JSON
+      let v = raw;
+      if (raw === "true") v = true;
+      else if (raw === "false") v = false;
+      else if (raw === "") v = "";
+      else if (/^-?\d+(\.\d+)?$/.test(raw)) v = Number(raw);
+      else if ((raw.startsWith("{") && raw.endsWith("}")) || (raw.startsWith("[") && raw.endsWith("]"))) {
+        try { v = JSON.parse(raw); } catch {}
+      }
+      row[h] = v;
+    });
+    return row;
+  });
 };
-
-const inferColumns = (docs) => {
-  const set = new Set(["__id"]);
-  docs.forEach(r => Object.keys(r.data || {}).forEach(k => set.add(k)));
-  return Array.from(set);
-};
-
-const downloadText = (filename, text) => {
-  const blob = new Blob([text], { type: "text/plain;charset=utf-8" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url; a.download = filename; a.click();
-  setTimeout(() => URL.revokeObjectURL(url), 300);
-};
-
-/* ------------------------------ component ---------------------------- */
 
 export default function AdminDataMaintenance() {
-  const db = getFirestore();
-  const auth = getAuth();
-  const uid = auth.currentUser?.uid || "<uid>";
-
-  // Presets you used before (kept)
-  const presets = [
-    { label: "metadata/config (doc)", path: "metadata/config" },
-    { label: "metadata/reading_catalog (doc)", path: "metadata/reading_catalog" },
-    { label: "leadership_plan/<uid>/profile/roadmap (doc)", path: `leadership_plan/${uid}/profile/roadmap` },
-    { label: "user_commitments/<uid>/profile/active (doc)", path: `user_commitments/${uid}/profile/active` },
-    { label: "user_planning/<uid>/profile/drafts (doc)", path: `user_planning/${uid}/profile/drafts` },
-    { label: "metadata (collection)", path: "metadata" },
-  ];
-
-  const [path, setPath] = useState(presets[0].path);
-  const { kind, tip } = useMemo(() => pathExplain(path), [path]);
-
+  const [path, setPath] = useState("metadata/reading_catalog");
   const [status, setStatus] = useState("Idle");
   const [error, setError] = useState("");
+  const [info, setInfo] = useState("");
+  const [live, setLive] = useState(null);
+  const unsubRef = useRef(null);
 
   // Document state
-  const [docJson, setDocJson] = useState("{}");
   const [docExists, setDocExists] = useState(false);
-  const [listening, setListening] = useState(false);
-  const unsubRef = useRef(null);
+  const [docJson, setDocJson] = useState({});
 
   // Collection state
   const [rows, setRows] = useState([]);
-  const [columns, setColumns] = useState(["__id"]);
-  const [loadingList, setLoadingList] = useState(false);
-  const [selectedIds, setSelectedIds] = useState(new Set());
+  const [selected, setSelected] = useState(new Set());
 
-  useEffect(() => () => stopListen(), []);
-  const stopListen = () => {
-    if (unsubRef.current) { unsubRef.current(); unsubRef.current = null; setListening(false); }
+  const expandedPath = useMemo(() => {
+    const uid = window?.getAuth?.().currentUser?.uid ?? "<uid>";
+    return trimSlashes(path.replaceAll("<uid>", uid));
+  }, [path]);
+
+  const kind = useMemo(() => pathKind(expandedPath), [expandedPath]);
+
+  const useFb = () => {
+    const fb = {
+      getFirestore: window.getFirestore,
+      doc: window.doc,
+      getDoc: window.getDoc,
+      setDoc: window.setDoc,
+      deleteDoc: window.deleteDoc,
+      updateDoc: window.updateDoc,
+      collection: window.collection,
+      getDocs: window.getDocs,
+      addDoc: window.addDoc,
+      writeBatch: window.writeBatch,
+      onSnapshot: window.onSnapshot,
+      fbReady: window.fbReady,
+    };
+    Object.entries(fb).forEach(([k, v]) => {
+      if (typeof v !== "function") {
+        throw new Error(`Missing Firebase global: ${k}`);
+      }
+    });
+    return fb;
   };
 
-  /* ----------------------------- Doc actions ----------------------------- */
+  useEffect(() => {
+    // Stop any active listener when path changes
+    if (unsubRef.current) {
+      unsubRef.current();
+      unsubRef.current = null;
+      setLive(null);
+    }
+    setError("");
+    setStatus("Idle");
+    setInfo("");
+    setDocExists(false);
+    setDocJson({});
+    setRows([]);
+    setSelected(new Set());
+  }, [expandedPath]);
 
   const readDoc = async () => {
-    setError(""); setStatus("Reading doc…");
     try {
-      const ref = doc(db, ...path.split("/"));
+      setStatus("Loading…");
+      setError("");
+      const { fbReady, getFirestore, doc, getDoc } = useFb();
+      await fbReady?.();
+      const db = getFirestore();
+      const ref = doc(db, ...segs(expandedPath));
       const snap = await getDoc(ref);
       setDocExists(snap.exists());
-      setDocJson(JSON.stringify(snap.exists() ? (snap.data() || {}) : {}, null, 2));
-      setStatus(`Read @ ${new Date().toISOString()}`);
-    } catch (e) { setError(String(e)); setStatus("Error"); }
+      setDocJson(snap.exists() ? snap.data() : {});
+      setStatus("Loaded");
+      setInfo(`Read: ${nowIso()}`);
+    } catch (e) {
+      setStatus("Error");
+      setError(String(e));
+    }
   };
 
-  const toggleListen = async () => {
-    if (listening) return stopListen();
-    setError("");
+  const listenDoc = async () => {
     try {
-      const ref = doc(db, ...path.split("/"));
+      setStatus("Listening…");
+      setError("");
+      const { fbReady, getFirestore, doc, onSnapshot } = useFb();
+      await fbReady?.();
+      const db = getFirestore();
+      const ref = doc(db, ...segs(expandedPath));
+      if (unsubRef.current) unsubRef.current();
       unsubRef.current = onSnapshot(ref, (snap) => {
         setDocExists(snap.exists());
-        setDocJson(JSON.stringify(snap.exists() ? (snap.data() || {}) : {}, null, 2));
-        setStatus(`Live @ ${new Date().toLocaleTimeString()}`);
-        console.log("[ADMIN LIVE]", path, snap.exists(), snap.data());
+        setDocJson(snap.exists() ? snap.data() : {});
+        setLive({ readTime: nowIso() });
       });
-      setListening(true);
-    } catch (e) { setError(String(e)); }
+      setInfo("Live listener attached. It will update automatically.");
+    } catch (e) {
+      setStatus("Error");
+      setError(String(e));
+    }
   };
 
-  const saveDocMerge = async () => {
-    setError(""); setStatus("Saving (merge)…");
+  const saveDoc = async (merge = true) => {
     try {
-      const data = tryJson(docJson);
-      if (!isObject(data)) throw new Error("Invalid JSON (object required).");
-      await setDoc(doc(db, ...path.split("/")), data, { merge: true });
-      setStatus("Saved (merge).");
-    } catch (e) { setError(String(e)); setStatus("Error"); }
+      setStatus("Saving…");
+      setError("");
+      const { fbReady, getFirestore, doc, setDoc } = useFb();
+      await fbReady?.();
+      const db = getFirestore();
+      const ref = doc(db, ...segs(expandedPath));
+      await setDoc(ref, docJson, { merge });
+      setStatus("Saved");
+      setInfo(`Saved (${merge ? "merge" : "replace"}) at ${nowIso()}`);
+    } catch (e) {
+      setStatus("Error");
+      setError(String(e));
+    }
   };
 
-  const replaceDoc = async () => {
-    setError(""); setStatus("Replacing…");
+  const deleteDocAtPath = async () => {
     try {
-      const data = tryJson(docJson);
-      if (!isObject(data)) throw new Error("Invalid JSON (object required).");
-      await setDoc(doc(db, ...path.split("/")), data, { merge: false });
-      setStatus("Replaced.");
-    } catch (e) { setError(String(e)); setStatus("Error"); }
-  };
-
-  const deleteDocNow = async () => {
-    setError(""); setStatus("Deleting…");
-    try {
-      await deleteDoc(doc(db, ...path.split("/")));
+      if (!confirm("Delete this document permanently?")) return;
+      setStatus("Deleting…");
+      setError("");
+      const { fbReady, getFirestore, doc, deleteDoc } = useFb();
+      await fbReady?.();
+      const db = getFirestore();
+      const ref = doc(db, ...segs(expandedPath));
+      await deleteDoc(ref);
       setDocExists(false);
-      setDocJson("{}");
-      setStatus("Deleted.");
-    } catch (e) { setError(String(e)); setStatus("Error"); }
+      setDocJson({});
+      setStatus("Deleted");
+      setInfo(`Deleted at ${nowIso()}`);
+    } catch (e) {
+      setStatus("Error");
+      setError(String(e));
+    }
   };
-
-  /* -------------------------- Collection actions ------------------------- */
 
   const listCollection = async () => {
-    setLoadingList(true); setError("");
     try {
-      const ref = collection(db, ...path.split("/"));
-      const snap = await getDocs(query(ref, limit(500)));
-      const records = [];
-      snap.forEach(d => records.push({ __id: d.id, ...(d.data() || {}) }));
-      setRows(records);
-      setColumns(inferColumns(records));
-      setStatus(`Listed ${records.length} doc(s).`);
-    } catch (e) { setError(String(e)); setStatus("Error"); }
-    finally { setLoadingList(false); }
+      setStatus("Loading…");
+      setError("");
+      const { fbReady, getFirestore, collection, getDocs } = useFb();
+      await fbReady?.();
+      const db = getFirestore();
+      const cref = collection(db, expandedPath);
+      const snap = await getDocs(cref);
+      const out = snap.docs.map((d) => ({ _id: d.id, ...d.data() }));
+      setRows(out);
+      setStatus("Loaded");
+      setInfo(`Documents: ${out.length}`);
+    } catch (e) {
+      setStatus("Error");
+      setError(String(e));
+    }
   };
 
-  const updateCell = (id, key, value) => {
-    setRows(prev => prev.map(r => (r.__id === id ? { ...r, [key]: value } : r)));
+  const addRow = () => {
+    setRows((r) => [{ _id: "", _new: true }, ...r]);
   };
 
-  const saveRow = async (row) => {
-    setError(""); setStatus(`Saving ${row.__id}…`);
-    try {
-      const { __id, ...data } = row;
-      const normalized = {};
-      Object.entries(data).forEach(([k, v]) => normalized[k] = coerce(v));
-      await setDoc(doc(db, ...path.split("/"), __id), normalized, { merge: true });
-      setStatus(`Saved ${__id}.`);
-    } catch (e) { setError(String(e)); setStatus("Error"); }
+  const toggleSel = (id, checked) => {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (checked) next.add(id);
+      else next.delete(id);
+      return next;
+    });
   };
 
-  const addRow = async () => {
-    setError("");
-    try {
-      const ref = collection(db, ...path.split("/"));
-      const created = await addDoc(ref, { created_at: new Date().toISOString() });
-      setRows(prev => [{ __id: created.id, created_at: new Date().toISOString() }, ...prev]);
-      if (!columns.includes("__id")) setColumns(prev => ["__id", ...prev]);
-      setStatus(`Added ${created.id}.`);
-    } catch (e) { setError(String(e)); setStatus("Error"); }
-  };
-
-  const deleteRowOne = async (id) => {
-    setError(""); setStatus(`Deleting ${id}…`);
-    try {
-      await deleteDoc(doc(db, ...path.split("/"), id));
-      setRows(prev => prev.filter(r => r.__id !== id));
-      setSelectedIds(prev => { const n = new Set(prev); n.delete(id); return n; });
-      setStatus(`Deleted ${id}.`);
-    } catch (e) { setError(String(e)); setStatus("Error"); }
+  const setCell = (index, key, value) => {
+    setRows((prev) => {
+      const next = [...prev];
+      next[index] = { ...next[index], [key]: value };
+      return next;
+    });
   };
 
   const batchSave = async () => {
-    setError(""); setStatus("Batch saving…");
     try {
-      const b = writeBatch(db);
-      rows.forEach(r => {
-        const { __id, ...data } = r;
-        const normalized = {};
-        Object.entries(data).forEach(([k, v]) => normalized[k] = coerce(v));
-        b.set(doc(db, ...path.split("/"), __id), normalized, { merge: true });
-      });
-      await b.commit();
-      setStatus(`Batch saved ${rows.length} doc(s).`);
-    } catch (e) { setError(String(e)); setStatus("Error"); }
-  };
+      setStatus("Saving…");
+      setError("");
+      const { fbReady, getFirestore, doc, setDoc, addDoc, collection } = useFb();
+      await fbReady?.();
+      const db = getFirestore();
 
-  const batchDeleteSelected = async () => {
-    if (selectedIds.size === 0) return;
-    setError(""); setStatus("Batch deleting…");
-    try {
-      const b = writeBatch(db);
-      selectedIds.forEach(id => b.delete(doc(db, ...path.split("/"), id)));
-      await b.commit();
-      setRows(prev => prev.filter(r => !selectedIds.has(r.__id)));
-      setSelectedIds(new Set());
-      setStatus("Batch delete complete.");
-    } catch (e) { setError(String(e)); setStatus("Error"); }
-  };
+      const saved = [];
+      for (const row of rows) {
+        const { _id, _deleted, _new, ...rest } = row;
 
-  /* ----------------------------- Import/Export ---------------------------- */
+        if (_deleted) continue; // skip
 
-  const importJSON = async (file) => {
-    setError("");
-    try {
-      const text = await file.text();
-      const parsed = JSON.parse(text);
-      const b = writeBatch(db);
+        // Coerce primitives from string literals where possible for convenience:
+        const clean = JSON.parse(JSON.stringify(rest));
 
-      if (Array.isArray(parsed)) {
-        parsed.forEach((obj, i) => {
-          const id = String(obj.__id || obj.id || `row_${Date.now()}_${i}`);
-          const data = { ...obj }; delete data.id; delete data.__id;
-          Object.entries(data).forEach(([k, v]) => data[k] = coerce(v));
-          b.set(doc(db, ...path.split("/"), id), data, { merge: true });
-        });
-        await b.commit();
-        await listCollection();
-        setStatus(`Imported ${parsed.length} doc(s).`);
-      } else {
-        const id = String(parsed.__id || parsed.id || `row_${Date.now()}`);
-        const data = { ...parsed }; delete data.id; delete data.__id;
-        Object.entries(data).forEach(([k, v]) => data[k] = coerce(v));
-        await setDoc(doc(db, ...path.split("/"), id), data, { merge: true });
-        await listCollection();
-        setStatus("Imported 1 doc.");
+        if (!_id) {
+          // create new doc with auto id
+          const cref = collection(db, expandedPath);
+          const res = await addDoc(cref, clean);
+          saved.push(res.id);
+        } else {
+          const dref = doc(db, ...segs(`${expandedPath}/${_id}`));
+          await setDoc(dref, clean, { merge: true });
+          saved.push(_id);
+        }
       }
-    } catch (e) { setError(String(e)); }
+      setStatus("Saved");
+      setInfo(`Saved ${saved.length} document(s) at ${nowIso()}`);
+      await listCollection();
+    } catch (e) {
+      setStatus("Error");
+      setError(String(e));
+    }
   };
 
-  const importCSV = async (file) => {
-    setError("");
+  const deleteSelected = async () => {
     try {
-      const text = await file.text();
-      const rowsCsv = parseCSV(text);
-      if (rowsCsv.length < 2) throw new Error("CSV needs a header row and at least one data row.");
-      const headers = rowsCsv[0];
-      const idIndex = headers.findIndex(h => h === "id" || h === "__id");
-
-      const b = writeBatch(db);
-      rowsCsv.slice(1).forEach((arr, i) => {
-        if (arr.every(v => (v ?? "") === "")) return;
-        const obj = {};
-        headers.forEach((h, j) => obj[h] = coerce(arr[j] ?? ""));
-        const id = String(idIndex >= 0 ? (arr[idIndex] || `row_${Date.now()}_${i}`) : `row_${Date.now()}_${i}`);
-        delete obj.id; delete obj.__id;
-        b.set(doc(db, ...path.split("/"), id), obj, { merge: true });
-      });
-      await b.commit();
+      if (selected.size === 0) return;
+      if (!confirm(`Delete ${selected.size} selected document(s)?`)) return;
+      setStatus("Deleting…");
+      setError("");
+      const { fbReady, getFirestore, doc, deleteDoc } = useFb();
+      await fbReady?.();
+      const db = getFirestore();
+      for (const id of selected) {
+        const dref = doc(db, ...segs(`${expandedPath}/${id}`));
+        await deleteDoc(dref);
+      }
+      setSelected(new Set());
       await listCollection();
-      setStatus(`Imported ${rowsCsv.length - 1} doc(s) from CSV.`);
-    } catch (e) { setError(String(e)); }
+      setStatus("Deleted");
+      setInfo(`Deleted ${selected.size} document(s)`);
+    } catch (e) {
+      setStatus("Error");
+      setError(String(e));
+    }
   };
 
   const exportJSON = () => {
-    if (kind === "document") downloadText("document.json", docJson);
-    else downloadText("collection.json", JSON.stringify(rows, null, 2));
+    const blob = new Blob(
+      [JSON.stringify(kind === "document" ? docJson : rows, null, 2)],
+      { type: "application/json" }
+    );
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = (kind === "document" ? "document" : "collection") + ".json";
+    a.click();
   };
 
   const exportCSV = () => {
     if (kind !== "collection") return;
-    const csv = toCSV(rows, columns);
-    downloadText("collection.csv", csv);
+    const blob = new Blob([rowsToCSV(rows)], { type: "text/csv" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "collection.csv";
+    a.click();
   };
 
-  /* --------------------------------- UI --------------------------------- */
+  const importJSON = async (file) => {
+    const text = await file.text();
+    try {
+      const data = JSON.parse(text);
+      if (kind === "document") {
+        setDocJson(data);
+        setInfo("JSON loaded into editor; click Save to write to Firestore.");
+      } else {
+        if (Array.isArray(data)) {
+          setRows(data.map((r) => (r._id ? r : { _id: "", ...r })));
+        } else if (data && typeof data === "object") {
+          const arr = Object.entries(data).map(([id, v]) => ({ _id: id, ...v }));
+          setRows(arr);
+        } else {
+          throw new Error("JSON must be an object or array for collections.");
+        }
+        setInfo("Rows loaded; click Batch Save to write to Firestore.");
+      }
+    } catch (e) {
+      setError("Invalid JSON: " + e.message);
+      setStatus("Error");
+    }
+  };
+
+  const importCSV = async (file) => {
+    const text = await file.text();
+    try {
+      const arr = csvToRows(text);
+      setRows(arr.map((r) => (r._id ? r : { _id: "", ...r })));
+      setInfo("CSV loaded; click Batch Save to write to Firestore.");
+    } catch (e) {
+      setError("Invalid CSV: " + e.message);
+      setStatus("Error");
+    }
+  };
 
   return (
-    <div className="p-6">
-      <div className="flex items-center gap-3 mb-4">
-        <Database className="w-6 h-6 text-slate-700" />
-        <h2 className="text-2xl font-bold">Admin · Firestore Data Manager</h2>
+    <div className="max-w-6xl mx-auto p-4">
+      <h1 className="text-2xl font-semibold mb-4">Admin · Firestore Data Manager</h1>
+
+      {/* Presets */}
+      <div className="flex flex-wrap gap-2 mb-3">
+        {presets.map((p) => (
+          <button
+            key={p.label}
+            onClick={() => setPath(p.value)}
+            className="px-2 py-1 text-sm rounded border hover:bg-gray-50"
+            title={p.value}
+          >
+            {p.label}
+          </button>
+        ))}
       </div>
 
-      <div className="mb-3">
-        <div className="text-xs text-slate-600 mb-2">Presets</div>
-        <div className="flex flex-wrap gap-2">
-          {presets.map(p => (
-            <button
-              key={p.label}
-              onClick={() => setPath(p.path)}
-              className="text-xs px-2 py-1 rounded border border-slate-300 bg-white hover:bg-slate-50"
-              title={p.path}
-            >
-              {p.label}
-            </button>
-          ))}
-        </div>
-      </div>
-
+      {/* Path input */}
       <div className="flex items-center gap-2 mb-2">
         <input
           value={path}
           onChange={(e) => setPath(e.target.value)}
-          className="flex-1 px-3 py-2 rounded border border-slate-300"
-          placeholder="collection or collection/doc/collection/doc"
+          className="flex-1 font-mono px-3 py-2 rounded border"
+          placeholder="collection[/doc[/subcollection...]]"
         />
         <button
-          onClick={() => (kind === "document" ? readDoc() : listCollection())}
-          className="px-3 py-2 bg-slate-800 text-white rounded hover:bg-slate-700"
+          className="px-3 py-2 rounded border"
+          onClick={() =>
+            alert(
+              "Path rules:\n- A DOCUMENT path has an EVEN number of segments, e.g. `metadata/config`.\n- A COLLECTION path has an ODD number of segments, e.g. `metadata` or `users/uid/profile`.\n\nExamples:\n• metadata/config  → document\n• metadata         → collection\n• leadership_plan/<uid>/profile/roadmap → document\n"
+            )
+          }
         >
-          {kind === "document" ? "Read Doc" : "List Collection"}
+          Path Help
         </button>
-        <button onClick={exportJSON} className="px-3 py-2 border rounded bg-white">
-          <Download className="w-4 h-4 inline-block mr-1" /> Export JSON
-        </button>
-        {kind === "collection" && (
-          <button onClick={exportCSV} className="px-3 py-2 border rounded bg-white">
-            <Download className="w-4 h-4 inline-block mr-1" /> Export CSV
-          </button>
+      </div>
+
+      {/* Path meta */}
+      <div className="text-sm mb-3">
+        <div>
+          <span className="font-semibold">Expanded:</span>{" "}
+          <span className="font-mono">{expandedPath || "(empty)"}</span>
+        </div>
+        <div>
+          <span className="font-semibold">Path type:</span>{" "}
+          {kind === "document" && (
+            <span className="text-blue-700">document — You can read, live-listen, edit, replace or delete.</span>
+          )}
+          {kind === "collection" && (
+            <span className="text-green-700">collection — You can list, add, import/export documents.</span>
+          )}
+          {kind === "invalid" && <span className="text-red-700">invalid — enter a Firestore path.</span>}
+        </div>
+      </div>
+
+      {/* Actions */}
+      <div className="flex flex-wrap items-center gap-2 mb-3">
+        {kind === "document" ? (
+          <>
+            <button className="px-3 py-2 rounded bg-gray-800 text-white" onClick={readDoc}>
+              Read Doc
+            </button>
+            <button className="px-3 py-2 rounded bg-gray-700 text-white" onClick={listenDoc}>
+              Listen (live)
+            </button>
+            <button className="px-3 py-2 rounded bg-blue-600 text-white" onClick={() => saveDoc(true)}>
+              Save (Merge)
+            </button>
+            <button className="px-3 py-2 rounded bg-indigo-600 text-white" onClick={() => saveDoc(false)}>
+              Replace (Set)
+            </button>
+            <button className="px-3 py-2 rounded bg-red-600 text-white" onClick={deleteDocAtPath}>
+              Delete Doc
+            </button>
+            <button className="px-3 py-2 rounded border" onClick={exportJSON}>
+              Export JSON
+            </button>
+            <label className="px-3 py-2 rounded border cursor-pointer">
+              Import JSON
+              <input type="file" accept="application/json" className="hidden" onChange={(e) => e.target.files?.[0] && importJSON(e.target.files[0])} />
+            </label>
+          </>
+        ) : kind === "collection" ? (
+          <>
+            <button className="px-3 py-2 rounded bg-gray-800 text-white" onClick={listCollection}>
+              List Collection
+            </button>
+            <button className="px-3 py-2 rounded bg-blue-600 text-white" onClick={addRow}>
+              + Add Row
+            </button>
+            <button className="px-3 py-2 rounded bg-green-600 text-white" onClick={batchSave}>
+              Batch Save
+            </button>
+            <button className="px-3 py-2 rounded bg-red-600 text-white" onClick={deleteSelected}>
+              Delete Selected
+            </button>
+            <label className="px-3 py-2 rounded border cursor-pointer">
+              Import JSON
+              <input type="file" accept="application/json" className="hidden" onChange={(e) => e.target.files?.[0] && importJSON(e.target.files[0])} />
+            </label>
+            <label className="px-3 py-2 rounded border cursor-pointer">
+              Import CSV
+              <input type="file" accept=".csv,text/csv" className="hidden" onChange={(e) => e.target.files?.[0] && importCSV(e.target.files[0])} />
+            </label>
+            <button className="px-3 py-2 rounded border" onClick={exportJSON}>
+              Export JSON
+            </button>
+            <button className="px-3 py-2 rounded border" onClick={exportCSV}>
+              Export CSV
+            </button>
+          </>
+        ) : null}
+      </div>
+
+      {/* Status */}
+      <div className="text-sm mb-4">
+        <span className="font-semibold">Status:</span> {status}
+        {info && <span className="ml-2 text-gray-600">{info}</span>}
+        {error && (
+          <div className="mt-2 p-2 rounded bg-red-50 text-red-700 border border-red-200 font-mono text-xs whitespace-pre-wrap">
+            {error}
+          </div>
         )}
-        <button
-          onClick={() => window.alert(tip)}
-          className="px-3 py-2 border rounded bg-white"
-          title="Explain Path"
-        >
-          <Eye className="w-4 h-4 inline-block mr-1" /> Path Help
-        </button>
       </div>
 
-      <div className="text-sm text-slate-600 mb-4">
-        <strong>Path type:</strong> <span className="font-mono">{kind}</span> — {tip}
-      </div>
-
-      {error && (
-        <div className="mb-4 p-3 rounded bg-red-50 border border-red-200 text-red-700 text-sm">
-          <strong>Error:</strong> {error}
+      {/* Views */}
+      {kind === "document" ? (
+        <div>
+          <div className="mb-2 text-sm">
+            <span className="font-semibold">Doc exists:</span>{" "}
+            <span className={docExists ? "text-green-700" : "text-red-700"}>{String(docExists)}</span>
+            {live && <span className="ml-2 text-gray-600">[live @ {live.readTime}]</span>}
+          </div>
+          <textarea
+            className="w-full min-h-[360px] font-mono text-sm p-3 border rounded"
+            value={JSON.stringify(docJson, null, 2)}
+            onChange={(e) => {
+              try {
+                const parsed = JSON.parse(e.target.value || "{}");
+                setDocJson(parsed);
+                setError("");
+              } catch (err) {
+                setError("Invalid JSON in editor: " + err.message);
+              }
+            }}
+          />
         </div>
-      )}
-      <div className="mb-4 p-2 text-xs text-slate-600">
-        <strong>Status:</strong> {status}
-      </div>
-
-      {/* ------------------- Document panel ------------------- */}
-      {kind === "document" && (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-2">
-            <div className="flex items-center justify-between mb-2">
-              <div className="font-semibold">Document Result</div>
-              <div className="flex items-center gap-2">
-                <button onClick={readDoc} className="px-3 py-1.5 rounded bg-slate-100 hover:bg-slate-200 border">
-                  <RefreshCw className="w-4 h-4 inline-block mr-1" /> Read
-                </button>
-                <button onClick={toggleListen} className={`px-3 py-1.5 rounded border ${listening ? "bg-green-100 border-green-300" : "bg-slate-100"}`}>
-                  {listening ? <><Pause className="w-4 h-4 inline-block mr-1" /> Stop</> : <><Play className="w-4 h-4 inline-block mr-1" /> Listen</>}
-                </button>
-              </div>
-            </div>
-
-            <textarea
-              className="w-full h-96 p-3 font-mono text-xs border rounded"
-              value={docJson}
-              onChange={(e) => setDocJson(e.target.value)}
-            />
-            <div className="flex items-center gap-2 mt-2">
-              <button onClick={saveDocMerge} className="px-3 py-1.5 rounded bg-blue-600 text-white hover:bg-blue-700">
-                <Save className="w-4 h-4 inline-block mr-1" /> Save (merge)
-              </button>
-              <button onClick={replaceDoc} className="px-3 py-1.5 rounded bg-indigo-600 text-white hover:bg-indigo-700">
-                Replace
-              </button>
-              <button onClick={deleteDocNow} className="px-3 py-1.5 rounded bg-red-600 text-white hover:bg-red-700">
-                <Trash2 className="w-4 h-4 inline-block mr-1" /> Delete
-              </button>
-            </div>
-          </div>
-
-          <div className="lg:col-span-1">
-            <div className="p-3 border rounded bg-white">
-              <div className="font-semibold mb-2">Doc Meta</div>
-              <div className="text-sm"><strong>Exists:</strong> {String(docExists)}</div>
-              <div className="text-xs text-slate-600 mt-2">
-                Tip: While listening, try a write in console:
-                <pre className="mt-2 bg-slate-50 p-2 rounded border whitespace-pre-wrap">
-{`await setDoc(
-  doc(getFirestore(), "${path.replace(/"/g, '\\"')}"),
-  { test_write: Date.now() },
-  { merge: true }
-);`}
-                </pre>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ------------------- Collection panel ------------------- */}
-      {kind === "collection" && (
-        <div className="mt-2">
-          <div className="flex items-center gap-2 mb-3">
-            <button onClick={listCollection} className="px-3 py-1.5 rounded bg-slate-800 text-white hover:bg-slate-700">
-              <RefreshCw className="w-4 h-4 inline-block mr-1" /> {loadingList ? "Loading…" : "List Collection"}
-            </button>
-            <button onClick={addRow} className="px-3 py-1.5 rounded bg-blue-600 text-white hover:bg-blue-700">
-              <Plus className="w-4 h-4 inline-block mr-1" /> Add Row
-            </button>
-            <button onClick={batchSave} className="px-3 py-1.5 rounded bg-green-600 text-white hover:bg-green-700">
-              <Save className="w-4 h-4 inline-block mr-1" /> Batch Save
-            </button>
-            <button onClick={batchDeleteSelected} className="px-3 py-1.5 rounded bg-red-600 text-white hover:bg-red-700">
-              <Trash2 className="w-4 h-4 inline-block mr-1" /> Delete Selected
-            </button>
-
-            <label className="ml-4 px-3 py-1.5 rounded border bg-white cursor-pointer">
-              <Upload className="w-4 h-4 inline-block mr-1" /> Import JSON
-              <input type="file" accept=".json,application/json" className="hidden"
-                     onChange={(e) => e.target.files?.[0] && importJSON(e.target.files[0])} />
-            </label>
-            <label className="px-3 py-1.5 rounded border bg-white cursor-pointer">
-              <Upload className="w-4 h-4 inline-block mr-1" /> Import CSV
-              <input type="file" accept=".csv,text/csv" className="hidden"
-                     onChange={(e) => e.target.files?.[0] && importCSV(e.target.files[0])} />
-            </label>
-          </div>
-
-          <div className="overflow-auto border rounded bg-white">
-            <table className="min-w-full text-sm">
-              <thead className="bg-slate-50 border-b">
+      ) : kind === "collection" ? (
+        <div className="overflow-auto border rounded">
+          <table className="min-w-full text-sm">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="p-2 border-b w-10">
+                  <input
+                    type="checkbox"
+                    onChange={(e) => {
+                      if (e.target.checked) setSelected(new Set(rows.map((r) => r._id).filter(Boolean)));
+                      else setSelected(new Set());
+                    }}
+                    checked={rows.length > 0 && rows.every((r) => r._id && selected.has(r._id))}
+                    aria-label="Select all"
+                  />
+                </th>
+                <th className="p-2 border-b w-64">_id (blank = new)</th>
+                <th className="p-2 border-b">data (JSON object)</th>
+                <th className="p-2 border-b w-40">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.length === 0 ? (
                 <tr>
-                  <th className="px-3 py-2 border-r w-10">
-                    <input
-                      type="checkbox"
-                      checked={rows.length > 0 && selectedIds.size === rows.length}
-                      onChange={(e) => {
-                        if (e.target.checked) setSelectedIds(new Set(rows.map(r => r.__id)));
-                        else setSelectedIds(new Set());
-                      }}
-                    />
-                  </th>
-                  {columns.map((c) => (
-                    <th key={c} className="px-3 py-2 border-r text-left">{c}</th>
-                  ))}
-                  <th className="px-3 py-2">Actions</th>
+                  <td colSpan={4} className="p-6 text-center text-gray-500">
+                    No documents loaded. Click <b>List Collection</b> or <b>Add Row</b>.
+                  </td>
                 </tr>
-              </thead>
-              <tbody>
-                {rows.map(r => (
-                  <tr key={r.__id} className="border-b hover:bg-slate-50">
-                    <td className="px-3 py-2 border-r">
-                      <input
-                        type="checkbox"
-                        checked={selectedIds.has(r.__id)}
-                        onChange={(e) => {
-                          setSelectedIds(prev => {
-                            const n = new Set(prev);
-                            if (e.target.checked) n.add(r.__id); else n.delete(r.__id);
-                            return n;
-                          });
-                        }}
-                      />
-                    </td>
-                    {columns.map((c) => {
-                      const val = c === "__id" ? r.__id : r[c];
-                      const asText = typeof val === "string" ? val : JSON.stringify(val ?? "");
-                      const readOnly = c === "__id";
-                      return (
-                        <td key={c} className="px-3 py-1.5 border-r align-top">
+              ) : (
+                rows.map((r, idx) => {
+                  const { _id, _new, ...rest } = r;
+                  const dataOnly = rest;
+                  return (
+                    <tr key={_id || `new-${idx}`} className="align-top">
+                      <td className="p-2 border-b text-center">
+                        {_id ? (
                           <input
-                            readOnly={readOnly}
-                            className={`w-full text-xs px-2 py-1 border rounded ${readOnly ? "bg-slate-100" : "bg-white"}`}
-                            value={asText}
-                            onChange={(e) => updateCell(r.__id, c, e.target.value)}
+                            type="checkbox"
+                            checked={selected.has(_id)}
+                            onChange={(e) => toggleSel(_id, e.target.checked)}
+                            aria-label={`Select ${_id}`}
                           />
-                        </td>
-                      );
-                    })}
-                    <td className="px-3 py-1.5">
-                      <div className="flex gap-2">
+                        ) : null}
+                      </td>
+                      <td className="p-2 border-b">
+                        <input
+                          className="w-full font-mono px-2 py-1 border rounded"
+                          placeholder="(auto id if left blank)"
+                          value={_id}
+                          onChange={(e) => setCell(idx, "_id", e.target.value)}
+                        />
+                      </td>
+                      <td className="p-2 border-b">
+                        <textarea
+                          className="w-full h-28 font-mono px-2 py-1 border rounded"
+                          value={JSON.stringify(dataOnly, null, 2)}
+                          onChange={(e) => {
+                            try {
+                              const parsed = JSON.parse(e.target.value || "{}");
+                              setCell(idx, "_json_valid", true);
+                              const withKeys = { _id, ...parsed };
+                              setRows((prev) => {
+                                const next = [...prev];
+                                next[idx] = withKeys;
+                                return next;
+                              });
+                              setError("");
+                            } catch (err) {
+                              setCell(idx, "_json_valid", false);
+                              setError(`Row ${idx + 1} has invalid JSON: ${err.message}`);
+                            }
+                          }}
+                        />
+                      </td>
+                      <td className="p-2 border-b">
                         <button
-                          onClick={() => saveRow(r)}
-                          className="px-2 py-1 rounded bg-green-600 text-white hover:bg-green-700"
-                          title="Save row"
+                          className="px-2 py-1 text-xs rounded border mr-2"
+                          onClick={async () => {
+                            // quick save single row
+                            const { fbReady, getFirestore, doc, setDoc, addDoc, collection } = useFb();
+                            await fbReady?.();
+                            const db = getFirestore();
+                            const { _id, _json_valid, ...payload } = rows[idx];
+                            if (!_id) {
+                              const cref = collection(db, expandedPath);
+                              const res = await addDoc(cref, payload);
+                              setCell(idx, "_id", res.id);
+                              setInfo(`Created ${res.id}`);
+                            } else {
+                              const dref = doc(db, ...segs(`${expandedPath}/${_id}`));
+                              await setDoc(dref, payload, { merge: true });
+                              setInfo(`Saved ${_id}`);
+                            }
+                          }}
                         >
-                          <Save className="w-4 h-4" />
+                          Save
                         </button>
-                        <button
-                          onClick={() => deleteRowOne(r.__id)}
-                          className="px-2 py-1 rounded bg-red-600 text-white hover:bg-red-700"
-                          title="Delete row"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-                {rows.length === 0 && (
-                  <tr>
-                    <td colSpan={columns.length + 2} className="px-3 py-10 text-center text-slate-500">
-                      No documents loaded. Click <strong>List Collection</strong> or <strong>Add Row</strong>.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-
-          <div className="text-xs text-slate-500 mt-2">
-            Editing notes: values auto-coerce to numbers/booleans/JSON. Wrap in quotes to force plain strings.
-          </div>
+                        {_id && (
+                          <button
+                            className="px-2 py-1 text-xs rounded border border-red-400 text-red-700"
+                            onClick={async () => {
+                              if (!confirm(`Delete ${_id}?`)) return;
+                              const { fbReady, getFirestore, doc, deleteDoc } = useFb();
+                              await fbReady?.();
+                              const db = getFirestore();
+                              await deleteDoc(doc(db, ...segs(`${expandedPath}/${_id}`)));
+                              setRows((prev) => prev.filter((x) => x._id !== _id));
+                              setInfo(`Deleted ${_id}`);
+                            }}
+                          >
+                            Delete
+                          </button>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
+            </tbody>
+          </table>
+        </div>
+      ) : (
+        <div className="p-4 rounded border bg-yellow-50 text-yellow-900">
+          Enter a valid Firestore path above to begin.
         </div>
       )}
     </div>
