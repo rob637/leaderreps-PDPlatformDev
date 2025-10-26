@@ -21,11 +21,38 @@ const pretty = (v) => JSON.stringify(v ?? {}, null, 2);
 const tryParse = (t, fb) => { try { return JSON.parse(t); } catch { return fb; } };
 const pathParts = (p) => p.trim().split("/").filter(Boolean);
 
-// Rely on standard Firestore path logic (even segments = Document)
-// Since we are fixing the presets to use 4 segments (e.g., metadata/config/catalogs/DOC_ID),
-// this simple check now works reliably for all your catalogs.
-const isDocumentPath = (p) => pathParts(p).length % 2 === 0;
+// --- CONSTANTS FOR SINGLE ARRAY DOCUMENTS ---
+const ARRAY_WRAPPER_KEY = "items"; 
+const SINGLE_ARRAY_DOCUMENT_PATHS = [
+    "metadata/reading_catalog",
+    "metadata/config/COMMITMENT_BANK",
+    "metadata/config/TARGET_REP_CATALOG",
+    "metadata/config/quick_challenge_catalog",
+];
+const isSingleArrayDocument = (p) => SINGLE_ARRAY_DOCUMENT_PATHS.includes(p);
+// --- END CONSTANTS ---
+
+// CRITICAL FIX: The logic is now based on path segment count AND the known single array documents.
+const isDocumentPath = (p) => {
+    // Standard Firestore logic (even segments)
+    if (pathParts(p).length % 2 === 0) return true;
+    // Overload: Check if the path matches a known document path with 3 segments
+    return FORCED_DOCUMENT_PATHS.includes(p);
+};
 const isCollectionPath = (p) => !isDocumentPath(p);
+
+// The list of 3-segment paths that must be treated as documents (metadata/config/DOC_ID)
+const FORCED_DOCUMENT_PATHS = [
+    "metadata/config/COMMITMENT_BANK",
+    "metadata/config/TARGET_REP_CATALOG",
+    "metadata/config/leadership_domains",
+    "metadata/config/leadership_tiers",
+    "metadata/config/quick_challenge_catalog",
+    "metadata/config/resource_library",
+    "metadata/config/scenario_catalog",
+    "metadata/config/video_catalog",
+];
+
 
 const normalizePath = (raw, uid) =>
   raw.replaceAll("<uid>", uid || "").replaceAll("{uid}", uid || "");
