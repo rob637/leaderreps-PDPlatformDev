@@ -117,7 +117,8 @@ const HabitAnchorCard = ({ anchor, onEdit, isDefault }) => (
   <Card title="⚓ Habit Anchor" icon={Anchor} accent="BLUE">
     {isDefault ? ( <p className="text-md font-medium text-gray-500 italic mb-4"> Set a daily cue to build consistency! </p> )
      : ( <> <p className="text-sm font-semibold text-gray-500 uppercase">Your Cue:</p> <p className="text-md font-medium text-gray-800 mb-4">{anchor}</p> </> )}
-    <Button onClick={onEdit} variant="outline" className="text-sm !py-2 !px-4 w-full"> <Edit3 className="w-4 h-4 mr-2" /> {isDefault ? 'Set Anchor' : 'Edit Anchor'} </Button>
+    {/* --- UPDATED: Button text changed to "Set Habit Anchor" --- */}
+    <Button onClick={onEdit} variant="outline" className="text-sm !py-2 !px-4 w-full"> <Edit3 className="w-4 h-4 mr-2" /> Set Habit Anchor </Button>
   </Card>
 );
 
@@ -242,6 +243,100 @@ const ReflectionLogModal = ({ isOpen, onClose, history, isLoading }) => {
 };
 
 /* =========================================================
+   Identity Anchor Modal Component (NEW)
+========================================================= */
+const IdentityAnchorModal = ({ isOpen, onClose, currentIdentity, onSave }) => {
+  if (!isOpen) return null;
+  
+  // Extract the customizable part of the identity
+  const prefix = "I'm the kind of leader who ";
+  const getEditablePart = (fullIdentity) => {
+    if (fullIdentity && fullIdentity.startsWith(prefix)) {
+      return fullIdentity.substring(prefix.length);
+    }
+    // Handle default/empty state
+    if (fullIdentity === "Define your leader identity...") {
+      return "";
+    }
+    return fullIdentity || "";
+  };
+
+  const [identityText, setIdentityText] = useState(getEditablePart(currentIdentity));
+  const [isSaving, setIsSaving] = useState(false);
+
+  const suggestions = [
+    "trusts my team",
+    "is decisive and clear",
+    "listens actively before speaking",
+    "takes ownership of outcomes",
+    "coaches my people to success",
+  ];
+
+  const handleSaveClick = async () => {
+    if (!identityText.trim()) {
+      alert("Please provide an identity statement.");
+      return;
+    }
+    setIsSaving(true);
+    try {
+      await onSave(identityText.trim());
+    } catch (e) {
+      console.error("Save failed", e);
+      // Error alert is handled in the parent
+    } finally {
+      setIsSaving(false);
+      // Don't close on save, parent (onSave) will
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4" aria-modal="true" role="dialog">
+      <div className="fixed inset-0 bg-black/60 backdrop-blur-sm animate-in fade-in" onClick={onClose} />
+      <div className="relative w-full max-w-lg bg-white rounded-2xl shadow-2xl z-10 animate-in zoom-in-95 slide-in-from-bottom-4 duration-300">
+        <div className="p-6 border-b border-gray-200 flex justify-between items-center">
+          <h2 className="text-2xl font-extrabold text-[#002E47] flex items-center gap-3"> <User className="text-[#47A88D]" /> Set Identity Anchor </h2>
+          <button onClick={onClose} className="p-1 rounded-full text-gray-400 hover:text-gray-800 hover:bg-gray-100 transition-colors" aria-label="Close modal"> <X className="w-6 h-6" /> </button>
+        </div>
+        <div className="p-6 space-y-4">
+          <div className="p-4 bg-gray-50 border border-gray-200 rounded-lg">
+            <p className="text-md font-medium text-gray-600">I'm the kind of leader who...</p>
+          </div>
+          <textarea
+            value={identityText}
+            onChange={(e) => setIdentityText(e.target.value)}
+            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#47A88D]"
+            rows="3"
+            placeholder="...trusts my team."
+          />
+          <div>
+            <p className="text-sm font-semibold text-gray-600 mb-2">Or, start with a suggestion:</p>
+            <div className="flex flex-wrap gap-2">
+              {suggestions.map((suggestion) => (
+                <button
+                  key={suggestion}
+                  onClick={() => setIdentityText(suggestion)}
+                  className="px-3 py-1.5 text-sm bg-gray-100 text-gray-700 rounded-full border border-gray-300 hover:bg-gray-200 hover:border-gray-400 transition-colors"
+                >
+                  {suggestion}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+        <div className="p-4 bg-gray-50 border-t border-gray-200 rounded-b-2xl flex justify-end items-center gap-4">
+          <Button onClick={onClose} variant="outline" className="text-sm !py-2 !px-4"> Cancel </Button>
+          <Button onClick={handleSaveClick} variant="primary" className="text-sm !py-2 !px-4" disabled={isSaving || !identityText.trim()}>
+            {isSaving ? <Loader className="animate-spin w-4 h-4 mr-2" /> : <Save className="w-4 h-4 mr-2" />}
+            Save Anchor
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+
+/* =========================================================
    Embedded Reflection Form Component
 ========================================================= */
 const EmbeddedReflectionForm = ({ db, userId, onOpenLog, onSaveSuccess }) => {
@@ -363,6 +458,8 @@ const DashboardScreen = () => {
   const isArenaMode = useMemo(() => commitmentData?.arena_mode ?? true, [commitmentData]);
   const [isSavingMode, setIsSavingMode] = useState(false);
   const [lastReflectionEntry, setLastReflectionEntry] = useState(null);
+  // --- NEW: State for Identity Modal ---
+  const [isIdentityModalOpen, setIsIdentityModalOpen] = useState(false);
 
   // --- Effects & Derived Data ---
   useEffect(() => { if (isLogModalOpen && db && userId) { const fetch = async () => { setIsHistoryLoading(true); try { const q = query(collection(db,`user_commitments/${userId}/reflection_history`), orderBy("timestamp","desc")); const snap = await getDocs(q); setReflectionHistory(snap.docs.map(d=>({id:d.id,...d.data()}))); } catch(e){console.error(e);} setIsHistoryLoading(false);}; fetch(); } }, [isLogModalOpen, db, userId]);
@@ -376,13 +473,26 @@ const DashboardScreen = () => {
   const habitAnchor = useMemo(() => commitmentData?.habit_anchor || DEFAULT_HABIT_ANCHOR, [commitmentData]);
   const isDefaultAnchor = habitAnchor === DEFAULT_HABIT_ANCHOR;
   const whyStatement = useMemo(() => planningData?.focus_goals?.[0]?.why || "", [planningData]);
+  
+  // --- UPDATED: identityStatement logic now prioritizes commitmentData.identity_anchor ---
   const identityStatement = useMemo(() => {
+     // 1. Prioritize the new dedicated field
+     if (commitmentData?.identity_anchor) {
+       return `I'm the kind of leader who ${commitmentData.identity_anchor}`;
+     }
+     // 2. Fallback to last reflection (transient)
      const lastIdentity = lastReflectionEntry?.identity || '';
      if (lastIdentity) return `I'm the kind of leader who ${lastIdentity}`;
+     
+     // 3. Fallback to parsing the journal (old way)
      const journalIdentityLine = commitmentData?.reflection_journal?.split('\n').find(l => l.startsWith('Identity:'));
      const journalIdentity = journalIdentityLine?.substring(9).trim();
-     return journalIdentity ? `I'm the kind of leader who ${journalIdentity}` : "Define your leader identity...";
+     if (journalIdentity) return `I'm the kind of leader who ${journalIdentity}`;
+
+     // 4. Default
+     return "Define your leader identity...";
   }, [commitmentData, lastReflectionEntry]);
+  
   const dailyTargetRep = useMemo(() => {
      const defaultRep = { text: "Define your focus rep.", definition: "Go to your Development Plan.", microRep: "Review your goals." };
      const bank = COMMITMENT_BANK?.items || [];
@@ -431,6 +541,21 @@ const DashboardScreen = () => {
       finally { setIsSavingMode(false); }
     };
 
+  // --- NEW: Save handler for Identity Anchor ---
+  const handleSaveIdentity = async (newIdentity) => {
+    if (!newIdentity.trim()) {
+      alert("Identity cannot be empty.");
+      return;
+    }
+    try {
+      await updateCommitmentData({ identity_anchor: newIdentity.trim() });
+      setIsIdentityModalOpen(false);
+    } catch (e) {
+      console.error("Failed to save identity anchor:", e);
+      alert("Failed to save identity.");
+    }
+  };
+
   // --- Main Render ---
   if (isAppLoading && !commitmentData && !pdpData) { return <div className="min-h-screen flex items-center justify-center"> <Loader className="animate-spin text-[#47A88D] h-12 w-12" /> Loading...</div>; }
 
@@ -438,6 +563,13 @@ const DashboardScreen = () => {
     <div className={`p-6 space-y-6 bg-[${COLORS.LIGHT_GRAY}] min-h-screen`}>
       <CelebrationOverlay show={showCelebration} />
       <ReflectionLogModal isOpen={isLogModalOpen} onClose={() => setIsLogModalOpen(false)} history={reflectionHistory} isLoading={isHistoryLoading} />
+      {/* --- NEW: Render Identity Modal --- */}
+      <IdentityAnchorModal 
+        isOpen={isIdentityModalOpen} 
+        onClose={() => setIsIdentityModalOpen(false)} 
+        currentIdentity={identityStatement}
+        onSave={handleSaveIdentity} 
+      />
 
       {/* 1. Header */}
       <div className={`bg-[${COLORS.OFF_WHITE}] p-6 -mx-6 -mt-6 mb-4 rounded-b-xl shadow-md border-b-4 border-[${COLORS.TEAL}]`}>
@@ -457,14 +589,25 @@ const DashboardScreen = () => {
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
         
         {/* Left Column */}
-        {/* --- UPDATED: Changed lg:col-span-2 to lg:col-span-3 --- */}
+        {/* --- UPDATED: Changed lg:col-span-2 to lg:grid-cols-3 --- */}
         <div className="lg:col-span-3 space-y-6">
            <Card title="🎯 Today's Strategic Focus" icon={Target} accent='NAVY'>
               <div className='grid md:grid-cols-2 gap-6'>
                  <div> <p className='text-sm font-semibold ...'><Flag /> Target Rep:</p> <p className='text-lg font-bold ...'>{dailyTargetRep.text}</p> </div>
                  <div> <p className='text-sm font-semibold ...'><CheckCircle /> What Good Looks Like:</p> <p className='text-sm italic ...'>{dailyTargetRep.definition}</p> </div>
               </div>
-              <div className="mt-4 pt-4 border-t border-gray-200"> <p className='text-sm font-semibold ...'><User /> Identity Anchor:</p> <p className='text-md italic ...'>"{identityStatement}"</p> </div>
+              {/* --- UPDATED: Added "Set" button for Identity Anchor --- */}
+              <div className="mt-4 pt-4 border-t border-gray-200">
+                <div className="flex justify-between items-center gap-4">
+                  <div className="flex-1">
+                    <p className='text-sm font-semibold text-gray-600'><User className="inline w-4 h-4 mr-1" /> Identity Anchor:</p> 
+                    <p className='text-md italic text-gray-800 font-medium'>"{identityStatement}"</p> 
+                  </div>
+                  <Button onClick={() => setIsIdentityModalOpen(true)} variant="outline" className="text-sm !py-2 !px-4 flex-shrink-0">
+                    <Edit3 className="w-4 h-4 mr-2" /> Set
+                  </Button>
+                </div>
+              </div>
            </Card>
            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
              <WhyItMattersCard statement={whyStatement} onPersonalize={() => navigate('development-plan')} />
