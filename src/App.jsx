@@ -285,7 +285,8 @@ import {
 ----------------------------------------------------------------------------- */
 const ScreenMap = {
   dashboard: lazy(() => import('./components/screens/Dashboard.jsx')),
-  'prof-dev-plan': lazy(() => import('./components/screens/DevPlan.jsx')),
+  'prof-dev-plan': lazy(() => import('./components/screens/DevPlan.jsx')), // Generator/Assessment Screen
+  'roadmap-tracker': lazy(() => import('./components/screens/RoadmapTracker.jsx')), // NEW: Dedicated Tracker Screen
   'coaching-lab': lazy(() => import('./components/screens/Labs.jsx')),
   'daily-practice': lazy(() => import('./components/screens/DailyPractice.jsx')),
   'planning-hub': lazy(() => import('./components/screens/PlanningHub.jsx')),
@@ -636,7 +637,8 @@ const NavSidebar = ({ currentScreen, setCurrentScreen, user, closeMobileMenu, is
   ];
 
   const contentPillarNav = [
-    { screen: 'prof-dev-plan', label: 'Development Roadmap', icon: Dumbbell },
+    { screen: 'roadmap-tracker', label: 'Development Roadmap Tracker', icon: Briefcase, badge: 'New' }, // NEW TRACKER BUTTON
+    { screen: 'prof-dev-plan', label: 'Development Roadmap (Generator)', icon: Dumbbell, badge: 'Dev Only' }, // OLD GENERATOR (HIDDEN/SECONDARY)
     { screen: 'planning-hub', label: 'Strategic Content Tools', icon: Trello },
     { screen: 'business-readings', label: 'Content: Read & Reps', icon: BookOpen },
     { screen: 'leadership-videos', label: 'Content: Leader Talks', icon: Film, badge: 'New' },

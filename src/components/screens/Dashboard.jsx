@@ -232,7 +232,7 @@ const TIP_CACHE = {
   TTL: 4 * 60 * 60 * 1000, // TTL to 4 hours
   lastAITip: null,
 };
-const mdToHtml = async (md) => {
+const mdToHtmlFunc = async (md) => {
   let html = md;
   html = html.replace(/\*\*(.*)\*\*/gim, '<strong>$1</strong>');
   html = html.replace(/\> (.*)/gim, '<blockquote class="text-sm border-l-4 border-gray-400 pl-3 italic text-gray-700">$1</blockquote>');
@@ -351,7 +351,7 @@ useEffect(() => {
   (async () => {
     try {
       if (!tipHtml && tipContent) {
-        setTipHtml(await mdToHtml(tipContent));
+        setTipHtml(await mdToHtmlFunc(tipContent));
         TIP_CACHE.lastAITip = tipContent;
       }
     } catch {}
@@ -372,13 +372,13 @@ useEffect(() => {
       const text = extractGeminiText(resp) || SIMPLE_FALLBACK_TIP;
       TIP_CACHE.lastAITip = text; 
       setTipContent(text);
-      setTipHtml(await mdToHtml(text));
+      setTipHtml(await mdToHtmlFunc(text));
     } catch (e) {
       console.error('AI tip fetch error:', e);
       const fallbackText = SIMPLE_FALLBACK_TIP;
       TIP_CACHE.lastAITip = fallbackText;
       setTipContent(fallbackText);
-      setTipHtml(await mdToHtml(`**Error**: AI connection failed. Using local tip. ${fallbackText}`));
+      setTipHtml(await mdToHtmlFunc(`**Error**: AI connection failed. Using local tip. ${fallbackText}`));
     } finally {
       setTipLoading(false);
     }
@@ -407,7 +407,7 @@ useEffect(() => {
     }
     
     setTipContent(nextTip);
-    setTipHtml(await mdToHtml(nextTip));
+    setTipHtml(await mdToHtmlFunc(nextTip));
   }, [tipContent, tipLoading, hasGeminiKey, getInitialAITip]);
 
   // CRITICAL FIX 2: Call getInitialAITip when AI dependencies are ready (hasGeminiKey)
@@ -528,7 +528,7 @@ useEffect(() => {
                 
                  {/* PRIMARY ACTION 3: Development Roadmap */}
                 <ThreeDButton
-                    onClick={() => safeNavigate('prof-dev-plan')} 
+                    onClick={() => safeNavigate('roadmap-tracker')} // *** CHANGED TO NEW TRACKER ***
                     color={COLORS.ORANGE}
                     accentColor={COLORS.NAVY}
                     className="h-24 flex-col px-3 py-2 text-white" 
@@ -592,7 +592,7 @@ useEffect(() => {
                         icon={Target}
                         label="Weakest Tier Focus"
                         value={`${weakestTier?.name || 'N/A'}`}
-                        onClick={() => safeNavigate('prof-dev-plan')}
+                        onClick={() => safeNavigate('roadmap-tracker')} // *** CHANGED TO NEW TRACKER ***
                         trend={0} 
                         colorHex={COLORS.AMBER}
                     />
@@ -655,7 +655,7 @@ useEffect(() => {
                         icon={Briefcase}
                         label="Roadmap Months Remaining"
                         value={`${24 - goalsCount}`}
-                        onClick={() => safeNavigate('prof-dev-plan')}
+                        onClick={() => safeNavigate('roadmap-tracker')} // *** CHANGED TO NEW TRACKER ***
                         trend={24 - goalsCount > 0 ? -4 : 0} 
                         colorHex={COLORS.NAVY}
                     />

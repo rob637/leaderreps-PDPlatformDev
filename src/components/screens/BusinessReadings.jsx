@@ -21,7 +21,7 @@ function getDerivedDuration(book) {
    HIGH-CONTRAST PALETTE (From uiKit)
 ========================================================= */
 const COLORS = {
-  NAVY: '#002E47', TEAL: '#47A88D', SUBTLE_TEAL: '#349881', ORANGE: '#E04E1B', GREEN: '#10B981', AMBER: '#F59E0B', RED: '#E04E1B', LIGHT_GRAY: '#FCFCFA', OFF_WHITE: '#FFFFFF', MUTED: '#4B5563', SUBTLE: '#E5E7EB', TEXT: '#374151', BLUE: '#2563EB', BG: '#F9FAFB', PURPLE: '#7C3AED',
+  NAVY: '#002E47', TEAL: '#47A88D', SUBTLE_TEAL: '#349881', ORANGE: '#E04E1B', GREEN: '#10B981', AMBER: '#F5A900', RED: '#E04E1B', LIGHT_GRAY: '#FCFCFA', OFF_WHITE: '#FFFFFF', MUTED: '#4B5563', SUBTLE: '#E5E7EB', TEXT: '#374151', BLUE: '#2563EB', BG: '#F9FAFB', PURPLE: '#7C3AED',
 };
 
 const COMPLEXITY_MAP = {
@@ -614,7 +614,10 @@ export default function BusinessReadingsScreen() {
   // CRITICAL FIX 7: Default to an empty object if READING_CATALOG_SERVICE is null/undefined to prevent runtime errors when destructuring.
   // The service returns the document Map: { items: { Category1: [...], ... } }
   // We must unwrap the 'items' property if it exists.
-  const allBooks = READING_CATALOG_SERVICE?.items || MOCK_ALL_BOOKS_FALLBACK; 
+  // CRITICAL FIX FOR DATA STRUCTURE INCONSISTENCY:
+  const allBooks = READING_CATALOG_SERVICE?.['Innovation & Change'] 
+    ? READING_CATALOG_SERVICE // Use the root object (which has the HTML)
+    : (READING_CATALOG_SERVICE?.items || MOCK_ALL_BOOKS_FALLBACK); 
 
   // NEW: Deep dependency for the useMemo below
   const deepDataSignature = useMemo(() => getDeepDataSignature(allBooks), [allBooks]);
