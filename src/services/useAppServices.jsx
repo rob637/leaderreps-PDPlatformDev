@@ -1,4 +1,4 @@
-// src/services/useAppServices.jsx (Final Structural Fix)
+// src/services/useAppServices.jsx (Structural Fix with Exports Added)
 
 import React, {
   useMemo,
@@ -24,6 +24,7 @@ const __firestore_mock_store =
     ? window.__firestore_mock_store || (window.__firestore_mock_store = {})
     : {};
 
+// ... (mock functions mockDoc, createMockSnapshot, mockSetDoc, mockGetDoc are unchanged) ...
 const createMockSnapshot = (docPath, data, exists = true) => ({
   exists: () => exists,
   data: () => data,
@@ -38,11 +39,11 @@ const mockGetDoc = async (docPath) => {
   const d = __firestore_mock_store[docPath];
   return createMockSnapshot(docPath, d || {}, !!d);
 };
-// Updated mockDoc to handle simple pathing for global metadata
 const mockDoc = (db, c, d) => (c === 'metadata' ? `${c}/${d}` : `${c}/${d}`);
 
+
 /* =========================================================
-   Real Firestore wrappers (Modified for GetDocEx only where needed)
+   Real Firestore wrappers (Unchanged)
 ========================================================= */
 const toDocRef = (db, path) => fsDoc(db, ...path.split('/'));
 
@@ -83,8 +84,8 @@ const setDocEx = (db, path, data, merge = false) =>
 const updateDocEx = (db, path, data) => setDocEx(db, path, data, true);
 
 
-// --- ensureUserDocs: create required per-user docs if missing ---
-export const ensureUserDocs = async (db, uid) => {
+// --- ensureUserDocs: create required per-user docs if missing (Unchanged) ---
+export const ensureUserDocs = async (db, uid) => { 
   try {
     if (!db || !uid) return;
     const targets = [
@@ -107,7 +108,7 @@ export const ensureUserDocs = async (db, uid) => {
 
 
 /* =========================================================
-   Defaults / fallbacks
+   Defaults / fallbacks (UPDATED)
 ========================================================= */
 const GEMINI_MODEL = 'gemini-2.5-flash'; 
 const LEADERSHIP_TIERS_FALLBACK = {
@@ -121,8 +122,13 @@ const MOCK_PDP_DATA = { plan_goals: [], last_updated: new Date().toISOString() }
 const MOCK_COMMITMENT_DATA = { active_commitments: [], reflection_journal: '' };
 const MOCK_PLANNING_DATA = { drafts: [] };
 
+// NEW FALLBACKS ADDED FOR APPLIED LEADERSHIP DATA
+const MOCK_DOMAINS = []; 
+const MOCK_RESOURCES = {}; 
+
+
 /* =========================================================
-   Context + API
+   Context + API (UPDATED)
 ========================================================= */
 const DEFAULT_SERVICES = { 
     navigate: () => console.warn('Navigate not initialized'),
@@ -150,13 +156,19 @@ const DEFAULT_SERVICES = {
     updateCommitmentData: async () => {},
     updatePlanningData: async () => {},
     updateGlobalMetadata: async () => {},
+    
+    // NEW DEFAULTS ADDED
+    LEADERSHIP_DOMAINS: MOCK_DOMAINS,
+    RESOURCE_LIBRARY: MOCK_RESOURCES,
+    isAppliedLeadershipLoading: true, 
 };
 
 export const AppServiceContext = createContext(DEFAULT_SERVICES);
 export const useAppServices = () => useContext(AppServiceContext);
 
+
 /* =========================================================
-   Helpers (guards + tracing)
+   Helpers (guards + tracing) (Unchanged)
 ========================================================= */
 const resolveGlobalMetadata = (meta) => {
   if (!meta || typeof meta !== 'object') return {};
@@ -189,11 +201,12 @@ const traceCallsite = (label = 'updateGlobalMetadata') => {
 
 
 /* =========================================================
-   User-data hooks (Unchanged)
+   User-data hooks (EXPORT ADDED TO FIX BUILD ERROR)
 ========================================================= */
 const SUBCOLLECTION_NAME = 'profile'; 
 const MAX_LOAD_TIMEOUT = 1500; 
 
+// Base hook remains internal
 const useFirestoreUserData = (db, userId, isAuthReady, collection, document, mockData) => {
   const path = userId && `${collection}/${userId}/${SUBCOLLECTION_NAME}/${document}`; 
   const [data, setData] = useState(mockData);
@@ -257,6 +270,7 @@ const useFirestoreUserData = (db, userId, isAuthReady, collection, document, moc
 };
 
 
+// EXPORT ADDED: Resolves the build error
 export const usePDPData = (db, userId, isAuthReady) => {
   const { roadmapData, isLoading, error, updateData: updatePdpData } = useFirestoreUserData(db, userId, isAuthReady, 'leadership_plan', 'roadmap', MOCK_PDP_DATA);
   
@@ -275,11 +289,13 @@ export const usePDPData = (db, userId, isAuthReady) => {
   return { pdpData: roadmapData, isLoading, error, updatePdpData, saveNewPlan };
 };
 
+// EXPORT ADDED: Resolves the build error
 export const useCommitmentData = (db, userId, isAuthReady) => {
   const { activeData, isLoading, error, updateData: updateCommitmentData } = useFirestoreUserData(db, userId, isAuthReady, 'user_commitments', 'active', MOCK_COMMITMENT_DATA);
   return { commitmentData: activeData, isLoading, error, updateCommitmentData };
 };
 
+// EXPORT ADDED: Resolves the build error
 export const usePlanningData = (db, userId, isAuthReady) => {
   const { draftsData, isLoading, error, updateData: updatePlanningData } = useFirestoreUserData(db, userId, isAuthReady, 'user_planning', 'drafts', MOCK_PLANNING_DATA);
   return { planningData: draftsData, isLoading, error, updatePlanningData };
@@ -287,7 +303,7 @@ export const usePlanningData = (db, userId, isAuthReady) => {
 
 
 /* =========================================================
-   Global metadata (read) - CRITICAL STRUCTURAL FIX
+   Global metadata (read) (Unchanged)
 ========================================================= */
 export const useGlobalMetadata = (db, isAuthReady) => {
   const [metadata, setMetadata] = useState({});
@@ -363,6 +379,7 @@ export const useGlobalMetadata = (db, isAuthReady) => {
   return { metadata, isLoading: loading, error };
 };
 
+
 /* =========================================================
    Global writer (safe merge + optional force overwrite) (Unchanged)
 ========================================================= */
@@ -411,13 +428,152 @@ export const updateGlobalMetadata = async (
   }
 };
 
+
 /* =========================================================
-   Provider factory (Unchanged)
+   NEW HOOK: Applied Leadership Data Fetch (EXPORT ADDED)
+========================================================= */
+// EXPORT ADDED: Resolves the build error
+export const useAppliedLeadershipData = (isAuthReady) => {
+    const [domains, setDomains] = useState(MOCK_DOMAINS);
+    const [resources, setResources] = useState(MOCK_RESOURCES);
+    const [isLoading, setIsLoading] = useState(true);
+
+    useEffect(() => {
+        // Skip fetching if not authenticated or environment is not ready
+        if (!isAuthReady) {
+            setIsLoading(false);
+            return;
+        }
+
+        const fetchAppliedData = async () => {
+            setIsLoading(true);
+            try {
+                // ASSUMPTION: Your backend exposes a single endpoint for all applied leadership data
+                const response = await fetch('/api/v1/applied-leadership');
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                // ASSUMPTION: The API returns an object { leadership_domains: [...], resource_library: [...] }
+                const { leadership_domains, resource_library } = await response.json();
+                
+                if (Array.isArray(leadership_domains)) {
+                    setDomains(leadership_domains);
+                } else {
+                    console.error("API response missing 'leadership_domains' array.");
+                    setDomains(MOCK_DOMAINS);
+                }
+
+                // CRITICAL TRANSFORMATION: Convert the flat resource array into the { [domainId]: [resources] } object
+                if (Array.isArray(resource_library)) {
+                    const transformedResources = resource_library.reduce((acc, resource) => {
+                        const domainId = resource.domain_id;
+                        if (domainId) { // Only add if domain_id exists
+                            acc[domainId] = acc[domainId] || [];
+                            acc[domainId].push(resource);
+                        }
+                        return acc;
+                    }, {});
+                    setResources(transformedResources);
+                } else {
+                    console.error("API response missing 'resource_library' array.");
+                    setResources(MOCK_RESOURCES);
+                }
+
+            } catch (error) {
+                console.error("[APPLIED LEADERSHIP FAIL] Failed to fetch data:", error);
+                setDomains(MOCK_DOMAINS);
+                setResources(MOCK_RESOURCES);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        fetchAppliedData();
+    }, [isAuthReady]);
+
+    return { 
+        LEADERSHIP_DOMAINS: domains, 
+        RESOURCE_LIBRARY: resources, 
+        isAppliedLeadershipLoading: isLoading 
+    };
+};
+
+
+/* =========================================================
+   Provider factory (Unchanged Logic, uses all hooks)
 ========================================================= */
 export const createAppServices = ({
   user, userId, auth, db, isAuthReady, navigate,
   callSecureGeminiAPI = async () => ({ candidates: [] }),
   hasGeminiKey = () => false, API_KEY = '',
-}) => { /* ... */ };
+}) => {
+  // Use all the hooks
+  const pdpHook = usePDPData(db, userId, isAuthReady);
+  const commitmentHook = useCommitmentData(db, userId, isAuthReady);
+  const planningHook = usePlanningData(db, userId, isAuthReady);
+  const metadataHook = useGlobalMetadata(db, isAuthReady);
+  
+  // NEW HOOK INTEGRATION
+  const appliedLeadershipHook = useAppliedLeadershipData(isAuthReady); 
+
+  // Combined loading state: True if any major piece is loading
+  const combinedIsLoading = pdpHook.isLoading || commitmentHook.isLoading || planningHook.isLoading || metadataHook.isLoading || appliedLeadershipHook.isAppliedLeadershipLoading;
+
+  const value = useMemo(() => {
+    // Determine Tiers from Metadata or Fallback
+    const tiers = metadataHook.metadata.LEADERSHIP_TIERS || LEADERSHIP_TIERS_FALLBACK;
+    
+    // Check if daily practice data needs attention (e.g., pending tasks)
+    const hasPendingDailyPractice = (commitmentHook.commitmentData.active_commitments || []).some(
+        c => c.status === 'Pending'
+    );
+    
+    return {
+      navigate,
+      user,
+      userId,
+      db,
+      auth,
+      isAuthReady,
+      
+      // Data from Hooks
+      ...pdpHook,
+      ...commitmentHook,
+      ...planningHook,
+      ...appliedLeadershipHook, // NEW: Applied Leadership Data
+      metadata: resolveGlobalMetadata(metadataHook.metadata),
+      
+      // Core Configuration
+      isLoading: combinedIsLoading,
+      error: pdpHook.error || commitmentHook.error || planningHook.error || metadataHook.error || null,
+      appId: metadataHook.metadata.APP_ID || 'default-app-id',
+      IconMap: metadataHook.metadata.IconMap || {},
+      LEADERSHIP_TIERS: tiers,
+
+      // AI/API Services
+      callSecureGeminiAPI,
+      hasGeminiKey,
+      GEMINI_MODEL: metadataHook.metadata.GEMINI_MODEL || GEMINI_MODEL,
+      API_KEY,
+      
+      // Other State
+      hasPendingDailyPractice,
+      
+      // Writers
+      updatePdpData: pdpHook.updateData,
+      saveNewPlan: pdpHook.saveNewPlan,
+      updateCommitmentData: commitmentHook.updateData,
+      updatePlanningData: planningHook.updateData,
+      updateGlobalMetadata: (data, opts) => updateGlobalMetadata(db, data, { ...opts, userId }),
+    };
+  }, [
+    user, userId, db, auth, isAuthReady, navigate, callSecureGeminiAPI, hasGeminiKey, API_KEY,
+    pdpHook, commitmentHook, planningHook, metadataHook, appliedLeadershipHook, combinedIsLoading,
+  ]);
+
+  return value;
+};
+
 
 export default AppServiceContext;

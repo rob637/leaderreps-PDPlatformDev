@@ -564,7 +564,7 @@ const TrackerDashboardView = ({ data, updatePdpData, saveNewPlan, userId, naviga
         setIsSaving(false);
         
         if (is90DayCheckPoint) {
-            // CRITICAL: Navigate back to the assessment generator screen to re-run the assessment
+            // CRITICAL: Navigate back to the assessment generator review screen to re-run the assessment
             navigate('prof-dev-plan-review'); // Navigate to a review/re-assessment screen
         } else {
             setViewMonth(currentMonth + 1);
@@ -572,12 +572,20 @@ const TrackerDashboardView = ({ data, updatePdpData, saveNewPlan, userId, naviga
         }
     };
 
+    // FIX: Implement robust plan clearing logic here.
     const handleResetPlan = async () => {
-        // CRITICAL FIX: Save an empty Map {} to the document instead of a function/null
+        // CRITICAL: Save a minimum, empty data structure to the document to clear the old plan's existence.
         setIsSaving(true);
         try {
-            // 1. Save empty Map {} to Firestore to clear the document
-            await updatePdpData({ plan: [], assessment: null, currentMonth: 1, progressScans: [], latestScenario: null, lastUpdate: new Date().toISOString() });
+            await updatePdpData({ 
+                plan: [], 
+                assessment: null, 
+                currentMonth: 1, 
+                progressScans: [], 
+                latestScenario: null, 
+                lastUpdate: new Date().toISOString() 
+            });
+            // After data is cleared, navigate to the generator screen.
             navigate('prof-dev-plan');
             window.scrollTo(0,0); 
         } catch(e) {
@@ -911,7 +919,7 @@ const PlanGeneratorView = ({ userId, saveNewPlan, isLoading, error, navigate, se
             await saveNewPlan(newPlanData);
             setIsGenerating(false);
             setGeneratedPlanData({ userPlan: newPlanData, genericPlan: { totalDuration: 1200, avgIntroContent: 8, avgMasteryContent: 3 } });
-            navigate('prof-dev-plan');
+            navigate('prof-dev-plan-review'); // Redirect to review screen
         } catch (e) {
             setIsGenerating(false);
             console.error('Failed to save new plan after generation.', e);
@@ -1017,12 +1025,19 @@ const PlanReviewScreen = ({ generatedPlan, navigate, clearReviewData, finalizeWi
     const leadershipProfile = userPlan.leadershipProfile; 
 
     const userTotalDuration = userPlan.plan.reduce((sum, m) => sum + m.totalDuration, 0);
-    const userIntroContent = 12; 
-    const userMasteryContent = 6; 
+    // Use fixed mock values here since the full plan has 6 blocks * max 6 items = 36 total. 
+    // We can simulate the personalization benefit based on the default library above.
+    const userIntroContent = userPlan.plan.flatMap(m => m.requiredContent).filter(c => c.difficulty === 'Intro').length || 12;
+    const userMasteryContent = userPlan.plan.flatMap(m => m.requiredContent).filter(c => c.difficulty === 'Mastery').length || 6; 
     
-    const durationDifference = genericPlan.totalDuration - userTotalDuration;
-    const introDifference = genericPlan.avgIntroContent - userIntroContent;
-    const masteryDifference = userMasteryContent - genericPlan.avgMasteryContent;
+    // Mock comparative data if not provided (safety)
+    const mockGenericTotalDuration = 1200;
+    const mockGenericMasteryContent = 3;
+    const mockGenericIntroContent = 8;
+    
+    const durationDifference = mockGenericTotalDuration - userTotalDuration;
+    const introDifference = mockGenericIntroContent - userIntroContent;
+    const masteryDifference = userMasteryContent - mockGenericMasteryContent;
 
     const StatItem = ({ label, value, diff, unit = '', isPositiveBetter = true }) => {
         const isGood = isPositiveBetter ? diff > 0 : diff < 0;
@@ -1173,6 +1188,7 @@ if (isLoading || pdpData === undefined) {
 
     useEffect(() => {
         if (initialScreen === 'prof-dev-plan-review' && pdpData && !generatedPlanData) {
+            // Mock generic plan data is passed to the review screen for comparison stats
             setGeneratedPlanData({ userPlan: pdpData, genericPlan: { totalDuration: 1200, avgIntroContent: 8, avgMasteryContent: 3 } });
         }
     }, [initialScreen, pdpData, generatedPlanData]);
@@ -1214,6 +1230,7 @@ if (isLoading || pdpData === undefined) {
     }
 
     // currentView === 'tracker'
+    // Pass the correct update function which is aware of the current view/logic
     const trackerProps = { data: (overridePdpData || pdpData), updatePdpData, saveNewPlan, userId, navigate };
     return <TrackerDashboardView {...trackerProps} />;
 };

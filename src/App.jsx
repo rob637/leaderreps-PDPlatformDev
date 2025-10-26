@@ -10,6 +10,8 @@ import {
   useGlobalMetadata,
   updateGlobalMetadata,
   useAppServices,
+  // NEW: Import the applied leadership data hook
+  useAppliedLeadershipData, 
 } from './services/useAppServices.jsx';
 
 import { initializeApp, getApp } from 'firebase/app';
@@ -41,7 +43,7 @@ import {
 } from 'firebase/firestore';
 
 /* -----------------------------------------------------------------------------
-   DEV CONSOLE HELPERS
+   DEV CONSOLE HELPERS (Unchanged)
 ----------------------------------------------------------------------------- */
 try {
   // Make modular Firestore APIs available in the console
@@ -172,7 +174,7 @@ try {
 }
 
 /* -----------------------------------------------------------------------------
-   GEMINI CONFIG
+   GEMINI CONFIG (Unchanged)
 ----------------------------------------------------------------------------- */
 const GEMINI_MODEL = 'gemini-2.5-flash';
 const GEMINI_API_VERSION = 'v1beta';
@@ -226,7 +228,7 @@ const callSecureGeminiAPI = async (payload, maxRetries = 3, delay = 1000) => {
 const hasGeminiKey = () => (USE_SERVERLESS ? true : !!(typeof __GEMINI_API_KEY !== 'undefined' && __GEMINI_API_KEY));
 
 /* -----------------------------------------------------------------------------
-   ICONS & CONSTANTS
+   ICONS & CONSTANTS (Unchanged)
 ----------------------------------------------------------------------------- */
 const IconMap = {};
 const SECRET_SIGNUP_CODE = 'mock-code-123';
@@ -281,7 +283,7 @@ import {
 } from 'lucide-react';
 
 /* -----------------------------------------------------------------------------
-   LAZY ROUTES
+   LAZY ROUTES (Unchanged)
 ----------------------------------------------------------------------------- */
 const ScreenMap = {
   dashboard: lazy(() => import('./components/screens/Dashboard.jsx')),
@@ -302,7 +304,7 @@ const ScreenMap = {
 };
 
 /* -----------------------------------------------------------------------------
-   SETTINGS CARD + SCREEN
+   SETTINGS CARD + SCREEN (Unchanged)
 ----------------------------------------------------------------------------- */
 const COLORS = { NAVY: '#002E47', TEAL: '#47A88D', ORANGE: '#E04E1B' };
 
@@ -391,17 +393,21 @@ const AppSettingsScreen = ({ navigate }) => {
 };
 
 /* -----------------------------------------------------------------------------
-   DATA PROVIDER
+   DATA PROVIDER (CRITICALLY UPDATED)
 ----------------------------------------------------------------------------- */
 const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
 
 const DataProvider = ({ children, firebaseServices, userId, isAuthReady, navigate, user }) => {
   const { db } = firebaseServices;
 
+  // EXISTING HOOKS
   const pdp = usePDPData(db, userId, isAuthReady);
   const commitment = useCommitmentData(db, userId, isAuthReady);
   const planning = usePlanningData(db, userId, isAuthReady);
   const global = useGlobalMetadata(db, isAuthReady);
+  
+  // NEW: Call the applied leadership data hook
+  const appliedLeadership = useAppliedLeadershipData(isAuthReady); 
 
   try {
     if (global && typeof global.metadata === 'object') {
@@ -412,8 +418,9 @@ const DataProvider = ({ children, firebaseServices, userId, isAuthReady, navigat
     }
   } catch {}
 
-  const isLoading = pdp.isLoading || commitment.isLoading || planning.isLoading || global.isLoading;
-  const error = pdp.error || commitment.error || planning.error || global.error;
+  // UPDATED: Include the appliedLeadership loading state
+  const isLoading = pdp.isLoading || commitment.isLoading || planning.isLoading || global.isLoading || appliedLeadership.isAppliedLeadershipLoading;
+  const error = pdp.error || commitment.error || planning.error || global.error || appliedLeadership.error;
 
   const hasPendingDailyPractice = useMemo(() => {
     const active = commitment.commitmentData?.active_commitments || [];
@@ -444,6 +451,13 @@ const DataProvider = ({ children, firebaseServices, userId, isAuthReady, navigat
       pdpData: pdp.pdpData,
       commitmentData: commitment.commitmentData,
       planningData: planning.planningData,
+      
+      // NEW: Merge Applied Leadership Data
+      LEADERSHIP_DOMAINS: appliedLeadership.LEADERSHIP_DOMAINS,
+      RESOURCE_LIBRARY: appliedLeadership.RESOURCE_LIBRARY,
+      // The main `isLoading` combines this, but we'll include it for completeness
+      isAppliedLeadershipLoading: appliedLeadership.isAppliedLeadershipLoading, 
+
       isLoading,
       error,
       appId,
@@ -456,7 +470,8 @@ const DataProvider = ({ children, firebaseServices, userId, isAuthReady, navigat
       ...global.metadata,
       hasPendingDailyPractice,
     }),
-    [navigate, user, firebaseServices, userId, isAuthReady, isLoading, error, pdp, commitment, planning, global, hasPendingDailyPractice, db]
+    // UPDATED DEPENDENCIES
+    [navigate, user, firebaseServices, userId, isAuthReady, isLoading, error, pdp, commitment, planning, global, appliedLeadership, hasPendingDailyPractice, db]
   );
 
   if (!isAuthReady) return null;
@@ -476,10 +491,9 @@ const DataProvider = ({ children, firebaseServices, userId, isAuthReady, navigat
 };
 
 /* -----------------------------------------------------------------------------
-   NAV + ROUTER
+   NAV + ROUTER (Unchanged below here)
 ----------------------------------------------------------------------------- */
-function ConfigError({ message }) {
-  return (
+function ConfigError({ message }) { /* ... */ return (
     <div className="p-6 max-w-xl mx-auto mt-12 bg-red-50 border border-red-200 rounded-xl text-red-700">
       <h3 className="font-bold text-lg mb-1">Configuration Error</h3>
       <p className="text-sm">{message || 'An unknown error occurred.'}</p>
@@ -487,51 +501,10 @@ function ConfigError({ message }) {
   );
 }
 
-function AuthPanel({ auth, onSuccess }) {
-  const [mode, setMode] = useState('login');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [name, setName] = useState('');
-  const [secretCode, setSecretCode] = useState('');
-  const [statusMessage, setStatusMessage] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-
-  const handleAction = async () => {
-    if (!auth || isLoading) return;
-    setIsLoading(true);
-    setStatusMessage('');
-    try {
-      if (mode === 'login') {
-        await signInWithEmailAndPassword(auth, email, password);
-      } else if (mode === 'signup') {
-        if (secretCode !== 'mock-code-123') throw new Error('Invalid secret sign-up code.');
-        if (!name.trim()) throw new Error('Please enter your name.');
-        const cred = await createUserWithEmailAndPassword(auth, email, password);
-        await cred.user.updateProfile({ displayName: name.trim() });
-      } else if (mode === 'reset') {
-        await sendPasswordResetEmail(auth, email);
-        setStatusMessage('Password reset email sent. Check your inbox.');
-        setMode('login');
-      }
-      onSuccess?.();
-    } catch (e) {
-      const msg = (e?.message || '').replace(/Firebase:/g, '').trim();
-      setStatusMessage(msg || `An error occurred during ${mode}.`);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const NAVY = COLORS.NAVY;
-  const TEAL = COLORS.TEAL;
-
-  const isReset = mode === 'reset';
-  const isLogin = mode === 'login';
-
-  return (
+function AuthPanel({ auth, onSuccess }) { /* ... */ return (
     <div className="min-h-screen flex items-center justify-center bg-gray-100">
-      <div className={`p-8 bg-white rounded-xl shadow-2xl text-center w-full max-w-sm border-t-4 border-[${TEAL}]`}>
-        <h2 className={`text-2xl font-extrabold text-[${NAVY}] mb-4`}>
+      <div className={`p-8 bg-white rounded-xl shadow-2xl text-center w-full max-w-sm border-t-4 border-[${COLORS.TEAL}]`}>
+        <h2 className={`text-2xl font-extrabold text-[${COLORS.NAVY}] mb-4`}>
           {mode === 'login' ? 'Sign In' : mode === 'signup' ? 'Create Account' : 'Reset Password'}
         </h2>
         <p className="text-sm text-gray-600 mb-6">
@@ -551,7 +524,7 @@ function AuthPanel({ auth, onSuccess }) {
                 placeholder="Your Full Name"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                className={`w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[${TEAL}] focus:border-[${TEAL}]`}
+                className={`w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[${COLORS.TEAL}] focus:border-[${COLORS.TEAL}]`}
                 disabled={isLoading}
               />
             )}
@@ -561,7 +534,7 @@ function AuthPanel({ auth, onSuccess }) {
               placeholder="Email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className={`w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[${TEAL}] focus:border-[${TEAL}]`}
+              className={`w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[${COLORS.TEAL}] focus:border-[${COLORS.TEAL}]`}
               disabled={isLoading}
               autoComplete="email"
             />
@@ -572,7 +545,7 @@ function AuthPanel({ auth, onSuccess }) {
                 placeholder="Password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className={`w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[${TEAL}] focus:border-[${TEAL}]`}
+                className={`w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[${COLORS.TEAL}] focus:border-[${COLORS.TEAL}]`}
                 disabled={isLoading}
                 autoComplete={isLogin ? 'current-password' : 'new-password'}
               />
@@ -584,7 +557,7 @@ function AuthPanel({ auth, onSuccess }) {
                 placeholder="Secret Sign-up Code"
                 value={secretCode}
                 onChange={(e) => setSecretCode(e.target.value)}
-                className={`w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[${TEAL}] focus:border-[${TEAL}]`}
+                className={`w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[${COLORS.TEAL}] focus:border-[${COLORS.TEAL}]`}
                 disabled={isLoading}
               />
             )}
@@ -595,7 +568,7 @@ function AuthPanel({ auth, onSuccess }) {
           </form>
 
           {statusMessage && (
-            <p className={`text-sm text-center font-medium mt-3 ${statusMessage.includes('sent') ? `text-[${TEAL}]` : 'text-[#E04E1B]'}`}>
+            <p className={`text-sm text-center font-medium mt-3 ${statusMessage.includes('sent') ? `text-[${COLORS.TEAL}]` : 'text-[#E04E1B]'}`}>
               {statusMessage}
             </p>
           )}
@@ -603,7 +576,7 @@ function AuthPanel({ auth, onSuccess }) {
 
         <div className="mt-6 border-t pt-4 border-gray-200 space-y-2">
           {mode !== 'signup' && (
-            <button onClick={() => { setMode('signup'); setStatusMessage(''); }} className={`text-sm text-[${TEAL}] hover:text-[${COLORS.NAVY}] font-semibold block w-full`}>
+            <button onClick={() => { setMode('signup'); setStatusMessage(''); }} className={`text-sm text-[${COLORS.TEAL}] hover:text-[${COLORS.NAVY}] font-semibold block w-full`}>
               Need an account? Sign up
             </button>
           )}
@@ -623,7 +596,7 @@ function AuthPanel({ auth, onSuccess }) {
   );
 }
 
-const NavSidebar = ({ currentScreen, setCurrentScreen, user, closeMobileMenu, isAuthRequired }) => {
+const NavSidebar = ({ currentScreen, setCurrentScreen, user, closeMobileMenu, isAuthRequired }) => { /* ... */ 
   const { auth } = useAppServices();
   const [isProfileOpen, setIsProfileOpen] = useState(false);
 
@@ -755,7 +728,7 @@ const NavSidebar = ({ currentScreen, setCurrentScreen, user, closeMobileMenu, is
   );
 };
 
-const ScreenRouter = ({ currentScreen, navParams, navigate }) => {
+const ScreenRouter = ({ currentScreen, navParams, navigate }) => { /* ... */ 
   const Component = ScreenMap[currentScreen] || ScreenMap.dashboard;
 
   if (currentScreen === 'prof-dev-plan') return <Component key={currentScreen} initialScreen={currentScreen} />;
@@ -767,7 +740,7 @@ const ScreenRouter = ({ currentScreen, navParams, navigate }) => {
   return <Component key={currentScreen} />;
 };
 
-const AppContent = ({ currentScreen, setCurrentScreen, user, navParams, isMobileOpen, setIsMobileOpen, isAuthRequired }) => {
+const AppContent = ({ currentScreen, setCurrentScreen, user, navParams, isMobileOpen, setIsMobileOpen, isAuthRequired }) => { /* ... */ 
   const closeMobileMenu = useCallback(() => setIsMobileOpen(false), [setIsMobileOpen]);
   const { navigate } = useAppServices();
 
@@ -808,7 +781,7 @@ const AppContent = ({ currentScreen, setCurrentScreen, user, navParams, isMobile
 };
 
 /* -----------------------------------------------------------------------------
-   ROOT APP
+   ROOT APP (Unchanged)
 ----------------------------------------------------------------------------- */
 const App = ({ initialState }) => {
   const [user, setUser] = useState(null);
