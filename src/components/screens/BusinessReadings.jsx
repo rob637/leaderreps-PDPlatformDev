@@ -647,13 +647,15 @@ export default function BusinessReadingsScreen() {
     navigate = () => {},
     callSecureGeminiAPI,
     hasGeminiKey,
-    // CRITICAL: READING_CATALOG_SERVICE is the prop that holds the loaded data.
+    // CRITICAL: READING_CATALOG_SERVICE is the prop that holds the loaded document.
     READING_CATALOG_SERVICE 
   } = services;
 
   // CRITICAL FIX 1: Ensure allBooks reacts to the READING_CATALOG_SERVICE changing.
   // CRITICAL FIX 7: Default to an empty object if READING_CATALOG_SERVICE is null/undefined to prevent runtime errors when destructuring.
-  const allBooks = READING_CATALOG_SERVICE || MOCK_ALL_BOOKS_FALLBACK; 
+  // The service returns the document Map: { items: { Category1: [...], ... } }
+  // We must unwrap the 'items' property if it exists.
+  const allBooks = READING_CATALOG_SERVICE?.items || MOCK_ALL_BOOKS_FALLBACK; 
 
   // NEW: Deep dependency for the useMemo below
   const deepDataSignature = useMemo(() => getDeepDataSignature(allBooks), [allBooks]);
@@ -701,6 +703,7 @@ export default function BusinessReadingsScreen() {
     if (!allBooks || typeof allBooks !== 'object') return {}; 
 
     const flat = Object.entries(allBooks).flatMap(([tier, books]) =>
+      // FIX: Ensure 'books' is definitely an array before mapping
       (Array.isArray(books) ? books : []).map(b => ({ ...b, tier }))
     );
     const s = (filters.search || '').toLowerCase();
