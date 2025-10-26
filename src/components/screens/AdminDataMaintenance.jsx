@@ -21,24 +21,10 @@ const pretty = (v) => JSON.stringify(v ?? {}, null, 2);
 const tryParse = (t, fb) => { try { return JSON.parse(t); } catch { return fb; } };
 const pathParts = (p) => p.trim().split("/").filter(Boolean);
 
-// CRITICAL FIX: Manually force known three-segment paths (which should be single documents) to be treated as documents.
-const FORCED_DOCUMENT_PATHS = [
-    "metadata/config/COMMITMENT_BANK",
-    "metadata/config/TARGET_REP_CATALOG",
-    "metadata/config/leadership_domains",
-    "metadata/config/leadership_tiers",
-    "metadata/config/quick_challenge_catalog",
-    "metadata/config/resource_library",
-    "metadata/config/scenario_catalog",
-    "metadata/config/video_catalog",
-];
-
-const isDocumentPath = (p) => {
-    // Standard Firestore logic: even number of segments is a document
-    if (pathParts(p).length % 2 === 0) return true;
-    // Overload: Check if the path matches a known document path that uses 3 segments
-    return FORCED_DOCUMENT_PATHS.includes(p);
-};
+// Rely on standard Firestore path logic (even segments = Document)
+// Since we are fixing the presets to use 4 segments (e.g., metadata/config/catalogs/DOC_ID),
+// this simple check now works reliably for all your catalogs.
+const isDocumentPath = (p) => pathParts(p).length % 2 === 0;
 const isCollectionPath = (p) => !isDocumentPath(p);
 
 const normalizePath = (raw, uid) =>
