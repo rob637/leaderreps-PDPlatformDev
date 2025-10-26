@@ -10,8 +10,7 @@ import {
   useGlobalMetadata,
   updateGlobalMetadata,
   useAppServices,
-  // NEW: Import the applied leadership data hook
-  useAppliedLeadershipData, 
+  // NEW: Import the applied leadership data hook // <-- REMOVED
 } from './services/useAppServices.jsx';
 
 import { initializeApp, getApp } from 'firebase/app';
@@ -412,8 +411,8 @@ const DataProvider = ({ children, firebaseServices, userId, isAuthReady, navigat
   const planning = usePlanningData(db, userId, isAuthReady);
   const global = useGlobalMetadata(db, isAuthReady);
   
-  // NEW: Call the applied leadership data hook
-  const appliedLeadership = useAppliedLeadershipData(isAuthReady); 
+  // NEW: Call the applied leadership data hook // <-- REMOVED
+  // const appliedLeadership = useAppliedLeadershipData(isAuthReady); 
 
   try {
     if (global && typeof global.metadata === 'object') {
@@ -424,9 +423,9 @@ const DataProvider = ({ children, firebaseServices, userId, isAuthReady, navigat
     }
   } catch {}
 
-  // UPDATED: Include the appliedLeadership loading state
-  const isLoading = pdp.isLoading || commitment.isLoading || planning.isLoading || global.isLoading || appliedLeadership.isAppliedLeadershipLoading;
-  const error = pdp.error || commitment.error || planning.error || global.error || appliedLeadership.error;
+  // UPDATED: Include the appliedLeadership loading state // <-- REMOVED
+  const isLoading = pdp.isLoading || commitment.isLoading || planning.isLoading || global.isLoading;
+  const error = pdp.error || commitment.error || planning.error || global.error;
 
   const hasPendingDailyPractice = useMemo(() => {
     const active = commitment.commitmentData?.active_commitments || [];
@@ -458,11 +457,11 @@ const DataProvider = ({ children, firebaseServices, userId, isAuthReady, navigat
       commitmentData: commitment.commitmentData,
       planningData: planning.planningData,
       
-      // NEW: Merge Applied Leadership Data
-      LEADERSHIP_DOMAINS: appliedLeadership.LEADERSHIP_DOMAINS,
-      RESOURCE_LIBRARY: appliedLeadership.RESOURCE_LIBRARY,
+      // NEW: Merge Applied Leadership Data // <-- REMOVED
+      // LEADERSHIP_DOMAINS: appliedLeadership.LEADERSHIP_DOMAINS, // <-- REMOVED
+      // RESOURCE_LIBRARY: appliedLeadership.RESOURCE_LIBRARY, // <-- REMOVED
       // The main `isLoading` combines this, but we'll include it for completeness
-      isAppliedLeadershipLoading: appliedLeadership.isAppliedLeadershipLoading, 
+      // isAppliedLeadershipLoading: appliedLeadership.isAppliedLeadershipLoading, // <-- REMOVED
 
       isLoading,
       error,
@@ -473,11 +472,11 @@ const DataProvider = ({ children, firebaseServices, userId, isAuthReady, navigat
       GEMINI_MODEL,
       API_KEY,
       LEADERSHIP_TIERS: global.metadata.LEADERSHIP_TIERS || LEADERSHIP_TIERS_FALLBACK,
-      ...global.metadata,
+      ...global.metadata, // <-- This spread now correctly includes LEADERSHIP_DOMAINS and RESOURCE_LIBRARY
       hasPendingDailyPractice,
     }),
     // UPDATED DEPENDENCIES
-    [navigate, user, firebaseServices, userId, isAuthReady, isLoading, error, pdp, commitment, planning, global, appliedLeadership, hasPendingDailyPractice, db]
+    [navigate, user, firebaseServices, userId, isAuthReady, isLoading, error, pdp, commitment, planning, global, hasPendingDailyPractice, db]
   );
 
   if (!isAuthReady) return null;
@@ -507,7 +506,44 @@ function ConfigError({ message }) { /* ... */ return (
   );
 }
 
-function AuthPanel({ auth, onSuccess }) { /* ... */ return (
+function AuthPanel({ auth, onSuccess }) { /* ... */ 
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [name, setName] = useState('');
+  const [secretCode, setSecretCode] = useState('');
+  const [mode, setMode] = useState('login'); // 'login', 'signup', 'reset'
+  const [statusMessage, setStatusMessage] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+
+  const isLogin = mode === 'login';
+  const isReset = mode === 'reset';
+
+  const handleAction = async () => {
+    setIsLoading(true);
+    setStatusMessage('');
+    try {
+      if (mode === 'login') {
+        await signInWithEmailAndPassword(auth, email, password);
+        onSuccess();
+      } else if (mode === 'reset') {
+        await sendPasswordResetEmail(auth, email);
+        setStatusMessage('Password reset email sent. Check your inbox.');
+      } else if (mode === 'signup') {
+        if (secretCode !== SECRET_SIGNUP_CODE) {
+          throw new Error('Invalid secret sign-up code.');
+        }
+        await createUserWithEmailAndPassword(auth, email, password);
+        // Note: In a real app, you'd update the user's profile with 'name' here
+        onSuccess();
+      }
+    } catch (e) {
+      console.error('Auth action failed:', e);
+      setStatusMessage(e.message);
+    }
+    setIsLoading(false);
+  };
+  
+  return (
     <div className="min-h-screen flex items-center justify-center bg-gray-100">
       <div className={`p-8 bg-white rounded-xl shadow-2xl text-center w-full max-w-sm border-t-4 border-[${COLORS.TEAL}]`}>
         <h2 className={`text-2xl font-extrabold text-[${COLORS.NAVY}] mb-4`}>
@@ -748,7 +784,7 @@ const ScreenRouter = ({ currentScreen, navParams, navigate }) => { /* ... */
   if (currentScreen === 'daily-practice')
     return <Component key={currentScreen} initialGoal={navParams.initialGoal} initialTier={navParams.initialTier} />;
   if (currentScreen === 'app-settings') return <AppSettingsScreen key={currentScreen} navigate={navigate} />;
-  if (currentScreen === 'data-maintenance') return <Component key={currentScreen} navigate={navigate} />;
+  if (currentScreen === 'data-maintenance') return <Component key={currentDDScreen} navigate={navigate} />;
   if (currentScreen === 'debug-data') return <Component key={currentScreen} navigate={navigate} />;
   return <Component key={currentScreen} />;
 };

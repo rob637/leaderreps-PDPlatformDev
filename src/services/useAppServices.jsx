@@ -39,7 +39,7 @@ const mockGetDoc = async (docPath) => {
   const d = __firestore_mock_store[docPath];
   return createMockSnapshot(docPath, d || {}, !!d);
 };
-const mockDoc = (db, c, d) => (c === 'metadata' ? `${c}/${d}` : `${c}/${d}`);
+const mockDoc = (db, c, d) => (c === 'metadata' ? `${c}/${d}` : `${c.replace(/\/$/, '')}/${d}`); // FIX: Handle nested paths for catalog
 
 
 /* =========================================================
@@ -122,7 +122,7 @@ const MOCK_PDP_DATA = { plan_goals: [], last_updated: new Date().toISOString() }
 const MOCK_COMMITMENT_DATA = { active_commitments: [], reflection_journal: '' };
 const MOCK_PLANNING_DATA = { drafts: [] };
 
-// NEW FALLBACKS ADDED FOR APPLIED LEADERSHIP DATA
+// FALLBACKS for Applied Leadership data (now loaded by useGlobalMetadata)
 const MOCK_DOMAINS = []; 
 const MOCK_RESOURCES = {}; 
 
@@ -157,10 +157,10 @@ const DEFAULT_SERVICES = {
     updatePlanningData: async () => {},
     updateGlobalMetadata: async () => {},
     
-    // NEW DEFAULTS ADDED
+    // DEFAULTS ADDED (will be populated by useGlobalMetadata)
     LEADERSHIP_DOMAINS: MOCK_DOMAINS,
     RESOURCE_LIBRARY: MOCK_RESOURCES,
-    isAppliedLeadershipLoading: true, 
+    // isAppliedLeadershipLoading: true, // <-- REMOVED, now part of main isLoading
 };
 
 export const AppServiceContext = createContext(DEFAULT_SERVICES);
@@ -177,7 +177,7 @@ const resolveGlobalMetadata = (meta) => {
 
 const looksEmptyGlobal = (obj) => {
   if (!obj || typeof obj !== 'object') return true;
-  const known = [ 'LEADERSHIP_TIERS', 'COMMITMENT_BANK', 'SCENARIO_CATALOG', 'READING_CATALOG_SERVICE' ];
+  const known = [ 'LEADERSHIP_TIERS', 'COMMITMENT_BANK', 'SCENARIO_CATALOG', 'READING_CATALOG_SERVICE', 'LEADERSHIP_DOMAINS', 'RESOURCE_LIBRARY' ]; // <-- UPDATED
   const hasKnown = known.some((k) => Object.prototype.hasOwnProperty.call(obj, k));
   
   if (hasKnown) {
@@ -303,15 +303,18 @@ export const usePlanningData = (db, userId, isAuthReady) => {
 
 
 /* =========================================================
-   Global metadata (read) (Unchanged)
+   Global metadata (read) (*** UPDATED ***)
 ========================================================= */
 export const useGlobalMetadata = (db, isAuthReady) => {
   const [metadata, setMetadata] = useState({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   
+  // --- UPDATED: Added new paths based on user feedback ---
   const pathConfig = mockDoc(db, 'metadata', 'config');
   const pathCatalog = mockDoc(db, 'metadata', 'reading_catalog');
+  const pathDomains = mockDoc(db, 'metadata/config/catalog', 'leadership_domains');
+  const pathResources = mockDoc(db, 'metadata/config/catalog', 'resource_library');
 
   useEffect(() => {
     if (!isAuthReady) {
@@ -321,38 +324,65 @@ export const useGlobalMetadata = (db, isAuthReady) => {
     setLoading(true);
     
     // --- STEP 0: LOG START ---
-    console.log(`[*** ABSOLUTE DEBUG START ***] Fetching Global Metadata from: ${pathConfig} and ${pathCatalog}`);
+    console.log(`[*** ABSOLUTE DEBUG START ***] Fetching Global Metadata from: ${pathConfig}, ${pathCatalog}, ${pathDomains}, ${pathResources}`);
+
+    // NEW HELPER: Replicates the transformation logic from the old API hook
+    const transformResources = (resourcesItems) => {
+        if (!Array.isArray(resourcesItems)) {
+            console.warn("Resource library items is not an array, returning empty object.");
+            return MOCK_RESOURCES;
+        }
+        return resourcesItems.reduce((acc, resource) => {
+            const domainId = resource.domain_id;
+            if (domainId) { 
+                acc[domainId] = acc[domainId] || [];
+                acc[domainId].push(resource);
+            }
+            return acc;
+        }, {});
+    };
 
     const fetchMetadata = async () => {
       let finalData = {};
       try {
-        const [configSnap, catalogSnap] = await Promise.all([
+        const [configSnap, catalogSnap, domainsSnap, resourcesSnap] = await Promise.all([
           getDocEx(db, pathConfig),
-          getDocEx(db, pathCatalog)
+          getDocEx(db, pathCatalog),
+          getDocEx(db, pathDomains),
+          getDocEx(db, pathResources),
         ]);
 
         // --- STEP 1: LOG RAW SNAPSHOT STATUS ---
-        console.log(`[DEBUG SNAPSHOT] Config Doc Exists: ${configSnap.exists()}. Catalog Doc Exists: ${catalogSnap.exists()}`);
+        console.log(`[DEBUG SNAPSHOT] Config Doc Exists: ${configSnap.exists()}. Catalog Doc Exists: ${catalogSnap.exists()}. Domains Doc Exists: ${domainsSnap.exists()}. Resources Doc Exists: ${resourcesSnap.exists()}`);
 
         const configData = configSnap.exists() ? configSnap.data() : {};
         const catalogData = catalogSnap.exists() ? catalogSnap.data() : {};
+        // Get the 'items' array from the wrapped domain and resource docs
+        const domainsItems = domainsSnap.exists() ? (domainsSnap.data()?.items || []) : MOCK_DOMAINS;
+        const resourcesItems = resourcesSnap.exists() ? (resourcesSnap.data()?.items || []) : [];
         
         // --- STEP 2: LOG RAW DATA RETURNED ---
         console.log(`[DEBUG RAW DATA] RAW CONFIG: ${JSON.stringify(configData)}`);
         console.log(`[DEBUG RAW DATA] RAW CATALOG: ${JSON.stringify(catalogData)}`);
+        console.log(`[DEBUG RAW DATA] RAW DOMAINS (items): ${JSON.stringify(domainsItems)}`);
+        console.log(`[DEBUG RAW DATA] RAW RESOURCES (items): ${JSON.stringify(resourcesItems)}`);
         
-        // CRITICAL STRUCTURAL MERGE FIX: 
-        // 1. Merge the main config document content (which includes the VIDEO_CATALOG, etc.)
-        // 2. Explicitly nest the entire catalogData document under READING_CATALOG_SERVICE
+        // CRITICAL STRUCTURAL MERGE: 
+        // 1. Merge the main config document content
+        // 2. Explicitly nest the entire catalogData document
+        // 3. Explicitly add LEADERSHIP_DOMAINS array
+        // 4. Explicitly add *transformed* RESOURCE_LIBRARY object
         finalData = { 
             ...(configData || {}), 
-            READING_CATALOG_SERVICE: (catalogData || {}) 
+            READING_CATALOG_SERVICE: (catalogData || {}),
+            LEADERSHIP_DOMAINS: Array.isArray(domainsItems) ? domainsItems : MOCK_DOMAINS,
+            RESOURCE_LIBRARY: transformResources(resourcesItems),
         };
         
         // --- STEP 3: LOG MERGED DATA ---
         console.log(`[DEBUG MERGED] MERGED DATA: ${JSON.stringify(finalData)}`);
         
-        // Apply fallback tiers ONLY if the entire config document was empty
+        // Apply fallback tiers ONLY if the main config document was empty
         if (Object.keys(configData || {}).length === 0) {
             finalData.LEADERSHIP_TIERS = LEADERSHIP_TIERS_FALLBACK;
             console.warn('[REBUILD READ RESOLVE] Config data was empty. Applied LEADERSHIP_TIERS_FALLBACK.');
@@ -383,6 +413,8 @@ export const useGlobalMetadata = (db, isAuthReady) => {
 /* =========================================================
    Global writer (safe merge + optional force overwrite) (Unchanged)
 ========================================================= */
+// NOTE: This function is unchanged. It does NOT support writing to the new domain/resource paths.
+// This is fine, as the request was only about *reading* data.
 export const updateGlobalMetadata = async (
   db,
   data,
@@ -398,6 +430,7 @@ export const updateGlobalMetadata = async (
   let path;
   let payload = { ...data };
 
+  // This logic is retained, but does not account for new paths.
   if (forceDocument === 'catalog' || (payload.READING_CATALOG_SERVICE && forceDocument !== 'config')) {
       path = mockDoc(db, 'metadata', 'reading_catalog');
       payload = payload.READING_CATALOG_SERVICE || payload; 
@@ -430,79 +463,15 @@ export const updateGlobalMetadata = async (
 
 
 /* =========================================================
-   NEW HOOK: Applied Leadership Data Fetch (EXPORT ADDED)
+   NEW HOOK: Applied Leadership Data Fetch (REMOVED)
 ========================================================= */
-export const useAppliedLeadershipData = (isAuthReady) => {
-    const [domains, setDomains] = useState(MOCK_DOMAINS);
-    const [resources, setResources] = useState(MOCK_RESOURCES);
-    const [isLoading, setIsLoading] = useState(true);
-
-    useEffect(() => {
-        if (!isAuthReady) {
-            setIsLoading(false);
-            return;
-        }
-
-        const fetchAppliedData = async () => {
-            setIsLoading(true);
-            try {
-                // Fetch the data from your new backend endpoint
-                const response = await fetch('/api/v1/applied-leadership');
-                if (!response.ok) {
-                    // CRITICAL: Throw an error on non-200 status codes
-                    throw new Error(`API Request Failed: HTTP ${response.status} - Could not load applied leadership data.`);
-                }
-                
-                const { leadership_domains, resource_library } = await response.json();
-                
-                if (Array.isArray(leadership_domains)) {
-                    setDomains(leadership_domains);
-                } else {
-                    console.error("API response missing 'leadership_domains' array.");
-                    setDomains(MOCK_DOMAINS);
-                }
-
-                // CRITICAL TRANSFORMATION: Convert flat list to object lookup
-                if (Array.isArray(resource_library)) {
-                    const transformedResources = resource_library.reduce((acc, resource) => {
-                        const domainId = resource.domain_id;
-                        if (domainId) { 
-                            acc[domainId] = acc[domainId] || [];
-                            acc[domainId].push(resource);
-                        }
-                        return acc;
-                    }, {});
-                    setResources(transformedResources);
-                } else {
-                    console.error("API response missing 'resource_library' array.");
-                    setResources(MOCK_RESOURCES);
-                }
-
-            } catch (error) {
-                // If API fails (404/500), this catches it.
-                console.error("[APPLIED LEADERSHIP FAIL] Failed to fetch data:", error);
-                setDomains(MOCK_DOMAINS);
-                setResources(MOCK_RESOURCES);
-                // The component now relies on safeDomains.length === 0 AND isLoading === false
-            } finally {
-                setIsLoading(false);
-            }
-        };
-
-        fetchAppliedData();
-    }, [isAuthReady]);
-
-    // This is the data structure the component needs.
-    return { 
-        LEADERSHIP_DOMAINS: domains, 
-        RESOURCE_LIBRARY: resources, 
-        isAppliedLeadershipLoading: isLoading 
-    };
-};
+// export const useAppliedLeadershipData = ...
+// --- This hook (lines 554-610) has been REMOVED ---
+// --- Its functionality is now merged into useGlobalMetadata ---
 
 
 /* =========================================================
-   Provider factory (Unchanged Logic, uses all hooks)
+   Provider factory (UPDATED: uses all hooks)
 ========================================================= */
 export const createAppServices = ({
   user, userId, auth, db, isAuthReady, navigate,
@@ -515,12 +484,12 @@ export const createAppServices = ({
   const planningHook = usePlanningData(db, userId, isAuthReady);
   const metadataHook = useGlobalMetadata(db, isAuthReady);
   
-  // NEW HOOK INTEGRATION
-  const appliedLeadershipHook = useAppliedLeadershipData(isAuthReady); 
+  // NEW HOOK INTEGRATION (REMOVED)
+  // const appliedLeadershipHook = useAppliedLeadershipData(isAuthReady); // <-- REMOVED
 
   // Combined loading state: True if any major piece is loading
   // CRITICAL: Combines all loading flags
-  const combinedIsLoading = pdpHook.isLoading || commitmentHook.isLoading || planningHook.isLoading || metadataHook.isLoading || appliedLeadershipHook.isAppliedLeadershipLoading;
+  const combinedIsLoading = pdpHook.isLoading || commitmentHook.isLoading || planningHook.isLoading || metadataHook.isLoading; // <-- REMOVED appliedLeadershipHook
 
   const value = useMemo(() => {
     // Determine Tiers from Metadata or Fallback
@@ -544,7 +513,7 @@ export const createAppServices = ({
       ...commitmentHook,
       ...planningHook,
       // CRITICAL: Merges applied leadership data and its loading flag
-      ...appliedLeadershipHook, 
+      // ...appliedLeadershipHook, // <-- REMOVED
       metadata: resolveGlobalMetadata(metadataHook.metadata),
       
       // Core Configuration
@@ -553,6 +522,10 @@ export const createAppServices = ({
       appId: metadataHook.metadata.APP_ID || 'default-app-id',
       IconMap: metadataHook.metadata.IconMap || {},
       LEADERSHIP_TIERS: tiers,
+
+      // NEW: Pull Applied Leadership data from the (now correct) metadata object
+      LEADERSHIP_DOMAINS: metadataHook.metadata.LEADERSHIP_DOMAINS || MOCK_DOMAINS,
+      RESOURCE_LIBRARY: metadataHook.metadata.RESOURCE_LIBRARY || MOCK_RESOURCES,
 
       // AI/API Services
       callSecureGeminiAPI,
@@ -572,7 +545,7 @@ export const createAppServices = ({
     };
   }, [
     user, userId, db, auth, isAuthReady, navigate, callSecureGeminiAPI, hasGeminiKey, API_KEY,
-    pdpHook, commitmentHook, planningHook, metadataHook, appliedLeadershipHook, combinedIsLoading,
+    pdpHook, commitmentHook, planningHook, metadataHook, combinedIsLoading, // <-- REMOVED appliedLeadershipHook
   ]);
 
   return value;
