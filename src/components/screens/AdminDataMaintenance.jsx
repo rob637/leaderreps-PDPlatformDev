@@ -21,37 +21,27 @@ const pretty = (v) => JSON.stringify(v ?? {}, null, 2);
 const tryParse = (t, fb) => { try { return JSON.parse(t); } catch { return fb; } };
 const pathParts = (p) => p.trim().split("/").filter(Boolean);
 
-// --- CONSTANTS FOR SINGLE ARRAY DOCUMENTS ---
+// --- PATH CONSTANTS AND UTILITIES ---
 const ARRAY_WRAPPER_KEY = "items"; 
-const SINGLE_ARRAY_DOCUMENT_PATHS = [
-    "metadata/reading_catalog",
-    "metadata/config/COMMITMENT_BANK",
-    "metadata/config/TARGET_REP_CATALOG",
-    "metadata/config/quick_challenge_catalog",
-];
-const isSingleArrayDocument = (p) => SINGLE_ARRAY_DOCUMENT_PATHS.includes(p);
-// --- END CONSTANTS ---
 
-// CRITICAL FIX: The logic is now based on path segment count AND the known single array documents.
-const isDocumentPath = (p) => {
-    // Standard Firestore logic (even segments)
-    if (pathParts(p).length % 2 === 0) return true;
-    // Overload: Check if the path matches a known document path with 3 segments
-    return FORCED_DOCUMENT_PATHS.includes(p);
-};
+// Paths that are known to contain a single array at the root or are collections of arrays
+// NOTE: ALL PATHS CORRECTED TO USE SINGULAR '/catalog/'
+const SINGLE_ARRAY_DOCUMENTS = [
+    "metadata/reading_catalog",
+    "metadata/config/catalog/COMMITMENT_BANK",
+    "metadata/config/catalog/TARGET_REP_CATALOG",
+    "metadata/config/catalog/quick_challenge_catalog",
+    // Assuming other catalogs will use the singular 'catalog' path if they are 4-segment documents
+];
+
+// Standard Firestore path logic (even segments = Document)
+const isDocumentPath = (p) => pathParts(p).length % 2 === 0;
 const isCollectionPath = (p) => !isDocumentPath(p);
 
-// The list of 3-segment paths that must be treated as documents (metadata/config/DOC_ID)
-const FORCED_DOCUMENT_PATHS = [
-    "metadata/config/COMMITMENT_BANK",
-    "metadata/config/TARGET_REP_CATALOG",
-    "metadata/config/leadership_domains",
-    "metadata/config/leadership_tiers",
-    "metadata/config/quick_challenge_catalog",
-    "metadata/config/resource_library",
-    "metadata/config/scenario_catalog",
-    "metadata/config/video_catalog",
-];
+const getWrapperKeyForPath = (path) => {
+    return SINGLE_ARRAY_DOCUMENTS.includes(path) ? ARRAY_WRAPPER_KEY : null;
+};
+// --- END PATH UTILITIES ---
 
 
 const normalizePath = (raw, uid) =>
@@ -326,21 +316,56 @@ export default function AdminDataMaintenance() {
   const isReading = status.startsWith("Reading") || status.startsWith("Listening"); 
 
   // array editor state
-  const docObj = useMemo(() => tryParse(docJson, {}), [docJson]);
+  // We determine the internal doc object from the JSON string
+  const rawDocObj = useMemo(() => tryParse(docJson, {}), [docJson]);
+  
+  // CRITICAL: Check if we need to UNWRAP the data for display/editing
+  const wrapperKey = getWrapperKeyForPath(path);
+  // If wrapperKey is active, docObj holds the ARRAY CONTENT; otherwise, it holds the rawDocObj
+  const docObj = wrapperKey ? (rawDocObj[wrapperKey] || {}) : rawDocObj;
+
+
   const arrayFields = useMemo(() => {
+    // If the whole document is designated as a single array, we skip finding nested arrays.
+    // We explicitly list the wrapperKey as the *only* array field if it applies.
+    if (wrapperKey) return [wrapperKey]; 
+    // Otherwise, find nested arrays inside the document object
     return Object.keys(docObj || {}).filter((k) => Array.isArray(docObj[k]));
-  }, [docObj]);
+  }, [docObj, wrapperKey]);
+  
   const [activeArray, setActiveArray] = useState("");
+  
+  // Force activeArray selection if it's a single array document
+  useEffect(() => {
+    if (wrapperKey && activeArray !== wrapperKey) {
+        setActiveArray(wrapperKey);
+    } else if (!wrapperKey && !activeArray && arrayFields.length) {
+        // Fallback to selecting the first normal array field
+        setActiveArray(arrayFields[0]);
+    }
+    // Cleanup live listener when path type changes or component unmounts
+    return () => liveUnsub && liveUnsub();
+  }, [arrayFields, activeArray, wrapperKey, liveUnsub]);
+
 
   const arrayRows = useMemo(() => {
-    const src = Array.isArray(docObj?.[activeArray]) ? docObj[activeArray] : [];
+    // Determine the source of the array data
+    let src = [];
+    if (wrapperKey && activeArray === wrapperKey) {
+        // Source is the array inside the rawDocObj wrapper
+        src = rawDocObj[wrapperKey] || [];
+    } else {
+        // Source is a standard nested array
+        src = Array.isArray(docObj?.[activeArray]) ? docObj[activeArray] : [];
+    }
+
     // map primitives -> { value: <primitive> }, objects -> flattened
     return src.map((item, i) =>
       (item && typeof item === "object" && !Array.isArray(item))
         ? ({ _id: String(i), ...flatten(item) })
         : ({ _id: String(i), value: typeof item === "string" ? item : JSON.stringify(item) })
     );
-  }, [docObj, activeArray]);
+  }, [rawDocObj, docObj, activeArray, wrapperKey]);
 
   const setArrayRows = (nextRows) => {
     const rebuilt = nextRows.map(({ _id, ...rest }) => {
@@ -349,7 +374,17 @@ export default function AdminDataMaintenance() {
       if (keys.length === 1 && keys[0] === "value") return coerce(rest.value);
       return unflatten(rest);
     });
-    const updated = { ...docObj, [activeArray]: rebuilt };
+    
+    // CRITICAL: When saving an array on a single-array document, we MUST write the Map wrapper
+    let updated;
+    if (wrapperKey && activeArray === wrapperKey) {
+        // If the array being edited is the single array, we put it back in the wrapper Map.
+        updated = { ...rawDocObj, [wrapperKey]: rebuilt };
+    } else {
+        // Normal save path for nested arrays
+        updated = { ...rawDocObj, [activeArray]: rebuilt };
+    }
+    
     setDocJson(pretty(updated));
   };
 
@@ -388,21 +423,29 @@ export default function AdminDataMaintenance() {
       // Reset active array before reading new data
       setActiveArray("");
       
-      // CRITICAL FIX: Aggressively auto-select the most relevant array field
-      if (snap.exists() && typeof data === 'object' && data !== null) {
-        
+      // CRITICAL: Check if document needs WRAPPING for display
+      const key = getWrapperKeyForPath(p);
+      if (key) {
+        // If the document data is already a Map containing the array key, use it.
+        if (data && data[key] && Array.isArray(data[key])) {
+            setActiveArray(key);
+        } else if (snap.exists()) {
+             // If data exists but is just an array, wrap it immediately for internal use.
+             if (Array.isArray(data)) {
+                 data = { [key]: data };
+                 setActiveArray(key);
+             } else {
+                 // If data is a non-array map, auto-select array field if one exists
+                 const currentKeys = Object.keys(data);
+                 const arrayKey = currentKeys.find(k => Array.isArray(data[k]));
+                 if (arrayKey) setActiveArray(arrayKey);
+             }
+        }
+      } else if (snap.exists() && typeof data === 'object' && data !== null) {
+        // Standard non-wrapped document: auto-select the first array field
         const currentKeys = Object.keys(data);
         const arrayKey = currentKeys.find(k => Array.isArray(data[k]));
-        
-        // Auto-select the first (or only) top-level array field found
-        if (arrayKey) {
-            setActiveArray(arrayKey);
-        } else if (currentKeys.length === 0) {
-            // Document exists but is empty, clear editor
-            setDocJson(pretty({}));
-            setStatus("✅ Read successful (Document is empty).");
-            return;
-        }
+        if (arrayKey) setActiveArray(arrayKey);
       }
       
       setDocJson(pretty(data));
@@ -420,8 +463,12 @@ export default function AdminDataMaintenance() {
         setDocExists(snap.exists());
         
         let data = snap.exists() ? snap.data() : {};
-        // Note: We don't change activeArray in the snapshot handler to avoid 
-        // interrupting user editing if they switch fields manually.
+        
+        // CRITICAL: If wrapper is active, check and apply it for the snapshot data too
+        const key = getWrapperKeyForPath(p);
+        if (key && Array.isArray(data)) {
+             data = { [key]: data };
+        }
         
         setDocJson(pretty(data));
         setStatus("👂 Live listening...");
@@ -435,6 +482,13 @@ export default function AdminDataMaintenance() {
     try {
       const data = tryParse(docJson, null);
       if (data == null) throw new Error("Invalid JSON. Please check the format in the left box.");
+      
+      // CRITICAL: Prevent merge for single-array documents (use REPLACE instead)
+      const wrapperKey = getWrapperKeyForPath(path);
+      if (wrapperKey && data && data[wrapperKey] && Array.isArray(data[wrapperKey])) {
+          throw new Error("Cannot use **Save (Merge)** for single-array catalogs (e.g., Target Rep). Use **Replace (Set)**.");
+      }
+      
       const p = normalizePath(path, uid);
       await setDoc(doc(db, ...pathParts(p)), data, { merge: true });
       setStatus("✅ Saved (merge).");
@@ -446,10 +500,16 @@ export default function AdminDataMaintenance() {
     try {
       const data = tryParse(docJson, null);
       if (data == null) throw new Error("Invalid JSON. Please check the format in the left box.");
+      
       const p = normalizePath(path, uid);
+      
+      // CRITICAL FIX: We must send the Map object, which now correctly contains the wrapper key 
+      // if it's a single-array document.
       await setDoc(doc(db, ...pathParts(p)), data);
+      
       setDocExists(true);
       setStatus("✅ Replaced (Set).");
+      await readDoc(); // Refresh UI
     } catch (e) { setErr(String(e)); setStatus("❌ Error"); }
   };
 
@@ -473,6 +533,12 @@ export default function AdminDataMaintenance() {
     try {
       const data = tryParse(docJson, {});
       const p = normalizePath(path, uid);
+      
+      // CRITICAL: If the active array is the wrapper key, force user to use Replace (Set)
+      if (getWrapperKeyForPath(p) === activeArray) {
+          throw new Error("Please use **Replace (Set)** to save changes to the entire catalog (Document Root Array).");
+      }
+      
       // Only save the active array field and a timestamp for merge
       await setDoc(doc(db, ...pathParts(p)), { [activeArray]: data[activeArray], _lastEdited: nowIso() }, { merge: true });
       setStatus(`✅ Saved array "${activeArray}".`);
@@ -641,23 +707,20 @@ export default function AdminDataMaintenance() {
   };
 
   /* ---------- presets ---------- */
-  // CRITICAL FIX: Corrected preset paths to match case and structure shown in Firebase screenshot
-  const presets = [
-    // Corrected to COMMITMENT_BANK (Uppercase, targets the document)
-    { label: "✅ Commitment Bank (Doc)", value: "metadata/config/COMMITMENT_BANK" },
-    
-    // Corrected TARGET_REP_CATALOG (Uppercase, targets the document)
-    { label: "🎯 Target Rep Catalog (Doc)", value: "metadata/config/TARGET_REP_CATALOG" },
-    
-    // Assumed other single-document catalog names follow the same pattern (Document ID = Name)
-    { label: "🗺️ Leadership Domains (Doc)", value: "metadata/config/leadership_domains" },
-    { label: "🪜 Leadership Tiers (Doc)", value: "metadata/config/leadership_tiers" },
-    { label: "⚡ Quick Challenge Catalog (Doc)", value: "metadata/config/quick_challenge_catalog" },
-    { label: "📚 Resource Library (Doc)", value: "metadata/config/resource_library" },
-    { label: "🎬 Scenario Catalog (Doc)", value: "metadata/config/scenario_catalog" },
-    { label: "🎥 Video Catalog (Doc)", value: "metadata/config/video_catalog" },
+  // CRITICAL FIX: Corrected preset paths to use the singular 'catalog' structure
+  const CATALOG_BASE_PATH = "metadata/config/catalog";
 
-    // Reading Catalog appears to be correct as metadata/reading_catalog
+  const presets = [
+    { label: "✅ Commitment Bank (Doc)", value: `${CATALOG_BASE_PATH}/COMMITMENT_BANK` },
+    { label: "🎯 Target Rep Catalog (Doc)", value: `${CATALOG_BASE_PATH}/TARGET_REP_CATALOG` },
+    { label: "🗺️ Leadership Domains (Doc)", value: `${CATALOG_BASE_PATH}/leadership_domains` },
+    { label: "🪜 Leadership Tiers (Doc)", value: `${CATALOG_BASE_PATH}/leadership_tiers` },
+    { label: "⚡ Quick Challenge Catalog (Doc)", value: `${CATALOG_BASE_PATH}/quick_challenge_catalog` },
+    { label: "📚 Resource Library (Doc)", value: `${CATALOG_BASE_PATH}/resource_library` },
+    { label: "🎬 Scenario Catalog (Doc)", value: `${CATALOG_BASE_PATH}/scenario_catalog` },
+    { label: "🎥 Video Catalog (Doc)", value: `${CATALOG_BASE_PATH}/video_catalog` },
+
+    // Reading Catalog appears to be correct as metadata/reading_catalog (2-segment path)
     { label: "📖 Reading Catalog (Doc)", value: "metadata/reading_catalog" },
   ];
 
