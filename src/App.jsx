@@ -289,7 +289,7 @@ import {
 } from 'lucide-react';
 
 /* -----------------------------------------------------------------------------
-   LAZY ROUTES (*** UPDATED ***)
+   LAZY ROUTES (Unchanged)
 ----------------------------------------------------------------------------- */
 const ScreenMap = {
   dashboard: lazy(() => import('./components/screens/Dashboard.jsx')),
@@ -694,8 +694,8 @@ const NavSidebar = ({ currentScreen, setCurrentScreen, user, closeMobileMenu, is
         <button
           key={item.screen}
           onClick={() => handleNavigate(item.screen)}
-          title={isNavExpanded ? '' : item.label} // Tooltip for collapsed state
-          className={`flex items-center w-full px-4 py-2.5 rounded-xl font-semibold relative transition-all duration-200 ${
+          // --- UPDATED: Added 'relative group' and removed 'title' ---
+          className={`relative group flex items-center w-full px-4 py-2.5 rounded-xl font-semibold transition-all duration-200 ${
             isActive
               ? `bg-white text-[${NAVY}] shadow-lg ${isNavExpanded ? 'transform translate-x-1' : ''} ring-2 ring-[${TEAL}]` // Active state
               : `text-white hover:bg-[${TEAL}]/20 hover:text-white hover:shadow-md ${isNavExpanded ? 'hover:scale-[1.02]' : ''} bg-[${NAVY}]/5 border border-[${TEAL}]/10 ` // Inactive state
@@ -708,6 +708,15 @@ const NavSidebar = ({ currentScreen, setCurrentScreen, user, closeMobileMenu, is
           {isNavExpanded && item.badge && (
             <span className={`ml-2 px-2 py-0.5 text-xs font-bold rounded-full bg-[${ORANGE}] text-white animate-in fade-in duration-200`}>{item.badge}</span>
           )}
+
+          {/* --- NEW: Custom tooltip for collapsed state --- */}
+          {!isNavExpanded && (
+            <span className="absolute left-full ml-3 w-max px-3 py-2 bg-gray-900 text-white text-sm rounded-md shadow-lg 
+                           opacity-0 pointer-events-none group-hover:opacity-100 
+                           transition-opacity duration-200 z-50">
+              {item.label}
+            </span>
+          )}
         </button>
       );
     });
@@ -715,10 +724,24 @@ const NavSidebar = ({ currentScreen, setCurrentScreen, user, closeMobileMenu, is
   if (isAuthRequired) return null;
 
   return (
-    // --- UPDATED: Width, transition, and padding ---
-    <div className={`hidden md:flex flex-col ${isNavExpanded ? 'w-64 p-4' : 'w-20 p-3'} bg-[${NAVY}] text-white shadow-2xl transition-all duration-300 ease-in-out`}>
+    // --- UPDATED: Added 'relative' for positioning the toggle button ---
+    <div className={`hidden md:flex flex-col ${isNavExpanded ? 'w-64 p-4' : 'w-20 p-3'} bg-[${NAVY}] text-white shadow-2xl transition-all duration-300 ease-in-out relative`}>
+      
+      {/* --- NEW: Toggle Button (Moved to top) --- */}
+      <button
+        onClick={() => setIsNavExpanded(!isNavExpanded)}
+        title={isNavExpanded ? 'Collapse Menu' : 'Expand Menu'}
+        className="absolute top-6 -right-4 
+                   bg-white hover:bg-gray-200 text-[#002E47] 
+                   rounded-full shadow-lg border border-gray-300
+                   w-8 h-8 flex items-center justify-center z-20 transition-all
+                   hover:scale-110"
+      >
+        {isNavExpanded ? <ChevronLeft className="w-5 h-5" /> : <ChevronRight className="w-5 h-5" />}
+      </button>
+
+      {/* Header */}
       <div className={`flex items-center justify-center h-16 border-b border-[${TEAL}]/50 mb-6 flex-shrink-0`}>
-        {/* --- UPDATED: Show icon only or icon + text --- */}
         <CornerRightUp className={`w-7 h-7 text-[${TEAL}] ${isNavExpanded ? 'mr-2' : ''} transition-all`} />
         {isNavExpanded && (
           <h1 className="text-2xl font-extrabold animate-in fade-in duration-200">
@@ -727,13 +750,12 @@ const NavSidebar = ({ currentScreen, setCurrentScreen, user, closeMobileMenu, is
         )}
       </div>
 
-      {/* --- UPDATED: flex-col to position toggle button at bottom --- */}
+      {/* Navigation */}
       <nav className="flex-1 space-y-3 flex flex-col">
         {/* Wrapper for nav items */}
         <div className="flex-1 space-y-3">
           {menuSections.map((section) => (
             <div key={section.title} className="space-y-1">
-              {/* --- UPDATED: Show title only if expanded --- */}
               {isNavExpanded && (
                 <p className={`text-xs font-extrabold uppercase tracking-widest text-white px-2 py-1 rounded bg-[${TEAL}]/10 animate-in fade-in duration-200`}>
                   {section.title}
@@ -744,8 +766,8 @@ const NavSidebar = ({ currentScreen, setCurrentScreen, user, closeMobileMenu, is
           ))}
         </div>
 
-        {/* --- NEW: Toggle Button --- */}
-        <div className="py-2 mt-4">
+        {/* --- OLD TOGGLE BUTTON (REMOVED) --- */}
+        {/* <div className="py-2 mt-4">
           <button
             onClick={() => setIsNavExpanded(!isNavExpanded)}
             title={isNavExpanded ? 'Collapse Menu' : 'Expand Menu'}
@@ -755,22 +777,32 @@ const NavSidebar = ({ currentScreen, setCurrentScreen, user, closeMobileMenu, is
             {isNavExpanded && <span className="flex-1 text-left animate-in fade-in duration-200">Collapse</span>}
           </button>
         </div>
+        */}
       </nav>
 
+      {/* Profile Section */}
       <div className={`pt-4 border-t border-[${TEAL}]/50 mt-4 relative flex-shrink-0`}>
-        {/* --- UPDATED: Profile button --- */}
         <button
           onClick={() => setIsProfileOpen(!isProfileOpen)}
-          title={isNavExpanded ? '' : (user?.name || 'Guest User')} // Tooltip
-          className={`flex items-center w-full p-2 rounded-xl text-sm font-semibold transition-colors hover:bg-[${TEAL}]/20 focus:outline-none focus:ring-2 focus:ring-[${TEAL}] bg-white/5 ${isNavExpanded ? '' : 'justify-center'}`}
+          // --- UPDATED: Added 'relative group' and removed 'title' ---
+          className={`relative group flex items-center w-full p-2 rounded-xl text-sm font-semibold transition-colors hover:bg-[${TEAL}]/20 focus:outline-none focus:ring-2 focus:ring-[${TEAL}] bg-white/5 ${isNavExpanded ? '' : 'justify-center'}`}
         >
           <User className={`w-5 h-5 flex-shrink-0 ${isNavExpanded ? 'mr-3' : ''} text-indigo-300`} />
           {isNavExpanded && (
             <span className="truncate animate-in fade-in duration-200">{user?.name || `Guest User`}</span>
           )}
+          
+          {/* --- NEW: Custom tooltip for collapsed state --- */}
+          {!isNavExpanded && (
+            <span className="absolute left-full ml-3 w-max px-3 py-2 bg-gray-900 text-white text-sm rounded-md shadow-lg 
+                           opacity-0 pointer-events-none group-hover:opacity-100 
+                           transition-opacity duration-200 z-50">
+              {user?.name || 'Guest User'}
+            </span>
+          )}
         </button>
 
-        {/* --- UPDATED: Profile popup position --- */}
+        {/* Profile popup (unchanged) */}
         {isProfileOpen && (
           <div
             className={`absolute bottom-full ${isNavExpanded ? 'left-0' : 'left-full ml-2'} mb-3 w-64 p-4 rounded-xl shadow-2xl bg-[${NAVY}] border border-[${TEAL}]/50 z-10 animate-in fade-in ${isNavExpanded ? 'slide-in-from-bottom-2' : 'slide-in-from-left-2'}`}
