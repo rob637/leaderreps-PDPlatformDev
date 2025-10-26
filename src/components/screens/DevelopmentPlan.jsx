@@ -1,5 +1,5 @@
 // src/components/screens/DevelopmentPlan.jsx
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react'; // <-- Added useEffect
 import { useAppServices } from '../../services/useAppServices.jsx'; // <-- IMPORT SERVICES
 import {
   Loader,
@@ -262,7 +262,7 @@ const generatePlanFromScores = (scores, openEndedAnswer, cycle) => {
         standardFocusNamesMap[cycleData.performance] || 'Clarity & Communication',
         standardFocusNamesMap[cycleData.people] || 'Trust & Relationships'
     ];
-    standardFocusNames = [...new Set(standardFocusNames)]; // Remove duplicates if mapping results in same dimension
+    standardFocusNames = [...new Set(standardFocusNames)];
 
     const personalFocus = sortedScores[0];
     if (personalFocus && !standardFocusNames.includes(personalFocus.name)) {
@@ -273,12 +273,12 @@ const generatePlanFromScores = (scores, openEndedAnswer, cycle) => {
         const details = DIMENSIONS_MAP[name];
         if (!details) {
             console.error(`Missing details for dimension: ${name}. Check DIMENSIONS_MAP.`);
-            return null; // Handle missing dimension gracefully
+            return null;
         }
         const scoreData = scores[name];
         return {
           name: name,
-          score: scoreData?.score !== undefined ? scoreData.score : 'N/A', // Handle case where score might be missing
+          score: scoreData?.score !== undefined ? scoreData.score : 'N/A',
           why: details.why,
           whatGoodLooksLike: details.whatGoodLooksLike,
           courses: details.courses,
@@ -288,7 +288,7 @@ const generatePlanFromScores = (scores, openEndedAnswer, cycle) => {
             { week: 'Week 7-9', rep: `Practice ${details.courses[2] || details.courses[0]}` },
           ]
         };
-    }).filter(Boolean); // Remove null entries if a dimension was missing
+    }).filter(Boolean);
 
     const strengths = Object.values(scores)
         .filter(d => d.status === 'Strength')
@@ -334,7 +334,7 @@ const BaselineAssessment = ({ onComplete }) => {
       answers: answers,
       openEnded: openEnded,
     };
-    await new Promise(res => setTimeout(res, 1000));
+    await new Promise(res => setTimeout(res, 1000)); // Simulate API delay
     onComplete(plan, assessmentData);
     setIsSubmitting(false);
   };
@@ -405,7 +405,7 @@ const BaselineAssessment = ({ onComplete }) => {
 
 
 const DevelopmentPlanTracker = ({ pdpData, onStartProgressScan }) => {
-  const { user, navigate } = useAppServices(); // <-- Get navigate
+  const { user, navigate } = useAppServices();
   const assessmentHistory = pdpData.assessmentHistory || [];
   const latestAssessment = assessmentHistory[assessmentHistory.length - 1];
   const currentPlan = pdpData.currentPlan;
@@ -431,7 +431,12 @@ const DevelopmentPlanTracker = ({ pdpData, onStartProgressScan }) => {
   const scoreHistory = assessmentHistory.map(a => ({
       date: new Date(a.date).toLocaleDateString(),
       ...Object.keys(a.scores).reduce((acc, key) => {
-          acc[key] = a.scores[key].score;
+          // Ensure scores exist before trying to access score property
+          if(a.scores[key]) {
+              acc[key] = a.scores[key].score;
+          } else {
+              acc[key] = 0; // Default to 0 if score data is missing for robustness
+          }
           return acc;
       }, {})
   }));
@@ -523,7 +528,6 @@ const DevelopmentPlanTracker = ({ pdpData, onStartProgressScan }) => {
                              </div>
                         </div>
                     ))}
-                    {/* --- NEW: Add 80/20 explanation --- */}
                     {currentCycle > 1 && (
                       <p className="text-sm text-gray-500 mt-4 bg-gray-100 p-3 rounded-lg border">
                         <Lightbulb className="w-4 h-4 inline-block mr-1 text-blue-500" />
@@ -531,7 +535,6 @@ const DevelopmentPlanTracker = ({ pdpData, onStartProgressScan }) => {
                       </p>
                     )}
                 </div>
-                {/* --- NEW: Add navigation button --- */}
                 <Button onClick={() => navigate('daily-practice')} variant="primary" className="mt-6 w-full">
                   <Zap className="w-5 h-5 mr-2" /> Go to My Daily Practice Scorecard
                 </Button>
@@ -550,21 +553,26 @@ const DevelopmentPlanTracker = ({ pdpData, onStartProgressScan }) => {
                 </tr>
             </thead>
             <tbody>
-                <tr className="border-b border-gray-100">
-                    <td className="p-3 text-sm">1-3</td>
-                    <td className="p-3 text-sm font-medium">{currentPlan.focusAreas[0]?.name}</td>
-                    <td className="p-3 text-sm">{currentPlan.focusAreas[0]?.reps[0]?.rep}</td>
-                </tr>
-                 <tr className="border-b border-gray-100 bg-gray-50">
-                    <td className="p-3 text-sm">4-6</td>
-                    <td className="p-3 text-sm font-medium">{currentPlan.focusAreas[1]?.name}</td>
-                    <td className="p-3 text-sm">{currentPlan.focusAreas[1]?.reps[1]?.rep}</td>
-                </tr>
-                 <tr className="border-b border-gray-100">
-                    <td className="p-3 text-sm">7-9</td>
-                    <td className="p-3 text-sm font-medium">{currentPlan.focusAreas[2]?.name}</td>
-                    <td className="p-3 text-sm">{currentPlan.focusAreas[2]?.reps[2]?.rep}</td>
-                </tr>
+               {/* Ensure focusAreas exist before mapping */}
+                {currentPlan.focusAreas && currentPlan.focusAreas.length > 0 && (
+                    <>
+                        <tr className="border-b border-gray-100">
+                            <td className="p-3 text-sm">1-3</td>
+                            <td className="p-3 text-sm font-medium">{currentPlan.focusAreas[0]?.name}</td>
+                            <td className="p-3 text-sm">{currentPlan.focusAreas[0]?.reps[0]?.rep}</td>
+                        </tr>
+                        <tr className="border-b border-gray-100 bg-gray-50">
+                            <td className="p-3 text-sm">4-6</td>
+                            <td className="p-3 text-sm font-medium">{currentPlan.focusAreas[1]?.name}</td>
+                            <td className="p-3 text-sm">{currentPlan.focusAreas[1]?.reps[1]?.rep}</td>
+                        </tr>
+                        <tr className="border-b border-gray-100">
+                            <td className="p-3 text-sm">7-9</td>
+                            <td className="p-3 text-sm font-medium">{currentPlan.focusAreas[2]?.name}</td>
+                            <td className="p-3 text-sm">{currentPlan.focusAreas[2]?.reps[2]?.rep}</td>
+                        </tr>
+                    </>
+                )}
             </tbody>
           </table>
        </Card>
@@ -603,6 +611,9 @@ const ProgressScan = ({ pdpData, onCompleteScan }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const previousPlan = pdpData.currentPlan;
+  // Add defensive check for previousPlan and focusAreas
+  const previousFocusAreaName = previousPlan?.focusAreas?.[0]?.name || 'your primary focus area';
+
 
   const handleAnswerChange = (qId, value) => {
     setAnswers(prev => ({ ...prev, [qId]: value }));
@@ -615,7 +626,6 @@ const ProgressScan = ({ pdpData, onCompleteScan }) => {
   const completedQuestions = Object.keys(answers).filter(k => k.startsWith('q')).length;
   const isComplete = completedQuestions === ASSESSMENT_QUESTIONS.length;
 
-  // --- NEW: Add check for artifact context ---
   const canSubmit = isComplete && artifact.context.trim().length > 0;
 
   const handleSubmit = async () => {
@@ -623,7 +633,6 @@ const ProgressScan = ({ pdpData, onCompleteScan }) => {
       alert('Please answer all 10 questions to generate your new plan.');
       return;
     }
-    // --- NEW: Artifact context check ---
     if (!artifact.context.trim()) {
         alert('Please provide context for your uploaded artifact.');
         return;
@@ -645,7 +654,7 @@ const ProgressScan = ({ pdpData, onCompleteScan }) => {
       artifact: {
           fileName: artifact.file?.name || 'N/A',
           context: artifact.context,
-          focusArea: previousPlan.focusAreas[0].name
+          focusArea: previousFocusAreaName // Use the safe variable
       }
     };
 
@@ -691,7 +700,7 @@ const ProgressScan = ({ pdpData, onCompleteScan }) => {
 
       <Card title="📊 Evidence of Practice (Artifact)" icon={UploadCloud} accent="BLUE" className="mb-8 space-y-4">
          <p className="text-sm text-gray-600">
-           To validate your progress, please upload one artifact (evidence) of your work on a previous focus area, like <strong>"{previousPlan.focusAreas[0].name}"</strong>.
+           To validate your progress, please upload one artifact (evidence) of your work on <strong>"{previousFocusAreaName}"</strong>.
          </p>
          <p className="text-xs text-gray-500 italic">Examples: A meeting agenda, a feedback email (names redacted), a project plan, or an expectations doc.</p>
 
@@ -723,7 +732,7 @@ const ProgressScan = ({ pdpData, onCompleteScan }) => {
                     type="file"
                     className="hidden"
                     onChange={(e) => setArtifact(prev => ({...prev, file: e.target.files[0]}))}
-                    accept=".pdf,.doc,.docx,.png,.jpg,.jpeg" // Added typical file types
+                    accept=".pdf,.doc,.docx,.png,.jpg,.jpeg"
                 />
             </label>
         </div>
@@ -763,7 +772,7 @@ const ProgressScan = ({ pdpData, onCompleteScan }) => {
       <div className="mt-8 text-center">
         <Button
           onClick={handleSubmit}
-          disabled={!canSubmit || isSubmitting} // <-- UPDATED disabled check
+          disabled={!canSubmit || isSubmitting}
           variant="primary"
           className="px-12 py-4 text-lg"
         >
@@ -790,16 +799,12 @@ const DevelopmentPlanScreen = () => {
       setView('loading');
       return;
     }
-
     const hasPlan = pdpData?.currentPlan;
-
     if (hasPlan) {
-        const lastScanDate = new Date(pdpData.lastAssessmentDate || pdpData.createdAt || 0); // Use 0 if no date found
+        const lastScanDate = new Date(pdpData.lastAssessmentDate || pdpData.createdAt || 0);
         const now = new Date();
         const daysSinceLastScan = (now - lastScanDate) / (1000 * 60 * 60 * 24);
-
-        // Allow scan slightly early (e.g., day 85) for flexibility
-        if (daysSinceLastScan >= 85) {
+        if (daysSinceLastScan >= 85) { // Allow scan slightly early
             setView('scan');
         } else {
             setView('tracker');
@@ -809,12 +814,27 @@ const DevelopmentPlanScreen = () => {
     }
   }, [pdpData, isLoading]);
 
+  // --- SCROLL FIX: Added useEffect ---
+  useEffect(() => {
+    if (view === 'tracker') {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  }, [view]);
+
   const syncPlanToDailyPractice = async (newPlan) => {
+      // Ensure newPlan and focusAreas exist
+      if (!newPlan || !newPlan.focusAreas) {
+        console.error("syncPlanToDailyPractice: newPlan or focusAreas is missing.");
+        return; // Exit if data is invalid
+      }
+
       const newCoreReps = newPlan.focusAreas.map((area, index) => {
           const tier = DIMENSION_TO_TIER_MAP[area.name] || 'T1';
+          // Ensure area.reps exists and has at least one rep
+          const repText = area.reps && area.reps.length > 0 ? area.reps[0].rep : `Core Practice for ${area.name}`;
           return {
               id: `pdp-${newPlan.cycle}-${index}-${Date.now()}`,
-              text: `[90-Day Focus] ${area.reps[0].rep}`,
+              text: `[90-Day Focus] ${repText}`,
               status: 'Pending',
               isCustom: false,
               linkedGoal: `Plan: ${area.name}`,
@@ -827,90 +847,69 @@ const DevelopmentPlanScreen = () => {
       const existingCommitments = commitmentData?.active_commitments || [];
       const nonCoreCommitments = existingCommitments.filter(c => c.source !== 'DevelopmentPlan');
 
-      await updateCommitmentData(data => ({
-          ...data,
+      // --- SAVE FIX: Pass object, not function ---
+      const dataToSave = {
           active_commitments: [
               ...nonCoreCommitments,
               ...newCoreReps
           ]
-      }));
+          // If updateCommitmentData replaces the whole doc, you need to include other fields:
+          // reflection_journal: commitmentData?.reflection_journal || '',
+          // last_reset_date: commitmentData?.last_reset_date || '',
+          // resilience_log: commitmentData?.resilience_log || {},
+          // history: commitmentData?.history || [],
+          // last_weekly_review: commitmentData?.last_weekly_review || null,
+          // weekly_review_notes: commitmentData?.weekly_review_notes || ''
+      };
+      await updateCommitmentData(dataToSave);
+      // --- END SAVE FIX ---
   };
 
   const handleAssessmentComplete = async (plan, assessment) => {
     setIsSubmitting(true);
-
-    // Prepare data for the main doc update
     const newPdpData = {
-      // Don't spread pdpData here to avoid accidentally including old history arrays if they exist
       currentPlan: plan,
       currentCycle: 1,
-      createdAt: new Date().toISOString(), // Use ISO string for consistency
+      createdAt: new Date().toISOString(),
       lastAssessmentDate: assessment.date,
     };
-
     try {
-      // 1. Update the main PDP document
-      // We assume updatePdpData is smart enough to handle merge/overwrite correctly
       await updatePdpData(newPdpData);
-
-      // 2. Simulate saving assessment to subcollection (In real app, call a separate function)
       console.log("[SAVE] Saving assessment to assessment_history subcollection:", assessment);
-      // await saveToSubcollection('assessment_history', assessment); // Placeholder for actual function
-
-      // 3. Simulate saving plan to subcollection
       console.log("[SAVE] Saving plan to plan_history subcollection:", plan);
-      // await saveToSubcollection('plan_history', plan); // Placeholder for actual function
-
-      // 4. Sync this first plan with DailyPractice
-      await syncPlanToDailyPractice(plan);
-
+      await syncPlanToDailyPractice(plan); // Call sync *after* pdpData might have updated (though ideally before view changes)
     } catch (error) {
       console.error("Error completing assessment:", error);
       alert("There was an error saving your assessment. Please try again.");
     } finally {
       setIsSubmitting(false);
-      // State will update via listener, triggering useMemo -> setView('tracker')
+      // View should change automatically via useMemo when pdpData updates
     }
   };
 
   const handleScanComplete = async (newPlan, newAssessment) => {
      setIsSubmitting(true);
-
-     // Prepare data for the main doc update
      const newPdpData = {
-       // Don't spread pdpData here
        currentPlan: newPlan,
        currentCycle: newPlan.cycle,
        lastAssessmentDate: newAssessment.date,
-       // Include other top-level fields if necessary, but exclude history arrays
-       createdAt: pdpData?.createdAt || new Date().toISOString(), // Preserve original creation date
+       createdAt: pdpData?.createdAt || new Date().toISOString(),
      };
-
      try {
-       // 1. Update the main PDP document
        await updatePdpData(newPdpData);
-
-       // 2. Simulate saving assessment to subcollection
        console.log("[SAVE] Saving assessment to assessment_history subcollection:", newAssessment);
-       // await saveToSubcollection('assessment_history', newAssessment); // Placeholder
-
-       // 3. Simulate saving plan to subcollection
        console.log("[SAVE] Saving plan to plan_history subcollection:", newPlan);
-       // await saveToSubcollection('plan_history', newPlan); // Placeholder
-
-       // 4. Sync this new plan with DailyPractice
-       await syncPlanToDailyPractice(newPlan);
-
+       await syncPlanToDailyPractice(newPlan); // Call sync *after* pdpData might have updated
      } catch (error) {
        console.error("Error completing progress scan:", error);
        alert("There was an error saving your progress scan. Please try again.");
      } finally {
        setIsSubmitting(false);
-       // State will update via listener, triggering useMemo -> setView('tracker')
+       // View should change automatically via useMemo when pdpData updates
      }
   };
 
-  if (view === 'loading' || isSubmitting) {
+  if (view === 'loading' || isLoading || isSubmitting) { // Added isLoading check here too
     return <LoadingSpinner />;
   }
 
@@ -919,13 +918,31 @@ const DevelopmentPlanScreen = () => {
   }
 
   if (view === 'scan') {
+     // Ensure pdpData is passed correctly for ProgressScan
+     if (!pdpData || !pdpData.currentPlan) return <LoadingSpinner />; // Or an error message
     return <ProgressScan pdpData={pdpData} onCompleteScan={handleScanComplete} />;
   }
 
   if (view === 'tracker') {
-    // Pass only necessary data. History would be fetched within Tracker if needed.
-    // For now, pass a placeholder if assessmentHistory isn't in main doc.
-    const historyForTracker = pdpData.assessmentHistory || [{ date: pdpData.lastAssessmentDate, scores: {} }]; // Placeholder/Fallback
+    // Ensure pdpData is passed correctly for Tracker
+    if (!pdpData || !pdpData.currentPlan || !pdpData.lastAssessmentDate) return <LoadingSpinner />; // Or an error message
+
+    // Ensure assessmentHistory is structured correctly for the tracker.
+    // If it's not stored in the main doc anymore, create a minimal version for the latest assessment.
+    const historyForTracker = pdpData.assessmentHistory || [{
+      date: pdpData.lastAssessmentDate,
+      // Attempt to find latest scores if they were temporarily stored, otherwise empty
+      scores: pdpData.latestScores || {} // You might need to adjust where scores are temporarily stored or fetched
+    }];
+
+    // Defensive check if scores are missing in the derived history
+    if (!historyForTracker[historyForTracker.length - 1]?.scores || Object.keys(historyForTracker[historyForTracker.length - 1].scores).length === 0) {
+        console.warn("Tracker rendering without latest assessment scores. Display might be incomplete.");
+        // Provide default scores if necessary for RadarChart
+        historyForTracker[historyForTracker.length - 1].scores = scoreAssessment({}); // Generate empty scores object
+    }
+
+
     return (
         <DevelopmentPlanTracker
             pdpData={{...pdpData, assessmentHistory: historyForTracker }}
@@ -934,6 +951,7 @@ const DevelopmentPlanScreen = () => {
     );
   }
 
+  // Fallback error view
   return (
      <div className="p-8 text-center">
         <h2 className="text-2xl font-bold text-red-600">Error</h2>
