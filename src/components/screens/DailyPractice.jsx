@@ -1,6 +1,6 @@
 // src/components/screens/DailyPractice.jsx - NEW: 1-Minute Reflection Rep
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react'; // <-- FIX: Added useMemo
 import { useAppServices } from '../../services/useAppServices.jsx';
 import { ArrowLeft, CheckCircle, Loader, MessageSquare, Save, Target, User, Zap } from 'lucide-react';
 
