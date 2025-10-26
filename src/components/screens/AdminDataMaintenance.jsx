@@ -13,14 +13,33 @@ import {
   limit as qLimit,
 } from "firebase/firestore";
 import { getAuth } from "firebase/auth";
+import { Loader } from 'lucide-react'; // Import Lucide Loader icon
 
 /* ----------------------- utilities ----------------------- */
 
 const pretty = (v) => JSON.stringify(v ?? {}, null, 2);
 const tryParse = (t, fb) => { try { return JSON.parse(t); } catch { return fb; } };
 const pathParts = (p) => p.trim().split("/").filter(Boolean);
-const isDocumentPath = (p) => pathParts(p).length % 2 === 0;
-const isCollectionPath = (p) => pathParts(p).length % 2 === 1;
+
+// CRITICAL FIX: Manually force known three-segment paths (which should be single documents) to be treated as documents.
+const FORCED_DOCUMENT_PATHS = [
+    "metadata/config/COMMITMENT_BANK",
+    "metadata/config/TARGET_REP_CATALOG",
+    "metadata/config/leadership_domains",
+    "metadata/config/leadership_tiers",
+    "metadata/config/quick_challenge_catalog",
+    "metadata/config/resource_library",
+    "metadata/config/scenario_catalog",
+    "metadata/config/video_catalog",
+];
+
+const isDocumentPath = (p) => {
+    // Standard Firestore logic: even number of segments is a document
+    if (pathParts(p).length % 2 === 0) return true;
+    // Overload: Check if the path matches a known document path that uses 3 segments
+    return FORCED_DOCUMENT_PATHS.includes(p);
+};
+const isCollectionPath = (p) => !isDocumentPath(p);
 
 const normalizePath = (raw, uid) =>
   raw.replaceAll("<uid>", uid || "").replaceAll("{uid}", uid || "");
@@ -144,7 +163,14 @@ const fromCSV = (text) => {
 
 /* ----------------------- UI components ----------------------- */
 
-function KVEditor({ value, onChange, onSave }) {
+const LoaderSpinner = () => (
+    <div className="p-8 text-center text-gray-500 bg-gray-50 rounded-lg flex items-center justify-center">
+        <Loader className="w-5 h-5 animate-spin mr-2 text-indigo-500" />
+        Loading data...
+    </div>
+);
+
+function KVEditor({ value, onChange, onSave, isLoading }) {
   const [rows, setRows] = useState(() => {
     const flat = flatten(value);
     return Object.keys(flat).map((k) => ({ key: k, value: flat[k] }));
@@ -177,35 +203,37 @@ function KVEditor({ value, onChange, onSave }) {
   return (
     <div className="border rounded">
       <div className="p-2 flex items-center gap-2 bg-gray-50 border-b">
-        <button className="px-2 py-1 border rounded bg-white hover:bg-gray-100 transition" onClick={addRow}>➕ Add Field</button>
-        <button className="px-2 py-1 border rounded bg-green-500 text-white hover:bg-green-600 transition" onClick={onSave}>💾 Save Key/Values</button>
+        <button className="px-2 py-1 border rounded bg-white hover:bg-gray-100 transition" onClick={addRow} disabled={isLoading}>➕ Add Field</button>
+        <button className="px-2 py-1 border rounded bg-green-500 text-white hover:bg-green-600 transition" onClick={onSave} disabled={isLoading}>💾 Save Key/Values</button>
       </div>
-      <div className="overflow-auto max-h-96">
-        <table className="min-w-full text-sm">
-          <thead className="sticky top-0 bg-gray-100">
-            <tr>
-              {cols.map((c) => <th key={c} className="p-2 border-b text-left text-gray-700">{c}</th>)}
-              <th className="p-2 border-b">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {!rows.length ? (
-              <tr><td colSpan={3} className="p-6 text-center text-gray-500">No fields yet. Add one to begin.</td></tr>
-            ) : rows.map((r, idx) => (
-              <tr key={idx} className="odd:bg-white even:bg-gray-50 hover:bg-yellow-50 transition">
-                <td className="p-1.5 border-b"><input className="w-full border rounded px-2 py-1 font-mono text-xs" value={r.key} onChange={(e) => update(idx, "key", e.target.value)} placeholder="e.g., plan_goals.0.title" /></td>
-                <td className="p-1.5 border-b"><input className="w-full border rounded px-2 py-1 font-mono text-xs" value={r.value} onChange={(e) => update(idx, "value", e.target.value)} placeholder="Value (will be auto-coerced to number/boolean/JSON)" /></td>
-                <td className="p-1.5 border-b"><button className="text-xs text-red-600 underline hover:text-red-800" onClick={() => delRow(idx)}>🗑️ delete</button></td>
+      {isLoading ? <LoaderSpinner /> : (
+        <div className="overflow-auto max-h-96">
+          <table className="min-w-full text-sm">
+            <thead className="sticky top-0 bg-gray-100">
+              <tr>
+                {cols.map((c) => <th key={c} className="p-2 border-b text-left text-gray-700">{c}</th>)}
+                <th className="p-2 border-b">Actions</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+            </thead>
+            <tbody>
+              {!rows.length ? (
+                <tr><td colSpan={3} className="p-6 text-center text-gray-500">No fields yet. Add one to begin.</td></tr>
+              ) : rows.map((r, idx) => (
+                <tr key={idx} className="odd:bg-white even:bg-gray-50 hover:bg-yellow-50 transition">
+                  <td className="p-1.5 border-b"><input className="w-full border rounded px-2 py-1 font-mono text-xs" value={r.key} onChange={(e) => update(idx, "key", e.target.value)} placeholder="e.g., plan_goals.0.title" /></td>
+                  <td className="p-1.5 border-b"><input className="w-full border rounded px-2 py-1 font-mono text-xs" value={r.value} onChange={(e) => update(idx, "value", e.target.value)} placeholder="Value (will be auto-coerced to number/boolean/JSON)" /></td>
+                  <td className="p-1.5 border-b"><button className="text-xs text-red-600 underline hover:text-red-800" onClick={() => delRow(idx)}>🗑️ delete</button></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
     </div>
   );
 }
 
-function ArrayTable({ fieldName, rows, setRows, onSave }) {
+function ArrayTable({ fieldName, rows, setRows, onSave, isLoading }) {
   const cols = useMemo(() => inferColumns(rows), [rows]);
 
   const add = () => setRows((prev) => [{ _id: String(Date.now()) }, ...prev]);
@@ -219,48 +247,50 @@ function ArrayTable({ fieldName, rows, setRows, onSave }) {
   return (
     <div className="border rounded">
       <div className="p-2 flex items-center gap-2 bg-gray-50 border-b">
-        <button className="px-2 py-1 border rounded bg-white hover:bg-gray-100 transition" onClick={add}>➕ Add Row</button>
-        <button className="px-2 py-1 border rounded bg-green-500 text-white hover:bg-green-600 transition" onClick={onSave}>💾 Save {fieldName}</button>
+        <button className="px-2 py-1 border rounded bg-white hover:bg-gray-100 transition" onClick={add} disabled={isLoading}>➕ Add Row</button>
+        <button className="px-2 py-1 border rounded bg-green-500 text-white hover:bg-green-600 transition" onClick={onSave} disabled={isLoading}>💾 Save {fieldName}</button>
       </div>
-      <div className="overflow-auto max-h-96">
-        <table className="min-w-full text-sm">
-          <thead className="sticky top-0 bg-gray-100">
-            <tr>
-              {cols.map((c) => (
-                <th key={c} className="p-2 border-b text-left text-gray-700">
-                  {c === "_id" ? "Index ID" : (isPrimitiveArray && c === "value" ? primaryColName : c)}
-                </th>
-              ))}
-              <th className="p-2 border-b">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {!rows.length ? (
-              <tr><td colSpan={cols.length + 1} className="p-6 text-center text-gray-500">No rows. Add one to begin.</td></tr>
-            ) : rows.map((r) => (
-              <tr key={r._id} className="odd:bg-white even:bg-gray-50 hover:bg-yellow-50 transition">
+      {isLoading ? <LoaderSpinner /> : (
+        <div className="overflow-auto max-h-96">
+          <table className="min-w-full text-sm">
+            <thead className="sticky top-0 bg-gray-100">
+              <tr>
                 {cols.map((c) => (
-                  <td key={c} className="p-1.5 border-b">
-                    {c === "_id" ? (
-                      <div className="px-2 py-1 rounded bg-gray-100 font-mono text-xs">{r._id}</div>
-                    ) : (
-                      <input 
-                        className="w-full border rounded px-2 py-1 font-mono text-xs" 
-                        value={r[c] ?? ""} 
-                        onChange={(e) => edit(r._id, c, e.target.value)} 
-                        placeholder={c === "value" ? "Enter value (primitive or JSON)" : c}
-                      />
-                    )}
-                  </td>
+                  <th key={c} className="p-2 border-b text-left text-gray-700">
+                    {c === "_id" ? "Index ID" : (isPrimitiveArray && c === "value" ? primaryColName : c)}
+                  </th>
                 ))}
-                <td className="p-1.5 border-b">
-                  <button className="text-xs text-red-600 underline hover:text-red-800" onClick={() => del(r._id)}>🗑️ delete</button>
-                </td>
+                <th className="p-2 border-b">Actions</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+            </thead>
+            <tbody>
+              {!rows.length ? (
+                <tr><td colSpan={cols.length + 1} className="p-6 text-center text-gray-500">No rows. Add one to begin.</td></tr>
+              ) : rows.map((r) => (
+                <tr key={r._id} className="odd:bg-white even:bg-gray-50 hover:bg-yellow-50 transition">
+                  {cols.map((c) => (
+                    <td key={c} className="p-1.5 border-b">
+                      {c === "_id" ? (
+                        <div className="px-2 py-1 rounded bg-gray-100 font-mono text-xs">{r._id}</div>
+                      ) : (
+                        <input 
+                          className="w-full border rounded px-2 py-1 font-mono text-xs" 
+                          value={r[c] ?? ""} 
+                          onChange={(e) => edit(r._id, c, e.target.value)} 
+                          placeholder={c === "value" ? "Enter value (primitive or JSON)" : c}
+                        />
+                      )}
+                    </td>
+                  ))}
+                  <td className="p-1.5 border-b">
+                    <button className="text-xs text-red-600 underline hover:text-red-800" onClick={() => del(r._id)}>🗑️ delete</button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
     </div>
   );
 }
@@ -278,6 +308,9 @@ export default function AdminDataMaintenance() {
   const [docJson, setDocJson] = useState("{}");
   const [docExists, setDocExists] = useState(false);
   const [liveUnsub, setLiveUnsub] = useState(null);
+  
+  // NEW: Determine if a read operation is actively running
+  const isReading = status.startsWith("Reading") || status.startsWith("Listening"); 
 
   // array editor state
   const docObj = useMemo(() => tryParse(docJson, {}), [docJson]);
@@ -317,7 +350,7 @@ export default function AdminDataMaintenance() {
     window.scrollTo(0, 0);
   }, []); 
 
-
+  // CRITICAL FIX 2: Ensure path type logic uses the correct helper
   const explain = isDocumentPath(path)
     ? "Path type: 📝 Document — read/listen/edit/replace/delete a single record."
     : isCollectionPath(path)
@@ -595,19 +628,24 @@ export default function AdminDataMaintenance() {
   };
 
   /* ---------- presets ---------- */
-  // CRITICAL FIX 1: Corrected preset paths to match case and structure shown in Firebase screenshot
+  // CRITICAL FIX: Corrected preset paths to match case and structure shown in Firebase screenshot
   const presets = [
+    // Corrected to COMMITMENT_BANK (Uppercase, targets the document)
     { label: "✅ Commitment Bank (Doc)", value: "metadata/config/COMMITMENT_BANK" },
+    
+    // Corrected TARGET_REP_CATALOG (Uppercase, targets the document)
+    { label: "🎯 Target Rep Catalog (Doc)", value: "metadata/config/TARGET_REP_CATALOG" },
+    
+    // Assumed other single-document catalog names follow the same pattern (Document ID = Name)
     { label: "🗺️ Leadership Domains (Doc)", value: "metadata/config/leadership_domains" },
     { label: "🪜 Leadership Tiers (Doc)", value: "metadata/config/leadership_tiers" },
     { label: "⚡ Quick Challenge Catalog (Doc)", value: "metadata/config/quick_challenge_catalog" },
     { label: "📚 Resource Library (Doc)", value: "metadata/config/resource_library" },
     { label: "🎬 Scenario Catalog (Doc)", value: "metadata/config/scenario_catalog" },
-    { label: "🎯 Target Rep Catalog (Doc)", value: "metadata/config/TARGET_REP_CATALOG" },
     { label: "🎥 Video Catalog (Doc)", value: "metadata/config/video_catalog" },
+
+    // Reading Catalog appears to be correct as metadata/reading_catalog
     { label: "📖 Reading Catalog (Doc)", value: "metadata/reading_catalog" },
-    // If you need collection presets, add them here:
-    // { label: "🗂️ Commitments (Col)", value: "metadata/config/commitment_bank" },
   ];
 
   /* ----------------------- render ----------------------- */
@@ -691,12 +729,13 @@ export default function AdminDataMaintenance() {
                   </select>
                 </div>
               </div>
-              {arrayFields.length ? (
+              {isReading ? <LoaderSpinner /> : arrayFields.length ? (
                 <ArrayTable
                   fieldName={activeArray}
                   rows={arrayRows}
                   setRows={setArrayRows}
                   onSave={saveArray}
+                  isLoading={isReading}
                 />
               ) : (
                 <div className="text-sm text-gray-600 p-4 border rounded bg-gray-50">
@@ -712,6 +751,7 @@ export default function AdminDataMaintenance() {
                 value={docObj}
                 onChange={(obj) => setDocJson(pretty(obj))}
                 onSave={saveKV}
+                isLoading={isReading}
               />
             </div>
           </div>
