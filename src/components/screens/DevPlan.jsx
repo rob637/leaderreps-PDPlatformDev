@@ -150,7 +150,7 @@ const ASSESSMENT_QUESTIONS = [
 ];
 
 const CONTENT_LIBRARY = [
-    // Simplified Content Library for mapping (You would expand this with titles, types, etc.)
+    // This is now the fallback library, but is complete for the generator function
     { skill: 'Leadership Identity', type: 'Tool', duration: 45, tier: 'T1', title: 'Defining Your Leadership Identity (LIS)', difficulty: 'Mastery' },
     { skill: 'Motive', type: 'Reading', duration: 30, tier: 'T1', title: 'Leadership Motive - Servant Leadership Primer', difficulty: 'Intro' },
     { skill: 'PlayerToCoach', type: 'Exercise', duration: 60, tier: 'T1', title: 'Player-to-Coach Delegation Framework', difficulty: 'Core' },
@@ -275,7 +275,7 @@ const generatePlanData = (assessment, ownerUid, contentLibrary) => {
         fullPlan.push({
             month: cycle, 
             tier: primaryTier,
-            theme: `90-Day Block ${cycle} Focus: ${growthDimensions.join(', ')}`,
+            theme: blockDef.theme,
             requiredContent: requiredContent,
             status: 'Pending',
             reflectionText: '',
@@ -408,12 +408,10 @@ const ContentDetailsModal = ({ isVisible, onClose, content }) => {
         </div>
     );
 };
-// --- END Component 4 ---
 
 
 // --- Component 3: Roadmap Timeline View (Unchanged) ---
 const RoadmapTimeline = ({ data, currentMonth, navigateToMonth, viewMonth }) => {
-    // Logic remains the same...
     return (
         <Card title="24-Month Roadmap Timeline" icon={Trello} accent="PURPLE" className='lg:sticky lg:top-4 bg-white shadow-2xl border-l-4 border-[#7C3AED]'>
             <p className='text-sm text-gray-600 mb-4'>Review your full two-year journey. Click a month to review its content and reflection.</p>
@@ -862,7 +860,7 @@ const TrackerDashboardView = ({ data, updatePdpData, saveNewPlan, userId, naviga
 
 
 // --- Component 1: Plan Generator View ---
-const PlanGeneratorView = ({ userId, saveNewPlan, isLoading, error, navigate, setGeneratedPlanData, generatePlanData: generatePlanDataWrapper }) => {
+const PlanGeneratorView = ({ userId, saveNewPlan, isLoading, error, navigate, setGeneratedPlanData, generatePlanDataWrapper }) => {
     // Assessment State Management
     const [assessmentAnswers, setAssessmentAnswers] = useState(ASSESSMENT_QUESTIONS.reduce((acc, q) => ({ ...acc, [q.id]: 0 }), {})); // 0 = not answered
     const [openEndedGoal, setOpenEndedGoal] = useState('');
