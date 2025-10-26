@@ -312,6 +312,11 @@ export default function AdminDataMaintenance() {
   const [selected, setSelected] = useState({});
   const cols = useMemo(() => inferColumns(rows), [rows]);
 
+  // 1) Scroll to top when component loads
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []); 
+
   useEffect(() => { 
     if (!activeArray && arrayFields.length) setActiveArray(arrayFields[0]); 
     // Cleanup live listener when path type changes or component unmounts
@@ -321,7 +326,7 @@ export default function AdminDataMaintenance() {
   const explain = isDocumentPath(path)
     ? "Path type: 📝 Document — read/listen/edit/replace/delete a single record."
     : isCollectionPath(path)
-    ? "Path type: 📚 Collection — list/add/edit/delete/import/export multiple records."
+    ? "Path type: 📚 Collection — list/add/edit/delete/import/export multiple records. (Note: Parent/child relationships like Categories/Books are best managed by ensuring the Parent collection is loaded.)"
     : "Enter a Firestore path";
 
   /* ---------- document actions ---------- */
@@ -566,14 +571,19 @@ export default function AdminDataMaintenance() {
   };
 
   /* ---------- presets ---------- */
-
+  // 2) Updated Preset names to match data structure
   const presets = [
-    { label: "⚙️ metadata/config (Doc)", value: "metadata/config" },
-    { label: "📖 reading_catalog (Doc)", value: "metadata/reading_catalog" },
-    { label: "🗺️ leadership_plan/<uid>/profile/roadmap (Doc)", value: "leadership_plan/<uid>/profile/roadmap" },
-    { label: "✅ user_commitments/<uid>/profile/active (Doc)", value: "user_commitments/<uid>/profile/active" },
-    { label: "✍️ user_planning/<uid>/profile/drafts (Doc)", value: "user_planning/<uid>/profile/drafts" },
-    { label: "🗂️ metadata (Collection)", value: "metadata" },
+    { label: "✅ Commitment Bank (Doc)", value: "metadata/config/commitment_bank/data" },
+    { label: "🗺️ Leadership Domains (Doc)", value: "metadata/config/leadership_domains/data" },
+    { label: "🪜 Leadership Tiers (Doc)", value: "metadata/config/leadership_tiers/data" },
+    { label: "⚡ Quick Challenge Catalog (Doc)", value: "metadata/config/quick_challenge_catalog/data" },
+    { label: "📚 Resource Library (Doc)", value: "metadata/config/resource_library/data" },
+    { label: "🎬 Scenario Catalog (Doc)", value: "metadata/config/scenario_catalog/data" },
+    { label: "🎯 Target Rep Catalog (Doc)", value: "metadata/config/target_rep_catalog/data" },
+    { label: "🎥 Video Catalog (Doc)", value: "metadata/config/video_catalog/data" },
+    { label: "📖 Reading Catalog (Doc)", value: "metadata/reading_catalog" },
+    // If you need collection presets, add them here:
+    // { label: "🗂️ Commitments (Col)", value: "metadata/config/commitment_bank" },
   ];
 
   /* ----------------------- render ----------------------- */
