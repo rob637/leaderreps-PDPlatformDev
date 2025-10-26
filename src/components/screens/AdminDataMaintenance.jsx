@@ -1,7 +1,7 @@
 // src/components/screens/AdminDataMaintenance.jsx (Final Direct Initialization)
 
 import React, { useState, useMemo, useEffect, useRef } from 'react'; 
-import { useAppServices } from '../../services/useAppServices'; 
+import { useAppServices } from '../../services/useAppServices.jsx'; 
 import { ChevronsLeft, AlertTriangle, Save, Lock, Cpu, RotateCcw } from 'lucide-react';
 
 // Admin Password 
