@@ -107,14 +107,14 @@ const AppSettingsScreen = ({ navigate }) => {
 const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id'; const DataProvider = ({ children, firebaseServices, userId, isAuthReady, navigate, user }) => { /* ... data provider logic ... */ };
 
 /* -----------------------------------------------------------------------------
-   NAV + ROUTER (*** UPDATED AppContent Fallback ***)
+   NAV + ROUTER (*** UPDATED Mobile Overlay ***)
 ----------------------------------------------------------------------------- */
 function ConfigError({ message }) { /* ... unchanged ... */ }
 function AuthPanel({ auth, onSuccess }) { /* ... unchanged ... */ }
 const NavSidebar = ({ currentScreen, setCurrentScreen, user, closeMobileMenu, isAuthRequired, isCollapsed, toggleCollapse }) => { /* ... sidebar jsx ... */ };
 const ScreenRouter = ({ currentScreen, navParams, navigate }) => { /* ... unchanged ... */ };
 
-// --- UPDATED AppContent ---
+// --- AppContent ---
 const AppContent = ({
   currentScreen,
   setCurrentScreen,
@@ -123,8 +123,8 @@ const AppContent = ({
   isMobileOpen,
   setIsMobileOpen,
   isAuthRequired,
-  isSidebarCollapsed, // Receives state
-  toggleSidebar // Receives toggle function
+  isSidebarCollapsed,
+  toggleSidebar
 }) => {
   const closeMobileMenu = useCallback(() => setIsMobileOpen(false), [setIsMobileOpen]);
   const { navigate } = useAppServices();
@@ -136,10 +136,10 @@ const AppContent = ({
         currentScreen={currentScreen}
         setCurrentScreen={setCurrentScreen}
         user={user}
-        closeMobileMenu={closeMobileMenu} // Doesn't really apply here
+        closeMobileMenu={closeMobileMenu}
         isAuthRequired={isAuthRequired}
-        isCollapsed={isSidebarCollapsed} // Passed down
-        toggleCollapse={toggleSidebar} // Passed down
+        isCollapsed={isSidebarCollapsed}
+        toggleCollapse={toggleSidebar}
       />
 
       {/* Main Content Area */}
@@ -152,27 +152,41 @@ const AppContent = ({
             </button>
         </div>
 
-        {/* --- UPDATED Suspense Fallback --- */}
+        {/* Suspense and Router (Unchanged) */}
         <Suspense fallback={
-            <div className="min-h-[calc(100vh-64px)] flex items-center justify-center bg-gray-100"> {/* Adjusted min-height */}
+            <div className="min-h-[calc(100vh-64px)] flex items-center justify-center bg-gray-100">
               <div className="flex flex-col items-center">
-                <Loader className="animate-spin text-[#47A88D] h-10 w-10 mb-3" /> {/* Use Loader icon */}
+                <Loader className="animate-spin text-[#47A88D] h-10 w-10 mb-3" />
                 <p className="text-[#002E47] font-semibold">Loading Screen...</p>
               </div>
             </div>
           }>
           <ScreenRouter currentScreen={currentScreen} navParams={navParams} navigate={navigate} />
         </Suspense>
-        {/* --- END UPDATE --- */}
-
       </main>
 
-      {/* Mobile Sidebar (Overlay - unchanged logic) */}
+      {/* --- RESTORED Mobile Sidebar Overlay --- */}
        {isMobileOpen && (
             <div className="fixed inset-0 z-50 flex md:hidden">
-                {/* ... mobile sidebar overlay ... */}
+                {/* Overlay */}
+                <div className="fixed inset-0 bg-black/50" onClick={closeMobileMenu}></div>
+                {/* Actual Sidebar Content for Mobile */}
+                <div className="relative z-10 w-64 bg-[#002E47] h-full shadow-xl animate-in slide-in-from-left duration-300">
+                     {/* Render a non-collapsible version for mobile simplicity */}
+                    <NavSidebar
+                        currentScreen={currentScreen}
+                        setCurrentScreen={setCurrentScreen}
+                        user={user}
+                        isMobileOpen={isMobileOpen} // Pass down?
+                        closeMobileMenu={closeMobileMenu}
+                        isAuthRequired={isAuthRequired}
+                        isCollapsed={false} // Force expanded on mobile overlay
+                        toggleCollapse={() => {}} // No toggle needed here
+                    />
+                </div>
             </div>
         )}
+       {/* --- END RESTORE --- */}
     </div>
   );
 };
@@ -189,12 +203,11 @@ const App = ({ initialState }) => {
   const [navParams, setNavParams] = useState(initialState?.params || {});
   const [authRequired, setAuthRequired] = useState(true);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
-
   const [initStage, setInitStage] = useState('init');
   const [initError, setInitError] = useState('');
 
   // --- Sidebar Collapse State - Initialized to TRUE ---
-  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(true); // Starts collapsed
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(true); // <-- Starts collapsed
   const toggleSidebar = useCallback(() => setIsSidebarCollapsed(prev => !prev), []);
   // --- END ---
 
@@ -204,14 +217,10 @@ const App = ({ initialState }) => {
     setIsMobileOpen(false);
   }, []);
 
-  // Expose Gemini caller + navigate for debugging (unchanged)
   useEffect(() => { /* ... expose __callSecureGeminiAPI ... */ }, []);
   useEffect(() => { /* ... expose __appNavigate ... */ }, [navigate]);
-
-  // Firebase init/auth (unchanged)
   useEffect(() => { /* ... unchanged firebase init logic ... */ }, []);
 
-  // --- Render logic ---
   if (initStage === 'init') { /* ... unchanged loading ... */ }
   if (initStage === 'error') return <ConfigError message={initError} />;
   if (!user && isAuthReady) { /* ... unchanged auth panel ... */ }
@@ -224,16 +233,14 @@ const App = ({ initialState }) => {
       navigate={navigate}
       user={user}
     >
-      {/* --- Restored Fallback in outer Suspense --- */}
       <Suspense fallback={
           <div className="min-h-screen flex items-center justify-center bg-gray-100">
             <div className="flex flex-col items-center">
-              <Loader className="animate-spin text-[#47A88D] h-12 w-12 mb-3" /> {/* Use Loader icon */}
-              <p className="text-[#002E47] font-semibold">Loading App Core...</p> {/* Differentiate text */}
+              <Loader className="animate-spin text-[#47A88D] h-12 w-12 mb-3" />
+              <p className="text-[#002E47] font-semibold">Loading App Core...</p>
             </div>
           </div>
         }>
-        {/* Pass sidebar state and toggle function down */}
         <AppContent
           currentScreen={currentScreen}
           setCurrentScreen={navigate}
@@ -242,11 +249,10 @@ const App = ({ initialState }) => {
           isMobileOpen={isMobileOpen}
           setIsMobileOpen={setIsMobileOpen}
           isAuthRequired={authRequired}
-          isSidebarCollapsed={isSidebarCollapsed} // <-- Pass state
-          toggleSidebar={toggleSidebar} // <-- Pass function
+          isSidebarCollapsed={isSidebarCollapsed}
+          toggleSidebar={toggleSidebar}
         />
       </Suspense>
-      {/* --- END UPDATE --- */}
     </DataProvider>
   );
 };
