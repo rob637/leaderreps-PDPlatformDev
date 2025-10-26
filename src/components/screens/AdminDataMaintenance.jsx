@@ -1,88 +1,73 @@
 // src/components/screens/AdminDataMaintenance.jsx
-import React, { useMemo, useEffect } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from "react";
+import {
+  getFirestore,
+  doc,
+  getDoc,
+  onSnapshot,
+  collection,
+  getDocs,
+  query,
+  limit,
+} from "firebase/firestore";
+import { getAuth, onAuthStateChanged } from "firebase/auth";
 
-// ⬇️ UPDATE THIS IMPORT if your hook lives elsewhere.
-//   examples:
-//     import { useAppServices } from '../../services/useAppServices';
-//     import { useAppServices } from '../../hooks/useAppServices';
-import { useAppServices } from '../../services/useAppServices';
-
-/** Turn the nested READING_CATALOG_SERVICE into flat table rows */
-function flattenReadingCatalog(catalogObj) {
-  if (!catalogObj || typeof catalogObj !== 'object') return [];
-  const IGNORE = new Set(['_meta', 'catalog_data']);
-  const rows = [];
-
-  const preferredOrder = Array.isArray(catalogObj?._meta?.keys)
-    ? catalogObj._meta.keys
-    : null;
-
-  const keys = preferredOrder ?? Object.keys(catalogObj).filter(k => !IGNORE.has(k));
-
-  for (const category of keys) {
-    if (IGNORE.has(category)) continue;
-    const list = catalogObj[category];
-    if (!Array.isArray(list)) continue;
-
-    for (const item of list) {
-      rows.push({
-        category,
-        id: item?.id ?? '',
-        title: item?.title ?? '',
-        author: item?.author ?? '',
-        duration: item?.duration ?? '',
-        complexity: item?.complexity ?? '',
-        theme: item?.theme ?? '',
-        focus: item?.focus ?? '',
-      });
-    }
-  }
-  return rows;
+/** Split "a/b/c/d" into ["a","b","c","d"] without empties */
+function splitPath(p) {
+  return (p || "").trim().split("/").filter(Boolean);
 }
 
-function Section({ title, children, note }) {
+/** Firestore rule of thumb: even segments => document path, odd => collection path */
+function classifyPath(p) {
+  const segs = splitPath(p);
+  return { segs, kind: segs.length % 2 === 0 ? "doc" : "coll" };
+}
+
+function JsonBlock({ value }) {
   return (
-    <div className="mb-8">
-      <div className="flex items-baseline justify-between">
-        <h2 className="text-lg font-semibold mb-3">{title}</h2>
-        {note ? <div className="text-xs text-gray-500">{note}</div> : null}
-      </div>
-      {children}
-    </div>
+    <pre className="text-xs bg-gray-50 border rounded p-3 overflow-auto max-h-96">
+      {JSON.stringify(value, null, 2)}
+    </pre>
   );
 }
 
-function SimpleTable({ columns, rows, keyField }) {
+function Table({ rows }) {
+  if (!Array.isArray(rows) || rows.length === 0) {
+    return (
+      <div className="text-sm text-gray-500 border rounded p-3 bg-gray-50">
+        (No documents)
+      </div>
+    );
+  }
+  const columns = Object.keys(rows[0] ?? {}).map((k) => k);
   return (
     <div className="overflow-auto border rounded">
       <table className="min-w-full text-sm">
         <thead className="bg-gray-50">
           <tr>
-            {columns.map(col => (
-              <th key={col.key} className="text-left px-3 py-2 font-medium text-gray-600">
-                {col.header}
+            {columns.map((c) => (
+              <th key={c} className="text-left px-3 py-2 font-medium text-gray-600">
+                {c}
               </th>
             ))}
           </tr>
         </thead>
         <tbody>
-          {rows.length === 0 ? (
-            <tr>
-              <td className="px-3 py-3 text-gray-500" colSpan={columns.length}>
-                No data
-              </td>
+          {rows.map((r, i) => (
+            <tr key={r.id ?? i} className={i % 2 ? "bg-gray-50/40" : ""}>
+              {columns.map((c) => (
+                <td key={c} className="px-3 py-2 align-top">
+                  {typeof r[c] === "object" ? (
+                    <pre className="text-xs whitespace-pre-wrap">
+                      {JSON.stringify(r[c], null, 0)}
+                    </pre>
+                  ) : (
+                    String(r[c])
+                  )}
+                </td>
+              ))}
             </tr>
-          ) : (
-            rows.map((row, idx) => (
-              <tr key={row[keyField] ?? `${keyField}-${idx}`} className={idx % 2 ? 'bg-gray-50/40' : ''}>
-                {columns.map(col => (
-                  <td key={col.key} className="px-3 py-2 align-top">
-                    {typeof col.render === 'function' ? col.render(row[col.key], row) : row[col.key]}
-                  </td>
-                ))}
-              </tr>
-            ))
-          )}
+          ))}
         </tbody>
       </table>
     </div>
@@ -90,115 +75,232 @@ function SimpleTable({ columns, rows, keyField }) {
 }
 
 export default function AdminDataMaintenance() {
-  const { metadata, isAuthReady } = useAppServices();
+  const auth = useMemo(() => getAuth(), []);
+  const db = useMemo(() => getFirestore(), []);
+  const [uid, setUid] = useState(() => auth.currentUser?.uid || "");
+  const [path, setPath] = useState(""); // user-entered path
+  const [status, setStatus] = useState("");
+  const [error, setError] = useState("");
+  const [docSnap, setDocSnap] = useState(null); // { exists, data, readTime }
+  const [collRows, setCollRows] = useState([]); // [{id, ...data}]
+  const [mode, setMode] = useState(""); // "", "doc-read", "doc-live", "coll-list"
+  const liveUnsub = useRef(null);
 
-  // quick diagnostics in the console to confirm what this screen sees
+  // Track auth changes so preset paths can use the current UID
   useEffect(() => {
-    console.log('[ADMIN] isAuthReady:', isAuthReady);
-    console.log('[ADMIN] metadata keys:', Object.keys(metadata || {}));
-    console.log('[ADMIN] READING_CATALOG_SERVICE keys:', Object.keys(metadata?.READING_CATALOG_SERVICE || {}));
-    if (typeof window !== 'undefined') window.__lastAdminMeta = metadata; // handy for manual inspection
-  }, [isAuthReady, metadata]);
+    const off = onAuthStateChanged(auth, (u) => setUid(u?.uid || ""));
+    return () => off();
+  }, [auth]);
 
-  // pull sections from merged metadata (logs you posted show these keys present)
-  const quickChallenges = metadata?.QUICK_CHALLENGE_CATALOG ?? [];
-  const tiers           = metadata?.LEADERSHIP_TIERS ?? {};
-  const targetReps      = metadata?.TARGET_REP_CATALOG ?? [];
-  const scenarios       = metadata?.SCENARIO_CATALOG ?? [];
+  // Clean up any live listener when mode changes or unmounts
+  useEffect(() => {
+    return () => {
+      if (liveUnsub.current) {
+        liveUnsub.current();
+        liveUnsub.current = null;
+      }
+    };
+  }, []);
 
-  // reading catalog: new merged location
-  const readingRows = useMemo(
-    () => flattenReadingCatalog(metadata?.READING_CATALOG_SERVICE),
-    [metadata?.READING_CATALOG_SERVICE]
-  );
+  function clearOutputs() {
+    setDocSnap(null);
+    setCollRows([]);
+    setError("");
+    setStatus("");
+  }
 
-  // normalize tiers for table rows
-  const tierRows = useMemo(() => {
-    const out = [];
-    for (const [id, v] of Object.entries(tiers || {})) {
-      out.push({
-        id,
-        name: v?.name ?? id,
-        hex: v?.hex ?? '',
-        icon: v?.icon ?? '',
-        color: v?.color ?? '',
+  async function handleRead() {
+    clearOutputs();
+    const { segs, kind } = classifyPath(path);
+    try {
+      if (kind !== "doc") {
+        setError("The current path looks like a collection. Use List or add another segment to point to a document.");
+        return;
+      }
+      setMode("doc-read");
+      setStatus("Reading document...");
+      const ref = doc(db, ...segs);
+      const s = await getDoc(ref);
+      setDocSnap({
+        exists: s.exists(),
+        data: s.exists() ? s.data() : null,
+        readTime: new Date().toISOString(),
+        path,
       });
+      setStatus("Done.");
+    } catch (e) {
+      setError(String(e?.message || e));
+      setStatus("");
     }
-    return out;
-  }, [tiers]);
+  }
 
-  // table column configs
-  const qcColumns = [
-    { key: 'tier', header: 'Tier' },
-    { key: 'rep', header: 'Prompt' },
-  ];
+  async function handleList(limitCount = 100) {
+    clearOutputs();
+    const { segs, kind } = classifyPath(path);
+    try {
+      if (kind !== "coll") {
+        setError("The current path looks like a document. Remove the last segment to list the collection.");
+        return;
+      }
+      setMode("coll-list");
+      setStatus("Listing collection...");
+      const collRef = collection(db, ...segs);
+      const q = query(collRef, limit(limitCount));
+      const snap = await getDocs(q);
+      const rows = [];
+      snap.forEach((d) => rows.push({ id: d.id, ...d.data() }));
+      setCollRows(rows);
+      setStatus(`Done. ${rows.length} documents.`);
+    } catch (e) {
+      setError(String(e?.message || e));
+      setStatus("");
+    }
+  }
 
-  const tierColumns = [
-    { key: 'id', header: 'ID' },
-    { key: 'name', header: 'Name' },
-    { key: 'hex', header: 'Hex' },
-    { key: 'icon', header: 'Icon' },
-    { key: 'color', header: 'Color' },
-  ];
+  function handleListen() {
+    clearOutputs();
+    const { segs, kind } = classifyPath(path);
+    try {
+      if (kind !== "doc") {
+        setError("Live listen works on a document path. Add/remove a segment so the path points to a single doc.");
+        return;
+      }
+      setMode("doc-live");
+      setStatus("Listening...");
+      const ref = doc(db, ...segs);
+      if (liveUnsub.current) {
+        liveUnsub.current();
+        liveUnsub.current = null;
+      }
+      liveUnsub.current = onSnapshot(
+        ref,
+        (s) => {
+          setDocSnap({
+            exists: s.exists(),
+            data: s.exists() ? s.data() : null,
+            readTime: new Date().toISOString(),
+            path,
+          });
+          setStatus("Live update received.");
+          // also mirror to console for your debugging flow
+          // eslint-disable-next-line no-console
+          console.log("[ADMIN LIVE]", path, s.exists(), s.data());
+        },
+        (err) => {
+          setError(String(err?.message || err));
+          setStatus("");
+        }
+      );
+    } catch (e) {
+      setError(String(e?.message || e));
+      setStatus("");
+    }
+  }
 
-  const repColumns = [
-    { key: 'id', header: 'ID' },
-    { key: 'linkedTier', header: 'Tier' },
-    { key: 'linkedGoal', header: 'Goal' },
-    { key: 'text', header: 'Text' },
-  ];
-
-  const scenarioColumns = [
-    { key: 'id', header: 'ID' },
-    { key: 'title', header: 'Title' },
-    { key: 'persona', header: 'Persona' },
-    { key: 'difficultyLevel', header: 'Difficulty' },
-    { key: 'description', header: 'Description' },
-  ];
-
-  const readingColumns = [
-    { key: 'category', header: 'Category' },
-    { key: 'id', header: 'ID' },
-    { key: 'title', header: 'Title' },
-    { key: 'author', header: 'Author' },
-    { key: 'duration', header: 'Min' },
-    { key: 'complexity', header: 'Complexity' },
-    { key: 'theme', header: 'Theme' },
-    {
-      key: 'focus',
-      header: 'Focus',
-      render: (val) => (Array.isArray(val) ? val.join(', ') : String(val ?? '')),
-    },
-  ];
+  // Helpful presets based on your logs
+  const presets = useMemo(() => {
+    const u = uid || "<UID>";
+    return [
+      { label: "metadata/config (doc)", value: "metadata/config" },
+      { label: "metadata/reading_catalog (doc)", value: "metadata/reading_catalog" },
+      { label: "leadership_plan/<uid>/profile/roadmap (doc)", value: `leadership_plan/${u}/profile/roadmap` },
+      { label: "user_commitments/<uid>/profile/active (doc)", value: `user_commitments/${u}/profile/active` },
+      { label: "user_planning/<uid>/profile/drafts (doc)", value: `user_planning/${u}/profile/drafts` },
+      { label: "metadata (collection)", value: "metadata" },
+      // add more collections if you want to browse
+    ];
+  }, [uid]);
 
   return (
-    <div className="p-4 space-y-8" data-admin-meta-check>
-      <header className="mb-2">
-        <h1 className="text-2xl font-bold">Admin Data — Metadata Viewer</h1>
-        <div className="text-xs text-gray-500 mt-1">
-          Auth ready: {String(isAuthReady)} · Keys: {Object.keys(metadata || {}).join(', ')}
+    <div className="p-4 space-y-6" data-admin-raw>
+      <header className="space-y-1">
+        <h1 className="text-2xl font-bold">Admin · Raw Firestore Viewer</h1>
+        <div className="text-xs text-gray-600">
+          UID: <span className="font-mono">{uid || "(not signed in)"}</span>
         </div>
       </header>
 
-      <Section title="Quick Challenge Catalog" note={`${quickChallenges.length} items`}>
-        <SimpleTable columns={qcColumns} rows={quickChallenges} keyField="rep" />
-      </Section>
+      <section className="space-y-2">
+        <div className="text-sm text-gray-700">Presets</div>
+        <div className="flex flex-wrap gap-2">
+          {presets.map((p) => (
+            <button
+              key={p.label}
+              className="px-2 py-1 text-xs border rounded hover:bg-gray-50"
+              onClick={() => setPath(p.value)}
+              title={p.value}
+            >
+              {p.label}
+            </button>
+          ))}
+        </div>
+      </section>
 
-      <Section title="Leadership Tiers" note={`${tierRows.length} items`}>
-        <SimpleTable columns={tierColumns} rows={tierRows} keyField="id" />
-      </Section>
+      <section className="space-y-3">
+        <label className="block text-sm font-medium">
+          Firestore Path
+          <input
+            className="mt-1 w-full border rounded px-3 py-2 font-mono text-sm"
+            placeholder='e.g. metadata/config  or  leadership_plan/<uid>/profile/roadmap'
+            value={path}
+            onChange={(e) => setPath(e.target.value)}
+          />
+        </label>
 
-      <Section title="Target Rep Catalog" note={`${targetReps.length} items`}>
-        <SimpleTable columns={repColumns} rows={targetReps} keyField="id" />
-      </Section>
+        <div className="flex items-center gap-2">
+          <button className="px-3 py-1.5 border rounded hover:bg-gray-50" onClick={handleRead}>
+            Read Doc
+          </button>
+          <button className="px-3 py-1.5 border rounded hover:bg-gray-50" onClick={handleListen}>
+            Listen Doc (live)
+          </button>
+          <button className="px-3 py-1.5 border rounded hover:bg-gray-50" onClick={() => handleList(200)}>
+            List Collection
+          </button>
 
-      <Section title="Scenario Catalog" note={`${scenarios.length} items`}>
-        <SimpleTable columns={scenarioColumns} rows={scenarios} keyField="id" />
-      </Section>
+          <span className="text-xs text-gray-500 ml-2">
+            {(() => {
+              const { kind } = classifyPath(path);
+              return path ? (kind === "doc" ? "Looks like a document path" : "Looks like a collection path") : "";
+            })()}
+          </span>
+        </div>
 
-      <Section title="Reading Catalog (from READING_CATALOG_SERVICE)" note={`${readingRows.length} items`}>
-        <SimpleTable columns={readingColumns} rows={readingRows} keyField="id" />
-      </Section>
+        {!!status && <div className="text-xs text-blue-700">{status}</div>}
+        {!!error && <div className="text-xs text-red-600">{error}</div>}
+      </section>
+
+      {/* Results */}
+      {mode.startsWith("doc") && (
+        <section className="space-y-2">
+          <div className="text-sm font-semibold">Document Result</div>
+          {!docSnap ? (
+            <div className="text-sm text-gray-500">(No document loaded yet)</div>
+          ) : (
+            <div className="space-y-2">
+              <div className="text-xs text-gray-600">
+                Path: <span className="font-mono">{docSnap.path}</span> · Exists:{" "}
+                <span className="font-mono">{String(docSnap.exists)}</span> · Read:{" "}
+                <span className="font-mono">{docSnap.readTime}</span>
+              </div>
+              <JsonBlock value={docSnap.data} />
+            </div>
+          )}
+        </section>
+      )}
+
+      {mode === "coll-list" && (
+        <section className="space-y-2">
+          <div className="text-sm font-semibold">Collection Result ({collRows.length} docs)</div>
+          <Table rows={collRows.map((d) => ({ id: d.id, ...d }))} />
+          <div className="text-sm font-semibold mt-4">Raw JSON</div>
+          <JsonBlock value={collRows} />
+        </section>
+      )}
+
+      <footer className="text-xs text-gray-500 pt-4 border-t">
+        Tip: You can keep a live listener open on a document and, in another tab/console, write to that path to verify updates appear instantly.
+      </footer>
     </div>
   );
 }
