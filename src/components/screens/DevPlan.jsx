@@ -576,12 +576,11 @@ const TrackerDashboardView = ({ data, updatePdpData, saveNewPlan, userId, naviga
         // CRITICAL FIX: Save an empty Map {} to the document instead of a function/null
         setIsSaving(true);
         try {
-            // This bypasses the functional update failure and directly sets the document to be empty.
-            // Note: If updatePdpData expects a function, this direct call should be wrapped by the service hook.
-            // Assuming the core issue is the service failing to execute the function, we try passing the final object.
+            // 1. Save empty Map {} to Firestore to clear the document
             await updatePdpData({}); 
             
-            // Force a page reload to trigger the app router to read the empty state 
+            // 2. Force a page reload to trigger the app router to read the empty state 
+            // and correctly switch to the generator view.
             window.location.reload(); 
         } catch(e) {
             console.error("Failed to reset plan:", e);
