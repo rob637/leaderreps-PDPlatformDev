@@ -573,22 +573,18 @@ const TrackerDashboardView = ({ data, updatePdpData, saveNewPlan, userId, naviga
     };
 
     const handleResetPlan = async () => {
+        // CRITICAL FIX: Save an empty Map {} to the document instead of a function/null
         setIsSaving(true);
         try {
-            // Overwrite critical fields so the router treats it as "no plan"
+            // 1. Save empty Map {} to Firestore to clear the document
             await updatePdpData({
-                plan: [],
-                assessment: null,
-                currentMonth: 1,
-                progressScans: [],
-                latestScenario: null,
-                lastUpdate: new Date().toISOString(),
+                plan: [], assessment: null, currentMonth: 1, progressScans: [], latestScenario: null, lastUpdate: new Date().toISOString()
             });
-            // Return to generator flow; router will route correctly
             navigate('prof-dev-plan');
-        } catch (e) {
+            window.scrollTo(0,0); 
+        } catch(e) {
             console.error("Failed to reset plan:", e);
-            alert("Failed to reset plan data. Check database permissions.");
+            alert("Failed to reset plan data. Check database permissions or refresh the page manually.");
         } finally {
             setIsSaving(false);
         }
@@ -913,17 +909,18 @@ const PlanGeneratorView = ({ userId, saveNewPlan, isLoading, error, navigate, se
 
         const newPlanData = generatePlanDataWrapper(assessment, userId);
 
-        const success = await saveNewPlan(newPlanData);
-        
+        try {
+        await saveNewPlan(newPlanData);
         setIsGenerating(false);
 
-        if (success) {
             setGeneratedPlanData({ userPlan: newPlanData, genericPlan: { totalDuration: 1200, avgIntroContent: 8, avgMasteryContent: 3 } }); 
             navigate('prof-dev-plan');
-        } else {
-             console.error("Failed to save new plan after generation.");
-        }
-    };
+    } catch (e) {
+        setIsGenerating(false);
+        console.error('Failed to save new plan after generation.', e);
+        alert('Saving your new plan failed. Please check your connection and try again.');
+    }
+};
 
     return (
         <div className="p-6 md:p-10 min-h-screen" style={{ background: COLORS.BG, color: COLORS.TEXT }}>
@@ -1147,15 +1144,13 @@ export const ProfDevPlanScreen = ({ initialScreen }) => {
     } else if (error) {
         currentView = 'error';
     } else if (generatedPlanData || initialScreen === 'prof-dev-plan-review') {
-        // Prefer the freshly generated plan (review) if present or explicitly requested
         currentView = 'review';
-    } else if (planExistsAndIsValid) {
-        // Fall back to whatever is saved in Firestore
+    } else if (planExistsAndIsValid) { 
         currentView = 'tracker';
     } else {
-        // No plan yet -> generator
-        currentView = 'generator';
+        currentView = 'generator'; // Default to generator for new users
     }
+    
     // CRITICAL: Updated generatePlanData to take the library as an argument
     const generatePlanDataWrapper = useCallback((assessment, ownerUid) => {
         // Pass the contentLibrary (loaded from service or fallback) to the generator function

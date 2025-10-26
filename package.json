@@ -2,6 +2,7 @@
   "name": "leader-reps-pdp",
   "private": true,
   "version": "0.0.0",
+  "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
@@ -15,6 +16,7 @@
     "node": "20.x"
   },
   "dependencies": {
+    "@google/genai": "^1.27.0",
     "dompurify": "^3.3.0",
     "firebase": "^10.14.1",
     "firebase-admin": "^13.5.0",

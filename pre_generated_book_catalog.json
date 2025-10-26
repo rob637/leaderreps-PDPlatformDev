@@ -1,0 +1,252 @@
+{
+  "Innovation & Change": [
+    {
+      "id": "i_c_1",
+      "title": "The Lean Startup",
+      "author": "Eric Ries",
+      "theme": "Build-measure-learn with continuous innovation.",
+      "complexity": "High",
+      "duration": 250,
+      "focus": "MVP, Build-Measure-Learn, Iteration, Pivot or Persevere, Validated Learning, Innovation Accounting",
+      "fullFlyerHTML": "<div style=\"padding: 16px;\"><h2 style=\"color:#002E47; font-weight:900; font-size: 24px; border-bottom: 3px solid #E04E1B; padding-bottom: 8px;\">FULL FLYER UNAVAILABLE</h2><p style=\"color:#E04E1B; font-size: 18px; margin-top: 15px; line-height: 1.6;\">**CRITICAL API ERROR**: Content generation failed during pre-processing. Check API key and service status.</p>\n           <h3 style=\"color:#002E47; font-weight:800; font-size: 20px; margin-top:20px;\">Root Cause Check</h3>\n           <ul style=\"list-style:disc;margin-left:20px;color:#374151;font-size:16px;\">\n              <li>The API call failed during the generation script.</li>\n              <li>Verify the **Gemini API Key** is correctly set in the environment.</li>\n           </ul></div>",
+      "executiveBriefHTML": "<div style=\"padding: 16px;\"><h2 style=\"color:#002E47; font-weight:900; font-size: 24px; border-bottom: 3px solid #E04E1B; padding-bottom: 8px;\">EXECUTIVE BRIEFING UNAVAILABLE</h2><p style=\"color:#E04E1B; font-size: 18px; margin-top: 15px; line-height: 1.6;\">**CRITICAL API ERROR**: Content generation failed during pre-processing. Check API key and service status.</p>\n           <h3 style=\"color:#002E47; font-weight:800; font-size: 20px; margin-top:20px;\">Static Summary (for Reference)</h3>\n           <p style=\"color:#374151; font-size: 16px; margin-top: 5px;\">This briefing would have covered: Build-measure-learn with continuous innovation.. Focus areas: MVP,  Build-Measure-Learn,  Iteration.</p></div>"
+    },
+    {
+      "id": "i_c_2",
+      "title": "Innovator's Dilemma",
+      "author": "Clayton Christensen",
+      "theme": "Why great companies fail by being too good at what they do.",
+      "complexity": "High",
+      "duration": 270,
+      "focus": "Disruptive Innovation, Sustaining Technology, Value Networks, Resource Dependence, Small Markets",
+      "fullFlyerHTML": "<div style=\"padding: 16px;\"><h2 style=\"color:#002E47; font-weight:900; font-size: 24px; border-bottom: 3px solid #E04E1B; padding-bottom: 8px;\">FULL FLYER UNAVAILABLE</h2><p style=\"color:#E04E1B; font-size: 18px; margin-top: 15px; line-height: 1.6;\">**CRITICAL API ERROR**: Content generation failed during pre-processing. Check API key and service status.</p>\n           <h3 style=\"color:#002E47; font-weight:800; font-size: 20px; margin-top:20px;\">Root Cause Check</h3>\n           <ul style=\"list-style:disc;margin-left:20px;color:#374151;font-size:16px;\">\n              <li>The API call failed during the generation script.</li>\n              <li>Verify the **Gemini API Key** is correctly set in the environment.</li>\n           </ul></div>",
+      "executiveBriefHTML": "<div style=\"padding: 16px;\"><h2 style=\"color:#002E47; font-weight:900; font-size: 24px; border-bottom: 3px solid #E04E1B; padding-bottom: 8px;\">EXECUTIVE BRIEFING UNAVAILABLE</h2><p style=\"color:#E04E1B; font-size: 18px; margin-top: 15px; line-height: 1.6;\">**CRITICAL API ERROR**: Content generation failed during pre-processing. Check API key and service status.</p>\n           <h3 style=\"color:#002E47; font-weight:800; font-size: 20px; margin-top:20px;\">Static Summary (for Reference)</h3>\n           <p style=\"color:#374151; font-size: 16px; margin-top: 5px;\">This briefing would have covered: Why great companies fail by being too good at what they do.. Focus areas: Disruptive Innovation,  Sustaining Technology,  Value Networks.</p></div>"
+    },
+    {
+      "id": "i_c_3",
+      "title": "Crossing the Chasm",
+      "author": "Geoffrey A. Moore",
+      "theme": "Marketing high-tech products to mainstream customers.",
+      "complexity": "Medium",
+      "duration": 230,
+      "focus": "Technology Adoption Lifecycle, Chasm Strategy, Bowling Pin, Early Adopters, Mainstream Market",
+      "fullFlyerHTML": "<div style=\"padding: 16px;\"><h2 style=\"color:#002E47; font-weight:900; font-size: 24px; border-bottom: 3px solid #E04E1B; padding-bottom: 8px;\">FULL FLYER UNAVAILABLE</h2><p style=\"color:#E04E1B; font-size: 18px; margin-top: 15px; line-height: 1.6;\">**CRITICAL API ERROR**: Content generation failed during pre-processing. Check API key and service status.</p>\n           <h3 style=\"color:#002E47; font-weight:800; font-size: 20px; margin-top:20px;\">Root Cause Check</h3>\n           <ul style=\"list-style:disc;margin-left:20px;color:#374151;font-size:16px;\">\n              <li>The API call failed during the generation script.</li>\n              <li>Verify the **Gemini API Key** is correctly set in the environment.</li>\n           </ul></div>",
+      "executiveBriefHTML": "<div style=\"padding: 16px;\"><h2 style=\"color:#002E47; font-weight:900; font-size: 24px; border-bottom: 3px solid #E04E1B; padding-bottom: 8px;\">EXECUTIVE BRIEFING UNAVAILABLE</h2><p style=\"color:#E04E1B; font-size: 18px; margin-top: 15px; line-height: 1.6;\">**CRITICAL API ERROR**: Content generation failed during pre-processing. Check API key and service status.</p>\n           <h3 style=\"color:#002E47; font-weight:800; font-size: 20px; margin-top:20px;\">Static Summary (for Reference)</h3>\n           <p style=\"color:#374151; font-size: 16px; margin-top: 5px;\">This briefing would have covered: Marketing high-tech products to mainstream customers.. Focus areas: Technology Adoption Lifecycle,  Chasm Strategy,  Bowling Pin.</p></div>"
+    },
+    {
+      "id": "i_c_4",
+      "title": "Zero to One",
+      "author": "Peter Thiel",
+      "theme": "The secret to building a better future is to create new things, not copy existing ones.",
+      "complexity": "Medium",
+      "duration": 200,
+      "focus": "Monopolies, Vertical Progress, Last Mover Advantage, Secret, Peter Thiel's Seven Questions",
+      "fullFlyerHTML": "<div style=\"padding: 16px;\"><h2 style=\"color:#002E47; font-weight:900; font-size: 24px; border-bottom: 3px solid #E04E1B; padding-bottom: 8px;\">FULL FLYER UNAVAILABLE</h2><p style=\"color:#E04E1B; font-size: 18px; margin-top: 15px; line-height: 1.6;\">**CRITICAL API ERROR**: Content generation failed during pre-processing. Check API key and service status.</p>\n           <h3 style=\"color:#002E47; font-weight:800; font-size: 20px; margin-top:20px;\">Root Cause Check</h3>\n           <ul style=\"list-style:disc;margin-left:20px;color:#374151;font-size:16px;\">\n              <li>The API call failed during the generation script.</li>\n              <li>Verify the **Gemini API Key** is correctly set in the environment.</li>\n           </ul></div>",
+      "executiveBriefHTML": "<div style=\"padding: 16px;\"><h2 style=\"color:#002E47; font-weight:900; font-size: 24px; border-bottom: 3px solid #E04E1B; padding-bottom: 8px;\">EXECUTIVE BRIEFING UNAVAILABLE</h2><p style=\"color:#E04E1B; font-size: 18px; margin-top: 15px; line-height: 1.6;\">**CRITICAL API ERROR**: Content generation failed during pre-processing. Check API key and service status.</p>\n           <h3 style=\"color:#002E47; font-weight:800; font-size: 20px; margin-top:20px;\">Static Summary (for Reference)</h3>\n           <p style=\"color:#374151; font-size: 16px; margin-top: 5px;\">This briefing would have covered: The secret to building a better future is to create new things, not copy existing ones.. Focus areas: Monopolies,  Vertical Progress,  Last Mover Advantage.</p></div>"
+    }
+  ],
+  "People & Culture": [
+    {
+      "id": "p_c_1",
+      "title": "Dare to Lead",
+      "author": "Brené Brown",
+      "theme": "Courageous leadership by embracing vulnerability and trust.",
+      "complexity": "Medium",
+      "duration": 210,
+      "focus": "Psychological Safety, Feedback, Vulnerability, Rumbling with Vulnerability, Armored Leadership, Empathy",
+      "fullFlyerHTML": "<div style=\"padding: 16px;\"><h2 style=\"color:#002E47; font-weight:900; font-size: 24px; border-bottom: 3px solid #E04E1B; padding-bottom: 8px;\">FULL FLYER UNAVAILABLE</h2><p style=\"color:#E04E1B; font-size: 18px; margin-top: 15px; line-height: 1.6;\">**CRITICAL API ERROR**: Content generation failed during pre-processing. Check API key and service status.</p>\n           <h3 style=\"color:#002E47; font-weight:800; font-size: 20px; margin-top:20px;\">Root Cause Check</h3>\n           <ul style=\"list-style:disc;margin-left:20px;color:#374151;font-size:16px;\">\n              <li>The API call failed during the generation script.</li>\n              <li>Verify the **Gemini API Key** is correctly set in the environment.</li>\n           </ul></div>",
+      "executiveBriefHTML": "<div style=\"padding: 16px;\"><h2 style=\"color:#002E47; font-weight:900; font-size: 24px; border-bottom: 3px solid #E04E1B; padding-bottom: 8px;\">EXECUTIVE BRIEFING UNAVAILABLE</h2><p style=\"color:#E04E1B; font-size: 18px; margin-top: 15px; line-height: 1.6;\">**CRITICAL API ERROR**: Content generation failed during pre-processing. Check API key and service status.</p>\n           <h3 style=\"color:#002E47; font-weight:800; font-size: 20px; margin-top:20px;\">Static Summary (for Reference)</h3>\n           <p style=\"color:#374151; font-size: 16px; margin-top: 5px;\">This briefing would have covered: Courageous leadership by embracing vulnerability and trust.. Focus areas: Psychological Safety,  Feedback,  Vulnerability.</p></div>"
+    },
+    {
+      "id": "p_c_2",
+      "title": "Turn the Ship Around!",
+      "author": "L. David Marquet",
+      "theme": "Creating a leader-leader organization over a leader-follower one.",
+      "complexity": "Medium",
+      "duration": 190,
+      "focus": "Intent-Based Leadership, Decentralization, Ownership, Competence, Clarity, Control",
+      "fullFlyerHTML": "<div style=\"padding: 16px;\"><h2 style=\"color:#002E47; font-weight:900; font-size: 24px; border-bottom: 3px solid #E04E1B; padding-bottom: 8px;\">FULL FLYER UNAVAILABLE</h2><p style=\"color:#E04E1B; font-size: 18px; margin-top: 15px; line-height: 1.6;\">**CRITICAL API ERROR**: Content generation failed during pre-processing. Check API key and service status.</p>\n           <h3 style=\"color:#002E47; font-weight:800; font-size: 20px; margin-top:20px;\">Root Cause Check</h3>\n           <ul style=\"list-style:disc;margin-left:20px;color:#374151;font-size:16px;\">\n              <li>The API call failed during the generation script.</li>\n              <li>Verify the **Gemini API Key** is correctly set in the environment.</li>\n           </ul></div>",
+      "executiveBriefHTML": "<div style=\"padding: 16px;\"><h2 style=\"color:#002E47; font-weight:900; font-size: 24px; border-bottom: 3px solid #E04E1B; padding-bottom: 8px;\">EXECUTIVE BRIEFING UNAVAILABLE</h2><p style=\"color:#E04E1B; font-size: 18px; margin-top: 15px; line-height: 1.6;\">**CRITICAL API ERROR**: Content generation failed during pre-processing. Check API key and service status.</p>\n           <h3 style=\"color:#002E47; font-weight:800; font-size: 20px; margin-top:20px;\">Static Summary (for Reference)</h3>\n           <p style=\"color:#374151; font-size: 16px; margin-top: 5px;\">This briefing would have covered: Creating a leader-leader organization over a leader-follower one.. Focus areas: Intent-Based Leadership,  Decentralization,  Ownership.</p></div>"
+    },
+    {
+      "id": "p_c_3",
+      "title": "Radical Candor",
+      "author": "Kim Scott",
+      "theme": "Challenging directly while caring personally.",
+      "complexity": "Medium",
+      "duration": 190,
+      "focus": "Feedback Delivery, Coaching, Guidance, Caring Personally, Challenging Directly, Get Stuff Done Wheel",
+      "fullFlyerHTML": "<div style=\"padding: 16px;\"><h2 style=\"color:#002E47; font-weight:900; font-size: 24px; border-bottom: 3px solid #E04E1B; padding-bottom: 8px;\">FULL FLYER UNAVAILABLE</h2><p style=\"color:#E04E1B; font-size: 18px; margin-top: 15px; line-height: 1.6;\">**CRITICAL API ERROR**: Content generation failed during pre-processing. Check API key and service status.</p>\n           <h3 style=\"color:#002E47; font-weight:800; font-size: 20px; margin-top:20px;\">Root Cause Check</h3>\n           <ul style=\"list-style:disc;margin-left:20px;color:#374151;font-size:16px;\">\n              <li>The API call failed during the generation script.</li>\n              <li>Verify the **Gemini API Key** is correctly set in the environment.</li>\n           </ul></div>",
+      "executiveBriefHTML": "<div style=\"padding: 16px;\"><h2 style=\"color:#002E47; font-weight:900; font-size: 24px; border-bottom: 3px solid #E04E1B; padding-bottom: 8px;\">EXECUTIVE BRIEFING UNAVAILABLE</h2><p style=\"color:#E04E1B; font-size: 18px; margin-top: 15px; line-height: 1.6;\">**CRITICAL API ERROR**: Content generation failed during pre-processing. Check API key and service status.</p>\n           <h3 style=\"color:#002E47; font-weight:800; font-size: 20px; margin-top:20px;\">Static Summary (for Reference)</h3>\n           <p style=\"color:#374151; font-size: 16px; margin-top: 5px;\">This briefing would have covered: Challenging directly while caring personally.. Focus areas: Feedback Delivery,  Coaching,  Guidance.</p></div>"
+    },
+    {
+      "id": "p_c_4",
+      "title": "The Culture Code",
+      "author": "Daniel Coyle",
+      "theme": "Building highly successful groups through belonging, safety, and shared purpose.",
+      "complexity": "Low",
+      "duration": 230,
+      "focus": "Group Cohesion, Vulnerability Loops, Shared Identity, Safety, Vulnerability, Purpose",
+      "fullFlyerHTML": "<div style=\"padding: 16px;\"><h2 style=\"color:#002E47; font-weight:900; font-size: 24px; border-bottom: 3px solid #E04E1B; padding-bottom: 8px;\">FULL FLYER UNAVAILABLE</h2><p style=\"color:#E04E1B; font-size: 18px; margin-top: 15px; line-height: 1.6;\">**CRITICAL API ERROR**: Content generation failed during pre-processing. Check API key and service status.</p>\n           <h3 style=\"color:#002E47; font-weight:800; font-size: 20px; margin-top:20px;\">Root Cause Check</h3>\n           <ul style=\"list-style:disc;margin-left:20px;color:#374151;font-size:16px;\">\n              <li>The API call failed during the generation script.</li>\n              <li>Verify the **Gemini API Key** is correctly set in the environment.</li>\n           </ul></div>",
+      "executiveBriefHTML": "<div style=\"padding: 16px;\"><h2 style=\"color:#002E47; font-weight:900; font-size: 24px; border-bottom: 3px solid #E04E1B; padding-bottom: 8px;\">EXECUTIVE BRIEFING UNAVAILABLE</h2><p style=\"color:#E04E1B; font-size: 18px; margin-top: 15px; line-height: 1.6;\">**CRITICAL API ERROR**: Content generation failed during pre-processing. Check API key and service status.</p>\n           <h3 style=\"color:#002E47; font-weight:800; font-size: 20px; margin-top:20px;\">Static Summary (for Reference)</h3>\n           <p style=\"color:#374151; font-size: 16px; margin-top: 5px;\">This briefing would have covered: Building highly successful groups through belonging, safety, and shared purpose.. Focus areas: Group Cohesion,  Vulnerability Loops,  Shared Identity.</p></div>"
+    },
+    {
+      "id": "p_c_5",
+      "title": "Start with Why",
+      "author": "Simon Sinek",
+      "theme": "Great leaders inspire action by communicating from the inside out (The Golden Circle).",
+      "complexity": "Low",
+      "duration": 180,
+      "focus": "Purpose, Vision, The Golden Circle, Mass Influence, Trust, Why/How/What",
+      "fullFlyerHTML": "<div style=\"padding: 16px;\"><h2 style=\"color:#002E47; font-weight:900; font-size: 24px; border-bottom: 3px solid #E04E1B; padding-bottom: 8px;\">FULL FLYER UNAVAILABLE</h2><p style=\"color:#E04E1B; font-size: 18px; margin-top: 15px; line-height: 1.6;\">**CRITICAL API ERROR**: Content generation failed during pre-processing. Check API key and service status.</p>\n           <h3 style=\"color:#002E47; font-weight:800; font-size: 20px; margin-top:20px;\">Root Cause Check</h3>\n           <ul style=\"list-style:disc;margin-left:20px;color:#374151;font-size:16px;\">\n              <li>The API call failed during the generation script.</li>\n              <li>Verify the **Gemini API Key** is correctly set in the environment.</li>\n           </ul></div>",
+      "executiveBriefHTML": "<div style=\"padding: 16px;\"><h2 style=\"color:#002E47; font-weight:900; font-size: 24px; border-bottom: 3px solid #E04E1B; padding-bottom: 8px;\">EXECUTIVE BRIEFING UNAVAILABLE</h2><p style=\"color:#E04E1B; font-size: 18px; margin-top: 15px; line-height: 1.6;\">**CRITICAL API ERROR**: Content generation failed during pre-processing. Check API key and service status.</p>\n           <h3 style=\"color:#002E47; font-weight:800; font-size: 20px; margin-top:20px;\">Static Summary (for Reference)</h3>\n           <p style=\"color:#374151; font-size: 16px; margin-top: 5px;\">This briefing would have covered: Great leaders inspire action by communicating from the inside out (The Golden Circle).. Focus areas: Purpose,  Vision,  The Golden Circle.</p></div>"
+    },
+    {
+      "id": "p_c_6",
+      "title": "Team of Teams",
+      "author": "General Stanley McChrystal",
+      "theme": "How a decentralized command structure can beat highly effective, organized threats.",
+      "complexity": "High",
+      "duration": 250,
+      "focus": "Shared Consciousness, Empowered Execution, Adaptability, Decentralization, Liaison Officers, Trust",
+      "fullFlyerHTML": "<div style=\"padding: 16px;\"><h2 style=\"color:#002E47; font-weight:900; font-size: 24px; border-bottom: 3px solid #E04E1B; padding-bottom: 8px;\">FULL FLYER UNAVAILABLE</h2><p style=\"color:#E04E1B; font-size: 18px; margin-top: 15px; line-height: 1.6;\">**CRITICAL API ERROR**: Content generation failed during pre-processing. Check API key and service status.</p>\n           <h3 style=\"color:#002E47; font-weight:800; font-size: 20px; margin-top:20px;\">Root Cause Check</h3>\n           <ul style=\"list-style:disc;margin-left:20px;color:#374151;font-size:16px;\">\n              <li>The API call failed during the generation script.</li>\n              <li>Verify the **Gemini API Key** is correctly set in the environment.</li>\n           </ul></div>",
+      "executiveBriefHTML": "<div style=\"padding: 16px;\"><h2 style=\"color:#002E47; font-weight:900; font-size: 24px; border-bottom: 3px solid #E04E1B; padding-bottom: 8px;\">EXECUTIVE BRIEFING UNAVAILABLE</h2><p style=\"color:#E04E1B; font-size: 18px; margin-top: 15px; line-height: 1.6;\">**CRITICAL API ERROR**: Content generation failed during pre-processing. Check API key and service status.</p>\n           <h3 style=\"color:#002E47; font-weight:800; font-size: 20px; margin-top:20px;\">Static Summary (for Reference)</h3>\n           <p style=\"color:#374151; font-size: 16px; margin-top: 5px;\">This briefing would have covered: How a decentralized command structure can beat highly effective, organized threats.. Focus areas: Shared Consciousness,  Empowered Execution,  Adaptability.</p></div>"
+    }
+  ],
+  "Self-Awareness & Growth": [
+    {
+      "id": "s_a_1",
+      "title": "Atomic Habits",
+      "author": "James Clear",
+      "theme": "Build good habits by tiny improvements.",
+      "complexity": "Low",
+      "duration": 180,
+      "focus": "Habit Formation, Self-Discipline, Identity, Four Laws, Habit Stacking, Two-Minute Rule, Environment Design",
+      "fullFlyerHTML": "<div style=\"padding: 16px;\"><h2 style=\"color:#002E47; font-weight:900; font-size: 24px; border-bottom: 3px solid #E04E1B; padding-bottom: 8px;\">FULL FLYER UNAVAILABLE</h2><p style=\"color:#E04E1B; font-size: 18px; margin-top: 15px; line-height: 1.6;\">**CRITICAL API ERROR**: Content generation failed during pre-processing. Check API key and service status.</p>\n           <h3 style=\"color:#002E47; font-weight:800; font-size: 20px; margin-top:20px;\">Root Cause Check</h3>\n           <ul style=\"list-style:disc;margin-left:20px;color:#374151;font-size:16px;\">\n              <li>The API call failed during the generation script.</li>\n              <li>Verify the **Gemini API Key** is correctly set in the environment.</li>\n           </ul></div>",
+      "executiveBriefHTML": "<div style=\"padding: 16px;\"><h2 style=\"color:#002E47; font-weight:900; font-size: 24px; border-bottom: 3px solid #E04E1B; padding-bottom: 8px;\">EXECUTIVE BRIEFING UNAVAILABLE</h2><p style=\"color:#E04E1B; font-size: 18px; margin-top: 15px; line-height: 1.6;\">**CRITICAL API ERROR**: Content generation failed during pre-processing. Check API key and service status.</p>\n           <h3 style=\"color:#002E47; font-weight:800; font-size: 20px; margin-top:20px;\">Static Summary (for Reference)</h3>\n           <p style=\"color:#374151; font-size: 16px; margin-top: 5px;\">This briefing would have covered: Build good habits by tiny improvements.. Focus areas: Habit Formation,  Self-Discipline,  Identity.</p></div>"
+    },
+    {
+      "id": "s_a_2",
+      "title": "Mindset",
+      "author": "Carol Dweck",
+      "theme": "The difference between growth and fixed mindsets in success.",
+      "complexity": "Medium",
+      "duration": 190,
+      "focus": "Growth Mindset, Fixed Mindset, Effort vs. Talent, Praise for Effort, Neuroscience of Change",
+      "fullFlyerHTML": "<div style=\"padding: 16px;\"><h2 style=\"color:#002E47; font-weight:900; font-size: 24px; border-bottom: 3px solid #E04E1B; padding-bottom: 8px;\">FULL FLYER UNAVAILABLE</h2><p style=\"color:#E04E1B; font-size: 18px; margin-top: 15px; line-height: 1.6;\">**CRITICAL API ERROR**: Content generation failed during pre-processing. Check API key and service status.</p>\n           <h3 style=\"color:#002E47; font-weight:800; font-size: 20px; margin-top:20px;\">Root Cause Check</h3>\n           <ul style=\"list-style:disc;margin-left:20px;color:#374151;font-size:16px;\">\n              <li>The API call failed during the generation script.</li>\n              <li>Verify the **Gemini API Key** is correctly set in the environment.</li>\n           </ul></div>",
+      "executiveBriefHTML": "<div style=\"padding: 16px;\"><h2 style=\"color:#002E47; font-weight:900; font-size: 24px; border-bottom: 3px solid #E04E1B; padding-bottom: 8px;\">EXECUTIVE BRIEFING UNAVAILABLE</h2><p style=\"color:#E04E1B; font-size: 18px; margin-top: 15px; line-height: 1.6;\">**CRITICAL API ERROR**: Content generation failed during pre-processing. Check API key and service status.</p>\n           <h3 style=\"color:#002E47; font-weight:800; font-size: 20px; margin-top:20px;\">Static Summary (for Reference)</h3>\n           <p style=\"color:#374151; font-size: 16px; margin-top: 5px;\">This briefing would have covered: The difference between growth and fixed mindsets in success.. Focus areas: Growth Mindset,  Fixed Mindset,  Effort vs. Talent.</p></div>"
+    },
+    {
+      "id": "s_a_3",
+      "title": "Drive",
+      "author": "Daniel H. Pink",
+      "theme": "The new operating system for business based on intrinsic motivation (Autonomy, Mastery, Purpose).",
+      "complexity": "Medium",
+      "duration": 170,
+      "focus": "Intrinsic Motivation, Autonomy, Mastery, Purpose, Type I vs Type X Behavior, Flow State, Goldilocks Tasks",
+      "fullFlyerHTML": "<div style=\"padding: 16px;\"><h2 style=\"color:#002E47; font-weight:900; font-size: 24px; border-bottom: 3px solid #E04E1B; padding-bottom: 8px;\">FULL FLYER UNAVAILABLE</h2><p style=\"color:#E04E1B; font-size: 18px; margin-top: 15px; line-height: 1.6;\">**CRITICAL API ERROR**: Content generation failed during pre-processing. Check API key and service status.</p>\n           <h3 style=\"color:#002E47; font-weight:800; font-size: 20px; margin-top:20px;\">Root Cause Check</h3>\n           <ul style=\"list-style:disc;margin-left:20px;color:#374151;font-size:16px;\">\n              <li>The API call failed during the generation script.</li>\n              <li>Verify the **Gemini API Key** is correctly set in the environment.</li>\n           </ul></div>",
+      "executiveBriefHTML": "<div style=\"padding: 16px;\"><h2 style=\"color:#002E47; font-weight:900; font-size: 24px; border-bottom: 3px solid #E04E1B; padding-bottom: 8px;\">EXECUTIVE BRIEFING UNAVAILABLE</h2><p style=\"color:#E04E1B; font-size: 18px; margin-top: 15px; line-height: 1.6;\">**CRITICAL API ERROR**: Content generation failed during pre-processing. Check API key and service status.</p>\n           <h3 style=\"color:#002E47; font-weight:800; font-size: 20px; margin-top:20px;\">Static Summary (for Reference)</h3>\n           <p style=\"color:#374151; font-size: 16px; margin-top: 5px;\">This briefing would have covered: The new operating system for business based on intrinsic motivation (Autonomy, Mastery, Purpose).. Focus areas: Intrinsic Motivation,  Autonomy,  Mastery.</p></div>"
+    },
+    {
+      "id": "s_a_4",
+      "title": "Emotional Intelligence 2.0",
+      "author": "Travis Bradberry",
+      "theme": "Practical strategies for increasing self-awareness and self-management.",
+      "complexity": "Low",
+      "duration": 160,
+      "focus": "Self-Awareness, Self-Management, Social Awareness, Relationship Management, EQ Assessment, Delaying Gratification",
+      "fullFlyerHTML": "<div style=\"padding: 16px;\"><h2 style=\"color:#002E47; font-weight:900; font-size: 24px; border-bottom: 3px solid #E04E1B; padding-bottom: 8px;\">FULL FLYER UNAVAILABLE</h2><p style=\"color:#E04E1B; font-size: 18px; margin-top: 15px; line-height: 1.6;\">**CRITICAL API ERROR**: Content generation failed during pre-processing. Check API key and service status.</p>\n           <h3 style=\"color:#002E47; font-weight:800; font-size: 20px; margin-top:20px;\">Root Cause Check</h3>\n           <ul style=\"list-style:disc;margin-left:20px;color:#374151;font-size:16px;\">\n              <li>The API call failed during the generation script.</li>\n              <li>Verify the **Gemini API Key** is correctly set in the environment.</li>\n           </ul></div>",
+      "executiveBriefHTML": "<div style=\"padding: 16px;\"><h2 style=\"color:#002E47; font-weight:900; font-size: 24px; border-bottom: 3px solid #E04E1B; padding-bottom: 8px;\">EXECUTIVE BRIEFING UNAVAILABLE</h2><p style=\"color:#E04E1B; font-size: 18px; margin-top: 15px; line-height: 1.6;\">**CRITICAL API ERROR**: Content generation failed during pre-processing. Check API key and service status.</p>\n           <h3 style=\"color:#002E47; font-weight:800; font-size: 20px; margin-top:20px;\">Static Summary (for Reference)</h3>\n           <p style=\"color:#374151; font-size: 16px; margin-top: 5px;\">This briefing would have covered: Practical strategies for increasing self-awareness and self-management.. Focus areas: Self-Awareness,  Self-Management,  Social Awareness.</p></div>"
+    },
+    {
+      "id": "s_a_5",
+      "title": "Thinking, Fast and Slow",
+      "author": "Daniel Kahneman",
+      "theme": "Dual-process model of the brain (System 1 and System 2) and cognitive biases.",
+      "complexity": "High",
+      "duration": 280,
+      "focus": "Cognitive Biases, System 1/System 2, Decision Making, Anchoring Effect, Loss Aversion, Prospect Theory",
+      "fullFlyerHTML": "<div style=\"padding: 16px;\"><h2 style=\"color:#002E47; font-weight:900; font-size: 24px; border-bottom: 3px solid #E04E1B; padding-bottom: 8px;\">FULL FLYER UNAVAILABLE</h2><p style=\"color:#E04E1B; font-size: 18px; margin-top: 15px; line-height: 1.6;\">**CRITICAL API ERROR**: Content generation failed during pre-processing. Check API key and service status.</p>\n           <h3 style=\"color:#002E47; font-weight:800; font-size: 20px; margin-top:20px;\">Root Cause Check</h3>\n           <ul style=\"list-style:disc;margin-left:20px;color:#374151;font-size:16px;\">\n              <li>The API call failed during the generation script.</li>\n              <li>Verify the **Gemini API Key** is correctly set in the environment.</li>\n           </ul></div>",
+      "executiveBriefHTML": "<div style=\"padding: 16px;\"><h2 style=\"color:#002E47; font-weight:900; font-size: 24px; border-bottom: 3px solid #E04E1B; padding-bottom: 8px;\">EXECUTIVE BRIEFING UNAVAILABLE</h2><p style=\"color:#E04E1B; font-size: 18px; margin-top: 15px; line-height: 1.6;\">**CRITICAL API ERROR**: Content generation failed during pre-processing. Check API key and service status.</p>\n           <h3 style=\"color:#002E47; font-weight:800; font-size: 20px; margin-top:20px;\">Static Summary (for Reference)</h3>\n           <p style=\"color:#374151; font-size: 16px; margin-top: 5px;\">This briefing would have covered: Dual-process model of the brain (System 1 and System 2) and cognitive biases.. Focus areas: Cognitive Biases,  System 1/System 2,  Decision Making.</p></div>"
+    }
+  ],
+  "Strategy & Execution": [
+    {
+      "id": "s_e_1",
+      "title": "The E-Myth Revisited",
+      "author": "Michael E. Gerber",
+      "theme": "Why most small businesses fail and how to build a scalable system.",
+      "complexity": "Medium",
+      "duration": 180,
+      "focus": "Delegation, Process Mapping, Systemization, Standard Operating Procedures, Entrepreneurial Vision, Managerial Structure",
+      "fullFlyerHTML": "<div style=\"padding: 16px;\"><h2 style=\"color:#002E47; font-weight:900; font-size: 24px; border-bottom: 3px solid #E04E1B; padding-bottom: 8px;\">FULL FLYER UNAVAILABLE</h2><p style=\"color:#E04E1B; font-size: 18px; margin-top: 15px; line-height: 1.6;\">**CRITICAL API ERROR**: Content generation failed during pre-processing. Check API key and service status.</p>\n           <h3 style=\"color:#002E47; font-weight:800; font-size: 20px; margin-top:20px;\">Root Cause Check</h3>\n           <ul style=\"list-style:disc;margin-left:20px;color:#374151;font-size:16px;\">\n              <li>The API call failed during the generation script.</li>\n              <li>Verify the **Gemini API Key** is correctly set in the environment.</li>\n           </ul></div>",
+      "executiveBriefHTML": "<div style=\"padding: 16px;\"><h2 style=\"color:#002E47; font-weight:900; font-size: 24px; border-bottom: 3px solid #E04E1B; padding-bottom: 8px;\">EXECUTIVE BRIEFING UNAVAILABLE</h2><p style=\"color:#E04E1B; font-size: 18px; margin-top: 15px; line-height: 1.6;\">**CRITICAL API ERROR**: Content generation failed during pre-processing. Check API key and service status.</p>\n           <h3 style=\"color:#002E47; font-weight:800; font-size: 20px; margin-top:20px;\">Static Summary (for Reference)</h3>\n           <p style=\"color:#374151; font-size: 16px; margin-top: 5px;\">This briefing would have covered: Why most small businesses fail and how to build a scalable system.. Focus areas: Delegation,  Process Mapping,  Systemization.</p></div>"
+    },
+    {
+      "id": "s_e_2",
+      "title": "Good to Great",
+      "author": "Jim Collins",
+      "theme": "The factors that allow companies to make the leap from good results to sustained great ones.",
+      "complexity": "High",
+      "duration": 240,
+      "focus": "Level 5 Leadership, Hedgehog Concept, Culture of Discipline, Technology Accelerators, Flywheel Effect, Stockdale Paradox",
+      "fullFlyerHTML": "<div style=\"padding: 16px;\"><h2 style=\"color:#002E47; font-weight:900; font-size: 24px; border-bottom: 3px solid #E04E1B; padding-bottom: 8px;\">FULL FLYER UNAVAILABLE</h2><p style=\"color:#E04E1B; font-size: 18px; margin-top: 15px; line-height: 1.6;\">**CRITICAL API ERROR**: Content generation failed during pre-processing. Check API key and service status.</p>\n           <h3 style=\"color:#002E47; font-weight:800; font-size: 20px; margin-top:20px;\">Root Cause Check</h3>\n           <ul style=\"list-style:disc;margin-left:20px;color:#374151;font-size:16px;\">\n              <li>The API call failed during the generation script.</li>\n              <li>Verify the **Gemini API Key** is correctly set in the environment.</li>\n           </ul></div>",
+      "executiveBriefHTML": "<div style=\"padding: 16px;\"><h2 style=\"color:#002E47; font-weight:900; font-size: 24px; border-bottom: 3px solid #E04E1B; padding-bottom: 8px;\">EXECUTIVE BRIEFING UNAVAILABLE</h2><p style=\"color:#E04E1B; font-size: 18px; margin-top: 15px; line-height: 1.6;\">**CRITICAL API ERROR**: Content generation failed during pre-processing. Check API key and service status.</p>\n           <h3 style=\"color:#002E47; font-weight:800; font-size: 20px; margin-top:20px;\">Static Summary (for Reference)</h3>\n           <p style=\"color:#374151; font-size: 16px; margin-top: 5px;\">This briefing would have covered: The factors that allow companies to make the leap from good results to sustained great ones.. Focus areas: Level 5 Leadership,  Hedgehog Concept,  Culture of Discipline.</p></div>"
+    },
+    {
+      "id": "s_e_3",
+      "title": "Measure What Matters",
+      "author": "John Doerr",
+      "theme": "Achieving ambitious goals using OKRs.",
+      "complexity": "Medium",
+      "duration": 200,
+      "focus": "Goal Setting, Quarterly Planning, Accountability, Transparency, Stretch Goals, Feedback Cycles",
+      "fullFlyerHTML": "<div style=\"padding: 16px;\"><h2 style=\"color:#002E47; font-weight:900; font-size: 24px; border-bottom: 3px solid #E04E1B; padding-bottom: 8px;\">FULL FLYER UNAVAILABLE</h2><p style=\"color:#E04E1B; font-size: 18px; margin-top: 15px; line-height: 1.6;\">**CRITICAL API ERROR**: Content generation failed during pre-processing. Check API key and service status.</p>\n           <h3 style=\"color:#002E47; font-weight:800; font-size: 20px; margin-top:20px;\">Root Cause Check</h3>\n           <ul style=\"list-style:disc;margin-left:20px;color:#374151;font-size:16px;\">\n              <li>The API call failed during the generation script.</li>\n              <li>Verify the **Gemini API Key** is correctly set in the environment.</li>\n           </ul></div>",
+      "executiveBriefHTML": "<div style=\"padding: 16px;\"><h2 style=\"color:#002E47; font-weight:900; font-size: 24px; border-bottom: 3px solid #E04E1B; padding-bottom: 8px;\">EXECUTIVE BRIEFING UNAVAILABLE</h2><p style=\"color:#E04E1B; font-size: 18px; margin-top: 15px; line-height: 1.6;\">**CRITICAL API ERROR**: Content generation failed during pre-processing. Check API key and service status.</p>\n           <h3 style=\"color:#002E47; font-weight:800; font-size: 20px; margin-top:20px;\">Static Summary (for Reference)</h3>\n           <p style=\"color:#374151; font-size: 16px; margin-top: 5px;\">This briefing would have covered: Achieving ambitious goals using OKRs.. Focus areas: Goal Setting,  Quarterly Planning,  Accountability.</p></div>"
+    },
+    {
+      "id": "s_e_4",
+      "title": "The 7 Habits",
+      "author": "Stephen Covey",
+      "theme": "Principles for personal and professional effectiveness.",
+      "complexity": "Low",
+      "duration": 220,
+      "focus": "Proactivity, Prioritization, Synergy, Sharpen the Saw, Win/Win, Habit Stacking, Time Management Matrix",
+      "fullFlyerHTML": "<div style=\"padding: 16px;\"><h2 style=\"color:#002E47; font-weight:900; font-size: 24px; border-bottom: 3px solid #E04E1B; padding-bottom: 8px;\">FULL FLYER UNAVAILABLE</h2><p style=\"color:#E04E1B; font-size: 18px; margin-top: 15px; line-height: 1.6;\">**CRITICAL API ERROR**: Content generation failed during pre-processing. Check API key and service status.</p>\n           <h3 style=\"color:#002E47; font-weight:800; font-size: 20px; margin-top:20px;\">Root Cause Check</h3>\n           <ul style=\"list-style:disc;margin-left:20px;color:#374151;font-size:16px;\">\n              <li>The API call failed during the generation script.</li>\n              <li>Verify the **Gemini API Key** is correctly set in the environment.</li>\n           </ul></div>",
+      "executiveBriefHTML": "<div style=\"padding: 16px;\"><h2 style=\"color:#002E47; font-weight:900; font-size: 24px; border-bottom: 3px solid #E04E1B; padding-bottom: 8px;\">EXECUTIVE BRIEFING UNAVAILABLE</h2><p style=\"color:#E04E1B; font-size: 18px; margin-top: 15px; line-height: 1.6;\">**CRITICAL API ERROR**: Content generation failed during pre-processing. Check API key and service status.</p>\n           <h3 style=\"color:#002E47; font-weight:800; font-size: 20px; margin-top:20px;\">Static Summary (for Reference)</h3>\n           <p style=\"color:#374151; font-size: 16px; margin-top: 5px;\">This briefing would have covered: Principles for personal and professional effectiveness.. Focus areas: Proactivity,  Prioritization,  Synergy.</p></div>"
+    },
+    {
+      "id": "s_e_5",
+      "title": "Getting Things Done (GTD)",
+      "author": "David Allen",
+      "theme": "A stress-free system for organizing tasks and projects.",
+      "complexity": "Medium",
+      "duration": 210,
+      "focus": "Workflow Management, Capture, Organize, Engage, Next Actions, Two-Minute Rule, Weekly Review",
+      "fullFlyerHTML": "<div style=\"padding: 16px;\"><h2 style=\"color:#002E47; font-weight:900; font-size: 24px; border-bottom: 3px solid #E04E1B; padding-bottom: 8px;\">FULL FLYER UNAVAILABLE</h2><p style=\"color:#E04E1B; font-size: 18px; margin-top: 15px; line-height: 1.6;\">**CRITICAL API ERROR**: Content generation failed during pre-processing. Check API key and service status.</p>\n           <h3 style=\"color:#002E47; font-weight:800; font-size: 20px; margin-top:20px;\">Root Cause Check</h3>\n           <ul style=\"list-style:disc;margin-left:20px;color:#374151;font-size:16px;\">\n              <li>The API call failed during the generation script.</li>\n              <li>Verify the **Gemini API Key** is correctly set in the environment.</li>\n           </ul></div>",
+      "executiveBriefHTML": "<div style=\"padding: 16px;\"><h2 style=\"color:#002E47; font-weight:900; font-size: 24px; border-bottom: 3px solid #E04E1B; padding-bottom: 8px;\">EXECUTIVE BRIEFING UNAVAILABLE</h2><p style=\"color:#E04E1B; font-size: 18px; margin-top: 15px; line-height: 1.6;\">**CRITICAL API ERROR**: Content generation failed during pre-processing. Check API key and service status.</p>\n           <h3 style=\"color:#002E47; font-weight:800; font-size: 20px; margin-top:20px;\">Static Summary (for Reference)</h3>\n           <p style=\"color:#374151; font-size: 16px; margin-top: 5px;\">This briefing would have covered: A stress-free system for organizing tasks and projects.. Focus areas: Workflow Management,  Capture,  Organize.</p></div>"
+    },
+    {
+      "id": "s_e_6",
+      "title": "Deep Work",
+      "author": "Cal Newport",
+      "theme": "The value of focused, distraction-free concentration on cognitively demanding tasks.",
+      "complexity": "Medium",
+      "duration": 190,
+      "focus": "Focus, Productivity, Attention Management, Monastic Approach, High-Value Tasks, Metrics of Depth, Batch Processing",
+      "fullFlyerHTML": "<div style=\"padding: 16px;\"><h2 style=\"color:#002E47; font-weight:900; font-size: 24px; border-bottom: 3px solid #E04E1B; padding-bottom: 8px;\">FULL FLYER UNAVAILABLE</h2><p style=\"color:#E04E1B; font-size: 18px; margin-top: 15px; line-height: 1.6;\">**CRITICAL API ERROR**: Content generation failed during pre-processing. Check API key and service status.</p>\n           <h3 style=\"color:#002E47; font-weight:800; font-size: 20px; margin-top:20px;\">Root Cause Check</h3>\n           <ul style=\"list-style:disc;margin-left:20px;color:#374151;font-size:16px;\">\n              <li>The API call failed during the generation script.</li>\n              <li>Verify the **Gemini API Key** is correctly set in the environment.</li>\n           </ul></div>",
+      "executiveBriefHTML": "<div style=\"padding: 16px;\"><h2 style=\"color:#002E47; font-weight:900; font-size: 24px; border-bottom: 3px solid #E04E1B; padding-bottom: 8px;\">EXECUTIVE BRIEFING UNAVAILABLE</h2><p style=\"color:#E04E1B; font-size: 18px; margin-top: 15px; line-height: 1.6;\">**CRITICAL API ERROR**: Content generation failed during pre-processing. Check API key and service status.</p>\n           <h3 style=\"color:#002E47; font-weight:800; font-size: 20px; margin-top:20px;\">Static Summary (for Reference)</h3>\n           <p style=\"color:#374151; font-size: 16px; margin-top: 5px;\">This briefing would have covered: The value of focused, distraction-free concentration on cognitively demanding tasks.. Focus areas: Focus,  Productivity,  Attention Management.</p></div>"
+    },
+    {
+      "id": "s_e_7",
+      "title": "The Goal",
+      "author": "Eliyahu Goldratt",
+      "theme": "The process of ongoing improvement using the Theory of Constraints.",
+      "complexity": "High",
+      "duration": 260,
+      "focus": "Theory of Constraints, Bottlenecks, Throughput, Drum-Buffer-Rope, Process Improvement, Optimization",
+      "fullFlyerHTML": "<div style=\"padding: 16px;\"><h2 style=\"color:#002E47; font-weight:900; font-size: 24px; border-bottom: 3px solid #E04E1B; padding-bottom: 8px;\">FULL FLYER UNAVAILABLE</h2><p style=\"color:#E04E1B; font-size: 18px; margin-top: 15px; line-height: 1.6;\">**CRITICAL API ERROR**: Content generation failed during pre-processing. Check API key and service status.</p>\n           <h3 style=\"color:#002E47; font-weight:800; font-size: 20px; margin-top:20px;\">Root Cause Check</h3>\n           <ul style=\"list-style:disc;margin-left:20px;color:#374151;font-size:16px;\">\n              <li>The API call failed during the generation script.</li>\n              <li>Verify the **Gemini API Key** is correctly set in the environment.</li>\n           </ul></div>",
+      "executiveBriefHTML": "<div style=\"padding: 16px;\"><h2 style=\"color:#002E47; font-weight:900; font-size: 24px; border-bottom: 3px solid #E04E1B; padding-bottom: 8px;\">EXECUTIVE BRIEFING UNAVAILABLE</h2><p style=\"color:#E04E1B; font-size: 18px; margin-top: 15px; line-height: 1.6;\">**CRITICAL API ERROR**: Content generation failed during pre-processing. Check API key and service status.</p>\n           <h3 style=\"color:#002E47; font-weight:800; font-size: 20px; margin-top:20px;\">Static Summary (for Reference)</h3>\n           <p style=\"color:#374151; font-size: 16px; margin-top: 5px;\">This briefing would have covered: The process of ongoing improvement using the Theory of Constraints.. Focus areas: Theory of Constraints,  Bottlenecks,  Throughput.</p></div>"
+    }
+  ]
+}
