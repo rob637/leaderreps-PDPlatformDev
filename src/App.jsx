@@ -230,9 +230,11 @@ const callSecureGeminiAPI = async (payload, maxRetries = 3, delay = 1000) => {
 const hasGeminiKey = () => (USE_SERVERLESS ? true : !!(typeof __GEMINI_API_KEY !== 'undefined' && __GEMINI_API_KEY));
 
 /* -----------------------------------------------------------------------------
-   ICONS & CONSTANTS (Unchanged)
+   ICONS & CONSTANTS (*** UPDATED ***)
 ----------------------------------------------------------------------------- */
 const IconMap = {};
+// --- *** MOVED HERE ***: Placed COLORS definition at top level ---
+const COLORS = { NAVY: '#002E47', TEAL: '#47A88D', ORANGE: '#E04E1B' };
 const SECRET_SIGNUP_CODE = 'mock-code-123';
 const LEADERSHIP_TIERS_FALLBACK = {
   T1: { id: 'T1', name: 'Lead Self & Mindsets', icon: 'HeartPulse', color: 'indigo-500' },
@@ -310,7 +312,8 @@ const ScreenMap = {
 /* -----------------------------------------------------------------------------
    SETTINGS CARD + SCREEN (Unchanged)
 ----------------------------------------------------------------------------- */
-const COLORS = { NAVY: '#002E47', TEAL: '#47A88D', ORANGE: '#E04E1B' };
+// --- *** REMOVED ***: COLORS const definition moved to top level ---
+// const COLORS = { NAVY: '#002E47', TEAL: '#47A88D', ORANGE: '#E04E1B' };
 
 const SettingsCard = ({ title, icon: Icon, children }) => (
   <div className="p-6 rounded-xl border border-gray-200 bg-white shadow-lg space-y-4">
@@ -631,6 +634,7 @@ const NavSidebar = ({ currentScreen, setCurrentScreen, user, closeMobileMenu, is
   const { auth } = useAppServices();
   const [isProfileOpen, setIsProfileOpen] = useState(false);
 
+  // --- *** UPDATED ***: These constants now correctly reference the top-level COLORS object
   const NAVY = COLORS.NAVY;
   const TEAL = COLORS.TEAL;
   const ORANGE = COLORS.ORANGE;
@@ -725,17 +729,19 @@ const NavSidebar = ({ currentScreen, setCurrentScreen, user, closeMobileMenu, is
 
   return (
     // --- UPDATED: Added 'relative' for positioning the toggle button ---
+    // --- *** NOTE ***: bg-[${NAVY}] will now work correctly
     <div className={`hidden md:flex flex-col ${isNavExpanded ? 'w-64 p-4' : 'w-20 p-3'} bg-[${NAVY}] text-white shadow-2xl transition-all duration-300 ease-in-out relative`}>
       
-      {/* --- NEW: Toggle Button (Moved to top) --- */}
+      {/* --- *** UPDATED ***: Toggle Button (Moved to top) --- */}
       <button
         onClick={() => setIsNavExpanded(!isNavExpanded)}
         title={isNavExpanded ? 'Collapse Menu' : 'Expand Menu'}
-        className="absolute top-6 -right-4 
-                   bg-white hover:bg-gray-200 text-[#002E47] 
-                   rounded-full shadow-lg border border-gray-300
+        // --- *** UPDATED ***: Changed style from white bubble to teal button
+        className={`absolute top-6 -right-4 
+                   bg-[${TEAL}] hover:bg-[#349881] text-white 
+                   rounded-full shadow-lg border-2 border-white/50
                    w-8 h-8 flex items-center justify-center z-20 transition-all
-                   hover:scale-110"
+                   hover:scale-110`}
       >
         {isNavExpanded ? <ChevronLeft className="w-5 h-5" /> : <ChevronRight className="w-5 h-5" />}
       </button>
@@ -869,6 +875,7 @@ const AppContent = ({ currentScreen, setCurrentScreen, user, navParams, isMobile
           }
         >
           <ScreenRouter currentScreen={currentScreen} navParams={navParams} navigate={navigate} />
+        {/* --- *** FIXED ***: Corrected typo from </SuspG> to </Suspense> --- */}
         </Suspense>
       </main>
     </div>

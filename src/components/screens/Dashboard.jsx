@@ -32,7 +32,7 @@ const Card = ({ children, title, icon: Icon, className = '', onClick, accent = '
   return (
     <Tag {...(interactive ? { type: 'button' } : {})} role={interactive ? 'button' : undefined} tabIndex={interactive ? 0 : undefined} onKeyDown={handleKeyDown} className={`relative p-6 rounded-2xl border-2 shadow-2xl hover:shadow-xl transition-all duration-300 text-left ${className}`} style={{ background: 'linear-gradient(180deg,#FFFFFF, #FCFCFA)', borderColor: COLORS.SUBTLE, color: COLORS.TEXT }} onClick={onClick}>
       <span style={{ position:'absolute', top:0, left:0, right:0, height:6, background: accentColor, borderTopLeftRadius:14, borderTopRightRadius:14 }} />
-      {Icon && (<div className="w-10 h-10 rounded-lg flex items-center justify-center border mb-3" style={{ borderColor: COLORS.SUBTLE, background: COLORS.LIGHT_GRAY }}><Icon className="w-5 h-5" style={{ color: COLORS.TEAL }} /></div>)}
+      {/* {Icon && (<div className="w-10 h-10 rounded-lg flex items-center justify-center border mb-3" style={{ borderColor: COLORS.SUBTLE, background: COLORS.LIGHT_GRAY }}><Icon className="w-5 h-5" style={{ color: COLORS.TEAL }} /></div>)} */} {/* <-- REMOVED per user request */}
       {title && <h2 className="text-xl font-extrabold mb-2" style={{ color: COLORS.NAVY }}>{title}</h2>}
       {children}
     </Tag>
@@ -145,7 +145,8 @@ const SocialPodFeed = ({ feed, onShare, isArenaMode }) => {
           </div>
           <div className="space-y-2">
             <textarea value={newPost} onChange={(e) => setNewPost(e.target.value)} className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#7C3AED]" rows="2" placeholder="Share your rep or a win..." />
-            <Button onClick={handleSubmit} variant="primary" className="w-full text-sm !py-2" style={{ background: COLORS.PURPLE, focusRing: COLORS.PURPLE }}> <Share2 className="w-4 h-4 mr-2" /> Share to Pod </Button>
+            {/* --- UPDATED: Removed inline style to use 'primary' variant (teal) --- */}
+            <Button onClick={handleSubmit} variant="primary" className="w-full text-sm !py-2"> <Share2 className="w-4 h-4 mr-2" /> Share to Pod </Button>
           </div>
         </>
       )}
@@ -452,9 +453,12 @@ const DashboardScreen = () => {
       </div>
 
       {/* 2. Main Content Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      {/* --- UPDATED: Changed lg:grid-cols-3 to lg:grid-cols-5 --- */}
+      <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
+        
         {/* Left Column */}
-        <div className="lg:col-span-2 space-y-6">
+        {/* --- UPDATED: Changed lg:col-span-2 to lg:col-span-3 --- */}
+        <div className="lg:col-span-3 space-y-6">
            <Card title="🎯 Today's Strategic Focus" icon={Target} accent='NAVY'>
               <div className='grid md:grid-cols-2 gap-6'>
                  <div> <p className='text-sm font-semibold ...'><Flag /> Target Rep:</p> <p className='text-lg font-bold ...'>{dailyTargetRep.text}</p> </div>
@@ -473,7 +477,8 @@ const DashboardScreen = () => {
         </div>
 
         {/* Right Column */}
-        <div className="lg:col-span-1 space-y-6">
+        {/* --- UPDATED: Changed lg:col-span-1 to lg:col-span-2 --- */}
+        <div className="lg:col-span-2 space-y-6">
              <EmbeddedReflectionForm db={db} userId={userId} onOpenLog={() => setIsLogModalOpen(true)} onSaveSuccess={handleReflectionSaved} />
              <AICoachNudge lastReflectionEntry={lastReflectionEntry} callSecureGeminiAPI={callSecureGeminiAPI} hasGeminiKey={hasGeminiKey} />
         </div>
