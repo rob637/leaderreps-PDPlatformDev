@@ -478,7 +478,8 @@ function BookListStable({
                         <div className="mt-3 pt-3" style={{ borderTop: '1px solid #F3F4F6' }}>
                           <p className="text-xs font-semibold" style={{ color: COLORS.TEAL }}>Key Focus</p>
                           <div className="flex flex-wrap gap-1 mt-1">
-                            {(book.focus || '').split(',').slice(0, 3).map((f, i) => (
+                            {/* CRITICAL FIX APPLIED HERE: Ensure book.focus is a string before splitting/mapping */}
+                            {((String(book.focus) || '').split(',').slice(0, 3)).map((f, i) => (
                               <span key={i}
                                     className="px-2 py-0.5 text-xs font-medium rounded-full"
                                     style={{ background: '#F3F4F6', color: '#4B5563' }}>{f.trim()}</span>
@@ -703,7 +704,7 @@ export default function BusinessReadingsScreen() {
       .filter(b => {
         const cOK = filters.complexity === 'All' || b.complexity === filters.complexity;
         const dOK = (typeof b.duration === 'number') ? ((() => { const m = getDerivedDuration(b); return (m === null) ? true : (m <= filters.maxDuration); })()) : true;
-        const sOK = !s || b.title.toLowerCase().includes(s) || b.author.toLowerCase().includes(s) || (b.focus || '').toLowerCase().includes(s);
+        const sOK = !s || b.title.toLowerCase().includes(s) || b.author.toLowerCase().includes(s) || (String(b.focus) || '').toLowerCase().includes(s); // Added String(b.focus) defensively
         return cOK && dOK && sOK;
       })
       .reduce((acc, b) => {
