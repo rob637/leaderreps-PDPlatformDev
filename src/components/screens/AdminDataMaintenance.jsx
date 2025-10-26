@@ -595,16 +595,16 @@ export default function AdminDataMaintenance() {
   };
 
   /* ---------- presets ---------- */
-  // 2) Updated Preset names to match data structure
+  // CRITICAL FIX 1: Corrected preset paths to match case and structure shown in Firebase screenshot
   const presets = [
-    { label: "✅ Commitment Bank (Doc)", value: "metadata/config/commitment_bank/data" },
-    { label: "🗺️ Leadership Domains (Doc)", value: "metadata/config/leadership_domains/data" },
-    { label: "🪜 Leadership Tiers (Doc)", value: "metadata/config/leadership_tiers/data" },
-    { label: "⚡ Quick Challenge Catalog (Doc)", value: "metadata/config/quick_challenge_catalog/data" },
-    { label: "📚 Resource Library (Doc)", value: "metadata/config/resource_library/data" },
-    { label: "🎬 Scenario Catalog (Doc)", value: "metadata/config/scenario_catalog/data" },
-    { label: "🎯 Target Rep Catalog (Doc)", value: "metadata/config/target_rep_catalog/data" },
-    { label: "🎥 Video Catalog (Doc)", value: "metadata/config/video_catalog/data" },
+    { label: "✅ Commitment Bank (Doc)", value: "metadata/config/COMMITMENT_BANK" },
+    { label: "🗺️ Leadership Domains (Doc)", value: "metadata/config/leadership_domains" },
+    { label: "🪜 Leadership Tiers (Doc)", value: "metadata/config/leadership_tiers" },
+    { label: "⚡ Quick Challenge Catalog (Doc)", value: "metadata/config/quick_challenge_catalog" },
+    { label: "📚 Resource Library (Doc)", value: "metadata/config/resource_library" },
+    { label: "🎬 Scenario Catalog (Doc)", value: "metadata/config/scenario_catalog" },
+    { label: "🎯 Target Rep Catalog (Doc)", value: "metadata/config/TARGET_REP_CATALOG" },
+    { label: "🎥 Video Catalog (Doc)", value: "metadata/config/video_catalog" },
     { label: "📖 Reading Catalog (Doc)", value: "metadata/reading_catalog" },
     // If you need collection presets, add them here:
     // { label: "🗂️ Commitments (Col)", value: "metadata/config/commitment_bank" },
