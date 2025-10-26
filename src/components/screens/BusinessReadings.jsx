@@ -144,49 +144,8 @@ const API_ERROR_HTML = (executive, book) => {
 
 /* =========================================================
    AI FLYER BUILDER & QUESTION SCORING (PRODUCTION FOCUS)
+   NOTE: buildAIFlyerHTML function has been REMOVED as the content is now pre-generated.
 ========================================================= */
-async function buildAIFlyerHTML({ book, tier, executive, callSecureGeminiAPI }) {
-  
-  const baseInstruction = executive
-    ? `Write a robust EXECUTIVE BRIEF (150-200 words, split into 2 paragraphs). The brief must address the book's core insight, its relevance to the leader's specific tier, and two clear takeaway actions presented in a brief, bulleted list. Output clean, styled HTML using only h2, h3, p, ul, li, strong, em, and inline CSS for presentation. The two paragraphs should be separate <p> tags, followed by an H3 and a <ul> with 2 <li> items.`
-    : `Create a comprehensive BOOK FLYER (300-350 words total). The content must include four specific sections: **1. Core Insight & Overview**, **2. Deep Dive (3 Critical Takeaways as a list)**, **3. Key Frameworks (with short descriptions)**, and **4. Immediate 4-Week Action Plan (4 bullet points)**. Ensure high detail and professional tone. Output ONLY clean, styled HTML using h2, h3, p, ul, li, strong, em, and inline CSS for presentation. DO NOT include any plain text outside the HTML tags.`;
-
-  const systemPrompt =
-    `You are the LeaderReps Researcher and Content Generator. Your goal is to produce a detailed, premium, high-value content piece based on the provided book and the user's Leadership Tier. You MUST adhere to all structural and word count requirements. Frameworks and actions must clearly reference the book’s named models and concepts. Use Google Search grounding to ensure accuracy.`;
-
-  const userPrompt =
-    `${baseInstruction}\n\nBook: ${book.title} by ${book.author}\n` +
-    `Focus areas: ${(book.focus || '')}\nComplexity: ${book.complexity}\nTier: ${tier}`;
-
-  try {
-    // 1. ATTEMPT LIVE API CALL with Google Search grounding
-    const out = await callSecureGeminiAPI({ 
-      systemInstruction: { parts: [{ text: systemPrompt }] }, 
-      contents: [{ role: "user", parts: [{ text: userPrompt }] }], 
-    });
-    
-    let html = out?.candidates?.[0]?.content?.parts?.[0]?.text || '';
-    
-    // 2. PROCESS SUCCESSFUL RESPONSE
-    if (html && !html.toLowerCase().includes('error')) {
-        // Apply inline styles to the AI-generated HTML for consistent branding
-        html = html.replace(/<h2/g, `<h2 style="color:${COLORS.ORANGE};font-size:24px;border-bottom:2px solid ${COLORS.SUBTLE};padding-bottom:5px;margin-top:15px;"`);
-        html = html.replace(/<h3/g, `<h3 style="color:${COLORS.NAVY};font-size:20px;margin-top:10px;"`);
-        html = html.replace(/<p/g, `<p style="color:#374151;font-size:16px;"`);
-        html = html.replace(/<ul/g, `<ul style="list-style:disc;margin-left:20px;color:#374151;"`);
-        html = html.replace(/<ol/g, `<ol style="list-style:decimal;margin-left:20px;color:#374151;"`);
-        return html;
-    }
-    
-    // 3. FALLBACK ON FAILURE (Response was empty, mock, or error)
-    console.error("AI Flyer Generation failed. Returning structured error message.");
-    return API_ERROR_HTML(executive, book); // Use the guaranteed error content
-  } catch (e) {
-    // 4. FALLBACK ON EXCEPTION (API call failed - network/key issue)
-    console.error('AI flyer generation failed due to API exception.', e);
-    return API_ERROR_HTML(executive, book); // Use the guaranteed error content
-  }
-}
 
 const getQuestionScore = (query, bookTitle) => {
     const q = query.toLowerCase().trim();
@@ -575,7 +534,7 @@ function BookFlyerStable({
             <div className="p-4 rounded-xl border border-gray-300 shadow-inner text-center" style={{ background: '#F0F5FF' }}>
                 <div className="flex items-center justify-center gap-2" style={{ color: COLORS.PURPLE }}>
                     <Loader className='w-5 h-5 animate-spin'/>
-                    <span className="font-semibold whitespace-nowrap">Flyer being generated...</span>
+                    <span className="font-semibold whitespace-nowrap">Flyer being loaded...</span>
                 </div>
             </div>
         ) : (
@@ -583,7 +542,7 @@ function BookFlyerStable({
                 <div className="p-4 rounded-xl border border-gray-300 shadow-inner" style={{ background: '#FFF7F7' }}>
                     <div className="flex items-center justify-center gap-2 mb-3" style={{ color: COLORS.RED }}>
                         <AlertTriangle className='w-5 h-5'/>
-                        <span className="font-semibold">API Error</span>
+                        <span className="font-semibold">Content Error</span>
                     </div>
                     <div className="max-w-none space-y-4" style={{ color: COLORS.TEXT }} dangerouslySetInnerHTML={{ __html: htmlFlyer }} />
                 </div>
@@ -721,28 +680,32 @@ export default function BusinessReadingsScreen() {
       }, {});
   }, [allBooks, filters, deepDataSignature]); // <-- CRITICAL FIX: ADDED DEEP SIGNATURE HERE
 
-  /* ---------- Flyer generation (AI now drives content) ---------- */
+  /* ---------- Flyer generation (Fast loading from saved data) ---------- */
+  // REPLACEMENT FOR OLD SLOW useEffect
   useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      if (!selectedBook) { setHtmlFlyer(''); setIsFlyerLoading(false); return; }
-      
-      const tierKey = selectedTier || Object.keys(allBooks).find(k => (Array.isArray(allBooks[k]) ? allBooks[k] : []).some(b => b.id === selectedBook.id)) || 'Strategy & Execution';
-      
-      // Start loading
-      setIsFlyerLoading(true);
-      setHtmlFlyer('');
-      
-      const html = await buildAIFlyerHTML({ 
-        book: selectedBook, 
-        tier: tierKey, 
-        executive: isExecutiveBrief, 
-        callSecureGeminiAPI 
-      });
-      if (!cancelled) { setHtmlFlyer(html); setIsFlyerLoading(false); }
-    })();
-    return () => { cancelled = true; };
-  }, [selectedBook, selectedTier, isExecutiveBrief, allBooks, callSecureGeminiAPI]);
+    if (!selectedBook) { 
+      setHtmlFlyer(''); 
+      return; 
+    }
+    
+    // 1. Determine the content key (which is now on the book object)
+    const contentKey = isExecutiveBrief ? 'executiveBriefHTML' : 'fullFlyerHTML';
+    
+    // 2. Retrieve the saved HTML or fall back to the error message
+    // NOTE: If the book object doesn't have the key, it defaults to the error HTML.
+    const newHtml = selectedBook[contentKey] || API_ERROR_HTML(isExecutiveBrief, selectedBook);
+
+    // 3. Set a brief loading state to prevent jarring flicker
+    setIsFlyerLoading(true); 
+
+    const timer = setTimeout(() => {
+        setHtmlFlyer(newHtml);
+        setIsFlyerLoading(false);
+    }, 50); // Minimal delay for smooth state transition
+
+    return () => clearTimeout(timer); 
+  }, [selectedBook, isExecutiveBrief]); // Removed slow dependencies!
+
 
   /* ---------- Reset contextual state when changing book ---------- */
   useEffect(() => {
