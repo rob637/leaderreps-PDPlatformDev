@@ -1,8 +1,8 @@
-// src/components/screens/Dashboard.jsx (Updated for "Rep Tracker" Features)
+// src/components/screens/Dashboard.jsx (Updated for "Rep Tracker" Features & Log Modal)
 import React, { useMemo, useState, useEffect, useCallback } from 'react';
 import { useAppServices } from '../../services/useAppServices.jsx';
-// --- NEW: Firestore Imports for Reflection Logging ---
-import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+// --- NEW: Firestore Imports for Reflection Logging & QUERYING ---
+import { collection, addDoc, serverTimestamp, query, getDocs, orderBy, where } from 'firebase/firestore';
 
 // --- NEW: More Icons for new features ---
 import {
@@ -200,11 +200,87 @@ const EmbeddedDailyReps = ({ commitments, onToggleCommit, isLoading, onCommitMic
 
 
 /* =========================================================
-   Embedded Reflection Form Component (Unchanged)
-   (This is FEATURE 4: "What did I notice?" and FEATURE 8: "I am..." Tracker)
+   NEW: Reflection Log Modal Component
 ========================================================= */
-const EmbeddedReflectionForm = ({ db, userId }) => {
-  const { navigate } = useAppServices();
+const ReflectionLogModal = ({ isOpen, onClose, history, isLoading }) => {
+  if (!isOpen) return null;
+
+  const formatDate = (dateString) => {
+    try {
+      return new Date(dateString + 'T12:00:00Z').toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+      });
+    } catch (e) {
+      return dateString;
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" aria-modal="true" role="dialog">
+      {/* Backdrop */}
+      <div className="fixed inset-0 bg-black/60 backdrop-blur-sm animate-in fade-in" onClick={onClose} />
+      
+      {/* Modal Content */}
+      <div className="relative w-full max-w-2xl bg-white rounded-2xl shadow-2xl z-10 animate-in zoom-in-95 slide-in-from-bottom-4 duration-300">
+        <div className="p-6 border-b border-gray-200 flex justify-between items-center">
+          <h2 className="text-2xl font-extrabold text-[#002E47] flex items-center gap-3">
+            <Archive className="text-[#47A88D]" />
+            Full Reflection Log
+          </h2>
+          <button
+            onClick={onClose}
+            className="p-1 rounded-full text-gray-400 hover:text-gray-800 hover:bg-gray-100 transition-colors"
+            aria-label="Close modal"
+          >
+            <X className="w-6 h-6" />
+          </button>
+        </div>
+
+        <div className="p-6 max-h-[70vh] overflow-y-auto space-y-6">
+          {isLoading && (
+            <div className="flex justify-center items-center py-12">
+              <Loader className="animate-spin text-[#47A88D] h-8 w-8" />
+            </div>
+          )}
+          {!isLoading && history.length === 0 && (
+            <div className="text-center py-12">
+              <p className="text-gray-600 font-semibold">No reflections saved yet.</p>
+              <p className="text-gray-500 text-sm">Complete the form on the dashboard to start your log.</p>
+            </div>
+          )}
+          {!isLoading && history.length > 0 && history.map((entry) => (
+            <div key={entry.id} className="p-4 border border-gray-200 rounded-xl bg-gray-50/50 shadow-sm">
+              <p className="text-sm font-bold text-[#002E47] mb-2 border-b pb-1">
+                {formatDate(entry.date)}
+              </p>
+              <div className="space-y-3">
+                {entry.did && <p className="text-sm text-gray-700"><strong>Did:</strong> {entry.did}</p>}
+                {entry.noticed && <p className="text-sm text-gray-700"><strong>Noticed:</strong> {entry.noticed}</p>}
+                {entry.tryDiff && <p className="text-sm text-gray-700"><strong>Try:</strong> {entry.tryDiff}</p>}
+                {entry.identity && <p className="text-sm text-gray-800 italic font-medium"><strong>Identity:</strong> "I'm the kind of leader who {entry.identity}"</p>}
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div className="p-4 bg-gray-50 border-t border-gray-200 rounded-b-2xl text-right">
+           <Button onClick={onClose} variant="outline" className="text-sm !py-2 !px-4">
+            Close
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+
+/* =========================================================
+   Embedded Reflection Form Component (*** UPDATED ***)
+========================================================= */
+const EmbeddedReflectionForm = ({ db, userId, onOpenLog }) => { // Added onOpenLog prop
+  // const { navigate } = useAppServices(); // No longer needed for navigation
   const [isSaving, setIsSaving] = useState(false);
   const [isSavedConfirmation, setIsSavedConfirmation] = useState(false);
   const [did, setDid] = useState('');
@@ -281,8 +357,10 @@ const EmbeddedReflectionForm = ({ db, userId }) => {
           {isSavedConfirmation && ( <span className='text-xs font-bold text-green-600 flex items-center'><CheckCircle className='w-4 h-4 mr-1'/> Saved</span> )}
         </div>
         <div className="mt-4 flex justify-center">
-          <Button onClick={() => navigate('reflection-log')} variant="outline" className="text-sm !py-2 !px-4" >
-            <Archive className="w-4 h-4 mr-2" /> View Full Log
+          {/* --- UPDATED: Button now opens modal --- */}
+          <Button onClick={onOpenLog} variant="outline" className="text-sm !py-2 !px-4" >
+            <Archive className="w-4 h-4 mr-2" />
+            View Full Log
           </Button>
         </div>
     </Card>
@@ -295,9 +373,6 @@ const EmbeddedReflectionForm = ({ db, userId }) => {
 ========================================================= */
 
 // --- NEW MOCK DATA (This should come from useAppServices) ---
-// Mocking a richer catalog for Feature 1 & 3
-// NOTE: This is mocked here because `useAppServices` doesn't provide this specific structure yet.
-// A real implementation would pull this from `metadata.COMMITMENT_BANK` or similar.
 const mockTargetRepCatalog = [
   {
     id: "r1",
@@ -315,9 +390,9 @@ const mockTargetRepCatalog = [
   }
 ];
 
-// Mocking data for Feature 5
 const mockSocialFeedData = [
   { id: 's3', author: 'Alex T.', text: "Logged my delegation rep. Felt weird but good.", time: "1h ago" },
+  // --- THIS IS THE FIX ---
   { id: 's2', author: 'Samira K.', text: "My 2-min challenge (send a thank-you) turned into a great chat.", time: "4h ago" },
   { id: 's1', author: 'User', text: "Just joined the Arena. Let's go!", time: "1d ago" },
 ];
@@ -325,40 +400,58 @@ const mockSocialFeedData = [
 const DashboardScreen = () => {
   const {
     navigate, user, 
-    pdpData, // From usePDPData hook
-    commitmentData, // From useCommitmentData hook
-    planningData, // From usePlanningData hook
-    LEADERSHIP_TIERS, // From metadata hook
-    updateCommitmentData, // From useCommitmentData hook
-    isLoading: isAppLoading, // Combined loading state
-    db, // Direct from provider
-    userId // Direct from provider
+    pdpData, 
+    commitmentData, 
+    planningData, 
+    LEADERSHIP_TIERS, 
+    updateCommitmentData, 
+    isLoading: isAppLoading, 
+    db, 
+    userId 
   } = useAppServices();
 
   const [isSavingRep, setIsSavingRep] = useState(false);
-  // --- NEW: State for micro-celebration (Feature 4) ---
   const [showCelebration, setShowCelebration] = useState(false);
-  // --- NEW: State for social pod (Feature 5) ---
   const [podPosts, setPodPosts] = useState(mockSocialFeedData);
 
-  // --- Derived Data Calculations (MODIFIED) ---
+  // --- NEW: State for Reflection Log Modal ---
+  const [isLogModalOpen, setIsLogModalOpen] = useState(false);
+  const [reflectionHistory, setReflectionHistory] = useState([]);
+  const [isHistoryLoading, setIsHistoryLoading] = useState(false);
+
+  // --- NEW: Effect to fetch reflection history when modal opens ---
+  useEffect(() => {
+    if (isLogModalOpen && db && userId) {
+      const fetchHistory = async () => {
+        setIsHistoryLoading(true);
+        try {
+          const historyCollectionRef = collection(db, `user_commitments/${userId}/reflection_history`);
+          // Query to get reflections, ordered by timestamp descending
+          const q = query(historyCollectionRef, orderBy("timestamp", "desc"));
+          const querySnapshot = await getDocs(q);
+          const history = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+          setReflectionHistory(history);
+        } catch (error) {
+          console.error("Failed to fetch reflection history:", error);
+          alert("Could not load reflection history.");
+        }
+        setIsHistoryLoading(false);
+      };
+      fetchHistory();
+    }
+  }, [isLogModalOpen, db, userId]); // Re-run if modal opens
+
+  // --- Derived Data Calculations (Unchanged) ---
   const displayedUserName = useMemo(() => user?.name || user?.email?.split('@')[0] || 'Leader', [user]);
   const greeting = useMemo(() => 'Welcome to The Arena,', []);
   const activeCommitments = useMemo(() => commitmentData?.active_commitments || [], [commitmentData]);
   const commitsCompleted = useMemo(() => activeCommitments.filter(c => c.status === 'Committed').length, [activeCommitments]);
   const commitsTotal = activeCommitments.length;
-
-  // --- "Smart" Mocks: Try to read from real data, then fall back ---
-  // FEATURE 4: Streak Data (Tries to read from real commitmentData object)
   const streakCount = useMemo(() => commitmentData?.streak_count || 5, [commitmentData]);
-  // FEATURE 6: Habit Anchor Data (Tries to read from real commitmentData object)
   const habitAnchor = useMemo(() => commitmentData?.habit_anchor || "After my 1:1 with my manager", [commitmentData]);
-  // FEATURE 2: Why It Matters Data (Tries to read from real planningData object)
   const whyStatement = useMemo(() => planningData?.focus_goals?.[0]?.why || "When I empower my team, we all win and I can focus on strategy.", [planningData]);
-  // FEATURE 8: Identity Anchor (Tries to read from real commitmentData object)
   const identityStatement = useMemo(() => commitmentData?.reflection_journal?.split('\n').find(l => l.startsWith('Identity:'))?.substring(9).trim() || 'I am a principled leader.', [commitmentData]);
 
-  // --- MODIFIED: Target Rep Logic (Feature 1 & 3) ---
   const dailyTargetRep = useMemo(() => {
     const pdpRep = activeCommitments.find(c => c.source === 'DevelopmentPlan');
     let baseText = pdpRep?.text;
@@ -374,7 +467,6 @@ const DashboardScreen = () => {
     };
   }, [activeCommitments]);
 
-  // Weakest tier logic uses pdpData, which is supplied by the hook
   const weakestTier = useMemo(() => {
     const scores = pdpData?.assessment?.scores;
     if (!scores || !LEADERSHIP_TIERS) return { id: 'T3', name: 'Getting Started', hex: COLORS.AMBER };
@@ -387,16 +479,15 @@ const DashboardScreen = () => {
   }, [pdpData, LEADERSHIP_TIERS]);
 
 
-  // --- Helper: Trigger Celebration ---
+  // --- Helper: Trigger Celebration (Unchanged) ---
   const triggerCelebration = () => {
     setShowCelebration(true);
     setTimeout(() => {
       setShowCelebration(false);
-    }, 1500); // Show for 1.5 seconds
+    }, 1500); 
   };
 
-  // --- MODIFIED: Handle Toggling Rep Commitment (Feature 4) ---
-  // This now uses the `updateCommitmentData` function from useAppServices
+  // --- Handle Toggling Rep Commitment (Unchanged) ---
   const handleToggleCommitment = useCallback(async (commitId) => {
     if (isSavingRep) return;
     setIsSavingRep(true);
@@ -411,9 +502,7 @@ const DashboardScreen = () => {
     );
 
     try {
-      // This call is now handled by the hook
       await updateCommitmentData({ active_commitments: updatedCommitments });
-      // --- NEW: Trigger celebration on completion ---
       if (newStatus === 'Committed') {
         triggerCelebration();
       }
@@ -424,15 +513,13 @@ const DashboardScreen = () => {
     }
   }, [commitmentData, updateCommitmentData, isSavingRep]);
 
-  // --- NEW: Handle Micro-Rep (Feature 3 & 4) ---
+  // --- Handle Micro-Rep (Unchanged) ---
   const handleCommitMicroRep = () => {
     console.log("Committing micro-rep!");
     triggerCelebration();
-    // In a real app, you might log this as a specific event
-    // or even update a *different* rep
   };
 
-  // --- NEW: Handle Pod Share (Feature 5) ---
+  // --- Handle Pod Share (Unchanged) ---
   const handleShareToPod = (postText) => {
     console.log("Sharing to pod:", postText);
     const newPost = {
@@ -442,13 +529,10 @@ const DashboardScreen = () => {
       time: "Just now"
     };
     setPodPosts([newPost, ...podPosts]);
-    // In a real app, this would write to a Firestore collection
-    // using the `db` and `userId` from `useAppServices`
   };
 
 
   // --- Main Render ---
-  // Uses the combined `isAppLoading` flag from the hook
   if (isAppLoading && !commitmentData) {
       return (
           <div className="min-h-screen flex items-center justify-center bg-gray-100">
@@ -461,14 +545,21 @@ const DashboardScreen = () => {
     <div className={`p-6 space-y-6 bg-[${COLORS.LIGHT_GRAY}] min-h-screen`}>
       {/* FEATURE 4: Celebration Overlay */}
       <CelebrationOverlay show={showCelebration} />
+      
+      {/* NEW: Render Reflection Log Modal */}
+      <ReflectionLogModal 
+        isOpen={isLogModalOpen}
+        onClose={() => setIsLogModalOpen(false)}
+        history={reflectionHistory}
+        isLoading={isHistoryLoading}
+      />
 
-      {/* 1. Header (MODIFIED) */}
+      {/* 1. Header (Unchanged) */}
       <div className={`bg-[${COLORS.OFF_WHITE}] p-6 -mx-6 -mt-6 mb-4 rounded-b-xl shadow-md border-b-4 border-[${COLORS.TEAL}]`}>
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <h1 className={`text-3xl font-extrabold text-[${COLORS.NAVY}] flex items-center gap-3`}>
             <Home size={28} style={{ color: COLORS.TEAL }} /> The Arena
           </h1>
-          {/* FEATURE 4: Streak Tracker */}
           <StreakTracker streakCount={streakCount} />
         </div>
         <p className="text-gray-600 text-base mt-4">
@@ -479,62 +570,49 @@ const DashboardScreen = () => {
       {/* 2. Main Content Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
-        {/* Left Column: Today's Reps & Actions */}
+        {/* Left Column: Today's Reps & Actions (Unchanged) */}
         <div className="lg:col-span-2 space-y-6">
-           
-           {/* FEATURE 1: Clarity of Target Behavior */}
            <Card title="🎯 Today's Strategic Focus" icon={Target} accent='NAVY'>
               <div className='grid md:grid-cols-2 gap-6'>
-                  {/* Target Rep */}
                   <div>
                       <p className='text-sm font-semibold text-gray-700 mb-1 uppercase tracking-wide flex items-center gap-1'><Flag className='w-4 h-4 text-red-500'/> Target Rep:</p>
                       <p className='text-lg font-bold text-[#E04E1B]'>{dailyTargetRep.text}</p>
                   </div>
-                  {/* What Good Looks Like */}
                   <div>
                        <p className='text-sm font-semibold text-gray-700 mb-1 uppercase tracking-wide flex items-center gap-1'><CheckCircle className='w-4 h-4 text-gray-500'/> What Good Looks Like:</p>
                        <p className='text-sm italic text-[#002E47]'>{dailyTargetRep.definition}</p>
                   </div>
               </div>
-               {/* FEATURE 8: Identity Anchor (Moved inside) */}
                <div className="mt-4 pt-4 border-t border-gray-200">
                    <p className='text-sm font-semibold text-gray-700 mb-1 uppercase tracking-wide flex items-center gap-1'><User className='w-4 h-4 text-gray-500'/> Identity Anchor:</p>
                    <p className='text-md italic text-[#002E47]'>"{identityStatement}"</p>
                </div>
           </Card>
 
-          {/* NEW CARDS: Feature 2 & 6 */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* FEATURE 2: Why It Matters */}
             <WhyItMattersCard 
               statement={whyStatement}
               onPersonalize={() => navigate('development-plan')}
             />
-            {/* FEATURE 6: Habit Anchor */}
             <HabitAnchorCard
               anchor={habitAnchor}
-              onEdit={() => navigate('settings-anchors')} // Assumes a new route
+              onEdit={() => navigate('settings-anchors')}
             />
           </div>
 
-          {/* FEATURE 1, 3, 4: Today's Reps */}
           <Card title={`⏳ Today's Reps (${commitsCompleted}/${commitsTotal})`} icon={Clock} accent='TEAL'>
              <EmbeddedDailyReps
                 commitments={activeCommitments}
                 onToggleCommit={handleToggleCommitment}
                 isLoading={isSavingRep || (isAppLoading && !commitmentData)}
-                // Pass micro-rep info
                 microRepText={dailyTargetRep.microRep}
                 onCommitMicroRep={handleCommitMicroRep}
              />
           </Card>
 
-          {/* FEATURE 5: Social Pod */}
           <SocialPodFeed feed={podPosts} onShare={handleShareToPod} />
 
-          {/* Launchpad (MODIFIED) */}
            <div className='grid grid-cols-1 md:grid-cols-3 gap-4'>
-                 {/* Link to Development Plan */}
                 <ThreeDButton
                     onClick={() => navigate('development-plan')}
                     color={COLORS.ORANGE}
@@ -544,7 +622,6 @@ const DashboardScreen = () => {
                     <Briefcase className='w-5 h-5 mb-1'/>
                     <span className='text-base font-extrabold'>My Dev Plan</span>
                 </ThreeDButton>
-                {/* Link to AI Coaching Lab */}
                  <ThreeDButton
                     onClick={() => navigate('coaching-lab')}
                     color={COLORS.PURPLE}
@@ -554,9 +631,8 @@ const DashboardScreen = () => {
                     <Sparkles className='w-5 h-5 mb-1'/>
                     <span className='text-base font-extrabold'>AI Coaching Lab</span>
                 </ThreeDButton>
-                {/* FEATURE 7: Weekly Recap Button */}
                 <ThreeDButton
-                    onClick={() => navigate('weekly-recap')} // Assumes new route
+                    onClick={() => navigate('weekly-recap')} 
                     color={COLORS.BLUE}
                     accentColor={COLORS.NAVY}
                     className="h-20 flex-col px-3 py-2 text-white"
@@ -567,10 +643,13 @@ const DashboardScreen = () => {
             </div>
         </div>
 
-        {/* Right Column: Reflection Form (FEATURE 4 & 8) */}
+        {/* Right Column: Reflection Form (*** UPDATED ***) */}
         <div className="lg:col-span-1 space-y-6">
-             {/* This component is passed the real db and userId from the hook */}
-             <EmbeddedReflectionForm db={db} userId={userId} />
+             <EmbeddedReflectionForm 
+                db={db} 
+                userId={userId} 
+                onOpenLog={() => setIsLogModalOpen(true)} // Pass the function to open the modal
+             />
         </div>
       </div>
 

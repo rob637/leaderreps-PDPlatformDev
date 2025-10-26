@@ -39,6 +39,9 @@ import {
   addDoc,
   collection,
   getDocs,
+  // --- NEW: Import query and orderBy for reflection log ---
+  query,
+  orderBy,
 } from 'firebase/firestore';
 
 /* -----------------------------------------------------------------------------
@@ -282,16 +285,17 @@ import {
   // --- NEW: ICONS FOR COLLAPSIBLE MENU ---
   ChevronLeft,
   ChevronRight,
+  X, // Icon for modal close
 } from 'lucide-react';
 
 /* -----------------------------------------------------------------------------
-   LAZY ROUTES (Unchanged)
+   LAZY ROUTES (*** UPDATED ***)
 ----------------------------------------------------------------------------- */
 const ScreenMap = {
   dashboard: lazy(() => import('./components/screens/Dashboard.jsx')),
   'development-plan': lazy(() => import('./components/screens/DevelopmentPlan.jsx')), 
   'coaching-lab': lazy(() => import('./components/screens/Labs.jsx')),
-  'daily-practice': lazy(() => import('./components/screens/DailyPractice.jsx')),
+  // 'daily-practice': lazy(() => import('./components/screens/DailyPractice.jsx')), // <-- REMOVED
   'planning-hub': lazy(() => import('./components/screens/PlanningHub.jsx')),
   'business-readings': lazy(() => import('./components/screens/BusinessReadings.jsx')),
   'quick-start-accelerator': lazy(() => import('./components/screens/QuickStartAccelerator.jsx')),
@@ -421,8 +425,8 @@ const DataProvider = ({ children, firebaseServices, userId, isAuthReady, navigat
   const hasPendingDailyPractice = useMemo(() => {
     const active = commitment.commitmentData?.active_commitments || [];
     const isPending = active.some((c) => c.status === 'Pending');
-    const reflectionMissing = !commitment.commitmentData?.reflection_journal?.trim();
-    return active.length > 0 && (isPending || reflectionMissing);
+    // --- UPDATED: No longer checking reflection_journal as it's not the primary trigger ---
+    return active.length > 0 && isPending;
   }, [commitment.commitmentData]);
 
   const appServices = useMemo(
@@ -622,7 +626,7 @@ function AuthPanel({ auth, onSuccess }) { /* ... */
   );
 }
 
-// --- **** NAVSIDEBAR: UPDATED FOR COLLAPSIBLE STATE **** ---
+// --- **** NAVSIDEBAR: UPDATED **** ---
 const NavSidebar = ({ currentScreen, setCurrentScreen, user, closeMobileMenu, isAuthRequired, isNavExpanded, setIsNavExpanded }) => {
   const { auth } = useAppServices();
   const [isProfileOpen, setIsProfileOpen] = useState(false);
@@ -645,7 +649,7 @@ const NavSidebar = ({ currentScreen, setCurrentScreen, user, closeMobileMenu, is
   ];
 
   const coachingPillarNav = [
-    { screen: 'daily-practice', label: 'Daily Practice Scorecard', icon: Clock },
+    // { screen: 'daily-practice', label: 'Daily Practice Scorecard', icon: Clock }, // <-- REMOVED
     { screen: 'coaching-lab', label: 'AI Coaching Lab', icon: Mic },
     { screen: 'reflection', label: 'Executive ROI Report', icon: BarChart3 },
   ];
@@ -789,21 +793,20 @@ const NavSidebar = ({ currentScreen, setCurrentScreen, user, closeMobileMenu, is
 const ScreenRouter = ({ currentScreen, navParams, navigate }) => { /* ... */ 
   const Component = ScreenMap[currentScreen] || ScreenMap.dashboard;
 
-  if (currentScreen === 'daily-practice')
-    return <Component key={currentScreen} initialGoal={navParams.initialGoal} initialTier={navParams.initialTier} />;
+  // if (currentScreen === 'daily-practice') // <-- REMOVED
+  //   return <Component key={currentScreen} initialGoal={navParams.initialGoal} initialTier={navParams.initialTier} />;
   if (currentScreen === 'app-settings') return <AppSettingsScreen key={currentScreen} navigate={navigate} />;
 if (currentScreen === 'data-maintenance') return <Component key={currentScreen} navigate={navigate} />;
   if (currentScreen === 'debug-data') return <Component key={currentScreen} navigate={navigate} />;
   return <Component key={currentScreen} />;
 };
 
-// --- **** APPCONTENT: UPDATED **** ---
+// --- **** APPCONTENT: (Unchanged) **** ---
 const AppContent = ({ currentScreen, setCurrentScreen, user, navParams, isMobileOpen, setIsMobileOpen, isAuthRequired, isNavExpanded, setIsNavExpanded }) => {
   const closeMobileMenu = useCallback(() => setIsMobileOpen(false), [setIsMobileOpen]);
   const { navigate } = useAppServices();
 
   return (
-    // --- UPDATED: `relative` and `min-h-screen` added for robustness ---
     <div className="relative min-h-screen flex bg-gray-100 font-sans antialiased">
       <NavSidebar
         currentScreen={currentScreen}
@@ -812,12 +815,9 @@ const AppContent = ({ currentScreen, setCurrentScreen, user, navParams, isMobile
         isMobileOpen={isMobileOpen}
         closeMobileMenu={closeMobileMenu}
         isAuthRequired={isAuthRequired}
-        // --- UPDATED: Pass state to sidebar ---
         isNavExpanded={isNavExpanded}
         setIsNavExpanded={setIsNavExpanded}
       />
-
-      {/* --- UPDATED: Main content area --- */}
       <main className="flex-1">
         <div className="md:hidden sticky top-0 bg-white/95 backdrop-blur-sm shadow-md p-4 flex justify-between items-center z-40">
           <h1 className="text-xl font-bold text-[#002E47]">LeaderReps</h1>
@@ -837,7 +837,6 @@ const AppContent = ({ currentScreen, setCurrentScreen, user, navParams, isMobile
           }
         >
           <ScreenRouter currentScreen={currentScreen} navParams={navParams} navigate={navigate} />
-        {/* --- THIS IS THE FIX --- */}
         </Suspense>
       </main>
     </div>
@@ -845,7 +844,7 @@ const AppContent = ({ currentScreen, setCurrentScreen, user, navParams, isMobile
 };
 
 /* -----------------------------------------------------------------------------
-   ROOT APP (*** UPDATED ***)
+   ROOT APP (Unchanged)
 ----------------------------------------------------------------------------- */
 const App = ({ initialState }) => {
   const [user, setUser] = useState(null);
@@ -856,10 +855,7 @@ const App = ({ initialState }) => {
   const [navParams, setNavParams] = useState(initialState?.params || {});
   const [authRequired, setAuthRequired] = useState(true);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
-  
-  // --- NEW: State for collapsible nav ---
   const [isNavExpanded, setIsNavExpanded] = useState(false); // Default to collapsed
-
   const [initStage, setInitStage] = useState('init');
   const [initError, setInitError] = useState('');
 
@@ -987,7 +983,6 @@ const App = ({ initialState }) => {
           </div>
         }
       >
-        {/* --- UPDATED: Pass nav state to AppContent --- */}
         <AppContent
           currentScreen={currentScreen}
           setCurrentScreen={navigate}
