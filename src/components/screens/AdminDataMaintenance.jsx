@@ -1,306 +1,217 @@
 // src/components/screens/AdminDataMaintenance.jsx
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useMemo, useState } from 'react';
+import { getAuth } from 'firebase/auth';
 import {
   getFirestore,
   doc,
-  getDoc,
-  onSnapshot,
   collection,
+  getDoc,
   getDocs,
-  query,
-  limit,
-} from "firebase/firestore";
-import { getAuth, onAuthStateChanged } from "firebase/auth";
+  onSnapshot,
+} from 'firebase/firestore';
 
-/** Split "a/b/c/d" into ["a","b","c","d"] without empties */
-function splitPath(p) {
-  return (p || "").trim().split("/").filter(Boolean);
-}
+// ---- helpers ---------------------------------------------------------------
+const pathInfo = (p) => {
+  const parts = (p || '').split('/').filter(Boolean);
+  const isDoc = parts.length % 2 === 0;
+  return {
+    parts,
+    segments: parts.length,
+    kind: isDoc ? 'document' : 'collection',
+    tip: isDoc
+      ? 'Looks like a document path. Use "Read Doc" or "Listen Doc". To list the parent collection, remove the last segment.'
+      : 'Looks like a collection path. You can list documents here.',
+  };
+};
 
-/** Firestore rule of thumb: even segments => document path, odd => collection path */
-function classifyPath(p) {
-  const segs = splitPath(p);
-  return { segs, kind: segs.length % 2 === 0 ? "doc" : "coll" };
-}
+function jsonToRows(input, base = '') {
+  const rows = [];
+  const push = (path, value) => {
+    const type =
+      value === null ? 'null' :
+      Array.isArray(value) ? 'array' :
+      typeof value;
+    const preview =
+      type === 'object' || type === 'array'
+        ? JSON.stringify(value).slice(0, 200)
+        : String(value);
+    rows.push({ path, type, preview });
+  };
 
-function JsonBlock({ value }) {
-  return (
-    <pre className="text-xs bg-gray-50 border rounded p-3 overflow-auto max-h-96">
-      {JSON.stringify(value, null, 2)}
-    </pre>
-  );
-}
+  const walk = (val, cur) => {
+    if (Array.isArray(val)) {
+      if (val.length === 0) push(cur || '(root)', val);
+      val.forEach((v, i) => walk(v, cur ? `${cur}[${i}]` : `[${i}]`));
+    } else if (val && typeof val === 'object') {
+      const keys = Object.keys(val);
+      if (keys.length === 0) push(cur || '(root)', val);
+      keys.forEach((k) => walk(val[k], cur ? `${cur}.${k}` : k));
+    } else {
+      push(cur || '(root)', val);
+    }
+  };
 
-function Table({ rows }) {
-  if (!Array.isArray(rows) || rows.length === 0) {
-    return (
-      <div className="text-sm text-gray-500 border rounded p-3 bg-gray-50">
-        (No documents)
-      </div>
-    );
-  }
-  const columns = Object.keys(rows[0] ?? {}).map((k) => k);
-  return (
-    <div className="overflow-auto border rounded">
-      <table className="min-w-full text-sm">
-        <thead className="bg-gray-50">
-          <tr>
-            {columns.map((c) => (
-              <th key={c} className="text-left px-3 py-2 font-medium text-gray-600">
-                {c}
-              </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((r, i) => (
-            <tr key={r.id ?? i} className={i % 2 ? "bg-gray-50/40" : ""}>
-              {columns.map((c) => (
-                <td key={c} className="px-3 py-2 align-top">
-                  {typeof r[c] === "object" ? (
-                    <pre className="text-xs whitespace-pre-wrap">
-                      {JSON.stringify(r[c], null, 0)}
-                    </pre>
-                  ) : (
-                    String(r[c])
-                  )}
-                </td>
-              ))}
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
-  );
+  walk(input, base);
+  return rows;
 }
+// ---------------------------------------------------------------------------
 
 export default function AdminDataMaintenance() {
-  const auth = useMemo(() => getAuth(), []);
-  const db = useMemo(() => getFirestore(), []);
-  const [uid, setUid] = useState(() => auth.currentUser?.uid || "");
-  const [path, setPath] = useState(""); // user-entered path
-  const [status, setStatus] = useState("");
-  const [error, setError] = useState("");
-  const [docSnap, setDocSnap] = useState(null); // { exists, data, readTime }
-  const [collRows, setCollRows] = useState([]); // [{id, ...data}]
-  const [mode, setMode] = useState(""); // "", "doc-read", "doc-live", "coll-list"
-  const liveUnsub = useRef(null);
+  const auth = getAuth();
+  const db = getFirestore();
+  const uid = auth.currentUser?.uid || '<uid>';
 
-  // Track auth changes so preset paths can use the current UID
+  const [path, setPath] = useState(`leadership_plan/${uid}/profile/roadmap`);
+  const [status, setStatus] = useState('');
+  const [result, setResult] = useState(null);
+  const [rows, setRows] = useState([]);
+  const [unsub, setUnsub] = useState(null);
+
+  useEffect(() => () => unsub?.(), [unsub]);
+
   useEffect(() => {
-    const off = onAuthStateChanged(auth, (u) => setUid(u?.uid || ""));
-    return () => off();
-  }, [auth]);
+    if (result && typeof result === 'object') setRows(jsonToRows(result));
+    else setRows([]);
+  }, [result]);
 
-  // Clean up any live listener when mode changes or unmounts
-  useEffect(() => {
-    return () => {
-      if (liveUnsub.current) {
-        liveUnsub.current();
-        liveUnsub.current = null;
-      }
-    };
-  }, []);
+  const presets = useMemo(
+    () => [
+      { label: 'metadata/config (doc)', value: 'metadata/config' },
+      { label: 'metadata/reading_catalog (doc)', value: 'metadata/reading_catalog' },
+      { label: 'leadership_plan/<uid>/profile/roadmap (doc)', value: `leadership_plan/${uid}/profile/roadmap` },
+      { label: 'user_commitments/<uid>/profile/active (doc)', value: `user_commitments/${uid}/profile/active` },
+      { label: 'user_planning/<uid>/profile/drafts (doc)', value: `user_planning/${uid}/profile/drafts` },
+      { label: 'metadata (collection)', value: 'metadata' },
+    ],
+    [uid]
+  );
 
-  function clearOutputs() {
-    setDocSnap(null);
-    setCollRows([]);
-    setError("");
-    setStatus("");
-  }
+  const info = pathInfo(path);
+  const segments = path.split('/').filter(Boolean);
 
-  async function handleRead() {
-    clearOutputs();
-    const { segs, kind } = classifyPath(path);
-    try {
-      if (kind !== "doc") {
-        setError("The current path looks like a collection. Use List or add another segment to point to a document.");
-        return;
-      }
-      setMode("doc-read");
-      setStatus("Reading document...");
-      const ref = doc(db, ...segs);
-      const s = await getDoc(ref);
-      setDocSnap({
-        exists: s.exists(),
-        data: s.exists() ? s.data() : null,
-        readTime: new Date().toISOString(),
-        path,
-      });
-      setStatus("Done.");
-    } catch (e) {
-      setError(String(e?.message || e));
-      setStatus("");
+  const readDoc = async () => {
+    if (info.kind !== 'document') {
+      setStatus('The current path is a collection. Use "List Collection" or switch to a document path.');
+      setResult(null);
+      return;
     }
-  }
+    setStatus('Reading…');
+    const snap = await getDoc(doc(db, ...segments));
+    setStatus(`Path: ${path} · Exists: ${snap.exists()} · Read: ${new Date().toISOString()}`);
+    setResult(snap.exists() ? snap.data() : null);
+  };
 
-  async function handleList(limitCount = 100) {
-    clearOutputs();
-    const { segs, kind } = classifyPath(path);
-    try {
-      if (kind !== "coll") {
-        setError("The current path looks like a document. Remove the last segment to list the collection.");
-        return;
-      }
-      setMode("coll-list");
-      setStatus("Listing collection...");
-      const collRef = collection(db, ...segs);
-      const q = query(collRef, limit(limitCount));
-      const snap = await getDocs(q);
-      const rows = [];
-      snap.forEach((d) => rows.push({ id: d.id, ...d.data() }));
-      setCollRows(rows);
-      setStatus(`Done. ${rows.length} documents.`);
-    } catch (e) {
-      setError(String(e?.message || e));
-      setStatus("");
+  const listenDoc = () => {
+    if (info.kind !== 'document') {
+      setStatus('The current path is a collection. Use "List Collection" or switch to a document path.');
+      setResult(null);
+      return;
     }
-  }
+    unsub?.();
+    const u = onSnapshot(doc(db, ...segments), (s) => {
+      console.log('[ADMIN LIVE]', path, s.exists(), s.data());
+      setStatus(`LIVE: ${path} · Exists: ${s.exists()} · @ ${new Date().toISOString()}`);
+      setResult(s.exists() ? s.data() : null);
+    });
+    setUnsub(() => u);
+  };
 
-  function handleListen() {
-    clearOutputs();
-    const { segs, kind } = classifyPath(path);
-    try {
-      if (kind !== "doc") {
-        setError("Live listen works on a document path. Add/remove a segment so the path points to a single doc.");
-        return;
-      }
-      setMode("doc-live");
-      setStatus("Listening...");
-      const ref = doc(db, ...segs);
-      if (liveUnsub.current) {
-        liveUnsub.current();
-        liveUnsub.current = null;
-      }
-      liveUnsub.current = onSnapshot(
-        ref,
-        (s) => {
-          setDocSnap({
-            exists: s.exists(),
-            data: s.exists() ? s.data() : null,
-            readTime: new Date().toISOString(),
-            path,
-          });
-          setStatus("Live update received.");
-          // also mirror to console for your debugging flow
-          // eslint-disable-next-line no-console
-          console.log("[ADMIN LIVE]", path, s.exists(), s.data());
-        },
-        (err) => {
-          setError(String(err?.message || err));
-          setStatus("");
-        }
-      );
-    } catch (e) {
-      setError(String(e?.message || e));
-      setStatus("");
+  const listCollection = async () => {
+    if (info.kind !== 'collection') {
+      setStatus('The current path looks like a document. Remove the last segment to list the collection.');
+      setResult(null);
+      return;
     }
-  }
-
-  // Helpful presets based on your logs
-  const presets = useMemo(() => {
-    const u = uid || "<UID>";
-    return [
-      { label: "metadata/config (doc)", value: "metadata/config" },
-      { label: "metadata/reading_catalog (doc)", value: "metadata/reading_catalog" },
-      { label: "leadership_plan/<uid>/profile/roadmap (doc)", value: `leadership_plan/${u}/profile/roadmap` },
-      { label: "user_commitments/<uid>/profile/active (doc)", value: `user_commitments/${u}/profile/active` },
-      { label: "user_planning/<uid>/profile/drafts (doc)", value: `user_planning/${u}/profile/drafts` },
-      { label: "metadata (collection)", value: "metadata" },
-      // add more collections if you want to browse
-    ];
-  }, [uid]);
+    setStatus('Listing…');
+    const snap = await getDocs(collection(db, ...segments));
+    const out = {};
+    snap.forEach((d) => (out[d.id] = d.data()));
+    setStatus(`Collection: ${path} · Count: ${snap.size} · Read: ${new Date().toISOString()}`);
+    setResult(out);
+  };
 
   return (
-    <div className="p-4 space-y-6" data-admin-raw>
-      <header className="space-y-1">
-        <h1 className="text-2xl font-bold">Admin · Raw Firestore Viewer</h1>
-        <div className="text-xs text-gray-600">
-          UID: <span className="font-mono">{uid || "(not signed in)"}</span>
+    <div className="p-6 space-y-4">
+      <h1 className="text-2xl font-semibold">Admin · Raw Firestore Viewer</h1>
+      <div className="text-sm text-gray-500">UID: <code>{uid}</code></div>
+
+      <div className="flex flex-wrap gap-2 mt-2">
+        {presets.map((p) => (
+          <button
+            key={p.label}
+            onClick={() => setPath(p.value)}
+            className="px-2 py-1 text-xs rounded border hover:bg-gray-50"
+            title={p.value}
+          >
+            {p.label}
+          </button>
+        ))}
+      </div>
+
+      <div className="space-y-2">
+        <label className="block text-xs font-medium text-gray-600">Firestore Path</label>
+        <input
+          value={path}
+          onChange={(e) => setPath(e.target.value)}
+          className="w-full border rounded px-3 py-2 font-mono text-sm"
+          placeholder="collection/doc/collection/doc"
+        />
+        <div className="text-xs text-gray-500">
+          {info.tip} ({info.kind}; segments: {info.segments})
         </div>
-      </header>
 
-      <section className="space-y-2">
-        <div className="text-sm text-gray-700">Presets</div>
-        <div className="flex flex-wrap gap-2">
-          {presets.map((p) => (
-            <button
-              key={p.label}
-              className="px-2 py-1 text-xs border rounded hover:bg-gray-50"
-              onClick={() => setPath(p.value)}
-              title={p.value}
-            >
-              {p.label}
-            </button>
-          ))}
-        </div>
-      </section>
-
-      <section className="space-y-3">
-        <label className="block text-sm font-medium">
-          Firestore Path
-          <input
-            className="mt-1 w-full border rounded px-3 py-2 font-mono text-sm"
-            placeholder='e.g. metadata/config  or  leadership_plan/<uid>/profile/roadmap'
-            value={path}
-            onChange={(e) => setPath(e.target.value)}
-          />
-        </label>
-
-        <div className="flex items-center gap-2">
-          <button className="px-3 py-1.5 border rounded hover:bg-gray-50" onClick={handleRead}>
+        <div className="flex gap-2">
+          <button className="px-3 py-2 rounded bg-gray-900 text-white text-sm" onClick={readDoc}>
             Read Doc
           </button>
-          <button className="px-3 py-1.5 border rounded hover:bg-gray-50" onClick={handleListen}>
+          <button className="px-3 py-2 rounded bg-indigo-600 text-white text-sm" onClick={listenDoc}>
             Listen Doc (live)
           </button>
-          <button className="px-3 py-1.5 border rounded hover:bg-gray-50" onClick={() => handleList(200)}>
+          <button className="px-3 py-2 rounded bg-gray-200 text-gray-900 text-sm" onClick={listCollection}>
             List Collection
           </button>
-
-          <span className="text-xs text-gray-500 ml-2">
-            {(() => {
-              const { kind } = classifyPath(path);
-              return path ? (kind === "doc" ? "Looks like a document path" : "Looks like a collection path") : "";
-            })()}
-          </span>
         </div>
 
-        {!!status && <div className="text-xs text-blue-700">{status}</div>}
-        {!!error && <div className="text-xs text-red-600">{error}</div>}
-      </section>
+        <div className="text-xs text-gray-500">Status: {status || '—'}</div>
+      </div>
 
-      {/* Results */}
-      {mode.startsWith("doc") && (
-        <section className="space-y-2">
-          <div className="text-sm font-semibold">Document Result</div>
-          {!docSnap ? (
-            <div className="text-sm text-gray-500">(No document loaded yet)</div>
-          ) : (
-            <div className="space-y-2">
-              <div className="text-xs text-gray-600">
-                Path: <span className="font-mono">{docSnap.path}</span> · Exists:{" "}
-                <span className="font-mono">{String(docSnap.exists)}</span> · Read:{" "}
-                <span className="font-mono">{docSnap.readTime}</span>
-              </div>
-              <JsonBlock value={docSnap.data} />
+      <div className="mt-4">
+        <div className="text-sm font-medium mb-1">Document Result</div>
+        <div className="text-xs text-gray-500 mb-2">
+          {result ? 'Table view (flattened) and raw JSON below.' : '(No document loaded yet)'}
+        </div>
+
+        {result ? (
+          <>
+            <div className="overflow-auto rounded border">
+              <table className="min-w-full text-sm">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="text-left px-3 py-2 font-medium border-b w-1/2">Path</th>
+                    <th className="text-left px-3 py-2 font-medium border-b">Type</th>
+                    <th className="text-left px-3 py-2 font-medium border-b">Preview</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {rows.map((r, i) => (
+                    <tr key={i} className="odd:bg-white even:bg-gray-50">
+                      <td className="px-3 py-2 font-mono">{r.path}</td>
+                      <td className="px-3 py-2">{r.type}</td>
+                      <td className="px-3 py-2 font-mono">{r.preview}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
-          )}
-        </section>
-      )}
 
-      {mode === "coll-list" && (
-        <section className="space-y-2">
-          <div className="text-sm font-semibold">Collection Result ({collRows.length} docs)</div>
-          <Table rows={collRows.map((d) => ({ id: d.id, ...d }))} />
-          <div className="text-sm font-semibold mt-4">Raw JSON</div>
-          <JsonBlock value={collRows} />
-        </section>
-      )}
-
-      <footer className="text-xs text-gray-500 pt-4 border-t">
-        Tip: You can keep a live listener open on a document and, in another tab/console, write to that path to verify updates appear instantly.
-      </footer>
+            <pre className="mt-4 p-3 bg-gray-50 rounded border text-xs overflow-auto">
+{JSON.stringify(result, null, 2)}
+            </pre>
+          </>
+        ) : (
+          <div className="text-sm text-gray-500">Enter a path and click one of the actions above.</div>
+        )}
+      </div>
     </div>
   );
 }
