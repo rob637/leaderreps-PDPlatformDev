@@ -855,9 +855,30 @@ const App = ({ initialState }) => {
     };
     try { fb.app = getApp(); } catch {}
 
+    // NEW: add the alias that the console attempts used
+    fb.checkUserDocs = async () => {
+      const uid = auth.currentUser?.uid;
+      if (!uid) throw new Error('No currentUser; sign in first.');
+      await ensureUserDocs(db, uid);
+      return fb.testReads();
+    };
+
+    // Attach helpers to window
     window.__fb = fb;
-    window.__fbExample = `await __fbReady(); const { db, auth, doc, getDoc } = __fb; const uid = auth.currentUser.uid; const r = await getDoc(doc(db,'leadership_plan', uid,'profile','roadmap')); console.log('roadmap exists?', r.exists(), r.data());`;
-    console.log('[DEBUG] window.__fb attached. Try: await __fbReady(); await __fb.testReads();');
+    // Common alias people reach for in the console
+    window.fb = fb; // <— alias to match your previous calls
+
+    // Convenience aliases for quick one-liners the user tried earlier
+    window.getAuth = getAuth;
+    window.getFirestore = getFirestore;
+    window.doc = doc; // careful: use via __fb.doc recommended
+    window.getDoc = getDoc;
+
+    // Pair with the waiter defined above
+    window.fbReady = window.__fbReady;
+
+    window.__fbExample = `await fbReady(); const { db, auth, doc, getDoc } = fb; const uid = auth.currentUser.uid; const r = await getDoc(doc(db,'leadership_plan', uid,'profile','roadmap')); console.log('roadmap exists?', r.exists(), r.data());`;
+    console.log('[DEBUG] window.__fb + window.fb attached. Try: await fbReady(); await fb.checkUserDocs();');
   }, [firebaseServices.db, firebaseServices.auth]);
 
   // CRITICAL FIX: keep cleanup simple; session persistence managed by Firebase Auth settings
