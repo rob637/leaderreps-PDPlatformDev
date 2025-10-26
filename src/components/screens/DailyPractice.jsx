@@ -1,8 +1,9 @@
 // src/components/screens/DailyPractice.jsx - NEW: 1-Minute Reflection Rep
 
-import React, { useState, useEffect, useCallback, useMemo } from 'react'; // <-- FIX: Added useMemo
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useAppServices } from '../../services/useAppServices.jsx';
-import { ArrowLeft, CheckCircle, Loader, MessageSquare, Save, Target, User, Zap } from 'lucide-react';
+// --- UPDATED: Added Archive icon ---
+import { ArrowLeft, CheckCircle, Loader, MessageSquare, Save, Target, User, Zap, Archive } from 'lucide-react';
 
 /* =========================================================
    COLORS & UI COMPONENTS (Simplified)
@@ -110,7 +111,15 @@ export default function DailyPracticeScreen() {
         // weekly_review_notes: commitmentData?.weekly_review_notes || ''
       };
       await updateCommitmentData(dataToSave);
+      
+      // --- UPDATED: Show confirmation AND clear fields ---
       setIsSavedConfirmation(true);
+      setDid('');
+      setNoticed('');
+      setTryDiff('');
+      setIdentity('');
+      // --- END UPDATE ---
+
       setTimeout(() => setIsSavedConfirmation(false), 3000); // Show confirmation briefly
       console.log("Daily Reflection Saved.");
     } catch (e) {
@@ -228,6 +237,18 @@ export default function DailyPracticeScreen() {
         <p className="text-sm text-gray-500 mt-6 text-center italic">
             <strong>Tip:</strong> Complete this reflection rep immediately after your last task or meeting of the day.
         </p>
+
+      {/* --- NEW: View Log Button --- */}
+      <div className="mt-8 pt-8 border-t border-gray-200 flex justify-center">
+        <Button
+          onClick={() => navigate('reflection-log')} // Assumes 'reflection-log' is the new route
+          variant="outline"
+          className="text-md" 
+        >
+          <Archive className="w-5 h-5 mr-2" />
+          View Reflection Log
+        </Button>
+      </div>
 
     </div>
   );

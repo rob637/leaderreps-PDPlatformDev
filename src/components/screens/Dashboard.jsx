@@ -1,91 +1,18 @@
-// src/components/screens/Dashboard.jsx 
+// src/components/screens/Dashboard.jsx (NEW SIMPLIFIED VERSION)
 import React, { useMemo, useState, useEffect, useCallback } from 'react';
-// CRITICAL FIX: Use the actual service hook from the expected path
-import { useAppServices } from '../../services/useAppServices.jsx'; 
+import { useAppServices } from '../../services/useAppServices.jsx';
 
-// Icons
+// Icons (Ensure all used icons are imported)
 import {
-  Clock as ClockIcon,
-  TrendingUp,
-  BookOpen,
-  Mic,
-  Zap,
-  AlertTriangle,
-  Home,
-  CornerRightUp,
-  BarChart3,
-  Target,
-  Briefcase,
-  Star,
-  Loader,
-  Trello,
-  CalendarClock,
-  LayoutDashboard,
-  TrendingDown,
-  MessageSquare,
-  User,
-  Activity,
-  CheckCircle,
-  Users,
-  Lightbulb, 
-  Link as CommunityIcon, 
-  Archive, 
-  ShieldCheck, 
-  Map,
-  Film, 
-  Dumbbell,
-  ChevronsRight,
-  Send,
-  Flag,
-  CornerDownRight,
-  Sparkles
+  Home, Zap, AlertTriangle, Target, Briefcase, Loader, Lightbulb, Sparkles, CheckCircle, Clock, Save, CornerDownRight, Flag, User, Activity, BarChart3, Check, X
 } from 'lucide-react';
 
 /* =========================================================
-   HIGH-CONTRAST PALETTE (Centralized for Consistency)
+   PALETTE & UI COMPONENTS (Using existing definitions)
 ========================================================= */
-const COLORS = {
-  NAVY: '#002E47', 
-  TEAL: '#47A88D', 
-  BLUE: '#2563EB',
-  ORANGE: '#E04E1B', 
-  GREEN: '#10B981',
-  AMBER: '#F5A800',
-  RED: '#E04E1B',
-  LIGHT_GRAY: '#FCFCFA',
-  OFF_WHITE: '#FFFFFF',
-  SUBTLE: '#E5E7EB',
-  TEXT: '#002E47',
-  MUTED: '#4B5355',
-  PURPLE: '#7C3AED',
-};
+const COLORS = { NAVY: '#002E47', TEAL: '#47A88D', BLUE: '#2563EB', ORANGE: '#E04E1B', GREEN: '#10B981', AMBER: '#F5A800', RED: '#E04E1B', LIGHT_GRAY: '#FCFCFA', OFF_WHITE: '#FFFFFF', SUBTLE: '#E5E7EB', TEXT: '#002E47', MUTED: '#4B5355', PURPLE: '#7C3AED' };
 
-// Streak calculation utility (Now self-contained, as original was a dependency of mock)
-function calculateStreak(history) {
-    let streak = 0;
-    const validHistory = Array.isArray(history) ? history : [];
-    const sortedHistory = [...validHistory].sort((a, b) => new Date(b.date) - new Date(a.date));
-    let yesterday = new Date();
-    yesterday.setDate(yesterday.getDate() - 1); 
-    for (let i = 0; i < 7; i++) { 
-      const checkDate = new Date(yesterday);
-      checkDate.setDate(yesterday.getDate() - i);
-      const dateString = checkDate.toISOString().split('T')[0];
-      const historyEntry = sortedHistory.find(h => h.date === dateString);
-      if (historyEntry) {
-        const scoreParts = historyEntry.score.split('/');
-        if (scoreParts.length === 2) {
-          const [committed, total] = scoreParts.map(Number);
-          if (committed === total && total > 0) streak++;
-          else break;
-        }
-      } else break;
-    }
-    return streak;
-}
-
-// --- UI Components (Standardized and Referenced Below) ---
-
+// Button, ThreeDButton, Card components (using definitions from your previous Dashboard.jsx)
 const Button = ({ children, onClick, disabled = false, variant = 'primary', className = '', ...rest }) => {
   let baseStyle = "px-6 py-3 rounded-xl font-semibold transition-all shadow-xl focus:outline-none focus:ring-4 text-white flex items-center justify-center";
   if (variant === 'primary') { baseStyle += ` bg-[${COLORS.TEAL}] hover:bg-[#349881] focus:ring-[${COLORS.TEAL}]/50`; }
@@ -93,614 +20,273 @@ const Button = ({ children, onClick, disabled = false, variant = 'primary', clas
   else if (variant === 'outline') { baseStyle = `px-6 py-3 rounded-xl font-semibold transition-all shadow-md border-2 border-[${COLORS.TEAL}] text-[${COLORS.TEAL}] hover:bg-[#47A88D]/10 focus:ring-4 focus:ring-[${COLORS.TEAL}]/50 bg-[${COLORS.LIGHT_GRAY}] flex items-center justify-center`; }
   else if (variant === 'nav-back') { baseStyle = `px-4 py-2 rounded-lg font-medium transition-all shadow-sm border-2 border-gray-300 text-gray-700 hover:bg-gray-100 flex items-center justify-center`; }
   if (disabled) { baseStyle = "px-6 py-3 rounded-xl font-semibold bg-gray-300 text-gray-500 cursor-not-allowed shadow-inner transition-none flex items-center justify-center"; }
-  return (
-    <button {...rest} onClick={onClick} disabled={disabled} className={`${baseStyle} ${className}`}>
-      {children}
-    </button>
-  );
+  return ( <button {...rest} onClick={onClick} disabled={disabled} className={`${baseStyle} ${className}`}>{children}</button> );
+};
+const ThreeDButton = ({ children, onClick, color = COLORS.TEAL, accentColor = COLORS.NAVY, className = '', ...rest }) => { /* ... same as before ... */
+  const buttonStyle = { background: color, boxShadow: `0 4px 0px 0px ${accentColor}, 0 6px 12px rgba(0,0,0,0.2)`, transition: 'all 0.1s ease-out', transform: 'translateY(0px)' };
+  return ( <button {...rest} onClick={onClick} type="button" className={`${className} flex items-center justify-center p-3 rounded-xl font-extrabold text-white cursor-pointer transition-all duration-100`} style={buttonStyle}>{children}</button> );
+};
+const Card = ({ children, title, icon: Icon, className = '', onClick, accent = 'NAVY' }) => { /* ... same as before ... */
+  const interactive = !!onClick; const Tag = interactive ? 'button' : 'div'; const accentColor = COLORS[accent] || COLORS.NAVY; const handleKeyDown = (e) => { if (!interactive) return; if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onClick?.(); } };
+  return ( <Tag {...(interactive ? { type: 'button' } : {})} role={interactive ? 'button' : undefined} tabIndex={interactive ? 0 : undefined} onKeyDown={handleKeyDown} className={`relative p-6 rounded-2xl border-2 shadow-2xl hover:shadow-xl transition-all duration-300 text-left ${className}`} style={{ background: 'linear-gradient(180deg,#FFFFFF, #FCFCFA)', borderColor: COLORS.SUBTLE, color: COLORS.TEXT }} onClick={onClick}> <span style={{ position:'absolute', top:0, left:0, right:0, height:6, background: accentColor, borderTopLeftRadius:14, borderTopRightRadius:14 }} /> {Icon && ( <div className="w-10 h-10 rounded-lg flex items-center justify-center border mb-3" style={{ borderColor: COLORS.SUBTLE, background: COLORS.LIGHT_GRAY }}> <Icon className="w-5 h-5" style={{ color: COLORS.TEAL }} /> </div> )} {title && <h2 className="text-xl font-extrabold mb-2" style={{ color: COLORS.NAVY }}>{title}</h2>} {children} </Tag> );
 };
 
-const ThreeDButton = ({ children, onClick, color = COLORS.TEAL, accentColor = COLORS.NAVY, className = '', ...rest }) => {
-  const defaultColor = color;
-  const defaultAccent = accentColor; 
-  
-  const buttonStyle = {
-    background: defaultColor, 
-    boxShadow: `0 4px 0px 0px ${defaultAccent}, 0 6px 12px rgba(0,0,0,0.2)`,
-    transition: 'all 0.1s ease-out',
-    transform: 'translateY(0px)',
-  };
-
-  return (
-    <button
-      {...rest}
-      onClick={onClick}
-      type="button"
-      className={`${className} flex items-center justify-center p-3 rounded-xl font-extrabold text-white cursor-pointer transition-all duration-100`}
-      style={buttonStyle}
-    >
-      {children}
-    </button>
-  );
-};
-
-
-const Card = ({ children, title, icon: Icon, className = '', onClick, accent = 'NAVY' }) => {
-  const interactive = !!onClick;
-  const Tag = interactive ? 'button' : 'div';
-  const accentColor = COLORS[accent] || COLORS.NAVY;
-  const handleKeyDown = (e) => {
-    if (!interactive) return;
-    if (e.key === 'Enter' || e.key === ' ') {
-      e.preventDefault();
-      onClick?.();
-    }
-  };
-  return (
-    <Tag
-      {...(interactive ? { type: 'button' } : {})}
-      role={interactive ? 'button' : undefined}
-      tabIndex={interactive ? 0 : undefined}
-      onKeyDown={handleKeyDown}
-      className={`relative p-6 rounded-2xl border-2 shadow-2xl hover:shadow-xl transition-all duration-300 text-left ${className}`}
-      style={{ background: 'linear-gradient(180deg,#FFFFFF, #FCFCFA)', borderColor: COLORS.SUBTLE, color: COLORS.TEXT }}
-      onClick={onClick}
-    >
-      <span style={{ position:'absolute', top:0, left:0, right:0, height:6, background: accentColor, borderTopLeftRadius:14, borderTopRightRadius:14 }} />
-
-      {Icon && (
-        <div className="w-10 h-10 rounded-lg flex items-center justify-center border mb-3" style={{ borderColor: COLORS.SUBTLE, background: COLORS.LIGHT_GRAY }}>
-          <Icon className="w-5 h-5" style={{ color: COLORS.TEAL }} />
-        </div>
-      )}
-      {title && <h2 className="text-xl font-extrabold mb-2" style={{ color: COLORS.NAVY }}>{title}</h2>}
-      {children}
-    </Tag>
-  );
-};
-
-const StatCard = ({ icon: Icon, label, value, onClick, trend = 0, colorHex, size = 'full', ...rest }) => {
-  const TrendIcon = trend > 0 ? TrendingUp : TrendingDown;
-  const showTrend = trend !== 0; 
-  const trendColor = trend > 0 ? COLORS.TEAL : trend < 0 ? COLORS.ORANGE : COLORS.MUTED;
-  
-  // Map label to a strong accent color
-  let accent = 'NAVY';
-  if (label.includes("Streak")) { accent = 'GREEN'; }
-  if (label.includes("Total Reps Completed")) { accent = 'TEAL'; }
-  if (label.includes("Daily Reps Completed Today")) { accent = 'ORANGE'; }
-  if (label.includes("Roadmap Months Remaining")) { accent = 'NAVY'; }
-  if (label.includes("Total Coaching Labs")) { accent = 'PURPLE'; }
-  if (label.includes("Daily Labs Completed Today")) { accent = 'BLUE'; }
-  if (label.includes("Weakest Tier Focus")) { accent = 'AMBER'; }
-  if (label.includes("Longest-Held OKR")) { accent = 'BLUE'; }
-  if (label.includes("Today's Target Rep")) { accent = 'RED'; } 
-
-  
-  // Set width based on size prop
-  let widthClass = 'w-full';
-  if (size === 'half') widthClass = 'md:w-1/2';
-  if (size === 'third') widthClass = 'md:w-1/3';
-
-  return (
-    <Card 
-      {...rest} 
-      icon={Icon} 
-      title={value}
-      onClick={onClick} 
-      className={`${widthClass}`}
-      accent={accent}
-    >
-      <div className="flex justify-between items-center -mt-1">
-        <div className="flex-1">
-          <div className="text-sm font-medium text-gray-500">{label}</div>
-        </div>
-        {showTrend && (
-            <div className={`text-sm font-semibold flex items-center gap-1`} style={{ color: trendColor }}>
-                <span className={`p-1 rounded-full`} style={{ background: trend > 0 ? COLORS.TEAL + '1A' : COLORS.ORANGE + '1A' }}>
-                <span className='block leading-none'><TrendIcon size={14} /></span>
-                </span>
-                <span className='font-bold'>{Math.abs(trend)}{label.includes("Reps") ? '%' : ''}</span>
-            </div>
-        )}
-      </div>
-      <CornerRightUp className="absolute top-8 right-8 text-gray-400" size={20} />
-    </Card>
-  );
-};
-
-
-function extractGeminiText(resp) {
-  if (!resp) return '';
-  if (typeof resp === 'string') return String(resp);
-  if (resp.text) return String(resp.text);
-  const c = resp.candidates?.[0];
-  const parts = c?.content?.parts;
-  if (Array.isArray(parts)) {
-    return parts.map(p => p?.text).filter(Boolean).join('\n\n');
-  }
-  return '';
-}
-
-// NOTE: LOCAL_NUDGES HAS BEEN REMOVED. THE AI TIP MUST BE FETCHED OR USE A SIMPLE FALLBACK.
+/* =========================================================
+   AI NUDGE LOGIC (Using existing logic)
+========================================================= */
+// (extractGeminiText, mdToHtmlFunc, TIP_CACHE, SIMPLE_FALLBACK_TIP remain the same)
+function extractGeminiText(resp) { /* ... same as before ... */ if (!resp) return ''; if (typeof resp === 'string') return String(resp); if (resp.text) return String(resp.text); const c = resp.candidates?.[0]; const parts = c?.content?.parts; if (Array.isArray(parts)) { return parts.map(p => p?.text).filter(Boolean).join('\n\n'); } return ''; }
+const mdToHtmlFunc = async (md = '') => { /* ... same as before ... */ let html = md; html = html.replace(/\*\*(.*)\*\*/gim, '<strong>$1</strong>'); html = html.replace(/\> (.*)/gim, '<blockquote class="text-sm border-l-4 border-gray-400 pl-3 italic text-gray-700">$1</blockquote>'); html = html.split('\n').map(line => line.trim()).filter(line => line.length > 0).map(line => { if (!line.startsWith('<')) return `<p class="text-sm text-gray-700">${line}</p>`; return line; }).join(''); return html; };
+const TIP_CACHE = { content: null, timestamp: 0, TTL: 4 * 60 * 60 * 1000, lastAITip: null };
 const SIMPLE_FALLBACK_TIP = 'Focus today on deep listening; practice paraphrasing your colleague\'s needs before offering solutions.';
 
-// Global variable to cache the tip content and the last fetch time
-const TIP_CACHE = {
-  content: null,
-  timestamp: 0,
-  TTL: 4 * 60 * 60 * 1000, // TTL to 4 hours
-  lastAITip: null,
-};
-const mdToHtmlFunc = async (md) => {
-  let html = md;
-  html = html.replace(/\*\*(.*)\*\*/gim, '<strong>$1</strong>');
-  html = html.replace(/\> (.*)/gim, '<blockquote class="text-sm border-l-4 border-gray-400 pl-3 italic text-gray-700">$1</blockquote>');
-  html = html.split('\n').map(line => line.trim()).filter(line => line.length > 0).map(line => {
-    if (!line.startsWith('<')) return `<p class="text-sm text-gray-700">${line}</p>`;
-    return line;
-  }).join('');
-  return html;
-};
+/* =========================================================
+   NEW: Embedded Daily Reps Component
+========================================================= */
+const EmbeddedDailyReps = ({ commitments, onToggleCommit, isLoading }) => {
+  const { navigate } = useAppServices();
 
-/* ---------------------------------------
-   Dashboard (default export)
-----------------------------------------*/
-const DashboardScreen = () => {
-  const {
-    navigate, 
-    user,
-    pdpData: svcPdpData,
-    planningData: svcPlanningData,
-    commitmentData: svcCommitmentData,
-    callSecureGeminiAPI,
-    hasGeminiKey,
-    LEADERSHIP_TIERS: svcLEADERSHIP_TIERS, // Loaded from service context now
-    MOCK_ACTIVITY_DATA, // Loaded from service context now
-    TARGET_REP_CATALOG, // NEW: Loaded from service context now
-  } = useAppServices();
+  if (isLoading) {
+    return <div className="p-4 text-center text-gray-500">Loading reps...</div>;
+  }
 
-  // CRITICAL FIX: Removed local mock data fallback. Data must come from the service.
-  const pdpData = svcPdpData; 
-  const commitmentData = svcCommitmentData;
-  const planningData = svcPlanningData; 
-  const TIER_MAP = svcLEADERSHIP_TIERS; 
-  // NOTE: If svcPdpData, etc., are null during the first render, components must handle it gracefully.
-
-
-  const displayedUserName = useMemo(() => {
-    if (user?.name) return user.name;
-    if (user?.email) {
-      const emailName = user.email.split('@')[0];
-      return emailName.charAt(0).toUpperCase() + emailName.slice(1);
-    }
-    return 'Leader';
-  }, [user?.name, user?.email]);
-  
-  const greeting = useMemo(() => (user?.firstLogin ? 'Welcome to The Arena,' : 'Welcome to The Arena,'), [user?.firstLogin]);
-
-  // CRITICAL FIX 1: Fix the self-referential bug by calling 'navigate' instead of 'safeNavigate'
-  const safeNavigate = useCallback((screen, params) => {
-    if (typeof navigate !== 'function') {
-      console.error('CRITICAL ERROR: navigate() is not available from useAppServices.');
-      return;
-    }
-    console.log('[Dashboard] NAVIGATION EXECUTED ->', screen, params || {});
-    navigate(screen, params); // <--- CORRECTED: Call the original navigate function
-  }, [navigate]);
-  
-  const goalsCount = useMemo(() => pdpData?.currentMonth || 0, [pdpData]);
-  const okrs = useMemo(() => planningData?.okrs || [], [planningData]);
-  const commitsTotal = useMemo(() => commitmentData?.active_commitments?.length || 0, [commitmentData]);
-  const commitsCompleted = useMemo(() => commitmentData?.active_commitments?.filter(c => c.status === 'Committed').length || 0, [commitmentData]);
-  const commitsDue = commitsTotal - commitsCompleted; 
-  
-  // --- METRIC CALCULATIONS ---
-  const longestHeldOKR = useMemo(() => {
-    const longest = okrs.reduce((max, okr) => (okr.daysHeld > max.daysHeld ? okr : max), { daysHeld: 0, objective: 'N/A' });
-    return { days: longest.daysHeld, objective: longest.objective };
-  }, [okrs]);
-  
-  // CRITICAL FIX: NEW Target Rep logic (Selects the first item from the new catalog)
-  const dailyTargetRep = useMemo(() => {
-      const catalog = TARGET_REP_CATALOG || [];
-      // Select the first rep in the catalog array (for simplicity)
-      return catalog[0]?.text || MOCK_ACTIVITY_DATA?.daily_target_rep || 'Define your top priority rep.';
-  }, [TARGET_REP_CATALOG, MOCK_ACTIVITY_DATA]);
-  
-  const dailyChallengeRep = useMemo(() => MOCK_ACTIVITY_DATA?.daily_challenge_rep || 'Grab a quick win.', [MOCK_ACTIVITY_DATA]);
-  const identityStatement = useMemo(() => MOCK_ACTIVITY_DATA?.identity_statement || 'I am a principled leader.', [MOCK_ACTIVITY_DATA]);
-  const totalRepsCompleted = useMemo(() => MOCK_ACTIVITY_DATA?.total_reps_completed || 0, [MOCK_ACTIVITY_DATA]);
-  const todayRepsCompleted = useMemo(() => commitsCompleted, [commitsCompleted]); 
-  const totalCoachingLabs = useMemo(() => MOCK_ACTIVITY_DATA?.total_coaching_labs || 0, [MOCK_ACTIVITY_DATA]);
-  const todayCoachingLabs = useMemo(() => MOCK_ACTIVITY_DATA?.today_coaching_labs || 0, [MOCK_ACTIVITY_DATA]);
-
-
-  const perfectStreak = useMemo(() => calculateStreak(commitmentData?.history || []), [commitmentData?.history]);
-  const dailyPercent = commitsTotal > 0 ? Math.round((commitsCompleted / commitsTotal) * 100) : 0;
-  const monthlyPercent = goalsCount > 0 ? Math.round(((goalsCount - 1) % 4) * 25 + (commitsCompleted / commitsTotal || 0) * 25) : 0; 
-  const careerPercent = Math.round((goalsCount / 24) * 100);
-
-  // *** UPDATED ***
-  // Use the new plan structure from pdpData to find the weakest tier.
-  // This logic assumes `pdpData.assessment.scores` exists after the assessment.
-  const weakestTier = useMemo(() => {
-    const scores = pdpData?.assessment?.scores; // Using the new structure
-    if (!scores || !TIER_MAP) return { id: 'T3', name: 'Getting Started', rating: 5, color: 'bg-gray-100 text-gray-700', hex: COLORS.AMBER, icon: AlertTriangle };
-    
-    // Find the dimension with the lowest score
-    const sortedDimensions = Object.values(scores).sort((a, b) => a.score - b.score);
-    const weakest = sortedDimensions[0];
-    if (!weakest) return { id: 'T3', name: 'Getting Started', rating: 5, color: 'bg-gray-100 text-gray-700', hex: COLORS.AMBER, icon: AlertTriangle };
-
-    // Find a matching TIER_MAP entry (this mapping is a bit loose, but follows the spirit)
-    const tierKey = Object.keys(TIER_MAP).find(key => TIER_MAP[key].name.includes(weakest.name.split(' ')[0]));
-    const meta = TIER_MAP[tierKey || 'T1'];
-    
-    return {
-      id: weakest.name,
-      name: weakest.name,
-      rating: weakest.score,
-      color: meta?.color || 'bg-red-100 text-red-700',
-      hex: meta?.hex || COLORS.ORANGE,
-      icon: AlertTriangle,
-    };
-  }, [pdpData, TIER_MAP, COLORS.AMBER, COLORS.ORANGE]);
-  
-  const tierMasteryProjection = useMemo(() => {
-    const dailySuccessRate = 68; 
-    return Math.round(180 - dailySuccessRate * 1.5);
-  }, []);
-
-  const [tipLoading, setTipLoading] = useState(false);
-  const [tipContent, setTipContent] = useState(SIMPLE_FALLBACK_TIP); // Uses simple fallback now
-  const [tipHtml, setTipHtml] = useState('');
-  
-useEffect(() => {
-  (async () => {
-    try {
-      if (!tipHtml && tipContent) {
-        setTipHtml(await mdToHtmlFunc(tipContent));
-        TIP_CACHE.lastAITip = tipContent;
-      }
-    } catch {}
-  })();
-// eslint-disable-next-line react-hooks/exhaustive-deps
-}, [tipContent]);
-
-
-  const getInitialAITip = useCallback(async () => {
-    if (!hasGeminiKey() || tipContent !== SIMPLE_FALLBACK_TIP) return;
-    
-    setTipLoading(true);
-    try {
-      const weakestSkill = weakestTier?.name || 'General Leadership';
-      const prompt = `Give a concise, actionable leadership practice for the day (3 sentences max). Focus the tip explicitly on improving the skill: ${weakestSkill}. Tone: encouraging, strategic, direct.`;
-      const payload = { contents: [{ parts: [{ text: prompt }] }] };
-      const resp = await callSecureGeminiAPI(payload);
-      const text = extractGeminiText(resp) || SIMPLE_FALLBACK_TIP;
-      TIP_CACHE.lastAITip = text; 
-      setTipContent(text);
-      setTipHtml(await mdToHtmlFunc(text));
-    } catch (e) {
-      console.error('AI tip fetch error:', e);
-      const fallbackText = SIMPLE_FALLBACK_TIP;
-      TIP_CACHE.lastAITip = fallbackText;
-      setTipContent(fallbackText);
-      setTipHtml(await mdToHtmlFunc(`**Error**: AI connection failed. Using local tip. ${fallbackText}`));
-    } finally {
-      setTipLoading(false);
-    }
-  }, [weakestTier?.name, callSecureGeminiAPI, hasGeminiKey, tipContent]);
-
-  const nextNudge = useCallback(async () => {
-    let nextTip = '';
-    if (tipLoading) return;
-    
-    // NOTE: Since LOCAL_NUDGES was removed, we only rely on the last AI tip as a base
-    const availableNudges = [TIP_CACHE.lastAITip || SIMPLE_FALLBACK_TIP]; 
-    
-    let attempts = 0;
-    do {
-      const newIndex = Math.floor(Math.random() * availableNudges.length);
-      nextTip = availableNudges[newIndex];
-      attempts++;
-    } while (nextTip === tipContent && attempts < 5); 
-    
-    // Since there is only one non-AI tip now, we fall back to the initial fetcher to get a new one
-    if (nextTip === tipContent && !hasGeminiKey()) {
-        nextTip = SIMPLE_FALLBACK_TIP; // Fallback loop fails without more hardcoded options
-    } else if (nextTip === tipContent && hasGeminiKey()) {
-        getInitialAITip(); // Rerun the AI fetcher for a new tip
-        return; 
-    }
-    
-    setTipContent(nextTip);
-    setTipHtml(await mdToHtmlFunc(nextTip));
-  }, [tipContent, tipLoading, hasGeminiKey, getInitialAITip]);
-
-  // CRITICAL FIX 2: Call getInitialAITip when AI dependencies are ready (hasGeminiKey)
-  useEffect(() => { 
-    if (hasGeminiKey() && weakestTier) { // Wait for core data to load
-        getInitialAITip(); 
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [weakestTier?.name, hasGeminiKey]); // Call getInitialAITip when AI dependencies are ready (hasGeminiKey)
-
-
-  /* =========================================================
-     SIMPLIFIED RENDER: FOCUS ON DAILY ACTIONS & SCORECARD
-  ========================================================= */
+  if (!commitments || commitments.length === 0) {
+    return (
+      <div className="p-6 text-center border border-dashed border-gray-300 rounded-lg bg-gray-50">
+        <p className="text-gray-600 font-semibold mb-3">No reps defined for today.</p>
+        <Button onClick={() => navigate('development-plan')} variant="outline" className="text-sm px-4 py-2">
+          Set Up Your Development Plan
+        </Button>
+      </div>
+    );
+  }
 
   return (
-    <div className={`p-6 space-y-4 bg-[${COLORS.LIGHT_GRAY}] min-h-screen`}> 
-      {/* 1. Header with enhanced Personalization */}
-      <div className={`border-b border-gray-200 pb-5 bg-[${COLORS.OFF_WHITE}] p-6 -mx-6 -mt-6 mb-4 rounded-b-xl shadow-md`}>
-        <h1 className={`text-4xl font-extrabold text-[${COLORS.NAVY}] flex items-center gap-3`}>
-          <Home size={32} style={{ color: COLORS.TEAL }} /> The Arena Dashboard
+    <div className="space-y-3">
+      {commitments.map((commit) => (
+        <div
+          key={commit.id}
+          className={`p-4 rounded-xl flex items-center justify-between transition-all border
+            ${commit.status === 'Committed' ? 'bg-green-50 border-green-200 shadow-inner' : 'bg-white hover:bg-gray-50'}`}
+        >
+          <div className="flex-1 mr-4">
+            <p className={`font-medium ${commit.status === 'Committed' ? 'text-green-800 line-through' : 'text-[#002E47]'}`}>
+              {commit.text}
+            </p>
+            {commit.linkedGoal && (
+              <span className="text-xs text-gray-500 italic block mt-1">
+                Linked to: {commit.linkedGoal}
+              </span>
+            )}
+          </div>
+          <button
+            onClick={() => onToggleCommit(commit.id)}
+            className={`w-10 h-10 rounded-full flex items-center justify-center border-2 transition-all focus:outline-none focus:ring-2 focus:ring-offset-1
+              ${commit.status === 'Committed'
+                ? `bg-[${COLORS.GREEN}] border-[${COLORS.GREEN}] text-white hover:bg-green-700 focus:ring-[${COLORS.GREEN}]`
+                : `bg-white border-gray-300 text-gray-400 hover:border-[${COLORS.TEAL}] hover:text-[${COLORS.TEAL}] focus:ring-[${COLORS.TEAL}]`
+              }`}
+            aria-label={commit.status === 'Committed' ? 'Mark as Pending' : 'Mark as Committed'}
+          >
+            {commit.status === 'Committed' ? <Check size={20} /> : <Zap size={18} />}
+          </button>
+        </div>
+      ))}
+       {/* Button to go to the full Daily Practice screen (for reflection) */}
+       <Button
+          onClick={() => navigate('daily-practice')}
+          variant="primary"
+          className="w-full mt-4 !py-2 text-base"
+        >
+          <CornerDownRight className="w-4 h-4 mr-2" /> Complete Today's Reflection Rep
+        </Button>
+    </div>
+  );
+};
+
+
+/* =========================================================
+   Dashboard Screen (Main Export - Simplified)
+========================================================= */
+const DashboardScreen = () => {
+  const {
+    navigate, user, pdpData, commitmentData, planningData, callSecureGeminiAPI, hasGeminiKey,
+    LEADERSHIP_TIERS, TARGET_REP_CATALOG, updateCommitmentData, isLoading: isAppLoading // Use main loading flag
+  } = useAppServices();
+
+  const [isSavingRep, setIsSavingRep] = useState(false); // Local loading state for rep updates
+
+  // --- Derived Data Calculations ---
+  const displayedUserName = useMemo(() => user?.name || user?.email?.split('@')[0] || 'Leader', [user]);
+  const greeting = useMemo(() => 'Welcome to The Arena,', []); // Simplified greeting
+  const activeCommitments = useMemo(() => commitmentData?.active_commitments || [], [commitmentData]);
+  const commitsCompleted = useMemo(() => activeCommitments.filter(c => c.status === 'Committed').length, [activeCommitments]);
+  const commitsTotal = activeCommitments.length;
+
+  const identityStatement = useMemo(() => commitmentData?.reflection_journal?.split('\n').find(l => l.startsWith('Identity:'))?.substring(9).trim() || 'I am a principled leader.', [commitmentData]);
+
+  const dailyTargetRep = useMemo(() => {
+    // Prioritize linked reps from PDP first, then catalog, then fallback
+    const pdpRep = activeCommitments.find(c => c.source === 'DevelopmentPlan');
+    if (pdpRep) return pdpRep.text.replace('[90-Day Focus]', '').trim();
+    const catalog = TARGET_REP_CATALOG || [];
+    return catalog[0]?.text || 'Define your top priority rep.';
+  }, [activeCommitments, TARGET_REP_CATALOG]);
+
+  const weakestTier = useMemo(() => {
+    // Using the same logic as before to find weakest tier from pdpData.assessment.scores
+    const scores = pdpData?.assessment?.scores;
+    if (!scores || !LEADERSHIP_TIERS) return { id: 'T3', name: 'Getting Started', hex: COLORS.AMBER };
+    const sortedDimensions = Object.values(scores).sort((a, b) => a.score - b.score);
+    const weakest = sortedDimensions[0];
+    if (!weakest) return { id: 'T3', name: 'Getting Started', hex: COLORS.AMBER };
+    const tierKey = Object.keys(LEADERSHIP_TIERS).find(key => LEADERSHIP_TIERS[key].name.includes(weakest.name.split(' ')[0])) || 'T1';
+    const meta = LEADERSHIP_TIERS[tierKey];
+    return { id: weakest.name, name: weakest.name, hex: meta?.hex || COLORS.ORANGE };
+  }, [pdpData, LEADERSHIP_TIERS, COLORS.AMBER, COLORS.ORANGE]);
+
+  // --- AI Nudge Logic (Unchanged from previous version) ---
+  const [tipLoading, setTipLoading] = useState(false);
+  const [tipContent, setTipContent] = useState(SIMPLE_FALLBACK_TIP);
+  const [tipHtml, setTipHtml] = useState('');
+
+  useEffect(() => { (async () => { if (!tipHtml && tipContent) setTipHtml(await mdToHtmlFunc(tipContent)); })(); }, [tipContent, tipHtml]);
+
+  const getInitialAITip = useCallback(async () => { /* ... same AI fetch logic as before ... */
+     if (!hasGeminiKey() || tipContent !== SIMPLE_FALLBACK_TIP) return; setTipLoading(true); try { const weakestSkill = weakestTier?.name || 'General Leadership'; const prompt = `Give a concise, actionable leadership practice for the day (3 sentences max). Focus the tip explicitly on improving the skill: ${weakestSkill}. Tone: encouraging, strategic, direct.`; const payload = { contents: [{ parts: [{ text: prompt }] }] }; const resp = await callSecureGeminiAPI(payload); const text = extractGeminiText(resp) || SIMPLE_FALLBACK_TIP; TIP_CACHE.lastAITip = text; setTipContent(text); setTipHtml(await mdToHtmlFunc(text)); } catch (e) { console.error('AI tip fetch error:', e); const fallbackText = SIMPLE_FALLBACK_TIP; TIP_CACHE.lastAITip = fallbackText; setTipContent(fallbackText); setTipHtml(await mdToHtmlFunc(`**Error**: AI connection failed. Using local tip. ${fallbackText}`)); } finally { setTipLoading(false); }
+  }, [weakestTier?.name, callSecureGeminiAPI, hasGeminiKey, tipContent]);
+
+  const nextNudge = useCallback(async () => { /* ... same nextNudge logic as before ... */
+     let nextTip = ''; if (tipLoading) return; const availableNudges = [TIP_CACHE.lastAITip || SIMPLE_FALLBACK_TIP]; let attempts = 0; do { const newIndex = Math.floor(Math.random() * availableNudges.length); nextTip = availableNudges[newIndex]; attempts++; } while (nextTip === tipContent && attempts < 5); if (nextTip === tipContent && !hasGeminiKey()) { nextTip = SIMPLE_FALLBACK_TIP; } else if (nextTip === tipContent && hasGeminiKey()) { getInitialAITip(); return; } setTipContent(nextTip); setTipHtml(await mdToHtmlFunc(nextTip));
+  }, [tipContent, tipLoading, hasGeminiKey, getInitialAITip]);
+
+  useEffect(() => { if (hasGeminiKey() && weakestTier) { getInitialAITip(); } }, [weakestTier?.name, hasGeminiKey, getInitialAITip]);
+
+
+  // --- NEW: Handle Toggling Rep Commitment ---
+  const handleToggleCommitment = useCallback(async (commitId) => {
+    if (isSavingRep) return; // Prevent double clicks
+    setIsSavingRep(true);
+    const currentCommits = commitmentData?.active_commitments || [];
+    const targetCommit = currentCommits.find(c => c.id === commitId);
+    if (!targetCommit) return;
+
+    const newStatus = targetCommit.status === 'Committed' ? 'Pending' : 'Committed';
+    const updatedCommitments = currentCommits.map(c =>
+      c.id === commitId ? { ...c, status: newStatus } : c
+    );
+
+    try {
+      // Use the updateCommitmentData function from useAppServices
+      await updateCommitmentData({ active_commitments: updatedCommitments });
+      console.log(`Rep ${commitId} status updated to ${newStatus}`);
+    } catch (error) {
+      console.error("Failed to update rep status:", error);
+      // Optionally show an error to the user
+    } finally {
+      setIsSavingRep(false);
+    }
+  }, [commitmentData, updateCommitmentData, isSavingRep]);
+
+  // --- Main Render ---
+  if (isAppLoading && !commitmentData) { // Show loading only if core data isn't ready
+      return (
+          <div className="min-h-screen flex items-center justify-center bg-gray-100">
+            <Loader className="animate-spin text-[#47A88D] h-12 w-12" />
+          </div>
+      );
+  }
+
+  return (
+    <div className={`p-6 space-y-6 bg-[${COLORS.LIGHT_GRAY}] min-h-screen`}>
+      {/* 1. Header */}
+      <div className={`bg-[${COLORS.OFF_WHITE}] p-6 -mx-6 -mt-6 mb-4 rounded-b-xl shadow-md border-b-4 border-[${COLORS.TEAL}]`}>
+        <h1 className={`text-3xl font-extrabold text-[${COLORS.NAVY}] flex items-center gap-3`}>
+          <Home size={28} style={{ color: COLORS.TEAL }} /> The Arena Dashboard
         </h1>
         <p className="text-gray-600 text-base mt-2">
-          {greeting} <span className={`font-semibold text-[${COLORS.NAVY}]`}>{displayedUserName}</span>. Your focus is **{weakestTier?.name || 'Getting Started'}**—consistency over intensity.
+          {greeting} <span className={`font-semibold text-[${COLORS.NAVY}]`}>{displayedUserName}</span>. Your focus: <strong style={{ color: weakestTier?.hex || COLORS.NAVY }}>{weakestTier?.name || 'Getting Started'}</strong>.
         </p>
       </div>
-      
-      {/* --- 2. THE REP TRACKER LAUNCHPAD (HIGH PRIORITY) --- */}
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6"> 
-        
-        {/* HEALTH SCORE AND NUDGE COLUMN (lg:col-span-1) */}
-        <div className="lg:col-span-1 space-y-4 order-1 lg:order-2"> {/* ORDER SWAP: Health & Nudge on right */}
-             <h2 className="text-2xl font-extrabold text-[#002E47] flex items-center gap-3">
-                <Activity size={24} className='text-[#47A88D]'/> Focus Nudge
-            </h2>
-            
-            {/* Strategic Nudge / AI Reflection Coach (Moved up) */}
-            <div className="min-h-full">
-                <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-xl relative group min-h-full flex flex-col justify-between" style={{ background: `${weakestTier?.hex || COLORS.TEAL}1A`, opacity: 0.9 }}>
-                    <div className="flex items-center justify-between mb-4 relative z-10">
-                        <h2 className={`text-xl font-bold flex items-center gap-2`} style={{color: weakestTier?.hex || COLORS.NAVY}}>
-                            <Lightbulb size={20} className={`text-white p-1 rounded-full`} style={{backgroundColor: weakestTier?.hex || COLORS.TEAL}}/> 
-                            Strategic Nudge
-                        </h2>
-                    </div>
-                    <div className={`p-4 rounded-xl bg-gray-50 border border-gray-100 mt-3 shadow-inner flex-1`}>
-                        <div className="prose prose-sm max-w-none relative z-10">
-                            {tipHtml
-                                ? <div dangerouslySetInnerHTML={{ __html: tipHtml }} />
-                                : <p className="text-gray-600 text-sm">Tap Next Rep to get a fresh, powerful focus point from your AI Coach.</p>}
-                        </div>
-                    </div>
-                     <button
-                        className="rounded-xl mt-4 px-3 py-2 text-sm font-semibold bg-[#002E47] text-white hover:bg-gray-700 transition-colors flex items-center justify-center gap-1"
-                        onClick={nextNudge}
-                        disabled={tipLoading}
-                        type="button"
-                    >
-                        {tipLoading ? <Loader size={16} className='animate-spin text-white' /> : <Sparkles size={16} />}
-                        Next Coaching Nudge
-                    </button>
-                </div>
-            </div>
-        </div>
 
-        {/* LAUNCHPAD BUTTONS (lg:col-span-3) */}
-        <div className="lg:col-span-3 space-y-3 order-2 lg:order-1"> {/* ORDER SWAP: Launchpad on left */}
-            <h2 className="text-2xl font-extrabold text-[#002E47] flex items-center gap-3">
-                <Zap size={24} className='text-[#E04E1B]'/> Launchpad: Today's Focus
-            </h2>
-            
-            {/* New Simplified Rep/Identity Info Card - Features 1, 2, 8 */}
-            <Card title="Today's Strategic Focus" icon={Target} accent='NAVY' className="border-4 border-[#002E47]/10 bg-white/95">
-                <div className='grid md:grid-cols-2 gap-4'>
-                    <div>
-                        <p className='text-sm font-semibold text-gray-700 mb-2 uppercase tracking-wide flex items-center gap-2'>
-                            <Flag className='w-4 h-4 text-red-500'/> Target Rep (Clarity of Behavior):
-                        </p>
-                        <p className='text-md font-bold text-[#E04E1B]'>
-                            {dailyTargetRep}
-                        </p>
-                    </div>
-                    <div>
-                         <p className='text-sm font-semibold text-gray-700 mb-2 uppercase tracking-wide flex items-center gap-2'>
-                            <User className='w-4 h-4 text-gray-500'/> Identity Anchor (Emotional Relevance):
-                        </p>
-                        <p className='text-md italic text-[#002E47]'>
-                            "{identityStatement.substring(0, 60) + '...'}"
-                        </p>
-                    </div>
-                </div>
-            </Card>
-            
-            <div className='grid grid-cols-1 md:grid-cols-3 gap-4'>
-                 {/* PRIMARY ACTION 1: Daily Practice Scorecard */}
-                <ThreeDButton
-                    onClick={() => safeNavigate('daily-practice')} 
-                    color={COLORS.TEAL}
-                    accentColor={COLORS.NAVY}
-                    className="h-24 flex-col px-3 py-2 text-white" 
-                >
-                    <ClockIcon className='w-6 h-6 mb-1'/> 
-                    <span className='text-lg font-extrabold'>Daily Practice Scorecard</span>
-                    <span className='text-xs font-light mt-1'>Reps: {todayRepsCompleted}/{commitsTotal}</span>
-                </ThreeDButton>
+      {/* 2. Main Content Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
-                {/* PRIMARY ACTION 2: 2-Min Micro-Action Start (Frictionless Rep) - Feature 3 */}
-                <ThreeDButton 
-                    onClick={() => safeNavigate('daily-practice', { quickLog: true, source: 'dashboard' })} 
-                    color={COLORS.BLUE}
-                    accentColor={COLORS.NAVY}
-                    className="h-24 flex-col px-3 py-2 text-white"
-                >
-                    <Zap className='w-6 h-6 mb-1'/> 
-                    <span className='text-lg font-extrabold'>2-Min Start (Momentum Rep)</span>
-                    <span className='text-xs font-light mt-1'>Grab a quick win to build streak</span>
-                </ThreeDButton>
-                
-                 {/* *** UPDATED: PRIMARY ACTION 3: Development Roadmap *** */}
+        {/* Left Column: Today's Reps & Actions */}
+        <div className="lg:col-span-2 space-y-6">
+           <Card title="🎯 Today's Strategic Focus" icon={Target} accent='NAVY'>
+              <div className='grid md:grid-cols-2 gap-4'>
+                  <div>
+                      <p className='text-sm font-semibold text-gray-700 mb-1 uppercase tracking-wide flex items-center gap-1'><Flag className='w-4 h-4 text-red-500'/> Target Rep:</p>
+                      <p className='text-md font-bold text-[#E04E1B]'>{dailyTargetRep}</p>
+                  </div>
+                  <div>
+                       <p className='text-sm font-semibold text-gray-700 mb-1 uppercase tracking-wide flex items-center gap-1'><User className='w-4 h-4 text-gray-500'/> Identity Anchor:</p>
+                       <p className='text-md italic text-[#002E47]'>"{identityStatement}"</p>
+                  </div>
+              </div>
+          </Card>
+
+          <Card title={`⏳ Today's Reps (${commitsCompleted}/${commitsTotal})`} icon={Clock} accent='TEAL'>
+             <EmbeddedDailyReps
+                commitments={activeCommitments}
+                onToggleCommit={handleToggleCommitment}
+                isLoading={isSavingRep || (isAppLoading && !commitmentData)} // Show loading if app is loading OR saving rep
+             />
+          </Card>
+
+          {/* Quick Links / Launchpad */}
+           <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
+                 {/* Link to Development Plan */}
                 <ThreeDButton
-                    onClick={() => safeNavigate('development-plan')} // *** CHANGED TO NEW SCREEN ***
+                    onClick={() => navigate('development-plan')}
                     color={COLORS.ORANGE}
                     accentColor={COLORS.NAVY}
-                    className="h-24 flex-col px-3 py-2 text-white" 
+                    className="h-20 flex-col px-3 py-2 text-white"
                 >
-                    <Briefcase className='w-6 h-6 mb-1'/> 
-                    <span className='text-lg font-extrabold'>My Development Plan</span>
-                    <span className='text-xs font-light mt-1'>Current Focus: {weakestTier?.name}</span>
+                    <Briefcase className='w-5 h-5 mb-1'/>
+                    <span className='text-base font-extrabold'>My Development Plan</span>
+                </ThreeDButton>
+
+                {/* Link to AI Coaching Lab */}
+                 <ThreeDButton
+                    onClick={() => navigate('coaching-lab')}
+                    color={COLORS.PURPLE}
+                    accentColor={COLORS.NAVY}
+                    className="h-20 flex-col px-3 py-2 text-white"
+                >
+                    <Sparkles className='w-5 h-5 mb-1'/>
+                    <span className='text-base font-extrabold'>AI Coaching Lab</span>
                 </ThreeDButton>
             </div>
+        </div>
 
-
+        {/* Right Column: AI Nudge */}
+        <div className="lg:col-span-1 space-y-6">
+             <Card title="💡 Strategic Nudge" icon={Lightbulb} accent='AMBER' className="sticky top-4">
+                <div className="prose prose-sm max-w-none mb-4">
+                    {tipHtml
+                        ? <div dangerouslySetInnerHTML={{ __html: tipHtml }} />
+                        : <p className="text-gray-600">Loading AI insight...</p>}
+                </div>
+                <Button
+                    onClick={nextNudge}
+                    disabled={tipLoading}
+                    variant='outline'
+                    className='w-full !py-2 text-sm'
+                >
+                    {tipLoading ? <Loader size={16} className='animate-spin' /> : <Sparkles size={16} />}
+                    Next Coaching Nudge
+                </Button>
+            </Card>
         </div>
       </div>
-      
-      {/* --- 3. METRICS SCORECARD (SECONDARY CONTENT) --- */}
-      <h2 className="text-2xl font-extrabold text-[#002E47] flex items-center gap-3 pt-6 border-t border-gray-200">
-          <BarChart3 size={24} className='text-[#47A88D]'/> Performance Scorecard
-      </h2>
 
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-        
-        {/* Progress Snapshot (The Scorecard: lg:col-span-4) - Span full width now */}
-        <div className="lg:col-span-4 space-y-6">
-          
-          <div className="space-y-6">
-            {/* PILLAR: CONTENT */}
-            <div className='p-6 rounded-2xl border-4 border-[#47A88D]/20 bg-[#F7FCFF]'>
-                <h3 className='text-xl font-extrabold text-[#47A88D] mb-4 flex items-center gap-2'>
-                    <BookOpen size={20}/> PILLAR: Content & Discipline
-                </h3>
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                    {/* Metric: Daily Reps Completed Today */}
-                    <StatCard
-                        icon={CheckCircle}
-                        label="Daily Reps Completed Today"
-                        value={`${todayRepsCompleted} / ${commitsTotal}`}
-                        onClick={() => safeNavigate('daily-practice')}
-                        trend={todayRepsCompleted} 
-                        colorHex={COLORS.ORANGE}
-                    />
-                    {/* Metric: Total Reps Completed (Cumulative) */}
-                    <StatCard
-                        icon={ChevronsRight}
-                        label="Total Reps Completed (All Time)"
-                        value={`${totalRepsCompleted}`}
-                        onClick={() => safeNavigate('daily-practice')}
-                        trend={1}
-                        colorHex={COLORS.TEAL}
-                    />
-                    {/* Metric: Current Streak - Feature 4 */}
-                    <StatCard
-                        icon={Star}
-                        label="Current Perfect Score Streak"
-                        value={`${perfectStreak} Days`}
-                        onClick={() => safeNavigate('daily-practice')}
-                        trend={perfectStreak >= 3 ? 5 : 0} 
-                        colorHex={COLORS.GREEN}
-                    />
-                     {/* *** UPDATED: Metric: Weakest Tier Focus *** */}
-                     <StatCard
-                        icon={Target}
-                        label="Weakest Tier Focus"
-                        value={`${weakestTier?.name || 'N/A'}`}
-                        onClick={() => safeNavigate('development-plan')} // *** CHANGED TO NEW SCREEN ***
-                        trend={0} 
-                        colorHex={COLORS.AMBER}
-                    />
-                </div>
-            </div>
+       {/* Footer/Reminder - Optional */}
+       <div className="text-center text-xs text-gray-500 pt-6 border-t mt-6">
+           Remember: Consistency compounds. Log your reps daily and complete your reflection.
+       </div>
 
-            {/* PILLAR: COACHING */}
-            <div className='p-6 rounded-2xl border-4 border-[#7C3AED]/20 bg-[#F7FCFF]'>
-                <h3 className='text-xl font-extrabold text-[#7C3AED] mb-4 flex items-center gap-2'>
-                    <Mic size={20}/> PILLAR: Coaching & Practice
-                </h3>
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                    {/* Metric: Labs Completed Today (Daily Coaching) */}
-                    <StatCard
-                        icon={Send}
-                        label="Labs Completed Today"
-                        value={`${todayCoachingLabs}`}
-                        onClick={() => safeNavigate('coaching-lab')}
-                        trend={todayCoachingLabs} 
-                        colorHex={COLORS.BLUE}
-                    />
-                    {/* Metric: Total Coaching Labs (Cumulative) */}
-                    <StatCard
-                        icon={Mic}
-                        label="Total Coaching Labs Performed"
-                        value={`${totalCoachingLabs}`}
-                        onClick={() => safeNavigate('coaching-lab')}
-                        trend={1} 
-                        colorHex={COLORS.PURPLE}
-                    />
-                    {/* Metric: Daily Reps Completion Rate (Context) */}
-                    <StatCard
-                        icon={TrendingUp}
-                        label="Daily Completion Rate"
-                        value={`${dailyPercent}%`}
-                        onClick={() => safeNavigate('daily-practice')}
-                        trend={dailyPercent > 50 ? 5 : -5} 
-                        colorHex={COLORS.ORANGE}
-                    />
-                     {/* Metric: Placeholder for AI Reflection Coach summary */}
-                    <StatCard
-                        icon={Lightbulb}
-                        label="AI Reflection Summary"
-                        value={`Ready`}
-                        onClick={() => safeNavigate('coaching-lab')}
-                        trend={0} 
-                        colorHex={COLORS.NAVY}
-                    />
-                </div>
-            </div>
-            
-            {/* PILLAR: COMMUNITY */}
-            <div className='p-6 rounded-2xl border-4 border-[#002E47]/20 bg-[#F7FCFF]'>
-                <h3 className='text-xl font-extrabold text-[#002E47] mb-4 flex items-center gap-2'>
-                    <Dumbbell size={20}/> PILLAR: Community & Roadmap
-                </h3>
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                    {/* Metric: Roadmap Months Remaining */}
-                    <StatCard
-                        icon={Briefcase}
-                        label="Roadmap Months Remaining"
-                        value={`${24 - goalsCount}`}
-                        onClick={() => safeNavigate('development-plan')} // *** CHANGED TO NEW SCREEN ***
-                        trend={24 - goalsCount > 0 ? -4 : 0} 
-                        colorHex={COLORS.NAVY}
-                    />
-                    {/* Metric: Social Accountability Nudge - Feature 5 */}
-                     <StatCard
-                        icon={Users}
-                        label="Accountability Pod"
-                        value={`2 New Shares`}
-                        onClick={() => safeNavigate('community')}
-                        trend={10} 
-                        colorHex={COLORS.TEAL}
-                    />
-                    {/* Metric: Longest Held OKR (Context) */}
-                    <StatCard
-                        icon={Archive}
-                        label="Longest-Held OKR (Days)"
-                        value={`${longestHeldOKR.days} Days`}
-                        onClick={() => safeNavigate('planning-hub')}
-                        trend={5} 
-                        colorHex={COLORS.BLUE}
-                    />
-                     {/* Metric: Placeholder for a Community Gamification Metric (Streak Coin) */}
-                    <StatCard
-                        icon={Sparkles}
-                        label="Rep Streak Coins Earned"
-                        value={`1 Coin`}
-                        onClick={() => safeNavigate('profile')}
-                        trend={3} 
-                        colorHex={COLORS.PURPLE}
-                    />
-                </div>
-            </div>
-          </div>
-        </div>
-      </div>
-      
     </div>
   );
 };
