@@ -275,7 +275,7 @@ const generatePlanData = (assessment, ownerUid, contentLibrary) => {
         fullPlan.push({
             month: cycle, 
             tier: primaryTier,
-            theme: `90-Day Block ${cycle} Focus: ${growthDimensions.join(', ')}`,
+            theme: blockDef.theme,
             requiredContent: requiredContent,
             status: 'Pending',
             reflectionText: '',
@@ -531,7 +531,6 @@ const TrackerDashboardView = ({ data, updatePdpData, saveNewPlan, userId, naviga
             }
 
         } catch (e) {
-            console.error("AI Briefing Error:", e);
             setBriefing("AI coach unavailable. Focus on completing your required content first.");
         } finally {
             setBriefingLoading(false);
@@ -577,7 +576,7 @@ const TrackerDashboardView = ({ data, updatePdpData, saveNewPlan, userId, naviga
         // CRITICAL FIX: Save an empty Map {} to the document instead of null to bypass Firestore error
         setIsSaving(true);
         try {
-            // Save empty Map {} to Firestore to clear the plan data
+            // Save empty Map {} to Firestore to clear the document
             await updatePdpData(() => ({})); 
             // Force a page reload to trigger the app router to read the empty state 
             // and correctly switch to the generator view.
@@ -874,7 +873,8 @@ const TrackerDashboardView = ({ data, updatePdpData, saveNewPlan, userId, naviga
 // --- Component 1: Plan Generator View ---
 const PlanGeneratorView = ({ userId, saveNewPlan, isLoading, error, navigate, setGeneratedPlanData, generatePlanDataWrapper }) => {
     // Assessment State Management
-    const [assessmentAnswers, setAssessmentAnswers] = useState(ASSESSMENT_QUESTIONS.reduce((acc, q) => ({ ...acc, [q.id]: 0 }), {})); // 0 = not answered
+    // FIX 1: Initial assessment score set to 3 (Neutral) instead of 0
+    const [assessmentAnswers, setAssessmentAnswers] = useState(ASSESSMENT_QUESTIONS.reduce((acc, q) => ({ ...acc, [q.id]: 3 }), {})); 
     const [openEndedGoal, setOpenEndedGoal] = useState('');
     const [overallConfidence, setOverallConfidence] = useState(5);
     const [isGenerating, setIsGenerating] = useState(false);
@@ -933,7 +933,7 @@ const PlanGeneratorView = ({ userId, saveNewPlan, isLoading, error, navigate, se
                     <h3 className="text-md font-semibold text-gray-700 mb-3">Rate your current effectiveness (1 = Strongly Disagree, 5 = Strongly Agree):</h3>
                     
                     {ASSESSMENT_QUESTIONS.map(q => {
-                        const answer = assessmentAnswers[q.id] || 0;
+                        const answer = assessmentAnswers[q.id] || 3; // Default display score is 3
                         const scoreColor = answer >= 4 ? COLORS.GREEN : answer <= 2 ? COLORS.RED : COLORS.AMBER;
 
                         return (
@@ -942,12 +942,12 @@ const PlanGeneratorView = ({ userId, saveNewPlan, isLoading, error, navigate, se
                                 <div className='flex flex-col space-y-1'>
                                     <p className="font-semibold text-[#002E47] flex justify-between">
                                         <span className='text-sm text-gray-600'>Rating:</span>
-                                        <span className='text-xl font-extrabold' style={{ color: scoreColor }}>{answer > 0 ? answer : '-'} / 5</span>
+                                        <span className='text-xl font-extrabold' style={{ color: scoreColor }}>{answer} / 5</span>
                                     </p>
                                     <input
                                         type="range"
                                         min="1" max="5"
-                                        value={answer > 0 ? answer : 3} // Default to 3 for slider if 0
+                                        value={answer} // Pass the current state value
                                         onChange={(e) => handleAnswerChange(q.id, e.target.value)}
                                         className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer range-lg"
                                         style={{ accentColor: scoreColor }}
