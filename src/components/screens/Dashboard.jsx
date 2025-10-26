@@ -332,6 +332,13 @@ const AICoachNudge = ({ lastReflectionEntry, callSecureGeminiAPI, hasGeminiKey }
   );
 };
 
+/* =========================================================
+   MOCK SOCIAL FEED DATA (Placeholder)
+========================================================= */
+const mockSocialFeedData = [
+  { id: 's1', author: 'Coach Rin', text: 'Welcome to the pod! Share your first rep when you\'re ready.', time: '1h ago' },
+  { id: 's2', author: 'Alex T.', text: 'Just completed my "Listen without interrupting" rep. Harder than it sounds!', time: '30m ago' },
+];
 
 /* =========================================================
    Dashboard Screen (Main Export)
