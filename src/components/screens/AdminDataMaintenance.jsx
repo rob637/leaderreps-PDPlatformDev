@@ -1,3 +1,4 @@
+// src/components/screens/AdminDataMaintenance.jsx
 import React, { useEffect, useMemo, useState } from "react";
 import {
   getFirestore,
@@ -22,16 +23,19 @@ const tryParse = (t, fb) => { try { return JSON.parse(t); } catch { return fb; }
 const pathParts = (p) => p.trim().split("/").filter(Boolean);
 
 // --- PATH CONSTANTS AND UTILITIES ---
-const ARRAY_WRAPPER_KEY = "items"; 
+const ARRAY_WRAPPER_KEY = "items";
 
 // Paths that are known to contain a single array at the root or are collections of arrays
 // NOTE: ALL PATHS CORRECTED TO USE SINGULAR '/catalog/'
 const SINGLE_ARRAY_DOCUMENTS = [
     "metadata/reading_catalog",
-    "metadata/config/catalog/COMMITMENT_BANK",
+    "metadata/config/catalog/COMMITMENT_BANK", // Kept for consistency if data exists
     "metadata/config/catalog/TARGET_REP_CATALOG",
     "metadata/config/catalog/quick_challenge_catalog",
-    "metadata/config/catalog/SKILL_CONTENT_LIBRARY", // NEW: Added the new content library document
+    "metadata/config/catalog/SKILL_CONTENT_LIBRARY",
+    // These might be collections, not single array docs:
+    // "metadata/config/leadership_domains",
+    // "metadata/config/resource_library"
 ];
 
 // Standard Firestore path logic (even segments = Document)
@@ -39,7 +43,17 @@ const isDocumentPath = (p) => pathParts(p).length % 2 === 0;
 const isCollectionPath = (p) => !isDocumentPath(p);
 
 const getWrapperKeyForPath = (path) => {
-    return SINGLE_ARRAY_DOCUMENTS.includes(path) ? ARRAY_WRAPPER_KEY : null;
+    // Simple check, might need refinement based on exact path structure
+    if (path.startsWith("metadata/config/catalog/")) return ARRAY_WRAPPER_KEY;
+    if (path === "metadata/reading_catalog") return ARRAY_WRAPPER_KEY;
+    // Add specific checks for leadership_domains and resource_library if they are top-level arrays in config
+    if (path === "metadata/config" && (path.endsWith("/leadership_domains") || path.endsWith("/resource_library"))) {
+       // Assuming these fields within config doc are arrays
+       // This logic might need adjustment based on how you load/save these specific fields.
+       // For now, let's assume they are handled like standard map fields in the KV editor.
+       return null;
+    }
+    return null;
 };
 // --- END PATH UTILITIES ---
 
@@ -64,16 +78,22 @@ const flatten = (obj, prefix = "", out = {}) => {
   if (obj == null) return out;
   Object.entries(obj).forEach(([k, v]) => {
     const key = prefix ? `${prefix}.${k}` : k;
-    if (Array.isArray(v) || (v && typeof v === "object" && !(v instanceof Date))) {
+    if (Array.isArray(v) || (v && typeof v === "object" && !(v instanceof Date) && !(v?.seconds !== undefined && v?.nanoseconds !== undefined))) { // Added check for Firestore Timestamp like objects
       // store arrays/objects as JSON strings at leaf cells for table editing
-      // NOTE: Added !(v instanceof Date) to prevent Date objects from being JSON.stringified here,
-      // although Firestore usually handles them as timestamps.
       if (Array.isArray(v) || typeof v === "object") {
-          out[key] = JSON.stringify(v);
+          out[key] = JSON.stringify(v, null, 2); // Prettify JSON strings for readability
       } else {
-          out[key] = v;
+          out[key] = v; // Should not happen based on the check above
       }
-    } else {
+    } else if (v?.seconds !== undefined && v?.nanoseconds !== undefined) {
+        // Handle Firestore Timestamps - display as ISO string
+        try {
+            out[key] = new Date(v.seconds * 1000 + v.nanoseconds / 1000000).toISOString();
+        } catch {
+            out[key] = "[Invalid Timestamp]";
+        }
+    }
+     else {
       out[key] = v;
     }
   });
@@ -91,7 +111,18 @@ const unflatten = (flat) => {
       cur[p] = cur[p] || {};
       cur = cur[p];
     }
-    cur[parts[0]] = coerce(value);
+    // Attempt to parse JSON strings back into objects/arrays
+    let coercedValue = coerce(value);
+    if (typeof coercedValue === 'string') {
+        try {
+            const parsed = JSON.parse(coercedValue);
+            // Only use parsed value if it's an object or array
+            if (typeof parsed === 'object' && parsed !== null) {
+                coercedValue = parsed;
+            }
+        } catch { /* Ignore if parsing fails, keep as string */ }
+    }
+    cur[parts[0]] = coercedValue;
   });
   return out;
 };
@@ -104,7 +135,7 @@ const inferColumns = (rows) => {
 
 const nowIso = () => new Date().toISOString();
 
-/* ----------------------- CSV helpers ----------------------- */
+/* ----------------------- CSV helpers (Unchanged) ----------------------- */
 
 const toCSV = (rows) => {
   if (!rows.length) return "";
@@ -121,10 +152,6 @@ const toCSV = (rows) => {
 const fromCSV = (text) => {
   const lines = text.split(/\r?\n/).filter(Boolean);
   if (!lines.length) return [];
-  
-  // Custom regex to handle quotes correctly, similar to what's used in the original.
-  // This is a simplified approach and might fail for complex nested quotes/commas in cells.
-  // The original implementation used a non-standard regex for split. We'll use a more standard approach for parsing CSV lines.
   const parseLine = (line) => {
       const parts = [];
       let current = '';
@@ -132,30 +159,21 @@ const fromCSV = (text) => {
       for (let i = 0; i < line.length; i++) {
           const char = line[i];
           if (char === '"') {
-              // Handle escaped quotes inside quotes ("")
               if (inQuote && line[i + 1] === '"') {
-                  current += '"';
-                  i++; // skip the next quote
-              } else {
-                  inQuote = !inQuote;
-              }
+                  current += '"'; i++;
+              } else { inQuote = !inQuote; }
           } else if (char === ',' && !inQuote) {
-              parts.push(current);
-              current = '';
-          } else {
-              current += char;
-          }
+              parts.push(current); current = '';
+          } else { current += char; }
       }
-      parts.push(current); // push the last part
+      parts.push(current);
       return parts;
   };
-
   const headers = parseLine(lines[0]);
   const parseCell = (cell) => {
     const unq = (cell || "").replace(/^"(.*)"$/, (_, p1) => p1.replace(/""/g, '"'));
     return coerce(unq);
   };
-  
   return lines.slice(1).map((line) => {
     const parts = parseLine(line);
     const row = {};
@@ -164,7 +182,7 @@ const fromCSV = (text) => {
   });
 };
 
-/* ----------------------- UI components ----------------------- */
+/* ----------------------- UI components (Unchanged) ----------------------- */
 
 const LoaderSpinner = () => (
     <div className="p-8 text-center text-gray-500 bg-gray-50 rounded-lg flex items-center justify-center">
@@ -224,7 +242,16 @@ function KVEditor({ value, onChange, onSave, isLoading }) {
               ) : rows.map((r, idx) => (
                 <tr key={idx} className="odd:bg-white even:bg-gray-50 hover:bg-yellow-50 transition">
                   <td className="p-1.5 border-b"><input className="w-full border rounded px-2 py-1 font-mono text-xs" value={r.key} onChange={(e) => update(idx, "key", e.target.value)} placeholder="e.g., plan_goals.0.title" /></td>
-                  <td className="p-1.5 border-b"><input className="w-full border rounded px-2 py-1 font-mono text-xs" value={r.value} onChange={(e) => update(idx, "value", e.target.value)} placeholder="Value (will be auto-coerced to number/boolean/JSON)" /></td>
+                  {/* Use textarea for value to better handle JSON strings */}
+                  <td className="p-1.5 border-b">
+                     <textarea
+                       className="w-full border rounded px-2 py-1 font-mono text-xs h-16 resize-y" // Allow vertical resize
+                       value={r.value}
+                       onChange={(e) => update(idx, "value", e.target.value)}
+                       placeholder="Value (primitive, ISO date, or JSON string)"
+                       rows={1} // Start small
+                     />
+                  </td>
                   <td className="p-1.5 border-b"><button className="text-xs text-red-600 underline hover:text-red-800" onClick={() => delRow(idx)}>🗑️ delete</button></td>
                 </tr>
               ))}
@@ -243,7 +270,6 @@ function ArrayTable({ fieldName, rows, setRows, onSave, isLoading }) {
   const edit = (id, key, val) => setRows((prev) => prev.map((r) => (r._id === id ? { ...r, [key]: val } : r)));
   const del = (id) => setRows((prev) => prev.filter((r) => r._id !== id));
 
-  // Determine new column name if the only data is 'value' (for arrays of primitives)
   const isPrimitiveArray = cols.length === 2 && cols.includes('value');
   const primaryColName = isPrimitiveArray ? "Array Value (Primitives/JSON)" : "Data Field";
 
@@ -276,12 +302,13 @@ function ArrayTable({ fieldName, rows, setRows, onSave, isLoading }) {
                       {c === "_id" ? (
                         <div className="px-2 py-1 rounded bg-gray-100 font-mono text-xs">{r._id}</div>
                       ) : (
-                        <input 
-                          className="w-full border rounded px-2 py-1 font-mono text-xs" 
-                          value={r[c] ?? ""} 
-                          onChange={(e) => edit(r._id, c, e.target.value)} 
-                          placeholder={c === "value" ? "Enter value (primitive or JSON)" : c}
-                        />
+                         <textarea
+                            className="w-full border rounded px-2 py-1 font-mono text-xs h-16 resize-y" // Use textarea for editing
+                            value={r[c] ?? ""}
+                            onChange={(e) => edit(r._id, c, e.target.value)}
+                            placeholder={c === "value" ? "Enter value (primitive or JSON)" : c}
+                            rows={1}
+                          />
                       )}
                     </td>
                   ))}
@@ -303,96 +330,101 @@ function ArrayTable({ fieldName, rows, setRows, onSave, isLoading }) {
 export default function AdminDataMaintenance() {
   const db = getFirestore();
   const uid = getAuth().currentUser?.uid || "";
-  const [path, setPath] = useState("metadata/reading_catalog");
+  const [path, setPath] = useState("metadata/config"); // Default to main config
   const [status, setStatus] = useState("Idle");
   const [err, setErr] = useState("");
 
-  // doc state
   const [docJson, setDocJson] = useState("{}");
   const [docExists, setDocExists] = useState(false);
   const [liveUnsub, setLiveUnsub] = useState(null);
-  
-  // NEW: Determine if a read operation is actively running
-  const isReading = status.startsWith("Reading") || status.startsWith("Listening"); 
 
-  // array editor state
-  // We determine the internal doc object from the JSON string
+  const isReading = status.startsWith("Reading") || status.startsWith("Listening");
+
   const rawDocObj = useMemo(() => tryParse(docJson, {}), [docJson]);
-  
-  // CRITICAL: Check if we need to UNWRAP the data for display/editing
-  const wrapperKey = getWrapperKeyForPath(path);
-  // If wrapperKey is active, docObj holds the ARRAY CONTENT; otherwise, it holds the rawDocObj
-  // FIX: Added explicit check for typeof rawDocObj === 'object' to prevent 't.map is not a function' if rawDocObj is a primitive/null
+
+  // Wrapper key logic remains similar, but now more robust checks needed
+  const wrapperKey = useMemo(() => getWrapperKeyForPath(path), [path]);
+
   const docObj = useMemo(() => {
     if (typeof rawDocObj !== 'object' || rawDocObj === null) return {};
-    return wrapperKey ? (rawDocObj[wrapperKey] || {}) : rawDocObj;
+    return wrapperKey && rawDocObj[wrapperKey] ? rawDocObj[wrapperKey] : rawDocObj; // Use array if wrapped, else use raw object
   }, [rawDocObj, wrapperKey]);
 
-
+  // Determine array fields based on the potentially unwrapped docObj
   const arrayFields = useMemo(() => {
-    // If the whole document is designated as a single array, we skip finding nested arrays.
-    // We explicitly list the wrapperKey as the *only* array field if it applies.
-    if (wrapperKey) return [wrapperKey]; 
-    // Otherwise, find nested arrays inside the document object
-    return Object.keys(docObj || {}).filter((k) => Array.isArray(docObj[k]));
+    if (wrapperKey) return [wrapperKey]; // If it's a designated wrapper doc, only show that key
+    if (typeof docObj !== 'object' || docObj === null) return []; // Handle cases where docObj isn't an object
+    return Object.keys(docObj).filter((k) => Array.isArray(docObj[k]));
   }, [docObj, wrapperKey]);
-  
+
   const [activeArray, setActiveArray] = useState("");
-  
-  // Force activeArray selection if it's a single array document
+
   useEffect(() => {
+    // Automatically select the wrapper key if it exists
     if (wrapperKey && activeArray !== wrapperKey) {
         setActiveArray(wrapperKey);
-    } else if (!wrapperKey && !activeArray && arrayFields.length) {
-        // Fallback to selecting the first normal array field
+    } else if (!wrapperKey && arrayFields.length > 0 && !arrayFields.includes(activeArray)) {
+        // Auto-select the first available array field if none is selected or selection is invalid
         setActiveArray(arrayFields[0]);
+    } else if (!wrapperKey && arrayFields.length === 0) {
+        // Clear selection if no arrays exist
+        setActiveArray("");
     }
-    // Cleanup live listener when path type changes or component unmounts
-    return () => liveUnsub && liveUnsub();
-  }, [arrayFields, activeArray, wrapperKey, liveUnsub]);
+    // Cleanup listener on path change or unmount
+     return () => {
+        if (liveUnsub) {
+            liveUnsub();
+            setLiveUnsub(null); // Clear the unsub function state
+        }
+    };
+  }, [arrayFields, activeArray, wrapperKey, path]); // Added path dependency
 
 
   const arrayRows = useMemo(() => {
-    // Determine the source of the array data
     let src = [];
     if (wrapperKey && activeArray === wrapperKey) {
-        // Source is the array inside the rawDocObj wrapper
-        // FIX: Ensure rawDocObj[wrapperKey] is checked against null/undefined
+        // Handle wrapped array case
         src = rawDocObj[wrapperKey] || [];
-    } else {
-        // Source is a standard nested array
-        src = Array.isArray(docObj?.[activeArray]) ? docObj[activeArray] : [];
+    } else if (docObj && typeof docObj === 'object' && activeArray && Array.isArray(docObj[activeArray])) {
+        // Handle standard nested array case
+        src = docObj[activeArray];
     }
-    
-    // FIX: Ensure src is always an array before mapping
-    if (!Array.isArray(src)) return []; 
 
-    // map primitives -> { value: <primitive> }, objects -> flattened
-    return src.map((item, i) =>
-      (item && typeof item === "object" && !Array.isArray(item))
-        ? ({ _id: String(i), ...flatten(item) })
-        : ({ _id: String(i), value: typeof item === "string" ? item : JSON.stringify(item) })
-    );
+    if (!Array.isArray(src)) return [];
+
+    return src.map((item, i) => {
+        const base = { _id: String(i) }; // Use index as ID for simplicity
+        if (item && typeof item === "object" && !Array.isArray(item)) {
+            return { ...base, ...flatten(item) };
+        } else {
+            // Represent primitives or nested arrays/objects as JSON strings
+            return { ...base, value: typeof item === "string" ? item : JSON.stringify(item, null, 2) };
+        }
+    });
   }, [rawDocObj, docObj, activeArray, wrapperKey]);
+
 
   const setArrayRows = (nextRows) => {
     const rebuilt = nextRows.map(({ _id, ...rest }) => {
-      // if only column is "value" treat as primitive; else unflatten object
-      const keys = Object.keys(rest);
-      if (keys.length === 1 && keys[0] === "value") return coerce(rest.value);
-      return unflatten(rest);
+        const keys = Object.keys(rest);
+        if (keys.length === 1 && keys[0] === "value") {
+            // If only 'value' exists, try to parse it (could be primitive or JSON string)
+            return coerce(rest.value);
+        }
+        // Otherwise, unflatten the object
+        return unflatten(rest);
     });
-    
-    // CRITICAL: When saving an array on a single-array document, we MUST write the Map wrapper
+
     let updated;
     if (wrapperKey && activeArray === wrapperKey) {
-        // If the array being edited is the single array, we put it back in the wrapper Map.
+        // Re-wrap the array if editing the main wrapped array
         updated = { ...rawDocObj, [wrapperKey]: rebuilt };
     } else {
-        // Normal save path for nested arrays
+        // Update the nested array directly in the raw object
+        // Use rawDocObj to preserve other fields correctly
         updated = { ...rawDocObj, [activeArray]: rebuilt };
     }
-    
+
     setDocJson(pretty(updated));
   };
 
@@ -401,87 +433,73 @@ export default function AdminDataMaintenance() {
   const [selected, setSelected] = useState({});
   const cols = useMemo(() => inferColumns(rows), [rows]);
 
-  // 1) Scroll to top when component loads
-  useEffect(() => {
-    window.scrollTo(0, 0);
-  }, []); 
+  useEffect(() => { window.scrollTo(0, 0); }, []);
 
-  // CRITICAL FIX 2: Ensure path type logic uses the correct helper
   const explain = isDocumentPath(path)
     ? "Path type: 📝 Document — read/listen/edit/replace/delete a single record."
     : isCollectionPath(path)
-    ? "Path type: 📚 Collection — list/add/edit/delete/import/export multiple records. (Note: Parent/child relationships like Categories/Books are best managed by ensuring the Parent collection is loaded.)"
+    ? "Path type: 📚 Collection — list/add/edit/delete/import/export multiple records."
     : "Enter a Firestore path";
 
   /* ---------- document actions ---------- */
 
   const readDoc = async () => {
     setStatus("Reading…"); setErr("");
+    setActiveArray(""); // Reset active array on new read
     try {
-      liveUnsub && liveUnsub(); // Stop any current listener
-      setLiveUnsub(null);
-      
+      liveUnsub && liveUnsub(); setLiveUnsub(null);
       const p = normalizePath(path, uid);
       const ref = doc(db, ...pathParts(p));
       const snap = await getDoc(ref);
       setDocExists(snap.exists());
-      
       let data = snap.exists() ? snap.data() : {};
-      
-      // Reset active array before reading new data
-      setActiveArray("");
-      
-      // CRITICAL: Check if document needs WRAPPING for display
-      const key = getWrapperKeyForPath(p);
-      if (key) {
-        // If the document data is already a Map containing the array key, use it.
-        if (data && data[key] && Array.isArray(data[key])) {
-            setActiveArray(key);
-        } else if (snap.exists()) {
-             // If data exists but is just an array, wrap it immediately for internal use.
-             if (Array.isArray(data)) {
-                 data = { [key]: data };
-                 setActiveArray(key);
-             } else {
-                 // If data is a non-array map, auto-select array field if one exists
-                 const currentKeys = Object.keys(data);
-                 const arrayKey = currentKeys.find(k => Array.isArray(data[k]));
-                 if (arrayKey) setActiveArray(arrayKey);
-             }
-        }
-      } else if (snap.exists() && typeof data === 'object' && data !== null) {
-        // Standard non-wrapped document: auto-select the first array field
-        const currentKeys = Object.keys(data);
-        const arrayKey = currentKeys.find(k => Array.isArray(data[k]));
-        if (arrayKey) setActiveArray(arrayKey);
+
+      // Auto-select first array field if it's not a designated wrapper document
+      const currentWrapperKey = getWrapperKeyForPath(p);
+      if (!currentWrapperKey && snap.exists() && typeof data === 'object' && data !== null) {
+          const keys = Object.keys(data);
+          const firstArrayKey = keys.find(k => Array.isArray(data[k]));
+          if (firstArrayKey) {
+              setActiveArray(firstArrayKey);
+          }
+      } else if (currentWrapperKey) {
+          // If it IS a wrapper document, ensure the wrapper key is selected
+          setActiveArray(currentWrapperKey);
       }
-      
+
       setDocJson(pretty(data));
       setStatus("✅ Read successful.");
     } catch (e) { setErr(String(e)); setStatus("❌ Error"); }
   };
 
-  const listenDoc = () => {
+   const listenDoc = () => {
     setStatus("Listening…"); setErr("");
+    setActiveArray(""); // Reset active array
     try {
       liveUnsub && liveUnsub();
       const p = normalizePath(path, uid);
       const ref = doc(db, ...pathParts(p));
       const unsub = onSnapshot(ref, (snap) => {
         setDocExists(snap.exists());
-        
         let data = snap.exists() ? snap.data() : {};
-        
-        // CRITICAL: If wrapper is active, check and apply it for the snapshot data too
-        const key = getWrapperKeyForPath(p);
-        if (key && Array.isArray(data)) {
-             data = { [key]: data };
+
+        // Auto-select first array field logic (same as readDoc)
+        const currentWrapperKey = getWrapperKeyForPath(p);
+         if (!currentWrapperKey && snap.exists() && typeof data === 'object' && data !== null) {
+            const keys = Object.keys(data);
+            const firstArrayKey = keys.find(k => Array.isArray(data[k]));
+            // Only set if activeArray isn't already set or doesn't match
+            if (firstArrayKey && activeArray !== firstArrayKey) {
+                setActiveArray(firstArrayKey);
+            }
+        } else if (currentWrapperKey && activeArray !== currentWrapperKey) {
+            setActiveArray(currentWrapperKey);
         }
-        
+
         setDocJson(pretty(data));
         setStatus("👂 Live listening...");
       }, (e) => { setErr(String(e)); setStatus("❌ Error"); });
-      setLiveUnsub(() => unsub);
+      setLiveUnsub(() => unsub); // Store the unsubscribe function
     } catch (e) { setErr(String(e)); setStatus("❌ Error"); }
   };
 
@@ -490,16 +508,17 @@ export default function AdminDataMaintenance() {
     try {
       const data = tryParse(docJson, null);
       if (data == null) throw new Error("Invalid JSON. Please check the format in the left box.");
-      
-      // CRITICAL: Prevent merge for single-array documents (use REPLACE instead)
-      const wrapperKey = getWrapperKeyForPath(path);
-      if (wrapperKey && data && data[wrapperKey] && Array.isArray(data[wrapperKey])) {
-          throw new Error("Cannot use **Save (Merge)** for single-array catalogs (e.g., Target Rep). Use **Replace (Set)**.");
-      }
-      
+
+      // Allow merge for all documents now, assuming Firestore handles nested merges correctly.
+      // const wrapperKey = getWrapperKeyForPath(path);
+      // if (wrapperKey && data && data[wrapperKey] && Array.isArray(data[wrapperKey])) {
+      //     throw new Error("Cannot use **Save (Merge)** for single-array catalogs. Use **Replace (Set)**.");
+      // }
+
       const p = normalizePath(path, uid);
       await setDoc(doc(db, ...pathParts(p)), data, { merge: true });
       setStatus("✅ Saved (merge).");
+       await readDoc(); // Refresh UI after save
     } catch (e) { setErr(String(e)); setStatus("❌ Error"); }
   };
 
@@ -508,16 +527,11 @@ export default function AdminDataMaintenance() {
     try {
       const data = tryParse(docJson, null);
       if (data == null) throw new Error("Invalid JSON. Please check the format in the left box.");
-      
       const p = normalizePath(path, uid);
-      
-      // CRITICAL FIX: We must send the Map object, which now correctly contains the wrapper key 
-      // if it's a single-array document.
-      await setDoc(doc(db, ...pathParts(p)), data);
-      
+      await setDoc(doc(db, ...pathParts(p)), data); // No merge option means overwrite
       setDocExists(true);
       setStatus("✅ Replaced (Set).");
-      await readDoc(); // Refresh UI
+      await readDoc(); // Refresh UI after replace
     } catch (e) { setErr(String(e)); setStatus("❌ Error"); }
   };
 
@@ -525,54 +539,94 @@ export default function AdminDataMaintenance() {
     if (!window.confirm(`Are you sure you want to PERMANENTLY delete the document at: ${path}?`)) return;
     setStatus("Deleting…"); setErr("");
     try {
-      liveUnsub && liveUnsub();
-      setLiveUnsub(null);
+      liveUnsub && liveUnsub(); setLiveUnsub(null);
       const p = normalizePath(path, uid);
       await deleteDoc(doc(db, ...pathParts(p)));
       setDocExists(false);
       setDocJson("{}");
+      setActiveArray(""); // Clear active array
       setStatus("✅ Deleted.");
     } catch (e) { setErr(String(e)); setStatus("❌ Error"); }
   };
 
-  const saveArray = async () => {
-    if (!activeArray) return;
+   const saveArray = async () => {
+    if (!activeArray) {
+        setErr("No array field selected to save.");
+        setStatus("❌ Error");
+        return;
+    }
     setStatus(`Saving array "${activeArray}"…`); setErr("");
     try {
-      const data = tryParse(docJson, {});
-      const p = normalizePath(path, uid);
-      
-      // CRITICAL: If the active array is the wrapper key, force user to use Replace (Set)
-      if (getWrapperKeyForPath(p) === activeArray) {
-          throw new Error("Please use **Replace (Set)** to save changes to the entire catalog (Document Root Array).");
-      }
-      
-      // Only save the active array field and a timestamp for merge
-      await setDoc(doc(db, ...pathParts(p)), { [activeArray]: data[activeArray], _lastEdited: nowIso() }, { merge: true });
-      setStatus(`✅ Saved array "${activeArray}".`);
-      await readDoc(); // Re-read to refresh docObj/docJson
-    } catch (e) { setErr(String(e)); setStatus("❌ Error"); }
+        const fullDocData = tryParse(docJson, {}); // Get the current state from the editor
+        const p = normalizePath(path, uid);
+
+        // Extract the specific array data to be saved
+        const arrayDataToSave = fullDocData[activeArray];
+
+        if (!Array.isArray(arrayDataToSave)) {
+            throw new Error(`Data for field "${activeArray}" is not an array in the current JSON.`);
+        }
+
+        // Save only the active array field using merge to avoid overwriting other fields
+        await setDoc(doc(db, ...pathParts(p)), {
+            [activeArray]: arrayDataToSave,
+            _lastEdited: nowIso() // Add a timestamp for tracking
+        }, { merge: true });
+
+        setStatus(`✅ Saved array "${activeArray}".`);
+        // No need to re-read manually if listening, but good practice if not
+        if (!liveUnsub) {
+            await readDoc();
+        }
+    } catch (e) {
+        setErr(String(e));
+        setStatus("❌ Error");
+    }
   };
 
   const saveKV = async () => {
     setStatus("Saving key/values…"); setErr("");
     try {
-      const data = tryParse(docJson, {});
-      const p = normalizePath(path, uid);
-      // Save all key/value changes with merge
-      await setDoc(doc(db, ...pathParts(p)), data, { merge: true });
-      setStatus("✅ Saved key/values.");
-      await readDoc(); // Re-read to refresh docObj/docJson
-    } catch (e) { setErr(String(e)); setStatus("❌ Error"); }
-  };
+        const kvData = tryParse(docJson, {}); // KV editor updates docJson directly
+        const p = normalizePath(path, uid);
 
-  /* ---------- collection actions ---------- */
+        // Filter out array fields managed by the ArrayTable from the KV save data
+        // This prevents accidental overwrites if both editors were used without saving in between
+        const dataToSave = { ...kvData };
+        arrayFields.forEach(field => {
+            // Check if the field exists and is still an array in the current JSON
+            // If it is, DO NOT include it in the KV save, let saveArray handle it.
+            if (Array.isArray(dataToSave[field])) {
+                 console.warn(`Field "${field}" is managed by Array Editor, excluding from KV save.`);
+                 delete dataToSave[field];
+            }
+        });
+
+        if (Object.keys(dataToSave).length > 0) {
+            await setDoc(doc(db, ...pathParts(p)), {
+                ...dataToSave,
+                _lastEdited: nowIso() // Add timestamp
+            }, { merge: true });
+            setStatus("✅ Saved key/values.");
+            // No need to re-read manually if listening
+            if (!liveUnsub) {
+                 await readDoc();
+            }
+        } else {
+             setStatus("✅ No non-array key/values to save.");
+        }
+    } catch (e) {
+        setErr(String(e));
+        setStatus("❌ Error");
+    }
+};
+
+  /* ---------- collection actions (Unchanged) ---------- */
 
   const listCollection = async () => {
     setStatus("Listing…"); setErr(""); setRows([]); setSelected({});
     try {
       const p = normalizePath(path, uid);
-      // Use query(..., qLimit(500)) for performance and safety
       const snap = await getDocs(query(collection(db, ...pathParts(p)), qLimit(500)));
       const list = [];
       snap.forEach((d) => list.push({ _id: d.id, ...flatten(d.data()) }));
@@ -601,26 +655,18 @@ export default function AdminDataMaintenance() {
       const colRef = collection(db, ...pathParts(p));
       const batch = writeBatch(db);
       const newMap = [];
-      
       for (const r of rows) {
-        // Exclude the _id field from the data written
         const { _id, ...rest } = r;
         const data = unflatten(rest);
-        
         if (_id.startsWith("__new__")) {
-          // New Document: Use doc() to auto-generate a new ID
           const newRef = doc(colRef);
           batch.set(newRef, data, { merge: true });
           newMap.push({ temp: _id, real: newRef.id });
         } else {
-          // Existing Document: Set using its existing ID
           batch.set(doc(colRef, _id), data, { merge: true });
         }
       }
-      
       await batch.commit();
-      
-      // Update the local state with real IDs for new documents
       if (newMap.length) {
         setRows((prev) => prev.map((x) => {
           const f = newMap.find((n) => n.temp === x._id);
@@ -641,12 +687,9 @@ export default function AdminDataMaintenance() {
       const p = normalizePath(path, uid);
       const colRef = collection(db, ...pathParts(p));
       const batch = writeBatch(db);
-      
-      ids.forEach((id) => { 
-        // Only delete if it's an existing document (not a __new__ temp ID)
-        if (!id.startsWith("__new__")) batch.delete(doc(colRef, id)); 
+      ids.forEach((id) => {
+        if (!id.startsWith("__new__")) batch.delete(doc(colRef, id));
       });
-      
       await batch.commit();
       setRows((prev) => prev.filter((r) => !ids.includes(r._id)));
       setSelected({});
@@ -654,7 +697,7 @@ export default function AdminDataMaintenance() {
     } catch (e) { setErr(String(e)); setStatus("❌ Error"); }
   };
 
-  /* ---------- import / export ---------- */
+  /* ---------- import / export (Unchanged) ---------- */
 
   const exportJSON = () => {
     const blob = new Blob([docJson], { type: "application/json" });
@@ -669,16 +712,12 @@ export default function AdminDataMaintenance() {
     r.onload = () => {
       const txt = String(r.result || "");
       if (isDocumentPath(path)) {
-        // Document: Load raw JSON to the textarea
         setDocJson(txt);
         setStatus("Loaded JSON into editor. Click Save or Replace to apply.");
       } else {
-        // Collection: Load array of docs to the table
         const arr = tryParse(txt, []);
         if (!Array.isArray(arr)) { setErr("JSON must be an array for collection import."); return; }
-        
         setRows(arr.map((o) => {
-          // Preserve existing _id or assign a new temp ID
           const id = o._id || "__new__" + Math.random().toString(36).slice(2, 8);
           const { _id, ...rest } = o;
           return { _id: id, ...flatten(rest) };
@@ -703,10 +742,8 @@ export default function AdminDataMaintenance() {
       setErr("");
       const arr = fromCSV(String(r.result || ""));
       setRows(arr.map((row) => {
-        // Preserve existing _id or assign a new temp ID
         const id = row._id || "__new__" + Math.random().toString(36).slice(2, 8);
         const { _id, ...rest } = row;
-        // Flatten non-_id fields for table editing compatibility
         return { _id: id, ...rest };
       }));
       setStatus(`Loaded ${arr.length} records from CSV. Click Batch Save to apply.`);
@@ -714,24 +751,24 @@ export default function AdminDataMaintenance() {
     r.readAsText(f); e.target.value = "";
   };
 
-  /* ---------- presets ---------- */
-  // CRITICAL FIX: Corrected preset paths to use the singular 'catalog' structure
-  const CATALOG_BASE_PATH = "metadata/config/catalog";
-
+  /* ---------- presets (UPDATED) ---------- */
   const presets = [
-    // FINAL FIX: Using the 4-segment path.
-    { label: "✅ Commitment Bank (Doc)", value: `${CATALOG_BASE_PATH}/COMMITMENT_BANK` },
-    { label: "🎯 Target Rep Catalog (Doc)", value: `${CATALOG_BASE_PATH}/TARGET_REP_CATALOG` },
-    { label: "🗺️ Leadership Domains (Doc)", value: `${CATALOG_BASE_PATH}/leadership_domains` },
-    { label: "🪜 Leadership Tiers (Doc)", value: `${CATALOG_BASE_PATH}/leadership_tiers` },
-    { label: "⚡ Quick Challenge Catalog (Doc)", value: `${CATALOG_BASE_PATH}/quick_challenge_catalog` },
-    { label: "📚 Resource Library (Doc)", value: `${CATALOG_BASE_PATH}/resource_library` },
-    { label: "🎬 Scenario Catalog (Doc)", value: `${CATALOG_BASE_PATH}/scenario_catalog` },
-    { label: "🎥 Video Catalog (Doc)", value: `${CATALOG_BASE_PATH}/video_catalog` },
-    // NEW: Skill Content Library
-    { label: "🛠️ Skill Content Library (Doc)", value: `${CATALOG_BASE_PATH}/SKILL_CONTENT_LIBRARY` }, 
-    // Reading Catalog appears to be correct as metadata/reading_catalog (2-segment path)
+    // Global Config
+    { label: "⚙️ Global Config (Doc)", value: "metadata/config" },
     { label: "📖 Reading Catalog (Doc)", value: "metadata/reading_catalog" },
+    // User Specific - Development Plan
+    { label: "👤 User - Current Dev Plan (Doc)", value: "leadership_plan/<uid>/profile/plan" },
+    { label: "📜 User - Dev Plan History (Coll)", value: "leadership_plan/<uid>/plan_history" },
+    { label: "📊 User - Assessment History (Coll)", value: "leadership_plan/<uid>/assessment_history" },
+    // User Specific - Daily Reps & Planning
+    { label: "✅ User - Daily Reps / Reflection (Doc)", value: "user_commitments/<uid>/profile/active" },
+    { label: "📝 User - Planning Drafts (Doc)", value: "user_planning/<uid>/profile/drafts" },
+
+    // Keeping old catalog paths for reference, but maybe remove if unused
+    // { label: "뱅크 Commitment Bank (Doc)", value: "metadata/config/catalog/COMMITMENT_BANK" }, // Terminology Update
+    // { label: "🎯 Target Rep Catalog (Doc)", value: "metadata/config/catalog/TARGET_REP_CATALOG" },
+    // { label: "⚡ Quick Challenge Catalog (Doc)", value: "metadata/config/catalog/quick_challenge_catalog" },
+    // { label: "🛠️ Skill Content Library (Doc)", value: "metadata/config/catalog/SKILL_CONTENT_LIBRARY" },
   ];
 
   /* ----------------------- render ----------------------- */
@@ -755,9 +792,9 @@ export default function AdminDataMaintenance() {
             value={path}
             onChange={(e) => setPath(e.target.value)}
             placeholder="collection/document path… (supports <uid>)"
-            onKeyDown={(e) => { 
+            onKeyDown={(e) => {
                 if (e.key === "Enter") {
-                    if (isDocumentPath(path)) readDoc(); 
+                    if (isDocumentPath(path)) readDoc();
                     else if (isCollectionPath(path)) listCollection();
                 }
             }}
@@ -769,7 +806,7 @@ export default function AdminDataMaintenance() {
         </div>
         <div className="text-sm text-gray-600 font-medium">{explain}</div>
       </div>
-      
+
       {/* Status Bar */}
       <div className="mb-4 p-3 rounded-lg shadow-sm" style={{ backgroundColor: err ? '#fef2f2' : status.includes("✅") ? '#f0fdf4' : status.includes("❌") ? '#fef2f2' : '#eff6ff', border: err ? '1px solid #fca5a5' : status.includes("✅") ? '1px solid #86efac' : status.includes("❌") ? '1px solid #fca5a5' : '1px solid #93c5fd' }}>
         <div className="text-sm font-semibold">Status: <span className={err ? "text-red-700" : status.includes("✅") ? "text-green-700" : status.includes("❌") ? "text-red-700" : "text-blue-700"}>{status}</span></div>
@@ -781,13 +818,13 @@ export default function AdminDataMaintenance() {
           {/* Action Buttons */}
           <div className="flex flex-wrap gap-3 mb-6 p-4 bg-white rounded-lg shadow-md border">
             <button className="px-4 py-2 rounded-lg bg-indigo-600 text-white font-semibold hover:bg-indigo-700 transition shadow-md" onClick={readDoc}>🔍 Read Doc</button>
-            <button className={`px-4 py-2 rounded-lg border ${liveUnsub ? 'bg-red-100 text-red-600 border-red-300 hover:bg-red-200' : 'bg-white text-gray-700 hover:bg-gray-100'}`} onClick={listenDoc}>
+            <button className={`px-4 py-2 rounded-lg border ${liveUnsub ? 'bg-red-100 text-red-600 border-red-300 hover:bg-red-200' : 'bg-white text-gray-700 hover:bg-gray-100'}`} onClick={liveUnsub ? () => { liveUnsub(); setLiveUnsub(null); setStatus("Idle"); } : listenDoc}>
                 {liveUnsub ? '🔴 Stop Listening' : '👂 Listen (Live)'}
             </button>
             <button className="px-4 py-2 rounded-lg border border-green-300 bg-green-50 text-green-700 font-semibold hover:bg-green-100 transition" onClick={saveMerge}>💾 Save (Merge)</button>
             <button className="px-4 py-2 rounded-lg border border-yellow-300 bg-yellow-50 text-yellow-700 font-semibold hover:bg-yellow-100 transition" onClick={replaceSet}>🔄 Replace (Set)</button>
             <button className="px-4 py-2 rounded-lg border border-red-600 bg-red-50 text-red-600 font-semibold hover:bg-red-100 transition" onClick={deleteTheDoc} disabled={!docExists}>🗑️ Delete Doc</button>
-            
+
             <div className="ml-auto flex items-center gap-3">
               <button className="px-4 py-2 rounded-lg border bg-white hover:bg-gray-100 transition" onClick={exportJSON}>📥 Export JSON</button>
               <label className="px-4 py-2 rounded-lg border cursor-pointer bg-white hover:bg-gray-100 transition">📤 Import JSON
@@ -797,71 +834,78 @@ export default function AdminDataMaintenance() {
             </div>
           </div>
 
-          {/* Editors (Full Width) */}
-          <div className="flex flex-col gap-6 mb-6">
-            {/* Array Editor (Full Width) */}
-            <div className="bg-white p-4 rounded-lg shadow-md border">
-              <div className="flex items-center justify-between mb-3">
-                <div className="text-base font-semibold text-gray-800">Array Table Editor (Full Width)</div>
-                <div className="flex items-center gap-2">
-                  <span className="text-sm text-gray-600">Field:</span>
-                  <select 
-                    className="border border-gray-300 rounded-lg px-2 py-1 text-sm focus:ring-blue-500 focus:border-blue-500" 
-                    value={activeArray} 
-                    onChange={(e) => setActiveArray(e.target.value)}
-                  >
-                    <option value="" disabled>-- Select Array Field --</option>
-                    {arrayFields.map((f) => <option key={f} value={f}>{f}</option>)}
-                  </select>
-                </div>
-              </div>
-              {isReading ? <LoaderSpinner /> : arrayFields.length ? (
-                <ArrayTable
-                  fieldName={activeArray}
-                  rows={arrayRows}
-                  setRows={setArrayRows}
-                  onSave={saveArray}
-                  isLoading={isReading}
+          {/* Editors (Refined Layout) */}
+          <div className="flex flex-col xl:flex-row gap-6 mb-6">
+            {/* Left Column: JSON Editor */}
+             <div className="flex-1 bg-white p-4 rounded-lg shadow-md border">
+                <div className="text-base font-semibold text-gray-800 mb-2">Full Document JSON (Raw Edit)</div>
+                <textarea
+                    className="w-full min-h-[400px] xl:min-h-[600px] font-mono border border-gray-300 rounded p-3 text-xs bg-gray-50 focus:ring-indigo-500 focus:border-indigo-500"
+                    spellCheck={false}
+                    value={docJson}
+                    onChange={(e) => setDocJson(e.target.value)}
+                    placeholder="Document content will load here..."
                 />
-              ) : (
-                <div className="text-sm text-gray-600 p-4 border rounded bg-gray-50">
-                  No array fields (e.g., lists or arrays of objects) were found in the document. Click **Read Doc** to load an array-containing document.
+            </div>
+
+            {/* Right Column: KV and Array Editors */}
+            <div className="flex-1 flex flex-col gap-6">
+                 {/* KV Editor */}
+                <div className="bg-white p-4 rounded-lg shadow-md border">
+                  <div className="text-base font-semibold text-gray-800 mb-2">Key/Value Table (Dot-Path Editor)</div>
+                   {isReading ? <LoaderSpinner /> : (
+                      <KVEditor
+                        value={tryParse(docJson, {})} // Pass parsed object
+                        onChange={(obj) => setDocJson(pretty(obj))} // Update JSON string on change
+                        onSave={saveKV}
+                        isLoading={isReading || status.startsWith("Saving")} // Disable during save too
+                      />
+                   )}
                 </div>
-              )}
-            </div>
 
-            {/* KV Editor (Full Width) */}
-            <div className="bg-white p-4 rounded-lg shadow-md border">
-              <div className="text-base font-semibold text-gray-800 mb-2">Key/Value Table (Dot-Path Editor - Full Width)</div>
-              <KVEditor
-                value={docObj}
-                onChange={(obj) => setDocJson(pretty(obj))}
-                onSave={saveKV}
-                isLoading={isReading}
-              />
+                {/* Array Editor */}
+                <div className="bg-white p-4 rounded-lg shadow-md border">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="text-base font-semibold text-gray-800">Array Table Editor</div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm text-gray-600">Field:</span>
+                      <select
+                        className="border border-gray-300 rounded-lg px-2 py-1 text-sm focus:ring-blue-500 focus:border-blue-500"
+                        value={activeArray}
+                        onChange={(e) => setActiveArray(e.target.value)}
+                         disabled={arrayFields.length === 0}
+                      >
+                        <option value="" disabled={arrayFields.length > 0}>-- Select Array Field --</option>
+                        {arrayFields.map((f) => <option key={f} value={f}>{f}</option>)}
+                      </select>
+                    </div>
+                  </div>
+                  {isReading ? <LoaderSpinner /> : arrayFields.length > 0 && activeArray ? (
+                    <ArrayTable
+                      fieldName={activeArray}
+                      rows={arrayRows}
+                      setRows={setArrayRows}
+                      onSave={saveArray}
+                      isLoading={isReading || status.startsWith("Saving")}
+                    />
+                  ) : (
+                    <div className="text-sm text-gray-600 p-4 border rounded bg-gray-50">
+                      {isReading ? 'Loading...' : 'No array fields found or selected in the current document.'}
+                    </div>
+                  )}
+                </div>
             </div>
           </div>
 
-          {/* JSON Editor (Moved to Bottom, Full Width) */}
-          <div className="bg-white p-4 rounded-lg shadow-md border">
-            <div className="text-base font-semibold text-gray-800 mb-2">Full Document JSON (Raw Edit)</div>
-            <textarea 
-              className="w-full min-h-[500px] font-mono border border-gray-300 rounded p-3 text-xs bg-gray-50 focus:ring-indigo-500 focus:border-indigo-500" 
-              spellCheck={false} 
-              value={docJson} 
-              onChange={(e) => setDocJson(e.target.value)} 
-              placeholder="Document content will load here. Edit and use 'Save (Merge)' or 'Replace (Set)'."
-            />
-          </div>
         </>
       ) : isCollectionPath(path) ? (
         <>
           <div className="flex flex-wrap gap-3 mb-6 p-4 bg-white rounded-lg shadow-md border">
             <button className="px-4 py-2 rounded-lg bg-indigo-600 text-white font-semibold hover:bg-indigo-700 transition shadow-md" onClick={listCollection}>📋 List Collection (max 500)</button>
             <button className="px-4 py-2 rounded-lg border bg-white hover:bg-gray-100 transition" onClick={addRow}>➕ Add New Row (Local)</button>
-            <button className="px-4 py-2 rounded-lg border border-green-300 bg-green-50 text-green-700 font-semibold hover:bg-green-100 transition" onClick={batchSave} disabled={!rows.length}>💾 Batch Save All Changes</button>
-            <button className="px-4 py-2 rounded-lg border border-red-600 bg-red-50 text-red-600 font-semibold hover:bg-red-100 transition" onClick={deleteSelected} disabled={!Object.values(selected).some(Boolean)}>🗑️ Delete Selected</button>
-            
+            <button className="px-4 py-2 rounded-lg border border-green-300 bg-green-50 text-green-700 font-semibold hover:bg-green-100 transition" onClick={batchSave} disabled={!rows.length || status.startsWith("Batch saving")}>💾 Batch Save All Changes</button>
+            <button className="px-4 py-2 rounded-lg border border-red-600 bg-red-50 text-red-600 font-semibold hover:bg-red-100 transition" onClick={deleteSelected} disabled={!Object.values(selected).some(Boolean) || status.startsWith("Deleting")}>🗑️ Delete Selected</button>
+
             <div className="ml-auto flex items-center gap-3">
                 <button className="px-4 py-2 rounded-lg border bg-white hover:bg-gray-100 transition" onClick={exportCSV} disabled={!rows.length}>📥 Export CSV</button>
                 <label className="px-4 py-2 rounded-lg border cursor-pointer bg-white hover:bg-gray-100 transition">📤 Import JSON
@@ -874,56 +918,62 @@ export default function AdminDataMaintenance() {
           </div>
 
           <div className="overflow-x-auto border rounded-lg shadow-md bg-white">
-            <table className="min-w-full text-sm">
-              <thead className="bg-gray-100 sticky top-0">
-                <tr>
-                  <th className="p-2 border-b w-10">
-                    <input type="checkbox" checked={Object.keys(selected).length === rows.length && rows.length > 0 && Object.values(selected).every(Boolean)} onChange={toggleAll} title="Select All" />
-                  </th>
-                  {cols.map((c) => <th key={c} className="p-3 border-b text-left font-semibold text-gray-700">{c}</th>)}
-                  <th className="p-3 border-b font-semibold text-gray-700">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {!rows.length ? (
-                  <tr><td colSpan={cols.length + 2} className="p-8 text-center text-gray-500">No documents loaded. Click <b>List Collection</b> or <b>Add New Row</b>.</td></tr>
-                ) : rows.map((r) => (
-                  <tr key={r._id} className="odd:bg-white even:bg-gray-50 hover:bg-yellow-50 transition">
-                    <td className="p-2 border-b align-top text-center">
-                      <input type="checkbox" checked={!!selected[r._id]} onChange={() => toggle(r._id)} />
-                    </td>
-                    {cols.map((c) => (
-                      <td key={c} className="p-1.5 border-b align-top">
-                        {c === "_id" ? (
-                          <div className={`px-2 py-1 rounded font-mono text-xs ${r._id.startsWith("__new__") ? 'bg-yellow-200 text-yellow-800' : 'bg-gray-100 text-gray-700'}`} title={r._id.startsWith("__new__") ? "New ID (will be generated on save)" : "Document ID"}>{r._id.startsWith("__new__") ? 'NEW' : r._id}</div>
-                        ) : (
-                          <input 
-                            className="w-full border rounded px-2 py-1 font-mono text-xs focus:ring-blue-500 focus:border-blue-500" 
-                            value={r[c] ?? ""} 
-                            onChange={(e) => setCell(r._id, c, e.target.value)} 
-                            placeholder={c}
-                            title={c}
-                          />
-                        )}
-                      </td>
+             {isReading ? <LoaderSpinner/> : (
+                <table className="min-w-full text-sm">
+                  <thead className="bg-gray-100 sticky top-0">
+                    <tr>
+                      <th className="p-2 border-b w-10">
+                        <input type="checkbox" checked={Object.keys(selected).length === rows.length && rows.length > 0 && Object.values(selected).every(Boolean)} onChange={toggleAll} title="Select All" />
+                      </th>
+                      {cols.map((c) => <th key={c} className="p-3 border-b text-left font-semibold text-gray-700">{c}</th>)}
+                      <th className="p-3 border-b font-semibold text-gray-700">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {!rows.length ? (
+                      <tr><td colSpan={cols.length + 2} className="p-8 text-center text-gray-500">No documents loaded. Click <b>List Collection</b> or <b>Add New Row</b>.</td></tr>
+                    ) : rows.map((r) => (
+                      <tr key={r._id} className="odd:bg-white even:bg-gray-50 hover:bg-yellow-50 transition">
+                        <td className="p-2 border-b align-top text-center">
+                          <input type="checkbox" checked={!!selected[r._id]} onChange={() => toggle(r._id)} />
+                        </td>
+                        {cols.map((c) => (
+                          <td key={c} className="p-1.5 border-b align-top">
+                            {c === "_id" ? (
+                              <div className={`px-2 py-1 rounded font-mono text-xs ${r._id.startsWith("__new__") ? 'bg-yellow-200 text-yellow-800' : 'bg-gray-100 text-gray-700'}`} title={r._id.startsWith("__new__") ? "New ID (will be generated on save)" : "Document ID"}>{r._id.startsWith("__new__") ? 'NEW' : r._id}</div>
+                            ) : (
+                               <textarea
+                                className="w-full border rounded px-2 py-1 font-mono text-xs h-16 resize-y" // Use textarea
+                                value={r[c] ?? ""}
+                                onChange={(e) => setCell(r._id, c, e.target.value)}
+                                placeholder={c}
+                                title={c}
+                                rows={1}
+                              />
+                            )}
+                          </td>
+                        ))}
+                        <td className="p-2 border-b align-top text-center">
+                           <button className="text-xs text-red-600 underline hover:text-red-800" onClick={async () => {
+                              if (!window.confirm(`Delete document ${r._id}? New rows cannot be deleted individually.`)) return;
+                              if (r._id.startsWith("__new__")) {
+                                 setRows((prev) => prev.filter((x) => x._id !== r._id)); // Remove local new row
+                                 setStatus("ℹ️ Removed new local row.");
+                                 return;
+                              }
+                              try {
+                                const p = normalizePath(path, uid);
+                                await deleteDoc(doc(collection(db, ...pathParts(p)), r._id));
+                                setRows((prev) => prev.filter((x) => x._id !== r._id));
+                                setStatus(`✅ Deleted document ${r._id}.`);
+                              } catch (e) { setErr(String(e)); setStatus("❌ Error"); }
+                            }}>🗑️ delete</button>
+                        </td>
+                      </tr>
                     ))}
-                    <td className="p-2 border-b align-top text-center">
-                      {r._id.startsWith("__new__") ? <span className="text-xs text-yellow-700 font-medium">Local New</span> : (
-                        <button className="text-xs text-red-600 underline hover:text-red-800" onClick={async () => {
-                          if (!window.confirm(`Delete document ${r._id}?`)) return;
-                          try {
-                            const p = normalizePath(path, uid);
-                            await deleteDoc(doc(collection(db, ...pathParts(p)), r._id));
-                            setRows((prev) => prev.filter((x) => x._id !== r._id));
-                            setStatus(`✅ Deleted document ${r._id}.`);
-                          } catch (e) { setErr(String(e)); setStatus("❌ Error"); }
-                        }}>🗑️ delete</button>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+                  </tbody>
+                </table>
+             )}
           </div>
         </>
       ) : null}
