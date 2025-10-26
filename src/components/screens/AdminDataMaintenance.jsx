@@ -1,378 +1,468 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { getAuth } from "firebase/auth";
 import {
   getFirestore,
   doc,
-  getDoc,
-  setDoc,
-  deleteDoc,
-  onSnapshot,
   collection,
+  getDoc,
   getDocs,
-  writeBatch
+  onSnapshot,
+  setDoc,
+  addDoc,
+  deleteDoc,
+  writeBatch,
+  query,
+  limit as qLimit,
 } from "firebase/firestore";
+import { getAuth } from "firebase/auth";
 
-/**
- * Utility helpers
- */
-const jsonPretty = (v) => JSON.stringify(v, null, 2);
-const safeParse = (text) => {
-  if (!text?.trim()) return {};
-  try {
-    return JSON.parse(text);
-  } catch (e) {
-    throw new Error("Invalid JSON in editor.");
+/** ---------- tiny helpers ---------- */
+
+const pretty = (obj) => JSON.stringify(obj ?? {}, null, 2);
+const tryParse = (txt, fallback = {}) => {
+  try { return JSON.parse(txt); } catch { return fallback; }
+};
+
+const pathKind = (path) => {
+  const count = path.trim().split("/").filter(Boolean).length;
+  if (!count) return "invalid";
+  return count % 2 === 0 ? "document" : "collection";
+};
+
+const explainPath = (path) => {
+  const kind = pathKind(path);
+  if (kind === "document") {
+    return "Path type: document — You can read, listen, edit, replace or delete.";
   }
+  if (kind === "collection") {
+    return "Path type: collection — You can list, add, import documents here.";
+  }
+  return "Enter a Firestore path.";
 };
-const isEven = (n) => n % 2 === 0;
-const pathParts = (p) => p.split("/").filter(Boolean);
-const uidify = (p, uid) => p.replaceAll("<uid>", uid || "<uid>");
-const isObject = (v) => v && typeof v === "object" && !Array.isArray(v);
 
-/** very light CSV helpers (no commas in headers recommended) */
-const csvEscape = (s) => {
-  const v = String(s ?? "");
-  if (/[",\n]/.test(v)) return `"${v.replace(/"/g, '""')}"`;
-  return v;
+const flatten = (obj, prefix = "", out = {}) => {
+  Object.entries(obj || {}).forEach(([k, v]) => {
+    const key = prefix ? `${prefix}.${k}` : k;
+    if (v && typeof v === "object" && !Array.isArray(v)) {
+      flatten(v, key, out);
+    } else {
+      out[key] = Array.isArray(v) || typeof v === "object" ? JSON.stringify(v) : v;
+    }
+  });
+  return out;
 };
+
+const unflattenOneLevel = (obj) => {
+  // Converts dot.notation back one level deep (simple & good enough for admin)
+  const out = {};
+  Object.entries(obj).forEach(([k, v]) => {
+    const parts = k.split(".");
+    if (parts.length === 1) {
+      out[k] = v;
+    } else {
+      const [head, ...rest] = parts;
+      out[head] = out[head] || {};
+      // shove the rest back as a nested object literal
+      let cursor = out[head];
+      while (rest.length > 1) {
+        const p = rest.shift();
+        cursor[p] = cursor[p] || {};
+        cursor = cursor[p];
+      }
+      cursor[rest[0]] = v;
+    }
+  });
+  return out;
+};
+
+const inferColumns = (rows) => {
+  const keys = new Set(["_id"]);
+  rows.forEach((r) => Object.keys(r).forEach((k) => keys.add(k)));
+  return Array.from(keys);
+};
+
+const nowIso = () => new Date().toISOString();
+
+/** CSV helpers (simple: header + comma separated; quotes preserved if present) */
 const toCSV = (rows) => {
-  if (!rows?.length) return "";
-  // Gather union of keys
-  const keys = Array.from(
-    rows.reduce((set, r) => {
-      Object.keys(r || {}).forEach((k) => set.add(k));
-      return set;
-    }, new Set(["_id"]))
-  );
-  const header = keys.join(",");
+  if (!rows.length) return "";
+  const cols = inferColumns(rows);
+  const esc = (v) => {
+    const s = v === undefined || v === null ? "" : String(v);
+    // naive CSV escaping
+    return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+  };
+  const header = cols.join(",");
   const body = rows
-    .map((r) => keys.map((k) => csvEscape(r?.[k] ?? "")).join(","))
+    .map((r) => cols.map((c) => esc(r[c])).join(","))
     .join("\n");
   return `${header}\n${body}`;
 };
+
 const fromCSV = (text) => {
-  const lines = text
-    .split(/\r?\n/)
-    .map((l) => l.trim())
-    .filter((l) => l.length > 0);
-  if (lines.length === 0) return [];
-  const parseLine = (line) => {
-    const out = [];
-    let cur = "";
-    let inQ = false;
-    for (let i = 0; i < line.length; i++) {
-      const c = line[i];
-      if (inQ) {
-        if (c === '"' && line[i + 1] === '"') {
-          cur += '"';
-          i++;
-        } else if (c === '"') {
-          inQ = false;
-        } else {
-          cur += c;
-        }
-      } else {
-        if (c === ",") {
-          out.push(cur);
-          cur = "";
-        } else if (c === '"') {
-          inQ = true;
-        } else {
-          cur += c;
-        }
-      }
-    }
-    out.push(cur);
-    return out;
+  const lines = text.split(/\r?\n/).filter(Boolean);
+  if (!lines.length) return [];
+  const headers = lines[0].split(",");
+  const parseCell = (cell) => {
+    const unq = cell.replace(/^"(.*)"$/, (_, p1) => p1.replace(/""/g, '"'));
+    // try simple JSON-ish parse
+    try { return JSON.parse(unq); } catch { return unq; }
   };
-  const headers = parseLine(lines[0]);
-  return lines.slice(1).map((ln) => {
-    const vals = parseLine(ln);
-    const obj = {};
-    headers.forEach((h, i) => (obj[h] = vals[i] ?? ""));
-    return obj;
+  return lines.slice(1).map((line) => {
+    const parts = line.match(/("([^"]|"")*"|[^,]+)/g) || [];
+    const row = {};
+    headers.forEach((h, i) => (row[h] = parseCell(parts[i] ?? "")));
+    return row;
   });
 };
 
-const DocBadge = ({ exists }) => (
-  <span
-    className={`ml-2 inline-block text-xs px-2 py-1 rounded ${
-      exists ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"
-    }`}
-  >
-    Doc exists: {String(!!exists)}
-  </span>
-);
+/** ---------- Component ---------- */
 
 export default function AdminDataMaintenance() {
-  const auth = getAuth();
   const db = getFirestore();
-
-  // UI state
-  const [rawPath, setRawPath] = useState("metadata/reading_catalog");
+  const auth = getAuth();
+  const uid = auth.currentUser?.uid || "<uid>";
+  const [path, setPath] = useState(`metadata/reading_catalog`);
   const [status, setStatus] = useState("Idle");
   const [error, setError] = useState("");
+  const [docJson, setDocJson] = useState("{}");
   const [docExists, setDocExists] = useState(false);
-  const [jsonText, setJsonText] = useState("{}");
+  const [liveUnsub, setLiveUnsub] = useState(null);
 
-  // collection data grid
-  const [rows, setRows] = useState([]); // [{_id, ...fields}]
-  const [selectedIds, setSelectedIds] = useState(new Set());
+  // collection state
+  const [rows, setRows] = useState([]);              // flattened rows
+  const [selectedIds, setSelectedIds] = useState({});
+  const [pending, setPending] = useState(false);
 
-  // live listener
-  const liveUnsubRef = useRef(null);
-
-  const uid = auth.currentUser?.uid || "";
-  const resolvedPath = useMemo(() => uidify(rawPath, uid), [rawPath, uid]);
-  const parts = useMemo(() => pathParts(resolvedPath), [resolvedPath]);
-  const pathType = parts.length === 0 ? "empty" : isEven(parts.length) ? "document" : "collection";
+  // document array editor
+  const docObj = useMemo(() => tryParse(docJson, {}), [docJson]);
+  const arrayFields = useMemo(
+    () => Object.entries(docObj)
+      .filter(([, v]) => Array.isArray(v) && v.every((x) => typeof x === "object"))
+      .map(([k]) => k),
+    [docObj]
+  );
+  const [arrayField, setArrayField] = useState("");
+  const arrayRows = useMemo(() => {
+    const arr = Array.isArray(docObj?.[arrayField]) ? docObj[arrayField] : [];
+    return arr.map((o, i) => ({ _id: String(i), ...flatten(o) }));
+  }, [docObj, arrayField]);
 
   useEffect(() => {
-    // cleanup live listener when path changes
-    if (liveUnsubRef.current) {
-      liveUnsubRef.current();
-      liveUnsubRef.current = null;
-    }
-    // reset UI bits
-    setError("");
-    setStatus("Idle");
-    setDocExists(false);
-    setRows([]);
-  }, [resolvedPath]);
+    if (!arrayField && arrayFields.length) setArrayField(arrayFields[0]);
+  }, [arrayFields, arrayField]);
 
-  /** Presets for quick navigation */
-  const presets = [
-    { label: "metadata/config (doc)", value: "metadata/config" },
-    { label: "metadata/reading_catalog (doc)", value: "metadata/reading_catalog" },
-    { label: "leadership_plan/<uid>/profile/roadmap (doc)", value: "leadership_plan/<uid>/profile/roadmap" },
-    { label: "user_commitments/<uid>/profile/active (doc)", value: "user_commitments/<uid>/profile/active" },
-    { label: "user_planning/<uid>/profile/drafts (doc)", value: "user_planning/<uid>/profile/drafts" },
-    { label: "metadata (collection)", value: "metadata" }
-  ];
+  const kind = pathKind(path);
 
   /** ------- Document actions ------- */
+
   const readDoc = async () => {
+    setStatus("Reading…");
+    setError("");
     try {
-      setStatus("Reading…");
-      setError("");
-      const snap = await getDoc(doc(db, ...parts));
+      const ref = doc(db, ...path.split("/"));
+      const snap = await getDoc(ref);
       setDocExists(snap.exists());
-      setJsonText(snap.exists() ? jsonPretty(snap.data()) : "{}");
-      setStatus("Ready");
+      setDocJson(pretty(snap.exists() ? snap.data() : {}));
+      setStatus("Done");
     } catch (e) {
-      setError(String(e?.message || e));
       setStatus("Error");
+      setError(String(e));
     }
   };
 
-  const listenDoc = async () => {
+  const listenDoc = () => {
+    setStatus("Listening…");
+    setError("");
     try {
-      if (liveUnsubRef.current) {
-        liveUnsubRef.current();
-        liveUnsubRef.current = null;
-        setStatus("Live listener: OFF");
-        return;
-      }
-      const unsub = onSnapshot(doc(db, ...parts), (snap) => {
-        setDocExists(snap.exists());
-        setJsonText(snap.exists() ? jsonPretty(snap.data()) : "{}");
-      });
-      liveUnsubRef.current = unsub;
-      setStatus("Live listener: ON");
+      liveUnsub && liveUnsub();
+      const ref = doc(db, ...path.split("/"));
+      const unsub = onSnapshot(
+        ref,
+        (snap) => {
+          setDocExists(snap.exists());
+          setDocJson(pretty(snap.exists() ? snap.data() : {}));
+          setStatus("Live");
+        },
+        (e) => {
+          setStatus("Error");
+          setError(String(e));
+        }
+      );
+      setLiveUnsub(() => unsub);
     } catch (e) {
-      setError(String(e?.message || e));
       setStatus("Error");
+      setError(String(e));
     }
   };
 
   const saveMerge = async () => {
+    setStatus("Saving (merge) …");
+    setError("");
     try {
-      setStatus("Saving (merge)…");
-      setError("");
-      const data = safeParse(jsonText);
-      await setDoc(doc(db, ...parts), data, { merge: true });
-      setStatus("Saved (merge)");
-      setDocExists(true);
+      const data = tryParse(docJson, null);
+      if (data === null) throw new Error("Invalid JSON.");
+      const ref = doc(db, ...path.split("/"));
+      await setDoc(ref, data, { merge: true });
+      setStatus("Saved (merge).");
     } catch (e) {
-      setError(String(e?.message || e));
       setStatus("Error");
+      setError(String(e));
     }
   };
 
   const replaceSet = async () => {
+    setStatus("Replacing (set) …");
+    setError("");
     try {
-      setStatus("Replacing (set)…");
-      setError("");
-      const data = safeParse(jsonText);
-      await setDoc(doc(db, ...parts), data, { merge: false });
-      setStatus("Replaced (set)");
-      setDocExists(true);
+      const data = tryParse(docJson, null);
+      if (data === null) throw new Error("Invalid JSON.");
+      const ref = doc(db, ...path.split("/"));
+      await setDoc(ref, data);
+      setStatus("Replaced (set).");
     } catch (e) {
-      setError(String(e?.message || e));
       setStatus("Error");
+      setError(String(e));
     }
   };
 
-  const removeDoc = async () => {
+  const deleteTheDoc = async () => {
+    setStatus("Deleting …");
+    setError("");
     try {
-      setStatus("Deleting…");
-      setError("");
-      await deleteDoc(doc(db, ...parts));
+      const ref = doc(db, ...path.split("/"));
+      await deleteDoc(ref);
       setDocExists(false);
-      setJsonText("{}");
-      setStatus("Deleted");
+      setDocJson("{}");
+      setStatus("Deleted.");
     } catch (e) {
-      setError(String(e?.message || e));
       setStatus("Error");
+      setError(String(e));
     }
   };
 
-  const exportDocJSON = () => {
-    const blob = new Blob([jsonText || "{}"], { type: "application/json;charset=utf-8" });
-    const a = document.createElement("a");
-    a.href = URL.createObjectURL(blob);
-    a.download = `${parts.join("_")}.json`;
-    a.click();
-  };
-
-  const importDocJSON = async (file) => {
-    const text = await file.text();
-    // just load into editor; user saves explicitly
-    setJsonText(text);
+  /** Save the array-field table back into the document */
+  const saveArrayField = async () => {
+    if (!arrayField) return;
+    setStatus(`Saving array "${arrayField}" …`);
+    setError("");
+    try {
+      // convert flattened table back to array of objects
+      const toWrite = arrayRows
+        .map(({ _id, ...rest }) => unflattenOneLevel(rest));
+      const ref = doc(db, ...path.split("/"));
+      await setDoc(ref, { [arrayField]: toWrite, _lastEdited: nowIso() }, { merge: true });
+      setStatus(`Saved "${arrayField}".`);
+      // refresh doc
+      await readDoc();
+    } catch (e) {
+      setStatus("Error");
+      setError(String(e));
+    }
   };
 
   /** ------- Collection actions ------- */
+
   const listCollection = async () => {
+    setPending(true);
+    setError("");
+    setStatus("Listing …");
+    setRows([]);
+    setSelectedIds({});
     try {
-      setStatus("Listing…");
-      setError("");
-      const cRef = collection(db, ...parts);
-      const qs = await getDocs(cRef);
-      const out = [];
-      qs.forEach((d) => out.push({ _id: d.id, ...(d.data() || {}) }));
-      setRows(out);
-      setSelectedIds(new Set());
-      setStatus(`Loaded ${out.length} docs`);
+      const ref = collection(db, ...path.split("/"));
+      const q = query(ref, qLimit(200));
+      const snap = await getDocs(q);
+      const list = [];
+      snap.forEach((d) => {
+        const flat = flatten(d.data());
+        list.push({ _id: d.id, ...flat });
+      });
+      setRows(list);
+      setStatus(`Listed ${list.length} docs.`);
     } catch (e) {
-      setError(String(e?.message || e));
       setStatus("Error");
+      setError(String(e));
+    } finally {
+      setPending(false);
     }
   };
 
   const addRow = () => {
-    const id = `doc_${Math.random().toString(36).slice(2, 8)}`;
-    setRows((r) => [{ _id: id }, ...r]);
+    const tempId = "__new__" + Math.random().toString(36).slice(2, 8);
+    setRows((r) => [{ _id: tempId }, ...r]);
   };
 
-  const toggleRow = (id) => {
-    setSelectedIds((s) => {
-      const n = new Set(s);
-      if (n.has(id)) n.delete(id);
-      else n.add(id);
-      return n;
-    });
+  const updateCell = (rowId, key, value) => {
+    setRows((prev) =>
+      prev.map((r) => (r._id === rowId ? { ...r, [key]: value } : r))
+    );
   };
 
-  const quickEdit = (id, key, value) => {
-    setRows((r) => r.map((row) => (row._id === id ? { ...row, [key]: value } : row)));
+  const toggleSelect = (rowId) => {
+    setSelectedIds((s) => ({ ...s, [rowId]: !s[rowId] }));
   };
 
   const batchSave = async () => {
+    setPending(true);
+    setError("");
+    setStatus("Batch saving …");
     try {
-      setStatus("Batch saving…");
-      setError("");
-      const b = writeBatch(db);
-      const cRef = collection(db, ...parts);
-      rows.forEach((row) => {
-        const { _id, ...rest } = row || {};
-        // auto-id if empty
-        const docRef = _id ? doc(cRef, _id) : doc(cRef);
-        b.set(docRef, rest, { merge: true });
-      });
-      await b.commit();
-      setStatus("Batch saved");
-      await listCollection();
+      const colRef = collection(db, ...path.split("/"));
+      const batch = writeBatch(db);
+      const createdIds = [];
+
+      for (const r of rows) {
+        const { _id, ...flatRest } = r;
+        const toWrite = unflattenOneLevel(flatRest);
+
+        if (_id.startsWith("__new__")) {
+          // allocate an id first so we can use batch
+          const newRef = doc(colRef);
+          batch.set(newRef, toWrite, { merge: true });
+          createdIds.push({ temp: _id, real: newRef.id });
+        } else {
+          const ref = doc(colRef, _id);
+          batch.set(ref, toWrite, { merge: true });
+        }
+      }
+
+      await batch.commit();
+      // swap temp ids with real ones
+      if (createdIds.length) {
+        setRows((prev) =>
+          prev.map((r) => {
+            const found = createdIds.find((x) => x.temp === r._id);
+            return found ? { ...r, _id: found.real } : r;
+          })
+        );
+      }
+      setStatus("Batch saved.");
     } catch (e) {
-      setError(String(e?.message || e));
       setStatus("Error");
+      setError(String(e));
+    } finally {
+      setPending(false);
     }
   };
 
   const deleteSelected = async () => {
+    const ids = Object.keys(selectedIds).filter((k) => selectedIds[k]);
+    if (!ids.length) return;
+    setPending(true);
+    setError("");
+    setStatus("Deleting selected …");
     try {
-      setStatus("Deleting selected…");
-      setError("");
-      const b = writeBatch(db);
-      const cRef = collection(db, ...parts);
-      rows.forEach((row) => {
-        if (selectedIds.has(row._id)) {
-          b.delete(doc(cRef, row._id));
+      const colRef = collection(db, ...path.split("/"));
+      const batch = writeBatch(db);
+      ids.forEach((id) => {
+        if (!id.startsWith("__new__")) {
+          batch.delete(doc(colRef, id));
         }
       });
-      await b.commit();
-      setStatus("Deleted selected");
-      await listCollection();
+      await batch.commit();
+      setRows((prev) => prev.filter((r) => !ids.includes(r._id)));
+      setSelectedIds({});
+      setStatus("Deleted.");
     } catch (e) {
-      setError(String(e?.message || e));
       setStatus("Error");
+      setError(String(e));
+    } finally {
+      setPending(false);
     }
   };
 
-  const exportCollectionJSON = () => {
-    const blob = new Blob([jsonPretty(rows)], { type: "application/json;charset=utf-8" });
+  /** ------- Import / Export ------- */
+
+  const exportJSON = () => {
+    const blob = new Blob([docJson], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
-    a.href = URL.createObjectURL(blob);
-    a.download = `${parts.join("_")}.json`;
+    a.href = url;
+    a.download = (path.replace(/\//g, "_") || "export") + ".json";
     a.click();
+    URL.revokeObjectURL(url);
   };
 
-  const exportCollectionCSV = () => {
-    const blob = new Blob([toCSV(rows)], { type: "text/csv;charset=utf-8" });
+  const importJSON = (evt) => {
+    const file = evt.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      const txt = String(reader.result || "");
+      if (kind === "document") setDocJson(txt);
+      else {
+        const arr = tryParse(txt, []);
+        if (!Array.isArray(arr)) {
+          setError("JSON must be an array of documents for collection import.");
+          return;
+        }
+        // normalize each row to flattened view
+        setRows(
+          arr.map((o) => {
+            const id = o._id || "__new__" + Math.random().toString(36).slice(2, 8);
+            const { _id, ...rest } = o;
+            return { _id: id, ...flatten(rest) };
+          })
+        );
+      }
+    };
+    reader.readAsText(file);
+    evt.target.value = "";
+  };
+
+  const exportCSV = () => {
+    const csv = toCSV(rows);
+    const blob = new Blob([csv], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
-    a.href = URL.createObjectURL(blob);
-    a.download = `${parts.join("_")}.csv`;
+    a.href = url;
+    a.download = (path.replace(/\//g, "_") || "export") + ".csv";
     a.click();
+    URL.revokeObjectURL(url);
   };
 
-  const importCollectionJSON = async (file) => {
-    const text = await file.text();
-    const data = JSON.parse(text);
-    if (Array.isArray(data)) {
-      // [{_id?, ...}]
-      setRows(data.map((d, i) => ({ _id: d._id || `row_${i}`, ...d })));
-    } else if (isObject(data)) {
-      // {id: {...}}
-      const arr = Object.entries(data).map(([id, v]) => ({ _id: id, ...(v || {}) }));
-      setRows(arr);
-    } else {
-      throw new Error("JSON must be an array of docs or an object keyed by id.");
-    }
+  const importCSV = (evt) => {
+    const file = evt.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      const txt = String(reader.result || "");
+      const arr = fromCSV(txt);
+      setRows(
+        arr.map((r) => {
+          const id = r._id || "__new__" + Math.random().toString(36).slice(2, 8);
+          const { _id, ...rest } = r;
+          return { _id: id, ...rest };
+        })
+      );
+    };
+    reader.readAsText(file);
+    evt.target.value = "";
   };
 
-  const importCollectionCSV = async (file) => {
-    const text = await file.text();
-    const arr = fromCSV(text);
-    setRows(arr.map((r, i) => ({ _id: r._id || `row_${i}`, ...r })));
-  };
+  /** ------- UI helpers ------- */
+  const presets = [
+    { label: "metadata/config (doc)", value: "metadata/config" },
+    { label: "metadata/reading_catalog (doc)", value: "metadata/reading_catalog" },
+    { label: "leadership_plan/<uid>/profile/roadmap (doc)", value: `leadership_plan/${uid}/profile/roadmap` },
+    { label: "user_commitments/<uid>/profile/active (doc)", value: `user_commitments/${uid}/profile/active` },
+    { label: "user_planning/<uid>/profile/drafts (doc)", value: `user_planning/${uid}/profile/drafts` },
+    { label: "metadata (collection)", value: "metadata" },
+  ];
 
-  /** Columns for grid (union of keys across rows) */
-  const gridColumns = useMemo(() => {
-    const set = new Set(["_id"]);
-    rows.forEach((r) => Object.keys(r || {}).forEach((k) => set.add(k)));
-    return Array.from(set);
-  }, [rows]);
+  const cols = useMemo(() => inferColumns(rows), [rows]);
 
+  /** ------- Render ------- */
   return (
-    <div className="max-w-6xl mx-auto px-4 py-6">
+    <div className="p-6">
       <h1 className="text-2xl font-semibold mb-4">Admin · Firestore Data Manager</h1>
 
-      {/* Presets */}
       <div className="flex flex-wrap gap-2 mb-3">
         {presets.map((p) => (
           <button
-            key={p.label}
-            onClick={() => setRawPath(p.value)}
-            className="text-xs px-2 py-1 rounded bg-gray-100 hover:bg-gray-200"
+            key={p.value}
+            className="px-2 py-1 rounded border text-sm hover:bg-gray-50"
+            onClick={() => setPath(p.value)}
             title={p.value}
           >
             {p.label}
@@ -380,182 +470,279 @@ export default function AdminDataMaintenance() {
         ))}
       </div>
 
-      {/* Path + Help */}
       <div className="flex items-center gap-2 mb-2">
         <input
-          value={rawPath}
-          onChange={(e) => setRawPath(e.target.value)}
-          className="flex-1 border rounded px-3 py-2 font-mono text-sm"
-          placeholder="collection/abc or collection/abc/doc/xyz …"
+          className="flex-1 border rounded px-3 py-2"
+          value={path}
+          onChange={(e) => setPath(e.target.value)}
+          placeholder="collection or document path…"
         />
         <button
-          className="px-3 py-2 text-sm rounded bg-gray-100 hover:bg-gray-200"
-          onClick={() =>
-            alert(
-              "Rule of thumb:\n- Collections have an ODD number of path parts and can be listed.\n- Documents have an EVEN number of parts and can be read/edited.\n\nExamples\n  metadata (collection)\n  metadata/reading_catalog (document)\n  leadership_plan/<uid>/profile (collection)\n  leadership_plan/<uid>/profile/roadmap (document)"
-            )
-          }
+          className="px-3 py-2 border rounded"
+          onClick={() => alert(
+            "Rule of thumb:\n• Collection path = odd number of segments (e.g., `metadata` or `users/<uid>/posts`)\n• Document path = even number of segments (e.g., `metadata/config`)\n\n" + explainPath(path)
+          )}
         >
           Path Help
         </button>
       </div>
+      <div className="text-sm text-gray-600 mb-3">{explainPath(path)}</div>
 
-      <div className="text-xs text-gray-600 mb-3">
-        Resolved path: <code className="font-mono">{resolvedPath}</code> · Path type:{" "}
-        <span className="font-semibold">{pathType}</span>{" "}
-        {auth.currentUser && (
-          <span className="ml-2">
-            (UID: <span className="font-mono">{auth.currentUser.uid}</span>)
-          </span>
-        )}
-      </div>
-
-      {/* Actions */}
-      {pathType === "document" ? (
-        <div className="flex flex-wrap gap-2 mb-2">
-          <button onClick={readDoc} className="px-3 py-2 rounded bg-gray-900 text-white">
-            Read Doc
-          </button>
-          <button onClick={listenDoc} className="px-3 py-2 rounded bg-indigo-600 text-white">
-            Listen (live)
-          </button>
-          <button onClick={saveMerge} className="px-3 py-2 rounded bg-blue-600 text-white">
-            Save (Merge)
-          </button>
-          <button onClick={replaceSet} className="px-3 py-2 rounded bg-purple-600 text-white">
-            Replace (Set)
-          </button>
-          <button onClick={removeDoc} className="px-3 py-2 rounded bg-red-600 text-white">
-            Delete Doc
-          </button>
-          <button onClick={exportDocJSON} className="px-3 py-2 rounded bg-gray-100">
-            Export JSON
-          </button>
-          <label className="px-3 py-2 rounded bg-gray-100 cursor-pointer">
+      {/* Action bar */}
+      {kind === "document" ? (
+        <div className="flex flex-wrap gap-2 mb-3">
+          <button className="px-3 py-2 rounded bg-gray-800 text-white" onClick={readDoc}>Read Doc</button>
+          <button className="px-3 py-2 rounded border" onClick={listenDoc}>Listen (live)</button>
+          <button className="px-3 py-2 rounded border" onClick={saveMerge}>Save (Merge)</button>
+          <button className="px-3 py-2 rounded border" onClick={replaceSet}>Replace (Set)</button>
+          <button className="px-3 py-2 rounded border text-red-600" onClick={deleteTheDoc}>Delete Doc</button>
+          <button className="px-3 py-2 rounded border" onClick={exportJSON}>Export JSON</button>
+          <label className="px-3 py-2 rounded border cursor-pointer">
             Import JSON
-            <input
-              type="file"
-              accept=".json,application/json"
-              className="hidden"
-              onChange={(e) => e.target.files?.[0] && importDocJSON(e.target.files[0])}
-            />
+            <input type="file" accept="application/json" className="hidden" onChange={importJSON} />
           </label>
-          <DocBadge exists={docExists} />
+          <div className="ml-auto text-sm">
+            Doc exists: <span className={docExists ? "text-green-700" : "text-red-700"}>{String(docExists)}</span>
+          </div>
         </div>
-      ) : pathType === "collection" ? (
-        <div className="flex flex-wrap gap-2 mb-2">
-          <button onClick={listCollection} className="px-3 py-2 rounded bg-gray-900 text-white">
+      ) : kind === "collection" ? (
+        <div className="flex flex-wrap gap-2 mb-3">
+          <button className="px-3 py-2 rounded bg-gray-800 text-white" onClick={listCollection} disabled={pending}>
             List Collection
           </button>
-          <button onClick={addRow} className="px-3 py-2 rounded bg-blue-600 text-white">
-            + Add Row
-          </button>
-          <button onClick={batchSave} className="px-3 py-2 rounded bg-green-600 text-white">
+          <button className="px-3 py-2 rounded border" onClick={addRow}>Add Row</button>
+          <button className="px-3 py-2 rounded border" onClick={batchSave} disabled={!rows.length || pending}>
             Batch Save
           </button>
-          <button onClick={deleteSelected} className="px-3 py-2 rounded bg-red-600 text-white">
+          <button className="px-3 py-2 rounded border text-red-600" onClick={deleteSelected} disabled={!Object.values(selectedIds).some(Boolean) || pending}>
             Delete Selected
           </button>
-          <label className="px-3 py-2 rounded bg-gray-100 cursor-pointer">
+          <button className="px-3 py-2 rounded border" onClick={exportCSV} disabled={!rows.length}>Export CSV</button>
+          <label className="px-3 py-2 rounded border cursor-pointer">
             Import JSON
-            <input
-              type="file"
-              accept=".json,application/json"
-              className="hidden"
-              onChange={(e) => e.target.files?.[0] && importCollectionJSON(e.target.files[0])}
-            />
+            <input type="file" accept="application/json" className="hidden" onChange={importJSON} />
           </label>
-          <label className="px-3 py-2 rounded bg-gray-100 cursor-pointer">
+          <label className="px-3 py-2 rounded border cursor-pointer">
             Import CSV
-            <input
-              type="file"
-              accept=".csv,text/csv"
-              className="hidden"
-              onChange={(e) => e.target.files?.[0] && importCollectionCSV(e.target.files[0])}
-            />
+            <input type="file" accept=".csv,text/csv" className="hidden" onChange={importCSV} />
           </label>
-          <button onClick={exportCollectionJSON} className="px-3 py-2 rounded bg-gray-100">
-            Export JSON
-          </button>
-          <button onClick={exportCollectionCSV} className="px-3 py-2 rounded bg-gray-100">
-            Export CSV
-          </button>
         </div>
       ) : null}
 
-      {/* Status + Error */}
-      <div className="mb-2">
-        <div className="text-sm">
-          <span className="font-medium">Status:</span> {status}
-        </div>
-        {error && (
-          <div className="mt-2 text-sm bg-red-50 text-red-700 border border-red-200 px-3 py-2 rounded">
-            Error: {error}
-          </div>
-        )}
+      {/* Status / Error */}
+      <div className="mb-3 text-sm">
+        <span className="font-medium">Status:</span>{" "}
+        <span>{status}</span>
       </div>
+      {error && (
+        <div className="mb-3 p-3 border rounded bg-red-50 text-red-700 text-sm">
+          Error: {error}
+        </div>
+      )}
 
-      {/* Editor / Grid */}
-      {pathType === "document" ? (
-        <textarea
-          value={jsonText}
-          onChange={(e) => setJsonText(e.target.value)}
-          className="w-full h-[360px] border rounded p-3 font-mono text-sm"
-        />
-      ) : pathType === "collection" ? (
-        <div className="w-full border rounded overflow-x-auto">
+      {/* Document editor */}
+      {kind === "document" && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <div>
+            <div className="text-sm font-medium mb-1">Document JSON</div>
+            <textarea
+              className="w-full min-h-[420px] font-mono border rounded p-3"
+              spellCheck={false}
+              value={docJson}
+              onChange={(e) => setDocJson(e.target.value)}
+            />
+          </div>
+
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <div className="text-sm font-medium">Array Field Table Editor</div>
+              <div className="flex items-center gap-2">
+                <select
+                  className="border rounded px-2 py-1"
+                  value={arrayField}
+                  onChange={(e) => setArrayField(e.target.value)}
+                >
+                  {arrayFields.map((f) => (
+                    <option key={f} value={f}>{f}</option>
+                  ))}
+                </select>
+                <button className="px-3 py-1.5 rounded border" onClick={saveArrayField} disabled={!arrayField}>
+                  Save {arrayField || "array"}
+                </button>
+              </div>
+            </div>
+
+            {!arrayField ? (
+              <div className="text-sm text-gray-600">
+                No array-of-objects fields detected. When your document contains arrays like
+                <code className="mx-1">"Strategy &amp; Execution": [ &#123;…&#125; ]</code>,
+                they’ll show here for row-by-row editing.
+              </div>
+            ) : (
+              <div className="overflow-auto border rounded">
+                <DocArrayTable
+                  rows={arrayRows}
+                  onChange={(next) => {
+                    // reflect changes back into docJson for accuracy
+                    const arr = next.map(({ _id, ...rest }) => unflattenOneLevel(rest));
+                    const updated = { ...docObj, [arrayField]: arr };
+                    setDocJson(pretty(updated));
+                  }}
+                />
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Collection table */}
+      {kind === "collection" && (
+        <div className="overflow-auto border rounded">
           <table className="min-w-full text-sm">
-            <thead>
-              <tr className="bg-gray-50">
-                <th className="p-2 text-left">#</th>
-                {gridColumns.map((c) => (
-                  <th key={c} className="p-2 text-left">
-                    {c}
-                  </th>
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="p-2 border-b w-10"></th>
+                {cols.map((c) => (
+                  <th key={c} className="p-2 border-b text-left">{c}</th>
                 ))}
+                <th className="p-2 border-b">Actions</th>
               </tr>
             </thead>
             <tbody>
-              {rows.length === 0 ? (
+              {!rows.length ? (
                 <tr>
-                  <td className="p-3 text-gray-500" colSpan={gridColumns.length + 1}>
-                    No documents loaded. Click <b>List Collection</b> or <b>Add Row</b>.
+                  <td colSpan={cols.length + 2} className="p-6 text-center text-gray-500">
+                    No documents loaded. Click <span className="font-medium">List Collection</span> or <span className="font-medium">Add Row</span>.
                   </td>
                 </tr>
               ) : (
-                rows.map((r, idx) => (
-                  <tr key={r._id || idx} className={idx % 2 ? "bg-white" : "bg-gray-50/40"}>
-                    <td className="p-2 align-top">
+                rows.map((r) => (
+                  <tr key={r._id} className="odd:bg-white even:bg-gray-50">
+                    <td className="p-2 border-b align-top">
                       <input
                         type="checkbox"
-                        checked={selectedIds.has(r._id)}
-                        onChange={() => toggleRow(r._id)}
+                        checked={!!selectedIds[r._id]}
+                        onChange={() => toggleSelect(r._id)}
                       />
                     </td>
-                    {gridColumns.map((k) => (
-                      <td key={k} className="p-1 align-top min-w-[160px]">
-                        <input
-                          className="w-full border rounded px-2 py-1 font-mono"
-                          value={r[k] ?? ""}
-                          onChange={(e) => quickEdit(r._id, k, e.target.value)}
-                          placeholder={k}
-                        />
+                    {cols.map((c) => (
+                      <td key={c} className="p-1.5 border-b align-top">
+                        {c === "_id" ? (
+                          <div className="px-2 py-1 rounded bg-gray-100 font-mono">{r._id}</div>
+                        ) : (
+                          <input
+                            className="w-full border rounded px-2 py-1 font-mono"
+                            value={r[c] ?? ""}
+                            onChange={(e) => updateCell(r._id, c, e.target.value)}
+                            placeholder=""
+                          />
+                        )}
                       </td>
                     ))}
+                    <td className="p-2 border-b">
+                      {r._id.startsWith("__new__") ? (
+                        <span className="text-xs text-gray-500">new</span>
+                      ) : (
+                        <button
+                          className="text-xs text-red-600 underline"
+                          onClick={async () => {
+                            try {
+                              const colRef = collection(db, ...path.split("/"));
+                              await deleteDoc(doc(colRef, r._id));
+                              setRows((prev) => prev.filter((x) => x._id !== r._id));
+                            } catch (e) {
+                              setError(String(e));
+                            }
+                          }}
+                        >
+                          delete
+                        </button>
+                      )}
+                    </td>
                   </tr>
                 ))
               )}
             </tbody>
           </table>
-          <div className="text-xs text-gray-500 p-2">
-            Editing notes: values auto-coerce to strings in the grid (for speed). For objects/arrays,
-            paste JSON strings; Batch Save will store them as strings unless you convert them to real
-            JSON in a doc view.
-          </div>
         </div>
-      ) : (
-        <div className="text-sm text-gray-600">Enter a path to begin.</div>
       )}
+    </div>
+  );
+}
+
+/** Row editor for array field inside a single document */
+function DocArrayTable({ rows, onChange }) {
+  const [local, setLocal] = useState(rows);
+
+  useEffect(() => setLocal(rows), [rows]);
+
+  const cols = useMemo(() => inferColumns(local), [local]);
+
+  const edit = (rowId, key, value) => {
+    const next = local.map((r) => (r._id === rowId ? { ...r, [key]: value } : r));
+    setLocal(next);
+    onChange(next);
+  };
+
+  const add = () => {
+    const next = [{ _id: String(Date.now()), /* empty row */ }, ...local];
+    setLocal(next);
+    onChange(next);
+  };
+
+  const remove = (rowId) => {
+    const next = local.filter((r) => r._id !== rowId);
+    setLocal(next);
+    onChange(next);
+  };
+
+  return (
+    <div className="overflow-auto">
+      <div className="p-2">
+        <button className="px-2 py-1 rounded border" onClick={add}>Add Row</button>
+      </div>
+      <table className="min-w-full text-sm">
+        <thead className="bg-gray-50">
+          <tr>
+            {cols.map((c) => (
+              <th key={c} className="p-2 border-b text-left">{c}</th>
+            ))}
+            <th className="p-2 border-b">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {!local.length ? (
+            <tr>
+              <td colSpan={cols.length + 1} className="p-6 text-center text-gray-500">
+                No rows. Click <span className="font-medium">Add Row</span>.
+              </td>
+            </tr>
+          ) : (
+            local.map((r) => (
+              <tr key={r._id} className="odd:bg-white even:bg-gray-50">
+                {cols.map((c) => (
+                  <td key={c} className="p-1.5 border-b align-top">
+                    {c === "_id" ? (
+                      <div className="px-2 py-1 rounded bg-gray-100 font-mono">{r._id}</div>
+                    ) : (
+                      <input
+                        className="w-full border rounded px-2 py-1 font-mono"
+                        value={r[c] ?? ""}
+                        onChange={(e) => edit(r._id, c, e.target.value)}
+                      />
+                    )}
+                  </td>
+                ))}
+                <td className="p-2 border-b">
+                  <button className="text-xs text-red-600 underline" onClick={() => remove(r._id)}>
+                    delete
+                  </button>
+                </td>
+              </tr>
+            ))
+          )}
+        </tbody>
+      </table>
     </div>
   );
 }
