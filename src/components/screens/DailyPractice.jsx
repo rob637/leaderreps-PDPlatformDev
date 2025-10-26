@@ -66,20 +66,24 @@ export default function DailyPracticeScreen() {
   const [isSavedConfirmation, setIsSavedConfirmation] = useState(false);
 
   // Parse the existing journal string into structured state
+  // This hook is correctly called at the top level.
   const initialReflection = useReflectionParser(commitmentData?.reflection_journal);
   const [did, setDid] = useState(initialReflection.did);
   const [noticed, setNoticed] = useState(initialReflection.noticed);
   const [tryDiff, setTryDiff] = useState(initialReflection.tryDiff);
   const [identity, setIdentity] = useState(initialReflection.identity);
 
+  // --- THIS BLOCK IS NOW FIXED ---
   // Update local state if the underlying data changes (e.g., after daily reset)
   useEffect(() => {
-    const currentParsed = useReflectionParser(commitmentData?.reflection_journal);
-    setDid(currentParsed.did);
-    setNoticed(currentParsed.noticed);
-    setTryDiff(currentParsed.tryDiff);
-    setIdentity(currentParsed.identity);
-  }, [commitmentData?.reflection_journal]);
+    // DO NOT call useReflectionParser() here.
+    // Just use the 'initialReflection' variable that was already
+    // calculated at the top level of the component (line 77).
+    setDid(initialReflection.did);
+    setNoticed(initialReflection.noticed);
+    setTryDiff(initialReflection.tryDiff);
+    setIdentity(initialReflection.identity);
+  }, [initialReflection]); // <-- The dependency is the memoized object from the hook.
 
   const handleSaveReflection = async () => {
     setIsSaving(true);
