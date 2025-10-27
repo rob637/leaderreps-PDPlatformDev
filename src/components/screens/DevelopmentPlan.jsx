@@ -1,4 +1,4 @@
-// src/components/screens/DevelopmentPlan.jsx (Refactored for Consistency, Context, Comments)
+// src/components/screens/DevelopmentPlan.jsx (Final Corrected Version)
 
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
 // --- Core Services & Context ---
@@ -882,7 +882,7 @@ const DevelopmentPlanScreen = () => {
       const newCoreReps = newPlan.focusAreas.map((area, index) => {
           // Determine Tier (use mapping, default to T1)
           const tier = DIMENSION_TO_TIER_MAP[area.name] || 'T1';
-          // Get the primary rep text (e.g., from the first week)
+          // Get the primary rep text (use the first rep in the list)
           const repText = area.reps?.[0]?.rep || `Core Practice: ${area.name}`; // Fallback text
           // Create the commitment object structure
           return {
@@ -935,15 +935,10 @@ const DevelopmentPlanScreen = () => {
       planHistory: [plan], // Start history with this plan
     };
     try {
+      // NOTE: We rely on the main render function's check (around line 976) to ensure
+      // updateDevelopmentPlanData is defined before BaselineAssessment is even mounted.
+      
       // Update the development plan document in Firestore
-      // DevelopmentPlan.jsx (Around line 939)
-      if (!updateDevelopmentPlanData) {
-          throw new Error("Development Plan update function not available.");
-      }
-      // Update the development plan document in Firestore
-      // Use the function. The underlying hook in useAppServices uses updateDocEx,
-      // which handles existence gracefully if properly implemented, or should use setDocEx with merge: true.
-      // Since updateDevelopmentPlanData is a simple setter, we use it directly.
       const success = await updateDevelopmentPlanData(newDevPlanData); // This is the call
       if (!success) throw new Error("updateDevelopmentPlanData returned false for initial save");
 
@@ -999,7 +994,8 @@ const DevelopmentPlanScreen = () => {
 
   // --- Render Logic ---
   // Show loading spinner if app is loading OR if saving plan updates
-  if (view === 'loading' || isAppLoading || isSaving) {
+  // FIX: Added check for updateDevelopmentPlanData and updateDailyPracticeData availability
+  if (view === 'loading' || isAppLoading || isSaving || !updateDevelopmentPlanData || !updateDailyPracticeData) {
     return <LoadingSpinner message={isSaving ? "Saving Plan..." : "Loading Development Plan..."} />;
   }
   // Show error view if app loading failed

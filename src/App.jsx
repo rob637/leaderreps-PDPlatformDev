@@ -12,7 +12,9 @@ import {
   useGlobalMetadata,
   updateGlobalMetadata, // Stays the same, handles nested structure now
   ensureUserDocs,       // For seeding user documents
-  useAppServices        // Hook to consume context
+  useAppServices,       // Hook to consume context
+// --- IMPORT ADMIN_EMAILS CONSTANT ---
+  ADMIN_EMAILS // NEW: Import the admin emails constant
 } from './services/useAppServices.jsx'; // cite: useAppServices.jsx
 
 // --- Firebase Imports (Authentication & Firestore) ---
@@ -234,6 +236,7 @@ function AuthPanel({ auth, onSuccess }) {
  */
 const NavSidebar = ({ currentScreen, setCurrentScreen, user, closeMobileMenu, isAuthRequired, isNavExpanded, setIsNavExpanded }) => {
   // --- Consume services for auth actions and feature flags ---
+  // FIX: Access isAdmin from context
   const { auth, featureFlags, isAdmin } = useAppServices(); // cite: useAppServices.jsx
   const [isProfileOpen, setIsProfileOpen] = useState(false);
 
@@ -586,10 +589,12 @@ const DataProvider = ({ children, firebaseServices, userId, isAuthReady, navigat
   const error = devPlanHook.error || dailyPracticeHook.error || strategicContentHook.error || globalHook.error; // cite: useAppServices.jsx
 
   // --- Derive `isAdmin` status ---
+  // FIX: Recalculate isAdmin status using the hardcoded ADMIN_EMAILS list
+  // The globalHook.metadata.ADMIN_EMAILS check is removed to use the internal application logic.
   const isAdmin = useMemo(() => {
-      // Ensure user and email exist before checking against ADMIN_EMAILS
-      return !!user?.email && (globalHook.metadata.ADMIN_EMAILS || []).includes(user.email.toLowerCase());
-  }, [user, globalHook.metadata.ADMIN_EMAILS]); // Add ADMIN_EMAILS dependency
+      // Logic is simplified here, but relies on ADMIN_EMAILS being imported
+      return !!user?.email && ADMIN_EMAILS.includes(user.email.toLowerCase());
+  }, [user]);
 
   // --- Derive `hasPendingDailyPractice` (using updated data structure) ---
   const hasPendingDailyPractice = useMemo(() => {
