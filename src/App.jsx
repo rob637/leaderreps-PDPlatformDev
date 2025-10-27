@@ -41,7 +41,7 @@ import {
 // --- UI/UX & Icons ---
 // Consolidated icon imports
 import {
-  Home, Zap, ShieldCheck, TrendingUp, Mic, BookOpen, Settings, User, LogOut,
+  Home, Zap, ShieldCheck, TrendingUp, Mic, BookOpen, Settings, User, LogOut, // Settings is imported here
   CornerRightUp, Clock, Briefcase, Target, Users, BarChart3, Globe, Code,
   Bell, Lock, Download, Trash2, Mail, Link, Menu, Trello, Film, Dumbbell, Cpu,
   ChevronLeft, ChevronRight, X, Loader, AlertTriangle, ChevronsLeft, ChevronsRight, // Added Loader, AlertTriangle, Chevrons
