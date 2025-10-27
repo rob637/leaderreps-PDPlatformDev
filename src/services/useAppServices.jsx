@@ -1,4 +1,4 @@
-// src/services/useAppServices.jsx (Final Structural Fix + WHY_CATALOG + COMMITMENT_BANK)
+// src/services/useAppServices.jsx (Final Structural Fix + WHY_CATALOG + COMMITMENT_BANK + TARGET_REP_CATALOG + Target Rep State)
 
 import React, {
   useMemo,
@@ -85,13 +85,14 @@ const setDocEx = (db, path, data, merge = false) =>
 const updateDocEx = (db, path, data) => setDocEx(db, path, data, true);
 
 
-// --- ensureUserDocs: create required per-user docs if missing (Unchanged) ---
+// --- ensureUserDocs: create required per-user docs if missing (UPDATED) ---
 export const ensureUserDocs = async (db, uid) => {
   try {
     if (!db || !uid) return;
     const targets = [
       ['leadership_plan', 'roadmap', { focus_goals: [], last_updated: new Date().toISOString() }], // <-- Corrected key to focus_goals
-      ['user_commitments', 'active', { active_commitments: [], reflection_journal: '' }],
+      // --- ADDED initial state for new target rep fields ---
+      ['user_commitments', 'active', { active_commitments: [], reflection_journal: '', dailyTargetRepId: null, dailyTargetRepStatus: 'Pending' }],
       ['user_planning', 'drafts', { drafts: [] }],
     ];
     for (const [col, docName, defaultData] of targets) {
@@ -100,6 +101,19 @@ export const ensureUserDocs = async (db, uid) => {
       if (!snap || !snap.exists()) {
         await setDocEx(db, path, defaultData, true); // merge:true
         console.log(`[SEED] created ${path}`);
+      } else {
+         // --- Ensure new fields exist even if doc exists ---
+         const currentData = snap.data();
+         let needsUpdate = false;
+         const updates = {};
+         if (docName === 'active') {
+             if (currentData.dailyTargetRepId === undefined) { updates.dailyTargetRepId = null; needsUpdate = true;}
+             if (currentData.dailyTargetRepStatus === undefined) { updates.dailyTargetRepStatus = 'Pending'; needsUpdate = true; }
+         }
+         if (needsUpdate) {
+             await updateDocEx(db, path, updates);
+             console.log(`[SEED] Updated ${path} with new fields.`);
+         }
       }
     }
   } catch (err) {
@@ -120,7 +134,7 @@ const LEADERSHIP_TIERS_FALLBACK = {
   T5: { id: 'T5', name: 'Strategy & Vision', icon: 'TrendingUp', color: 'cyan-600' },
 };
 const MOCK_PDP_DATA = { focus_goals: [], last_updated: new Date().toISOString() }; // <-- Corrected key
-const MOCK_COMMITMENT_DATA = { active_commitments: [], reflection_journal: '' };
+const MOCK_COMMITMENT_DATA = { active_commitments: [], reflection_journal: '', dailyTargetRepId: null, dailyTargetRepStatus: 'Pending' }; // Added new fields
 const MOCK_PLANNING_DATA = { drafts: [] };
 
 // FALLBACKS for Applied Leadership data (now loaded by useGlobalMetadata)
@@ -133,7 +147,9 @@ const MOCK_HABIT_CATALOG = { items: [] };
 // --- NEW: Fallback for Why catalog ---
 const MOCK_WHY_CATALOG = { items: [] };
 // --- NEW: Fallback for Commitment Bank ---
-const MOCK_COMMITMENT_BANK = { items: [] }; // <-- NEW
+const MOCK_COMMITMENT_BANK = { items: [] };
+// --- NEW: Fallback for Target Rep Catalog ---
+const MOCK_TARGET_REP_CATALOG = { items: [] }; // <-- NEW
 
 
 /* =========================================================
@@ -172,8 +188,9 @@ const DEFAULT_SERVICES = {
     // --- NEW: Add new catalogs to default services ---
     IDENTITY_ANCHOR_CATALOG: MOCK_IDENTITY_CATALOG,
     HABIT_ANCHOR_CATALOG: MOCK_HABIT_CATALOG,
-    WHY_CATALOG: MOCK_WHY_CATALOG, // <-- NEW
-    COMMITMENT_BANK: MOCK_COMMITMENT_BANK, // <-- NEW
+    WHY_CATALOG: MOCK_WHY_CATALOG,
+    COMMITMENT_BANK: MOCK_COMMITMENT_BANK,
+    TARGET_REP_CATALOG: MOCK_TARGET_REP_CATALOG, // <-- NEW
 };
 
 export const AppServiceContext = createContext(DEFAULT_SERVICES);
@@ -191,7 +208,7 @@ const resolveGlobalMetadata = (meta) => {
 const looksEmptyGlobal = (obj) => {
   if (!obj || typeof obj !== 'object') return true;
   // --- UPDATED: Added new catalog keys ---
-  const known = [ 'LEADERSHIP_TIERS', 'COMMITMENT_BANK', 'SCENARIO_CATALOG', 'READING_CATALOG_SERVICE', 'LEADERSHIP_DOMAINS', 'RESOURCE_LIBRARY', 'IDENTITY_ANCHOR_CATALOG', 'HABIT_ANCHOR_CATALOG', 'WHY_CATALOG' ]; // <-- UPDATED
+  const known = [ 'LEADERSHIP_TIERS', 'COMMITMENT_BANK', 'SCENARIO_CATALOG', 'READING_CATALOG_SERVICE', 'LEADERSHIP_DOMAINS', 'RESOURCE_LIBRARY', 'IDENTITY_ANCHOR_CATALOG', 'HABIT_ANCHOR_CATALOG', 'WHY_CATALOG', 'TARGET_REP_CATALOG' ]; // <-- UPDATED
   const hasKnown = known.some((k) => Object.prototype.hasOwnProperty.call(obj, k));
 
   if (hasKnown) {
@@ -264,7 +281,13 @@ const useFirestoreUserData = (db, userId, isAuthReady, collection, document, moc
       if (!isMounted) return; // Prevent state updates if unmounted
       resolveLoad();
       if (snap.exists()) {
-          setData(snap.data());
+          // --- Ensure new fields have defaults if missing ---
+          const fetchedData = snap.data();
+          if (document === 'active') {
+             if (fetchedData.dailyTargetRepId === undefined) fetchedData.dailyTargetRepId = null;
+             if (fetchedData.dailyTargetRepStatus === undefined) fetchedData.dailyTargetRepStatus = 'Pending';
+          }
+          setData(fetchedData);
           setError(null);
       } else {
           console.warn(`[USER DATA] Document ${path} does not exist. Using mock data.`);
@@ -359,7 +382,9 @@ export const useGlobalMetadata = (db, isAuthReady) => {
   // --- NEW: Add path for Why catalog ---
   const pathWhy = mockDoc(db, 'metadata/config/catalog', 'WHY_CATALOG');
   // --- NEW: Add path for Commitment Bank ---
-  const pathCommitmentBank = mockDoc(db, 'metadata/config/catalog', 'COMMITMENT_BANK'); // <-- NEW
+  const pathCommitmentBank = mockDoc(db, 'metadata/config/catalog', 'COMMITMENT_BANK');
+  // --- NEW: Add path for Target Rep Catalog ---
+  const pathTargetRepCatalog = mockDoc(db, 'metadata/config/catalog', 'target-rep-catalog'); // <-- NEW (using filename)
 
 
   useEffect(() => {
@@ -370,7 +395,7 @@ export const useGlobalMetadata = (db, isAuthReady) => {
     setLoading(true);
 
     // --- STEP 0: LOG START (UPDATED) ---
-    console.log(`[*** ABSOLUTE DEBUG START ***] Fetching Global Metadata from: ${pathConfig}, ${pathCatalog}, ${pathDomains}, ${pathResources}, ${pathIdentity}, ${pathHabit}, ${pathWhy}, ${pathCommitmentBank}`); // <-- NEW
+    console.log(`[*** ABSOLUTE DEBUG START ***] Fetching Global Metadata from: ${pathConfig}, ${pathCatalog}, ${pathDomains}, ${pathResources}, ${pathIdentity}, ${pathHabit}, ${pathWhy}, ${pathCommitmentBank}, ${pathTargetRepCatalog}`); // <-- NEW
 
     // NEW HELPER: Replicates the transformation logic from the old API hook
     const transformResources = (resourcesItems) => {
@@ -392,19 +417,20 @@ export const useGlobalMetadata = (db, isAuthReady) => {
       let finalData = {};
       try {
         // --- UPDATED: Added new snaps to Promise.all ---
-        const [configSnap, catalogSnap, domainsSnap, resourcesSnap, identitySnap, habitSnap, whySnap, commitmentBankSnap] = await Promise.all([ // <-- NEW
+        const [configSnap, catalogSnap, domainsSnap, resourcesSnap, identitySnap, habitSnap, whySnap, commitmentBankSnap, targetRepSnap] = await Promise.all([ // <-- NEW
           getDocEx(db, pathConfig),
           getDocEx(db, pathCatalog),
           getDocEx(db, pathDomains),
           getDocEx(db, pathResources),
-          getDocEx(db, pathIdentity), 
-          getDocEx(db, pathHabit),    
-          getDocEx(db, pathWhy),     
-          getDocEx(db, pathCommitmentBank), // <-- NEW
+          getDocEx(db, pathIdentity),
+          getDocEx(db, pathHabit),
+          getDocEx(db, pathWhy),
+          getDocEx(db, pathCommitmentBank),
+          getDocEx(db, pathTargetRepCatalog), // <-- NEW
         ]);
 
         // --- STEP 1: LOG RAW SNAPSHOT STATUS (UPDATED) ---
-        console.log(`[DEBUG SNAPSHOT] Config Doc Exists: ${configSnap.exists()}. Catalog Doc Exists: ${catalogSnap.exists()}. Domains Doc Exists: ${domainsSnap.exists()}. Resources Doc Exists: ${resourcesSnap.exists()}. Identity Doc Exists: ${identitySnap.exists()}. Habit Doc Exists: ${habitSnap.exists()}. Why Doc Exists: ${whySnap.exists()}. Commitment Bank Exists: ${commitmentBankSnap.exists()}`); // <-- NEW
+        console.log(`[DEBUG SNAPSHOT] Config Doc Exists: ${configSnap.exists()}. Catalog Doc Exists: ${catalogSnap.exists()}. Domains Doc Exists: ${domainsSnap.exists()}. Resources Doc Exists: ${resourcesSnap.exists()}. Identity Doc Exists: ${identitySnap.exists()}. Habit Doc Exists: ${habitSnap.exists()}. Why Doc Exists: ${whySnap.exists()}. Commitment Bank Exists: ${commitmentBankSnap.exists()}. Target Rep Catalog Exists: ${targetRepSnap.exists()}`); // <-- NEW
 
         const configData = configSnap.exists() ? configSnap.data() : {};
         const catalogData = catalogSnap.exists() ? catalogSnap.data() : {};
@@ -414,8 +440,9 @@ export const useGlobalMetadata = (db, isAuthReady) => {
         const resourcesItems = resourcesSnap.exists() ? (resourcesSnap.data()?.items || []) : []; // This one is special (transformed)
         const identityData = identitySnap.exists() ? identitySnap.data() : MOCK_IDENTITY_CATALOG;
         const habitData = habitSnap.exists() ? habitSnap.data() : MOCK_HABIT_CATALOG;
-        const whyData = whySnap.exists() ? whySnap.data() : MOCK_WHY_CATALOG; 
-        const commitmentBankData = commitmentBankSnap.exists() ? commitmentBankSnap.data() : MOCK_COMMITMENT_BANK; // <-- NEW
+        const whyData = whySnap.exists() ? whySnap.data() : MOCK_WHY_CATALOG;
+        const commitmentBankData = commitmentBankSnap.exists() ? commitmentBankSnap.data() : MOCK_COMMITMENT_BANK;
+        const targetRepData = targetRepSnap.exists() ? targetRepSnap.data() : MOCK_TARGET_REP_CATALOG; // <-- NEW
 
         // --- STEP 2: LOG RAW DATA RETURNED (UPDATED) ---
         console.log(`[DEBUG RAW DATA] RAW CONFIG: ${JSON.stringify(configData)}`);
@@ -425,23 +452,25 @@ export const useGlobalMetadata = (db, isAuthReady) => {
         console.log(`[DEBUG RAW DATA] RAW IDENTITY (full doc): ${JSON.stringify(identityData)}`);
         console.log(`[DEBUG RAW DATA] RAW HABIT (full doc): ${JSON.stringify(habitData)}`);
         console.log(`[DEBUG RAW DATA] RAW WHY (full doc): ${JSON.stringify(whyData)}`);
-        console.log(`[DEBUG RAW DATA] RAW COMMITMENT BANK (full doc): ${JSON.stringify(commitmentBankData)}`); // <-- NEW
+        console.log(`[DEBUG RAW DATA] RAW COMMITMENT BANK (full doc): ${JSON.stringify(commitmentBankData)}`);
+        console.log(`[DEBUG RAW DATA] RAW TARGET REP CATALOG (full doc): ${JSON.stringify(targetRepData)}`); // <-- NEW
 
         // CRITICAL STRUCTURAL MERGE:
         // 1. Merge the main config document content
         // 2. Explicitly nest the entire catalogData document
         // 3. Explicitly add LEADERSHIP_DOMAINS (full object)
         // 4. Explicitly add *transformed* RESOURCE_LIBRARY object
-        // 5. Explicitly add anchor/why/commitment catalogs (full objects)
+        // 5. Explicitly add anchor/why/commitment/target catalogs (full objects)
         finalData = {
             ...(configData || {}),
             READING_CATALOG_SERVICE: (catalogData || {}),
             LEADERSHIP_DOMAINS: domainsData, // <-- UPDATED (was extracting items)
             RESOURCE_LIBRARY: transformResources(resourcesItems),
-            IDENTITY_ANCHOR_CATALOG: identityData, // <-- NEW
-            HABIT_ANCHOR_CATALOG: habitData,       // <-- NEW
-            WHY_CATALOG: whyData,                  // <-- NEW
-            COMMITMENT_BANK: commitmentBankData,   // <-- NEW
+            IDENTITY_ANCHOR_CATALOG: identityData,
+            HABIT_ANCHOR_CATALOG: habitData,
+            WHY_CATALOG: whyData,
+            COMMITMENT_BANK: commitmentBankData,
+            TARGET_REP_CATALOG: targetRepData, // <-- NEW
         };
 
         // --- STEP 3: LOG MERGED DATA ---
@@ -482,7 +511,7 @@ export const useGlobalMetadata = (db, isAuthReady) => {
 /* =========================================================
    Global writer (safe merge + optional force overwrite) (Unchanged)
 ========================================================= */
-// NOTE: This function is unchanged. It does NOT support writing to the new domain/resource/anchor/why paths.
+// NOTE: This function is unchanged. It does NOT support writing to the new domain/resource/anchor/why/target paths.
 export const updateGlobalMetadata = async (
   db,
   data,
@@ -517,7 +546,8 @@ export const updateGlobalMetadata = async (
       delete payload.IDENTITY_ANCHOR_CATALOG;
       delete payload.HABIT_ANCHOR_CATALOG;
       delete payload.WHY_CATALOG;
-      delete payload.COMMITMENT_BANK; // <-- NEW
+      delete payload.COMMITMENT_BANK;
+      delete payload.TARGET_REP_CATALOG; // <-- NEW
   }
 
 
@@ -569,9 +599,13 @@ export const createAppServices = ({
     const tiers = metadataHook.metadata.LEADERSHIP_TIERS || LEADERSHIP_TIERS_FALLBACK;
 
     // Check if daily practice data needs attention (e.g., pending tasks)
-    const hasPendingDailyPractice = (commitmentHook.commitmentData?.active_commitments || []).some(
+    // --- UPDATED: Check both target rep status AND additional commitments ---
+    const hasPendingTargetRep = commitmentHook.commitmentData?.dailyTargetRepStatus === 'Pending';
+    const hasPendingAdditionalReps = (commitmentHook.commitmentData?.active_commitments || []).some(
         c => c.status === 'Pending'
     );
+    const hasPendingDailyPractice = hasPendingTargetRep || hasPendingAdditionalReps;
+
 
     return {
       navigate,
@@ -598,11 +632,12 @@ export const createAppServices = ({
       LEADERSHIP_DOMAINS: metadataHook.metadata.LEADERSHIP_DOMAINS || MOCK_DOMAINS,
       RESOURCE_LIBRARY: metadataHook.metadata.RESOURCE_LIBRARY || MOCK_RESOURCES,
 
-      // --- NEW: Provide anchor/why catalogs to the context ---
+      // --- NEW: Provide anchor/why/commitment/target catalogs to the context ---
       IDENTITY_ANCHOR_CATALOG: metadataHook.metadata.IDENTITY_ANCHOR_CATALOG || MOCK_IDENTITY_CATALOG,
       HABIT_ANCHOR_CATALOG: metadataHook.metadata.HABIT_ANCHOR_CATALOG || MOCK_HABIT_CATALOG,
-      WHY_CATALOG: metadataHook.metadata.WHY_CATALOG || MOCK_WHY_CATALOG, // <-- NEW
-      COMMITMENT_BANK: metadataHook.metadata.COMMITMENT_BANK || MOCK_COMMITMENT_BANK, // <-- NEW
+      WHY_CATALOG: metadataHook.metadata.WHY_CATALOG || MOCK_WHY_CATALOG,
+      COMMITMENT_BANK: metadataHook.metadata.COMMITMENT_BANK || MOCK_COMMITMENT_BANK,
+      TARGET_REP_CATALOG: metadataHook.metadata.TARGET_REP_CATALOG || MOCK_TARGET_REP_CATALOG, // <-- NEW
 
       // AI/API Services
       callSecureGeminiAPI,
@@ -630,3 +665,4 @@ export const createAppServices = ({
 
 
 export default AppServiceContext; // Default export is the context itself
+

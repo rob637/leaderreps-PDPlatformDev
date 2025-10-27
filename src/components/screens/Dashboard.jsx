@@ -1,4 +1,4 @@
-// src/components/screens/Dashboard.jsx (ATTEMPT 3: Complete + WhyItMatters Modal + Safety Checks + AI Nudge Update)
+// src/components/screens/Dashboard.jsx (Target Rep Logic + Completion Button + Separate Catalogs)
 import React, { useMemo, useState, useEffect, useCallback } from 'react';
 import { useAppServices } from '../../services/useAppServices.jsx';
 // --- Firestore Imports ---
@@ -160,43 +160,35 @@ const SocialPodFeed = ({ feed, onShare, isArenaMode }) => {
 
 /* =========================================================
    Embedded Daily Reps Component
+   (Shows *additional* reps beyond the main Target Rep)
 ========================================================= */
-const EmbeddedDailyReps = ({ commitments, onToggleCommit, isLoading, onCommitMicroRep, microRepText }) => {
+// --- UPDATED: Removed microRepText and related button ---
+const EmbeddedDailyReps = ({ commitments, onToggleCommit, isLoading }) => {
   const { navigate } = useAppServices();
-  const hasPendingReps = commitments.some(c => c.status === 'Pending');
+
+  // No need to filter here if parent component already does
+  const additionalCommitments = useMemo(() => commitments || [], [commitments]);
 
   return (
     <div className="space-y-3">
-      {hasPendingReps && microRepText && (
-        <Button
-          onClick={onCommitMicroRep}
-          variant="secondary"
-          className="w-full !py-3 text-base mb-4 border-2 border-dashed border-red-300 hover:border-red-400"
-          style={{ background: '#FFF1ED', color: COLORS.ORANGE, boxShadow: 'none' }}
-        >
-          <Award className="w-5 h-5 mr-2" />
-          <span className="font-semibold">2-Min Challenge:</span>&nbsp;{microRepText}
-        </Button>
-      )}
+      {/* Removed 2-Min Challenge Button from here */}
       {isLoading && <div className="p-4 text-center text-gray-500 flex items-center justify-center"><Loader className="animate-spin w-4 h-4 mr-2"/>Loading reps...</div>}
-      {!isLoading && (!commitments || commitments.length === 0) && (
-        <div className="p-6 text-center border-2 border-dashed border-gray-300 rounded-lg bg-gray-50">
-          <p className="text-gray-600 font-semibold mb-3">No reps defined for today.</p>
-          <Button
-            onClick={() => navigate('development-plan')}
-            variant="outline"
-            className="text-sm !px-4 !py-2"
-          >
-            Set Up Plan
-          </Button>
+
+      {/* Message if NO additional reps exist */}
+      {!isLoading && additionalCommitments.length === 0 && (
+        <div className="p-4 text-center text-sm text-gray-500 italic border border-dashed rounded-lg">
+           No additional reps added for today. Add more from your Development Plan.
         </div>
       )}
-      {!isLoading && commitments.length > 0 && commitments.map((commit) => (
+
+      {/* Render the list of additional commitments */}
+      {!isLoading && additionalCommitments.length > 0 && additionalCommitments.map((commit) => (
         <div key={commit.id} className={`p-4 rounded-xl flex items-center justify-between transition-all border ${ commit.status === 'Committed' ? 'bg-green-50 border-green-200 shadow-inner' : 'bg-white hover:bg-gray-50/70 border-gray-200 shadow-sm'}`}>
           <div className="flex-1 mr-4">
             <p className={`font-medium ${commit.status === 'Committed' ? 'text-green-700 line-through decoration-green-400' : 'text-[#002E47]'}`}> {commit.text} </p>
             {commit.linkedGoal && ( <span className="text-xs text-gray-500 italic block mt-1"> Linked to: {commit.linkedGoal} </span> )}
           </div>
+          {/* Use the standard toggle commit handler */}
           <button onClick={() => onToggleCommit(commit.id)} className={`w-10 h-10 rounded-full flex items-center justify-center border-2 transition-all focus:outline-none focus:ring-2 focus:ring-offset-1 ${ commit.status === 'Committed' ? `bg-[${COLORS.GREEN}] border-[${COLORS.GREEN}] text-white hover:bg-green-700 focus:ring-[${COLORS.GREEN}]` : `bg-white border-gray-300 text-gray-400 hover:border-[${COLORS.TEAL}] hover:text-[${COLORS.TEAL}] focus:ring-[${COLORS.TEAL}]`}`} aria-label={commit.status === 'Committed' ? 'Undo' : 'Complete'}>
             {commit.status === 'Committed' ? <Check size={20} /> : <Zap size={18} />}
           </button>
@@ -205,6 +197,7 @@ const EmbeddedDailyReps = ({ commitments, onToggleCommit, isLoading, onCommitMic
     </div>
   );
 };
+
 
 /* =========================================================
    Reflection Log Modal Component
@@ -647,25 +640,28 @@ const mockSocialFeedData = [
 ];
 
 /* =========================================================
-   Dashboard Screen (Main Export - VERIFIED Full Code)
+   Dashboard Screen (Main Export - Target Rep Update)
 ========================================================= */
 const DEFAULT_HABIT_ANCHOR = "Set a daily cue!";
 const DEFAULT_WHY_STATEMENT = "Connect your actions to a deeper purpose...";
 const DEFAULT_IDENTITY_PLACEHOLDER = "Define your leader identity..."; // For display
+const DEFAULT_TARGET_REP = { id: 'default', text: "Set Your Focus", definition: "Go to your Development Plan to select a target rep for the day.", microRep: "Review Development Plan", status: 'Pending' }; // Added status
+
 
 const DashboardScreen = () => {
   const {
     navigate, user, pdpData, commitmentData, planningData, LEADERSHIP_TIERS,
     updateCommitmentData, updatePlanningData, // Use correct update function for planning data
     isLoading: isAppLoading, db, userId,
-    callSecureGeminiAPI, hasGeminiKey, COMMITMENT_BANK,
+    callSecureGeminiAPI, hasGeminiKey, COMMITMENT_BANK, TARGET_REP_CATALOG, // <-- Added TARGET_REP_CATALOG
     // --- Catalogs from services ---
     IDENTITY_ANCHOR_CATALOG, HABIT_ANCHOR_CATALOG, WHY_CATALOG
   } = useAppServices();
 
   // --- State ---
-  const [isSavingRep, setIsSavingRep] = useState(false);
+  const [isSavingRep, setIsSavingRep] = useState(false); // Used for saving BOTH target and additional reps
   const [showCelebration, setShowCelebration] = useState(false);
+  const [showChallengePrompt, setShowChallengePrompt] = useState(false); // <-- NEW: State for 2-min challenge prompt
   const [isLogModalOpen, setIsLogModalOpen] = useState(false);
   const [reflectionHistory, setReflectionHistory] = useState([]);
   const [isHistoryLoading, setIsHistoryLoading] = useState(false);
@@ -702,9 +698,10 @@ const DashboardScreen = () => {
 
   const displayedUserName = useMemo(() => user?.name || user?.email?.split('@')[0] || 'Leader', [user]);
   const greeting = useMemo(() => 'Welcome to The Arena,', []);
+
+  // Additional commitments (filter out target rep later)
   const activeCommitments = useMemo(() => commitmentData?.active_commitments || [], [commitmentData]);
-  const commitsCompleted = useMemo(() => activeCommitments.filter(c => c.status === 'Committed').length, [activeCommitments]);
-  const commitsTotal = activeCommitments.length;
+
   const streakCount = useMemo(() => commitmentData?.streak_count || 0, [commitmentData]);
   const streakCoins = useMemo(() => commitmentData?.streak_coins || 0, [commitmentData]);
   const habitAnchor = useMemo(() => commitmentData?.habit_anchor || DEFAULT_HABIT_ANCHOR, [commitmentData]);
@@ -720,20 +717,77 @@ const DashboardScreen = () => {
        : DEFAULT_IDENTITY_PLACEHOLDER;
   }, [commitmentData]);
 
-  // dailyTargetRep logic remains the same
-  const dailyTargetRep = useMemo(() => {
-     const defaultRep = { text: "Define your focus rep.", definition: "Go to your Development Plan.", microRep: "Review your goals." };
-     const bank = COMMITMENT_BANK?.items || [];
-     const pdpRepText = activeCommitments.find(c => c.source === 'DevelopmentPlan')?.text;
-     if (pdpRepText) { const bankEntry = bank.find(r => r.text === pdpRepText); return { text: pdpRepText, definition: bankEntry?.definition || "Execute this planned action.", microRep: bankEntry?.microRep || "Take the first small step." }; }
-     const catalogRepText = activeCommitments.find(c => c.source === 'Catalog')?.text;
-     if (catalogRepText) { const bankEntry = bank.find(r => r.text === catalogRepText); return { text: catalogRepText, definition: bankEntry?.definition || "Practice this skill.", microRep: bankEntry?.microRep || "Do a quick practice." }; }
-     const userRepText = activeCommitments.find(c => c.source === 'UserAdded')?.text;
-     if (userRepText) { return { text: userRepText, definition: "Complete your custom task.", microRep: "Start your task." }; }
-     return defaultRep;
-   }, [activeCommitments, COMMITMENT_BANK]);
+   // --- UPDATED: dailyTargetRep logic ---
+   const dailyTargetRep = useMemo(() => {
+    const targetCatalog = TARGET_REP_CATALOG?.items || [];
+    if (targetCatalog.length === 0) return DEFAULT_TARGET_REP;
 
-  // weakestTier logic remains the same
+    // Get today's date in YYYY-MM-DD format for consistent selection
+    const today = new Date().toISOString().split('T')[0];
+
+    // --- Simple Selection Logic: Use Weakest Tier ---
+    // Find the tier ID associated with the weakest tier name
+    const scores = pdpData?.assessment?.scores;
+    let weakestTierId = 'T1'; // Default
+    if (scores && LEADERSHIP_TIERS) {
+        const sorted = Object.values(scores).sort((a, b) => a.score - b.score);
+        const weakest = sorted[0];
+        if (weakest) {
+           const tierKey = Object.keys(LEADERSHIP_TIERS).find(key => LEADERSHIP_TIERS[key].name.includes(weakest.name.split(' ')[0]));
+           weakestTierId = tierKey || 'T1';
+        }
+    }
+
+    // Find the first rep in the catalog matching the weakest tier
+    let selectedRepData = targetCatalog.find(rep => rep.tier_id === weakestTierId);
+
+    // Fallback: If no match for weakest tier, pick the first rep overall
+    if (!selectedRepData) {
+        selectedRepData = targetCatalog[0];
+    }
+
+    if (!selectedRepData) return DEFAULT_TARGET_REP; // Still no rep found
+
+    // Check the user's saved status for *this specific rep ID* for *today*
+    // We'll store status in commitmentData like: dailyTargetRepStatus_focus-001_2025-10-27: 'Committed'
+    // For simplicity now, let's use the fields added in useAppServices: dailyTargetRepId and dailyTargetRepStatus
+    // We need to ensure these fields reset daily (or are interpreted daily) - a server function or client-side logic on load could handle this.
+    // Assuming for now: if commitmentData.dailyTargetRepId matches selectedRepData.id, use commitmentData.dailyTargetRepStatus
+
+    let currentStatus = 'Pending';
+    if (commitmentData?.dailyTargetRepId === selectedRepData.id) {
+        currentStatus = commitmentData.dailyTargetRepStatus || 'Pending';
+    } else {
+        // If the ID in user data doesn't match today's selected rep, assume today's is pending
+        // This implies a need to potentially reset dailyTargetRepId/Status daily.
+        // For now, this logic works if the ID mismatch means it's a new day's rep.
+        currentStatus = 'Pending';
+    }
+
+
+    return {
+        id: selectedRepData.id,
+        text: selectedRepData.text,
+        definition: selectedRepData.definition,
+        microRep: selectedRepData.microRep,
+        status: currentStatus // Use the status from user data or default to Pending
+    };
+
+   }, [TARGET_REP_CATALOG, pdpData, LEADERSHIP_TIERS, commitmentData]);
+
+    // --- Filter additional commitments ---
+    const additionalCommitments = useMemo(() => {
+       return activeCommitments.filter(c => c.id !== dailyTargetRep.id);
+    }, [activeCommitments, dailyTargetRep.id]);
+
+    // --- Calculate total completed (target + additional) ---
+    const targetRepCompleted = dailyTargetRep.status === 'Committed' ? 1 : 0;
+    const additionalCommitsCompleted = useMemo(() => additionalCommitments.filter(c => c.status === 'Committed').length, [additionalCommitments]);
+    const commitsCompleted = targetRepCompleted + additionalCommitsCompleted;
+    const commitsTotal = 1 + additionalCommitments.length; // Always 1 target + additional
+
+
+  // weakestTier calculation remains the same
   const weakestTier = useMemo(() => {
      const scores = pdpData?.assessment?.scores; if (!scores || !LEADERSHIP_TIERS) return { name: 'Getting Started', hex: COLORS.AMBER };
      const sorted = Object.values(scores).sort((a, b) => a.score - b.score); const weakest = sorted[0]; if (!weakest) return { name: 'Getting Started', hex: COLORS.AMBER };
@@ -742,15 +796,35 @@ const DashboardScreen = () => {
    }, [pdpData, LEADERSHIP_TIERS]);
 
   // --- Handlers ---
-  const triggerCelebration = () => { setShowCelebration(true); setTimeout(() => setShowCelebration(false), 1500); };
+  const triggerCelebration = (showChallenge = false) => {
+    setShowCelebration(true);
+    setShowChallengePrompt(false); // Hide challenge initially
+    setTimeout(() => {
+        setShowCelebration(false);
+        // Only show challenge if flag is true AND there's microRep text
+        if (showChallenge && dailyTargetRep.microRep && dailyTargetRep.id !== 'default') {
+            setShowChallengePrompt(true); // Show challenge prompt after celebration
+        }
+    }, 1500); // Duration of celebration
+  };
 
-  const handleToggleCommitment = useCallback(async (commitId) => {
+  // --- UPDATED: handleToggleCommitment now ONLY handles ADDITIONAL reps ---
+  const handleToggleAdditionalCommitment = useCallback(async (commitId) => {
       if (isSavingRep) return; setIsSavingRep(true);
       const currentCommits = commitmentData?.active_commitments || [];
       const targetCommitIndex = currentCommits.findIndex(c => c.id === commitId);
-      if (targetCommitIndex === -1) { setIsSavingRep(false); return; }
+      if (targetCommitIndex === -1) {
+          console.warn("Attempted to toggle non-existent additional commitment:", commitId);
+          setIsSavingRep(false); return;
+      }
 
       const targetCommit = currentCommits[targetCommitIndex];
+      // Ensure we are not accidentally toggling the target rep via this function
+      if (targetCommit.id === dailyTargetRep.id) {
+          console.warn("Attempted to toggle target rep via additional rep handler. Use completeTargetRep instead.");
+          setIsSavingRep(false); return;
+      }
+
       const newStatus = targetCommit.status === 'Committed' ? 'Pending' : 'Committed';
       const updatedCommitments = [
           ...currentCommits.slice(0, targetCommitIndex),
@@ -758,39 +832,62 @@ const DashboardScreen = () => {
           ...currentCommits.slice(targetCommitIndex + 1)
       ];
 
+      // Only update active_commitments, don't touch streak here (streak tied to Target Rep completion)
       const updates = { active_commitments: updatedCommitments };
+
+      try {
+        await updateCommitmentData(updates);
+        // Maybe a smaller celebration for additional reps? For now, no separate celebration.
+      } catch (error) {
+        console.error("Failed to update additional rep status:", error);
+        alert("Error updating additional rep. Please try again.");
+      } finally {
+        setIsSavingRep(false);
+      }
+    }, [commitmentData, updateCommitmentData, isSavingRep, dailyTargetRep.id]);
+
+
+  // --- NEW: Handler specifically for completing the Target Rep ---
+  const completeTargetRep = useCallback(async () => {
+      if (isSavingRep || dailyTargetRep.id === 'default' || dailyTargetRep.status === 'Committed') return;
+      setIsSavingRep(true);
+
+      const newStatus = 'Committed'; // Only handle completion here
+      const updates = {
+          dailyTargetRepId: dailyTargetRep.id, // Ensure ID is set
+          dailyTargetRepStatus: newStatus
+      };
       let updatedStreak = streakCount;
       let updatedCoins = streakCoins;
 
       try {
-        if (newStatus === 'Committed') {
+          // Update Streak and Coins on Target Rep completion
           updatedStreak = (streakCount || 0) + 1;
           updates.streak_count = updatedStreak;
           if (updatedStreak > 0 && updatedStreak % 7 === 0) { // Award coins every 7 days
             updatedCoins = (streakCoins || 0) + 2;
             updates.streak_coins = updatedCoins;
           }
-        } else {
-          // Optional: Logic if undoing completion affects streak (e.g., reset if undone on the same day?)
-          // For simplicity, current logic doesn't penalize unchecking.
-        }
 
-        await updateCommitmentData(updates);
-        if (newStatus === 'Committed') { triggerCelebration(); }
+          await updateCommitmentData(updates);
+          triggerCelebration(true); // Trigger celebration AND challenge prompt
 
       } catch (error) {
-        console.error("Failed to update rep status:", error);
-        alert("Error updating rep. Please try again.");
-        // Consider reverting local state on error?
+          console.error("Failed to update target rep status:", error);
+          alert("Error completing target rep. Please try again.");
       } finally {
-        setIsSavingRep(false);
+          setIsSavingRep(false);
       }
-    }, [commitmentData, updateCommitmentData, isSavingRep, streakCount, streakCoins]);
+  }, [updateCommitmentData, isSavingRep, dailyTargetRep, streakCount, streakCoins]); // Added dependencies
 
-  const handleCommitMicroRep = () => {
-      console.log("Committing micro-rep action!");
-      // Potentially update state or trigger other actions here
-      triggerCelebration();
+
+  // Renamed for clarity: This specifically handles the *Micro* Rep action
+  const handleDoMicroRep = () => {
+      console.log("Committing 2-Minute Challenge / Micro-Rep action!");
+      // Optionally add logic here: Mark micro-rep done, maybe grant small reward?
+      setShowChallengePrompt(false); // Hide the prompt after action
+      // Consider a smaller celebration?
+      // triggerCelebration(false); // Maybe don't trigger full celebration again
   };
 
   const handleShareToPod = (postText) => {
@@ -861,6 +958,11 @@ const DashboardScreen = () => {
   const habitSuggestions = HABIT_ANCHOR_CATALOG?.items || [];
   const whySuggestions = WHY_CATALOG?.items || [];
 
+  // Check if the current Target Rep is already completed (uses derived state)
+  const isTargetRepDone = dailyTargetRep.status === 'Committed';
+  const canCompleteTargetRep = dailyTargetRep.id !== 'default' && !isTargetRepDone;
+
+
   return (
     <div className={`p-4 md:p-6 space-y-6 bg-[${COLORS.LIGHT_GRAY}] min-h-screen`}>
       <CelebrationOverlay show={showCelebration} />
@@ -891,6 +993,26 @@ const DashboardScreen = () => {
       />
 
 
+      {/* --- NEW: 2-Minute Challenge Prompt Modal/Overlay --- */}
+      {showChallengePrompt && dailyTargetRep.microRep && dailyTargetRep.id !== 'default' && ( // Added ID check
+        <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in" onClick={() => setShowChallengePrompt(false)}>
+          <div className="relative w-full max-w-md bg-gradient-to-br from-orange-50 to-amber-100 rounded-2xl shadow-2xl border-2 border-orange-300 p-6 text-center animate-in zoom-in-95 slide-in-from-bottom-5" onClick={(e) => e.stopPropagation()}>
+             <Award className="w-12 h-12 text-orange-500 mx-auto mb-3"/>
+             <h3 className="text-xl font-bold text-orange-800 mb-2">Up for a 2-Minute Challenge?</h3>
+             <p className="text-md text-orange-700 mb-4">{dailyTargetRep.microRep}</p>
+             <div className="flex gap-3 justify-center">
+                 <Button onClick={handleDoMicroRep} variant="secondary" className="!py-2 !px-5 text-base">
+                     <Zap className="w-5 h-5 mr-1.5"/> Let's Do It!
+                 </Button>
+                 <Button onClick={() => setShowChallengePrompt(false)} variant="outline" className="!py-2 !px-5 text-sm !border-orange-300 !text-orange-600">
+                     Maybe Later
+                 </Button>
+             </div>
+          </div>
+        </div>
+      )}
+
+
       {/* 1. Header */}
       <div className={`bg-[${COLORS.OFF_WHITE}] p-4 md:p-6 -mx-4 md:-mx-6 -mt-4 md:-mt-6 mb-4 rounded-b-xl shadow-md border-b-4 border-[${COLORS.TEAL}]`}>
          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
@@ -909,13 +1031,35 @@ const DashboardScreen = () => {
 
         {/* Left Column */}
         <div className="lg:col-span-3 space-y-6">
+           {/* --- UPDATED: Strategic Focus Card --- */}
            <Card title="🎯 Today's Strategic Focus" icon={Target} accent='NAVY'>
               <div className='grid md:grid-cols-2 gap-4 md:gap-6 mb-4'>
-                 <div> <p className='text-sm font-semibold text-gray-600'><Flag className="inline w-4 h-4 mr-1"/> Target Rep:</p> <p className='text-lg font-bold text-gray-800'>{dailyTargetRep.text}</p> </div>
-                 <div> <p className='text-sm font-semibold text-gray-600'><CheckCircle className="inline w-4 h-4 mr-1"/> What Good Looks Like:</p> <p className='text-sm italic text-gray-700'>{dailyTargetRep.definition}</p> </div>
+                 <div>
+                    <p className='text-sm font-semibold text-gray-600'><Flag className="inline w-4 h-4 mr-1"/> Target Rep:</p>
+                    {/* Use dailyTargetRep state */}
+                    <p className={`text-lg font-bold ${isTargetRepDone ? 'text-green-700 line-through' : 'text-gray-800'}`}>{dailyTargetRep.text}</p>
+                 </div>
+                 <div>
+                     <p className='text-sm font-semibold text-gray-600'><CheckCircle className="inline w-4 h-4 mr-1"/> What Good Looks Like:</p>
+                     <p className='text-sm italic text-gray-700'>{dailyTargetRep.definition}</p>
+                 </div>
               </div>
-              {/* Identity Anchor Section */}
-              <div className="mt-4 pt-4 border-t border-gray-200">
+
+              {/* --- NEW: Complete Target Rep Button --- */}
+              <div className="mt-5 pt-4 border-t border-gray-200">
+                 <Button
+                    onClick={completeTargetRep} // Use new handler
+                    disabled={!canCompleteTargetRep || isSavingRep}
+                    variant={isTargetRepDone ? "outline" : "primary"}
+                    className={`w-full !py-3 text-base ${isTargetRepDone ? '!border-green-300 !text-green-700 !bg-green-50 cursor-default' : ''}`}
+                 >
+                   {isSavingRep && !isTargetRepDone ? <Loader className="animate-spin w-5 h-5 mr-2"/> : (isTargetRepDone ? <CheckCircle className="w-5 h-5 mr-2"/> : <Zap className="w-5 h-5 mr-2"/>)}
+                   {isTargetRepDone ? 'Target Rep Complete!' : 'Complete Target Rep'}
+                 </Button>
+              </div>
+
+              {/* Identity Anchor Section (Remains the same) */}
+              <div className="mt-6 pt-4 border-t border-gray-200">
                 <div>
                   <div className="mb-3">
                     <p className='text-sm font-semibold text-gray-600'><User className="inline w-4 h-4 mr-1" /> Identity Anchor:</p>
@@ -934,9 +1078,14 @@ const DashboardScreen = () => {
              <HabitAnchorCard anchor={habitAnchor} onEdit={() => setIsHabitModalOpen(true)} isDefault={isDefaultAnchor} />
            </div>
 
-           {/* Daily Reps Card */}
-           <Card title={`⏳ Today's Reps (${commitsCompleted}/${commitsTotal})`} icon={Clock} accent='TEAL'>
-             <EmbeddedDailyReps commitments={activeCommitments} onToggleCommit={handleToggleCommitment} isLoading={isSavingRep} microRepText={dailyTargetRep.microRep} onCommitMicroRep={handleCommitMicroRep} />
+           {/* --- UPDATED: Daily Reps Card Title & Data --- */}
+           <Card title={`⏳ Additional Daily Reps (${additionalCommitsCompleted}/${additionalCommitments.length})`} icon={Clock} accent='TEAL'>
+             {/* Pass only additional commitments and the correct handler */}
+             <EmbeddedDailyReps
+                commitments={additionalCommitments}
+                onToggleCommit={handleToggleAdditionalCommitment} // Use specific handler
+                isLoading={isSavingRep} // Still uses general saving flag
+             />
            </Card>
 
            {/* Social Pod Card */}

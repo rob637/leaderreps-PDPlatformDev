@@ -106,7 +106,7 @@ const nowIso = () => new Date().toISOString();
 const ARRAY_WRAPPER_KEY = "items";
 
 // List *all* document paths expected to be structured strictly as { items: [...] }
-// --- UPDATED: Added all new catalog paths ---
+// --- UPDATED: Added target-rep-catalog ---
 const SINGLE_ARRAY_WRAPPER_DOCUMENTS = [
     "metadata/reading_catalog", // This one is explicitly separate
     // Add ALL catalogs under /catalog/ IF they use the { items: [...] } structure
@@ -115,12 +115,12 @@ const SINGLE_ARRAY_WRAPPER_DOCUMENTS = [
     "metadata/config/catalog/scenario_catalog",
     "metadata/config/catalog/video_catalog",
     "metadata/config/catalog/SKILL_CONTENT_LIBRARY", // Assuming it does
-    "metadata/config/catalog/COMMITMENT_BANK", // <-- NEW
-    "metadata/config/catalog/IDENTITY_ANCHOR_CATALOG", // <-- NEW
-    "metadata/config/catalog/HABIT_ANCHOR_CATALOG", // <-- NEW
-    "metadata/config/catalog/WHY_CATALOG", // <-- NEW
-    "metadata/config/catalog/TARGET_REP_CATALOG", // <-- Keeping existing (if still used)
-    "metadata/config/catalog/quick_challenge_catalog", // <-- Keeping existing (if still used)
+    "metadata/config/catalog/COMMITMENT_BANK",
+    "metadata/config/catalog/IDENTITY_ANCHOR_CATALOG",
+    "metadata/config/catalog/HABIT_ANCHOR_CATALOG",
+    "metadata/config/catalog/WHY_CATALOG",
+    "metadata/config/catalog/target-rep-catalog", // <-- NEW (matches filename)
+    "metadata/config/catalog/quick_challenge_catalog",
 ];
 
 const isDocumentPath = (p) => pathParts(p).length % 2 === 0;
@@ -418,9 +418,9 @@ export default function AdminDataMaintenance() {
   const setArrayRows = useCallback((nextRowsOrFn) => {
     setDocJson(prevJson => {
         const currentRaw = tryParse(prevJson, {});
-        
+
         // Resolve functional update
-        const nextRows = typeof nextRowsOrFn === 'function' 
+        const nextRows = typeof nextRowsOrFn === 'function'
             ? nextRowsOrFn(arrayRows) // Pass the memoized arrayRows to the function
             : nextRowsOrFn;
 
@@ -456,7 +456,7 @@ export default function AdminDataMaintenance() {
   const explain = isDocumentPath(path) ? "Path type: 📝 Document" : isCollectionPath(path) ? "Path type: 📚 Collection" : "Enter Path";
 
   /* ---------- document actions ---------- */
-  
+
   const readDoc = useCallback(async () => {
     if (isReading) return;
     if (liveUnsub) { liveUnsub(); setLiveUnsub(null); }
@@ -579,17 +579,17 @@ export default function AdminDataMaintenance() {
         const dataFromEditor = tryParse(docJson, {});
         const p = normalizePath(path, uid);
         let dataToSave = { ...dataFromEditor };
-        
+
         // Determine fields managed by Array editor
         const currentWrapperKey = getStrictWrapperKeyForPath(path);
         const currentArrayFields = Object.keys(dataFromEditor).filter(k => k !== currentWrapperKey && Array.isArray(dataFromEditor[k]));
         const arrayManagedFields = currentWrapperKey ? [ARRAY_WRAPPER_KEY] : currentArrayFields;
 
         // Delete array-managed fields from the object we are about to save
-        arrayManagedFields.forEach(field => { 
-            if (dataToSave.hasOwnProperty(field)) { 
-                delete dataToSave[field]; 
-            } 
+        arrayManagedFields.forEach(field => {
+            if (dataToSave.hasOwnProperty(field)) {
+                delete dataToSave[field];
+            }
         });
 
         if (Object.keys(dataToSave).length > 0 || !docExists) { // Allow saving KV if doc doesn't exist
@@ -602,7 +602,7 @@ export default function AdminDataMaintenance() {
 
 
   /* ---------- collection actions ---------- */
-  
+
   const listCollection = useCallback(async () => {
     if (isReading) return;
     setStatus("Listing collection…"); setErr("");
@@ -622,7 +622,7 @@ export default function AdminDataMaintenance() {
   const addCollectionRow = useCallback(() => setRows((r) => [{ _id: "__new__" + Math.random().toString(36).slice(2, 8) }, ...r]), []);
   const setCollectionCell = useCallback((id, key, val) => setRows((r) => r.map((x) => (x._id === id ? { ...x, [key]: val } : x))), []);
   const toggleSelection = useCallback((id) => setSelected((s) => ({ ...s, [id]: !s[id] })), []);
-  
+
   const toggleAllSelection = useCallback(() => {
     const allSelected = rows.length > 0 && Object.keys(selected).length === rows.length && Object.values(selected).every(Boolean);
     if (allSelected) {
@@ -636,7 +636,7 @@ export default function AdminDataMaintenance() {
     if (isWriting) return;
     const toSave = rows.filter(r => r._id.startsWith('__new__') || r._id.startsWith('__import__'));
     const toUpdate = rows.filter(r => selected[r._id] && !r._id.startsWith('__'));
-    
+
     if (toSave.length === 0 && toUpdate.length === 0) {
         setStatus("ⓘ No new/imported rows or selected rows to save.");
         return;
@@ -646,7 +646,7 @@ export default function AdminDataMaintenance() {
     setStatus(`Batch saving ${toSave.length + toUpdate.length} docs...`); setErr("");
     const p = normalizePath(path, uid);
     const batch = writeBatch(db);
-    
+
     try {
         // Save/merge selected existing docs
         toUpdate.forEach(r => {
@@ -702,7 +702,7 @@ export default function AdminDataMaintenance() {
 
 
   /* ---------- import / export ---------- */
-  
+
   const exportJSON = useCallback(() => {
     const p = normalizePath(path, uid).replaceAll('/', '_');
     let dataToExport;
@@ -720,7 +720,7 @@ export default function AdminDataMaintenance() {
     } else {
         return;
     }
-    
+
     const blob = new Blob([dataToExport], { type: "application/json" });
     const a = document.createElement("a");
     a.href = URL.createObjectURL(blob);
@@ -803,30 +803,30 @@ export default function AdminDataMaintenance() {
 
 
   /* ---------- presets (WITH ALL CATALOGS) ---------- */
-  // --- UPDATED: Added presets for all new catalogs ---
+  // --- UPDATED: Added preset for target-rep-catalog ---
   const presets = useMemo(() => [
     // --- USER DATA ---
     { group: "User Data (Development Plan)", label: "👤 Dev Plan (Roadmap)", value: "leadership_plan/<uid>/profile/roadmap" }, // Updated label/path
     { group: "User Data (Development Plan)", label: "📜 Dev Plan History (Coll)", value: "leadership_plan/<uid>/plan_history" },
     { group: "User Data (Development Plan)", label: "📊 Assessment History (Coll)", value: "leadership_plan/<uid>/assessment_history" },
-    { group: "User Data (Daily Practice)", label: "✅ Daily Reps / Anchors / Etc", value: "user_commitments/<uid>/profile/active" }, // Updated Label
-    { group: "User Data (Daily Practice)", label: "📓 Reflection Log (Coll)", value: "user_commitments/<uid>/reflection_history" }, // <-- NEW
+    { group: "User Data (Daily Practice)", label: "✅ Daily State (Reps/Anchors)", value: "user_commitments/<uid>/profile/active" }, // Updated Label
+    { group: "User Data (Daily Practice)", label: "📓 Reflection Log (Coll)", value: "user_commitments/<uid>/reflection_history" },
     { group: "User Data (Other)", label: "📝 Planning Drafts", value: "user_planning/<uid>/profile/drafts" },
-    
+
     // --- APP DATASETS ---
     { group: "App DataSets (Global)", label: "⚙️ Global Config Root", value: "metadata/config" },
     { group: "App DataSets (Development Plan)", label: "🗺️ Leadership Domains", value: "metadata/config/catalog/leadership_domains" },
     { group: "App DataSets (Development Plan)", label: "🛠️ Skill Content Library", value: "metadata/config/catalog/SKILL_CONTENT_LIBRARY" },
-    { group: "App DataSets (Daily Practice)", label: "🏦 Daily Rep Bank (Commitments)", value: "metadata/config/catalog/COMMITMENT_BANK" }, // <-- Updated Label
-    { group: "App DataSets (Daily Practice)", label: "👤 Identity Anchor Catalog", value: "metadata/config/catalog/IDENTITY_ANCHOR_CATALOG" }, // <-- Updated Label
-    { group: "App DataSets (Daily Practice)", label: "⚓ Habit Anchor Catalog", value: "metadata/config/catalog/HABIT_ANCHOR_CATALOG" }, // <-- Updated Label
-    { group: "App DataSets (Daily Practice)", label: "💖 Why Catalog", value: "metadata/config/catalog/WHY_CATALOG" }, // <-- NEW
+    { group: "App DataSets (Daily Practice)", label: "🎯 Target Rep Catalog", value: "metadata/config/catalog/target-rep-catalog" }, // <-- NEW
+    { group: "App DataSets (Daily Practice)", label: "🏦 Commitment Bank (Addtl Reps)", value: "metadata/config/catalog/COMMITMENT_BANK" }, // Renamed label
+    { group: "App DataSets (Daily Practice)", label: "👤 Identity Anchor Catalog", value: "metadata/config/catalog/IDENTITY_ANCHOR_CATALOG" },
+    { group: "App DataSets (Daily Practice)", label: "⚓ Habit Anchor Catalog", value: "metadata/config/catalog/HABIT_ANCHOR_CATALOG" },
+    { group: "App DataSets (Daily Practice)", label: "💖 Why Catalog", value: "metadata/config/catalog/WHY_CATALOG" },
     { group: "App DataSets (Other Features)", label: "📚 Resource Library", value: "metadata/config/catalog/resource_library" },
     { group: "App DataSets (Other Features)", label: "⚡ Quick Challenges", value: "metadata/config/catalog/quick_challenge_catalog" },
     { group: "App DataSets (Other Features)", label: "🎬 Scenario Catalog", value: "metadata/config/catalog/scenario_catalog" },
     { group: "App DataSets (Other Features)", label: "🎥 Video Catalog", value: "metadata/config/catalog/video_catalog" },
     { group: "App DataSets (Other Features)", label: "📖 Reading Catalog (Wrapped)", value: "metadata/reading_catalog" },
-    // Removed TARGET_REP_CATALOG if COMMITMENT_BANK replaces it
   ], []);
 
   // Helper to get unique, ordered groups
@@ -838,7 +838,7 @@ export default function AdminDataMaintenance() {
   return (
     <div className="p-6 bg-gray-50 min-h-screen">
       <h1 className="text-3xl font-extrabold text-gray-900 mb-6 border-b pb-2">🔥 Firestore Data Manager (Admin)</h1>
-      
+
       <AdminWarning /> {/* <-- NEW: Added Warning */}
 
       {/* Presets */}
@@ -994,11 +994,11 @@ export default function AdminDataMaintenance() {
                      <tr>
                         <th className="p-2 border-b w-10">
                             {/* NEW: Select All Checkbox */}
-                            <input 
-                                type="checkbox" 
-                                checked={rows.length > 0 && Object.keys(selected).length === rows.length && Object.values(selected).every(Boolean)} 
-                                onChange={toggleAllSelection} 
-                                title="Select All" 
+                            <input
+                                type="checkbox"
+                                checked={rows.length > 0 && Object.keys(selected).length === rows.length && Object.values(selected).every(Boolean)}
+                                onChange={toggleAllSelection}
+                                title="Select All"
                             />
                         </th>
                         {cols.map((c) => <th key={c} className="p-3 border-b text-left font-semibold text-gray-700">{c}</th>)}
@@ -1013,20 +1013,20 @@ export default function AdminDataMaintenance() {
                             {cols.map((c) => (
                                <td key={c} className="p-1.5 border-b align-top">
                                 {/* NEW: _id is now read-only */}
-                                {c === "_id" ? ( 
+                                {c === "_id" ? (
                                     <div className={`px-2 py-1 rounded font-mono text-xs ${r._id.startsWith("__new__") || r._id.startsWith("__import__") ? 'bg-yellow-200 text-yellow-800' : 'bg-gray-100 text-gray-700'}`}>
                                         {r._id.startsWith("__") ? 'NEW/IMPORT' : r._id}
-                                    </div> 
-                                ) : ( 
-                                    <textarea 
-                                        className="w-full border rounded px-2 py-1 font-mono text-xs h-16 resize-y disabled:bg-gray-50" 
-                                        value={r[c] ?? ""} 
-                                        onChange={(e) => setCollectionCell(r._id, c, e.target.value)} 
-                                        placeholder={c} 
-                                        title={c} 
-                                        rows={1} 
+                                    </div>
+                                ) : (
+                                    <textarea
+                                        className="w-full border rounded px-2 py-1 font-mono text-xs h-16 resize-y disabled:bg-gray-50"
+                                        value={r[c] ?? ""}
+                                        onChange={(e) => setCollectionCell(r._id, c, e.target.value)}
+                                        placeholder={c}
+                                        title={c}
+                                        rows={1}
                                         disabled={isWriting}
-                                    /> 
+                                    />
                                 )}
                                </td>
                             ))}
@@ -1044,3 +1044,4 @@ export default function AdminDataMaintenance() {
     </div>
   );
 }
+
