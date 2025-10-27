@@ -1,4 +1,4 @@
-// src/App.jsx (Updated with Comprehensive State Reset on Sign Out)
+// src/App.jsx (Updated with Comprehensive State Reset on Sign Out and Session Persistence Fix)
 
 import React, { useState, useEffect, useMemo, useCallback, Suspense, lazy } from 'react';
 
@@ -26,6 +26,9 @@ import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
   sendPasswordResetEmail,
+  // 🚨 NEW: Import setPersistence and browserSessionPersistence
+  setPersistence,
+  browserSessionPersistence,
 } from 'firebase/auth';
 import {
   getFirestore,
@@ -123,6 +126,9 @@ function AuthPanel({ auth, onSuccess }) {
     setIsLoading(true);
     setStatusMessage('');
     try {
+      // 🚨 PERSISTENCE FIX: Set persistence before attempting sign in/up
+      await setPersistence(auth, browserSessionPersistence);
+
       if (mode === 'login') {
         await signInWithEmailAndPassword(auth, email, password);
         onSuccess(); // Callback on successful login
