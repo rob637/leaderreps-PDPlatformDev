@@ -635,6 +635,9 @@ const DataProvider = ({ children, firebaseServices, userId, isAuthReady, navigat
     // const apiKey = resolvedMetadata.API_KEY || (typeof __GEMINI_API_KEY !== 'undefined' ? __GEMINI_API_KEY : ''); // <-- Now defined above
     const geminiModel = resolvedMetadata.GEMINI_MODEL || 'gemini-1.5-flash'; // cite: useAppServices.jsx
     // callSecureGeminiAPI and hasGeminiKey are now defined in this scope
+    
+    // Define a stable, generic no-op function for absolute defense.
+    const noOpUpdate = async () => false;
 
     return {
       // Core App State & Functions
@@ -684,9 +687,10 @@ const DataProvider = ({ children, firebaseServices, userId, isAuthReady, navigat
       hasPendingDailyPractice,
 
       // Data Writers (using updated names)
-      updateDevelopmentPlanData: devPlanHook.updateData, // cite: useAppServices.jsx
-      updateDailyPracticeData: dailyPracticeHook.updateData, // cite: useAppServices.jsx
-      updateStrategicContentData: strategicContentHook.updateData, // cite: useAppServices.jsx
+      // FIX: Add defensive check (?? noOpUpdate) here as a final guarantee.
+      updateDevelopmentPlanData: devPlanHook.updateData ?? noOpUpdate, // cite: useAppServices.jsx
+      updateDailyPracticeData: dailyPracticeHook.updateData ?? noOpUpdate, // cite: useAppServices.jsx
+      updateStrategicContentData: strategicContentHook.updateData ?? noOpUpdate, // cite: useAppServices.jsx
       // Update global metadata (pass db and userId)
       updateGlobalMetadata: (data, opts) => updateGlobalMetadata(db, data, { ...opts, userId }), // cite: useAppServices.jsx
     };
