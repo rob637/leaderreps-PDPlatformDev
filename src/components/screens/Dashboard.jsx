@@ -417,15 +417,40 @@ const ReflectionLogModal = ({ isOpen, onClose, history, isLoading }) => {
 /* =========================================================
    Identity Anchor Modal Component (Unchanged Logically, Style Refined)
 ========================================================= */
-const IdentityAnchorModal = ({ isOpen, onClose, currentIdentity, onSave, suggestions = [] }) => { /* ... minor style tweaks ... */
+const IdentityAnchorModal = ({ isOpen, onClose, currentIdentity, onSave, suggestions = [] }) => {
   if (!isOpen) return null;
   const prefix = "I'm the kind of leader who ";
   const defaultPlaceholder = "Define your leader identity...";
-  const getEditablePart = (fullIdentity) => { /* ... unchanged ... */ };
-  const [identityText, setIdentityText] = useState(getEditablePart(currentIdentity));
+  
+  // **FIX: Explicitly define getEditablePart with null/undefined safety**
+  const getEditablePart = (fullIdentity) => {
+    // Ensure fullIdentity is a string before checking against the prefix
+    const safeIdentity = fullIdentity || ""; 
+    if (!safeIdentity || safeIdentity === defaultPlaceholder) return "";
+    return safeIdentity.startsWith(prefix) ? safeIdentity.substring(prefix.length) : safeIdentity;
+  };
+  
+  // **FIX: Ensure useState is initialized with a string**
+  const [identityText, setIdentityText] = useState(getEditablePart(currentIdentity) || ""); 
+  
   const [isSaving, setIsSaving] = useState(false);
   const suggestionItems = Array.isArray(suggestions) ? suggestions : [];
-  const handleSaveClick = async () => { /* ... unchanged ... */ };
+  
+  // **FIX: Ensure validation is safe**
+  const handleSaveClick = async () => { 
+    // Basic validation
+    if (!identityText.trim()) { alert("Identity anchor cannot be empty."); return; }
+    
+    setIsSaving(true);
+    try {
+        await onSave(identityText.trim()); // Call parent save handler
+    } catch (e) {
+        console.error("Identity Anchor save failed:", e);
+        alert("Failed to save Identity Anchor.");
+    } finally {
+        setIsSaving(false);
+    }
+  };
 
   return ( /* ... Modal structure ... */
     <div className="fixed inset-0 z-[60] flex items-center justify-center p-4" aria-modal="true" role="dialog">
@@ -467,13 +492,33 @@ const IdentityAnchorModal = ({ isOpen, onClose, currentIdentity, onSave, suggest
 /* =========================================================
    Habit Anchor Modal Component (Unchanged Logically, Style Refined)
 ========================================================= */
-const HabitAnchorModal = ({ isOpen, onClose, currentAnchor, onSave, suggestions = [], defaultAnchorText }) => { /* ... minor style tweaks ... */
+const HabitAnchorModal = ({ isOpen, onClose, currentAnchor, onSave, suggestions = [], defaultAnchorText }) => {
    if (!isOpen) return null;
-   const getEditablePart = (fullAnchor) => (fullAnchor === defaultAnchorText ? "" : fullAnchor || "");
-   const [anchorText, setAnchorText] = useState(getEditablePart(currentAnchor));
+   
+   // **FIX: Explicitly define getEditablePart with null/undefined safety**
+   const getEditablePart = (fullAnchor) => (fullAnchor === defaultAnchorText || !fullAnchor ? "" : fullAnchor || "");
+   
+   // **FIX: Ensure useState is initialized with a string**
+   const [anchorText, setAnchorText] = useState(getEditablePart(currentAnchor) || "");
+   
    const [isSaving, setIsSaving] = useState(false);
    const suggestionItems = Array.isArray(suggestions) ? suggestions : [];
-   const handleSaveClick = async () => { /* ... unchanged ... */ };
+   
+   // **FIX: Ensure validation is safe**
+   const handleSaveClick = async () => { 
+        // Basic validation
+        if (!anchorText.trim()) { alert("Habit anchor cannot be empty."); return; }
+        
+        setIsSaving(true);
+        try {
+            await onSave(anchorText.trim()); // Call parent save handler
+        } catch (e) {
+            console.error("Habit Anchor save failed:", e);
+            alert("Failed to save Habit Anchor.");
+        } finally {
+            setIsSaving(false);
+        }
+   };
 
    return ( /* ... Modal structure ... */
     <div className="fixed inset-0 z-[60] flex items-center justify-center p-4" aria-modal="true" role="dialog">
@@ -514,12 +559,30 @@ const HabitAnchorModal = ({ isOpen, onClose, currentAnchor, onSave, suggestions 
 /* =========================================================
    Why It Matters Modal Component (Unchanged Logically, Style Refined)
 ========================================================= */
-const WhyItMattersModal = ({ isOpen, onClose, currentWhy, onSave, suggestions = [] }) => { /* ... minor style tweaks ... */
+const WhyItMattersModal = ({ isOpen, onClose, currentWhy, onSave, suggestions = [] }) => { 
    if (!isOpen) return null;
+   
+   // **FIX: Ensure useState is initialized with a string**
    const [whyText, setWhyText] = useState(currentWhy || "");
+   
    const [isSaving, setIsSaving] = useState(false);
    const suggestionItems = Array.isArray(suggestions) ? suggestions : [];
-   const handleSaveClick = async () => { /* ... unchanged ... */ };
+   
+   // **FIX: Ensure validation is safe**
+   const handleSaveClick = async () => { 
+        // Basic validation
+        if (!whyText.trim()) { alert("'Why' statement cannot be empty."); return; }
+        
+        setIsSaving(true);
+        try {
+            await onSave(whyText.trim()); // Call parent save handler
+        } catch (e) {
+            console.error("Why statement save failed:", e);
+            alert("Failed to save 'Why' statement.");
+        } finally {
+            setIsSaving(false);
+        }
+   };
 
    return ( /* ... Modal structure ... */
     <div className="fixed inset-0 z-[60] flex items-center justify-center p-4" aria-modal="true" role="dialog">

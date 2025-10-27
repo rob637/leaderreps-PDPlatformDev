@@ -107,11 +107,10 @@ const ARRAY_WRAPPER_KEY = "items"; // cite: AdminDataMaintenance.jsx (Original)
 // List of specific document paths known to use the { items: [...] } structure
 const SINGLE_ARRAY_WRAPPER_DOCUMENTS = [ // cite: AdminDataMaintenance.jsx (Original, Updated List)
     "metadata/reading_catalog",
-    "metadata/config/catalog/leadership_domains", // now SKILL_CATALOG conceptually
-    "metadata/config/catalog/resource_library", // now RESOURCE_LIBRARY_ITEMS conceptually
+    "metadata/config/catalog/SKILL_CATALOG", // Renamed from leadership_domains conceptually
+    "metadata/config/catalog/RESOURCE_LIBRARY_ITEMS", // Raw items // cite: useAppServices.jsx
     "metadata/config/catalog/scenario_catalog",
     "metadata/config/catalog/video_catalog",
-    // "metadata/config/catalog/SKILL_CONTENT_LIBRARY", // Might be SKILL_CATALOG
     "metadata/config/catalog/REP_LIBRARY", // Unified Rep Library Concept
     "metadata/config/catalog/EXERCISE_LIBRARY", // New
     "metadata/config/catalog/WORKOUT_LIBRARY", // New
@@ -119,8 +118,6 @@ const SINGLE_ARRAY_WRAPPER_DOCUMENTS = [ // cite: AdminDataMaintenance.jsx (Orig
     "metadata/config/catalog/IDENTITY_ANCHOR_CATALOG",
     "metadata/config/catalog/HABIT_ANCHOR_CATALOG",
     "metadata/config/catalog/WHY_CATALOG",
-    // "metadata/config/catalog/target-rep-catalog", // Included in REP_LIBRARY conceptually
-    // "metadata/config/catalog/quick_challenge_catalog", // Likely part of REP_LIBRARY
 ];
 // Checks if the current path exactly matches one of the wrapper documents
 const getStrictWrapperKeyForPath = (path) => SINGLE_ARRAY_WRAPPER_DOCUMENTS.includes(path) ? ARRAY_WRAPPER_KEY : null; // cite: AdminDataMaintenance.jsx (Original)
@@ -454,9 +451,9 @@ export default function AdminDataMaintenance() {
   const deleteSingleCollectionDoc = useCallback(async (id) => { /* ... Re-use exact deleteSingleCollectionDoc logic ... */ }, [path, userId, db, isWriting, listCollection]);
 
   // --- Import/Export Callbacks (Unchanged Logic) ---
-  const exportJSON = useCallback(() => { /* ... Re-use exact exportJSON logic ... */ }, [docJson, rows, path, uid, isDocView, isCollView]); // Added view checks
+  const exportJSON = useCallback(() => { /* ... Re-use exact exportJSON logic ... */ }, [docJson, rows, path, userId, isDocView, isCollView]); // FIX 2a: Replaced 'uid' with 'userId'
   const importJSON = useCallback((e) => { /* ... Re-use exact importJSON logic ... */ }, [path, isDocView, isCollView]); // Added view checks
-  const exportCSV = useCallback(() => { /* ... Re-use exact exportCSV logic ... */ }, [rows, path, uid, isCollView]); // Added view check
+  const exportCSV = useCallback(() => { /* ... Re-use exact exportCSV logic ... */ }, [rows, path, userId, isCollView]); // FIX 2b: Replaced 'uid' with 'userId'
   const importCSV = useCallback((e) => { /* ... Re-use exact importCSV logic ... */ }, [path, isCollView]); // Added view check
 
 

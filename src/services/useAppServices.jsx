@@ -15,6 +15,8 @@ import {
   onSnapshot as fsOnSnapshot,
   getDoc as fsGetDoc,
   updateDoc as fsUpdateDoc, // Added for partial updates
+  serverTimestamp, // <-- FIX 1: ADDED serverTimestamp
+  FieldValue // Added for utility functions like delete
 } from 'firebase/firestore';
 
 // --- NEW: Import specific icons used within this service ---
@@ -31,11 +33,11 @@ const __firestore_mock_store =
 const createMockSnapshot = (docPath, data, exists = true) => ({
   exists: () => exists,
   data: () => data,
-  docRef: path, // Use consistent naming 'path'
+  docRef: docPath, // Use consistent naming 'docPath'
   _md: { fromCache: false, pendingWrites: false },
 });
 const mockSetDoc = async (docRefPath, data) => {
-  __firestore_mock_store[docPath] = data;
+  __firestore_mock_store[docRefPath] = data;
   console.log(`[MOCK SET] Path: ${docRefPath}`, data); // Added logging
   return true;
 };
@@ -239,7 +241,8 @@ export const ensureUserDocs = async (db, uid) => {
              if (currentData.streakCoins === undefined) { updates.streakCoins = 0; needsUpdate = true; }
              if (currentData.arenaMode === undefined) { updates.arenaMode = true; needsUpdate = true; }
              // Remove deprecated field if present
-             if (currentData.reflection_journal !== undefined) { updates.reflection_journal = firebase.firestore.FieldValue.delete(); needsUpdate = true; }
+             // NOTE: Since firebase.firestore.FieldValue.delete is undefined, use FieldValue.delete() from imported FieldValue
+             if (currentData.reflection_journal !== undefined) { updates.reflection_journal = FieldValue.delete(); needsUpdate = true; }
          }
          // Add checks for other collections if needed
 
@@ -817,7 +820,6 @@ export const createAppServices = ({
   // --- Combined error state ---
   const combinedError = devPlanHook.error || dailyPracticeHook.error || strategicContentHook.error || metadataHook.error;
 
- // src/services/useAppServices.jsx (Around line 850)
 // --- Determine Admin Status ---
 const isAdmin = useMemo(() => {
     // Ensure user and email exist before checking, and convert user.email to lowercase
