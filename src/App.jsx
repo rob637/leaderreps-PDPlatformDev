@@ -402,8 +402,8 @@ const NavSidebar = ({ currentScreen, setCurrentScreen, user, closeMobileMenu, is
           className={`relative group flex items-center w-full p-2 rounded-lg text-sm font-semibold transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-[${COLORS.TEAL}] focus:ring-offset-1 focus:ring-offset-[${COLORS.NAVY}]`}
           style={{ background: `${COLORS.TEAL}15`, ':hover': { background: `${COLORS.TEAL}25` } }} // Subtle background
         >
-          {/* User Icon */}
-          <UserIcon
+          {/* User Icon --- THIS IS THE FIX --- */}
+          <User
             className={`w-5 h-5 flex-shrink-0 transition-colors duration-200 ${isNavExpanded ? 'mr-3' : ''}`}
             style={{ color: COLORS.SUBTLE }}
           />
