@@ -1,4 +1,4 @@
-// src/components/screens/Dashboard.jsx (Refactored for Consistency, Daily Resets, AI Nudge Position, Terminology)
+// src/components/screens/Dashboard.jsx (Refactored for Consistency, Daily Resets, AI Nudge Position, Terminology, and Closure Fix)
 
 import React, { useMemo, useState, useEffect, useCallback } from 'react';
 // --- Core Services & Context ---
@@ -880,18 +880,22 @@ const DEFAULT_TARGET_REP = { id: 'default', text: "Set Your Focus Rep", definiti
  */
 const DashboardScreen = () => {
   // --- Core Hooks & Services ---
+  // 🚨 FINAL FIX: Capture the entire service object to ensure live function reading inside handlers
+  const appServices = useAppServices(); 
+  
+  // Destructure variables from the captured service object
   const {
     navigate, user, db, userId, isAuthReady, // Basic app context
-    // Renamed User Data Hooks
-    developmentPlanData, updateDevelopmentPlanData,
-    dailyPracticeData, updateDailyPracticeData,
-    strategicContentData, updateStrategicContentData,
+    // Renamed User Data Hooks (destructure data objects directly)
+    developmentPlanData,
+    dailyPracticeData,
+    strategicContentData,
     // Global Metadata & Catalogs (using updated names)
     isLoading: isAppLoading, error: appError, featureFlags, REP_LIBRARY,
     IDENTITY_ANCHOR_CATALOG, HABIT_ANCHOR_CATALOG, WHY_CATALOG, LEADERSHIP_TIERS,
     // AI Services
     callSecureGeminiAPI, hasGeminiKey,
-  } = useAppServices(); // cite: useAppServices.jsx
+  } = appServices; // cite: useAppServices.jsx
 
   // --- Local Component State ---
   const [isSavingRep, setIsSavingRep] = useState(false); // Loading state for saving any rep
@@ -1077,6 +1081,9 @@ const DashboardScreen = () => {
 
   // --- Toggles the status of an *additional* daily rep ---
   const handleToggleAdditionalCommitment = useCallback(async (commitId) => {
+      // 🚨 CRITICAL FIX: Get the LIVE function directly from the service object
+      const updateDailyPracticeData = appServices.updateDailyPracticeData; 
+
       if (isSavingRep) return; // Prevent double clicks
       console.log("[Dashboard] Toggling additional commitment:", commitId);
       setIsSavingRep(true);
@@ -1134,11 +1141,14 @@ const DashboardScreen = () => {
       } finally {
         setIsSavingRep(false); // Reset loading state
       }
-    }, [dailyPracticeData, updateDailyPracticeData, isSavingRep, dailyTargetRep.id]); // Dependencies
+    }, [appServices, dailyPracticeData, isSavingRep, dailyTargetRep.id]); // Dependencies
 
 
   // --- Marks the *Daily Target Rep* as complete for *today* ---
   const completeTargetRep = useCallback(async () => {
+      // 🚨 CRITICAL FIX: Get the LIVE function directly from the service object
+      const updateDailyPracticeData = appServices.updateDailyPracticeData; 
+
       // Prevent action if already saving, rep is default, or already committed for today
       if (isSavingRep || dailyTargetRep.id === 'default' || (dailyTargetRep.status === 'Committed' && dailyPracticeData?.dailyTargetRepDate === todayStr)) {
            console.log("[Dashboard] completeTargetRep: Action skipped (saving, default, or already complete today).");
@@ -1203,7 +1213,7 @@ const DashboardScreen = () => {
       } finally {
           setIsSavingRep(false); // Reset loading state
       }
-  }, [updateDailyPracticeData, isSavingRep, dailyTargetRep, dailyPracticeData, todayStr, streakCount, streakCoins, triggerCelebration]); // Dependencies
+  }, [appServices, isSavingRep, dailyTargetRep, dailyPracticeData, todayStr, streakCount, streakCoins, triggerCelebration]); // Dependencies
 
 
   // Handler for the "Let's Do It!" button in the 2-Minute Challenge modal
@@ -1244,6 +1254,9 @@ const DashboardScreen = () => {
 
   // Handler for toggling Arena/Solo mode
   const handleModeToggle = async () => {
+      // 🚨 CRITICAL FIX: Get the LIVE function directly from the service object
+      const updateDailyPracticeData = appServices.updateDailyPracticeData; 
+
       if (isSavingMode) return;
       setIsSavingMode(true);
       const newMode = !isArenaMode;
@@ -1274,6 +1287,9 @@ const DashboardScreen = () => {
   // --- Modal Save Handlers ---
   // Save Identity Anchor (updates dailyPracticeData)
   const handleSaveIdentity = async (newIdentitySuffix) => {
+    // 🚨 CRITICAL FIX: Get the LIVE function directly from the service object
+    const updateDailyPracticeData = appServices.updateDailyPracticeData; 
+    
     if (!newIdentitySuffix.trim()) { alert("Identity anchor cannot be empty."); return; }
     // CRITICAL FIX: Check for update function
     if (!updateDailyPracticeData) { console.error("[Dashboard] Identity update failed: Service missing."); alert("Update service is missing."); return; }
@@ -1290,6 +1306,9 @@ const DashboardScreen = () => {
 
   // Save Habit Anchor (updates dailyPracticeData)
   const handleSaveHabitAnchor = async (newAnchor) => {
+    // 🚨 CRITICAL FIX: Get the LIVE function directly from the service object
+    const updateDailyPracticeData = appServices.updateDailyPracticeData; 
+
     if (!newAnchor.trim()) { alert("Habit anchor cannot be empty."); return; }
     // CRITICAL FIX: Check for update function
     if (!updateDailyPracticeData) { console.error("[Dashboard] Habit Anchor update failed: Service missing."); alert("Update service is missing."); return; }
@@ -1306,6 +1325,9 @@ const DashboardScreen = () => {
 
   // Save Why It Matters (updates strategicContentData)
   const handleSaveWhy = async (newWhy) => {
+    // 🚨 CRITICAL FIX: Get the LIVE function directly from the service object
+    const updateStrategicContentData = appServices.updateStrategicContentData; 
+
     if (!newWhy.trim()) { alert("'Why' statement cannot be empty."); return; }
     // CRITICAL FIX: Check for update function
     if (!updateStrategicContentData) { console.error("[Dashboard] Why update failed: Service missing."); alert("Update service is missing."); return; }
