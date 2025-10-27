@@ -817,11 +817,12 @@ export const createAppServices = ({
   // --- Combined error state ---
   const combinedError = devPlanHook.error || dailyPracticeHook.error || strategicContentHook.error || metadataHook.error;
 
-  // --- Determine Admin Status ---
-  const isAdmin = useMemo(() => {
-      // Ensure user and email exist before checking
-      return !!user?.email && ADMIN_EMAILS.includes(user.email.toLowerCase());
-  }, [user]);
+ // src/services/useAppServices.jsx (Around line 850)
+// --- Determine Admin Status ---
+const isAdmin = useMemo(() => {
+    // Ensure user and email exist before checking, and convert user.email to lowercase
+    return !!user?.email && ADMIN_EMAILS.includes(user.email.toLowerCase()); // FIX: Added .toLowerCase()
+}, [user]);
 
   // --- Memoized Service Value ---
   const value = useMemo(() => {
