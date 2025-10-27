@@ -1,4 +1,4 @@
-// src/App.jsx (Refactored for Consistency, Features, Admin, Daily Resets)
+// src/App.jsx (Refactored for Consistency, Features, Admin, Daily Resets, and Loading Fix)
 
 import React, { useState, useEffect, useMemo, useCallback, Suspense, lazy } from 'react';
 
@@ -477,7 +477,7 @@ const ScreenRouter = ({ currentScreen, navParams, navigate }) => {
  */
 const AppContent = ({ currentScreen, setCurrentScreen, user, navParams, isMobileOpen, setIsMobileOpen, isAuthRequired, isNavExpanded, setIsNavExpanded }) => {
   // Memoized callback to close mobile menu
-  const closeMobileMenu = useCallback(() => setIsMobileOpen(false), [setIsMobileOpen]);
+  const closeMobileMenu = useCallback(() => setIsMobileOpen(false), [setIsMobileMenu]);
   // Get navigate function from context for ScreenRouter
   const { navigate } = useAppServices();
 
@@ -570,7 +570,8 @@ const DataProvider = ({ children, firebaseServices, userId, isAuthReady, navigat
   const globalHook = useGlobalMetadata(db, isAuthReady);
 
   // --- Combined Loading & Error States ---
-  const isLoading = devPlanHook.isLoading || dailyPracticeHook.isLoading || strategicContentHook.isLoading || globalHook.isLoading; // cite: useAppServices.jsx
+  const isUserHookLoading = devPlanHook.isLoading || dailyPracticeHook.isLoading || strategicContentHook.isLoading;
+  const isLoading = isUserHookLoading || globalHook.isLoading; // combined app loading
   const error = devPlanHook.error || dailyPracticeHook.error || strategicContentHook.error || globalHook.error; // cite: useAppServices.jsx
 
   // --- Derive `isAdmin` status ---
@@ -710,7 +711,12 @@ const DataProvider = ({ children, firebaseServices, userId, isAuthReady, navigat
       // Render nothing or a minimal placeholder until auth is resolved
       return null;
   }
-  if (isLoading) {
+  
+  // 🚨 CRITICAL FIX FOR SPINNING: Ensure the app waits for the user hooks 
+  // to initialize and load data when a valid userId is present.
+  const isUserDataLoading = !!userId && isUserHookLoading;
+
+  if (isLoading || isUserDataLoading) {
     console.log("[DataProvider] Core data loading...");
     return (
       <div className="min-h-screen flex items-center justify-center" style={{ background: COLORS.BG }}>
@@ -936,7 +942,7 @@ const App = ({ initialState }) => {
           user={user}
           navParams={navParams}
           isMobileOpen={isMobileOpen}
-          setIsMobileOpen={setIsMobileOpen}
+          setIsMobileOpen={setIsMobileMenu}
           isAuthRequired={authRequired} // Pass auth status down
           isNavExpanded={isNavExpanded}
           setIsNavExpanded={setIsNavExpanded}
