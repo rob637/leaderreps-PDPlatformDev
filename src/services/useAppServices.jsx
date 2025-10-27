@@ -294,7 +294,7 @@ const MOCK_SCENARIO_CATALOG = { items: [] };
 const MOCK_RESOURCE_LIBRARY_ITEMS = { items: [] }; // For Applied Leadership resources, needs transformation
 
 // --- MOCK ADMIN CONFIG ---
-const ADMIN_EMAILS = ["admin@leaderreps.com", "your.email@example.com"]; // Add emails of admins here
+const ADMIN_EMAILS = ["rob@sagecg.com", "ryan@leaderreps.com", "ryanyeoman@gmail.com", "christina@leaderreps.com", "jeff@leaderreps.com"]; // Add emails of admins here
 const ADMIN_PASSWORD = "7777"; // Simple password for admin functions screen
 
 

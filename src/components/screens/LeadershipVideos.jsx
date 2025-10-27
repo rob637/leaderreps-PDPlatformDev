@@ -2,7 +2,7 @@
 
 import React, { useEffect, useMemo } from 'react';
 // --- Icons ---
-import { Film, User, Clock, ArrowRight, Zap, Briefcase } from 'lucide-react'; // Added Zap, Briefcase for section headers
+import { Film, User, Clock, ArrowRight, Zap, Briefcase, ArrowLeft } from 'lucide-react'; // Added Zap, Briefcase for section headers
 // --- Core Services & Context ---
 import { useAppServices } from '../../services/useAppServices.jsx'; // cite: useAppServices.jsx
 
