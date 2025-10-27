@@ -106,17 +106,21 @@ const nowIso = () => new Date().toISOString();
 const ARRAY_WRAPPER_KEY = "items";
 
 // List *all* document paths expected to be structured strictly as { items: [...] }
+// --- UPDATED: Added all new catalog paths ---
 const SINGLE_ARRAY_WRAPPER_DOCUMENTS = [
     "metadata/reading_catalog", // This one is explicitly separate
     // Add ALL catalogs under /catalog/ IF they use the { items: [...] } structure
-    "metadata/config/catalog/TARGET_REP_CATALOG",
-    "metadata/config/catalog/quick_challenge_catalog",
     "metadata/config/catalog/leadership_domains",
     "metadata/config/catalog/resource_library",
     "metadata/config/catalog/scenario_catalog",
     "metadata/config/catalog/video_catalog",
-    // Add SKILL_CONTENT_LIBRARY if it also follows this pattern
-    "metadata/config/catalog/SKILL_CONTENT_LIBRARY" // Assuming it does
+    "metadata/config/catalog/SKILL_CONTENT_LIBRARY", // Assuming it does
+    "metadata/config/catalog/COMMITMENT_BANK", // <-- NEW
+    "metadata/config/catalog/IDENTITY_ANCHOR_CATALOG", // <-- NEW
+    "metadata/config/catalog/HABIT_ANCHOR_CATALOG", // <-- NEW
+    "metadata/config/catalog/WHY_CATALOG", // <-- NEW
+    "metadata/config/catalog/TARGET_REP_CATALOG", // <-- Keeping existing (if still used)
+    "metadata/config/catalog/quick_challenge_catalog", // <-- Keeping existing (if still used)
 ];
 
 const isDocumentPath = (p) => pathParts(p).length % 2 === 0;
@@ -799,30 +803,30 @@ export default function AdminDataMaintenance() {
 
 
   /* ---------- presets (WITH ALL CATALOGS) ---------- */
+  // --- UPDATED: Added presets for all new catalogs ---
   const presets = useMemo(() => [
     // --- USER DATA ---
-    { group: "User Data (Development Plan)", label: "👤 Dev Plan (Current)", value: "leadership_plan/<uid>/profile/plan" },
+    { group: "User Data (Development Plan)", label: "👤 Dev Plan (Roadmap)", value: "leadership_plan/<uid>/profile/roadmap" }, // Updated label/path
     { group: "User Data (Development Plan)", label: "📜 Dev Plan History (Coll)", value: "leadership_plan/<uid>/plan_history" },
     { group: "User Data (Development Plan)", label: "📊 Assessment History (Coll)", value: "leadership_plan/<uid>/assessment_history" },
-    { group: "User Data (Daily Practice)", label: "✅ Daily Reps / Reflection", value: "user_commitments/<uid>/profile/active" },
-    // --- *** REMOVED previous field-based presets *** ---
+    { group: "User Data (Daily Practice)", label: "✅ Daily Reps / Anchors / Etc", value: "user_commitments/<uid>/profile/active" }, // Updated Label
+    { group: "User Data (Daily Practice)", label: "📓 Reflection Log (Coll)", value: "user_commitments/<uid>/reflection_history" }, // <-- NEW
     { group: "User Data (Other)", label: "📝 Planning Drafts", value: "user_planning/<uid>/profile/drafts" },
     
     // --- APP DATASETS ---
     { group: "App DataSets (Global)", label: "⚙️ Global Config Root", value: "metadata/config" },
-    { group: "App DataSets (Development Plan)", label: "🗺️ Leadership Domains (Tiers)", value: "metadata/config/catalog/leadership_domains" },
-    { group: "App DataSets (Development Plan)", label: "🛠️ Skill Content Library (Courses)", value: "metadata/config/catalog/SKILL_CONTENT_LIBRARY" },
-    { group: "App DataSets (Daily Practice)", label: "🏦 Daily Rep Bank", value: "metadata/config/catalog/COMMITMENT_BANK" },
-    // --- *** ADDED CATALOG PRESETS *** ---
-    { group: "App DataSets (Daily Practice)", label: "👤 Identity Anchor Catalog", value: "metadata/config/catalog/IDENTITY_ANCHOR_CATALOG" },
-    { group: "App DataSets (Daily Practice)", label: "⚓ Habit Anchor Catalog", value: "metadata/config/catalog/HABIT_ANCHOR_CATALOG" },
-    // --- *** END ADDED *** ---
-    { group: "App DataSets (Other Features)", label: "🎯 Target Rep Catalog", value: "metadata/config/catalog/TARGET_REP_CATALOG" },
+    { group: "App DataSets (Development Plan)", label: "🗺️ Leadership Domains", value: "metadata/config/catalog/leadership_domains" },
+    { group: "App DataSets (Development Plan)", label: "🛠️ Skill Content Library", value: "metadata/config/catalog/SKILL_CONTENT_LIBRARY" },
+    { group: "App DataSets (Daily Practice)", label: "🏦 Daily Rep Bank (Commitments)", value: "metadata/config/catalog/COMMITMENT_BANK" }, // <-- Updated Label
+    { group: "App DataSets (Daily Practice)", label: "👤 Identity Anchor Catalog", value: "metadata/config/catalog/IDENTITY_ANCHOR_CATALOG" }, // <-- Updated Label
+    { group: "App DataSets (Daily Practice)", label: "⚓ Habit Anchor Catalog", value: "metadata/config/catalog/HABIT_ANCHOR_CATALOG" }, // <-- Updated Label
+    { group: "App DataSets (Daily Practice)", label: "💖 Why Catalog", value: "metadata/config/catalog/WHY_CATALOG" }, // <-- NEW
     { group: "App DataSets (Other Features)", label: "📚 Resource Library", value: "metadata/config/catalog/resource_library" },
     { group: "App DataSets (Other Features)", label: "⚡ Quick Challenges", value: "metadata/config/catalog/quick_challenge_catalog" },
     { group: "App DataSets (Other Features)", label: "🎬 Scenario Catalog", value: "metadata/config/catalog/scenario_catalog" },
     { group: "App DataSets (Other Features)", label: "🎥 Video Catalog", value: "metadata/config/catalog/video_catalog" },
     { group: "App DataSets (Other Features)", label: "📖 Reading Catalog (Wrapped)", value: "metadata/reading_catalog" },
+    // Removed TARGET_REP_CATALOG if COMMITMENT_BANK replaces it
   ], []);
 
   // Helper to get unique, ordered groups

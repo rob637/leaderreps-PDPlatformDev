@@ -1,4 +1,4 @@
-// src/components/screens/Dashboard.jsx (ATTEMPT 3: Complete + WhyItMatters Modal + Safety Checks)
+// src/components/screens/Dashboard.jsx (ATTEMPT 3: Complete + WhyItMatters Modal + Safety Checks + AI Nudge Update)
 import React, { useMemo, useState, useEffect, useCallback } from 'react';
 import { useAppServices } from '../../services/useAppServices.jsx';
 // --- Firestore Imports ---
@@ -545,7 +545,7 @@ const EmbeddedReflectionForm = ({ db, userId, onOpenLog, onSaveSuccess }) => {
 };
 
 /* =========================================================
-   AI Coach Nudge Component
+   AI Coach Nudge Component (UPDATED: Removed static text)
 ========================================================= */
 const AICoachNudge = ({ lastReflectionEntry, callSecureGeminiAPI, hasGeminiKey }) => {
   const [nudge, setNudge] = useState('');
@@ -562,7 +562,7 @@ const AICoachNudge = ({ lastReflectionEntry, callSecureGeminiAPI, hasGeminiKey }
         setNudge(''); // Clear previous nudge
         try {
           // Construct prompt using the *last saved* reflection entry data
-          const prompt = `Based on this user's daily reflection:\n- Did: ${lastReflectionEntry.did || 'N/A'}\n- Noticed: ${lastReflectionEntry.noticed || 'N/A'}\n- Will Try: ${lastReflectionEntry.tryDiff || 'N/A'}\n- Identity (Reflection): ${lastReflectionEntry.identity || 'N/A'}\n\nAsk one brief, insightful follow-up question (under 20 words) to deepen their reflection. Frame it as a coach ("Rin Mode"). Example: "Interesting. What signal showed you that impact?"`;
+          const prompt = `Based on this user's daily reflection:\n- Did: ${lastReflectionEntry.did || 'N/A'}\n- Noticed: ${lastReflectionEntry.noticed || 'N/A'}\n- Will Try: ${lastReflectionEntry.tryDiff || 'N/A'}\n- Identity (Reflection): ${lastReflectionEntry.identity || 'N/A'}\n\nPlease act as Coach Rin and ask one brief, insightful follow-up question (under 20 words) to deepen their reflection. Do NOT include any preamble like "Okay, based on that..." or closing remarks. Just the question. Example: "Interesting. What signal showed you that impact?"`; // Updated prompt
 
           console.log("AI Coach: Sending prompt based on reflection:", lastReflectionEntry.id, prompt);
 
@@ -603,9 +603,25 @@ const AICoachNudge = ({ lastReflectionEntry, callSecureGeminiAPI, hasGeminiKey }
   // Depend on the ID of the last reflection entry to re-trigger nudge
   }, [lastReflectionEntry?.id, callSecureGeminiAPI, hasGeminiKey]);
 
-  // Don't render if no nudge, loading, or error
-  if (!isLoadingNudge && !nudge && !errorNudge) return null;
+  // --- UPDATED: Conditionally render only when there's something to show ---
+  if (!isLoadingNudge && !nudge && !errorNudge) {
+      // If nothing is happening, render a minimal placeholder or nothing
+      // For now, let's render a subtle prompt if NO reflection has been saved yet today (or ever)
+      // We need a way to know if a reflection was saved today... for now, let's assume if lastReflectionEntry is null/old, show prompt
+       if (!lastReflectionEntry) {
+          return (
+             <div className="mt-4 p-4 rounded-xl bg-gray-100 border border-gray-200 shadow-sm">
+                <div className="flex items-start gap-2">
+                  <Bot className="w-5 h-5 text-gray-400 flex-shrink-0 mt-0.5"/>
+                  <p className="text-sm font-medium text-gray-500 italic">Save your reflection above to get feedback from Coach Rin.</p>
+                </div>
+             </div>
+          );
+       }
+       return null; // Don't render anything if there was a previous reflection but no current activity
+  }
 
+  // --- Render loading, error, or the generated nudge ---
   return (
     <div className="mt-4 p-4 rounded-xl bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 border border-purple-200 shadow-sm animate-in fade-in duration-500">
        <div className="flex items-start gap-2">
@@ -613,7 +629,7 @@ const AICoachNudge = ({ lastReflectionEntry, callSecureGeminiAPI, hasGeminiKey }
          <div className="flex-1">
            {isLoadingNudge && <p className="text-sm font-medium text-purple-600 italic">Rin is thinking...</p>}
            {errorNudge && <p className="text-sm font-semibold text-red-600">{errorNudge}</p>}
-           {nudge && !isLoadingNudge && <p className="text-sm font-medium text-purple-800 italic">Coach Rin: {nudge}</p>}
+           {nudge && !isLoadingNudge && <p className="text-sm font-medium text-purple-800 italic">{nudge}</p>} {/* Removed "Coach Rin:" prefix */}
          </div>
        </div>
     </div>
@@ -941,3 +957,4 @@ const DashboardScreen = () => {
 };
 
 export default DashboardScreen;
+

@@ -295,7 +295,7 @@ import {
 ----------------------------------------------------------------------------- */
 const ScreenMap = {
   dashboard: lazy(() => import('./components/screens/Dashboard.jsx')),
-  'development-plan': lazy(() => import('./components/screens/DevelopmentPlan.jsx')), 
+  'development-plan': lazy(() => import('./components/screens/DevelopmentPlan.jsx')),
   'coaching-lab': lazy(() => import('./components/screens/Labs.jsx')),
   // 'daily-practice': lazy(() => import('./components/screens/DailyPractice.jsx')), // <-- REMOVED
   'planning-hub': lazy(() => import('./components/screens/PlanningHub.jsx')),
@@ -412,7 +412,7 @@ const DataProvider = ({ children, firebaseServices, userId, isAuthReady, navigat
   const commitment = useCommitmentData(db, userId, isAuthReady);
   const planning = usePlanningData(db, userId, isAuthReady);
   const global = useGlobalMetadata(db, isAuthReady);
-  
+
   try {
     if (global && typeof global.metadata === 'object') {
       console.log('[GLOBAL SNAPSHOT]', {
@@ -454,7 +454,7 @@ const DataProvider = ({ children, firebaseServices, userId, isAuthReady, navigat
       pdpData: pdp.pdpData,
       commitmentData: commitment.commitmentData,
       planningData: planning.planningData,
-      
+
       isLoading,
       error,
       appId,
@@ -497,7 +497,7 @@ function ConfigError({ message }) { /* ... */ return (
   );
 }
 
-function AuthPanel({ auth, onSuccess }) { /* ... */ 
+function AuthPanel({ auth, onSuccess }) { /* ... */
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
@@ -533,7 +533,7 @@ function AuthPanel({ auth, onSuccess }) { /* ... */
     }
     setIsLoading(false);
   };
-  
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-100">
       <div className={`p-8 bg-white rounded-xl shadow-2xl text-center w-full max-w-sm border-t-4 border-[${COLORS.TEAL}]`}>
@@ -645,7 +645,7 @@ const NavSidebar = ({ currentScreen, setCurrentScreen, user, closeMobileMenu, is
   ];
 
   const contentPillarNav = [
-    { screen: 'development-plan', label: 'My Development Plan', icon: Briefcase }, 
+    { screen: 'development-plan', label: 'My Development Plan', icon: Briefcase },
     { screen: 'planning-hub', label: 'Strategic Content Tools', icon: Trello },
     { screen: 'business-readings', label: 'Content: Read & Reps', icon: BookOpen },
     { screen: 'leadership-videos', label: 'Content: Leader Talks', icon: Film, badge: 'New' },
@@ -715,8 +715,8 @@ const NavSidebar = ({ currentScreen, setCurrentScreen, user, closeMobileMenu, is
 
           {/* --- NEW: Custom tooltip for collapsed state --- */}
           {!isNavExpanded && (
-            <span className="absolute left-full ml-3 w-max px-3 py-2 bg-gray-900 text-white text-sm rounded-md shadow-lg 
-                           opacity-0 pointer-events-none group-hover:opacity-100 
+            <span className="absolute left-full ml-3 w-max px-3 py-2 bg-gray-900 text-white text-sm rounded-md shadow-lg
+                           opacity-0 pointer-events-none group-hover:opacity-100
                            transition-opacity duration-200 z-50">
               {item.label}
             </span>
@@ -731,17 +731,17 @@ const NavSidebar = ({ currentScreen, setCurrentScreen, user, closeMobileMenu, is
     // --- UPDATED: Added 'relative' for positioning the toggle button ---
     // --- *** NOTE ***: bg-[${NAVY}] will now work correctly
     <div className={`hidden md:flex flex-col ${isNavExpanded ? 'w-64 p-4' : 'w-20 p-3'} bg-[${NAVY}] text-white shadow-2xl transition-all duration-300 ease-in-out relative`}>
-      
+
       {/* --- *** UPDATED ***: Toggle Button (Moved to top) --- */}
       <button
         onClick={() => setIsNavExpanded(!isNavExpanded)}
         title={isNavExpanded ? 'Collapse Menu' : 'Expand Menu'}
-        // --- *** UPDATED ***: Changed style from white bubble to teal button
-        className={`absolute top-6 -right-4 
-                   bg-[${TEAL}] hover:bg-[#349881] text-white 
-                   rounded-full shadow-lg border-2 border-white/50
+        // --- *** UPDATED ***: Refined styles for better visibility ---
+        className={`absolute top-6 -right-4
+                   bg-[${TEAL}] hover:bg-[#349881] text-white
+                   rounded-full shadow-lg border-2 border-white/50 ring-2 ring-offset-2 ring-offset-[#002E47] ring-transparent focus:ring-[${TEAL}]
                    w-8 h-8 flex items-center justify-center z-20 transition-all
-                   hover:scale-110`}
+                   hover:scale-110 focus:outline-none`}
       >
         {isNavExpanded ? <ChevronLeft className="w-5 h-5" /> : <ChevronRight className="w-5 h-5" />}
       </button>
@@ -797,11 +797,11 @@ const NavSidebar = ({ currentScreen, setCurrentScreen, user, closeMobileMenu, is
           {isNavExpanded && (
             <span className="truncate animate-in fade-in duration-200">{user?.name || `Guest User`}</span>
           )}
-          
+
           {/* --- NEW: Custom tooltip for collapsed state --- */}
           {!isNavExpanded && (
-            <span className="absolute left-full ml-3 w-max px-3 py-2 bg-gray-900 text-white text-sm rounded-md shadow-lg 
-                           opacity-0 pointer-events-none group-hover:opacity-100 
+            <span className="absolute left-full ml-3 w-max px-3 py-2 bg-gray-900 text-white text-sm rounded-md shadow-lg
+                           opacity-0 pointer-events-none group-hover:opacity-100
                            transition-opacity duration-200 z-50">
               {user?.name || 'Guest User'}
             </span>
@@ -828,7 +828,7 @@ const NavSidebar = ({ currentScreen, setCurrentScreen, user, closeMobileMenu, is
   );
 };
 
-const ScreenRouter = ({ currentScreen, navParams, navigate }) => { /* ... */ 
+const ScreenRouter = ({ currentScreen, navParams, navigate }) => { /* ... */
   const Component = ScreenMap[currentScreen] || ScreenMap.dashboard;
 
   // if (currentScreen === 'daily-practice') // <-- REMOVED
@@ -1043,6 +1043,7 @@ export default function Root(props) {
   const forceSanity = typeof window !== 'undefined' && /[?&]sanity=1/.test(window.location.search);
   if (false || forceSanity) {
     return (
+      // --- *** FIXED ***: Corrected truncated style object ---
       <div style={{ padding: 32, fontSize: 18, lineHeight: 1.4 }}>
         <div>✅ <strong>React mounted (Sanity Check)</strong></div>
       </div>
@@ -1050,3 +1051,4 @@ export default function Root(props) {
   }
   return <App {...props} />;
 }
+
