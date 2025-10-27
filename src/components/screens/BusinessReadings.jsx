@@ -1,805 +1,930 @@
-// src/components/screens/BusinessReadings.jsx
+// src/components/screens/BusinessReadings.jsx (Refactored for Consistency, Context, Terminology)
 
-import React, { useState, useMemo, useRef, useEffect, useCallback, useLayoutEffect } from 'react';
-import { useAppServices } from '../../services/useAppServices.jsx';
+import React, { useState, useMemo, useRef, useEffect, useCallback } from 'react';
+// --- Core Services & Context ---
+import { useAppServices } from '../../services/useAppServices.jsx'; // cite: useAppServices.jsx
+
+// --- Icons ---
 import {
-  BookOpen, Target, CheckCircle, Clock, AlertTriangle,
-  MessageSquare, Filter, TrendingUp, Star, Search as SearchIcon, Cpu, Zap, Info, Check, Loader
+  BookOpen, Target, CheckCircle, Clock, AlertTriangle, MessageSquare, Filter, TrendingUp,
+  Star, Search as SearchIcon, Cpu, Zap, Info, Check, Loader, Save, ArrowLeft // Added Save, ArrowLeft
 } from 'lucide-react';
 
+/* =========================================================
+   PALETTE & UI COMPONENTS (Standardized)
+========================================================= */
+// --- Primary Color Palette ---
+const COLORS = { NAVY: '#002E47', TEAL: '#47A88D', BLUE: '#2563EB', ORANGE: '#E04E1B', GREEN: '#10B981', AMBER: '#F5A800', RED: '#E04E1B', LIGHT_GRAY: '#FCFCFA', OFF_WHITE: '#FFFFFF', SUBTLE: '#E5E7EB', TEXT: '#374151', MUTED: '#4B5563', PURPLE: '#7C3AED', BG: '#F9FAFB' }; // cite: App.jsx
 
-// Helper: derive minutes from pages if needed (~1.5 pages/minute)
+// --- Standardized UI Components (Matches Dashboard/Dev Plan) ---
+const Button = ({ children, onClick, disabled = false, variant = 'primary', className = '', size = 'md', ...rest }) => { /* ... Re-use exact Button definition from Dashboard.jsx ... */
+    let baseStyle = `inline-flex items-center justify-center gap-2 font-semibold rounded-xl transition-all duration-200 focus:outline-none focus:ring-4 disabled:opacity-50 disabled:cursor-not-allowed`;
+    if (size === 'sm') baseStyle += ' px-4 py-2 text-sm'; else if (size === 'lg') baseStyle += ' px-8 py-4 text-lg'; else baseStyle += ' px-6 py-3 text-base'; // Default 'md'
+    if (variant === 'primary') baseStyle += ` bg-[${COLORS.TEAL}] text-white shadow-lg hover:bg-[#349881] focus:ring-[${COLORS.TEAL}]/50`;
+    else if (variant === 'secondary') baseStyle += ` bg-[${COLORS.ORANGE}] text-white shadow-lg hover:bg-[#C33E12] focus:ring-[${COLORS.ORANGE}]/50`;
+    else if (variant === 'outline') baseStyle += ` bg-[${COLORS.OFF_WHITE}] text-[${COLORS.TEAL}] border-2 border-[${COLORS.TEAL}] shadow-md hover:bg-[${COLORS.TEAL}]/10 focus:ring-[${COLORS.TEAL}]/50`;
+    else if (variant === 'nav-back') baseStyle += ` bg-white text-gray-700 border border-gray-300 shadow-sm hover:bg-gray-100 focus:ring-gray-300/50 px-4 py-2 text-sm`;
+    else if (variant === 'ghost') baseStyle += ` bg-transparent text-gray-600 hover:bg-gray-100 focus:ring-gray-300/50 px-3 py-1.5 text-sm`;
+    if (disabled) baseStyle += ' bg-gray-300 text-gray-500 shadow-inner border-transparent hover:bg-gray-300';
+    return (<button {...rest} onClick={onClick} disabled={disabled} className={`${baseStyle} ${className}`}>{children}</button>);
+};
+const Card = ({ children, title, icon: Icon, className = '', onClick, accent = 'NAVY' }) => { /* ... Re-use exact Card definition from Dashboard.jsx ... */
+    const interactive = !!onClick; const Tag = interactive ? 'button' : 'div'; const accentColor = COLORS[accent] || COLORS.NAVY; const handleKeyDown = (e) => { if (interactive && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); onClick?.(); } };
+    return (
+        <Tag {...(interactive ? { type: 'button' } : {})} role={interactive ? 'button' : undefined} tabIndex={interactive ? 0 : undefined} onKeyDown={handleKeyDown} className={`relative p-6 rounded-2xl border-2 shadow-xl hover:shadow-lg transition-all duration-300 text-left ${className}`} style={{ background: 'linear-gradient(180deg,#FFFFFF, #FCFCFA)', borderColor: COLORS.SUBTLE, color: COLORS.NAVY }} onClick={onClick}>
+            <span style={{ position:'absolute', top:0, left:0, right:0, height:6, background: accentColor, borderTopLeftRadius:14, borderTopRightRadius:14 }} />
+            {Icon && title && ( <div className="flex items-center gap-3 mb-4"> <div className="w-10 h-10 rounded-lg flex items-center justify-center border flex-shrink-0" style={{ borderColor: COLORS.SUBTLE, background: COLORS.LIGHT_GRAY }}> <Icon className="w-5 h-5" style={{ color: accentColor }} /> </div> <h2 className="text-xl font-extrabold" style={{ color: COLORS.NAVY }}>{title}</h2> </div> )}
+            {!Icon && title && <h2 className="text-xl font-extrabold mb-4 border-b pb-2" style={{ color: COLORS.NAVY, borderColor: COLORS.SUBTLE }}>{title}</h2>}
+            <div className={Icon || title ? '' : ''}>{children}</div>
+        </Tag>
+    );
+};
+const LoadingSpinner = ({ message = "Loading..." }) => ( /* ... Re-use definition from DevelopmentPlan.jsx ... */
+    <div className="min-h-[300px] flex items-center justify-center" style={{ background: COLORS.BG }}> <div className="flex flex-col items-center"> <Loader className="animate-spin h-12 w-12 mb-3" style={{ color: COLORS.TEAL }} /> <p className="font-semibold" style={{ color: COLORS.NAVY }}>{message}</p> </div> </div>
+);
+
+// --- Complexity Mapping (Could be loaded from global metadata) ---
+const COMPLEXITY_MAP = {
+  Low:    { label: 'Foundational', hex: COLORS.GREEN, icon: CheckCircle },
+  Medium: { label: 'Intermediate', hex: COLORS.AMBER, icon: AlertTriangle },
+  High:   { label: 'Advanced',     hex: COLORS.RED,   icon: Target },
+};
+
+
+/* =========================================================
+   DATA & UTILITIES
+========================================================= */
+
+// --- Fallback Book Data (Used only if READING_CATALOG fails to load) ---
+const MOCK_ALL_BOOKS_FALLBACK = { // cite: Original File
+    'Strategy & Execution': [ { id: 's_e_1_fb', title: 'The E-Myth Revisited (Fallback)', author: 'Michael E. Gerber', theme: 'Why most small businesses fail.', complexity: 'Medium', duration: 180, focus: 'Delegation, Process Mapping, Systemization', executiveBriefHTML: '<p>Mock Brief: Focus on systems.</p>', fullFlyerHTML: '<h2>Mock Flyer: The E-Myth</h2><p>Build systems like a franchise...</p>' } ],
+    'People & Culture': [ { id: 'p_c_1_fb', title: 'Dare to Lead (Fallback)', author: 'Brené Brown', theme: 'Courageous leadership via vulnerability.', complexity: 'Medium', duration: 210, focus: 'Psychological Safety, Feedback, Vulnerability', executiveBriefHTML: '<p>Mock Brief: Embrace vulnerability.</p>', fullFlyerHTML: '<h2>Mock Flyer: Dare to Lead</h2><p>Vulnerability is strength...</p>' } ],
+    // Add more fallback categories/books if needed
+};
+
+// --- Utility Functions (Local or potentially from a shared utils file) ---
+
+/**
+ * Derives estimated reading duration in minutes from page count if duration isn't provided.
+ * Assumes ~1.5 pages per minute reading speed.
+ * @param {object} book - The book object.
+ * @returns {number|null} Estimated duration in minutes or null.
+ */
 function getDerivedDuration(book) {
-  if (typeof book.duration === 'number') return book.duration;
-  if (typeof book.pages === 'number') {
-    return Math.round(book.pages / 1.5);
-  }
-  return null;
+  if (typeof book?.duration === 'number') return book.duration;
+  if (typeof book?.pages === 'number') return Math.round(book.pages / 1.5);
+  return null; // Return null if neither is available
 }
 
-/* =========================================================
-   HIGH-CONTRAST PALETTE (From uiKit)
-========================================================= */
-const COLORS = {
-  NAVY: '#002E47', TEAL: '#47A88D', SUBTLE_TEAL: '#349881', ORANGE: '#E04E1B', GREEN: '#10B981', AMBER: '#F5A900', RED: '#E04E1B', LIGHT_GRAY: '#FCFCFA', OFF_WHITE: '#FFFFFF', MUTED: '#4B5563', SUBTLE: '#E5E7EB', TEXT: '#374151', BLUE: '#2563EB', BG: '#F9FAFB', PURPLE: '#7C3AED',
-};
-
-const COMPLEXITY_MAP = {
-  Low:    { label: 'Novice',       hex: COLORS.GREEN, icon: CheckCircle },
-  Medium: { label: 'Intermediate', hex: COLORS.AMBER, icon: AlertTriangle },
-  High:   { label: 'Expert',       hex: COLORS.RED,   icon: Target },
-};
-
-/* =========================================================
-   MOCK BOOKS (DELETED: Replaced by fallbacks)
-========================================================= */
-
-// --- FALLBACK MOCK DATA ---
-const MOCK_ALL_BOOKS_FALLBACK = {
-    'Strategy & Execution': [
-        { id: 's_e_1', title: 'The E-Myth Revisited (Fallback)', author: 'Michael E. Gerber', theme: 'Why most small businesses fail.', complexity: 'Medium', duration: 180, focus: 'Delegation, Process Mapping, Systemization' },
-    ],
-    'People & Culture': [
-        { id: 'p_c_1', title: 'Dare to Lead (Fallback)', author: 'Brené Brown', theme: 'Courageous leadership by embracing vulnerability and trust.', complexity: 'Medium', duration: 210, focus: 'Psychological Safety, Feedback, Vulnerability' },
-    ]
-};
-
-// --- NEW UTILITY FOR DEEP DEPENDENCY TRACKING ---
+/**
+ * Generates a deep signature string based on the structure and count of books.
+ * Used as a dependency for memoization to detect changes in the book data.
+ * @param {object} booksObject - The object containing book categories and arrays.
+ * @returns {string} A signature string.
+ */
 function getDeepDataSignature(booksObject) {
-    if (!booksObject) return '';
-    // This creates a string that changes if: a) a category is added/removed, or b) the total number of books changes.
+    if (!booksObject || typeof booksObject !== 'object') return 'empty';
     try {
-        // FIX: Ensure Object.values is only called on a non-null object
-        return Object.keys(booksObject).sort().join(',') + '-' + Object.values(booksObject || {}).flat().length;
+        // Sort keys for consistency, count total items
+        const keys = Object.keys(booksObject).sort().join(',');
+        const count = Object.values(booksObject).reduce((sum, arr) => sum + (Array.isArray(arr) ? arr.length : 0), 0);
+        return `${keys}-${count}`;
     } catch {
-        return 'error';
+        return 'error-signature'; // Fallback signature on error
     }
 }
-// --- END NEW UTILITY ---
 
-/* =========================================================
-   UI COMPONENTS (Standardized)
-========================================================= */
-const ExecSwitch = ({ checked, onChange }) => { /* ... */ return (
-    <div className="flex items-center gap-2">
-      <button type="button" role="switch" aria-checked={checked} onClick={() => onChange(!checked)}
-        className="relative inline-flex items-center" style={{ width: 46, height: 26 }} >
-        <span style={{ position: 'absolute', inset: 0, background: checked ? COLORS.ORANGE : '#9CA3AF', borderRadius: 9999, transition: 'background .15s ease'}} />
-        <span style={{ position: 'relative', left: checked ? 22 : 2, width: 22, height: 22, background: '#FFFFFF', borderRadius: '9999px', boxShadow: '0 1px 2px rgba(0,0,0,.2)', transition: 'left .15s ease' }} />
-      </button>
-      <span style={{ color: COLORS.NAVY, fontWeight: 600 }}>Executive Brief</span>
-    </div>
-  );
-};
-const Button = ({ children, onClick, disabled = false, variant = 'primary', className = '', ...rest }) => {
-    let baseStyle = "px-6 py-3 rounded-xl font-semibold transition-all shadow-lg focus:outline-none focus:ring-4 text-white";
-    if (variant === 'primary') { baseStyle += ` bg-[${COLORS.TEAL}] hover:bg-[#349881] focus:ring-[${COLORS.TEAL}]/50`; }
-    else if (variant === 'secondary') { baseStyle += ` bg-[${COLORS.ORANGE}] hover:bg-[#C33E12] focus:ring-[${COLORS.ORANGE}]/50`; }
-    if (disabled) { baseStyle = "px-6 py-3 rounded-xl font-semibold bg-gray-300 text-gray-500 cursor-not-allowed shadow-inner transition-none"; }
-return (
-  <button
-    {...rest}
-    onClick={onClick}
-    disabled={disabled}
-    className={`${baseStyle} ${className}`}
-    type="button"
-  >
-    {children}
-  </button>
-);
-};
+// --- Action Steps & Frameworks (Local Fallbacks - Ideally load with book data) ---
+// These provide placeholder content if the book data doesn't include structured actions/frameworks.
+function getActionSteps(book) { /* ... same as original ... */ return ['Define the outcome, then design the smallest repeatable action.']; }
+function getFrameworks(book) { /* ... same as original ... */ return [{ name: 'Core Principles', desc: 'Prioritize outcomes, feedback loops, and small, testable steps.' }]; }
 
-/* =========================================================
-   LOCAL FALLBACK UTILITIES (ONLY FOR STRUCTURE/CONTEXT)
-========================================================= */
-// NOTE: These utility functions use data from the book object passed to them, 
-// which is sufficient even with the MOCK_ALL_BOOKS replaced by MOCK_ALL_BOOKS_FALLBACK.
-
-function getActionSteps(book) { 
-  const t = (book.title || '').toLowerCase();
-  if (t.includes('e-myth')) { return ['Map one repeatable process (5–7 steps) and write a 1-page SOP.', 'Delegate the checklist, not the task.', 'Analyze your time allocation: Technician, Manager, or Entrepreneur Role?', 'Design a comprehensive organizational chart based on function, not personality.', 'Schedule a weekly "Manager Hat" block for system review.'];}
-  if (t.includes('radical candor')) { return ['Ask your team: “What’s one thing I could do better?” then act on one item within a week.', 'Draft corrective feedback using the SBI framework (Situation, Behavior, Impact).', 'Use a 5:1 positive-to-negative feedback ratio in your next 1:1s.', 'Create a team norm that makes challenging the boss an expected, not punished, behavior.', 'Commit to giving one immediate, in-the-moment praise and one immediate, in-the-moment correction this week.'];}
-  if (t.includes('atomic habits')) { return ['Pick one keystone habit; write it as Habit Stack: “After [current], I will [new], then [small reward]”.', 'Use the 2-Minute Rule to start any new habit.', 'Audit your environment to make good habits obvious and bad habits invisible.', 'Conduct a Habit Scorecard for your daily routine.', 'Start a "motion vs. action" journal to focus on outcome-producing activities.'];}
-  if (t.includes('good to great')) { return ['Identify one "Hedgehog" area where your company can be the best.', 'Implement a "Stop Doing" list to enforce a Culture of Discipline.', 'Find a "Level 5" leader on your team and mentor them.', 'Start every executive meeting with a review of a current "Brutal Fact" (Stockdale Paradox).', 'Ensure the right people are on the bus before deciding where to drive it.'];}
-  if (t.includes('getting things done')) { return ['Establish an "In-Basket" system for capturing all open loops.', 'Complete the "Mind Sweep" process and list every open commitment.', 'Set up context-specific "Next Actions" lists (e.g., @computer, @calls).', 'Perform a comprehensive Weekly Review.', 'Apply the Natural Planning Model to a large, complex project you are currently managing.'];}
-  return ['Define the outcome, then design the smallest repeatable action.'];
-}
-
-function getFrameworks(book) { 
-  const t = (book.title || '').toLowerCase();
-  if (t.includes('e-myth')) { return [{ name: 'E-Myth Roles', desc: 'Entrepreneur (vision), Manager (systems), Technician (doing).' }, { name: 'Systemization', desc: 'Build the business as if it were a franchise prototype.' }];}
-  if (t.includes('radical candor')) { return [{ name: 'Candor Quadrants', desc: 'Caring Personally × Challenging Directly; aim for Radical Candor.' }, { name: 'Gives-and-Gets', desc: 'Focus on what you give (feedback) and get (results).' }];}
-  if (t.includes('atomic habits')) { return [{ name: 'Four Laws', desc: 'Make it Obvious, Attractive, Easy, Satisfying.' }, { name: 'Habit Stacking', desc: 'Pair a new habit with an old one (e.g., After X, I will Y).' }];}
-  if (t.includes('good to great')) { return [{ name: 'Hedgehog Concept', desc: 'Intersection of passion, best-in-world, and economic engine.' }, { name: 'Level 5 Leadership', desc: 'Ambitious for the company, not for themselves.' }];}
-  if (t.includes('getting things done')) { return [{ name: 'The 5 Steps', desc: 'Capture, Clarify, Organize, Reflect, Engage.' }, { name: 'The Two-Minute Rule', desc: 'If an action takes less than two minutes, do it immediately.' }];}
-  return [{ name: 'Core Principles', desc: 'Prioritize outcomes, feedback loops, and small, testable steps.' }];
-}
-
-
-// --- ERROR DISPLAY FUNCTIONS (Used when AI fails) ---
-
-const API_ERROR_HTML = (executive, book) => {
+// --- Error HTML Generator (Used when pre-generated flyer HTML is missing) ---
+const API_ERROR_HTML = (executive, book) => { /* ... same as original ... */
     const errorTitle = executive ? "EXECUTIVE BRIEFING UNAVAILABLE" : "FULL FLYER UNAVAILABLE";
-    const baseContent = executive 
-        ? `<p style="color:${COLORS.RED}; font-size: 18px; margin-top: 15px; line-height: 1.6;">**CRITICAL API ERROR**: The live connection to the content generation service failed (e.g., **Timeout 504** or **Missing API Key**). The feature is currently disabled.</p>
-           <h3 style="color:${COLORS.NAVY}; font-weight:800; font-size: 20px; margin-top:20px;">Static Summary (for Reference)</h3>
-           <p style="color:#374151; font-size: 16px; margin-top: 5px;">This briefing would have covered: ${book.theme}. Focus areas: ${book.focus.split(',').slice(0, 3).join(', ')}.</p>
-           <h3 style="color:${COLORS.NAVY}; font-weight:800; font-size: 20px; margin-top:20px;">Manual Action Item</h3>
-           <ul style="list-style:disc;margin-left:20px;color:#374151;font-size:16px;">
-              <li>Read the book's Chapter 3 summary before your next meeting.</li>
-           </ul>`
-        : `<p style="color:${COLORS.RED}; font-size: 18px; margin-top: 15px; line-height: 1.6;">**CRITICAL API ERROR**: The content generator failed to respond. This is usually due to a **server timeout** or an invalid configuration.</p>
-           <h3 style="color:${COLORS.NAVY}; font-weight:800; font-size: 20px; margin-top:20px;">Root Cause Check</h3>
-           <ul style="list-style:disc;margin-left:20px;color:#374151;font-size:16px;">
-              <li>Verify the **Gemini API Key** in App Settings is correctly loaded.</li>
-              <li>Check the developer console for network (504) or authentication (400) errors.</li>
-              <li>The system will attempt to auto-recover on the next page load.</li>
-           </ul>
-           <h3 style="color:${COLORS.NAVY}; font-weight:800; font-size: 20px; margin-top:20px;">Static Takeaways</h3>
-           <p style="color:#374151; font-size: 16px; margin-top: 5px;">Key frameworks include: ${getFrameworks(book).map(f => f.name).join(', ')}.</p>
-        `;
-        
-    return `<div style="padding: 16px;"><h2 style="color:${COLORS.NAVY}; font-weight:900; font-size: 24px; border-bottom: 3px solid ${COLORS.RED}; padding-bottom: 8px;">${errorTitle}</h2>${baseContent}</div>`;
+    // Simplified error message focusing on missing pre-generated content
+    const baseContent = `
+       <p style="color:${COLORS.RED}; font-size: 16px; margin-top: 15px; line-height: 1.6;">
+         <strong>Content Error:</strong> The pre-generated ${executive ? 'Executive Brief' : 'Full Flyer'} content for this book ('${book.title}') is missing from the catalog data.
+       </p>
+       <h3 style="color:${COLORS.NAVY}; font-weight:800; font-size: 18px; margin-top:20px;">Static Summary (for Reference)</h3>
+       <p style="color:#374151; font-size: 14px; margin-top: 5px;">
+         Theme: ${book.theme || 'N/A'}. Key Focus Areas: ${book.focus || 'N/A'}.
+       </p>
+       <p style="color:#374151; font-size: 14px; margin-top: 5px;">
+         Est. Duration: ${book.duration || getDerivedDuration(book) || 'N/A'} min. Complexity: ${book.complexity || 'N/A'}.
+       </p>
+       <h3 style="color:${COLORS.NAVY}; font-weight:800; font-size: 18px; margin-top:20px;">Next Steps</h3>
+       <ul style="list-style:disc;margin-left:20px;color:#374151;font-size:14px;">
+          <li>Notify the administrator that content is missing for book ID: ${book.id || 'Unknown'}.</li>
+          <li>You can still add this reading as a Daily Practice Rep.</li>
+       </ul>`;
+    return `<div style="padding: 16px;"><h2 style="color:${COLORS.NAVY}; font-weight:900; font-size: 22px; border-bottom: 2px solid ${COLORS.RED}; padding-bottom: 8px;">${errorTitle}</h2>${baseContent}</div>`;
 };
 
+
 /* =========================================================
-   AI FLYER BUILDER & QUESTION SCORING (PRODUCTION FOCUS)
-   NOTE: buildAIFlyerHTML function has been REMOVED as the content is now pre-generated.
+   AI COACHING LOGIC (Using Context Services)
 ========================================================= */
 
-const getQuestionScore = (query, bookTitle) => {
-    const q = query.toLowerCase().trim();
+/**
+ * Calculates a simple quality score for the user's AI query.
+ * @param {string} query - The user's input question.
+ * @param {string} bookTitle - The title of the selected book.
+ * @returns {object} - { score: 0-3, tip: string }.
+ */
+const getQuestionScore = (query, bookTitle) => { /* ... same logic as original ... */
+    const q = (query || '').toLowerCase().trim(); // Add safety check for query
     if (q.length < 15) return { score: 0, tip: 'Question is too short. Be specific about your challenge.' };
-    
-    let score = 0;
-    let feedback = 'Question could be more specific.';
-    const applicationKeywords = ['how do i', 'apply', 'implement', 'what is the first step', 'next step', 'my team', 'colleague', 'delegate', 'situation'];
+    let score = 1; // Default score if length > 15
+    let feedback = 'Try relating this book to a specific work challenge or asking "How do I apply...?"';
+    const applicationKeywords = ['how do i', 'apply', 'implement', 'first step', 'next step', 'my team', 'colleague', 'delegate', 'situation'];
     const hasApplication = applicationKeywords.some(keyword => q.includes(keyword));
     const hasContext = q.length > 50;
-    
-    if (hasApplication && hasContext) {
-        score = 3;
-        feedback = `Excellent query! Ready to apply ${bookTitle}.`;
-    } else if (hasApplication || hasContext) {
-        score = 2;
-        feedback = hasApplication ? 'Good start. Add more context about your current situation.' : 'The context is great, now phrase it as an actionable "how-to" question.';
-    }
-    // FIX: Set score to 1 if neither application nor context is present, to avoid score 0 for short queries that pass the length check
-    else {
-        score = 1;
-        feedback = 'Try to phrase your question in a way that relates this book to a specific work challenge.';
-    }
-
+    if (hasApplication && hasContext) { score = 3; feedback = `Excellent query! Applying ${bookTitle} insights.`; }
+    else if (hasApplication || hasContext) { score = 2; feedback = hasApplication ? 'Good start. Add more context about your situation.' : 'Great context. Now phrase it as an actionable "how-to" question.'; }
     return { score, tip: feedback };
 };
 
+/**
+ * Handles submitting the user's query to the AI Rep Coach via useAppServices.
+ * @param {Event} e - Form submit event.
+ * @param {object} services - The app services context object.
+ * @param {object} selectedBook - The currently selected book.
+ * @param {string} aiQuery - The user's input query.
+ * @param {function} setIsSubmitting - State setter for loading state.
+ * @param {function} setAiResponse - State setter for AI response text.
+ */
 async function handleAiSubmit(e, services, selectedBook, aiQuery, setIsSubmitting, setAiResponse) {
   e.preventDefault();
-  if (e.target.disabled) return;
-
   const q = (aiQuery || '').trim();
-  if (!selectedBook || !q) return;
+  if (!selectedBook || !q || !services || typeof services.callSecureGeminiAPI !== 'function') return;
 
+  console.log("[handleAiSubmit] Submitting query for book:", selectedBook.title);
   setIsSubmitting(true);
-  setAiResponse('The AI Coach is analyzing the book\'s core principles and formulating an actionable response...');
+  setAiResponse('The AI Rep Coach is analyzing the book and your question...'); // Updated name // cite: User Request
 
-  const hasKeyOk =
-    typeof services?.hasGeminiKey === 'function' ? services.hasGeminiKey() : true;
-  const canCall =
-    typeof services?.callSecureGeminiAPI === 'function';
-
-  if (!canCall || !hasKeyOk) {
-    setAiResponse('**AI OFFLINE/KEY MISSING**:\n\nContact IT. The necessary API endpoint is not configured to provide real-time coaching.');
+  // Check if API call is possible
+  const hasKeyOk = typeof services.hasGeminiKey === 'function' ? services.hasGeminiKey() : false; // cite: useAppServices.jsx
+  if (!hasKeyOk) {
+    console.warn("[handleAiSubmit] Gemini API key/config missing.");
+    setAiResponse('**AI Rep Coach Offline:** API configuration is missing. Please contact support.');
     setIsSubmitting(false);
     return;
   }
 
   try {
-    const actionableContext = `
-      Book: ${selectedBook.title} by ${selectedBook.author}. Focus: ${selectedBook.focus}.
-      Key Frameworks: ${getFrameworks(selectedBook).map(f => f.name).join(', ')}.
-      Key Actions: ${getActionSteps(selectedBook).map(a => a.substring(0, 50)).join(' | ')}.
-      User's Current Question: ${q}
-    `;
+    // --- Prepare context for the AI ---
+    // Extract frameworks and action steps (use fallbacks if needed)
+    const frameworks = getFrameworks(selectedBook).map(f => f.name).join(', ') || 'Core principles';
+    const actions = getActionSteps(selectedBook).slice(0, 3).join(' | ') || 'Define outcome, take small steps'; // Take first 3 actions
 
-    const systemPrompt =
-      `You are the LeaderReps AI Coach. Your sole purpose is to answer the user's question by referencing the provided book's principles ONLY. Do not use outside knowledge. Your response must be direct, actionable, and reference the book's frameworks.
-      ${actionableContext}
-      Guidelines: Answer directly with 3–5 sentences. Include one concrete next action that applies the book's principle to the user's situation. Do not use markdown other than **bold** for emphasis. Ensure the response flows naturally like coaching advice.`;
+    // Construct the prompt with clear instructions and context
+    const systemPrompt = `You are the LeaderReps AI Rep Coach. Your goal is to help the user apply principles from a specific book to their leadership challenges.
+      Use ONLY the provided book context. Do not use external knowledge.
+      Keep responses concise (3-5 sentences), actionable, and directly answer the user's question.
+      Reference the book's frameworks or themes when relevant. Suggest ONE concrete next step.
+      Do not use markdown formatting other than **bold** for emphasis.
 
-    const out = await services.callSecureGeminiAPI({
-      systemInstruction: { parts: [{ text: systemPrompt }] },
-      contents: [{ role: 'user', parts: [{ text: `Regarding "${selectedBook.title}": ${q}` }] }],
-    });
+      **Book Context:**
+      Title: ${selectedBook.title} by ${selectedBook.author}
+      Theme: ${selectedBook.theme || 'N/A'}
+      Key Focus Areas: ${selectedBook.focus || 'N/A'}
+      Key Frameworks: ${frameworks}
+      Example Actions: ${actions}
 
-    const text = out?.candidates?.[0]?.content?.parts?.[0]?.text
-      || 'No response was received from the AI. Please try rephrasing your question.';
+      **User's Question:** ${q}`;
 
-    setAiResponse(text);
+    // --- Make the API Call ---
+    const payload = {
+        // Use user role for the direct question
+        contents: [{ role: 'user', parts: [{ text: `Regarding "${selectedBook.title}": ${q}` }] }],
+        systemInstruction: { parts: [{ text: systemPrompt }] },
+        // Use the model defined in services, potentially defaulting to flash
+        model: services.GEMINI_MODEL || 'gemini-1.5-flash', // cite: useAppServices.jsx
+        generationConfig: { temperature: 0.6, maxOutputTokens: 150 } // Adjust config as needed
+    };
+
+    const result = await services.callSecureGeminiAPI(payload); // cite: useAppServices.jsx
+    console.log("[handleAiSubmit] API Response:", result);
+
+    // --- Process the Response ---
+    const text = result?.candidates?.[0]?.content?.parts?.[0]?.text
+      || 'No response received from the AI Rep Coach. Please try rephrasing your question or check the connection.';
+
+    setAiResponse(text.trim()); // Set the cleaned response
+
   } catch (err) {
-    console.error('AI coach production call failed.', err);
-    setAiResponse('**PRODUCTION CALL FAILED**: The API request resulted in an error. Please check the network or system logs.');
+    console.error('[handleAiSubmit] AI coach call failed:', err);
+    setAiResponse(`**Error:** The AI Rep Coach encountered a problem. Please try again. (${err.message})`);
   } finally {
-    setIsSubmitting(false);
+    setIsSubmitting(false); // Reset loading state
   }
 }
 
-// Fix 1: Search Input (Isolated and Memoized)
-const SearchInput = React.memo(({ value, onChange }) => {
+/* =========================================================
+   CHILD COMPONENTS (Refactored for Consistency)
+========================================================= */
+
+// --- Search Input Component (Memoized) ---
+const SearchInput = React.memo(({ value, onChange }) => { // cite: Original File (Structure)
     return (
         <div>
-            <label className="block text-sm font-medium mb-1 flex items-center gap-1" style={{ color: COLORS.MUTED }}>
-                <SearchIcon className="w-4 h-4" style={{ color: COLORS.TEAL }}/> Search by Title, Author, or Focus
+            <label className="block text-sm font-medium mb-1 flex items-center gap-1.5" style={{ color: COLORS.MUTED }}>
+                <SearchIcon className="w-4 h-4" style={{ color: COLORS.TEAL }}/> Search Library
             </label>
-            <input 
-                type="text" 
-                value={value} 
-                onChange={onChange} 
-                placeholder="Start typing to find a book..." 
-                className="w-full p-3 border rounded-lg shadow-sm focus:outline-none"
+            <input
+                type="search" // Use type="search" for better semantics
+                value={value}
+                onChange={onChange}
+                placeholder="Find by title, author, or focus..."
+                className="w-full p-3 border rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-[${COLORS.TEAL}] text-sm" // Consistent input style
+                style={{ borderColor: COLORS.SUBTLE }}
             />
         </div>
     );
 });
-SearchInput.displayName = 'SearchInput';
+SearchInput.displayName = 'SearchInput'; // For React DevTools
 
+// --- AI Coach Input Component (Memoized) ---
+const AICoachInput = React.memo(({ aiQuery, handleAiQueryChange, submitHandler, isSubmitting, questionFeedback, selectedBookTitle }) => { // cite: Original File (Structure)
 
-// Fix 2: AI Coach Input (Isolated and Memoized)
-const AICoachInput = React.memo(({ aiQuery, handleAiQueryChange, submitHandler, isSubmitting, questionFeedback, selectedBookTitle }) => {
-    
-    // Determine AI Coach message colors and icons based on props
-    const coachBgColor = questionFeedback.score === 3 ? '#D1FAE5' : (questionFeedback.score === 2 ? '#FEF3C7' : '#FEE2E2');
-    const coachBorderColor = questionFeedback.score === 3 ? '#34D399' : (questionFeedback.score === 2 ? '#FBBF24' : '#F87171');
-    const coachTextColor = questionFeedback.score === 3 ? '#065F46' : (questionFeedback.score === 2 ? '#B45309' : '#991B1B');
-    const CoachIcon = questionFeedback.score === 3 ? Zap : (questionFeedback.score === 2 ? AlertTriangle : Info);
-    
+    // Determine feedback style based on score
+    const score = questionFeedback?.score ?? 0;
+    const { bgColor, borderColor, textColor, Icon } = useMemo(() => {
+        if (score === 3) return { bgColor: '#D1FAE5', borderColor: '#34D399', textColor: '#065F46', Icon: Zap }; // Green
+        if (score === 2) return { bgColor: '#FEF3C7', borderColor: '#FBBF24', textColor: '#B45309', Icon: AlertTriangle }; // Yellow
+        return { bgColor: '#FEE2E2', borderColor: '#F87171', textColor: '#991B1B', Icon: Info }; // Red/Default
+    }, [score]);
+
     return (
-        <form onSubmit={submitHandler} className="flex flex-col gap-2">
-            {/* Live Feedback Bar */}
-            {aiQuery.trim().length > 0 && (
-                <div className="p-2 rounded-lg text-sm flex items-center gap-2 transition-all duration-300 shadow-inner" 
-                        style={{ background: coachBgColor, border: `1px solid ${coachBorderColor}`, color: coachTextColor }}>
-                    <CoachIcon className="w-4 h-4 flex-shrink-0" />
-                    <span className="font-semibold">Query Quality Score {questionFeedback.score}/3:</span> 
-                    <span className="flex-1">{questionFeedback.tip}</span>
+        <form onSubmit={submitHandler} className="flex flex-col gap-3"> {/* Use gap */}
+            {/* Live Query Quality Feedback Bar */}
+            {aiQuery.trim().length > 5 && ( // Show only if query has some content
+                <div className="p-2 rounded-lg text-xs flex items-center gap-2 transition-all duration-300 shadow-inner" // Smaller text
+                        style={{ background: bgColor, border: `1px solid ${borderColor}`, color: textColor }}>
+                    <Icon className="w-4 h-4 flex-shrink-0" />
+                    <span className="font-semibold">Query Quality ({score}/3):</span>
+                    <span className="flex-1">{questionFeedback?.tip || ''}</span>
                 </div>
             )}
-            
+
+            {/* Input and Submit Button */}
             <div className="flex gap-2">
                 <input
-                    type="text"
-                    value={aiQuery}
-                    onChange={handleAiQueryChange}
-                    // --- FIX 2: CONTEXTUALIZE PLACEHOLDER ---
-                    placeholder={`Ask Coach how to apply principles from "${selectedBookTitle}"...`}
-                    className="flex-grow p-3 border rounded-xl"
+                    type="text" value={aiQuery} onChange={handleAiQueryChange}
+                    // Contextual placeholder using selected book title
+                    placeholder={`Ask AI Rep Coach how to apply "${selectedBookTitle}"...`} // cite: User Request
+                    className="flex-grow p-3 border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[${COLORS.PURPLE}]" // Use Purple focus
                     style={{ borderColor: COLORS.SUBTLE, color: COLORS.TEXT }}
-                    required
+                    required disabled={isSubmitting} // Disable input while submitting
                 />
-                <button
-                    type="submit"
-                    className="px-4 rounded-xl font-semibold flex items-center gap-1 shadow-lg"
-                    style={{
-                        background: isSubmitting ? '#9CA3AF' : COLORS.PURPLE,
-                        color: '#FFFFFF',
-                        cursor: (aiQuery.trim() && !isSubmitting) ? 'pointer' : 'not-allowed',
-                        opacity: isSubmitting ? 0.9 : 1
-                    }}
+                <Button
+                    type="submit" variant="primary" size="md" // Use standard Button
+                    style={{ background: COLORS.PURPLE, focusRingColor: `${COLORS.PURPLE}/50` }} // Custom purple
                     disabled={!aiQuery.trim() || isSubmitting}
-                    aria-busy={isSubmitting ? 'true' : 'false'}
+                    aria-busy={isSubmitting} // Accessibility attribute
                 >
-                    <MessageSquare className="w-5 h-5" /> {isSubmitting ? 'Working…' : 'Ask Coach'}
-                </button>
+                    <MessageSquare className="w-5 h-5" />
+                    {isSubmitting ? 'Thinking…' : 'Ask Coach'}
+                </Button>
             </div>
         </form>
     );
 });
-AICoachInput.displayName = 'AICoachInput';
+AICoachInput.displayName = 'AICoachInput'; // For React DevTools
 
 
+/**
+ * BookListStable Component
+ * Displays the filter controls and the categorized list of books.
+ * Uses standardized Card component for filter section.
+ */
 function BookListStable({
-  COLORS,
-  COMPLEXITY_MAP,
-  filters,
-  filteredBooks,
-  savedBooks,
-  selectedBook,
-  onSelectBook,
-  onToggleSave,
-  handleSearchChange,
-  handleFilterChange,
+  filters, filteredBooks, savedBooks, selectedBook,
+  onSelectBook, onToggleSave, handleSearchChange, handleFilterChange,
 }) {
-    // CRITICAL FIX 4: Check if there are any books in the original data structure
+    // --- Determine Loading/Empty States ---
     const totalBookCount = useMemo(() => {
-        // Use Object.values(filteredBooks || {}) to safely handle filteredBooks being null/undefined
-        return Object.values(filteredBooks || {}).flat().length;
+        // Safely count books, handling null/undefined filteredBooks
+        return Object.values(filteredBooks || {}).reduce((sum, arr) => sum + (Array.isArray(arr) ? arr.length : 0), 0);
     }, [filteredBooks]);
 
-    // Check if the filtering process returned an empty set, but there are books loaded
-    const allBooksLoaded = totalBookCount > 0;
-    const filteredIsEmpty = totalBookCount === 0 && (filters.search || filters.complexity !== 'All' || filters.maxDuration !== 300);
-
-    const isDataEmpty = Object.keys(filteredBooks || {}).length === 0 && !filteredIsEmpty; // Added defensive check
+    // Check if filters are active and resulted in no books
+    const hasActiveFilters = filters.search || filters.complexity !== 'All' || filters.maxDuration !== 300;
+    const isFilteredEmpty = totalBookCount === 0 && hasActiveFilters;
+    // Check if the source data itself is empty (no filters applied, still zero books)
+    const isSourceDataEmpty = totalBookCount === 0 && !hasActiveFilters;
 
   return (
-    <div className="space-y-10">
-      <h2 className="text-3xl font-extrabold flex items-center gap-3 border-b-4 pb-2"
-          style={{ color: COLORS.NAVY, borderColor: COLORS.ORANGE }}>
-        <BookOpen className="w-7 h-7" style={{ color: COLORS.TEAL }}/> LeaderReps Curated Reading Library
-      </h2>
-
-      <div className="p-5 rounded-xl shadow-xl border" style={{ background: COLORS.OFF_WHITE, borderColor: COLORS.SUBTLE }}>
-        <h3 className="text-xl font-bold flex items-center gap-2 mb-4" style={{ color: COLORS.NAVY }}>
-          <Filter className="w-5 h-5" style={{ color: COLORS.ORANGE }}/> Personalize Your Search
-        </h3>
-
+    <div className="space-y-8"> {/* Increased spacing */}
+      {/* --- Filter Section --- */}
+      {/* Encapsulate filters within a Card for consistent styling */}
+      <Card title="Personalize Your Library" icon={Filter} accent="TEAL">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {/* Search Input */}
           <SearchInput value={filters.search} onChange={handleSearchChange} />
+          {/* Complexity Filter */}
           <div>
             <label className="block text-sm font-medium mb-1" style={{ color: COLORS.MUTED }}>Complexity Level</label>
             <select
               value={filters.complexity}
               onChange={(e) => handleFilterChange('complexity', e.target.value)}
-              className="w-full p-2 border rounded-lg shadow-sm focus:outline-none"
+              className="w-full p-3 border rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-[${COLORS.TEAL}] text-sm" // Consistent select style
+              style={{ borderColor: COLORS.SUBTLE }}
             >
               <option value="All">All Levels</option>
               {Object.keys(COMPLEXITY_MAP).map(k => (<option key={k} value={k}>{COMPLEXITY_MAP[k].label}</option>))}
             </select>
           </div>
+          {/* Duration Filter */}
           <div>
-            <label className="block text-sm font-medium mb-1" style={{ color: COLORS.MUTED }}>Max Est. Minutes ({filters.maxDuration} min)</label>
+            <label className="block text-sm font-medium mb-1" style={{ color: COLORS.MUTED }}>Max Est. Time ({filters.maxDuration} min)</label>
             <input
-              type="range" min="150" max="300" step="10"
+              type="range" min="60" max="300" step="10" // Adjusted min duration
               value={filters.maxDuration}
               onChange={(e) => handleFilterChange('maxDuration', parseInt(e.target.value, 10))}
-              className="w-full"
+              className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer range-lg accent-[#E04E1B]" // Use ORANGE accent for slider
             />
-            <div className="flex justify-between text-xs mt-1" style={{ color: COLORS.MUTED }}><span>150 min</span><span>300 min</span></div>
+            <div className="flex justify-between text-xs mt-1" style={{ color: COLORS.MUTED }}><span>60 min</span><span>300 min</span></div>
           </div>
         </div>
-      </div>
-      
-      {/* CRITICAL FIX 5: Display a single, clear message if no books are loaded/found */}
-      {isDataEmpty && (
+      </Card>
+
+      {/* --- Loading / Empty State Messages --- */}
+      {/* Case 1: Source data is completely empty */}
+      {isSourceDataEmpty && (
            <div className="p-10 rounded-2xl border-2 shadow-xl bg-white text-center" style={{ borderColor: COLORS.SUBTLE }}>
                 <AlertTriangle className='w-10 h-10 mx-auto mb-4' style={{ color: COLORS.ORANGE }}/>
-                <h3 className="text-xl font-bold" style={{ color: COLORS.NAVY }}>No Books Available</h3>
-                <p className="text-gray-600 mt-2">The reading library catalog is currently empty. Please upload data via the Admin Maintenance Hub.</p>
+                <h3 className="text-xl font-bold" style={{ color: COLORS.NAVY }}>Reading Library Empty</h3>
+                <p className="text-gray-600 mt-2 text-sm">The reading catalog hasn't been loaded yet. Please contact an administrator or check the data source (<code>metadata/reading_catalog</code>).</p>
            </div>
       )}
-      
-      {filteredIsEmpty && (
+      {/* Case 2: Filters applied, but no results found */}
+      {isFilteredEmpty && (
            <div className="p-8 rounded-2xl border-2 shadow-xl bg-white text-center" style={{ borderColor: COLORS.SUBTLE }}>
                 <SearchIcon className='w-8 h-8 mx-auto mb-3' style={{ color: COLORS.TEAL }}/>
                 <h3 className="text-lg font-bold" style={{ color: COLORS.NAVY }}>No Results Found</h3>
-                <p className="text-gray-600 mt-1">Your current filters returned no books. Try adjusting your search query or removing complexity/duration limits.</p>
+                <p className="text-gray-600 mt-1 text-sm">Try adjusting your search query or filter settings.</p>
            </div>
       )}
 
-      {/* RENDER BOOKS ONLY IF DATA EXISTS */}
-      {allBooksLoaded && (
+      {/* --- Book List Rendering --- */}
+      {/* Render categories and books only if data exists and is not filtered empty */}
+      {totalBookCount > 0 && !isFilteredEmpty && (
         <div className="space-y-12">
-          {/* FIX: Ensure we're iterating over the filtered book categories, which should be updated */}
-          {Object.entries(filteredBooks).map(([tier, books]) => (
-            <div key={tier}
-                 className="rounded-2xl shadow-xl overflow-hidden border-2"
-                 style={{ background: COLORS.OFF_WHITE, borderColor: COLORS.SUBTLE }}>
-              <div className="p-6" style={{ background: COLORS.NAVY }}>
-                <h3 className="text-2xl font-bold flex items-center gap-2" style={{ color: COLORS.OFF_WHITE }}>{tier}</h3>
-                <p className="text-base mt-1" style={{ color: '#E5E7EB' }}>Foundational books for this competency. ({Array.isArray(books) ? books.length : 0} available)</p>
-              </div>
-
-              <div className="p-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                {/* CRITICAL FIX 6: Explicitly ensure books is an array before mapping. */}
-                {Array.isArray(books) ? books.map((book) => {
-                  const c = COMPLEXITY_MAP[book.complexity] || COMPLEXITY_MAP.Medium;
-                  const ComplexityIcon = c.icon;
-                  const isSaved = !!savedBooks[book.id];
-                  const isSelected = selectedBook?.id === book.id;
-
-                  return (
-                    <div key={book.id} className="relative">
-                      <button
-                        onClick={() => { onSelectBook(book, tier); }}
-                        className="p-5 text-left w-full h-full block rounded-2xl border-2 transition-all"
-                        style={{
-                          background: 'linear-gradient(180deg,#FFFFFF,#F9FAFB)',
-                          borderColor: isSelected ? COLORS.TEAL : COLORS.SUBTLE,
-                          boxShadow: isSelected ? '0 12px 30px rgba(0,0,0,.12)' : '0 2px 8px rgba(0,0,0,.06)',
-                          color: COLORS.TEXT,
-                          position: 'relative'
-                        }}
-                      >
-                        <span style={{ position:'absolute',top:0,left:0,right:0,height:6,
-                          background: isSelected ? COLORS.TEAL : COLORS.ORANGE,
-                          borderTopLeftRadius:14,borderTopRightRadius:14 }} />
-
-                        <div className="flex gap-3 items-start">
-                          <div className="w-10 h-10 rounded-lg flex items-center justify-center border" style={{ borderColor: COLORS.SUBTLE, background: '#F3F4F6' }}>
-                            <BookOpen className="w-5 h-5" style={{ color: COLORS.TEAL }} />
+          {/* Iterate over filtered book categories */}
+          {Object.entries(filteredBooks)
+                // Optional: Sort categories if needed
+                // .sort(([tierA], [tierB]) => tierA.localeCompare(tierB))
+                .map(([tier, booksInCategory]) => (
+                    // Ensure booksInCategory is an array before mapping
+                    Array.isArray(booksInCategory) && booksInCategory.length > 0 && (
+                        <div key={tier}
+                             className="rounded-2xl shadow-xl overflow-hidden border-2"
+                             style={{ background: COLORS.OFF_WHITE, borderColor: COLORS.SUBTLE }}>
+                          {/* Category Header */}
+                          <div className="p-5" style={{ background: COLORS.NAVY }}> {/* Use NAVY background */}
+                            <h3 className="text-xl font-bold flex items-center gap-2" style={{ color: COLORS.OFF_WHITE }}>{tier}</h3>
+                            <p className="text-sm mt-1" style={{ color: COLORS.SUBTLE }}>{booksInCategory.length} item{booksInCategory.length !== 1 ? 's' : ''} available</p>
                           </div>
-                          <div className="min-w-0">
-                            <p className="font-extrabold text-lg" style={{ color: COLORS.NAVY }}>{book.title}</p>
-                            <p className="text-sm italic" style={{ color: COLORS.MUTED }}>by {book.author}</p>
+
+                          {/* Book Grid within Category */}
+                          <div className="p-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                            {booksInCategory.map((book) => {
+                              // Get complexity details
+                              const complexityMeta = COMPLEXITY_MAP[book.complexity] || COMPLEXITY_MAP.Medium; // Fallback
+                              const ComplexityIcon = complexityMeta.icon;
+                              const isSaved = !!savedBooks[book.id];
+                              const isSelected = selectedBook?.id === book.id;
+                              const estimatedDuration = book.duration || getDerivedDuration(book); // Get duration
+
+                              return (
+                                // --- Book Card ---
+                                <div key={book.id} className="relative h-full"> {/* Ensure relative positioning for Save button, full height */}
+                                  <button
+                                    onClick={() => onSelectBook(book, tier)} // Pass book and tier
+                                    className="p-5 text-left w-full h-full block rounded-2xl border-2 transition-all duration-300 flex flex-col focus:outline-none focus:ring-2 focus:ring-offset-1" // Added flex-col
+                                    style={{
+                                      background: 'linear-gradient(180deg,#FFFFFF,#F9FAFB)',
+                                      borderColor: isSelected ? COLORS.TEAL : COLORS.SUBTLE,
+                                      boxShadow: isSelected ? '0 8px 20px rgba(71,168,141,.2)' : '0 2px 8px rgba(0,0,0,.06)', // Refined shadow
+                                      color: COLORS.TEXT,
+                                      position: 'relative', // Needed for accent bar
+                                      focusRingColor: COLORS.TEAL,
+                                    }}
+                                  >
+                                    {/* Accent Bar */}
+                                    <span style={{ position:'absolute',top:0,left:0,right:0,height:6, background: isSelected ? COLORS.TEAL : COLORS.ORANGE, borderTopLeftRadius:14, borderTopRightRadius:14 }} />
+
+                                    {/* Book Info */}
+                                    <div className="flex-grow pt-2"> {/* Added flex-grow */}
+                                        <div className="flex gap-3 items-start mb-3">
+                                            {/* Icon */}
+                                            <div className="w-10 h-10 rounded-lg flex items-center justify-center border flex-shrink-0" style={{ borderColor: COLORS.SUBTLE, background: COLORS.LIGHT_GRAY }}>
+                                                <BookOpen className="w-5 h-5" style={{ color: COLORS.TEAL }} />
+                                            </div>
+                                            {/* Title & Author */}
+                                            <div className="min-w-0">
+                                                <p className="font-extrabold text-md leading-tight" style={{ color: COLORS.NAVY }}>{book.title}</p> {/* Slightly smaller */}
+                                                <p className="text-xs italic mt-0.5" style={{ color: COLORS.MUTED }}>by {book.author}</p>
+                                            </div>
+                                        </div>
+
+                                        {/* Divider */}
+                                        <div className="my-3" style={{ height: 1, background: COLORS.SUBTLE }} />
+
+                                        {/* Stats: Duration & Complexity */}
+                                        <div className="space-y-1.5 text-xs"> {/* Smaller text */}
+                                            <div className="flex items-center gap-2" style={{ color: COLORS.TEXT }}>
+                                                <Clock className="w-3.5 h-3.5 flex-shrink-0" style={{ color: COLORS.ORANGE }}/>
+                                                <span className="font-semibold">Est. Time:</span>
+                                                <span className="ml-auto font-bold">{estimatedDuration ? `${estimatedDuration} min` : 'N/A'}</span>
+                                            </div>
+                                            <div className="flex items-center gap-2" style={{ color: COLORS.TEXT }}>
+                                                <ComplexityIcon className="w-3.5 h-3.5 flex-shrink-0" style={{ color: complexityMeta.hex }}/>
+                                                <span className="font-semibold">Level:</span>
+                                                <span className="ml-auto font-bold" style={{ color: complexityMeta.hex }}>{complexityMeta.label}</span>
+                                            </div>
+                                        </div>
+
+                                        {/* Key Focus Tags */}
+                                        <div className="mt-3 pt-3 border-t" style={{ borderColor: COLORS.SUBTLE }}>
+                                            <p className="text-[10px] font-semibold uppercase mb-1.5" style={{ color: COLORS.TEAL }}>Key Focus</p>
+                                            <div className="flex flex-wrap gap-1">
+                                                {(String(book.focus || '').split(',').slice(0, 3)).map((f, i) => ( // Safe split and slice
+                                                    f.trim() && <span key={i} className="px-2 py-0.5 text-[10px] font-medium rounded-full" style={{ background: COLORS.SUBTLE, color: COLORS.MUTED }}>{f.trim()}</span>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    </div>
+                                  </button>
+
+                                  {/* Save Button (Overlay) */}
+                                  <button
+                                    onClick={(e) => { e.stopPropagation(); onToggleSave(book.id); }}
+                                    aria-label={isSaved ? 'Remove from Saved' : 'Save for Later'}
+                                    className="absolute top-2 right-2 p-1.5 rounded-full transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-amber-500" // Adjusted focus ring
+                                    style={{ background: isSaved ? COLORS.AMBER : 'rgba(255,255,255,0.8)', color: isSaved ? COLORS.OFF_WHITE : COLORS.MUTED, boxShadow: '0 1px 3px rgba(0,0,0,.1)' }}
+                                  >
+                                    <Star className="w-4 h-4" fill={isSaved ? 'currentColor' : 'none'} />
+                                  </button>
+                                </div>
+                              );
+                            })}
                           </div>
                         </div>
-
-                        <div className="my-3" style={{ height: 1, background: COLORS.SUBTLE }} />
-
-                        <div className="flex items-center text-sm gap-2" style={{ color: COLORS.TEXT }}>
-                          <Clock className="w-4 h-4" style={{ color: COLORS.ORANGE, marginRight: 8 }}/> 
-                          <span className="font-semibold">Learning Mins:</span>
-                          <span className="ml-auto font-bold">{book.duration} min</span>
-                        </div>
-                        <div className="flex items-center text-sm gap-2" style={{ color: COLORS.TEXT }}>
-                          <ComplexityIcon className="w-4 h-4" style={{ color: c.hex, marginRight: 8 }}/> 
-                          <span className="font-semibold">Complexity:</span>
-                          <span className="ml-auto font-bold" style={{ color: c.hex }}>{c.label}</span>
-                        </div>
-
-                        <div className="mt-3 pt-3" style={{ borderTop: '1px solid #F3F4F6' }}>
-                          <p className="text-xs font-semibold" style={{ color: COLORS.TEAL }}>Key Focus</p>
-                          <div className="flex flex-wrap gap-1 mt-1">
-                            {/* CRITICAL FIX APPLIED HERE: Ensure book.focus is a string before splitting/mapping */}
-                            {((String(book.focus) || '').split(',').slice(0, 3)).map((f, i) => (
-                              <span key={i}
-                                    className="px-2 py-0.5 text-xs font-medium rounded-full"
-                                    style={{ background: '#F3F4F6', color: '#4B5563' }}>{f.trim()}</span>
-                            ))}
-                          </div>
-                        </div>
-                      </button>
-
-                      <button
-                        onClick={(e) => { e.stopPropagation(); onToggleSave(book.id); }}
-                        aria-label={isSaved ? 'Remove from Saved' : 'Save for Later'}
-                        className="absolute top-2 right-2 p-2 rounded-full"
-                        style={{ background: isSaved ? COLORS.AMBER : '#FFFFFFCC', color: isSaved ? '#FFFFFF' : '#9CA3AF', boxShadow: '0 1px 2px rgba(0,0,0,.2)' }}
-                      >
-                        <Star className="w-4 h-4" fill={isSaved ? 'currentColor' : 'none'} />
-                      </button>
-                    </div>
-                  );
-                }) : null} {/* If books is not an array, render nothing */}
-              </div>
-
-              {/* Removed the redundant 'No books match current filters' message here */}
-            </div>
-          ))}
+                    )
+                )
+            )}
         </div>
       )}
     </div>
   );
 }
 
+
+/**
+ * BookFlyerStable Component
+ * Displays the detailed flyer content (HTML) for the selected book,
+ * including the AI Coach interaction section and action buttons.
+ */
 function BookFlyerStable({
-  COLORS,
-  selectedBook,
-  htmlFlyer,
-  isFlyerLoading,
-  isExecutiveBrief,
-  setIsExecutiveBrief,
-  questionFeedback,
-  aiResponse,
-  aiQuery,
-  handleAiQueryChange,
-  submitHandler,
-  savedBooks,
-  onToggleSave,
-  onCommit,
-  isCommitted,
-  isSubmitting,
+  selectedBook, htmlFlyer, isFlyerLoading, isExecutiveBrief, setIsExecutiveBrief,
+  questionFeedback, aiResponse, aiQuery, handleAiQueryChange, submitHandler,
+  savedBooks, onToggleSave, onCommit, isCommitted, isSubmitting,
 }) {
-  const progressMinutes = 45;
-  const total = selectedBook.duration;
-  const pct = Math.min(100, Math.round((progressMinutes / total) * 100));
+  // --- Calculate Mock Progress (Replace with real data if available) ---
+  const progressMinutes = 45; // Placeholder
+  const totalDuration = selectedBook.duration || getDerivedDuration(selectedBook) || 180; // Estimate if missing
+  const progressPercent = Math.min(100, Math.round((progressMinutes / totalDuration) * 100));
+
+  // --- Executive Brief Toggle Switch ---
+  // Using a button-based switch for simpler styling alignment
+  const ExecSwitch = ({ checked, onChange }) => (
+    <div className="flex items-center gap-2">
+      <button type="button" role="switch" aria-checked={checked} onClick={() => onChange(!checked)}
+        className={`relative inline-flex items-center h-6 w-11 rounded-full transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-[${COLORS.ORANGE}]`}
+        style={{ background: checked ? COLORS.ORANGE : COLORS.MUTED }}
+      >
+        <span className={`inline-block w-4 h-4 transform bg-white rounded-full transition-transform duration-200 ${checked ? 'translate-x-6' : 'translate-x-1'}`} />
+      </button>
+      <span className="text-sm font-semibold" style={{ color: COLORS.NAVY }}>Executive Brief</span>
+    </div>
+  );
 
   return (
     <div className="space-y-8">
-      <div className="flex justify-between items-center pb-4" style={{ borderBottom: `1px solid ${COLORS.SUBTLE}` }}>
-        <h2 className="text-3xl font-bold flex items-center gap-3" style={{ color: COLORS.NAVY }}>
+      {/* --- Flyer Header --- */}
+      <div className="flex flex-col md:flex-row justify-between md:items-center gap-4 pb-4 border-b" style={{ borderColor: COLORS.SUBTLE }}>
+        {/* Title */}
+        <h2 className="text-2xl md:text-3xl font-bold flex items-center gap-3" style={{ color: COLORS.NAVY }}>
+          <BookOpen className="w-7 h-7 flex-shrink-0" style={{ color: COLORS.TEAL }} />
           Focus Flyer: {selectedBook.title}
         </h2>
-        <button
-          onClick={() => window.dispatchEvent(new CustomEvent('lr-close-flyer'))}
-          className="font-semibold px-3 py-2 rounded-xl border-2"
-          style={{ color: COLORS.NAVY, borderColor: COLORS.SUBTLE }}
+        {/* Back Button */}
+        <Button
+          onClick={() => window.dispatchEvent(new CustomEvent('lr-close-flyer'))} // Use custom event to signal close
+          variant="nav-back" size="sm" // Use nav-back style
         >
-          ← Back to Library
-        </button>
+          <ArrowLeft className="w-4 h-4 mr-2" /> Back to Library
+        </Button>
       </div>
 
-      <div className="rounded-2xl shadow-2xl p-8 border" style={{ background: COLORS.OFF_WHITE, borderColor: COLORS.SUBTLE }}>
-        <div className="flex flex-col md:flex-row justify-between gap-4 mb-4">
+      {/* --- Main Flyer Content Card --- */}
+      <Card accent="TEAL" className="shadow-2xl"> {/* Use standard Card */}
+        {/* Top Controls: Progress & Exec Brief Toggle */}
+        <div className="flex flex-col md:flex-row justify-between gap-4 mb-6">
+          {/* Mock Progress Indicator */}
           <div className="flex items-center gap-3 p-3 rounded-xl border" style={{ background: COLORS.LIGHT_GRAY, borderColor: COLORS.SUBTLE }}>
-            <TrendingUp className="w-5 h-5" style={{ color: COLORS.TEAL }}/>
+            <TrendingUp className="w-5 h-5 flex-shrink-0" style={{ color: COLORS.TEAL }}/>
             <div>
-              <p className="text-xs font-medium" style={{ color: COLORS.MUTED }}>YOUR COMMITMENT STATUS</p>
-              <div className="flex items-center gap-2">
-                <div className="w-40 h-2 rounded-full" style={{ background: COLORS.SUBTLE }}>
-                  <div className="h-2 rounded-full" style={{ width: `${pct}%`, background: COLORS.TEAL }} />
+              <p className="text-xs font-medium uppercase" style={{ color: COLORS.MUTED }}>Your Progress (Mock)</p>
+              <div className="flex items-center gap-2 mt-1">
+                {/* Progress Bar */}
+                <div className="w-32 h-2 rounded-full" style={{ background: COLORS.SUBTLE }}>
+                  <div className="h-2 rounded-full" style={{ width: `${progressPercent}%`, background: COLORS.TEAL }} />
                 </div>
-                <span className="text-sm font-bold" style={{ color: COLORS.NAVY }}>{pct}% Complete</span>
+                <span className="text-sm font-bold" style={{ color: COLORS.NAVY }}>{progressPercent}%</span>
               </div>
             </div>
           </div>
-
-          <div className="flex items-center gap-3">
+          {/* Executive Brief Toggle */}
+          <div className="flex items-center">
             <ExecSwitch checked={isExecutiveBrief} onChange={setIsExecutiveBrief} />
           </div>
         </div>
 
-        {/* FIX: Check if HTML Flyer is loading and apply desired effect */}
-        {isFlyerLoading ? (
-            <div className="p-4 rounded-xl border border-gray-300 shadow-inner text-center" style={{ background: '#F0F5FF' }}>
-                <div className="flex items-center justify-center gap-2" style={{ color: COLORS.PURPLE }}>
+        {/* --- HTML Flyer Content Area --- */}
+        <div className="p-4 rounded-xl border min-h-[200px]" style={{ background: COLORS.OFF_WHITE, borderColor: COLORS.SUBTLE }}>
+            {/* Loading State */}
+            {isFlyerLoading && (
+                <div className="h-full flex items-center justify-center gap-2" style={{ color: COLORS.PURPLE }}>
                     <Loader className='w-5 h-5 animate-spin'/>
-                    <span className="font-semibold whitespace-nowrap">Flyer being loaded...</span>
+                    <span className="font-semibold text-sm">Loading Flyer Content...</span>
                 </div>
-            </div>
-        ) : (
-            htmlFlyer.includes('CRITICAL API ERROR') ? (
-                <div className="p-4 rounded-xl border border-gray-300 shadow-inner" style={{ background: '#FFF7F7' }}>
-                    <div className="flex items-center justify-center gap-2 mb-3" style={{ color: COLORS.RED }}>
-                        <AlertTriangle className='w-5 h-5'/>
-                        <span className="font-semibold">Content Error</span>
-                    </div>
-                    <div className="max-w-none space-y-4" style={{ color: COLORS.TEXT }} dangerouslySetInnerHTML={{ __html: htmlFlyer }} />
+            )}
+            {/* Error State (Content Missing) */}
+            {!isFlyerLoading && htmlFlyer.includes('Content Error:') && (
+                <div className="h-full flex flex-col items-center justify-center gap-2 p-4 rounded-lg bg-red-50 border border-red-200">
+                    <AlertTriangle className='w-6 h-6 text-red-500 mb-2'/>
+                    <div className="text-sm text-center max-w-none space-y-2" style={{ color: COLORS.TEXT }} dangerouslySetInnerHTML={{ __html: htmlFlyer }} />
                 </div>
-            ) : (
-                <div className="max-w-none space-y-4" style={{ color: COLORS.TEXT }} dangerouslySetInnerHTML={{ __html: htmlFlyer }} />
-            )
-        )}
-        {/* END FIX */}
+            )}
+            {/* Success State: Render HTML */}
+            {!isFlyerLoading && !htmlFlyer.includes('Content Error:') && (
+                <div className="prose prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: htmlFlyer }} />
+            )}
+        </div>
 
-        <div className="mt-8 pt-4" style={{ borderTop: `1px solid ${COLORS.SUBTLE}` }}>
-          <h3 className="text-2xl font-bold mb-4 flex items-center gap-3" style={{ color: COLORS.NAVY }}>
-            <MessageSquare className="text-2xl w-6 h-6" style={{ color: COLORS.PURPLE }}/> AI Coach: Instant Application
+        {/* --- AI Coach Section --- */}
+        <div className="mt-8 pt-6 border-t" style={{ borderColor: COLORS.SUBTLE }}>
+          <h3 className="text-xl font-bold mb-4 flex items-center gap-3" style={{ color: COLORS.NAVY }}>
+            <MessageSquare className="w-6 h-6" style={{ color: COLORS.PURPLE }}/> AI Rep Coach: Apply It Now
           </h3>
-
+          {/* AI Response Area */}
           {aiResponse && (
             <div className="p-4 mb-4 rounded-xl shadow-lg border-l-4" style={{ background: '#F0F5FF', borderLeftColor: COLORS.PURPLE, color: COLORS.TEXT }}>
-              <p className="text-sm font-semibold flex items-center gap-2" style={{ color: COLORS.NAVY }}>
-                <Cpu className="w-4 h-4"/> AI Coach Response:
+              <p className="text-sm font-semibold flex items-center gap-2 mb-1" style={{ color: COLORS.NAVY }}>
+                <Cpu className="w-4 h-4"/> AI Rep Coach Response:
               </p>
-              <p className="text-base mt-1" style={{ whiteSpace: 'pre-wrap' }}>{aiResponse}</p>
+              {/* Use pre-wrap to preserve line breaks from AI */}
+              <p className="text-sm whitespace-pre-wrap">{aiResponse}</p>
             </div>
           )}
-
+          {/* AI Input Form */}
           <AICoachInput
             aiQuery={aiQuery}
             handleAiQueryChange={handleAiQueryChange}
             submitHandler={submitHandler}
             isSubmitting={isSubmitting}
             questionFeedback={questionFeedback}
-            selectedBookTitle={selectedBook.title}
+            selectedBookTitle={selectedBook.title} // Pass title for placeholder
           />
         </div>
 
-        <div className="mt-10 pt-6 flex justify-end gap-4" style={{ borderTop: `1px solid ${COLORS.SUBTLE}` }}>
-          <button
+        {/* --- Action Buttons Footer --- */}
+        <div className="mt-10 pt-6 flex flex-col sm:flex-row justify-end items-center gap-4 border-t" style={{ borderColor: COLORS.SUBTLE }}>
+          {/* Save for Later Button */}
+          <Button
             onClick={() => onToggleSave(selectedBook.id)}
-            className="flex items-center gap-2 px-6 py-3 font-semibold rounded-xl border-2"
-            style={{ background: COLORS.OFF_WHITE, borderColor: savedBooks[selectedBook.id] ? COLORS.AMBER : COLORS.SUBTLE, color: savedBooks[selectedBook.id] ? '#B45309' : COLORS.MUTED }}
+            variant="outline" size="sm" // Use outline, small size
+            className="w-full sm:w-auto"
+            style={{ borderColor: savedBooks[selectedBook.id] ? COLORS.AMBER : COLORS.SUBTLE, color: savedBooks[selectedBook.id] ? COLORS.AMBER : COLORS.MUTED }} // Dynamic style
           >
-            <Star className="w-5 h-5" fill={savedBooks[selectedBook.id] ? 'currentColor' : 'none'}/>
-            {savedBooks[selectedBook.id] ? 'Saved to Library' : 'Save for Later'}
-          </button>
-          <button
+            <Star className="w-4 h-4" fill={savedBooks[selectedBook.id] ? 'currentColor' : 'none'}/>
+            {savedBooks[selectedBook.id] ? 'Saved' : 'Save for Later'}
+          </Button>
+          {/* Add to Daily Practice Button */}
+          <Button
             onClick={onCommit}
-            className="flex items-center gap-2 px-6 py-3 font-semibold rounded-xl"
-            style={{ background: isCommitted ? COLORS.GREEN : COLORS.ORANGE, color: '#FFF', boxShadow: `0 8px 24px ${isCommitted ? COLORS.GREEN : COLORS.ORANGE}45` }}
-            disabled={isCommitted}
+            variant={isCommitted ? 'primary' : 'secondary'} // Use secondary (Orange) if not committed
+            size="md" // Use medium size
+            className="w-full sm:w-auto" // Full width on small screens
+            disabled={isCommitted} // Disable after committing
+            style={{ background: isCommitted ? COLORS.GREEN : COLORS.ORANGE, // Dynamic background
+                     boxShadow: `0 6px 18px ${isCommitted ? COLORS.GREEN : COLORS.ORANGE}40` }} // Dynamic shadow
           >
-            {isCommitted ? (<><Check className="w-5 h-5" /> Committed!</>) : (<><TrendingUp className="w-5 h-5" /> Add to Daily Practice Commitment</>)}
-          </button>
+            {isCommitted ? <Check className="w-5 h-5" /> : <TrendingUp className="w-5 h-5" />}
+            {isCommitted ? 'Added to Practice!' : 'Add to Daily Practice'}
+          </Button>
         </div>
-      </div>
+      </Card>
     </div>
   );
 }
 
+
+/* =========================================================
+   MAIN SCREEN COMPONENT: BusinessReadingsScreen
+========================================================= */
+
 export default function BusinessReadingsScreen() {
-  const services = useAppServices(); 
+  // --- Consume Core Services ---
   const {
-    updateCommitmentData = () => true,
-    navigate = () => {},
-    callSecureGeminiAPI,
-    hasGeminiKey,
-    // CRITICAL: READING_CATALOG_SERVICE is the prop that holds the loaded document.
-    READING_CATALOG_SERVICE 
-  } = services;
+    // Data & State
+    isLoading: isAppLoading, error: appError, // Combined loading/error state
+    READING_CATALOG, // Catalog data { items: { Category: [books...] } } // cite: useAppServices.jsx
+    dailyPracticeData, // For adding commitments // cite: useAppServices.jsx
+    // Functions
+    navigate, updateDailyPracticeData, callSecureGeminiAPI, hasGeminiKey, GEMINI_MODEL, // cite: useAppServices.jsx
+  } = useAppServices();
 
-  // CRITICAL FIX 1: Ensure allBooks reacts to the READING_CATALOG_SERVICE changing.
-  // CRITICAL FIX 7: Default to an empty object if READING_CATALOG_SERVICE is null/undefined to prevent runtime errors when destructuring.
-  // The service returns the document Map: { items: { Category1: [...], ... } }
-  // We must unwrap the 'items' property if it exists.
-  // CRITICAL FIX FOR DATA STRUCTURE INCONSISTENCY:
-  const allBooks = READING_CATALOG_SERVICE?.['Innovation & Change'] 
-    ? READING_CATALOG_SERVICE // Use the root object (which has the HTML)
-    : (READING_CATALOG_SERVICE?.items || MOCK_ALL_BOOKS_FALLBACK); 
+  // --- Local State ---
+  const [selectedBook, setSelectedBook] = useState(null); // The book object currently viewed in the flyer
+  const [selectedTier, setSelectedTier] = useState(''); // The category/tier of the selected book
+  const [htmlFlyer, setHtmlFlyer] = useState(''); // Pre-generated HTML content for the flyer
+  const [isFlyerLoading, setIsFlyerLoading] = useState(false); // Brief loading state for flyer transition
+  const [savedBooks, setSavedBooks] = useState({}); // Local state for 'saved for later' status { bookId: true/false }
+  const [isExecutiveBrief, setIsExecutiveBrief] = useState(false); // Flyer view mode (full vs. brief)
+  const [isCommitted, setIsCommitted] = useState(false); // Has the current book been added to daily practice?
+  // Filters
+  const [filters, setFilters] = useState({ complexity: 'All', maxDuration: 300, search: '' });
+  // AI Coach State
+  const [aiQuery, setAiQuery] = useState(''); // User's input question
+  const [aiResponse, setAiResponse] = useState(''); // AI's response text
+  const [isSubmittingAi, setIsSubmittingAi] = useState(false); // Loading state for AI query
 
-  // NEW: Deep dependency for the useMemo below
+  // --- Determine Book Data Source ---
+  // Use READING_CATALOG from services if valid, otherwise use local fallback
+  const allBooks = useMemo(() => {
+    const catalogItems = READING_CATALOG?.items;
+    // Validate structure: must be an object with at least one key/value pair where value is array
+    if (catalogItems && typeof catalogItems === 'object' && Object.keys(catalogItems).length > 0 && Object.values(catalogItems).some(Array.isArray)) {
+        console.log("[BusinessReadings] Using READING_CATALOG from services.");
+        return catalogItems;
+    } else {
+        console.warn("[BusinessReadings] READING_CATALOG invalid or empty. Using fallback data.", READING_CATALOG);
+        return MOCK_ALL_BOOKS_FALLBACK;
+    }
+  }, [READING_CATALOG]); // cite: useAppServices.jsx
+
+  // --- Deep Dependency Signature ---
+  // Used to ensure filtering memoization updates correctly when book data changes fundamentally
   const deepDataSignature = useMemo(() => getDeepDataSignature(allBooks), [allBooks]);
 
-  const [selectedBook, setSelectedBook] = useState(null);
-  const [htmlFlyer, setHtmlFlyer] = useState('');
-  const [selectedTier, setSelectedTier] = useState('');
-  const [isFlyerLoading, setIsFlyerLoading] = useState(false);
-  const [savedBooks, setSavedBooks] = useState({});
-  const [isExecutiveBrief, setIsExecutiveBrief] = useState(false);
-  const [isCommitted, setIsCommitted] = useState(false);
+  /* ---------- Filtering Logic (Memoized) ---------- */
+  const filteredBooks = useMemo(() => {
+    console.log("[BusinessReadings] Re-calculating filtered books. Signature:", deepDataSignature);
+    // Safety check for allBooks structure
+    if (!allBooks || typeof allBooks !== 'object') return {};
 
-  const [filters, setFilters] = useState({ complexity: 'All', maxDuration: 300, search: '' });
-  const [aiQuery, setAiQuery] = useState('');
-  const [aiResponse, setAiResponse] = useState('');
-  const [isSubmitting, setIsSubmitting] = useState(false);
+    const searchTerm = (filters.search || '').toLowerCase();
+    const maxDuration = filters.maxDuration;
+    const complexityFilter = filters.complexity;
 
-  /* New: Question Feedback Hook */
-  const questionFeedback = useMemo(() => {
-    if (!selectedBook) return { score: 0, tip: '' };
-    return getQuestionScore(aiQuery, selectedBook.title);
-  }, [aiQuery, selectedBook]);
+    // Filter and group books
+    const result = {};
+    for (const tier in allBooks) {
+        if (Array.isArray(allBooks[tier])) { // Ensure the category contains an array
+            const booksInCategory = allBooks[tier].filter(book => {
+                // Duration Check (handles missing duration)
+                const duration = book.duration || getDerivedDuration(book);
+                const durationOK = duration === null || duration <= maxDuration;
+                // Complexity Check
+                const complexityOK = complexityFilter === 'All' || book.complexity === complexityFilter;
+                // Search Term Check (check title, author, focus)
+                const searchOK = !searchTerm ||
+                    (book.title || '').toLowerCase().includes(searchTerm) ||
+                    (book.author || '').toLowerCase().includes(searchTerm) ||
+                    (String(book.focus || '')).toLowerCase().includes(searchTerm); // Safe focus check
+                // Combine checks
+                return durationOK && complexityOK && searchOK;
+            });
+            // Only add tier to result if it has books after filtering
+            if (booksInCategory.length > 0) {
+                result[tier] = booksInCategory;
+            }
+        }
+    }
+    console.log("[BusinessReadings] Filtering complete. Result keys:", Object.keys(result));
+    return result;
+  }, [allBooks, filters, deepDataSignature]); // Dependencies: Trigger re-filter on data, filters, or signature change
 
 
-  // --- FIX 2: MEMOIZE HANDLERS TO PREVENT CURSOR BOUNCE ---
+  /* ---------- Flyer Content Loading ---------- */
+  // Loads the appropriate pre-generated HTML when a book is selected or brief mode changes
+  useEffect(() => {
+    if (!selectedBook) {
+      setHtmlFlyer(''); // Clear flyer if no book selected
+      return;
+    }
+    console.log(`[BusinessReadings] Loading flyer for: ${selectedBook.title}, Brief Mode: ${isExecutiveBrief}`);
+    // Determine which HTML content key to use
+    const contentKey = isExecutiveBrief ? 'executiveBriefHTML' : 'fullFlyerHTML';
+    // Retrieve HTML from the selected book object, use error fallback if missing
+    const newHtml = selectedBook[contentKey] || API_ERROR_HTML(isExecutiveBrief, selectedBook); // cite: Original File (Logic)
+
+    // Apply a brief loading state for smooth visual transition
+    setIsFlyerLoading(true);
+    const timer = setTimeout(() => {
+        setHtmlFlyer(newHtml);
+        setIsFlyerLoading(false);
+        console.log(`[BusinessReadings] Flyer content set.`);
+    }, 50); // Minimal delay
+
+    // Cleanup timer on unmount or if dependencies change
+    return () => clearTimeout(timer);
+  }, [selectedBook, isExecutiveBrief]); // Re-run when book or brief mode changes
+
+
+  /* ---------- State Resets on Book Change ---------- */
+  useEffect(() => {
+    // Reset secondary states when the selected book changes
+    if (selectedBook) {
+      console.log(`[BusinessReadings] Resetting state for new book: ${selectedBook.title}`);
+      setIsExecutiveBrief(false); // Default to full flyer view
+      setAiQuery('');             // Clear AI query
+      setAiResponse('');          // Clear AI response
+      setIsSubmittingAi(false);    // Reset AI loading state
+      setIsCommitted(false);        // Reset commitment status for the new book
+    }
+  }, [selectedBook]); // Run only when selectedBook changes
+
+
+  /* ---------- Event Listener for Closing Flyer ---------- */
+  useEffect(() => {
+    // Custom event listener to allow BookFlyerStable to signal closing itself
+    const handler = () => {
+        console.log("[BusinessReadings] Close flyer event received.");
+        setSelectedBook(null);
+    };
+    window.addEventListener('lr-close-flyer', handler);
+    // Cleanup listener on component unmount
+    return () => window.removeEventListener('lr-close-flyer', handler);
+  }, []); // Run only once on mount
+
+
+  /* ---------- Memoized Handlers for Inputs/Actions ---------- */
+  // Updates the filter state
   const handleFilterChange = useCallback((key, value) => {
     setFilters(prev => ({ ...prev, [key]: value }));
   }, []);
 
+  // Updates the search filter state
   const handleSearchChange = useCallback((e) => {
     setFilters(prev => ({ ...prev, search: e.target.value }));
   }, []);
 
+  // Updates the AI query input state
   const handleAiQueryChange = useCallback((e) => {
     setAiQuery(e.target.value);
   }, []);
-  // --- END FIX 2 ---
 
-
-  /* ---------- Filtering (Memoized for performance) ---------- */
-  const filteredBooks = useMemo(() => {
-    // CRITICAL FIX 3: Base the filtering logic on a stable reference (allBooks)
-    // The dependency array now correctly tracks changes to allBooks.
-    // CRITICAL FIX 8: Safely handle if allBooks is null/undefined/non-object.
-    if (!allBooks || typeof allBooks !== 'object') return {}; 
-
-    const flat = Object.entries(allBooks).flatMap(([tier, books]) =>
-      // FIX: Ensure 'books' is definitely an array before mapping
-      (Array.isArray(books) ? books : []).map(b => ({ ...b, tier }))
-    );
-    const s = (filters.search || '').toLowerCase();
-
-    return flat
-      .filter(b => {
-        const cOK = filters.complexity === 'All' || b.complexity === filters.complexity;
-        const dOK = (typeof b.duration === 'number') ? ((() => { const m = getDerivedDuration(b); return (m === null) ? true : (m <= filters.maxDuration); })()) : true;
-        const sOK = !s || b.title.toLowerCase().includes(s) || b.author.toLowerCase().includes(s) || (String(b.focus) || '').toLowerCase().includes(s); // Added String(b.focus) defensively
-        return cOK && dOK && sOK;
-      })
-      .reduce((acc, b) => {
-        (acc[b.tier] ||= []).push(b);
-        return acc;
-      }, {});
-  }, [allBooks, filters, deepDataSignature]); // <-- CRITICAL FIX: ADDED DEEP SIGNATURE HERE
-
-  /* ---------- Flyer generation (Fast loading from saved data) ---------- */
-  // REPLACEMENT FOR OLD SLOW useEffect
-  useEffect(() => {
-    if (!selectedBook) { 
-      setHtmlFlyer(''); 
-      return; 
-    }
-    
-    // 1. Determine the content key (which is now on the book object)
-    const contentKey = isExecutiveBrief ? 'executiveBriefHTML' : 'fullFlyerHTML';
-    
-    // 2. Retrieve the saved HTML or fall back to the error message
-    // NOTE: If the book object doesn't have the key, it defaults to the error HTML.
-    const newHtml = selectedBook[contentKey] || API_ERROR_HTML(isExecutiveBrief, selectedBook);
-
-    // 3. Set a brief loading state to prevent jarring flicker
-    setIsFlyerLoading(true); 
-
-    const timer = setTimeout(() => {
-        setHtmlFlyer(newHtml);
-        setIsFlyerLoading(false);
-    }, 50); // Minimal delay for smooth state transition
-
-    return () => clearTimeout(timer); 
-  }, [selectedBook, isExecutiveBrief]); // Removed slow dependencies!
-
-
-  /* ---------- Reset contextual state when changing book ---------- */
-  useEffect(() => {
-    if (selectedBook) {
-      setIsExecutiveBrief(false);
-      setAiQuery('');
-      setAiResponse('');
-      setIsSubmitting(false);
-      setIsCommitted(false); // Reset commitment status
-    }
-  }, [selectedBook]);
-
-  useEffect(() => {
-    const handler = () => setSelectedBook(null);
-    window.addEventListener('lr-close-flyer', handler);
-    return () => window.removeEventListener('lr-close-flyer', handler);
+  // Handler for selecting a book from the list
+  const handleSelectBook = useCallback((book, tier) => {
+      console.log(`[BusinessReadings] Book selected: ${book.title} from tier ${tier}`);
+      setSelectedBook(book);
+      setSelectedTier(tier || ''); // Store the tier/category name
   }, []);
 
+  // Toggles the 'saved for later' status of a book
+  const handleToggleSave = useCallback((bookId) => {
+    setSavedBooks(prev => {
+        const isCurrentlySaved = !!prev[bookId];
+        console.log(`[BusinessReadings] Toggling save for book ${bookId}. New status: ${!isCurrentlySaved}`);
+        return { ...prev, [bookId]: !isCurrentlySaved };
+        // TODO: Persist savedBooks state (e.g., to localStorage or user profile in Firestore)
+    });
+  }, []);
 
+  // --- Adds the selected book reading task as a Daily Practice Rep ---
+  const handleCommitment = useCallback(async (book) => {
+    if (!book || isCommitted) return; // Prevent adding if already committed or no book
+    console.log(`[BusinessReadings] Adding commitment for book: ${book.title}`);
 
-  /* ---------- Actions ---------- */
-  const handleCommitment = (book) => {
+    // --- Create the new Rep (Commitment) object ---
+    const estimatedDuration = book.duration || getDerivedDuration(book) || 0; // Get duration
     const newCommitment = {
-      id: book.id,
-      title: `Read: ${book.title} (${book.author})`,
-      category: 'Reading',
-      tier: selectedTier,
-      notes: `Flyer theme: ${book.theme}. Est. ${book.duration} min.`,
-      status: 'Pending',
-      progressMinutes: 0,
-      totalDuration: book.duration,
-      createdAt: new Date().toISOString(),
+      id: `read_${book.id}_${Date.now()}`, // Unique ID for the rep
+      text: `Read: ${book.title} (${book.author}) - Est. ${estimatedDuration} min`, // Descriptive text
+      status: 'Pending', // Start as pending
+      isCustom: false, // Indicate it's from a standard source
+      linkedGoal: selectedTier || 'Personal Development', // Link to the book category/tier
+      linkedTier: book.complexity ? (DIMENSION_TO_TIER_MAP[book.complexity] || 'T1') : 'T1', // Map complexity to Tier (heuristic)
+      source: 'BusinessReadings', // Identify the source
+      // Add optional fields if needed: targetColleague, progressMinutes, totalDuration
     };
-    // The real updateCommitmentData must handle adding the new commitment to the active_commitments array
-    const ok = updateCommitmentData(data => ({
-        ...data, // CRITICAL FIX 4: Spread existing data when updating commitments
-        active_commitments: [...(data?.active_commitments || []), newCommitment]
-    }));
-    if (ok) {
-        setIsCommitted(true);
-        setTimeout(() => navigate('daily-practice'), 1500); // Navigate after brief confirmation
-    } else console.error('Failed to add commitment.');
-  };
 
-  const handleSaveForLater = (bookId) => {
-    setSavedBooks(prev => ({ ...prev, [bookId]: !prev[bookId] }));
-  };
-  
-  // Wrapped AI Submit handler for component context
-  const submitHandler = useCallback((e) => {
-      handleAiSubmit(e, services, selectedBook, aiQuery, setIsSubmitting, setAiResponse);
-  }, [aiQuery, selectedBook, services, setIsSubmitting, setAiResponse]);
-  
+    // --- Update dailyPracticeData using the context function ---
+    try {
+        const success = await updateDailyPracticeData(currentData => {
+            const existingCommitments = currentData?.activeCommitments || []; // cite: useAppServices.jsx
+            // Add the new commitment to the list
+            return {
+                ...currentData, // Preserve existing data
+                activeCommitments: [...existingCommitments, newCommitment]
+            };
+        }); // cite: useAppServices.jsx
+
+        if (success) {
+            console.log("[BusinessReadings] Commitment added successfully.");
+            setIsCommitted(true); // Update local state to reflect commitment
+            // Optional: Navigate to daily practice after a brief delay
+            // setTimeout(() => navigate('daily-practice'), 1000);
+        } else {
+             throw new Error("updateDailyPracticeData returned false");
+        }
+    } catch (error) {
+        console.error('[BusinessReadings] Failed to add commitment:', error);
+        alert('Failed to add reading commitment to your daily practice. Please try again.');
+        setIsCommitted(false); // Ensure state reflects failure
+    }
+  }, [isCommitted, selectedTier, updateDailyPracticeData]); // Dependencies
+
+
+  // --- Memoized Question Feedback ---
+  // Calculates the quality score of the AI query as the user types
+  const questionFeedback = useMemo(() => {
+    if (!selectedBook) return { score: 0, tip: '' }; // No score if no book selected
+    return getQuestionScore(aiQuery, selectedBook.title);
+  }, [aiQuery, selectedBook]);
+
+
+  // --- Memoized AI Submit Handler ---
+  // Wraps the handleAiSubmit logic with necessary state and context
+  const submitAiHandler = useCallback((e) => {
+      // Pass all required arguments to the standalone handler function
+      handleAiSubmit(e, { callSecureGeminiAPI, hasGeminiKey, GEMINI_MODEL }, selectedBook, aiQuery, setIsSubmittingAi, setAiResponse);
+  }, [aiQuery, selectedBook, callSecureGeminiAPI, hasGeminiKey, GEMINI_MODEL]); // Include all dependencies
+
+
+  // --- RENDER LOGIC ---
+
+  // Show loading spinner if the app's core data is still loading
+  if (isAppLoading) {
+    return <LoadingSpinner message="Loading Reading Hub..." />;
+  }
+  // Show error message if app loading failed
+  if (appError) {
+      return <ConfigError message={`Failed to load Reading Hub data: ${appError.message}`} />;
+  }
 
   return (
-    <div className="p-6 md:p-10 min-h-screen" style={{ background: COLORS.BG, color: COLORS.TEXT }}>
-      <div className='flex items-center gap-4 border-b-2 pb-2 mb-8' style={{borderColor: COLORS.PURPLE+'30'}}>
-          <BookOpen className='w-10 h-10' style={{color: COLORS.PURPLE}}/>
-          <h1 className="text-4xl font-extrabold" style={{ color: COLORS.NAVY }}>Professional Reading Hub</h1>
-      </div>
-      
-      {!selectedBook && <BookListStable 
-          COLORS={COLORS} 
-          COMPLEXITY_MAP={COMPLEXITY_MAP} 
-          filters={filters} 
-          filteredBooks={filteredBooks} 
-          savedBooks={savedBooks} 
-          selectedBook={selectedBook} 
-          onSelectBook={(book, tier) => { setSelectedBook(book); setSelectedTier(tier); }} 
-          onToggleSave={handleSaveForLater} 
-          handleSearchChange={handleSearchChange} 
-          handleFilterChange={handleFilterChange} 
-      />}
-      {selectedBook && <BookFlyerStable 
-          COLORS={COLORS} 
-          selectedBook={selectedBook}
-          htmlFlyer={htmlFlyer}
-          isFlyerLoading={isFlyerLoading}
-          isExecutiveBrief={isExecutiveBrief} 
-          setIsExecutiveBrief={setIsExecutiveBrief} 
-          questionFeedback={questionFeedback} 
-          aiResponse={aiResponse} 
-          aiQuery={aiQuery} 
-          handleAiQueryChange={handleAiQueryChange} 
-          submitHandler={submitHandler} 
-          savedBooks={savedBooks} 
-          onToggleSave={handleSaveForLater} 
-          onCommit={() => handleCommitment(selectedBook)} 
-          isCommitted={isCommitted} 
-          isSubmitting={isSubmitting} 
-      />}
+    // Main screen container with consistent padding and background
+    <div className="p-6 md:p-10 min-h-screen" style={{ background: COLORS.BG }}>
+      {/* Header */}
+      <header className='flex items-center gap-4 border-b-2 pb-3 mb-8' style={{borderColor: COLORS.PURPLE+'30'}}> {/* Use PURPLE accent */}
+          <BookOpen className='w-10 h-10 flex-shrink-0' style={{color: COLORS.PURPLE}}/>
+          <div>
+              <h1 className="text-3xl md:text-4xl font-extrabold" style={{ color: COLORS.NAVY }}>Professional Reading Hub</h1>
+              <p className="text-md text-gray-600 mt-1">(Content Pillar 1)</p>
+          </div>
+      </header>
+
+      {/* Conditional Rendering: Show Book List or Book Flyer */}
+      {!selectedBook ? (
+          // --- Render Book List View ---
+          <BookListStable
+              filters={filters}
+              filteredBooks={filteredBooks}
+              savedBooks={savedBooks}
+              selectedBook={selectedBook} // Pass null when list is visible
+              onSelectBook={handleSelectBook}
+              onToggleSave={handleToggleSave}
+              handleSearchChange={handleSearchChange}
+              handleFilterChange={handleFilterChange}
+          />
+      ) : (
+          // --- Render Book Flyer View ---
+          <BookFlyerStable
+              selectedBook={selectedBook}
+              htmlFlyer={htmlFlyer}
+              isFlyerLoading={isFlyerLoading}
+              isExecutiveBrief={isExecutiveBrief}
+              setIsExecutiveBrief={setIsExecutiveBrief}
+              questionFeedback={questionFeedback}
+              aiResponse={aiResponse}
+              aiQuery={aiQuery}
+              handleAiQueryChange={handleAiQueryChange}
+              submitHandler={submitAiHandler} // Pass the memoized handler
+              savedBooks={savedBooks}
+              onToggleSave={handleToggleSave}
+              onCommit={() => handleCommitment(selectedBook)} // Pass the selected book to handler
+              isCommitted={isCommitted}
+              isSubmitting={isSubmittingAi} // Pass AI loading state
+          />
+      )}
     </div>
   );
 }

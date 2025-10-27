@@ -1,138 +1,231 @@
-// src/components/screens/AppliedLeadership.jsx
+// src/components/screens/AppliedLeadership.jsx (Refactored as Course Library Hub)
 
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
-// --- ADDED: Missing lucide-react imports ---
-import { ArrowLeft, BookOpen, ChevronRight, Loader, AlertTriangle } from 'lucide-react'; // Added Loader & AlertTriangle
-import { useAppServices } from '../../services/useAppServices.jsx';
+// --- Core Services & Context ---
+import { useAppServices } from '../../services/useAppServices.jsx'; // cite: useAppServices.jsx
+
+// --- Icons ---
+import { ArrowLeft, BookOpen, ChevronRight, Loader, AlertTriangle, ShieldCheck } from 'lucide-react'; // Added ShieldCheck
 
 /* =========================================================
-   COLORS & UI COMPONENTS (Assuming these exist)
+   PALETTE & UI COMPONENTS (Standardized)
 ========================================================= */
-const COLORS = { NAVY: '#002E47', TEAL: '#47A88D', BLUE: '#2563EB', ORANGE: '#E04E1B', GREEN: '#10B981', AMBER: '#F5A800', RED: '#E04E1B', LIGHT_GRAY: '#FCFCFA', OFF_WHITE: '#FFFFFF', SUBTLE: '#E5E7EB', TEXT: '#002E47', MUTED: '#4B5355', PURPLE: '#7C3AED'};
-const Button = ({ children, onClick, disabled = false, variant = 'primary', className = '', ...rest }) => { let baseStyle = "px-6 py-3 rounded-xl font-semibold transition-all shadow-xl focus:outline-none focus:ring-4 text-white flex items-center justify-center"; if (variant === 'primary') { baseStyle += ` bg-[${COLORS.TEAL}] hover:bg-[#349881] focus:ring-[${COLORS.TEAL}]/50`; } else if (variant === 'secondary') { baseStyle += ` bg-[${COLORS.ORANGE}] hover:bg-red-700 focus:ring-[${COLORS.ORANGE}]/50`; } else if (variant === 'outline') { baseStyle = `px-6 py-3 rounded-xl font-semibold transition-all shadow-md border-2 border-[${COLORS.TEAL}] text-[${COLORS.TEAL}] hover:bg-[#47A88D]/10 focus:ring-4 focus:ring-[${COLORS.TEAL}]/50 bg-[${COLORS.LIGHT_GRAY}] flex items-center justify-center`; } else if (variant === 'nav-back') { baseStyle = `px-4 py-2 rounded-lg font-medium transition-all shadow-sm border-2 border-gray-300 text-gray-700 hover:bg-gray-100 flex items-center justify-center`; } if (disabled) { baseStyle = "px-6 py-3 rounded-xl font-semibold bg-gray-300 text-gray-500 cursor-not-allowed shadow-inner transition-none flex items-center justify-center"; } return ( <button {...rest} onClick={onClick} disabled={disabled} className={`${baseStyle} ${className}`}>{children}</button> ); };
-const Card = ({ children, title, icon: Icon, className = '', onClick, accent = 'NAVY' }) => { const interactive = !!onClick; const Tag = interactive ? 'button' : 'div'; const accentColor = COLORS[accent] || COLORS.NAVY; const handleKeyDown = (e) => { if (!interactive) return; if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onClick?.(); } }; return ( <Tag {...(interactive ? { type: 'button' } : {})} role={interactive ? 'button' : undefined} tabIndex={interactive ? 0 : undefined} onKeyDown={handleKeyDown} className={`relative p-6 rounded-2xl border-2 shadow-2xl hover:shadow-xl transition-all duration-300 text-left ${className}`} style={{ background: 'linear-gradient(180deg,#FFFFFF, #FCFCFA)', borderColor: COLORS.SUBTLE, color: COLORS.TEXT }} onClick={onClick}> <span style={{ position:'absolute', top:0, left:0, right:0, height:6, background: accentColor, borderTopLeftRadius:14, borderTopRightRadius:14 }} /> {Icon && ( <div className="w-10 h-10 rounded-lg flex items-center justify-center border mb-3" style={{ borderColor: COLORS.SUBTLE, background: COLORS.LIGHT_GRAY }}> <Icon className="w-5 h-5" style={{ color: COLORS.TEAL }} /> </div> )} {title && <h2 className="text-xl font-extrabold mb-2" style={{ color: COLORS.NAVY }}>{title}</h2>} {children} </Tag> ); };
+// --- Primary Color Palette ---
+const COLORS = { NAVY: '#002E47', TEAL: '#47A88D', BLUE: '#2563EB', ORANGE: '#E04E1B', GREEN: '#10B981', AMBER: '#F5A800', RED: '#E04E1B', LIGHT_GRAY: '#FCFCFA', OFF_WHITE: '#FFFFFF', SUBTLE: '#E5E7EB', TEXT: '#374151', MUTED: '#4B5563', PURPLE: '#7C3AED', BG: '#F9FAFB' }; // cite: App.jsx
 
-// Placeholder components (replace with actual implementations if needed)
-const AICoachingSimulator = ({ domain, RESOURCES }) => <div className="p-4 my-4 bg-purple-50 border border-purple-200 rounded-lg">AI Coaching Simulator Placeholder for {domain.name}</div>; // Changed domain.title to domain.name
-const ResourceDetailModal = ({ isVisible, onClose, resource, domain }) => {
-    if (!isVisible || !resource) return null;
+// --- Standardized Button Component (Matches Dashboard) ---
+const Button = ({ children, onClick, disabled = false, variant = 'primary', className = '', size = 'md', ...rest }) => { /* ... Re-use exact Button definition from Dashboard.jsx ... */
+    let baseStyle = `inline-flex items-center justify-center gap-2 font-semibold rounded-xl transition-all duration-200 focus:outline-none focus:ring-4 disabled:opacity-50 disabled:cursor-not-allowed`;
+    if (size === 'sm') baseStyle += ' px-4 py-2 text-sm'; else if (size === 'lg') baseStyle += ' px-8 py-4 text-lg'; else baseStyle += ' px-6 py-3 text-base'; // Default 'md'
+    if (variant === 'primary') baseStyle += ` bg-[${COLORS.TEAL}] text-white shadow-lg hover:bg-[#349881] focus:ring-[${COLORS.TEAL}]/50`;
+    else if (variant === 'secondary') baseStyle += ` bg-[${COLORS.ORANGE}] text-white shadow-lg hover:bg-[#C33E12] focus:ring-[${COLORS.ORANGE}]/50`;
+    else if (variant === 'outline') baseStyle += ` bg-[${COLORS.OFF_WHITE}] text-[${COLORS.TEAL}] border-2 border-[${COLORS.TEAL}] shadow-md hover:bg-[${COLORS.TEAL}]/10 focus:ring-[${COLORS.TEAL}]/50`;
+    else if (variant === 'nav-back') baseStyle += ` bg-white text-gray-700 border border-gray-300 shadow-sm hover:bg-gray-100 focus:ring-gray-300/50 px-4 py-2 text-sm`;
+    else if (variant === 'ghost') baseStyle += ` bg-transparent text-gray-600 hover:bg-gray-100 focus:ring-gray-300/50 px-3 py-1.5 text-sm`;
+    if (disabled) baseStyle += ' bg-gray-300 text-gray-500 shadow-inner border-transparent hover:bg-gray-300';
+    return (<button {...rest} onClick={onClick} disabled={disabled} className={`${baseStyle} ${className}`}>{children}</button>);
+};
+
+// --- Standardized Card Component (Matches Dashboard) ---
+const Card = ({ children, title, icon: Icon, className = '', onClick, accent = 'NAVY' }) => { /* ... Re-use exact Card definition from Dashboard.jsx ... */
+    const interactive = !!onClick; const Tag = interactive ? 'button' : 'div'; const accentColor = COLORS[accent] || COLORS.NAVY; const handleKeyDown = (e) => { if (interactive && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); onClick?.(); } };
     return (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
-            <div className="bg-white p-6 rounded-lg max-w-lg w-full relative animate-in zoom-in-95 slide-in-from-bottom-5 duration-300">
-                <button onClick={onClose} className="absolute top-2 right-2 p-1 text-gray-500 hover:text-red-600">&times;</button>
-                <h3 className="text-xl font-bold mb-2">{resource.title} ({domain.name})</h3> {/* Changed domain.title to domain.name */}
-                <p className="text-sm text-gray-600">{resource.summary || 'Details unavailable.'}</p> {/* Changed description to summary */}
-                {/* Add more resource details here */}
+        <Tag {...(interactive ? { type: 'button' } : {})} role={interactive ? 'button' : undefined} tabIndex={interactive ? 0 : undefined} onKeyDown={handleKeyDown} className={`relative p-6 rounded-2xl border-2 shadow-xl hover:shadow-lg transition-all duration-300 text-left ${className}`} style={{ background: 'linear-gradient(180deg,#FFFFFF, #FCFCFA)', borderColor: COLORS.SUBTLE, color: COLORS.NAVY }} onClick={onClick}>
+            <span style={{ position:'absolute', top:0, left:0, right:0, height:6, background: accentColor, borderTopLeftRadius:14, borderTopRightRadius:14 }} />
+            {Icon && title && ( <div className="flex items-center gap-3 mb-4"> <div className="w-10 h-10 rounded-lg flex items-center justify-center border flex-shrink-0" style={{ borderColor: COLORS.SUBTLE, background: COLORS.LIGHT_GRAY }}> <Icon className="w-5 h-5" style={{ color: accentColor }} /> </div> <h2 className="text-xl font-extrabold" style={{ color: COLORS.NAVY }}>{title}</h2> </div> )}
+            {!Icon && title && <h2 className="text-xl font-extrabold mb-4 border-b pb-2" style={{ color: COLORS.NAVY, borderColor: COLORS.SUBTLE }}>{title}</h2>}
+            <div className={Icon || title ? '' : ''}>{children}</div>
+        </Tag>
+    );
+};
+
+// --- Standardized Loading Spinner ---
+const LoadingSpinner = ({ message = "Loading..." }) => ( /* ... Re-use definition from DevelopmentPlan.jsx ... */
+    <div className="min-h-[300px] flex items-center justify-center" style={{ background: COLORS.BG }}> <div className="flex flex-col items-center"> <Loader className="animate-spin h-12 w-12 mb-3" style={{ color: COLORS.TEAL }} /> <p className="font-semibold" style={{ color: COLORS.NAVY }}>{message}</p> </div> </div>
+);
+
+/* =========================================================
+   PLACEHOLDER COMPONENTS (Styled Consistently)
+========================================================= */
+
+/**
+ * Placeholder for AI Coaching Simulator specific to a skill/course.
+ */
+const AICoachingSimulator = ({ skill }) => ( // Renamed prop to 'skill'
+  <Card title={`AI Rep Coach for ${skill.name}`} icon={ShieldCheck} accent="PURPLE" className="my-8">
+    <p className="text-sm text-gray-600 mb-4">Practice applying '{skill.name}' principles in simulated scenarios.</p>
+    {/* Placeholder content */}
+    <div className="p-4 bg-purple-50 border border-purple-200 rounded-lg text-center text-purple-700 font-medium italic">
+      AI Coaching Simulator coming soon...
+    </div>
+  </Card>
+);
+
+/**
+ * Modal to display details of a selected resource.
+ */
+const ResourceDetailModal = ({ isVisible, onClose, resource, skill }) => { // Renamed prop to 'skill'
+    if (!isVisible || !resource || !skill) return null;
+
+    return (
+        // Standard modal structure with backdrop and content
+        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 animate-in fade-in duration-200 backdrop-blur-sm">
+            <div className="bg-white p-6 rounded-xl shadow-2xl max-w-lg w-full relative animate-in zoom-in-95 slide-in-from-bottom-5 duration-300 overflow-hidden">
+                {/* Header */}
+                <div className="flex justify-between items-center pb-3 mb-4 border-b" style={{ borderColor: COLORS.SUBTLE }}>
+                    <h3 className="text-lg font-bold" style={{ color: COLORS.NAVY }}>{resource.title}</h3>
+                    <Button onClick={onClose} variant="ghost" size="sm" className="!p-1 text-gray-400 hover:text-red-600 absolute top-3 right-3"> {/* Use Button */}
+                        <X className="w-5 h-5" />
+                    </Button>
+                </div>
+                {/* Content */}
+                <p className="text-xs font-semibold uppercase mb-1" style={{ color: COLORS.TEAL }}>Skill: {skill.name}</p>
+                <p className="text-sm text-gray-600 mb-4">{resource.summary || 'Details unavailable.'}</p>
+                {/* Additional details like type, duration could go here */}
+                {resource.type && <p className="text-xs text-gray-500 mb-1">Type: {resource.type}</p>}
+                {/* Link */}
                  {resource.url && (
-                    <a href={resource.url} target="_blank" rel="noopener noreferrer" className="mt-4 inline-block text-blue-600 hover:underline text-sm">
-                        View Resource &rarr;
+                    <a href={resource.url} target="_blank" rel="noopener noreferrer" className="mt-4 inline-block text-blue-600 hover:underline text-sm font-medium group">
+                        View Resource <span className="inline-block transition-transform group-hover:translate-x-1">&rarr;</span>
                     </a>
                  )}
-                <Button onClick={onClose} variant="outline" className="mt-4 w-full !py-2 text-sm">Close</Button>
+                 {/* Close Button */}
+                <Button onClick={onClose} variant="outline" size="sm" className="mt-6 w-full">Close</Button>
             </div>
         </div>
     );
 };
+
 /* =========================================================
-   MAIN SCREEN COMPONENT (UPDATED)
+   MAIN SCREEN COMPONENT: AppliedLeadershipScreen (Course Library)
 ========================================================= */
 
 export default function AppliedLeadershipScreen() {
-    // --- UPDATED: Get data including IconMap from useAppServices ---
+    // --- Consume services ---
     const {
-        LEADERSHIP_DOMAINS, // Get the full object { items: [...] }
-        RESOURCE_LIBRARY: RESOURCES,
-        isLoading, // Use the main combined loading flag
-        IconMap = {},
-        LEADERSHIP_TIERS // Get Tiers for context
+        // Renamed Catalog Data
+        SKILL_CATALOG, // Contains { items: [{ id, name, summary, icon, tier_id,... }] } // cite: useAppServices.jsx
+        RESOURCE_LIBRARY, // Contains { skill_id_1: [resources...], skill_id_2: [...] } // cite: useAppServices.jsx
+        LEADERSHIP_TIERS, // Contains { T1: { name, icon, color, ... }, ... } // cite: useAppServices.jsx
+        IconMap, // Maps icon names (string) to Lucide components // cite: useAppServices.jsx
+        isLoading: isAppLoading, // Combined loading state // cite: useAppServices.jsx
+        error: appError,         // Combined error state // cite: useAppServices.jsx
+        navigate,               // Navigation function
     } = useAppServices();
 
-    // --- UPDATED: Extract the 'items' array safely after loading ---
-    const safeDomains = useMemo(() => {
-        if (isLoading) return []; // Return empty while loading
-        // Check if LEADERSHIP_DOMAINS exists, is an object, and has an 'items' array
-        if (LEADERSHIP_DOMAINS && typeof LEADERSHIP_DOMAINS === 'object' && Array.isArray(LEADERSHIP_DOMAINS.items)) {
-            return LEADERSHIP_DOMAINS.items;
+    // --- Local State ---
+    const [selectedSkill, setSelectedSkill] = useState(null); // Holds the currently viewed skill object
+    const [isModalVisible, setIsModalVisible] = useState(false); // Resource detail modal state
+    const [selectedResource, setSelectedResource] = useState(null); // Resource object for the modal
+
+    // --- Effect to scroll to top on mount or when selectedSkill changes ---
+    useEffect(() => { window.scrollTo({ top: 0, behavior: 'smooth' }); }, [selectedSkill]);
+
+    // --- Derived Data ---
+    // Safely extract the array of skills from the catalog, handling loading/missing data
+    const safeSkills = useMemo(() => {
+        if (isAppLoading) return []; // Return empty while loading
+        // Check structure and fallback
+        if (SKILL_CATALOG && typeof SKILL_CATALOG === 'object' && Array.isArray(SKILL_CATALOG.items)) {
+            return SKILL_CATALOG.items;
         }
-        return []; // Fallback to empty array if structure is wrong or data missing
-    }, [LEADERSHIP_DOMAINS, isLoading]);
+        console.warn("[AppliedLeadership] SKILL_CATALOG data is missing or invalid. Using empty array.");
+        return []; // Fallback
+    }, [SKILL_CATALOG, isAppLoading]); // cite: useAppServices.jsx
 
-
-    const [selectedDomain, setSelectedDomain] = useState(null);
-    const [isModalVisible, setIsModalVisible] = useState(false);
-    const [selectedResource, setSelectedResource] = useState(null);
-
-    const handleSelectDomain = useCallback((domain) => {
-        setSelectedDomain(domain);
-        window.scrollTo({ top: 0, behavior: 'smooth' });
+    // --- Callbacks ---
+    // Sets the selected skill to display the detail view
+    const handleSelectSkill = useCallback((skill) => {
+        console.log("[AppliedLeadership] Selecting skill:", skill.name);
+        setSelectedSkill(skill);
+        // Scroll handled by useEffect
     }, []);
 
+    // Opens the resource detail modal
     const handleOpenResource = useCallback((resource) => {
+        console.log("[AppliedLeadership] Opening resource:", resource.title);
         setSelectedResource(resource);
         setIsModalVisible(true);
     }, []);
 
-    // --- NEW: Find Tier Name ---
+    // Closes the resource detail modal
+    const handleCloseResource = useCallback(() => {
+        setIsModalVisible(false);
+        // Delay clearing selectedResource to allow modal fade-out animation
+        setTimeout(() => setSelectedResource(null), 300);
+    }, []);
+
+    // Retrieves the Tier name from LEADERSHIP_TIERS using the tier_id
     const getTierName = useCallback((tierId) => {
-        return LEADERSHIP_TIERS?.[tierId]?.name || `Tier ${tierId}`;
+        return LEADERSHIP_TIERS?.[tierId]?.name || `Tier ${tierId}`; // cite: useAppServices.jsx
     }, [LEADERSHIP_TIERS]);
 
+    // --- RENDER: Skill Detail View ---
+    const renderSkillDetail = () => {
+        // Should not happen if selectedSkill is required, but safety check
+        if (!selectedSkill) return null;
 
-    // Detail View Renderer (Now safely uses IconMap and corrected field names)
-    const renderDomainDetail = () => {
-        if (!selectedDomain) return null;
-        const domain = selectedDomain;
-        // --- UPDATED: Access RESOURCES using domain_id ---
-        const resources = RESOURCES?.[domain.domain_id] || [];
-        // --- UPDATED: Use domain.icon key ---
-        const Icon = IconMap[domain.icon] || BookOpen; // Use domain.icon key, fallback to BookOpen
-        // --- UPDATED: Use tier_id to find color from LEADERSHIP_TIERS ---
-        const tierColorKey = LEADERSHIP_TIERS?.[domain.tier_id]?.color?.split('-')[0].toUpperCase(); // e.g., "INDIGO"
-        const accentColor = tierColorKey && COLORS[tierColorKey] ? COLORS[tierColorKey] : COLORS.TEAL; // Fallback to TEAL
+        const skill = selectedSkill;
+        // Get resources associated with this skill's ID from the pre-transformed library
+        const resources = RESOURCE_LIBRARY?.[skill.skill_id] || []; // cite: useAppServices.jsx
+        // Get the icon component from IconMap, fallback to BookOpen
+        const IconComponent = IconMap?.[skill.icon] || BookOpen; // cite: useAppServices.jsx
+        // Determine accent color based on the skill's tier
+        const tierMeta = LEADERSHIP_TIERS?.[skill.tier_id]; // cite: useAppServices.jsx
+        const accentColorKey = tierMeta?.color?.split('-')[0].toUpperCase(); // e.g., "INDIGO" -> INDIGO
+        const accentColor = COLORS[accentColorKey] || COLORS.TEAL; // Get hex from palette, fallback TEAL
 
         return (
-            <div className="p-6 md:p-8 max-w-4xl mx-auto"> {/* Added max-width and centering */}
+            // Consistent padding and max-width for detail view
+            <div className="p-6 md:p-8 lg:p-10 max-w-4xl mx-auto">
                 {/* Back Button */}
-                <Button onClick={() => setSelectedDomain(null)} variant='outline' className='mb-6 !px-4 !py-2 text-sm'>
-                    <ArrowLeft className="w-4 h-4 mr-2" /> Back to Domains
+                <Button onClick={() => setSelectedSkill(null)} variant='nav-back' className='mb-6'>
+                    <ArrowLeft className="w-4 h-4 mr-2" /> Back to Course Library
                 </Button>
 
-                {/* Domain Header */}
-                <Card accent={tierColorKey} className="mb-8"> {/* Use tierColorKey for accent */}
-                     <div className='flex items-start space-x-4'>
-                        <div className="w-16 h-16 rounded-full flex items-center justify-center shadow-lg flex-shrink-0" style={{ background: accentColor + '1A' }}>
-                            {Icon && <Icon className="w-8 h-8" style={{ color: accentColor }} />}
+                {/* Skill Header Card */}
+                <Card accent={accentColorKey} className="mb-8"> {/* Use color key for accent */}
+                     <div className='flex flex-col sm:flex-row items-start space-y-4 sm:space-y-0 sm:space-x-4'>
+                        {/* Icon */}
+                        <div className="w-16 h-16 rounded-full flex items-center justify-center shadow-lg flex-shrink-0" style={{ background: `${accentColor}1A` }}> {/* Lighter background */}
+                            {IconComponent && <IconComponent className="w-8 h-8" style={{ color: accentColor }} />}
                         </div>
-                        <div>
-                            {/* --- UPDATED: Use domain.name and domain.summary --- */}
-                            <h1 className="text-3xl font-extrabold" style={{ color: COLORS.NAVY }}>{domain.name}</h1>
-                            <p className="text-lg text-gray-600 mt-1">{domain.summary}</p>
-                            <p className="text-sm font-semibold mt-2 px-3 py-1 rounded-full inline-block" style={{ background: accentColor + '20', color: accentColor }}>
-                               {getTierName(domain.tier_id)}
+                        {/* Title, Summary, Tier Badge */}
+                        <div className="flex-1">
+                            <h1 className="text-2xl md:text-3xl font-extrabold" style={{ color: COLORS.NAVY }}>{skill.name}</h1>
+                            <p className="text-md md:text-lg text-gray-600 mt-1">{skill.summary}</p>
+                            <p className="text-xs font-semibold mt-3 px-3 py-1 rounded-full inline-block" style={{ background: `${accentColor}20`, color: accentColor }}>
+                               {getTierName(skill.tier_id)} {/* Display tier name */}
                             </p>
                         </div>
                     </div>
                 </Card>
 
-                {/* AI Coaching Simulator Placeholder */}
-                <AICoachingSimulator domain={domain} RESOURCES={RESOURCES} />
+                {/* AI Coaching Simulator (Placeholder) */}
+                <AICoachingSimulator skill={skill} />
 
-                {/* Resources Card */}
+                {/* Curated Resources Card */}
                 <Card title="Curated Deep Dive Resources" icon={BookOpen} accent='NAVY' className='mt-8'>
-                    {resources.length === 0 && <p className="text-gray-500 italic">No specific resources found for this domain yet.</p>}
-                    <div className="space-y-3"> {/* Added spacing */}
+                    {/* Empty State */}
+                    {resources.length === 0 && (
+                        <p className="text-gray-500 italic text-sm text-center py-4">
+                            No specific resources linked to this skill yet.
+                        </p>
+                    )}
+                    {/* Resource List */}
+                    <div className="space-y-3">
                         {resources.map((resource, index) => (
                             <button
-                                key={resource.resource_id || index} // Use resource_id if available
+                                key={resource.resource_id || index} // Use unique ID if available
                                 onClick={() => handleOpenResource(resource)}
-                                className="w-full text-left p-4 rounded-lg bg-gray-50 hover:bg-teal-50 border border-gray-200 hover:border-teal-200 transition flex justify-between items-center"
+                                // Styling for resource list items
+                                className="w-full text-left p-4 rounded-lg bg-gray-50 hover:bg-teal-50 border border-gray-200 hover:border-teal-200 transition flex justify-between items-center group focus:outline-none focus:ring-2 focus:ring-[${COLORS.TEAL}]"
                             >
-                                <div>
-                                    <p className="font-semibold text-sm text-[#002E47]">{resource.title}</p>
-                                    {/* --- UPDATED: Display type safely --- */}
+                                <div className="overflow-hidden"> {/* Prevent text overflow */}
+                                    <p className="font-semibold text-sm truncate" style={{ color: COLORS.NAVY }}>{resource.title}</p>
                                     <p className="text-xs text-gray-500">{resource.type || 'Resource'}</p>
                                 </div>
-                                <ChevronRight className='w-5 h-5 text-gray-400'/>
+                                <ChevronRight className='w-5 h-5 text-gray-400 flex-shrink-0 ml-2 group-hover:text-[${COLORS.TEAL}] transition-colors'/>
                             </button>
                         ))}
                     </div>
@@ -141,71 +234,84 @@ export default function AppliedLeadershipScreen() {
                 {/* Resource Detail Modal */}
                 <ResourceDetailModal
                     isVisible={isModalVisible}
-                    onClose={() => setIsModalVisible(false)}
+                    onClose={handleCloseResource}
                     resource={selectedResource}
-                    domain={selectedDomain} // Pass domain for context
+                    skill={selectedSkill} // Pass skill for context
                 />
             </div>
         );
     };
 
-    // Main Domain Grid Renderer (Now safely uses IconMap and corrected field names)
-    const renderDomainGrid = () => (
-        <div className="p-6 md:p-8"> {/* Adjusted padding */}
-            <h1 className="text-3xl md:text-4xl font-extrabold text-[#002E47] mb-4">Applied Content Library</h1>
-            <p className="text-lg md:text-xl text-gray-600 mb-10 max-w-4xl">
-                Access micro-habits, resources, and AI coaching tailored to your leadership context. **Practice over theory.**
+    // --- RENDER: Skill Grid View (Course Library Home) ---
+    const renderSkillGrid = () => (
+        // Consistent padding
+        <div className="p-6 md:p-8 lg:p-10">
+            {/* Header */}
+            <div className='flex items-center gap-4 border-b-2 pb-2 mb-8' style={{borderColor: COLORS.NAVY+'30'}}>
+                <ShieldCheck className='w-10 h-10' style={{color: COLORS.NAVY}}/> {/* Use consistent header style */}
+                <h1 className="text-3xl md:text-4xl font-extrabold" style={{ color: COLORS.NAVY }}>Course Library</h1>
+            </div>
+            <p className="text-lg text-gray-600 mb-10 max-w-3xl">
+                Explore leadership skills, access curated resources, practice with AI coaching, and build mastery through focused reps. **Practice over theory.**
             </p>
 
-            {/* Loading Indicator */}
-            {isLoading && (
-                 <div className="text-center py-10 flex items-center justify-center text-gray-500">
-                    <Loader className="animate-spin h-5 w-5 mr-2 text-[#47A88D]" />
-                    Loading leadership domains...
-                </div>
-            )}
+            {/* Loading State */}
+            {isAppLoading && <LoadingSpinner message="Loading course library..." />}
 
-            {/* Error Message */}
-            {/* --- UPDATED: Check safeDomains.length AFTER loading --- */}
-            {!isLoading && safeDomains.length === 0 && (
+            {/* Error State (Post-Loading) */}
+            {!isAppLoading && appError && (
                  <div className="text-red-600 italic text-center py-10 bg-red-50 p-4 rounded-lg border border-red-200 max-w-2xl mx-auto flex items-center justify-center gap-2">
                      <AlertTriangle className="w-5 h-5 text-red-500"/>
-                     <span>Configuration Error: `leadership_domains` data is missing or empty. Verify Firestore path: `metadata/config/catalog/leadership_domains`.</span>
+                     <span>Error loading library: {appError.message}. Please try again later.</span>
                  </div>
             )}
 
-            {/* Domain Grid */}
-            {!isLoading && safeDomains.length > 0 && (
+            {/* Empty State (Post-Loading, No Error) */}
+            {!isAppLoading && !appError && safeSkills.length === 0 && (
+                 <div className="text-gray-500 italic text-center py-10 bg-gray-100 p-4 rounded-lg border border-gray-200 max-w-2xl mx-auto flex items-center justify-center gap-2">
+                     <AlertTriangle className="w-5 h-5 text-orange-500"/>
+                     <span>The Skill Catalog (<code>metadata/config/catalog/SKILL_CATALOG</code>) appears to be empty or missing. Please contact an administrator.</span>
+                 </div>
+            )}
+
+            {/* Skill Grid */}
+            {!isAppLoading && !appError && safeSkills.length > 0 && (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                    {safeDomains.map((domain) => {
-                        // Use domain.icon which should be the key (e.g., "Zap", "HeartPulse")
-                        const Icon = IconMap[domain.icon] || BookOpen; // Fallback icon
-                         // --- UPDATED: Use tier_id to find color from LEADERSHIP_TIERS ---
-                        const tierColorKey = LEADERSHIP_TIERS?.[domain.tier_id]?.color?.split('-')[0].toUpperCase();
-                        const accentColor = tierColorKey && COLORS[tierColorKey] ? COLORS[tierColorKey] : COLORS.TEAL;
+                    {safeSkills.map((skill) => {
+                        // Determine Icon and Color
+                        const IconComponent = IconMap?.[skill.icon] || BookOpen; // Fallback icon // cite: useAppServices.jsx
+                        const tierMeta = LEADERSHIP_TIERS?.[skill.tier_id]; // cite: useAppServices.jsx
+                        const accentColorKey = tierMeta?.color?.split('-')[0].toUpperCase();
+                        const accentColor = COLORS[accentColorKey] || COLORS.TEAL;
+                        const resourceCount = RESOURCE_LIBRARY?.[skill.skill_id]?.length || 0; // cite: useAppServices.jsx
 
                         return (
+                            // Use Button styling for accessibility and interaction consistency
                             <button
-                                key={domain.domain_id} // Use domain_id as key
-                                onClick={() => handleSelectDomain(domain)}
-                                className="text-left block w-full group focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#47A88D] rounded-2xl" // Added focus styles
+                                key={skill.skill_id} // Use skill_id as the unique key
+                                onClick={() => handleSelectSkill(skill)}
+                                className="text-left block w-full group focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[${COLORS.TEAL}] rounded-2xl"
                             >
-                                <div className={`p-6 rounded-2xl border-2 shadow-lg transition-all duration-300 group-hover:scale-[1.03] group-hover:shadow-xl group-focus:scale-[1.03] group-focus:shadow-xl`} style={{ borderColor: accentColor + '30', background: COLORS.LIGHT_GRAY }}>
-                                    <div className='flex items-center space-x-3 mb-4'>
-                                        <div className="w-12 h-12 rounded-full flex items-center justify-center shadow-md transition-all duration-300 group-hover:shadow-lg" style={{ background: accentColor + '1A' }}>
-                                            {Icon && <Icon className="w-6 h-6 transition-colors duration-300" style={{ color: accentColor }} />}
+                                {/* Apply Card styling directly for hover effects */}
+                                <div className={`p-6 rounded-2xl border-2 shadow-lg transition-all duration-300 group-hover:scale-[1.03] group-hover:shadow-xl group-focus:scale-[1.03] group-focus:shadow-xl h-full flex flex-col`} // Added h-full and flex
+                                     style={{ borderColor: `${accentColor}30`, background: COLORS.LIGHT_GRAY }}>
+                                    {/* Icon and Title */}
+                                    <div className='flex items-center space-x-3 mb-3'>
+                                        <div className="w-12 h-12 rounded-full flex items-center justify-center shadow-md transition-all duration-300 group-hover:shadow-lg flex-shrink-0" style={{ background: `${accentColor}1A` }}>
+                                            {IconComponent && <IconComponent className="w-6 h-6 transition-colors duration-300" style={{ color: accentColor }} />}
                                         </div>
-                                         {/* --- UPDATED: Use domain.name --- */}
-                                        <h2 className="text-lg font-extrabold transition-colors duration-300" style={{ color: COLORS.NAVY }}>{domain.name}</h2>
+                                        <h2 className="text-lg font-extrabold transition-colors duration-300 flex-1" style={{ color: COLORS.NAVY }}>{skill.name}</h2>
                                     </div>
-                                    {/* --- UPDATED: Use domain.summary --- */}
-                                    <p className="text-sm text-gray-600 h-10 overflow-hidden">{domain.summary}</p> {/* Set fixed height */}
-                                    <div className='mt-4 flex justify-between items-center border-t border-gray-200 pt-3'>
-                                        <span className='text-xs font-semibold uppercase transition-colors duration-300' style={{ color: accentColor }}>
-                                            {/* Count resources for this domain */}
-                                            {RESOURCES?.[domain.domain_id]?.length || 0} Resources
-                                        </span>
-                                        <ChevronRight className='w-4 h-4 transition-colors duration-300' style={{ color: accentColor }}/>
+                                    {/* Summary (fixed height for alignment) */}
+                                    <p className="text-sm text-gray-600 mb-4 flex-grow" style={{ minHeight: '3rem' }}>{skill.summary}</p>
+                                    {/* Footer: Resource Count & Arrow */}
+                                    <div className='mt-auto pt-3 border-t' style={{ borderColor: COLORS.SUBTLE }}>
+                                        <div className='flex justify-between items-center'>
+                                            <span className='text-xs font-semibold uppercase transition-colors duration-300' style={{ color: accentColor }}>
+                                                {resourceCount} Resource{resourceCount !== 1 ? 's' : ''}
+                                            </span>
+                                            <ChevronRight className='w-4 h-4 transition-colors duration-300' style={{ color: accentColor }}/>
+                                        </div>
                                     </div>
                                 </div>
                             </button>
@@ -216,10 +322,11 @@ export default function AppliedLeadershipScreen() {
         </div>
     );
 
-    // Main component return
+    // --- Main Component Return ---
+    // Renders either the grid or the detail view based on selectedSkill state
     return (
-        <div className='min-h-screen bg-gray-50'>
-            {selectedDomain ? renderDomainDetail() : renderDomainGrid()}
+        <div className='min-h-screen' style={{ background: COLORS.BG }}> {/* Use consistent BG */}
+            {selectedSkill ? renderSkillDetail() : renderSkillGrid()}
         </div>
     );
 }
