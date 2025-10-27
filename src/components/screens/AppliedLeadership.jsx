@@ -2,7 +2,7 @@
 
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
 // --- ADDED: Missing lucide-react imports ---
-import { ArrowLeft, BookOpen, ChevronRight, Loader } from 'lucide-react'; // Added Loader
+import { ArrowLeft, BookOpen, ChevronRight, Loader, AlertTriangle } from 'lucide-react'; // Added Loader & AlertTriangle
 import { useAppServices } from '../../services/useAppServices.jsx';
 
 /* =========================================================
@@ -13,17 +13,22 @@ const Button = ({ children, onClick, disabled = false, variant = 'primary', clas
 const Card = ({ children, title, icon: Icon, className = '', onClick, accent = 'NAVY' }) => { const interactive = !!onClick; const Tag = interactive ? 'button' : 'div'; const accentColor = COLORS[accent] || COLORS.NAVY; const handleKeyDown = (e) => { if (!interactive) return; if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onClick?.(); } }; return ( <Tag {...(interactive ? { type: 'button' } : {})} role={interactive ? 'button' : undefined} tabIndex={interactive ? 0 : undefined} onKeyDown={handleKeyDown} className={`relative p-6 rounded-2xl border-2 shadow-2xl hover:shadow-xl transition-all duration-300 text-left ${className}`} style={{ background: 'linear-gradient(180deg,#FFFFFF, #FCFCFA)', borderColor: COLORS.SUBTLE, color: COLORS.TEXT }} onClick={onClick}> <span style={{ position:'absolute', top:0, left:0, right:0, height:6, background: accentColor, borderTopLeftRadius:14, borderTopRightRadius:14 }} /> {Icon && ( <div className="w-10 h-10 rounded-lg flex items-center justify-center border mb-3" style={{ borderColor: COLORS.SUBTLE, background: COLORS.LIGHT_GRAY }}> <Icon className="w-5 h-5" style={{ color: COLORS.TEAL }} /> </div> )} {title && <h2 className="text-xl font-extrabold mb-2" style={{ color: COLORS.NAVY }}>{title}</h2>} {children} </Tag> ); };
 
 // Placeholder components (replace with actual implementations if needed)
-const AICoachingSimulator = ({ domain, RESOURCES }) => <div className="p-4 my-4 bg-purple-50 border border-purple-200 rounded-lg">AI Coaching Simulator Placeholder for {domain.title}</div>;
+const AICoachingSimulator = ({ domain, RESOURCES }) => <div className="p-4 my-4 bg-purple-50 border border-purple-200 rounded-lg">AI Coaching Simulator Placeholder for {domain.name}</div>; // Changed domain.title to domain.name
 const ResourceDetailModal = ({ isVisible, onClose, resource, domain }) => {
     if (!isVisible || !resource) return null;
     return (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-            <div className="bg-white p-6 rounded-lg max-w-lg w-full relative">
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
+            <div className="bg-white p-6 rounded-lg max-w-lg w-full relative animate-in zoom-in-95 slide-in-from-bottom-5 duration-300">
                 <button onClick={onClose} className="absolute top-2 right-2 p-1 text-gray-500 hover:text-red-600">&times;</button>
-                <h3 className="text-xl font-bold mb-2">{resource.title} ({domain.title})</h3>
-                <p className="text-sm text-gray-600">{resource.description || 'Details unavailable.'}</p>
+                <h3 className="text-xl font-bold mb-2">{resource.title} ({domain.name})</h3> {/* Changed domain.title to domain.name */}
+                <p className="text-sm text-gray-600">{resource.summary || 'Details unavailable.'}</p> {/* Changed description to summary */}
                 {/* Add more resource details here */}
-                <Button onClick={onClose} variant="outline" className="mt-4 w-full">Close</Button>
+                 {resource.url && (
+                    <a href={resource.url} target="_blank" rel="noopener noreferrer" className="mt-4 inline-block text-blue-600 hover:underline text-sm">
+                        View Resource &rarr;
+                    </a>
+                 )}
+                <Button onClick={onClose} variant="outline" className="mt-4 w-full !py-2 text-sm">Close</Button>
             </div>
         </div>
     );
@@ -35,14 +40,23 @@ const ResourceDetailModal = ({ isVisible, onClose, resource, domain }) => {
 export default function AppliedLeadershipScreen() {
     // --- UPDATED: Get data including IconMap from useAppServices ---
     const {
-        LEADERSHIP_DOMAINS: DOMAINS,
+        LEADERSHIP_DOMAINS, // Get the full object { items: [...] }
         RESOURCE_LIBRARY: RESOURCES,
         isLoading, // Use the main combined loading flag
-        IconMap = {} // <-- FIX: Added IconMap and default to empty object
+        IconMap = {},
+        LEADERSHIP_TIERS // Get Tiers for context
     } = useAppServices();
 
-    // Use a safe, empty array fallback. Check *after* loading is complete.
-    const safeDomains = !isLoading && Array.isArray(DOMAINS) ? DOMAINS : [];
+    // --- UPDATED: Extract the 'items' array safely after loading ---
+    const safeDomains = useMemo(() => {
+        if (isLoading) return []; // Return empty while loading
+        // Check if LEADERSHIP_DOMAINS exists, is an object, and has an 'items' array
+        if (LEADERSHIP_DOMAINS && typeof LEADERSHIP_DOMAINS === 'object' && Array.isArray(LEADERSHIP_DOMAINS.items)) {
+            return LEADERSHIP_DOMAINS.items;
+        }
+        return []; // Fallback to empty array if structure is wrong or data missing
+    }, [LEADERSHIP_DOMAINS, isLoading]);
+
 
     const [selectedDomain, setSelectedDomain] = useState(null);
     const [isModalVisible, setIsModalVisible] = useState(false);
@@ -58,13 +72,23 @@ export default function AppliedLeadershipScreen() {
         setIsModalVisible(true);
     }, []);
 
-    // Detail View Renderer (Now safely uses IconMap)
+    // --- NEW: Find Tier Name ---
+    const getTierName = useCallback((tierId) => {
+        return LEADERSHIP_TIERS?.[tierId]?.name || `Tier ${tierId}`;
+    }, [LEADERSHIP_TIERS]);
+
+
+    // Detail View Renderer (Now safely uses IconMap and corrected field names)
     const renderDomainDetail = () => {
         if (!selectedDomain) return null;
         const domain = selectedDomain;
-        const resources = RESOURCES?.[domain.id] || [];
+        // --- UPDATED: Access RESOURCES using domain_id ---
+        const resources = RESOURCES?.[domain.domain_id] || [];
+        // --- UPDATED: Use domain.icon key ---
         const Icon = IconMap[domain.icon] || BookOpen; // Use domain.icon key, fallback to BookOpen
-        const accentColor = domain.color && COLORS[domain.color.toUpperCase()] ? COLORS[domain.color.toUpperCase()] : COLORS.TEAL;
+        // --- UPDATED: Use tier_id to find color from LEADERSHIP_TIERS ---
+        const tierColorKey = LEADERSHIP_TIERS?.[domain.tier_id]?.color?.split('-')[0].toUpperCase(); // e.g., "INDIGO"
+        const accentColor = tierColorKey && COLORS[tierColorKey] ? COLORS[tierColorKey] : COLORS.TEAL; // Fallback to TEAL
 
         return (
             <div className="p-6 md:p-8 max-w-4xl mx-auto"> {/* Added max-width and centering */}
@@ -74,14 +98,18 @@ export default function AppliedLeadershipScreen() {
                 </Button>
 
                 {/* Domain Header */}
-                <Card accent={domain.color?.toUpperCase()} className="mb-8">
+                <Card accent={tierColorKey} className="mb-8"> {/* Use tierColorKey for accent */}
                      <div className='flex items-start space-x-4'>
                         <div className="w-16 h-16 rounded-full flex items-center justify-center shadow-lg flex-shrink-0" style={{ background: accentColor + '1A' }}>
                             {Icon && <Icon className="w-8 h-8" style={{ color: accentColor }} />}
                         </div>
                         <div>
-                            <h1 className="text-3xl font-extrabold" style={{ color: COLORS.NAVY }}>{domain.title}</h1>
-                            <p className="text-lg text-gray-600 mt-1">{domain.subtitle}</p>
+                            {/* --- UPDATED: Use domain.name and domain.summary --- */}
+                            <h1 className="text-3xl font-extrabold" style={{ color: COLORS.NAVY }}>{domain.name}</h1>
+                            <p className="text-lg text-gray-600 mt-1">{domain.summary}</p>
+                            <p className="text-sm font-semibold mt-2 px-3 py-1 rounded-full inline-block" style={{ background: accentColor + '20', color: accentColor }}>
+                               {getTierName(domain.tier_id)}
+                            </p>
                         </div>
                     </div>
                 </Card>
@@ -95,13 +123,14 @@ export default function AppliedLeadershipScreen() {
                     <div className="space-y-3"> {/* Added spacing */}
                         {resources.map((resource, index) => (
                             <button
-                                key={index}
+                                key={resource.resource_id || index} // Use resource_id if available
                                 onClick={() => handleOpenResource(resource)}
                                 className="w-full text-left p-4 rounded-lg bg-gray-50 hover:bg-teal-50 border border-gray-200 hover:border-teal-200 transition flex justify-between items-center"
                             >
                                 <div>
                                     <p className="font-semibold text-sm text-[#002E47]">{resource.title}</p>
-                                    <p className="text-xs text-gray-500">{resource.type || 'Resource'} - {resource.duration || 'N/A'} min</p>
+                                    {/* --- UPDATED: Display type safely --- */}
+                                    <p className="text-xs text-gray-500">{resource.type || 'Resource'}</p>
                                 </div>
                                 <ChevronRight className='w-5 h-5 text-gray-400'/>
                             </button>
@@ -120,7 +149,7 @@ export default function AppliedLeadershipScreen() {
         );
     };
 
-    // Main Domain Grid Renderer (Now safely uses IconMap)
+    // Main Domain Grid Renderer (Now safely uses IconMap and corrected field names)
     const renderDomainGrid = () => (
         <div className="p-6 md:p-8"> {/* Adjusted padding */}
             <h1 className="text-3xl md:text-4xl font-extrabold text-[#002E47] mb-4">Applied Content Library</h1>
@@ -137,10 +166,12 @@ export default function AppliedLeadershipScreen() {
             )}
 
             {/* Error Message */}
+            {/* --- UPDATED: Check safeDomains.length AFTER loading --- */}
             {!isLoading && safeDomains.length === 0 && (
-                 <p className="text-red-600 italic text-center py-10 bg-red-50 p-4 rounded-lg border border-red-200 max-w-2xl mx-auto">
-                    Configuration Error: `leadership_domains` data is missing or empty. Please check the Firestore path: `metadata/config/catalog/leadership_domains`.
-                </p>
+                 <div className="text-red-600 italic text-center py-10 bg-red-50 p-4 rounded-lg border border-red-200 max-w-2xl mx-auto flex items-center justify-center gap-2">
+                     <AlertTriangle className="w-5 h-5 text-red-500"/>
+                     <span>Configuration Error: `leadership_domains` data is missing or empty. Verify Firestore path: `metadata/config/catalog/leadership_domains`.</span>
+                 </div>
             )}
 
             {/* Domain Grid */}
@@ -149,11 +180,13 @@ export default function AppliedLeadershipScreen() {
                     {safeDomains.map((domain) => {
                         // Use domain.icon which should be the key (e.g., "Zap", "HeartPulse")
                         const Icon = IconMap[domain.icon] || BookOpen; // Fallback icon
-                        const accentColor = domain.color && COLORS[domain.color.toUpperCase()] ? COLORS[domain.color.toUpperCase()] : COLORS.TEAL;
+                         // --- UPDATED: Use tier_id to find color from LEADERSHIP_TIERS ---
+                        const tierColorKey = LEADERSHIP_TIERS?.[domain.tier_id]?.color?.split('-')[0].toUpperCase();
+                        const accentColor = tierColorKey && COLORS[tierColorKey] ? COLORS[tierColorKey] : COLORS.TEAL;
 
                         return (
                             <button
-                                key={domain.id}
+                                key={domain.domain_id} // Use domain_id as key
                                 onClick={() => handleSelectDomain(domain)}
                                 className="text-left block w-full group focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#47A88D] rounded-2xl" // Added focus styles
                             >
@@ -162,12 +195,15 @@ export default function AppliedLeadershipScreen() {
                                         <div className="w-12 h-12 rounded-full flex items-center justify-center shadow-md transition-all duration-300 group-hover:shadow-lg" style={{ background: accentColor + '1A' }}>
                                             {Icon && <Icon className="w-6 h-6 transition-colors duration-300" style={{ color: accentColor }} />}
                                         </div>
-                                        <h2 className="text-lg font-extrabold transition-colors duration-300" style={{ color: COLORS.NAVY }}>{domain.title}</h2>
+                                         {/* --- UPDATED: Use domain.name --- */}
+                                        <h2 className="text-lg font-extrabold transition-colors duration-300" style={{ color: COLORS.NAVY }}>{domain.name}</h2>
                                     </div>
-                                    <p className="text-sm text-gray-600 h-10 overflow-hidden">{domain.subtitle}</p> {/* Set fixed height */}
+                                    {/* --- UPDATED: Use domain.summary --- */}
+                                    <p className="text-sm text-gray-600 h-10 overflow-hidden">{domain.summary}</p> {/* Set fixed height */}
                                     <div className='mt-4 flex justify-between items-center border-t border-gray-200 pt-3'>
                                         <span className='text-xs font-semibold uppercase transition-colors duration-300' style={{ color: accentColor }}>
-                                            {Array.isArray(domain.focus) ? domain.focus.length : 0} Key Focus Areas {/* Safe check */}
+                                            {/* Count resources for this domain */}
+                                            {RESOURCES?.[domain.domain_id]?.length || 0} Resources
                                         </span>
                                         <ChevronRight className='w-4 h-4 transition-colors duration-300' style={{ color: accentColor }}/>
                                     </div>

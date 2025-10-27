@@ -736,14 +736,16 @@ const NavSidebar = ({ currentScreen, setCurrentScreen, user, closeMobileMenu, is
       <button
         onClick={() => setIsNavExpanded(!isNavExpanded)}
         title={isNavExpanded ? 'Collapse Menu' : 'Expand Menu'}
-        // --- *** UPDATED ***: Refined styles for better visibility ---
-        className={`absolute top-6 -right-4
-                   bg-[${TEAL}] hover:bg-[#349881] text-white
-                   rounded-full shadow-lg border-2 border-white/50 ring-2 ring-offset-2 ring-offset-[#002E47] ring-transparent focus:ring-[${TEAL}]
-                   w-8 h-8 flex items-center justify-center z-20 transition-all
-                   hover:scale-110 focus:outline-none`}
+        // --- *** UPDATED ***: Refined styles for better visibility - White BG, Teal Border/Icon ---
+        className={`absolute top-6 -right-5 // Adjusted position slightly
+                   bg-white hover:bg-gray-100 text-[${TEAL}] // White BG, Teal Icon
+                   border-2 border-[${TEAL}] // Teal border
+                   rounded-full shadow-lg
+                   w-10 h-10 // Slightly larger
+                   flex items-center justify-center z-20 transition-all
+                   hover:scale-110 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-[#002E47] focus:ring-[${TEAL}]`} // Focus ring adjusted
       >
-        {isNavExpanded ? <ChevronLeft className="w-5 h-5" /> : <ChevronRight className="w-5 h-5" />}
+        {isNavExpanded ? <ChevronLeft className="w-6 h-6" /> : <ChevronRight className="w-6 h-6" />} {/* Slightly larger icon */}
       </button>
 
       {/* Header */}
@@ -1051,4 +1053,5 @@ export default function Root(props) {
   }
   return <App {...props} />;
 }
+
 

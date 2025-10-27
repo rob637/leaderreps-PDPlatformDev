@@ -1,4 +1,4 @@
-// src/components/screens/Dashboard.jsx (Target Rep Logic + Completion Button + Separate Catalogs)
+// src/components/screens/Dashboard.jsx (Target Rep Logic + Completion Button + Separate Catalogs + UI Polish)
 import React, { useMemo, useState, useEffect, useCallback } from 'react';
 import { useAppServices } from '../../services/useAppServices.jsx';
 // --- Firestore Imports ---
@@ -60,21 +60,28 @@ const ModeSwitch = ({ isArenaMode, onToggle, isLoading }) => (
 );
 
 /* =========================================================
-   Micro-Celebration Component
+   Micro-Celebration Component (UPDATED)
 ========================================================= */
 const CelebrationOverlay = ({ show }) => {
   if (!show) return null;
   return (
     <div className="fixed inset-0 flex items-center justify-center z-[100] pointer-events-none"> {/* Increased z-index */}
-      <div className="bg-black/50 backdrop-blur-sm rounded-full p-8 animate-ping absolute opacity-75"> {/* Effect */}
-        {/* <div className="text-6xl animate-bounce">🎉</div> */}
+      {/* --- UPDATED: Enhanced ping effect --- */}
+      <div className="absolute bg-green-400 rounded-full p-20 animate-ping opacity-50"></div>
+      {/* --- UPDATED: Larger, fancier text box --- */}
+      <div className="relative bg-white p-8 rounded-2xl shadow-2xl border-4 border-green-500 transform scale-100 animate-in zoom-in-75 fade-in duration-300">
+         <p className="text-4xl font-extrabold text-gray-800 flex items-center gap-3">
+            <Sparkles className="w-8 h-8 text-yellow-500"/>
+             Nice Rep!
+            <Sparkles className="w-8 h-8 text-yellow-500"/>
+         </p>
+         <div className="absolute -top-4 -left-4 text-4xl animate-bounce">🎉</div>
+         <div className="absolute -bottom-4 -right-4 text-4xl animate-bounce delay-100">🎊</div>
       </div>
-       <div className="relative bg-white p-6 rounded-xl shadow-2xl border-4 border-green-500 transform scale-100 animate-in zoom-in-50 fade-in duration-300">
-         <p className="text-2xl font-bold text-gray-800">Nice Rep! 🎉</p>
-       </div>
     </div>
   );
 };
+
 
 /* =========================================================
    Streak Tracker Component
@@ -460,9 +467,10 @@ const WhyItMattersModal = ({ isOpen, onClose, currentWhy, onSave, suggestions = 
 
 
 /* =========================================================
-   Embedded Reflection Form Component
+   Embedded Reflection Form Component (UPDATED)
 ========================================================= */
-const EmbeddedReflectionForm = ({ db, userId, onOpenLog, onSaveSuccess }) => {
+// --- UPDATED: Added showCoachPrompt prop ---
+const EmbeddedReflectionForm = ({ db, userId, onOpenLog, onSaveSuccess, showCoachPrompt = false }) => {
   const [isSaving, setIsSaving] = useState(false);
   const [isSavedConfirmation, setIsSavedConfirmation] = useState(false);
   const [did, setDid] = useState('');
@@ -530,6 +538,15 @@ const EmbeddedReflectionForm = ({ db, userId, onOpenLog, onSaveSuccess }) => {
           </Button>
           {isSavedConfirmation && ( <span className='text-xs font-bold text-green-600 flex items-center shrink-0'><CheckCircle className='w-4 h-4 mr-1'/> Saved</span> )}
         </div>
+        {/* --- NEW: Conditionally show AI Coach prompt INSIDE the card --- */}
+        {showCoachPrompt && (
+          <div className="mt-4 p-3 rounded-lg bg-gray-100 border border-gray-200 shadow-sm">
+             <div className="flex items-start gap-2">
+               <Bot className="w-5 h-5 text-gray-400 flex-shrink-0 mt-0.5"/>
+               <p className="text-sm font-medium text-gray-500 italic">Save your reflection above to get feedback.</p>
+             </div>
+          </div>
+        )}
         <div className="mt-4 flex justify-center">
           <Button onClick={onOpenLog} variant="outline" className="text-sm !py-2 !px-4"> <Archive className="w-4 h-4 mr-2" /> View Full Log </Button>
         </div>
@@ -538,7 +555,7 @@ const EmbeddedReflectionForm = ({ db, userId, onOpenLog, onSaveSuccess }) => {
 };
 
 /* =========================================================
-   AI Coach Nudge Component (UPDATED: Removed static text)
+   AI Coach Nudge Component (UPDATED: Removed initial prompt)
 ========================================================= */
 const AICoachNudge = ({ lastReflectionEntry, callSecureGeminiAPI, hasGeminiKey }) => {
   const [nudge, setNudge] = useState('');
@@ -596,22 +613,9 @@ const AICoachNudge = ({ lastReflectionEntry, callSecureGeminiAPI, hasGeminiKey }
   // Depend on the ID of the last reflection entry to re-trigger nudge
   }, [lastReflectionEntry?.id, callSecureGeminiAPI, hasGeminiKey]);
 
-  // --- UPDATED: Conditionally render only when there's something to show ---
+  // --- UPDATED: Removed initial prompt logic, only render if loading, error, or nudge exists ---
   if (!isLoadingNudge && !nudge && !errorNudge) {
-      // If nothing is happening, render a minimal placeholder or nothing
-      // For now, let's render a subtle prompt if NO reflection has been saved yet today (or ever)
-      // We need a way to know if a reflection was saved today... for now, let's assume if lastReflectionEntry is null/old, show prompt
-       if (!lastReflectionEntry) {
-          return (
-             <div className="mt-4 p-4 rounded-xl bg-gray-100 border border-gray-200 shadow-sm">
-                <div className="flex items-start gap-2">
-                  <Bot className="w-5 h-5 text-gray-400 flex-shrink-0 mt-0.5"/>
-                  <p className="text-sm font-medium text-gray-500 italic">Save your reflection above to get feedback from Coach Rin.</p>
-                </div>
-             </div>
-          );
-       }
-       return null; // Don't render anything if there was a previous reflection but no current activity
+      return null; // Don't render anything if there's no activity
   }
 
   // --- Render loading, error, or the generated nudge ---
@@ -756,12 +760,15 @@ const DashboardScreen = () => {
 
     let currentStatus = 'Pending';
     if (commitmentData?.dailyTargetRepId === selectedRepData.id) {
+        // TODO: Add logic here to check if the status is for *today*.
+        // If commitmentData also stored a `dailyTargetRepDate`, compare it to `today`.
+        // If dates don't match, reset status to 'Pending' and potentially clear dailyTargetRepId.
         currentStatus = commitmentData.dailyTargetRepStatus || 'Pending';
     } else {
         // If the ID in user data doesn't match today's selected rep, assume today's is pending
         // This implies a need to potentially reset dailyTargetRepId/Status daily.
-        // For now, this logic works if the ID mismatch means it's a new day's rep.
         currentStatus = 'Pending';
+         // TODO: Consider explicitly *setting* dailyTargetRepId and status to Pending in DB here if ID mismatch detected?
     }
 
 
@@ -777,6 +784,7 @@ const DashboardScreen = () => {
 
     // --- Filter additional commitments ---
     const additionalCommitments = useMemo(() => {
+       // Only include commitments that are NOT the current daily target rep
        return activeCommitments.filter(c => c.id !== dailyTargetRep.id);
     }, [activeCommitments, dailyTargetRep.id]);
 
@@ -784,7 +792,8 @@ const DashboardScreen = () => {
     const targetRepCompleted = dailyTargetRep.status === 'Committed' ? 1 : 0;
     const additionalCommitsCompleted = useMemo(() => additionalCommitments.filter(c => c.status === 'Committed').length, [additionalCommitments]);
     const commitsCompleted = targetRepCompleted + additionalCommitsCompleted;
-    const commitsTotal = 1 + additionalCommitments.length; // Always 1 target + additional
+    // --- UPDATED: Calculate total based on whether a target rep is set ---
+    const commitsTotal = (dailyTargetRep.id !== 'default' ? 1 : 0) + additionalCommitments.length;
 
 
   // weakestTier calculation remains the same
@@ -808,7 +817,7 @@ const DashboardScreen = () => {
     }, 1500); // Duration of celebration
   };
 
-  // --- UPDATED: handleToggleCommitment now ONLY handles ADDITIONAL reps ---
+  // --- UPDATED: handleToggleAdditionalCommitment ---
   const handleToggleAdditionalCommitment = useCallback(async (commitId) => {
       if (isSavingRep) return; setIsSavingRep(true);
       const currentCommits = commitmentData?.active_commitments || [];
@@ -819,9 +828,9 @@ const DashboardScreen = () => {
       }
 
       const targetCommit = currentCommits[targetCommitIndex];
-      // Ensure we are not accidentally toggling the target rep via this function
+      // Prevent toggling the target rep via this handler
       if (targetCommit.id === dailyTargetRep.id) {
-          console.warn("Attempted to toggle target rep via additional rep handler. Use completeTargetRep instead.");
+          console.warn("Attempted to toggle target rep via additional rep handler.");
           setIsSavingRep(false); return;
       }
 
@@ -832,12 +841,12 @@ const DashboardScreen = () => {
           ...currentCommits.slice(targetCommitIndex + 1)
       ];
 
-      // Only update active_commitments, don't touch streak here (streak tied to Target Rep completion)
+      // Update ONLY the active_commitments array
       const updates = { active_commitments: updatedCommitments };
 
       try {
         await updateCommitmentData(updates);
-        // Maybe a smaller celebration for additional reps? For now, no separate celebration.
+        // No celebration or challenge prompt for additional reps
       } catch (error) {
         console.error("Failed to update additional rep status:", error);
         alert("Error updating additional rep. Please try again.");
@@ -847,24 +856,25 @@ const DashboardScreen = () => {
     }, [commitmentData, updateCommitmentData, isSavingRep, dailyTargetRep.id]);
 
 
-  // --- NEW: Handler specifically for completing the Target Rep ---
+  // --- UPDATED: completeTargetRep ---
   const completeTargetRep = useCallback(async () => {
       if (isSavingRep || dailyTargetRep.id === 'default' || dailyTargetRep.status === 'Committed') return;
       setIsSavingRep(true);
 
-      const newStatus = 'Committed'; // Only handle completion here
+      const newStatus = 'Committed';
       const updates = {
-          dailyTargetRepId: dailyTargetRep.id, // Ensure ID is set
+          dailyTargetRepId: dailyTargetRep.id, // Ensure ID is correct
           dailyTargetRepStatus: newStatus
+          // TODO: Add dailyTargetRepDate: new Date().toISOString().split('T')[0] here if implementing daily reset
       };
       let updatedStreak = streakCount;
       let updatedCoins = streakCoins;
 
       try {
-          // Update Streak and Coins on Target Rep completion
+          // Update Streak and Coins
           updatedStreak = (streakCount || 0) + 1;
           updates.streak_count = updatedStreak;
-          if (updatedStreak > 0 && updatedStreak % 7 === 0) { // Award coins every 7 days
+          if (updatedStreak > 0 && updatedStreak % 7 === 0) {
             updatedCoins = (streakCoins || 0) + 2;
             updates.streak_coins = updatedCoins;
           }
@@ -878,7 +888,7 @@ const DashboardScreen = () => {
       } finally {
           setIsSavingRep(false);
       }
-  }, [updateCommitmentData, isSavingRep, dailyTargetRep, streakCount, streakCoins]); // Added dependencies
+  }, [updateCommitmentData, isSavingRep, dailyTargetRep, streakCount, streakCoins]);
 
 
   // Renamed for clarity: This specifically handles the *Micro* Rep action
@@ -1094,7 +1104,14 @@ const DashboardScreen = () => {
 
         {/* Right Column */}
         <div className="lg:col-span-2 space-y-6">
-             <EmbeddedReflectionForm db={db} userId={userId} onOpenLog={() => setIsLogModalOpen(true)} onSaveSuccess={handleReflectionSaved} />
+             {/* --- UPDATED: Pass showCoachPrompt prop --- */}
+             <EmbeddedReflectionForm
+                db={db}
+                userId={userId}
+                onOpenLog={() => setIsLogModalOpen(true)}
+                onSaveSuccess={handleReflectionSaved}
+                showCoachPrompt={!lastReflectionEntry} // Show prompt only if no reflection saved yet
+             />
              <AICoachNudge lastReflectionEntry={lastReflectionEntry} callSecureGeminiAPI={callSecureGeminiAPI} hasGeminiKey={hasGeminiKey} />
         </div>
       </div>
