@@ -50,13 +50,6 @@ import {
 
 
 /* =========================================================
-   DEV CONSOLE HELPERS (No structural changes needed)
-========================================================= */
-// The existing console helpers (window.fbReady, window.fb.pathExplain, etc.) remain useful for debugging.
-// Ensure they use the correct Firestore V9 modular functions if used directly.
-
-
-/* =========================================================
    GLOBAL CONFIG & CONSTANTS (Aligned with useAppServices)
 ========================================================= */
 // --- Primary Color Palette (Ensure consistency) ---
@@ -64,15 +57,6 @@ const COLORS = { NAVY: '#002E47', TEAL: '#47A88D', ORANGE: '#E04E1B', GREEN: '#1
 
 // --- Authentication ---
 const SECRET_SIGNUP_CODE = 'mock-code-123'; // Keep for mock signup flow
-
-// --- Gemini Config (Handled within useAppServices) ---
-// const GEMINI_MODEL = ... (Defined in useAppServices)
-// const callSecureGeminiAPI = ... (Provided by useAppServices)
-// const hasGeminiKey = ... (Provided by useAppServices)
-
-// --- Icon Map (Loaded via useGlobalMetadata in useAppServices) ---
-// const IconMap = ...
-
 
 /* =========================================================
    LAZY LOADED SCREEN COMPONENTS (Updated List & Paths)
@@ -444,22 +428,23 @@ const NavSidebar = ({ currentScreen, setCurrentScreen, user, closeMobileMenu, is
         )}
       </div>
 
-       {/* --- NEW: Sidebar Toggle Button --- */}
-        <button
+       {/* --- NEW: Sidebar Toggle Button (Slide Switch Style) --- */}
+        <div className="absolute top-1/2 -translate-y-1/2 -right-3 z-40">
+          <button
             onClick={() => setIsNavExpanded(!isNavExpanded)}
             title={isNavExpanded ? 'Collapse Menu' : 'Expand Menu'}
-            className={`absolute top-1/2 -translate-y-1/2 -right-3 z-40 // Position centered vertically, slightly outside
-                    bg-white text-[${COLORS.NAVY}] // White background, navy icon
-                    border-2 border-[${COLORS.NAVY}] // Navy border
-                    rounded-full shadow-lg
-                    w-7 h-7 // Smaller size
-                    flex items-center justify-center transition-all duration-300 ease-in-out
-                    hover:scale-110 hover:bg-gray-100
-                    focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-[${COLORS.NAVY}] focus:ring-[${COLORS.TEAL}]`}
-        >
-            {isNavExpanded ? <ChevronsLeft className="w-5 h-5" /> : <ChevronsRight className="w-5 h-5" />}
-        </button>
-
+            className={`relative inline-flex items-center h-7 w-12 rounded-full transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[${COLORS.NAVY}]`}
+            style={{ background: isNavExpanded ? COLORS.TEAL : COLORS.MUTED }} // TEAL (Expanded) vs MUTED (Collapsed)
+          >
+            {/* Knob/Pill */}
+            <span className={`inline-block w-6 h-6 transform bg-white rounded-full transition-all duration-300 ease-in-out shadow-md`}
+              style={{ transform: isNavExpanded ? 'translate(20px, 0)' : 'translate(2px, 0)' }} // Slide knob
+            >
+              {/* Icon within Knob */}
+              {isNavExpanded ? <ChevronsLeft className="w-6 h-6 p-0.5 text-gray-700" /> : <ChevronsRight className="w-6 h-6 p-0.5 text-gray-700" />}
+            </span>
+          </button>
+        </div>
     </div>
   );
 };
@@ -613,6 +598,7 @@ const DataProvider = ({ children, firebaseServices, userId, isAuthReady, navigat
   const resolvedMetadata = useMemo(() => resolveGlobalMetadata(globalHook.metadata), [globalHook.metadata]); // cite: useAppServices.jsx
 
   const apiKey = useMemo(() => {
+      // Ensure API key is pulled from the environment or from metadata
       return resolvedMetadata.API_KEY || (typeof __GEMINI_API_KEY !== 'undefined' ? __GEMINI_API_KEY : ''); // cite: useAppServices.jsx
   }, [resolvedMetadata.API_KEY]);
 
@@ -779,8 +765,6 @@ const App = ({ initialState }) => {
     return () => { if (typeof window !== 'undefined') delete window.__appNavigate; };
   }, [navigate]);
   
-  // --- **FIX**: Removed broken useEffect that referenced undefined variables ---
-
   // --- Firebase Initialization & Auth State Listener ---
   useEffect(() => {
     console.log("[App Init] Starting Firebase setup...");
@@ -930,8 +914,6 @@ const App = ({ initialState }) => {
       isAuthReady={isAuthReady}
       navigate={navigate}
       user={user}
-      // --- **FIX**: Removed broken props that were causing the ReferenceError ---
-      // API_KEY might be sourced from metadata now
     >
       {/* Suspense for lazy loaded screens */}
       <Suspense
