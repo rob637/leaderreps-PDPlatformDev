@@ -164,6 +164,7 @@ export const ensureUserDocs = async (db, uid) => {
     }
 
     const todayStr = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+    const USER_STATE_SUBCOLLECTION = 'user_state'; // Consistent subcollection name for 4-segment path
 
     // Structure: [collection, docName, defaultData]
     const userDocConfigs = [
@@ -217,7 +218,8 @@ export const ensureUserDocs = async (db, uid) => {
     ];
 
     for (const config of userDocConfigs) {
-      const path = `${config.collection}/${uid}/${config.docName}`;
+      // **FIX: Use 4-segment path: collection/uid/user_state/docName**
+      const path = `${config.collection}/${uid}/${USER_STATE_SUBCOLLECTION}/${config.docName}`;
       const snap = await getDocEx(db, path);
 
       if (!snap || !snap.exists()) {
@@ -241,7 +243,6 @@ export const ensureUserDocs = async (db, uid) => {
              if (currentData.streakCoins === undefined) { updates.streakCoins = 0; needsUpdate = true; }
              if (currentData.arenaMode === undefined) { updates.arenaMode = true; needsUpdate = true; }
              // Remove deprecated field if present
-             // NOTE: Since firebase.firestore.FieldValue.delete is undefined, use FieldValue.delete() from imported FieldValue
              if (currentData.reflection_journal !== undefined) { updates.reflection_journal = FieldValue.delete(); needsUpdate = true; }
          }
          // Add checks for other collections if needed
@@ -287,9 +288,9 @@ const MOCK_WORKOUT_LIBRARY = { items: [] }; // NEW
 const MOCK_COURSE_LIBRARY = { items: [] }; // NEW
 const MOCK_SKILL_CATALOG = { items: [] }; // Maps to LEADERSHIP_DOMAINS/SKILL_CONTENT_LIBRARY
 // Anchor/Why Catalogs remain conceptually similar
-const MOCK_IDENTITY_ANCHOR_CATALOG = { items: ["prioritizes psychological safety", "leads with vulnerability", "holds myself and others accountable"] };
-const MOCK_HABIT_ANCHOR_CATALOG = { items: ["After my morning coffee", "Before my first meeting", "During my commute", "After lunch"] };
-const MOCK_WHY_CATALOG = { items: ["To empower my team to do their best work", "To build a high-performing, high-trust culture", "To achieve our ambitious goals together"] };
+export const MOCK_IDENTITY_ANCHOR_CATALOG = { items: ["prioritizes psychological safety", "leads with vulnerability", "holds myself and others accountable"] };
+export const MOCK_HABIT_ANCHOR_CATALOG = { items: ["After my morning coffee", "Before my first meeting", "During my commute", "After lunch"] };
+export const MOCK_WHY_CATALOG = { items: ["To empower my team to do their best work", "To build a high-performing, high-trust culture", "To achieve our ambitious goals together"] };
 // Catalogs for specific content types
 const MOCK_READING_CATALOG = { items: [] }; // Renamed from READING_CATALOG_SERVICE
 const MOCK_VIDEO_CATALOG = { items: [] };
@@ -394,13 +395,15 @@ const traceCallsite = (label = 'updateGlobalMetadata') => { /* ... */ };
 
 
 /* =========================================================
-   User-data hooks (UPDATED - Renamed, Daily Reset Logic)
+   User-data hooks (UPDATED - Renamed, Daily Reset Logic, PATH FIX)
 ========================================================= */
 const MAX_LOAD_TIMEOUT = 2500; // Increased timeout slightly
+const USER_STATE_SUBCOLLECTION = 'user_state'; // **FIX: Consistent subcollection name**
 
 // --- Base Hook (Internal) ---
 const useFirestoreUserData = (db, userId, isAuthReady, collection, document, mockData) => {
-  const path = userId ? `${collection}/${userId}/${document}` : null; // Construct path only if userId exists
+  // **FIX: Use 4-segment path: collection/uid/user_state/docName**
+  const path = userId ? `${collection}/${userId}/${USER_STATE_SUBCOLLECTION}/${document}` : null;
   const [data, setData] = useState(mockData);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);

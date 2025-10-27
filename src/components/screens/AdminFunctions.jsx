@@ -126,10 +126,10 @@ const AdminFunctionsScreen = () => {
 
         try {
             // Call updateGlobalMetadata to save *only* the featureFlags field
-            // The function handles merging and adding audit timestamps.
+            // FIX: Explicitly set merge: true in options to ensure we don't overwrite the whole config document
             await updateGlobalMetadata({ featureFlags: currentFlags }, { // cite: useAppServices.jsx
                 source: 'AdminFunctionsScreen', // Identify the source of the update
-                merge: true // Ensure we only update the featureFlags field
+                merge: true // CRITICAL FIX: Ensure merge is true for safe global updates
             });
             console.log("[AdminFunctions] Feature flags saved successfully.");
             setSaveStatus('✅ Flags updated successfully!');
