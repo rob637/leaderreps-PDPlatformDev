@@ -19,7 +19,7 @@ import { BarChart, Bar, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer, Rada
    PALETTE & UI COMPONENTS (Standardized)
 ========================================================= */
 // --- Primary Color Palette ---
-const COLORS = { NAVY: '#002E47', TEAL: '#47A88D', BLUE: '#2563EB', ORANGE: '#E04E1B', GREEN: '#10B981', AMBER: '#F5A800', RED: '#E04E1B', LIGHT_GRAY: '#FCFCFA', OFF_WHITE: '#FFFFFF', SUBTLE: '#E5E7EB', TEXT: '#374151', MUTED: '#4B5563', PURPLE: '#7C3AED', BG: '#F9FAFB' }; // cite: App.jsx, User Request
+const COLORS = { NAVY: '#002E47', TEAL: '#47A88D', BLUE: '#2563EB', ORANGE: '#E04E1B', GREEN: '#10B981', AMBER: '#F5A500', RED: '#E04E1B', LIGHT_GRAY: '#FCFCFA', OFF_WHITE: '#FFFFFF', SUBTLE: '#E5E7EB', TEXT: '#374151', MUTED: '#4B5563', PURPLE: '#7C3AED', BG: '#F9FAFB' }; // cite: App.jsx, User Request
 
 // --- Standardized Button Component (Matches Dashboard) ---
 const Button = ({ children, onClick, disabled = false, variant = 'primary', className = '', size = 'md', ...rest }) => { /* ... Re-use exact Button definition from Dashboard.jsx ... */
@@ -812,29 +812,29 @@ const DevelopmentPlanScreen = () => {
   // --- View Determination Logic ---
   // Determines whether to show Assessment, Tracker, or Scan based on plan existence and last scan date
   useEffect(() => {
-    // Wait for app loading (including auth and initial data fetch) to complete
+    // 1. Check App Loading
     if (isAppLoading) {
       console.log("[DevPlanScreen] App is loading, setting view to 'loading'.");
       setView('loading');
       return;
     }
-    // CRITICAL FIX: Ensure both required update functions are defined
+    
+    // 2. Check Critical Service Functions (The Core Fix)
+    // CRITICAL FIX: Explicitly check for both functions here.
     if (!updateDevelopmentPlanData || !updateDailyPracticeData) {
-        // If either writer function is missing, remain in the error state or 'loading'
         console.error("[DevPlanScreen] Critical service functions are missing. Cannot render content.");
-        // Set an explicit error view, or let the final render block handle the spin (prefer final render block check below)
         setView('error'); 
         return; // Exit early if services aren't ready
     }
 
-    // Check for errors after loading
+    // 3. Check for Global Errors
     if (appError) {
         console.error("[DevPlanScreen] App error detected:", appError);
         setView('error'); // Show an error state if app loading failed
         return;
     }
 
-    // Determine view based on developmentPlanData
+    // 4. Determine View
     const hasPlan = !!developmentPlanData?.currentPlan; // Check if a plan object exists
     if (hasPlan) {
         // Plan exists, check timing for next scan
@@ -1018,21 +1018,23 @@ const DevelopmentPlanScreen = () => {
   // --- Render Logic ---
   // Show loading spinner if app is loading OR if saving plan updates
   // CRITICAL FIX: Check for updateDevelopmentPlanData and updateDailyPracticeData availability
-  if (view === 'loading' || isAppLoading || isSaving || !updateDevelopmentPlanData || !updateDailyPracticeData) {
-    // If update functions are missing, the component is fundamentally broken, keep spinning/show specific error.
-    if (!updateDevelopmentPlanData || !updateDailyPracticeData) {
-        console.error("[DevPlanScreen] Critical writer functions failed to load. Staying in loading/error state.");
+  if (view === 'loading' || isAppLoading || isSaving) {
+    // Check if the cause is permanently missing service functions *after* app loading
+    if (!isAppLoading && (!updateDevelopmentPlanData || !updateDailyPracticeData)) {
+        console.error("[DevPlanScreen] Critical writer functions failed to load. Switching to permanent error view.");
         return <LoadingSpinner message={"A critical service failed to load. Please contact support."} />;
     }
+    
     // Otherwise, show generic loading spinner
     return <LoadingSpinner message={isSaving ? "Saving Plan..." : "Loading Development Plan..."} />;
   }
-  // Show error view if app loading failed
+  
+  // Show error view if app loading failed OR if view state was set to 'error' by the useEffect
   if (view === 'error' || appError) { // Added appError check here as well
       return (
          <div className="p-8 text-center">
             <h2 className="text-2xl font-bold text-red-600">Loading Error</h2>
-            <p className="text-gray-600">Could not load development plan data. Please try refreshing.</p>
+            <p className="text-gray-600">Could not load development plan data or critical application services failed to initialize. Please try refreshing.</p>
             {appError && <pre className="mt-4 text-xs text-left bg-red-50 p-2 border border-red-200 rounded">{appError.message}</pre>}
         </div>
       );
