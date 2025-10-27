@@ -552,7 +552,10 @@ export const useStrategicContentData = (db, userId, isAuthReady) => {
 const PATH_CATALOG_BASE = 'metadata/config/catalog';
 const CATALOG_DOC_NAMES = [
     'REP_LIBRARY', 'EXERCISE_LIBRARY', 'WORKOUT_LIBRARY', 'COURSE_LIBRARY', 'SKILL_CATALOG', 
-    'IDENTITY_ANCHOR_CATALOG', 'HABIT_ANCHUR_CATALOG', 'WHY_CATALOG', 'VIDEO_CATALOG', // NOTE: Typo fix here: HABIT_ANCHOR_CATALOG
+    'IDENTITY_ANCHOR_CATALOG', 
+    // CRITICAL FIX: Typo in 'HABIT_ANCHOR_CATALOG' corrected from 'HABIT_ANCHUR_CATALOG'
+    'HABIT_ANCHOR_CATALOG', 
+    'WHY_CATALOG', 'VIDEO_CATALOG', 
     'SCENARIO_CATALOG', 'RESOURCE_LIBRARY_ITEMS'
 ];
 
@@ -727,7 +730,7 @@ export const updateGlobalMetadata = async (
   if (forceDocument === 'reading_catalog') {
       path = mockDoc(db, 'metadata', 'reading_catalog');
       // Ensure payload is structured correctly { items: [...] }
-      if (!payload || !payload.items || !ArrayArray(payload.items)) {
+      if (!payload || !payload.items || !Array.isArray(payload.items)) { // CRITICAL FIX: Changed 'ArrayArray' to 'Array.isArray'
            // Attempt to find an array in the payload or wrap it
            const potentialArray = Object.values(payload).find(Array.isArray);
            payload = { items: potentialArray || (Array.isArray(payload) ? payload : []) };

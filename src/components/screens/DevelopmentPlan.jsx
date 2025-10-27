@@ -818,6 +818,15 @@ const DevelopmentPlanScreen = () => {
       setView('loading');
       return;
     }
+    // CRITICAL FIX: Ensure both required update functions are defined
+    if (!updateDevelopmentPlanData || !updateDailyPracticeData) {
+        // If either writer function is missing, remain in the error state or 'loading'
+        console.error("[DevPlanScreen] Critical service functions are missing. Cannot render content.");
+        // Set an explicit error view, or let the final render block handle the spin (prefer final render block check below)
+        setView('error'); 
+        return; // Exit early if services aren't ready
+    }
+
     // Check for errors after loading
     if (appError) {
         console.error("[DevPlanScreen] App error detected:", appError);
@@ -860,7 +869,7 @@ const DevelopmentPlanScreen = () => {
       console.log("[DevPlanScreen] No plan found, setting view to 'assessment'.");
       setView('assessment');
     }
-  }, [developmentPlanData, isAppLoading, appError]); // Dependencies: Re-run when data or loading state changes
+  }, [developmentPlanData, isAppLoading, appError, updateDevelopmentPlanData, updateDailyPracticeData]); // Dependencies: Added update functions
 
   // Scroll to top when the main view state changes (Assessment, Scan, Tracker)
   useEffect(() => {
@@ -876,6 +885,11 @@ const DevelopmentPlanScreen = () => {
       if (!newPlan?.focusAreas || !Array.isArray(newPlan.focusAreas)) {
         console.error("[syncPlanToDailyPractice] Invalid plan structure. Cannot sync reps.");
         return; // Exit if data is invalid
+      }
+      // CRITICAL FIX: Check writer function availability before proceeding
+      if (!updateDailyPracticeData) {
+        console.error("[syncPlanToDailyPractice] Update service function is not available. Cannot sync.");
+        return;
       }
 
       // --- Map Focus Areas to Core Reps ---
@@ -924,6 +938,12 @@ const DevelopmentPlanScreen = () => {
   const handleAssessmentComplete = useCallback(async (plan, assessment) => {
     console.log("[handleAssessmentComplete] Processing completed assessment...");
     setIsSaving(true);
+    // CRITICAL FIX: Check writer function availability before proceeding
+    if (!updateDevelopmentPlanData) {
+        alert("Development Plan update service is missing. Cannot save.");
+        setIsSaving(false); return;
+    }
+
     // Prepare data to update the main development plan document
     const newDevPlanData = {
       currentPlan: plan, // The newly generated plan object
@@ -935,9 +955,6 @@ const DevelopmentPlanScreen = () => {
       planHistory: [plan], // Start history with this plan
     };
     try {
-      // NOTE: We rely on the main render function's check (around line 976) to ensure
-      // updateDevelopmentPlanData is defined before BaselineAssessment is even mounted.
-      
       // Update the development plan document in Firestore
       const success = await updateDevelopmentPlanData(newDevPlanData); // This is the call
       if (!success) throw new Error("updateDevelopmentPlanData returned false for initial save");
@@ -961,6 +978,12 @@ const DevelopmentPlanScreen = () => {
   const handleScanComplete = useCallback(async (newPlan, newAssessment) => {
      console.log("[handleScanComplete] Processing completed progress scan...");
      setIsSaving(true);
+     // CRITICAL FIX: Check writer function availability before proceeding
+     if (!updateDevelopmentPlanData) {
+        alert("Development Plan update service is missing. Cannot save.");
+        setIsSaving(false); return;
+     }
+
      // Prepare data to update the main development plan document
      const currentHistory = developmentPlanData?.assessmentHistory || [];
      const currentPlanHistory = developmentPlanData?.planHistory || [];
@@ -994,12 +1017,18 @@ const DevelopmentPlanScreen = () => {
 
   // --- Render Logic ---
   // Show loading spinner if app is loading OR if saving plan updates
-  // FIX: Added check for updateDevelopmentPlanData and updateDailyPracticeData availability
+  // CRITICAL FIX: Check for updateDevelopmentPlanData and updateDailyPracticeData availability
   if (view === 'loading' || isAppLoading || isSaving || !updateDevelopmentPlanData || !updateDailyPracticeData) {
+    // If update functions are missing, the component is fundamentally broken, keep spinning/show specific error.
+    if (!updateDevelopmentPlanData || !updateDailyPracticeData) {
+        console.error("[DevPlanScreen] Critical writer functions failed to load. Staying in loading/error state.");
+        return <LoadingSpinner message={"A critical service failed to load. Please contact support."} />;
+    }
+    // Otherwise, show generic loading spinner
     return <LoadingSpinner message={isSaving ? "Saving Plan..." : "Loading Development Plan..."} />;
   }
   // Show error view if app loading failed
-  if (view === 'error') {
+  if (view === 'error' || appError) { // Added appError check here as well
       return (
          <div className="p-8 text-center">
             <h2 className="text-2xl font-bold text-red-600">Loading Error</h2>

@@ -1081,8 +1081,9 @@ const DashboardScreen = () => {
       console.log("[Dashboard] Toggling additional commitment:", commitId);
       setIsSavingRep(true);
 
-      // Check if update function is available (CRITICAL FIX)
+      // CRITICAL FIX: Ensure update function is available before proceeding
       if (!updateDailyPracticeData) {
+          console.error("[Dashboard] Failed to update additional rep: Update service function is not available.");
           alert("Error: Update service function is not available.");
           setIsSavingRep(false); return;
       }
@@ -1247,6 +1248,15 @@ const DashboardScreen = () => {
       setIsSavingMode(true);
       const newMode = !isArenaMode;
       console.log(`[Dashboard] Toggling Arena Mode to: ${newMode}`);
+
+      // CRITICAL FIX: Check for update function
+      if (!updateDailyPracticeData) {
+          console.error("[Dashboard] Failed to update mode: Update service function is not available.");
+          alert("Error: Mode toggle service is missing.");
+          setIsSavingMode(false);
+          return;
+      }
+      
       try {
           // Update the arenaMode field in dailyPracticeData
           const success = await updateDailyPracticeData({ arenaMode: newMode }); // cite: useAppServices.jsx
@@ -1265,6 +1275,9 @@ const DashboardScreen = () => {
   // Save Identity Anchor (updates dailyPracticeData)
   const handleSaveIdentity = async (newIdentitySuffix) => {
     if (!newIdentitySuffix.trim()) { alert("Identity anchor cannot be empty."); return; }
+    // CRITICAL FIX: Check for update function
+    if (!updateDailyPracticeData) { console.error("[Dashboard] Identity update failed: Service missing."); alert("Update service is missing."); return; }
+
     console.log("[Dashboard] Saving Identity Anchor:", newIdentitySuffix);
     try {
       const success = await updateDailyPracticeData({ identityAnchor: newIdentitySuffix.trim() }); // cite: useAppServices.jsx
@@ -1278,6 +1291,9 @@ const DashboardScreen = () => {
   // Save Habit Anchor (updates dailyPracticeData)
   const handleSaveHabitAnchor = async (newAnchor) => {
     if (!newAnchor.trim()) { alert("Habit anchor cannot be empty."); return; }
+    // CRITICAL FIX: Check for update function
+    if (!updateDailyPracticeData) { console.error("[Dashboard] Habit Anchor update failed: Service missing."); alert("Update service is missing."); return; }
+
     console.log("[Dashboard] Saving Habit Anchor:", newAnchor);
     try {
       const success = await updateDailyPracticeData({ habitAnchor: newAnchor.trim() }); // cite: useAppServices.jsx
@@ -1291,6 +1307,9 @@ const DashboardScreen = () => {
   // Save Why It Matters (updates strategicContentData)
   const handleSaveWhy = async (newWhy) => {
     if (!newWhy.trim()) { alert("'Why' statement cannot be empty."); return; }
+    // CRITICAL FIX: Check for update function
+    if (!updateStrategicContentData) { console.error("[Dashboard] Why update failed: Service missing."); alert("Update service is missing."); return; }
+
     console.log("[Dashboard] Saving Why statement:", newWhy);
     // Determine where to save 'Why'. Assume an 'overallWhy' field for simplicity.
     const updates = { overallWhy: newWhy.trim() };

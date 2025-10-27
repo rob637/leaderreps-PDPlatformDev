@@ -1,11 +1,10 @@
-// src/components/screens/AdminFunctions.jsx (NEW FILE)
+// src/components/screens/AdminFunctions.jsx (FIXED VERSION)
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 // --- Core Services & Context ---
 import { useAppServices } from '../../services/useAppServices.jsx'; // cite: useAppServices.jsx
 
 // --- Icons ---
-// **FIX: Added Settings icon to the import list.**
 import { Shield, ToggleLeft, ToggleRight, Save, Loader, AlertTriangle, ArrowLeft, Key, Settings } from 'lucide-react';
 
 /* =========================================================
@@ -14,11 +13,7 @@ import { Shield, ToggleLeft, ToggleRight, Save, Loader, AlertTriangle, ArrowLeft
 // --- Primary Color Palette ---
 const COLORS = { NAVY: '#002E47', TEAL: '#47A88D', BLUE: '#2563EB', ORANGE: '#E04E1B', GREEN: '#10B981', AMBER: '#F5A800', RED: '#E04E1B', LIGHT_GRAY: '#FCFCFA', OFF_WHITE: '#FFFFFF', SUBTLE: '#E5E7EB', TEXT: '#374151', MUTED: '#4B5355', PURPLE: '#7C3AED', BG: '#F9FAFB' }; // cite: App.jsx
 
-// --- Standardized UI Components (Assume imported or globally available) ---
-// Using placeholder comments, assuming Button and Card are correctly defined elsewhere or globally
-// const Button = ({...}) => { /* ... Standard Button ... */ };
-// const Card = ({...}) => { /* ... Standard Card ... */ };
-// --- Standardized Button Component (Local Definition for standalone use) ---
+// --- Standardized UI Components (Local Definition for standalone use) ---
 const Button = ({ children, onClick, disabled = false, variant = 'primary', className = '', size = 'md', ...rest }) => { /* ... Re-use definition ... */
     let baseStyle = `inline-flex items-center justify-center gap-2 font-semibold rounded-xl transition-all duration-200 focus:outline-none focus:ring-4 disabled:opacity-50 disabled:cursor-not-allowed`;
     if (size === 'sm') baseStyle += ' px-4 py-2 text-sm'; else if (size === 'lg') baseStyle += ' px-8 py-4 text-lg'; else baseStyle += ' px-6 py-3 text-base'; // Default 'md'
@@ -77,14 +72,29 @@ const AdminFunctionsScreen = () => {
     }, [isAdmin, isAppLoading, navigate]); // Dependencies
 
     // --- Effect to update local flags if context flags change ---
-    // This handles cases where flags might be updated elsewhere while this screen is open
+    // FIX: Added saveStatus dependency and logic to prevent immediate local state reversion
+    // when 'initialFlags' is briefly outdated due to Firestore latency after a local save.
     useEffect(() => {
-        // Only update if the screen is authenticated and the context flags differ
-        if (isAuthenticated && initialFlags && JSON.stringify(initialFlags) !== JSON.stringify(currentFlags)) {
-            console.log("[AdminFunctions] Context feature flags updated. Syncing local state.");
+        // Only update if the screen is authenticated and context flags are available.
+        if (!isAuthenticated || !initialFlags) return;
+
+        const initialFlagsString = JSON.stringify(initialFlags);
+        const currentFlagsString = JSON.stringify(currentFlags);
+
+        // Check if context flags are different from local flags.
+        if (initialFlagsString !== currentFlagsString) {
+            
+            // If a save was *just* successful, assume the local state is ahead of the context 
+            // and temporarily wait for the next external context update to reflect the change.
+            if (saveStatus.startsWith('✅')) {
+                 console.log("[AdminFunctions] Successful save detected. Skipping immediate local state sync with context (Firestore latency expected).");
+                 return;
+            }
+
+            console.log("[AdminFunctions] Context feature flags updated or initial load finished. Syncing local state.");
             setCurrentFlags(initialFlags);
         }
-    }, [initialFlags, isAuthenticated]); // Dependency on initialFlags from context
+    }, [initialFlags, isAuthenticated, saveStatus]); // Dependency on initialFlags and saveStatus
 
     // --- Handlers ---
     /**
