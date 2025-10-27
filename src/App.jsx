@@ -905,21 +905,17 @@ const App = ({ initialState }) => {
   }
 
   // If auth is ready but user is not logged in, show AuthPanel
-  if (!user && isAuthReady && authRequired) {
-    console.log("[App Render] Auth ready, user not logged in. Showing AuthPanel.");
-    return (
-      <AuthPanel
-        auth={firebaseServices.auth}
-        onSuccess={() => {
-          // AuthPanel handles setting user state via onAuthStateChanged listener.
-          // We might not need to do anything here immediately, but can ensure nav to dashboard.
-          console.log("[AuthPanel Success] Logged in/Signed up. Navigating to dashboard.");
-          setAuthRequired(false); // Explicitly set auth required to false
-          navigate('dashboard'); // Navigate after successful auth
-        }}
-      />
-    );
-  }
+if (isAuthReady && !user) {
+  return (
+    <AuthPanel
+      auth={firebaseServices.auth}
+      onSuccess={() => {
+        // Let onAuthStateChanged set user + flip auth; no UI flip here.
+        console.log("[AuthPanel Success] Auth completed – waiting for onAuthStateChanged.");
+      }}
+    />
+  );
+}
 
   // --- Render Main Application ---
   // If init is 'ok' and user is potentially logged in (or auth not required), render DataProvider and AppContent
