@@ -312,7 +312,7 @@ const EmbeddedDailyReps = ({ commitments, onToggleCommit, isLoading }) => {
                   {/* Rep Text and Metadata */}
                   <div className="flex-1 mr-4 overflow-hidden"> {/* Added overflow-hidden */}
                       <p className={`font-medium text-sm ${ // Smaller font size
-                          isCommitted ? 'text-green-700 line-through decoration-green-400 decoration-1' : `text-[${COLORS.NAVY}]`
+                          isCommitted ? 'text-green-700 line-through decoration-2' : `text-[${COLORS.NAVY}]`
                       }`}>
                           {commit.text}
                       </p>
@@ -448,6 +448,7 @@ const IdentityAnchorModal = ({ isOpen, onClose, currentIdentity, onSave, suggest
         console.error("Identity Anchor save failed:", e);
         alert("Failed to save Identity Anchor.");
     } finally {
+        onClose(); // Close modal regardless of outcome
         setIsSaving(false);
     }
   };
@@ -516,6 +517,7 @@ const HabitAnchorModal = ({ isOpen, onClose, currentAnchor, onSave, suggestions 
             console.error("Habit Anchor save failed:", e);
             alert("Failed to save Habit Anchor.");
         } finally {
+            onClose(); // Close modal regardless of outcome
             setIsSaving(false);
         }
    };
@@ -556,6 +558,7 @@ const HabitAnchorModal = ({ isOpen, onClose, currentAnchor, onSave, suggestions 
    );
 };
 
+
 /* =========================================================
    Why It Matters Modal Component (Unchanged Logically, Style Refined)
 ========================================================= */
@@ -580,6 +583,7 @@ const WhyItMattersModal = ({ isOpen, onClose, currentWhy, onSave, suggestions = 
             console.error("Why statement save failed:", e);
             alert("Failed to save 'Why' statement.");
         } finally {
+            onClose(); // Close modal regardless of outcome
             setIsSaving(false);
         }
    };
@@ -854,7 +858,11 @@ const AICoachNudge = ({ lastReflectionEntry, callSecureGeminiAPI, hasGeminiKey }
    MOCK SOCIAL FEED DATA (Placeholder - Consider replacing)
 ========================================================= */
 // This should ideally be fetched or managed via context/props
-const mockSocialFeedData = [ /* ... unchanged ... */ ];
+const mockSocialFeedData = [
+  { id: 'p1', author: 'Ryan Y.', text: "Crushed my 'Give CLEAR feedback' rep today. Team member handled it well, and the result was immediate clarity. Win!", time: "4h ago" },
+  { id: 'p2', author: 'Christina A.', text: "Having trouble finding a good habit anchor for my morning routine. What cues work for everyone else?", time: "6h ago" },
+  { id: 'p3', author: 'Jeff S.', text: "My 'Ask Open Questions' rep is finally starting to feel natural. The silence is getting less awkward!", time: "1d ago" },
+];
 
 /* =========================================================
    DASHBOARD SCREEN (Main Export - Refactored)
@@ -973,7 +981,7 @@ const DashboardScreen = () => {
           ) || 'T1'; // Default to T1 if no match
 
           const meta = LEADERSHIP_TIERS[tierKey];
-          return { name: weakest.name, hex: meta?.hex || COLORS.ORANGE, id: tierKey }; // Return ID as well
+          return { name: weakest.name, hex: meta?.color || COLORS.ORANGE, id: tierKey }; // Return ID as well, use 'color' from meta
       } catch (e) {
           console.error("[Dashboard] Error calculating weakest tier:", e, scores);
           return { name: 'Error Calculating', hex: COLORS.RED };
@@ -1017,12 +1025,7 @@ const DashboardScreen = () => {
         // Mismatch: Either different rep, old date, or no data saved yet. Status is Pending for today.
         console.log(`[Dashboard] No matching target rep state for today (${selectedRepData.id}). Setting status to Pending. (Saved ID: ${dailyPracticeData?.dailyTargetRepId}, Saved Date: ${dailyPracticeData?.dailyTargetRepDate})`);
         currentStatus = 'Pending';
-        // --- TODO: Consider triggering an update to save the *new* targetRepId/Date here if mismatched? ---
-        // This could happen in a useEffect or dedicated function. For now, it defaults correctly.
-        // Example (needs useCallback and dependency management if implemented):
-        // if (dailyPracticeData?.dailyTargetRepId !== selectedRepData.id || dailyPracticeData?.dailyTargetRepDate !== todayStr) {
-        //   updateDailyPracticeData({ dailyTargetRepId: selectedRepData.id, dailyTargetRepDate: todayStr, dailyTargetRepStatus: 'Pending' });
-        // }
+        // Note: The daily reset logic in useAppServices ensures the state is correct, so no need to force update here.
     }
 
     // 4. Return the Rep Object with Correct Status
@@ -1077,6 +1080,12 @@ const DashboardScreen = () => {
       if (isSavingRep) return; // Prevent double clicks
       console.log("[Dashboard] Toggling additional commitment:", commitId);
       setIsSavingRep(true);
+
+      // Check if update function is available (CRITICAL FIX)
+      if (!updateDailyPracticeData) {
+          alert("Error: Update service function is not available.");
+          setIsSavingRep(false); return;
+      }
 
       const currentCommits = dailyPracticeData?.activeCommitments || [];
       const targetCommitIndex = currentCommits.findIndex(c => c.id === commitId);
@@ -1136,6 +1145,15 @@ const DashboardScreen = () => {
       }
       console.log("[Dashboard] Completing target rep:", dailyTargetRep.id);
       setIsSavingRep(true);
+
+      // CRITICAL FIX: Ensure update function is available before proceeding
+      if (!updateDailyPracticeData) {
+          console.error("[Dashboard] Failed to update target rep status: Update service function is not available.");
+          alert("Error completing target rep. Update service is missing.");
+          setIsSavingRep(false); // Reset saving state
+          return; // Exit early
+      }
+
 
       const newStatus = 'Committed';
       // Prepare updates for the target rep fields
@@ -1301,7 +1319,18 @@ const DashboardScreen = () => {
   }
   // Display error message if app loading failed
   if (appError) {
-      return <ConfigError message={`Failed to load application data: ${appError.message}`} />;
+      return (
+        <div className="min-h-screen flex items-center justify-center p-4" style={{ background: COLORS.BG }}>
+            <div className="p-6 max-w-xl mx-auto bg-red-50 border border-red-200 rounded-xl text-red-700 shadow-lg">
+                <div className="flex items-center gap-3 mb-2">
+                    <AlertTriangle className="w-6 h-6 text-red-500" />
+                    <h3 className="font-bold text-lg">Application Error</h3>
+                </div>
+                <p className="text-sm">Failed to load essential application data. Please try refreshing.</p>
+                <pre className="text-xs mt-2 overflow-x-auto whitespace-pre-wrap">{appError.message}</pre>
+            </div>
+        </div>
+      );
   }
 
   // --- Extract Suggestion Catalogs Safely ---
