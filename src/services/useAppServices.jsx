@@ -35,7 +35,7 @@ const createMockSnapshot = (docPath, data, exists = true) => ({
   _md: { fromCache: false, pendingWrites: false },
 });
 const mockSetDoc = async (docRefPath, data) => {
-  __firestore_mock_store[docRefPath] = data;
+  __firestore_mock_store[docPath] = data;
   console.log(`[MOCK SET] Path: ${docRefPath}`, data); // Added logging
   return true;
 };
@@ -294,7 +294,7 @@ const MOCK_SCENARIO_CATALOG = { items: [] };
 const MOCK_RESOURCE_LIBRARY_ITEMS = { items: [] }; // For Applied Leadership resources, needs transformation
 
 // --- MOCK ADMIN CONFIG ---
-const ADMIN_EMAILS = ["rob@sagecg.com", "ryan@leaderreps.com", "ryanyeoman@gmail.com", "christina@leaderreps.com", "jeff@leaderreps.com"]; // Add emails of admins here
+export const ADMIN_EMAILS = ["rob@sagecg.com", "ryan@leaderreps.com", "ryanyeoman@gmail.com", "christina@leaderreps.com", "jeff@leaderreps.com"]; // Add emails of admins here
 const ADMIN_PASSWORD = "7777"; // Simple password for admin functions screen
 
 
