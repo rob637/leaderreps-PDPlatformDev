@@ -5,7 +5,7 @@ import React, { useMemo, useState, useEffect, useCallback } from 'react';
 import { useAppServices } from '../../services/useAppServices.jsx'; // cite: useAppServices.jsx
 
 // --- Firestore Imports (for saving reflections, potentially pod posts later) ---
-import { collection, addDoc, serverTimestamp, query, getDocs, orderBy } from 'firebase/firestore'; // Removed 'where' as it's not used here
+import { collection, addDoc, serverTimestamp, query, getDocs, orderBy, doc, setDoc } from 'firebase/firestore';
 
 // --- Icons ---
 import {
