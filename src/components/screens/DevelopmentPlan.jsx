@@ -936,7 +936,15 @@ const DevelopmentPlanScreen = () => {
     };
     try {
       // Update the development plan document in Firestore
-      const success = await updateDevelopmentPlanData(newDevPlanData); // Use setDoc logic (overwrite) // cite: useAppServices.jsx
+      // DevelopmentPlan.jsx (Around line 939)
+      if (!updateDevelopmentPlanData) {
+          throw new Error("Development Plan update function not available.");
+      }
+      // Update the development plan document in Firestore
+      // Use the function. The underlying hook in useAppServices uses updateDocEx,
+      // which handles existence gracefully if properly implemented, or should use setDocEx with merge: true.
+      // Since updateDevelopmentPlanData is a simple setter, we use it directly.
+      const success = await updateDevelopmentPlanData(newDevPlanData); // This is the call
       if (!success) throw new Error("updateDevelopmentPlanData returned false for initial save");
 
       console.log("[handleAssessmentComplete] Development Plan document saved/updated.");
