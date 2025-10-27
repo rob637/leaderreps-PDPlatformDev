@@ -530,19 +530,20 @@ const useFirestoreUserData = (db, userId, isAuthReady, collection, document, moc
 // --- Specific Hooks (Renamed) ---
 export const useDevelopmentPlanData = (db, userId, isAuthReady) => {
   const { data, isLoading, error, updateData } = useFirestoreUserData(db, userId, isAuthReady, 'development_plan', 'profile', MOCK_DEVELOPMENT_PLAN_DATA);
-  // Optional: Add specific saveNewPlan logic if needed (overwrites doc)
-  // const saveNewPlan = useCallback(async (newPlanData) => { ... setDocEx ... }, [db, userId]);
-  return { developmentPlanData: data, isLoading, error, updateDevelopmentPlanData: updateData };
+  // FIX: Ensure updateData is a defined function reference (even if it's async () => false)
+  return { developmentPlanData: data, isLoading, error, updateDevelopmentPlanData: updateData ?? (async () => false) };
 };
 
 export const useDailyPracticeData = (db, userId, isAuthReady) => {
   const { data, isLoading, error, updateData } = useFirestoreUserData(db, userId, isAuthReady, 'daily_practice', 'state', MOCK_DAILY_PRACTICE_DATA);
-  return { dailyPracticeData: data, isLoading, error, updateDailyPracticeData: updateData };
+  // FIX: Ensure updateData is a defined function reference
+  return { dailyPracticeData: data, isLoading, error, updateDailyPracticeData: updateData ?? (async () => false) };
 };
 
 export const useStrategicContentData = (db, userId, isAuthReady) => {
   const { data, isLoading, error, updateData } = useFirestoreUserData(db, userId, isAuthReady, 'strategic_content', 'data', MOCK_STRATEGIC_CONTENT_DATA);
-  return { strategicContentData: data, isLoading, error, updateStrategicContentData: updateData };
+  // FIX: Ensure updateData is a defined function reference
+  return { strategicContentData: data, isLoading, error, updateStrategicContentData: updateData ?? (async () => false) };
 };
 
 
