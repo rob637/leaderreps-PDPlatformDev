@@ -784,13 +784,16 @@ export const createAppServices = ({
   callSecureGeminiAPI = async () => ({ candidates: [] }),
   hasGeminiKey = () => false, API_KEY = '',
 }) => {
-  const devPlanHook = useDevelopmentPlanData(db, userId, isAuthReady);
-  const dailyPracticeHook = useDailyPracticeData(db, userId, isAuthReady);
-  const strategicContentHook = useStrategicContentData(db, userId, isAuthReady);
+  // CRITICAL FIX: Destructure explicitly from each hook
+  const { data: developmentPlanData, isLoading: devPlanLoading, error: devPlanError, updateData: updateDevelopmentPlanData } = useFirestoreUserData(db, userId, isAuthReady, 'development_plan', 'profile', MOCK_DEVELOPMENT_PLAN_DATA);
+  const { data: dailyPracticeData, isLoading: dailyPracticeLoading, error: dailyPracticeError, updateData: updateDailyPracticeData } = useFirestoreUserData(db, userId, isAuthReady, 'daily_practice', 'state', MOCK_DAILY_PRACTICE_DATA);
+  const { data: strategicContentData, isLoading: strategicContentLoading, error: strategicContentError, updateData: updateStrategicContentData } = useFirestoreUserData(db, userId, isAuthReady, 'strategic_content', 'data', MOCK_STRATEGIC_CONTENT_DATA);
+  
   const metadataHook = useGlobalMetadata(db, isAuthReady);
 
-  const combinedIsLoading = devPlanHook.isLoading || dailyPracticeHook.isLoading || strategicContentHook.isLoading || metadataHook.isLoading;
-  const combinedError = devPlanHook.error || dailyPracticeHook.error || strategicContentHook.error || metadataHook.error;
+  // COMBINE HOOK STATES
+  const combinedIsLoading = devPlanLoading || dailyPracticeLoading || strategicContentLoading || metadataHook.isLoading;
+  const combinedError = devPlanError || dailyPracticeError || strategicContentError || metadataHook.error;
 
   const isAdmin = useMemo(() => {
     return !!user?.email && ADMIN_EMAILS.includes(user.email.toLowerCase()); 
@@ -798,7 +801,7 @@ export const createAppServices = ({
 
   const value = useMemo(() => {
     const resolvedMetadata = resolveGlobalMetadata(metadataHook.metadata);
-    const dailyData = dailyPracticeHook.dailyPracticeData;
+    const dailyData = dailyPracticeData;
     const hasPendingTargetRep = dailyData?.dailyTargetRepStatus === 'Pending' && !!dailyData?.dailyTargetRepId;
     const hasPendingAdditionalReps = (dailyData?.activeCommitments || []).some(
         c => c.status === 'Pending'
@@ -809,10 +812,11 @@ export const createAppServices = ({
       navigate, user, userId, db, auth, isAuthReady,
       isLoading: combinedIsLoading, error: combinedError, isAdmin, ADMIN_PASSWORD,
 
-      developmentPlanData: devPlanHook.developmentPlanData,
-      dailyPracticeData: dailyPracticeHook.dailyPracticeData,
-      strategicContentData: strategicContentHook.strategicContentData,
-
+      // Pass the destructured data
+      developmentPlanData: developmentPlanData,
+      dailyPracticeData: dailyPracticeData,
+      strategicContentData: strategicContentData,
+      
       metadata: resolvedMetadata,
       featureFlags: resolvedMetadata.featureFlags || MOCK_FEATURE_FLAGS,
       LEADERSHIP_TIERS: resolvedMetadata.LEADERSHIP_TIERS || LEADERSHIP_TIERS_FALLBACK,
@@ -835,23 +839,25 @@ export const createAppServices = ({
       GEMINI_MODEL: resolvedMetadata.GEMINI_MODEL || GEMINI_MODEL, API_KEY,
       hasPendingDailyPractice,
 
-      updateDevelopmentPlanData: devPlanHook.updateData,
-      updateDailyPracticeData: dailyPracticeHook.updateData,
-      updateStrategicContentData: strategicContentHook.updateData,
+      // Pass the destructured update functions
+      updateDevelopmentPlanData: updateDevelopmentPlanData,
+      updateDailyPracticeData: updateDailyPracticeData,
+      updateStrategicContentData: updateStrategicContentData,
       updateGlobalMetadata: (data, opts) => updateGlobalMetadata(db, data, { ...opts, userId }),
     };
   }, [
     // Core dependencies
     user, userId, db, auth, isAuthReady, navigate, callSecureGeminiAPI, hasGeminiKey, API_KEY, isAdmin,
-    // Hook states
-    devPlanHook, dailyPracticeHook, strategicContentHook, metadataHook,
-    // Combined states
+    // CRITICAL: Individual loading states and update functions are now dependencies
+    devPlanLoading, dailyPracticeLoading, strategicContentLoading, metadataHook,
     combinedIsLoading, combinedError,
+    // Add the destructured update functions and data to the dependency array
+    updateDevelopmentPlanData, updateDailyPracticeData, updateStrategicContentData,
+    developmentPlanData, dailyPracticeData, strategicContentData,
   ]);
 
   return value;
 };
-
 
 // Default export is the context itself
 export default AppServiceContext;
