@@ -1,4 +1,4 @@
-// src/App.jsx (Updated with Comprehensive State Reset on Sign Out and Session Persistence Fix)
+// src/App.jsx (Final version with persistence fix and synchronous data wait)
 
 import React, { useState, useEffect, useMemo, useCallback, Suspense, lazy } from 'react';
 
