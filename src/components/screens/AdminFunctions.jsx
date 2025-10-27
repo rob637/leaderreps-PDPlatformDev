@@ -5,7 +5,8 @@ import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useAppServices } from '../../services/useAppServices.jsx'; // cite: useAppServices.jsx
 
 // --- Icons ---
-import { Shield, ToggleLeft, ToggleRight, Save, Loader, AlertTriangle, ArrowLeft, Key } from 'lucide-react';
+// **FIX: Added Settings icon to the import list.**
+import { Shield, ToggleLeft, ToggleRight, Save, Loader, AlertTriangle, ArrowLeft, Key, Settings } from 'lucide-react';
 
 /* =========================================================
    PALETTE & UI COMPONENTS (Standardized)
@@ -143,7 +144,15 @@ const AdminFunctionsScreen = () => {
     // --- Render Logic ---
     // Show loading if app is still initializing
     if (isAppLoading) {
-        return <LoadingSpinner message="Loading Admin Functions..." />;
+        // Since AdminFunctions.jsx doesn't define LoadingSpinner, we'll use a simple div
+        return (
+            <div className="min-h-screen flex items-center justify-center p-4" style={{ background: COLORS.BG }}>
+                <div className="flex items-center justify-center p-8 text-center text-gray-500 bg-gray-50 rounded-lg min-h-[100px]">
+                    <Loader className="w-5 h-5 animate-spin mr-2" style={{ color: COLORS.TEAL }} />
+                    Loading Admin Functions...
+                </div>
+            </div>
+        );
     }
     // Render nothing or redirect if not admin (handled by useEffect, but added safety)
     if (!isAdmin) {
@@ -247,8 +256,13 @@ const AdminFunctionsScreen = () => {
                 </p>
             </Card>
 
-             {/* Placeholder for future admin functions */}
-             {/* <Card title="User Management (Future)" icon={Users} accent="NAVY" className="mt-6 opacity-50"> ... </Card> */}
+             {/* Data Manager Link Card */}
+             <Card title="Database Management" icon={Key} accent="NAVY" className="mt-6">
+                <p className="text-sm text-gray-600 mb-4">Direct access to the Firestore Data Manager to view and edit document/collection data.</p>
+                <Button onClick={() => navigate('data-maintenance')} variant="outline" size="md">
+                    <Shield className="w-5 h-5 mr-2" /> Open Data Manager
+                </Button>
+             </Card>
 
         </div>
     );
