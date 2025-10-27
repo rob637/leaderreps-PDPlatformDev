@@ -1,6 +1,6 @@
 // src/components/screens/DailyPractice.jsx (Refactored for History Log & Consistency)
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 // --- Core Services & Context ---
 import { useAppServices } from '../../services/useAppServices.jsx'; // cite: useAppServices.jsx
 

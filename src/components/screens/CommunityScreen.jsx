@@ -7,7 +7,7 @@ import { useAppServices } from '../../services/useAppServices.jsx'; // cite: use
 // --- Icons ---
 import {
     Users, MessageSquare, Briefcase, Bell, PlusCircle, User, ArrowLeft, Target, Settings, Filter, Clock,
-    Star, CheckCircle, Award, Link, Send, Loader // Added Award, Link, Send, Loader
+    Star, CheckCircle, Award, Link, Send, Loader, Heart // Added Award, Link, Send, Loader
 } from 'lucide-react';
 
 /* =========================================================

@@ -869,7 +869,7 @@ const DevelopmentPlanScreen = () => {
     }
   }, [view]);
 
-  // --- Function to Sync Plan Focus to Daily Practice Reps ---
+// --- Function to Sync Plan Focus to Daily Practice Reps ---
   const syncPlanToDailyPractice = useCallback(async (newPlan) => {
       console.log("[syncPlanToDailyPractice] Starting sync for plan cycle:", newPlan?.cycle);
       // Validate input
