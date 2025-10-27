@@ -1,4 +1,4 @@
-// src/App.jsx (Refactored for Consistency, Features, Admin, Daily Resets, and Loading Fix)
+// src/App.jsx (Updated with Comprehensive State Reset on Sign Out)
 
 import React, { useState, useEffect, useMemo, useCallback, Suspense, lazy } from 'react';
 
@@ -306,7 +306,7 @@ const NavSidebar = ({ currentScreen, setCurrentScreen, user, closeMobileMenu, is
               // --- Refined Styling ---
               background: isActive ? COLORS.TEAL : 'transparent',
               color: isActive ? COLORS.OFF_WHITE : COLORS.LIGHT_GRAY, // Use lighter gray for inactive text
-              boxShadow: isActive ? `0 4px 12px ${COLORS.TEAL}40` : 'none',
+              boxShadow: isActive ? `0 4px 4px ${COLORS.TEAL}40` : 'none',
               // Add subtle hover effect for inactive items
               ':hover': {
                   background: isActive ? COLORS.TEAL : `${COLORS.TEAL}20`, // Slightly lighter teal background on hover
@@ -716,7 +716,8 @@ const DataProvider = ({ children, firebaseServices, userId, isAuthReady, navigat
   // to initialize and load data when a valid userId is present.
   const isUserDataLoading = !!userId && isUserHookLoading;
 
-  if (isLoading || isUserDataLoading) {
+  // 🛠️ FIX: Only check if user data loading is required, and global loading is complete.
+  if (isUserDataLoading || globalHook.isLoading) {
     console.log("[DataProvider] Core data loading...");
     return (
       <div className="min-h-screen flex items-center justify-center" style={{ background: COLORS.BG }}>
@@ -858,11 +859,12 @@ const App = ({ initialState }) => {
           setAuthRequired(false);
 
         } else {
+          // 🚨 CRITICAL FIX: Clear ALL user state and force authentication requirement
           console.log("[App Init] User Logged Out.");
-          // Clear user state
           setUser(null);
-          setUserId(null);
+          setUserId(null); // Clear UID to break data hook paths
           setAuthRequired(true);
+          setCurrentScreen('dashboard'); // Optionally reset navigation to dashboard/login screen
         }
         // Finalize initialization after handling auth state
         finalizeInit(true);
