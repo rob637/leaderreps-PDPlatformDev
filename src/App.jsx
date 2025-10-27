@@ -477,7 +477,8 @@ const ScreenRouter = ({ currentScreen, navParams, navigate }) => {
   // if (currentScreen === 'app-settings') return <AppSettingsScreen key={currentScreen} navigate={navigate} />;
 
   // Render the selected component within Suspense fallback
-  return <Component key={currentScreen} {...(navParams || {})} />; // Spread navParams as props
+  // --- FIX: Pass navigate prop ---
+  return <Component key={currentScreen} {...(navParams || {})} navigate={navigate} />; // Spread navParams and pass navigate
 };
 
 
@@ -559,6 +560,12 @@ const AppContent = ({ currentScreen, setCurrentScreen, user, navParams, isMobile
 ========================================================= */
 const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
 
+// --- FIX: Define missing helper function ---
+const resolveGlobalMetadata = (meta) => {
+  // Add safety check
+  return (meta && typeof meta === 'object') ? meta : {};
+};
+
 /**
  * DataProvider Component
  * Fetches user-specific and global data using custom hooks from useAppServices.
@@ -597,16 +604,46 @@ const DataProvider = ({ children, firebaseServices, userId, isAuthReady, navigat
     return hasPendingTargetRep || hasPendingAdditionalReps;
   }, [dailyPracticeHook.dailyPracticeData]); // cite: useAppServices.jsx
 
+  // --- **FIX START**: Define API key and functions here ---
+  const resolvedMetadata = useMemo(() => resolveGlobalMetadata(globalHook.metadata), [globalHook.metadata]); // cite: useAppServices.jsx
+
+  const apiKey = useMemo(() => {
+      return resolvedMetadata.API_KEY || (typeof __GEMINI_API_KEY !== 'undefined' ? __GEMINI_API_KEY : ''); // cite: useAppServices.jsx
+  }, [resolvedMetadata.API_KEY]);
+
+  const hasGeminiKey = useCallback(() => !!apiKey, [apiKey]);
+
+  // This function body is a mock, matching the default implementation in useAppServices.jsx
+  // A real implementation would securely call a cloud function.
+  const callSecureGeminiAPI = useCallback(async (payload) => {
+      if (!hasGeminiKey()) {
+          console.error("Gemini API Key is missing. Returning mock error.");
+          throw new Error("Gemini API Key is missing.");
+      }
+      // In a real app, this would be a fetch call to a secure cloud function
+      console.warn("Using MOCK callSecureGeminiAPI. No real API call made.", payload);
+      // Return a mock response structure
+      return {
+          candidates: [{
+              content: {
+                  parts: [{ text: "## Mock AI Response\n\nThis is a mock response because the secure API function is not defined globally." }],
+                  role: "model"
+              }
+          }]
+      };
+  }, [hasGeminiKey, apiKey]); // Depends on apiKey via hasGeminiKey
+  // --- **FIX END** ---
+
   // --- Memoize the context value ---
   // Provides all necessary data and functions to the rest of the application.
   const appServicesValue = useMemo(() => {
-    const resolvedMetadata = resolveGlobalMetadata(globalHook.metadata); // cite: useAppServices.jsx
+    // const resolvedMetadata = resolveGlobalMetadata(globalHook.metadata); // <-- Now defined above
     // console.log("[DataProvider] Resolved Metadata:", resolvedMetadata); // Debug log
 
     // Safely access potentially missing API details from metadata
-    const apiKey = resolvedMetadata.API_KEY || (typeof __GEMINI_API_KEY !== 'undefined' ? __GEMINI_API_KEY : ''); // cite: useAppServices.jsx
+    // const apiKey = resolvedMetadata.API_KEY || (typeof __GEMINI_API_KEY !== 'undefined' ? __GEMINI_API_KEY : ''); // <-- Now defined above
     const geminiModel = resolvedMetadata.GEMINI_MODEL || 'gemini-1.5-flash'; // cite: useAppServices.jsx
-    // callSecureGeminiAPI and hasGeminiKey are assumed to be globally available or passed in correctly
+    // callSecureGeminiAPI and hasGeminiKey are now defined in this scope
 
     return {
       // Core App State & Functions
@@ -646,9 +683,9 @@ const DataProvider = ({ children, firebaseServices, userId, isAuthReady, navigat
       IconMap: resolvedMetadata.IconMap || {}, // cite: useAppServices.jsx
       APP_ID: resolvedMetadata.APP_ID || appId, // cite: useAppServices.jsx
 
-      // AI/API Services (assuming global functions or passed via props)
-      callSecureGeminiAPI, // Assuming passed correctly
-      hasGeminiKey,       // Assuming passed correctly
+      // AI/API Services (now defined in DataProvider scope)
+      callSecureGeminiAPI, // Pass the newly defined function
+      hasGeminiKey,       // Pass the newly defined function
       GEMINI_MODEL: geminiModel,
       API_KEY: apiKey,
 
@@ -667,8 +704,8 @@ const DataProvider = ({ children, firebaseServices, userId, isAuthReady, navigat
       navigate, user, userId, db, auth, isAuthReady, isLoading, error, isAdmin,
       devPlanHook, dailyPracticeHook, strategicContentHook, globalHook,
       hasPendingDailyPractice, // Include derived state
-      // API functions might be stable, but include if they could change
-      callSecureGeminiAPI, hasGeminiKey
+      // API functions are now defined in DataProvider, add them
+      callSecureGeminiAPI, hasGeminiKey, apiKey, resolvedMetadata
   ]);
 
   // --- Loading State ---
@@ -736,14 +773,8 @@ const App = ({ initialState }) => {
     if (typeof window !== 'undefined') window.__appNavigate = navigate;
     return () => { if (typeof window !== 'undefined') delete window.__appNavigate; };
   }, [navigate]);
-  // Expose Gemini caller globally (provided via context, but useful for direct console tests)
-  useEffect(() => {
-    // This assumes callSecureGeminiAPI is globally accessible or passed correctly
-    if (typeof window !== 'undefined' && typeof callSecureGeminiAPI !== 'undefined') {
-        window.__callSecureGeminiAPI = callSecureGeminiAPI;
-        return () => { if (typeof window !== 'undefined') delete window.__callSecureGeminiAPI; };
-    }
-  }, []); // Assuming callSecureGeminiAPI is stable
+  
+  // --- **FIX**: Removed broken useEffect that referenced undefined variables ---
 
   // --- Firebase Initialization & Auth State Listener ---
   useEffect(() => {
@@ -894,9 +925,7 @@ const App = ({ initialState }) => {
       isAuthReady={isAuthReady}
       navigate={navigate}
       user={user}
-      // Pass down API functions if they are initialized here (or assume global)
-      callSecureGeminiAPI={callSecureGeminiAPI}
-      hasGeminiKey={hasGeminiKey}
+      // --- **FIX**: Removed broken props that were causing the ReferenceError ---
       // API_KEY might be sourced from metadata now
     >
       {/* Suspense for lazy loaded screens */}
