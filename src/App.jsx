@@ -26,6 +26,7 @@ import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
   sendPasswordResetEmail,
+  updateProfile, // Import updateProfile to set displayName
   // 🚨 NEW: Import setPersistence and browserSessionPersistence
   setPersistence,
   browserSessionPersistence,
@@ -147,8 +148,15 @@ function AuthPanel({ auth, onSuccess }) {
       } else if (mode === 'signup') {
         if (secretCode !== SECRET_SIGNUP_CODE) throw new Error('Invalid secret sign-up code.');
         if (!name) throw new Error("Name is required for signup.");
-        // TODO: In a real app, update the user's profile with 'name' after creation.
-        await createUserWithEmailAndPassword(auth, email, password);
+        
+        // Create the user account
+        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+        
+        // Update the user's profile with their display name
+        await updateProfile(userCredential.user, {
+          displayName: name
+        });
+        
         // Note: ensureUserDocs will run after login to create necessary Firestore docs.
         onSuccess(); // Callback on successful signup
       }
@@ -348,11 +356,12 @@ const NavSidebar = ({ currentScreen, setCurrentScreen, user, closeMobileMenu, is
 
           {/* Tooltip for Collapsed State */}
           {!isNavExpanded && (
-            <span className={`absolute left-full ml-3 w-auto px-3 py-2 text-sm font-medium whitespace-nowrap rounded-md shadow-xl opacity-0 pointer-events-none group-hover:opacity-100 transition-all duration-150 z-50`}
+            <span className={`absolute left-full ml-3 w-auto px-4 py-2.5 text-base font-bold whitespace-nowrap rounded-lg shadow-2xl opacity-0 pointer-events-none group-hover:opacity-100 transition-all duration-150 z-50`}
                   style={{ 
-                    background: '#1a1a1a',
-                    color: '#ffffff',
-                    border: '1px solid rgba(255, 255, 255, 0.1)'
+                    background: COLORS.NAVY,
+                    color: COLORS.TEAL,
+                    border: `2px solid ${COLORS.TEAL}`,
+                    boxShadow: `0 8px 16px rgba(0, 0, 0, 0.3), 0 0 0 1px ${COLORS.TEAL}40`
                   }}>
               {label}
             </span>
@@ -403,20 +412,42 @@ const NavSidebar = ({ currentScreen, setCurrentScreen, user, closeMobileMenu, is
               
               {/* Insert toggle button right after SYSTEM section */}
               {section.title === 'SYSTEM' && (
-                <div className={`pt-2 pb-1 ${isNavExpanded ? 'px-3' : 'flex justify-center'}`}>
+                <div className={`pt-3 pb-2 ${isNavExpanded ? 'px-3' : 'flex justify-center'}`}>
                   <button
                     onClick={() => setIsNavExpanded(!isNavExpanded)}
                     title={isNavExpanded ? 'Collapse Menu' : 'Expand Menu'}
-                    className={`relative inline-flex items-center h-7 w-12 rounded-full transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[${COLORS.TEAL}]`}
-                    style={{ background: isNavExpanded ? COLORS.TEAL : COLORS.MUTED }}
+                    className={`relative group flex items-center w-full px-3 py-2.5 rounded-lg font-semibold text-sm transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-[${COLORS.TEAL}] focus:ring-offset-[${COLORS.NAVY}]`}
+                    style={{
+                        background: 'transparent',
+                        color: COLORS.LIGHT_GRAY,
+                        border: `1px dashed ${COLORS.TEAL}40`
+                    }}
                   >
-                    {/* Knob/Pill */}
-                    <span className={`inline-block w-6 h-6 transform bg-white rounded-full transition-all duration-300 ease-in-out shadow-md`}
-                      style={{ transform: isNavExpanded ? 'translate(20px, 0)' : 'translate(2px, 0)' }}
-                    >
-                      {/* Icon within Knob */}
-                      {isNavExpanded ? <ChevronsRight className="w-6 h-6 p-0.5 text-gray-700" /> : <ChevronsLeft className="w-6 h-6 p-0.5 text-gray-700" />}
-                    </span>
+                    {/* Icon */}
+                    {isNavExpanded ? (
+                      <ChevronsLeft className={`w-5 h-5 flex-shrink-0 transition-colors duration-200 ${isNavExpanded ? 'mr-3' : ''}`} style={{ color: COLORS.SUBTLE }} />
+                    ) : (
+                      <ChevronsRight className="w-5 h-5 flex-shrink-0 transition-colors duration-200" style={{ color: COLORS.SUBTLE }} />
+                    )}
+                    
+                    {/* Label (only when expanded) */}
+                    {isNavExpanded && (
+                      <span className="flex-1 text-left whitespace-nowrap overflow-hidden overflow-ellipsis transition-opacity duration-300">
+                        Collapse Menu
+                      </span>
+                    )}
+                    
+                    {/* Tooltip for Collapsed State */}
+                    {!isNavExpanded && (
+                      <span className={`absolute left-full ml-3 w-auto px-3 py-2 text-sm font-medium whitespace-nowrap rounded-md shadow-xl opacity-0 pointer-events-none group-hover:opacity-100 transition-all duration-150 z-50`}
+                            style={{ 
+                              background: '#1a1a1a',
+                              color: '#ffffff',
+                              border: '1px solid rgba(255, 255, 255, 0.1)'
+                            }}>
+                        Expand Menu
+                      </span>
+                    )}
                   </button>
                 </div>
               )}
@@ -444,11 +475,12 @@ const NavSidebar = ({ currentScreen, setCurrentScreen, user, closeMobileMenu, is
           )}
           {/* Tooltip for Collapsed State */}
           {!isNavExpanded && (
-            <span className={`absolute left-full ml-3 w-auto px-3 py-2 text-sm font-medium whitespace-nowrap rounded-md shadow-xl opacity-0 pointer-events-none group-hover:opacity-100 transition-all duration-150 z-50`}
+            <span className={`absolute left-full ml-3 w-auto px-4 py-2.5 text-base font-bold whitespace-nowrap rounded-lg shadow-2xl opacity-0 pointer-events-none group-hover:opacity-100 transition-all duration-150 z-50`}
                   style={{ 
-                    background: '#1a1a1a',
-                    color: '#ffffff',
-                    border: '1px solid rgba(255, 255, 255, 0.1)'
+                    background: COLORS.NAVY,
+                    color: COLORS.TEAL,
+                    border: `2px solid ${COLORS.TEAL}`,
+                    boxShadow: `0 8px 16px rgba(0, 0, 0, 0.3), 0 0 0 1px ${COLORS.TEAL}40`
                   }}>
               {user?.name || 'User Profile'}
             </span>
