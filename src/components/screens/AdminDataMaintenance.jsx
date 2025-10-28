@@ -850,7 +850,7 @@ export default function AdminDataMaintenance() {
     { group: "User Data (Per User)", label: "👤 Dev Plan Profile", value: "development_plan/<uid>/profile" },
     { group: "User Data (Per User)", label: "📜 Dev Plan History (Coll)", value: "development_plan/<uid>/plan_history" },
     { group: "User Data (Per User)", label: "📊 Assessment History (Coll)", value: "development_plan/<uid>/assessment_history" },
-    { group: "User Data (Per User)", label: "✅ Daily Practice State", value: "daily_practice/<uid>/state" },
+    { group: "User Data (Per User)", label: "✅ Daily Practice State", value: "daily_practice/<uid>/user_state/state" },
     { group: "User Data (Per User)", label: "📓 Reflection History (Coll)", value: "daily_practice/<uid>/reflection_history" },
     { group: "User Data (Per User)", label: "📈 Practice History (Coll)", value: "daily_practice/<uid>/practice_history" },
     { group: "User Data (Per User)", label: "📝 Strategic Content Data", value: "strategic_content/<uid>/data" },
