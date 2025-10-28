@@ -1,0 +1,293 @@
+{
+  "items": [
+    {
+      "resource_id": "res_clear_article_mindtools_1",
+      "domain_id": "skill_feedback_clear",
+      "title": "MindTools: The CLEAR Model for Feedback",
+      "summary": "A concise explanation of the CLEAR feedback model (Context, Listen, Example, Action, Review) with practical tips.",
+      "type": "Article",
+      "url": "https://www.mindtools.com/example/clear-feedback-model"
+    },
+    {
+      "resource_id": "res_clear_video_brene_1",
+      "domain_id": "skill_feedback_clear",
+      "title": "Brené Brown on Clear is Kind (Video)",
+      "summary": "Short video clip where Brené Brown discusses the importance of directness and clarity in communication and feedback.",
+      "type": "Video",
+      "url": "https://brenebrown.com/example/clear-is-kind-video"
+    },
+    {
+      "resource_id": "res_clear_article_radicalcandor_1",
+      "domain_id": "skill_feedback_clear",
+      "title": "Radical Candor: Getting Specific with Feedback",
+      "summary": "Article emphasizing the 'Example' part of feedback, aligning with Radical Candor's principles of specific behavioral examples.",
+      "type": "Article",
+      "url": "https://www.radicalcandor.com/example/specific-feedback"
+    },
+    {
+      "resource_id": "res_clear_tool_template_1",
+      "domain_id": "skill_feedback_clear",
+      "title": "CLEAR Feedback Preparation Template",
+      "summary": "A simple downloadable template to structure your thoughts before delivering feedback using the CLEAR model.",
+      "type": "Tool",
+      "url": "https://example.com/clear-feedback-template.pdf"
+    },
+    {
+      "resource_id": "res_listening_article_ccl_1",
+      "domain_id": "skill_active_listening",
+      "title": "Center for Creative Leadership: 3 Key Active Listening Skills",
+      "summary": "Focuses on paraphrasing, inquiring, and acknowledging feelings as core components of active listening.",
+      "type": "Article",
+      "url": "https://www.ccl.org/example/active-listening-skills"
+    },
+    {
+      "resource_id": "res_listening_video_rogers_1",
+      "domain_id": "skill_active_listening",
+      "title": "Carl Rogers on Empathic Listening (Video)",
+      "summary": "Classic footage explaining the power of deep, empathic listening from a foundational psychologist.",
+      "type": "Video",
+      "url": "https://youtube.com/example/carl-rogers-listening"
+    },
+    {
+      "resource_id": "res_listening_tool_checklist_1",
+      "domain_id": "skill_active_listening",
+      "title": "Active Listening Self-Checklist",
+      "summary": "A tool to assess your listening habits in recent conversations (e.g., Did I interrupt? Did I paraphrase?).",
+      "type": "Tool",
+      "url": "https://example.com/listening-checklist"
+    },
+    {
+      "resource_id": "res_listening_podcast_1",
+      "domain_id": "skill_active_listening",
+      "title": "Podcast: The Importance of Listening in Leadership",
+      "summary": "Podcast episode featuring leadership experts discussing how active listening builds trust and improves decision-making.",
+      "type": "Podcast",
+      "url": "https://example.com/leadership-listening-podcast"
+    },
+    {
+      "resource_id": "res_delegation_article_hbr_1",
+      "domain_id": "skill_delegation",
+      "title": "HBR Guide to Delegating Effectively",
+      "summary": "Covers the principles of delegation, including choosing the right task, person, and level of authority.",
+      "type": "Article",
+      "url": "https://hbr.org/example/guide-to-delegating"
+    },
+    {
+      "resource_id": "res_delegation_tool_matrix_1",
+      "domain_id": "skill_delegation",
+      "title": "Delegation Decision Matrix Tool",
+      "summary": "A simple matrix to help decide which tasks are suitable for delegation based on importance and urgency.",
+      "type": "Tool",
+      "url": "https://example.com/delegation-matrix"
+    },
+    {
+      "resource_id": "res_delegation_video_tips_1",
+      "domain_id": "skill_delegation",
+      "title": "Video: 5 Common Delegation Mistakes to Avoid",
+      "summary": "Short video highlighting frequent errors like unclear instructions, lack of follow-up, and reverse delegation.",
+      "type": "Video",
+      "url": "https://youtube.com/example/delegation-mistakes"
+    },
+    {
+      "resource_id": "res_delegation_book_emyth_1",
+      "domain_id": "skill_delegation",
+      "title": "Book Excerpt: 'The E-Myth Revisited' on Systemization",
+      "summary": "Relevant sections discussing how building systems enables effective delegation beyond just assigning tasks.",
+      "type": "Book Excerpt",
+      "url": "https://example.com/emyth-delegation-excerpt"
+    },
+    {
+      "resource_id": "res_grow_article_mindtools_1",
+      "domain_id": "skill_coaching_grow",
+      "title": "MindTools: The GROW Model of Coaching",
+      "summary": "Detailed explanation of the GROW model (Goal, Reality, Options, Will) with example questions for each stage.",
+      "type": "Article",
+      "url": "https://www.mindtools.com/example/grow-model"
+    },
+    {
+      "resource_id": "res_grow_video_whitmore_1",
+      "domain_id": "skill_coaching_grow",
+      "title": "Sir John Whitmore Explains the GROW Model (Video)",
+      "summary": "Video featuring the originator of the GROW model discussing its application in performance coaching.",
+      "type": "Video",
+      "url": "https://youtube.com/example/john-whitmore-grow"
+    },
+    {
+      "resource_id": "res_grow_tool_questionbank_1",
+      "domain_id": "skill_coaching_grow",
+      "title": "GROW Model Question Bank",
+      "summary": "A list of powerful coaching questions categorized by each stage of the GROW model.",
+      "type": "Tool",
+      "url": "https://example.com/grow-question-bank.pdf"
+    },
+    {
+      "resource_id": "res_grow_article_coachingculture_1",
+      "domain_id": "skill_coaching_grow",
+      "title": "Building a Coaching Culture with GROW",
+      "summary": "Article discussing how managers can use the GROW model in daily interactions, not just formal sessions.",
+      "type": "Article",
+      "url": "https://example.com/coaching-culture-grow"
+    },
+    {
+      "resource_id": "res_conflict_article_pon_1",
+      "domain_id": "skill_conflict_resolution",
+      "title": "Harvard PON: 5 Conflict Resolution Strategies",
+      "summary": "Overview from the Program on Negotiation covering avoiding, accommodating, compromising, competing, and collaborating.",
+      "type": "Article",
+      "url": "https://www.pon.harvard.edu/example/5-conflict-strategies"
+    },
+    {
+      "resource_id": "res_conflict_book_crucial_1",
+      "domain_id": "skill_conflict_resolution",
+      "title": "Book Excerpt: 'Crucial Conversations' - Mastering Dialogue",
+      "summary": "Key principles for handling high-stakes disagreements, focusing on safety and mutual purpose.",
+      "type": "Book Excerpt",
+      "url": "https://example.com/crucial-conversations-conflict"
+    },
+    {
+      "resource_id": "res_conflict_video_tki_1",
+      "domain_id": "skill_conflict_resolution",
+      "title": "Understanding the Thomas-Kilmann Conflict Modes (Video)",
+      "summary": "Explainer video detailing the TKI model's five approaches to conflict based on assertiveness and cooperativeness.",
+      "type": "Video",
+      "url": "https://youtube.com/example/tki-conflict-modes"
+    },
+    {
+      "resource_id": "res_conflict_tool_styles_1",
+      "domain_id": "skill_conflict_resolution",
+      "title": "Conflict Styles Assessment (Simple)",
+      "summary": "A brief online quiz to help identify your dominant conflict resolution style.",
+      "type": "Tool",
+      "url": "https://example.com/conflict-style-quiz"
+    },
+    {
+      "resource_id": "res_strategy_article_hbr_1",
+      "domain_id": "skill_strategic_thinking",
+      "title": "HBR: What Is Strategy, Again?",
+      "summary": "Classic article clarifying the definition of strategy and distinguishing it from operational effectiveness.",
+      "type": "Article",
+      "url": "https://hbr.org/example/what-is-strategy"
+    },
+    {
+      "resource_id": "res_strategy_tool_swot_1",
+      "domain_id": "skill_strategic_thinking",
+      "title": "SWOT Analysis Template & Guide",
+      "summary": "Tool and guide for conducting a Strengths, Weaknesses, Opportunities, Threats analysis.",
+      "type": "Tool",
+      "url": "https://example.com/swot-analysis-template"
+    },
+    {
+      "resource_id": "res_strategy_video_porter_1",
+      "domain_id": "skill_strategic_thinking",
+      "title": "Michael Porter on Competitive Strategy (Video)",
+      "summary": "Interviews or lectures explaining Porter's Five Forces and generic strategies (cost leadership, differentiation, focus).",
+      "type": "Video",
+      "url": "https://youtube.com/example/michael-porter-strategy"
+    },
+    {
+      "resource_id": "res_strategy_book_goodstrategy_1",
+      "domain_id": "skill_strategic_thinking",
+      "title": "Book Excerpt: 'Good Strategy Bad Strategy'",
+      "summary": "Key sections outlining the 'kernel' of good strategy: diagnosis, guiding policy, and coherent actions.",
+      "type": "Book Excerpt",
+      "url": "https://example.com/good-strategy-bad-strategy-excerpt"
+    },
+    {
+      "resource_id": "res_mindset_video_dweck_1",
+      "domain_id": "skill_mindset_growth",
+      "title": "Carol Dweck: The Power of Believing You Can Improve (TED Talk)",
+      "summary": "The foundational TED Talk explaining the difference between fixed and growth mindsets.",
+      "type": "Video",
+      "url": "https://www.ted.com/example/carol-dweck-mindset"
+    },
+    {
+      "resource_id": "res_mindset_article_hbr_1",
+      "domain_id": "skill_mindset_growth",
+      "title": "HBR: How Companies Can Profit from a Growth Mindset",
+      "summary": "Article discussing the organizational benefits and practices for fostering a growth mindset culture.",
+      "type": "Article",
+      "url": "https://hbr.org/example/growth-mindset-companies"
+    },
+    {
+      "resource_id": "res_mindset_tool_praise_1",
+      "domain_id": "skill_mindset_growth",
+      "title": "Growth Mindset Praise Cheat Sheet",
+      "summary": "Examples of how to rephrase fixed mindset praise ('You're smart') into growth mindset praise ('You worked hard').",
+      "type": "Tool",
+      "url": "https://example.com/growth-mindset-praise.pdf"
+    },
+    {
+      "resource_id": "res_mindset_article_neuro_1",
+      "domain_id": "skill_mindset_growth",
+      "title": "The Neuroscience of Growth Mindset",
+      "summary": "Explores the brain science behind learning, neuroplasticity, and how effort changes the brain.",
+      "type": "Article",
+      "url": "https://example.com/neuroscience-growth-mindset"
+    },
+    {
+      "resource_id": "res_accountability_book_oz_1",
+      "domain_id": "skill_accountability",
+      "title": "Book Excerpt: 'The Oz Principle' - Above/Below the Line",
+      "summary": "Key concepts on taking ownership ('Above the Line' behavior) vs. blame/victim mentality ('Below the Line').",
+      "type": "Book Excerpt",
+      "url": "https://example.com/oz-principle-excerpt"
+    },
+    {
+      "resource_id": "res_accountability_article_lencioni_1",
+      "domain_id": "skill_accountability",
+      "title": "Lencioni: The Trouble with Teamwork (Accountability)",
+      "summary": "Discusses accountability as a key dysfunction of teams and the need for peer-to-peer accountability.",
+      "type": "Article",
+      "url": "https://www.tablegroup.com/example/team-accountability"
+    },
+    {
+      "resource_id": "res_accountability_tool_ladder_1",
+      "domain_id": "skill_accountability",
+      "title": "The Ladder of Accountability Tool",
+      "summary": "Visual model and questions to help individuals and teams move up from blame towards ownership and solutions.",
+      "type": "Tool",
+      "url": "https://example.com/ladder-of-accountability"
+    },
+    {
+      "resource_id": "res_accountability_video_feedback_1",
+      "domain_id": "skill_accountability",
+      "title": "Holding People Accountable Without Being a Jerk (Video)",
+      "summary": "Practical tips on structuring accountability conversations that are firm but fair.",
+      "type": "Video",
+      "url": "https://youtube.com/example/accountability-conversation"
+    },
+    {
+      "resource_id": "res_vision_book_sinek_1",
+      "domain_id": "skill_vision_casting",
+      "title": "Book Excerpt: 'Start With Why' - The Golden Circle",
+      "summary": "Explains how communicating the 'Why' (purpose/vision) inspires action more effectively than 'What' or 'How'.",
+      "type": "Book Excerpt",
+      "url": "https://example.com/start-with-why-excerpt"
+    },
+    {
+      "resource_id": "res_vision_article_collins_1",
+      "domain_id": "skill_vision_casting",
+      "title": "Jim Collins: Building Your Company's Vision (HBR)",
+      "summary": "Classic HBR article on defining core ideology (values & purpose) and envisioned future (BHAGs & vivid description).",
+      "type": "Article",
+      "url": "https://hbr.org/example/collins-porras-vision"
+    },
+    {
+      "resource_id": "res_vision_video_storytelling_1",
+      "domain_id": "skill_vision_casting",
+      "title": "The Role of Storytelling in Vision Casting (Video)",
+      "summary": "Explores how narrative and storytelling techniques make a vision more compelling and memorable.",
+      "type": "Video",
+      "url": "https://youtube.com/example/vision-storytelling"
+    },
+    {
+      "resource_id": "res_vision_tool_template_1",
+      "domain_id": "skill_vision_casting",
+      "title": "Simple Vision Statement Template",
+      "summary": "A guided template to help draft a concise and inspiring vision statement.",
+      "type": "Tool",
+      "url": "https://example.com/vision-statement-template"
+    }
+  ]
+}
+export PATH="$PATH:/c/Users/rob/.npm-global"
