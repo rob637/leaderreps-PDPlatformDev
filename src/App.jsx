@@ -569,9 +569,16 @@ const DataProvider = ({ children, firebaseServices, userId, isAuthReady, navigat
   const { db, auth } = firebaseServices;
 
   // --- Use the RENAMED user data hooks ---
-  const devPlanHook = useDevelopmentPlanData(db, userId, isAuthReady); // cite: useAppServices.jsx
-  const dailyPracticeHook = useDailyPracticeData(db, userId, isAuthReady); // cite: useAppServices.jsx
-  const strategicContentHook = useStrategicContentData(db, userId, isAuthReady); // cite: useAppServices.jsx
+  const devPlanHook = useDevelopmentPlanData(db, userId, isAuthReady);
+const dailyPracticeHook = useDailyPracticeData(db, userId, isAuthReady);
+const strategicContentHook = useStrategicContentData(db, userId, isAuthReady);
+
+// DEBUG: Log what we're getting from hooks
+console.log('🔍 devPlanHook:', devPlanHook);
+console.log('🔍 dailyPracticeHook:', dailyPracticeHook);
+console.log('🔍 strategicContentHook:', strategicContentHook);
+console.log('🔍 dailyPracticeHook.updateData exists:', !!dailyPracticeHook.updateData);
+console.log('🔍 dailyPracticeHook.updateData type:', typeof dailyPracticeHook.updateData);
   // Global metadata hook remains the same but fetches more data now
   const globalHook = useGlobalMetadata(db, isAuthReady);
 
