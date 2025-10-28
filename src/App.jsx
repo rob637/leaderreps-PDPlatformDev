@@ -487,7 +487,7 @@ const ScreenRouter = ({ currentScreen, navParams, navigate }) => {
  */
 const AppContent = ({ currentScreen, setCurrentScreen, user, navParams, isMobileOpen, setIsMobileOpen, isAuthRequired, isNavExpanded, setIsNavExpanded }) => {
   // Memoized callback to close mobile menu
-  const closeMobileMenu = useCallback(() => setIsMobileOpen(false), [setIsMobileMenu]);
+  const closeMobileMenu = useCallback(() => setIsMobileOpen(false), [setIsMobileOpen]);
   // Get navigate function from context for ScreenRouter
   const { navigate } = useAppServices();
 
