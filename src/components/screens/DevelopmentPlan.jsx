@@ -1008,6 +1008,7 @@ const DevelopmentPlanScreen = () => {
        await syncPlanToDailyPractice(newPlan);
        console.log("[handleScanComplete] Sync complete. View should update to 'tracker'.");
        // View changes via useEffect
+       setIsSaving(false); // Reset loading state after successful save
 
      } catch (error) {
        console.error("[handleScanComplete] Error saving progress scan:", error);

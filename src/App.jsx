@@ -61,6 +61,14 @@ const COLORS = { NAVY: '#002E47', TEAL: '#47A88D', ORANGE: '#E04E1B', GREEN: '#1
 // --- Authentication ---
 const SECRET_SIGNUP_CODE = 'mock-code-123'; // Keep for mock signup flow
 
+// --- Helper function to extract first name ---
+const getFirstName = (fullName) => {
+  if (!fullName) return 'Leader';
+  // Split by space and take the first part
+  const parts = fullName.trim().split(/\s+/);
+  return parts[0] || 'Leader';
+};
+
 /* =========================================================
    LAZY LOADED SCREEN COMPONENTS (Updated List & Paths)
 ========================================================= */
@@ -395,7 +403,7 @@ const NavSidebar = ({ currentScreen, setCurrentScreen, user, closeMobileMenu, is
               
               {/* Insert toggle button right after SYSTEM section */}
               {section.title === 'SYSTEM' && (
-                <div className="pt-2 pb-1">
+                <div className={`pt-2 pb-1 ${isNavExpanded ? 'px-3' : 'flex justify-center'}`}>
                   <button
                     onClick={() => setIsNavExpanded(!isNavExpanded)}
                     title={isNavExpanded ? 'Collapse Menu' : 'Expand Menu'}
@@ -902,7 +910,7 @@ const App = ({ initialState }) => {
              console.log("[App Init Timeout] Found currentUser, setting state.");
              const uid = currentUser.uid;
              const email = currentUser.email;
-             const name = currentUser.displayName || email?.split('@')[0] || 'Leader';
+             const name = getFirstName(currentUser.displayName) || email?.split('@')[0] || 'Leader';
              setUserId(uid);
              setUser({ name, email, userId: uid });
              setAuthRequired(false);
@@ -925,7 +933,7 @@ const App = ({ initialState }) => {
           const uid = currentUser.uid;
           const email = currentUser.email;
           // Fetch display name or derive from email
-          const name = currentUser.displayName || email.split('@')[0] || 'Leader';
+          const name = getFirstName(currentUser.displayName) || email.split('@')[0] || 'Leader';
           console.log(`[App Init] User Authenticated: ${name} (${uid})`);
 
           // --- CRITICAL: Ensure user docs exist *after* confirming login ---
