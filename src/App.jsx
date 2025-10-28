@@ -1,4 +1,4 @@
-// src/App.jsx (Final version with persistence fix and synchronous data wait)
+// src/App.jsx (Corrected Admin Flag Bypass)
 
 import React, { useState, useEffect, useMemo, useCallback, Suspense, lazy } from 'react';
 
@@ -293,10 +293,10 @@ const NavSidebar = ({ currentScreen, setCurrentScreen, user, closeMobileMenu, is
 
   // --- Renders individual navigation items, checking feature flags ---
   const renderNavItems = (items) => items
-    // Filter items based on feature flags (default to true if flag is missing)
-    .filter(item => !item.flag || (featureFlags && featureFlags[item.flag] !== false))
-    // Filter admin items if user is not admin
+    // Filter admin-only items first (though none are currently marked as such)
     .filter(item => !item.adminOnly || isAdmin)
+    // --- MODIFIED FILTER: Bypass flag check if isAdmin is true ---
+    .filter(item => isAdmin || !item.flag || (featureFlags && featureFlags[item.flag] !== false))
     .map((item) => {
       const Icon = item.icon;
       const isActive = currentScreen === item.screen;
