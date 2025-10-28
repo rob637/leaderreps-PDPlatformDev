@@ -620,23 +620,71 @@ console.log('🔍 dailyPracticeHook.updateData type:', typeof dailyPracticeHook.
 
   // This function body is a mock, matching the default implementation in useAppServices.jsx
   // A real implementation would securely call a cloud function.
+// --- **FIX START**: Replace the MOCK function with a REAL backend call structure ---
   const callSecureGeminiAPI = useCallback(async (payload) => {
-      if (!hasGeminiKey()) {
-          console.error("Gemini API Key is missing. Returning mock error.");
-          throw new Error("Gemini API Key is missing.");
+      if (!hasGeminiKey()) { // Keep the initial API key check
+          console.error("Gemini API Key check failed in callSecureGeminiAPI. Ensure it's loaded correctly.");
+          throw new Error("Gemini API Key is missing or not configured.");
       }
-      // In a real app, this would be a fetch call to a secure cloud function
-      console.warn("Using MOCK callSecureGeminiAPI. No real API call made.", payload);
-      // Return a mock response structure
-      return {
-          candidates: [{
-              content: {
-                  parts: [{ text: "## Mock AI Response\n\nThis is a mock response because the secure API function is not defined globally." }],
-                  role: "model"
-              }
-          }]
-      };
-  }, [hasGeminiKey, apiKey]); // Depends on apiKey via hasGeminiKey
+
+      // ------------------------------------------------------------------
+      // --- CRITICAL: REPLACE THIS URL WITH YOUR ACTUAL BACKEND FUNCTION ---
+      // ------------------------------------------------------------------
+      // This should be the HTTPS endpoint of your Cloud Function, serverless function,
+      // or API endpoint that securely handles the call to the Google AI Gemini API.
+      const YOUR_BACKEND_ENDPOINT_URL = 'YOUR_SECURE_CLOUD_FUNCTION_URL_HERE'; 
+      // ------------------------------------------------------------------
+      
+      if (YOUR_BACKEND_ENDPOINT_URL === 'YOUR_SECURE_CLOUD_FUNCTION_URL_HERE') {
+           console.error("CRITICAL SETUP ERROR: The backend endpoint URL for callSecureGeminiAPI has not been set in App.jsx.");
+           throw new Error("AI Rep Coach backend is not configured. Please contact the administrator.");
+      }
+
+      console.log("[callSecureGeminiAPI] Calling backend endpoint:", YOUR_BACKEND_ENDPOINT_URL);
+
+      try {
+          // Prepare the request to your backend
+          const requestOptions = {
+              method: 'POST',
+              headers: {
+                  'Content-Type': 'application/json',
+                  // --- Add Authentication (IMPORTANT!) ---
+                  // If your backend needs to verify the user, get the Firebase Auth ID token
+                  // and include it in the Authorization header.
+                  // You might need to add 'auth' to the useCallback dependency array if you use it here.
+                  // 'Authorization': `Bearer ${await auth.currentUser.getIdToken()}` 
+              },
+              body: JSON.stringify(payload) // Send the payload constructed by the calling component
+          };
+
+          // Make the fetch call to your backend
+          const response = await fetch(YOUR_BACKEND_ENDPOINT_URL, requestOptions);
+
+          // Check if the backend call was successful
+          if (!response.ok) {
+              let errorBody = 'Could not retrieve error details.';
+              try {
+                  errorBody = await response.text(); // Try to get more error info
+              } catch (_) { /* Ignore parsing error */ }
+              console.error(`[callSecureGeminiAPI] Backend call failed with status ${response.status}:`, errorBody);
+              throw new Error(`The AI Rep Coach backend returned an error (Status ${response.status}).`);
+          }
+
+          // Parse the JSON response from your backend
+          // (Assuming your backend forwards the Gemini API response structure)
+          const data = await response.json(); 
+          console.log("[callSecureGeminiAPI] Received successful response from backend.");
+          
+          // Return the data received from the backend
+          return data; 
+
+      } catch (error) {
+          console.error("[callSecureGeminiAPI] Error during fetch to backend:", error);
+          // Re-throw a more user-friendly error or handle appropriately
+          throw new Error(`Failed to communicate with the AI Rep Coach: ${error.message}`);
+      }
+  // --- Update dependencies: include 'auth' if you add the Authorization header ---
+  }, [hasGeminiKey, apiKey /* , auth */ ]); 
   // --- **FIX END** ---
 
   // --- Memoize the context value ---

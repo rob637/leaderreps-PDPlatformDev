@@ -218,32 +218,45 @@ const AdminFunctionsScreen = () => {
             <Card title="Feature Flags" icon={Settings} accent="PURPLE">
                 <p className="text-sm text-gray-600 mb-6">Enable or disable application features globally. Changes affect all users on next load.</p>
 
-                {/* List of Toggles */}
+               {/* List of Toggles */}
                 <div className="space-y-4">
-                    {/* Map through the flags in state */}
-                    {Object.entries(currentFlags).sort(([keyA], [keyB]) => keyA.localeCompare(keyB)).map(([flagName, isEnabled]) => (
-                        <div key={flagName} className="flex items-center justify-between p-3 border rounded-lg bg-white shadow-sm">
-                            {/* Flag Name & Description (Placeholder) */}
-                            <span className="text-sm font-medium text-gray-800">{flagName.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}</span> {/* Format name */}
-                            {/* Toggle Button */}
-                            <button
-                                onClick={() => handleToggleFlag(flagName)}
-                                disabled={isSaving}
-                                className={`flex items-center gap-1.5 px-2 py-1 rounded-full text-xs font-semibold border transition-colors ${
-                                    isEnabled !== false ? `bg-green-100 border-green-300 text-green-700` : `bg-red-100 border-red-300 text-red-700`
-                                }`}
-                                aria-pressed={isEnabled !== false} // Treat undefined/null as enabled
-                                aria-label={`Toggle ${flagName}`}
-                            >
-                                {isEnabled !== false ? <ToggleRight className="w-4 h-4" /> : <ToggleLeft className="w-4 h-4" />}
-                                {isEnabled !== false ? 'Enabled' : 'Disabled'}
-                            </button>
-                        </div>
-                    ))}
-                    {/* Message if no flags loaded */}
-                    {Object.keys(currentFlags).length === 0 && (
-                         <p className="text-sm text-gray-500 italic text-center py-4">(No feature flags found in configuration)</p>
-                    )}
+                    {/* FIX: Iterate over a defined list of *all* manageable flags,
+                      not just the ones that already exist in the database.
+                    */}
+                    {[
+                        'enableLabs',           // The missing flag
+                        'enableLabsAdvanced',
+                        'enableCommunity',
+                        'enablePlanningHub'
+                    ]
+                     .sort() // Ensure consistent order
+                     .map((flagName) => {
+                        // Get the current value from state.
+                        // isEnabled will be 'undefined' if the flag is new.
+                        const isEnabled = currentFlags[flagName]; 
+
+                        return (
+                            <div key={flagName} className="flex items-center justify-between p-3 border rounded-lg bg-white shadow-sm">
+                                {/* Flag Name */}
+                                <span className="text-sm font-medium text-gray-800">{flagName.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}</span>
+                                
+                                {/* Toggle Button */}
+                                <button
+                                    onClick={() => handleToggleFlag(flagName)}
+                                    disabled={isSaving}
+                                    className={`flex items-center gap-1.5 px-2 py-1 rounded-full text-xs font-semibold border transition-colors ${
+                                        // The logic (isEnabled !== false) correctly treats 'undefined' as 'true' (Enabled)
+                                        isEnabled !== false ? `bg-green-100 border-green-300 text-green-700` : `bg-red-100 border-red-300 text-red-700`
+                                    }`}
+                                    aria-pressed={isEnabled !== false} // Treat undefined/null as enabled
+                                    aria-label={`Toggle ${flagName}`}
+                                >
+                                    {isEnabled !== false ? <ToggleRight className="w-4 h-4" /> : <ToggleLeft className="w-4 h-4" />}
+                                    {isEnabled !== false ? 'Enabled' : 'Disabled'}
+                                </button>
+                            </div>
+                        );
+                    })}
                 </div>
 
                 {/* Save Changes Button & Status */}

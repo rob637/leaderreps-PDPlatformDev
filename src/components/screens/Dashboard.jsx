@@ -1242,19 +1242,42 @@ const DashboardScreen = () => {
   };
 
   // Handler for sharing posts to the social pod (MOCK)
-  const handleShareToPod = useCallback((postText) => {
-      console.log("[Dashboard] Sharing to pod (mock):", postText);
-      // In a real app, this would call an API or Firestore function to add the post.
-      // For now, just update local state for immediate feedback.
-      const newPost = {
-          id:`local_${Date.now()}`,
-          author: displayedUserName, // Use derived user name
-          text: postText,
-          time:"Just now"
-      };
-      // Add to the beginning of the feed array
-      setPodPosts(prev => [newPost, ...prev]);
-  }, [displayedUserName]); // Dependency: displayedUserName
+  const handleShareToPod = useCallback(async (postText) => {
+    console.log("[Dashboard] Sharing to pod:", postText);
+    
+    if (!db || !userId) {
+        console.error("[Dashboard] Cannot share to pod: missing db or userId");
+        alert("Error: Unable to share post. Please try again.");
+        return;
+    }
+    
+    try {
+        // Create the post document in Firestore
+        const postsCollectionRef = collection(db, 'community/posts/feed');
+        const newPost = {
+            authorId: userId,
+            authorName: displayedUserName,
+            text: postText,
+            createdAt: serverTimestamp(),
+        };
+        
+        // Save to Firestore
+        const docRef = await addDoc(postsCollectionRef, newPost);
+        console.log("[Dashboard] Post saved to Firestore with ID:", docRef.id);
+        
+        // Update local state for immediate feedback
+        setPodPosts(prev => [{
+            id: docRef.id,
+            author: displayedUserName,
+            text: postText,
+            time: "Just now"
+        }, ...prev]);
+        
+    } catch (error) {
+        console.error("[Dashboard] Error saving post to pod:", error);
+        alert("Error: Failed to share post. Please try again.");
+    }
+}, [db, userId, displayedUserName]);
 
   // Callback passed to EmbeddedReflectionForm, triggered on successful save
   const handleReflectionSaved = useCallback((savedEntry) => {
