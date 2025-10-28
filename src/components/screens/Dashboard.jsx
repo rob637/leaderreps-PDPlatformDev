@@ -1038,6 +1038,18 @@ const todayStr = new Date().toISOString().split('T')[0]; // Today's date string 
         // Otherwise, force Pending for today
         console.log(`[Dashboard] Forcing 'Pending' status for today (${selectedRepData.id}). Reason: Reset date mismatch (${lastResetDate} vs ${todayStr}) OR Rep ID mismatch (${savedRepId} vs ${selectedRepData.id}) OR Rep Date mismatch (${savedRepDate} vs ${todayStr})`);
         currentStatus = 'Pending';
+        
+        // Update the saved state to reflect today's selected rep (silent background update)
+        // This ensures that if the user refreshes or comes back later today, we remember
+        // which rep was assigned for today and its status
+        if (updateDailyPracticeData && (savedRepId !== selectedRepData.id || savedRepDate !== todayStr)) {
+            console.log(`[Dashboard] Updating saved rep state to today's selection: ${selectedRepData.id}`);
+            updateDailyPracticeData({
+                dailyTargetRepId: selectedRepData.id,
+                dailyTargetRepDate: todayStr,
+                dailyTargetRepStatus: 'Pending'
+            }).catch(err => console.error("[Dashboard] Failed to update daily rep selection:", err));
+        }
     }
 
     // 4. Return the Rep Object (unchanged)

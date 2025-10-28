@@ -466,23 +466,14 @@ const useFirestoreUserData = (db, userId, isAuthReady, collection, document, moc
                       updatesNeeded.dailyTargetRepStatus = fetchedData.dailyTargetRepStatus || 'Pending';
                       updatesNeeded.activeCommitments = fetchedData.activeCommitments || [];
                   }
-                   // 2. Check if Target Rep Date needs update (if ID exists but date is old/null)
-                   // This assumes the *selection* logic happens elsewhere (e.g., Dashboard)
-                   // Here, we just ensure the date field is consistent if an ID is present.
-if (fetchedData.dailyTargetRepId && fetchedData.dailyTargetRepDate !== todayStr) {
-     console.log(`[DAILY RESET ${collection}/${document}] Target Rep date is old (${fetchedData.dailyTargetRepDate}). Clearing ID and date for new selection.`);
-     updatesNeeded.dailyTargetRepDate = null;  // Clear the date
-     updatesNeeded.dailyTargetRepId = null;     // Clear the ID to allow Dashboard to select new rep
-     needsDBUpdate = true;
-                  } else if (fetchedData.dailyTargetRepId) {
-                       // Ensure current data reflects potentially missed updates
-                       updatesNeeded.dailyTargetRepDate = fetchedData.dailyTargetRepDate;
-                       updatesNeeded.dailyTargetRepId = fetchedData.dailyTargetRepId;
-                  } else {
-                        // No target rep ID set
-                       updatesNeeded.dailyTargetRepDate = null;
-                       updatesNeeded.dailyTargetRepId = null;
-                  }
+                   // 2. Preserve Target Rep ID and Date (Dashboard handles rep selection logic)
+                   // We don't clear these fields on reset - the Dashboard will determine if a new rep
+                   // should be selected based on its own logic (weakest tier matching, etc.)
+                   // This allows the Dashboard to know what rep was assigned yesterday and properly
+                   // select a new one if needed.
+                   updatesNeeded.dailyTargetRepDate = fetchedData.dailyTargetRepDate;
+                   updatesNeeded.dailyTargetRepId = fetchedData.dailyTargetRepId;
+                   console.log(`[DAILY RESET ${collection}/${document}] Preserving rep ID (${fetchedData.dailyTargetRepId}) and date (${fetchedData.dailyTargetRepDate}) for Dashboard logic.`);
 
 
                   // Apply local updates immediately for UI responsiveness
