@@ -219,7 +219,33 @@ export const ensureUserDocs = async (db, uid) => {
               streakCount: 0,
               streakCoins: 0,
               lastStatusResetDate: todayStr, 
-              arenaMode: true, 
+              arenaMode: true,
+              // NEW: Morning Bookend fields
+              morningBookend: {
+                  dailyWIN: '',
+                  otherTasks: [],
+                  readLIS: false,
+                  completedAt: null
+              },
+              // NEW: Evening Bookend fields
+              eveningBookend: {
+                  good: '',
+                  better: '',
+                  best: '',
+                  habits: {
+                      readLIS: false,
+                      completedDailyRep: false,
+                      eveningReflection: false
+                  },
+                  completedAt: null
+              },
+              // NEW: Weekly Focus fields
+              weeklyFocus: {
+                  area: '',
+                  source: 'none', // 'devPlan', 'selfSelected', or 'none'
+                  weekStartDate: null,
+                  dailyReps: []
+              }
           }
       },
       // Strategic Content (formerly user_planning)
@@ -263,6 +289,41 @@ export const ensureUserDocs = async (db, uid) => {
              if (currentData.streakCount === undefined) { updates.streakCount = 0; needsUpdate = true; }
              if (currentData.streakCoins === undefined) { updates.streakCoins = 0; needsUpdate = true; }
              if (currentData.arenaMode === undefined) { updates.arenaMode = true; needsUpdate = true; }
+             // NEW: Morning Bookend
+             if (currentData.morningBookend === undefined) {
+                 updates.morningBookend = {
+                     dailyWIN: '',
+                     otherTasks: [],
+                     readLIS: false,
+                     completedAt: null
+                 };
+                 needsUpdate = true;
+             }
+             // NEW: Evening Bookend
+             if (currentData.eveningBookend === undefined) {
+                 updates.eveningBookend = {
+                     good: '',
+                     better: '',
+                     best: '',
+                     habits: {
+                         readLIS: false,
+                         completedDailyRep: false,
+                         eveningReflection: false
+                     },
+                     completedAt: null
+                 };
+                 needsUpdate = true;
+             }
+             // NEW: Weekly Focus
+             if (currentData.weeklyFocus === undefined) {
+                 updates.weeklyFocus = {
+                     area: '',
+                     source: 'none',
+                     weekStartDate: null,
+                     dailyReps: []
+                 };
+                 needsUpdate = true;
+             }
              // Remove deprecated field if present
              if (currentData.reflection_journal !== undefined) { updates.reflection_journal = FieldValue.delete(); needsUpdate = true; }
          }
@@ -298,15 +359,39 @@ const LEADERSHIP_TIERS_FALLBACK = {
 };
 // --- MOCK USER DATA w/ RENAMED COLLECTIONS & NEW FIELDS ---
 const MOCK_DEVELOPMENT_PLAN_DATA = { currentCycle: 1, currentPlan: null, assessmentHistory: [], planHistory: [] };
-const MOCK_DAILY_PRACTICE_DATA = { activeCommitments: [], identityAnchor: '', habitAnchor: '', dailyTargetRepId: null, dailyTargetRepDate: null, dailyTargetRepStatus: 'Pending', streakCount: 0, streakCoins: 0, lastStatusResetDate: new Date().toISOString().split('T')[0], arenaMode: true };
+const MOCK_DAILY_PRACTICE_DATA = { 
+    activeCommitments: [], 
+    identityAnchor: '', 
+    habitAnchor: '', 
+    dailyTargetRepId: null, 
+    dailyTargetRepDate: null, 
+    dailyTargetRepStatus: 'Pending', 
+    streakCount: 0, 
+    streakCoins: 0, 
+    lastStatusResetDate: new Date().toISOString().split('T')[0], 
+    arenaMode: true,
+    morningBookend: { dailyWIN: '', otherTasks: [], readLIS: false, completedAt: null },
+    eveningBookend: { good: '', better: '', best: '', habits: { readLIS: false, completedDailyRep: false, eveningReflection: false }, completedAt: null },
+    weeklyFocus: { area: '', source: 'none', weekStartDate: null, dailyReps: [] }
+};
 const MOCK_STRATEGIC_CONTENT_DATA = { vision: '', mission: '', okrs: [], lastPreMortemDecision: '', risks: [], misalignmentNotes: '' };
 
 // --- MOCK GLOBAL METADATA (Catalogs - using boss's names where applicable) ---
 const MOCK_FEATURE_FLAGS = { 
-    enableCommunity: true, 
-    enableLabs: true,           // ADD THIS
-    enableLabsAdvanced: false, 
-    enablePlanningHub: true 
+    // v1 Features - Enabled by default
+    enableDevPlan: true,
+    enableReadings: true,
+    enableCourses: true,
+    enableBookends: true,        // NEW - AM/PM Bookends
+    
+    // v2 Features - Disabled for regular users (admins always see)
+    enableCommunity: false,      // Hold - Mighty Networks discussion pending
+    enableLabs: false,           // Hold - AI Coaching Lab for v2
+    enableLabsAdvanced: false,   // Hold - Advanced lab features
+    enablePlanningHub: false,    // Hold - Strategic Content Tools need to be built
+    enableVideos: false,         // Hold - Content Leader Talks need discussion
+    enableRoiReport: false,      // Hold - Executive ROI Report for v2
+    enableRecap: false           // Hold - Weekly Recap feature
 };
 const MOCK_REP_LIBRARY = { items: [] }; // Central library, maps to TARGET_REP_CATALOG and COMMITMENT_BANK conceptually
 const MOCK_EXERCISE_LIBRARY = { items: [] }; // NEW conceptual mapping

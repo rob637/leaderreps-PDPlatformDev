@@ -246,35 +246,37 @@ const NavSidebar = ({ currentScreen, setCurrentScreen, user, closeMobileMenu, is
   const { auth, featureFlags, isAdmin } = useAppServices(); // cite: useAppServices.jsx
   const [isProfileOpen, setIsProfileOpen] = useState(false);
 
-  // --- Navigation Structure (using boss's terminology & updated screens) ---
+  // --- Navigation Structure (UPDATED per boss feedback 10/28/25) ---
   const coreNav = [
     { screen: 'dashboard', label: 'The Arena', icon: Home }, // Renamed Dashboard
-    // --- REMOVED QuickStart from CORE ---
   ];
 
   const contentPillarNav = [
     { screen: 'development-plan', label: 'Development Plan', icon: Briefcase, flag: 'enableDevPlan' },
-    { screen: 'planning-hub', label: 'Strategic Content Tools', icon: Trello, flag: 'enablePlanningHub' }, // cite: PlanningHub.jsx
-    { screen: 'business-readings', label: 'Reading Library', icon: BookOpen, flag: 'enableReadings' }, // cite: BusinessReadings.jsx
-    { screen: 'leadership-videos', label: 'Leader Talks Library', icon: Film, flag: 'enableVideos' }, // cite: LeadershipVideos.jsx
-    { screen: 'applied-leadership', label: 'Course Library', icon: ShieldCheck, flag: 'enableCourses' }, // Course Hub // cite: AppliedLeadership.jsx
+    // QuickStart moved from core to Course Library section (it's a course)
+    { screen: 'quick-start-accelerator', label: 'QuickStart Course', icon: Zap, flag: 'enableCourses', badge: 'Course' },
+    { screen: 'business-readings', label: 'Professional Reading Hub', icon: BookOpen, flag: 'enableReadings' }, // cite: BusinessReadings.jsx
+    { screen: 'applied-leadership', label: 'Course Library', icon: ShieldCheck, flag: 'enableCourses' }, // cite: AppliedLeadership.jsx
+    // v2 Features (admins see these, regular users don't unless flag enabled)
+    { screen: 'planning-hub', label: 'Strategic Content Tools', icon: Trello, flag: 'enablePlanningHub' }, // cite: PlanningHub.jsx - HOLD for v2
+    { screen: 'leadership-videos', label: 'Content Leader Talks', icon: Film, flag: 'enableVideos' }, // cite: LeadershipVideos.jsx - HOLD for v2
   ];
 
   const coachingPillarNav = [
-    // --- REMOVED Daily Reflection Log ---
-    { screen: 'coaching-lab', label: 'AI Coaching Lab', icon: Mic, flag: 'enableLabs' }, // cite: Labs.jsx
-    { screen: 'executive-reflection', label: 'Executive ROI Report', icon: BarChart3, flag: 'enableRoiReport' }, // cite: ExecutiveReflection.jsx
+    // NOTE: Daily Reflection Rep now lives on Dashboard only (per boss feedback)
+    // v2 Features (admins see these, regular users don't unless flag enabled)
+    { screen: 'coaching-lab', label: 'AI Coaching Lab', icon: Mic, flag: 'enableLabs' }, // cite: Labs.jsx - HOLD for v2
+    { screen: 'executive-reflection', label: 'Executive ROI Report', icon: BarChart3, flag: 'enableRoiReport' }, // cite: ExecutiveReflection.jsx - HOLD for v2
   ];
 
   const communityPillarNav = [
-    { screen: 'community', label: 'Community Hub', icon: Users, flag: 'enableCommunity' }, // cite: CommunityScreen.jsx
+    // v2 Feature (pending Mighty Networks discussion with Cristina)
+    { screen: 'community', label: 'Leadership Community', icon: Users, flag: 'enableCommunity' }, // cite: CommunityScreen.jsx - HOLD for v2
   ];
 
   // --- System/Admin Navigation (Conditional) ---
   const systemNav = [
     { screen: 'app-settings', label: 'App Settings', icon: Settings },
-    // --- REMOVED Admin Functions link from main sidebar ---
-    // (Access is now presumably through 'App Settings')
   ];
 
   const menuSections = [
