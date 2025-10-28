@@ -340,16 +340,13 @@ const NavSidebar = ({ currentScreen, setCurrentScreen, user, closeMobileMenu, is
 
           {/* Tooltip for Collapsed State */}
           {!isNavExpanded && (
-            <span className={`absolute left-full ml-6 w-auto px-4 py-2.5 text-sm font-semibold whitespace-nowrap rounded-lg shadow-2xl opacity-0 pointer-events-none group-hover:opacity-100 transition-all duration-200 z-50`}
+            <span className={`absolute left-full ml-3 w-auto px-3 py-2 text-sm font-medium whitespace-nowrap rounded-md shadow-xl opacity-0 pointer-events-none group-hover:opacity-100 transition-all duration-150 z-50`}
                   style={{ 
-                    background: `linear-gradient(135deg, ${COLORS.TEAL} 0%, ${COLORS.TEAL}dd 100%)`,
-                    color: COLORS.OFF_WHITE,
-                    border: `2px solid ${COLORS.OFF_WHITE}40`
+                    background: '#1a1a1a',
+                    color: '#ffffff',
+                    border: '1px solid rgba(255, 255, 255, 0.1)'
                   }}>
               {label}
-              {/* Arrow pointing to the icon */}
-              <span className="absolute right-full top-1/2 -translate-y-1/2 border-8 border-transparent" 
-                    style={{ borderRightColor: COLORS.TEAL, marginRight: '-2px' }}></span>
             </span>
           )}
         </button>
@@ -382,10 +379,11 @@ const NavSidebar = ({ currentScreen, setCurrentScreen, user, closeMobileMenu, is
 
       {/* --- Navigation Sections --- */}
       <nav className="flex-1 overflow-y-auto overflow-x-hidden p-3 space-y-4"> {/* Added padding */}
-        {menuSections.map((section) => (
+        {menuSections.map((section, index) => (
           // Render section only if it still has visible items after filtering
           renderNavItems(section.items).length > 0 && (
-              <div key={section.title} className="space-y-1">
+            <React.Fragment key={section.title}>
+              <div className="space-y-1">
                 {isNavExpanded && (
                   <p className={`px-3 py-1 text-[10px] font-bold uppercase tracking-wider transition-opacity duration-300`} style={{ color: `${COLORS.TEAL}90` }}>
                     {section.title}
@@ -394,27 +392,30 @@ const NavSidebar = ({ currentScreen, setCurrentScreen, user, closeMobileMenu, is
                 {/* Render items, applying filters */}
                 {renderNavItems(section.items)}
               </div>
+              
+              {/* Insert toggle button right after SYSTEM section */}
+              {section.title === 'SYSTEM' && (
+                <div className="pt-2 pb-1">
+                  <button
+                    onClick={() => setIsNavExpanded(!isNavExpanded)}
+                    title={isNavExpanded ? 'Collapse Menu' : 'Expand Menu'}
+                    className={`relative inline-flex items-center h-7 w-12 rounded-full transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[${COLORS.TEAL}]`}
+                    style={{ background: isNavExpanded ? COLORS.TEAL : COLORS.MUTED }}
+                  >
+                    {/* Knob/Pill */}
+                    <span className={`inline-block w-6 h-6 transform bg-white rounded-full transition-all duration-300 ease-in-out shadow-md`}
+                      style={{ transform: isNavExpanded ? 'translate(20px, 0)' : 'translate(2px, 0)' }}
+                    >
+                      {/* Icon within Knob */}
+                      {isNavExpanded ? <ChevronsRight className="w-6 h-6 p-0.5 text-gray-700" /> : <ChevronsLeft className="w-6 h-6 p-0.5 text-gray-700" />}
+                    </span>
+                  </button>
+                </div>
+              )}
+            </React.Fragment>
           )
         ))}
       </nav>
-
-      {/* --- Sidebar Toggle Button (Positioned after navigation, before profile) --- */}
-      <div className="flex-shrink-0 px-3 pb-2 relative">
-        <button
-          onClick={() => setIsNavExpanded(!isNavExpanded)}
-          title={isNavExpanded ? 'Collapse Menu' : 'Expand Menu'}
-          className={`relative inline-flex items-center h-7 w-12 rounded-full transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[${COLORS.TEAL}]`}
-          style={{ background: isNavExpanded ? COLORS.TEAL : COLORS.MUTED }}
-        >
-          {/* Knob/Pill */}
-          <span className={`inline-block w-6 h-6 transform bg-white rounded-full transition-all duration-300 ease-in-out shadow-md`}
-            style={{ transform: isNavExpanded ? 'translate(20px, 0)' : 'translate(2px, 0)' }}
-          >
-            {/* Icon within Knob */}
-            {isNavExpanded ? <ChevronsLeft className="w-6 h-6 p-0.5 text-gray-700" /> : <ChevronsRight className="w-6 h-6 p-0.5 text-gray-700" />}
-          </span>
-        </button>
-      </div>
 
       {/* --- Profile Section --- */}
       <div className={`flex-shrink-0 p-3 border-t border-[${COLORS.TEAL}]/30 relative`}>
@@ -435,16 +436,13 @@ const NavSidebar = ({ currentScreen, setCurrentScreen, user, closeMobileMenu, is
           )}
           {/* Tooltip for Collapsed State */}
           {!isNavExpanded && (
-            <span className={`absolute left-full ml-6 w-auto px-4 py-2.5 text-sm font-semibold whitespace-nowrap rounded-lg shadow-2xl opacity-0 pointer-events-none group-hover:opacity-100 transition-all duration-200 z-50`}
+            <span className={`absolute left-full ml-3 w-auto px-3 py-2 text-sm font-medium whitespace-nowrap rounded-md shadow-xl opacity-0 pointer-events-none group-hover:opacity-100 transition-all duration-150 z-50`}
                   style={{ 
-                    background: `linear-gradient(135deg, ${COLORS.TEAL} 0%, ${COLORS.TEAL}dd 100%)`,
-                    color: COLORS.OFF_WHITE,
-                    border: `2px solid ${COLORS.OFF_WHITE}40`
+                    background: '#1a1a1a',
+                    color: '#ffffff',
+                    border: '1px solid rgba(255, 255, 255, 0.1)'
                   }}>
               {user?.name || 'User Profile'}
-              {/* Arrow pointing to the icon */}
-              <span className="absolute right-full top-1/2 -translate-y-1/2 border-8 border-transparent" 
-                    style={{ borderRightColor: COLORS.TEAL, marginRight: '-2px' }}></span>
             </span>
           )}
         </button>
