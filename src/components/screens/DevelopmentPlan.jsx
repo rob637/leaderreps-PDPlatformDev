@@ -869,7 +869,7 @@ const DevelopmentPlanScreen = () => {
       console.log("[DevPlanScreen] No plan found, setting view to 'assessment'.");
       setView('assessment');
     }
-  }, [developmentPlanData, isAppLoading, appError, updateDevelopmentPlanData, updateDailyPracticeData]); // Dependencies: Added update functions
+  }, [developmentPlanData, isAppLoading, appError]); // Dependencies: Removed update functions to prevent infinite loop
 
   // Scroll to top when the main view state changes (Assessment, Scan, Tracker)
   useEffect(() => {
