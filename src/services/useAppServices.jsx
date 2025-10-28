@@ -454,14 +454,19 @@ const useFirestoreUserData = (db, userId, isAuthReady, collection, document, moc
                   let needsDBUpdate = false;
 
                   // 1. Check if Status Reset is needed
-                  if (fetchedData.lastStatusResetDate !== todayStr) {
-                      console.log(`[DAILY RESET ${collection}/${document}] Date mismatch (${fetchedData.lastStatusResetDate} vs ${todayStr}). Resetting statuses.`);
+                  // Reset if: the reset date doesn't match today, OR if the target rep date is old
+                  const isResetNeeded = (fetchedData.lastStatusResetDate !== todayStr) || 
+                                       (fetchedData.dailyTargetRepDate && fetchedData.dailyTargetRepDate !== todayStr);
+                  
+                  if (isResetNeeded) {
+                      console.log(`[DAILY RESET ${collection}/${document}] Reset triggered. lastStatusResetDate: ${fetchedData.lastStatusResetDate}, dailyTargetRepDate: ${fetchedData.dailyTargetRepDate}, today: ${todayStr}`);
                       updatesNeeded.lastStatusResetDate = todayStr;
                       updatesNeeded.dailyTargetRepStatus = 'Pending'; // Reset target rep status
                       updatesNeeded.activeCommitments = (fetchedData.activeCommitments || []).map(c => ({ ...c, status: 'Pending' })); // Reset additional reps
                       needsDBUpdate = true;
                   } else {
-                      // Ensure current data reflects potentially missed updates if app was closed
+                      // Same day, no reset needed - preserve current state
+                      console.log(`[DAILY RESET ${collection}/${document}] No reset needed. Already reset for today.`);
                       updatesNeeded.lastStatusResetDate = fetchedData.lastStatusResetDate;
                       updatesNeeded.dailyTargetRepStatus = fetchedData.dailyTargetRepStatus || 'Pending';
                       updatesNeeded.activeCommitments = fetchedData.activeCommitments || [];
