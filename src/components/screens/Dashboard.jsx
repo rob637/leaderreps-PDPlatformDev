@@ -952,7 +952,7 @@ const DashboardScreen = () => {
   // --- Derived Data (Memoized for Performance) ---
   const displayedUserName = useMemo(() => user?.name || user?.email?.split('@')[0] || 'Leader', [user]);
   const greeting = useMemo(() => `Welcome to The Arena,`, []); // Static greeting
-  const todayStr = useMemo(() => new Date().toISOString().split('T')[0], []); // Today's date string YYYY-MM-DD
+const todayStr = new Date().toISOString().split('T')[0]; // Today's date string YYYY-MM-DD
 
   // --- Daily Practice State ---
   const isArenaMode = useMemo(() => dailyPracticeData?.arenaMode ?? true, [dailyPracticeData]); // cite: useAppServices.jsx
