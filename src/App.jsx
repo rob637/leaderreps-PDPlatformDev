@@ -3,71 +3,19 @@
 import React, { useState, useEffect, useMemo, useCallback, Suspense, lazy } from 'react';
 
 // --- Core Services & Context ---
-// WARNING: The following lines are commented out or replaced because this environment
-// only supports a single JSX file. All external component and service files are missing.
-
-// import {
-//   AppServiceContext,
-//   useDevelopmentPlanData, // Renamed hook
-//   useDailyPracticeData,   // Renamed hook
-//   useStrategicContentData, // Renamed hook
-//   useGlobalMetadata,
-//   updateGlobalMetadata, // Stays the same, handles nested structure now
-//   ensureUserDocs,       // For seeding user documents
-//   useAppServices,       // Hook to consume context
-// // --- IMPORT ADMIN_EMAILS CONSTANT ---
-//   ADMIN_EMAILS // NEW: Import the admin emails constant
-// } from './services/useAppServices.jsx'; // cite: useAppServices.jsx
-
-// --- START: Single-File Placeholder Definitions (To satisfy compiler) ---
-// Since we cannot import useAppServices, we mock the necessary parts here:
-const AppServiceContext = React.createContext({});
-const useAppServices = () => ({ 
-    auth: null, 
-    featureFlags: { enableCourses: true, enableDevPlan: true, enablePlanningHub: true, enableReadings: true, enableVideos: true, enableLabs: true, enableRoiReport: true, enableCommunity: true },
-    isAdmin: true, // Mock admin access to see all nav items
-    navigate: () => console.log("Navigation called (Mock)")
-});
-const ADMIN_EMAILS = ['your-admin-email@here.com', 'admin1@example.com']; 
-const ensureUserDocs = async () => true; 
-const updateGlobalMetadata = async () => true;
-// Define No-op/Placeholder Hooks for DataProvider to prevent ReferenceErrors
-const useDevelopmentPlanData = () => ({ isLoading: false, developmentPlanData: {}, error: null, updateDevelopmentPlanData: async () => true });
-const useDailyPracticeData = () => ({ isLoading: false, dailyPracticeData: {}, error: null, updateDailyPracticeData: async () => true, hasPendingDailyPractice: false });
-const useStrategicContentData = () => ({ isLoading: false, strategicContentData: {}, error: null, updateStrategicContentData: async () => true });
-const useGlobalMetadata = () => ({ isLoading: false, metadata: {
-    API_KEY: '', GEMINI_MODEL: 'gemini-1.5-flash', LEADERSHIP_TIERS: {},
-    REP_LIBRARY: { items: [] }, EXERCISE_LIBRARY: { items: [] }, WORKOUT_LIBRARY: { items: [] }, 
-    COURSE_LIBRARY: { items: [] }, SKILL_CATALOG: { items: [] }, 
-    IDENTITY_ANCHOR_CATALOG: { items: [] }, HABIT_ANCHOR_CATALOG: { items: [] }, 
-    WHY_CATALOG: { items: [] }, READING_CATALOG: { items: [] }, VIDEO_CATALOG: { items: [] }, 
-    SCENARIO_CATALOG: { items: [] }, RESOURCE_LIBRARY: {}, IconMap: {}
-}, error: null });
-// Define placeholder screen components
-const PlaceholderScreen = ({ screenName }) => (
-    <div className="p-10 text-center bg-gray-50 min-h-[500px]">
-        <h1 className="text-2xl font-bold text-red-600">Component Missing: {screenName}</h1>
-        <p className="text-gray-500 mt-2">This application expects multiple files, but is running in a single-file environment. The real component logic is not available.</p>
-    </div>
-);
-const Dashboard = () => <PlaceholderScreen screenName="Dashboard" />;
-const DevelopmentPlan = () => <PlaceholderScreen screenName="DevelopmentPlan" />;
-const Labs = () => <PlaceholderScreen screenName="Coaching Lab (Labs)" />;
-const DailyPractice = () => <PlaceholderScreen screenName="DailyPractice" />;
-const PlanningHub = () => <PlaceholderScreen screenName="PlanningHub" />;
-const BusinessReadings = () => <PlaceholderScreen screenName="BusinessReadings" />;
-const QuickStartAccelerator = () => <PlaceholderScreen screenName="QuickStartAccelerator" />;
-const ExecutiveReflection = () => <PlaceholderScreen screenName="ExecutiveReflection" />;
-const CommunityScreen = () => <PlaceholderScreen screenName="CommunityScreen" />;
-// AppliedLeadership is the one the user cares about, provide a slightly more descriptive placeholder
-const AppliedLeadership = () => <PlaceholderScreen screenName="AppliedLeadership (Course Library)" />;
-const LeadershipVideos = () => <PlaceholderScreen screenName="LeadershipVideos" />;
-const AppSettings = () => <PlaceholderScreen screenName="AppSettings" />;
-const AdminFunctions = () => <PlaceholderScreen screenName="AdminFunctions" />;
-const AdminDataMaintenance = () => <PlaceholderScreen screenName="AdminDataMaintenance" />;
-const DebugDataViewer = () => <PlaceholderScreen screenName="DebugDataViewer" />;
-
-// --- END: Single-File Placeholder Definitions ---
+// Uses the renamed hooks and provides renamed data/functions
+import {
+  AppServiceContext,
+  useDevelopmentPlanData, // Renamed hook
+  useDailyPracticeData,   // Renamed hook
+  useStrategicContentData, // Renamed hook
+  useGlobalMetadata,
+  updateGlobalMetadata, // Stays the same, handles nested structure now
+  ensureUserDocs,       // For seeding user documents
+  useAppServices,       // Hook to consume context
+// --- IMPORT ADMIN_EMAILS CONSTANT ---
+  ADMIN_EMAILS // NEW: Import the admin emails constant
+} from './services/useAppServices.jsx'; // cite: useAppServices.jsx
 
 // --- Firebase Imports (Authentication & Firestore) ---
 import { initializeApp } from 'firebase/app';
@@ -117,21 +65,21 @@ const SECRET_SIGNUP_CODE = 'mock-code-123'; // Keep for mock signup flow
    LAZY LOADED SCREEN COMPONENTS (Updated List & Paths)
 ========================================================= */
 const ScreenMap = {
-  'dashboard': Dashboard, // cite: Dashboard.jsx
-  'development-plan': DevelopmentPlan, // cite: DevelopmentPlan.jsx
-  'coaching-lab': Labs, // cite: Labs.jsx
-  'daily-practice': DailyPractice, // Replaced Reflection screen with this log entry screen // cite: DailyPractice.jsx
-  'planning-hub': PlanningHub, // cite: PlanningHub.jsx
-  'business-readings': BusinessReadings, // cite: BusinessReadings.jsx
-  'quick-start-accelerator': QuickStartAccelerator, // cite: QuickStartAccelerator.jsx - *Still loadable via direct nav if needed*
-  'executive-reflection': ExecutiveReflection, // ROI Report // cite: ExecutiveReflection.jsx
-  'community': CommunityScreen, // cite: CommunityScreen.jsx
-  'applied-leadership': AppliedLeadership, // Course Hub // cite: AppliedLeadership.jsx
-  'leadership-videos': LeadershipVideos, // cite: LeadershipVideos.jsx
-  'app-settings': AppSettings, // Renamed component file assumed
-  'admin-functions': AdminFunctions, // NEW Admin screen
-  'data-maintenance': AdminDataMaintenance, // cite: AdminDataMaintenance.jsx
-  'debug-data': DebugDataViewer, // Assumed exists
+  'dashboard': lazy(() => import('./components/screens/Dashboard.jsx')), // cite: Dashboard.jsx
+  'development-plan': lazy(() => import('./components/screens/DevelopmentPlan.jsx')), // cite: DevelopmentPlan.jsx
+  'coaching-lab': lazy(() => import('./components/screens/Labs.jsx')), // cite: Labs.jsx
+  'daily-practice': lazy(() => import('./components/screens/DailyPractice.jsx')), // Replaced Reflection screen with this log entry screen // cite: DailyPractice.jsx
+  'planning-hub': lazy(() => import('./components/screens/PlanningHub.jsx')), // cite: PlanningHub.jsx
+  'business-readings': lazy(() => import('./components/screens/BusinessReadings.jsx')), // cite: BusinessReadings.jsx
+  'quick-start-accelerator': lazy(() => import('./components/screens/QuickStartAccelerator.jsx')), // cite: QuickStartAccelerator.jsx - *Still loadable via direct nav if needed*
+  'executive-reflection': lazy(() => import('./components/screens/ExecutiveReflection.jsx')), // ROI Report // cite: ExecutiveReflection.jsx
+  'community': lazy(() => import('./components/screens/CommunityScreen.jsx')), // cite: CommunityScreen.jsx
+  'applied-leadership': lazy(() => import('./components/screens/AppliedLeadership.jsx')), // Course Hub // cite: AppliedLeadership.jsx
+  'leadership-videos': lazy(() => import('./components/screens/LeadershipVideos.jsx')), // cite: LeadershipVideos.jsx
+  'app-settings': lazy(() => import('./components/screens/AppSettings.jsx')), // Renamed component file assumed
+  'admin-functions': lazy(() => import('./components/screens/AdminFunctions.jsx')), // NEW Admin screen
+  'data-maintenance': lazy(() => import('./components/screens/AdminDataMaintenance.jsx')), // cite: AdminDataMaintenance.jsx
+  'debug-data': lazy(() => import('./components/screens/DebugDataViewer.jsx')), // Assumed exists
 };
 
 
@@ -539,8 +487,7 @@ const ScreenRouter = ({ currentScreen, navParams, navigate }) => {
  */
 const AppContent = ({ currentScreen, setCurrentScreen, user, navParams, isMobileOpen, setIsMobileOpen, isAuthRequired, isNavExpanded, setIsNavExpanded }) => {
   // Memoized callback to close mobile menu
-  // 🛠️ FIX: Change dependency from [setIsMobileMenu] to [setIsMobileOpen]
-  const closeMobileMenu = useCallback(() => setIsMobileOpen(false), [setIsMobileOpen]);
+  const closeMobileMenu = useCallback(() => setIsMobileOpen(false), [setIsMobileMenu]);
   // Get navigate function from context for ScreenRouter
   const { navigate } = useAppServices();
 
@@ -1058,7 +1005,7 @@ if (isAuthReady && !user) {
           user={user}
           navParams={navParams}
           isMobileOpen={isMobileOpen}
-          setIsMobileOpen={setIsMobileOpen}
+          setIsMobileOpen={setIsMobileOpen} // 🛠️ CORRECTED: This was the source of the ReferenceError
           isAuthRequired={authRequired} // Pass auth status down
           isNavExpanded={isNavExpanded}
           setIsNavExpanded={setIsNavExpanded}
