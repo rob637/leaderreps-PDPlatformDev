@@ -520,7 +520,7 @@ console.log(`🚨 useFirestoreUserData RETURNING for ${document}:`, JSON.stringi
   hasUpdateData: !!updateData,
   updateDataType: typeof updateData 
 }));
-return { data, isLoading: loading, error, updateData };return () => {
+return () => {
         console.log(`[useFirestoreUserData ${collection}/${document}] Cleaning up listener. Path: ${path}`);
         isMounted = false;
         if (unsubscribe) unsubscribe();
