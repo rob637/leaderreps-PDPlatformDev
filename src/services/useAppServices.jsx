@@ -108,23 +108,43 @@ const getDocEx = async (db, path) => {
 };
 
 const setDocEx = async (db, path, data, merge = false) => {
+  console.log(`[setDocEx] ===== START =====`);
+  console.log(`[setDocEx] Path: ${path}`);
+  console.log(`[setDocEx] Data:`, data);
+  console.log(`[setDocEx] Merge: ${merge}`);
+  console.log(`[setDocEx] DB exists: ${!!db}`);
+  
   if (!db) {
       console.warn(`[setDocEx] No Firestore DB instance provided for path: ${path}. Using mock.`);
       return mockSetDoc(path, data);
   }
+  
   try {
+      console.log(`[setDocEx] Creating dataWithTimestamp...`);
       const dataWithTimestamp = { ...data, _updatedAt: serverTimestamp() };
-      console.log(`[setDocEx] Attempting write to path: ${path}`, { data: dataWithTimestamp, merge });
-      await fsSetDoc(toDocRef(db, path), dataWithTimestamp, merge ? { merge: true } : undefined);
-      console.log(`[setDocEx SUCCESS] Path: ${path}, Merge: ${merge}`);
+      console.log(`[setDocEx] DataWithTimestamp created:`, dataWithTimestamp);
+      
+      console.log(`[setDocEx] Creating document reference for path: ${path}`);
+      const docRef = toDocRef(db, path);
+      console.log(`[setDocEx] Document reference created:`, docRef);
+      
+      console.log(`[setDocEx] Calling fsSetDoc...`);
+      await fsSetDoc(docRef, dataWithTimestamp, merge ? { merge: true } : undefined);
+      console.log(`[setDocEx SUCCESS] ===== Path: ${path}, Merge: ${merge} =====`);
       return true; 
   } catch (error) {
-      console.error(`[setDocEx FAILED] Path: ${path}`, error);
-      console.error(`[setDocEx FAILED] Error details:`, { 
-        code: error.code, 
-        message: error.message,
-        name: error.name,
-        stack: error.stack
+      console.error(`[setDocEx FAILED] ===== CRITICAL ERROR =====`);
+      console.error(`[setDocEx FAILED] Path: ${path}`);
+      console.error(`[setDocEx FAILED] Error object:`, error);
+      console.error(`[setDocEx FAILED] Error code:`, error?.code);
+      console.error(`[setDocEx FAILED] Error message:`, error?.message);
+      console.error(`[setDocEx FAILED] Error name:`, error?.name);
+      console.error(`[setDocEx FAILED] Full error details:`, { 
+        code: error?.code, 
+        message: error?.message,
+        name: error?.name,
+        stack: error?.stack,
+        toString: error?.toString()
       });
       return false; 
   }
@@ -500,19 +520,29 @@ const useFirestoreUserData = (db, userId, isAuthReady, collection, document, moc
 
   // --- Update Function ---
   const updateData = useCallback(async (updatesOrFn) => {
+    console.log(`[USER UPDATE] ===== START UPDATE for ${document} =====`);
+    console.log(`[USER UPDATE] DB exists: ${!!db}`);
+    console.log(`[USER UPDATE] UserID: ${userId}`);
+    console.log(`[USER UPDATE] Path: ${path}`);
+    
     if (!db || !userId || !path) {
-        console.error(`[USER UPDATE FAILED] Cannot update ${document}. Missing db, userId, or path.`);
+        console.error(`[USER UPDATE FAILED] Cannot update ${document}. Missing prerequisites.`);
+        console.error(`[USER UPDATE FAILED] DB: ${!!db}, UserID: ${!!userId}, Path: ${path}`);
         return false; // Return failure indicator
     }
+    
     try {
       let finalUpdates;
       if (typeof updatesOrFn === 'function') {
-          // Apply functional update based on current local state
-          const currentState = data; // Use the state variable 'data'
+          console.log(`[USER UPDATE] Applying functional update...`);
+          const currentState = data;
           finalUpdates = updatesOrFn(currentState);
       } else {
+          console.log(`[USER UPDATE] Using direct updates...`);
           finalUpdates = updatesOrFn;
       }
+      
+      console.log(`[USER UPDATE] Final updates:`, finalUpdates);
 
       // Add safety check for empty updates
        if (!finalUpdates || typeof finalUpdates !== 'object' || Object.keys(finalUpdates).length === 0) {
@@ -520,21 +550,23 @@ const useFirestoreUserData = (db, userId, isAuthReady, collection, document, moc
            return true; // No-op is considered success
        }
 
-      // Use updateDocEx for partial updates
-      // Use setDocEx with merge:true for "upsert" (create or update)
+      console.log(`[USER UPDATE] Calling setDocEx with merge:true...`);
       const success = await setDocEx(db, path, finalUpdates, true);
+      console.log(`[USER UPDATE] setDocEx returned: ${success}`);
+      
       if (success) {
-          console.log(`[USER UPDATE SUCCESS] ${document}. Path: ${path}`, finalUpdates);
+          console.log(`[USER UPDATE SUCCESS] ===== ${document}. Path: ${path} =====`);
           return true;
       } else {
-          console.error(`[USER UPDATE FAILED] setDocEx returned false for ${document}. Path: ${path}`);
+          console.error(`[USER UPDATE FAILED] ===== setDocEx returned false for ${document}. Path: ${path} =====`);
           return false;
       }
     } catch (e) {
-      console.error(`[USER UPDATE EXCEPTION] ${document}. Path: ${path}`, e);
-      return false; // Return failure indicator on exception
+      console.error(`[USER UPDATE EXCEPTION] ===== ${document}. Path: ${path} =====`);
+      console.error(`[USER UPDATE EXCEPTION] Error:`, e);
+      return false;
     }
-  }, [db, userId, path, document, data]); // Added 'data' dependency for functional updates
+  }, [db, userId, path, document, data]);
 
   // Return consistent structure
   return { data, isLoading: loading, error, updateData };
