@@ -1,4 +1,4 @@
-// src/App.jsx (Removed QuickStart and Daily Practice from Sidebar)
+// src/App.jsx (Toggle moved below nav content)
 
 import React, { useState, useEffect, useMemo, useCallback, Suspense, lazy } from 'react';
 
@@ -438,8 +438,8 @@ const NavSidebar = ({ currentScreen, setCurrentScreen, user, closeMobileMenu, is
       </div>
 
        {/* --- NEW: Sidebar Toggle Button (Slide Switch Style) --- */}
-        {/* MODIFIED: Changed top-1/2 to top-3/4 */}
-        <div className="absolute top-3/4 -translate-y-1/2 -right-3 z-40">
+        {/* MODIFIED POSITIONING: Moved from top-3/4 to a calculated position below navigation */}
+        <div className="absolute z-40" style={{ top: `calc(16px + 100% - 72px)`, transform: 'translateY(-100%)', right: -12 }}>
           <button
             onClick={() => setIsNavExpanded(!isNavExpanded)}
             title={isNavExpanded ? 'Collapse Menu' : 'Expand Menu'}

@@ -1,4 +1,4 @@
-// src/components/screens/Dashboard.jsx (Refactored for Consistency, Daily Resets, AI Nudge Position, Terminology, and Closure Fix)
+// src/components/screens/Dashboard.jsx (FIXED: updateDailyPracticeData ReferenceError)
 
 import React, { useMemo, useState, useEffect, useCallback } from 'react';
 // --- Core Services & Context ---
@@ -465,7 +465,7 @@ const IdentityAnchorModal = ({ isOpen, onClose, currentIdentity, onSave, suggest
         {/* Body */}
         <div className="p-6 space-y-4">
             <div className="p-3 bg-gray-100 border border-gray-200 rounded-lg text-md font-medium text-gray-600">I'm the kind of leader who...</div>
-            <textarea value={identityText} onChange={(e) => setIdentityText(e.target.value)} className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#47A88D]" rows="3" placeholder="...trusts my team." />
+            <textarea value={identityText} onChange={(e) => setIdentityText(e.target.value)} className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#47A88D] text-sm" rows="3" placeholder="...trusts my team." />
             {suggestionItems.length > 0 && ( /* ... Suggestions UI ... */
                 <div>
                     <p className="text-sm font-semibold text-gray-600 mb-2">Or, start with a suggestion:</p>
@@ -901,7 +901,7 @@ const DashboardScreen = () => {
     isLoading: isAppLoading, error: appError, featureFlags, REP_LIBRARY,
     IDENTITY_ANCHOR_CATALOG, HABIT_ANCHOR_CATALOG, WHY_CATALOG, LEADERSHIP_TIERS,
     // AI Services
-    callSecureGeminiAPI, hasGeminiKey,
+    callSecureGeminiAPI, hasGeminiKey, updateDailyPracticeData // **CRITICAL: Include writer function here**
   } = appServices; // cite: useAppServices.jsx
 
   // --- Local Component State ---
@@ -1042,6 +1042,7 @@ const todayStr = new Date().toISOString().split('T')[0]; // Today's date string 
         // Update the saved state to reflect today's selected rep (silent background update)
         // This ensures that if the user refreshes or comes back later today, we remember
         // which rep was assigned for today and its status
+        // **FIX**: Access the function from the destructured scope variable `updateDailyPracticeData`
         if (updateDailyPracticeData && (savedRepId !== selectedRepData.id || savedRepDate !== todayStr)) {
             console.log(`[Dashboard] Updating saved rep state to today's selection: ${selectedRepData.id}`);
             updateDailyPracticeData({
@@ -1061,8 +1062,8 @@ const todayStr = new Date().toISOString().split('T')[0]; // Today's date string 
         status: currentStatus // Status now strictly checked against reset date
     };
 
-  // Ensure all dependencies are included
-  }, [REP_LIBRARY, weakestTier, dailyPracticeData, todayStr]);
+  // **FIX**: Include `updateDailyPracticeData` in the dependency array
+  }, [REP_LIBRARY, weakestTier, dailyPracticeData, todayStr, updateDailyPracticeData]);
 
 
   // --- Additional Daily Reps (filtered from activeCommitments) ---
@@ -1103,14 +1104,15 @@ const todayStr = new Date().toISOString().split('T')[0]; // Today's date string 
   // --- Toggles the status of an *additional* daily rep ---
   const handleToggleAdditionalCommitment = useCallback(async (commitId) => {
       // 🚨 CRITICAL FIX: Get the LIVE function directly from the service object
-      const updateDailyPracticeData = appServices.updateDailyPracticeData;
+      // Note: Since updateDailyPracticeData is destructured above, we can use it directly
+      const updateFn = updateDailyPracticeData; // Use the destructured variable name
 
       if (isSavingRep) return; // Prevent double clicks
       console.log("[Dashboard] Toggling additional commitment:", commitId);
       setIsSavingRep(true);
 
       // CRITICAL FIX: Ensure update function is available before proceeding
-      if (!updateDailyPracticeData) {
+      if (!updateFn) {
           console.error("[Dashboard] Failed to update additional rep: Update service function is not available.");
           alert("Error: Update service function is not available.");
           setIsSavingRep(false); return;
@@ -1147,7 +1149,7 @@ const todayStr = new Date().toISOString().split('T')[0]; // Today's date string 
 
       try {
         // Use the specific update function for daily practice data
-        const success = await updateDailyPracticeData(updates); // cite: useAppServices.jsx
+        const success = await updateFn(updates); // cite: useAppServices.jsx
         if (success) {
             console.log("[Dashboard] Additional rep status updated successfully.");
             // OPTIONAL: Trigger a smaller, less intrusive confirmation?
@@ -1162,18 +1164,14 @@ const todayStr = new Date().toISOString().split('T')[0]; // Today's date string 
       } finally {
         setIsSavingRep(false); // Reset loading state
       }
-    }, [appServices, dailyPracticeData, isSavingRep, dailyTargetRep.id]); // Dependencies
+    }, [updateDailyPracticeData, dailyPracticeData, isSavingRep, dailyTargetRep.id]); // Dependencies
 
 
   // --- Marks the *Daily Target Rep* as complete for *today* ---
   const completeTargetRep = useCallback(async () => {
        console.log('🔍 completeTargetRep CALLED');
-    console.log('🔍 appServices:', appServices);
-    console.log('🔍 updateDailyPracticeData exists:', !!appServices.updateDailyPracticeData);
-    console.log('🔍 updateDailyPracticeData type:', typeof appServices.updateDailyPracticeData);
-    // 🚨 CRITICAL FIX: Get the LIVE function directly from the service object
-      const updateDailyPracticeData = appServices.updateDailyPracticeData;
-
+       // Note: updateDailyPracticeData is destructured from useAppServices()
+    
       // Prevent action if already saving, rep is default, or already committed for today
       if (isSavingRep || dailyTargetRep.id === 'default' || (dailyTargetRep.status === 'Committed' && dailyPracticeData?.dailyTargetRepDate === todayStr)) {
            console.log("[Dashboard] completeTargetRep: Action skipped (saving, default, or already complete today).");
@@ -1245,7 +1243,7 @@ const todayStr = new Date().toISOString().split('T')[0]; // Today's date string 
       } finally {
           setIsSavingRep(false); // Reset loading state
       }
-  }, [appServices, isSavingRep, dailyTargetRep, dailyPracticeData, todayStr, streakCount, streakCoins, triggerCelebration]); // Dependencies
+  }, [isSavingRep, dailyTargetRep, dailyPracticeData, todayStr, streakCount, streakCoins, triggerCelebration, updateDailyPracticeData, db, userId]); // Dependencies
 
 
   // Handler for the "Let's Do It!" button in the 2-Minute Challenge modal
@@ -1314,7 +1312,8 @@ const todayStr = new Date().toISOString().split('T')[0]; // Today's date string 
   // Handler for toggling Arena/Solo mode
   const handleModeToggle = async () => {
       // 🚨 CRITICAL FIX: Get the LIVE function directly from the service object
-      const updateDailyPracticeData = appServices.updateDailyPracticeData;
+      // Note: updateDailyPracticeData is destructured above, we can use it directly
+      const updateFn = updateDailyPracticeData;
 
       if (isSavingMode) return;
       setIsSavingMode(true);
@@ -1322,7 +1321,7 @@ const todayStr = new Date().toISOString().split('T')[0]; // Today's date string 
       console.log(`[Dashboard] Toggling Arena Mode to: ${newMode}`);
 
       // CRITICAL FIX: Check for update function
-      if (!updateDailyPracticeData) {
+      if (!updateFn) {
           console.error("[Dashboard] Failed to update mode: Update service function is not available.");
           alert("Error: Mode toggle service is missing.");
           setIsSavingMode(false);
@@ -1331,7 +1330,7 @@ const todayStr = new Date().toISOString().split('T')[0]; // Today's date string 
 
       try {
           // Update the arenaMode field in dailyPracticeData
-          const success = await updateDailyPracticeData({ arenaMode: newMode }); // cite: useAppServices.jsx
+          const success = await updateFn({ arenaMode: newMode }); // cite: useAppServices.jsx
           if (!success) throw new Error("updateDailyPracticeData returned false");
           console.log("[Dashboard] Arena Mode updated successfully.");
       } catch (error) {
@@ -1347,15 +1346,15 @@ const todayStr = new Date().toISOString().split('T')[0]; // Today's date string 
   // Save Identity Anchor (updates dailyPracticeData)
   const handleSaveIdentity = async (newIdentitySuffix) => {
     // 🚨 CRITICAL FIX: Get the LIVE function directly from the service object
-    const updateDailyPracticeData = appServices.updateDailyPracticeData;
+    const updateFn = updateDailyPracticeData;
 
     if (!newIdentitySuffix.trim()) { alert("Identity anchor cannot be empty."); return; }
     // CRITICAL FIX: Check for update function
-    if (!updateDailyPracticeData) { console.error("[Dashboard] Identity update failed: Service missing."); alert("Update service is missing."); return; }
+    if (!updateFn) { console.error("[Dashboard] Identity update failed: Service missing."); alert("Update service is missing."); return; }
 
     console.log("[Dashboard] Saving Identity Anchor:", newIdentitySuffix);
     try {
-      const success = await updateDailyPracticeData({ identityAnchor: newIdentitySuffix.trim() }); // cite: useAppServices.jsx
+      const success = await updateFn({ identityAnchor: newIdentitySuffix.trim() }); // cite: useAppServices.jsx
       if (success) {
           setIsIdentityModalOpen(false); // Close modal on success
           console.log("[Dashboard] Identity Anchor saved.");
@@ -1366,15 +1365,15 @@ const todayStr = new Date().toISOString().split('T')[0]; // Today's date string 
   // Save Habit Anchor (updates dailyPracticeData)
   const handleSaveHabitAnchor = async (newAnchor) => {
     // 🚨 CRITICAL FIX: Get the LIVE function directly from the service object
-    const updateDailyPracticeData = appServices.updateDailyPracticeData;
+    const updateFn = updateDailyPracticeData;
 
     if (!newAnchor.trim()) { alert("Habit anchor cannot be empty."); return; }
     // CRITICAL FIX: Check for update function
-    if (!updateDailyPracticeData) { console.error("[Dashboard] Habit Anchor update failed: Service missing."); alert("Update service is missing."); return; }
+    if (!updateFn) { console.error("[Dashboard] Habit Anchor update failed: Service missing."); alert("Update service is missing."); return; }
 
     console.log("[Dashboard] Saving Habit Anchor:", newAnchor);
     try {
-      const success = await updateDailyPracticeData({ habitAnchor: newAnchor.trim() }); // cite: useAppServices.jsx
+      const success = await updateFn({ habitAnchor: newAnchor.trim() }); // cite: useAppServices.jsx
       if (success) {
           setIsHabitModalOpen(false); // Close modal on success
           console.log("[Dashboard] Habit Anchor saved.");
