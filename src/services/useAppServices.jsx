@@ -513,13 +513,13 @@ const useFirestoreUserData = (db, userId, isAuthReady, collection, document, moc
 
     // --- Cleanup ---
     // Return consistent structure
-console.log(`🚨 useFirestoreUserData RETURNING for ${document}:`, { 
+console.log(`🚨 useFirestoreUserData RETURNING for ${document}:`, JSON.stringify({ 
   hasData: !!data, 
   isLoading: loading, 
   hasError: !!error, 
   hasUpdateData: !!updateData,
   updateDataType: typeof updateData 
-});
+}));
 return { data, isLoading: loading, error, updateData };return () => {
         console.log(`[useFirestoreUserData ${collection}/${document}] Cleaning up listener. Path: ${path}`);
         isMounted = false;
