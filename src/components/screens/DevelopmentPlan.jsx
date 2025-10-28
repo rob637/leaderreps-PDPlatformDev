@@ -961,9 +961,10 @@ const DevelopmentPlanScreen = () => {
 
       console.log("[handleAssessmentComplete] Development Plan document saved/updated.");
       // Sync the new plan's core reps to the daily practice list
-      await syncPlanToDailyPractice(plan);
+     await syncPlanToDailyPractice(plan);
       console.log("[handleAssessmentComplete] Sync complete. View should update to 'tracker'.");
       // The view should change automatically via the useEffect watching developmentPlanData
+      setIsSaving(false); // Reset saving state after successful save
 
     } catch (error) {
       console.error("[handleAssessmentComplete] Error saving assessment/plan:", error);
