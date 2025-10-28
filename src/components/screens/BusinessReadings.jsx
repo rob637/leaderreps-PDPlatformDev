@@ -1,4 +1,4 @@
-// src/components/screens/BusinessReadings.jsx (Refactored for Consistency, Context, Terminology)
+// src/components/screens/BusinessReadings.jsx (Refactored for Consistency, Context, Terminology - FIXED HEADER)
 
 import React, { useState, useMemo, useRef, useEffect, useCallback } from 'react';
 // --- Core Services & Context ---
@@ -7,7 +7,7 @@ import { useAppServices } from '../../services/useAppServices.jsx'; // cite: use
 // --- Icons ---
 import {
   BookOpen, Target, CheckCircle, Clock, AlertTriangle, MessageSquare, Filter, TrendingUp,
-  Star, Search as SearchIcon, Cpu, Zap, Info, Check, Loader, Save, ArrowLeft // Added Save, ArrowLeft
+  Star, Search as SearchIcon, Cpu, Zap, Info, Check, Loader, Save, ArrowLeft
 } from 'lucide-react';
 
 /* =========================================================
@@ -383,10 +383,13 @@ function BookListStable({
                         <div key={tier}
                              className="rounded-2xl shadow-xl overflow-hidden border-2"
                              style={{ background: COLORS.OFF_WHITE, borderColor: COLORS.SUBTLE }}>
-                          {/* Category Header */}
-                          <div className="p-5" style={{ background: COLORS.NAVY }}> {/* Use NAVY background */}
-                            <h3 className="text-xl font-bold flex items-center gap-2" style={{ color: COLORS.OFF_WHITE }}>{tier}</h3>
-                            <p className="text-sm mt-1" style={{ color: COLORS.SUBTLE }}>{booksInCategory.length} item{booksInCategory.length !== 1 ? 's' : ''} available</p>
+                          {/* Category Header - MODIFIED FOR CONSISTENCY */}
+                          <div className="p-4 border-b" style={{ background: COLORS.LIGHT_GRAY, borderColor: COLORS.SUBTLE }}>
+                            <h3 className="text-lg font-extrabold flex items-center gap-2" style={{ color: COLORS.NAVY }}>
+                                <Target className="w-5 h-5" style={{ color: COLORS.ORANGE }} />
+                                {tier}
+                            </h3>
+                            <p className="text-sm mt-1" style={{ color: COLORS.MUTED }}>{booksInCategory.length} item{booksInCategory.length !== 1 ? 's' : ''} available</p>
                           </div>
 
                           {/* Book Grid within Category */}
@@ -596,8 +599,8 @@ function BookFlyerStable({
           <AICoachInput
             aiQuery={aiQuery}
             handleAiQueryChange={handleAiQueryChange}
-            submitHandler={submitHandler}
-            isSubmitting={isSubmitting}
+            submitHandler={submitAiHandler}
+            isSubmitting={isSubmittingAi}
             questionFeedback={questionFeedback}
             selectedBookTitle={selectedBook.title} // Pass title for placeholder
           />
@@ -757,9 +760,13 @@ export default function BusinessReadingsScreen() {
       setAiQuery('');             // Clear AI query
       setAiResponse('');          // Clear AI response
       setIsSubmittingAi(false);    // Reset AI loading state
-      setIsCommitted(false);        // Reset commitment status for the new book
+      // Check if this book is already an active commitment today
+      const isCurrentlyCommitted = (dailyPracticeData?.activeCommitments || []).some(
+          c => c.source === 'BusinessReadings' && c.id.includes(`read_${selectedBook.id}`) && c.status === 'Pending' // Check for the base ID and status
+      );
+      setIsCommitted(isCurrentlyCommitted);
     }
-  }, [selectedBook]); // Run only when selectedBook changes
+  }, [selectedBook, dailyPracticeData]); // Run only when selectedBook or dailyPracticeData changes
 
 
   /* ---------- Event Listener for Closing Flyer ---------- */
@@ -770,7 +777,7 @@ export default function BusinessReadingsScreen() {
         setSelectedBook(null);
     };
     window.addEventListener('lr-close-flyer', handler);
-    // Cleanup listener on component unmount
+    // Cleanup listener on unmount
     return () => window.removeEventListener('lr-close-flyer', handler);
   }, []); // Run only once on mount
 
