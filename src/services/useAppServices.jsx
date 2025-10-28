@@ -508,7 +508,8 @@ const useFirestoreUserData = (db, userId, isAuthReady, collection, document, moc
        }
 
       // Use updateDocEx for partial updates
-      const success = await updateDocEx(db, path, finalUpdates, true);
+      // Use setDocEx with merge:true for "upsert" (create or update)
+      const success = await setDocEx(db, path, finalUpdates, true); // [!code ++]
       if (success) {
           console.log(`[USER UPDATE SUCCESS] ${document}. Path: ${path}`, finalUpdates);
           return true;
