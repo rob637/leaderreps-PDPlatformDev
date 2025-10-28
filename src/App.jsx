@@ -63,10 +63,10 @@ const SECRET_SIGNUP_CODE = 'mock-code-123'; // Keep for mock signup flow
 
 // --- Helper function to extract first name ---
 const getFirstName = (fullName) => {
-  if (!fullName) return 'Leader';
+  if (!fullName) return null; // Return null instead of 'Leader' to allow fallback logic
   // Split by space and take the first part
   const parts = fullName.trim().split(/\s+/);
-  return parts[0] || 'Leader';
+  return parts[0] || null;
 };
 
 /* =========================================================
@@ -910,7 +910,8 @@ const App = ({ initialState }) => {
              console.log("[App Init Timeout] Found currentUser, setting state.");
              const uid = currentUser.uid;
              const email = currentUser.email;
-             const name = getFirstName(currentUser.displayName) || email?.split('@')[0] || 'Leader';
+             const firstName = getFirstName(currentUser.displayName);
+             const name = firstName || email?.split('@')[0] || 'Leader';
              setUserId(uid);
              setUser({ name, email, userId: uid });
              setAuthRequired(false);
@@ -933,7 +934,8 @@ const App = ({ initialState }) => {
           const uid = currentUser.uid;
           const email = currentUser.email;
           // Fetch display name or derive from email
-          const name = getFirstName(currentUser.displayName) || email.split('@')[0] || 'Leader';
+          const firstName = getFirstName(currentUser.displayName);
+          const name = firstName || email.split('@')[0] || 'Leader';
           console.log(`[App Init] User Authenticated: ${name} (${uid})`);
 
           // --- CRITICAL: Ensure user docs exist *after* confirming login ---
