@@ -326,19 +326,19 @@ const NavSidebar = ({ currentScreen, setCurrentScreen, user, closeMobileMenu, is
             style={{ color: isActive ? COLORS.OFF_WHITE : COLORS.SUBTLE }}
           />
 
-          /* Label (only when expanded) */
+          {/* Label (only when expanded) */}
           {isNavExpanded && (
             <span className={`flex-1 text-left whitespace-nowrap overflow-hidden overflow-ellipsis transition-opacity duration-300 ${isNavExpanded ? 'opacity-100' : 'opacity-0'}`}>
               {label}
             </span>
           )}
 
-          /* Badge (only when expanded) */
+          {/* Badge (only when expanded) */}
           {isNavExpanded && item.badge && (
             <span className={`ml-2 px-2 py-0.5 text-xs font-bold rounded-full bg-[${COLORS.ORANGE}] text-white`}>{item.badge}</span>
           )}
 
-          /* Tooltip for Collapsed State */
+          {/* Tooltip for Collapsed State */}
           {!isNavExpanded && (
             <span className={`absolute left-full ml-4 w-auto px-3 py-1.5 bg-[${COLORS.NAVY}] text-white text-xs whitespace-nowrap rounded-md shadow-lg opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity duration-300 z-50`}>
               {label}
@@ -383,7 +383,7 @@ const NavSidebar = ({ currentScreen, setCurrentScreen, user, closeMobileMenu, is
                     {section.title}
                   </p>
                 )}
-                /* Render items, applying filters */
+                {/* Render items, applying filters */}
                 {renderNavItems(section.items)}
               </div>
           )
@@ -403,11 +403,11 @@ const NavSidebar = ({ currentScreen, setCurrentScreen, user, closeMobileMenu, is
             className={`w-5 h-5 flex-shrink-0 transition-colors duration-200 ${isNavExpanded ? 'mr-3' : ''}`}
             style={{ color: COLORS.SUBTLE }}
           />
-          /* User Name (only when expanded) */
+          {/* User Name (only when expanded) */}
           {isNavExpanded && (
             <span className="truncate text-white transition-opacity duration-300">{user?.name || `Guest`}</span>
           )}
-          /* Tooltip for Collapsed State */
+          {/* Tooltip for Collapsed State */}
           {!isNavExpanded && (
             <span className={`absolute left-full ml-4 w-auto px-3 py-1.5 bg-[${COLORS.NAVY}] text-white text-xs whitespace-nowrap rounded-md shadow-lg opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity duration-300 z-50`}>
               {user?.name || 'User Profile'}
@@ -415,7 +415,7 @@ const NavSidebar = ({ currentScreen, setCurrentScreen, user, closeMobileMenu, is
           )}
         </button>
 
-        /* Profile Pop-up Menu */
+        {/* Profile Pop-up Menu */}
         {isProfileOpen && (
           <div
             className={`absolute bottom-full mb-2 w-60 p-4 rounded-lg shadow-2xl z-40 animate-in fade-in slide-in-from-bottom-2 duration-200`}
@@ -540,12 +540,12 @@ const AppContent = ({ currentScreen, setCurrentScreen, user, navParams, isMobile
              <p className="text-xs text-gray-500">
                 © {currentYear} LeaderReps. All rights reserved.
              </p>
-             /* Optional: Add links like Privacy Policy, Terms of Service */
-             /* <div className="mt-1 space-x-2">
+             {/* Optional: Add links like Privacy Policy, Terms of Service */}
+             {/* <div className="mt-1 space-x-2">
                  <a href="/privacy" className="text-xs text-gray-400 hover:underline">Privacy Policy</a>
                  <span className="text-gray-400">|</span>
                  <a href="/terms" className="text-xs text-gray-400 hover:underline">Terms of Service</a>
-             </div> */
+             </div> */}
         </footer>
       </main>
     </div>
