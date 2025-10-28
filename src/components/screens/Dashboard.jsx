@@ -1146,7 +1146,11 @@ const DashboardScreen = () => {
 
   // --- Marks the *Daily Target Rep* as complete for *today* ---
   const completeTargetRep = useCallback(async () => {
-      // 🚨 CRITICAL FIX: Get the LIVE function directly from the service object
+       console.log('🔍 completeTargetRep CALLED');
+    console.log('🔍 appServices:', appServices);
+    console.log('🔍 updateDailyPracticeData exists:', !!appServices.updateDailyPracticeData);
+    console.log('🔍 updateDailyPracticeData type:', typeof appServices.updateDailyPracticeData);
+    // 🚨 CRITICAL FIX: Get the LIVE function directly from the service object
       const updateDailyPracticeData = appServices.updateDailyPracticeData; 
 
       // Prevent action if already saving, rep is default, or already committed for today
