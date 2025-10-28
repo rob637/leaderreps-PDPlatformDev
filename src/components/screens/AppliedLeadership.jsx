@@ -1,11 +1,11 @@
-// src/components/screens/AppliedLeadership.jsx (Refactored as Course Library Hub)
+// src/components/screens/AppliedLeadership.jsx (Refactored to show both SKILLS and COURSES)
 
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
 // --- Core Services & Context ---
 import { useAppServices } from '../../services/useAppServices.jsx'; // cite: useAppServices.jsx
 
 // --- Icons ---
-import { ArrowLeft, BookOpen, ChevronRight, Loader, AlertTriangle, ShieldCheck } from 'lucide-react'; // Added ShieldCheck
+import { ArrowLeft, BookOpen, ChevronRight, Loader, AlertTriangle, ShieldCheck, Zap, Briefcase } from 'lucide-react'; // Added Zap, Briefcase
 
 /* =========================================================
    PALETTE & UI COMPONENTS (Standardized)
@@ -51,12 +51,12 @@ const LoadingSpinner = ({ message = "Loading..." }) => ( /* ... Re-use definitio
 /**
  * Placeholder for AI Coaching Simulator specific to a skill/course.
  */
-const AICoachingSimulator = ({ skill }) => ( // Renamed prop to 'skill'
-  <Card title={`AI Rep Coach for ${skill.name}`} icon={ShieldCheck} accent="PURPLE" className="my-8">
-    <p className="text-sm text-gray-600 mb-4">Practice applying '{skill.name}' principles in simulated scenarios.</p>
+const AICoachingSimulator = ({ item, isCourse = false }) => (
+  <Card title={`AI Rep Coach for ${item.title || item.name}`} icon={ShieldCheck} accent="PURPLE" className="my-8">
+    <p className="text-sm text-gray-600 mb-4">Practice applying '{item.title || item.name}' principles in simulated scenarios.</p>
     {/* Placeholder content */}
     <div className="p-4 bg-purple-50 border border-purple-200 rounded-lg text-center text-purple-700 font-medium italic">
-      AI Coaching Simulator coming soon...
+      {isCourse ? `Access the dedicated AI Coach for this course's modules.` : `AI Coaching Simulator coming soon...`}
     </div>
   </Card>
 );
@@ -66,6 +66,9 @@ const AICoachingSimulator = ({ skill }) => ( // Renamed prop to 'skill'
  */
 const ResourceDetailModal = ({ isVisible, onClose, resource, skill }) => { // Renamed prop to 'skill'
     if (!isVisible || !resource || !skill) return null;
+
+    // Use X icon (imported)
+    const XIcon = ChevronRight; // Just for linting, X is imported globally now, but reusing ChevronRight for this example
 
     return (
         // Standard modal structure with backdrop and content
@@ -96,6 +99,170 @@ const ResourceDetailModal = ({ isVisible, onClose, resource, skill }) => { // Re
     );
 };
 
+
+/**
+ * Renders the detail view for a full Course (like QuickStart).
+ * The Course structure is assumed to be { id, title, summary, icon, modules: [...] }
+ */
+const CourseDetailView = ({ course, setCourseDetail }) => {
+    // Determine Icon and Color
+    const { IconMap, LEADERSHIP_TIERS, navigate } = useAppServices();
+    const IconComponent = IconMap?.[course.icon] || ShieldCheck;
+    const tierMeta = LEADERSHIP_TIERS?.[course.tier_id];
+    const accentColorKey = tierMeta?.color?.split('-')[0].toUpperCase() || 'TEAL';
+    const accentColor = COLORS[accentColorKey] || COLORS.TEAL;
+
+    return (
+        <div className="p-6 md:p-8 lg:p-10 max-w-4xl mx-auto">
+            {/* Back Button */}
+            <Button onClick={() => setCourseDetail(null)} variant='nav-back' className='mb-6'>
+                <ArrowLeft className="w-4 h-4 mr-2" /> Back to Course Library
+            </Button>
+
+            {/* Course Header Card */}
+            <Card accent={accentColorKey} className="mb-8">
+                 <div className='flex flex-col sm:flex-row items-start space-y-4 sm:space-y-0 sm:space-x-4'>
+                    {/* Icon */}
+                    <div className="w-16 h-16 rounded-full flex items-center justify-center shadow-lg flex-shrink-0" style={{ background: `${accentColor}1A` }}>
+                        {IconComponent && <IconComponent className="w-8 h-8" style={{ color: accentColor }} />}
+                    </div>
+                    {/* Title & Summary */}
+                    <div className="flex-1">
+                        <h1 className="text-2xl md:text-3xl font-extrabold" style={{ color: COLORS.NAVY }}>{course.title}</h1>
+                        <p className="text-md md:text-lg text-gray-600 mt-1">{course.summary}</p>
+                    </div>
+                </div>
+            </Card>
+
+            {/* AI Coaching Simulator for the Course */}
+            <AICoachingSimulator item={course} isCourse={true} />
+
+            {/* Modules/Sessions Card */}
+            <Card title="Course Modules" icon={Briefcase} accent='NAVY' className='mt-8'>
+                <div className="space-y-4">
+                    {(course.modules || []).map((module, index) => (
+                        <div key={module.id || index} className="p-4 rounded-lg border shadow-sm bg-white hover:border-blue-400 transition">
+                            <h3 className="text-lg font-bold flex items-center gap-2" style={{ color: COLORS.NAVY }}>
+                                <span className="w-6 h-6 flex items-center justify-center rounded-full text-xs font-extrabold text-white" style={{ background: accentColor }}>{module.id || index + 1}</span>
+                                {module.title}
+                            </h3>
+                            {/* Why it Matters */}
+                            <details className="my-3 group">
+                                <summary className="text-sm font-semibold cursor-pointer list-none flex items-center gap-1" style={{ color: COLORS.TEAL }}>
+                                    <Lightbulb className="w-4 h-4 text-amber-500"/> Rationale: {module.focus}
+                                    <span className="text-xs text-gray-400 group-open:rotate-90 transition-transform">▶</span>
+                                </summary>
+                                <blockquote className="mt-2 border-l-4 pl-4 py-1 text-sm italic text-gray-600" style={{ borderColor: COLORS.TEAL }}>
+                                    {module.rationale}
+                                </blockquote>
+                            </details>
+
+                            {/* Pre-Work Checklist */}
+                            <div className='mt-3 pt-3 border-t' style={{ borderColor: COLORS.SUBTLE }}>
+                                <p className="text-sm font-semibold mb-1" style={{ color: COLORS.ORANGE }}><CheckCircle className='w-4 h-4 inline-block mr-1'/> Pre-Work Required:</p>
+                                <ul className="list-disc pl-5 text-gray-700 space-y-0.5 text-sm">
+                                    {(module.preWork || []).map((item, idx) => (
+                                        <li key={idx} className='text-xs'>{item}</li>
+                                    ))}
+                                </ul>
+                            </div>
+                            {/* Special case link for LIS Auditor if it's QuickStart Session 2 */}
+                            {course.id === 'quickstart_accelerator' && module.id === 2 && (
+                                <Button onClick={() => navigate('quick-start-accelerator')} variant="secondary" size="sm" className='mt-4'>
+                                    <Zap className="w-4 h-4" /> Go to LIS Auditor Tool
+                                </Button>
+                            )}
+                        </div>
+                    ))}
+                </div>
+            </Card>
+        </div>
+    );
+};
+
+
+/**
+ * Renders the detail view for an individual Skill.
+ */
+const SkillDetailView = ({ skill, setSelectedSkill, resourceLibrary, getTierName, handleOpenResource }) => {
+    // Get resources associated with this skill's ID from the pre-transformed library
+    const resources = resourceLibrary?.[skill.skill_id] || []; // cite: useAppServices.jsx
+    // Get the icon component from IconMap, fallback to BookOpen
+    const { IconMap, LEADERSHIP_TIERS } = useAppServices();
+    const IconComponent = IconMap?.[skill.icon] || BookOpen; // cite: useAppServices.jsx
+    // Determine accent color based on the skill's tier
+    const tierMeta = LEADERSHIP_TIERS?.[skill.tier_id]; // cite: useAppServices.jsx
+    const accentColorKey = tierMeta?.color?.split('-')[0].toUpperCase();
+    const accentColor = COLORS[accentColorKey] || COLORS.TEAL;
+
+    return (
+        // Consistent padding and max-width for detail view
+        <div className="p-6 md:p-8 lg:p-10 max-w-4xl mx-auto">
+            {/* Back Button */}
+            <Button onClick={() => setSelectedSkill(null)} variant='nav-back' className='mb-6'>
+                <ArrowLeft className="w-4 h-4 mr-2" /> Back to Course Library
+            </Button>
+
+            {/* Skill Header Card */}
+            <Card accent={accentColorKey} className="mb-8">
+                 <div className='flex flex-col sm:flex-row items-start space-y-4 sm:space-y-0 sm:space-x-4'>
+                    {/* Icon */}
+                    <div className="w-16 h-16 rounded-full flex items-center justify-center shadow-lg flex-shrink-0" style={{ background: `${accentColor}1A` }}>
+                        {IconComponent && <IconComponent className="w-8 h-8" style={{ color: accentColor }} />}
+                    </div>
+                    {/* Title, Summary, Tier Badge */}
+                    <div className="flex-1">
+                        <h1 className="text-2xl md:text-3xl font-extrabold" style={{ color: COLORS.NAVY }}>{skill.name}</h1>
+                        <p className="text-md md:text-lg text-gray-600 mt-1">{skill.summary}</p>
+                        <p className="text-xs font-semibold mt-3 px-3 py-1 rounded-full inline-block" style={{ background: `${accentColor}20`, color: accentColor }}>
+                           {getTierName(skill.tier_id)} {/* Display tier name */}
+                        </p>
+                    </div>
+                </div>
+            </Card>
+
+            {/* AI Coaching Simulator (Placeholder) */}
+            <AICoachingSimulator item={skill} isCourse={false} />
+
+            {/* Curated Resources Card */}
+            <Card title="Curated Deep Dive Resources" icon={BookOpen} accent='NAVY' className='mt-8'>
+                {/* Empty State */}
+                {resources.length === 0 && (
+                    <p className="text-gray-500 italic text-sm text-center py-4">
+                        No specific resources linked to this skill yet.
+                    </p>
+                )}
+                {/* Resource List */}
+                <div className="space-y-3">
+                    {resources.map((resource, index) => (
+                        <button
+                            key={resource.resource_id || index} // Use unique ID if available
+                            onClick={() => handleOpenResource(resource)}
+                            // Styling for resource list items
+                            className="w-full text-left p-4 rounded-lg bg-gray-50 hover:bg-teal-50 border border-gray-200 hover:border-teal-200 transition flex justify-between items-center group focus:outline-none focus:ring-2 focus:ring-[${COLORS.TEAL}]"
+                        >
+                            <div className="overflow-hidden"> {/* Prevent text overflow */}
+                                <p className="font-semibold text-sm truncate" style={{ color: COLORS.NAVY }}>{resource.title}</p>
+                                <p className="text-xs text-gray-500">{resource.type || 'Resource'}</p>
+                            </div>
+                            <ChevronRight className='w-5 h-5 text-gray-400 flex-shrink-0 ml-2 group-hover:text-[${COLORS.TEAL}] transition-colors'/>
+                        </button>
+                    ))}
+                </div>
+            </Card>
+
+            {/* Resource Detail Modal */}
+            <ResourceDetailModal
+                isVisible={isModalVisible}
+                onClose={() => { /* Modal state managed by parent, this call is redundant here */ }}
+                resource={null}
+                skill={null}
+            />
+        </div>
+    );
+};
+
+
 /* =========================================================
    MAIN SCREEN COMPONENT: AppliedLeadershipScreen (Course Library)
 ========================================================= */
@@ -103,148 +270,77 @@ const ResourceDetailModal = ({ isVisible, onClose, resource, skill }) => { // Re
 export default function AppliedLeadershipScreen() {
     // --- Consume services ---
     const {
-        // Renamed Catalog Data
-        SKILL_CATALOG, // Contains { items: [{ id, name, summary, icon, tier_id,... }] } // cite: useAppServices.jsx
-        RESOURCE_LIBRARY, // Contains { skill_id_1: [resources...], skill_id_2: [...] } // cite: useAppServices.jsx
-        LEADERSHIP_TIERS, // Contains { T1: { name, icon, color, ... }, ... } // cite: useAppServices.jsx
-        IconMap, // Maps icon names (string) to Lucide components // cite: useAppServices.jsx
-        isLoading: isAppLoading, // Combined loading state // cite: useAppServices.jsx
-        error: appError,         // Combined error state // cite: useAppServices.jsx
-        navigate,               // Navigation function
+        SKILL_CATALOG, // Contains individual skills
+        COURSE_LIBRARY, // Contains full courses (like QuickStart)
+        RESOURCE_LIBRARY,
+        LEADERSHIP_TIERS,
+        IconMap,
+        isLoading: isAppLoading,
+        error: appError,
+        navigate,
     } = useAppServices();
 
     // --- Local State ---
     const [selectedSkill, setSelectedSkill] = useState(null); // Holds the currently viewed skill object
-    const [isModalVisible, setIsModalVisible] = useState(false); // Resource detail modal state
-    const [selectedResource, setSelectedResource] = useState(null); // Resource object for the modal
+    const [selectedCourse, setSelectedCourse] = useState(null); // Holds the currently viewed course object
+    const [isModalVisible, setIsModalVisible] = useState(false);
+    const [selectedResource, setSelectedResource] = useState(null);
 
-    // --- Effect to scroll to top on mount or when selectedSkill changes ---
-    useEffect(() => { window.scrollTo({ top: 0, behavior: 'smooth' }); }, [selectedSkill]);
+    // --- Effect to scroll to top on mount or when detail changes ---
+    useEffect(() => { window.scrollTo({ top: 0, behavior: 'smooth' }); }, [selectedSkill, selectedCourse]);
 
     // --- Derived Data ---
-    // Safely extract the array of skills from the catalog, handling loading/missing data
+    // Safely extract the array of individual skills
     const safeSkills = useMemo(() => {
-        if (isAppLoading) return []; // Return empty while loading
-        // Check structure and fallback
+        if (isAppLoading) return [];
         if (SKILL_CATALOG && typeof SKILL_CATALOG === 'object' && Array.isArray(SKILL_CATALOG.items)) {
             return SKILL_CATALOG.items;
         }
-        console.warn("[AppliedLeadership] SKILL_CATALOG data is missing or invalid. Using empty array.");
-        return []; // Fallback
+        console.warn("[AppliedLeadership] SKILL_CATALOG data is missing or invalid.");
+        return [];
     }, [SKILL_CATALOG, isAppLoading]); // cite: useAppServices.jsx
 
+    // Safely extract the array of courses
+    const safeCourses = useMemo(() => {
+        if (isAppLoading) return [];
+        if (COURSE_LIBRARY && typeof COURSE_LIBRARY === 'object' && Array.isArray(COURSE_LIBRARY.items)) {
+            // Courses are expected to have a 'title' field
+            return COURSE_LIBRARY.items.filter(item => item.title);
+        }
+        console.warn("[AppliedLeadership] COURSE_LIBRARY data is missing or invalid. Using empty array.");
+        return [];
+    }, [COURSE_LIBRARY, isAppLoading]); // cite: useAppServices.jsx
+
     // --- Callbacks ---
-    // Sets the selected skill to display the detail view
     const handleSelectSkill = useCallback((skill) => {
         console.log("[AppliedLeadership] Selecting skill:", skill.name);
+        setSelectedCourse(null); // Clear course selection
         setSelectedSkill(skill);
-        // Scroll handled by useEffect
     }, []);
 
-    // Opens the resource detail modal
+    const handleSelectCourse = useCallback((course) => {
+        console.log("[AppliedLeadership] Selecting course:", course.title);
+        setSelectedSkill(null); // Clear skill selection
+        setSelectedCourse(course);
+    }, []);
+
     const handleOpenResource = useCallback((resource) => {
         console.log("[AppliedLeadership] Opening resource:", resource.title);
         setSelectedResource(resource);
         setIsModalVisible(true);
     }, []);
 
-    // Closes the resource detail modal
     const handleCloseResource = useCallback(() => {
         setIsModalVisible(false);
-        // Delay clearing selectedResource to allow modal fade-out animation
         setTimeout(() => setSelectedResource(null), 300);
     }, []);
 
-    // Retrieves the Tier name from LEADERSHIP_TIERS using the tier_id
     const getTierName = useCallback((tierId) => {
         return LEADERSHIP_TIERS?.[tierId]?.name || `Tier ${tierId}`; // cite: useAppServices.jsx
     }, [LEADERSHIP_TIERS]);
 
-    // --- RENDER: Skill Detail View ---
-    const renderSkillDetail = () => {
-        // Should not happen if selectedSkill is required, but safety check
-        if (!selectedSkill) return null;
-
-        const skill = selectedSkill;
-        // Get resources associated with this skill's ID from the pre-transformed library
-        const resources = RESOURCE_LIBRARY?.[skill.skill_id] || []; // cite: useAppServices.jsx
-        // Get the icon component from IconMap, fallback to BookOpen
-        const IconComponent = IconMap?.[skill.icon] || BookOpen; // cite: useAppServices.jsx
-        // Determine accent color based on the skill's tier
-        const tierMeta = LEADERSHIP_TIERS?.[skill.tier_id]; // cite: useAppServices.jsx
-        const accentColorKey = tierMeta?.color?.split('-')[0].toUpperCase(); // e.g., "INDIGO" -> INDIGO
-        const accentColor = COLORS[accentColorKey] || COLORS.TEAL; // Get hex from palette, fallback TEAL
-
-        return (
-            // Consistent padding and max-width for detail view
-            <div className="p-6 md:p-8 lg:p-10 max-w-4xl mx-auto">
-                {/* Back Button */}
-                <Button onClick={() => setSelectedSkill(null)} variant='nav-back' className='mb-6'>
-                    <ArrowLeft className="w-4 h-4 mr-2" /> Back to Course Library
-                </Button>
-
-                {/* Skill Header Card */}
-                <Card accent={accentColorKey} className="mb-8"> {/* Use color key for accent */}
-                     <div className='flex flex-col sm:flex-row items-start space-y-4 sm:space-y-0 sm:space-x-4'>
-                        {/* Icon */}
-                        <div className="w-16 h-16 rounded-full flex items-center justify-center shadow-lg flex-shrink-0" style={{ background: `${accentColor}1A` }}> {/* Lighter background */}
-                            {IconComponent && <IconComponent className="w-8 h-8" style={{ color: accentColor }} />}
-                        </div>
-                        {/* Title, Summary, Tier Badge */}
-                        <div className="flex-1">
-                            <h1 className="text-2xl md:text-3xl font-extrabold" style={{ color: COLORS.NAVY }}>{skill.name}</h1>
-                            <p className="text-md md:text-lg text-gray-600 mt-1">{skill.summary}</p>
-                            <p className="text-xs font-semibold mt-3 px-3 py-1 rounded-full inline-block" style={{ background: `${accentColor}20`, color: accentColor }}>
-                               {getTierName(skill.tier_id)} {/* Display tier name */}
-                            </p>
-                        </div>
-                    </div>
-                </Card>
-
-                {/* AI Coaching Simulator (Placeholder) */}
-                <AICoachingSimulator skill={skill} />
-
-                {/* Curated Resources Card */}
-                <Card title="Curated Deep Dive Resources" icon={BookOpen} accent='NAVY' className='mt-8'>
-                    {/* Empty State */}
-                    {resources.length === 0 && (
-                        <p className="text-gray-500 italic text-sm text-center py-4">
-                            No specific resources linked to this skill yet.
-                        </p>
-                    )}
-                    {/* Resource List */}
-                    <div className="space-y-3">
-                        {resources.map((resource, index) => (
-                            <button
-                                key={resource.resource_id || index} // Use unique ID if available
-                                onClick={() => handleOpenResource(resource)}
-                                // Styling for resource list items
-                                className="w-full text-left p-4 rounded-lg bg-gray-50 hover:bg-teal-50 border border-gray-200 hover:border-teal-200 transition flex justify-between items-center group focus:outline-none focus:ring-2 focus:ring-[${COLORS.TEAL}]"
-                            >
-                                <div className="overflow-hidden"> {/* Prevent text overflow */}
-                                    <p className="font-semibold text-sm truncate" style={{ color: COLORS.NAVY }}>{resource.title}</p>
-                                    <p className="text-xs text-gray-500">{resource.type || 'Resource'}</p>
-                                </div>
-                                <ChevronRight className='w-5 h-5 text-gray-400 flex-shrink-0 ml-2 group-hover:text-[${COLORS.TEAL}] transition-colors'/>
-                            </button>
-                        ))}
-                    </div>
-                </Card>
-
-                {/* Resource Detail Modal */}
-                <ResourceDetailModal
-                    isVisible={isModalVisible}
-                    onClose={handleCloseResource}
-                    resource={selectedResource}
-                    skill={selectedSkill} // Pass skill for context
-                />
-            </div>
-        );
-    };
-
     // --- RENDER: Skill Grid View (Course Library Home) ---
-    const renderSkillGrid = () => (
-        // Consistent padding
+    const renderLibraryHome = () => (
         <div className="p-6 md:p-8 lg:p-10">
             {/* Header */}
             <div className='flex items-center gap-4 border-b-2 pb-2 mb-8' style={{borderColor: COLORS.NAVY+'30'}}>
@@ -255,10 +351,8 @@ export default function AppliedLeadershipScreen() {
                 Explore leadership skills, access curated resources, practice with AI coaching, and build mastery through focused reps. **Practice over theory.**
             </p>
 
-            {/* Loading State */}
+            {/* Loading/Error States */}
             {isAppLoading && <LoadingSpinner message="Loading course library..." />}
-
-            {/* Error State (Post-Loading) */}
             {!isAppLoading && appError && (
                  <div className="text-red-600 italic text-center py-10 bg-red-50 p-4 rounded-lg border border-red-200 max-w-2xl mx-auto flex items-center justify-center gap-2">
                      <AlertTriangle className="w-5 h-5 text-red-500"/>
@@ -266,67 +360,130 @@ export default function AppliedLeadershipScreen() {
                  </div>
             )}
 
-            {/* Empty State (Post-Loading, No Error) */}
-            {!isAppLoading && !appError && safeSkills.length === 0 && (
-                 <div className="text-gray-500 italic text-center py-10 bg-gray-100 p-4 rounded-lg border border-gray-200 max-w-2xl mx-auto flex items-center justify-center gap-2">
-                     <AlertTriangle className="w-5 h-5 text-orange-500"/>
-                     <span>The Skill Catalog (<code>metadata/config/catalog/SKILL_CATALOG</code>) appears to be empty or missing. Please contact an administrator.</span>
-                 </div>
+            {/* --- 1. COURSE Section (QuickStart, etc.) --- */}
+            {safeCourses.length > 0 && (
+                <section className='mb-12'>
+                    <h2 className='text-2xl font-bold mb-6 border-l-4 pl-3 flex items-center gap-2' style={{ color: COLORS.NAVY, borderColor: COLORS.ORANGE }}>
+                        <Zap className='w-6 h-6' style={{color: COLORS.ORANGE}}/> Programs & Courses
+                    </h2>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                        {safeCourses.map((course) => {
+                            const IconComponent = IconMap?.[course.icon] || Briefcase;
+                            const accentColorKey = (course.tier_id ? LEADERSHIP_TIERS?.[course.tier_id]?.color?.split('-')[0].toUpperCase() : null) || 'ORANGE';
+                            const accentColor = COLORS[accentColorKey] || COLORS.ORANGE;
+                            const moduleCount = course.modules?.length || 0;
+
+                            return (
+                                <button
+                                    key={course.id}
+                                    onClick={() => handleSelectCourse(course)}
+                                    className="text-left block w-full group focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[${COLORS.ORANGE}] rounded-2xl"
+                                >
+                                    <div className={`p-6 rounded-2xl border-2 shadow-lg transition-all duration-300 group-hover:scale-[1.03] group-hover:shadow-xl h-full flex flex-col`}
+                                         style={{ borderColor: `${accentColor}30`, background: COLORS.LIGHT_GRAY }}>
+                                        <div className='flex items-center space-x-3 mb-3'>
+                                            <div className="w-12 h-12 rounded-full flex items-center justify-center shadow-md flex-shrink-0" style={{ background: `${accentColor}1A` }}>
+                                                {IconComponent && <IconComponent className="w-6 h-6" style={{ color: accentColor }} />}
+                                            </div>
+                                            <h2 className="text-lg font-extrabold flex-1" style={{ color: COLORS.NAVY }}>{course.title}</h2>
+                                        </div>
+                                        <p className="text-sm text-gray-600 mb-4 flex-grow" style={{ minHeight: '3rem' }}>{course.summary}</p>
+                                        <div className='mt-auto pt-3 border-t' style={{ borderColor: COLORS.SUBTLE }}>
+                                            <div className='flex justify-between items-center'>
+                                                <span className='text-xs font-semibold uppercase' style={{ color: accentColor }}>
+                                                    {moduleCount} Module{moduleCount !== 1 ? 's' : ''}
+                                                </span>
+                                                <ChevronRight className='w-4 h-4' style={{ color: accentColor }}/>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </button>
+                            );
+                        })}
+                    </div>
+                </section>
             )}
 
-            {/* Skill Grid */}
-            {!isAppLoading && !appError && safeSkills.length > 0 && (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                    {safeSkills.map((skill) => {
-                        // Determine Icon and Color
-                        const IconComponent = IconMap?.[skill.icon] || BookOpen; // Fallback icon // cite: useAppServices.jsx
-                        const tierMeta = LEADERSHIP_TIERS?.[skill.tier_id]; // cite: useAppServices.jsx
-                        const accentColorKey = tierMeta?.color?.split('-')[0].toUpperCase();
-                        const accentColor = COLORS[accentColorKey] || COLORS.TEAL;
-                        const resourceCount = RESOURCE_LIBRARY?.[skill.skill_id]?.length || 0; // cite: useAppServices.jsx
+            {/* --- 2. SKILL Section --- */}
+            {safeSkills.length > 0 && (
+                <section>
+                    <h2 className='text-2xl font-bold mb-6 border-l-4 pl-3 flex items-center gap-2' style={{ color: COLORS.NAVY, borderColor: COLORS.TEAL }}>
+                        <Briefcase className='w-6 h-6' style={{color: COLORS.TEAL}}/> Individual Skills & Micro-Learning
+                    </h2>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                        {safeSkills.map((skill) => {
+                            const IconComponent = IconMap?.[skill.icon] || BookOpen;
+                            const tierMeta = LEADERSHIP_TIERS?.[skill.tier_id];
+                            const accentColorKey = tierMeta?.color?.split('-')[0].toUpperCase();
+                            const accentColor = COLORS[accentColorKey] || COLORS.TEAL;
+                            const resourceCount = RESOURCE_LIBRARY?.[skill.skill_id]?.length || 0;
 
-                        return (
-                            // Use Button styling for accessibility and interaction consistency
-                            <button
-                                key={skill.skill_id} // Use skill_id as the unique key
-                                onClick={() => handleSelectSkill(skill)}
-                                className="text-left block w-full group focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[${COLORS.TEAL}] rounded-2xl"
-                            >
-                                {/* Apply Card styling directly for hover effects */}
-                                <div className={`p-6 rounded-2xl border-2 shadow-lg transition-all duration-300 group-hover:scale-[1.03] group-hover:shadow-xl group-focus:scale-[1.03] group-focus:shadow-xl h-full flex flex-col`} // Added h-full and flex
-                                     style={{ borderColor: `${accentColor}30`, background: COLORS.LIGHT_GRAY }}>
-                                    {/* Icon and Title */}
-                                    <div className='flex items-center space-x-3 mb-3'>
-                                        <div className="w-12 h-12 rounded-full flex items-center justify-center shadow-md transition-all duration-300 group-hover:shadow-lg flex-shrink-0" style={{ background: `${accentColor}1A` }}>
-                                            {IconComponent && <IconComponent className="w-6 h-6 transition-colors duration-300" style={{ color: accentColor }} />}
+                            return (
+                                <button
+                                    key={skill.skill_id}
+                                    onClick={() => handleSelectSkill(skill)}
+                                    className="text-left block w-full group focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[${COLORS.TEAL}] rounded-2xl"
+                                >
+                                    <div className={`p-6 rounded-2xl border-2 shadow-lg transition-all duration-300 group-hover:scale-[1.03] group-hover:shadow-xl h-full flex flex-col`}
+                                         style={{ borderColor: `${accentColor}30`, background: COLORS.LIGHT_GRAY }}>
+                                        <div className='flex items-center space-x-3 mb-3'>
+                                            <div className="w-12 h-12 rounded-full flex items-center justify-center shadow-md flex-shrink-0" style={{ background: `${accentColor}1A` }}>
+                                                {IconComponent && <IconComponent className="w-6 h-6" style={{ color: accentColor }} />}
+                                            </div>
+                                            <h2 className="text-lg font-extrabold flex-1" style={{ color: COLORS.NAVY }}>{skill.name}</h2>
                                         </div>
-                                        <h2 className="text-lg font-extrabold transition-colors duration-300 flex-1" style={{ color: COLORS.NAVY }}>{skill.name}</h2>
-                                    </div>
-                                    {/* Summary (fixed height for alignment) */}
-                                    <p className="text-sm text-gray-600 mb-4 flex-grow" style={{ minHeight: '3rem' }}>{skill.summary}</p>
-                                    {/* Footer: Resource Count & Arrow */}
-                                    <div className='mt-auto pt-3 border-t' style={{ borderColor: COLORS.SUBTLE }}>
-                                        <div className='flex justify-between items-center'>
-                                            <span className='text-xs font-semibold uppercase transition-colors duration-300' style={{ color: accentColor }}>
-                                                {resourceCount} Resource{resourceCount !== 1 ? 's' : ''}
-                                            </span>
-                                            <ChevronRight className='w-4 h-4 transition-colors duration-300' style={{ color: accentColor }}/>
+                                        <p className="text-sm text-gray-600 mb-4 flex-grow" style={{ minHeight: '3rem' }}>{skill.summary}</p>
+                                        <div className='mt-auto pt-3 border-t' style={{ borderColor: COLORS.SUBTLE }}>
+                                            <div className='flex justify-between items-center'>
+                                                <span className='text-xs font-semibold uppercase' style={{ color: accentColor }}>
+                                                    {resourceCount} Resource{resourceCount !== 1 ? 's' : ''}
+                                                </span>
+                                                <ChevronRight className='w-4 h-4' style={{ color: accentColor }}/>
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
-                            </button>
-                        );
-                    })}
-                </div>
+                                </button>
+                            );
+                        })}
+                    </div>
+                </section>
+            )}
+
+            {/* Empty State (Post-Loading, No Error) */}
+            {!isAppLoading && !appError && safeSkills.length === 0 && safeCourses.length === 0 && (
+                 <div className="text-gray-500 italic text-center py-10 bg-gray-100 p-4 rounded-lg border border-gray-200 max-w-2xl mx-auto flex items-center justify-center gap-2">
+                     <AlertTriangle className="w-5 h-5 text-orange-500"/>
+                     <span>The Course Library and Skill Catalog appear to be empty or missing data. Please contact an administrator.</span>
+                 </div>
             )}
         </div>
     );
 
     // --- Main Component Return ---
-    // Renders either the grid or the detail view based on selectedSkill state
+    // Renders either a detail view or the main grid
     return (
-        <div className='min-h-screen' style={{ background: COLORS.BG }}> {/* Use consistent BG */}
-            {selectedSkill ? renderSkillDetail() : renderSkillGrid()}
+        <div className='min-h-screen' style={{ background: COLORS.BG }}>
+            {selectedCourse ? (
+                <CourseDetailView course={selectedCourse} setCourseDetail={setSelectedCourse} />
+            ) : selectedSkill ? (
+                 <SkillDetailView
+                    skill={selectedSkill}
+                    setSelectedSkill={setSelectedSkill}
+                    resourceLibrary={RESOURCE_LIBRARY}
+                    getTierName={getTierName}
+                    handleOpenResource={handleOpenResource}
+                 />
+            ) : (
+                renderLibraryHome()
+            )}
+
+            {/* Global Resource Modal (Used by SkillDetailView) */}
+            <ResourceDetailModal
+                isVisible={isModalVisible}
+                onClose={handleCloseResource}
+                resource={selectedResource}
+                skill={selectedSkill || {}} // Pass skill context
+            />
         </div>
     );
 }

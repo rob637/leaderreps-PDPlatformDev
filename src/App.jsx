@@ -1,4 +1,4 @@
-// src/App.jsx (Corrected Admin Flag Bypass)
+// src/App.jsx (Removed QuickStart and Daily Practice from Sidebar)
 
 import React, { useState, useEffect, useMemo, useCallback, Suspense, lazy } from 'react';
 
@@ -71,7 +71,7 @@ const ScreenMap = {
   'daily-practice': lazy(() => import('./components/screens/DailyPractice.jsx')), // Replaced Reflection screen with this log entry screen // cite: DailyPractice.jsx
   'planning-hub': lazy(() => import('./components/screens/PlanningHub.jsx')), // cite: PlanningHub.jsx
   'business-readings': lazy(() => import('./components/screens/BusinessReadings.jsx')), // cite: BusinessReadings.jsx
-  'quick-start-accelerator': lazy(() => import('./components/screens/QuickStartAccelerator.jsx')), // cite: QuickStartAccelerator.jsx
+  'quick-start-accelerator': lazy(() => import('./components/screens/QuickStartAccelerator.jsx')), // cite: QuickStartAccelerator.jsx - *Still loadable via direct nav if needed*
   'executive-reflection': lazy(() => import('./components/screens/ExecutiveReflection.jsx')), // ROI Report // cite: ExecutiveReflection.jsx
   'community': lazy(() => import('./components/screens/CommunityScreen.jsx')), // cite: CommunityScreen.jsx
   'applied-leadership': lazy(() => import('./components/screens/AppliedLeadership.jsx')), // Course Hub // cite: AppliedLeadership.jsx
@@ -233,7 +233,7 @@ const NavSidebar = ({ currentScreen, setCurrentScreen, user, closeMobileMenu, is
   // --- Navigation Structure (using boss's terminology & updated screens) ---
   const coreNav = [
     { screen: 'dashboard', label: 'The Arena', icon: Home }, // Renamed Dashboard
-    { screen: 'quick-start-accelerator', label: 'QuickStart Program', icon: Zap, flag: 'enableQuickStart' }, // Example flag
+    // --- REMOVED QuickStart from CORE ---
   ];
 
   const contentPillarNav = [
@@ -245,7 +245,7 @@ const NavSidebar = ({ currentScreen, setCurrentScreen, user, closeMobileMenu, is
   ];
 
   const coachingPillarNav = [
-    { screen: 'daily-practice', label: 'Daily Reflection Log', icon: Clock, flag: 'enableDailyPractice' }, // Link to the log entry screen // cite: DailyPractice.jsx
+    // --- REMOVED Daily Reflection Log ---
     { screen: 'coaching-lab', label: 'AI Coaching Lab', icon: Mic, flag: 'enableLabs' }, // cite: Labs.jsx
     { screen: 'executive-reflection', label: 'Executive ROI Report', icon: BarChart3, flag: 'enableRoiReport' }, // cite: ExecutiveReflection.jsx
   ];
@@ -375,15 +375,18 @@ const NavSidebar = ({ currentScreen, setCurrentScreen, user, closeMobileMenu, is
       {/* --- Navigation Sections --- */}
       <nav className="flex-1 overflow-y-auto overflow-x-hidden p-3 space-y-4"> {/* Added padding */}
         {menuSections.map((section) => (
-          <div key={section.title} className="space-y-1">
-            {isNavExpanded && (
-              <p className={`px-3 py-1 text-[10px] font-bold uppercase tracking-wider transition-opacity duration-300`} style={{ color: `${COLORS.TEAL}90` }}>
-                {section.title}
-              </p>
-            )}
-            {/* Render items, applying filters */}
-            {renderNavItems(section.items)}
-          </div>
+          // Render section only if it still has visible items after filtering
+          renderNavItems(section.items).length > 0 && (
+              <div key={section.title} className="space-y-1">
+                {isNavExpanded && (
+                  <p className={`px-3 py-1 text-[10px] font-bold uppercase tracking-wider transition-opacity duration-300`} style={{ color: `${COLORS.TEAL}90` }}>
+                    {section.title}
+                  </p>
+                )}
+                {/* Render items, applying filters */}
+                {renderNavItems(section.items)}
+              </div>
+          )
         ))}
       </nav>
 
