@@ -1,11 +1,11 @@
-// src/components/screens/AppliedLeadership.jsx (Refactored to show both SKILLS and COURSES)
+// src/components/screens/AppliedLeadership.jsx (FIXED: Missing Icons and Modal State)
 
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
 // --- Core Services & Context ---
 import { useAppServices } from '../../services/useAppServices.jsx'; // cite: useAppServices.jsx
 
-// --- Icons ---
-import { ArrowLeft, BookOpen, ChevronRight, Loader, AlertTriangle, ShieldCheck, Zap, Briefcase } from 'lucide-react'; // Added Zap, Briefcase
+// --- ICONS: CRITICAL FIX - Import all icons used in sub-components/rendering logic ---
+import { ArrowLeft, BookOpen, ChevronRight, Loader, AlertTriangle, ShieldCheck, Zap, Briefcase, Lightbulb, CheckCircle, X, CornerRightUp } from 'lucide-react'; 
 
 /* =========================================================
    PALETTE & UI COMPONENTS (Standardized)
@@ -68,8 +68,8 @@ const ResourceDetailModal = ({ isVisible, onClose, resource, skill }) => { // Re
     if (!isVisible || !resource || !skill) return null;
 
     // Use X icon (imported)
-    const XIcon = ChevronRight; // Just for linting, X is imported globally now, but reusing ChevronRight for this example
-
+    // Note: X icon is now imported at the top.
+    
     return (
         // Standard modal structure with backdrop and content
         <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 animate-in fade-in duration-200 backdrop-blur-sm">
@@ -185,6 +185,21 @@ const CourseDetailView = ({ course, setCourseDetail }) => {
  * Renders the detail view for an individual Skill.
  */
 const SkillDetailView = ({ skill, setSelectedSkill, resourceLibrary, getTierName, handleOpenResource }) => {
+    // FIX: Define local state for modal visibility and resource
+    const [isResourceModalVisible, setIsResourceModalVisible] = useState(false);
+    const [currentResource, setCurrentResource] = useState(null);
+
+    // FIX: Update modal handlers to use local state
+    const localHandleOpenResource = (resource) => {
+        setCurrentResource(resource);
+        setIsResourceModalVisible(true);
+    };
+
+    const localHandleCloseResource = () => {
+        setIsResourceModalVisible(false);
+        setTimeout(() => setCurrentResource(null), 300);
+    };
+
     // Get resources associated with this skill's ID from the pre-transformed library
     const resources = resourceLibrary?.[skill.skill_id] || []; // cite: useAppServices.jsx
     // Get the icon component from IconMap, fallback to BookOpen
@@ -237,7 +252,7 @@ const SkillDetailView = ({ skill, setSelectedSkill, resourceLibrary, getTierName
                     {resources.map((resource, index) => (
                         <button
                             key={resource.resource_id || index} // Use unique ID if available
-                            onClick={() => handleOpenResource(resource)}
+                            onClick={() => localHandleOpenResource(resource)} // FIX: Use local handler
                             // Styling for resource list items
                             className="w-full text-left p-4 rounded-lg bg-gray-50 hover:bg-teal-50 border border-gray-200 hover:border-teal-200 transition flex justify-between items-center group focus:outline-none focus:ring-2 focus:ring-[${COLORS.TEAL}]"
                         >
@@ -251,12 +266,12 @@ const SkillDetailView = ({ skill, setSelectedSkill, resourceLibrary, getTierName
                 </div>
             </Card>
 
-            {/* Resource Detail Modal */}
+            {/* Resource Detail Modal - FIX: Use local state and handlers */}
             <ResourceDetailModal
-                isVisible={isModalVisible}
-                onClose={() => { /* Modal state managed by parent, this call is redundant here */ }}
-                resource={null}
-                skill={null}
+                isVisible={isResourceModalVisible}
+                onClose={localHandleCloseResource}
+                resource={currentResource}
+                skill={skill} // Pass skill context
             />
         </div>
     );
@@ -283,7 +298,7 @@ export default function AppliedLeadershipScreen() {
     // --- Local State ---
     const [selectedSkill, setSelectedSkill] = useState(null); // Holds the currently viewed skill object
     const [selectedCourse, setSelectedCourse] = useState(null); // Holds the currently viewed course object
-    const [isModalVisible, setIsModalVisible] = useState(false);
+    const [isModalVisible, setIsModalVisible] = useState(false); // Modal for resource detail (only used in legacy structure/home view)
     const [selectedResource, setSelectedResource] = useState(null);
 
     // --- Effect to scroll to top on mount or when detail changes ---
@@ -324,8 +339,10 @@ export default function AppliedLeadershipScreen() {
         setSelectedCourse(course);
     }, []);
 
+    // These resource handlers are now only relevant for the top-level home view if it links to resources directly
+    // They are no longer needed for SkillDetailView since it manages its own state.
     const handleOpenResource = useCallback((resource) => {
-        console.log("[AppliedLeadership] Opening resource:", resource.title);
+        console.log("[AppliedLeadership] Opening resource (Home View):", resource.title);
         setSelectedResource(resource);
         setIsModalVisible(true);
     }, []);
