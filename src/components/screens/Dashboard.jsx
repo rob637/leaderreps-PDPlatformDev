@@ -421,26 +421,26 @@ const IdentityAnchorModal = ({ isOpen, onClose, currentIdentity, onSave, suggest
   if (!isOpen) return null;
   const prefix = "I'm the kind of leader who ";
   const defaultPlaceholder = "Define your leader identity...";
-  
+
   // **FIX: Explicitly define getEditablePart with null/undefined safety**
   const getEditablePart = (fullIdentity) => {
     // Ensure fullIdentity is a string before checking against the prefix
-    const safeIdentity = fullIdentity || ""; 
+    const safeIdentity = fullIdentity || "";
     if (!safeIdentity || safeIdentity === defaultPlaceholder) return "";
     return safeIdentity.startsWith(prefix) ? safeIdentity.substring(prefix.length) : safeIdentity;
   };
-  
+
   // **FIX: Ensure useState is initialized with a string**
-  const [identityText, setIdentityText] = useState(getEditablePart(currentIdentity) || ""); 
-  
+  const [identityText, setIdentityText] = useState(getEditablePart(currentIdentity) || "");
+
   const [isSaving, setIsSaving] = useState(false);
   const suggestionItems = Array.isArray(suggestions) ? suggestions : [];
-  
+
   // **FIX: Ensure validation is safe**
-  const handleSaveClick = async () => { 
+  const handleSaveClick = async () => {
     // Basic validation
     if (!identityText.trim()) { alert("Identity anchor cannot be empty."); return; }
-    
+
     setIsSaving(true);
     try {
         await onSave(identityText.trim()); // Call parent save handler
@@ -495,21 +495,21 @@ const IdentityAnchorModal = ({ isOpen, onClose, currentIdentity, onSave, suggest
 ========================================================= */
 const HabitAnchorModal = ({ isOpen, onClose, currentAnchor, onSave, suggestions = [], defaultAnchorText }) => {
    if (!isOpen) return null;
-   
+
    // **FIX: Explicitly define getEditablePart with null/undefined safety**
    const getEditablePart = (fullAnchor) => (fullAnchor === defaultAnchorText || !fullAnchor ? "" : fullAnchor || "");
-   
+
    // **FIX: Ensure useState is initialized with a string**
    const [anchorText, setAnchorText] = useState(getEditablePart(currentAnchor) || "");
-   
+
    const [isSaving, setIsSaving] = useState(false);
    const suggestionItems = Array.isArray(suggestions) ? suggestions : [];
-   
+
    // **FIX: Ensure validation is safe**
-   const handleSaveClick = async () => { 
+   const handleSaveClick = async () => {
         // Basic validation
         if (!anchorText.trim()) { alert("Habit anchor cannot be empty."); return; }
-        
+
         setIsSaving(true);
         try {
             await onSave(anchorText.trim()); // Call parent save handler
@@ -560,22 +560,22 @@ const HabitAnchorModal = ({ isOpen, onClose, currentAnchor, onSave, suggestions 
 
 
 /* =========================================================
-   Why It Matters Modal Component (Unchanged Logically, Style Refined)
+   Why It Matters Modal Component (Style Fix Applied)
 ========================================================= */
-const WhyItMattersModal = ({ isOpen, onClose, currentWhy, onSave, suggestions = [] }) => { 
+const WhyItMattersModal = ({ isOpen, onClose, currentWhy, onSave, suggestions = [] }) => {
    if (!isOpen) return null;
-   
+
    // **FIX: Ensure useState is initialized with a string**
    const [whyText, setWhyText] = useState(currentWhy || "");
-   
+
    const [isSaving, setIsSaving] = useState(false);
    const suggestionItems = Array.isArray(suggestions) ? suggestions : [];
-   
+
    // **FIX: Ensure validation is safe**
-   const handleSaveClick = async () => { 
+   const handleSaveClick = async () => {
         // Basic validation
         if (!whyText.trim()) { alert("'Why' statement cannot be empty."); return; }
-        
+
         setIsSaving(true);
         try {
             await onSave(whyText.trim()); // Call parent save handler
@@ -615,7 +615,14 @@ const WhyItMattersModal = ({ isOpen, onClose, currentWhy, onSave, suggestions = 
         {/* Footer */}
         <div className="p-4 bg-gray-100 border-t border-gray-200 flex justify-end items-center gap-3">
             <Button onClick={onClose} variant="outline" size="sm"> Cancel </Button>
-            <Button onClick={handleSaveClick} variant="secondary" size="sm" disabled={isSaving || !whyText.trim()}>
+            {/* --- FIX #3: APPLY INLINE STYLE FOR SECONDARY BUTTON --- */}
+            <Button
+                onClick={handleSaveClick}
+                variant="secondary"
+                size="sm"
+                disabled={isSaving || !whyText.trim()}
+                style={{ background: COLORS.ORANGE, color: COLORS.OFF_WHITE, borderColor: 'transparent' }} // Explicitly set colors
+            >
                 {isSaving ? <Loader className="animate-spin w-4 h-4 mr-2" /> : <Save className="w-4 h-4 mr-2" />} Save "Why"
             </Button>
         </div>
@@ -881,8 +888,8 @@ const DEFAULT_TARGET_REP = { id: 'default', text: "Set Your Focus Rep", definiti
 const DashboardScreen = () => {
   // --- Core Hooks & Services ---
   // 🚨 FINAL FIX: Capture the entire service object to ensure live function reading inside handlers
-  const appServices = useAppServices(); 
-  
+  const appServices = useAppServices();
+
   // Destructure variables from the captured service object
   const {
     navigate, user, db, userId, isAuthReady, // Basic app context
@@ -993,55 +1000,57 @@ const DashboardScreen = () => {
   }, [developmentPlanData, LEADERSHIP_TIERS]);
 
 
-  // --- ** CRITICAL: Daily Target Rep Logic ** ---
+  // --- ** CRITICAL FIX #1: Daily Target Rep Logic (Corrected Reset Handling) ** ---
   const dailyTargetRep = useMemo(() => {
-    // 1. Get the Rep Library (fallback to empty)
+    // 1. Get Rep Library (unchanged)
     const targetRepCatalog = REP_LIBRARY?.items || []; // Use unified REP_LIBRARY // cite: useAppServices.jsx
     if (targetRepCatalog.length === 0) {
         console.warn("[Dashboard] Rep Library is empty. Using default target rep.");
         return DEFAULT_TARGET_REP;
     }
 
-    // 2. Determine Today's Target Rep ID (using simple weakest tier logic for now)
-    //    This logic could be made more sophisticated (e.g., user selection, rotation)
-    const targetTierId = weakestTier?.id || 'T1'; // Use calculated weakest tier ID
-    // Find the *first* rep in the catalog matching the target tier
+    // 2. Determine Today's Target Rep ID (unchanged)
+    const targetTierId = weakestTier?.id || 'T1';
     let selectedRepData = targetRepCatalog.find(rep => rep.tier_id === targetTierId);
-    // Fallback: If no match for tier, pick the first rep overall
     if (!selectedRepData) {
         selectedRepData = targetRepCatalog[0];
         console.warn(`[Dashboard] No rep found for tier ${targetTierId}, using first rep (${selectedRepData?.id}) as fallback.`);
     }
-    // Final fallback if catalog is truly empty or malformed
     if (!selectedRepData) {
         console.error("[Dashboard] Could not select any target rep from the library.");
         return DEFAULT_TARGET_REP;
     }
 
-    // 3. Check User's Saved State for *this specific rep* for *today*
-    let currentStatus = 'Pending';
-    // Check if the saved rep ID matches today's selected rep AND the date matches today
-    if (dailyPracticeData?.dailyTargetRepId === selectedRepData.id && dailyPracticeData?.dailyTargetRepDate === todayStr) {
-        // Status is valid for today
-        currentStatus = dailyPracticeData.dailyTargetRepStatus || 'Pending';
-        console.log(`[Dashboard] Found matching target rep state for today (${selectedRepData.id}): ${currentStatus}`);
+    // 3. Check User's Saved State - **MODIFIED LOGIC**
+    let currentStatus = 'Pending'; // Default to Pending
+    const savedRepId = dailyPracticeData?.dailyTargetRepId;
+    const savedRepDate = dailyPracticeData?.dailyTargetRepDate;
+    const savedRepStatus = dailyPracticeData?.dailyTargetRepStatus;
+    const lastResetDate = dailyPracticeData?.lastStatusResetDate; // Get the date statuses were last reset
+
+    // **NEW CHECK:** Only use the saved status if the statuses were ALREADY reset *for today*
+    // AND the saved Rep ID matches the one selected for today
+    // AND the saved Rep Date matches today.
+    if (lastResetDate === todayStr && savedRepId === selectedRepData.id && savedRepDate === todayStr) {
+        currentStatus = savedRepStatus || 'Pending'; // Use saved status if all conditions met
+        console.log(`[Dashboard] Found VALID target rep state for today (${selectedRepData.id}): ${currentStatus}`);
     } else {
-        // Mismatch: Either different rep, old date, or no data saved yet. Status is Pending for today.
-        console.log(`[Dashboard] No matching target rep state for today (${selectedRepData.id}). Setting status to Pending. (Saved ID: ${dailyPracticeData?.dailyTargetRepId}, Saved Date: ${dailyPracticeData?.dailyTargetRepDate})`);
+        // Otherwise, force Pending for today
+        console.log(`[Dashboard] Forcing 'Pending' status for today (${selectedRepData.id}). Reason: Reset date mismatch (${lastResetDate} vs ${todayStr}) OR Rep ID mismatch (${savedRepId} vs ${selectedRepData.id}) OR Rep Date mismatch (${savedRepDate} vs ${todayStr})`);
         currentStatus = 'Pending';
-        // Note: The daily reset logic in useAppServices ensures the state is correct, so no need to force update here.
     }
 
-    // 4. Return the Rep Object with Correct Status
+    // 4. Return the Rep Object (unchanged)
     return {
-        id: selectedRepData.id, // ID from catalog
-        text: selectedRepData.text, // Text from catalog
-        definition: selectedRepData.definition, // Definition from catalog
-        microRep: selectedRepData.microRep, // Micro-rep from catalog
-        status: currentStatus // Status determined by user data for today
+        id: selectedRepData.id,
+        text: selectedRepData.text,
+        definition: selectedRepData.definition,
+        microRep: selectedRepData.microRep,
+        status: currentStatus // Status now strictly checked against reset date
     };
 
-  }, [REP_LIBRARY, weakestTier, dailyPracticeData, todayStr]); // Dependencies
+  // Ensure all dependencies are included
+  }, [REP_LIBRARY, weakestTier, dailyPracticeData, todayStr]);
 
 
   // --- Additional Daily Reps (filtered from activeCommitments) ---
@@ -1082,7 +1091,7 @@ const DashboardScreen = () => {
   // --- Toggles the status of an *additional* daily rep ---
   const handleToggleAdditionalCommitment = useCallback(async (commitId) => {
       // 🚨 CRITICAL FIX: Get the LIVE function directly from the service object
-      const updateDailyPracticeData = appServices.updateDailyPracticeData; 
+      const updateDailyPracticeData = appServices.updateDailyPracticeData;
 
       if (isSavingRep) return; // Prevent double clicks
       console.log("[Dashboard] Toggling additional commitment:", commitId);
@@ -1151,7 +1160,7 @@ const DashboardScreen = () => {
     console.log('🔍 updateDailyPracticeData exists:', !!appServices.updateDailyPracticeData);
     console.log('🔍 updateDailyPracticeData type:', typeof appServices.updateDailyPracticeData);
     // 🚨 CRITICAL FIX: Get the LIVE function directly from the service object
-      const updateDailyPracticeData = appServices.updateDailyPracticeData; 
+      const updateDailyPracticeData = appServices.updateDailyPracticeData;
 
       // Prevent action if already saving, rep is default, or already committed for today
       if (isSavingRep || dailyTargetRep.id === 'default' || (dailyTargetRep.status === 'Committed' && dailyPracticeData?.dailyTargetRepDate === todayStr)) {
@@ -1205,11 +1214,11 @@ const DashboardScreen = () => {
     console.log('🔍 About to call updateDailyPracticeData with updates:', updates);
     console.log('🔍 db:', db);
     console.log('🔍 userId:', userId);
-    
+
     const success = await updateDailyPracticeData(updates); // cite: useAppServices.jsx
-    
+
     console.log('🔍 updateDailyPracticeData returned:', success);
-    
+
     if (success) {
               console.log("[Dashboard] Target rep marked complete successfully.");
               // Trigger celebration and potential challenge prompt only on successful completion
@@ -1244,13 +1253,13 @@ const DashboardScreen = () => {
   // Handler for sharing posts to the social pod (MOCK)
   const handleShareToPod = useCallback(async (postText) => {
     console.log("[Dashboard] Sharing to pod:", postText);
-    
+
     if (!db || !userId) {
         console.error("[Dashboard] Cannot share to pod: missing db or userId");
         alert("Error: Unable to share post. Please try again.");
         return;
     }
-    
+
     try {
         // Create the post document in Firestore
         const postsCollectionRef = collection(db, 'community/posts/feed');
@@ -1260,11 +1269,11 @@ const DashboardScreen = () => {
             text: postText,
             createdAt: serverTimestamp(),
         };
-        
+
         // Save to Firestore
         const docRef = await addDoc(postsCollectionRef, newPost);
         console.log("[Dashboard] Post saved to Firestore with ID:", docRef.id);
-        
+
         // Update local state for immediate feedback
         setPodPosts(prev => [{
             id: docRef.id,
@@ -1272,12 +1281,16 @@ const DashboardScreen = () => {
             text: postText,
             time: "Just now"
         }, ...prev]);
-        
+
+    // --- FIX #4: ENHANCED ERROR LOGGING ---
     } catch (error) {
+        // **ADD MORE LOGGING:**
         console.error("[Dashboard] Error saving post to pod:", error);
-        alert("Error: Failed to share post. Please try again.");
+        console.error("Firestore Error Code:", error.code); // Log specific code
+        console.error("Firestore Error Message:", error.message); // Log specific message
+        alert(`Error: Failed to share post. (${error.code || error.message})`); // Show code in alert
     }
-}, [db, userId, displayedUserName]);
+  }, [db, userId, displayedUserName]);
 
   // Callback passed to EmbeddedReflectionForm, triggered on successful save
   const handleReflectionSaved = useCallback((savedEntry) => {
@@ -1289,7 +1302,7 @@ const DashboardScreen = () => {
   // Handler for toggling Arena/Solo mode
   const handleModeToggle = async () => {
       // 🚨 CRITICAL FIX: Get the LIVE function directly from the service object
-      const updateDailyPracticeData = appServices.updateDailyPracticeData; 
+      const updateDailyPracticeData = appServices.updateDailyPracticeData;
 
       if (isSavingMode) return;
       setIsSavingMode(true);
@@ -1303,7 +1316,7 @@ const DashboardScreen = () => {
           setIsSavingMode(false);
           return;
       }
-      
+
       try {
           // Update the arenaMode field in dailyPracticeData
           const success = await updateDailyPracticeData({ arenaMode: newMode }); // cite: useAppServices.jsx
@@ -1322,8 +1335,8 @@ const DashboardScreen = () => {
   // Save Identity Anchor (updates dailyPracticeData)
   const handleSaveIdentity = async (newIdentitySuffix) => {
     // 🚨 CRITICAL FIX: Get the LIVE function directly from the service object
-    const updateDailyPracticeData = appServices.updateDailyPracticeData; 
-    
+    const updateDailyPracticeData = appServices.updateDailyPracticeData;
+
     if (!newIdentitySuffix.trim()) { alert("Identity anchor cannot be empty."); return; }
     // CRITICAL FIX: Check for update function
     if (!updateDailyPracticeData) { console.error("[Dashboard] Identity update failed: Service missing."); alert("Update service is missing."); return; }
@@ -1341,7 +1354,7 @@ const DashboardScreen = () => {
   // Save Habit Anchor (updates dailyPracticeData)
   const handleSaveHabitAnchor = async (newAnchor) => {
     // 🚨 CRITICAL FIX: Get the LIVE function directly from the service object
-    const updateDailyPracticeData = appServices.updateDailyPracticeData; 
+    const updateDailyPracticeData = appServices.updateDailyPracticeData;
 
     if (!newAnchor.trim()) { alert("Habit anchor cannot be empty."); return; }
     // CRITICAL FIX: Check for update function
@@ -1360,7 +1373,7 @@ const DashboardScreen = () => {
   // Save Why It Matters (updates strategicContentData)
   const handleSaveWhy = async (newWhy) => {
     // 🚨 CRITICAL FIX: Get the LIVE function directly from the service object
-    const updateStrategicContentData = appServices.updateStrategicContentData; 
+    const updateStrategicContentData = appServices.updateStrategicContentData;
 
     if (!newWhy.trim()) { alert("'Why' statement cannot be empty."); return; }
     // CRITICAL FIX: Check for update function
@@ -1486,7 +1499,7 @@ const DashboardScreen = () => {
                  <div className="md:col-span-3">
                     <p className='text-sm font-semibold text-gray-600 mb-1'>Target Rep:</p>
                     <p className={`text-lg font-bold ${
-                        targetRepCompletedToday ? 'text-green-700 line-through decoration-2' : `text-[${COLORS.NAVY}]`
+                        dailyTargetRep.status === 'Committed' ? 'text-green-700 line-through decoration-2' : `text-[${COLORS.NAVY}]` // Check status directly
                     }`}>{dailyTargetRep.text}</p>
                  </div>
                  {/* Definition (Smaller Area) */}
@@ -1500,14 +1513,14 @@ const DashboardScreen = () => {
               <div className="mt-5 pt-4 border-t border-gray-200">
                  <Button
                     onClick={completeTargetRep}
-                    disabled={!canCompleteTargetRep || isSavingRep}
-                    variant={targetRepCompletedToday ? "outline" : "primary"}
+                    disabled={dailyTargetRep.id === 'default' || dailyTargetRep.status === 'Committed' || isSavingRep} // Use direct status check
+                    variant={dailyTargetRep.status === 'Committed' ? "outline" : "primary"} // Use direct status check
                     size="md" // Use md size
-                    className={`w-full ${targetRepCompletedToday ? '!border-green-300 !text-green-700 !bg-green-50 cursor-default' : ''}`}
+                    className={`w-full ${dailyTargetRep.status === 'Committed' ? '!border-green-300 !text-green-700 !bg-green-50 cursor-default' : ''}`} // Use direct status check
                  >
                    {/* Conditional Icon and Text */}
-                   {isSavingRep && !targetRepCompletedToday ? <Loader className="animate-spin w-5 h-5 mr-2"/> : (targetRepCompletedToday ? <CheckCircle className="w-5 h-5 mr-2"/> : <Zap className="w-5 h-5 mr-2"/>)}
-                   {targetRepCompletedToday ? 'Focus Rep Complete Today!' : (isSavingRep ? 'Saving...' : 'Complete Focus Rep')}
+                   {isSavingRep && dailyTargetRep.status !== 'Committed' ? <Loader className="animate-spin w-5 h-5 mr-2"/> : (dailyTargetRep.status === 'Committed' ? <CheckCircle className="w-5 h-5 mr-2"/> : <Zap className="w-5 h-5 mr-2"/>)}
+                   {dailyTargetRep.status === 'Committed' ? 'Focus Rep Complete Today!' : (isSavingRep ? 'Saving...' : 'Complete Focus Rep')}
                  </Button>
               </div>
 
