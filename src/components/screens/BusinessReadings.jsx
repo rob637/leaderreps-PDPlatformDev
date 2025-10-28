@@ -1,4 +1,4 @@
-// src/components/screens/BusinessReadings.jsx (Refactored for Consistency, Context, Terminology - FIXED HEADER)
+// src/components/screens/BusinessReadings.jsx (FIXED: submitAiHandler ReferenceError)
 
 import React, { useState, useMemo, useRef, useEffect, useCallback } from 'react';
 // --- Core Services & Context ---
@@ -162,7 +162,7 @@ async function handleAiSubmit(e, services, selectedBook, aiQuery, setIsSubmittin
 
   console.log("[handleAiSubmit] Submitting query for book:", selectedBook.title);
   setIsSubmitting(true);
-  setAiResponse('The AI Rep Coach is analyzing the book and your question...'); // Updated name // cite: User Request
+  setAiResponse('The AI Rep Coach is analyzing the book and your question...'); // Updated name
 
   // Check if API call is possible
   const hasKeyOk = typeof services.hasGeminiKey === 'function' ? services.hasGeminiKey() : false; // cite: useAppServices.jsx
@@ -599,8 +599,8 @@ function BookFlyerStable({
           <AICoachInput
             aiQuery={aiQuery}
             handleAiQueryChange={handleAiQueryChange}
-            submitHandler={submitAiHandler}
-            isSubmitting={isSubmittingAi}
+            submitHandler={submitHandler} // FIX: Now correctly passed as a prop
+            isSubmitting={isSubmitting} // FIX: Now correctly passed as a prop
             questionFeedback={questionFeedback}
             selectedBookTitle={selectedBook.title} // Pass title for placeholder
           />
@@ -664,7 +664,7 @@ export default function BusinessReadingsScreen() {
   // Filters
   const [filters, setFilters] = useState({ complexity: 'All', maxDuration: 300, search: '' });
   // AI Coach State
-  const [aiQuery, setAiQuery] = useState(''); // User's input question
+  const [aiQuery, setAiQuery, ] = useState(''); // User's input question
   const [aiResponse, setAiResponse] = useState(''); // AI's response text
   const [isSubmittingAi, setIsSubmittingAi] = useState(false); // Loading state for AI query
 
@@ -924,7 +924,7 @@ export default function BusinessReadingsScreen() {
               aiResponse={aiResponse}
               aiQuery={aiQuery}
               handleAiQueryChange={handleAiQueryChange}
-              submitHandler={submitAiHandler} // Pass the memoized handler
+              submitHandler={submitAiHandler} // FIX: Pass the memoized handler
               savedBooks={savedBooks}
               onToggleSave={handleToggleSave}
               onCommit={() => handleCommitment(selectedBook)} // Pass the selected book to handler

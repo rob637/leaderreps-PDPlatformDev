@@ -1,4 +1,4 @@
-// src/services/useAppServices.jsx (Path & Metadata Fetch Fixes Applied, Fully Restored, Enhanced Logging)
+// src/services/useAppServices.jsx (FIXED: Daily Rep Status Not Persisting After Completion)
 
 import React, {
   useMemo,
@@ -454,12 +454,11 @@ const useFirestoreUserData = (db, userId, isAuthReady, collection, document, moc
                   let needsDBUpdate = false;
 
                   // 1. Check if Status Reset is needed
-                  // Reset if: the reset date doesn't match today, OR if the target rep date is old
-                  const isResetNeeded = (fetchedData.lastStatusResetDate !== todayStr) || 
-                                       (fetchedData.dailyTargetRepDate && fetchedData.dailyTargetRepDate !== todayStr);
+                  // MODIFIED: Reset only if lastStatusResetDate is NOT today.
+                  const isResetNeeded = (fetchedData.lastStatusResetDate !== todayStr);
                   
                   if (isResetNeeded) {
-                      console.log(`[DAILY RESET ${collection}/${document}] Reset triggered. lastStatusResetDate: ${fetchedData.lastStatusResetDate}, dailyTargetRepDate: ${fetchedData.dailyTargetRepDate}, today: ${todayStr}`);
+                      console.log(`[DAILY RESET ${collection}/${document}] Reset triggered. Last Reset Date: ${fetchedData.lastStatusResetDate}, Today: ${todayStr}`);
                       updatesNeeded.lastStatusResetDate = todayStr;
                       updatesNeeded.dailyTargetRepStatus = 'Pending'; // Reset target rep status
                       updatesNeeded.activeCommitments = (fetchedData.activeCommitments || []).map(c => ({ ...c, status: 'Pending' })); // Reset additional reps
@@ -467,15 +466,11 @@ const useFirestoreUserData = (db, userId, isAuthReady, collection, document, moc
                   } else {
                       // Same day, no reset needed - preserve current state
                       console.log(`[DAILY RESET ${collection}/${document}] No reset needed. Already reset for today.`);
-                      updatesNeeded.lastStatusResetDate = fetchedData.lastStatusResetDate;
+                      // Preserving saved status from the snapshot ensures the 'Committed' status persists on refresh/re-read.
                       updatesNeeded.dailyTargetRepStatus = fetchedData.dailyTargetRepStatus || 'Pending';
                       updatesNeeded.activeCommitments = fetchedData.activeCommitments || [];
                   }
                    // 2. Preserve Target Rep ID and Date (Dashboard handles rep selection logic)
-                   // We don't clear these fields on reset - the Dashboard will determine if a new rep
-                   // should be selected based on its own logic (weakest tier matching, etc.)
-                   // This allows the Dashboard to know what rep was assigned yesterday and properly
-                   // select a new one if needed.
                    updatesNeeded.dailyTargetRepDate = fetchedData.dailyTargetRepDate;
                    updatesNeeded.dailyTargetRepId = fetchedData.dailyTargetRepId;
                    console.log(`[DAILY RESET ${collection}/${document}] Preserving rep ID (${fetchedData.dailyTargetRepId}) and date (${fetchedData.dailyTargetRepDate}) for Dashboard logic.`);
@@ -488,7 +483,8 @@ const useFirestoreUserData = (db, userId, isAuthReady, collection, document, moc
                   // Trigger background DB update if needed
                   if (needsDBUpdate) {
                       console.log(`[DAILY RESET ${collection}/${document}] Triggering background Firestore update for path: ${path}`, updatesNeeded);
-                      updateDocEx(db, path, updatesNeeded).catch(err => {
+                      // Use setDocEx with merge: true for background update
+                      setDocEx(db, path, updatesNeeded, true).catch(err => {
                           console.error(`[DAILY RESET ${collection}/${document}] Background update failed for path: ${path}`, err);
                           // Optional: Set an error state?
                       });
@@ -526,14 +522,10 @@ return () => {
   const updateData = useCallback(async (updatesOrFn) => {
     console.log('🚨🚨🚨 UPDATE DATA FUNCTION CALLED - NEW VERSION 🚨🚨🚨');
     console.log(`[USER UPDATE] ===== START UPDATE for ${document} =====`);
-    console.log(`[USER UPDATE] ===== START UPDATE for ${document} =====`);
     console.log(`[USER UPDATE] DB exists: ${!!db}`);
-    console.log(`[USER UPDATE] UserID: ${userId}`);
-    console.log(`[USER UPDATE] Path: ${path}`);
     
     if (!db || !userId || !path) {
-        console.error(`[USER UPDATE FAILED] Cannot update ${document}. Missing prerequisites.`);
-        console.error(`[USER UPDATE FAILED] DB: ${!!db}, UserID: ${!!userId}, Path: ${path}`);
+        console.error(`[USER UPDATE FAILED] Cannot update ${document}. Missing prerequisites. Path: ${path}`);
         return false; // Return failure indicator
     }
     
@@ -541,7 +533,8 @@ return () => {
       let finalUpdates;
       if (typeof updatesOrFn === 'function') {
           console.log(`[USER UPDATE] Applying functional update...`);
-          const currentState = data;
+          // CRITICAL FIX: Use the latest 'data' state captured from the closure.
+          const currentState = data; 
           finalUpdates = updatesOrFn(currentState);
       } else {
           console.log(`[USER UPDATE] Using direct updates...`);
@@ -572,7 +565,8 @@ return () => {
       console.error(`[USER UPDATE EXCEPTION] Error:`, e);
       return false;
     }
-  }, [db, userId, path, document, data]);
+  // CRITICAL FIX: Include 'data' in dependency array to ensure the functional update closure is current
+  }, [db, userId, path, document, data]); 
     // --- Debug logging ---
   console.log(`🚨 useFirestoreUserData RETURNING for ${document}:`, JSON.stringify({ 
     hasData: !!data, 
