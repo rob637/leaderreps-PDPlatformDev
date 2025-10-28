@@ -522,6 +522,8 @@ const useFirestoreUserData = (db, userId, isAuthReady, collection, document, moc
 
   // --- Update Function ---
   const updateData = useCallback(async (updatesOrFn) => {
+    console.log('🚨🚨🚨 UPDATE DATA FUNCTION CALLED - NEW VERSION 🚨🚨🚨');
+    console.log(`[USER UPDATE] ===== START UPDATE for ${document} =====`);
     console.log(`[USER UPDATE] ===== START UPDATE for ${document} =====`);
     console.log(`[USER UPDATE] DB exists: ${!!db}`);
     console.log(`[USER UPDATE] UserID: ${userId}`);
