@@ -302,7 +302,12 @@ const MOCK_DAILY_PRACTICE_DATA = { activeCommitments: [], identityAnchor: '', ha
 const MOCK_STRATEGIC_CONTENT_DATA = { vision: '', mission: '', okrs: [], lastPreMortemDecision: '', risks: [], misalignmentNotes: '' };
 
 // --- MOCK GLOBAL METADATA (Catalogs - using boss's names where applicable) ---
-const MOCK_FEATURE_FLAGS = { enableCommunity: true, enableLabsAdvanced: false, enablePlanningHub: true }; // NEW
+const MOCK_FEATURE_FLAGS = { 
+    enableCommunity: true, 
+    enableLabs: true,           // ADD THIS
+    enableLabsAdvanced: false, 
+    enablePlanningHub: true 
+};
 const MOCK_REP_LIBRARY = { items: [] }; // Central library, maps to TARGET_REP_CATALOG and COMMITMENT_BANK conceptually
 const MOCK_EXERCISE_LIBRARY = { items: [] }; // NEW conceptual mapping
 const MOCK_WORKOUT_LIBRARY = { items: [] }; // NEW
@@ -464,12 +469,11 @@ const useFirestoreUserData = (db, userId, isAuthReady, collection, document, moc
                    // 2. Check if Target Rep Date needs update (if ID exists but date is old/null)
                    // This assumes the *selection* logic happens elsewhere (e.g., Dashboard)
                    // Here, we just ensure the date field is consistent if an ID is present.
-                  if (fetchedData.dailyTargetRepId && fetchedData.dailyTargetRepDate !== todayStr) {
-                       console.log(`[DAILY RESET ${collection}/${document}] Target Rep ID ${fetchedData.dailyTargetRepId} exists, but date is old (${fetchedData.dailyTargetRepDate}). Updating date.`);
-                       updatesNeeded.dailyTargetRepDate = todayStr;
-                       // Keep existing ID and status (status reset handled above)
-                       updatesNeeded.dailyTargetRepId = fetchedData.dailyTargetRepId;
-                       needsDBUpdate = true; // Ensure date update is saved
+if (fetchedData.dailyTargetRepId && fetchedData.dailyTargetRepDate !== todayStr) {
+     console.log(`[DAILY RESET ${collection}/${document}] Target Rep date is old (${fetchedData.dailyTargetRepDate}). Clearing ID and date for new selection.`);
+     updatesNeeded.dailyTargetRepDate = null;  // Clear the date
+     updatesNeeded.dailyTargetRepId = null;     // Clear the ID to allow Dashboard to select new rep
+     needsDBUpdate = true;
                   } else if (fetchedData.dailyTargetRepId) {
                        // Ensure current data reflects potentially missed updates
                        updatesNeeded.dailyTargetRepDate = fetchedData.dailyTargetRepDate;
