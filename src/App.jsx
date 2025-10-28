@@ -703,7 +703,7 @@ console.log('🔍 dailyPracticeHook.updateData type:', typeof dailyPracticeHook.
       // Data Writers (using updated names)
       // FIX: Add defensive check (?? noOpUpdate) here as a final guarantee.
       updateDevelopmentPlanData: devPlanHook.updateData ?? noOpUpdate, // cite: useAppServices.jsx
-      updateDailyPracticeData: dailyPracticeHook.updateData ?? noOpUpdate, // cite: useAppServices.jsx
+      updateDailyPracticeData: dailyPracticeHook.updateDailyPracticeData ?? noOpUpdate, // cite: useAppServices.jsx
       updateStrategicContentData: strategicContentHook.updateData ?? noOpUpdate, // cite: useAppServices.jsx
       // Update global metadata (pass db and userId)
       updateGlobalMetadata: (data, opts) => updateGlobalMetadata(db, data, { ...opts, userId }), // cite: useAppServices.jsx
