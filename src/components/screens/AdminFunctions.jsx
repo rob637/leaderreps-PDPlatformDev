@@ -1,4 +1,4 @@
-// src/components/screens/AdminFunctions.jsx (FIXED VERSION)
+// src/components/screens/AdminFunctions.jsx (Updated with more flags)
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 // --- Core Services & Context ---
@@ -220,16 +220,28 @@ const AdminFunctionsScreen = () => {
 
                {/* List of Toggles */}
                 <div className="space-y-4">
-                    {/* FIX: Iterate over a defined list of *all* manageable flags,
-                      not just the ones that already exist in the database.
+                    {/*
+                      Iterate over a defined list of *all* manageable flags.
+                      This ensures new flags can be added here and will be
+                      picked up by the system.
                     */}
                     {[
-                        'enableLabs',           // The missing flag
+                        // Original Flags
+                        'enableLabs',
                         'enableLabsAdvanced',
                         'enableCommunity',
-                        'enablePlanningHub'
+                        'enablePlanningHub',
+                        // Added Flags
+                        'enableRoiReport',      // Executive ROI Report
+                        'enableCourses',        // Course Library (AppliedLeadership)
+                        'enableVideos',         // Content Videos (LeadershipVideos)
+                        'enableReadings',       // Professional Reading Hub (BusinessReadings)
+                        // Add other flags from App.jsx as needed
+                        'enableDevPlan',
+                        'enableQuickStart',
+                        'enableDailyPractice',
                     ]
-                     .sort() // Ensure consistent order
+                     .sort() // Ensure consistent alphabetical order
                      .map((flagName) => {
                         // Get the current value from state.
                         // isEnabled will be 'undefined' if the flag is new.
@@ -237,8 +249,8 @@ const AdminFunctionsScreen = () => {
 
                         return (
                             <div key={flagName} className="flex items-center justify-between p-3 border rounded-lg bg-white shadow-sm">
-                                {/* Flag Name */}
-                                <span className="text-sm font-medium text-gray-800">{flagName.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}</span>
+                                {/* Flag Name (prettified) */}
+                                <span className="text-sm font-medium text-gray-800">{flagName.replace('enable', '').replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase()).trim()}</span>
                                 
                                 {/* Toggle Button */}
                                 <button

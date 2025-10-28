@@ -257,8 +257,8 @@ const NavSidebar = ({ currentScreen, setCurrentScreen, user, closeMobileMenu, is
   // --- System/Admin Navigation (Conditional) ---
   const systemNav = [
     { screen: 'app-settings', label: 'App Settings', icon: Settings },
-    // Conditionally add Admin Functions link if user is admin
-    ...(isAdmin ? [{ screen: 'admin-functions', label: 'Admin Functions', icon: Shield, adminOnly: true }] : []),
+    // --- REMOVED Admin Functions link from main sidebar ---
+    // (Access is now presumably through 'App Settings')
   ];
 
   const menuSections = [
@@ -435,7 +435,8 @@ const NavSidebar = ({ currentScreen, setCurrentScreen, user, closeMobileMenu, is
       </div>
 
        {/* --- NEW: Sidebar Toggle Button (Slide Switch Style) --- */}
-        <div className="absolute top-1/2 -translate-y-1/2 -right-3 z-40">
+        {/* MODIFIED: Changed top-1/2 to top-3/4 */}
+        <div className="absolute top-3/4 -translate-y-1/2 -right-3 z-40">
           <button
             onClick={() => setIsNavExpanded(!isNavExpanded)}
             title={isNavExpanded ? 'Collapse Menu' : 'Expand Menu'}
