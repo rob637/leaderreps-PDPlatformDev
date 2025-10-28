@@ -1200,10 +1200,17 @@ const DashboardScreen = () => {
       }
 
 
-      try {
-          // Update Firestore using the specific hook function
-          const success = await updateDailyPracticeData(updates); // cite: useAppServices.jsx
-          if (success) {
+     try {
+    // Update Firestore using the specific hook function
+    console.log('🔍 About to call updateDailyPracticeData with updates:', updates);
+    console.log('🔍 db:', db);
+    console.log('🔍 userId:', userId);
+    
+    const success = await updateDailyPracticeData(updates); // cite: useAppServices.jsx
+    
+    console.log('🔍 updateDailyPracticeData returned:', success);
+    
+    if (success) {
               console.log("[Dashboard] Target rep marked complete successfully.");
               // Trigger celebration and potential challenge prompt only on successful completion
               triggerCelebration(true); // Show celebration + check for micro-rep challenge

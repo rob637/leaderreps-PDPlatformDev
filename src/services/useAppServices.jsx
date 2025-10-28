@@ -22,6 +22,8 @@ import {
 // --- NEW: Import specific icons used within this service ---
 import { HeartPulse, Briefcase, Users, AlertTriangle, TrendingUp, Zap, ShieldCheck, Target, BarChart3, BookOpen, Film, Trello, Mic, Clock, Cpu, User as UserIcon } from 'lucide-react'; 
 
+console.log('🔥🔥🔥 useAppServices.jsx LOADED - Version with Enhanced Logging 🔥🔥🔥');
+
 /* =========================================================
    Mock fallback (keeps the app usable without Firestore)
 ========================================================= */
