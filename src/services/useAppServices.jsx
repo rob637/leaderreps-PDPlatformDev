@@ -1,4 +1,4 @@
-// src/services/useAppServices.jsx (Path & Metadata Fetch Fixes Applied, Fully Restored)
+// src/services/useAppServices.jsx (Path & Metadata Fetch Fixes Applied, Fully Restored, Enhanced Logging)
 
 import React, {
   useMemo,
@@ -114,11 +114,18 @@ const setDocEx = async (db, path, data, merge = false) => {
   }
   try {
       const dataWithTimestamp = { ...data, _updatedAt: serverTimestamp() };
+      console.log(`[setDocEx] Attempting write to path: ${path}`, { data: dataWithTimestamp, merge });
       await fsSetDoc(toDocRef(db, path), dataWithTimestamp, merge ? { merge: true } : undefined);
       console.log(`[setDocEx SUCCESS] Path: ${path}, Merge: ${merge}`);
       return true; 
   } catch (error) {
       console.error(`[setDocEx FAILED] Path: ${path}`, error);
+      console.error(`[setDocEx FAILED] Error details:`, { 
+        code: error.code, 
+        message: error.message,
+        name: error.name,
+        stack: error.stack
+      });
       return false; 
   }
 };
@@ -134,11 +141,17 @@ const updateDocEx = async (db, path, data) => {
     }
     try {
         const dataWithTimestamp = { ...data, _updatedAt: serverTimestamp() };
+        console.log(`[updateDocEx] Attempting update to path: ${path}`, { data: dataWithTimestamp });
         await fsUpdateDoc(toDocRef(db, path), dataWithTimestamp);
         console.log(`[updateDocEx SUCCESS] Path: ${path}`, data); 
         return true;
     } catch (error) {
         console.error(`[updateDocEx FAILED] Path: ${path}`, error);
+        console.error(`[updateDocEx FAILED] Error details:`, { 
+          code: error.code, 
+          message: error.message,
+          name: error.name 
+        });
         return false;
     }
 };
@@ -187,7 +200,7 @@ export const ensureUserDocs = async (db, uid) => {
               arenaMode: true, 
           }
       },
-      // Strategic Content Tools (formerly user_planning)
+      // Strategic Content (formerly user_planning)
       {
           collection: 'strategic_content', 
           docName: 'data', 
@@ -509,12 +522,12 @@ const useFirestoreUserData = (db, userId, isAuthReady, collection, document, moc
 
       // Use updateDocEx for partial updates
       // Use setDocEx with merge:true for "upsert" (create or update)
-      const success = await setDocEx(db, path, finalUpdates, true); // [!code ++]
+      const success = await setDocEx(db, path, finalUpdates, true);
       if (success) {
           console.log(`[USER UPDATE SUCCESS] ${document}. Path: ${path}`, finalUpdates);
           return true;
       } else {
-          console.error(`[USER UPDATE FAILED] updateDocEx returned false for ${document}. Path: ${path}`);
+          console.error(`[USER UPDATE FAILED] setDocEx returned false for ${document}. Path: ${path}`);
           return false;
       }
     } catch (e) {
@@ -732,7 +745,7 @@ export const updateGlobalMetadata = async (
   if (forceDocument === 'reading_catalog') {
       path = mockDoc(db, 'metadata', 'reading_catalog');
       // Ensure payload is structured correctly { items: [...] }
-      if (!payload || !payload.items || !Array.isArray(payload.items)) { // CRITICAL FIX: Changed 'ArrayArray' to 'Array.isArray'
+      if (!payload || !payload.items || !Array.isArray(payload.items)) {
            // Attempt to find an array in the payload or wrap it
            const potentialArray = Object.values(payload).find(Array.isArray);
            payload = { items: potentialArray || (Array.isArray(payload) ? payload : []) };
