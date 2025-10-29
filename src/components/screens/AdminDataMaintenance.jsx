@@ -831,33 +831,48 @@ export default function AdminDataMaintenance() {
   }, [isLoading, isWriting, isCollView]);
 
 
-  // --- Presets (Unchanged Logic) ---
+  // --- Presets (Enhanced with Dashboard & Dev Plan Groups) ---
   const presets = useMemo(() => [
+    // === DASHBOARD DATA GROUP ===
+    { group: "Dashboard Data", label: "📊 Daily Practice State", value: "daily_practice/<uid>/user_state/state" },
+    { group: "Dashboard Data", label: "🎯 Rep Library (All Reps)", value: "metadata/config/catalog/REP_LIBRARY" },
+    { group: "Dashboard Data", label: "👤 Identity Anchors", value: "metadata/config/catalog/IDENTITY_ANCHOR_CATALOG" },
+    { group: "Dashboard Data", label: "⚓ Habit Anchors", value: "metadata/config/catalog/HABIT_ANCHOR_CATALOG" },
+    { group: "Dashboard Data", label: "💖 Why Statements", value: "metadata/config/catalog/WHY_CATALOG" },
+    { group: "Dashboard Data", label: "📓 Reflection History (Coll)", value: "daily_practice/<uid>/reflection_history" },
+    { group: "Dashboard Data", label: "📈 Practice History (Coll)", value: "daily_practice/<uid>/practice_history" },
+    
+    // === DEVELOPMENT PLAN DATA GROUP ===
+    { group: "Development Plan Data", label: "👤 Dev Plan Profile", value: "development_plan/<uid>/profile" },
+    { group: "Development Plan Data", label: "📜 Dev Plan History (Coll)", value: "development_plan/<uid>/plan_history" },
+    { group: "Development Plan Data", label: "📊 Assessment History (Coll)", value: "development_plan/<uid>/assessment_history" },
+    { group: "Development Plan Data", label: "🗺️ Skill Catalog (Courses)", value: "metadata/config/catalog/SKILL_CATALOG" },
+    { group: "Development Plan Data", label: "📚 Resource Library Items", value: "metadata/config/catalog/RESOURCE_LIBRARY_ITEMS" },
+    
+    // === APP VALUE SETS (GLOBAL CONFIG) ===
     { group: "App Value Sets (Global Config)", label: "⚙️ Global Config Root", value: "metadata/config" },
     { group: "App Value Sets (Global Config)", label: "🚩 Feature Flags", value: "metadata/config" },
-    { group: "App Value Sets (Catalogs)", label: "🗺️ Skill Catalog (Courses)", value: "metadata/config/catalog/SKILL_CATALOG" },
-    { group: "App Value Sets (Catalogs)", label: "📚 Resource Library Items", value: "metadata/config/catalog/RESOURCE_LIBRARY_ITEMS" },
-    { group: "App Value Sets (Catalogs)", label: "🎯 Rep Library (All Reps)", value: "metadata/config/catalog/REP_LIBRARY" },
+    
+    // === APP VALUE SETS (CATALOGS) ===
     { group: "App Value Sets (Catalogs)", label: "🏋️ Exercise Library", value: "metadata/config/catalog/EXERCISE_LIBRARY" },
     { group: "App Value Sets (Catalogs)", label: "💪 Workout Library", value: "metadata/config/catalog/WORKOUT_LIBRARY" },
     { group: "App Value Sets (Catalogs)", label: "📘 Course Library", value: "metadata/config/catalog/COURSE_LIBRARY" },
-    { group: "App Value Sets (Catalogs)", label: "👤 Identity Anchors", value: "metadata/config/catalog/IDENTITY_ANCHOR_CATALOG" },
-    { group: "App Value Sets (Catalogs)", label: "⚓ Habit Anchors", value: "metadata/config/catalog/HABIT_ANCHOR_CATALOG" },
-    { group: "App Value Sets (Catalogs)", label: "💖 Why Statements", value: "metadata/config/catalog/WHY_CATALOG" },
     { group: "App Value Sets (Catalogs)", label: "🎬 Scenario Catalog", value: "metadata/config/catalog/scenario_catalog" },
     { group: "App Value Sets (Catalogs)", label: "🎥 Video Catalog", value: "metadata/config/catalog/video_catalog" },
     { group: "App Value Sets (Catalogs)", label: "📖 Reading Catalog (Wrapped Doc)", value: "metadata/reading_catalog" },
-    { group: "User Data (Per User)", label: "👤 Dev Plan Profile", value: "development_plan/<uid>/profile" },
-    { group: "User Data (Per User)", label: "📜 Dev Plan History (Coll)", value: "development_plan/<uid>/plan_history" },
-    { group: "User Data (Per User)", label: "📊 Assessment History (Coll)", value: "development_plan/<uid>/assessment_history" },
-    { group: "User Data (Per User)", label: "✅ Daily Practice State", value: "daily_practice/<uid>/user_state/state" },
-    { group: "User Data (Per User)", label: "📓 Reflection History (Coll)", value: "daily_practice/<uid>/reflection_history" },
-    { group: "User Data (Per User)", label: "📈 Practice History (Coll)", value: "daily_practice/<uid>/practice_history" },
+    
+    // === USER DATA (PER USER) ===
     { group: "User Data (Per User)", label: "📝 Strategic Content Data", value: "strategic_content/<uid>/data" },
   ], []);
 
   const presetGroups = useMemo(() => {
-      const groupOrder = ["App Value Sets (Global Config)", "App Value Sets (Catalogs)", "User Data (Per User)"];
+      const groupOrder = [
+        "Dashboard Data",
+        "Development Plan Data", 
+        "App Value Sets (Global Config)", 
+        "App Value Sets (Catalogs)", 
+        "User Data (Per User)"
+      ];
       return groupOrder.filter(group => presets.some(p => p.group === group));
   }, [presets]);
 
@@ -958,14 +973,15 @@ export default function AdminDataMaintenance() {
 
           {/* --- Editors Layout --- */}
           {isLoading && !liveUnsub ? <LoadingSpinner /> : (
-              <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-                {/* Left: Raw JSON Editor */}
+              <div className="space-y-6">
+                {/* Raw JSON Editor (FULL WIDTH) */}
                  <div className="bg-white p-4 rounded-lg shadow-md border">
                      <label htmlFor="jsonEditor" className="text-base font-semibold text-gray-800 mb-2 block">Raw Document JSON</label>
                      <textarea id="jsonEditor" className="w-full h-[600px] font-mono border border-gray-300 rounded p-3 text-xs bg-gray-50 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 disabled:opacity-70 resize-y" spellCheck={false} value={docJson} onChange={(e) => setDocJson(e.target.value)} placeholder="Document JSON content..." disabled={isWriting} aria-label="Raw JSON Editor"/>
                 </div>
-                {/* Right: Table Editors */}
-                <div className="flex flex-col gap-6">
+                
+                {/* Field Editors (BELOW JSON) */}
+                <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
                     {/* KV Editor */}
                     <div className="bg-white p-4 rounded-lg shadow-md border">
                       <h3 className="text-base font-semibold text-gray-800 mb-2">Key/Value Fields (Non-Arrays)</h3>

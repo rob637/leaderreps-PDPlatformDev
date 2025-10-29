@@ -300,15 +300,41 @@ export const useDashboard = ({
     }
   }, [otherTasks, updateDailyPracticeData]);
 
-  const handleToggleTask = useCallback((taskId) => {
-    setOtherTasks(prev => prev.map(task =>
+  const handleToggleTask = useCallback(async (taskId) => {
+    const updatedTasks = otherTasks.map(task =>
       task.id === taskId ? { ...task, completed: !task.completed } : task
-    ));
-  }, []);
+    );
+    setOtherTasks(updatedTasks);
+    
+    // Auto-save to Firestore immediately
+    if (updateDailyPracticeData) {
+      try {
+        await updateDailyPracticeData({
+          'morningBookend.otherTasks': updatedTasks
+        });
+        console.log('[Dashboard] Task toggled and saved');
+      } catch (error) {
+        console.error('[Dashboard] Error auto-saving task toggle:', error);
+      }
+    }
+  }, [otherTasks, updateDailyPracticeData]);
 
-  const handleRemoveTask = useCallback((taskId) => {
-    setOtherTasks(prev => prev.filter(task => task.id !== taskId));
-  }, []);
+  const handleRemoveTask = useCallback(async (taskId) => {
+    const updatedTasks = otherTasks.filter(task => task.id !== taskId);
+    setOtherTasks(updatedTasks);
+    
+    // Auto-save to Firestore immediately
+    if (updateDailyPracticeData) {
+      try {
+        await updateDailyPracticeData({
+          'morningBookend.otherTasks': updatedTasks
+        });
+        console.log('[Dashboard] Task removed and saved');
+      } catch (error) {
+        console.error('[Dashboard] Error auto-saving task removal:', error);
+      }
+    }
+  }, [otherTasks, updateDailyPracticeData]);
 
   // NEW: Handle WIN checkbox toggle
   const handleToggleWIN = useCallback(async () => {

@@ -1,5 +1,5 @@
 // src/components/screens/Dashboard.jsx
-// Refactored with 60/40 layout, dynamic bookends, reminders, auto-tracking (10/28/25)
+// COMPLETE VERSION with all fixes (10/29/25)
 
 import React, { useState, useEffect } from 'react';
 import { useAppServices } from '../../services/useAppServices.jsx';
@@ -14,12 +14,13 @@ import {
   Card,
   ModeSwitch,
   StreakTracker,
-  DynamicBookendContainer, // NEW
-  DevPlanProgressLink, // NEW
-  IdentityAnchorCard, // RENAMED from WhyItMattersCard
+  DynamicBookendContainer,
+  DevPlanProgressLink,
+  IdentityAnchorCard,
   HabitAnchorCard,
   AICoachNudge,
-  ReminderBanner // NEW
+  ReminderBanner,
+  SuggestionModal // NEW: For Identity/Habit suggestions
 } from './dashboard/DashboardComponents.jsx';
 
 // Import hooks
@@ -37,7 +38,8 @@ const Dashboard = ({ navigate }) => {
     featureFlags,
     db,
     userEmail,
-    developmentPlanData
+    developmentPlanData,
+    globalMetadata // NEW: Get global metadata for REP_LIBRARY lookups
   } = useAppServices();
 
   // Use consolidated dashboard hook
@@ -85,8 +87,8 @@ const Dashboard = ({ navigate }) => {
     handleAddTask,
     handleToggleTask,
     handleRemoveTask,
-    handleToggleWIN, // NEW
-    handleSaveWIN, // NEW
+    handleToggleWIN,
+    handleSaveWIN,
     handleHabitToggle,
 
     // Streak
@@ -108,11 +110,30 @@ const Dashboard = ({ navigate }) => {
   const [showImprovementReminder, setShowImprovementReminder] = useState(false);
   const [celebrationShown, setCelebrationShown] = useState(false);
 
+  // NEW: State for suggestion modals
+  const [showIdentitySuggestions, setShowIdentitySuggestions] = useState(false);
+  const [showHabitSuggestions, setShowHabitSuggestions] = useState(false);
+
   // NEW: Get dynamic focus area from dev plan
   const focusArea = developmentPlanData?.currentPlan?.focusArea || 'Not Set';
   
   // NEW: Calculate dev plan progress (simple version - can be enhanced)
   const devPlanProgress = 22; // Placeholder - should calculate based on actual progress
+
+  // NEW: Lookup Target Rep details from REP_LIBRARY
+  const targetRepDetails = useMemo(() => {
+    if (!targetRep || !globalMetadata?.REP_LIBRARY?.items) return null;
+    
+    const repItem = globalMetadata.REP_LIBRARY.items.find(
+      rep => rep.id === targetRep || rep.repId === targetRep
+    );
+    
+    return repItem || null;
+  }, [targetRep, globalMetadata?.REP_LIBRARY]);
+
+  // NEW: Get suggestion catalogs
+  const identitySuggestions = globalMetadata?.IDENTITY_ANCHOR_CATALOG?.items || [];
+  const habitSuggestions = globalMetadata?.HABIT_ANCHOR_CATALOG?.items || [];
 
   /* =========================================================
      AUTO-UPDATE WATCHERS (NEW)
@@ -226,56 +247,64 @@ const Dashboard = ({ navigate }) => {
      MAIN RENDER
   ========================================================= */
   return (
-    <div className="min-h-screen p-6" style={{ backgroundColor: COLORS.BG }}>
+    <div className="min-h-screen pb-8 pt-20" style={{ background: COLORS.BG }}>
       
       {/* === HEADER === */}
-      <div className="max-w-7xl mx-auto mb-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-4xl font-extrabold mb-2" style={{ color: COLORS.NAVY }}>
-              <Home className="inline w-8 h-8 mr-2" /> The Arena
-            </h1>
-            <p className="text-lg" style={{ color: COLORS.TEXT }}>
-              Welcome to The Arena, <strong>{userEmail?.split('@')[0] || 'Leader'}</strong>. 
-              Focus Area: <strong>{focusArea}</strong>
-            </p>
+      <div className="px-6 py-6 shadow-md mb-6" 
+           style={{ 
+             background: `linear-gradient(135deg, ${COLORS.NAVY} 0%, ${COLORS.TEAL} 100%)`,
+             color: 'white' 
+           }}>
+        <div className="max-w-7xl mx-auto">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-3">
+              <Home className="w-8 h-8" />
+              <h1 className="text-3xl font-extrabold">Your Daily Arena</h1>
+            </div>
+            <div className="flex items-center gap-4">
+              <StreakTracker count={streakCount} coins={streakCoins} />
+              <ModeSwitch 
+                isArenaMode={isArenaMode}
+                onToggle={handleToggleMode}
+                isLoading={isTogglingMode}
+              />
+            </div>
           </div>
-          
-          <div className="flex items-center gap-4">
-            <StreakTracker streakCount={streakCount} streakCoins={streakCoins} />
-            <ModeSwitch 
-              isArenaMode={isArenaMode} 
-              onToggle={handleToggleMode} 
-              isLoading={isTogglingMode} 
-            />
-          </div>
+          <p className="text-sm opacity-90">
+            {isArenaMode 
+              ? "🏆 Arena Mode: Build accountability with your pod" 
+              : "🎯 Solo Mode: Focus on your individual growth"}
+          </p>
         </div>
-        <div className="h-1 w-full mt-4 rounded-full" 
-             style={{ background: `linear-gradient(90deg, ${COLORS.TEAL}, ${COLORS.ORANGE})` }} />
       </div>
 
-      {/* === REMINDER BANNERS (NEW) === */}
-      {(showBestReminder || showImprovementReminder) && (
-        <div className="max-w-7xl mx-auto mb-4 space-y-3">
-          {showBestReminder && (
+      {/* === REMINDER BANNERS === */}
+      {showBestReminder && (
+        <div className="max-w-7xl mx-auto px-6 mb-6">
+          {dailyPracticeData?.tomorrowsReminder && (
             <ReminderBanner 
+              type="best"
               message={dailyPracticeData.tomorrowsReminder}
               onDismiss={handleDismissBestReminder}
-              type="best"
             />
           )}
-          {showImprovementReminder && (
+        </div>
+      )}
+
+      {showImprovementReminder && (
+        <div className="max-w-7xl mx-auto px-6 mb-6">
+          {dailyPracticeData?.improvementReminder && (
             <ReminderBanner 
+              type="better"
               message={dailyPracticeData.improvementReminder}
               onDismiss={handleDismissImprovementReminder}
-              type="improvement"
             />
           )}
         </div>
       )}
 
       {/* === MAIN CONTENT GRID === */}
-      <div className="max-w-7xl mx-auto">
+      <div className="max-w-7xl mx-auto px-6">
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
 
           {/* === LEFT COLUMN (60% - DAILY FOCUS) === */}
@@ -288,19 +317,20 @@ const Dashboard = ({ navigate }) => {
                   Target Rep:
                 </p>
                 <p className="text-lg font-bold" style={{ color: COLORS.NAVY }}>
-                  {targetRep || 'No target rep set'}
+                  {targetRepDetails ? targetRepDetails.name : (targetRep || 'No target rep set')}
                 </p>
               </div>
 
-              <div className="mb-4 p-4 rounded-lg" style={{ backgroundColor: `${COLORS.TEAL}10` }}>
-                <p className="text-xs font-semibold mb-2" style={{ color: COLORS.TEAL }}>
-                  WHAT GOOD LOOKS LIKE:
-                </p>
-                <p className="text-sm italic" style={{ color: COLORS.TEXT }}>
-                  You actively reward and promote a psychologically safe environment, 
-                  fostering a culture where team members feel comfortable expressing themselves.
-                </p>
-              </div>
+              {targetRepDetails?.description && (
+                <div className="mb-4 p-4 rounded-lg" style={{ backgroundColor: `${COLORS.TEAL}10` }}>
+                  <p className="text-xs font-semibold mb-2" style={{ color: COLORS.TEAL }}>
+                    WHAT GOOD LOOKS LIKE:
+                  </p>
+                  <p className="text-sm italic" style={{ color: COLORS.TEXT }}>
+                    {targetRepDetails.description}
+                  </p>
+                </div>
+              )}
 
               {targetRepStatus === 'Pending' && (
                 <Button 
@@ -321,14 +351,14 @@ const Dashboard = ({ navigate }) => {
                 </div>
               )}
 
-              {/* Identity Anchor Display */}
+              {/* Identity Anchor Display - FIXED: Full sentence format */}
               {identityStatement && (
                 <div className="mt-4 pt-4 border-t" style={{ borderColor: COLORS.SUBTLE }}>
                   <p className="text-xs font-semibold mb-2" style={{ color: COLORS.MUTED }}>
-                    🎯 IDENTITY ANCHOR:
+                    🎯 TODAY'S FOCUS:
                   </p>
-                  <p className="text-sm italic" style={{ color: COLORS.TEXT }}>
-                    "{identityStatement}"
+                  <p className="text-sm italic font-medium" style={{ color: COLORS.TEXT }}>
+                    "I am the kind of leader who {identityStatement}"
                   </p>
                 </div>
               )}
@@ -344,12 +374,14 @@ const Dashboard = ({ navigate }) => {
             {/* Identity & Habit Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <IdentityAnchorCard 
-                identityStatement={identityStatement || "I am the kind of leader who..."} 
-                onEdit={() => setShowIdentityEditor(true)} 
+                identityStatement={identityStatement} 
+                onEdit={() => setShowIdentityEditor(true)}
+                onShowSuggestions={() => setShowIdentitySuggestions(true)} // NEW
               />
               <HabitAnchorCard 
-                habitAnchor={habitAnchor || "When I start my workday"} 
-                onEdit={() => setShowHabitEditor(true)} 
+                habitAnchor={habitAnchor} 
+                onEdit={() => setShowHabitEditor(true)}
+                onShowSuggestions={() => setShowHabitSuggestions(true)} // NEW
               />
             </div>
 
@@ -401,11 +433,11 @@ const Dashboard = ({ navigate }) => {
                   setShowLIS: setShowLIS,
                   identityStatement: identityStatement,
                   onSave: handleSaveMorningBookend,
-                  onSaveWIN: handleSaveWIN, // NEW
-                  onToggleWIN: handleToggleWIN, // NEW
+                  onSaveWIN: handleSaveWIN,
+                  onToggleWIN: handleToggleWIN,
                   isSaving: isSavingBookend,
-                  completedAt: dailyPracticeData?.morningBookend?.completedAt, // NEW
-                  winCompleted: dailyPracticeData?.morningBookend?.winCompleted // NEW
+                  completedAt: dailyPracticeData?.morningBookend?.completedAt,
+                  winCompleted: dailyPracticeData?.morningBookend?.winCompleted
                 }}
                 eveningProps={{
                   reflectionGood: reflectionGood,
@@ -418,7 +450,7 @@ const Dashboard = ({ navigate }) => {
                   onHabitToggle: handleHabitToggle,
                   onSave: handleSaveEveningBookend,
                   isSaving: isSavingBookend,
-                  onNavigate: navigate // NEW: for history link
+                  onNavigate: navigate
                 }}
                 dailyPracticeData={dailyPracticeData}
               />
@@ -434,6 +466,8 @@ const Dashboard = ({ navigate }) => {
       </div>
 
       {/* === MODALS === */}
+      
+      {/* Identity Editor Modal */}
       {showIdentityEditor && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl p-6 max-w-lg w-full" style={{ borderColor: COLORS.SUBTLE }}>
@@ -451,7 +485,7 @@ const Dashboard = ({ navigate }) => {
               style={{ borderColor: COLORS.SUBTLE }}
               rows={4}
             />
-            <div className="flex gap-3">
+            <div className="flex gap-3 mb-3">
               <Button onClick={() => handleSaveIdentity(identityStatement)} variant="primary" size="md" className="flex-1">
                 Save
               </Button>
@@ -459,10 +493,24 @@ const Dashboard = ({ navigate }) => {
                 Cancel
               </Button>
             </div>
+            {identitySuggestions.length > 0 && (
+              <Button 
+                onClick={() => {
+                  setShowIdentityEditor(false);
+                  setShowIdentitySuggestions(true);
+                }} 
+                variant="ghost" 
+                size="sm" 
+                className="w-full"
+              >
+                💡 View Suggestions
+              </Button>
+            )}
           </div>
         </div>
       )}
 
+      {/* Habit Editor Modal */}
       {showHabitEditor && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl p-6 max-w-lg w-full">
@@ -477,7 +525,7 @@ const Dashboard = ({ navigate }) => {
               className="w-full p-3 border rounded-lg mb-4"
               style={{ borderColor: COLORS.SUBTLE }}
             />
-            <div className="flex gap-3">
+            <div className="flex gap-3 mb-3">
               <Button onClick={() => handleSaveHabit(habitAnchor)} variant="primary" size="md" className="flex-1">
                 Save
               </Button>
@@ -485,8 +533,51 @@ const Dashboard = ({ navigate }) => {
                 Cancel
               </Button>
             </div>
+            {habitSuggestions.length > 0 && (
+              <Button 
+                onClick={() => {
+                  setShowHabitEditor(false);
+                  setShowHabitSuggestions(true);
+                }} 
+                variant="ghost" 
+                size="sm" 
+                className="w-full"
+              >
+                💡 View Suggestions
+              </Button>
+            )}
           </div>
         </div>
+      )}
+
+      {/* Identity Suggestions Modal */}
+      {showIdentitySuggestions && (
+        <SuggestionModal
+          title="Identity Anchor Suggestions"
+          prefix="I am the kind of leader who"
+          suggestions={identitySuggestions}
+          onSelect={(value) => {
+            setIdentityStatement(value);
+            handleSaveIdentity(value);
+            setShowIdentitySuggestions(false);
+          }}
+          onClose={() => setShowIdentitySuggestions(false)}
+        />
+      )}
+
+      {/* Habit Suggestions Modal */}
+      {showHabitSuggestions && (
+        <SuggestionModal
+          title="Habit Anchor Suggestions"
+          prefix="When I"
+          suggestions={habitSuggestions}
+          onSelect={(value) => {
+            setHabitAnchor(value);
+            handleSaveHabit(value);
+            setShowHabitSuggestions(false);
+          }}
+          onClose={() => setShowHabitSuggestions(false)}
+        />
       )}
     </div>
   );

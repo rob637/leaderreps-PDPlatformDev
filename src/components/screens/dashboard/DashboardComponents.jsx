@@ -403,8 +403,8 @@ export const MorningBookend = ({
                 {showLIS && (
                     <div className="mt-3 p-4 rounded-lg border" 
                          style={{ backgroundColor: `${COLORS.TEAL}10`, borderColor: `${COLORS.TEAL}30` }}>
-                        <p className="text-sm italic" style={{ color: COLORS.TEXT }}>
-                            {identityStatement || 'No identity statement set'}
+                        <p className="text-sm italic font-medium" style={{ color: COLORS.TEXT }}>
+                            "I am the kind of leader who {identityStatement || '...'}"
                         </p>
                     </div>
                 )}
@@ -560,42 +560,142 @@ export const EveningBookend = ({
 };
 
 /* =========================================================
-   IDENTITY ANCHOR CARD (RENAMED from WhyItMattersCard)
+   SUGGESTION MODAL (NEW)
 ========================================================= */
-export const IdentityAnchorCard = ({ identityStatement, onEdit }) => (
+export const SuggestionModal = ({ title, prefix, suggestions, onSelect, onClose }) => (
+  <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+    <div className="bg-white rounded-2xl p-6 max-w-2xl w-full max-h-[80vh] overflow-hidden flex flex-col">
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-2xl font-bold" style={{ color: COLORS.NAVY }}>
+          {title}
+        </h2>
+        <button 
+          onClick={onClose}
+          className="text-gray-400 hover:text-gray-600 transition-colors"
+        >
+          <X className="w-6 h-6" />
+        </button>
+      </div>
+      
+      <div className="overflow-y-auto flex-1 space-y-2">
+        {suggestions.map((suggestion, index) => (
+          <button
+            key={index}
+            onClick={() => onSelect(suggestion.value || suggestion.text || suggestion)}
+            className="w-full text-left p-4 rounded-lg border-2 transition-all hover:border-teal-500 hover:bg-teal-50"
+            style={{ borderColor: COLORS.SUBTLE }}
+          >
+            <p className="text-sm font-medium" style={{ color: COLORS.TEXT }}>
+              {prefix} <strong>{suggestion.value || suggestion.text || suggestion}</strong>
+            </p>
+            {suggestion.description && (
+              <p className="text-xs mt-1" style={{ color: COLORS.MUTED }}>
+                {suggestion.description}
+              </p>
+            )}
+          </button>
+        ))}
+      </div>
+      
+      <div className="mt-4 pt-4 border-t" style={{ borderColor: COLORS.SUBTLE }}>
+        <Button onClick={onClose} variant="outline" size="sm" className="w-full">
+          Close
+        </Button>
+      </div>
+    </div>
+  </div>
+);
+
+/* =========================================================
+   SAVE INDICATOR (NEW)
+========================================================= */
+export const SaveIndicator = ({ show, message = "Saved!" }) => {
+  if (!show) return null;
+  
+  return (
+    <div className="fixed bottom-4 right-4 z-50 animate-fade-in-up">
+      <div className="bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg flex items-center gap-2">
+        <CheckCircle className="w-5 h-5" />
+        <span className="font-semibold">{message}</span>
+      </div>
+    </div>
+  );
+};
+
+/* =========================================================
+   IDENTITY ANCHOR CARD
+========================================================= */
+export const IdentityAnchorCard = ({ identityStatement, onEdit, onShowSuggestions }) => (
   <Card icon={Anchor} accent='TEAL'>
     <h3 className="text-lg font-bold mb-3 flex items-center gap-2" style={{ color: COLORS.NAVY }}>
       <span>🎯</span> Identity Anchor
     </h3>
     <div className="p-4 bg-teal-50 rounded-lg mb-3">
         <p className="text-sm italic" style={{ color: COLORS.TEXT }}>
-            {identityStatement || "I am the kind of leader who..."}
+            I am the kind of leader who{' '}
+            <strong>{identityStatement || "..."}</strong>
         </p>
     </div>
-    <Button onClick={onEdit} variant="outline" size="sm" className="w-full">
-      <span className="mr-1">✏️</span> Edit Identity Anchor
-    </Button>
+    <div className="flex gap-2">
+      <Button onClick={onEdit} variant="outline" size="sm" className="flex-1">
+        <span className="mr-1">✏️</span> Edit
+      </Button>
+      {onShowSuggestions && (
+        <Button onClick={onShowSuggestions} variant="ghost" size="sm" className="flex-1">
+          💡 Suggestions
+        </Button>
+      )}
+    </div>
   </Card>
 );
 
-// DEPRECATED: Keep for backwards compatibility but mark as deprecated
-export const WhyItMattersCard = IdentityAnchorCard;
+/* =========================================================
+   WHY IT MATTERS CARD (RESTORED - SEPARATE FROM IDENTITY)
+========================================================= */
+export const WhyItMattersCard = ({ whyContent, onLearnMore }) => {
+  const defaultContent = "Your identity shapes your actions. When you anchor your habits to who you are becoming, you create lasting change from the inside out.";
+  
+  return (
+    <Card icon={Star} accent='AMBER'>
+      <h3 className="text-lg font-bold mb-3 flex items-center gap-2" style={{ color: COLORS.NAVY }}>
+        <span>💡</span> Why It Matters
+      </h3>
+      <div className="mb-4">
+        <p className="text-sm leading-relaxed" style={{ color: COLORS.TEXT }}>
+          {whyContent || defaultContent}
+        </p>
+      </div>
+      {onLearnMore && (
+        <Button onClick={onLearnMore} variant="ghost" size="sm" className="w-full !justify-start">
+          <span className="mr-1">📖</span> Learn more about identity-based habits
+        </Button>
+      )}
+    </Card>
+  );
+};
 
 /* =========================================================
    HABIT ANCHOR CARD
 ========================================================= */
-export const HabitAnchorCard = ({ habitAnchor, onEdit }) => (
+export const HabitAnchorCard = ({ habitAnchor, onEdit, onShowSuggestions }) => (
   <Card icon={Clock} accent='BLUE'>
     <h3 className="text-lg font-bold mb-3 flex items-center gap-2" style={{ color: COLORS.NAVY }}>
       <span>⚓</span> Habit Anchor
     </h3>
     <div className="mb-4">
       <p className="text-xs font-semibold mb-1" style={{ color: COLORS.MUTED }}>YOUR DAILY CUE:</p>
-      <p className="text-sm" style={{ color: COLORS.TEXT }}>{habitAnchor}</p>
+      <p className="text-sm" style={{ color: COLORS.TEXT }}>{habitAnchor || "When I..."}</p>
     </div>
-    <Button onClick={onEdit} variant="outline" size="sm" className="w-full">
-      <Clock className="w-4 h-4 mr-1" /> Edit Anchor
-    </Button>
+    <div className="flex gap-2">
+      <Button onClick={onEdit} variant="outline" size="sm" className="flex-1">
+        <Clock className="w-4 h-4 mr-1" /> Edit
+      </Button>
+      {onShowSuggestions && (
+        <Button onClick={onShowSuggestions} variant="ghost" size="sm" className="flex-1">
+          💡 Suggestions
+        </Button>
+      )}
+    </div>
   </Card>
 );
 
