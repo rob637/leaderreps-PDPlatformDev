@@ -665,14 +665,14 @@ const AlignmentTrackerView = ({ setPlanningView }) => {
 ========================================================= */
 export default function PlanningHubScreen() {
     // --- Consume Services ---
-    const { isLoading: isAppLoading, error: appError, featureFlags } = useAppServices(); // cite: useAppServices.jsx
+    const { isLoading: isAppLoading, error: appError, featureFlags, isAdmin } = useAppServices(); // cite: useAppServices.jsx
 
     // --- Local State ---
     const [view, setPlanningView] = useState('planning-home'); // Current tool view
 
-    // --- Feature Flag Check ---
+    // --- Feature Flag Check (bypass for admins) ---
     // If the entire Planning Hub is disabled, show a message or return null
-    if (!featureFlags?.enablePlanningHub) { // cite: useAppServices.jsx
+    if (!isAdmin && !featureFlags?.enablePlanningHub) { // cite: useAppServices.jsx
         return (
             <div className="p-8 text-center text-gray-500">
                 <Trello className="w-12 h-12 mx-auto mb-4 text-gray-400"/>
