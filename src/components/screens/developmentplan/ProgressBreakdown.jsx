@@ -1,231 +1,198 @@
 // src/components/developmentplan/ProgressBreakdown.jsx
-// Enhanced progress breakdown showing skill-level detail and statistics
+// Visual breakdown of skill progress across development plan
+// FIXED: Updated to work with adapted plan structure (coreReps), group by focus area
 
 import React, { useMemo } from 'react';
-import { TrendingUp, Target, Award, Clock, BarChart3 } from 'lucide-react';
-import { Card, ProgressBar, Badge, StatCard } from './DevPlanComponents';
-import { calculateSkillProgress, COLORS } from './devPlanUtils';
+import { TrendingUp, Target, Award } from 'lucide-react';
+import { Card, ProgressBar, Badge } from './DevPlanComponents';
+import { COLORS, calculateSkillProgress } from './devPlanUtils';
 
 const ProgressBreakdown = ({ plan, globalMetadata }) => {
-  const skillCatalog = (globalMetadata?.SKILL_CATALOG?.items
-  || globalMetadata?.SKILL_CATALOG
-  || globalMetadata?.config?.catalog?.SKILL_CATALOG?.items
-  || globalMetadata?.config?.catalog?.SKILL_CATALOG
-  || []);
-  
-  // Calculate detailed progress for each skill
+  // FIXED: Simplified skill catalog access
+  const skillCatalog = globalMetadata?.SKILL_CATALOG?.items || globalMetadata?.SKILL_CATALOG || [];
+
   const skillProgress = useMemo(() => {
     if (!plan || !plan.coreReps) return [];
     
+    console.log('[ProgressBreakdown] Processing adapted plan:', {
+      hasCoreReps: !!plan.coreReps,
+      coreRepsCount: plan.coreReps?.length,
+      catalogSize: skillCatalog.length
+    });
+    
     return plan.coreReps.map(rep => {
-      const skill = skillCatalog.find(s => s.id === rep.skillId);
-      const weeksCompleted = rep.weeksCompleted || 0;
-      const progressPercent = Math.round((weeksCompleted / 12) * 100);
+      // Use skillName from adapted rep (already has the name!)
+      const skillName = rep.skillName || rep.skillId;
+      
+      // Calculate progress from weeksCompleted
+      const progress = calculateSkillProgress(rep.weeksCompleted || 0);
       
       return {
-        skillId: rep.skillId,
-        skillName: skill?.name || 'Unknown Skill',
-        tier: skill?.tier || 'T1',
-        weeksCompleted,
-        progressPercent,
-        isComplete: weeksCompleted >= 12,
-        dimension: skill?.dimension || 'General',
+        ...rep,
+        skillName,
+        progress,
+        focusArea: rep.focusArea || rep.dimension || 'General'
       };
     });
   }, [plan, skillCatalog]);
 
-  // Calculate overall stats
-  const stats = useMemo(() => {
-    const totalWeeks = skillProgress.length * 12;
-    const completedWeeks = skillProgress.reduce((sum, s) => sum + s.weeksCompleted, 0);
-    const avgProgress = skillProgress.length > 0 
-      ? Math.round(completedWeeks / skillProgress.length)
-      : 0;
-    const completedSkills = skillProgress.filter(s => s.isComplete).length;
-    
-    return {
-      overallProgress: Math.round((completedWeeks / totalWeeks) * 100),
-      avgWeeksPerSkill: avgProgress,
-      completedSkills,
-      totalSkills: skillProgress.length,
-      remainingWeeks: totalWeeks - completedWeeks,
-    };
-  }, [skillProgress]);
-
-  // Group skills by tier
-  const skillsByTier = useMemo(() => {
-    const grouped = { T1: [], T2: [], T3: [], T4: [] };
+  // FIXED: Group by focus area instead of tier
+  const skillsByFocusArea = useMemo(() => {
+    const grouped = {};
     skillProgress.forEach(skill => {
-      if (grouped[skill.tier]) {
-        grouped[skill.tier].push(skill);
+      const area = skill.focusArea || 'General';
+      if (!grouped[area]) {
+        grouped[area] = [];
       }
+      grouped[area].push(skill);
     });
+    
+    console.log('[ProgressBreakdown] Grouped by focus area:', Object.keys(grouped));
     return grouped;
   }, [skillProgress]);
 
+  const overallProgress = useMemo(() => {
+    if (skillProgress.length === 0) return 0;
+    const total = skillProgress.reduce((sum, skill) => sum + skill.progress, 0);
+    return Math.round(total / skillProgress.length);
+  }, [skillProgress]);
+
+  if (!plan || skillProgress.length === 0) {
+    return (
+      <div className="max-w-4xl mx-auto p-6">
+        <Card accent="BLUE">
+          <p className="text-gray-600">No skills to display. Complete your baseline assessment to get started.</p>
+        </Card>
+      </div>
+    );
+  }
+
+  // Focus area colors
+  const areaColors = {
+    'Clarity & Communication': COLORS.BLUE,
+    'Trust & Relationships': COLORS.TEAL,
+    'Delegation & Empowerment': COLORS.PURPLE,
+    'Execution & Results': COLORS.ORANGE,
+    'Leadership Mindset & Identity': COLORS.NAVY,
+    'Ownership & Accountability': COLORS.GREEN,
+    'Recognition & Motivation': COLORS.PINK,
+    'Team Health & Culture': COLORS.GOLD
+  };
+
   return (
-    <Card title="Progress Breakdown" icon={BarChart3} accent="BLUE">
-      {/* Overall Stats */}
-      <div className="grid grid-cols-4 gap-4 mb-6">
-        <StatCard
-          label="Overall Progress"
-          value={`${stats.overallProgress}%`}
-          icon={TrendingUp}
-          color={COLORS.TEAL}
-        />
-        <StatCard
-          label="Avg per Skill"
-          value={`${stats.avgWeeksPerSkill}w`}
-          icon={Target}
-          trend={`${stats.avgWeeksPerSkill} weeks average`}
-          color={COLORS.BLUE}
-        />
-        <StatCard
-          label="Completed"
-          value={`${stats.completedSkills}/${stats.totalSkills}`}
-          icon={Award}
-          trend={`${stats.totalSkills - stats.completedSkills} in progress`}
-          color={COLORS.GREEN}
-        />
-        <StatCard
-          label="Remaining"
-          value={`${stats.remainingWeeks}w`}
-          icon={Clock}
-          trend={`${Math.ceil(stats.remainingWeeks / skillProgress.length)} weeks avg`}
-          color={COLORS.ORANGE}
-        />
-      </div>
-
-      {/* Skill-Level Progress */}
-      <div className="space-y-6">
-        <h4 className="font-bold text-sm mb-3" style={{ color: COLORS.NAVY }}>
-          Skill-Level Detail
-        </h4>
-
-        {/* By Tier */}
-        {Object.entries(skillsByTier).map(([tier, skills]) => {
-          if (skills.length === 0) return null;
-          
-          const tierColor = {
-            T1: COLORS.BLUE,
-            T2: COLORS.TEAL,
-            T3: COLORS.PURPLE,
-            T4: COLORS.ORANGE,
-          }[tier];
-
-          return (
-            <div key={tier} className="space-y-3">
-              <div className="flex items-center gap-2">
-                <Badge variant="primary">{tier}</Badge>
-                <span className="text-sm font-semibold text-gray-600">
-                  {skills.length} skill{skills.length !== 1 ? 's' : ''}
-                </span>
-              </div>
-              
-              {skills.map(skill => (
-                <SkillProgressCard 
-                  key={skill.skillId}
-                  skill={skill}
-                  tierColor={tierColor}
-                />
-              ))}
-            </div>
-          );
-        })}
-      </div>
-
-      {/* Weekly Trend */}
-      <div className="mt-6 p-4 rounded-xl border-2" style={{ borderColor: COLORS.SUBTLE, background: COLORS.LIGHT_GRAY }}>
-        <h5 className="font-bold text-sm mb-3" style={{ color: COLORS.NAVY }}>
-          Weekly Progress Trend
-        </h5>
-        <div className="space-y-2">
-          {skillProgress.map(skill => {
-            const weeksArray = Array.from({ length: 12 }, (_, i) => i + 1);
-            
-            return (
-              <div key={skill.skillId} className="flex items-center gap-2">
-                <span className="text-xs font-medium text-gray-600 w-32 truncate">
-                  {skill.skillName}
-                </span>
-                <div className="flex-1 flex gap-1">
-                  {weeksArray.map(week => {
-                    const isCompleted = week <= skill.weeksCompleted;
-                    return (
-                      <div
-                        key={week}
-                        className="flex-1 h-2 rounded-sm"
-                        style={{
-                          background: isCompleted ? COLORS.GREEN : COLORS.SUBTLE,
-                        }}
-                        title={`Week ${week}`}
-                      />
-                    );
-                  })}
-                </div>
-                <span className="text-xs font-semibold text-gray-500 w-12 text-right">
-                  {skill.weeksCompleted}/12
-                </span>
-              </div>
-            );
-          })}
-        </div>
-      </div>
-    </Card>
-  );
-};
-
-// Skill Progress Card Component
-const SkillProgressCard = ({ skill, tierColor }) => {
-  return (
-    <div 
-      className="p-4 rounded-xl border-2 transition-all hover:shadow-md"
-      style={{ borderColor: COLORS.SUBTLE, background: 'white' }}
-    >
-      <div className="flex items-start justify-between mb-3">
-        <div className="flex-1">
-          <div className="flex items-center gap-2 mb-1">
-            <h5 className="font-bold text-sm" style={{ color: COLORS.NAVY }}>
-              {skill.skillName}
-            </h5>
-            {skill.isComplete && (
-              <Badge variant="success" size="sm">Complete</Badge>
-            )}
+    <div className="max-w-4xl mx-auto p-6 space-y-6">
+      {/* Overall Progress */}
+      <Card accent="BLUE">
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <h2 className="text-2xl font-bold" style={{ color: COLORS.NAVY }}>
+              Overall Progress
+            </h2>
+            <p className="text-gray-600">
+              {skillProgress.length} skills across {Object.keys(skillsByFocusArea).length} focus areas
+            </p>
           </div>
-          <p className="text-xs text-gray-600">{skill.dimension}</p>
+          <div className="text-right">
+            <div className="text-3xl font-bold" style={{ color: COLORS.BLUE }}>
+              {overallProgress}%
+            </div>
+            <p className="text-sm text-gray-600">complete</p>
+          </div>
         </div>
-        <div className="text-right">
-          <p className="text-2xl font-bold" style={{ color: tierColor }}>
-            {skill.progressPercent}%
-          </p>
-          <p className="text-xs text-gray-500">
-            {skill.weeksCompleted}/12 weeks
-          </p>
+        <ProgressBar progress={overallProgress} color={COLORS.BLUE} />
+      </Card>
+
+      {/* Skills by Focus Area */}
+      {Object.entries(skillsByFocusArea).map(([area, skills]) => {
+        if (skills.length === 0) return null;
+        
+        const areaColor = areaColors[area] || COLORS.ORANGE;
+        const areaProgress = Math.round(
+          skills.reduce((sum, s) => sum + s.progress, 0) / skills.length
+        );
+
+        return (
+          <Card key={area} accent="BLUE">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-3">
+                <Badge variant="primary" style={{ backgroundColor: areaColor }}>
+                  {area}
+                </Badge>
+                <span className="text-sm text-gray-600">
+                  {skills.length} {skills.length === 1 ? 'skill' : 'skills'}
+                </span>
+              </div>
+              <div className="text-right">
+                <span className="text-xl font-bold" style={{ color: areaColor }}>
+                  {areaProgress}%
+                </span>
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              {skills.map((skill, idx) => {
+                const isComplete = skill.progress >= 100;
+                const isMastered = skill.weeksCompleted >= 12;
+
+                return (
+                  <div
+                    key={skill.skillId || idx}
+                    className="p-4 rounded-lg border-2"
+                    style={{
+                      borderColor: isComplete ? areaColor : COLORS.SUBTLE,
+                      background: isComplete ? `${areaColor}08` : 'white'
+                    }}
+                  >
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex-1">
+                        <h3 className="font-semibold mb-1" style={{ color: COLORS.NAVY }}>
+                          {skill.skillName}
+                        </h3>
+                        {skill.phase && (
+                          <p className="text-sm text-gray-600">
+                            Current phase: {skill.phase}
+                          </p>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {isMastered && (
+                          <Award size={20} style={{ color: COLORS.GOLD }} />
+                        )}
+                        <span className="text-sm font-medium" style={{ color: areaColor }}>
+                          {skill.weeksCompleted || 0} weeks
+                        </span>
+                      </div>
+                    </div>
+                    <ProgressBar progress={skill.progress} color={areaColor} height="h-2" />
+                  </div>
+                );
+              })}
+            </div>
+          </Card>
+        );
+      })}
+
+      {/* Insights */}
+      <Card accent="TEAL">
+        <div className="flex items-center gap-3 mb-3">
+          <TrendingUp size={24} style={{ color: COLORS.TEAL }} />
+          <h3 className="font-bold" style={{ color: COLORS.NAVY }}>
+            Key Insights
+          </h3>
         </div>
-      </div>
-      
-      <ProgressBar 
-        progress={skill.progressPercent}
-        color={tierColor}
-        height={6}
-      />
-      
-      {/* Status Message */}
-      <div className="mt-2">
-        {skill.isComplete ? (
-          <p className="text-xs text-green-600 font-medium">
-            ✓ Mastery achieved
-          </p>
-        ) : skill.progressPercent >= 50 ? (
-          <p className="text-xs text-blue-600 font-medium">
-            → {12 - skill.weeksCompleted} weeks to mastery
-          </p>
-        ) : (
-          <p className="text-xs text-gray-500 font-medium">
-            → Building foundation
-          </p>
-        )}
-      </div>
+        <ul className="space-y-2 text-sm text-gray-600">
+          <li>• You have {skillProgress.filter(s => s.progress >= 100).length} skills at or above 100% completion</li>
+          <li>• {skillProgress.filter(s => s.weeksCompleted >= 12).length} skills have reached mastery (12+ weeks)</li>
+          <li>• Focus area with most progress: {
+            Object.entries(skillsByFocusArea)
+              .map(([area, skills]) => ({
+                area,
+                progress: skills.reduce((sum, s) => sum + s.progress, 0) / skills.length
+              }))
+              .sort((a, b) => b.progress - a.progress)[0]?.area || 'None'
+          }</li>
+        </ul>
+      </Card>
     </div>
   );
 };

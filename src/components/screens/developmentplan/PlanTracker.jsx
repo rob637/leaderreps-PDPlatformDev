@@ -1,215 +1,226 @@
-// src/components/developmentplan/PlanTracker.jsx
-// Main plan tracker view integrating timeline, progress breakdown, and quick actions
+// src/components/developmentplan/PlanTracker.jsx  
+// Main view of current development plan with action buttons
+// FIXED: Added logging, works with adapted plan structure
 
 import React, { useState } from 'react';
-import { RefreshCw, Edit, TrendingUp, Calendar, BarChart3 } from 'lucide-react';
-import { Button, Card, StatCard, SectionHeader, EmptyState } from './DevPlanComponents';
-import { generatePlanSummary, COLORS } from './devPlanUtils';
-import MilestoneTimeline from './MilestoneTimeline';
+import { Target, TrendingUp, Calendar, Edit } from 'lucide-react';
+import { Button, Card, ProgressBar } from './DevPlanComponents';
+import { COLORS, generatePlanSummary } from './devPlanUtils';
 import ProgressBreakdown from './ProgressBreakdown';
 import QuickPlanEditor from './QuickPlanEditor';
 
 const PlanTracker = ({ 
-  developmentPlanData, 
-  globalMetadata,
-  onStartProgressScan,
-  onUpdatePlan,
-  onNavigateToDailyPractice,
+  plan, 
+  cycle = 1, 
+  globalMetadata, 
+  skillCatalog = [],
+  onEditPlan,
+  onScan,
+  onDetail,
+  onTimeline 
 }) => {
-  const [showQuickEdit, setShowQuickEdit] = useState(false);
-  
-  const plan = developmentPlanData?.currentPlan;
-  
+  const [showBreakdown, setShowBreakdown] = useState(false);
+  const [showEditor, setShowEditor] = useState(false);
+
   if (!plan) {
     return (
-      <EmptyState
-        icon={TrendingUp}
-        title="No Development Plan"
-        description="Complete your baseline assessment to generate your personalized development plan."
-        action={
-          <Button variant="primary" onClick={onStartProgressScan}>
-            Start Assessment
-          </Button>
-        }
+      <div className="max-w-3xl mx-auto p-6">
+        <Card accent="TEAL">
+          <p className="text-gray-600">No plan available. Complete your baseline assessment to get started.</p>
+        </Card>
+      </div>
+    );
+  }
+
+  // Generate summary with logging
+  const summary = generatePlanSummary(plan);
+  console.log('[PlanTracker] Plan summary:', {
+    hasCoreReps: !!plan?.coreReps,
+    coreRepsCount: plan?.coreReps?.length,
+    progress: summary.progress,
+    cycle
+  });
+
+  const handleSaveEdit = async (updatedPlan) => {
+    if (onEditPlan) {
+      const success = await onEditPlan(updatedPlan);
+      if (success) {
+        setShowEditor(false);
+      }
+    }
+  };
+
+  if (showEditor) {
+    return (
+      <QuickPlanEditor
+        plan={plan}
+        onSave={handleSaveEdit}
+        onCancel={() => setShowEditor(false)}
       />
     );
   }
 
-  const summary = generatePlanSummary(plan);
-
-  const handleSavePlan = async (updatedPlan) => {
-    await onUpdatePlan(updatedPlan);
-    setShowQuickEdit(false);
-  };
-
-  // Quick Edit Mode
-  if (showQuickEdit) {
+  if (showBreakdown) {
     return (
-      <QuickPlanEditor
-        plan={plan}
-        globalMetadata={globalMetadata}
-        onSave={handleSavePlan}
-        onCancel={() => setShowQuickEdit(false)}
-      />
+      <div>
+        <div className="max-w-4xl mx-auto p-6 mb-4">
+          <Button onClick={() => setShowBreakdown(false)} variant="secondary">
+            Back to Overview
+          </Button>
+        </div>
+        <ProgressBreakdown plan={plan} globalMetadata={globalMetadata} />
+      </div>
     );
   }
 
   return (
-    <div className="space-y-6">
-      {/* Header Section */}
+    <div className="max-w-4xl mx-auto p-6 space-y-6">
+      {/* Header */}
       <Card accent="TEAL">
-        <div className="flex items-start justify-between">
+        <div className="flex items-center justify-between mb-6">
           <div>
-            <h1 className="text-3xl font-extrabold mb-2" style={{ color: COLORS.NAVY }}>
-              Development Journey
+            <h1 className="text-3xl font-bold mb-2" style={{ color: COLORS.NAVY }}>
+              Development Plan
             </h1>
-            <p className="text-gray-600 mb-4">
-              Cycle {summary.cycle} • Focus: {typeof summary.focusArea === 'object' && summary.focusArea?.name ? summary.focusArea.name : summary.focusArea || 'Not Set'}
+            <p className="text-gray-600">
+              Cycle {cycle} • {summary.totalSkills} skills • {summary.progress}% complete
             </p>
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-2">
-                <Calendar className="w-4 h-4 text-gray-500" />
-                <span className="text-sm text-gray-600">
-                  Started {new Date(summary.startDate).toLocaleDateString()}
-                </span>
+          </div>
+          <Button
+            onClick={() => setShowEditor(true)}
+            variant="secondary"
+            className="flex items-center gap-2"
+          >
+            <Edit size={16} />
+            Quick Edit
+          </Button>
+        </div>
+
+        <ProgressBar progress={summary.progress} color={COLORS.TEAL} />
+      </Card>
+
+      {/* Quick Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <Card accent="BLUE">
+          <div className="flex items-center gap-3">
+            <Target size={32} style={{ color: COLORS.BLUE }} />
+            <div>
+              <div className="text-2xl font-bold" style={{ color: COLORS.NAVY }}>
+                {summary.totalSkills}
               </div>
-              <div className="flex items-center gap-2">
-                <BarChart3 className="w-4 h-4 text-gray-500" />
-                <span className="text-sm text-gray-600">
-                  {summary.totalReps} Active Skills
-                </span>
-              </div>
+              <div className="text-sm text-gray-600">Total Skills</div>
             </div>
           </div>
-          
-          <div className="flex flex-col gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setShowQuickEdit(true)}
-            >
-              <Edit size={16} />
-              Quick Edit
-            </Button>
-            <Button
-              variant="secondary"
-              size="sm"
-              onClick={onStartProgressScan}
-            >
-              <RefreshCw size={16} />
-              Progress Scan
-            </Button>
-          </div>
-        </div>
-      </Card>
+        </Card>
 
-      {/* Key Stats */}
-      <div className="grid grid-cols-4 gap-4">
-        <StatCard
-          label="Current Week"
-          value={`Week ${summary.currentWeek}`}
-          icon={Calendar}
-          trend={summary.currentPhase}
-          color={COLORS.TEAL}
-        />
-        <StatCard
-          label="Overall Progress"
-          value={`${summary.progress}%`}
-          icon={TrendingUp}
-          trend={`${100 - summary.progress}% remaining`}
-          color={COLORS.BLUE}
-        />
-        <StatCard
-          label="Active Skills"
-          value={summary.totalReps}
-          icon={BarChart3}
-          trend="Core development areas"
-          color={COLORS.PURPLE}
-        />
-        <StatCard
-          label="Days Practiced"
-          value="--"
-          icon={Calendar}
-          trend="This cycle"
-          color={COLORS.GREEN}
-        />
+        <Card accent="GREEN">
+          <div className="flex items-center gap-3">
+            <TrendingUp size={32} style={{ color: COLORS.GREEN }} />
+            <div>
+              <div className="text-2xl font-bold" style={{ color: COLORS.NAVY }}>
+                {summary.completedSkills}
+              </div>
+              <div className="text-sm text-gray-600">Completed</div>
+            </div>
+          </div>
+        </Card>
+
+        <Card accent="ORANGE">
+          <div className="flex items-center gap-3">
+            <Calendar size={32} style={{ color: COLORS.ORANGE }} />
+            <div>
+              <div className="text-2xl font-bold" style={{ color: COLORS.NAVY }}>
+                {summary.currentWeek || 0}
+              </div>
+              <div className="text-sm text-gray-600">Current Week</div>
+            </div>
+          </div>
+        </Card>
       </div>
 
-      {/* Timeline */}
-      <MilestoneTimeline plan={plan} />
-
-      {/* Progress Breakdown */}
-      <ProgressBreakdown 
-        plan={plan}
-        globalMetadata={globalMetadata}
-      />
-
-      {/* Quick Actions */}
-      <Card title="Quick Actions" accent="ORANGE">
-        <div className="grid grid-cols-2 gap-4">
-          <ActionCard
-            title="Daily Practice"
-            description="Complete today's reps and track progress"
-            onClick={onNavigateToDailyPractice}
+      {/* Actions */}
+      <Card accent="TEAL">
+        <h2 className="font-bold mb-4" style={{ color: COLORS.NAVY }}>
+          Actions
+        </h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <Button
+            onClick={() => setShowBreakdown(true)}
             variant="primary"
-          />
-          <ActionCard
-            title="Update Progress"
-            description="Quick edit weeks completed for each skill"
-            onClick={() => setShowQuickEdit(true)}
-            variant="outline"
-          />
+            className="flex items-center justify-center gap-2"
+          >
+            <Target size={16} />
+            View Progress Breakdown
+          </Button>
+          
+          {onScan && (
+            <Button
+              onClick={onScan}
+              variant="primary"
+              className="flex items-center justify-center gap-2"
+            >
+              <TrendingUp size={16} />
+              Start Progress Scan
+            </Button>
+          )}
+          
+          {onTimeline && (
+            <Button
+              onClick={onTimeline}
+              variant="secondary"
+              className="flex items-center justify-center gap-2"
+            >
+              <Calendar size={16} />
+              View Timeline
+            </Button>
+          )}
+          
+          {onDetail && (
+            <Button
+              onClick={onDetail}
+              variant="secondary"
+              className="flex items-center justify-center gap-2"
+            >
+              View Detailed Plan
+            </Button>
+          )}
         </div>
       </Card>
 
-      {/* Historical Data (if available) */}
-      {developmentPlanData?.planHistory && developmentPlanData.planHistory.length > 0 && (
-        <Card title="Previous Cycles" accent="PURPLE">
-          <div className="space-y-2">
-            {developmentPlanData.planHistory.map((historicalPlan, idx) => (
-              <div
-                key={idx}
-                className="p-3 rounded-lg border"
-                style={{ borderColor: COLORS.SUBTLE, background: COLORS.LIGHT_GRAY }}
-              >
-                <div className="flex items-center justify-between">
-                  <div>
-                    <span className="text-sm font-semibold" style={{ color: COLORS.NAVY }}>
-                      Cycle {historicalPlan.cycle}
-                    </span>
-                    <p className="text-xs text-gray-600">
-                      {typeof historicalPlan.focusArea === 'object' && historicalPlan.focusArea?.name ? historicalPlan.focusArea.name : historicalPlan.focusArea || 'Not Set'}
-                    </p>
-                  </div>
-                  <span className="text-xs text-gray-500">
-                    {new Date(historicalPlan.startDate).toLocaleDateString()}
-                  </span>
+      {/* Focus Areas Summary */}
+      {plan.focusAreas && (
+        <Card accent="PURPLE">
+          <h2 className="font-bold mb-4" style={{ color: COLORS.NAVY }}>
+            Focus Areas
+          </h2>
+          <div className="space-y-3">
+            {plan.focusAreas.map((area, index) => (
+              <div key={index} className="p-4 bg-gray-50 rounded-lg">
+                <h3 className="font-semibold mb-2" style={{ color: COLORS.NAVY }}>
+                  {area.name}
+                </h3>
+                <p className="text-sm text-gray-600 mb-2">
+                  {area.why}
+                </p>
+                <div className="text-xs text-gray-500">
+                  {area.reps?.length || 0} practice reps • {area.courses?.length || 0} courses
                 </div>
               </div>
             ))}
           </div>
         </Card>
       )}
-    </div>
-  );
-};
 
-// Quick Action Card Component
-const ActionCard = ({ title, description, onClick, variant = 'primary' }) => {
-  return (
-    <button
-      onClick={onClick}
-      className="p-4 rounded-xl border-2 text-left transition-all hover:shadow-md hover:scale-105"
-      style={{
-        borderColor: variant === 'primary' ? COLORS.TEAL : COLORS.SUBTLE,
-        background: variant === 'primary' ? `${COLORS.TEAL}10` : 'white',
-      }}
-    >
-      <h4 className="font-bold text-sm mb-1" style={{ color: COLORS.NAVY }}>
-        {title}
-      </h4>
-      <p className="text-xs text-gray-600">{description}</p>
-    </button>
+      {/* Open-Ended Goal */}
+      {plan.openEndedAnswer && (
+        <Card accent="GOLD">
+          <h3 className="font-bold mb-2" style={{ color: COLORS.NAVY }}>
+            Your Goal
+          </h3>
+          <p className="text-gray-700">{plan.openEndedAnswer}</p>
+        </Card>
+      )}
+    </div>
   );
 };
 

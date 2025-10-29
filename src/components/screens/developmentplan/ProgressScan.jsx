@@ -1,19 +1,36 @@
 // src/components/developmentplan/ProgressScan.jsx
 // Progress scan for reassessing leadership effectiveness after completing a cycle
+// FIXED: Updated field names to match Firebase (answers, openEnded) and added adapter support
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { TrendingUp, ArrowRight, CheckCircle } from 'lucide-react';
 import { Button, Card, ProgressBar, Badge } from './DevPlanComponents';
 import { ASSESSMENT_QUESTIONS, OPEN_ENDED_QUESTION, LIKERT_SCALE, COLORS, generatePlanFromAssessment } from './devPlanUtils';
+import { adaptFirebaseAssessmentToComponents } from '../../../utils/devPlanAdapter';
 
-const ProgressScan = ({ developmentPlanData, globalMetadata, onCompleteScan }) => {
+const ProgressScan = ({ 
+  developmentPlanData, 
+  globalMetadata, 
+  skillCatalog = [],
+  onCompleteScan, 
+  onBack,
+  isLoading = false 
+}) => {
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [responses, setResponses] = useState({});
   const [openEndedResponse, setOpenEndedResponse] = useState('');
   const [showOpenEnded, setShowOpenEnded] = useState(false);
   const [showComparison, setShowComparison] = useState(false);
 
-  const previousAssessment = developmentPlanData?.assessmentHistory?.[developmentPlanData.assessmentHistory.length - 1];
+  // FIXED: Adapt previous assessment to get correct field names
+  const previousAssessment = useMemo(() => {
+    const lastAssessment = developmentPlanData?.assessmentHistory?.[developmentPlanData.assessmentHistory.length - 1];
+    if (!lastAssessment) return null;
+    
+    console.log('[ProgressScan] Adapting previous assessment');
+    return adaptFirebaseAssessmentToComponents(lastAssessment);
+  }, [developmentPlanData?.assessmentHistory]);
+
   const progress = ((currentQuestion / ASSESSMENT_QUESTIONS.length) * 100);
   const isComplete = Object.keys(responses).length === ASSESSMENT_QUESTIONS.length;
 
@@ -28,14 +45,15 @@ const ProgressScan = ({ developmentPlanData, globalMetadata, onCompleteScan }) =
   };
 
   const handleComplete = () => {
+    // FIXED: Use Firebase field names (answers, openEnded)
     const newAssessment = {
       date: new Date().toISOString(),
-      responses,
-      openEndedResponse: openEndedResponse.trim(),
+      answers: responses,                    // CHANGED: 'answers' not 'responses'
+      openEnded: openEndedResponse.trim(),   // CHANGED: 'openEnded' not 'openEndedResponse'
       cycle: (developmentPlanData?.currentCycle || 1) + 1,
     };
 
-    const skillCatalog = globalMetadata?.config?.catalog?.SKILL_CATALOG || [];
+    console.log('[ProgressScan] Generating plan with skill catalog size:', skillCatalog.length);
     const newPlan = generatePlanFromAssessment(newAssessment, skillCatalog);
     
     onCompleteScan(newPlan, newAssessment);
@@ -56,7 +74,8 @@ const ProgressScan = ({ developmentPlanData, globalMetadata, onCompleteScan }) =
 
           <div className="space-y-4 mb-6">
             {ASSESSMENT_QUESTIONS.map(question => {
-              const prevScore = previousAssessment.responses[question.id] || 3;
+              // FIXED: Use adapted field name (responses instead of answers)
+              const prevScore = previousAssessment.responses?.[question.id] || 3;
               const newScore = responses[question.id] || 3;
               const improvement = newScore - prevScore;
 
@@ -67,7 +86,7 @@ const ProgressScan = ({ developmentPlanData, globalMetadata, onCompleteScan }) =
                   style={{ borderColor: COLORS.SUBTLE, background: 'white' }}
                 >
                   <p className="text-sm font-semibold mb-3" style={{ color: COLORS.NAVY }}>
-                    {question.text}
+                    {question.question}
                   </p>
                   <div className="flex items-center gap-4">
                     <div className="flex-1">
@@ -79,46 +98,44 @@ const ProgressScan = ({ developmentPlanData, globalMetadata, onCompleteScan }) =
                         {[1, 2, 3, 4, 5].map(val => (
                           <div
                             key={val}
-                            className="flex-1 h-2 rounded-sm"
+                            className="h-8 flex-1 rounded"
                             style={{
-                              background: val <= prevScore ? `${COLORS.BLUE}40` : COLORS.SUBTLE,
-                            }}
-                          />
-                        ))}
-                      </div>
-                      <div className="flex gap-1 mt-1">
-                        {[1, 2, 3, 4, 5].map(val => (
-                          <div
-                            key={val}
-                            className="flex-1 h-2 rounded-sm"
-                            style={{
-                              background: val <= newScore ? COLORS.GREEN : COLORS.SUBTLE,
+                              background: val <= prevScore ? COLORS.SUBTLE : '#E5E7EB',
+                              opacity: val <= newScore ? 1 : 0.3,
                             }}
                           />
                         ))}
                       </div>
                     </div>
-                    <div className="text-right">
-                      {improvement > 0 && (
-                        <Badge variant="success">+{improvement}</Badge>
-                      )}
-                      {improvement < 0 && (
-                        <Badge variant="warning">{improvement}</Badge>
-                      )}
-                      {improvement === 0 && (
-                        <Badge variant="default">—</Badge>
-                      )}
-                    </div>
+                    {improvement !== 0 && (
+                      <Badge variant={improvement > 0 ? 'success' : 'warning'}>
+                        {improvement > 0 ? '+' : ''}{improvement}
+                      </Badge>
+                    )}
                   </div>
                 </div>
               );
             })}
           </div>
 
-          <Button variant="primary" onClick={handleComplete} className="w-full">
-            <CheckCircle size={20} />
-            Complete Scan & Generate New Plan
-          </Button>
+          <div className="flex gap-3">
+            <Button
+              onClick={() => setShowComparison(false)}
+              variant="secondary"
+              disabled={isLoading}
+            >
+              Back
+            </Button>
+            <Button
+              onClick={handleComplete}
+              variant="primary"
+              className="flex items-center gap-2"
+              disabled={isLoading}
+            >
+              {isLoading ? 'Creating Plan...' : 'Generate New Plan'}
+              <ArrowRight size={16} />
+            </Button>
+          </div>
         </Card>
       </div>
     );
@@ -127,41 +144,45 @@ const ProgressScan = ({ developmentPlanData, globalMetadata, onCompleteScan }) =
   if (showOpenEnded) {
     return (
       <div className="max-w-3xl mx-auto p-6">
-        <Card accent="TEAL">
+        <Card accent="GREEN">
           <div className="mb-6">
             <h2 className="text-2xl font-bold mb-2" style={{ color: COLORS.NAVY }}>
-              Looking Forward
+              Looking Ahead
             </h2>
             <p className="text-gray-600">
-              What's your focus for the next 90 days?
+              What's your top priority for the next development cycle?
             </p>
           </div>
 
           <div className="mb-6">
-            <label className="block text-sm font-semibold mb-3" style={{ color: COLORS.NAVY }}>
-              {OPEN_ENDED_QUESTION.text}
+            <label className="block text-sm font-medium mb-2" style={{ color: COLORS.NAVY }}>
+              {OPEN_ENDED_QUESTION}
             </label>
             <textarea
+              className="w-full p-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+              rows={6}
               value={openEndedResponse}
               onChange={(e) => setOpenEndedResponse(e.target.value)}
-              className="w-full p-4 border-2 rounded-xl min-h-[120px] resize-y"
-              style={{ borderColor: COLORS.SUBTLE }}
-              placeholder={OPEN_ENDED_QUESTION.placeholder || "Your response..."}
-              autoFocus
+              placeholder="Share your focus for the next 90 days..."
             />
           </div>
 
-          <div className="flex justify-end gap-3">
-            <Button variant="outline" onClick={() => setShowOpenEnded(false)}>
+          <div className="flex gap-3">
+            <Button
+              onClick={() => setShowOpenEnded(false)}
+              variant="secondary"
+              disabled={isLoading}
+            >
               Back
             </Button>
             <Button
+              onClick={() => setShowComparison(true)}
               variant="primary"
-              onClick={() => previousAssessment ? setShowComparison(true) : handleComplete()}
-              disabled={!openEndedResponse.trim()}
+              className="flex items-center gap-2"
+              disabled={isLoading}
             >
-              {previousAssessment ? 'View Progress' : 'Complete'}
-              <ArrowRight size={20} />
+              Review Progress
+              <TrendingUp size={16} />
             </Button>
           </div>
         </Card>
@@ -169,138 +190,116 @@ const ProgressScan = ({ developmentPlanData, globalMetadata, onCompleteScan }) =
     );
   }
 
-  const question = ASSESSMENT_QUESTIONS[currentQuestion];
+  const currentQ = ASSESSMENT_QUESTIONS[currentQuestion];
 
   return (
     <div className="max-w-3xl mx-auto p-6">
-      <Card accent="PURPLE">
-        <div className="mb-8">
-          <div className="flex items-center gap-3 mb-4">
-            <div
-              className="w-12 h-12 rounded-full flex items-center justify-center"
-              style={{ background: `${COLORS.PURPLE}20` }}
-            >
-              <TrendingUp className="w-6 h-6" style={{ color: COLORS.PURPLE }} />
-            </div>
-            <div>
-              <h2 className="text-2xl font-bold" style={{ color: COLORS.NAVY }}>
-                Progress Scan
-              </h2>
-              <p className="text-sm text-gray-600">
-                Cycle {(developmentPlanData?.currentCycle || 1) + 1} Assessment
-              </p>
-            </div>
-          </div>
-          <p className="text-gray-600 mb-4">
-            Reassess your leadership effectiveness to track growth and generate your next development plan.
-          </p>
-          <ProgressBar progress={progress} height={8} showLabel />
-        </div>
+      <div className="mb-6">
+        <h1 className="text-3xl font-bold mb-2" style={{ color: COLORS.NAVY }}>
+          Progress Scan
+        </h1>
+        <p className="text-gray-600">
+          Let's reassess your leadership effectiveness to see how you've grown.
+        </p>
+      </div>
 
-        <div className="mb-4">
-          <span className="text-sm font-semibold text-gray-600">
+      <div className="mb-8">
+        <div className="flex justify-between text-sm mb-2">
+          <span className="text-gray-600">
             Question {currentQuestion + 1} of {ASSESSMENT_QUESTIONS.length}
           </span>
+          <span className="font-medium" style={{ color: COLORS.GREEN }}>
+            {Math.round(progress)}% complete
+          </span>
         </div>
+        <ProgressBar progress={progress} color={COLORS.GREEN} />
+      </div>
 
+      <Card accent="GREEN">
         <div className="mb-8">
-          <h3 className="text-xl font-bold mb-6" style={{ color: COLORS.NAVY }}>
-            {question.text}
-          </h3>
-
-          <div className="space-y-3">
-            {LIKERT_SCALE.map((option) => {
-              const isSelected = responses[question.id] === option.value;
-              const previousScore = previousAssessment?.responses[question.id];
-              
-              return (
-                <button
-                  key={option.value}
-                  onClick={() => handleResponse(question.id, option.value)}
-                  className={`w-full p-4 rounded-xl border-2 text-left transition-all hover:scale-[1.02] ${
-                    isSelected ? 'ring-2' : ''
-                  }`}
-                  style={{
-                    borderColor: isSelected ? COLORS.PURPLE : COLORS.SUBTLE,
-                    background: isSelected ? `${COLORS.PURPLE}10` : 'white',
-                    ringColor: isSelected ? COLORS.PURPLE : 'transparent',
-                  }}
-                >
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-4">
-                      <div
-                        className={`w-8 h-8 rounded-full flex items-center justify-center font-bold ${
-                          isSelected ? 'text-white' : 'text-gray-600'
-                        }`}
-                        style={{
-                          background: isSelected ? COLORS.PURPLE : COLORS.SUBTLE,
-                        }}
-                      >
-                        {option.value}
-                      </div>
-                      <div>
-                        <span className={`font-semibold ${isSelected ? '' : 'text-gray-700'}`}>
-                          {option.label}
-                        </span>
-                        {previousScore === option.value && (
-                          <p className="text-xs text-gray-500 mt-1">
-                            (Previous response)
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                    {isSelected && (
-                      <CheckCircle className="w-6 h-6" style={{ color: COLORS.PURPLE }} />
-                    )}
-                  </div>
-                </button>
-              );
-            })}
-          </div>
+          <p className="text-sm font-medium mb-2" style={{ color: COLORS.GREEN }}>
+            {currentQ.dimension}
+          </p>
+          <h2 className="text-xl font-bold mb-4" style={{ color: COLORS.NAVY }}>
+            {currentQ.question}
+          </h2>
+          
+          {previousAssessment?.responses?.[currentQ.id] && (
+            <div className="mt-4 p-3 bg-gray-50 rounded-lg">
+              <p className="text-sm text-gray-600">
+                Your previous score: <span className="font-medium">{previousAssessment.responses[currentQ.id]}/5</span>
+              </p>
+            </div>
+          )}
         </div>
 
-        <div className="flex justify-between items-center">
-          <Button
-            variant="ghost"
-            onClick={() => setCurrentQuestion(prev => Math.max(0, prev - 1))}
-            disabled={currentQuestion === 0}
-          >
-            Previous
-          </Button>
+        <div className="space-y-3">
+          {LIKERT_SCALE.map((option) => (
+            <button
+              key={option.value}
+              onClick={() => handleResponse(currentQ.id, option.value)}
+              className={`w-full p-4 rounded-lg border-2 text-left transition-all ${
+                responses[currentQ.id] === option.value
+                  ? 'border-green-500 bg-green-50'
+                  : 'border-gray-200 hover:border-green-300 bg-white'
+              }`}
+            >
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="font-medium mb-1" style={{ color: COLORS.NAVY }}>
+                    {option.label}
+                  </div>
+                  <div className="text-sm text-gray-600">
+                    {option.description}
+                  </div>
+                </div>
+                {responses[currentQ.id] === option.value && (
+                  <CheckCircle size={24} style={{ color: COLORS.GREEN }} />
+                )}
+              </div>
+            </button>
+          ))}
+        </div>
 
-          <div className="flex gap-2">
-            {ASSESSMENT_QUESTIONS.map((_, idx) => (
-              <button
-                key={idx}
-                onClick={() => setCurrentQuestion(idx)}
-                className="w-2 h-2 rounded-full transition-all"
-                style={{
-                  background: idx === currentQuestion 
-                    ? COLORS.PURPLE 
-                    : responses[ASSESSMENT_QUESTIONS[idx].id] 
-                    ? COLORS.GREEN 
-                    : COLORS.SUBTLE,
-                  scale: idx === currentQuestion ? 1.5 : 1,
-                }}
-                title={`Question ${idx + 1}`}
-              />
-            ))}
-          </div>
-
-          <Button
-            variant="primary"
-            onClick={() => {
-              if (currentQuestion < ASSESSMENT_QUESTIONS.length - 1) {
-                setCurrentQuestion(prev => prev + 1);
-              } else if (isComplete) {
-                setShowOpenEnded(true);
-              }
-            }}
-            disabled={!responses[question.id]}
-          >
-            {currentQuestion === ASSESSMENT_QUESTIONS.length - 1 && isComplete ? 'Continue' : 'Next'}
-            <ArrowRight size={20} />
-          </Button>
+        <div className="flex gap-3 mt-6">
+          {currentQuestion > 0 && (
+            <Button
+              onClick={() => setCurrentQuestion(prev => prev - 1)}
+              variant="secondary"
+              disabled={isLoading}
+            >
+              Previous
+            </Button>
+          )}
+          {onBack && (
+            <Button
+              onClick={onBack}
+              variant="secondary"
+              disabled={isLoading}
+            >
+              Cancel
+            </Button>
+          )}
+          {responses[currentQ.id] && currentQuestion < ASSESSMENT_QUESTIONS.length - 1 && (
+            <Button
+              onClick={() => setCurrentQuestion(prev => prev + 1)}
+              variant="primary"
+              className="ml-auto"
+              disabled={isLoading}
+            >
+              Next Question
+            </Button>
+          )}
+          {responses[currentQ.id] && currentQuestion === ASSESSMENT_QUESTIONS.length - 1 && (
+            <Button
+              onClick={() => setShowOpenEnded(true)}
+              variant="primary"
+              className="ml-auto"
+              disabled={isLoading}
+            >
+              Continue
+            </Button>
+          )}
         </div>
       </Card>
     </div>

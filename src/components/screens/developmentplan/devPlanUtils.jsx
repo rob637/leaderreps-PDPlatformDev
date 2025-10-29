@@ -489,6 +489,8 @@ export default {
   getCurrentWeek,
   getCurrentPhase,
   calculateEndDate,
+  normalizeSkillCatalog,
+  normalizeSkillFields,
 };
 
 
@@ -502,4 +504,34 @@ export const normalizeSkillCatalog = (globalMetadata) => {
     || globalMetadata?.config?.catalog?.SKILL_CATALOG?.items
     || globalMetadata?.config?.catalog?.SKILL_CATALOG
     || []);
+};
+
+/**
+ * Normalize skill field names to handle different Firebase structures
+ * Similar to REP_LIBRARY field mapping (text/name, definition/description, etc.)
+ */
+export const normalizeSkillFields = (skill) => {
+  if (!skill) return null;
+  
+  // Create normalized skill object handling multiple field name patterns
+  return {
+    // Core fields with fallbacks
+    id: skill.id,
+    name: skill.text || skill.name || skill.title || 'Unknown Skill',
+    description: skill.definition || skill.description || skill.desc || '',
+    tier: skill.tier_id || skill.tier || 'T1',
+    category: skill.category || 'General',
+    dimension: skill.dimension || skill.category || 'General',
+    
+    // Additional fields (pass through if present)
+    priority: skill.priority,
+    targetLevel: skill.targetLevel,
+    currentLevel: skill.currentLevel,
+    milestones: skill.milestones || [],
+    resources: skill.resources || [],
+    categories: skill.categories || [],
+    
+    // Keep original for reference
+    _original: skill
+  };
 };

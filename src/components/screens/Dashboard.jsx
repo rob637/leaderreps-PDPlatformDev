@@ -114,36 +114,14 @@ const Dashboard = ({ navigate }) => {
   const [availablePods, setAvailablePods] = useState([]);
   const [isLoadingPods, setIsLoadingPods] = useState(false);
 
-  // FIX #1: Check multiple possible property names for focus area
-  const focusArea = useMemo(() => {
-    const plan = developmentPlanData?.currentPlan;
-    if (!plan) return 'Not Set';
-    
-    // Check direct properties first
-    if (plan.focusArea) return plan.focusArea;
-    if (plan.targetSkill) return plan.targetSkill;
-    if (plan.primarySkill) return plan.primarySkill;
-    if (plan.skill) return plan.skill;
-    if (plan.focus) return plan.focus;
-    
-    // Check phases structure (based on DevelopmentPlan.jsx structure)
-    if (plan.phases && Array.isArray(plan.phases) && plan.phases.length > 0) {
-      const firstPhase = plan.phases[0];
-      if (firstPhase.skills && Array.isArray(firstPhase.skills) && firstPhase.skills.length > 0) {
-        return firstPhase.skills[0];
-      }
-    }
-    
-    return 'Not Set';
-  }, [developmentPlanData?.currentPlan]);
-  
+  const focusArea = developmentPlanData?.currentPlan?.focusArea || 'Not Set';
   const devPlanProgress = 22;
 
   const targetRepDetails = useMemo(() => {
-    // FIX #2: Enhanced target rep lookup with better debugging
+    // This console.log is very helpful for debugging
     console.log('[Dashboard] Looking up target rep:', targetRep);
-    console.log('[Dashboard] globalMetadata keys:', Object.keys(globalMetadata || {}));
     
+    // With the isLoading fix, globalMetadata should be populated here.
     if (!globalMetadata) {
       console.log('[Dashboard] globalMetadata is not yet available.');
       return null;
@@ -154,65 +132,41 @@ const Dashboard = ({ navigate }) => {
       return null;
     }
     
-    let repLibrary = null;
-    
-    // Try all possible paths where REP_LIBRARY might be stored
-    if (globalMetadata?.REP_LIBRARY?.items) {
-      repLibrary = globalMetadata.REP_LIBRARY.items;
-      console.log('[Dashboard] Found REP_LIBRARY.items:', repLibrary.length);
-    } else if (Array.isArray(globalMetadata?.REP_LIBRARY)) {
-      repLibrary = globalMetadata.REP_LIBRARY;
-      console.log('[Dashboard] Found REP_LIBRARY as array:', repLibrary.length);
-    } else if (globalMetadata?.reps) {
-      repLibrary = globalMetadata.reps;
-      console.log('[Dashboard] Found reps:', repLibrary.length);
-    } else if (globalMetadata?.repLibrary) {
-      repLibrary = globalMetadata.repLibrary;
-      console.log('[Dashboard] Found repLibrary:', repLibrary.length);
-    }
+    // FIX: Correct path is globalMetadata.REP_LIBRARY.items (not just .REP_LIBRARY)
+    const repLibrary = globalMetadata?.REP_LIBRARY?.items;
     
     if (!repLibrary || !Array.isArray(repLibrary)) {
-      console.error('[Dashboard] REP_LIBRARY not found or not an array');
-      console.log('[Dashboard] Available metadata:', globalMetadata);
+      console.error('[Dashboard] REP_LIBRARY.items not found or not an array');
+      console.log('[Dashboard] globalMetadata.REP_LIBRARY:', globalMetadata?.REP_LIBRARY);
+      console.log('[Dashboard] Available metadata keys:', Object.keys(globalMetadata || {}));
       return {
         name: targetRep,
-        description: 'Loading rep details...',
-        whatGreatLooksLike: 'Please wait while we load the rep catalog'
+        description: 'Rep library not loaded yet',
+        whatGreatLooksLike: 'Please wait or refresh the page'
       };
     }
     
     console.log('[Dashboard] Searching', repLibrary.length, 'reps for:', targetRep);
-    if (repLibrary.length > 0) {
-      console.log('[Dashboard] First rep structure:', repLibrary[0]);
-    }
     
-    // Enhanced matching logic - try multiple ID formats
+    // Match against rep ID (exact match)
     const repItem = repLibrary.find(rep => {
       if (!rep) return false;
       
-      // Try exact matches first
-      if (rep.id === targetRep || 
-          rep.repId === targetRep ||
-          rep.repID === targetRep ||
-          rep.rep_id === targetRep) {
+      // Try exact ID match first (this is the most common case)
+      if (rep.id === targetRep) {
         console.log('[Dashboard] Found exact ID match:', rep);
         return true;
       }
       
-      // Try case-insensitive matches
-      const targetLower = targetRep.toLowerCase();
-      if (rep.id?.toLowerCase() === targetLower ||
-          rep.repId?.toLowerCase() === targetLower ||
-          rep.repID?.toLowerCase() === targetLower) {
-        console.log('[Dashboard] Found case-insensitive match:', rep);
+      // Try case-insensitive ID match
+      if (rep.id?.toLowerCase() === targetRep.toLowerCase()) {
+        console.log('[Dashboard] Found case-insensitive ID match:', rep);
         return true;
       }
       
-      // Try name matches
-      if (rep.name === targetRep || 
-          rep.title === targetRep ||
-          rep.text === targetRep) {
-        console.log('[Dashboard] Found name match:', rep);
+      // Fallback: try matching against text/name
+      if (rep.text === targetRep || rep.name === targetRep) {
+        console.log('[Dashboard] Found text/name match:', rep);
         return true;
       }
       
@@ -221,31 +175,24 @@ const Dashboard = ({ navigate }) => {
     
     if (!repItem) {
       console.warn('[Dashboard] Target rep not found in catalog:', targetRep);
-      if (repLibrary.length > 0) {
-        console.log('[Dashboard] Sample IDs from catalog:', 
-          repLibrary.slice(0, 5).map(r => ({ 
-            id: r.id, 
-            repId: r.repId, 
-            name: r.name 
-          }))
-        );
-      }
+      console.log('[Dashboard] Sample rep IDs:', repLibrary.slice(0, 3).map(r => r.id));
       return {
         name: targetRep,
-        description: 'Rep not found in catalog',
-        whatGreatLooksLike: 'Please check your Development Plan or contact support'
+        description: 'Rep not found in catalog. Please check your Development Plan.',
+        whatGreatLooksLike: 'Select a new target rep from your Development Plan'
       };
     }
     
     console.log('[Dashboard] Successfully found rep:', repItem);
     
+    // Map Firebase fields to display fields
     return {
-      id: repItem.id || repItem.repId || repItem.repID,
-      name: repItem.text || repItem.name || repItem.title || targetRep,
-      description: repItem.definition || repItem.description || repItem.desc || 'No description available',
-      whatGreatLooksLike: repItem.whatGoodLooksLike || repItem.definition || 'Focus on consistent practice',
+      id: repItem.id,
+      name: repItem.text || repItem.name || targetRep,  // 'text' is the display name in Firebase
+      description: repItem.definition || repItem.description || 'No description available',  // 'definition' is the description
+      whatGreatLooksLike: repItem.definition || 'Practice this rep consistently',
       category: repItem.category || 'General',
-      tier: repItem.tier || repItem.tier_id
+      tier: repItem.tier_id || repItem.tier
     };
   }, [targetRep, globalMetadata]);
 
@@ -255,75 +202,45 @@ const Dashboard = ({ navigate }) => {
 
   
   useEffect(() => {
-    // FIX #7: Enhanced suggestions loading with better debugging
-    console.log('[Dashboard] Loading suggestions from metadata');
-    console.log('[Dashboard] globalMetadata available:', !!globalMetadata);
+    console.log('[Dashboard] Loading anchor suggestions...');
     
     if (!globalMetadata) {
-      console.log('[Dashboard] globalMetadata is null/undefined');
+      console.log('[Dashboard] globalMetadata not available yet');
       return;
     }
     
     console.log('[Dashboard] globalMetadata keys:', Object.keys(globalMetadata));
-    console.log('[Dashboard] IDENTITY_ANCHOR_CATALOG:', globalMetadata.IDENTITY_ANCHOR_CATALOG);
-    console.log('[Dashboard] HABIT_ANCHOR_CATALOG:', globalMetadata.HABIT_ANCHOR_CATALOG);
     
     try {
-      // Try multiple paths for identity anchors
-      let identityItems = 
-        globalMetadata?.IDENTITY_ANCHOR_CATALOG?.items ||
-        globalMetadata?.IDENTITY_ANCHORS?.items ||
-        globalMetadata?.identityAnchors?.items ||
-        globalMetadata?.identityAnchors ||
-        globalMetadata?.IDENTITY_ANCHOR_CATALOG ||
-        [];
+      // FIX: Correct path is globalMetadata.IDENTITY_ANCHOR_CATALOG.items (array of strings)
+      const identityItems = globalMetadata?.IDENTITY_ANCHOR_CATALOG?.items || [];
+      const habitItems = globalMetadata?.HABIT_ANCHOR_CATALOG?.items || [];
       
-      // Try multiple paths for habit anchors
-      let habitItems = 
-        globalMetadata?.HABIT_ANCHOR_CATALOG?.items ||
-        globalMetadata?.HABIT_ANCHORS?.items ||
-        globalMetadata?.habitAnchors?.items ||
-        globalMetadata?.habitAnchors ||
-        globalMetadata?.HABIT_ANCHOR_CATALOG ||
-        [];
+      console.log('[Dashboard] Identity items:', identityItems.length, 'items');
+      console.log('[Dashboard] Habit items:', habitItems.length, 'items');
       
-      console.log('[Dashboard] Raw identity items:', identityItems);
-      console.log('[Dashboard] Raw habit items:', habitItems);
-      
-      // Ensure items are arrays
       if (!Array.isArray(identityItems)) {
         console.warn('[Dashboard] Identity items not an array:', typeof identityItems);
-        identityItems = [];
       }
       if (!Array.isArray(habitItems)) {
         console.warn('[Dashboard] Habit items not an array:', typeof habitItems);
-        habitItems = [];
       }
       
-      // Normalize items to objects with text property
-      const identity = identityItems.map(x => {
-        if (typeof x === 'string') return { text: x };
-        if (x && typeof x === 'object') return x;
-        return { text: String(x) };
-      });
-      
-      const habits = habitItems.map(x => {
-        if (typeof x === 'string') return { text: x };
-        if (x && typeof x === 'object') return x;
-        return { text: String(x) };
-      });
-      
-      console.log('[Dashboard] Normalized identity suggestions:', identity.length);
-      console.log('[Dashboard] Normalized habit suggestions:', habits.length);
-      if (identity.length > 0) console.log('[Dashboard] Sample identity:', identity[0]);
-      if (habits.length > 0) console.log('[Dashboard] Sample habit:', habits[0]);
+      // These are already strings, just wrap them in objects with 'text' property
+      const identity = identityItems.map(x => 
+        typeof x === 'string' ? { text: x } : (x.text ? x : { text: String(x) })
+      );
+      const habits = habitItems.map(x => 
+        typeof x === 'string' ? { text: x } : (x.text ? x : { text: String(x) })
+      );
       
       setIdentitySuggestions(identity);
       setHabitSuggestions(habits);
       setIsLoadingSuggestions(false);
-      console.log('[Dashboard] Suggestions loaded from metadata catalogs', { identity: identity.length, habits: habits.length });
+      
+      console.log('[Dashboard] Loaded', identity.length, 'identity and', habits.length, 'habit suggestions');
     } catch (error) {
-      console.error('[Dashboard] Failed to parse metadata catalogs', error);
+      console.error('[Dashboard] Failed to load anchor suggestions:', error);
       setIdentitySuggestions([]);
       setHabitSuggestions([]);
       setIsLoadingSuggestions(false);
@@ -358,22 +275,10 @@ const Dashboard = ({ navigate }) => {
 
   const handleSaveEveningWithConfirmation = async () => {
     await handleSaveEveningBookend();
-    
-    // FIX #3: Clear the reflection inputs in Firestore for next day
-    if (updateDailyPracticeData) {
-      await updateDailyPracticeData({
-        'eveningBookend.good': '',
-        'eveningBookend.better': '',
-        'eveningBookend.best': ''
-      });
-    }
-    
-    // Clear local state
+    showSaveSuccess('Evening reflection saved!');
     setReflectionGood('');
     setReflectionBetter('');
     setReflectionBest('');
-    
-    showSaveSuccess('Evening reflection saved!');
   };
 
   const handleToggleAdditionalRep = async (commitmentId) => {
@@ -413,50 +318,39 @@ const Dashboard = ({ navigate }) => {
     try {
       if (!db) throw new Error('Database not available');
       
-      // FIX #6: Use Firestore v9 syntax
-      const { collection, query, where, getDocs } = await import('firebase/firestore');
+      const podsSnapshot = await db
+        .collection('pods')
+        .where('status', '==', 'active')
+        .get();
       
-      // Create query using v9 syntax
-      const podsRef = collection(db, 'pods');
-      const q = query(podsRef, where('status', '==', 'active'));
-      const podsSnapshot = await getDocs(q);
-      
-      // Map documents to data
       let pods = podsSnapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
       }));
       
-      // Filter for pods with space
       pods = pods.filter(p => (p.memberCount || 0) < 5);
       setAvailablePods(pods);
       console.log('[Dashboard] Found pods:', pods.length);
     } catch (error) {
       console.error('[Dashboard] Error finding pods:', error);
-      console.error('[Dashboard] Error details:', error.message, error.stack);
       alert('Unable to load pods. Please try again.');
       setShowFindPodModal(false);
-    } finally {
-      setIsLoadingPods(false);
     }
+    setIsLoadingPods(false);
   };
 
   const handleJoinPod = async (podId) => {
-    if (!db || !userEmail) {
-      console.error('[Dashboard] Missing db or userEmail');
-      return;
-    }
+    if (!db || !userEmail) return;
     
     try {
-      // FIX #6: Use Firestore v9 syntax
-      const { doc, updateDoc, arrayUnion, increment } = await import('firebase/firestore');
+      const { FieldValue } = await import('firebase/firestore'); // Import FieldValue
       
-      const podRef = doc(db, 'pods', podId);
+      const podRef = db.collection('pods').doc(podId);
       
-      // Use Firestore v9 syntax for updates
-      await updateDoc(podRef, {
-        members: arrayUnion(userEmail),
-        memberCount: increment(1)
+      // Use FieldValue for atomic operations
+      await podRef.update({
+        members: FieldValue.arrayUnion(userEmail),
+        memberCount: FieldValue.increment(1)
       });
       
       await updateDailyPracticeData({
@@ -663,6 +557,17 @@ const Dashboard = ({ navigate }) => {
                   <strong>✓ Completed Today!</strong>
                 </div>
               )}
+
+              {identityStatement && (
+                <div className="mt-4 pt-4 border-t" style={{ borderColor: COLORS.SUBTLE }}>
+                  <p className="text-xs font-semibold mb-2" style={{ color: COLORS.MUTED }}>
+                    🎯 TODAY'S FOCUS:
+                  </p>
+                  <p className="text-sm italic font-medium" style={{ color: COLORS.TEXT }}>
+                    "{identityStatement}"
+                  </p>
+                </div>
+              )}
             </Card>
 
             {/* 3. Identity Anchor (Moved from right) */}
@@ -677,14 +582,14 @@ const Dashboard = ({ navigate }) => {
               onEdit={() => setShowHabitEditor(true)}
             />
 
-            {/* 5. Daily Reflection Log (NEW: Added from screenshot) */}
+            {/* 5. Daily Reflection Log */}
             <Card title="Daily Reflection Log">
               <p className="text-sm text-gray-600 mb-4">
                 Review your past entries and reflections.
               </p>
               <Button 
                 variant="outline" 
-                onClick={() => navigate('reflection-log')} // Assuming a 'reflection-log' route
+                onClick={() => navigate('reflection-log')}
                 className="w-full"
               >
                 View Reflection Log
@@ -793,45 +698,29 @@ const Dashboard = ({ navigate }) => {
             </div>
 
             <p className="text-xs font-semibold mb-2" style={{ color: COLORS.MUTED }}>
-              OR SELECT FROM SUGGESTIONS ({identitySuggestions.length} available):
+              OR SELECT FROM SUGGESTIONS:
             </p>
             <div className="overflow-y-auto flex-1 space-y-2">
-              {isLoadingSuggestions ? (
-                <div className="text-center py-8">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 mx-auto mb-2" 
-                       style={{ borderColor: COLORS.TEAL }} />
-                  <p className="text-sm">Loading suggestions...</p>
-                </div>
-              ) : identitySuggestions.length > 0 ? (
-                identitySuggestions.map((suggestion, index) => {
-                  const displayText = suggestion?.text || suggestion?.value || suggestion?.name || String(suggestion);
-                  return (
-                    <button
-                      key={index}
-                      onClick={() => {
-                        setIdentityStatement(displayText);
-                        handleSaveIdentityWithConfirmation(displayText);
-                      }}
-                      className="w-full text-left p-3 rounded-lg border-2 transition-all hover:border-teal-500 hover:bg-teal-50"
-                      style={{ borderColor: COLORS.SUBTLE }}
-                    >
-                      <p className="text-sm font-medium" style={{ color: COLORS.TEXT }}>
-                        I am the kind of leader who <strong>{displayText}</strong>
-                      </p>
-                      {suggestion.description && (
-                        <p className="text-xs mt-1 text-gray-500">{suggestion.description}</p>
-                      )}
-                    </button>
-                  );
-                })
-              ) : (
-                <div className="text-center py-8">
-                  <p className="text-sm text-gray-600 mb-2">No suggestions available.</p>
-                  <p className="text-xs text-gray-500">
-                    The suggestion catalog may not be loaded. Please check your metadata configuration or check the browser console for details.
-                  </p>
-                </div>
-              )}
+              {isLoadingSuggestions ? ( <p>Loading suggestions...</p> ) : 
+               identitySuggestions.length > 0 ? (
+                identitySuggestions.map((suggestion, index) => (
+                  <button
+                    key={index}
+                    onClick={() => {
+                      const value = suggestion.text || suggestion.value || suggestion.name || suggestion;
+                      setIdentityStatement(value);
+                      handleSaveIdentityWithConfirmation(value);
+                    }}
+                    className="w-full text-left p-3 rounded-lg border-2 transition-all hover:border-teal-500 hover:bg-teal-50"
+                    style={{ borderColor: COLORS.SUBTLE }}
+                  >
+                    <p className="text-sm font-medium" style={{ color: COLORS.TEXT }}>
+                      ... <strong>{suggestion.text || suggestion.value || suggestion.name || suggestion}</strong>
+                    </p>
+                  </button>
+                ))
+               ) : ( <p className="text-sm text-gray-500">No suggestions loaded.</p> )
+              }
             </div>
           </div>
         </div>
@@ -865,45 +754,29 @@ const Dashboard = ({ navigate }) => {
             </div>
 
             <p className="text-xs font-semibold mb-2" style={{ color: COLORS.MUTED }}>
-              OR SELECT FROM SUGGESTIONS ({habitSuggestions.length} available):
+              OR SELECT FROM SUGGESTIONS:
             </p>
             <div className="overflow-y-auto flex-1 space-y-2">
-              {isLoadingSuggestions ? (
-                <div className="text-center py-8">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 mx-auto mb-2" 
-                       style={{ borderColor: COLORS.TEAL }} />
-                  <p className="text-sm">Loading suggestions...</p>
-                </div>
-              ) : habitSuggestions.length > 0 ? (
-                habitSuggestions.map((suggestion, index) => {
-                  const displayText = suggestion?.text || suggestion?.value || suggestion?.name || String(suggestion);
-                  return (
-                    <button
-                      key={index}
-                      onClick={() => {
-                        setHabitAnchor(displayText);
-                        handleSaveHabitWithConfirmation(displayText);
-                      }}
-                      className="w-full text-left p-3 rounded-lg border-2 transition-all hover:border-teal-500 hover:bg-teal-50"
-                      style={{ borderColor: COLORS.SUBTLE }}
-                    >
-                      <p className="text-sm font-medium" style={{ color: COLORS.TEXT }}>
-                        When I <strong>{displayText}</strong>
-                      </p>
-                      {suggestion.description && (
-                        <p className="text-xs mt-1 text-gray-500">{suggestion.description}</p>
-                      )}
-                    </button>
-                  );
-                })
-              ) : (
-                <div className="text-center py-8">
-                  <p className="text-sm text-gray-600 mb-2">No suggestions available.</p>
-                  <p className="text-xs text-gray-500">
-                    The suggestion catalog may not be loaded. Please check your metadata configuration or check the browser console for details.
-                  </p>
-                </div>
-              )}
+              {isLoadingSuggestions ? ( <p>Loading suggestions...</p> ) : 
+               habitSuggestions.length > 0 ? (
+                habitSuggestions.map((suggestion, index) => (
+                  <button
+                    key={index}
+                    onClick={() => {
+                      const value = suggestion.text || suggestion.value || suggestion.name || suggestion;
+                      setHabitAnchor(value);
+                      handleSaveHabitWithConfirmation(value);
+                    }}
+                    className="w-full text-left p-3 rounded-lg border-2 transition-all hover:border-teal-500 hover:bg-teal-50"
+                    style={{ borderColor: COLORS.SUBTLE }}
+                  >
+                    <p className="text-sm font-medium" style={{ color: COLORS.TEXT }}>
+                      ... <strong>{suggestion.text || suggestion.value || suggestion.name || suggestion}</strong>
+                    </p>
+                  </button>
+                ))
+               ) : ( <p className="text-sm text-gray-500">No suggestions loaded.</p> )
+              }
             </div>
           </div>
         </div>
