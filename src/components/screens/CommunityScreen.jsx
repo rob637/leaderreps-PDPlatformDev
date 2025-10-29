@@ -395,7 +395,7 @@ const NewThreadView = ({ setView }) => {
 
 const CommunityScreen = () => {
     // --- Consume Services ---
-    const { user, navigate, LEADERSHIP_TIERS, featureFlags, isLoading: isAppLoading, error: appError } = useAppServices(); // cite: useAppServices.jsx
+    const { user, navigate, LEADERSHIP_TIERS, featureFlags, isAdmin, isLoading: isAppLoading, error: appError } = useAppServices(); // cite: useAppServices.jsx
     // Use safeUser structure even if user context is briefly null during auth changes
     const safeUser = useMemo(() => user || { userId: null, name: 'Guest' }, [user]); // cite: useAppServices.jsx (provides user)
 
@@ -458,8 +458,8 @@ const CommunityScreen = () => {
     };
 
     // --- Main Render ---
-    // Feature Flag Check for entire screen
-    if (!featureFlags?.enableCommunity) { // cite: useAppServices.jsx
+    // Feature Flag Check for entire screen (bypass for admins)
+    if (!isAdmin && !featureFlags?.enableCommunity) { // cite: useAppServices.jsx
          return (
              <div className="p-8 text-center text-gray-500">
                  <Users className="w-12 h-12 mx-auto mb-4 text-gray-400"/>

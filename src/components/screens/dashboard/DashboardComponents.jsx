@@ -1,12 +1,12 @@
 // src/components/screens/dashboard/DashboardComponents.jsx
-// Extracted UI Components from Dashboard (10/28/25)
-// UPDATED: Two-state bookends, Dynamic container, Auto-tracked habits, Reminders
+// COMPLETE VERSION with ALL 9 FIXES (10/29/25)
 
 import React, { useState, useEffect } from 'react';
 import { 
   Target, Clock, User, Save, Loader, CheckCircle, TrendingUp, Star, 
   ChevronDown, ChevronUp, Plus, X, Sunrise, Moon, Flame, Anchor,
-  ToggleLeft, ToggleRight, Zap, AlertTriangle, MessageSquare
+  ToggleLeft, ToggleRight, Zap, AlertTriangle, MessageSquare, Trophy,
+  Send, Users, Activity
 } from 'lucide-react';
 import { serverTimestamp } from 'firebase/firestore';
 
@@ -118,7 +118,7 @@ export const StreakTracker = ({ streakCount, streakCoins }) => (
 );
 
 /* =========================================================
-   TAB BUTTON (NEW - for Dynamic Bookend Container)
+   TAB BUTTON (for Dynamic Bookend Container)
 ========================================================= */
 export const TabButton = ({ active, onClick, label, minimized = false }) => (
   <button
@@ -144,14 +144,11 @@ export const TabButton = ({ active, onClick, label, minimized = false }) => (
 );
 
 /* =========================================================
-   DYNAMIC BOOKEND CONTAINER (NEW)
+   DYNAMIC BOOKEND CONTAINER
 ========================================================= */
 export const DynamicBookendContainer = ({ 
-  // Morning bookend props
   morningProps,
-  // Evening bookend props
   eveningProps,
-  // Current daily practice data for logic
   dailyPracticeData
 }) => {
   const [activeTab, setActiveTab] = useState('AM');
@@ -161,18 +158,15 @@ export const DynamicBookendContainer = ({
     const currentHour = new Date().getHours();
     
     if (currentHour < 12) {
-      // Before noon: show AM
       setActiveTab('AM');
     } else if (currentHour >= 16) {
-      // After 4pm: show PM
       setActiveTab('PM');
     } else {
-      // Between noon-4pm: show PM but allow AM access
       setActiveTab('PM');
     }
-  }, []); // Only run on mount
+  }, []);
   
-  // Minimization logic for AM bookend
+  // FIX #7: Improved minimization logic for AM bookend
   const currentHour = new Date().getHours();
   const shouldMinimizeAM = currentHour >= 12 && 
     !dailyPracticeData?.morningBookend?.completedAt;
@@ -202,13 +196,13 @@ export const DynamicBookendContainer = ({
 };
 
 /* =========================================================
-   MORNING BOOKEND COMPONENT (REFACTORED: Two-State View)
+   FIX #7: MORNING BOOKEND COMPONENT (Fixed Lock Logic)
 ========================================================= */
 export const MorningBookend = ({ 
     dailyWIN, setDailyWIN, otherTasks, onAddTask, onToggleTask, onRemoveTask,
     showLIS, setShowLIS, identityStatement, onSave, isSaving, 
-    onToggleWIN, onSaveWIN, // NEW handlers
-    completedAt, winCompleted // NEW props
+    onToggleWIN, onSaveWIN,
+    completedAt, winCompleted
 }) => {
     const [newTaskText, setNewTaskText] = useState('');
     
@@ -217,8 +211,13 @@ export const MorningBookend = ({
     };
     const handleKeyPress = (e) => { if (e.key === 'Enter') handleAddClick(); };
     
-    // Determine if we're in checklist mode
+    // FIX #7: Improved lock logic
     const isChecklistMode = !!completedAt;
+    const currentHour = new Date().getHours();
+    const isPastNoon = currentHour >= 12;
+    
+    // Show warning if past noon and not completed
+    const showNoonWarning = isPastNoon && !isChecklistMode && !dailyWIN;
     
     // CHECKLIST MODE - After completion
     if (isChecklistMode) {
@@ -318,6 +317,35 @@ export const MorningBookend = ({
                 </h3>
             </div>
             
+            {/* FIX #7: Warning if past noon */}
+            {showNoonWarning && (
+                <div className="p-3 rounded-lg border-l-4" 
+                     style={{ backgroundColor: `${COLORS.AMBER}10`, borderColor: COLORS.AMBER }}>
+                    <div className="flex items-start gap-2">
+                        <AlertTriangle className="w-4 h-4 mt-0.5 flex-shrink-0" style={{ color: COLORS.AMBER }} />
+                        <div>
+                            <p className="text-xs font-semibold" style={{ color: COLORS.AMBER }}>
+                                ⚠️ LATE START ALERT
+                            </p>
+                            <p className="text-xs mt-1" style={{ color: COLORS.TEXT }}>
+                                It's past noon! Set your WIN and lock in your plan to stay on track.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* FIX #7: Why It Matters Section */}
+            <div className="p-3 rounded-lg" style={{ backgroundColor: `${COLORS.BLUE}05`, border: `1px solid ${COLORS.BLUE}20` }}>
+                <p className="text-xs font-semibold mb-1" style={{ color: COLORS.BLUE }}>
+                    💡 WHY IT MATTERS:
+                </p>
+                <p className="text-xs" style={{ color: COLORS.TEXT }}>
+                    Leaders who plan their day intentionally are 3x more likely to achieve their goals. 
+                    Your WIN keeps you focused on what truly matters.
+                </p>
+            </div>
+            
             {/* WIN Input */}
             <div>
                 <label className="text-sm font-semibold mb-2 flex items-center" style={{ color: COLORS.TEXT }}>
@@ -330,7 +358,7 @@ export const MorningBookend = ({
                     className="w-full p-3 border rounded-lg focus:ring-2 transition-all"
                     style={{ borderColor: COLORS.SUBTLE }} rows={2}
                 />
-                {/* NEW: Separate Save WIN Button */}
+                {/* Separate Save WIN Button */}
                 <Button 
                     onClick={onSaveWIN}
                     variant="outline" 
@@ -410,9 +438,20 @@ export const MorningBookend = ({
                 )}
             </div>
 
-            {/* Complete Bookend Button */}
+            {/* FIX #7: Validation - require WIN before completion */}
             <div className="pt-4 border-t" style={{ borderColor: COLORS.SUBTLE }}>
-                <Button onClick={onSave} disabled={isSaving} variant="primary" size="md" className="w-full">
+                {!dailyWIN && (
+                    <p className="text-xs mb-2 text-center" style={{ color: COLORS.AMBER }}>
+                        ⚠️ Set your WIN before completing the bookend
+                    </p>
+                )}
+                <Button 
+                    onClick={onSave} 
+                    disabled={isSaving || !dailyWIN} 
+                    variant="primary" 
+                    size="md" 
+                    className="w-full"
+                >
                     {isSaving ? <><Loader className="w-5 h-5 mr-2 animate-spin" />Saving...</> : 
                                <><CheckCircle className="w-5 h-5 mr-2" />✓ Complete Morning Bookend</>}
                 </Button>
@@ -422,12 +461,12 @@ export const MorningBookend = ({
 };
 
 /* =========================================================
-   EVENING BOOKEND COMPONENT (UPDATED: Auto-Tracked Habits)
+   EVENING BOOKEND COMPONENT
 ========================================================= */
 export const EveningBookend = ({ 
     reflectionGood, setReflectionGood, reflectionBetter, setReflectionBetter,
     reflectionBest, setReflectionBest, habitsCompleted, onHabitToggle, onSave, isSaving,
-    onNavigate // NEW: for history link
+    onNavigate
 }) => {
     return (
         <div className="space-y-4">
@@ -479,7 +518,7 @@ export const EveningBookend = ({
             <div className="pt-4 border-t" style={{ borderColor: COLORS.SUBTLE }}>
                 <p className="text-sm font-semibold mb-3" style={{ color: COLORS.TEXT }}>Daily Habits Tracker</p>
                 
-                {/* NEW: Auto-Tracked Habits */}
+                {/* Auto-Tracked Habits */}
                 <div className="space-y-2 mb-3 p-3 rounded-lg" style={{ backgroundColor: `${COLORS.TEAL}05` }}>
                     <p className="text-xs font-semibold mb-2" style={{ color: COLORS.TEAL }}>
                         🔗 AUTO-TRACKED FROM MORNING:
@@ -542,7 +581,7 @@ export const EveningBookend = ({
                 </Button>
             </div>
             
-            {/* NEW: View History Link */}
+            {/* View History Link */}
             {onNavigate && (
                 <div className="pt-3">
                     <Button 
@@ -560,7 +599,7 @@ export const EveningBookend = ({
 };
 
 /* =========================================================
-   SUGGESTION MODAL (NEW)
+   SUGGESTION MODAL (FIX #4, #5)
 ========================================================= */
 export const SuggestionModal = ({ title, prefix, suggestions, onSelect, onClose }) => (
   <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
@@ -607,7 +646,7 @@ export const SuggestionModal = ({ title, prefix, suggestions, onSelect, onClose 
 );
 
 /* =========================================================
-   SAVE INDICATOR (NEW)
+   FIX #6: SAVE INDICATOR
 ========================================================= */
 export const SaveIndicator = ({ show, message = "Saved!" }) => {
   if (!show) return null;
@@ -619,6 +658,245 @@ export const SaveIndicator = ({ show, message = "Saved!" }) => {
         <span className="font-semibold">{message}</span>
       </div>
     </div>
+  );
+};
+
+/* =========================================================
+   FIX #3: BONUS EXERCISE MODAL
+========================================================= */
+export const BonusExerciseModal = ({ exercise, onComplete, onSkip }) => (
+  <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+    <div className="bg-white rounded-2xl p-6 max-w-lg w-full">
+      <div className="text-center mb-4">
+        <div className="w-16 h-16 mx-auto mb-3 rounded-full flex items-center justify-center"
+             style={{ backgroundColor: `${COLORS.ORANGE}20` }}>
+          <Trophy className="w-8 h-8" style={{ color: COLORS.ORANGE }} />
+        </div>
+        <h2 className="text-2xl font-bold mb-2" style={{ color: COLORS.NAVY }}>
+          🎉 Bonus Challenge!
+        </h2>
+        <p className="text-sm" style={{ color: COLORS.MUTED }}>
+          Complete this 2-minute exercise to earn +50 coins
+        </p>
+      </div>
+
+      <div className="p-4 rounded-lg mb-4" style={{ backgroundColor: `${COLORS.TEAL}10` }}>
+        <h3 className="font-bold mb-2" style={{ color: COLORS.NAVY }}>
+          {exercise.name || exercise.title}
+        </h3>
+        <p className="text-sm mb-3" style={{ color: COLORS.TEXT }}>
+          {exercise.description}
+        </p>
+        {exercise.instructions && (
+          <div className="text-xs" style={{ color: COLORS.MUTED }}>
+            <strong>How to do it:</strong>
+            <p className="mt-1">{exercise.instructions}</p>
+          </div>
+        )}
+      </div>
+
+      <div className="flex gap-3">
+        <Button onClick={onComplete} variant="primary" size="md" className="flex-1">
+          ✓ I Did It! (+50 🪙)
+        </Button>
+        <Button onClick={onSkip} variant="outline" size="md" className="flex-1">
+          Skip for Now
+        </Button>
+      </div>
+    </div>
+  </div>
+);
+
+/* =========================================================
+   FIX #8: ADDITIONAL REPS CARD (Enhanced)
+========================================================= */
+export const AdditionalRepsCard = ({ commitments, onToggle, repLibrary }) => {
+  // Lookup full rep details from library
+  const enrichedCommitments = commitments.map(commitment => {
+    if (typeof commitment === 'string') {
+      return { id: commitment, text: commitment, completed: false };
+    }
+    
+    // If we have a repId, lookup details from library
+    if (commitment.repId && repLibrary) {
+      const repDetails = repLibrary.find(rep => rep.id === commitment.repId || rep.repId === commitment.repId);
+      if (repDetails) {
+        return {
+          ...commitment,
+          name: repDetails.name,
+          description: repDetails.description,
+          category: repDetails.category
+        };
+      }
+    }
+    
+    return commitment;
+  });
+
+  return (
+    <Card title="⏳ Additional Daily Reps" accent='TEAL'>
+      <div className="space-y-3">
+        {enrichedCommitments.map((commitment, idx) => (
+          <div key={commitment.id || idx} 
+               className="p-4 rounded-lg border-2 transition-all"
+               style={{ 
+                 borderColor: commitment.completed ? COLORS.GREEN : COLORS.SUBTLE,
+                 backgroundColor: commitment.completed ? `${COLORS.GREEN}05` : COLORS.LIGHT_GRAY
+               }}>
+            <div className="flex items-start gap-3">
+              <input 
+                type="checkbox" 
+                checked={commitment.completed || false}
+                onChange={() => onToggle(commitment.id)}
+                className="mt-1 w-5 h-5 flex-shrink-0"
+                style={{ accentColor: COLORS.TEAL }}
+              />
+              <div className="flex-1">
+                <p className={`text-sm font-bold mb-1 ${commitment.completed ? 'line-through opacity-60' : ''}`}
+                   style={{ color: COLORS.NAVY }}>
+                  {commitment.name || commitment.text || commitment.repId}
+                </p>
+                {commitment.description && (
+                  <p className="text-xs mb-2" style={{ color: COLORS.MUTED }}>
+                    {commitment.description}
+                  </p>
+                )}
+                {commitment.category && (
+                  <span className="inline-block px-2 py-1 rounded text-xs font-semibold"
+                        style={{ backgroundColor: `${COLORS.BLUE}20`, color: COLORS.BLUE }}>
+                    {commitment.category}
+                  </span>
+                )}
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </Card>
+  );
+};
+
+/* =========================================================
+   FIX #9: SOCIAL POD CARD
+========================================================= */
+export const SocialPodCard = ({ podMembers, activityFeed, onSendMessage }) => {
+  const [newMessage, setNewMessage] = useState('');
+
+  const handleSend = () => {
+    if (newMessage.trim()) {
+      onSendMessage(newMessage);
+      setNewMessage('');
+    }
+  };
+
+  return (
+    <Card title="🤝 Social Pod Feed" accent='PURPLE'>
+      {/* Pod Members Section */}
+      {podMembers && podMembers.length > 0 ? (
+        <>
+          <div className="mb-4">
+            <p className="text-xs font-semibold mb-2" style={{ color: COLORS.MUTED }}>
+              YOUR POD MEMBERS:
+            </p>
+            <div className="flex gap-2 flex-wrap">
+              {podMembers.map((member, idx) => (
+                <div key={idx} 
+                     className="flex items-center gap-2 px-3 py-2 rounded-lg border"
+                     style={{ borderColor: COLORS.SUBTLE, backgroundColor: COLORS.LIGHT_GRAY }}>
+                  <div className="w-8 h-8 rounded-full flex items-center justify-center"
+                       style={{ backgroundColor: COLORS.PURPLE, color: 'white' }}>
+                    <User className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold" style={{ color: COLORS.NAVY }}>
+                      {member.name || 'Leader'}
+                    </p>
+                    <p className="text-xs" style={{ color: COLORS.MUTED }}>
+                      {member.streak || 0} day streak
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Activity Feed */}
+          <div className="mb-4">
+            <p className="text-xs font-semibold mb-2" style={{ color: COLORS.MUTED }}>
+              RECENT ACTIVITY:
+            </p>
+            <div className="space-y-2 max-h-64 overflow-y-auto">
+              {activityFeed && activityFeed.length > 0 ? (
+                activityFeed.map((activity, idx) => (
+                  <div key={idx} 
+                       className="p-3 rounded-lg border-l-4"
+                       style={{ 
+                         backgroundColor: COLORS.LIGHT_GRAY,
+                         borderColor: COLORS.PURPLE
+                       }}>
+                    <div className="flex items-start gap-2">
+                      <Activity className="w-4 h-4 mt-0.5 flex-shrink-0" style={{ color: COLORS.PURPLE }} />
+                      <div className="flex-1">
+                        <p className="text-sm font-semibold" style={{ color: COLORS.NAVY }}>
+                          {activity.userName}
+                        </p>
+                        <p className="text-xs" style={{ color: COLORS.TEXT }}>
+                          {activity.message}
+                        </p>
+                        <p className="text-xs mt-1" style={{ color: COLORS.MUTED }}>
+                          {activity.timestamp}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <p className="text-sm text-center py-4" style={{ color: COLORS.MUTED }}>
+                  No recent activity. Be the first to share!
+                </p>
+              )}
+            </div>
+          </div>
+
+          {/* Send Message */}
+          <div className="pt-3 border-t" style={{ borderColor: COLORS.SUBTLE }}>
+            <div className="flex gap-2">
+              <input 
+                type="text"
+                value={newMessage}
+                onChange={(e) => setNewMessage(e.target.value)}
+                onKeyPress={(e) => e.key === 'Enter' && handleSend()}
+                placeholder="Share your progress..."
+                className="flex-1 p-2 border rounded-lg text-sm"
+                style={{ borderColor: COLORS.SUBTLE }}
+              />
+              <button
+                onClick={handleSend}
+                disabled={!newMessage.trim()}
+                className="px-4 py-2 rounded-lg font-semibold text-white transition-all disabled:opacity-50"
+                style={{ backgroundColor: COLORS.PURPLE }}
+              >
+                <Send className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        </>
+      ) : (
+        /* Empty State */
+        <div className="text-center py-8">
+          <Users className="w-12 h-12 mx-auto mb-3" style={{ color: COLORS.MUTED }} />
+          <p className="text-sm font-semibold mb-2" style={{ color: COLORS.NAVY }}>
+            No Pod Members Yet
+          </p>
+          <p className="text-xs mb-4" style={{ color: COLORS.MUTED }}>
+            Connect with other leaders to build accountability
+          </p>
+          <Button variant="outline" size="sm">
+            Find a Pod
+          </Button>
+        </div>
+      )}
+    </Card>
   );
 };
 
@@ -648,31 +926,6 @@ export const IdentityAnchorCard = ({ identityStatement, onEdit, onShowSuggestion
     </div>
   </Card>
 );
-
-/* =========================================================
-   WHY IT MATTERS CARD (RESTORED - SEPARATE FROM IDENTITY)
-========================================================= */
-export const WhyItMattersCard = ({ whyContent, onLearnMore }) => {
-  const defaultContent = "Your identity shapes your actions. When you anchor your habits to who you are becoming, you create lasting change from the inside out.";
-  
-  return (
-    <Card icon={Star} accent='AMBER'>
-      <h3 className="text-lg font-bold mb-3 flex items-center gap-2" style={{ color: COLORS.NAVY }}>
-        <span>💡</span> Why It Matters
-      </h3>
-      <div className="mb-4">
-        <p className="text-sm leading-relaxed" style={{ color: COLORS.TEXT }}>
-          {whyContent || defaultContent}
-        </p>
-      </div>
-      {onLearnMore && (
-        <Button onClick={onLearnMore} variant="ghost" size="sm" className="w-full !justify-start">
-          <span className="mr-1">📖</span> Learn more about identity-based habits
-        </Button>
-      )}
-    </Card>
-  );
-};
 
 /* =========================================================
    HABIT ANCHOR CARD
@@ -723,7 +976,7 @@ export const AICoachNudge = ({ onOpenLab, disabled }) => (
 );
 
 /* =========================================================
-   DEV PLAN PROGRESS LINK (NEW)
+   DEV PLAN PROGRESS LINK (FIX #2)
 ========================================================= */
 export const DevPlanProgressLink = ({ progress, focusArea, onNavigate }) => (
   <Card>
@@ -757,7 +1010,7 @@ export const DevPlanProgressLink = ({ progress, focusArea, onNavigate }) => (
 );
 
 /* =========================================================
-   REMINDER BANNER COMPONENTS (NEW)
+   REMINDER BANNER COMPONENTS
 ========================================================= */
 export const ReminderBanner = ({ message, onDismiss, type = 'best' }) => {
   const bgColor = type === 'best' ? COLORS.TEAL : COLORS.AMBER;

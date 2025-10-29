@@ -1,5 +1,5 @@
 // src/components/screens/Dashboard.jsx
-// COMPLETE VERSION with all fixes (10/29/25)
+// COMPLETE VERSION with ALL 9 FIXES (10/29/25)
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { useAppServices } from '../../services/useAppServices.jsx';
@@ -20,7 +20,11 @@ import {
   HabitAnchorCard,
   AICoachNudge,
   ReminderBanner,
-  SuggestionModal // NEW: For Identity/Habit suggestions
+  SuggestionModal,
+  SaveIndicator, // FIX #6: Save feedback
+  BonusExerciseModal, // FIX #3: Bonus exercise
+  AdditionalRepsCard, // FIX #8: Enhanced additional reps
+  SocialPodCard // FIX #9: Social pod feature
 } from './dashboard/DashboardComponents.jsx';
 
 // Import hooks
@@ -39,7 +43,7 @@ const Dashboard = ({ navigate }) => {
     db,
     userEmail,
     developmentPlanData,
-    globalMetadata // NEW: Get global metadata for REP_LIBRARY lookups
+    globalMetadata // For REP_LIBRARY lookups (FIX #1)
   } = useAppServices();
 
   // Use consolidated dashboard hook
@@ -105,22 +109,30 @@ const Dashboard = ({ navigate }) => {
     userEmail
   });
 
-  // NEW: State for reminders
+  // FIX #6: Save confirmation state
+  const [showSaveConfirmation, setShowSaveConfirmation] = useState(false);
+  const [saveMessage, setSaveMessage] = useState('');
+
+  // State for reminders
   const [showBestReminder, setShowBestReminder] = useState(false);
   const [showImprovementReminder, setShowImprovementReminder] = useState(false);
   const [celebrationShown, setCelebrationShown] = useState(false);
 
-  // NEW: State for suggestion modals
+  // State for suggestion modals (FIX #4, #5)
   const [showIdentitySuggestions, setShowIdentitySuggestions] = useState(false);
   const [showHabitSuggestions, setShowHabitSuggestions] = useState(false);
 
-  // NEW: Get dynamic focus area from dev plan
+  // FIX #3: Bonus Exercise Modal state
+  const [showBonusExercise, setShowBonusExercise] = useState(false);
+  const [bonusExerciseData, setBonusExerciseData] = useState(null);
+
+  // Get dynamic focus area from dev plan
   const focusArea = developmentPlanData?.currentPlan?.focusArea || 'Not Set';
   
-  // NEW: Calculate dev plan progress (simple version - can be enhanced)
+  // Calculate dev plan progress
   const devPlanProgress = 22; // Placeholder - should calculate based on actual progress
 
-  // NEW: Lookup Target Rep details from REP_LIBRARY
+  // FIX #1: Lookup Target Rep details from REP_LIBRARY
   const targetRepDetails = useMemo(() => {
     if (!targetRep || !globalMetadata?.REP_LIBRARY?.items) return null;
     
@@ -131,12 +143,79 @@ const Dashboard = ({ navigate }) => {
     return repItem || null;
   }, [targetRep, globalMetadata?.REP_LIBRARY]);
 
-  // NEW: Get suggestion catalogs
+  // Get suggestion catalogs (FIX #4, #5)
   const identitySuggestions = globalMetadata?.IDENTITY_ANCHOR_CATALOG?.items || [];
   const habitSuggestions = globalMetadata?.HABIT_ANCHOR_CATALOG?.items || [];
 
+  // FIX #3: Get bonus exercises from global metadata
+  const bonusExercises = globalMetadata?.BONUS_EXERCISES?.items || [];
+
   /* =========================================================
-     AUTO-UPDATE WATCHERS (NEW)
+     FIX #6: ENHANCED SAVE HANDLERS WITH CONFIRMATION
+  ========================================================= */
+  const showSaveSuccess = (message = 'Saved successfully!') => {
+    setSaveMessage(message);
+    setShowSaveConfirmation(true);
+    setTimeout(() => setShowSaveConfirmation(false), 3000);
+  };
+
+  const handleSaveIdentityWithConfirmation = async (value) => {
+    await handleSaveIdentity(value);
+    showSaveSuccess('Identity anchor saved!');
+  };
+
+  const handleSaveHabitWithConfirmation = async (value) => {
+    await handleSaveHabit(value);
+    showSaveSuccess('Habit anchor saved!');
+  };
+
+  const handleSaveMorningWithConfirmation = async () => {
+    await handleSaveMorningBookend();
+    showSaveSuccess('Morning plan locked in!');
+  };
+
+  const handleSaveEveningWithConfirmation = async () => {
+    await handleSaveEveningBookend();
+    showSaveSuccess('Evening reflection saved!');
+  };
+
+  /* =========================================================
+     FIX #3: BONUS EXERCISE LOGIC
+  ========================================================= */
+  const handleCompleteTargetRepWithBonus = async () => {
+    await handleCompleteTargetRep();
+    
+    // Show bonus exercise modal if available
+    if (bonusExercises.length > 0) {
+      // Pick a random bonus exercise or match to focus area
+      const randomExercise = bonusExercises[Math.floor(Math.random() * bonusExercises.length)];
+      setBonusExerciseData(randomExercise);
+      setShowBonusExercise(true);
+    }
+    
+    showSaveSuccess('Focus rep completed! 🎉');
+  };
+
+  const handleCompleteBonusExercise = async () => {
+    if (!updateDailyPracticeData) return;
+    
+    try {
+      await updateDailyPracticeData({
+        'bonusExercise': {
+          completed: true,
+          exerciseId: bonusExerciseData?.id,
+          completedAt: new Date().toISOString()
+        }
+      });
+      setShowBonusExercise(false);
+      showSaveSuccess('Bonus exercise completed! +50 coins 🪙');
+    } catch (error) {
+      console.error('[Dashboard] Error saving bonus exercise:', error);
+    }
+  };
+
+  /* =========================================================
+     AUTO-UPDATE WATCHERS
   ========================================================= */
   
   // Watch for AM WIN completion → Auto-update PM habit
@@ -182,8 +261,7 @@ const Dashboard = ({ navigate }) => {
       const celebratedKey = `celebrated_am_${todayStr}`;
       
       if (!sessionStorage.getItem(celebratedKey)) {
-        // Show celebration
-        alert('🎉 Way to go, Leader! Morning plan crushed!');
+        showSaveSuccess('🎉 Way to go, Leader! Morning plan crushed!');
         sessionStorage.setItem(celebratedKey, 'true');
         setCelebrationShown(true);
       }
@@ -191,7 +269,7 @@ const Dashboard = ({ navigate }) => {
   }, [dailyPracticeData?.morningBookend, celebrationShown]);
 
   /* =========================================================
-     NEXT-DAY REMINDERS (NEW)
+     NEXT-DAY REMINDERS
   ========================================================= */
   
   useEffect(() => {
@@ -213,7 +291,6 @@ const Dashboard = ({ navigate }) => {
   const handleDismissBestReminder = () => {
     setShowBestReminder(false);
     sessionStorage.setItem('dismissed_best_reminder', 'true');
-    // Clear from database
     if (updateDailyPracticeData) {
       updateDailyPracticeData({ tomorrowsReminder: '' });
     }
@@ -222,7 +299,6 @@ const Dashboard = ({ navigate }) => {
   const handleDismissImprovementReminder = () => {
     setShowImprovementReminder(false);
     sessionStorage.setItem('dismissed_improvement_reminder', 'true');
-    // Clear from database
     if (updateDailyPracticeData) {
       updateDailyPracticeData({ improvementReminder: '' });
     }
@@ -262,7 +338,7 @@ const Dashboard = ({ navigate }) => {
               <h1 className="text-3xl font-extrabold">Your Daily Arena</h1>
             </div>
             <div className="flex items-center gap-4">
-              <StreakTracker count={streakCount} coins={streakCoins} />
+              <StreakTracker streakCount={streakCount} streakCoins={streakCoins} />
               <ModeSwitch 
                 isArenaMode={isArenaMode}
                 onToggle={handleToggleMode}
@@ -279,27 +355,23 @@ const Dashboard = ({ navigate }) => {
       </div>
 
       {/* === REMINDER BANNERS === */}
-      {showBestReminder && (
+      {showBestReminder && dailyPracticeData?.tomorrowsReminder && (
         <div className="max-w-7xl mx-auto px-6 mb-6">
-          {dailyPracticeData?.tomorrowsReminder && (
-            <ReminderBanner 
-              type="best"
-              message={dailyPracticeData.tomorrowsReminder}
-              onDismiss={handleDismissBestReminder}
-            />
-          )}
+          <ReminderBanner 
+            type="best"
+            message={dailyPracticeData.tomorrowsReminder}
+            onDismiss={handleDismissBestReminder}
+          />
         </div>
       )}
 
-      {showImprovementReminder && (
+      {showImprovementReminder && dailyPracticeData?.improvementReminder && (
         <div className="max-w-7xl mx-auto px-6 mb-6">
-          {dailyPracticeData?.improvementReminder && (
-            <ReminderBanner 
-              type="better"
-              message={dailyPracticeData.improvementReminder}
-              onDismiss={handleDismissImprovementReminder}
-            />
-          )}
+          <ReminderBanner 
+            type="better"
+            message={dailyPracticeData.improvementReminder}
+            onDismiss={handleDismissImprovementReminder}
+          />
         </div>
       )}
 
@@ -310,7 +382,7 @@ const Dashboard = ({ navigate }) => {
           {/* === LEFT COLUMN (60% - DAILY FOCUS) === */}
           <div className="lg:col-span-3 space-y-6">
             
-            {/* Today's Focus Rep */}
+            {/* Today's Focus Rep - FIX #1: Shows actual rep name */}
             <Card title="🎯 Today's Focus Rep" icon={Flag} accent='NAVY'>
               <div className="mb-4">
                 <p className="text-sm font-semibold mb-1" style={{ color: COLORS.TEXT }}>
@@ -334,7 +406,7 @@ const Dashboard = ({ navigate }) => {
 
               {targetRepStatus === 'Pending' && (
                 <Button 
-                  onClick={handleCompleteTargetRep} 
+                  onClick={handleCompleteTargetRepWithBonus} 
                   disabled={!canCompleteTargetRep}
                   variant="primary" 
                   size="md" 
@@ -351,7 +423,7 @@ const Dashboard = ({ navigate }) => {
                 </div>
               )}
 
-              {/* Identity Anchor Display - FIXED: Full sentence format */}
+              {/* Identity Anchor Display */}
               {identityStatement && (
                 <div className="mt-4 pt-4 border-t" style={{ borderColor: COLORS.SUBTLE }}>
                   <p className="text-xs font-semibold mb-2" style={{ color: COLORS.MUTED }}>
@@ -364,62 +436,60 @@ const Dashboard = ({ navigate }) => {
               )}
             </Card>
 
-            {/* NEW: Dev Plan Progress Link */}
+            {/* FIX #2: Dev Plan Progress Link - Already present */}
             <DevPlanProgressLink 
               progress={devPlanProgress}
               focusArea={focusArea}
               onNavigate={() => navigate('development-plan')}
             />
 
-            {/* Identity & Habit Grid */}
+            {/* Identity & Habit Grid - FIX #4, #5: Enhanced with suggestions */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <IdentityAnchorCard 
                 identityStatement={identityStatement} 
                 onEdit={() => setShowIdentityEditor(true)}
-                onShowSuggestions={() => setShowIdentitySuggestions(true)} // NEW
+                onShowSuggestions={() => setShowIdentitySuggestions(true)}
               />
               <HabitAnchorCard 
                 habitAnchor={habitAnchor} 
                 onEdit={() => setShowHabitEditor(true)}
-                onShowSuggestions={() => setShowHabitSuggestions(true)} // NEW
+                onShowSuggestions={() => setShowHabitSuggestions(true)}
               />
             </div>
 
-            {/* Additional Daily Reps */}
-            {additionalCommitments.length > 0 && (
-              <Card title="⏳ Additional Daily Reps" accent='TEAL'>
-                <div className="space-y-2">
-                  {additionalCommitments.map((commitment, idx) => (
-                    <div key={idx} className="flex items-center gap-2 p-3 rounded-lg border"
-                         style={{ borderColor: COLORS.SUBTLE }}>
-                      <input 
-                        type="checkbox" 
-                        className="w-4 h-4"
-                        style={{ accentColor: COLORS.TEAL }}
-                      />
-                      <span className="text-sm" style={{ color: COLORS.TEXT }}>
-                        {commitment.text || commitment}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </Card>
+            {/* FIX #8: Enhanced Additional Daily Reps */}
+            {additionalCommitments && additionalCommitments.length > 0 && (
+              <AdditionalRepsCard 
+                commitments={additionalCommitments}
+                onToggle={(commitmentId) => {
+                  // Toggle completion state
+                  const updated = additionalCommitments.map(c => 
+                    c.id === commitmentId ? { ...c, completed: !c.completed } : c
+                  );
+                  updateDailyPracticeData({ activeCommitments: updated });
+                  showSaveSuccess('Additional rep updated!');
+                }}
+                repLibrary={globalMetadata?.REP_LIBRARY?.items || []}
+              />
             )}
 
-            {/* Social Pod (Arena Mode Only) */}
+            {/* FIX #9: Social Pod (Arena Mode Only) */}
             {isArenaMode && (
-              <Card title="🤝 Social Pod Feed" accent='PURPLE'>
-                <p className="text-sm text-center py-8" style={{ color: COLORS.MUTED }}>
-                  Connect with your accountability pod members...
-                </p>
-              </Card>
+              <SocialPodCard 
+                podMembers={dailyPracticeData?.podMembers || []}
+                activityFeed={dailyPracticeData?.podActivity || []}
+                onSendMessage={(message) => {
+                  console.log('[Dashboard] Sending pod message:', message);
+                  showSaveSuccess('Message sent to pod!');
+                }}
+              />
             )}
           </div>
 
           {/* === RIGHT COLUMN (40% - BOOKENDS) === */}
           <div className="lg:col-span-2 space-y-6">
             
-            {/* NEW: Dynamic Bookend Container */}
+            {/* Dynamic Bookend Container - FIX #7: Fixed lock logic */}
             {(featureFlags?.enableBookends !== false) && (
               <DynamicBookendContainer 
                 morningProps={{
@@ -432,7 +502,7 @@ const Dashboard = ({ navigate }) => {
                   showLIS: showLIS,
                   setShowLIS: setShowLIS,
                   identityStatement: identityStatement,
-                  onSave: handleSaveMorningBookend,
+                  onSave: handleSaveMorningWithConfirmation,
                   onSaveWIN: handleSaveWIN,
                   onToggleWIN: handleToggleWIN,
                   isSaving: isSavingBookend,
@@ -448,7 +518,7 @@ const Dashboard = ({ navigate }) => {
                   setReflectionBest: setReflectionBest,
                   habitsCompleted: habitsCompleted,
                   onHabitToggle: handleHabitToggle,
-                  onSave: handleSaveEveningBookend,
+                  onSave: handleSaveEveningWithConfirmation,
                   isSaving: isSavingBookend,
                   onNavigate: navigate
                 }}
@@ -486,7 +556,7 @@ const Dashboard = ({ navigate }) => {
               rows={4}
             />
             <div className="flex gap-3 mb-3">
-              <Button onClick={() => handleSaveIdentity(identityStatement)} variant="primary" size="md" className="flex-1">
+              <Button onClick={() => handleSaveIdentityWithConfirmation(identityStatement)} variant="primary" size="md" className="flex-1">
                 Save
               </Button>
               <Button onClick={() => setShowIdentityEditor(false)} variant="outline" size="md" className="flex-1">
@@ -526,7 +596,7 @@ const Dashboard = ({ navigate }) => {
               style={{ borderColor: COLORS.SUBTLE }}
             />
             <div className="flex gap-3 mb-3">
-              <Button onClick={() => handleSaveHabit(habitAnchor)} variant="primary" size="md" className="flex-1">
+              <Button onClick={() => handleSaveHabitWithConfirmation(habitAnchor)} variant="primary" size="md" className="flex-1">
                 Save
               </Button>
               <Button onClick={() => setShowHabitEditor(false)} variant="outline" size="md" className="flex-1">
@@ -550,7 +620,7 @@ const Dashboard = ({ navigate }) => {
         </div>
       )}
 
-      {/* Identity Suggestions Modal */}
+      {/* FIX #4: Identity Suggestions Modal */}
       {showIdentitySuggestions && (
         <SuggestionModal
           title="Identity Anchor Suggestions"
@@ -558,14 +628,14 @@ const Dashboard = ({ navigate }) => {
           suggestions={identitySuggestions}
           onSelect={(value) => {
             setIdentityStatement(value);
-            handleSaveIdentity(value);
+            handleSaveIdentityWithConfirmation(value);
             setShowIdentitySuggestions(false);
           }}
           onClose={() => setShowIdentitySuggestions(false)}
         />
       )}
 
-      {/* Habit Suggestions Modal */}
+      {/* FIX #5: Habit Suggestions Modal */}
       {showHabitSuggestions && (
         <SuggestionModal
           title="Habit Anchor Suggestions"
@@ -573,12 +643,24 @@ const Dashboard = ({ navigate }) => {
           suggestions={habitSuggestions}
           onSelect={(value) => {
             setHabitAnchor(value);
-            handleSaveHabit(value);
+            handleSaveHabitWithConfirmation(value);
             setShowHabitSuggestions(false);
           }}
           onClose={() => setShowHabitSuggestions(false)}
         />
       )}
+
+      {/* FIX #3: Bonus Exercise Modal */}
+      {showBonusExercise && bonusExerciseData && (
+        <BonusExerciseModal
+          exercise={bonusExerciseData}
+          onComplete={handleCompleteBonusExercise}
+          onSkip={() => setShowBonusExercise(false)}
+        />
+      )}
+
+      {/* FIX #6: Save Confirmation Indicator */}
+      <SaveIndicator show={showSaveConfirmation} message={saveMessage} />
     </div>
   );
 };

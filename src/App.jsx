@@ -253,8 +253,7 @@ const NavSidebar = ({ currentScreen, setCurrentScreen, user, closeMobileMenu, is
 
   const contentPillarNav = [
     { screen: 'development-plan', label: 'Development Plan', icon: Briefcase, flag: 'enableDevPlan' },
-    // QuickStart moved from core to Course Library section (it's a course)
-    { screen: 'quick-start-accelerator', label: 'QuickStart Course', icon: Zap, flag: 'enableCourses', badge: 'Course' },
+    // QuickStart is accessible via Course Library (AppliedLeadership screen) - removed from main nav
     { screen: 'business-readings', label: 'Professional Reading Hub', icon: BookOpen, flag: 'enableReadings' }, // cite: BusinessReadings.jsx
     { screen: 'applied-leadership', label: 'Course Library', icon: ShieldCheck, flag: 'enableCourses' }, // cite: AppliedLeadership.jsx
     // v2 Features (admins see these, regular users don't unless flag enabled)
