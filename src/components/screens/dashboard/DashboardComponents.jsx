@@ -1,6 +1,7 @@
 // src/components/screens/dashboard/DashboardComponents.jsx
 // COMPLETE VERSION with ALL 9 FIXES (10/29/25)
 // MODIFIED: 10/29/25 - Removed 'Suggestions' button from Anchor Cards per user request.
+// MODIFIED: 10/29/25 - Fixed PM Bookend auto-tracking bug
 
 import React, { useState, useEffect } from 'react';
 import { 
@@ -467,7 +468,9 @@ export const MorningBookend = ({
 export const EveningBookend = ({ 
     reflectionGood, setReflectionGood, reflectionBetter, setReflectionBetter,
     reflectionBest, setReflectionBest, habitsCompleted, onHabitToggle, onSave, isSaving,
-    onNavigate
+    onNavigate,
+    // MODIFIED (10/29/25): Add props for auto-tracking
+    amWinCompleted, amTasksCompleted
 }) => {
     return (
         <div className="space-y-4">
@@ -526,7 +529,8 @@ export const EveningBookend = ({
                     </p>
                     
                     <label className="flex items-center gap-2 p-2 rounded opacity-75">
-                        <input type="checkbox" checked={habitsCompleted.completedAMWIN || false}
+                        {/* MODIFIED (10/29/25): Use amWinCompleted prop */}
+                        <input type="checkbox" checked={amWinCompleted || false}
                             disabled 
                             className="w-4 h-4" style={{ accentColor: COLORS.TEAL }}
                         />
@@ -534,7 +538,8 @@ export const EveningBookend = ({
                     </label>
                     
                     <label className="flex items-center gap-2 p-2 rounded opacity-75">
-                        <input type="checkbox" checked={habitsCompleted.completedAMTasks || false}
+                        {/* MODIFIED (10/29/25): Use amTasksCompleted prop */}
+                        <input type="checkbox" checked={amTasksCompleted || false}
                             disabled
                             className="w-4 h-4" style={{ accentColor: COLORS.TEAL }}
                         />

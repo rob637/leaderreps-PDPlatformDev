@@ -1,5 +1,6 @@
 // src/components/screens/Dashboard.jsx
 // COMPLETE FIX FOR ALL 8 ISSUES (10/29/25 - FINAL VERSION)
+// MODIFIED: 10/29/25 - Applied all user-requested fixes
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { useAppServices } from '../../services/useAppServices.jsx';
@@ -112,6 +113,7 @@ const Dashboard = ({ navigate }) => {
   const devPlanProgress = 22;
 
   // FIX #1: Enhanced Target Rep lookup with COMPREHENSIVE debugging and fallback
+  // MODIFIED (10/29/25): Updated field mapping to use 'text' and 'definition' per database schema
   const targetRepDetails = useMemo(() => {
     console.log('[Dashboard FIX #1] Looking up target rep:', targetRep);
     console.log('[Dashboard FIX #1] globalMetadata structure:', globalMetadata);
@@ -121,10 +123,8 @@ const Dashboard = ({ navigate }) => {
       return null;
     }
     
-    // FIX #1: Check multiple possible paths in globalMetadata
     let repLibrary = null;
     
-    // Try different possible paths
     if (globalMetadata?.REP_LIBRARY?.items) {
       repLibrary = globalMetadata.REP_LIBRARY.items;
       console.log('[Dashboard FIX #1] Found REP_LIBRARY.items');
@@ -148,7 +148,6 @@ const Dashboard = ({ navigate }) => {
     
     console.log('[Dashboard FIX #1] Searching', repLibrary.length, 'reps');
     
-    // Try multiple field patterns to find the rep
     const repItem = repLibrary.find(rep => {
       const match = (
         rep.id === targetRep || 
@@ -164,7 +163,6 @@ const Dashboard = ({ navigate }) => {
     if (!repItem) {
       console.warn('[Dashboard FIX #1] Target rep not found in catalog:', targetRep);
       console.log('[Dashboard FIX #1] Sample rep structure:', repLibrary[0]);
-      // Return fallback with the ID
       return {
         name: targetRep,
         description: 'Rep details not found in catalog',
@@ -174,14 +172,14 @@ const Dashboard = ({ navigate }) => {
     
     console.log('[Dashboard FIX #1] Found rep details:', repItem);
     
-    // FIX #1: Ensure we have whatGreatLooksLike field
+    // UPDATED MAPPING:
     return {
       id: repItem.id || repItem.repId || repItem.repID,
-      name: repItem.name || repItem.title || targetRep,
-      description: repItem.description || repItem.desc || 'No description available',
-      whatGreatLooksLike: repItem.whatGreatLooksLike || repItem.whatGoodLooksLike || repItem.description || 'Focus on consistent practice',
+      name: repItem.text || repItem.name || repItem.title || targetRep, // Use 'text' as name
+      description: repItem.definition || repItem.desc || 'No description available', // Use 'definition'
+      whatGreatLooksLike: repItem.definition || repItem.whatGoodLooksLike || 'Focus on consistent practice', // Use 'definition'
       category: repItem.category || 'General',
-      tier: repItem.tier
+      tier: repItem.tier || repItem.tier_id // Add tier_id as fallback
     };
   }, [targetRep, globalMetadata]);
 
@@ -419,6 +417,10 @@ const Dashboard = ({ navigate }) => {
       setShowImprovementReminder(true);
     }
   }, [dailyPracticeData]);
+  
+  // NEW BUG FIX (10/29/25): Calculate AM completion status to pass to PM bookend
+  const amWinCompleted = dailyPracticeData?.morningBookend?.winCompleted || false;
+  const amTasksCompleted = otherTasks.length > 0 && otherTasks.every(t => t.completed);
 
   if (!dailyPracticeData || !updateDailyPracticeData) {
     return (
@@ -492,9 +494,10 @@ const Dashboard = ({ navigate }) => {
                   <p className="text-xs font-semibold mb-1" style={{ color: COLORS.BLUE }}>
                     💡 WHY THIS REP MATTERS:
                   </p>
+                  {/* MODIFIED (10/29/25): Updated copy per user request */}
                   <p className="text-xs" style={{ color: COLORS.TEXT }}>
-                    This is your anchor practice. Completing it daily builds the habit foundation 
-                    that drives leadership growth. Small, consistent reps compound into transformational change.
+                    This is your anchor rep. It converts reflection into forward motion and 
+                    builds the awareness that is the heart of leadership learning.
                   </p>
                 </div>
               )}
@@ -569,41 +572,43 @@ const Dashboard = ({ navigate }) => {
             </Card>
 
             {/* Dynamic Bookend Container with FIX #2 and FIX #3 */}
-            {(featureFlags?.enableBookends) && (
-              <DynamicBookendContainer
-                morningProps={{
-                  dailyWIN: morningWIN,
-                  setDailyWIN: setMorningWIN,
-                  otherTasks: otherTasks,
-                  onAddTask: handleAddTask,
-                  onToggleTask: handleToggleTask,
-                  onRemoveTask: handleRemoveTask,
-                  showLIS: showLIS,
-                  setShowLIS: setShowLIS,
-                  identityStatement: identityStatement,
-                  onSave: handleSaveMorningWithConfirmation,
-                  onSaveWIN: handleSaveWIN,
-                  onToggleWIN: handleToggleWIN,
-                  isSaving: isSavingBookend,
-                  completedAt: dailyPracticeData?.morningBookend?.completedAt,
-                  winCompleted: dailyPracticeData?.morningBookend?.winCompleted
-                }}
-                eveningProps={{
-                  reflectionGood: reflectionGood,
-                  setReflectionGood: setReflectionGood,
-                  reflectionBetter: reflectionBetter,
-                  setReflectionBetter: setReflectionBetter,
-                  reflectionBest: reflectionBest,
-                  setReflectionBest: setReflectionBest,
-                  habitsCompleted: habitsCompleted,
-                  onHabitToggle: handleHabitToggle,
-                  onSave: handleSaveEveningWithConfirmation,
-                  isSaving: isSavingBookend,
-                  onNavigate: navigate
-                }}
-                dailyPracticeData={dailyPracticeData}
-              />
-            )}
+            {/* MODIFIED (10/29/25): Removed featureFlags?.enableBookends check */}
+            <DynamicBookendContainer
+              morningProps={{
+                dailyWIN: morningWIN,
+                setDailyWIN: setMorningWIN,
+                otherTasks: otherTasks,
+                onAddTask: handleAddTask,
+                onToggleTask: handleToggleTask,
+                onRemoveTask: handleRemoveTask,
+                showLIS: showLIS,
+                setShowLIS: setShowLIS,
+                identityStatement: identityStatement,
+                onSave: handleSaveMorningWithConfirmation,
+                onSaveWIN: handleSaveWIN,
+                onToggleWIN: handleToggleWIN,
+                isSaving: isSavingBookend,
+                completedAt: dailyPracticeData?.morningBookend?.completedAt,
+                winCompleted: dailyPracticeData?.morningBookend?.winCompleted
+              }}
+              eveningProps={{
+                reflectionGood: reflectionGood,
+                setReflectionGood: setReflectionGood,
+                reflectionBetter: reflectionBetter,
+                setReflectionBetter: setReflectionBetter,
+                reflectionBest: reflectionBest,
+                setReflectionBest: setReflectionBest,
+                habitsCompleted: habitsCompleted,
+                onHabitToggle: handleHabitToggle,
+                onSave: handleSaveEveningWithConfirmation,
+                isSaving: isSavingBookend,
+                onNavigate: navigate,
+                // MODIFIED (10/29/25): Pass AM completion status
+                amWinCompleted: amWinCompleted,
+                amTasksCompleted: amTasksCompleted
+              }}
+              dailyPracticeData={dailyPracticeData}
+            />
 
             <AICoachNudge 
               onOpenLab={() => navigate('coaching-lab')} 
