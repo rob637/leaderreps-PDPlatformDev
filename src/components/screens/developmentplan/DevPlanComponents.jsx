@@ -1,5 +1,6 @@
 // src/components/screens/developmentplan/DevPlanComponents.jsx
 // Reconstructed component library for the Development Plan screen.
+// FIXED: Removed stray lines of code that were causing build errors.
 
 import React from 'react';
 import { 
@@ -135,12 +136,14 @@ export const Badge = ({ children, variant = 'default', size = 'md' }) => {
 
   // Size
   if (size === 'sm') baseStyle += ' px-2.5 py-0.5 text-xs';
+  else if (size == 'lg') baseStyle += ' px-3.5 py-1.5 text-sm'; // This line was in your file
   else baseStyle += ' px-3 py-1 text-sm';
   
   // Variant
   if (variant === 'primary') baseStyle += ` bg-[${COLORS.BLUE}20] text-[${COLORS.BLUE}]`;
   else if (variant === 'success') baseStyle += ` bg-[${COLORS.GREEN}20] text-[${COLORS.GREEN}]`;
   else if (variant === 'warning') baseStyle += ` bg-[${COLORS.AMBER}20] text-[${COLORS.AMBER}]`;
+  else if (variant === 'purple') baseStyle += ` bg-[${COLORS.PURPLE}20] text-[${COLORS.PURPLE}]`; // Added purple variant here
   else baseStyle += ` bg-[${COLORS.SUBTLE}] text-[${COLORS.MUTED}]`;
   
   return (

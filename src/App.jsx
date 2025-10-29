@@ -1,4 +1,4 @@
-// src/App.jsx (FIXED: Toggle position moved below App Settings)
+// src/App.jsx (FIXED: Corrected debug log lines in DataProvider)
 
 import React, { useState, useEffect, useMemo, useCallback, Suspense, lazy } from 'react';
 
@@ -498,7 +498,7 @@ const NavSidebar = ({ currentScreen, setCurrentScreen, user, closeMobileMenu, is
             <p className="text-sm font-semibold truncate mb-2 text-white" title={user?.email}>
               {user?.email || 'N/A'}
             </p>
-            /* <p className="text-xs text-gray-400 break-words mb-4">UID: {user?.userId || 'N/A'}</p> */
+            {/* <p className="text-xs text-gray-400 break-words mb-4">UID: {user?.userId || 'N/A'}</p> */ }
             <button
               onClick={handleSignOut}
               className={`flex items-center w-full px-3 py-2 mt-2 rounded-md text-sm font-semibold transition-colors text-white`}
@@ -628,15 +628,17 @@ const DataProvider = ({ children, firebaseServices, userId, isAuthReady, navigat
 
   // --- Use the RENAMED user data hooks ---
   const devPlanHook = useDevelopmentPlanData(db, userId, isAuthReady);
-const dailyPracticeHook = useDailyPracticeData(db, userId, isAuthReady);
-const strategicContentHook = useStrategicContentData(db, userId, isAuthReady);
+  const dailyPracticeHook = useDailyPracticeData(db, userId, isAuthReady);
+  const strategicContentHook = useStrategicContentData(db, userId, isAuthReady);
 
-// DEBUG: Log what we're getting from hooks
-console.log('🔍 devPlanHook:', devPlanHook);
-console.log('🔍 dailyPracticeHook:', dailyPracticeHook);
-console.log('🔍 strategicContentHook:', strategicContentHook);
-console.log('🔍 dailyPracticeHook.updateData exists:', !!dailyPracticeHook.updateData);
-console.log('🔍 dailyPracticeHook.updateData type:', typeof dailyPracticeHook.updateData);
+  // --- **FIX START**: Corrected debug log lines
+  console.log('🔍 devPlanHook:', devPlanHook);
+  console.log('🔍 dailyPracticeHook:', dailyPracticeHook);
+  console.log('🔍 strategicContentHook:', strategicContentHook);
+  console.log('🔍 dailyPracticeHook.updateDailyPracticeData exists:', !!dailyPracticeHook.updateDailyPracticeData);
+  console.log('🔍 dailyPracticeHook.updateDailyPracticeData type:', typeof dailyPracticeHook.updateDailyPracticeData);
+  // --- **FIX END** ---
+
   // Global metadata hook remains the same but fetches more data now
   const globalHook = useGlobalMetadata(db, isAuthReady);
 
@@ -809,8 +811,8 @@ console.log('🔍 dailyPracticeHook.updateData type:', typeof dailyPracticeHook.
       // Data Writers (using updated names)
       // FIX: Add defensive check (?? noOpUpdate) here as a final guarantee.
       updateDevelopmentPlanData: devPlanHook.updateDevelopmentPlanData ?? noOpUpdate,
-updateDailyPracticeData: dailyPracticeHook.updateDailyPracticeData ?? noOpUpdate,
-updateStrategicContentData: strategicContentHook.updateStrategicContentData ?? noOpUpdate,
+      updateDailyPracticeData: dailyPracticeHook.updateDailyPracticeData ?? noOpUpdate,
+      updateStrategicContentData: strategicContentHook.updateStrategicContentData ?? noOpUpdate,
       // Update global metadata (pass db and userId)
       updateGlobalMetadata: (data, opts) => updateGlobalMetadata(db, data, { ...opts, userId }), // cite: useAppServices.jsx
     };

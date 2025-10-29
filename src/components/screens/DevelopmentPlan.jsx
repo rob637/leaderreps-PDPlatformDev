@@ -1,244 +1,259 @@
 // src/components/screens/DevelopmentPlan.jsx
-// ENHANCED VERSION with Detailed 18-Month Plan View (FIX #4)
+// Parent container for the Development Plan flow (no-regression, single-CTA per screen)
+// Wires: BaselineAssessment → PlanTracker → ProgressScan (+ optional Detail/Timeline/Quick Edit inside children)
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { useAppServices } from '../../services/useAppServices.jsx';
-import { LoadingSpinner } from './developmentplan/DevPlanComponents';
-import { generatePlanFromAssessment } from './developmentplan/devPlanUtils';
-
-// Import sub-components
 import BaselineAssessment from './developmentplan/BaselineAssessment';
-import ProgressScan from './developmentplan/ProgressScan';
 import PlanTracker from './developmentplan/PlanTracker';
-
-// FIX #4: Import the detailed plan view component
+import ProgressScan from './developmentplan/ProgressScan';
 import DetailedPlanView from './developmentplan/DetailedPlanView';
+import MilestoneTimeline from './developmentplan/MilestoneTimeline';
+import { Button, Card, EmptyState } from './developmentplan/DevPlanComponents';
+import { generatePlanFromAssessment, normalizeSkillCatalog } from './developmentplan/devPlanUtils';
 
-const DevelopmentPlanScreen = () => {
+// Simple guard wrapper
+const LoadingBlock = ({ title = 'Loading…', description = 'Preparing your development plan...' }) => (
+  <div className="max-w-3xl mx-auto p-6">
+    <Card accent="TEAL">
+      <h2 className="text-xl font-extrabold mb-2"> {title} </h2>
+      <p className="text-gray-600">{description}</p>
+    </Card>
+  </div>
+);
+
+export default function DevelopmentPlan() {
+  const services = useAppServices();
   const {
-    isLoading: isAppLoading,
-    error: appError,
-    developmentPlanData,
-    globalMetadata,
-    updateDevelopmentPlanData,
-    updateDailyPracticeData,
-    syncPlanToDailyPractice,
-  } = useAppServices();
+    db, userId, isAuthReady, isLoading: isServicesLoading, navigate,
+    developmentPlanData, updateDevelopmentPlanData, metadata: globalMetadata
+  } = services || {};
 
-  const [view, setView] = useState('loading');
+  // Local view-state (router-in-component)
+  // tracker | baseline | scan | detail | timeline
+  const hasCurrentPlan = !!(developmentPlanData && developmentPlanData.currentPlan);
+  const [view, setView] = useState(hasCurrentPlan ? 'tracker' : 'baseline');
   const [isSaving, setIsSaving] = useState(false);
+  const [error, setError] = useState(null);
 
-  // Determine which view to show based on data state
+  // Sync view with live snapshots as they arrive
   useEffect(() => {
-    if (isAppLoading) {
-      setView('loading');
-      return;
-    }
+    if (developmentPlanData?.currentPlan && view === 'baseline') setView('tracker');
+    if (!developmentPlanData?.currentPlan && view === 'tracker') setView('baseline');
+  }, [developmentPlanData?.currentPlan]);
 
-    if (appError) {
-      setView('error');
-      return;
-    }
+  // Helpers
+  const skillCatalog = useMemo(() => normalizeSkillCatalog(globalMetadata), [globalMetadata]);
 
-    if (!updateDevelopmentPlanData || !updateDailyPracticeData) {
-      console.error('[DevPlan] Critical services missing');
-      setView('error');
-      return;
-    }
-
-    // Determine view based on plan state
-    if (!developmentPlanData || !developmentPlanData.currentPlan) {
-      setView('assessment');
-    } else {
-      // FIX #4: Default to detailed view after plan is created
-      setView('detailed');
-    }
-  }, [isAppLoading, appError, developmentPlanData, updateDevelopmentPlanData, updateDailyPracticeData]);
-
-  // Handler for completing initial assessment
-  const handleAssessmentComplete = useCallback(async (assessment) => {
-    console.log('[DevPlan] Processing completed assessment...');
+  const writeDevPlan = async (payload, { merge = true } = {}) => {
     setIsSaving(true);
-
-    if (!updateDevelopmentPlanData) {
-      alert('Development Plan update service is missing. Cannot save.');
-      setIsSaving(false);
-      return;
-    }
-
+    setError(null);
     try {
-      // Generate plan from assessment
-      const skillCatalog = globalMetadata?.config?.catalog?.SKILL_CATALOG || [];
-      const plan = generatePlanFromAssessment(assessment, skillCatalog);
-
-      // Prepare data structure
-      const newDevPlanData = {
-        currentPlan: plan,
-        currentCycle: plan.cycle,
-        lastAssessmentDate: assessment.date,
-        assessmentHistory: [assessment],
-        planHistory: [plan],
-        createdAt: new Date().toISOString(),
-      };
-
-      // Save to Firestore
-      const success = await updateDevelopmentPlanData(newDevPlanData);
-      if (!success) throw new Error('updateDevelopmentPlanData returned false');
-
-      console.log('[DevPlan] Initial plan saved');
-
-      // Sync to Daily Practice
-      await syncPlanToDailyPractice(plan);
-      console.log('[DevPlan] Synced to Daily Practice');
-
+      if (typeof updateDevelopmentPlanData === 'function') {
+        const ok = await updateDevelopmentPlanData(payload, { merge });
+        if (ok === false) {
+          console.warn('[DevelopmentPlan] updateDevelopmentPlanData returned false; continuing as best-effort.');
+        }
+      } else if (db && userId) {
+        // Fallback best-effort path if writer not provided
+        const path = `users/${userId}/development/plan`; // <-- adjust if your path differs
+        await db.doc(path).set(payload, { merge });
+      } else {
+        throw new Error('No writer (updateDevelopmentPlanData) and no db/user available.');
+      }
+    } catch (e) {
+      console.error('[DevelopmentPlan] Write failed:', e);
+      setError(e);
       setIsSaving(false);
-      // FIX #4: Navigate to detailed view after creating plan
-      setView('detailed');
-    } catch (error) {
-      console.error('[DevPlan] Error saving assessment:', error);
-      alert('There was an error saving your assessment. Please try again.');
-      setIsSaving(false);
+      return false;
     }
-  }, [updateDevelopmentPlanData, syncPlanToDailyPractice, globalMetadata]);
+    setIsSaving(false);
+    return true;
+  };
 
-  // Handler for completing progress scan
-  const handleScanComplete = useCallback(async (newPlan, newAssessment) => {
-    console.log('[DevPlan] Processing completed progress scan...');
-    setIsSaving(true);
+  // ===== FLOW ACTIONS =====
 
-    if (!updateDevelopmentPlanData) {
-      alert('Development Plan update service is missing. Cannot save.');
-      setIsSaving(false);
-      return;
+  // Baseline → Generate new plan then route to tracker
+  const handleCompleteBaseline = async (assessment) => {
+    const date = new Date().toISOString();
+    const newAssessment = { ...assessment, date };
+    const newPlanRaw = generatePlanFromAssessment(newAssessment, skillCatalog);
+
+    // If an existing plan exists, bump cycle for the new plan & archive the old
+    const prevPlan = developmentPlanData?.currentPlan;
+    const prevCycle = prevPlan?.cycle || developmentPlanData?.cycle || 0;
+    const newPlan = { ...newPlanRaw, cycle: (prevCycle || 0) + 1 };
+
+    // Build history arrays
+    const prevPlans = Array.isArray(developmentPlanData?.previousPlans) ? developmentPlanData.previousPlans.slice() : [];
+    if (prevPlan) {
+      prevPlans.push({
+        ...prevPlan,
+        endDate: new Date().toISOString(),
+        archivedAt: new Date().toISOString(),
+        status: 'archived'
+      });
     }
 
-    try {
-      const currentHistory = developmentPlanData?.assessmentHistory || [];
-      const currentPlanHistory = developmentPlanData?.planHistory || [];
+    const assessmentHistory = Array.isArray(developmentPlanData?.assessmentHistory)
+      ? developmentPlanData.assessmentHistory.slice()
+      : [];
+    assessmentHistory.push(newAssessment);
 
-      const updatedDevPlanData = {
-        currentPlan: newPlan,
-        currentCycle: newPlan.cycle,
-        lastAssessmentDate: newAssessment.date,
-        assessmentHistory: [...currentHistory, newAssessment],
-        planHistory: [...currentPlanHistory, newPlan],
-        createdAt: developmentPlanData?.createdAt || new Date().toISOString(),
-      };
+    const ok = await writeDevPlan({
+      currentPlan: newPlan,
+      assessment: newAssessment,
+      previousPlans: prevPlans,
+      assessmentHistory,
+      latestScenario: null,
+      cycle: newPlan.cycle,
+      _updatedAt: date,
+      _source: 'baseline_generator'
+    }, { merge: true });
 
-      const success = await updateDevelopmentPlanData(updatedDevPlanData);
-      if (!success) throw new Error('updateDevelopmentPlanData returned false');
+    if (ok) setView('tracker');
+  };
 
-      console.log('[DevPlan] Progress scan saved');
+  // PlanTracker → Quick edits come back here via onUpdatePlan
+  const handleUpdatePlan = async (updatedPlan) => {
+    const safePlan = {
+      ...(developmentPlanData?.currentPlan || {}),
+      ...(updatedPlan || {}),
+      cycle: (developmentPlanData?.currentPlan?.cycle || updatedPlan?.cycle || 1),
+      status: updatedPlan?.status || 'active',
+      _updatedAt: new Date().toISOString(),
+      _source: 'quick_edit'
+    };
+    const ok = await writeDevPlan({ currentPlan: safePlan }, { merge: true });
+    if (ok) setView('tracker');
+  };
 
-      await syncPlanToDailyPractice(newPlan);
-      console.log('[DevPlan] Synced to Daily Practice');
+  // PlanTracker → Start Progress Scan
+  const handleStartProgressScan = () => setView('scan');
 
-      setIsSaving(false);
-      // FIX #4: Return to detailed view after scan
-      setView('detailed');
-    } catch (error) {
-      console.error('[DevPlan] Error saving progress scan:', error);
-      alert('There was an error saving your progress scan. Please try again.');
-      setIsSaving(false);
+  // ProgressScan → Save scan (+ optional adjusted plan) then back to tracker
+  const handleCompleteScan = async (newPlan, newAssessment) => {
+    const date = new Date().toISOString();
+    // Keep same cycle; scan adjusts weeks/phases, not cycle rollover
+    const cycle = developmentPlanData?.currentPlan?.cycle || 1;
+    const nextPlan = { ...newPlan, cycle, _updatedAt: date, _source: 'progress_scan' };
+
+    const assessmentHistory = Array.isArray(developmentPlanData?.assessmentHistory)
+      ? developmentPlanData.assessmentHistory.slice()
+      : [];
+    if (newAssessment) assessmentHistory.push({ ...newAssessment, date });
+
+    const progressScans = Array.isArray(developmentPlanData?.progressScans)
+      ? developmentPlanData.progressScans.slice()
+      : [];
+    progressScans.push({
+      id: `ps_${Date.now()}`,
+      cycle,
+      at: date,
+      notes: newAssessment?.notes || '',
+    });
+
+    const ok = await writeDevPlan({
+      currentPlan: nextPlan,
+      assessmentHistory,
+      progressScans,
+      _updatedAt: date
+    }, { merge: true });
+
+    if (ok) setView('tracker');
+  };
+
+  // Start Over → send to Baseline (generation will handle archive + cycle)
+  const handleStartOver = () => setView('baseline');
+
+  // View toggles
+  const handleOpenDetail = () => setView('detail');
+  const handleOpenTimeline = () => setView('timeline');
+  const handleBackToTracker = () => setView('tracker');
+
+  // Cross-app navigation for CTA
+  const handleNavigateToDailyPractice = () => {
+    if (typeof navigate === 'function') {
+      navigate('daily-practice');
     }
-  }, [developmentPlanData, updateDevelopmentPlanData, syncPlanToDailyPractice]);
+  };
 
-  // Handler for updating plan (from QuickPlanEditor)
-  const handleUpdatePlan = useCallback(async (updatedPlan) => {
-    console.log('[DevPlan] Updating plan...');
-    setIsSaving(true);
-
-    try {
-      const updatedDevPlanData = {
-        ...developmentPlanData,
-        currentPlan: updatedPlan,
-      };
-
-      const success = await updateDevelopmentPlanData(updatedDevPlanData);
-      if (!success) throw new Error('Failed to update plan');
-
-      console.log('[DevPlan] Plan updated');
-
-      await syncPlanToDailyPractice(updatedPlan);
-      console.log('[DevPlan] Synced to Daily Practice');
-
-      setIsSaving(false);
-    } catch (error) {
-      console.error('[DevPlan] Error updating plan:', error);
-      alert('Failed to update plan. Please try again.');
-      setIsSaving(false);
-    }
-  }, [developmentPlanData, updateDevelopmentPlanData, syncPlanToDailyPractice]);
-
-  // Render appropriate view
-  if (view === 'loading' || isAppLoading || isSaving) {
-    if (!isAppLoading && (!updateDevelopmentPlanData || !updateDailyPracticeData)) {
-      console.error('[DevPlan] Critical functions failed to load');
-      return <LoadingSpinner message="A critical service failed to load. Please contact support." />;
-    }
-    return <LoadingSpinner message={isSaving ? "Saving Plan..." : "Loading Development Plan..."} />;
+  // ===== RENDER =====
+  if (!isAuthReady || isServicesLoading) {
+    return <LoadingBlock />;
   }
 
-  if (view === 'error' || appError) {
+  if (error) {
     return (
-      <div className="p-8 text-center">
-        <h2 className="text-2xl font-bold text-red-600">Loading Error</h2>
-        <p className="text-gray-600">Could not load development plan data or critical services failed. Please try refreshing.</p>
-        {appError && <pre className="mt-4 text-xs text-left bg-red-50 p-2 border border-red-200 rounded">{appError.message}</pre>}
+      <div className="max-w-3xl mx-auto p-6">
+        <Card accent="RED">
+          <h2 className="text-xl font-extrabold mb-2">Something went wrong</h2>
+          <p className="text-gray-600 mb-3">{String(error?.message || error)}</p>
+          <Button onClick={() => setError(null)}>Try Again</Button>
+        </Card>
       </div>
     );
   }
 
-  switch (view) {
-    case 'assessment':
-      return <BaselineAssessment onComplete={handleAssessmentComplete} />;
-    
-    case 'scan':
-      if (!developmentPlanData) return <LoadingSpinner message="Loading previous plan data..." />;
-      return (
-        <ProgressScan
-          developmentPlanData={developmentPlanData}
-          globalMetadata={globalMetadata}
-          onCompleteScan={handleScanComplete}
-        />
-      );
-    
-    // FIX #4: Added detailed view as primary view
-    case 'detailed':
-      if (!developmentPlanData) return <LoadingSpinner message="Loading plan details..." />;
-      return (
-        <DetailedPlanView
-          developmentPlanData={developmentPlanData}
-          globalMetadata={globalMetadata}
-          onNavigateToTracker={() => setView('tracker')}
-          onStartProgressScan={() => setView('scan')}
-          onUpdatePlan={handleUpdatePlan}
-        />
-      );
-    
-    case 'tracker':
-      if (!developmentPlanData) return <LoadingSpinner message="Loading plan details..." />;
-      return (
-        <PlanTracker
-          developmentPlanData={developmentPlanData}
-          globalMetadata={globalMetadata}
-          onStartProgressScan={() => setView('scan')}
-          onUpdatePlan={handleUpdatePlan}
-          onViewDetailedPlan={() => setView('detailed')}
-          onNavigateToDailyPractice={() => {
-            console.log('[DevPlan] Navigate to Daily Practice');
-          }}
-        />
-      );
-    
-    default:
-      return (
-        <div className="p-8 text-center">
-          <h2 className="text-2xl font-bold text-red-600">Unknown State</h2>
-          <p className="text-gray-600">Could not determine view state ({view}). Please try refreshing.</p>
-        </div>
-      );
+  if (view === 'baseline') {
+    return (
+      <BaselineAssessment
+        onComplete={handleCompleteBaseline}
+      />
+    );
   }
-};
 
-export default DevelopmentPlanScreen;
+  if (view === 'scan') {
+    return (
+      <ProgressScan
+        developmentPlanData={developmentPlanData}
+        globalMetadata={globalMetadata}
+        onCompleteScan={handleCompleteScan}
+      />
+    );
+  }
+
+  if (view === 'detail') {
+    return (
+      <DetailedPlanView
+        developmentPlanData={developmentPlanData}
+        globalMetadata={globalMetadata}
+        onNavigateToTracker={handleBackToTracker}
+        onStartProgressScan={handleStartProgressScan}
+        onUpdatePlan={handleUpdatePlan}
+      />
+    );
+  }
+
+  if (view === 'timeline') {
+    const plan = developmentPlanData?.currentPlan;
+    if (!plan) {
+      return (
+        <EmptyState
+          title="No Development Plan Yet"
+          description="Start with the baseline assessment to create your 90‑day plan."
+          action={<Button onClick={() => setView('baseline')}>Start Baseline</Button>}
+        />
+      );
+    }
+    return (
+      <div className="max-w-5xl mx-auto p-6">
+        <MilestoneTimeline plan={plan} />
+        <div className="mt-4 flex justify-end">
+          <Button variant="outline" onClick={handleBackToTracker}>Back to Tracker</Button>
+        </div>
+      </div>
+    );
+  }
+
+  // Default: tracker
+  return (
+    <PlanTracker
+      developmentPlanData={developmentPlanData}
+      globalMetadata={globalMetadata}
+      onStartProgressScan={handleStartProgressScan}
+      onUpdatePlan={handleUpdatePlan}
+      onNavigateToDailyPractice={handleNavigateToDailyPractice}
+    />
+  );
+}

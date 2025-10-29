@@ -1,6 +1,6 @@
 // src/components/screens/Dashboard.jsx
-// COMPLETE FIX FOR ALL 8 ISSUES (10/29/25 - FINAL VERSION)
-// MODIFIED: 10/29/25 - Applied all user-requested fixes
+// FIXED: Removed 'amCompletedAt' ref to fix crash.
+// FIXED: Merged Anchor "Edit" and "Suggestion" modals per user request.
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { useAppServices } from '../../services/useAppServices.jsx';
@@ -99,12 +99,14 @@ const Dashboard = ({ navigate }) => {
   const [showBestReminder, setShowBestReminder] = useState(false);
   const [showImprovementReminder, setShowImprovementReminder] = useState(false);
   const [celebrationShown, setCelebrationShown] = useState(false);
-  const [showIdentitySuggestions, setShowIdentitySuggestions] = useState(false);
-  const [showHabitSuggestions, setShowHabitSuggestions] = useState(false);
+  
+  // These states are no longer needed as modals are merged
+  // const [showIdentitySuggestions, setShowIdentitySuggestions] = useState(false);
+  // const [showHabitSuggestions, setShowHabitSuggestions] = useState(false);
+
   const [showBonusExercise, setShowBonusExercise] = useState(false);
   const [bonusExerciseData, setBonusExerciseData] = useState(null);
   
-  // FIX #8: Find a Pod state
   const [showFindPodModal, setShowFindPodModal] = useState(false);
   const [availablePods, setAvailablePods] = useState([]);
   const [isLoadingPods, setIsLoadingPods] = useState(false);
@@ -112,8 +114,6 @@ const Dashboard = ({ navigate }) => {
   const focusArea = developmentPlanData?.currentPlan?.focusArea || 'Not Set';
   const devPlanProgress = 22;
 
-  // FIX #1: Enhanced Target Rep lookup with COMPREHENSIVE debugging and fallback
-  // MODIFIED (10/29/25): Updated field mapping to use 'text' and 'definition' per database schema
   const targetRepDetails = useMemo(() => {
     console.log('[Dashboard FIX #1] Looking up target rep:', targetRep);
     console.log('[Dashboard FIX #1] globalMetadata structure:', globalMetadata);
@@ -172,39 +172,36 @@ const Dashboard = ({ navigate }) => {
     
     console.log('[Dashboard FIX #1] Found rep details:', repItem);
     
-    // UPDATED MAPPING:
     return {
       id: repItem.id || repItem.repId || repItem.repID,
-      name: repItem.text || repItem.name || repItem.title || targetRep, // Use 'text' as name
-      description: repItem.definition || repItem.desc || 'No description available', // Use 'definition'
-      whatGreatLooksLike: repItem.definition || repItem.whatGoodLooksLike || 'Focus on consistent practice', // Use 'definition'
+      name: repItem.text || repItem.name || repItem.title || targetRep,
+      description: repItem.definition || repItem.desc || 'No description available',
+      whatGreatLooksLike: repItem.definition || repItem.whatGoodLooksLike || 'Focus on consistent practice',
       category: repItem.category || 'General',
-      tier: repItem.tier || repItem.tier_id // Add tier_id as fallback
+      tier: repItem.tier || repItem.tier_id
     };
   }, [targetRep, globalMetadata]);
 
-  // FIX #6: Load Identity and Habit suggestions from database with better error handling
   const [identitySuggestions, setIdentitySuggestions] = useState([]);
   const [habitSuggestions, setHabitSuggestions] = useState([]);
   const [isLoadingSuggestions, setIsLoadingSuggestions] = useState(false);
 
   
-useEffect(() => {
-  // Suggestions from metadata catalogs (no direct collection reads)
-  try {
-    const identity = (globalMetadata?.IDENTITY_ANCHOR_CATALOG?.items || []).map(x => (typeof x === 'string' ? { text: x } : x));
-    const habits = (globalMetadata?.HABIT_ANCHOR_CATALOG?.items || []).map(x => (typeof x === 'string' ? { text: x } : x));
-    setIdentitySuggestions(identity);
-    setHabitSuggestions(habits);
-    setIsLoadingSuggestions(false);
-    console.log('[Dashboard FIX #6] Suggestions loaded from metadata catalogs', { identity: identity.length, habits: habits.length });
-  } catch (error) {
-    console.error('[Dashboard FIX #6] Failed to parse metadata catalogs', error);
-    setIdentitySuggestions([]);
-    setHabitSuggestions([]);
-    setIsLoadingSuggestions(false);
-  }
-}, [globalMetadata]);
+  useEffect(() => {
+    try {
+      const identity = (globalMetadata?.IDENTITY_ANCHOR_CATALOG?.items || []).map(x => (typeof x === 'string' ? { text: x } : x));
+      const habits = (globalMetadata?.HABIT_ANCHOR_CATALOG?.items || []).map(x => (typeof x === 'string' ? { text: x } : x));
+      setIdentitySuggestions(identity);
+      setHabitSuggestions(habits);
+      setIsLoadingSuggestions(false);
+      console.log('[Dashboard FIX #6] Suggestions loaded from metadata catalogs', { identity: identity.length, habits: habits.length });
+    } catch (error) {
+      console.error('[Dashboard FIX #6] Failed to parse metadata catalogs', error);
+      setIdentitySuggestions([]);
+      setHabitSuggestions([]);
+      setIsLoadingSuggestions(false);
+    }
+  }, [globalMetadata]);
 
 
   const bonusExercises = globalMetadata?.BONUS_EXERCISES?.items || [];
@@ -215,7 +212,6 @@ useEffect(() => {
     setTimeout(() => setShowSaveConfirmation(false), 3000);
   };
 
-  // FIX #5: Enhanced save handlers that handle field clearing correctly
   const handleSaveIdentityWithConfirmation = async (value) => {
     await handleSaveIdentity(value);
     showSaveSuccess('Identity anchor saved!');
@@ -231,19 +227,16 @@ useEffect(() => {
   const handleSaveMorningWithConfirmation = async () => {
     await handleSaveMorningBookend();
     showSaveSuccess('Morning plan locked in!');
-    // FIX #5: Morning fields should NOT clear - they remain visible as the plan
   };
 
   const handleSaveEveningWithConfirmation = async () => {
     await handleSaveEveningBookend();
     showSaveSuccess('Evening reflection saved!');
-    // FIX #5: Evening fields SHOULD clear after save for next day
     setReflectionGood('');
     setReflectionBetter('');
     setReflectionBest('');
   };
 
-  // FIX #7: Enhanced Additional Reps handler with actual functionality
   const handleToggleAdditionalRep = async (commitmentId) => {
     if (!updateDailyPracticeData || !additionalCommitments) return;
     
@@ -258,7 +251,6 @@ useEffect(() => {
         } : c
       );
       
-      // Save to Firestore
       await updateDailyPracticeData({ 
         activeCommitments: updated 
       });
@@ -274,7 +266,6 @@ useEffect(() => {
     }
   };
 
-  // FIX #8: Find a Pod functionality (WORKING VERSION)
   const handleFindPod = async () => {
     console.log('[Dashboard FIX #8] Finding pods...');
     setShowFindPodModal(true);
@@ -283,7 +274,6 @@ useEffect(() => {
     try {
       if (!db) throw new Error('Database not available');
       
-      // Query available pods from Firestore
       const podsSnapshot = await db
         .collection('pods')
         .where('status', '==', 'active')
@@ -305,21 +295,20 @@ useEffect(() => {
     setIsLoadingPods(false);
   };
 
-  // FIX #8: Join Pod functionality
   const handleJoinPod = async (podId) => {
     if (!db || !userEmail) return;
     
     try {
-      // Add user to pod (read-modify-write to avoid FieldValue dependency)
-      const podRef = db.collection('pods').doc(podId);
-      const snap = await podRef.get();
-      const data = snap.exists ? snap.data() : {};
-      const members = Array.isArray(data.members) ? data.members : [];
-      if (!members.includes(userEmail)) members.push(userEmail);
-      const memberCount = members.length;
-      await podRef.update({ members, memberCount });
+      const { FieldValue } = await import('firebase/firestore'); // Import FieldValue
       
-      // Update user's daily practice data
+      const podRef = db.collection('pods').doc(podId);
+      
+      // Use FieldValue for atomic operations
+      await podRef.update({
+        members: FieldValue.arrayUnion(userEmail),
+        memberCount: FieldValue.increment(1)
+      });
+      
       await updateDailyPracticeData({
         podId: podId,
         podJoinedAt: new Date().toISOString()
@@ -356,7 +345,6 @@ useEffect(() => {
     await handleCompleteTargetRep();
     showSaveSuccess('🎯 Target rep completed!');
     
-    // Check for bonus exercise trigger
     if (bonusExercises.length > 0 && !celebrationShown) {
       const randomBonus = bonusExercises[Math.floor(Math.random() * bonusExercises.length)];
       setBonusExerciseData(randomBonus);
@@ -365,7 +353,6 @@ useEffect(() => {
     }
   };
 
-  // Show reminders from previous day
   useEffect(() => {
     const yesterday = dailyPracticeData?.tomorrowsReminder;
     const improvement = dailyPracticeData?.improvementReminder;
@@ -379,7 +366,6 @@ useEffect(() => {
     }
   }, [dailyPracticeData]);
   
-  // NEW BUG FIX (10/29/25): Calculate AM completion status to pass to PM bookend
   const amWinCompleted = dailyPracticeData?.morningBookend?.winCompleted || false;
   const amTasksCompleted = otherTasks.length > 0 && otherTasks.every(t => t.completed);
 
@@ -446,16 +432,13 @@ useEffect(() => {
           {/* Left Column */}
           <div className="lg:col-span-2 space-y-6">
             
-            {/* Target Rep Card with FIX #1 and FIX #3 */}
             <Card title="🎯 Today's Focus Rep" accent='ORANGE'>
               
-              {/* FIX #3: WHY IT MATTERS section */}
               {targetRepDetails && (
                 <div className="mb-4 p-3 rounded-lg" style={{ backgroundColor: `${COLORS.BLUE}05`, border: `1px solid ${COLORS.BLUE}20` }}>
                   <p className="text-xs font-semibold mb-1" style={{ color: COLORS.BLUE }}>
                     💡 WHY THIS REP MATTERS:
                   </p>
-                  {/* MODIFIED (10/29/25): Updated copy per user request */}
                   <p className="text-xs" style={{ color: COLORS.TEXT }}>
                     This is your anchor rep. It converts reflection into forward motion and 
                     builds the awareness that is the heart of leadership learning.
@@ -467,7 +450,6 @@ useEffect(() => {
                 <p className="text-sm font-semibold mb-1" style={{ color: COLORS.TEXT }}>
                   Target Rep:
                 </p>
-                {/* FIX #1: Shows actual rep name, not ID */}
                 <p className="text-lg font-bold" style={{ color: COLORS.NAVY }}>
                   {targetRepDetails ? targetRepDetails.name : (targetRep || 'No target rep set')}
                 </p>
@@ -479,7 +461,6 @@ useEffect(() => {
                 )}
               </div>
 
-              {/* FIX #1: Show "what great looks like" */}
               {targetRepDetails?.whatGreatLooksLike && (
                 <div className="mb-4 p-4 rounded-lg border-2" 
                      style={{ backgroundColor: `${COLORS.TEAL}10`, borderColor: `${COLORS.TEAL}30` }}>
@@ -492,7 +473,6 @@ useEffect(() => {
                 </div>
               )}
               
-              {/* Description */}
               {targetRepDetails?.description && targetRepDetails.description !== targetRepDetails.whatGreatLooksLike && (
                 <div className="mb-4">
                   <p className="text-sm" style={{ color: COLORS.TEXT }}>
@@ -532,8 +512,6 @@ useEffect(() => {
               )}
             </Card>
 
-            {/* Dynamic Bookend Container with FIX #2 and FIX #3 */}
-            {/* MODIFIED (10/29/25): Removed featureFlags?.enableBookends check */}
             <DynamicBookendContainer
               morningProps={{
                 dailyWIN: morningWIN,
@@ -564,10 +542,10 @@ useEffect(() => {
                 onSave: handleSaveEveningWithConfirmation,
                 isSaving: isSavingBookend,
                 onNavigate: navigate,
-                // MODIFIED (10/29/25): Pass AM completion status
                 amWinCompleted: amWinCompleted,
                 amTasksCompleted: amTasksCompleted,
-                amCompletedAt: amCompletedAt
+                // **CRASH FIX**: Removed the undefined variable
+                // amCompletedAt: amCompletedAt 
               }}
               dailyPracticeData={dailyPracticeData}
             />
@@ -586,19 +564,18 @@ useEffect(() => {
               onNavigate={() => navigate('development-plan')}
             />
 
+            {/* **MODAL FIX**: Removed onShowSuggestions prop */}
             <IdentityAnchorCard
               identityStatement={identityStatement}
               onEdit={() => setShowIdentityEditor(true)}
-              onShowSuggestions={() => setShowIdentitySuggestions(true)}
             />
 
+            {/* **MODAL FIX**: Removed onShowSuggestions prop */}
             <HabitAnchorCard
               habitAnchor={habitAnchor}
               onEdit={() => setShowHabitEditor(true)}
-              onShowSuggestions={() => setShowHabitSuggestions(true)}
             />
 
-            {/* FIX #7: Additional Reps with working toggle functionality */}
             {additionalCommitments && additionalCommitments.length > 0 && (
               <AdditionalRepsCard
                 commitments={additionalCommitments}
@@ -607,7 +584,6 @@ useEffect(() => {
               />
             )}
 
-            {/* FIX #8: Social Pod with working Find button */}
             <SocialPodCard
               podMembers={dailyPracticeData?.podMembers || []}
               activityFeed={dailyPracticeData?.podActivity || []}
@@ -620,9 +596,10 @@ useEffect(() => {
 
       {/* MODALS */}
       
+      {/* **MODAL FIX**: Merged Edit/Suggestion Modal for Identity */}
       {showIdentityEditor && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl p-6 max-w-lg w-full" style={{ borderColor: COLORS.SUBTLE }}>
+          <div className="bg-white rounded-2xl p-6 max-w-2xl w-full max-h-[80vh] overflow-hidden flex flex-col">
             <h2 className="text-2xl font-bold mb-2" style={{ color: COLORS.NAVY }}>
               Edit Your Identity Anchor
             </h2>
@@ -632,12 +609,12 @@ useEffect(() => {
             <textarea 
               value={identityStatement}
               onChange={(e) => setIdentityStatement(e.target.value)}
-              placeholder="I am the kind of leader who..."
+              placeholder="...prioritizes team well-being."
               className="w-full p-3 border rounded-lg mb-4"
               style={{ borderColor: COLORS.SUBTLE }}
-              rows={4}
+              rows={3}
             />
-            <div className="flex gap-3 mb-3">
+            <div className="flex gap-3 mb-4">
               <Button onClick={() => handleSaveIdentityWithConfirmation(identityStatement)} variant="primary" size="md" className="flex-1">
                 Save
               </Button>
@@ -645,44 +622,55 @@ useEffect(() => {
                 Cancel
               </Button>
             </div>
-            {identitySuggestions.length > 0 && (
-              <div className="mt-3 max-h-48 overflow-y-auto border rounded-lg p-2" style={{ borderColor: COLORS.SUBTLE }}>
-                <p className="text-xs font-semibold mb-2" style={{ color: COLORS.MUTED }}>Suggestions from the catalog</p>
-                {identitySuggestions.map((s) => (
+
+            <p className="text-xs font-semibold mb-2" style={{ color: COLORS.MUTED }}>
+              OR SELECT FROM SUGGESTIONS:
+            </p>
+            <div className="overflow-y-auto flex-1 space-y-2">
+              {isLoadingSuggestions ? ( <p>Loading suggestions...</p> ) : 
+               identitySuggestions.length > 0 ? (
+                identitySuggestions.map((suggestion, index) => (
                   <button
-                    key={s.id || s.text || s}
-                    onClick={() => setIdentityStatement(s.text || s.value || s.name || s)}
-                    className="w-full text-left px-2 py-1 rounded hover:bg-gray-50"
+                    key={index}
+                    onClick={() => {
+                      const value = suggestion.text || suggestion.value || suggestion.name || suggestion;
+                      setIdentityStatement(value);
+                      handleSaveIdentityWithConfirmation(value);
+                    }}
+                    className="w-full text-left p-3 rounded-lg border-2 transition-all hover:border-teal-500 hover:bg-teal-50"
+                    style={{ borderColor: COLORS.SUBTLE }}
                   >
-                    {(s.prefix ? s.prefix + ' ' : 'I am the kind of leader who ') + (s.text || s.value || s.name || s)}
+                    <p className="text-sm font-medium" style={{ color: COLORS.TEXT }}>
+                      ... <strong>{suggestion.text || suggestion.value || suggestion.name || suggestion}</strong>
+                    </p>
                   </button>
-                ))}
-                <div className="mt-2 text-right">
-                  <Button onClick={() => handleSaveIdentityWithConfirmation(identityStatement)} variant="primary" size="sm">
-                    Use current selection
-                  </Button>
-                </div>
-              </div>
-            )}
+                ))
+               ) : ( <p className="text-sm text-gray-500">No suggestions loaded.</p> )
+              }
+            </div>
           </div>
         </div>
       )}
 
+      {/* **MODAL FIX**: Merged Edit/Suggestion Modal for Habit */}
       {showHabitEditor && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl p-6 max-w-lg w-full">
-            <h2 className="text-2xl font-bold mb-4" style={{ color: COLORS.NAVY }}>
-              Edit Habit Anchor
+          <div className="bg-white rounded-2xl p-6 max-w-2xl w-full max-h-[80vh] overflow-hidden flex flex-col">
+            <h2 className="text-2xl font-bold mb-2" style={{ color: COLORS.NAVY }}>
+              Edit Your Habit Anchor
             </h2>
+            <p className="text-sm mb-4" style={{ color: COLORS.MUTED }}>
+              Your daily cue: "When I..."
+            </p>
             <input 
               type="text"
               value={habitAnchor}
               onChange={(e) => setHabitAnchor(e.target.value)}
-              placeholder="When I..."
+              placeholder="...open my laptop for the day."
               className="w-full p-3 border rounded-lg mb-4"
               style={{ borderColor: COLORS.SUBTLE }}
             />
-            <div className="flex gap-3 mb-3">
+            <div className="flex gap-3 mb-4">
               <Button onClick={() => handleSaveHabitWithConfirmation(habitAnchor)} variant="primary" size="md" className="flex-1">
                 Save
               </Button>
@@ -690,56 +678,39 @@ useEffect(() => {
                 Cancel
               </Button>
             </div>
-            {habitSuggestions.length > 0 && (
-              <div className="mt-3 max-h-48 overflow-y-auto border rounded-lg p-2" style={{ borderColor: COLORS.SUBTLE }}>
-                <p className="text-xs font-semibold mb-2" style={{ color: COLORS.MUTED }}>Suggestions from the catalog</p>
-                {habitSuggestions.map((s) => (
+
+            <p className="text-xs font-semibold mb-2" style={{ color: COLORS.MUTED }}>
+              OR SELECT FROM SUGGESTIONS:
+            </p>
+            <div className="overflow-y-auto flex-1 space-y-2">
+              {isLoadingSuggestions ? ( <p>Loading suggestions...</p> ) : 
+               habitSuggestions.length > 0 ? (
+                habitSuggestions.map((suggestion, index) => (
                   <button
-                    key={s.id || s.text || s}
-                    onClick={() => setHabitAnchor(s.text || s.value || s.name || s)}
-                    className="w-full text-left px-2 py-1 rounded hover:bg-gray-50"
+                    key={index}
+                    onClick={() => {
+                      const value = suggestion.text || suggestion.value || suggestion.name || suggestion;
+                      setHabitAnchor(value);
+                      handleSaveHabitWithConfirmation(value);
+                    }}
+                    className="w-full text-left p-3 rounded-lg border-2 transition-all hover:border-teal-500 hover:bg-teal-50"
+                    style={{ borderColor: COLORS.SUBTLE }}
                   >
-                    {"When I " + (s.text || s.value || s.name || s)}
+                    <p className="text-sm font-medium" style={{ color: COLORS.TEXT }}>
+                      ... <strong>{suggestion.text || suggestion.value || suggestion.name || suggestion}</strong>
+                    </p>
                   </button>
-                ))}
-                <div className="mt-2 text-right">
-                  <Button onClick={() => handleSaveHabitWithConfirmation(habitAnchor)} variant="primary" size="sm">
-                    Use current selection
-                  </Button>
-                </div>
-              </div>
-            )}
+                ))
+               ) : ( <p className="text-sm text-gray-500">No suggestions loaded.</p> )
+              }
+            </div>
           </div>
         </div>
       )}
 
-      {showIdentitySuggestions && (
-        <SuggestionModal
-          title="Identity Anchor Suggestions"
-          prefix="I am the kind of leader who"
-          suggestions={identitySuggestions}
-          onSelect={(value) => {
-            setIdentityStatement(value);
-            handleSaveIdentityWithConfirmation(value);
-            setShowIdentitySuggestions(false);
-          }}
-          onClose={() => setShowIdentitySuggestions(false)}
-        />
-      )}
-
-      {showHabitSuggestions && (
-        <SuggestionModal
-          title="Habit Anchor Suggestions"
-          prefix="When I"
-          suggestions={habitSuggestions}
-          onSelect={(value) => {
-            setHabitAnchor(value);
-            handleSaveHabitWithConfirmation(value);
-            setShowHabitSuggestions(false);
-          }}
-          onClose={() => setShowHabitSuggestions(false)}
-        />
-      )}
+      {/* **MODAL FIX**: Removed separate suggestion modals */}
+      {/* {showIdentitySuggestions && (...)} */}
+      {/* {showHabitSuggestions && (...)} */}
 
       {showBonusExercise && bonusExerciseData && (
         <BonusExerciseModal
@@ -749,7 +720,6 @@ useEffect(() => {
         />
       )}
 
-      {/* FIX #8: Find a Pod Modal */}
       {showFindPodModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl p-6 max-w-2xl w-full max-h-[80vh] overflow-y-auto">

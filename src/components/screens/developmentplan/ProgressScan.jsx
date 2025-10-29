@@ -139,14 +139,14 @@ const ProgressScan = ({ developmentPlanData, globalMetadata, onCompleteScan }) =
 
           <div className="mb-6">
             <label className="block text-sm font-semibold mb-3" style={{ color: COLORS.NAVY }}>
-              {OPEN_ENDED_QUESTION}
+              {OPEN_ENDED_QUESTION.text}
             </label>
             <textarea
               value={openEndedResponse}
               onChange={(e) => setOpenEndedResponse(e.target.value)}
               className="w-full p-4 border-2 rounded-xl min-h-[120px] resize-y"
               style={{ borderColor: COLORS.SUBTLE }}
-              placeholder="Your response..."
+              placeholder={OPEN_ENDED_QUESTION.placeholder || "Your response..."}
               autoFocus
             />
           </div>

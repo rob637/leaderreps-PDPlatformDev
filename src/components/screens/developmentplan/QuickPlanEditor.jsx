@@ -17,7 +17,11 @@ const QuickPlanEditor = ({
   const [isSaving, setIsSaving] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
 
-  const skillCatalog = globalMetadata?.config?.catalog?.SKILL_CATALOG || [];
+  const skillCatalog = (globalMetadata?.SKILL_CATALOG?.items
+  || globalMetadata?.SKILL_CATALOG
+  || globalMetadata?.config?.catalog?.SKILL_CATALOG?.items
+  || globalMetadata?.config?.catalog?.SKILL_CATALOG
+  || []);
 
   useEffect(() => {
     if (plan) {
@@ -62,10 +66,11 @@ const QuickPlanEditor = ({
 
   const addRep = () => {
     // Show simple skill selector
-    const skillId = prompt('Enter skill ID to add:');
+    const skillId = prompt('Enter skill ID (or Skill Name) to add:');
     if (!skillId) return;
     
-    const skill = skillCatalog.find(s => s.id === skillId);
+    let skill = skillCatalog.find(s => s.id === skillId);
+    if (!skill) { skill = skillCatalog.find(s => (s.name || s.title) === skillId); }
     if (!skill) {
       alert('Skill not found');
       return;

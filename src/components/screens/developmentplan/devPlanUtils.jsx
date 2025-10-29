@@ -490,3 +490,16 @@ export default {
   getCurrentPhase,
   calculateEndDate,
 };
+
+
+/**
+ * Normalize skill catalog shape from metadata
+ * Supports: array of skills OR {items:[...]} under SKILL_CATALOG
+ */
+export const normalizeSkillCatalog = (globalMetadata) => {
+  return (globalMetadata?.SKILL_CATALOG?.items
+    || globalMetadata?.SKILL_CATALOG
+    || globalMetadata?.config?.catalog?.SKILL_CATALOG?.items
+    || globalMetadata?.config?.catalog?.SKILL_CATALOG
+    || []);
+};

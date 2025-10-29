@@ -7,7 +7,11 @@ import { Card, ProgressBar, Badge, StatCard } from './DevPlanComponents';
 import { calculateSkillProgress, COLORS } from './devPlanUtils';
 
 const ProgressBreakdown = ({ plan, globalMetadata }) => {
-  const skillCatalog = globalMetadata?.config?.catalog?.SKILL_CATALOG || [];
+  const skillCatalog = (globalMetadata?.SKILL_CATALOG?.items
+  || globalMetadata?.SKILL_CATALOG
+  || globalMetadata?.config?.catalog?.SKILL_CATALOG?.items
+  || globalMetadata?.config?.catalog?.SKILL_CATALOG
+  || []);
   
   // Calculate detailed progress for each skill
   const skillProgress = useMemo(() => {
