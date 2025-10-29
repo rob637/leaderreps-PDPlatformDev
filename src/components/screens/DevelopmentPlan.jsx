@@ -1,5 +1,5 @@
 // src/components/screens/DevelopmentPlan.jsx
-// Main Development Plan screen coordinator - now modular and enhanced!
+// ENHANCED VERSION with Detailed 18-Month Plan View (FIX #4)
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAppServices } from '../../services/useAppServices.jsx';
@@ -10,6 +10,9 @@ import { generatePlanFromAssessment } from './developmentplan/devPlanUtils';
 import BaselineAssessment from './developmentplan/BaselineAssessment';
 import ProgressScan from './developmentplan/ProgressScan';
 import PlanTracker from './developmentplan/PlanTracker';
+
+// FIX #4: Import the detailed plan view component
+import DetailedPlanView from './developmentplan/DetailedPlanView';
 
 const DevelopmentPlanScreen = () => {
   const {
@@ -37,7 +40,6 @@ const DevelopmentPlanScreen = () => {
       return;
     }
 
-    // Check if critical services are available
     if (!updateDevelopmentPlanData || !updateDailyPracticeData) {
       console.error('[DevPlan] Critical services missing');
       setView('error');
@@ -48,7 +50,8 @@ const DevelopmentPlanScreen = () => {
     if (!developmentPlanData || !developmentPlanData.currentPlan) {
       setView('assessment');
     } else {
-      setView('tracker');
+      // FIX #4: Default to detailed view after plan is created
+      setView('detailed');
     }
   }, [isAppLoading, appError, developmentPlanData, updateDevelopmentPlanData, updateDailyPracticeData]);
 
@@ -89,6 +92,8 @@ const DevelopmentPlanScreen = () => {
       console.log('[DevPlan] Synced to Daily Practice');
 
       setIsSaving(false);
+      // FIX #4: Navigate to detailed view after creating plan
+      setView('detailed');
     } catch (error) {
       console.error('[DevPlan] Error saving assessment:', error);
       alert('There was an error saving your assessment. Please try again.');
@@ -129,6 +134,8 @@ const DevelopmentPlanScreen = () => {
       console.log('[DevPlan] Synced to Daily Practice');
 
       setIsSaving(false);
+      // FIX #4: Return to detailed view after scan
+      setView('detailed');
     } catch (error) {
       console.error('[DevPlan] Error saving progress scan:', error);
       alert('There was an error saving your progress scan. Please try again.');
@@ -196,6 +203,19 @@ const DevelopmentPlanScreen = () => {
         />
       );
     
+    // FIX #4: Added detailed view as primary view
+    case 'detailed':
+      if (!developmentPlanData) return <LoadingSpinner message="Loading plan details..." />;
+      return (
+        <DetailedPlanView
+          developmentPlanData={developmentPlanData}
+          globalMetadata={globalMetadata}
+          onNavigateToTracker={() => setView('tracker')}
+          onStartProgressScan={() => setView('scan')}
+          onUpdatePlan={handleUpdatePlan}
+        />
+      );
+    
     case 'tracker':
       if (!developmentPlanData) return <LoadingSpinner message="Loading plan details..." />;
       return (
@@ -204,8 +224,8 @@ const DevelopmentPlanScreen = () => {
           globalMetadata={globalMetadata}
           onStartProgressScan={() => setView('scan')}
           onUpdatePlan={handleUpdatePlan}
+          onViewDetailedPlan={() => setView('detailed')}
           onNavigateToDailyPractice={() => {
-            // This would ideally use navigation from App.jsx
             console.log('[DevPlan] Navigate to Daily Practice');
           }}
         />
