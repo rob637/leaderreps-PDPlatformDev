@@ -1,7 +1,7 @@
 // src/components/screens/Dashboard.jsx
 // COMPLETE VERSION with all fixes (10/29/25)
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useAppServices } from '../../services/useAppServices.jsx';
 import { 
   Flag, Home 
