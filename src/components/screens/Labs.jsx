@@ -527,7 +527,7 @@ const RolePlayCritique = ({ history, setView, preparedSBI, scenario, difficultyL
             <Card title="Skill Breakdown Heatmap & Benchmarking" icon={BarChart3} className=''>
                 {scoreBreakdown?.sbi !== null ? (
                     <>
-                        <div className className={`p-3 mb-4 rounded-xl shadow-inner text-center font-semibold border-l-4 ${benchmarkDifference >= 0 ? 'bg-green-100 border-green-500 text-green-700' : 'bg-red-100 border-red-500 text-[#E04E1B]'}`}>
+<div className={`p-3 mb-4 rounded-xl shadow-inner text-center font-semibold border-l-4 ${benchmarkDifference >= 0 ? 'bg-green-100 border-green-500 text-green-700' : 'bg-red-100 border-red-500 text-[#E04E1B]'}`}>
                             <span className='text-lg'>
                                 Global Benchmark: {globalAverage}%
                             </span>

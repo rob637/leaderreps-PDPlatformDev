@@ -1,5 +1,6 @@
 // src/components/screens/dashboard/DashboardComponents.jsx
 // COMPLETE VERSION with ALL 9 FIXES (10/29/25)
+// MODIFIED: 10/29/25 - Removed 'Suggestions' button from Anchor Cards per user request.
 
 import React, { useState, useEffect } from 'react';
 import { 
@@ -162,7 +163,7 @@ export const DynamicBookendContainer = ({
     } else if (currentHour >= 16) {
       setActiveTab('PM');
     } else {
-      setActiveTab('PM');
+      setActiveTab('PM'); // Default to PM in the afternoon
     }
   }, []);
   
@@ -358,7 +359,7 @@ export const MorningBookend = ({
                     className="w-full p-3 border rounded-lg focus:ring-2 transition-all"
                     style={{ borderColor: COLORS.SUBTLE }} rows={2}
                 />
-                {/* Separate Save WIN Button */}
+                {/* Separate Save WIN Button (Address user confusion) */}
                 <Button 
                     onClick={onSaveWIN}
                     variant="outline" 
@@ -518,7 +519,7 @@ export const EveningBookend = ({
             <div className="pt-4 border-t" style={{ borderColor: COLORS.SUBTLE }}>
                 <p className="text-sm font-semibold mb-3" style={{ color: COLORS.TEXT }}>Daily Habits Tracker</p>
                 
-                {/* Auto-Tracked Habits */}
+                {/* Auto-Tracked Habits (Matches user request) */}
                 <div className="space-y-2 mb-3 p-3 rounded-lg" style={{ backgroundColor: `${COLORS.TEAL}05` }}>
                     <p className="text-xs font-semibold mb-2" style={{ color: COLORS.TEAL }}>
                         🔗 AUTO-TRACKED FROM MORNING:
@@ -581,7 +582,7 @@ export const EveningBookend = ({
                 </Button>
             </div>
             
-            {/* View History Link */}
+            {/* View History Link (Matches user request) */}
             {onNavigate && (
                 <div className="pt-3">
                     <Button 
@@ -902,9 +903,10 @@ export const SocialPodCard = ({ podMembers, activityFeed, onSendMessage, onFindP
 };
 
 /* =========================================================
-   IDENTITY ANCHOR CARD
+   IDENTITY ANCHOR CARD (MODIFIED)
+   Removed onShowSuggestions prop and button
 ========================================================= */
-export const IdentityAnchorCard = ({ identityStatement, onEdit, onShowSuggestions }) => (
+export const IdentityAnchorCard = ({ identityStatement, onEdit }) => (
   <Card icon={Anchor} accent='TEAL'>
     <h3 className="text-lg font-bold mb-3 flex items-center gap-2" style={{ color: COLORS.NAVY }}>
       <span>🎯</span> Identity Anchor
@@ -919,19 +921,16 @@ export const IdentityAnchorCard = ({ identityStatement, onEdit, onShowSuggestion
       <Button onClick={onEdit} variant="outline" size="sm" className="flex-1">
         <span className="mr-1">✏️</span> Edit
       </Button>
-      {onShowSuggestions && (
-        <Button onClick={onShowSuggestions} variant="ghost" size="sm" className="flex-1">
-          💡 Suggestions
-        </Button>
-      )}
+      {/* 'Suggestions' button removed per user request */}
     </div>
   </Card>
 );
 
 /* =========================================================
-   HABIT ANCHOR CARD
+   HABIT ANCHOR CARD (MODIFIED)
+   Removed onShowSuggestions prop and button
 ========================================================= */
-export const HabitAnchorCard = ({ habitAnchor, onEdit, onShowSuggestions }) => (
+export const HabitAnchorCard = ({ habitAnchor, onEdit }) => (
   <Card icon={Clock} accent='BLUE'>
     <h3 className="text-lg font-bold mb-3 flex items-center gap-2" style={{ color: COLORS.NAVY }}>
       <span>⚓</span> Habit Anchor
@@ -944,11 +943,7 @@ export const HabitAnchorCard = ({ habitAnchor, onEdit, onShowSuggestions }) => (
       <Button onClick={onEdit} variant="outline" size="sm" className="flex-1">
         <Clock className="w-4 h-4 mr-1" /> Edit
       </Button>
-      {onShowSuggestions && (
-        <Button onClick={onShowSuggestions} variant="ghost" size="sm" className="flex-1">
-          💡 Suggestions
-        </Button>
-      )}
+       {/* 'Suggestions' button removed per user request */}
     </div>
   </Card>
 );
@@ -1015,7 +1010,7 @@ export const DevPlanProgressLink = ({ progress, focusArea, onNavigate }) => (
 ========================================================= */
 export const ReminderBanner = ({ message, onDismiss, type = 'best' }) => {
   const bgColor = type === 'best' ? COLORS.TEAL : COLORS.AMBER;
-  const emoji = type === 'best' ? '🌟' : '💡';
+  const emoji = type ==='best' ? '🌟' : '💡';
   const label = type === 'best' ? "YESTERDAY'S COMMITMENT:" : "AREA FOR IMPROVEMENT:";
   
   return (
