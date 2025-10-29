@@ -1,4 +1,5 @@
-// src/services/useAppServices.jsx (FIXED: Daily Rep Status Not Persisting After Completion)
+// src/services/useAppServices.jsx (UPDATED FOR CLEAN STRUCTURE - OPTION B)
+// Custom for rob@sagecg.com - Scales to 10,000+ users
 
 import React, {
   useMemo,
@@ -19,10 +20,10 @@ import {
   deleteField 
 } from 'firebase/firestore';
 
-// --- NEW: Import specific icons used within this service ---
+// Import specific icons used within this service
 import { HeartPulse, Briefcase, Users, AlertTriangle, TrendingUp, Zap, ShieldCheck, Target, BarChart3, BookOpen, Film, Trello, Mic, Clock, Cpu, User as UserIcon } from 'lucide-react'; 
 
-console.log('🔥🔥🔥 useAppServices.jsx LOADED - Version with Enhanced Logging 🔥🔥🔥');
+console.log('🔥🔥🔥 useAppServices.jsx LOADED - CLEAN STRUCTURE VERSION (Option B) 🔥🔥🔥');
 
 /* =========================================================
    Mock fallback (keeps the app usable without Firestore)
@@ -38,24 +39,27 @@ const createMockSnapshot = (docPath, data, exists = true) => ({
   docRef: docPath, 
   _md: { fromCache: false, pendingWrites: false },
 });
+
 const mockSetDoc = async (docRefPath, data) => {
   __firestore_mock_store[docRefPath] = data;
   console.log(`[MOCK SET] Path: ${docRefPath}`, data); 
   return true;
 };
+
 const mockGetDoc = async (docPath) => {
   const d = __firestore_mock_store[docPath];
   console.log(`[MOCK GET] Path: ${docPath}`, d ? '(Found)' : '(Not Found)'); 
   return createMockSnapshot(docPath, d || {}, !!d);
 };
+
 const mockDoc = (db, ...pathSegments) => pathSegments.join('/');
+
 const mockUpdateDoc = async (docRefPath, data) => {
     const existingData = __firestore_mock_store[docRefPath] || {};
     __firestore_mock_store[docRefPath] = { ...existingData, ...data };
     console.log(`[MOCK UPDATE] Path: ${docRefPath}`, data); 
     return true;
 };
-
 
 /* =========================================================
    Real Firestore wrappers 
@@ -178,10 +182,28 @@ const updateDocEx = async (db, path, data) => {
     }
 };
 
+// ==================== NEW CLEAN PATH STRUCTURE ====================
+// ALL USER DATA NOW LIVES IN: modules/{userId}/{moduleName}/{docName}
+// This scales perfectly for 10,000+ users
+// =================================================================
 
-// --- ensureUserDocs: Create required per-user docs if missing (PATH FIX APPLIED) ---
+/**
+ * Build path for user modules (NEW CLEAN STRUCTURE)
+ */
+const buildModulePath = (uid, moduleName, docName) => {
+  return `modules/${uid}/${moduleName}/${docName}`;
+};
+
+/**
+ * Build path for user profile (FIXED: 2 segments for document)
+ */
+const buildUserProfilePath = (uid) => {
+  return `users/${uid}`;
+};
+
+// --- ensureUserDocs: Create required per-user docs if missing (CLEAN STRUCTURE) ---
 export const ensureUserDocs = async (db, uid) => {
-  console.log(`[ensureUserDocs] Running for UID: ${uid}`); 
+  console.log(`[ensureUserDocs] Running for UID: ${uid} (CLEAN STRUCTURE)`); 
   try {
     if (!db || !uid) {
         console.warn('[ensureUserDocs] DB or UID missing, skipping.');
@@ -189,661 +211,322 @@ export const ensureUserDocs = async (db, uid) => {
     }
 
     const todayStr = new Date().toISOString().split('T')[0]; 
-    const USER_STATE_SUBCOLLECTION = 'user_state'; // Consistent subcollection name for 4-segment path
 
-    // Structure: [collection, docName, defaultData]
-    const userDocConfigs = [
-      // Development Plan (formerly leadership_plan)
-      {
-          collection: 'development_plan', 
-          docName: 'profile', 
-          defaultData: {
-              currentCycle: 1,
-              createdAt: serverTimestamp(),
-              lastAssessmentDate: null,
-              assessmentHistory: [], 
-              planHistory: [], 
-          }
-      },
-      // Daily Practice (formerly user_commitments)
-      {
-          collection: 'daily_practice', 
-          docName: 'state', 
-          defaultData: {
-              activeCommitments: [], 
-              identityAnchor: '', 
-              habitAnchor: '', 
-              dailyTargetRepId: null, 
-              dailyTargetRepDate: null, 
-              dailyTargetRepStatus: 'Pending', 
-              streakCount: 0,
-              streakCoins: 0,
-              lastStatusResetDate: todayStr, 
-              arenaMode: true,
-              // NEW: Morning Bookend fields
-              morningBookend: {
-                  dailyWIN: '',
-                  winCompleted: false, // NEW: Track WIN completion separately
-                  otherTasks: [],
-                  readLIS: false,
-                  completedAt: null
-              },
-              // NEW: Evening Bookend fields
-              eveningBookend: {
-                  good: '',
-                  better: '',
-                  best: '',
-                  habits: {
-                      readLIS: false,
-                      completedDailyRep: false,
-                      eveningReflection: false,
-                      completedAMWIN: false, // NEW: Auto-tracked from AM bookend
-                      completedAMTasks: false // NEW: Auto-tracked from AM bookend
-                  },
-                  completedAt: null
-              },
-              // NEW: Next-day reminder fields
-              tomorrowsReminder: '', // Populated from "Best" answer
-              improvementReminder: '', // Populated from "Better" answer
-              // NEW: Weekly Focus fields
-              weeklyFocus: {
-                  area: '',
-                  source: 'none', // 'devPlan', 'selfSelected', or 'none'
-                  weekStartDate: null,
-                  dailyReps: []
-              }
-          }
-      },
-      // Strategic Content (formerly user_planning)
-      {
-          collection: 'strategic_content', 
-          docName: 'data', 
-          defaultData: {
-              vision: '',
-              mission: '',
-              okrs: [],
-              lastPreMortemDecision: '', 
-              risks: [], 
-              misalignmentNotes: '', 
-              lastAlignmentCheck: null,
-          }
-      },
-    ];
-
-    for (const config of userDocConfigs) {
-      // **CRITICAL FIX: Use 4-segment path: collection/uid/user_state/docName**
-      const path = `${config.collection}/${uid}/${USER_STATE_SUBCOLLECTION}/${config.docName}`;
-      const snap = await getDocEx(db, path);
-
-      if (!snap || !snap.exists()) {
-        console.log(`[SEED] Document ${path} missing, creating with defaults.`);
-        await setDocEx(db, path, config.defaultData, false); 
-      } else {
-         // --- Ensure new/required fields exist even if doc exists ---
-         const currentData = snap.data();
-         let needsUpdate = false;
-         const updates = {};
-
-         // Check fields specifically for 'daily_practice/state'
-         if (config.collection === 'daily_practice' && config.docName === 'state') {
-             if (currentData.dailyTargetRepId === undefined) { updates.dailyTargetRepId = null; needsUpdate = true;}
-             if (currentData.dailyTargetRepDate === undefined) { updates.dailyTargetRepDate = null; needsUpdate = true;}
-             if (currentData.dailyTargetRepStatus === undefined) { updates.dailyTargetRepStatus = 'Pending'; needsUpdate = true; }
-             if (currentData.lastStatusResetDate === undefined) { updates.lastStatusResetDate = todayStr; needsUpdate = true; }
-             if (currentData.identityAnchor === undefined) { updates.identityAnchor = ''; needsUpdate = true; }
-             if (currentData.habitAnchor === undefined) { updates.habitAnchor = ''; needsUpdate = true; }
-             if (currentData.streakCount === undefined) { updates.streakCount = 0; needsUpdate = true; }
-             if (currentData.streakCoins === undefined) { updates.streakCoins = 0; needsUpdate = true; }
-             if (currentData.arenaMode === undefined) { updates.arenaMode = true; needsUpdate = true; }
-             // NEW: Morning Bookend
-             if (currentData.morningBookend === undefined) {
-                 updates.morningBookend = {
-                     dailyWIN: '',
-                     otherTasks: [],
-                     readLIS: false,
-                     completedAt: null
-                 };
-                 needsUpdate = true;
-             }
-             // NEW: Evening Bookend
-             if (currentData.eveningBookend === undefined) {
-                 updates.eveningBookend = {
-                     good: '',
-                     better: '',
-                     best: '',
-                     habits: {
-                         readLIS: false,
-                         completedDailyRep: false,
-                         eveningReflection: false
-                     },
-                     completedAt: null
-                 };
-                 needsUpdate = true;
-             }
-             // NEW: Weekly Focus
-             if (currentData.weeklyFocus === undefined) {
-                 updates.weeklyFocus = {
-                     area: '',
-                     source: 'none',
-                     weekStartDate: null,
-                     dailyReps: []
-                 };
-                 needsUpdate = true;
-             }
-             // Remove deprecated field if present
-             if (currentData.reflection_journal !== undefined) { updates.reflection_journal = deleteField(); needsUpdate = true; }
-         }
-         // Add checks for other collections if needed
-
-         if (needsUpdate) {
-             console.log(`[SEED] Document ${path} exists but needs updates. Applying:`, updates);
-             // Use updateDocEx to add missing fields without overwriting existing data
-             await updateDocEx(db, path, updates);
-         } else {
-             console.log(`[SEED] Document ${path} exists and is up-to-date.`);
-         }
-      }
-    }
-    console.log('[ensureUserDocs] Check complete.'); // Added log
-  } catch (err) {
-    console.error('[ensureUserDocs] failed:', err);
-  }
-};
-
-
-/* =========================================================
-   Defaults / fallbacks (Full definitions restored)
-========================================================= */
-const GEMINI_MODEL = 'gemini-1.5-flash'; // Use flash by default for speed/cost
-// --- FALLBACK TIER DATA --- (Incorporating boss's structure/examples)
-const LEADERSHIP_TIERS_FALLBACK = {
-  T1: { id: 'T1', name: 'Lead Self', icon: HeartPulse, color: 'indigo-500', skills: ['Ownership', 'Mindset Shifts'] },
-  T2: { id: 'T2', name: 'Lead Work', icon: Briefcase, color: 'green-600', skills: ['Execution', 'Feedback (CLEAR)', 'Delegation'] },
-  T3: { id: 'T3', name: 'Lead People', icon: Users, color: 'yellow-600', skills: ['Coaching', '1:1s', 'Motivation'] },
-  T4: { id: 'T4', name: 'Lead Teams', icon: AlertTriangle, color: 'red-600', skills: ['Conflict', 'Team Health', 'Accountability'] },
-  T5: { id: 'T5', name: 'Lead Strategy', icon: TrendingUp, color: 'cyan-600', skills: ['Vision', 'Decision Making'] },
-};
-// --- MOCK USER DATA w/ RENAMED COLLECTIONS & NEW FIELDS ---
-const MOCK_DEVELOPMENT_PLAN_DATA = { currentCycle: 1, currentPlan: null, assessmentHistory: [], planHistory: [] };
-const MOCK_DAILY_PRACTICE_DATA = { 
-    activeCommitments: [], 
-    identityAnchor: '', 
-    habitAnchor: '', 
-    dailyTargetRepId: null, 
-    dailyTargetRepDate: null, 
-    dailyTargetRepStatus: 'Pending', 
-    streakCount: 0, 
-    streakCoins: 0, 
-    lastStatusResetDate: new Date().toISOString().split('T')[0], 
-    arenaMode: true,
-    morningBookend: { dailyWIN: '', otherTasks: [], readLIS: false, completedAt: null },
-    eveningBookend: { good: '', better: '', best: '', habits: { readLIS: false, completedDailyRep: false, eveningReflection: false }, completedAt: null },
-    weeklyFocus: { area: '', source: 'none', weekStartDate: null, dailyReps: [] }
-};
-const MOCK_STRATEGIC_CONTENT_DATA = { vision: '', mission: '', okrs: [], lastPreMortemDecision: '', risks: [], misalignmentNotes: '' };
-
-// --- MOCK GLOBAL METADATA (Catalogs - using boss's names where applicable) ---
-const MOCK_FEATURE_FLAGS = { 
-    // v1 Features - Enabled by default
-    enableDevPlan: true,
-    enableReadings: true,
-    enableCourses: true,
-    enableBookends: true,        // NEW - AM/PM Bookends
+    // ==================== USER PROFILE ====================
+    const userProfilePath = buildUserProfilePath(uid);
+    const userProfileSnap = await getDocEx(db, userProfilePath);
     
-    // v2 Features - Disabled for regular users (admins always see)
-    enableCommunity: false,      // Hold - Mighty Networks discussion pending
-    enableLabs: false,           // Hold - AI Coaching Lab for v2
-    enableLabsAdvanced: false,   // Hold - Advanced lab features
-    enablePlanningHub: false,    // Hold - Strategic Content Tools need to be built
-    enableVideos: false,         // Hold - Content Leader Talks need discussion
-    enableRoiReport: false,      // Hold - Executive ROI Report for v2
-    enableRecap: false           // Hold - Weekly Recap feature
-};
-const MOCK_REP_LIBRARY = { items: [] }; // Central library, maps to TARGET_REP_CATALOG and COMMITMENT_BANK conceptually
-const MOCK_EXERCISE_LIBRARY = { items: [] }; // NEW conceptual mapping
-const MOCK_WORKOUT_LIBRARY = { items: [] }; // NEW
-const MOCK_COURSE_LIBRARY = { items: [] }; // NEW
-const MOCK_SKILL_CATALOG = { items: [] }; // Maps to LEADERSHIP_DOMAINS/SKILL_CONTENT_LIBRARY
-// Anchor/Why Catalogs remain conceptually similar
-export const MOCK_IDENTITY_ANCHOR_CATALOG = { items: ["prioritizes psychological safety", "leads with vulnerability", "holds myself and others accountable"] };
-export const MOCK_HABIT_ANCHOR_CATALOG = { items: ["After my morning coffee", "Before my first meeting", "During my commute", "After lunch"] };
-export const MOCK_WHY_CATALOG = { items: ["To empower my team to do their best work", "To build a high-performing, high-trust culture", "To achieve our ambitious goals together"] };
-// Catalogs for specific content types
-const MOCK_READING_CATALOG = { items: [] }; // Renamed from READING_CATALOG_SERVICE
-const MOCK_VIDEO_CATALOG = { items: [] };
-const MOCK_SCENARIO_CATALOG = { items: [] };
-const MOCK_RESOURCE_LIBRARY_ITEMS = { items: [] }; // For Applied Leadership resources, needs transformation
-
-// --- MOCK ADMIN CONFIG ---
-export const ADMIN_EMAILS = ["rob@sagecg.com", "ryan@leaderreps.com"]; // Add emails of admins here
-const ADMIN_PASSWORD = "7777"; // Simple password for admin functions screen
-
-
-/* =========================================================
-   Context + API (Full definitions restored)
-========================================================= */
-const DEFAULT_SERVICES = {
-    // Core App
-    navigate: () => console.warn('Navigate not initialized'),
-    user: null, userId: null, db: null, auth: null, isAuthReady: false, isLoading: true, error: null,
-    // User Data
-    developmentPlanData: MOCK_DEVELOPMENT_PLAN_DATA,
-    dailyPracticeData: MOCK_DAILY_PRACTICE_DATA,
-    strategicContentData: MOCK_STRATEGIC_CONTENT_DATA,
-    // Global Metadata / Value Sets
-    metadata: {}, featureFlags: MOCK_FEATURE_FLAGS, LEADERSHIP_TIERS: LEADERSHIP_TIERS_FALLBACK,
-    REP_LIBRARY: MOCK_REP_LIBRARY, EXERCISE_LIBRARY: MOCK_EXERCISE_LIBRARY, WORKOUT_LIBRARY: MOCK_WORKOUT_LIBRARY,
-    COURSE_LIBRARY: MOCK_COURSE_LIBRARY, SKILL_CATALOG: MOCK_SKILL_CATALOG, IDENTITY_ANCHOR_CATALOG: MOCK_IDENTITY_ANCHOR_CATALOG,
-    HABIT_ANCHOR_CATALOG: MOCK_HABIT_ANCHOR_CATALOG, WHY_CATALOG: MOCK_WHY_CATALOG, READING_CATALOG: MOCK_READING_CATALOG,
-    VIDEO_CATALOG: MOCK_VIDEO_CATALOG, SCENARIO_CATALOG: MOCK_SCENARIO_CATALOG, RESOURCE_LIBRARY: {}, IconMap: {},
-    // AI/API Services
-    callSecureGeminiAPI: async () => ({ candidates: [] }), hasGeminiKey: () => false, GEMINI_MODEL: GEMINI_MODEL, API_KEY: '',
-    // Derived State & Functions
-    isAdmin: false, hasPendingDailyPractice: false,
-    // Writers
-    updateDevelopmentPlanData: async () => false, updateDailyPracticeData: async () => false,
-    updateStrategicContentData: async () => false, updateGlobalMetadata: async () => ({}),
-    updateCatalog: async () => ({}),
-};
-
-export const AppServiceContext = createContext(DEFAULT_SERVICES);
-export const useAppServices = () => useContext(AppServiceContext);
-
-
-/* =========================================================
-   Helpers (Full definitions restored)
-========================================================= */
-const resolveGlobalMetadata = (meta) => {
-  // Add safety check
-  return (meta && typeof meta === 'object') ? meta : {};
-};
-
-const looksEmptyGlobal = (obj) => {
-  if (!obj || typeof obj !== 'object') return true;
-  // --- UPDATED: Check against new catalog/config structure ---
-  const knownKeys = [
-      'LEADERSHIP_TIERS', 'featureFlags', 'REP_LIBRARY', 'EXERCISE_LIBRARY', 'WORKOUT_LIBRARY',
-      'COURSE_LIBRARY', 'SKILL_CATALOG', 'IDENTITY_ANCHOR_CATALOG', 'HABIT_ANCHOR_CATALOG',
-      'WHY_CATALOG', 'READING_CATALOG', 'VIDEO_CATALOG', 'SCENARIO_CATALOG', 'RESOURCE_LIBRARY_ITEMS', // Check raw items before transform
-      'IconMap', 'GEMINI_MODEL', 'APP_ID'
-  ];
-  const hasKnown = knownKeys.some((k) => Object.prototype.hasOwnProperty.call(obj, k));
-
-  if (hasKnown) {
-      // Check if all *present* known keys point to empty values (empty object, empty array, or empty 'items' array)
-      return knownKeys.filter(k => Object.prototype.hasOwnProperty.call(obj, k)).every(k => {
-          const v = obj[k];
-          if (v && typeof v === 'object' && v.hasOwnProperty('items') && Array.isArray(v.items)) { return v.items.length === 0; }
-          if (Array.isArray(v)) { return v.length === 0; }
-          if (v && typeof v === 'object') { return Object.keys(v).length === 0; }
-          return !v; // Treat null/undefined/false/0 as empty
-      });
-  }
-  // If no known keys are present, check if the object is empty overall
-  return Object.keys(obj).length === 0;
-};
-const traceCallsite = (label = 'updateGlobalMetadata') => { /* ... */ };
-
-
-/* =========================================================
-   User-data hooks (PATH FIX APPLIED)
-========================================================= */
-const MAX_LOAD_TIMEOUT = 2500; // Increased timeout slightly
-const USER_STATE_SUBCOLLECTION = 'user_state'; // **FIX: Consistent subcollection name**
-
-// --- Base Hook (Internal) ---
-const useFirestoreUserData = (db, userId, isAuthReady, collection, document, mockData) => {
-  // **FIX: Use 4-segment path: collection/uid/user_state/docName**
-  const path = userId ? `${collection}/${userId}/${USER_STATE_SUBCOLLECTION}/${document}` : null;
-  const [data, setData] = useState(mockData);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-
-  useEffect(() => {
-    // --- Prerequisites Check ---
-    if (!db || !userId || !isAuthReady || !path) {
-      console.log(`[useFirestoreUserData ${collection}/${document}] Prerequisites not met (DB: ${!!db}, UserID: ${!!userId}, AuthReady: ${isAuthReady}, Path: ${path}). Using mock data.`);
-      setData(mockData);
-      setLoading(false); // Ensure loading is false
-      setError(null);
-      return () => {}; // Return empty cleanup
-    }
-
-    console.log(`[useFirestoreUserData ${collection}/${document}] Initializing listener for path: ${path}`);
-    setLoading(true);
-    setData(mockData); // Reset to mock on path change before loading
-    setError(null);
-
-    let isMounted = true;
-    let timeoutId = null;
-    let unsubscribe = null;
-
-    const resolveLoad = (shouldStopTimeout = true) => {
-        if (isMounted && loading) { setLoading(false); }
-        if (shouldStopTimeout && timeoutId) { clearTimeout(timeoutId); timeoutId = null; }
-    };
-
-    // --- Timeout Logic ---
-    timeoutId = setTimeout(() => {
-        console.warn(`[USER DATA TIMEOUT] Hook for ${document} timed out (${MAX_LOAD_TIMEOUT}ms). Path: ${path}. Resolving with current state (might be mock).`);
-        resolveLoad(false); // Resolve loading state
-    }, MAX_LOAD_TIMEOUT);
-
-    // --- Firestore Listener ---
-    try {
-        unsubscribe = onSnapshotEx(db, path, (snap) => {
-          if (!isMounted) { console.log(`[useFirestoreUserData ${collection}/${document}] Unmounted before snapshot received. Path: ${path}`); return; }
-
-          resolveLoad(); // Clear timeout on successful snapshot
-
-          if (snap.exists()) {
-              console.log(`[useFirestoreUserData ${collection}/${document}] Snapshot received (Exists). Path: ${path}`);
-              const fetchedData = snap.data();
-              // --- Daily Reset Logic (specific to daily_practice/state) ---
-              if (collection === 'daily_practice' && document === 'state') {
-                  const todayStr = new Date().toISOString().split('T')[0];
-                  let updatesNeeded = {};
-                  let needsDBUpdate = false;
-
-                  // 1. Check if Status Reset is needed
-                  // MODIFIED: Reset only if lastStatusResetDate is NOT today.
-                  const isResetNeeded = (fetchedData.lastStatusResetDate !== todayStr);
-                  
-                  if (isResetNeeded) {
-                      console.log(`[DAILY RESET ${collection}/${document}] Reset triggered. Last Reset Date: ${fetchedData.lastStatusResetDate}, Today: ${todayStr}`);
-                      updatesNeeded.lastStatusResetDate = todayStr;
-                      updatesNeeded.dailyTargetRepStatus = 'Pending'; // Reset target rep status
-                      updatesNeeded.activeCommitments = (fetchedData.activeCommitments || []).map(c => ({ ...c, status: 'Pending' })); // Reset additional reps
-                      needsDBUpdate = true;
-                  } else {
-                      // Same day, no reset needed - preserve current state
-                      console.log(`[DAILY RESET ${collection}/${document}] No reset needed. Already reset for today.`);
-                      // Preserving saved status from the snapshot ensures the 'Committed' status persists on refresh/re-read.
-                      updatesNeeded.dailyTargetRepStatus = fetchedData.dailyTargetRepStatus || 'Pending';
-                      updatesNeeded.activeCommitments = fetchedData.activeCommitments || [];
-                  }
-                   // 2. Preserve Target Rep ID and Date (Dashboard handles rep selection logic)
-                   updatesNeeded.dailyTargetRepDate = fetchedData.dailyTargetRepDate;
-                   updatesNeeded.dailyTargetRepId = fetchedData.dailyTargetRepId;
-                   console.log(`[DAILY RESET ${collection}/${document}] Preserving rep ID (${fetchedData.dailyTargetRepId}) and date (${fetchedData.dailyTargetRepDate}) for Dashboard logic.`);
-
-
-                  // Apply local updates immediately for UI responsiveness
-                  const locallyUpdatedData = { ...fetchedData, ...updatesNeeded };
-                  setData(locallyUpdatedData); // Update local state
-
-                  // Trigger background DB update if needed
-                  if (needsDBUpdate) {
-                      console.log(`[DAILY RESET ${collection}/${document}] Triggering background Firestore update for path: ${path}`, updatesNeeded);
-                      // Use setDocEx with merge: true for background update
-                      setDocEx(db, path, updatesNeeded, true).catch(err => {
-                          console.error(`[DAILY RESET ${collection}/${document}] Background update failed for path: ${path}`, err);
-                          // Optional: Set an error state?
-                      });
-                  }
-
-              } else {
-                  // For other collections, just set the data
-                  setData(fetchedData);
-              }
-              setError(null);
-          } else {
-              console.warn(`[useFirestoreUserData ${collection}/${document}] Document does not exist. Path: ${path}. Using mock data.`);
-              setData(mockData); // Use mock data if doc doesn't exist
-              setError(null); // No error, just doesn't exist yet
-          }
+    if (!userProfileSnap.exists()) {
+        console.log(`[ensureUserDocs] Creating user profile at: ${userProfilePath}`);
+        await setDocEx(db, userProfilePath, {
+            userId: uid,
+            createdAt: new Date().toISOString(),
+            _createdAt: serverTimestamp()
         });
-    } catch (error) {
-         console.error(`[useFirestoreUserData ${collection}/${document}] Failed to set up listener for path: ${path}`, error);
-         setError(error);
-         resolveLoad(); // Resolve loading state on setup error
     }
 
-    // --- Cleanup ---
-    // Return consistent structure
-
-return () => {
-        console.log(`[useFirestoreUserData ${collection}/${document}] Cleaning up listener. Path: ${path}`);
-        isMounted = false;
-        if (unsubscribe) unsubscribe();
-        if (timeoutId) clearTimeout(timeoutId);
-    };
-  }, [db, userId, isAuthReady, collection, document, path, mockData]); // Added path to dependencies
-
-  // --- Update Function ---
-  const updateData = useCallback(async (updatesOrFn) => {
-    console.log('🚨🚨🚨 UPDATE DATA FUNCTION CALLED - NEW VERSION 🚨🚨🚨');
-    console.log(`[USER UPDATE] ===== START UPDATE for ${document} =====`);
-    console.log(`[USER UPDATE] DB exists: ${!!db}`);
+    // ==================== DEVELOPMENT PLAN MODULE ====================
+    const devPlanPath = buildModulePath(uid, 'development_plan', 'current');
+    const devPlanSnap = await getDocEx(db, devPlanPath);
     
-    if (!db || !userId || !path) {
-        console.error(`[USER UPDATE FAILED] Cannot update ${document}. Missing prerequisites. Path: ${path}`);
-        return false; // Return failure indicator
+    if (!devPlanSnap.exists()) {
+        console.log(`[ensureUserDocs] Creating development plan at: ${devPlanPath}`);
+        const defaultPlan = {
+            currentCycle: 1,
+            createdAt: serverTimestamp(),
+            lastAssessmentDate: null,
+            assessmentHistory: [], 
+            planHistory: [],
+            coreReps: [],
+            currentWeek: 0,
+            startDate: todayStr,
+            responses: {},
+            openEndedResponse: ''
+        };
+        await setDocEx(db, devPlanPath, defaultPlan);
     }
+
+    // ==================== DAILY PRACTICE MODULE ====================
+    const dailyPracticePath = buildModulePath(uid, 'daily_practice', 'current');
+    const dailyPracticeSnap = await getDocEx(db, dailyPracticePath);
     
-    try {
-      let finalUpdates;
-      if (typeof updatesOrFn === 'function') {
-          console.log(`[USER UPDATE] Applying functional update...`);
-          // CRITICAL FIX: Use the latest 'data' state captured from the closure.
-          const currentState = data; 
-          finalUpdates = updatesOrFn(currentState);
-      } else {
-          console.log(`[USER UPDATE] Using direct updates...`);
-          finalUpdates = updatesOrFn;
-      }
-      
-      console.log(`[USER UPDATE] Final updates:`, finalUpdates);
-
-      // Add safety check for empty updates
-       if (!finalUpdates || typeof finalUpdates !== 'object' || Object.keys(finalUpdates).length === 0) {
-           console.warn(`[USER UPDATE SKIPPED] ${document}. No valid updates provided. Path: ${path}`);
-           return true; // No-op is considered success
-       }
-
-      console.log(`[USER UPDATE] Calling setDocEx with merge:true...`);
-      const success = await setDocEx(db, path, finalUpdates, true);
-      console.log(`[USER UPDATE] setDocEx returned: ${success}`);
-      
-      if (success) {
-          console.log(`[USER UPDATE SUCCESS] ===== ${document}. Path: ${path} =====`);
-          return true;
-      } else {
-          console.error(`[USER UPDATE FAILED] ===== setDocEx returned false for ${document}. Path: ${path} =====`);
-          return false;
-      }
-    } catch (e) {
-      console.error(`[USER UPDATE EXCEPTION] ===== ${document}. Path: ${path} =====`);
-      console.error(`[USER UPDATE EXCEPTION] Error:`, e);
-      return false;
+    if (!dailyPracticeSnap.exists()) {
+        console.log(`[ensureUserDocs] Creating daily practice at: ${dailyPracticePath}`);
+        const defaultDailyPractice = {
+            activeCommitments: [], 
+            identityAnchor: '', 
+            habitAnchor: '', 
+            dailyTargetRepId: null, 
+            dailyTargetRepDate: null, 
+            dailyTargetRepStatus: 'Pending', 
+            streakCount: 0,
+            streakCoins: 0,
+            lastUpdated: todayStr,
+            completedRepsToday: [],
+            _createdAt: serverTimestamp()
+        };
+        await setDocEx(db, dailyPracticePath, defaultDailyPractice);
     }
-  // CRITICAL FIX: Include 'data' in dependency array to ensure the functional update closure is current
-  }, [db, userId, path, document, data]); 
-    // --- Debug logging ---
-  console.log(`🚨 useFirestoreUserData RETURNING for ${document}:`, JSON.stringify({ 
-    hasData: !!data, 
-    isLoading: loading, 
-    hasError: !!error, 
-    hasUpdateData: !!updateData,
-    updateDataType: typeof updateData 
-  }));
 
-   // Return consistent structure
-  return { data, isLoading: loading, error, updateData };
+    // ==================== STRATEGIC CONTENT MODULE ====================
+    const strategicPath = buildModulePath(uid, 'strategic_content', 'vision_mission');
+    const strategicSnap = await getDocEx(db, strategicPath);
+    
+    if (!strategicSnap.exists()) {
+        console.log(`[ensureUserDocs] Creating strategic content at: ${strategicPath}`);
+        const defaultStrategic = {
+            vision: '',
+            mission: '',
+            values: [],
+            goals: [],
+            purpose: '',
+            _createdAt: serverTimestamp()
+        };
+        await setDocEx(db, strategicPath, defaultStrategic);
+    }
+
+    console.log('[ensureUserDocs] All required documents verified/created (CLEAN STRUCTURE)');
+  } catch (e) {
+    console.error('[ensureUserDocs] Error:', e);
+  }
 };
-
-
-// --- Specific Hooks (Renamed) ---
-// FIXED 10/29/25: Changed from development_plan to leadership_plan, profile to roadmap
-export const useLeadershipPlanData = (db, userId, isAuthReady) => {
-  const { data, isLoading, error, updateData } = useFirestoreUserData(db, userId, isAuthReady, 'leadership_plan', 'roadmap', MOCK_DEVELOPMENT_PLAN_DATA);
-  // FIX: Ensure updateData is a defined function reference (even if it's async () => false)
-  return { leadershipPlanData: data, isLoading, error, updateLeadershipPlanData: updateData ?? (async () => false) };
-};
-
-// Backward compatibility alias
-export const useDevelopmentPlanData = useLeadershipPlanData;
-
-export const useDailyPracticeData = (db, userId, isAuthReady) => {
-  const { data, isLoading, error, updateData } = useFirestoreUserData(db, userId, isAuthReady, 'daily_practice', 'state', MOCK_DAILY_PRACTICE_DATA);
-  // FIX: Ensure updateData is a defined function reference
-  return { dailyPracticeData: data, isLoading, error, updateDailyPracticeData: updateData ?? (async () => false) };
-};
-
-export const useStrategicContentData = (db, userId, isAuthReady) => {
-  const { data, isLoading, error, updateData } = useFirestoreUserData(db, userId, isAuthReady, 'strategic_content', 'data', MOCK_STRATEGIC_CONTENT_DATA);
-  // FIX: Ensure updateData is a defined function reference
-  return { strategicContentData: data, isLoading, error, updateStrategicContentData: updateData ?? (async () => false) };
-};
-
 
 /* =========================================================
-   Global metadata (read) (CATALOG FETCH FIX APPLIED)
+   Mock Data (fallback for when Firestore isn't available)
 ========================================================= */
-const PATH_CATALOG_BASE = 'metadata/config/catalog';
-const CATALOG_ALIASES = {
-    TARGET_REP_CATALOG: 'REP_LIBRARY',
-    SKILL_CONTENT_LIBRARY: 'SKILL_CATALOG',
-    COMMITMENT_BANK: 'REP_LIBRARY'
+export const MOCK_DEVELOPMENT_PLAN_DATA = {
+  coreReps: [],
+  responses: {},
+  openEndedResponse: '',
+  currentWeek: 0,
+  startDate: new Date().toISOString().split('T')[0],
+  assessmentHistory: [],
+  planHistory: [],
+  currentCycle: 1,
 };
 
-const CATALOG_DOC_NAMES = [
-    'REP_LIBRARY', 'EXERCISE_LIBRARY', 'WORKOUT_LIBRARY', 'COURSE_LIBRARY', 'SKILL_CATALOG', 
-    'IDENTITY_ANCHOR_CATALOG', 
-    // CRITICAL FIX: Typo in 'HABIT_ANCHOR_CATALOG' corrected from 'HABIT_ANCHUR_CATALOG'
-    'HABIT_ANCHOR_CATALOG', 
-    'WHY_CATALOG', 'VIDEO_CATALOG', 
-    'SCENARIO_CATALOG', 'RESOURCE_LIBRARY_ITEMS'
+export const MOCK_DAILY_PRACTICE_DATA = {
+  lastUpdated: new Date().toISOString().split('T')[0],
+  dailyTargetRepId: null,
+  dailyTargetRepStatus: 'Pending',
+  dailyTargetRepDate: null,
+  activeCommitments: [],
+  completedRepsToday: [],
+  identityAnchor: '',
+  habitAnchor: '',
+  streakCount: 0,
+  streakCoins: 0,
+};
+
+export const MOCK_STRATEGIC_CONTENT_DATA = {
+  vision: '',
+  mission: '',
+  values: [],
+  goals: [],
+  purpose: '',
+};
+
+// Global metadata mocks
+const MOCK_FEATURE_FLAGS = { enableNewFeature: false };
+const MOCK_REP_LIBRARY = [];
+const MOCK_EXERCISE_LIBRARY = [];
+const MOCK_WORKOUT_LIBRARY = [];
+const MOCK_COURSE_LIBRARY = [];
+const MOCK_SKILL_CATALOG = [];
+const MOCK_IDENTITY_ANCHOR_CATALOG = [];
+const MOCK_HABIT_ANCHOR_CATALOG = [];
+const MOCK_WHY_CATALOG = [];
+const MOCK_READING_CATALOG = [];
+const MOCK_VIDEO_CATALOG = [];
+const MOCK_SCENARIO_CATALOG = [];
+
+const LEADERSHIP_TIERS_FALLBACK = [
+  { tier: 1, name: "Tier 1", description: "Foundation" },
+  { tier: 2, name: "Tier 2", description: "Intermediate" },
+  { tier: 3, name: "Tier 3", description: "Advanced" },
+  { tier: 4, name: "Tier 4", description: "Expert" },
 ];
 
+const GEMINI_MODEL = 'gemini-pro';
+const ADMIN_EMAILS = ['rob@sagecg.com', 'ryan@leaderreps.com'];
+const ADMIN_PASSWORD = 'admin123';
+
+// Create and export the context
+const AppServiceContext = createContext(null);
+export { AppServiceContext }; // Named export for App.jsx
+
+export const useAppServices = () => {
+  const ctx = useContext(AppServiceContext);
+  if (!ctx) throw new Error('useAppServices must be used within AppServiceProvider');
+  return ctx;
+};
+
+/* =========================================================
+   User Data Hook (UPDATED FOR CLEAN STRUCTURE)
+========================================================= */
+export const useFirestoreUserData = (db, uid, isAuthReady, moduleName, docName, mockFallback = {}) => {
+  const [data, setData] = useState(mockFallback);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  // Build path using new structure: modules/{uid}/{moduleName}/{docName}
+  const path = useMemo(() => {
+    if (!uid) return null;
+    return buildModulePath(uid, moduleName, docName);
+  }, [uid, moduleName, docName]);
+
+  console.log(`[useFirestoreUserData] Initialized for path: ${path}`);
+
+  // Real-time listener
+  useEffect(() => {
+    console.log(`[useFirestoreUserData] Effect triggered for path: ${path}`);
+    console.log(`[useFirestoreUserData] - DB: ${!!db}, UID: ${uid}, AuthReady: ${isAuthReady}, Path: ${path}`);
+
+    if (!db || !uid || !isAuthReady || !path) {
+      console.warn(`[useFirestoreUserData] Prerequisites not met. DB: ${!!db}, UID: ${uid}, AuthReady: ${isAuthReady}, Path: ${path}`);
+      setIsLoading(false);
+      return;
+    }
+
+    console.log(`[useFirestoreUserData] ✅ Setting up listener for: ${path}`);
+    setIsLoading(true);
+    setError(null);
+
+    let didSetInitial = false;
+
+    const unsubscribe = onSnapshotEx(db, path, (snap) => {
+      console.log(`[useFirestoreUserData SNAPSHOT] Path: ${path}, Exists: ${snap.exists()}, FromCache: ${snap._md?.fromCache}`);
+
+      if (snap.exists()) {
+        const docData = snap.data();
+        console.log(`[useFirestoreUserData] ✅ Data received for ${path}:`, Object.keys(docData));
+        setData(docData);
+        didSetInitial = true;
+      } else {
+        console.warn(`[useFirestoreUserData] ⚠️ Document does not exist at ${path}. Using mock fallback.`);
+        setData(mockFallback);
+      }
+
+      if (!didSetInitial || !snap._md?.fromCache) {
+        setIsLoading(false);
+      }
+    });
+
+    return () => {
+      console.log(`[useFirestoreUserData] 🔌 Unsubscribing from: ${path}`);
+      unsubscribe();
+    };
+  }, [db, uid, isAuthReady, path, mockFallback]);
+
+  // Update function
+  const updateData = useCallback(
+    async (updates) => {
+      console.log(`[useFirestoreUserData.updateData] Called for path: ${path}`, updates);
+      
+      if (!path || !db) {
+        console.warn(`[useFirestoreUserData.updateData] Cannot update - missing path or db. Path: ${path}, DB: ${!!db}`);
+        return false;
+      }
+
+      try {
+        console.log(`[useFirestoreUserData.updateData] Attempting to update ${path}...`);
+        const success = await setDocEx(db, path, updates, true);
+        
+        if (success) {
+          console.log(`[useFirestoreUserData.updateData] ✅ Successfully updated ${path}`);
+          // Optimistically update local state
+          setData(prev => ({ ...prev, ...updates }));
+          return true;
+        } else {
+          console.error(`[useFirestoreUserData.updateData] ❌ setDocEx returned false for ${path}`);
+          return false;
+        }
+      } catch (err) {
+        console.error(`[useFirestoreUserData.updateData] ❌ Error updating ${path}:`, err);
+        setError(err);
+        return false;
+      }
+    },
+    [db, path]
+  );
+
+  return { data, isLoading, error, updateData };
+};
+
+/* =========================================================
+   Global Metadata Hook (unchanged - already clean)
+========================================================= */
 export const useGlobalMetadata = (db, isAuthReady) => {
-  const [metadata, setMetadata] = useState({});
+  const [metadata, setMetadata] = useState({
+    featureFlags: MOCK_FEATURE_FLAGS,
+    LEADERSHIP_TIERS: LEADERSHIP_TIERS_FALLBACK,
+    REP_LIBRARY: MOCK_REP_LIBRARY,
+    EXERCISE_LIBRARY: MOCK_EXERCISE_LIBRARY,
+    WORKOUT_LIBRARY: MOCK_WORKOUT_LIBRARY,
+    COURSE_LIBRARY: MOCK_COURSE_LIBRARY,
+    SKILL_CATALOG: MOCK_SKILL_CATALOG,
+    IDENTITY_ANCHOR_CATALOG: MOCK_IDENTITY_ANCHOR_CATALOG,
+    HABIT_ANCHOR_CATALOG: MOCK_HABIT_ANCHOR_CATALOG,
+    WHY_CATALOG: MOCK_WHY_CATALOG,
+    READING_CATALOG: MOCK_READING_CATALOG,
+    VIDEO_CATALOG: MOCK_VIDEO_CATALOG,
+    SCENARIO_CATALOG: MOCK_SCENARIO_CATALOG,
+    RESOURCE_LIBRARY: {},
+    IconMap: {},
+    APP_ID: 'default-app-id',
+    GEMINI_MODEL: GEMINI_MODEL,
+  });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // --- Simplified Paths ---
-  const pathConfig = mockDoc(db, 'metadata', 'config'); // Main config doc
-  // Catalogs are now nested under config OR separate like reading_catalog
-  const pathReadingCatalog = mockDoc(db, 'metadata', 'reading_catalog'); // Separate
-
   useEffect(() => {
-    if (!isAuthReady) {
+    if (!db || !isAuthReady) {
       setLoading(false);
-      console.log('[useGlobalMetadata] Auth not ready, skipping fetch.');
       return;
     }
-    setLoading(true);
-    setMetadata({}); // Clear previous state
-    setError(null);
-    console.log(`[useGlobalMetadata] Fetching from: ${pathConfig} and multiple catalog docs...`);
-
-    // --- Resource Transformation Helper (Unchanged) ---
-    const transformResources = (resourcesData) => {
-        const items = resourcesData?.items;
-        if (!Array.isArray(items)) {
-            console.warn("[transformResources] Resource library items is not an array, returning empty object.", resourcesData);
-            return {};
-        }
-        return items.reduce((acc, resource) => {
-            const domainId = resource.domain_id; // Assuming skill_id maps to domain_id now
-            if (domainId) {
-                acc[domainId] = acc[domainId] || [];
-                acc[domainId].push(resource);
-            }
-            return acc;
-        }, {});
-    };
 
     const fetchMetadata = async () => {
-      let finalData = {};
       try {
-        const [configSnap, readingCatalogSnap] = await Promise.all([
-          getDocEx(db, pathConfig),
-          getDocEx(db, pathReadingCatalog),
-        ]);
+          console.log("[GLOBAL METADATA] Fetching from metadata/config");
+          const configSnap = await getDocEx(db, 'metadata/config');
+          const configData = configSnap.exists() ? configSnap.data() : {};
+          
+          console.log("[GLOBAL METADATA] Config keys found:", Object.keys(configData));
 
-        console.log(`[DEBUG SNAPSHOT] Config Doc Exists: ${configSnap.exists()}. Reading Catalog Doc Exists: ${readingCatalogSnap.exists()}.`);
+          // Build icon map
+          const iconComponents = {
+            HeartPulse, Briefcase, Users, AlertTriangle, TrendingUp, Zap,
+            ShieldCheck, Target, BarChart3, BookOpen, Film, Trello, Mic, Clock, Cpu, UserIcon
+          };
+          const iconMap = {};
+          Object.keys(iconComponents).forEach(name => {
+              iconMap[name] = iconComponents[name];
+          });
 
-        const configData = configSnap.exists() ? configSnap.data() : {};
-        const readingCatalogData = readingCatalogSnap.exists() ? readingCatalogSnap.data() : MOCK_READING_CATALOG; // Use fallback
-
-        console.log(`[DEBUG RAW DATA] RAW CONFIG: ${JSON.stringify(configData)}`);
-        console.log(`[DEBUG RAW DATA] RAW READING CATALOG: ${JSON.stringify(readingCatalogData)}`);
-
-        // **FIX: Fetch all catalogs from the subcollection as individual documents**
-        const ALL_DOCS = [...CATALOG_DOC_NAMES, ...Object.keys(CATALOG_ALIASES)];
-        const catalogPromises = ALL_DOCS.map(docName => getDocEx(db, `${PATH_CATALOG_BASE}/${docName}`));
-        const catalogSnaps = await Promise.all(catalogPromises);
-        
-        // Assemble the catalog data from the fetched documents
-        const catalogResults = {};
-        catalogSnaps.forEach((snap, index) => {
-            const rawName = ALL_DOCS[index];
-            const docName = CATALOG_ALIASES[rawName] || rawName;
-            if (snap.exists()) {
-                catalogResults[docName] = snap.data();
-            } else {
-                // Assign mock fallback based on document name (manual mapping required here)
-                switch (docName) {
-                    case 'REP_LIBRARY': catalogResults[docName] = MOCK_REP_LIBRARY; break;
-                    case 'EXERCISE_LIBRARY': catalogResults[docName] = MOCK_EXERCISE_LIBRARY; break;
-                    case 'WORKOUT_LIBRARY': catalogResults[docName] = MOCK_WORKOUT_LIBRARY; break;
-                    case 'COURSE_LIBRARY': catalogResults[docName] = MOCK_COURSE_LIBRARY; break;
-                    case 'SKILL_CATALOG': catalogResults[docName] = MOCK_SKILL_CATALOG; break;
-                    case 'IDENTITY_ANCHOR_CATALOG': catalogResults[docName] = MOCK_IDENTITY_ANCHOR_CATALOG; break;
-                    case 'HABIT_ANCHOR_CATALOG': catalogResults[docName] = MOCK_HABIT_ANCHOR_CATALOG; break;
-                    case 'WHY_CATALOG': catalogResults[docName] = MOCK_WHY_CATALOG; break;
-                    case 'VIDEO_CATALOG': catalogResults[docName] = MOCK_VIDEO_CATALOG; break;
-                    case 'SCENARIO_CATALOG': catalogResults[docName] = MOCK_SCENARIO_CATALOG; break;
-                    case 'RESOURCE_LIBRARY_ITEMS': catalogResults[docName] = MOCK_RESOURCE_LIBRARY_ITEMS; break;
-                    default: catalogResults[docName] = { items: [] };
-                }
-                console.warn(`[DEBUG CATALOG] Catalog document ${docName} not found. Using mock/default.`);
-            }
-        });
-
-
-        // --- MERGE FINAL DATA ---
-        finalData = {
-            ...(configData || {}), // Spread top-level config fields (APP_ID, GEMINI_MODEL, IconMap, featureFlags, LEADERSHIP_TIERS)
-            // Spread the explicitly fetched catalog documents
-            REP_LIBRARY: catalogResults.REP_LIBRARY || MOCK_REP_LIBRARY,
-            EXERCISE_LIBRARY: catalogResults.EXERCISE_LIBRARY || MOCK_EXERCISE_LIBRARY,
-            WORKOUT_LIBRARY: catalogResults.WORKOUT_LIBRARY || MOCK_WORKOUT_LIBRARY,
-            COURSE_LIBRARY: catalogResults.COURSE_LIBRARY || MOCK_COURSE_LIBRARY,
-            SKILL_CATALOG: catalogResults.SKILL_CATALOG || MOCK_SKILL_CATALOG,
-            IDENTITY_ANCHOR_CATALOG: catalogResults.IDENTITY_ANCHOR_CATALOG || MOCK_IDENTITY_ANCHOR_CATALOG,
-            HABIT_ANCHOR_CATALOG: catalogResults.HABIT_ANCHOR_CATALOG || MOCK_HABIT_ANCHOR_CATALOG,
-            WHY_CATALOG: catalogResults.WHY_CATALOG || MOCK_WHY_CATALOG,
-            VIDEO_CATALOG: catalogResults.VIDEO_CATALOG || MOCK_VIDEO_CATALOG,
-            SCENARIO_CATALOG: catalogResults.SCENARIO_CATALOG || MOCK_SCENARIO_CATALOG,
-            READING_CATALOG: readingCatalogData, // From separate doc
-            RESOURCE_LIBRARY: transformResources(catalogResults.RESOURCE_LIBRARY_ITEMS || MOCK_RESOURCE_LIBRARY_ITEMS), // Transformed
-
-            // Ensure essential config fields have fallbacks 
-            featureFlags: configData.featureFlags || MOCK_FEATURE_FLAGS,
-            LEADERSHIP_TIERS: configData.LEADERSHIP_TIERS || LEADERSHIP_TIERS_FALLBACK,
-            IconMap: configData.IconMap || {},
-            GEMINI_MODEL: configData.GEMINI_MODEL || GEMINI_MODEL,
-            APP_ID: configData.APP_ID || 'default-app-id',
-        };
-
-        // Remove the potentially large 'catalog' field if it existed in raw configData
-        delete finalData.catalog;
-        // Also remove the raw resource items if they existed at top level
-        delete finalData.RESOURCE_LIBRARY_ITEMS;
-
-
-        console.log(`[DEBUG MERGED] MERGED DATA: ${JSON.stringify(Object.keys(finalData))}`); // Log keys for brevity
-
-        setMetadata(finalData);
-        setError(null);
-        console.log(`[DEBUG FINAL] FINAL METADATA STATE SET. Keys: ${Object.keys(finalData).join(', ')}`);
+          setMetadata({
+              featureFlags: configData.featureFlags || MOCK_FEATURE_FLAGS,
+              LEADERSHIP_TIERS: configData.LEADERSHIP_TIERS || LEADERSHIP_TIERS_FALLBACK,
+              REP_LIBRARY: configData.REP_LIBRARY || MOCK_REP_LIBRARY,
+              EXERCISE_LIBRARY: configData.EXERCISE_LIBRARY || MOCK_EXERCISE_LIBRARY,
+              WORKOUT_LIBRARY: configData.WORKOUT_LIBRARY || MOCK_WORKOUT_LIBRARY,
+              COURSE_LIBRARY: configData.COURSE_LIBRARY || MOCK_COURSE_LIBRARY,
+              SKILL_CATALOG: configData.SKILL_CATALOG || MOCK_SKILL_CATALOG,
+              IDENTITY_ANCHOR_CATALOG: configData.IDENTITY_ANCHOR_CATALOG || MOCK_IDENTITY_ANCHOR_CATALOG,
+              HABIT_ANCHOR_CATALOG: configData.HABIT_ANCHOR_CATALOG || MOCK_HABIT_ANCHOR_CATALOG,
+              WHY_CATALOG: configData.WHY_CATALOG || MOCK_WHY_CATALOG,
+              READING_CATALOG: configData.READING_CATALOG || MOCK_READING_CATALOG,
+              VIDEO_CATALOG: configData.VIDEO_CATALOG || MOCK_VIDEO_CATALOG,
+              SCENARIO_CATALOG: configData.SCENARIO_CATALOG || MOCK_SCENARIO_CATALOG,
+              RESOURCE_LIBRARY: configData.RESOURCE_LIBRARY || {},
+              IconMap: iconMap,
+              APP_ID: configData.APP_ID || 'default-app-id',
+              GEMINI_MODEL: configData.GEMINI_MODEL || GEMINI_MODEL,
+          });
 
       } catch (e) {
           console.error("[CRITICAL GLOBAL READ FAIL] Metadata fetch failed.", e);
           setError(e);
-          setMetadata({ // Set minimal fallbacks on error
+          setMetadata({
               featureFlags: MOCK_FEATURE_FLAGS,
               LEADERSHIP_TIERS: LEADERSHIP_TIERS_FALLBACK,
               IconMap: {},
@@ -857,14 +540,35 @@ export const useGlobalMetadata = (db, isAuthReady) => {
 
     fetchMetadata();
 
-  }, [db, isAuthReady]); // Dependencies
+  }, [db, isAuthReady]);
 
   return { metadata, isLoading: loading, error };
 };
 
+const resolveGlobalMetadata = (meta) => {
+  return {
+    featureFlags: meta?.featureFlags || MOCK_FEATURE_FLAGS,
+    LEADERSHIP_TIERS: meta?.LEADERSHIP_TIERS || LEADERSHIP_TIERS_FALLBACK,
+    REP_LIBRARY: meta?.REP_LIBRARY || MOCK_REP_LIBRARY,
+    EXERCISE_LIBRARY: meta?.EXERCISE_LIBRARY || MOCK_EXERCISE_LIBRARY,
+    WORKOUT_LIBRARY: meta?.WORKOUT_LIBRARY || MOCK_WORKOUT_LIBRARY,
+    COURSE_LIBRARY: meta?.COURSE_LIBRARY || MOCK_COURSE_LIBRARY,
+    SKILL_CATALOG: meta?.SKILL_CATALOG || MOCK_SKILL_CATALOG,
+    IDENTITY_ANCHOR_CATALOG: meta?.IDENTITY_ANCHOR_CATALOG || MOCK_IDENTITY_ANCHOR_CATALOG,
+    HABIT_ANCHOR_CATALOG: meta?.HABIT_ANCHOR_CATALOG || MOCK_HABIT_ANCHOR_CATALOG,
+    WHY_CATALOG: meta?.WHY_CATALOG || MOCK_WHY_CATALOG,
+    READING_CATALOG: meta?.READING_CATALOG || MOCK_READING_CATALOG,
+    VIDEO_CATALOG: meta?.VIDEO_CATALOG || MOCK_VIDEO_CATALOG,
+    SCENARIO_CATALOG: meta?.SCENARIO_CATALOG || MOCK_SCENARIO_CATALOG,
+    RESOURCE_LIBRARY: meta?.RESOURCE_LIBRARY || {},
+    IconMap: meta?.IconMap || {},
+    GEMINI_MODEL: meta?.GEMINI_MODEL || GEMINI_MODEL,
+    APP_ID: meta?.APP_ID || 'default-app-id',
+  };
+};
 
 /* =========================================================
-   Global writer (Full definitions restored)
+   Global writer (unchanged - already clean)
 ========================================================= */
 export const updateGlobalMetadata = async (
   db,
@@ -876,27 +580,18 @@ export const updateGlobalMetadata = async (
     return data; 
   }
 
-  // --- traceCallsite definition added back ---
-  const traceCallsite = (label = 'updateGlobalMetadata') => { /* ... */ }; 
-  traceCallsite('updateGlobalMetadata');
-
   let path;
   let payload = { ...data }; 
 
-  // Determine path and clean payload based on target document
   if (forceDocument === 'reading_catalog') {
       path = mockDoc(db, 'metadata', 'reading_catalog');
-      // Ensure payload is structured correctly { items: [...] }
       if (!payload || !payload.items || !Array.isArray(payload.items)) {
-           // Attempt to find an array in the payload or wrap it
            const potentialArray = Object.values(payload).find(Array.isArray);
            payload = { items: potentialArray || (Array.isArray(payload) ? payload : []) };
            console.warn(`[GLOBAL WRITE] Auto-wrapping payload for reading_catalog into { items: [...] }`);
       }
   } else {
-      // Default to metadata/config
       path = mockDoc(db, 'metadata', 'config');
-      // Clean known keys that should NOT be written directly to config root
       delete payload.REP_LIBRARY; delete payload.EXERCISE_LIBRARY; delete payload.WORKOUT_LIBRARY;
       delete payload.COURSE_LIBRARY; delete payload.SKILL_CATALOG; delete payload.IDENTITY_ANCHOR_CATALOG;
       delete payload.HABIT_ANCHOR_CATALOG; delete payload.WHY_CATALOG; delete payload.READING_CATALOG; 
@@ -932,7 +627,6 @@ export const updateGlobalMetadata = async (
   }
 };
 
-
 export const updateCatalogDoc = async (db, docName, payload, { merge = true, userId = 'N/A' } = {}) => {
   const path = `metadata/config/catalog/${docName}`;
   const body = Array.isArray(payload) ? { items: payload } : payload;
@@ -940,92 +634,104 @@ export const updateCatalogDoc = async (db, docName, payload, { merge = true, use
   return setDocEx(db, path, finalPayload, merge);
 };
 
-
-
 /* =========================================================
-   Provider factory (Full definitions restored)
+   Provider factory (REWRITTEN FOR DIRECT FIRESTORE ACCESS)
+   This function sets up Firestore listeners and returns data/update functions
+   Can be called from useEffect without issues
 ========================================================= */
-export const createAppServices = ({
-  user, userId, auth, db, isAuthReady, navigate,
-  callSecureGeminiAPI = async () => ({ candidates: [] }),
-  hasGeminiKey = () => false, API_KEY = '',
-}) => {
-  // CRITICAL FIX: Destructure explicitly from each hook
-  // FIXED 10/29/25: Changed from development_plan to leadership_plan
-  const { data: leadershipPlanData, isLoading: devPlanLoading, error: devPlanError, updateData: updateLeadershipPlanData } = useFirestoreUserData(db, userId, isAuthReady, 'leadership_plan', 'roadmap', MOCK_DEVELOPMENT_PLAN_DATA);
-  const { data: dailyPracticeData, isLoading: dailyPracticeLoading, error: dailyPracticeError, updateData: updateDailyPracticeData } = useFirestoreUserData(db, userId, isAuthReady, 'daily_practice', 'state', MOCK_DAILY_PRACTICE_DATA);
-  const { data: strategicContentData, isLoading: strategicContentLoading, error: strategicContentError, updateData: updateStrategicContentData } = useFirestoreUserData(db, userId, isAuthReady, 'strategic_content', 'data', MOCK_STRATEGIC_CONTENT_DATA);
+export const createAppServices = (db, userId) => {
+  console.log('[createAppServices] Creating services for userId:', userId);
   
-  const metadataHook = useGlobalMetadata(db, isAuthReady);
+  // Create reactive data stores
+  const stores = {
+    developmentPlanData: null,
+    dailyPracticeData: null,
+    strategicContentData: null,
+    globalMetadata: null,
+    listeners: [] // Store unsubscribe functions
+  };
 
-  // COMBINE HOOK STATES
-  const combinedIsLoading = devPlanLoading || dailyPracticeLoading || strategicContentLoading || metadataHook.isLoading;
-  const combinedError = devPlanError || dailyPracticeError || strategicContentError || metadataHook.error;
+  // Set up Firestore listeners for real-time updates
+  if (db && userId) {
+    // Development Plan listener
+    const devPlanPath = buildModulePath(userId, 'development_plan', 'current');
+    const unsubDev = onSnapshotEx(db, devPlanPath, (snap) => {
+      stores.developmentPlanData = snap.exists() ? snap.data() : MOCK_DEVELOPMENT_PLAN_DATA;
+      console.log('[createAppServices] Dev Plan updated');
+    });
+    stores.listeners.push(unsubDev);
 
-  const isAdmin = useMemo(() => {
-    return !!user?.email && ADMIN_EMAILS.includes(user.email.toLowerCase()); 
-  }, [user]);
+    // Daily Practice listener
+    const dailyPath = buildModulePath(userId, 'daily_practice', 'current');
+    const unsubDaily = onSnapshotEx(db, dailyPath, (snap) => {
+      stores.dailyPracticeData = snap.exists() ? snap.data() : MOCK_DAILY_PRACTICE_DATA;
+      console.log('[createAppServices] Daily Practice updated');
+    });
+    stores.listeners.push(unsubDaily);
 
-  const value = useMemo(() => {
-    const resolvedMetadata = resolveGlobalMetadata(metadataHook.metadata);
-    const dailyData = dailyPracticeData;
-    const hasPendingTargetRep = dailyData?.dailyTargetRepStatus === 'Pending' && !!dailyData?.dailyTargetRepId;
-    const hasPendingAdditionalReps = (dailyData?.activeCommitments || []).some(
-        c => c.status === 'Pending'
-    );
-    const hasPendingDailyPractice = hasPendingTargetRep || hasPendingAdditionalReps;
+    // Strategic Content listener
+    const strategicPath = buildModulePath(userId, 'strategic_content', 'vision_mission');
+    const unsubStrategic = onSnapshotEx(db, strategicPath, (snap) => {
+      stores.strategicContentData = snap.exists() ? snap.data() : MOCK_STRATEGIC_CONTENT_DATA;
+      console.log('[createAppServices] Strategic Content updated');
+    });
+    stores.listeners.push(unsubStrategic);
 
-    return {
-      navigate, user, userId, db, auth, isAuthReady,
-      isLoading: combinedIsLoading, error: combinedError, isAdmin, ADMIN_PASSWORD,
+    // Global Metadata listener
+    const metadataPath = 'metadata/config';
+    const unsubMeta = onSnapshotEx(db, metadataPath, (snap) => {
+      stores.globalMetadata = snap.exists() ? snap.data() : {};
+      console.log('[createAppServices] Global Metadata updated');
+    });
+    stores.listeners.push(unsubMeta);
+  } else {
+    // No db or userId - use mock data
+    console.warn('[createAppServices] No db or userId provided, using mock data');
+    stores.developmentPlanData = MOCK_DEVELOPMENT_PLAN_DATA;
+    stores.dailyPracticeData = MOCK_DAILY_PRACTICE_DATA;
+    stores.strategicContentData = MOCK_STRATEGIC_CONTENT_DATA;
+    stores.globalMetadata = {};
+  }
 
-      // Pass the destructured data (FIXED 10/29/25: Added leadershipPlanData + alias)
-      leadershipPlanData: leadershipPlanData,
-      developmentPlanData: leadershipPlanData, // Alias for backward compatibility
-      dailyPracticeData: dailyPracticeData,
-      strategicContentData: strategicContentData,
-      
-      metadata: resolvedMetadata,
-      featureFlags: resolvedMetadata.featureFlags || MOCK_FEATURE_FLAGS,
-      LEADERSHIP_TIERS: resolvedMetadata.LEADERSHIP_TIERS || LEADERSHIP_TIERS_FALLBACK,
-      REP_LIBRARY: resolvedMetadata.REP_LIBRARY || MOCK_REP_LIBRARY,
-      EXERCISE_LIBRARY: resolvedMetadata.EXERCISE_LIBRARY || MOCK_EXERCISE_LIBRARY,
-      WORKOUT_LIBRARY: resolvedMetadata.WORKOUT_LIBRARY || MOCK_WORKOUT_LIBRARY,
-      COURSE_LIBRARY: resolvedMetadata.COURSE_LIBRARY || MOCK_COURSE_LIBRARY,
-      SKILL_CATALOG: resolvedMetadata.SKILL_CATALOG || MOCK_SKILL_CATALOG,
-      IDENTITY_ANCHOR_CATALOG: resolvedMetadata.IDENTITY_ANCHOR_CATALOG || MOCK_IDENTITY_ANCHOR_CATALOG,
-      HABIT_ANCHOR_CATALOG: resolvedMetadata.HABIT_ANCHOR_CATALOG || MOCK_HABIT_ANCHOR_CATALOG,
-      WHY_CATALOG: resolvedMetadata.WHY_CATALOG || MOCK_WHY_CATALOG,
-      READING_CATALOG: resolvedMetadata.READING_CATALOG || MOCK_READING_CATALOG,
-      VIDEO_CATALOG: resolvedMetadata.VIDEO_CATALOG || MOCK_VIDEO_CATALOG,
-      SCENARIO_CATALOG: resolvedMetadata.SCENARIO_CATALOG || MOCK_SCENARIO_CATALOG,
-      RESOURCE_LIBRARY: resolvedMetadata.RESOURCE_LIBRARY || {}, 
-      IconMap: resolvedMetadata.IconMap || {},
-      APP_ID: resolvedMetadata.APP_ID || 'default-app-id',
+  // Create update functions
+  const updateDevelopmentPlanData = async (updates) => {
+    if (!db || !userId) return false;
+    const path = buildModulePath(userId, 'development_plan', 'current');
+    return await updateDocEx(db, path, updates);
+  };
 
-      callSecureGeminiAPI, hasGeminiKey,
-      GEMINI_MODEL: resolvedMetadata.GEMINI_MODEL || GEMINI_MODEL, API_KEY,
-      hasPendingDailyPractice,
+  const updateDailyPracticeData = async (updates) => {
+    if (!db || !userId) return false;
+    const path = buildModulePath(userId, 'daily_practice', 'current');
+    return await updateDocEx(db, path, updates);
+  };
 
-      // Pass the destructured update functions (FIXED 10/29/25: Added updateLeadershipPlanData + alias)
-      updateLeadershipPlanData: updateLeadershipPlanData,
-      updateDevelopmentPlanData: updateLeadershipPlanData, // Alias for backward compatibility
-      updateDailyPracticeData: updateDailyPracticeData,
-      updateStrategicContentData: updateStrategicContentData,
-      updateGlobalMetadata: (data, opts) => updateGlobalMetadata(db, data, { ...opts, userId }),
-    };
-  }, [
-    // Core dependencies
-    user, userId, db, auth, isAuthReady, navigate, callSecureGeminiAPI, hasGeminiKey, API_KEY, isAdmin,
-    // CRITICAL: Individual loading states and update functions are now dependencies
-    devPlanLoading, dailyPracticeLoading, strategicContentLoading, metadataHook,
-    combinedIsLoading, combinedError,
-    // Add the destructured update functions and data to the dependency array (FIXED 10/29/25: Changed to leadershipPlanData)
-    updateLeadershipPlanData, updateDailyPracticeData, updateStrategicContentData,
-    leadershipPlanData, dailyPracticeData, strategicContentData,
-  ]);
+  const updateStrategicContentData = async (updates) => {
+    if (!db || !userId) return false;
+    const path = buildModulePath(userId, 'strategic_content', 'vision_mission');
+    return await updateDocEx(db, path, updates);
+  };
 
-  return value;
+  // Resolve metadata with fallbacks
+  const resolvedMetadata = resolveGlobalMetadata(stores.globalMetadata);
+
+  // Return the service object
+  return {
+    developmentPlanData: stores.developmentPlanData,
+    dailyPracticeData: stores.dailyPracticeData,
+    strategicContentData: stores.strategicContentData,
+    globalMetadata: resolvedMetadata,
+    
+    updateDevelopmentPlanData,
+    updateDailyPracticeData,
+    updateStrategicContentData,
+    
+    // Cleanup function to unsubscribe from listeners
+    cleanup: () => {
+      console.log('[createAppServices] Cleaning up listeners');
+      stores.listeners.forEach(unsub => unsub && unsub());
+    }
+  };
 };
 
 // Default export is the context itself

@@ -3,19 +3,14 @@
 import React, { useState, useEffect, useMemo, useCallback, Suspense, lazy } from 'react';
 
 // --- Core Services & Context ---
-// Uses the renamed hooks and provides renamed data/functions
+// Updated to use createAppServices factory pattern
 import {
   AppServiceContext,
-  useDevelopmentPlanData, // Renamed hook
-  useDailyPracticeData,   // Renamed hook
-  useStrategicContentData, // Renamed hook
-  useGlobalMetadata,
-  updateGlobalMetadata, // Stays the same, handles nested structure now
+  createAppServices,    // Factory function that creates all services
+  updateGlobalMetadata, // Global metadata writer
   ensureUserDocs,       // For seeding user documents
   useAppServices,       // Hook to consume context
-// --- IMPORT ADMIN_EMAILS CONSTANT ---
-  ADMIN_EMAILS // NEW: Import the admin emails constant
-} from './services/useAppServices.jsx'; // cite: useAppServices.jsx
+} from './services/useAppServices.jsx';
 
 // --- Firebase Imports (Authentication & Firestore) ---
 import { initializeApp } from 'firebase/app';
@@ -56,6 +51,13 @@ import {
 /* =========================================================
    GLOBAL CONFIG & CONSTANTS (Aligned with useAppServices)
 ========================================================= */
+// --- Admin Emails Configuration ---
+// Define admin users who have access to advanced features
+const ADMIN_EMAILS = [
+  'admin@leaderreps.com',
+  // Add your admin email addresses here
+];
+
 // --- Primary Color Palette (Ensure consistency) ---
 const COLORS = { NAVY: '#002E47', TEAL: '#47A88D', ORANGE: '#E04E1B', GREEN: '#10B981', BLUE: '#2563EB', AMBER: '#F5A800', RED: '#E04E1B', LIGHT_GRAY: '#FCFCFA', OFF_WHITE: '#FFFFFF', SUBTLE: '#E5E7EB', TEXT: '#374151', MUTED: '#4B5563', PURPLE: '#7C3AED', BG: '#F9FAFB' }; // cite: User Request
 
@@ -618,82 +620,116 @@ const resolveGlobalMetadata = (meta) => {
   return (meta && typeof meta === 'object') ? meta : {};
 };
 
+
 /**
  * DataProvider Component
- * Fetches user-specific and global data using custom hooks from useAppServices.
- * Provides the fetched data and update functions via AppServiceContext.
+ * Creates and provides all app services using createAppServices factory.
+ * Maintains backwards compatibility with existing code that expects hook-style data.
  */
 const DataProvider = ({ children, firebaseServices, userId, isAuthReady, navigate, user }) => {
   const { db, auth } = firebaseServices;
+  
+  // --- State to hold the created services ---
+  const [services, setServices] = useState(null);
+  const [isLoadingServices, setIsLoadingServices] = useState(true);
 
-  // --- Use the RENAMED user data hooks ---
-  const devPlanHook = useDevelopmentPlanData(db, userId, isAuthReady);
-  const dailyPracticeHook = useDailyPracticeData(db, userId, isAuthReady);
-  const strategicContentHook = useStrategicContentData(db, userId, isAuthReady);
+  // --- Create services when userId and db are available ---
+  useEffect(() => {
+    console.log('[DataProvider] Effect triggered:', {
+      userId: userId || 'none',
+      isAuthReady,
+      hasDb: !!db
+    });
 
-  // --- **FIX START**: Corrected debug log lines
-  console.log('🔍 devPlanHook:', devPlanHook);
-  console.log('🔍 dailyPracticeHook:', dailyPracticeHook);
-  console.log('🔍 strategicContentHook:', strategicContentHook);
-  console.log('🔍 dailyPracticeHook.updateDailyPracticeData exists:', !!dailyPracticeHook.updateDailyPracticeData);
-  console.log('🔍 dailyPracticeHook.updateDailyPracticeData type:', typeof dailyPracticeHook.updateDailyPracticeData);
-  // --- **FIX END** ---
+    // Don't create services if no user or Firebase isn't ready
+    if (!userId || !db || !isAuthReady) {
+      console.log('[DataProvider] Conditions not met, clearing services');
+      setServices(null);
+      setIsLoadingServices(false);
+      return;
+    }
 
-  // Global metadata hook remains the same but fetches more data now
-  const globalHook = useGlobalMetadata(db, isAuthReady);
+    // Create all services using the factory function
+    console.log('[DataProvider] Creating services for user:', userId);
+    setIsLoadingServices(true);
+    
+    try {
+      const createdServices = createAppServices(db, userId);
+      console.log('[DataProvider] Services created successfully');
+      setServices(createdServices);
+    } catch (error) {
+      console.error('[DataProvider] Error creating services:', error);
+      setServices(null);
+    } finally {
+      setIsLoadingServices(false);
+    }
+  }, [userId, db, isAuthReady]);
+  
+  // --- Create backwards-compatible hook objects from services ---
+  const devPlanHook = useMemo(() => services ? {
+    developmentPlanData: services.developmentPlanData,
+    updateDevelopmentPlanData: services.updateDevelopmentPlanData,
+    isLoading: false,
+    error: null
+  } : { developmentPlanData: null, updateDevelopmentPlanData: null, isLoading: isLoadingServices, error: null }, [services, isLoadingServices]);
+  
+  const dailyPracticeHook = useMemo(() => services ? {
+    dailyPracticeData: services.dailyPracticeData,
+    updateDailyPracticeData: services.updateDailyPracticeData,
+    isLoading: false,
+    error: null
+  } : { dailyPracticeData: null, updateDailyPracticeData: null, isLoading: isLoadingServices, error: null }, [services, isLoadingServices]);
+  
+  const strategicContentHook = useMemo(() => services ? {
+    strategicContentData: services.strategicContentData,
+    updateStrategicContentData: services.updateStrategicContentData,
+    isLoading: false,
+    error: null
+  } : { strategicContentData: null, updateStrategicContentData: null, isLoading: isLoadingServices, error: null }, [services, isLoadingServices]);
+  
+  const globalHook = useMemo(() => services ? {
+    metadata: services.globalMetadata,
+    isLoading: false,
+    error: null
+  } : { metadata: null, isLoading: isLoadingServices, error: null }, [services, isLoadingServices]);
 
   // --- Combined Loading & Error States ---
   const isUserHookLoading = devPlanHook.isLoading || dailyPracticeHook.isLoading || strategicContentHook.isLoading;
   const isLoading = isUserHookLoading || globalHook.isLoading; // combined app loading
-  const error = devPlanHook.error || dailyPracticeHook.error || strategicContentHook.error || globalHook.error; // cite: useAppServices.jsx
+  const error = devPlanHook.error || dailyPracticeHook.error || strategicContentHook.error || globalHook.error;
 
   // --- Derive `isAdmin` status ---
-  // FIX: Recalculate isAdmin status using the hardcoded ADMIN_EMAILS list
-  // The globalHook.metadata.ADMIN_EMAILS check is removed to use the internal application logic.
   const isAdmin = useMemo(() => {
-      // Logic is simplified here, but relies on ADMIN_EMAILS being imported
       return !!user?.email && ADMIN_EMAILS.includes(user.email.toLowerCase());
   }, [user]);
 
   // --- Derive `hasPendingDailyPractice` (using updated data structure) ---
   const hasPendingDailyPractice = useMemo(() => {
-    const dailyData = dailyPracticeHook.dailyPracticeData; // cite: useAppServices.jsx
-    // Check if target rep exists and is pending for the correct date
+    const dailyData = dailyPracticeHook.dailyPracticeData;
     const todayStr = new Date().toISOString().split('T')[0];
-    const hasPendingTargetRep = dailyData?.dailyTargetRepStatus === 'Pending' && dailyData?.dailyTargetRepDate === todayStr && !!dailyData?.dailyTargetRepId; // cite: useAppServices.jsx
-    // Check if any additional reps are pending (status resets daily via hook)
+    const hasPendingTargetRep = dailyData?.dailyTargetRepStatus === 'Pending' && dailyData?.dailyTargetRepDate === todayStr && !!dailyData?.dailyTargetRepId;
     const hasPendingAdditionalReps = (dailyData?.activeCommitments || []).some(
         c => c.status === 'Pending'
-    ); // cite: useAppServices.jsx
+    );
     return hasPendingTargetRep || hasPendingAdditionalReps;
-  }, [dailyPracticeHook.dailyPracticeData]); // cite: useAppServices.jsx
+  }, [dailyPracticeHook.dailyPracticeData]);
 
-  // --- **FIX START**: Define API key and functions here ---
-  const resolvedMetadata = useMemo(() => resolveGlobalMetadata(globalHook.metadata), [globalHook.metadata]); // cite: useAppServices.jsx
+  // --- Resolve metadata and API key ---
+  const resolvedMetadata = useMemo(() => resolveGlobalMetadata(globalHook.metadata), [globalHook.metadata]);
 
   const apiKey = useMemo(() => {
-      // Ensure API key is pulled from the environment or from metadata
-      return resolvedMetadata.API_KEY || (typeof __GEMINI_API_KEY !== 'undefined' ? __GEMINI_API_KEY : ''); // cite: useAppServices.jsx
+      return resolvedMetadata.API_KEY || (typeof __GEMINI_API_KEY !== 'undefined' ? __GEMINI_API_KEY : '');
   }, [resolvedMetadata.API_KEY]);
 
   const hasGeminiKey = useCallback(() => !!apiKey, [apiKey]);
 
-  // This function body is a mock, matching the default implementation in useAppServices.jsx
-  // A real implementation would securely call a cloud function.
-// --- **FIX START**: Replace the MOCK function with a REAL backend call structure ---
   const callSecureGeminiAPI = useCallback(async (payload) => {
-      if (!hasGeminiKey()) { // Keep the initial API key check
+      if (!hasGeminiKey()) {
           console.error("Gemini API Key check failed in callSecureGeminiAPI. Ensure it's loaded correctly.");
           throw new Error("Gemini API Key is missing or not configured.");
       }
 
-      // ------------------------------------------------------------------
-      // --- CRITICAL: REPLACE THIS URL WITH YOUR ACTUAL BACKEND FUNCTION ---
-      // ------------------------------------------------------------------
-      // This should be the HTTPS endpoint of your Cloud Function, serverless function,
-      // or API endpoint that securely handles the call to the Google AI Gemini API.
       const YOUR_BACKEND_ENDPOINT_URL = 'YOUR_SECURE_CLOUD_FUNCTION_URL_HERE'; 
-      // ------------------------------------------------------------------
       
       if (YOUR_BACKEND_ENDPOINT_URL === 'YOUR_SECURE_CLOUD_FUNCTION_URL_HERE') {
            console.error("CRITICAL SETUP ERROR: The backend endpoint URL for callSecureGeminiAPI has not been set in App.jsx.");
@@ -703,62 +739,39 @@ const DataProvider = ({ children, firebaseServices, userId, isAuthReady, navigat
       console.log("[callSecureGeminiAPI] Calling backend endpoint:", YOUR_BACKEND_ENDPOINT_URL);
 
       try {
-          // Prepare the request to your backend
           const requestOptions = {
               method: 'POST',
               headers: {
                   'Content-Type': 'application/json',
-                  // --- Add Authentication (IMPORTANT!) ---
-                  // If your backend needs to verify the user, get the Firebase Auth ID token
-                  // and include it in the Authorization header.
-                  // You might need to add 'auth' to the useCallback dependency array if you use it here.
-                  // 'Authorization': `Bearer ${await auth.currentUser.getIdToken()}` 
               },
-              body: JSON.stringify(payload) // Send the payload constructed by the calling component
+              body: JSON.stringify(payload)
           };
 
-          // Make the fetch call to your backend
           const response = await fetch(YOUR_BACKEND_ENDPOINT_URL, requestOptions);
 
-          // Check if the backend call was successful
           if (!response.ok) {
               let errorBody = 'Could not retrieve error details.';
               try {
-                  errorBody = await response.text(); // Try to get more error info
+                  errorBody = await response.text();
               } catch (_) { /* Ignore parsing error */ }
               console.error(`[callSecureGeminiAPI] Backend call failed with status ${response.status}:`, errorBody);
               throw new Error(`The AI Rep Coach backend returned an error (Status ${response.status}).`);
           }
 
-          // Parse the JSON response from your backend
-          // (Assuming your backend forwards the Gemini API response structure)
           const data = await response.json(); 
           console.log("[callSecureGeminiAPI] Received successful response from backend.");
           
-          // Return the data received from the backend
           return data; 
 
       } catch (error) {
           console.error("[callSecureGeminiAPI] Error during fetch to backend:", error);
-          // Re-throw a more user-friendly error or handle appropriately
           throw new Error(`Failed to communicate with the AI Rep Coach: ${error.message}`);
       }
-  // --- Update dependencies: include 'auth' if you add the Authorization header ---
-  }, [hasGeminiKey, apiKey /* , auth */ ]); 
-  // --- **FIX END** ---
+  }, [hasGeminiKey, apiKey]);
 
   // --- Memoize the context value ---
-  // Provides all necessary data and functions to the rest of the application.
   const appServicesValue = useMemo(() => {
-    // const resolvedMetadata = resolveGlobalMetadata(globalHook.metadata); // <-- Now defined above
-    // console.log("[DataProvider] Resolved Metadata:", resolvedMetadata); // Debug log
-
-    // Safely access potentially missing API details from metadata
-    // const apiKey = resolvedMetadata.API_KEY || (typeof __GEMINI_API_KEY !== 'undefined' ? __GEMINI_API_KEY : ''); // <-- Now defined above
-    const geminiModel = resolvedMetadata.GEMINI_MODEL || 'gemini-1.5-flash'; // cite: useAppServices.jsx
-    // callSecureGeminiAPI and hasGeminiKey are now defined in this scope
-    
-    // Define a stable, generic no-op function for absolute defense.
+    const geminiModel = resolvedMetadata.GEMINI_MODEL || 'gemini-1.5-flash';
     const noOpUpdate = async () => false;
 
     return {
@@ -771,73 +784,63 @@ const DataProvider = ({ children, firebaseServices, userId, isAuthReady, navigat
       isAuthReady,
       isLoading,
       error,
-      isAdmin, // Provide admin status
-      ADMIN_PASSWORD: resolvedMetadata.ADMIN_PASSWORD || '7777', // Provide admin password constant // cite: useAppServices.jsx
+      isAdmin,
+      ADMIN_PASSWORD: resolvedMetadata.ADMIN_PASSWORD || '7777',
 
       // User-Specific Data (using updated names)
-      developmentPlanData: devPlanHook.developmentPlanData, // cite: useAppServices.jsx
-      dailyPracticeData: dailyPracticeHook.dailyPracticeData, // cite: useAppServices.jsx
-      strategicContentData: strategicContentHook.strategicContentData, // cite: useAppServices.jsx
+      developmentPlanData: devPlanHook.developmentPlanData,
+      dailyPracticeData: dailyPracticeHook.dailyPracticeData,
+      strategicContentData: strategicContentHook.strategicContentData,
 
       // Global Metadata / Value Sets (extracted from resolvedMetadata)
-      metadata: resolvedMetadata, // Raw metadata object
-      featureFlags: resolvedMetadata.featureFlags || {}, // Provide feature flags // cite: useAppServices.jsx
-      LEADERSHIP_TIERS: resolvedMetadata.LEADERSHIP_TIERS || {}, // cite: useAppServices.jsx
-      // Include all catalogs provided by useGlobalMetadata
-      REP_LIBRARY: resolvedMetadata.REP_LIBRARY || { items: [] }, // cite: useAppServices.jsx
-      EXERCISE_LIBRARY: resolvedMetadata.EXERCISE_LIBRARY || { items: [] }, // cite: useAppServices.jsx
-      WORKOUT_LIBRARY: resolvedMetadata.WORKOUT_LIBRARY || { items: [] }, // cite: useAppServices.jsx
-      COURSE_LIBRARY: resolvedMetadata.COURSE_LIBRARY || { items: [] }, // cite: useAppServices.jsx
-      SKILL_CATALOG: resolvedMetadata.SKILL_CATALOG || { items: [] }, // cite: useAppServices.jsx
-      IDENTITY_ANCHOR_CATALOG: resolvedMetadata.IDENTITY_ANCHOR_CATALOG || { items: [] }, // cite: useAppServices.jsx
-      HABIT_ANCHOR_CATALOG: resolvedMetadata.HABIT_ANCHOR_CATALOG || { items: [] }, // cite: useAppServices.jsx
-      WHY_CATALOG: resolvedMetadata.WHY_CATALOG || { items: [] }, // cite: useAppServices.jsx
-      READING_CATALOG: resolvedMetadata.READING_CATALOG || { items: [] }, // cite: useAppServices.jsx
-      VIDEO_CATALOG: resolvedMetadata.VIDEO_CATALOG || { items: [] }, // cite: useAppServices.jsx
-      SCENARIO_CATALOG: resolvedMetadata.SCENARIO_CATALOG || { items: [] }, // cite: useAppServices.jsx
-      RESOURCE_LIBRARY: resolvedMetadata.RESOURCE_LIBRARY || {}, // Transformed // cite: useAppServices.jsx
-      IconMap: resolvedMetadata.IconMap || {}, // cite: useAppServices.jsx
-      APP_ID: resolvedMetadata.APP_ID || appId, // cite: useAppServices.jsx
+      metadata: resolvedMetadata,
+      featureFlags: resolvedMetadata.featureFlags || {},
+      LEADERSHIP_TIERS: resolvedMetadata.LEADERSHIP_TIERS || {},
+      REP_LIBRARY: resolvedMetadata.REP_LIBRARY || { items: [] },
+      EXERCISE_LIBRARY: resolvedMetadata.EXERCISE_LIBRARY || { items: [] },
+      WORKOUT_LIBRARY: resolvedMetadata.WORKOUT_LIBRARY || { items: [] },
+      COURSE_LIBRARY: resolvedMetadata.COURSE_LIBRARY || { items: [] },
+      SKILL_CATALOG: resolvedMetadata.SKILL_CATALOG || { items: [] },
+      IDENTITY_ANCHOR_CATALOG: resolvedMetadata.IDENTITY_ANCHOR_CATALOG || { items: [] },
+      HABIT_ANCHOR_CATALOG: resolvedMetadata.HABIT_ANCHOR_CATALOG || { items: [] },
+      WHY_CATALOG: resolvedMetadata.WHY_CATALOG || { items: [] },
+      READING_CATALOG: resolvedMetadata.READING_CATALOG || { items: [] },
+      VIDEO_CATALOG: resolvedMetadata.VIDEO_CATALOG || { items: [] },
+      SCENARIO_CATALOG: resolvedMetadata.SCENARIO_CATALOG || { items: [] },
+      RESOURCE_LIBRARY: resolvedMetadata.RESOURCE_LIBRARY || {},
+      IconMap: resolvedMetadata.IconMap || {},
+      APP_ID: resolvedMetadata.APP_ID || appId,
 
-      // AI/API Services (now defined in DataProvider scope)
-      callSecureGeminiAPI, // Pass the newly defined function
-      hasGeminiKey,       // Pass the newly defined function
+      // AI/API Services
+      callSecureGeminiAPI,
+      hasGeminiKey,
       GEMINI_MODEL: geminiModel,
       API_KEY: apiKey,
 
       // Derived State
       hasPendingDailyPractice,
 
-      // Data Writers (using updated names)
-      // FIX: Add defensive check (?? noOpUpdate) here as a final guarantee.
+      // Data Writers
       updateDevelopmentPlanData: devPlanHook.updateDevelopmentPlanData ?? noOpUpdate,
       updateDailyPracticeData: dailyPracticeHook.updateDailyPracticeData ?? noOpUpdate,
       updateStrategicContentData: strategicContentHook.updateStrategicContentData ?? noOpUpdate,
-      // Update global metadata (pass db and userId)
-      updateGlobalMetadata: (data, opts) => updateGlobalMetadata(db, data, { ...opts, userId }), // cite: useAppServices.jsx
+      updateGlobalMetadata: (data, opts) => updateGlobalMetadata(db, data, { ...opts, userId }),
     };
   }, [
-      // Dependencies - include all hooks and relevant state
       navigate, user, userId, db, auth, isAuthReady, isLoading, error, isAdmin,
       devPlanHook, dailyPracticeHook, strategicContentHook, globalHook,
-      hasPendingDailyPractice, // Include derived state
-      // API functions are now defined in DataProvider, add them
+      hasPendingDailyPractice,
       callSecureGeminiAPI, hasGeminiKey, apiKey, resolvedMetadata
   ]);
 
   // --- Loading State ---
-  // Show a spinner while ANY essential data is loading AFTER auth is ready
   if (!isAuthReady) {
       console.log("[DataProvider] Waiting for auth to be ready.");
-      // Render nothing or a minimal placeholder until auth is resolved
       return null;
   }
   
-  // 🚨 CRITICAL FIX FOR SPINNING: Ensure the app waits for the user hooks 
-  // to initialize and load data when a valid userId is present.
   const isUserDataLoading = !!userId && isUserHookLoading;
 
-  // 🛠️ FIX: Only check if user data loading is required, and global loading is complete.
   if (isUserDataLoading || globalHook.isLoading) {
     console.log("[DataProvider] Core data loading...");
     return (
@@ -853,7 +856,6 @@ const DataProvider = ({ children, firebaseServices, userId, isAuthReady, navigat
   // --- Error State ---
   if (error) {
     console.error("[DataProvider] Error loading data:", error);
-    // Display a user-friendly error message, perhaps allow retry?
     return <ConfigError message={`Failed to load essential application data: ${error.message}`} />;
   }
 
@@ -861,6 +863,7 @@ const DataProvider = ({ children, firebaseServices, userId, isAuthReady, navigat
   console.log("[DataProvider] Rendering with fully loaded context.");
   return <AppServiceContext.Provider value={appServicesValue}>{children}</AppServiceContext.Provider>;
 };
+
 
 
 /* =========================================================
