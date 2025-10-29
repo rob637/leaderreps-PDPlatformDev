@@ -1,0 +1,72 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // --- Admin Check Function ---
+    function isAdmin() {
+      // ⬇️ IMPORTANT: Add your admin emails here ⬇️
+      let adminEmails = [
+        'rob@sagecg.com',
+        'ryan@leaderreps.com'
+      ];
+      return request.auth != null && request.auth.token.email in adminEmails;
+    }
+
+    // === Global Metadata (Read for all, Write for Admins) ===
+    match /metadata/{docId} {
+      allow read: if request.auth.uid != null;
+      allow write: if isAdmin();
+    }
+
+    // === Global Catalogs (Read for all, Write for Admins) ===
+    match /metadata/config/catalog/{catalogId} {
+      allow read: if request.auth.uid != null;
+      allow write: if isAdmin();
+    }
+
+    // === Community Pod Feed ===
+    // Allow any authenticated user to read and create posts in the feed.
+    // Future: Consider adding update/delete rules (e.g., only allow owner to delete).
+    match /community/posts/feed/{postId} {
+      allow read, create: if request.auth != null;
+      // Add validation if needed: ensure required fields like authorId, text, createdAt exist
+      // allow create: if request.auth != null && request.resource.data.keys().hasAll(['authorId', 'authorName', 'text', 'createdAt']);
+    }
+
+    // === User Data (User can only access their own) ===
+    // --- (All your user rules below are correct and unchanged) ---
+
+    // --- Development Plan ---
+    match /development_plan/{userId} {
+      match /user_state/profile {
+        allow read, write: if request.auth.uid == userId;
+      }
+      match /plan_history/{docId} {
+        allow read, create, update: if request.auth.uid == userId;
+      }
+      match /assessment_history/{docId} {
+        allow read, create, update: if request.auth.uid == userId;
+      }
+    }
+
+    // --- Daily Practice ---
+    match /daily_practice/{userId} {
+      match /user_state/state {
+        allow read, write: if request.auth.uid == userId;
+      }
+      match /reflection_history/{docId} {
+        allow read, create, update: if request.auth.uid == userId;
+      }
+      match /practice_history/{docId} {
+        allow read, create, update: if request.auth.uid == userId;
+      }
+    }
+
+    // --- Strategic Content ---
+    match /strategic_content/{userId} {
+      match /user_state/data {
+        allow read, write: if request.auth.uid == userId;
+      }
+    }
+  }
+}
