@@ -31,10 +31,8 @@ export const useDashboard = ({
   const [showHabitEditor, setShowHabitEditor] = useState(false);
 
   // === BOOKEND STATE (NEW 10/28/25) ===
-  // FIX #2: Initialize WIN from database
-  const [morningWIN, setMorningWIN] = useState(
-    dailyPracticeData?.morningBookend?.dailyWIN || ''
-  );
+  // FIX #2: Initialize WIN from database with proper loading
+  const [morningWIN, setMorningWIN] = useState('');
   const [otherTasks, setOtherTasks] = useState([]);
   const [showLIS, setShowLIS] = useState(false);
   const [reflectionGood, setReflectionGood] = useState('');

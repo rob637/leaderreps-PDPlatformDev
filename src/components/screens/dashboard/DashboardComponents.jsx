@@ -777,9 +777,9 @@ export const AdditionalRepsCard = ({ commitments, onToggle, repLibrary }) => {
 };
 
 /* =========================================================
-   FIX #9: SOCIAL POD CARD
+   FIX #8 & #9: SOCIAL POD CARD (with working Find Pod button)
 ========================================================= */
-export const SocialPodCard = ({ podMembers, activityFeed, onSendMessage }) => {
+export const SocialPodCard = ({ podMembers, activityFeed, onSendMessage, onFindPod }) => {
   const [newMessage, setNewMessage] = useState('');
 
   const handleSend = () => {
@@ -891,7 +891,8 @@ export const SocialPodCard = ({ podMembers, activityFeed, onSendMessage }) => {
           <p className="text-xs mb-4" style={{ color: COLORS.MUTED }}>
             Connect with other leaders to build accountability
           </p>
-          <Button variant="outline" size="sm">
+          {/* FIX #8: Connected button to onFindPod handler */}
+          <Button onClick={onFindPod} variant="outline" size="sm">
             Find a Pod
           </Button>
         </div>
