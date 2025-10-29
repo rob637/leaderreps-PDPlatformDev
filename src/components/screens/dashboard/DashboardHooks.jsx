@@ -320,8 +320,20 @@ export const useDashboard = ({
     }
   }, [otherTasks, updateDailyPracticeData]);
 
-  const handleRemoveTask = useCallback(async (taskId) => {
-    const updatedTasks = otherTasks.filter(task => task.id !== taskId);
+  const handleRemoveTask = useCallback(async (taskKey) => {
+    let updatedTasks;
+    if (typeof taskKey === 'number') {
+      updatedTasks = otherTasks.filter((_, idx) => idx !== taskKey);
+    } else {
+      updatedTasks = otherTasks.filter(task => task.id !== taskKey);
+      // If not found and taskKey looks like an index string, try parseInt
+      if (updatedTasks.length === otherTasks.length && typeof taskKey === 'string' && taskKey.match(/^\d+$/)) {
+        const idx = parseInt(taskKey, 10);
+        updatedTasks = otherTasks.filter((_, i) => i !== idx);
+      }
+    }
+    // If still same length, nothing to remove
+    if (updatedTasks.length === otherTasks.length) return;
     setOtherTasks(updatedTasks);
     
     // Auto-save to Firestore immediately
@@ -376,6 +388,11 @@ export const useDashboard = ({
   /* =========================================================
      COMPUTED VALUES
   ========================================================= */
+  // Derived AM flags for UI auto-tracking
+  const amCompletedAt = dailyPracticeData?.morningBookend?.completedAt || null;
+  const amWinCompleted = !!(dailyPracticeData?.morningBookend?.winCompleted);
+  const amTasksCompleted = Array.isArray(otherTasks) && otherTasks.length > 0 && otherTasks.every(t => !!t.completed);
+
   const targetRep = useMemo(() => {
     return dailyPracticeData?.dailyTargetRepId || null;
   }, [dailyPracticeData?.dailyTargetRepId]);

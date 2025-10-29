@@ -124,6 +124,8 @@ export const StreakTracker = ({ streakCount, streakCoins }) => (
 ========================================================= */
 export const TabButton = ({ active, onClick, label, minimized = false }) => (
   <button
+    type="button"
+    aria-pressed={active}
     onClick={onClick}
     className={`flex-1 px-4 py-2 rounded-lg font-semibold text-sm transition-all duration-200 relative ${
       active ? 'shadow-md' : 'hover:bg-gray-50'
@@ -272,7 +274,7 @@ export const MorningBookend = ({
                                 <input 
                                     type="checkbox"
                                     checked={task.completed}
-                                    onChange={() => onToggleTask(task.id)}
+                                    onChange={() => onToggleTask(task.id ?? idx)}
                                     className="w-4 h-4"
                                     style={{ accentColor: COLORS.TEAL }}
                                 />
@@ -389,7 +391,7 @@ export const MorningBookend = ({
                                  style={{ borderColor: COLORS.SUBTLE, backgroundColor: COLORS.LIGHT_GRAY }}>
                                 <span className="text-sm flex-1" style={{ color: COLORS.TEXT }}>{task.text}</span>
                                 <button 
-                                    onClick={() => onRemoveTask(task.id)}
+                                    onClick={() => onRemoveTask(task.id ?? idx)}
                                     className="text-gray-400 hover:text-red-500 transition-colors"
                                 >
                                     <X className="w-4 h-4" />

@@ -16,7 +16,7 @@ import {
   getDoc as fsGetDoc,
   updateDoc as fsUpdateDoc, 
   serverTimestamp, 
-  FieldValue 
+  deleteField 
 } from 'firebase/firestore';
 
 // --- NEW: Import specific icons used within this service ---
@@ -331,7 +331,7 @@ export const ensureUserDocs = async (db, uid) => {
                  needsUpdate = true;
              }
              // Remove deprecated field if present
-             if (currentData.reflection_journal !== undefined) { updates.reflection_journal = FieldValue.delete(); needsUpdate = true; }
+             if (currentData.reflection_journal !== undefined) { updates.reflection_journal = deleteField(); needsUpdate = true; }
          }
          // Add checks for other collections if needed
 
@@ -443,6 +443,7 @@ const DEFAULT_SERVICES = {
     // Writers
     updateDevelopmentPlanData: async () => false, updateDailyPracticeData: async () => false,
     updateStrategicContentData: async () => false, updateGlobalMetadata: async () => ({}),
+    updateCatalog: async () => ({}),
 };
 
 export const AppServiceContext = createContext(DEFAULT_SERVICES);
@@ -696,6 +697,12 @@ export const useStrategicContentData = (db, userId, isAuthReady) => {
    Global metadata (read) (CATALOG FETCH FIX APPLIED)
 ========================================================= */
 const PATH_CATALOG_BASE = 'metadata/config/catalog';
+const CATALOG_ALIASES = {
+    TARGET_REP_CATALOG: 'REP_LIBRARY',
+    SKILL_CONTENT_LIBRARY: 'SKILL_CATALOG',
+    COMMITMENT_BANK: 'REP_LIBRARY'
+};
+
 const CATALOG_DOC_NAMES = [
     'REP_LIBRARY', 'EXERCISE_LIBRARY', 'WORKOUT_LIBRARY', 'COURSE_LIBRARY', 'SKILL_CATALOG', 
     'IDENTITY_ANCHOR_CATALOG', 
@@ -760,15 +767,15 @@ export const useGlobalMetadata = (db, isAuthReady) => {
         console.log(`[DEBUG RAW DATA] RAW READING CATALOG: ${JSON.stringify(readingCatalogData)}`);
 
         // **FIX: Fetch all catalogs from the subcollection as individual documents**
-        const catalogPromises = CATALOG_DOC_NAMES.map(docName => 
-            getDocEx(db, `${PATH_CATALOG_BASE}/${docName}`)
-        );
+        const ALL_DOCS = [...CATALOG_DOC_NAMES, ...Object.keys(CATALOG_ALIASES)];
+        const catalogPromises = ALL_DOCS.map(docName => getDocEx(db, `${PATH_CATALOG_BASE}/${docName}`));
         const catalogSnaps = await Promise.all(catalogPromises);
         
         // Assemble the catalog data from the fetched documents
         const catalogResults = {};
         catalogSnaps.forEach((snap, index) => {
-            const docName = CATALOG_DOC_NAMES[index];
+            const rawName = ALL_DOCS[index];
+            const docName = CATALOG_ALIASES[rawName] || rawName;
             if (snap.exists()) {
                 catalogResults[docName] = snap.data();
             } else {
@@ -920,6 +927,15 @@ export const updateGlobalMetadata = async (
     throw new Error(`Failed to update global metadata for ${path}: ${e.message}`);
   }
 };
+
+
+export const updateCatalogDoc = async (db, docName, payload, { merge = true, userId = 'N/A' } = {}) => {
+  const path = `metadata/config/catalog/${docName}`;
+  const body = Array.isArray(payload) ? { items: payload } : payload;
+  const finalPayload = { ...body, _updatedAt: serverTimestamp(), _updatedBy: userId, _source: 'updateCatalogDoc' };
+  return setDocEx(db, path, finalPayload, merge);
+};
+
 
 
 /* =========================================================

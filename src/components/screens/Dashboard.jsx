@@ -188,66 +188,24 @@ const Dashboard = ({ navigate }) => {
   const [habitSuggestions, setHabitSuggestions] = useState([]);
   const [isLoadingSuggestions, setIsLoadingSuggestions] = useState(false);
 
-  useEffect(() => {
-    const loadSuggestions = async () => {
-      if (!db) {
-        console.warn('[Dashboard FIX #6] Database not available for suggestions');
-        // Use globalMetadata as fallback
-        setIdentitySuggestions(globalMetadata?.IDENTITY_ANCHOR_CATALOG?.items || []);
-        setHabitSuggestions(globalMetadata?.HABIT_ANCHOR_CATALOG?.items || []);
-        return;
-      }
-      
-      setIsLoadingSuggestions(true);
-      try {
-        console.log('[Dashboard FIX #6] Loading suggestions from Firestore...');
-        
-        // Load from Firestore collections
-        const identitySnapshot = await db.collection('identityAnchors').get();
-        const habitSnapshot = await db.collection('habitAnchors').get();
-        
-        const identityDocs = identitySnapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data()
-        }));
-        
-        const habitDocs = habitSnapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data()
-        }));
-        
-        console.log('[Dashboard FIX #6] Loaded from Firestore:', {
-          identity: identityDocs.length,
-          habit: habitDocs.length
-        });
-        
-        // If nothing in Firestore, fall back to globalMetadata
-        if (identityDocs.length === 0 && globalMetadata?.IDENTITY_ANCHOR_CATALOG?.items) {
-          console.log('[Dashboard FIX #6] Using globalMetadata for identity anchors');
-          setIdentitySuggestions(globalMetadata.IDENTITY_ANCHOR_CATALOG.items);
-        } else {
-          setIdentitySuggestions(identityDocs);
-        }
-        
-        if (habitDocs.length === 0 && globalMetadata?.HABIT_ANCHOR_CATALOG?.items) {
-          console.log('[Dashboard FIX #6] Using globalMetadata for habit anchors');
-          setHabitSuggestions(globalMetadata.HABIT_ANCHOR_CATALOG.items);
-        } else {
-          setHabitSuggestions(habitDocs);
-        }
-        
-      } catch (error) {
-        console.error('[Dashboard FIX #6] Error loading suggestions from Firestore:', error);
-        // Fallback to globalMetadata if database fails
-        console.log('[Dashboard FIX #6] Falling back to globalMetadata');
-        setIdentitySuggestions(globalMetadata?.IDENTITY_ANCHOR_CATALOG?.items || []);
-        setHabitSuggestions(globalMetadata?.HABIT_ANCHOR_CATALOG?.items || []);
-      }
-      setIsLoadingSuggestions(false);
-    };
-    
-    loadSuggestions();
-  }, [db, globalMetadata]);
+  
+useEffect(() => {
+  // Suggestions from metadata catalogs (no direct collection reads)
+  try {
+    const identity = (globalMetadata?.IDENTITY_ANCHOR_CATALOG?.items || []).map(x => (typeof x === 'string' ? { text: x } : x));
+    const habits = (globalMetadata?.HABIT_ANCHOR_CATALOG?.items || []).map(x => (typeof x === 'string' ? { text: x } : x));
+    setIdentitySuggestions(identity);
+    setHabitSuggestions(habits);
+    setIsLoadingSuggestions(false);
+    console.log('[Dashboard FIX #6] Suggestions loaded from metadata catalogs', { identity: identity.length, habits: habits.length });
+  } catch (error) {
+    console.error('[Dashboard FIX #6] Failed to parse metadata catalogs', error);
+    setIdentitySuggestions([]);
+    setHabitSuggestions([]);
+    setIsLoadingSuggestions(false);
+  }
+}, [globalMetadata]);
+
 
   const bonusExercises = globalMetadata?.BONUS_EXERCISES?.items || [];
 
@@ -329,14 +287,14 @@ const Dashboard = ({ navigate }) => {
       const podsSnapshot = await db
         .collection('pods')
         .where('status', '==', 'active')
-        .where('memberCount', '<', 5) // Max 5 members per pod
         .get();
       
-      const pods = podsSnapshot.docs.map(doc => ({
+      let pods = podsSnapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
       }));
       
+      pods = pods.filter(p => (p.memberCount || 0) < 5);
       setAvailablePods(pods);
       console.log('[Dashboard FIX #8] Found pods:', pods.length);
     } catch (error) {
@@ -352,11 +310,14 @@ const Dashboard = ({ navigate }) => {
     if (!db || !userEmail) return;
     
     try {
-      // Add user to pod
-      await db.collection('pods').doc(podId).update({
-        members: db.FieldValue.arrayUnion(userEmail),
-        memberCount: db.FieldValue.increment(1)
-      });
+      // Add user to pod (read-modify-write to avoid FieldValue dependency)
+      const podRef = db.collection('pods').doc(podId);
+      const snap = await podRef.get();
+      const data = snap.exists ? snap.data() : {};
+      const members = Array.isArray(data.members) ? data.members : [];
+      if (!members.includes(userEmail)) members.push(userEmail);
+      const memberCount = members.length;
+      await podRef.update({ members, memberCount });
       
       // Update user's daily practice data
       await updateDailyPracticeData({
@@ -441,10 +402,10 @@ const Dashboard = ({ navigate }) => {
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
           <div>
             <h1 className="text-3xl md:text-4xl font-extrabold" style={{ color: COLORS.NAVY }}>
-              Daily Practice Arena
+              The Arena
             </h1>
             <p className="text-base" style={{ color: COLORS.TEXT }}>
-              Your leadership command center
+              Welcome to the Arena, Leader…
             </p>
           </div>
           
@@ -605,7 +566,8 @@ const Dashboard = ({ navigate }) => {
                 onNavigate: navigate,
                 // MODIFIED (10/29/25): Pass AM completion status
                 amWinCompleted: amWinCompleted,
-                amTasksCompleted: amTasksCompleted
+                amTasksCompleted: amTasksCompleted,
+                amCompletedAt: amCompletedAt
               }}
               dailyPracticeData={dailyPracticeData}
             />
@@ -684,17 +646,23 @@ const Dashboard = ({ navigate }) => {
               </Button>
             </div>
             {identitySuggestions.length > 0 && (
-              <Button 
-                onClick={() => {
-                  setShowIdentityEditor(false);
-                  setShowIdentitySuggestions(true);
-                }} 
-                variant="ghost" 
-                size="sm" 
-                className="w-full"
-              >
-                💡 View Suggestions ({identitySuggestions.length} available)
-              </Button>
+              <div className="mt-3 max-h-48 overflow-y-auto border rounded-lg p-2" style={{ borderColor: COLORS.SUBTLE }}>
+                <p className="text-xs font-semibold mb-2" style={{ color: COLORS.MUTED }}>Suggestions from the catalog</p>
+                {identitySuggestions.map((s) => (
+                  <button
+                    key={s.id || s.text || s}
+                    onClick={() => setIdentityStatement(s.text || s.value || s.name || s)}
+                    className="w-full text-left px-2 py-1 rounded hover:bg-gray-50"
+                  >
+                    {(s.prefix ? s.prefix + ' ' : 'I am the kind of leader who ') + (s.text || s.value || s.name || s)}
+                  </button>
+                ))}
+                <div className="mt-2 text-right">
+                  <Button onClick={() => handleSaveIdentityWithConfirmation(identityStatement)} variant="primary" size="sm">
+                    Use current selection
+                  </Button>
+                </div>
+              </div>
             )}
           </div>
         </div>
@@ -723,17 +691,23 @@ const Dashboard = ({ navigate }) => {
               </Button>
             </div>
             {habitSuggestions.length > 0 && (
-              <Button 
-                onClick={() => {
-                  setShowHabitEditor(false);
-                  setShowHabitSuggestions(true);
-                }} 
-                variant="ghost" 
-                size="sm" 
-                className="w-full"
-              >
-                💡 View Suggestions ({habitSuggestions.length} available)
-              </Button>
+              <div className="mt-3 max-h-48 overflow-y-auto border rounded-lg p-2" style={{ borderColor: COLORS.SUBTLE }}>
+                <p className="text-xs font-semibold mb-2" style={{ color: COLORS.MUTED }}>Suggestions from the catalog</p>
+                {habitSuggestions.map((s) => (
+                  <button
+                    key={s.id || s.text || s}
+                    onClick={() => setHabitAnchor(s.text || s.value || s.name || s)}
+                    className="w-full text-left px-2 py-1 rounded hover:bg-gray-50"
+                  >
+                    {"When I " + (s.text || s.value || s.name || s)}
+                  </button>
+                ))}
+                <div className="mt-2 text-right">
+                  <Button onClick={() => handleSaveHabitWithConfirmation(habitAnchor)} variant="primary" size="sm">
+                    Use current selection
+                  </Button>
+                </div>
+              </div>
             )}
           </div>
         </div>
