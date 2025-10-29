@@ -674,11 +674,15 @@ return () => {
 
 
 // --- Specific Hooks (Renamed) ---
-export const useDevelopmentPlanData = (db, userId, isAuthReady) => {
-  const { data, isLoading, error, updateData } = useFirestoreUserData(db, userId, isAuthReady, 'development_plan', 'profile', MOCK_DEVELOPMENT_PLAN_DATA);
+// FIXED 10/29/25: Changed from development_plan to leadership_plan, profile to roadmap
+export const useLeadershipPlanData = (db, userId, isAuthReady) => {
+  const { data, isLoading, error, updateData } = useFirestoreUserData(db, userId, isAuthReady, 'leadership_plan', 'roadmap', MOCK_DEVELOPMENT_PLAN_DATA);
   // FIX: Ensure updateData is a defined function reference (even if it's async () => false)
-  return { developmentPlanData: data, isLoading, error, updateDevelopmentPlanData: updateData ?? (async () => false) };
+  return { leadershipPlanData: data, isLoading, error, updateLeadershipPlanData: updateData ?? (async () => false) };
 };
+
+// Backward compatibility alias
+export const useDevelopmentPlanData = useLeadershipPlanData;
 
 export const useDailyPracticeData = (db, userId, isAuthReady) => {
   const { data, isLoading, error, updateData } = useFirestoreUserData(db, userId, isAuthReady, 'daily_practice', 'state', MOCK_DAILY_PRACTICE_DATA);
@@ -947,7 +951,8 @@ export const createAppServices = ({
   hasGeminiKey = () => false, API_KEY = '',
 }) => {
   // CRITICAL FIX: Destructure explicitly from each hook
-  const { data: developmentPlanData, isLoading: devPlanLoading, error: devPlanError, updateData: updateDevelopmentPlanData } = useFirestoreUserData(db, userId, isAuthReady, 'development_plan', 'profile', MOCK_DEVELOPMENT_PLAN_DATA);
+  // FIXED 10/29/25: Changed from development_plan to leadership_plan
+  const { data: leadershipPlanData, isLoading: devPlanLoading, error: devPlanError, updateData: updateLeadershipPlanData } = useFirestoreUserData(db, userId, isAuthReady, 'leadership_plan', 'roadmap', MOCK_DEVELOPMENT_PLAN_DATA);
   const { data: dailyPracticeData, isLoading: dailyPracticeLoading, error: dailyPracticeError, updateData: updateDailyPracticeData } = useFirestoreUserData(db, userId, isAuthReady, 'daily_practice', 'state', MOCK_DAILY_PRACTICE_DATA);
   const { data: strategicContentData, isLoading: strategicContentLoading, error: strategicContentError, updateData: updateStrategicContentData } = useFirestoreUserData(db, userId, isAuthReady, 'strategic_content', 'data', MOCK_STRATEGIC_CONTENT_DATA);
   
@@ -974,8 +979,9 @@ export const createAppServices = ({
       navigate, user, userId, db, auth, isAuthReady,
       isLoading: combinedIsLoading, error: combinedError, isAdmin, ADMIN_PASSWORD,
 
-      // Pass the destructured data
-      developmentPlanData: developmentPlanData,
+      // Pass the destructured data (FIXED 10/29/25: Added leadershipPlanData + alias)
+      leadershipPlanData: leadershipPlanData,
+      developmentPlanData: leadershipPlanData, // Alias for backward compatibility
       dailyPracticeData: dailyPracticeData,
       strategicContentData: strategicContentData,
       
@@ -1001,8 +1007,9 @@ export const createAppServices = ({
       GEMINI_MODEL: resolvedMetadata.GEMINI_MODEL || GEMINI_MODEL, API_KEY,
       hasPendingDailyPractice,
 
-      // Pass the destructured update functions
-      updateDevelopmentPlanData: updateDevelopmentPlanData,
+      // Pass the destructured update functions (FIXED 10/29/25: Added updateLeadershipPlanData + alias)
+      updateLeadershipPlanData: updateLeadershipPlanData,
+      updateDevelopmentPlanData: updateLeadershipPlanData, // Alias for backward compatibility
       updateDailyPracticeData: updateDailyPracticeData,
       updateStrategicContentData: updateStrategicContentData,
       updateGlobalMetadata: (data, opts) => updateGlobalMetadata(db, data, { ...opts, userId }),
@@ -1013,9 +1020,9 @@ export const createAppServices = ({
     // CRITICAL: Individual loading states and update functions are now dependencies
     devPlanLoading, dailyPracticeLoading, strategicContentLoading, metadataHook,
     combinedIsLoading, combinedError,
-    // Add the destructured update functions and data to the dependency array
-    updateDevelopmentPlanData, updateDailyPracticeData, updateStrategicContentData,
-    developmentPlanData, dailyPracticeData, strategicContentData,
+    // Add the destructured update functions and data to the dependency array (FIXED 10/29/25: Changed to leadershipPlanData)
+    updateLeadershipPlanData, updateDailyPracticeData, updateStrategicContentData,
+    leadershipPlanData, dailyPracticeData, strategicContentData,
   ]);
 
   return value;

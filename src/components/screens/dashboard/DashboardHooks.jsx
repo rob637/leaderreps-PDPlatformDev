@@ -44,6 +44,9 @@ export const useDashboard = ({
       eveningReflection: false
   });
   const [isSavingBookend, setIsSavingBookend] = useState(false);
+  
+  // FIXED 10/29/25: Track when we're intentionally clearing reflections
+  const [shouldSkipReflectionLoad, setShouldSkipReflectionLoad] = useState(false);
 
   // === STREAK STATE ===
   const [streakCount, setStreakCount] = useState(0);
@@ -107,7 +110,14 @@ export const useDashboard = ({
   }, [dailyPracticeData?.morningBookend]);
 
   // Load Evening Bookend
+  // FIXED 10/29/25: Skip reload after intentional clearing
   useEffect(() => {
+    // Skip load if we just saved and cleared
+    if (shouldSkipReflectionLoad) {
+      setShouldSkipReflectionLoad(false);
+      return;
+    }
+    
     if (dailyPracticeData?.eveningBookend) {
       const eb = dailyPracticeData.eveningBookend;
       setReflectionGood(eb.good || '');
@@ -119,7 +129,7 @@ export const useDashboard = ({
         eveningReflection: false
       });
     }
-  }, [dailyPracticeData?.eveningBookend]);
+  }, [dailyPracticeData?.eveningBookend, shouldSkipReflectionLoad]);
 
   /* =========================================================
      MODE TOGGLE HANDLER
@@ -266,6 +276,10 @@ export const useDashboard = ({
 
       // Auto-check evening reflection habit
       setHabitsCompleted(prev => ({ ...prev, eveningReflection: true }));
+      
+      // FIXED 10/29/25: Set flag to prevent reload
+      setShouldSkipReflectionLoad(true);
+      
       console.log('[Dashboard] Evening bookend saved with next-day reminders');
     } catch (error) {
       console.error('[Dashboard] Error saving evening bookend:', error);
@@ -451,6 +465,7 @@ export const useDashboard = ({
     handleToggleWIN, // NEW
     handleSaveWIN, // NEW
     handleHabitToggle,
+    setShouldSkipReflectionLoad, // FIXED 10/29/25: Export flag setter
 
     // Streak
     streakCount,

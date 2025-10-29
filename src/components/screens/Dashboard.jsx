@@ -42,7 +42,7 @@ const Dashboard = ({ navigate }) => {
     db,
     userEmail,
     developmentPlanData,
-    globalMetadata,
+    metadata: globalMetadata, // FIXED 10/29/25: Use 'metadata' from context
     isLoading // <-- FIX: Added main loading flag
   } = useAppServices();
 
@@ -114,10 +114,34 @@ const Dashboard = ({ navigate }) => {
   const [availablePods, setAvailablePods] = useState([]);
   const [isLoadingPods, setIsLoadingPods] = useState(false);
 
-  const focusArea = developmentPlanData?.currentPlan?.focusArea || 'Not Set';
+  // FIXED 10/29/25: Try multiple possible paths in Firebase
+  const focusArea = 
+    developmentPlanData?.currentPlan?.focusArea || 
+    developmentPlanData?.focusArea || 
+    developmentPlanData?.weeklyFocus?.area ||
+    developmentPlanData?.focus ||
+    'Not Set';
+  
   const devPlanProgress = 22;
 
   const targetRepDetails = useMemo(() => {
+    // DEBUG LOGGING (ADDED 10/29/25)
+    console.log('========== TARGET REP DEBUG ==========');
+    console.log('[Dashboard] targetRep value:', targetRep);
+    console.log('[Dashboard] targetRep type:', typeof targetRep);
+    console.log('[Dashboard] globalMetadata exists:', !!globalMetadata);
+    console.log('[Dashboard] globalMetadata keys:', globalMetadata ? Object.keys(globalMetadata) : 'N/A');
+    console.log('[Dashboard] REP_LIBRARY exists:', !!globalMetadata?.REP_LIBRARY);
+    console.log('[Dashboard] REP_LIBRARY.items exists:', !!globalMetadata?.REP_LIBRARY?.items);
+    console.log('[Dashboard] REP_LIBRARY.items is array:', Array.isArray(globalMetadata?.REP_LIBRARY?.items));
+    console.log('[Dashboard] REP_LIBRARY.items length:', globalMetadata?.REP_LIBRARY?.items?.length);
+    
+    if (globalMetadata?.REP_LIBRARY?.items?.[0]) {
+      console.log('[Dashboard] First rep structure:', globalMetadata.REP_LIBRARY.items[0]);
+      console.log('[Dashboard] First rep keys:', Object.keys(globalMetadata.REP_LIBRARY.items[0]));
+    }
+    console.log('======================================');
+    
     // This console.log is very helpful for debugging
     console.log('[Dashboard] Looking up target rep:', targetRep);
     
@@ -275,6 +299,24 @@ const Dashboard = ({ navigate }) => {
 
   const handleSaveEveningWithConfirmation = async () => {
     await handleSaveEveningBookend();
+    
+    // CRITICAL FIX (10/29/25): Delete the duplicate flat fields that were created incorrectly
+    try {
+      const { deleteField } = await import('firebase/firestore');
+      
+      await updateDailyPracticeData({
+        'eveningBookend.good': '',
+        'eveningBookend.better': '',
+        'eveningBookend.best': '',
+        // Also delete the incorrect flat fields if they exist
+        'eveningBookend.best': deleteField(),
+        'eveningBookend.better': deleteField(),
+        'eveningBookend.good': deleteField()
+      });
+    } catch (error) {
+      console.error('[Dashboard] Error clearing reflection fields:', error);
+    }
+    
     showSaveSuccess('Evening reflection saved!');
     setReflectionGood('');
     setReflectionBetter('');
@@ -318,39 +360,70 @@ const Dashboard = ({ navigate }) => {
     try {
       if (!db) throw new Error('Database not available');
       
-      const podsSnapshot = await db
-        .collection('pods')
-        .where('status', '==', 'active')
-        .get();
+      // FIXED 10/29/25: Use Firebase v9+ modular syntax
+      const { collection, query, where, getDocs } = await import('firebase/firestore');
+      
+      // Try the artifacts path first
+      const appId = globalMetadata?.APP_ID || 'default-app-id';
+      let podsRef = collection(db, 'artifacts', appId, 'pods');
+      let q = query(podsRef, where('status', '==', 'active'));
+      let podsSnapshot = await getDocs(q);
+      
+      // If no pods found, try root level
+      if (podsSnapshot.empty) {
+        console.log('[Dashboard] No pods in artifacts path, trying root level...');
+        podsRef = collection(db, 'pods');
+        q = query(podsRef, where('status', '==', 'active'));
+        podsSnapshot = await getDocs(q);
+      }
+      
+      // If still no pods, try community collection
+      if (podsSnapshot.empty) {
+        console.log('[Dashboard] No pods in root, trying community collection...');
+        podsRef = collection(db, 'community', 'pods');
+        q = query(podsRef, where('status', '==', 'active'));
+        podsSnapshot = await getDocs(q);
+      }
       
       let pods = podsSnapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
       }));
       
-      pods = pods.filter(p => (p.memberCount || 0) < 5);
+      // Filter pods with space
+      pods = pods.filter(p => (p.memberCount || 0) < (p.maxMembers || 5));
+      
       setAvailablePods(pods);
       console.log('[Dashboard] Found pods:', pods.length);
+      
+      if (pods.length === 0) {
+        alert('No pods available at the moment. Please create a new pod or check back later.');
+      }
     } catch (error) {
       console.error('[Dashboard] Error finding pods:', error);
-      alert('Unable to load pods. Please try again.');
+      console.error('[Dashboard] Error code:', error.code);
+      console.error('[Dashboard] Error message:', error.message);
+      alert(`Unable to load pods: ${error.message}`);
       setShowFindPodModal(false);
+    } finally {
+      setIsLoadingPods(false);
     }
-    setIsLoadingPods(false);
   };
 
   const handleJoinPod = async (podId) => {
     if (!db || !userEmail) return;
     
     try {
-      const { FieldValue } = await import('firebase/firestore'); // Import FieldValue
+      // FIXED 10/29/25: Use Firebase v9+ modular syntax
+      const { doc, updateDoc, arrayUnion, increment } = await import('firebase/firestore');
       
-      const podRef = db.collection('pods').doc(podId);
+      // Use the same path logic as finding pods
+      const appId = globalMetadata?.APP_ID || 'default-app-id';
+      const podRef = doc(db, 'artifacts', appId, 'pods', podId);
       
-      // Use FieldValue for atomic operations
-      await podRef.update({
-        members: FieldValue.arrayUnion(userEmail),
-        memberCount: FieldValue.increment(1)
+      await updateDoc(podRef, {
+        members: arrayUnion(userEmail),
+        memberCount: increment(1)
       });
       
       await updateDailyPracticeData({
@@ -364,7 +437,7 @@ const Dashboard = ({ navigate }) => {
       console.log('[Dashboard] Successfully joined pod:', podId);
     } catch (error) {
       console.error('[Dashboard] Error joining pod:', error);
-      alert('Failed to join pod. Please try again.');
+      alert(`Failed to join pod: ${error.message}`);
     }
   };
 
