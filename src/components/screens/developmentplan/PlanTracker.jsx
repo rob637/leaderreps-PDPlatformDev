@@ -64,7 +64,7 @@ const PlanTracker = ({
               Development Journey
             </h1>
             <p className="text-gray-600 mb-4">
-              Cycle {summary.cycle} • Focus: {summary.focusArea}
+              Cycle {summary.cycle} • Focus: {typeof summary.focusArea === 'object' && summary.focusArea?.name ? summary.focusArea.name : summary.focusArea || 'Not Set'}
             </p>
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-2">
@@ -178,7 +178,7 @@ const PlanTracker = ({
                       Cycle {historicalPlan.cycle}
                     </span>
                     <p className="text-xs text-gray-600">
-                      {historicalPlan.focusArea}
+                      {typeof historicalPlan.focusArea === 'object' && historicalPlan.focusArea?.name ? historicalPlan.focusArea.name : historicalPlan.focusArea || 'Not Set'}
                     </p>
                   </div>
                   <span className="text-xs text-gray-500">
