@@ -254,7 +254,10 @@ export const useDashboard = ({
           best: reflectionBest,
           habits: habitsCompleted,
           completedAt: serverTimestamp()
-        }
+        },
+        // NEW: Set tomorrow's reminders from today's reflection
+        tomorrowsReminder: reflectionBest,
+        improvementReminder: reflectionBetter
       };
 
       const success = await updateDailyPracticeData(updates);
@@ -262,7 +265,7 @@ export const useDashboard = ({
 
       // Auto-check evening reflection habit
       setHabitsCompleted(prev => ({ ...prev, eveningReflection: true }));
-      console.log('[Dashboard] Evening bookend saved');
+      console.log('[Dashboard] Evening bookend saved with next-day reminders');
     } catch (error) {
       console.error('[Dashboard] Error saving evening bookend:', error);
       alert('Error saving reflection. Please try again.');
@@ -277,12 +280,25 @@ export const useDashboard = ({
       alert('Maximum 5 tasks allowed');
       return;
     }
-    setOtherTasks(prev => [...prev, {
+    
+    const newTask = {
       id: `task-${Date.now()}`,
       text: taskText,
       completed: false
-    }]);
-  }, [otherTasks]);
+    };
+    
+    const updatedTasks = [...otherTasks, newTask];
+    setOtherTasks(updatedTasks);
+    
+    // NEW: Auto-save to Firestore immediately
+    if (updateDailyPracticeData) {
+      updateDailyPracticeData({
+        'morningBookend.otherTasks': updatedTasks
+      }).catch(error => {
+        console.error('[Dashboard] Error auto-saving task:', error);
+      });
+    }
+  }, [otherTasks, updateDailyPracticeData]);
 
   const handleToggleTask = useCallback((taskId) => {
     setOtherTasks(prev => prev.map(task =>
@@ -294,9 +310,41 @@ export const useDashboard = ({
     setOtherTasks(prev => prev.filter(task => task.id !== taskId));
   }, []);
 
+  // NEW: Handle WIN checkbox toggle
+  const handleToggleWIN = useCallback(async () => {
+    if (!updateDailyPracticeData) return;
+    
+    const currentStatus = dailyPracticeData?.morningBookend?.winCompleted || false;
+    const newStatus = !currentStatus;
+    
+    try {
+      await updateDailyPracticeData({
+        'morningBookend.winCompleted': newStatus
+      });
+      console.log('[Dashboard] WIN toggled:', newStatus);
+    } catch (error) {
+      console.error('[Dashboard] Error toggling WIN:', error);
+    }
+  }, [dailyPracticeData, updateDailyPracticeData]);
+
   const handleHabitToggle = useCallback((habitKey, checked) => {
     setHabitsCompleted(prev => ({ ...prev, [habitKey]: checked }));
   }, []);
+
+  // NEW: Handle saving WIN separately
+  const handleSaveWIN = useCallback(async () => {
+    if (!updateDailyPracticeData) return;
+    
+    try {
+      await updateDailyPracticeData({
+        'morningBookend.dailyWIN': morningWIN
+      });
+      console.log('[Dashboard] WIN saved');
+    } catch (error) {
+      console.error('[Dashboard] Error saving WIN:', error);
+      alert('Error saving WIN. Please try again.');
+    }
+  }, [morningWIN, updateDailyPracticeData]);
 
   /* =========================================================
      COMPUTED VALUES
@@ -356,6 +404,8 @@ export const useDashboard = ({
     handleAddTask,
     handleToggleTask,
     handleRemoveTask,
+    handleToggleWIN, // NEW
+    handleSaveWIN, // NEW
     handleHabitToggle,
 
     // Streak

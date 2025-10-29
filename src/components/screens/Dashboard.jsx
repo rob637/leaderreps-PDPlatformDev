@@ -1,10 +1,10 @@
 // src/components/screens/Dashboard.jsx
-// Refactored into modular structure (10/28/25)
+// Refactored with 60/40 layout, dynamic bookends, reminders, auto-tracking (10/28/25)
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAppServices } from '../../services/useAppServices.jsx';
 import { 
-  Flag, Briefcase, Home 
+  Flag, Home 
 } from 'lucide-react';
 
 // Import modular components
@@ -14,11 +14,12 @@ import {
   Card,
   ModeSwitch,
   StreakTracker,
-  MorningBookend,
-  EveningBookend,
-  WhyItMattersCard,
+  DynamicBookendContainer, // NEW
+  DevPlanProgressLink, // NEW
+  IdentityAnchorCard, // RENAMED from WhyItMattersCard
   HabitAnchorCard,
-  AICoachNudge
+  AICoachNudge,
+  ReminderBanner // NEW
 } from './dashboard/DashboardComponents.jsx';
 
 // Import hooks
@@ -84,6 +85,8 @@ const Dashboard = ({ navigate }) => {
     handleAddTask,
     handleToggleTask,
     handleRemoveTask,
+    handleToggleWIN, // NEW
+    handleSaveWIN, // NEW
     handleHabitToggle,
 
     // Streak
@@ -99,6 +102,110 @@ const Dashboard = ({ navigate }) => {
     db,
     userEmail
   });
+
+  // NEW: State for reminders
+  const [showBestReminder, setShowBestReminder] = useState(false);
+  const [showImprovementReminder, setShowImprovementReminder] = useState(false);
+  const [celebrationShown, setCelebrationShown] = useState(false);
+
+  // NEW: Get dynamic focus area from dev plan
+  const focusArea = developmentPlanData?.currentPlan?.focusArea || 'Not Set';
+  
+  // NEW: Calculate dev plan progress (simple version - can be enhanced)
+  const devPlanProgress = 22; // Placeholder - should calculate based on actual progress
+
+  /* =========================================================
+     AUTO-UPDATE WATCHERS (NEW)
+  ========================================================= */
+  
+  // Watch for AM WIN completion → Auto-update PM habit
+  useEffect(() => {
+    if (!dailyPracticeData?.morningBookend || !updateDailyPracticeData) return;
+    
+    const { winCompleted } = dailyPracticeData.morningBookend;
+    
+    if (winCompleted && !habitsCompleted.completedAMWIN) {
+      console.log('[Dashboard] AM WIN completed - updating PM habit');
+      updateDailyPracticeData({
+        'eveningBookend.habits.completedAMWIN': true
+      });
+    }
+  }, [dailyPracticeData?.morningBookend?.winCompleted, habitsCompleted.completedAMWIN, updateDailyPracticeData]);
+
+  // Watch for all AM tasks completion → Auto-update PM habit
+  useEffect(() => {
+    if (!dailyPracticeData?.morningBookend || !updateDailyPracticeData) return;
+    
+    const { otherTasks } = dailyPracticeData.morningBookend;
+    const allTasksComplete = otherTasks && otherTasks.length > 0 && 
+      otherTasks.every(task => task.completed);
+    
+    if (allTasksComplete && !habitsCompleted.completedAMTasks) {
+      console.log('[Dashboard] All AM tasks completed - updating PM habit');
+      updateDailyPracticeData({
+        'eveningBookend.habits.completedAMTasks': true
+      });
+    }
+  }, [dailyPracticeData?.morningBookend?.otherTasks, habitsCompleted.completedAMTasks, updateDailyPracticeData]);
+
+  // Watch for complete AM plan → Celebration
+  useEffect(() => {
+    if (!dailyPracticeData?.morningBookend || celebrationShown) return;
+    
+    const { winCompleted, otherTasks } = dailyPracticeData.morningBookend;
+    const allTasksComplete = otherTasks && otherTasks.length > 0 && 
+      otherTasks.every(task => task.completed);
+    
+    if (winCompleted && allTasksComplete) {
+      const todayStr = new Date().toISOString().split('T')[0];
+      const celebratedKey = `celebrated_am_${todayStr}`;
+      
+      if (!sessionStorage.getItem(celebratedKey)) {
+        // Show celebration
+        alert('🎉 Way to go, Leader! Morning plan crushed!');
+        sessionStorage.setItem(celebratedKey, 'true');
+        setCelebrationShown(true);
+      }
+    }
+  }, [dailyPracticeData?.morningBookend, celebrationShown]);
+
+  /* =========================================================
+     NEXT-DAY REMINDERS (NEW)
+  ========================================================= */
+  
+  useEffect(() => {
+    if (!dailyPracticeData) return;
+    
+    const { tomorrowsReminder, improvementReminder } = dailyPracticeData;
+    
+    // Show Best reminder
+    if (tomorrowsReminder && !sessionStorage.getItem('dismissed_best_reminder')) {
+      setShowBestReminder(true);
+    }
+    
+    // Show Improvement reminder
+    if (improvementReminder && !sessionStorage.getItem('dismissed_improvement_reminder')) {
+      setShowImprovementReminder(true);
+    }
+  }, [dailyPracticeData]);
+
+  const handleDismissBestReminder = () => {
+    setShowBestReminder(false);
+    sessionStorage.setItem('dismissed_best_reminder', 'true');
+    // Clear from database
+    if (updateDailyPracticeData) {
+      updateDailyPracticeData({ tomorrowsReminder: '' });
+    }
+  };
+
+  const handleDismissImprovementReminder = () => {
+    setShowImprovementReminder(false);
+    sessionStorage.setItem('dismissed_improvement_reminder', 'true');
+    // Clear from database
+    if (updateDailyPracticeData) {
+      updateDailyPracticeData({ improvementReminder: '' });
+    }
+  };
 
   /* =========================================================
      LOADING STATE
@@ -130,7 +237,7 @@ const Dashboard = ({ navigate }) => {
             </h1>
             <p className="text-lg" style={{ color: COLORS.TEXT }}>
               Welcome to The Arena, <strong>{userEmail?.split('@')[0] || 'Leader'}</strong>. 
-              Focus Area: <strong>Team Health & Culture</strong>
+              Focus Area: <strong>{focusArea}</strong>
             </p>
           </div>
           
@@ -147,30 +254,33 @@ const Dashboard = ({ navigate }) => {
              style={{ background: `linear-gradient(90deg, ${COLORS.TEAL}, ${COLORS.ORANGE})` }} />
       </div>
 
+      {/* === REMINDER BANNERS (NEW) === */}
+      {(showBestReminder || showImprovementReminder) && (
+        <div className="max-w-7xl mx-auto mb-4 space-y-3">
+          {showBestReminder && (
+            <ReminderBanner 
+              message={dailyPracticeData.tomorrowsReminder}
+              onDismiss={handleDismissBestReminder}
+              type="best"
+            />
+          )}
+          {showImprovementReminder && (
+            <ReminderBanner 
+              message={dailyPracticeData.improvementReminder}
+              onDismiss={handleDismissImprovementReminder}
+              type="improvement"
+            />
+          )}
+        </div>
+      )}
+
       {/* === MAIN CONTENT GRID === */}
       <div className="max-w-7xl mx-auto">
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
 
-          {/* === LEFT COLUMN === */}
+          {/* === LEFT COLUMN (60% - DAILY FOCUS) === */}
           <div className="lg:col-span-3 space-y-6">
             
-            {/* Morning Bookend (NEW) */}
-            {(featureFlags?.enableBookends !== false) && (
-              <MorningBookend 
-                dailyWIN={morningWIN}
-                setDailyWIN={setMorningWIN}
-                otherTasks={otherTasks}
-                onAddTask={handleAddTask}
-                onToggleTask={handleToggleTask}
-                onRemoveTask={handleRemoveTask}
-                showLIS={showLIS}
-                setShowLIS={setShowLIS}
-                identityStatement={identityStatement}
-                onSave={handleSaveMorningBookend}
-                isSaving={isSavingBookend}
-              />
-            )}
-
             {/* Today's Focus Rep */}
             <Card title="🎯 Today's Focus Rep" icon={Flag} accent='NAVY'>
               <div className="mb-4">
@@ -224,10 +334,17 @@ const Dashboard = ({ navigate }) => {
               )}
             </Card>
 
-            {/* Why & Habit Grid */}
+            {/* NEW: Dev Plan Progress Link */}
+            <DevPlanProgressLink 
+              progress={devPlanProgress}
+              focusArea={focusArea}
+              onNavigate={() => navigate('development-plan')}
+            />
+
+            {/* Identity & Habit Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <WhyItMattersCard 
-                whyStatement={identityStatement || "Define your leadership identity..."} 
+              <IdentityAnchorCard 
+                identityStatement={identityStatement || "I am the kind of leader who..."} 
                 onEdit={() => setShowIdentityEditor(true)} 
               />
               <HabitAnchorCard 
@@ -267,39 +384,45 @@ const Dashboard = ({ navigate }) => {
             )}
           </div>
 
-          {/* === RIGHT COLUMN === */}
+          {/* === RIGHT COLUMN (40% - BOOKENDS) === */}
           <div className="lg:col-span-2 space-y-6">
             
-            {/* Evening Bookend (NEW) */}
+            {/* NEW: Dynamic Bookend Container */}
             {(featureFlags?.enableBookends !== false) && (
-              <EveningBookend 
-                reflectionGood={reflectionGood}
-                setReflectionGood={setReflectionGood}
-                reflectionBetter={reflectionBetter}
-                setReflectionBetter={setReflectionBetter}
-                reflectionBest={reflectionBest}
-                setReflectionBest={setReflectionBest}
-                habitsCompleted={habitsCompleted}
-                onHabitToggle={handleHabitToggle}
-                onSave={handleSaveEveningBookend}
-                isSaving={isSavingBookend}
+              <DynamicBookendContainer 
+                morningProps={{
+                  dailyWIN: morningWIN,
+                  setDailyWIN: setMorningWIN,
+                  otherTasks: otherTasks,
+                  onAddTask: handleAddTask,
+                  onToggleTask: handleToggleTask,
+                  onRemoveTask: handleRemoveTask,
+                  showLIS: showLIS,
+                  setShowLIS: setShowLIS,
+                  identityStatement: identityStatement,
+                  onSave: handleSaveMorningBookend,
+                  onSaveWIN: handleSaveWIN, // NEW
+                  onToggleWIN: handleToggleWIN, // NEW
+                  isSaving: isSavingBookend,
+                  completedAt: dailyPracticeData?.morningBookend?.completedAt, // NEW
+                  winCompleted: dailyPracticeData?.morningBookend?.winCompleted // NEW
+                }}
+                eveningProps={{
+                  reflectionGood: reflectionGood,
+                  setReflectionGood: setReflectionGood,
+                  reflectionBetter: reflectionBetter,
+                  setReflectionBetter: setReflectionBetter,
+                  reflectionBest: reflectionBest,
+                  setReflectionBest: setReflectionBest,
+                  habitsCompleted: habitsCompleted,
+                  onHabitToggle: handleHabitToggle,
+                  onSave: handleSaveEveningBookend,
+                  isSaving: isSavingBookend,
+                  onNavigate: navigate // NEW: for history link
+                }}
+                dailyPracticeData={dailyPracticeData}
               />
             )}
-
-            {/* Daily Reflection Log */}
-            <Card title="📝 Daily Reflection Log" accent='TEAL'>
-              <p className="text-sm mb-4" style={{ color: COLORS.TEXT }}>
-                Track your daily insights and growth moments...
-              </p>
-              <Button 
-                onClick={() => {/* TODO: Open reflection log */}} 
-                variant="outline" 
-                size="sm" 
-                className="w-full"
-              >
-                View Full Reflection Log
-              </Button>
-            </Card>
 
             {/* AI Coach Nudge */}
             <AICoachNudge 
@@ -314,13 +437,16 @@ const Dashboard = ({ navigate }) => {
       {showIdentityEditor && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl p-6 max-w-lg w-full" style={{ borderColor: COLORS.SUBTLE }}>
-            <h2 className="text-2xl font-bold mb-4" style={{ color: COLORS.NAVY }}>
-              Edit Leadership Identity
+            <h2 className="text-2xl font-bold mb-2" style={{ color: COLORS.NAVY }}>
+              Edit Your Identity Anchor
             </h2>
+            <p className="text-sm mb-4" style={{ color: COLORS.MUTED }}>
+              Complete this statement: "I am the kind of leader who..."
+            </p>
             <textarea 
               value={identityStatement}
               onChange={(e) => setIdentityStatement(e.target.value)}
-              placeholder="I'm the kind of leader who..."
+              placeholder="I am the kind of leader who..."
               className="w-full p-3 border rounded-lg mb-4"
               style={{ borderColor: COLORS.SUBTLE }}
               rows={4}

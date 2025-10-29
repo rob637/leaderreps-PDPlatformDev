@@ -223,6 +223,7 @@ export const ensureUserDocs = async (db, uid) => {
               // NEW: Morning Bookend fields
               morningBookend: {
                   dailyWIN: '',
+                  winCompleted: false, // NEW: Track WIN completion separately
                   otherTasks: [],
                   readLIS: false,
                   completedAt: null
@@ -235,10 +236,15 @@ export const ensureUserDocs = async (db, uid) => {
                   habits: {
                       readLIS: false,
                       completedDailyRep: false,
-                      eveningReflection: false
+                      eveningReflection: false,
+                      completedAMWIN: false, // NEW: Auto-tracked from AM bookend
+                      completedAMTasks: false // NEW: Auto-tracked from AM bookend
                   },
                   completedAt: null
               },
+              // NEW: Next-day reminder fields
+              tomorrowsReminder: '', // Populated from "Best" answer
+              improvementReminder: '', // Populated from "Better" answer
               // NEW: Weekly Focus fields
               weeklyFocus: {
                   area: '',
