@@ -1,4 +1,6 @@
 // src/components/screens/Dashboard.jsx
+// FIXED: Wait for main 'isLoading' flag to ensure globalMetadata is loaded from catalog.
+// FIXED: Re-ordered layout to match design screenshot.
 // FIXED: Removed 'amCompletedAt' ref to fix crash.
 // FIXED: Merged Anchor "Edit" and "Suggestion" modals per user request.
 
@@ -40,7 +42,8 @@ const Dashboard = ({ navigate }) => {
     db,
     userEmail,
     developmentPlanData,
-    globalMetadata
+    globalMetadata,
+    isLoading // <-- FIX: Added main loading flag
   } = useAppServices();
 
   const {
@@ -115,30 +118,36 @@ const Dashboard = ({ navigate }) => {
   const devPlanProgress = 22;
 
   const targetRepDetails = useMemo(() => {
-    console.log('[Dashboard FIX #1] Looking up target rep:', targetRep);
-    console.log('[Dashboard FIX #1] globalMetadata structure:', globalMetadata);
+    // This console.log is very helpful for debugging
+    console.log('[Dashboard] Looking up target rep:', targetRep);
     
+    // With the isLoading fix, globalMetadata should be populated here.
+    if (!globalMetadata) {
+      console.log('[Dashboard] globalMetadata is not yet available.');
+      return null;
+    }
+
     if (!targetRep) {
-      console.log('[Dashboard FIX #1] No target rep set');
+      console.log('[Dashboard] No target rep set');
       return null;
     }
     
     let repLibrary = null;
     
+    // Check the primary path first
     if (globalMetadata?.REP_LIBRARY?.items) {
       repLibrary = globalMetadata.REP_LIBRARY.items;
-      console.log('[Dashboard FIX #1] Found REP_LIBRARY.items');
-    } else if (globalMetadata?.config?.catalog?.REP_LIBRARY) {
-      repLibrary = globalMetadata.config.catalog.REP_LIBRARY;
-      console.log('[Dashboard FIX #1] Found config.catalog.REP_LIBRARY');
-    } else if (Array.isArray(globalMetadata?.REP_LIBRARY)) {
+      console.log('[Dashboard] Found REP_LIBRARY.items');
+    } 
+    // Add other fallback paths if necessary
+    else if (Array.isArray(globalMetadata?.REP_LIBRARY)) {
       repLibrary = globalMetadata.REP_LIBRARY;
-      console.log('[Dashboard FIX #1] Found REP_LIBRARY array');
+      console.log('[Dashboard] Found REP_LIBRARY as a direct array');
     }
     
     if (!repLibrary) {
-      console.error('[Dashboard FIX #1] REP_LIBRARY not found in any known path');
-      console.log('[Dashboard FIX #1] Available keys:', Object.keys(globalMetadata || {}));
+      console.error('[Dashboard] REP_LIBRARY not found in any known path');
+      console.log('[Dashboard] Available metadata keys:', Object.keys(globalMetadata || {}));
       return {
         name: targetRep,
         description: 'Unable to load rep details from database',
@@ -146,7 +155,7 @@ const Dashboard = ({ navigate }) => {
       };
     }
     
-    console.log('[Dashboard FIX #1] Searching', repLibrary.length, 'reps');
+    console.log('[Dashboard] Searching', repLibrary.length, 'reps');
     
     const repItem = repLibrary.find(rep => {
       const match = (
@@ -156,13 +165,12 @@ const Dashboard = ({ navigate }) => {
         rep.name === targetRep ||
         rep.title === targetRep
       );
-      if (match) console.log('[Dashboard FIX #1] MATCH FOUND:', rep);
+      // if (match) console.log('[Dashboard] MATCH FOUND:', rep); // Optional: reduce log noise
       return match;
     });
     
     if (!repItem) {
-      console.warn('[Dashboard FIX #1] Target rep not found in catalog:', targetRep);
-      console.log('[Dashboard FIX #1] Sample rep structure:', repLibrary[0]);
+      console.warn('[Dashboard] Target rep not found in catalog:', targetRep);
       return {
         name: targetRep,
         description: 'Rep details not found in catalog',
@@ -170,7 +178,7 @@ const Dashboard = ({ navigate }) => {
       };
     }
     
-    console.log('[Dashboard FIX #1] Found rep details:', repItem);
+    console.log('[Dashboard] Found rep details:', repItem);
     
     return {
       id: repItem.id || repItem.repId || repItem.repID,
@@ -188,15 +196,18 @@ const Dashboard = ({ navigate }) => {
 
   
   useEffect(() => {
+    // This check is good. globalMetadata might be {} on first render before isLoading is false.
+    if (!globalMetadata) return; 
+    
     try {
       const identity = (globalMetadata?.IDENTITY_ANCHOR_CATALOG?.items || []).map(x => (typeof x === 'string' ? { text: x } : x));
       const habits = (globalMetadata?.HABIT_ANCHOR_CATALOG?.items || []).map(x => (typeof x === 'string' ? { text: x } : x));
       setIdentitySuggestions(identity);
       setHabitSuggestions(habits);
       setIsLoadingSuggestions(false);
-      console.log('[Dashboard FIX #6] Suggestions loaded from metadata catalogs', { identity: identity.length, habits: habits.length });
+      console.log('[Dashboard] Suggestions loaded from metadata catalogs', { identity: identity.length, habits: habits.length });
     } catch (error) {
-      console.error('[Dashboard FIX #6] Failed to parse metadata catalogs', error);
+      console.error('[Dashboard] Failed to parse metadata catalogs', error);
       setIdentitySuggestions([]);
       setHabitSuggestions([]);
       setIsLoadingSuggestions(false);
@@ -240,7 +251,7 @@ const Dashboard = ({ navigate }) => {
   const handleToggleAdditionalRep = async (commitmentId) => {
     if (!updateDailyPracticeData || !additionalCommitments) return;
     
-    console.log('[Dashboard FIX #7] Toggling additional rep:', commitmentId);
+    console.log('[Dashboard] Toggling additional rep:', commitmentId);
     
     try {
       const updated = additionalCommitments.map(c => 
@@ -261,13 +272,13 @@ const Dashboard = ({ navigate }) => {
           : 'Rep marked incomplete'
       );
     } catch (error) {
-      console.error('[Dashboard FIX #7] Error toggling rep:', error);
+      console.error('[Dashboard] Error toggling rep:', error);
       alert('Failed to update rep. Please try again.');
     }
   };
 
   const handleFindPod = async () => {
-    console.log('[Dashboard FIX #8] Finding pods...');
+    console.log('[Dashboard] Finding pods...');
     setShowFindPodModal(true);
     setIsLoadingPods(true);
     
@@ -286,9 +297,9 @@ const Dashboard = ({ navigate }) => {
       
       pods = pods.filter(p => (p.memberCount || 0) < 5);
       setAvailablePods(pods);
-      console.log('[Dashboard FIX #8] Found pods:', pods.length);
+      console.log('[Dashboard] Found pods:', pods.length);
     } catch (error) {
-      console.error('[Dashboard FIX #8] Error finding pods:', error);
+      console.error('[Dashboard] Error finding pods:', error);
       alert('Unable to load pods. Please try again.');
       setShowFindPodModal(false);
     }
@@ -317,9 +328,9 @@ const Dashboard = ({ navigate }) => {
       showSaveSuccess('🎉 Joined pod successfully!');
       setShowFindPodModal(false);
       
-      console.log('[Dashboard FIX #8] Successfully joined pod:', podId);
+      console.log('[Dashboard] Successfully joined pod:', podId);
     } catch (error) {
-      console.error('[Dashboard FIX #8] Error joining pod:', error);
+      console.error('[Dashboard] Error joining pod:', error);
       alert('Failed to join pod. Please try again.');
     }
   };
@@ -369,7 +380,8 @@ const Dashboard = ({ navigate }) => {
   const amWinCompleted = dailyPracticeData?.morningBookend?.winCompleted || false;
   const amTasksCompleted = otherTasks.length > 0 && otherTasks.every(t => t.completed);
 
-  if (!dailyPracticeData || !updateDailyPracticeData) {
+  // --- FIX: UPDATED LOADING GUARD ---
+  if (isLoading || !dailyPracticeData) {
     return (
       <div className="min-h-screen flex items-center justify-center" style={{ background: COLORS.BG }}>
         <div className="flex flex-col items-center">
@@ -379,6 +391,7 @@ const Dashboard = ({ navigate }) => {
       </div>
     );
   }
+  // --- END FIX ---
 
   return (
     <div className="min-h-screen" style={{ background: COLORS.BG }}>
@@ -426,12 +439,24 @@ const Dashboard = ({ navigate }) => {
           </div>
         )}
 
-        {/* Main Content Grid */}
+        {/* // --- FIX: RE-ORDERED MAIN CONTENT GRID ---
+        // The layout is now changed to match the screenshot:
+        // Left Column (col-span-2): DevPlan, Focus Rep, Anchors, Reflection Log, etc.
+        // Right Column (col-span-1): Bookends, Social Pod
+        */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           
           {/* Left Column */}
           <div className="lg:col-span-2 space-y-6">
             
+            {/* 1. Dev Plan / Focus Area (Moved from right) */}
+            <DevPlanProgressLink
+              progress={devPlanProgress}
+              focusArea={focusArea}
+              onNavigate={() => navigate('development-plan')}
+            />
+
+            {/* 2. Today's Focus Rep (Was already here) */}
             <Card title="🎯 Today's Focus Rep" accent='ORANGE'>
               
               {targetRepDetails && (
@@ -512,6 +537,53 @@ const Dashboard = ({ navigate }) => {
               )}
             </Card>
 
+            {/* 3. Identity Anchor (Moved from right) */}
+            <IdentityAnchorCard
+              identityStatement={identityStatement}
+              onEdit={() => setShowIdentityEditor(true)}
+            />
+
+            {/* 4. Habit Anchor (Moved from right) */}
+            <HabitAnchorCard
+              habitAnchor={habitAnchor}
+              onEdit={() => setShowHabitEditor(true)}
+            />
+
+            {/* 5. Daily Reflection Log (NEW: Added from screenshot) */}
+            <Card title="Daily Reflection Log">
+              <p className="text-sm text-gray-600 mb-4">
+                Review your past entries and reflections.
+              </p>
+              <Button 
+                variant="outline" 
+                onClick={() => navigate('reflection-log')} // Assuming a 'reflection-log' route
+                className="w-full"
+              >
+                View Reflection Log
+              </Button>
+            </Card>
+
+            {/* 6. Additional Reps (Moved from right) */}
+            {additionalCommitments && additionalCommitments.length > 0 && (
+              <AdditionalRepsCard
+                commitments={additionalCommitments}
+                onToggle={handleToggleAdditionalRep}
+                repLibrary={globalMetadata?.REP_LIBRARY?.items || []}
+              />
+            )}
+
+            {/* 7. AI Coach Nudge (Was already here) */}
+            <AICoachNudge 
+              onOpenLab={() => navigate('coaching-lab')} 
+              disabled={!(featureFlags?.enableLabs)}
+            />
+
+          </div>
+
+          {/* Right Column */}
+          <div className="space-y-6">
+
+            {/* 1. AM/PM Bookend (Moved from left) */}
             <DynamicBookendContainer
               morningProps={{
                 dailyWIN: morningWIN,
@@ -549,49 +621,18 @@ const Dashboard = ({ navigate }) => {
               }}
               dailyPracticeData={dailyPracticeData}
             />
-
-            <AICoachNudge 
-              onOpenLab={() => navigate('coaching-lab')} 
-              disabled={!(featureFlags?.enableLabs)}
-            />
-          </div>
-
-          {/* Right Column */}
-          <div className="space-y-6">
-            <DevPlanProgressLink
-              progress={devPlanProgress}
-              focusArea={focusArea}
-              onNavigate={() => navigate('development-plan')}
-            />
-
-            {/* **MODAL FIX**: Removed onShowSuggestions prop */}
-            <IdentityAnchorCard
-              identityStatement={identityStatement}
-              onEdit={() => setShowIdentityEditor(true)}
-            />
-
-            {/* **MODAL FIX**: Removed onShowSuggestions prop */}
-            <HabitAnchorCard
-              habitAnchor={habitAnchor}
-              onEdit={() => setShowHabitEditor(true)}
-            />
-
-            {additionalCommitments && additionalCommitments.length > 0 && (
-              <AdditionalRepsCard
-                commitments={additionalCommitments}
-                onToggle={handleToggleAdditionalRep}
-                repLibrary={globalMetadata?.REP_LIBRARY?.items || []}
-              />
-            )}
-
+            
+            {/* 2. Social Pod (Was already here) */}
             <SocialPodCard
               podMembers={dailyPracticeData?.podMembers || []}
               activityFeed={dailyPracticeData?.podActivity || []}
               onSendMessage={(msg) => console.log('Send message:', msg)}
               onFindPod={handleFindPod}
             />
+
           </div>
         </div>
+        {/* --- END FIX --- */}
       </div>
 
       {/* MODALS */}
