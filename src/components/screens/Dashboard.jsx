@@ -114,14 +114,36 @@ const Dashboard = ({ navigate }) => {
   const [availablePods, setAvailablePods] = useState([]);
   const [isLoadingPods, setIsLoadingPods] = useState(false);
 
-  const focusArea = developmentPlanData?.currentPlan?.focusArea || 'Not Set';
+  // FIX #1: Check multiple possible property names for focus area
+  const focusArea = useMemo(() => {
+    const plan = developmentPlanData?.currentPlan;
+    if (!plan) return 'Not Set';
+    
+    // Check direct properties first
+    if (plan.focusArea) return plan.focusArea;
+    if (plan.targetSkill) return plan.targetSkill;
+    if (plan.primarySkill) return plan.primarySkill;
+    if (plan.skill) return plan.skill;
+    if (plan.focus) return plan.focus;
+    
+    // Check phases structure (based on DevelopmentPlan.jsx structure)
+    if (plan.phases && Array.isArray(plan.phases) && plan.phases.length > 0) {
+      const firstPhase = plan.phases[0];
+      if (firstPhase.skills && Array.isArray(firstPhase.skills) && firstPhase.skills.length > 0) {
+        return firstPhase.skills[0];
+      }
+    }
+    
+    return 'Not Set';
+  }, [developmentPlanData?.currentPlan]);
+  
   const devPlanProgress = 22;
 
   const targetRepDetails = useMemo(() => {
-    // This console.log is very helpful for debugging
+    // FIX #2: Enhanced target rep lookup with better debugging
     console.log('[Dashboard] Looking up target rep:', targetRep);
+    console.log('[Dashboard] globalMetadata keys:', Object.keys(globalMetadata || {}));
     
-    // With the isLoading fix, globalMetadata should be populated here.
     if (!globalMetadata) {
       console.log('[Dashboard] globalMetadata is not yet available.');
       return null;
@@ -134,57 +156,94 @@ const Dashboard = ({ navigate }) => {
     
     let repLibrary = null;
     
-    // Check the primary path first
+    // Try all possible paths where REP_LIBRARY might be stored
     if (globalMetadata?.REP_LIBRARY?.items) {
       repLibrary = globalMetadata.REP_LIBRARY.items;
-      console.log('[Dashboard] Found REP_LIBRARY.items');
-    } 
-    // Add other fallback paths if necessary
-    else if (Array.isArray(globalMetadata?.REP_LIBRARY)) {
+      console.log('[Dashboard] Found REP_LIBRARY.items:', repLibrary.length);
+    } else if (Array.isArray(globalMetadata?.REP_LIBRARY)) {
       repLibrary = globalMetadata.REP_LIBRARY;
-      console.log('[Dashboard] Found REP_LIBRARY as a direct array');
+      console.log('[Dashboard] Found REP_LIBRARY as array:', repLibrary.length);
+    } else if (globalMetadata?.reps) {
+      repLibrary = globalMetadata.reps;
+      console.log('[Dashboard] Found reps:', repLibrary.length);
+    } else if (globalMetadata?.repLibrary) {
+      repLibrary = globalMetadata.repLibrary;
+      console.log('[Dashboard] Found repLibrary:', repLibrary.length);
     }
     
-    if (!repLibrary) {
-      console.error('[Dashboard] REP_LIBRARY not found in any known path');
-      console.log('[Dashboard] Available metadata keys:', Object.keys(globalMetadata || {}));
+    if (!repLibrary || !Array.isArray(repLibrary)) {
+      console.error('[Dashboard] REP_LIBRARY not found or not an array');
+      console.log('[Dashboard] Available metadata:', globalMetadata);
       return {
         name: targetRep,
-        description: 'Unable to load rep details from database',
-        whatGreatLooksLike: 'Database connection issue - please refresh'
+        description: 'Loading rep details...',
+        whatGreatLooksLike: 'Please wait while we load the rep catalog'
       };
     }
     
-    console.log('[Dashboard] Searching', repLibrary.length, 'reps');
+    console.log('[Dashboard] Searching', repLibrary.length, 'reps for:', targetRep);
+    if (repLibrary.length > 0) {
+      console.log('[Dashboard] First rep structure:', repLibrary[0]);
+    }
     
+    // Enhanced matching logic - try multiple ID formats
     const repItem = repLibrary.find(rep => {
-      const match = (
-        rep.id === targetRep || 
-        rep.repId === targetRep ||
-        rep.repID === targetRep ||
-        rep.name === targetRep ||
-        rep.title === targetRep
-      );
-      // if (match) console.log('[Dashboard] MATCH FOUND:', rep); // Optional: reduce log noise
-      return match;
+      if (!rep) return false;
+      
+      // Try exact matches first
+      if (rep.id === targetRep || 
+          rep.repId === targetRep ||
+          rep.repID === targetRep ||
+          rep.rep_id === targetRep) {
+        console.log('[Dashboard] Found exact ID match:', rep);
+        return true;
+      }
+      
+      // Try case-insensitive matches
+      const targetLower = targetRep.toLowerCase();
+      if (rep.id?.toLowerCase() === targetLower ||
+          rep.repId?.toLowerCase() === targetLower ||
+          rep.repID?.toLowerCase() === targetLower) {
+        console.log('[Dashboard] Found case-insensitive match:', rep);
+        return true;
+      }
+      
+      // Try name matches
+      if (rep.name === targetRep || 
+          rep.title === targetRep ||
+          rep.text === targetRep) {
+        console.log('[Dashboard] Found name match:', rep);
+        return true;
+      }
+      
+      return false;
     });
     
     if (!repItem) {
       console.warn('[Dashboard] Target rep not found in catalog:', targetRep);
+      if (repLibrary.length > 0) {
+        console.log('[Dashboard] Sample IDs from catalog:', 
+          repLibrary.slice(0, 5).map(r => ({ 
+            id: r.id, 
+            repId: r.repId, 
+            name: r.name 
+          }))
+        );
+      }
       return {
         name: targetRep,
-        description: 'Rep details not found in catalog',
-        whatGreatLooksLike: 'Please check Development Plan for more information'
+        description: 'Rep not found in catalog',
+        whatGreatLooksLike: 'Please check your Development Plan or contact support'
       };
     }
     
-    console.log('[Dashboard] Found rep details:', repItem);
+    console.log('[Dashboard] Successfully found rep:', repItem);
     
     return {
       id: repItem.id || repItem.repId || repItem.repID,
       name: repItem.text || repItem.name || repItem.title || targetRep,
-      description: repItem.definition || repItem.desc || 'No description available',
-      whatGreatLooksLike: repItem.definition || repItem.whatGoodLooksLike || 'Focus on consistent practice',
+      description: repItem.definition || repItem.description || repItem.desc || 'No description available',
+      whatGreatLooksLike: repItem.whatGoodLooksLike || repItem.definition || 'Focus on consistent practice',
       category: repItem.category || 'General',
       tier: repItem.tier || repItem.tier_id
     };
@@ -196,12 +255,69 @@ const Dashboard = ({ navigate }) => {
 
   
   useEffect(() => {
-    // This check is good. globalMetadata might be {} on first render before isLoading is false.
-    if (!globalMetadata) return; 
+    // FIX #7: Enhanced suggestions loading with better debugging
+    console.log('[Dashboard] Loading suggestions from metadata');
+    console.log('[Dashboard] globalMetadata available:', !!globalMetadata);
+    
+    if (!globalMetadata) {
+      console.log('[Dashboard] globalMetadata is null/undefined');
+      return;
+    }
+    
+    console.log('[Dashboard] globalMetadata keys:', Object.keys(globalMetadata));
+    console.log('[Dashboard] IDENTITY_ANCHOR_CATALOG:', globalMetadata.IDENTITY_ANCHOR_CATALOG);
+    console.log('[Dashboard] HABIT_ANCHOR_CATALOG:', globalMetadata.HABIT_ANCHOR_CATALOG);
     
     try {
-      const identity = (globalMetadata?.IDENTITY_ANCHOR_CATALOG?.items || []).map(x => (typeof x === 'string' ? { text: x } : x));
-      const habits = (globalMetadata?.HABIT_ANCHOR_CATALOG?.items || []).map(x => (typeof x === 'string' ? { text: x } : x));
+      // Try multiple paths for identity anchors
+      let identityItems = 
+        globalMetadata?.IDENTITY_ANCHOR_CATALOG?.items ||
+        globalMetadata?.IDENTITY_ANCHORS?.items ||
+        globalMetadata?.identityAnchors?.items ||
+        globalMetadata?.identityAnchors ||
+        globalMetadata?.IDENTITY_ANCHOR_CATALOG ||
+        [];
+      
+      // Try multiple paths for habit anchors
+      let habitItems = 
+        globalMetadata?.HABIT_ANCHOR_CATALOG?.items ||
+        globalMetadata?.HABIT_ANCHORS?.items ||
+        globalMetadata?.habitAnchors?.items ||
+        globalMetadata?.habitAnchors ||
+        globalMetadata?.HABIT_ANCHOR_CATALOG ||
+        [];
+      
+      console.log('[Dashboard] Raw identity items:', identityItems);
+      console.log('[Dashboard] Raw habit items:', habitItems);
+      
+      // Ensure items are arrays
+      if (!Array.isArray(identityItems)) {
+        console.warn('[Dashboard] Identity items not an array:', typeof identityItems);
+        identityItems = [];
+      }
+      if (!Array.isArray(habitItems)) {
+        console.warn('[Dashboard] Habit items not an array:', typeof habitItems);
+        habitItems = [];
+      }
+      
+      // Normalize items to objects with text property
+      const identity = identityItems.map(x => {
+        if (typeof x === 'string') return { text: x };
+        if (x && typeof x === 'object') return x;
+        return { text: String(x) };
+      });
+      
+      const habits = habitItems.map(x => {
+        if (typeof x === 'string') return { text: x };
+        if (x && typeof x === 'object') return x;
+        return { text: String(x) };
+      });
+      
+      console.log('[Dashboard] Normalized identity suggestions:', identity.length);
+      console.log('[Dashboard] Normalized habit suggestions:', habits.length);
+      if (identity.length > 0) console.log('[Dashboard] Sample identity:', identity[0]);
+      if (habits.length > 0) console.log('[Dashboard] Sample habit:', habits[0]);
+      
       setIdentitySuggestions(identity);
       setHabitSuggestions(habits);
       setIsLoadingSuggestions(false);
@@ -242,10 +358,22 @@ const Dashboard = ({ navigate }) => {
 
   const handleSaveEveningWithConfirmation = async () => {
     await handleSaveEveningBookend();
-    showSaveSuccess('Evening reflection saved!');
+    
+    // FIX #3: Clear the reflection inputs in Firestore for next day
+    if (updateDailyPracticeData) {
+      await updateDailyPracticeData({
+        'eveningBookend.good': '',
+        'eveningBookend.better': '',
+        'eveningBookend.best': ''
+      });
+    }
+    
+    // Clear local state
     setReflectionGood('');
     setReflectionBetter('');
     setReflectionBest('');
+    
+    showSaveSuccess('Evening reflection saved!');
   };
 
   const handleToggleAdditionalRep = async (commitmentId) => {
@@ -285,39 +413,50 @@ const Dashboard = ({ navigate }) => {
     try {
       if (!db) throw new Error('Database not available');
       
-      const podsSnapshot = await db
-        .collection('pods')
-        .where('status', '==', 'active')
-        .get();
+      // FIX #6: Use Firestore v9 syntax
+      const { collection, query, where, getDocs } = await import('firebase/firestore');
       
+      // Create query using v9 syntax
+      const podsRef = collection(db, 'pods');
+      const q = query(podsRef, where('status', '==', 'active'));
+      const podsSnapshot = await getDocs(q);
+      
+      // Map documents to data
       let pods = podsSnapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
       }));
       
+      // Filter for pods with space
       pods = pods.filter(p => (p.memberCount || 0) < 5);
       setAvailablePods(pods);
       console.log('[Dashboard] Found pods:', pods.length);
     } catch (error) {
       console.error('[Dashboard] Error finding pods:', error);
+      console.error('[Dashboard] Error details:', error.message, error.stack);
       alert('Unable to load pods. Please try again.');
       setShowFindPodModal(false);
+    } finally {
+      setIsLoadingPods(false);
     }
-    setIsLoadingPods(false);
   };
 
   const handleJoinPod = async (podId) => {
-    if (!db || !userEmail) return;
+    if (!db || !userEmail) {
+      console.error('[Dashboard] Missing db or userEmail');
+      return;
+    }
     
     try {
-      const { FieldValue } = await import('firebase/firestore'); // Import FieldValue
+      // FIX #6: Use Firestore v9 syntax
+      const { doc, updateDoc, arrayUnion, increment } = await import('firebase/firestore');
       
-      const podRef = db.collection('pods').doc(podId);
+      const podRef = doc(db, 'pods', podId);
       
-      // Use FieldValue for atomic operations
-      await podRef.update({
-        members: FieldValue.arrayUnion(userEmail),
-        memberCount: FieldValue.increment(1)
+      // Use Firestore v9 syntax for updates
+      await updateDoc(podRef, {
+        members: arrayUnion(userEmail),
+        memberCount: increment(1)
       });
       
       await updateDailyPracticeData({
@@ -524,17 +663,6 @@ const Dashboard = ({ navigate }) => {
                   <strong>✓ Completed Today!</strong>
                 </div>
               )}
-
-              {identityStatement && (
-                <div className="mt-4 pt-4 border-t" style={{ borderColor: COLORS.SUBTLE }}>
-                  <p className="text-xs font-semibold mb-2" style={{ color: COLORS.MUTED }}>
-                    🎯 TODAY'S FOCUS:
-                  </p>
-                  <p className="text-sm italic font-medium" style={{ color: COLORS.TEXT }}>
-                    "{identityStatement}"
-                  </p>
-                </div>
-              )}
             </Card>
 
             {/* 3. Identity Anchor (Moved from right) */}
@@ -665,29 +793,45 @@ const Dashboard = ({ navigate }) => {
             </div>
 
             <p className="text-xs font-semibold mb-2" style={{ color: COLORS.MUTED }}>
-              OR SELECT FROM SUGGESTIONS:
+              OR SELECT FROM SUGGESTIONS ({identitySuggestions.length} available):
             </p>
             <div className="overflow-y-auto flex-1 space-y-2">
-              {isLoadingSuggestions ? ( <p>Loading suggestions...</p> ) : 
-               identitySuggestions.length > 0 ? (
-                identitySuggestions.map((suggestion, index) => (
-                  <button
-                    key={index}
-                    onClick={() => {
-                      const value = suggestion.text || suggestion.value || suggestion.name || suggestion;
-                      setIdentityStatement(value);
-                      handleSaveIdentityWithConfirmation(value);
-                    }}
-                    className="w-full text-left p-3 rounded-lg border-2 transition-all hover:border-teal-500 hover:bg-teal-50"
-                    style={{ borderColor: COLORS.SUBTLE }}
-                  >
-                    <p className="text-sm font-medium" style={{ color: COLORS.TEXT }}>
-                      ... <strong>{suggestion.text || suggestion.value || suggestion.name || suggestion}</strong>
-                    </p>
-                  </button>
-                ))
-               ) : ( <p className="text-sm text-gray-500">No suggestions loaded.</p> )
-              }
+              {isLoadingSuggestions ? (
+                <div className="text-center py-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 mx-auto mb-2" 
+                       style={{ borderColor: COLORS.TEAL }} />
+                  <p className="text-sm">Loading suggestions...</p>
+                </div>
+              ) : identitySuggestions.length > 0 ? (
+                identitySuggestions.map((suggestion, index) => {
+                  const displayText = suggestion?.text || suggestion?.value || suggestion?.name || String(suggestion);
+                  return (
+                    <button
+                      key={index}
+                      onClick={() => {
+                        setIdentityStatement(displayText);
+                        handleSaveIdentityWithConfirmation(displayText);
+                      }}
+                      className="w-full text-left p-3 rounded-lg border-2 transition-all hover:border-teal-500 hover:bg-teal-50"
+                      style={{ borderColor: COLORS.SUBTLE }}
+                    >
+                      <p className="text-sm font-medium" style={{ color: COLORS.TEXT }}>
+                        I am the kind of leader who <strong>{displayText}</strong>
+                      </p>
+                      {suggestion.description && (
+                        <p className="text-xs mt-1 text-gray-500">{suggestion.description}</p>
+                      )}
+                    </button>
+                  );
+                })
+              ) : (
+                <div className="text-center py-8">
+                  <p className="text-sm text-gray-600 mb-2">No suggestions available.</p>
+                  <p className="text-xs text-gray-500">
+                    The suggestion catalog may not be loaded. Please check your metadata configuration or check the browser console for details.
+                  </p>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -721,29 +865,45 @@ const Dashboard = ({ navigate }) => {
             </div>
 
             <p className="text-xs font-semibold mb-2" style={{ color: COLORS.MUTED }}>
-              OR SELECT FROM SUGGESTIONS:
+              OR SELECT FROM SUGGESTIONS ({habitSuggestions.length} available):
             </p>
             <div className="overflow-y-auto flex-1 space-y-2">
-              {isLoadingSuggestions ? ( <p>Loading suggestions...</p> ) : 
-               habitSuggestions.length > 0 ? (
-                habitSuggestions.map((suggestion, index) => (
-                  <button
-                    key={index}
-                    onClick={() => {
-                      const value = suggestion.text || suggestion.value || suggestion.name || suggestion;
-                      setHabitAnchor(value);
-                      handleSaveHabitWithConfirmation(value);
-                    }}
-                    className="w-full text-left p-3 rounded-lg border-2 transition-all hover:border-teal-500 hover:bg-teal-50"
-                    style={{ borderColor: COLORS.SUBTLE }}
-                  >
-                    <p className="text-sm font-medium" style={{ color: COLORS.TEXT }}>
-                      ... <strong>{suggestion.text || suggestion.value || suggestion.name || suggestion}</strong>
-                    </p>
-                  </button>
-                ))
-               ) : ( <p className="text-sm text-gray-500">No suggestions loaded.</p> )
-              }
+              {isLoadingSuggestions ? (
+                <div className="text-center py-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 mx-auto mb-2" 
+                       style={{ borderColor: COLORS.TEAL }} />
+                  <p className="text-sm">Loading suggestions...</p>
+                </div>
+              ) : habitSuggestions.length > 0 ? (
+                habitSuggestions.map((suggestion, index) => {
+                  const displayText = suggestion?.text || suggestion?.value || suggestion?.name || String(suggestion);
+                  return (
+                    <button
+                      key={index}
+                      onClick={() => {
+                        setHabitAnchor(displayText);
+                        handleSaveHabitWithConfirmation(displayText);
+                      }}
+                      className="w-full text-left p-3 rounded-lg border-2 transition-all hover:border-teal-500 hover:bg-teal-50"
+                      style={{ borderColor: COLORS.SUBTLE }}
+                    >
+                      <p className="text-sm font-medium" style={{ color: COLORS.TEXT }}>
+                        When I <strong>{displayText}</strong>
+                      </p>
+                      {suggestion.description && (
+                        <p className="text-xs mt-1 text-gray-500">{suggestion.description}</p>
+                      )}
+                    </button>
+                  );
+                })
+              ) : (
+                <div className="text-center py-8">
+                  <p className="text-sm text-gray-600 mb-2">No suggestions available.</p>
+                  <p className="text-xs text-gray-500">
+                    The suggestion catalog may not be loaded. Please check your metadata configuration or check the browser console for details.
+                  </p>
+                </div>
+              )}
             </div>
           </div>
         </div>

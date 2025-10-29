@@ -589,11 +589,11 @@ export const EveningBookend = ({
                 </Button>
             </div>
             
-            {/* View History Link (Matches user request) */}
+            {/* View History Link (FIX #5: Navigate to correct reflection history page) */}
             {onNavigate && (
                 <div className="pt-3">
                     <Button 
-                        onClick={() => onNavigate('daily-practice')}
+                        onClick={() => onNavigate('reflection-history')}
                         variant="outline"
                         size="sm"
                         className="w-full"
