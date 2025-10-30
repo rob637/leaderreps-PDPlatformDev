@@ -447,11 +447,8 @@ export const ensureUserDocs = async (db, uid) => {
             lastAssessmentDate: null,
             assessmentHistory: [], 
             planHistory: [],
-            coreReps: [],
-            currentWeek: 0,
-            startDate: todayStr,
-            responses: {},
-            openEndedResponse: ''
+            // NOTE: 'currentPlan' is the container, which is what the component checks for.
+            currentPlan: null, 
         };
         await setDocEx(db, devPlanPath, defaultPlan);
     }
@@ -527,11 +524,7 @@ export const ensureUserDocs = async (db, uid) => {
    Mock Data (fallback for when Firestore isn't available)
 ========================================================= */
 export const MOCK_DEVELOPMENT_PLAN_DATA = {
-  coreReps: [],
-  responses: {},
-  openEndedResponse: '',
-  currentWeek: 0,
-  startDate: new Date().toISOString().split('T')[0],
+  currentPlan: null, // Ensure mock reflects reality
   assessmentHistory: [],
   planHistory: [],
   currentCycle: 1,
@@ -1135,10 +1128,7 @@ export const createAppServices = (db, userId) => {
     const path = buildModulePath(userId, 'development_plan', 'current');
     console.log(`[updateDevelopmentPlanData] Executing with setDocEx (merge=${merge})`);
     const ok = await setDocEx(db, path, updates, merge);
-    // 🚀 FIX (10/30/25): Removed optimistic update to prevent data corruption
-    // The Firestore listener (line 1006) will fire with clean, sentinel-stripped data
-    // after the write completes. This eliminates the race condition that was causing
-    // the development plan to disappear after generation.
+    // Removed optimistic update - listener will fire with clean data
     return ok;
   };
 
@@ -1179,7 +1169,52 @@ export const createAppServices = (db, userId) => {
     }
     return ok;
   };
+  
+  // =========================================================
+  // 🛑 NEW: FULL PLAN AND ANCHOR CLEAR FUNCTION
+  // =========================================================
+  const clearUserPlanAndAnchors = async () => {
+      if (!db || !userId) {
+          console.warn('[clearUserPlanAndAnchors] DB or UserID missing, skipping clear.');
+          return false;
+      }
+      
+      const devPlanPath = buildModulePath(userId, 'development_plan', 'current');
+      const dailyPath = buildModulePath(userId, 'daily_practice', 'current');
+      const todayStr = new Date().toISOString().split('T')[0];
+      
+      console.log('[clearUserPlanAndAnchors] Initiating full plan and daily practice clear.');
+      
+      // 1. CLEAR DEVELOPMENT PLAN to its default state
+      const defaultPlanPayload = {
+          currentPlan: null, // CRITICAL: Set to null to trigger Baseline view
+          currentCycle: 1,
+          lastAssessmentDate: null,
+          assessmentHistory: [], 
+          planHistory: [],
+      };
+      const ok1 = await setDocEx(db, devPlanPath, defaultPlanPayload, true);
 
+      // 2. CLEAR DAILY PRACTICE to its default state (removes all anchors/targets)
+      const defaultDailyPracticePayload = {
+          activeCommitments: [], 
+          identityAnchor: '', 
+          habitAnchor: '', 
+          whyStatement: '',
+          dailyTargetRepId: null, 
+          dailyTargetRepDate: null, 
+          dailyTargetRepStatus: 'Pending', 
+          streakCount: 0,
+          streakCoins: 0,
+          lastUpdated: todayStr,
+          completedRepsToday: [],
+      };
+      const ok2 = await setDocEx(db, dailyPath, defaultDailyPracticePayload, true);
+      
+      const result = ok1 && ok2;
+      console.log(`[clearUserPlanAndAnchors] Plan Clear Status: ${result ? 'SUCCESS' : 'FAILED'}`);
+      return result;
+  };
 
   // Return the service object with getter functions and a way to set onChange callback
   return {
@@ -1198,6 +1233,9 @@ export const createAppServices = (db, userId) => {
     updateDailyPracticeData,
     updateStrategicContentData,
     updateMembershipData, // ADDED: Update membership data function
+    
+    // Utility functions
+    clearUserPlanAndAnchors, // 🛑 NEW EXPORTED FUNCTION
     
     // Method to set onChange callback
     setOnChange: (callback) => {
