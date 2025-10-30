@@ -26,6 +26,43 @@ import { HeartPulse, Briefcase, Users, AlertTriangle, TrendingUp, Zap, ShieldChe
 console.log('🔥🔥🔥 useAppServices.jsx LOADED - CLEAN STRUCTURE VERSION (Option B) 🔥🔥🔥');
 
 /* =========================================================
+   HELPER FUNCTION: Sanitize Firestore Timestamps
+========================================================= */
+// Recursively converts all Firestore Timestamp objects to JavaScript Date objects
+// This prevents React Error #31 when trying to render timestamp objects
+const sanitizeTimestamps = (obj) => {
+  if (!obj) return obj;
+  
+  // Handle arrays
+  if (Array.isArray(obj)) {
+    return obj.map(item => sanitizeTimestamps(item));
+  }
+  
+  // Handle Firestore Timestamp objects (have toDate method)
+  if (obj && typeof obj === 'object' && typeof obj.toDate === 'function') {
+    try {
+      return obj.toDate();
+    } catch (error) {
+      console.warn('[sanitizeTimestamps] Error converting timestamp:', error);
+      return null;
+    }
+  }
+  
+  // Handle plain objects - recursively sanitize all properties
+  if (obj && typeof obj === 'object' && obj.constructor === Object) {
+    const sanitized = {};
+    for (const key in obj) {
+      if (obj.hasOwnProperty(key)) {
+        sanitized[key] = sanitizeTimestamps(obj[key]);
+      }
+    }
+    return sanitized;
+  }
+  
+  return obj;
+};
+
+/* =========================================================
    Mock fallback (keeps the app usable without Firestore)
 ========================================================= */
 const __firestore_mock_store =
@@ -719,7 +756,7 @@ export const createAppServices = (db, userId) => {
     // Development Plan listener
     const devPlanPath = buildModulePath(userId, 'development_plan', 'current');
     const unsubDev = onSnapshotEx(db, devPlanPath, (snap) => {
-      stores.developmentPlanData = snap.exists() ? snap.data() : MOCK_DEVELOPMENT_PLAN_DATA;
+      stores.developmentPlanData = snap.exists() ? sanitizeTimestamps(snap.data()) : MOCK_DEVELOPMENT_PLAN_DATA;
       console.log('[createAppServices] Dev Plan updated');
       notifyChange();
     });
@@ -729,7 +766,7 @@ export const createAppServices = (db, userId) => {
     // Daily Practice listener
     const dailyPath = buildModulePath(userId, 'daily_practice', 'current');
     const unsubDaily = onSnapshotEx(db, dailyPath, (snap) => {
-      stores.dailyPracticeData = snap.exists() ? snap.data() : MOCK_DAILY_PRACTICE_DATA;
+      stores.dailyPracticeData = snap.exists() ? sanitizeTimestamps(snap.data()) : MOCK_DAILY_PRACTICE_DATA;
       console.log('[createAppServices] Daily Practice updated');
       notifyChange();
     });
@@ -738,7 +775,7 @@ export const createAppServices = (db, userId) => {
     // Strategic Content listener
     const strategicPath = buildModulePath(userId, 'strategic_content', 'vision_mission');
     const unsubStrategic = onSnapshotEx(db, strategicPath, (snap) => {
-      stores.strategicContentData = snap.exists() ? snap.data() : MOCK_STRATEGIC_CONTENT_DATA;
+      stores.strategicContentData = snap.exists() ? sanitizeTimestamps(snap.data()) : MOCK_STRATEGIC_CONTENT_DATA;
       console.log('[createAppServices] Strategic Content updated');
       notifyChange();
     });
@@ -754,7 +791,8 @@ export const createAppServices = (db, userId) => {
       
       // Merge in the main config fields (featureFlags, LEADERSHIP_TIERS, etc.)
       if (snap.exists()) {
-        Object.assign(stores.globalMetadata, snap.data());
+        // CRITICAL: Sanitize timestamps in config data before storing
+        Object.assign(stores.globalMetadata, sanitizeTimestamps(snap.data()));
       }
       
       console.log('[createAppServices] Global Metadata (config) updated');
@@ -787,7 +825,8 @@ export const createAppServices = (db, userId) => {
         if (snap.exists()) {
           // Convert snake_case to UPPER_CASE for the key name
           const keyName = catalogName.toUpperCase();
-          stores.globalMetadata[keyName] = snap.data();
+          // CRITICAL: Sanitize timestamps in catalog data before storing
+          stores.globalMetadata[keyName] = sanitizeTimestamps(snap.data());
           console.log(`[createAppServices] Catalog ${catalogName} loaded:`, snap.data().items?.length || 0, 'items');
         }
         
