@@ -23,37 +23,45 @@ export const adaptFirebasePlanToComponents = (firebasePlan) => {
   // Transform focusAreas → coreReps
   const coreReps = [];
   
-  firebasePlan.focusAreas?.forEach((area, areaIndex) => {
-    area.reps?.forEach((rep, repIndex) => {
-      // Convert phase string to weeks completed
-      const weeksCompleted = parsePhaseToWeeks(rep.week);
-      
-      coreReps.push({
-        // Create pseudo skill ID from area and rep
-        skillId: generateSkillId(area.name, repIndex),
-        
-        // Core fields
-        skillName: rep.rep,
-        focusArea: area.name,
-        weeksCompleted,
-        phase: rep.week,
-        
-        // Related data from focus area
-        courses: area.courses || [],
-        score: area.score,
-        whatGoodLooksLike: area.whatGoodLooksLike,
-        why: area.why,
-        
-        // Metadata
-        areaIndex,
-        repIndex,
-        
-        // Keep original for reference
-        _originalRep: rep,
-        _originalArea: { name: area.name, courses: area.courses }
-      });
+  // Ensure focusAreas is an array before processing
+  if (Array.isArray(firebasePlan.focusAreas)) {
+    firebasePlan.focusAreas.forEach((area, areaIndex) => {
+      // Ensure reps is an array before processing
+      if (Array.isArray(area.reps)) {
+        area.reps.forEach((rep, repIndex) => {
+          // Convert phase string to weeks completed
+          const weeksCompleted = parsePhaseToWeeks(rep.week);
+          
+          coreReps.push({
+            // Create pseudo skill ID from area and rep
+            skillId: generateSkillId(area.name, repIndex),
+            
+            // Core fields
+            skillName: rep.rep,
+            focusArea: area.name,
+            weeksCompleted,
+            phase: rep.week,
+            
+            // Related data from focus area
+            courses: area.courses || [],
+            score: area.score,
+            whatGoodLooksLike: area.whatGoodLooksLike,
+            why: area.why,
+            
+            // Metadata
+            areaIndex,
+            repIndex,
+            
+            // Keep original for reference
+            _originalRep: rep,
+            _originalArea: { name: area.name, courses: area.courses }
+          });
+        });
+      }
     });
-  });
+  } else if (firebasePlan.focusAreas) {
+    console.warn('[Adapter] focusAreas exists but is not an array:', typeof firebasePlan.focusAreas);
+  }
   
   console.log('[Adapter] Created coreReps:', {
     count: coreReps.length,
@@ -320,17 +328,25 @@ export const buildVirtualSkillCatalog = (currentPlan) => {
  * Merge virtual catalog with actual SKILL_CATALOG if available
  */
 export const mergeSkillCatalogs = (virtualCatalog, actualCatalog) => {
-  if (!actualCatalog || actualCatalog.length === 0) {
-    return virtualCatalog;
+  // Ensure both catalogs are arrays
+  const safeVirtual = Array.isArray(virtualCatalog) ? virtualCatalog : [];
+  const safeActual = Array.isArray(actualCatalog) ? actualCatalog : [];
+  
+  if (safeActual.length === 0) {
+    return safeVirtual;
+  }
+  
+  if (safeVirtual.length === 0) {
+    return safeActual;
   }
   
   // Create map of actual skills by ID
   const actualMap = new Map(
-    actualCatalog.map(skill => [skill.id, skill])
+    safeActual.map(skill => [skill.id, skill])
   );
   
   // Enhance virtual skills with actual data if available
-  const merged = virtualCatalog.map(virtualSkill => {
+  const merged = safeVirtual.map(virtualSkill => {
     const actualSkill = actualMap.get(virtualSkill.id);
     
     if (actualSkill) {
@@ -346,8 +362,8 @@ export const mergeSkillCatalogs = (virtualCatalog, actualCatalog) => {
   });
   
   console.log('[Adapter] Merged catalogs:', {
-    virtual: virtualCatalog.length,
-    actual: actualCatalog.length,
+    virtual: safeVirtual.length,
+    actual: safeActual.length,
     merged: merged.length
   });
   
@@ -436,6 +452,16 @@ export const adaptDevelopmentPlanData = (firebaseData) => {
   
   console.log('[Adapter] Adapting full development plan data');
   
+  // Helper to safely map over arrays
+  const safeMap = (data, mapper) => {
+    if (!data) return [];
+    if (!Array.isArray(data)) {
+      console.warn('[Adapter] Expected array but got:', typeof data);
+      return [];
+    }
+    return data.map(mapper);
+  };
+  
   return {
     ...firebaseData,
     
@@ -445,19 +471,22 @@ export const adaptDevelopmentPlanData = (firebaseData) => {
       : null,
     
     // Adapt assessment history
-    assessmentHistory: firebaseData.assessmentHistory?.map(
+    assessmentHistory: safeMap(
+      firebaseData.assessmentHistory,
       assessment => adaptFirebaseAssessmentToComponents(assessment)
-    ) || [],
+    ),
     
     // Adapt plan history (previousPlans is the correct field name in Firebase)
-    previousPlans: firebaseData.previousPlans?.map(
+    previousPlans: safeMap(
+      firebaseData.previousPlans,
       plan => adaptFirebasePlanToComponents(plan)
-    ) || [],
+    ),
     
     // Keep planHistory for backward compatibility if it exists
-    planHistory: firebaseData.planHistory?.map(
+    planHistory: safeMap(
+      firebaseData.planHistory,
       plan => adaptFirebasePlanToComponents(plan)
-    ) || [],
+    ),
     
     _fullyAdapted: true
   };
