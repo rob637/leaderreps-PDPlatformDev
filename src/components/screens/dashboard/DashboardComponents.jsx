@@ -11,6 +11,34 @@ import {
 } from 'lucide-react';
 import { serverTimestamp } from 'firebase/firestore';
 
+// --- Helper function to format timestamps ---
+const formatTimestamp = (timestamp) => {
+  if (!timestamp) return 'Just now';
+  
+  try {
+    // Handle both Date objects and Firestore Timestamps
+    const date = timestamp instanceof Date ? timestamp : timestamp.toDate?.();
+    if (!date) return 'Just now';
+    
+    const now = new Date();
+    const diff = now - date;
+    const seconds = Math.floor(diff / 1000);
+    const minutes = Math.floor(seconds / 60);
+    const hours = Math.floor(minutes / 60);
+    const days = Math.floor(hours / 24);
+    
+    if (seconds < 60) return 'Just now';
+    if (minutes < 60) return `${minutes}m ago`;
+    if (hours < 24) return `${hours}h ago`;
+    if (days < 7) return `${days}d ago`;
+    
+    return date.toLocaleDateString();
+  } catch (error) {
+    console.error('Error formatting timestamp:', error);
+    return 'Recently';
+  }
+};
+
 /* =========================================================
    COLORS & BASE COMPONENTS
 ========================================================= */
@@ -894,7 +922,7 @@ export const SocialPodCard = ({ podMembers, activityFeed, onSendMessage, onFindP
                           {activity.message}
                         </p>
                         <p className="text-xs mt-1" style={{ color: COLORS.MUTED }}>
-                          {activity.timestamp}
+                          {formatTimestamp(activity.timestamp)}
                         </p>
                       </div>
                     </div>

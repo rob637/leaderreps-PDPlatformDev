@@ -31,6 +31,34 @@ import {
 // Import hooks from the file you provided
 import { useDashboard } from './dashboard/DashboardHooks.jsx';
 
+// --- Helper function to sanitize Firestore Timestamps ---
+const sanitizeTimestamps = (obj) => {
+  if (!obj) return obj;
+  
+  // Handle arrays
+  if (Array.isArray(obj)) {
+    return obj.map(item => sanitizeTimestamps(item));
+  }
+  
+  // Handle Firestore Timestamp objects
+  if (obj && typeof obj === 'object' && typeof obj.toDate === 'function') {
+    return obj.toDate();
+  }
+  
+  // Handle plain objects
+  if (obj && typeof obj === 'object') {
+    const sanitized = {};
+    for (const key in obj) {
+      if (obj.hasOwnProperty(key)) {
+        sanitized[key] = sanitizeTimestamps(obj[key]);
+      }
+    }
+    return sanitized;
+  }
+  
+  return obj;
+};
+
 
 // --- Helper Components (Get Started Card, SuggestionButton are used locally) ---
 const GetStartedCard = ({ onNavigate }) => (
@@ -385,7 +413,8 @@ const Dashboard = ({ navigate }) => {
       });
     }
 
-    return [...newTasks, ...originalOtherTasks];
+    // Sanitize originalOtherTasks in case they contain Firestore Timestamps
+    return [...newTasks, ...sanitizeTimestamps(originalOtherTasks)];
   }, [
     originalOtherTasks, 
     focusArea, 
@@ -548,7 +577,7 @@ const Dashboard = ({ navigate }) => {
             {/* 4. Accountability Pod */}
             <SocialPodCard
               podMembers={dailyPracticeData?.podMembers || []}
-              activityFeed={dailyPracticeData?.podActivity || []}
+              activityFeed={sanitizeTimestamps(dailyPracticeData?.podActivity || [])}
               onSendMessage={(msg) => console.log('Send message:', msg)}
               onFindPod={handleFindPod}
             />
@@ -597,7 +626,7 @@ const Dashboard = ({ navigate }) => {
                 amWinCompleted: amWinCompleted,
                 amTasksCompleted: amTasksCompleted,
               }}
-              dailyPracticeData={dailyPracticeData}
+              dailyPracticeData={sanitizeTimestamps(dailyPracticeData)}
             />
 
             {/* 2. NEW: Test Utilities Button */}
