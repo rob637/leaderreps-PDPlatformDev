@@ -24,7 +24,8 @@ import {
   BonusExerciseModal,
   SocialPodCard,
   // === UNIFIED IMPORTS ===
-  UnifiedAnchorEditorModal 
+  UnifiedAnchorEditorModal,
+AdditionalRepsCard // <--- ADD THIS LINE 
   // LeadershipAnchorsCard REMOVED per user request
   // ===========================
 } from './dashboard/DashboardComponents.jsx';
