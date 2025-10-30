@@ -64,6 +64,27 @@ const mockUpdateDoc = async (docRefPath, data) => {
 /* =========================================================
    Real Firestore wrappers 
 ========================================================= */
+
+// REQ #5 (BUG FIX): Helper function to remove 'undefined' values before saving to Firestore
+const cleanUndefinedValues = (obj) => {
+  if (typeof obj !== 'object' || obj === null) return obj;
+  if (Array.isArray(obj)) return obj.map(cleanUndefinedValues);
+  
+  const newObj = {};
+  for (const key in obj) {
+    if (Object.prototype.hasOwnProperty.call(obj, key)) {
+      const value = obj[key];
+      if (value !== undefined) {
+        newObj[key] = cleanUndefinedValues(value); // Recurse
+      } else {
+        console.warn(`[cleanUndefinedValues] Removed 'undefined' from key: ${key}`);
+      }
+    }
+  }
+  return newObj;
+};
+
+
 const toDocRef = (db, path) => fsDoc(db, ...path.split('/'));
 
 const onSnapshotEx = (db, path, cb) => {
@@ -116,7 +137,7 @@ const getDocEx = async (db, path) => {
 const setDocEx = async (db, path, data, merge = false) => {
   console.log(`[setDocEx] ===== START =====`);
   console.log(`[setDocEx] Path: ${path}`);
-  console.log(`[setDocEx] Data:`, data);
+  // console.log(`[setDocEx] Data (Raw):`, data); // Too noisy
   console.log(`[setDocEx] Merge: ${merge}`);
   console.log(`[setDocEx] DB exists: ${!!db}`);
   
@@ -126,9 +147,12 @@ const setDocEx = async (db, path, data, merge = false) => {
   }
   
   try {
+      // REQ #5 (BUG FIX): Clean data of undefined values
+      console.log(`[setDocEx] Cleaning data for Firestore...`);
+      const cleanedData = cleanUndefinedValues(data);
+      
       console.log(`[setDocEx] Creating dataWithTimestamp...`);
-      const dataWithTimestamp = { ...data, _updatedAt: serverTimestamp() };
-      console.log(`[setDocEx] DataWithTimestamp created:`, dataWithTimestamp);
+      const dataWithTimestamp = { ...cleanedData, _updatedAt: serverTimestamp() };
       
       console.log(`[setDocEx] Creating document reference for path: ${path}`);
       const docRef = toDocRef(db, path);
@@ -166,7 +190,10 @@ const updateDocEx = async (db, path, data) => {
         return true; 
     }
     try {
-        const dataWithTimestamp = { ...data, _updatedAt: serverTimestamp() };
+        // REQ #5 (BUG FIX): Clean data of undefined values
+        const cleanedData = cleanUndefinedValues(data);
+
+        const dataWithTimestamp = { ...cleanedData, _updatedAt: serverTimestamp() };
         console.log(`[updateDocEx] Attempting update to path: ${path}`, { data: dataWithTimestamp });
         await fsUpdateDoc(toDocRef(db, path), dataWithTimestamp);
         console.log(`[updateDocEx SUCCESS] Path: ${path}`, data); 
@@ -696,7 +723,8 @@ export const createAppServices = (db, userId) => {
       console.log('[createAppServices] Dev Plan updated');
       notifyChange();
     });
-    stores.listeners.push(unSubDev);
+    // REQ #1 (BUG FIX): Corrected typo from unSubDev to unsubDev
+    stores.listeners.push(unsubDev);
 
     // Daily Practice listener
     const dailyPath = buildModulePath(userId, 'daily_practice', 'current');

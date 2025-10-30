@@ -1,7 +1,7 @@
 // src/components/developmentplan/BaselineAssessment.jsx
 // REFACTORED: Converted to a single-page, modern form. (Req #14)
 // Uses new 1-3 goal input fields. (Req #15)
-// UPDATED (10/30/25): Added dividers to make questionnaire sleeker (Req #3)
+// UPDATED (10/30/25): Replaced Likert component with new styled radio buttons (Req #2)
 
 import React, { useState } from 'react';
 import { ArrowRight, Loader, Plus, X } from 'lucide-react'; // Added Plus and X
@@ -9,7 +9,7 @@ import {
   Button, 
   Card, 
   ProgressBar, 
-  LikertScaleInput // Import our new component
+  // LikertScaleInput // Removed this component
 } from './DevPlanComponents';
 import { 
   ASSESSMENT_QUESTIONS, 
@@ -17,6 +17,58 @@ import {
   LIKERT_SCALE, 
   COLORS 
 } from './devPlanUtils';
+
+// REQ #2: New Radio Button Input Component
+const RadioButtonInput = ({ question, options, value, onChange }) => {
+  const [isFocused, setIsFocused] = useState(false);
+  
+  return (
+    <div 
+      className="p-6 rounded-lg transition-all"
+      style={{ 
+        background: isFocused ? 'white' : COLORS.BG,
+        border: `2px solid ${isFocused ? COLORS.TEAL : 'transparent'}`
+      }}
+      onFocus={() => setIsFocused(true)}
+      onBlur={() => setIsFocused(false)}
+    >
+      <label className="block text-base font-semibold mb-1" style={{ color: COLORS.NAVY }}>
+        {question.text}
+      </label>
+      <p className="text-sm mb-4" style={{ color: COLORS.MUTED }}>
+        {question.description}
+      </p>
+      
+      <fieldset className="mt-4">
+        <legend className="sr-only">Choose an option for {question.text}</legend>
+        <div className="flex flex-col sm:flex-row sm:flex-wrap sm:items-center gap-x-6 gap-y-3">
+          {options.map((option) => (
+            <div key={option.value} className="flex items-center">
+              <input
+                id={`${question.id}-${option.value}`}
+                name={question.id}
+                type="radio"
+                value={option.value}
+                checked={value === option.value}
+                onChange={() => onChange(question.id, option.value)}
+                className="h-5 w-5 border-gray-300"
+                style={{ color: COLORS.TEAL, accentColor: COLORS.TEAL }}
+              />
+              <label 
+                htmlFor={`${question.id}-${option.value}`} 
+                className="ml-2 block text-sm font-medium"
+                style={{ color: COLORS.TEXT }}
+              >
+                {option.label}
+              </label>
+            </div>
+          ))}
+        </div>
+      </fieldset>
+    </div>
+  );
+};
+
 
 const BaselineAssessment = ({ onComplete, isLoading = false }) => {
   // One state object for all answers
@@ -119,22 +171,21 @@ const BaselineAssessment = ({ onComplete, isLoading = false }) => {
         {/* Form Container */}
         <div className="p-6 sm:p-8">
           
-          {/* REQ #3: Render Likert questions with dividers */}
-          <div className="divide-y" style={{ borderColor: COLORS.SUBTLE }}>
+          {/* REQ #2: Render new radio button inputs */}
+          <div className="space-y-4">
             {ASSESSMENT_QUESTIONS.map((question) => (
-              <div key={question.id} className="py-6">
-                <LikertScaleInput
-                  question={question}
-                  options={LIKERT_SCALE}
-                  value={responses[question.id]}
-                  onChange={handleResponse}
-                />
-              </div>
+              <RadioButtonInput
+                key={question.id}
+                question={question}
+                options={LIKERT_SCALE}
+                value={responses[question.id]}
+                onChange={handleResponse}
+              />
             ))}
           </div>
 
           {/* REQ #15: Open-ended goals section */}
-          <div className="mt-6 p-6 rounded-lg" style={{ background: `${COLORS.ORANGE}10` }}>
+          <div className="mt-8 p-6 rounded-lg" style={{ background: `${COLORS.ORANGE}10` }}>
             <label className="block text-lg font-semibold mb-2" style={{ color: COLORS.NAVY }}>
               {OPEN_ENDED_QUESTION.text}
             </label>

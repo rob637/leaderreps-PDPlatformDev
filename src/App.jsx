@@ -315,8 +315,12 @@ const NavSidebar = ({ currentScreen, setCurrentScreen, user, closeMobileMenu, is
   const renderNavItems = (items) => items
     // Filter admin-only items first (though none are currently marked as such)
     .filter(item => !item.adminOnly || isAdmin)
-    // --- MODIFIED FILTER: Bypass flag check if isAdmin is true ---
-    .filter(item => isAdmin || !item.flag || (featureFlags && featureFlags[item.flag] !== false))
+    // --- REQ #3/4 (BUG FIX): Change filter logic. ---
+    // Old logic: !item.flag || (featureFlags && featureFlags[item.flag] !== false)
+    //    This showed items if the flag was 'undefined', which is wrong.
+    // New logic: !item.flag || (featureFlags && featureFlags[item.flag] === true)
+    //    This only shows flagged items if the flag is explicitly 'true'.
+    .filter(item => isAdmin || !item.flag || (featureFlags && featureFlags[item.flag] === true))
     .map((item) => {
       const Icon = item.icon;
       const isActive = currentScreen === item.screen;
