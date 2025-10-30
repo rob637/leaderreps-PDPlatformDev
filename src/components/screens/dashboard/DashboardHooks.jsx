@@ -96,16 +96,37 @@ export const useDashboard = ({
   // Load Additional Commitments
   useEffect(() => {
     if (dailyPracticeData?.activeCommitments) {
-      setAdditionalCommitments(dailyPracticeData.activeCommitments);
+      setAdditionalCommitments(sanitizeTimestamps(dailyPracticeData.activeCommitments));
     }
   }, [dailyPracticeData?.activeCommitments]);
+
+  // Helper to sanitize Firestore Timestamps
+  const sanitizeTimestamps = (obj) => {
+    if (!obj) return obj;
+    if (Array.isArray(obj)) {
+      return obj.map(item => sanitizeTimestamps(item));
+    }
+    if (obj && typeof obj === 'object' && typeof obj.toDate === 'function') {
+      return obj.toDate();
+    }
+    if (obj && typeof obj === 'object') {
+      const sanitized = {};
+      for (const key in obj) {
+        if (obj.hasOwnProperty(key)) {
+          sanitized[key] = sanitizeTimestamps(obj[key]);
+        }
+      }
+      return sanitized;
+    }
+    return obj;
+  };
 
   // Load Morning Bookend
   useEffect(() => {
     if (dailyPracticeData?.morningBookend) {
       const mb = dailyPracticeData.morningBookend;
       setMorningWIN(mb.dailyWIN || '');
-      setOtherTasks(mb.otherTasks || []);
+      setOtherTasks(sanitizeTimestamps(mb.otherTasks || []));
     }
   }, [dailyPracticeData?.morningBookend]);
 
