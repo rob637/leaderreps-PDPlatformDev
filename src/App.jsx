@@ -797,10 +797,18 @@ const DataProvider = ({ children, firebaseServices, userId, isAuthReady, navigat
 
   // --- Derive `isAdmin` status ---
   const isAdmin = useMemo(() => {
+      // CRITICAL FIX: Hardcode primary admin(s) for immediate access and recovery
+      const PRIMARY_ADMIN_EMAILS = ['rob@sagecg.com', 'admin@leaderreps.com']; // <-- ADDED HARDCODED ADMINS
+
       // 🚨 FIX: Load adminEmails from resolvedMetadata
       const adminEmails = resolvedMetadata.adminemails || []; 
+      const userEmail = user?.email?.toLowerCase(); // Cache user email
+
+      // Check against hardcoded list OR the list from metadata
+      const isPrimaryAdmin = !!userEmail && PRIMARY_ADMIN_EMAILS.includes(userEmail); // <-- ADDED HARDCODED CHECK
+
       // Ensure the array is present and includes the user's email
-      return !!user?.email && Array.isArray(adminEmails) && adminEmails.includes(user.email.toLowerCase());
+      return isPrimaryAdmin || (!!userEmail && Array.isArray(adminEmails) && adminEmails.includes(userEmail));
   }, [user, resolvedMetadata]); // Now depends on user and dynamically loaded metadata
 
   // --- Derive `hasPendingDailyPractice` (using updated data structure) ---
@@ -929,7 +937,7 @@ const DataProvider = ({ children, firebaseServices, userId, isAuthReady, navigat
     };
   }, [
       navigate, user, userId, db, auth, isAuthReady, isLoading, error, isAdmin,
-      devPlanHook, dailyPracticeHook, strategicContentHook, membershipHook, strategicContentHook, globalHook,
+      devPlanHook, dailyPracticeHook, strategicContentHook, membershipHook, globalHook,
       hasPendingDailyPractice,
       callSecureGeminiAPI, hasGeminiKey, apiKey, resolvedMetadata
   ]);
