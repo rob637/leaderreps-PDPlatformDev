@@ -8,7 +8,7 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useAppServices } from '../../services/useAppServices.jsx';
 import { ArrowRight, Edit3, Loader, X, Users, Send, Target, Clock, Zap, Shield, Trash2, Anchor } from 'lucide-react'; 
-import { deleteField } from 'firebase/firestore'; // Import deleteField
+import { deleteField } from 'firebase/firestore'; // Used for reminder dismissals
 
 // Import modular components from the file you provided
 import {
@@ -94,8 +94,7 @@ const Dashboard = ({ navigate }) => {
     dailyPracticeData,
     // CRITICAL FIX: Ensure update functions are explicitly destructured here
     updateDailyPracticeData, 
-    updateDevelopmentPlanData,
-    clearUserPlanAndAnchors, // 🛑 NEW: Import the comprehensive clear function 
+    updateDevelopmentPlanData, 
     // END CRITICAL FIX
     featureFlags,
     db,
@@ -355,25 +354,60 @@ const Dashboard = ({ navigate }) => {
   };
   
   // --- FIX (Issue 1): Reset Plan ---
-  // 🛑 CRITICAL FIX: Use the comprehensive clearUserPlanAndAnchors function from services
+  // 🛑 CRITICAL FIX: Direct implementation using update functions with complete overwrite
   // This ensures ALL residual data is properly removed with a forced overwrite (merge: false)
   const handleDeletePlanAndReset = useCallback(async () => {
-    console.log('[Dashboard] Executing Delete Plan and Reset using clearUserPlanAndAnchors...');
+    console.log('[Dashboard] Executing Delete Plan and Reset with direct overwrite...');
     
-    // Use the comprehensive clear function that does a full overwrite
-    const success = await clearUserPlanAndAnchors();
-    
-    if (success) {
-      console.log('[Dashboard] Plan and anchors successfully cleared');
-      setShowTestUtils(false);
-      // Navigate to the Development Plan screen to show the Baseline
-      navigate('development-plan'); 
-      triggerCelebration('Plan and progress reset. Start fresh!');
-    } else {
-      console.error('[Dashboard] Failed to clear plan and anchors');
+    try {
+      // 1. CLEAR DEVELOPMENT PLAN to default state with OVERWRITE (merge: false)
+      const defaultPlanPayload = {
+        currentPlan: null, // CRITICAL: Set to null to trigger Baseline view
+        currentCycle: 1,
+        lastAssessmentDate: null,
+        assessmentHistory: [], 
+        planHistory: [],
+      };
+      
+      // Use merge: false to completely overwrite the document (removes ALL fields)
+      const planCleared = await updateDevelopmentPlanData(defaultPlanPayload, { merge: false });
+      
+      // 2. CLEAR DAILY PRACTICE to default state  
+      const todayStr = new Date().toISOString().split('T')[0];
+      const defaultDailyPracticePayload = {
+        activeCommitments: [], 
+        identityAnchor: '', 
+        habitAnchor: '', 
+        whyStatement: '',
+        dailyTargetRepId: null, 
+        dailyTargetRepDate: null, 
+        dailyTargetRepStatus: 'Pending', 
+        streakCount: 0,
+        streakCoins: 0,
+        lastUpdated: todayStr,
+        completedRepsToday: [],
+        morningBookend: {},
+        eveningBookend: {},
+      };
+      
+      // Daily practice update
+      await updateDailyPracticeData(defaultDailyPracticePayload);
+      
+      if (planCleared) {
+        console.log('[Dashboard] Plan and anchors successfully cleared');
+        setShowTestUtils(false);
+        // Navigate to the Development Plan screen to show the Baseline
+        navigate('development-plan'); 
+        triggerCelebration('Plan and progress reset. Start fresh!');
+      } else {
+        console.error('[Dashboard] Failed to clear plan');
+        triggerCelebration('Error resetting plan. Please try again.');
+      }
+    } catch (error) {
+      console.error('[Dashboard] Error during delete:', error);
       triggerCelebration('Error resetting plan. Please try again.');
     }
-  }, [clearUserPlanAndAnchors, navigate]);
+  }, [updateDevelopmentPlanData, updateDailyPracticeData, navigate]);
 
   // --- Reminder Banners (Cool Ideas) ---
   useEffect(() => {
