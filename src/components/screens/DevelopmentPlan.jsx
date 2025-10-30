@@ -4,6 +4,7 @@
 // FIXED: Added adapter layer to transform Firebase focusAreas ↔ component coreReps
 // FIXED (10/30/25): Removed manual setView('tracker') to fix race condition (Req #16)
 // FINAL FIX (10/30/25): Added robust logic to auto-set first target rep on new plan creation (Issue 4).
+// CRITICAL FIX (10/30/25): Strip Firebase sentinels before data enters React state to prevent corruption
 
 import React, { useMemo, useState, useEffect } from 'react';
 import { useAppServices } from '../../services/useAppServices.jsx';
@@ -31,6 +32,42 @@ const LoadingBlock = ({ title = 'Loading…', description = 'Preparing your deve
     </Card>
   </div>
 );
+
+// --- CRITICAL FIX: Utility to strip Firebase sentinels ---
+/**
+ * Recursively removes Firebase FieldValue sentinels from data
+ * Sentinels like serverTimestamp() cause React Error #31 if they enter state
+ */
+const stripFirebaseSentinels = (obj) => {
+  if (!obj || typeof obj !== 'object') return obj;
+  
+  // Check if this is a Firebase sentinel
+  if (obj.constructor?.name === 'FieldValue' || 
+      obj.constructor?.name === 'ServerTimestampTransform' ||
+      obj._methodName === 'serverTimestamp' ||
+      (obj.toJSON && typeof obj.toJSON === 'function' && !obj.toISOString)) {
+    console.log('[stripSentinels] Found and removing sentinel:', obj.constructor?.name || 'unknown');
+    return null; // Remove sentinels
+  }
+  
+  // Handle arrays
+  if (Array.isArray(obj)) {
+    return obj.map(item => stripFirebaseSentinels(item)).filter(item => item !== null);
+  }
+  
+  // Handle plain objects
+  const cleaned = {};
+  for (const key in obj) {
+    if (obj.hasOwnProperty(key)) {
+      const value = stripFirebaseSentinels(obj[key]);
+      if (value !== null) {
+        cleaned[key] = value;
+      }
+    }
+  }
+  
+  return cleaned;
+};
 
 // --- NEW HELPER (10/30/25) ---
 // Finds the first rep matching the plan's first focus area and saves it
@@ -188,17 +225,20 @@ export default function DevelopmentPlan() {
         firebasePayload = adaptComponentPlanToFirebase(payload); 
       }
       
+      // CRITICAL FIX: Strip sentinels BEFORE sending to Firebase write
+      const cleanPayload = stripFirebaseSentinels(firebasePayload);
+      console.log('[DevelopmentPlan] Stripped sentinels from payload before write');
+      
       if (typeof updateDevelopmentPlanData === 'function') {
-        const ok = await updateDevelopmentPlanData(firebasePayload, { merge });
+        const ok = await updateDevelopmentPlanData(cleanPayload, { merge });
         if (ok === false) {
           console.warn('[DevelopmentPlan] updateDevelopmentPlanData returned false; continuing as best-effort.');
         }
-      } else if (db && userId) {
-        // Fallback best-effort path if writer not provided
-        const path = `users/${userId}/development/plan`;
-        await db.doc(path).set(firebasePayload, { merge });
       } else {
-        throw new Error('No writer (updateDevelopmentPlanData) and no db/user available.');
+        console.error('[DevelopmentPlan] updateDevelopmentPlanData is not available.');
+        setError(new Error('Writer unavailable.'));
+        setIsSaving(false);
+        return false;
       }
     } catch (e) {
       console.error('[DevelopmentPlan] Write failed:', e);

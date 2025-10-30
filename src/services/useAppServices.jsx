@@ -1,5 +1,11 @@
 // src/services/useAppServices.jsx (UPDATED FOR CLEAN STRUCTURE - OPTION B)
 // Custom for rob@sagecg.com - Scales to 10,000+ users
+// 
+// CRITICAL FIX (10/30/25): Comprehensive Firebase sentinel stripping
+// - Enhanced stripSentinels() to catch ALL sentinel types (FieldValue, ServerTimestampTransform, etc.)
+// - Applied to ALL Firestore listeners (devPlan, dailyPractice, strategic, membership, metadata, catalogs)
+// - Prevents React Error #31 from sentinel objects in state
+// - Fixes development plan generation bug where data disappeared after save
 
 import React, {
   useMemo,
@@ -63,34 +69,95 @@ const sanitizeTimestamps = (obj) => {
 };
 
 /* =========================================================
-   HELPER FUNCTION: Strip FieldValue Sentinels
+   HELPER FUNCTION: Strip FieldValue Sentinels (COMPREHENSIVE)
 ========================================================= */
-// Removes FieldValue sentinels (deleteField, serverTimestamp, etc.) from data
+// Removes ALL types of FieldValue sentinels (deleteField, serverTimestamp, increment, etc.)
 // This prevents React Error #31 when optimistic updates include sentinels
+// CRITICAL: Must catch ALL sentinel variations to prevent state corruption
 const stripSentinels = (val) => {
-  // If it's a FieldValue sentinel (has _methodName), strip it from state
-  if (val && typeof val === 'object' && '_methodName' in val) {
-    return undefined; // Remove from local state
+  // Handle null, undefined, and primitives
+  if (!val || typeof val !== 'object') {
+    return val;
+  }
+  
+  // COMPREHENSIVE SENTINEL DETECTION
+  // Check multiple ways sentinels can manifest:
+  const isSentinel = (
+    // Method 1: Check constructor name (most reliable)
+    val.constructor?.name === 'FieldValue' ||
+    val.constructor?.name === 'ServerTimestampTransform' ||
+    val.constructor?.name === 'DeleteFieldValueImpl' ||
+    val.constructor?.name === 'NumericIncrementFieldValueImpl' ||
+    val.constructor?.name === 'ArrayUnionFieldValueImpl' ||
+    val.constructor?.name === 'ArrayRemoveFieldValueImpl' ||
+    
+    // Method 2: Check for _methodName property (legacy)
+    (val._methodName && typeof val._methodName === 'string') ||
+    
+    // Method 3: Check for sentinel methods
+    val._methodName === 'serverTimestamp' ||
+    val._methodName === 'delete' ||
+    val._methodName === 'increment' ||
+    val._methodName === 'arrayUnion' ||
+    val._methodName === 'arrayRemove' ||
+    
+    // Method 4: Has toJSON but is NOT a Date or Timestamp
+    (val.toJSON && 
+     typeof val.toJSON === 'function' && 
+     !val.toISOString && // Not a Date
+     !val.toDate) // Not a Firestore Timestamp
+  );
+  
+  if (isSentinel) {
+    console.warn('[stripSentinels] 🛑 Removing Firebase sentinel:', {
+      constructor: val.constructor?.name,
+      methodName: val._methodName,
+      type: typeof val
+    });
+    return null; // Return null instead of undefined for clearer filtering
+  }
+  
+  // Preserve Date objects
+  if (val instanceof Date) {
+    return val;
+  }
+  
+  // Preserve Firestore Timestamps (they have toDate method)
+  if (val.toDate && typeof val.toDate === 'function') {
+    return val;
   }
   
   // Handle arrays
   if (Array.isArray(val)) {
-    return val
+    const cleaned = val
       .map(item => stripSentinels(item))
-      .filter(item => item !== undefined);
+      .filter(item => item !== null && item !== undefined);
+    return cleaned;
   }
   
   // Handle objects - recursively strip sentinels from all properties
   if (val && typeof val === 'object') {
     const cleaned = {};
+    let sentinelCount = 0;
+    
     for (const key in val) {
       if (val.hasOwnProperty(key)) {
         const cleanedValue = stripSentinels(val[key]);
-        if (cleanedValue !== undefined) {
+        
+        // Only add non-null, non-undefined values
+        if (cleanedValue !== null && cleanedValue !== undefined) {
           cleaned[key] = cleanedValue;
+        } else if (cleanedValue === null) {
+          // Sentinel was removed
+          sentinelCount++;
         }
       }
     }
+    
+    if (sentinelCount > 0) {
+      console.log(`[stripSentinels] ✅ Stripped ${sentinelCount} sentinel(s) from object`);
+    }
+    
     return cleaned;
   }
   
@@ -940,7 +1007,7 @@ export const createAppServices = (db, userId) => {
       const rawData = snap.exists() ? snap.data() : MOCK_DEVELOPMENT_PLAN_DATA;
       // FIX APPLIED HERE: Apply BOTH sanitizers: remove timestamps AND sentinels
       stores.developmentPlanData = stripSentinels(sanitizeTimestamps(rawData));
-      console.log('[createAppServices] Dev Plan updated');
+      console.log('[createAppServices] 📋 Dev Plan updated (sentinels stripped)');
       notifyChange();
     });
     stores.listeners.push(unsubDev);
@@ -951,7 +1018,7 @@ export const createAppServices = (db, userId) => {
       const rawData = snap.exists() ? snap.data() : MOCK_DAILY_PRACTICE_DATA;
       // Apply BOTH sanitizers: remove timestamps AND sentinels
       stores.dailyPracticeData = stripSentinels(sanitizeTimestamps(rawData));
-      console.log('[createAppServices] Daily Practice updated');
+      console.log('[createAppServices] 💪 Daily Practice updated (sentinels stripped)');
       notifyChange();
     });
     stores.listeners.push(unsubDaily);
@@ -959,7 +1026,9 @@ export const createAppServices = (db, userId) => {
     // Strategic Content listener
     const strategicPath = buildModulePath(userId, 'strategic_content', 'vision_mission');
     const unsubStrategic = onSnapshotEx(db, strategicPath, (snap) => {
-      stores.strategicContentData = snap.exists() ? sanitizeTimestamps(snap.data()) : MOCK_STRATEGIC_CONTENT_DATA;
+      const rawData = snap.exists() ? snap.data() : MOCK_STRATEGIC_CONTENT_DATA;
+      // CRITICAL: Apply BOTH sanitizers: remove timestamps AND sentinels
+      stores.strategicContentData = stripSentinels(sanitizeTimestamps(rawData));
       console.log('[createAppServices] Strategic Content updated');
       notifyChange();
     });
@@ -968,7 +1037,9 @@ export const createAppServices = (db, userId) => {
     // Membership Listener (NEW)
     const membershipPath = buildModulePath(userId, 'membership', 'current');
     const unsubMembership = onSnapshotEx(db, membershipPath, (snap) => {
-      stores.membershipData = snap.exists() ? sanitizeTimestamps(snap.data()) : MOCK_MEMBERSHIP_DATA;
+      const rawData = snap.exists() ? snap.data() : MOCK_MEMBERSHIP_DATA;
+      // CRITICAL: Apply BOTH sanitizers: remove timestamps AND sentinels
+      stores.membershipData = stripSentinels(sanitizeTimestamps(rawData));
       console.log('[createAppServices] Membership Data updated');
       notifyChange();
     });
@@ -984,8 +1055,9 @@ export const createAppServices = (db, userId) => {
       
       // Merge in the main config fields (featureFlags, LEADERSHIP_TIERS, etc.)
       if (snap.exists()) {
-        // CRITICAL: Sanitize timestamps in config data before storing
-        Object.assign(stores.globalMetadata, sanitizeTimestamps(snap.data()));
+        // CRITICAL: Apply BOTH sanitizers: remove timestamps AND sentinels
+        const cleanData = stripSentinels(sanitizeTimestamps(snap.data()));
+        Object.assign(stores.globalMetadata, cleanData);
       }
       
       console.log('[createAppServices] Global Metadata (config) updated');
@@ -1019,8 +1091,8 @@ export const createAppServices = (db, userId) => {
         if (snap.exists()) {
           // Convert snake_case to UPPER_CASE for the key name
           const keyName = catalogName.toUpperCase();
-          // CRITICAL: Sanitize timestamps in catalog data before storing
-          stores.globalMetadata[keyName] = sanitizeTimestamps(snap.data());
+          // CRITICAL: Apply BOTH sanitizers: remove timestamps AND sentinels
+          stores.globalMetadata[keyName] = stripSentinels(sanitizeTimestamps(snap.data()));
           console.log(`[createAppServices] Catalog ${catalogName} loaded:`, snap.data().items?.length || 0, 'items');
         }
         
