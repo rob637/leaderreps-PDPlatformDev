@@ -97,6 +97,50 @@ const stripSentinels = (val) => {
   return val;
 };
 
+
+/* =========================================================
+   HELPER FUNCTION: Detect Firestore FieldValue Sentinels
+   and Delete-Aware UI Merge (prevents React error #31)
+========================================================= */
+const isFirestoreSentinel = (v) =>
+  v && typeof v === 'object' && typeof v._methodName === 'string';
+
+/**
+ * Deep, delete-aware merge for optimistic UI updates.
+ * - If patch value is a Firestore sentinel => delete that key locally.
+ * - If object => recurse
+ * - If array => replace (arrays are not merged)
+ * - Never returns sentinel objects (so it's safe for React state).
+ */
+function applyPatchDeleteAware(prev, patch) {
+  // Pass through primitives/null
+  if (patch === null || typeof patch !== 'object') return patch;
+
+  // Arrays: replace whole branch after removing sentinels
+  if (Array.isArray(patch)) {
+    return stripSentinels(patch);
+  }
+
+  // Objects
+  const base =
+    prev && typeof prev === 'object' && !Array.isArray(prev) ? { ...prev } : {};
+
+  for (const [k, v] of Object.entries(patch)) {
+    if (isFirestoreSentinel(v)) {
+      // deleteField() => remove locally for optimistic UI
+      delete base[k];
+      continue;
+    }
+    if (v && typeof v === 'object' && !Array.isArray(v)) {
+      base[k] = applyPatchDeleteAware(base[k], v);
+    } else {
+      base[k] = v;
+    }
+  }
+  return base;
+}
+
+
 /* =========================================================
    Mock fallback (keeps the app usable without Firestore)
 ========================================================= */
@@ -610,7 +654,7 @@ export const useFirestoreUserData = (db, uid, isAuthReady, moduleName, docName, 
         if (success) {
           console.log(`[useFirestoreUserData.updateData] ✅ Successfully updated ${path}`);
           // Optimistically update local state
-          setData(prev => ({ ...prev, ...updates }));
+          setData(prev => applyPatchDeleteAware(prev, updates));
           return true;
         } else {
           console.error(`[useFirestoreUserData.updateData] ❌ setDocEx returned false for ${path}`);
@@ -1016,26 +1060,51 @@ export const createAppServices = (db, userId) => {
     if (!db || !userId) return false;
     const path = buildModulePath(userId, 'development_plan', 'current');
     console.log(`[updateDevelopmentPlanData] Executing with setDocEx (merge=${merge})`);
-    return await setDocEx(db, path, updates, merge);
+    const ok = await setDocEx(db, path, updates, merge);
+    if (ok) {
+      // Optimistic UI: apply delete-aware merge locally & notify
+      stores.developmentPlanData = applyPatchDeleteAware(stores.developmentPlanData || {}, updates);
+      notifyChange();
+    }
+    return ok;
   };
 
   const updateDailyPracticeData = async (updates) => {
     if (!db || !userId) return false;
     const path = buildModulePath(userId, 'daily_practice', 'current');
-    return await setDocEx(db, path, updates, true); // Use setDocEx(..., true) for module updates
+    
+    const ok = await setDocEx(db, path, updates, true);
+    if (ok) {
+      // Optimistic UI: apply delete-aware merge locally & notify
+      stores.dailyPracticeData = applyPatchDeleteAware(stores.dailyPracticeData || {}, updates);
+      notifyChange();
+    }
+    return ok;
   };
 
   const updateStrategicContentData = async (updates) => {
     if (!db || !userId) return false;
     const path = buildModulePath(userId, 'strategic_content', 'vision_mission');
-    return await setDocEx(db, path, updates, true); // Use setDocEx(..., true) for module updates
+    
+    const ok = await setDocEx(db, path, updates, true);
+    if (ok) {
+      // Optimistic UI: apply delete-aware merge locally & notify
+      stores.strategicContentData = applyPatchDeleteAware(stores.strategicContentData || {}, updates);
+      notifyChange();
+    }
+    return ok;
   };
   
   // Update Membership Data (NEW)
   const updateMembershipData = async (updates) => {
     if (!db || !userId) return false;
     const path = buildModulePath(userId, 'membership', 'current');
-    return await setDocEx(db, path, updates, true); // Use setDocEx(..., true) for module updates
+    const ok = await setDocEx(db, path, updates, true);
+    if (ok) {
+      stores.membershipData = applyPatchDeleteAware(stores.membershipData || {}, updates);
+      notifyChange();
+    }
+    return ok;
   };
 
 
