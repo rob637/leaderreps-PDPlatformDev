@@ -1,6 +1,7 @@
 // src/components/screens/Dashboard.jsx
 // FINAL VERSION - Updated 10/30/25
 // FIX: Anchor deletion logic implemented in handleDeletePlanAndReset (Issue 1).
+// FIX: Added defensive checks for arrays after deletion to prevent React error #31.
 // UX: Implemented floating/blinking Anchor FAB and Test Utilities.
 // UX: REMOVED LeadershipAnchorsCard for prominence of FAB.
 
@@ -155,12 +156,14 @@ const Dashboard = ({ navigate }) => {
   // --- Data Lookups (Unchanged logic) ---
 
   const focusAreasArray = useMemo(() => {
-    if (!developmentPlanData) return null;
-    return developmentPlanData.currentPlan?.focusAreas || developmentPlanData.focusAreas;
+    if (!developmentPlanData) return [];
+    const areas = developmentPlanData.currentPlan?.focusAreas || developmentPlanData.focusAreas;
+    // Ensure we always return an array, even if the data is corrupted
+    return Array.isArray(areas) ? areas : [];
   }, [developmentPlanData]);
 
   const primaryFocusAreaName = useMemo(() => {
-    if (Array.isArray(focusAreasArray) && focusAreasArray.length > 0) {
+    if (focusAreasArray.length > 0) {
       // NOTE: This logic is why you see "Unnamed Focus" if the plan data is incomplete.
       return focusAreasArray[0].name || focusAreasArray[0].category || 'Unnamed Focus';
     }
@@ -177,6 +180,14 @@ const Dashboard = ({ navigate }) => {
     if (!globalMetadata || !globalMetadata[key]) return [];
     const data = globalMetadata[key];
     
+    // Handle null or undefined
+    if (!data) return [];
+    
+    // Handle Firebase deleteField placeholder objects
+    if (typeof data === 'object' && data._methodName === 'FieldValue.delete') {
+      return [];
+    }
+    
     if (data && data.items && Array.isArray(data.items)) {
       return data.items;
     }
@@ -185,7 +196,7 @@ const Dashboard = ({ navigate }) => {
       return data;
     }
     
-    console.warn(`[getArrayFromMetadata] Metadata for key '${key}' is not in the expected { items: [...] } format or a simple array.`);
+    console.warn(`[getArrayFromMetadata] Metadata for key '${key}' is not in the expected { items: [...] } format or a simple array. Got:`, typeof data);
     return [];
   };
 
@@ -214,14 +225,26 @@ const Dashboard = ({ navigate }) => {
     };
   }, [targetRep, globalMetadata]);
 
-  // Load suggestions for Anchors
-  const identitySuggestions = useMemo(() => getArrayFromMetadata('IDENTITY_ANCHOR_CATALOG').map(s => ({ text: typeof s === 'string' ? s : s.text })), [globalMetadata]);
+  // Load suggestions for Anchors with defensive checks
+  const identitySuggestions = useMemo(() => {
+    const arr = getArrayFromMetadata('IDENTITY_ANCHOR_CATALOG');
+    return Array.isArray(arr) ? arr.map(s => ({ text: typeof s === 'string' ? s : s.text || '' })) : [];
+  }, [globalMetadata]);
   
-  const habitSuggestions = useMemo(() => getArrayFromMetadata('HABIT_ANCHOR_CATALOG').map(s => ({ text: typeof s === 'string' ? s : s.text })), [globalMetadata]);
+  const habitSuggestions = useMemo(() => {
+    const arr = getArrayFromMetadata('HABIT_ANCHOR_CATALOG');
+    return Array.isArray(arr) ? arr.map(s => ({ text: typeof s === 'string' ? s : s.text || '' })) : [];
+  }, [globalMetadata]);
   
-  const whySuggestions = useMemo(() => getArrayFromMetadata('WHY_CATALOG').map(s => ({ text: typeof s === 'string' ? s : s.text })), [globalMetadata]);
+  const whySuggestions = useMemo(() => {
+    const arr = getArrayFromMetadata('WHY_CATALOG');
+    return Array.isArray(arr) ? arr.map(s => ({ text: typeof s === 'string' ? s : s.text || '' })) : [];
+  }, [globalMetadata]);
   
-  const bonusExercises = useMemo(() => getArrayFromMetadata('EXERCISE_LIBRARY'), [globalMetadata]);
+  const bonusExercises = useMemo(() => {
+    const arr = getArrayFromMetadata('EXERCISE_LIBRARY');
+    return Array.isArray(arr) ? arr : [];
+  }, [globalMetadata]);
 
   // --- UI Handlers ---
 
@@ -575,7 +598,7 @@ const Dashboard = ({ navigate }) => {
             />
             
             {/* 5. Additional Reps Card (if any) */}
-            {additionalCommitments?.length > 0 && (
+            {Array.isArray(additionalCommitments) && additionalCommitments.length > 0 && (
               <AdditionalRepsCard
                 commitments={additionalCommitments}
                 onToggle={(id) => console.log('Toggle additional rep:', id)}
