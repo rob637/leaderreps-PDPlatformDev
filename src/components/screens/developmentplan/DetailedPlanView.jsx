@@ -90,14 +90,38 @@ const DetailedPlanView = ({
 
   // Prepare data for Radar Chart
   const radarData = useMemo(() => {
-    if (!latestAssessment?.scores) return [];
+    // FIXED: Use scores from assessmentHistory's latest item
+    const scores = latestAssessment?.assessmentScores || latestAssessment?.answers;
+
+    if (!scores) return [];
     
-    return Object.entries(latestAssessment.scores).map(([dimension, data]) => ({
-      subject: dimension.split(' ').slice(0, 2).join(' '), // Shorten labels
-      score: typeof data === 'object' ? data.score : data,
-      fullMark: 5
-    }));
+    return Object.entries(scores).map(([dimension, score]) => {
+        // Find the full category name from devPlanUtils.js context (Q_TO_CATEGORY or SKILL_CATEGORIES)
+        // Since we don't have devPlanUtils, we'll use simple mapping for display
+        const subjectMap = {
+            'STRATEGIC': 'Strategy',
+            'PEOPLE': 'People',
+            'EXECUTION': 'Execution',
+            'INFLUENCE': 'Influence',
+            'SELF': 'Self-Mgt',
+            // Fallback for Q IDs
+            'q1': 'Prio.', 'q2': 'Fdbk', 'q3': 'Dev.', 'q4': 'Comm.', 'q5': 'Time',
+            'q6': 'Rels.', 'q7': 'Decs.', 'q8': 'Trust', 'q9': 'Cnflict', 'q10': 'Recog.',
+        };
+        
+        const fullSubject = subjectMap[dimension] || dimension.split(' ').slice(0, 2).join(' ');
+        
+        // Ensure score is a number between 1 and 5
+        const numericScore = typeof score === 'string' ? parseInt(score, 10) : Number(score);
+
+        return {
+          subject: fullSubject,
+          score: isNaN(numericScore) ? 3 : Math.min(5, Math.max(1, numericScore)), // Clamp between 1-5
+          fullMark: 5
+        };
+    }).filter(d => d.subject.length > 0);
   }, [latestAssessment]);
+
 
   if (!currentPlan) {
     return (
