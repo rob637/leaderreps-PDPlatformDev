@@ -1,10 +1,10 @@
 // src/components/screens/Dashboard.jsx
 // FINAL VERSION - Updated 10/30/25
-// FIXED: Removed all redundant local definitions and unused imports to ensure clean build.
+// FIX: Resolved ReferenceError by ensuring update functions are correctly destructured for useCallback scope.
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useAppServices } from '../../services/useAppServices.jsx';
-import { ArrowRight, Edit3, Loader, X, Users, Send, Target, Clock, Zap } from 'lucide-react'; 
+import { ArrowRight, Edit3, Loader, X, Users, Send, Target, Clock, Zap, Shield, Trash2, Anchor } from 'lucide-react'; 
 import { deleteField } from 'firebase/firestore'; // Import deleteField
 
 // Import modular components from the file you provided
@@ -73,7 +73,10 @@ const Dashboard = ({ navigate }) => {
   const {
     user, 
     dailyPracticeData,
-    updateDailyPracticeData,
+    // CRITICAL FIX: Ensure update functions are explicitly destructured here
+    updateDailyPracticeData, 
+    updateDevelopmentPlanData, 
+    // END CRITICAL FIX
     featureFlags,
     db,
     userEmail,
@@ -87,10 +90,8 @@ const Dashboard = ({ navigate }) => {
     targetRep, targetRepStatus, canCompleteTargetRep, isSavingRep, handleCompleteTargetRep,
     identityStatement, setIdentityStatement,
     habitAnchor, setHabitAnchor,
-    // Removed: showIdentityEditor, setShowIdentityEditor,
-    // Removed: showHabitEditor, setShowHabitEditor,
-    handleSaveIdentity, // Note: Keeping these for potential future single-save logic if needed
-    handleSaveHabit,    // Note: Keeping these for potential future single-save logic if needed
+    handleSaveIdentity, 
+    handleSaveHabit,    
     morningWIN, setMorningWIN,
     otherTasks: originalOtherTasks,
     showLIS, setShowLIS,
@@ -302,7 +303,7 @@ const Dashboard = ({ navigate }) => {
     console.log('[Dashboard] Executing Delete Plan and Reset...');
     
     // 1. Delete Development Plan
-    await updateDevelopmentPlanData({
+    await updateDevelopmentPlanData({ 
         currentPlan: null,
         focusAreas: null,
         cycle: 0,
