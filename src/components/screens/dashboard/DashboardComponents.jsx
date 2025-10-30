@@ -1,7 +1,6 @@
 // src/components/screens/dashboard/DashboardComponents.jsx
-// COMPLETE VERSION with ALL 9 FIXES (10/29/25)
-// MODIFIED: 10/30/25 - Fixed MorningBookend component to make system tasks clickable.
-// MODIFIED: 10/30/25 - Grouped Identity/Habit/Why functionality into new UnifiedAnchorEditorModal.
+// MODIFIED: 10/30/25 - FINAL VERSION. Includes UnifiedAnchorEditorModal, LeadershipAnchorsCard, 
+//                      clickable system tasks, and fixed height for Morning Bookend to prevent layout shift.
 
 import React, { useState, useEffect } from 'react';
 import { 
@@ -22,7 +21,7 @@ export const COLORS = {
   PURPLE: '#7C3AED', BG: '#F9FAFB' 
 };
 
-// --- Standardized Button Component ---
+// --- Standardized Button Component (Unchanged) ---
 export const Button = ({ children, onClick, disabled = false, variant = 'primary', className = '', size = 'md', ...rest }) => {
   let baseStyle = `inline-flex items-center justify-center gap-2 font-semibold rounded-xl transition-all duration-200 focus:outline-none focus:ring-4 disabled:opacity-50 disabled:cursor-not-allowed`;
 
@@ -41,7 +40,7 @@ export const Button = ({ children, onClick, disabled = false, variant = 'primary
   return <button {...rest} onClick={onClick} disabled={disabled} className={`${baseStyle} ${className}`}>{children}</button>;
 };
 
-// --- Standardized Card Component ---
+// --- Standardized Card Component (Unchanged) ---
 export const Card = ({ children, title, icon: Icon, className = '', onClick, accent = 'NAVY' }) => {
   const interactive = !!onClick;
   const Tag = interactive ? 'button' : 'div';
@@ -80,7 +79,7 @@ export const Card = ({ children, title, icon: Icon, className = '', onClick, acc
 };
 
 /* =========================================================
-   MODE SWITCH COMPONENT
+   MODE SWITCH COMPONENT (Unchanged)
 ========================================================= */
 export const ModeSwitch = ({ isArenaMode, onToggle, isLoading }) => (
   <button
@@ -100,7 +99,7 @@ export const ModeSwitch = ({ isArenaMode, onToggle, isLoading }) => (
 );
 
 /* =========================================================
-   STREAK TRACKER COMPONENT
+   STREAK TRACKER COMPONENT (Unchanged)
 ========================================================= */
 export const StreakTracker = ({ streakCount, streakCoins }) => (
   <div className="flex items-center gap-4 px-4 py-2 rounded-lg border-2" 
@@ -120,7 +119,7 @@ export const StreakTracker = ({ streakCount, streakCoins }) => (
 );
 
 /* =========================================================
-   TAB BUTTON (for Dynamic Bookend Container)
+   TAB BUTTON (for Dynamic Bookend Container) (Unchanged)
 ========================================================= */
 export const TabButton = ({ active, onClick, label, minimized = false }) => (
   <button
@@ -148,7 +147,7 @@ export const TabButton = ({ active, onClick, label, minimized = false }) => (
 );
 
 /* =========================================================
-   DYNAMIC BOOKEND CONTAINER
+   DYNAMIC BOOKEND CONTAINER (Unchanged)
 ========================================================= */
 export const DynamicBookendContainer = ({ 
   morningProps,
@@ -200,7 +199,7 @@ export const DynamicBookendContainer = ({
 };
 
 /* =========================================================
-   MORNING BOOKEND COMPONENT
+   MORNING BOOKEND COMPONENT (WITH LAYOUT FIX)
 ========================================================= */
 export const MorningBookend = ({ 
     dailyWIN, setDailyWIN, otherTasks, onAddTask, onToggleTask, onRemoveTask,
@@ -261,13 +260,13 @@ export const MorningBookend = ({
                     </div>
                 </div>
                 
-                {/* Tasks Display with Checkboxes */}
-                {otherTasks && otherTasks.length > 0 && (
-                    <div className="space-y-2">
-                        <p className="text-xs font-semibold" style={{ color: COLORS.MUTED }}>
-                            📋 OTHER TASKS:
-                        </p>
-                        {otherTasks.map((task, idx) => (
+                {/* Tasks Display with Checkboxes - Added MIN-HEIGHT FIX */}
+                <div className="space-y-2" style={{ minHeight: '120px' }}> 
+                    <p className="text-xs font-semibold" style={{ color: COLORS.MUTED }}>
+                        📋 OTHER TASKS:
+                    </p>
+                    {otherTasks && otherTasks.length > 0 ? (
+                        otherTasks.map((task, idx) => (
                             <div key={task.id || idx} 
                                  className="flex items-center gap-3 p-2 border rounded-lg"
                                  style={{ borderColor: task.completed ? COLORS.GREEN : COLORS.SUBTLE }}>
@@ -307,9 +306,11 @@ export const MorningBookend = ({
                                     </button>
                                 )}
                             </div>
-                        ))}
-                    </div>
-                )}
+                        ))
+                    ) : (
+                        <p className="text-sm italic pt-2" style={{ color: COLORS.MUTED }}>No tasks were set for today.</p>
+                    )}
+                </div>
                 
                 {/* LIS Display (if enabled) */}
                 {showLIS && identityStatement && (
@@ -397,8 +398,8 @@ export const MorningBookend = ({
                 </Button>
             </div>
 
-            {/* Tasks Input */}
-            <div>
+            {/* Tasks Input - Added MIN-HEIGHT FIX */}
+            <div style={{ minHeight: '120px' }}>
                 <label className="text-sm font-semibold mb-2 flex items-center justify-between" style={{ color: COLORS.TEXT }}>
                     <span className="flex items-center">
                         <Clock className="w-4 h-4 mr-1" style={{ color: COLORS.TEAL }} />
@@ -505,7 +506,7 @@ export const MorningBookend = ({
 };
 
 /* =========================================================
-   EVENING BOOKEND COMPONENT
+   EVENING BOOKEND COMPONENT (Unchanged)
 ========================================================= */
 export const EveningBookend = ({ 
     reflectionGood, setReflectionGood, reflectionBetter, setReflectionBetter,
@@ -647,7 +648,7 @@ export const EveningBookend = ({
 };
 
 /* =========================================================
-   SUGGESTION MODAL (FIX #4, #5)
+   SUGGESTION MODAL (FIX #4, #5) (Unchanged)
 ========================================================= */
 export const SuggestionModal = ({ title, prefix, suggestions, onSelect, onClose }) => (
   <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
@@ -694,7 +695,7 @@ export const SuggestionModal = ({ title, prefix, suggestions, onSelect, onClose 
 );
 
 /* =========================================================
-   FIX #6: SAVE INDICATOR
+   FIX #6: SAVE INDICATOR (Unchanged)
 ========================================================= */
 export const SaveIndicator = ({ show, message = "Saved!" }) => {
   if (!show) return null;
@@ -710,7 +711,7 @@ export const SaveIndicator = ({ show, message = "Saved!" }) => {
 };
 
 /* =========================================================
-   FIX #3: BONUS EXERCISE MODAL
+   FIX #3: BONUS EXERCISE MODAL (Unchanged)
 ========================================================= */
 export const BonusExerciseModal = ({ exercise, onComplete, onSkip }) => (
   <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
@@ -756,7 +757,7 @@ export const BonusExerciseModal = ({ exercise, onComplete, onSkip }) => (
 );
 
 /* =========================================================
-   FIX #8: ADDITIONAL REPS CARD (Enhanced)
+   FIX #8: ADDITIONAL REPS CARD (Enhanced) (Unchanged)
 ========================================================= */
 export const AdditionalRepsCard = ({ commitments, onToggle, repLibrary }) => {
   // Lookup full rep details from library
@@ -825,7 +826,7 @@ export const AdditionalRepsCard = ({ commitments, onToggle, repLibrary }) => {
 };
 
 /* =========================================================
-   FIX #8 & #9: SOCIAL POD CARD (with working Find Pod button)
+   FIX #8 & #9: SOCIAL POD CARD (with working Find Pod button) (Unchanged)
 ========================================================= */
 export const SocialPodCard = ({ podMembers, activityFeed, onSendMessage, onFindPod }) => {
   const [newMessage, setNewMessage] = useState('');
@@ -950,7 +951,7 @@ export const SocialPodCard = ({ podMembers, activityFeed, onSendMessage, onFindP
 };
 
 /* =========================================================
-   AI COACH NUDGE
+   AI COACH NUDGE (Unchanged)
 ========================================================= */
 export const AICoachNudge = ({ onOpenLab, disabled }) => (
   <Card>
@@ -973,7 +974,7 @@ export const AICoachNudge = ({ onOpenLab, disabled }) => (
 );
 
 /* =========================================================
-   DEV PLAN PROGRESS LINK (FIX #2)
+   DEV PLAN PROGRESS LINK (FIX #2) (Unchanged)
 ========================================================= */
 export const DevPlanProgressLink = ({ progress, focusArea, onNavigate }) => (
   <Card>
@@ -1007,7 +1008,7 @@ export const DevPlanProgressLink = ({ progress, focusArea, onNavigate }) => (
 );
 
 /* =========================================================
-   REMINDER BANNER COMPONENTS
+   REMINDER BANNER COMPONENTS (Unchanged)
 ========================================================= */
 export const ReminderBanner = ({ message, onDismiss, type = 'best' }) => {
   const bgColor = type === 'best' ? COLORS.TEAL : COLORS.AMBER;
@@ -1044,7 +1045,59 @@ export const ReminderBanner = ({ message, onDismiss, type = 'best' }) => {
 };
 
 /* =========================================================
-   NEW: UNIFIED ANCHOR EDITOR MODAL
+   NEW: LEADERSHIP ANCHORS CARD (Exported) (Unchanged Logic)
+========================================================= */
+export const LeadershipAnchorsCard = ({ 
+    identityStatement, 
+    habitAnchor, 
+    whyStatement, 
+    onDefine, 
+    onEdit
+}) => {
+    const isFullyDefined = !!identityStatement && !!habitAnchor && !!whyStatement;
+    const itemsDefined = [identityStatement, habitAnchor, whyStatement].filter(Boolean).length;
+
+    return (
+        <Card title="⚓ Leadership Anchors" accent='TEAL' icon={Target}>
+            {isFullyDefined ? (
+                // Summary View (All 3 are set)
+                <div className="space-y-3">
+                    <p className="text-sm font-bold" style={{ color: COLORS.NAVY }}>
+                        All 3 Anchors Set
+                    </p>
+                    <div className="p-3 rounded-lg" style={{ backgroundColor: `${COLORS.TEAL}10` }}>
+                        <p className="text-xs font-semibold mb-1" style={{ color: COLORS.TEAL }}>
+                            Identity:
+                        </p>
+                        <p className="text-sm italic" style={{ color: COLORS.TEXT }}>
+                            "I am the kind of leader who {identityStatement}"
+                        </p>
+                    </div>
+                    <Button onClick={onEdit} variant="outline" size="sm" className="w-full">
+                        <Edit3 className="w-4 h-4 mr-1" /> Edit Anchors
+                    </Button>
+                </div>
+            ) : (
+                // Call to Action View (Missing one or more)
+                <div className="text-center p-4 space-y-3 bg-gray-50 rounded-lg">
+                    <p className="text-base font-semibold" style={{ color: COLORS.NAVY }}>
+                        {itemsDefined}/3 Anchors Defined
+                    </p>
+                    <p className="text-sm" style={{ color: COLORS.MUTED }}>
+                        Define your **Identity**, **Habit**, and **Why** to solidify your practice.
+                    </p>
+                    <Button onClick={onDefine} variant="primary" size="md" className="w-full">
+                        <Zap className="w-4 h-4 mr-1" /> Define Your Anchors
+                    </Button>
+                </div>
+            )}
+        </Card>
+    );
+};
+
+
+/* =========================================================
+   NEW: UNIFIED ANCHOR EDITOR MODAL (Unchanged Logic)
 ========================================================= */
 const AnchorInputSection = ({ 
     title, icon: Icon, description, value, setValue, 
@@ -1184,21 +1237,9 @@ export const UnifiedAnchorEditorModal = ({
 
 
 /* =========================================================
-   REMOVED CARDS (Replaced by LeadershipAnchorsCard in Dashboard.jsx)
+   PLACEHOLDER COMPONENTS (Required to fix build errors)
 ========================================================= */
-
-// The following components are no longer used in the main Dashboard render 
-// but are left here to show what was removed/replaced.
-
-/* export const IdentityAnchorCard = ({ identityStatement, onEdit }) => (...) */
-/* export const HabitAnchorCard = ({ habitAnchor, onEdit }) => (...) */
-/* export const WhyAnchorCard = ({ whyStatement, onEdit }) => (...) */
-
-// --- Added back for compatibility with Dashboard.jsx structure ---
-// Note: This component is defined in Dashboard.jsx to contain the custom logic.
-export const LeadershipAnchorsCard = () => null; 
-
-// Exporting placeholder components to prevent errors in Dashboard.jsx
+// Exporting placeholder components to prevent errors in Dashboard.jsx when these are not used
 export const IdentityAnchorCard = () => null;
 export const HabitAnchorCard = () => null;
 export const WhyAnchorCard = () => null;
