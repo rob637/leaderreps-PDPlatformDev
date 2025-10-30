@@ -2,6 +2,7 @@
 // FINAL VERSION - Updated 10/30/25
 // FIX: Resolved ReferenceError by ensuring update functions are correctly destructured for useCallback scope.
 // UX: Implemented floating/blinking Anchor FAB and Test Utilities.
+// UX: REMOVED LeadershipAnchorsCard for prominence of FAB.
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useAppServices } from '../../services/useAppServices.jsx';
@@ -22,9 +23,9 @@ import {
   SaveIndicator,
   BonusExerciseModal,
   SocialPodCard,
-  // === NEW/UNIFIED IMPORTS ===
-  LeadershipAnchorsCard, 
+  // === UNIFIED IMPORTS ===
   UnifiedAnchorEditorModal 
+  // LeadershipAnchorsCard REMOVED per user request
   // ===========================
 } from './dashboard/DashboardComponents.jsx';
 
@@ -83,19 +84,6 @@ const GetStartedCard = ({ onNavigate }) => (
     </div>
   </Card>
 );
-
-const SuggestionButton = ({ text, onClick }) => (
-  <button
-    onClick={onClick}
-    className="w-full text-left p-3 rounded-lg border border-transparent transition-all"
-    style={{ background: COLORS.BG }}
-  >
-    <p className="text-sm font-medium" style={{ color: COLORS.NAVY }}>
-      {text}
-    </p>
-  </button>
-);
-
 
 const Dashboard = ({ navigate }) => {
   
@@ -565,16 +553,7 @@ const Dashboard = ({ navigate }) => {
               </Card>
             )}
 
-            {/* 3. Leadership Anchors Card (UNIFIED) - INTENTIONALLY HIDDEN FOR REAL ESTATE */}
-            <LeadershipAnchorsCard
-                identityStatement={identityStatement}
-                habitAnchor={habitAnchor}
-                whyStatement={whyStatement}
-                onDefine={handleOpenAnchorEditor} 
-                onEdit={handleOpenAnchorEditor}   
-            />
-
-            {/* 4. Accountability Pod */}
+            {/* 3. Accountability Pod */}
             <SocialPodCard
               podMembers={dailyPracticeData?.podMembers || []}
               activityFeed={sanitizeTimestamps(dailyPracticeData?.podActivity || [])}
@@ -582,11 +561,20 @@ const Dashboard = ({ navigate }) => {
               onFindPod={handleFindPod}
             />
 
-            {/* 5. AI Coach */}
+            {/* 4. AI Coach */}
             <AICoachNudge 
               onOpenLab={() => navigate('coaching-lab')} 
               disabled={!(featureFlags?.enableLabs)}
             />
+            
+            {/* 5. Additional Reps Card (if any) */}
+            {additionalCommitments?.length > 0 && (
+              <AdditionalRepsCard
+                commitments={additionalCommitments}
+                onToggle={(id) => console.log('Toggle additional rep:', id)}
+                repLibrary={getArrayFromMetadata('REP_LIBRARY')}
+              />
+            )}
 
           </div>
 
@@ -642,18 +630,17 @@ const Dashboard = ({ navigate }) => {
 
       {/* --- MODALS --- */}
       
-      {/* NEW: Floating Anchor Button (FAB) - REMAINS STATIC WHEN COMPLETE */}
+      {/* NEW: Floating Anchor Button (FAB) - MORE VISIBLE */}
       <button 
         onClick={handleOpenAnchorEditor}
-        className={`fixed bottom-6 right-6 z-50 flex items-center px-6 py-3 rounded-full font-bold text-white shadow-xl transition-all duration-300 hover:scale-[1.02] 
-            ${!isFullyDefined ? 'animate-bounce' : 'opacity-80'}`}
+        className={`fixed bottom-6 right-6 z-50 flex items-center px-6 py-3 rounded-full font-bold text-white shadow-xl transition-all duration-300 hover:scale-[1.05] 
+            ${!isFullyDefined ? 'animate-bounce bg-purple-700' : 'bg-teal-600 opacity-90'}`}
         style={{ 
-            background: isFullyDefined ? COLORS.TEAL : COLORS.PURPLE, 
-            boxShadow: `0 8px 15px ${COLORS.PURPLE}50` 
+            boxShadow: `0 8px 20px ${!isFullyDefined ? COLORS.PURPLE : COLORS.TEAL}80` 
         }}
       >
         <Anchor className={`w-5 h-5 mr-3 ${!isFullyDefined ? 'animate-pulse' : ''}`} />
-        {isFullyDefined ? 'Edit Anchors' : 'Define Your Anchors!'}
+        {isFullyDefined ? 'Edit Your Anchors' : 'DEFINE YOUR ANCHORS!'}
       </button>
 
       {/* UNIFIED Anchor Editor Modal */}

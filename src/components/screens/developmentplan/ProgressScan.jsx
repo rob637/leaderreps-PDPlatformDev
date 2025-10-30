@@ -1,7 +1,8 @@
 // src/components/developmentplan/ProgressScan.jsx
 // REFACTORED: Converted to a single-page form (Screen 1).
 // Kept the "Comparison" screen (Screen 2) as a good UX step.
-// Uses new <LikertScaleInput> component.
+// UPDATED (10/30/25): Added simulated 8s loading state for generation.
+// UPDATED (10/30/25): Replaced LikertScaleInput with RadioButtonInput for consistency.
 
 import React, { useState, useMemo } from 'react';
 // REQ #3: Added ArrowLeft
@@ -11,7 +12,7 @@ import {
   Card, 
   ProgressBar, 
   Badge, 
-  LikertScaleInput // Import our new component
+  // LikertScaleInput REMOVED
 } from './DevPlanComponents';
 import { 
   ASSESSMENT_QUESTIONS, 
@@ -21,6 +22,58 @@ import {
   generatePlanFromAssessment 
 } from './devPlanUtils';
 import { adaptFirebaseAssessmentToComponents } from '../../../utils/devPlanAdapter';
+
+// REQ: New Radio Button Input Component (Copied from BaselineAssessment for visual consistency)
+const RadioButtonInput = ({ question, options, value, onChange }) => {
+  const [isFocused, setIsFocused] = useState(false);
+  
+  return (
+    <div 
+      className="p-6 rounded-lg transition-all"
+      style={{ 
+        background: isFocused ? 'white' : COLORS.BG,
+        border: `2px solid ${isFocused ? COLORS.TEAL : 'transparent'}`
+      }}
+      onFocus={() => setIsFocused(true)}
+      onBlur={() => setIsFocused(false)}
+    >
+      <label className="block text-base font-semibold mb-1" style={{ color: COLORS.NAVY }}>
+        {question.text}
+      </label>
+      <p className="text-sm mb-4" style={{ color: COLORS.MUTED }}>
+        {question.description}
+      </p>
+      
+      <fieldset className="mt-4">
+        <legend className="sr-only">Choose an option for {question.text}</legend>
+        <div className="flex flex-col sm:flex-row sm:flex-wrap sm:items-center gap-x-6 gap-y-3">
+          {options.map((option) => (
+            <div key={option.value} className="flex items-center">
+              <input
+                id={`${question.id}-${option.value}`}
+                name={question.id}
+                type="radio"
+                value={option.value}
+                checked={value === option.value}
+                onChange={() => onChange(question.id, option.value)}
+                className="h-5 w-5 border-gray-300"
+                style={{ color: COLORS.TEAL, accentColor: COLORS.TEAL }}
+              />
+              <label 
+                htmlFor={`${question.id}-${option.value}`} 
+                className="ml-2 block text-sm font-medium"
+                style={{ color: COLORS.TEXT }}
+              >
+                {option.label}
+              </label>
+            </div>
+          ))}
+        </div>
+      </fieldset>
+    </div>
+  );
+};
+
 
 const ProgressScan = ({ 
   developmentPlanData, 
@@ -38,6 +91,9 @@ const ProgressScan = ({
   // State for the assessment form
   const [responses, setResponses] = useState({});
   const [openEndedResponse, setOpenEndedResponse] = useState('');
+  
+  // NEW: State for simulated loading delay
+  const [isGenerating, setIsGenerating] = useState(false);
 
   // Adapt previous assessment to get correct field names
   const previousAssessment = useMemo(() => {
@@ -45,6 +101,7 @@ const ProgressScan = ({
     if (!lastAssessment) return null;
     
     console.log('[ProgressScan] Adapting previous assessment');
+    // Ensure the answers keys are correctly mapped
     return adaptFirebaseAssessmentToComponents(lastAssessment);
   }, [developmentPlanData?.assessmentHistory]);
 
@@ -69,23 +126,33 @@ const ProgressScan = ({
 
   // This is the final "submit" from the comparison screen
   const handleComplete = () => {
-    const newAssessment = {
-      date: new Date().toISOString(),
-      answers: responses,
-      openEnded: openEndedResponse.trim(),
-      cycle: (developmentPlanData?.currentCycle || 1) + 1,
-    };
-
-    console.log('[ProgressScan] Generating plan with skill catalog size:', skillCatalog.length);
-    const newPlan = generatePlanFromAssessment(newAssessment, skillCatalog);
+    // START SIMULATED GENERATION
+    setIsGenerating(true);
     
-    onCompleteScan(newPlan, newAssessment);
+    // Simulate 8-second generation time (UX requirement)
+    setTimeout(() => {
+        const newAssessment = {
+            date: new Date().toISOString(),
+            answers: responses,
+            openEnded: [openEndedResponse.trim()].filter(g => g), // Wrap in array to match Baseline format
+            cycle: (developmentPlanData?.currentCycle || 0) + 1, // Cycle starts at 1, so if currentCycle is 0 (initial state), new is 1. If current is 1, new is 2.
+        };
+
+        console.log('[ProgressScan] Generating plan with skill catalog size:', skillCatalog.length);
+        const newPlan = generatePlanFromAssessment(newAssessment, skillCatalog);
+        
+        onCompleteScan(newPlan, newAssessment);
+        setIsGenerating(false);
+    }, 8000); // 8-second delay
   };
 
   // --- RENDER ---
 
   // SCREEN 2: COMPARISON VIEW
   if (view === 'comparison' && previousAssessment) {
+    // Use combined loading state
+    const isTotalLoading = isLoading || isGenerating;
+    
     return (
       <div className="max-w-4xl mx-auto p-4 sm:p-6">
         <Card accent="GREEN">
@@ -100,7 +167,8 @@ const ProgressScan = ({
 
           <div className="space-y-4 mb-6">
             {ASSESSMENT_QUESTIONS.map(question => {
-              const prevScore = previousAssessment.responses?.[question.id] || 0;
+              // We need to use .answers for previous assessment if it was a Baseline, or .responses if it was a Progress Scan.
+              const prevScore = previousAssessment.responses?.[question.id] || previousAssessment.answers?.[question.id] || 0;
               const newScore = responses[question.id] || 0;
               const improvement = newScore - prevScore;
 
@@ -142,7 +210,7 @@ const ProgressScan = ({
               onClick={() => setView('assessment')}
               variant="outline"
               size="lg"
-              disabled={isLoading}
+              disabled={isTotalLoading}
             >
               Back to Edit
             </Button>
@@ -151,10 +219,10 @@ const ProgressScan = ({
               variant="primary"
               size="lg"
               className="flex-1"
-              disabled={isLoading}
+              disabled={isTotalLoading}
             >
-              {isLoading ? <Loader className="animate-spin" /> : <ArrowRight className="w-5 h-5" />}
-              {isLoading ? 'Creating Plan...' : 'Generate New Plan'}
+              {isTotalLoading ? <Loader className="animate-spin" /> : <ArrowRight className="w-5 h-5" />}
+              {isTotalLoading ? 'Generating Plan...' : 'Generate New Plan'}
             </Button>
           </div>
         </Card>
@@ -163,6 +231,9 @@ const ProgressScan = ({
   }
 
   // SCREEN 1: ASSESSMENT FORM (Default View)
+  // Use combined loading state
+  const isTotalLoading = isLoading || isGenerating;
+  
   return (
     <div className="max-w-4xl mx-auto p-4 sm:p-6" style={{ background: COLORS.BG }}>
       
@@ -202,13 +273,13 @@ const ProgressScan = ({
       {/* Form Container */}
       <div className="space-y-4 mt-4">
         
-        {/* Render all Likert questions */}
+        {/* Render all Likert questions - NOW USING RADIO BUTTON INPUT */}
         {ASSESSMENT_QUESTIONS.map((question) => {
-          const prevScore = previousAssessment?.responses?.[question.id];
+          const prevScore = previousAssessment?.responses?.[question.id] || previousAssessment?.answers?.[question.id];
           
           return (
             <div key={question.id}>
-              <LikertScaleInput
+              <RadioButtonInput // Changed from LikertScaleInput
                 question={question}
                 options={LIKERT_SCALE}
                 value={responses[question.id]}
@@ -240,6 +311,7 @@ const ProgressScan = ({
             value={openEndedResponse}
             onChange={(e) => setOpenEndedResponse(e.target.value)}
             placeholder="Share your focus for the next 90 days..."
+            disabled={isTotalLoading}
           />
         </Card>
 
@@ -250,14 +322,14 @@ const ProgressScan = ({
             variant="primary"
             size="lg"
             className="w-full"
-            disabled={isLoading || !isComplete}
+            disabled={isTotalLoading || !isComplete}
           >
-            {isLoading ? (
+            {isTotalLoading ? (
               <Loader className="animate-spin" />
             ) : (
               <TrendingUp className="w-5 h-5" />
             )}
-            {isLoading ? 'Saving...' : 'Review My Progress'}
+            {isTotalLoading ? 'Generating Plan...' : 'Review My Progress'}
           </Button>
           {!isComplete && (
             <p className="text-center text-sm mt-3" style={{ color: COLORS.MUTED }}>

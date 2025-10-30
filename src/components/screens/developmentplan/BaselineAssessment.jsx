@@ -87,6 +87,10 @@ const BaselineAssessment = ({ onComplete, isLoading = false }) => {
   const atLeastOneGoal = goals.some(g => g.trim() !== '');
   
   const isComplete = allLikertAnswered && atLeastOneGoal;
+  
+  // NEW: State for simulated loading delay
+  const [isGenerating, setIsGenerating] = useState(false);
+
 
   // Handler for the new component
   const handleResponse = (questionId, value) => {
@@ -126,17 +130,27 @@ const BaselineAssessment = ({ onComplete, isLoading = false }) => {
       return;
     }
 
-    const assessment = {
-      date: new Date().toISOString(),
-      answers: responses,
-      // REQ #15: Send goals as a filtered array
-      openEnded: goals.map(g => g.trim()).filter(g => g),
-      cycle: 1,
-    };
+    // START SIMULATED GENERATION
+    setIsGenerating(true);
     
-    console.log('[BaselineAssessment] Submitting single-page assessment:', assessment);
-    onComplete(assessment);
+    // Simulate 8-second generation time (UX requirement)
+    setTimeout(() => {
+        const assessment = {
+            date: new Date().toISOString(),
+            answers: responses,
+            // REQ #15: Send goals as a filtered array
+            openEnded: goals.map(g => g.trim()).filter(g => g),
+            cycle: 1,
+        };
+        
+        console.log('[BaselineAssessment] Submitting single-page assessment:', assessment);
+        onComplete(assessment);
+        setIsGenerating(false);
+    }, 8000); // 8-second delay
   };
+
+  // Use combined loading state
+  const isTotalLoading = isLoading || isGenerating;
 
   // --- REQ #14: Sleeker Layout ---
   return (
@@ -203,12 +217,13 @@ const BaselineAssessment = ({ onComplete, isLoading = false }) => {
                     value={goal}
                     onChange={(e) => handleGoalChange(index, e.target.value)}
                     placeholder={`Leadership goal #${index + 1}`}
+                    disabled={isTotalLoading}
                   />
                   <button
                     onClick={() => removeGoal(index)}
                     className="p-2 rounded-full text-gray-400 hover:bg-red-100 hover:text-red-600 transition-colors"
                     title="Remove goal"
-                    disabled={goals.length === 1}
+                    disabled={goals.length === 1 || isTotalLoading}
                   >
                     <X className="w-5 h-5" />
                   </button>
@@ -222,6 +237,7 @@ const BaselineAssessment = ({ onComplete, isLoading = false }) => {
                 variant="outline"
                 size="sm"
                 className="mt-4"
+                disabled={isTotalLoading}
               >
                 <Plus className="w-4 h-4 mr-2" />
                 Add Another Goal
@@ -236,14 +252,14 @@ const BaselineAssessment = ({ onComplete, isLoading = false }) => {
               variant="primary"
               size="lg"
               className="w-full"
-              disabled={isLoading || !isComplete}
+              disabled={isTotalLoading || !isComplete}
             >
-              {isLoading ? (
+              {isTotalLoading ? (
                 <Loader className="animate-spin" />
               ) : (
                 <ArrowRight className="w-5 h-5" />
               )}
-              {isLoading ? 'Creating Your Plan...' : 'Complete & Generate My Plan'}
+              {isTotalLoading ? 'Creating Your Plan...' : 'Complete & Generate My Plan'}
             </Button>
             {!isComplete && (
               <p className="text-center text-sm mt-3" style={{ color: COLORS.MUTED }}>

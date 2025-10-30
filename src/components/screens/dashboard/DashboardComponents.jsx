@@ -1,6 +1,7 @@
 // src/components/screens/dashboard/DashboardComponents.jsx
-// MODIFIED: 10/30/25 - Final version with UnifiedAnchorEditorModal, LeadershipAnchorsCard, 
+// MODIFIED: 10/30/25 - Final version with UnifiedAnchorEditorModal, 
 //                      clickable system tasks, and fixed height for Morning Bookend to prevent layout shift.
+// REMOVED: LeadershipAnchorsCard and related placeholder exports.
 
 import React, { useState, useEffect } from 'react';
 import { 
@@ -1079,56 +1080,9 @@ export const ReminderBanner = ({ message, onDismiss, type = 'best' }) => {
 };
 
 /* =========================================================
-   NEW: LEADERSHIP ANCHORS CARD (Exported)
+   NEW: LEADERSHIP ANCHORS CARD (Exported) -- REMOVED
 ========================================================= */
-export const LeadershipAnchorsCard = ({ 
-    identityStatement, 
-    habitAnchor, 
-    whyStatement, 
-    onDefine, 
-    onEdit
-}) => {
-    const isFullyDefined = !!identityStatement && !!habitAnchor && !!whyStatement;
-    const itemsDefined = [identityStatement, habitAnchor, whyStatement].filter(Boolean).length;
-
-    return (
-        <Card title="⚓ Leadership Anchors" accent='TEAL' icon={Target}>
-            {isFullyDefined ? (
-                // Summary View (All 3 are set)
-                <div className="space-y-3">
-                    <p className="text-sm font-bold" style={{ color: COLORS.NAVY }}>
-                        All 3 Anchors Set
-                    </p>
-                    <div className="p-3 rounded-lg" style={{ backgroundColor: `${COLORS.TEAL}10` }}>
-                        <p className="text-xs font-semibold mb-1" style={{ color: COLORS.TEAL }}>
-                            Identity:
-                        </p>
-                        <p className="text-sm italic" style={{ color: COLORS.TEXT }}>
-                            "I am the kind of leader who {identityStatement}"
-                        </p>
-                    </div>
-                    <Button onClick={onEdit} variant="outline" size="sm" className="w-full">
-                        <Edit3 className="w-4 h-4 mr-1" /> Edit Anchors
-                    </Button>
-                </div>
-            ) : (
-                // Call to Action View (Missing one or more)
-                <div className="text-center p-4 space-y-3 bg-gray-50 rounded-lg">
-                    <p className="text-base font-semibold" style={{ color: COLORS.NAVY }}>
-                        {itemsDefined}/3 Anchors Defined
-                    </p>
-                    <p className="text-sm" style={{ color: COLORS.MUTED }}>
-                        Define your **Identity**, **Habit**, and **Why** to solidify your practice.
-                    </p>
-                    <Button onClick={onDefine} variant="primary" size="md" className="w-full">
-                        <Zap className="w-4 h-4 mr-1" /> Define Your Anchors
-                    </Button>
-                </div>
-            )}
-        </Card>
-    );
-};
-
+// export const LeadershipAnchorsCard = () => null; // Placeholder removed
 
 /* =========================================================
    NEW: UNIFIED ANCHOR EDITOR MODAL
