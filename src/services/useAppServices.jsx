@@ -63,6 +63,41 @@ const sanitizeTimestamps = (obj) => {
 };
 
 /* =========================================================
+   HELPER FUNCTION: Strip FieldValue Sentinels
+========================================================= */
+// Removes FieldValue sentinels (deleteField, serverTimestamp, etc.) from data
+// This prevents React Error #31 when optimistic updates include sentinels
+const stripSentinels = (val) => {
+  // If it's a FieldValue sentinel (has _methodName), strip it from state
+  if (val && typeof val === 'object' && '_methodName' in val) {
+    return undefined; // Remove from local state
+  }
+  
+  // Handle arrays
+  if (Array.isArray(val)) {
+    return val
+      .map(item => stripSentinels(item))
+      .filter(item => item !== undefined);
+  }
+  
+  // Handle objects - recursively strip sentinels from all properties
+  if (val && typeof val === 'object') {
+    const cleaned = {};
+    for (const key in val) {
+      if (val.hasOwnProperty(key)) {
+        const cleanedValue = stripSentinels(val[key]);
+        if (cleanedValue !== undefined) {
+          cleaned[key] = cleanedValue;
+        }
+      }
+    }
+    return cleaned;
+  }
+  
+  return val;
+};
+
+/* =========================================================
    Mock fallback (keeps the app usable without Firestore)
 ========================================================= */
 const __firestore_mock_store =
@@ -766,7 +801,9 @@ export const createAppServices = (db, userId) => {
     // Daily Practice listener
     const dailyPath = buildModulePath(userId, 'daily_practice', 'current');
     const unsubDaily = onSnapshotEx(db, dailyPath, (snap) => {
-      stores.dailyPracticeData = snap.exists() ? sanitizeTimestamps(snap.data()) : MOCK_DAILY_PRACTICE_DATA;
+      const rawData = snap.exists() ? snap.data() : MOCK_DAILY_PRACTICE_DATA;
+      // Apply BOTH sanitizers: remove timestamps AND sentinels
+      stores.dailyPracticeData = stripSentinels(sanitizeTimestamps(rawData));
       console.log('[createAppServices] Daily Practice updated');
       notifyChange();
     });

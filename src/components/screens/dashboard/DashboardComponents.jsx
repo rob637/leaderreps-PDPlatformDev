@@ -382,7 +382,7 @@ export const MorningBookend = ({
                         <AlertTriangle className="w-4 h-4 mt-0.5 flex-shrink-0" style={{ color: COLORS.AMBER }} />
                         <div>
                             <p className="text-xs font-semibold" style={{ color: COLORS.AMBER }}>
-                                ⚠️ LATE START ALERT
+                               ⚠️ LATE START ALERT
                             </p>
                             <p className="text-xs mt-1" style={{ color: COLORS.TEXT }}>
                                 It's past noon! Set your WIN and lock in your plan to stay on track.
@@ -1042,6 +1042,12 @@ export const ReminderBanner = ({ message, onDismiss, type = 'best' }) => {
   const bgColor = type === 'best' ? COLORS.TEAL : COLORS.AMBER;
   const emoji = type ==='best' ? '🌟' : '💡';
   const label = type === 'best' ? "YESTERDAY'S COMMITMENT:" : "AREA FOR IMPROVEMENT:";
+  
+  // CRITICAL FIX: Don't render if message is a FieldValue sentinel (has _methodName)
+  // This prevents React Error #31 when deleteField() or other sentinels are passed
+  if (!message || typeof message !== 'string') {
+    return null; // Don't render if message is not a valid string
+  }
   
   return (
     <div 

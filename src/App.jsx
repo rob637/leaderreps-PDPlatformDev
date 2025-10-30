@@ -671,6 +671,50 @@ const DataProvider = ({ children, firebaseServices, userId, isAuthReady, navigat
           hasDailyPractice: data.dailyPracticeData !== null,
           hasDevPlan: data.developmentPlanData !== null
         });
+        
+        // SENTINEL DETECTOR: Find any FieldValue sentinels that would cause React Error #31
+        const detectSentinels = (obj, path = '') => {
+          const found = [];
+          
+          if (!obj || typeof obj !== 'object') return found;
+          
+          // Check if this object is a FieldValue sentinel (has _methodName)
+          if ('_methodName' in obj) {
+            found.push({
+              path: path || 'root',
+              method: obj._methodName || 'unknown',
+              value: obj
+            });
+            return found;
+          }
+          
+          // Recursively check arrays
+          if (Array.isArray(obj)) {
+            obj.forEach((item, index) => {
+              found.push(...detectSentinels(item, `${path}[${index}]`));
+            });
+            return found;
+          }
+          
+          // Recursively check object properties
+          for (const key in obj) {
+            if (obj.hasOwnProperty(key)) {
+              const newPath = path ? `${path}.${key}` : key;
+              found.push(...detectSentinels(obj[key], newPath));
+            }
+          }
+          
+          return found;
+        };
+        
+        // Run the detector on all data
+        const sentinels = detectSentinels(data);
+        if (sentinels.length > 0) {
+          console.error('🚨 [DataProvider][SentinelDetector] Found FieldValue sentinel(s) in UI state:');
+          console.error(sentinels);
+          console.error('These will cause React Error #31 if rendered. Fix: strip sentinels before merging into state.');
+        }
+        
         setServiceData(data);
         
         // Once we have any data, we can set loading to false
