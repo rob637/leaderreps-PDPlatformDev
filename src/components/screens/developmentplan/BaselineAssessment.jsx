@@ -1,10 +1,9 @@
 // src/components/developmentplan/BaselineAssessment.jsx
-// REFACTORED: Converted to a single-page, modern form.
-// Removed all "currentQuestion" and "showOpenEnded" state logic.
-// Uses new <LikertScaleInput> component.
+// REFACTORED: Converted to a single-page, modern form. (Req #14)
+// Uses new 1-3 goal input fields. (Req #15)
 
 import React, { useState } from 'react';
-import { ArrowRight, Loader } from 'lucide-react';
+import { ArrowRight, Loader, Plus, X } from 'lucide-react'; // Added Plus and X
 import { 
   Button, 
   Card, 
@@ -13,7 +12,7 @@ import {
 } from './DevPlanComponents';
 import { 
   ASSESSMENT_QUESTIONS, 
-  OPEN_ENDED_QUESTION, 
+  OPEN_ENDED_QUESTION, // We'll still use its title
   LIKERT_SCALE, 
   COLORS 
 } from './devPlanUtils';
@@ -21,32 +20,64 @@ import {
 const BaselineAssessment = ({ onComplete, isLoading = false }) => {
   // One state object for all answers
   const [responses, setResponses] = useState({});
-  const [openEndedResponse, setOpenEndedResponse] = useState('');
+  
+  // REQ #15: State for 1-3 goals
+  const [goals, setGoals] = useState(['']);
 
   const completedQuestions = Object.keys(responses).length;
   const totalQuestions = ASSESSMENT_QUESTIONS.length;
   const progress = (completedQuestions / totalQuestions) * 100;
   
   // Check if all Likert questions are answered
-  const isComplete = completedQuestions === totalQuestions;
+  const allLikertAnswered = completedQuestions === totalQuestions;
+  // Check if at least one goal is entered
+  const atLeastOneGoal = goals.some(g => g.trim() !== '');
+  
+  const isComplete = allLikertAnswered && atLeastOneGoal;
 
   // Handler for the new component
   const handleResponse = (questionId, value) => {
     setResponses(prev => ({ ...prev, [questionId]: value }));
   };
+  
+  // --- REQ #15: Goal Handlers ---
+  const handleGoalChange = (index, value) => {
+    const newGoals = [...goals];
+    newGoals[index] = value;
+    setGoals(newGoals);
+  };
+  
+  const addGoal = () => {
+    if (goals.length < 3) {
+      setGoals([...goals, '']);
+    }
+  };
+  
+  const removeGoal = (index) => {
+    if (goals.length > 1) {
+      const newGoals = goals.filter((_, i) => i !== index);
+      setGoals(newGoals);
+    } else {
+      // Don't remove the last one, just clear it
+      setGoals(['']);
+    }
+  };
 
   const handleComplete = () => {
-    // We already checked if the likert scale is complete
-    // We can also add a check for the open-ended response if required
-    if (!isComplete) {
+    if (!allLikertAnswered) {
       alert("Please answer all assessment questions.");
+      return;
+    }
+    if (!atLeastOneGoal) {
+      alert("Please enter at least one leadership goal.");
       return;
     }
 
     const assessment = {
       date: new Date().toISOString(),
       answers: responses,
-      openEnded: openEndedResponse.trim(),
+      // REQ #15: Send goals as a filtered array
+      openEnded: goals.map(g => g.trim()).filter(g => g),
       cycle: 1,
     };
     
@@ -54,22 +85,12 @@ const BaselineAssessment = ({ onComplete, isLoading = false }) => {
     onComplete(assessment);
   };
 
+  // --- REQ #14: Sleeker Layout ---
   return (
-    <div className="max-w-4xl mx-auto p-4 sm:p-6" style={{ background: COLORS.BG }}>
+    <div className="min-h-screen p-4 sm:p-6 lg:p-8" style={{ background: COLORS.BG }}>
       
-      {/* Header Card */}
-      <Card accent="TEAL">
-        <h1 className="text-3xl font-extrabold mb-2" style={{ color: COLORS.NAVY }}>
-          Baseline Assessment
-        </h1>
-        <p className="text-lg" style={{ color: COLORS.MUTED }}>
-          Answer these {totalQuestions} questions to create your personalized leadership plan.
-        </p>
-      </Card>
-
       {/* Sticky Progress Bar */}
-      <div className="sticky top-0 z-10 py-4" style={{ background: `${COLORS.BG}F0` }}>
-        <div className="max-w-4xl mx-auto">
+      <div className="sticky top-0 z-10 py-4 max-w-4xl mx-auto" style={{ background: `${COLORS.BG}F0` }}>
           <div className="flex justify-between text-sm mb-2 px-1">
             <span className="font-semibold" style={{ color: COLORS.TEAL }}>
               {completedQuestions} of {totalQuestions} Questions Answered
@@ -79,62 +100,102 @@ const BaselineAssessment = ({ onComplete, isLoading = false }) => {
             </span>
           </div>
           <ProgressBar progress={progress} color={COLORS.TEAL} height={12} />
-        </div>
       </div>
 
-      {/* Form Container */}
-      <div className="space-y-4 mt-4">
+      {/* Main Content Card */}
+      <div className="max-w-4xl mx-auto bg-white rounded-2xl shadow-xl overflow-hidden mt-4">
         
-        {/* Render all Likert questions */}
-        {ASSESSMENT_QUESTIONS.map((question) => (
-          <LikertScaleInput
-            key={question.id}
-            question={question}
-            options={LIKERT_SCALE}
-            value={responses[question.id]}
-            onChange={handleResponse}
-          />
-        ))}
-
-        {/* Open-ended question - just part of the same form now */}
-        <Card accent="ORANGE">
-          <label className="block text-lg font-semibold mb-3" style={{ color: COLORS.NAVY }}>
-            {OPEN_ENDED_QUESTION.text}
-          </label>
-          <p className="text-sm mb-3" style={{ color: COLORS.MUTED }}>
-            {OPEN_ENDED_QUESTION.placeholder}
+        {/* Header Area */}
+        <div className="p-6 sm:p-8 border-b" style={{ borderColor: COLORS.SUBTLE }}>
+          <h1 className="text-3xl font-extrabold mb-2" style={{ color: COLORS.NAVY }}>
+            Baseline Assessment
+          </h1>
+          <p className="text-lg" style={{ color: COLORS.MUTED }}>
+            Answer these {totalQuestions} questions to create your personalized leadership plan.
           </p>
-          <textarea
-            className="w-full p-4 border rounded-lg focus:ring-2 transition-all"
-            style={{ borderColor: COLORS.SUBTLE, ringColor: COLORS.ORANGE }}
-            rows={4}
-            value={openEndedResponse}
-            onChange={(e) => setOpenEndedResponse(e.target.value)}
-            placeholder="Share your top goal or priority..."
-          />
-        </Card>
+        </div>
 
-        {/* The "One Banana" - Complete Button */}
-        <div className="pt-6 pb-12">
-          <Button
-            onClick={handleComplete}
-            variant="primary"
-            size="lg"
-            className="w-full"
-            disabled={isLoading || !isComplete}
-          >
-            {isLoading ? (
-              <Loader className="animate-spin" />
-            ) : (
-              <ArrowRight className="w-5 h-5" />
-            )}
-            {isLoading ? 'Creating Your Plan...' : 'Complete & Generate My Plan'}
-          </Button>
-          {!isComplete && (
-            <p className="text-center text-sm mt-3" style={{ color: COLORS.MUTED }}>
-              Please answer all {totalQuestions} questions to complete the assessment.
+        {/* Form Container */}
+        <div className="p-6 sm:p-8 space-y-6">
+          
+          {/* Render all Likert questions */}
+          {ASSESSMENT_QUESTIONS.map((question) => (
+            <LikertScaleInput
+              key={question.id}
+              question={question}
+              options={LIKERT_SCALE}
+              value={responses[question.id]}
+              onChange={handleResponse}
+            />
+          ))}
+
+          {/* REQ #15: Open-ended goals section */}
+          <div className="p-6 rounded-lg" style={{ background: `${COLORS.ORANGE}10` }}>
+            <label className="block text-lg font-semibold mb-2" style={{ color: COLORS.NAVY }}>
+              {OPEN_ENDED_QUESTION.text}
+            </label>
+            <p className="text-sm mb-4" style={{ color: COLORS.MUTED }}>
+              {OPEN_ENDED_QUESTION.placeholder} (Add up to 3)
             </p>
-          )}
+            
+            <div className="space-y-3">
+              {goals.map((goal, index) => (
+                <div key={index} className="flex items-center gap-2">
+                  <input
+                    type="text"
+                    className="flex-1 w-full p-3 border rounded-lg focus:ring-2 transition-all"
+                    style={{ borderColor: COLORS.SUBTLE, ringColor: COLORS.ORANGE }}
+                    value={goal}
+                    onChange={(e) => handleGoalChange(index, e.target.value)}
+                    placeholder={`Leadership goal #${index + 1}`}
+                  />
+                  <button
+                    onClick={() => removeGoal(index)}
+                    className="p-2 rounded-full text-gray-400 hover:bg-red-100 hover:text-red-600 transition-colors"
+                    title="Remove goal"
+                    disabled={goals.length === 1}
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+              ))}
+            </div>
+            
+            {goals.length < 3 && (
+              <Button
+                onClick={addGoal}
+                variant="outline"
+                size="sm"
+                className="mt-4"
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                Add Another Goal
+              </Button>
+            )}
+          </div>
+
+          {/* The "One Banana" - Complete Button */}
+          <div className="pt-6">
+            <Button
+              onClick={handleComplete}
+              variant="primary"
+              size="lg"
+              className="w-full"
+              disabled={isLoading || !isComplete}
+            >
+              {isLoading ? (
+                <Loader className="animate-spin" />
+              ) : (
+                <ArrowRight className="w-5 h-5" />
+              )}
+              {isLoading ? 'Creating Your Plan...' : 'Complete & Generate My Plan'}
+            </Button>
+            {!isComplete && (
+              <p className="text-center text-sm mt-3" style={{ color: COLORS.MUTED }}>
+                Please answer all {totalQuestions} questions and add at least one goal to complete the assessment.
+              </p>
+            )}
+          </div>
         </div>
       </div>
     </div>
