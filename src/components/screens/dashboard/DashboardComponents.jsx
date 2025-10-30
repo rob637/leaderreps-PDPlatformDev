@@ -1,14 +1,14 @@
 // src/components/screens/dashboard/DashboardComponents.jsx
 // COMPLETE VERSION with ALL 9 FIXES (10/29/25)
-// MODIFIED: 10/29/25 - Removed 'Suggestions' button from Anchor Cards per user request.
-// MODIFIED: 10/29/25 - Fixed PM Bookend auto-tracking bug
+// MODIFIED: 10/30/25 - Fixed MorningBookend component to make system tasks clickable.
+// MODIFIED: 10/30/25 - Grouped Identity/Habit/Why functionality into new UnifiedAnchorEditorModal.
 
 import React, { useState, useEffect } from 'react';
 import { 
   Target, Clock, User, Save, Loader, CheckCircle, TrendingUp, Star, 
   ChevronDown, ChevronUp, Plus, X, Sunrise, Moon, Flame, Anchor,
   ToggleLeft, ToggleRight, Zap, AlertTriangle, MessageSquare, Trophy,
-  Send, Users, Activity
+  Send, Users, Activity, Edit3
 } from 'lucide-react';
 import { serverTimestamp } from 'firebase/firestore';
 
@@ -200,7 +200,7 @@ export const DynamicBookendContainer = ({
 };
 
 /* =========================================================
-   FIX #7: MORNING BOOKEND COMPONENT (Fixed Lock Logic)
+   MORNING BOOKEND COMPONENT
 ========================================================= */
 export const MorningBookend = ({ 
     dailyWIN, setDailyWIN, otherTasks, onAddTask, onToggleTask, onRemoveTask,
@@ -267,21 +267,45 @@ export const MorningBookend = ({
                         <p className="text-xs font-semibold" style={{ color: COLORS.MUTED }}>
                             📋 OTHER TASKS:
                         </p>
-                        {otherTasks.map(task => (
-                            <div key={task.id} 
+                        {otherTasks.map((task, idx) => (
+                            <div key={task.id || idx} 
                                  className="flex items-center gap-3 p-2 border rounded-lg"
                                  style={{ borderColor: task.completed ? COLORS.GREEN : COLORS.SUBTLE }}>
-                                <input 
-                                    type="checkbox"
-                                    checked={task.completed}
-                                    onChange={() => onToggleTask(task.id ?? idx)}
-                                    className="w-4 h-4"
-                                    style={{ accentColor: COLORS.TEAL }}
-                                />
-                                <span className={`text-sm flex-1 ${task.completed ? 'line-through opacity-60' : ''}`}
-                                      style={{ color: COLORS.TEXT }}>
-                                    {task.text}
-                                </span>
+                                
+                                {/* MODIFIED: Render system tasks as clickable buttons/links */}
+                                {task.isSystem ? (
+                                    <button 
+                                        onClick={task.onClick}
+                                        className="text-sm flex-1 text-left font-medium hover:text-teal-600 transition-colors"
+                                        style={{ color: COLORS.NAVY }}
+                                    >
+                                        <span className="mr-2 text-red-500">→</span>
+                                        {task.text}
+                                    </button>
+                                ) : (
+                                  <>
+                                    <input 
+                                        type="checkbox"
+                                        checked={task.completed}
+                                        onChange={() => onToggleTask(task.id ?? idx)}
+                                        className="w-4 h-4"
+                                        style={{ accentColor: COLORS.TEAL }}
+                                    />
+                                    <span className={`text-sm flex-1 ${task.completed ? 'line-through opacity-60' : ''}`}
+                                        style={{ color: COLORS.TEXT }}>
+                                        {task.text}
+                                    </span>
+                                  </>
+                                )}
+                                {/* Only show remove button for non-system, non-completed tasks in checklist mode */}
+                                {!task.isSystem && !task.completed && (
+                                    <button 
+                                        onClick={() => onRemoveTask(task.id ?? idx)}
+                                        className="text-gray-400 hover:text-red-500 transition-colors"
+                                    >
+                                        <X className="w-4 h-4" />
+                                    </button>
+                                )}
                             </div>
                         ))}
                     </div>
@@ -389,13 +413,29 @@ export const MorningBookend = ({
                             <div key={task.id || idx} 
                                  className="flex items-center gap-2 p-2 border rounded-lg"
                                  style={{ borderColor: COLORS.SUBTLE, backgroundColor: COLORS.LIGHT_GRAY }}>
-                                <span className="text-sm flex-1" style={{ color: COLORS.TEXT }}>{task.text}</span>
-                                <button 
-                                    onClick={() => onRemoveTask(task.id ?? idx)}
-                                    className="text-gray-400 hover:text-red-500 transition-colors"
-                                >
-                                    <X className="w-4 h-4" />
-                                </button>
+                                
+                                {/* MODIFIED: Render system tasks as clickable buttons/links */}
+                                {task.isSystem ? (
+                                    <button 
+                                        onClick={task.onClick}
+                                        className="text-sm flex-1 text-left font-medium hover:text-teal-600 transition-colors"
+                                        style={{ color: COLORS.NAVY }}
+                                    >
+                                        <span className="mr-2 text-red-500">→</span>
+                                        {task.text}
+                                    </button>
+                                ) : (
+                                    <span className="text-sm flex-1" style={{ color: COLORS.TEXT }}>{task.text}</span>
+                                )}
+
+                                {!task.isSystem && (
+                                    <button 
+                                        onClick={() => onRemoveTask(task.id ?? idx)}
+                                        className="text-gray-400 hover:text-red-500 transition-colors"
+                                    >
+                                        <X className="w-4 h-4" />
+                                    </button>
+                                )}
                             </div>
                         ))}
                     </div>
@@ -910,52 +950,6 @@ export const SocialPodCard = ({ podMembers, activityFeed, onSendMessage, onFindP
 };
 
 /* =========================================================
-   IDENTITY ANCHOR CARD (MODIFIED)
-   Removed onShowSuggestions prop and button
-========================================================= */
-export const IdentityAnchorCard = ({ identityStatement, onEdit }) => (
-  <Card icon={Anchor} accent='TEAL'>
-    <h3 className="text-lg font-bold mb-3 flex items-center gap-2" style={{ color: COLORS.NAVY }}>
-      <span>🎯</span> Identity Anchor
-    </h3>
-    <div className="p-4 bg-teal-50 rounded-lg mb-3">
-        <p className="text-sm italic" style={{ color: COLORS.TEXT }}>
-            I am the kind of leader who{' '}
-            <strong>{identityStatement || "..."}</strong>
-        </p>
-    </div>
-    <div className="flex gap-2">
-      <Button onClick={onEdit} variant="outline" size="sm" className="flex-1">
-        <span className="mr-1">✏️</span> Edit
-      </Button>
-      {/* 'Suggestions' button removed per user request */}
-    </div>
-  </Card>
-);
-
-/* =========================================================
-   HABIT ANCHOR CARD (MODIFIED)
-   Removed onShowSuggestions prop and button
-========================================================= */
-export const HabitAnchorCard = ({ habitAnchor, onEdit }) => (
-  <Card icon={Clock} accent='BLUE'>
-    <h3 className="text-lg font-bold mb-3 flex items-center gap-2" style={{ color: COLORS.NAVY }}>
-      <span>⚓</span> Habit Anchor
-    </h3>
-    <div className="mb-4">
-      <p className="text-xs font-semibold mb-1" style={{ color: COLORS.MUTED }}>YOUR DAILY CUE:</p>
-      <p className="text-sm" style={{ color: COLORS.TEXT }}>{habitAnchor || "When I..."}</p>
-    </div>
-    <div className="flex gap-2">
-      <Button onClick={onEdit} variant="outline" size="sm" className="flex-1">
-        <Clock className="w-4 h-4 mr-1" /> Edit
-      </Button>
-       {/* 'Suggestions' button removed per user request */}
-    </div>
-  </Card>
-);
-
-/* =========================================================
    AI COACH NUDGE
 ========================================================= */
 export const AICoachNudge = ({ onOpenLab, disabled }) => (
@@ -1048,3 +1042,163 @@ export const ReminderBanner = ({ message, onDismiss, type = 'best' }) => {
     </div>
   );
 };
+
+/* =========================================================
+   NEW: UNIFIED ANCHOR EDITOR MODAL
+========================================================= */
+const AnchorInputSection = ({ 
+    title, icon: Icon, description, value, setValue, 
+    suggestions, onSelectSuggestion, isTextArea = false 
+}) => {
+    // Determine the text used for suggestions based on the anchor type
+    const suggestionPrefix = title === '1. Identity Anchor' 
+        ? '... ' // for "...prioritizes team well-being"
+        : ''; 
+        
+    return (
+        <div className="p-4 rounded-xl border" style={{ borderColor: COLORS.SUBTLE }}>
+            <div className="flex items-center gap-2 mb-2">
+                <Icon className="w-5 h-5" style={{ color: COLORS.TEAL }} />
+                <h3 className="text-lg font-bold" style={{ color: COLORS.NAVY }}>
+                    {title}
+                </h3>
+            </div>
+            <p className="text-xs mb-3" style={{ color: COLORS.MUTED }}>
+                {description}
+            </p>
+            
+            {isTextArea ? (
+                <textarea 
+                    value={value}
+                    onChange={(e) => setValue(e.target.value)}
+                    placeholder="Enter your anchor..."
+                    className="w-full p-3 border rounded-lg mb-4"
+                    style={{ borderColor: COLORS.SUBTLE }}
+                    rows={3}
+                />
+            ) : (
+                <input 
+                    type="text"
+                    value={value}
+                    onChange={(e) => setValue(e.target.value)}
+                    placeholder="Enter your anchor..."
+                    className="w-full p-3 border rounded-lg mb-4"
+                    style={{ borderColor: COLORS.SUBTLE }}
+                />
+            )}
+            
+            {suggestions && suggestions.length > 0 && (
+                <>
+                    <p className="text-xs font-semibold mb-2" style={{ color: COLORS.MUTED }}>
+                        SUGGESTIONS:
+                    </p>
+                    <div className="space-y-1 max-h-32 overflow-y-auto">
+                        {suggestions.slice(0, 3).map((suggestion, index) => (
+                            <button
+                                key={index}
+                                onClick={() => onSelectSuggestion(suggestion.text)}
+                                className="w-full text-left p-2 rounded-lg text-sm transition-all bg-gray-50 hover:bg-teal-50"
+                                style={{ color: COLORS.NAVY }}
+                            >
+                                {suggestionPrefix} {suggestion.text}
+                            </button>
+                        ))}
+                    </div>
+                </>
+            )}
+        </div>
+    );
+};
+
+export const UnifiedAnchorEditorModal = ({ 
+    initialIdentity, initialHabit, initialWhy,
+    identitySuggestions, habitSuggestions, whySuggestions,
+    onSave, onClose
+}) => {
+    const [identity, setIdentity] = useState(initialIdentity);
+    const [habit, setHabit] = useState(initialHabit);
+    const [why, setWhy] = useState(initialWhy);
+
+    const handleSave = () => {
+        onSave({ identity, habit, why });
+    };
+
+    return (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-2xl p-6 max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+                <div className="flex justify-between items-center mb-4 pb-2 border-b" style={{ borderColor: COLORS.SUBTLE }}>
+                    <h2 className="text-2xl font-bold" style={{ color: COLORS.NAVY }}>
+                        <Anchor className="w-6 h-6 inline-block mr-2" style={{ color: COLORS.TEAL }} />
+                        Define Your Leadership Anchors
+                    </h2>
+                    <button onClick={onClose} className="p-1 rounded-full hover:bg-gray-100">
+                        <X className="w-5 h-5" style={{ color: COLORS.MUTED }} />
+                    </button>
+                </div>
+
+                <div className="overflow-y-auto flex-1 space-y-4 pr-2">
+                    <AnchorInputSection
+                        title="1. Identity Anchor"
+                        icon={User}
+                        description='Complete the statement: "I am the kind of leader who..."'
+                        value={identity}
+                        setValue={setIdentity}
+                        suggestions={identitySuggestions}
+                        onSelectSuggestion={setIdentity}
+                    />
+
+                    <AnchorInputSection
+                        title="2. Habit Anchor (Cue)"
+                        icon={Clock}
+                        description='Your daily cue: "When I..."'
+                        value={habit}
+                        setValue={setHabit}
+                        suggestions={habitSuggestions}
+                        onSelectSuggestion={setHabit}
+                    />
+                    
+                    <AnchorInputSection
+                        title="3. Your 'Why It Matters'"
+                        icon={Zap}
+                        description='Your core purpose: Why does this leadership journey matter to you?'
+                        value={why}
+                        setValue={setWhy}
+                        suggestions={whySuggestions}
+                        onSelectSuggestion={setWhy}
+                        isTextArea={true}
+                    />
+                </div>
+
+                <div className="mt-4 pt-4 border-t flex gap-3" style={{ borderColor: COLORS.SUBTLE }}>
+                    <Button onClick={handleSave} variant="primary" size="md" className="flex-1">
+                        <Save className="w-4 h-4 mr-2" /> Save All Anchors
+                    </Button>
+                    <Button onClick={onClose} variant="outline" size="md" className="flex-1">
+                        Cancel
+                    </Button>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+
+/* =========================================================
+   REMOVED CARDS (Replaced by LeadershipAnchorsCard in Dashboard.jsx)
+========================================================= */
+
+// The following components are no longer used in the main Dashboard render 
+// but are left here to show what was removed/replaced.
+
+/* export const IdentityAnchorCard = ({ identityStatement, onEdit }) => (...) */
+/* export const HabitAnchorCard = ({ habitAnchor, onEdit }) => (...) */
+/* export const WhyAnchorCard = ({ whyStatement, onEdit }) => (...) */
+
+// --- Added back for compatibility with Dashboard.jsx structure ---
+// Note: This component is defined in Dashboard.jsx to contain the custom logic.
+export const LeadershipAnchorsCard = () => null; 
+
+// Exporting placeholder components to prevent errors in Dashboard.jsx
+export const IdentityAnchorCard = () => null;
+export const HabitAnchorCard = () => null;
+export const WhyAnchorCard = () => null;

@@ -1,823 +1,1242 @@
-// src/components/screens/Dashboard.jsx
-// FINAL VERSION - Updated 10/30/25
-// Implements the 60/40 layout from the boss's mockup.
-// Prioritizes "Focus Rep" and "Bookends" as the two primary "bananas".
-// Uses the fixed components from DashboardComponents.jsx.
+// src/components/screens/dashboard/DashboardComponents.jsx
+// MODIFIED: 10/30/25 - Final version with UnifiedAnchorEditorModal and LeadershipAnchorsCard
 
-import React, { useState, useEffect, useMemo } from 'react';
-import { useAppServices } from '../../services/useAppServices.jsx';
-import { ArrowRight, Edit3, Loader, X, Users, Send } from 'lucide-react'; // Import icons
+import React, { useState, useEffect } from 'react';
+import { 
+  Target, Clock, User, Save, Loader, CheckCircle, TrendingUp, Star, 
+  ChevronDown, ChevronUp, Plus, X, Sunrise, Moon, Flame, Anchor,
+  ToggleLeft, ToggleRight, Zap, AlertTriangle, MessageSquare, Trophy,
+  Send, Users, Activity, Edit3
+} from 'lucide-react';
+import { serverTimestamp } from 'firebase/firestore';
 
-// Import modular components from the file you provided
-import {
-  COLORS,
-  Button,
-  Card,
-  ModeSwitch,
-  StreakTracker,
-  DynamicBookendContainer, // The 40% "Action" column
-  DevPlanProgressLink,    // The "Focus Area" card
-  IdentityAnchorCard,     // The "Anchor" card
-  HabitAnchorCard,        // The "Habit Anchor" card
-  AICoachNudge,
-  ReminderBanner,         // For the "Best" and "Better" reminders
-  SuggestionModal,
-  SaveIndicator,
-  BonusExerciseModal,
-  AdditionalRepsCard,
-  SocialPodCard           // The "Accountability Pod" card
-} from './dashboard/DashboardComponents.jsx';
+/* =========================================================
+   COLORS & BASE COMPONENTS
+========================================================= */
+export const COLORS = { 
+  NAVY: '#002E47', TEAL: '#47A88D', BLUE: '#2563EB', ORANGE: '#E04E1B', 
+  GREEN: '#10B981', AMBER: '#F5A800', RED: '#E04E1B', LIGHT_GRAY: '#FCFCFA', 
+  OFF_WHITE: '#FFFFFF', SUBTLE: '#E5E7EB', TEXT: '#374151', MUTED: '#4B5563', 
+  PURPLE: '#7C3AED', BG: '#F9FAFB' 
+};
 
-// Import hooks from the file you provided
-import { useDashboard } from './dashboard/DashboardHooks.jsx';
+// --- Standardized Button Component ---
+export const Button = ({ children, onClick, disabled = false, variant = 'primary', className = '', size = 'md', ...rest }) => {
+  let baseStyle = `inline-flex items-center justify-center gap-2 font-semibold rounded-xl transition-all duration-200 focus:outline-none focus:ring-4 disabled:opacity-50 disabled:cursor-not-allowed`;
 
-// --- NEW "Get Started" Card ---
-// This card replaces the progress link for new users (Req #2)
-const GetStartedCard = ({ onNavigate }) => (
-  <Card accent="TEAL">
-    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-      <div>
-        <h2 className="text-2xl font-bold" style={{ color: COLORS.NAVY }}>
-          Start Your Leadership Journey
-        </h2>
-        <p className="text-base mt-1" style={{ color: COLORS.MUTED }}>
-          Create your personalized Development Plan to unlock your daily reps.
-        </p>
-      </div>
-      <Button
-        onClick={() => onNavigate('development-plan')}
-        variant="primary"
-        size="md"
-        className="flex-shrink-0 w-full sm:w-auto"
-      >
-        Get Started <ArrowRight className="w-4 h-4 ml-2" />
-      </Button>
-    </div>
-  </Card>
-);
+  if (size === 'sm') baseStyle += ' px-4 py-2 text-sm';
+  else if (size === 'lg') baseStyle += ' px-8 py-4 text-lg';
+  else baseStyle += ' px-6 py-3 text-base';
 
-// --- NEW "Why It Matters" Card ---
-// This is the new 3rd anchor card (Req #6 - User clarification)
-const WhyAnchorCard = ({ whyStatement, onEdit }) => (
-  <Card>
-    <div className="flex justify-between items-start">
-      <div>
-        <p className="text-xs font-semibold uppercase" style={{ color: COLORS.MUTED }}>
-          💡 YOUR "WHY"
-        </p>
-        <p className="text-base italic font-medium mt-2" style={{ color: COLORS.TEXT }}>
-          {whyStatement ? (
-            `"${whyStatement}"`
-          ) : (
-            <span style={{ color: COLORS.MUTED }}>Not set...</span>
-          )}
-        </p>
-      </div>
-      <Button onClick={onEdit} variant="outline" size="sm" className="ml-4 flex-shrink-0">
-        <Edit3 className="w-4 h-4" />
-      </Button>
-    </div>
-  </Card>
-);
+  if (variant === 'primary') baseStyle += ` bg-[${COLORS.TEAL}] text-white shadow-lg hover:bg-[#349881] focus:ring-[${COLORS.TEAL}]/50`;
+  else if (variant === 'secondary') baseStyle += ` bg-[${COLORS.ORANGE}] text-white shadow-lg hover:bg-[#C33E12] focus:ring-[${COLORS.ORANGE}]/50`;
+  else if (variant === 'outline') baseStyle += ` bg-[${COLORS.OFF_WHITE}] text-[${COLORS.TEAL}] border-2 border-[${COLORS.TEAL}] shadow-md hover:bg-[${COLORS.TEAL}]/10 focus:ring-[${COLORS.TEAL}]/50`;
+  else if (variant === 'nav-back') baseStyle += ` bg-white text-gray-700 border border-gray-300 shadow-sm hover:bg-gray-100 focus:ring-gray-300/50 px-4 py-2 text-sm`;
+  else if (variant === 'ghost') baseStyle += ` bg-transparent text-gray-600 hover:bg-gray-100 focus:ring-gray-300/50 px-3 py-1.5 text-sm`;
 
-// --- REQ #2: New Suggestion Button Style ---
-const SuggestionButton = ({ text, onClick }) => (
+  if (disabled) baseStyle += ' bg-gray-300 text-gray-500 shadow-inner border-transparent hover:bg-gray-300';
+
+  return <button {...rest} onClick={onClick} disabled={disabled} className={`${baseStyle} ${className}`}>{children}</button>;
+};
+
+// --- Standardized Card Component ---
+export const Card = ({ children, title, icon: Icon, className = '', onClick, accent = 'NAVY' }) => {
+  const interactive = !!onClick;
+  const Tag = interactive ? 'button' : 'div';
+  const accentColor = COLORS[accent] || COLORS.NAVY;
+  const handleKeyDown = (e) => { if (interactive && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); onClick?.(); } };
+
+  return (
+    <Tag
+      {...(interactive ? { type: 'button' } : {})}
+      role={interactive ? 'button' : undefined}
+      tabIndex={interactive ? 0 : undefined}
+      onKeyDown={handleKeyDown}
+      className={`relative p-6 rounded-2xl border-2 shadow-xl hover:shadow-lg transition-all duration-300 text-left ${className}`}
+      style={{
+          background: 'linear-gradient(180deg,#FFFFFF, #FCFCFA)',
+          borderColor: COLORS.SUBTLE,
+          color: COLORS.NAVY
+      }}
+      onClick={onClick}
+    >
+      <span style={{ position:'absolute', top:0, left:0, right:0, height:6, background: accentColor, borderTopLeftRadius:14, borderTopRightRadius:14 }} />
+
+      {Icon && title && (
+           <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 rounded-lg flex items-center justify-center border flex-shrink-0" style={{ borderColor: COLORS.SUBTLE, background: COLORS.LIGHT_GRAY }}>
+                  <Icon className="w-5 h-5" style={{ color: accentColor }} />
+              </div>
+              <h2 className="text-xl font-extrabold" style={{ color: COLORS.NAVY }}>{title}</h2>
+          </div>
+      )}
+      {!Icon && title && <h2 className="text-xl font-extrabold mb-4 border-b pb-2" style={{ color: COLORS.NAVY, borderColor: COLORS.SUBTLE }}>{title}</h2>}
+
+      <div>{children}</div>
+    </Tag>
+  );
+};
+
+/* =========================================================
+   MODE SWITCH COMPONENT
+========================================================= */
+export const ModeSwitch = ({ isArenaMode, onToggle, isLoading }) => (
   <button
-    onClick={onClick}
-    className="w-full text-left p-3 rounded-lg border border-transparent transition-all"
-    style={{ background: COLORS.BG }}
+    onClick={onToggle}
+    disabled={isLoading}
+    className="flex items-center gap-2 px-4 py-2 rounded-lg transition-all duration-200 border-2"
+    style={{
+      backgroundColor: isArenaMode ? COLORS.TEAL : COLORS.ORANGE,
+      borderColor: isArenaMode ? COLORS.TEAL : COLORS.ORANGE,
+      color: 'white',
+      opacity: isLoading ? 0.6 : 1
+    }}
   >
-    <p className="text-sm font-medium" style={{ color: COLORS.NAVY }}>
-      {text}
-    </p>
+    {isArenaMode ? <ToggleRight className="w-5 h-5" /> : <ToggleLeft className="w-5 h-5" />}
+    <span className="font-semibold text-sm">{isArenaMode ? 'Arena Mode' : 'Solo Mode'}</span>
   </button>
 );
 
-const Dashboard = ({ navigate }) => {
+/* =========================================================
+   STREAK TRACKER COMPONENT
+========================================================= */
+export const StreakTracker = ({ streakCount, streakCoins }) => (
+  <div className="flex items-center gap-4 px-4 py-2 rounded-lg border-2" 
+       style={{ borderColor: COLORS.SUBTLE, backgroundColor: COLORS.LIGHT_GRAY }}>
+    <div className="flex items-center gap-2">
+      <Flame className="w-5 h-5" style={{ color: COLORS.ORANGE }} />
+      <span className="font-bold text-lg" style={{ color: COLORS.NAVY }}>{streakCount}</span>
+      <span className="text-sm" style={{ color: COLORS.MUTED }}>Day Streak</span>
+    </div>
+    <div className="h-6 w-px" style={{ backgroundColor: COLORS.SUBTLE }} />
+    <div className="flex items-center gap-2">
+      <span className="text-xl">🪙</span>
+      <span className="font-bold text-lg" style={{ color: COLORS.NAVY }}>{streakCoins}</span>
+      <span className="text-sm" style={{ color: COLORS.MUTED }}>Coins</span>
+    </div>
+  </div>
+);
+
+/* =========================================================
+   TAB BUTTON (for Dynamic Bookend Container)
+========================================================= */
+export const TabButton = ({ active, onClick, label, minimized = false }) => (
+  <button
+    type="button"
+    aria-pressed={active}
+    onClick={onClick}
+    className={`flex-1 px-4 py-2 rounded-lg font-semibold text-sm transition-all duration-200 relative ${
+      active ? 'shadow-md' : 'hover:bg-gray-50'
+    }`}
+    style={{
+      backgroundColor: active ? COLORS.TEAL : 'transparent',
+      color: active ? 'white' : COLORS.TEXT,
+      border: active ? 'none' : `2px solid ${COLORS.SUBTLE}`
+    }}
+  >
+    {label}
+    {minimized && !active && (
+      <span 
+        className="absolute -top-1 -right-1 w-3 h-3 rounded-full"
+        style={{ backgroundColor: COLORS.ORANGE }}
+        title="Incomplete"
+      />
+    )}
+  </button>
+);
+
+/* =========================================================
+   DYNAMIC BOOKEND CONTAINER
+========================================================= */
+export const DynamicBookendContainer = ({ 
+  morningProps,
+  eveningProps,
+  dailyPracticeData
+}) => {
+  const [activeTab, setActiveTab] = useState('AM');
   
-  const {
-    user, // <-- REQ #1: Get user object
-    dailyPracticeData,
-    updateDailyPracticeData,
-    featureFlags,
-    db,
-    userEmail,
-    developmentPlanData,
-    metadata: globalMetadata,
-    isLoading 
-  } = useAppServices();
-
-  // All state and logic is handled by the hook you provided
-  const {
-    isArenaMode, isTogglingMode, handleToggleMode,
-    targetRep, targetRepStatus, canCompleteTargetRep, isSavingRep, handleCompleteTargetRep,
-    identityStatement, setIdentityStatement,
-    habitAnchor, setHabitAnchor,
-    showIdentityEditor, setShowIdentityEditor,
-    showHabitEditor, setShowHabitEditor,
-    handleSaveIdentity, handleSaveHabit,
-    morningWIN, setMorningWIN,
-    otherTasks: originalOtherTasks, // Renamed to avoid conflict
-    showLIS, setShowLIS,
-    reflectionGood, setReflectionGood,
-    reflectionBetter, setReflectionBetter,
-    reflectionBest, setReflectionBest,
-    habitsCompleted,
-    isSavingBookend,
-    handleSaveMorningBookend, handleSaveEveningBookend,
-    handleAddTask, handleToggleTask, handleRemoveTask,
-    handleToggleWIN, handleSaveWIN,
-    handleHabitToggle,
-    streakCount, streakCoins,
-    additionalCommitments
-  } = useDashboard({
-    dailyPracticeData,
-    updateDailyPracticeData,
-    featureFlags,
-    db,
-    userEmail
-  });
-
-  // Local UI state
-  const [showSaveConfirmation, setShowSaveConfirmation] = useState(false);
-  const [saveMessage, setSaveMessage] = useState('');
-  const [showBestReminder, setShowBestReminder] = useState(false);
-  const [showImprovementReminder, setShowImprovementReminder] = useState(false);
-  const [celebrationShown, setCelebrationShown] = useState(false);
-  const [showBonusExercise, setShowBonusExercise] = useState(false);
-  const [bonusExerciseData, setBonusExerciseData] = useState(null);
-  
-  // --- NEW STATE FOR MODALS (Req #11, #13) ---
-  const [showFindPodModal, setShowFindPodModal] = useState(false);
-  const [availablePods, setAvailablePods] = useState([]);
-  const [isLoadingPods, setIsLoadingPods] = useState(false);
-
-  // --- REQ #6 (Clarified): State for 3rd Anchor ("Why") ---
-  const [whyStatement, setWhyStatement] = useState(dailyPracticeData?.whyStatement || '');
-  const [showWhyEditor, setShowWhyEditor] = useState(false);
-
-
-  // --- Data Lookups ---
-
-  // Get Focus Area and Progress
-  const focusArea = 
-    developmentPlanData?.currentPlan?.focusArea || 
-    developmentPlanData?.focusArea || 
-    'Not Set';
-  
-  // REQ #3: Default progress to 0 if no plan exists
-  const devPlanProgress = (focusArea === 'Not Set') 
-    ? 0 
-    : (developmentPlanData?.currentPlan?.progress || 0);
-
-  // REQ #1 (BUG FIX): Updated helper to correctly parse catalog objects
-  const getArrayFromMetadata = (key) => {
-    if (!globalMetadata || !globalMetadata[key]) return [];
-    const data = globalMetadata[key];
-    
-    // Prioritize the 'items' array, which is the catalog format
-    if (data && data.items && Array.isArray(data.items)) {
-      return data.items;
-    }
-    
-    // Fallback for old/simple array format
-    if (Array.isArray(data)) {
-      return data;
-    }
-    
-    console.warn(`[getArrayFromMetadata] Metadata for key '${key}' is not in the expected { items: [...] } format or a simple array.`);
-    return [];
-  };
-
-  // Find the details for "Today's Focus Rep"
-  const targetRepDetails = useMemo(() => {
-    if (!globalMetadata || !targetRep) return null;
-    const repLibrary = getArrayFromMetadata('REP_LIBRARY');
-    if (!repLibrary || repLibrary.length === 0) return null;
-    
-    const repItem = repLibrary.find(rep => rep.id === targetRep);
-    
-    if (!repItem) {
-      return {
-        name: targetRep,
-        whatGreatLooksLike: 'Rep not found in catalog. Please check your Development Plan.',
-        // This is where we update the copy per your boss's request
-        whyItMatters: "This rep couldn't be found. Please select a new rep from your Development Plan to get back on track."
-      };
-    }
-    
-    return {
-      id: repItem.id,
-      name: repItem.text || repItem.name,
-      whyItMatters: repItem.whyItMatters || "This is your anchor rep. It converts reflection into forward motion and builds the awareness that is the heart of leadership learning.",
-      whatGreatLooksLike: repItem.definition || 'Practice this rep consistently',
-      category: repItem.category,
-      tier: repItem.tier_id
-    };
-  }, [targetRep, globalMetadata]);
-
-  // Load suggestions for Anchors
-  const identitySuggestions = useMemo(() => getArrayFromMetadata('IDENTITY_ANCHOR_CATALOG').map(s => ({ text: typeof s === 'string' ? s : s.text })), [globalMetadata]);
-  
-  // REQ #8: Fix for habit suggestions (handles strings or objects)
-  const habitSuggestions = useMemo(() => getArrayFromMetadata('HABIT_ANCHOR_CATALOG').map(s => ({ text: typeof s === 'string' ? s : s.text })), [globalMetadata]);
-  
-  // REQ #11: Load "Why" suggestions
-  const whySuggestions = useMemo(() => getArrayFromMetadata('WHY_CATALOG').map(s => ({ text: typeof s === 'string' ? s : s.text })), [globalMetadata]);
-  
-  const bonusExercises = useMemo(() => getArrayFromMetadata('BONUS_EXERCISES'), [globalMetadata]);
-
-  // --- UI Handlers ---
-
-  const showSaveSuccess = (message = "Saved!") => {
-    setSaveMessage(message);
-    setShowSaveConfirmation(true);
-    setTimeout(() => setShowSaveConfirmation(false), 3000);
-  };
-
-  const handleSaveIdentityWithConfirmation = async (value) => {
-    await handleSaveIdentity(value);
-    showSaveSuccess('Identity anchor saved!');
-    setShowIdentityEditor(false);
-  };
-
-  const handleSaveHabitWithConfirmation = async (value) => {
-    await handleSaveHabit(value);
-    showSaveSuccess('Habit anchor saved!');
-    setShowHabitEditor(false);
-  };
-
-  // REQ #6 (Clarified): Handler for 3rd Anchor ("Why")
-  const handleSaveWhyWithConfirmation = async (value) => {
-    const newWhy = value.trim();
-    await updateDailyPracticeData({ whyStatement: newWhy });
-    setWhyStatement(newWhy); // Update local state
-    showSaveSuccess('Your "Why" has been saved!');
-    setShowWhyEditor(false);
-  };
-
-  const handleSaveMorningWithConfirmation = async () => {
-    await handleSaveMorningBookend();
-    showSaveSuccess('Morning plan locked in!');
-    // This will trigger the "celebration"
-    triggerCelebration("Way to go, Leader!");
-  };
-  
-  // REQ #4: Add confirmation for saving WIN
-  const handleSaveWINWithConfirmation = async () => {
-    await handleSaveWIN();
-    showSaveSuccess("Today's WIN saved!");
-    // REQ #5: Clear WIN field after saving
-    setMorningWIN('');
-  };
-
-  // REQ #3: This function already clears all 3 fields as requested.
-  const handleSaveEveningWithConfirmation = async () => {
-    await handleSaveEveningBookend();
-    showSaveSuccess('Evening reflection saved!');
-    setReflectionGood('');
-    setReflectionBetter('');
-    setReflectionBest('');
-  };
-  
-  // This is the "Visual Celebration"
-  const triggerCelebration = (message) => {
-    setSaveMessage(message);
-    setShowSaveConfirmation(true);
-    setTimeout(() => setShowSaveConfirmation(false), 3500);
-  };
-
-  const handleCompleteTargetRepWithBonus = async () => {
-    await handleCompleteTargetRep();
-    triggerCelebration('🎯 Target rep completed!');
-    
-    // Check for bonus
-    if (bonusExercises.length > 0 && !celebrationShown) {
-      const randomBonus = bonusExercises[Math.floor(Math.random() * bonusExercises.length)];
-      setBonusExerciseData(randomBonus);
-      setShowBonusExercise(true);
-      setCelebrationShown(true);
-    }
-  };
-
-  // REQ #13: Add functionality to Find Pod button
-  const handleFindPod = () => {
-    setShowFindPodModal(true);
-    setIsLoadingPods(true);
-    // Simulate API call
-    setTimeout(() => {
-      setAvailablePods([
-        { id: 'pod1', name: 'West Coast Leaders', members: 8, activity: 'High' },
-        { id: 'pod2', name: 'East Coast Go-Getters', members: 12, activity: 'Medium' },
-        { id: 'pod3', name: 'Global Leadership Forum', members: 4, activity: 'High' },
-      ]);
-      setIsLoadingPods(false);
-    }, 1500);
-  };
-
-  // --- Reminder Banners (The "Cool Ideas") ---
+  // Time-based default logic
   useEffect(() => {
-    // This is "Cool Idea 1"
-    const yesterdayBest = dailyPracticeData?.tomorrowsReminder;
-    if (yesterdayBest) {
-      setShowBestReminder(true);
-    }
+    const currentHour = new Date().getHours();
     
-    // This is "Cool Idea 2"
-    const yesterdayBetter = dailyPracticeData?.improvementReminder;
-    if (yesterdayBetter) {
-      setShowImprovementReminder(true);
+    if (currentHour < 12) {
+      setActiveTab('AM');
+    } else if (currentHour >= 16) {
+      setActiveTab('PM');
+    } else {
+      setActiveTab('PM'); // Default to PM in the afternoon
     }
-  }, [dailyPracticeData]);
+  }, []);
   
-  // --- REQ #5, #6, #7, #12: Augmented Task List ---
-  const augmentedOtherTasks = useMemo(() => {
-    const newTasks = [];
-    
-    // Req #5: Add Dev Plan task
-    if (focusArea === 'Not Set') {
-      newTasks.push({
-        id: 'system-dev-plan',
-        text: 'Start your Development Plan',
-        completed: false,
-        isSystem: true,
-        onClick: () => navigate('development-plan')
-      });
-    }
-    
-    // Req #6: Add Identity Anchor task
-    if (!identityStatement) {
-      newTasks.push({
-        id: 'system-identity',
-        text: 'Set your Identity Anchor',
-        completed: false,
-        isSystem: true,
-        onClick: () => setShowIdentityEditor(true)
-      });
-    }
-    
-    // Req #7: Add Habit Anchor task
-    if (!habitAnchor) {
-      newTasks.push({
-        id: 'system-habit',
-        text: 'Set your Habit Anchor',
-        completed: false,
-        isSystem: true,
-        onClick: () => setShowHabitEditor(true)
-      });
-    }
-    
-    // REQ #12 (Clarified): Add "Define Why" task
-    if (!whyStatement) {
-       newTasks.push({
-        id: 'system-why',
-        text: "Define your 'Why It Matters'",
-        completed: false,
-        isSystem: true,
-        onClick: () => setShowWhyEditor(true)
-      });
-    }
-
-    return [...newTasks, ...originalOtherTasks];
-  }, [
-    originalOtherTasks, 
-    focusArea, 
-    identityStatement, 
-    habitAnchor, 
-    whyStatement, // <-- Use new global why
-    navigate
-  ]);
-
-
-  // --- Computed Values for PM Bookend (The "Cool Idea 3") ---
-  const amWinCompleted = dailyPracticeData?.morningBookend?.winCompleted || false;
-  const amTasksCompleted = originalOtherTasks.length > 0 && originalOtherTasks.every(t => t.completed);
-
-  // --- Loading Guard ---
-  if (isLoading || !dailyPracticeData) {
-    return (
-      <div className="min-h-screen flex items-center justify-center" style={{ background: COLORS.BG }}>
-        {/* ... loading spinner ... */}
-      </div>
-    );
-  }
-
-  // --- RENDER ---
+  // FIX #7: Improved minimization logic for AM bookend
+  const currentHour = new Date().getHours();
+  const shouldMinimizeAM = currentHour >= 12 && 
+    !dailyPracticeData?.morningBookend?.completedAt;
+  
   return (
-    <div className="min-h-screen" style={{ background: COLORS.BG }}>
-      <div className="container mx-auto px-4 py-6 max-w-7xl">
-        
-        {/* Header */}
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
-          <div>
-            <h1 className="text-3xl md:text-4xl font-extrabold" style={{ color: COLORS.NAVY }}>
-              The Arena
-            </h1>
-            {/* REQ #1: Use user's first name + positive message */}
-            <p className="text-base" style={{ color: COLORS.TEXT }}>
-              Welcome to the Arena, {user?.name || 'Leader'}! We're glad you're here.
-            </p>
-          </div>
-          <div className="flex gap-3 items-center">
-            <ModeSwitch 
-              isArenaMode={isArenaMode} 
-              onToggle={handleToggleMode} 
-              isLoading={isTogglingMode}
-            />
-            <StreakTracker streakCount={streakCount} streakCoins={streakCoins} />
-          </div>
-        </div>
+    <Card title="📋 Daily Bookends" accent="NAVY">
+      {/* Tab Navigation */}
+      <div className="flex gap-2 mb-4">
+        <TabButton 
+          active={activeTab === 'AM'}
+          onClick={() => setActiveTab('AM')}
+          label="AM Bookend"
+          minimized={shouldMinimizeAM}
+        />
+        <TabButton 
+          active={activeTab === 'PM'}
+          onClick={() => setActiveTab('PM')}
+          label="PM Bookend"
+        />
+      </div>
+      
+      {/* Conditional Rendering */}
+      {activeTab === 'AM' && <MorningBookend {...morningProps} />}
+      {activeTab === 'PM' && <EveningBookend {...eveningProps} />}
+    </Card>
+  );
+};
 
-        {/* Reminders (Your Boss's "Cool Ideas") */}
-        {showBestReminder && (
-          <div className="mb-4">
-            <ReminderBanner
-              message={dailyPracticeData.tomorrowsReminder}
-              onDismiss={() => {
-                setShowBestReminder(false);
-                updateDailyPracticeData({ tomorrowsReminder: deleteField() });
-              }}
-              type="best"
-            />
-          </div>
-        )}
-        {showImprovementReminder && (
-          <div className="mb-4">
-            <ReminderBanner
-              message={dailyPracticeData.improvementReminder}
-              onDismiss={() => {
-                setShowImprovementReminder(false);
-                updateDailyPracticeData({ improvementReminder: deleteField() });
-              }}
-              type="improvement"
-            />
-          </div>
-        )}
-
-        {/* --- NEW 60/40 LAYOUT GRID --- */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          
-          {/* === 60% "FOCUS" COLUMN (LEFT) === */}
-          <div className="lg:col-span-2 space-y-6">
+/* =========================================================
+   MORNING BOOKEND COMPONENT
+========================================================= */
+export const MorningBookend = ({ 
+    dailyWIN, setDailyWIN, otherTasks, onAddTask, onToggleTask, onRemoveTask,
+    showLIS, setShowLIS, identityStatement, onSave, isSaving, 
+    onToggleWIN, onSaveWIN,
+    completedAt, winCompleted
+}) => {
+    const [newTaskText, setNewTaskText] = useState('');
+    
+    const handleAddClick = () => {
+        if (newTaskText.trim()) { onAddTask(newTaskText); setNewTaskText(''); }
+    };
+    const handleKeyPress = (e) => { if (e.key === 'Enter') handleAddClick(); };
+    
+    // FIX #7: Improved lock logic
+    const isChecklistMode = !!completedAt;
+    const currentHour = new Date().getHours();
+    const isPastNoon = currentHour >= 12;
+    
+    // Show warning if past noon and not completed
+    const showNoonWarning = isPastNoon && !isChecklistMode && !dailyWIN;
+    
+    // CHECKLIST MODE - After completion
+    if (isChecklistMode) {
+        return (
+            <div className="space-y-4">
+                {/* Header */}
+                <div className="flex items-center gap-2 mb-3">
+                    <Sunrise className="w-5 h-5" style={{ color: COLORS.TEAL }} />
+                    <h3 className="text-lg font-bold" style={{ color: COLORS.NAVY }}>
+                        ✅ Today's Plan
+                    </h3>
+                </div>
+                
+                {/* WIN Display with Checkbox */}
+                <div className="p-3 rounded-lg border-2" 
+                     style={{ 
+                         backgroundColor: winCompleted ? `${COLORS.GREEN}10` : `${COLORS.TEAL}10`,
+                         borderColor: winCompleted ? COLORS.GREEN : COLORS.TEAL
+                     }}>
+                    <div className="flex items-start gap-3">
+                        <input 
+                            type="checkbox"
+                            checked={winCompleted || false}
+                            onChange={onToggleWIN}
+                            className="mt-1 w-5 h-5 flex-shrink-0"
+                            style={{ accentColor: COLORS.TEAL }}
+                        />
+                        <div className="flex-1">
+                            <p className="text-xs font-semibold mb-1" style={{ color: COLORS.MUTED }}>
+                                🏆 TODAY'S WIN:
+                            </p>
+                            <p className={`text-sm font-bold ${winCompleted ? 'line-through opacity-60' : ''}`} 
+                               style={{ color: COLORS.NAVY }}>
+                                {dailyWIN || 'No WIN set'}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                
+                {/* Tasks Display with Checkboxes */}
+                {otherTasks && otherTasks.length > 0 && (
+                    <div className="space-y-2">
+                        <p className="text-xs font-semibold" style={{ color: COLORS.MUTED }}>
+                            📋 OTHER TASKS:
+                        </p>
+                        {otherTasks.map((task, idx) => (
+                            <div key={task.id || idx} 
+                                 className="flex items-center gap-3 p-2 border rounded-lg"
+                                 style={{ borderColor: task.completed ? COLORS.GREEN : COLORS.SUBTLE }}>
+                                
+                                {/* MODIFIED: Render system tasks as clickable buttons/links */}
+                                {task.isSystem ? (
+                                    <button 
+                                        onClick={task.onClick}
+                                        className="text-sm flex-1 text-left font-medium hover:text-teal-600 transition-colors"
+                                        style={{ color: COLORS.NAVY }}
+                                    >
+                                        <span className="mr-2 text-red-500">→</span>
+                                        {task.text}
+                                    </button>
+                                ) : (
+                                  <>
+                                    <input 
+                                        type="checkbox"
+                                        checked={task.completed}
+                                        onChange={() => onToggleTask(task.id ?? idx)}
+                                        className="w-4 h-4"
+                                        style={{ accentColor: COLORS.TEAL }}
+                                    />
+                                    <span className={`text-sm flex-1 ${task.completed ? 'line-through opacity-60' : ''}`}
+                                        style={{ color: COLORS.TEXT }}>
+                                        {task.text}
+                                    </span>
+                                  </>
+                                )}
+                                {/* Only show remove button for non-system, non-completed tasks in checklist mode */}
+                                {!task.isSystem && !task.completed && (
+                                    <button 
+                                        onClick={() => onRemoveTask(task.id ?? idx)}
+                                        className="text-gray-400 hover:text-red-500 transition-colors"
+                                    >
+                                        <X className="w-4 h-4" />
+                                    </button>
+                                )}
+                            </div>
+                        ))}
+                    </div>
+                )}
+                
+                {/* LIS Display (if enabled) */}
+                {showLIS && identityStatement && (
+                    <div className="p-3 rounded-lg border" 
+                         style={{ backgroundColor: `${COLORS.TEAL}10`, borderColor: `${COLORS.TEAL}30` }}>
+                        <p className="text-xs font-semibold mb-1" style={{ color: COLORS.TEAL }}>
+                            🎯 IDENTITY ANCHOR:
+                        </p>
+                        <p className="text-sm italic" style={{ color: COLORS.TEXT }}>
+                            {identityStatement}
+                        </p>
+                    </div>
+                )}
+                
+                {/* Completion Status */}
+                <div className="pt-3 border-t text-center" style={{ borderColor: COLORS.SUBTLE }}>
+                    <p className="text-xs font-semibold" style={{ color: COLORS.GREEN }}>
+                        ✓ Morning plan locked in!
+                    </p>
+                </div>
+            </div>
+        );
+    }
+    
+    // INPUT MODE - Before completion
+    return (
+        <div className="space-y-4">
+            {/* Header */}
+            <div className="flex items-center gap-2 mb-3">
+                <Sunrise className="w-5 h-5" style={{ color: COLORS.ORANGE }} />
+                <h3 className="text-lg font-bold" style={{ color: COLORS.NAVY }}>
+                    🌅 Plan Your Day
+                </h3>
+            </div>
             
-            {/* REQ #2: Conditional "Get Started" Card */}
-            {focusArea === 'Not Set' ? (
-              <GetStartedCard onNavigate={navigate} />
-            ) : (
-              <DevPlanProgressLink
-                progress={devPlanProgress}
-                focusArea={focusArea}
-                onNavigate={() => navigate('development-plan')}
-              />
+            {/* FIX #7: Warning if past noon */}
+            {showNoonWarning && (
+                <div className="p-3 rounded-lg border-l-4" 
+                     style={{ backgroundColor: `${COLORS.AMBER}10`, borderColor: COLORS.AMBER }}>
+                    <div className="flex items-start gap-2">
+                        <AlertTriangle className="w-4 h-4 mt-0.5 flex-shrink-0" style={{ color: COLORS.AMBER }} />
+                        <div>
+                            <p className="text-xs font-semibold" style={{ color: COLORS.AMBER }}>
+                                ⚠️ LATE START ALERT
+                            </p>
+                            <p className="text-xs mt-1" style={{ color: COLORS.TEXT }}>
+                                It's past noon! Set your WIN and lock in your plan to stay on track.
+                            </p>
+                        </div>
+                    </div>
+                </div>
             )}
 
-            {/* 2. Today's Focus Rep (The "Big Banana" for this column) */}
-            {/* Only show this card if a plan exists */}
-            {focusArea !== 'Not Set' && (
-              <Card title="🎯 Today's Focus Rep" accent='ORANGE'>
+            {/* FIX #7: Why It Matters Section */}
+            <div className="p-3 rounded-lg" style={{ backgroundColor: `${COLORS.BLUE}05`, border: `1px solid ${COLORS.BLUE}20` }}>
+                <p className="text-xs font-semibold mb-1" style={{ color: COLORS.BLUE }}>
+                    💡 WHY IT MATTERS:
+                </p>
+                <p className="text-xs" style={{ color: COLORS.TEXT }}>
+                    Leaders who plan their day intentionally are 3x more likely to achieve their goals. 
+                    Your WIN keeps you focused on what truly matters.
+                </p>
+            </div>
+            
+            {/* WIN Input */}
+            <div>
+                <label className="text-sm font-semibold mb-2 flex items-center" style={{ color: COLORS.TEXT }}>
+                    <Target className="w-4 h-4 mr-1" style={{ color: COLORS.ORANGE }} />
+                    Today's WIN (What's Important Now)
+                </label>
+                <textarea 
+                    value={dailyWIN} onChange={(e) => setDailyWIN(e.target.value)}
+                    placeholder="What is the ONE thing that must get done today?"
+                    className="w-full p-3 border rounded-lg focus:ring-2 transition-all"
+                    style={{ borderColor: COLORS.SUBTLE }} rows={2}
+                />
+                {/* Separate Save WIN Button (Address user confusion) */}
+                <Button 
+                    onClick={onSaveWIN}
+                    variant="outline" 
+                    size="sm" 
+                    className="w-full mt-2"
+                >
+                    <Save className="w-4 h-4 mr-1" /> Save Today's WIN
+                </Button>
+            </div>
+
+            {/* Tasks Input */}
+            <div>
+                <label className="text-sm font-semibold mb-2 flex items-center justify-between" style={{ color: COLORS.TEXT }}>
+                    <span className="flex items-center">
+                        <Clock className="w-4 h-4 mr-1" style={{ color: COLORS.TEAL }} />
+                        Other Important Tasks ({otherTasks?.length || 0}/5)
+                    </span>
+                </label>
                 
-                {/* Simplified "Why" - no edit button here */}
-                <div className="mb-4 p-3 rounded-lg" style={{ backgroundColor: `${COLORS.BLUE}05`, border: `1px solid ${COLORS.BLUE}20` }}>
-                  <div className="flex justify-between items-center mb-1">
-                    <p className="text-xs font-semibold" style={{ color: COLORS.BLUE }}>
-                      💡 WHY IT MATTERS:
+                {/* Existing Tasks */}
+                {otherTasks && otherTasks.length > 0 && (
+                    <div className="space-y-2 mb-3">
+                        {otherTasks.map((task, idx) => (
+                            <div key={task.id || idx} 
+                                 className="flex items-center gap-2 p-2 border rounded-lg"
+                                 style={{ borderColor: COLORS.SUBTLE, backgroundColor: COLORS.LIGHT_GRAY }}>
+                                
+                                {/* MODIFIED: Render system tasks as clickable buttons/links */}
+                                {task.isSystem ? (
+                                    <button 
+                                        onClick={task.onClick}
+                                        className="text-sm flex-1 text-left font-medium hover:text-teal-600 transition-colors"
+                                        style={{ color: COLORS.NAVY }}
+                                    >
+                                        <span className="mr-2 text-red-500">→</span>
+                                        {task.text}
+                                    </button>
+                                ) : (
+                                    <span className="text-sm flex-1" style={{ color: COLORS.TEXT }}>{task.text}</span>
+                                )}
+
+                                {!task.isSystem && (
+                                    <button 
+                                        onClick={() => onRemoveTask(task.id ?? idx)}
+                                        className="text-gray-400 hover:text-red-500 transition-colors"
+                                    >
+                                        <X className="w-4 h-4" />
+                                    </button>
+                                )}
+                            </div>
+                        ))}
+                    </div>
+                )}
+                
+                {/* Add New Task */}
+                {(!otherTasks || otherTasks.length < 5) && (
+                    <div className="flex gap-2">
+                        <input 
+                            type="text" value={newTaskText} onChange={(e) => setNewTaskText(e.target.value)}
+                            onKeyPress={handleKeyPress} placeholder="Add a task (auto-saves when you click +)..."
+                            className="flex-1 p-2 border rounded-lg text-sm focus:ring-2 transition-all"
+                            style={{ borderColor: COLORS.SUBTLE }}
+                        />
+                        <button 
+                            onClick={handleAddClick}
+                            disabled={!newTaskText.trim() || (otherTasks && otherTasks.length >= 5)}
+                            className="px-4 py-2 rounded-lg font-semibold text-white transition-all disabled:opacity-50"
+                            style={{ backgroundColor: COLORS.TEAL }}
+                        >
+                            <Plus className="w-4 h-4" />
+                        </button>
+                    </div>
+                )}
+            </div>
+
+            {/* LIS Toggle */}
+            <div>
+                <button 
+                    onClick={() => setShowLIS(!showLIS)}
+                    className="text-sm font-semibold flex items-center gap-2 transition-colors hover:opacity-80"
+                    style={{ color: COLORS.TEAL }}
+                >
+                    {showLIS ? 'Hide' : 'Show'} Leadership Identity Statement
+                    {showLIS ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                </button>
+                {showLIS && (
+                    <div className="mt-3 p-4 rounded-lg border" 
+                         style={{ backgroundColor: `${COLORS.TEAL}10`, borderColor: `${COLORS.TEAL}30` }}>
+                        <p className="text-sm italic font-medium" style={{ color: COLORS.TEXT }}>
+                            "I am the kind of leader who {identityStatement || '...'}"
+                        </p>
+                    </div>
+                )}
+            </div>
+
+            {/* FIX #7: Validation - require WIN before completion */}
+            <div className="pt-4 border-t" style={{ borderColor: COLORS.SUBTLE }}>
+                {!dailyWIN && (
+                    <p className="text-xs mb-2 text-center" style={{ color: COLORS.AMBER }}>
+                        ⚠️ Set your WIN before completing the bookend
                     </p>
-                  </div>
-                  <p className="text-xs" style={{ color: COLORS.TEXT }}>
-                    {targetRepDetails?.whyItMatters}
-                  </p>
-                </div>
-                
-                <p className="text-sm font-semibold mb-1" style={{ color: COLORS.TEXT }}>
-                  Target Rep:
-                </p>
-                <p className="text-lg font-bold" style={{ color: COLORS.NAVY }}>
-                  {targetRepDetails ? targetRepDetails.name : (targetRep || 'No target rep set')}
-                </p>
-                
-                <div className="mt-4 p-4 rounded-lg border-2" 
-                    style={{ backgroundColor: `${COLORS.TEAL}10`, borderColor: `${COLORS.TEAL}30` }}>
-                  <p className="text-xs font-semibold mb-2" style={{ color: COLORS.TEAL }}>
-                    ✨ WHAT GREAT LOOKS LIKE:
-                  </p>
-                  <p className="text-sm italic" style={{ color: COLORS.TEXT }}>
-                    {targetRepDetails?.whatGreatLooksLike}
-                  </p>
-                </div>
-                
-                {targetRepStatus === 'Pending' && (
-                  <Button 
-                    onClick={handleCompleteTargetRepWithBonus} 
-                    disabled={!canCompleteTargetRep}
+                )}
+                <Button 
+                    onClick={onSave} 
+                    disabled={isSaving || !dailyWIN} 
                     variant="primary" 
                     size="md" 
-                    className="w-full mt-4"
-                  >
-                    {isSavingRep ? 'Completing...' : '⚡ Complete Focus Rep'}
-                  </Button>
-                )}
-                {targetRepStatus === 'Committed' && (
-                  <div className="mt-4 p-3 rounded-lg text-center" 
-                      style={{ backgroundColor: `${COLORS.GREEN}20`, color: COLORS.GREEN }}>
-                    <strong>✓ Completed Today!</strong>
-                  </div>
-                )}
+                    className="w-full"
+                >
+                    {isSaving ? <><Loader className="w-5 h-5 mr-2 animate-spin" />Saving...</> : 
+                               <><CheckCircle className="w-5 h-5 mr-2" />✓ Complete Morning Bookend</>}
+                </Button>
+            </div>
+        </div>
+    );
+};
+
+/* =========================================================
+   EVENING BOOKEND COMPONENT
+========================================================= */
+export const EveningBookend = ({ 
+    reflectionGood, setReflectionGood, reflectionBetter, setReflectionBetter,
+    reflectionBest, setReflectionBest, habitsCompleted, onHabitToggle, onSave, isSaving,
+    onNavigate,
+    // MODIFIED (10/29/25): Add props for auto-tracking
+    amWinCompleted, amTasksCompleted
+}) => {
+    return (
+        <div className="space-y-4">
+            {/* Header */}
+            <div className="flex items-center gap-2 mb-3">
+                <Moon className="w-5 h-5" style={{ color: COLORS.NAVY }} />
+                <h3 className="text-lg font-bold" style={{ color: COLORS.NAVY }}>
+                    🌙 Evening Reflection
+                </h3>
+            </div>
+            
+            {/* Good */}
+            <div>
+                <label className="text-sm font-semibold mb-2 flex items-center" style={{ color: COLORS.GREEN }}>
+                    <CheckCircle className="w-4 h-4 mr-1" />
+                    Good - What went well today?
+                </label>
+                <textarea value={reflectionGood} onChange={(e) => setReflectionGood(e.target.value)}
+                    placeholder="Celebrate your wins..." className="w-full p-3 border rounded-lg focus:ring-2 transition-all"
+                    style={{ borderColor: `${COLORS.GREEN}40` }} rows={2}
+                />
+            </div>
+
+            {/* Better */}
+            <div>
+                <label className="text-sm font-semibold mb-2 flex items-center" style={{ color: COLORS.AMBER }}>
+                    <TrendingUp className="w-4 h-4 mr-1" />
+                    Better - What needs improvement?
+                </label>
+                <textarea value={reflectionBetter} onChange={(e) => setReflectionBetter(e.target.value)}
+                    placeholder="Areas for growth..." className="w-full p-3 border rounded-lg focus:ring-2 transition-all"
+                    style={{ borderColor: `${COLORS.AMBER}40` }} rows={2}
+                />
+            </div>
+
+            {/* Best */}
+            <div>
+                <label className="text-sm font-semibold mb-2 flex items-center" style={{ color: COLORS.BLUE }}>
+                    <Star className="w-4 h-4 mr-1" />
+                    Best - What do I need to do to show up as my best tomorrow?
+                </label>
+                <textarea value={reflectionBest} onChange={(e) => setReflectionBest(e.target.value)}
+                    placeholder="Tomorrow's commitment..." className="w-full p-3 border rounded-lg focus:ring-2 transition-all"
+                    style={{ borderColor: `${COLORS.BLUE}40` }} rows={2}
+                />
+            </div>
+
+            {/* Daily Habits Tracker */}
+            <div className="pt-4 border-t" style={{ borderColor: COLORS.SUBTLE }}>
+                <p className="text-sm font-semibold mb-3" style={{ color: COLORS.TEXT }}>Daily Habits Tracker</p>
                 
-                {identityStatement && (
-                  <div className="mt-4 pt-4 border-t" style={{ borderColor: COLORS.SUBTLE }}>
+                {/* Auto-Tracked Habits (Matches user request) */}
+                <div className="space-y-2 mb-3 p-3 rounded-lg" style={{ backgroundColor: `${COLORS.TEAL}05` }}>
+                    <p className="text-xs font-semibold mb-2" style={{ color: COLORS.TEAL }}>
+                        🔗 AUTO-TRACKED FROM MORNING:
+                    </p>
+                    
+                    <label className="flex items-center gap-2 p-2 rounded opacity-75">
+                        {/* MODIFIED (10/29/25): Use amWinCompleted prop */}
+                        <input type="checkbox" checked={amWinCompleted || false}
+                            disabled 
+                            className="w-4 h-4" style={{ accentColor: COLORS.TEAL }}
+                        />
+                        <span className="text-sm" style={{ color: COLORS.TEXT }}>Completed Morning WIN</span>
+                    </label>
+                    
+                    <label className="flex items-center gap-2 p-2 rounded opacity-75">
+                        {/* MODIFIED (10/29/25): Use amTasksCompleted prop */}
+                        <input type="checkbox" checked={amTasksCompleted || false}
+                            disabled
+                            className="w-4 h-4" style={{ accentColor: COLORS.TEAL }}
+                        />
+                        <span className="text-sm" style={{ color: COLORS.TEXT }}>Completed All Morning Tasks</span>
+                    </label>
+                </div>
+                
+                {/* Manual Tracking */}
+                <div className="space-y-2">
                     <p className="text-xs font-semibold mb-2" style={{ color: COLORS.MUTED }}>
-                      🎯 TODAY'S FOCUS:
+                        ✍️ MANUAL TRACKING:
                     </p>
-                    {/* REQ #10: Add full sentence */}
-                    <p className="text-sm italic font-medium" style={{ color: COLORS.TEXT }}>
-                      "I am the kind of leader who {identityStatement}"
-                    </p>
-                  </div>
-                )}
-              </Card>
-            )}
-
-            {/* 3. Identity Anchor */}
-            <IdentityAnchorCard
-              identityStatement={identityStatement}
-              onEdit={() => setShowIdentityEditor(true)}
-            />
-
-            {/* 4. Habit Anchor */}
-            <HabitAnchorCard
-              habitAnchor={habitAnchor}
-              onEdit={() => setShowHabitEditor(true)}
-            />
-
-            {/* 5. NEW "Why It Matters" Anchor */}
-            <WhyAnchorCard
-              whyStatement={whyStatement}
-              onEdit={() => setShowWhyEditor(true)}
-            />
-
-            {/* 6. Accountability Pod */}
-            <SocialPodCard
-              podMembers={dailyPracticeData?.podMembers || []}
-              activityFeed={dailyPracticeData?.podActivity || []}
-              onSendMessage={(msg) => console.log('Send message:', msg)}
-              onFindPod={handleFindPod} // <-- REQ #13: Hooked up
-            />
-
-            {/* 7. AI Coach (Kept as secondary CTA) */}
-            <AICoachNudge 
-              onOpenLab={() => navigate('coaching-lab')} 
-              disabled={!(featureFlags?.enableLabs)}
-            />
-
-          </div>
-
-          {/* === 40% "ACTION" COLUMN (RIGHT) === */}
-          <div className="space-y-6">
-
-            {/* 1. AM/PM Bookends (The "Big Banana" for this column) */}
-            <DynamicBookendContainer
-              morningProps={{
-                dailyWIN: morningWIN,
-                setDailyWIN: setMorningWIN,
-                // REQ #5, #6, #7, #12: Pass augmented tasks
-                otherTasks: augmentedOtherTasks,
-                onAddTask: handleAddTask,
-                onToggleTask: handleToggleTask,
-                onRemoveTask: handleRemoveTask,
-                showLIS: showLIS,
-                setShowLIS: setShowLIS,
-                identityStatement: identityStatement,
-                // This is the "Complete" button
-                onSave: handleSaveMorningWithConfirmation,
-                // REQ #4: Use new handler
-                onSaveWIN: handleSaveWINWithConfirmation,
-                // This is for the WIN checkbox
-                onToggleWIN: handleToggleWIN,
-                isSaving: isSavingBookend,
-                completedAt: dailyPracticeData?.morningBookend?.completedAt,
-                winCompleted: dailyPracticeData?.morningBookend?.winCompleted
-              }}
-              eveningProps={{
-                reflectionGood: reflectionGood,
-                setReflectionGood: setReflectionGood,
-                reflectionBetter: reflectionBetter,
-                setReflectionBetter: setReflectionBetter,
-                reflectionBest: reflectionBest,
-                setReflectionBest: setReflectionBest,
-                habitsCompleted: habitsCompleted,
-                onHabitToggle: handleHabitToggle,
-                onSave: handleSaveEveningWithConfirmation,
-                isSaving: isSavingBookend,
-                // This passes the navigate function to the "View History" button
-                onNavigate: navigate,
-                // These are for "Cool Idea 3"
-                amWinCompleted: amWinCompleted,
-                amTasksCompleted: amTasksCompleted,
-              }}
-              dailyPracticeData={dailyPracticeData}
-            />
-            
-            {/* NOTE: 
-              - "Daily Reflection Log" is now a button *inside* the PM Bookend.
-              - "Additional Reps" card is removed from V1 Dashboard to simplify.
-            */}
-
-          </div>
-        </div>
-      </div>
-
-      {/* --- MODALS --- */}
-      
-      {/* Identity Edit/Suggestion Modal */}
-      {showIdentityEditor && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl p-6 max-w-2xl w-full max-h-[80vh] overflow-hidden flex flex-col">
-            <h2 className="text-2xl font-bold mb-2" style={{ color: COLORS.NAVY }}>
-              Edit Your Identity Anchor
-            </h2>
-            <p className="text-sm mb-4" style={{ color: COLORS.MUTED }}>
-              Complete this statement: "I am the kind of leader who..."
-            </p>
-            <textarea 
-              value={identityStatement}
-              onChange={(e) => setIdentityStatement(e.target.value)}
-              placeholder="...prioritizes team well-being."
-              className="w-full p-3 border rounded-lg mb-4"
-              style={{ borderColor: COLORS.SUBTLE }}
-              rows={3}
-            />
-            <div className="flex gap-3 mb-4">
-              <Button onClick={() => handleSaveIdentityWithConfirmation(identityStatement)} variant="primary" size="md" className="flex-1">
-                Save
-              </Button>
-              <Button onClick={() => setShowIdentityEditor(false)} variant="outline" size="md" className="flex-1">
-                Cancel
-              </Button>
+                    
+                    <label className="flex items-center gap-2 cursor-pointer p-2 rounded hover:bg-gray-50 transition-colors">
+                        <input type="checkbox" checked={habitsCompleted.readLIS || false}
+                            onChange={(e) => onHabitToggle('readLIS', e.target.checked)}
+                            className="w-4 h-4" style={{ accentColor: COLORS.TEAL }}
+                        />
+                        <span className="text-sm" style={{ color: COLORS.TEXT }}>Read LIS</span>
+                    </label>
+                    
+                    <label className="flex items-center gap-2 cursor-pointer p-2 rounded hover:bg-gray-50 transition-colors">
+                        <input type="checkbox" checked={habitsCompleted.completedDailyRep || false}
+                            onChange={(e) => onHabitToggle('completedDailyRep', e.target.checked)}
+                            className="w-4 h-4" style={{ accentColor: COLORS.TEAL }}
+                        />
+                        <span className="text-sm" style={{ color: COLORS.TEXT }}>Complete Daily Rep</span>
+                    </label>
+                    
+                    <label className="flex items-center gap-2 cursor-pointer p-2 rounded hover:bg-gray-50 transition-colors">
+                        <input type="checkbox" checked={habitsCompleted.eveningReflection || false}
+                            onChange={(e) => onHabitToggle('eveningReflection', e.target.checked)}
+                            className="w-4 h-4" style={{ accentColor: COLORS.TEAL }}
+                        />
+                        <span className="text-sm" style={{ color: COLORS.TEXT }}>Evening Reflection</span>
+                    </label>
+                </div>
             </div>
-            <p className="text-xs font-semibold mb-2" style={{ color: COLORS.MUTED }}>
-              OR SELECT FROM SUGGESTIONS:
-            </p>
-            <div className="overflow-y-auto flex-1 space-y-2">
-              {identitySuggestions.map((suggestion, index) => (
-                // REQ #2: New sleeker button style
-                <SuggestionButton
-                  key={index}
-                  text={`... ${suggestion.text}`}
-                  onClick={() => handleSaveIdentityWithConfirmation(suggestion.text)}
-                />
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
 
-      {/* Habit Edit/Suggestion Modal */}
-      {showHabitEditor && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl p-6 max-w-2xl w-full max-h-[80vh] overflow-hidden flex flex-col">
-            <h2 className="text-2xl font-bold mb-2" style={{ color: COLORS.NAVY }}>
-              Edit Your Habit Anchor
-            </h2>
-            <p className="text-sm mb-4" style={{ color: COLORS.MUTED }}>
-              Your daily cue: "When I..."
-            </p>
-            <input 
-              type="text"
-              value={habitAnchor}
-              onChange={(e) => setHabitAnchor(e.target.value)}
-              placeholder="...open my laptop for the day."
-              className="w-full p-3 border rounded-lg mb-4"
-              style={{ borderColor: COLORS.SUBTLE }}
-            />
-            <div className="flex gap-3 mb-4">
-              <Button onClick={() => handleSaveHabitWithConfirmation(habitAnchor)} variant="primary" size="md" className="flex-1">
-                Save
-              </Button>
-              <Button onClick={() => setShowHabitEditor(false)} variant="outline" size="md" className="flex-1">
-                Cancel
-              </Button>
-            </div>
-            <p className="text-xs font-semibold mb-2" style={{ color: COLORS.MUTED }}>
-              OR SELECT FROM SUGGESTIONS:
-            </p>
-            <div className="overflow-y-auto flex-1 space-y-2">
-              {habitSuggestions.map((suggestion, index) => (
-                // REQ #2: New sleeker button style
-                <SuggestionButton
-                  key={index}
-                  text={`... ${suggestion.text}`}
-                  onClick={() => handleSaveHabitWithConfirmation(suggestion.text)}
-                />
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
-      
-      {/* REQ #6 (Clarified): "Why It Matters" Editor Modal */}
-      {showWhyEditor && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl p-6 max-w-2xl w-full max-h-[80vh] overflow-hidden flex flex-col">
-            <h2 className="text-2xl font-bold mb-2" style={{ color: COLORS.NAVY }}>
-              Define Your "Why"
-            </h2>
-            <p className="text-sm mb-4" style={{ color: COLORS.MUTED }}>
-              What is your core purpose? Why does this journey matter to you?
-            </p>
-            <textarea 
-              value={whyStatement}
-              onChange={(e) => setWhyStatement(e.target.value)}
-              placeholder="e.g., To build a team where everyone feels valued and empowered..."
-              className="w-full p-3 border rounded-lg mb-4"
-              style={{ borderColor: COLORS.SUBTLE }}
-              rows={4}
-            />
-            <div className="flex gap-3 mb-4">
-              <Button onClick={() => handleSaveWhyWithConfirmation(whyStatement)} variant="primary" size="md" className="flex-1">
-                Save My "Why"
-              </Button>
-              <Button onClick={() => setShowWhyEditor(false)} variant="outline" size="md" className="flex-1">
-                Cancel
-              </Button>
-            </div>
-            <p className="text-xs font-semibold mb-2" style={{ color: COLORS.MUTED }}>
-              OR SELECT FROM SUGGESTIONS:
-            </p>
-            <div className="overflow-y-auto flex-1 space-y-2">
-              {whySuggestions.map((suggestion, index) => (
-                // REQ #2: New sleeker button style
-                <SuggestionButton
-                  key={index}
-                  text={suggestion.text}
-                  onClick={() => handleSaveWhyWithConfirmation(suggestion.text)}
-                />
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
-      
-      {/* REQ #13: Find a Pod Modal */}
-      {showFindPodModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl p-6 max-w-lg w-full max-h-[80vh] overflow-hidden flex flex-col">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-2xl font-bold" style={{ color: COLORS.NAVY }}>
-                Find an Accountability Pod
-              </h2>
-              <button onClick={() => setShowFindPodModal(false)} className="p-1 rounded-full hover:bg-gray-100">
-                <X className="w-5 h-5" style={{ color: COLORS.MUTED }} />
-              </button>
+            {/* Save Button */}
+            <div className="pt-4 border-t" style={{ borderColor: COLORS.SUBTLE }}>
+                <Button onClick={onSave} disabled={isSaving} variant="primary" size="md" className="w-full">
+                    {isSaving ? <><Loader className="w-5 h-5 mr-2 animate-spin" />Saving...</> : 
+                               <><Save className="w-5 h-5 mr-2" />Save Reflection</>}
+                </Button>
             </div>
             
-            {isLoadingPods ? (
-              <div className="flex flex-col items-center justify-center h-64">
-                <Loader className="animate-spin h-10 w-10" style={{ color: COLORS.TEAL }} />
-                <p className="mt-3 font-semibold" style={{ color: COLORS.MUTED }}>
-                  Searching for available pods...
-                </p>
-              </div>
-            ) : (
-              <div className="overflow-y-auto flex-1 space-y-3">
-                <p className="text-sm mb-3" style={{ color: COLORS.TEXT }}>
-                  Found {availablePods.length} pods. Request to join a group to stay accountable.
-                </p>
-                {availablePods.map((pod) => (
-                  <div 
-                    key={pod.id} 
-                    className="flex justify-between items-center p-4 rounded-lg border"
-                    style={{ borderColor: COLORS.SUBTLE }}
-                  >
-                    <div>
-                      <p className="font-bold" style={{ color: COLORS.NAVY }}>{pod.name}</p>
-                      <p className="text-xs" style={{ color: COLORS.MUTED }}>
-                        <Users className="w-3 h-3 inline-block mr-1" /> {pod.members} members
-                        <Send className="w-3 h-3 inline-block ml-3 mr-1" /> {pod.activity} activity
-                      </p>
-                    </div>
-                    <Button variant="outline" size="sm">
-                      Request to Join
+            {/* View History Link */}
+            {onNavigate && (
+                <div className="pt-3">
+                    <Button 
+                        onClick={() => onNavigate('reflection-log')}
+                        variant="outline"
+                        size="sm"
+                        className="w-full"
+                    >
+                        📖 View Full Reflection History
                     </Button>
-                  </div>
-                ))}
-              </div>
+                </div>
             )}
-          </div>
         </div>
-      )}
+    );
+};
 
-      {/* Other Modals... */}
-      {showBonusExercise && bonusExerciseData && (
-        <BonusExerciseModal
-          exercise={bonusExerciseData}
-          onComplete={handleCompleteBonusExercise}
-          onSkip={() => setShowBonusExercise(false)}
-        />
-      )}
+/* =========================================================
+   SUGGESTION MODAL (FIX #4, #5)
+========================================================= */
+export const SuggestionModal = ({ title, prefix, suggestions, onSelect, onClose }) => (
+  <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+    <div className="bg-white rounded-2xl p-6 max-w-2xl w-full max-h-[80vh] overflow-hidden flex flex-col">
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-2xl font-bold" style={{ color: COLORS.NAVY }}>
+          {title}
+        </h2>
+        <button 
+          onClick={onClose}
+          className="text-gray-400 hover:text-gray-600 transition-colors"
+        >
+          <X className="w-6 h-6" />
+        </button>
+      </div>
       
-      <SaveIndicator show={showSaveConfirmation} message={saveMessage} />
+      <div className="overflow-y-auto flex-1 space-y-2">
+        {suggestions.map((suggestion, index) => (
+          <button
+            key={index}
+            onClick={() => onSelect(suggestion.value || suggestion.text || suggestion)}
+            className="w-full text-left p-4 rounded-lg border-2 transition-all hover:border-teal-500 hover:bg-teal-50"
+            style={{ borderColor: COLORS.SUBTLE }}
+          >
+            <p className="text-sm font-medium" style={{ color: COLORS.TEXT }}>
+              {prefix} <strong>{suggestion.value || suggestion.text || suggestion}</strong>
+            </p>
+            {suggestion.description && (
+              <p className="text-xs mt-1" style={{ color: COLORS.MUTED }}>
+                {suggestion.description}
+              </p>
+            )}
+          </button>
+        ))}
+      </div>
+      
+      <div className="mt-4 pt-4 border-t" style={{ borderColor: COLORS.SUBTLE }}>
+        <Button onClick={onClose} variant="outline" size="sm" className="w-full">
+          Close
+        </Button>
+      </div>
+    </div>
+  </div>
+);
+
+/* =========================================================
+   FIX #6: SAVE INDICATOR
+========================================================= */
+export const SaveIndicator = ({ show, message = "Saved!" }) => {
+  if (!show) return null;
+  
+  return (
+    <div className="fixed bottom-4 right-4 z-50 animate-fade-in-up">
+      <div className="bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg flex items-center gap-2">
+        <CheckCircle className="w-5 h-5" />
+        <span className="font-semibold">{message}</span>
+      </div>
     </div>
   );
 };
 
-export default Dashboard;
+/* =========================================================
+   FIX #3: BONUS EXERCISE MODAL
+========================================================= */
+export const BonusExerciseModal = ({ exercise, onComplete, onSkip }) => (
+  <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+    <div className="bg-white rounded-2xl p-6 max-w-lg w-full">
+      <div className="text-center mb-4">
+        <div className="w-16 h-16 mx-auto mb-3 rounded-full flex items-center justify-center"
+             style={{ backgroundColor: `${COLORS.ORANGE}20` }}>
+          <Trophy className="w-8 h-8" style={{ color: COLORS.ORANGE }} />
+        </div>
+        <h2 className="text-2xl font-bold mb-2" style={{ color: COLORS.NAVY }}>
+          🎉 Bonus Challenge!
+        </h2>
+        <p className="text-sm" style={{ color: COLORS.MUTED }}>
+          Complete this 2-minute exercise to earn +50 coins
+        </p>
+      </div>
+
+      <div className="p-4 rounded-lg mb-4" style={{ backgroundColor: `${COLORS.TEAL}10` }}>
+        <h3 className="font-bold mb-2" style={{ color: COLORS.NAVY }}>
+          {exercise.name || exercise.title}
+        </h3>
+        <p className="text-sm mb-3" style={{ color: COLORS.TEXT }}>
+          {exercise.description}
+        </p>
+        {exercise.instructions && (
+          <div className="text-xs" style={{ color: COLORS.MUTED }}>
+            <strong>How to do it:</strong>
+            <p className="mt-1">{exercise.instructions}</p>
+          </div>
+        )}
+      </div>
+
+      <div className="flex gap-3">
+        <Button onClick={onComplete} variant="primary" size="md" className="flex-1">
+          ✓ I Did It! (+50 🪙)
+        </Button>
+        <Button onClick={onSkip} variant="outline" size="md" className="flex-1">
+          Skip for Now
+        </Button>
+      </div>
+    </div>
+  </div>
+);
+
+/* =========================================================
+   FIX #8: ADDITIONAL REPS CARD (Enhanced)
+========================================================= */
+export const AdditionalRepsCard = ({ commitments, onToggle, repLibrary }) => {
+  // Lookup full rep details from library
+  const enrichedCommitments = commitments.map(commitment => {
+    if (typeof commitment === 'string') {
+      return { id: commitment, text: commitment, completed: false };
+    }
+    
+    // If we have a repId, lookup details from library
+    if (commitment.repId && repLibrary) {
+      const repDetails = repLibrary.find(rep => rep.id === commitment.repId || rep.repId === commitment.repId);
+      if (repDetails) {
+        return {
+          ...commitment,
+          name: repDetails.name,
+          description: repDetails.description,
+          category: repDetails.category
+        };
+      }
+    }
+    
+    return commitment;
+  });
+
+  return (
+    <Card title="⏳ Additional Daily Reps" accent='TEAL'>
+      <div className="space-y-3">
+        {enrichedCommitments.map((commitment, idx) => (
+          <div key={commitment.id || idx} 
+               className="p-4 rounded-lg border-2 transition-all"
+               style={{ 
+                 borderColor: commitment.completed ? COLORS.GREEN : COLORS.SUBTLE,
+                 backgroundColor: commitment.completed ? `${COLORS.GREEN}05` : COLORS.LIGHT_GRAY
+               }}>
+            <div className="flex items-start gap-3">
+              <input 
+                type="checkbox" 
+                checked={commitment.completed || false}
+                onChange={() => onToggle(commitment.id)}
+                className="mt-1 w-5 h-5 flex-shrink-0"
+                style={{ accentColor: COLORS.TEAL }}
+              />
+              <div className="flex-1">
+                <p className={`text-sm font-bold mb-1 ${commitment.completed ? 'line-through opacity-60' : ''}`}
+                   style={{ color: COLORS.NAVY }}>
+                  {commitment.name || commitment.text || commitment.repId}
+                </p>
+                {commitment.description && (
+                  <p className="text-xs mb-2" style={{ color: COLORS.MUTED }}>
+                    {commitment.description}
+                  </p>
+                )}
+                {commitment.category && (
+                  <span className="inline-block px-2 py-1 rounded text-xs font-semibold"
+                        style={{ backgroundColor: `${COLORS.BLUE}20`, color: COLORS.BLUE }}>
+                    {commitment.category}
+                  </span>
+                )}
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </Card>
+  );
+};
+
+/* =========================================================
+   FIX #8 & #9: SOCIAL POD CARD (with working Find Pod button)
+========================================================= */
+export const SocialPodCard = ({ podMembers, activityFeed, onSendMessage, onFindPod }) => {
+  const [newMessage, setNewMessage] = useState('');
+
+  const handleSend = () => {
+    if (newMessage.trim()) {
+      onSendMessage(newMessage);
+      setNewMessage('');
+    }
+  };
+
+  return (
+    <Card title="🤝 Social Pod Feed" accent='PURPLE'>
+      {/* Pod Members Section */}
+      {podMembers && podMembers.length > 0 ? (
+        <>
+          <div className="mb-4">
+            <p className="text-xs font-semibold mb-2" style={{ color: COLORS.MUTED }}>
+              YOUR POD MEMBERS:
+            </p>
+            <div className="flex gap-2 flex-wrap">
+              {podMembers.map((member, idx) => (
+                <div key={idx} 
+                     className="flex items-center gap-2 px-3 py-2 rounded-lg border"
+                     style={{ borderColor: COLORS.SUBTLE, backgroundColor: COLORS.LIGHT_GRAY }}>
+                  <div className="w-8 h-8 rounded-full flex items-center justify-center"
+                       style={{ backgroundColor: COLORS.PURPLE, color: 'white' }}>
+                    <User className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold" style={{ color: COLORS.NAVY }}>
+                      {member.name || 'Leader'}
+                    </p>
+                    <p className="text-xs" style={{ color: COLORS.MUTED }}>
+                      {member.streak || 0} day streak
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Activity Feed */}
+          <div className="mb-4">
+            <p className="text-xs font-semibold mb-2" style={{ color: COLORS.MUTED }}>
+              RECENT ACTIVITY:
+            </p>
+            <div className="space-y-2 max-h-64 overflow-y-auto">
+              {activityFeed && activityFeed.length > 0 ? (
+                activityFeed.map((activity, idx) => (
+                  <div key={idx} 
+                       className="p-3 rounded-lg border-l-4"
+                       style={{ 
+                         backgroundColor: COLORS.LIGHT_GRAY,
+                         borderColor: COLORS.PURPLE
+                       }}>
+                    <div className="flex items-start gap-2">
+                      <Activity className="w-4 h-4 mt-0.5 flex-shrink-0" style={{ color: COLORS.PURPLE }} />
+                      <div className="flex-1">
+                        <p className="text-sm font-semibold" style={{ color: COLORS.NAVY }}>
+                          {activity.userName}
+                        </p>
+                        <p className="text-xs" style={{ color: COLORS.TEXT }}>
+                          {activity.message}
+                        </p>
+                        <p className="text-xs mt-1" style={{ color: COLORS.MUTED }}>
+                          {activity.timestamp}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <p className="text-sm text-center py-4" style={{ color: COLORS.MUTED }}>
+                  No recent activity. Be the first to share!
+                </p>
+              )}
+            </div>
+          </div>
+
+          {/* Send Message */}
+          <div className="pt-3 border-t" style={{ borderColor: COLORS.SUBTLE }}>
+            <div className="flex gap-2">
+              <input 
+                type="text"
+                value={newMessage}
+                onChange={(e) => setNewMessage(e.target.value)}
+                onKeyPress={(e) => e.key === 'Enter' && handleSend()}
+                placeholder="Share your progress..."
+                className="flex-1 p-2 border rounded-lg text-sm"
+                style={{ borderColor: COLORS.SUBTLE }}
+              />
+              <button
+                onClick={handleSend}
+                disabled={!newMessage.trim()}
+                className="px-4 py-2 rounded-lg font-semibold text-white transition-all disabled:opacity-50"
+                style={{ backgroundColor: COLORS.PURPLE }}
+              >
+                <Send className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        </>
+      ) : (
+        /* Empty State */
+        <div className="text-center py-8">
+          <Users className="w-12 h-12 mx-auto mb-3" style={{ color: COLORS.MUTED }} />
+          <p className="text-sm font-semibold mb-2" style={{ color: COLORS.NAVY }}>
+            No Pod Members Yet
+          </p>
+          <p className="text-xs mb-4" style={{ color: COLORS.MUTED }}>
+            Connect with other leaders to build accountability
+          </p>
+          {/* FIX #8: Connected button to onFindPod handler */}
+          <Button onClick={onFindPod} variant="outline" size="sm">
+            Find a Pod
+          </Button>
+        </div>
+      )}
+    </Card>
+  );
+};
+
+/* =========================================================
+   AI COACH NUDGE
+========================================================= */
+export const AICoachNudge = ({ onOpenLab, disabled }) => (
+  <Card>
+    <div className="flex items-start gap-3">
+      <div className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0" 
+           style={{ backgroundColor: `${COLORS.PURPLE}20`, color: COLORS.PURPLE }}>
+        <MessageSquare className="w-5 h-5" />
+      </div>
+      <div className="flex-1">
+        <h3 className="font-bold mb-1" style={{ color: COLORS.NAVY }}>Need coaching support?</h3>
+        <p className="text-sm mb-3" style={{ color: COLORS.TEXT }}>
+          Practice scenarios, get feedback, or work through challenges with your AI coach.
+        </p>
+        <Button onClick={onOpenLab} variant="outline" size="sm" disabled={disabled}>
+          <Zap className="w-4 h-4 mr-1" /> Open Coaching Lab
+        </Button>
+      </div>
+    </div>
+  </Card>
+);
+
+/* =========================================================
+   DEV PLAN PROGRESS LINK (FIX #2)
+========================================================= */
+export const DevPlanProgressLink = ({ progress, focusArea, onNavigate }) => (
+  <Card>
+    <div className="flex items-center justify-between mb-3">
+      <div className="flex-1">
+        <p className="text-xs font-semibold mb-1" style={{ color: COLORS.MUTED }}>
+          CURRENT DEVELOPMENT FOCUS
+        </p>
+        <p className="text-base font-bold" style={{ color: COLORS.NAVY }}>
+          {focusArea || 'Not Set'}
+        </p>
+      </div>
+      <div className="text-right">
+        <p className="text-3xl font-bold" style={{ color: COLORS.TEAL }}>
+          {progress || 0}%
+        </p>
+        <p className="text-xs" style={{ color: COLORS.MUTED }}>
+          Complete
+        </p>
+      </div>
+    </div>
+    <Button 
+      onClick={onNavigate}
+      variant="outline"
+      size="sm"
+      className="w-full"
+    >
+      View Development Plan →
+    </Button>
+  </Card>
+);
+
+/* =========================================================
+   REMINDER BANNER COMPONENTS
+========================================================= */
+export const ReminderBanner = ({ message, onDismiss, type = 'best' }) => {
+  const bgColor = type === 'best' ? COLORS.TEAL : COLORS.AMBER;
+  const emoji = type ==='best' ? '🌟' : '💡';
+  const label = type === 'best' ? "YESTERDAY'S COMMITMENT:" : "AREA FOR IMPROVEMENT:";
+  
+  return (
+    <div 
+      className="p-4 rounded-lg border-l-4" 
+      style={{ 
+        backgroundColor: `${bgColor}10`, 
+        borderColor: bgColor 
+      }}
+    >
+      <div className="flex justify-between items-start gap-3">
+        <div className="flex-1">
+          <p className="text-xs font-semibold mb-1" style={{ color: bgColor }}>
+            {emoji} {label}
+          </p>
+          <p className="text-sm" style={{ color: COLORS.NAVY }}>
+            {message}
+          </p>
+        </div>
+        <button
+          onClick={onDismiss}
+          className="text-gray-400 hover:text-gray-600 transition-colors flex-shrink-0"
+          aria-label="Dismiss reminder"
+        >
+          <X className="w-4 h-4" />
+        </button>
+      </div>
+    </div>
+  );
+};
+
+/* =========================================================
+   NEW: LEADERSHIP ANCHORS CARD (Exported)
+========================================================= */
+export const LeadershipAnchorsCard = ({ 
+    identityStatement, 
+    habitAnchor, 
+    whyStatement, 
+    onDefine, 
+    onEdit
+}) => {
+    const isFullyDefined = !!identityStatement && !!habitAnchor && !!whyStatement;
+    const itemsDefined = [identityStatement, habitAnchor, whyStatement].filter(Boolean).length;
+
+    return (
+        <Card title="⚓ Leadership Anchors" accent='TEAL' icon={Target}>
+            {isFullyDefined ? (
+                // Summary View (All 3 are set)
+                <div className="space-y-3">
+                    <p className="text-sm font-bold" style={{ color: COLORS.NAVY }}>
+                        All 3 Anchors Set
+                    </p>
+                    <div className="p-3 rounded-lg" style={{ backgroundColor: `${COLORS.TEAL}10` }}>
+                        <p className="text-xs font-semibold mb-1" style={{ color: COLORS.TEAL }}>
+                            Identity:
+                        </p>
+                        <p className="text-sm italic" style={{ color: COLORS.TEXT }}>
+                            "I am the kind of leader who {identityStatement}"
+                        </p>
+                    </div>
+                    <Button onClick={onEdit} variant="outline" size="sm" className="w-full">
+                        <Edit3 className="w-4 h-4 mr-1" /> Edit Anchors
+                    </Button>
+                </div>
+            ) : (
+                // Call to Action View (Missing one or more)
+                <div className="text-center p-4 space-y-3 bg-gray-50 rounded-lg">
+                    <p className="text-base font-semibold" style={{ color: COLORS.NAVY }}>
+                        {itemsDefined}/3 Anchors Defined
+                    </p>
+                    <p className="text-sm" style={{ color: COLORS.MUTED }}>
+                        Define your **Identity**, **Habit**, and **Why** to solidify your practice.
+                    </p>
+                    <Button onClick={onDefine} variant="primary" size="md" className="w-full">
+                        <Zap className="w-4 h-4 mr-1" /> Define Your Anchors
+                    </Button>
+                </div>
+            )}
+        </Card>
+    );
+};
+
+
+/* =========================================================
+   NEW: UNIFIED ANCHOR EDITOR MODAL
+========================================================= */
+const AnchorInputSection = ({ 
+    title, icon: Icon, description, value, setValue, 
+    suggestions, onSelectSuggestion, isTextArea = false 
+}) => {
+    // Determine the text used for suggestions based on the anchor type
+    const suggestionPrefix = title === '1. Identity Anchor' 
+        ? '... ' // for "...prioritizes team well-being"
+        : ''; 
+        
+    return (
+        <div className="p-4 rounded-xl border" style={{ borderColor: COLORS.SUBTLE }}>
+            <div className="flex items-center gap-2 mb-2">
+                <Icon className="w-5 h-5" style={{ color: COLORS.TEAL }} />
+                <h3 className="text-lg font-bold" style={{ color: COLORS.NAVY }}>
+                    {title}
+                </h3>
+            </div>
+            <p className="text-xs mb-3" style={{ color: COLORS.MUTED }}>
+                {description}
+            </p>
+            
+            {isTextArea ? (
+                <textarea 
+                    value={value}
+                    onChange={(e) => setValue(e.target.value)}
+                    placeholder="Enter your anchor..."
+                    className="w-full p-3 border rounded-lg mb-4"
+                    style={{ borderColor: COLORS.SUBTLE }}
+                    rows={3}
+                />
+            ) : (
+                <input 
+                    type="text"
+                    value={value}
+                    onChange={(e) => setValue(e.target.value)}
+                    placeholder="Enter your anchor..."
+                    className="w-full p-3 border rounded-lg mb-4"
+                    style={{ borderColor: COLORS.SUBTLE }}
+                />
+            )}
+            
+            {suggestions && suggestions.length > 0 && (
+                <>
+                    <p className="text-xs font-semibold mb-2" style={{ color: COLORS.MUTED }}>
+                        SUGGESTIONS:
+                    </p>
+                    <div className="space-y-1 max-h-32 overflow-y-auto">
+                        {suggestions.slice(0, 3).map((suggestion, index) => (
+                            <button
+                                key={index}
+                                onClick={() => onSelectSuggestion(suggestion.text)}
+                                className="w-full text-left p-2 rounded-lg text-sm transition-all bg-gray-50 hover:bg-teal-50"
+                                style={{ color: COLORS.NAVY }}
+                            >
+                                {suggestionPrefix} {suggestion.text}
+                            </button>
+                        ))}
+                    </div>
+                </>
+            )}
+        </div>
+    );
+};
+
+export const UnifiedAnchorEditorModal = ({ 
+    initialIdentity, initialHabit, initialWhy,
+    identitySuggestions, habitSuggestions, whySuggestions,
+    onSave, onClose
+}) => {
+    const [identity, setIdentity] = useState(initialIdentity);
+    const [habit, setHabit] = useState(initialHabit);
+    const [why, setWhy] = useState(initialWhy);
+
+    const handleSave = () => {
+        onSave({ identity, habit, why });
+    };
+
+    return (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-2xl p-6 max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+                <div className="flex justify-between items-center mb-4 pb-2 border-b" style={{ borderColor: COLORS.SUBTLE }}>
+                    <h2 className="text-2xl font-bold" style={{ color: COLORS.NAVY }}>
+                        <Anchor className="w-6 h-6 inline-block mr-2" style={{ color: COLORS.TEAL }} />
+                        Define Your Leadership Anchors
+                    </h2>
+                    <button onClick={onClose} className="p-1 rounded-full hover:bg-gray-100">
+                        <X className="w-5 h-5" style={{ color: COLORS.MUTED }} />
+                    </button>
+                </div>
+
+                <div className="overflow-y-auto flex-1 space-y-4 pr-2">
+                    <AnchorInputSection
+                        title="1. Identity Anchor"
+                        icon={User}
+                        description='Complete the statement: "I am the kind of leader who..."'
+                        value={identity}
+                        setValue={setIdentity}
+                        suggestions={identitySuggestions}
+                        onSelectSuggestion={setIdentity}
+                    />
+
+                    <AnchorInputSection
+                        title="2. Habit Anchor (Cue)"
+                        icon={Clock}
+                        description='Your daily cue: "When I..."'
+                        value={habit}
+                        setValue={setHabit}
+                        suggestions={habitSuggestions}
+                        onSelectSuggestion={setHabit}
+                    />
+                    
+                    <AnchorInputSection
+                        title="3. Your 'Why It Matters'"
+                        icon={Zap}
+                        description='Your core purpose: Why does this leadership journey matter to you?'
+                        value={why}
+                        setValue={setWhy}
+                        suggestions={whySuggestions}
+                        onSelectSuggestion={setWhy}
+                        isTextArea={true}
+                    />
+                </div>
+
+                <div className="mt-4 pt-4 border-t flex gap-3" style={{ borderColor: COLORS.SUBTLE }}>
+                    <Button onClick={handleSave} variant="primary" size="md" className="flex-1">
+                        <Save className="w-4 h-4 mr-2" /> Save All Anchors
+                    </Button>
+                    <Button onClick={onClose} variant="outline" size="md" className="flex-1">
+                        Cancel
+                    </Button>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+
+/* =========================================================
+   REMOVED COMPONENT PLACEHOLDERS
+========================================================= */
+// Exporting placeholder components to prevent errors in Dashboard.jsx
+export const IdentityAnchorCard = () => null;
+export const HabitAnchorCard = () => null;
+export const WhyAnchorCard = () => null;
