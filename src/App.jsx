@@ -632,6 +632,14 @@ const DataProvider = ({ children, firebaseServices, userId, isAuthReady, navigat
   // --- State to hold the created services ---
   const [services, setServices] = useState(null);
   const [isLoadingServices, setIsLoadingServices] = useState(true);
+  
+  // --- State to hold the actual data from services ---
+  const [serviceData, setServiceData] = useState({
+    developmentPlanData: null,
+    dailyPracticeData: null,
+    strategicContentData: null,
+    globalMetadata: null
+  });
 
   // --- Create services when userId and db are available ---
   useEffect(() => {
@@ -656,42 +664,73 @@ const DataProvider = ({ children, firebaseServices, userId, isAuthReady, navigat
     try {
       const createdServices = createAppServices(db, userId);
       console.log('[DataProvider] Services created successfully');
+      
+      // Set up onChange callback to update state when Firestore data arrives
+      createdServices.setOnChange((data) => {
+        console.log('[DataProvider] Data changed from Firestore:', {
+          hasGlobalMetadata: data.globalMetadata !== null,
+          hasDailyPractice: data.dailyPracticeData !== null,
+          hasDevPlan: data.developmentPlanData !== null
+        });
+        setServiceData(data);
+        
+        // Once we have any data, we can set loading to false
+        if (data.globalMetadata !== null || data.dailyPracticeData !== null || data.developmentPlanData !== null) {
+          setIsLoadingServices(false);
+        }
+      });
+      
       setServices(createdServices);
+      
+      // Get initial data (might still be null if listeners haven't fired yet)
+      setServiceData({
+        developmentPlanData: createdServices.developmentPlanData,
+        dailyPracticeData: createdServices.dailyPracticeData,
+        strategicContentData: createdServices.strategicContentData,
+        globalMetadata: createdServices.globalMetadata
+      });
+      
     } catch (error) {
       console.error('[DataProvider] Error creating services:', error);
       setServices(null);
-    } finally {
       setIsLoadingServices(false);
     }
+    
+    // Cleanup function
+    return () => {
+      if (services) {
+        services.cleanup();
+      }
+    };
   }, [userId, db, isAuthReady]);
   
   // --- Create backwards-compatible hook objects from services ---
   const devPlanHook = useMemo(() => services ? {
-    developmentPlanData: services.developmentPlanData,
+    developmentPlanData: serviceData.developmentPlanData,
     updateDevelopmentPlanData: services.updateDevelopmentPlanData,
     isLoading: false,
     error: null
-  } : { developmentPlanData: null, updateDevelopmentPlanData: null, isLoading: isLoadingServices, error: null }, [services, isLoadingServices]);
+  } : { developmentPlanData: null, updateDevelopmentPlanData: null, isLoading: isLoadingServices, error: null }, [services, serviceData.developmentPlanData, isLoadingServices]);
   
   const dailyPracticeHook = useMemo(() => services ? {
-    dailyPracticeData: services.dailyPracticeData,
+    dailyPracticeData: serviceData.dailyPracticeData,
     updateDailyPracticeData: services.updateDailyPracticeData,
     isLoading: false,
     error: null
-  } : { dailyPracticeData: null, updateDailyPracticeData: null, isLoading: isLoadingServices, error: null }, [services, isLoadingServices]);
+  } : { dailyPracticeData: null, updateDailyPracticeData: null, isLoading: isLoadingServices, error: null }, [services, serviceData.dailyPracticeData, isLoadingServices]);
   
   const strategicContentHook = useMemo(() => services ? {
-    strategicContentData: services.strategicContentData,
+    strategicContentData: serviceData.strategicContentData,
     updateStrategicContentData: services.updateStrategicContentData,
     isLoading: false,
     error: null
-  } : { strategicContentData: null, updateStrategicContentData: null, isLoading: isLoadingServices, error: null }, [services, isLoadingServices]);
+  } : { strategicContentData: null, updateStrategicContentData: null, isLoading: isLoadingServices, error: null }, [services, serviceData.strategicContentData, isLoadingServices]);
   
   const globalHook = useMemo(() => services ? {
-    metadata: services.globalMetadata,
+    metadata: serviceData.globalMetadata,
     isLoading: false,
     error: null
-  } : { metadata: null, isLoading: isLoadingServices, error: null }, [services, isLoadingServices]);
+  } : { metadata: null, isLoading: isLoadingServices, error: null }, [services, serviceData.globalMetadata, isLoadingServices]);
 
   // --- Combined Loading & Error States ---
   const isUserHookLoading = devPlanHook.isLoading || dailyPracticeHook.isLoading || strategicContentHook.isLoading;

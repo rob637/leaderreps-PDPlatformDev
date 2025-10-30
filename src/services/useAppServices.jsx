@@ -642,13 +642,26 @@ export const updateCatalogDoc = async (db, docName, payload, { merge = true, use
 export const createAppServices = (db, userId) => {
   console.log('[createAppServices] Creating services for userId:', userId);
   
-  // Create reactive data stores
+  // Create reactive data stores using a simple observable pattern
   const stores = {
     developmentPlanData: null,
     dailyPracticeData: null,
     strategicContentData: null,
     globalMetadata: null,
-    listeners: [] // Store unsubscribe functions
+    listeners: [], // Store unsubscribe functions
+    onChange: null // Callback for when data changes
+  };
+
+  // Helper to notify about data changes
+  const notifyChange = () => {
+    if (stores.onChange) {
+      stores.onChange({
+        developmentPlanData: stores.developmentPlanData,
+        dailyPracticeData: stores.dailyPracticeData,
+        strategicContentData: stores.strategicContentData,
+        globalMetadata: stores.globalMetadata
+      });
+    }
   };
 
   // Set up Firestore listeners for real-time updates
@@ -658,6 +671,7 @@ export const createAppServices = (db, userId) => {
     const unsubDev = onSnapshotEx(db, devPlanPath, (snap) => {
       stores.developmentPlanData = snap.exists() ? snap.data() : MOCK_DEVELOPMENT_PLAN_DATA;
       console.log('[createAppServices] Dev Plan updated');
+      notifyChange();
     });
     stores.listeners.push(unsubDev);
 
@@ -666,6 +680,7 @@ export const createAppServices = (db, userId) => {
     const unsubDaily = onSnapshotEx(db, dailyPath, (snap) => {
       stores.dailyPracticeData = snap.exists() ? snap.data() : MOCK_DAILY_PRACTICE_DATA;
       console.log('[createAppServices] Daily Practice updated');
+      notifyChange();
     });
     stores.listeners.push(unsubDaily);
 
@@ -674,23 +689,86 @@ export const createAppServices = (db, userId) => {
     const unsubStrategic = onSnapshotEx(db, strategicPath, (snap) => {
       stores.strategicContentData = snap.exists() ? snap.data() : MOCK_STRATEGIC_CONTENT_DATA;
       console.log('[createAppServices] Strategic Content updated');
+      notifyChange();
     });
     stores.listeners.push(unsubStrategic);
 
-    // Global Metadata listener
+    // Global Metadata - Main Config listener
     const metadataPath = 'metadata/config';
     const unsubMeta = onSnapshotEx(db, metadataPath, (snap) => {
-      stores.globalMetadata = snap.exists() ? snap.data() : {};
-      console.log('[createAppServices] Global Metadata updated');
+      // Start with base config data
+      if (!stores.globalMetadata) {
+        stores.globalMetadata = {};
+      }
+      
+      // Merge in the main config fields (featureFlags, LEADERSHIP_TIERS, etc.)
+      if (snap.exists()) {
+        Object.assign(stores.globalMetadata, snap.data());
+      }
+      
+      console.log('[createAppServices] Global Metadata (config) updated');
+      notifyChange();
     });
     stores.listeners.push(unsubMeta);
+    
+    // Catalog listeners - these are in the catalog subcollection
+    const catalogNames = [
+      'rep_library',
+      'exercise_library', 
+      'workout_library',
+      'course_library',
+      'skill_catalog',
+      'identity_anchor_catalog',
+      'habit_anchor_catalog',
+      'why_catalog',
+      'reading_catalog',
+      'video_catalog',
+      'scenario_catalog'
+    ];
+    
+    catalogNames.forEach(catalogName => {
+      const catalogPath = `metadata/config/catalog/${catalogName}`;
+      const unsubCatalog = onSnapshotEx(db, catalogPath, (snap) => {
+        if (!stores.globalMetadata) {
+          stores.globalMetadata = {};
+        }
+        
+        if (snap.exists()) {
+          // Convert snake_case to UPPER_CASE for the key name
+          const keyName = catalogName.toUpperCase();
+          stores.globalMetadata[keyName] = snap.data();
+          console.log(`[createAppServices] Catalog ${catalogName} loaded:`, snap.data().items?.length || 0, 'items');
+        }
+        
+        notifyChange();
+      });
+      stores.listeners.push(unsubCatalog);
+    });
   } else {
     // No db or userId - use mock data
     console.warn('[createAppServices] No db or userId provided, using mock data');
     stores.developmentPlanData = MOCK_DEVELOPMENT_PLAN_DATA;
     stores.dailyPracticeData = MOCK_DAILY_PRACTICE_DATA;
     stores.strategicContentData = MOCK_STRATEGIC_CONTENT_DATA;
-    stores.globalMetadata = {};
+    stores.globalMetadata = {
+      featureFlags: MOCK_FEATURE_FLAGS,
+      LEADERSHIP_TIERS: LEADERSHIP_TIERS_FALLBACK,
+      REP_LIBRARY: MOCK_REP_LIBRARY,
+      EXERCISE_LIBRARY: MOCK_EXERCISE_LIBRARY,
+      WORKOUT_LIBRARY: MOCK_WORKOUT_LIBRARY,
+      COURSE_LIBRARY: MOCK_COURSE_LIBRARY,
+      SKILL_CATALOG: MOCK_SKILL_CATALOG,
+      IDENTITY_ANCHOR_CATALOG: MOCK_IDENTITY_ANCHOR_CATALOG,
+      HABIT_ANCHOR_CATALOG: MOCK_HABIT_ANCHOR_CATALOG,
+      WHY_CATALOG: MOCK_WHY_CATALOG,
+      READING_CATALOG: MOCK_READING_CATALOG,
+      VIDEO_CATALOG: MOCK_VIDEO_CATALOG,
+      SCENARIO_CATALOG: MOCK_SCENARIO_CATALOG,
+      RESOURCE_LIBRARY: {},
+      IconMap: {},
+      GEMINI_MODEL: GEMINI_MODEL,
+      APP_ID: 'mock-app-id'
+    };
   }
 
   // Create update functions
@@ -712,19 +790,26 @@ export const createAppServices = (db, userId) => {
     return await updateDocEx(db, path, updates);
   };
 
-  // Resolve metadata with fallbacks
-  const resolvedMetadata = resolveGlobalMetadata(stores.globalMetadata);
-
-  // Return the service object
+  // Return the service object with getter functions and a way to set onChange callback
   return {
-    developmentPlanData: stores.developmentPlanData,
-    dailyPracticeData: stores.dailyPracticeData,
-    strategicContentData: stores.strategicContentData,
-    globalMetadata: resolvedMetadata,
+    // Data getters that access the current state
+    get developmentPlanData() { return stores.developmentPlanData; },
+    get dailyPracticeData() { return stores.dailyPracticeData; },
+    get strategicContentData() { return stores.strategicContentData; },
+    get globalMetadata() { 
+      // Always resolve metadata with fallbacks
+      return resolveGlobalMetadata(stores.globalMetadata);
+    },
     
+    // Update functions
     updateDevelopmentPlanData,
     updateDailyPracticeData,
     updateStrategicContentData,
+    
+    // Method to set onChange callback
+    setOnChange: (callback) => {
+      stores.onChange = callback;
+    },
     
     // Cleanup function to unsubscribe from listeners
     cleanup: () => {
