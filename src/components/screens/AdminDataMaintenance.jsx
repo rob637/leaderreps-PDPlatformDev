@@ -156,13 +156,19 @@ const MODULE_CONFIGS = {
     icon: Settings,
     path: () => `metadata/config`,
     description: "App-wide configuration, feature flags, and catalogs",
+    // All 11 catalogs from DATA-STRUCTURE-COMPLETE.txt
     catalogs: [
       { name: "REP_LIBRARY", path: "metadata/config/catalog/rep_library" },
-      { name: "SKILL_CATALOG", path: "metadata/config/catalog/skill_catalog" },
-      { name: "COURSE_LIBRARY", path: "metadata/config/catalog/course_library" },
       { name: "EXERCISE_LIBRARY", path: "metadata/config/catalog/exercise_library" },
+      { name: "WORKOUT_LIBRARY", path: "metadata/config/catalog/workout_library" },
+      { name: "COURSE_LIBRARY", path: "metadata/config/catalog/course_library" },
+      { name: "SKILL_CATALOG", path: "metadata/config/catalog/skill_catalog" },
+      { name: "IDENTITY_ANCHOR_CATALOG", path: "metadata/config/catalog/identity_anchor_catalog" },
+      { name: "HABIT_ANCHOR_CATALOG", path: "metadata/config/catalog/habit_anchor_catalog" },
+      { name: "WHY_CATALOG", path: "metadata/config/catalog/why_catalog" },
       { name: "READING_CATALOG", path: "metadata/config/catalog/reading_catalog" },
-      { name: "VIDEO_CATALOG", path: "metadata/config/catalog/video_catalog" }
+      { name: "VIDEO_CATALOG", path: "metadata/config/catalog/video_catalog" },
+      { name: "SCENARIO_CATALOG", path: "metadata/config/catalog/scenario_catalog" }
     ],
     fields: [
       "featureFlags", "LEADERSHIP_TIERS", "APP_ID", "GEMINI_MODEL",
@@ -437,19 +443,46 @@ const ModuleDataViewer = ({ moduleKey, config, userId }) => {
       {/* Catalogs for Global Metadata */}
       {config.catalogs && Object.keys(subcollectionData).length > 0 && (
         <div className="space-y-4">
-          <h4 className="text-lg font-bold" style={{ color: COLORS.NAVY }}>Catalogs</h4>
-          {Object.entries(subcollectionData).map(([catalogName, catalogData]) => (
-            <Card key={catalogName} title={catalogName} accent={config.color}>
-              <div className="text-sm text-gray-600 mb-2">
-                {catalogData?.items?.length || 0} items
-              </div>
-              <div className="max-h-64 overflow-y-auto">
-                <pre className="text-xs font-mono whitespace-pre-wrap bg-gray-50 p-3 rounded">
-                  {pretty(catalogData)}
-                </pre>
-              </div>
-            </Card>
-          ))}
+          <h4 className="text-lg font-bold flex items-center gap-2" style={{ color: COLORS.NAVY }}>
+            <Database size={20} />
+            Catalogs (metadata/config/catalog/*)
+          </h4>
+          <p className="text-sm text-gray-600 mb-4">
+            These are the global catalogs that power the app. Each should have an 'items' array.
+          </p>
+          {Object.entries(subcollectionData).map(([catalogName, catalogData]) => {
+            const itemsCount = catalogData?.items?.length || 0;
+            const hasItems = itemsCount > 0;
+            
+            return (
+              <Card key={catalogName} title={catalogName} accent={hasItems ? COLORS.GREEN : COLORS.AMBER}>
+                <div className="text-sm mb-2 flex items-center gap-2">
+                  {hasItems ? (
+                    <>
+                      <CheckCircle size={16} className="text-green-600" />
+                      <span className="font-semibold text-green-800">{itemsCount} items</span>
+                    </>
+                  ) : (
+                    <>
+                      <AlertTriangle size={16} className="text-amber-600" />
+                      <span className="font-semibold text-amber-800">Empty catalog (0 items)</span>
+                    </>
+                  )}
+                </div>
+                <div className="max-h-64 overflow-y-auto">
+                  <pre className="text-xs font-mono whitespace-pre-wrap bg-gray-50 p-3 rounded">
+                    {pretty(catalogData)}
+                  </pre>
+                </div>
+                {!hasItems && (
+                  <div className="mt-2 p-2 bg-amber-50 border border-amber-200 rounded text-sm text-amber-800">
+                    <AlertTriangle size={14} className="inline mr-1" />
+                    This catalog needs to be populated with data.
+                  </div>
+                )}
+              </Card>
+            );
+          })}
         </div>
       )}
     </div>
@@ -562,7 +595,7 @@ export default function AdminDataMaintenance() {
       </div>
 
       {/* Footer Info */}
-      <div className="max-w-7xl mx-auto px-6 py-4">
+      <div className="max-w-7xl mx-auto px-6 py-4 space-y-4">
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
           <div className="flex items-start gap-3">
             <Database className="text-blue-600 flex-shrink-0" size={20} />
@@ -575,6 +608,32 @@ export default function AdminDataMaintenance() {
                 <li>• Strategic Content: <code className="bg-blue-100 px-1 rounded">modules/{'{userId}'}/strategic_content/vision_mission</code></li>
                 <li>• Global Metadata: <code className="bg-blue-100 px-1 rounded">metadata/config</code></li>
               </ul>
+            </div>
+          </div>
+        </div>
+        
+        <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
+          <div className="flex items-start gap-3">
+            <Settings className="text-purple-600 flex-shrink-0" size={20} />
+            <div className="text-sm">
+              <p className="font-medium text-purple-900 mb-2">Catalog Structures</p>
+              <div className="text-purple-800 space-y-2">
+                <div>
+                  <p className="font-semibold">Object Catalogs (REP_LIBRARY, EXERCISE_LIBRARY, etc.):</p>
+                  <code className="bg-purple-100 px-2 py-1 rounded text-xs block mt-1">
+                    {'{ items: [{ id: "...", text: "...", definition: "...", category: "...", tier_id: 1 }] }'}
+                  </code>
+                </div>
+                <div>
+                  <p className="font-semibold">String Catalogs (IDENTITY_ANCHOR_CATALOG, HABIT_ANCHOR_CATALOG):</p>
+                  <code className="bg-purple-100 px-2 py-1 rounded text-xs block mt-1">
+                    {'{ items: ["string 1", "string 2", "string 3"] }'}
+                  </code>
+                </div>
+                <p className="text-xs text-purple-700 mt-2">
+                  ⚠️ All catalogs must have an 'items' array. Empty catalogs will cause Dashboard issues.
+                </p>
+              </div>
             </div>
           </div>
         </div>
