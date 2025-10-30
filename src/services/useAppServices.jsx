@@ -1135,11 +1135,10 @@ export const createAppServices = (db, userId) => {
     const path = buildModulePath(userId, 'development_plan', 'current');
     console.log(`[updateDevelopmentPlanData] Executing with setDocEx (merge=${merge})`);
     const ok = await setDocEx(db, path, updates, merge);
-    if (ok) {
-      // Optimistic UI: apply delete-aware merge locally & notify
-      stores.developmentPlanData = applyPatchDeleteAware(stores.developmentPlanData || {}, updates);
-      notifyChange();
-    }
+    // 🚀 FIX (10/30/25): Removed optimistic update to prevent data corruption
+    // The Firestore listener (line 1006) will fire with clean, sentinel-stripped data
+    // after the write completes. This eliminates the race condition that was causing
+    // the development plan to disappear after generation.
     return ok;
   };
 
