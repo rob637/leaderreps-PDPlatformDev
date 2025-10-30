@@ -8,7 +8,8 @@ import { ArrowRight, Loader, Plus, X } from 'lucide-react'; // Added Plus and X
 import { 
   Button, 
   Card, 
-  ProgressBar, 
+  ProgressBar,
+  PlanGenerationLoader // NEW: Import the cool loader
   // LikertScaleInput // Removed this component
 } from './DevPlanComponents';
 import { 
@@ -154,7 +155,11 @@ const BaselineAssessment = ({ onComplete, isLoading = false }) => {
 
   // --- REQ #14: Sleeker Layout ---
   return (
-    <div className="min-h-screen p-4 sm:p-6 lg:p-8" style={{ background: COLORS.BG }}>
+    <>
+      {/* Show cool loading overlay when generating */}
+      {isGenerating && <PlanGenerationLoader message="Creating Your Leadership Plan" />}
+      
+      <div className="min-h-screen p-4 sm:p-6 lg:p-8" style={{ background: COLORS.BG }}>
       
       {/* Sticky Progress Bar */}
       <div className="sticky top-0 z-10 py-4 max-w-4xl mx-auto" style={{ background: `${COLORS.BG}F0`, backdropFilter: 'blur(8px)' }}>
@@ -270,6 +275,7 @@ const BaselineAssessment = ({ onComplete, isLoading = false }) => {
         </div>
       </div>
     </div>
+    </>
   );
 };
 

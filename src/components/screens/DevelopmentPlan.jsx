@@ -303,11 +303,11 @@ export default function DevelopmentPlan() {
 
   // ===== RENDER =====
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen" style={{ background: 'linear-gradient(to bottom, #F9FAFB 0%, #EEF2F6 100%)' }}>
       {error && (
-        <div className="max-w-3xl mx-auto p-4">
-          <div className="bg-red-50 border border-red-200 rounded p-4 text-red-800">
-            Error: {error.message || String(error)}
+        <div className="max-w-3xl mx-auto p-4 pt-6">
+          <div className="bg-red-50 border-2 border-red-200 rounded-xl p-4 text-red-800 shadow-lg">
+            <strong className="font-bold">Error:</strong> {error.message || String(error)}
           </div>
         </div>
       )}

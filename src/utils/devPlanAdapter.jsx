@@ -252,10 +252,28 @@ export const buildVirtualSkillCatalog = (currentPlan) => {
     return [];
   }
   
+  // Ensure focusAreas is an array
+  if (!Array.isArray(currentPlan.focusAreas)) {
+    console.warn('[Adapter] focusAreas is not an array:', typeof currentPlan.focusAreas);
+    return [];
+  }
+  
   const skills = [];
   
   currentPlan.focusAreas.forEach((area, areaIndex) => {
-    area.reps?.forEach((rep, repIndex) => {
+    // Handle string-only focus areas (simplified format)
+    if (typeof area === 'string') {
+      console.log('[Adapter] Focus area is a string, skipping skill catalog build:', area);
+      return;
+    }
+    
+    // Handle object format with reps
+    if (!area.reps || !Array.isArray(area.reps)) {
+      console.warn('[Adapter] Focus area missing reps array:', area);
+      return;
+    }
+    
+    area.reps.forEach((rep, repIndex) => {
       skills.push({
         // Identifiers
         id: generateSkillId(area.name, repIndex),
@@ -431,7 +449,12 @@ export const adaptDevelopmentPlanData = (firebaseData) => {
       assessment => adaptFirebaseAssessmentToComponents(assessment)
     ) || [],
     
-    // Adapt plan history
+    // Adapt plan history (previousPlans is the correct field name in Firebase)
+    previousPlans: firebaseData.previousPlans?.map(
+      plan => adaptFirebasePlanToComponents(plan)
+    ) || [],
+    
+    // Keep planHistory for backward compatibility if it exists
     planHistory: firebaseData.planHistory?.map(
       plan => adaptFirebasePlanToComponents(plan)
     ) || [],

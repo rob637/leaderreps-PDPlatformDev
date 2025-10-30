@@ -209,6 +209,146 @@ export const LoadingSpinner = ({ message }) => (
 );
 
 /* =========================================================
+   PlanGenerationLoader Component - COOL ANIMATION!
+   (Used in BaselineAssessment and ProgressScan during plan generation)
+========================================================= */
+export const PlanGenerationLoader = ({ message = 'Crafting Your Development Plan' }) => {
+  const [dots, setDots] = React.useState('');
+  const [currentStep, setCurrentStep] = React.useState(0);
+  
+  const steps = [
+    { icon: '🎯', text: 'Analyzing your assessment', color: COLORS.TEAL },
+    { icon: '🧠', text: 'Identifying growth areas', color: COLORS.BLUE },
+    { icon: '💡', text: 'Mapping practice reps', color: COLORS.ORANGE },
+    { icon: '📅', text: 'Structuring your 90-day plan', color: COLORS.GREEN },
+    { icon: '✨', text: 'Finalizing recommendations', color: COLORS.PURPLE }
+  ];
+  
+  React.useEffect(() => {
+    // Animate dots
+    const dotsInterval = setInterval(() => {
+      setDots(prev => prev.length >= 3 ? '' : prev + '.');
+    }, 500);
+    
+    // Cycle through steps
+    const stepInterval = setInterval(() => {
+      setCurrentStep(prev => (prev + 1) % steps.length);
+    }, 1600);
+    
+    return () => {
+      clearInterval(dotsInterval);
+      clearInterval(stepInterval);
+    };
+  }, []);
+  
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center" 
+         style={{ background: 'rgba(0, 0, 0, 0.75)' }}>
+      <div className="relative">
+        {/* Animated Background Circles */}
+        <div className="absolute inset-0 flex items-center justify-center">
+          <div 
+            className="absolute w-64 h-64 rounded-full animate-pulse"
+            style={{ 
+              background: `radial-gradient(circle, ${COLORS.TEAL}20 0%, transparent 70%)`,
+              animation: 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite'
+            }}
+          />
+          <div 
+            className="absolute w-48 h-48 rounded-full animate-ping"
+            style={{ 
+              background: `radial-gradient(circle, ${COLORS.ORANGE}15 0%, transparent 70%)`,
+              animation: 'ping 2s cubic-bezier(0, 0, 0.2, 1) infinite'
+            }}
+          />
+        </div>
+        
+        {/* Main Content Card */}
+        <div 
+          className="relative bg-white rounded-3xl shadow-2xl p-12 max-w-md mx-4"
+          style={{ 
+            border: `3px solid ${COLORS.TEAL}40`,
+            animation: 'fadeIn 0.3s ease-out'
+          }}
+        >
+          {/* Spinning Icon */}
+          <div className="flex justify-center mb-6">
+            <div 
+              className="w-20 h-20 rounded-full flex items-center justify-center text-4xl"
+              style={{ 
+                background: `linear-gradient(135deg, ${COLORS.TEAL}20, ${COLORS.BLUE}20)`,
+                animation: 'spin 3s linear infinite'
+              }}
+            >
+              {steps[currentStep].icon}
+            </div>
+          </div>
+          
+          {/* Main Message */}
+          <h3 
+            className="text-2xl font-extrabold text-center mb-2"
+            style={{ color: COLORS.NAVY }}
+          >
+            {message}{dots}
+          </h3>
+          
+          {/* Current Step */}
+          <div className="mt-6 p-4 rounded-xl transition-all duration-500"
+               style={{ 
+                 background: `${steps[currentStep].color}10`,
+                 border: `2px solid ${steps[currentStep].color}30`
+               }}>
+            <div className="flex items-center gap-3">
+              <div 
+                className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 text-lg"
+                style={{ background: `${steps[currentStep].color}20` }}
+              >
+                {steps[currentStep].icon}
+              </div>
+              <p className="text-sm font-semibold" style={{ color: steps[currentStep].color }}>
+                {steps[currentStep].text}
+              </p>
+            </div>
+          </div>
+          
+          {/* Progress Indicators */}
+          <div className="flex justify-center gap-2 mt-6">
+            {steps.map((_, index) => (
+              <div
+                key={index}
+                className="transition-all duration-300"
+                style={{
+                  width: index === currentStep ? '32px' : '8px',
+                  height: '8px',
+                  borderRadius: '4px',
+                  background: index === currentStep ? COLORS.TEAL : `${COLORS.SUBTLE}`
+                }}
+              />
+            ))}
+          </div>
+          
+          {/* Encouraging Message */}
+          <p className="text-center text-xs mt-6" style={{ color: COLORS.MUTED }}>
+            This usually takes 5-8 seconds...
+          </p>
+        </div>
+      </div>
+      
+      <style>{`
+        @keyframes fadeIn {
+          from { opacity: 0; transform: scale(0.95); }
+          to { opacity: 1; transform: scale(1); }
+        }
+        @keyframes spin {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
+        }
+      `}</style>
+    </div>
+  );
+};
+
+/* =========================================================
    EmptyState Component
    (Used in PlanTracker)
 ========================================================= */

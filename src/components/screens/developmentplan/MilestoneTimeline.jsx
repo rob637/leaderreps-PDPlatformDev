@@ -12,8 +12,8 @@ const MilestoneTimeline = ({ plan, onBack }) => {
   const currentPhase = getCurrentPhase(currentWeek);
   
   return (
-    // REQ #5: Added wrapper div for layout
-    <div className="max-w-4xl mx-auto p-6 space-y-6">
+    // REQ #5: Improved wrapper div for better layout - FULL WIDTH
+    <div className="w-full mx-auto p-4 sm:p-6 space-y-6" style={{ maxWidth: '1400px' }}>
       
       {/* REQ #5: Added Back Button */}
       <div className="mb-0">
@@ -24,49 +24,49 @@ const MilestoneTimeline = ({ plan, onBack }) => {
 
       <Card title="12-Week Journey" icon={Calendar} accent="PURPLE">
         {/* Phase Overview */}
-        <div className="mb-6 p-4 rounded-xl" style={{ background: `${currentPhase.color}10` }}>
-          <div className="flex items-center justify-between mb-2">
+        <div className="mb-8 p-6 rounded-xl" style={{ background: `${currentPhase.color}10` }}>
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-2">
             <div>
               <Badge variant="purple" size="lg">Week {currentWeek} of 12</Badge>
-              <h4 className="text-lg font-bold mt-2" style={{ color: COLORS.NAVY }}>
+              <h4 className="text-2xl font-bold mt-3" style={{ color: COLORS.NAVY }}>
                 {currentPhase.name} Phase
               </h4>
-              <p className="text-sm text-gray-600">{currentPhase.description}</p>
+              <p className="text-base text-gray-600 mt-1">{currentPhase.description}</p>
             </div>
-            <div className="text-right">
-              <p className="text-3xl font-bold" style={{ color: currentPhase.color }}>
+            <div className="text-center md:text-right">
+              <p className="text-5xl font-bold" style={{ color: currentPhase.color }}>
                 {Math.round((currentWeek / 12) * 100)}%
               </p>
-              <p className="text-xs text-gray-600">Complete</p>
+              <p className="text-sm text-gray-600 mt-1">Complete</p>
             </div>
           </div>
         </div>
 
-        {/* Timeline */}
-        <div className="space-y-6">
+        {/* Timeline - IMPROVED LAYOUT */}
+        <div className="space-y-8">
           {MILESTONE_CONFIG.phases.map((phase, phaseIdx) => (
             <div key={phase.name} className="relative">
-              {/* Phase Header */}
-              <div className="flex items-center gap-3 mb-3">
+              {/* Phase Header - IMPROVED */}
+              <div className="flex items-center gap-4 mb-4">
                 <div 
-                  className="w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-sm"
+                  className="w-12 h-12 rounded-full flex items-center justify-center text-white font-bold text-lg shadow-lg"
                   style={{ background: phase.color }}
                 >
                   {phaseIdx + 1}
                 </div>
                 <div>
-                  <h5 className="font-bold text-sm" style={{ color: COLORS.NAVY }}>
+                  <h5 className="font-bold text-lg" style={{ color: COLORS.NAVY }}>
                     {phase.name}
                   </h5>
-                  <p className="text-xs text-gray-600">
+                  <p className="text-sm text-gray-600">
                     Weeks {phase.weeks[0]}-{phase.weeks[phase.weeks.length - 1]}
                   </p>
                 </div>
               </div>
 
-              {/* Week Markers */}
-              <div className="ml-4 pl-4 border-l-2" style={{ borderColor: COLORS.SUBTLE }}>
-                <div className="grid grid-cols-4 gap-2">
+              {/* Week Markers - IMPROVED GRID */}
+              <div className="ml-6 pl-6 border-l-2" style={{ borderColor: COLORS.SUBTLE }}>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                   {phase.weeks.map(weekNum => {
                     const isPast = weekNum < currentWeek;
                     const isCurrent = weekNum === currentWeek;
@@ -75,8 +75,8 @@ const MilestoneTimeline = ({ plan, onBack }) => {
                     return (
                       <div 
                         key={weekNum}
-                        className={`p-2 rounded-lg border-2 transition-all ${
-                          isCurrent ? 'ring-2' : ''
+                        className={`p-3 rounded-xl border-2 transition-all ${
+                          isCurrent ? 'ring-2 shadow-lg' : 'shadow-sm'
                         }`}
                         style={{
                           borderColor: isPast || isCurrent ? phase.color : COLORS.SUBTLE,
@@ -84,21 +84,21 @@ const MilestoneTimeline = ({ plan, onBack }) => {
                           ringColor: isCurrent ? phase.color : 'transparent',
                         }}
                       >
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center justify-center gap-2">
                           {isPast ? (
-                            <CheckCircle className="w-4 h-4" style={{ color: phase.color }} />
+                            <CheckCircle className="w-5 h-5" style={{ color: phase.color }} />
                           ) : isCurrent ? (
-                            <Flag className="w-4 h-4" style={{ color: phase.color }} />
+                            <Flag className="w-5 h-5" style={{ color: phase.color }} />
                           ) : (
-                            <Circle className="w-4 h-4 text-gray-400" />
+                            <Circle className="w-5 h-5 text-gray-400" />
                           )}
                           <span 
-                            className={`text-xs font-semibold ${
+                            className={`text-sm font-bold ${
                               isPast || isCurrent ? '' : 'text-gray-400'
                             }`}
                             style={{ color: isPast || isCurrent ? phase.color : undefined }}
                           >
-                            W{weekNum}
+                            Week {weekNum}
                           </span>
                         </div>
                       </div>
@@ -110,12 +110,12 @@ const MilestoneTimeline = ({ plan, onBack }) => {
           ))}
         </div>
 
-        {/* Key Milestones */}
-        <div className="mt-6 p-4 rounded-xl border-2" style={{ borderColor: COLORS.SUBTLE, background: COLORS.LIGHT_GRAY }}>
-          <h5 className="font-bold text-sm mb-3" style={{ color: COLORS.NAVY }}>
-            Key Milestones
+        {/* Key Milestones - IMPROVED LAYOUT */}
+        <div className="mt-8 p-6 rounded-xl border-2 shadow-sm" style={{ borderColor: COLORS.SUBTLE, background: COLORS.LIGHT_GRAY }}>
+          <h5 className="font-bold text-lg mb-4" style={{ color: COLORS.NAVY }}>
+            🎯 Key Milestones
           </h5>
-          <div className="space-y-2">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <MilestoneItem 
               week={2}
               label="Foundation Set"
@@ -153,31 +153,31 @@ const MilestoneTimeline = ({ plan, onBack }) => {
   );
 };
 
-// Helper component for milestone items
+// Helper component for milestone items - IMPROVED
 const MilestoneItem = ({ week, label, completed, description }) => {
   return (
-    <div className="flex items-center gap-3">
+    <div className="flex items-start gap-3 p-3 rounded-lg bg-white shadow-sm">
       <div 
-        className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 ${
+        className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${
           completed ? 'bg-green-100' : 'bg-gray-100'
         }`}
       >
         {completed ? (
-          <CheckCircle className="w-4 h-4 text-green-600" />
+          <CheckCircle className="w-5 h-5 text-green-600" />
         ) : (
-          <Circle className="w-4 h-4 text-gray-400" />
+          <Circle className="w-5 h-5 text-gray-400" />
         )}
       </div>
       <div className="flex-1">
-        <div className="flex items-center gap-2">
-          <span className="text-xs font-semibold" style={{ color: COLORS.NAVY }}>
+        <div className="flex items-center gap-2 mb-1">
+          <span className="text-sm font-bold" style={{ color: COLORS.NAVY }}>
             Week {week}:
           </span>
-          <span className={`text-xs font-semibold ${completed ? 'text-green-600' : 'text-gray-500'}`}>
+          <span className={`text-sm font-bold ${completed ? 'text-green-600' : 'text-gray-500'}`}>
             {label}
           </span>
         </div>
-        <p className="text-xs text-gray-500">{description}</p>
+        <p className="text-xs text-gray-600">{description}</p>
       </div>
     </div>
   );

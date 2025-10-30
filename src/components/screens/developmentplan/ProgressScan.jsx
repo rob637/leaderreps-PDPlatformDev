@@ -11,7 +11,8 @@ import {
   Button, 
   Card, 
   ProgressBar, 
-  Badge, 
+  Badge,
+  PlanGenerationLoader // NEW: Import the cool loader
   // LikertScaleInput REMOVED
 } from './DevPlanComponents';
 import { 
@@ -154,7 +155,11 @@ const ProgressScan = ({
     const isTotalLoading = isLoading || isGenerating;
     
     return (
-      <div className="max-w-4xl mx-auto p-4 sm:p-6">
+      <>
+        {/* Show cool loading overlay when generating */}
+        {isGenerating && <PlanGenerationLoader message="Generating Your Next Plan" />}
+        
+        <div className="max-w-4xl mx-auto p-4 sm:p-6">
         <Card accent="GREEN">
           <div className="mb-6">
             <h2 className="text-3xl font-extrabold mb-2" style={{ color: COLORS.NAVY }}>
@@ -227,6 +232,7 @@ const ProgressScan = ({
           </div>
         </Card>
       </div>
+      </>
     );
   }
 
