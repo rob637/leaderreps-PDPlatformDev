@@ -94,7 +94,8 @@ const Dashboard = ({ navigate }) => {
     dailyPracticeData,
     // CRITICAL FIX: Ensure update functions are explicitly destructured here
     updateDailyPracticeData, 
-    updateDevelopmentPlanData, 
+    updateDevelopmentPlanData,
+    clearUserPlanAndAnchors, // 🛑 NEW: Import the comprehensive clear function 
     // END CRITICAL FIX
     featureFlags,
     db,
@@ -354,39 +355,25 @@ const Dashboard = ({ navigate }) => {
   };
   
   // --- FIX (Issue 1): Reset Plan ---
+  // 🛑 CRITICAL FIX: Use the comprehensive clearUserPlanAndAnchors function from services
+  // This ensures ALL residual data is properly removed with a forced overwrite (merge: false)
   const handleDeletePlanAndReset = useCallback(async () => {
-    console.log('[Dashboard] Executing Delete Plan and Reset...');
+    console.log('[Dashboard] Executing Delete Plan and Reset using clearUserPlanAndAnchors...');
     
-    // 1. Delete Development Plan fields (CRITICAL FIX: Using deleteField on the key ensures clean removal)
-    // By using {merge: true}, we are surgically removing these keys from the document.
-    await updateDevelopmentPlanData({ 
-        currentPlan: deleteField(), // Use deleteField for clean removal
-        focusAreas: deleteField(),
-        cycle: deleteField(),       // Use deleteField here too for maximum clean up
-        assessmentHistory: deleteField()
-    }, { merge: true });
-
-    // 2. Reset Daily Practice Essentials
-    await updateDailyPracticeData({
-        dailyTargetRepId: deleteField(), // <-- CRITICAL FIX: Ensure old rep is deleted
-        dailyTargetRepStatus: 'Pending',
-        dailyTargetRepDate: deleteField(),
-        streakCount: 0,
-        streakCoins: 0,
-        // Explicitly delete anchor fields
-        identityAnchor: deleteField(), 
-        habitAnchor: deleteField(),
-        whyStatement: deleteField(),
-        morningBookend: deleteField(),
-        eveningBookend: deleteField(),
-    });
-
-    setShowTestUtils(false);
-    // CRITICAL: Navigate immediately to the Development Plan screen. 
-    // This forces the UI to re-render using the now-deleted state, which DevelopmentPlan.jsx handles by showing the Baseline.
-    navigate('development-plan'); 
-    triggerCelebration('Plan and progress reset. Start fresh!');
-  }, [updateDevelopmentPlanData, updateDailyPracticeData, navigate]);
+    // Use the comprehensive clear function that does a full overwrite
+    const success = await clearUserPlanAndAnchors();
+    
+    if (success) {
+      console.log('[Dashboard] Plan and anchors successfully cleared');
+      setShowTestUtils(false);
+      // Navigate to the Development Plan screen to show the Baseline
+      navigate('development-plan'); 
+      triggerCelebration('Plan and progress reset. Start fresh!');
+    } else {
+      console.error('[Dashboard] Failed to clear plan and anchors');
+      triggerCelebration('Error resetting plan. Please try again.');
+    }
+  }, [clearUserPlanAndAnchors, navigate]);
 
   // --- Reminder Banners (Cool Ideas) ---
   useEffect(() => {
