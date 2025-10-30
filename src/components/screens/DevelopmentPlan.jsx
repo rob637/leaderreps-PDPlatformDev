@@ -258,12 +258,14 @@ export default function DevelopmentPlan() {
         />
       )}
 
+      {/* REQ #4 (BUG FIX): Updated props passed to DetailedPlanView */}
       {view === 'detail' && (
         <DetailedPlanView
-          plan={adaptedDevelopmentPlanData?.currentPlan}
+          developmentPlanData={adaptedDevelopmentPlanData}
           globalMetadata={globalMetadata}
-          onEditPlan={handleEditPlan}
-          onBack={() => setView('tracker')}
+          onUpdatePlan={handleEditPlan}
+          onNavigateToTracker={() => setView('tracker')}
+          onStartProgressScan={() => setView('scan')}
         />
       )}
 

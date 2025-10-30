@@ -107,7 +107,7 @@ export const MorningBookend = ({
     };
     
     return (
-        <Card title="Morning Bookend" icon={Target} accent='ORANGE'>
+        <Card title="Morning Bookend" icon={Target} accent='ORANGE' className="min-h-[620px]">
             {/* Daily WIN */}
             <div className="mb-6">
                 <label className="text-sm font-semibold mb-2 flex items-center" style={{ color: COLORS.TEXT }}>

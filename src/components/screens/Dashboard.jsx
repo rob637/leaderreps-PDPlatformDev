@@ -170,13 +170,22 @@ const Dashboard = ({ navigate }) => {
     ? 0 
     : (developmentPlanData?.currentPlan?.progress || 0);
 
-  // Helper to safely get arrays from metadata
+  // REQ #1 (BUG FIX): Updated helper to correctly parse catalog objects
   const getArrayFromMetadata = (key) => {
     if (!globalMetadata || !globalMetadata[key]) return [];
     const data = globalMetadata[key];
-    if (Array.isArray(data)) return data;
-    if (data.items && Array.isArray(data.items)) return data.items;
-    if (typeof data === 'object') return Object.values(data);
+    
+    // Prioritize the 'items' array, which is the catalog format
+    if (data && data.items && Array.isArray(data.items)) {
+      return data.items;
+    }
+    
+    // Fallback for old/simple array format
+    if (Array.isArray(data)) {
+      return data;
+    }
+    
+    console.warn(`[getArrayFromMetadata] Metadata for key '${key}' is not in the expected { items: [...] } format or a simple array.`);
     return [];
   };
 
