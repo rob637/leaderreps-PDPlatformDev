@@ -648,7 +648,7 @@ export const EveningBookend = ({
 };
 
 /* =========================================================
-   SUGGESTION MODAL (FIX #4, #5) (Unchanged)
+   SUGGESTION MODAL (FIX #4, #5)
 ========================================================= */
 export const SuggestionModal = ({ title, prefix, suggestions, onSelect, onClose }) => (
   <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
@@ -695,7 +695,7 @@ export const SuggestionModal = ({ title, prefix, suggestions, onSelect, onClose 
 );
 
 /* =========================================================
-   FIX #6: SAVE INDICATOR (Unchanged)
+   FIX #6: SAVE INDICATOR
 ========================================================= */
 export const SaveIndicator = ({ show, message = "Saved!" }) => {
   if (!show) return null;
@@ -711,7 +711,7 @@ export const SaveIndicator = ({ show, message = "Saved!" }) => {
 };
 
 /* =========================================================
-   FIX #3: BONUS EXERCISE MODAL (Unchanged)
+   FIX #3: BONUS EXERCISE MODAL
 ========================================================= */
 export const BonusExerciseModal = ({ exercise, onComplete, onSkip }) => (
   <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
@@ -757,7 +757,7 @@ export const BonusExerciseModal = ({ exercise, onComplete, onSkip }) => (
 );
 
 /* =========================================================
-   FIX #8: ADDITIONAL REPS CARD (Enhanced) (Unchanged)
+   FIX #8: ADDITIONAL REPS CARD (Enhanced)
 ========================================================= */
 export const AdditionalRepsCard = ({ commitments, onToggle, repLibrary }) => {
   // Lookup full rep details from library
@@ -826,7 +826,7 @@ export const AdditionalRepsCard = ({ commitments, onToggle, repLibrary }) => {
 };
 
 /* =========================================================
-   FIX #8 & #9: SOCIAL POD CARD (with working Find Pod button) (Unchanged)
+   FIX #8 & #9: SOCIAL POD CARD (with working Find Pod button)
 ========================================================= */
 export const SocialPodCard = ({ podMembers, activityFeed, onSendMessage, onFindPod }) => {
   const [newMessage, setNewMessage] = useState('');
@@ -907,7 +907,7 @@ export const SocialPodCard = ({ podMembers, activityFeed, onSendMessage, onFindP
             </div>
           </div>
 
-          {/* Send Message */}
+          /* Send Message */
           <div className="pt-3 border-t" style={{ borderColor: COLORS.SUBTLE }}>
             <div className="flex gap-2">
               <input 
@@ -940,7 +940,7 @@ export const SocialPodCard = ({ podMembers, activityFeed, onSendMessage, onFindP
           <p className="text-xs mb-4" style={{ color: COLORS.MUTED }}>
             Connect with other leaders to build accountability
           </p>
-          {/* FIX #8: Connected button to onFindPod handler */}
+          /* FIX #8: Connected button to onFindPod handler */
           <Button onClick={onFindPod} variant="outline" size="sm">
             Find a Pod
           </Button>
@@ -951,7 +951,7 @@ export const SocialPodCard = ({ podMembers, activityFeed, onSendMessage, onFindP
 };
 
 /* =========================================================
-   AI COACH NUDGE (Unchanged)
+   AI COACH NUDGE
 ========================================================= */
 export const AICoachNudge = ({ onOpenLab, disabled }) => (
   <Card>
@@ -974,7 +974,7 @@ export const AICoachNudge = ({ onOpenLab, disabled }) => (
 );
 
 /* =========================================================
-   DEV PLAN PROGRESS LINK (FIX #2) (Unchanged)
+   DEV PLAN PROGRESS LINK (FIX #2)
 ========================================================= */
 export const DevPlanProgressLink = ({ progress, focusArea, onNavigate }) => (
   <Card>
@@ -1008,7 +1008,7 @@ export const DevPlanProgressLink = ({ progress, focusArea, onNavigate }) => (
 );
 
 /* =========================================================
-   REMINDER BANNER COMPONENTS (Unchanged)
+   REMINDER BANNER COMPONENTS
 ========================================================= */
 export const ReminderBanner = ({ message, onDismiss, type = 'best' }) => {
   const bgColor = type === 'best' ? COLORS.TEAL : COLORS.AMBER;
@@ -1045,7 +1045,7 @@ export const ReminderBanner = ({ message, onDismiss, type = 'best' }) => {
 };
 
 /* =========================================================
-   NEW: LEADERSHIP ANCHORS CARD (Exported) (Unchanged Logic)
+   NEW: LEADERSHIP ANCHORS CARD (Exported)
 ========================================================= */
 export const LeadershipAnchorsCard = ({ 
     identityStatement, 
@@ -1097,7 +1097,7 @@ export const LeadershipAnchorsCard = ({
 
 
 /* =========================================================
-   NEW: UNIFIED ANCHOR EDITOR MODAL (Unchanged Logic)
+   NEW: UNIFIED ANCHOR EDITOR MODAL
 ========================================================= */
 const AnchorInputSection = ({ 
     title, icon: Icon, description, value, setValue, 
@@ -1239,7 +1239,14 @@ export const UnifiedAnchorEditorModal = ({
 /* =========================================================
    PLACEHOLDER COMPONENTS (Required to fix build errors)
 ========================================================= */
-// Exporting placeholder components to prevent errors in Dashboard.jsx when these are not used
+// FIX: IdentityAnchorCard and HabitAnchorCard were removed, but WhyAnchorCard 
+// was still being checked in Dashboard.jsx's logic. We must include a null return
+// for all three to ensure all possible imports are satisfied.
+
+// Exporting placeholders to prevent errors in Dashboard.jsx when these are not used
 export const IdentityAnchorCard = () => null;
 export const HabitAnchorCard = () => null;
+
+// The WhyAnchorCard was referenced in Dashboard.jsx's augmentedOtherTasks check, 
+// so it must be explicitly exported (even if it returns null).
 export const WhyAnchorCard = () => null;
