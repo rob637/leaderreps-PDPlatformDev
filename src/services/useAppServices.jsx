@@ -1,4 +1,4 @@
-// src/services/useAppServices.jsx (UPDATED FOR CLEAN STRUCTURE - OPTION B)
+// src/services/useAppServices.jsx (UPDATED FOR CRITICAL DELETION FIX)
 // Custom for rob@sagecg.com - Scales to 10,000+ users
 // 
 // CRITICAL FIX (10/30/25): Comprehensive Firebase sentinel stripping
@@ -1171,7 +1171,7 @@ export const createAppServices = (db, userId) => {
   };
   
   // =========================================================
-  // 🛑 NEW: FULL PLAN AND ANCHOR CLEAR FUNCTION
+  // 🛑 NEW: FULL PLAN AND ANCHOR CLEAR FUNCTION (CRITICAL FIX)
   // =========================================================
   const clearUserPlanAndAnchors = async () => {
       if (!db || !userId) {
@@ -1193,7 +1193,9 @@ export const createAppServices = (db, userId) => {
           assessmentHistory: [], 
           planHistory: [],
       };
-      const ok1 = await setDocEx(db, devPlanPath, defaultPlanPayload, true);
+      // 🛑 CRITICAL FIX: Use merge: false (or omit it) to force an OVERWRITE.
+      // This wipes out all old residual fields like 'coreReps', 'skills', etc.
+      const ok1 = await setDocEx(db, devPlanPath, defaultPlanPayload, false); 
 
       // 2. CLEAR DAILY PRACTICE to its default state (removes all anchors/targets)
       const defaultDailyPracticePayload = {
@@ -1209,10 +1211,11 @@ export const createAppServices = (db, userId) => {
           lastUpdated: todayStr,
           completedRepsToday: [],
       };
-      const ok2 = await setDocEx(db, dailyPath, defaultDailyPracticePayload, true);
+      // 🛑 CRITICAL FIX: Use merge: false (or omit it) to force an OVERWRITE.
+      const ok2 = await setDocEx(db, dailyPath, defaultDailyPracticePayload, false);
       
       const result = ok1 && ok2;
-      console.log(`[clearUserPlanAndAnchors] Plan Clear Status: ${result ? 'SUCCESS' : 'FAILED'}`);
+      console.log(`[clearUserPlanAndAnchors] Plan Clear Status: ${result ? 'SUCCESS' : 'FAILED'} (Forced Overwrite)`);
       return result;
   };
 
