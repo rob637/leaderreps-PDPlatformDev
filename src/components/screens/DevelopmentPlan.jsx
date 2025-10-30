@@ -151,7 +151,7 @@ export default function DevelopmentPlan() {
   // tracker | baseline | scan | detail | timeline
   const hasCurrentPlan = !!(adaptedDevelopmentPlanData && adaptedDevelopmentPlanData.currentPlan);
   const [view, setView] = useState(hasCurrentPlan ? 'tracker' : 'baseline');
-  const [isSaving, setIsSaving] = useState(false);
+  const [isSaving, setIsSaving] = useState(false); // Used to detect in-progress save
   const [error, setError] = useState(null);
 
   // Sync view with live snapshots as they arrive
@@ -160,12 +160,15 @@ export default function DevelopmentPlan() {
     if (adaptedDevelopmentPlanData?.currentPlan && view === 'baseline') {
       console.log('[DevelopmentPlan] Data updated, switching view to tracker.');
       setView('tracker');
+      return;
     }
-    if (!adaptedDevelopmentPlanData?.currentPlan && view === 'tracker') {
+    
+    // FIX: Add !isSaving condition to prevent race condition reversion.
+    if (!adaptedDevelopmentPlanData?.currentPlan && view === 'tracker' && !isSaving) {
       console.log('[DevelopmentPlan] No current plan, switching view to baseline.');
       setView('baseline');
     }
-  }, [adaptedDevelopmentPlanData?.currentPlan, view]); // Include 'view' in dependency array
+  }, [adaptedDevelopmentPlanData?.currentPlan, view, isSaving]); // ADDED 'isSaving' to dependencies
 
   const writeDevPlan = async (payload, { merge = true } = {}) => {
     setIsSaving(true);
@@ -193,7 +196,9 @@ export default function DevelopmentPlan() {
       setIsSaving(false);
       return false;
     }
-    setIsSaving(false);
+    // IMPORTANT: Set isSaving to false AFTER the write is complete (success or fail)
+    // This allows the useEffect to run and re-check the data.
+    setIsSaving(false); 
     return true;
   };
 
@@ -236,6 +241,7 @@ export default function DevelopmentPlan() {
       updatedAt: date
     };
 
+    // The writeDevPlan sets isSaving=true, then to false after Firestore ACK.
     const ok = await writeDevPlan(payload, { merge: true });
     
     if (ok) {
