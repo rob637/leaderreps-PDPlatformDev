@@ -1,6 +1,7 @@
 // src/components/screens/dashboard/DashboardHooks.jsx
 // Extracted State & Logic from Dashboard (10/28/25)
 // FINALIZED: Ensures updateDailyPracticeData dependency is used correctly and safely within callbacks.
+// FIXED (10/30/25): Final fix for Issue 5 (Reflections not clearing) by clearing local state explicitly.
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { serverTimestamp } from 'firebase/firestore';
@@ -130,11 +131,12 @@ export const useDashboard = ({
     }
   }, [dailyPracticeData?.morningBookend]);
 
-  // Load Evening Bookend
+  // Load Evening Bookend (Issue 5 Fix)
   useEffect(() => {
     // Skip load if we just saved and cleared
     if (shouldSkipReflectionLoad) {
-      setShouldSkipReflectionLoad(false);
+      // Clear flag after skipping the load cycle
+      setShouldSkipReflectionLoad(false); 
       return;
     }
     
@@ -303,8 +305,11 @@ export const useDashboard = ({
       // Auto-check evening reflection habit
       setHabitsCompleted(prev => ({ ...prev, eveningReflection: true }));
       
-      // FIXED 10/29/25: Set flag to prevent reload
-      setShouldSkipReflectionLoad(true);
+      // FIXED (Issue 5): Clear local state and activate reload guard flag
+      setReflectionGood('');
+      setReflectionBetter('');
+      setReflectionBest('');
+      setShouldSkipReflectionLoad(true); // <-- Set flag to skip next listener update
       
       console.log('[Dashboard] Evening bookend saved with next-day reminders');
     } catch (error) {

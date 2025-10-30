@@ -3,7 +3,7 @@
 // Wires: BaselineAssessment → PlanTracker → ProgressScan (+ optional Detail/Timeline/Quick Edit inside children)
 // FIXED: Added adapter layer to transform Firebase focusAreas ↔ component coreReps
 // FIXED (10/30/25): Removed manual setView('tracker') to fix race condition (Req #16)
-// FIXED (10/30/25): Added logic to auto-set first target rep on new plan creation.
+// FINAL FIX (10/30/25): Added robust logic to auto-set first target rep on new plan creation (Issue 4).
 
 import React, { useMemo, useState, useEffect } from 'react';
 import { useAppServices } from '../../services/useAppServices.jsx';
@@ -50,8 +50,15 @@ const findAndSetTargetRep = async (newPlan, metadata, writer) => {
   }
 
   try {
-    // 1. Get the category from the first skill in the new plan
-    const firstFocusAreaCategory = newPlan.focusAreas[0]?.category;
+    // 1. Get the category from the first focus area
+    // NOTE: This assumes the focusAreas array contains objects with a 'category' key.
+    // The simplified format from generatePlanFromAssessment returns an array of strings (e.g., ['People Development'])
+    const firstFocusAreaCategory = newPlan.focusAreas[0];
+    
+    // DEBUG LOGGING ADDED FOR ISSUE 4
+    console.log(`[DevPlan Target Rep] Searching for category: ${firstFocusAreaCategory}`);
+    console.log(`[DevPlan Target Rep] REP_LIBRARY size: ${metadata.REP_LIBRARY.items.length}`);
+    
     if (!firstFocusAreaCategory) {
       console.warn('[DevPlan] First focus area has no category. Cannot find rep. Check skill_catalog data.');
       return;
@@ -66,7 +73,13 @@ const findAndSetTargetRep = async (newPlan, metadata, writer) => {
       const newRepId = matchingRep.id || matchingRep.repId; // 'id' is seen in image_b9f3bd.png
       if (newRepId) {
         console.log(`[DevPlan] Setting new dailyTargetRepId: ${newRepId}`);
-        await writer({ dailyTargetRepId: newRepId });
+        // Reset status to pending when a new rep is assigned
+        await writer({ 
+          dailyTargetRepId: newRepId,
+          dailyTargetRepStatus: 'Pending',
+          dailyTargetRepDate: null,
+        });
+        console.log('[DevPlan] Target rep set successfully.');
       } else {
         console.warn('[DevPlan] Matching rep found but has no ID.');
       }
@@ -226,7 +239,7 @@ export default function DevelopmentPlan() {
     const ok = await writeDevPlan(payload, { merge: true });
     
     if (ok) {
-      // FIXED (10/30/25): Set the target rep
+      // FINAL FIX (Issue 4): Set the target rep
       console.log('[DevelopmentPlan] Baseline saved. Setting target rep...');
       await findAndSetTargetRep(newPlan, globalMetadata, updateDailyPracticeWriter);
       
@@ -268,7 +281,7 @@ export default function DevelopmentPlan() {
     const ok = await writeDevPlan(payload, { merge: true });
     
     if (ok) {
-      // FIXED (10/30/25): Set the target rep
+      // FINAL FIX (Issue 4): Set the target rep
       console.log('[DevelopmentPlan] Scan saved. Setting target rep...');
       await findAndSetTargetRep(withCycle, globalMetadata, updateDailyPracticeWriter);
       

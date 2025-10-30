@@ -1,6 +1,6 @@
 // src/components/screens/Dashboard.jsx
 // FINAL VERSION - Updated 10/30/25
-// FIX: Resolved ReferenceError by ensuring update functions are correctly destructured for useCallback scope.
+// FIX: Anchor deletion logic implemented in handleDeletePlanAndReset (Issue 1).
 // UX: Implemented floating/blinking Anchor FAB and Test Utilities.
 // UX: REMOVED LeadershipAnchorsCard for prominence of FAB.
 
@@ -329,28 +329,31 @@ const Dashboard = ({ navigate }) => {
     }, 1500);
   };
   
-  // --- NEW HANDLER: Reset Plan ---
+  // --- FIX (Issue 1): Reset Plan ---
   const handleDeletePlanAndReset = useCallback(async () => {
     console.log('[Dashboard] Executing Delete Plan and Reset...');
     
     // 1. Delete Development Plan
     await updateDevelopmentPlanData({ 
-        currentPlan: null,
-        focusAreas: null,
+        currentPlan: deleteField(), // Use deleteField for clean removal
+        focusAreas: deleteField(),
         cycle: 0,
+        assessmentHistory: deleteField()
     }, { merge: true });
 
-    // 2. Reset Daily Practice Essentials
+    // 2. Reset Daily Practice Essentials (ISSUE 1 FIX)
     await updateDailyPracticeData({
-        dailytargetrepid: deleteField(),
-        dailytargetrepstatus: 'Pending',
-        dailytargetrepdate: deleteField(),
-        streakcount: 0,
-        streakcoins: 0,
-        // Reset Anchors to trigger the FAB/System Task
-        identityanchor: '',
-        habitanchor: '',
-        whystatement: '',
+        dailyTargetRepId: deleteField(),
+        dailyTargetRepStatus: 'Pending',
+        dailyTargetRepDate: deleteField(),
+        streakCount: 0,
+        streakCoins: 0,
+        // Explicitly delete anchor fields
+        identityAnchor: deleteField(), 
+        habitAnchor: deleteField(),
+        whyStatement: deleteField(),
+        morningBookend: deleteField(),
+        eveningBookend: deleteField(),
     });
 
     setShowTestUtils(false);
