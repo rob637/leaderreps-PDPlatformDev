@@ -5,6 +5,7 @@
 // FIXED (10/30/25): Removed manual setView('tracker') to fix race condition (Req #16)
 // FINAL FIX (10/30/25): Added robust logic to auto-set first target rep on new plan creation (Issue 4).
 // SENTINEL FIX (10/30/25): Sentinels are stripped in useAppServices.jsx listeners, NOT in write operations
+// 🛑 CRITICAL FIX (10/30/25): Refactored writeDevPlan to only adapt the currentPlan sub-object.
 
 import React, { useMemo, useState, useEffect } from 'react';
 import { useAppServices } from '../../services/useAppServices.jsx';
@@ -176,24 +177,29 @@ export default function DevelopmentPlan() {
     setIsSaving(true);
     setError(null);
     try {
-      // 🛑 FIX: Conditionally adapt the plan based on its source.
-      let firebasePayload;
+      // 🛑 CRITICAL FIX: Ensure only the currentPlan sub-object is adapted if needed.
+      // We start with the payload and modify currentPlan if it is an existing/edited plan.
+      let firebasePayload = { ...payload }; 
       
-      if (payload.currentPlan && payload.currentPlan._source === 'generation') {
-        // If it was just generated, it is already in the Firebase focusAreas format.
-        // Copy the payload directly without using the component-to-Firebase adapter.
-        console.log('[DevelopmentPlan] Skipping component-to-Firebase adapter for new plan.');
-        firebasePayload = payload;
-      } else {
-        // FIXED: Convert component format back to Firebase format for existing plans/edits
-        console.log('[DevelopmentPlan] Converting component plan to Firebase format');
-        firebasePayload = adaptComponentPlanToFirebase(payload); 
+      if (firebasePayload.currentPlan) {
+        if (firebasePayload.currentPlan._source === 'generation') {
+          // New plan: It's already in the Firebase focusAreas format. We use it as-is.
+          console.log('[DevelopmentPlan] Skipping adapter for new plan, using direct format.');
+          // We must remove the temporary flag before saving.
+          delete firebasePayload.currentPlan._source;
+        } else if (firebasePayload.currentPlan.coreReps) {
+          // Edited plan: It's in component (coreReps) format and needs conversion back.
+          console.log('[DevelopmentPlan] Converting existing plan (coreReps) to Firebase format.');
+          // The adapter is now correctly applied to the sub-object only.
+          firebasePayload.currentPlan = adaptComponentPlanToFirebase(firebasePayload.currentPlan);
+        }
       }
       
       // NOTE: Do NOT strip sentinels here! Firebase needs them to process server-side operations.
       // Sentinels are stripped in the listeners (useAppServices.jsx) when data comes back.
       
       if (typeof updateDevelopmentPlanData === 'function') {
+        // Now updateDevelopmentPlanData receives the correctly structured top-level object
         const ok = await updateDevelopmentPlanData(firebasePayload, { merge });
         if (ok === false) {
           console.warn('[DevelopmentPlan] updateDevelopmentPlanData returned false; continuing as best-effort.');
@@ -221,10 +227,12 @@ export default function DevelopmentPlan() {
 async function confirmPlanPersisted(db, userId, retries = 4, delayMs = 250) {
   try {
     if (!db || !userId) return false;
-    const ref = doc(db, `modules/${userId}/development_plan/current`);
+    // NOTE: This uses the direct path to the document
+    const ref = doc(db, `modules/${userId}/development_plan/current`); 
     for (let i = 0; i < retries; i++) {
       const snap = await getDoc(ref);
-      if (snap.exists() && !!snap.data()?.currentPlan) return true;
+      // Check for document existence AND the currentPlan field inside it
+      if (snap.exists() && !!snap.data()?.currentPlan) return true; 
       await new Promise(r => setTimeout(r, delayMs));
     }
   } catch (e) {
@@ -293,6 +301,7 @@ async function confirmPlanPersisted(db, userId, retries = 4, delayMs = 250) {
         console.log('[DevelopmentPlan] Confirmed currentPlan via read-after-write. Switching to tracker.');
         setView('tracker');
       } else {
+        // NOTE: This optimistic switch is dangerous but necessary if the listener is slow.
         console.warn('[DevelopmentPlan] Listener/read didn’t show currentPlan in time; switching to tracker optimistically.');
         setView('tracker');
       }
@@ -349,7 +358,8 @@ async function confirmPlanPersisted(db, userId, retries = 4, delayMs = 250) {
   };
 
   const handleEditPlan = async (updatedPlan) => {
-    // NOTE: This will still go through the adapter, as an edited plan should be in coreReps format.
+    // NOTE: This plan is assumed to be in the component's 'coreReps' format,
+    // so it will hit the 'else if (coreReps)' conversion logic in writeDevPlan.
     const payload = { currentPlan: updatedPlan, updatedAt: new Date().toISOString() };
     const ok = await writeDevPlan(payload, { merge: true });
     return ok;
