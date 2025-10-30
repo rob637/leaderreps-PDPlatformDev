@@ -1,5 +1,6 @@
 // src/components/screens/dashboard/DashboardHooks.jsx
 // Extracted State & Logic from Dashboard (10/28/25)
+// FINALIZED: Ensures updateDailyPracticeData dependency is used correctly and safely within callbacks.
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { serverTimestamp } from 'firebase/firestore';
@@ -10,7 +11,7 @@ import { serverTimestamp } from 'firebase/firestore';
 ========================================================= */
 export const useDashboard = ({
   dailyPracticeData,
-  updateDailyPracticeData,
+  updateDailyPracticeData, // <--- Prop from useAppServices
   featureFlags,
   db,
   userEmail
@@ -31,7 +32,6 @@ export const useDashboard = ({
   const [showHabitEditor, setShowHabitEditor] = useState(false);
 
   // === BOOKEND STATE (NEW 10/28/25) ===
-  // FIX #2: Initialize WIN from database with proper loading
   const [morningWIN, setMorningWIN] = useState('');
   const [otherTasks, setOtherTasks] = useState([]);
   const [showLIS, setShowLIS] = useState(false);
@@ -56,7 +56,7 @@ export const useDashboard = ({
   const [additionalCommitments, setAdditionalCommitments] = useState([]);
 
   /* =========================================================
-     LOAD DATA FROM FIRESTORE
+     LOAD DATA FROM FIRESTORE (Dependency on dailyPracticeData)
   ========================================================= */
   
   // Load Arena Mode
@@ -110,7 +110,6 @@ export const useDashboard = ({
   }, [dailyPracticeData?.morningBookend]);
 
   // Load Evening Bookend
-  // FIXED 10/29/25: Skip reload after intentional clearing
   useEffect(() => {
     // Skip load if we just saved and cleared
     if (shouldSkipReflectionLoad) {
@@ -132,9 +131,10 @@ export const useDashboard = ({
   }, [dailyPracticeData?.eveningBookend, shouldSkipReflectionLoad]);
 
   /* =========================================================
-     MODE TOGGLE HANDLER
+     MODE TOGGLE HANDLER (Dependency on updateDailyPracticeData)
   ========================================================= */
   const handleToggleMode = useCallback(async () => {
+    // Use the destructured prop directly
     if (!updateDailyPracticeData || isTogglingMode) return;
 
     setIsTogglingMode(true);
@@ -152,12 +152,13 @@ export const useDashboard = ({
     } finally {
       setIsTogglingMode(false);
     }
-  }, [isArenaMode, isTogglingMode, updateDailyPracticeData]);
+  }, [isArenaMode, isTogglingMode, updateDailyPracticeData]); // Explicitly include prop
 
   /* =========================================================
-     TARGET REP HANDLERS
+     TARGET REP HANDLERS (Dependency on updateDailyPracticeData)
   ========================================================= */
   const handleCompleteTargetRep = useCallback(async () => {
+    // Use the destructured prop directly
     if (!updateDailyPracticeData || isSavingRep) return;
 
     setIsSavingRep(true);
@@ -180,12 +181,13 @@ export const useDashboard = ({
     } finally {
       setIsSavingRep(false);
     }
-  }, [updateDailyPracticeData, isSavingRep]);
+  }, [updateDailyPracticeData, isSavingRep]); // Explicitly include prop
 
   /* =========================================================
-     IDENTITY & HABIT HANDLERS
+     IDENTITY & HABIT HANDLERS (Dependency on updateDailyPracticeData)
   ========================================================= */
   const handleSaveIdentity = useCallback(async (newIdentity) => {
+    // Use the destructured prop directly
     if (!updateDailyPracticeData) return;
 
     try {
@@ -199,9 +201,10 @@ export const useDashboard = ({
       console.error('[Dashboard] Error saving identity:', error);
       alert('Error saving identity. Please try again.');
     }
-  }, [updateDailyPracticeData]);
+  }, [updateDailyPracticeData]); // Explicitly include prop
 
   const handleSaveHabit = useCallback(async (newHabit) => {
+    // Use the destructured prop directly
     if (!updateDailyPracticeData) return;
 
     try {
@@ -215,12 +218,13 @@ export const useDashboard = ({
       console.error('[Dashboard] Error saving habit:', error);
       alert('Error saving habit. Please try again.');
     }
-  }, [updateDailyPracticeData]);
+  }, [updateDailyPracticeData]); // Explicitly include prop
 
   /* =========================================================
-     BOOKEND HANDLERS (NEW 10/28/25)
+     BOOKEND HANDLERS (Dependency on updateDailyPracticeData)
   ========================================================= */
   const handleSaveMorningBookend = useCallback(async () => {
+    // Use the destructured prop directly
     if (!updateDailyPracticeData) {
       console.error('[Dashboard] Cannot save morning bookend');
       alert('Error: Unable to save. Please try again.');
@@ -247,9 +251,10 @@ export const useDashboard = ({
     } finally {
       setIsSavingBookend(false);
     }
-  }, [morningWIN, otherTasks, showLIS, updateDailyPracticeData]);
+  }, [morningWIN, otherTasks, showLIS, updateDailyPracticeData]); // Explicitly include prop
 
   const handleSaveEveningBookend = useCallback(async () => {
+    // Use the destructured prop directly
     if (!updateDailyPracticeData) {
       console.error('[Dashboard] Cannot save evening bookend');
       alert('Error: Unable to save. Please try again.');
@@ -287,7 +292,7 @@ export const useDashboard = ({
     } finally {
       setIsSavingBookend(false);
     }
-  }, [reflectionGood, reflectionBetter, reflectionBest, habitsCompleted, updateDailyPracticeData]);
+  }, [reflectionGood, reflectionBetter, reflectionBest, habitsCompleted, updateDailyPracticeData]); // Explicitly include prop
 
   const handleAddTask = useCallback((taskText) => {
     if (!taskText.trim()) return;
@@ -306,6 +311,7 @@ export const useDashboard = ({
     setOtherTasks(updatedTasks);
     
     // NEW: Auto-save to Firestore immediately
+    // Use the destructured prop directly
     if (updateDailyPracticeData) {
       updateDailyPracticeData({
         'morningBookend.otherTasks': updatedTasks
@@ -313,7 +319,7 @@ export const useDashboard = ({
         console.error('[Dashboard] Error auto-saving task:', error);
       });
     }
-  }, [otherTasks, updateDailyPracticeData]);
+  }, [otherTasks, updateDailyPracticeData]); // Explicitly include prop
 
   const handleToggleTask = useCallback(async (taskId) => {
     const updatedTasks = otherTasks.map(task =>
@@ -322,6 +328,7 @@ export const useDashboard = ({
     setOtherTasks(updatedTasks);
     
     // Auto-save to Firestore immediately
+    // Use the destructured prop directly
     if (updateDailyPracticeData) {
       try {
         await updateDailyPracticeData({
@@ -332,7 +339,7 @@ export const useDashboard = ({
         console.error('[Dashboard] Error auto-saving task toggle:', error);
       }
     }
-  }, [otherTasks, updateDailyPracticeData]);
+  }, [otherTasks, updateDailyPracticeData]); // Explicitly include prop
 
   const handleRemoveTask = useCallback(async (taskKey) => {
     let updatedTasks;
@@ -351,6 +358,7 @@ export const useDashboard = ({
     setOtherTasks(updatedTasks);
     
     // Auto-save to Firestore immediately
+    // Use the destructured prop directly
     if (updateDailyPracticeData) {
       try {
         await updateDailyPracticeData({
@@ -361,10 +369,11 @@ export const useDashboard = ({
         console.error('[Dashboard] Error auto-saving task removal:', error);
       }
     }
-  }, [otherTasks, updateDailyPracticeData]);
+  }, [otherTasks, updateDailyPracticeData]); // Explicitly include prop
 
   // NEW: Handle WIN checkbox toggle
   const handleToggleWIN = useCallback(async () => {
+    // Use the destructured prop directly
     if (!updateDailyPracticeData) return;
     
     const currentStatus = dailyPracticeData?.morningBookend?.winCompleted || false;
@@ -378,7 +387,7 @@ export const useDashboard = ({
     } catch (error) {
       console.error('[Dashboard] Error toggling WIN:', error);
     }
-  }, [dailyPracticeData, updateDailyPracticeData]);
+  }, [dailyPracticeData, updateDailyPracticeData]); // Explicitly include prop
 
   const handleHabitToggle = useCallback((habitKey, checked) => {
     setHabitsCompleted(prev => ({ ...prev, [habitKey]: checked }));
@@ -386,6 +395,7 @@ export const useDashboard = ({
 
   // NEW: Handle saving WIN separately
   const handleSaveWIN = useCallback(async () => {
+    // Use the destructured prop directly
     if (!updateDailyPracticeData) return;
     
     try {
@@ -397,7 +407,7 @@ export const useDashboard = ({
       console.error('[Dashboard] Error saving WIN:', error);
       alert('Error saving WIN. Please try again.');
     }
-  }, [morningWIN, updateDailyPracticeData]);
+  }, [morningWIN, updateDailyPracticeData]); // Explicitly include prop
 
   /* =========================================================
      COMPUTED VALUES

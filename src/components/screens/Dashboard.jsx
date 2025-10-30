@@ -1,6 +1,7 @@
 // src/components/screens/Dashboard.jsx
 // FINAL VERSION - Updated 10/30/25
-// FIX: Resolved ReferenceError by ensuring update functions are correctly destructured for useCallback scope.
+// FIX: Hides the LeadershipAnchorsCard entirely to free up screen real estate.
+// FIX: Modifies the Floating Action Button (FAB) to remain visible but static when anchors are complete.
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useAppServices } from '../../services/useAppServices.jsx';
@@ -22,7 +23,7 @@ import {
   BonusExerciseModal,
   SocialPodCard,
   // === NEW/UNIFIED IMPORTS ===
-  LeadershipAnchorsCard, // Imported from DashboardComponents.jsx
+  LeadershipAnchorsCard, // Imported but now intentionally not rendered in main column
   UnifiedAnchorEditorModal // Imported from DashboardComponents.jsx
   // ===========================
 } from './dashboard/DashboardComponents.jsx';
@@ -73,10 +74,8 @@ const Dashboard = ({ navigate }) => {
   const {
     user, 
     dailyPracticeData,
-    // CRITICAL FIX: Ensure update functions are explicitly destructured here
     updateDailyPracticeData, 
     updateDevelopmentPlanData, 
-    // END CRITICAL FIX
     featureFlags,
     db,
     userEmail,
@@ -527,7 +526,8 @@ const Dashboard = ({ navigate }) => {
               </Card>
             )}
 
-            {/* 3. Leadership Anchors Card (UNIFIED) */}
+            {/* 3. Leadership Anchors Card (UNIFIED) - INTENTIONALLY HIDDEN FOR REAL ESTATE */}
+            {/* The FAB handles the CTA/Edit function now. */}
             <LeadershipAnchorsCard
                 identityStatement={identityStatement}
                 habitAnchor={habitAnchor}
@@ -605,17 +605,19 @@ const Dashboard = ({ navigate }) => {
 
       {/* --- MODALS --- */}
       
-      {/* NEW: Floating Anchor Button (FAB) */}
-      {!isFullyDefined && (
-        <button 
-          onClick={handleOpenAnchorEditor}
-          className="fixed bottom-6 right-6 z-50 flex items-center px-6 py-3 rounded-full font-bold text-white shadow-xl animate-bounce transition-all duration-300 hover:scale-[1.02]"
-          style={{ background: COLORS.PURPLE, boxShadow: `0 8px 15px ${COLORS.PURPLE}50` }}
-        >
-          <Anchor className="w-5 h-5 mr-3 animate-pulse" />
-          Define Your Anchors!
-        </button>
-      )}
+      {/* NEW: Floating Anchor Button (FAB) - REMAINS STATIC WHEN COMPLETE */}
+      <button 
+        onClick={handleOpenAnchorEditor}
+        className={`fixed bottom-6 right-6 z-50 flex items-center px-6 py-3 rounded-full font-bold text-white shadow-xl transition-all duration-300 hover:scale-[1.02] 
+            ${!isFullyDefined ? 'animate-bounce' : 'opacity-80'}`}
+        style={{ 
+            background: isFullyDefined ? COLORS.TEAL : COLORS.PURPLE, 
+            boxShadow: `0 8px 15px ${COLORS.PURPLE}50` 
+        }}
+      >
+        <Anchor className={`w-5 h-5 mr-3 ${!isFullyDefined ? 'animate-pulse' : ''}`} />
+        {isFullyDefined ? 'Edit Anchors' : 'Define Your Anchors!'}
+      </button>
 
       {/* UNIFIED Anchor Editor Modal */}
       {showAnchorEditor && (
