@@ -1,4 +1,4 @@
-// src/components/screens/AdminFunctions.jsx (Updated with Admin Email Manager)
+// src/components/screens/AdminFunctions.jsx (Updated with Admin Email Manager and Membership Flag)
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 // --- Core Services & Context ---
@@ -380,6 +380,7 @@ const AdminFunctionsScreen = () => {
                             'enableDevPlan',
                             'enableQuickStart',
                             'enableDailyPractice',
+                            'enableMembershipModule', // <-- CRITICAL FIX: ADDED MISSING FLAG
                         ]
                          .sort() 
                          .map((flagName) => {
