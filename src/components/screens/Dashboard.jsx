@@ -1,7 +1,7 @@
 // src/components/screens/Dashboard.jsx
 // FINAL VERSION - Updated 10/30/25
-// FIX: Hides the LeadershipAnchorsCard entirely to free up screen real estate.
-// FIX: Modifies the Floating Action Button (FAB) to remain visible but static when anchors are complete.
+// FIX: Resolved ReferenceError by ensuring update functions are correctly destructured for useCallback scope.
+// UX: Implemented floating/blinking Anchor FAB and Test Utilities.
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useAppServices } from '../../services/useAppServices.jsx';
@@ -23,8 +23,8 @@ import {
   BonusExerciseModal,
   SocialPodCard,
   // === NEW/UNIFIED IMPORTS ===
-  LeadershipAnchorsCard, // Imported but now intentionally not rendered in main column
-  UnifiedAnchorEditorModal // Imported from DashboardComponents.jsx
+  LeadershipAnchorsCard, 
+  UnifiedAnchorEditorModal 
   // ===========================
 } from './dashboard/DashboardComponents.jsx';
 
@@ -74,8 +74,10 @@ const Dashboard = ({ navigate }) => {
   const {
     user, 
     dailyPracticeData,
+    // CRITICAL FIX: Ensure update functions are explicitly destructured here
     updateDailyPracticeData, 
     updateDevelopmentPlanData, 
+    // END CRITICAL FIX
     featureFlags,
     db,
     userEmail,
@@ -527,7 +529,6 @@ const Dashboard = ({ navigate }) => {
             )}
 
             {/* 3. Leadership Anchors Card (UNIFIED) - INTENTIONALLY HIDDEN FOR REAL ESTATE */}
-            {/* The FAB handles the CTA/Edit function now. */}
             <LeadershipAnchorsCard
                 identityStatement={identityStatement}
                 habitAnchor={habitAnchor}

@@ -932,7 +932,7 @@ export const SocialPodCard = ({ podMembers, activityFeed, onSendMessage, onFindP
           </div>
         </>
       ) : (
-        /* Empty State (FIX: Removed "FIX #8" comment) */
+        /* Empty State */
         <div className="text-center py-8">
           <Users className="w-12 h-12 mx-auto mb-3" style={{ color: COLORS.MUTED }} />
           <p className="text-sm font-semibold mb-2" style={{ color: COLORS.NAVY }}>
