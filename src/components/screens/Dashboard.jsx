@@ -214,6 +214,20 @@ const Dashboard = ({ navigate }) => {
     setTimeout(() => setShowSaveConfirmation(false), 3000);
   };
 
+  // --- FIX: Memoized Reminder Dismissal Handlers to prevent re-render crashes ---
+  const handleDismissBestReminder = useCallback(() => {
+      setShowBestReminder(false);
+      // Data mutation safely wrapped in a callback
+      updateDailyPracticeData({ tomorrowsReminder: deleteField() });
+  }, [updateDailyPracticeData]);
+  
+  const handleDismissImprovementReminder = useCallback(() => {
+      setShowImprovementReminder(false);
+      // Data mutation safely wrapped in a callback
+      updateDailyPracticeData({ improvementReminder: deleteField() });
+  }, [updateDailyPracticeData]);
+  // --- END FIX ---
+
   // --- UNIFIED SAVE HANDLER ---
   const handleSaveAllAnchors = async ({ identity, habit, why }) => {
     // Collect all updates
@@ -427,10 +441,7 @@ const Dashboard = ({ navigate }) => {
           <div className="mb-4">
             <ReminderBanner
               message={dailyPracticeData.tomorrowsReminder}
-              onDismiss={() => {
-                setShowBestReminder(false);
-                updateDailyPracticeData({ tomorrowsReminder: deleteField() });
-              }}
+              onDismiss={handleDismissBestReminder} // <-- FIX APPLIED HERE
               type="best"
             />
           </div>
@@ -439,10 +450,7 @@ const Dashboard = ({ navigate }) => {
           <div className="mb-4">
             <ReminderBanner
               message={dailyPracticeData.improvementReminder}
-              onDismiss={() => {
-                setShowImprovementReminder(false);
-                updateDailyPracticeData({ improvementReminder: deleteField() });
-              }}
+              onDismiss={handleDismissImprovementReminder} // <-- FIX APPLIED HERE
               type="improvement"
             />
           </div>
@@ -585,7 +593,6 @@ const Dashboard = ({ navigate }) => {
                 habitsCompleted: habitsCompleted,
                 onHabitToggle: handleHabitToggle,
                 onSave: handleSaveEveningWithConfirmation,
-                isSaving: isSavingBookend,
                 onNavigate: navigate,
                 amWinCompleted: amWinCompleted,
                 amTasksCompleted: amTasksCompleted,
