@@ -2,6 +2,7 @@
 // Parent container for the Development Plan flow (no-regression, single-CTA per screen)
 // Wires: BaselineAssessment → PlanTracker → ProgressScan (+ optional Detail/Timeline/Quick Edit inside children)
 // FIXED: Added adapter layer to transform Firebase focusAreas ↔ component coreReps
+// FIXED (10/30/25): Removed manual setView('tracker') to fix race condition (Req #16)
 
 import React, { useMemo, useState, useEffect } from 'react';
 import { useAppServices } from '../../services/useAppServices.jsx';
@@ -91,9 +92,16 @@ export default function DevelopmentPlan() {
 
   // Sync view with live snapshots as they arrive
   useEffect(() => {
-    if (adaptedDevelopmentPlanData?.currentPlan && view === 'baseline') setView('tracker');
-    if (!adaptedDevelopmentPlanData?.currentPlan && view === 'tracker') setView('baseline');
-  }, [adaptedDevelopmentPlanData?.currentPlan]);
+    // This effect now correctly handles the navigation *after* data is received
+    if (adaptedDevelopmentPlanData?.currentPlan && view === 'baseline') {
+      console.log('[DevelopmentPlan] Data updated, switching view to tracker.');
+      setView('tracker');
+    }
+    if (!adaptedDevelopmentPlanData?.currentPlan && view === 'tracker') {
+      console.log('[DevelopmentPlan] No current plan, switching view to baseline.');
+      setView('baseline');
+    }
+  }, [adaptedDevelopmentPlanData?.currentPlan, view]); // Include 'view' in dependency array
 
   const writeDevPlan = async (payload, { merge = true } = {}) => {
     setIsSaving(true);
@@ -163,7 +171,12 @@ export default function DevelopmentPlan() {
     };
 
     const ok = await writeDevPlan(payload, { merge: true });
-    if (ok) setView('tracker');
+    
+    // REQ #16: FIX - Do not manually set view. Let the useEffect handle it.
+    // if (ok) setView('tracker');
+    if (ok) {
+      console.log('[DevelopmentPlan] Baseline saved. Waiting for data listener to switch view.');
+    }
   };
 
   // ProgressScan → same pattern as baseline, but we show comparisons
@@ -197,7 +210,12 @@ export default function DevelopmentPlan() {
     };
 
     const ok = await writeDevPlan(payload, { merge: true });
-    if (ok) setView('tracker');
+    
+    // REQ #16: FIX - Do not manually set view. Let the useEffect handle it.
+    // if (ok) setView('tracker');
+    if (ok) {
+      console.log('[DevelopmentPlan] Scan saved. Waiting for data listener to switch view.');
+    }
   };
 
   const handleEditPlan = async (updatedPlan) => {
