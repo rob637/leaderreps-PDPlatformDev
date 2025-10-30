@@ -174,9 +174,19 @@ export default function DevelopmentPlan() {
     setIsSaving(true);
     setError(null);
     try {
-      // FIXED: Convert component format back to Firebase format
-      console.log('[DevelopmentPlan] Converting component plan to Firebase format');
-      const firebasePayload = adaptComponentPlanToFirebase(payload);
+      // 🛑 FIX: Conditionally adapt the plan based on its source.
+      let firebasePayload;
+      
+      if (payload.currentPlan && payload.currentPlan._source === 'generation') {
+        // If it was just generated, it is already in the Firebase focusAreas format.
+        // Copy the payload directly without using the component-to-Firebase adapter.
+        console.log('[DevelopmentPlan] Skipping component-to-Firebase adapter for new plan.');
+        firebasePayload = payload;
+      } else {
+        // FIXED: Convert component format back to Firebase format for existing plans/edits
+        console.log('[DevelopmentPlan] Converting component plan to Firebase format');
+        firebasePayload = adaptComponentPlanToFirebase(payload); 
+      }
       
       if (typeof updateDevelopmentPlanData === 'function') {
         const ok = await updateDevelopmentPlanData(firebasePayload, { merge });
@@ -215,7 +225,13 @@ export default function DevelopmentPlan() {
     // If an existing plan exists, bump cycle for the new plan & archive the old
     const prevPlan = adaptedDevelopmentPlanData?.currentPlan;
     const prevCycle = prevPlan?.cycle || adaptedDevelopmentPlanData?.cycle || 0;
-    const newPlan = { ...newPlanRaw, cycle: (prevCycle || 0) + 1 };
+    
+    // 🛑 FIX: Flag the new plan so we can bypass the faulty adapter during save.
+    const newPlan = { 
+        ...newPlanRaw, 
+        cycle: (prevCycle || 0) + 1,
+        _source: 'generation' // <-- CRITICAL FLAG
+    };
 
     // Build history arrays
     const prevPlans = Array.isArray(adaptedDevelopmentPlanData?.previousPlans) ? adaptedDevelopmentPlanData.previousPlans.slice() : [];
@@ -261,7 +277,13 @@ export default function DevelopmentPlan() {
 
     const prevPlan = adaptedDevelopmentPlanData?.currentPlan;
     const prevCycle = prevPlan?.cycle || adaptedDevelopmentPlanData?.cycle || 0;
-    const withCycle = { ...newPlan, cycle: prevCycle + 1 }; // This is the new plan
+    
+    // 🛑 FLAG the new plan here as well
+    const withCycle = { 
+        ...newPlan, 
+        cycle: prevCycle + 1, 
+        _source: 'generation' // <-- CRITICAL FLAG
+    }; // This is the new plan
 
     const prevPlans = Array.isArray(adaptedDevelopmentPlanData?.previousPlans) ? adaptedDevelopmentPlanData.previousPlans.slice() : [];
     if (prevPlan) {
@@ -297,6 +319,7 @@ export default function DevelopmentPlan() {
   };
 
   const handleEditPlan = async (updatedPlan) => {
+    // NOTE: This will still go through the adapter, as an edited plan should be in coreReps format.
     const payload = { currentPlan: updatedPlan, updatedAt: new Date().toISOString() };
     const ok = await writeDevPlan(payload, { merge: true });
     return ok;
