@@ -48,7 +48,7 @@ const sanitizeTimestamps = (obj) => {
     }
   }
   
-  // Handle plain objects - recursively sanitize all properties
+  // Handle plain objects
   if (obj && typeof obj === 'object' && obj.constructor === Object) {
     const sanitized = {};
     for (const key in obj) {
@@ -664,6 +664,8 @@ export const useGlobalMetadata = (db, isAuthReady) => {
     IconMap: {},
     APP_ID: 'default-app-id',
     GEMINI_MODEL: GEMINI_MODEL,
+    // 💡 FIX: Add mock/fallback for admin emails here
+    adminemails: ADMIN_EMAILS,
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -692,9 +694,13 @@ export const useGlobalMetadata = (db, isAuthReady) => {
               iconMap[name] = iconComponents[name];
           });
 
-          setMetadata({
+          setMetadata(prev => ({ // Merge with previous state to keep defaults/mocks until catalogs load
+              ...prev,
               // flags (support feature_flags and featureFlags)
               featureFlags: cfg(configData, ['feature_flags', 'featureFlags'], MOCK_FEATURE_FLAGS),
+
+              // 💡 FIX: Read the adminemails field (supports 'adminemails' and legacy 'ADMIN_EMAILS')
+              adminemails:              cfg(configData, ['adminemails', 'ADMIN_EMAILS'], ADMIN_EMAILS), // <-- ADDED THIS LINE
 
               // catalogs/libraries — prefer lower_case, fallback to legacy UPPER_CASE, then mock
               LEADERSHIP_TIERS:       cfg(configData, ['leadership_tiers', 'LEADERSHIP_TIERS'], LEADERSHIP_TIERS_FALLBACK),
@@ -719,7 +725,7 @@ export const useGlobalMetadata = (db, isAuthReady) => {
 
               // built-in icon map
               IconMap: iconMap,
-          });
+          }));
 
       } catch (e) {
           console.error("[CRITICAL GLOBAL READ FAIL] Metadata fetch failed.", e);
@@ -730,6 +736,7 @@ export const useGlobalMetadata = (db, isAuthReady) => {
               IconMap: {},
               GEMINI_MODEL: GEMINI_MODEL,
               APP_ID: 'error-app-id',
+              adminemails: ADMIN_EMAILS, // Ensure fallback is set on error
           });
       } finally {
           setLoading(false);
@@ -746,6 +753,7 @@ export const useGlobalMetadata = (db, isAuthReady) => {
 const resolveGlobalMetadata = (meta) => {
   return {
     featureFlags: meta?.featureFlags || MOCK_FEATURE_FLAGS,
+    adminemails: meta?.adminemails || ADMIN_EMAILS, // 💡 FIX: Include adminemails in resolved metadata
     LEADERSHIP_TIERS: meta?.LEADERSHIP_TIERS || LEADERSHIP_TIERS_FALLBACK,
     REP_LIBRARY: meta?.REP_LIBRARY || MOCK_REP_LIBRARY,
     EXERCISE_LIBRARY: meta?.EXERCISE_LIBRARY || MOCK_EXERCISE_LIBRARY,

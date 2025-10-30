@@ -1,4 +1,4 @@
-// src/components/screens/AdminFunctions.jsx (Updated with Admin Email Manager and Membership Flag)
+// src/components/screens/AdminFunctions.jsx (Updated with Admin Email Manager and Hardcoded Fallback)
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 // --- Core Services & Context ---
@@ -214,10 +214,19 @@ const AdminFunctionsScreen = () => {
 
     // Extract admin emails from metadata
     const adminEmails = useMemo(() => {
+        // --- HARDCODED FALLBACK LIST (Matches App.jsx) ---
+        const PRIMARY_ADMIN_EMAILS = ['rob@sagecg.com', 'admin@leaderreps.com'];
+        
         // Ensure metadata is available and adminemails is an array
-        // Fallback to empty array if not found
-        const emails = metadata?.adminemails;
-        return Array.isArray(emails) ? emails : [];
+        // This relies on the fix in useAppServices.jsx to include 'adminemails' in metadata
+        const firestoreEmails = metadata?.adminemails;
+        const allEmails = Array.isArray(firestoreEmails) ? firestoreEmails : [];
+        
+        // Merge the hardcoded list with the list from Firestore (deduplicate)
+        const finalEmails = [...new Set([...PRIMARY_ADMIN_EMAILS, ...allEmails])].filter(Boolean);
+
+        // Sort for consistent display
+        return finalEmails.sort();
     }, [metadata]);
 
     // --- Effect to redirect if not admin ---
