@@ -22,6 +22,7 @@ import {
   adaptComponentPlanToFirebase,
   buildVirtualSkillCatalog
 } from '../../utils/devPlanAdapter';
+import { doc, getDoc } from 'firebase/firestore';
 
 // Simple guard wrapper
 const LoadingBlock = ({ title = 'Loading…', description = 'Preparing your development plan...' }) => (
@@ -215,6 +216,23 @@ export default function DevelopmentPlan() {
     return true;
   };
 
+
+// Read-after-write confirmation: check Firestore a few times for 'currentPlan'
+async function confirmPlanPersisted(db, userId, retries = 4, delayMs = 250) {
+  try {
+    if (!db || !userId) return false;
+    const ref = doc(db, `modules/${userId}/development_plan/current`);
+    for (let i = 0; i < retries; i++) {
+      const snap = await getDoc(ref);
+      if (snap.exists() && !!snap.data()?.currentPlan) return true;
+      await new Promise(r => setTimeout(r, delayMs));
+    }
+  } catch (e) {
+    console.warn('[DevelopmentPlan] confirmPlanPersisted error:', e);
+  }
+  return false;
+}
+
   // ===== FLOW ACTIONS =====
 
   // Baseline → Generate new plan then route to tracker
@@ -269,7 +287,16 @@ export default function DevelopmentPlan() {
       await findAndSetTargetRep(newPlan, globalMetadata, updateDailyPracticeWriter);
       
       // REQ #16: FIX - Do not manually set view. Let the useEffect handle it.
-      console.log('[DevelopmentPlan] Waiting for data listener to switch view.');
+      setIsSaving(true);
+      const okPersisted = await confirmPlanPersisted(db, userId);
+      if (okPersisted) {
+        console.log('[DevelopmentPlan] Confirmed currentPlan via read-after-write. Switching to tracker.');
+        setView('tracker');
+      } else {
+        console.warn('[DevelopmentPlan] Listener/read didn’t show currentPlan in time; switching to tracker optimistically.');
+        setView('tracker');
+      }
+      setIsSaving(false);
     }
   };
 
