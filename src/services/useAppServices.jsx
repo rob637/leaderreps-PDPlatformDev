@@ -21,7 +21,7 @@ import {
 } from 'firebase/firestore';
 
 // Import specific icons used within this service
-import { HeartPulse, Briefcase, Users, AlertTriangle, TrendingUp, Zap, ShieldCheck, Target, BarChart3, BookOpen, Film, Trello, Mic, Clock, Cpu, User as UserIcon, CreditCard } from 'lucide-react'; 
+import { HeartPulse, Briefcase, Users, AlertTriangle, TrendingUp, Zap, ShieldCheck, Target, BarChart3, BookOpen, Film, Trello, Mic, Clock, Cpu, User as UserIcon, DollarSign } from 'lucide-react'; 
 
 console.log('🔥🔥🔥 useAppServices.jsx LOADED - CLEAN STRUCTURE VERSION (Option B) 🔥🔥🔥');
 
@@ -368,7 +368,7 @@ export const ensureUserDocs = async (db, uid) => {
         };
         await setDocEx(db, dailyPracticePath, defaultDailyPractice);
     }
-    
+
     // ==================== STRATEGIC CONTENT MODULE ====================
     const strategicPath = buildModulePath(uid, 'strategic_content', 'vision_mission');
     const strategicSnap = await getDocEx(db, strategicPath);
@@ -385,28 +385,27 @@ export const ensureUserDocs = async (db, uid) => {
         };
         await setDocEx(db, strategicPath, defaultStrategic);
     }
-
+    
     // ==================== MEMBERSHIP MODULE (NEW) ====================
     const membershipPath = buildModulePath(uid, 'membership', 'current');
     const membershipSnap = await getDocEx(db, membershipPath);
 
     if (!membershipSnap.exists()) {
         console.log(`[ensureUserDocs] Creating membership data at: ${membershipPath}`);
-        // Set nextBillingDate 7 days from now for a mock trial period
-        const nextBillingDate = new Date();
-        nextBillingDate.setDate(nextBillingDate.getDate() + 7);
-
         const defaultMembership = {
-            status: 'FreeTrial', // Default status: Free Trial
-            currentPlanId: 'free-trial',
-            nextBillingDate: nextBillingDate.toISOString().split('T')[0],
-            paymentHistory: [], // Array of { date, amount, method, status, planId }
-            notifications: [], // Array of { id, message, type, isRead }
+            status: 'Trial', // Default to Trial or Free
+            currentPlanId: 'trial',
+            nextBillingDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 7 days trial
+            paymentHistory: [],
+            notifications: [
+                { id: 'welcome', message: 'Welcome to your 7-day free trial! Upgrade now to maintain access.', type: 'warning', isRead: false }
+            ],
             _createdAt: serverTimestamp()
         };
         await setDocEx(db, membershipPath, defaultMembership);
     }
-    
+
+
     console.log('[ensureUserDocs] All required documents verified/created (CLEAN STRUCTURE)');
   } catch (e) {
     console.error('[ensureUserDocs] Error:', e);
@@ -449,28 +448,60 @@ export const MOCK_STRATEGIC_CONTENT_DATA = {
   purpose: '',
 };
 
-// --- NEW MEMBERSHIP MOCK DATA ---
 export const MOCK_MEMBERSHIP_DATA = {
-    status: 'FreeTrial',
-    currentPlanId: 'free-trial',
-    nextBillingDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 7 days from now
+    status: 'Trial',
+    currentPlanId: 'trial',
+    nextBillingDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
     paymentHistory: [],
     notifications: [
-        { id: 'trial', message: 'Your free trial expires in 7 days!', type: 'warning', isRead: false },
+        { id: 'welcome', message: 'Welcome to your 7-day free trial! Upgrade now to maintain access.', type: 'warning', isRead: false }
     ],
-    _createdAt: null
 };
 
-// --- NEW GLOBAL PLANS MOCK (using clear snake_case variable name for the list) ---
-const MOCK_MEMBERSHIP_PLANS = [
-    { id: 'free-trial', name: 'Free Trial', price: 0, recurrence: 'None', features: ['Dashboard', 'Daily Reps'], isTrial: true },
-    { id: 'basic', name: 'Arena Core', price: 29, recurrence: 'Monthly', features: ['All Core Features', 'AI Chatbot', '1-on-1 Coaching (Add-on)'], isTrial: false },
-    { id: 'pro', name: 'Executive Leader', price: 99, recurrence: 'Monthly', features: ['Arena Core', 'Executive ROI Report', 'Dedicated Advisor', 'Premium Content Library'], isTrial: false },
-    { id: 'enterprise', name: 'Team Accelerator', price: 499, recurrence: 'Annually', features: ['Executive Leader', 'Team Reporting', 'Custom Training Modules', 'SAML/SSO'], isTrial: false }
-];
+const MOCK_MEMBERSHIP_PLANS = {
+    items: [
+        { 
+            id: 'trial', 
+            name: 'Free Trial', 
+            price: 0, 
+            recurrence: 'N/A', 
+            isTrial: true,
+            features: [
+                '7-Day Full Access', 
+                'Limited Rep Catalog', 
+                'Dashboard & Planning Hub', 
+                'No AI Coaching'
+            ]
+        },
+        { 
+            id: 'basic', 
+            name: 'Pro', 
+            price: 49.99, 
+            recurrence: 'Monthly', 
+            features: [
+                'Full Rep & Content Library', 
+                'Unlimited Daily Practice', 
+                'Dashboard & Planning Hub', 
+                'Core AI Coaching Lab Access'
+            ]
+        },
+        { 
+            id: 'pro', 
+            name: 'Executive Leader', 
+            price: 499.00, 
+            recurrence: 'Annually', 
+            features: [
+                'All Pro Features', 
+                'Executive ROI Report Generation', 
+                'Priority Access to new Content', 
+                'Dedicated 1-on-1 AI Coaching'
+            ]
+        }
+    ]
+};
 
 // Global metadata mocks
-const MOCK_FEATURE_FLAGS = { enableNewFeature: false, enableMembershipModule: true }; // <<< ENABLED BY DEFAULT
+const MOCK_FEATURE_FLAGS = { enableNewFeature: false, enableMembershipModule: true };
 const MOCK_REP_LIBRARY = [];
 const MOCK_EXERCISE_LIBRARY = [];
 const MOCK_WORKOUT_LIBRARY = [];
@@ -546,7 +577,7 @@ export const useFirestoreUserData = (db, uid, isAuthReady, moduleName, docName, 
         setData(docData);
         didSetInitial = true;
       } else {
-        console.warn(`[useFirestoreUserData]⚠️ Document does not exist at ${path}. Using mock fallback.`);
+        console.warn(`[useFirestoreUserData] ⚠️ Document does not exist at ${path}. Using mock fallback.`);
         setData(mockFallback);
       }
 
@@ -573,6 +604,7 @@ export const useFirestoreUserData = (db, uid, isAuthReady, moduleName, docName, 
 
       try {
         console.log(`[useFirestoreUserData.updateData] Attempting to update ${path}...`);
+        // We use setDocEx with merge:true for all user module updates
         const success = await setDocEx(db, path, updates, true);
         
         if (success) {
@@ -627,10 +659,9 @@ export const useGlobalMetadata = (db, isAuthReady) => {
     READING_CATALOG: MOCK_READING_CATALOG,
     VIDEO_CATALOG: MOCK_VIDEO_CATALOG,
     SCENARIO_CATALOG: MOCK_SCENARIO_CATALOG,
+    MEMBERSHIP_PLANS: MOCK_MEMBERSHIP_PLANS, // ADDED: Membership plans mock
     RESOURCE_LIBRARY: {},
     IconMap: {},
-    // --- NEW: Membership Plans ---
-    MEMBERSHIP_PLANS: MOCK_MEMBERSHIP_PLANS,
     APP_ID: 'default-app-id',
     GEMINI_MODEL: GEMINI_MODEL,
   });
@@ -654,60 +685,33 @@ export const useGlobalMetadata = (db, isAuthReady) => {
           // Build icon map
           const iconComponents = {
             HeartPulse, Briefcase, Users, AlertTriangle, TrendingUp, Zap,
-            ShieldCheck, Target, BarChart3, BookOpen, Film, Trello, Mic, Clock, Cpu, UserIcon, CreditCard
+            ShieldCheck, Target, BarChart3, BookOpen, Film, Trello, Mic, Clock, Cpu, UserIcon, DollarSign
           };
           const iconMap = {};
           Object.keys(iconComponents).forEach(name => {
               iconMap[name] = iconComponents[name];
           });
-          
-          // --- Catalog Names (used below) ---
-          const catalogNames = [
-              'rep_library', 'exercise_library', 'workout_library', 'course_library',
-              'skill_catalog', 'identity_anchor_catalog', 'habit_anchor_catalog',
-              'why_catalog', 'reading_catalog', 'video_catalog', 'scenario_catalog',
-              'membership_plans' // <<< CORRECTLY using snake_case for Firestore path
-          ];
-          
-          // Fetch all catalog subdocuments in parallel
-          const catalogPromises = catalogNames.map(name => 
-              getDocEx(db, `metadata/config/catalog/${name}`).then(snap => ({
-                  name: name.toUpperCase(), // Converts snake_case path to internal uppercase key
-                  data: snap.exists() ? sanitizeTimestamps(snap.data()) : null
-              }))
-          );
-          
-          const catalogResults = await Promise.all(catalogPromises);
-          
-          const catalogData = {};
-          catalogResults.forEach(result => {
-              if (result.data) {
-                  catalogData[result.name] = result.data;
-              }
-          });
-          
 
-          setMetadata(prev => ({
-              ...prev,
+          setMetadata({
               // flags (support feature_flags and featureFlags)
               featureFlags: cfg(configData, ['feature_flags', 'featureFlags'], MOCK_FEATURE_FLAGS),
 
-              // catalogs/libraries (from subcollection fetches)
-              LEADERSHIP_TIERS:       cfg(catalogData, ['LEADERSHIP_TIERS'], LEADERSHIP_TIERS_FALLBACK),
-              REP_LIBRARY:            cfg(catalogData, ['REP_LIBRARY'], MOCK_REP_LIBRARY),
-              EXERCISE_LIBRARY:       cfg(catalogData, ['EXERCISE_LIBRARY'], MOCK_EXERCISE_LIBRARY),
-              WORKOUT_LIBRARY:        cfg(catalogData, ['WORKOUT_LIBRARY'], MOCK_WORKOUT_LIBRARY),
-              COURSE_LIBRARY:         cfg(catalogData, ['COURSE_LIBRARY'], MOCK_COURSE_LIBRARY),
-              SKILL_CATALOG:          cfg(catalogData, ['SKILL_CATALOG'], MOCK_SKILL_CATALOG),
-              IDENTITY_ANCHOR_CATALOG:cfg(catalogData, ['IDENTITY_ANCHOR_CATALOG'], MOCK_IDENTITY_ANCHOR_CATALOG),
-              HABIT_ANCHOR_CATALOG:   cfg(catalogData, ['HABIT_ANCHOR_CATALOG'], MOCK_HABIT_ANCHOR_CATALOG),
-              WHY_CATALOG:            cfg(catalogData, ['WHY_CATALOG'], MOCK_WHY_CATALOG),
-              READING_CATALOG:        cfg(catalogData, ['READING_CATALOG'], MOCK_READING_CATALOG),
-              VIDEO_CATALOG:          cfg(catalogData, ['VIDEO_CATALOG'], MOCK_VIDEO_CATALOG),
-              SCENARIO_CATALOG:       cfg(catalogData, ['SCENARIO_CATALOG'], MOCK_SCENARIO_CATALOG),
-              RESOURCE_LIBRARY:       cfg(configData, ['resource_library', 'RESOURCE_LIBRARY'], {}), // Top-level config
-              // --- NEW: Membership Plans (from subcollection fetch) ---
-              MEMBERSHIP_PLANS:       cfg(catalogData, ['MEMBERSHIP_PLANS'], MOCK_MEMBERSHIP_PLANS),
+              // catalogs/libraries — prefer lower_case, fallback to legacy UPPER_CASE, then mock
+              LEADERSHIP_TIERS:       cfg(configData, ['leadership_tiers', 'LEADERSHIP_TIERS'], LEADERSHIP_TIERS_FALLBACK),
+              REP_LIBRARY:            cfg(configData, ['rep_library', 'REP_LIBRARY'], MOCK_REP_LIBRARY),
+              EXERCISE_LIBRARY:       cfg(configData, ['exercise_library', 'EXERCISE_LIBRARY'], MOCK_EXERCISE_LIBRARY),
+              WORKOUT_LIBRARY:        cfg(configData, ['workout_library', 'WORKOUT_LIBRARY'], MOCK_WORKOUT_LIBRARY),
+              COURSE_LIBRARY:         cfg(configData, ['course_library', 'COURSE_LIBRARY'], MOCK_COURSE_LIBRARY),
+              SKILL_CATALOG:          cfg(configData, ['skill_catalog', 'SKILL_CATALOG'], MOCK_SKILL_CATALOG),
+              IDENTITY_ANCHOR_CATALOG:cfg(configData, ['identity_anchor_catalog', 'IDENTITY_ANCHOR_CATALOG'], MOCK_IDENTITY_ANCHOR_CATALOG),
+              HABIT_ANCHOR_CATALOG:   cfg(configData, ['habit_anchor_catalog', 'HABIT_ANCHOR_CATALOG'], MOCK_HABIT_ANCHOR_CATALOG),
+              WHY_CATALOG:            cfg(configData, ['why_catalog', 'WHY_CATALOG'], MOCK_WHY_CATALOG),
+              READING_CATALOG:        cfg(configData, ['reading_catalog', 'READING_CATALOG'], MOCK_READING_CATALOG),
+              VIDEO_CATALOG:          cfg(configData, ['video_catalog', 'VIDEO_CATALOG'], MOCK_VIDEO_CATALOG),
+              SCENARIO_CATALOG:       cfg(configData, ['scenario_catalog', 'SCENARIO_CATALOG'], MOCK_SCENARIO_CATALOG),
+              MEMBERSHIP_PLANS:       cfg(configData, ['membership_plans', 'MEMBERSHIP_PLANS'], MOCK_MEMBERSHIP_PLANS), // ADDED: Membership plans
+
+              RESOURCE_LIBRARY:       cfg(configData, ['resource_library', 'RESOURCE_LIBRARY'], {}),
 
               // app/system config — prefer lower_case
               APP_ID:                 cfg(configData, ['app_id', 'APP_ID'], 'default-app-id'),
@@ -715,7 +719,7 @@ export const useGlobalMetadata = (db, isAuthReady) => {
 
               // built-in icon map
               IconMap: iconMap,
-          }));
+          });
 
       } catch (e) {
           console.error("[CRITICAL GLOBAL READ FAIL] Metadata fetch failed.", e);
@@ -724,8 +728,6 @@ export const useGlobalMetadata = (db, isAuthReady) => {
               featureFlags: MOCK_FEATURE_FLAGS,
               LEADERSHIP_TIERS: LEADERSHIP_TIERS_FALLBACK,
               IconMap: {},
-              // --- NEW: Membership Plans ---
-              MEMBERSHIP_PLANS: MOCK_MEMBERSHIP_PLANS,
               GEMINI_MODEL: GEMINI_MODEL,
               APP_ID: 'error-app-id',
           });
@@ -742,7 +744,7 @@ export const useGlobalMetadata = (db, isAuthReady) => {
 };
 
 const resolveGlobalMetadata = (meta) => {
-  const resolved = {
+  return {
     featureFlags: meta?.featureFlags || MOCK_FEATURE_FLAGS,
     LEADERSHIP_TIERS: meta?.LEADERSHIP_TIERS || LEADERSHIP_TIERS_FALLBACK,
     REP_LIBRARY: meta?.REP_LIBRARY || MOCK_REP_LIBRARY,
@@ -756,14 +758,12 @@ const resolveGlobalMetadata = (meta) => {
     READING_CATALOG: meta?.READING_CATALOG || MOCK_READING_CATALOG,
     VIDEO_CATALOG: meta?.VIDEO_CATALOG || MOCK_VIDEO_CATALOG,
     SCENARIO_CATALOG: meta?.SCENARIO_CATALOG || MOCK_SCENARIO_CATALOG,
+    MEMBERSHIP_PLANS: meta?.MEMBERSHIP_PLANS || MOCK_MEMBERSHIP_PLANS, // ADDED: Membership plans
     RESOURCE_LIBRARY: meta?.RESOURCE_LIBRARY || {},
     IconMap: meta?.IconMap || {},
-    // --- NEW: Membership Plans ---
-    MEMBERSHIP_PLANS: meta?.MEMBERSHIP_PLANS || MOCK_MEMBERSHIP_PLANS,
     GEMINI_MODEL: meta?.GEMINI_MODEL || GEMINI_MODEL,
     APP_ID: meta?.APP_ID || 'default-app-id',
   };
-  return resolved;
 };
 
 /* =========================================================
@@ -781,47 +781,36 @@ export const updateGlobalMetadata = async (
 
   let path;
   let payload = { ...data }; 
-  
-  // --- CATALOG LIST ---
-  const catalogKeys = [
-      'REP_LIBRARY', 'EXERCISE_LIBRARY', 'WORKOUT_LIBRARY', 'COURSE_LIBRARY',
-      'SKILL_CATALOG', 'IDENTITY_ANCHOR_CATALOG', 'HABIT_ANCHOR_CATALOG',
-      'WHY_CATALOG', 'READING_CATALOG', 'VIDEO_CATALOG', 'SCENARIO_CATALOG',
-      'MEMBERSHIP_PLANS' // <<< MEMBERSHIP PLANS KEY
-  ];
+  let useCatalogDoc = false;
 
-  // Logic to handle specific catalog updates vs. general config updates
-  if (forceDocument === 'reading_catalog') {
-      // Legacy path logic for reading catalog
+  const catalogKeys = [
+    'REP_LIBRARY', 'EXERCISE_LIBRARY', 'WORKOUT_LIBRARY', 'COURSE_LIBRARY', 
+    'SKILL_CATALOG', 'IDENTITY_ANCHOR_CATALOG', 'HABIT_ANCHOR_CATALOG', 
+    'WHY_CATALOG', 'READING_CATALOG', 'VIDEO_CATALOG', 'SCENARIO_CATALOG',
+    'MEMBERSHIP_PLANS' // Check for membership plans too
+  ];
+  
+  // Check if we are trying to update a catalog
+  const catalogKeyToUpdate = catalogKeys.find(key => data.hasOwnProperty(key));
+
+  if (catalogKeyToUpdate === 'MEMBERSHIP_PLANS' && forceDocument === 'config') {
+      // Use the dedicated catalog writer for membership plans to place it correctly
+      useCatalogDoc = true;
+      path = 'metadata/config/catalog/membership_plans'; // The correct location
+      const body = Array.isArray(payload.MEMBERSHIP_PLANS) ? { items: payload.MEMBERSHIP_PLANS } : payload.MEMBERSHIP_PLANS;
+      payload = body;
+  } else if (forceDocument === 'reading_catalog') {
       path = mockDoc(db, 'metadata', 'reading_catalog');
       if (!payload || !payload.items || !Array.isArray(payload.items)) {
            const potentialArray = Object.values(payload).find(Array.isArray);
            payload = { items: potentialArray || (Array.isArray(payload) ? payload : []) };
            console.warn(`[GLOBAL WRITE] Auto-wrapping payload for reading_catalog into { items: [...] }`);
       }
-  } else if (catalogKeys.includes(forceDocument.toUpperCase())) {
-      // Handle updates to catalog lists via updateCatalogDoc
-      const docName = forceDocument.toLowerCase(); // Converts to snake_case for Firestore path
-      // Ensure the payload is wrapped in { items: [...] } if it's an array for consistency
-      const body = Array.isArray(payload) ? { items: payload } : payload;
-      
-      const success = await updateCatalogDoc(db, docName, body, { merge, userId });
-
-      if (success) {
-          console.log(`[GLOBAL CATALOG WRITE SUCCESS] Document: catalog/${docName}. Merge: ${merge}. Source: ${source}`);
-          return { ...payload, _updatedBy: userId, _source: source };
-      } else {
-          throw new Error(`updateCatalogDoc failed for path metadata/config/catalog/${docName}`);
-      }
-      
   } else {
-      // Standard config document update logic (metadata/config)
       path = mockDoc(db, 'metadata', 'config');
-      
-      // Filter out all catalog keys to ensure only top-level configs are written to /metadata/config
-      catalogKeys.forEach(key => { delete payload[key]; });
-      delete payload.RESOURCE_LIBRARY_ITEMS; 
-      delete payload.catalog; 
+      // Clean out catalog keys from the main config doc to prevent write errors
+      catalogKeys.forEach(key => delete payload[key]); 
+      delete payload.RESOURCE_LIBRARY; delete payload.RESOURCE_LIBRARY_ITEMS; delete payload.catalog; 
   }
 
    if (!payload || typeof payload !== 'object' || Object.keys(payload).length === 0) {
@@ -872,8 +861,7 @@ export const createAppServices = (db, userId) => {
     developmentPlanData: null,
     dailyPracticeData: null,
     strategicContentData: null,
-    // --- NEW: Membership Data ---
-    membershipData: null,
+    membershipData: null, // ADDED: Membership data store
     globalMetadata: null,
     listeners: [], // Store unsubscribe functions
     onChange: null // Callback for when data changes
@@ -886,8 +874,7 @@ export const createAppServices = (db, userId) => {
         developmentPlanData: stores.developmentPlanData,
         dailyPracticeData: stores.dailyPracticeData,
         strategicContentData: stores.strategicContentData,
-        // --- NEW: Membership Data ---
-        membershipData: stores.membershipData,
+        membershipData: stores.membershipData, // ADDED: Notify membership data
         globalMetadata: stores.globalMetadata
       });
     }
@@ -902,7 +889,6 @@ export const createAppServices = (db, userId) => {
       console.log('[createAppServices] Dev Plan updated');
       notifyChange();
     });
-    // REQ #1 (BUG FIX): Corrected typo from unSubDev to unsubDev
     stores.listeners.push(unsubDev);
 
     // Daily Practice listener
@@ -925,11 +911,10 @@ export const createAppServices = (db, userId) => {
     });
     stores.listeners.push(unsubStrategic);
     
-    // --- NEW: Membership Listener ---
+    // Membership Listener (NEW)
     const membershipPath = buildModulePath(userId, 'membership', 'current');
     const unsubMembership = onSnapshotEx(db, membershipPath, (snap) => {
-      const rawData = snap.exists() ? snap.data() : MOCK_MEMBERSHIP_DATA;
-      stores.membershipData = stripSentinels(sanitizeTimestamps(rawData));
+      stores.membershipData = snap.exists() ? sanitizeTimestamps(snap.data()) : MOCK_MEMBERSHIP_DATA;
       console.log('[createAppServices] Membership Data updated');
       notifyChange();
     });
@@ -967,7 +952,7 @@ export const createAppServices = (db, userId) => {
       'reading_catalog',
       'video_catalog',
       'scenario_catalog',
-      'membership_plans' // <<< CORRECTLY using snake_case path
+      'membership_plans' // ADDED: Membership plans catalog
     ];
     
     catalogNames.forEach(catalogName => {
@@ -995,8 +980,7 @@ export const createAppServices = (db, userId) => {
     stores.developmentPlanData = MOCK_DEVELOPMENT_PLAN_DATA;
     stores.dailyPracticeData = MOCK_DAILY_PRACTICE_DATA;
     stores.strategicContentData = MOCK_STRATEGIC_CONTENT_DATA;
-    // --- NEW: Membership Mock ---
-    stores.membershipData = MOCK_MEMBERSHIP_DATA;
+    stores.membershipData = MOCK_MEMBERSHIP_DATA; // ADDED: Mock Membership Data
     stores.globalMetadata = {
       featureFlags: MOCK_FEATURE_FLAGS,
       LEADERSHIP_TIERS: LEADERSHIP_TIERS_FALLBACK,
@@ -1011,10 +995,9 @@ export const createAppServices = (db, userId) => {
       READING_CATALOG: MOCK_READING_CATALOG,
       VIDEO_CATALOG: MOCK_VIDEO_CATALOG,
       SCENARIO_CATALOG: MOCK_SCENARIO_CATALOG,
+      MEMBERSHIP_PLANS: MOCK_MEMBERSHIP_PLANS, // ADDED: Mock Membership Plans
       RESOURCE_LIBRARY: {},
       IconMap: {},
-      // --- NEW: Membership Plans ---
-      MEMBERSHIP_PLANS: MOCK_MEMBERSHIP_PLANS,
       GEMINI_MODEL: GEMINI_MODEL,
       APP_ID: 'mock-app-id'
     };
@@ -1024,8 +1007,6 @@ export const createAppServices = (db, userId) => {
   const updateDevelopmentPlanData = async (updates, { merge = true } = {}) => {
     if (!db || !userId) return false;
     const path = buildModulePath(userId, 'development_plan', 'current');
-    // REQ #4: This is the BUG FIX.
-    // It must use setDocEx (to create/overwrite) with merge:true, not updateDocEx (which fails on undefined fields).
     console.log(`[updateDevelopmentPlanData] Executing with setDocEx (merge=${merge})`);
     return await setDocEx(db, path, updates, merge);
   };
@@ -1033,21 +1014,22 @@ export const createAppServices = (db, userId) => {
   const updateDailyPracticeData = async (updates) => {
     if (!db || !userId) return false;
     const path = buildModulePath(userId, 'daily_practice', 'current');
-    return await updateDocEx(db, path, updates);
+    return await setDocEx(db, path, updates, true); // Use setDocEx(..., true) for module updates
   };
 
   const updateStrategicContentData = async (updates) => {
     if (!db || !userId) return false;
     const path = buildModulePath(userId, 'strategic_content', 'vision_mission');
-    return await updateDocEx(db, path, updates);
+    return await setDocEx(db, path, updates, true); // Use setDocEx(..., true) for module updates
   };
   
-  // --- NEW: Update Membership Data Function ---
+  // Update Membership Data (NEW)
   const updateMembershipData = async (updates) => {
     if (!db || !userId) return false;
     const path = buildModulePath(userId, 'membership', 'current');
-    return await updateDocEx(db, path, updates);
+    return await setDocEx(db, path, updates, true); // Use setDocEx(..., true) for module updates
   };
+
 
   // Return the service object with getter functions and a way to set onChange callback
   return {
@@ -1055,8 +1037,7 @@ export const createAppServices = (db, userId) => {
     get developmentPlanData() { return stores.developmentPlanData; },
     get dailyPracticeData() { return stores.dailyPracticeData; },
     get strategicContentData() { return stores.strategicContentData; },
-    // --- NEW: Membership Data Getter ---
-    get membershipData() { return stores.membershipData; },
+    get membershipData() { return stores.membershipData; }, // ADDED: Getter for membership data
     get globalMetadata() { 
       // Always resolve metadata with fallbacks
       return resolveGlobalMetadata(stores.globalMetadata);
@@ -1066,8 +1047,7 @@ export const createAppServices = (db, userId) => {
     updateDevelopmentPlanData,
     updateDailyPracticeData,
     updateStrategicContentData,
-    // --- NEW: Membership Data Updater ---
-    updateMembershipData,
+    updateMembershipData, // ADDED: Update membership data function
     
     // Method to set onChange callback
     setOnChange: (callback) => {

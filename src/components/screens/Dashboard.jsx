@@ -599,6 +599,8 @@ const Dashboard = ({ navigate }) => {
                 onSave: handleSaveMorningWithConfirmation,
                 onSaveWIN: handleSaveWINWithConfirmation,
                 onToggleWIN: handleToggleWIN,
+                onSaveWIN: handleSaveWINWithConfirmation,
+                onToggleWIN: handleToggleWIN,
                 isSaving: isSavingBookend,
                 completedAt: dailyPracticeData?.morningBookend?.completedAt?.toDate?.() || null,
                 winCompleted: dailyPracticeData?.morningBookend?.winCompleted

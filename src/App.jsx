@@ -44,7 +44,7 @@ import {
   CornerRightUp, Clock, Briefcase, Target, Users, BarChart3, Globe, Code,
   Bell, Lock, Download, Trash2, Mail, Link, Menu, Trello, Film, Dumbbell, Cpu,
   ChevronLeft, ChevronRight, X, Loader, AlertTriangle, ChevronsLeft, ChevronsRight, // Added Loader, AlertTriangle, Chevrons
-  Shield, CreditCard, // Icon for Admin Functions and NEW CreditCard for Membership
+  Shield, DollarSign // Icon for Admin Functions and Membership
 } from 'lucide-react';
 
 
@@ -89,7 +89,7 @@ const ScreenMap = {
   'admin-functions': lazy(() => import('./components/screens/AdminFunctions.jsx')), // NEW Admin screen
   'data-maintenance': lazy(() => import('./components/screens/AdminDataMaintenance.jsx')), // cite: AdminDataMaintenance.jsx
   'debug-data': lazy(() => import('./components/screens/DebugDataViewer.jsx')), // Assumed exists
-  'membership-module': lazy(() => import('./components/screens/MembershipModule.jsx')), // <<< NEW: Membership Module
+  'membership-module': lazy(() => import('./components/screens/MembershipModule.jsx')), // ADDED: New Membership Module
 };
 
 
@@ -247,7 +247,7 @@ const NavSidebar = ({ currentScreen, setCurrentScreen, user, closeMobileMenu, is
   const { auth, featureFlags, isAdmin } = useAppServices(); // cite: useAppServices.jsx
   const [isProfileOpen, setIsProfileOpen] = useState(false);
 
-  // --- Navigation Structure (UPDATED per boss feedback 10/28/25) ---
+  // --- Navigation Structure (UPDATED) ---
   const coreNav = [
     { screen: 'dashboard', label: 'The Arena', icon: Home }, // Renamed Dashboard
   ];
@@ -276,17 +276,9 @@ const NavSidebar = ({ currentScreen, setCurrentScreen, user, closeMobileMenu, is
 
   // --- System/Admin Navigation (Conditional) ---
   const systemNav = [
-    // <<< NEW: Membership Module Link >>>
-    { screen: 'membership-module', label: 'Membership & Billing', icon: CreditCard, flag: 'enableMembershipModule' },
+    { screen: 'membership-module', label: 'Membership & Billing', icon: DollarSign, flag: 'enableMembershipModule' }, // ADDED: Membership Module
     { screen: 'app-settings', label: 'App Settings', icon: Settings },
   ];
-  
-  // Conditionally add Admin Functions if the user is an admin
-  if (isAdmin) {
-    systemNav.push(
-      { screen: 'admin-functions', label: 'Admin Functions', icon: Shield, flag: 'enableAdminFunctions' },
-    );
-  }
 
   const menuSections = [
     { title: 'CORE', items: coreNav },
@@ -647,8 +639,7 @@ const DataProvider = ({ children, firebaseServices, userId, isAuthReady, navigat
     developmentPlanData: null,
     dailyPracticeData: null,
     strategicContentData: null,
-    // <<< NEW: Membership Data >>>
-    membershipData: null,
+    membershipData: null, // ADDED: Membership data state
     globalMetadata: null
   });
 
@@ -682,7 +673,7 @@ const DataProvider = ({ children, firebaseServices, userId, isAuthReady, navigat
           hasGlobalMetadata: data.globalMetadata !== null,
           hasDailyPractice: data.dailyPracticeData !== null,
           hasDevPlan: data.developmentPlanData !== null,
-          hasMembership: data.membershipData !== null // <<< NEW
+          hasMembership: data.membershipData !== null // ADDED: Membership check
         });
         
         // SENTINEL DETECTOR: Find any FieldValue sentinels that would cause React Error #31
@@ -731,7 +722,7 @@ const DataProvider = ({ children, firebaseServices, userId, isAuthReady, navigat
         setServiceData(data);
         
         // Once we have any data, we can set loading to false
-        if (data.globalMetadata !== null || data.dailyPracticeData !== null || data.developmentPlanData !== null) {
+        if (data.globalMetadata !== null || data.dailyPracticeData !== null || data.developmentPlanData !== null || data.membershipData !== null) {
           setIsLoadingServices(false);
         }
       });
@@ -743,8 +734,7 @@ const DataProvider = ({ children, firebaseServices, userId, isAuthReady, navigat
         developmentPlanData: createdServices.developmentPlanData,
         dailyPracticeData: createdServices.dailyPracticeData,
         strategicContentData: createdServices.strategicContentData,
-        // <<< NEW: Membership Data >>>
-        membershipData: createdServices.membershipData,
+        membershipData: createdServices.membershipData, // ADDED: Membership data init
         globalMetadata: createdServices.globalMetadata
       });
       
@@ -784,14 +774,13 @@ const DataProvider = ({ children, firebaseServices, userId, isAuthReady, navigat
     error: null
   } : { strategicContentData: null, updateStrategicContentData: null, isLoading: isLoadingServices, error: null }, [services, serviceData.strategicContentData, isLoadingServices]);
   
-  // <<< NEW: Membership Hook >>>
-  const membershipHook = useMemo(() => services ? {
+  const membershipHook = useMemo(() => services ? { // ADDED: Membership hook
     membershipData: serviceData.membershipData,
     updateMembershipData: services.updateMembershipData,
     isLoading: false,
     error: null
   } : { membershipData: null, updateMembershipData: null, isLoading: isLoadingServices, error: null }, [services, serviceData.membershipData, isLoadingServices]);
-  
+
   const globalHook = useMemo(() => services ? {
     metadata: serviceData.globalMetadata,
     isLoading: false,
@@ -799,7 +788,7 @@ const DataProvider = ({ children, firebaseServices, userId, isAuthReady, navigat
   } : { metadata: null, isLoading: isLoadingServices, error: null }, [services, serviceData.globalMetadata, isLoadingServices]);
 
   // --- Combined Loading & Error States ---
-  const isUserHookLoading = devPlanHook.isLoading || dailyPracticeHook.isLoading || strategicContentHook.isLoading || membershipHook.isLoading;
+  const isUserHookLoading = devPlanHook.isLoading || dailyPracticeHook.isLoading || strategicContentHook.isLoading || membershipHook.isLoading; // ADDED: Membership loading
   const isLoading = isUserHookLoading || globalHook.isLoading; // combined app loading
   const error = devPlanHook.error || dailyPracticeHook.error || strategicContentHook.error || membershipHook.error || globalHook.error;
 
@@ -900,9 +889,8 @@ const DataProvider = ({ children, firebaseServices, userId, isAuthReady, navigat
       developmentPlanData: devPlanHook.developmentPlanData,
       dailyPracticeData: dailyPracticeHook.dailyPracticeData,
       strategicContentData: strategicContentHook.strategicContentData,
-      // <<< NEW: Membership Data >>>
-      membershipData: membershipHook.membershipData,
-
+      membershipData: membershipHook.membershipData, // ADDED: Membership data
+      
       // Global Metadata / Value Sets (extracted from resolvedMetadata)
       metadata: resolvedMetadata,
       featureFlags: resolvedMetadata.featureFlags || {},
@@ -918,10 +906,9 @@ const DataProvider = ({ children, firebaseServices, userId, isAuthReady, navigat
       READING_CATALOG: resolvedMetadata.READING_CATALOG || { items: [] },
       VIDEO_CATALOG: resolvedMetadata.VIDEO_CATALOG || { items: [] },
       SCENARIO_CATALOG: resolvedMetadata.SCENARIO_CATALOG || { items: [] },
+      MEMBERSHIP_PLANS: resolvedMetadata.MEMBERSHIP_PLANS || { items: [] }, // ADDED: Membership plans
       RESOURCE_LIBRARY: resolvedMetadata.RESOURCE_LIBRARY || {},
       IconMap: resolvedMetadata.IconMap || {},
-      // <<< NEW: Membership Plans >>>
-      MEMBERSHIP_PLANS: resolvedMetadata.MEMBERSHIP_PLANS || [],
       APP_ID: resolvedMetadata.APP_ID || appId,
 
       // AI/API Services
@@ -937,13 +924,12 @@ const DataProvider = ({ children, firebaseServices, userId, isAuthReady, navigat
       updateDevelopmentPlanData: devPlanHook.updateDevelopmentPlanData ?? noOpUpdate,
       updateDailyPracticeData: dailyPracticeHook.updateDailyPracticeData ?? noOpUpdate,
       updateStrategicContentData: strategicContentHook.updateStrategicContentData ?? noOpUpdate,
-      // <<< NEW: Membership Data Updater >>>
-      updateMembershipData: membershipHook.updateMembershipData ?? noOpUpdate,
+      updateMembershipData: membershipHook.updateMembershipData ?? noOpUpdate, // ADDED: Update membership data
       updateGlobalMetadata: (data, opts) => updateGlobalMetadata(db, data, { ...opts, userId }),
     };
   }, [
       navigate, user, userId, db, auth, isAuthReady, isLoading, error, isAdmin,
-      devPlanHook, dailyPracticeHook, strategicContentHook, membershipHook, globalHook,
+      devPlanHook, dailyPracticeHook, strategicContentHook, membershipHook, strategicContentHook, globalHook,
       hasPendingDailyPractice,
       callSecureGeminiAPI, hasGeminiKey, apiKey, resolvedMetadata
   ]);
@@ -976,10 +962,217 @@ const DataProvider = ({ children, firebaseServices, userId, isAuthReady, navigat
 
   // --- Provide Context Value ---
   console.log("[DataProvider] Rendering with fully loaded context.");
+  return <AppServiceContext.Provider value={appServicesValue}>{children}</AppServiceContext.Provider>;
+};
+
+
+/* =========================================================
+   ROOT APP COMPONENT (Initialization & Routing Logic)
+========================================================= */
+const App = ({ initialState }) => {
+  // --- Core State ---
+  const [user, setUser] = useState(null); // Stores authenticated user object { name, email, userId }
+  const [userId, setUserId] = useState(null); // Stores just the UID string
+  const [currentScreen, setCurrentScreen] = useState(initialState?.screen || 'dashboard'); // Current view route
+  const [navParams, setNavParams] = useState(initialState?.params || {}); // Params for the current view
+  const [firebaseServices, setFirebaseServices] = useState({ db: null, auth: null }); // Firebase instances
+  const [isAuthReady, setIsAuthReady] = useState(false); // Flag: Has Firebase auth state resolved?
+  const [authRequired, setAuthRequired] = useState(true); // Flag: Is user logged out?
+  const [isMobileOpen, setIsMobileOpen] = useState(false); // Mobile menu state
+  const [isNavExpanded, setIsNavExpanded] = useState(false); // Sidebar expansion state (default collapsed)
+  const [initStage, setInitStage] = useState('init'); // Tracks initialization progress ('init', 'ok', 'error')
+  const [initError, setInitError] = useState(''); // Stores initialization error message
+
+  // --- Navigation Function ---
+  // Centralized function to change the current screen and params
+  const navigate = useCallback((screen, params = {}) => {
+    console.log(`[Navigate] Changing screen to: ${screen}`, params);
+    setNavParams(typeof params === 'object' && params !== null ? params : {});
+    setCurrentScreen(screen);
+    // Optional: Scroll to top on navigation
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, []);
+
+  // --- Debugging Hooks ---
+  // Expose navigate function globally for console debugging
+  useEffect(() => {
+    if (typeof window !== 'undefined') window.__appNavigate = navigate;
+    return () => { if (typeof window !== 'undefined') delete window.__appNavigate; };
+  }, [navigate]);
+  
+  // --- Firebase Initialization & Auth State Listener ---
+  useEffect(() => {
+    console.log("[App Init] Starting Firebase setup...");
+    let app, firestore, authentication;
+    let unsubscribeAuth = null;
+    let initTimeoutId = null; // Timeout for initial auth resolution
+
+    // Function to finalize initialization state
+    const finalizeInit = (success = true, errorMsg = '') => {
+      console.log(`[App Init] Finalizing - Success: ${success}, Error: ${errorMsg}`);
+      if (initTimeoutId) clearTimeout(initTimeoutId);
+      setInitStage(success ? 'ok' : 'error');
+      setInitError(errorMsg);
+      setIsAuthReady(true); // Mark auth as resolved (or failed)
+    };
+
+    try {
+      // --- Get Firebase Config ---
+      let firebaseConfig = {};
+      if (typeof window !== 'undefined' && window.__firebase_config) {
+        const cfg = window.__firebase_config;
+        firebaseConfig = typeof cfg === 'string' ? JSON.parse(cfg) : cfg;
+        console.log("[App Init] Firebase config loaded from window.");
+      } else {
+        throw new Error('Firebase configuration (__firebase_config) is missing.');
+      }
+
+      // --- Initialize Firebase App, Firestore, Auth ---
+      app = initializeApp(firebaseConfig);
+      firestore = getFirestore(app);
+      authentication = getAuth(app);
+      // setLogLevel('debug'); // Enable verbose Firestore logging if needed
+      setFirebaseServices({ db: firestore, auth: authentication });
+      console.log("[App Init] Firebase App, Firestore, Auth initialized.");
+
+      // --- Set Timeout for Auth Resolution ---
+      // If onAuthStateChanged takes too long, show login/app based on initial check
+      initTimeoutId = setTimeout(() => {
+        console.warn("[App Init] Auth state resolution timed out (500ms). Proceeding with current state.");
+        // Check if user object exists from a potential previous session restoration
+        const currentUser = authentication.currentUser;
+        if (!user && !currentUser) { // Only finalize if still no user after timeout
+             finalizeInit(true); // Assume logged out if timeout occurs and no user found
+        } else if (!user && currentUser) {
+             // If timeout happens but currentUser exists, manually set user state before finalize
+             console.log("[App Init Timeout] Found currentUser, setting state.");
+             const uid = currentUser.uid;
+             const email = currentUser.email;
+             const firstName = getFirstName(currentUser.displayName);
+             const name = firstName || email?.split('@')[0] || 'Leader';
+             setUserId(uid);
+             setUser({ name, email, userId: uid });
+             setAuthRequired(false);
+             finalizeInit(true);
+             // Trigger ensureUserDocs check immediately after manual set
+             ensureUserDocs(firestore, uid);
+        } else {
+             // If user state was already set (somehow), just finalize
+             finalizeInit(true);
+        }
+      }, 500); // 500ms timeout
+
+      // --- Auth State Listener ---
+      console.log("[App Init] Setting up onAuthStateChanged listener...");
+      unsubscribeAuth = onAuthStateChanged(authentication, async (currentUser) => {
+        console.log("[App Init] onAuthStateChanged triggered. User:", currentUser ? currentUser.uid : 'null');
+        if (initTimeoutId) clearTimeout(initTimeoutId); // Clear timeout if listener fires
+
+        if (currentUser && currentUser.email) {
+          const uid = currentUser.uid;
+          const email = currentUser.email;
+          // Fetch display name or derive from email
+          const firstName = getFirstName(currentUser.displayName);
+          const name = firstName || email.split('@')[0] || 'Leader';
+          console.log(`[App Init] User Authenticated: ${name} (${uid})`);
+
+          // --- CRITICAL: Ensure user docs exist *after* confirming login ---
+          await ensureUserDocs(firestore, uid); // Wait for check/creation
+
+          // Set user state
+          setUserId(uid);
+          setUser({ name, email, userId: uid });
+          setAuthRequired(false);
+
+        } else {
+          // 🚨 CRITICAL FIX: Clear ALL user state and force authentication requirement
+          console.log("[App Init] User Logged Out.");
+          setUser(null);
+          setUserId(null); // Clear UID to break data hook paths
+          setAuthRequired(true);
+          setCurrentScreen('dashboard'); // Optionally reset navigation to dashboard/login screen
+        }
+        // Finalize initialization after handling auth state
+        finalizeInit(true);
+      });
+
+      // --- Cleanup Function ---
+      return () => {
+        console.log("[App Init] Cleaning up Firebase listener and timeout.");
+        if (unsubscribeAuth) unsubscribeAuth();
+        if (initTimeoutId) clearTimeout(initTimeoutId);
+      };
+
+    } catch (e) {
+      console.error('[App Init] Firebase setup failed:', e);
+      finalizeInit(false, e?.message || 'Firebase SDK initialization error.');
+    }
+  }, []); // Run only on initial mount
+
+  // --- Render Loading/Error/Auth States ---
+  if (initStage === 'init') {
+    return ( // Initializing Firebase state
+      <div className="min-h-screen flex items-center justify-center" style={{ background: COLORS.BG }}>
+          <div className="flex flex-col items-center">
+              <Loader className="animate-spin h-12 w-12 mb-3" style={{ color: COLORS.TEAL }} />
+              <p className="font-semibold" style={{ color: COLORS.NAVY }}>Initializing Arena...</p>
+          </div>
+      </div>
+    );
+  }
+  if (initStage === 'error') {
+    return <ConfigError message={initError} />; // Firebase config/init error
+  }
+
+  // If auth is ready but user is not logged in, show AuthPanel
+if (isAuthReady && !user) {
   return (
-      <AppServiceContext.Provider value={appServicesValue}>
-        {children}
-      </AppServiceContext.Provider>
+    <AuthPanel
+      auth={firebaseServices.auth}
+      onSuccess={() => {
+        // Let onAuthStateChanged set user + flip auth; no UI flip here.
+        console.log("[AuthPanel Success] Auth completed – waiting for onAuthStateChanged.");
+      }}
+    />
+  );
+}
+
+  // --- Render Main Application ---
+  // If init is 'ok' and user is potentially logged in (or auth not required), render DataProvider and AppContent
+  console.log(`[App Render] Rendering main app. AuthReady: ${isAuthReady}, User: ${user ? user.userId : 'null'}, AuthRequired: ${authRequired}`);
+  // We need DataProvider even if user is briefly null during logout transition
+  return (
+    <DataProvider
+      firebaseServices={firebaseServices}
+      userId={userId}
+      isAuthReady={isAuthReady}
+      navigate={navigate}
+      user={user}
+    >
+      {/* Suspense for lazy loaded screens */}
+      <Suspense
+        fallback={// Fallback shown *after* DataProvider initial load
+            <div className="min-h-screen flex items-center justify-center" style={{ background: COLORS.BG }}>
+                <div className="flex flex-col items-center">
+                    <Loader className="animate-spin h-12 w-12 mb-3" style={{ color: COLORS.TEAL }} />
+                    <p className="font-semibold" style={{ color: COLORS.NAVY }}>Loading Arena Content...</p>
+                </div>
+            </div>
+        }
+      >
+        <AppContent
+          currentScreen={currentScreen}
+          setCurrentScreen={navigate} // Pass navigate for sidebar/routing
+          user={user}
+          navParams={navParams}
+          isMobileOpen={isMobileOpen}
+          setIsMobileOpen={setIsMobileOpen} // 🛠️ CORRECTED: This was the source of the ReferenceError
+          isAuthRequired={authRequired} // Pass auth status down
+          isNavExpanded={isNavExpanded}
+          setIsNavExpanded={setIsNavExpanded}
+        />
+      </Suspense>
+    </DataProvider>
   );
 };
 
