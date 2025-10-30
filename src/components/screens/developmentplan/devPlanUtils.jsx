@@ -232,7 +232,7 @@ export const getRecommendedSkills = (category, skillCatalog, limit = 3) => {
  * Generate a development plan from assessment results
  */
 export const generatePlanFromAssessment = (assessment, skillCatalog = []) => {
-  const { responses, date } = assessment;
+const { answers: responses, date } = assessment;
 
   // Calculate category scores
   const categoryScores = calculateCategoryScores(responses);

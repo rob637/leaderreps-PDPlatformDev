@@ -1,6 +1,6 @@
 // src/components/screens/developmentplan/DevPlanComponents.jsx
 // Reconstructed component library for the Development Plan screen.
-// FIXED: Removed stray lines of code that were causing build errors.
+// ADDED: LikertScaleInput component for the new single-page assessment.
 
 import React from 'react';
 import { 
@@ -94,7 +94,7 @@ export const Card = ({ children, title, icon: Icon, className = '', onClick, acc
 };
 
 /* =========================================================
-   ProgressBar Component (FIXED: NOW EXPORTED)
+   ProgressBar Component
    (Used in BaselineAssessment, ProgressScan, QuickPlanEditor)
 ========================================================= */
 export const ProgressBar = ({ progress = 0, color, height = 8, showLabel = false }) => {
@@ -136,14 +136,14 @@ export const Badge = ({ children, variant = 'default', size = 'md' }) => {
 
   // Size
   if (size === 'sm') baseStyle += ' px-2.5 py-0.5 text-xs';
-  else if (size == 'lg') baseStyle += ' px-3.5 py-1.5 text-sm'; // This line was in your file
+  else if (size == 'lg') baseStyle += ' px-3.5 py-1.5 text-sm';
   else baseStyle += ' px-3 py-1 text-sm';
   
   // Variant
   if (variant === 'primary') baseStyle += ` bg-[${COLORS.BLUE}20] text-[${COLORS.BLUE}]`;
   else if (variant === 'success') baseStyle += ` bg-[${COLORS.GREEN}20] text-[${COLORS.GREEN}]`;
   else if (variant === 'warning') baseStyle += ` bg-[${COLORS.AMBER}20] text-[${COLORS.AMBER}]`;
-  else if (variant === 'purple') baseStyle += ` bg-[${COLORS.PURPLE}20] text-[${COLORS.PURPLE}]`; // Added purple variant here
+  else if (variant === 'purple') baseStyle += ` bg-[${COLORS.PURPLE}20] text-[${COLORS.PURPLE}]`;
   else baseStyle += ` bg-[${COLORS.SUBTLE}] text-[${COLORS.MUTED}]`;
   
   return (
@@ -243,6 +243,51 @@ export const SectionHeader = ({ title, icon: Icon, accent = 'NAVY' }) => {
       <h2 className="text-2xl font-bold" style={{ color: COLORS.NAVY }}>
         {title}
       </h2>
+    </div>
+  );
+};
+
+/* =========================================================
+   LikertScaleInput Component (NEW)
+   (Replaces the old full-width button layout in assessments)
+========================================================= */
+export const LikertScaleInput = ({ question, options, value, onChange }) => {
+  return (
+    <div 
+      className="p-6 rounded-2xl border-2" 
+      style={{ 
+        borderColor: value ? COLORS.TEAL : COLORS.SUBTLE, 
+        backgroundColor: value ? `${COLORS.TEAL}05` : COLORS.OFF_WHITE,
+        transition: 'border-color 0.3s'
+      }}
+    >
+      <p className="text-base font-semibold mb-4" style={{ color: COLORS.NAVY }}>
+        {question.text}
+      </p>
+      <div 
+        className="flex flex-col sm:flex-row rounded-lg overflow-hidden border" 
+        style={{ borderColor: COLORS.SUBTLE }}
+      >
+        {options.map((option, index) => (
+          <button
+            key={option.value}
+            onClick={() => onChange(question.id, option.value)}
+            className={`flex-1 p-3 text-center text-sm font-medium transition-all ${
+              value === option.value
+                ? '' // Active state is handled by style
+                : 'hover:bg-gray-100'
+            }`}
+            style={{ 
+              backgroundColor: value === option.value ? COLORS.TEAL : COLORS.OFF_WHITE,
+              color: value === option.value ? 'white' : COLORS.TEXT,
+              borderRight: index < options.length - 1 ? `1px solid ${COLORS.SUBTLE}` : 'none',
+              borderBottom: `1px solid ${COLORS.SUBTLE}`,
+            }}
+          >
+            {option.label}
+          </button>
+        ))}
+      </div>
     </div>
   );
 };
