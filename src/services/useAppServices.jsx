@@ -937,7 +937,9 @@ export const createAppServices = (db, userId) => {
     // Development Plan listener
     const devPlanPath = buildModulePath(userId, 'development_plan', 'current');
     const unsubDev = onSnapshotEx(db, devPlanPath, (snap) => {
-      stores.developmentPlanData = snap.exists() ? sanitizeTimestamps(snap.data()) : MOCK_DEVELOPMENT_PLAN_DATA;
+      const rawData = snap.exists() ? snap.data() : MOCK_DEVELOPMENT_PLAN_DATA;
+      // FIX APPLIED HERE: Apply BOTH sanitizers: remove timestamps AND sentinels
+      stores.developmentPlanData = stripSentinels(sanitizeTimestamps(rawData));
       console.log('[createAppServices] Dev Plan updated');
       notifyChange();
     });
