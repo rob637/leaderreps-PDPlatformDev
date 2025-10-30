@@ -1,11 +1,12 @@
-// src/components/screens/AdminFunctions.jsx (Updated with more flags)
+// src/components/screens/AdminFunctions.jsx (Updated with Admin Email Manager)
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 // --- Core Services & Context ---
 import { useAppServices } from '../../services/useAppServices.jsx'; // cite: useAppServices.jsx
 
 // --- Icons ---
-import { Shield, ToggleLeft, ToggleRight, Save, Loader, AlertTriangle, ArrowLeft, Key, Settings } from 'lucide-react';
+// Added Mail, Plus, X
+import { Shield, ToggleLeft, ToggleRight, Save, Loader, AlertTriangle, ArrowLeft, Key, Settings, Mail, Plus, X } from 'lucide-react'; 
 
 /* =========================================================
    PALETTE & UI COMPONENTS (Standardized)
@@ -35,7 +36,156 @@ const Card = ({ children, title, icon: Icon, className = '', accent = 'NAVY' }) 
 };
 
 /* =========================================================
-   AdminFunctionsScreen Component
+   NEW: AdminEmailManager Component
+========================================================= */
+const AdminEmailManager = ({ initialEmails, updateGlobalMetadata }) => {
+    // Treat initialEmails as the source of truth, but manage local edits
+    const [emails, setEmails] = useState(initialEmails || []);
+    const [newEmail, setNewEmail] = useState('');
+    const [isSaving, setIsSaving] = useState(false);
+    const [saveStatus, setSaveStatus] = useState('');
+    const [hasChanges, setHasChanges] = useState(false);
+
+    // Sync emails from context only if context changes and we're not currently saving
+    useEffect(() => {
+        const initialString = JSON.stringify(initialEmails || []);
+        const localString = JSON.stringify(emails);
+        
+        // Only re-sync if the initial data has changed externally AND we aren't displaying a local, successful save status
+        // The check for hasChanges prevents re-syncing if the user simply hasn't edited anything yet
+        if (initialString !== localString && !isSaving && !saveStatus.startsWith('✅')) {
+            // Check if the local state has actual *unsaved* changes. If it does, a re-sync would overwrite them.
+            // For now, we trust the external source (Firestore) is the single source of truth and must overwrite local edits.
+            setEmails(initialEmails || []);
+            setHasChanges(false);
+        }
+    }, [initialEmails]);
+    
+    // Check for changes against the initial value
+    useEffect(() => {
+        const initialString = JSON.stringify(initialEmails || []);
+        const localString = JSON.stringify(emails);
+        setHasChanges(initialString !== localString);
+    }, [emails, initialEmails]);
+    
+    // Handler to add a new email
+    const handleAddEmail = () => {
+        const emailToAdd = newEmail.trim().toLowerCase();
+        if (!emailToAdd || !emailToAdd.includes('@')) {
+            alert('Please enter a valid email address.');
+            return;
+        }
+        if (emails.includes(emailToAdd)) {
+            alert('This email is already an admin.');
+            return;
+        }
+        
+        setEmails(prev => [...prev, emailToAdd]); // Use functional update
+        setNewEmail('');
+        setSaveStatus('');
+    };
+
+    // Handler to remove an email
+    const handleRemoveEmail = (emailToRemove) => {
+        setEmails(prev => prev.filter(email => email !== emailToRemove)); // Use functional update
+        setSaveStatus('');
+    };
+
+    // Handler to save changes to Firestore
+    const handleSaveChanges = async () => {
+        setIsSaving(true);
+        setSaveStatus('');
+        
+        // Finalize data structure
+        const dataToSave = {
+            adminemails: emails
+        };
+
+        try {
+            // Use the updateGlobalMetadata function provided by context
+            await updateGlobalMetadata(dataToSave, { 
+                source: 'AdminEmailManager',
+                merge: true
+            });
+            setSaveStatus('✅ Admin emails updated successfully!');
+            // The useEffect syncs the local state after the context update.
+        } catch (error) {
+            console.error("[AdminEmailManager] Failed to save admin emails:", error);
+            setSaveStatus(`❌ Error saving emails: ${error.message}`);
+        } finally {
+            setIsSaving(false);
+        }
+    };
+
+    return (
+        <Card title="Administrator List" icon={Mail} accent="BLUE">
+            <p className="text-sm text-gray-600 mb-4">Emails listed here are granted full access to Admin Functions and all hidden features.</p>
+            
+            {/* Current Admin List */}
+            <div className="bg-gray-50 p-4 rounded-lg border space-y-2 mb-4 max-h-48 overflow-y-auto">
+                {emails.length === 0 && (
+                    <p className="text-sm text-gray-500 italic">No admin emails currently set.</p>
+                )}
+                {emails.map((email, index) => (
+                    <div key={email} className="flex items-center justify-between p-2 rounded-md bg-white border">
+                        <span className="text-sm font-medium text-gray-800 break-all">{email}</span>
+                        <Button 
+                            onClick={() => handleRemoveEmail(email)} 
+                            variant="ghost" 
+                            size="sm"
+                            className="text-red-500 hover:bg-red-50"
+                            disabled={isSaving}
+                        >
+                            <X size={14} />
+                        </Button>
+                    </div>
+                ))}
+            </div>
+
+            {/* Add New Email Input */}
+            <div className="flex gap-2 mb-6">
+                <input
+                    type="email"
+                    placeholder="new.admin@email.com"
+                    value={newEmail}
+                    onChange={(e) => setNewEmail(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && handleAddEmail()}
+                    className="flex-1 p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    disabled={isSaving}
+                />
+                <Button onClick={handleAddEmail} variant="primary" size="sm" disabled={isSaving || !newEmail.trim().includes('@')}>
+                    <Plus size={16} /> Add
+                </Button>
+            </div>
+
+            {/* Save Changes Button & Status */}
+            <div className="pt-4 border-t border-gray-200 flex items-center gap-4">
+                <Button 
+                    onClick={handleSaveChanges} 
+                    disabled={isSaving || !hasChanges} 
+                    variant="action-write" 
+                    size="md"
+                >
+                    {isSaving ? <Loader className="w-5 h-5 mr-2 animate-spin"/> : <Save className="w-5 h-5 mr-2" />}
+                    {isSaving ? 'Saving List...' : 'Save Admin List'}
+                </Button>
+                {/* Display Save Status */}
+                {saveStatus && (
+                    <span className={`text-sm font-semibold ${saveStatus.includes('Error') ? 'text-red-600' : 'text-green-600'}`}>
+                        {saveStatus}
+                    </span>
+                )}
+            </div>
+            <p className="text-xs text-gray-500 mt-2 italic">
+                    You must refresh the app to take effect after saving changes.
+            </p>
+        </Card>
+    );
+};
+
+
+/* =========================================================
+   AdminFunctionsScreen Component (MODIFIED)
 ========================================================= */
 
 /**
@@ -48,6 +198,7 @@ const AdminFunctionsScreen = () => {
     const {
         navigate, isAdmin, ADMIN_PASSWORD, // Get admin status, password constant, and navigation // cite: useAppServices.jsx
         featureFlags: initialFlags, // Get initial feature flags // cite: useAppServices.jsx
+        metadata, // Access the global metadata object for adminemails <-- NEW
         updateGlobalMetadata, // Function to save changes to Firestore // cite: useAppServices.jsx
         isLoading: isAppLoading // App loading state
     } = useAppServices();
@@ -57,10 +208,17 @@ const AdminFunctionsScreen = () => {
     const [passwordInput, setPasswordInput] = useState(''); // Input for password check
     const [authError, setAuthError] = useState(''); // Error message for password check
     // State to hold the feature flags being edited
-    // Initialize with flags from context, providing a default empty object
     const [currentFlags, setCurrentFlags] = useState(() => initialFlags || {}); // cite: useAppServices.jsx
     const [isSaving, setIsSaving] = useState(false); // Loading state for saving flags
     const [saveStatus, setSaveStatus] = useState(''); // Status message after save attempt
+
+    // Extract admin emails from metadata
+    const adminEmails = useMemo(() => {
+        // Ensure metadata is available and adminemails is an array
+        // Fallback to empty array if not found
+        const emails = metadata?.adminemails;
+        return Array.isArray(emails) ? emails : [];
+    }, [metadata]);
 
     // --- Effect to redirect if not admin ---
     useEffect(() => {
@@ -72,8 +230,6 @@ const AdminFunctionsScreen = () => {
     }, [isAdmin, isAppLoading, navigate]); // Dependencies
 
     // --- Effect to update local flags if context flags change ---
-    // FIX: Added saveStatus dependency and logic to prevent immediate local state reversion
-    // when 'initialFlags' is briefly outdated due to Firestore latency after a local save.
     useEffect(() => {
         // Only update if the screen is authenticated and context flags are available.
         if (!isAuthenticated || !initialFlags) return;
@@ -96,13 +252,9 @@ const AdminFunctionsScreen = () => {
         }
     }, [initialFlags, isAuthenticated, saveStatus]); // Dependency on initialFlags and saveStatus
 
-    // --- Handlers ---
-    /**
-     * Checks the entered password against the ADMIN_PASSWORD constant.
-     */
+    // --- Handlers (Password, ToggleFlag, SaveChanges are unchanged) ---
     const handlePasswordCheck = () => {
         setAuthError(''); // Clear previous error
-        // Compare input with the password from context/constants
         if (passwordInput === ADMIN_PASSWORD) { // cite: useAppServices.jsx (provides ADMIN_PASSWORD)
             console.log("[AdminFunctions] Admin password correct. Granting access.");
             setIsAuthenticated(true); // Grant access
@@ -113,12 +265,9 @@ const AdminFunctionsScreen = () => {
         }
     };
 
-    /**
-     * Toggles the value of a specific feature flag in the local state.
-     */
     const handleToggleFlag = (flagName) => {
         setCurrentFlags(prevFlags => {
-            const currentVal = prevFlags[flagName] !== false; // Treat undefined/null as true (enabled) by default
+            const currentVal = prevFlags[flagName] !== false; 
             const updatedFlags = { ...prevFlags, [flagName]: !currentVal };
             console.log(`[AdminFunctions] Toggling flag '${flagName}' to ${!currentVal}. New local state:`, updatedFlags);
             return updatedFlags;
@@ -126,17 +275,12 @@ const AdminFunctionsScreen = () => {
         setSaveStatus(''); // Clear save status when flags are changed
     };
 
-    /**
-     * Saves the current local feature flag state to Firestore using updateGlobalMetadata.
-     */
     const handleSaveChanges = async () => {
         setIsSaving(true);
         setSaveStatus(''); // Clear previous status
         console.log("[AdminFunctions] Saving feature flags:", currentFlags);
 
         try {
-            // Call updateGlobalMetadata to save *only* the featureFlags field
-            // FIX: Explicitly set merge: true in options to ensure we don't overwrite the whole config document
             await updateGlobalMetadata({ featureFlags: currentFlags }, { // cite: useAppServices.jsx
                 source: 'AdminFunctionsScreen', // Identify the source of the update
                 merge: true // CRITICAL FIX: Ensure merge is true for safe global updates
@@ -151,10 +295,8 @@ const AdminFunctionsScreen = () => {
         }
     };
 
-    // --- Render Logic ---
-    // Show loading if app is still initializing
+    // --- Render Logic (Same as original, but now includes AdminEmailManager) ---
     if (isAppLoading) {
-        // Since AdminFunctions.jsx doesn't define LoadingSpinner, we'll use a simple div
         return (
             <div className="min-h-screen flex items-center justify-center p-4" style={{ background: COLORS.BG }}>
                 <div className="flex items-center justify-center p-8 text-center text-gray-500 bg-gray-50 rounded-lg min-h-[100px]">
@@ -164,12 +306,11 @@ const AdminFunctionsScreen = () => {
             </div>
         );
     }
-    // Render nothing or redirect if not admin (handled by useEffect, but added safety)
+    
     if (!isAdmin) {
-         return null; // Or a dedicated "Access Denied" component
+         return null;
     }
 
-    // --- Password Prompt View ---
     if (!isAuthenticated) {
         return (
             <div className="min-h-screen flex items-center justify-center p-4" style={{ background: COLORS.BG }}>
@@ -198,7 +339,6 @@ const AdminFunctionsScreen = () => {
         );
     }
 
-    // --- Authenticated Admin View ---
     return (
         <div className="p-6 md:p-8 lg:p-10 min-h-screen" style={{ background: COLORS.BG }}>
             {/* Header */}
@@ -214,82 +354,76 @@ const AdminFunctionsScreen = () => {
                 <ArrowLeft className="w-5 h-5 mr-2" /> Back to App Settings
             </Button>
 
-            {/* Feature Flags Management Card */}
-            <Card title="Feature Flags" icon={Settings} accent="PURPLE">
-                <p className="text-sm text-gray-600 mb-6">Enable or disable application features globally. Changes affect all users on next load.</p>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
-               {/* List of Toggles */}
-                <div className="space-y-4">
-                    {/*
-                      Iterate over a defined list of *all* manageable flags.
-                      This ensures new flags can be added here and will be
-                      picked up by the system.
-                    */}
-                    {[
-                        // Original Flags
-                        'enableLabs',
-                        'enableLabsAdvanced',
-                        'enableCommunity',
-                        'enablePlanningHub',
-                        // Added Flags
-                        'enableRoiReport',      // Executive ROI Report
-                        'enableCourses',        // Course Library (AppliedLeadership)
-                        'enableVideos',         // Content Videos (LeadershipVideos)
-                        'enableReadings',       // Professional Reading Hub (BusinessReadings)
-                        // Add other flags from App.jsx as needed
-                        'enableDevPlan',
-                        'enableQuickStart',
-                        'enableDailyPractice',
-                    ]
-                     .sort() // Ensure consistent alphabetical order
-                     .map((flagName) => {
-                        // Get the current value from state.
-                        // isEnabled will be 'undefined' if the flag is new.
-                        const isEnabled = currentFlags[flagName]; 
+                {/* 1. Admin Email Manager <-- NEW CARD */}
+                <AdminEmailManager
+                    initialEmails={adminEmails}
+                    updateGlobalMetadata={updateGlobalMetadata}
+                />
 
-                        return (
-                            <div key={flagName} className="flex items-center justify-between p-3 border rounded-lg bg-white shadow-sm">
-                                {/* Flag Name (prettified) */}
-                                <span className="text-sm font-medium text-gray-800">{flagName.replace('enable', '').replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase()).trim()}</span>
-                                
-                                {/* Toggle Button */}
-                                <button
-                                    onClick={() => handleToggleFlag(flagName)}
-                                    disabled={isSaving}
-                                    className={`flex items-center gap-1.5 px-2 py-1 rounded-full text-xs font-semibold border transition-colors ${
-                                        // The logic (isEnabled !== false) correctly treats 'undefined' as 'true' (Enabled)
-                                        isEnabled !== false ? `bg-green-100 border-green-300 text-green-700` : `bg-red-100 border-red-300 text-red-700`
-                                    }`}
-                                    aria-pressed={isEnabled !== false} // Treat undefined/null as enabled
-                                    aria-label={`Toggle ${flagName}`}
-                                >
-                                    {isEnabled !== false ? <ToggleRight className="w-4 h-4" /> : <ToggleLeft className="w-4 h-4" />}
-                                    {isEnabled !== false ? 'Enabled' : 'Disabled'}
-                                </button>
-                            </div>
-                        );
-                    })}
-                </div>
+                {/* 2. Feature Flags Management Card */}
+                <Card title="Feature Flags" icon={Settings} accent="PURPLE">
+                    <p className="text-sm text-gray-600 mb-6">Enable or disable application features globally. Changes affect all users on next load.</p>
 
-                {/* Save Changes Button & Status */}
-                <div className="mt-6 pt-4 border-t border-gray-200 flex items-center gap-4">
-                    <Button onClick={handleSaveChanges} disabled={isSaving} variant="action-write" size="md">
-                        {isSaving ? <Loader className="w-5 h-5 mr-2 animate-spin"/> : <Save className="w-5 h-5 mr-2" />}
-                        {isSaving ? 'Saving Changes...' : 'Save Feature Flags'}
-                    </Button>
-                    {/* Display Save Status */}
-                    {saveStatus && (
-                        <span className={`text-sm font-semibold ${saveStatus.includes('Error') ? 'text-red-600' : 'text-green-600'}`}>
-                            {saveStatus}
-                        </span>
-                    )}
-                </div>
+                   {/* List of Toggles */}
+                    <div className="space-y-4">
+                        {[
+                            'enableLabs',
+                            'enableLabsAdvanced',
+                            'enableCommunity',
+                            'enablePlanningHub',
+                            'enableRoiReport',
+                            'enableCourses',
+                            'enableVideos',
+                            'enableReadings',
+                            'enableDevPlan',
+                            'enableQuickStart',
+                            'enableDailyPractice',
+                        ]
+                         .sort() 
+                         .map((flagName) => {
+                            const isEnabled = currentFlags[flagName]; 
 
-                {/* Warning about data source */}
-                <p className="text-xs text-gray-500 mt-4 italic">
-                    Feature flags are loaded from <code>metadata/config</code> document in Firestore. Ensure this document exists and contains a 'featureFlags' map object.
-                </p>
-            </Card>
+                            return (
+                                <div key={flagName} className="flex items-center justify-between p-3 border rounded-lg bg-white shadow-sm">
+                                    <span className="text-sm font-medium text-gray-800">{flagName.replace('enable', '').replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase()).trim()}</span>
+                                    
+                                    <button
+                                        onClick={() => handleToggleFlag(flagName)}
+                                        disabled={isSaving}
+                                        className={`flex items-center gap-1.5 px-2 py-1 rounded-full text-xs font-semibold border transition-colors ${
+                                            isEnabled !== false ? `bg-green-100 border-green-300 text-green-700` : `bg-red-100 border-red-300 text-red-700`
+                                        }`}
+                                        aria-pressed={isEnabled !== false} 
+                                        aria-label={`Toggle ${flagName}`}
+                                    >
+                                        {isEnabled !== false ? <ToggleRight className="w-4 h-4" /> : <ToggleLeft className="w-4 h-4" />}
+                                        {isEnabled !== false ? 'Enabled' : 'Disabled'}
+                                    </button>
+                                </div>
+                            );
+                        })}
+                    </div>
+
+                    {/* Save Changes Button & Status */}
+                    <div className="mt-6 pt-4 border-t border-gray-200 flex items-center gap-4">
+                        <Button onClick={handleSaveChanges} disabled={isSaving} variant="action-write" size="md">
+                            {isSaving ? <Loader className="w-5 h-5 mr-2 animate-spin"/> : <Save className="w-5 h-5 mr-2" />}
+                            {isSaving ? 'Saving Changes...' : 'Save Feature Flags'}
+                        </Button>
+                        {saveStatus && (
+                            <span className={`text-sm font-semibold ${saveStatus.includes('Error') ? 'text-red-600' : 'text-green-600'}`}>
+                                {saveStatus}
+                            </span>
+                        )}
+                    </div>
+
+                    <p className="text-xs text-gray-500 mt-4 italic">
+                        Feature flags are loaded from <code>metadata/config</code> document in Firestore.
+                    </p>
+                </Card>
+            </div>
 
              {/* Data Manager Link Card */}
              <Card title="Database Management" icon={Key} accent="NAVY" className="mt-6">

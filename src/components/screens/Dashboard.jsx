@@ -580,7 +580,7 @@ const Dashboard = ({ navigate }) => {
                 onSaveWIN: handleSaveWINWithConfirmation,
                 onToggleWIN: handleToggleWIN,
                 isSaving: isSavingBookend,
-                completedAt: dailyPracticeData?.morningBookend?.completedAt,
+                completedAt: dailyPracticeData?.morningBookend?.completedAt?.toDate?.() || null,
                 winCompleted: dailyPracticeData?.morningBookend?.winCompleted
               }}
               eveningProps={{

@@ -53,11 +53,8 @@ import {
 ========================================================= */
 // --- Admin Emails Configuration ---
 // Define admin users who have access to advanced features
-const ADMIN_EMAILS = [
-  'admin@leaderreps.com',
-  'rob@sagecg.com',  // Admin access for Rob
-  // Add your admin email addresses here
-];
+// 🚨 FIX: Removed hardcoded ADMIN_EMAILS constant. It is now loaded from Firestore metadata/config.
+// const ADMIN_EMAILS = [ 'admin@leaderreps.com', 'rob@sagecg.com', /* ... */ ];
 
 // --- Primary Color Palette (Ensure consistency) ---
 const COLORS = { NAVY: '#002E47', TEAL: '#47A88D', ORANGE: '#E04E1B', GREEN: '#10B981', BLUE: '#2563EB', AMBER: '#F5A800', RED: '#E04E1B', LIGHT_GRAY: '#FCFCFA', OFF_WHITE: '#FFFFFF', SUBTLE: '#E5E7EB', TEXT: '#374151', MUTED: '#4B5563', PURPLE: '#7C3AED', BG: '#F9FAFB' }; // cite: User Request
@@ -316,10 +313,7 @@ const NavSidebar = ({ currentScreen, setCurrentScreen, user, closeMobileMenu, is
     // Filter admin-only items first (though none are currently marked as such)
     .filter(item => !item.adminOnly || isAdmin)
     // --- REQ #3/4 (BUG FIX): Change filter logic. ---
-    // Old logic: !item.flag || (featureFlags && featureFlags[item.flag] !== false)
-    //    This showed items if the flag was 'undefined', which is wrong.
     // New logic: !item.flag || (featureFlags && featureFlags[item.flag] === true)
-    //    This only shows flagged items if the flag is explicitly 'true'.
     .filter(item => isAdmin || !item.flag || (featureFlags && featureFlags[item.flag] === true))
     .map((item) => {
       const Icon = item.icon;
@@ -742,10 +736,16 @@ const DataProvider = ({ children, firebaseServices, userId, isAuthReady, navigat
   const isLoading = isUserHookLoading || globalHook.isLoading; // combined app loading
   const error = devPlanHook.error || dailyPracticeHook.error || strategicContentHook.error || globalHook.error;
 
+  // --- Resolve metadata and API key ---
+  const resolvedMetadata = useMemo(() => resolveGlobalMetadata(globalHook.metadata), [globalHook.metadata]);
+
   // --- Derive `isAdmin` status ---
   const isAdmin = useMemo(() => {
-      return !!user?.email && ADMIN_EMAILS.includes(user.email.toLowerCase());
-  }, [user]);
+      // 🚨 FIX: Load adminEmails from resolvedMetadata
+      const adminEmails = resolvedMetadata.adminemails || []; 
+      // Ensure the array is present and includes the user's email
+      return !!user?.email && Array.isArray(adminEmails) && adminEmails.includes(user.email.toLowerCase());
+  }, [user, resolvedMetadata]); // Now depends on user and dynamically loaded metadata
 
   // --- Derive `hasPendingDailyPractice` (using updated data structure) ---
   const hasPendingDailyPractice = useMemo(() => {
@@ -758,8 +758,6 @@ const DataProvider = ({ children, firebaseServices, userId, isAuthReady, navigat
     return hasPendingTargetRep || hasPendingAdditionalReps;
   }, [dailyPracticeHook.dailyPracticeData]);
 
-  // --- Resolve metadata and API key ---
-  const resolvedMetadata = useMemo(() => resolveGlobalMetadata(globalHook.metadata), [globalHook.metadata]);
 
   const apiKey = useMemo(() => {
       return resolvedMetadata.API_KEY || (typeof __GEMINI_API_KEY !== 'undefined' ? __GEMINI_API_KEY : '');
@@ -1095,7 +1093,7 @@ if (isAuthReady && !user) {
     >
       {/* Suspense for lazy loaded screens */}
       <Suspense
-        fallback={ // Fallback shown *after* DataProvider initial load
+        fallback={// Fallback shown *after* DataProvider initial load
             <div className="min-h-screen flex items-center justify-center" style={{ background: COLORS.BG }}>
                 <div className="flex flex-col items-center">
                     <Loader className="animate-spin h-12 w-12 mb-3" style={{ color: COLORS.TEAL }} />

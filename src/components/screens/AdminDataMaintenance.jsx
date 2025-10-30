@@ -3,6 +3,7 @@
 // Organized by functional module with full CRUD operations
 // UPDATED: All field keys in lowercase, added reflection history and bookend data
 // UPDATED (10/30/25): Added table-based CRUD editor for 'isCatalog' documents
+// FIX (10/30/25): Added 'adminemails' to global_metadata/config
 
 import React, { useState, useEffect, useMemo } from "react";
 import {
@@ -109,7 +110,6 @@ const LoadingSpinner = ({ message = "Loading..." }) => (
 /* =========================================================
    DATA STRUCTURE CONFIGURATION (ALL LOWERCASE KEYS)
 ========================================================= */
-// ... (MODULE_GROUPS configuration remains unchanged) ...
 const MODULE_GROUPS = {
   user_data: {
     name: "User Profile",
@@ -276,6 +276,7 @@ const MODULE_GROUPS = {
           { key: 'app_id', label: 'App ID', type: 'text' },
           { key: 'gemini_model', label: 'Gemini Model', type: 'text' },
           { key: 'featureflags', label: 'Feature Flags', type: 'json' },
+          { key: 'adminemails', label: 'Admin Emails', type: 'json' }, // <-- ADDED FIELD
           { key: 'leadership_tiers', label: 'Leadership Tiers', type: 'json' },
           { key: 'iconmap', label: 'Icon Map', type: 'json' },
           { key: '_updatedat', label: 'Updated At', type: 'timestamp', readonly: true },
@@ -377,7 +378,6 @@ const MODULE_GROUPS = {
 /* =========================================================
    UTILITIES
 ========================================================= */
-// ... (pretty, tryParse, formatTimestamp, downloadJSON remain unchanged) ...
 const pretty = (v) => JSON.stringify(v ?? {}, null, 2);
 const tryParse = (t, fallback) => { 
   try { 
@@ -411,7 +411,6 @@ const downloadJSON = (data, filename) => {
 /* =========================================================
    SUBCOLLECTION VIEWER COMPONENT
 ========================================================= */
-// ... (SubcollectionViewer component remains unchanged) ...
 const SubcollectionViewer = ({ tableConfig, userId }) => {
   const [docs, setDocs] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -1078,7 +1077,6 @@ const TableDataEditor = ({ tableConfig, data, onSave, onDelete, userId }) => {
 /* =========================================================
    TABLE VIEWER COMPONENT
 ========================================================= */
-// ... (TableViewer component remains unchanged) ...
 const TableViewer = ({ groupKey, tableKey, config, userId }) => {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -1197,7 +1195,6 @@ const TableViewer = ({ groupKey, tableKey, config, userId }) => {
 /* =========================================================
    MAIN ADMIN COMPONENT
 ========================================================= */
-// ... (AdminDataMaintenance component remains unchanged) ...
 export default function AdminDataMaintenance() {
   const services = useAppServices();
   const { userId, isAdmin } = services || {};
