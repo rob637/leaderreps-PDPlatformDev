@@ -256,6 +256,8 @@ export const ensureUserDocs = async (db, uid) => {
             activeCommitments: [], 
             identityAnchor: '', 
             habitAnchor: '', 
+            // Add the new whyStatement
+            whyStatement: '',
             dailyTargetRepId: null, 
             dailyTargetRepDate: null, 
             dailyTargetRepStatus: 'Pending', 
@@ -314,6 +316,7 @@ export const MOCK_DAILY_PRACTICE_DATA = {
   completedRepsToday: [],
   identityAnchor: '',
   habitAnchor: '',
+  whyStatement: '', // Add mock field
   streakCount: 0,
   streakCoins: 0,
 };
@@ -693,7 +696,7 @@ export const createAppServices = (db, userId) => {
       console.log('[createAppServices] Dev Plan updated');
       notifyChange();
     });
-    stores.listeners.push(unsubDev);
+    stores.listeners.push(unSubDev);
 
     // Daily Practice listener
     const dailyPath = buildModulePath(userId, 'daily_practice', 'current');
@@ -792,10 +795,13 @@ export const createAppServices = (db, userId) => {
   }
 
   // Create update functions
-  const updateDevelopmentPlanData = async (updates) => {
+  const updateDevelopmentPlanData = async (updates, { merge = true } = {}) => {
     if (!db || !userId) return false;
     const path = buildModulePath(userId, 'development_plan', 'current');
-    return await updateDocEx(db, path, updates);
+    // REQ #4: This is the BUG FIX.
+    // It must use setDocEx (to create/overwrite) with merge:true, not updateDocEx (which fails on undefined fields).
+    console.log(`[updateDevelopmentPlanData] Executing with setDocEx (merge=${merge})`);
+    return await setDocEx(db, path, updates, merge);
   };
 
   const updateDailyPracticeData = async (updates) => {

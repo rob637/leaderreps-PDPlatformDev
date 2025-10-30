@@ -56,6 +56,43 @@ const GetStartedCard = ({ onNavigate }) => (
   </Card>
 );
 
+// --- NEW "Why It Matters" Card ---
+// This is the new 3rd anchor card (Req #6 - User clarification)
+const WhyAnchorCard = ({ whyStatement, onEdit }) => (
+  <Card>
+    <div className="flex justify-between items-start">
+      <div>
+        <p className="text-xs font-semibold uppercase" style={{ color: COLORS.MUTED }}>
+          💡 YOUR "WHY"
+        </p>
+        <p className="text-base italic font-medium mt-2" style={{ color: COLORS.TEXT }}>
+          {whyStatement ? (
+            `"${whyStatement}"`
+          ) : (
+            <span style={{ color: COLORS.MUTED }}>Not set...</span>
+          )}
+        </p>
+      </div>
+      <Button onClick={onEdit} variant="outline" size="sm" className="ml-4 flex-shrink-0">
+        <Edit3 className="w-4 h-4" />
+      </Button>
+    </div>
+  </Card>
+);
+
+// --- REQ #2: New Suggestion Button Style ---
+const SuggestionButton = ({ text, onClick }) => (
+  <button
+    onClick={onClick}
+    className="w-full text-left p-3 rounded-lg border border-transparent transition-all"
+    style={{ background: COLORS.BG }}
+  >
+    <p className="text-sm font-medium" style={{ color: COLORS.NAVY }}>
+      {text}
+    </p>
+  </button>
+);
+
 const Dashboard = ({ navigate }) => {
   
   const {
@@ -111,11 +148,14 @@ const Dashboard = ({ navigate }) => {
   const [bonusExerciseData, setBonusExerciseData] = useState(null);
   
   // --- NEW STATE FOR MODALS (Req #11, #13) ---
-  const [showWhyEditor, setShowWhyEditor] = useState(false);
   const [showFindPodModal, setShowFindPodModal] = useState(false);
   const [availablePods, setAvailablePods] = useState([]);
   const [isLoadingPods, setIsLoadingPods] = useState(false);
-  const [customWhyInput, setCustomWhyInput] = useState(dailyPracticeData?.customWhyStatement || '');
+
+  // --- REQ #6 (Clarified): State for 3rd Anchor ("Why") ---
+  const [whyStatement, setWhyStatement] = useState(dailyPracticeData?.whyStatement || '');
+  const [showWhyEditor, setShowWhyEditor] = useState(false);
+
 
   // --- Data Lookups ---
 
@@ -160,7 +200,6 @@ const Dashboard = ({ navigate }) => {
     return {
       id: repItem.id,
       name: repItem.text || repItem.name,
-      // REQ #11: Pulling from repItem first, then falling back
       whyItMatters: repItem.whyItMatters || "This is your anchor rep. It converts reflection into forward motion and builds the awareness that is the heart of leadership learning.",
       whatGreatLooksLike: repItem.definition || 'Practice this rep consistently',
       category: repItem.category,
@@ -199,6 +238,15 @@ const Dashboard = ({ navigate }) => {
     setShowHabitEditor(false);
   };
 
+  // REQ #6 (Clarified): Handler for 3rd Anchor ("Why")
+  const handleSaveWhyWithConfirmation = async (value) => {
+    const newWhy = value.trim();
+    await updateDailyPracticeData({ whyStatement: newWhy });
+    setWhyStatement(newWhy); // Update local state
+    showSaveSuccess('Your "Why" has been saved!');
+    setShowWhyEditor(false);
+  };
+
   const handleSaveMorningWithConfirmation = async () => {
     await handleSaveMorningBookend();
     showSaveSuccess('Morning plan locked in!');
@@ -210,15 +258,8 @@ const Dashboard = ({ navigate }) => {
   const handleSaveWINWithConfirmation = async () => {
     await handleSaveWIN();
     showSaveSuccess("Today's WIN saved!");
-  };
-
-  // REQ #11: Handler for saving custom "Why"
-  const handleSaveCustomWhy = async (value) => {
-    const newWhy = value.trim();
-    await updateDailyPracticeData({ customWhyStatement: newWhy });
-    setCustomWhyInput(newWhy); // Update local input state
-    showSaveSuccess('Your "Why" has been saved!');
-    setShowWhyEditor(false);
+    // REQ #5: Clear WIN field after saving
+    setMorningWIN('');
   };
 
   const handleSaveEveningWithConfirmation = async () => {
@@ -316,17 +357,14 @@ const Dashboard = ({ navigate }) => {
       });
     }
     
-    // Req #12: Add "Define Why" task
-    if (!dailyPracticeData?.customWhyStatement && focusArea !== 'Not Set') {
+    // REQ #12 (Clarified): Add "Define Why" task
+    if (!whyStatement) {
        newTasks.push({
         id: 'system-why',
-        text: "Define 'Why' this rep matters",
+        text: "Define your 'Why It Matters'",
         completed: false,
         isSystem: true,
-        onClick: () => {
-          setCustomWhyInput(dailyPracticeData?.customWhyStatement || targetRepDetails?.whyItMatters || '');
-          setShowWhyEditor(true);
-        }
+        onClick: () => setShowWhyEditor(true)
       });
     }
 
@@ -336,8 +374,7 @@ const Dashboard = ({ navigate }) => {
     focusArea, 
     identityStatement, 
     habitAnchor, 
-    dailyPracticeData?.customWhyStatement,
-    targetRepDetails?.whyItMatters,
+    whyStatement, // <-- Use new global why
     navigate
   ]);
 
@@ -366,9 +403,9 @@ const Dashboard = ({ navigate }) => {
             <h1 className="text-3xl md:text-4xl font-extrabold" style={{ color: COLORS.NAVY }}>
               The Arena
             </h1>
-            {/* REQ #1: Use user's first name */}
+            {/* REQ #1: Use user's first name + positive message */}
             <p className="text-base" style={{ color: COLORS.TEXT }}>
-              Welcome to the Arena, {user?.name || 'Leader'}…
+              Welcome to the Arena, {user?.name || 'Leader'}! We're glad you're here.
             </p>
           </div>
           <div className="flex gap-3 items-center">
@@ -429,27 +466,15 @@ const Dashboard = ({ navigate }) => {
             {focusArea !== 'Not Set' && (
               <Card title="🎯 Today's Focus Rep" accent='ORANGE'>
                 
+                {/* Simplified "Why" - no edit button here */}
                 <div className="mb-4 p-3 rounded-lg" style={{ backgroundColor: `${COLORS.BLUE}05`, border: `1px solid ${COLORS.BLUE}20` }}>
                   <div className="flex justify-between items-center mb-1">
                     <p className="text-xs font-semibold" style={{ color: COLORS.BLUE }}>
                       💡 WHY IT MATTERS:
                     </p>
-                    {/* REQ #11: Edit "Why" Button */}
-                    <button
-                      onClick={() => {
-                        setCustomWhyInput(dailyPracticeData?.customWhyStatement || targetRepDetails?.whyItMatters || '');
-                        setShowWhyEditor(true);
-                      }}
-                      className="flex items-center text-xs font-semibold"
-                      style={{ color: COLORS.BLUE }}
-                    >
-                      <Edit3 className="w-3 h-3 mr-1" />
-                      Edit
-                    </button>
                   </div>
-                  {/* REQ #11: Display custom "Why" or default */}
                   <p className="text-xs" style={{ color: COLORS.TEXT }}>
-                    {dailyPracticeData?.customWhyStatement || targetRepDetails?.whyItMatters}
+                    {targetRepDetails?.whyItMatters}
                   </p>
                 </div>
                 
@@ -502,19 +527,25 @@ const Dashboard = ({ navigate }) => {
               </Card>
             )}
 
-            {/* 3. Identity Anchor (Answers "where does this go?") */}
+            {/* 3. Identity Anchor */}
             <IdentityAnchorCard
               identityStatement={identityStatement}
               onEdit={() => setShowIdentityEditor(true)}
             />
 
-            {/* 4. Habit Anchor (Answers "where does this go?") */}
+            {/* 4. Habit Anchor */}
             <HabitAnchorCard
               habitAnchor={habitAnchor}
               onEdit={() => setShowHabitEditor(true)}
             />
 
-            {/* 5. Accountability Pod */}
+            {/* 5. NEW "Why It Matters" Anchor */}
+            <WhyAnchorCard
+              whyStatement={whyStatement}
+              onEdit={() => setShowWhyEditor(true)}
+            />
+
+            {/* 6. Accountability Pod */}
             <SocialPodCard
               podMembers={dailyPracticeData?.podMembers || []}
               activityFeed={dailyPracticeData?.podActivity || []}
@@ -522,7 +553,7 @@ const Dashboard = ({ navigate }) => {
               onFindPod={handleFindPod} // <-- REQ #13: Hooked up
             />
 
-            {/* 6. AI Coach (Kept as secondary CTA) */}
+            {/* 7. AI Coach (Kept as secondary CTA) */}
             <AICoachNudge 
               onOpenLab={() => navigate('coaching-lab')} 
               disabled={!(featureFlags?.enableLabs)}
@@ -587,7 +618,7 @@ const Dashboard = ({ navigate }) => {
 
       {/* --- MODALS --- */}
       
-      {/* Merged Identity Edit/Suggestion Modal */}
+      {/* Identity Edit/Suggestion Modal */}
       {showIdentityEditor && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl p-6 max-w-2xl w-full max-h-[80vh] overflow-hidden flex flex-col">
@@ -618,24 +649,19 @@ const Dashboard = ({ navigate }) => {
             </p>
             <div className="overflow-y-auto flex-1 space-y-2">
               {identitySuggestions.map((suggestion, index) => (
-                <button
+                // REQ #2: New sleeker button style
+                <SuggestionButton
                   key={index}
+                  text={`... ${suggestion.text}`}
                   onClick={() => handleSaveIdentityWithConfirmation(suggestion.text)}
-                  // REQ #9: Sleeker style - removed border-2
-                  className="w-full text-left p-3 rounded-lg border transition-all hover:bg-teal-50"
-                  style={{ borderColor: COLORS.SUBTLE }}
-                >
-                  <p className="text-sm font-medium" style={{ color: COLORS.TEXT }}>
-                    ... <strong>{suggestion.text}</strong>
-                  </p>
-                </button>
+                />
               ))}
             </div>
           </div>
         </div>
       )}
 
-      {/* Merged Habit Edit/Suggestion Modal */}
+      {/* Habit Edit/Suggestion Modal */}
       {showHabitEditor && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl p-6 max-w-2xl w-full max-h-[80vh] overflow-hidden flex flex-col">
@@ -666,24 +692,19 @@ const Dashboard = ({ navigate }) => {
             </p>
             <div className="overflow-y-auto flex-1 space-y-2">
               {habitSuggestions.map((suggestion, index) => (
-                <button
+                // REQ #2: New sleeker button style
+                <SuggestionButton
                   key={index}
+                  text={`... ${suggestion.text}`}
                   onClick={() => handleSaveHabitWithConfirmation(suggestion.text)}
-                  // REQ #9: Sleeker style - removed border-2
-                  className="w-full text-left p-3 rounded-lg border transition-all hover:bg-teal-50"
-                  style={{ borderColor: COLORS.SUBTLE }}
-                >
-                  <p className="text-sm font-medium" style={{ color: COLORS.TEXT }}>
-                    ... <strong>{suggestion.text}</strong>
-                  </p>
-                </button>
+                />
               ))}
             </div>
           </div>
         </div>
       )}
       
-      {/* REQ #11: "Why It Matters" Editor Modal */}
+      {/* REQ #6 (Clarified): "Why It Matters" Editor Modal */}
       {showWhyEditor && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl p-6 max-w-2xl w-full max-h-[80vh] overflow-hidden flex flex-col">
@@ -691,18 +712,18 @@ const Dashboard = ({ navigate }) => {
               Define Your "Why"
             </h2>
             <p className="text-sm mb-4" style={{ color: COLORS.MUTED }}>
-              Why does this rep matter *to you*? This will override the default.
+              What is your core purpose? Why does this journey matter to you?
             </p>
             <textarea 
-              value={customWhyInput}
-              onChange={(e) => setCustomWhyInput(e.target.value)}
-              placeholder="e.g., This matters because my team needs me to be present and clear..."
+              value={whyStatement}
+              onChange={(e) => setWhyStatement(e.target.value)}
+              placeholder="e.g., To build a team where everyone feels valued and empowered..."
               className="w-full p-3 border rounded-lg mb-4"
               style={{ borderColor: COLORS.SUBTLE }}
               rows={4}
             />
             <div className="flex gap-3 mb-4">
-              <Button onClick={() => handleSaveCustomWhy(customWhyInput)} variant="primary" size="md" className="flex-1">
+              <Button onClick={() => handleSaveWhyWithConfirmation(whyStatement)} variant="primary" size="md" className="flex-1">
                 Save My "Why"
               </Button>
               <Button onClick={() => setShowWhyEditor(false)} variant="outline" size="md" className="flex-1">
@@ -714,16 +735,12 @@ const Dashboard = ({ navigate }) => {
             </p>
             <div className="overflow-y-auto flex-1 space-y-2">
               {whySuggestions.map((suggestion, index) => (
-                <button
+                // REQ #2: New sleeker button style
+                <SuggestionButton
                   key={index}
-                  onClick={() => handleSaveCustomWhy(suggestion.text)}
-                  className="w-full text-left p-3 rounded-lg border transition-all hover:bg-teal-50"
-                  style={{ borderColor: COLORS.SUBTLE }}
-                >
-                  <p className="text-sm font-medium" style={{ color: COLORS.TEXT }}>
-                    {suggestion.text}
-                  </p>
-                </button>
+                  text={suggestion.text}
+                  onClick={() => handleSaveWhyWithConfirmation(suggestion.text)}
+                />
               ))}
             </div>
           </div>

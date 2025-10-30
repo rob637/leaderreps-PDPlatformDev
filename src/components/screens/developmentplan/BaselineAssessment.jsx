@@ -1,6 +1,7 @@
 // src/components/developmentplan/BaselineAssessment.jsx
 // REFACTORED: Converted to a single-page, modern form. (Req #14)
 // Uses new 1-3 goal input fields. (Req #15)
+// UPDATED (10/30/25): Added dividers to make questionnaire sleeker (Req #3)
 
 import React, { useState } from 'react';
 import { ArrowRight, Loader, Plus, X } from 'lucide-react'; // Added Plus and X
@@ -90,7 +91,7 @@ const BaselineAssessment = ({ onComplete, isLoading = false }) => {
     <div className="min-h-screen p-4 sm:p-6 lg:p-8" style={{ background: COLORS.BG }}>
       
       {/* Sticky Progress Bar */}
-      <div className="sticky top-0 z-10 py-4 max-w-4xl mx-auto" style={{ background: `${COLORS.BG}F0` }}>
+      <div className="sticky top-0 z-10 py-4 max-w-4xl mx-auto" style={{ background: `${COLORS.BG}F0`, backdropFilter: 'blur(8px)' }}>
           <div className="flex justify-between text-sm mb-2 px-1">
             <span className="font-semibold" style={{ color: COLORS.TEAL }}>
               {completedQuestions} of {totalQuestions} Questions Answered
@@ -116,21 +117,24 @@ const BaselineAssessment = ({ onComplete, isLoading = false }) => {
         </div>
 
         {/* Form Container */}
-        <div className="p-6 sm:p-8 space-y-6">
+        <div className="p-6 sm:p-8">
           
-          {/* Render all Likert questions */}
-          {ASSESSMENT_QUESTIONS.map((question) => (
-            <LikertScaleInput
-              key={question.id}
-              question={question}
-              options={LIKERT_SCALE}
-              value={responses[question.id]}
-              onChange={handleResponse}
-            />
-          ))}
+          {/* REQ #3: Render Likert questions with dividers */}
+          <div className="divide-y" style={{ borderColor: COLORS.SUBTLE }}>
+            {ASSESSMENT_QUESTIONS.map((question) => (
+              <div key={question.id} className="py-6">
+                <LikertScaleInput
+                  question={question}
+                  options={LIKERT_SCALE}
+                  value={responses[question.id]}
+                  onChange={handleResponse}
+                />
+              </div>
+            ))}
+          </div>
 
           {/* REQ #15: Open-ended goals section */}
-          <div className="p-6 rounded-lg" style={{ background: `${COLORS.ORANGE}10` }}>
+          <div className="mt-6 p-6 rounded-lg" style={{ background: `${COLORS.ORANGE}10` }}>
             <label className="block text-lg font-semibold mb-2" style={{ color: COLORS.NAVY }}>
               {OPEN_ENDED_QUESTION.text}
             </label>
@@ -175,7 +179,7 @@ const BaselineAssessment = ({ onComplete, isLoading = false }) => {
           </div>
 
           {/* The "One Banana" - Complete Button */}
-          <div className="pt-6">
+          <div className="pt-8">
             <Button
               onClick={handleComplete}
               variant="primary"
