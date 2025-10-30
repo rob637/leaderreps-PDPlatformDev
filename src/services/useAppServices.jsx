@@ -1,4 +1,4 @@
-// src/services/useAppServices.jsx (UPDATED FOR CRITICAL DELETION FIX)
+// src/services/useAppServices.jsx (FINAL CORRECTED VERSION)
 // Custom for rob@sagecg.com - Scales to 10,000+ users
 // 
 // CRITICAL FIX (10/30/25): Comprehensive Firebase sentinel stripping
