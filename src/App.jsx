@@ -1,4 +1,4 @@
-// src/App.jsx (FIXED: Regular Expression Syntax Error)
+// src/App.jsx (Final version with robust Feature Flag handling and syntax fix)
 
 import React, { useState, useEffect, useMemo, useCallback, Suspense, lazy } from 'react';
 
@@ -316,6 +316,7 @@ const NavSidebar = ({ currentScreen, setCurrentScreen, user, closeMobileMenu, is
     .filter(item => !item.adminOnly || isAdmin)
     // --- REQ #3/4 (BUG FIX): Change filter logic. ---
     // New logic: !item.flag || (featureFlags && featureFlags[item.flag] === true)
+    // This logic is now robust because featureFlags values are guaranteed booleans in DataProvider.
     .filter(item => isAdmin || !item.flag || (featureFlags && featureFlags[item.flag] === true))
     .map((item) => {
       const Icon = item.icon;

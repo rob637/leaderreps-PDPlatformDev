@@ -334,17 +334,18 @@ const Dashboard = ({ navigate }) => {
   const handleDeletePlanAndReset = useCallback(async () => {
     console.log('[Dashboard] Executing Delete Plan and Reset...');
     
-    // 1. Delete Development Plan
+    // 1. Delete Development Plan fields (CRITICAL FIX: Using deleteField on the key ensures clean removal)
+    // By using {merge: true}, we are surgically removing these keys from the document.
     await updateDevelopmentPlanData({ 
         currentPlan: deleteField(), // Use deleteField for clean removal
         focusAreas: deleteField(),
-        cycle: 0,
+        cycle: deleteField(),       // Use deleteField here too for maximum clean up
         assessmentHistory: deleteField()
     }, { merge: true });
 
-    // 2. Reset Daily Practice Essentials (ISSUE 1 FIX)
+    // 2. Reset Daily Practice Essentials
     await updateDailyPracticeData({
-        dailyTargetRepId: deleteField(),
+        dailyTargetRepId: deleteField(), // <-- CRITICAL FIX: Ensure old rep is deleted
         dailyTargetRepStatus: 'Pending',
         dailyTargetRepDate: deleteField(),
         streakCount: 0,
@@ -358,7 +359,9 @@ const Dashboard = ({ navigate }) => {
     });
 
     setShowTestUtils(false);
-    navigate('dashboard'); // Force re-render/re-fetch
+    // CRITICAL: Navigate immediately to the Development Plan screen. 
+    // This forces the UI to re-render using the now-deleted state, which DevelopmentPlan.jsx handles by showing the Baseline.
+    navigate('development-plan'); 
     triggerCelebration('Plan and progress reset. Start fresh!');
   }, [updateDevelopmentPlanData, updateDailyPracticeData, navigate]);
 
