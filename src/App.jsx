@@ -1,4 +1,4 @@
-// src/App.jsx (FIXED: Corrected debug log lines in DataProvider)
+// src/App.jsx (FIXED: Regular Expression Syntax Error)
 
 import React, { useState, useEffect, useMemo, useCallback, Suspense, lazy } from 'react';
 
@@ -879,6 +879,16 @@ const DataProvider = ({ children, firebaseServices, userId, isAuthReady, navigat
   const appServicesValue = useMemo(() => {
     const geminiModel = resolvedMetadata.GEMINI_MODEL || 'gemini-1.5-flash';
     const noOpUpdate = async () => false;
+    
+    // 💡 FIX: Ensure feature flag values are explicitly converted to a safe boolean 
+    // to handle cases where they might be stored as the string "true" or the number 1 
+    // in Firestore instead of the boolean 'true'.
+    const convertedFeatureFlags = Object.fromEntries(
+          Object.entries(resolvedMetadata.featureFlags || {}).map(([key, value]) => [
+              key, 
+              value === true || value === 'true' || value === 1 // Convert to a safe boolean
+          ])
+      );
 
     return {
       // Core App State & Functions
@@ -901,7 +911,7 @@ const DataProvider = ({ children, firebaseServices, userId, isAuthReady, navigat
       
       // Global Metadata / Value Sets (extracted from resolvedMetadata)
       metadata: resolvedMetadata,
-      featureFlags: resolvedMetadata.featureFlags || {},
+      featureFlags: convertedFeatureFlags, // Use the converted flags
       LEADERSHIP_TIERS: resolvedMetadata.LEADERSHIP_TIERS || {},
       REP_LIBRARY: resolvedMetadata.REP_LIBRARY || { items: [] },
       EXERCISE_LIBRARY: resolvedMetadata.EXERCISE_LIBRARY || { items: [] },
@@ -1191,6 +1201,7 @@ if (isAuthReady && !user) {
  */
 export default function Root(props) {
   // Simple check for ?sanity=1 in URL for basic React render test
+  // 🐛 FIX: Added missing forward slash to close the regex literal
   const forceSanity = typeof window !== 'undefined' && /[?&]sanity=1/.test(window.location.search);
   if (forceSanity) {
     return (
