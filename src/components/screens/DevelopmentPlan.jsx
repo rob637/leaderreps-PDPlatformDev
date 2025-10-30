@@ -3,6 +3,7 @@
 // Wires: BaselineAssessment → PlanTracker → ProgressScan (+ optional Detail/Timeline/Quick Edit inside children)
 // FIXED: Added adapter layer to transform Firebase focusAreas ↔ component coreReps
 // FIXED (10/30/25): Removed manual setView('tracker') to fix race condition (Req #16)
+// FIXED (10/30/25): Added logic to auto-set first target rep on new plan creation.
 
 import React, { useMemo, useState, useEffect } from 'react';
 import { useAppServices } from '../../services/useAppServices.jsx';
@@ -31,11 +32,61 @@ const LoadingBlock = ({ title = 'Loading…', description = 'Preparing your deve
   </div>
 );
 
+// --- NEW HELPER (10/30/25) ---
+// Finds the first rep matching the plan's first focus area and saves it
+const findAndSetTargetRep = async (newPlan, metadata, writer) => {
+  if (!newPlan || !newPlan.focusAreas || newPlan.focusAreas.length === 0) {
+    console.log('[DevPlan] No focus areas in new plan, cannot set target rep.');
+    return;
+  }
+  // Use REP_LIBRARY (from image_b9f3bd.png)
+  if (!metadata || !metadata.REP_LIBRARY || !metadata.REP_LIBRARY.items) {
+    console.warn('[DevPlan] REP_LIBRARY not found in metadata, cannot set target rep.');
+    return;
+  }
+  if (typeof writer !== 'function') {
+    console.warn('[DevPlan] Daily practice writer function not available.');
+    return;
+  }
+
+  try {
+    // 1. Get the category from the first skill in the new plan
+    const firstFocusAreaCategory = newPlan.focusAreas[0]?.category;
+    if (!firstFocusAreaCategory) {
+      console.warn('[DevPlan] First focus area has no category. Cannot find rep. Check skill_catalog data.');
+      return;
+    }
+
+    // 2. Find a rep in the library that matches that category
+    const repLibrary = metadata.REP_LIBRARY.items;
+    const matchingRep = repLibrary.find(rep => rep.category === firstFocusAreaCategory);
+
+    // 3. Save that rep's ID to dailyPracticeData
+    if (matchingRep) {
+      const newRepId = matchingRep.id || matchingRep.repId; // 'id' is seen in image_b9f3bd.png
+      if (newRepId) {
+        console.log(`[DevPlan] Setting new dailyTargetRepId: ${newRepId}`);
+        await writer({ dailyTargetRepId: newRepId });
+      } else {
+        console.warn('[DevPlan] Matching rep found but has no ID.');
+      }
+    } else {
+      console.warn(`[DevPlan] No rep found in REP_LIBRARY with category: ${firstFocusAreaCategory}`);
+    }
+  } catch (e) {
+    console.error('[DevPlan] Error setting target rep:', e);
+  }
+};
+
+
 export default function DevelopmentPlan() {
   const services = useAppServices();
   const {
     db, userId, isAuthReady, isLoading: isServicesLoading, navigate,
-    developmentPlanData, updateDevelopmentPlanData, metadata: globalMetadata
+    developmentPlanData, updateDevelopmentPlanData, 
+    // FIXED: Add writer for dailyPracticeData
+    updateDailyPracticeData: updateDailyPracticeWriter,
+    metadata: globalMetadata
   } = services || {};
 
   // Helpers
@@ -139,6 +190,8 @@ export default function DevelopmentPlan() {
   const handleCompleteBaseline = async (assessment) => {
     const date = new Date().toISOString();
     const newAssessment = { ...assessment, date };
+    
+    // Assumes generatePlanFromAssessment uses the *corrected* skill catalog
     const newPlanRaw = generatePlanFromAssessment(newAssessment, combinedSkillCatalog);
 
     // If an existing plan exists, bump cycle for the new plan & archive the old
@@ -172,10 +225,13 @@ export default function DevelopmentPlan() {
 
     const ok = await writeDevPlan(payload, { merge: true });
     
-    // REQ #16: FIX - Do not manually set view. Let the useEffect handle it.
-    // if (ok) setView('tracker');
     if (ok) {
-      console.log('[DevelopmentPlan] Baseline saved. Waiting for data listener to switch view.');
+      // FIXED (10/30/25): Set the target rep
+      console.log('[DevelopmentPlan] Baseline saved. Setting target rep...');
+      await findAndSetTargetRep(newPlan, globalMetadata, updateDailyPracticeWriter);
+      
+      // REQ #16: FIX - Do not manually set view. Let the useEffect handle it.
+      console.log('[DevelopmentPlan] Waiting for data listener to switch view.');
     }
   };
 
@@ -186,7 +242,7 @@ export default function DevelopmentPlan() {
 
     const prevPlan = adaptedDevelopmentPlanData?.currentPlan;
     const prevCycle = prevPlan?.cycle || adaptedDevelopmentPlanData?.cycle || 0;
-    const withCycle = { ...newPlan, cycle: prevCycle + 1 };
+    const withCycle = { ...newPlan, cycle: prevCycle + 1 }; // This is the new plan
 
     const prevPlans = Array.isArray(adaptedDevelopmentPlanData?.previousPlans) ? adaptedDevelopmentPlanData.previousPlans.slice() : [];
     if (prevPlan) {
@@ -211,10 +267,13 @@ export default function DevelopmentPlan() {
 
     const ok = await writeDevPlan(payload, { merge: true });
     
-    // REQ #16: FIX - Do not manually set view. Let the useEffect handle it.
-    // if (ok) setView('tracker');
     if (ok) {
-      console.log('[DevelopmentPlan] Scan saved. Waiting for data listener to switch view.');
+      // FIXED (10/30/25): Set the target rep
+      console.log('[DevelopmentPlan] Scan saved. Setting target rep...');
+      await findAndSetTargetRep(withCycle, globalMetadata, updateDailyPracticeWriter);
+      
+      // REQ #16: FIX - Do not manually set view. Let the useEffect handle it.
+      console.log('[DevelopmentPlan] Waiting for data listener to switch view.');
     }
   };
 

@@ -271,6 +271,7 @@ const Dashboard = ({ navigate }) => {
     setMorningWIN('');
   };
 
+  // REQ #3: This function already clears all 3 fields as requested.
   const handleSaveEveningWithConfirmation = async () => {
     await handleSaveEveningBookend();
     showSaveSuccess('Evening reflection saved!');

@@ -91,7 +91,8 @@ export const EveningBookend = ({
     isSaving
 }) => {
     return (
-        <Card title="Evening Bookend - Daily Reflection" icon={Moon} accent='NAVY' className="min-h-[620px]">
+        // REQ #1: Increased min-height
+        <Card title="Evening Bookend - Daily Reflection" icon={Moon} accent='NAVY' className="min-h-[680px]">
             {/* Good - What went well */}
             <div className="mb-4">
                 <label className="text-sm font-semibold mb-2 flex items-center" style={{ color: COLORS.GREEN }}>

@@ -107,7 +107,8 @@ export const MorningBookend = ({
     };
     
     return (
-        <Card title="Morning Bookend" icon={Target} accent='ORANGE' className="min-h-[620px]">
+        // REQ #1: Increased min-height
+        <Card title="Morning Bookend" icon={Target} accent='ORANGE' className="min-h-[680px]">
             {/* Daily WIN */}
             <div className="mb-6">
                 <label className="text-sm font-semibold mb-2 flex items-center" style={{ color: COLORS.TEXT }}>

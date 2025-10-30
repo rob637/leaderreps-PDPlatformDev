@@ -3,7 +3,7 @@
 // FIXED: Added logging, works with adapted plan structure
 
 import React, { useState } from 'react';
-import { Target, TrendingUp, Calendar, Edit } from 'lucide-react';
+import { Target, TrendingUp, Calendar, Edit, ArrowLeft } from 'lucide-react'; // REQ #4: Added ArrowLeft
 import { Button, Card, ProgressBar } from './DevPlanComponents';
 import { COLORS, generatePlanSummary } from './devPlanUtils';
 import ProgressBreakdown from './ProgressBreakdown';
@@ -63,9 +63,11 @@ const PlanTracker = ({
   if (showBreakdown) {
     return (
       <div>
-        <div className="max-w-4xl mx-auto p-6 mb-4">
-          <Button onClick={() => setShowBreakdown(false)} variant="secondary">
-            Back to Overview
+        <div className="max-w-4xl mx-auto p-6 mb-0">
+          {/* REQ #4: Changed button text from "Back to Overview" to "Back to Tracker" */}
+          <Button onClick={() => setShowBreakdown(false)} variant="nav-back" size="sm">
+            <ArrowLeft className="w-4 h-4" />
+            Back to Tracker
           </Button>
         </div>
         <ProgressBreakdown plan={plan} globalMetadata={globalMetadata} />

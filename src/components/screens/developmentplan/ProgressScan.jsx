@@ -4,7 +4,8 @@
 // Uses new <LikertScaleInput> component.
 
 import React, { useState, useMemo } from 'react';
-import { TrendingUp, ArrowRight, CheckCircle, Loader } from 'lucide-react';
+// REQ #3: Added ArrowLeft
+import { TrendingUp, ArrowRight, CheckCircle, Loader, ArrowLeft } from 'lucide-react';
 import { 
   Button, 
   Card, 
@@ -164,6 +165,15 @@ const ProgressScan = ({
   // SCREEN 1: ASSESSMENT FORM (Default View)
   return (
     <div className="max-w-4xl mx-auto p-4 sm:p-6" style={{ background: COLORS.BG }}>
+      
+      {/* REQ #3: Added Back Button */}
+      <div className="mb-4">
+        <Button onClick={onBack} variant="nav-back" size="sm">
+          <ArrowLeft className="w-4 h-4" />
+          Back to Tracker
+        </Button>
+      </div>
+
       {/* Header Card */}
       <Card accent="GREEN">
         <h1 className="text-3xl font-extrabold mb-2" style={{ color: COLORS.NAVY }}>

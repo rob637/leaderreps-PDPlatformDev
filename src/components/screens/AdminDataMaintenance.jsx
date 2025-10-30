@@ -2,6 +2,7 @@
 // Comprehensive admin interface for viewing and editing all Firestore data
 // Organized by functional module with full CRUD operations
 // UPDATED: All field keys in lowercase, added reflection history and bookend data
+// UPDATED (10/30/25): Added table-based CRUD editor for 'isCatalog' documents
 
 import React, { useState, useEffect, useMemo } from "react";
 import {
@@ -13,8 +14,8 @@ import {
   Loader, Download, Upload, Trash2, Save, Search, Edit, Plus, X,
   LayoutDashboard, Target, Calendar, Lightbulb, Settings, Database,
   AlertTriangle, CheckCircle, FileText, Copy, RefreshCw, Eye, EyeOff,
-  MessageSquare, Users, BookOpen, Film, Zap
-} from 'lucide-react';
+  MessageSquare, Users, BookOpen, Film, Zap, ChevronDown, ChevronUp, GripVertical
+} from 'lucide-react'; // Added new icons
 
 /* =========================================================
    DESIGN SYSTEM - Matching DevPlanComponents
@@ -108,6 +109,7 @@ const LoadingSpinner = ({ message = "Loading..." }) => (
 /* =========================================================
    DATA STRUCTURE CONFIGURATION (ALL LOWERCASE KEYS)
 ========================================================= */
+// ... (MODULE_GROUPS configuration remains unchanged) ...
 const MODULE_GROUPS = {
   user_data: {
     name: "User Profile",
@@ -375,6 +377,7 @@ const MODULE_GROUPS = {
 /* =========================================================
    UTILITIES
 ========================================================= */
+// ... (pretty, tryParse, formatTimestamp, downloadJSON remain unchanged) ...
 const pretty = (v) => JSON.stringify(v ?? {}, null, 2);
 const tryParse = (t, fallback) => { 
   try { 
@@ -408,6 +411,7 @@ const downloadJSON = (data, filename) => {
 /* =========================================================
    SUBCOLLECTION VIEWER COMPONENT
 ========================================================= */
+// ... (SubcollectionViewer component remains unchanged) ...
 const SubcollectionViewer = ({ tableConfig, userId }) => {
   const [docs, setDocs] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -550,7 +554,220 @@ const SubcollectionViewer = ({ tableConfig, userId }) => {
 };
 
 /* =========================================================
-   TABLE DATA EDITOR COMPONENT
+   NEW: CATALOG ITEM EDITOR COMPONENT (FOR TABLE ROWS)
+========================================================= */
+const CatalogItemEditor = ({ item, index, onUpdate, onDelete, onAddNewField }) => {
+  const [isEditing, setIsEditing] = useState(false);
+  const [editedItem, setEditedItem] = useState(item);
+
+  useEffect(() => {
+    setEditedItem(item);
+  }, [item]);
+
+  const handleChange = (key, value) => {
+    setEditedItem(prev => ({ ...prev, [key]: value }));
+  };
+
+  const handleSave = () => {
+    onUpdate(index, editedItem);
+    setIsEditing(false);
+  };
+
+  const handleCancel = () => {
+    setEditedItem(item);
+    setIsEditing(false);
+  };
+
+  // Guess input type based on value
+  const getInput = (key, value) => {
+    if (typeof value === 'boolean') {
+      return (
+        <select
+          value={String(value)}
+          onChange={(e) => handleChange(key, e.target.value === 'true')}
+          className="w-full p-2 border-2 rounded-lg text-sm"
+          style={{ borderColor: COLORS.SUBTLE }}
+        >
+          <option value="true">True</option>
+          <option value="false">False</option>
+        </select>
+      );
+    }
+    
+    if (typeof value === 'number') {
+      return (
+        <input
+          type="number"
+          value={value}
+          onChange={(e) => handleChange(key, Number(e.target.value))}
+          className="w-full p-2 border-2 rounded-lg text-sm"
+          style={{ borderColor: COLORS.SUBTLE }}
+        />
+      );
+    }
+
+    if (typeof value === 'string' && value.length > 100) {
+      return (
+        <textarea
+          value={value}
+          onChange={(e) => handleChange(key, e.target.value)}
+          className="w-full p-2 border-2 rounded-lg text-sm font-mono"
+          style={{ borderColor: COLORS.SUBTLE }}
+          rows={4}
+        />
+      );
+    }
+    
+    return (
+      <input
+        type="text"
+        value={value}
+        onChange={(e) => handleChange(key, e.target.value)}
+        className="w-full p-2 border-2 rounded-lg text-sm"
+        style={{ borderColor: COLORS.SUBTLE }}
+      />
+    );
+  };
+
+  return (
+    <div 
+      className="rounded-xl border-2" 
+      style={{ 
+        borderColor: isEditing ? COLORS.TEAL : COLORS.SUBTLE, 
+        backgroundColor: isEditing ? `${COLORS.TEAL}05` : COLORS.OFF_WHITE
+      }}
+    >
+      {/* Header Bar */}
+      <div className="flex items-center justify-between p-3" style={{ borderBottom: `2px solid ${COLORS.SUBTLE}` }}>
+        <div className="flex items-center gap-3">
+          <GripVertical className="w-5 h-5 text-gray-400 cursor-grab" />
+          <p className="font-semibold" style={{ color: COLORS.NAVY }}>
+            {item.name || item.id || `Item ${index + 1}`}
+          </p>
+          <Badge variant="default" size="sm">{item.id || 'NO ID'}</Badge>
+        </div>
+        <div className="flex gap-2">
+          {isEditing ? (
+            <>
+              <Button onClick={handleCancel} variant="outline" size="sm">Cancel</Button>
+              <Button onClick={handleSave} variant="primary" size="sm">Save</Button>
+            </>
+          ) : (
+            <>
+              <Button onClick={() => onDelete(index)} variant="danger" size="sm">
+                <Trash2 size={14} />
+              </Button>
+              <Button onClick={() => setIsEditing(true)} variant="outline" size="sm">
+                <Edit size={14} />
+                Edit
+              </Button>
+            </>
+          )}
+        </div>
+      </div>
+      
+      {/* Editor Body */}
+      {isEditing && (
+        <div className="p-4 space-y-3">
+          {Object.entries(editedItem).map(([key, value]) => (
+            <div key={key}>
+              <label className="block text-xs font-semibold mb-1" style={{ color: COLORS.MUTED }}>
+                {key}
+              </label>
+              {getInput(key, value)}
+            </div>
+          ))}
+          <Button 
+            onClick={() => onAddNewField(index)} 
+            variant="ghost" 
+            size="sm" 
+            className="mt-2"
+          >
+            <Plus size={14} />
+            Add New Field
+          </Button>
+        </div>
+      )}
+    </div>
+  );
+};
+
+/* =========================================================
+   NEW: CATALOG TABLE EDITOR COMPONENT
+========================================================= */
+const CatalogTableEditor = ({ items, onChange }) => {
+  const handleUpdate = (index, updatedItem) => {
+    const newItems = [...items];
+    newItems[index] = updatedItem;
+    onChange(newItems);
+  };
+
+  const handleDelete = (index) => {
+    if (!confirm(`Are you sure you want to delete this item?\n\n${JSON.stringify(items[index], null, 2)}`)) {
+      return;
+    }
+    const newItems = items.filter((_, i) => i !== index);
+    onChange(newItems);
+  };
+
+  const handleAddItem = () => {
+    const newItem = {
+      id: `new_item_${Date.now()}`,
+      name: "New Catalog Item",
+      description: "A description for the new item."
+    };
+    onChange([...items, newItem]);
+  };
+
+  const handleAddNewField = (index) => {
+    const fieldName = prompt("Enter new field name (e.g., 'category'):");
+    if (!fieldName || fieldName.trim() === '') return;
+    
+    const newItems = [...items];
+    newItems[index] = {
+      ...newItems[index],
+      [fieldName]: "new value"
+    };
+    onChange(newItems);
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <p className="text-sm font-semibold" style={{ color: COLORS.MUTED }}>
+          CATALOG ITEMS
+        </p>
+        <Button onClick={handleAddItem} variant="primary" size="sm">
+          <Plus size={16} />
+          Add New Item
+        </Button>
+      </div>
+      
+      <div className="p-4 bg-gray-50 rounded-xl border-2 space-y-3" style={{ borderColor: COLORS.SUBTLE }}>
+        {items.length > 0 ? (
+          items.map((item, index) => (
+            <CatalogItemEditor
+              key={item.id || index}
+              item={item}
+              index={index}
+              onUpdate={handleUpdate}
+              onDelete={handleDelete}
+              onAddNewField={handleAddNewField}
+            />
+          ))
+        ) : (
+          <div className="p-8 text-center text-gray-500">
+            <p>No items in this catalog.</p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+
+/* =========================================================
+   TABLE DATA EDITOR COMPONENT (MODIFIED)
 ========================================================= */
 const TableDataEditor = ({ tableConfig, data, onSave, onDelete, userId }) => {
   const [editedData, setEditedData] = useState(data || {});
@@ -564,6 +781,22 @@ const TableDataEditor = ({ tableConfig, data, onSave, onDelete, userId }) => {
     setJsonText(pretty(data || {}));
     setHasChanges(false);
   }, [data]);
+  
+  // Get catalog items from the edited data
+  const catalogItems = useMemo(() => {
+    if (!editedData || !Array.isArray(editedData.items)) {
+      return [];
+    }
+    return editedData.items;
+  }, [editedData]);
+
+  // Handler for changes from the new CatalogTableEditor
+  const handleCatalogChange = (newItems) => {
+    const newData = { ...editedData, items: newItems };
+    setEditedData(newData);
+    setJsonText(pretty(newData)); // Keep JSON view in sync
+    setHasChanges(true);
+  };
 
   const handleFieldChange = (key, value, type) => {
     let processedValue = value;
@@ -576,11 +809,13 @@ const TableDataEditor = ({ tableConfig, data, onSave, onDelete, userId }) => {
       try {
         processedValue = JSON.parse(value);
       } catch (e) {
-        processedValue = value;
+        processedValue = value; // Keep as string if invalid JSON
       }
     }
 
-    setEditedData(prev => ({ ...prev, [key]: processedValue }));
+    const newData = { ...editedData, [key]: processedValue };
+    setEditedData(newData);
+    setJsonText(pretty(newData)); // Keep JSON view in sync
     setHasChanges(true);
   };
 
@@ -588,17 +823,32 @@ const TableDataEditor = ({ tableConfig, data, onSave, onDelete, userId }) => {
     setJsonText(text);
     try {
       const parsed = JSON.parse(text);
-      setEditedData(parsed);
+      setEditedData(parsed); // Update main data from JSON
       setHasChanges(true);
     } catch (e) {
-      // Invalid JSON - don't update editedData
+      // Invalid JSON - don't update editedData, but still mark changes
+      setHasChanges(true);
     }
   };
 
   const handleSave = async () => {
     setIsSaving(true);
+    let dataToSave = editedData;
+    
+    // If in JSON mode, re-parse to ensure it's valid before saving
+    if (showJson) {
+      try {
+        dataToSave = JSON.parse(jsonText);
+      } catch (e) {
+        alert('Save failed: Invalid JSON format. Please correct it before saving.');
+        setIsSaving(false);
+        return;
+      }
+    }
+    
     try {
-      await onSave(editedData);
+      await onSave(dataToSave);
+      setEditedData(dataToSave); // Ensure state reflects saved data
       setHasChanges(false);
     } catch (error) {
       console.error('Save failed:', error);
@@ -654,7 +904,7 @@ const TableDataEditor = ({ tableConfig, data, onSave, onDelete, userId }) => {
             size="sm"
           >
             {showJson ? <EyeOff size={16} /> : <Eye size={16} />}
-            {showJson ? 'Show Form' : 'Show JSON'}
+            {showJson ? (tableConfig.isCatalog ? 'Show Table View' : 'Show Form') : 'Show JSON'}
           </Button>
           <Button 
             onClick={() => downloadJSON(data, `${tableConfig.name.replace(/\s+/g, '_')}.json`)}
@@ -727,8 +977,14 @@ const TableDataEditor = ({ tableConfig, data, onSave, onDelete, userId }) => {
             </div>
           )}
         </div>
+      ) : tableConfig.isCatalog ? (
+        // NEW: Catalog Table Editor View
+        <CatalogTableEditor
+          items={catalogItems}
+          onChange={handleCatalogChange}
+        />
       ) : (
-        /* Form Editor View */
+        /* Form Editor View (for non-catalog tables) */
         <div className="grid gap-4">
           {tableConfig.fields.map(field => {
             const value = editedData[field.key];
@@ -804,12 +1060,12 @@ const TableDataEditor = ({ tableConfig, data, onSave, onDelete, userId }) => {
       )}
 
       {/* Catalog Item Count */}
-      {tableConfig.isCatalog && data.items && (
-        <div className="p-4 bg-blue-50 border-2 border-blue-200 rounded-xl">
+      {tableConfig.isCatalog && editedData.items && (
+        <div className="p-4 bg-blue-50 border-2 border-blue-200 rounded-xl mt-4">
           <div className="flex items-center gap-2">
             <CheckCircle size={16} className="text-blue-600" />
             <span className="text-sm font-medium text-blue-900">
-              {Array.isArray(data.items) ? data.items.length : 0} items in catalog
+              {Array.isArray(editedData.items) ? editedData.items.length : 0} items in catalog
             </span>
           </div>
         </div>
@@ -818,9 +1074,11 @@ const TableDataEditor = ({ tableConfig, data, onSave, onDelete, userId }) => {
   );
 };
 
+
 /* =========================================================
    TABLE VIEWER COMPONENT
 ========================================================= */
+// ... (TableViewer component remains unchanged) ...
 const TableViewer = ({ groupKey, tableKey, config, userId }) => {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -871,7 +1129,10 @@ const TableViewer = ({ groupKey, tableKey, config, userId }) => {
       };
       
       await setDoc(docRef, dataToSave, { merge: true });
-      setData(dataToSave);
+      // Don't set data here, let Firestore's serverTimestamp resolve
+      // and then rely on a refresh or just trust the save.
+      // Setting it locally creates a mismatch with the { _updatedat: "pending" } object
+      setData(updatedData); // Compromise: set the user's data
       alert('Saved successfully!');
     } catch (err) {
       console.error('Save error:', err);
@@ -936,6 +1197,7 @@ const TableViewer = ({ groupKey, tableKey, config, userId }) => {
 /* =========================================================
    MAIN ADMIN COMPONENT
 ========================================================= */
+// ... (AdminDataMaintenance component remains unchanged) ...
 export default function AdminDataMaintenance() {
   const services = useAppServices();
   const { userId, isAdmin } = services || {};
