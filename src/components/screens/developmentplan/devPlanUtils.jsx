@@ -1,5 +1,6 @@
 // src/components/screens/developmentplan/devPlanUtils.jsx
 // Utility functions and constants for Development Plan
+// CRITICAL FIX: Updated generatePlanFromAssessment to use 'answers: responses'
 
 /* =========================================================
    COLOR CONSTANTS
@@ -232,7 +233,13 @@ export const getRecommendedSkills = (category, skillCatalog, limit = 3) => {
  * Generate a development plan from assessment results
  */
 export const generatePlanFromAssessment = (assessment, skillCatalog = []) => {
-const { answers: responses, date } = assessment;
+  // 
+  // === 🚨 CRITICAL FIX HERE ===
+  // The assessment components (BaselineAssessment, ProgressScan) save data using the key 'answers'.
+  // This line maps 'answers' from the assessment object to the 'responses' variable
+  // that the rest of this function expects.
+  //
+  const { answers: responses, date } = assessment;
 
   // Calculate category scores
   const categoryScores = calculateCategoryScores(responses);
