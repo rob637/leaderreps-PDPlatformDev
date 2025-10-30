@@ -55,6 +55,7 @@ import {
 // Define admin users who have access to advanced features
 const ADMIN_EMAILS = [
   'admin@leaderreps.com',
+  'rob@sagecg.com',  // Admin access for Rob
   // Add your admin email addresses here
 ];
 
