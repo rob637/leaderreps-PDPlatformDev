@@ -44,37 +44,69 @@ const formatTimestamp = (timestamp) => {
    COLORS & BASE COMPONENTS
 ========================================================= */
 export const COLORS = { 
-  NAVY: '#002E47', TEAL: '#47A88D', BLUE: '#2563EB', ORANGE: '#E04E1B', 
-  GREEN: '#10B981', AMBER: '#F5A800', RED: '#E04E1B', LIGHT_GRAY: '#FCFCFA', 
-  OFF_WHITE: '#FFFFFF', SUBTLE: '#E5E7EB', TEXT: '#374151', MUTED: '#4B5563', 
-  PURPLE: '#7C3AED', BG: '#F9FAFB' 
+  NAVY: '#002E47', TEAL: '#47A88D', BLUE: '#002E47', ORANGE: '#E04E1B', 
+  GREEN: '#47A88D', AMBER: '#E04E1B', RED: '#E04E1B', LIGHT_GRAY: '#FCFCFA', 
+  OFF_WHITE: '#FFFFFF', SUBTLE: '#E5E7EB', TEXT: '#002E47', MUTED: '#349881', 
+  PURPLE: '#47A88D', BG: '#FCFCFA'  // CORPORATE COLORS ONLY!
 };
 
-// --- Standardized Button Component (Unchanged) ---
+// --- Corporate Button Component ---
 export const Button = ({ children, onClick, disabled = false, variant = 'primary', className = '', size = 'md', ...rest }) => {
-  let baseStyle = `inline-flex items-center justify-center gap-2 font-semibold rounded-xl transition-all duration-200 focus:outline-none focus:ring-4 disabled:opacity-50 disabled:cursor-not-allowed`;
+  // Base corporate button classes
+  let buttonClass = '';
+  
+  if (variant === 'primary') {
+    buttonClass = 'btn-corporate-primary';
+  } else if (variant === 'secondary') {
+    buttonClass = 'btn-corporate-secondary';
+  } else if (variant === 'outline') {
+    buttonClass = 'btn-corporate-secondary';
+  } else if (variant === 'nav-back') {
+    buttonClass = 'form-corporate';
+  } else if (variant === 'ghost') {
+    buttonClass = 'bg-transparent hover:bg-gray-100 focus:ring-gray-300/50 px-3 py-1.5 text-sm';
+  } else {
+    buttonClass = 'btn-corporate-primary';
+  }
 
-  if (size === 'sm') baseStyle += ' px-4 py-2 text-sm';
-  else if (size === 'lg') baseStyle += ' px-8 py-4 text-lg';
-  else baseStyle += ' px-6 py-3 text-base';
+  // Size adjustments using CSS custom properties
+  let sizeStyle = {};
+  if (size === 'sm') {
+    sizeStyle = { padding: 'var(--spacing-sm) var(--spacing-md)', fontSize: '0.875rem' };
+  } else if (size === 'lg') {
+    sizeStyle = { padding: 'var(--spacing-xl) var(--spacing-2xl)', fontSize: '1.125rem' };
+  }
 
-  if (variant === 'primary') baseStyle += ` bg-[${COLORS.TEAL}] text-white shadow-lg hover:bg-[#349881] focus:ring-[${COLORS.TEAL}]/50`;
-  else if (variant === 'secondary') baseStyle += ` bg-[${COLORS.ORANGE}] text-white shadow-lg hover:bg-[#C33E12] focus:ring-[${COLORS.ORANGE}]/50`;
-  else if (variant === 'outline') baseStyle += ` bg-[${COLORS.OFF_WHITE}] text-[${COLORS.TEAL}] border-2 border-[${COLORS.TEAL}] shadow-md hover:bg-[${COLORS.TEAL}]/10 focus:ring-[${COLORS.TEAL}]/50`;
-  else if (variant === 'nav-back') baseStyle += ` bg-white text-gray-700 border border-gray-300 shadow-sm hover:bg-gray-100 focus:ring-gray-300/50 px-4 py-2 text-sm`;
-  else if (variant === 'ghost') baseStyle += ` bg-transparent text-gray-600 hover:bg-gray-100 focus:ring-gray-300/50 px-3 py-1.5 text-sm`;
+  // Disabled state
+  const disabledStyle = disabled ? {
+    opacity: 0.5,
+    cursor: 'not-allowed',
+    background: '#E5E7EB',
+    color: '#9CA3AF'
+  } : {};
 
-  if (disabled) baseStyle += ' bg-gray-300 text-gray-500 shadow-inner border-transparent hover:bg-gray-300';
-
-  return <button {...rest} onClick={onClick} disabled={disabled} className={`${baseStyle} ${className}`}>{children}</button>;
+  return (
+    <button 
+      {...rest} 
+      onClick={onClick} 
+      disabled={disabled} 
+      className={`${buttonClass} ${className}`}
+      style={{ ...sizeStyle, ...disabledStyle }}
+    >
+      {children}
+    </button>
+  );
 };
 
-// --- Standardized Card Component (Unchanged) ---
+// --- Corporate Card Component ---
 export const Card = ({ children, title, icon: Icon, className = '', onClick, accent = 'NAVY' }) => {
   const interactive = !!onClick;
   const Tag = interactive ? 'button' : 'div';
   const accentColor = COLORS[accent] || COLORS.NAVY;
   const handleKeyDown = (e) => { if (interactive && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); onClick?.(); } };
+
+  // Choose corporate card class based on interactivity
+  const cardClass = interactive ? 'card-corporate' : 'card-corporate-elevated';
 
   return (
     <Tag
@@ -82,22 +114,26 @@ export const Card = ({ children, title, icon: Icon, className = '', onClick, acc
       role={interactive ? 'button' : undefined}
       tabIndex={interactive ? 0 : undefined}
       onKeyDown={handleKeyDown}
-      className={`relative p-6 rounded-2xl border-2 shadow-xl hover:shadow-lg transition-all duration-300 text-left ${className}`}
-      style={{
-          background: 'linear-gradient(180deg,#FFFFFF, #FCFCFA)',
-          borderColor: COLORS.SUBTLE,
-          color: COLORS.NAVY
-      }}
+      className={`${cardClass} ${className} text-left`}
+      style={{ color: COLORS.NAVY }}
       onClick={onClick}
     >
-      <span style={{ position:'absolute', top:0, left:0, right:0, height:6, background: accentColor, borderTopLeftRadius:14, borderTopRightRadius:14 }} />
+      {/* Corporate accent bar using CSS custom properties */}
+      {Icon && title && <span style={{ position:'absolute', top:0, left:0, right:0, height:'4px', background: `var(--gradient-primary)` }} />}
 
       {Icon && title && (
-           <div className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 rounded-lg flex items-center justify-center border flex-shrink-0" style={{ borderColor: COLORS.SUBTLE, background: COLORS.LIGHT_GRAY }}>
+           <div className="flex items-center" style={{ gap: 'var(--spacing-md)', marginBottom: 'var(--spacing-lg)' }}>
+              <div className="flex items-center justify-center flex-shrink-0" 
+                   style={{ 
+                     width: '40px', 
+                     height: '40px', 
+                     borderRadius: 'var(--radius-lg)', 
+                     border: `1px solid ${COLORS.SUBTLE}`, 
+                     background: COLORS.LIGHT_GRAY 
+                   }}>
                   <Icon className="w-5 h-5" style={{ color: accentColor }} />
               </div>
-              <h2 className="text-xl font-extrabold" style={{ color: COLORS.NAVY }}>{title}</h2>
+              <h2 className="corporate-heading-md" style={{ color: COLORS.NAVY }}>{title}</h2>
           </div>
       )}
       {!Icon && title && <h2 className="text-xl font-extrabold mb-4 border-b pb-2" style={{ color: COLORS.NAVY, borderColor: COLORS.SUBTLE }}>{title}</h2>}
@@ -869,7 +905,7 @@ export const SocialPodCard = ({ podMembers, activityFeed, onSendMessage, onFindP
   };
 
   return (
-    <Card title="🤝 Social Pod Feed" accent='PURPLE'>
+    <Card title="🤝 Social Pod Feed" accent='TEAL'>
       {/* Pod Members Section */}
       {podMembers && podMembers.length > 0 ? (
         <>
@@ -883,7 +919,7 @@ export const SocialPodCard = ({ podMembers, activityFeed, onSendMessage, onFindP
                      className="flex items-center gap-2 px-3 py-2 rounded-lg border"
                      style={{ borderColor: COLORS.SUBTLE, backgroundColor: COLORS.LIGHT_GRAY }}>
                   <div className="w-8 h-8 rounded-full flex items-center justify-center"
-                       style={{ backgroundColor: COLORS.PURPLE, color: 'white' }}>
+                       style={{ backgroundColor: COLORS.TEAL, color: 'white' }}>
                     <User className="w-4 h-4" />
                   </div>
                   <div>
@@ -911,10 +947,10 @@ export const SocialPodCard = ({ podMembers, activityFeed, onSendMessage, onFindP
                        className="p-3 rounded-lg border-l-4"
                        style={{ 
                          backgroundColor: COLORS.LIGHT_GRAY,
-                         borderColor: COLORS.PURPLE
+                         borderColor: COLORS.TEAL
                        }}>
                     <div className="flex items-start gap-2">
-                      <Activity className="w-4 h-4 mt-0.5 flex-shrink-0" style={{ color: COLORS.PURPLE }} />
+                      <Activity className="w-4 h-4 mt-0.5 flex-shrink-0" style={{ color: COLORS.TEAL }} />
                       <div className="flex-1">
                         <p className="text-sm font-semibold" style={{ color: COLORS.NAVY }}>
                           {activity.userName}
@@ -953,7 +989,7 @@ export const SocialPodCard = ({ podMembers, activityFeed, onSendMessage, onFindP
                 onClick={handleSend}
                 disabled={!newMessage.trim()}
                 className="px-4 py-2 rounded-lg font-semibold text-white transition-all disabled:opacity-50"
-                style={{ backgroundColor: COLORS.PURPLE }}
+                style={{ backgroundColor: COLORS.TEAL }}
               >
                 <Send className="w-4 h-4" />
               </button>
@@ -986,7 +1022,7 @@ export const AICoachNudge = ({ onOpenLab, disabled }) => (
   <Card>
     <div className="flex items-start gap-3">
       <div className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0" 
-           style={{ backgroundColor: `${COLORS.PURPLE}20`, color: COLORS.PURPLE }}>
+           style={{ backgroundColor: `${COLORS.TEAL}20`, color: COLORS.TEAL }}>
         <MessageSquare className="w-5 h-5" />
       </div>
       <div className="flex-1">

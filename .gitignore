@@ -9,6 +9,35 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 firebase-debug.log
+firebase-debug.*.log
+firestore-debug.log
+ui-debug.log
+
+# Environment files with secrets
+.env.local
+.env.production
+.env.development.local
+.env.production.local
+
+# Security files
+*.pem
+*.key
+*.crt
+*.p8
+*.p12
+*.pfx
+
+# Temporary files
+*.tmp
+*.temp
+.DS_Store
+Thumbs.db
+
+# IDE files
+.vscode/settings.json
+.idea/
+*.swp
+*.swo
 
 # -------------------------
 # Dependencies

@@ -604,8 +604,27 @@ const MOCK_MEMBERSHIP_PLANS = {
     ]
 };
 
-// Global metadata mocks
-const MOCK_FEATURE_FLAGS = { enableNewFeature: false, enableMembershipModule: true };
+// Global metadata mocks - BOSS V1 SCOPE: Future features disabled by default
+const MOCK_FEATURE_FLAGS = { 
+  // V1 CORE FEATURES (ENABLED)
+  enableDevPlan: true,
+  enableReadings: true, 
+  enableCourses: true,
+  enableDailyPractice: true,
+  enableMembershipModule: true,
+  
+  // FUTURE SCOPE FEATURES (DISABLED per boss requirements)
+  enableLabs: false,           // AI Coaching Lab - FUTURE SCOPE
+  enableLabsAdvanced: false,   // Advanced Lab features - FUTURE SCOPE
+  enablePlanningHub: false,    // Strategic Tools - FUTURE SCOPE
+  enableVideos: false,         // Leadership Videos - FUTURE SCOPE
+  enableCommunity: false,      // Community features - FUTURE SCOPE
+  enableRoiReport: false,      // Executive ROI Report - FUTURE SCOPE
+  enableQuickStart: true,      // Keep QuickStart for onboarding
+  
+  // LEGACY/OTHER
+  enableNewFeature: false 
+};
 const MOCK_REP_LIBRARY = [];
 const MOCK_EXERCISE_LIBRARY = [];
 const MOCK_WORKOUT_LIBRARY = [];
@@ -626,8 +645,9 @@ const LEADERSHIP_TIERS_FALLBACK = [
 ];
 
 const GEMINI_MODEL = 'gemini-pro';
-const ADMIN_EMAILS = ['rob@sagecg.com', 'ryan@leaderreps.com'];
-const ADMIN_PASSWORD = 'admin123';
+// SECURITY FIX: Remove hardcoded credentials - use environment variables
+const ADMIN_EMAILS = process.env.VITE_ADMIN_EMAILS ? process.env.VITE_ADMIN_EMAILS.split(',') : ['rob@sagecg.com'];
+const ADMIN_PASSWORD = process.env.VITE_ADMIN_PASSWORD || 'temp-admin-pwd-change-me';
 
 // Create and export the context
 const AppServiceContext = createContext(null);

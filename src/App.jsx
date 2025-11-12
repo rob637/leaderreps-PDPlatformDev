@@ -12,6 +12,13 @@ import {
   useAppServices,       // Hook to consume context
 } from './services/useAppServices.jsx';
 
+// --- Membership System ---
+import { membershipService } from './services/membershipService.js';
+import { MembershipGate } from './components/ui/MembershipGate.jsx';
+
+// --- Corporate Brand Colors ---
+import { CORPORATE_COLORS } from './styles/corporate-colors.js';
+
 // --- Firebase Imports (Authentication & Firestore) ---
 import { initializeApp } from 'firebase/app';
 import {
@@ -56,8 +63,33 @@ import {
 // 🚨 FIX: Removed hardcoded ADMIN_EMAILS constant. It is now loaded from Firestore metadata/config.
 // const ADMIN_EMAILS = [ 'admin@leaderreps.com', 'rob@sagecg.com', /* ... */ ];
 
-// --- Primary Color Palette (Ensure consistency) ---
-const COLORS = { NAVY: '#002E47', TEAL: '#47A88D', ORANGE: '#E04E1B', GREEN: '#10B981', BLUE: '#2563EB', AMBER: '#F5A800', RED: '#E04E1B', LIGHT_GRAY: '#FCFCFA', OFF_WHITE: '#FFFFFF', SUBTLE: '#E5E7EB', TEXT: '#374151', MUTED: '#4B5563', PURPLE: '#7C3AED', BG: '#F9FAFB' }; // cite: User Request
+// --- LEADERREPS CORPORATE COLORS - STRICT BRAND COMPLIANCE ---
+const COLORS = {
+  // CORPORATE BRAND COLORS (must match leaderreps.com)
+  NAVY: '#002E47',           // Corporate navy - primary brand color
+  ORANGE: '#E04E1B',         // Corporate orange - accent/CTA color  
+  TEAL: '#47A88D',           // Corporate teal - secondary brand color
+  SUBTLE_TEAL: '#349881',    // Corporate subtle teal - hover states
+  LIGHT_GRAY: '#FCFCFA',     // Corporate light gray - page background
+  
+  // SEMANTIC COLORS (corporate aligned)
+  TEXT: '#002E47',           // Use navy for primary text
+  MUTED: '#349881',          // Use subtle teal for muted text
+  SUBTLE: '#47A88D',         // Use teal for borders
+  BG: '#FCFCFA',             // Corporate page background
+  OFF_WHITE: '#FFFFFF',      // Corporate card background
+  SUCCESS: '#47A88D',        // Use teal for success states
+  WARNING: '#E04E1B',        // Use orange for warnings  
+  ERROR: '#E04E1B',          // NO RED! Use corporate orange for errors
+  INFO: '#002E47',           // Use navy for info
+  
+  // LEGACY COMPATIBILITY (CORPORATE COLORS ONLY!)
+  GREEN: '#47A88D',          // Map to corporate teal
+  BLUE: '#002E47',           // Map to corporate navy
+  RED: '#E04E1B',            // Map to corporate orange
+  AMBER: '#E04E1B',          // NO AMBER! Use corporate orange
+  PURPLE: '#47A88D'          // NO PURPLE! Use corporate teal
+};
 
 // --- Authentication ---
 const SECRET_SIGNUP_CODE = 'mock-code-123'; // Keep for mock signup flow
@@ -86,6 +118,7 @@ const ScreenMap = {
   'applied-leadership': lazy(() => import('./components/screens/AppliedLeadership.jsx')), // Course Hub // cite: AppliedLeadership.jsx
   'leadership-videos': lazy(() => import('./components/screens/LeadershipVideos.jsx')), // cite: LeadershipVideos.jsx
   'app-settings': lazy(() => import('./components/screens/AppSettings.jsx')), // Renamed component file assumed
+  'membership-upgrade': lazy(() => import('./components/screens/MembershipUpgrade.jsx')), // Arena v1.0 Scope: Membership upgrade page
   'admin-functions': lazy(() => import('./components/screens/AdminFunctions.jsx')), // NEW Admin screen
   'data-maintenance': lazy(() => import('./components/screens/AdminDataMaintenance.jsx')), // cite: AdminDataMaintenance.jsx
   'debug-data': lazy(() => import('./components/screens/DebugDataViewer.jsx')), // Assumed exists
@@ -244,7 +277,7 @@ function AuthPanel({ auth, onSuccess }) {
 const NavSidebar = ({ currentScreen, setCurrentScreen, user, closeMobileMenu, isAuthRequired, isNavExpanded, setIsNavExpanded }) => {
   // --- Consume services for auth actions and feature flags ---
   // FIX: Access isAdmin from context
-  const { auth, featureFlags, isAdmin } = useAppServices(); // cite: useAppServices.jsx
+  const { auth, featureFlags, isAdmin, membershipData } = useAppServices(); // cite: useAppServices.jsx
   const [isProfileOpen, setIsProfileOpen] = useState(false);
 
   // --- Navigation Structure (UPDATED) ---
@@ -253,31 +286,32 @@ const NavSidebar = ({ currentScreen, setCurrentScreen, user, closeMobileMenu, is
   ];
 
   const contentPillarNav = [
-    { screen: 'development-plan', label: 'Development Plan', icon: Briefcase, flag: 'enableDevPlan' },
+    { screen: 'development-plan', label: 'Development Plan', icon: Briefcase, flag: 'enableDevPlan', requiredTier: 'basic' },
     // QuickStart is accessible via Course Library (AppliedLeadership screen) - removed from main nav
-    { screen: 'business-readings', label: 'Professional Reading Hub', icon: BookOpen, flag: 'enableReadings' }, // cite: BusinessReadings.jsx
-    { screen: 'applied-leadership', label: 'Course Library', icon: ShieldCheck, flag: 'enableCourses' }, // cite: AppliedLeadership.jsx
-    // v2 Features (admins see these, regular users don't unless flag enabled)
-    { screen: 'planning-hub', label: 'Strategic Content Tools', icon: Trello, flag: 'enablePlanningHub' }, // cite: PlanningHub.jsx - HOLD for v2
-    { screen: 'leadership-videos', label: 'Content Leader Talks', icon: Film, flag: 'enableVideos' }, // cite: LeadershipVideos.jsx - HOLD for v2
+    { screen: 'business-readings', label: 'Professional Reading Hub', icon: BookOpen, flag: 'enableReadings', requiredTier: 'professional' }, // cite: BusinessReadings.jsx
+    { screen: 'applied-leadership', label: 'Course Library', icon: ShieldCheck, flag: 'enableCourses', requiredTier: 'professional' }, // cite: AppliedLeadership.jsx
+    // ===== BOSS V1 SCOPE: ADVANCED CONTENT FEATURES DISABLED =====
+    // { screen: 'planning-hub', label: 'Strategic Content Tools', icon: Trello, flag: 'enablePlanningHub', requiredTier: 'elite' }, // FUTURE SCOPE - BOSS DECISION
+    // { screen: 'leadership-videos', label: 'Content Leader Talks', icon: Film, flag: 'enableVideos', requiredTier: 'elite' }, // FUTURE SCOPE - BOSS DECISION
   ];
 
   const coachingPillarNav = [
     // NOTE: Daily Reflection Rep now lives on Dashboard only (per boss feedback)
-    // v2 Features (admins see these, regular users don't unless flag enabled)
-    { screen: 'coaching-lab', label: 'AI Coaching Lab', icon: Mic, flag: 'enableLabs' }, // cite: Labs.jsx - HOLD for v2
-    { screen: 'executive-reflection', label: 'Executive ROI Report', icon: BarChart3, flag: 'enableRoiReport' }, // cite: ExecutiveReflection.jsx - HOLD for v2
+    // ===== BOSS V1 SCOPE: COACHING FEATURES DISABLED =====
+    // All coaching features moved to future scope per boss requirements
+    // { screen: 'coaching-lab', label: 'AI Coaching Lab', icon: Mic, flag: 'enableLabs', requiredTier: 'elite' }, // FUTURE SCOPE
+    // { screen: 'executive-reflection', label: 'Executive ROI Report', icon: BarChart3, flag: 'enableRoiReport', requiredTier: 'elite' }, // FUTURE SCOPE
   ];
 
   const communityPillarNav = [
-    // v2 Feature (pending Mighty Networks discussion with Cristina)
-    { screen: 'community', label: 'Leadership Community', icon: Users, flag: 'enableCommunity' }, // cite: CommunityScreen.jsx - HOLD for v2
+    // v2 Feature (pending Mighty Networks discussion with Cristina) - FUTURE SCOPE
+    // { screen: 'community', label: 'Leadership Community', icon: Users, flag: 'enableCommunity', requiredTier: 'professional' }, // cite: CommunityScreen.jsx - HOLD for v2
   ];
 
   // --- System/Admin Navigation (Conditional) ---
   const systemNav = [
-    { screen: 'membership-module', label: 'Membership & Billing', icon: DollarSign, flag: 'enableMembershipModule' }, // ADDED: Membership Module
-    { screen: 'app-settings', label: 'App Settings', icon: Settings },
+    { screen: 'membership-module', label: 'Membership & Billing', icon: DollarSign, flag: 'enableMembershipModule', requiredTier: 'basic' }, // ADDED: Membership Module
+    { screen: 'app-settings', label: 'App Settings', icon: Settings, requiredTier: 'basic' },
   ];
 
   const menuSections = [
@@ -310,7 +344,7 @@ const NavSidebar = ({ currentScreen, setCurrentScreen, user, closeMobileMenu, is
     closeMobileMenu();
   }, [setCurrentScreen, closeMobileMenu]); // Removed currentScreen dependency if allowing re-navigation
 
-  // --- Renders individual navigation items, checking feature flags ---
+  // --- Renders individual navigation items, checking feature flags and membership tiers ---
   const renderNavItems = (items) => items
     // Filter admin-only items first (though none are currently marked as such)
     .filter(item => !item.adminOnly || isAdmin)
@@ -318,6 +352,12 @@ const NavSidebar = ({ currentScreen, setCurrentScreen, user, closeMobileMenu, is
     // New logic: !item.flag || (featureFlags && featureFlags[item.flag] === true)
     // This logic is now robust because featureFlags values are guaranteed booleans in DataProvider.
     .filter(item => isAdmin || !item.flag || (featureFlags && featureFlags[item.flag] === true))
+    // Filter by membership tier access
+    .filter(item => {
+      if (isAdmin) return true; // Admins see everything
+      if (!item.requiredTier) return true; // No tier requirement
+      return membershipService.hasAccess(membershipData?.currentTier, item.requiredTier);
+    })
     .map((item) => {
       const Icon = item.icon;
       const isActive = currentScreen === item.screen;
@@ -328,16 +368,16 @@ const NavSidebar = ({ currentScreen, setCurrentScreen, user, closeMobileMenu, is
           key={item.screen}
           onClick={() => handleNavigate(item.screen)}
           title={!isNavExpanded ? label : ''} // Show title only when collapsed
-          className={`relative group flex items-center w-full px-3 py-2.5 rounded-lg font-semibold text-sm transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-[${COLORS.TEAL}] focus:ring-offset-[${COLORS.NAVY}]`}
+          className={`nav-item-corporate relative group flex items-center w-full transition-all duration-200 focus:outline-none ${isActive ? 'active' : ''}`}
           style={{
-              // --- Refined Styling ---
+              // --- Corporate Navigation Styling ---
               background: isActive ? COLORS.TEAL : 'transparent',
-              color: isActive ? COLORS.OFF_WHITE : COLORS.LIGHT_GRAY, // Use lighter gray for inactive text
-              boxShadow: isActive ? `0 4px 4px ${COLORS.TEAL}40` : 'none',
-              // Add subtle hover effect for inactive items
-              ':hover': {
-                  background: isActive ? COLORS.TEAL : `${COLORS.TEAL}20`, // Slightly lighter teal background on hover
-              }
+              color: isActive ? COLORS.OFF_WHITE : COLORS.LIGHT_GRAY,
+              borderRadius: 'var(--radius-lg)',
+              padding: 'var(--spacing-md) var(--spacing-lg)',
+              fontSize: '0.875rem',
+              fontWeight: 'var(--font-weight-semibold)',
+              boxShadow: isActive ? 'var(--shadow-md)' : 'none',
           }}
         >
           {/* Icon Styling */}
@@ -380,20 +420,30 @@ const NavSidebar = ({ currentScreen, setCurrentScreen, user, closeMobileMenu, is
 
   return (
     // --- Sidebar Container ---
-    // Added smooth transitions and z-index
-    <div className={`hidden md:flex flex-col relative z-30 shadow-2xl transition-all duration-300 ease-in-out`}
-         style={{ background: COLORS.NAVY, width: isNavExpanded ? '256px' : '72px' }}> {/* 18rem or 4.5rem */}
+    // Corporate styled navigation with professional appearance
+    <div className={`nav-corporate hidden md:flex flex-col relative z-30 transition-all duration-300 ease-in-out`}
+         style={{ background: COLORS.NAVY, width: isNavExpanded ? '256px' : '72px', boxShadow: 'var(--shadow-lg)' }}> {/* Professional shadow */}
 
       {/* --- Header / Logo Area --- */}
       <div className={`flex items-center justify-center flex-shrink-0 h-16 border-b border-[${COLORS.TEAL}]/30 transition-all duration-300`}
-           style={{ paddingLeft: isNavExpanded ? '1rem' : '0', paddingRight: isNavExpanded ? '1rem' : '0' }} // Adjust padding
+           style={{ 
+             paddingLeft: isNavExpanded ? 'var(--spacing-lg)' : '0', 
+             paddingRight: isNavExpanded ? 'var(--spacing-lg)' : '0',
+             background: 'linear-gradient(180deg, rgba(71, 168, 141, 0.1), transparent)'
+           }}
       >
-        <Zap // Using Zap as a placeholder logo icon
+        <Zap // Corporate logo with enhanced styling
             className={`transition-all duration-300`}
-            style={{ color: COLORS.TEAL, width: '28px', height: '28px', marginRight: isNavExpanded ? '8px' : '0' }}
+            style={{ 
+              color: COLORS.TEAL, 
+              width: '28px', 
+              height: '28px', 
+              marginRight: isNavExpanded ? '8px' : '0',
+              filter: 'drop-shadow(0 2px 4px rgba(71, 168, 141, 0.3))'
+            }}
         />
         {isNavExpanded && (
-          <h1 className="text-xl font-extrabold text-white whitespace-nowrap transition-opacity duration-300">
+          <h1 className="corporate-heading-md text-white whitespace-nowrap transition-opacity duration-300" style={{ fontSize: '1.25rem' }}>
             LeaderReps
           </h1>
         )}
@@ -446,8 +496,8 @@ const NavSidebar = ({ currentScreen, setCurrentScreen, user, closeMobileMenu, is
                     {!isNavExpanded && (
                       <span className={`absolute left-full ml-3 w-auto px-3 py-2 text-sm font-medium whitespace-nowrap rounded-md shadow-xl opacity-0 pointer-events-none group-hover:opacity-100 transition-all duration-150 z-50`}
                             style={{ 
-                              background: '#1a1a1a',
-                              color: '#ffffff',
+                              background: COLORS.NAVY,
+                              color: COLORS.LIGHT_GRAY,
                               border: '1px solid rgba(255, 255, 255, 0.1)'
                             }}>
                         Expand Menu
@@ -528,13 +578,33 @@ const ScreenRouter = ({ currentScreen, navParams, navigate }) => {
   const Component = ScreenMap[currentScreen] || ScreenMap.dashboard;
   console.log(`[ScreenRouter] Rendering screen: ${currentScreen}`); // Log current screen
 
-  // Handle specific screens that might need extra props or different components
-  // Note: AppSettingsScreen is now lazy-loaded via ScreenMap
-  // if (currentScreen === 'app-settings') return <AppSettingsScreen key={currentScreen} navigate={navigate} />;
+  // Define membership requirements for each screen (V1 SCOPE ONLY)
+  const screenTierRequirements = {
+    'development-plan': 'basic',
+    'business-readings': 'professional',
+    'applied-leadership': 'professional',
+    // ===== BOSS V1 SCOPE: FUTURE FEATURES REMOVED =====
+    // 'planning-hub': 'elite', // FUTURE SCOPE
+    // 'leadership-videos': 'elite', // FUTURE SCOPE  
+    // 'coaching-lab': 'elite', // FUTURE SCOPE
+    // 'executive-reflection': 'elite', // FUTURE SCOPE
+    // 'community': 'professional', // FUTURE SCOPE
+  };
 
-  // Render the selected component within Suspense fallback
-  // --- FIX: Pass navigate prop ---
-  return <Component key={currentScreen} {...(navParams || {})} navigate={navigate} />; // Spread navParams and pass navigate
+  const requiredTier = screenTierRequirements[currentScreen];
+  const componentElement = <Component key={currentScreen} {...(navParams || {})} navigate={navigate} />;
+
+  // Wrap with MembershipGate if tier is required
+  if (requiredTier) {
+    return (
+      <MembershipGate requiredTier={requiredTier} featureName={currentScreen}>
+        {componentElement}
+      </MembershipGate>
+    );
+  }
+
+  // Render the selected component without gate
+  return componentElement;
 };
 
 
@@ -567,10 +637,23 @@ const AppContent = ({ currentScreen, setCurrentScreen, user, navParams, isMobile
 
       {/* --- Main Content Area --- */}
       <main className="flex-1 flex flex-col"> {/* Ensure main area takes remaining space */}
-        {/* Mobile Header (Sticky) */}
-        <div className="md:hidden sticky top-0 bg-white/95 backdrop-blur-sm shadow-md p-4 flex justify-between items-center z-40">
-          <h1 className="text-xl font-bold" style={{ color: COLORS.NAVY }}>LeaderReps</h1>
-          <button onClick={() => setIsMobileOpen(true)} className="p-2" style={{ color: COLORS.NAVY }}>
+        {/* Mobile Header (Corporate Styled) */}
+        <div className="nav-corporate md:hidden sticky top-0 bg-white/95 backdrop-blur-sm shadow-md flex justify-between items-center z-40" 
+             style={{ 
+               padding: 'var(--spacing-lg)', 
+               borderBottom: `1px solid ${COLORS.SUBTLE}`,
+               boxShadow: 'var(--shadow-md)'
+             }}>
+          <h1 className="corporate-heading-md" style={{ color: COLORS.NAVY, fontSize: '1.25rem' }}>LeaderReps</h1>
+          <button onClick={() => setIsMobileOpen(true)} 
+                  className="btn-corporate-secondary" 
+                  style={{ 
+                    padding: 'var(--spacing-sm)', 
+                    color: COLORS.NAVY,
+                    border: 'none',
+                    background: 'transparent',
+                    borderRadius: 'var(--radius-md)'
+                  }}>
             <Menu className="w-6 h-6" />
           </button>
           {/* TODO: Add Mobile Menu Overlay component here */}
@@ -580,11 +663,11 @@ const AppContent = ({ currentScreen, setCurrentScreen, user, navParams, isMobile
         <div className="flex-1 overflow-y-auto"> {/* Allow content to scroll */}
             <Suspense
             fallback={
-                // Centered Loading Spinner
-                <div className="min-h-[calc(100vh-64px)] flex items-center justify-center"> {/* Adjust height calculation */}
-                <div className="flex flex-col items-center">
-                    <Loader className="animate-spin h-12 w-12 mb-3" style={{ color: COLORS.TEAL }} />
-                    <p className="font-semibold" style={{ color: COLORS.NAVY }}>Loading Content...</p>
+                // Corporate Loading Spinner
+                <div className="min-h-[calc(100vh-64px)] flex items-center justify-center gradient-corporate-hero">
+                <div className="card-corporate-elevated flex flex-col items-center" style={{ padding: 'var(--spacing-3xl)' }}>
+                    <div className="loading-corporate mb-6"></div>
+                    <p className="corporate-text-body" style={{ color: COLORS.NAVY }}>Loading Content...</p>
                 </div>
                 </div>
             }
@@ -593,9 +676,14 @@ const AppContent = ({ currentScreen, setCurrentScreen, user, navParams, isMobile
             </Suspense>
         </div>
 
-         {/* --- NEW: Legal Footer --- */}
-        <footer className="w-full text-center p-4 mt-auto border-t" style={{ background: COLORS.LIGHT_GRAY, borderColor: COLORS.SUBTLE }}>
-             <p className="text-xs text-gray-500">
+         {/* --- Corporate Footer --- */}
+        <footer className="w-full text-center mt-auto border-t" 
+                style={{ 
+                  background: COLORS.LIGHT_GRAY, 
+                  borderColor: COLORS.SUBTLE,
+                  padding: 'var(--spacing-lg)'
+                }}>
+             <p className="corporate-text-muted">
                 © {currentYear} LeaderReps. All rights reserved.
              </p>
              {/* Optional: Add links like Privacy Policy, Terms of Service */}
@@ -843,7 +931,10 @@ const DataProvider = ({ children, firebaseServices, userId, isAuthReady, navigat
            throw new Error("AI Rep Coach backend is not configured. Please contact the administrator.");
       }
 
-      console.log("[callSecureGeminiAPI] Calling backend endpoint:", YOUR_BACKEND_ENDPOINT_URL);
+      // Use logger instead of console.log for production safety
+      if (import.meta.env.DEV) {
+        console.log("[callSecureGeminiAPI] Calling backend endpoint:", YOUR_BACKEND_ENDPOINT_URL);
+      }
 
       try {
           const requestOptions = {
@@ -902,7 +993,7 @@ const DataProvider = ({ children, firebaseServices, userId, isAuthReady, navigat
       isLoading,
       error,
       isAdmin,
-      ADMIN_PASSWORD: resolvedMetadata.ADMIN_PASSWORD || '7777',
+      ADMIN_PASSWORD: resolvedMetadata.ADMIN_PASSWORD || import.meta.env.VITE_ADMIN_PASSWORD || 'change-me-now',
 
       // User-Specific Data (using updated names)
       developmentPlanData: devPlanHook.developmentPlanData,

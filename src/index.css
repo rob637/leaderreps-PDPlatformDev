@@ -1,4 +1,7 @@
 /* src/index.css */
+/* Import theme components first */
+@import './styles/theme.css';
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;

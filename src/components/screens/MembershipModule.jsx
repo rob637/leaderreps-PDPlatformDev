@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useCallback } from 'react';
 import { useAppServices } from '../../services/useAppServices.jsx'; // Canonical path used by other screen components
+import { membershipService, MEMBERSHIP_TIERS } from '../../services/membershipService.js';
 import { DollarSign, Zap, Clock, CheckCircle, CreditCard, AlertTriangle, X, ShieldCheck, CornerRightUp, RefreshCw, Trash2, Mail, Bell } from 'lucide-react';
 
 // Reusing colors from App.jsx's global constants
@@ -96,10 +97,8 @@ const MembershipModule = ({ navigate }) => {
     const { 
         membershipData, 
         updateMembershipData, 
-        MEMBERSHIP_PLANS, 
-        isLoading,
-        user 
-    } = useAppServices();
+        isLoading 
+    } = useAppServices(); // cite: useAppServices.jsx
 
     const [modalOpen, setModalOpen] = useState(false);
     const [selectedPlan, setSelectedPlan] = useState(null);
@@ -116,27 +115,21 @@ const MembershipModule = ({ navigate }) => {
         }
     }, [membershipData?.nextBillingDate]);
 
-    // Current Plan Details
+    // Current Plan Details - Updated to use new MEMBERSHIP_TIERS
     const currentPlanDetails = useMemo(() => {
-        // Ensure MEMBERSHIP_PLANS is an array before attempting to find
-        const plans = Array.isArray(MEMBERSHIP_PLANS?.items) ? MEMBERSHIP_PLANS.items : MEMBERSHIP_PLANS;
-
-        return plans.find(p => p.id === membershipData?.currentPlanId) || { 
-            name: 'Unknown', 
-            id: 'unknown', 
-            price: 0, 
-            recurrence: 'N/A', 
-            features: [] 
-        };
-    }, [membershipData?.currentPlanId, MEMBERSHIP_PLANS]);
+        const currentTier = membershipData?.currentTier || 'basic';
+        return MEMBERSHIP_TIERS[currentTier] || MEMBERSHIP_TIERS.basic;
+    }, [membershipData?.currentTier]);
     
-    // Filter out the current plan from the list of available plans
+    // Available upgrade plans - Updated to use new MEMBERSHIP_TIERS
     const upgradePlans = useMemo(() => {
-        // Ensure MEMBERSHIP_PLANS is an array before attempting to filter
-        const plans = Array.isArray(MEMBERSHIP_PLANS?.items) ? MEMBERSHIP_PLANS.items : MEMBERSHIP_PLANS;
-
-        return plans.filter(p => p.id !== currentPlanDetails.id && !p.isTrial);
-    }, [MEMBERSHIP_PLANS, currentPlanDetails.id]);
+        const currentTier = membershipData?.currentTier || 'basic';
+        const availableTiers = ['basic', 'professional', 'elite'];
+        
+        return availableTiers
+            .filter(tier => tier !== currentTier)
+            .map(tier => MEMBERSHIP_TIERS[tier]);
+    }, [membershipData?.currentTier]);
 
 
     // --- Handlers ---

@@ -14,17 +14,17 @@ const COLORS = {
   TEAL: '#47A88D',      
   SUBTLE_TEAL: '#349881', 
   ORANGE: '#E04E1B',    
-  GREEN: '#10B981',
-  AMBER: '#F5A500', 
+  GREEN: '#47A88D',      // NO GREEN! Use corporate teal
+  AMBER: '#E04E1B',      // NO AMBER! Use corporate orange
   RED: '#E04E1B',
   LIGHT_GRAY: '#FCFCFA',
   OFF_WHITE: '#FFFFFF', 
-  SUBTLE: '#E5E7EB',
+  SUBTLE: '#47A88D',     // Use teal for subtle borders
   TEXT: '#002E47',
-  MUTED: '#4B5355',
-  BLUE: '#2563EB',
-  BG: '#F9FAFB', 
-  PURPLE: '#7C3AED', 
+  MUTED: '#349881',      // Use subtle teal for muted
+  BLUE: '#002E47',       // NO BLUE! Use corporate navy
+  BG: '#FCFCFA',         // Use corporate light gray
+  PURPLE: '#47A88D',     // NO PURPLE! Use corporate teal
 };
 
 // Mock UI components (Standardized)

@@ -9,6 +9,7 @@ import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useAppServices } from '../../services/useAppServices.jsx';
 import { ArrowRight, Edit3, Loader, X, Users, Send, Target, Clock, Zap, Shield, Trash2, Anchor } from 'lucide-react'; 
 import { deleteField } from 'firebase/firestore'; // Used for reminder dismissals
+import { MembershipGate } from '../ui/MembershipGate.jsx';
 
 // Import modular components from the file you provided
 import {
@@ -30,6 +31,9 @@ AdditionalRepsCard // <--- ADD THIS LINE
   // LeadershipAnchorsCard REMOVED per user request
   // ===========================
 } from './dashboard/DashboardComponents.jsx';
+
+// Arena v1.0 Scope: Import Daily Tasks component to replace Social Pod
+import DailyTasksCard from './dashboard/DailyTasksCard.jsx';
 
 // Import hooks from the file you provided
 import { useDashboard } from './dashboard/DashboardHooks.jsx';
@@ -63,29 +67,121 @@ const sanitizeTimestamps = (obj) => {
 };
 
 
-// --- Helper Components (Get Started Card, SuggestionButton are used locally) ---
-const GetStartedCard = ({ onNavigate }) => (
-  <Card accent="TEAL">
-    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-      <div>
-        <h2 className="text-2xl font-bold" style={{ color: COLORS.NAVY }}>
-          Start Your Leadership Journey
-        </h2>
-        <p className="text-base mt-1" style={{ color: COLORS.MUTED }}>
-          Create your personalized Development Plan to unlock your daily reps.
-        </p>
+// --- Helper Components (Membership-Aware Start Card per Arena v1.0 Scope) ---
+const GetStartedCard = ({ onNavigate, membershipData, developmentPlanData }) => {
+  const currentTier = membershipData?.currentTier || 'basic';
+  const hasCompletedPlan = developmentPlanData?.currentPlan && 
+    developmentPlanData.currentPlan.focusAreas && 
+    developmentPlanData.currentPlan.focusAreas.length > 0;
+
+  // Base members -> Show upgrade page
+  if (currentTier === 'basic') {
+    return (
+      <Card accent="ORANGE">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div>
+            <h2 className="text-2xl font-bold" style={{ color: COLORS.NAVY }}>
+              Unlock Your Leadership Potential
+            </h2>
+            <p className="text-base mt-1" style={{ color: COLORS.MUTED }}>
+              Upgrade to Arena Professional to access assessments, development plans, and accountability pods.
+            </p>
+          </div>
+          <Button
+            onClick={() => onNavigate('membership-upgrade')}
+            variant="primary"
+            size="md"
+            className="flex-shrink-0 w-full sm:w-auto"
+            style={{ background: 'linear-gradient(135deg, #E04E1B, #F5A800)' }}
+          >
+            View Plans <ArrowRight className="w-4 h-4 ml-2" />
+          </Button>
+        </div>
+      </Card>
+    );
+  }
+
+  // Pro/Premium members without plan -> Assessment & Plan flow
+  if ((currentTier === 'professional' || currentTier === 'elite') && !hasCompletedPlan) {
+    return (
+      <Card accent="BLUE">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div>
+            <h2 className="text-2xl font-bold" style={{ color: COLORS.NAVY }}>
+              Create Your Development Plan
+            </h2>
+            <p className="text-base mt-1" style={{ color: COLORS.MUTED }}>
+              Take your leadership assessment and create your personalized development plan.
+            </p>
+          </div>
+          <Button
+            onClick={() => onNavigate('development-plan')}
+            variant="primary"
+            size="md"
+            className="flex-shrink-0 w-full sm:w-auto"
+          >
+            Take Assessment <ArrowRight className="w-4 h-4 ml-2" />
+          </Button>
+        </div>
+      </Card>
+    );
+  }
+
+  // Pro/Premium members with plan -> This Week's Focus
+  if ((currentTier === 'professional' || currentTier === 'elite') && hasCompletedPlan) {
+    const currentWeekFocus = developmentPlanData?.currentPlan?.focusAreas?.[0]?.name || 'Leadership Development';
+    
+    return (
+      <Card accent="TEAL">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div>
+            <h2 className="text-2xl font-bold" style={{ color: COLORS.NAVY }}>
+              This Week's Focus
+            </h2>
+            <p className="text-lg font-semibold mt-1" style={{ color: COLORS.TEAL }}>
+              {currentWeekFocus}
+            </p>
+            <p className="text-sm mt-1" style={{ color: COLORS.MUTED }}>
+              Continue building your skills in this key area
+            </p>
+          </div>
+          <Button
+            onClick={() => onNavigate('development-plan')}
+            variant="outline"
+            size="md"
+            className="flex-shrink-0 w-full sm:w-auto"
+          >
+            View Your Plan <ArrowRight className="w-4 h-4 ml-2" />
+          </Button>
+        </div>
+      </Card>
+    );
+  }
+
+  // Fallback to original behavior
+  return (
+    <Card accent="TEAL">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div>
+          <h2 className="text-2xl font-bold" style={{ color: COLORS.NAVY }}>
+            Start Your Leadership Journey
+          </h2>
+          <p className="text-base mt-1" style={{ color: COLORS.MUTED }}>
+            Create your personalized Development Plan to unlock your daily reps.
+          </p>
+        </div>
+        <Button
+          onClick={() => onNavigate('development-plan')}
+          variant="primary"
+          size="md"
+          className="flex-shrink-0 w-full sm:w-auto"
+        >
+          Get Started <ArrowRight className="w-4 h-4 ml-2" />
+        </Button>
       </div>
-      <Button
-        onClick={() => onNavigate('development-plan')}
-        variant="primary"
-        size="md"
-        className="flex-shrink-0 w-full sm:w-auto"
-      >
-        Get Started <ArrowRight className="w-4 h-4 ml-2" />
-      </Button>
-    </div>
-  </Card>
-);
+    </Card>
+  );
+};
 
 const Dashboard = ({ navigate }) => {
   
@@ -101,7 +197,9 @@ const Dashboard = ({ navigate }) => {
     userEmail,
     developmentPlanData,
     metadata: globalMetadata,
-    isLoading 
+    isLoading,
+    isAdmin,
+    membershipData
   } = useAppServices();
 
   const {
@@ -481,27 +579,30 @@ const Dashboard = ({ navigate }) => {
 
   // --- RENDER ---
   return (
-    <div className="min-h-screen" style={{ background: COLORS.BG }}>
-      <div className="container mx-auto px-4 py-6 max-w-7xl">
+    <div className="min-h-screen gradient-corporate-hero">
+      <div className="container mx-auto max-w-7xl" style={{ padding: 'var(--spacing-xl)' }}>
         
-        {/* Header */}
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
+        {/* Corporate Header */}
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4" style={{ marginBottom: 'var(--spacing-2xl)' }}>
           <div>
-            <h1 className="text-3xl md:text-4xl font-extrabold" style={{ color: COLORS.NAVY }}>
+            <h1 className="corporate-heading-xl" style={{ color: COLORS.NAVY }}>
               The Arena
             </h1>
-            <p className="text-base" style={{ color: COLORS.TEXT }}>
+            <p className="corporate-text-body" style={{ color: COLORS.TEXT }}>
               Welcome to the Arena, {user?.name || 'Leader'}! We're glad you're here.
             </p>
           </div>
-          <div className="flex gap-3 items-center">
-            <ModeSwitch 
-              isArenaMode={isArenaMode} 
-              onToggle={handleToggleMode} 
-              isLoading={isTogglingMode}
-            />
-            <StreakTracker streakCount={streakCount} streakCoins={streakCoins} />
-          </div>
+          {/* Arena Mode and Coins - Admin Only per Arena v1.0 Scope */}
+          {isAdmin && (
+            <div className="flex gap-3 items-center">
+              <ModeSwitch 
+                isArenaMode={isArenaMode} 
+                onToggle={handleToggleMode} 
+                isLoading={isTogglingMode}
+              />
+              <StreakTracker streakCount={streakCount} streakCoins={streakCoins} />
+            </div>
+          )}
         </div>
 
         {/* Reminders (Cool Ideas) */}
@@ -532,13 +633,19 @@ const Dashboard = ({ navigate }) => {
             
             {/* 1. Dev Plan Progress / Get Started */}
             {focusArea === 'Not Set' ? (
-              <GetStartedCard onNavigate={navigate} />
-            ) : (
-              <DevPlanProgressLink
-                progress={devPlanProgress}
-                focusArea={focusArea}
-                onNavigate={() => navigate('development-plan')}
+              <GetStartedCard 
+                onNavigate={navigate} 
+                membershipData={membershipData}
+                developmentPlanData={developmentPlanData}
               />
+            ) : (
+              <MembershipGate requiredTier="basic" featureName="Development Plan">
+                <DevPlanProgressLink
+                  progress={devPlanProgress}
+                  focusArea={focusArea}
+                  onNavigate={() => navigate('development-plan')}
+                />
+              </MembershipGate>
             )}
 
             {/* 2. Today's Focus Rep */}
@@ -604,19 +711,28 @@ const Dashboard = ({ navigate }) => {
               </Card>
             )}
 
-            {/* 3. Accountability Pod */}
-            <SocialPodCard
-              podMembers={dailyPracticeData?.podMembers || []}
-              activityFeed={sanitizeTimestamps(dailyPracticeData?.podActivity || [])}
-              onSendMessage={(msg) => console.log('Send message:', msg)}
-              onFindPod={handleFindPod}
+            {/* 3. Daily Tasks - Replaces Social Pod per Arena v1.0 Scope */}
+            <DailyTasksCard
+              otherTasks={augmentedOtherTasks}
+              morningWIN={morningWIN}
+              winCompleted={dailyPracticeData?.morningBookend?.winCompleted || false}
+              onToggleTask={handleToggleTask}
+              onRemoveTask={handleRemoveTask}
+              onAddTask={handleAddTask}
+              onToggleWIN={handleToggleWIN}
+              onSaveWIN={handleSaveWINWithConfirmation}
             />
 
-            {/* 4. AI Coach */}
-            <AICoachNudge 
-              onOpenLab={() => navigate('coaching-lab')} 
-              disabled={!(featureFlags?.enableLabs)}
-            />
+            {/* ===== BOSS V1 SCOPE: AI COACH DISABLED ===== */}
+            {/* AI Coach feature moved to future scope per boss requirements */}
+            {/* {featureFlags?.enableLabs && (
+              <MembershipGate requiredTier="elite" featureName="AI Coaching Lab">
+                <AICoachNudge 
+                  onOpenLab={() => navigate('coaching-lab')} 
+                  disabled={!(featureFlags?.enableLabs)}
+                />
+              </MembershipGate>
+            )} */}
             
             {/* 5. Additional Reps Card (if any) */}
             {Array.isArray(additionalCommitments) && additionalCommitments.length > 0 && (
@@ -645,8 +761,6 @@ const Dashboard = ({ navigate }) => {
                 setShowLIS: setShowLIS,
                 identityStatement: identityStatement,
                 onSave: handleSaveMorningWithConfirmation,
-                onSaveWIN: handleSaveWINWithConfirmation,
-                onToggleWIN: handleToggleWIN,
                 onSaveWIN: handleSaveWINWithConfirmation,
                 onToggleWIN: handleToggleWIN,
                 isSaving: isSavingBookend,
