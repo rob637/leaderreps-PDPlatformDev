@@ -579,7 +579,7 @@ const ScreenRouter = ({ currentScreen, navParams, navigate }) => {
  * Includes the sidebar, main content area, mobile header, and Suspense fallback.
  * Also includes the new Legal Footer.
  */
-const AppContent = ({ currentScreen, setCurrentScreen, user, navParams, isMobileOpen, setIsMobileOpen, isAuthRequired, isNavExpanded, setIsNavExpanded }) => {
+const AppContent = ({ currentScreen, setCurrentScreen, user, navParams, isMobileOpen, setIsMobileOpen, isAuthRequired, isNavExpanded, setIsNavExpanded, auth }) => {
   // Memoized callback to close mobile menu
   const closeMobileMenu = useCallback(() => setIsMobileOpen(false), [setIsMobileOpen]);
   // Get navigate function from context for ScreenRouter
@@ -1295,6 +1295,7 @@ if (isAuthReady && !user) {
           isAuthRequired={authRequired} // Pass auth status down
           isNavExpanded={isNavExpanded}
           setIsNavExpanded={setIsNavExpanded}
+          auth={firebaseServices.auth} // Pass auth for handleSignOut
         />
       </Suspense>
     </DataProvider>
