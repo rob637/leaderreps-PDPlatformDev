@@ -338,6 +338,7 @@ const NavSidebar = ({ currentScreen, setCurrentScreen, user, closeMobileMenu, is
 
   // --- Event Handlers ---
   const handleSignOut = async () => {
+    console.log('handleSignOut called, auth:', auth);
     try {
       if (auth) await signOut(auth);
       console.log('Sign Out successful.');
@@ -579,6 +580,7 @@ const ScreenRouter = ({ currentScreen, navParams, navigate }) => {
  * Also includes the new Legal Footer.
  */
 const AppContent = ({ currentScreen, setCurrentScreen, user, navParams, isMobileOpen, setIsMobileOpen, isAuthRequired, isNavExpanded, setIsNavExpanded, auth }) => {
+  console.log('AppContent rendering with auth:', auth);
   // Memoized callback to close mobile menu
   const closeMobileMenu = useCallback(() => setIsMobileOpen(false), [setIsMobileOpen]);
   // Get navigate function from context for ScreenRouter
