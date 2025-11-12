@@ -202,6 +202,17 @@ const Dashboard = ({ navigate }) => {
     membershipData
   } = useAppServices();
 
+  // Developer Mode Toggle - Arena v1.0 Enhancement
+  const [isDeveloperMode, setIsDeveloperMode] = useState(() => {
+    return localStorage.getItem('arena-developer-mode') === 'true';
+  });
+
+  const toggleDeveloperMode = () => {
+    const newMode = !isDeveloperMode;
+    setIsDeveloperMode(newMode);
+    localStorage.setItem('arena-developer-mode', newMode.toString());
+  };
+
   const {
     isArenaMode, isTogglingMode, handleToggleMode,
     targetRep, targetRepStatus, canCompleteTargetRep, isSavingRep, handleCompleteTargetRep,
@@ -587,22 +598,47 @@ const Dashboard = ({ navigate }) => {
           <div>
             <h1 className="corporate-heading-xl" style={{ color: COLORS.NAVY }}>
               The Arena
+              {isDeveloperMode && (
+                <span className="ml-3 px-3 py-1 bg-purple-100 text-purple-800 text-sm font-semibold rounded-full">
+                  🔧 Developer View
+                </span>
+              )}
             </h1>
             <p className="corporate-text-body" style={{ color: COLORS.TEXT }}>
               Welcome to the Arena, {user?.name || 'Leader'}! We're glad you're here.
+              {isDeveloperMode && (
+                <span className="block text-sm text-purple-600 font-medium mt-1">
+                  You're viewing the full developer experience - toggle to "User Mode" to see what regular users see.
+                </span>
+              )}
             </p>
           </div>
-          {/* Arena Mode and Coins - Admin Only per Arena v1.0 Scope */}
-          {isAdmin && (
-            <div className="flex gap-3 items-center">
-              <ModeSwitch 
-                isArenaMode={isArenaMode} 
-                onToggle={handleToggleMode} 
-                isLoading={isTogglingMode}
-              />
-              <StreakTracker streakCount={streakCount} streakCoins={streakCoins} />
-            </div>
-          )}
+          {/* Developer Mode Toggle & Arena Features */}
+          <div className="flex gap-3 items-center">
+            {/* Developer/User Mode Toggle */}
+            <button
+              onClick={toggleDeveloperMode}
+              className={`px-4 py-2 rounded-lg font-semibold text-sm transition-all duration-200 ${
+                isDeveloperMode 
+                  ? 'bg-purple-600 text-white shadow-lg' 
+                  : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+              }`}
+            >
+              {isDeveloperMode ? '🔧 Developer Mode' : '👤 User Mode'}
+            </button>
+
+            {/* Arena Mode and Coins - Developer Mode Only */}
+            {isDeveloperMode && (
+              <>
+                <ModeSwitch 
+                  isArenaMode={isArenaMode} 
+                  onToggle={handleToggleMode} 
+                  isLoading={isTogglingMode}
+                />
+                <StreakTracker streakCount={streakCount} streakCoins={streakCoins} />
+              </>
+            )}
+          </div>
         </div>
 
         {/* Reminders (Cool Ideas) */}
@@ -784,12 +820,14 @@ const Dashboard = ({ navigate }) => {
               dailyPracticeData={sanitizeTimestamps(dailyPracticeData)}
             />
 
-            {/* 2. NEW: Test Utilities Button */}
-            <div className="text-center">
-                <Button onClick={() => setShowTestUtils(true)} variant="nav-back" size="sm" className="w-full">
-                    <Shield className="w-4 h-4 mr-2 text-red-500" /> Test Utilities (Admin)
-                </Button>
-            </div>
+            {/* 2. Developer Mode: Test Utilities Button */}
+            {isDeveloperMode && (
+              <div className="text-center">
+                  <Button onClick={() => setShowTestUtils(true)} variant="nav-back" size="sm" className="w-full">
+                      <Shield className="w-4 h-4 mr-2 text-red-500" /> Test Utilities (Developer)
+                  </Button>
+              </div>
+            )}
 
           </div>
         </div>
