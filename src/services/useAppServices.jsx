@@ -606,12 +606,14 @@ const MOCK_MEMBERSHIP_PLANS = {
 
 // Global metadata mocks - BOSS V1 SCOPE: Future features disabled by default
 const MOCK_FEATURE_FLAGS = { 
-  // V1 CORE FEATURES (ENABLED)
+  // V1 CORE FEATURES (ENABLED) - Arena v1.0 Approved Only
   enableDevPlan: true,
-  enableReadings: true, 
-  enableCourses: true,
   enableDailyPractice: true,
   enableMembershipModule: true,
+  
+  // FUTURE SCOPE FEATURES (DISABLED per Arena v1.0 scope)
+  enableReadings: false,       // Professional Reading Hub - FUTURE SCOPE
+  enableCourses: false,        // Course Library - FUTURE SCOPE
   
   // FUTURE SCOPE FEATURES (DISABLED per boss requirements)
   enableLabs: false,           // AI Coaching Lab - FUTURE SCOPE
