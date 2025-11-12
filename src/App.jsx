@@ -360,23 +360,30 @@ const NavSidebar = ({ currentScreen, setCurrentScreen, user, closeMobileMenu, is
   const renderNavItems = (items) => items
     // Filter admin-only items first (though none are currently marked as such)
     .filter(item => !item.adminOnly || isAdmin)
-    // --- FEATURE FLAGS: Show dev-only items in developer mode, respect flags for others ---
+    // --- DEVELOPER MODE vs USER MODE FILTERING ---
     .filter(item => {
       // Admins always see everything
       if (isAdmin) return true;
-      // Developer mode items only show in developer mode
-      if (item.devModeOnly && !isDeveloperMode) return false;
-      // Regular items respect feature flags
+      
+      // DEVELOPER MODE: Show everything (bypass all restrictions)
+      if (isDeveloperMode) return true;
+      
+      // USER MODE: Only show approved Arena v1.0 items (hide devModeOnly items)
+      if (item.devModeOnly) return false;
+      
+      // USER MODE: Regular items still respect feature flags
       if (!item.flag) return true; // No flag requirement
       return featureFlags && featureFlags[item.flag] === true;
     })
-    // --- MEMBERSHIP TIERS: Show dev-only items in developer mode, respect tiers for others ---
+    // --- MEMBERSHIP TIERS (User Mode only, Developer Mode bypasses) ---
     .filter(item => {
       // Admins always see everything
       if (isAdmin) return true;
-      // Developer mode items bypass tier restrictions when in developer mode
-      if (item.devModeOnly && isDeveloperMode) return true;
-      // Regular items respect membership tiers
+      
+      // DEVELOPER MODE: Bypass membership restrictions
+      if (isDeveloperMode) return true;
+      
+      // USER MODE: Respect membership tiers
       if (!item.requiredTier) return true; // No tier requirement
       return membershipService.hasAccess(membershipData?.currentTier, item.requiredTier);
     })
