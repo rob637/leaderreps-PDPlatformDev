@@ -341,7 +341,6 @@ const NavSidebar = ({ currentScreen, setCurrentScreen, user, closeMobileMenu, is
     try {
       if (auth) await signOut(auth);
       console.log('Sign Out successful.');
-      setIsProfileOpen(false); // Close profile popup on sign out
       closeMobileMenu(); // Ensure mobile menu closes if open
       // Auth state change will handle redirect/UI update
     } catch (e) {
