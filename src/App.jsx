@@ -304,27 +304,21 @@ const NavSidebar = ({ currentScreen, setCurrentScreen, user, closeMobileMenu, is
     // QuickStart is accessible via Course Library (AppliedLeadership screen) - removed from main nav
     { screen: 'business-readings', label: 'Professional Reading Hub', icon: BookOpen, flag: 'enableReadings', requiredTier: 'professional' }, // cite: BusinessReadings.jsx
     { screen: 'applied-leadership', label: 'Course Library', icon: ShieldCheck, flag: 'enableCourses', requiredTier: 'professional' }, // cite: AppliedLeadership.jsx
-    // ===== DEVELOPER MODE: Show advanced features =====
-    ...(isDeveloperMode ? [
-      { screen: 'planning-hub', label: 'Strategic Content Tools', icon: Trello, flag: 'enablePlanningHub', requiredTier: 'elite', devModeOnly: true }, // FUTURE SCOPE - VISIBLE IN DEV MODE
-      { screen: 'leadership-videos', label: 'Content Leader Talks', icon: Film, flag: 'enableVideos', requiredTier: 'elite', devModeOnly: true }, // FUTURE SCOPE - VISIBLE IN DEV MODE
-    ] : []),
+    // ===== DEVELOPER MODE: Advanced features (always present, filtered by devModeOnly) =====
+    { screen: 'planning-hub', label: 'Strategic Content Tools', icon: Trello, flag: 'enablePlanningHub', requiredTier: 'elite', devModeOnly: true }, // FUTURE SCOPE - VISIBLE IN DEV MODE
+    { screen: 'leadership-videos', label: 'Content Leader Talks', icon: Film, flag: 'enableVideos', requiredTier: 'elite', devModeOnly: true }, // FUTURE SCOPE - VISIBLE IN DEV MODE
   ];
 
   const coachingPillarNav = [
     // NOTE: Daily Reflection Rep now lives on Dashboard only (per boss feedback)
-    // ===== DEVELOPER MODE: Show coaching features =====
-    ...(isDeveloperMode ? [
-      { screen: 'labs', label: 'AI Coaching Lab', icon: Mic, flag: 'enableLabs', requiredTier: 'elite', devModeOnly: true }, // FUTURE SCOPE - VISIBLE IN DEV MODE
-      { screen: 'executive-reflection', label: 'Executive ROI Report', icon: BarChart3, flag: 'enableRoiReport', requiredTier: 'elite', devModeOnly: true }, // FUTURE SCOPE - VISIBLE IN DEV MODE
-    ] : []),
+    // ===== DEVELOPER MODE: Always include coaching features, filtered by devModeOnly =====
+    { screen: 'labs', label: 'AI Coaching Lab', icon: Mic, flag: 'enableLabs', requiredTier: 'elite', devModeOnly: true }, // FUTURE SCOPE - VISIBLE IN DEV MODE
+    { screen: 'executive-reflection', label: 'Executive ROI Report', icon: BarChart3, flag: 'enableRoiReport', requiredTier: 'elite', devModeOnly: true }, // FUTURE SCOPE - VISIBLE IN DEV MODE
   ];
 
   const communityPillarNav = [
-    // ===== DEVELOPER MODE: Show community features =====
-    ...(isDeveloperMode ? [
-      { screen: 'community', label: 'Leadership Community', icon: Users, flag: 'enableCommunity', requiredTier: 'professional', devModeOnly: true }, // cite: CommunityScreen.jsx - VISIBLE IN DEV MODE
-    ] : []),
+    // ===== DEVELOPER MODE: Always include community features, filtered by devModeOnly =====
+    { screen: 'community', label: 'Leadership Community', icon: Users, flag: 'enableCommunity', requiredTier: 'professional', devModeOnly: true }, // cite: CommunityScreen.jsx - VISIBLE IN DEV MODE
   ];
 
   // --- System/Admin Navigation (Conditional) ---

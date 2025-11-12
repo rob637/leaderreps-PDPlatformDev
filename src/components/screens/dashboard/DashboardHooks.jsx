@@ -29,6 +29,7 @@ export const useDashboard = ({
   // === IDENTITY & HABIT STATE ===
   const [identityStatement, setIdentityStatement] = useState('');
   const [habitAnchor, setHabitAnchor] = useState('');
+  const [whyStatement, setWhyStatement] = useState('');
   const [showIdentityEditor, setShowIdentityEditor] = useState(false);
   const [showHabitEditor, setShowHabitEditor] = useState(false);
 
@@ -74,7 +75,7 @@ export const useDashboard = ({
     }
   }, [dailyPracticeData?.dailyTargetRepStatus]);
 
-  // Load Identity & Habit
+  // Load Identity & Habit & Why
   useEffect(() => {
     if (dailyPracticeData?.identityAnchor) {
       setIdentityStatement(dailyPracticeData.identityAnchor);
@@ -82,7 +83,10 @@ export const useDashboard = ({
     if (dailyPracticeData?.habitAnchor) {
       setHabitAnchor(dailyPracticeData.habitAnchor);
     }
-  }, [dailyPracticeData?.identityAnchor, dailyPracticeData?.habitAnchor]);
+    if (dailyPracticeData?.whyStatement) {
+      setWhyStatement(dailyPracticeData.whyStatement);
+    }
+  }, [dailyPracticeData?.identityAnchor, dailyPracticeData?.habitAnchor, dailyPracticeData?.whyStatement]);
 
   // Load Streak Data
   useEffect(() => {
@@ -467,11 +471,13 @@ export const useDashboard = ({
     isSavingRep,
     handleCompleteTargetRep,
 
-    // Identity & Habit
+    // Identity & Habit & Why
     identityStatement,
     setIdentityStatement,
     habitAnchor,
     setHabitAnchor,
+    whyStatement,
+    setWhyStatement,
     showIdentityEditor,
     setShowIdentityEditor,
     showHabitEditor,
