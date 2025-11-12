@@ -4,7 +4,7 @@
 export const MEMBERSHIP_TIERS = {
   basic: {
     id: 'basic',
-    name: 'Arena Basic',
+    name: 'Base',
     level: 1,
     price: 29,
     color: '#47A88D', // CORPORATE TEAL
@@ -32,7 +32,7 @@ export const MEMBERSHIP_TIERS = {
   
   professional: {
     id: 'professional', 
-    name: 'Arena Professional',
+    name: 'Pro',
     level: 2,
     price: 79,
     color: '#002E47', // CORPORATE NAVY
@@ -60,7 +60,7 @@ export const MEMBERSHIP_TIERS = {
   
   elite: {
     id: 'elite',
-    name: 'Arena Elite', 
+    name: 'Premium', 
     level: 3,
     price: 149,
     color: '#E04E1B', // CORPORATE ORANGE

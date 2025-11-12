@@ -565,40 +565,41 @@ export const MOCK_MEMBERSHIP_DATA = {
 const MOCK_MEMBERSHIP_PLANS = {
     items: [
         { 
-            id: 'trial', 
-            name: 'Free Trial', 
-            price: 0, 
-            recurrence: 'N/A', 
-            isTrial: true,
+            id: 'basic', 
+            name: 'Base', 
+            price: 29, 
+            recurrence: 'Monthly', 
             features: [
-                '7-Day Full Access', 
-                'Limited Rep Catalog', 
-                'Dashboard & Planning Hub', 
-                'No AI Coaching'
+                'Dashboard & Daily Practice', 
+                'Basic Rep Library', 
+                'Weekly Development Plan', 
+                'Limited AI Coaching (5/month)'
             ]
         },
         { 
-            id: 'basic', 
+            id: 'professional', 
             name: 'Pro', 
-            price: 49.99, 
+            price: 79, 
             recurrence: 'Monthly', 
             features: [
                 'Full Rep & Content Library', 
                 'Unlimited Daily Practice', 
-                'Dashboard & Planning Hub', 
-                'Core AI Coaching Lab Access'
+                'Complete Development Plans', 
+                'Full AI Coaching Lab Access',
+                'Community Participation'
             ]
         },
         { 
-            id: 'pro', 
-            name: 'Executive Leader', 
-            price: 499.00, 
-            recurrence: 'Annually', 
+            id: 'elite', 
+            name: 'Premium', 
+            price: 199, 
+            recurrence: 'Monthly', 
             features: [
                 'All Pro Features', 
-                'Executive ROI Report Generation', 
-                'Priority Access to new Content', 
-                'Dedicated 1-on-1 AI Coaching'
+                'Executive ROI Reports', 
+                'Priority Support', 
+                '1-on-1 Coaching Sessions',
+                'Early Access to New Content'
             ]
         }
     ]
