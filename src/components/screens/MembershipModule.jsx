@@ -14,7 +14,7 @@ const COLORS = {
     LIGHT_GRAY: '#FCFCFA', 
     TEXT: '#374151', 
     MUTED: '#4B5563', 
-    PURPLE: '#7C3AED', 
+    PURPLE: '#47A88D', // Map to TEAL (no purple in corporate colors)
     BG: '#F9FAFB' 
 };
 
@@ -279,10 +279,10 @@ const MembershipModule = ({ navigate }) => {
                         
                         <p className="font-semibold text-base mb-2" style={{ color: COLORS.NAVY }}>Your Features:</p>
                         <ul className="space-y-1 text-sm">
-                            {currentPlanDetails.features.map((feature, index) => (
+                            {currentPlanDetails.features && Object.entries(currentPlanDetails.features).map(([key, value], index) => (
                                 <li key={index} className="flex items-center text-gray-700">
                                     <CheckCircle className="w-4 h-4 mr-2 flex-shrink-0" style={{ color: COLORS.GREEN }} />
-                                    {feature}
+                                    {key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}: {typeof value === 'boolean' ? (value ? 'Yes' : 'No') : value}
                                 </li>
                             ))}
                         </ul>
@@ -318,10 +318,10 @@ const MembershipModule = ({ navigate }) => {
                                     </p>
                                     
                                     <ul className="space-y-2 text-sm mb-6">
-                                        {plan.features.map((feature, index) => (
+                                        {plan.features && Object.entries(plan.features).map(([key, value], index) => (
                                             <li key={index} className="flex items-center text-gray-700">
                                                 <CornerRightUp className="w-4 h-4 mr-2 flex-shrink-0" style={{ color: COLORS.ORANGE }} />
-                                                {feature}
+                                                {key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}: {typeof value === 'boolean' ? (value ? 'Yes' : 'No') : value}
                                             </li>
                                         ))}
                                     </ul>

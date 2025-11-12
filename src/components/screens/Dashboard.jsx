@@ -601,7 +601,7 @@ const Dashboard = ({ navigate }) => {
             <h1 className="corporate-heading-xl" style={{ color: COLORS.NAVY }}>
               The Arena
               {isDeveloperMode && (
-                <span className="ml-3 px-3 py-1 bg-purple-100 text-purple-800 text-sm font-semibold rounded-full">
+                <span className="ml-3 px-3 py-1 bg-orange-100 text-orange-800 text-sm font-semibold rounded-full">
                   🔧 Developer View
                 </span>
               )}
@@ -609,7 +609,7 @@ const Dashboard = ({ navigate }) => {
             <p className="corporate-text-body" style={{ color: COLORS.TEXT }}>
               Welcome to the Arena, {user?.name || 'Leader'}! We're glad you're here.
               {isDeveloperMode && (
-                <span className="block text-sm text-purple-600 font-medium mt-1">
+                <span className="block text-sm text-orange-600 font-medium mt-1">
                   You're viewing the full developer experience - toggle to "User Mode" to see what regular users see.
                 </span>
               )}
@@ -622,7 +622,7 @@ const Dashboard = ({ navigate }) => {
               onClick={toggleDeveloperMode}
               className={`px-4 py-2 rounded-lg font-semibold text-sm transition-all duration-200 ${
                 isDeveloperMode 
-                  ? 'bg-purple-600 text-white shadow-lg' 
+                  ? 'bg-orange-600 text-white shadow-lg' 
                   : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
               }`}
             >
