@@ -218,7 +218,7 @@ export default function DailyPracticeScreen() {
       {/* Navigation Footer */}
       <footer className="mt-10 pt-6 border-t border-gray-200 flex flex-col sm:flex-row justify-between items-center gap-4">
         {/* Button to View Log (Assuming 'reflection-log' route exists) */}
-        <Button onClick={() => navigate('reflection-log')} variant="outline" size="sm" >
+        <Button onClick={() => navigate('daily-practice')} variant="outline" size="sm" >
           <Archive className="w-4 h-4 mr-2" /> View Full Reflection Log
         </Button>
         {/* Button to go back to Dashboard */}

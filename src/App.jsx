@@ -279,6 +279,20 @@ const NavSidebar = ({ currentScreen, setCurrentScreen, user, closeMobileMenu, is
   // FIX: Access isAdmin from context
   const { auth, featureFlags, isAdmin, membershipData } = useAppServices(); // cite: useAppServices.jsx
   const [isProfileOpen, setIsProfileOpen] = useState(false);
+  
+  // --- Developer Mode Detection (Arena v1.0 Enhancement) ---
+  const [isDeveloperMode, setIsDeveloperMode] = useState(() => {
+    return localStorage.getItem('arena-developer-mode') === 'true';
+  });
+  
+  // Listen for developer mode changes
+  useEffect(() => {
+    const handleStorageChange = () => {
+      setIsDeveloperMode(localStorage.getItem('arena-developer-mode') === 'true');
+    };
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, []);
 
   // --- Navigation Structure (UPDATED) ---
   const coreNav = [
@@ -290,22 +304,27 @@ const NavSidebar = ({ currentScreen, setCurrentScreen, user, closeMobileMenu, is
     // QuickStart is accessible via Course Library (AppliedLeadership screen) - removed from main nav
     { screen: 'business-readings', label: 'Professional Reading Hub', icon: BookOpen, flag: 'enableReadings', requiredTier: 'professional' }, // cite: BusinessReadings.jsx
     { screen: 'applied-leadership', label: 'Course Library', icon: ShieldCheck, flag: 'enableCourses', requiredTier: 'professional' }, // cite: AppliedLeadership.jsx
-    // ===== BOSS V1 SCOPE: ADVANCED CONTENT FEATURES DISABLED =====
-    // { screen: 'planning-hub', label: 'Strategic Content Tools', icon: Trello, flag: 'enablePlanningHub', requiredTier: 'elite' }, // FUTURE SCOPE - BOSS DECISION
-    // { screen: 'leadership-videos', label: 'Content Leader Talks', icon: Film, flag: 'enableVideos', requiredTier: 'elite' }, // FUTURE SCOPE - BOSS DECISION
+    // ===== DEVELOPER MODE: Show advanced features =====
+    ...(isDeveloperMode ? [
+      { screen: 'planning-hub', label: 'Strategic Content Tools', icon: Trello, flag: 'enablePlanningHub', requiredTier: 'elite', devModeOnly: true }, // FUTURE SCOPE - VISIBLE IN DEV MODE
+      { screen: 'leadership-videos', label: 'Content Leader Talks', icon: Film, flag: 'enableVideos', requiredTier: 'elite', devModeOnly: true }, // FUTURE SCOPE - VISIBLE IN DEV MODE
+    ] : []),
   ];
 
   const coachingPillarNav = [
     // NOTE: Daily Reflection Rep now lives on Dashboard only (per boss feedback)
-    // ===== BOSS V1 SCOPE: COACHING FEATURES DISABLED =====
-    // All coaching features moved to future scope per boss requirements
-    // { screen: 'coaching-lab', label: 'AI Coaching Lab', icon: Mic, flag: 'enableLabs', requiredTier: 'elite' }, // FUTURE SCOPE
-    // { screen: 'executive-reflection', label: 'Executive ROI Report', icon: BarChart3, flag: 'enableRoiReport', requiredTier: 'elite' }, // FUTURE SCOPE
+    // ===== DEVELOPER MODE: Show coaching features =====
+    ...(isDeveloperMode ? [
+      { screen: 'labs', label: 'AI Coaching Lab', icon: Mic, flag: 'enableLabs', requiredTier: 'elite', devModeOnly: true }, // FUTURE SCOPE - VISIBLE IN DEV MODE
+      { screen: 'executive-reflection', label: 'Executive ROI Report', icon: BarChart3, flag: 'enableRoiReport', requiredTier: 'elite', devModeOnly: true }, // FUTURE SCOPE - VISIBLE IN DEV MODE
+    ] : []),
   ];
 
   const communityPillarNav = [
-    // v2 Feature (pending Mighty Networks discussion with Cristina) - FUTURE SCOPE
-    // { screen: 'community', label: 'Leadership Community', icon: Users, flag: 'enableCommunity', requiredTier: 'professional' }, // cite: CommunityScreen.jsx - HOLD for v2
+    // ===== DEVELOPER MODE: Show community features =====
+    ...(isDeveloperMode ? [
+      { screen: 'community', label: 'Leadership Community', icon: Users, flag: 'enableCommunity', requiredTier: 'professional', devModeOnly: true }, // cite: CommunityScreen.jsx - VISIBLE IN DEV MODE
+    ] : []),
   ];
 
   // --- System/Admin Navigation (Conditional) ---
@@ -348,13 +367,23 @@ const NavSidebar = ({ currentScreen, setCurrentScreen, user, closeMobileMenu, is
   const renderNavItems = (items) => items
     // Filter admin-only items first (though none are currently marked as such)
     .filter(item => !item.adminOnly || isAdmin)
-    // --- REQ #3/4 (BUG FIX): Change filter logic. ---
-    // New logic: !item.flag || (featureFlags && featureFlags[item.flag] === true)
-    // This logic is now robust because featureFlags values are guaranteed booleans in DataProvider.
-    .filter(item => isAdmin || !item.flag || (featureFlags && featureFlags[item.flag] === true))
-    // Filter by membership tier access
+    // --- FEATURE FLAGS: Show dev-only items in developer mode, respect flags for others ---
     .filter(item => {
-      if (isAdmin) return true; // Admins see everything
+      // Admins always see everything
+      if (isAdmin) return true;
+      // Developer mode items only show in developer mode
+      if (item.devModeOnly && !isDeveloperMode) return false;
+      // Regular items respect feature flags
+      if (!item.flag) return true; // No flag requirement
+      return featureFlags && featureFlags[item.flag] === true;
+    })
+    // --- MEMBERSHIP TIERS: Show dev-only items in developer mode, respect tiers for others ---
+    .filter(item => {
+      // Admins always see everything
+      if (isAdmin) return true;
+      // Developer mode items bypass tier restrictions when in developer mode
+      if (item.devModeOnly && isDeveloperMode) return true;
+      // Regular items respect membership tiers
       if (!item.requiredTier) return true; // No tier requirement
       return membershipService.hasAccess(membershipData?.currentTier, item.requiredTier);
     })
@@ -686,12 +715,37 @@ const AppContent = ({ currentScreen, setCurrentScreen, user, navParams, isMobile
              <p className="corporate-text-muted">
                 © {currentYear} LeaderReps. All rights reserved.
              </p>
-             {/* Optional: Add links like Privacy Policy, Terms of Service */}
-             {/* <div className="mt-1 space-x-2">
-                 <a href="/privacy" className="text-xs text-gray-400 hover:underline">Privacy Policy</a>
-                 <span className="text-gray-400">|</span>
-                 <a href="/terms" className="text-xs text-gray-400 hover:underline">Terms of Service</a>
-             </div> */}
+             <div className="mt-2 flex flex-wrap justify-center gap-1 text-xs" style={{ color: COLORS.MUTED }}>
+                 <a href="https://leaderreps.com/privacy-policy" target="_blank" rel="noopener noreferrer" 
+                    className="hover:underline transition-colors duration-200" 
+                    style={{ color: COLORS.MUTED }}>
+                    Privacy Policy
+                 </a>
+                 <span>|</span>
+                 <a href="https://leaderreps.com/terms-of-service" target="_blank" rel="noopener noreferrer" 
+                    className="hover:underline transition-colors duration-200"
+                    style={{ color: COLORS.MUTED }}>
+                    Terms of Service
+                 </a>
+                 <span>|</span>
+                 <a href="https://leaderreps.com/cookie-policy" target="_blank" rel="noopener noreferrer" 
+                    className="hover:underline transition-colors duration-200"
+                    style={{ color: COLORS.MUTED }}>
+                    Cookie Policy
+                 </a>
+                 <span>|</span>
+                 <a href="https://leaderreps.com/refund-policy" target="_blank" rel="noopener noreferrer" 
+                    className="hover:underline transition-colors duration-200"
+                    style={{ color: COLORS.MUTED }}>
+                    Refund Policy
+                 </a>
+                 <span>|</span>
+                 <a href="https://leaderreps.com/contact" target="_blank" rel="noopener noreferrer" 
+                    className="hover:underline transition-colors duration-200"
+                    style={{ color: COLORS.MUTED }}>
+                    Contact Us
+                 </a>
+             </div>
         </footer>
       </main>
     </div>

@@ -716,7 +716,7 @@ export const EveningBookend = ({
             {onNavigate && (
                 <div className="pt-3">
                     <Button 
-                        onClick={() => onNavigate('reflection-log')}
+                        onClick={() => onNavigate('daily-practice')}
                         variant="outline"
                         size="sm"
                         className="w-full"

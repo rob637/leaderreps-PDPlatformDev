@@ -87,27 +87,65 @@ const Card = ({ children, className = '', accent }) => {
   );
 };
 
-const FeatureList = ({ features, included = true }) => (
-  <ul className="space-y-3">
-    {features.map((feature, index) => (
-      <li key={index} className="flex items-start gap-3">
-        {included ? (
-          <Check className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />
-        ) : (
-          <div className="w-5 h-5 rounded-full border-2 border-gray-300 flex-shrink-0 mt-0.5" />
-        )}
-        <span className={`text-sm ${included ? 'text-gray-700' : 'text-gray-400'}`}>
-          {feature}
-        </span>
-      </li>
-    ))}
-  </ul>
-);
+const FeatureList = ({ features, included = true }) => {
+  // Extensive defensive checking for features array
+  console.log('FeatureList received features:', features, 'Type:', typeof features);
+  
+  if (!features) {
+    console.error('FeatureList: features is null or undefined');
+    return <div className="text-red-500 text-sm">Error: No features provided</div>;
+  }
+  
+  if (!Array.isArray(features)) {
+    console.error('FeatureList: features is not an array:', features, 'Type:', typeof features);
+    return <div className="text-red-500 text-sm">Error: Features must be an array, got: {typeof features}</div>;
+  }
+  
+  if (features.length === 0) {
+    return <div className="text-gray-500 text-sm">No features available</div>;
+  }
+  
+  return (
+    <ul className="space-y-3">
+      {features.map((feature, index) => (
+        <li key={index} className="flex items-start gap-3">
+          {included ? (
+            <Check className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />
+          ) : (
+            <div className="w-5 h-5 rounded-full border-2 border-gray-300 flex-shrink-0 mt-0.5" />
+          )}
+          <span className={`text-sm ${included ? 'text-gray-700' : 'text-gray-400'}`}>
+            {feature}
+          </span>
+        </li>
+      ))}
+    </ul>
+  );
+};
 
-const TierCard = ({ tier, isCurrentTier, onUpgrade, isPopular = false }) => {
+const TierCard = ({ tier, isCurrentTier = false, onUpgrade, isPopular = false }) => {
   const tierData = MEMBERSHIP_TIERS[tier];
   
+  // Early return if tierData is undefined
+  if (!tierData) {
+    console.error('TierCard: tierData is undefined for tier:', tier);
+    return (
+      <Card className="text-center p-6">
+        <div className="text-red-500">
+          <h3 className="text-xl font-bold mb-2">Error Loading Tier</h3>
+          <p>Unable to load data for tier: {tier}</p>
+        </div>
+      </Card>
+    );
+  }
+  
   const getFeatures = () => {
+    // Defensive check to ensure tier is defined
+    if (!tier) {
+      console.warn('TierCard: tier prop is undefined');
+      return [];
+    }
+    
     switch(tier) {
       case 'basic':
         return [
@@ -141,6 +179,7 @@ const TierCard = ({ tier, isCurrentTier, onUpgrade, isPopular = false }) => {
           'Direct Leadership Mentor Access'
         ];
       default:
+        console.warn('TierCard: Unknown tier:', tier);
         return [];
     }
   };

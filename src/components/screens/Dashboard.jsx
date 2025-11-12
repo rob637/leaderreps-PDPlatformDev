@@ -394,6 +394,7 @@ const Dashboard = ({ navigate }) => {
     if (why !== whyStatement) {
       updates.whyStatement = why;
       setWhyStatement(why);
+      console.log('Saving whyStatement:', why); // Debug log
     }
 
     if (Object.keys(updates).length > 0) {
@@ -764,7 +765,7 @@ const Dashboard = ({ navigate }) => {
             {/* {featureFlags?.enableLabs && (
               <MembershipGate requiredTier="elite" featureName="AI Coaching Lab">
                 <AICoachNudge 
-                  onOpenLab={() => navigate('coaching-lab')} 
+                  onOpenLab={() => navigate('labs')} 
                   disabled={!(featureFlags?.enableLabs)}
                 />
               </MembershipGate>
@@ -835,13 +836,14 @@ const Dashboard = ({ navigate }) => {
 
       {/* --- MODALS --- */}
       
-      {/* NEW: Floating Anchor Button (FAB) - MORE VISIBLE */}
+      {/* NEW: Floating Anchor Button (FAB) - MORE VISIBLE - CORPORATE COLORS */}
       <button 
         onClick={handleOpenAnchorEditor}
         className={`fixed bottom-6 right-6 z-50 flex items-center px-6 py-3 rounded-full font-bold text-white shadow-xl transition-all duration-300 hover:scale-[1.05] 
-            ${!isFullyDefined ? 'animate-bounce bg-purple-700' : 'bg-teal-600 opacity-90'}`}
+            ${!isFullyDefined ? 'animate-bounce' : 'opacity-90'}`}
         style={{ 
-            boxShadow: `0 8px 20px ${!isFullyDefined ? COLORS.PURPLE : COLORS.TEAL}80` 
+            backgroundColor: !isFullyDefined ? COLORS.ORANGE : COLORS.TEAL,
+            boxShadow: `0 8px 20px ${!isFullyDefined ? COLORS.ORANGE : COLORS.TEAL}80` 
         }}
       >
         <Anchor className={`w-5 h-5 mr-3 ${!isFullyDefined ? 'animate-pulse' : ''}`} />
