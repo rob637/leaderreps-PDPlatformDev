@@ -132,9 +132,50 @@ const toggleDeveloperMode = () => {
 3. Count visible navigation items in sidebar
 4. Check console for any errors or unexpected values
 
-## Goal
-Fix the navigation filtering so that:
+## Fix Applied
+
+The issue was identified as **redundant double-filtering logic** that was causing confusion in the filter chain. The original code had two separate `.filter()` calls chained together, both with duplicate admin/developer mode checks.
+
+### Solution: Single, Clear Filter Logic
+
+The filtering was simplified into a single, clean filter function:
+
+```javascript
+const renderNavItems = (items) => items
+  .filter(item => {
+    // 1. ADMIN/DEVELOPER MODE: Show everything, bypass all checks
+    if (isAdmin || isDeveloperMode) {
+      return true;
+    }
+    
+    // --- USER MODE (isDeveloperMode is FALSE) ---
+
+    // 2. EXCLUDE: Filter out items explicitly marked for Dev Mode
+    if (item.devModeOnly) {
+      return false; 
+    }
+
+    // 3. FEATURE FLAG CHECK: Filter out items where the flag is off
+    if (item.flag && featureFlags && featureFlags[item.flag] !== true) {
+      return false;
+    }
+
+    // 4. TIER CHECK: Filter out items where the tier is too low
+    if (item.requiredTier && 
+        !membershipService.hasAccess(membershipData?.currentTier, item.requiredTier)) {
+      return false;
+    }
+
+    // Item passed all User Mode checks
+    return true;
+  });
+```
+
+### Expected Result
 - **User Mode shows exactly 3 items**: Dashboard, Development Plan, Membership & Billing
 - **Developer Mode shows all items**: 11+ items including all future scope features
 
-The core issue appears to be that the filtering logic in `src/App.jsx` is not properly restricting navigation items in User Mode despite having the correct structure for `devModeOnly` flags and feature flag controls.
+### Deployment Status
+✅ **DEPLOYED** - https://leaderreps-pd-platform.web.app
+
+The simplified filter logic should now properly restrict User Mode navigation while allowing Developer Mode to show all items.

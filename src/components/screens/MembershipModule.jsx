@@ -314,7 +314,7 @@ const MembershipModule = ({ navigate }) => {
                                     
                                     <p className="text-3xl font-extrabold mb-4" style={{ color: COLORS.NAVY }}>
                                         <DollarSign className="inline-block w-6 h-6" />{plan.price}
-                                        <span className="text-base font-medium text-gray-500">/{plan.recurrence.toLowerCase().replace('ly', '').replace('ally', '')}</span>
+                                        <span className="text-base font-medium text-gray-500">/{plan.recurrence ? plan.recurrence.toLowerCase().replace('ly', '').replace('ally', '') : 'period'}</span>
                                     </p>
                                     
                                     <ul className="space-y-2 text-sm mb-6">
