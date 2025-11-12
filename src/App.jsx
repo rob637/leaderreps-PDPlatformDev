@@ -358,34 +358,32 @@ const NavSidebar = ({ currentScreen, setCurrentScreen, user, closeMobileMenu, is
 
   // --- Renders individual navigation items, checking feature flags and membership tiers ---
   const renderNavItems = (items) => items
-    // Filter admin-only items first (though none are currently marked as such)
-    .filter(item => !item.adminOnly || isAdmin)
-    // --- DEVELOPER MODE vs USER MODE FILTERING ---
     .filter(item => {
-      // Admins always see everything
-      if (isAdmin) return true;
+      // 1. ADMIN/DEVELOPER MODE: Show everything, bypass all checks
+      if (isAdmin || isDeveloperMode) {
+        return true;
+      }
       
-      // DEVELOPER MODE: Show everything (bypass all restrictions)
-      if (isDeveloperMode) return true;
-      
-      // USER MODE: Only show approved Arena v1.0 items (hide devModeOnly items)
-      if (item.devModeOnly) return false;
-      
-      // USER MODE: Regular items still respect feature flags
-      if (!item.flag) return true; // No flag requirement
-      return featureFlags && featureFlags[item.flag] === true;
-    })
-    // --- MEMBERSHIP TIERS (User Mode only, Developer Mode bypasses) ---
-    .filter(item => {
-      // Admins always see everything
-      if (isAdmin) return true;
-      
-      // DEVELOPER MODE: Bypass membership restrictions
-      if (isDeveloperMode) return true;
-      
-      // USER MODE: Respect membership tiers
-      if (!item.requiredTier) return true; // No tier requirement
-      return membershipService.hasAccess(membershipData?.currentTier, item.requiredTier);
+      // --- USER MODE (isDeveloperMode is FALSE) ---
+
+      // 2. EXCLUDE: Filter out items explicitly marked for Dev Mode
+      if (item.devModeOnly) {
+        return false; 
+      }
+
+      // 3. FEATURE FLAG CHECK: Filter out items where the flag is off
+      if (item.flag && featureFlags && featureFlags[item.flag] !== true) {
+        return false;
+      }
+
+      // 4. TIER CHECK: Filter out items where the tier is too low
+      if (item.requiredTier && 
+          !membershipService.hasAccess(membershipData?.currentTier, item.requiredTier)) {
+        return false;
+      }
+
+      // Item passed all User Mode checks
+      return true;
     })
     .map((item) => {
       const Icon = item.icon;
