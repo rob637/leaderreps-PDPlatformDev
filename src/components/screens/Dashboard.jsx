@@ -92,7 +92,7 @@ const GetStartedCard = ({ onNavigate, membershipData, developmentPlanData }) => 
             variant="primary"
             size="md"
             className="flex-shrink-0 w-full sm:w-auto"
-            style={{ background: 'linear-gradient(135deg, #E04E1B, #F5A800)' }}
+            style={{ background: `linear-gradient(135deg, ${COLORS.ORANGE}, ${COLORS.TEAL})` }}
           >
             View Plans <ArrowRight className="w-4 h-4 ml-2" />
           </Button>

@@ -43,11 +43,27 @@ const formatTimestamp = (timestamp) => {
 /* =========================================================
    COLORS & BASE COMPONENTS
 ========================================================= */
+// LEADERREPS.COM OFFICIAL CORPORATE COLORS - VERIFIED 11/12/25
 export const COLORS = { 
-  NAVY: '#002E47', TEAL: '#47A88D', BLUE: '#002E47', ORANGE: '#E04E1B', 
-  GREEN: '#47A88D', AMBER: '#E04E1B', RED: '#E04E1B', LIGHT_GRAY: '#FCFCFA', 
-  OFF_WHITE: '#FFFFFF', SUBTLE: '#E5E7EB', TEXT: '#002E47', MUTED: '#349881', 
-  PURPLE: '#47A88D', BG: '#FCFCFA'  // CORPORATE COLORS ONLY!
+  // === PRIMARY BRAND COLORS (from leaderreps.com) ===
+  NAVY: '#002E47',        // Primary text, headers, navigation
+  ORANGE: '#E04E1B',      // Call-to-action buttons, highlights, alerts  
+  TEAL: '#47A88D',        // Secondary buttons, success states, accents
+  LIGHT_GRAY: '#FCFCFA',  // Page backgrounds, subtle surfaces
+  
+  // === SEMANTIC MAPPINGS (using ONLY corporate colors) ===
+  BLUE: '#002E47',        // Map to NAVY (no separate blue in brand)
+  GREEN: '#47A88D',       // Map to TEAL (brand's green is teal)
+  AMBER: '#E04E1B',       // Map to ORANGE (no separate amber in brand)
+  RED: '#E04E1B',         // Map to ORANGE (warnings/errors use orange)
+  PURPLE: '#47A88D',      // Map to TEAL (no purple in brand)
+  
+  // === TEXT & BACKGROUNDS (corporate colors only) ===
+  TEXT: '#002E47',        // NAVY for all text
+  MUTED: '#47A88D',       // TEAL for muted text
+  BG: '#FCFCFA',          // LIGHT_GRAY for backgrounds
+  OFF_WHITE: '#FCFCFA',   // Same as BG
+  SUBTLE: '#47A88D'       // TEAL for subtle elements
 };
 
 // --- Corporate Button Component ---

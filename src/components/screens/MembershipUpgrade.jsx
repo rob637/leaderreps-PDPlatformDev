@@ -5,21 +5,27 @@ import { useAppServices } from '../../services/useAppServices.jsx';
 import { MEMBERSHIP_TIERS } from '../../services/membershipService.js';
 import { ArrowLeft, Check, Crown, Zap, Target, Users, Calendar, BookOpen, MessageSquare, Bot } from 'lucide-react';
 
+// LEADERREPS.COM OFFICIAL CORPORATE COLORS - VERIFIED 11/12/25
 const COLORS = { 
-  NAVY: '#002E47', 
-  TEAL: '#47A88D', 
-  ORANGE: '#E04E1B', 
-  GREEN: '#10B981', 
-  BLUE: '#2563EB', 
-  AMBER: '#F5A800',
-  RED: '#E04E1B', 
-  LIGHT_GRAY: '#FCFCFA', 
-  OFF_WHITE: '#FFFFFF', 
-  SUBTLE: '#E5E7EB', 
-  TEXT: '#374151', 
-  MUTED: '#4B5563', 
-  PURPLE: '#7C3AED', 
-  BG: '#F9FAFB' 
+  // === PRIMARY BRAND COLORS (from leaderreps.com) ===
+  NAVY: '#002E47',        // Primary text, headers, navigation
+  ORANGE: '#E04E1B',      // Call-to-action buttons, highlights, alerts  
+  TEAL: '#47A88D',        // Secondary buttons, success states, accents
+  LIGHT_GRAY: '#FCFCFA',  // Page backgrounds, subtle surfaces
+  
+  // === SEMANTIC MAPPINGS (using ONLY corporate colors) ===
+  BLUE: '#002E47',        // Map to NAVY
+  GREEN: '#47A88D',       // Map to TEAL  
+  AMBER: '#E04E1B',       // Map to ORANGE
+  RED: '#E04E1B',         // Map to ORANGE
+  PURPLE: '#47A88D',      // Map to TEAL
+  
+  // === TEXT & BACKGROUNDS (corporate colors only) ===
+  TEXT: '#002E47',        // NAVY for all text
+  MUTED: '#47A88D',       // TEAL for muted text
+  BG: '#FCFCFA',          // LIGHT_GRAY for backgrounds
+  OFF_WHITE: '#FCFCFA',   // Same as BG
+  SUBTLE: '#47A88D'       // TEAL for subtle elements
 };
 
 const Button = ({ children, onClick, variant = 'primary', size = 'md', className = '', disabled = false }) => {
