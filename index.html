@@ -6,7 +6,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>LeaderReps</title>
 
-    <!-- DEBUG OVERLAY + global error hooks (remove later if you want) -->
+    <link rel="manifest" href="/manifest.webmanifest">
+    <meta name="theme-color" content="#0056b3"> 
     <script>
       (function () {
         const steps = [];
@@ -33,9 +34,8 @@
       }());
     </script>
 
-    <!-- RUNTIME CONFIG via Vite HTML env replacement (Firebase only; Gemini key lives on server as GEMINI_API_KEY) -->
-    <!-- Set these on Netlify: VITE_FIREBASE_* and VITE_GEMINI_API_KEY -->
     <script>
+      // The %...% placeholders are handled by Vite during the build process.
       window.__firebase_config = {
         apiKey: "%VITE_FIREBASE_API_KEY%",
         authDomain: "%VITE_FIREBASE_AUTH_DOMAIN%",
@@ -46,13 +46,12 @@
       };
       window.__BOOTMARK__ && window.__BOOTMARK__.mark('config ' + (!!window.__firebase_config));
       if (!window.__firebase_config || !window.__firebase_config.apiKey) {
-        console.warn('[BOOT] Firebase env values appear missing.');
+        console.warn('[BOOT] Firebase env values appear missing. Ensure they are set in the Vite config or build script.');
       }
     </script>
 
-    <!-- IMPORTANT: No secrets in client. Tell the app to use serverless. (kept from your file) -->
     <script type="module">
-      window.__GEMINI_MODE = 'serverless';       // 'serverless' | 'direct'
+      window.__GEMINI_MODE = 'serverless';      // 'serverless' | 'direct'
       window.__GEMINI_MODEL = 'gemini-1.5-flash-latest'; // optional hint
       window.__BOOTMARK__ && window.__BOOTMARK__.mark('pre-app-scripts-ready');
     </script>

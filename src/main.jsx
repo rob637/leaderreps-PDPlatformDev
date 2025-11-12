@@ -1,8 +1,25 @@
 import React, { Suspense, lazy } from 'react';
 import { createRoot } from 'react-dom/client';
 import './index.css';
+
 // FIX: Removed the unnecessary import of AppServicesProvider since DataProvider is used in App.jsx.
 // import { AppServicesProvider } from './services/useAppServices.jsx'; 
+
+// === PWA SERVICE WORKER REGISTRATION ===
+const registerServiceWorker = () => {
+  // Check if Service Workers are supported by the browser
+  if ('serviceWorker' in navigator) {
+    // Vite PWA plugin generates the worker as /sw.js in production build
+    navigator.serviceWorker.register('/sw.js', { scope: '/' })
+      .then((registration) => {
+        console.log('SW registered successfully:', registration);
+      })
+      .catch((error) => {
+        console.error('SW registration failed:', error);
+      });
+  }
+};
+// === END PWA SERVICE WORKER REGISTRATION ===
 
 /** Error boundary so crashes don’t white-screen */
 class ErrorBoundary extends React.Component {
@@ -26,10 +43,17 @@ class ErrorBoundary extends React.Component {
 
 /** Parse Firebase config from Vite env (one-line JSON). Show a friendly screen if missing. */
 function ConfigGate({ children }) {
+  // NOTE: This config reading logic relies on Vite's import.meta.env, 
+  // which works even when hosted on GitHub Pages after a Vite build.
   const raw = import.meta.env.VITE_FIREBASE_CONFIG;
   let cfg = null, err = null;
+  
   if (!raw) {
-    err = 'VITE_FIREBASE_CONFIG is missing. Set it in Netlify → Site settings → Build & deploy → Environment.';
+    // Since we are moving from Netlify to a GitHub Pages/Vite pipeline, the VITE_FIREBASE_CONFIG 
+    // must be injected either via a CI tool (like GitHub Actions) or a manual placeholder.
+    // However, for Vite build to complete successfully, the placeholder must often resolve.
+    // We will leave this warning for debugging the build environment variables.
+    err = 'VITE_FIREBASE_CONFIG is missing. Set it in your CI/Build environment variables.';
   } else {
     try {
       cfg = typeof raw === 'string' ? JSON.parse(raw) : raw;
@@ -74,6 +98,9 @@ const container = document.getElementById('root');
 if (!container) {
   throw new Error('Root element with id="root" not found. Ensure <div id="root"></div> exists in index.html.');
 }
+
+// 1. Register the Service Worker right away
+registerServiceWorker(); 
 
 createRoot(container).render(
   <React.StrictMode>
