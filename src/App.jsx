@@ -300,13 +300,12 @@ const NavSidebar = ({ currentScreen, setCurrentScreen, user, closeMobileMenu, is
   ];
 
   const contentPillarNav = [
-    { screen: 'development-plan', label: 'Development Plan', icon: Briefcase, flag: 'enableDevPlan', requiredTier: 'basic' },
-    // QuickStart is accessible via Course Library (AppliedLeadership screen) - removed from main nav
-    { screen: 'business-readings', label: 'Professional Reading Hub', icon: BookOpen, flag: 'enableReadings', requiredTier: 'professional' }, // cite: BusinessReadings.jsx
-    { screen: 'applied-leadership', label: 'Course Library', icon: ShieldCheck, flag: 'enableCourses', requiredTier: 'professional' }, // cite: AppliedLeadership.jsx
-    // ===== DEVELOPER MODE: Advanced features (always present, filtered by devModeOnly) =====
-    { screen: 'planning-hub', label: 'Strategic Content Tools', icon: Trello, flag: 'enablePlanningHub', requiredTier: 'elite', devModeOnly: true }, // FUTURE SCOPE - VISIBLE IN DEV MODE
-    { screen: 'leadership-videos', label: 'Content Leader Talks', icon: Film, flag: 'enableVideos', requiredTier: 'elite', devModeOnly: true }, // FUTURE SCOPE - VISIBLE IN DEV MODE
+    { screen: 'development-plan', label: 'Development Plan', icon: Briefcase, flag: 'enableDevPlan', requiredTier: 'basic' }, // ARENA V1.0 APPROVED
+    // ===== DEVELOPER MODE ONLY: Future features not in V1.0 scope =====
+    { screen: 'business-readings', label: 'Professional Reading Hub', icon: BookOpen, flag: 'enableReadings', requiredTier: 'professional', devModeOnly: true }, // FUTURE SCOPE
+    { screen: 'applied-leadership', label: 'Course Library', icon: ShieldCheck, flag: 'enableCourses', requiredTier: 'professional', devModeOnly: true }, // FUTURE SCOPE
+    { screen: 'planning-hub', label: 'Strategic Content Tools', icon: Trello, flag: 'enablePlanningHub', requiredTier: 'elite', devModeOnly: true }, // FUTURE SCOPE
+    { screen: 'leadership-videos', label: 'Content Leader Talks', icon: Film, flag: 'enableVideos', requiredTier: 'elite', devModeOnly: true }, // FUTURE SCOPE
   ];
 
   const coachingPillarNav = [
@@ -323,8 +322,8 @@ const NavSidebar = ({ currentScreen, setCurrentScreen, user, closeMobileMenu, is
 
   // --- System/Admin Navigation (Conditional) ---
   const systemNav = [
-    { screen: 'membership-module', label: 'Membership & Billing', icon: DollarSign, flag: 'enableMembershipModule', requiredTier: 'basic' }, // ADDED: Membership Module
-    { screen: 'app-settings', label: 'App Settings', icon: Settings, requiredTier: 'basic' },
+    { screen: 'membership-module', label: 'Membership & Billing', icon: DollarSign, flag: 'enableMembershipModule', requiredTier: 'basic' }, // ARENA V1.0 APPROVED
+    { screen: 'app-settings', label: 'App Settings', icon: Settings, requiredTier: 'basic', devModeOnly: true }, // DEVELOPER MODE ONLY
   ];
 
   const menuSections = [
