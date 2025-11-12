@@ -531,6 +531,126 @@ const NavSidebar = ({ currentScreen, setCurrentScreen, user, closeMobileMenu, is
 
   // Desktop version - now hidden since we're using hamburger for all
   return null;
+          </h1>
+        )}
+      </div>
+
+      {/* --- Navigation Sections --- */}
+      <nav className="flex-1 overflow-y-auto overflow-x-hidden p-3 space-y-4"> {/* Added padding */}
+        {menuSections.map((section, index) => (
+          // Render section only if it still has visible items after filtering
+          renderNavItems(section.items).length > 0 && (
+            <React.Fragment key={section.title}>
+              <div className="space-y-1">
+                {isNavExpanded && (
+                  <p className={`px-3 py-1 text-[10px] font-bold uppercase tracking-wider transition-opacity duration-300`} style={{ color: `${COLORS.TEAL}90` }}>
+                    {section.title}
+                  </p>
+                )}
+                {/* Render items, applying filters */}
+                {renderNavItems(section.items)}
+              </div>
+              
+              {/* Insert toggle button right after SYSTEM section */}
+              {section.title === 'SYSTEM' && (
+                <div className={`pt-3 pb-2 ${isNavExpanded ? 'px-3' : 'flex justify-center'}`}>
+                  <button
+                    onClick={() => setIsNavExpanded(!isNavExpanded)}
+                    title={isNavExpanded ? 'Collapse Menu' : 'Expand Menu'}
+                    className={`relative group flex items-center w-full px-3 py-2.5 rounded-lg font-semibold text-sm transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-[${COLORS.TEAL}] focus:ring-offset-[${COLORS.NAVY}]`}
+                    style={{
+                        background: 'transparent',
+                        color: COLORS.LIGHT_GRAY,
+                        border: `1px dashed ${COLORS.TEAL}40`
+                    }}
+                  >
+                    {/* Icon */}
+                    {isNavExpanded ? (
+                      <ChevronsLeft className={`w-5 h-5 flex-shrink-0 transition-colors duration-200 ${isNavExpanded ? 'mr-3' : ''}`} style={{ color: COLORS.SUBTLE }} />
+                    ) : (
+                      <ChevronsRight className="w-5 h-5 flex-shrink-0 transition-colors duration-200" style={{ color: COLORS.SUBTLE }} />
+                    )}
+                    
+                    {/* Label (only when expanded) */}
+                    {isNavExpanded && (
+                      <span className="flex-1 text-left whitespace-nowrap overflow-hidden overflow-ellipsis transition-opacity duration-300">
+                        Collapse Menu
+                      </span>
+                    )}
+                    
+                    {/* Tooltip for Collapsed State */}
+                    {!isNavExpanded && (
+                      <span className={`absolute left-full ml-3 w-auto px-3 py-2 text-sm font-medium whitespace-nowrap rounded-md shadow-xl opacity-0 pointer-events-none group-hover:opacity-100 transition-all duration-150 z-50`}
+                            style={{ 
+                              background: COLORS.NAVY,
+                              color: COLORS.LIGHT_GRAY,
+                              border: '1px solid rgba(255, 255, 255, 0.1)'
+                            }}>
+                        Expand Menu
+                      </span>
+                    )}
+                  </button>
+                </div>
+              )}
+            </React.Fragment>
+          )
+        ))}
+      </nav>
+
+      {/* --- Profile Section --- */}
+      <div className={`flex-shrink-0 p-3 border-t border-[${COLORS.TEAL}]/30 relative`}>
+        <button
+          onClick={() => setIsProfileOpen(!isProfileOpen)}
+          title={!isNavExpanded ? (user?.name || 'User Profile') : ''}
+          className={`relative group flex items-center w-full p-2 rounded-lg text-sm font-semibold transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-[${COLORS.TEAL}] focus:ring-offset-1 focus:ring-offset-[${COLORS.NAVY}]`}
+          style={{ background: `${COLORS.TEAL}15`, ':hover': { background: `${COLORS.TEAL}25` } }} // Subtle background
+        >
+          {/* User Icon --- THIS IS THE FIX --- */}
+          <User
+            className={`w-5 h-5 flex-shrink-0 transition-colors duration-200 ${isNavExpanded ? 'mr-3' : ''}`}
+            style={{ color: COLORS.SUBTLE }}
+          />
+          {/* User Name (only when expanded) */}
+          {isNavExpanded && (
+            <span className="truncate text-white transition-opacity duration-300">{user?.name || `Guest`}</span>
+          )}
+          {/* Tooltip for Collapsed State */}
+          {!isNavExpanded && (
+            <span className={`absolute left-full ml-3 w-auto px-4 py-2.5 text-base font-bold whitespace-nowrap rounded-lg shadow-2xl opacity-0 pointer-events-none group-hover:opacity-100 transition-all duration-150 z-50`}
+                  style={{ 
+                    background: COLORS.NAVY,
+                    color: COLORS.TEAL,
+                    border: `2px solid ${COLORS.TEAL}`,
+                    boxShadow: `0 8px 16px rgba(0, 0, 0, 0.3), 0 0 0 1px ${COLORS.TEAL}40`
+                  }}>
+              {user?.name || 'User Profile'}
+            </span>
+          )}
+        </button>
+
+        {/* Profile Pop-up Menu */}
+        {isProfileOpen && (
+          <div
+            className={`absolute bottom-full mb-2 w-60 p-4 rounded-lg shadow-2xl z-40 animate-in fade-in slide-in-from-bottom-2 duration-200`}
+            style={{ background: COLORS.NAVY, border: `1px solid ${COLORS.TEAL}50`, left: isNavExpanded ? '0.75rem' : 'calc(100% + 0.75rem)' }} // Adjust position based on state
+          >
+            <p className="text-xs font-medium uppercase text-indigo-300 mb-1">Account</p>
+            <p className="text-sm font-semibold truncate mb-2 text-white" title={user?.email}>
+              {user?.email || 'N/A'}
+            </p>
+            {/* <p className="text-xs text-gray-400 break-words mb-4">UID: {user?.userId || 'N/A'}</p> */ }
+            <button
+              onClick={handleSignOut}
+              className={`flex items-center w-full px-3 py-2 mt-2 rounded-md text-sm font-semibold transition-colors text-white`}
+              style={{ background: COLORS.ORANGE, ':hover': { background: COLORS.RED } }} // Use theme colors
+            >
+              <LogOut className="w-4 h-4 mr-2" /> Sign Out
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
 };
 
 
