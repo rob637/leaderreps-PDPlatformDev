@@ -336,20 +336,6 @@ const NavSidebar = ({ currentScreen, setCurrentScreen, user, closeMobileMenu, is
     { title: 'SYSTEM', items: systemNav },
   ];
 
-  // --- Event Handlers ---
-  const handleSignOut = async () => {
-    console.log('handleSignOut called, auth:', auth);
-    try {
-      if (auth) await signOut(auth);
-      console.log('Sign Out successful.');
-      closeMobileMenu(); // Ensure mobile menu closes if open
-      // Auth state change will handle redirect/UI update
-    } catch (e) {
-      console.error('Sign out failed:', e);
-      // Optionally show an error message to the user
-    }
-  };
-
   const handleNavigate = useCallback((screen) => {
     // Prevent navigation if already on the target screen? (Optional)
     // if (screen === currentScreen) return;
@@ -585,6 +571,20 @@ const AppContent = ({ currentScreen, setCurrentScreen, user, navParams, isMobile
   const closeMobileMenu = useCallback(() => setIsMobileOpen(false), [setIsMobileOpen]);
   // Get navigate function from context for ScreenRouter
   const { navigate } = useAppServices();
+
+  // --- Event Handlers ---
+  const handleSignOut = async () => {
+    console.log('handleSignOut called, auth:', auth);
+    try {
+      if (auth) await signOut(auth);
+      console.log('Sign Out successful.');
+      closeMobileMenu(); // Ensure mobile menu closes if open
+      // Auth state change will handle redirect/UI update
+    } catch (e) {
+      console.error('Sign out failed:', e);
+      // Optionally show an error message to the user
+    }
+  };
 
   // --- Current Year for Footer ---
   const currentYear = new Date().getFullYear();
