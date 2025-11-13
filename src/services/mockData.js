@@ -82,25 +82,25 @@ export const MOCK_MEMBERSHIP_PLANS = {
     ]
 };
 
-// Global metadata mocks - BOSS V1 SCOPE: Future features disabled by default
+// Global metadata mocks - Feature flags control navigation visibility
 export const MOCK_FEATURE_FLAGS = { 
-  // V1 CORE FEATURES (ENABLED) - Arena v1.0 Approved Only
+  // V1 CORE FEATURES (ENABLED)
   enableDevPlan: true,
   enableDailyPractice: true,
   enableMembershipModule: true,
   
-  // FUTURE SCOPE FEATURES (DISABLED per Arena v1.0 scope)
-  enableReadings: false,       // Professional Reading Hub - FUTURE SCOPE
-  enableCourses: false,        // Course Library - FUTURE SCOPE
+  // TIER-GATED FEATURES (ENABLED - Access controlled by tier)
+  enableReadings: true,       // Professional Reading Hub - Pro+
+  enableCourses: true,        // Course Library - Pro+
+  enableLabs: true,           // AI Coaching Lab - Pro+
+  enableVideos: true,         // Leadership Videos - Pro+
+  enableCommunity: true,      // Community features - Pro+
   
-  // FUTURE SCOPE FEATURES (DISABLED per boss requirements)
-  enableLabs: false,           // AI Coaching Lab - FUTURE SCOPE
-  enableLabsAdvanced: false,   // Advanced Lab features - FUTURE SCOPE
-  enablePlanningHub: false,    // Strategic Tools - FUTURE SCOPE
-  enableVideos: false,         // Leadership Videos - FUTURE SCOPE
-  enableCommunity: false,      // Community features - FUTURE SCOPE
-  enableRoiReport: false,      // Executive ROI Report - FUTURE SCOPE
-  enableQuickStart: true,      // Keep QuickStart for onboarding
+  // DEVELOPER/ELITE FEATURES (ENABLED - Dev mode or Elite tier)
+  enableLabsAdvanced: true,   // Advanced Lab features
+  enablePlanningHub: true,    // Strategic Tools - Dev only
+  enableRoiReport: true,      // Executive ROI Report - Dev only
+  enableQuickStart: true,     // Keep QuickStart for onboarding
   
   // LEGACY/OTHER
   enableNewFeature: false 
