@@ -194,7 +194,14 @@ const Dashboard = (props) => {
     progressData,
     userAnchorData,
     quickstartData,
-    repsData
+    repsData,
+    // Add anchor data from DashboardHooks
+    identityStatement,
+    habitAnchor,
+    whyStatement,
+    handleSaveIdentity,
+    handleSaveHabit,
+    handleSaveWhy
   } = useDashboard(props);
 
   const [visibleComponents, setVisibleComponents] = useState([
@@ -347,29 +354,30 @@ const Dashboard = (props) => {
   // --------------------
   // ANCHOR HANDLERS (Unified)
   // --------------------
-  const handleSaveAnchor = useCallback(async (newText) => {
-    if (!user || !db) return;
-
+  const handleSaveAnchor = useCallback(async (anchorData) => {
+    if (!anchorData) return;
+    
     setIsSaving(true);
-    const now = new Date();
-
+    
     try {
-      await updateDoc(doc(db, 'user_anchors', user.uid), {
-        anchor: {
-          text: newText,
-          createdAt: now,
-          updatedAt: now
-        }
-      });
-
-      setLocalAnchor({ text: newText, createdAt: now, updatedAt: now });
+      // Save all three anchors using the hook functions
+      if (anchorData.identity && handleSaveIdentity) {
+        await handleSaveIdentity(anchorData.identity);
+      }
+      if (anchorData.habit && handleSaveHabit) {
+        await handleSaveHabit(anchorData.habit);
+      }
+      if (anchorData.why && handleSaveWhy) {
+        await handleSaveWhy(anchorData.why);
+      }
+      
       setIsEditorOpen(false);
     } catch (error) {
-      console.error('Error saving anchor:', error);
+      console.error('Error saving anchors:', error);
     } finally {
       setIsSaving(false);
     }
-  }, [user, db, setLocalAnchor]);
+  }, [handleSaveIdentity, handleSaveHabit, handleSaveWhy]);
 
   const handleDeleteAnchor = useCallback(async () => {
     if (!user || !db) return;
@@ -585,8 +593,12 @@ const Dashboard = (props) => {
         isOpen={isEditorOpen}
         onClose={handleCloseEditor}
         onSave={handleSaveAnchor}
-        currentAnchor={anchorText}
-        isSaving={isSaving}
+        initialIdentity={identityStatement || ''}
+        initialHabit={habitAnchor || ''}
+        initialWhy={whyStatement || ''}
+        identitySuggestions={[]}
+        habitSuggestions={[]}
+        whySuggestions={[]}
       />
 
       {/* Bonus Exercise Modal */}

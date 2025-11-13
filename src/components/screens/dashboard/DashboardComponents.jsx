@@ -1180,8 +1180,9 @@ const AnchorInputSection = ({
 };
 
 export const UnifiedAnchorEditorModal = ({ 
-    initialIdentity, initialHabit, initialWhy,
-    identitySuggestions, habitSuggestions, whySuggestions,
+    isOpen = false,
+    initialIdentity = '', initialHabit = '', initialWhy = '',
+    identitySuggestions = [], habitSuggestions = [], whySuggestions = [],
     onSave, onClose
 }) => {
     const [identity, setIdentity] = useState(initialIdentity);
@@ -1189,8 +1190,18 @@ export const UnifiedAnchorEditorModal = ({
     const [why, setWhy] = useState(initialWhy);
 
     const handleSave = () => {
-        onSave({ identity, habit, why });
+        if (onSave) {
+            onSave({ identity, habit, why });
+        }
     };
+
+    const handleClose = () => {
+        if (onClose) {
+            onClose();
+        }
+    };
+
+    if (!isOpen) return null;
 
     return (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
@@ -1200,7 +1211,7 @@ export const UnifiedAnchorEditorModal = ({
                         <Anchor className="w-6 h-6 inline-block mr-2" style={{ color: COLORS.TEAL }} />
                         Define Your Leadership Anchors
                     </h2>
-                    <button onClick={onClose} className="p-1 rounded-full hover:bg-gray-100">
+                    <button onClick={handleClose} className="p-1 rounded-full hover:bg-gray-100">
                         <X className="w-5 h-5" style={{ color: COLORS.MUTED }} />
                     </button>
                 </div>
@@ -1242,7 +1253,7 @@ export const UnifiedAnchorEditorModal = ({
                     <Button onClick={handleSave} variant="primary" size="md" className="flex-1">
                         <Save className="w-4 h-4 mr-2" /> Save All Anchors
                     </Button>
-                    <Button onClick={onClose} variant="outline" size="md" className="flex-1">
+                    <Button onClick={handleClose} variant="outline" size="md" className="flex-1">
                         Cancel
                     </Button>
                 </div>

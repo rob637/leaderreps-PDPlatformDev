@@ -254,6 +254,22 @@ export const useDashboard = ({
     }
   }, [updateDailyPracticeData]); // Explicitly include prop
 
+  const handleSaveWhy = useCallback(async (newWhy) => {
+    // Use the destructured prop directly
+    if (!updateDailyPracticeData) return;
+
+    try {
+      const success = await updateDailyPracticeData({ whyStatement: newWhy });
+      if (success) {
+        setWhyStatement(newWhy);
+        console.log('[Dashboard] Why statement saved');
+      }
+    } catch (error) {
+      console.error('[Dashboard] Error saving why statement:', error);
+      alert('Error saving why statement. Please try again.');
+    }
+  }, [updateDailyPracticeData]); // Explicitly include prop
+
   /* =========================================================
      BOOKEND HANDLERS (Dependency on updateDailyPracticeData)
   ========================================================= */
@@ -491,6 +507,7 @@ export const useDashboard = ({
     setShowHabitEditor,
     handleSaveIdentity,
     handleSaveHabit,
+    handleSaveWhy,
 
     // Bookends
     morningWIN,
