@@ -87,24 +87,89 @@ const AppContent = ({
   const closeMobileMenu = useCallback(() => setIsMobileOpen(false), [
     setIsMobileOpen,
   ]);
-  const { navigate } = useAppServices();
+  const { navigate, featureFlags, isAdmin, membershipData } = useAppServices();
 
-  // Navigation items for dropdown
+  // Navigation items for dropdown - matching NavSidebar.jsx structure
   const currentTier = isDeveloperMode ? 'elite' : simulatedTier;
   
-  const navigationItems = [
-    { screen: 'dashboard', label: 'The Arena', show: true },
-    { screen: 'development-plan', label: 'Development Plan', show: true },
-    { screen: 'business-readings', label: 'Professional Reading Hub', show: isDeveloperMode || currentTier !== 'basic' },
-    { screen: 'applied-leadership', label: 'Course Library', show: isDeveloperMode || currentTier !== 'basic' },
-    { screen: 'planning-hub', label: 'Strategic Content Tools', show: isDeveloperMode || currentTier === 'elite' },
-    { screen: 'leadership-videos', label: 'Content Leader Talks', show: isDeveloperMode || currentTier === 'elite' },
-    { screen: 'labs', label: 'AI Coaching Lab', show: isDeveloperMode || currentTier === 'elite' },
-    { screen: 'executive-reflection', label: 'Executive ROI Report', show: isDeveloperMode || currentTier === 'elite' },
-    { screen: 'community', label: 'Leadership Community', show: isDeveloperMode || currentTier !== 'basic' },
-    { screen: 'membership-module', label: 'Membership & Billing', show: true },
-    { screen: 'app-settings', label: 'App Settings', show: isDeveloperMode }
+  // Helper function to check tier access (matching NavSidebar logic)
+  const hasAccess = (requiredTier) => {
+    if (isAdmin || isDeveloperMode) return true;
+    if (!requiredTier) return true;
+    
+    const tierLevels = { basic: 1, professional: 2, elite: 3 };
+    const userLevel = tierLevels[simulatedTier || membershipData?.currentTier || 'basic'];
+    const requiredLevel = tierLevels[requiredTier];
+    return userLevel >= requiredLevel;
+  };
+
+  // Helper function to check feature flags (matching NavSidebar logic)
+  const checkFlag = (flag) => {
+    if (!flag) return true;
+    return featureFlags?.[flag] === true;
+  };
+
+  // Navigation sections matching NavSidebar.jsx
+  const navigationSections = [
+    {
+      title: 'THE ARENA',
+      items: [
+        { screen: 'dashboard', label: 'The Arena' }
+      ]
+    },
+    {
+      title: 'DEVELOPMENT PLAN',
+      items: [
+        { screen: 'development-plan', label: 'Development Plan', flag: 'enableDevPlan', requiredTier: 'basic' }
+      ]
+    },
+    {
+      title: 'COACHING',
+      items: [
+        { screen: 'labs', label: 'Coaching', flag: 'enableLabs', requiredTier: 'elite' }
+      ]
+    },
+    {
+      title: 'COMMUNITY',
+      items: [
+        { screen: 'community', label: 'Community', flag: 'enableCommunity', requiredTier: 'professional' }
+      ]
+    },
+    {
+      title: 'LIBRARY',
+      items: [
+        { screen: 'applied-leadership', label: 'Courses', flag: 'enableCourses', requiredTier: 'professional' },
+        { screen: 'business-readings', label: 'Reading & Reps', flag: 'enableReadings', requiredTier: 'professional' },
+        { screen: 'leadership-videos', label: 'Media', flag: 'enableVideos', requiredTier: 'elite' }
+      ]
+    },
+    {
+      title: 'MEMBERSHIP',
+      items: [
+        { screen: 'membership-module', label: 'Membership', flag: 'enableMembershipModule', requiredTier: 'basic' }
+      ]
+    },
+    ...(isDeveloperMode ? [{
+      title: 'DEVELOPER TOOLS',
+      items: [
+        { screen: 'planning-hub', label: 'Strategic Content Tools', flag: 'enablePlanningHub', requiredTier: 'elite', devModeOnly: true },
+        { screen: 'executive-reflection', label: 'Executive ROI Report', flag: 'enableRoiReport', requiredTier: 'elite', devModeOnly: true },
+        { screen: 'app-settings', label: 'App Settings', requiredTier: 'basic', devModeOnly: true }
+      ]
+    }] : [])
   ];
+
+  // Flatten sections into items for rendering, filtering by access
+  const navigationItems = navigationSections.flatMap(section => 
+    section.items
+      .filter(item => {
+        if (item.devModeOnly && !isDeveloperMode && !isAdmin) return false;
+        if (!checkFlag(item.flag)) return false;
+        if (!hasAccess(item.requiredTier)) return false;
+        return true;
+      })
+      .map(item => ({ ...item, sectionTitle: section.title }))
+  );
 
   const handleSignOut = async () => {
     try {
@@ -132,22 +197,40 @@ const AppContent = ({
             </button>
             
             {dropdownOpen && (
-              <div className="absolute top-full left-0 mt-1 w-64 bg-white rounded-lg shadow-lg border border-gray-200 z-50">
+              <div className="absolute top-full left-0 mt-1 w-64 bg-white rounded-lg shadow-lg border border-gray-200 z-50 max-h-[80vh] overflow-y-auto">
                 <div className="py-2">
-                  {navigationItems.filter(item => item.show).map((item) => (
-                    <button
-                      key={item.screen}
-                      onClick={() => {
-                        setCurrentScreen(item.screen);
-                        setDropdownOpen(false);
-                      }}
-                      className={`w-full text-left px-4 py-2 hover:bg-gray-100 transition-colors ${
-                        currentScreen === item.screen ? 'bg-corporate-teal text-white' : 'text-gray-700'
-                      }`}
-                    >
-                      {item.label}
-                    </button>
-                  ))}
+                  {navigationSections.map((section) => {
+                    const visibleItems = section.items.filter(item => {
+                      if (item.devModeOnly && !isDeveloperMode && !isAdmin) return false;
+                      if (!checkFlag(item.flag)) return false;
+                      if (!hasAccess(item.requiredTier)) return false;
+                      return true;
+                    });
+                    
+                    if (visibleItems.length === 0) return null;
+                    
+                    return (
+                      <div key={section.title} className="mb-1">
+                        <div className="px-4 py-1 text-xs font-semibold uppercase tracking-wider text-gray-500">
+                          {section.title}
+                        </div>
+                        {visibleItems.map((item) => (
+                          <button
+                            key={item.screen}
+                            onClick={() => {
+                              setCurrentScreen(item.screen);
+                              setDropdownOpen(false);
+                            }}
+                            className={`w-full text-left px-4 py-2 hover:bg-gray-100 transition-colors ${
+                              currentScreen === item.screen ? 'bg-corporate-teal text-white' : 'text-gray-700'
+                            }`}
+                          >
+                            {item.label}
+                          </button>
+                        ))}
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             )}
