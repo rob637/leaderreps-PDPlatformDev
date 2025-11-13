@@ -1,22 +1,11 @@
 import React, { useState, useMemo, useCallback } from 'react';
 import { useAppServices } from '../../services/useAppServices.jsx'; // Canonical path used by other screen components
-import { membershipService, MEMBERSHIP_TIERS } from '../../services/membershipService.js';
+import { MEMBERSHIP_TIERS } from '../../services/membershipService.js';
 import { DollarSign, Zap, Clock, CheckCircle, CreditCard, AlertTriangle, X, ShieldCheck, CornerRightUp, RefreshCw, Trash2, Mail, Bell } from 'lucide-react';
+import { CORPORATE_COLORS } from '../../data/Constants.js';
 
 // Reusing colors from App.jsx's global constants
-const COLORS = { 
-    NAVY: '#002E47', 
-    TEAL: '#47A88D', 
-    ORANGE: '#E04E1B', 
-    GREEN: '#10B981', 
-    BLUE: '#2563EB', 
-    RED: '#E04E1B', 
-    LIGHT_GRAY: '#FCFCFA', 
-    TEXT: '#374151', 
-    MUTED: '#4B5563', 
-    PURPLE: '#47A88D', // Map to TEAL (no purple in corporate colors)
-    BG: '#F9FAFB' 
-};
+const COLORS = CORPORATE_COLORS;
 
 // --- Local Components for Modularity and Style ---
 
@@ -93,11 +82,12 @@ const NotificationBanner = ({ notification, onDismiss }) => {
 };
 
 // --- Main Membership Module Component ---
-const MembershipModule = ({ navigate }) => {
+const MembershipModule = () => {
     const { 
         membershipData, 
         updateMembershipData, 
-        isLoading 
+        isLoading,
+        user
     } = useAppServices(); // cite: useAppServices.jsx
 
     const [modalOpen, setModalOpen] = useState(false);

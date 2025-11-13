@@ -70,7 +70,6 @@ const MilestoneTimeline = ({ plan, onBack }) => {
                   {phase.weeks.map(weekNum => {
                     const isPast = weekNum < currentWeek;
                     const isCurrent = weekNum === currentWeek;
-                    const isFuture = weekNum > currentWeek;
                     
                     return (
                       <div 

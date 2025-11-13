@@ -1,4 +1,3 @@
-
 /* Global Notepad (safe side-effect module)
    - Creates window.notepad/globalThis.notepad if absent
    - No exports; pure side-effect for early import in main.jsx
@@ -11,12 +10,13 @@
     var subs = new Set();
     var state = { title: 'Notepad', lines: [] };
 
-    function snapshot(){
+    const snapshot = () => {
       return { title: state.title, lines: state.lines.slice() };
     }
-    function notify(){
+    
+    const notify = () => {
       subs.forEach(function(fn){
-        try { fn(snapshot()); } catch (e) {}
+        try { fn(snapshot()); } catch (e) { /* ignore subscriber errors */ }
       });
     }
 
@@ -45,9 +45,8 @@
 
     root.notepad = api;
     // mirror to globalThis as well (in case window is shadowed)
-    try { if (typeof globalThis !== 'undefined') globalThis.notepad = api; } catch (e) {}
+    try { if (typeof globalThis !== 'undefined') globalThis.notepad = api; } catch (e) { /* ignore */ }
   } catch (e) {
     // If anything unexpected happens, do not block app boot
-    console.error('Notepad global failed to initialize:', e);
   }
 })();

@@ -78,7 +78,6 @@ const RadioButtonInput = ({ question, options, value, onChange }) => {
 
 const ProgressScan = ({ 
   developmentPlanData, 
-  globalMetadata, 
   skillCatalog = [],
   onCompleteScan, 
   onBack,

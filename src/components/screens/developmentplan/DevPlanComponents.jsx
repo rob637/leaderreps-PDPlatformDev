@@ -6,27 +6,17 @@ import React from 'react';
 import { 
   CheckCircle, ArrowRight, Loader, 
   TrendingUp, Target, Award, Clock, BarChart3, 
-  Edit, RefreshCw, Calendar, Save, X, Plus, Trash2 
+  Edit, RefreshCw, Calendar, Save, X, Plus, Trash2, FileX
 } from 'lucide-react';
-
-/* =========================================================
-   COLORS
-   (Shared with DashboardComponents)
-========================================================= */
-export const COLORS = { 
-  NAVY: '#002E47', TEAL: '#47A88D', BLUE: '#2563EB', ORANGE: '#E04E1B', 
-  GREEN: '#10B981', AMBER: '#F5A800', RED: '#E04E1B', LIGHT_GRAY: '#FCFCFA', 
-  OFF_WHITE: '#FFFFFF', SUBTLE: '#E5E7EB', TEXT: '#374151', MUTED: '#4B5563', 
-  PURPLE: '#7C3AED', BG: '#F9FAFB' 
-};
+import { COLORS } from './devPlanConstants.js';
 
 /* =========================================================
    Standardized Button Component
    (Shared with DashboardComponents)
 ========================================================= */
-export const Button = ({ children, onClick, disabled = false, variant = 'primary', className = '', size = 'md', ...rest }) => {
+export const Button = ({ children, onClick, disabled = false, variant = 'primary', className = '', size = 'md'
+, ...rest }) => {
   let baseStyle = `inline-flex items-center justify-center gap-2 font-semibold rounded-xl transition-all duration-200 focus:outline-none focus:ring-4 disabled:opacity-50 disabled:cursor-not-allowed`;
-
   if (size === 'sm') baseStyle += ' px-4 py-2 text-sm';
   else if (size === 'lg') baseStyle += ' px-8 py-4 text-lg';
   else baseStyle += ' px-6 py-3 text-base';
@@ -36,7 +26,6 @@ export const Button = ({ children, onClick, disabled = false, variant = 'primary
   else if (variant === 'outline') baseStyle += ` bg-[${COLORS.OFF_WHITE}] text-[${COLORS.TEAL}] border-2 border-[${COLORS.TEAL}] shadow-md hover:bg-[${COLORS.TEAL}]/10 focus:ring-[${COLORS.TEAL}]/50`;
   else if (variant === 'nav-back') baseStyle += ` bg-white text-gray-700 border border-gray-300 shadow-sm hover:bg-gray-100 focus:ring-gray-300/50 px-4 py-2 text-sm`;
   else if (variant === 'ghost') baseStyle += ` bg-transparent text-gray-600 hover:bg-gray-100 focus:ring-gray-300/50 px-3 py-1.5 text-sm`;
-
   if (disabled) baseStyle += ' bg-gray-300 text-gray-500 shadow-inner border-transparent hover:bg-gray-300';
 
   return <button {...rest} onClick={onClick} disabled={disabled} className={`${baseStyle} ${className}`}>{children}</button>;
@@ -46,12 +35,11 @@ export const Button = ({ children, onClick, disabled = false, variant = 'primary
    Standardized Card Component
    (Shared with DashboardComponents)
 ========================================================= */
-export const Card = ({ children, title, icon: Icon, className = '', onClick, accent = 'NAVY', actions }) => {
+export const Card = ({ children, title, className = '', onClick, accent = 'NAVY', actions }) => {
   const interactive = !!onClick;
   const Tag = interactive ? 'button' : 'div';
   const accentColor = COLORS[accent] || COLORS.NAVY;
   const handleKeyDown = (e) => { if (interactive && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); onClick?.(); } };
-
   return (
     <Tag
       {...(interactive ? { type: 'button' } : {})}
@@ -67,15 +55,9 @@ export const Card = ({ children, title, icon: Icon, className = '', onClick, acc
       onClick={onClick}
     >
       <span style={{ position:'absolute', top:0, left:0, right:0, height:6, background: accentColor, borderTopLeftRadius:14, borderTopRightRadius:14 }} />
-      
       {(title || actions) && (
         <div className="flex items-center justify-between p-6 pb-4">
           <div className="flex items-center gap-3">
-            {Icon && (
-              <div className="w-10 h-10 rounded-lg flex items-center justify-center border flex-shrink-0" style={{ borderColor: COLORS.SUBTLE, background: COLORS.LIGHT_GRAY }}>
-                  <Icon className="w-5 h-5" style={{ color: accentColor }} />
-              </div>
-            )}
             {title && (
               <h2 className="text-xl font-extrabold" style={{ color: COLORS.NAVY }}>{title}</h2>
             )}
@@ -157,7 +139,7 @@ export const Badge = ({ children, variant = 'default', size = 'md' }) => {
    StatCard Component
    (Used in ProgressBreakdown, PlanTracker)
 ========================================================= */
-export const StatCard = ({ label, value, icon: Icon, color, trend }) => {
+export const StatCard = ({ label, value, color, trend }) => {
   const accentColor = color || COLORS.TEAL;
 
   return (
@@ -170,7 +152,7 @@ export const StatCard = ({ label, value, icon: Icon, color, trend }) => {
           className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0"
           style={{ backgroundColor: `${accentColor}20` }}
         >
-          <Icon className="w-5 h-5" style={{ color: accentColor }} />
+          <TrendingUp className="w-5 h-5" style={{ color: accentColor }} />
         </div>
         <div>
           <p className="text-xs font-semibold" style={{ color: COLORS.MUTED }}>
@@ -239,7 +221,7 @@ export const PlanGenerationLoader = ({ message = 'Crafting Your Development Plan
       clearInterval(dotsInterval);
       clearInterval(stepInterval);
     };
-  }, []);
+  }, [steps.length]);
   
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center" 
@@ -352,9 +334,9 @@ export const PlanGenerationLoader = ({ message = 'Crafting Your Development Plan
    EmptyState Component
    (Used in PlanTracker)
 ========================================================= */
-export const EmptyState = ({ icon: Icon, title, description, action }) => (
+export const EmptyState = ({ title, description, action }) => (
   <div className="text-center p-12 my-12 border-2 border-dashed rounded-2xl" style={{ borderColor: COLORS.SUBTLE, backgroundColor: COLORS.LIGHT_GRAY }}>
-    <Icon 
+    <FileX 
       className="w-12 h-12 mx-auto mb-4" 
       style={{ color: COLORS.MUTED }} 
     />
@@ -374,12 +356,12 @@ export const EmptyState = ({ icon: Icon, title, description, action }) => (
    SectionHeader Component
    (Used in PlanTracker)
 ========================================================= */
-export const SectionHeader = ({ title, icon: Icon, accent = 'NAVY' }) => {
+export const SectionHeader = ({ title, accent = 'NAVY' }) => {
   const accentColor = COLORS[accent] || COLORS.NAVY;
   
   return (
     <div className="flex items-center gap-3 mb-4 pb-3 border-b-2" style={{ borderColor: COLORS.SUBTLE }}>
-      <Icon className="w-6 h-6" style={{ color: accentColor }} />
+      <BarChart3 className="w-6 h-6" style={{ color: accentColor }} />
       <h2 className="text-2xl font-bold" style={{ color: COLORS.NAVY }}>
         {title}
       </h2>
@@ -431,3 +413,4 @@ export const LikertScaleInput = ({ question, options, value, onChange }) => {
     </div>
   );
 };
+

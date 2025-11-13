@@ -13,7 +13,6 @@ const PlanTracker = ({
   plan, 
   cycle = 1, 
   globalMetadata, 
-  skillCatalog = [],
   onEditPlan,
   onScan,
   onDetail,

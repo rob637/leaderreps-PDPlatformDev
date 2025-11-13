@@ -64,11 +64,10 @@ export const EmptyState = ({
   message = "There's nothing here yet.",
   actionLabel,
   onAction,
-  icon: Icon = FileX,
   className = ""
 }) => (
   <div className={`flex flex-col items-center justify-center p-8 text-center ${className}`}>
-    <Icon className="h-12 w-12 mb-4" style={{ color: COLORS.SUBTLE }} />
+    <FileX className="h-12 w-12 mb-4" style={{ color: COLORS.SUBTLE }} />
     <h3 className="text-lg font-semibold mb-2" style={{ color: COLORS.TEXT }}>
       {title}
     </h3>

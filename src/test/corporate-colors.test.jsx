@@ -3,17 +3,13 @@
 // Ensures only approved colors (#002E47, #E04E1B, #FCFCFA, #47A88D, #349881) are used
 
 import React from 'react'
-import { describe, it, expect, beforeEach } from 'vitest'
+import { describe, it, expect } from 'vitest'
 import { render, screen, fireEvent } from '@testing-library/react'
 import { CORPORATE_COLORS, APPROVED_COLORS, isApprovedColor, extractColorsFromElement } from './setup.js'
 
 // Import components to test
 import { Button, Card } from '../components/screens/dashboard/DashboardComponents.jsx'
 import { MembershipGate } from '../components/ui/MembershipGate.jsx'
-
-// Mock Firebase and services
-const mockUser = { name: 'Test User', uid: 'test-123' }
-const mockMembershipData = { currentTier: 'basic' }
 
 // Mock required context providers
 const MockProviders = ({ children }) => {

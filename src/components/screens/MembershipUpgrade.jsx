@@ -234,7 +234,7 @@ const TierCard = ({ tier, isCurrentTier = false, onUpgrade, isPopular = false })
 };
 
 const MembershipUpgrade = ({ navigate }) => {
-  const { membershipData, user } = useAppServices();
+  const { membershipData } = useAppServices();
   const currentTier = membershipData?.currentTier || 'basic';
 
   const handleUpgrade = (tier) => {

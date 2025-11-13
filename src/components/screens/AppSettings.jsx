@@ -6,6 +6,7 @@ import { useAppServices } from '../../services/useAppServices.jsx'; // cite: use
 
 // --- Icons ---
 import { User, Lock, Code, Cpu, Settings, Shield, ArrowLeft } from 'lucide-react'; // Added Shield, ArrowLeft
+import { sendPasswordResetEmail } from 'firebase/auth';
 
 /* =========================================================
    PALETTE & UI COMPONENTS (Standardized)

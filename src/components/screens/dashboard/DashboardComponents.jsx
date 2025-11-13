@@ -10,7 +10,6 @@ import {
   ToggleLeft, ToggleRight, Zap, AlertTriangle, MessageSquare, Trophy,
   Send, Users, Activity, Edit3
 } from 'lucide-react';
-import { serverTimestamp } from 'firebase/firestore';
 
 // --- Helper function to format timestamps ---
 const formatTimestamp = (timestamp) => {
@@ -40,31 +39,7 @@ const formatTimestamp = (timestamp) => {
   }
 };
 
-/* =========================================================
-   COLORS & BASE COMPONENTS
-========================================================= */
-// LEADERREPS.COM OFFICIAL CORPORATE COLORS - VERIFIED 11/12/25
-export const COLORS = { 
-  // === PRIMARY BRAND COLORS (from leaderreps.com) ===
-  NAVY: '#002E47',        // Primary text, headers, navigation
-  ORANGE: '#E04E1B',      // Call-to-action buttons, highlights, alerts  
-  TEAL: '#47A88D',        // Secondary buttons, success states, accents
-  LIGHT_GRAY: '#FCFCFA',  // Page backgrounds, subtle surfaces
-  
-  // === SEMANTIC MAPPINGS (using ONLY corporate colors) ===
-  BLUE: '#002E47',        // Map to NAVY (no separate blue in brand)
-  GREEN: '#47A88D',       // Map to TEAL (brand's green is teal)
-  AMBER: '#E04E1B',       // Map to ORANGE (no separate amber in brand)
-  RED: '#E04E1B',         // Map to ORANGE (warnings/errors use orange)
-  PURPLE: '#47A88D',      // Map to TEAL (no purple in brand)
-  
-  // === TEXT & BACKGROUNDS (corporate colors only) ===
-  TEXT: '#002E47',        // NAVY for all text
-  MUTED: '#47A88D',       // TEAL for muted text
-  BG: '#FCFCFA',          // LIGHT_GRAY for backgrounds
-  OFF_WHITE: '#FCFCFA',   // Same as BG
-  SUBTLE: '#47A88D'       // TEAL for subtle elements
-};
+import { COLORS } from './dashboardConstants.js';
 
 // --- Corporate Button Component ---
 export const Button = ({ children, onClick, disabled = false, variant = 'primary', className = '', size = 'md', ...rest }) => {
@@ -1140,7 +1115,7 @@ export const ReminderBanner = ({ message, onDismiss, type = 'best' }) => {
    NEW: UNIFIED ANCHOR EDITOR MODAL
 ========================================================= */
 const AnchorInputSection = ({ 
-    title, icon: Icon, description, value, setValue, 
+    title, description, value, setValue, 
     suggestions, onSelectSuggestion, isTextArea = false 
 }) => {
     // Determine the text used for suggestions based on the anchor type

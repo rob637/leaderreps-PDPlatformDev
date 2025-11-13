@@ -12,10 +12,7 @@ import { serverTimestamp } from 'firebase/firestore';
 ========================================================= */
 export const useDashboard = ({
   dailyPracticeData,
-  updateDailyPracticeData, // <--- Prop from useAppServices
-  featureFlags,
-  db,
-  userEmail
+  updateDailyPracticeData // <--- Prop from useAppServices
 }) => {
   
   // === ARENA MODE STATE ===
@@ -103,10 +100,10 @@ export const useDashboard = ({
     if (dailyPracticeData?.activeCommitments) {
       setAdditionalCommitments(sanitizeTimestamps(dailyPracticeData.activeCommitments));
     }
-  }, [dailyPracticeData?.activeCommitments]);
+  }, [dailyPracticeData?.activeCommitments, sanitizeTimestamps]);
 
   // Helper to sanitize Firestore Timestamps
-  const sanitizeTimestamps = (obj) => {
+  const sanitizeTimestamps = useCallback((obj) => {
     if (!obj) return obj;
     if (Array.isArray(obj)) {
       return obj.map(item => sanitizeTimestamps(item));
@@ -117,14 +114,14 @@ export const useDashboard = ({
     if (obj && typeof obj === 'object') {
       const sanitized = {};
       for (const key in obj) {
-        if (obj.hasOwnProperty(key)) {
+        if (Object.prototype.hasOwnProperty.call(obj, key)) {
           sanitized[key] = sanitizeTimestamps(obj[key]);
         }
       }
       return sanitized;
     }
     return obj;
-  };
+  }, []);
 
   // Load Morning Bookend
   useEffect(() => {
@@ -133,7 +130,7 @@ export const useDashboard = ({
       setMorningWIN(mb.dailyWIN || '');
       setOtherTasks(sanitizeTimestamps(mb.otherTasks || []));
     }
-  }, [dailyPracticeData?.morningBookend]);
+  }, [dailyPracticeData?.morningBookend, sanitizeTimestamps]);
 
   // Load Evening Bookend (Issue 5 Fix)
   useEffect(() => {
@@ -443,9 +440,9 @@ export const useDashboard = ({
      COMPUTED VALUES
   ========================================================= */
   // Derived AM flags for UI auto-tracking
-  const amCompletedAt = dailyPracticeData?.morningBookend?.completedAt || null;
-  const amWinCompleted = !!(dailyPracticeData?.morningBookend?.winCompleted);
-  const amTasksCompleted = Array.isArray(otherTasks) && otherTasks.length > 0 && otherTasks.every(t => !!t.completed);
+  const amCompletedAt = useMemo(() => dailyPracticeData?.morningBookend?.completedAt || null, [dailyPracticeData]);
+  const amWinCompleted = useMemo(() => !!(dailyPracticeData?.morningBookend?.winCompleted), [dailyPracticeData]);
+  const amTasksCompleted = useMemo(() => Array.isArray(otherTasks) && otherTasks.length > 0 && otherTasks.every(t => !!t.completed), [otherTasks]);
 
   const targetRep = useMemo(() => {
     return dailyPracticeData?.dailyTargetRepId || null;
@@ -504,16 +501,18 @@ export const useDashboard = ({
     handleAddTask,
     handleToggleTask,
     handleRemoveTask,
-    handleToggleWIN, // NEW
-    handleSaveWIN, // NEW
+    handleToggleWIN,
     handleHabitToggle,
-    setShouldSkipReflectionLoad, // FIXED 10/29/25: Export flag setter
+    handleSaveWIN,
 
-    // Streak
+    // Computed Values
+    amCompletedAt,
+    amWinCompleted,
+    amTasksCompleted,
+
+    // Streak & Additional Reps
     streakCount,
     streakCoins,
-
-    // Additional Reps
-    additionalCommitments,
+    additionalCommitments
   };
 };

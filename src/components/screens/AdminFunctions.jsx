@@ -1,6 +1,6 @@
 // src/components/screens/AdminFunctions.jsx (Updated with Admin Email Manager and Hardcoded Fallback)
 
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 // --- Core Services & Context ---
 import { useAppServices } from '../../services/useAppServices.jsx'; // cite: useAppServices.jsx
 
@@ -59,7 +59,7 @@ const AdminEmailManager = ({ initialEmails, updateGlobalMetadata }) => {
             setEmails(initialEmails || []);
             setHasChanges(false);
         }
-    }, [initialEmails]);
+    }, [initialEmails, emails, isSaving, saveStatus]);
     
     // Check for changes against the initial value
     useEffect(() => {
@@ -126,7 +126,7 @@ const AdminEmailManager = ({ initialEmails, updateGlobalMetadata }) => {
                 {emails.length === 0 && (
                     <p className="text-sm text-gray-500 italic">No admin emails currently set.</p>
                 )}
-                {emails.map((email, index) => (
+                {emails.map((email) => (
                     <div key={email} className="flex items-center justify-between p-2 rounded-md bg-white border">
                         <span className="text-sm font-medium text-gray-800 break-all">{email}</span>
                         <Button 
@@ -259,7 +259,7 @@ const AdminFunctionsScreen = () => {
             console.log("[AdminFunctions] Context feature flags updated or initial load finished. Syncing local state.");
             setCurrentFlags(initialFlags);
         }
-    }, [initialFlags, isAuthenticated, saveStatus]); // Dependency on initialFlags and saveStatus
+    }, [initialFlags, isAuthenticated, saveStatus, currentFlags]); // Dependency on initialFlags and saveStatus
 
     // --- Handlers (Password, ToggleFlag, SaveChanges are unchanged) ---
     const handlePasswordCheck = () => {

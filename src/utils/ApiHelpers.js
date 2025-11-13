@@ -192,12 +192,16 @@ export function readLocal(key, fallback = null) {
 export function writeLocal(key, value) {
   try {
     localStorage.setItem(key, JSON.stringify(value));
-  } catch {}
+  } catch (e) {
+    // ignore write errors
+  }
 }
 export function removeLocal(key) {
   try {
     localStorage.removeItem(key);
-  } catch {}
+  } catch (e) {
+    // ignore remove errors
+  }
 }
 
 // Optional default export for namespace import

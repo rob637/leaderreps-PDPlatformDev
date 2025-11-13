@@ -154,7 +154,6 @@ export const MembershipGate = ({ requiredTier, featureName, children, navigate }
  * Inline upgrade prompt for smaller spaces
  */
 export const MembershipPrompt = ({ requiredTier, featureName, navigate, className = "" }) => {
-  const { membershipData } = useAppServices();
   const requiredTierInfo = MEMBERSHIP_TIERS[requiredTier];
   
   return (

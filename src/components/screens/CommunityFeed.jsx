@@ -57,9 +57,6 @@ const MOCK_LEADERBOARD = [ // cite: CommunityFeed.jsx (Original)
  * Includes user info, rep text, actions (react, comment), and tags.
  */
 const RepFeedItem = ({ item }) => {
-    // --- Consume Services ---
-    const { navigate } = useAppServices(); // For handling navigation on comment click // cite: useAppServices.jsx
-
     // --- Mock Handlers (Replace with actual interaction logic) ---
     const handleComment = () => {
         console.log(`[RepFeedItem] Navigating to comment thread for Rep ID: ${item.id}`);
@@ -170,8 +167,13 @@ const CommunityFeedScreen = () => {
 
     // --- Render Logic ---
     // Feature Flag Check
-    if (!featureFlags?.enableCommunity) { // cite: useAppServices.jsx
-         return ( /* ... Render disabled message ... */ );
+        if (!featureFlags?.enableCommunity) {
+      return (
+        <div className="p-8 text-center">
+          <h2 className="text-2xl font-bold mb-4">Community Feature Disabled</h2>
+          <p>This feature is currently not enabled. Please contact support for more information.</p>
+        </div>
+      );
     }
     // Loading/Error States
     if (isAppLoading) return <LoadingSpinner message="Loading Community Feed..." />;

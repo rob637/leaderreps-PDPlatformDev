@@ -5,10 +5,10 @@
 // UPDATED (10/30/25): Added table-based CRUD editor for 'isCatalog' documents
 // FIX (10/30/25): Added 'adminemails' to global_metadata/config
 
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import {
   getFirestore, doc, collection, getDoc, getDocs, setDoc, deleteDoc, 
-  serverTimestamp, query, limit as qLimit, writeBatch, updateDoc, orderBy
+  serverTimestamp, query, orderBy
 } from "firebase/firestore";
 import { useAppServices } from '../../services/useAppServices.jsx';
 import { 
@@ -379,13 +379,6 @@ const MODULE_GROUPS = {
    UTILITIES
 ========================================================= */
 const pretty = (v) => JSON.stringify(v ?? {}, null, 2);
-const tryParse = (t, fallback) => { 
-  try { 
-    return JSON.parse(t); 
-  } catch { 
-    return fallback; 
-  } 
-};
 
 const formatTimestamp = (value) => {
   if (!value) return 'N/A';
@@ -417,10 +410,6 @@ const SubcollectionViewer = ({ tableConfig, userId }) => {
   const [error, setError] = useState(null);
   const [selectedDoc, setSelectedDoc] = useState(null);
   const db = getFirestore();
-
-  useEffect(() => {
-    loadDocs();
-  }, [userId]);
 
   const loadDocs = async () => {
     setLoading(true);
@@ -768,7 +757,7 @@ const CatalogTableEditor = ({ items, onChange }) => {
 /* =========================================================
    TABLE DATA EDITOR COMPONENT (MODIFIED)
 ========================================================= */
-const TableDataEditor = ({ tableConfig, data, onSave, onDelete, userId }) => {
+const TableDataEditor = ({ tableConfig, data, onSave, onDelete }) => {
   const [editedData, setEditedData] = useState(data || {});
   const [isSaving, setIsSaving] = useState(false);
   const [showJson, setShowJson] = useState(false);
@@ -1077,17 +1066,13 @@ const TableDataEditor = ({ tableConfig, data, onSave, onDelete, userId }) => {
 /* =========================================================
    TABLE VIEWER COMPONENT
 ========================================================= */
-const TableViewer = ({ groupKey, tableKey, config, userId }) => {
+const TableViewer = ({ config, userId }) => {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const db = getFirestore();
 
-  useEffect(() => {
-    loadData();
-  }, [tableKey, userId]);
-
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     setLoading(true);
     setError(null);
     
@@ -1114,7 +1099,11 @@ const TableViewer = ({ groupKey, tableKey, config, userId }) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [config, userId, db]);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
 
   const handleSave = async (updatedData) => {
     try {
@@ -1216,7 +1205,7 @@ export default function AdminDataMaintenance() {
     if (userId && !targetUserId) {
       setTargetUserId(userId);
     }
-  }, [userId]);
+  }, [userId, targetUserId]);
 
   if (!isAdmin) {
     return (

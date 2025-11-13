@@ -1,6 +1,6 @@
 // src/components/screens/ReflectionLogScreen.jsx (NEW FILE)
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 // --- Core Services & Context ---
 import { useAppServices } from '../../services/useAppServices.jsx'; // cite: useAppServices.jsx
 
@@ -56,7 +56,6 @@ const ReflectionLogScreen = () => {
     const {
         db, userId, // Firestore instance and user ID
         isLoading: isAppLoading, // Global app loading state
-        error: appError, // Global app error state
         navigate // Navigation function
     } = useAppServices(); // cite: useAppServices.jsx
 

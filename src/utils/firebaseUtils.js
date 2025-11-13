@@ -72,7 +72,7 @@ export const stripFirebaseSentinels = (obj) => {
   // Handle plain objects
   const cleaned = {};
   for (const key in obj) {
-    if (obj.hasOwnProperty(key)) {
+    if (Object.prototype.hasOwnProperty.call(obj, key)) {
       const value = stripFirebaseSentinels(obj[key]);
       // Only add non-null values
       if (value !== null && value !== undefined) {
@@ -187,7 +187,7 @@ const findSentinels = (obj, path = 'root') => {
     });
   } else {
     for (const key in obj) {
-      if (obj.hasOwnProperty(key)) {
+      if (Object.prototype.hasOwnProperty.call(obj, key)) {
         sentinels.push(...findSentinels(obj[key], `${path}.${key}`));
       }
     }

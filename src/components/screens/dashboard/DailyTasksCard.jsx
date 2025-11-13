@@ -139,8 +139,7 @@ const DailyTasksCard = ({
   onToggleTask, 
   onRemoveTask, 
   onAddTask,
-  onToggleWIN,
-  onSaveWIN 
+  onToggleWIN
 }) => {
   const [newTaskText, setNewTaskText] = useState('');
   const [showAddTask, setShowAddTask] = useState(false);

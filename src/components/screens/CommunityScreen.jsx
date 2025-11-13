@@ -299,7 +299,6 @@ const NotificationsView = () => (
  * Form for creating a new discussion thread.
  */
 const NewThreadView = ({ setView }) => {
-    const { user } = useAppServices(); // Get user info for potential future use // cite: useAppServices.jsx
     const [title, setTitle] = useState('');
     const [context, setContext] = useState('');
     const [question, setQuestion] = useState('');

@@ -184,7 +184,7 @@ const CourseDetailView = ({ course, setCourseDetail }) => {
 /**
  * Renders the detail view for an individual Skill.
  */
-const SkillDetailView = ({ skill, setSelectedSkill, resourceLibrary, getTierName, handleOpenResource }) => {
+const SkillDetailView = ({ skill, setSelectedSkill, resourceLibrary, getTierName }) => {
     // FIX: Define local state for modal visibility and resource
     const [isResourceModalVisible, setIsResourceModalVisible] = useState(false);
     const [currentResource, setCurrentResource] = useState(null);
@@ -292,7 +292,6 @@ export default function AppliedLeadershipScreen() {
         IconMap,
         isLoading: isAppLoading,
         error: appError,
-        navigate,
     } = useAppServices();
 
     // --- Local State ---

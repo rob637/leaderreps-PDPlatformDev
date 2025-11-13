@@ -117,8 +117,8 @@ const PWAInstall = () => {
     };
   };
 
-  if (isInstalled) {
-    return null; // Don't show install button if already installed
+  if (isInstalled || !isInstallable) {
+    return null; // Don't show install button if already installed or not installable
   }
 
   return (

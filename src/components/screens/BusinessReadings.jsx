@@ -1,8 +1,10 @@
 // src/components/screens/BusinessReadings.jsx (FIXED: submitAiHandler ReferenceError)
 
-import React, { useState, useMemo, useRef, useEffect, useCallback } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 // --- Core Services & Context ---
 import { useAppServices } from '../../services/useAppServices.jsx'; // cite: useAppServices.jsx
+import { DIMENSION_TO_TIER_MAP, CORPORATE_COLORS } from '../../data/Constants.js';
+import ConfigError from '../../components/system/ConfigError.jsx';
 
 // --- Icons ---
 import {
@@ -14,7 +16,7 @@ import {
    PALETTE & UI COMPONENTS (Standardized)
 ========================================================= */
 // --- Primary Color Palette ---
-const COLORS = { NAVY: '#002E47', TEAL: '#47A88D', BLUE: '#2563EB', ORANGE: '#E04E1B', GREEN: '#10B981', AMBER: '#F5A800', RED: '#E04E1B', LIGHT_GRAY: '#FCFCFA', OFF_WHITE: '#FFFFFF', SUBTLE: '#E5E7EB', TEXT: '#374151', MUTED: '#4B5563', PURPLE: '#7C3AED', BG: '#F9FAFB' }; // cite: App.jsx
+const COLORS = CORPORATE_COLORS;
 
 // --- Standardized UI Components (Matches Dashboard/Dev Plan) ---
 const Button = ({ children, onClick, disabled = false, variant = 'primary', className = '', size = 'md', ...rest }) => { /* ... Re-use exact Button definition from Dashboard.jsx ... */
@@ -96,8 +98,8 @@ function getDeepDataSignature(booksObject) {
 
 // --- Action Steps & Frameworks (Local Fallbacks - Ideally load with book data) ---
 // These provide placeholder content if the book data doesn't include structured actions/frameworks.
-function getActionSteps(book) { /* ... same as original ... */ return ['Define the outcome, then design the smallest repeatable action.']; }
-function getFrameworks(book) { /* ... same as original ... */ return [{ name: 'Core Principles', desc: 'Prioritize outcomes, feedback loops, and small, testable steps.' }]; }
+function getActionSteps() { /* ... same as original ... */ return ['Define the outcome, then design the smallest repeatable action.']; }
+function getFrameworks() { /* ... same as original ... */ return [{ name: 'Core Principles', desc: 'Prioritize outcomes, feedback loops, and small, testable steps.' }]; }
 
 // --- Error HTML Generator (Used when pre-generated flyer HTML is missing) ---
 const API_ERROR_HTML = (executive, book) => { /* ... same as original ... */
@@ -650,7 +652,7 @@ export default function BusinessReadingsScreen() {
     READING_CATALOG, // Catalog data { items: { Category: [books...] } } // cite: useAppServices.jsx
     dailyPracticeData, // For adding commitments // cite: useAppServices.jsx
     // Functions
-    navigate, updateDailyPracticeData, callSecureGeminiAPI, hasGeminiKey, GEMINI_MODEL, // cite: useAppServices.jsx
+    updateDailyPracticeData, callSecureGeminiAPI, hasGeminiKey, GEMINI_MODEL, // cite: useAppServices.jsx
   } = useAppServices();
 
   // --- Local State ---

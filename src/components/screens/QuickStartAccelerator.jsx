@@ -81,7 +81,7 @@ const LIS_MOCK_CRITIQUE = `## Leadership Identity Audit Score: 75/100
 ========================================================= */
 const LISAuditorView = ({ setQuickStartView }) => {
     // --- Consume Services ---
-    const { hasGeminiKey, callSecureGeminiAPI, GEMINI_MODEL } = useAppServices(); // cite: useAppServices.jsx
+            const { callSecureGeminiAPI, hasGeminiKey } = useAppServices(); // cite: useAppServices.jsx
 
     // --- Local State ---
     const [lisDraft, setLisDraft] = useState('I am a dedicated leader who always tries to do the right thing for my team and my company. I believe in hard work.'); // Initial example draft
@@ -219,7 +219,7 @@ const LISAuditorView = ({ setQuickStartView }) => {
 ========================================================= */
 const QuickStartAcceleratorScreen = () => {
     // --- Consume Services ---
-    const { navigate, featureFlags, isLoading: isAppLoading, error: appError } = useAppServices(); // cite: useAppServices.jsx
+    const { isLoading: isAppLoading, error: appError } = useAppServices(); // cite: useAppServices.jsx
 
     // --- Local State ---
     const [view, setQuickStartView] = useState('quick-start-home'); // Controls view: 'home' or 'lis-auditor'
@@ -323,5 +323,16 @@ const QuickStartAcceleratorScreen = () => {
       </div>
     );
 };
+
+// Error component for configuration or loading issues
+const ConfigError = ({ message }) => (
+    <div className="min-h-[200px] flex items-center justify-center bg-red-50 p-4">
+        <div className="flex flex-col items-center text-center">
+            <AlertTriangle className="h-12 w-12 text-red-500 mb-3" />
+            <h2 className="text-xl font-bold text-red-800">Configuration Error</h2>
+            <p className="text-red-600 mt-1">{message}</p>
+        </div>
+    </div>
+);
 
 export default QuickStartAcceleratorScreen;

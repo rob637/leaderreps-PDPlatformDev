@@ -73,10 +73,8 @@ const JOURNEY_MAP = [
 ========================================================= */
 const DetailedPlanView = ({ 
   developmentPlanData, 
-  globalMetadata,
   onNavigateToTracker,
-  onStartProgressScan,
-  onUpdatePlan 
+  onStartProgressScan
 }) => {
   
   const currentPlan = developmentPlanData?.currentPlan;

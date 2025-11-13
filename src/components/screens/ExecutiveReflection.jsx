@@ -1,8 +1,9 @@
 // src/components/screens/ExecutiveReflection.jsx (Refactored for Consistency, Context)
 
-import React, { useMemo, useState, useCallback, useEffect } from 'react';
+import React, { useMemo, useCallback, useEffect } from 'react';
 // --- Core Services & Context ---
 import { useAppServices } from '../../services/useAppServices.jsx'; // cite: useAppServices.jsx
+import { DIMENSION_TO_TIER_MAP, CORPORATE_COLORS } from '../../data/Constants.js';
 
 // --- Icons ---
 import {
@@ -15,7 +16,7 @@ import {
    PALETTE & UI COMPONENTS (Standardized)
 ========================================================= */
 // --- Primary Color Palette ---
-const COLORS = { NAVY: '#002E47', TEAL: '#47A88D', BLUE: '#2563EB', ORANGE: '#E04E1B', GREEN: '#10B981', AMBER: '#F5A800', RED: '#E04E1B', LIGHT_GRAY: '#FCFCFA', OFF_WHITE: '#FFFFFF', SUBTLE: '#E5E7EB', TEXT: '#374151', MUTED: '#4B5563', PURPLE: '#7C3AED', BG: '#F9FAFB' }; // cite: App.jsx
+const COLORS = CORPORATE_COLORS;
 
 // --- Standardized UI Components (Matches Dashboard/Dev Plan) ---
 const Button = ({ children, onClick, disabled = false, variant = 'primary', className = '', size = 'md', ...rest }) => { /* ... Re-use exact Button definition from Dashboard.jsx ... */
@@ -242,7 +243,7 @@ const useLongitudinalData = (dailyPracticeData, developmentPlanData, strategicCo
 export default function ExecutiveReflection() {
     // --- Consume Services ---
     const {
-        navigate, user, // Core context
+        navigate, // Core context
         isLoading: isAppLoading, error: appError, // App loading/error state
         dailyPracticeData, developmentPlanData, strategicContentData, // Renamed user data // cite: useAppServices.jsx
         LEADERSHIP_TIERS, // Global metadata // cite: useAppServices.jsx

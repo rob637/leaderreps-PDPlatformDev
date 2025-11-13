@@ -244,8 +244,6 @@ export const generatePlanData = (assessment, ownerUid) => {
     const { managerStatus, goalPriorities, selfRatings } = assessment;
     const allTiers = Object.keys(LEADERSHIP_TIERS);
 
-    const initialTierIndex = managerStatus === 'New' ? 0 : managerStatus === 'Mid-Level' ? 2 : 4;
-
     const plan = [];
     const usedContentIds = new Set();
 

@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, sendPasswordResetEmail, signOut } from 'firebase/auth';
-import { getFirestore, doc, onSnapshot, setDoc, updateDoc, writeBatch, getDoc, addDoc, collection } from 'firebase/firestore'; 
+import { doc, onSnapshot, setDoc, updateDoc, writeBatch, getDoc } from 'firebase/firestore'; 
 
 import { 
     useAppServices 
@@ -14,8 +14,6 @@ import {
 // --- FIRESTORE PATHING UTILITY ---
 const getPath = (collection, document, userId, appId) => 
     userId ? `/artifacts/${appId}/users/${userId}/${collection}/${document}` : null;
-const getCollectionPath = (collection, userId, appId) => 
-    userId ? `/artifacts/${appId}/users/${userId}/${collection}` : null;
 
 
 // --- COMMITMENT DEFAULTS (Moved from App.jsx) ---

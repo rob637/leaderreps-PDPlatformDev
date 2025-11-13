@@ -39,7 +39,7 @@ const TwoMinuteChallengeModal = ({ isVisible, onClose, sourceScreen, onLogSucces
         if (catalog.length === 0) return QUICK_CHALLENGE_FALLBACK[0];
         const randomIndex = Math.floor(Math.random() * catalog.length);
         return catalog[randomIndex];
-    }, [isVisible, catalog]); // Rerun selection when modal visibility changes
+    }, [catalog]); // Rerun selection when modal visibility changes
 
     if (!isVisible) return null;
 

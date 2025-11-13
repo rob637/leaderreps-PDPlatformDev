@@ -362,7 +362,6 @@ const LeadershipVideosScreen = () => {
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedCategory, setSelectedCategory] = useState('ALL');
     const [selectedTag, setSelectedTag] = useState('');
-    const [viewMode, setViewMode] = useState('grid'); // 'grid' or 'list'
 
     // --- Get Enhanced Video Data ---
     const allVideos = useMemo(() => {

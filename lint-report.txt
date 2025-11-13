@@ -1,0 +1,838 @@
+
+> leader-reps-pdp@0.0.0 lint
+> eslint .
+
+
+/workspaces/leaderreps-PDPlatformDev/DailyPractice.jsx
+   399:40  warning  'setLinkedGoal' is defined but never used                                                                                                                                                                                         no-unused-vars
+   399:55  warning  'setLinkedTier' is defined but never used                                                                                                                                                                                         no-unused-vars
+   399:70  warning  'isSaving' is defined but never used                                                                                                                                                                                              no-unused-vars
+   435:9   warning  The 'userCommitments' logical expression could make the dependencies of useMemo Hook (at line 462) change on every render. To fix this, wrap the initialization of 'userCommitments' in its own useMemo() Hook                    react-hooks/exhaustive-deps
+   436:9   warning  The 'okrGoals' logical expression could make the dependencies of useMemo Hook (at line 474) change on every render. To fix this, wrap the initialization of 'okrGoals' in its own useMemo() Hook                                  react-hooks/exhaustive-deps
+   436:9   warning  The 'okrGoals' logical expression could make the dependencies of useEffect Hook (at line 497) change on every render. To fix this, wrap the initialization of 'okrGoals' in its own useMemo() Hook                                react-hooks/exhaustive-deps
+   445:9   warning  The 'EXPANDED_COMMITMENT_BANK' logical expression could make the dependencies of useMemo Hook (at line 446) change on every render. To fix this, wrap the initialization of 'EXPANDED_COMMITMENT_BANK' in its own useMemo() Hook  react-hooks/exhaustive-deps
+   445:9   warning  The 'EXPANDED_COMMITMENT_BANK' logical expression could make the dependencies of useMemo Hook (at line 462) change on every render. To fix this, wrap the initialization of 'EXPANDED_COMMITMENT_BANK' in its own useMemo() Hook  react-hooks/exhaustive-deps
+   573:63  error    Unnecessary escape character: \{                                                                                                                                                                                                  no-useless-escape
+  1191:83  warning  'source' is defined but never used                                                                                                                                                                                                no-unused-vars
+  1193:84  warning  'pdpData' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u                                                                                                                                           no-unused-vars
+  1207:4   warning  React Hook useEffect has a missing dependency: 'commitmentData'. Either include it or remove the dependency array                                                                                                                 react-hooks/exhaustive-deps
+  1275:9   warning  The 'userCommitments' logical expression could make the dependencies of useMemo Hook (at line 1312) change on every render. To fix this, wrap the initialization of 'userCommitments' in its own useMemo() Hook                   react-hooks/exhaustive-deps
+  1275:9   warning  The 'userCommitments' logical expression could make the dependencies of useMemo Hook (at line 1486) change on every render. To fix this, wrap the initialization of 'userCommitments' in its own useMemo() Hook                   react-hooks/exhaustive-deps
+  1275:9   warning  The 'userCommitments' logical expression could make the dependencies of useMemo Hook (at line 1505) change on every render. To fix this, wrap the initialization of 'userCommitments' in its own useMemo() Hook                   react-hooks/exhaustive-deps
+  1276:9   warning  The 'commitmentHistory' logical expression could make the dependencies of useMemo Hook (at line 1312) change on every render. To fix this, wrap the initialization of 'commitmentHistory' in its own useMemo() Hook               react-hooks/exhaustive-deps
+  1276:9   warning  The 'commitmentHistory' logical expression could make the dependencies of useMemo Hook (at line 1313) change on every render. To fix this, wrap the initialization of 'commitmentHistory' in its own useMemo() Hook               react-hooks/exhaustive-deps
+  1309:4   warning  React Hook useEffect has a missing dependency: 'handleClosePerfectModal'. Either include it or remove the dependency array                                                                                                        react-hooks/exhaustive-deps
+  1319:9   warning  'fetchReflectionPrompt' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u                                                                                                                             no-unused-vars
+
+/workspaces/leaderreps-PDPlatformDev/DevPlan.jsx
+    97:7   warning  'copyToClipboard' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u                                                                                              no-unused-vars
+   206:11  warning  'growthDimensions' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u                                                                                             no-unused-vars
+   305:43  error    React Hook "useState" is called conditionally. React Hooks must be called in the exact same order in every component render. Did you accidentally call a React Hook after an early return?   react-hooks/rules-of-hooks
+   306:33  error    React Hook "useState" is called conditionally. React Hooks must be called in the exact same order in every component render. Did you accidentally call a React Hook after an early return?   react-hooks/rules-of-hooks
+   307:39  error    React Hook "useState" is called conditionally. React Hooks must be called in the exact same order in every component render. Did you accidentally call a React Hook after an early return?   react-hooks/rules-of-hooks
+   324:32  error    React Hook "useMemo" is called conditionally. React Hooks must be called in the exact same order in every component render. Did you accidentally call a React Hook after an early return?    react-hooks/rules-of-hooks
+   324:58  warning  React Hook useMemo has a missing dependency: 'mockDetail'. Either include it or remove the dependency array                                                                                  react-hooks/exhaustive-deps
+   337:5   error    React Hook "useEffect" is called conditionally. React Hooks must be called in the exact same order in every component render. Did you accidentally call a React Hook after an early return?  react-hooks/rules-of-hooks
+   414:34  warning  'currentMonth' is defined but never used                                                                                                                                                     no-unused-vars
+   454:54  warning  'saveNewPlan' is defined but never used                                                                                                                                                      no-unused-vars
+   454:67  warning  'userId' is defined but never used                                                                                                                                                           no-unused-vars
+   881:51  warning  'isLoading' is defined but never used                                                                                                                                                        no-unused-vars
+   881:62  warning  'error' is defined but never used                                                                                                                                                            no-unused-vars
+  1024:11  warning  'genericPlan' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u                                                                                                  no-unused-vars
+
+/workspaces/leaderreps-PDPlatformDev/RoadmapTracker.jsx
+   97:7   warning  'copyToClipboard' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u                                                                                              no-unused-vars
+  145:43  error    React Hook "useState" is called conditionally. React Hooks must be called in the exact same order in every component render. Did you accidentally call a React Hook after an early return?   react-hooks/rules-of-hooks
+  146:33  error    React Hook "useState" is called conditionally. React Hooks must be called in the exact same order in every component render. Did you accidentally call a React Hook after an early return?   react-hooks/rules-of-hooks
+  147:39  error    React Hook "useState" is called conditionally. React Hooks must be called in the exact same order in every component render. Did you accidentally call a React Hook after an early return?   react-hooks/rules-of-hooks
+  164:32  error    React Hook "useMemo" is called conditionally. React Hooks must be called in the exact same order in every component render. Did you accidentally call a React Hook after an early return?    react-hooks/rules-of-hooks
+  164:58  warning  React Hook useMemo has a missing dependency: 'mockDetail'. Either include it or remove the dependency array                                                                                  react-hooks/exhaustive-deps
+  177:5   error    React Hook "useEffect" is called conditionally. React Hooks must be called in the exact same order in every component render. Did you accidentally call a React Hook after an early return?  react-hooks/rules-of-hooks
+  254:34  warning  'currentMonth' is defined but never used                                                                                                                                                     no-unused-vars
+  294:54  warning  'saveNewPlan' is defined but never used                                                                                                                                                      no-unused-vars
+  294:67  warning  'userId' is defined but never used                                                                                                                                                           no-unused-vars
+  721:40  warning  'initialScreen' is defined but never used                                                                                                                                                    no-unused-vars
+  727:29  warning  'setOverridePdpData' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u                                                                                           no-unused-vars
+
+/workspaces/leaderreps-PDPlatformDev/build/assets/AdminFunctions-BWagq--v.js
+  1:3808  warning  'a' is defined but never used  no-unused-vars
+
+/workspaces/leaderreps-PDPlatformDev/build/assets/App-B37kJt51.js
+  2:4142   warning  'r' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+  2:7530   warning  'n' is defined but never used                                                      no-unused-vars
+  2:7600   warning  'd' is defined but never used                                                      no-unused-vars
+  2:7671   warning  'h' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+  2:7721   warning  'f' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+  2:14286  warning  'd' is defined but never used                                                      no-unused-vars
+  2:15165  error    Empty block statement                                                              no-empty
+  2:20340  warning  'e' is defined but never used                                                      no-unused-vars
+
+/workspaces/leaderreps-PDPlatformDev/build/assets/AppliedLeadership-Bjw2aZN1.js
+  1:7959   warning  'd' is defined but never used                                                      no-unused-vars
+  1:10401  warning  'y' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+
+/workspaces/leaderreps-PDPlatformDev/build/assets/BusinessReadings-CcoXJpHx.js
+  1:17445  warning  'i' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+  1:21043  error    'DIMENSION_TO_TIER_MAP' is not defined                                             no-undef
+  1:24218  error    'ConfigError' is not defined                                                       no-undef
+
+/workspaces/leaderreps-PDPlatformDev/build/assets/CommunityScreen-DEDPJvNx.js
+  1:10768  warning  'a' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+  1:11292  error    'X' is not defined                                                                 no-undef
+  1:14867  error    'ConfigError' is not defined                                                       no-undef
+
+/workspaces/leaderreps-PDPlatformDev/build/assets/DebugDataViewer-CRTHGk5T.js
+  1:4235  error  'Globe' is not defined      no-undef
+  1:4868  error  'Clock' is not defined      no-undef
+  1:5340  error  'Briefcase' is not defined  no-undef
+
+/workspaces/leaderreps-PDPlatformDev/build/assets/DevelopmentPlan-XlD594OG.js
+   1:24735   warning  'a' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u   no-unused-vars
+   1:31387   warning  't' is defined but never used                                                       no-unused-vars
+   1:43988   error    'be' is a function                                                                  no-func-assign
+   1:45011   error    'je' is a function                                                                  no-func-assign
+   1:49788   warning  't' is defined but never used                                                       no-unused-vars
+  10:1575    error    'WeakRef' is not defined                                                            no-undef
+  10:9426    warning  't' is defined but never used                                                       no-unused-vars
+  10:19321   warning  'r' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u   no-unused-vars
+  10:19344   warning  'n' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u   no-unused-vars
+  10:19368   warning  'a' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u   no-unused-vars
+  10:24643   warning  't' is defined but never used                                                       no-unused-vars
+  10:26948   warning  'e' is defined but never used                                                       no-unused-vars
+  10:39014   warning  'e' is defined but never used                                                       no-unused-vars
+  10:39016   warning  't' is defined but never used                                                       no-unused-vars
+  10:39621   error    'xi' is a function                                                                  no-func-assign
+  10:54783   warning  't' is defined but never used                                                       no-unused-vars
+  10:54872   warning  't' is defined but never used                                                       no-unused-vars
+  10:61662   error    Expected a conditional expression and instead saw an assignment                     no-cond-assign
+  10:61923   error    Expected a conditional expression and instead saw an assignment                     no-cond-assign
+  10:61963   error    Expected a conditional expression and instead saw an assignment                     no-cond-assign
+  10:62027   error    Expected a conditional expression and instead saw an assignment                     no-cond-assign
+  10:62066   error    Expected a conditional expression and instead saw an assignment                     no-cond-assign
+  10:62129   error    Expected a conditional expression and instead saw an assignment                     no-cond-assign
+  10:62173   error    Expected a conditional expression and instead saw an assignment                     no-cond-assign
+  10:62222   error    Do not access Object.prototype method 'hasOwnProperty' from target object           no-prototype-builtins
+  10:67400   error    Expected a conditional expression and instead saw an assignment                     no-cond-assign
+  10:67781   error    Expected a conditional expression and instead saw an assignment                     no-cond-assign
+  10:69421   error    Expected a conditional expression and instead saw an assignment                     no-cond-assign
+  10:101107  error    Expected a conditional expression and instead saw an assignment                     no-cond-assign
+  10:109015  error    Expected a conditional expression and instead saw an assignment                     no-cond-assign
+  10:110278  error    Expected a conditional expression and instead saw an assignment                     no-cond-assign
+  10:111755  error    Expected a conditional expression and instead saw an assignment                     no-cond-assign
+  10:112395  error    Do not access Object.prototype method 'hasOwnProperty' from target object           no-prototype-builtins
+  10:126476  error    Empty block statement                                                               no-empty
+  10:126666  error    Empty block statement                                                               no-empty
+  10:126945  error    Empty block statement                                                               no-empty
+  10:147998  warning  'hm' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+  10:156079  error    'Ym' is a function                                                                  no-func-assign
+  10:160234  error    'ag' is a function                                                                  no-func-assign
+  10:162060  warning  'v' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u   no-unused-vars
+  10:166146  error    'wg' is a function                                                                  no-func-assign
+  10:166907  warning  'a' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u   no-unused-vars
+  10:167759  error    'Mg' is a function                                                                  no-func-assign
+  10:169549  error    'Ig' is a function                                                                  no-func-assign
+  10:171187  error    'rv' is a function                                                                  no-func-assign
+  10:176433  error    'kv' is a function                                                                  no-func-assign
+  10:180625  error    '_v' is a function                                                                  no-func-assign
+  10:181935  warning  't' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u   no-unused-vars
+  10:186334  warning  'ab' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+  10:186367  warning  'ib' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+  10:186399  warning  'ob' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+  10:188362  warning  'yb' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+  10:188377  warning  'mb' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+  10:188389  warning  'gb' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+  10:188404  warning  'vb' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+  10:188416  warning  'bb' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+  10:188431  warning  'xb' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+  10:188451  warning  'wb' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+  10:193903  error    'Yb' is a function                                                                  no-func-assign
+  10:194633  warning  'l' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u   no-unused-vars
+  10:199327  warning  'lx' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+  10:199346  warning  'sx' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+  10:199364  warning  'cx' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+  10:199701  warning  'hx' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+  10:200224  warning  'gx' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+  10:200237  warning  'vx' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+  10:200248  warning  'bx' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+  10:200262  warning  'xx' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+  10:200273  warning  'wx' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+  10:200287  warning  'jx' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+  10:207345  warning  'r' is defined but never used                                                       no-unused-vars
+  10:208470  warning  'n' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u   no-unused-vars
+  10:209114  error    'cw' is a function                                                                  no-func-assign
+  10:211415  error    'gw' is a function                                                                  no-func-assign
+  10:216747  error    'Pw' is a function                                                                  no-func-assign
+  10:222002  warning  't' is defined but never used                                                       no-unused-vars
+  10:222061  warning  'o' is defined but never used                                                       no-unused-vars
+  10:234133  error    Empty block statement                                                               no-empty
+  10:234213  warning  's' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u   no-unused-vars
+  10:238104  error    Empty block statement                                                               no-empty
+
+/workspaces/leaderreps-PDPlatformDev/build/assets/ExecutiveReflection-B46mIgLQ.js
+  1:4983  error  'DIMENSION_TO_TIER_MAP' is not defined  no-undef
+  1:5028  error  Empty block statement                   no-empty
+  1:7369  error  'ConfigError' is not defined            no-undef
+
+/workspaces/leaderreps-PDPlatformDev/build/assets/LeadershipVideos-ByHVLPgA.js
+  1:10845  warning  'x' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+
+/workspaces/leaderreps-PDPlatformDev/build/assets/MembershipModule-DG39_ewg.js
+  1:2230   warning  'u' is defined but never used  no-unused-vars
+  1:12075  error    'user' is not defined          no-undef
+  1:12087  error    'user' is not defined          no-undef
+
+/workspaces/leaderreps-PDPlatformDev/build/assets/MembershipUpgrade-Bp_NUWst.js
+  1:4733  warning  'n' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+
+/workspaces/leaderreps-PDPlatformDev/build/assets/PlanningHub-BmDDBGRO.js
+  1:3342   warning  'n' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+  1:4788   error    Unnecessary escape character: \*                                                   no-useless-escape
+  1:4794   error    Unnecessary escape character: \.                                                   no-useless-escape
+  1:4999   error    Unnecessary escape character: \*                                                   no-useless-escape
+  1:5005   error    Unnecessary escape character: \.                                                   no-useless-escape
+  1:11587  warning  'w' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+  1:13535  error    'Save' is not defined                                                              no-undef
+  1:14967  warning  'e' is defined but never used                                                      no-unused-vars
+  1:14969  warning  's' is defined but never used                                                      no-unused-vars
+  1:15002  warning  'e' is defined but never used                                                      no-unused-vars
+  1:15004  warning  's' is defined but never used                                                      no-unused-vars
+  1:15006  warning  't' is defined but never used                                                      no-unused-vars
+  1:15038  warning  'e' is defined but never used                                                      no-unused-vars
+  1:15065  warning  'e' is defined but never used                                                      no-unused-vars
+  1:15067  warning  's' is defined but never used                                                      no-unused-vars
+  1:16844  warning  'e' is defined but never used                                                      no-unused-vars
+  1:18392  error    'Save' is not defined                                                              no-undef
+  1:19555  warning  'n' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+  1:19644  warning  'y' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+  1:19919  warning  'e' is defined but never used                                                      no-unused-vars
+  1:19921  warning  's' is defined but never used                                                      no-unused-vars
+  1:23744  error    'Save' is not defined                                                              no-undef
+  1:25727  error    'ConfigError' is not defined                                                       no-undef
+
+/workspaces/leaderreps-PDPlatformDev/build/assets/QuickStartAccelerator-CoqXIjuh.js
+  1:3253   warning  'l' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+  1:8889   warning  'r' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+  1:8904   warning  'd' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+  1:10690  error    'ConfigError' is not defined                                                       no-undef
+
+/workspaces/leaderreps-PDPlatformDev/build/assets/admin-Cir6nRwh.js
+  1:16620  warning  'i' is defined but never used  no-unused-vars
+  1:21960  warning  'e' is defined but never used  no-unused-vars
+  1:22879  error    Unnecessary try/catch wrapper  no-useless-catch
+
+/workspaces/leaderreps-PDPlatformDev/build/assets/dashboard-62c_ZRLE.js
+  1:723    error    Do not access Object.prototype method 'hasOwnProperty' from target object           no-prototype-builtins
+  1:1200   error    Do not access Object.prototype method 'hasOwnProperty' from target object           no-prototype-builtins
+  1:2206   error    Do not access Object.prototype method 'hasOwnProperty' from target object           no-prototype-builtins
+  1:3261   warning  'e' is defined but never used                                                       no-unused-vars
+  1:4982   error    Empty block statement                                                               no-empty
+  1:42877  warning  'i' is defined but never used                                                       no-unused-vars
+  1:45986  error    Do not access Object.prototype method 'hasOwnProperty' from target object           no-prototype-builtins
+  1:51667  warning  'w' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u   no-unused-vars
+  1:52529  warning  'l' is defined but never used                                                       no-unused-vars
+  1:52534  warning  'r' is defined but never used                                                       no-unused-vars
+  1:52546  warning  'o' is defined but never used                                                       no-unused-vars
+  1:54070  error    Do not access Object.prototype method 'hasOwnProperty' from target object           no-prototype-builtins
+  1:56225  warning  'e' is defined but never used                                                       no-unused-vars
+  1:56389  error    Empty block statement                                                               no-empty
+  1:56705  error    Empty block statement                                                               no-empty
+  1:56892  error    Empty block statement                                                               no-empty
+  1:58602  warning  'et' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+  1:66187  warning  'e' is defined but never used                                                       no-unused-vars
+
+/workspaces/leaderreps-PDPlatformDev/build/assets/firebase-P7IyNO6h.js
+    17:3046   error    Empty block statement                                                      no-empty
+   117:1442   error    Empty block statement                                                      no-empty
+   165:465    error    Empty block statement                                                      no-empty
+   181:72     error    Empty block statement                                                      no-empty
+   181:254    error    Empty block statement                                                      no-empty
+   181:1499   error    Empty block statement                                                      no-empty
+   181:1901   error    Empty block statement                                                      no-empty
+   197:355    warning  'n' is defined but never used                                              no-unused-vars
+   279:593    error    Empty block statement                                                      no-empty
+   320:5333   warning  'r' is defined but never used                                              no-unused-vars
+   320:9935   error    'r.prototype.add' is assigned to itself                                    no-self-assign
+   320:10109  error    'r.prototype.toString' is assigned to itself                               no-self-assign
+   330:248    warning  't' is defined but never used                                              no-unused-vars
+   330:250    warning  'n' is defined but never used                                              no-unused-vars
+   330:306    warning  'n' is defined but never used                                              no-unused-vars
+   330:574    warning  'e' is defined but never used                                              no-unused-vars
+   330:576    warning  't' is defined but never used                                              no-unused-vars
+   330:578    warning  'n' is defined but never used                                              no-unused-vars
+   330:588    error    'u' is a function                                                          no-func-assign
+   330:717    warning  't' is defined but never used                                              no-unused-vars
+   330:983    warning  'r' is defined but never used                                              no-unused-vars
+   330:1220   warning  't' is defined but never used                                              no-unused-vars
+   330:1962   warning  't' is defined but never used                                              no-unused-vars
+   330:2933   error    Expected a conditional expression and instead saw an assignment            no-cond-assign
+   330:3048   error    'this.s' is assigned to itself                                             no-self-assign
+   330:3062   error    'this.C' is assigned to itself                                             no-self-assign
+   330:3460   error    Expected to return a value in method 'get'                                 getter-return
+   330:3575   error    Empty block statement                                                      no-empty
+   330:4087   error    Empty block statement                                                      no-empty
+   330:7166   error    Expected a conditional expression and instead saw an assignment            no-cond-assign
+   330:9067   warning  'e' is defined but never used                                              no-unused-vars
+   330:9302   error    Do not access Object.prototype method 'hasOwnProperty' from target object  no-prototype-builtins
+   330:9929   warning  'e' is defined but never used                                              no-unused-vars
+   330:13492  error    Empty block statement                                                      no-empty
+   330:14583  error    Empty block statement                                                      no-empty
+   330:16908  error    Empty block statement                                                      no-empty
+   330:21073  error    Unnecessary escape character: \/                                           no-useless-escape
+   330:21075  error    Unnecessary escape character: \?                                           no-useless-escape
+   330:21088  error    Unnecessary escape character: \?                                           no-useless-escape
+   330:21101  error    Unnecessary escape character: \?                                           no-useless-escape
+   330:21113  error    Unnecessary escape character: \?                                           no-useless-escape
+   330:21921  error    Empty block statement                                                      no-empty
+   330:27030  error    Expected a conditional expression and instead saw an assignment            no-cond-assign
+   330:27460  error    Empty block statement                                                      no-empty
+   330:29181  error    Empty block statement                                                      no-empty
+   330:38569  warning  'e' is defined but never used                                              no-unused-vars
+   330:38764  error    'In.prototype.close' is assigned to itself                                 no-self-assign
+   412:135    warning  't' is defined but never used                                              no-unused-vars
+   412:160    warning  't' is defined but never used                                              no-unused-vars
+   604:963    warning  'n' is defined but never used                                              no-unused-vars
+   653:4871   warning  'e' is defined but never used                                              no-unused-vars
+   653:4873   warning  't' is defined but never used                                              no-unused-vars
+   653:4875   warning  'n' is defined but never used                                              no-unused-vars
+   653:4877   warning  'r' is defined but never used                                              no-unused-vars
+   653:4879   warning  'i' is defined but never used                                              no-unused-vars
+   653:4905   warning  'n' is defined but never used                                              no-unused-vars
+   653:4934   warning  'e' is defined but never used                                              no-unused-vars
+   653:4936   warning  't' is defined but never used                                              no-unused-vars
+   653:4987   warning  'e' is defined but never used                                              no-unused-vars
+   653:5016   warning  'e' is defined but never used                                              no-unused-vars
+   670:295    warning  'n' is defined but never used                                              no-unused-vars
+   782:1501   error    Do not access Object.prototype method 'hasOwnProperty' from target object  no-prototype-builtins
+  1072:8121   error    Unexpected lexical declaration in case block                               no-case-declarations
+  1072:8210   error    Unexpected lexical declaration in case block                               no-case-declarations
+  1072:8309   error    Unexpected lexical declaration in case block                               no-case-declarations
+  1072:8402   error    Unexpected lexical declaration in case block                               no-case-declarations
+  1120:190    warning  'e' is defined but never used                                              no-unused-vars
+  1120:192    warning  't' is defined but never used                                              no-unused-vars
+  1120:232    warning  'e' is defined but never used                                              no-unused-vars
+  1120:234    warning  't' is defined but never used                                              no-unused-vars
+  1120:279    warning  'e' is defined but never used                                              no-unused-vars
+  1120:322    warning  'e' is defined but never used                                              no-unused-vars
+  1120:324    warning  't' is defined but never used                                              no-unused-vars
+  1120:374    warning  'e' is defined but never used                                              no-unused-vars
+  1120:376    warning  't' is defined but never used                                              no-unused-vars
+  1120:416    warning  'e' is defined but never used                                              no-unused-vars
+  1120:418    warning  't' is defined but never used                                              no-unused-vars
+  1120:458    warning  'e' is defined but never used                                              no-unused-vars
+  1120:460    warning  't' is defined but never used                                              no-unused-vars
+  1120:516    warning  'e' is defined but never used                                              no-unused-vars
+  1120:556    warning  'e' is defined but never used                                              no-unused-vars
+  1120:558    warning  't' is defined but never used                                              no-unused-vars
+  1120:621    warning  'e' is defined but never used                                              no-unused-vars
+  1120:623    warning  't' is defined but never used                                              no-unused-vars
+  1120:676    warning  'e' is defined but never used                                              no-unused-vars
+  1120:678    warning  't' is defined but never used                                              no-unused-vars
+  1120:680    warning  'n' is defined but never used                                              no-unused-vars
+  1120:722    warning  'e' is defined but never used                                              no-unused-vars
+  1120:724    warning  't' is defined but never used                                              no-unused-vars
+  1248:82     warning  'e' is defined but never used                                              no-unused-vars
+  1280:140    warning  'e' is defined but never used                                              no-unused-vars
+  1280:836    warning  'e' is defined but never used                                              no-unused-vars
+  1280:1950   warning  'e' is defined but never used                                              no-unused-vars
+  1280:2085   warning  'e' is defined but never used                                              no-unused-vars
+  1280:2139   warning  't' is defined but never used                                              no-unused-vars
+  1296:1061   warning  'e' is defined but never used                                              no-unused-vars
+  1296:1063   warning  't' is defined but never used                                              no-unused-vars
+  1296:1065   warning  'n' is defined but never used                                              no-unused-vars
+  1296:1067   warning  'r' is defined but never used                                              no-unused-vars
+  1296:1136   warning  'e' is defined but never used                                              no-unused-vars
+  1296:1167   warning  'e' is defined but never used                                              no-unused-vars
+  1312:295    warning  'e' is defined but never used                                              no-unused-vars
+  1312:373    warning  'e' is defined but never used                                              no-unused-vars
+  1312:420    warning  'e' is defined but never used                                              no-unused-vars
+  1312:1250   warning  'e' is defined but never used                                              no-unused-vars
+  1328:489    warning  'e' is defined but never used                                              no-unused-vars
+  1328:2323   warning  'e' is defined but never used                                              no-unused-vars
+  1392:3199   warning  't' is defined but never used                                              no-unused-vars
+  1392:5030   warning  'e' is defined but never used                                              no-unused-vars
+  1392:5054   warning  'e' is defined but never used                                              no-unused-vars
+  1392:5056   warning  't' is defined but never used                                              no-unused-vars
+  1392:5058   warning  'n' is defined but never used                                              no-unused-vars
+  1392:5161   warning  'n' is defined but never used                                              no-unused-vars
+  1392:5498   warning  'e' is defined but never used                                              no-unused-vars
+  1392:5500   warning  't' is defined but never used                                              no-unused-vars
+  1392:5502   warning  'n' is defined but never used                                              no-unused-vars
+  1392:5521   warning  'e' is defined but never used                                              no-unused-vars
+  1392:5557   warning  'e' is defined but never used                                              no-unused-vars
+  1392:5580   warning  'e' is defined but never used                                              no-unused-vars
+  1408:16     warning  'e' is defined but never used                                              no-unused-vars
+  1488:837    warning  's' is defined but never used                                              no-unused-vars
+  1488:1534   error    Unexpected lexical declaration in case block                               no-case-declarations
+  1488:1761   error    Unexpected lexical declaration in case block                               no-case-declarations
+  1568:185    warning  'e' is defined but never used                                              no-unused-vars
+  1568:1440   warning  'n' is defined but never used                                              no-unused-vars
+  1584:237    warning  'e' is defined but never used                                              no-unused-vars
+  1600:584    warning  'n' is defined but never used                                              no-unused-vars
+  1648:2190   warning  'e' is defined but never used                                              no-unused-vars
+  1648:13322  warning  'e' is defined but never used                                              no-unused-vars
+  1648:13324  warning  't' is defined but never used                                              no-unused-vars
+  1648:13342  warning  'e' is defined but never used                                              no-unused-vars
+  1648:13344  warning  't' is defined but never used                                              no-unused-vars
+  1648:13472  warning  'e' is defined but never used                                              no-unused-vars
+  1648:13515  warning  'e' is defined but never used                                              no-unused-vars
+  1648:14422  warning  'e' is defined but never used                                              no-unused-vars
+  1794:2528   warning  't' is defined but never used                                              no-unused-vars
+  1890:1007   warning  'e' is defined but never used                                              no-unused-vars
+  1922:5815   error    Unexpected lexical declaration in case block                               no-case-declarations
+  2003:68     error    'SuppressedError' is not defined                                           no-undef
+  2051:205    error    'chrome' is not defined                                                    no-undef
+  2051:245    error    'browser' is not defined                                                   no-undef
+  2148:110    error    Empty block statement                                                      no-empty
+  2310:240    warning  'e' is defined but never used                                              no-unused-vars
+  2310:242    warning  't' is defined but never used                                              no-unused-vars
+  2310:262    warning  'e' is defined but never used                                              no-unused-vars
+  2310:264    warning  't' is defined but never used                                              no-unused-vars
+  2326:1359   error    Empty block statement                                                      no-empty
+  2326:1559   error    Empty block statement                                                      no-empty
+  2342:494    error    Unnecessary escape character: \.                                           no-useless-escape
+  2342:510    error    Unnecessary escape character: \.                                           no-useless-escape
+  2374:433    error    Empty block statement                                                      no-empty
+  2406:1269   error    Empty block statement                                                      no-empty
+  2438:539    error    Promise executor functions should not be async                             no-async-promise-executor
+  2454:20     warning  'n' is defined but never used                                              no-unused-vars
+  2470:271    warning  'e' is defined but never used                                              no-unused-vars
+  2470:318    warning  'e' is defined but never used                                              no-unused-vars
+  2470:320    warning  't' is defined but never used                                              no-unused-vars
+  2470:381    warning  'e' is defined but never used                                              no-unused-vars
+  2766:122    warning  'n' is defined but never used                                              no-unused-vars
+  2863:94     warning  'e' is defined but never used                                              no-unused-vars
+  2863:96     warning  't' is defined but never used                                              no-unused-vars
+  2863:116    warning  'e' is defined but never used                                              no-unused-vars
+  2863:118    warning  't' is defined but never used                                              no-unused-vars
+  2979:1869   warning  'e' is defined but never used                                              no-unused-vars
+  2979:1871   warning  't' is defined but never used                                              no-unused-vars
+  2979:2755   error    Empty block statement                                                      no-empty
+  2979:2877   error    Empty block statement                                                      no-empty
+  3029:214    error    Promise executor functions should not be async                             no-async-promise-executor
+  3128:252    error    Empty block statement                                                      no-empty
+  3144:305    error    'gapi' is not defined                                                      no-undef
+  3144:347    error    'gapi' is not defined                                                      no-undef
+  3144:543    error    'gapi' is not defined                                                      no-undef
+  3144:708    error    'gapi' is not defined                                                      no-undef
+  3161:896    error    Promise executor functions should not be async                             no-async-promise-executor
+  3177:194    error    Empty block statement                                                      no-empty
+  3193:104    error    Empty block statement                                                      no-empty
+  3193:234    warning  's' is defined but never used                                              no-unused-vars
+  3209:1097   error    'gapi' is not defined                                                      no-undef
+  3209:1399   error    'gapi' is not defined                                                      no-undef
+  3259:2311   warning  't' is defined but never used                                              no-unused-vars
+  3259:2313   warning  'n' is defined but never used                                              no-unused-vars
+
+/workspaces/leaderreps-PDPlatformDev/build/assets/index-XnNlsnEW.js
+  2:1038  warning  't' is defined but never used  no-unused-vars
+  2:2216  warning  'e' is defined but never used  no-unused-vars
+  2:2218  warning  'r' is defined but never used  no-unused-vars
+  2:4228  warning  'e' is defined but never used  no-unused-vars
+  2:4241  warning  'e' is defined but never used  no-unused-vars
+
+/workspaces/leaderreps-PDPlatformDev/build/assets/labs-2MZsJ5P3.js
+  1:3890   warning  'r' is defined but never used                                                      no-unused-vars
+  1:6671   warning  'i' is defined but never used                                                      no-unused-vars
+  1:6820   warning  'v' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+  1:9686   error    Unnecessary escape character: \Z                                                   no-useless-escape
+  1:17723  error    Empty block statement                                                              no-empty
+  1:18151  warning  'd' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+  1:51640  warning  'a' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+  1:57383  warning  'l' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+
+/workspaces/leaderreps-PDPlatformDev/build/assets/vendor-BdxBrZfF.js
+   1:1887    error    Do not access Object.prototype method 'hasOwnProperty' from target object  no-prototype-builtins
+   1:4974    error    Do not access Object.prototype method 'hasOwnProperty' from target object  no-prototype-builtins
+  20:576     error    Unexpected combined character in character class                           no-misleading-character-class
+  20:2470    error    Unnecessary escape character: \-                                           no-useless-escape
+  20:2555    error    Do not access Object.prototype method 'hasOwnProperty' from target object  no-prototype-builtins
+  20:6941    error    Expected a conditional expression and instead saw an assignment            no-cond-assign
+  20:7951    error    Empty block statement                                                      no-empty
+  20:9161    error    Do not access Object.prototype method 'hasOwnProperty' from target object  no-prototype-builtins
+  20:10607   error    Do not access Object.prototype method 'hasOwnProperty' from target object  no-prototype-builtins
+  20:10648   error    Do not access Object.prototype method 'hasOwnProperty' from target object  no-prototype-builtins
+  20:10815   error    Do not access Object.prototype method 'hasOwnProperty' from target object  no-prototype-builtins
+  20:10842   error    Do not access Object.prototype method 'hasOwnProperty' from target object  no-prototype-builtins
+  20:11431   error    Do not access Object.prototype method 'hasOwnProperty' from target object  no-prototype-builtins
+  20:13069   error    'MSApp' is not defined                                                     no-undef
+  20:13112   warning  't' is defined but never used                                              no-unused-vars
+  20:13114   warning  'r' is defined but never used                                              no-unused-vars
+  20:13117   error    'MSApp' is not defined                                                     no-undef
+  20:14078   error    Do not access Object.prototype method 'hasOwnProperty' from target object  no-prototype-builtins
+  20:14171   error    Do not access Object.prototype method 'hasOwnProperty' from target object  no-prototype-builtins
+  20:15372   error    Expected a conditional expression and instead saw an assignment            no-cond-assign
+  20:16392   error    Expected to return a value in method 'get'                                 getter-return
+  20:16529   warning  'r' is defined but never used                                              no-unused-vars
+  20:16531   warning  'l' is defined but never used                                              no-unused-vars
+  20:16533   warning  'a' is defined but never used                                              no-unused-vars
+  20:16535   warning  'u' is defined but never used                                              no-unused-vars
+  20:16537   warning  'o' is defined but never used                                              no-unused-vars
+  20:16539   warning  'i' is defined but never used                                              no-unused-vars
+  20:16712   warning  'e' is defined but never used                                              no-unused-vars
+  20:16714   warning  'n' is defined but never used                                              no-unused-vars
+  20:16716   warning  't' is defined but never used                                              no-unused-vars
+  20:16718   warning  'r' is defined but never used                                              no-unused-vars
+  20:16720   warning  'l' is defined but never used                                              no-unused-vars
+  20:16722   warning  'a' is defined but never used                                              no-unused-vars
+  20:16724   warning  'u' is defined but never used                                              no-unused-vars
+  20:16726   warning  'o' is defined but never used                                              no-unused-vars
+  20:16728   warning  'i' is defined but never used                                              no-unused-vars
+  20:25582   error    Do not access Object.prototype method 'hasOwnProperty' from target object  no-prototype-builtins
+  20:25903   error    Invalid typeof comparison value                                            valid-typeof
+  20:26076   error    Invalid typeof comparison value                                            valid-typeof
+  20:32885   error    Expected a conditional expression and instead saw an assignment            no-cond-assign
+  20:34103   error    Do not access Object.prototype method 'hasOwnProperty' from target object  no-prototype-builtins
+  20:36603   warning  'e' is defined but never used                                              no-unused-vars
+  20:36605   warning  'n' is defined but never used                                              no-unused-vars
+  20:36607   warning  't' is defined but never used                                              no-unused-vars
+  20:36609   warning  'r' is defined but never used                                              no-unused-vars
+  20:36611   warning  'l' is defined but never used                                              no-unused-vars
+  20:36613   warning  'a' is defined but never used                                              no-unused-vars
+  20:36615   warning  'u' is defined but never used                                              no-unused-vars
+  20:36617   warning  'o' is defined but never used                                              no-unused-vars
+  20:36619   warning  'i' is defined but never used                                              no-unused-vars
+  20:38546   error    Expected a 'break' statement before 'case'                                 no-fallthrough
+  20:38733   error    Expected a 'break' statement before 'case'                                 no-fallthrough
+  20:39839   error    Expected a conditional expression and instead saw an assignment            no-cond-assign
+  20:39913   error    Expected a conditional expression and instead saw an assignment            no-cond-assign
+  20:41266   error    Expected a 'break' statement before 'case'                                 no-fallthrough
+  20:43237   error    Unexpected control character(s) in regular expression: \x00                no-control-regex
+  20:44821   error    Expected a conditional expression and instead saw an assignment            no-cond-assign
+  20:44921   error    Expected a conditional expression and instead saw an assignment            no-cond-assign
+  20:49174   error    Expected a conditional expression and instead saw an assignment            no-cond-assign
+  20:57890   error    Expected a 'break' statement before 'case'                                 no-fallthrough
+  20:58928   error    Expected a conditional expression and instead saw an assignment            no-cond-assign
+  20:65492   error    Empty block statement                                                      no-empty
+  20:69662   error    Expected a conditional expression and instead saw an assignment            no-cond-assign
+  20:74976   error    Expected a conditional expression and instead saw an assignment            no-cond-assign
+  20:76093   error    Expected a conditional expression and instead saw an assignment            no-cond-assign
+  20:78812   error    Expected a conditional expression and instead saw an assignment            no-cond-assign
+  20:84393   error    Do not access Object.prototype method 'hasOwnProperty' from target object  no-prototype-builtins
+  20:84671   error    Do not access Object.prototype method 'hasOwnProperty' from target object  no-prototype-builtins
+  20:85118   error    Unnecessary escape character: \/                                           no-useless-escape
+  20:85988   error    Do not access Object.prototype method 'hasOwnProperty' from target object  no-prototype-builtins
+  20:86294   error    Do not access Object.prototype method 'hasOwnProperty' from target object  no-prototype-builtins
+  20:91233   error    Do not access Object.prototype method 'hasOwnProperty' from target object  no-prototype-builtins
+  20:91254   error    Do not access Object.prototype method 'hasOwnProperty' from target object  no-prototype-builtins
+  20:91324   error    Do not access Object.prototype method 'hasOwnProperty' from target object  no-prototype-builtins
+  20:91504   error    Do not access Object.prototype method 'hasOwnProperty' from target object  no-prototype-builtins
+  20:91606   error    Do not access Object.prototype method 'hasOwnProperty' from target object  no-prototype-builtins
+  20:91686   error    Do not access Object.prototype method 'hasOwnProperty' from target object  no-prototype-builtins
+  20:91710   error    Do not access Object.prototype method 'hasOwnProperty' from target object  no-prototype-builtins
+  20:91762   error    Do not access Object.prototype method 'hasOwnProperty' from target object  no-prototype-builtins
+  20:92115   error    Do not access Object.prototype method 'hasOwnProperty' from target object  no-prototype-builtins
+  20:94505   error    Empty block statement                                                      no-empty
+  20:94540   error    Expected a 'break' statement before 'case'                                 no-fallthrough
+  20:98579   error    Do not access Object.prototype method 'hasOwnProperty' from target object  no-prototype-builtins
+  20:99106   error    Expected a 'break' statement before 'case'                                 no-fallthrough
+  20:99514   warning  'n' is defined but never used                                              no-unused-vars
+  20:99516   warning  't' is defined but never used                                              no-unused-vars
+  20:99544   warning  'n' is defined but never used                                              no-unused-vars
+  20:99546   warning  't' is defined but never used                                              no-unused-vars
+  20:111435  error    Empty block statement                                                      no-empty
+  20:113092  error    Empty block statement                                                      no-empty
+  20:122826  warning  'e' is defined but never used                                              no-unused-vars
+  20:123509  error    Expected a conditional expression and instead saw an assignment            no-cond-assign
+  20:125247  error    'vn' is a function                                                         no-func-assign
+  20:125253  error    'yn' is a function                                                         no-func-assign
+  20:126201  error    '__REACT_DEVTOOLS_GLOBAL_HOOK__' is not defined                            no-undef
+  20:126304  error    Empty block statement                                                      no-empty
+  20:128516  error    '__REACT_DEVTOOLS_GLOBAL_HOOK__' is not defined                            no-undef
+  20:128560  error    '__REACT_DEVTOOLS_GLOBAL_HOOK__' is not defined                            no-undef
+  20:128611  error    Empty block statement                                                      no-empty
+
+/workspaces/leaderreps-PDPlatformDev/build/sw.js
+  1:213  error  'importScripts' is not defined  no-undef
+  1:571  error  'define' is not defined         no-undef
+
+/workspaces/leaderreps-PDPlatformDev/build/workbox-2df08125.js
+  1:1      error    'define' is not defined                                          no-undef
+  1:77     error    '_' is not defined                                               no-undef
+  1:89     error    Empty block statement                                            no-empty
+  1:288    error    '_' is not defined                                               no-undef
+  1:300    error    Empty block statement                                            no-empty
+  1:3195   error    'registration' is not defined                                    no-undef
+  1:3388   error    'y' is a function                                                no-func-assign
+  1:6136   error    '_' is not defined                                               no-undef
+  1:6148   error    Empty block statement                                            no-empty
+  1:8492   error    '_' is not defined                                               no-undef
+  1:8504   error    Empty block statement                                            no-empty
+  1:9127   error    'FetchEvent' is not defined                                      no-undef
+  1:11880  error    Expected a conditional expression and instead saw an assignment  no-cond-assign
+  1:12368  error    'FetchEvent' is not defined                                      no-undef
+  1:13077  error    Empty block statement                                            no-empty
+  1:13411  error    '_' is not defined                                               no-undef
+  1:13423  error    Empty block statement                                            no-empty
+  1:19600  error    Empty block statement                                            no-empty
+  1:21133  warning  'e' is defined but never used                                    no-unused-vars
+  1:21291  warning  's' is defined but never used                                    no-unused-vars
+  1:22103  warning  't' is defined but never used                                    no-unused-vars
+
+/workspaces/leaderreps-PDPlatformDev/import-data.js
+    8:38  error  Empty block statement  no-empty
+   95:47  error  Empty block statement  no-empty
+  100:47  error  Empty block statement  no-empty
+
+/workspaces/leaderreps-PDPlatformDev/migrate-READY-TO-RUN.js
+   20:7   warning  'firebaseConfig' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+   56:30  error    'FIREBASE_CONFIG' is not defined                                                                no-undef
+  374:7   error    'FIREBASE_CONFIG' is not defined                                                                no-undef
+
+/workspaces/leaderreps-PDPlatformDev/migration.js
+  14:3   warning  'writeBatch' is defined but never used. Allowed unused vars must match /^[A-Z_]/u               no-unused-vars
+  22:7   warning  'firebaseConfig' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+  64:30  error    'FIREBASE_CONFIG' is not defined                                                                no-undef
+
+/workspaces/leaderreps-PDPlatformDev/src/components/layout/AppContent.jsx
+  19:3  warning  'isNavExpanded' is defined but never used  no-unused-vars
+
+/workspaces/leaderreps-PDPlatformDev/src/components/layout/NavSidebar.jsx
+  24:3   warning  'user' is defined but never used                                                               no-unused-vars
+  28:3   warning  'setIsNavExpanded' is defined but never used                                                   no-unused-vars
+  33:11  warning  'auth' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u           no-unused-vars
+  34:10  warning  'isProfileOpen' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+
+/workspaces/leaderreps-PDPlatformDev/src/components/modals/TwoMinuteChallengeModal.jsx
+  42:8  warning  React Hook useMemo has an unnecessary dependency: 'isVisible'. Either exclude it or remove the dependency array  react-hooks/exhaustive-deps
+
+/workspaces/leaderreps-PDPlatformDev/src/components/screens/AdminDataMaintenance.jsx
+    11:36  warning  'qLimit' is defined but never used. Allowed unused vars must match /^[A-Z_]/u                                    no-unused-vars
+    11:44  warning  'writeBatch' is defined but never used. Allowed unused vars must match /^[A-Z_]/u                                no-unused-vars
+    11:56  warning  'updateDoc' is defined but never used. Allowed unused vars must match /^[A-Z_]/u                                 no-unused-vars
+   382:7   warning  'tryParse' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u                         no-unused-vars
+   423:6   warning  React Hook useEffect has a missing dependency: 'loadDocs'. Either include it or remove the dependency array      react-hooks/exhaustive-deps
+   771:65  warning  'userId' is defined but never used                                                                               no-unused-vars
+  1080:24  warning  'groupKey' is defined but never used                                                                             no-unused-vars
+  1088:6   warning  React Hook useEffect has a missing dependency: 'loadData'. Either include it or remove the dependency array      react-hooks/exhaustive-deps
+  1219:6   warning  React Hook useEffect has a missing dependency: 'targetUserId'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+/workspaces/leaderreps-PDPlatformDev/src/components/screens/AdminFunctions.jsx
+    3:47  warning  'useCallback' is defined but never used. Allowed unused vars must match /^[A-Z_]/u                                                         no-unused-vars
+   62:8   warning  React Hook useEffect has missing dependencies: 'emails', 'isSaving', and 'saveStatus'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+  129:37  warning  'index' is defined but never used                                                                                                          no-unused-vars
+  262:8   warning  React Hook useEffect has a missing dependency: 'currentFlags'. Either include it or remove the dependency array                            react-hooks/exhaustive-deps
+
+/workspaces/leaderreps-PDPlatformDev/src/components/screens/AppSettings.jsx
+  9:10  warning  'getAuth' is defined but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+
+/workspaces/leaderreps-PDPlatformDev/src/components/screens/AppliedLeadership.jsx
+  187:83  warning  'handleOpenResource' is defined but never used                                            no-unused-vars
+  295:9   warning  'navigate' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+
+/workspaces/leaderreps-PDPlatformDev/src/components/screens/BusinessReadings.jsx
+    3:36  warning  'useRef' is defined but never used. Allowed unused vars must match /^[A-Z_]/u             no-unused-vars
+  101:25  warning  'book' is defined but never used                                                          no-unused-vars
+  102:24  warning  'book' is defined but never used                                                          no-unused-vars
+  655:5   warning  'navigate' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+
+/workspaces/leaderreps-PDPlatformDev/src/components/screens/CommunityFeed.jsx
+  61:13  warning  'navigate' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+
+/workspaces/leaderreps-PDPlatformDev/src/components/screens/CommunityScreen.jsx
+  302:13  warning  'user' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+
+/workspaces/leaderreps-PDPlatformDev/src/components/screens/Dashboard.jsx
+   59:15  error    Do not access Object.prototype method 'hasOwnProperty' from target object                                                                                                                                      no-prototype-builtins
+  202:5   warning  'isAdmin' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u                                                                                                                        no-unused-vars
+  223:5   warning  'handleSaveIdentity' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u                                                                                                             no-unused-vars
+  224:5   warning  'handleSaveHabit' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u                                                                                                                no-unused-vars
+  336:6   warning  React Hook useMemo has a missing dependency: 'getArrayFromMetadata'. Either include it or remove the dependency array                                                                                          react-hooks/exhaustive-deps
+  342:6   warning  React Hook useMemo has a missing dependency: 'getArrayFromMetadata'. Either include it or remove the dependency array                                                                                          react-hooks/exhaustive-deps
+  347:6   warning  React Hook useMemo has a missing dependency: 'getArrayFromMetadata'. Either include it or remove the dependency array                                                                                          react-hooks/exhaustive-deps
+  352:6   warning  React Hook useMemo has a missing dependency: 'getArrayFromMetadata'. Either include it or remove the dependency array                                                                                          react-hooks/exhaustive-deps
+  357:6   warning  React Hook useMemo has a missing dependency: 'getArrayFromMetadata'. Either include it or remove the dependency array                                                                                          react-hooks/exhaustive-deps
+  454:9   warning  'handleFindPod' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u                                                                                                                  no-unused-vars
+  539:9   warning  The 'handleOpenAnchorEditor' function makes the dependencies of useMemo Hook (at line 568) change on every render. To fix this, wrap the definition of 'handleOpenAnchorEditor' in its own useCallback() Hook  react-hooks/exhaustive-deps
+
+/workspaces/leaderreps-PDPlatformDev/src/components/screens/DevelopmentPlan.jsx
+  101:60  warning  'navigate' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+
+/workspaces/leaderreps-PDPlatformDev/src/components/screens/ExecutiveReflection.jsx
+    3:26  warning  'useState' is defined but never used. Allowed unused vars must match /^[A-Z_]/u       no-unused-vars
+  246:19  warning  'user' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+
+/workspaces/leaderreps-PDPlatformDev/src/components/screens/Labs.jsx
+     8:47   warning  'useCallback' is defined but never used. Allowed unused vars must match /^[A-Z_]/u                              no-unused-vars
+   159:35   warning  'setView' is defined but never used                                                                             no-unused-vars
+   261:47   warning  'preparedSBI' is defined but never used                                                                         no-unused-vars
+   264:94   warning  'commitmentData' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u                  no-unused-vars
+   284:67   error    Unnecessary escape character: \Z                                                                                no-useless-escape
+   611:13   warning  'navigate' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u                        no-unused-vars
+  1571:13   warning  'navigate' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u                        no-unused-vars
+  1618:110  warning  React Hook useMemo has a missing dependency: 'baseScenarios'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+  1760:13   warning  'navigate' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u                        no-unused-vars
+
+/workspaces/leaderreps-PDPlatformDev/src/components/screens/LeadershipVideos.jsx
+  365:12  warning  'viewMode' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u     no-unused-vars
+  365:22  warning  'setViewMode' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+
+/workspaces/leaderreps-PDPlatformDev/src/components/screens/MembershipModule.jsx
+  85:29  warning  'navigate' is defined but never used  no-unused-vars
+
+/workspaces/leaderreps-PDPlatformDev/src/components/screens/MembershipUpgrade.jsx
+  237:27  warning  'user' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+
+/workspaces/leaderreps-PDPlatformDev/src/components/screens/PlanningHub.jsx
+   79:9    warning  'dailyPracticeData' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u                                                                                        no-unused-vars
+  104:90   error    Unnecessary escape character: \*                                                                                                                                                         no-useless-escape
+  104:96   error    Unnecessary escape character: \.                                                                                                                                                         no-useless-escape
+  110:87   error    Unnecessary escape character: \*                                                                                                                                                         no-useless-escape
+  110:93   error    Unnecessary escape character: \.                                                                                                                                                         no-useless-escape
+  311:22   warning  'setIsSaving' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u                                                                                              no-unused-vars
+  312:33   warning  'setIsSavedConfirmation' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u                                                                                   no-unused-vars
+  313:26   warning  'setIsCritiquing' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u                                                                                          no-unused-vars
+  314:28   warning  'setCritiqueResult' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u                                                                                        no-unused-vars
+  315:26   warning  'setCritiqueHtml' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u                                                                                          no-unused-vars
+  322:99   warning  React Hook useCallback has unnecessary dependencies: 'mission', 'updateStrategicContentData', and 'vision'. Either exclude them or remove the dependency array                           react-hooks/exhaustive-deps
+  325:96   warning  React Hook useCallback has unnecessary dependencies: 'GEMINI_MODEL', 'callSecureGeminiAPI', 'hasGeminiKey', 'mission', and 'vision'. Either exclude them or remove the dependency array  react-hooks/exhaustive-deps
+  395:26   warning  'setCritiqueHtml' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u                                                                                          no-unused-vars
+  396:26   warning  'setIsCritiquing' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u                                                                                          no-unused-vars
+  404:42   warning  'id' is defined but never used                                                                                                                                                           no-unused-vars
+  404:46   warning  'value' is defined but never used                                                                                                                                                        no-unused-vars
+  405:35   warning  'objId' is defined but never used                                                                                                                                                        no-unused-vars
+  405:42   warning  'krId' is defined but never used                                                                                                                                                         no-unused-vars
+  405:48   warning  'value' is defined but never used                                                                                                                                                        no-unused-vars
+  406:32   warning  'objId' is defined but never used                                                                                                                                                        no-unused-vars
+  407:35   warning  'objId' is defined but never used                                                                                                                                                        no-unused-vars
+  407:42   warning  'krId' is defined but never used                                                                                                                                                         no-unused-vars
+  409:59   warning  React Hook useCallback has an unnecessary dependency: 'okrs'. Either exclude it or remove the dependency array                                                                           react-hooks/exhaustive-deps
+  423:94   warning  React Hook useCallback has unnecessary dependencies: 'GEMINI_MODEL', 'callSecureGeminiAPI', 'hasGeminiKey', and 'okrs'. Either exclude them or remove the dependency array               react-hooks/exhaustive-deps
+  449:112  warning  'e' is defined but never used                                                                                                                                                            no-unused-vars
+  505:63   warning  'dailyPracticeData' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u                                                                                        no-unused-vars
+  508:22   warning  'setIsSaving' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u                                                                                              no-unused-vars
+  509:33   warning  'setIsSavedConfirmation' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u                                                                                   no-unused-vars
+  519:78   warning  'o' is defined but never used                                                                                                                                                            no-unused-vars
+  519:81   warning  'index' is defined but never used                                                                                                                                                        no-unused-vars
+  522:109  warning  React Hook useCallback has unnecessary dependencies: 'misalignmentNotes' and 'updateStrategicContentData'. Either exclude them or remove the dependency array                            react-hooks/exhaustive-deps
+  584:116  warning  React Hook useCallback has unnecessary dependencies: 'navigate', 'suggestionCommitment', and 'updateDailyPracticeData'. Either exclude them or remove the dependency array               react-hooks/exhaustive-deps
+
+/workspaces/leaderreps-PDPlatformDev/src/components/screens/QuickStartAccelerator.jsx
+  222:13  warning  'navigate' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u      no-unused-vars
+  222:23  warning  'featureFlags' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+
+/workspaces/leaderreps-PDPlatformDev/src/components/screens/ReflectionLogScreen.jsx
+   3:38  warning  'useMemo' is defined but never used. Allowed unused vars must match /^[A-Z_]/u            no-unused-vars
+  59:16  warning  'appError' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+
+/workspaces/leaderreps-PDPlatformDev/src/components/screens/dashboard/DailyTasksCard.jsx
+  143:3  warning  'onSaveWIN' is defined but never used  no-unused-vars
+
+/workspaces/leaderreps-PDPlatformDev/src/components/screens/dashboard/DashboardComponents.jsx
+    13:10  warning  'serverTimestamp' is defined but never used. Allowed unused vars must match /^[A-Z_]/u                                          no-unused-vars
+    47:14  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+  1143:18  warning  'Icon' is defined but never used                                                                                                no-unused-vars
+
+/workspaces/leaderreps-PDPlatformDev/src/components/screens/dashboard/DashboardHooks.jsx
+   16:3   warning  'featureFlags' is defined but never used                                                                               no-unused-vars
+   17:3   warning  'db' is defined but never used                                                                                         no-unused-vars
+   18:3   warning  'userEmail' is defined but never used                                                                                  no-unused-vars
+  106:6   warning  React Hook useEffect has a missing dependency: 'sanitizeTimestamps'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+  120:17  error    Do not access Object.prototype method 'hasOwnProperty' from target object                                              no-prototype-builtins
+  136:6   warning  React Hook useEffect has a missing dependency: 'sanitizeTimestamps'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+  446:9   warning  'amCompletedAt' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u                          no-unused-vars
+  447:9   warning  'amWinCompleted' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u                         no-unused-vars
+  448:9   warning  'amTasksCompleted' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u                       no-unused-vars
+
+/workspaces/leaderreps-PDPlatformDev/src/components/screens/developmentplan/DetailedPlanView.jsx
+  76:3  warning  'globalMetadata' is defined but never used  no-unused-vars
+  79:3  warning  'onUpdatePlan' is defined but never used    no-unused-vars
+
+/workspaces/leaderreps-PDPlatformDev/src/components/screens/developmentplan/DevPlanComponents.jsx
+   16:14  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+  160:48  warning  'Icon' is defined but never used                                                                                                no-unused-vars
+  242:6   warning  React Hook React.useEffect has a missing dependency: 'steps.length'. Either include it or remove the dependency array           react-hooks/exhaustive-deps
+  355:36  warning  'Icon' is defined but never used                                                                                                no-unused-vars
+  377:46  warning  'Icon' is defined but never used                                                                                                no-unused-vars
+
+/workspaces/leaderreps-PDPlatformDev/src/components/screens/developmentplan/MilestoneTimeline.jsx
+  73:27  warning  'isFuture' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+
+/workspaces/leaderreps-PDPlatformDev/src/components/screens/developmentplan/PlanTracker.jsx
+  16:3  warning  'skillCatalog' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+
+/workspaces/leaderreps-PDPlatformDev/src/components/screens/developmentplan/ProgressBreakdown.jsx
+  12:9  warning  The 'skillCatalog' logical expression could make the dependencies of useMemo Hook (at line 37) change on every render. Move it inside the useMemo callback. Alternatively, wrap the initialization of 'skillCatalog' in its own useMemo() Hook  react-hooks/exhaustive-deps
+
+/workspaces/leaderreps-PDPlatformDev/src/components/screens/developmentplan/ProgressScan.jsx
+  81:3  warning  'globalMetadata' is defined but never used  no-unused-vars
+
+/workspaces/leaderreps-PDPlatformDev/src/components/screens/labs/shared/LabComponents.jsx
+  10:14  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+  27:14  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+/workspaces/leaderreps-PDPlatformDev/src/components/shared/LoadingStates.jsx
+  67:9  warning  'Icon' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+
+/workspaces/leaderreps-PDPlatformDev/src/components/ui/MembershipGate.jsx
+  157:11  warning  'membershipData' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+
+/workspaces/leaderreps-PDPlatformDev/src/components/ui/PWAInstall.jsx
+  18:10  warning  'isInstallable' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+
+/workspaces/leaderreps-PDPlatformDev/src/data/Constants.js
+  247:11  warning  'initialTierIndex' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+
+/workspaces/leaderreps-PDPlatformDev/src/firebase/Hooks.js
+   3:10  warning  'getFirestore' is defined but never used. Allowed unused vars must match /^[A-Z_]/u                no-unused-vars
+   3:80  warning  'addDoc' is defined but never used. Allowed unused vars must match /^[A-Z_]/u                      no-unused-vars
+   3:88  warning  'collection' is defined but never used. Allowed unused vars must match /^[A-Z_]/u                  no-unused-vars
+  17:7   warning  'getCollectionPath' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+
+/workspaces/leaderreps-PDPlatformDev/src/globals/notepad.js
+  14:5   error  Move function declaration to function body root  no-inner-declarations
+  17:5   error  Move function declaration to function body root  no-inner-declarations
+  19:43  error  Empty block statement                            no-empty
+  48:88  error  Empty block statement                            no-empty
+
+/workspaces/leaderreps-PDPlatformDev/src/main.jsx
+  45:10  warning  Fast refresh only works when a file has exports. Move your component(s) to a separate file  react-refresh/only-export-components
+
+/workspaces/leaderreps-PDPlatformDev/src/providers/DataProvider.jsx
+   69:6   warning  React Hook useEffect has a missing dependency: 'services'. Either include it or remove the dependency array       react-hooks/exhaustive-deps
+  236:23  error    Empty block statement                                                                                             no-empty
+  258:5   warning  React Hook useCallback has an unnecessary dependency: 'apiKey'. Either exclude it or remove the dependency array  react-hooks/exhaustive-deps
+
+/workspaces/leaderreps-PDPlatformDev/src/services/useAppServices.jsx
+   26:3   warning  'deleteField' is defined but never used. Allowed unused vars must match /^[A-Z_]/u                                              no-unused-vars
+   61:15  error    Do not access Object.prototype method 'hasOwnProperty' from target object                                                       no-prototype-builtins
+  144:15  error    Do not access Object.prototype method 'hasOwnProperty' from target object                                                       no-prototype-builtins
+  366:7   warning  'updateDocEx' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u                                     no-unused-vars
+  415:14  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+  526:14  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+  533:14  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+  547:14  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+  555:14  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+  659:14  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+  668:14  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+  774:14  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+  907:14  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+  929:59  error    Do not access Object.prototype method 'hasOwnProperty' from target object                                                       no-prototype-builtins
+  933:7   warning  'useCatalogDoc' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u                                   no-unused-vars
+  979:14  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+  991:14  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+/workspaces/leaderreps-PDPlatformDev/src/test/corporate-colors.test.jsx
+   6:32  warning  'beforeEach' is defined but never used. Allowed unused vars must match /^[A-Z_]/u                   no-unused-vars
+  15:7   warning  'mockUser' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u            no-unused-vars
+  16:7   warning  'mockMembershipData' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+
+/workspaces/leaderreps-PDPlatformDev/src/ui/uiKit.jsx
+  6:14  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+/workspaces/leaderreps-PDPlatformDev/src/utils/ApiHelpers.js
+  195:11  error  Empty block statement  no-empty
+  200:11  error  Empty block statement  no-empty
+
+/workspaces/leaderreps-PDPlatformDev/src/utils/errorHandler.js
+  47:38  error  'React' is not defined  no-undef
+  65:11  error  'React' is not defined  no-undef
+  68:13  error  'React' is not defined  no-undef
+  69:13  error  'React' is not defined  no-undef
+  70:13  error  'React' is not defined  no-undef
+
+/workspaces/leaderreps-PDPlatformDev/src/utils/firebaseUtils.js
+   75:13  error  Do not access Object.prototype method 'hasOwnProperty' from target object  no-prototype-builtins
+  190:15  error  Do not access Object.prototype method 'hasOwnProperty' from target object  no-prototype-builtins
+
+✖ 689 problems (264 errors, 425 warnings)
+

@@ -56,7 +56,7 @@ const sanitizeTimestamps = (obj) => {
   if (obj && typeof obj === 'object') {
     const sanitized = {};
     for (const key in obj) {
-      if (obj.hasOwnProperty(key)) {
+      if (Object.prototype.hasOwnProperty.call(obj, key)) {
         sanitized[key] = sanitizeTimestamps(obj[key]);
       }
     }
@@ -199,7 +199,6 @@ const Dashboard = ({ navigate }) => {
     developmentPlanData,
     metadata: globalMetadata,
     isLoading,
-    isAdmin,
     membershipData
   } = useAppServices();
 
@@ -220,8 +219,6 @@ const Dashboard = ({ navigate }) => {
     identityStatement, setIdentityStatement,
     habitAnchor, setHabitAnchor,
     whyStatement, setWhyStatement,
-    handleSaveIdentity, 
-    handleSaveHabit,    
     morningWIN, setMorningWIN,
     otherTasks: originalOtherTasks,
     showLIS, setShowLIS,
@@ -259,8 +256,8 @@ const Dashboard = ({ navigate }) => {
   
   // --- POD STATE ---
   const [showFindPodModal, setShowFindPodModal] = useState(false);
-  const [availablePods, setAvailablePods] = useState([]);
-  const [isLoadingPods, setIsLoadingPods] = useState(false);
+  const [availablePods] = useState([]);
+  const [isLoadingPods] = useState(false);
 
 
   // --- Data Lookups (Unchanged logic) ---
@@ -286,7 +283,7 @@ const Dashboard = ({ navigate }) => {
     ? 0 
     : (developmentPlanData?.currentPlan?.progress || 0);
 
-  const getArrayFromMetadata = (key) => {
+  const getArrayFromMetadata = useCallback((key) => {
     if (!globalMetadata || !globalMetadata[key]) return [];
     const data = globalMetadata[key];
     
@@ -308,7 +305,7 @@ const Dashboard = ({ navigate }) => {
     
     console.warn(`[getArrayFromMetadata] Metadata for key '${key}' is not in the expected { items: [...] } format or a simple array. Got:`, typeof data);
     return [];
-  };
+  }, [globalMetadata]);
 
   const targetRepDetails = useMemo(() => {
     if (!globalMetadata || !targetRep) return null;
@@ -333,28 +330,28 @@ const Dashboard = ({ navigate }) => {
       category: repItem.category,
       tier: repItem.tier_id
     };
-  }, [targetRep, globalMetadata]);
+  }, [targetRep, globalMetadata, getArrayFromMetadata]);
 
   // Load suggestions for Anchors with defensive checks
   const identitySuggestions = useMemo(() => {
     const arr = getArrayFromMetadata('IDENTITY_ANCHOR_CATALOG');
     return Array.isArray(arr) ? arr.map(s => ({ text: typeof s === 'string' ? s : s.text || '' })) : [];
-  }, [globalMetadata]);
+  }, [getArrayFromMetadata]);
   
   const habitSuggestions = useMemo(() => {
     const arr = getArrayFromMetadata('HABIT_ANCHOR_CATALOG');
     return Array.isArray(arr) ? arr.map(s => ({ text: typeof s === 'string' ? s : s.text || '' })) : [];
-  }, [globalMetadata]);
+  }, [getArrayFromMetadata]);
   
   const whySuggestions = useMemo(() => {
     const arr = getArrayFromMetadata('WHY_CATALOG');
     return Array.isArray(arr) ? arr.map(s => ({ text: typeof s === 'string' ? s : s.text || '' })) : [];
-  }, [globalMetadata]);
+  }, [getArrayFromMetadata]);
   
   const bonusExercises = useMemo(() => {
     const arr = getArrayFromMetadata('EXERCISE_LIBRARY');
     return Array.isArray(arr) ? arr : [];
-  }, [globalMetadata]);
+  }, [getArrayFromMetadata]);
 
   // --- UI Handlers ---
 
@@ -451,18 +448,6 @@ const Dashboard = ({ navigate }) => {
     }
   };
 
-  const handleFindPod = () => {
-    setShowFindPodModal(true);
-    setIsLoadingPods(true);
-    setTimeout(() => {
-      setAvailablePods([
-        { id: 'pod1', name: 'West Coast Leaders', members: 8, activity: 'High' },
-        { id: 'pod2', name: 'East Coast Go-Getters', members: 12, activity: 'Medium' },
-        { id: 'pod3', name: 'Global Leadership Forum', members: 4, activity: 'High' },
-      ]);
-      setIsLoadingPods(false);
-    }, 1500);
-  };
   
   // --- FIX (Issue 1): Reset Plan ---
   // 🛑 CRITICAL FIX: Direct implementation using update functions with complete overwrite
@@ -536,7 +521,7 @@ const Dashboard = ({ navigate }) => {
   // --- UX ENHANCEMENT: Anchor FAB Logic ---
   const isFullyDefined = !!identityStatement && !!habitAnchor && !!whyStatement;
   
-  const handleOpenAnchorEditor = () => setShowAnchorEditor(true);
+  const handleOpenAnchorEditor = useCallback(() => setShowAnchorEditor(true), []);
   
   // --- Augmented Task List (Uses UNIFIED Anchor Editor) ---
   const augmentedOtherTasks = useMemo(() => {

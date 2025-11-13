@@ -8,11 +8,10 @@ import { Card, ProgressBar, Badge } from './DevPlanComponents';
 import { COLORS, calculateSkillProgress } from './devPlanUtils';
 
 const ProgressBreakdown = ({ plan, globalMetadata }) => {
-  // FIXED: Simplified skill catalog access
-  const skillCatalog = globalMetadata?.SKILL_CATALOG?.items || globalMetadata?.SKILL_CATALOG || [];
-
   const skillProgress = useMemo(() => {
     if (!plan || !plan.coreReps) return [];
+    
+    const skillCatalog = globalMetadata?.SKILL_CATALOG?.items || globalMetadata?.SKILL_CATALOG || [];
     
     console.log('[ProgressBreakdown] Processing adapted plan:', {
       hasCoreReps: !!plan.coreReps,
@@ -34,7 +33,7 @@ const ProgressBreakdown = ({ plan, globalMetadata }) => {
         focusArea: rep.focusArea || rep.dimension || 'General'
       };
     });
-  }, [plan, skillCatalog]);
+  }, [plan, globalMetadata]);
 
   // FIXED: Group by focus area instead of tier
   const skillsByFocusArea = useMemo(() => {

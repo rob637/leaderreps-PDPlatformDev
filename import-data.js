@@ -5,7 +5,7 @@
 // If args are omitted, defaults are ./master_import.json and ./service-account-key.json
 
 // 0) On Windows behind corp proxy, trust Windows root store if available (no-op if module missing)
-try { require('win-ca'); } catch (_) {}
+try { require('win-ca'); } catch (_) { /* ignore */ }
 
 const admin = require('firebase-admin');
 const fs = require('fs');
@@ -92,11 +92,11 @@ async function importData() {
 
 importData()
   .then(async () => {
-    try { await admin.app().delete(); } catch {}
+    try { await admin.app().delete(); } catch (_) { /* ignore */ }
     process.exit(0);
   })
   .catch(async (err) => {
     console.error('CRITICAL IMPORT ERROR:', err);
-    try { await admin.app().delete(); } catch {}
+    try { await admin.app().delete(); } catch (_) { /* ignore */ }
     process.exit(1);
   });

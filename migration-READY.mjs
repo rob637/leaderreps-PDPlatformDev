@@ -20,13 +20,13 @@ import {
 // ============================================
 
 const FIREBASE_CONFIG = {
-  apiKey: "AIzaSyBf_js_jWW-GctwOLvN5PUqRAiZyezgXAo",
-  authDomain: "leaderreps-pd-platform.firebaseapp.com",
-  projectId: "leaderreps-pd-platform",
-  storageBucket: "leaderreps-pd-platform.firebasestorage.app",
-  messagingSenderId: "336868581775",
-  appId: "1:336868581775:web:f439e98a560f705516abfa",
-  measurementId: "G-7YVDMDK01J"
+  apiKey: process.env.VITE_FIREBASE_API_KEY,
+  authDomain: process.env.VITE_FIREBASE_AUTH_DOMAIN,
+  projectId: process.env.VITE_FIREBASE_PROJECT_ID,
+  storageBucket: process.env.VITE_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: process.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  appId: process.env.VITE_FIREBASE_APP_ID,
+  measurementId: process.env.VITE_FIREBASE_MEASUREMENT_ID
 };
 
 const MIGRATION_CONFIG = {

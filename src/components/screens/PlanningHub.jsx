@@ -8,7 +8,7 @@ import { useAppServices } from '../../services/useAppServices.jsx'; // cite: use
 import {
     ArrowLeft, CheckCircle, PlusCircle, X, TrendingUp, Target, AlertTriangle, Lightbulb,
     ShieldCheck, Cpu, Trash2, Zap, MessageSquare, BookOpen, Clock, CornerRightUp, Award, Activity,
-    Link, CornerDownRight, Dumbbell, Trello, Loader // Added Trello, Loader
+    Link, CornerDownRight, Dumbbell, Trello, Loader, Save // Added Trello, Loader, Save
 } from 'lucide-react';
 
 /* =========================================================
@@ -76,7 +76,7 @@ const PreMortemView = ({ setPlanningView }) => {
     // --- Consume Services ---
     const {
         strategicContentData, updateStrategicContentData, // Data for this hub // cite: useAppServices.jsx
-        dailyPracticeData, updateDailyPracticeData, // For adding commitments // cite: useAppServices.jsx
+        updateDailyPracticeData, // Added back for commitment creation
         navigate, callSecureGeminiAPI, hasGeminiKey, GEMINI_MODEL // AI & Nav // cite: useAppServices.jsx
     } = useAppServices();
 
@@ -92,6 +92,9 @@ const PreMortemView = ({ setPlanningView }) => {
     // Parsed outputs for actions
     const [mitigationText, setMitigationText] = useState(''); // Parsed mitigation step
     const [riskScenario, setRiskScenario] = useState(''); // Parsed highest risk for coaching lab
+    const [isCritiquing, setIsCritiquing] = useState(false);
+    const [critiqueResult, setCritiqueResult] = useState('');
+    const [critiqueHtml, setCritiqueHtml] = useState('');
 
     // --- Effect to Parse AI Audit Result ---
     useEffect(() => {
@@ -101,16 +104,24 @@ const PreMortemView = ({ setPlanningView }) => {
         // Parse Mitigation Strategy (improved robustness)
         const mitigationMatch = auditResult.match(/### Mitigation Strategy\s*([\s\S]*?)(?:##|$)/i);
         if (mitigationMatch?.[1]) {
-            const strategy = mitigationMatch[1].trim().split('\n').map(s => s.replace(/^[\*\-\d\.\s]+/, '').trim()).filter(Boolean)[0] || ''; // Get first non-empty line
+            const strategy = mitigationMatch[1].trim().split('\n').map(s => s.replace(/^[*\-d.\s]+/, '').trim()).filter(Boolean)[0] || ''; // Get first non-empty line
             setMitigationText(strategy.substring(0, 100)); // Limit length
         }
         // Parse Amplified Risk for Scenario
         const riskMatch = auditResult.match(/### Risk Amplification\s*([\s\S]*?)(?:##|$)/i);
          if (riskMatch?.[1]) {
-            const primaryRisk = riskMatch[1].trim().split('\n').map(s => s.replace(/^[\*\-\d\.\s]+/, '').trim()).filter(Boolean)[0] || 'Unforeseen consequences'; // Get first non-empty line
+            const primaryRisk = riskMatch[1].trim().split('\n').map(s => s.replace(/^[*\-d.\s]+/, '').trim()).filter(Boolean)[0] || 'Unforeseen consequences'; // Get first non-empty line
             setRiskScenario(primaryRisk.substring(0, 100)); // Limit length
         }
     }, [auditResult]);
+
+    useEffect(() => {
+        if (critiqueResult) {
+            mdToHtml(critiqueResult).then(setCritiqueHtml);
+        } else {
+            setCritiqueHtml('');
+        }
+    }, [critiqueResult]);
 
     // --- Handlers for Risk Input Array ---
     const handleRiskChange = useCallback((index, value) => {
@@ -213,6 +224,34 @@ const PreMortemView = ({ setPlanningView }) => {
         // Optionally navigate to the lab: navigate('coaching-lab');
     }, [riskScenario, decision]); // Dependencies
 
+    // --- Critique Pre-Mortem Analysis ---
+    const critiquePreMortem = useCallback(async () => {
+        const validRisks = risks.map(r => r.trim()).filter(Boolean);
+        if (!decision.trim() || !outcome.trim() || validRisks.length === 0) {
+            alert("Please define the Decision, Outcome, and at least one Risk to critique.");
+            return;
+        }
+        setIsCritiquing(true);
+        setCritiqueResult('');
+        const systemPrompt = "You are a world-class business strategist. Critique the following 'Pre-Mortem' analysis, which imagines potential failure points for a project. Are the risks identified specific and plausible? Is the analysis actionable? Provide 2-3 bullet points of feedback. Use markdown.";
+        const userQuery = `**Decision:** ${decision.trim()}\n**Desired Outcome:** ${outcome.trim()}\n**Identified Risks:**\n${validRisks.map(r => `- ${r}`).join('\n')}`;
+        
+        try {
+            const payload = {
+                contents: [{ role: "user", parts: [{ text: userQuery }] }],
+                systemInstruction: { parts: [{ text: systemPrompt }] },
+                model: GEMINI_MODEL || 'gemini-1.5-flash',
+            };
+            const result = await callSecureGeminiAPI(payload);
+            const text = result?.candidates?.[0]?.content?.parts?.[0]?.text || "Critique failed.";
+            setCritiqueResult(text);
+        } catch (e) {
+            setCritiqueResult(`**Error:** ${e.message}`);
+        } finally {
+            setIsCritiquing(false);
+        }
+    }, [decision, outcome, risks, GEMINI_MODEL, callSecureGeminiAPI]);
+
     return (
         // Consistent page structure and padding
         <div className="p-6 md:p-8 lg:p-10">
@@ -297,6 +336,22 @@ const PreMortemView = ({ setPlanningView }) => {
                     )}
                 </Card>
             )}
+
+            {/* Critique Section */}
+            <Card title="AI Critique of Pre-Mortem Analysis" icon={Cpu} accent='PURPLE' className="mt-8">
+                <p className="text-gray-700 text-sm mb-4">Get AI feedback on your Pre-Mortem analysis for completeness and actionability.</p>
+                {/* Critique Button */}
+                <Button onClick={critiquePreMortem} disabled={isCritiquing || !decision.trim() || !outcome.trim() || risks.filter(r => r.trim()).length < 1 || !hasGeminiKey()} size="md" className="w-full bg-[#7C3AED] hover:bg-purple-700">
+                    {isCritiquing ? <Loader className="w-5 h-5 mr-2 animate-spin"/> : <MessageSquare className='w-5 h-5 mr-2'/>} {isCritiquing ? 'Auditing Pre-Mortem...' : 'Run Pre-Mortem Critique'}
+                </Button>
+                 {!hasGeminiKey() && <p className="text-xs text-red-500 mt-2 text-center">API Key missing. Critique disabled.</p>}
+                {/* Critique Result */}
+                {critiqueHtml && (
+                    <div className="mt-6 pt-4 border-t border-gray-200">
+                        <div dangerouslySetInnerHTML={{ __html: critiqueHtml }} />
+                    </div>
+                )}
+            </Card>
         </div>
     );
 };
@@ -315,14 +370,56 @@ const VisionBuilderView = ({ setPlanningView }) => {
     const [critiqueHtml, setCritiqueHtml] = useState('');
 
     // Effects for syncing state and parsing critique (unchanged logic)
-    useEffect(() => { /* ... sync vision/mission from context ... */ }, [strategicContentData]);
-    useEffect(() => { /* ... parse critique markdown to html ... */ }, [critiqueResult]);
+    useEffect(() => { 
+        setVision(strategicContentData?.vision || '');
+        setMission(strategicContentData?.mission || '');
+    }, [strategicContentData]);
+    useEffect(() => { 
+        if (critiqueResult) {
+            mdToHtml(critiqueResult).then(setCritiqueHtml);
+        } else {
+            setCritiqueHtml('');
+        }
+    }, [critiqueResult]);
 
     // Save handler (unchanged logic, ensure correct update function)
-    const handleSave = useCallback(async () => { /* ... uses updateStrategicContentData ... */ }, [vision, mission, updateStrategicContentData]); // cite: useAppServices.jsx
+    const handleSave = useCallback(async () => { 
+        setIsSaving(true);
+        setIsSavedConfirmation(false);
+        try {
+            await updateStrategicContentData({ vision, mission });
+            setIsSavedConfirmation(true);
+            setTimeout(() => setIsSavedConfirmation(false), 3000);
+        } catch (e) {
+            console.error("Failed to save vision/mission:", e);
+            alert("Failed to save. Please try again.");
+        } finally {
+            setIsSaving(false);
+        }
+    }, [vision, mission, updateStrategicContentData]); // cite: useAppServices.jsx
 
     // AI Critique handler (unchanged logic, ensure payload)
-    const critiqueVision = useCallback(async () => { /* ... uses callSecureGeminiAPI ... */ }, [vision, mission, hasGeminiKey, GEMINI_MODEL, callSecureGeminiAPI]); // cite: useAppServices.jsx
+    const critiqueVision = useCallback(async () => { 
+        if (!vision || !mission) return;
+        setIsCritiquing(true);
+        setCritiqueResult('');
+        const systemPrompt = "You are a world-class business strategist. Critique the following Vision and Mission statements. Are they clear, inspiring, and distinct? Provide 2-3 bullet points of actionable feedback. Use markdown.";
+        const userQuery = `Vision: "${vision}"\nMission: "${mission}"`;
+        try {
+            const payload = {
+                contents: [{ role: "user", parts: [{ text: userQuery }] }],
+                systemInstruction: { parts: [{ text: systemPrompt }] },
+                model: GEMINI_MODEL || 'gemini-1.5-flash',
+            };
+            const result = await callSecureGeminiAPI(payload);
+            const text = result?.candidates?.[0]?.content?.parts?.[0]?.text || "Critique failed.";
+            setCritiqueResult(text);
+        } catch (e) {
+            setCritiqueResult(`**Error:** ${e.message}`);
+        } finally {
+            setIsCritiquing(false);
+        }
+    }, [vision, mission, callSecureGeminiAPI, GEMINI_MODEL]);
 
     return (
         // Consistent page structure and padding
@@ -351,7 +448,12 @@ const VisionBuilderView = ({ setPlanningView }) => {
                 </Card>
                 {/* Quality Check Card */}
                 <Card title="Quality Check" icon={CheckCircle} accent='NAVY' className='bg-[#002E47]/5 text-sm'>
-                     {/* ... unchanged checklist ... */}
+                     <ul className="list-disc list-inside space-y-2 text-gray-700">
+                        <li><strong>Inspiring?</strong> Does it motivate action?</li>
+                        <li><strong>Clear & Concise?</strong> Is it easy to understand and remember?</li>
+                        <li><strong>Distinct?</strong> Does it separate you from others?</li>
+                        <li><strong>Ambitious?</strong> Does it challenge the team?</li>
+                    </ul>
                 </Card>
             </div>
 
@@ -396,31 +498,81 @@ const OKRDraftingView = ({ setPlanningView }) => {
     const [isCritiquing, setIsCritiquing] = useState(false);
 
     // Sync local state if context data loads/changes after initial render
-    useEffect(() => { /* ... same sync logic as original ... */ }, [strategicContentData?.okrs]);
+    useEffect(() => {
+        const initialOkrs = (strategicContentData?.okrs || []).map(o => ({
+            ...o,
+            keyResults: o.keyResults || []
+        }));
+        setOkrs(initialOkrs);
+    }, [strategicContentData?.okrs]);
+
     // Parse critique markdown (unchanged)
-    useEffect(() => { /* ... same markdown parsing ... */ }, [okrCritique]);
+    useEffect(() => {
+        if (okrCritique) {
+            mdToHtml(okrCritique).then(setCritiqueHtml);
+        } else {
+            setCritiqueHtml('');
+        }
+    }, [okrCritique]);
 
     // Handlers for modifying OKRs (unchanged logic)
-    const updateObjective = useCallback((id, value) => { /* ... */ setOkrCritique(''); }, []);
-    const updateKR = useCallback((objId, krId, value) => { /* ... */ setOkrCritique(''); }, []);
-    const addKR = useCallback((objId) => { /* ... */ }, []);
-    const removeKR = useCallback((objId, krId) => { /* ... */ }, []);
+    const updateObjective = useCallback((id, value) => {
+        setOkrs(prev => prev.map(o => o.id === id ? { ...o, objective: value } : o));
+        setOkrCritique('');
+    }, []);
+    const updateKR = useCallback((objId, krId, value) => {
+        setOkrs(prev => prev.map(o => o.id === objId ? { ...o, keyResults: o.keyResults.map(kr => kr.id === krId ? { ...kr, kr: value } : kr) } : o));
+        setOkrCritique('');
+    }, []);
+    const addKR = useCallback((objId) => {
+        setOkrs(prev => prev.map(o => o.id === objId ? { ...o, keyResults: [...o.keyResults, { id: `kr_${Date.now()}`, kr: '' }] } : o));
+    }, []);
+    const removeKR = useCallback((objId, krId) => {
+        setOkrs(prev => prev.map(o => o.id === objId ? { ...o, keyResults: o.keyResults.filter(kr => kr.id !== krId) } : o));
+    }, []);
     const removeObjective = useCallback((id) => setOkrs(prev => prev.filter(o => o.id !== id)), []);
-    const addObjective = useCallback(() => { /* ... */ }, [okrs]); // Dependency needed if logic uses okrs.length
+    const addObjective = useCallback(() => {
+        setOkrs(prev => [...prev, { id: `obj_${Date.now()}`, objective: '', keyResults: [{ id: `kr_${Date.now()}`, kr: '' }] }]);
+    }, []);
 
     // Save handler (unchanged logic, ensure correct update function)
-    const handleSave = useCallback(async () => { /* ... uses updateStrategicContentData ... */
-        setIsSaving(true); setIsSavedConfirmation(false);
-        const validOkrs = okrs.filter(/* ... */); // Filter empty
+    const handleSave = useCallback(async () => {
+        setIsSaving(true);
+        setIsSavedConfirmation(false);
+        const validOkrs = okrs.filter(o => o.objective.trim() && o.keyResults.every(kr => kr.kr.trim()));
         try {
             await updateStrategicContentData({ okrs: validOkrs }); // cite: useAppServices.jsx
-            setIsSavedConfirmation(true); setTimeout(() => setIsSavedConfirmation(false), 3000);
-        } catch (e) { console.error('Failed to save OKRs:', e); alert('Failed to save OKRs.'); }
-        finally { setIsSaving(false); }
+            setIsSavedConfirmation(true);
+            setTimeout(() => setIsSavedConfirmation(false), 3000);
+        } catch (e) {
+            console.error('Failed to save OKRs:', e);
+            alert('Failed to save OKRs.');
+        } finally {
+            setIsSaving(false);
+        }
     }, [okrs, updateStrategicContentData]); // cite: useAppServices.jsx
 
     // AI Critique handler (unchanged logic, ensure payload)
-    const critiqueOKRs = useCallback(async () => { /* ... uses callSecureGeminiAPI ... */ }, [okrs, hasGeminiKey, GEMINI_MODEL, callSecureGeminiAPI]); // cite: useAppServices.jsx
+    const critiqueOKRs = useCallback(async () => {
+        setIsCritiquing(true);
+        setOkrCritique('');
+        const systemPrompt = "You are a world-class business strategist. Critique the following OKRs. Are the objectives ambitious? Are the key results measurable and specific ('from X to Y')? Provide 2-3 bullet points of feedback per objective. Use markdown.";
+        const userQuery = okrs.map(o => `Objective: ${o.objective}\n${o.keyResults.map(kr => `- KR: ${kr.kr}`).join('\n')}`).join('\n\n');
+        try {
+            const payload = {
+                contents: [{ role: "user", parts: [{ text: userQuery }] }],
+                systemInstruction: { parts: [{ text: systemPrompt }] },
+                model: GEMINI_MODEL || 'gemini-1.5-flash',
+            };
+            const result = await callSecureGeminiAPI(payload);
+            const text = result?.candidates?.[0]?.content?.parts?.[0]?.text || "Critique failed.";
+            setOkrCritique(text);
+        } catch (e) {
+            setOkrCritique(`**Error:** ${e.message}`);
+        } finally {
+            setIsCritiquing(false);
+        }
+    }, [okrs, callSecureGeminiAPI, GEMINI_MODEL]);
 
     return (
         // Consistent page structure and padding
@@ -446,7 +598,10 @@ const OKRDraftingView = ({ setPlanningView }) => {
                         {/* Succession Dependency (unchanged UI) */}
                         <div className='flex items-center gap-2 mb-6 p-2 rounded-lg bg-gray-100 border border-gray-200'>
                             <label htmlFor={`dep-${obj.id}`} className='text-xs font-semibold flex items-center text-gray-600'><CornerRightUp className='w-3 h-3 mr-1'/> Succession:</label>
-                            <select id={`dep-${obj.id}`} value={obj.successionDependency || 'None'} onChange={(e) => setOkrs(/* */)} className="p-1 border border-gray-300 rounded text-xs bg-white"> /* ... options ... */ </select>
+                            <select id={`dep-${obj.id}`} value={obj.successionDependency || 'None'} onChange={(e) => setOkrs(prev => prev.map(o => o.id === obj.id ? { ...o, successionDependency: e.target.value } : o))} className="p-1 border border-gray-300 rounded text-xs bg-white">
+                                <option value="None">None</option>
+                                {(strategicContentData?.developmentAreas || []).map(area => <option key={area.id} value={area.title}>{area.title}</option>)}
+                            </select>
                         </div>
                         {/* Key Results Section */}
                         <h3 className="text-md font-bold mb-3 border-b border-dashed pb-1" style={{ color: COLORS.TEAL }}>Key Results (Measurable 'from X to Y')</h3>
@@ -502,24 +657,32 @@ const OKRDraftingView = ({ setPlanningView }) => {
 // --- AlignmentTrackerView (Refactored for Consistency & AI Fix) ---
 const AlignmentTrackerView = ({ setPlanningView }) => {
     // --- Services & State ---
-    const { strategicContentData, updateStrategicContentData, dailyPracticeData, updateDailyPracticeData, navigate, callSecureGeminiAPI, hasGeminiKey, GEMINI_MODEL } = useAppServices(); // cite: useAppServices.jsx
+    const { strategicContentData, updateStrategicContentData, updateDailyPracticeData, navigate, callSecureGeminiAPI, hasGeminiKey, GEMINI_MODEL } = useAppServices(); // cite: useAppServices.jsx
     // Safely initialize state from context
     const [misalignmentNotes, setMisalignmentNotes] = useState(strategicContentData?.misalignmentNotes || ''); // cite: useAppServices.jsx
-    const [isSaving, setIsSaving] = useState(false);
-    const [isSavedConfirmation, setIsSavedConfirmation] = useState(false);
     const [isSuggesting, setIsSuggesting] = useState(false);
     const [suggestionText, setSuggestionText] = useState(''); // Just the commitment text
     const [suggestionCommitment, setSuggestionCommitment] = useState(null); // Full { commitment, tier } object
     const [lastJsonError, setLastJsonError] = useState(''); // Store JSON error details
 
     // Sync state on load (unchanged)
-    useEffect(() => { /* ... */ }, [strategicContentData]);
+    useEffect(() => {
+        setMisalignmentNotes(strategicContentData?.misalignmentNotes || '');
+    }, [strategicContentData]);
 
     // Mock progress data (unchanged logic, uses context data for titles)
-    const objectives = useMemo(() => (strategicContentData?.okrs || []).map((o, index) => { /* ... same mock progress logic ... */ }), [strategicContentData?.okrs]);
+    const objectives = useMemo(() => (strategicContentData?.okrs || []).map((o) => {
+        const progress = Math.random(); // MOCK
+        const status = progress > 0.8 ? 'On Track' : progress > 0.4 ? 'Needs Attention' : 'At Risk';
+        const color = progress > 0.8 ? COLORS.GREEN : progress > 0.4 ? COLORS.AMBER : COLORS.RED;
+        return { id: o.id, title: o.objective, progress, status, color, successionDependency: o.successionDependency };
+    }), [strategicContentData?.okrs]);
 
     // Save handler (unchanged logic)
-    const handleSaveReflection = useCallback(async () => { /* ... uses updateStrategicContentData ... */ }, [misalignmentNotes, updateStrategicContentData]); // cite: useAppServices.jsx
+    const handleSaveReflection = useCallback(async () => {
+        // This is a fire-and-forget for reflection notes
+        updateStrategicContentData({ misalignmentNotes });
+    }, [misalignmentNotes, updateStrategicContentData]);
 
     // --- ** FIXED AI Suggestion Handler ** ---
     const critiqueMisalignment = useCallback(async () => {
@@ -581,7 +744,26 @@ const AlignmentTrackerView = ({ setPlanningView }) => {
     }, [misalignmentNotes, hasGeminiKey, callSecureGeminiAPI]); // Dependencies
 
     // Add suggestion to daily practice (unchanged logic)
-    const handleAddSuggestionToScorecard = useCallback(async () => { /* ... uses updateDailyPracticeData ... */ }, [suggestionCommitment, updateDailyPracticeData, navigate]); // cite: useAppServices.jsx
+    const handleAddSuggestionToScorecard = useCallback(async () => {
+        if (!suggestionCommitment) return;
+        const newCommitment = {
+            id: `align_${Date.now()}`,
+            text: `(Align) ${suggestionCommitment.commitment}`,
+            status: 'Pending',
+            isCustom: true,
+            linkedGoal: 'Strategic Alignment',
+            linkedTier: suggestionCommitment.tier,
+            source: 'AlignmentTracker'
+        };
+        try {
+            await updateDailyPracticeData(data => ({ ...data, activeCommitments: [...(data?.activeCommitments || []), newCommitment] }));
+            alert("Preventative Rep added to your Daily Practice!");
+            navigate('daily-practice');
+        } catch (e) {
+            console.error("Failed to add alignment rep:", e);
+            alert("Failed to add rep.");
+        }
+    }, [suggestionCommitment, updateDailyPracticeData, navigate]);
 
     return (
         // Consistent page structure and padding
@@ -605,52 +787,45 @@ const AlignmentTrackerView = ({ setPlanningView }) => {
                         <div className="flex items-center justify-between mb-2">
                             <p className="text-sm font-semibold">Progress: {Math.round(obj.progress * 100)}%</p>
                             {/* Status Badge (FIXED) */}
-                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full`}>{obj.status}</span>
+                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full text-white`} style={{ backgroundColor: obj.color }}>{obj.status}</span>
                         </div>
                         {/* Progress Bar Visual (FIXED) */}
                         <div className="w-full bg-gray-200 rounded-full h-2.5"> 
-                            <div className={`h-2.5 rounded-full`} style={{ width: `${obj.progress * 100}%` }}></div> 
+                            <div className={`h-2.5 rounded-full`} style={{ width: `${obj.progress * 100}%`, backgroundColor: obj.color }}></div> 
                         </div>
                         {/* Succession Dependency Note (if applicable) */}
-                        {obj.successionDependency && <div className='mt-3 p-2 rounded text-xs flex items-center bg-gray-100 border border-gray-200'><CornerRightUp className='w-3 h-3 mr-1 text-gray-500'/> Succession Critical: Requires <strong>{obj.successionDependency}</strong> development.</div>}
-                        {/* ... rest of the card ... */}
+                        {obj.successionDependency && obj.successionDependency !== 'None' && <div className='mt-3 p-2 rounded text-xs flex items-center bg-gray-100 border border-gray-200'><CornerRightUp className='w-3 h-3 mr-1 text-gray-500'/> Succession Critical: Requires <strong>{obj.successionDependency}</strong> development.</div>}
                     </Card>
                 ))}
 
-                {/* Misalignment Log Card */}
-                <Card title="Vision Alignment Check (Misalignment Log)" icon={Lightbulb} accent='ORANGE'>
-                    <p className="text-gray-700 text-sm mb-3">Log non-OKR activities draining time this week to identify & eliminate waste.</p>
-                    {/* Notes Input */}
-                    <textarea value={misalignmentNotes} onChange={(e) => setMisalignmentNotes(e.target.value)}
-                        className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#E04E1B] h-20 text-sm" placeholder="e.g., 'Spent 3 hours on ad-hoc reporting not tied to KRs...'" />
-                    {/* Save Log Button */}
-                    <div className='flex items-center gap-4 mt-4'>
-                        <Button onClick={handleSaveReflection} disabled={isSaving || !misalignmentNotes.trim()} variant="secondary" size="md" className="flex-1">
-                            {isSaving ? <Loader className="w-5 h-5 mr-2 animate-spin"/> : <Save className='w-5 h-5 mr-2'/>} {isSaving ? 'Saving Log...' : 'Save Misalignment Log'}
-                        </Button>
-                        {isSavedConfirmation && <span className='text-sm font-bold text-green-600 flex items-center'><CheckCircle className='w-4 h-4 mr-1'/> Logged!</span>}
-                    </div>
-                    {/* AI Suggestion Button */}
-                    <Button onClick={critiqueMisalignment} disabled={isSuggesting || !misalignmentNotes.trim() || misalignmentNotes.trim().length < 20 || !hasGeminiKey()} variant="outline" size="md" className="w-full mt-4 text-[#002E47] border-[#002E47] hover:bg-[#002E47]/10">
-                        {isSuggesting ? <Loader className="w-5 h-5 mr-2 animate-spin"/> : <Cpu className='w-5 h-5 mr-2'/>} {isSuggesting ? 'Generating Commitment...' : 'Get AI Preventative Rep'}
+                {/* Misalignment Reflection Section */}
+                <Card title="Log Misalignment / Wasted Effort" icon={Activity} accent='ORANGE'>
+                    <p className="text-gray-700 text-sm mb-3">Describe a recent situation where your or your team's effort was not aligned with the OKRs above.</p>
+                    <textarea value={misalignmentNotes} onChange={(e) => { setMisalignmentNotes(e.target.value); handleSaveReflection(); }}
+                        className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#E04E1B] h-28 text-sm" placeholder="e.g., 'Spent half of Tuesday on an urgent request that didn't map to any KR...'" />
+                </Card>
+
+                {/* AI Suggestion Section */}
+                <Card title="AI-Suggested Preventative Rep" icon={Cpu} accent='PURPLE'>
+                    <p className='text-gray-700 text-sm mb-4'>Generate a T1/T2 daily rep to prevent this misalignment from recurring.</p>
+                    <Button onClick={critiqueMisalignment} disabled={isSuggesting || !misalignmentNotes.trim() || !hasGeminiKey()} size="md" className="w-full bg-[#7C3AED] hover:bg-purple-700">
+                        {isSuggesting ? <Loader className="w-5 h-5 mr-2 animate-spin"/> : <Zap className='w-5 h-5 mr-2'/>} {isSuggesting ? 'Generating Suggestion...' : 'Generate Preventative Rep'}
                     </Button>
-                     {!hasGeminiKey() && <p className="text-xs text-red-500 mt-2 text-center">API Key missing. AI suggestions disabled.</p>}
-                    {/* AI Suggestion Display */}
-                    {suggestionText && (
-                        <div className={`mt-4 p-3 rounded-xl border ${suggestionCommitment ? 'bg-white border-[#47A88D]' : 'bg-red-50 border-red-300'} shadow-md`}>
-                            <p className={`text-xs font-semibold mb-1 flex items-center gap-1 ${suggestionCommitment ? 'text-[#47A88D]' : 'text-red-600'}`}>
-                                {suggestionCommitment ? <Lightbulb className="w-4 h-4"/> : <AlertTriangle className="w-4 h-4"/>}
-                                AI Preventative Rep Suggestion {suggestionCommitment ? `(${suggestionCommitment.tier})` : '(Error)'}:
-                            </p>
-                            <p className={`text-sm ${suggestionCommitment ? 'text-[#002E47] font-medium' : 'text-red-700'}`}>{suggestionText}</p>
-                            {/* Add to Scorecard Button (Conditional) */}
-                            {suggestionCommitment && (
-                                <Button onClick={handleAddSuggestionToScorecard} variant='primary' size="sm" className="w-full mt-3">
-                                    <PlusCircle className='w-4 h-4 mr-1' /> Add to Daily Practice ({suggestionCommitment.tier} Rep)
+                    {!hasGeminiKey() && <p className="text-xs text-red-500 mt-2 text-center">API Key missing. Suggestion disabled.</p>}
+                    
+                    {/* Suggestion Result */}
+                    {(suggestionText || lastJsonError) && (
+                        <div className="mt-6 pt-4 border-t border-gray-200">
+                            <p className='text-sm font-semibold mb-2'>Suggested Rep (Tier: {suggestionCommitment?.tier || 'N/A'}):</p>
+                            <div className={`p-3 rounded-lg text-sm ${lastJsonError ? 'bg-red-100 text-red-800' : 'bg-purple-100 text-purple-800'}`}>
+                                {suggestionText}
+                                {lastJsonError && <p className="text-xs mt-2"><strong>Error Details:</strong> {lastJsonError}</p>}
+                            </div>
+                            {suggestionCommitment && !lastJsonError && (
+                                <Button onClick={handleAddSuggestionToScorecard} size="sm" className="w-full mt-3 bg-[#47A88D] hover:bg-[#349881]">
+                                    <PlusCircle className='w-4 h-4 mr-2'/> Add to Daily Practice
                                 </Button>
                             )}
-                            {/* Display JSON error details if present */}
-                            {lastJsonError && !suggestionCommitment && <p className='text-[10px] text-red-500 mt-2'>Error Detail: {lastJsonError}</p>}
                         </div>
                     )}
                 </Card>
@@ -659,91 +834,59 @@ const AlignmentTrackerView = ({ setPlanningView }) => {
     );
 };
 
+// --- Main Planning Hub Component ---
+const PlanningHub = () => {
+    const [planningView, setPlanningView] = useState('planning-home'); // 'planning-home', 'pre-mortem', 'vision-builder', 'okr-drafting', 'alignment-tracker'
 
-/* =========================================================
-   MAIN ROUTER: PlanningHubScreen
-========================================================= */
-export default function PlanningHubScreen() {
-    // --- Consume Services ---
-    const { isLoading: isAppLoading, error: appError, featureFlags, isAdmin } = useAppServices(); // cite: useAppServices.jsx
-
-    // --- Local State ---
-    const [view, setPlanningView] = useState('planning-home'); // Current tool view
-
-    // --- Feature Flag Check (bypass for admins) ---
-    // If the entire Planning Hub is disabled, show a message or return null
-    if (!isAdmin && !featureFlags?.enablePlanningHub) { // cite: useAppServices.jsx
-        return (
-            <div className="p-8 text-center text-gray-500">
-                <Trello className="w-12 h-12 mx-auto mb-4 text-gray-400"/>
-                <h1 className="text-2xl font-bold mb-2">Strategic Content Tools Unavailable</h1>
-                <p>This feature is currently disabled by the administrator.</p>
-            </div>
-        );
-    }
-
-    // --- Loading & Error States ---
-    if (isAppLoading) return <LoadingSpinner message="Loading Strategic Content Tools..." />;
-    if (appError) return <ConfigError message={`Failed to load Planning Hub: ${appError.message}`} />;
-
-
-    // --- View Rendering Logic ---
-    const renderView = () => {
-        const viewProps = { setPlanningView }; // Pass setter to child views
-
-        switch (view) {
-            case 'vision-builder': return <VisionBuilderView {...viewProps} />;
-            case 'okr-drafting': return <OKRDraftingView {...viewProps} />;
-            case 'alignment-tracker': return <AlignmentTrackerView {...viewProps} />;
-            case 'pre-mortem': return <PreMortemView {...viewProps} />;
-            case 'planning-home':
-            default:
-                // --- Refactored Home View ---
-                return (
-                    // Consistent page structure and padding
-                    <div className="p-6 md:p-8 lg:p-10">
-                        {/* Header */}
-                        <header className='flex items-center gap-4 border-b-2 pb-3 mb-8' style={{borderColor: COLORS.BLUE+'30'}}> {/* Use BLUE accent */}
-                            <Trello className='w-10 h-10 flex-shrink-0' style={{color: COLORS.BLUE}}/>
-                            <div>
-                                <h1 className="text-3xl md:text-4xl font-extrabold" style={{ color: COLORS.NAVY }}>Strategic Content Tools</h1>
-                                <p className="text-md text-gray-600 mt-1">(Content Pillar 1)</p>
-                            </div>
-                        </header>
-                        <p className="text-lg text-gray-700 mb-10 max-w-3xl">High-leverage tools for strategic planning, goal setting, and risk mitigation, supported by AI audits.</p>
-
-                        {/* Tool Grid */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                            {/* Vision & Mission */}
-                            <Card title="Vision & Mission Builder" icon={BookOpen} accent='TEAL' onClick={() => setPlanningView('vision-builder')} className="cursor-pointer hover:border-teal-400">
-                                <p className="text-gray-700 text-sm mb-4">Define your 3-5 year strategic North Star. Get AI critique on clarity and alignment.</p>
-                                <div className="mt-auto text-[#47A88D] font-semibold flex items-center group">Launch Tool <span className="ml-1 group-hover:translate-x-1 transition-transform">&rarr;</span></div>
-                            </Card>
-                            {/* OKR Drafting */}
-                            <Card title="OKR Drafting & Audit" icon={Target} accent='NAVY' onClick={() => setPlanningView('okr-drafting')} className="cursor-pointer hover:border-navy-400">
-                                <p className="text-gray-700 text-sm mb-4">Set quarterly Objectives and Key Results. Use the AI Auditor for measurability and impact.</p>
-                                <div className="mt-auto text-[#002E47] font-semibold flex items-center group">Launch Tool <span className="ml-1 group-hover:translate-x-1 transition-transform">&rarr;</span></div>
-                            </Card>
-                            {/* Pre-Mortem */}
-                            <Card title="Decision Pre-Mortem Audit" icon={AlertTriangle} accent='ORANGE' onClick={() => setPlanningView('pre-mortem')} className="cursor-pointer hover:border-orange-400">
-                                <p className="text-gray-700 text-sm mb-4">Identify critical risks *before* decisions. Use the AI Devil's Advocate to find blind spots.</p>
-                                <div className="mt-auto text-[#E04E1B] font-semibold flex items-center group">Launch Auditor <span className="ml-1 group-hover:translate-x-1 transition-transform">&rarr;</span></div>
-                            </Card>
-                            {/* Alignment Tracker */}
-                            <Card title="Strategic Alignment Tracker" icon={Activity} accent='BLUE' onClick={() => setPlanningView('alignment-tracker')} className="cursor-pointer hover:border-blue-400">
-                                <p className="text-gray-700 text-sm mb-4">Review OKR progress, log misalignments, and get AI suggestions for preventative daily reps.</p>
-                                <div className="mt-auto text-[#2563EB] font-semibold flex items-center group">Launch Tracker <span className="ml-1 group-hover:translate-x-1 transition-transform">&rarr;</span></div>
-                            </Card>
-                        </div>
-                    </div>
-                );
-        }
+    const hubComponents = {
+        'pre-mortem': <PreMortemView setPlanningView={setPlanningView} />,
+        'vision-builder': <VisionBuilderView setPlanningView={setPlanningView} />,
+        'okr-drafting': <OKRDraftingView setPlanningView={setPlanningView} />,
+        'alignment-tracker': <AlignmentTrackerView setPlanningView={setPlanningView} />,
     };
 
-    // --- Main Render ---
+    if (planningView !== 'planning-home') {
+        return hubComponents[planningView] || <div>View not found</div>;
+    }
+
     return (
-        <div className="min-h-screen" style={{ background: COLORS.BG }}> {/* Consistent BG */}
-            {renderView()}
+        <div className="p-6 md:p-8 lg:p-10" style={{ background: `radial-gradient(circle at top left, ${COLORS.BG}, #FFFFFF)` }}>
+            <h1 className="text-4xl font-extrabold mb-3" style={{ color: COLORS.NAVY }}>Strategic Planning Hub</h1>
+            <p className="text-lg text-gray-600 mb-10 max-w-4xl">A suite of tools to help you define your strategy, set clear goals, and align your team for maximum impact.</p>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                {/* Vision & Mission Builder */}
+                <Card title="Vision & Mission Builder" icon={TrendingUp} accent="ORANGE" onClick={() => setPlanningView('vision-builder')}>
+                    <p className="text-gray-700">Define your aspirational 3-5 year Vision (Future State) and your team's core purpose (Mission). Get AI feedback on clarity and impact.</p>
+                </Card>
+
+                {/* OKR Drafting & Audit */}
+                <Card title="OKR Drafting & Audit" icon={Target} accent="TEAL" onClick={() => setPlanningView('okr-drafting')}>
+                    <p className="text-gray-700">Set quarterly Objectives and Key Results. Use the AI Auditor to ensure they are well-formed and impactful.</p>
+                </Card>
+
+                {/* Decision Pre-Mortem */}
+                <Card title="Decision Pre-Mortem" icon={AlertTriangle} accent="RED" onClick={() => setPlanningView('pre-mortem')}>
+                    <p className="text-gray-700">Before a big decision, run a "pre-mortem" to identify potential failure points. The AI acts as a Devil's Advocate to find blind spots.</p>
+                </Card>
+
+                {/* Strategic Alignment Tracker */}
+                <Card title="Strategic Alignment Tracker" icon={Activity} accent="NAVY" onClick={() => setPlanningView('alignment-tracker')}>
+                    <p className="text-gray-700">Track progress against OKRs, log misalignments, and get AI-suggested "preventative reps" to improve team focus.</p>
+                </Card>
+
+                {/* Trello Integration (Example) */}
+                <Card title="Export to Trello (Coming Soon)" icon={Trello} accent="BLUE" className="opacity-60 cursor-not-allowed">
+                    <p className="text-gray-700">Automatically create Trello boards and cards from your drafted OKRs to move from planning to execution seamlessly.</p>
+                </Card>
+
+                 {/* Link to Development Plan */}
+                <Card title="Link to Development Plan" icon={Link} accent="PURPLE" onClick={() => useAppServices.getState().navigate('dev-plan')}>
+                    <p className="text-gray-700">Connect your strategic objectives to specific leadership development areas for you and your team.</p>
+                </Card>
+            </div>
         </div>
     );
-}
+};
+
+export default PlanningHub;

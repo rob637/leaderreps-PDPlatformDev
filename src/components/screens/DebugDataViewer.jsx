@@ -5,13 +5,14 @@ import React, { useMemo } from 'react';
 import { useAppServices } from '../../services/useAppServices.jsx'; // cite: useAppServices.jsx
 
 // --- Icons ---
-import { RefreshCw, Code, ArrowLeft, Loader } from 'lucide-react'; // Added Loader, ArrowLeft
+import { RefreshCw, Code, ArrowLeft, Loader, Globe, Clock, Briefcase } from 'lucide-react'; // Added Loader, ArrowLeft
 
 /* =========================================================
    PALETTE & UI COMPONENTS (Standardized)
 ========================================================= */
 // --- Primary Color Palette ---
-const COLORS = { NAVY: '#002E47', TEAL: '#47A88D', BLUE: '#2563EB', ORANGE: '#E04E1B', GREEN: '#10B981', AMBER: '#F5A800', RED: '#E04E1B', LIGHT_GRAY: '#FCFCFA', OFF_WHITE: '#FFFFFF', SUBTLE: '#E5E7EB', TEXT: '#374151', MUTED: '#4B5563', PURPLE: '#7C3AED', BG: '#F9FAFB' }; // cite: App.jsx
+import { CORPORATE_COLORS } from '../../data/Constants';
+const COLORS = CORPORATE_COLORS;
 
 // --- Standardized UI Components (Assume imported or globally available) ---
 // Using placeholder comments, assuming Button and Card are correctly defined elsewhere or globally

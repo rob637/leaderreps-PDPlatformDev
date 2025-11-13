@@ -98,7 +98,7 @@ const findAndSetTargetRep = async (newPlan, metadata, writer) => {
 export default function DevelopmentPlan() {
   const services = useAppServices();
   const {
-    db, userId, isAuthReady, isLoading: isServicesLoading, navigate,
+    db, userId, isAuthReady, isLoading: isServicesLoading,
     developmentPlanData, updateDevelopmentPlanData, 
     // FIXED: Add writer for dailyPracticeData
     updateDailyPracticeData: updateDailyPracticeWriter,

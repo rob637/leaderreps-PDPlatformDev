@@ -2,6 +2,8 @@
 // READY TO RUN VERSION
 // Just update Firebase config and run: node migrate-READY-TO-RUN.js
 
+require('dotenv').config();
+
 const { initializeApp } = require('firebase/app');
 const { 
   getFirestore, 
@@ -17,14 +19,14 @@ const {
 // CONFIGURATION - UPDATE THIS!
 // ============================================
 
-const firebaseConfig = {
-  apiKey: "AIzaSyBf_js_jWW-GctwOLvN5PUqRAiZyezgXAo",
-  authDomain: "leaderreps-pd-platform.firebaseapp.com",
-  projectId: "leaderreps-pd-platform",
-  storageBucket: "leaderreps-pd-platform.firebasestorage.app",
-  messagingSenderId: "336868581775",
-  appId: "1:336868581775:web:f439e98a560f705516abfa",
-  measurementId: "G-7YVDMDK01J"
+const FIREBASE_CONFIG = {
+  apiKey: process.env.VITE_FIREBASE_API_KEY,
+  authDomain: process.env.VITE_FIREBASE_AUTH_DOMAIN,
+  projectId: process.env.VITE_FIREBASE_PROJECT_ID,
+  storageBucket: process.env.VITE_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: process.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  appId: process.env.VITE_FIREBASE_APP_ID,
+  measurementId: process.env.VITE_FIREBASE_MEASUREMENT_ID
 };
 
 const MIGRATION_CONFIG = {
@@ -57,9 +59,9 @@ class DevelopmentPlanMigration {
     this.db = getFirestore(this.app);
     console.log('✅ Firebase initialized');
   }
-
+  
   async discoverUsers() {
-    console.log('\n📋 STEP 1: Discovering users...');
+    console.log('📋 STEP 1: Discovering users...');
     console.log('='.repeat(60));
     
     try {
@@ -299,7 +301,7 @@ class DevelopmentPlanMigration {
         log: this.migrationLog,
         errors: this.errors,
         backup: this.backupData
-      };
+      }; 
       
     } catch (error) {
       console.error('\n❌ MIGRATION FAILED:', error);
@@ -371,14 +373,14 @@ class DevelopmentPlanMigration {
 
 async function main() {
   // Check if Firebase config is updated
-  if (FIREBASE_CONFIG.apiKey === "YOUR_API_KEY") {
+  if (!FIREBASE_CONFIG.apiKey || FIREBASE_CONFIG.apiKey === "YOUR_API_KEY") {
     console.log('\n');
     console.log('⚠️ '.repeat(40));
     console.log('❌ ERROR: Firebase credentials not configured!');
     console.log('⚠️ '.repeat(40));
     console.log('\n');
     console.log('📝 REQUIRED STEPS:');
-    console.log('   1. Open this file: migrate-READY-TO-RUN.js');
+    console.log('   1. Make sure you have a .env file with your Firebase credentials.');
     console.log('   2. Update FIREBASE_CONFIG (lines 10-17) with your actual credentials');
     console.log('   3. Get credentials from: https://console.firebase.google.com');
     console.log('   4. Save the file');

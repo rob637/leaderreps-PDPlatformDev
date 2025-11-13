@@ -2,13 +2,14 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
+import { visualizer } from 'rollup-plugin-visualizer';
 
 export default defineConfig({
   plugins: [
     react(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['vite.svg'], 
+      includeAssets: ['icons/icon-512x512.svg'], 
       
       manifest: {
         name: 'LeaderReps PD Platform',
@@ -20,10 +21,27 @@ export default defineConfig({
         start_url: '/',
         icons: [
           {
-            src: 'vite.svg',
-            sizes: 'any',
-            type: 'image/svg+xml',
+            src: 'icons/icon-192x192.png',
+            sizes: '192x192',
+            type: 'image/png',
           },
+          {
+            src: 'icons/icon-512x512.png',
+            sizes: '512x512',
+            type: 'image/png',
+          },
+          {
+            src: 'icons/icon-512x512.svg',
+            sizes: '512x512',
+            type: 'image/svg+xml',
+            purpose: 'any'
+          },
+          {
+            src: 'icons/icon-512x512.png',
+            sizes: '512x512',
+            type: 'image/png',
+            purpose: 'maskable'
+          }
         ],
       },
       
@@ -56,6 +74,10 @@ export default defineConfig({
         clientsClaim: true,
       },
     }),
+    visualizer({
+      open: true,
+      filename: 'build/stats.html', 
+    }),
   ],
   
   resolve: { 
@@ -70,7 +92,7 @@ export default defineConfig({
 
   // PERFORMANCE: Optimized build configuration
   build: {
-    outDir: 'dist', 
+    outDir: 'build', 
     emptyOutDir: true,
     sourcemap: process.env.NODE_ENV === 'development',
     

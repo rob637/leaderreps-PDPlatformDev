@@ -1,6 +1,8 @@
 // src/utils/errorHandler.js
 // IMPROVEMENT: Centralized error handling and logging
 
+import React from 'react';
+
 export class AppError extends Error {
   constructor(message, code = 'GENERAL_ERROR', context = {}) {
     super(message);

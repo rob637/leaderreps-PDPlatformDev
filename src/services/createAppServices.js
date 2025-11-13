@@ -1,0 +1,240 @@
+// src/services/createAppServices.js
+import { onSnapshotEx, setDocEx } from './firestoreUtils';
+import { buildModulePath } from './pathUtils';
+import { 
+    MOCK_DEVELOPMENT_PLAN_DATA, MOCK_DAILY_PRACTICE_DATA, MOCK_STRATEGIC_CONTENT_DATA, 
+    MOCK_MEMBERSHIP_DATA, MOCK_MEMBERSHIP_PLANS, MOCK_FEATURE_FLAGS, MOCK_REP_LIBRARY,
+    MOCK_EXERCISE_LIBRARY, MOCK_WORKOUT_LIBRARY, MOCK_COURSE_LIBRARY, MOCK_SKILL_CATALOG,
+    MOCK_IDENTITY_ANCHOR_CATALOG, MOCK_HABIT_ANCHOR_CATALOG, MOCK_WHY_CATALOG,
+    MOCK_READING_CATALOG, MOCK_VIDEO_CATALOG, MOCK_SCENARIO_CATALOG, LEADERSHIP_TIERS_FALLBACK
+} from './mockData.js';
+import { applyPatchDeleteAware, sanitizeTimestamps, stripSentinels } from './dataUtils.js';
+import { resolveGlobalMetadata } from './metadataResolver.js';
+
+export const createAppServices = (db, userId) => {
+  console.log('[createAppServices] Creating services for userId:', userId);
+  
+  const stores = {
+    developmentPlanData: null,
+    dailyPracticeData: null,
+    strategicContentData: null,
+    membershipData: null,
+    globalMetadata: null,
+    listeners: [],
+    onChange: null
+  };
+
+  const notifyChange = () => {
+    if (stores.onChange) {
+      stores.onChange({
+        developmentPlanData: stores.developmentPlanData,
+        dailyPracticeData: stores.dailyPracticeData,
+        strategicContentData: stores.strategicContentData,
+        membershipData: stores.membershipData,
+        globalMetadata: stores.globalMetadata
+      });
+    }
+  };
+
+  if (db && userId) {
+    const devPlanPath = buildModulePath(userId, 'development_plan', 'current');
+    const unsubDev = onSnapshotEx(db, devPlanPath, (snap) => {
+      const rawData = snap.exists() ? snap.data() : MOCK_DEVELOPMENT_PLAN_DATA;
+      stores.developmentPlanData = stripSentinels(sanitizeTimestamps(rawData));
+      console.log('[createAppServices] 📋 Dev Plan updated (sentinels stripped)');
+      notifyChange();
+    });
+    stores.listeners.push(unsubDev);
+
+    const dailyPath = buildModulePath(userId, 'daily_practice', 'current');
+    const unsubDaily = onSnapshotEx(db, dailyPath, (snap) => {
+      const rawData = snap.exists() ? snap.data() : MOCK_DAILY_PRACTICE_DATA;
+      stores.dailyPracticeData = stripSentinels(sanitizeTimestamps(rawData));
+      console.log('[createAppServices] 💪 Daily Practice updated (sentinels stripped)');
+      notifyChange();
+    });
+    stores.listeners.push(unsubDaily);
+
+    const strategicPath = buildModulePath(userId, 'strategic_content', 'vision_mission');
+    const unsubStrategic = onSnapshotEx(db, strategicPath, (snap) => {
+      const rawData = snap.exists() ? snap.data() : MOCK_STRATEGIC_CONTENT_DATA;
+      stores.strategicContentData = stripSentinels(sanitizeTimestamps(rawData));
+      console.log('[createAppServices] Strategic Content updated');
+      notifyChange();
+    });
+    stores.listeners.push(unsubStrategic);
+    
+    const membershipPath = buildModulePath(userId, 'membership', 'current');
+    const unsubMembership = onSnapshotEx(db, membershipPath, (snap) => {
+      const rawData = snap.exists() ? snap.data() : MOCK_MEMBERSHIP_DATA;
+      stores.membershipData = stripSentinels(sanitizeTimestamps(rawData));
+      console.log('[createAppServices] Membership Data updated');
+      notifyChange();
+    });
+    stores.listeners.push(unsubMembership);
+
+    const metadataPath = 'metadata/config';
+    const unsubMeta = onSnapshotEx(db, metadataPath, (snap) => {
+      if (!stores.globalMetadata) {
+        stores.globalMetadata = {};
+      }
+      
+      if (snap.exists()) {
+        const cleanData = stripSentinels(sanitizeTimestamps(snap.data()));
+        Object.assign(stores.globalMetadata, cleanData);
+      }
+      
+      console.log('[createAppServices] Global Metadata (config) updated');
+      notifyChange();
+    });
+    stores.listeners.push(unsubMeta);
+    
+    const catalogNames = [
+      'rep_library', 'exercise_library', 'workout_library', 'course_library',
+      'skill_catalog', 'identity_anchor_catalog', 'habit_anchor_catalog',
+      'why_catalog', 'reading_catalog', 'video_catalog', 'scenario_catalog',
+      'membership_plans'
+    ];
+    
+    catalogNames.forEach(catalogName => {
+      const catalogPath = `metadata/config/catalog/${catalogName}`;
+      const unsubCatalog = onSnapshotEx(db, catalogPath, (snap) => {
+        if (!stores.globalMetadata) {
+          stores.globalMetadata = {};
+        }
+        
+        if (snap.exists()) {
+          const keyName = catalogName.toUpperCase();
+          stores.globalMetadata[keyName] = stripSentinels(sanitizeTimestamps(snap.data()));
+          console.log(`[createAppServices] Catalog ${catalogName} loaded:`, snap.data().items?.length || 0, 'items');
+        }
+        
+        notifyChange();
+      });
+      stores.listeners.push(unsubCatalog);
+    });
+  } else {
+    console.warn('[createAppServices] No db or userId provided, using mock data');
+    stores.developmentPlanData = MOCK_DEVELOPMENT_PLAN_DATA;
+    stores.dailyPracticeData = MOCK_DAILY_PRACTICE_DATA;
+    stores.strategicContentData = MOCK_STRATEGIC_CONTENT_DATA;
+    stores.membershipData = MOCK_MEMBERSHIP_DATA;
+    stores.globalMetadata = {
+      featureFlags: MOCK_FEATURE_FLAGS,
+      LEADERSHIP_TIERS: LEADERSHIP_TIERS_FALLBACK,
+      REP_LIBRARY: MOCK_REP_LIBRARY,
+      EXERCISE_LIBRARY: MOCK_EXERCISE_LIBRARY,
+      WORKOUT_LIBRARY: MOCK_WORKOUT_LIBRARY,
+      COURSE_LIBRARY: MOCK_COURSE_LIBRARY,
+      SKILL_CATALOG: MOCK_SKILL_CATALOG,
+      IDENTITY_ANCHOR_CATALOG: MOCK_IDENTITY_ANCHOR_CATALOG,
+      HABIT_ANCHOR_CATALOG: MOCK_HABIT_ANCHOR_CATALOG,
+      WHY_CATALOG: MOCK_WHY_CATALOG,
+      READING_CATALOG: MOCK_READING_CATALOG,
+      VIDEO_CATALOG: MOCK_VIDEO_CATALOG,
+      SCENARIO_CATALOG: MOCK_SCENARIO_CATALOG,
+      MEMBERSHIP_PLANS: MOCK_MEMBERSHIP_PLANS,
+      RESOURCE_LIBRARY: {},
+      IconMap: {},
+      GEMINI_MODEL: 'gemini-pro',
+      APP_ID: 'mock-app-id'
+    };
+  }
+
+  const updateDevelopmentPlanData = async (updates, { merge = true } = {}) => {
+    if (!db || !userId) return false;
+    const path = buildModulePath(userId, 'development_plan', 'current');
+    return await setDocEx(db, path, updates, merge);
+  };
+
+  const updateDailyPracticeData = async (updates) => {
+    if (!db || !userId) return false;
+    const path = buildModulePath(userId, 'daily_practice', 'current');
+    const ok = await setDocEx(db, path, updates, true);
+    if (ok) {
+      stores.dailyPracticeData = applyPatchDeleteAware(stores.dailyPracticeData || {}, updates);
+      notifyChange();
+    }
+    return ok;
+  };
+
+  const updateStrategicContentData = async (updates) => {
+    if (!db || !userId) return false;
+    const path = buildModulePath(userId, 'strategic_content', 'vision_mission');
+    const ok = await setDocEx(db, path, updates, true);
+    if (ok) {
+      stores.strategicContentData = applyPatchDeleteAware(stores.strategicContentData || {}, updates);
+      notifyChange();
+    }
+    return ok;
+  };
+  
+  const updateMembershipData = async (updates) => {
+    if (!db || !userId) return false;
+    const path = buildModulePath(userId, 'membership', 'current');
+    const ok = await setDocEx(db, path, updates, true);
+    if (ok) {
+      stores.membershipData = applyPatchDeleteAware(stores.membershipData || {}, updates);
+      notifyChange();
+    }
+    return ok;
+  };
+  
+  const clearUserPlanAndAnchors = async () => {
+      if (!db || !userId) {
+          console.warn('[clearUserPlanAndAnchors] DB or UserID missing, skipping clear.');
+          return false;
+      }
+      
+      const devPlanPath = buildModulePath(userId, 'development_plan', 'current');
+      const dailyPath = buildModulePath(userId, 'daily_practice', 'current');
+      const todayStr = new Date().toISOString().split('T')[0];
+      
+      const defaultPlanPayload = {
+          currentPlan: null,
+          currentCycle: 1,
+          lastAssessmentDate: null,
+          assessmentHistory: [], 
+          planHistory: [],
+      };
+      const ok1 = await setDocEx(db, devPlanPath, defaultPlanPayload, false); 
+
+      const defaultDailyPracticePayload = {
+          activeCommitments: [], 
+          identityAnchor: '', 
+          habitAnchor: '', 
+          whyStatement: '',
+          dailyTargetRepId: null, 
+          dailyTargetRepDate: null, 
+          dailyTargetRepStatus: 'Pending', 
+          streakCount: 0,
+          streakCoins: 0,
+          lastUpdated: todayStr,
+          completedRepsToday: [],
+      };
+      const ok2 = await setDocEx(db, dailyPath, defaultDailyPracticePayload, false);
+      
+      return ok1 && ok2;
+  };
+
+  return {
+    get developmentPlanData() { return stores.developmentPlanData; },
+    get dailyPracticeData() { return stores.dailyPracticeData; },
+    get strategicContentData() { return stores.strategicContentData; },
+    get membershipData() { return stores.membershipData; },
+    get globalMetadata() { 
+      return resolveGlobalMetadata(stores.globalMetadata);
+    },
+    updateDevelopmentPlanData,
+    updateDailyPracticeData,
+    updateStrategicContentData,
+    updateMembershipData,
+    clearUserPlanAndAnchors,
+    setOnChange: (callback) => {
+      stores.onChange = callback;
+    },
+    cleanup: () => {
+      stores.listeners.forEach(unsub => unsub && unsub());
+    }
+  };
+};

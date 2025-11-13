@@ -94,21 +94,6 @@ const Tooltip = ({ content, children }) => {
         </div>
     );
 };
-const copyToClipboard = (text) => {
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-        navigator.clipboard.writeText(text)
-            .then(() => console.log('Content copied to clipboard via modern API!'))
-            .catch(err => console.error('Could not copy text: ', err));
-    } else {
-        const el = document.createElement('textarea');
-        el.value = text;
-        document.body.appendChild(el);
-        el.select();
-        document.execCommand('copy');
-        document.body.removeChild(el);
-        console.log('Content copied to clipboard via fallback!');
-    }
-};
 const mdToHtml = async (md) => {
     let html = md;
     html = html.replace(/## (.*$)/gim, '<h2 class="text-2xl font-extrabold text-[#E04E1B] mb-3">$1</h2>');
@@ -203,7 +188,7 @@ const generatePlanData = (assessment, ownerUid, contentLibrary) => {
     }));
 
     // Identify Top 3 Growth Areas (lowest scores)
-    const growthDimensions = finalScores
+    finalScores
         .sort((a, b) => a.score - b.score) 
         .slice(0, 3) 
         .map(d => d.dimension);
@@ -302,26 +287,31 @@ const generatePlanData = (assessment, ownerUid, contentLibrary) => {
 const ContentDetailsModal = ({ isVisible, onClose, content }) => { 
     if (!isVisible || !content) return null;
     
+    return <ContentDetailsModalInternal onClose={onClose} content={content} />;
+};
+
+const MOCK_CONTENT_DETAILS_FINAL = {
+    Reading: (title, skill) => `## Reading: ${title}\n### Focus: ${skill}\nThis is a reading module focusing on ${skill} theory.`,
+    Exercise: (title, skill) => `## Exercise: ${title}\n### Focus: ${skill}\nThis is a practical exercise for skill ${skill}.`,
+    'Role-Play': (title, skill) => `## Role-Play: ${title}\n### Focus: ${skill}\nThis is a simulation for skill ${skill}.`, 
+    CaseStudy: (title, skill) => `## Executive Analysis: ${title}\n### Focus: ${skill}\nThis is a case study analysis for skill ${skill}.`,
+    Tool: (title, skill) => `## Tool Implementation: ${title}\n### Focus: ${skill}\nThis is a tool implementation module for skill ${skill}.`,
+    Coaching: (title, skill) => `## AI Coaching Lab: ${title}\n### Focus: ${skill}\nThis is an AI coaching session for skill ${skill}.`,
+};
+
+const ContentDetailsModalInternal = ({ onClose, content }) => {
     const [htmlContent, setHtmlContent] = useState('');
     const [rating, setRating] = useState(0); 
     const [isLogging, setIsLogging] = useState(false);
     
     const tierData = LEADERSHIP_TIERS[content.tier] || { name: 'Unknown Tier' };
 
-    const MOCK_CONTENT_DETAILS_FINAL = {
-        Reading: (title, skill) => `## Reading: ${title}\n### Focus: ${skill}\nThis is a reading module focusing on ${skill} theory.`,
-        Exercise: (title, skill) => `## Exercise: ${title}\n### Focus: ${skill}\nThis is a practical exercise for skill ${skill}.`,
-        'Role-Play': (title, skill) => `## Role-Play: ${title}\n### Focus: ${skill}\nThis is a simulation for skill ${skill}.`, 
-        CaseStudy: (title, skill) => `## Executive Analysis: ${title}\n### Focus: ${skill}\nThis is a case study analysis for skill ${skill}.`,
-        Tool: (title, skill) => `## Tool Implementation: ${title}\n### Focus: ${skill}\nThis is a tool implementation module for skill ${skill}.`,
-        Coaching: (title, skill) => `## AI Coaching Lab: ${title}\n### Focus: ${skill}\nThis is an AI coaching session for skill ${skill}.`,
-    };
-
-    const mockDetail = MOCK_CONTENT_DETAILS_FINAL[content.type]
-        ? MOCK_CONTENT_DETAILS_FINAL[content.type](content.title, content.skill)
-        : `## Content Unavailable\n\nNo detailed content available for **${content.title}** (Type: ${content.type}).`;
-
-    const memoizedMockDetail = useMemo(() => mockDetail, [content.id, content.tier, content.title, content.skill]); 
+    const memoizedMockDetail = useMemo(() => {
+        const detailGenerator = MOCK_CONTENT_DETAILS_FINAL[content.type];
+        return detailGenerator
+            ? detailGenerator(content.title, content.skill)
+            : `## Content Unavailable\n\nNo detailed content available for **${content.title}** (Type: ${content.type}).`;
+    }, [content.title, content.skill, content.type]); 
     
     const handleLogLearning = async () => {
         if (rating === 0) { console.log('Please provide a 5-star rating before logging.'); return; }
@@ -411,7 +401,7 @@ const ContentDetailsModal = ({ isVisible, onClose, content }) => {
 
 
 // --- Component 3: Roadmap Timeline View (Unchanged) ---
-const RoadmapTimeline = ({ data, currentMonth, navigateToMonth, viewMonth }) => {
+const RoadmapTimeline = ({ data, navigateToMonth, viewMonth }) => {
     return (
         <Card title="24-Month Roadmap Timeline" icon={Trello} accent="PURPLE" className='lg:sticky lg:top-4 bg-white shadow-2xl border-l-4 border-[#7C3AED]'>
             <p className='text-sm text-gray-600 mb-4'>Review your full two-year journey. Click a month to review its content and reflection.</p>
@@ -451,14 +441,13 @@ const RoadmapTimeline = ({ data, currentMonth, navigateToMonth, viewMonth }) => 
 
 
 // --- Component 2: Tracker Dashboard View ---
-const TrackerDashboardView = ({ data, updatePdpData, saveNewPlan, userId, navigate }) => {
+const TrackerDashboardView = ({ data, updatePdpData, navigate }) => {
     const [viewMonth, setViewMonth] = useState(data.currentMonth); 
-    const currentMonth = data.currentMonth;
     
     const monthPlan = useMemo(() => data.plan.find(m => m.month === viewMonth), [data.plan, viewMonth]);
     
-    const isCurrentView = viewMonth === currentMonth; 
-    const isPastOrCurrent = viewMonth <= currentMonth; 
+    const isCurrentView = viewMonth === data.currentMonth; 
+    const isPastOrCurrent = viewMonth <= data.currentMonth; 
     
     const assessment = data.assessment;
 
@@ -486,11 +475,11 @@ const TrackerDashboardView = ({ data, updatePdpData, saveNewPlan, userId, naviga
                 } : item
             );
             const updatedPlan = oldData.plan.map(m =>
-                m.month === currentMonth ? { ...m, requiredContent: updatedContent } : m
+                m.month === data.currentMonth ? { ...m, requiredContent: updatedContent } : m
             );
             return { ...oldData, plan: updatedPlan };
         });
-    }, [isCurrentView, updatePdpData, monthPlan, currentMonth]);
+    }, [isCurrentView, updatePdpData, monthPlan, data.currentMonth]);
 
     const toggleContent = useCallback((id) => {
         if (!isPastOrCurrent) return; 
@@ -540,7 +529,7 @@ const TrackerDashboardView = ({ data, updatePdpData, saveNewPlan, userId, naviga
 
     const handleCompleteMonth = async () => {
         // Check if this month is the end of a 90-day block (Month 3, 6, 9, etc.)
-        const is90DayCheckPoint = currentMonth % 3 === 0;
+        const is90DayCheckPoint = data.currentMonth % 3 === 0;
 
         setIsSaving(true);
         const briefingToSave = briefing ? briefing.replace('## Monthly Executive Briefing', '## Saved Executive Briefing') : '';
@@ -567,7 +556,7 @@ const TrackerDashboardView = ({ data, updatePdpData, saveNewPlan, userId, naviga
             // CRITICAL: Navigate back to the assessment generator review screen to re-run the assessment
             navigate('prof-dev-plan-review'); // Navigate to a review/re-assessment screen
         } else {
-            setViewMonth(currentMonth + 1);
+            setViewMonth(data.currentMonth + 1);
             window.scrollTo(0, 0); 
         }
     };
@@ -604,13 +593,13 @@ const TrackerDashboardView = ({ data, updatePdpData, saveNewPlan, userId, naviga
         setIsSaving(true);
         updatePdpData(oldData => {
             const updatedPlan = oldData.plan.map(m =>
-                m.month === currentMonth ? { ...m, reflectionText: localReflection } : m
+                m.month === data.currentMonth ? { ...m, reflectionText: localReflection } : m
             );
             
             // NEW FEATURE: Save the current assessment answers as a historical 'Progress Scan'
             const newProgressScan = {
-                cycle: Math.ceil(currentMonth / 3), // Cycle 1, 2, 3, etc.
-                month: currentMonth,
+                cycle: Math.ceil(oldData.currentMonth / 3), // Cycle 1, 2, 3, etc.
+                month: oldData.currentMonth,
                 date: new Date().toISOString(),
                 // NOTE: Use the current assessment scores for the snapshot
                 // Mapping the 10 questions' Likert scores to the dimensions for historical comparison
@@ -646,7 +635,7 @@ const TrackerDashboardView = ({ data, updatePdpData, saveNewPlan, userId, naviga
     const isReadyToComplete = allContentCompleted && localReflection.length >= 50;
     const requiredContent = monthPlan?.requiredContent || [];
     const totalDuration = data.plan.reduce((sum, m) => sum + m.totalDuration, 0);
-    const completedDuration = data.plan.filter(m => m.month < currentMonth).reduce((sum, m) => sum + m.totalDuration, 0);
+    const completedDuration = data.plan.filter(m => m.month < data.currentMonth).reduce((sum, m) => sum + m.totalDuration, 0);
     const progressPercentage = totalDuration > 0 ? Math.round((completedDuration / totalDuration) * 100) : 0;
     const TierIcon = IconMap[LEADERSHIP_TIERS[currentTierId]?.icon || 'Target'];
     const completedItems = requiredContent.filter(item => item.status === 'Completed').length;
@@ -662,7 +651,7 @@ const TrackerDashboardView = ({ data, updatePdpData, saveNewPlan, userId, naviga
             </div>
 
             {/* Progress Bar & Header */}
-            <Card title={`Roadmap Progress: Training Month ${currentMonth} of 24`} icon={Clock} accent='NAVY' className="bg-[#002E47]/10 border-4 border-[#002E47]/20 mb-8">
+            <Card title={`Roadmap Progress: Training Month ${data.currentMonth} of 24`} icon={Clock} accent='NAVY' className="bg-[#002E47]/10 border-4 border-[#002E47]/20 mb-8">
                 <div className="w-full bg-gray-200 rounded-full h-4 mb-2">
                     <div
                         className="bg-[#47A88D] h-4 rounded-full transition-all duration-700"
@@ -670,7 +659,7 @@ const TrackerDashboardView = ({ data, updatePdpData, saveNewPlan, userId, naviga
                     ></div>
                 </div>
                 <p className='text-sm font-medium text-[#002E47]'>
-                    {Math.round(progressPercentage)}% Complete. Next Tier Focus in {4 - ((currentMonth - 1) % 4)} months.
+                    {Math.round(progressPercentage)}% Complete. Next Tier Focus in {4 - ((data.currentMonth - 1) % 4)} months.
                 </p>
                 <div className='flex space-x-4 mt-4'>
                     <Button onClick={handleResetPlan} variant='outline' className='text-xs px-4 py-2 text-[#E04E1B] border-[#E04E1B]/50 hover:bg-[#E04E1B]/10'>
@@ -686,7 +675,7 @@ const TrackerDashboardView = ({ data, updatePdpData, saveNewPlan, userId, naviga
             <div className='lg:grid lg:grid-cols-4 lg:gap-8'>
                 
                 <div className='lg:col-span-1 space-y-8 order-1'>
-                    <RoadmapTimeline data={data} currentMonth={currentMonth} navigateToMonth={setViewMonth} viewMonth={viewMonth} />
+                    <RoadmapTimeline data={data} navigateToMonth={setViewMonth} viewMonth={viewMonth} />
                     
                     <Card title={`Tier Mastery Status (${currentTierId})`} icon={Star} accent='NAVY' className='bg-[#FCFCFA] border-l-4 border-[#002E47] text-center'>
                          <div className="relative w-32 h-32 mx-auto mb-4">
@@ -708,10 +697,10 @@ const TrackerDashboardView = ({ data, updatePdpData, saveNewPlan, userId, naviga
                 <div className='lg:col-span-3 space-y-8 order-2'>
                     
                     {/* VIEWING WARNINGS - THESE DISPLAY FOR FUTURE/PAST MONTHS */}
-                    {viewMonth > currentMonth && ( // Check if viewing a future month
+                    {viewMonth > data.currentMonth && ( // Check if viewing a future month
                         <div className='p-4 rounded-xl bg-yellow-100 border-2 border-yellow-400 shadow-md text-yellow-800 font-semibold flex items-center gap-3'>
                             <AlertTriangle className='w-5 h-5'/> 
-                            Viewing **Future Training Month {viewMonth}**. You must complete Month **{currentMonth}** before accessing this content. Content is read-only.
+                            Viewing **Future Training Month {viewMonth}**. You must complete Month **{data.currentMonth}** before accessing this content. Content is read-only.
                         </div>
                     )}
                     {!isCurrentView && isPastOrCurrent && (
@@ -845,14 +834,14 @@ const TrackerDashboardView = ({ data, updatePdpData, saveNewPlan, userId, naviga
                         
                         <Card title="Advance Roadmap" icon={CornerRightUp} accent='TEAL' className='bg-[#47A88D]/10 border-4 border-[#47A88D]'>
                             <p className='text-sm text-gray-700 mb-4'>
-                                Once all content and your reflection are complete, lock in your progress and move to **Training Month {currentMonth + 1}** of your Roadmap (Progressive Overload).
+                                Once all content and your reflection are complete, lock in your progress and move to **Training Month {data.currentMonth + 1}** of your Roadmap (Progressive Overload).
                             </p>
                             <Button
                                 onClick={handleCompleteMonth}
                                 disabled={isSaving || !isReadyToComplete}
                                 className='w-full bg-[#47A88D] hover:bg-[#349881]'
                             >
-                                {isSaving ? 'Processing...' : `Complete Month ${currentMonth} and Advance`}
+                                {isSaving ? 'Processing...' : `Complete Month ${data.currentMonth} and Advance`}
                             </Button>
                             {!allContentCompleted && (
                                 <p className='text-[#E04E1B] text-xs mt-2'>* Finish all content reps first.</p>
@@ -878,7 +867,7 @@ const TrackerDashboardView = ({ data, updatePdpData, saveNewPlan, userId, naviga
 
 
 // --- Component 1: Plan Generator View ---
-const PlanGeneratorView = ({ userId, saveNewPlan, isLoading, error, navigate, setGeneratedPlanData, generatePlanDataWrapper }) => {
+const PlanGeneratorView = ({ userId, saveNewPlan, navigate, setGeneratedPlanData, generatePlanDataWrapper }) => {
     // Assessment State Management
     // FIX 1: Initial assessment score set to 3 (Neutral) instead of 0
     const [assessmentAnswers, setAssessmentAnswers] = useState(ASSESSMENT_QUESTIONS.reduce((acc, q) => ({ ...acc, [q.id]: 3 }), {})); 
@@ -1021,7 +1010,6 @@ const PlanReviewScreen = ({ generatedPlan, navigate, clearReviewData, finalizeWi
     );
 
     const userPlan = generatedPlan.userPlan;
-    const genericPlan = generatedPlan.genericPlan;
     const leadershipProfile = userPlan.leadershipProfile; 
 
     const userTotalDuration = userPlan.plan.reduce((sum, m) => sum + m.totalDuration, 0);
