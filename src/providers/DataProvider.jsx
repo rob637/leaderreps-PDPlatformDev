@@ -67,7 +67,7 @@ const DataProvider = ({
         services.cleanup();
       }
     };
-  }, [userId, db, isAuthReady, services]);
+  }, [userId, db, isAuthReady]);
 
   const devPlanHook = useMemo(
     () =>

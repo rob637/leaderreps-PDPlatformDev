@@ -32,8 +32,8 @@ const COLORS = {
  * @param {React.ReactNode} children - The component/content to gate
  * @param {function} navigate - Optional navigation function for upgrade flow
  */
-export const MembershipGate = ({ requiredTier, featureName, children, navigate }) => {
-  const { membershipData, isAdmin } = useAppServices();
+export const MembershipGate = ({ requiredTier, featureName, children }) => {
+  const { membershipData, isAdmin, navigate } = useAppServices();
   
   // Admins bypass all restrictions
   if (isAdmin) {
@@ -153,7 +153,8 @@ export const MembershipGate = ({ requiredTier, featureName, children, navigate }
 /**
  * Inline upgrade prompt for smaller spaces
  */
-export const MembershipPrompt = ({ requiredTier, featureName, navigate, className = "" }) => {
+export const MembershipPrompt = ({ requiredTier, featureName, className = "" }) => {
+  const { navigate } = useAppServices();
   const requiredTierInfo = MEMBERSHIP_TIERS[requiredTier];
   
   return (
