@@ -4,7 +4,7 @@ import { Home, Settings, Zap, Clock, Briefcase, Mic, Trello, BookOpen, BarChart3
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 
 // --- SERVICES (production) ---
-import { useAppServices } from './src/services/useAppServices.jsx';
+import { useAppServices } from '../../services/useAppServices.jsx';
 
 /* =========================================================
    HIGH-CONTRAST PALETTE (Centralized for Consistency)
