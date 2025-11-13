@@ -4,6 +4,7 @@ import React, { lazy } from 'react';
 import { MembershipGate } from '../components/ui/MembershipGate.jsx';
 
 const ScreenMap = {
+  'roadmap-tracker': lazy(() => import('../components/screens/RoadmapTracker.jsx')),
   dashboard: lazy(() => import('../components/screens/Dashboard.jsx')),
   'development-plan': lazy(() =>
     import('../components/screens/DevelopmentPlan.jsx')

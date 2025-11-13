@@ -29,14 +29,20 @@ const COLORS = {
 
 // Mock UI components (Standardized)
 const Button = ({ children, onClick, disabled = false, variant = 'primary', className = '', ...rest }) => {
-  let baseStyle = "px-6 py-3 rounded-xl font-semibold transition-all shadow-xl focus:outline-none focus:ring-4 text-white flex items-center justify-center";
-  if (variant === 'primary') { baseStyle += ` bg-[${COLORS.TEAL}] hover:bg-[${COLORS.SUBTLE_TEAL}] focus:ring-[${COLORS.TEAL}]/50`; }
-  else if (variant === 'secondary') { baseStyle += ` bg-[${COLORS.ORANGE}] hover:bg-[#C33E12] focus:ring-[${COLORS.ORANGE}]/50`; }
-  else if (variant === 'outline') { baseStyle = `px-6 py-3 rounded-xl font-semibold transition-all shadow-md border-2 border-[${COLORS.TEAL}] text-[${COLORS.TEAL}] hover:bg-[${COLORS.TEAL}]/10 focus:ring-4 focus:ring-[${COLORS.TEAL}]/50 bg-[${COLORS.LIGHT_GRAY}] flex items-center justify-center`; }
-  else if (variant === 'nav-back') { baseStyle = `px-4 py-2 rounded-lg font-medium transition-all shadow-sm border-2 border-gray-300 text-gray-700 hover:bg-gray-100 flex items-center justify-center`; }
-  if (disabled) { baseStyle = "px-6 py-3 rounded-xl font-semibold bg-gray-300 text-gray-500 cursor-not-allowed shadow-inner transition-none flex items-center justify-center"; }
+  const variantStyles = {
+    primary: 'bg-[#47A88D] hover:bg-[#349881] focus:ring-[#47A88D]/50 text-white',
+    secondary: 'bg-[#E04E1B] hover:bg-[#C33E12] focus:ring-[#E04E1B]/50 text-white',
+    outline: 'border-2 border-[#47A88D] text-[#47A88D] hover:bg-[#47A88D]/10 focus:ring-[#47A88D]/50 bg-[#FCFCFA]',
+    'nav-back': 'border-2 border-gray-300 text-gray-700 hover:bg-gray-100',
+  };
+
+  const baseStyle = "px-6 py-3 rounded-xl font-semibold transition-all shadow-xl focus:outline-none focus:ring-4 flex items-center justify-center";
+  const disabledStyle = "bg-gray-300 text-gray-500 cursor-not-allowed shadow-inner transition-none";
+
+  const finalClassName = `${baseStyle} ${disabled ? disabledStyle : variantStyles[variant]} ${className}`;
+
   return (
-    <button {...rest} onClick={onClick} disabled={disabled} className={`${baseStyle} ${className}`}>
+    <button {...rest} onClick={onClick} disabled={disabled} className={finalClassName}>
       {children}
     </button>
   );
