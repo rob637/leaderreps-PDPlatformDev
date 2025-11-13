@@ -55,9 +55,20 @@ const NotFoundScreen = () => (
   </div>
 );
 
-const ScreenRouter = ({ currentScreen, navParams, navigate }) => {
+const ScreenRouter = ({ currentScreen, navParams }) => {
   const Component = ScreenMap[currentScreen] || NotFoundScreen;
-  console.log(`[ScreenRouter] Rendering screen: ${currentScreen}`);
+  
+  // --- DEBUGGING ---
+  console.log(`[ScreenRouter] Rendering screen: '${currentScreen}'`);
+  if (Component) {
+    console.log(`[ScreenRouter]   -> Component found:`, Component);
+    if (typeof Component === 'undefined') {
+      console.error(`❌ [ScreenRouter] CRITICAL: Component for '${currentScreen}' is UNDEFINED.`);
+    }
+  } else {
+    console.warn(`[ScreenRouter]   -> No component found for '${currentScreen}'. Rendering NotFoundScreen.`);
+  }
+  // --- END DEBUGGING ---
 
   const screenTierRequirements = {
     'development-plan': 'basic',
@@ -67,7 +78,7 @@ const ScreenRouter = ({ currentScreen, navParams, navigate }) => {
 
   const requiredTier = screenTierRequirements[currentScreen];
   const componentElement = (
-    <Component key={currentScreen} {...(navParams || {})} navigate={navigate} />
+    <Component key={currentScreen} {...(navParams || {})} />
   );
 
   if (requiredTier) {
