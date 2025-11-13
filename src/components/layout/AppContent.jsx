@@ -191,7 +191,7 @@ const AppContent = ({
           <PWAInstall />
           <button
             onClick={handleSignOut}
-            className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-offset-1 bg-corporate-orange text-white"
+            className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-offset-1 bg-red-600 hover:bg-red-700 text-white shadow-lg"
             title="Sign Out"
           >
             <LogOut className="w-4 h-4" />

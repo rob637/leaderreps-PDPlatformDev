@@ -219,8 +219,7 @@ const MembershipModule = () => {
 
     // --- RENDER ---
     return (
-        <div className="min-h-screen" style={{ background: COLORS.BG }}>
-            <div className="container mx-auto px-4 py-6 max-w-7xl">
+        <div className="relative space-y-6 p-4 sm:p-6" style={{ background: COLORS.BG, color: COLORS.NAVY }}>
                 
                 {/* Header */}
                 <h1 className="text-3xl md:text-4xl font-extrabold mb-2" style={{ color: COLORS.NAVY }}>

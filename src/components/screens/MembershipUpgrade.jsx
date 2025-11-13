@@ -245,8 +245,7 @@ const MembershipUpgrade = () => {
   };
 
   return (
-    <div className="min-h-screen" style={{ backgroundColor: COLORS.BG }}>
-      <div className="container mx-auto max-w-7xl px-6 py-8">
+    <div className="relative space-y-6 p-4 sm:p-6" style={{ backgroundColor: COLORS.BG, color: COLORS.NAVY }}>
         
         {/* Header */}
         <div className="flex items-center gap-4 mb-8">

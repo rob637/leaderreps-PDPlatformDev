@@ -372,7 +372,7 @@ async function confirmPlanPersisted(db, userId, retries = 4, delayMs = 250) {
 
   // ===== RENDER =====
   return (
-    <div className="min-h-screen" style={{ background: 'linear-gradient(to bottom, #F9FAFB 0%, #EEF2F6 100%)' }}>
+    <div className="relative space-y-6 p-4 sm:p-6">
       {error && (
         <div className="max-w-3xl mx-auto p-4 pt-6">
           <div className="bg-red-50 border-2 border-red-200 rounded-xl p-4 text-red-800 shadow-lg">

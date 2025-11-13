@@ -88,7 +88,10 @@ const GetStartedCard = ({ onNavigate, membershipData, developmentPlanData }) => 
             </p>
           </div>
           <Button
-            onClick={() => onNavigate('membership-upgrade')}
+            onClick={() => {
+              console.log('[Dashboard] View Plans button clicked, navigating to membership-upgrade');
+              onNavigate('membership-upgrade');
+            }}
             variant="primary"
             size="md"
             className="flex-shrink-0 w-full sm:w-auto"
@@ -186,7 +189,7 @@ const GetStartedCard = ({ onNavigate, membershipData, developmentPlanData }) => 
 const Dashboard = (props) => {
   const {
     membershipData,
-    setCurrentScreen,
+    setCurrentScreen: _setCurrentScreen,
     userData,
     localAnchor,
     setLocalAnchor,
@@ -221,7 +224,21 @@ const Dashboard = (props) => {
     handleRemoveTask,
     handleToggleWIN,
     amWinCompleted
-  } = useDashboard(props);
+  } = useDashboard({
+    ...props,
+    dailyPracticeData,
+    updateDailyPracticeData
+  });
+
+  // Debug wrapper for setCurrentScreen
+  const setCurrentScreen = (screen) => {
+    console.log('[Dashboard] setCurrentScreen called with:', screen);
+    if (typeof _setCurrentScreen === 'function') {
+      _setCurrentScreen(screen);
+    } else {
+      console.error('[Dashboard] setCurrentScreen is not a function:', typeof _setCurrentScreen);
+    }
+  };
 
   const [visibleComponents, setVisibleComponents] = useState([
     'mode', 'streak', 'getStarted', 'dynamicBookend', 'devPlanProgress', 'aiCoachNudge'
@@ -237,7 +254,7 @@ const Dashboard = (props) => {
   const [showAnchorModal, setShowAnchorModal] = useState(false);
   const [isEditorOpen, setIsEditorOpen] = useState(false);
 
-  const { db, user } = useAppServices();
+  const { db, user, dailyPracticeData, updateDailyPracticeData } = useAppServices();
   const currentTier = membershipData?.currentTier || 'basic';
   const isMemberPro = membershipService.hasAccess(currentTier, 'professional');
   const isMemberPremium = membershipService.hasAccess(currentTier, 'elite');
