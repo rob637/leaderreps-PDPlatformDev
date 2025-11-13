@@ -58,17 +58,33 @@ const NotFoundScreen = () => (
 const ScreenRouter = ({ currentScreen, navParams }) => {
   const Component = ScreenMap[currentScreen] || NotFoundScreen;
   
-  // --- DEBUGGING ---
+  // --- MORE DEBUGGING ---
   console.log(`[ScreenRouter] Rendering screen: '${currentScreen}'`);
-  if (Component) {
-    console.log(`[ScreenRouter]   -> Component found:`, Component);
-    if (typeof Component === 'undefined') {
-      console.error(`❌ [ScreenRouter] CRITICAL: Component for '${currentScreen}' is UNDEFINED.`);
+  
+  // 🔍 Let's inspect the lazy component itself before rendering
+  if (ScreenMap[currentScreen]) {
+    console.log(`[ScreenRouter]   -> Found lazy component in ScreenMap for '${currentScreen}'.`);
+    console.log(`[ScreenRouter]   -> Component object:`, ScreenMap[currentScreen]);
+
+    // This is a bit of a hack to inspect the inner promise of a lazy component
+    // It might reveal if the import is failing.
+    try {
+      ScreenMap[currentScreen]._payload._result.then(module => {
+        console.log(`[ScreenRouter] SUCCESS: Lazy import for '${currentScreen}' resolved to:`, module);
+        if (!module.default) {
+          console.error(`❌ [ScreenRouter] CRITICAL FAILURE: Module for '${currentScreen}' loaded but has NO DEFAULT EXPORT!`);
+        }
+      }).catch(err => {
+        console.error(`❌ [ScreenRouter] CRITICAL FAILURE: Lazy import promise for '${currentScreen}' REJECTED with error:`, err);
+      });
+    } catch (e) {
+      console.warn(`[ScreenRouter] Could not inspect lazy promise for '${currentScreen}'. This is not necessarily an error.`, e);
     }
+
   } else {
     console.warn(`[ScreenRouter]   -> No component found for '${currentScreen}'. Rendering NotFoundScreen.`);
   }
-  // --- END DEBUGGING ---
+  // --- END MORE DEBUGGING ---
 
   const screenTierRequirements = {
     'development-plan': 'basic',
