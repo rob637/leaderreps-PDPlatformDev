@@ -55,7 +55,7 @@ const NavSidebar = ({
       label: 'Coaching',
       icon: Mic,
       flag: 'enableLabs',
-      requiredTier: 'elite',
+      requiredTier: 'professional',
     },
   ];
 
@@ -91,7 +91,7 @@ const NavSidebar = ({
       label: 'Media',
       icon: Film,
       flag: 'enableVideos',
-      requiredTier: 'elite',
+      requiredTier: 'professional',
     },
   ];
 

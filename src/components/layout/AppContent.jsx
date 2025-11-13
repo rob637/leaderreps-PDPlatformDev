@@ -110,6 +110,10 @@ const AppContent = ({
   };
 
   // Navigation sections matching NavSidebar.jsx
+  // Basic: Arena, Dev Plan, Membership
+  // Pro: Arena, Dev Plan, Coaching, Community, Library, Membership  
+  // Elite: Arena, Dev Plan, Coaching, Community, Library, Membership
+  // Dev: Everything including Developer Tools
   const navigationSections = [
     {
       title: 'THE ARENA',
@@ -126,7 +130,7 @@ const AppContent = ({
     {
       title: 'COACHING',
       items: [
-        { screen: 'labs', label: 'Coaching', flag: 'enableLabs', requiredTier: 'elite' }
+        { screen: 'labs', label: 'Coaching', flag: 'enableLabs', requiredTier: 'professional' }
       ]
     },
     {
@@ -140,7 +144,7 @@ const AppContent = ({
       items: [
         { screen: 'applied-leadership', label: 'Courses', flag: 'enableCourses', requiredTier: 'professional' },
         { screen: 'business-readings', label: 'Reading & Reps', flag: 'enableReadings', requiredTier: 'professional' },
-        { screen: 'leadership-videos', label: 'Media', flag: 'enableVideos', requiredTier: 'elite' }
+        { screen: 'leadership-videos', label: 'Media', flag: 'enableVideos', requiredTier: 'professional' }
       ]
     },
     {
