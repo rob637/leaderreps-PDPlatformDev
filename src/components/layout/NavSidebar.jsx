@@ -257,22 +257,44 @@ const NavSidebar = ({
                   {section.title}
                 </h3>
                 <div className="space-y-1">
-                  {renderNavItems(section.items).map((item, index) => {
-                    const Icon = item.icon;
-                    const isActive = currentScreen === item.screen;
-                    return (
-                      <button
-                        key={item.screen || index}
-                        onClick={() => handleNavClick(item.screen)}
-                        className={`w-full flex items-center px-3 py-2.5 rounded-lg font-medium text-sm transition-all duration-200 ${
-                          isActive ? 'bg-teal-600/20 text-corporate-teal' : 'hover:bg-gray-100/10 text-corporate-light-gray'
-                        }`}
-                      >
-                        <Icon className="w-5 h-5 mr-3 flex-shrink-0" />
-                        <span>{item.label}</span>
-                      </button>
-                    );
-                  })}
+                  {section.items
+                    .filter((item) => {
+                      if (isAdmin || isDeveloperMode) {
+                        return true;
+                      }
+                      if (item.devModeOnly) {
+                        return false;
+                      }
+                      if (item.flag && featureFlags && featureFlags[item.flag] !== true) {
+                        return false;
+                      }
+                      if (
+                        item.requiredTier &&
+                        !membershipService.hasAccess(
+                          membershipData?.currentTier,
+                          item.requiredTier
+                        )
+                      ) {
+                        return false;
+                      }
+                      return true;
+                    })
+                    .map((item, index) => {
+                      const Icon = item.icon;
+                      const isActive = currentScreen === item.screen;
+                      return (
+                        <button
+                          key={item.screen || index}
+                          onClick={() => handleNavClick(item.screen)}
+                          className={`w-full flex items-center px-3 py-2.5 rounded-lg font-medium text-sm transition-all duration-200 ${
+                            isActive ? 'bg-teal-600/20 text-corporate-teal' : 'hover:bg-gray-100/10 text-corporate-light-gray'
+                          }`}
+                        >
+                          <Icon className="w-5 h-5 mr-3 flex-shrink-0" />
+                          <span>{item.label}</span>
+                        </button>
+                      );
+                    })}
                 </div>
               </div>
             ))}
