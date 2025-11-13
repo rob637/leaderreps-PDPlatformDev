@@ -117,6 +117,13 @@ export const MOCK_READING_CATALOG = [];
 export const MOCK_VIDEO_CATALOG = [];
 export const MOCK_SCENARIO_CATALOG = [];
 
+export const LEADERSHIP_TIERS_FALLBACK = [
+  { tier: 1, name: "Tier 1", description: "Foundation" },
+  { tier: 2, name: "Tier 2", description: "Intermediate" },
+  { tier: 3, name: "Tier 3", description: "Advanced" },
+  { tier: 4, name: "Tier 4", description: "Expert" },
+];
+
 export const MOCK_GLOBAL_METADATA = {
   featureFlags: MOCK_FEATURE_FLAGS,
   LEADERSHIP_TIERS: LEADERSHIP_TIERS_FALLBACK,
@@ -137,10 +144,3 @@ export const MOCK_GLOBAL_METADATA = {
   GEMINI_MODEL: 'gemini-pro',
   APP_ID: 'mock-app-id'
 };
-
-export const LEADERSHIP_TIERS_FALLBACK = [
-  { tier: 1, name: "Tier 1", description: "Foundation" },
-  { tier: 2, name: "Tier 2", description: "Intermediate" },
-  { tier: 3, name: "Tier 3", description: "Advanced" },
-  { tier: 4, name: "Tier 4", description: "Expert" },
-];
