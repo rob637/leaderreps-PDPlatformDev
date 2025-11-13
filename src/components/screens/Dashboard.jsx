@@ -187,7 +187,11 @@ const GetStartedCard = ({ onNavigate, membershipData, developmentPlanData }) => 
 };
 
 const Dashboard = (props) => {
-  const {
+  const { 
+    db, 
+    user, 
+    dailyPracticeData, 
+    updateDailyPracticeData,
     membershipData,
     setCurrentScreen: _setCurrentScreen,
     userData,
@@ -197,7 +201,10 @@ const Dashboard = (props) => {
     progressData,
     userAnchorData,
     quickstartData,
-    repsData,
+    repsData
+  } = useAppServices();
+  
+  const {
     // Add anchor data from DashboardHooks
     identityStatement,
     habitAnchor,
@@ -254,7 +261,6 @@ const Dashboard = (props) => {
   const [showAnchorModal, setShowAnchorModal] = useState(false);
   const [isEditorOpen, setIsEditorOpen] = useState(false);
 
-  const { db, user, dailyPracticeData, updateDailyPracticeData } = useAppServices();
   const currentTier = membershipData?.currentTier || 'basic';
   const isMemberPro = membershipService.hasAccess(currentTier, 'professional');
   const isMemberPremium = membershipService.hasAccess(currentTier, 'elite');
