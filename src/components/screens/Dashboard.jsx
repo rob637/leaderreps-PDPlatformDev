@@ -10,10 +10,10 @@ import { useAppServices } from '../../services/useAppServices.jsx';
 import { ArrowRight, Edit3, Loader, X, Users, Send, Target, Clock, Zap, Shield, Trash2, Anchor } from 'lucide-react'; 
 import { deleteField } from 'firebase/firestore'; // Used for reminder dismissals
 import { MembershipGate } from '../ui/MembershipGate.jsx';
+import { COLORS } from './dashboard/dashboardConstants.js';
 
 // Import modular components from the file you provided
 import {
-  COLORS,
   Button,
   Card,
   ModeSwitch,

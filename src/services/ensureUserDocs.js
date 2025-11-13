@@ -1,6 +1,6 @@
 // src/services/ensureUserDocs.js
 import { getDocEx, setDocEx } from './firestoreUtils';
-import { buildUserProfilePath, buildModulePath } from './pathUtils';
+import { buildUserProfilePath, buildModulePath } from './pathUtils.js';
 import { serverTimestamp } from 'firebase/firestore';
 
 export const ensureUserDocs = async (db, uid) => {

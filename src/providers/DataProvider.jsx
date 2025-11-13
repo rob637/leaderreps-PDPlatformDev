@@ -1,7 +1,8 @@
 // src/providers/DataProvider.jsx
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { AppServiceContext, createAppServices } from '../services/useAppServices.jsx';
+import AppServiceContext from '../services/AppServiceContext.js';
+import { createAppServices } from '../services/createAppServices.js';
 
 const resolveGlobalMetadata = (meta) => {
   return meta && typeof meta === 'object' ? meta : {};

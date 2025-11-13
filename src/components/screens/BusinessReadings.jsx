@@ -3,7 +3,7 @@
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
 // --- Core Services & Context ---
 import { useAppServices } from '../../services/useAppServices.jsx'; // cite: useAppServices.jsx
-import { DIMENSION_TO_TIER_MAP, CORPORATE_COLORS } from '../../data/Constants.js';
+
 import ConfigError from '../../components/system/ConfigError.jsx';
 
 // --- Icons ---

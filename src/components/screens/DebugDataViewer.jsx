@@ -10,9 +10,7 @@ import { RefreshCw, Code, ArrowLeft, Loader, Globe, Clock, Briefcase } from 'luc
 /* =========================================================
    PALETTE & UI COMPONENTS (Standardized)
 ========================================================= */
-// --- Primary Color Palette ---
-import { CORPORATE_COLORS } from '../../data/Constants';
-const COLORS = CORPORATE_COLORS;
+
 
 // --- Standardized UI Components (Assume imported or globally available) ---
 // Using placeholder comments, assuming Button and Card are correctly defined elsewhere or globally

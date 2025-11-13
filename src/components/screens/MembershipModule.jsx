@@ -2,10 +2,7 @@ import React, { useState, useMemo, useCallback } from 'react';
 import { useAppServices } from '../../services/useAppServices.jsx'; // Canonical path used by other screen components
 import { MEMBERSHIP_TIERS } from '../../services/membershipService.js';
 import { DollarSign, Zap, Clock, CheckCircle, CreditCard, AlertTriangle, X, ShieldCheck, CornerRightUp, RefreshCw, Trash2, Mail, Bell } from 'lucide-react';
-import { CORPORATE_COLORS } from '../../data/Constants.js';
 
-// Reusing colors from App.jsx's global constants
-const COLORS = CORPORATE_COLORS;
 
 // --- Local Components for Modularity and Style ---
 

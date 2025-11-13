@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { useAppServices } from '../../App.jsx';
+import { useAppServices } from '../../services/useAppServices.jsx';
 import { Card, Button } from '../shared/UI';
 import { PlusCircle, X, CheckCircle, Target, TrendingUp, Clock, AlertTriangle, BarChart3, CornerRightUp } from 'lucide-react';
 import { LEADERSHIP_TIERS, COMMITMENT_COLLECTION } from '../../data/Constants';
