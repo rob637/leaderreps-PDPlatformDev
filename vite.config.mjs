@@ -94,7 +94,7 @@ export default defineConfig({
   build: {
     outDir: 'build', 
     emptyOutDir: true,
-    sourcemap: process.env.NODE_ENV === 'development',
+    sourcemap: true,
     
     // Bundle size optimization
     rollupOptions: {

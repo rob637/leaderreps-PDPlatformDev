@@ -151,6 +151,16 @@ export const useDashboard = ({
         completedDailyRep: false,
         eveningReflection: false
       });
+    } else {
+      // If no evening bookend data, reset to default state
+      setReflectionGood('');
+      setReflectionBetter('');
+      setReflectionBest('');
+      setHabitsCompleted({
+        readLIS: false,
+        completedDailyRep: false,
+        eveningReflection: false
+      });
     }
   }, [dailyPracticeData?.eveningBookend, shouldSkipReflectionLoad]);
 
