@@ -364,8 +364,6 @@ const MembershipUpgrade = () => {
             </div>
           </div>
         </Card>
-
-      </div>
     </div>
   );
 };

@@ -11,6 +11,13 @@ module.exports = {
       },
       colors: {
         ...CORPORATE_COLORS,
+        // Add kebab-case variants for Tailwind classes
+        'corporate-navy': CORPORATE_COLORS.NAVY,
+        'corporate-orange': CORPORATE_COLORS.ORANGE,
+        'corporate-teal': CORPORATE_COLORS.TEAL,
+        'corporate-teal-dark': CORPORATE_COLORS.SUBTLE_TEAL,
+        'corporate-light-gray': CORPORATE_COLORS.LIGHT_GRAY,
+        'corporate-subtle-teal': CORPORATE_COLORS.SUBTLE_TEAL,
       },
     },
   },

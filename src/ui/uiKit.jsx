@@ -7,18 +7,44 @@ import { COLORS } from './uiKitConstants.js';
 export const Button = ({
   children, onClick, disabled = false, variant = 'primary', className = '', ...rest
 }) => {
-  // Updated base style for softer shadow and consistent font
-  let base = "px-6 py-3 rounded-xl font-semibold transition-all shadow-lg focus:outline-none focus:ring-4 flex items-center justify-center";
+  // Base styles using safe Tailwind classes
+  let baseClasses = "px-6 py-3 rounded-xl font-semibold transition-all shadow-lg focus:outline-none focus:ring-4 flex items-center justify-center";
+  let customStyle = {};
   
-  if (variant === 'primary') base += ` bg-[${COLORS.TEAL}] hover:bg-[${COLORS.SUBTLE_TEAL}] focus:ring-[${COLORS.TEAL}]/50 text-white`;
-  else if (variant === 'secondary') base += ` bg-[${COLORS.ORANGE}] hover:bg-[#C33E12] focus:ring-[${COLORS.ORANGE}]/50 text-white`;
-  else if (variant === 'outline') base = `px-6 py-3 rounded-xl font-semibold transition-all shadow-md border-2 border-[${COLORS.TEAL}] text-[${COLORS.TEAL}] hover:bg-[${COLORS.TEAL}]/10 focus:ring-4 focus:ring-[${COLORS.TEAL}]/50 bg-[${COLORS.LIGHT_GRAY}] flex items-center justify-center`;
-  else if (variant === 'nav-back') base = `px-4 py-2 rounded-lg font-medium transition-all shadow-sm border-2 border-gray-300 text-gray-700 hover:bg-gray-100 flex items-center justify-center`;
-  
-  if (disabled) base = "px-6 py-3 rounded-xl font-semibold bg-gray-300 text-gray-500 cursor-not-allowed shadow-inner transition-none flex items-center justify-center";
+  if (disabled) {
+    baseClasses = "px-6 py-3 rounded-xl font-semibold bg-gray-300 text-gray-500 cursor-not-allowed shadow-inner transition-none flex items-center justify-center";
+  } else if (variant === 'primary') {
+    baseClasses += " text-white";
+    customStyle = {
+      backgroundColor: COLORS.TEAL,
+      '--tw-ring-color': COLORS.TEAL + '80', // 50% opacity
+    };
+  } else if (variant === 'secondary') {
+    baseClasses += " text-white";
+    customStyle = {
+      backgroundColor: COLORS.ORANGE,
+      '--tw-ring-color': COLORS.ORANGE + '80',
+    };
+  } else if (variant === 'outline') {
+    baseClasses = "px-6 py-3 rounded-xl font-semibold transition-all shadow-md border-2 flex items-center justify-center";
+    customStyle = {
+      borderColor: COLORS.TEAL,
+      color: COLORS.TEAL,
+      backgroundColor: COLORS.LIGHT_GRAY,
+      '--tw-ring-color': COLORS.TEAL + '80',
+    };
+  } else if (variant === 'nav-back') {
+    baseClasses = "px-4 py-2 rounded-lg font-medium transition-all shadow-sm border-2 border-gray-300 text-gray-700 hover:bg-gray-100 flex items-center justify-center";
+  }
 
   return (
-    <button {...rest} onClick={onClick} disabled={disabled} className={`${base} ${className}`}>
+    <button 
+      {...rest} 
+      onClick={onClick} 
+      disabled={disabled} 
+      className={`${baseClasses} ${className}`}
+      style={customStyle}
+    >
       {children}
     </button>
   );
