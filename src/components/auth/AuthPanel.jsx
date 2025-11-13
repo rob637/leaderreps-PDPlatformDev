@@ -135,68 +135,74 @@ function AuthPanel({ auth, onSuccess }) {
             />
           )}
 
+          {statusMessage && (
+            <p
+              className={`text-sm p-3 rounded-lg ${
+                statusMessage.includes('sent')
+                  ? 'bg-green-100 text-green-800'
+                  : 'bg-red-100 text-red-800'
+              }`}
+            >
+              {statusMessage}
+            </p>
+          )}
+
           <button
             type="submit"
+            className="w-full bg-corporate-teal text-white p-3 rounded-lg font-bold hover:bg-corporate-teal-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-corporate-teal disabled:bg-gray-400 transition-colors duration-300"
             disabled={isLoading}
-            className={`w-full p-3 text-white rounded-lg font-semibold transition-colors focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed bg-corporate-teal focus:ring-corporate-teal`}
           >
             {isLoading ? (
-              <Loader className="animate-spin h-5 w-5 mx-auto" />
-            ) : mode === 'login' ? (
-              'Sign In'
+              <Loader className="animate-spin mx-auto" />
+            ) : isReset ? (
+              'Send Reset Link'
             ) : isSignup ? (
               'Create Account'
             ) : (
-              'Send Reset Link'
+              'Sign In'
             )}
           </button>
         </form>
 
-        {statusMessage && (
-          <p
-            className={`text-sm text-center font-medium mt-4 ${
-              statusMessage.includes('sent')
-                ? `text-corporate-green`
-                : `text-corporate-red`
-            }`}
-          >
-            {statusMessage}
-          </p>
-        )}
-
-        <div className="mt-6 border-t pt-4 border-gray-200 space-y-2 text-sm">
-          {mode !== 'signup' && (
-            <button
-              onClick={() => {
-                setMode('signup');
-                setStatusMessage('');
-              }}
-              className={`font-semibold hover:underline block w-full text-corporate-teal`}
-            >
-              Need an account? Sign up
-            </button>
-          )}
-          {mode !== 'login' && (
-            <button
-              onClick={() => {
+        <div className="mt-6 text-sm">
+          {mode === 'login' ? (
+            <>
+              <a
+                href="#"
+                onClick={(e) => {
+                  e.preventDefault();
+                  setMode('reset');
+                  setStatusMessage('');
+                }}
+                className="font-medium text-corporate-teal hover:text-corporate-teal-dark"
+              >
+                Forgot password?
+              </a>
+              <span className="text-gray-500 mx-2">|</span>
+              <a
+                href="#"
+                onClick={(e) => {
+                  e.preventDefault();
+                  setMode('signup');
+                  setStatusMessage('');
+                }}
+                className="font-medium text-corporate-teal hover:text-corporate-teal-dark"
+              >
+                Sign Up
+              </a>
+            </>
+          ) : (
+            <a
+              href="#"
+              onClick={(e) => {
+                e.preventDefault();
                 setMode('login');
                 setStatusMessage('');
               }}
-              className={`text-gray-500 hover:underline block w-full`}
+              className="font-medium text-corporate-teal hover:text-corporate-teal-dark"
             >
-              Already have an account? Sign In
-            </button>
-          )}
-          {mode === 'login' && (
-            <button
-              onClick={() => {
-                setMode('reset');
-                setStatusMessage('');
-              }}
-              className={`text-gray-500 hover:underline block w-full`}
-            >
-              Forgot Password?
-            </button>
+              Back to Sign In
+            </a>
           )}
         </div>
       </div>
