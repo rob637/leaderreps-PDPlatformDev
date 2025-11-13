@@ -55,7 +55,7 @@ const NotFoundScreen = () => (
   </div>
 );
 
-const ScreenRouter = ({ currentScreen, navParams, isDeveloperMode, simulatedTier }) => {
+const ScreenRouter = ({ currentScreen, navParams, navigate, isDeveloperMode, simulatedTier }) => {
   const Component = ScreenMap[currentScreen] || NotFoundScreen;
   
   // --- MORE DEBUGGING ---
@@ -99,6 +99,7 @@ const ScreenRouter = ({ currentScreen, navParams, isDeveloperMode, simulatedTier
       <Component 
         key={currentScreen} 
         {...(navParams || {})} 
+        setCurrentScreen={navigate}
         isDeveloperMode={isDeveloperMode}
         simulatedTier={simulatedTier}
       />

@@ -28,6 +28,19 @@ const AppContent = ({
   const [simulatedTier, setSimulatedTier] = useState(() => {
     return localStorage.getItem('arena-simulated-tier') || 'basic';
   });
+  
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownOpen && !event.target.closest('.relative')) {
+        setDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [dropdownOpen]);
 
   // Listen for developer mode changes
   useEffect(() => {
@@ -43,6 +56,8 @@ const AppContent = ({
     const newMode = !isDeveloperMode;
     setIsDeveloperMode(newMode);
     localStorage.setItem('arena-developer-mode', newMode.toString());
+    // Close dropdown when mode changes so user sees the updated menu
+    setDropdownOpen(false);
   };
 
   const handleTierChange = (tier) => {
@@ -53,6 +68,8 @@ const AppContent = ({
       key: 'arena-simulated-tier',
       newValue: tier
     }));
+    // Close dropdown when tier changes so user sees the updated menu
+    setDropdownOpen(false);
   };
 
   const tierColors = {
@@ -72,6 +89,23 @@ const AppContent = ({
   ]);
   const { navigate } = useAppServices();
 
+  // Navigation items for dropdown
+  const currentTier = isDeveloperMode ? 'elite' : simulatedTier;
+  
+  const navigationItems = [
+    { screen: 'dashboard', label: 'The Arena', show: true },
+    { screen: 'development-plan', label: 'Development Plan', show: true },
+    { screen: 'business-readings', label: 'Professional Reading Hub', show: isDeveloperMode || currentTier !== 'basic' },
+    { screen: 'applied-leadership', label: 'Course Library', show: isDeveloperMode || currentTier !== 'basic' },
+    { screen: 'planning-hub', label: 'Strategic Content Tools', show: isDeveloperMode || currentTier === 'elite' },
+    { screen: 'leadership-videos', label: 'Content Leader Talks', show: isDeveloperMode || currentTier === 'elite' },
+    { screen: 'labs', label: 'AI Coaching Lab', show: isDeveloperMode || currentTier === 'elite' },
+    { screen: 'executive-reflection', label: 'Executive ROI Report', show: isDeveloperMode || currentTier === 'elite' },
+    { screen: 'community', label: 'Leadership Community', show: isDeveloperMode || currentTier !== 'basic' },
+    { screen: 'membership-module', label: 'Membership & Billing', show: true },
+    { screen: 'app-settings', label: 'App Settings', show: isDeveloperMode }
+  ];
+
   const handleSignOut = async () => {
     try {
       if (auth) await signOut(auth);
@@ -88,13 +122,36 @@ const AppContent = ({
     <div className="relative min-h-screen flex flex-col font-sans antialiased bg-corporate-light-gray">
       <header className="sticky top-0 bg-white/95 backdrop-blur-sm shadow-md flex justify-between items-center z-50 px-4 py-2 border-b border-corporate-subtle-teal">
         <div className="flex items-center gap-4">
-          <button
-            onClick={() => setIsMobileOpen(true)}
-            className="p-2 hover:bg-gray-100 rounded-lg transition-colors text-corporate-navy"
-            title="Open Menu"
-          >
-            <Menu className="w-6 h-6" />
-          </button>
+          <div className="relative">
+            <button
+              onClick={() => setDropdownOpen(!dropdownOpen)}
+              className="p-2 hover:bg-gray-100 rounded-lg transition-colors text-corporate-navy"
+              title="Navigation Menu"
+            >
+              <Menu className="w-6 h-6" />
+            </button>
+            
+            {dropdownOpen && (
+              <div className="absolute top-full left-0 mt-1 w-64 bg-white rounded-lg shadow-lg border border-gray-200 z-50">
+                <div className="py-2">
+                  {navigationItems.filter(item => item.show).map((item) => (
+                    <button
+                      key={item.screen}
+                      onClick={() => {
+                        setCurrentScreen(item.screen);
+                        setDropdownOpen(false);
+                      }}
+                      className={`w-full text-left px-4 py-2 hover:bg-gray-100 transition-colors ${
+                        currentScreen === item.screen ? 'bg-corporate-teal text-white' : 'text-gray-700'
+                      }`}
+                    >
+                      {item.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
           <h1 className="text-xl font-bold text-corporate-navy">
             LeaderReps 
             {isDeveloperMode && <span className="text-xs bg-orange-500 text-white px-2 py-1 rounded ml-2">DEV</span>}
@@ -143,20 +200,7 @@ const AppContent = ({
         </div>
       </header>
 
-      <NavSidebar
-        currentScreen={currentScreen}
-        setCurrentScreen={setCurrentScreen}
-        isDeveloperMode={isDeveloperMode}
-        simulatedTier={simulatedTier}
-        user={user}
-        closeMobileMenu={closeMobileMenu}
-        isAuthRequired={isAuthRequired}
-        isNavExpanded={true}
-        setIsNavExpanded={setIsNavExpanded}
-        isHamburgerMode={true}
-        isMobileOpen={isMobileOpen}
-        setIsMobileOpen={setIsMobileOpen}
-      />
+      {/* Navigation moved to header dropdown */}
 
       <main className="flex-1 flex flex-col">
         <div className="flex-1 overflow-y-auto">
@@ -175,7 +219,7 @@ const AppContent = ({
             <ScreenRouter
               currentScreen={currentScreen}
               navParams={navParams}
-              navigate={navigate}
+              navigate={setCurrentScreen}
               isDeveloperMode={isDeveloperMode}
               simulatedTier={simulatedTier}
             />
@@ -188,7 +232,7 @@ const AppContent = ({
           </p>
           <div className="mt-2 flex flex-wrap justify-center gap-1 text-xs text-text-muted">
             <a
-              href="https://leaderreps.com/privacy-policy"
+              href="https://leaderreps.com/privacy-policy#data-collection"
               target="_blank"
               rel="noopener noreferrer"
               className="hover:underline transition-colors duration-200 text-text-muted"
@@ -197,7 +241,7 @@ const AppContent = ({
             </a>
             <span>|</span>
             <a
-              href="https://leaderreps.com/terms-of-service"
+              href="https://leaderreps.com/terms-of-service#user-obligations"
               target="_blank"
               rel="noopener noreferrer"
               className="hover:underline transition-colors duration-200 text-text-muted"
@@ -206,7 +250,7 @@ const AppContent = ({
             </a>
             <span>|</span>
             <a
-              href="https://leaderreps.com/cookie-policy"
+              href="https://leaderreps.com/cookie-policy#cookie-types"
               target="_blank"
               rel="noopener noreferrer"
               className="hover:underline transition-colors duration-200 text-text-muted"
@@ -215,7 +259,7 @@ const AppContent = ({
             </a>
             <span>|</span>
             <a
-              href="https://leaderreps.com/refund-policy"
+              href="https://leaderreps.com/refund-policy#eligibility"
               target="_blank"
               rel="noopener noreferrer"
               className="hover:underline transition-colors duration-200 text-text-muted"
@@ -224,7 +268,7 @@ const AppContent = ({
             </a>
             <span>|</span>
             <a
-              href="https://leaderreps.com/contact"
+              href="https://leaderreps.com/contact#support-form"
               target="_blank"
               rel="noopener noreferrer"
               className="hover:underline transition-colors duration-200 text-text-muted"

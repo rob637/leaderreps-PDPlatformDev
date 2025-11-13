@@ -201,7 +201,26 @@ const Dashboard = (props) => {
     whyStatement,
     handleSaveIdentity,
     handleSaveHabit,
-    handleSaveWhy
+    handleSaveWhy,
+    // Add evening bookend data
+    reflectionGood,
+    setReflectionGood,
+    reflectionBetter,
+    setReflectionBetter,
+    reflectionBest,
+    setReflectionBest,
+    habitsCompleted,
+    handleHabitToggle,
+    handleSaveEveningBookend,
+    isSavingBookend,
+    // Add morning bookend and task data
+    morningWIN,
+    otherTasks,
+    handleAddTask,
+    handleToggleTask,
+    handleRemoveTask,
+    handleToggleWIN,
+    amWinCompleted
   } = useDashboard(props);
 
   const [visibleComponents, setVisibleComponents] = useState([
@@ -456,13 +475,22 @@ const Dashboard = (props) => {
       {/* Dynamic Bookend (Morning/Evening Practice) */}
       {visibleComponents.includes('dynamicBookend') && (
         <DynamicBookendContainer
-          bookendType={bookendType}
-          onNavigate={setCurrentScreen}
-          currentWeekNumber={currentWeekNumber}
-          developmentPlanData={developmentPlanData}
-          userData={userData}
-          isMemberPro={isMemberPro}
-          isMemberPremium={isMemberPremium}
+          morningProps={{
+            // Add morning props here when needed
+          }}
+          eveningProps={{
+            reflectionGood,
+            setReflectionGood,
+            reflectionBetter,
+            setReflectionBetter,
+            reflectionBest,
+            setReflectionBest,
+            habitsCompleted,
+            onHabitToggle: handleHabitToggle,
+            onSave: handleSaveEveningBookend,
+            isSaving: isSavingBookend
+          }}
+          dailyPracticeData={{}}
         />
       )}
 
@@ -487,9 +515,13 @@ const Dashboard = (props) => {
       {/* Social Pod / Daily Tasks (Arena 1.0 Scope) */}
       {dailyMode ? (
         <DailyTasksCard
-          currentWeekNumber={currentWeekNumber}
-          developmentPlanData={developmentPlanData}
-          userData={userData}
+          otherTasks={otherTasks || []}
+          morningWIN={morningWIN || ''}
+          winCompleted={amWinCompleted || false}
+          onToggleTask={handleToggleTask}
+          onRemoveTask={handleRemoveTask}
+          onAddTask={handleAddTask}
+          onToggleWIN={handleToggleWIN}
         />
       ) : (
         <SocialPodCard onNavigate={setCurrentScreen} />
