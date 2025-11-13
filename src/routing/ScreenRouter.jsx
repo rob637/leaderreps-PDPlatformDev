@@ -45,8 +45,15 @@ const ScreenMap = {
   ),
 };
 
+const NotFoundScreen = () => (
+  <div className="p-8 text-center">
+    <h1 className="text-2xl font-bold text-red-600">Screen Not Found</h1>
+    <p className="text-gray-700 mt-2">The requested screen does not exist.</p>
+  </div>
+);
+
 const ScreenRouter = ({ currentScreen, navParams, navigate }) => {
-  const Component = ScreenMap[currentScreen] || ScreenMap.dashboard;
+  const Component = ScreenMap[currentScreen] || NotFoundScreen;
   console.log(`[ScreenRouter] Rendering screen: ${currentScreen}`);
 
   const screenTierRequirements = {
