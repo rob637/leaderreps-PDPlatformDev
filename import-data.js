@@ -92,11 +92,11 @@ async function importData() {
 
 importData()
   .then(async () => {
-    try { await admin.app().delete(); } catch (_) { /* ignore */ }
+    try { await admin.app().delete(); } catch (e) { console.error("Error during app termination:", e); }
     process.exit(0);
   })
   .catch(async (err) => {
     console.error('CRITICAL IMPORT ERROR:', err);
-    try { await admin.app().delete(); } catch (_) { /* ignore */ }
+    try { await admin.app().delete(); } catch (e) { console.error("Error during app termination on failure:", e); }
     process.exit(1);
   });

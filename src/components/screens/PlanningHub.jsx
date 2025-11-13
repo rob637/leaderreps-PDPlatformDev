@@ -770,7 +770,7 @@ const AlignmentTrackerView = ({ setPlanningView }) => {
         <div className="p-6 md:p-8 lg:p-10">
             {/* Header */}
             <h1 className="text-3xl font-extrabold mb-2" style={{ color: COLORS.NAVY }}>Tool: Strategic Alignment Tracker</h1>
-            <p className="text-lg text-gray-600 mb-6 max-w-3xl">Review OKR progress, log misalignments, and get AI suggestions for preventative daily reps.</p>
+            <p className="text-lg text-gray-600 mb-6 max-w-3xl">Review OKR progress, log misalignments, and get AI-suggested "preventative reps" to improve team focus.</p>
             {/* Back Button */}
             <Button onClick={() => setPlanningView('planning-home')} variant="nav-back" className="mb-8">
                 <ArrowLeft className="w-5 h-5 mr-2" /> Back to Strategic Tools
@@ -837,6 +837,7 @@ const AlignmentTrackerView = ({ setPlanningView }) => {
 // --- Main Planning Hub Component ---
 const PlanningHub = () => {
     const [planningView, setPlanningView] = useState('planning-home'); // 'planning-home', 'pre-mortem', 'vision-builder', 'okr-drafting', 'alignment-tracker'
+    const { navigate } = useAppServices();
 
     const hubComponents = {
         'pre-mortem': <PreMortemView setPlanningView={setPlanningView} />,
@@ -881,7 +882,7 @@ const PlanningHub = () => {
                 </Card>
 
                  {/* Link to Development Plan */}
-                <Card title="Link to Development Plan" icon={Link} accent="PURPLE" onClick={() => useAppServices.getState().navigate('dev-plan')}>
+                <Card title="Link to Development Plan" icon={Link} accent="PURPLE" onClick={() => navigate('dev-plan')}>
                     <p className="text-gray-700">Connect your strategic objectives to specific leadership development areas for you and your team.</p>
                 </Card>
             </div>

@@ -171,7 +171,7 @@ const GetStartedCard = ({ onNavigate, membershipData, developmentPlanData }) => 
           </p>
         </div>
         <Button
-          onClick={() => onNavigate('development-plan')}
+          onClick={() => onNavigate('/development-plan')}
           variant="primary"
           size="md"
           className="flex-shrink-0 w-full sm:w-auto"
@@ -493,7 +493,7 @@ const Dashboard = ({ navigate }) => {
         console.log('[Dashboard] Plan and anchors successfully cleared');
         setShowTestUtils(false);
         // Navigate to the Development Plan screen to show the Baseline
-        navigate('development-plan'); 
+        navigate('/development-plan'); 
         triggerCelebration('Plan and progress reset. Start fresh!');
       } else {
         console.error('[Dashboard] Failed to clear plan');
@@ -533,7 +533,7 @@ const Dashboard = ({ navigate }) => {
         text: 'Start your Development Plan',
         completed: false,
         isSystem: true,
-        onClick: () => navigate('development-plan') 
+        onClick: () => navigate('/development-plan') 
       });
     }
     
@@ -666,7 +666,7 @@ const Dashboard = ({ navigate }) => {
                 <DevPlanProgressLink
                   progress={devPlanProgress}
                   focusArea={focusArea}
-                  onNavigate={() => navigate('development-plan')}
+                  onNavigate={() => navigate('/development-plan')}
                 />
               </MembershipGate>
             )}

@@ -277,7 +277,7 @@ const RolePlayCritique = ({ history, scenario, difficultyLevel, setView }) => {
             console.log("Practice session logged to commitmentData.practice_history.");
         }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [scoreBreakdown?.overall]); 
+    }, [scoreBreakdown?.overall, difficultyLevel, keyTakeaway, scenario.title, updateCommitmentData]); 
 
 
     useEffect(() => {
@@ -343,7 +343,7 @@ const RolePlayCritique = ({ history, scenario, difficultyLevel, setView }) => {
             }
         })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [history]);
+    }, [history, callSecureGeminiAPI, GEMINI_MODEL, hasGeminiKey]);
 
     useEffect(() => {
         if (critique) {
@@ -573,7 +573,7 @@ const RolePlayCritique = ({ history, scenario, difficultyLevel, setView }) => {
 };
 
 // --- ROLE PLAY SIMULATOR VIEW ---
-const RolePlayView = ({ scenario, setCoachingLabView, preparedSBI, difficultyLevel }) => {
+const RolePlayView = ({ scenario, setCoachingLabView, difficultyLevel, preparedSBI }) => {
     // FIX: Use real hook
     const services = useAppServices(); 
     const { callSecureGeminiAPI, hasGeminiKey, GEMINI_MODEL } = services; 
@@ -926,6 +926,7 @@ export default function CoachingLabScreen() {
     const [view, setView] = useState('coaching-lab-home');
     const [selectedScenario, setSelectedScenario] = useState(null);
     const [preparedSBI, setPreparedSBI] = useState(null);
+    const { navigate } = useAppServices();
 
     // CRITICAL FIX: Scroll to the top whenever the view state changes
     useEffect(() => {
@@ -969,6 +970,9 @@ export default function CoachingLabScreen() {
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                             <Card title="Scenario Library" icon={Briefcase} onClick={() => setView('scenario-library')}>
                                 <p className="text-sm text-gray-600">Practice high-stakes conversations in a realistic AI role-play simulator.</p>
+                            </Card>
+                            <Card title="Practice History" icon={Clock} onClick={() => navigate('daily-practice')}>
+                                <p className="text-sm text-gray-600">Review your past performance, scores, and AI feedback.</p>
                             </Card>
                         </div>
                     </div>

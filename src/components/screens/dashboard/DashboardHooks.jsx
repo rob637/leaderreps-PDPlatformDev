@@ -12,7 +12,7 @@ import { serverTimestamp } from 'firebase/firestore';
 ========================================================= */
 export const useDashboard = ({
   dailyPracticeData,
-  updateDailyPracticeData // <--- Prop from useAppServices
+  updateDailyPracticeData, // <--- Prop from useAppServices
 }) => {
   
   // === ARENA MODE STATE ===
@@ -57,6 +57,27 @@ export const useDashboard = ({
   /* =========================================================
      LOAD DATA FROM FIRESTORE (Dependency on dailyPracticeData)
   ========================================================= */
+
+  // Helper to sanitize Firestore Timestamps
+  const sanitizeTimestamps = useCallback((obj) => {
+    if (!obj) return obj;
+    if (Array.isArray(obj)) {
+      return obj.map(item => sanitizeTimestamps(item));
+    }
+    if (obj && typeof obj === 'object' && typeof obj.toDate === 'function') {
+      return obj.toDate();
+    }
+    if (obj && typeof obj === 'object') {
+      const sanitized = {};
+      for (const key in obj) {
+        if (Object.prototype.hasOwnProperty.call(obj, key)) {
+          sanitized[key] = sanitizeTimestamps(obj[key]);
+        }
+      }
+      return sanitized;
+    }
+    return obj;
+  }, []);
   
   // Load Arena Mode
   useEffect(() => {
@@ -101,27 +122,6 @@ export const useDashboard = ({
       setAdditionalCommitments(sanitizeTimestamps(dailyPracticeData.activeCommitments));
     }
   }, [dailyPracticeData?.activeCommitments, sanitizeTimestamps]);
-
-  // Helper to sanitize Firestore Timestamps
-  const sanitizeTimestamps = useCallback((obj) => {
-    if (!obj) return obj;
-    if (Array.isArray(obj)) {
-      return obj.map(item => sanitizeTimestamps(item));
-    }
-    if (obj && typeof obj === 'object' && typeof obj.toDate === 'function') {
-      return obj.toDate();
-    }
-    if (obj && typeof obj === 'object') {
-      const sanitized = {};
-      for (const key in obj) {
-        if (Object.prototype.hasOwnProperty.call(obj, key)) {
-          sanitized[key] = sanitizeTimestamps(obj[key]);
-        }
-      }
-      return sanitized;
-    }
-    return obj;
-  }, []);
 
   // Load Morning Bookend
   useEffect(() => {

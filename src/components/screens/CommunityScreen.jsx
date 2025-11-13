@@ -7,7 +7,7 @@ import { useAppServices } from '../../services/useAppServices.jsx'; // cite: use
 // --- Icons ---
 import {
     Users, MessageSquare, Briefcase, Bell, PlusCircle, User, ArrowLeft, Target, Settings, Filter, Clock,
-    Star, CheckCircle, Award, Link, Send, Loader, Heart // Added Award, Link, Send, Loader
+    Star, CheckCircle, Award, Link, Send, Loader, Heart, X
 } from 'lucide-react';
 
 /* =========================================================
@@ -438,7 +438,7 @@ const CommunityScreen = () => {
                 return <MyThreadsView user={safeUser} allThreads={allThreads} />; // Pass safeUser and allThreads
             case 'mentorship':
                  // Only render if feature is enabled (redundant check if nav item is hidden, but safe)
-                return featureFlags?.enableMentorship ? <MentorshipView /> : <CommunityHomeView /* Fallback or redirect */ />;
+                return featureFlags?.enableMentorship ? <MentorshipView /> : <CommunityHomeView setView={setView} user={safeUser} currentTierFilter={currentTierFilter} setCurrentTierFilter={setCurrentTierFilter} filteredThreads={filteredThreads} tierMeta={tierMeta} /* Fallback or redirect */ />;
             case 'notifications':
                 return <NotificationsView />; // Placeholder
             case 'new-thread':

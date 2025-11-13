@@ -19,7 +19,7 @@ const {
 // CONFIGURATION - UPDATE THIS!
 // ============================================
 
-const FIREBASE_CONFIG = {
+const firebaseConfig = {
   apiKey: process.env.VITE_FIREBASE_API_KEY,
   authDomain: process.env.VITE_FIREBASE_AUTH_DOMAIN,
   projectId: process.env.VITE_FIREBASE_PROJECT_ID,
@@ -55,7 +55,7 @@ class DevelopmentPlanMigration {
 
   async initialize() {
     console.log('🔥 Initializing Firebase...');
-    this.app = initializeApp(FIREBASE_CONFIG);
+    this.app = initializeApp(firebaseConfig);
     this.db = getFirestore(this.app);
     console.log('✅ Firebase initialized');
   }
@@ -373,7 +373,7 @@ class DevelopmentPlanMigration {
 
 async function main() {
   // Check if Firebase config is updated
-  if (!FIREBASE_CONFIG.apiKey || FIREBASE_CONFIG.apiKey === "YOUR_API_KEY") {
+  if (!firebaseConfig.apiKey || firebaseConfig.apiKey === "YOUR_API_KEY") {
     console.log('\n');
     console.log('⚠️ '.repeat(40));
     console.log('❌ ERROR: Firebase credentials not configured!');

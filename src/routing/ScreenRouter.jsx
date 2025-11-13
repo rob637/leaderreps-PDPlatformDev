@@ -8,7 +8,7 @@ const ScreenMap = {
   'development-plan': lazy(() =>
     import('../components/screens/DevelopmentPlan.jsx')
   ),
-  'coaching-lab': lazy(() => import('../components/screens/Labs.jsx')),
+  'coaching-lab': lazy(() => import('../components/screens/CoachingLabScreen.jsx')),
   'daily-practice': lazy(() =>
     import('../components/screens/DailyPractice.jsx')
   ),

@@ -107,7 +107,7 @@ export default defineConfig({
           
           // Feature chunks for better caching
           dashboard: ['./src/components/screens/Dashboard.jsx'],
-          labs: ['./src/components/screens/Labs.jsx'],
+          labs: ['./src/components/screens/CoachingLabScreen.jsx'],
           admin: ['./src/components/screens/AdminDataMaintenance.jsx']
         },
         

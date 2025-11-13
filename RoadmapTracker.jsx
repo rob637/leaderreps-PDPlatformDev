@@ -123,34 +123,59 @@ const LEADERSHIP_TIERS = {
 
 // NOTE: All assessment and generator constants/functions are removed from this file.
 
-// --- Component 4: PDP Content Details Modal ---
-const ContentDetailsModal = ({ isVisible, onClose, content }) => { 
-    if (!isVisible || !content) return null;
-    
-    return <ContentDetailsModalInternal content={content} onClose={onClose} />;
+const MOCK_CONTENT_DETAILS_FINAL = {
+    Reading: (title, skill) => `## Reading: ${title}\n### Focus: ${skill}\nThis is a reading module focusing on ${skill} theory.`,
+    Exercise: (title, skill) => `## Exercise: ${title}\n### Focus: ${skill}\nThis is a practical exercise for skill ${skill}.`,
+    'Role-Play': (title, skill) => `## Role-Play: ${title}\n### Focus: ${skill}\nThis is a simulation for skill ${skill}.`, 
+    CaseStudy: (title, skill) => `## Executive Analysis: ${title}\n### Focus: ${skill}\nThis is a case study analysis for skill ${skill}.`,
+    Tool: (title, skill) => `## Tool Implementation: ${title}\n### Focus: ${skill}\nThis is a tool implementation module for skill ${skill}.`,
+    Coaching: (title, skill) => `## AI Coaching Lab: ${title}\n### Focus: ${skill}\nThis is an AI coaching session for skill ${skill}.`,
 };
 
-const ContentDetailsModalInternal = ({ content, onClose }) => {
+// --- Component 4: PDP Content Details Modal ---
+const ContentDetailsModal = ({ isVisible, onClose, content }) => { 
     const [htmlContent, setHtmlContent] = useState('');
     const [rating, setRating] = useState(0); 
     const [isLogging, setIsLogging] = useState(false);
-    
-    const tierData = LEADERSHIP_TIERS[content.tier] || { name: 'Unknown Tier' };
 
-    const MOCK_CONTENT_DETAILS_FINAL = {
-        Reading: (title, skill) => `## Reading: ${title}\n### Focus: ${skill}\nThis is a reading module focusing on ${skill} theory.`,
-        Exercise: (title, skill) => `## Exercise: ${title}\n### Focus: ${skill}\nThis is a practical exercise for skill ${skill}.`,
-        'Role-Play': (title, skill) => `## Role-Play: ${title}\n### Focus: ${skill}\nThis is a simulation for skill ${skill}.`, 
-        CaseStudy: (title, skill) => `## Executive Analysis: ${title}\n### Focus: ${skill}\nThis is a case study analysis for skill ${skill}.`,
-        Tool: (title, skill) => `## Tool Implementation: ${title}\n### Focus: ${skill}\nThis is a tool implementation module for skill ${skill}.`,
-        Coaching: (title, skill) => `## AI Coaching Lab: ${title}\n### Focus: ${skill}\nThis is an AI coaching session for skill ${skill}.`,
-    };
-
-    const mockDetail = MOCK_CONTENT_DETAILS_FINAL[content.type]
+    const mockDetail = useMemo(() => content ? (MOCK_CONTENT_DETAILS_FINAL[content.type]
         ? MOCK_CONTENT_DETAILS_FINAL[content.type](content.title, content.skill)
-        : `## Content Unavailable\n\nNo detailed content available for **${content.title}** (Type: ${content.type}).`;
+        : `## Content Unavailable\n\nNo detailed content available for **${content.title}** (Type: ${content.type}).`) : '', [content]);
 
-    const memoizedMockDetail = useMemo(() => mockDetail, [mockDetail]); 
+    useEffect(() => {
+        if (!isVisible || !content) return;
+
+        let isCancelled = false;
+        setHtmlContent('');
+        setRating(0);
+
+        (async () => {
+            const html = await mdToHtml(mockDetail);
+            if (!isCancelled) {
+                setHtmlContent(html);
+            }
+        })();
+
+        return () => {
+            isCancelled = true;
+        };
+    }, [isVisible, content, mockDetail]);
+
+    if (!isVisible || !content) return null;
+    
+    return <ContentDetailsModalInternal 
+        content={content} 
+        onClose={onClose} 
+        htmlContent={htmlContent}
+        rating={rating}
+        setRating={setRating}
+        isLogging={isLogging}
+        setIsLogging={setIsLogging}
+    />;
+};
+
+const ContentDetailsModalInternal = ({ content, onClose, htmlContent, rating, setRating, isLogging, setIsLogging }) => {
+    const tierData = LEADERSHIP_TIERS[content.tier] || { name: 'Unknown Tier' };
     
     const handleLogLearning = async () => {
         if (rating === 0) { console.log('Please provide a 5-star rating before logging.'); return; }
@@ -163,23 +188,6 @@ const ContentDetailsModalInternal = ({ content, onClose }) => {
         onClose();
     };
 
-    useEffect(() => {
-        let isCancelled = false;
-        setHtmlContent('');
-        setRating(0);
-
-        (async () => {
-            const html = await mdToHtml(memoizedMockDetail);
-            if (!isCancelled) {
-                setHtmlContent(html);
-            }
-        })();
-
-        return () => {
-            isCancelled = true;
-        };
-    }, [memoizedMockDetail]);
-    
     return (
         <div className="fixed inset-0 bg-[#002E47]/80 z-50 flex items-center justify-center p-4">
             <div className="bg-[#FCFCFA] rounded-3xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto p-8">
@@ -329,44 +337,47 @@ const TrackerDashboardView = ({ data, updatePdpData, navigate }) => {
         }, 400);
     }, [isPastOrCurrent, handleContentStatusToggle]);
 
-    const fetchMonthlyBriefing = useCallback(async (plan, assessment) => {
-        if (briefingLoading || !hasGeminiKey() || !plan || !assessment || !isCurrentView) return;
-        
-        if (plan.briefingText || briefing) {
-            setBriefing(plan.briefingText || briefing);
-            return;
-        }
-
-        setBriefingLoading(true);
-        // NOTE: We don't have the assessment questions defined here, 
-        // so we use a mock rating to prevent errors during the API call setup.
-        const currentTier = LEADERSHIP_TIERS[plan.tier];
-        const rating = 5; // Use 5 as a safe default mock rating since assessment data is outside this component
-
-        const systemPrompt = `You are a concise Executive Coach. Analyze the user's current Roadmap phase (fitness training). Given their focus tier (${currentTier.name}) and their initial self-rating (${rating}/10), provide: 1) A 1-sentence **Executive Summary** of the goal (the rep/skill). 2) A 1-sentence **Coaching Nudge** on how to prioritize the month's learning based on their skill gap. Use bold markdown for key phrases.`;
-
-        const userQuery = `Generate a monthly briefing for the user's current focus: ${plan.theme}. Required content/reps includes: ${plan.requiredContent.map(c => c.title).join(', ')}.`;
-
-        try {
-            const payload = {
-                contents: [{ role: "user", parts: [{ text: userQuery }] }],
-                systemInstruction: { parts: [{ text: systemPrompt }] },
-                model: 'gemini-2.5-flash', // Use model name directly as GEMINI_MODEL is not available here
-            };
-            const result = await callSecureGeminiAPI(payload);
-            const text = result?.candidates?.[0]?.content?.parts?.[0]?.text;
+    useEffect(() => {
+        const fetchMonthlyBriefing = async (plan, assessment) => {
+            if (briefingLoading || !hasGeminiKey() || !plan || !assessment || !isCurrentView) return;
             
-            if (text && text !== briefing) {
-                setBriefing(text);
+            if (plan.briefingText || briefing) {
+                setBriefing(plan.briefingText || briefing);
+                return;
             }
+    
+            setBriefingLoading(true);
+            const currentTier = LEADERSHIP_TIERS[plan.tier];
+            const rating = 5; 
+    
+            const systemPrompt = `You are a concise Executive Coach. Analyze the user's current Roadmap phase (fitness training). Given their focus tier (${currentTier.name}) and their initial self-rating (${rating}/10), provide: 1) A 1-sentence **Executive Summary** of the goal (the rep/skill). 2) A 1-sentence **Coaching Nudge** on how to prioritize the month's learning based on their skill gap. Use bold markdown for key phrases.`;
+    
+            const userQuery = `Generate a monthly briefing for the user's current focus: ${plan.theme}. Required content/reps includes: ${plan.requiredContent.map(c => c.title).join(', ')}.`;
+    
+            try {
+                const payload = {
+                    contents: [{ role: "user", parts: [{ text: userQuery }] }],
+                    systemInstruction: { parts: [{ text: systemPrompt }] },
+                    model: 'gemini-2.5-flash',
+                };
+                const result = await callSecureGeminiAPI(payload);
+                const text = result?.candidates?.[0]?.content?.parts?.[0]?.text;
+                
+                if (text && text !== briefing) {
+                    setBriefing(text);
+                }
+    
+            } catch (e) {
+                setBriefing("AI coach unavailable. Focus on completing your required content first.");
+            } finally {
+                setBriefingLoading(false);
+            }
+        };
 
-        } catch (e) {
-            setBriefing("AI coach unavailable. Focus on completing your required content first.");
-        } finally {
-            setBriefingLoading(false);
+        if (monthPlan && assessment && isCurrentView && !monthPlan.briefingText && !briefingLoading) {
+            fetchMonthlyBriefing(monthPlan, assessment);
         }
-    }, [briefingLoading, hasGeminiKey, callSecureGeminiAPI, isCurrentView, briefing]);
-
+    }, [monthPlan, assessment, isCurrentView, briefingLoading, hasGeminiKey, callSecureGeminiAPI, briefing]);
 
     const handleCompleteMonth = async () => {
         // Check if this month is the end of a 90-day block (Month 3, 6, 9, etc.)
@@ -463,7 +474,6 @@ const TrackerDashboardView = ({ data, updatePdpData, navigate }) => {
     
     // Effects simplified for this context
     useEffect(() => { setLocalReflection(monthPlan?.reflectionText || ''); setBriefing(monthPlan?.briefingText || null); setBriefingLoading(false); window.scrollTo(0, 0); }, [monthPlan]);
-    useEffect(() => { if (monthPlan && assessment && isCurrentView && !monthPlan.briefingText && !briefingLoading) { fetchMonthlyBriefing(monthPlan, assessment); } }, [monthPlan, assessment, fetchMonthlyBriefing, isCurrentView, briefingLoading]);
     
     
     // --- Data Calculation ---
@@ -712,14 +722,13 @@ export const RoadmapTrackerScreen = () => {
     const { pdpData, isLoading, error, navigate, updatePdpData } = services;
 
     // Local override state is no longer strictly needed but kept for safety/future dev
-    const [overridePdpData] = useState(null);
     const [pdpIsReady, setPdpIsReady] = useState(false);
 
     // CRITICAL: New logic for plan existence check
     const planExistsAndIsValid = useMemo(() => {
-        const data = overridePdpData || pdpData;
+        const data = pdpData;
         return data !== null && Array.isArray(data?.plan) && data.plan.length > 0;
-    }, [pdpData, overridePdpData]);
+    }, [pdpData]);
     
     // Safety check: When initial data loads, set the ready flag
     useEffect(() => {
@@ -758,7 +767,7 @@ export const RoadmapTrackerScreen = () => {
     }
 
     // Tracker View: If the plan is valid, show the tracker dashboard
-    const trackerProps = { data: (overridePdpData || pdpData), updatePdpData, navigate };
+    const trackerProps = { data: pdpData, updatePdpData, navigate };
     return <TrackerDashboardView {...trackerProps} />;
 };
 

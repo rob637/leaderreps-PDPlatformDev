@@ -18,7 +18,7 @@ const CommitmentSelectorView = ({ setView, initialGoal, initialTier }) => {
     const [isSaving, setIsSaving] = useState(false);
 
     const userCommitments = useMemo(() => commitmentData?.active_commitments || [], [commitmentData]);
-    const activeCommitmentIds = new Set(userCommitments.map(c => c.id));
+    const activeCommitmentIds = useMemo(() => new Set(userCommitments.map(c => c.id)), [userCommitments]);
     
     // Combine all commitments from the bank into a flat array
     const allBankCommitments = useMemo(() => {
@@ -28,24 +28,24 @@ const CommitmentSelectorView = ({ setView, initialGoal, initialTier }) => {
     }, []);
 
     // PDP Content Calculation
-    const currentMonthPlan = pdpData?.plan?.find(m => m.month === pdpData?.currentMonth);
-    const requiredPdpContent = currentMonthPlan?.requiredContent || [];
+    const currentMonthPlan = useMemo(() => pdpData?.plan?.find(m => m.month === pdpData?.currentMonth), [pdpData]);
+    const requiredPdpContent = useMemo(() => currentMonthPlan?.requiredContent || [], [currentMonthPlan]);
     // Filter out PDP content items that have already been converted to an active commitment
-    const pdpContentReady = requiredPdpContent.filter(c => !userCommitments.some(uc => uc.sourceId === c.id));
+    const pdpContentReady = useMemo(() => requiredPdpContent.filter(c => !userCommitments.some(uc => uc.sourceId === c.id)), [requiredPdpContent, userCommitments]);
 
 
     // DYNAMIC GOAL LINKING: Combine Vision/Mission and OKRs from Planning Data
-    const okrGoals = planningData?.okrs?.map(o => o.objective) || [];
-    const missionVisionGoals = [planningData?.vision, planningData?.mission].filter(Boolean);
-    const availableGoals = [
+    const okrGoals = useMemo(() => planningData?.okrs?.map(o => o.objective) || [], [planningData]);
+    const missionVisionGoals = useMemo(() => [planningData?.vision, planningData?.mission].filter(Boolean), [planningData]);
+    const availableGoals = useMemo(() => [
         '--- Select the Goal this commitment supports ---', 
         ...okrGoals,
         ...missionVisionGoals,
         'Improve Feedback & Coaching Skills',
         'Risk Mitigation Strategy',
         'Other / New Goal'
-    ];
-    const initialLinkedGoal = availableGoals[0];
+    ], [okrGoals, missionVisionGoals]);
+    const initialLinkedGoal = useMemo(() => availableGoals[0], [availableGoals]);
 
     useEffect(() => {
         if (initialGoal && initialGoal !== linkedGoal) {
@@ -563,7 +563,7 @@ export default function DailyPracticeScreen({ initialGoal, initialTier }) {
     const { commitmentData, updateCommitmentData, isLoading, error } = useAppServices();
     const [view, setView] = useState('scorecard'); 
     const [isSaving, setIsSaving] = useState(false);
-    const [reflection, setReflection] = useState(commitmentData?.reflection_journal || '');
+    const [reflection, setReflection] = useState('');
     
     const userCommitments = useMemo(() => commitmentData?.active_commitments || [], [commitmentData]);
     const commitmentHistory = useMemo(() => commitmentData?.history || [], [commitmentData]);

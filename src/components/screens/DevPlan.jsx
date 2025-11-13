@@ -4,7 +4,7 @@ import { Home, Settings, Zap, Clock, Briefcase, Mic, Trello, BookOpen, BarChart3
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 
 // --- SERVICES (production) ---
-import { useAppServices } from '../../services/useAppServices.jsx';
+import { useAppServices } from '../../services/useAppServices';
 
 /* =========================================================
    HIGH-CONTRAST PALETTE (Centralized for Consistency)
@@ -554,7 +554,7 @@ const TrackerDashboardView = ({ data, updatePdpData, navigate }) => {
         
         if (is90DayCheckPoint) {
             // CRITICAL: Navigate back to the assessment generator review screen to re-run the assessment
-            navigate('prof-dev-plan-review'); // Navigate to a review/re-assessment screen
+            navigate('/prof-dev-plan-review'); // Navigate to a review/re-assessment screen
         } else {
             setViewMonth(data.currentMonth + 1);
             window.scrollTo(0, 0); 
@@ -575,7 +575,7 @@ const TrackerDashboardView = ({ data, updatePdpData, navigate }) => {
                 lastUpdate: new Date().toISOString() 
             });
             // After data is cleared, navigate to the generator screen.
-            navigate('prof-dev-plan');
+            navigate('/prof-dev-plan');
             window.scrollTo(0,0); 
         } catch(e) {
             console.error("Failed to reset plan:", e);
@@ -908,7 +908,7 @@ const PlanGeneratorView = ({ userId, saveNewPlan, navigate, setGeneratedPlanData
             await saveNewPlan(newPlanData);
             setIsGenerating(false);
             setGeneratedPlanData({ userPlan: newPlanData, genericPlan: { totalDuration: 1200, avgIntroContent: 8, avgMasteryContent: 3 } });
-            navigate('prof-dev-plan-review'); // Redirect to review screen
+            navigate('/prof-dev-plan-review'); // Redirect to review screen
         } catch (e) {
             setIsGenerating(false);
             console.error('Failed to save new plan after generation.', e);
@@ -1005,7 +1005,7 @@ const PlanReviewScreen = ({ generatedPlan, navigate, clearReviewData, finalizeWi
     if (!generatedPlan || !generatedPlan.userPlan || !generatedPlan.userPlan.leadershipProfile) return (
          <div className="p-8 min-h-screen">
              <p className='text-xl text-[#E04E1B] font-bold'>Error: Personalized plan data is incomplete. Please re-run the assessment.</p>
-             <Button onClick={() => navigate('prof-dev-plan')} className='mt-4'>Go to Assessment</Button>
+             <Button onClick={() => navigate('/prof-dev-plan')} className='mt-4'>Go to Assessment</Button>
          </div>
     );
 
@@ -1048,14 +1048,14 @@ const PlanReviewScreen = ({ generatedPlan, navigate, clearReviewData, finalizeWi
             finalizeWithData(userPlan);
         } else {
             clearReviewData();
-            navigate('prof-dev-plan');
+            navigate('/prof-dev-plan');
         }
         window.scrollTo(0, 0);
     };
 
     const handleStartOver = () => { 
         clearReviewData(); 
-        navigate('prof-dev-plan');
+        navigate('/prof-dev-plan');
     };
 
     return (
@@ -1201,7 +1201,7 @@ if (isLoading || pdpData === undefined) {
             finalizeWithData={(data) => {
                 setOverridePdpData(data);
                 clearReviewData();
-                navigate('prof-dev-plan');
+                navigate('/prof-dev-plan');
             }}
         />
     ); }

@@ -18,7 +18,7 @@ import {
 // CONFIGURATION
 // ============================================
 
-const FIREBASE_CONFIG = {
+const firebaseConfig = {
   apiKey: process.env.VITE_FIREBASE_API_KEY,
   authDomain: process.env.VITE_FIREBASE_AUTH_DOMAIN,
   projectId: process.env.VITE_FIREBASE_PROJECT_ID,
@@ -60,7 +60,7 @@ class DevelopmentPlanMigration {
   // Initialize Firebase
   async initialize() {
     console.log('🔥 Initializing Firebase...');
-    this.app = initializeApp(FIREBASE_CONFIG);
+    this.app = initializeApp(firebaseConfig);
     this.db = getFirestore(this.app);
     console.log('✅ Firebase initialized');
   }

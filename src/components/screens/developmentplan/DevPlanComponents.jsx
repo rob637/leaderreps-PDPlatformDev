@@ -2,7 +2,7 @@
 // Reconstructed component library for the Development Plan screen.
 // ADDED: LikertScaleInput component for the new single-page assessment.
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { 
   CheckCircle, ArrowRight, Loader, 
   TrendingUp, Target, Award, Clock, BarChart3, 
@@ -195,8 +195,8 @@ export const LoadingSpinner = ({ message }) => (
    (Used in BaselineAssessment and ProgressScan during plan generation)
 ========================================================= */
 export const PlanGenerationLoader = ({ message = 'Crafting Your Development Plan' }) => {
-  const [dots, setDots] = React.useState('');
-  const [currentStep, setCurrentStep] = React.useState(0);
+  const [dots, setDots] = useState('');
+  const [currentStep, setCurrentStep] = useState(0);
   
   const steps = [
     { icon: '🎯', text: 'Analyzing your assessment', color: COLORS.TEAL },
@@ -206,7 +206,7 @@ export const PlanGenerationLoader = ({ message = 'Crafting Your Development Plan
     { icon: '✨', text: 'Finalizing recommendations', color: COLORS.PURPLE }
   ];
   
-  React.useEffect(() => {
+  useEffect(() => {
     // Animate dots
     const dotsInterval = setInterval(() => {
       setDots(prev => prev.length >= 3 ? '' : prev + '.');

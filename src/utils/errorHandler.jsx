@@ -1,7 +1,7 @@
 // src/utils/errorHandler.js
 // IMPROVEMENT: Centralized error handling and logging
 
-import React from 'react';
+import { Component, createElement } from 'react';
 
 export class AppError extends Error {
   constructor(message, code = 'GENERAL_ERROR', context = {}) {
@@ -46,7 +46,7 @@ export const handleError = (error, context = {}) => {
 };
 
 export const createErrorBoundary = (fallbackComponent) => {
-  return class ErrorBoundary extends React.Component {
+  return class ErrorBoundary extends Component {
     constructor(props) {
       super(props);
       this.state = { hasError: false, error: null };
@@ -64,12 +64,12 @@ export const createErrorBoundary = (fallbackComponent) => {
       if (this.state.hasError) {
         return fallbackComponent ? 
           fallbackComponent(this.state.error) : 
-          React.createElement('div', {
+          createElement('div', {
             style: { padding: '2rem', textAlign: 'center', color: '#DC2626' }
           }, [
-            React.createElement('h2', { key: 'title' }, 'Something went wrong'),
-            React.createElement('p', { key: 'message' }, this.state.error?.message || 'An unexpected error occurred'),
-            React.createElement('button', {
+            createElement('h2', { key: 'title' }, 'Something went wrong'),
+            createElement('p', { key: 'message' }, this.state.error?.message || 'An unexpected error occurred'),
+            createElement('button', {
               key: 'retry',
               onClick: () => this.setState({ hasError: false, error: null }),
               style: { 
