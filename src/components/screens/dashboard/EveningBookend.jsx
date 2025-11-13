@@ -90,6 +90,9 @@ export const EveningBookend = ({
     onSave,
     isSaving
 }) => {
+    // Defensive check to ensure habitsCompleted is always an object
+    const safeHabitsCompleted = habitsCompleted || { readLIS: false, completedDailyRep: false, eveningReflection: false };
+    
     return (
         // REQ #1: Increased min-height
         <Card title="Evening Bookend - Daily Reflection" icon={Moon} accent='NAVY' className="min-h-[680px]">
@@ -157,8 +160,8 @@ export const EveningBookend = ({
                     <label className="flex items-center gap-2 cursor-pointer p-2 rounded hover:bg-gray-50 transition-colors">
                         <input 
                             type="checkbox" 
-                            checked={habitsCompleted?.readLIS || false}
-                            onChange={(e) => onHabitToggle?.('readLIS', e.target.checked)}
+                            checked={safeHabitsCompleted.readLIS}
+                            onChange={(e) => onHabitToggle('readLIS', e.target.checked)}
                             className="w-4 h-4"
                             style={{ accentColor: COLORS.TEAL }}
                         />
@@ -167,8 +170,8 @@ export const EveningBookend = ({
                     <label className="flex items-center gap-2 cursor-pointer p-2 rounded hover:bg-gray-50 transition-colors">
                         <input 
                             type="checkbox" 
-                            checked={habitsCompleted?.completedDailyRep || false}
-                            onChange={(e) => onHabitToggle?.('completedDailyRep', e.target.checked)}
+                            checked={safeHabitsCompleted.completedDailyRep}
+                            onChange={(e) => onHabitToggle('completedDailyRep', e.target.checked)}
                             className="w-4 h-4"
                             style={{ accentColor: COLORS.TEAL }}
                         />
@@ -177,8 +180,8 @@ export const EveningBookend = ({
                     <label className="flex items-center gap-2 cursor-pointer p-2 rounded hover:bg-gray-50 transition-colors">
                         <input 
                             type="checkbox" 
-                            checked={habitsCompleted?.eveningReflection || false}
-                            onChange={(e) => onHabitToggle?.('eveningReflection', e.target.checked)}
+                            checked={safeHabitsCompleted.eveningReflection}
+                            onChange={(e) => onHabitToggle('eveningReflection', e.target.checked)}
                             className="w-4 h-4"
                             style={{ accentColor: COLORS.TEAL }}
                         />
