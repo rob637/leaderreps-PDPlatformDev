@@ -1116,7 +1116,8 @@ export const ReminderBanner = ({ message, onDismiss, type = 'best' }) => {
 ========================================================= */
 const AnchorInputSection = ({ 
     title, description, value, setValue, 
-    suggestions, onSelectSuggestion, isTextArea = false 
+    suggestions, onSelectSuggestion, isTextArea = false,
+    icon: Icon 
 }) => {
     // Determine the text used for suggestions based on the anchor type
     const suggestionPrefix = title === '1. Identity Anchor' 
