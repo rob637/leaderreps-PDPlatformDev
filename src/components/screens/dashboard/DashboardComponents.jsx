@@ -654,7 +654,7 @@ export const EveningBookend = ({
                     </p>
                     
                     <label className="flex items-center gap-2 cursor-pointer p-2 rounded hover:bg-gray-50 transition-colors">
-                        <input type="checkbox" checked={habitsCompleted.readLIS || false}
+                        <input type="checkbox" checked={(habitsCompleted || {}).readLIS || false}
                             onChange={(e) => onHabitToggle('readLIS', e.target.checked)}
                             className="w-4 h-4" style={{ accentColor: COLORS.TEAL }}
                         />
@@ -662,7 +662,7 @@ export const EveningBookend = ({
                     </label>
                     
                     <label className="flex items-center gap-2 cursor-pointer p-2 rounded hover:bg-gray-50 transition-colors">
-                        <input type="checkbox" checked={habitsCompleted.completedDailyRep || false}
+                        <input type="checkbox" checked={(habitsCompleted || {}).completedDailyRep || false}
                             onChange={(e) => onHabitToggle('completedDailyRep', e.target.checked)}
                             className="w-4 h-4" style={{ accentColor: COLORS.TEAL }}
                         />
@@ -670,7 +670,7 @@ export const EveningBookend = ({
                     </label>
                     
                     <label className="flex items-center gap-2 cursor-pointer p-2 rounded hover:bg-gray-50 transition-colors">
-                        <input type="checkbox" checked={habitsCompleted.eveningReflection || false}
+                        <input type="checkbox" checked={(habitsCompleted || {}).eveningReflection || false}
                             onChange={(e) => onHabitToggle('eveningReflection', e.target.checked)}
                             className="w-4 h-4" style={{ accentColor: COLORS.TEAL }}
                         />
