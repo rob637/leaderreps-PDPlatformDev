@@ -1,6 +1,6 @@
 // src/routing/ScreenRouter.jsx
 
-import React, { lazy } from 'react';
+import React, { lazy, Suspense } from 'react';
 import { MembershipGate } from '../components/ui/MembershipGate.jsx';
 
 const ScreenMap = {
@@ -77,8 +77,11 @@ const ScreenRouter = ({ currentScreen, navParams }) => {
   };
 
   const requiredTier = screenTierRequirements[currentScreen];
+  
   const componentElement = (
-    <Component key={currentScreen} {...(navParams || {})} />
+    <Suspense fallback={<div className="p-8 text-center">Loading...</div>}>
+      <Component key={currentScreen} {...(navParams || {})} />
+    </Suspense>
   );
 
   if (requiredTier) {
@@ -91,5 +94,6 @@ const ScreenRouter = ({ currentScreen, navParams }) => {
 
   return componentElement;
 };
+
 
 export default ScreenRouter;
