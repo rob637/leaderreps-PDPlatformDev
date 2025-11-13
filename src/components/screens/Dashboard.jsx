@@ -7,8 +7,9 @@
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useAppServices } from '../../services/useAppServices.jsx';
+import { membershipService } from '../../services/membershipService.js';
 import { ArrowRight, Edit3, Loader, X, Users, Send, Target, Clock, Zap, Shield, Trash2, Anchor } from 'lucide-react'; 
-import { deleteField } from 'firebase/firestore'; // Used for reminder dismissals
+import { deleteField, updateDoc, doc } from 'firebase/firestore'; // Used for reminder dismissals
 import { MembershipGate } from '../ui/MembershipGate.jsx';
 import { COLORS } from './dashboard/dashboardConstants.js';
 
@@ -210,10 +211,10 @@ const Dashboard = (props) => {
   const [showAnchorModal, setShowAnchorModal] = useState(false);
   const [isEditorOpen, setIsEditorOpen] = useState(false);
 
-  const { firestoreService, membershipService } = useAppServices();
+  const { db, user } = useAppServices();
   const currentTier = membershipData?.currentTier || 'basic';
-  const isMemberPro = membershipService.isPro(currentTier);
-  const isMemberPremium = membershipService.isPremium(currentTier);
+  const isMemberPro = membershipService.hasAccess(currentTier, 'professional');
+  const isMemberPremium = membershipService.hasAccess(currentTier, 'elite');
 
   // -------------------------------
   // Compute Anchor State (Unified)
@@ -264,11 +265,9 @@ const Dashboard = (props) => {
     const newMode = !dailyMode;
     setDailyMode(newMode);
 
-    const { auth } = await import('../../config/firebaseConfig.js');
-    const user = auth.currentUser;
-    if (user && firestoreService) {
+    if (user && db) {
       try {
-        await firestoreService.updateDocument('users', user.uid, {
+        await updateDoc(doc(db, 'users', user.uid), {
           isStudyMode: newMode
         });
       } catch (error) {
@@ -276,7 +275,7 @@ const Dashboard = (props) => {
         setDailyMode(!newMode);
       }
     }
-  }, [dailyMode, firestoreService]);
+  }, [dailyMode, user, db]);
 
   // Load reminders from progressData
   useEffect(() => {
@@ -294,20 +293,18 @@ const Dashboard = (props) => {
 
   // Dismiss reminder handler
   const handleDismissReminder = useCallback(async (reminderKey) => {
-    const { auth } = await import('../../config/firebaseConfig.js');
-    const user = auth.currentUser;
-    if (user && firestoreService) {
+    if (user && db) {
       try {
         const updates = {
           [`reminders.${reminderKey}`]: deleteField()
         };
-        await firestoreService.updateDocument('progress', user.uid, updates);
+        await updateDoc(doc(db, 'progress', user.uid), updates);
         setReminders(prevReminders => prevReminders.filter(r => r.key !== reminderKey));
       } catch (error) {
         console.error('Error dismissing reminder:', error);
       }
     }
-  }, [firestoreService]);
+  }, [user, db]);
 
   // Dynamic Bookend (Morning/Evening)
   const bookendType = useMemo(() => {
@@ -351,15 +348,13 @@ const Dashboard = (props) => {
   // ANCHOR HANDLERS (Unified)
   // --------------------
   const handleSaveAnchor = useCallback(async (newText) => {
-    const { auth } = await import('../../config/firebaseConfig.js');
-    const user = auth.currentUser;
-    if (!user || !firestoreService) return;
+    if (!user || !db) return;
 
     setIsSaving(true);
     const now = new Date();
 
     try {
-      await firestoreService.updateDocument('user_anchors', user.uid, {
+      await updateDoc(doc(db, 'user_anchors', user.uid), {
         anchor: {
           text: newText,
           createdAt: now,
@@ -374,16 +369,14 @@ const Dashboard = (props) => {
     } finally {
       setIsSaving(false);
     }
-  }, [firestoreService, setLocalAnchor]);
+  }, [user, db, setLocalAnchor]);
 
   const handleDeleteAnchor = useCallback(async () => {
-    const { auth } = await import('../../config/firebaseConfig.js');
-    const user = auth.currentUser;
-    if (!user || !firestoreService) return;
+    if (!user || !db) return;
 
     setIsSaving(true);
     try {
-      await firestoreService.updateDocument('user_anchors', user.uid, {
+      await updateDoc(doc(db, 'user_anchors', user.uid), {
         anchor: deleteField()
       });
       setLocalAnchor(null);
@@ -394,7 +387,7 @@ const Dashboard = (props) => {
     } finally {
       setIsSaving(false);
     }
-  }, [firestoreService, setLocalAnchor]);
+  }, [user, db, setLocalAnchor]);
 
   const handleAnchorModalOpen = useCallback(() => {
     setShowAnchorModal(true);
