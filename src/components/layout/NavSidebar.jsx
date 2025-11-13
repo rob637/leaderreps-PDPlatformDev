@@ -32,9 +32,9 @@ const NavSidebar = ({
 }) => {
   const { featureFlags, isAdmin, membershipData } = useAppServices();
 
-  const coreNav = [{ screen: 'dashboard', label: 'The Arena', icon: Home }];
-
-  const contentPillarNav = [
+  // Main Menu Items - Always visible
+  const mainMenuNav = [
+    { screen: 'dashboard', label: 'The Arena', icon: Home },
     {
       screen: 'development-plan',
       label: 'Development Plan',
@@ -43,19 +43,51 @@ const NavSidebar = ({
       requiredTier: 'basic',
     },
     {
+      screen: 'labs',
+      label: 'Coaching',
+      icon: Mic,
+      flag: 'enableLabs',
+      requiredTier: 'elite',
+    },
+    {
+      screen: 'community',
+      label: 'Community',
+      icon: Users,
+      flag: 'enableCommunity',
+      requiredTier: 'professional',
+    },
+    {
+      screen: 'applied-leadership',
+      label: 'Library',
+      icon: BookOpen,
+      flag: 'enableCourses',
+      requiredTier: 'professional',
+    },
+    {
+      screen: 'membership-module',
+      label: 'Membership',
+      icon: DollarSign,
+      flag: 'enableMembershipModule',
+      requiredTier: 'basic',
+    },
+  ];
+
+  // Developer Tools (only visible in Developer mode)
+  const developerToolsNav = [
+    {
       screen: 'business-readings',
-      label: 'Professional Reading Hub',
+      label: 'Reading & Reps',
       icon: BookOpen,
       flag: 'enableReadings',
       requiredTier: 'professional',
       devModeOnly: true,
     },
     {
-      screen: 'applied-leadership',
-      label: 'Course Library',
-      icon: ShieldCheck,
-      flag: 'enableCourses',
-      requiredTier: 'professional',
+      screen: 'leadership-videos',
+      label: 'Media',
+      icon: Film,
+      flag: 'enableVideos',
+      requiredTier: 'elite',
       devModeOnly: true,
     },
     {
@@ -67,52 +99,12 @@ const NavSidebar = ({
       devModeOnly: true,
     },
     {
-      screen: 'leadership-videos',
-      label: 'Content Leader Talks',
-      icon: Film,
-      flag: 'enableVideos',
-      requiredTier: 'elite',
-      devModeOnly: true,
-    },
-  ];
-
-  const coachingPillarNav = [
-    {
-      screen: 'labs',
-      label: 'AI Coaching Lab',
-      icon: Mic,
-      flag: 'enableLabs',
-      requiredTier: 'elite',
-      devModeOnly: true,
-    },
-    {
       screen: 'executive-reflection',
       label: 'Executive ROI Report',
       icon: BarChart3,
       flag: 'enableRoiReport',
       requiredTier: 'elite',
       devModeOnly: true,
-    },
-  ];
-
-  const communityPillarNav = [
-    {
-      screen: 'community',
-      label: 'Leadership Community',
-      icon: Users,
-      flag: 'enableCommunity',
-      requiredTier: 'professional',
-      devModeOnly: true,
-    },
-  ];
-
-  const systemNav = [
-    {
-      screen: 'membership-module',
-      label: 'Membership & Billing',
-      icon: DollarSign,
-      flag: 'enableMembershipModule',
-      requiredTier: 'basic',
     },
     {
       screen: 'app-settings',
@@ -124,11 +116,8 @@ const NavSidebar = ({
   ];
 
   const menuSections = [
-    { title: 'CORE', items: coreNav },
-    { title: 'CONTENT PILLAR', items: contentPillarNav },
-    { title: 'COACHING PILLAR', items: coachingPillarNav },
-    { title: 'COMMUNITY PILLAR', items: communityPillarNav },
-    { title: 'SYSTEM', items: systemNav },
+    { title: 'MAIN MENU', items: mainMenuNav },
+    ...(isDeveloperMode ? [{ title: 'DEVELOPER TOOLS', items: developerToolsNav }] : []),
   ];
 
   const handleNavigate = useCallback(
