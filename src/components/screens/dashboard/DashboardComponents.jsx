@@ -41,6 +41,54 @@ const formatTimestamp = (timestamp) => {
 
 import { COLORS } from './dashboardConstants.js';
 
+// --- Corporate Button Component ---
+export const Button = ({ children, onClick, disabled = false, variant = 'primary', className = '', size = 'md', ...rest }) => {
+  // Base corporate button classes
+  let buttonClass = '';
+  
+  if (variant === 'primary') {
+    buttonClass = 'btn-corporate-primary';
+  } else if (variant === 'secondary') {
+    buttonClass = 'btn-corporate-secondary';
+  } else if (variant === 'outline') {
+    buttonClass = 'btn-corporate-secondary';
+  } else if (variant === 'nav-back') {
+    buttonClass = 'form-corporate';
+  } else if (variant === 'ghost') {
+    buttonClass = 'bg-transparent hover:bg-gray-100 focus:ring-gray-300/50 px-3 py-1.5 text-sm';
+  } else {
+    buttonClass = 'btn-corporate-primary';
+  }
+
+  // Size adjustments using CSS custom properties
+  let sizeStyle = {};
+  if (size === 'sm') {
+    sizeStyle = { padding: 'var(--spacing-sm) var(--spacing-md)', fontSize: '0.875rem' };
+  } else if (size === 'lg') {
+    sizeStyle = { padding: 'var(--spacing-xl) var(--spacing-2xl)', fontSize: '1.125rem' };
+  }
+
+  // Disabled state
+  const disabledStyle = disabled ? {
+    opacity: 0.5,
+    cursor: 'not-allowed',
+    background: '#E5E7EB',
+    color: '#9CA3AF'
+  } : {};
+
+  return (
+    <button 
+      {...rest} 
+      onClick={onClick} 
+      disabled={disabled} 
+      className={`${buttonClass} ${className}`}
+      style={{ ...sizeStyle, ...disabledStyle }}
+    >
+      {children}
+    </button>
+  );
+};
+
 // --- Corporate Card Component ---
 export const Card = ({ children, title, icon: Icon, className = '', onClick, accent = 'NAVY' }) => {
   const interactive = !!onClick;
