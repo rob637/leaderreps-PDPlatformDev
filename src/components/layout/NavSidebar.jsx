@@ -32,9 +32,13 @@ const NavSidebar = ({
 }) => {
   const { featureFlags, isAdmin, membershipData } = useAppServices();
 
-  // Main Menu Items - Always visible
-  const mainMenuNav = [
+  // The Arena
+  const arenaNav = [
     { screen: 'dashboard', label: 'The Arena', icon: Home },
+  ];
+
+  // Development Plan
+  const developmentPlanNav = [
     {
       screen: 'development-plan',
       label: 'Development Plan',
@@ -42,6 +46,10 @@ const NavSidebar = ({
       flag: 'enableDevPlan',
       requiredTier: 'basic',
     },
+  ];
+
+  // Coaching
+  const coachingNav = [
     {
       screen: 'labs',
       label: 'Coaching',
@@ -49,6 +57,10 @@ const NavSidebar = ({
       flag: 'enableLabs',
       requiredTier: 'elite',
     },
+  ];
+
+  // Community
+  const communityNav = [
     {
       screen: 'community',
       label: 'Community',
@@ -56,13 +68,35 @@ const NavSidebar = ({
       flag: 'enableCommunity',
       requiredTier: 'professional',
     },
+  ];
+
+  // Library
+  const libraryNav = [
     {
       screen: 'applied-leadership',
-      label: 'Library',
-      icon: BookOpen,
+      label: 'Courses',
+      icon: ShieldCheck,
       flag: 'enableCourses',
       requiredTier: 'professional',
     },
+    {
+      screen: 'business-readings',
+      label: 'Reading & Reps',
+      icon: BookOpen,
+      flag: 'enableReadings',
+      requiredTier: 'professional',
+    },
+    {
+      screen: 'leadership-videos',
+      label: 'Media',
+      icon: Film,
+      flag: 'enableVideos',
+      requiredTier: 'elite',
+    },
+  ];
+
+  // Membership
+  const membershipNav = [
     {
       screen: 'membership-module',
       label: 'Membership',
@@ -74,22 +108,6 @@ const NavSidebar = ({
 
   // Developer Tools (only visible in Developer mode)
   const developerToolsNav = [
-    {
-      screen: 'business-readings',
-      label: 'Reading & Reps',
-      icon: BookOpen,
-      flag: 'enableReadings',
-      requiredTier: 'professional',
-      devModeOnly: true,
-    },
-    {
-      screen: 'leadership-videos',
-      label: 'Media',
-      icon: Film,
-      flag: 'enableVideos',
-      requiredTier: 'elite',
-      devModeOnly: true,
-    },
     {
       screen: 'planning-hub',
       label: 'Strategic Content Tools',
@@ -116,7 +134,12 @@ const NavSidebar = ({
   ];
 
   const menuSections = [
-    { title: 'MAIN MENU', items: mainMenuNav },
+    { title: 'THE ARENA', items: arenaNav },
+    { title: 'DEVELOPMENT PLAN', items: developmentPlanNav },
+    { title: 'COACHING', items: coachingNav },
+    { title: 'COMMUNITY', items: communityNav },
+    { title: 'LIBRARY', items: libraryNav },
+    { title: 'MEMBERSHIP', items: membershipNav },
     ...(isDeveloperMode ? [{ title: 'DEVELOPER TOOLS', items: developerToolsNav }] : []),
   ];
 
