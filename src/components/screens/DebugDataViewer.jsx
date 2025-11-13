@@ -6,10 +6,12 @@ import { useAppServices } from '../../services/useAppServices.jsx'; // cite: use
 
 // --- Icons ---
 import { RefreshCw, Code, ArrowLeft, Loader, Globe, Clock, Briefcase } from 'lucide-react'; // Added Loader, ArrowLeft
+import { CORPORATE_COLORS } from '../../styles/corporate-colors.js';
 
 /* =========================================================
    PALETTE & UI COMPONENTS (Standardized)
 ========================================================= */
+const COLORS = CORPORATE_COLORS;
 
 
 // --- Standardized UI Components (Assume imported or globally available) ---

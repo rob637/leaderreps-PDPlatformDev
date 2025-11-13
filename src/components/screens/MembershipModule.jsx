@@ -2,9 +2,12 @@ import React, { useState, useMemo, useCallback } from 'react';
 import { useAppServices } from '../../services/useAppServices.jsx'; // Canonical path used by other screen components
 import { MEMBERSHIP_TIERS } from '../../services/membershipService.js';
 import { DollarSign, Zap, Clock, CheckCircle, CreditCard, AlertTriangle, X, ShieldCheck, CornerRightUp, RefreshCw, Trash2, Mail, Bell } from 'lucide-react';
+import { CORPORATE_COLORS } from '../../styles/corporate-colors.js';
 
 
 // --- Local Components for Modularity and Style ---
+
+const COLORS = CORPORATE_COLORS;
 
 const Card = ({ title, children, accent = 'TEAL', icon: Icon, className = '' }) => {
     const accentColor = COLORS[accent] || COLORS.TEAL;

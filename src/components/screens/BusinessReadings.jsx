@@ -11,6 +11,8 @@ import {
   BookOpen, Target, CheckCircle, Clock, AlertTriangle, MessageSquare, Filter, TrendingUp,
   Star, Search as SearchIcon, Cpu, Zap, Info, Check, Loader, Save, ArrowLeft
 } from 'lucide-react';
+import { CORPORATE_COLORS } from '../../styles/corporate-colors.js';
+import { DIMENSION_TO_TIER_MAP } from '../../data/LeadershipTiers.js';
 
 /* =========================================================
    PALETTE & UI COMPONENTS (Standardized)

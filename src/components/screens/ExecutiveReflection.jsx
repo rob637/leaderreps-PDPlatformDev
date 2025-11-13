@@ -11,6 +11,8 @@ import {
   HeartPulse, Users, Lightbulb, X, CornerRightUp, Activity, Briefcase, Trello, Clock,
   ChevronsRight, CheckCircle, Mic, Archive, Sparkles, Loader // Added Loader
 } from 'lucide-react';
+import { CORPORATE_COLORS } from '../../styles/corporate-colors.js';
+import { DIMENSION_TO_TIER_MAP } from '../../data/LeadershipTiers.js';
 
 /* =========================================================
    PALETTE & UI COMPONENTS (Standardized)
