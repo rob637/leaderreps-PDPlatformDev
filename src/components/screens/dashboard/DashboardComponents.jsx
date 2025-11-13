@@ -10,8 +10,6 @@ import {
   ToggleLeft, ToggleRight, Zap, AlertTriangle, MessageSquare, Trophy,
   Send, Users, Activity, Edit3
 } from 'lucide-react';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import { PieChart, Pie, Cell } from 'recharts';
 
 // --- Helper function to format timestamps ---
 const formatTimestamp = (timestamp) => {
@@ -250,6 +248,8 @@ export const DynamicBookendContainer = ({
       </div>
       
       {/* Conditional Rendering */}
+      {activeTab === 'AM' && <MorningBookend {...morningProps} />}
+      {activeTab === 'PM' && <EveningBookend {...eveningProps} />}
     </Card>
   );
 };
