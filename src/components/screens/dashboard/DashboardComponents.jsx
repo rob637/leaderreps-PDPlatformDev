@@ -55,7 +55,7 @@ export const Button = ({ children, onClick, disabled = false, variant = 'primary
   } else if (variant === 'nav-back') {
     buttonClass = 'form-corporate';
   } else if (variant === 'ghost') {
-    buttonClass = 'bg-transparent hover:bg-gray-100 focus:ring-gray-300/50 px-3 py-1.5 text-sm';
+    buttonClass = 'bg-transparent text-gray-600 hover:bg-gray-100 focus:ring-gray-300/50 border border-transparent hover:border-gray-200';
   } else {
     buttonClass = 'btn-corporate-primary';
   }

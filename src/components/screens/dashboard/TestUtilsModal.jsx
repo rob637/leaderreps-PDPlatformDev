@@ -4,12 +4,15 @@ import { Button } from './DashboardComponents.jsx';
 import { COLORS } from './dashboardConstants.js';
 import { Trash2 } from 'lucide-react';
 
-const TestUtilsModal = ({ onDeletePlan, onClose, membershipData, updateMembershipData }) => {
+const TestUtilsModal = ({ isOpen, onDeletePlan, onClose, membershipData, updateMembershipData }) => {
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [statusMessage, setStatusMessage] = useState('');
   const [isSettingTier, setIsSettingTier] = useState(false);
 
   const safeMembership = membershipData || {};
+
+  // Don't render if not open
+  if (!isOpen) return null;
 
   const handleSetTier = async (tier) => {
     if (!updateMembershipData) {
