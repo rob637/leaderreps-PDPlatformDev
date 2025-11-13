@@ -1,8 +1,8 @@
 // src/components/layout/AppContent.jsx
 
-import React, { Suspense, useCallback } from 'react';
+import React, { Suspense, useCallback, useState, useEffect } from 'react';
 import { signOut } from 'firebase/auth';
-import { Menu, LogOut, Loader } from 'lucide-react';
+import { Menu, LogOut, Loader, Settings } from 'lucide-react';
 import PWAInstall from '../ui/PWAInstall.jsx';
 import NavSidebar from './NavSidebar.jsx';
 import ScreenRouter from '../../routing/ScreenRouter.jsx';
@@ -19,6 +19,54 @@ const AppContent = ({
   setIsNavExpanded,
   auth,
 }) => {
+  // Developer Mode State
+  const [isDeveloperMode, setIsDeveloperMode] = useState(() => {
+    return localStorage.getItem('arena-developer-mode') === 'true';
+  });
+
+  // Tier Simulation State (for development/testing)
+  const [simulatedTier, setSimulatedTier] = useState(() => {
+    return localStorage.getItem('arena-simulated-tier') || 'basic';
+  });
+
+  // Listen for developer mode changes
+  useEffect(() => {
+    const handleStorageChange = () => {
+      setIsDeveloperMode(localStorage.getItem('arena-developer-mode') === 'true');
+      setSimulatedTier(localStorage.getItem('arena-simulated-tier') || 'basic');
+    };
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, []);
+
+  const toggleDeveloperMode = () => {
+    const newMode = !isDeveloperMode;
+    setIsDeveloperMode(newMode);
+    localStorage.setItem('arena-developer-mode', newMode.toString());
+  };
+
+  const handleTierChange = (tier) => {
+    setSimulatedTier(tier);
+    localStorage.setItem('arena-simulated-tier', tier);
+    // Trigger a storage event to notify other components
+    window.dispatchEvent(new StorageEvent('storage', {
+      key: 'arena-simulated-tier',
+      newValue: tier
+    }));
+  };
+
+  const tierColors = {
+    basic: 'bg-gray-500',
+    professional: 'bg-blue-500', 
+    elite: 'bg-purple-500'
+  };
+
+  const tierLabels = {
+    basic: 'Basic',
+    professional: 'Pro',
+    elite: 'Elite'
+  };
+
   const closeMobileMenu = useCallback(() => setIsMobileOpen(false), [
     setIsMobileOpen,
   ]);
@@ -48,11 +96,41 @@ const AppContent = ({
             <Menu className="w-6 h-6" />
           </button>
           <h1 className="text-xl font-bold text-corporate-navy">
-            LeaderReps
+            LeaderReps 
+            {isDeveloperMode && <span className="text-xs bg-orange-500 text-white px-2 py-1 rounded ml-2">DEV</span>}
+            {!isDeveloperMode && <span className={`text-xs text-white px-2 py-1 rounded ml-2 ${tierColors[simulatedTier]}`}>TEST: {tierLabels[simulatedTier]}</span>}
           </h1>
         </div>
 
         <div className="flex items-center gap-3">
+          {/* Tier Selector (only in user mode) */}
+          {!isDeveloperMode && (
+            <div className="relative">
+              <select
+                value={simulatedTier}
+                onChange={(e) => handleTierChange(e.target.value)}
+                className={`px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-offset-1 text-white border-none cursor-pointer ${tierColors[simulatedTier]}`}
+                title="Simulate Membership Tier (Dev Only)"
+              >
+                <option value="basic">Basic Tier</option>
+                <option value="professional">Pro Tier</option>
+                <option value="elite">Elite Tier</option>
+              </select>
+            </div>
+          )}
+          
+          <button
+            onClick={toggleDeveloperMode}
+            className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-offset-1 ${
+              isDeveloperMode 
+                ? 'bg-orange-500 text-white' 
+                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+            }`}
+            title={isDeveloperMode ? "Switch to User Mode" : "Switch to Developer Mode"}
+          >
+            <Settings className="w-4 h-4" />
+            <span className="hidden sm:inline">{isDeveloperMode ? 'DEV' : 'USER'}</span>
+          </button>
           <PWAInstall />
           <button
             onClick={handleSignOut}
@@ -68,6 +146,8 @@ const AppContent = ({
       <NavSidebar
         currentScreen={currentScreen}
         setCurrentScreen={setCurrentScreen}
+        isDeveloperMode={isDeveloperMode}
+        simulatedTier={simulatedTier}
         user={user}
         closeMobileMenu={closeMobileMenu}
         isAuthRequired={isAuthRequired}
@@ -96,6 +176,8 @@ const AppContent = ({
               currentScreen={currentScreen}
               navParams={navParams}
               navigate={navigate}
+              isDeveloperMode={isDeveloperMode}
+              simulatedTier={simulatedTier}
             />
           </Suspense>
         </div>

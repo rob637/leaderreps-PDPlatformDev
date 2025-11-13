@@ -32,7 +32,7 @@ const COLORS = {
  * @param {React.ReactNode} children - The component/content to gate
  * @param {function} navigate - Optional navigation function for upgrade flow
  */
-export const MembershipGate = ({ requiredTier, featureName, children }) => {
+export const MembershipGate = ({ requiredTier, featureName, children, simulatedTier }) => {
   const { membershipData, isAdmin, navigate } = useAppServices();
   
   // Admins bypass all restrictions
@@ -40,7 +40,7 @@ export const MembershipGate = ({ requiredTier, featureName, children }) => {
     return children;
   }
   
-  const currentTier = membershipData?.currentTier || 'basic';
+  const currentTier = simulatedTier || membershipData?.currentTier || 'basic';
   const hasAccess = membershipService.hasAccess(currentTier, requiredTier);
   
   // If user has access, render the children

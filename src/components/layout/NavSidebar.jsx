@@ -21,6 +21,8 @@ import { membershipService } from '../../services/membershipService.js';
 const NavSidebar = ({
   currentScreen,
   setCurrentScreen,
+  isDeveloperMode,
+  simulatedTier,
   closeMobileMenu,
   isAuthRequired,
   isNavExpanded,
@@ -29,18 +31,6 @@ const NavSidebar = ({
   setIsMobileOpen,
 }) => {
   const { featureFlags, isAdmin, membershipData } = useAppServices();
-
-  const [isDeveloperMode, setIsDeveloperMode] = useState(() => {
-    return localStorage.getItem('arena-developer-mode') === 'true';
-  });
-
-  useEffect(() => {
-    const handleStorageChange = () => {
-      setIsDeveloperMode(localStorage.getItem('arena-developer-mode') === 'true');
-    };
-    window.addEventListener('storage', handleStorageChange);
-    return () => window.removeEventListener('storage', handleStorageChange);
-  }, []);
 
   const coreNav = [{ screen: 'dashboard', label: 'The Arena', icon: Home }];
 
@@ -164,7 +154,7 @@ const NavSidebar = ({
         if (
           item.requiredTier &&
           !membershipService.hasAccess(
-            membershipData?.currentTier,
+            simulatedTier || membershipData?.currentTier,
             item.requiredTier
           )
         ) {

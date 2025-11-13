@@ -55,7 +55,7 @@ const NotFoundScreen = () => (
   </div>
 );
 
-const ScreenRouter = ({ currentScreen, navParams }) => {
+const ScreenRouter = ({ currentScreen, navParams, isDeveloperMode, simulatedTier }) => {
   const Component = ScreenMap[currentScreen] || NotFoundScreen;
   
   // --- MORE DEBUGGING ---
@@ -96,13 +96,22 @@ const ScreenRouter = ({ currentScreen, navParams }) => {
   
   const componentElement = (
     <Suspense fallback={<div className="p-8 text-center">Loading...</div>}>
-      <Component key={currentScreen} {...(navParams || {})} />
+      <Component 
+        key={currentScreen} 
+        {...(navParams || {})} 
+        isDeveloperMode={isDeveloperMode}
+        simulatedTier={simulatedTier}
+      />
     </Suspense>
   );
 
   if (requiredTier) {
     return (
-      <MembershipGate requiredTier={requiredTier} featureName={currentScreen}>
+      <MembershipGate 
+        requiredTier={requiredTier} 
+        featureName={currentScreen}
+        simulatedTier={simulatedTier}
+      >
         {componentElement}
       </MembershipGate>
     );
