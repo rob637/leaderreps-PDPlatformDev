@@ -27,6 +27,27 @@ import AppContent from './components/layout/AppContent.jsx';
 import DataProvider from './providers/DataProvider.jsx';
 import ConfigError from './components/system/ConfigError.jsx';
 
+// 🔍 DEBUG: Log all imports to verify they're defined
+console.log('🔍 [App.jsx] Import checks:');
+console.log('  - AuthPanel:', typeof AuthPanel, AuthPanel);
+console.log('  - AppContent:', typeof AppContent, AppContent);
+console.log('  - DataProvider:', typeof DataProvider, DataProvider);
+console.log('  - ConfigError:', typeof ConfigError, ConfigError);
+
+// 🔍 DEBUG: Verify imports are not undefined
+if (typeof AuthPanel === 'undefined') {
+  console.error('❌ [App.jsx] AuthPanel is UNDEFINED!');
+}
+if (typeof AppContent === 'undefined') {
+  console.error('❌ [App.jsx] AppContent is UNDEFINED!');
+}
+if (typeof DataProvider === 'undefined') {
+  console.error('❌ [App.jsx] DataProvider is UNDEFINED!');
+}
+if (typeof ConfigError === 'undefined') {
+  console.error('❌ [App.jsx] ConfigError is UNDEFINED!');
+}
+
 
 /* =========================================================
    MAIN APP COMPONENT
@@ -72,16 +93,50 @@ function App() {
 
   const isAuthRequired = !user && isAuthReady;
 
+  console.log('🔍 [App.jsx] Render state:', {
+    firebaseConfig: !!firebaseConfig,
+    isAuthReady,
+    user: !!user,
+    isAuthRequired
+  });
+
   if (!firebaseConfig) {
+    console.log('🔍 [App.jsx] Rendering ConfigError');
+    if (typeof ConfigError === 'undefined') {
+      console.error('❌ [App.jsx] ConfigError is UNDEFINED at render time!');
+      return <div>Error: ConfigError component is undefined</div>;
+    }
     return <ConfigError message="Firebase configuration is missing." />;
   }
 
   if (!isAuthReady) {
+    console.log('🔍 [App.jsx] Rendering loading spinner');
     return (
       <div className="min-h-screen flex items-center justify-center">
         <Loader className="animate-spin h-10 w-10 text-corporate-teal" />
       </div>
     );
+  }
+
+  console.log('🔍 [App.jsx] About to render main app');
+  console.log('🔍 [App.jsx] Pre-render component checks:');
+  console.log('  - DataProvider:', typeof DataProvider);
+  console.log('  - AuthPanel:', typeof AuthPanel);
+  console.log('  - AppContent:', typeof AppContent);
+
+  if (typeof DataProvider === 'undefined') {
+    console.error('❌ [App.jsx] DataProvider is UNDEFINED at render time!');
+    return <div>Error: DataProvider component is undefined</div>;
+  }
+
+  if (isAuthRequired && typeof AuthPanel === 'undefined') {
+    console.error('❌ [App.jsx] AuthPanel is UNDEFINED at render time!');
+    return <div>Error: AuthPanel component is undefined</div>;
+  }
+
+  if (!isAuthRequired && typeof AppContent === 'undefined') {
+    console.error('❌ [App.jsx] AppContent is UNDEFINED at render time!');
+    return <div>Error: AppContent component is undefined</div>;
   }
 
   return (
