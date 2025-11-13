@@ -27,12 +27,11 @@ import {
   SocialPodCard,
   // === UNIFIED IMPORTS ===
   UnifiedAnchorEditorModal,
-import TestUtilsModal from './dashboard/TestUtilsModal.jsx';
+  AdditionalRepsCard
   // LeadershipAnchorsCard REMOVED per user request
   // ===========================
 } from './dashboard/DashboardComponents.jsx';
-
-// Arena v1.0 Scope: Import Daily Tasks component to replace Social Pod
+import TestUtilsModal from './dashboard/TestUtilsModal.jsx';// Arena v1.0 Scope: Import Daily Tasks component to replace Social Pod
 import DailyTasksCard from './dashboard/DailyTasksCard.jsx';
 
 // Import hooks from the file you provided
