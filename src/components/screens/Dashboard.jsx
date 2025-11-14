@@ -68,14 +68,14 @@ const sanitizeTimestamps = (obj) => {
 
 
 // --- Helper Components (Membership-Aware Start Card per Arena v1.0 Scope) ---
-const GetStartedCard = ({ onNavigate, membershipData, developmentPlanData }) => {
-  const currentTier = membershipData?.currentTier || 'basic';
+const GetStartedCard = ({ onNavigate, membershipData, developmentPlanData, currentTier }) => {
   const hasCompletedPlan = developmentPlanData?.currentPlan && 
     developmentPlanData.currentPlan.focusAreas && 
     developmentPlanData.currentPlan.focusAreas.length > 0;
   
   console.log('[GetStartedCard] Rendering with tier:', currentTier, 'hasCompletedPlan:', hasCompletedPlan);
   console.log('[GetStartedCard] onNavigate type:', typeof onNavigate);
+  console.log('[GetStartedCard] onNavigate function:', onNavigate);
 
   // Base members -> Show upgrade page
   if (currentTier === 'basic') {
@@ -242,6 +242,9 @@ const Dashboard = (props) => {
     dailyPracticeData,
     updateDailyPracticeData
   });
+
+  console.log('[Dashboard] Component rendering, simulatedTier:', props.simulatedTier);
+  console.log('[Dashboard] _setCurrentScreen type:', typeof _setCurrentScreen);
 
   // Debug wrapper for setCurrentScreen
   const setCurrentScreen = (screen) => {
@@ -499,6 +502,7 @@ const Dashboard = (props) => {
           onNavigate={setCurrentScreen}
           membershipData={membershipData}
           developmentPlanData={developmentPlanData}
+          currentTier={currentTier}
         />
       )}
 
