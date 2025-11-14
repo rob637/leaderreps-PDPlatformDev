@@ -169,7 +169,7 @@ export const StreakTracker = ({ streakCount, streakCoins }) => (
     <div className="flex items-center gap-2">
       <span className="text-xl">🪙</span>
       <span className="font-bold text-lg" style={{ color: COLORS.NAVY }}>{streakCoins}</span>
-      <span className="text-sm" style={{ color: COLORS.MUTED }}>Coins</span>
+      <span className="text-sm" style={{ color: COLORS.MUTED }}>Tokens</span>
     </div>
   </div>
 );
