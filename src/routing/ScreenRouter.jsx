@@ -46,6 +46,9 @@ const ScreenMap = {
   'membership-module': lazy(() =>
     import('../components/screens/MembershipModule.jsx')
   ),
+  'library': lazy(() =>
+    import('../components/screens/Library.jsx')
+  ),
 };
 
 const NotFoundScreen = () => (

@@ -103,7 +103,7 @@ const AppContent = ({
     return userLevel >= requiredLevel;
   };
 
-  // Flat navigation menu items (no subcategories)
+  // Flat navigation menu items (NO subcategories/headers)
   // Basic: Arena, Dev Plan, Membership
   // Pro & Elite: Arena, Dev Plan, Coaching, Community, Library, Membership  
   // Dev: Everything including Developer Tools
@@ -112,7 +112,7 @@ const AppContent = ({
     { screen: 'development-plan', label: 'Development Plan', requiredTier: 'basic' },
     { screen: 'labs', label: 'Coaching', requiredTier: 'professional' },
     { screen: 'community', label: 'Community', requiredTier: 'professional' },
-    { screen: 'applied-leadership', label: 'Library', requiredTier: 'professional' },
+    { screen: 'library', label: 'Library', requiredTier: 'professional' },
     { screen: 'membership-module', label: 'Membership', requiredTier: 'basic' },
     // Developer Tools (only visible in dev mode)
     ...(isDeveloperMode ? [
