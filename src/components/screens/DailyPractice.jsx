@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useAppServices } from '../../services/useAppServices.jsx';
 import { Card, Button } from '../shared/UI';
-import { PlusCircle, X, CheckCircle, Target, TrendingUp, Clock, AlertTriangle, BarChart3, CornerRightUp } from 'lucide-react';
+import { PlusCircle, X, CheckCircle, Target, TrendingUp, Clock, AlertTriangle, BarChart3, CornerRightUp, ArrowLeft } from 'lucide-react';
 import { LEADERSHIP_TIERS, COMMITMENT_COLLECTION } from '../../data/Constants';
 
 // --- Commitment Selector ---
@@ -457,9 +457,18 @@ const CommitmentItem = ({ commitment, onLogCommitment, onRemove }) => {
 }
 
 const ScorecardView = ({ setView, initialGoal, initialTier, isSaving, commitmentData, handleLogCommitment, handleRemoveCommitment, handleSaveReflection, calculateTotalScore, calculateStreak, commitmentHistory, reflection, setReflection }) => {
+    const { navigate } = useAppServices();
     const streak = calculateStreak(commitmentHistory);
     return (
         <div className="p-8">
+            <button
+                onClick={() => navigate('coaching-lab')}
+                className="flex items-center gap-2 mb-6 px-4 py-2 text-[#002E47] hover:text-[#47A88D] transition-colors"
+            >
+                <ArrowLeft className="w-5 h-5" />
+                <span className="font-semibold">Back to Coaching Lab</span>
+            </button>
+            
             <h1 className="text-3xl font-extrabold text-[#002E47] mb-6">Daily Commitment Scorecard (Leadership Practice)</h1>
             <p className="text-lg text-gray-600 mb-8 max-w-3xl">Track your daily commitment to the non-negotiable leadership actions that reinforce your professional identity. Consistently hitting this score is the key to sustained executive growth.</p>
 

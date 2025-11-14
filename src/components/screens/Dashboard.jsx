@@ -289,15 +289,17 @@ const Dashboard = (props) => {
   // Compute Anchor State (Unified)
   // -------------------------------
   const hasActiveAnchor = useMemo(() => {
-    return Boolean(
-      (localAnchor && localAnchor.text) ||
-      (userAnchorData && userAnchorData.anchor && userAnchorData.anchor.text)
-    );
-  }, [localAnchor, userAnchorData]);
+    // Check if any of the three new anchor types are set
+    return Boolean(identityStatement || habitAnchor || whyStatement);
+  }, [identityStatement, habitAnchor, whyStatement]);
 
   const anchorText = useMemo(() => {
-    return localAnchor?.text || userAnchorData?.anchor?.text || '';
-  }, [localAnchor, userAnchorData]);
+    // Return a summary of set anchors
+    if (identityStatement) return `Identity: ${identityStatement}`;
+    if (habitAnchor) return `Habit: ${habitAnchor}`;
+    if (whyStatement) return `Why: ${whyStatement}`;
+    return '';
+  }, [identityStatement, habitAnchor, whyStatement]);
 
   const anchorSetDate = useMemo(() => {
     let date = localAnchor?.createdAt || userAnchorData?.anchor?.createdAt;
@@ -518,7 +520,7 @@ const Dashboard = (props) => {
       {/* Streak Tracker */}
       {visibleComponents.includes('streak') && (
         <div className="section-corporate">
-          <StreakTracker progressData={progressData} />
+          <StreakTracker progressData={progressData} userEmail={user?.email} />
         </div>
       )}
 
@@ -631,7 +633,7 @@ const Dashboard = (props) => {
       {showAnchorFAB && (
         <button
           onClick={handleAnchorModalOpen}
-          className="fixed bottom-6 right-6 z-40 p-4 rounded-full shadow-2xl transition-all duration-300 hover:scale-110 animate-bounce"
+          className={`fixed bottom-6 right-6 z-40 p-4 rounded-full shadow-2xl transition-all duration-300 hover:scale-110 ${!hasActiveAnchor ? 'animate-bounce' : ''}`}
           style={{
             background: hasActiveAnchor
               ? `linear-gradient(135deg, ${COLORS.TEAL}, ${COLORS.BLUE})`

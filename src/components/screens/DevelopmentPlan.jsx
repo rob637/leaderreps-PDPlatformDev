@@ -102,7 +102,8 @@ export default function DevelopmentPlan() {
     developmentPlanData, updateDevelopmentPlanData, 
     // FIXED: Add writer for dailyPracticeData
     updateDailyPracticeData: updateDailyPracticeWriter,
-    metadata: globalMetadata
+    metadata: globalMetadata,
+    navigate
   } = services || {};
 
   // Helpers

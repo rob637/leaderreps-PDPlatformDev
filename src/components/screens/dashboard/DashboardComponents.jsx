@@ -167,24 +167,33 @@ export const ModeSwitch = ({ isArenaMode, onToggle, isLoading }) => (
 );
 
 /* =========================================================
-   STREAK TRACKER COMPONENT (Unchanged)
+   STREAK TRACKER COMPONENT
 ========================================================= */
-export const StreakTracker = ({ streakCount, streakCoins }) => (
-  <div className="flex items-center gap-4 px-4 py-2 rounded-lg border-2" 
-       style={{ borderColor: COLORS.SUBTLE, backgroundColor: COLORS.LIGHT_GRAY }}>
-    <div className="flex items-center gap-2">
-      <Flame className="w-5 h-5" style={{ color: COLORS.ORANGE }} />
-      <span className="font-bold text-lg" style={{ color: COLORS.NAVY }}>{streakCount}</span>
-      <span className="text-sm" style={{ color: COLORS.MUTED }}>Day Streak</span>
+export const StreakTracker = ({ streakCount, streakCoins, userEmail }) => {
+  // Only show tokens for developer
+  const isDeveloper = userEmail === 'rob@sagecg.com';
+  
+  return (
+    <div className="flex items-center gap-4 px-4 py-2 rounded-lg border-2" 
+         style={{ borderColor: COLORS.SUBTLE, backgroundColor: COLORS.LIGHT_GRAY }}>
+      <div className="flex items-center gap-2">
+        <Flame className="w-5 h-5" style={{ color: COLORS.ORANGE }} />
+        <span className="font-bold text-lg" style={{ color: COLORS.NAVY }}>{streakCount}</span>
+        <span className="text-sm" style={{ color: COLORS.MUTED }}>Day Streak</span>
+      </div>
+      {isDeveloper && (
+        <>
+          <div className="h-6 w-px" style={{ backgroundColor: COLORS.SUBTLE }} />
+          <div className="flex items-center gap-2">
+            <span className="text-xl">🪙</span>
+            <span className="font-bold text-lg" style={{ color: COLORS.NAVY }}>{streakCoins}</span>
+            <span className="text-sm" style={{ color: COLORS.MUTED }}>Tokens</span>
+          </div>
+        </>
+      )}
     </div>
-    <div className="h-6 w-px" style={{ backgroundColor: COLORS.SUBTLE }} />
-    <div className="flex items-center gap-2">
-      <span className="text-xl">🪙</span>
-      <span className="font-bold text-lg" style={{ color: COLORS.NAVY }}>{streakCoins}</span>
-      <span className="text-sm" style={{ color: COLORS.MUTED }}>Tokens</span>
-    </div>
-  </div>
-);
+  );
+};
 
 /* =========================================================
    TAB BUTTON (for Dynamic Bookend Container) (Unchanged)
@@ -1279,7 +1288,7 @@ export const UnifiedAnchorEditorModal = ({
    ANCHORS IN ACTION - Shows how anchors are being used
 ========================================================= */
 export const AnchorsInAction = ({ identityStatement, habitAnchor, whyStatement }) => {
-    const [isExpanded, setIsExpanded] = useState(true);
+    const [isExpanded, setIsExpanded] = useState(false);
     
     // Don't show if no anchors are set
     if (!identityStatement && !habitAnchor && !whyStatement) {

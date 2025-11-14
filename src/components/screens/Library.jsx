@@ -75,7 +75,7 @@ const LibraryCard = ({ title, description, icon: Icon, onClick, disabled = false
 
 const Library = () => {
   const { membershipData, navigate } = useAppServices();
-  const currentTier = membershipData?.currentTier || 'basic';
+  const currentTier = membershipData?.currentPlanId || 'basic';
 
   const libraryItems = [
     {
