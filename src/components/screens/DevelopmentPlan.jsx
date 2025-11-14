@@ -167,7 +167,6 @@ export default function DevelopmentPlan() {
       hasCurrentPlan: !!adaptedDevelopmentPlanData?.currentPlan
     };
     console.log('[DevelopmentPlan useEffect] Checking view state:', stateInfo);
-    alert('🔴 VIEW CHECK:\nView: ' + view + '\nHas plan: ' + stateInfo.hasCurrentPlan + '\nSaving: ' + isSaving + '\nJust completed: ' + justCompletedBaseline);
     
     // DON'T switch views while saving is in progress
     if (isSaving) {
@@ -175,23 +174,26 @@ export default function DevelopmentPlan() {
       return;
     }
     
-    // DON'T switch back to baseline if we just completed it and are waiting for data
-    if (justCompletedBaseline && view === 'baseline') {
-      console.log('[DevelopmentPlan] Just completed baseline, waiting for plan data before switching.');
+    // When plan data exists, always switch to tracker
+    if (adaptedDevelopmentPlanData?.currentPlan) {
+      if (view !== 'tracker') {
+        console.log('[DevelopmentPlan] Plan data exists, switching to tracker view.');
+        alert('✅ Plan data received! Switching to tracker view.');
+        setJustCompletedBaseline(false); // Clear flag
+        setView('tracker');
+      }
       return;
     }
     
-    // When plan data exists and we're on baseline, switch to tracker
-    if (adaptedDevelopmentPlanData?.currentPlan && view === 'baseline') {
-      console.log('[DevelopmentPlan] Plan data received, switching to tracker view.');
-      setJustCompletedBaseline(false); // Clear flag
-      setView('tracker');
+    // When no plan exists and we just completed baseline, STAY on baseline and wait for data
+    if (!adaptedDevelopmentPlanData?.currentPlan && justCompletedBaseline) {
+      console.log('[DevelopmentPlan] Waiting for plan data after baseline completion...');
       return;
     }
     
-    // When no plan exists and we're on tracker (and we didn't just complete baseline), switch to baseline
-    if (!adaptedDevelopmentPlanData?.currentPlan && view === 'tracker' && !justCompletedBaseline) {
-      console.log('[DevelopmentPlan] No plan data, switching to baseline view.');
+    // When no plan exists and we're on tracker, switch to baseline
+    if (!adaptedDevelopmentPlanData?.currentPlan && view === 'tracker') {
+      console.log('[DevelopmentPlan] No plan data and on tracker, switching to baseline view.');
       setView('baseline');
     }
   }, [adaptedDevelopmentPlanData?.currentPlan, view, isSaving, justCompletedBaseline]);
@@ -270,7 +272,6 @@ async function confirmPlanPersisted(db, userId, retries = 4, delayMs = 250) {
 
   // Baseline → Generate new plan then route to tracker
   const handleCompleteBaseline = async (assessment) => {
-    alert('🔴 handleCompleteBaseline STARTED!\nGenerating plan from assessment...');
     console.log('[DevelopmentPlan] Starting baseline completion with assessment:', assessment);
     
     const date = new Date().toISOString();

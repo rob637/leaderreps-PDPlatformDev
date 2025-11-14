@@ -84,7 +84,7 @@ const Library = () => {
       description: 'Structured leadership courses and learning paths to develop your skills.',
       icon: ShieldCheck,
       screen: 'applied-leadership',
-      requiredTier: 'professional'
+      requiredTier: 'professional' // Pro and Elite can access
     },
     {
       id: 'readings',
@@ -92,7 +92,7 @@ const Library = () => {
       description: 'Curated business readings with actionable exercises and practice opportunities.',
       icon: BookOpen,
       screen: 'business-readings',
-      requiredTier: 'professional'
+      requiredTier: 'professional' // Pro and Elite can access
     },
     {
       id: 'media',
@@ -100,7 +100,7 @@ const Library = () => {
       description: 'Video content, leader talks, and multimedia resources for visual learners.',
       icon: Film,
       screen: 'leadership-videos',
-      requiredTier: 'elite'
+      requiredTier: 'elite' // Elite tier only
     }
   ];
 

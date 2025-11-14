@@ -193,7 +193,6 @@ const Dashboard = (props) => {
     dailyPracticeData, 
     updateDailyPracticeData,
     membershipData,
-    setCurrentScreen: _setCurrentScreen,
     userData,
     localAnchor,
     setLocalAnchor,
@@ -204,8 +203,8 @@ const Dashboard = (props) => {
     repsData
   } = useAppServices();
   
-  // Get simulatedTier from props (passed from ScreenRouter)
-  const { simulatedTier } = props;
+  // Get setCurrentScreen and simulatedTier from props (passed from ScreenRouter)
+  const { simulatedTier, setCurrentScreen: _setCurrentScreen } = props;
   
   const {
     // Add anchor data from DashboardHooks

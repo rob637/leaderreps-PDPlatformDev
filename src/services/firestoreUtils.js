@@ -108,10 +108,23 @@ export const setDocEx = async (db, path, data, merge = false) => {
       const cleanedData = cleanUndefinedValues(data);
       const dataWithTimestamp = { ...cleanedData, _updatedAt: serverTimestamp() };
       const docRef = toDocRef(db, path);
+      console.log(`[setDocEx] Attempting write to ${path}`, {
+        merge,
+        dataKeys: Object.keys(dataWithTimestamp),
+        dataPreview: JSON.stringify(dataWithTimestamp, null, 2).substring(0, 500)
+      });
       await fsSetDoc(docRef, dataWithTimestamp, merge ? { merge: true } : undefined);
+      console.log(`[setDocEx SUCCESS] Path: ${path}`);
       return true; 
   } catch (error) {
       console.error(`[setDocEx FAILED] Path: ${path}`, error);
+      console.error(`[setDocEx FAILED] Error details:`, {
+        name: error.name,
+        message: error.message,
+        code: error.code,
+        stack: error.stack
+      });
+      alert(`❌ Firestore write failed!\nPath: ${path}\nError: ${error.message}\nCode: ${error.code}`);
       return false; 
   }
 };

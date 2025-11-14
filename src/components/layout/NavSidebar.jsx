@@ -145,8 +145,16 @@ const NavSidebar = ({
 
   const handleNavigate = useCallback(
     (screen) => {
-      setCurrentScreen(screen);
-      closeMobileMenu();
+      console.log('[NavSidebar] Navigating to:', screen);
+      if (typeof setCurrentScreen === 'function') {
+        setCurrentScreen(screen);
+        if (closeMobileMenu && typeof closeMobileMenu === 'function') {
+          closeMobileMenu();
+        }
+      } else {
+        console.error('[NavSidebar] setCurrentScreen is not a function!');
+        alert('Navigation error: Cannot navigate. Please refresh.');
+      }
     },
     [setCurrentScreen, closeMobileMenu]
   );
@@ -217,9 +225,15 @@ const NavSidebar = ({
   if (isAuthRequired) return null;
 
   const handleNavClick = (screen) => {
-    setCurrentScreen(screen);
-    if (isHamburgerMode && setIsMobileOpen) {
-      setIsMobileOpen(false);
+    console.log('[NavSidebar] Mobile nav click:', screen);
+    if (typeof setCurrentScreen === 'function') {
+      setCurrentScreen(screen);
+      if (isHamburgerMode && setIsMobileOpen) {
+        setIsMobileOpen(false);
+      }
+    } else {
+      console.error('[NavSidebar] Mobile nav - setCurrentScreen is not a function!');
+      alert('⚠️ Navigation error: Cannot navigate to ' + screen + '. Please refresh.');
     }
   };
 

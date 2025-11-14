@@ -392,7 +392,10 @@ export const useDashboard = ({
     if (updateDailyPracticeData) {
       console.log('[Dashboard] Auto-saving task to Firestore...');
       updateDailyPracticeData({
-        'morningBookend.otherTasks': updatedTasks
+        morningBookend: {
+          ...dailyPracticeData?.morningBookend,
+          otherTasks: updatedTasks
+        }
       }).then(() => {
         console.log('[Dashboard] Task saved successfully');
         alert('✅ Task saved to Firestore!\nTotal tasks: ' + updatedTasks.length);
@@ -421,7 +424,10 @@ export const useDashboard = ({
     if (updateDailyPracticeData) {
       try {
         await updateDailyPracticeData({
-          'morningBookend.otherTasks': updatedTasks
+          morningBookend: {
+            ...dailyPracticeData?.morningBookend,
+            otherTasks: updatedTasks
+          }
         });
         console.log('[Dashboard] Task toggled and saved');
       } catch (error) {
@@ -451,7 +457,10 @@ export const useDashboard = ({
     if (updateDailyPracticeData) {
       try {
         await updateDailyPracticeData({
-          'morningBookend.otherTasks': updatedTasks
+          morningBookend: {
+            ...dailyPracticeData?.morningBookend,
+            otherTasks: updatedTasks
+          }
         });
         console.log('[Dashboard] Task removed and saved');
       } catch (error) {
@@ -485,18 +494,31 @@ export const useDashboard = ({
   // NEW: Handle saving WIN separately
   const handleSaveWIN = useCallback(async () => {
     // Use the destructured prop directly
-    if (!updateDailyPracticeData) return;
+    if (!updateDailyPracticeData) {
+      console.error('[Dashboard] Cannot save WIN - updateDailyPracticeData not available');
+      alert('⚠️ Error: Cannot save WIN. Please refresh.');
+      return;
+    }
+    
+    console.log('[Dashboard] Saving WIN:', morningWIN);
     
     try {
-      await updateDailyPracticeData({
-        'morningBookend.dailyWIN': morningWIN
+      // Use nested object structure instead of dot notation
+      const success = await updateDailyPracticeData({
+        morningBookend: {
+          dailyWIN: morningWIN
+        }
       });
-      console.log('[Dashboard] WIN saved');
-      // Visual feedback for successful save
-      alert('✅ Today\'s WIN saved successfully!');
+      
+      if (success) {
+        console.log('[Dashboard] WIN saved successfully');
+        alert('✅ Today\'s WIN saved successfully!');
+      } else {
+        throw new Error('Update returned false');
+      }
     } catch (error) {
       console.error('[Dashboard] Error saving WIN:', error);
-      alert('❌ Error saving WIN. Please try again.');
+      alert('❌ Error saving WIN: ' + error.message);
     }
   }, [morningWIN, updateDailyPracticeData]); // Explicitly include prop
 
