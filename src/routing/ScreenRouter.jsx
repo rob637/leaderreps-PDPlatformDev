@@ -90,7 +90,6 @@ const ScreenRouter = ({ currentScreen, navParams, navigate, isDeveloperMode, sim
   // --- END MORE DEBUGGING ---
 
   const screenTierRequirements = {
-    'development-plan': 'basic',
     'business-readings': 'professional',
     'applied-leadership': 'professional',
     'coaching-lab': 'professional',
