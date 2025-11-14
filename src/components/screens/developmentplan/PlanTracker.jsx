@@ -22,10 +22,7 @@ const PlanTracker = ({
   const [showEditor, setShowEditor] = useState(false);
 
   if (!plan) {
-    alert('❌ PlanTracker: NO PLAN FOUND!');
-    alert('📊 developmentPlanData: ' + (developmentPlanData ? 'EXISTS' : 'NULL'));
-    alert('📋 plan object: ' + (plan ? 'EXISTS' : 'NULL'));
-    console.log('[PlanTracker] No plan available:', { developmentPlanData, plan });
+    console.log('[PlanTracker] No plan available:', { plan });
     
     return (
       <div className="text-center py-8">
@@ -36,9 +33,6 @@ const PlanTracker = ({
         <p className="text-sm" style={{ color: COLORS.MUTED }}>
           Complete your baseline assessment to get started.
         </p>
-        <div className="mt-4 text-xs text-gray-500">
-          DEBUG: developmentPlanData={developmentPlanData ? 'EXISTS' : 'NULL'}, plan={plan ? 'EXISTS' : 'NULL'}
-        </div>
       </div>
     );
   }
