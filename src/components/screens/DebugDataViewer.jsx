@@ -22,7 +22,7 @@ const COLORS = CORPORATE_COLORS;
 const Button = ({ children, onClick, disabled = false, variant = 'primary', className = '', size = 'md', ...rest }) => { /* ... Re-use definition ... */
     let baseStyle = `inline-flex items-center justify-center gap-2 font-semibold rounded-xl transition-all duration-200 focus:outline-none focus:ring-4 disabled:opacity-50 disabled:cursor-not-allowed`;
     if (size === 'sm') baseStyle += ' px-4 py-2 text-sm'; else if (size === 'lg') baseStyle += ' px-8 py-4 text-lg'; else baseStyle += ' px-6 py-3 text-base'; // Default 'md'
-    if (variant === 'primary') baseStyle += ` bg-[${COLORS.TEAL}] text-white shadow-lg hover:bg-[#349881] focus:ring-[${COLORS.TEAL}]/50`;
+    if (variant === 'primary') baseStyle += ` bg-[${COLORS.TEAL}] text-white shadow-lg hover:bg-[#47A88D] focus:ring-[${COLORS.TEAL}]/50`;
     else if (variant === 'secondary') baseStyle += ` bg-[${COLORS.ORANGE}] text-white shadow-lg hover:bg-[#C312] focus:ring-[${COLORS.ORANGE}]/50`;
     else if (variant === 'outline') baseStyle += ` bg-[${COLORS.OFF_WHITE}] text-[${COLORS.TEAL}] border-2 border-[${COLORS.TEAL}] shadow-md hover:bg-[${COLORS.TEAL}]/10 focus:ring-[${COLORS.TEAL}]/50`;
     else if (variant === 'nav-back') baseStyle += ` bg-white text-gray-700 border border-gray-300 shadow-sm hover:bg-gray-100 focus:ring-gray-300/50 px-4 py-2 text-sm`;
@@ -69,10 +69,10 @@ const DebugDataViewer = () => {
     // --- Render Logic ---
     return (
         // Consistent page structure and padding
-        <div className="p-6 md:p-8 lg:p-10 space-y-6 max-w-7xl mx-auto min-h-screen" style={{ background: COLORS.BG }}> {/* Use BG color */}
+        <div className="p-6 md:p-4 sm:p-3 sm:p-4 lg:p-6 lg:p-8 lg:p-10 space-y-4 sm:space-y-5 lg:space-y-6 max-w-7xl mx-auto min-h-screen" style={{ background: COLORS.BG }}> {/* Use BG color */}
             {/* Header */}
             <header className="flex flex-col sm:flex-row justify-between sm:items-center gap-4 border-b pb-4 mb-6" style={{ borderColor: COLORS.SUBTLE }}>
-                <h1 className="text-3xl md:text-4xl font-extrabold flex items-center gap-3" style={{ color: COLORS.NAVY }}>
+                <h1 className="text-xl sm:text-2xl sm:text-3xl md:text-4xl font-extrabold flex items-center gap-3" style={{ color: COLORS.NAVY }}>
                     <Code size={32} className='text-red-500 flex-shrink-0' /> DEBUG: Raw Context Data
                 </h1>
                 {/* Back Button */}
@@ -99,7 +99,7 @@ const DebugDataViewer = () => {
             )}
 
             {/* Data Display Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 sm:p-4 lg:p-6">
 
                 {/* Global Metadata Card */}
                 <div className="md:col-span-2"> {/* Wider column */}
@@ -115,7 +115,7 @@ const DebugDataViewer = () => {
                 </div>
 
                 {/* User Data Cards */}
-                <div className="space-y-6">
+                <div className="space-y-4 sm:space-y-5 lg:space-y-6">
                     {/* Daily Practice Data */}
                     <Card title="Daily Practice State (User)" icon={Clock} accent="TEAL">
                          <p className='text-xs text-gray-600 mb-3 italic'>Source: <code>daily_practice/[uid]/state</code>.</p>

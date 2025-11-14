@@ -17,7 +17,7 @@ import { COLORS, COMPLEXITY_MAP } from './labs/labConstants.js';
 const Button = ({ children, onClick, disabled = false, variant = 'primary', className = '', ...rest }) => {
     let baseStyle = "px-6 py-3 rounded-xl font-semibold transition-all shadow-xl focus:outline-none focus:ring-4 text-white flex items-center justify-center";
 
-    if (variant === 'primary') { baseStyle += ` bg-[${COLORS.TEAL}] hover:bg-[#349881] focus:ring-[#47A88D]/50`; } 
+    if (variant === 'primary') { baseStyle += ` bg-[${COLORS.TEAL}] hover:bg-[#47A88D] focus:ring-[#47A88D]/50`; } 
     else if (variant === 'secondary') { baseStyle += ` bg-[${COLORS.ORANGE}] hover:bg-red-700 focus:ring-[#E04E1B]/50`; } 
     else if (variant === 'outline') { baseStyle = `px-6 py-3 rounded-xl font-semibold transition-all shadow-md border-2 border-[${COLORS.TEAL}] text-[${COLORS.TEAL}] hover:bg-[#47A88D]/10 focus:ring-4 focus:ring-[#47A88D]/50 bg-[${COLORS.LIGHT_GRAY}] flex items-center justify-center`; }
 
@@ -75,9 +75,9 @@ const Tooltip = ({ content, children }) => {
         >
             {children}
             {isVisible && (
-                <div className="absolute z-10 w-64 p-3 -mt-2 -ml-32 text-xs text-white bg-[#0B3B5B] rounded-lg shadow-lg bottom-full left-1/2 transform translate-x-1/2">
+                <div className="absolute z-10 w-64 p-3 -mt-2 -ml-32 text-xs text-white bg-[#002E47] rounded-lg shadow-lg bottom-full left-1/2 transform translate-x-1/2">
                     {content}
-                    <div className="absolute left-1/2 transform -translate-x-1/2 bottom-[-4px] w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-[#0B3B5B]"></div>
+                    <div className="absolute left-1/2 transform -translate-x-1/2 bottom-[-4px] w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-[#002E47]"></div>
                 </div>
             )}
         </div>
@@ -88,8 +88,8 @@ const mdToHtml = async (markdown) => {
   let html = markdown;
   
   html = html.replace(/^### (.*$)/gim, '<h3 class="text-lg font-extrabold text-[#47A88D] mt-4 mb-2">$1</h3>');
-  html = html.replace(/^## (.*$)/gim, '<h2 class="text-2xl font-bold text-[#0B3B5B] border-b pb-1 mb-3 mt-6">$1</h2>');
-  html = html.replace(/^# (.*$)/gim, '<h1 class="text-3xl font-extrabold text-[#E04E1B] mb-4">$1</h1>');
+  html = html.replace(/^## (.*$)/gim, '<h2 class="text-2xl font-bold text-[#002E47] border-b pb-1 mb-3 mt-6">$1</h2>');
+  html = html.replace(/^# (.*$)/gim, '<h1 class="text-2xl sm:text-3xl font-extrabold text-[#E04E1B] mb-4">$1</h1>');
 
   html = html.replace(/\*\*(.*)\*\*/gim, '<strong>$1</strong>');
   
@@ -110,8 +110,8 @@ const Message = ({ sender, text, isAI }) => (
     <div
       className={`p-4 max-w-lg rounded-xl shadow-md ${
         isAI
-          ? 'bg-[#0B3B5B]/10 text-[#0B3B5B] rounded-tl-none border border-[#0B3B5B]/20'
-          : 'bg-[#219E8B] text-white rounded-tr-none'
+          ? 'bg-[#002E47]/10 text-[#002E47] rounded-tl-none border border-[#002E47]/20'
+          : 'bg-[#47A88D] text-white rounded-tr-none'
       }`}
     >
       <strong className="font-bold text-sm">{sender}:</strong>
@@ -184,7 +184,7 @@ ${fullConversation}
     };
 
     return (
-        <Card title="AI Follow-Up Coaching (Deep Reflection)" icon={Lightbulb} className='mt-8 bg-[#0B3B5B]/10 border-2 border-[#0B3B5B]/20'>
+        <Card title="AI Follow-Up Coaching (Deep Reflection)" icon={Lightbulb} className='mt-8 bg-[#002E47]/10 border-2 border-[#002E47]/20'>
             <p className='text-sm text-gray-700 mb-4'>Ask the AI Coach for specific alternatives, missed opportunities, or clarification on your score.</p>
             
             <div ref={followUpRef} className='h-64 overflow-y-auto p-3 bg-white rounded-xl border border-gray-300 mb-3'>
@@ -201,7 +201,7 @@ ${fullConversation}
                 )}
                 {isGenerating && (
                     <div className='flex justify-start mb-4'>
-                        <div className='p-4 max-w-lg rounded-xl bg-[#0B3B5B]/10 text-gray-500 rounded-tl-none'>
+                        <div className='p-4 max-w-lg rounded-xl bg-[#002E47]/10 text-gray-500 rounded-tl-none'>
                             <div className="animate-pulse text-sm">Coach is analyzing...</div>
                         </div>
                     </div>
@@ -215,7 +215,7 @@ ${fullConversation}
                     onChange={(e) => setInputText(e.target.value)}
                     onKeyDown={(e) => e.key === 'Enter' && sendFollowUpQuery()}
                     placeholder="Ask your coach for feedback..."
-                    className="flex-1 p-3 border border-gray-300 rounded-xl focus:ring-[#219E8B] focus:border-[#219E8B]"
+                    className="flex-1 p-3 border border-gray-300 rounded-xl focus:ring-[#47A88D] focus:border-[#47A88D]"
                     disabled={isGenerating || !hasGeminiKey()}
                 />
                 <Button onClick={sendFollowUpQuery} disabled={!inputText.trim() || isGenerating || !hasGeminiKey()} className='px-4 py-3'>
@@ -429,7 +429,7 @@ const RolePlayCritique = ({ history, scenario, difficultyLevel, setView }) => {
         const barColorClass = score > 85 ? 'text-green-500' : score > 70 ? 'text-yellow-500' : 'text-red-500';
         return (
             <div className='mb-3'>
-                <div className='flex justify-between items-center text-sm font-semibold text-[#0B3B5B]'>
+                <div className='flex justify-between items-center text-sm font-semibold text-[#002E47]'>
                     <span>{title}</span>
                     <span className={`text-lg font-extrabold ${barColorClass}`}>{score}%</span>
                 </div>
@@ -445,10 +445,10 @@ const RolePlayCritique = ({ history, scenario, difficultyLevel, setView }) => {
 
     if (isGenerating) {
         return (
-            <Card title="Generating Session Critique..." icon={Zap} className="mt-8 bg-[#219E8B]/10 border-2 border-[#219E8B]">
+            <Card title="Generating Session Critique..." icon={Zap} className="mt-8 bg-[#47A88D]/10 border-2 border-[#47A88D]">
                 <div className="flex flex-col items-center justify-center h-40">
-                    <div className="animate-spin rounded-full h-10 w-10 border-b-4 border-[#219E8B] mb-4"></div>
-                    <p className="text-[#219E8B] font-medium">Analyzing dialogue history and scoring performance...</p>
+                    <div className="animate-spin rounded-full h-10 w-10 border-b-4 border-[#47A88D] mb-4"></div>
+                    <p className="text-[#47A88D] font-medium">Analyzing dialogue history and scoring performance...</p>
                 </div>
             </Card>
         );
@@ -461,8 +461,8 @@ const RolePlayCritique = ({ history, scenario, difficultyLevel, setView }) => {
 
 
     return (
-        <div className='space-y-6'>
-            <div className='grid lg:grid-cols-4 gap-6'>
+        <div className='space-y-4 sm:space-y-5 lg:space-y-6'>
+            <div className='grid lg:grid-cols-4 gap-4 sm:gap-5 lg:gap-6'>
                 {/* Overall Score Card */}
                 <Card title="Overall Performance" icon={Star} className='lg:col-span-2' accent="NAVY">
                     <p className='text-sm text-gray-300 mb-2'>Final Audit Score</p>
@@ -470,21 +470,21 @@ const RolePlayCritique = ({ history, scenario, difficultyLevel, setView }) => {
                         {scoreBreakdown?.overall || '--'} / 100
                     </div>
                     <div className='mt-4 pt-4 border-t border-gray-200'>
-                        <p className='text-sm font-semibold text-[#0B3B5B]'>Key Takeaway:</p>
+                        <p className='text-sm font-semibold text-[#002E47]'>Key Takeaway:</p>
                         <p className='text-sm text-gray-700'>{keyTakeaway || 'Review the full critique.'}</p>
                     </div>
                 </Card>
 
                 {/* Adaptive Scenario Tracker */}
                 <Card title="Adaptive Session Metrics" icon={Target} className='lg:col-span-2' accent="ORANGE">
-                    <p className='text-sm font-semibold text-[#0B3B5B] mb-2'>Tension Multiplier:</p>
+                    <p className='text-sm font-semibold text-[#002E47] mb-2'>Tension Multiplier:</p>
                     <div className='flex justify-between items-center'>
-                        <span className='text-3xl font-extrabold text-[#E04E1B]'>{difficultyMultiplier.toFixed(1)}X</span>
+                        <span className='text-2xl sm:text-3xl font-extrabold text-[#E04E1B]'>{difficultyMultiplier.toFixed(1)}X</span>
                         <span className='text-sm text-gray-600 font-medium'>({difficultyText})</span>
                     </div>
                     <div className='mt-4 pt-4 border-t border-gray-200'>
-                        <p className='text-sm font-semibold text-[#0B3B5B]'>Difficulty Grade:</p>
-                        <span className='text-xl font-extrabold text-[#219E8B]'>
+                        <p className='text-sm font-semibold text-[#002E47]'>Difficulty Grade:</p>
+                        <span className='text-xl font-extrabold text-[#47A88D]'>
                             {difficultyLevel < 25 ? 'C - Standard' : difficultyLevel < 75 ? 'B - Challenging' : 'A - Executive Level'}
                         </span>
                     </div>
@@ -516,14 +516,14 @@ const RolePlayCritique = ({ history, scenario, difficultyLevel, setView }) => {
             </Card>
             
             {/* Full Critique and Accountability Actions */}
-            <Card title="AI Coach Full Audit" icon={CheckCircle} className="bg-[#FCFCFA] border-4 border-[#219E8B]">
-                <div className="prose max-w-none prose-h2:text-4xl prose-h2:text-[#E04E1B] prose-h2:font-extrabold prose-h3:text-[#219E8B] prose-p:text-gray-700 prose-ul:space-y-2">
+            <Card title="AI Coach Full Audit" icon={CheckCircle} className="bg-[#FCFCFA] border-4 border-[#47A88D]">
+                <div className="prose max-w-none prose-h2:text-4xl prose-h2:text-[#E04E1B] prose-h2:font-extrabold prose-h3:text-[#47A88D] prose-p:text-gray-700 prose-ul:space-y-2">
                     <div dangerouslySetInnerHTML={{ __html: critiqueHtml }} />
                 </div>
                 
                 {/* Reflective Analysis Section */}
                 <div className='mt-8 pt-6 border-t border-gray-200'>
-                    <h3 className='text-xl font-bold text-[#0B3B5B] mb-3 flex items-center'><Info className='w-5 h-5 mr-2 text-[#E04E1B]'/> Post-Critique Reflective Analysis</h3>
+                    <h3 className='text-xl font-bold text-[#002E47] mb-3 flex items-center'><Info className='w-5 h-5 mr-2 text-[#E04E1B]'/> Post-Critique Reflective Analysis</h3>
                     <p className='text-sm text-gray-700 mb-3'>Write a brief reflection on the critique: **What was your core mistake, and how will you correct it in your next session?**</p>
                     
                     <textarea 
@@ -535,8 +535,8 @@ const RolePlayCritique = ({ history, scenario, difficultyLevel, setView }) => {
                     />
                     
                     {auditResult && (
-                        <Card title="Your Reflection Audit" icon={Eye} className='bg-white shadow-lg border-l-4 border-dashed border-[#219E8B]'>
-                            <div className="prose max-w-none prose-h2:text-[#0B3B5B] prose-h3:text-[#219E8B]">
+                        <Card title="Your Reflection Audit" icon={Eye} className='bg-white shadow-lg border-l-4 border-dashed border-[#47A88D]'>
+                            <div className="prose max-w-none prose-h2:text-[#002E47] prose-h3:text-[#47A88D]">
                                 <div dangerouslySetInnerHTML={{ __html: auditResult }} />
                             </div>
                         </Card>
@@ -552,9 +552,9 @@ const RolePlayCritique = ({ history, scenario, difficultyLevel, setView }) => {
                 
                 {keyTakeaway && (
                     <div className='mt-8 pt-6 border-t border-gray-200'>
-                        <h3 className='text-xl font-bold text-[#0B3B5B] mb-3 flex items-center'><TrendingUp className='w-5 h-5 mr-2 text-[#219E8B]'/> Practice Commitment Planner</h3>
+                        <h3 className='text-xl font-bold text-[#002E47] mb-3 flex items-center'><TrendingUp className='w-5 h-5 mr-2 text-[#47A88D]'/> Practice Commitment Planner</h3>
                         <p className='text-sm text-gray-700 mb-4'>Convert your key takeaway into a daily practice habit to reinforce learning immediately.</p>
-                        <Button onClick={handleCreateCommitment} className='w-full bg-[#349881] hover:bg-[#219E8B]'>
+                        <Button onClick={handleCreateCommitment} className='w-full bg-[#47A88D] hover:bg-[#47A88D]'>
                             <PlusCircle className='w-5 h-5 mr-2'/> Commit to Daily Practice: "{keyTakeaway.substring(0, 40)}..."
                         </Button>
                     </div>
@@ -806,15 +806,15 @@ const RolePlayView = ({ scenario, setCoachingLabView, difficultyLevel, preparedS
     
     if (isPrimingModalVisible) {
         return (
-            <div className="fixed inset-0 bg-[#0B3B5B]/90 z-50 flex items-center justify-center p-4">
-                <div className="bg-[#FCFCFA] rounded-3xl shadow-2xl w-full max-w-lg p-8">
-                    <h2 className="text-2xl font-extrabold text-[#0B3B5B] mb-4 flex items-center">
+            <div className="fixed inset-0 bg-[#002E47]/90 z-50 flex items-center justify-center p-4">
+                <div className="bg-[#FCFCFA] rounded-3xl shadow-2xl w-full max-w-lg p-4 sm:p-3 sm:p-4 lg:p-6 lg:p-8">
+                    <h2 className="text-xl sm:text-2xl font-extrabold text-[#002E47] mb-4 flex items-center">
                         <HeartPulse className="w-6 h-6 mr-3" /> Psychological Priming Check
                     </h2>
                     <p className='text-gray-700 mb-6'>Manage your internal state before engaging. This minimizes emotional hijacking and maximizes skill transfer.</p>
 
                     <div className='mb-6'>
-                        <label className="block text-sm font-medium text-[#0B3B5B] mb-1">1. Current Stress/Anxiety Level ({stressLevel}%)</label>
+                        <label className="block text-sm font-medium text-[#002E47] mb-1">1. Current Stress/Anxiety Level ({stressLevel}%)</label>
                         <input 
                             type="range" 
                             min="0" 
@@ -828,7 +828,7 @@ const RolePlayView = ({ scenario, setCoachingLabView, difficultyLevel, preparedS
                     </div>
 
                     <div className='mb-6'>
-                        <label className="block text-sm font-medium text-[#0B3B5B] mb-1">2. Intentional Mindset</label>
+                        <label className="block text-sm font-medium text-[#002E47] mb-1">2. Intentional Mindset</label>
                         <select 
                             value={intentionalMindset} 
                             onChange={(e) => setIntentionalMindset(e.target.value)}
@@ -853,7 +853,7 @@ const RolePlayView = ({ scenario, setCoachingLabView, difficultyLevel, preparedS
     if (sessionEnded) {
         return (
             <div className='p-8'>
-                <h1 className="text-3xl font-extrabold text-[#0B3B5B] mb-4">Session Complete: Audit Results</h1>
+                <h1 className="text-xl sm:text-2xl sm:text-3xl font-extrabold text-[#002E47] mb-4">Session Complete: Audit Results</h1>
                 <RolePlayCritique 
                     history={chatHistory} 
                     scenario={scenario} 
@@ -866,8 +866,8 @@ const RolePlayView = ({ scenario, setCoachingLabView, difficultyLevel, preparedS
 
 
     return (
-        <div className="p-8">
-            <h1 className="text-3xl font-extrabold text-[#0B3B5B] mb-4">Role-Play Simulator: {scenario.title}</h1>
+        <div className="p-4 sm:p-3 sm:p-4 lg:p-6 lg:p-8">
+            <h1 className="text-xl sm:text-2xl sm:text-3xl font-extrabold text-[#002E47] mb-4">Role-Play Simulator: {scenario.title}</h1>
             <p className="text-lg text-gray-600 mb-6 max-w-3xl">Practice your conversation with Alex, who is simulating **{scenario.persona}** behavior. Focus on using empathy and clear SBI feedback.</p>
             <Button onClick={handleSaveSessionAndCritique} variant="secondary" className="mb-8 bg-[#E04E1B] border-red-500 hover:bg-red-700">
                 <AlertTriangle className="w-5 h-5 mr-2" /> End Session & Get Critique
@@ -886,17 +886,17 @@ const RolePlayView = ({ scenario, setCoachingLabView, difficultyLevel, preparedS
                             realtimeHint.type === 'warning' ? 'text-orange-600' :
                             'text-blue-600'
                         }`} />
-                        <p className="font-semibold text-sm text-[#0B3B5B]">{realtimeHint.message}</p>
+                        <p className="font-semibold text-sm text-[#002E47]">{realtimeHint.message}</p>
                     </div>
                 </div>
             )}
             
-            <div className='flex flex-col lg:flex-row space-y-6 lg:space-y-0 lg:space-x-6'>
+            <div className='flex flex-col lg:flex-row space-y-4 sm:space-y-5 lg:space-y-6 lg:space-y-0 lg:space-x-6'>
                 <div className='flex-1 bg-[#FCFCFA] border border-gray-300 rounded-2xl shadow-lg flex flex-col h-[500px]'>
                     
                     {confidenceTip && !isGenerating && chatHistory.length < 2 && (
-                        <div className="p-3 bg-[#219E8B]/10 text-sm text-[#0B3B5B] border-b border-[#219E8B]/30 font-medium">
-                            <Lightbulb className='w-4 h-4 inline mr-2 text-[#219E8B]'/> **Pre-Session Nudge:** {confidenceTip}
+                        <div className="p-3 bg-[#47A88D]/10 text-sm text-[#002E47] border-b border-[#47A88D]/30 font-medium">
+                            <Lightbulb className='w-4 h-4 inline mr-2 text-[#47A88D]'/> **Pre-Session Nudge:** {confidenceTip}
                         </div>
                     )}
                     
@@ -905,13 +905,13 @@ const RolePlayView = ({ scenario, setCoachingLabView, difficultyLevel, preparedS
                             !msg.system && <Message key={index} sender={msg.sender} text={msg.text} isAI={msg.isAI} />
                         ))}
                          {chatHistory.find(msg => msg.system) && (
-                            <div className="text-sm text-[#0B3B5B] bg-[#219E8B]/10 p-3 rounded-lg border border-[#219E8B]/20 mb-4">
+                            <div className="text-sm text-[#002E47] bg-[#47A88D]/10 p-3 rounded-lg border border-[#47A88D]/20 mb-4">
                                 {chatHistory.find(msg => msg.system)?.text}
                             </div>
                         )}
                         {isGenerating && (
                             <div className='flex justify-start mb-4'>
-                                <div className='p-4 max-w-lg rounded-xl bg-[#0B3B5B]/10 text-gray-500 rounded-tl-none'>
+                                <div className='p-4 max-w-lg rounded-xl bg-[#002E47]/10 text-gray-500 rounded-tl-none'>
                                     <div className="animate-pulse text-sm">Alex is typing...</div>
                                 </div>
                             </div>
@@ -925,7 +925,7 @@ const RolePlayView = ({ scenario, setCoachingLabView, difficultyLevel, preparedS
                             onChange={(e) => setInputText(e.target.value)}
                             onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
                             placeholder="Type your response to Alex..."
-                            className="flex-1 p-3 border border-gray-300 rounded-xl focus:ring-[#219E8B] focus:border-[#219E8B]"
+                            className="flex-1 p-3 border border-gray-300 rounded-xl focus:ring-[#47A88D] focus:border-[#47A88D]"
                             disabled={isGenerating || !hasGeminiKey()}
                         />
                         <Button onClick={handleSendMessage} disabled={!inputText.trim() || isGenerating || !hasGeminiKey()} className='px-4 py-3'>
@@ -935,9 +935,9 @@ const RolePlayView = ({ scenario, setCoachingLabView, difficultyLevel, preparedS
                 </div>
 
                 <div className='lg:w-1/3'>
-                    <Card title={`Alex: The ${AI_PERSONA}`} icon={Users} className='h-full bg-[#0B3B5B]/10 border-2 border-[#0B3B5B]/20'>
+                    <Card title={`Alex: The ${AI_PERSONA}`} icon={Users} className='h-full bg-[#002E47]/10 border-2 border-[#002E47]/20'>
                         <div className='p-3 bg-white rounded-lg shadow-inner mb-4 border border-gray-200'>
-                            <h4 className='font-bold text-[#0B3B5B] mb-2 flex items-center'><Clock className='w-4 h-4 mr-1'/> Conversation Tracker</h4>
+                            <h4 className='font-bold text-[#002E47] mb-2 flex items-center'><Clock className='w-4 h-4 mr-1'/> Conversation Tracker</h4>
                             <div className='flex justify-between text-sm font-medium'>
                                 <span>Turn Count:</span>
                                 <span className='font-extrabold text-[#E04E1B]'>{Math.floor(chatHistory.filter(m => !m.system).length / 2)}</span>
@@ -953,8 +953,8 @@ const RolePlayView = ({ scenario, setCoachingLabView, difficultyLevel, preparedS
                         
                         {preparedSBI && (
                              <div className='mt-4 pt-2 border-t border-gray-300'>
-                                <h4 className='font-bold text-[#219E8B] mb-2 flex items-center'><ShieldCheck className='w-4 h-4 mr-1'/> Prepared SBI Focus:</h4>
-                                <p className='text-xs text-gray-700 italic border border-[#219E8B]/20 p-2 rounded-lg bg-white'>{preparedSBI}</p>
+                                <h4 className='font-bold text-[#47A88D] mb-2 flex items-center'><ShieldCheck className='w-4 h-4 mr-1'/> Prepared SBI Focus:</h4>
+                                <p className='text-xs text-gray-700 italic border border-[#47A88D]/20 p-2 rounded-lg bg-white'>{preparedSBI}</p>
                             </div>
                         )}
 
@@ -1023,11 +1023,11 @@ const ProgressAnalyticsView = ({ setCoachingLabView }) => {
     const velocityChange = recentAvg - previousAvg;
     
     return (
-        <div className="p-8">
-            <h1 className="text-3xl font-extrabold text-[#0B3B5B] mb-4">Progress Analytics Dashboard</h1>
+        <div className="p-4 sm:p-3 sm:p-4 lg:p-6 lg:p-8">
+            <h1 className="text-xl sm:text-2xl sm:text-3xl font-extrabold text-[#002E47] mb-4">Progress Analytics Dashboard</h1>
             <p className="text-lg text-gray-600 mb-6">Track your leadership practice performance and identify growth opportunities.</p>
             
-            <Button onClick={() => setCoachingLabView('coaching-lab-home')} variant="outline" className="mb-8">
+            <Button onClick={() => setCoachingLabView('coaching-lab-home')} variant="nav-back" size="sm" className="mb-8">
                 <ArrowLeft className="w-5 h-5 mr-2" /> Back to Coaching Lab
             </Button>
             
@@ -1039,9 +1039,9 @@ const ProgressAnalyticsView = ({ setCoachingLabView }) => {
                     </Button>
                 </Card>
             ) : (
-                <div className="space-y-6">
+                <div className="space-y-4 sm:space-y-5 lg:space-y-6">
                     {/* Overview Stats */}
-                    <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-3 sm:p-4 lg:p-6">
                         <Card title="Total Sessions" icon={Target} accent="TEAL">
                             <div className="text-4xl font-extrabold text-[#47A88D]">{totalSessions}</div>
                         </Card>
@@ -1063,16 +1063,16 @@ const ProgressAnalyticsView = ({ setCoachingLabView }) => {
                     </div>
                     
                     {/* Performance Breakdown */}
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:p-4 lg:p-6">
                         <Card title="Strengths & Weaknesses" icon={BarChart3} accent="TEAL">
                             {bestScenario && (
                                 <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg">
                                     <div className="flex items-center justify-between">
                                         <div>
                                             <p className="text-xs text-green-700 font-semibold uppercase">Strongest Area</p>
-                                            <p className="text-sm font-bold text-[#0B3B5B] mt-1">{bestScenario.title}</p>
+                                            <p className="text-sm font-bold text-[#002E47] mt-1">{bestScenario.title}</p>
                                         </div>
-                                        <div className="text-3xl font-extrabold text-green-600">{bestScenario.avgScore}</div>
+                                        <div className="text-xl sm:text-2xl sm:text-3xl font-extrabold text-green-600">{bestScenario.avgScore}</div>
                                     </div>
                                 </div>
                             )}
@@ -1081,9 +1081,9 @@ const ProgressAnalyticsView = ({ setCoachingLabView }) => {
                                     <div className="flex items-center justify-between">
                                         <div>
                                             <p className="text-xs text-orange-700 font-semibold uppercase">Growth Opportunity</p>
-                                            <p className="text-sm font-bold text-[#0B3B5B] mt-1">{worstScenario.title}</p>
+                                            <p className="text-sm font-bold text-[#002E47] mt-1">{worstScenario.title}</p>
                                         </div>
-                                        <div className="text-3xl font-extrabold text-orange-600">{worstScenario.avgScore}</div>
+                                        <div className="text-xl sm:text-2xl sm:text-3xl font-extrabold text-orange-600">{worstScenario.avgScore}</div>
                                     </div>
                                 </div>
                             )}
@@ -1093,7 +1093,7 @@ const ProgressAnalyticsView = ({ setCoachingLabView }) => {
                             {Object.entries(scenarioBreakdown).map(([category, count]) => (
                                 <div key={category} className="mb-3">
                                     <div className="flex justify-between text-sm mb-1">
-                                        <span className="font-semibold text-[#0B3B5B]">{category}</span>
+                                        <span className="font-semibold text-[#002E47]">{category}</span>
                                         <span className="text-gray-600">{count} sessions</span>
                                     </div>
                                     <div className="w-full bg-gray-200 rounded-full h-2">
@@ -1113,7 +1113,7 @@ const ProgressAnalyticsView = ({ setCoachingLabView }) => {
                             {recentSessions.reverse().map((session, idx) => (
                                 <div key={idx} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-200">
                                     <div className="flex-1">
-                                        <p className="font-semibold text-[#0B3B5B]">{session.title}</p>
+                                        <p className="font-semibold text-[#002E47]">{session.title}</p>
                                         <p className="text-xs text-gray-600">{session.date} • {session.difficulty} Difficulty</p>
                                     </div>
                                     <div className={`text-2xl font-extrabold ${
@@ -1136,7 +1136,7 @@ const ProgressAnalyticsView = ({ setCoachingLabView }) => {
                                 return (
                                     <div key={skill}>
                                         <div className="flex justify-between text-sm mb-2">
-                                            <span className="font-semibold text-[#0B3B5B]">{skill}</span>
+                                            <span className="font-semibold text-[#002E47]">{skill}</span>
                                             <span className="text-gray-600">{skillAvg}/100</span>
                                         </div>
                                         <div className="w-full bg-gray-200 rounded-full h-3">
@@ -1251,9 +1251,9 @@ const MicroLearningView = ({ topic, setCoachingLabView, onComplete }) => {
     const isLastSlide = currentSlide === module.slides.length - 1;
     
     return (
-        <div className="p-8 max-w-3xl mx-auto">
+        <div className="p-4 sm:p-3 sm:p-4 lg:p-6 lg:p-8 max-w-3xl mx-auto">
             <div className="mb-8">
-                <h1 className="text-3xl font-extrabold text-[#0B3B5B] mb-2 flex items-center">
+                <h1 className="text-xl sm:text-2xl sm:text-3xl font-extrabold text-[#002E47] mb-2 flex items-center">
                     <Icon className="w-8 h-8 mr-3 text-[#47A88D]" />
                     {module.title}
                 </h1>
@@ -1261,11 +1261,11 @@ const MicroLearningView = ({ topic, setCoachingLabView, onComplete }) => {
             </div>
             
             <Card className="mb-6">
-                <h2 className="text-2xl font-bold text-[#0B3B5B] mb-4">{slide.title}</h2>
+                <h2 className="text-xl sm:text-2xl font-bold text-[#002E47] mb-4">{slide.title}</h2>
                 <p className="text-gray-700 text-lg mb-6 leading-relaxed" dangerouslySetInnerHTML={{ __html: slide.content.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') }} />
                 
                 <div className="p-4 bg-[#47A88D]/10 border-l-4 border-[#47A88D] rounded-lg">
-                    <p className="text-sm font-semibold text-[#0B3B5B]">
+                    <p className="text-sm font-semibold text-[#002E47]">
                         <Lightbulb className="w-4 h-4 inline mr-2 text-[#47A88D]" />
                         Pro Tip: {slide.tip}
                     </p>
@@ -1402,20 +1402,20 @@ Return only valid JSON, no additional text.`;
     
     return (
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4 overflow-y-auto">
-            <div className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full p-8 my-8">
+            <div className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full p-4 sm:p-3 sm:p-4 lg:p-6 lg:p-8 my-8">
                 <div className="flex justify-between items-center mb-6">
-                    <h2 className="text-3xl font-extrabold text-[#0B3B5B]">Custom Scenario Builder</h2>
-                    <button onClick={onClose} className="text-gray-500 hover:text-[#0B3B5B]">
+                    <h2 className="text-xl sm:text-2xl sm:text-3xl font-extrabold text-[#002E47]">Custom Scenario Builder</h2>
+                    <button onClick={onClose} className="text-gray-500 hover:text-[#002E47]">
                         <X className="w-6 h-6" />
                     </button>
                 </div>
                 
                 {!previewScenario ? (
-                    <div className="space-y-6">
+                    <div className="space-y-4 sm:space-y-5 lg:space-y-6">
                         <p className="text-gray-700">Describe a real situation you need to practice, and AI will generate a tailored scenario with a realistic persona.</p>
                         
                         <div>
-                            <label className="block text-sm font-semibold text-[#0B3B5B] mb-2">Scenario Title</label>
+                            <label className="block text-sm font-semibold text-[#002E47] mb-2">Scenario Title</label>
                             <input
                                 type="text"
                                 value={scenarioTitle}
@@ -1426,7 +1426,7 @@ Return only valid JSON, no additional text.`;
                         </div>
                         
                         <div>
-                            <label className="block text-sm font-semibold text-[#0B3B5B] mb-2">Situation Description</label>
+                            <label className="block text-sm font-semibold text-[#002E47] mb-2">Situation Description</label>
                             <textarea
                                 value={situationDescription}
                                 onChange={(e) => setSituationDescription(e.target.value)}
@@ -1436,7 +1436,7 @@ Return only valid JSON, no additional text.`;
                         </div>
                         
                         <div>
-                            <label className="block text-sm font-semibold text-[#0B3B5B] mb-3">Persona Type (How will they respond?)</label>
+                            <label className="block text-sm font-semibold text-[#002E47] mb-3">Persona Type (How will they respond?)</label>
                             <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                                 {personaOptions.map((option) => {
                                     const Icon = option.icon;
@@ -1451,7 +1451,7 @@ Return only valid JSON, no additional text.`;
                                             }`}
                                         >
                                             <Icon className={`w-5 h-5 mb-2 ${personaType === option.value ? 'text-[#47A88D]' : 'text-gray-500'}`} />
-                                            <p className="text-sm font-semibold text-[#0B3B5B]">{option.label}</p>
+                                            <p className="text-sm font-semibold text-[#002E47]">{option.label}</p>
                                         </button>
                                     );
                                 })}
@@ -1474,24 +1474,24 @@ Return only valid JSON, no additional text.`;
                         </div>
                     </div>
                 ) : (
-                    <div className="space-y-6">
-                        <div className="p-6 bg-[#47A88D]/10 rounded-xl border-2 border-[#47A88D]">
-                            <h3 className="text-2xl font-bold text-[#0B3B5B] mb-3">{previewScenario.title}</h3>
+                    <div className="space-y-4 sm:space-y-5 lg:space-y-6">
+                        <div className="p-3 sm:p-4 lg:p-6 bg-[#47A88D]/10 rounded-xl border-2 border-[#47A88D]">
+                            <h3 className="text-xl sm:text-2xl font-bold text-[#002E47] mb-3">{previewScenario.title}</h3>
                             <p className="text-gray-700 mb-4">{previewScenario.description}</p>
                             <div className="flex items-center mb-4">
                                 <Users className="w-5 h-5 text-[#47A88D] mr-2" />
-                                <span className="font-semibold text-[#0B3B5B]">Persona: {previewScenario.persona}</span>
+                                <span className="font-semibold text-[#002E47]">Persona: {previewScenario.persona}</span>
                             </div>
                             <p className="text-sm text-gray-600 italic">{previewScenario.context}</p>
                         </div>
                         
                         <div>
-                            <h4 className="font-bold text-[#0B3B5B] mb-2">Suggested Approach:</h4>
+                            <h4 className="font-bold text-[#002E47] mb-2">Suggested Approach:</h4>
                             <p className="text-sm text-gray-700">{previewScenario.suggestedApproach}</p>
                         </div>
                         
                         <div>
-                            <h4 className="font-bold text-[#0B3B5B] mb-2">Learning Objectives:</h4>
+                            <h4 className="font-bold text-[#002E47] mb-2">Learning Objectives:</h4>
                             <ul className="list-disc list-inside space-y-1 text-sm text-gray-700">
                                 {previewScenario.learningObjectives?.map((obj, idx) => (
                                     <li key={idx}>{obj}</li>
@@ -1523,7 +1523,13 @@ const ScenarioLibraryView = ({ setCoachingLabView, setSelectedScenario, setMicro
     
     // Load scenarios from database via useAppServices
     const { SCENARIO_CATALOG } = useAppServices();
-    const scenarios = useMemo(() => SCENARIO_CATALOG?.items || [], [SCENARIO_CATALOG]);
+    // SCENARIO_CATALOG is an array, not an object with items property
+    const scenarios = useMemo(() => {
+        if (Array.isArray(SCENARIO_CATALOG)) {
+            return SCENARIO_CATALOG;
+        }
+        return SCENARIO_CATALOG?.items || [];
+    }, [SCENARIO_CATALOG]);
     
     const handleScenarioClick = (scenario) => {
         setTempSelectedScenario(scenario);
@@ -1545,26 +1551,26 @@ const ScenarioLibraryView = ({ setCoachingLabView, setSelectedScenario, setMicro
     
     
     return (
-    <div className="p-8">
-    <h1 className="text-3xl font-extrabold text-[#0B3B5B] mb-4">Scenario Library: Practice Conversations</h1>
+    <div className="p-4 sm:p-3 sm:p-4 lg:p-6 lg:p-8">
+    <h1 className="text-xl sm:text-2xl sm:text-3xl font-extrabold text-[#002E47] mb-4">Scenario Library: Practice Conversations</h1>
     <p className="text-lg text-gray-600 mb-6">Select a high-stakes scenario to practice your preparation process. Each scenario includes a unique persona for the AI simulator.</p>
-    <Button onClick={() => setCoachingLabView('coaching-lab-home')} variant="outline" className="mb-8">
+    <Button onClick={() => setCoachingLabView('coaching-lab-home')} variant="nav-back" size="sm" className="mb-8">
     <ArrowLeft className="w-5 h-5 mr-2" /> Back to Coaching Lab
     </Button>
     
-      <Card title="Custom Scenario Builder" icon={Zap} className="mb-8 bg-[#0B3B5B]/10 border-l-4 border-[#E04E1B] rounded-3xl" onClick={() => setIsDynamicGeneratorVisible(true)}>
+      <Card title="Custom Scenario Builder" icon={Zap} className="mb-8 bg-[#002E47]/10 border-l-4 border-[#E04E1B] rounded-3xl" onClick={() => setIsDynamicGeneratorVisible(true)}>
             <p className="text-gray-700 text-sm">Describe a real situation from your workplace, and AI will generate a tailored practice scenario with a realistic persona.</p>
             <div className="mt-4 text-[#E04E1B] font-semibold flex items-center">
                 Build Custom Scenario <CornerRightUp className='w-4 h-4 ml-1'/>
             </div>
       </Card>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:p-4 lg:p-6">
         {scenarios.map(scenario => (
-          <Card key={scenario.id} title={scenario.title} className="border-l-4 border-[#219E8B] rounded-3xl" onClick={() => handleScenarioClick(scenario)}>
+          <Card key={scenario.id} title={scenario.title} className="border-l-4 border-[#47A88D] rounded-3xl" onClick={() => handleScenarioClick(scenario)}>
             <p className="text-sm text-gray-700 mb-3">{scenario.description}</p>
-            <div className="text-xs font-semibold text-[#0B3B5B] bg-[#0B3B5B]/10 px-3 py-1 rounded-full inline-block">Persona: {scenario.persona}</div>
-            <div className="mt-4 text-[#219E8B] font-semibold flex items-center">
+            <div className="text-xs font-semibold text-[#002E47] bg-[#002E47]/10 px-3 py-1 rounded-full inline-block">Persona: {scenario.persona}</div>
+            <div className="mt-4 text-[#47A88D] font-semibold flex items-center">
               Start Preparation &rarr;
             </div>
           </Card>
@@ -1574,8 +1580,8 @@ const ScenarioLibraryView = ({ setCoachingLabView, setSelectedScenario, setMicro
       {/* Micro-Learning Prompt Modal */}
       {showMicroLearningPrompt && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full p-8">
-            <h2 className="text-2xl font-extrabold text-[#0B3B5B] mb-4">Quick Skill Refresher?</h2>
+          <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full p-4 sm:p-3 sm:p-4 lg:p-6 lg:p-8">
+            <h2 className="text-xl sm:text-2xl font-extrabold text-[#002E47] mb-4">Quick Skill Refresher?</h2>
             <p className="text-gray-700 mb-6">Take 2 minutes to review a key skill before practicing this scenario. Or skip and go straight to preparation.</p>
             
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
@@ -1584,7 +1590,7 @@ const ScenarioLibraryView = ({ setCoachingLabView, setSelectedScenario, setMicro
                 className="p-4 border-2 border-[#47A88D] rounded-xl hover:bg-[#47A88D]/10 transition-all text-left"
               >
                 <ShieldCheck className="w-6 h-6 text-[#47A88D] mb-2" />
-                <p className="font-bold text-[#0B3B5B] text-sm">SBI Framework</p>
+                <p className="font-bold text-[#002E47] text-sm">SBI Framework</p>
                 <p className="text-xs text-gray-600">Situation-Behavior-Impact</p>
               </button>
               
@@ -1593,7 +1599,7 @@ const ScenarioLibraryView = ({ setCoachingLabView, setSelectedScenario, setMicro
                 className="p-4 border-2 border-[#47A88D] rounded-xl hover:bg-[#47A88D]/10 transition-all text-left"
               >
                 <HeartPulse className="w-6 h-6 text-[#47A88D] mb-2" />
-                <p className="font-bold text-[#0B3B5B] text-sm">Active Listening</p>
+                <p className="font-bold text-[#002E47] text-sm">Active Listening</p>
                 <p className="text-xs text-gray-600">Empathy & validation</p>
               </button>
               
@@ -1602,7 +1608,7 @@ const ScenarioLibraryView = ({ setCoachingLabView, setSelectedScenario, setMicro
                 className="p-4 border-2 border-[#47A88D] rounded-xl hover:bg-[#47A88D]/10 transition-all text-left"
               >
                 <AlertTriangle className="w-6 h-6 text-[#47A88D] mb-2" />
-                <p className="font-bold text-[#0B3B5B] text-sm">Handling Defensiveness</p>
+                <p className="font-bold text-[#002E47] text-sm">Handling Defensiveness</p>
                 <p className="text-xs text-gray-600">De-escalation tactics</p>
               </button>
             </div>
@@ -1686,9 +1692,9 @@ export default function CoachingLabScreen() {
             default:
                 return (
                     <div>
-                        <h1 className="text-3xl font-extrabold text-[#0B3B5B] mb-4">Coaching Lab</h1>
+                        <h1 className="text-xl sm:text-2xl sm:text-3xl font-extrabold text-[#002E47] mb-4">Coaching Lab</h1>
                         <p className="text-lg text-gray-600 mb-8">Welcome to the Coaching Lab. Select a tool to build your leadership skills.</p>
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:p-4 lg:p-6">
                             <Card title="Scenario Library" icon={Briefcase} onClick={() => setView('scenario-library')}>
                                 <p className="text-sm text-gray-600">Practice high-stakes conversations in a realistic AI role-play simulator.</p>
                             </Card>
@@ -1705,7 +1711,7 @@ export default function CoachingLabScreen() {
     };
 
     return (
-        <div className="relative space-y-6 p-4 sm:p-6" style={{ background: '#F9FAFB' }}>
+        <div className="relative space-y-4 sm:space-y-5 lg:space-y-6 p-4 sm:p-3 sm:p-4 lg:p-6" style={{ background: '#F9FAFB' }}>
             {renderView()}
         </div>
     );

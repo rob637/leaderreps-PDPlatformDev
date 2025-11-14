@@ -21,7 +21,7 @@ export const Button = ({ children, onClick, disabled = false, variant = 'primary
   else if (size === 'lg') baseStyle += ' px-8 py-4 text-lg';
   else baseStyle += ' px-6 py-3 text-base';
 
-  if (variant === 'primary') baseStyle += ` bg-[${COLORS.TEAL}] text-white shadow-lg hover:bg-[#349881] focus:ring-[${COLORS.TEAL}]/50`;
+  if (variant === 'primary') baseStyle += ` bg-[${COLORS.TEAL}] text-white shadow-lg hover:bg-[#47A88D] focus:ring-[${COLORS.TEAL}]/50`;
   else if (variant === 'secondary') baseStyle += ` bg-[${COLORS.ORANGE}] text-white shadow-lg hover:bg-[#C33E12] focus:ring-[${COLORS.ORANGE}]/50`;
   else if (variant === 'outline') baseStyle += ` bg-[${COLORS.OFF_WHITE}] text-[${COLORS.TEAL}] border-2 border-[${COLORS.TEAL}] shadow-md hover:bg-[${COLORS.TEAL}]/10 focus:ring-[${COLORS.TEAL}]/50`;
   else if (variant === 'nav-back') baseStyle += ` bg-white text-gray-700 border border-gray-300 shadow-sm hover:bg-gray-100 focus:ring-gray-300/50 px-4 py-2 text-sm`;
@@ -56,7 +56,7 @@ export const Card = ({ children, title, className = '', onClick, accent = 'NAVY'
     >
       <span style={{ position:'absolute', top:0, left:0, right:0, height:6, background: accentColor, borderTopLeftRadius:14, borderTopRightRadius:14 }} />
       {(title || actions) && (
-        <div className="flex items-center justify-between p-6 pb-4">
+        <div className="flex items-center justify-between p-3 sm:p-4 lg:p-6 pb-4">
           <div className="flex items-center gap-3">
             {title && (
               <h2 className="text-xl font-extrabold" style={{ color: COLORS.NAVY }}>{title}</h2>
@@ -160,7 +160,7 @@ export const StatCard = ({ label, value, color, trend }) => {
           </p>
         </div>
       </div>
-      <p className="text-3xl font-extrabold" style={{ color: COLORS.NAVY }}>
+      <p className="text-xl sm:text-2xl sm:text-3xl font-extrabold" style={{ color: COLORS.NAVY }}>
         {value}
       </p>
       {trend && (
@@ -268,7 +268,7 @@ export const PlanGenerationLoader = ({ message = 'Crafting Your Development Plan
           
           {/* Main Message */}
           <h3 
-            className="text-2xl font-extrabold text-center mb-2"
+            className="text-xl sm:text-2xl font-extrabold text-center mb-2"
             style={{ color: COLORS.NAVY }}
           >
             {message}{dots}
@@ -362,7 +362,7 @@ export const SectionHeader = ({ title, accent = 'NAVY' }) => {
   return (
     <div className="flex items-center gap-3 mb-4 pb-3 border-b-2" style={{ borderColor: COLORS.SUBTLE }}>
       <BarChart3 className="w-6 h-6" style={{ color: accentColor }} />
-      <h2 className="text-2xl font-bold" style={{ color: COLORS.NAVY }}>
+      <h2 className="text-xl sm:text-2xl font-bold" style={{ color: COLORS.NAVY }}>
         {title}
       </h2>
     </div>
@@ -376,7 +376,7 @@ export const SectionHeader = ({ title, accent = 'NAVY' }) => {
 export const LikertScaleInput = ({ question, options, value, onChange }) => {
   return (
     <div 
-      className="p-6 rounded-2xl border-2" 
+      className="p-3 sm:p-4 lg:p-6 rounded-2xl border-2" 
       style={{ 
         borderColor: value ? COLORS.TEAL : COLORS.SUBTLE, 
         backgroundColor: value ? `${COLORS.TEAL}05` : COLORS.OFF_WHITE,

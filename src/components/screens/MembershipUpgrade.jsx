@@ -130,7 +130,7 @@ const TierCard = ({ tier, isCurrentTier = false, onUpgrade, isPopular = false })
   if (!tierData) {
     console.error('TierCard: tierData is undefined for tier:', tier);
     return (
-      <Card className="text-center p-6">
+      <Card className="text-center p-3 sm:p-4 lg:p-6">
         <div className="text-red-500">
           <h3 className="text-xl font-bold mb-2">Error Loading Tier</h3>
           <p>Unable to load data for tier: {tier}</p>
@@ -200,7 +200,7 @@ const TierCard = ({ tier, isCurrentTier = false, onUpgrade, isPopular = false })
             {tier === 'elite' && <Crown className="w-6 h-6 text-purple-600" />}
             {tier === 'professional' && <Zap className="w-6 h-6 text-blue-600" />}
             {tier === 'basic' && <Target className="w-6 h-6 text-teal-600" />}
-            <h3 className="text-2xl font-bold" style={{ color: COLORS.NAVY }}>
+            <h3 className="text-xl sm:text-2xl font-bold" style={{ color: COLORS.NAVY }}>
               {tierData.name}
             </h3>
           </div>
@@ -255,7 +255,7 @@ const MembershipUpgrade = ({ setCurrentScreen }) => {
   };
 
   return (
-    <div className="relative space-y-6 p-4 sm:p-6" style={{ backgroundColor: COLORS.BG, color: COLORS.NAVY }}>
+    <div className="relative space-y-4 sm:space-y-5 lg:space-y-6 p-4 sm:p-3 sm:p-4 lg:p-6" style={{ backgroundColor: COLORS.BG, color: COLORS.NAVY }}>
         
         {/* Header */}
         <div className="flex items-center gap-4 mb-8">
@@ -280,7 +280,7 @@ const MembershipUpgrade = ({ setCurrentScreen }) => {
         </div>
 
         {/* Pricing Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:p-3 sm:p-4 lg:p-6 lg:p-8 mb-12">
           <TierCard 
             tier="basic" 
             isCurrentTier={currentTier === 'basic'}
@@ -301,7 +301,7 @@ const MembershipUpgrade = ({ setCurrentScreen }) => {
 
         {/* Feature Comparison */}
         <Card className="mb-8">
-          <h2 className="text-2xl font-bold mb-6 text-center" style={{ color: COLORS.NAVY }}>
+          <h2 className="text-xl sm:text-2xl font-bold mb-6 text-center" style={{ color: COLORS.NAVY }}>
             Feature Comparison
           </h2>
           
@@ -353,11 +353,11 @@ const MembershipUpgrade = ({ setCurrentScreen }) => {
 
         {/* FAQ Section */}
         <Card>
-          <h2 className="text-2xl font-bold mb-6" style={{ color: COLORS.NAVY }}>
+          <h2 className="text-xl sm:text-2xl font-bold mb-6" style={{ color: COLORS.NAVY }}>
             Frequently Asked Questions
           </h2>
           
-          <div className="space-y-6">
+          <div className="space-y-4 sm:space-y-5 lg:space-y-6">
             <div>
               <h3 className="font-semibold mb-2">Can I upgrade or downgrade anytime?</h3>
               <p className="text-gray-600">Yes, you can change your membership tier at any time. Upgrades take effect immediately, while downgrades take effect at the next billing cycle.</p>

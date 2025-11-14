@@ -219,11 +219,11 @@ const MembershipModule = () => {
 
     // --- RENDER ---
     return (
-        <div className="relative space-y-6 p-4 sm:p-6" style={{ background: COLORS.BG, color: COLORS.NAVY }}>
+        <div className="relative space-y-4 sm:space-y-5 lg:space-y-6 p-4 sm:p-3 sm:p-4 lg:p-6" style={{ background: COLORS.BG, color: COLORS.NAVY }}>
             <div>
                 
                 {/* Header */}
-                <h1 className="text-3xl md:text-4xl font-extrabold mb-2" style={{ color: COLORS.NAVY }}>
+                <h1 className="text-xl sm:text-2xl sm:text-3xl md:text-4xl font-extrabold mb-2" style={{ color: COLORS.NAVY }}>
                     Membership & Billing
                 </h1>
                 <p className="text-base mb-6" style={{ color: COLORS.MUTED }}>
@@ -247,7 +247,7 @@ const MembershipModule = () => {
                 )}
                 
                 {/* Current Plan and Upgrade Plans */}
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 sm:p-4 lg:p-6 mb-8">
                     
                     {/* Current Plan Card (Span 1) */}
                     <Card title="Current Plan" accent={statusColor} icon={ShieldCheck} className="lg:col-span-1">
@@ -256,7 +256,7 @@ const MembershipModule = () => {
                                 {membershipData.status}
                             </span>
                         </p>
-                        <h3 className="text-2xl font-extrabold mb-4" style={{ color: COLORS.NAVY }}>
+                        <h3 className="text-xl sm:text-2xl font-extrabold mb-4" style={{ color: COLORS.NAVY }}>
                             {currentPlanDetails.name}
                         </h3>
                         
@@ -291,18 +291,18 @@ const MembershipModule = () => {
 
                     {/* Available Plans (Span 2) */}
                     <div className="lg:col-span-2 space-y-4">
-                        <h3 className="text-2xl font-bold" style={{ color: COLORS.NAVY }}>Upgrade Options</h3>
+                        <h3 className="text-xl sm:text-2xl font-bold" style={{ color: COLORS.NAVY }}>Upgrade Options</h3>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             {upgradePlans.map(plan => (
                                 <div 
                                     key={plan.id} 
-                                    className="bg-white rounded-xl shadow-md p-6 border-t-4 hover:shadow-xl transition-shadow duration-300"
+                                    className="bg-white rounded-xl shadow-md p-3 sm:p-4 lg:p-6 border-t-4 hover:shadow-xl transition-shadow duration-300"
                                     style={{ borderColor: plan.id === 'pro' ? COLORS.PURPLE : COLORS.BLUE }}
                                 >
                                     <h4 className="text-xl font-extrabold mb-1" style={{ color: COLORS.NAVY }}>{plan.name}</h4>
                                     <p className="text-sm font-semibold mb-3" style={{ color: COLORS.MUTED }}>{plan.recurrence}</p>
                                     
-                                    <p className="text-3xl font-extrabold mb-4" style={{ color: COLORS.NAVY }}>
+                                    <p className="text-xl sm:text-2xl sm:text-3xl font-extrabold mb-4" style={{ color: COLORS.NAVY }}>
                                         <DollarSign className="inline-block w-6 h-6" />{plan.price}
                                         <span className="text-base font-medium text-gray-500">/{plan.recurrence ? plan.recurrence.toLowerCase().replace('ly', '').replace('ally', '') : 'period'}</span>
                                     </p>
@@ -366,9 +366,9 @@ const MembershipModule = () => {
             {/* --- Payment Modal --- */}
             {modalOpen && selectedPlan && (
                 <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4">
-                    <div className="bg-white rounded-2xl p-8 max-w-lg w-full shadow-2xl">
+                    <div className="bg-white rounded-2xl p-4 sm:p-3 sm:p-4 lg:p-6 lg:p-8 max-w-lg w-full shadow-2xl">
                         <div className="flex justify-between items-center mb-6">
-                            <h2 className="text-2xl font-bold" style={{ color: COLORS.NAVY }}>
+                            <h2 className="text-xl sm:text-2xl font-bold" style={{ color: COLORS.NAVY }}>
                                 Secure Checkout: {selectedPlan.name}
                             </h2>
                             <button onClick={() => setModalOpen(false)} className="p-2 rounded-full hover:bg-gray-100">
@@ -380,7 +380,7 @@ const MembershipModule = () => {
                         <div className="border-b pb-4 mb-4">
                             <p className="text-lg font-semibold" style={{ color: COLORS.TEXT }}>
                                 Total Due Today: 
-                                <span className="ml-2 text-2xl font-extrabold" style={{ color: COLORS.TEAL }}>
+                                <span className="ml-2 text-xl sm:text-2xl font-extrabold" style={{ color: COLORS.TEAL }}>
                                     ${selectedPlan.price.toFixed(2)}
                                 </span>
                                 <span className="text-sm text-gray-500"> / {selectedPlan.recurrence}</span>

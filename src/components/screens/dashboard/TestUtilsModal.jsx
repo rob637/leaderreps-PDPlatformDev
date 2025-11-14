@@ -38,8 +38,8 @@ const TestUtilsModal = ({ isOpen, onDeletePlan, onClose, membershipData, updateM
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl p-6 max-w-md w-full">
-        <h2 className="text-2xl font-bold mb-2" style={{ color: COLORS.NAVY }}>
+      <div className="bg-white rounded-2xl p-3 sm:p-4 lg:p-6 max-w-md w-full">
+        <h2 className="text-xl sm:text-2xl font-bold mb-2" style={{ color: COLORS.NAVY }}>
           ⚙️ Test Utilities (Danger Zone)
         </h2>
         <p className="text-sm text-red-600 mb-4">

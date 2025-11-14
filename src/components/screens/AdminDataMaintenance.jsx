@@ -22,10 +22,10 @@ import {
    DESIGN SYSTEM - Matching DevPlanComponents
 ========================================================= */
 const COLORS = { 
-  NAVY: '#002E47', TEAL: '#47A88D', BLUE: '#2563EB', ORANGE: '#E04E1B', 
-  GREEN: '#10B981', AMBER: '#F5A800', RED: '#E04E1B', LIGHT_GRAY: '#FCFCFA', 
+  NAVY: '#002E47', TEAL: '#47A88D', BLUE: '#002E47', ORANGE: '#E04E1B', 
+  GREEN: '#47A88D', AMBER: '#E04E1B', RED: '#E04E1B', LIGHT_GRAY: '#FCFCFA', 
   OFF_WHITE: '#FFFFFF', SUBTLE: '#E5E7EB', TEXT: '#374151', MUTED: '#4B5563', 
-  PURPLE: '#7C3AED', BG: '#F9FAFB', PINK: '#EC4899', GOLD: '#F59E0B'
+  PURPLE: '#47A88D', BG: '#F9FAFB', PINK: '#E04E1B', GOLD: '#E04E1B'
 };
 
 const Button = ({ children, onClick, disabled = false, variant = 'primary', size = 'md', className = '', ...rest }) => {
@@ -35,7 +35,7 @@ const Button = ({ children, onClick, disabled = false, variant = 'primary', size
   else if (size === 'lg') baseStyle += ' px-8 py-4 text-lg';
   else baseStyle += ' px-4 py-2 text-sm';
 
-  if (variant === 'primary') baseStyle += ` bg-[${COLORS.TEAL}] text-white shadow-md hover:bg-[#349881] focus:ring-[${COLORS.TEAL}]/50`;
+  if (variant === 'primary') baseStyle += ` bg-[${COLORS.TEAL}] text-white shadow-md hover:bg-[#47A88D] focus:ring-[${COLORS.TEAL}]/50`;
   else if (variant === 'secondary') baseStyle += ` bg-[${COLORS.ORANGE}] text-white shadow-md hover:bg-[#C33E12] focus:ring-[${COLORS.ORANGE}]/50`;
   else if (variant === 'outline') baseStyle += ` bg-white text-[${COLORS.TEAL}] border-2 border-[${COLORS.TEAL}] hover:bg-[${COLORS.TEAL}]/10 focus:ring-[${COLORS.TEAL}]/50`;
   else if (variant === 'danger') baseStyle += ` bg-red-600 text-white shadow-md hover:bg-red-700 focus:ring-red-500/50`;
@@ -58,7 +58,7 @@ const Card = ({ children, title, icon: Icon, className = '', accent = 'NAVY', ac
       <span style={{ position:'absolute', top:0, left:0, right:0, height:6, background: accentColor, borderTopLeftRadius:14, borderTopRightRadius:14 }} />
       
       {(title || actions) && (
-        <div className="flex items-center justify-between p-6 pb-4">
+        <div className="flex items-center justify-between p-3 sm:p-4 lg:p-6 pb-4">
           <div className="flex items-center gap-3">
             {Icon && (
               <div className="w-10 h-10 rounded-lg flex items-center justify-center border flex-shrink-0" style={{ borderColor: COLORS.SUBTLE, background: COLORS.LIGHT_GRAY }}>
@@ -457,7 +457,7 @@ const SubcollectionViewer = ({ tableConfig, userId }) => {
 
   if (error) {
     return (
-      <div className="p-6 bg-red-50 border-2 border-red-200 rounded-xl">
+      <div className="p-3 sm:p-4 lg:p-6 bg-red-50 border-2 border-red-200 rounded-xl">
         <AlertTriangle size={20} className="text-red-600 mb-2" />
         <p className="text-red-800">{error}</p>
       </div>
@@ -466,7 +466,7 @@ const SubcollectionViewer = ({ tableConfig, userId }) => {
 
   if (docs.length === 0) {
     return (
-      <div className="p-8 text-center bg-gray-50 rounded-xl border-2 border-dashed" style={{ borderColor: COLORS.SUBTLE }}>
+      <div className="p-4 sm:p-3 sm:p-4 lg:p-6 lg:p-8 text-center bg-gray-50 rounded-xl border-2 border-dashed" style={{ borderColor: COLORS.SUBTLE }}>
         <MessageSquare className="w-12 h-12 mx-auto mb-4 text-gray-400" />
         <p className="text-gray-600">No entries found</p>
       </div>
@@ -744,7 +744,7 @@ const CatalogTableEditor = ({ items, onChange }) => {
             />
           ))
         ) : (
-          <div className="p-8 text-center text-gray-500">
+          <div className="p-4 sm:p-3 sm:p-4 lg:p-6 lg:p-8 text-center text-gray-500">
             <p>No items in this catalog.</p>
           </div>
         )}
@@ -870,7 +870,7 @@ const TableDataEditor = ({ tableConfig, data, onSave, onDelete }) => {
 
   if (!data) {
     return (
-      <div className="p-8 text-center bg-gray-50 rounded-xl border-2 border-dashed" style={{ borderColor: COLORS.SUBTLE }}>
+      <div className="p-4 sm:p-3 sm:p-4 lg:p-6 lg:p-8 text-center bg-gray-50 rounded-xl border-2 border-dashed" style={{ borderColor: COLORS.SUBTLE }}>
         <Database className="w-12 h-12 mx-auto mb-4 text-gray-400" />
         <p className="text-gray-600 mb-4">No data found for this table</p>
         <Button onClick={handleSave} variant="primary">
@@ -1154,7 +1154,7 @@ const TableViewer = ({ config, userId }) => {
 
   if (error) {
     return (
-      <div className="p-6 bg-red-50 border-2 border-red-200 rounded-xl">
+      <div className="p-3 sm:p-4 lg:p-6 bg-red-50 border-2 border-red-200 rounded-xl">
         <div className="flex items-center gap-3 text-red-800">
           <AlertTriangle size={20} />
           <div>
@@ -1209,11 +1209,11 @@ export default function AdminDataMaintenance() {
 
   if (!isAdmin) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-6">
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-3 sm:p-4 lg:p-6">
         <Card accent="RED">
-          <div className="text-center p-8">
+          <div className="text-center p-4 sm:p-3 sm:p-4 lg:p-6 lg:p-8">
             <AlertTriangle className="w-16 h-16 mx-auto mb-4 text-red-600" />
-            <h2 className="text-2xl font-bold mb-2" style={{ color: COLORS.NAVY }}>
+            <h2 className="text-xl sm:text-2xl font-bold mb-2" style={{ color: COLORS.NAVY }}>
               Access Denied
             </h2>
             <p className="text-gray-600">
@@ -1235,7 +1235,7 @@ export default function AdminDataMaintenance() {
         <div className="max-w-7xl mx-auto px-6 py-6">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-3xl font-bold mb-2" style={{ color: COLORS.NAVY }}>
+              <h1 className="text-xl sm:text-2xl sm:text-3xl font-bold mb-2" style={{ color: COLORS.NAVY }}>
                 Admin Data Maintenance
               </h1>
               <p className="text-gray-600">
@@ -1292,7 +1292,7 @@ export default function AdminDataMaintenance() {
       </div>
 
       <div className="max-w-7xl mx-auto px-6 py-6">
-        <div className="grid grid-cols-12 gap-6">
+        <div className="grid grid-cols-12 gap-3 sm:p-4 lg:p-6">
           {/* Sidebar - Table List */}
           <div className="col-span-3">
             <Card accent={currentGroup.color.replace('#', '').toUpperCase()}>
@@ -1369,7 +1369,7 @@ export default function AdminDataMaintenance() {
         </div>
 
         {/* Help Section */}
-        <div className="mt-8 grid grid-cols-2 gap-6">
+        <div className="mt-8 grid grid-cols-2 gap-3 sm:p-4 lg:p-6">
           <Card accent="BLUE">
             <div className="flex items-start gap-3">
               <FileText className="text-blue-600 flex-shrink-0 mt-1" size={20} />

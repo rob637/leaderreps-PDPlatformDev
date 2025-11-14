@@ -30,7 +30,7 @@ const RadioButtonInput = ({ question, options, value, onChange }) => {
   
   return (
     <div 
-      className="p-6 rounded-lg transition-all"
+      className="p-3 sm:p-4 lg:p-6 rounded-lg transition-all"
       style={{ 
         background: isFocused ? 'white' : COLORS.BG,
         border: `2px solid ${isFocused ? COLORS.TEAL : 'transparent'}`
@@ -158,10 +158,10 @@ const ProgressScan = ({
         {/* Show cool loading overlay when generating */}
         {isGenerating && <PlanGenerationLoader message="Generating Your Next Plan" />}
         
-        <div className="max-w-4xl mx-auto p-4 sm:p-6">
+        <div className="max-w-4xl mx-auto p-4 sm:p-3 sm:p-4 lg:p-6">
         <Card accent="GREEN">
           <div className="mb-6">
-            <h2 className="text-3xl font-extrabold mb-2" style={{ color: COLORS.NAVY }}>
+            <h2 className="text-xl sm:text-2xl sm:text-3xl font-extrabold mb-2" style={{ color: COLORS.NAVY }}>
               Your Progress
             </h2>
             <p className="text-lg" style={{ color: COLORS.MUTED }}>
@@ -240,7 +240,7 @@ const ProgressScan = ({
   const isTotalLoading = isLoading || isGenerating;
   
   return (
-    <div className="max-w-4xl mx-auto p-4 sm:p-6" style={{ background: COLORS.BG }}>
+    <div className="max-w-4xl mx-auto p-4 sm:p-3 sm:p-4 lg:p-6" style={{ background: COLORS.BG }}>
       
       {/* REQ #3: Added Back Button */}
       <div className="mb-4">
@@ -252,7 +252,7 @@ const ProgressScan = ({
 
       {/* Header Card */}
       <Card accent="GREEN">
-        <h1 className="text-3xl font-extrabold mb-2" style={{ color: COLORS.NAVY }}>
+        <h1 className="text-xl sm:text-2xl sm:text-3xl font-extrabold mb-2" style={{ color: COLORS.NAVY }}>
           Progress Scan
         </h1>
         <p className="text-lg" style={{ color: COLORS.MUTED }}>

@@ -117,10 +117,10 @@ const CommunityHomeView = ({ setView, user, currentTierFilter, setCurrentTierFil
     };
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-4 sm:space-y-5 lg:space-y-6">
             {/* Header: Title & New Thread Button */}
             <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4 border-b pb-4" style={{ borderColor: COLORS.SUBTLE }}>
-                <h2 className="text-2xl font-bold" style={{ color: COLORS.NAVY }}>Community Feed ({safeTierMeta[currentTierFilter]?.name || 'All'})</h2>
+                <h2 className="text-xl sm:text-2xl font-bold" style={{ color: COLORS.NAVY }}>Community Feed ({safeTierMeta[currentTierFilter]?.name || 'All'})</h2>
                 <Button onClick={() => setView('new-thread')} size="sm"> {/* Use standard Button */}
                     <PlusCircle className="w-4 h-4 mr-2" /> Start Discussion
                 </Button>
@@ -480,9 +480,9 @@ const CommunityScreen = () => {
     // Feature Flag Check for entire screen (bypass for admins)
     if (!isAdmin && !featureFlags?.enableCommunity) { // cite: useAppServices.jsx
          return (
-             <div className="p-8 text-center text-gray-500">
+             <div className="p-4 sm:p-3 sm:p-4 lg:p-6 lg:p-8 text-center text-gray-500">
                  <Users className="w-12 h-12 mx-auto mb-4 text-gray-400"/>
-                 <h1 className="text-2xl font-bold mb-2">Community Hub Unavailable</h1>
+                 <h1 className="text-xl sm:text-2xl font-bold mb-2">Community Hub Unavailable</h1>
                  <p>This feature is currently disabled.</p>
                  <Button onClick={() => navigate('dashboard')} variant="outline" size="sm" className="mt-4">Back to Arena</Button>
              </div>
@@ -495,7 +495,7 @@ const CommunityScreen = () => {
 
     return (
         // Consistent page structure and padding
-        <div className="relative space-y-6 p-4 sm:p-6" style={{ background: COLORS.BG }}>
+        <div className="relative space-y-4 sm:space-y-5 lg:space-y-6 p-4 sm:p-3 sm:p-4 lg:p-6" style={{ background: COLORS.BG }}>
             {/* Back Button */}
             <Button
                 onClick={() => navigate('dashboard')}
@@ -510,15 +510,15 @@ const CommunityScreen = () => {
             <header className='flex items-center gap-4 border-b-2 pb-3 mb-8' style={{borderColor: COLORS.NAVY+'30'}}>
                 <Users className='w-10 h-10 flex-shrink-0' style={{color: COLORS.TEAL}}/>
                 <div>
-                     <h1 className="text-3xl md:text-4xl font-extrabold" style={{ color: COLORS.NAVY }}>Leadership Community</h1>
+                     <h1 className="text-xl sm:text-2xl sm:text-3xl md:text-4xl font-extrabold" style={{ color: COLORS.NAVY }}>Leadership Community</h1>
                      <p className="text-md text-gray-600 mt-1">(Community Pillar 3)</p>
                 </div>
             </header>
 
             {/* Main Layout Grid (Sidebar + Content) */}
-            <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+            <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 sm:p-3 sm:p-4 lg:p-6 lg:p-8">
                 {/* Sidebar Navigation */}
-                <aside className="lg:col-span-1 space-y-4 lg:sticky lg:top-6 self-start"> {/* Make sidebar sticky */}
+                <aside className="lg:col-span-1 space-y-4 lg:sticky lg:top-3 sm:p-4 lg:p-6 self-start"> {/* Make sidebar sticky */}
                     <h3 className="text-xs font-extrabold uppercase tracking-wider px-3 py-1 rounded text-gray-500 bg-gray-100 border border-gray-200">
                         Community Channels
                     </h3>

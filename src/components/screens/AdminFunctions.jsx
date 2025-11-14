@@ -12,13 +12,13 @@ import { Shield, ToggleLeft, ToggleRight, Save, Loader, AlertTriangle, ArrowLeft
    PALETTE & UI COMPONENTS (Standardized)
 ========================================================= */
 // --- Primary Color Palette ---
-const COLORS = { NAVY: '#002E47', TEAL: '#47A88D', BLUE: '#2563EB', ORANGE: '#E04E1B', GREEN: '#10B981', AMBER: '#F5A800', RED: '#E04E1B', LIGHT_GRAY: '#FCFCFA', OFF_WHITE: '#FFFFFF', SUBTLE: '#E5E7EB', TEXT: '#374151', MUTED: '#4B5355', PURPLE: '#7C3AED', BG: '#F9FAFB' }; // cite: App.jsx
+const COLORS = { NAVY: '#002E47', TEAL: '#47A88D', BLUE: '#002E47', ORANGE: '#E04E1B', GREEN: '#47A88D', AMBER: '#E04E1B', RED: '#E04E1B', LIGHT_GRAY: '#FCFCFA', OFF_WHITE: '#FFFFFF', SUBTLE: '#E5E7EB', TEXT: '#374151', MUTED: '#4B5355', PURPLE: '#47A88D', BG: '#F9FAFB' }; // cite: App.jsx
 
 // --- Standardized UI Components (Local Definition for standalone use) ---
 const Button = ({ children, onClick, disabled = false, variant = 'primary', className = '', size = 'md', ...rest }) => { /* ... Re-use definition ... */
     let baseStyle = `inline-flex items-center justify-center gap-2 font-semibold rounded-xl transition-all duration-200 focus:outline-none focus:ring-4 disabled:opacity-50 disabled:cursor-not-allowed`;
     if (size === 'sm') baseStyle += ' px-4 py-2 text-sm'; else if (size === 'lg') baseStyle += ' px-8 py-4 text-lg'; else baseStyle += ' px-6 py-3 text-base'; // Default 'md'
-    if (variant === 'primary') baseStyle += ` bg-[${COLORS.TEAL}] text-white shadow-lg hover:bg-[#349881] focus:ring-[${COLORS.TEAL}]/50`;
+    if (variant === 'primary') baseStyle += ` bg-[${COLORS.TEAL}] text-white shadow-lg hover:bg-[#47A88D] focus:ring-[${COLORS.TEAL}]/50`;
     else if (variant === 'secondary') baseStyle += ` bg-[${COLORS.ORANGE}] text-white shadow-lg hover:bg-[#C312] focus:ring-[${COLORS.ORANGE}]/50`;
     else if (variant === 'outline') baseStyle += ` bg-[${COLORS.OFF_WHITE}] text-[${COLORS.TEAL}] border-2 border-[${COLORS.TEAL}] shadow-md hover:bg-[${COLORS.TEAL}]/10 focus:ring-[${COLORS.TEAL}]/50`;
     else if (variant === 'nav-back') baseStyle += ` bg-white text-gray-700 border border-gray-300 shadow-sm hover:bg-gray-100 focus:ring-gray-300/50 px-4 py-2 text-sm`;
@@ -308,7 +308,7 @@ const AdminFunctionsScreen = () => {
     if (isAppLoading) {
         return (
             <div className="min-h-screen flex items-center justify-center p-4" style={{ background: COLORS.BG }}>
-                <div className="flex items-center justify-center p-8 text-center text-gray-500 bg-gray-50 rounded-lg min-h-[100px]">
+                <div className="flex items-center justify-center p-4 sm:p-3 sm:p-4 lg:p-6 lg:p-8 text-center text-gray-500 bg-gray-50 rounded-lg min-h-[100px]">
                     <Loader className="w-5 h-5 animate-spin mr-2" style={{ color: COLORS.TEAL }} />
                     Loading Admin Functions...
                 </div>
@@ -349,10 +349,10 @@ const AdminFunctionsScreen = () => {
     }
 
     return (
-        <div className="p-6 md:p-8 lg:p-10 min-h-screen" style={{ background: COLORS.BG }}>
+        <div className="p-6 md:p-4 sm:p-3 sm:p-4 lg:p-6 lg:p-8 lg:p-10 min-h-screen" style={{ background: COLORS.BG }}>
             {/* Header */}
             <header className="mb-8">
-                <h1 className="text-3xl md:text-4xl font-extrabold mb-2 flex items-center gap-3" style={{ color: COLORS.NAVY }}>
+                <h1 className="text-xl sm:text-2xl sm:text-3xl md:text-4xl font-extrabold mb-2 flex items-center gap-3" style={{ color: COLORS.NAVY }}>
                     <Shield className="w-8 h-8" style={{ color: COLORS.PURPLE }} /> Admin Functions
                 </h1>
                 <p className="text-lg text-gray-700">Manage application features and settings.</p>
@@ -363,7 +363,7 @@ const AdminFunctionsScreen = () => {
                 <ArrowLeft className="w-5 h-5 mr-2" /> Back to App Settings
             </Button>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:p-4 lg:p-6">
 
                 {/* 1. Admin Email Manager <-- NEW CARD */}
                 <AdminEmailManager

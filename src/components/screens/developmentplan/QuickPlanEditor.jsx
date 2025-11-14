@@ -157,12 +157,12 @@ const QuickPlanEditor = ({ plan, onSave, onCancel }) => {
   });
 
   return (
-    <div className="max-w-4xl mx-auto p-6 space-y-6">
+    <div className="max-w-4xl mx-auto p-3 sm:p-4 lg:p-6 space-y-4 sm:space-y-5 lg:space-y-6">
       {/* Header */}
       <Card accent="ORANGE">
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-2xl font-bold mb-2" style={{ color: COLORS.NAVY }}>
+            <h2 className="text-xl sm:text-2xl font-bold mb-2" style={{ color: COLORS.NAVY }}>
               Quick Edit Plan
             </h2>
             <p className="text-gray-600">

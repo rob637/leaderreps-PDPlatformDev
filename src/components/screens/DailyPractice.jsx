@@ -190,15 +190,15 @@ const CommitmentSelectorView = ({ setView, initialGoal, initialTier }) => {
         }`;
 
     return (
-        <div className="p-8">
-            <h1 className="text-3xl font-extrabold text-[#002E47] mb-4">Manage Your Scorecard Commitments</h1>
+        <div className="p-4 sm:p-3 sm:p-4 lg:p-6 lg:p-8">
+            <h1 className="text-xl sm:text-2xl sm:text-3xl font-extrabold text-[#002E47] mb-4">Manage Your Scorecard Commitments</h1>
             <p className="text-lg text-gray-600 mb-6 max-w-3xl">Select the core micro-habits that directly support your current leadership development goals. Aim for 3-5 active commitments.</p>
 
-            <Button onClick={() => setView('scorecard')} variant="secondary" className="mb-8" disabled={isSaving}>
-                <CornerRightUp className="w-5 h-5 mr-2" /> Back to Scorecard
+            <Button onClick={() => setView('scorecard')} variant="nav-back" size="sm" className="mb-8" disabled={isSaving}>
+                <ArrowLeft className="w-5 h-5 mr-2" /> Back to Scorecard
             </Button>
             
-            <div className="lg:grid lg:grid-cols-3 gap-6">
+            <div className="lg:grid lg:grid-cols-3 gap-3 sm:p-4 lg:p-6">
                 
                 {/* Current Commitments List (Left Column) */}
                 <Card title={`Active Commitments (${userCommitments.length})`} icon={CheckCircle} className='mb-8 lg:mb-0 lg:col-span-1 border-2 border-[#47A88D]/50'>
@@ -298,7 +298,7 @@ const CommitmentSelectorView = ({ setView, initialGoal, initialTier }) => {
                                             <button 
                                                 onClick={() => handleAddCommitment(c, 'pdp')}
                                                 disabled={!canAddCommitment || isSaving}
-                                                className={`font-semibold text-xs transition-colors p-1 flex items-center space-x-1 ${canAddCommitment ? 'text-[#47A88D] hover:text-[#349881]' : 'text-gray-400 cursor-not-allowed'}`}
+                                                className={`font-semibold text-xs transition-colors p-1 flex items-center space-x-1 ${canAddCommitment ? 'text-[#47A88D] hover:text-[#47A88D]' : 'text-gray-400 cursor-not-allowed'}`}
                                             >
                                                 <PlusCircle className='w-4 h-4'/>
                                                 <span className='hidden sm:inline'>Add</span>
@@ -341,7 +341,7 @@ const CommitmentSelectorView = ({ setView, initialGoal, initialTier }) => {
                                                         <button 
                                                             onClick={() => handleAddCommitment(c, 'bank')}
                                                             disabled={!canAddCommitment || isSaving}
-                                                            className={`font-semibold text-xs transition-colors p-1 ${canAddCommitment ? 'text-[#47A88D] hover:text-[#349881]' : 'text-gray-400 cursor-not-allowed'}`}
+                                                            className={`font-semibold text-xs transition-colors p-1 ${canAddCommitment ? 'text-[#47A88D] hover:text-[#47A88D]' : 'text-gray-400 cursor-not-allowed'}`}
                                                         >
                                                             <PlusCircle className='w-4 h-4'/>
                                                         </button>
@@ -368,7 +368,7 @@ const CommitmentSelectorView = ({ setView, initialGoal, initialTier }) => {
                                 <Button 
                                     onClick={handleCreateCustomCommitment} 
                                     disabled={!customCommitment.trim() || !canAddCommitment || isSaving} 
-                                    className="w-full bg-[#47A88D] hover:bg-[#349881]"
+                                    className="w-full bg-[#47A88D] hover:bg-[#47A88D]"
                                 >
                                     {isSaving ? 'Saving...' : 'Add Custom Commitment'}
                                 </Button>
@@ -431,7 +431,7 @@ const CommitmentItem = ({ commitment, onLogCommitment, onRemove }) => {
                 <Button 
                     onClick={() => onLogCommitment(commitment.id, 'Committed')} 
                     disabled={status === 'Committed'}
-                    className="px-3 py-1 text-xs bg-[#47A88D] hover:bg-[#349881] disabled:bg-green-300 disabled:shadow-none"
+                    className="px-3 py-1 text-xs bg-[#47A88D] hover:bg-[#47A88D] disabled:bg-green-300 disabled:shadow-none"
                     >
                     Committed
                 </Button>
@@ -460,19 +460,21 @@ const ScorecardView = ({ setView, initialGoal, initialTier, isSaving, commitment
     const { navigate } = useAppServices();
     const streak = calculateStreak(commitmentHistory);
     return (
-        <div className="p-8">
-            <button
+        <div className="p-4 sm:p-3 sm:p-4 lg:p-6 lg:p-8">
+            <Button
                 onClick={() => navigate('coaching-lab')}
-                className="flex items-center gap-2 mb-6 px-4 py-2 text-[#002E47] hover:text-[#47A88D] transition-colors"
+                variant="nav-back"
+                size="sm"
+                className="mb-6"
             >
-                <ArrowLeft className="w-5 h-5" />
-                <span className="font-semibold">Back to Coaching Lab</span>
-            </button>
+                <ArrowLeft className="w-5 h-5 mr-2" />
+                Back to Coaching Lab
+            </Button>
             
-            <h1 className="text-3xl font-extrabold text-[#002E47] mb-6">Daily Commitment Scorecard (Leadership Practice)</h1>
+            <h1 className="text-xl sm:text-2xl sm:text-3xl font-extrabold text-[#002E47] mb-6">Daily Commitment Scorecard (Leadership Practice)</h1>
             <p className="text-lg text-gray-600 mb-8 max-w-3xl">Track your daily commitment to the non-negotiable leadership actions that reinforce your professional identity. Consistently hitting this score is the key to sustained executive growth.</p>
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:p-3 sm:p-4 lg:p-6 lg:p-8">
                 {/* Scorecard Column */}
                 <div className='lg:col-span-2'>
                     {(initialGoal || initialTier) && (
@@ -484,7 +486,7 @@ const ScorecardView = ({ setView, initialGoal, initialTier, isSaving, commitment
                             </div>
                     )}
                     <div className="mb-8 flex justify-between items-center">
-                        <h3 className="text-2xl font-extrabold text-[#002E47]">
+                        <h3 className="text-xl sm:text-2xl font-extrabold text-[#002E47]">
                             Today's Commitments ({commitmentData?.active_commitments?.length || 0})
                         </h3>
                         <Button onClick={() => setView('selector')} variant="outline" className="text-sm px-4 py-2" disabled={isSaving}>
@@ -509,7 +511,7 @@ const ScorecardView = ({ setView, initialGoal, initialTier, isSaving, commitment
                         </div>
 
                         <div className="mt-8 pt-4 border-t border-gray-200 flex justify-between items-center">
-                            <h3 className="text-2xl font-extrabold text-[#002E47]">
+                            <h3 className="text-xl sm:text-2xl font-extrabold text-[#002E47]">
                                 Daily Score:
                             </h3>
                             <span className={`text-4xl font-extrabold p-3 rounded-xl shadow-inner min-w-[100px] text-center ${
@@ -522,7 +524,7 @@ const ScorecardView = ({ setView, initialGoal, initialTier, isSaving, commitment
                 </div>
                 
                 {/* History Column */}
-                <div className='lg:col-span-1 space-y-8'>
+                <div className='lg:col-span-1 space-y-4 sm:space-y-6 lg:space-y-8'>
                     <Card title="Commitment History" icon={BarChart3} className='bg-[#002E47]/10 border-2 border-[#002E47]/20'>
                         <p className='text-gray-700 text-sm mb-4'>
                             **Data is persistent and loaded from Firestore!** (Last 7 days)
@@ -667,14 +669,14 @@ export default function DailyPracticeScreen({ initialGoal, initialTier }) {
 
     if (isLoading) {
         return (
-            <div className="p-6 min-h-screen flex items-center justify-center">
+            <div className="p-3 sm:p-4 lg:p-6 min-h-screen flex items-center justify-center">
                 <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-emerald-600"></div>
                 <p className="text-emerald-700 ml-3">Loading practice data...</p>
             </div>
         );
     }
     if (error) {
-        return <div className="p-8"><p className="text-[#E04E1B] p-4 bg-red-100 rounded-xl">Error loading data: {error}</p></div>;
+        return <div className="p-4 sm:p-3 sm:p-4 lg:p-6 lg:p-8"><p className="text-[#E04E1B] p-4 bg-red-100 rounded-xl">Error loading data: {error}</p></div>;
     }
     
     const sharedProps = {

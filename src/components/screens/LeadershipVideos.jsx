@@ -10,7 +10,7 @@ import { useAppServices } from '../../services/useAppServices.jsx'; // cite: use
    PALETTE & UI COMPONENTS (Standardized)
 ========================================================= */
 // --- CORPORATE COLORS (STRICT COMPLIANCE) ---
-const COLORS = { NAVY: '#002E47', TEAL: '#47A88D', BLUE: '#002E47', ORANGE: '#E04E1B', GREEN: '#47A88D', AMBER: '#E04E1B', RED: '#E04E1B', LIGHT_GRAY: '#FCFCFA', OFF_WHITE: '#FFFFFF', SUBTLE: '#47A88D', TEXT: '#002E47', MUTED: '#349881', PURPLE: '#47A88D', BG: '#FCFCFA' }; // CORPORATE COLORS ONLY!
+const COLORS = { NAVY: '#002E47', TEAL: '#47A88D', BLUE: '#002E47', ORANGE: '#E04E1B', GREEN: '#47A88D', AMBER: '#E04E1B', RED: '#E04E1B', LIGHT_GRAY: '#FCFCFA', OFF_WHITE: '#FFFFFF', SUBTLE: '#47A88D', TEXT: '#002E47', MUTED: '#47A88D', PURPLE: '#47A88D', BG: '#FCFCFA' }; // CORPORATE COLORS ONLY!
 
 // --- Standardized Button Component (Local Definition, Styled Consistently) ---
 // Note: Ideally, this would be imported from a shared UI library.
@@ -18,7 +18,7 @@ const COLORS = { NAVY: '#002E47', TEAL: '#47A88D', BLUE: '#002E47', ORANGE: '#E0
 const Button = ({ children, onClick, disabled = false, variant = 'primary', className = '', size = 'md', ...rest }) => {
   let baseStyle = `inline-flex items-center justify-center gap-2 font-semibold rounded-xl transition-all duration-200 focus:outline-none focus:ring-4 disabled:opacity-50 disabled:cursor-not-allowed`;
   if (size === 'sm') baseStyle += ' px-4 py-2 text-sm'; else if (size === 'lg') baseStyle += ' px-8 py-4 text-lg'; else baseStyle += ' px-6 py-3 text-base'; // Default 'md'
-  if (variant === 'primary') baseStyle += ` bg-[${COLORS.TEAL}] text-white shadow-lg hover:bg-[#349881] focus:ring-[${COLORS.TEAL}]/50`;
+  if (variant === 'primary') baseStyle += ` bg-[${COLORS.TEAL}] text-white shadow-lg hover:bg-[#47A88D] focus:ring-[${COLORS.TEAL}]/50`;
   else if (variant === 'secondary') baseStyle += ` bg-[${COLORS.ORANGE}] text-white shadow-lg hover:bg-[#C33E12] focus:ring-[${COLORS.ORANGE}]/50`;
   else if (variant === 'outline') baseStyle += ` bg-[${COLORS.OFF_WHITE}] text-[${COLORS.TEAL}] border-2 border-[${COLORS.TEAL}] shadow-md hover:bg-[${COLORS.TEAL}]/10 focus:ring-[${COLORS.TEAL}]/50`;
   else if (variant === 'nav-back') baseStyle += ` bg-white text-gray-700 border border-gray-300 shadow-sm hover:bg-gray-100 focus:ring-gray-300/50 px-4 py-2 text-sm`;
@@ -422,12 +422,12 @@ const LeadershipVideosScreen = () => {
     const actionableVideos = useMemo(() => VIDEO_LISTS?.ACTIONABLE || [], [VIDEO_LISTS]);
 
     return (
-        <div className="p-6 md:p-10 min-h-screen" style={{ background: COLORS.BG }}>
+        <div className="p-3 sm:p-4 lg:p-6 md:p-10 min-h-screen" style={{ background: COLORS.BG }}>
             {/* Header */}
             <header className='flex items-center gap-4 border-b-2 pb-3 mb-8' style={{borderColor: COLORS.NAVY+'30'}}>
                 <Film className='w-10 h-10 flex-shrink-0' style={{color: COLORS.NAVY}}/>
                 <div>
-                    <h1 className="text-3xl md:text-4xl font-extrabold" style={{ color: COLORS.NAVY }}>
+                    <h1 className="text-xl sm:text-2xl sm:text-3xl md:text-4xl font-extrabold" style={{ color: COLORS.NAVY }}>
                         Leadership Video Library
                     </h1>
                     <p className="text-md" style={{ color: COLORS.NAVY + '80' }}>
@@ -508,7 +508,7 @@ const LeadershipVideosScreen = () => {
 
             {/* Enhanced Video Grid */}
             {filteredVideos.length > 0 ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:p-4 lg:p-6 mb-12">
                     {filteredVideos.map((video) => (
                         <VideoCard
                             key={video.id}
@@ -539,13 +539,13 @@ const LeadershipVideosScreen = () => {
             {/* --- SECTION 1: INSPIRATIONAL & PHILOSOPHY --- */}
             <section className="mb-12">
                 {/* Section Header with Accent */}
-                <h2 className="text-2xl md:text-3xl font-bold mb-6 border-l-4 pl-3 flex items-center gap-3"
+                <h2 className="text-2xl md:text-xl sm:text-2xl sm:text-3xl font-bold mb-6 border-l-4 pl-3 flex items-center gap-3"
                     style={{ color: COLORS.NAVY, borderColor: COLORS.ORANGE }}>
                     <Zap className='w-6 h-6' style={{color: COLORS.ORANGE}}/> Philosophical Insights & Mindset
                 </h2>
                 {/* Video Grid */}
                 {inspirationalVideos.length > 0 ? (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:p-4 lg:p-6">
                         {inspirationalVideos.map((video, index) => (
                             <VideoCard
                                 key={video.id || index} // Prefer unique ID if available
@@ -566,13 +566,13 @@ const LeadershipVideosScreen = () => {
             {/* --- SECTION 2: ACTIONABLE & PRACTICAL --- */}
             <section>
                 {/* Section Header with Accent */}
-                <h2 className="text-2xl md:text-3xl font-bold mb-6 border-l-4 pl-3 flex items-center gap-3"
+                <h2 className="text-2xl md:text-xl sm:text-2xl sm:text-3xl font-bold mb-6 border-l-4 pl-3 flex items-center gap-3"
                     style={{ color: COLORS.NAVY, borderColor: COLORS.TEAL }}>
                     <Briefcase className='w-6 h-6' style={{color: COLORS.TEAL}}/> Actionable Leadership Techniques
                 </h2>
                 {/* Video Grid */}
                 {actionableVideos.length > 0 ? (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:p-4 lg:p-6">
                         {actionableVideos.map((video, index) => (
                             <VideoCard
                                 key={video.id || index} // Prefer unique ID

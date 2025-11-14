@@ -68,7 +68,7 @@ const PlanTracker = ({
   if (showBreakdown) {
     return (
       <div>
-        <div className="max-w-4xl mx-auto p-6 mb-0">
+        <div className="max-w-4xl mx-auto p-3 sm:p-4 lg:p-6 mb-0">
           {/* REQ #4: Changed button text from "Back to Overview" to "Back to Tracker" */}
           <Button onClick={() => setShowBreakdown(false)} variant="nav-back" size="sm">
             <ArrowLeft className="w-4 h-4" />
@@ -81,12 +81,12 @@ const PlanTracker = ({
   }
 
   return (
-    <div className="max-w-4xl mx-auto p-6 space-y-6">
+    <div className="max-w-4xl mx-auto p-3 sm:p-4 lg:p-6 space-y-4 sm:space-y-5 lg:space-y-6">
       {/* Header */}
       <Card accent="TEAL">
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h1 className="text-3xl font-bold mb-2" style={{ color: COLORS.NAVY }}>
+            <h1 className="text-xl sm:text-2xl sm:text-3xl font-bold mb-2" style={{ color: COLORS.NAVY }}>
               Development Plan
             </h1>
             <p className="text-gray-600">
@@ -112,7 +112,7 @@ const PlanTracker = ({
           <div className="flex items-center gap-3">
             <Target size={32} style={{ color: COLORS.BLUE }} />
             <div>
-              <div className="text-2xl font-bold" style={{ color: COLORS.NAVY }}>
+              <div className="text-xl sm:text-2xl font-bold" style={{ color: COLORS.NAVY }}>
                 {summary.totalSkills}
               </div>
               <div className="text-sm text-gray-600">Total Skills</div>
@@ -124,7 +124,7 @@ const PlanTracker = ({
           <div className="flex items-center gap-3">
             <TrendingUp size={32} style={{ color: COLORS.GREEN }} />
             <div>
-              <div className="text-2xl font-bold" style={{ color: COLORS.NAVY }}>
+              <div className="text-xl sm:text-2xl font-bold" style={{ color: COLORS.NAVY }}>
                 {summary.completedSkills}
               </div>
               <div className="text-sm text-gray-600">Completed</div>
@@ -136,7 +136,7 @@ const PlanTracker = ({
           <div className="flex items-center gap-3">
             <Calendar size={32} style={{ color: COLORS.ORANGE }} />
             <div>
-              <div className="text-2xl font-bold" style={{ color: COLORS.NAVY }}>
+              <div className="text-xl sm:text-2xl font-bold" style={{ color: COLORS.NAVY }}>
                 {summary.currentWeek || 0}
               </div>
               <div className="text-sm text-gray-600">Current Week</div>

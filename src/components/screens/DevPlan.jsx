@@ -12,7 +12,7 @@ import { useAppServices } from '../../services/useAppServices';
 const COLORS = {
   NAVY: '#002E47',      
   TEAL: '#47A88D',      
-  SUBTLE_TEAL: '#349881', 
+  SUBTLE_TEAL: '#47A88D', 
   ORANGE: '#E04E1B',    
   GREEN: '#47A88D',      // NO GREEN! Use corporate teal
   AMBER: '#E04E1B',      // NO AMBER! Use corporate orange
@@ -21,7 +21,7 @@ const COLORS = {
   OFF_WHITE: '#FFFFFF', 
   SUBTLE: '#47A88D',     // Use teal for subtle borders
   TEXT: '#002E47',
-  MUTED: '#349881',      // Use subtle teal for muted
+  MUTED: '#47A88D',      // Use subtle teal for muted
   BLUE: '#002E47',       // NO BLUE! Use corporate navy
   BG: '#FCFCFA',         // Use corporate light gray
   PURPLE: '#47A88D',     // NO PURPLE! Use corporate teal
@@ -343,9 +343,9 @@ const ContentDetailsModalInternal = ({ onClose, content }) => {
     
     return (
         <div className="fixed inset-0 bg-[#002E47]/80 z-50 flex items-center justify-center p-4">
-            <div className="bg-[#FCFCFA] rounded-3xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto p-8">
+            <div className="bg-[#FCFCFA] rounded-3xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto p-4 sm:p-3 sm:p-4 lg:p-6 lg:p-8">
                 <div className="flex justify-between items-start border-b pb-4 mb-6">
-                    <h2 className="text-3xl font-extrabold text-[#002E47] flex items-center">
+                    <h2 className="text-xl sm:text-2xl sm:text-3xl font-extrabold text-[#002E47] flex items-center">
                         <BookOpen className="w-8 h-8 mr-3 text-[#47A88D]" />
                         {content.title} ({content.type})
                     </h2>
@@ -403,7 +403,7 @@ const ContentDetailsModalInternal = ({ onClose, content }) => {
 // --- Component 3: Roadmap Timeline View (Unchanged) ---
 const RoadmapTimeline = ({ data, navigateToMonth, viewMonth }) => {
     return (
-        <Card title="24-Month Roadmap Timeline" icon={Trello} accent="PURPLE" className='lg:sticky lg:top-4 bg-white shadow-2xl border-l-4 border-[#7C3AED]'>
+        <Card title="24-Month Roadmap Timeline" icon={Trello} accent="PURPLE" className='lg:sticky lg:top-4 bg-white shadow-2xl border-l-4 border-[#47A88D]'>
             <p className='text-sm text-gray-600 mb-4'>Review your full two-year journey. Click a month to review its content and reflection.</p>
             <div className='max-h-96 overflow-y-auto space-y-2 pr-2'>
                 {data.plan.map(monthData => {
@@ -415,14 +415,14 @@ const RoadmapTimeline = ({ data, navigateToMonth, viewMonth }) => {
                     return (
                         <div key={monthData.month}
                              className={`p-3 rounded-lg border flex justify-between items-center transition-all cursor-pointer shadow-sm
-                                         ${isCurrentView ? 'bg-[#7C3AED]/20 border-[#7C3AED] font-extrabold' : isCompleted ? 'bg-[#47A88D]/10 border-[#47A88D]' : 'bg-gray-50 border-gray-200 hover:bg-gray-100'}
+                                         ${isCurrentView ? 'bg-[#47A88D]/20 border-[#47A88D] font-extrabold' : isCompleted ? 'bg-[#47A88D]/10 border-[#47A88D]' : 'bg-gray-50 border-gray-200 hover:bg-gray-100'}
                                          ${isFuture && !isCurrentView ? 'opacity-80' : ''}` 
                              }
                              onClick={() => {
                                  if (isClickable) navigateToMonth(monthData.month); 
                              }}
                         >
-                            <span className={`text-sm ${isCurrentView ? 'text-[#7C3AED]' : 'text-[#002E47]'}`}>
+                            <span className={`text-sm ${isCurrentView ? 'text-[#47A88D]' : 'text-[#002E47]'}`}>
                                 **Training Month {monthData.month}**: {monthData.theme}
                             </span>
                             <span className="flex items-center space-x-1 text-xs">
@@ -647,7 +647,7 @@ const TrackerDashboardView = ({ data, updatePdpData, navigate }) => {
 
 
     return (
-        <div className="p-6 md:p-10 min-h-screen" style={{ background: COLORS.BG, color: COLORS.TEXT }}>
+        <div className="p-3 sm:p-4 lg:p-6 md:p-10 min-h-screen" style={{ background: COLORS.BG, color: COLORS.TEXT }}>
             <div className='flex items-center gap-4 border-b-2 pb-2 mb-8' style={{borderColor: COLORS.PURPLE+'30'}}>
                 <Dumbbell className='w-10 h-10' style={{color: COLORS.PURPLE}}/>
                 <h1 className="text-4xl font-extrabold" style={{ color: COLORS.NAVY }}>Development Roadmap Tracker</h1>
@@ -675,9 +675,9 @@ const TrackerDashboardView = ({ data, updatePdpData, navigate }) => {
             </Card>
 
             {/* Current Month Plan */}
-            <div className='lg:grid lg:grid-cols-4 lg:gap-8'>
+            <div className='lg:grid lg:grid-cols-4 lg:gap-4 sm:gap-6 lg:gap-8'>
                 
-                <div className='lg:col-span-1 space-y-8 order-1'>
+                <div className='lg:col-span-1 space-y-4 sm:space-y-6 lg:space-y-8 order-1'>
                     <RoadmapTimeline data={data} navigateToMonth={setViewMonth} viewMonth={viewMonth} />
                     
                     <Card title={`Tier Mastery Status (${currentTierId})`} icon={Star} accent='NAVY' className='bg-[#FCFCFA] border-l-4 border-[#002E47] text-center'>
@@ -687,7 +687,7 @@ const TrackerDashboardView = ({ data, updatePdpData, navigate }) => {
                                 <path className="text-[#47A88D]" fill="none" stroke="currentColor" strokeWidth="3.8" strokeDasharray={`${tierProgress.overallPercentage}, 100`} d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
                             </svg>
                             <div className="absolute top-0 left-0 w-full h-full flex items-center justify-center">
-                                <span className="text-3xl font-extrabold text-[#002E47]">{tierProgress.overallPercentage}%</span>
+                                <span className="text-xl sm:text-2xl sm:text-3xl font-extrabold text-[#002E47]">{tierProgress.overallPercentage}%</span>
                             </div>
                         </div>
                         <p className='text-md font-semibold text-[#002E47] mb-1'>{tierProgress.completedContent} / {tierProgress.totalContent} Content Reps Completed</p>
@@ -697,7 +697,7 @@ const TrackerDashboardView = ({ data, updatePdpData, navigate }) => {
                 </div>
 
 
-                <div className='lg:col-span-3 space-y-8 order-2'>
+                <div className='lg:col-span-3 space-y-4 sm:space-y-6 lg:space-y-8 order-2'>
                     
                     {/* VIEWING WARNINGS - THESE DISPLAY FOR FUTURE/PAST MONTHS */}
                     {viewMonth > data.currentMonth && ( // Check if viewing a future month
@@ -842,7 +842,7 @@ const TrackerDashboardView = ({ data, updatePdpData, navigate }) => {
                             <Button
                                 onClick={handleCompleteMonth}
                                 disabled={isSaving || !isReadyToComplete}
-                                className='w-full bg-[#47A88D] hover:bg-[#349881]'
+                                className='w-full bg-[#47A88D] hover:bg-[#47A88D]'
                             >
                                 {isSaving ? 'Processing...' : `Complete Month ${data.currentMonth} and Advance`}
                             </Button>
@@ -923,7 +923,7 @@ const PlanGeneratorView = ({ userId, saveNewPlan, navigate, setGeneratedPlanData
     };
 
     return (
-        <div className="p-6 md:p-10 min-h-screen" style={{ background: COLORS.BG, color: COLORS.TEXT }}>
+        <div className="p-3 sm:p-4 lg:p-6 md:p-10 min-h-screen" style={{ background: COLORS.BG, color: COLORS.TEXT }}>
             <div className='flex items-center gap-4 border-b-2 pb-2 mb-8' style={{borderColor: COLORS.PURPLE+'30'}}>
                 <Dumbbell className='w-10 h-10' style={{color: COLORS.PURPLE}}/>
                 <h1 className="text-4xl font-extrabold" style={{ color: COLORS.NAVY }}>Personalized Arena Assessment</h1>
@@ -1009,7 +1009,7 @@ const PlanGeneratorView = ({ userId, saveNewPlan, navigate, setGeneratedPlanData
 // --- Component 4: Plan Review Screen (Unchanged, relies on generator output) ---
 const PlanReviewScreen = ({ generatedPlan, navigate, clearReviewData, finalizeWithData }) => { 
     if (!generatedPlan || !generatedPlan.userPlan || !generatedPlan.userPlan.leadershipProfile) return (
-         <div className="p-8 min-h-screen">
+         <div className="p-4 sm:p-3 sm:p-4 lg:p-6 lg:p-8 min-h-screen">
              <p className='text-xl text-[#E04E1B] font-bold'>Error: Personalized plan data is incomplete. Please re-run the assessment.</p>
              <Button onClick={() => navigate('/prof-dev-plan')} className='mt-4'>Go to Assessment</Button>
          </div>
@@ -1065,7 +1065,7 @@ const PlanReviewScreen = ({ generatedPlan, navigate, clearReviewData, finalizeWi
     };
 
     return (
-        <div className="p-6 md:p-10 min-h-screen" style={{ background: COLORS.BG, color: COLORS.TEXT }}>
+        <div className="p-3 sm:p-4 lg:p-6 md:p-10 min-h-screen" style={{ background: COLORS.BG, color: COLORS.TEXT }}>
             <div className='flex items-center gap-4 border-b-2 pb-2 mb-8' style={{borderColor: COLORS.GREEN+'30'}}>
                 <CheckCircle className='w-10 h-10' style={{color: COLORS.GREEN}}/>
                 <h1 className="text-4xl font-extrabold" style={{ color: COLORS.NAVY }}>Roadmap Successfully Generated!</h1>
@@ -1190,7 +1190,7 @@ if (isLoading || pdpData === undefined) {
 
     if (currentView === 'loading') { 
         return (
-            <div className="p-8 min-h-screen flex items-center justify-center">
+            <div className="p-4 sm:p-3 sm:p-4 lg:p-6 lg:p-8 min-h-screen flex items-center justify-center">
                 <div className="flex flex-col items-center">
                     <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#47A88D] mb-3"></div>
                     <p className="text-[#47A88D] font-medium">Loading Personalized Development Roadmap...</p>

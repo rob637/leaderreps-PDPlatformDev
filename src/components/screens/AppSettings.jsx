@@ -12,7 +12,7 @@ import { sendPasswordResetEmail } from 'firebase/auth';
    PALETTE & UI COMPONENTS (Standardized)
 ========================================================= */
 // --- Primary Color Palette ---
-const COLORS = { NAVY: '#002E47', TEAL: '#47A88D', BLUE: '#2563EB', ORANGE: '#E04E1B', GREEN: '#10B981', AMBER: '#F5A800', RED: '#E04E1B', LIGHT_GRAY: '#FCFCFA', OFF_WHITE: '#FFFFFF', SUBTLE: '#E5E7EB', TEXT: '#374151', MUTED: '#4B5355', PURPLE: '#7C3AED', BG: '#F9FAFB' }; // cite: App.jsx
+const COLORS = { NAVY: '#002E47', TEAL: '#47A88D', BLUE: '#002E47', ORANGE: '#E04E1B', GREEN: '#47A88D', AMBER: '#E04E1B', RED: '#E04E1B', LIGHT_GRAY: '#FCFCFA', OFF_WHITE: '#FFFFFF', SUBTLE: '#E5E7EB', TEXT: '#374151', MUTED: '#4B5355', PURPLE: '#47A88D', BG: '#F9FAFB' }; // cite: App.jsx
 
 // --- Standardized UI Components (Assume imported or globally available) ---
 // Using placeholder comments, assuming Button and Card are correctly defined elsewhere or globally
@@ -23,7 +23,7 @@ const COLORS = { NAVY: '#002E47', TEAL: '#47A88D', BLUE: '#2563EB', ORANGE: '#E0
 const Button = ({ children, onClick, disabled = false, variant = 'primary', className = '', size = 'md', ...rest }) => {
     let baseStyle = `inline-flex items-center justify-center gap-2 font-semibold rounded-xl transition-all duration-200 focus:outline-none focus:ring-4 disabled:opacity-50 disabled:cursor-not-allowed`;
     if (size === 'sm') baseStyle += ' px-4 py-2 text-sm'; else if (size === 'lg') baseStyle += ' px-8 py-4 text-lg'; else baseStyle += ' px-6 py-3 text-base'; // Default 'md'
-    if (variant === 'primary') baseStyle += ` bg-[${COLORS.TEAL}] text-white shadow-lg hover:bg-[#349881] focus:ring-[${COLORS.TEAL}]/50`;
+    if (variant === 'primary') baseStyle += ` bg-[${COLORS.TEAL}] text-white shadow-lg hover:bg-[#47A88D] focus:ring-[${COLORS.TEAL}]/50`;
     else if (variant === 'secondary') baseStyle += ` bg-[${COLORS.ORANGE}] text-white shadow-lg hover:bg-[#C312] focus:ring-[${COLORS.ORANGE}]/50`;
     else if (variant === 'outline') baseStyle += ` bg-[${COLORS.OFF_WHITE}] text-[${COLORS.TEAL}] border-2 border-[${COLORS.TEAL}] shadow-md hover:bg-[${COLORS.TEAL}]/10 focus:ring-[${COLORS.TEAL}]/50`;
     else if (variant === 'nav-back') baseStyle += ` bg-white text-gray-700 border border-gray-300 shadow-sm hover:bg-gray-100 focus:ring-gray-300/50 px-4 py-2 text-sm`;
@@ -89,17 +89,17 @@ const AppSettingsScreen = () => {
 
   return (
     // Consistent page structure and padding
-    <div className="p-6 md:p-8 lg:p-10 min-h-screen" style={{ background: COLORS.BG }}>
+    <div className="p-6 md:p-4 sm:p-3 sm:p-4 lg:p-6 lg:p-8 lg:p-10 min-h-screen" style={{ background: COLORS.BG }}>
       {/* Header */}
       <header className="mb-8">
-        <h1 className="text-3xl md:text-4xl font-extrabold mb-2 flex items-center gap-3" style={{ color: COLORS.NAVY }}>
+        <h1 className="text-xl sm:text-2xl sm:text-3xl md:text-4xl font-extrabold mb-2 flex items-center gap-3" style={{ color: COLORS.NAVY }}>
             <Settings className="w-8 h-8" style={{ color: COLORS.TEAL }} /> App Settings
         </h1>
         <p className="text-lg text-gray-700">Manage your profile, security, and application preferences.</p>
       </header>
 
       {/* Settings Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto"> {/* Centered content */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:p-4 lg:p-6 max-w-4xl mx-auto"> {/* Centered content */}
 
         {/* User Account Card */}
         <Card title="User Account" icon={User} accent="TEAL">

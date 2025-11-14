@@ -4,6 +4,7 @@ import React from 'react';
 import { BookOpen, ShieldCheck, Film, ArrowLeft } from 'lucide-react';
 import { useAppServices } from '../../services/useAppServices.jsx';
 import { membershipService } from '../../services/membershipService.js';
+import { Button } from '../shared/UI';
 
 // LEADERREPS.COM OFFICIAL CORPORATE COLORS - VERIFIED 11/14/25
 const COLORS = {
@@ -35,7 +36,7 @@ const LibraryCard = ({ title, description, icon: Icon, onClick, disabled = false
         background: disabled ? COLORS.LIGHT_GRAY : 'white'
       }}
     >
-      <div className="flex items-start gap-6">
+      <div className="flex items-start gap-3 sm:p-4 lg:p-6">
         <div
           className="w-16 h-16 rounded-xl flex items-center justify-center flex-shrink-0"
           style={{ 
@@ -73,9 +74,19 @@ const LibraryCard = ({ title, description, icon: Icon, onClick, disabled = false
   );
 };
 
-const Library = () => {
+const Library = ({ simulatedTier }) => {
   const { membershipData, navigate } = useAppServices();
-  const currentTier = membershipData?.currentPlanId || 'basic';
+  
+  // Match Dashboard's exact tier logic - MUST match Dashboard.jsx line 285
+  const currentTier = simulatedTier || membershipData?.currentTier || 'basic';
+  
+  // DEBUG: Log to help diagnose tier issues
+  console.log('[Library] Tier Debug:', {
+    propsSimulatedTier: simulatedTier,
+    membershipDataCurrentTier: membershipData?.currentTier,
+    finalTier: currentTier,
+    fullMembershipData: membershipData
+  });
 
   const libraryItems = [
     {
@@ -114,18 +125,15 @@ const Library = () => {
     <div className="page-corporate container-corporate animate-corporate-fade-in">
       <div>
         {/* Back Button */}
-        <button
+        <Button
           onClick={() => navigate && navigate('dashboard')}
-          className="inline-flex items-center px-4 py-2 mb-6 text-sm font-semibold rounded-lg transition-all duration-200"
-          style={{
-            backgroundColor: COLORS.LIGHT_GRAY,
-            color: COLORS.NAVY,
-            border: `1px solid ${COLORS.TEAL}`
-          }}
+          variant="nav-back"
+          size="sm"
+          className="mb-6"
         >
           <ArrowLeft className="w-4 h-4 mr-2" />
           Back to The Arena
-        </button>
+        </Button>
 
         {/* Header */}
         <div className="mb-12 text-center">
@@ -141,6 +149,7 @@ const Library = () => {
         <div className="section-corporate grid-corporate-3">
           {libraryItems.map((item) => {
             const hasAccess = membershipService.hasAccess(currentTier, item.requiredTier);
+            console.log(`[Library] Access check for ${item.title}: currentTier=${currentTier}, requiredTier=${item.requiredTier}, hasAccess=${hasAccess}`);
             return (
               <LibraryCard
                 key={item.id}
@@ -158,7 +167,7 @@ const Library = () => {
         {/* Upgrade CTA for Basic Users */}
         {currentTier === 'basic' && (
           <div className="card-corporate-elevated mt-12 text-center" style={{ borderColor: COLORS.ORANGE }}>
-            <div className="gradient-corporate-feature p-8 rounded-2xl">
+            <div className="gradient-corporate-feature p-4 sm:p-3 sm:p-4 lg:p-6 lg:p-8 rounded-2xl">
               <h3 className="corporate-heading-lg mb-4">
                 Unlock the Full Library
               </h3>

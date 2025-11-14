@@ -24,7 +24,7 @@ const COLORS = CORPORATE_COLORS;
 const Button = ({ children, onClick, disabled = false, variant = 'primary', className = '', size = 'md', ...rest }) => { /* ... Re-use exact Button definition from Dashboard.jsx ... */
     let baseStyle = `inline-flex items-center justify-center gap-2 font-semibold rounded-xl transition-all duration-200 focus:outline-none focus:ring-4 disabled:opacity-50 disabled:cursor-not-allowed`;
     if (size === 'sm') baseStyle += ' px-4 py-2 text-sm'; else if (size === 'lg') baseStyle += ' px-8 py-4 text-lg'; else baseStyle += ' px-6 py-3 text-base'; // Default 'md'
-    if (variant === 'primary') baseStyle += ` bg-[${COLORS.TEAL}] text-white shadow-lg hover:bg-[#349881] focus:ring-[${COLORS.TEAL}]/50`;
+    if (variant === 'primary') baseStyle += ` bg-[${COLORS.TEAL}] text-white shadow-lg hover:bg-[#47A88D] focus:ring-[${COLORS.TEAL}]/50`;
     else if (variant === 'secondary') baseStyle += ` bg-[${COLORS.ORANGE}] text-white shadow-lg hover:bg-[#C312] focus:ring-[${COLORS.ORANGE}]/50`;
     else if (variant === 'outline') baseStyle += ` bg-[${COLORS.OFF_WHITE}] text-[${COLORS.TEAL}] border-2 border-[${COLORS.TEAL}] shadow-md hover:bg-[${COLORS.TEAL}]/10 focus:ring-[${COLORS.TEAL}]/50`;
     else if (variant === 'nav-back') baseStyle += ` bg-white text-gray-700 border border-gray-300 shadow-sm hover:bg-gray-100 focus:ring-gray-300/50 px-4 py-2 text-sm`;
@@ -304,11 +304,11 @@ export default function ExecutiveReflection() {
 
     return (
         // Consistent page structure and padding
-        <div className={`p-6 md:p-8 lg:p-10 min-h-screen space-y-8`} style={{ background: COLORS.BG }}> {/* Use BG color */}
+        <div className={`p-6 md:p-8 lg:p-10 min-h-screen space-y-4 sm:space-y-6 lg:space-y-8`} style={{ background: COLORS.BG }}> {/* Use BG color */}
 
             {/* --- Section 1: Header --- */}
             <header>
-                 <h1 className={`text-3xl md:text-4xl font-extrabold mb-2`} style={{ color: COLORS.NAVY }}>Executive ROI Report</h1>
+                 <h1 className={`text-2xl sm:text-3xl md:text-4xl font-extrabold mb-2`} style={{ color: COLORS.NAVY }}>Executive ROI Report</h1>
                  <p className="text-lg text-gray-700 max-w-3xl">Data-driven insights into your leadership development progress and impact (Last 90 Days).</p>
             </header>
 
@@ -338,7 +338,7 @@ export default function ExecutiveReflection() {
 
             {/* --- Section 3: Longitudinal Impact Grid --- */}
             <h2 className='text-2xl font-extrabold pt-4 border-t mt-10' style={{ color: COLORS.NAVY, borderColor: COLORS.SUBTLE }}>Longitudinal Impact (90-Day View)</h2>
-            <div className='grid grid-cols-1 lg:grid-cols-3 gap-8'>
+            <div className='grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 lg:gap-8'>
                 {/* 1. Confidence vs. Competence */}
                 <Card title="Confidence vs. Competence" icon={Target} accent='TEAL' className='lg:col-span-2'>
                     <p className='text-sm text-gray-700 mb-4'>Self-perception (Assessment Score) vs. Proven capability (Daily Rep Execution %).</p>
@@ -346,7 +346,7 @@ export default function ExecutiveReflection() {
                         {/* Confidence */}
                         <div className={`p-4 rounded-xl border-2 bg-white shadow-inner`} style={{ borderColor: COLORS.NAVY }}>
                             <p className='text-xs font-semibold uppercase text-gray-500'>Confidence</p>
-                            <p className={`text-4xl font-extrabold mt-1`} style={{ color: COLORS.NAVY }}>{longitudinalData.confidence.toFixed(1)}<span className="text-2xl text-gray-400">/5</span></p>
+                            <p className={`text-4xl font-extrabold mt-1`} style={{ color: COLORS.NAVY }}>{longitudinalData.confidence.toFixed(1)}<span className="text-xl sm:text-2xl text-gray-400">/5</span></p>
                             <p className='text-[10px] text-gray-500'>(Latest Self-Assessment)</p>
                         </div>
                         {/* Competence */}
@@ -397,7 +397,7 @@ export default function ExecutiveReflection() {
                      <div className="grid grid-cols-2 gap-4 text-center mb-4">
                          <div className="p-3 bg-gray-50 border rounded-lg">
                              <p className="text-xs text-gray-500 uppercase font-semibold">Overall Avg Score</p>
-                             <p className="text-2xl font-bold" style={{ color: COLORS.NAVY }}>{longitudinalData.avgDailyScore}%</p>
+                             <p className="text-xl sm:text-2xl font-bold" style={{ color: COLORS.NAVY }}>{longitudinalData.avgDailyScore}%</p>
                          </div>
                          <div className="p-3 bg-gray-50 border rounded-lg">
                              <p className="text-xs text-gray-500 uppercase font-semibold">Avg on Low Energy Days</p>
@@ -432,7 +432,7 @@ export default function ExecutiveReflection() {
                          <p className='text-xs mt-1 text-gray-700'>Score: <strong>{longitudinalData.menteeFeedback.score}/100</strong>. Comment: "{longitudinalData.menteeFeedback.comment}"</p>
                      </div>
                      {/* Button to Feedback Area */}
-                     <Button onClick={() => handleNavigation('coaching-lab', { view: 'feedback-review', tier: 'T4' })} size="sm" variant="primary" className='mt-4 w-full bg-[#2563EB] hover:bg-blue-700'> {/* Blue Button */}
+                     <Button onClick={() => handleNavigation('coaching-lab', { view: 'feedback-review', tier: 'T4' })} size="sm" variant="primary" className='mt-4 w-full bg-[#002E47] hover:bg-blue-700'> {/* Blue Button */}
                          Review Full Mentee Feedback
                      </Button>
                 </Card>
@@ -446,7 +446,7 @@ export default function ExecutiveReflection() {
                          <p className='flex justify-between font-semibold text-gray-700'>Project On-Time Rate: <span className='font-extrabold text-amber-600'>+5%</span></p>
                      </div>
                      {/* Button to Generate Detailed Report */}
-                     <Button onClick={() => handleNavigation('planning-hub', { view: 'roi-report' })} size="sm" variant="secondary" className='mt-6 w-full bg-[#7C3AED] hover:bg-purple-700'> {/* Purple Button */}
+                     <Button onClick={() => handleNavigation('planning-hub', { view: 'roi-report' })} size="sm" variant="secondary" className='mt-6 w-full bg-[#47A88D] hover:bg-purple-700'> {/* Purple Button */}
                          Generate Full Management ROI Report
                      </Button>
                 </Card>

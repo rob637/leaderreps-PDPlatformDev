@@ -12,10 +12,10 @@ import {
 ========================================================= */
 const COLORS = { 
     NAVY: '#002E47', TEAL: '#47A88D', ORANGE: '#E04E1B', 
-    GREEN: '#10B981', BLUE: '#2563EB', AMBER: '#F5A800', 
+    GREEN: '#47A88D', BLUE: '#002E47', AMBER: '#E04E1B', 
     RED: '#E04E1B', LIGHT_GRAY: '#FCFCFA', OFF_WHITE: '#FFFFFF', 
     SUBTLE: '#E5E7EB', TEXT: '#374151', MUTED: '#4B5563', 
-    PURPLE: '#7C3AED', BG: '#F9FAFB' 
+    PURPLE: '#47A88D', BG: '#F9FAFB' 
 };
 
 // --- Standardized Button Component ---
@@ -26,7 +26,7 @@ const Button = ({ children, onClick, disabled = false, variant = 'primary', clas
   else if (size === 'lg') baseStyle += ' px-8 py-4 text-lg';
   else baseStyle += ' px-6 py-3 text-base';
 
-  if (variant === 'primary') baseStyle += ` bg-[${COLORS.TEAL}] text-white shadow-lg hover:bg-[#349881] focus:ring-[${COLORS.TEAL}]/50`;
+  if (variant === 'primary') baseStyle += ` bg-[${COLORS.TEAL}] text-white shadow-lg hover:bg-[#47A88D] focus:ring-[${COLORS.TEAL}]/50`;
   else if (variant === 'secondary') baseStyle += ` bg-[${COLORS.ORANGE}] text-white shadow-lg hover:bg-[#C33E12] focus:ring-[${COLORS.ORANGE}]/50`;
   else if (variant === 'outline') baseStyle += ` bg-[${COLORS.OFF_WHITE}] text-[${COLORS.TEAL}] border-2 border-[${COLORS.TEAL}] shadow-md hover:bg-[${COLORS.TEAL}]/10 focus:ring-[${COLORS.TEAL}]/50`;
   

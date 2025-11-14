@@ -11,13 +11,13 @@ import { Users, Send, MessageSquare, Heart, CornerRightUp, Award, Link, Settings
    PALETTE & UI COMPONENTS (Standardized)
 ========================================================= */
 // --- Primary Color Palette ---
-const COLORS = { NAVY: '#002E47', TEAL: '#47A88D', BLUE: '#2563EB', ORANGE: '#E04E1B', GREEN: '#10B981', AMBER: '#F5A800', RED: '#E04E1B', LIGHT_GRAY: '#FCFCFA', OFF_WHITE: '#FFFFFF', SUBTLE: '#E5E7EB', TEXT: '#374151', MUTED: '#4B5563', PURPLE: '#7C3AED', BG: '#F9FAFB' }; // cite: App.jsx
+const COLORS = { NAVY: '#002E47', TEAL: '#47A88D', BLUE: '#002E47', ORANGE: '#E04E1B', GREEN: '#47A88D', AMBER: '#E04E1B', RED: '#E04E1B', LIGHT_GRAY: '#FCFCFA', OFF_WHITE: '#FFFFFF', SUBTLE: '#E5E7EB', TEXT: '#374151', MUTED: '#4B5563', PURPLE: '#47A88D', BG: '#F9FAFB' }; // cite: App.jsx
 
 // --- Standardized UI Components (Matches Dashboard/Dev Plan) ---
 const Button = ({ children, onClick, disabled = false, variant = 'primary', className = '', size = 'md', ...rest }) => { /* ... Re-use exact Button definition from Dashboard.jsx ... */
     let baseStyle = `inline-flex items-center justify-center gap-2 font-semibold rounded-xl transition-all duration-200 focus:outline-none focus:ring-4 disabled:opacity-50 disabled:cursor-not-allowed`;
     if (size === 'sm') baseStyle += ' px-4 py-2 text-sm'; else if (size === 'lg') baseStyle += ' px-8 py-4 text-lg'; else baseStyle += ' px-6 py-3 text-base'; // Default 'md'
-    if (variant === 'primary') baseStyle += ` bg-[${COLORS.TEAL}] text-white shadow-lg hover:bg-[#349881] focus:ring-[${COLORS.TEAL}]/50`;
+    if (variant === 'primary') baseStyle += ` bg-[${COLORS.TEAL}] text-white shadow-lg hover:bg-[#47A88D] focus:ring-[${COLORS.TEAL}]/50`;
     else if (variant === 'secondary') baseStyle += ` bg-[${COLORS.ORANGE}] text-white shadow-lg hover:bg-[#C312] focus:ring-[${COLORS.ORANGE}]/50`;
     else if (variant === 'outline') baseStyle += ` bg-[${COLORS.OFF_WHITE}] text-[${COLORS.TEAL}] border-2 border-[${COLORS.TEAL}] shadow-md hover:bg-[${COLORS.TEAL}]/10 focus:ring-[${COLORS.TEAL}]/50`;
     else if (variant === 'nav-back') baseStyle += ` bg-white text-gray-700 border border-gray-300 shadow-sm hover:bg-gray-100 focus:ring-gray-300/50 px-4 py-2 text-sm`;
@@ -65,7 +65,9 @@ const RepFeedItem = ({ item }) => {
         // For now, just show an alert
         const isDeveloperMode = localStorage.getItem('arena-developer-mode') === 'true';
         if (isDeveloperMode) {
-          alert(`Action: View comments for post ${item.id}`);
+          if (localStorage.getItem('arena-developer-mode') === 'true') {
+            alert(`Action: View comments for post ${item.id}`);
+          }
         }
     };
     };
@@ -73,7 +75,9 @@ const RepFeedItem = ({ item }) => {
         // For now, just show an alert
         const isDeveloperMode = localStorage.getItem('arena-developer-mode') === 'true';
         if (isDeveloperMode) {
-          alert(`Action: Liked post ${item.id}`);
+          if (localStorage.getItem('arena-developer-mode') === 'true') {
+            alert(`Action: Liked post ${item.id}`);
+          }
         }
     };
 
@@ -167,7 +171,9 @@ const CommunityFeedScreen = () => {
 
         const isDeveloperMode = localStorage.getItem('arena-developer-mode') === 'true';
         if (isDeveloperMode) {
-          alert(`Mock Share Success: "${textToShare}"`);
+          if (localStorage.getItem('arena-developer-mode') === 'true') {
+            alert(`Mock Share Success: "${textToShare}"`);
+          }
         }
         setQuickShareText(''); // Clear input
         setIsSharing(false);
@@ -178,8 +184,8 @@ const CommunityFeedScreen = () => {
     // Feature Flag Check
         if (!featureFlags?.enableCommunity) {
       return (
-        <div className="p-8 text-center">
-          <h2 className="text-2xl font-bold mb-4">Community Feature Disabled</h2>
+        <div className="p-4 sm:p-3 sm:p-4 lg:p-6 lg:p-8 text-center">
+          <h2 className="text-xl sm:text-2xl font-bold mb-4">Community Feature Disabled</h2>
           <p>This feature is currently not enabled. Please contact support for more information.</p>
         </div>
       );
@@ -190,10 +196,10 @@ const CommunityFeedScreen = () => {
 
     return (
         // Consistent page structure and padding
-        <div className="p-6 md:p-8 lg:p-10 space-y-8 min-h-screen" style={{ background: COLORS.BG }}>
+        <div className="p-6 md:p-4 sm:p-3 sm:p-4 lg:p-6 lg:p-8 lg:p-10 space-y-4 sm:space-y-6 lg:space-y-8 min-h-screen" style={{ background: COLORS.BG }}>
             {/* Header */}
             <header className="flex flex-col sm:flex-row justify-between sm:items-center gap-4 border-b pb-4" style={{ borderColor: COLORS.SUBTLE }}>
-                <h1 className="text-3xl md:text-4xl font-extrabold flex items-center gap-3" style={{ color: COLORS.NAVY }}>
+                <h1 className="text-xl sm:text-2xl sm:text-3xl md:text-4xl font-extrabold flex items-center gap-3" style={{ color: COLORS.NAVY }}>
                     <Users size={32} style={{ color: COLORS.BLUE }} /> Accountability Pod Feed
                 </h1>
                 {/* Link to Community Settings */}
@@ -203,12 +209,12 @@ const CommunityFeedScreen = () => {
             </header>
 
             {/* Main Layout Grid */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:p-3 sm:p-4 lg:p-6 lg:p-8">
 
                 {/* Left Column: Leaderboard & Quick Share */}
-                <aside className="lg:col-span-1 space-y-6 lg:sticky lg:top-6 self-start"> {/* Sticky sidebar */}
+                <aside className="lg:col-span-1 space-y-4 sm:space-y-5 lg:space-y-6 lg:sticky lg:top-3 sm:p-4 lg:p-6 self-start"> {/* Sticky sidebar */}
                     {/* Leaderboard Card */}
-                    <div className="p-6 bg-white border border-gray-200 rounded-xl shadow-lg">
+                    <div className="p-3 sm:p-4 lg:p-6 bg-white border border-gray-200 rounded-xl shadow-lg">
                         <h2 className="text-lg font-bold mb-4 flex items-center gap-2 border-b pb-2" style={{ color: COLORS.NAVY, borderColor: COLORS.SUBTLE }}>
                             <Award className="w-5 h-5 text-amber-500" /> Rep Streak Leaderboard (Pod)
                         </h2>
@@ -229,7 +235,7 @@ const CommunityFeedScreen = () => {
                     </div>
 
                     {/* Quick Share Card */}
-                    <div className="p-6 bg-white border border-gray-200 rounded-xl shadow-lg">
+                    <div className="p-3 sm:p-4 lg:p-6 bg-white border border-gray-200 rounded-xl shadow-lg">
                         <h2 className="text-lg font-bold mb-4 flex items-center gap-2 border-b pb-2" style={{ color: COLORS.NAVY, borderColor: COLORS.SUBTLE }}>
                             <Link className="w-5 h-5 text-gray-500" /> Quick Share
                         </h2>
@@ -250,7 +256,7 @@ const CommunityFeedScreen = () => {
                 </aside>
 
                 {/* Right Column: Activity Feed */}
-                <main className="lg:col-span-2 space-y-6">
+                <main className="lg:col-span-2 space-y-4 sm:space-y-5 lg:space-y-6">
                     {/* Feed Filter Buttons */}
                     <div className="flex space-x-3">
                         <Button

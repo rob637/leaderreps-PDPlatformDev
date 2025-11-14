@@ -262,11 +262,11 @@ const NavSidebar = ({
           } bg-corporate-navy w-[280px] shadow-2xl`}
         >
           <div className="flex items-center justify-between p-4 border-b border-gray-200/20">
-            <h2
-              className="text-lg font-bold text-corporate-teal"
-            >
-              Navigation
-            </h2>
+            <img 
+              src="/images/leaderreps-logo.svg" 
+              alt="LeaderReps" 
+              className="h-8 sm:h-10 w-auto"
+            />
             <button
               onClick={() => setIsMobileOpen(false)}
               className="p-2 hover:bg-gray-100/10 rounded-lg transition-colors text-corporate-light-gray"

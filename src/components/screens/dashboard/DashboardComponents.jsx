@@ -730,9 +730,9 @@ export const EveningBookend = ({
 ========================================================= */
 export const SuggestionModal = ({ title, prefix, suggestions, onSelect, onClose }) => (
   <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-    <div className="bg-white rounded-2xl p-6 max-w-2xl w-full max-h-[80vh] overflow-hidden flex flex-col">
+    <div className="bg-white rounded-2xl p-3 sm:p-4 lg:p-6 max-w-2xl w-full max-h-[80vh] overflow-hidden flex flex-col">
       <div className="flex items-center justify-between mb-4">
-        <h2 className="text-2xl font-bold" style={{ color: COLORS.NAVY }}>
+        <h2 className="text-xl sm:text-2xl font-bold" style={{ color: COLORS.NAVY }}>
           {title}
         </h2>
         <button 
@@ -793,13 +793,13 @@ export const SaveIndicator = ({ show, message = "Saved!" }) => {
 ========================================================= */
 export const BonusExerciseModal = ({ exercise, onComplete, onSkip }) => (
   <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-    <div className="bg-white rounded-2xl p-6 max-w-lg w-full">
+    <div className="bg-white rounded-2xl p-3 sm:p-4 lg:p-6 max-w-lg w-full">
       <div className="text-center mb-4">
         <div className="w-16 h-16 mx-auto mb-3 rounded-full flex items-center justify-center"
              style={{ backgroundColor: `${COLORS.ORANGE}20` }}>
           <Trophy className="w-8 h-8" style={{ color: COLORS.ORANGE }} />
         </div>
-        <h2 className="text-2xl font-bold mb-2" style={{ color: COLORS.NAVY }}>
+        <h2 className="text-xl sm:text-2xl font-bold mb-2" style={{ color: COLORS.NAVY }}>
           🎉 Bonus Challenge!
         </h2>
         <p className="text-sm" style={{ color: COLORS.MUTED }}>
@@ -1065,7 +1065,7 @@ export const DevPlanProgressLink = ({ progress, focusArea, onNavigate }) => (
         </p>
       </div>
       <div className="text-right">
-        <p className="text-3xl font-bold" style={{ color: COLORS.TEAL }}>
+        <p className="text-xl sm:text-2xl sm:text-3xl font-bold" style={{ color: COLORS.TEAL }}>
           {progress || 0}%
         </p>
         <p className="text-xs" style={{ color: COLORS.MUTED }}>
@@ -1226,9 +1226,9 @@ export const UnifiedAnchorEditorModal = ({
 
     return (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-2xl p-6 max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+            <div className="bg-white rounded-2xl p-3 sm:p-4 lg:p-6 max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col">
                 <div className="flex justify-between items-center mb-4 pb-2 border-b" style={{ borderColor: COLORS.SUBTLE }}>
-                    <h2 className="text-2xl font-bold" style={{ color: COLORS.NAVY }}>
+                    <h2 className="text-xl sm:text-2xl font-bold" style={{ color: COLORS.NAVY }}>
                         <Anchor className="w-6 h-6 inline-block mr-2" style={{ color: COLORS.TEAL }} />
                         Define Your Leadership Anchors
                     </h2>

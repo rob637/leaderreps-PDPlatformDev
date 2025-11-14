@@ -25,7 +25,7 @@ const RadioButtonInput = ({ question, options, value, onChange }) => {
   
   return (
     <div 
-      className="p-6 rounded-lg transition-all"
+      className="p-3 sm:p-4 lg:p-6 rounded-lg transition-all"
       style={{ 
         background: isFocused ? 'white' : COLORS.BG,
         border: `2px solid ${isFocused ? COLORS.TEAL : 'transparent'}`
@@ -164,7 +164,7 @@ const BaselineAssessment = ({ onComplete, isLoading = false }) => {
       {/* Show cool loading overlay when generating */}
       {isGenerating && <PlanGenerationLoader message="Creating Your Leadership Plan" />}
       
-      <div className="min-h-screen p-4 sm:p-6 lg:p-8" style={{ background: COLORS.BG }}>
+      <div className="min-h-screen p-4 sm:p-6 lg:p-4 sm:p-3 sm:p-4 lg:p-6 lg:p-8" style={{ background: COLORS.BG }}>
       
       {/* Sticky Progress Bar */}
       <div className="sticky top-0 z-10 py-4 max-w-4xl mx-auto" style={{ background: `${COLORS.BG}F0`, backdropFilter: 'blur(8px)' }}>
@@ -183,8 +183,8 @@ const BaselineAssessment = ({ onComplete, isLoading = false }) => {
       <div className="max-w-4xl mx-auto bg-white rounded-2xl shadow-xl overflow-hidden mt-4">
         
         {/* Header Area */}
-        <div className="p-6 sm:p-8 border-b" style={{ borderColor: COLORS.SUBTLE }}>
-          <h1 className="text-3xl font-extrabold mb-2" style={{ color: COLORS.NAVY }}>
+        <div className="p-6 sm:p-4 sm:p-3 sm:p-4 lg:p-6 lg:p-8 border-b" style={{ borderColor: COLORS.SUBTLE }}>
+          <h1 className="text-xl sm:text-2xl sm:text-3xl font-extrabold mb-2" style={{ color: COLORS.NAVY }}>
             Baseline Assessment
           </h1>
           <p className="text-lg" style={{ color: COLORS.MUTED }}>
@@ -193,7 +193,7 @@ const BaselineAssessment = ({ onComplete, isLoading = false }) => {
         </div>
 
         {/* Form Container */}
-        <div className="p-6 sm:p-8">
+        <div className="p-6 sm:p-4 sm:p-3 sm:p-4 lg:p-6 lg:p-8">
           
           {/* REQ #2: Render new radio button inputs */}
           <div className="space-y-4">
@@ -209,7 +209,7 @@ const BaselineAssessment = ({ onComplete, isLoading = false }) => {
           </div>
 
           {/* REQ #15: Open-ended goals section */}
-          <div className="mt-8 p-6 rounded-lg" style={{ background: `${COLORS.ORANGE}10` }}>
+          <div className="mt-8 p-3 sm:p-4 lg:p-6 rounded-lg" style={{ background: `${COLORS.ORANGE}10` }}>
             <label className="block text-lg font-semibold mb-2" style={{ color: COLORS.NAVY }}>
               {OPEN_ENDED_QUESTION.text}
             </label>

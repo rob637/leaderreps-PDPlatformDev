@@ -13,7 +13,7 @@ export const COLORS = {
   BG: '#F5F7FA',
   LIGHT_GRAY: '#F0F2F5',
   SUBTLE: '#E1E4E8',
-  GREEN: '#10B981',
+  GREEN: '#47A88D',
   RED: '#EF4444',
   BLUE: '#3B82F6',
   PURPLE: '#8B5CF6',

@@ -58,7 +58,7 @@ const ProgressBreakdown = ({ plan, globalMetadata }) => {
 
   if (!plan || skillProgress.length === 0) {
     return (
-      <div className="max-w-4xl mx-auto p-6">
+      <div className="max-w-4xl mx-auto p-3 sm:p-4 lg:p-6">
         <Card accent="BLUE">
           <p className="text-gray-600">No skills to display. Complete your baseline assessment to get started.</p>
         </Card>
@@ -79,12 +79,12 @@ const ProgressBreakdown = ({ plan, globalMetadata }) => {
   };
 
   return (
-    <div className="max-w-4xl mx-auto p-6 space-y-6">
+    <div className="max-w-4xl mx-auto p-3 sm:p-4 lg:p-6 space-y-4 sm:space-y-5 lg:space-y-6">
       {/* Overall Progress */}
       <Card accent="BLUE">
         <div className="flex items-center justify-between mb-4">
           <div>
-            <h2 className="text-2xl font-bold" style={{ color: COLORS.NAVY }}>
+            <h2 className="text-xl sm:text-2xl font-bold" style={{ color: COLORS.NAVY }}>
               Overall Progress
             </h2>
             <p className="text-gray-600">
@@ -92,7 +92,7 @@ const ProgressBreakdown = ({ plan, globalMetadata }) => {
             </p>
           </div>
           <div className="text-right">
-            <div className="text-3xl font-bold" style={{ color: COLORS.BLUE }}>
+            <div className="text-xl sm:text-2xl sm:text-3xl font-bold" style={{ color: COLORS.BLUE }}>
               {overallProgress}%
             </div>
             <p className="text-sm text-gray-600">complete</p>

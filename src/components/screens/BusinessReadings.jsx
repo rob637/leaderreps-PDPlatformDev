@@ -321,11 +321,11 @@ function BookListStable({
     const isSourceDataEmpty = totalBookCount === 0 && !hasActiveFilters;
 
   return (
-    <div className="space-y-8"> {/* Increased spacing */}
+    <div className="space-y-4 sm:space-y-6 lg:space-y-8"> {/* Increased spacing */}
       {/* --- Filter Section --- */}
       {/* Encapsulate filters within a Card for consistent styling */}
       <Card title="Personalize Your Library" icon={Filter} accent="TEAL">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 sm:p-4 lg:p-6">
           {/* Search Input */}
           <SearchInput value={filters.search} onChange={handleSearchChange} />
           {/* Complexity Filter */}
@@ -366,7 +366,7 @@ function BookListStable({
       )}
       {/* Case 2: Filters applied, but no results found */}
       {isFilteredEmpty && (
-           <div className="p-8 rounded-2xl border-2 shadow-xl bg-white text-center" style={{ borderColor: COLORS.SUBTLE }}>
+           <div className="p-4 sm:p-3 sm:p-4 lg:p-6 lg:p-8 rounded-2xl border-2 shadow-xl bg-white text-center" style={{ borderColor: COLORS.SUBTLE }}>
                 <SearchIcon className='w-8 h-8 mx-auto mb-3' style={{ color: COLORS.TEAL }}/>
                 <h3 className="text-lg font-bold" style={{ color: COLORS.NAVY }}>No Results Found</h3>
                 <p className="text-gray-600 mt-1 text-sm">Try adjusting your search query or filter settings.</p>
@@ -397,7 +397,7 @@ function BookListStable({
                           </div>
 
                           {/* Book Grid within Category */}
-                          <div className="p-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                          <div className="p-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:p-4 lg:p-6">
                             {booksInCategory.map((book) => {
                               // Get complexity details
                               const complexityMeta = COMPLEXITY_MAP[book.complexity] || COMPLEXITY_MAP.Medium; // Fallback
@@ -521,11 +521,11 @@ function BookFlyerStable({
   );
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-4 sm:space-y-6 lg:space-y-8">
       {/* --- Flyer Header --- */}
       <div className="flex flex-col md:flex-row justify-between md:items-center gap-4 pb-4 border-b" style={{ borderColor: COLORS.SUBTLE }}>
         {/* Title */}
-        <h2 className="text-2xl md:text-3xl font-bold flex items-center gap-3" style={{ color: COLORS.NAVY }}>
+        <h2 className="text-2xl md:text-xl sm:text-2xl sm:text-3xl font-bold flex items-center gap-3" style={{ color: COLORS.NAVY }}>
           <BookOpen className="w-7 h-7 flex-shrink-0" style={{ color: COLORS.TEAL }} />
           Focus Flyer: {selectedBook.title}
         </h2>
@@ -893,12 +893,12 @@ export default function BusinessReadingsScreen() {
 
   return (
     // Main screen container with consistent padding and background
-    <div className="p-6 md:p-10 min-h-screen" style={{ background: COLORS.BG }}>
+    <div className="p-3 sm:p-4 lg:p-6 md:p-10 min-h-screen" style={{ background: COLORS.BG }}>
       {/* Header */}
       <header className='flex items-center gap-4 border-b-2 pb-3 mb-8' style={{borderColor: COLORS.PURPLE+'30'}}> {/* Use PURPLE accent */}
           <BookOpen className='w-10 h-10 flex-shrink-0' style={{color: COLORS.PURPLE}}/>
           <div>
-              <h1 className="text-3xl md:text-4xl font-extrabold" style={{ color: COLORS.NAVY }}>Professional Reading Hub</h1>
+              <h1 className="text-xl sm:text-2xl sm:text-3xl md:text-4xl font-extrabold" style={{ color: COLORS.NAVY }}>Professional Reading Hub</h1>
               <p className="text-md text-gray-600 mt-1">(Content Pillar 1)</p>
           </div>
       </header>

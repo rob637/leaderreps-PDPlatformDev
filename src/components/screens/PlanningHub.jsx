@@ -15,13 +15,13 @@ import {
    PALETTE & UI COMPONENTS (Standardized)
 ========================================================= */
 // --- Primary Color Palette ---
-const COLORS = { NAVY: '#002E47', TEAL: '#47A88D', BLUE: '#2563EB', ORANGE: '#E04E1B', GREEN: '#10B981', AMBER: '#F5A800', RED: '#E04E1B', LIGHT_GRAY: '#FCFCFA', OFF_WHITE: '#FFFFFF', SUBTLE: '#E5E7EB', TEXT: '#374151', MUTED: '#4B5563', PURPLE: '#7C3AED', BG: '#F9FAFB' }; // cite: App.jsx
+const COLORS = { NAVY: '#002E47', TEAL: '#47A88D', BLUE: '#002E47', ORANGE: '#E04E1B', GREEN: '#47A88D', AMBER: '#E04E1B', RED: '#E04E1B', LIGHT_GRAY: '#FCFCFA', OFF_WHITE: '#FFFFFF', SUBTLE: '#E5E7EB', TEXT: '#374151', MUTED: '#4B5563', PURPLE: '#47A88D', BG: '#F9FAFB' }; // cite: App.jsx
 
 // --- Standardized UI Components (Matches Dashboard/Dev Plan) ---
 const Button = ({ children, onClick, disabled = false, variant = 'primary', className = '', size = 'md', ...rest }) => { /* ... Re-use exact Button definition from Dashboard.jsx ... */
     let baseStyle = `inline-flex items-center justify-center gap-2 font-semibold rounded-xl transition-all duration-200 focus:outline-none focus:ring-4 disabled:opacity-50 disabled:cursor-not-allowed`;
     if (size === 'sm') baseStyle += ' px-4 py-2 text-sm'; else if (size === 'lg') baseStyle += ' px-8 py-4 text-lg'; else baseStyle += ' px-6 py-3 text-base'; // Default 'md'
-    if (variant === 'primary') baseStyle += ` bg-[${COLORS.TEAL}] text-white shadow-lg hover:bg-[#349881] focus:ring-[${COLORS.TEAL}]/50`;
+    if (variant === 'primary') baseStyle += ` bg-[${COLORS.TEAL}] text-white shadow-lg hover:bg-[#47A88D] focus:ring-[${COLORS.TEAL}]/50`;
     else if (variant === 'secondary') baseStyle += ` bg-[${COLORS.ORANGE}] text-white shadow-lg hover:bg-[#C312] focus:ring-[${COLORS.ORANGE}]/50`;
     else if (variant === 'outline') baseStyle += ` bg-[${COLORS.OFF_WHITE}] text-[${COLORS.TEAL}] border-2 border-[${COLORS.TEAL}] shadow-md hover:bg-[${COLORS.TEAL}]/10 focus:ring-[${COLORS.TEAL}]/50`;
     else if (variant === 'nav-back') baseStyle += ` bg-white text-gray-700 border border-gray-300 shadow-sm hover:bg-gray-100 focus:ring-gray-300/50 px-4 py-2 text-sm`;
@@ -254,9 +254,9 @@ const PreMortemView = ({ setPlanningView }) => {
 
     return (
         // Consistent page structure and padding
-        <div className="p-6 md:p-8 lg:p-10">
+        <div className="p-6 md:p-4 sm:p-3 sm:p-4 lg:p-6 lg:p-8 lg:p-10">
             {/* Header */}
-            <h1 className="text-3xl font-extrabold mb-2" style={{ color: COLORS.NAVY }}>Tool: Decision Pre-Mortem Audit</h1>
+            <h1 className="text-xl sm:text-2xl sm:text-3xl font-extrabold mb-2" style={{ color: COLORS.NAVY }}>Tool: Decision Pre-Mortem Audit</h1>
             <p className="text-lg text-gray-600 mb-6 max-w-3xl">Identify critical risks *before* committing to a high-stakes decision using the AI Devil's Advocate.</p>
             {/* Back Button */}
             <Button onClick={() => setPlanningView('planning-home')} variant="nav-back" className="mb-8">
@@ -264,7 +264,7 @@ const PreMortemView = ({ setPlanningView }) => {
             </Button>
 
             {/* Main Content Sections */}
-            <div className="space-y-6">
+            <div className="space-y-4 sm:space-y-5 lg:space-y-6">
                 {/* Step 1: Decision & Outcome */}
                 <Card title="1. Define Decision & Desired Outcome" icon={TrendingUp} accent='TEAL'>
                     {/* Decision Input */}
@@ -322,7 +322,7 @@ const PreMortemView = ({ setPlanningView }) => {
                             <p className='text-sm font-semibold flex items-center gap-1'><Award className="w-4 h-4 text-[#47A88D]" /> Actionable Next Steps:</p>
                             {/* Create Commitment Button */}
                             {mitigationText && (
-                                <Button onClick={handleCommitmentCreation} size="sm" className="w-full bg-[#47A88D] hover:bg-[#349881]">
+                                <Button onClick={handleCommitmentCreation} size="sm" className="w-full bg-[#47A88D] hover:bg-[#47A88D]">
                                     <PlusCircle className='w-4 h-4 mr-2' /> Add Mitigation Rep to Daily Practice (T5)
                                 </Button>
                             )}
@@ -341,7 +341,7 @@ const PreMortemView = ({ setPlanningView }) => {
             <Card title="AI Critique of Pre-Mortem Analysis" icon={Cpu} accent='PURPLE' className="mt-8">
                 <p className="text-gray-700 text-sm mb-4">Get AI feedback on your Pre-Mortem analysis for completeness and actionability.</p>
                 {/* Critique Button */}
-                <Button onClick={critiquePreMortem} disabled={isCritiquing || !decision.trim() || !outcome.trim() || risks.filter(r => r.trim()).length < 1 || !hasGeminiKey()} size="md" className="w-full bg-[#7C3AED] hover:bg-purple-700">
+                <Button onClick={critiquePreMortem} disabled={isCritiquing || !decision.trim() || !outcome.trim() || risks.filter(r => r.trim()).length < 1 || !hasGeminiKey()} size="md" className="w-full bg-[#47A88D] hover:bg-purple-700">
                     {isCritiquing ? <Loader className="w-5 h-5 mr-2 animate-spin"/> : <MessageSquare className='w-5 h-5 mr-2'/>} {isCritiquing ? 'Auditing Pre-Mortem...' : 'Run Pre-Mortem Critique'}
                 </Button>
                  {!hasGeminiKey() && <p className="text-xs text-red-500 mt-2 text-center">API Key missing. Critique disabled.</p>}
@@ -423,9 +423,9 @@ const VisionBuilderView = ({ setPlanningView }) => {
 
     return (
         // Consistent page structure and padding
-        <div className="p-6 md:p-8 lg:p-10">
+        <div className="p-6 md:p-4 sm:p-3 sm:p-4 lg:p-6 lg:p-8 lg:p-10">
             {/* Header */}
-            <h1 className="text-3xl font-extrabold mb-2" style={{ color: COLORS.NAVY }}>Tool: Vision & Mission Builder</h1>
+            <h1 className="text-xl sm:text-2xl sm:text-3xl font-extrabold mb-2" style={{ color: COLORS.NAVY }}>Tool: Vision & Mission Builder</h1>
             <p className="text-lg text-gray-600 mb-6 max-w-3xl">Define your aspirational 3-5 year Vision (Future State) and Mission (Core Purpose).</p>
             {/* Back Button */}
             <Button onClick={() => setPlanningView('planning-home')} variant="nav-back" className="mb-8">
@@ -433,7 +433,7 @@ const VisionBuilderView = ({ setPlanningView }) => {
             </Button>
 
             {/* Main Content Sections */}
-            <div className="space-y-6">
+            <div className="space-y-4 sm:space-y-5 lg:space-y-6">
                 {/* Vision Card */}
                 <Card title="1. Define Your Vision (3-5 Year Future State)" icon={TrendingUp} accent='ORANGE'>
                     <p className="text-gray-700 text-sm mb-3">Inspiring, memorable, concise (max ~20 words).</p>
@@ -469,7 +469,7 @@ const VisionBuilderView = ({ setPlanningView }) => {
             <Card title="AI Vision Auditor" icon={Cpu} accent='PURPLE' className='mt-8'> {/* Use Purple Accent */}
                 <p className='text-gray-700 text-sm mb-4'>Use the AI Rep Coach to critique your statements for clarity, alignment, and actionability (T5 focus).</p>
                 {/* Critique Button */}
-                <Button onClick={critiqueVision} disabled={isCritiquing || !vision.trim() || !mission.trim() || !hasGeminiKey()} size="md" className="w-full bg-[#7C3AED] hover:bg-purple-700"> {/* Purple Button */}
+                <Button onClick={critiqueVision} disabled={isCritiquing || !vision.trim() || !mission.trim() || !hasGeminiKey()} size="md" className="w-full bg-[#47A88D] hover:bg-purple-700"> {/* Purple Button */}
                     {isCritiquing ? <Loader className="w-5 h-5 mr-2 animate-spin"/> : <MessageSquare className='w-5 h-5 mr-2'/>} {isCritiquing ? 'Auditing Vision...' : 'Run Vision Critique'}
                 </Button>
                  {!hasGeminiKey() && <p className="text-xs text-red-500 mt-2 text-center">API Key missing. Critique disabled.</p>}
@@ -576,9 +576,9 @@ const OKRDraftingView = ({ setPlanningView }) => {
 
     return (
         // Consistent page structure and padding
-        <div className="p-6 md:p-8 lg:p-10">
+        <div className="p-6 md:p-4 sm:p-3 sm:p-4 lg:p-6 lg:p-8 lg:p-10">
             {/* Header */}
-            <h1 className="text-3xl font-extrabold mb-2" style={{ color: COLORS.NAVY }}>Tool: OKR Drafting & Audit</h1>
+            <h1 className="text-xl sm:text-2xl sm:text-3xl font-extrabold mb-2" style={{ color: COLORS.NAVY }}>Tool: OKR Drafting & Audit</h1>
             <p className="text-lg text-gray-600 mb-6 max-w-3xl">Set ambitious Objectives (What) and measurable Key Results (How) for the quarter, aligned with your Vision.</p>
             {/* Back Button */}
             <Button onClick={() => setPlanningView('planning-home')} variant="nav-back" className="mb-8">
@@ -586,7 +586,7 @@ const OKRDraftingView = ({ setPlanningView }) => {
             </Button>
 
             {/* OKR Cards */}
-            <div className="space-y-8">
+            <div className="space-y-4 sm:space-y-6 lg:space-y-8">
                 {okrs.map((obj, objIndex) => (
                     <Card key={obj.id} title={`Objective ${objIndex + 1}`} icon={Target} accent='NAVY'>
                         {/* Objective Input & Remove Button */}
@@ -767,9 +767,9 @@ const AlignmentTrackerView = ({ setPlanningView }) => {
 
     return (
         // Consistent page structure and padding
-        <div className="p-6 md:p-8 lg:p-10">
+        <div className="p-6 md:p-4 sm:p-3 sm:p-4 lg:p-6 lg:p-8 lg:p-10">
             {/* Header */}
-            <h1 className="text-3xl font-extrabold mb-2" style={{ color: COLORS.NAVY }}>Tool: Strategic Alignment Tracker</h1>
+            <h1 className="text-xl sm:text-2xl sm:text-3xl font-extrabold mb-2" style={{ color: COLORS.NAVY }}>Tool: Strategic Alignment Tracker</h1>
             <p className="text-lg text-gray-600 mb-6 max-w-3xl">Review OKR progress, log misalignments, and get AI-suggested "preventative reps" to improve team focus.</p>
             {/* Back Button */}
             <Button onClick={() => setPlanningView('planning-home')} variant="nav-back" className="mb-8">
@@ -777,7 +777,7 @@ const AlignmentTrackerView = ({ setPlanningView }) => {
             </Button>
 
             {/* Main Content Sections */}
-            <div className="space-y-6">
+            <div className="space-y-4 sm:space-y-5 lg:space-y-6">
                 {/* OKR Progress Section */}
                 <h2 className='text-2xl font-extrabold border-b-2 pb-2 mb-4' style={{ color: COLORS.NAVY, borderColor: COLORS.TEAL }}>Quarterly Objective Progress</h2>
                 {objectives.length === 0 && <Card className="text-center italic text-gray-500 border-dashed">No OKRs defined yet. Use the OKR Drafting Tool.</Card>}
@@ -808,7 +808,7 @@ const AlignmentTrackerView = ({ setPlanningView }) => {
                 {/* AI Suggestion Section */}
                 <Card title="AI-Suggested Preventative Rep" icon={Cpu} accent='PURPLE'>
                     <p className='text-gray-700 text-sm mb-4'>Generate a T1/T2 daily rep to prevent this misalignment from recurring.</p>
-                    <Button onClick={critiqueMisalignment} disabled={isSuggesting || !misalignmentNotes.trim() || !hasGeminiKey()} size="md" className="w-full bg-[#7C3AED] hover:bg-purple-700">
+                    <Button onClick={critiqueMisalignment} disabled={isSuggesting || !misalignmentNotes.trim() || !hasGeminiKey()} size="md" className="w-full bg-[#47A88D] hover:bg-purple-700">
                         {isSuggesting ? <Loader className="w-5 h-5 mr-2 animate-spin"/> : <Zap className='w-5 h-5 mr-2'/>} {isSuggesting ? 'Generating Suggestion...' : 'Generate Preventative Rep'}
                     </Button>
                     {!hasGeminiKey() && <p className="text-xs text-red-500 mt-2 text-center">API Key missing. Suggestion disabled.</p>}
@@ -822,7 +822,7 @@ const AlignmentTrackerView = ({ setPlanningView }) => {
                                 {lastJsonError && <p className="text-xs mt-2"><strong>Error Details:</strong> {lastJsonError}</p>}
                             </div>
                             {suggestionCommitment && !lastJsonError && (
-                                <Button onClick={handleAddSuggestionToScorecard} size="sm" className="w-full mt-3 bg-[#47A88D] hover:bg-[#349881]">
+                                <Button onClick={handleAddSuggestionToScorecard} size="sm" className="w-full mt-3 bg-[#47A88D] hover:bg-[#47A88D]">
                                     <PlusCircle className='w-4 h-4 mr-2'/> Add to Daily Practice
                                 </Button>
                             )}
@@ -851,11 +851,11 @@ const PlanningHub = () => {
     }
 
     return (
-        <div className="p-6 md:p-8 lg:p-10" style={{ background: `radial-gradient(circle at top left, ${COLORS.BG}, #FFFFFF)` }}>
+        <div className="p-6 md:p-4 sm:p-3 sm:p-4 lg:p-6 lg:p-8 lg:p-10" style={{ background: `radial-gradient(circle at top left, ${COLORS.BG}, #FFFFFF)` }}>
             <h1 className="text-4xl font-extrabold mb-3" style={{ color: COLORS.NAVY }}>Strategic Planning Hub</h1>
             <p className="text-lg text-gray-600 mb-10 max-w-4xl">A suite of tools to help you define your strategy, set clear goals, and align your team for maximum impact.</p>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:p-3 sm:p-4 lg:p-6 lg:p-8">
                 {/* Vision & Mission Builder */}
                 <Card title="Vision & Mission Builder" icon={TrendingUp} accent="ORANGE" onClick={() => setPlanningView('vision-builder')}>
                     <p className="text-gray-700">Define your aspirational 3-5 year Vision (Future State) and your team's core purpose (Mission). Get AI feedback on clarity and impact.</p>

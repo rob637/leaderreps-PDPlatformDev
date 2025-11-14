@@ -11,7 +11,7 @@ import { COLORS, COMPLEXITY_MAP } from './labSharedConstants.js';
 export const Button = ({ children, onClick, disabled = false, variant = 'primary', className = '', ...rest }) => {
     let baseStyle = "px-6 py-3 rounded-xl font-semibold transition-all shadow-xl focus:outline-none focus:ring-4 text-white flex items-center justify-center";
 
-    if (variant === 'primary') { baseStyle += ` bg-[${COLORS.TEAL}] hover:bg-[#349881] focus:ring-[#47A88D]/50`; } 
+    if (variant === 'primary') { baseStyle += ` bg-[${COLORS.TEAL}] hover:bg-[#47A88D] focus:ring-[#47A88D]/50`; } 
     else if (variant === 'secondary') { baseStyle += ` bg-[${COLORS.ORANGE}] hover:bg-[${COLORS.SUBTLE}] focus:ring-[#E04E1B]/50`; } 
     else if (variant === 'outline') { baseStyle = `px-6 py-3 rounded-xl font-semibold transition-all shadow-md border-2 border-[${COLORS.TEAL}] text-[${COLORS.TEAL}] hover:bg-[#47A88D]/10 focus:ring-4 focus:ring-[#47A88D]/50 bg-[${COLORS.LIGHT_GRAY}] flex items-center justify-center`; }
 

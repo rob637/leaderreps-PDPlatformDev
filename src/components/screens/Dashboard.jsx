@@ -8,7 +8,7 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useAppServices } from '../../services/useAppServices.jsx';
 import { membershipService } from '../../services/membershipService.js';
-import { ArrowRight, Edit3, Loader, X, Users, Send, Target, Clock, Zap, Shield, Trash2, Anchor } from 'lucide-react'; 
+import { ArrowRight, Edit3, Loader, X, Users, Send, Target, Clock, Zap, Shield, Trash2, Anchor, ChevronDown, ChevronUp } from 'lucide-react'; 
 import { deleteField, updateDoc, doc } from 'firebase/firestore'; // Used for reminder dismissals
 import { MembershipGate } from '../ui/MembershipGate.jsx';
 import { COLORS } from './dashboard/dashboardConstants.js';
@@ -70,7 +70,7 @@ const sanitizeTimestamps = (obj) => {
 
 
 // --- Helper Components (Membership-Aware Start Card per Arena v1.0 Scope) ---
-const GetStartedCard = ({ onNavigate, membershipData, developmentPlanData, currentTier }) => {
+const GetStartedCard = ({ onNavigate, membershipData, developmentPlanData, currentTier, userData }) => {
   const hasCompletedPlan = developmentPlanData?.currentPlan && 
     developmentPlanData.currentPlan.focusAreas && 
     developmentPlanData.currentPlan.focusAreas.length > 0;
@@ -79,7 +79,7 @@ const GetStartedCard = ({ onNavigate, membershipData, developmentPlanData, curre
   if (currentTier === 'basic') {
     return (
       <Card accent="ORANGE">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:p-4 lg:p-6">
           <div className="flex-1">
             <h2 className="corporate-heading-lg mb-3">
               Unlock Your Leadership Potential
@@ -90,10 +90,14 @@ const GetStartedCard = ({ onNavigate, membershipData, developmentPlanData, curre
           </div>
           <Button
             onClick={() => {
-              alert('🔵 View Plans button clicked!\nAttempting to navigate to: membership-upgrade');
+              if (userData?.isDeveloperMode) {
+                alert('🔵 View Plans button clicked!\nAttempting to navigate to: membership-upgrade');
+              }
               console.log('[GetStartedCard] View Plans clicked, calling onNavigate');
               onNavigate('membership-upgrade');
-              alert('🔵 onNavigate called with membership-upgrade');
+              if (userData?.isDeveloperMode) {
+                alert('🔵 onNavigate called with membership-upgrade');
+              }
             }}
             variant="primary"
             size="lg"
@@ -110,7 +114,7 @@ const GetStartedCard = ({ onNavigate, membershipData, developmentPlanData, curre
   if ((currentTier === 'professional' || currentTier === 'elite') && !hasCompletedPlan) {
     return (
       <Card accent="BLUE">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:p-4 lg:p-6">
           <div className="flex-1">
             <h2 className="corporate-heading-lg mb-3">
               Create Your Development Plan
@@ -138,7 +142,7 @@ const GetStartedCard = ({ onNavigate, membershipData, developmentPlanData, curre
     
     return (
       <Card accent="TEAL">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:p-4 lg:p-6">
           <div className="flex-1">
             <h2 className="corporate-heading-lg mb-3">
               This Week's Focus
@@ -168,7 +172,7 @@ const GetStartedCard = ({ onNavigate, membershipData, developmentPlanData, curre
     <Card accent="TEAL">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-bold" style={{ color: COLORS.NAVY }}>
+          <h2 className="text-xl sm:text-2xl font-bold" style={{ color: COLORS.NAVY }}>
             Start Your Leadership Journey
           </h2>
           <p className="text-base mt-1" style={{ color: COLORS.MUTED }}>
@@ -202,7 +206,8 @@ const Dashboard = (props) => {
     progressData,
     userAnchorData,
     quickstartData,
-    repsData
+    repsData,
+    isAdmin
   } = useAppServices();
   
   // Get setCurrentScreen and simulatedTier from props (passed from ScreenRouter)
@@ -262,7 +267,9 @@ const Dashboard = (props) => {
         type: typeof _setCurrentScreen,
         value: _setCurrentScreen
       });
-      alert(`Navigation error: Cannot navigate to ${screen}. Please refresh the page.`);
+      if (userData?.isDeveloperMode) {
+        alert(`Navigation error: Cannot navigate to ${screen}. Please refresh the page.`);
+      }
     }
   };
 
@@ -442,7 +449,9 @@ const Dashboard = (props) => {
       
       // Close modal and show success
       setIsEditorOpen(false);
-      alert('✅ Leadership Anchors saved! Your identity, habit, and why are now set.');
+      if (userData?.isDeveloperMode) {
+        alert('✅ Leadership Anchors saved! Your identity, habit, and why are now set.');
+      }
       
       console.log('[Dashboard] All anchors saved successfully');
     } catch (error) {
@@ -517,12 +526,78 @@ const Dashboard = (props) => {
       )}
       */}
 
-      {/* Streak Tracker */}
-      {visibleComponents.includes('streak') && (
+      {/* Streak Tracker - COMMENTED OUT FOR NOW */}
+      {/* {visibleComponents.includes('streak') && isAdmin && (
         <div className="section-corporate">
           <StreakTracker progressData={progressData} userEmail={user?.email} />
         </div>
-      )}
+      )} */}
+
+      {/* Leadership Anchors Card - Collapsed by default */}
+      <div className="section-corporate">
+        <Card accent="TEAL">
+          <details className="group">
+            <summary className="cursor-pointer list-none flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <Anchor className="w-5 h-5" style={{ color: COLORS.TEAL }} />
+                <h2 className="text-lg sm:text-xl font-bold" style={{ color: COLORS.NAVY }}>
+                  Your Leadership Anchors
+                </h2>
+              </div>
+              <ChevronDown className="w-5 h-5 group-open:hidden" style={{ color: COLORS.MUTED }} />
+              <ChevronUp className="w-5 h-5 hidden group-open:block" style={{ color: COLORS.MUTED }} />
+            </summary>
+            <div className="mt-4 pt-4 border-t" style={{ borderColor: COLORS.SUBTLE }}>
+              {hasActiveAnchor ? (
+                <div className="space-y-3">
+                  {identityStatement && (
+                    <div className="p-3 rounded-lg bg-gray-50">
+                      <p className="text-xs font-semibold mb-1" style={{ color: COLORS.MUTED }}>Identity Anchor</p>
+                      <p className="text-sm" style={{ color: COLORS.NAVY }}>{identityStatement}</p>
+                    </div>
+                  )}
+                  {habitAnchor && (
+                    <div className="p-3 rounded-lg bg-gray-50">
+                      <p className="text-xs font-semibold mb-1" style={{ color: COLORS.MUTED }}>Habit Anchor</p>
+                      <p className="text-sm" style={{ color: COLORS.NAVY }}>{habitAnchor}</p>
+                    </div>
+                  )}
+                  {whyStatement && (
+                    <div className="p-3 rounded-lg bg-gray-50">
+                      <p className="text-xs font-semibold mb-1" style={{ color: COLORS.MUTED }}>Why Statement</p>
+                      <p className="text-sm" style={{ color: COLORS.NAVY }}>{whyStatement}</p>
+                    </div>
+                  )}
+                  <Button
+                    onClick={handleOpenEditor}
+                    variant="outline"
+                    size="sm"
+                    className="w-full mt-2"
+                  >
+                    <Edit3 className="w-4 h-4 mr-2" />
+                    Edit Anchors
+                  </Button>
+                </div>
+              ) : (
+                <div>
+                  <p className="text-sm mb-4" style={{ color: COLORS.MUTED }}>
+                    Set your Leadership Anchors to stay focused on your core purpose.
+                  </p>
+                  <Button
+                    onClick={handleOpenEditor}
+                    variant="primary"
+                    size="sm"
+                    className="w-full"
+                  >
+                    <Anchor className="w-4 h-4 mr-2" />
+                    Set Your Anchors
+                  </Button>
+                </div>
+              )}
+            </div>
+          </details>
+        </Card>
+      </div>
 
       {/* Get Started / Onboarding Card */}
       {visibleComponents.includes('getStarted') && (
@@ -532,6 +607,7 @@ const Dashboard = (props) => {
             membershipData={membershipData}
             developmentPlanData={developmentPlanData}
             currentTier={currentTier}
+            userData={userData}
           />
         </div>
       )}
@@ -653,12 +729,12 @@ const Dashboard = (props) => {
           onClick={handleAnchorModalClose}
         >
           <div
-            className="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full"
+            className="bg-white rounded-2xl shadow-2xl p-4 sm:p-3 sm:p-4 lg:p-6 lg:p-8 max-w-md w-full"
             onClick={(e) => e.stopPropagation()}
             style={{ borderTop: `4px solid ${COLORS.TEAL}` }}
           >
             <div className="flex justify-between items-start mb-4">
-              <h2 className="text-2xl font-bold" style={{ color: COLORS.NAVY }}>
+              <h2 className="text-xl sm:text-2xl font-bold" style={{ color: COLORS.NAVY }}>
                 Your Anchor
               </h2>
               <button

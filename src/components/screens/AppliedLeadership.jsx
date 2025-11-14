@@ -11,13 +11,13 @@ import { ArrowLeft, BookOpen, ChevronRight, Loader, AlertTriangle, ShieldCheck, 
    PALETTE & UI COMPONENTS (Standardized)
 ========================================================= */
 // --- Primary Color Palette ---
-const COLORS = { NAVY: '#002E47', TEAL: '#47A88D', BLUE: '#2563EB', ORANGE: '#E04E1B', GREEN: '#10B981', AMBER: '#F5A800', RED: '#E04E1B', LIGHT_GRAY: '#FCFCFA', OFF_WHITE: '#FFFFFF', SUBTLE: '#E5E7EB', TEXT: '#374151', MUTED: '#4B5563', PURPLE: '#7C3AED', BG: '#F9FAFB' }; // cite: App.jsx
+const COLORS = { NAVY: '#002E47', TEAL: '#47A88D', BLUE: '#002E47', ORANGE: '#E04E1B', GREEN: '#47A88D', AMBER: '#E04E1B', RED: '#E04E1B', LIGHT_GRAY: '#FCFCFA', OFF_WHITE: '#FFFFFF', SUBTLE: '#E5E7EB', TEXT: '#374151', MUTED: '#4B5563', PURPLE: '#47A88D', BG: '#F9FAFB' }; // cite: App.jsx
 
 // --- Standardized Button Component (Matches Dashboard) ---
 const Button = ({ children, onClick, disabled = false, variant = 'primary', className = '', size = 'md', ...rest }) => { /* ... Re-use exact Button definition from Dashboard.jsx ... */
     let baseStyle = `inline-flex items-center justify-center gap-2 font-semibold rounded-xl transition-all duration-200 focus:outline-none focus:ring-4 disabled:opacity-50 disabled:cursor-not-allowed`;
     if (size === 'sm') baseStyle += ' px-4 py-2 text-sm'; else if (size === 'lg') baseStyle += ' px-8 py-4 text-lg'; else baseStyle += ' px-6 py-3 text-base'; // Default 'md'
-    if (variant === 'primary') baseStyle += ` bg-[${COLORS.TEAL}] text-white shadow-lg hover:bg-[#349881] focus:ring-[${COLORS.TEAL}]/50`;
+    if (variant === 'primary') baseStyle += ` bg-[${COLORS.TEAL}] text-white shadow-lg hover:bg-[#47A88D] focus:ring-[${COLORS.TEAL}]/50`;
     else if (variant === 'secondary') baseStyle += ` bg-[${COLORS.ORANGE}] text-white shadow-lg hover:bg-[#C33E12] focus:ring-[${COLORS.ORANGE}]/50`;
     else if (variant === 'outline') baseStyle += ` bg-[${COLORS.OFF_WHITE}] text-[${COLORS.TEAL}] border-2 border-[${COLORS.TEAL}] shadow-md hover:bg-[${COLORS.TEAL}]/10 focus:ring-[${COLORS.TEAL}]/50`;
     else if (variant === 'nav-back') baseStyle += ` bg-white text-gray-700 border border-gray-300 shadow-sm hover:bg-gray-100 focus:ring-gray-300/50 px-4 py-2 text-sm`;
@@ -73,7 +73,7 @@ const ResourceDetailModal = ({ isVisible, onClose, resource, skill }) => { // Re
     return (
         // Standard modal structure with backdrop and content
         <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 animate-in fade-in duration-200 backdrop-blur-sm">
-            <div className="bg-white p-6 rounded-xl shadow-2xl max-w-lg w-full relative animate-in zoom-in-95 slide-in-from-bottom-5 duration-300 overflow-hidden">
+            <div className="bg-white p-3 sm:p-4 lg:p-6 rounded-xl shadow-2xl max-w-lg w-full relative animate-in zoom-in-95 slide-in-from-bottom-5 duration-300 overflow-hidden">
                 {/* Header */}
                 <div className="flex justify-between items-center pb-3 mb-4 border-b" style={{ borderColor: COLORS.SUBTLE }}>
                     <h3 className="text-lg font-bold" style={{ color: COLORS.NAVY }}>{resource.title}</h3>
@@ -113,7 +113,7 @@ const CourseDetailView = ({ course, setCourseDetail }) => {
     const accentColor = COLORS[accentColorKey] || COLORS.TEAL;
 
     return (
-        <div className="p-6 md:p-8 lg:p-10 max-w-4xl mx-auto">
+        <div className="p-6 md:p-4 sm:p-3 sm:p-4 lg:p-6 lg:p-8 lg:p-10 max-w-4xl mx-auto">
             {/* Back Button */}
             <Button onClick={() => setCourseDetail(null)} variant='nav-back' className='mb-6'>
                 <ArrowLeft className="w-4 h-4 mr-2" /> Back to Course Library
@@ -128,7 +128,7 @@ const CourseDetailView = ({ course, setCourseDetail }) => {
                     </div>
                     {/* Title & Summary */}
                     <div className="flex-1">
-                        <h1 className="text-2xl md:text-3xl font-extrabold" style={{ color: COLORS.NAVY }}>{course.title}</h1>
+                        <h1 className="text-2xl md:text-xl sm:text-2xl sm:text-3xl font-extrabold" style={{ color: COLORS.NAVY }}>{course.title}</h1>
                         <p className="text-md md:text-lg text-gray-600 mt-1">{course.summary}</p>
                     </div>
                 </div>
@@ -212,7 +212,7 @@ const SkillDetailView = ({ skill, setSelectedSkill, resourceLibrary, getTierName
 
     return (
         // Consistent padding and max-width for detail view
-        <div className="p-6 md:p-8 lg:p-10 max-w-4xl mx-auto">
+        <div className="p-6 md:p-4 sm:p-3 sm:p-4 lg:p-6 lg:p-8 lg:p-10 max-w-4xl mx-auto">
             {/* Back Button */}
             <Button onClick={() => setSelectedSkill(null)} variant='nav-back' className='mb-6'>
                 <ArrowLeft className="w-4 h-4 mr-2" /> Back to Course Library
@@ -227,7 +227,7 @@ const SkillDetailView = ({ skill, setSelectedSkill, resourceLibrary, getTierName
                     </div>
                     {/* Title, Summary, Tier Badge */}
                     <div className="flex-1">
-                        <h1 className="text-2xl md:text-3xl font-extrabold" style={{ color: COLORS.NAVY }}>{skill.name}</h1>
+                        <h1 className="text-2xl md:text-xl sm:text-2xl sm:text-3xl font-extrabold" style={{ color: COLORS.NAVY }}>{skill.name}</h1>
                         <p className="text-md md:text-lg text-gray-600 mt-1">{skill.summary}</p>
                         <p className="text-xs font-semibold mt-3 px-3 py-1 rounded-full inline-block" style={{ background: `${accentColor}20`, color: accentColor }}>
                            {getTierName(skill.tier_id)} {/* Display tier name */}
@@ -357,11 +357,11 @@ export default function AppliedLeadershipScreen() {
 
     // --- RENDER: Skill Grid View (Course Library Home) ---
     const renderLibraryHome = () => (
-        <div className="p-6 md:p-8 lg:p-10">
+        <div className="p-6 md:p-4 sm:p-3 sm:p-4 lg:p-6 lg:p-8 lg:p-10">
             {/* Header */}
             <div className='flex items-center gap-4 border-b-2 pb-2 mb-8' style={{borderColor: COLORS.NAVY+'30'}}>
                 <ShieldCheck className='w-10 h-10' style={{color: COLORS.NAVY}}/> {/* Use consistent header style */}
-                <h1 className="text-3xl md:text-4xl font-extrabold" style={{ color: COLORS.NAVY }}>Course Library</h1>
+                <h1 className="text-xl sm:text-2xl sm:text-3xl md:text-4xl font-extrabold" style={{ color: COLORS.NAVY }}>Course Library</h1>
             </div>
             <p className="text-lg text-gray-600 mb-10 max-w-3xl">
                 Explore leadership skills, access curated resources, practice with AI coaching, and build mastery through focused reps. **Practice over theory.**
@@ -382,7 +382,7 @@ export default function AppliedLeadershipScreen() {
                     <h2 className='text-2xl font-bold mb-6 border-l-4 pl-3 flex items-center gap-2' style={{ color: COLORS.NAVY, borderColor: COLORS.ORANGE }}>
                         <Zap className='w-6 h-6' style={{color: COLORS.ORANGE}}/> Programs & Courses
                     </h2>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:p-4 lg:p-6">
                         {safeCourses.map((course) => {
                             const IconComponent = IconMap?.[course.icon] || Briefcase;
                             const accentColorKey = (course.tier_id ? LEADERSHIP_TIERS?.[course.tier_id]?.color?.split('-')[0].toUpperCase() : null) || 'ORANGE';
@@ -426,7 +426,7 @@ export default function AppliedLeadershipScreen() {
                     <h2 className='text-2xl font-bold mb-6 border-l-4 pl-3 flex items-center gap-2' style={{ color: COLORS.NAVY, borderColor: COLORS.TEAL }}>
                         <Briefcase className='w-6 h-6' style={{color: COLORS.TEAL}}/> Individual Skills & Micro-Learning
                     </h2>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:p-4 lg:p-6">
                         {safeSkills.map((skill) => {
                             const IconComponent = IconMap?.[skill.icon] || BookOpen;
                             const tierMeta = LEADERSHIP_TIERS?.[skill.tier_id];

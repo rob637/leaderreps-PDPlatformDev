@@ -6,6 +6,9 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { serverTimestamp } from 'firebase/firestore';
 
+// Helper function to check if developer mode is enabled
+const isDeveloperMode = () => localStorage.getItem('arena-developer-mode') === 'true';
+
 /* =========================================================
    MAIN DASHBOARD HOOK
    Consolidates all state and logic for Dashboard
@@ -307,7 +310,9 @@ export const useDashboard = ({
       const success = await updateDailyPracticeData(updates);
       if (!success) throw new Error('Update failed');
       console.log('[Dashboard] Morning bookend saved');
-      alert('✅ Morning Bookend Complete! Your WIN and tasks are set for the day.');
+      if (isDeveloperMode()) {
+        alert('✅ Morning Bookend Complete! Your WIN and tasks are set for the day.');
+      }
     } catch (error) {
       console.error('Error saving morning plan:', error);
       alert('Error saving morning plan. Please try again.');
@@ -400,7 +405,9 @@ export const useDashboard = ({
       if (newReminders.length > 0) {
         message += ` ${newReminders.length} reminder(s) created for tomorrow.`;
       }
-      alert(message);
+      if (isDeveloperMode()) {
+        alert(message);
+      }
     } catch (error) {
       console.error('[Dashboard] Error saving evening bookend:', error);
       console.error('[Dashboard] Error details:', {
@@ -417,7 +424,9 @@ export const useDashboard = ({
   const handleAddTask = useCallback((taskText) => {
     const isDeveloperMode = localStorage.getItem('arena-developer-mode') === 'true';
     if (isDeveloperMode) {
-      alert('🟡 Adding Task: "' + taskText + '"\nCurrent tasks: ' + otherTasks.length);
+      if (isDeveloperMode()) {
+        alert('🟡 Adding Task: "' + taskText + '"\nCurrent tasks: ' + otherTasks.length);
+      }
     }
     console.log('[Dashboard] handleAddTask called with:', taskText);
     
@@ -572,7 +581,9 @@ export const useDashboard = ({
       
       if (success) {
         console.log('[Dashboard] WIN saved successfully');
-        alert('✅ Today\'s WIN saved! This will be tracked in your progress.');
+        if (isDeveloperMode()) {
+          alert('✅ Today\'s WIN saved! This will be tracked in your progress.');
+        }
       } else {
         throw new Error('Update returned false');
       }

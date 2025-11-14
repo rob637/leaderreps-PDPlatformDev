@@ -27,7 +27,7 @@ import { doc, getDoc } from 'firebase/firestore';
 
 // Simple guard wrapper
 const LoadingBlock = ({ title = 'Loading…', description = 'Preparing your development plan...' }) => (
-  <div className="p-4 sm:p-6">
+  <div className="p-4 sm:p-3 sm:p-4 lg:p-6">
     <Card accent="TEAL">
       <h2 className="text-xl font-extrabold mb-2"> {title} </h2>
       <p className="text-gray-600">{description}</p>
@@ -182,7 +182,9 @@ export default function DevelopmentPlan() {
         console.log('[DevelopmentPlan] Plan data exists after baseline, switching to tracker view.');
         const isDeveloperMode = localStorage.getItem('arena-developer-mode') === 'true';
         if (isDeveloperMode) {
-          alert('✅ Plan data received! Switching to tracker view.');
+          if (localStorage.getItem('arena-developer-mode') === 'true') {
+            alert('✅ Plan data received! Switching to tracker view.');
+          }
         }
         setJustCompletedBaseline(false); // Clear flag
         setView('tracker');
@@ -289,7 +291,9 @@ export default function DevelopmentPlan() {
         console.log('[DevelopmentPlan] Plan deleted successfully');
         setView('baseline');
         setJustCompletedBaseline(false);
-        alert('✅ Development plan deleted. You can now create a new plan.');
+        if (localStorage.getItem('arena-developer-mode') === 'true') {
+          alert('✅ Development plan deleted. You can now create a new plan.');
+        }
       } else {
         throw new Error('Delete operation failed');
       }
@@ -336,7 +340,9 @@ async function confirmPlanPersisted(db, userId, retries = 4, delayMs = 250) {
     
     const newPlanRaw = generatePlanFromAssessment(newAssessment, combinedSkillCatalog);
     console.log('[DevelopmentPlan] Generated plan:', newPlanRaw);
-    alert('🔴 Plan generated!\nFocus areas: ' + (newPlanRaw?.focusAreas?.length || 0));
+    if (localStorage.getItem('arena-developer-mode') === 'true') {
+      alert('🔴 Plan generated!\nFocus areas: ' + (newPlanRaw?.focusAreas?.length || 0));
+    }
     
     if (!newPlanRaw || !newPlanRaw.focusAreas || newPlanRaw.focusAreas.length === 0) {
       console.error('[DevelopmentPlan] ERROR: Generated plan is invalid or empty!');
@@ -379,7 +385,9 @@ async function confirmPlanPersisted(db, userId, retries = 4, delayMs = 250) {
       updatedAt: date
     };
 
-    alert('🔴 About to save plan to Firestore...');
+    if (localStorage.getItem('arena-developer-mode') === 'true') {
+      alert('🔴 About to save plan to Firestore...');
+    }
     console.log('[DevelopmentPlan] Saving payload to Firebase:', payload);
     const ok = await writeDevPlan(payload, { merge: true });
     console.log('[DevelopmentPlan] writeDevPlan result:', ok);
@@ -475,7 +483,7 @@ async function confirmPlanPersisted(db, userId, retries = 4, delayMs = 250) {
   const isDeveloperMode = localStorage.getItem('arena-developer-mode') === 'true';
   
   return (
-    <div className="relative space-y-6 p-4 sm:p-6">
+    <div className="relative space-y-4 sm:space-y-5 lg:space-y-6 p-4 sm:p-3 sm:p-4 lg:p-6">
       {/* Back Button */}
       <Button
         onClick={() => navigate && navigate('dashboard')}

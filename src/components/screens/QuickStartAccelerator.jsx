@@ -14,13 +14,13 @@ import {
    PALETTE & UI COMPONENTS (Standardized)
 ========================================================= */
 // --- Primary Color Palette ---
-const COLORS = { NAVY: '#002E47', TEAL: '#47A88D', BLUE: '#2563EB', ORANGE: '#E04E1B', GREEN: '#10B981', AMBER: '#F5A800', RED: '#E04E1B', LIGHT_GRAY: '#FCFCFA', OFF_WHITE: '#FFFFFF', SUBTLE: '#E5E7EB', TEXT: '#374151', MUTED: '#4B5355', PURPLE: '#7C3AED', BG: '#F9FAFB' }; // cite: App.jsx
+const COLORS = { NAVY: '#002E47', TEAL: '#47A88D', BLUE: '#002E47', ORANGE: '#E04E1B', GREEN: '#47A88D', AMBER: '#E04E1B', RED: '#E04E1B', LIGHT_GRAY: '#FCFCFA', OFF_WHITE: '#FFFFFF', SUBTLE: '#E5E7EB', TEXT: '#374151', MUTED: '#4B5355', PURPLE: '#47A88D', BG: '#F9FAFB' }; // cite: App.jsx
 
 // --- Standardized UI Components (Matches Dashboard/Dev Plan) ---
 const Button = ({ children, onClick, disabled = false, variant = 'primary', className = '', size = 'md', ...rest }) => { /* ... Re-use exact Button definition from Dashboard.jsx ... */
     let baseStyle = `inline-flex items-center justify-center gap-2 font-semibold rounded-xl transition-all duration-200 focus:outline-none focus:ring-4 disabled:opacity-50 disabled:cursor-not-allowed`;
     if (size === 'sm') baseStyle += ' px-4 py-2 text-sm'; else if (size === 'lg') baseStyle += ' px-8 py-4 text-lg'; else baseStyle += ' px-6 py-3 text-base'; // Default 'md'
-    if (variant === 'primary') baseStyle += ` bg-[${COLORS.TEAL}] text-white shadow-lg hover:bg-[#349881] focus:ring-[${COLORS.TEAL}]/50`;
+    if (variant === 'primary') baseStyle += ` bg-[${COLORS.TEAL}] text-white shadow-lg hover:bg-[#47A88D] focus:ring-[${COLORS.TEAL}]/50`;
     else if (variant === 'secondary') baseStyle += ` bg-[${COLORS.ORANGE}] text-white shadow-lg hover:bg-[#C312] focus:ring-[${COLORS.ORANGE}]/50`;
     else if (variant === 'outline') baseStyle += ` bg-[${COLORS.OFF_WHITE}] text-[${COLORS.TEAL}] border-2 border-[${COLORS.TEAL}] shadow-md hover:bg-[${COLORS.TEAL}]/10 focus:ring-[${COLORS.TEAL}]/50`;
     else if (variant === 'nav-back') baseStyle += ` bg-white text-gray-700 border border-gray-300 shadow-sm hover:bg-gray-100 focus:ring-gray-300/50 px-4 py-2 text-sm`;
@@ -150,12 +150,12 @@ const LISAuditorView = ({ setQuickStartView }) => {
 
     return (
         // Consistent page structure and padding
-        <div className="p-6 md:p-8 lg:p-10 min-h-screen" style={{ background: COLORS.BG }}>
+        <div className="p-6 md:p-4 sm:p-3 sm:p-4 lg:p-6 lg:p-8 lg:p-10 min-h-screen" style={{ background: COLORS.BG }}>
             {/* Header */}
             <header className='flex items-center gap-4 border-b-2 pb-3 mb-8' style={{borderColor: COLORS.NAVY+'30'}}>
                 <ShieldCheck className='w-10 h-10 flex-shrink-0' style={{color: COLORS.NAVY}}/>
                 <div>
-                    <h1 className="text-3xl md:text-4xl font-extrabold" style={{ color: COLORS.NAVY }}>Leadership Identity Statement (LIS) Auditor</h1>
+                    <h1 className="text-xl sm:text-2xl sm:text-3xl md:text-4xl font-extrabold" style={{ color: COLORS.NAVY }}>Leadership Identity Statement (LIS) Auditor</h1>
                     <p className="text-md text-gray-600 mt-1">Refine your core leadership foundation.</p>
                 </div>
             </header>
@@ -167,7 +167,7 @@ const LISAuditorView = ({ setQuickStartView }) => {
             </Button>
 
             {/* Main Content Grid */}
-            <div className='grid grid-cols-1 lg:grid-cols-2 gap-8'>
+            <div className='grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 lg:gap-8'>
                 {/* Left Column: LIS Input */}
                 <Card title="1. Draft Your Leadership Identity Statement" icon={ShieldCheck} accent='NAVY'>
                     <p className="text-gray-700 text-sm mb-4">Define who you are when leading at your best. Focus on actions and values.</p>
@@ -246,12 +246,12 @@ const QuickStartAcceleratorScreen = () => {
                 // --- Refactored Home View ---
                 return (
                     // Consistent page structure and padding
-                    <div className="p-6 md:p-8 lg:p-10">
+                    <div className="p-6 md:p-4 sm:p-3 sm:p-4 lg:p-6 lg:p-8 lg:p-10">
                         {/* Header */}
                         <header className='flex items-center gap-4 border-b-2 pb-3 mb-8' style={{borderColor: COLORS.ORANGE+'30'}}> {/* Use ORANGE accent */}
                             <Zap className='w-10 h-10 flex-shrink-0' style={{color: COLORS.ORANGE}}/>
                             <div>
-                                <h1 className="text-3xl md:text-4xl font-extrabold" style={{ color: COLORS.NAVY }}>QuickStart Program</h1>
+                                <h1 className="text-xl sm:text-2xl sm:text-3xl md:text-4xl font-extrabold" style={{ color: COLORS.NAVY }}>QuickStart Program</h1>
                                 <p className="text-md text-gray-600 mt-1">(Core Pillar)</p>
                             </div>
                         </header>
@@ -267,7 +267,7 @@ const QuickStartAcceleratorScreen = () => {
 
                         {/* Session Cards */}
                         <h2 className='text-2xl font-bold mb-4 mt-10 border-b pb-1' style={{ color: COLORS.NAVY, borderColor: COLORS.SUBTLE }}>Program Sessions</h2>
-                        <div className="space-y-6">
+                        <div className="space-y-4 sm:space-y-5 lg:space-y-6">
                             {sessions.map(session => (
                                 // Use standard Card for each session
                                 <Card key={session.id} title={`Session ${session.id}: ${session.title}`} icon={BookOpen} accent="NAVY">

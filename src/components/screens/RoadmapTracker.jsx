@@ -12,9 +12,9 @@ import { useAppServices } from '../../services/useAppServices.jsx';
 const COLORS = {
   NAVY: '#002E47',      
   TEAL: '#47A88D',      
-  SUBTLE_TEAL: '#349881', 
+  SUBTLE_TEAL: '#47A88D', 
   ORANGE: '#E04E1B',    
-  GREEN: '#10B981',
+  GREEN: '#47A88D',
   AMBER: '#F5A500', 
   RED: '#E04E1B',
   LIGHT_GRAY: '#FCFCFA',
@@ -22,15 +22,15 @@ const COLORS = {
   SUBTLE: '#E5E7EB',
   TEXT: '#002E47',
   MUTED: '#4B5355',
-  BLUE: '#2563EB',
+  BLUE: '#002E47',
   BG: '#F9FAFB', 
-  PURPLE: '#7C3AED', 
+  PURPLE: '#47A88D', 
 };
 
 // Mock UI components (Standardized)
 const Button = ({ children, onClick, disabled = false, variant = 'primary', className = '', ...rest }) => {
   const variantStyles = {
-    primary: 'bg-[#47A88D] hover:bg-[#349881] focus:ring-[#47A88D]/50 text-white',
+    primary: 'bg-[#47A88D] hover:bg-[#47A88D] focus:ring-[#47A88D]/50 text-white',
     secondary: 'bg-[#E04E1B] hover:bg-[#C33E12] focus:ring-[#E04E1B]/50 text-white',
     outline: 'border-2 border-[#47A88D] text-[#47A88D] hover:bg-[#47A88D]/10 focus:ring-[#47A88D]/50 bg-[#FCFCFA]',
     'nav-back': 'border-2 border-gray-300 text-gray-700 hover:bg-gray-100',
@@ -196,9 +196,9 @@ const ContentDetailsModalInternal = ({ content, onClose, htmlContent, rating, se
 
     return (
         <div className="fixed inset-0 bg-[#002E47]/80 z-50 flex items-center justify-center p-4">
-            <div className="bg-[#FCFCFA] rounded-3xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto p-8">
+            <div className="bg-[#FCFCFA] rounded-3xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto p-4 sm:p-3 sm:p-4 lg:p-6 lg:p-8">
                 <div className="flex justify-between items-start border-b pb-4 mb-6">
-                    <h2 className="text-3xl font-extrabold text-[#002E47] flex items-center">
+                    <h2 className="text-xl sm:text-2xl sm:text-3xl font-extrabold text-[#002E47] flex items-center">
                         <BookOpen className="w-8 h-8 mr-3 text-[#47A88D]" />
                         {content.title} ({content.type})
                     </h2>
@@ -256,7 +256,7 @@ const ContentDetailsModalInternal = ({ content, onClose, htmlContent, rating, se
 // --- Component 3: Roadmap Timeline View (Unchanged) ---
 const RoadmapTimeline = ({ data, navigateToMonth, viewMonth }) => {
     return (
-        <Card title="24-Month Roadmap Timeline" icon={Trello} accent="PURPLE" className='lg:sticky lg:top-4 bg-white shadow-2xl border-l-4 border-[#7C3AED]'>
+        <Card title="24-Month Roadmap Timeline" icon={Trello} accent="PURPLE" className='lg:sticky lg:top-4 bg-white shadow-2xl border-l-4 border-[#47A88D]'>
             <p className='text-sm text-gray-600 mb-4'>Review your full two-year journey. Click a month to review its content and reflection.</p>
             <div className='max-h-96 overflow-y-auto space-y-2 pr-2'>
                 {data.plan.map(monthData => {
@@ -268,14 +268,14 @@ const RoadmapTimeline = ({ data, navigateToMonth, viewMonth }) => {
                     return (
                         <div key={monthData.month}
                              className={`p-3 rounded-lg border flex justify-between items-center transition-all cursor-pointer shadow-sm
-                                         ${isCurrentView ? 'bg-[#7C3AED]/20 border-[#7C3AED] font-extrabold' : isCompleted ? 'bg-[#47A88D]/10 border-[#47A88D]' : 'bg-gray-50 border-gray-200 hover:bg-gray-100'}
+                                         ${isCurrentView ? 'bg-[#47A88D]/20 border-[#47A88D] font-extrabold' : isCompleted ? 'bg-[#47A88D]/10 border-[#47A88D]' : 'bg-gray-50 border-gray-200 hover:bg-gray-100'}
                                          ${isFuture && !isCurrentView ? 'opacity-80' : ''}` 
                              }
                              onClick={() => {
                                  if (isClickable) navigateToMonth(monthData.month); 
                              }}
                         >
-                            <span className={`text-sm ${isCurrentView ? 'text-[#7C3AED]' : 'text-[#002E47]'}`}>
+                            <span className={`text-sm ${isCurrentView ? 'text-[#47A88D]' : 'text-[#002E47]'}`}>
                                 **Training Month {monthData.month}**: {monthData.theme}
                             </span>
                             <span className="flex items-center space-x-1 text-xs">
@@ -499,7 +499,7 @@ const TrackerDashboardView = ({ data, updatePdpData, navigate }) => {
 
 
     return (
-        <div className="p-6 md:p-10 min-h-screen" style={{ background: COLORS.BG, color: COLORS.TEXT }}>
+        <div className="p-3 sm:p-4 lg:p-6 md:p-10 min-h-screen" style={{ background: COLORS.BG, color: COLORS.TEXT }}>
             <div className='flex items-center gap-4 border-b-2 pb-2 mb-8' style={{borderColor: COLORS.PURPLE+'30'}}>
                 <Dumbbell className='w-10 h-10' style={{color: COLORS.PURPLE}}/>
                 <h1 className="text-4xl font-extrabold" style={{ color: COLORS.NAVY }}>Development Roadmap Tracker</h1>
@@ -527,9 +527,9 @@ const TrackerDashboardView = ({ data, updatePdpData, navigate }) => {
             </Card>
 
             {/* Current Month Plan */}
-            <div className='lg:grid lg:grid-cols-4 lg:gap-8'>
+            <div className='lg:grid lg:grid-cols-4 lg:gap-4 sm:gap-6 lg:gap-8'>
                 
-                <div className='lg:col-span-1 space-y-8 order-1'>
+                <div className='lg:col-span-1 space-y-4 sm:space-y-6 lg:space-y-8 order-1'>
                     <RoadmapTimeline data={data} currentMonth={data.currentMonth} navigateToMonth={setViewMonth} viewMonth={viewMonth} />
                     
                     <Card title={`Tier Mastery Status (${currentTierId})`} icon={Star} accent='NAVY' className='bg-[#FCFCFA] border-l-4 border-[#002E47] text-center'>
@@ -539,7 +539,7 @@ const TrackerDashboardView = ({ data, updatePdpData, navigate }) => {
                                 <path className="text-[#47A88D]" fill="none" stroke="currentColor" strokeWidth="3.8" strokeDasharray={`${tierProgress.overallPercentage}, 100`} d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
                             </svg>
                             <div className="absolute top-0 left-0 w-full h-full flex items-center justify-center">
-                                <span className="text-3xl font-extrabold text-[#002E47]">{tierProgress.overallPercentage}%</span>
+                                <span className="text-xl sm:text-2xl sm:text-3xl font-extrabold text-[#002E47]">{tierProgress.overallPercentage}%</span>
                             </div>
                         </div>
                         <p className='text-md font-semibold text-[#002E47] mb-1'>{tierProgress.completedContent} / {tierProgress.totalContent} Content Reps Completed</p>
@@ -549,7 +549,7 @@ const TrackerDashboardView = ({ data, updatePdpData, navigate }) => {
                 </div>
 
 
-                <div className='lg:col-span-3 space-y-8 order-2'>
+                <div className='lg:col-span-3 space-y-4 sm:space-y-6 lg:space-y-8 order-2'>
                     
                     {/* VIEWING WARNINGS - THESE DISPLAY FOR FUTURE/PAST MONTHS */}
                     {viewMonth > data.currentMonth && ( // Check if viewing a future month
@@ -694,7 +694,7 @@ const TrackerDashboardView = ({ data, updatePdpData, navigate }) => {
                             <Button
                                 onClick={handleCompleteMonth}
                                 disabled={isSaving || !isReadyToComplete}
-                                className='w-full bg-[#47A88D] hover:bg-[#349881]'
+                                className='w-full bg-[#47A88D] hover:bg-[#47A88D]'
                             >
                                 {isSaving ? 'Processing...' : `Complete Month ${data.currentMonth} and Advance`}
                             </Button>
@@ -745,7 +745,7 @@ export const RoadmapTrackerScreen = () => {
 
     if (isLoading || !pdpIsReady) {
         return (
-            <div className="p-8 min-h-screen flex items-center justify-center">
+            <div className="p-4 sm:p-3 sm:p-4 lg:p-6 lg:p-8 min-h-screen flex items-center justify-center">
                 <div className="flex flex-col items-center">
                     <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#47A88D] mb-3"></div>
                     <p className="text-[#47A88D] font-medium">Loading Roadmap Data...</p>
@@ -757,7 +757,7 @@ export const RoadmapTrackerScreen = () => {
     if (error || !planExistsAndIsValid) {
         // If data is missing or invalid, prompt the user to go to the generator screen.
         return (
-            <div className="p-6 md:p-10 min-h-screen" style={{ background: COLORS.BG, color: COLORS.TEXT }}>
+            <div className="p-3 sm:p-4 lg:p-6 md:p-10 min-h-screen" style={{ background: COLORS.BG, color: COLORS.TEXT }}>
                 <div className='flex items-center gap-4 border-b-2 pb-2 mb-8' style={{borderColor: COLORS.RED+'30'}}>
                     <AlertTriangle className='w-10 h-10' style={{color: COLORS.RED}}/>
                     <h1 className="text-4xl font-extrabold" style={{ color: COLORS.NAVY }}>Roadmap Required</h1>

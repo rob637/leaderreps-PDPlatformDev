@@ -13,7 +13,7 @@ const MilestoneTimeline = ({ plan, onBack }) => {
   
   return (
     // REQ #5: Improved wrapper div for better layout - FULL WIDTH
-    <div className="w-full mx-auto p-4 sm:p-6 space-y-6" style={{ maxWidth: '1400px' }}>
+    <div className="w-full mx-auto p-4 sm:p-3 sm:p-4 lg:p-6 space-y-4 sm:space-y-5 lg:space-y-6" style={{ maxWidth: '1400px' }}>
       
       {/* REQ #5: Added Back Button */}
       <div className="mb-0">
@@ -24,11 +24,11 @@ const MilestoneTimeline = ({ plan, onBack }) => {
 
       <Card title="12-Week Journey" icon={Calendar} accent="PURPLE">
         {/* Phase Overview */}
-        <div className="mb-8 p-6 rounded-xl" style={{ background: `${currentPhase.color}10` }}>
+        <div className="mb-8 p-3 sm:p-4 lg:p-6 rounded-xl" style={{ background: `${currentPhase.color}10` }}>
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-2">
             <div>
               <Badge variant="purple" size="lg">Week {currentWeek} of 12</Badge>
-              <h4 className="text-2xl font-bold mt-3" style={{ color: COLORS.NAVY }}>
+              <h4 className="text-xl sm:text-2xl font-bold mt-3" style={{ color: COLORS.NAVY }}>
                 {currentPhase.name} Phase
               </h4>
               <p className="text-base text-gray-600 mt-1">{currentPhase.description}</p>
@@ -43,7 +43,7 @@ const MilestoneTimeline = ({ plan, onBack }) => {
         </div>
 
         {/* Timeline - IMPROVED LAYOUT */}
-        <div className="space-y-8">
+        <div className="space-y-4 sm:space-y-6 lg:space-y-8">
           {MILESTONE_CONFIG.phases.map((phase, phaseIdx) => (
             <div key={phase.name} className="relative">
               {/* Phase Header - IMPROVED */}
@@ -110,7 +110,7 @@ const MilestoneTimeline = ({ plan, onBack }) => {
         </div>
 
         {/* Key Milestones - IMPROVED LAYOUT */}
-        <div className="mt-8 p-6 rounded-xl border-2 shadow-sm" style={{ borderColor: COLORS.SUBTLE, background: COLORS.LIGHT_GRAY }}>
+        <div className="mt-8 p-3 sm:p-4 lg:p-6 rounded-xl border-2 shadow-sm" style={{ borderColor: COLORS.SUBTLE, background: COLORS.LIGHT_GRAY }}>
           <h5 className="font-bold text-lg mb-4" style={{ color: COLORS.NAVY }}>
             🎯 Key Milestones
           </h5>

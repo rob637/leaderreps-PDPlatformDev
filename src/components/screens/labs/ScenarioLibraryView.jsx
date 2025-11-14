@@ -15,8 +15,8 @@ const ScenarioLibraryView = ({ setCoachingLabView, setSelectedScenario }) => {
     const scenarios = useMemo(() => SCENARIO_CATALOG?.items || [], [SCENARIO_CATALOG]);
     
     return (
-        <div className="p-8">
-            <h1 className="text-3xl font-extrabold text-[#0B3B5B] mb-4">Scenario Library: Practice Conversations</h1>
+        <div className="p-4 sm:p-3 sm:p-4 lg:p-6 lg:p-8">
+            <h1 className="text-xl sm:text-2xl sm:text-3xl font-extrabold text-[#0B3B5B] mb-4">Scenario Library: Practice Conversations</h1>
             <p className="text-lg text-gray-600 mb-6">Select a high-stakes scenario to practice your preparation process. Each scenario includes a unique persona for the AI simulator.</p>
             
             <Button onClick={() => setCoachingLabView('coaching-lab-home')} variant="outline" className="mb-8">
@@ -37,7 +37,7 @@ const ScenarioLibraryView = ({ setCoachingLabView, setSelectedScenario }) => {
             
             <h2 className='text-xl font-bold text-[#0B3B5B] mb-4 border-b pb-1'>Pre-Seeded Scenarios</h2>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:p-4 lg:p-6">
                 {scenarios.map(scenario => (
                     <Card 
                         key={scenario.id} 

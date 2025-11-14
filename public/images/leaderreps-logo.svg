@@ -1,0 +1,28 @@
+<svg width="180" height="40" viewBox="0 0 180 40" xmlns="http://www.w3.org/2000/svg">
+  <!-- LeaderReps Logo with Corporate Colors -->
+  <defs>
+    <style>
+      .logo-text { font-family: 'Arial', 'Helvetica', sans-serif; font-weight: 700; }
+      .navy { fill: #002E47; }
+      .teal { fill: #47A88D; }
+      .orange { fill: #E04E1B; }
+    </style>
+  </defs>
+  
+  <!-- Icon: Stylized "L" and "R" -->
+  <g transform="translate(5, 5)">
+    <!-- L shape -->
+    <rect class="navy" x="0" y="0" width="4" height="30" rx="1"/>
+    <rect class="navy" x="0" y="26" width="12" height="4" rx="1"/>
+    
+    <!-- R shape with dynamic swoosh -->
+    <path class="teal" d="M 18 0 L 22 0 L 22 12 L 28 12 Q 32 12 32 8 Q 32 4 28 4 L 22 4 L 22 0 L 28 0 Q 36 0 36 8 Q 36 14 32 16 L 36 30 L 31 30 L 27 16 L 22 16 L 22 30 L 18 30 Z"/>
+    
+    <!-- Accent dot -->
+    <circle class="orange" cx="20" cy="33" r="2"/>
+  </g>
+  
+  <!-- Text: LeaderReps -->
+  <text class="logo-text navy" x="50" y="27" font-size="18">Leader</text>
+  <text class="logo-text teal" x="115" y="27" font-size="18">Reps</text>
+</svg>

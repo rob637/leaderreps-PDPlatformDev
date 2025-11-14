@@ -15,10 +15,10 @@ import {
    COLORS & COMPONENTS (Match Dashboard)
 ========================================================= */
 const COLORS = { 
-  NAVY: '#002E47', TEAL: '#47A88D', BLUE: '#2563EB', ORANGE: '#E04E1B', 
-  GREEN: '#10B981', AMBER: '#F5A800', RED: '#E04E1B', LIGHT_GRAY: '#FCFCFA', 
+  NAVY: '#002E47', TEAL: '#47A88D', BLUE: '#002E47', ORANGE: '#E04E1B', 
+  GREEN: '#47A88D', AMBER: '#E04E1B', RED: '#E04E1B', LIGHT_GRAY: '#FCFCFA', 
   OFF_WHITE: '#FFFFFF', SUBTLE: '#E5E7EB', TEXT: '#374151', MUTED: '#4B5563', 
-  PURPLE: '#7C3AED', BG: '#F9FAFB' 
+  PURPLE: '#47A88D', BG: '#F9FAFB' 
 };
 
 const Button = ({ children, onClick, disabled = false, variant = 'primary', className = '', size = 'md', ...rest }) => {
@@ -26,7 +26,7 @@ const Button = ({ children, onClick, disabled = false, variant = 'primary', clas
     if (size === 'sm') baseStyle += ' px-4 py-2 text-sm'; 
     else if (size === 'lg') baseStyle += ' px-8 py-4 text-lg'; 
     else baseStyle += ' px-6 py-3 text-base';
-    if (variant === 'primary') baseStyle += ` bg-[${COLORS.TEAL}] text-white shadow-lg hover:bg-[#349881] focus:ring-[${COLORS.TEAL}]/50`;
+    if (variant === 'primary') baseStyle += ` bg-[${COLORS.TEAL}] text-white shadow-lg hover:bg-[#47A88D] focus:ring-[${COLORS.TEAL}]/50`;
     else if (variant === 'secondary') baseStyle += ` bg-[${COLORS.ORANGE}] text-white shadow-lg hover:bg-[#C33E12] focus:ring-[${COLORS.ORANGE}]/50`;
     else if (variant === 'outline') baseStyle += ` bg-[${COLORS.OFF_WHITE}] text-[${COLORS.TEAL}] border-2 border-[${COLORS.TEAL}] shadow-md hover:bg-[${COLORS.TEAL}]/10 focus:ring-[${COLORS.TEAL}]/50`;
     else if (variant === 'nav-back') baseStyle += ` bg-white text-gray-700 border border-gray-300 shadow-sm hover:bg-gray-100 focus:ring-gray-300/50 px-4 py-2 text-sm`;
@@ -123,7 +123,7 @@ const DetailedPlanView = ({
 
   if (!currentPlan) {
     return (
-      <div className="p-8 text-center">
+      <div className="p-4 sm:p-3 sm:p-4 lg:p-6 lg:p-8 text-center">
         <p className="text-lg text-gray-600">No development plan found.</p>
       </div>
     );
@@ -141,7 +141,7 @@ const DetailedPlanView = ({
                 <ArrowLeft className="w-4 h-4" /> Back to Tracker
               </Button>
             </div>
-            <h1 className="text-3xl md:text-4xl font-extrabold mb-2" style={{ color: COLORS.NAVY }}>
+            <h1 className="text-xl sm:text-2xl sm:text-3xl md:text-4xl font-extrabold mb-2" style={{ color: COLORS.NAVY }}>
               Your Arena Development Plan
             </h1>
             <p className="text-lg text-gray-600">
@@ -215,7 +215,7 @@ const DetailedPlanView = ({
         </Card>
 
         {/* Assessment Snapshot & Focus Plan Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 sm:p-4 lg:p-6 mt-6">
           
           {/* Left Column: Radar Chart (RESTORED from OLD version) */}
           <div className="lg:col-span-1">
@@ -269,7 +269,7 @@ const DetailedPlanView = ({
               </p>
               
               {/* Focus Areas List */}
-              <div className="space-y-6">
+              <div className="space-y-4 sm:space-y-5 lg:space-y-6">
                 {currentPlan.focusAreas?.map((area, index) => (
                   <div key={index} 
                        className="flex flex-col sm:flex-row gap-4 border-b pb-6 last:border-b-0" 

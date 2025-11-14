@@ -176,9 +176,11 @@ const AppContent = ({
             )}
           </div>
           <div className="flex items-center gap-3">
-            <h1 className="corporate-heading-md text-corporate-navy">
-              LeaderReps
-            </h1>
+            <img 
+              src="/images/leaderreps-logo.svg" 
+              alt="LeaderReps" 
+              className="h-8 sm:h-10 w-auto"
+            />
             {isDeveloperMode && (
               <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-orange-100 text-orange-700">
                 DEV
