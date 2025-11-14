@@ -178,10 +178,11 @@ const AppContent = ({
           </div>
           <div className="flex items-center gap-2">
             <img 
-              src="/leaderreps-logo.png" 
-              alt="LeaderReps" 
-              className="h-8"
+              src="/icons/icon-192x192.png" 
+              alt="LeaderReps Icon" 
+              className="h-8 w-8"
             />
+            <span className="text-xl font-bold" style={{ color: '#002E47' }}>LeaderReps</span>
             {isDeveloperMode && <span className="text-xs bg-orange-500 text-white px-2 py-1 rounded ml-2">DEV</span>}
             {!isDeveloperMode && <span className={`text-xs text-white px-2 py-1 rounded ml-2 ${tierColors[simulatedTier]}`}>TEST: {tierLabels[simulatedTier]}</span>}
           </div>
