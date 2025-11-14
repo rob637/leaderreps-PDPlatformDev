@@ -176,11 +176,15 @@ const AppContent = ({
               </div>
             )}
           </div>
-          <h1 className="text-xl font-bold text-corporate-navy">
-            LeaderReps 
+          <div className="flex items-center gap-2">
+            <img 
+              src="/leaderreps-logo.png" 
+              alt="LeaderReps" 
+              className="h-8"
+            />
             {isDeveloperMode && <span className="text-xs bg-orange-500 text-white px-2 py-1 rounded ml-2">DEV</span>}
             {!isDeveloperMode && <span className={`text-xs text-white px-2 py-1 rounded ml-2 ${tierColors[simulatedTier]}`}>TEST: {tierLabels[simulatedTier]}</span>}
-          </h1>
+          </div>
         </div>
 
         <div className="flex items-center gap-3">

@@ -223,12 +223,18 @@ const Dashboard = (props) => {
     isSavingBookend,
     // Add morning bookend and task data
     morningWIN,
+    setMorningWIN,
     otherTasks,
+    showLIS,
+    setShowLIS,
     handleAddTask,
     handleToggleTask,
     handleRemoveTask,
     handleToggleWIN,
-    amWinCompleted
+    handleSaveWIN,
+    handleSaveMorningBookend,
+    amWinCompleted,
+    amCompletedAt
   } = useDashboard({
     ...props,
     dailyPracticeData,
@@ -502,7 +508,21 @@ const Dashboard = (props) => {
       {visibleComponents.includes('dynamicBookend') && (
         <DynamicBookendContainer
           morningProps={{
-            // Add morning props here when needed
+            dailyWIN: morningWIN,
+            setDailyWIN: setMorningWIN,
+            otherTasks: otherTasks,
+            onAddTask: handleAddTask,
+            onToggleTask: handleToggleTask,
+            onRemoveTask: handleRemoveTask,
+            showLIS: showLIS,
+            setShowLIS: setShowLIS,
+            identityStatement: identityStatement,
+            onSave: handleSaveMorningBookend,
+            isSaving: isSavingBookend,
+            onToggleWIN: handleToggleWIN,
+            onSaveWIN: handleSaveWIN,
+            completedAt: amCompletedAt,
+            winCompleted: amWinCompleted
           }}
           eveningProps={{
             reflectionGood,
