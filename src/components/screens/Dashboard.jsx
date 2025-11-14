@@ -87,7 +87,10 @@ const GetStartedCard = ({ onNavigate, membershipData, developmentPlanData, curre
             </p>
           </div>
           <Button
-            onClick={() => onNavigate('membership-upgrade')}
+            onClick={() => {
+              alert('🔥 Navigating to: membership-upgrade');
+              onNavigate('membership-upgrade');
+            }}
             variant="primary"
             size="md"
             className="flex-shrink-0 w-full sm:w-auto"
