@@ -43,9 +43,9 @@ const ScreenMap = {
     import('../components/screens/AdminDataMaintenance.jsx')
   ),
   'debug-data': lazy(() => import('../components/screens/DebugDataViewer.jsx')),
-  'membership-module': lazy(() =>
-    import('../components/screens/MembershipModule.jsx')
-  ),
+  // 'membership-module': lazy(() =>
+  //   import('../components/screens/MembershipModule.jsx')
+  // ),
   'library': lazy(() =>
     import('../components/screens/Library.jsx')
   ),
