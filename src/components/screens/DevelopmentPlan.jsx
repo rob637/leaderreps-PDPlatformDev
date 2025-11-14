@@ -249,11 +249,21 @@ async function confirmPlanPersisted(db, userId, retries = 4, delayMs = 250) {
 
   // Baseline → Generate new plan then route to tracker
   const handleCompleteBaseline = async (assessment) => {
+    console.log('[DevelopmentPlan] Starting baseline completion with assessment:', assessment);
     const date = new Date().toISOString();
     const newAssessment = { ...assessment, date };
     
     // Assumes generatePlanFromAssessment uses the *corrected* skill catalog
+    console.log('[DevelopmentPlan] Generating plan from assessment...');
+    console.log('[DevelopmentPlan] combinedSkillCatalog:', combinedSkillCatalog?.length || 'undefined');
     const newPlanRaw = generatePlanFromAssessment(newAssessment, combinedSkillCatalog);
+    console.log('[DevelopmentPlan] Generated plan:', newPlanRaw);
+    
+    if (!newPlanRaw || !newPlanRaw.focusAreas || newPlanRaw.focusAreas.length === 0) {
+      console.error('[DevelopmentPlan] ERROR: Generated plan is invalid or empty!');
+      alert('Error generating development plan. Please check your assessment and try again.');
+      return;
+    }
 
     // If an existing plan exists, bump cycle for the new plan & archive the old
     const prevPlan = adaptedDevelopmentPlanData?.currentPlan;
@@ -290,8 +300,10 @@ async function confirmPlanPersisted(db, userId, retries = 4, delayMs = 250) {
       updatedAt: date
     };
 
+    console.log('[DevelopmentPlan] Saving payload to Firebase:', payload);
     // The writeDevPlan sets isSaving=true, then to false after Firestore ACK.
     const ok = await writeDevPlan(payload, { merge: true });
+    console.log('[DevelopmentPlan] writeDevPlan result:', ok);
     
     if (ok) {
       // FINAL FIX (Issue 4): Set the target rep

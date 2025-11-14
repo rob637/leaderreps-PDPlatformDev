@@ -22,10 +22,12 @@ const PlanTracker = ({
   const [showEditor, setShowEditor] = useState(false);
 
   if (!plan) {
+    console.log('[PlanTracker] No plan available. Plan data received:', plan);
     return (
       <div className="max-w-3xl mx-auto p-6">
         <Card accent="TEAL">
           <p className="text-gray-600">No plan available. Complete your baseline assessment to get started.</p>
+          <p className="text-xs text-gray-500 mt-2">Debug: Plan data is {typeof plan} - {JSON.stringify(plan)}</p>
         </Card>
       </div>
     );
