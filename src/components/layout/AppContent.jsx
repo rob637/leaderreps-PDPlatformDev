@@ -87,7 +87,7 @@ const AppContent = ({
   const closeMobileMenu = useCallback(() => setIsMobileOpen(false), [
     setIsMobileOpen,
   ]);
-  const { navigate, featureFlags, isAdmin, membershipData } = useAppServices();
+  const { navigate, isAdmin, membershipData } = useAppServices();
 
   // Navigation items for dropdown - matching NavSidebar.jsx structure
   const currentTier = isDeveloperMode ? 'elite' : simulatedTier;
@@ -103,12 +103,6 @@ const AppContent = ({
     return userLevel >= requiredLevel;
   };
 
-  // Helper function to check feature flags (matching NavSidebar logic)
-  const checkFlag = (flag) => {
-    if (!flag) return true;
-    return featureFlags?.[flag] === true;
-  };
-
   // Navigation sections matching NavSidebar.jsx
   // Basic: Arena, Dev Plan, Membership
   // Pro: Arena, Dev Plan, Coaching, Community, Library, Membership  
@@ -118,62 +112,50 @@ const AppContent = ({
     {
       title: 'THE ARENA',
       items: [
-        { screen: 'dashboard', label: 'The Arena' }
+        { screen: 'dashboard', label: 'The Arena', requiredTier: 'basic' }
       ]
     },
     {
       title: 'DEVELOPMENT PLAN',
       items: [
-        { screen: 'development-plan', label: 'Development Plan', flag: 'enableDevPlan', requiredTier: 'basic' }
+        { screen: 'development-plan', label: 'Development Plan', requiredTier: 'basic' }
       ]
     },
     {
       title: 'COACHING',
       items: [
-        { screen: 'labs', label: 'Coaching', flag: 'enableLabs', requiredTier: 'professional' }
+        { screen: 'labs', label: 'Coaching', requiredTier: 'professional' }
       ]
     },
     {
       title: 'COMMUNITY',
       items: [
-        { screen: 'community', label: 'Community', flag: 'enableCommunity', requiredTier: 'professional' }
+        { screen: 'community', label: 'Community', requiredTier: 'professional' }
       ]
     },
     {
       title: 'LIBRARY',
       items: [
-        { screen: 'applied-leadership', label: 'Courses', flag: 'enableCourses', requiredTier: 'professional' },
-        { screen: 'business-readings', label: 'Reading & Reps', flag: 'enableReadings', requiredTier: 'professional' },
-        { screen: 'leadership-videos', label: 'Media', flag: 'enableVideos', requiredTier: 'professional' }
+        { screen: 'applied-leadership', label: 'Courses', requiredTier: 'professional' },
+        { screen: 'business-readings', label: 'Reading & Reps', requiredTier: 'professional' },
+        { screen: 'leadership-videos', label: 'Media', requiredTier: 'professional' }
       ]
     },
     {
       title: 'MEMBERSHIP',
       items: [
-        { screen: 'membership-module', label: 'Membership', flag: 'enableMembershipModule', requiredTier: 'basic' }
+        { screen: 'membership-module', label: 'Membership', requiredTier: 'basic' }
       ]
     },
     ...(isDeveloperMode ? [{
       title: 'DEVELOPER TOOLS',
       items: [
-        { screen: 'planning-hub', label: 'Strategic Content Tools', flag: 'enablePlanningHub', requiredTier: 'elite', devModeOnly: true },
-        { screen: 'executive-reflection', label: 'Executive ROI Report', flag: 'enableRoiReport', requiredTier: 'elite', devModeOnly: true },
+        { screen: 'planning-hub', label: 'Strategic Content Tools', requiredTier: 'basic', devModeOnly: true },
+        { screen: 'executive-reflection', label: 'Executive ROI Report', requiredTier: 'basic', devModeOnly: true },
         { screen: 'app-settings', label: 'App Settings', requiredTier: 'basic', devModeOnly: true }
       ]
     }] : [])
   ];
-
-  // Flatten sections into items for rendering, filtering by access
-  const navigationItems = navigationSections.flatMap(section => 
-    section.items
-      .filter(item => {
-        if (item.devModeOnly && !isDeveloperMode && !isAdmin) return false;
-        if (!checkFlag(item.flag)) return false;
-        if (!hasAccess(item.requiredTier)) return false;
-        return true;
-      })
-      .map(item => ({ ...item, sectionTitle: section.title }))
-  );
 
   const handleSignOut = async () => {
     try {
@@ -205,8 +187,9 @@ const AppContent = ({
                 <div className="py-2">
                   {navigationSections.map((section) => {
                     const visibleItems = section.items.filter(item => {
+                      // Developer Tools only show in dev mode
                       if (item.devModeOnly && !isDeveloperMode && !isAdmin) return false;
-                      if (!checkFlag(item.flag)) return false;
+                      // Check tier access
                       if (!hasAccess(item.requiredTier)) return false;
                       return true;
                     });
