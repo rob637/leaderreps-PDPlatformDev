@@ -156,28 +156,43 @@ export default function DevelopmentPlan() {
   const [view, setView] = useState(hasCurrentPlan ? 'tracker' : 'baseline');
   const [isSaving, setIsSaving] = useState(false); // Used to detect in-progress save
   const [error, setError] = useState(null);
+  const [justCompletedBaseline, setJustCompletedBaseline] = useState(false); // Prevent returning to baseline after save
 
   // Sync view with live snapshots as they arrive
   useEffect(() => {
+    console.log('[DevelopmentPlan useEffect] Checking view state:', {
+      view,
+      isSaving,
+      justCompletedBaseline,
+      hasCurrentPlan: !!adaptedDevelopmentPlanData?.currentPlan
+    });
+    
     // DON'T switch views while saving is in progress
     if (isSaving) {
       console.log('[DevelopmentPlan] Save in progress, not switching views.');
       return;
     }
     
+    // DON'T switch back to baseline if we just completed it and are waiting for data
+    if (justCompletedBaseline && view === 'baseline') {
+      console.log('[DevelopmentPlan] Just completed baseline, waiting for plan data before switching.');
+      return;
+    }
+    
     // When plan data exists and we're on baseline, switch to tracker
     if (adaptedDevelopmentPlanData?.currentPlan && view === 'baseline') {
       console.log('[DevelopmentPlan] Plan data received, switching to tracker view.');
+      setJustCompletedBaseline(false); // Clear flag
       setView('tracker');
       return;
     }
     
-    // When no plan exists and we're on tracker, switch to baseline
-    if (!adaptedDevelopmentPlanData?.currentPlan && view === 'tracker') {
+    // When no plan exists and we're on tracker (and we didn't just complete baseline), switch to baseline
+    if (!adaptedDevelopmentPlanData?.currentPlan && view === 'tracker' && !justCompletedBaseline) {
       console.log('[DevelopmentPlan] No plan data, switching to baseline view.');
       setView('baseline');
     }
-  }, [adaptedDevelopmentPlanData?.currentPlan, view, isSaving]);
+  }, [adaptedDevelopmentPlanData?.currentPlan, view, isSaving, justCompletedBaseline]);
 
   const writeDevPlan = async (payload, { merge = true } = {}) => {
     console.log('[DevelopmentPlan] Starting writeDevPlan...');
@@ -311,6 +326,10 @@ async function confirmPlanPersisted(db, userId, retries = 4, delayMs = 250) {
     console.log('[DevelopmentPlan] writeDevPlan result:', ok);
     
     if (ok) {
+      // Set flag to prevent returning to baseline view
+      console.log('[DevelopmentPlan] Setting justCompletedBaseline flag');
+      setJustCompletedBaseline(true);
+      
       // FINAL FIX (Issue 4): Set the target rep
       console.log('[DevelopmentPlan] Baseline saved. Setting target rep...');
       await findAndSetTargetRep(newPlan, globalMetadata, updateDailyPracticeWriter);
@@ -320,11 +339,14 @@ async function confirmPlanPersisted(db, userId, retries = 4, delayMs = 250) {
       if (okPersisted) {
         console.log('[DevelopmentPlan] Confirmed currentPlan via read-after-write.');
       } else {
-        console.warn('[DevelopmentPlan] Could not confirm plan persistence.');
+        console.warn('[DevelopmentPlan] Could not confirm plan persistence, but waiting for listener.');
       }
       
       // View will automatically switch to tracker via useEffect when data arrives
       console.log('[DevelopmentPlan] Assessment completed. Waiting for Firestore update...');
+    } else {
+      console.error('[DevelopmentPlan] Failed to save plan!');
+      alert('Failed to save development plan. Please try again.');
     }
   };
 

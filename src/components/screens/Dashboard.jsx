@@ -244,10 +244,19 @@ const Dashboard = (props) => {
   // Debug wrapper for setCurrentScreen
   const setCurrentScreen = (screen) => {
     console.log('[Dashboard] setCurrentScreen called with:', screen);
+    console.log('[Dashboard] _setCurrentScreen type:', typeof _setCurrentScreen);
+    console.log('[Dashboard] _setCurrentScreen value:', _setCurrentScreen);
+    
     if (typeof _setCurrentScreen === 'function') {
+      console.log('[Dashboard] Calling _setCurrentScreen with:', screen);
       _setCurrentScreen(screen);
+      console.log('[Dashboard] _setCurrentScreen called successfully');
     } else {
-      console.error('[Dashboard] setCurrentScreen is not a function:', typeof _setCurrentScreen);
+      console.error('[Dashboard] ERROR: setCurrentScreen is not a function!', {
+        type: typeof _setCurrentScreen,
+        value: _setCurrentScreen
+      });
+      alert(`Navigation error: Cannot navigate to ${screen}. Please refresh the page.`);
     }
   };
 

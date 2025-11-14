@@ -306,10 +306,17 @@ export const useDashboard = ({
   const handleSaveEveningBookend = useCallback(async () => {
     // Use the destructured prop directly
     if (!updateDailyPracticeData) {
-      console.error('[Dashboard] Cannot save evening bookend');
+      console.error('[Dashboard] Cannot save evening bookend - updateDailyPracticeData is not available');
       alert('Error: Unable to save. Please try again.');
       return;
     }
+
+    console.log('[Dashboard] Starting evening bookend save...', {
+      reflectionGood: reflectionGood?.length || 0,
+      reflectionBetter: reflectionBetter?.length || 0,
+      reflectionBest: reflectionBest?.length || 0,
+      habitsCompleted
+    });
 
     setIsSavingBookend(true);
     try {
@@ -326,7 +333,10 @@ export const useDashboard = ({
         improvementReminder: reflectionBetter
       };
 
+      console.log('[Dashboard] Calling updateDailyPracticeData with updates:', updates);
       const success = await updateDailyPracticeData(updates);
+      console.log('[Dashboard] updateDailyPracticeData result:', success);
+      
       if (!success) throw new Error('Update failed');
 
       // Auto-check evening reflection habit
@@ -338,17 +348,28 @@ export const useDashboard = ({
       setReflectionBest('');
       setShouldSkipReflectionLoad(true); // <-- Set flag to skip next listener update
       
-      console.log('[Dashboard] Evening bookend saved with next-day reminders');
+      console.log('[Dashboard] Evening bookend saved successfully with next-day reminders');
+      alert('Reflection saved successfully!');
     } catch (error) {
       console.error('[Dashboard] Error saving evening bookend:', error);
-      alert('Error saving reflection. Please try again.');
+      console.error('[Dashboard] Error details:', {
+        name: error.name,
+        message: error.message,
+        stack: error.stack
+      });
+      alert(`Error saving reflection: ${error.message}. Please try again.`);
     } finally {
       setIsSavingBookend(false);
     }
   }, [reflectionGood, reflectionBetter, reflectionBest, habitsCompleted, updateDailyPracticeData]); // Explicitly include prop
 
   const handleAddTask = useCallback((taskText) => {
-    if (!taskText.trim()) return;
+    console.log('[Dashboard] handleAddTask called with:', taskText);
+    
+    if (!taskText.trim()) {
+      console.log('[Dashboard] Task text is empty, skipping');
+      return;
+    }
     if (otherTasks.length >= 5) {
       alert('Maximum 5 tasks allowed');
       return;
@@ -361,16 +382,28 @@ export const useDashboard = ({
     };
     
     const updatedTasks = [...otherTasks, newTask];
+    console.log('[Dashboard] Adding task, new task list:', updatedTasks);
     setOtherTasks(updatedTasks);
     
     // NEW: Auto-save to Firestore immediately
     // Use the destructured prop directly
     if (updateDailyPracticeData) {
+      console.log('[Dashboard] Auto-saving task to Firestore...');
       updateDailyPracticeData({
         'morningBookend.otherTasks': updatedTasks
+      }).then(() => {
+        console.log('[Dashboard] Task saved successfully');
       }).catch(error => {
         console.error('[Dashboard] Error auto-saving task:', error);
+        console.error('[Dashboard] Error details:', {
+          name: error.name,
+          message: error.message
+        });
+        alert(`Error saving task: ${error.message}`);
       });
+    } else {
+      console.error('[Dashboard] updateDailyPracticeData is not available!');
+      alert('Error: Cannot save task. Please refresh the page.');
     }
   }, [otherTasks, updateDailyPracticeData]); // Explicitly include prop
 
