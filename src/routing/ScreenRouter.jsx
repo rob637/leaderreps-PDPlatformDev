@@ -93,6 +93,9 @@ const ScreenRouter = ({ currentScreen, navParams, navigate, isDeveloperMode, sim
     'development-plan': 'basic',
     'business-readings': 'professional',
     'applied-leadership': 'professional',
+    'coaching-lab': 'professional',
+    'community': 'professional',
+    'library': 'professional',
   };
 
   const requiredTier = screenTierRequirements[currentScreen];
