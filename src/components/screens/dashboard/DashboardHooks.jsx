@@ -364,9 +364,11 @@ export const useDashboard = ({
   }, [reflectionGood, reflectionBetter, reflectionBest, habitsCompleted, updateDailyPracticeData]); // Explicitly include prop
 
   const handleAddTask = useCallback((taskText) => {
+    alert('🟡 Adding Task: "' + taskText + '"\nCurrent tasks: ' + otherTasks.length);
     console.log('[Dashboard] handleAddTask called with:', taskText);
     
     if (!taskText.trim()) {
+      alert('❌ Task text is empty!');
       console.log('[Dashboard] Task text is empty, skipping');
       return;
     }
@@ -393,6 +395,7 @@ export const useDashboard = ({
         'morningBookend.otherTasks': updatedTasks
       }).then(() => {
         console.log('[Dashboard] Task saved successfully');
+        alert('✅ Task saved to Firestore!\nTotal tasks: ' + updatedTasks.length);
       }).catch(error => {
         console.error('[Dashboard] Error auto-saving task:', error);
         console.error('[Dashboard] Error details:', {

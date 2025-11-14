@@ -122,6 +122,8 @@ const BaselineAssessment = ({ onComplete, isLoading = false }) => {
   };
 
   const handleComplete = () => {
+    alert('🔴 Complete & Generate clicked!\nQuestions: ' + completedQuestions + '/' + totalQuestions + '\nGoals: ' + goals.filter(g => g.trim()).length);
+    
     if (!allLikertAnswered) {
       alert("Please answer all assessment questions.");
       return;
@@ -131,6 +133,7 @@ const BaselineAssessment = ({ onComplete, isLoading = false }) => {
       return;
     }
 
+    alert('🔴 Starting 8-second generation timer...');
     // START SIMULATED GENERATION
     setIsGenerating(true);
     
@@ -145,7 +148,9 @@ const BaselineAssessment = ({ onComplete, isLoading = false }) => {
         };
         
         console.log('[BaselineAssessment] Submitting single-page assessment:', assessment);
+        alert('🔴 8 seconds complete!\nCalling onComplete() to save plan...');
         onComplete(assessment);
+        alert('🔴 onComplete() returned!\nWaiting for plan to save...');
         setIsGenerating(false);
     }, 8000); // 8-second delay
   };

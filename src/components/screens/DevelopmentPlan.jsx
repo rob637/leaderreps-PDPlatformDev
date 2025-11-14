@@ -160,12 +160,14 @@ export default function DevelopmentPlan() {
 
   // Sync view with live snapshots as they arrive
   useEffect(() => {
-    console.log('[DevelopmentPlan useEffect] Checking view state:', {
+    const stateInfo = {
       view,
       isSaving,
       justCompletedBaseline,
       hasCurrentPlan: !!adaptedDevelopmentPlanData?.currentPlan
-    });
+    };
+    console.log('[DevelopmentPlan useEffect] Checking view state:', stateInfo);
+    alert('🔴 VIEW CHECK:\nView: ' + view + '\nHas plan: ' + stateInfo.hasCurrentPlan + '\nSaving: ' + isSaving + '\nJust completed: ' + justCompletedBaseline);
     
     // DON'T switch views while saving is in progress
     if (isSaving) {
@@ -268,6 +270,7 @@ async function confirmPlanPersisted(db, userId, retries = 4, delayMs = 250) {
 
   // Baseline → Generate new plan then route to tracker
   const handleCompleteBaseline = async (assessment) => {
+    alert('🔴 handleCompleteBaseline STARTED!\nGenerating plan from assessment...');
     console.log('[DevelopmentPlan] Starting baseline completion with assessment:', assessment);
     
     const date = new Date().toISOString();
@@ -279,6 +282,7 @@ async function confirmPlanPersisted(db, userId, retries = 4, delayMs = 250) {
     
     const newPlanRaw = generatePlanFromAssessment(newAssessment, combinedSkillCatalog);
     console.log('[DevelopmentPlan] Generated plan:', newPlanRaw);
+    alert('🔴 Plan generated!\nFocus areas: ' + (newPlanRaw?.focusAreas?.length || 0));
     
     if (!newPlanRaw || !newPlanRaw.focusAreas || newPlanRaw.focusAreas.length === 0) {
       console.error('[DevelopmentPlan] ERROR: Generated plan is invalid or empty!');
@@ -321,9 +325,11 @@ async function confirmPlanPersisted(db, userId, retries = 4, delayMs = 250) {
       updatedAt: date
     };
 
+    alert('🔴 About to save plan to Firestore...');
     console.log('[DevelopmentPlan] Saving payload to Firebase:', payload);
     const ok = await writeDevPlan(payload, { merge: true });
     console.log('[DevelopmentPlan] writeDevPlan result:', ok);
+    alert('🔴 writeDevPlan returned: ' + ok);
     
     if (ok) {
       // Set flag to prevent returning to baseline view

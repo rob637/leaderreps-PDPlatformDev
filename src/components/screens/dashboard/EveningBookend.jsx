@@ -193,7 +193,10 @@ export const EveningBookend = ({
             {/* Save Button */}
             <div className="mt-6 pt-4 border-t" style={{ borderColor: COLORS.SUBTLE }}>
                 <Button
-                    onClick={onSave}
+                    onClick={() => {
+                        alert('🟢 Save Reflection clicked!\nGood: ' + (reflectionGood?.length || 0) + ' chars\nBetter: ' + (reflectionBetter?.length || 0) + ' chars\nBest: ' + (reflectionBest?.length || 0) + ' chars');
+                        onSave();
+                    }}
                     disabled={isSaving}
                     variant="primary"
                     size="md"
