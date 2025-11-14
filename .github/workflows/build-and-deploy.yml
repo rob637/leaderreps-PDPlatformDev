@@ -41,7 +41,6 @@ jobs:
           channelId: live
           projectId: leaderreps-pd-platform
         continue-on-error: true
-        continue-on-error: true
 
       - name: Send failure email
         if: failure()
