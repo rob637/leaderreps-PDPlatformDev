@@ -92,8 +92,12 @@ const GetStartedCard = ({ onNavigate, membershipData, developmentPlanData, curre
           </div>
           <Button
             onClick={() => {
+              alert('🔥 BUTTON CLICKED! About to navigate to membership-upgrade');
               console.log('[Dashboard] View Plans button clicked, navigating to membership-upgrade');
+              console.log('[Dashboard] onNavigate:', onNavigate);
+              console.log('[Dashboard] Calling onNavigate now...');
               onNavigate('membership-upgrade');
+              console.log('[Dashboard] onNavigate called');
             }}
             variant="primary"
             size="md"
