@@ -280,6 +280,8 @@ const DataProvider = ({
       user,
       userId,
       isAdmin,
+      isAuthReady,
+      isLoading: isLoadingServices,
       hasPendingDailyPractice,
 
       // Feature Flags
@@ -305,6 +307,8 @@ const DataProvider = ({
     user,
     userId,
     isAdmin,
+    isAuthReady,
+    isLoadingServices,
     hasPendingDailyPractice,
     resolvedMetadata,
     devPlanHook,
