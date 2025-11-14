@@ -42,7 +42,7 @@ jobs:
           projectId: leaderreps-pd-platform
 
       - name: Send failure email
-        if: failure() && secrets.EMAIL_USERNAME != '' && secrets.EMAIL_PASSWORD != ''
+        if: failure()
         uses: dawidd6/action-send-mail@v3
         with:
           server_address: smtp.gmail.com
