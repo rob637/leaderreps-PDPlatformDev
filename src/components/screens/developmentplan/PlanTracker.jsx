@@ -22,13 +22,23 @@ const PlanTracker = ({
   const [showEditor, setShowEditor] = useState(false);
 
   if (!plan) {
-    console.log('[PlanTracker] No plan available. Plan data received:', plan);
+    alert('❌ PlanTracker: NO PLAN FOUND!');
+    alert('📊 developmentPlanData: ' + (developmentPlanData ? 'EXISTS' : 'NULL'));
+    alert('📋 plan object: ' + (plan ? 'EXISTS' : 'NULL'));
+    console.log('[PlanTracker] No plan available:', { developmentPlanData, plan });
+    
     return (
-      <div className="max-w-3xl mx-auto p-6">
-        <Card accent="TEAL">
-          <p className="text-gray-600">No plan available. Complete your baseline assessment to get started.</p>
-          <p className="text-xs text-gray-500 mt-2">Debug: Plan data is {typeof plan} - {JSON.stringify(plan)}</p>
-        </Card>
+      <div className="text-center py-8">
+        <Target className="w-12 h-12 mx-auto mb-4" style={{ color: COLORS.MUTED }} />
+        <h3 className="text-lg font-semibold mb-2" style={{ color: COLORS.NAVY }}>
+          No plan available
+        </h3>
+        <p className="text-sm" style={{ color: COLORS.MUTED }}>
+          Complete your baseline assessment to get started.
+        </p>
+        <div className="mt-4 text-xs text-gray-500">
+          DEBUG: developmentPlanData={developmentPlanData ? 'EXISTS' : 'NULL'}, plan={plan ? 'EXISTS' : 'NULL'}
+        </div>
       </div>
     );
   }
