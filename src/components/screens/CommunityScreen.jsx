@@ -475,7 +475,7 @@ const CommunityScreen = () => {
 
     return (
         // Consistent page structure and padding
-        <div className="p-6 md:p-8 lg:p-10 min-h-screen" style={{ background: COLORS.BG }}>
+        <div className="relative space-y-6 p-4 sm:p-6" style={{ background: COLORS.BG }}>
             {/* Header */}
             <header className='flex items-center gap-4 border-b-2 pb-3 mb-8' style={{borderColor: COLORS.NAVY+'30'}}>
                 <Users className='w-10 h-10 flex-shrink-0' style={{color: COLORS.TEAL}}/>

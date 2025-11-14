@@ -1,7 +1,7 @@
-// src/components/screens/Labs.jsx
+// src/components/screens/CoachingLabScreen.jsx
 
 /* =========================================================
-   PRODUCTION READY FILE: Labs.jsx 
+   PRODUCTION READY FILE: CoachingLabScreen.jsx 
    CLEANUP: Local mock datasets removed. Now relies entirely on useAppServices.
 ========================================================= */
 /* eslint-disable no-console */
@@ -964,7 +964,7 @@ export default function CoachingLabScreen() {
 
             default:
                 return (
-                    <div className="p-8">
+                    <div>
                         <h1 className="text-3xl font-extrabold text-[#0B3B5B] mb-4">Coaching Lab</h1>
                         <p className="text-lg text-gray-600 mb-8">Welcome to the Coaching Lab. Select a tool to build your leadership skills.</p>
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -981,8 +981,8 @@ export default function CoachingLabScreen() {
     };
 
     return (
-        <div className="min-h-screen bg-gray-50">
-            <main>{renderView()}</main>
+        <div className="relative space-y-6 p-4 sm:p-6" style={{ background: '#F9FAFB' }}>
+            {renderView()}
         </div>
     );
 }

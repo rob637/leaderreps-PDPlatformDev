@@ -27,7 +27,7 @@ import { doc, getDoc } from 'firebase/firestore';
 
 // Simple guard wrapper
 const LoadingBlock = ({ title = 'Loading…', description = 'Preparing your development plan...' }) => (
-  <div className="max-w-3xl mx-auto p-6">
+  <div className="p-4 sm:p-6">
     <Card accent="TEAL">
       <h2 className="text-xl font-extrabold mb-2"> {title} </h2>
       <p className="text-gray-600">{description}</p>

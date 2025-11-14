@@ -98,8 +98,8 @@ const Library = () => {
   };
 
   return (
-    <div className="min-h-screen bg-corporate-light-gray p-6">
-      <div className="max-w-6xl mx-auto">
+    <div className="relative space-y-6 p-4 sm:p-6" style={{ background: '#F9FAFB' }}>
+      <div>
         {/* Header */}
         <div className="mb-8">
           <h1

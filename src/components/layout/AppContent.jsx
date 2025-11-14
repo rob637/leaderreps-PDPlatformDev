@@ -110,7 +110,7 @@ const AppContent = ({
   const navigationItems = [
     { screen: 'dashboard', label: 'The Arena', requiredTier: 'basic' },
     { screen: 'development-plan', label: 'Development Plan', requiredTier: 'basic' },
-    { screen: 'labs', label: 'Coaching', requiredTier: 'professional' },
+    { screen: 'coaching-lab', label: 'Coaching Lab', requiredTier: 'professional' },
     { screen: 'community', label: 'Community', requiredTier: 'professional' },
     { screen: 'library', label: 'Library', requiredTier: 'professional' },
     { screen: 'membership-module', label: 'Membership', requiredTier: 'basic' },
@@ -215,10 +215,10 @@ const AppContent = ({
           <PWAInstall />
           <button
             onClick={handleSignOut}
-            className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-offset-1 bg-red-600 hover:bg-red-700 text-white shadow-lg"
+            className="flex items-center gap-1 px-2 py-1.5 rounded-md text-xs font-normal transition-colors hover:bg-gray-100 text-gray-600 hover:text-gray-800"
             title="Sign Out"
           >
-            <LogOut className="w-4 h-4" />
+            <LogOut className="w-3.5 h-3.5" />
             <span className="hidden sm:inline">Exit</span>
           </button>
         </div>
