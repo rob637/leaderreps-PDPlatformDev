@@ -1,4 +1,4 @@
-// src/components/layout/AppContent.jsx
+// src/components/layout/AppContent.jsx 
 
 import React, { Suspense, useCallback, useState, useEffect } from 'react';
 import { signOut } from 'firebase/auth';
