@@ -73,6 +73,9 @@ const GetStartedCard = ({ onNavigate, membershipData, developmentPlanData }) => 
   const hasCompletedPlan = developmentPlanData?.currentPlan && 
     developmentPlanData.currentPlan.focusAreas && 
     developmentPlanData.currentPlan.focusAreas.length > 0;
+  
+  console.log('[GetStartedCard] Rendering with tier:', currentTier, 'hasCompletedPlan:', hasCompletedPlan);
+  console.log('[GetStartedCard] onNavigate type:', typeof onNavigate);
 
   // Base members -> Show upgrade page
   if (currentTier === 'basic') {

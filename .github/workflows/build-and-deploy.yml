@@ -33,13 +33,14 @@ jobs:
         run: npm run build
 
       - name: Deploy to Firebase
-        if: github.ref == 'refs/heads/main' && github.event_name == 'push' && secrets.FIREBASE_SERVICE_ACCOUNT != ''
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
         uses: FirebaseExtended/action-hosting-deploy@v0
         with:
           repoToken: '${{ secrets.GITHUB_TOKEN }}'
           firebaseServiceAccount: '${{ secrets.FIREBASE_SERVICE_ACCOUNT }}'
           channelId: live
           projectId: leaderreps-pd-platform
+        continue-on-error: true
         continue-on-error: true
 
       - name: Send failure email
