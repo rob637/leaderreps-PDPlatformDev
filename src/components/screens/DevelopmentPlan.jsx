@@ -156,25 +156,33 @@ export default function DevelopmentPlan() {
   const [view, setView] = useState(hasCurrentPlan ? 'tracker' : 'baseline');
   const [isSaving, setIsSaving] = useState(false); // Used to detect in-progress save
   const [error, setError] = useState(null);
+  const [forceTracker, setForceTracker] = useState(false); // NEW: Force tracker view after assessment completion
 
   // Sync view with live snapshots as they arrive
   useEffect(() => {
+    // If we just completed an assessment, force tracker view and wait for data
+    if (forceTracker && adaptedDevelopmentPlanData?.currentPlan) {
+      console.log('[DevelopmentPlan] Assessment completed, plan data received, staying in tracker view.');
+      setForceTracker(false);
+      return;
+    }
+    
     // This effect now correctly handles the navigation *after* data is received
-    if (adaptedDevelopmentPlanData?.currentPlan && view === 'baseline') {
+    if (adaptedDevelopmentPlanData?.currentPlan && view === 'baseline' && !forceTracker) {
       console.log('[DevelopmentPlan] Data updated, switching view to tracker.');
       setView('tracker');
       return;
     }
     
-    // FIX: Add !isSaving condition to prevent race condition reversion.
-    if (!adaptedDevelopmentPlanData?.currentPlan && view === 'tracker' && !isSaving) {
+    // FIX: Add !isSaving and !forceTracker conditions to prevent race condition reversion.
+    if (!adaptedDevelopmentPlanData?.currentPlan && view === 'tracker' && !isSaving && !forceTracker) {
       console.log('[DevelopmentPlan] No current plan, switching view to baseline.');
       setView('baseline');
     }
-  }, [adaptedDevelopmentPlanData?.currentPlan, view, isSaving]); // ADDED 'isSaving' to dependencies
+  }, [adaptedDevelopmentPlanData?.currentPlan, view, isSaving, forceTracker]); // ADDED 'forceTracker' to dependencies
 
   const writeDevPlan = async (payload, { merge = true } = {}) => {
-    setIsSaving(true);
+    console.log('[DevelopmentPlan] Starting writeDevPlan...');
     setError(null);
     try {
       // 🛑 CRITICAL FIX: Ensure only the currentPlan sub-object is adapted if needed.
@@ -207,18 +215,14 @@ export default function DevelopmentPlan() {
       } else {
         console.error('[DevelopmentPlan] updateDevelopmentPlanData is not available.');
         setError(new Error('Writer unavailable.'));
-        setIsSaving(false);
         return false;
       }
     } catch (e) {
       console.error('[DevelopmentPlan] Write failed:', e);
       setError(e);
-      setIsSaving(false);
       return false;
     }
-    // IMPORTANT: Set isSaving to false AFTER the write is complete (success or fail)
-    // This allows the useEffect to run and re-check the data.
-    setIsSaving(false); 
+    console.log('[DevelopmentPlan] writeDevPlan completed successfully.');
     return true;
   };
 
@@ -294,18 +298,18 @@ async function confirmPlanPersisted(db, userId, retries = 4, delayMs = 250) {
       console.log('[DevelopmentPlan] Baseline saved. Setting target rep...');
       await findAndSetTargetRep(newPlan, globalMetadata, updateDailyPracticeWriter);
       
-      // REQ #16: FIX - Do not manually set view. Let the useEffect handle it.
-      setIsSaving(true);
+      // NEW FIX: Force tracker view and prevent reversion while waiting for data
+      console.log('[DevelopmentPlan] Assessment completed successfully. Forcing tracker view.');
+      setForceTracker(true);
+      setView('tracker');
+      
+      // Confirm plan persisted for logging purposes
       const okPersisted = await confirmPlanPersisted(db, userId);
       if (okPersisted) {
-        console.log('[DevelopmentPlan] Confirmed currentPlan via read-after-write. Switching to tracker.');
-        setView('tracker');
+        console.log('[DevelopmentPlan] Confirmed currentPlan via read-after-write.');
       } else {
-        // NOTE: This optimistic switch is dangerous but necessary if the listener is slow.
-        console.warn('[DevelopmentPlan] Listener/read didn’t show currentPlan in time; switching to tracker optimistically.');
-        setView('tracker');
+        console.warn('[DevelopmentPlan] Could not confirm plan persistence, but proceeding to tracker.');
       }
-      setIsSaving(false);
     }
   };
 
