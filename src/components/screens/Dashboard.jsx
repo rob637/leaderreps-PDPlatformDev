@@ -207,6 +207,9 @@ const Dashboard = (props) => {
     repsData
   } = useAppServices();
   
+  // Get simulatedTier from props (passed from ScreenRouter)
+  const { simulatedTier } = props;
+  
   const {
     // Add anchor data from DashboardHooks
     identityStatement,
@@ -264,7 +267,8 @@ const Dashboard = (props) => {
   const [showAnchorModal, setShowAnchorModal] = useState(false);
   const [isEditorOpen, setIsEditorOpen] = useState(false);
 
-  const currentTier = membershipData?.currentTier || 'basic';
+  // Use simulatedTier if available (for testing), otherwise use actual membershipData
+  const currentTier = simulatedTier || membershipData?.currentTier || 'basic';
   const isMemberPro = membershipService.hasAccess(currentTier, 'professional');
   const isMemberPremium = membershipService.hasAccess(currentTier, 'elite');
 
