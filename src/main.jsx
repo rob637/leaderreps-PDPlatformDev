@@ -1,8 +1,23 @@
+console.log('[MAIN.JSX] ========== MODULE LOADING STARTED ==========');
+console.log('[MAIN.JSX] Timestamp:', new Date().toISOString());
+
 import React, { Suspense, lazy } from 'react';
 import { createRoot } from 'react-dom/client';
 import './styles/global.css';
 import ErrorBoundary from './components/system/ErrorBoundary';
 import ConfigGate from './components/system/ConfigGate';
+
+console.log('🔍 [main.jsx] Starting application...');
+console.log('🔍 [main.jsx] Import checks:');
+console.log('  - ErrorBoundary:', typeof ErrorBoundary, ErrorBoundary);
+console.log('  - ConfigGate:', typeof ConfigGate, ConfigGate);
+
+if (typeof ErrorBoundary === 'undefined') {
+  console.error('❌ [main.jsx] ErrorBoundary is UNDEFINED!');
+}
+if (typeof ConfigGate === 'undefined') {
+  console.error('❌ [main.jsx] ConfigGate is UNDEFINED!');
+}
 
 // === PWA SERVICE WORKER REGISTRATION ===
 const registerServiceWorker = () => {
