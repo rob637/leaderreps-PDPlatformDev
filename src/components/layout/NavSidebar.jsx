@@ -98,7 +98,7 @@ const NavSidebar = ({
   // Membership
   const membershipNav = [
     {
-      screen: 'membership-module',
+      screen: 'membership-upgrade',
       label: 'Membership',
       icon: DollarSign,
       flag: 'enableMembershipModule',

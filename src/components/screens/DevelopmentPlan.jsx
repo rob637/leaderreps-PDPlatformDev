@@ -159,6 +159,12 @@ export default function DevelopmentPlan() {
 
   // Sync view with live snapshots as they arrive
   useEffect(() => {
+    // DON'T switch views while saving is in progress
+    if (isSaving) {
+      console.log('[DevelopmentPlan] Save in progress, not switching views.');
+      return;
+    }
+    
     // When plan data exists and we're on baseline, switch to tracker
     if (adaptedDevelopmentPlanData?.currentPlan && view === 'baseline') {
       console.log('[DevelopmentPlan] Plan data received, switching to tracker view.');
@@ -166,8 +172,8 @@ export default function DevelopmentPlan() {
       return;
     }
     
-    // When no plan exists and we're on tracker (and not currently saving), switch to baseline
-    if (!adaptedDevelopmentPlanData?.currentPlan && view === 'tracker' && !isSaving) {
+    // When no plan exists and we're on tracker, switch to baseline
+    if (!adaptedDevelopmentPlanData?.currentPlan && view === 'tracker') {
       console.log('[DevelopmentPlan] No plan data, switching to baseline view.');
       setView('baseline');
     }

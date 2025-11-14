@@ -4,7 +4,6 @@ import React, { Suspense, useCallback, useState, useEffect } from 'react';
 import { signOut } from 'firebase/auth';
 import { Menu, LogOut, Loader, Settings } from 'lucide-react';
 import PWAInstall from '../ui/PWAInstall.jsx';
-import NavSidebar from './NavSidebar.jsx';
 import ScreenRouter from '../../routing/ScreenRouter.jsx';
 import { useAppServices } from '../../services/useAppServices.jsx';
 
@@ -89,10 +88,10 @@ const AppContent = ({
   ]);
   const { navigate, isAdmin, membershipData } = useAppServices();
 
-  // Navigation items for dropdown - matching NavSidebar.jsx structure
+  // Navigation items for dropdown menu
   const currentTier = isDeveloperMode ? 'elite' : simulatedTier;
   
-  // Helper function to check tier access (matching NavSidebar logic)
+  // Helper function to check tier access
   const hasAccess = (requiredTier) => {
     if (isAdmin || isDeveloperMode) return true;
     if (!requiredTier) return true;
