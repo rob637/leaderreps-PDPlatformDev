@@ -1692,7 +1692,14 @@ export default function CoachingLabScreen() {
             default:
                 return (
                     <div>
-                        <h1 className="text-xl sm:text-2xl sm:text-3xl font-extrabold text-[#002E47] mb-4">Coaching Lab</h1>
+                        {/* Back Button */}
+                        <Button onClick={() => navigate('dashboard')} variant="outline" size="sm" className="mb-6">
+                            <ArrowLeft className="w-4 h-4 mr-2" />
+                            Back to The Arena
+                        </Button>
+                        
+                        <h1 className="text-xl sm:text-2xl sm:text-3xl font-extrabold text-[#002E47] mb-2">Coaching Lab</h1>
+                        <p className="text-md text-gray-600 mb-1">(Coaching Pillar 2)</p>
                         <p className="text-lg text-gray-600 mb-8">Welcome to the Coaching Lab. Select a tool to build your leadership skills.</p>
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:p-4 lg:p-6">
                             <Card title="Scenario Library" icon={Briefcase} onClick={() => setView('scenario-library')}>

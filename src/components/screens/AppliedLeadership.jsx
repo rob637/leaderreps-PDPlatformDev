@@ -283,6 +283,11 @@ const SkillDetailView = ({ skill, setSelectedSkill, resourceLibrary, getTierName
 ========================================================= */
 
 export default function AppliedLeadershipScreen() {
+    // Scroll to top when component mounts
+    React.useEffect(() => {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }, []);
+    
     // --- Consume services ---
     const {
         SKILL_CATALOG, // Contains individual skills
@@ -358,6 +363,12 @@ export default function AppliedLeadershipScreen() {
     // --- RENDER: Skill Grid View (Course Library Home) ---
     const renderLibraryHome = () => (
         <div className="p-6 md:p-4 sm:p-3 sm:p-4 lg:p-6 lg:p-8 lg:p-10">
+            {/* Back Button */}
+            <Button onClick={() => window.history.back()} variant="nav-back" size="sm" className="mb-6">
+                <ArrowLeft className="w-4 h-4 mr-2" />
+                Back to Library
+            </Button>
+            
             {/* Header */}
             <div className='flex items-center gap-4 border-b-2 pb-2 mb-8' style={{borderColor: COLORS.NAVY+'30'}}>
                 <ShieldCheck className='w-10 h-10' style={{color: COLORS.NAVY}}/> {/* Use consistent header style */}

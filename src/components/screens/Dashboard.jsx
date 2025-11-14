@@ -533,71 +533,7 @@ const Dashboard = (props) => {
         </div>
       )} */}
 
-      {/* Leadership Anchors Card - Collapsed by default */}
-      <div className="section-corporate">
-        <Card accent="TEAL">
-          <details className="group">
-            <summary className="cursor-pointer list-none flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <Anchor className="w-5 h-5" style={{ color: COLORS.TEAL }} />
-                <h2 className="text-lg sm:text-xl font-bold" style={{ color: COLORS.NAVY }}>
-                  Your Leadership Anchors
-                </h2>
-              </div>
-              <ChevronDown className="w-5 h-5 group-open:hidden" style={{ color: COLORS.MUTED }} />
-              <ChevronUp className="w-5 h-5 hidden group-open:block" style={{ color: COLORS.MUTED }} />
-            </summary>
-            <div className="mt-4 pt-4 border-t" style={{ borderColor: COLORS.SUBTLE }}>
-              {hasActiveAnchor ? (
-                <div className="space-y-3">
-                  {identityStatement && (
-                    <div className="p-3 rounded-lg bg-gray-50">
-                      <p className="text-xs font-semibold mb-1" style={{ color: COLORS.MUTED }}>Identity Anchor</p>
-                      <p className="text-sm" style={{ color: COLORS.NAVY }}>{identityStatement}</p>
-                    </div>
-                  )}
-                  {habitAnchor && (
-                    <div className="p-3 rounded-lg bg-gray-50">
-                      <p className="text-xs font-semibold mb-1" style={{ color: COLORS.MUTED }}>Habit Anchor</p>
-                      <p className="text-sm" style={{ color: COLORS.NAVY }}>{habitAnchor}</p>
-                    </div>
-                  )}
-                  {whyStatement && (
-                    <div className="p-3 rounded-lg bg-gray-50">
-                      <p className="text-xs font-semibold mb-1" style={{ color: COLORS.MUTED }}>Why Statement</p>
-                      <p className="text-sm" style={{ color: COLORS.NAVY }}>{whyStatement}</p>
-                    </div>
-                  )}
-                  <Button
-                    onClick={handleOpenEditor}
-                    variant="outline"
-                    size="sm"
-                    className="w-full mt-2"
-                  >
-                    <Edit3 className="w-4 h-4 mr-2" />
-                    Edit Anchors
-                  </Button>
-                </div>
-              ) : (
-                <div>
-                  <p className="text-sm mb-4" style={{ color: COLORS.MUTED }}>
-                    Set your Leadership Anchors to stay focused on your core purpose.
-                  </p>
-                  <Button
-                    onClick={handleOpenEditor}
-                    variant="primary"
-                    size="sm"
-                    className="w-full"
-                  >
-                    <Anchor className="w-4 h-4 mr-2" />
-                    Set Your Anchors
-                  </Button>
-                </div>
-              )}
-            </div>
-          </details>
-        </Card>
-      </div>
+
 
       {/* Get Started / Onboarding Card */}
       {visibleComponents.includes('getStarted') && (

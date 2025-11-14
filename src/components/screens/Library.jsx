@@ -36,36 +36,40 @@ const LibraryCard = ({ title, description, icon: Icon, onClick, disabled = false
         background: disabled ? COLORS.LIGHT_GRAY : 'white'
       }}
     >
-      <div className="flex items-start gap-3 sm:p-4 lg:p-6">
-        <div
-          className="w-16 h-16 rounded-xl flex items-center justify-center flex-shrink-0"
-          style={{ 
-            backgroundColor: disabled ? `${COLORS.SUBTLE}20` : `${COLORS.TEAL}15`,
-            border: `2px solid ${disabled ? COLORS.SUBTLE : COLORS.TEAL}30`
-          }}
-        >
-          <Icon
-            className="w-8 h-8"
-            style={{ color: disabled ? COLORS.SUBTLE : COLORS.TEAL }}
-          />
-        </div>
-        <div className="flex-1">
-          <h3 className="corporate-heading-md mb-3" style={{ color: disabled ? COLORS.MUTED : COLORS.NAVY }}>
+      <div className="p-6 h-full flex flex-col">
+        <div className="text-center mb-4">
+          <div
+            className="w-20 h-20 rounded-2xl flex items-center justify-center mx-auto mb-4"
+            style={{ 
+              backgroundColor: disabled ? `${COLORS.SUBTLE}20` : `${COLORS.TEAL}15`,
+              border: `3px solid ${disabled ? COLORS.SUBTLE : COLORS.TEAL}30`
+            }}
+          >
+            <Icon
+              className="w-10 h-10"
+              style={{ color: disabled ? COLORS.SUBTLE : COLORS.TEAL }}
+            />
+          </div>
+          <h3 className="text-xl font-bold mb-3" style={{ color: disabled ? COLORS.MUTED : COLORS.NAVY }}>
             {title}
           </h3>
-          <p className="corporate-text-body mb-4">
+        </div>
+        <div className="flex-1 flex flex-col">
+          <p className="text-gray-600 text-center mb-4 flex-1">
             {description}
           </p>
           {disabled && requiredTier && (
-            <div 
-              className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold"
-              style={{ 
-                backgroundColor: `${COLORS.ORANGE}20`, 
-                color: COLORS.ORANGE,
-                border: `1px solid ${COLORS.ORANGE}40`
-              }}
-            >
-              Requires {requiredTier === 'professional' ? 'Pro' : 'Elite'} Tier
+            <div className="mt-auto">
+              <div 
+                className="inline-flex items-center px-3 py-2 rounded-full text-sm font-semibold w-full justify-center"
+                style={{ 
+                  backgroundColor: `${COLORS.ORANGE}20`, 
+                  color: COLORS.ORANGE,
+                  border: `1px solid ${COLORS.ORANGE}40`
+                }}
+              >
+                Requires {requiredTier === 'professional' ? 'Pro' : 'Elite'} Tier
+              </div>
             </div>
           )}
         </div>
@@ -76,6 +80,11 @@ const LibraryCard = ({ title, description, icon: Icon, onClick, disabled = false
 
 const Library = ({ simulatedTier }) => {
   const { membershipData, navigate } = useAppServices();
+  
+  // Scroll to top when component mounts
+  React.useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, []);
   
   // Match Dashboard's exact tier logic - MUST match Dashboard.jsx line 285
   const currentTier = simulatedTier || membershipData?.currentTier || 'basic';
@@ -146,7 +155,7 @@ const Library = ({ simulatedTier }) => {
         </div>
 
         {/* Library Cards */}
-        <div className="section-corporate grid-corporate-3">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
           {libraryItems.map((item) => {
             const hasAccess = membershipService.hasAccess(currentTier, item.requiredTier);
             console.log(`[Library] Access check for ${item.title}: currentTier=${currentTier}, requiredTier=${item.requiredTier}, hasAccess=${hasAccess}`);

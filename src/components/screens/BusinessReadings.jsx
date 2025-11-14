@@ -499,7 +499,7 @@ function BookListStable({
 function BookFlyerStable({
   selectedBook, htmlFlyer, isFlyerLoading, isExecutiveBrief, setIsExecutiveBrief,
   questionFeedback, aiResponse, aiQuery, handleAiQueryChange, submitHandler,
-  savedBooks, onToggleSave, onCommit, isCommitted, isSubmitting,
+  savedBooks, onToggleSave, onCommit, isCommitted, isSubmitting, onBack,
 }) {
   // --- Calculate Mock Progress (Replace with real data if available) ---
   const progressMinutes = 45; // Placeholder
@@ -531,10 +531,10 @@ function BookFlyerStable({
         </h2>
         {/* Back Button */}
         <Button
-          onClick={() => window.dispatchEvent(new CustomEvent('lr-close-flyer'))} // Use custom event to signal close
+          onClick={onBack} // Use the onBack prop to return to book list
           variant="nav-back" size="sm" // Use nav-back style
         >
-          <ArrowLeft className="w-4 h-4 mr-2" /> Back to Library
+          <ArrowLeft className="w-4 h-4 mr-2" /> Back to Reading List
         </Button>
       </div>
 
@@ -647,6 +647,11 @@ function BookFlyerStable({
 ========================================================= */
 
 export default function BusinessReadingsScreen() {
+  // Scroll to top when component mounts
+  React.useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, []);
+  
   // --- Consume Core Services ---
   const {
     // Data & State
@@ -894,11 +899,17 @@ export default function BusinessReadingsScreen() {
   return (
     // Main screen container with consistent padding and background
     <div className="p-3 sm:p-4 lg:p-6 md:p-10 min-h-screen" style={{ background: COLORS.BG }}>
+      {/* Back Button */}
+      <Button onClick={() => window.history.back()} variant="nav-back" size="sm" className="mb-6">
+        <ArrowLeft className="w-4 h-4 mr-2" />
+        Back to Library
+      </Button>
+      
       {/* Header */}
       <header className='flex items-center gap-4 border-b-2 pb-3 mb-8' style={{borderColor: COLORS.PURPLE+'30'}}> {/* Use PURPLE accent */}
           <BookOpen className='w-10 h-10 flex-shrink-0' style={{color: COLORS.PURPLE}}/>
           <div>
-              <h1 className="text-xl sm:text-2xl sm:text-3xl md:text-4xl font-extrabold" style={{ color: COLORS.NAVY }}>Professional Reading Hub</h1>
+              <h1 className="text-xl sm:text-2xl sm:text-3xl md:text-4xl font-extrabold" style={{ color: COLORS.NAVY }}>Reading & Reps</h1>
               <p className="text-md text-gray-600 mt-1">(Content Pillar 1)</p>
           </div>
       </header>
@@ -934,6 +945,7 @@ export default function BusinessReadingsScreen() {
               onCommit={() => handleCommitment(selectedBook)} // Pass the selected book to handler
               isCommitted={isCommitted}
               isSubmitting={isSubmittingAi} // Pass AI loading state
+              onBack={() => setSelectedBook(null)} // Close flyer to return to book list
           />
       )}
     </div>

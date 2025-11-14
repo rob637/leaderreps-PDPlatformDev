@@ -168,12 +168,7 @@ const AppSettingsScreen = () => {
         )}
       </div>
 
-       {/* Back Button (Optional - users typically use main nav) */}
-       <footer className="mt-12 text-center">
-            <Button onClick={() => navigate('dashboard')} variant="nav-back" size="sm">
-               <ArrowLeft className="w-4 h-4 mr-2" /> Back to The Arena
-            </Button>
-       </footer>
+
     </div>
   );
 };

@@ -4,7 +4,7 @@
 export const MEMBERSHIP_TIERS = {
   basic: {
     id: 'basic',
-    name: 'Base',
+    name: 'Basic',
     level: 1,
     price: 29,
     color: '#47A88D', // CORPORATE TEAL
@@ -60,7 +60,7 @@ export const MEMBERSHIP_TIERS = {
   
   elite: {
     id: 'elite',
-    name: 'Premium', 
+    name: 'Elite', 
     level: 3,
     price: 149,
     color: '#E04E1B', // CORPORATE ORANGE

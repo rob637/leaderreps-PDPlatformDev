@@ -2,10 +2,87 @@
 
 import React, { Suspense, useCallback, useState, useEffect } from 'react';
 import { signOut } from 'firebase/auth';
-import { Menu, LogOut, Loader, Settings } from 'lucide-react';
+import { Menu, LogOut, Loader, Settings, Anchor, ChevronDown, ChevronUp } from 'lucide-react';
 import PWAInstall from '../ui/PWAInstall.jsx';
 import ScreenRouter from '../../routing/ScreenRouter.jsx';
 import { useAppServices } from '../../services/useAppServices.jsx';
+
+// LEADERREPS.COM OFFICIAL CORPORATE COLORS - VERIFIED 11/14/25
+const COLORS = {
+  // === PRIMARY BRAND COLORS (from leaderreps.com) ===
+  NAVY: '#002E47',        // Primary text, headers, navigation
+  ORANGE: '#E04E1B',      // Call-to-action buttons, highlights, alerts  
+  TEAL: '#47A88D',        // Secondary buttons, success states, accents
+  LIGHT_GRAY: '#FCFCFA',  // Page backgrounds, subtle surfaces
+  
+  // === SEMANTIC MAPPINGS (using ONLY corporate colors) ===
+  PRIMARY: '#47A88D',     // Map to TEAL
+  SECONDARY: '#E04E1B',   // Map to ORANGE
+  SUCCESS: '#47A88D',     // Map to TEAL
+  WARNING: '#E04E1B',     // Map to ORANGE
+  DANGER: '#E04E1B',      // Map to ORANGE
+  INFO: '#47A88D',        // Map to TEAL
+  
+  // === TEXT & BACKGROUNDS (corporate colors only) ===
+  TEXT: '#002E47',        // NAVY for all text
+  MUTED: '#47A88D',       // TEAL for muted text
+  BG: '#FCFCFA',          // LIGHT_GRAY for backgrounds
+  SUBTLE: '#47A88D'       // TEAL for subtle elements
+};
+
+// Small inconspicuous Leadership Anchors dropdown component
+const LeadershipAnchorsDropdown = () => {
+  const [isOpen, setIsOpen] = useState(false);
+  const { identityStatement, habitAnchor, whyStatement } = useAppServices();
+  
+  // Don't show if no anchors are set
+  const hasAnchors = identityStatement || habitAnchor || whyStatement;
+  if (!hasAnchors) return null;
+  
+  return (
+    <div className="relative">
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className="p-1 text-gray-400 hover:text-gray-600 transition-colors"
+        title="Your Leadership Anchors"
+      >
+        <Anchor className="w-4 h-4" />
+      </button>
+      
+      {isOpen && (
+        <>
+          <div 
+            className="fixed inset-0 z-40" 
+            onClick={() => setIsOpen(false)}
+          />
+          <div className="absolute top-full left-0 mt-2 w-80 bg-white rounded-lg shadow-lg border border-gray-200 z-50 p-3">
+            <h3 className="text-sm font-semibold mb-2" style={{ color: COLORS.NAVY }}>Your Leadership Anchors</h3>
+            <div className="space-y-2 text-xs">
+              {identityStatement && (
+                <div>
+                  <p className="font-medium" style={{ color: COLORS.TEAL }}>Identity:</p>
+                  <p className="text-gray-600">{identityStatement}</p>
+                </div>
+              )}
+              {habitAnchor && (
+                <div>
+                  <p className="font-medium" style={{ color: COLORS.BLUE }}>Habit:</p>
+                  <p className="text-gray-600">{habitAnchor}</p>
+                </div>
+              )}
+              {whyStatement && (
+                <div>
+                  <p className="font-medium" style={{ color: COLORS.ORANGE }}>Why:</p>
+                  <p className="text-gray-600">{whyStatement}</p>
+                </div>
+              )}
+            </div>
+          </div>
+        </>
+      )}
+    </div>
+  );
+};
 
 const AppContent = ({
   currentScreen,
@@ -181,6 +258,7 @@ const AppContent = ({
               alt="LeaderReps" 
               className="h-8 sm:h-10 w-auto"
             />
+            <LeadershipAnchorsDropdown />
             {isDeveloperMode && (
               <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-orange-100 text-orange-700">
                 DEV

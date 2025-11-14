@@ -135,14 +135,15 @@ const ReflectionLogScreen = () => {
         // Consistent page structure and padding
         <div className="p-6 md:p-4 sm:p-3 sm:p-4 lg:p-6 lg:p-8 lg:p-10 max-w-4xl mx-auto min-h-screen" style={{ background: COLORS.BG }}>
             {/* Header */}
+            {/* Back Button */}
+            <Button onClick={() => navigate('dashboard')} variant="nav-back" size="sm" className="mb-6"> 
+                <ArrowLeft className="w-4 h-4 mr-2" /> Back to The Arena
+            </Button>
+            
             <header className="flex flex-col sm:flex-row justify-between sm:items-center gap-4 border-b pb-4 mb-6" style={{ borderColor: COLORS.SUBTLE }}>
                 <h1 className="text-xl sm:text-2xl sm:text-3xl md:text-4xl font-extrabold flex items-center gap-3" style={{ color: COLORS.NAVY }}>
                     <Archive className="w-8 h-8" style={{ color: COLORS.TEAL }} /> Reflection Log
                 </h1>
-                {/* Back Button */}
-                <Button onClick={() => navigate('dashboard')} variant="nav-back" size="sm"> {/* Use Button */}
-                    <ArrowLeft size={16} className="mr-1" /> Back to The Arena
-                </Button>
             </header>
 
             {/* Loading State for History Fetch */}

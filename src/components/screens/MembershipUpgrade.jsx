@@ -158,7 +158,7 @@ const TierCard = ({ tier, isCurrentTier = false, onUpgrade, isPopular = false })
         ];
       case 'professional':
         return [
-          'Everything in Arena Basic',
+          'Everything in Basic',
           'Full Development Plan & Assessment',
           'Accountability Pod Matching',
           'Complete Business Readings Library',
@@ -169,7 +169,7 @@ const TierCard = ({ tier, isCurrentTier = false, onUpgrade, isPopular = false })
         ];
       case 'elite':
         return [
-          'Everything in Arena Professional',
+          'Everything in Pro',
           'Priority AI Coaching Lab Access',
           'Advanced Analytics & Insights',
           'Leadership Coaching Call Library',
@@ -237,6 +237,11 @@ const MembershipUpgrade = ({ setCurrentScreen }) => {
   const { membershipData } = useAppServices();
   const currentTier = membershipData?.currentTier || 'basic';
   
+  // Scroll to top when component mounts to ensure users see the full page
+  React.useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, []);
+  
   console.log('[MembershipUpgrade] DEBUG:', { 
     hasMembershipData: !!membershipData, 
     currentTier,
@@ -258,16 +263,16 @@ const MembershipUpgrade = ({ setCurrentScreen }) => {
     <div className="relative space-y-4 sm:space-y-5 lg:space-y-6 p-4 sm:p-3 sm:p-4 lg:p-6" style={{ backgroundColor: COLORS.BG, color: COLORS.NAVY }}>
         
         {/* Header */}
-        <div className="flex items-center gap-4 mb-8">
-          <Button 
-            variant="ghost" 
-            onClick={() => setCurrentScreen('dashboard')}
-            className="flex items-center gap-2"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            Back to Dashboard
-          </Button>
-        </div>
+        {/* Back Button */}
+        <Button 
+          variant="nav-back" 
+          size="sm"
+          onClick={() => setCurrentScreen('dashboard')}
+          className="mb-6"
+        >
+          <ArrowLeft className="w-4 h-4 mr-2" />
+          Back to The Arena
+        </Button>
 
         <div className="text-center mb-12">
           <h1 className="text-4xl font-bold mb-4" style={{ color: COLORS.NAVY }}>
@@ -310,9 +315,9 @@ const MembershipUpgrade = ({ setCurrentScreen }) => {
               <thead>
                 <tr className="border-b">
                   <th className="text-left py-4 px-4">Features</th>
-                  <th className="text-center py-4 px-4">Arena Basic</th>
-                  <th className="text-center py-4 px-4">Arena Professional</th>
-                  <th className="text-center py-4 px-4">Arena Elite</th>
+                  <th className="text-center py-4 px-4">Basic</th>
+                  <th className="text-center py-4 px-4">Pro</th>
+                  <th className="text-center py-4 px-4">Elite</th>
                 </tr>
               </thead>
               <tbody className="divide-y">

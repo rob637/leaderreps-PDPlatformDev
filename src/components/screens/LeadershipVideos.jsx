@@ -423,6 +423,12 @@ const LeadershipVideosScreen = () => {
 
     return (
         <div className="p-3 sm:p-4 lg:p-6 md:p-10 min-h-screen" style={{ background: COLORS.BG }}>
+            {/* Back Button */}
+            <Button onClick={() => navigate('library')} variant="nav-back" size="sm" className="mb-6">
+                <ArrowLeft className="w-4 h-4 mr-2" />
+                Back to Library
+            </Button>
+            
             {/* Header */}
             <header className='flex items-center gap-4 border-b-2 pb-3 mb-8' style={{borderColor: COLORS.NAVY+'30'}}>
                 <Film className='w-10 h-10 flex-shrink-0' style={{color: COLORS.NAVY}}/>
@@ -590,13 +596,7 @@ const LeadershipVideosScreen = () => {
                 )}
             </section>
 
-            {/* --- Footer Navigation --- */}
-            <footer className='mt-12 pt-8 border-t border-gray-200'> {/* Use consistent footer style */}
-                <Button onClick={() => navigate('dashboard')} variant='outline' size="sm"> {/* Use standard Button */}
-                    <ArrowLeft className='w-4 h-4 mr-2' /> {/* Use ArrowLeft for "Back" */}
-                    Back to The Arena
-                </Button>
-            </footer>
+
         </div>
     );
 };
