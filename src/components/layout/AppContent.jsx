@@ -103,58 +103,23 @@ const AppContent = ({
     return userLevel >= requiredLevel;
   };
 
-  // Navigation sections matching NavSidebar.jsx
+  // Flat navigation menu items (no subcategories)
   // Basic: Arena, Dev Plan, Membership
-  // Pro: Arena, Dev Plan, Coaching, Community, Library, Membership  
-  // Elite: Arena, Dev Plan, Coaching, Community, Library, Membership
+  // Pro & Elite: Arena, Dev Plan, Coaching, Community, Library, Membership  
   // Dev: Everything including Developer Tools
-  const navigationSections = [
-    {
-      title: 'THE ARENA',
-      items: [
-        { screen: 'dashboard', label: 'The Arena', requiredTier: 'basic' }
-      ]
-    },
-    {
-      title: 'DEVELOPMENT PLAN',
-      items: [
-        { screen: 'development-plan', label: 'Development Plan', requiredTier: 'basic' }
-      ]
-    },
-    {
-      title: 'COACHING',
-      items: [
-        { screen: 'labs', label: 'Coaching', requiredTier: 'professional' }
-      ]
-    },
-    {
-      title: 'COMMUNITY',
-      items: [
-        { screen: 'community', label: 'Community', requiredTier: 'professional' }
-      ]
-    },
-    {
-      title: 'LIBRARY',
-      items: [
-        { screen: 'applied-leadership', label: 'Courses', requiredTier: 'professional' },
-        { screen: 'business-readings', label: 'Reading & Reps', requiredTier: 'professional' },
-        { screen: 'leadership-videos', label: 'Media', requiredTier: 'professional' }
-      ]
-    },
-    {
-      title: 'MEMBERSHIP',
-      items: [
-        { screen: 'membership-module', label: 'Membership', requiredTier: 'basic' }
-      ]
-    },
-    ...(isDeveloperMode ? [{
-      title: 'DEVELOPER TOOLS',
-      items: [
-        { screen: 'planning-hub', label: 'Strategic Content Tools', requiredTier: 'basic', devModeOnly: true },
-        { screen: 'executive-reflection', label: 'Executive ROI Report', requiredTier: 'basic', devModeOnly: true },
-        { screen: 'app-settings', label: 'App Settings', requiredTier: 'basic', devModeOnly: true }
-      ]
-    }] : [])
+  const navigationItems = [
+    { screen: 'dashboard', label: 'The Arena', requiredTier: 'basic' },
+    { screen: 'development-plan', label: 'Development Plan', requiredTier: 'basic' },
+    { screen: 'labs', label: 'Coaching', requiredTier: 'professional' },
+    { screen: 'community', label: 'Community', requiredTier: 'professional' },
+    { screen: 'applied-leadership', label: 'Library', requiredTier: 'professional' },
+    { screen: 'membership-module', label: 'Membership', requiredTier: 'basic' },
+    // Developer Tools (only visible in dev mode)
+    ...(isDeveloperMode ? [
+      { screen: 'planning-hub', label: 'Strategic Content Tools', requiredTier: 'basic', devModeOnly: true },
+      { screen: 'executive-reflection', label: 'Executive ROI Report', requiredTier: 'basic', devModeOnly: true },
+      { screen: 'app-settings', label: 'App Settings', requiredTier: 'basic', devModeOnly: true }
+    ] : [])
   ];
 
   const handleSignOut = async () => {
@@ -185,39 +150,28 @@ const AppContent = ({
             {dropdownOpen && (
               <div className="absolute top-full left-0 mt-1 w-64 bg-white rounded-lg shadow-lg border border-gray-200 z-50 max-h-[80vh] overflow-y-auto">
                 <div className="py-2">
-                  {navigationSections.map((section) => {
-                    const visibleItems = section.items.filter(item => {
+                  {navigationItems
+                    .filter(item => {
                       // Developer Tools only show in dev mode
                       if (item.devModeOnly && !isDeveloperMode && !isAdmin) return false;
                       // Check tier access
                       if (!hasAccess(item.requiredTier)) return false;
                       return true;
-                    });
-                    
-                    if (visibleItems.length === 0) return null;
-                    
-                    return (
-                      <div key={section.title} className="mb-1">
-                        <div className="px-4 py-1 text-xs font-semibold uppercase tracking-wider text-gray-500">
-                          {section.title}
-                        </div>
-                        {visibleItems.map((item) => (
-                          <button
-                            key={item.screen}
-                            onClick={() => {
-                              setCurrentScreen(item.screen);
-                              setDropdownOpen(false);
-                            }}
-                            className={`w-full text-left px-4 py-2 hover:bg-gray-100 transition-colors ${
-                              currentScreen === item.screen ? 'bg-corporate-teal text-white' : 'text-gray-700'
-                            }`}
-                          >
-                            {item.label}
-                          </button>
-                        ))}
-                      </div>
-                    );
-                  })}
+                    })
+                    .map((item) => (
+                      <button
+                        key={item.screen}
+                        onClick={() => {
+                          setCurrentScreen(item.screen);
+                          setDropdownOpen(false);
+                        }}
+                        className={`w-full text-left px-4 py-2.5 hover:bg-gray-100 transition-colors ${
+                          currentScreen === item.screen ? 'bg-corporate-teal text-white' : 'text-gray-700'
+                        }`}
+                      >
+                        {item.label}
+                      </button>
+                    ))}
                 </div>
               </div>
             )}
