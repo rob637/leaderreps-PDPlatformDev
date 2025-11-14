@@ -62,13 +62,19 @@ const RepFeedItem = ({ item }) => {
         console.log(`[RepFeedItem] Navigating to comment thread for Rep ID: ${item.id}`);
         // Example navigation (route needs to be defined in App.jsx)
         // navigate('community-thread', { feedItemId: item.id });
-        alert(`Action: View comments for post ${item.id}`);
+        // For now, just show an alert
+        const isDeveloperMode = localStorage.getItem('arena-developer-mode') === 'true';
+        if (isDeveloperMode) {
+          alert(`Action: View comments for post ${item.id}`);
+        }
     };
-    const handleReact = () => {
-        // Mock reaction logic (e.g., update local state or call API)
-        console.log(`[RepFeedItem] Reacted to Rep ID: ${item.id}`);
-        alert(`Action: Liked post ${item.id}`);
-        // TODO: Implement actual reaction update
+    };
+    const handleLike = (item) => {
+        // For now, just show an alert
+        const isDeveloperMode = localStorage.getItem('arena-developer-mode') === 'true';
+        if (isDeveloperMode) {
+          alert(`Action: Liked post ${item.id}`);
+        }
     };
 
     return (
@@ -159,7 +165,10 @@ const CommunityFeedScreen = () => {
         // TODO: Replace with actual API call to post to the feed
         // Example: addDoc(collection(db, 'community_feed'), { userId: safeUser.userId, userName: safeUser.name, text: textToShare, isPod: true, createdAt: serverTimestamp(), ... });
 
-        alert(`Mock Share Success: "${textToShare}"`);
+        const isDeveloperMode = localStorage.getItem('arena-developer-mode') === 'true';
+        if (isDeveloperMode) {
+          alert(`Mock Share Success: "${textToShare}"`);
+        }
         setQuickShareText(''); // Clear input
         setIsSharing(false);
         // TODO: Optionally refresh the feed after posting

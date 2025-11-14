@@ -194,9 +194,11 @@ export const EveningBookend = ({
             <div className="mt-6 pt-4 border-t" style={{ borderColor: COLORS.SUBTLE }}>
                 <Button
                     onClick={() => {
-                        alert('🟢 Save Reflection clicked!\nGood: ' + (reflectionGood?.length || 0) + ' chars\nBetter: ' + (reflectionBetter?.length || 0) + ' chars\nBest: ' + (reflectionBest?.length || 0) + ' chars');
-                        onSave();
-                    }}
+                        const isDeveloperMode = localStorage.getItem('arena-developer-mode') === 'true';
+                        if (isDeveloperMode) {
+                          alert('🟢 Save Reflection clicked!\nGood: ' + (reflectionGood?.length || 0) + ' chars\nBetter: ' + (reflectionBetter?.length || 0) + ' chars\nBest: ' + (reflectionBest?.length || 0) + ' chars');
+                        }
+                        if (onSaveReflection) {
                     disabled={isSaving}
                     variant="primary"
                     size="md"

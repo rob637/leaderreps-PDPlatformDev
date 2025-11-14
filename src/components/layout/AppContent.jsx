@@ -240,18 +240,19 @@ const AppContent = ({
 
       <main className="flex-1 flex flex-col">
         <div className="flex-1 overflow-y-auto">
-          <Suspense
-            fallback={
-              <div className="min-h-[calc(100vh-64px)] flex items-center justify-center gradient-corporate-hero">
-                <div className="card-corporate-elevated flex flex-col items-center p-12">
-                  <div className="loading-corporate mb-6"></div>
-                  <p className="corporate-text-body text-corporate-navy">
-                    Loading Content...
-                  </p>
+          <div className="content-wrapper-corporate">
+            <Suspense
+              fallback={
+                <div className="min-h-[calc(100vh-64px)] flex items-center justify-center gradient-corporate-hero">
+                  <div className="card-corporate-elevated flex flex-col items-center p-12">
+                    <div className="loading-corporate mb-6"></div>
+                    <p className="corporate-text-body text-corporate-navy">
+                      Loading Content...
+                    </p>
+                  </div>
                 </div>
-              </div>
-            }
-          >
+              }
+            >
             <ScreenRouter
               currentScreen={currentScreen}
               navParams={navParams}
@@ -260,6 +261,7 @@ const AppContent = ({
               simulatedTier={simulatedTier}
             />
           </Suspense>
+          </div>
         </div>
 
         <footer className="w-full text-center mt-auto border-t bg-corporate-light-gray border-corporate-subtle-teal p-4">

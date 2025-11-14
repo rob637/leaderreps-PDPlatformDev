@@ -63,7 +63,11 @@ function App() {
   // Debug logging for screen changes
   useEffect(() => {
     console.log('[App.jsx] currentScreen changed to:', currentScreen);
-    alert(`🔥 SCREEN CHANGE: ${currentScreen}`);
+    // Only show alert in developer mode
+    const isDeveloperMode = localStorage.getItem('arena-developer-mode') === 'true';
+    if (isDeveloperMode) {
+      alert(`🔥 SCREEN CHANGE: ${currentScreen}`);
+    }
   }, [currentScreen]);
   const [isNavExpanded, setIsNavExpanded] = useState(true);
   const [isMobileOpen, setIsMobileOpen] = useState(false);

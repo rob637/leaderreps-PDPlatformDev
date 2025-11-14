@@ -248,7 +248,10 @@ const MembershipUpgrade = ({ setCurrentScreen }) => {
     // In a real app, this would integrate with Stripe/payment processor
     console.log(`Upgrading to ${tier}`);
     // For now, just show an alert
-    alert(`Upgrade to ${MEMBERSHIP_TIERS[tier].name} - Payment integration coming soon!`);
+    const isDeveloperMode = localStorage.getItem('arena-developer-mode') === 'true';
+    if (isDeveloperMode) {
+      alert(`Upgrade to ${MEMBERSHIP_TIERS[tier].name} - Payment integration coming soon!`);
+    }
   };
 
   return (

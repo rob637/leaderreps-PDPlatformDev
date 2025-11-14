@@ -579,8 +579,11 @@ const TrackerDashboardView = ({ data, updatePdpData, navigate }) => {
             window.scrollTo(0,0); 
         } catch(e) {
             console.error("Failed to reset plan:", e);
-            alert("Failed to reset plan data. Check database permissions or refresh the page manually.");
-        } finally {
+            const isDeveloperMode = localStorage.getItem('arena-developer-mode') === 'true';
+            if (isDeveloperMode) {
+              alert("Failed to reset plan data. Check database permissions or refresh the page manually.");
+            }
+        } finally{
             setIsSaving(false);
         }
     };
@@ -912,7 +915,10 @@ const PlanGeneratorView = ({ userId, saveNewPlan, navigate, setGeneratedPlanData
         } catch (e) {
             setIsGenerating(false);
             console.error('Failed to save new plan after generation.', e);
-            alert('Saving your new plan failed. Please check your connection and try again.');
+            const isDeveloperMode = localStorage.getItem('arena-developer-mode') === 'true';
+            if (isDeveloperMode) {
+              alert('Saving your new plan failed. Please check your connection and try again.');
+            }
         }
     };
 

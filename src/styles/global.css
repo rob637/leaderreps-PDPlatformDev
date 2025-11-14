@@ -344,9 +344,22 @@
 }
 
 .container-corporate {
-  max-width: 1200px;
+  max-width: 1400px;
   margin: 0 auto;
-  padding: var(--spacing-xl);
+  padding-left: var(--spacing-xl);
+  padding-right: var(--spacing-xl);
+  padding-top: var(--spacing-lg);
+  padding-bottom: var(--spacing-lg);
+  width: 100%;
+}
+
+/* Consistent content wrapper for all screens */
+.content-wrapper-corporate {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding-left: var(--spacing-xl);
+  padding-right: var(--spacing-xl);
+  width: 100%;
 }
 
 .section-corporate {

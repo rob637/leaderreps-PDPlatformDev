@@ -153,7 +153,12 @@ const NavSidebar = ({
         }
       } else {
         console.error('[NavSidebar] setCurrentScreen is not a function!');
-        alert('Navigation error: Cannot navigate. Please refresh.');
+        } else {
+        const isDeveloperMode = localStorage.getItem('arena-developer-mode') === 'true';
+        if (isDeveloperMode) {
+          alert('Navigation error: Cannot navigate. Please refresh.');
+        }
+      }
       }
     },
     [setCurrentScreen, closeMobileMenu]
@@ -233,7 +238,12 @@ const NavSidebar = ({
       }
     } else {
       console.error('[NavSidebar] Mobile nav - setCurrentScreen is not a function!');
-      alert('⚠️ Navigation error: Cannot navigate to ' + screen + '. Please refresh.');
+      } else {
+      const isDeveloperMode = localStorage.getItem('arena-developer-mode') === 'true';
+      if (isDeveloperMode) {
+        alert('⚠️ Navigation error: Cannot navigate to ' + screen + '. Please refresh.');
+      }
+    }
     }
   };
 

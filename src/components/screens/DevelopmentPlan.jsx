@@ -174,11 +174,15 @@ export default function DevelopmentPlan() {
       return;
     }
     
-    // When plan data exists, always switch to tracker
-    if (adaptedDevelopmentPlanData?.currentPlan) {
+    // When plan data exists AND we just completed baseline, switch to tracker
+    // Otherwise, let the user navigate freely between views
+    if (adaptedDevelopmentPlanData?.currentPlan && justCompletedBaseline) {
       if (view !== 'tracker') {
-        console.log('[DevelopmentPlan] Plan data exists, switching to tracker view.');
-        alert('✅ Plan data received! Switching to tracker view.');
+        console.log('[DevelopmentPlan] Plan data exists after baseline, switching to tracker view.');
+        const isDeveloperMode = localStorage.getItem('arena-developer-mode') === 'true';
+        if (isDeveloperMode) {
+          alert('✅ Plan data received! Switching to tracker view.');
+        }
         setJustCompletedBaseline(false); // Clear flag
         setView('tracker');
       }
@@ -247,6 +251,54 @@ export default function DevelopmentPlan() {
     console.log('[DevelopmentPlan] writeDevPlan completed successfully.');
     setIsSaving(false);
     return true;
+  };
+
+  // Delete/Reset Development Plan (Developer Mode Only)
+  const handleResetPlan = async () => {
+    const isDeveloperMode = localStorage.getItem('arena-developer-mode') === 'true';
+    
+    if (!isDeveloperMode) {
+      console.log('[DevelopmentPlan] Reset only available in developer mode');
+      return;
+    }
+
+    const confirmed = window.confirm(
+      '⚠️ DELETE DEVELOPMENT PLAN?\n\n' +
+      'This will permanently delete your current development plan and all progress.\n\n' +
+      'You will be able to create a new plan from scratch.\n\n' +
+      'Are you sure?'
+    );
+    
+    if (!confirmed) return;
+
+    setIsSaving(true);
+    setError(null);
+
+    try {
+      // Delete the entire development plan by setting currentPlan to null
+      const ok = await updateDevelopmentPlanData({
+        currentPlan: null,
+        cycle: 0,
+        previousPlans: [],
+        assessmentHistory: [],
+        updatedAt: new Date().toISOString()
+      }, { merge: false }); // Don't merge, replace everything
+
+      if (ok) {
+        console.log('[DevelopmentPlan] Plan deleted successfully');
+        setView('baseline');
+        setJustCompletedBaseline(false);
+        alert('✅ Development plan deleted. You can now create a new plan.');
+      } else {
+        throw new Error('Delete operation failed');
+      }
+    } catch (e) {
+      console.error('[DevelopmentPlan] Error deleting plan:', e);
+      setError(e);
+      alert('❌ Failed to delete plan: ' + e.message);
+    } finally {
+      setIsSaving(false);
+    }
   };
 
 
@@ -419,8 +471,24 @@ async function confirmPlanPersisted(db, userId, retries = 4, delayMs = 250) {
   if (!services || !userId) return <LoadingBlock title="Services unavailable" description="Please refresh or contact support." />;
 
   // ===== RENDER =====
+  const isDeveloperMode = localStorage.getItem('arena-developer-mode') === 'true';
+  
   return (
     <div className="relative space-y-6 p-4 sm:p-6">
+      {/* Developer Mode Reset Button */}
+      {isDeveloperMode && hasCurrentPlan && (
+        <div className="max-w-3xl mx-auto mb-4">
+          <Button
+            onClick={handleResetPlan}
+            variant="secondary"
+            className="bg-red-500 hover:bg-red-600 text-white border-red-600"
+            disabled={isSaving}
+          >
+            🗑️ Delete Development Plan (Dev Mode)
+          </Button>
+        </div>
+      )}
+
       {error && (
         <div className="max-w-3xl mx-auto p-4 pt-6">
           <div className="bg-red-50 border-2 border-red-200 rounded-xl p-4 text-red-800 shadow-lg">

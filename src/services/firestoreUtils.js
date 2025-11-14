@@ -124,7 +124,11 @@ export const setDocEx = async (db, path, data, merge = false) => {
         code: error.code,
         stack: error.stack
       });
-      alert(`❌ Firestore write failed!\nPath: ${path}\nError: ${error.message}\nCode: ${error.code}`);
+      // Only show alert in developer mode
+      const isDeveloperMode = localStorage.getItem('arena-developer-mode') === 'true';
+      if (isDeveloperMode) {
+        alert(`❌ Firestore write failed!\nPath: ${path}\nError: ${error.message}\nCode: ${error.code}`);
+      }
       return false; 
   }
 };

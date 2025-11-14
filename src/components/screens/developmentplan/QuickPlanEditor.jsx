@@ -128,8 +128,11 @@ const QuickPlanEditor = ({ plan, onSave, onCancel }) => {
       await onSave(editedPlan);
       setHasChanges(false);
     } catch (error) {
-      console.error('[QuickPlanEditor] Save failed:', error);
-      alert('Failed to save changes');
+      console.error('Error saving plan:', error);
+      const isDeveloperMode = localStorage.getItem('arena-developer-mode') === 'true';
+      if (isDeveloperMode) {
+        alert('Failed to save changes');
+      }
     } finally {
       setIsSaving(false);
     }
