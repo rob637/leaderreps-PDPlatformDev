@@ -87,15 +87,7 @@ const GetStartedCard = ({ onNavigate, membershipData, developmentPlanData, curre
             </p>
           </div>
           <Button
-            onClick={() => {
-              alert('🔥 [1] Button clicked');
-              alert(`🔥 [2] onNavigate type: ${typeof onNavigate}`);
-              alert(`🔥 [3] onNavigate === undefined? ${onNavigate === undefined}`);
-              alert(`🔥 [4] About to call onNavigate("membership-upgrade")`);
-              const result = onNavigate('membership-upgrade');
-              alert(`🔥 [5] onNavigate returned: ${result}`);
-              alert('🔥 [6] Done. Check if you got SCREEN CHANGE alert from App.jsx');
-            }}
+            onClick={() => onNavigate('membership-upgrade')}
             variant="primary"
             size="md"
             className="flex-shrink-0 w-full sm:w-auto"
