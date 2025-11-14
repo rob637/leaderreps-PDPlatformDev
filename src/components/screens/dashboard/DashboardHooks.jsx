@@ -228,7 +228,7 @@ export const useDashboard = ({
   ========================================================= */
   const handleSaveIdentity = useCallback(async (newIdentity) => {
     // Use the destructured prop directly
-    if (!updateDailyPracticeData) return;
+    if (!updateDailyPracticeData) return false;
 
     try {
       const success = await updateDailyPracticeData({ identityAnchor: newIdentity });
@@ -236,19 +236,18 @@ export const useDashboard = ({
         setIdentityStatement(newIdentity);
         setShowIdentityEditor(false);
         console.log('[Dashboard] Identity saved');
+        return true;
       }
+      return false;
     } catch (error) {
       console.error('Error saving identity:', error);
-      const isDeveloperMode = localStorage.getItem('arena-developer-mode') === 'true';
-      if (isDeveloperMode) {
-        alert('Error saving identity. Please try again.');
-      }
+      throw error;
     }
   }, [updateDailyPracticeData]); // Explicitly include prop
 
   const handleSaveHabit = useCallback(async (newHabit) => {
     // Use the destructured prop directly
-    if (!updateDailyPracticeData) return;
+    if (!updateDailyPracticeData) return false;
 
     try {
       const success = await updateDailyPracticeData({ habitAnchor: newHabit });
@@ -256,32 +255,30 @@ export const useDashboard = ({
         setHabitAnchor(newHabit);
         setShowHabitEditor(false);
         console.log('[Dashboard] Habit anchor saved');
+        return true;
       }
+      return false;
     } catch (error) {
       console.error('Error saving habit:', error);
-      const isDeveloperMode = localStorage.getItem('arena-developer-mode') === 'true';
-      if (isDeveloperMode) {
-        alert('Error saving habit. Please try again.');
-      }
+      throw error;
     }
   }, [updateDailyPracticeData]); // Explicitly include prop
 
   const handleSaveWhy = useCallback(async (newWhy) => {
     // Use the destructured prop directly
-    if (!updateDailyPracticeData) return;
+    if (!updateDailyPracticeData) return false;
 
     try {
       const success = await updateDailyPracticeData({ whyStatement: newWhy });
       if (success) {
         setWhyStatement(newWhy);
         console.log('[Dashboard] Why statement saved');
+        return true;
       }
+      return false;
     } catch (error) {
       console.error('Error saving why statement:', error);
-      const isDeveloperMode = localStorage.getItem('arena-developer-mode') === 'true';
-      if (isDeveloperMode) {
-        alert('Error saving why statement. Please try again.');
-      }
+      throw error;
     }
   }, [updateDailyPracticeData]); // Explicitly include prop
 
@@ -292,10 +289,7 @@ export const useDashboard = ({
     // Use the destructured prop directly
     if (!updateDailyPracticeData) {
       console.error('[Dashboard] Cannot save morning bookend');
-      const isDeveloperMode = localStorage.getItem('arena-developer-mode') === 'true';
-      if (isDeveloperMode) {
-        alert('Error: Unable to save. Please try again.');
-      }
+      alert('Error: Unable to save. Please try again.');
       return;
     }
 
@@ -313,12 +307,10 @@ export const useDashboard = ({
       const success = await updateDailyPracticeData(updates);
       if (!success) throw new Error('Update failed');
       console.log('[Dashboard] Morning bookend saved');
+      alert('✅ Morning Bookend Complete! Your WIN and tasks are set for the day.');
     } catch (error) {
       console.error('Error saving morning plan:', error);
-      const isDeveloperMode = localStorage.getItem('arena-developer-mode') === 'true';
-      if (isDeveloperMode) {
-        alert('Error saving morning plan. Please try again.');
-      }
+      alert('Error saving morning plan. Please try again.');
     } finally {
       setIsSavingBookend(false);
     }
@@ -328,10 +320,7 @@ export const useDashboard = ({
     // Use the destructured prop directly
     if (!updateDailyPracticeData) {
       console.error('[Dashboard] Cannot save evening bookend - updateDailyPracticeData is not available');
-      const isDeveloperMode = localStorage.getItem('arena-developer-mode') === 'true';
-      if (isDeveloperMode) {
-        alert('Error: Unable to save. Please try again.');
-      }
+      alert('Error: Unable to save. Please try again.');
       return;
     }
 
@@ -344,6 +333,31 @@ export const useDashboard = ({
 
     setIsSavingBookend(true);
     try {
+      // Create reminders from the evening bookend data
+      const newReminders = [];
+      
+      // Add tomorrow's reminder if provided
+      if (reflectionBest && reflectionBest.trim()) {
+        newReminders.push({
+          id: `reminder-${Date.now()}-tomorrow`,
+          text: reflectionBest,
+          type: 'tomorrow',
+          createdAt: new Date().toISOString(),
+          dismissed: false
+        });
+      }
+      
+      // Add improvement reminder if provided
+      if (reflectionBetter && reflectionBetter.trim()) {
+        newReminders.push({
+          id: `reminder-${Date.now()}-improvement`,
+          text: `Focus on improving: ${reflectionBetter}`,
+          type: 'improvement',
+          createdAt: new Date().toISOString(),
+          dismissed: false
+        });
+      }
+
       const updates = {
         eveningBookend: {
           good: reflectionGood,
@@ -356,6 +370,13 @@ export const useDashboard = ({
         tomorrowsReminder: reflectionBest,
         improvementReminder: reflectionBetter
       };
+
+      // Add reminders to updates if any were created
+      if (newReminders.length > 0) {
+        // Get existing reminders and append new ones
+        const existingReminders = dailyPracticeData?.reminders || [];
+        updates.reminders = [...existingReminders, ...newReminders];
+      }
 
       console.log('[Dashboard] Calling updateDailyPracticeData with updates:', updates);
       const success = await updateDailyPracticeData(updates);
@@ -373,10 +394,13 @@ export const useDashboard = ({
       setShouldSkipReflectionLoad(true); // <-- Set flag to skip next listener update
       
       console.log('[Dashboard] Evening bookend saved successfully with next-day reminders');
-      const isDeveloperMode = localStorage.getItem('arena-developer-mode') === 'true';
-      if (isDeveloperMode) {
-        alert('Reflection saved successfully!');
+      
+      // Show success message with reminder info
+      let message = '✅ Evening Reflection saved!';
+      if (newReminders.length > 0) {
+        message += ` ${newReminders.length} reminder(s) created for tomorrow.`;
       }
+      alert(message);
     } catch (error) {
       console.error('[Dashboard] Error saving evening bookend:', error);
       console.error('[Dashboard] Error details:', {
@@ -384,14 +408,11 @@ export const useDashboard = ({
         message: error.message,
         stack: error.stack
       });
-      const isDeveloperMode = localStorage.getItem('arena-developer-mode') === 'true';
-      if (isDeveloperMode) {
-        alert(`Error saving reflection: ${error.message}. Please try again.`);
-      }
+      alert(`Error saving reflection: ${error.message}. Please try again.`);
     } finally {
       setIsSavingBookend(false);
     }
-  }, [reflectionGood, reflectionBetter, reflectionBest, habitsCompleted, updateDailyPracticeData]); // Explicitly include prop
+  }, [reflectionGood, reflectionBetter, reflectionBest, habitsCompleted, updateDailyPracticeData, dailyPracticeData]); // Explicitly include prop
 
   const handleAddTask = useCallback((taskText) => {
     const isDeveloperMode = localStorage.getItem('arena-developer-mode') === 'true';
@@ -437,27 +458,18 @@ export const useDashboard = ({
         }
       }).then(() => {
         console.log('[Dashboard] Task saved successfully');
-        const isDeveloperMode = localStorage.getItem('arena-developer-mode') === 'true';
-        if (isDeveloperMode) {
-          alert('✅ Task saved to Firestore!\nTotal tasks: ' + updatedTasks.length);
-        }
+        // Simple confirmation without cluttering the UI
       }).catch(error => {
         console.error('[Dashboard] Error auto-saving task:', error);
         console.error('[Dashboard] Error details:', {
           name: error.name,
           message: error.message
         });
-        const isDeveloperMode = localStorage.getItem('arena-developer-mode') === 'true';
-        if (isDeveloperMode) {
-          alert(`Error saving task: ${error.message}`);
-        }
+        alert(`Error saving task: ${error.message}`);
       });
     } else {
       console.error('[Dashboard] updateDailyPracticeData is not available!');
-      const isDeveloperMode = localStorage.getItem('arena-developer-mode') === 'true';
-      if (isDeveloperMode) {
-        alert('Error: Cannot save task. Please refresh the page.');
-      }
+      alert('Error: Cannot save task. Please refresh the page.');
     }
   }, [otherTasks, updateDailyPracticeData]); // Explicitly include prop
 
@@ -544,10 +556,7 @@ export const useDashboard = ({
     // Use the destructured prop directly
     if (!updateDailyPracticeData) {
       console.error('[Dashboard] Cannot save WIN - updateDailyPracticeData not available');
-      const isDeveloperMode = localStorage.getItem('arena-developer-mode') === 'true';
-      if (isDeveloperMode) {
-        alert('⚠️ Error: Cannot save WIN. Please refresh.');
-      }
+      alert('⚠️ Error: Cannot save WIN. Please refresh.');
       return;
     }
     
@@ -563,19 +572,13 @@ export const useDashboard = ({
       
       if (success) {
         console.log('[Dashboard] WIN saved successfully');
-        const isDeveloperMode = localStorage.getItem('arena-developer-mode') === 'true';
-        if (isDeveloperMode) {
-          alert('✅ Today\'s WIN saved successfully!');
-        }
+        alert('✅ Today\'s WIN saved! This will be tracked in your progress.');
       } else {
         throw new Error('Update returned false');
       }
     } catch (error) {
       console.error('[Dashboard] Error saving WIN:', error);
-      const isDeveloperMode = localStorage.getItem('arena-developer-mode') === 'true';
-      if (isDeveloperMode) {
-        alert('❌ Error saving WIN: ' + error.message);
-      }
+      alert('❌ Error saving WIN: ' + error.message);
     }
   }, [morningWIN, updateDailyPracticeData]); // Explicitly include prop
 

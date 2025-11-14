@@ -26,6 +26,8 @@ import {
   SaveIndicator,
   BonusExerciseModal,
   SocialPodCard,
+  DailyProgressSummary,
+  AnchorsInAction,
   // === UNIFIED IMPORTS ===
   UnifiedAnchorEditorModal,
   AdditionalRepsCard
@@ -421,19 +423,29 @@ const Dashboard = (props) => {
     
     try {
       // Save all three anchors using the hook functions
+      const promises = [];
+      
       if (anchorData.identity && handleSaveIdentity) {
-        await handleSaveIdentity(anchorData.identity);
+        promises.push(handleSaveIdentity(anchorData.identity));
       }
       if (anchorData.habit && handleSaveHabit) {
-        await handleSaveHabit(anchorData.habit);
+        promises.push(handleSaveHabit(anchorData.habit));
       }
       if (anchorData.why && handleSaveWhy) {
-        await handleSaveWhy(anchorData.why);
+        promises.push(handleSaveWhy(anchorData.why));
       }
       
+      // Wait for all saves to complete
+      await Promise.all(promises);
+      
+      // Close modal and show success
       setIsEditorOpen(false);
+      alert('✅ Leadership Anchors saved! Your identity, habit, and why are now set.');
+      
+      console.log('[Dashboard] All anchors saved successfully');
     } catch (error) {
       console.error('Error saving anchors:', error);
+      alert('❌ Error saving anchors. Please try again.');
     } finally {
       setIsSaving(false);
     }
@@ -519,6 +531,24 @@ const Dashboard = (props) => {
             developmentPlanData={developmentPlanData}
             currentTier={currentTier}
           />
+        </div>
+      )}
+
+      {/* Anchors In Action - Shows how anchors are used */}
+      {visibleComponents.includes('dynamicBookend') && (identityStatement || habitAnchor || whyStatement) && (
+        <div className="section-corporate">
+          <AnchorsInAction 
+            identityStatement={identityStatement}
+            habitAnchor={habitAnchor}
+            whyStatement={whyStatement}
+          />
+        </div>
+      )}
+
+      {/* Daily Progress Summary - Shows WIN and Reflections */}
+      {visibleComponents.includes('dynamicBookend') && (
+        <div className="section-corporate">
+          <DailyProgressSummary dailyPracticeData={dailyPracticeData} />
         </div>
       )}
 

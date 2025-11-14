@@ -72,6 +72,24 @@ function App() {
   const [isNavExpanded, setIsNavExpanded] = useState(true);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
 
+  // Prevent browser back/forward navigation from leaving the app
+  useEffect(() => {
+    // Push a dummy state to create history entry
+    window.history.pushState(null, '', window.location.href);
+    
+    const handlePopState = (e) => {
+      // Prevent navigation and stay in the app
+      window.history.pushState(null, '', window.location.href);
+      console.log('[App] Blocked browser back/forward navigation');
+    };
+    
+    window.addEventListener('popstate', handlePopState);
+    
+    return () => {
+      window.removeEventListener('popstate', handlePopState);
+    };
+  }, []);
+
   useEffect(() => {
     const config = typeof window.__FIREBASE_CONFIG__ !== 'undefined' ? window.__FIREBASE_CONFIG__ : undefined;
     if (config) {

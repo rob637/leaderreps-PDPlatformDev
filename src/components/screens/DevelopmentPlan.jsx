@@ -475,6 +475,21 @@ async function confirmPlanPersisted(db, userId, retries = 4, delayMs = 250) {
   
   return (
     <div className="relative space-y-6 p-4 sm:p-6">
+      {/* Back Button */}
+      <Button
+        onClick={() => navigate && navigate('dashboard')}
+        variant="nav-back"
+        size="sm"
+        className="mb-4"
+      >
+        <span className="flex items-center">
+          <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+          </svg>
+          Back to The Arena
+        </span>
+      </Button>
+
       {/* Developer Mode Reset Button */}
       {isDeveloperMode && hasCurrentPlan && (
         <div className="max-w-3xl mx-auto mb-4">

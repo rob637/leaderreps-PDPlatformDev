@@ -1,7 +1,7 @@
 // src/components/screens/Library.jsx
 
 import React from 'react';
-import { BookOpen, ShieldCheck, Film } from 'lucide-react';
+import { BookOpen, ShieldCheck, Film, ArrowLeft } from 'lucide-react';
 import { useAppServices } from '../../services/useAppServices.jsx';
 import { membershipService } from '../../services/membershipService.js';
 
@@ -113,6 +113,20 @@ const Library = () => {
   return (
     <div className="page-corporate container-corporate animate-corporate-fade-in">
       <div>
+        {/* Back Button */}
+        <button
+          onClick={() => navigate && navigate('dashboard')}
+          className="inline-flex items-center px-4 py-2 mb-6 text-sm font-semibold rounded-lg transition-all duration-200"
+          style={{
+            backgroundColor: COLORS.LIGHT_GRAY,
+            color: COLORS.NAVY,
+            border: `1px solid ${COLORS.TEAL}`
+          }}
+        >
+          <ArrowLeft className="w-4 h-4 mr-2" />
+          Back to The Arena
+        </button>
+
         {/* Header */}
         <div className="mb-12 text-center">
           <h1 className="corporate-heading-xl mb-4">
@@ -152,7 +166,7 @@ const Library = () => {
                 Upgrade to Pro or Elite to access our complete collection of leadership development resources.
               </p>
               <button
-                onClick={() => navigate && navigate('membership-module')}
+                onClick={() => navigate && navigate('membership-upgrade')}
                 className="btn-corporate-primary"
               >
                 View Plans

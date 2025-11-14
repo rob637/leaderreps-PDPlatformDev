@@ -6,7 +6,7 @@ import { useAppServices } from '../../services/useAppServices.jsx'; // cite: use
 
 // --- Icons ---
 import {
-    Users, MessageSquare, Briefcase, Bell, PlusCircle, User, ArrowLeft, Target, Settings, Filter, Clock,
+    Users, MessageSquare, Briefcase, Bell, PlusCircle, User, ArrowLeft, Target, Filter, Clock,
     Star, CheckCircle, Award, Link, Send, Loader, Heart, X
 } from 'lucide-react';
 
@@ -496,6 +496,16 @@ const CommunityScreen = () => {
     return (
         // Consistent page structure and padding
         <div className="relative space-y-6 p-4 sm:p-6" style={{ background: COLORS.BG }}>
+            {/* Back Button */}
+            <Button
+                onClick={() => navigate('dashboard')}
+                variant="nav-back"
+                size="sm"
+                className="mb-4"
+            >
+                <ArrowLeft className="w-4 h-4 mr-2" /> Back to The Arena
+            </Button>
+
             {/* Header */}
             <header className='flex items-center gap-4 border-b-2 pb-3 mb-8' style={{borderColor: COLORS.NAVY+'30'}}>
                 <Users className='w-10 h-10 flex-shrink-0' style={{color: COLORS.TEAL}}/>
@@ -536,10 +546,6 @@ const CommunityScreen = () => {
                             </button>
                         );
                     })}
-                     {/* Settings Link (Optional) */}
-                     <Button onClick={() => navigate('app-settings')} variant="ghost" size="sm" className="w-full justify-start text-gray-500 hover:text-gray-700">
-                        <Settings className="w-4 h-4 mr-2"/> Community Settings
-                     </Button>
                 </aside>
 
                 {/* Main Content Area */}

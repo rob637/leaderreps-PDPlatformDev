@@ -12,6 +12,7 @@ const ScreenMap = {
     import('../components/screens/DevelopmentPlan.jsx')
   ),
   'coaching-lab': lazy(() => import('../components/screens/CoachingLabScreen.jsx')),
+  'labs': lazy(() => import('../components/screens/CoachingLabScreen.jsx')), // Alias for backward compatibility
   'daily-practice': lazy(() =>
     import('../components/screens/DailyPractice.jsx')
   ),
@@ -36,6 +37,9 @@ const ScreenMap = {
   'membership-upgrade': lazy(() =>
     import('../components/screens/MembershipUpgrade.jsx')
   ),
+  'membership-module': lazy(() =>
+    import('../components/screens/MembershipUpgrade.jsx')
+  ), // Alias for backward compatibility
   'admin-functions': lazy(() =>
     import('../components/screens/AdminFunctions.jsx')
   ),

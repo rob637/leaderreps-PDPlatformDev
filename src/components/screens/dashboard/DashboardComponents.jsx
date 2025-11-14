@@ -1276,6 +1276,252 @@ export const UnifiedAnchorEditorModal = ({
 
 
 /* =========================================================
+   ANCHORS IN ACTION - Shows how anchors are being used
+========================================================= */
+export const AnchorsInAction = ({ identityStatement, habitAnchor, whyStatement }) => {
+    const [isExpanded, setIsExpanded] = useState(true);
+    
+    // Don't show if no anchors are set
+    if (!identityStatement && !habitAnchor && !whyStatement) {
+        return null;
+    }
+    
+    return (
+        <Card accent="BLUE">
+            <div className="space-y-4">
+                {/* Header */}
+                <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                        <Anchor className="w-5 h-5" style={{ color: COLORS.BLUE }} />
+                        <h3 className="text-lg font-bold" style={{ color: COLORS.NAVY }}>
+                            Your Leadership Anchors
+                        </h3>
+                    </div>
+                    <button
+                        onClick={() => setIsExpanded(!isExpanded)}
+                        className="p-1 rounded-full hover:bg-gray-100 transition-colors"
+                    >
+                        {isExpanded ? (
+                            <ChevronUp className="w-5 h-5" style={{ color: COLORS.MUTED }} />
+                        ) : (
+                            <ChevronDown className="w-5 h-5" style={{ color: COLORS.MUTED }} />
+                        )}
+                    </button>
+                </div>
+                
+                {isExpanded && (
+                    <div className="space-y-3">
+                        {/* Identity Anchor */}
+                        {identityStatement && (
+                            <div className="p-3 rounded-lg border-l-4" 
+                                 style={{ 
+                                     backgroundColor: `${COLORS.TEAL}10`,
+                                     borderColor: COLORS.TEAL
+                                 }}>
+                                <div className="flex items-start gap-2">
+                                    <User className="w-4 h-4 flex-shrink-0 mt-1" style={{ color: COLORS.TEAL }} />
+                                    <div className="flex-1">
+                                        <p className="text-xs font-semibold mb-1" style={{ color: COLORS.TEAL }}>
+                                            🎯 IDENTITY ANCHOR:
+                                        </p>
+                                        <p className="text-sm italic" style={{ color: COLORS.TEXT }}>
+                                            "I am the kind of leader who {identityStatement}"
+                                        </p>
+                                        <p className="text-xs mt-2" style={{ color: COLORS.MUTED }}>
+                                            ✓ Displayed in your Morning Bookend to ground your daily practice
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+                        
+                        {/* Habit Anchor */}
+                        {habitAnchor && (
+                            <div className="p-3 rounded-lg border-l-4" 
+                                 style={{ 
+                                     backgroundColor: `${COLORS.BLUE}10`,
+                                     borderColor: COLORS.BLUE
+                                 }}>
+                                <div className="flex items-start gap-2">
+                                    <Clock className="w-4 h-4 flex-shrink-0 mt-1" style={{ color: COLORS.BLUE }} />
+                                    <div className="flex-1">
+                                        <p className="text-xs font-semibold mb-1" style={{ color: COLORS.BLUE }}>
+                                            ⏰ HABIT ANCHOR (CUE):
+                                        </p>
+                                        <p className="text-sm italic" style={{ color: COLORS.TEXT }}>
+                                            "When I {habitAnchor}..."
+                                        </p>
+                                        <p className="text-xs mt-2" style={{ color: COLORS.MUTED }}>
+                                            ✓ Triggers your daily leadership practice routine
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+                        
+                        {/* Why Statement */}
+                        {whyStatement && (
+                            <div className="p-3 rounded-lg border-l-4" 
+                                 style={{ 
+                                     backgroundColor: `${COLORS.ORANGE}10`,
+                                     borderColor: COLORS.ORANGE
+                                 }}>
+                                <div className="flex items-start gap-2">
+                                    <Zap className="w-4 h-4 flex-shrink-0 mt-1" style={{ color: COLORS.ORANGE }} />
+                                    <div className="flex-1">
+                                        <p className="text-xs font-semibold mb-1" style={{ color: COLORS.ORANGE }}>
+                                            💡 WHY IT MATTERS:
+                                        </p>
+                                        <p className="text-sm" style={{ color: COLORS.TEXT }}>
+                                            {whyStatement}
+                                        </p>
+                                        <p className="text-xs mt-2" style={{ color: COLORS.MUTED }}>
+                                            ✓ Your core purpose that keeps you motivated
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+                        
+                        {/* How Anchors Are Used */}
+                        <div className="pt-3 border-t" style={{ borderColor: COLORS.SUBTLE }}>
+                            <p className="text-xs font-semibold mb-2" style={{ color: COLORS.NAVY }}>
+                                📍 WHERE YOUR ANCHORS APPEAR:
+                            </p>
+                            <div className="space-y-1">
+                                <p className="text-xs" style={{ color: COLORS.TEXT }}>
+                                    • <strong>Morning Bookend:</strong> Identity statement visible in optional LIS section
+                                </p>
+                                <p className="text-xs" style={{ color: COLORS.TEXT }}>
+                                    • <strong>Daily Reminders:</strong> Why statement reminds you of your purpose
+                                </p>
+                                <p className="text-xs" style={{ color: COLORS.TEXT }}>
+                                    • <strong>Habit Building:</strong> Cue triggers consistent daily practice
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                )}
+            </div>
+        </Card>
+    );
+};
+
+/* =========================================================
+   DAILY PROGRESS SUMMARY - Shows Today's WIN and Recent Reflections
+========================================================= */
+export const DailyProgressSummary = ({ dailyPracticeData }) => {
+    const [isExpanded, setIsExpanded] = useState(true);
+    
+    // Extract today's WIN and evening reflection
+    const todaysWIN = dailyPracticeData?.morningBookend?.dailyWIN;
+    const eveningReflection = dailyPracticeData?.eveningBookend;
+    const winCompleted = dailyPracticeData?.morningBookend?.winCompleted;
+    
+    // Don't show if no data
+    if (!todaysWIN && !eveningReflection?.good) {
+        return null;
+    }
+    
+    return (
+        <Card accent="TEAL">
+            <div className="space-y-4">
+                {/* Header */}
+                <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                        <Trophy className="w-5 h-5" style={{ color: COLORS.TEAL }} />
+                        <h3 className="text-lg font-bold" style={{ color: COLORS.NAVY }}>
+                            Today's Progress
+                        </h3>
+                    </div>
+                    <button
+                        onClick={() => setIsExpanded(!isExpanded)}
+                        className="p-1 rounded-full hover:bg-gray-100 transition-colors"
+                    >
+                        {isExpanded ? (
+                            <ChevronUp className="w-5 h-5" style={{ color: COLORS.MUTED }} />
+                        ) : (
+                            <ChevronDown className="w-5 h-5" style={{ color: COLORS.MUTED }} />
+                        )}
+                    </button>
+                </div>
+                
+                {isExpanded && (
+                    <>
+                        {/* Today's WIN */}
+                        {todaysWIN && (
+                            <div className="p-3 rounded-lg border-2" 
+                                 style={{ 
+                                     backgroundColor: winCompleted ? `${COLORS.GREEN}10` : `${COLORS.TEAL}10`,
+                                     borderColor: winCompleted ? COLORS.GREEN : COLORS.TEAL
+                                 }}>
+                                <div className="flex items-start gap-3">
+                                    {winCompleted && (
+                                        <CheckCircle className="w-5 h-5 flex-shrink-0 mt-0.5" style={{ color: COLORS.GREEN }} />
+                                    )}
+                                    <div className="flex-1">
+                                        <p className="text-xs font-semibold mb-1" style={{ color: COLORS.MUTED }}>
+                                            🏆 TODAY'S WIN:
+                                        </p>
+                                        <p className={`text-sm font-bold ${winCompleted ? 'line-through opacity-60' : ''}`} 
+                                           style={{ color: COLORS.NAVY }}>
+                                            {todaysWIN}
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+                        
+                        {/* Evening Reflection Summary */}
+                        {eveningReflection?.good && (
+                            <div className="space-y-2">
+                                <p className="text-xs font-semibold" style={{ color: COLORS.MUTED }}>
+                                    🌙 YESTERDAY'S REFLECTION:
+                                </p>
+                                
+                                {/* What Went Well */}
+                                <div className="p-2 rounded-lg" style={{ backgroundColor: `${COLORS.GREEN}10` }}>
+                                    <p className="text-xs font-semibold mb-1" style={{ color: COLORS.GREEN }}>
+                                        ✅ What Went Well:
+                                    </p>
+                                    <p className="text-sm" style={{ color: COLORS.TEXT }}>
+                                        {eveningReflection.good}
+                                    </p>
+                                </div>
+                                
+                                {/* What Could Be Better */}
+                                {eveningReflection.better && (
+                                    <div className="p-2 rounded-lg" style={{ backgroundColor: `${COLORS.AMBER}10` }}>
+                                        <p className="text-xs font-semibold mb-1" style={{ color: COLORS.AMBER }}>
+                                            💡 What Could Be Better:
+                                        </p>
+                                        <p className="text-sm" style={{ color: COLORS.TEXT }}>
+                                            {eveningReflection.better}
+                                        </p>
+                                    </div>
+                                )}
+                                
+                                {/* Tomorrow's Focus */}
+                                {eveningReflection.best && (
+                                    <div className="p-2 rounded-lg" style={{ backgroundColor: `${COLORS.BLUE}10` }}>
+                                        <p className="text-xs font-semibold mb-1" style={{ color: COLORS.BLUE }}>
+                                            🎯 Tomorrow's Focus:
+                                        </p>
+                                        <p className="text-sm" style={{ color: COLORS.TEXT }}>
+                                            {eveningReflection.best}
+                                        </p>
+                                    </div>
+                                )}
+                            </div>
+                        )}
+                    </>
+                )}
+            </div>
+        </Card>
+    );
+};
+
+/* =========================================================
    PLACEHOLDER COMPONENTS (Required to fix build errors)
 ========================================================= */
 // Exporting placeholder components to prevent errors in Dashboard.jsx when these are not used

@@ -51,7 +51,7 @@ const NavSidebar = ({
   // Coaching
   const coachingNav = [
     {
-      screen: 'labs',
+      screen: 'coaching-lab',
       label: 'Coaching',
       icon: Mic,
       flag: 'enableLabs',
@@ -91,7 +91,7 @@ const NavSidebar = ({
       label: 'Media',
       icon: Film,
       flag: 'enableVideos',
-      requiredTier: 'professional',
+      requiredTier: 'elite',
     },
   ];
 
