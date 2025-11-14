@@ -156,39 +156,28 @@ export default function DevelopmentPlan() {
   const [view, setView] = useState(hasCurrentPlan ? 'tracker' : 'baseline');
   const [isSaving, setIsSaving] = useState(false); // Used to detect in-progress save
   const [error, setError] = useState(null);
-  const [forceTracker, setForceTracker] = useState(false); // NEW: Force tracker view after assessment completion
 
   // Sync view with live snapshots as they arrive
   useEffect(() => {
-    // If we just completed an assessment, force tracker view and wait for data
-    if (forceTracker && adaptedDevelopmentPlanData?.currentPlan) {
-      console.log('[DevelopmentPlan] Assessment completed, plan data received, staying in tracker view.');
-      setForceTracker(false);
-      return;
-    }
-    
-    // This effect now correctly handles the navigation *after* data is received
-    alert('🔄 VIEW EFFECT: currentPlan=' + (!!adaptedDevelopmentPlanData?.currentPlan) + ', view=' + view + ', forceTracker=' + forceTracker + ', isSaving=' + isSaving);
-    
-    if (adaptedDevelopmentPlanData?.currentPlan && view === 'baseline' && !forceTracker) {
-      alert('🎯 SWITCHING TO TRACKER: Found currentPlan, switching from baseline to tracker');
-      console.log('[DevelopmentPlan] Data updated, switching view to tracker.');
+    // When plan data exists and we're on baseline, switch to tracker
+    if (adaptedDevelopmentPlanData?.currentPlan && view === 'baseline') {
+      console.log('[DevelopmentPlan] Plan data received, switching to tracker view.');
       setView('tracker');
       return;
     }
     
-    // FIX: Add !isSaving and !forceTracker conditions to prevent race condition reversion.
-    if (!adaptedDevelopmentPlanData?.currentPlan && view === 'tracker' && !isSaving && !forceTracker) {
-      alert('📝 SWITCHING TO BASELINE: No currentPlan found, switching from tracker to baseline');
-      console.log('[DevelopmentPlan] No current plan, switching view to baseline.');
+    // When no plan exists and we're on tracker (and not currently saving), switch to baseline
+    if (!adaptedDevelopmentPlanData?.currentPlan && view === 'tracker' && !isSaving) {
+      console.log('[DevelopmentPlan] No plan data, switching to baseline view.');
       setView('baseline');
     }
-  }, [adaptedDevelopmentPlanData?.currentPlan, view, isSaving, forceTracker]); // ADDED 'forceTracker' to dependencies
+  }, [adaptedDevelopmentPlanData?.currentPlan, view, isSaving]);
 
   const writeDevPlan = async (payload, { merge = true } = {}) => {
-    alert('💾 Starting writeDevPlan function...');
     console.log('[DevelopmentPlan] Starting writeDevPlan...');
     setError(null);
+    setIsSaving(true);
+    
     try {
       // 🛑 CRITICAL FIX: Ensure only the currentPlan sub-object is adapted if needed.
       // We start with the payload and modify currentPlan if it is an existing/edited plan.
@@ -211,7 +200,6 @@ export default function DevelopmentPlan() {
       // NOTE: Do NOT strip sentinels here! Firebase needs them to process server-side operations.
       // Sentinels are stripped in the listeners (useAppServices.jsx) when data comes back.
       
-      alert('📝 About to call updateDevelopmentPlanData...');
       if (typeof updateDevelopmentPlanData === 'function') {
         // Now updateDevelopmentPlanData receives the correctly structured top-level object
         const ok = await updateDevelopmentPlanData(firebasePayload, { merge });
@@ -221,14 +209,18 @@ export default function DevelopmentPlan() {
       } else {
         console.error('[DevelopmentPlan] updateDevelopmentPlanData is not available.');
         setError(new Error('Writer unavailable.'));
+        setIsSaving(false);
         return false;
       }
     } catch (e) {
       console.error('[DevelopmentPlan] Write failed:', e);
       setError(e);
+      setIsSaving(false);
       return false;
     }
+    
     console.log('[DevelopmentPlan] writeDevPlan completed successfully.');
+    setIsSaving(false);
     return true;
   };
 
@@ -255,31 +247,23 @@ async function confirmPlanPersisted(db, userId, retries = 4, delayMs = 250) {
 
   // Baseline → Generate new plan then route to tracker
   const handleCompleteBaseline = async (assessment) => {
-    alert('🔍 DEBUG: Starting handleCompleteBaseline');
     console.log('[DevelopmentPlan] Starting baseline completion with assessment:', assessment);
-    alert('📊 Assessment data: ' + JSON.stringify(assessment, null, 2).substring(0, 200) + '...');
     
     const date = new Date().toISOString();
     const newAssessment = { ...assessment, date };
     
     // Assumes generatePlanFromAssessment uses the *corrected* skill catalog
-    alert('🔍 About to generate plan from assessment...');
     console.log('[DevelopmentPlan] Generating plan from assessment...');
     console.log('[DevelopmentPlan] combinedSkillCatalog:', combinedSkillCatalog?.length || 'undefined');
-    alert('📚 combinedSkillCatalog length: ' + (combinedSkillCatalog ? combinedSkillCatalog.length : 'NULL'));
     
     const newPlanRaw = generatePlanFromAssessment(newAssessment, combinedSkillCatalog);
-    alert('✅ Plan generated successfully!');
-    alert('📋 Generated plan focus areas: ' + (newPlanRaw?.focusAreas?.length || 'NONE'));
     console.log('[DevelopmentPlan] Generated plan:', newPlanRaw);
     
     if (!newPlanRaw || !newPlanRaw.focusAreas || newPlanRaw.focusAreas.length === 0) {
-      alert('❌ CRITICAL ERROR: Generated plan is invalid or empty!');
       console.error('[DevelopmentPlan] ERROR: Generated plan is invalid or empty!');
       alert('Error generating development plan. Please check your assessment and try again.');
       return;
     }
-    alert('✅ Plan validation passed - plan has focus areas!');
 
     // If an existing plan exists, bump cycle for the new plan & archive the old
     const prevPlan = adaptedDevelopmentPlanData?.currentPlan;
@@ -316,33 +300,25 @@ async function confirmPlanPersisted(db, userId, retries = 4, delayMs = 250) {
       updatedAt: date
     };
 
-    alert('💾 About to save payload to Firebase...');
     console.log('[DevelopmentPlan] Saving payload to Firebase:', payload);
-    // The writeDevPlan sets isSaving=true, then to false after Firestore ACK.
     const ok = await writeDevPlan(payload, { merge: true });
-    alert('💾 writeDevPlan result: ' + ok);
     console.log('[DevelopmentPlan] writeDevPlan result:', ok);
     
     if (ok) {
-      alert('✅ Plan saved successfully! Setting target rep...');
       // FINAL FIX (Issue 4): Set the target rep
       console.log('[DevelopmentPlan] Baseline saved. Setting target rep...');
       await findAndSetTargetRep(newPlan, globalMetadata, updateDailyPracticeWriter);
-      
-      // NEW FIX: Force tracker view and prevent reversion while waiting for data
-      alert('🎯 Forcing tracker view...');
-      console.log('[DevelopmentPlan] Assessment completed successfully. Forcing tracker view.');
-      setForceTracker(true);
-      setView('tracker');
-      alert('🎯 Set forceTracker=true and view=tracker');
       
       // Confirm plan persisted for logging purposes
       const okPersisted = await confirmPlanPersisted(db, userId);
       if (okPersisted) {
         console.log('[DevelopmentPlan] Confirmed currentPlan via read-after-write.');
       } else {
-        console.warn('[DevelopmentPlan] Could not confirm plan persistence, but proceeding to tracker.');
+        console.warn('[DevelopmentPlan] Could not confirm plan persistence.');
       }
+      
+      // View will automatically switch to tracker via useEffect when data arrives
+      console.log('[DevelopmentPlan] Assessment completed. Waiting for Firestore update...');
     }
   };
 
@@ -418,10 +394,6 @@ async function confirmPlanPersisted(db, userId, retries = 4, delayMs = 250) {
         </div>
       )}
 
-      {(() => {
-        alert('🖥️ RENDERING VIEW: ' + view);
-        return null;
-      })()}
       {view === 'baseline' && (
         <BaselineAssessment
           onComplete={handleCompleteBaseline}
