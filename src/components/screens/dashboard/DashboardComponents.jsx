@@ -43,37 +43,39 @@ import { COLORS } from './dashboardConstants.js';
 
 // --- Corporate Button Component ---
 export const Button = ({ children, onClick, disabled = false, variant = 'primary', className = '', size = 'md', ...rest }) => {
-  // Base corporate button classes
-  let buttonClass = '';
+  // Corporate button classes matching leaderreps.com
+  let buttonClass = 'inline-flex items-center justify-center font-semibold transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2';
   
   if (variant === 'primary') {
-    buttonClass = 'btn-corporate-primary';
+    buttonClass += ' btn-corporate-primary';
   } else if (variant === 'secondary') {
-    buttonClass = 'btn-corporate-secondary';
+    buttonClass += ' btn-corporate-secondary';
   } else if (variant === 'outline') {
-    buttonClass = 'btn-corporate-secondary';
+    buttonClass += ' btn-corporate-secondary';
   } else if (variant === 'nav-back') {
-    buttonClass = 'form-corporate';
+    buttonClass += ' form-corporate bg-white border border-gray-300';
   } else if (variant === 'ghost') {
-    buttonClass = 'bg-transparent text-gray-600 hover:bg-gray-100 focus:ring-gray-300/50 border border-transparent hover:border-gray-200';
+    buttonClass += ' bg-transparent hover:bg-gray-50 border border-transparent';
   } else {
-    buttonClass = 'btn-corporate-primary';
+    buttonClass += ' btn-corporate-primary';
   }
 
-  // Size adjustments using CSS custom properties
-  let sizeStyle = {};
+  // Professional size system
   if (size === 'sm') {
-    sizeStyle = { padding: 'var(--spacing-sm) var(--spacing-md)', fontSize: '0.875rem' };
+    buttonClass += ' px-4 py-2 text-sm rounded-lg';
   } else if (size === 'lg') {
-    sizeStyle = { padding: 'var(--spacing-xl) var(--spacing-2xl)', fontSize: '1.125rem' };
+    buttonClass += ' px-8 py-4 text-lg rounded-xl';
+  } else {
+    buttonClass += ' px-6 py-3 text-base rounded-lg';
   }
 
-  // Disabled state
+  // Corporate disabled state
   const disabledStyle = disabled ? {
-    opacity: 0.5,
+    opacity: 0.6,
     cursor: 'not-allowed',
-    background: '#E5E7EB',
-    color: '#9CA3AF'
+    background: COLORS.LIGHT_GRAY,
+    color: COLORS.MUTED,
+    border: `1px solid ${COLORS.SUBTLE}`
   } : {};
 
   return (
@@ -82,7 +84,7 @@ export const Button = ({ children, onClick, disabled = false, variant = 'primary
       onClick={onClick} 
       disabled={disabled} 
       className={`${buttonClass} ${className}`}
-      style={{ ...sizeStyle, ...disabledStyle }}
+      style={{ ...disabledStyle }}
     >
       {children}
     </button>
@@ -96,8 +98,10 @@ export const Card = ({ children, title, icon: Icon, className = '', onClick, acc
   const accentColor = COLORS[accent] || COLORS.NAVY;
   const handleKeyDown = (e) => { if (interactive && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); onClick?.(); } };
 
-  // Choose corporate card class based on interactivity
-  const cardClass = interactive ? 'card-corporate' : 'card-corporate-elevated';
+  // Corporate card styling matching leaderreps.com
+  const cardClass = interactive 
+    ? 'card-corporate cursor-pointer hover:-translate-y-1' 
+    : 'card-corporate-elevated';
 
   return (
     <Tag
@@ -105,31 +109,39 @@ export const Card = ({ children, title, icon: Icon, className = '', onClick, acc
       role={interactive ? 'button' : undefined}
       tabIndex={interactive ? 0 : undefined}
       onKeyDown={handleKeyDown}
-      className={`${cardClass} ${className} text-left`}
+      className={`${cardClass} ${className} text-left relative overflow-hidden`}
       style={{ color: COLORS.NAVY }}
       onClick={onClick}
     >
-      {/* Corporate accent bar using CSS custom properties */}
-      {Icon && title && <span style={{ position:'absolute', top:0, left:0, right:0, height:'4px', background: `var(--gradient-primary)` }} />}
+      {/* Professional accent bar */}
+      {Icon && title && <span style={{ position:'absolute', top:0, left:0, right:0, height:'4px', background: accentColor }} />}
 
       {Icon && title && (
-           <div className="flex items-center" style={{ gap: 'var(--spacing-md)', marginBottom: 'var(--spacing-lg)' }}>
-              <div className="flex items-center justify-center flex-shrink-0" 
+           <div className="flex items-center" style={{ gap: 'var(--spacing-lg)', marginBottom: 'var(--spacing-xl)' }}>
+              <div className="flex items-center justify-center flex-shrink-0 shadow-md" 
                    style={{ 
-                     width: '40px', 
-                     height: '40px', 
-                     borderRadius: 'var(--radius-lg)', 
-                     border: `1px solid ${COLORS.SUBTLE}`, 
-                     background: COLORS.LIGHT_GRAY 
+                     width: '56px', 
+                     height: '56px', 
+                     borderRadius: 'var(--radius-xl)', 
+                     backgroundColor: `${accentColor}15`,
+                     border: `2px solid ${accentColor}30`
                    }}>
-                  <Icon className="w-5 h-5" style={{ color: accentColor }} />
+                  <Icon className="w-7 h-7" style={{ color: accentColor }} />
               </div>
-              <h2 className="corporate-heading-md" style={{ color: COLORS.NAVY }}>{title}</h2>
+              <h2 className="corporate-heading-lg" style={{ color: COLORS.NAVY }}>{title}</h2>
           </div>
       )}
-      {!Icon && title && <h2 className="text-xl font-extrabold mb-4 border-b pb-2" style={{ color: COLORS.NAVY, borderColor: COLORS.SUBTLE }}>{title}</h2>}
+      {!Icon && title && (
+        <div style={{ marginBottom: 'var(--spacing-xl)' }}>
+          <h2 className="corporate-heading-lg" style={{ 
+            color: COLORS.NAVY, 
+            borderBottom: `2px solid ${COLORS.SUBTLE}30`,
+            paddingBottom: 'var(--spacing-md)'
+          }}>{title}</h2>
+        </div>
+      )}
 
-      <div>{children}</div>
+      <div className="corporate-text-body">{children}</div>
     </Tag>
   );
 };

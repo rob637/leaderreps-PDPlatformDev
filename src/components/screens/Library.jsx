@@ -5,12 +5,19 @@ import { BookOpen, ShieldCheck, Film } from 'lucide-react';
 import { useAppServices } from '../../services/useAppServices.jsx';
 import { membershipService } from '../../services/membershipService.js';
 
+// LEADERREPS.COM OFFICIAL CORPORATE COLORS - VERIFIED 11/14/25
 const COLORS = {
-  NAVY: '#0B2447',
-  TEAL: '#47A88D',
-  ORANGE: '#E5491D',
-  MUTED: '#6B7280',
-  SUBTLE: '#E5E7EB'
+  // === PRIMARY BRAND COLORS (from leaderreps.com) ===
+  NAVY: '#002E47',        // Primary text, headers, navigation
+  ORANGE: '#E04E1B',      // Call-to-action buttons, highlights, alerts  
+  TEAL: '#47A88D',        // Secondary buttons, success states, accents
+  LIGHT_GRAY: '#FCFCFA',  // Page backgrounds, subtle surfaces
+  
+  // === TEXT & BACKGROUNDS (corporate colors only) ===
+  TEXT: '#002E47',        // NAVY for all text
+  MUTED: '#47A88D',       // TEAL for muted text
+  BG: '#FCFCFA',          // LIGHT_GRAY for backgrounds
+  SUBTLE: '#47A88D'       // TEAL for subtle elements
 };
 
 const LibraryCard = ({ title, description, icon: Icon, onClick, disabled = false, requiredTier }) => {
@@ -18,39 +25,45 @@ const LibraryCard = ({ title, description, icon: Icon, onClick, disabled = false
     <button
       onClick={onClick}
       disabled={disabled}
-      className={`relative w-full p-6 rounded-xl border-2 transition-all duration-200 text-left ${
+      className={`card-corporate-elevated w-full text-left transition-all duration-300 ${
         disabled
-          ? 'bg-gray-100 border-gray-300 cursor-not-allowed opacity-60'
-          : 'bg-white border-corporate-teal hover:shadow-lg hover:scale-105 cursor-pointer'
+          ? 'opacity-60 cursor-not-allowed'
+          : 'hover:shadow-xl hover:-translate-y-1 cursor-pointer'
       }`}
+      style={{ 
+        borderColor: disabled ? COLORS.SUBTLE : COLORS.TEAL,
+        background: disabled ? COLORS.LIGHT_GRAY : 'white'
+      }}
     >
-      <div className="flex items-start gap-4">
+      <div className="flex items-start gap-6">
         <div
-          className={`p-3 rounded-lg ${
-            disabled ? 'bg-gray-300' : 'bg-corporate-teal/10'
-          }`}
+          className="w-16 h-16 rounded-xl flex items-center justify-center flex-shrink-0"
+          style={{ 
+            backgroundColor: disabled ? `${COLORS.SUBTLE}20` : `${COLORS.TEAL}15`,
+            border: `2px solid ${disabled ? COLORS.SUBTLE : COLORS.TEAL}30`
+          }}
         >
           <Icon
-            className={`w-8 h-8 ${
-              disabled ? 'text-gray-500' : 'text-corporate-teal'
-            }`}
+            className="w-8 h-8"
+            style={{ color: disabled ? COLORS.SUBTLE : COLORS.TEAL }}
           />
         </div>
         <div className="flex-1">
-          <h3
-            className="text-xl font-bold mb-2"
-            style={{ color: disabled ? COLORS.MUTED : COLORS.NAVY }}
-          >
+          <h3 className="corporate-heading-md mb-3" style={{ color: disabled ? COLORS.MUTED : COLORS.NAVY }}>
             {title}
           </h3>
-          <p
-            className="text-sm"
-            style={{ color: COLORS.MUTED }}
-          >
+          <p className="corporate-text-body mb-4">
             {description}
           </p>
           {disabled && requiredTier && (
-            <div className="mt-2 inline-block px-2 py-1 bg-orange-100 text-orange-700 text-xs rounded-md font-semibold">
+            <div 
+              className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold"
+              style={{ 
+                backgroundColor: `${COLORS.ORANGE}20`, 
+                color: COLORS.ORANGE,
+                border: `1px solid ${COLORS.ORANGE}40`
+              }}
+            >
               Requires {requiredTier === 'professional' ? 'Pro' : 'Elite'} Tier
             </div>
           )}
@@ -98,26 +111,20 @@ const Library = () => {
   };
 
   return (
-    <div className="relative space-y-6 p-4 sm:p-6" style={{ background: '#F9FAFB' }}>
+    <div className="page-corporate container-corporate animate-corporate-fade-in">
       <div>
         {/* Header */}
-        <div className="mb-8">
-          <h1
-            className="text-4xl font-bold mb-2"
-            style={{ color: COLORS.NAVY }}
-          >
+        <div className="mb-12 text-center">
+          <h1 className="corporate-heading-xl mb-4">
             Leadership Library
           </h1>
-          <p
-            className="text-lg"
-            style={{ color: COLORS.MUTED }}
-          >
+          <p className="corporate-text-body max-w-2xl mx-auto">
             Explore our collection of courses, readings, and media to accelerate your leadership development.
           </p>
         </div>
 
         {/* Library Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="section-corporate grid-corporate-3">
           {libraryItems.map((item) => {
             const hasAccess = membershipService.hasAccess(currentTier, item.requiredTier);
             return (
@@ -136,26 +143,21 @@ const Library = () => {
 
         {/* Upgrade CTA for Basic Users */}
         {currentTier === 'basic' && (
-          <div
-            className="mt-8 p-6 rounded-xl border-2"
-            style={{ borderColor: COLORS.ORANGE, backgroundColor: '#FFF5F0' }}
-          >
-            <h3
-              className="text-xl font-bold mb-2"
-              style={{ color: COLORS.NAVY }}
-            >
-              Unlock the Full Library
-            </h3>
-            <p className="mb-4" style={{ color: COLORS.MUTED }}>
-              Upgrade to Pro or Elite to access our complete collection of leadership development resources.
-            </p>
-            <button
-              onClick={() => navigate && navigate('membership-module')}
-              className="px-6 py-3 rounded-lg font-semibold text-white transition-all duration-200 hover:opacity-90"
-              style={{ backgroundColor: COLORS.ORANGE }}
-            >
-              View Plans
-            </button>
+          <div className="card-corporate-elevated mt-12 text-center" style={{ borderColor: COLORS.ORANGE }}>
+            <div className="gradient-corporate-feature p-8 rounded-2xl">
+              <h3 className="corporate-heading-lg mb-4">
+                Unlock the Full Library
+              </h3>
+              <p className="corporate-text-body mb-6 max-w-md mx-auto">
+                Upgrade to Pro or Elite to access our complete collection of leadership development resources.
+              </p>
+              <button
+                onClick={() => navigate && navigate('membership-module')}
+                className="btn-corporate-primary"
+              >
+                View Plans
+              </button>
+            </div>
           </div>
         )}
       </div>

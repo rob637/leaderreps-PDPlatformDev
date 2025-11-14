@@ -136,20 +136,20 @@ const AppContent = ({
 
   return (
     <div className="relative min-h-screen flex flex-col font-sans antialiased bg-corporate-light-gray">
-      <header className="sticky top-0 bg-white/95 backdrop-blur-sm shadow-md flex justify-between items-center z-50 px-4 py-2 border-b border-corporate-subtle-teal">
-        <div className="flex items-center gap-4">
+      <header className="nav-corporate sticky top-0 flex justify-between items-center z-50 px-6 py-4">
+        <div className="flex items-center gap-6">
           <div className="relative">
             <button
               onClick={() => setDropdownOpen(!dropdownOpen)}
-              className="p-2 hover:bg-gray-100 rounded-lg transition-colors text-corporate-navy"
+              className="p-3 hover:bg-gray-100 rounded-xl transition-all duration-200 text-corporate-navy"
               title="Navigation Menu"
             >
               <Menu className="w-6 h-6" />
             </button>
             
             {dropdownOpen && (
-              <div className="absolute top-full left-0 mt-1 w-64 bg-white rounded-lg shadow-lg border border-gray-200 z-50 max-h-[80vh] overflow-y-auto">
-                <div className="py-2">
+              <div className="absolute top-full left-0 mt-2 w-72 bg-white rounded-2xl shadow-2xl border border-gray-100 z-50 max-h-[80vh] overflow-y-auto">
+                <div className="py-3">
                   {navigationItems
                     .filter(item => {
                       // Developer Tools only show in dev mode
@@ -165,8 +165,8 @@ const AppContent = ({
                           setCurrentScreen(item.screen);
                           setDropdownOpen(false);
                         }}
-                        className={`w-full text-left px-4 py-2.5 hover:bg-gray-100 transition-colors ${
-                          currentScreen === item.screen ? 'bg-corporate-teal text-white' : 'text-gray-700'
+                        className={`nav-item-corporate w-full text-left mx-2 ${
+                          currentScreen === item.screen ? 'active' : ''
                         }`}
                       >
                         {item.label}
@@ -176,11 +176,24 @@ const AppContent = ({
               </div>
             )}
           </div>
-          <h1 className="text-xl font-bold text-corporate-navy">
-            LeaderReps 
-            {isDeveloperMode && <span className="text-xs bg-orange-500 text-white px-2 py-1 rounded ml-2">DEV</span>}
-            {!isDeveloperMode && <span className={`text-xs text-white px-2 py-1 rounded ml-2 ${tierColors[simulatedTier]}`}>TEST: {tierLabels[simulatedTier]}</span>}
-          </h1>
+          <div className="flex items-center gap-3">
+            <h1 className="corporate-heading-md text-corporate-navy">
+              LeaderReps
+            </h1>
+            {isDeveloperMode && (
+              <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-orange-100 text-orange-700">
+                DEV
+              </span>
+            )}
+            {!isDeveloperMode && (
+              <span 
+                className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold text-white"
+                style={{ backgroundColor: tierColors[simulatedTier] }}
+              >
+                TEST: {tierLabels[simulatedTier]}
+              </span>
+            )}
+          </div>
         </div>
 
         <div className="flex items-center gap-3">

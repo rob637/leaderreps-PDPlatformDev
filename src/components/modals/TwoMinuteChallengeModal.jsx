@@ -4,8 +4,17 @@ import React, { useState, useMemo } from 'react';
 import { X, Zap, CheckCircle, CornerRightUp, AlertTriangle } from 'lucide-react';
 import { useAppServices } from '../../services/useAppServices.jsx';
 
+// LEADERREPS.COM OFFICIAL CORPORATE COLORS - VERIFIED 11/14/25
 const COLORS = {
-  NAVY: '#002E47', TEAL: '#47A88D', BLUE: '#2563EB', ORANGE: '#E04E1B', OFF_WHITE: '#FFFFFF',
+  // === PRIMARY BRAND COLORS (from leaderreps.com) ===
+  NAVY: '#002E47',        // Primary text, headers, navigation
+  ORANGE: '#E04E1B',      // Call-to-action buttons, highlights, alerts  
+  TEAL: '#47A88D',        // Secondary buttons, success states, accents
+  LIGHT_GRAY: '#FCFCFA',  // Page backgrounds, subtle surfaces
+  
+  // === SEMANTIC MAPPINGS (using ONLY corporate colors) ===
+  BLUE: '#002E47',        // Map to NAVY
+  OFF_WHITE: '#FCFCFA'    // Same as LIGHT_GRAY
 };
 
 // --- ENHANCEMENT: QUICK CHALLENGE CATALOG DELETED (Now loaded via service context) ---
@@ -124,7 +133,7 @@ const TwoMinuteChallengeModal = ({ isVisible, onClose, sourceScreen, onLogSucces
                     <Button 
                         onClick={handleLog} 
                         disabled={isLogging}
-                        className="w-full text-lg bg-[#2563EB] hover:bg-[#1E40AF]"
+                        className="w-full text-lg bg-[#47A88D] hover:opacity-90"
                     >
                         {isLogging ? 'Logging...' : 'I Did It! Log Rep Now'}
                     </Button>

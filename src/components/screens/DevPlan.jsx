@@ -31,7 +31,7 @@ const COLORS = {
 const Button = ({ children, onClick, disabled = false, variant = 'primary', className = '', ...rest }) => {
   let baseStyle = "px-6 py-3 rounded-xl font-semibold transition-all shadow-xl focus:outline-none focus:ring-4 text-white flex items-center justify-center";
   if (variant === 'primary') { baseStyle += ` bg-[${COLORS.TEAL}] hover:bg-[${COLORS.SUBTLE_TEAL}] focus:ring-[${COLORS.TEAL}]/50`; }
-  else if (variant === 'secondary') { baseStyle += ` bg-[${COLORS.ORANGE}] hover:bg-[#C33E12] focus:ring-[${COLORS.ORANGE}]/50`; }
+  else if (variant === 'secondary') { baseStyle += ` bg-[${COLORS.ORANGE}] hover:opacity-90 focus:ring-[${COLORS.ORANGE}]/50`; }
   else if (variant === 'outline') { baseStyle = `px-6 py-3 rounded-xl font-semibold transition-all shadow-md border-2 border-[${COLORS.TEAL}] text-[${COLORS.TEAL}] hover:bg-[${COLORS.TEAL}]/10 focus:ring-4 focus:ring-[${COLORS.TEAL}]/50 bg-[${COLORS.LIGHT_GRAY}] flex items-center justify-center`; }
   else if (variant === 'nav-back') { baseStyle = `px-4 py-2 rounded-lg font-medium transition-all shadow-sm border-2 border-gray-300 text-gray-700 hover:bg-gray-100 flex items-center justify-center`; }
   if (disabled) { baseStyle = "px-6 py-3 rounded-xl font-semibold bg-gray-300 text-gray-500 cursor-not-allowed shadow-inner transition-none flex items-center justify-center"; }
@@ -59,7 +59,7 @@ const Card = ({ children, title, icon: Icon, className = '', onClick, accent = '
       tabIndex={interactive ? 0 : undefined}
       onKeyDown={handleKeyDown}
       className={`relative p-6 rounded-2xl border-2 shadow-2xl transition-all duration-300 text-left ${className}`}
-      style={{ background: 'linear-gradient(180deg,#FFFFFF,#F9FAFB)', borderColor: COLORS.SUBTLE, color: COLORS.TEXT }}
+      style={{ background: `linear-gradient(180deg, ${COLORS.OFF_WHITE}, ${COLORS.LIGHT_GRAY})`, borderColor: COLORS.SUBTLE, color: COLORS.TEXT }}
       onClick={onClick}
     >
       <span style={{ position:'absolute', top:0, left:0, right:0, height:6, background: accentColor, borderTopLeftRadius:14, borderTopRightRadius:14 }} />

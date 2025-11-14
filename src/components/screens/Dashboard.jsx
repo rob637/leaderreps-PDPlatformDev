@@ -77,23 +77,22 @@ const GetStartedCard = ({ onNavigate, membershipData, developmentPlanData, curre
   if (currentTier === 'basic') {
     return (
       <Card accent="ORANGE">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          <div>
-            <h2 className="text-2xl font-bold" style={{ color: COLORS.NAVY }}>
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
+          <div className="flex-1">
+            <h2 className="corporate-heading-lg mb-3">
               Unlock Your Leadership Potential
             </h2>
-            <p className="text-base mt-1" style={{ color: COLORS.MUTED }}>
+            <p className="corporate-text-body">
               Upgrade to Arena Professional to access assessments, development plans, and accountability pods.
             </p>
           </div>
           <Button
             onClick={() => onNavigate('membership-upgrade')}
             variant="primary"
-            size="md"
-            className="flex-shrink-0 w-full sm:w-auto"
-            style={{ background: `linear-gradient(135deg, ${COLORS.ORANGE}, ${COLORS.TEAL})` }}
+            size="lg"
+            className="btn-corporate-primary flex-shrink-0 w-full sm:w-auto"
           >
-            View Plans <ArrowRight className="w-4 h-4 ml-2" />
+            View Plans <ArrowRight className="w-5 h-5 ml-2" />
           </Button>
         </div>
       </Card>
@@ -104,22 +103,22 @@ const GetStartedCard = ({ onNavigate, membershipData, developmentPlanData, curre
   if ((currentTier === 'professional' || currentTier === 'elite') && !hasCompletedPlan) {
     return (
       <Card accent="BLUE">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          <div>
-            <h2 className="text-2xl font-bold" style={{ color: COLORS.NAVY }}>
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
+          <div className="flex-1">
+            <h2 className="corporate-heading-lg mb-3">
               Create Your Development Plan
             </h2>
-            <p className="text-base mt-1" style={{ color: COLORS.MUTED }}>
+            <p className="corporate-text-body">
               Take your leadership assessment and create your personalized development plan.
             </p>
           </div>
           <Button
             onClick={() => onNavigate('development-plan')}
             variant="primary"
-            size="md"
-            className="flex-shrink-0 w-full sm:w-auto"
+            size="lg"
+            className="btn-corporate-primary flex-shrink-0 w-full sm:w-auto"
           >
-            Take Assessment <ArrowRight className="w-4 h-4 ml-2" />
+            Take Assessment <ArrowRight className="w-5 h-5 ml-2" />
           </Button>
         </div>
       </Card>
@@ -132,25 +131,25 @@ const GetStartedCard = ({ onNavigate, membershipData, developmentPlanData, curre
     
     return (
       <Card accent="TEAL">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          <div>
-            <h2 className="text-2xl font-bold" style={{ color: COLORS.NAVY }}>
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
+          <div className="flex-1">
+            <h2 className="corporate-heading-lg mb-3">
               This Week's Focus
             </h2>
-            <p className="text-lg font-semibold mt-1" style={{ color: COLORS.TEAL }}>
+            <p className="corporate-heading-md mb-2" style={{ color: COLORS.TEAL }}>
               {currentWeekFocus}
             </p>
-            <p className="text-sm mt-1" style={{ color: COLORS.MUTED }}>
+            <p className="corporate-text-muted">
               Continue building your skills in this key area
             </p>
           </div>
           <Button
             onClick={() => onNavigate('development-plan')}
             variant="outline"
-            size="md"
-            className="flex-shrink-0 w-full sm:w-auto"
+            size="lg"
+            className="btn-corporate-secondary flex-shrink-0 w-full sm:w-auto"
           >
-            View Your Plan <ArrowRight className="w-4 h-4 ml-2" />
+            View Your Plan <ArrowRight className="w-5 h-5 ml-2" />
           </Button>
         </div>
       </Card>
@@ -463,7 +462,7 @@ const Dashboard = (props) => {
 
   // --- RENDER ---
   return (
-    <div className="relative space-y-6 p-4 sm:p-6" style={{ color: COLORS.NAVY }}>
+    <div className="page-corporate container-corporate animate-corporate-fade-in">
       {/* Save indicator */}
       <SaveIndicator isSaving={isSaving} />
 
@@ -492,20 +491,27 @@ const Dashboard = (props) => {
       */}
 
       {/* Streak Tracker */}
-      {visibleComponents.includes('streak') && <StreakTracker progressData={progressData} />}
+      {visibleComponents.includes('streak') && (
+        <div className="section-corporate">
+          <StreakTracker progressData={progressData} />
+        </div>
+      )}
 
       {/* Get Started / Onboarding Card */}
       {visibleComponents.includes('getStarted') && (
-        <GetStartedCard
-          onNavigate={setCurrentScreen}
-          membershipData={membershipData}
-          developmentPlanData={developmentPlanData}
-          currentTier={currentTier}
-        />
+        <div className="section-corporate">
+          <GetStartedCard
+            onNavigate={setCurrentScreen}
+            membershipData={membershipData}
+            developmentPlanData={developmentPlanData}
+            currentTier={currentTier}
+          />
+        </div>
       )}
 
       {/* Dynamic Bookend (Morning/Evening Practice) */}
       {visibleComponents.includes('dynamicBookend') && (
+        <div className="section-corporate">
         <DynamicBookendContainer
           morningProps={{
             dailyWIN: morningWIN,
@@ -536,24 +542,31 @@ const Dashboard = (props) => {
           }}
           dailyPracticeData={{}}
         />
+        </div>
       )}
 
       {/* Development Plan Progress Link (Arena 1.0 – Show for Pro/Premium only) */}
       {visibleComponents.includes('devPlanProgress') && (isMemberPro || isMemberPremium) && (
-        <DevPlanProgressLink onNavigate={setCurrentScreen} />
+        <div className="section-corporate">
+          <DevPlanProgressLink onNavigate={setCurrentScreen} />
+        </div>
       )}
 
       {/* AI Coach Nudge (Arena 1.0 – Show for Premium only) */}
       {visibleComponents.includes('aiCoachNudge') && isMemberPremium && (
-        <AICoachNudge onOpenLab={() => setCurrentScreen('coaching-lab')} />
+        <div className="section-corporate">
+          <AICoachNudge onOpenLab={() => setCurrentScreen('coaching-lab')} />
+        </div>
       )}
 
       {/* Additional Reps (Bonus Exercises) (Arena 1.0 – Show for Pro/Premium only) */}
       {(isMemberPro || isMemberPremium) && bonusExercises.length > 0 && (
-        <AdditionalRepsCard
-          bonusExercises={bonusExercises}
-          onExerciseClick={handleBonusExerciseClick}
-        />
+        <div className="section-corporate">
+          <AdditionalRepsCard
+            bonusExercises={bonusExercises}
+            onExerciseClick={handleBonusExerciseClick}
+          />
+        </div>
       )}
 
       {/* Social Pod / Daily Tasks (Arena 1.0 Scope) */}

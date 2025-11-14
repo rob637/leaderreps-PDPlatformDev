@@ -13,25 +13,45 @@ import {
 /* =========================================================
    PALETTE & UI COMPONENTS (Standardized)
 ========================================================= */
-// --- Primary Color Palette ---
-const COLORS = { NAVY: '#002E47', TEAL: '#47A88D', BLUE: '#2563EB', ORANGE: '#E04E1B', GREEN: '#10B981', AMBER: '#F5A800', RED: '#E04E1B', LIGHT_GRAY: '#FCFCFA', OFF_WHITE: '#FFFFFF', SUBTLE: '#E5E7EB', TEXT: '#374151', MUTED: '#4B5563', PURPLE: '#7C3AED', BG: '#F9FAFB' }; // cite: App.jsx
+// LEADERREPS.COM OFFICIAL CORPORATE COLORS - VERIFIED 11/14/25
+const COLORS = {
+  // === PRIMARY BRAND COLORS (from leaderreps.com) ===
+  NAVY: '#002E47',        // Primary text, headers, navigation
+  ORANGE: '#E04E1B',      // Call-to-action buttons, highlights, alerts  
+  TEAL: '#47A88D',        // Secondary buttons, success states, accents
+  LIGHT_GRAY: '#FCFCFA',  // Page backgrounds, subtle surfaces
+  
+  // === SEMANTIC MAPPINGS (using ONLY corporate colors) ===
+  BLUE: '#002E47',        // Map to NAVY
+  GREEN: '#47A88D',       // Map to TEAL  
+  AMBER: '#E04E1B',       // Map to ORANGE
+  RED: '#E04E1B',         // Map to ORANGE
+  PURPLE: '#47A88D',      // Map to TEAL
+  
+  // === TEXT & BACKGROUNDS (corporate colors only) ===
+  TEXT: '#002E47',        // NAVY for all text
+  MUTED: '#47A88D',       // TEAL for muted text
+  BG: '#FCFCFA',          // LIGHT_GRAY for backgrounds
+  OFF_WHITE: '#FCFCFA',   // Same as BG
+  SUBTLE: '#47A88D'       // TEAL for subtle elements
+};
 
 // --- Standardized UI Components (Matches Dashboard/Dev Plan) ---
 const Button = ({ children, onClick, disabled = false, variant = 'primary', className = '', size = 'md', ...rest }) => { /* ... Re-use exact Button definition from Dashboard.jsx ... */
     let baseStyle = `inline-flex items-center justify-center gap-2 font-semibold rounded-xl transition-all duration-200 focus:outline-none focus:ring-4 disabled:opacity-50 disabled:cursor-not-allowed`;
     if (size === 'sm') baseStyle += ' px-4 py-2 text-sm'; else if (size === 'lg') baseStyle += ' px-8 py-4 text-lg'; else baseStyle += ' px-6 py-3 text-base'; // Default 'md'
-    if (variant === 'primary') baseStyle += ` bg-[${COLORS.TEAL}] text-white shadow-lg hover:bg-[#349881] focus:ring-[${COLORS.TEAL}]/50`;
-    else if (variant === 'secondary') baseStyle += ` bg-[${COLORS.ORANGE}] text-white shadow-lg hover:bg-[#C312] focus:ring-[${COLORS.ORANGE}]/50`;
+    if (variant === 'primary') baseStyle += ` bg-[${COLORS.TEAL}] text-white shadow-lg hover:opacity-90 focus:ring-[${COLORS.TEAL}]/50`;
+    else if (variant === 'secondary') baseStyle += ` bg-[${COLORS.ORANGE}] text-white shadow-lg hover:opacity-90 focus:ring-[${COLORS.ORANGE}]/50`;
     else if (variant === 'outline') baseStyle += ` bg-[${COLORS.OFF_WHITE}] text-[${COLORS.TEAL}] border-2 border-[${COLORS.TEAL}] shadow-md hover:bg-[${COLORS.TEAL}]/10 focus:ring-[${COLORS.TEAL}]/50`;
-    else if (variant === 'nav-back') baseStyle += ` bg-white text-gray-700 border border-gray-300 shadow-sm hover:bg-gray-100 focus:ring-gray-300/50 px-4 py-2 text-sm`;
-    else if (variant === 'ghost') baseStyle += ` bg-transparent text-gray-600 hover:bg-gray-100 focus:ring-gray-300/50 px-3 py-1.5 text-sm`;
-    if (disabled) baseStyle += ' bg-gray-300 text-gray-500 shadow-inner border-transparent hover:bg-gray-300';
+    else if (variant === 'nav-back') baseStyle += ` bg-[${COLORS.LIGHT_GRAY}] text-[${COLORS.NAVY}] border border-[${COLORS.TEAL}] shadow-sm hover:opacity-90 focus:ring-[${COLORS.TEAL}]/50 px-4 py-2 text-sm`;
+    else if (variant === 'ghost') baseStyle += ` bg-transparent text-[${COLORS.MUTED}] hover:bg-[${COLORS.LIGHT_GRAY}] focus:ring-[${COLORS.TEAL}]/50 px-3 py-1.5 text-sm`;
+    if (disabled) baseStyle += ` bg-[${COLORS.LIGHT_GRAY}] text-[${COLORS.MUTED}] shadow-inner border-transparent opacity-50 hover:bg-[${COLORS.LIGHT_GRAY}]`;
     return (<button {...rest} onClick={onClick} disabled={disabled} className={`${baseStyle} ${className}`}>{children}</button>);
 };
 const Card = ({ children, title, icon: Icon, className = '', onClick, accent = 'NAVY' }) => { /* ... Re-use exact Card definition from Dashboard.jsx ... */
     const interactive = !!onClick; const Tag = interactive ? 'button' : 'div'; const accentColor = COLORS[accent] || COLORS.NAVY; const handleKeyDown = (e) => { if (interactive && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); onClick?.(); } };
     return (
-        <Tag {...(interactive ? { type: 'button' } : {})} role={interactive ? 'button' : undefined} tabIndex={interactive ? 0 : undefined} onKeyDown={handleKeyDown} className={`relative p-6 rounded-2xl border-2 shadow-xl hover:shadow-lg transition-all duration-300 text-left ${className}`} style={{ background: 'linear-gradient(180deg,#FFFFFF, #FCFCFA)', borderColor: COLORS.SUBTLE, color: COLORS.NAVY }} onClick={onClick}>
+        <Tag {...(interactive ? { type: 'button' } : {})} role={interactive ? 'button' : undefined} tabIndex={interactive ? 0 : undefined} onKeyDown={handleKeyDown} className={`relative p-6 rounded-2xl border-2 shadow-xl hover:shadow-lg transition-all duration-300 text-left ${className}`} style={{ background: `linear-gradient(180deg, ${COLORS.OFF_WHITE}, ${COLORS.LIGHT_GRAY})`, borderColor: COLORS.SUBTLE, color: COLORS.NAVY }} onClick={onClick}>
             <span style={{ position:'absolute', top:0, left:0, right:0, height:6, background: accentColor, borderTopLeftRadius:14, borderTopRightRadius:14 }} />
             {Icon && title && ( <div className="flex items-center gap-3 mb-4"> <div className="w-10 h-10 rounded-lg flex items-center justify-center border flex-shrink-0" style={{ borderColor: COLORS.SUBTLE, background: COLORS.LIGHT_GRAY }}> <Icon className="w-5 h-5" style={{ color: accentColor }} /> </div> <h2 className="text-xl font-extrabold" style={{ color: COLORS.NAVY }}>{title}</h2> </div> )}
             {!Icon && title && <h2 className="text-xl font-extrabold mb-4 border-b pb-2" style={{ color: COLORS.NAVY, borderColor: COLORS.SUBTLE }}>{title}</h2>}
