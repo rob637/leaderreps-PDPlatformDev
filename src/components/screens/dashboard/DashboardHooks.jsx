@@ -456,9 +456,11 @@ export const useDashboard = ({
         'morningBookend.dailyWIN': morningWIN
       });
       console.log('[Dashboard] WIN saved');
+      // Visual feedback for successful save
+      alert('✅ Today\'s WIN saved successfully!');
     } catch (error) {
       console.error('[Dashboard] Error saving WIN:', error);
-      alert('Error saving WIN. Please try again.');
+      alert('❌ Error saving WIN. Please try again.');
     }
   }, [morningWIN, updateDailyPracticeData]); // Explicitly include prop
 

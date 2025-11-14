@@ -16,9 +16,10 @@
     
     <!-- BOOT AND ERROR OVERLAY SCRIPTS -->
     <script>
+      console.warn('🚀 INLINE SCRIPT EXECUTING');
       (function () {
         const steps = [];
-        function mark(s) { steps.push(s); console.log('[BOOT]', s); }
+        function mark(s) { steps.push(s); console.log('[BOOT]', s); console.warn('[BOOT]', s); }
         function overlay(msg) {
           const div = document.createElement('div');
           div.id = '__boot_overlay__';

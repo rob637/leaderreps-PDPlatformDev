@@ -1,11 +1,9 @@
 // src/components/screens/MembershipUpgrade.jsx
 // Arena v1.0 Scope: Membership upgrade page showing tier comparison
-console.log('🔥 [MembershipUpgrade] MODULE LOADING - This should appear when lazy import starts');
 import React from 'react';
 import { useAppServices } from '../../services/useAppServices.jsx';
 import { MEMBERSHIP_TIERS } from '../../services/membershipService.js';
 import { ArrowLeft, Check, Crown, Zap, Target, Users, Calendar, BookOpen, MessageSquare, Bot } from 'lucide-react';
-console.log('✅ [MembershipUpgrade] ALL IMPORTS SUCCESSFUL');
 
 // LEADERREPS.COM OFFICIAL CORPORATE COLORS - VERIFIED 11/12/25
 const COLORS = { 

@@ -176,16 +176,11 @@ const AppContent = ({
               </div>
             )}
           </div>
-          <div className="flex items-center gap-2">
-            <img 
-              src="/icons/icon-192x192.png" 
-              alt="LeaderReps Icon" 
-              className="h-8 w-8"
-            />
-            <span className="text-xl font-bold" style={{ color: '#002E47' }}>LeaderReps</span>
+          <h1 className="text-xl font-bold text-corporate-navy">
+            LeaderReps 
             {isDeveloperMode && <span className="text-xs bg-orange-500 text-white px-2 py-1 rounded ml-2">DEV</span>}
             {!isDeveloperMode && <span className={`text-xs text-white px-2 py-1 rounded ml-2 ${tierColors[simulatedTier]}`}>TEST: {tierLabels[simulatedTier]}</span>}
-          </div>
+          </h1>
         </div>
 
         <div className="flex items-center gap-3">
@@ -195,7 +190,7 @@ const AppContent = ({
               <select
                 value={simulatedTier}
                 onChange={(e) => handleTierChange(e.target.value)}
-                className={`px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-offset-1 text-white border-none cursor-pointer ${tierColors[simulatedTier]}`}
+                className={`px-2 py-1.5 rounded-md text-xs font-normal transition-all duration-200 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-offset-1 text-white border-none cursor-pointer ${tierColors[simulatedTier]}`}
                 title="Simulate Membership Tier (Dev Only)"
               >
                 <option value="basic">Basic Tier</option>
@@ -207,14 +202,14 @@ const AppContent = ({
           
           <button
             onClick={toggleDeveloperMode}
-            className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-offset-1 ${
+            className={`flex items-center gap-1 px-2 py-1.5 rounded-md text-xs font-normal transition-colors hover:bg-gray-100 focus:outline-none ${
               isDeveloperMode 
                 ? 'bg-orange-500 text-white' 
-                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                : 'text-gray-600 hover:text-gray-800'
             }`}
             title={isDeveloperMode ? "Switch to User Mode" : "Switch to Developer Mode"}
           >
-            <Settings className="w-4 h-4" />
+            <Settings className="w-3.5 h-3.5" />
             <span className="hidden sm:inline">{isDeveloperMode ? 'DEV' : 'USER'}</span>
           </button>
           <PWAInstall />

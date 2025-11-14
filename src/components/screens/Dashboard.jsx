@@ -189,6 +189,7 @@ const Dashboard = (props) => {
     dailyPracticeData, 
     updateDailyPracticeData,
     membershipData,
+    setCurrentScreen: _setCurrentScreen,
     userData,
     localAnchor,
     setLocalAnchor,
@@ -199,8 +200,8 @@ const Dashboard = (props) => {
     repsData
   } = useAppServices();
   
-  // Get setCurrentScreen and simulatedTier from props (passed from ScreenRouter)
-  const { simulatedTier, setCurrentScreen: _setCurrentScreen } = props;
+  // Get simulatedTier from props (passed from ScreenRouter)
+  const { simulatedTier } = props;
   
   const {
     // Add anchor data from DashboardHooks
@@ -225,16 +226,13 @@ const Dashboard = (props) => {
     morningWIN,
     setMorningWIN,
     otherTasks,
-    showLIS,
-    setShowLIS,
     handleAddTask,
     handleToggleTask,
     handleRemoveTask,
     handleToggleWIN,
-    handleSaveWIN,
     handleSaveMorningBookend,
-    amWinCompleted,
-    amCompletedAt
+    handleSaveWIN,
+    amWinCompleted
   } = useDashboard({
     ...props,
     dailyPracticeData,
@@ -481,7 +479,8 @@ const Dashboard = (props) => {
         />
       ))}
 
-      {/* Mode Switch (Arena 1.0 – Show for Pro/Premium only) */}
+      {/* Mode Switch (Arena 1.0 – Show for Pro/Premium only) - COMMENTED OUT FOR NOW */}
+      {/* TEMPORARILY COMMENTED OUT - Solo Mode functionality disabled
       {visibleComponents.includes('mode') && (isMemberPro || isMemberPremium) && (
         <ModeSwitch
           dailyMode={dailyMode}
@@ -490,6 +489,7 @@ const Dashboard = (props) => {
           isMemberPremium={isMemberPremium}
         />
       )}
+      */}
 
       {/* Streak Tracker */}
       {visibleComponents.includes('streak') && <StreakTracker progressData={progressData} />}
@@ -510,18 +510,16 @@ const Dashboard = (props) => {
           morningProps={{
             dailyWIN: morningWIN,
             setDailyWIN: setMorningWIN,
-            otherTasks: otherTasks,
+            otherTasks,
             onAddTask: handleAddTask,
             onToggleTask: handleToggleTask,
             onRemoveTask: handleRemoveTask,
-            showLIS: showLIS,
-            setShowLIS: setShowLIS,
-            identityStatement: identityStatement,
+            showLIS: false,
+            setShowLIS: () => {},
+            identityStatement,
             onSave: handleSaveMorningBookend,
-            isSaving: isSavingBookend,
-            onToggleWIN: handleToggleWIN,
             onSaveWIN: handleSaveWIN,
-            completedAt: amCompletedAt,
+            isSaving: isSavingBookend,
             winCompleted: amWinCompleted
           }}
           eveningProps={{
@@ -547,7 +545,7 @@ const Dashboard = (props) => {
 
       {/* AI Coach Nudge (Arena 1.0 – Show for Premium only) */}
       {visibleComponents.includes('aiCoachNudge') && isMemberPremium && (
-        <AICoachNudge onNavigate={setCurrentScreen} />
+        <AICoachNudge onOpenLab={() => setCurrentScreen('coaching-lab')} />
       )}
 
       {/* Additional Reps (Bonus Exercises) (Arena 1.0 – Show for Pro/Premium only) */}

@@ -9,7 +9,7 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['icons/icon-192x192.png', 'icons/icon-512x512.png'], 
+      includeAssets: ['icons/icon-512x512.svg'], 
       
       manifest: {
         name: 'LeaderReps PD Platform',
@@ -21,16 +21,10 @@ export default defineConfig({
         start_url: '/',
         icons: [
           {
-            src: 'icons/icon-192x192.png',
-            sizes: '192x192',
-            type: 'image/png',
-            purpose: 'any maskable'
-          },
-          {
-            src: 'icons/icon-512x512.png',
+            src: 'icons/icon-512x512.svg',
             sizes: '512x512',
-            type: 'image/png',
-            purpose: 'any maskable'
+            type: 'image/svg+xml',
+            purpose: 'any'
           }
         ],
       },
