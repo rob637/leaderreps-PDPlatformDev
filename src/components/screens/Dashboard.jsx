@@ -72,10 +72,6 @@ const GetStartedCard = ({ onNavigate, membershipData, developmentPlanData, curre
   const hasCompletedPlan = developmentPlanData?.currentPlan && 
     developmentPlanData.currentPlan.focusAreas && 
     developmentPlanData.currentPlan.focusAreas.length > 0;
-  
-  console.log('[GetStartedCard] Rendering with tier:', currentTier, 'hasCompletedPlan:', hasCompletedPlan);
-  console.log('[GetStartedCard] onNavigate type:', typeof onNavigate);
-  console.log('[GetStartedCard] onNavigate function:', onNavigate);
 
   // Base members -> Show upgrade page
   if (currentTier === 'basic') {
@@ -91,14 +87,7 @@ const GetStartedCard = ({ onNavigate, membershipData, developmentPlanData, curre
             </p>
           </div>
           <Button
-            onClick={() => {
-              alert('🔥 BUTTON CLICKED! About to navigate to membership-upgrade');
-              console.log('[Dashboard] View Plans button clicked, navigating to membership-upgrade');
-              console.log('[Dashboard] onNavigate:', onNavigate);
-              console.log('[Dashboard] Calling onNavigate now...');
-              onNavigate('membership-upgrade');
-              console.log('[Dashboard] onNavigate called');
-            }}
+            onClick={() => onNavigate('membership-upgrade')}
             variant="primary"
             size="md"
             className="flex-shrink-0 w-full sm:w-auto"

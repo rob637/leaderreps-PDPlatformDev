@@ -59,6 +59,12 @@ function App() {
   const [isAuthReady, setIsAuthReady] = useState(false);
   const [currentScreen, setCurrentScreen] = useState('dashboard');
   const [navParams, setNavParams] = useState({});
+  
+  // Debug logging for screen changes
+  useEffect(() => {
+    console.log('[App.jsx] currentScreen changed to:', currentScreen);
+    alert(`🔥 SCREEN CHANGE: ${currentScreen}`);
+  }, [currentScreen]);
   const [isNavExpanded, setIsNavExpanded] = useState(true);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
 
