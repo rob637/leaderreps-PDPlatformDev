@@ -1,3 +1,6 @@
+console.log('[MAIN.JSX] ========== MODULE LOADING STARTED ==========');
+console.log('[MAIN.JSX] Timestamp:', new Date().toISOString());
+
 import React, { Suspense, lazy } from 'react';
 import { createRoot } from 'react-dom/client';
 import './styles/global.css';
