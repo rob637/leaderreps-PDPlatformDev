@@ -236,6 +236,13 @@ const TierCard = ({ tier, isCurrentTier = false, onUpgrade, isPopular = false })
 const MembershipUpgrade = ({ setCurrentScreen }) => {
   const { membershipData } = useAppServices();
   const currentTier = membershipData?.currentTier || 'basic';
+  
+  console.log('[MembershipUpgrade] DEBUG:', { 
+    hasMembershipData: !!membershipData, 
+    currentTier,
+    hasSetCurrentScreen: !!setCurrentScreen,
+    setCurrentScreenType: typeof setCurrentScreen
+  });
 
   const handleUpgrade = (tier) => {
     // In a real app, this would integrate with Stripe/payment processor
