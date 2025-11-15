@@ -99,23 +99,35 @@ export default function DevelopmentPlan() {
     navigate
   } = services || {};
   
-  // Width debugging - log on mount
-  React.useEffect(() => {
+  // Width debugging - log on mount with full hierarchy
+  useEffect(() => {
     setTimeout(() => {
-      const container = document.querySelector('.page-corporate');
-      if (container) {
-        const rect = container.getBoundingClientRect();
-        const computed = window.getComputedStyle(container);
-        console.log('📐 [DEVELOPMENT PLAN] Width Measurements:', {
-          component: 'DevelopmentPlan',
-          actualWidth: `${rect.width}px`,
-          maxWidth: computed.maxWidth,
-          padding: computed.padding,
-          margin: computed.margin,
-          boxSizing: computed.boxSizing,
-          classList: container.className
-        });
-      }
+      const pageCorporate = document.querySelector('.page-corporate');
+      const contentFull = document.querySelector('.content-full');
+      const mainContent = document.querySelector('#main-content');
+      
+      console.log('📐 [DEVELOPMENT PLAN] Width Hierarchy:', {
+        component: 'DevelopmentPlan',
+        pageCorporate: pageCorporate ? {
+          width: `${pageCorporate.getBoundingClientRect().width}px`,
+          maxWidth: window.getComputedStyle(pageCorporate).maxWidth,
+          padding: window.getComputedStyle(pageCorporate).padding,
+          margin: window.getComputedStyle(pageCorporate).margin,
+          classList: pageCorporate.className
+        } : 'NOT FOUND',
+        contentFull: contentFull ? {
+          width: `${contentFull.getBoundingClientRect().width}px`,
+          maxWidth: window.getComputedStyle(contentFull).maxWidth,
+          padding: window.getComputedStyle(contentFull).padding,
+          classList: contentFull.className
+        } : 'NOT FOUND',
+        mainContent: mainContent ? {
+          width: `${mainContent.getBoundingClientRect().width}px`,
+          maxWidth: window.getComputedStyle(mainContent).maxWidth,
+          padding: window.getComputedStyle(mainContent).padding,
+          classList: mainContent.className
+        } : 'NOT FOUND'
+      });
     }, 100);
   }, []);
 
