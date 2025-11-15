@@ -236,6 +236,10 @@ const MembershipUpgrade = ({ setCurrentScreen, simulatedTier }) => {
   // Match Dashboard's exact tier logic - use simulatedTier if provided (from toggle), otherwise use actual membership tier
   const currentTier = simulatedTier || membershipData?.currentTier || 'basic';
   
+  // Check if developer mode is on
+  const isDeveloperMode = localStorage.getItem('arena-developer-mode') === 'true';
+  const localStorageTier = localStorage.getItem('arena-simulated-tier');
+  
   // Scroll to top when component mounts to ensure users see the full page
   React.useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -244,7 +248,6 @@ const MembershipUpgrade = ({ setCurrentScreen, simulatedTier }) => {
   const handleUpgrade = (tier) => {
     // In a real app, this would integrate with Stripe/payment processor
     // For now, just show an alert
-    const isDeveloperMode = localStorage.getItem('arena-developer-mode') === 'true';
     if (isDeveloperMode) {
       alert(`Upgrade to ${MEMBERSHIP_TIERS[tier].name} - Payment integration coming soon!`);
     }
@@ -253,6 +256,19 @@ const MembershipUpgrade = ({ setCurrentScreen, simulatedTier }) => {
   return (
     <div className="page-corporate container-corporate animate-corporate-fade-in">
       <div className="content-full">
+        {/* Debug Panel - Only show in developer mode */}
+        {isDeveloperMode && (
+          <div className="mb-4 p-4 bg-yellow-50 border-2 border-yellow-400 rounded-lg">
+            <div className="font-bold text-yellow-800 mb-2">🔧 Debug Info:</div>
+            <div className="text-sm text-yellow-900 space-y-1">
+              <div><strong>simulatedTier prop:</strong> {simulatedTier || 'undefined'}</div>
+              <div><strong>membershipData tier:</strong> {membershipData?.currentTier || 'undefined'}</div>
+              <div><strong>localStorage tier:</strong> {localStorageTier || 'not set'}</div>
+              <div><strong>computed currentTier:</strong> {currentTier}</div>
+            </div>
+          </div>
+        )}
+        
         {/* Back Button */}
         <div className="flex items-center gap-2 mb-6 text-gray-600 hover:text-gray-800 cursor-pointer transition-colors" onClick={() => setCurrentScreen('dashboard')}>
           <ArrowLeft className="w-4 h-4" />
