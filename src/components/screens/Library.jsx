@@ -154,10 +154,12 @@ const Library = ({ simulatedTier }) => {
           <div className="absolute top-8 right-1/4 w-4 h-4 rounded-full animate-bounce" style={{ backgroundColor: `${COLORS.ORANGE}30`, animationDelay: '1s' }}></div>
           <div className="absolute top-4 left-3/4 w-5 h-5 rounded-full animate-bounce" style={{ backgroundColor: `${COLORS.NAVY}30`, animationDelay: '2s' }}></div>
           
-          <div className="mb-4">
-            <h1 className="corporate-heading-xl text-black">
+          <div className="flex items-center justify-center gap-2 mb-4">
+            <BookOpen className='w-8 h-8' style={{color: COLORS.TEAL}}/>
+            <h1 className="corporate-heading-xl" style={{ color: COLORS.NAVY }}>
               Leadership Library
             </h1>
+            <BookOpen className='w-8 h-8' style={{color: COLORS.TEAL}}/>
           </div>
           
           <p className="corporate-text-body mx-auto mb-8 px-4">

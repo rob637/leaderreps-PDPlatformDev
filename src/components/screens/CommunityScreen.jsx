@@ -509,18 +509,17 @@ const CommunityScreen = () => {
             </div>
 
             {/* Header */}
-            <header className='flex items-center gap-4 border-b-2 pb-3 mb-8' style={{borderColor: COLORS.NAVY+'30'}}>
-                <Users className='w-10 h-10 flex-shrink-0' style={{color: COLORS.TEAL}}/>
-                <div className="flex-1">
-                     <div className="flex items-center gap-4 mb-2">
-                         <h1 className="corporate-heading-xl" style={{ color: COLORS.NAVY }}>Leadership Community</h1>
-                         {!hasCommunityAccess && (
-                             <span className="inline-block bg-orange-100 text-orange-800 px-3 py-1 rounded-full text-sm font-semibold">Requires Pro Tier</span>
-                         )}
-                     </div>
-                     <p className="corporate-text-body text-gray-600">Connect, share insights, and grow with fellow leaders.</p>
+            <div className="text-center mb-12">
+                <div className="flex items-center justify-center gap-2 mb-4">
+                    <Users className='w-8 h-8' style={{color: COLORS.TEAL}}/>
+                    <h1 className="corporate-heading-xl" style={{ color: COLORS.NAVY }}>Leadership Community</h1>
+                    <Users className='w-8 h-8' style={{color: COLORS.TEAL}}/>
                 </div>
-            </header>
+                {!hasCommunityAccess && (
+                    <span className="inline-block bg-orange-100 text-orange-800 px-3 py-1 rounded-full text-sm font-semibold mb-4">Requires Pro Tier</span>
+                )}
+                <p className="corporate-text-body text-gray-600 mx-auto px-4">Connect, share insights, and grow with fellow leaders.</p>
+            </div>
 
             {/* Main Layout Grid (Sidebar + Content) */}
             <div className={`grid grid-cols-1 lg:grid-cols-6 gap-3 ${!hasCommunityAccess ? 'opacity-60 pointer-events-none' : ''}`}>

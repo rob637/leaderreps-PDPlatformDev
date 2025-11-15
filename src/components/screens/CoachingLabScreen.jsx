@@ -10,7 +10,7 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useAppServices } from '../../services/useAppServices.jsx';
 import { membershipService } from '../../services/membershipService.js';
 import { useNavigation } from '../../providers/NavigationProvider.jsx'; 
-import { AlertTriangle, ArrowLeft, BarChart3, Briefcase, CheckCircle, Clock, CornerRightUp, Cpu, Eye, HeartPulse, Info, Lightbulb, Mic, Play, PlusCircle, Send, ShieldCheck, Star, Target, TrendingUp, Users, X, Zap } from 'lucide-react'; 
+import { AlertTriangle, ArrowLeft, BarChart3, Beaker, Briefcase, CheckCircle, Clock, CornerRightUp, Cpu, Eye, HeartPulse, Info, Lightbulb, Mic, Play, PlusCircle, Send, ShieldCheck, Star, Target, TrendingUp, Users, X, Zap } from 'lucide-react'; 
 import { COLORS, COMPLEXITY_MAP } from './labs/labConstants.js';
 
 /* =========================================================
@@ -1723,13 +1723,17 @@ export default function CoachingLabScreen() {
                             </div>
                         </div>
                         
-                        <div className="flex items-center gap-4 mb-4">
-                            <h1 className="corporate-heading-xl" style={{ color: '#002E47' }}>Coaching Lab</h1>
+                        <div className="text-center mb-12">
+                            <div className="flex items-center justify-center gap-2 mb-4">
+                                <Beaker className='w-8 h-8' style={{color: COLORS.TEAL}}/>
+                                <h1 className="corporate-heading-xl" style={{ color: COLORS.NAVY }}>Coaching Lab</h1>
+                                <Beaker className='w-8 h-8' style={{color: COLORS.TEAL}}/>
+                            </div>
                             {!hasCoachingAccess && (
-                                <span className="inline-block bg-orange-100 text-orange-800 px-3 py-1 rounded-full text-sm font-semibold">Requires Pro Tier</span>
+                                <span className="inline-block bg-orange-100 text-orange-800 px-3 py-1 rounded-full text-sm font-semibold mb-4">Requires Pro Tier</span>
                             )}
+                            <p className="corporate-text-body text-gray-600 mx-auto px-4">Welcome to the Coaching Lab. Select a tool to build your leadership skills.</p>
                         </div>
-                        <p className="corporate-text-body text-gray-600 mb-8">Welcome to the Coaching Lab. Select a tool to build your leadership skills.</p>
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                             <Card title="Scenario Library" icon={Briefcase} onClick={hasCoachingAccess ? () => setView('scenario-library') : undefined}>
                                 <p className="text-sm text-gray-600 mb-3">Practice high-stakes conversations in a realistic AI role-play simulator.</p>

@@ -351,8 +351,8 @@
   padding-right: var(--spacing-sm);
   padding-top: var(--spacing-sm);
   padding-bottom: var(--spacing-sm);
-  /* Consistent standard width across all screens */
-  max-width: 1200px;
+  /* Wider container for all screens to match */
+  max-width: 1400px;
 }
 
 @media (min-width: 640px) {
