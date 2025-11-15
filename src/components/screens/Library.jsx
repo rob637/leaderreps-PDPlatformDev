@@ -149,12 +149,10 @@ const Library = ({ simulatedTier }) => {
           <div className="absolute top-8 right-1/4 w-4 h-4 rounded-full animate-bounce" style={{ backgroundColor: `${COLORS.ORANGE}30`, animationDelay: '1s' }}></div>
           <div className="absolute top-4 left-3/4 w-5 h-5 rounded-full animate-bounce" style={{ backgroundColor: `${COLORS.NAVY}30`, animationDelay: '2s' }}></div>
           
-          <div className="flex items-center justify-center gap-2 mb-4">
-            <Sparkles className="w-8 h-8 animate-pulse" style={{ color: COLORS.TEAL }} />
-            <h1 className="corporate-heading-xl bg-gradient-to-r from-teal-600 via-navy-600 to-orange-600 bg-clip-text text-transparent">
+          <div className="mb-4">
+            <h1 className="corporate-heading-xl text-black">
               Leadership Library
             </h1>
-            <Sparkles className="w-8 h-8 animate-pulse" style={{ color: COLORS.ORANGE }} />
           </div>
           
           <p className="corporate-text-body mx-auto mb-8 px-4">
@@ -206,64 +204,15 @@ const Library = ({ simulatedTier }) => {
                 description={item.description}
                 icon={item.icon}
                 onClick={() => handleCardClick(item)}
-                disabled={!hasAccess}
-                requiredTier={item.requiredTier}
+                disabled={false}
+                requiredTier={hasAccess ? null : item.requiredTier}
               />
             );
           })}
           </div>
         </div>
 
-        {/* Success Stories */}
-        <div className="mb-12">
-          <div className="text-center mb-8">
-            <h2 className="text-2xl font-bold mb-4" style={{ color: COLORS.NAVY }}>🎯 Member Success Stories</h2>
-            <p className="text-gray-600 max-w-2xl mx-auto">
-              See how our leadership library is transforming careers and teams
-            </p>
-          </div>
-          
-          <div className="grid md:grid-cols-3 gap-6">
-            <div className="bg-white rounded-xl p-6 shadow-lg border-l-4" style={{ borderColor: COLORS.TEAL }}>
-              <div className="flex items-center gap-3 mb-3">
-                <div className="w-10 h-10 rounded-full bg-teal-100 flex items-center justify-center">
-                  <Users className="w-5 h-5" style={{ color: COLORS.TEAL }} />
-                </div>
-                <div>
-                  <p className="font-semibold text-sm">Sarah M., Director</p>
-                  <p className="text-xs text-gray-500">Tech Startup</p>
-                </div>
-              </div>
-              <p className="text-sm italic text-gray-700">"The Strategic Thinking Academy completely changed how I approach business planning. Got promoted to VP within 6 months."</p>
-            </div>
-            
-            <div className="bg-white rounded-xl p-6 shadow-lg border-l-4" style={{ borderColor: COLORS.NAVY }}>
-              <div className="flex items-center gap-3 mb-3">
-                <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
-                  <TrendingUp className="w-5 h-5" style={{ color: COLORS.NAVY }} />
-                </div>
-                <div>
-                  <p className="font-semibold text-sm">Marcus R., Manager</p>
-                  <p className="text-xs text-gray-500">Fortune 500</p>
-                </div>
-              </div>
-              <p className="text-sm italic text-gray-700">"The feedback frameworks from the readings section helped me build the highest-performing team in our division."</p>
-            </div>
-            
-            <div className="bg-white rounded-xl p-6 shadow-lg border-l-4" style={{ borderColor: COLORS.ORANGE }}>
-              <div className="flex items-center gap-3 mb-3">
-                <div className="w-10 h-10 rounded-full bg-orange-100 flex items-center justify-center">
-                  <Star className="w-5 h-5" style={{ color: COLORS.ORANGE }} />
-                </div>
-                <div>
-                  <p className="font-semibold text-sm">Jennifer L., VP</p>
-                  <p className="text-xs text-gray-500">Healthcare</p>
-                </div>
-              </div>
-              <p className="text-sm italic text-gray-700">"Executive Presence Masterclass was a game-changer. Now I command the room in every board meeting."</p>
-            </div>
-          </div>
-        </div>
+
         
         {/* Upgrade CTA for Basic Users */}
         {currentTier === 'basic' && (

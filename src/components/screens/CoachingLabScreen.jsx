@@ -1763,7 +1763,7 @@ export default function CoachingLabScreen() {
 
     return (
         <div className="page-corporate container-corporate animate-corporate-fade-in">
-            <div className="content-wide">
+            <div className="content-full">
                 <div className={`relative ${!hasCoachingAccess ? 'opacity-60 pointer-events-none' : ''}`}>
                     {renderView()}
                 </div>
