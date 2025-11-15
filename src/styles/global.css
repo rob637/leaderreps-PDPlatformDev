@@ -507,10 +507,9 @@
 }
 
 #root {
-  /* Removed max-width constraint to allow screens to use their own container-corporate sizing */
+  max-width: 1280px;
   width: 100%;
   margin: 0 auto;
-  /* Removed padding - individual screens handle their own padding via container-corporate */
   text-align: center;
 }
 
