@@ -163,6 +163,10 @@ const AppContent = ({
     setIsMobileOpen,
   ]);
   const { navigate, isAdmin, membershipData } = useAppServices();
+  
+  // Debug logging
+  console.log('[AppContent] navigate function:', typeof navigate, navigate);
+  console.log('[AppContent] currentScreen:', currentScreen);
 
   // Navigation items for dropdown menu
   const currentTier = isDeveloperMode ? 'elite' : simulatedTier;
@@ -237,7 +241,13 @@ const AppContent = ({
                       <button
                         key={item.screen}
                         onClick={() => {
-                          navigate(item.screen);
+                          alert(`Button clicked: ${item.screen}\nnavigate type: ${typeof navigate}\nnavigate exists: ${!!navigate}`);
+                          if (navigate) {
+                            navigate(item.screen);
+                            alert(`navigate() called for: ${item.screen}`);
+                          } else {
+                            alert('ERROR: navigate is undefined!');
+                          }
                           setDropdownOpen(false);
                         }}
                         className={`nav-item-corporate w-full text-left mx-2 ${
