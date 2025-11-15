@@ -70,10 +70,14 @@ const sanitizeTimestamps = (obj) => {
 
 
 // --- Helper Components (Membership-Aware Start Card per Arena v1.0 Scope) ---
-const GetStartedCard = ({ onNavigate, membershipData, developmentPlanData, currentTier, userData }) => {
+const GetStartedCard = ({ onNavigate, membershipData, developmentPlanData, currentTier, userData, identityStatement, habitAnchor, whyStatement }) => {
+  const [showAnchors, setShowAnchors] = useState(false);
+  
   const hasCompletedPlan = developmentPlanData?.currentPlan && 
     developmentPlanData.currentPlan.focusAreas && 
     developmentPlanData.currentPlan.focusAreas.length > 0;
+  
+  const hasAnyAnchor = identityStatement || habitAnchor || whyStatement;
 
   // Base members -> Show upgrade page
   if (currentTier === 'basic') {
@@ -141,26 +145,65 @@ const GetStartedCard = ({ onNavigate, membershipData, developmentPlanData, curre
     
     return (
       <Card accent="TEAL">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:p-4 lg:p-6">
-          <div className="flex-1">
-            <h2 className="corporate-heading-lg mb-3">
-              This Week's Focus
-            </h2>
-            <p className="corporate-heading-md mb-2" style={{ color: COLORS.TEAL }}>
-              {currentWeekFocus}
-            </p>
-            <p className="corporate-text-muted">
-              Continue building your skills in this key area
-            </p>
+        <div className="flex flex-col gap-3 sm:p-4 lg:p-6">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+            <div className="flex-1">
+              <h2 className="corporate-heading-lg mb-3">
+                This Week's Focus
+              </h2>
+              <p className="corporate-heading-md mb-2" style={{ color: COLORS.TEAL }}>
+                {currentWeekFocus}
+              </p>
+              <p className="corporate-text-muted">
+                Continue building your skills in this key area
+              </p>
+            </div>
+            <Button
+              onClick={() => onNavigate('development-plan')}
+              variant="outline"
+              size="lg"
+              className="btn-corporate-secondary flex-shrink-0 w-full sm:w-auto"
+            >
+              View Your Plan <ArrowRight className="w-5 h-5 ml-2" />
+            </Button>
           </div>
-          <Button
-            onClick={() => onNavigate('development-plan')}
-            variant="outline"
-            size="lg"
-            className="btn-corporate-secondary flex-shrink-0 w-full sm:w-auto"
-          >
-            View Your Plan <ArrowRight className="w-5 h-5 ml-2" />
-          </Button>
+          
+          {/* Identity Anchors Dropdown */}
+          {hasAnyAnchor && (
+            <div className="mt-2">
+              <button
+                onClick={() => setShowAnchors(!showAnchors)}
+                className="flex items-center gap-1 text-xs text-gray-500 hover:text-gray-700 transition-colors"
+                title="View your identity anchors"
+              >
+                <span>Identity Anchors</span>
+                {showAnchors ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+              </button>
+              
+              {showAnchors && (
+                <div className="mt-2 space-y-2 text-sm pl-2">
+                  {identityStatement && (
+                    <div>
+                      <p className="font-medium text-xs text-gray-500">Identity:</p>
+                      <p className="text-gray-700 text-sm">{identityStatement}</p>
+                    </div>
+                  )}
+                  {habitAnchor && (
+                    <div>
+                      <p className="font-medium text-xs text-gray-500">Habit:</p>
+                      <p className="text-gray-700 text-sm">{habitAnchor}</p>
+                    </div>
+                  )}
+                  {whyStatement && (
+                    <div>
+                      <p className="font-medium text-xs text-gray-500">Why:</p>
+                      <p className="text-gray-700 text-sm">{whyStatement}</p>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </Card>
     );
@@ -246,7 +289,6 @@ const Dashboard = (props) => {
     winsList,
     handleDeleteWin
   } = useDashboard({
-    ...props,
     dailyPracticeData,
     updateDailyPracticeData
   });
@@ -281,14 +323,13 @@ const Dashboard = (props) => {
   // Use simulatedTier if available (for testing), otherwise use actual membershipData
   const currentTier = simulatedTier || membershipData?.currentTier || 'basic';
   
-  console.log('📊 [DASHBOARD] Tier state:', { 
-    simulatedTier, 
-    membershipTier: membershipData?.currentTier, 
-    computedCurrentTier: currentTier,
-    isDeveloperMode 
-  });
-  const isMemberPro = membershipService.hasAccess(currentTier, 'professional');
-  const isMemberPremium = membershipService.hasAccess(currentTier, 'elite');
+  const isMemberPro = useMemo(() => {
+    return membershipService.hasAccess(currentTier, 'professional');
+  }, [currentTier]);
+  
+  const isMemberPremium = useMemo(() => {
+    return membershipService.hasAccess(currentTier, 'elite');
+  }, [currentTier]);
   
   // Width debugging - FULL PARENT CHAIN
   React.useEffect(() => {
@@ -625,6 +666,9 @@ const Dashboard = (props) => {
             developmentPlanData={developmentPlanData}
             currentTier={currentTier}
             userData={userData}
+            identityStatement={identityStatement}
+            habitAnchor={habitAnchor}
+            whyStatement={whyStatement}
           />
         </div>
       )}
@@ -682,13 +726,6 @@ const Dashboard = (props) => {
       <div className="section-corporate">
         <WinsList winsList={winsList} onDeleteWin={handleDeleteWin} />
       </div>
-
-      {/* Development Plan Progress Link (Arena 1.0 – Show for Pro/Premium only) */}
-      {visibleComponents.includes('devPlanProgress') && (isMemberPro || isMemberPremium) && (
-        <div className="section-corporate">
-          <DevPlanProgressLink onNavigate={setCurrentScreen} />
-        </div>
-      )}
 
       {/* AI Coach Nudge (Arena 1.0 – Show for Premium only) */}
       {visibleComponents.includes('aiCoachNudge') && isMemberPremium && (

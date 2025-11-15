@@ -85,7 +85,7 @@ export const createAppServices = (db, userId) => {
     const catalogNames = [
       'rep_library', 'exercise_library', 'workout_library', 'course_library',
       'skill_catalog', 'identity_anchor_catalog', 'habit_anchor_catalog',
-      'why_catalog', 'reading_catalog', 'video_catalog', 'scenario_catalog',
+      'why_catalog', 'video_catalog', 'scenario_catalog',
       'membership_plans'
     ];
     
@@ -105,6 +105,39 @@ export const createAppServices = (db, userId) => {
       });
       stores.listeners.push(unsubCatalog);
     });
+    
+    // Special listener for reading_catalog at metadata/reading_catalog
+    const readingCatalogPath = 'metadata/reading_catalog';
+    const unsubReadingCatalog = onSnapshotEx(db, readingCatalogPath, (snap) => {
+      console.log('📚 [createAppServices] Reading catalog snapshot:', {
+        exists: snap.exists(),
+        path: readingCatalogPath
+      });
+      
+      if (!stores.globalMetadata) {
+        stores.globalMetadata = {};
+      }
+      
+      if (snap.exists()) {
+        const rawData = snap.data();
+        console.log('📚 [createAppServices] Reading catalog raw data:', {
+          hasItems: !!rawData?.items,
+          itemsType: typeof rawData?.items,
+          itemsKeys: rawData?.items ? Object.keys(rawData.items) : [],
+          itemsLength: rawData?.items ? Object.keys(rawData.items).length : 0
+        });
+        stores.globalMetadata.READING_CATALOG = stripSentinels(sanitizeTimestamps(rawData));
+        console.log('📚 [createAppServices] READING_CATALOG set in globalMetadata:', {
+          hasItems: !!stores.globalMetadata.READING_CATALOG?.items,
+          itemsKeys: stores.globalMetadata.READING_CATALOG?.items ? Object.keys(stores.globalMetadata.READING_CATALOG.items) : []
+        });
+      } else {
+        console.warn('⚠️ [createAppServices] Reading catalog document does NOT exist at:', readingCatalogPath);
+      }
+      
+      notifyChange();
+    });
+    stores.listeners.push(unsubReadingCatalog);
   } else {
     console.warn('[createAppServices] No db or userId provided, using mock data');
     stores.developmentPlanData = MOCK_DEVELOPMENT_PLAN_DATA;

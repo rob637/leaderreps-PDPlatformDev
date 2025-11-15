@@ -122,7 +122,8 @@ export const useDashboard = ({
     if (dailyPracticeData?.activeCommitments) {
       setAdditionalCommitments(sanitizeTimestamps(dailyPracticeData.activeCommitments));
     }
-  }, [dailyPracticeData?.activeCommitments, sanitizeTimestamps]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [JSON.stringify(dailyPracticeData?.activeCommitments)]);
 
   // Load Morning Bookend
   useEffect(() => {
@@ -131,7 +132,8 @@ export const useDashboard = ({
       setMorningWIN(mb.dailyWIN || '');
       setOtherTasks(sanitizeTimestamps(mb.otherTasks || []));
     }
-  }, [dailyPracticeData?.morningBookend, sanitizeTimestamps]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [JSON.stringify(dailyPracticeData?.morningBookend)]);
 
   // Load Evening Bookend (Issue 5 Fix)
   useEffect(() => {
@@ -164,7 +166,8 @@ export const useDashboard = ({
     } else {
       setWinsList([]);
     }
-  }, [dailyPracticeData?.eveningBookend, dailyPracticeData?.winsList, shouldSkipReflectionLoad]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [JSON.stringify(dailyPracticeData?.eveningBookend), JSON.stringify(dailyPracticeData?.winsList), shouldSkipReflectionLoad]);
 
   /* =========================================================
      MODE TOGGLE HANDLER (Dependency on updateDailyPracticeData)
@@ -283,6 +286,12 @@ export const useDashboard = ({
      BOOKEND HANDLERS (Dependency on updateDailyPracticeData)
   ========================================================= */
   const handleSaveMorningBookend = useCallback(async () => {
+    console.log('☀️ [MORNING BOOKEND] Save initiated:', {
+      dailyWIN: morningWIN,
+      otherTasks,
+      readLIS: showLIS
+    });
+    
     // Use the destructured prop directly
     if (!updateDailyPracticeData) {
       console.error('[Dashboard] Cannot save morning bookend');
@@ -301,7 +310,9 @@ export const useDashboard = ({
         }
       };
 
+      console.log('☀️ [MORNING BOOKEND] Calling updateDailyPracticeData with:', updates);
       const success = await updateDailyPracticeData(updates);
+      console.log('☀️ [MORNING BOOKEND] Save result:', success);
       if (!success) throw new Error('Update failed');
       // Always show success message with warm feeling
       const message = '✅ Morning Plan Saved Successfully!\n\n' +
@@ -318,6 +329,13 @@ export const useDashboard = ({
   }, [morningWIN, otherTasks, showLIS, updateDailyPracticeData]); // Explicitly include prop
 
   const handleSaveEveningBookend = useCallback(async () => {
+    console.log('💾 [EVENING BOOKEND] Save initiated:', {
+      good: reflectionGood,
+      better: reflectionBetter,
+      best: reflectionBest,
+      habits: habitsCompleted
+    });
+    
     // Use the destructured prop directly
     if (!updateDailyPracticeData) {
       console.error('[Dashboard] Cannot save evening bookend - updateDailyPracticeData is not available');
@@ -377,7 +395,9 @@ export const useDashboard = ({
         updates.reminders = [...existingReminders, ...newReminders];
       }
 
+      console.log('💾 [EVENING BOOKEND] Calling updateDailyPracticeData with:', updates);
       const success = await updateDailyPracticeData(updates);
+      console.log('💾 [EVENING BOOKEND] Save result:', success);
       
       if (!success) throw new Error('Update failed');
 

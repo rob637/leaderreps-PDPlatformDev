@@ -7,6 +7,7 @@ import PWAInstall from '../ui/PWAInstall.jsx';
 import ScreenRouter from '../../routing/ScreenRouter.jsx';
 import MobileBottomNav from './MobileBottomNav.jsx';
 import { useAppServices } from '../../services/useAppServices.jsx';
+import { NavigationProvider } from '../../providers/NavigationProvider.jsx';
 
 // LEADERREPS.COM OFFICIAL CORPORATE COLORS - VERIFIED 11/14/25
 const COLORS = {
@@ -93,6 +94,8 @@ const AppContent = ({
   setIsMobileOpen,
   isAuthRequired,
   auth,
+  goBack,
+  canGoBack,
 }) => {
   // Developer Mode State
   const [isDeveloperMode, setIsDeveloperMode] = useState(() => {
@@ -223,7 +226,14 @@ const AppContent = ({
   const currentYear = new Date().getFullYear();
 
   return (
-    <div className="relative min-h-screen flex flex-col font-sans antialiased bg-corporate-light-gray">
+    <NavigationProvider
+      navigate={navigate}
+      canGoBack={canGoBack}
+      goBack={goBack}
+      currentScreen={currentScreen}
+      navParams={navParams}
+    >
+      <div className="relative min-h-screen flex flex-col font-sans antialiased bg-corporate-light-gray">
       <header className="nav-corporate sticky top-0 flex justify-between items-center z-50 px-6 py-4">
         <div className="flex items-center gap-6">
           <div className="relative">
@@ -422,6 +432,7 @@ const AppContent = ({
         />
       </main>
     </div>
+    </NavigationProvider>
   );
 };
 

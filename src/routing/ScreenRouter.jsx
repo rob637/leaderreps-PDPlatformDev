@@ -86,7 +86,7 @@ const ScreenRouter = ({ currentScreen, navParams, navigate, isDeveloperMode, sim
     <Suspense fallback={<div className="p-8 text-center">Loading...</div>}>
       <Component 
         key={currentScreen} 
-        {...(navParams || {})} 
+        {...(navParams && typeof navParams === 'object' ? navParams : null)} 
         setCurrentScreen={navigate}
         isDeveloperMode={isDeveloperMode}
         simulatedTier={simulatedTier}

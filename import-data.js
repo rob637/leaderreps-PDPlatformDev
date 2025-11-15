@@ -87,6 +87,26 @@ async function importData() {
   );
   console.log('   -> User template import complete.');
 
+  console.log('3. Importing Reading Catalog (metadata/reading_catalog)...');
+  try {
+    const catalogPath = path.resolve(__dirname, 'pre_generated_book_catalog.json');
+    const catalogRaw = fs.readFileSync(catalogPath, 'utf8');
+    const catalogData = JSON.parse(catalogRaw);
+    const totalBooks = Object.values(catalogData).reduce((sum, arr) => sum + (Array.isArray(arr) ? arr.length : 0), 0);
+    
+    await withTimeout('Write metadata/reading_catalog',
+      db.collection('metadata').doc('reading_catalog').set({
+        items: catalogData,
+        lastUpdated: admin.firestore.FieldValue.serverTimestamp(),
+        version: '1.0',
+        totalBooks: totalBooks
+      }, { merge: true })
+    );
+    console.log(`   -> Reading catalog import complete (${totalBooks} books).`);
+  } catch (e) {
+    console.warn('   ⚠️  Could not import reading catalog:', e.message);
+  }
+
   console.log('\n✅ ALL DATA IMPORTED SUCCESSFULLY.');
 }
 

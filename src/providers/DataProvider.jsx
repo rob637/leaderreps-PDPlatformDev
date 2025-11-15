@@ -8,6 +8,11 @@ const resolveGlobalMetadata = (meta) => {
   return meta && typeof meta === 'object' ? meta : {};
 };
 
+// Constant fallback objects to prevent recreation on every render
+const EMPTY_ARRAY_CATALOG = { items: [] };
+const EMPTY_OBJECT_CATALOG = { items: {} };
+const EMPTY_OBJECT = {};
+
 const DataProvider = ({
   children,
   firebaseServices,
@@ -285,14 +290,25 @@ const DataProvider = ({
       ...globalHook,
 
       // Catalogs (from resolvedMetadata)
-      SKILL_CATALOG: resolvedMetadata.SKILL_CATALOG || { items: [] },
-      COURSE_LIBRARY: resolvedMetadata.COURSE_LIBRARY || { items: [] },
-      READING_CATALOG: resolvedMetadata.READING_CATALOG || { items: {} },
-      RESOURCE_LIBRARY: resolvedMetadata.RESOURCE_LIBRARY || {},
-      VIDEO_CATALOG: resolvedMetadata.VIDEO_CATALOG || { items: [] },
-      SCENARIO_CATALOG: resolvedMetadata.SCENARIO_CATALOG || { items: [] },
-      LEADERSHIP_TIERS: resolvedMetadata.LEADERSHIP_TIERS || {},
-      IconMap: resolvedMetadata.IconMap || {},
+      SKILL_CATALOG: resolvedMetadata.SKILL_CATALOG || EMPTY_ARRAY_CATALOG,
+      COURSE_LIBRARY: resolvedMetadata.COURSE_LIBRARY || EMPTY_ARRAY_CATALOG,
+      READING_CATALOG: (() => {
+        const catalog = resolvedMetadata.READING_CATALOG || EMPTY_OBJECT_CATALOG;
+        console.log('📚 [DataProvider] READING_CATALOG being provided to components:', {
+          hasCatalog: !!resolvedMetadata.READING_CATALOG,
+          hasItems: !!catalog.items,
+          itemsType: typeof catalog.items,
+          itemsKeys: catalog.items && typeof catalog.items === 'object' ? Object.keys(catalog.items) : [],
+          itemsLength: catalog.items && typeof catalog.items === 'object' ? Object.keys(catalog.items).length : 0,
+          fullCatalog: catalog
+        });
+        return catalog;
+      })(),
+      RESOURCE_LIBRARY: resolvedMetadata.RESOURCE_LIBRARY || EMPTY_OBJECT,
+      VIDEO_CATALOG: resolvedMetadata.VIDEO_CATALOG || EMPTY_ARRAY_CATALOG,
+      SCENARIO_CATALOG: resolvedMetadata.SCENARIO_CATALOG || EMPTY_ARRAY_CATALOG,
+      LEADERSHIP_TIERS: resolvedMetadata.LEADERSHIP_TIERS || EMPTY_OBJECT,
+      IconMap: resolvedMetadata.IconMap || EMPTY_OBJECT,
 
       // Gemini API
       apiKey,

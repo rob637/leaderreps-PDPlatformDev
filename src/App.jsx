@@ -117,6 +117,8 @@ function App() {
           setIsMobileOpen={setIsMobileOpen}
           isAuthRequired={isAuthRequired}
           auth={firebaseServices.auth}
+          goBack={goBack}
+          canGoBack={canGoBack}
         />
       )}
     </DataProvider>
