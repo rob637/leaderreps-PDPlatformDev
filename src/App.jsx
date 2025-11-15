@@ -129,13 +129,16 @@ function App() {
   }, [firebaseServices]);
 
   const navigate = useCallback((screen, params = {}) => {
-    console.log('[App] Navigating to:', screen, params);
+    console.log('🚀 [App.jsx] navigate() CALLED with screen:', screen, 'params:', params);
+    console.log('🚀 [App.jsx] Current screen before navigation:', currentScreen);
     setCurrentScreen(screen);
+    console.log('🚀 [App.jsx] setCurrentScreen() called with:', screen);
     setNavParams(params);
     
     // Push to navigation history for browser back/forward support
     pushNavigationState({ screen, params });
-  }, [pushNavigationState]);
+    console.log('🚀 [App.jsx] Navigation complete');
+  }, [pushNavigationState, currentScreen]);
 
   const isAuthRequired = !user && isAuthReady;
 
