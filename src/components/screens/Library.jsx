@@ -117,13 +117,32 @@ const Library = ({ simulatedTier }) => {
   ];
 
   const handleCardClick = (item) => {
+    console.log('🔍 Library Card Click Debug:', {
+      itemId: item.id,
+      itemTitle: item.title,
+      targetScreen: item.screen,
+      currentTier: currentTier,
+      requiredTier: item.requiredTier,
+      navigateFunction: typeof navigate
+    });
+    
     if (navigate && typeof navigate === 'function') {
       const hasAccess = membershipService.hasAccess(currentTier, item.requiredTier);
+      
+      console.log('🔑 Access Check Result:', {
+        hasAccess: hasAccess,
+        willNavigateTo: hasAccess ? item.screen : 'membership-upgrade'
+      });
+      
       if (!hasAccess) {
+        console.log('❌ No access - redirecting to membership-upgrade');
         navigate('membership-upgrade');
       } else {
+        console.log('✅ Access granted - navigating to:', item.screen);
         navigate(item.screen);
       }
+    } else {
+      console.error('❌ Navigate function not available or not a function');
     }
   };
 
@@ -200,7 +219,7 @@ const Library = ({ simulatedTier }) => {
                 description={item.description}
                 icon={item.icon}
                 onClick={() => handleCardClick(item)}
-                disabled={false}
+                disabled={!hasAccess}
                 requiredTier={hasAccess ? null : item.requiredTier}
               />
             );
