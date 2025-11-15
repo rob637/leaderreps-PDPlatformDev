@@ -363,6 +363,18 @@ const Dashboard = (props) => {
       });
     }
     setReminders(activeReminders);
+    
+    // DEBUG: Measure actual widths
+    setTimeout(() => {
+      const pageEl = document.querySelector('.page-corporate');
+      const contentEl = document.querySelector('.content-full');
+      console.log('📏 DASHBOARD Width Measurements:', {
+        pageWidth: pageEl?.offsetWidth,
+        contentWidth: contentEl?.offsetWidth,
+        pageComputedMaxWidth: window.getComputedStyle(pageEl || document.body).maxWidth,
+        contentComputedMaxWidth: window.getComputedStyle(contentEl || document.body).maxWidth
+      });
+    }, 100);
   }, [progressData]);
 
   // Dismiss reminder handler
@@ -495,6 +507,26 @@ const Dashboard = (props) => {
     <div className="page-corporate animate-corporate-fade-in">
       <div className="content-full">
       <div>
+      {/* DEBUG: Width Inspector */}
+      {isDeveloperMode && (
+        <div style={{
+          position: 'fixed',
+          top: '80px',
+          right: '10px',
+          background: 'rgba(0,0,0,0.9)',
+          color: 'white',
+          padding: '10px',
+          fontSize: '12px',
+          zIndex: 9999,
+          borderRadius: '8px',
+          fontFamily: 'monospace'
+        }}>
+          <div><strong>🔍 DASHBOARD WIDTH DEBUG</strong></div>
+          <div>Container classes: page-corporate, content-full</div>
+          <div>Max-width should be: 1200px</div>
+        </div>
+      )}
+      
       {/* Save indicator */}
       <SaveIndicator isSaving={isSaving} />
 

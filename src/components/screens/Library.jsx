@@ -84,6 +84,18 @@ const Library = ({ simulatedTier }) => {
   // Scroll to top when component mounts
   React.useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
+    
+    // DEBUG: Measure actual widths
+    setTimeout(() => {
+      const pageEl = document.querySelector('.page-corporate');
+      const contentEl = document.querySelector('.content-full');
+      console.log('📏 LIBRARY Width Measurements:', {
+        pageWidth: pageEl?.offsetWidth,
+        contentWidth: contentEl?.offsetWidth,
+        pageComputedMaxWidth: window.getComputedStyle(pageEl || document.body).maxWidth,
+        contentComputedMaxWidth: window.getComputedStyle(contentEl || document.body).maxWidth
+      });
+    }, 100);
   }, []);
   
   // Match Dashboard's exact tier logic - MUST match Dashboard.jsx line 285
@@ -150,6 +162,24 @@ const Library = ({ simulatedTier }) => {
       <div className="page-corporate animate-corporate-fade-in">
         <div className="content-full">
       <div>
+        {/* DEBUG: Width Inspector */}
+        <div style={{
+          position: 'fixed',
+          top: '80px',
+          left: '10px',
+          background: 'rgba(0,128,0,0.9)',
+          color: 'white',
+          padding: '10px',
+          fontSize: '12px',
+          zIndex: 9999,
+          borderRadius: '8px',
+          fontFamily: 'monospace'
+        }}>
+          <div><strong>🔍 LIBRARY WIDTH DEBUG</strong></div>
+          <div>Container classes: page-corporate, content-full</div>
+          <div>Max-width should be: 1200px</div>
+        </div>
+        
         {/* Back Button */}
         <div className="flex items-center gap-2 mb-6 text-gray-600 hover:text-gray-800 cursor-pointer transition-colors" onClick={() => navigate('dashboard')}>
           <ArrowLeft className="w-5 h-5" />
