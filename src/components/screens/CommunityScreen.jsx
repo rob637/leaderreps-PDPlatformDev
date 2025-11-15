@@ -579,12 +579,9 @@ const CommunityScreen = () => {
                         
                         <button
                             onClick={() => {
-                              console.log('🟣 [CommunityScreen] Upgrade Now button clicked');
-                              console.log('🟣 [CommunityScreen] navigate function type:', typeof navigate);
-                              console.log('🟣 [CommunityScreen] navigate function:', navigate);
-                              console.log('🟣 [CommunityScreen] Calling navigate with: membership-upgrade');
+                              alert('🟣 [Community] Upgrade Now clicked! Navigate type: ' + typeof navigate);
                               navigate('membership-upgrade');
-                              console.log('🟣 [CommunityScreen] navigate() call completed');
+                              alert('🟣 [Community] navigate(membership-upgrade) called');
                             }}
                             className="bg-gradient-to-r from-teal-600 to-navy-600 text-white px-8 py-4 rounded-xl font-bold text-lg shadow-lg hover:shadow-xl transition-all duration-300"
                         >

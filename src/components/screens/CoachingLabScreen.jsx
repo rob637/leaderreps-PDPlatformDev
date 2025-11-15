@@ -1790,12 +1790,9 @@ export default function CoachingLabScreen() {
                         
                         <button
                             onClick={() => {
-                              console.log('🟡 [CoachingLab] Upgrade Now button clicked');
-                              console.log('🟡 [CoachingLab] navigate function type:', typeof navigate);
-                              console.log('🟡 [CoachingLab] navigate function:', navigate);
-                              console.log('🟡 [CoachingLab] Calling navigate with: membership-upgrade');
+                              alert('🟡 [CoachingLab] Upgrade Now clicked! Navigate type: ' + typeof navigate);
                               navigate('membership-upgrade');
-                              console.log('🟡 [CoachingLab] navigate() call completed');
+                              alert('🟡 [CoachingLab] navigate(membership-upgrade) called');
                             }}
                             className="bg-gradient-to-r from-teal-600 to-navy-600 text-white px-8 py-4 rounded-xl font-bold text-lg shadow-lg hover:shadow-xl transition-all duration-300"
                         >
