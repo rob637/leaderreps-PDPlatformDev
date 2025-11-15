@@ -495,7 +495,7 @@ async function confirmPlanPersisted(db, userId, retries = 4, delayMs = 250) {
 
       {/* Developer Mode Reset Button */}
       {isDeveloperMode && hasCurrentPlan && (
-        <div className="max-w-3xl mx-auto mb-4">
+        <div className="mb-4">
           <Button
             onClick={handleResetPlan}
             variant="secondary"
@@ -508,7 +508,7 @@ async function confirmPlanPersisted(db, userId, retries = 4, delayMs = 250) {
       )}
 
       {error && (
-        <div className="max-w-3xl mx-auto p-4 pt-6">
+        <div className="p-4 pt-6">
           <div className="bg-red-50 border-2 border-red-200 rounded-xl p-4 text-red-800 shadow-lg">
             <strong className="font-bold">Error:</strong> {error.message || String(error)}
           </div>
