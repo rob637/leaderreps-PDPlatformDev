@@ -136,6 +136,7 @@ const AppContent = ({
   };
 
   const handleTierChange = (tier) => {
+    console.log('🎚️ [AppContent] Tier changed:', { oldTier: simulatedTier, newTier: tier, isDeveloperMode });
     setSimulatedTier(tier);
     localStorage.setItem('arena-simulated-tier', tier);
     // Trigger a storage event to notify other components

@@ -280,6 +280,12 @@ const Dashboard = (props) => {
 
   // Use simulatedTier if available (for testing), otherwise use actual membershipData
   const currentTier = simulatedTier || membershipData?.currentTier || 'basic';
+  
+  console.log('📊 [Dashboard] Tier state:', { 
+    simulatedTier, 
+    membershipTier: membershipData?.currentTier, 
+    computedCurrentTier: currentTier 
+  });
   const isMemberPro = membershipService.hasAccess(currentTier, 'professional');
   const isMemberPremium = membershipService.hasAccess(currentTier, 'elite');
 

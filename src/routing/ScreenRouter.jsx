@@ -63,6 +63,13 @@ const NotFoundScreen = () => (
 );
 
 const ScreenRouter = ({ currentScreen, navParams, navigate, isDeveloperMode, simulatedTier }) => {
+  console.log('🗺️ [ScreenRouter] Routing to screen:', { 
+    currentScreen, 
+    simulatedTier, 
+    isDeveloperMode,
+    hasComponent: !!ScreenMap[currentScreen]
+  });
+  
   const Component = ScreenMap[currentScreen] || NotFoundScreen;
 
   const screenTierRequirements = {
