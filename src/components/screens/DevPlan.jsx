@@ -1065,8 +1065,9 @@ const PlanReviewScreen = ({ generatedPlan, navigate, clearReviewData, finalizeWi
     };
 
     return (
-        <div className="p-3 sm:p-4 lg:p-6 md:p-10 min-h-screen" style={{ background: COLORS.BG, color: COLORS.TEXT }}>
-            <div className='flex items-center gap-4 border-b-2 pb-2 mb-8' style={{borderColor: COLORS.GREEN+'30'}}>
+        <div className="page-corporate container-corporate animate-corporate-fade-in">
+            <div className="content-full">
+                <div className='flex items-center gap-4 border-b-2 pb-2 mb-8' style={{borderColor: COLORS.GREEN+'30'}}>
                 <CheckCircle className='w-10 h-10' style={{color: COLORS.GREEN}}/>
                 <h1 className="text-4xl font-extrabold" style={{ color: COLORS.NAVY }}>Roadmap Successfully Generated!</h1>
             </div>
@@ -1120,6 +1121,7 @@ const PlanReviewScreen = ({ generatedPlan, navigate, clearReviewData, finalizeWi
                     </Button>
                 </div>
             </Card>
+            </div>
         </div>
     );
 };
