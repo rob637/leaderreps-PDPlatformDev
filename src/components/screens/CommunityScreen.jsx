@@ -501,6 +501,7 @@ const CommunityScreen = () => {
     return (
         <div className="page-corporate container-corporate animate-corporate-fade-in">
             <div className="content-full">
+            <div>
             {/* Back Button */}
             <div className="flex items-center gap-2 mb-6 text-gray-600 hover:text-gray-800 cursor-pointer transition-colors" onClick={() => navigate('dashboard')}>
                 <ArrowLeft className="w-4 h-4" />
@@ -588,6 +589,7 @@ const CommunityScreen = () => {
                     </div>
                 </div>
             )}
+            </div>
             </div>
         </div>
     );

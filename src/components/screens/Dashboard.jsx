@@ -503,6 +503,7 @@ const Dashboard = (props) => {
   return (
     <div className="page-corporate container-corporate animate-corporate-fade-in">
       <div className="content-full">
+      <div>
       {/* Save indicator */}
       <SaveIndicator isSaving={isSaving} />
 
@@ -772,6 +773,7 @@ const Dashboard = (props) => {
       )}
 
       <TestUtilsModal isOpen={testUtilsOpen} onClose={() => setTestUtilsOpen(false)} />
+      </div>
       </div>
     </div>
   );
