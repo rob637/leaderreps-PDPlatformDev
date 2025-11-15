@@ -558,9 +558,9 @@ const Dashboard = (props) => {
 
   // --- RENDER ---
   return (
-    <div className="page-corporate container-corporate animate-corporate-fade-in">
-      <div className="content-full">
-      <div>
+    <div className="page-corporate container-corporate animate-corporate-fade-in min-w-full">
+      <div className="content-full min-w-full">
+      <div className="min-w-full">
       {/* Save indicator */}
       <SaveIndicator isSaving={isSaving} />
 
