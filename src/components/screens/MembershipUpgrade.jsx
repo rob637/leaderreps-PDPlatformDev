@@ -240,14 +240,13 @@ const MembershipUpgrade = ({ setCurrentScreen }) => {
   // Scroll to top when component mounts to ensure users see the full page
   React.useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
+    console.log('[MembershipUpgrade] DEBUG:', { 
+      hasMembershipData: !!membershipData, 
+      currentTier,
+      hasSetCurrentScreen: !!setCurrentScreen,
+      setCurrentScreenType: typeof setCurrentScreen
+    });
   }, []);
-  
-  console.log('[MembershipUpgrade] DEBUG:', { 
-    hasMembershipData: !!membershipData, 
-    currentTier,
-    hasSetCurrentScreen: !!setCurrentScreen,
-    setCurrentScreenType: typeof setCurrentScreen
-  });
 
   const handleUpgrade = (tier) => {
     // In a real app, this would integrate with Stripe/payment processor
@@ -261,7 +260,7 @@ const MembershipUpgrade = ({ setCurrentScreen }) => {
 
   return (
     <div className="page-corporate container-corporate animate-corporate-fade-in">
-      <div className="content-standard">
+      <div className="content-wide">
         {/* Back Button */}
         <div className="flex items-center gap-2 mb-6 text-gray-600 hover:text-gray-800 cursor-pointer transition-colors" onClick={() => setCurrentScreen('dashboard')}>
           <ArrowLeft className="w-4 h-4" />

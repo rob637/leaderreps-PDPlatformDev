@@ -500,7 +500,7 @@ const CommunityScreen = () => {
 
     return (
         <div className="page-corporate container-corporate animate-corporate-fade-in">
-            <div className="content-standard">
+            <div className="content-wide">
             {/* Back Button */}
             <div className="flex items-center gap-2 mb-6 text-gray-600 hover:text-gray-800 cursor-pointer transition-colors" onClick={() => navigate('dashboard')}>
                 <ArrowLeft className="w-4 h-4" />
@@ -510,9 +510,14 @@ const CommunityScreen = () => {
             {/* Header */}
             <header className='flex items-center gap-4 border-b-2 pb-3 mb-8' style={{borderColor: COLORS.NAVY+'30'}}>
                 <Users className='w-10 h-10 flex-shrink-0' style={{color: COLORS.TEAL}}/>
-                <div>
-                     <h1 className="corporate-heading-xl" style={{ color: COLORS.NAVY }}>Leadership Community</h1>
-                     <p className="corporate-text-body text-gray-600 mt-1">Connect, share insights, and grow with fellow leaders.</p>
+                <div className="flex-1">
+                     <div className="flex items-center gap-4 mb-2">
+                         <h1 className="corporate-heading-xl" style={{ color: COLORS.NAVY }}>Leadership Community</h1>
+                         {!hasCommunityAccess && (
+                             <span className="inline-block bg-orange-100 text-orange-800 px-3 py-1 rounded-full text-sm font-semibold">Requires Pro Tier</span>
+                         )}
+                     </div>
+                     <p className="corporate-text-body text-gray-600">Connect, share insights, and grow with fellow leaders.</p>
                 </div>
             </header>
 

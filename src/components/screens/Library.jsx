@@ -134,7 +134,7 @@ const Library = ({ simulatedTier }) => {
 
   return (
       <div className="page-corporate container-corporate animate-corporate-fade-in">
-        <div className="content-standard">
+        <div className="content-wide">
       <div>
         {/* Back Button */}
         <div className="flex items-center gap-2 mb-6 text-gray-600 hover:text-gray-800 cursor-pointer transition-colors" onClick={() => canGoBack ? goBack() : navigate && navigate('dashboard')}>
@@ -282,7 +282,7 @@ const Library = ({ simulatedTier }) => {
               </div>
               
               <button
-                onClick={() => navigate && navigate('membership-upgrade')}
+                onClick={() => navigate('membership-upgrade')}
                 className="bg-gradient-to-r from-teal-600 to-navy-600 text-white px-8 py-4 rounded-xl font-bold text-lg shadow-lg hover:shadow-xl transition-all duration-300"
               >
                 Upgrade Now
