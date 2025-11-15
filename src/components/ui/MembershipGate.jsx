@@ -41,12 +41,7 @@ const COLORS = {
 export const MembershipGate = ({ requiredTier, featureName, children, simulatedTier }) => {
   const { membershipData, isAdmin, navigate } = useAppServices();
   
-  // Admins bypass all restrictions
-  if (isAdmin) {
-    console.log(`🔓 [MembershipGate] Admin bypass for ${featureName}`);
-    return children;
-  }
-  
+  // Determine current tier - use simulatedTier if provided (from tier toggle), otherwise use actual membership
   const currentTier = simulatedTier || membershipData?.currentTier || 'basic';
   const hasAccess = membershipService.hasAccess(currentTier, requiredTier);
   

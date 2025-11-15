@@ -109,7 +109,17 @@ export const hasAccess = (currentTier, requiredTier) => {
   const current = MEMBERSHIP_TIERS[currentTier?.toLowerCase()] || MEMBERSHIP_TIERS.basic;
   const required = MEMBERSHIP_TIERS[requiredTier?.toLowerCase()] || MEMBERSHIP_TIERS.basic;
   
-  return current.level >= required.level;
+  const accessGranted = current.level >= required.level;
+  
+  console.log('🔑 [membershipService.hasAccess]:', {
+    currentTier,
+    requiredTier,
+    currentLevel: current.level,
+    requiredLevel: required.level,
+    accessGranted
+  });
+  
+  return accessGranted;
 };
 
 // Get tier information by ID
