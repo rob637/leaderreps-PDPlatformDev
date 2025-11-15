@@ -43,16 +43,31 @@ export const MembershipGate = ({ requiredTier, featureName, children, simulatedT
   
   // Admins bypass all restrictions
   if (isAdmin) {
+    console.log(`🔓 [MembershipGate] Admin bypass for ${featureName}`);
     return children;
   }
   
   const currentTier = simulatedTier || membershipData?.currentTier || 'basic';
   const hasAccess = membershipService.hasAccess(currentTier, requiredTier);
   
+  console.log(`🚪 [MembershipGate] Checking access for ${featureName}:`, {
+    featureName,
+    currentTier,
+    requiredTier,
+    simulatedTier,
+    membershipDataTier: membershipData?.currentTier,
+    hasAccess,
+    isAdmin
+  });
+  
   // If user has access, render the children
   if (hasAccess) {
+    console.log(`✅ [MembershipGate] Access granted for ${featureName}`);
     return children;
   }
+  
+  console.log(`❌ [MembershipGate] Access denied for ${featureName}`);
+  
   
   // Get tier information for upgrade prompt
   const requiredTierInfo = MEMBERSHIP_TIERS[requiredTier];
