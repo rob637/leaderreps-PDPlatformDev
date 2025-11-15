@@ -188,23 +188,15 @@ function App() {
       {isAuthRequired ? (
         <AuthPanel auth={firebaseServices.auth} onSuccess={() => {}} />
       ) : (
-        <NavigationProvider
-          navigate={navigate}
-          canGoBack={canGoBack}
-          goBack={goBack}
+        <AppContent
           currentScreen={currentScreen}
+          user={user}
           navParams={navParams}
-        >
-          <AppContent
-            currentScreen={currentScreen}
-            user={user}
-            navParams={navParams}
-            isMobileOpen={isMobileOpen}
-            setIsMobileOpen={setIsMobileOpen}
-            isAuthRequired={isAuthRequired}
-            auth={firebaseServices.auth}
-          />
-        </NavigationProvider>
+          isMobileOpen={isMobileOpen}
+          setIsMobileOpen={setIsMobileOpen}
+          isAuthRequired={isAuthRequired}
+          auth={firebaseServices.auth}
+        />
       )}
     </DataProvider>
   );
