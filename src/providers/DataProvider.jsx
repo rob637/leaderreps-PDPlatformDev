@@ -284,6 +284,16 @@ const DataProvider = ({
       ...membershipHook,
       ...globalHook,
 
+      // Catalogs (from resolvedMetadata)
+      SKILL_CATALOG: resolvedMetadata.SKILL_CATALOG || { items: [] },
+      COURSE_LIBRARY: resolvedMetadata.COURSE_LIBRARY || { items: [] },
+      READING_CATALOG: resolvedMetadata.READING_CATALOG || { items: {} },
+      RESOURCE_LIBRARY: resolvedMetadata.RESOURCE_LIBRARY || {},
+      VIDEO_CATALOG: resolvedMetadata.VIDEO_CATALOG || { items: [] },
+      SCENARIO_CATALOG: resolvedMetadata.SCENARIO_CATALOG || { items: [] },
+      LEADERSHIP_TIERS: resolvedMetadata.LEADERSHIP_TIERS || {},
+      IconMap: resolvedMetadata.IconMap || {},
+
       // Gemini API
       apiKey,
       geminiModel,
