@@ -657,6 +657,7 @@ export default function BusinessReadingsScreen() {
     READING_CATALOG, // Catalog data { items: { Category: [books...] } } // cite: useAppServices.jsx
     dailyPracticeData, // For adding commitments // cite: useAppServices.jsx
     // Functions
+    navigate,
     updateDailyPracticeData, callSecureGeminiAPI, hasGeminiKey, GEMINI_MODEL, // cite: useAppServices.jsx
   } = useAppServices();
 
@@ -887,7 +888,7 @@ export default function BusinessReadingsScreen() {
     // Main screen container with consistent padding and background
     <div className="p-3 sm:p-4 lg:p-6 md:p-10 min-h-screen" style={{ background: COLORS.BG }}>
       {/* Back Button */}
-      <Button onClick={() => window.history.back()} variant="nav-back" size="sm" className="mb-6">
+      <Button onClick={() => navigate('library')} variant="nav-back" size="sm" className="mb-6">
         <ArrowLeft className="w-4 h-4 mr-2" />
         Back to Library
       </Button>

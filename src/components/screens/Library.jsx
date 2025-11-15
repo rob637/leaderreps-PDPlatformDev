@@ -147,7 +147,7 @@ const Library = ({ simulatedTier }) => {
   };
 
   return (
-      <div className="page-corporate container-corporate animate-corporate-fade-in">
+      <div className="page-corporate animate-corporate-fade-in">
         <div className="content-full">
       <div>
         {/* Back Button */}

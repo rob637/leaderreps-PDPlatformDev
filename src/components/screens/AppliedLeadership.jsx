@@ -403,6 +403,7 @@ export default function AppliedLeadershipScreen() {
         RESOURCE_LIBRARY,
         LEADERSHIP_TIERS,
         IconMap,
+        navigate,
         isLoading: isAppLoading,
         error: appError,
     } = useAppServices();
@@ -470,7 +471,7 @@ export default function AppliedLeadershipScreen() {
     const renderLibraryHome = () => (
         <div className="p-6 md:p-4 sm:p-3 sm:p-4 lg:p-6 lg:p-8 lg:p-10">
             {/* Back Button */}
-            <Button onClick={() => window.history.back()} variant="nav-back" size="sm" className="mb-6">
+            <Button onClick={() => navigate('library')} variant="nav-back" size="sm" className="mb-6">
                 <ArrowLeft className="w-4 h-4 mr-2" />
                 Back to Library
             </Button>

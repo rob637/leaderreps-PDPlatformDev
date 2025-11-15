@@ -223,7 +223,7 @@ const AppContent = ({
             </button>
             
             {dropdownOpen && (
-              <div className="absolute top-full left-0 mt-2 w-72 bg-white rounded-2xl shadow-2xl border border-gray-100 z-50 max-h-[80vh] overflow-y-auto">
+              <div className="absolute top-full left-0 mt-2 w-72 bg-white rounded-2xl shadow-2xl border border-gray-100 z-50">
                 <div className="py-3">
                   {navigationItems
                     .filter(item => {
