@@ -87,13 +87,11 @@ const LeadershipAnchorsDropdown = () => {
 
 const AppContent = ({
   currentScreen,
-  setCurrentScreen,
   user,
   navParams,
   isMobileOpen,
   setIsMobileOpen,
   isAuthRequired,
-  setIsNavExpanded,
   auth,
 }) => {
   // Developer Mode State
@@ -337,7 +335,7 @@ const AppContent = ({
             <ScreenRouter
               currentScreen={currentScreen}
               navParams={navParams}
-              navigate={setCurrentScreen}
+              navigate={navigate}
               isDeveloperMode={isDeveloperMode}
               simulatedTier={simulatedTier}
             />
@@ -400,7 +398,7 @@ const AppContent = ({
         {/* Mobile Bottom Navigation */}
         <MobileBottomNav 
           currentScreen={currentScreen} 
-          navigate={setCurrentScreen} 
+          navigate={navigate} 
         />
       </main>
     </div>

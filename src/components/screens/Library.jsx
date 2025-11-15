@@ -238,11 +238,7 @@ const Library = ({ simulatedTier }) => {
               </div>
               
               <button
-                onClick={() => {
-                  alert('🟢 [Library] Upgrade Now clicked! Navigate type: ' + typeof navigate);
-                  navigate('membership-upgrade');
-                  alert('🟢 [Library] navigate(membership-upgrade) called');
-                }}
+                onClick={() => navigate('membership-upgrade')}
                 className="bg-gradient-to-r from-teal-600 to-navy-600 text-white px-8 py-4 rounded-xl font-bold text-lg shadow-lg hover:shadow-xl transition-all duration-300"
               >
                 Upgrade Now

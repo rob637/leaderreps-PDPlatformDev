@@ -25,7 +25,6 @@ import { Loader } from 'lucide-react';
 import useNavigationHistory from './hooks/useNavigationHistory.js';
 
 // --- New Structure ---
-import NavigationProvider from './providers/NavigationProvider.jsx';
 import AuthPanel from './components/auth/AuthPanel.jsx';
 import AppContent from './components/layout/AppContent.jsx';
 import DataProvider from './providers/DataProvider.jsx';
@@ -63,18 +62,12 @@ function App() {
   const [isAuthReady, setIsAuthReady] = useState(false);
   const [currentScreen, setCurrentScreen] = useState('dashboard');
   const [navParams, setNavParams] = useState({});
+  const [isMobileOpen, setIsMobileOpen] = useState(false);
   
   // Debug logging for screen changes
   useEffect(() => {
     console.log('[App.jsx] currentScreen changed to:', currentScreen);
-    // Only show alert in developer mode
-    const isDeveloperMode = localStorage.getItem('arena-developer-mode') === 'true';
-    if (isDeveloperMode) {
-      alert(`🔥 SCREEN CHANGE: ${currentScreen}`);
-    }
   }, [currentScreen]);
-  const [isNavExpanded, setIsNavExpanded] = useState(true);
-  const [isMobileOpen, setIsMobileOpen] = useState(false);
 
   // Navigation history manager for browser back/forward buttons
   const {
@@ -129,9 +122,7 @@ function App() {
   }, [firebaseServices]);
 
   const navigate = useCallback((screen, params = {}) => {
-    alert(`🚀 [App.jsx] navigate() called with screen: ${screen}`);
     setCurrentScreen(screen);
-    alert(`🚀 [App.jsx] setCurrentScreen(${screen}) called`);
     setNavParams(params);
     
     // Push to navigation history for browser back/forward support
@@ -206,14 +197,11 @@ function App() {
         >
           <AppContent
             currentScreen={currentScreen}
-            setCurrentScreen={setCurrentScreen}
             user={user}
             navParams={navParams}
             isMobileOpen={isMobileOpen}
             setIsMobileOpen={setIsMobileOpen}
             isAuthRequired={isAuthRequired}
-            isNavExpanded={isNavExpanded}
-            setIsNavExpanded={setIsNavExpanded}
             auth={firebaseServices.auth}
           />
         </NavigationProvider>
