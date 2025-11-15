@@ -58,7 +58,7 @@ const ProgressBreakdown = ({ plan, globalMetadata }) => {
 
   if (!plan || skillProgress.length === 0) {
     return (
-      <div className="p-3 sm:p-4 lg:p-6">
+      <div>
         <Card accent="BLUE">
           <p className="text-gray-600">No skills to display. Complete your baseline assessment to get started.</p>
         </Card>
@@ -79,7 +79,7 @@ const ProgressBreakdown = ({ plan, globalMetadata }) => {
   };
 
   return (
-    <div className="p-3 sm:p-4 lg:p-6 space-y-4 sm:space-y-5 lg:space-y-6">
+    <div className="space-y-4 sm:space-y-5 lg:space-y-6">
       {/* Overall Progress */}
       <Card accent="BLUE">
         <div className="flex items-center justify-between mb-4">
