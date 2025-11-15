@@ -105,6 +105,20 @@ export default function DevelopmentPlan() {
     const container = document.querySelector('.page-corporate');
     if (container) {
       console.log('🔍 [DEVPLAN] Found .page-corporate?', !!container);
+      
+      // Log FULL parent chain FIRST
+      let current = container;
+      const fullChain = [];
+      while (current && current !== document.body) {
+        fullChain.push({
+          tag: current.tagName,
+          classes: current.className,
+          width: current.offsetWidth
+        });
+        current = current.parentElement;
+      }
+      console.log('🔗 [DEVPLAN] FULL Parent Chain:', fullChain);
+      
       const rect = container.getBoundingClientRect();
       const computed = window.getComputedStyle(container);
       

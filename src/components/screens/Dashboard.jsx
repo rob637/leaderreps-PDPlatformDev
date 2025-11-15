@@ -299,6 +299,19 @@ const Dashboard = (props) => {
       console.log('🔍 [DASHBOARD] Found .page-corporate?', !!pageCorporate);
       
       if (pageCorporate) {
+        // Log FULL parent chain FIRST
+        let current = pageCorporate;
+        const fullChain = [];
+        while (current && current !== document.body) {
+          fullChain.push({
+            tag: current.tagName,
+            classes: current.className,
+            width: current.offsetWidth
+          });
+          current = current.parentElement;
+        }
+        console.log('🔗 [DASHBOARD] FULL Parent Chain:', fullChain);
+        
         const rect = pageCorporate.getBoundingClientRect();
         const computed = window.getComputedStyle(pageCorporate);
         
