@@ -158,7 +158,7 @@ const ProgressScan = ({
         {/* Show cool loading overlay when generating */}
         {isGenerating && <PlanGenerationLoader message="Generating Your Next Plan" />}
         
-        <div className="max-w-4xl mx-auto p-4 sm:p-3 sm:p-4 lg:p-6">
+        <div className="p-4 sm:p-3 sm:p-4 lg:p-6">
         <Card accent="GREEN">
           <div className="mb-6">
             <h2 className="text-xl sm:text-2xl sm:text-3xl font-extrabold mb-2" style={{ color: COLORS.NAVY }}>
@@ -240,7 +240,7 @@ const ProgressScan = ({
   const isTotalLoading = isLoading || isGenerating;
   
   return (
-    <div className="max-w-4xl mx-auto p-4 sm:p-3 sm:p-4 lg:p-6" style={{ background: COLORS.BG }}>
+    <div className="p-4 sm:p-3 sm:p-4 lg:p-6" style={{ background: COLORS.BG }}>
       
       {/* REQ #3: Added Back Button */}
       <div className="mb-4">
@@ -262,7 +262,7 @@ const ProgressScan = ({
 
       {/* Sticky Progress Bar */}
       <div className="sticky top-0 z-10 py-4" style={{ background: `${COLORS.BG}F0` }}>
-        <div className="max-w-4xl mx-auto">
+        <div>
           <div className="flex justify-between text-sm mb-2 px-1">
             <span className="font-semibold" style={{ color: COLORS.GREEN }}>
               {completedQuestions} of {totalQuestions} Questions Answered

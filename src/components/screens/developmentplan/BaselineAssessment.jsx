@@ -167,7 +167,7 @@ const BaselineAssessment = ({ onComplete, isLoading = false }) => {
       <div className="min-h-screen p-4 sm:p-6 lg:p-4 sm:p-3 sm:p-4 lg:p-6 lg:p-8" style={{ background: COLORS.BG }}>
       
       {/* Sticky Progress Bar */}
-      <div className="sticky top-0 z-10 py-4 max-w-4xl mx-auto" style={{ background: `${COLORS.BG}F0`, backdropFilter: 'blur(8px)' }}>
+      <div className="sticky top-0 z-10 py-4" style={{ background: `${COLORS.BG}F0`, backdropFilter: 'blur(8px)' }}>
           <div className="flex justify-between text-sm mb-2 px-1">
             <span className="font-semibold" style={{ color: COLORS.TEAL }}>
               {completedQuestions} of {totalQuestions} Questions Answered
@@ -180,7 +180,7 @@ const BaselineAssessment = ({ onComplete, isLoading = false }) => {
       </div>
 
       {/* Main Content Card */}
-      <div className="max-w-4xl mx-auto bg-white rounded-2xl shadow-xl overflow-hidden mt-4">
+      <div className="bg-white rounded-2xl shadow-xl overflow-hidden mt-4">
         
         {/* Header Area */}
         <div className="p-6 sm:p-4 sm:p-3 sm:p-4 lg:p-6 lg:p-8 border-b" style={{ borderColor: COLORS.SUBTLE }}>

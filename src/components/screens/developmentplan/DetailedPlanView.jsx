@@ -131,7 +131,7 @@ const DetailedPlanView = ({
 
   return (
     <div className="min-h-screen" style={{ background: COLORS.BG }}>
-      <div className="container mx-auto px-4 py-6 max-w-7xl">
+      <div className="container mx-auto px-4 py-6">
         
         {/* Header Area */}
         <div className="flex flex-col md:flex-row justify-between items-start gap-4 mb-6">
