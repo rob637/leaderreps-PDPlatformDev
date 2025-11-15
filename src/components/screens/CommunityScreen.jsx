@@ -411,15 +411,23 @@ const NewThreadView = ({ setView }) => {
    MAIN COMPONENT: CommunityScreen (Router)
 ========================================================= */
 
-const CommunityScreen = () => {
+const CommunityScreen = ({ simulatedTier }) => {
     // --- Consume Services ---
-    const { user, navigate, LEADERSHIP_TIERS, featureFlags, isAdmin, isLoading: isAppLoading, error: appError } = useAppServices(); // cite: useAppServices.jsx
+    const { user, navigate, LEADERSHIP_TIERS, featureFlags, isAdmin, membershipData, isLoading: isAppLoading, error: appError } = useAppServices(); // cite: useAppServices.jsx
     // Use safeUser structure even if user context is briefly null during auth changes
     const safeUser = useMemo(() => user || { userId: null, name: 'Guest' }, [user]); // cite: useAppServices.jsx (provides user)
     
-    // Check membership access
-    const currentTier = user?.membershipTier || 'basic';
+    // Check membership access - use simulatedTier if provided, otherwise use actual membership
+    const currentTier = simulatedTier || membershipData?.currentTier || user?.membershipTier || 'basic';
     const hasCommunityAccess = membershipService.canAccessFeature(currentTier, 'communitySubmit');
+    
+    console.log('🏘️ [CommunityScreen] Tier check:', {
+        simulatedTier,
+        membershipDataTier: membershipData?.currentTier,
+        userMembershipTier: user?.membershipTier,
+        computedCurrentTier: currentTier,
+        hasCommunityAccess
+    });
 
     // --- Local State ---
     const [view, setView] = useState('home'); // Controls which sub-view is displayed

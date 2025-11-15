@@ -1635,16 +1635,24 @@ const ScenarioLibraryView = ({ setCoachingLabView, setSelectedScenario, setMicro
 
 
 // --- MAIN COACHING LAB ROUTER ---
-export default function CoachingLabScreen() {
+export default function CoachingLabScreen({ simulatedTier }) {
     const [view, setView] = useState('coaching-lab-home');
     const [selectedScenario, setSelectedScenario] = useState(null);
     const [preparedSBI, setPreparedSBI] = useState(null);
     const [microLearningTopic, setMicroLearningTopic] = useState(null);
-    const { navigate, currentUser } = useAppServices();
+    const { navigate, currentUser, membershipData } = useAppServices();
     
-    // Check membership access
-    const currentTier = currentUser?.membershipTier || 'basic';
+    // Check membership access - use simulatedTier if provided, otherwise use actual membership
+    const currentTier = simulatedTier || membershipData?.currentTier || currentUser?.membershipTier || 'basic';
     const hasCoachingAccess = membershipService.canAccessFeature(currentTier, 'aiCoaching');
+    
+    console.log('🧪 [CoachingLabScreen] Tier check:', {
+        simulatedTier,
+        membershipDataTier: membershipData?.currentTier,
+        currentUserTier: currentUser?.membershipTier,
+        computedCurrentTier: currentTier,
+        hasCoachingAccess
+    });
 
     // CRITICAL FIX: Scroll to the top whenever the view state changes
     useEffect(() => {
