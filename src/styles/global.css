@@ -338,6 +338,7 @@
 .page-corporate {
   background: var(--corporate-light-gray);
   min-height: 100vh;
+  width: 100%;
   font-family: var(--font-family-primary);
   color: var(--corporate-navy);
   line-height: 1.6;
