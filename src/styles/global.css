@@ -346,6 +346,7 @@
 /* === STANDARDIZED CONTAINER SYSTEM === */
 .container-corporate {
   width: 100%;
+  min-width: 100%;
   margin: 0 auto;
   padding-left: var(--spacing-sm);
   padding-right: var(--spacing-sm);
@@ -353,6 +354,7 @@
   padding-bottom: var(--spacing-sm);
   /* Wider container for all screens to match */
   max-width: 1400px;
+  box-sizing: border-box;
 }
 
 @media (min-width: 640px) {
