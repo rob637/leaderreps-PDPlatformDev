@@ -78,7 +78,7 @@ const LibraryCard = ({ title, description, icon: Icon, onClick, disabled = false
   );
 };
 
-const Library = ({ simulatedTier }) => {
+const Library = ({ simulatedTier, isDeveloperMode }) => {
   const { membershipData, navigate } = useAppServices();
   
   // Scroll to top when component mounts

@@ -209,8 +209,8 @@ const Dashboard = (props) => {
     isAdmin
   } = useAppServices();
   
-  // Get setCurrentScreen and simulatedTier from props (passed from ScreenRouter)
-  const { simulatedTier, setCurrentScreen: _setCurrentScreen } = props;
+  // Get setCurrentScreen, simulatedTier, and isDeveloperMode from props (passed from ScreenRouter)
+  const { simulatedTier, setCurrentScreen: _setCurrentScreen, isDeveloperMode } = props;
   
   const {
     // Add anchor data from DashboardHooks
