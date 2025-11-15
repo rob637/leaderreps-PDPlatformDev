@@ -2,12 +2,30 @@
 // Visual breakdown of skill progress across development plan
 // FIXED: Updated to work with adapted plan structure (coreReps), group by focus area
 
-import React, { useMemo } from 'react';
+import React, { useMemo, useEffect } from 'react';
 import { TrendingUp, Target, Award } from 'lucide-react';
 import { Card, ProgressBar, Badge } from './DevPlanComponents';
 import { COLORS, calculateSkillProgress } from './devPlanUtils';
 
 const ProgressBreakdown = ({ plan, globalMetadata }) => {
+  // Width debugging
+  useEffect(() => {
+    setTimeout(() => {
+      const container = document.querySelector('.space-y-4');
+      if (container) {
+        const rect = container.getBoundingClientRect();
+        const computed = window.getComputedStyle(container);
+        console.log('📐 [PROGRESS BREAKDOWN] Width Measurements:', {
+          component: 'ProgressBreakdown',
+          actualWidth: `${rect.width}px`,
+          maxWidth: computed.maxWidth,
+          padding: computed.padding,
+          margin: computed.margin,
+          classList: container.className
+        });
+      }
+    }, 100);
+  }, []);
   const skillProgress = useMemo(() => {
     if (!plan || !plan.coreReps) return [];
     

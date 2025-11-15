@@ -94,6 +94,25 @@ const ProgressScan = ({
   
   // NEW: State for simulated loading delay
   const [isGenerating, setIsGenerating] = useState(false);
+  
+  // Width debugging
+  React.useEffect(() => {
+    setTimeout(() => {
+      const container = document.querySelector('.w-full.max-w-4xl');
+      if (container) {
+        const rect = container.getBoundingClientRect();
+        const computed = window.getComputedStyle(container);
+        console.log('📐 [PROGRESS SCAN] Width Measurements:', {
+          component: 'ProgressScan',
+          actualWidth: `${rect.width}px`,
+          maxWidth: computed.maxWidth,
+          padding: computed.padding,
+          margin: computed.margin,
+          classList: container.className
+        });
+      }
+    }, 100);
+  }, [view]);
 
   // Adapt previous assessment to get correct field names
   const previousAssessment = useMemo(() => {

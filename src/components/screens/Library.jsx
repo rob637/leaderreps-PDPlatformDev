@@ -159,27 +159,9 @@ const Library = ({ simulatedTier, isDeveloperMode }) => {
   };
 
   return (
-      <div className="page-corporate animate-corporate-fade-in">
+      <div className="page-corporate container-corporate animate-corporate-fade-in">
         <div className="content-full">
       <div>
-        {/* DEBUG: Width Inspector */}
-        <div style={{
-          position: 'fixed',
-          top: '80px',
-          left: '10px',
-          background: 'rgba(0,128,0,0.9)',
-          color: 'white',
-          padding: '10px',
-          fontSize: '12px',
-          zIndex: 9999,
-          borderRadius: '8px',
-          fontFamily: 'monospace'
-        }}>
-          <div><strong>🔍 LIBRARY WIDTH DEBUG</strong></div>
-          <div>Container classes: page-corporate, content-full</div>
-          <div>Max-width should be: 1200px</div>
-        </div>
-        
         {/* Back Button */}
         <div className="flex items-center gap-2 mb-6 text-gray-600 hover:text-gray-800 cursor-pointer transition-colors" onClick={() => navigate('dashboard')}>
           <ArrowLeft className="w-5 h-5" />

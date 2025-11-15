@@ -451,7 +451,7 @@ async function confirmPlanPersisted(db, userId, retries = 4, delayMs = 250) {
   const isDeveloperMode = localStorage.getItem('arena-developer-mode') === 'true';
   
   return (
-    <div className="page-corporate animate-corporate-fade-in">
+    <div className="page-corporate container-corporate animate-corporate-fade-in">
       <div className="content-full">
       <div>
         {/* Back Button */}

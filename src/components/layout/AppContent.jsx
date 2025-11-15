@@ -174,9 +174,22 @@ const AppContent = ({
     if (!requiredTier) return true;
     
     const tierLevels = { basic: 1, professional: 2, elite: 3 };
-    const userLevel = tierLevels[simulatedTier || membershipData?.currentTier || 'basic'];
+    const currentUserTier = simulatedTier || membershipData?.currentTier || 'basic';
+    const userLevel = tierLevels[currentUserTier];
     const requiredLevel = tierLevels[requiredTier];
-    return userLevel >= requiredLevel;
+    const hasAccessResult = userLevel >= requiredLevel;
+    
+    console.log('🔐 [AppContent] Access Check:', {
+      requiredTier,
+      currentUserTier,
+      userLevel,
+      requiredLevel,
+      hasAccess: hasAccessResult,
+      isAdmin,
+      isDeveloperMode
+    });
+    
+    return hasAccessResult;
   };
 
   // Flat navigation menu items (NO subcategories/headers)
@@ -228,9 +241,17 @@ const AppContent = ({
                   {navigationItems
                     .filter(item => {
                       // Developer Tools only show in dev mode
-                      if (item.devModeOnly && !isDeveloperMode && !isAdmin) return false;
+                      if (item.devModeOnly && !isDeveloperMode && !isAdmin) {
+                        console.log(`🚫 [Navigation Filter] ${item.label} hidden (dev mode only)`);
+                        return false;
+                      }
                       // Check tier access
-                      if (!hasAccess(item.requiredTier)) return false;
+                      const hasItemAccess = hasAccess(item.requiredTier);
+                      if (!hasItemAccess) {
+                        console.log(`🚫 [Navigation Filter] ${item.label} hidden (insufficient tier access)`);
+                        return false;
+                      }
+                      console.log(`✅ [Navigation Filter] ${item.label} visible`);
                       return true;
                     })
                     .map((item) => (

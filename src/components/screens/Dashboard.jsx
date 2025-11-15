@@ -525,29 +525,9 @@ const Dashboard = (props) => {
 
   // --- RENDER ---
   return (
-    <div className="page-corporate animate-corporate-fade-in">
+    <div className="page-corporate container-corporate animate-corporate-fade-in">
       <div className="content-full">
       <div>
-      {/* DEBUG: Width Inspector */}
-      {isDeveloperMode && (
-        <div style={{
-          position: 'fixed',
-          top: '80px',
-          right: '10px',
-          background: 'rgba(0,0,0,0.9)',
-          color: 'white',
-          padding: '10px',
-          fontSize: '12px',
-          zIndex: 9999,
-          borderRadius: '8px',
-          fontFamily: 'monospace'
-        }}>
-          <div><strong>🔍 DASHBOARD WIDTH DEBUG</strong></div>
-          <div>Container classes: page-corporate, content-full</div>
-          <div>Max-width should be: 1200px</div>
-        </div>
-      )}
-      
       {/* Save indicator */}
       <SaveIndicator isSaving={isSaving} />
 

@@ -1,7 +1,7 @@
 // src/components/developmentplan/MilestoneTimeline.jsx
 // Visual timeline showing progress through the 12-week development cycle
 
-import React from 'react';
+import React, { useEffect } from 'react';
 // REQ #5: Import Button and ArrowLeft
 import { CheckCircle, Circle, Flag, Calendar, ArrowLeft } from 'lucide-react';
 import { Card, Badge, Button } from './DevPlanComponents';
@@ -10,6 +10,25 @@ import { MILESTONE_CONFIG, getCurrentWeek, getCurrentPhase, COLORS } from './dev
 const MilestoneTimeline = ({ plan, onBack }) => {
   const currentWeek = getCurrentWeek(plan);
   const currentPhase = getCurrentPhase(currentWeek);
+  
+  // Width debugging
+  useEffect(() => {
+    setTimeout(() => {
+      const container = document.querySelector('.w-full.mx-auto');
+      if (container) {
+        const rect = container.getBoundingClientRect();
+        const computed = window.getComputedStyle(container);
+        console.log('📐 [MILESTONE TIMELINE] Width Measurements:', {
+          component: 'MilestoneTimeline',
+          actualWidth: `${rect.width}px`,
+          maxWidth: computed.maxWidth,
+          padding: computed.padding,
+          margin: computed.margin,
+          classList: container.className
+        });
+      }
+    }, 100);
+  }, []);
   
   return (
     // REQ #5: Improved wrapper div for better layout - FULL WIDTH

@@ -81,6 +81,25 @@ const DetailedPlanView = ({
   const currentCycle = developmentPlanData?.currentCycle || 1;
   const latestAssessment = developmentPlanData?.assessmentHistory?.[developmentPlanData.assessmentHistory.length - 1];
   
+  // Width debugging
+  React.useEffect(() => {
+    setTimeout(() => {
+      const container = document.querySelector('.w-full.max-w-7xl');
+      if (container) {
+        const rect = container.getBoundingClientRect();
+        const computed = window.getComputedStyle(container);
+        console.log('📐 [DETAILED PLAN VIEW] Width Measurements:', {
+          component: 'DetailedPlanView',
+          actualWidth: `${rect.width}px`,
+          maxWidth: computed.maxWidth,
+          padding: computed.padding,
+          margin: computed.margin,
+          classList: container.className
+        });
+      }
+    }, 100);
+  }, []);
+  
   const journeyPhase = useMemo(() => 
     JOURNEY_MAP.find(j => j.cycle === currentCycle)?.phase || 'Foundation', 
     [currentCycle]
