@@ -340,8 +340,8 @@ const AppContent = ({
 
       {/* Navigation moved to header dropdown */}
 
-      <main className="flex-1 flex flex-col pb-20 md:pb-0">
-        <div className="flex-1 overflow-y-auto">
+      <main className="flex-1 flex flex-col pb-20 md:pb-0 w-full">
+        <div className="flex-1 overflow-y-auto w-full">
             <Suspense
               fallback={
                 <div className="min-h-[calc(100vh-64px)] flex items-center justify-center gradient-corporate-hero">
