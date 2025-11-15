@@ -523,7 +523,7 @@ const CommunityScreen = () => {
             </header>
 
             {/* Main Layout Grid (Sidebar + Content) */}
-            <div className={`grid grid-cols-1 lg:grid-cols-4 gap-3 ${!hasCommunityAccess ? 'opacity-60 pointer-events-none' : ''}`}>
+            <div className={`grid grid-cols-1 lg:grid-cols-6 gap-3 ${!hasCommunityAccess ? 'opacity-60 pointer-events-none' : ''}`}>
                 {/* Sidebar Navigation */}
                 <aside className="lg:col-span-1 space-y-4 lg:sticky lg:top-3 sm:p-4 lg:p-6 self-start"> {/* Make sidebar sticky */}
                     <h3 className="text-xs font-extrabold uppercase tracking-wider px-3 py-1 rounded text-gray-500 bg-gray-100 border border-gray-200">
@@ -556,7 +556,7 @@ const CommunityScreen = () => {
                 </aside>
 
                 {/* Main Content Area */}
-                <main className="lg:col-span-3">
+                <main className="lg:col-span-5">
                     {renderContent()}
                 </main>
             </div>

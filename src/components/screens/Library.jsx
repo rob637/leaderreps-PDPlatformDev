@@ -128,7 +128,12 @@ const Library = ({ simulatedTier }) => {
 
   const handleCardClick = (item) => {
     if (navigate && typeof navigate === 'function') {
-      navigate(item.screen);
+      const hasAccess = membershipService.hasAccess(currentTier, item.requiredTier);
+      if (!hasAccess) {
+        navigate('membership-upgrade');
+      } else {
+        navigate(item.screen);
+      }
     }
   };
 
