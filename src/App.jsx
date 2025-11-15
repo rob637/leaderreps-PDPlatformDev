@@ -21,7 +21,11 @@ import {
 // --- UI/UX & Icons ---
 import { Loader } from 'lucide-react';
 
+// --- Custom Hooks ---
+import useNavigationHistory from './hooks/useNavigationHistory.js';
+
 // --- New Structure ---
+import NavigationProvider from './providers/NavigationProvider.jsx';
 import AuthPanel from './components/auth/AuthPanel.jsx';
 import AppContent from './components/layout/AppContent.jsx';
 import DataProvider from './providers/DataProvider.jsx';
@@ -72,23 +76,33 @@ function App() {
   const [isNavExpanded, setIsNavExpanded] = useState(true);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
 
-  // Prevent browser back/forward navigation from leaving the app
+  // Navigation history manager for browser back/forward buttons
+  const {
+    pushNavigationState,
+    getCurrentState,
+    goBack,
+    canGoBack,
+    clearHistory
+  } = useNavigationHistory();
+
+  // Handle navigation state changes
   useEffect(() => {
-    // Push a dummy state to create history entry
-    window.history.pushState(null, '', window.location.href);
-    
-    const handlePopState = (e) => {
-      // Prevent navigation and stay in the app
-      window.history.pushState(null, '', window.location.href);
-      console.log('[App] Blocked browser back/forward navigation');
-    };
-    
-    window.addEventListener('popstate', handlePopState);
-    
-    return () => {
-      window.removeEventListener('popstate', handlePopState);
-    };
-  }, []);
+    const currentState = getCurrentState();
+    if (currentState) {
+      console.log('[App] Restoring navigation state:', currentState);
+      setCurrentScreen(currentState.screen || 'dashboard');
+      setNavParams(currentState.params || {});
+    }
+  }, [getCurrentState]);
+
+  // Clear history on user change
+  useEffect(() => {
+    if (user) {
+      clearHistory();
+      // Push initial dashboard state
+      pushNavigationState({ screen: 'dashboard', params: {} });
+    }
+  }, [user?.uid, clearHistory, pushNavigationState]);
 
   useEffect(() => {
     const config = typeof window.__FIREBASE_CONFIG__ !== 'undefined' ? window.__FIREBASE_CONFIG__ : undefined;
@@ -115,9 +129,13 @@ function App() {
   }, [firebaseServices]);
 
   const navigate = useCallback((screen, params = {}) => {
+    console.log('[App] Navigating to:', screen, params);
     setCurrentScreen(screen);
     setNavParams(params);
-  }, []);
+    
+    // Push to navigation history for browser back/forward support
+    pushNavigationState({ screen, params });
+  }, [pushNavigationState]);
 
   const isAuthRequired = !user && isAuthReady;
 
@@ -178,18 +196,26 @@ function App() {
       {isAuthRequired ? (
         <AuthPanel auth={firebaseServices.auth} onSuccess={() => {}} />
       ) : (
-        <AppContent
+        <NavigationProvider
+          navigate={navigate}
+          canGoBack={canGoBack}
+          goBack={goBack}
           currentScreen={currentScreen}
-          setCurrentScreen={setCurrentScreen}
-          user={user}
           navParams={navParams}
-          isMobileOpen={isMobileOpen}
-          setIsMobileOpen={setIsMobileOpen}
-          isAuthRequired={isAuthRequired}
-          isNavExpanded={isNavExpanded}
-          setIsNavExpanded={setIsNavExpanded}
-          auth={firebaseServices.auth}
-        />
+        >
+          <AppContent
+            currentScreen={currentScreen}
+            setCurrentScreen={setCurrentScreen}
+            user={user}
+            navParams={navParams}
+            isMobileOpen={isMobileOpen}
+            setIsMobileOpen={setIsMobileOpen}
+            isAuthRequired={isAuthRequired}
+            isNavExpanded={isNavExpanded}
+            setIsNavExpanded={setIsNavExpanded}
+            auth={firebaseServices.auth}
+          />
+        </NavigationProvider>
       )}
     </DataProvider>
   );

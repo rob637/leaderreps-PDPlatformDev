@@ -483,21 +483,12 @@ async function confirmPlanPersisted(db, userId, retries = 4, delayMs = 250) {
   const isDeveloperMode = localStorage.getItem('arena-developer-mode') === 'true';
   
   return (
-    <div className="relative space-y-4 sm:space-y-5 lg:space-y-6 p-4 sm:p-3 sm:p-4 lg:p-6">
+    <div className="page-corporate container-corporate animate-corporate-fade-in">
       {/* Back Button */}
-      <Button
-        onClick={() => navigate && navigate('dashboard')}
-        variant="nav-back"
-        size="sm"
-        className="mb-4"
-      >
-        <span className="flex items-center">
-          <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-          </svg>
-          Back to The Arena
-        </span>
-      </Button>
+      <div className="flex items-center gap-2 mb-6 text-gray-600 hover:text-gray-800 cursor-pointer transition-colors" onClick={() => navigate && navigate('dashboard')}>
+        <ArrowLeft className="w-4 h-4" />
+        <span className="text-sm font-medium">Back to The Arena</span>
+      </div>
 
       {/* Developer Mode Reset Button */}
       {isDeveloperMode && hasCurrentPlan && (

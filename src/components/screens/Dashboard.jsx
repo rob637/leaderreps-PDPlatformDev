@@ -27,7 +27,6 @@ import {
   BonusExerciseModal,
   SocialPodCard,
   DailyProgressSummary,
-  AnchorsInAction,
   // === UNIFIED IMPORTS ===
   UnifiedAnchorEditorModal,
   AdditionalRepsCard
@@ -242,6 +241,7 @@ const Dashboard = (props) => {
     handleToggleWIN,
     handleSaveMorningBookend,
     handleSaveWIN,
+    isSavingWIN,
     amWinCompleted
   } = useDashboard({
     ...props,
@@ -548,17 +548,6 @@ const Dashboard = (props) => {
         </div>
       )}
 
-      {/* Anchors In Action - Shows how anchors are used */}
-      {visibleComponents.includes('dynamicBookend') && (identityStatement || habitAnchor || whyStatement) && (
-        <div className="section-corporate">
-          <AnchorsInAction 
-            identityStatement={identityStatement}
-            habitAnchor={habitAnchor}
-            whyStatement={whyStatement}
-          />
-        </div>
-      )}
-
       {/* Daily Progress Summary - Shows WIN and Reflections */}
       {visibleComponents.includes('dynamicBookend') && (
         <div className="section-corporate">
@@ -582,6 +571,7 @@ const Dashboard = (props) => {
             identityStatement,
             onSave: handleSaveMorningBookend,
             onSaveWIN: handleSaveWIN,
+            isSavingWIN,
             isSaving: isSavingBookend,
             winCompleted: amWinCompleted
           }}
@@ -595,7 +585,12 @@ const Dashboard = (props) => {
             habitsCompleted,
             onHabitToggle: handleHabitToggle,
             onSave: handleSaveEveningBookend,
-            isSaving: isSavingBookend
+            isSaving: isSavingBookend,
+            // Add task management to evening bookend
+            otherTasks,
+            onAddTask: handleAddTask,
+            onToggleTask: handleToggleTask,
+            onRemoveTask: handleRemoveTask
           }}
           dailyPracticeData={{}}
         />
@@ -644,7 +639,7 @@ const Dashboard = (props) => {
       {/* Unified Anchor FAB */}
       {showAnchorFAB && (
         <button
-          onClick={handleAnchorModalOpen}
+          onClick={handleOpenEditor}
           className={`fixed bottom-6 right-6 z-40 p-4 rounded-full shadow-2xl transition-all duration-300 hover:scale-110 ${!hasActiveAnchor ? 'animate-bounce' : ''}`}
           style={{
             background: hasActiveAnchor

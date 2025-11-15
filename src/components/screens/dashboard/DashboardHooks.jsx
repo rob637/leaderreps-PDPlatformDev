@@ -400,14 +400,15 @@ export const useDashboard = ({
       
       console.log('[Dashboard] Evening bookend saved successfully with next-day reminders');
       
-      // Show success message with reminder info
-      let message = '✅ Evening Reflection saved!';
+      // Always show success message with clear guidance about value
+      let message = '✅ Evening Reflection saved successfully!\n\n';
+      message += '📊 Your reflections appear in "Today\'s Progress" section above\n';
+      message += '📈 They\'re analyzed for growth patterns in your Executive ROI Report\n';
+      message += '📚 Full history is available in your Reflection Log\n';
       if (newReminders.length > 0) {
-        message += ` ${newReminders.length} reminder(s) created for tomorrow.`;
+        message += `\n🔔 ${newReminders.length} smart reminder(s) created for tomorrow based on your insights`;
       }
-      if (isDeveloperMode()) {
-        alert(message);
-      }
+      alert(message);
     } catch (error) {
       console.error('[Dashboard] Error saving evening bookend:', error);
       console.error('[Dashboard] Error details:', {
@@ -561,6 +562,8 @@ export const useDashboard = ({
   }, []);
 
   // NEW: Handle saving WIN separately
+  const [isSavingWIN, setIsSavingWIN] = useState(false);
+  
   const handleSaveWIN = useCallback(async () => {
     // Use the destructured prop directly
     if (!updateDailyPracticeData) {
@@ -569,6 +572,7 @@ export const useDashboard = ({
       return;
     }
     
+    setIsSavingWIN(true);
     console.log('[Dashboard] Saving WIN:', morningWIN);
     
     try {
@@ -581,15 +585,16 @@ export const useDashboard = ({
       
       if (success) {
         console.log('[Dashboard] WIN saved successfully');
-        if (isDeveloperMode()) {
-          alert('✅ Today\'s WIN saved! This will be tracked in your progress.');
-        }
+        // Always show feedback, not just in dev mode
+        alert('✅ Today\'s WIN saved successfully!\n\nYou can see it in the "Today\'s Progress" section below.');
       } else {
         throw new Error('Update returned false');
       }
     } catch (error) {
       console.error('[Dashboard] Error saving WIN:', error);
       alert('❌ Error saving WIN: ' + error.message);
+    } finally {
+      setIsSavingWIN(false);
     }
   }, [morningWIN, updateDailyPracticeData]); // Explicitly include prop
 
@@ -662,6 +667,7 @@ export const useDashboard = ({
     handleToggleWIN,
     handleHabitToggle,
     handleSaveWIN,
+    isSavingWIN,
 
     // Computed Values
     amCompletedAt,

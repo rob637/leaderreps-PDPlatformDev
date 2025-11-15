@@ -69,7 +69,7 @@ const DebugDataViewer = () => {
     // --- Render Logic ---
     return (
         // Consistent page structure and padding
-        <div className="p-6 md:p-4 sm:p-3 sm:p-4 lg:p-6 lg:p-8 lg:p-10 space-y-4 sm:space-y-5 lg:space-y-6 max-w-7xl mx-auto min-h-screen" style={{ background: COLORS.BG }}> {/* Use BG color */}
+        <div className="p-3 sm:p-4 lg:p-6 space-y-4 sm:space-y-5 lg:space-y-6 mx-auto min-h-screen" style={{ background: COLORS.BG }}> {/* Use BG color */}
             {/* Back Button */}
             <Button onClick={() => navigate('app-settings')} variant="nav-back" size="sm" className="mb-6">
                 <ArrowLeft className="w-4 h-4 mr-2" /> Back to Settings

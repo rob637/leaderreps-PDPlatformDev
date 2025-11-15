@@ -366,7 +366,7 @@ const MembershipModule = () => {
             {/* --- Payment Modal --- */}
             {modalOpen && selectedPlan && (
                 <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4">
-                    <div className="bg-white rounded-2xl p-4 sm:p-3 sm:p-4 lg:p-6 lg:p-8 max-w-lg w-full shadow-2xl">
+                    <div className="bg-white rounded-2xl p-3 sm:p-4 lg:p-6 w-full shadow-2xl">
                         <div className="flex justify-between items-center mb-6">
                             <h2 className="text-xl sm:text-2xl font-bold" style={{ color: COLORS.NAVY }}>
                                 Secure Checkout: {selectedPlan.name}

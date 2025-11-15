@@ -254,7 +254,7 @@ const PreMortemView = ({ setPlanningView }) => {
 
     return (
         // Consistent page structure and padding
-        <div className="p-6 md:p-4 sm:p-3 sm:p-4 lg:p-6 lg:p-8 lg:p-10">
+        <div className="p-3 sm:p-4 lg:p-6">
             {/* Header */}
             <h1 className="text-xl sm:text-2xl sm:text-3xl font-extrabold mb-2" style={{ color: COLORS.NAVY }}>Tool: Decision Pre-Mortem Audit</h1>
             <p className="text-lg text-gray-600 mb-6 max-w-3xl">Identify critical risks *before* committing to a high-stakes decision using the AI Devil's Advocate.</p>
@@ -423,7 +423,7 @@ const VisionBuilderView = ({ setPlanningView }) => {
 
     return (
         // Consistent page structure and padding
-        <div className="p-6 md:p-4 sm:p-3 sm:p-4 lg:p-6 lg:p-8 lg:p-10">
+        <div className="p-3 sm:p-4 lg:p-6">
             {/* Header */}
             <h1 className="text-xl sm:text-2xl sm:text-3xl font-extrabold mb-2" style={{ color: COLORS.NAVY }}>Tool: Vision & Mission Builder</h1>
             <p className="text-lg text-gray-600 mb-6 max-w-3xl">Define your aspirational 3-5 year Vision (Future State) and Mission (Core Purpose).</p>

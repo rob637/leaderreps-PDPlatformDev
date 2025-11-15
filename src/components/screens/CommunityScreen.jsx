@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 // --- Core Services & Context ---
 import { useAppServices } from '../../services/useAppServices.jsx'; // cite: useAppServices.jsx
+import { membershipService } from '../../services/membershipService.js';
 
 // --- Icons ---
 import {
@@ -417,6 +418,10 @@ const CommunityScreen = () => {
     const { user, navigate, LEADERSHIP_TIERS, featureFlags, isAdmin, isLoading: isAppLoading, error: appError } = useAppServices(); // cite: useAppServices.jsx
     // Use safeUser structure even if user context is briefly null during auth changes
     const safeUser = useMemo(() => user || { userId: null, name: 'Guest' }, [user]); // cite: useAppServices.jsx (provides user)
+    
+    // Check membership access
+    const currentTier = user?.membershipTier || 'basic';
+    const hasCommunityAccess = membershipService.canAccessFeature(currentTier, 'communitySubmit');
 
     // --- Local State ---
     const [view, setView] = useState('home'); // Controls which sub-view is displayed
@@ -494,29 +499,24 @@ const CommunityScreen = () => {
     if (appError) return <ConfigError message={`Failed to load Community Hub: ${appError.message}`} />;
 
     return (
-        // Consistent page structure and padding
-        <div className="relative space-y-4 sm:space-y-5 lg:space-y-6 p-4 sm:p-3 sm:p-4 lg:p-6" style={{ background: COLORS.BG }}>
+        <div className="page-corporate container-corporate animate-corporate-fade-in">
             {/* Back Button */}
-            <Button
-                onClick={() => navigate('dashboard')}
-                variant="nav-back"
-                size="sm"
-                className="mb-4"
-            >
-                <ArrowLeft className="w-4 h-4 mr-2" /> Back to The Arena
-            </Button>
+            <div className="flex items-center gap-2 mb-6 text-gray-600 hover:text-gray-800 cursor-pointer transition-colors" onClick={() => navigate('dashboard')}>
+                <ArrowLeft className="w-4 h-4" />
+                <span className="text-sm font-medium">Back to The Arena</span>
+            </div>
 
             {/* Header */}
             <header className='flex items-center gap-4 border-b-2 pb-3 mb-8' style={{borderColor: COLORS.NAVY+'30'}}>
                 <Users className='w-10 h-10 flex-shrink-0' style={{color: COLORS.TEAL}}/>
                 <div>
-                     <h1 className="text-xl sm:text-2xl sm:text-3xl md:text-4xl font-extrabold" style={{ color: COLORS.NAVY }}>Leadership Community</h1>
-                     <p className="text-md text-gray-600 mt-1">(Community Pillar 3)</p>
+                     <h1 className="corporate-heading-xl" style={{ color: COLORS.NAVY }}>Leadership Community</h1>
+                     <p className="corporate-text-body text-gray-600 mt-1">Connect, share insights, and grow with fellow leaders.</p>
                 </div>
             </header>
 
             {/* Main Layout Grid (Sidebar + Content) */}
-            <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 sm:p-3 sm:p-4 lg:p-6 lg:p-8">
+            <div className={`grid grid-cols-1 lg:grid-cols-4 gap-3 ${!hasCommunityAccess ? 'opacity-60 pointer-events-none' : ''}`}>
                 {/* Sidebar Navigation */}
                 <aside className="lg:col-span-1 space-y-4 lg:sticky lg:top-3 sm:p-4 lg:p-6 self-start"> {/* Make sidebar sticky */}
                     <h3 className="text-xs font-extrabold uppercase tracking-wider px-3 py-1 rounded text-gray-500 bg-gray-100 border border-gray-200">
@@ -531,7 +531,7 @@ const CommunityScreen = () => {
                         return (
                             <button
                                 key={item.screen}
-                                onClick={() => setView(item.screen)}
+                                onClick={hasCommunityAccess ? () => setView(item.screen) : undefined}
                                 // Consistent button styling for sidebar nav
                                 className={`flex items-center w-full p-3 rounded-xl font-semibold text-sm relative transition-all duration-200 shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-[${COLORS.TEAL}] ${
                                     isActive
@@ -553,6 +553,53 @@ const CommunityScreen = () => {
                     {renderContent()}
                 </main>
             </div>
+            
+            {/* Unlock Section for Basic Users */}
+            {!hasCommunityAccess && (
+                <div className="mt-8 relative overflow-hidden rounded-3xl border-4 border-gradient-to-r from-orange-400 to-teal-500 shadow-2xl">
+                    <div className="absolute inset-0 bg-gradient-to-br from-orange-50 via-white to-teal-50"></div>
+                    <div className="absolute top-4 right-4 w-32 h-32 rounded-full bg-gradient-to-br from-orange-200 to-teal-200 opacity-30 animate-pulse"></div>
+                    <div className="absolute bottom-4 left-4 w-24 h-24 rounded-full bg-gradient-to-br from-navy-200 to-orange-200 opacity-30 animate-bounce"></div>
+                    
+                    <div className="relative z-10 p-8">
+                        <div className="flex items-center justify-center gap-2 mb-4">
+                            <Users className="w-8 h-8 animate-pulse" style={{ color: COLORS.ORANGE }} />
+                            <h3 className="text-2xl font-bold" style={{ color: COLORS.NAVY }}>
+                                🚀 Join the Leadership Community
+                            </h3>
+                            <Users className="w-8 h-8 animate-pulse" style={{ color: COLORS.TEAL }} />
+                        </div>
+                        
+                        <p className="text-lg text-gray-700 mb-6 mx-auto px-4">
+                            Connect with <strong>1,200+ leaders</strong> sharing insights, asking questions, and growing together. Join discussions on <strong>leadership challenges</strong>, <strong>team dynamics</strong>, and <strong>professional growth</strong> strategies.
+                        </p>
+                        
+                        <div className="flex items-center justify-center gap-6 mb-6">
+                            <div className="text-center">
+                                <div className="text-2xl font-bold" style={{ color: COLORS.TEAL }}>1200+</div>
+                                <div className="text-sm text-gray-600">Leaders</div>
+                            </div>
+                            <div className="text-center">
+                                <div className="text-2xl font-bold" style={{ color: COLORS.NAVY }}>24/7</div>
+                                <div className="text-sm text-gray-600">Discussions</div>
+                            </div>
+                            <div className="text-center">
+                                <div className="text-2xl font-bold" style={{ color: COLORS.ORANGE }}>∞</div>
+                                <div className="text-sm text-gray-600">Insights</div>
+                            </div>
+                        </div>
+                        
+                        <button
+                            onClick={() => navigate && navigate('membership-upgrade')}
+                            className="bg-gradient-to-r from-teal-600 to-navy-600 text-white px-8 py-4 rounded-xl font-bold text-lg shadow-xl hover:shadow-2xl transform hover:-translate-y-1 transition-all duration-300"
+                        >
+                            🎯 Upgrade Now & Join Community
+                        </button>
+                        
+                        <p className="text-xs text-gray-500 mt-3">Connect with leaders who are growing just like you</p>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

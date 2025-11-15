@@ -7,7 +7,9 @@
 /* eslint-disable no-console */
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 // FIX: Import the real useAppServices from the standard path.
-import { useAppServices } from '../../services/useAppServices.jsx'; 
+import { useAppServices } from '../../services/useAppServices.jsx';
+import { membershipService } from '../../services/membershipService.js';
+import { useNavigation } from '../../providers/NavigationProvider.jsx'; 
 import { AlertTriangle, ArrowLeft, BarChart3, Briefcase, CheckCircle, Clock, CornerRightUp, Cpu, Eye, HeartPulse, Info, Lightbulb, Mic, Play, PlusCircle, Send, ShieldCheck, Star, Target, TrendingUp, Users, X, Zap } from 'lucide-react'; 
 import { COLORS, COMPLEXITY_MAP } from './labs/labConstants.js';
 
@@ -807,7 +809,7 @@ const RolePlayView = ({ scenario, setCoachingLabView, difficultyLevel, preparedS
     if (isPrimingModalVisible) {
         return (
             <div className="fixed inset-0 bg-[#002E47]/90 z-50 flex items-center justify-center p-4">
-                <div className="bg-[#FCFCFA] rounded-3xl shadow-2xl w-full max-w-lg p-4 sm:p-3 sm:p-4 lg:p-6 lg:p-8">
+                <div className="bg-[#FCFCFA] rounded-3xl shadow-2xl w-full p-3 sm:p-4 lg:p-6">
                     <h2 className="text-xl sm:text-2xl font-extrabold text-[#002E47] mb-4 flex items-center">
                         <HeartPulse className="w-6 h-6 mr-3" /> Psychological Priming Check
                     </h2>
@@ -973,6 +975,7 @@ const RolePlayView = ({ scenario, setCoachingLabView, difficultyLevel, preparedS
 // --- PROGRESS ANALYTICS DASHBOARD ---
 const ProgressAnalyticsView = ({ setCoachingLabView }) => {
     const { dailyPracticeData } = useAppServices();
+    const { canGoBack, goBack } = useNavigation();
     const practiceHistory = dailyPracticeData?.practice_history || [];
     
     // Calculate analytics
@@ -1022,13 +1025,25 @@ const ProgressAnalyticsView = ({ setCoachingLabView }) => {
     const previousAvg = prev5.length > 0 ? prev5.reduce((sum, s) => sum + s.score, 0) / prev5.length : 0;
     const velocityChange = recentAvg - previousAvg;
     
+    const handleBackClick = () => {
+        if (canGoBack) {
+            goBack();
+        } else {
+            setCoachingLabView('coaching-lab-home');
+        }
+    };
+    
     return (
         <div className="p-4 sm:p-3 sm:p-4 lg:p-6 lg:p-8">
-            <h1 className="text-xl sm:text-2xl sm:text-3xl font-extrabold text-[#002E47] mb-4">Progress Analytics Dashboard</h1>
-            <p className="text-lg text-gray-600 mb-6">Track your leadership practice performance and identify growth opportunities.</p>
+            <Button onClick={handleBackClick} variant="nav-back" size="sm" className="mb-6">
+                <ArrowLeft className="w-4 h-4 mr-2" /> {canGoBack ? 'Back' : 'Back to Coaching Lab'}
+            </Button>
             
-            <Button onClick={() => setCoachingLabView('coaching-lab-home')} variant="nav-back" size="sm" className="mb-8">
-                <ArrowLeft className="w-5 h-5 mr-2" /> Back to Coaching Lab
+            <h1 className="corporate-heading-xl mb-4" style={{ color: '#002E47' }}>Progress Analytics</h1>
+            <p className="corporate-text-body text-gray-600 mb-6">Track your leadership practice performance and identify growth opportunities.</p>
+            
+            <Button onClick={handleBackClick} variant="nav-back" size="sm" className="mb-8">
+                <ArrowLeft className="w-5 h-5 mr-2" /> {canGoBack ? 'Back' : 'Back to Coaching Lab'}
             </Button>
             
             {totalSessions === 0 ? (
@@ -1251,7 +1266,7 @@ const MicroLearningView = ({ topic, setCoachingLabView, onComplete }) => {
     const isLastSlide = currentSlide === module.slides.length - 1;
     
     return (
-        <div className="p-4 sm:p-3 sm:p-4 lg:p-6 lg:p-8 max-w-3xl mx-auto">
+        <div className="p-3 sm:p-4 lg:p-6 mx-auto">
             <div className="mb-8">
                 <h1 className="text-xl sm:text-2xl sm:text-3xl font-extrabold text-[#002E47] mb-2 flex items-center">
                     <Icon className="w-8 h-8 mr-3 text-[#47A88D]" />
@@ -1402,7 +1417,7 @@ Return only valid JSON, no additional text.`;
     
     return (
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4 overflow-y-auto">
-            <div className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full p-4 sm:p-3 sm:p-4 lg:p-6 lg:p-8 my-8">
+            <div className="bg-white rounded-2xl shadow-2xl w-full p-3 sm:p-4 lg:p-6 my-8">
                 <div className="flex justify-between items-center mb-6">
                     <h2 className="text-xl sm:text-2xl sm:text-3xl font-extrabold text-[#002E47]">Custom Scenario Builder</h2>
                     <button onClick={onClose} className="text-gray-500 hover:text-[#002E47]">
@@ -1525,10 +1540,14 @@ const ScenarioLibraryView = ({ setCoachingLabView, setSelectedScenario, setMicro
     const { SCENARIO_CATALOG } = useAppServices();
     // SCENARIO_CATALOG is an array, not an object with items property
     const scenarios = useMemo(() => {
+        console.log('[CoachingLab] SCENARIO_CATALOG data:', SCENARIO_CATALOG);
         if (Array.isArray(SCENARIO_CATALOG)) {
+            console.log('[CoachingLab] Found', SCENARIO_CATALOG.length, 'scenarios:', SCENARIO_CATALOG.map(s => s.title));
             return SCENARIO_CATALOG;
         }
-        return SCENARIO_CATALOG?.items || [];
+        const items = SCENARIO_CATALOG?.items || [];
+        console.log('[CoachingLab] Found', items.length, 'scenarios from items array');
+        return items;
     }, [SCENARIO_CATALOG]);
     
     const handleScenarioClick = (scenario) => {
@@ -1552,7 +1571,7 @@ const ScenarioLibraryView = ({ setCoachingLabView, setSelectedScenario, setMicro
     
     return (
     <div className="p-4 sm:p-3 sm:p-4 lg:p-6 lg:p-8">
-    <h1 className="text-xl sm:text-2xl sm:text-3xl font-extrabold text-[#002E47] mb-4">Scenario Library: Practice Conversations</h1>
+    <h1 className="corporate-heading-xl mb-4" style={{ color: '#002E47' }}>Scenario Library</h1>
     <p className="text-lg text-gray-600 mb-6">Select a high-stakes scenario to practice your preparation process. Each scenario includes a unique persona for the AI simulator.</p>
     <Button onClick={() => setCoachingLabView('coaching-lab-home')} variant="nav-back" size="sm" className="mb-8">
     <ArrowLeft className="w-5 h-5 mr-2" /> Back to Coaching Lab
@@ -1580,7 +1599,7 @@ const ScenarioLibraryView = ({ setCoachingLabView, setSelectedScenario, setMicro
       {/* Micro-Learning Prompt Modal */}
       {showMicroLearningPrompt && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full p-4 sm:p-3 sm:p-4 lg:p-6 lg:p-8">
+          <div className="bg-white rounded-2xl shadow-2xl w-full p-3 sm:p-4 lg:p-6">
             <h2 className="text-xl sm:text-2xl font-extrabold text-[#002E47] mb-4">Quick Skill Refresher?</h2>
             <p className="text-gray-700 mb-6">Take 2 minutes to review a key skill before practicing this scenario. Or skip and go straight to preparation.</p>
             
@@ -1645,7 +1664,11 @@ export default function CoachingLabScreen() {
     const [selectedScenario, setSelectedScenario] = useState(null);
     const [preparedSBI, setPreparedSBI] = useState(null);
     const [microLearningTopic, setMicroLearningTopic] = useState(null);
-    const { navigate } = useAppServices();
+    const { navigate, currentUser } = useAppServices();
+    
+    // Check membership access
+    const currentTier = currentUser?.membershipTier || 'basic';
+    const hasCoachingAccess = membershipService.canAccessFeature(currentTier, 'aiCoaching');
 
     // CRITICAL FIX: Scroll to the top whenever the view state changes
     useEffect(() => {
@@ -1693,22 +1716,23 @@ export default function CoachingLabScreen() {
                 return (
                     <div>
                         {/* Back Button */}
-                        <Button onClick={() => navigate('dashboard')} variant="outline" size="sm" className="mb-6">
-                            <ArrowLeft className="w-4 h-4 mr-2" />
-                            Back to The Arena
-                        </Button>
+                        <div className="flex justify-center mb-6">
+                            <div className="flex items-center gap-2 text-gray-800 hover:text-black cursor-pointer transition-colors" onClick={() => navigate('dashboard')}>
+                                <ArrowLeft className="w-4 h-4" />
+                                <span className="text-sm font-medium">Back to The Arena</span>
+                            </div>
+                        </div>
                         
-                        <h1 className="text-xl sm:text-2xl sm:text-3xl font-extrabold text-[#002E47] mb-2">Coaching Lab</h1>
-                        <p className="text-md text-gray-600 mb-1">(Coaching Pillar 2)</p>
-                        <p className="text-lg text-gray-600 mb-8">Welcome to the Coaching Lab. Select a tool to build your leadership skills.</p>
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:p-4 lg:p-6">
-                            <Card title="Scenario Library" icon={Briefcase} onClick={() => setView('scenario-library')}>
+                        <h1 className="corporate-heading-xl mb-4" style={{ color: '#002E47' }}>Coaching Lab</h1>
+                        <p className="corporate-text-body text-gray-600 mb-8">Welcome to the Coaching Lab. Select a tool to build your leadership skills.</p>
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                            <Card title="Scenario Library" icon={Briefcase} onClick={hasCoachingAccess ? () => setView('scenario-library') : undefined}>
                                 <p className="text-sm text-gray-600">Practice high-stakes conversations in a realistic AI role-play simulator.</p>
                             </Card>
-                            <Card title="Progress Analytics" icon={BarChart3} onClick={() => setView('progress-analytics')}>
+                            <Card title="Progress Analytics" icon={BarChart3} onClick={hasCoachingAccess ? () => setView('progress-analytics') : undefined}>
                                 <p className="text-sm text-gray-600">Track your performance trends, strengths, and growth opportunities.</p>
                             </Card>
-                            <Card title="Practice History" icon={Clock} onClick={() => navigate('daily-practice')}>
+                            <Card title="Practice History" icon={Clock} onClick={hasCoachingAccess ? () => navigate('daily-practice') : undefined}>
                                 <p className="text-sm text-gray-600">Review your past performance, scores, and AI feedback.</p>
                             </Card>
                         </div>
@@ -1718,8 +1742,57 @@ export default function CoachingLabScreen() {
     };
 
     return (
-        <div className="relative space-y-4 sm:space-y-5 lg:space-y-6 p-4 sm:p-3 sm:p-4 lg:p-6" style={{ background: '#F9FAFB' }}>
-            {renderView()}
+        <div className="page-corporate container-corporate animate-corporate-fade-in">
+            <div className={`relative ${!hasCoachingAccess ? 'opacity-60 pointer-events-none' : ''}`}>
+                {renderView()}
+            </div>
+            
+            {/* Unlock Section for Basic Users */}
+            {!hasCoachingAccess && (
+                <div className="mt-8 relative overflow-hidden rounded-3xl border-4 border-gradient-to-r from-orange-400 to-teal-500 shadow-2xl">
+                    <div className="absolute inset-0 bg-gradient-to-br from-orange-50 via-white to-teal-50"></div>
+                    <div className="absolute top-4 right-4 w-32 h-32 rounded-full bg-gradient-to-br from-orange-200 to-teal-200 opacity-30 animate-pulse"></div>
+                    <div className="absolute bottom-4 left-4 w-24 h-24 rounded-full bg-gradient-to-br from-navy-200 to-orange-200 opacity-30 animate-bounce"></div>
+                    
+                    <div className="relative z-10 p-8">
+                        <div className="flex items-center justify-center gap-2 mb-4">
+                            <Zap className="w-8 h-8 animate-pulse" style={{ color: COLORS.ORANGE }} />
+                            <h3 className="text-2xl font-bold" style={{ color: COLORS.NAVY }}>
+                                🚀 Unlock AI Coaching Lab
+                            </h3>
+                            <Zap className="w-8 h-8 animate-pulse" style={{ color: COLORS.TEAL }} />
+                        </div>
+                        
+                        <p className="text-lg text-gray-700 mb-6 mx-auto px-4">
+                            Join <strong>1,200+ leaders</strong> practicing critical conversations with our AI coaching simulator. Master <strong>difficult conversations</strong>, <strong>feedback delivery</strong>, and <strong>conflict resolution</strong> in a risk-free environment.
+                        </p>
+                        
+                        <div className="flex items-center justify-center gap-6 mb-6">
+                            <div className="text-center">
+                                <div className="text-2xl font-bold" style={{ color: COLORS.TEAL }}>15+</div>
+                                <div className="text-sm text-gray-600">Scenarios</div>
+                            </div>
+                            <div className="text-center">
+                                <div className="text-2xl font-bold" style={{ color: COLORS.NAVY }}>AI</div>
+                                <div className="text-sm text-gray-600">Role Play</div>
+                            </div>
+                            <div className="text-center">
+                                <div className="text-2xl font-bold" style={{ color: COLORS.ORANGE }}>∞</div>
+                                <div className="text-sm text-gray-600">Practice</div>
+                            </div>
+                        </div>
+                        
+                        <button
+                            onClick={() => navigate && navigate('membership-upgrade')}
+                            className="bg-gradient-to-r from-teal-600 to-navy-600 text-white px-8 py-4 rounded-xl font-bold text-lg shadow-xl hover:shadow-2xl transform hover:-translate-y-1 transition-all duration-300"
+                        >
+                            🎯 Upgrade Now & Start Practicing
+                        </button>
+                        
+                        <p className="text-xs text-gray-500 mt-3">Join thousands of leaders mastering difficult conversations</p>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

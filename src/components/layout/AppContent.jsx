@@ -5,6 +5,7 @@ import { signOut } from 'firebase/auth';
 import { Menu, LogOut, Loader, Settings, Anchor, ChevronDown, ChevronUp } from 'lucide-react';
 import PWAInstall from '../ui/PWAInstall.jsx';
 import ScreenRouter from '../../routing/ScreenRouter.jsx';
+import MobileBottomNav from './MobileBottomNav.jsx';
 import { useAppServices } from '../../services/useAppServices.jsx';
 
 // LEADERREPS.COM OFFICIAL CORPORATE COLORS - VERIFIED 11/14/25
@@ -318,7 +319,7 @@ const AppContent = ({
 
       {/* Navigation moved to header dropdown */}
 
-      <main className="flex-1 flex flex-col">
+      <main className="flex-1 flex flex-col pb-20 md:pb-0">
         <div className="flex-1 overflow-y-auto">
           <div className="content-wrapper-corporate">
             <Suspense
@@ -395,6 +396,12 @@ const AppContent = ({
             </a>
           </div>
         </footer>
+        
+        {/* Mobile Bottom Navigation */}
+        <MobileBottomNav 
+          currentScreen={currentScreen} 
+          navigate={setCurrentScreen} 
+        />
       </main>
     </div>
   );

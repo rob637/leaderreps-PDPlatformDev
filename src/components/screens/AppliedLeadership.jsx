@@ -3,6 +3,7 @@
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
 // --- Core Services & Context ---
 import { useAppServices } from '../../services/useAppServices.jsx'; // cite: useAppServices.jsx
+import { useNavigation } from '../../providers/NavigationProvider.jsx';
 
 // --- ICONS: CRITICAL FIX - Import all icons used in sub-components/rendering logic ---
 import { ArrowLeft, BookOpen, ChevronRight, Loader, AlertTriangle, ShieldCheck, Zap, Briefcase, Lightbulb, CheckCircle, X, CornerRightUp } from 'lucide-react'; 
@@ -129,10 +130,118 @@ const CourseDetailView = ({ course, setCourseDetail }) => {
                     {/* Title & Summary */}
                     <div className="flex-1">
                         <h1 className="text-2xl md:text-xl sm:text-2xl sm:text-3xl font-extrabold" style={{ color: COLORS.NAVY }}>{course.title}</h1>
-                        <p className="text-md md:text-lg text-gray-600 mt-1">{course.summary}</p>
+                        <p className="text-md md:text-lg text-gray-600 mt-1">{course.description}</p>
+                        
+                        {/* Course Meta Information */}
+                        <div className="mt-4 grid grid-cols-2 md:grid-cols-4 gap-4">
+                            <div>
+                                <span className="text-xs text-gray-500 uppercase">Duration</span>
+                                <p className="font-semibold">{course.duration}</p>
+                            </div>
+                            <div>
+                                <span className="text-xs text-gray-500 uppercase">Format</span>
+                                <p className="font-semibold">{course.format}</p>
+                            </div>
+                            <div>
+                                <span className="text-xs text-gray-500 uppercase">Level</span>
+                                <p className="font-semibold">{course.level}</p>
+                            </div>
+                            <div>
+                                <span className="text-xs text-gray-500 uppercase">Price</span>
+                                <p className="font-semibold text-lg" style={{ color: accentColor }}>${course.price}</p>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </Card>
+            
+            {/* Enrollment and Schedule Card */}
+            <div className="grid md:grid-cols-2 gap-6 mb-8">
+                {/* Enrollment Info */}
+                <Card title="Enrollment" icon={Users} accent='TEAL'>
+                    <div className="space-y-4">
+                        <div>
+                            <div className="flex justify-between items-center mb-2">
+                                <span className="text-sm text-gray-600">Enrollment Progress</span>
+                                <span className="text-sm font-semibold">{course.currentEnrollment}/{course.maxParticipants}</span>
+                            </div>
+                            <div className="w-full bg-gray-200 rounded-full h-2">
+                                <div 
+                                    className="h-2 rounded-full" 
+                                    style={{ 
+                                        backgroundColor: COLORS.TEAL,
+                                        width: `${(course.currentEnrollment / course.maxParticipants) * 100}%` 
+                                    }}
+                                />
+                            </div>
+                        </div>
+                        
+                        <div className="space-y-2">
+                            <div className="flex justify-between">
+                                <span className="text-sm text-gray-600">Start Date:</span>
+                                <span className="font-medium">{new Date(course.startDate).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</span>
+                            </div>
+                            <div className="flex justify-between">
+                                <span className="text-sm text-gray-600">End Date:</span>
+                                <span className="font-medium">{new Date(course.endDate).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</span>
+                            </div>
+                            <div className="flex justify-between">
+                                <span className="text-sm text-gray-600">Enrollment Deadline:</span>
+                                <span className="font-medium text-red-600">{new Date(course.enrollmentDeadline).toLocaleDateString()}</span>
+                            </div>
+                        </div>
+                        
+                        <Button 
+                            variant="primary" 
+                            className="w-full mt-4"
+                            onClick={() => alert(`Enrollment for ${course.title} - Implementation coming soon!`)}
+                        >
+                            Enroll Now - ${course.price}
+                        </Button>
+                    </div>
+                </Card>
+                
+                {/* Schedule & Instructor */}
+                <Card title="Schedule & Instructor" icon={Calendar} accent='NAVY'>
+                    <div className="space-y-4">
+                        <div>
+                            <h4 className="font-semibold text-sm mb-2">Meeting Times:</h4>
+                            <ul className="space-y-1">
+                                {course.meetingTimes?.map((time, idx) => (
+                                    <li key={idx} className="text-sm text-gray-600 flex items-center gap-2">
+                                        <Clock className="w-3 h-3" />
+                                        {time}
+                                    </li>
+                                ))}
+                            </ul>
+                        </div>
+                        
+                        <div>
+                            <h4 className="font-semibold text-sm mb-2">Instructor:</h4>
+                            <p className="font-medium">{course.instructor}</p>
+                            <p className="text-sm text-gray-600">{course.instructorBio}</p>
+                        </div>
+                        
+                        <div>
+                            <h4 className="font-semibold text-sm mb-2">Prerequisites:</h4>
+                            <ul className="space-y-1">
+                                {course.prerequisites?.map((prereq, idx) => (
+                                    <li key={idx} className="text-sm text-gray-600">• {prereq}</li>
+                                ))}
+                            </ul>
+                        </div>
+                        
+                        <div>
+                            <h4 className="font-semibold text-sm mb-2">Learning Outcomes:</h4>
+                            <ul className="space-y-1">
+                                {course.learningOutcomes?.map((outcome, idx) => (
+                                    <li key={idx} className="text-sm text-gray-600">✓ {outcome}</li>
+                                ))}
+                            </ul>
+                        </div>
+                    </div>
+                </Card>
+            </div>
 
             {/* AI Coaching Simulator for the Course */}
             <AICoachingSimulator item={course} isCourse={true} />
@@ -288,6 +397,9 @@ export default function AppliedLeadershipScreen() {
         window.scrollTo({ top: 0, behavior: 'smooth' });
     }, []);
     
+    // Navigation context
+    const { canGoBack, goBack } = useNavigation();
+    
     // --- Consume services ---
     const {
         SKILL_CATALOG, // Contains individual skills
@@ -322,9 +434,12 @@ export default function AppliedLeadershipScreen() {
     // Safely extract the array of courses
     const safeCourses = useMemo(() => {
         if (isAppLoading) return [];
+        console.log("[AppliedLeadership] COURSE_LIBRARY data:", COURSE_LIBRARY);
         if (COURSE_LIBRARY && typeof COURSE_LIBRARY === 'object' && Array.isArray(COURSE_LIBRARY.items)) {
             // Courses are expected to have a 'title' field
-            return COURSE_LIBRARY.items.filter(item => item.title);
+            const filteredCourses = COURSE_LIBRARY.items.filter(item => item.title);
+            console.log("[AppliedLeadership] Found", filteredCourses.length, "courses:", filteredCourses.map(c => c.title));
+            return filteredCourses;
         }
         console.warn("[AppliedLeadership] COURSE_LIBRARY data is missing or invalid. Using empty array.");
         return [];
@@ -414,12 +529,38 @@ export default function AppliedLeadershipScreen() {
                                             </div>
                                             <h2 className="text-lg font-extrabold flex-1" style={{ color: COLORS.NAVY }}>{course.title}</h2>
                                         </div>
-                                        <p className="text-sm text-gray-600 mb-4 flex-grow" style={{ minHeight: '3rem' }}>{course.summary}</p>
+                                        <p className="text-sm text-gray-600 mb-4 flex-grow" style={{ minHeight: '3rem' }}>{course.description}</p>
+                                        
+                                        {/* Course Details */}
+                                        <div className="space-y-2 mb-3">
+                                            <div className="flex justify-between items-center text-xs">
+                                                <span className="text-gray-500">Duration:</span>
+                                                <span className="font-medium">{course.duration}</span>
+                                            </div>
+                                            <div className="flex justify-between items-center text-xs">
+                                                <span className="text-gray-500">Format:</span>
+                                                <span className="font-medium">{course.format}</span>
+                                            </div>
+                                            <div className="flex justify-between items-center text-xs">
+                                                <span className="text-gray-500">Starts:</span>
+                                                <span className="font-medium">{new Date(course.startDate).toLocaleDateString()}</span>
+                                            </div>
+                                            <div className="flex justify-between items-center text-xs">
+                                                <span className="text-gray-500">Enrollment:</span>
+                                                <span className="font-medium">{course.currentEnrollment}/{course.maxParticipants}</span>
+                                            </div>
+                                        </div>
+                                        
                                         <div className='mt-auto pt-3 border-t' style={{ borderColor: COLORS.SUBTLE }}>
                                             <div className='flex justify-between items-center'>
-                                                <span className='text-xs font-semibold uppercase' style={{ color: accentColor }}>
-                                                    {moduleCount} Module{moduleCount !== 1 ? 's' : ''}
-                                                </span>
+                                                <div className="flex flex-col">
+                                                    <span className='text-xs font-semibold uppercase' style={{ color: accentColor }}>
+                                                        {moduleCount} Module{moduleCount !== 1 ? 's' : ''}
+                                                    </span>
+                                                    <span className='text-sm font-bold' style={{ color: COLORS.NAVY }}>
+                                                        ${course.price}
+                                                    </span>
+                                                </div>
                                                 <ChevronRight className='w-4 h-4' style={{ color: accentColor }}/>
                                             </div>
                                         </div>

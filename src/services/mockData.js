@@ -220,6 +220,109 @@ export const MOCK_COURSE_LIBRARY = {
       ],
       icon: 'Target',
       color: 'ORANGE'
+    },
+    {
+      id: 'new-manager-bootcamp',
+      title: 'New Manager Bootcamp',
+      description: 'Essential skills for first-time managers. Learn delegation, one-on-ones, team building, and performance management fundamentals.',
+      instructor: 'Lisa Thompson',
+      instructorBio: 'Former Director at Salesforce, 15+ years management experience',
+      duration: '3 weeks',
+      format: 'Live + Practice Sessions',
+      startDate: '2025-01-29',
+      endDate: '2025-02-19',
+      enrollmentDeadline: '2025-01-25',
+      price: 399,
+      tier_id: 'T1',
+      category: 'Management Fundamentals',
+      level: 'Beginner',
+      maxParticipants: 30,
+      currentEnrollment: 22,
+      status: 'enrolling',
+      meetingTimes: ['Mondays 12:00-1:00 PM EST', 'Fridays 12:00-1:00 PM EST'],
+      modules: [
+        { week: 1, title: 'From Individual Contributor to Manager', type: 'live' },
+        { week: 2, title: 'Essential Management Skills', type: 'live' },
+        { week: 3, title: 'Building Your Management Style', type: 'capstone' }
+      ],
+      prerequisites: ['Recently promoted to management role'],
+      learningOutcomes: [
+        'Understand your new role and responsibilities',
+        'Master essential management conversations',
+        'Build effective one-on-one practices',
+        'Develop your management philosophy'
+      ],
+      icon: 'Users',
+      color: 'BLUE'
+    },
+    {
+      id: 'difficult-conversations-workshop',
+      title: 'Difficult Conversations Workshop',
+      description: 'A 2-day intensive workshop on navigating challenging workplace conversations with confidence and professionalism.',
+      instructor: 'Robert Kim',
+      instructorBio: 'Conflict Resolution Expert, Former Corporate Mediator',
+      duration: '2 days',
+      format: 'In-Person Workshop',
+      startDate: '2025-02-15',
+      endDate: '2025-02-16',
+      enrollmentDeadline: '2025-02-10',
+      price: 899,
+      tier_id: 'T2',
+      category: 'Communication',
+      level: 'Intermediate',
+      maxParticipants: 16,
+      currentEnrollment: 11,
+      status: 'enrolling',
+      meetingTimes: ['Saturday-Sunday 9:00 AM - 4:00 PM EST'],
+      modules: [
+        { day: 1, title: 'Conversation Preparation & Frameworks', type: 'workshop' },
+        { day: 2, title: 'Role-Play & Real Scenarios', type: 'practice' }
+      ],
+      prerequisites: ['None'],
+      learningOutcomes: [
+        'Navigate emotionally charged conversations',
+        'Use de-escalation techniques effectively',
+        'Deliver difficult news professionally',
+        'Build stronger relationships through honest dialogue'
+      ],
+      icon: 'MessageCircle',
+      color: 'RED'
+    },
+    {
+      id: 'remote-leadership-mastery',
+      title: 'Remote Leadership Mastery',
+      description: 'Master the unique challenges of leading distributed teams. Learn virtual engagement, remote culture building, and digital leadership tools.',
+      instructor: 'Dr. Angela Foster',
+      instructorBio: 'Remote Work Expert, Author of "Leading from Anywhere"',
+      duration: '5 weeks',
+      format: 'Virtual Cohort',
+      startDate: '2025-02-12',
+      endDate: '2025-03-19',
+      enrollmentDeadline: '2025-02-08',
+      price: 799,
+      tier_id: 'T3',
+      category: 'Digital Leadership',
+      level: 'Intermediate',
+      maxParticipants: 25,
+      currentEnrollment: 19,
+      status: 'enrolling',
+      meetingTimes: ['Wednesdays 11:00 AM - 12:30 PM EST'],
+      modules: [
+        { week: 1, title: 'Remote Leadership Fundamentals', type: 'live' },
+        { week: 2, title: 'Building Virtual Team Culture', type: 'live' },
+        { week: 3, title: 'Digital Communication Excellence', type: 'workshop' },
+        { week: 4, title: 'Performance Management Remotely', type: 'live' },
+        { week: 5, title: 'Sustaining Remote Excellence', type: 'capstone' }
+      ],
+      prerequisites: ['Currently managing remote team members'],
+      learningOutcomes: [
+        'Create engaging virtual team experiences',
+        'Master remote performance management',
+        'Build strong digital relationships',
+        'Leverage technology for team success'
+      ],
+      icon: 'Wifi',
+      color: 'GREEN'
     }
   ]
 };

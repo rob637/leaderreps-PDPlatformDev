@@ -99,7 +99,7 @@ const AppSettingsScreen = () => {
       </header>
 
       {/* Settings Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:p-4 lg:p-6 max-w-4xl mx-auto"> {/* Centered content */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 p-3 sm:p-4 lg:p-6 mx-auto"> {/* Centered content */}
 
         {/* User Account Card */}
         <Card title="User Account" icon={User} accent="TEAL">

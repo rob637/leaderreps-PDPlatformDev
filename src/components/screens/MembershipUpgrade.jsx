@@ -260,32 +260,28 @@ const MembershipUpgrade = ({ setCurrentScreen }) => {
   };
 
   return (
-    <div className="relative space-y-4 sm:space-y-5 lg:space-y-6 p-4 sm:p-3 sm:p-4 lg:p-6" style={{ backgroundColor: COLORS.BG, color: COLORS.NAVY }}>
-        
-        {/* Header */}
+    <div className="page-corporate container-corporate animate-corporate-fade-in">
         {/* Back Button */}
-        <Button 
-          variant="nav-back" 
-          size="sm"
-          onClick={() => setCurrentScreen('dashboard')}
-          className="mb-6"
-        >
-          <ArrowLeft className="w-4 h-4 mr-2" />
-          Back to The Arena
-        </Button>
+        <div className="flex items-center gap-2 mb-6 text-gray-600 hover:text-gray-800 cursor-pointer transition-colors" onClick={() => setCurrentScreen('dashboard')}>
+          <ArrowLeft className="w-4 h-4" />
+          <span className="text-sm font-medium">Back to The Arena</span>
+        </div>
 
         <div className="text-center mb-12">
-          <h1 className="text-4xl font-bold mb-4" style={{ color: COLORS.NAVY }}>
-            Choose Your Leadership Journey
-          </h1>
-          <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-            Unlock your full potential with the right membership tier. 
-            Start with the basics or accelerate your growth with advanced features.
+          <div className="flex items-center justify-center gap-2 mb-4">
+            <Crown className="w-8 h-8" style={{ color: COLORS.ORANGE }} />
+            <h1 className="corporate-heading-xl" style={{ color: COLORS.NAVY }}>
+              Membership Plans
+            </h1>
+            <Crown className="w-8 h-8" style={{ color: COLORS.ORANGE }} />
+          </div>
+          <p className="corporate-text-body text-gray-600 mx-auto px-4">
+            Choose the perfect plan to accelerate your leadership development.
           </p>
         </div>
 
         {/* Pricing Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:p-3 sm:p-4 lg:p-6 lg:p-8 mb-12">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-8">
           <TierCard 
             tier="basic" 
             isCurrentTier={currentTier === 'basic'}

@@ -117,7 +117,7 @@ export const Card = ({ children, title, icon: Icon, className = '', onClick, acc
       {Icon && title && <span style={{ position:'absolute', top:0, left:0, right:0, height:'4px', background: accentColor }} />}
 
       {Icon && title && (
-           <div className="flex items-center" style={{ gap: 'var(--spacing-lg)', marginBottom: 'var(--spacing-xl)' }}>
+           <div className="flex items-center" style={{ gap: 'var(--spacing-md)', marginBottom: 'var(--spacing-lg)' }}>
               <div className="flex items-center justify-center flex-shrink-0 shadow-md" 
                    style={{ 
                      width: '56px', 
@@ -281,7 +281,7 @@ export const DynamicBookendContainer = ({
 export const MorningBookend = ({ 
     dailyWIN, setDailyWIN, otherTasks, onAddTask, onToggleTask, onRemoveTask,
     showLIS, setShowLIS, identityStatement, onSave, isSaving, 
-    onToggleWIN, onSaveWIN,
+    onToggleWIN, onSaveWIN, isSavingWIN,
     completedAt, winCompleted
 }) => {
     const [newTaskText, setNewTaskText] = useState('');
@@ -338,7 +338,7 @@ export const MorningBookend = ({
                 </div>
                 
                 {/* Tasks Display with Checkboxes - MIN-HEIGHT FIX APPLIED */}
-                <div className="space-y-2" style={{ minHeight: '180px' }}> 
+                <div className="space-y-2"> 
                     <p className="text-xs font-semibold" style={{ color: COLORS.MUTED }}>
                         📋 OTHER TASKS:
                     </p>
@@ -470,13 +470,18 @@ export const MorningBookend = ({
                     variant="outline" 
                     size="sm" 
                     className="w-full mt-2"
+                    disabled={isSavingWIN || !dailyWIN?.trim()}
                 >
-                    <Save className="w-4 h-4 mr-1" /> Save Today's WIN
+                    {isSavingWIN ? (
+                        <><Loader className="w-4 h-4 mr-1 animate-spin" /> Saving WIN...</>
+                    ) : (
+                        <><Save className="w-4 h-4 mr-1" /> Save Today's WIN</>
+                    )}
                 </Button>
             </div>
 
-            {/* Tasks Input - MIN-HEIGHT FIX APPLIED */}
-            <div style={{ minHeight: '180px' }}>
+            {/* Tasks Input */}
+            <div>
                 <label className="text-sm font-semibold mb-2 flex items-center justify-between" style={{ color: COLORS.TEXT }}>
                     <span className="flex items-center">
                         <Clock className="w-4 h-4 mr-1" style={{ color: COLORS.TEAL }} />
@@ -1485,7 +1490,7 @@ export const DailyProgressSummary = ({ dailyPracticeData }) => {
                         {eveningReflection?.good && (
                             <div className="space-y-2">
                                 <p className="text-xs font-semibold" style={{ color: COLORS.MUTED }}>
-                                    🌙 YESTERDAY'S REFLECTION:
+                                    🌙 TODAY'S REFLECTION:
                                 </p>
                                 
                                 {/* What Went Well */}

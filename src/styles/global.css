@@ -178,7 +178,7 @@
   background: var(--gradient-surface);
   border: 1px solid rgba(71, 168, 141, 0.2);
   border-radius: var(--radius-xl);
-  padding: var(--spacing-2xl);
+  padding: var(--spacing-md);
   box-shadow: var(--shadow-sm);
   transition: all 0.3s ease;
 }
@@ -193,7 +193,7 @@
   background: white;
   border: 1px solid rgba(71, 168, 141, 0.15);
   border-radius: var(--radius-2xl);
-  padding: var(--spacing-3xl);
+  padding: var(--spacing-xl);
   box-shadow: var(--shadow-lg);
   position: relative;
   overflow: hidden;
@@ -344,26 +344,36 @@
 }
 
 .container-corporate {
-  max-width: 1400px;
-  margin: 0 auto;
-  padding-left: var(--spacing-md);
-  padding-right: var(--spacing-md);
-  padding-top: var(--spacing-md);
-  padding-bottom: var(--spacing-md);
   width: 100%;
+  margin: 0 auto;
+  padding-left: var(--spacing-sm);
+  padding-right: var(--spacing-sm);
+  padding-top: var(--spacing-sm);
+  padding-bottom: var(--spacing-sm);
+  /* Full width on mobile, controlled on desktop */
+  max-width: 100vw;
 }
 
 @media (min-width: 640px) {
   .container-corporate {
-    padding-left: var(--spacing-lg);
-    padding-right: var(--spacing-lg);
-    padding-top: var(--spacing-lg);
-    padding-bottom: var(--spacing-lg);
+    padding-left: var(--spacing-md);
+    padding-right: var(--spacing-md);
+    padding-top: var(--spacing-md);
+    padding-bottom: var(--spacing-md);
   }
 }
 
 @media (min-width: 1024px) {
   .container-corporate {
+    padding-left: var(--spacing-lg);
+    padding-right: var(--spacing-lg);
+    max-width: 1200px;
+  }
+}
+
+@media (min-width: 1440px) {
+  .container-corporate {
+    max-width: 1400px;
     padding-left: var(--spacing-xl);
     padding-right: var(--spacing-xl);
   }
@@ -371,17 +381,17 @@
 
 /* Consistent content wrapper for all screens */
 .content-wrapper-corporate {
-  max-width: 1400px;
-  margin: 0 auto;
-  padding-left: var(--spacing-md);
-  padding-right: var(--spacing-md);
   width: 100%;
+  margin: 0 auto;
+  padding-left: var(--spacing-sm);
+  padding-right: var(--spacing-sm);
+  max-width: 100vw;
 }
 
 @media (min-width: 640px) {
   .content-wrapper-corporate {
-    padding-left: var(--spacing-lg);
-    padding-right: var(--spacing-lg);
+    padding-left: var(--spacing-md);
+    padding-right: var(--spacing-md);
   }
 }
 
@@ -393,7 +403,7 @@
 }
 
 .section-corporate {
-  margin-bottom: var(--spacing-3xl);
+  margin-bottom: var(--spacing-lg);
 }
 
 /* Professional Grid System */

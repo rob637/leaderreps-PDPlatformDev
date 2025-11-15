@@ -2,9 +2,9 @@
 // Evening Bookend Component for PM Reflection
 // Added 10/28/25 per boss feedback
 
-import React from 'react';
+import React, { useState } from 'react';
 import {
-  CheckCircle, TrendingUp, Star, Save, Loader, Moon
+  CheckCircle, TrendingUp, Star, Save, Loader, Moon, Clock, Plus, X
 } from 'lucide-react';
 
 /* =========================================================
@@ -76,6 +76,93 @@ const Card = ({ children, title, icon: Icon, className = '', onClick, accent = '
 };
 
 /* =========================================================
+   Task Section Component (Simplified for Evening)
+========================================================= */
+const TaskSection = ({ otherTasks, onAddTask, onToggleTask, onRemoveTask }) => {
+    const [newTaskText, setNewTaskText] = useState('');
+    
+    const handleAddClick = () => {
+        if (newTaskText.trim()) {
+            onAddTask(newTaskText);
+            setNewTaskText('');
+        }
+    };
+    
+    const handleKeyPress = (e) => {
+        if (e.key === 'Enter') handleAddClick();
+    };
+    
+    return (
+        <div>
+            <label className="text-sm font-semibold mb-2 flex items-center justify-between" style={{ color: COLORS.TEXT }}>
+                <span className="flex items-center">
+                    <Clock className="w-4 h-4 mr-1" style={{ color: COLORS.TEAL }} />
+                    Daily Tasks ({otherTasks?.length || 0}/5)
+                </span>
+            </label>
+            
+            {/* Existing Tasks */}
+            {otherTasks && otherTasks.length > 0 && (
+                <div className="space-y-2 mb-3">
+                    {otherTasks.map((task, idx) => (
+                        <div key={task.id || idx} 
+                             className="flex items-center gap-2 p-2 border rounded-lg"
+                             style={{ borderColor: COLORS.SUBTLE, backgroundColor: COLORS.LIGHT_GRAY }}>
+                            
+                            {/* Checkbox for task completion */}
+                            <input
+                                type="checkbox"
+                                checked={task.completed || false}
+                                onChange={() => onToggleTask(task.id || idx)}
+                                className="w-4 h-4"
+                                style={{ accentColor: COLORS.TEAL }}
+                            />
+                            
+                            <span className={`text-sm flex-1 ${task.completed ? 'line-through opacity-60' : ''}`} 
+                                  style={{ color: COLORS.TEXT }}>
+                                {task.text}
+                            </span>
+                            
+                            {!task.isSystem && (
+                                <button 
+                                    onClick={() => onRemoveTask(task.id ?? idx)}
+                                    className="text-gray-400 hover:text-red-500 transition-colors"
+                                >
+                                    <X className="w-4 h-4" />
+                                </button>
+                            )}
+                        </div>
+                    ))}
+                </div>
+            )}
+            
+            {/* Add New Task */}
+            {(!otherTasks || otherTasks.length < 5) && (
+                <div className="flex gap-2">
+                    <input 
+                        type="text" 
+                        value={newTaskText} 
+                        onChange={(e) => setNewTaskText(e.target.value)}
+                        onKeyPress={handleKeyPress} 
+                        placeholder="Add a task..."
+                        className="flex-1 p-2 border rounded-lg text-sm focus:ring-2 transition-all"
+                        style={{ borderColor: COLORS.SUBTLE }}
+                    />
+                    <button 
+                        onClick={handleAddClick}
+                        disabled={!newTaskText.trim() || (otherTasks && otherTasks.length >= 5)}
+                        className="px-4 py-2 rounded-lg font-semibold text-white transition-all disabled:opacity-50"
+                        style={{ backgroundColor: COLORS.TEAL }}
+                    >
+                        <Plus className="w-4 h-4" />
+                    </button>
+                </div>
+            )}
+        </div>
+    );
+};
+
+/* =========================================================
    Evening Bookend Component
 ========================================================= */
 export const EveningBookend = ({ 
@@ -88,14 +175,19 @@ export const EveningBookend = ({
     habitsCompleted = { readLIS: false, completedDailyRep: false, eveningReflection: false },
     onHabitToggle,
     onSave,
-    isSaving
+    isSaving,
+    // Task management props
+    otherTasks = [],
+    onAddTask,
+    onToggleTask,
+    onRemoveTask
 }) => {
     // Defensive check to ensure habitsCompleted is always an object
     const safeHabitsCompleted = habitsCompleted || { readLIS: false, completedDailyRep: false, eveningReflection: false };
     
     return (
         // REQ #1: Increased min-height
-        <Card title="Evening Bookend - Daily Reflection" icon={Moon} accent='NAVY' className="min-h-[680px]">
+        <Card title="Evening Bookend - Daily Reflection" icon={Moon} accent='NAVY'>
             {/* Good - What went well */}
             <div className="mb-4">
                 <label className="text-sm font-semibold mb-2 flex items-center" style={{ color: COLORS.GREEN }}>
@@ -152,6 +244,18 @@ export const EveningBookend = ({
                     rows={2}
                 />
             </div>
+
+            {/* Daily Tasks Section */}
+            {onAddTask && (
+                <div className="pt-4 border-t" style={{ borderColor: COLORS.SUBTLE }}>
+                    <TaskSection 
+                        otherTasks={otherTasks}
+                        onAddTask={onAddTask}
+                        onToggleTask={onToggleTask}
+                        onRemoveTask={onRemoveTask}
+                    />
+                </div>
+            )}
 
             {/* Daily Habits Tracker */}
             <div className="pt-4 border-t" style={{ borderColor: COLORS.SUBTLE }}>

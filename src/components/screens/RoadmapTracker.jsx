@@ -196,7 +196,7 @@ const ContentDetailsModalInternal = ({ content, onClose, htmlContent, rating, se
 
     return (
         <div className="fixed inset-0 bg-[#002E47]/80 z-50 flex items-center justify-center p-4">
-            <div className="bg-[#FCFCFA] rounded-3xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto p-4 sm:p-3 sm:p-4 lg:p-6 lg:p-8">
+            <div className="bg-[#FCFCFA] rounded-3xl shadow-2xl w-full max-h-[90vh] overflow-y-auto p-3 sm:p-4 lg:p-6">
                 <div className="flex justify-between items-start border-b pb-4 mb-6">
                     <h2 className="text-xl sm:text-2xl sm:text-3xl font-extrabold text-[#002E47] flex items-center">
                         <BookOpen className="w-8 h-8 mr-3 text-[#47A88D]" />
