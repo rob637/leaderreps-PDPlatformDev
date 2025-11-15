@@ -231,9 +231,10 @@ const TierCard = ({ tier, isCurrentTier = false, onUpgrade, isPopular = false })
   );
 };
 
-const MembershipUpgrade = ({ setCurrentScreen }) => {
+const MembershipUpgrade = ({ setCurrentScreen, simulatedTier }) => {
   const { membershipData } = useAppServices();
-  const currentTier = membershipData?.currentTier || 'basic';
+  // Match Dashboard's exact tier logic - use simulatedTier if provided (from toggle), otherwise use actual membership tier
+  const currentTier = simulatedTier || membershipData?.currentTier || 'basic';
   
   // Scroll to top when component mounts to ensure users see the full page
   React.useEffect(() => {
