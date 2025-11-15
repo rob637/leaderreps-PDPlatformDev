@@ -3,7 +3,6 @@
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
 // --- Core Services & Context ---
 import { useAppServices } from '../../services/useAppServices.jsx'; // cite: useAppServices.jsx
-import { useNavigation } from '../../providers/NavigationProvider.jsx';
 
 // --- ICONS: CRITICAL FIX - Import all icons used in sub-components/rendering logic ---
 import { ArrowLeft, BookOpen, ChevronRight, Loader, AlertTriangle, ShieldCheck, Zap, Briefcase, Lightbulb, CheckCircle, X, CornerRightUp } from 'lucide-react'; 
@@ -396,9 +395,6 @@ export default function AppliedLeadershipScreen() {
     React.useEffect(() => {
         window.scrollTo({ top: 0, behavior: 'smooth' });
     }, []);
-    
-    // Navigation context
-    const { canGoBack, goBack } = useNavigation();
     
     // --- Consume services ---
     const {
