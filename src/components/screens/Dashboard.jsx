@@ -296,11 +296,30 @@ const Dashboard = (props) => {
       const pageCorporate = document.querySelector('.page-corporate');
       const contentFull = document.querySelector('.content-full');
       const mainContent = document.querySelector('#main-content');
+      const allParents = [];
+      
+      // Traverse up the DOM tree
+      let current = pageCorporate;
+      while (current) {
+        allParents.push({
+          tag: current.tagName,
+          className: current.className,
+          width: `${current.getBoundingClientRect().width}px`,
+          computedWidth: window.getComputedStyle(current).width,
+          maxWidth: window.getComputedStyle(current).maxWidth,
+          padding: window.getComputedStyle(current).padding,
+        });
+        current = current.parentElement;
+      }
       
       console.log('📐 [DASHBOARD] Width Hierarchy:', {
         component: 'Dashboard',
+        viewport: `${window.innerWidth}px`,
         pageCorporate: pageCorporate ? {
           width: `${pageCorporate.getBoundingClientRect().width}px`,
+          offsetWidth: `${pageCorporate.offsetWidth}px`,
+          clientWidth: `${pageCorporate.clientWidth}px`,
+          scrollWidth: `${pageCorporate.scrollWidth}px`,
           maxWidth: window.getComputedStyle(pageCorporate).maxWidth,
           padding: window.getComputedStyle(pageCorporate).padding,
           margin: window.getComputedStyle(pageCorporate).margin,
@@ -317,7 +336,8 @@ const Dashboard = (props) => {
           maxWidth: window.getComputedStyle(mainContent).maxWidth,
           padding: window.getComputedStyle(mainContent).padding,
           classList: mainContent.className
-        } : 'NOT FOUND'
+        } : 'NOT FOUND',
+        parentHierarchy: allParents
       });
     }, 100);
   }, []);
