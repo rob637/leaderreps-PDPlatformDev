@@ -290,56 +290,39 @@ const Dashboard = (props) => {
   const isMemberPro = membershipService.hasAccess(currentTier, 'professional');
   const isMemberPremium = membershipService.hasAccess(currentTier, 'elite');
   
-  // Width debugging - log on mount with full hierarchy
+  // Width debugging - SIMPLIFIED VERSION
   React.useEffect(() => {
-    setTimeout(() => {
+    console.log('🔍 [DASHBOARD] Width debug useEffect FIRED');
+    
+    const checkWidth = () => {
       const pageCorporate = document.querySelector('.page-corporate');
-      const contentFull = document.querySelector('.content-full');
-      const mainContent = document.querySelector('#main-content');
-      const allParents = [];
+      console.log('🔍 [DASHBOARD] Found .page-corporate?', !!pageCorporate);
       
-      // Traverse up the DOM tree
-      let current = pageCorporate;
-      while (current) {
-        allParents.push({
-          tag: current.tagName,
-          className: current.className,
-          width: `${current.getBoundingClientRect().width}px`,
-          computedWidth: window.getComputedStyle(current).width,
-          maxWidth: window.getComputedStyle(current).maxWidth,
-          padding: window.getComputedStyle(current).padding,
-        });
-        current = current.parentElement;
-      }
-      
-      console.log('📐 [DASHBOARD] Width Hierarchy:', {
-        component: 'Dashboard',
-        viewport: `${window.innerWidth}px`,
-        pageCorporate: pageCorporate ? {
-          width: `${pageCorporate.getBoundingClientRect().width}px`,
+      if (pageCorporate) {
+        const rect = pageCorporate.getBoundingClientRect();
+        const computed = window.getComputedStyle(pageCorporate);
+        console.log('📐 [DASHBOARD] Width Measurements:', {
+          component: 'Dashboard',
+          actualWidth: `${rect.width}px`,
           offsetWidth: `${pageCorporate.offsetWidth}px`,
           clientWidth: `${pageCorporate.clientWidth}px`,
-          scrollWidth: `${pageCorporate.scrollWidth}px`,
-          maxWidth: window.getComputedStyle(pageCorporate).maxWidth,
-          padding: window.getComputedStyle(pageCorporate).padding,
-          margin: window.getComputedStyle(pageCorporate).margin,
-          classList: pageCorporate.className
-        } : 'NOT FOUND',
-        contentFull: contentFull ? {
-          width: `${contentFull.getBoundingClientRect().width}px`,
-          maxWidth: window.getComputedStyle(contentFull).maxWidth,
-          padding: window.getComputedStyle(contentFull).padding,
-          classList: contentFull.className
-        } : 'NOT FOUND',
-        mainContent: mainContent ? {
-          width: `${mainContent.getBoundingClientRect().width}px`,
-          maxWidth: window.getComputedStyle(mainContent).maxWidth,
-          padding: window.getComputedStyle(mainContent).padding,
-          classList: mainContent.className
-        } : 'NOT FOUND',
-        parentHierarchy: allParents
-      });
-    }, 100);
+          maxWidth: computed.maxWidth,
+          padding: computed.padding,
+          margin: computed.margin,
+          classList: pageCorporate.className,
+          viewport: `${window.innerWidth}px`
+        });
+      } else {
+        console.warn('⚠️ [DASHBOARD] Could not find .page-corporate element');
+      }
+    };
+    
+    // Try immediately
+    checkWidth();
+    
+    // Also try after a delay
+    setTimeout(checkWidth, 100);
+    setTimeout(checkWidth, 500);
   }, []);
 
   // -------------------------------

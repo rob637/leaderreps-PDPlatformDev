@@ -99,36 +99,39 @@ export default function DevelopmentPlan() {
     navigate
   } = services || {};
   
-  // Width debugging - log on mount with full hierarchy
+  // Width debugging - SIMPLIFIED VERSION
   useEffect(() => {
-    setTimeout(() => {
+    console.log('🔍 [DEVPLAN] Width debug useEffect FIRED');
+    
+    const checkWidth = () => {
       const pageCorporate = document.querySelector('.page-corporate');
-      const contentFull = document.querySelector('.content-full');
-      const mainContent = document.querySelector('#main-content');
+      console.log('🔍 [DEVPLAN] Found .page-corporate?', !!pageCorporate);
       
-      console.log('📐 [DEVELOPMENT PLAN] Width Hierarchy:', {
-        component: 'DevelopmentPlan',
-        pageCorporate: pageCorporate ? {
-          width: `${pageCorporate.getBoundingClientRect().width}px`,
-          maxWidth: window.getComputedStyle(pageCorporate).maxWidth,
-          padding: window.getComputedStyle(pageCorporate).padding,
-          margin: window.getComputedStyle(pageCorporate).margin,
-          classList: pageCorporate.className
-        } : 'NOT FOUND',
-        contentFull: contentFull ? {
-          width: `${contentFull.getBoundingClientRect().width}px`,
-          maxWidth: window.getComputedStyle(contentFull).maxWidth,
-          padding: window.getComputedStyle(contentFull).padding,
-          classList: contentFull.className
-        } : 'NOT FOUND',
-        mainContent: mainContent ? {
-          width: `${mainContent.getBoundingClientRect().width}px`,
-          maxWidth: window.getComputedStyle(mainContent).maxWidth,
-          padding: window.getComputedStyle(mainContent).padding,
-          classList: mainContent.className
-        } : 'NOT FOUND'
-      });
-    }, 100);
+      if (pageCorporate) {
+        const rect = pageCorporate.getBoundingClientRect();
+        const computed = window.getComputedStyle(pageCorporate);
+        console.log('📐 [DEVPLAN] Width Measurements:', {
+          component: 'DevelopmentPlan',
+          actualWidth: `${rect.width}px`,
+          offsetWidth: `${pageCorporate.offsetWidth}px`,
+          clientWidth: `${pageCorporate.clientWidth}px`,
+          maxWidth: computed.maxWidth,
+          padding: computed.padding,
+          margin: computed.margin,
+          classList: pageCorporate.className,
+          viewport: `${window.innerWidth}px`
+        });
+      } else {
+        console.warn('⚠️ [DEVPLAN] Could not find .page-corporate element');
+      }
+    };
+    
+    // Try immediately
+    checkWidth();
+    
+    // Also try after delays
+    setTimeout(checkWidth, 100);
+    setTimeout(checkWidth, 500);
   }, []);
 
   // Helpers
