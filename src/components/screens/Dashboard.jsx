@@ -290,7 +290,7 @@ const Dashboard = (props) => {
   const isMemberPro = membershipService.hasAccess(currentTier, 'professional');
   const isMemberPremium = membershipService.hasAccess(currentTier, 'elite');
   
-  // Width debugging - SIMPLIFIED VERSION
+  // Width debugging - FULL PARENT CHAIN
   React.useEffect(() => {
     console.log('🔍 [DASHBOARD] Width debug useEffect FIRED');
     
@@ -301,6 +301,23 @@ const Dashboard = (props) => {
       if (pageCorporate) {
         const rect = pageCorporate.getBoundingClientRect();
         const computed = window.getComputedStyle(pageCorporate);
+        
+        // Check ALL parent elements
+        let parent = pageCorporate.parentElement;
+        let parentChain = [];
+        while (parent && parentChain.length < 6) {
+          const parentComputed = window.getComputedStyle(parent);
+          parentChain.push({
+            tag: parent.tagName,
+            classes: parent.className,
+            width: `${parent.offsetWidth}px`,
+            maxWidth: parentComputed.maxWidth,
+            overflow: parentComputed.overflow,
+            display: parentComputed.display
+          });
+          parent = parent.parentElement;
+        }
+        
         console.log('📐 [DASHBOARD] Width Measurements:', {
           component: 'Dashboard',
           actualWidth: `${rect.width}px`,
@@ -310,7 +327,8 @@ const Dashboard = (props) => {
           padding: computed.padding,
           margin: computed.margin,
           classList: pageCorporate.className,
-          viewport: `${window.innerWidth}px`
+          viewport: `${window.innerWidth}px`,
+          parentChain
         });
       } else {
         console.warn('⚠️ [DASHBOARD] Could not find .page-corporate element');

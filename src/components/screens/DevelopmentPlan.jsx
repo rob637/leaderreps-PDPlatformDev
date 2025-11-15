@@ -99,7 +99,7 @@ export default function DevelopmentPlan() {
     navigate
   } = services || {};
   
-  // Width debugging - SIMPLIFIED VERSION
+  // Width debugging - FULL PARENT CHAIN
   useEffect(() => {
     console.log('🔍 [DEVPLAN] Width debug useEffect FIRED');
     
@@ -110,6 +110,23 @@ export default function DevelopmentPlan() {
       if (pageCorporate) {
         const rect = pageCorporate.getBoundingClientRect();
         const computed = window.getComputedStyle(pageCorporate);
+        
+        // Check ALL parent elements
+        let parent = pageCorporate.parentElement;
+        let parentChain = [];
+        while (parent && parentChain.length < 6) {
+          const parentComputed = window.getComputedStyle(parent);
+          parentChain.push({
+            tag: parent.tagName,
+            classes: parent.className,
+            width: `${parent.offsetWidth}px`,
+            maxWidth: parentComputed.maxWidth,
+            overflow: parentComputed.overflow,
+            display: parentComputed.display
+          });
+          parent = parent.parentElement;
+        }
+        
         console.log('📐 [DEVPLAN] Width Measurements:', {
           component: 'DevelopmentPlan',
           actualWidth: `${rect.width}px`,
@@ -119,7 +136,8 @@ export default function DevelopmentPlan() {
           padding: computed.padding,
           margin: computed.margin,
           classList: pageCorporate.className,
-          viewport: `${window.innerWidth}px`
+          viewport: `${window.innerWidth}px`,
+          parentChain
         });
       } else {
         console.warn('⚠️ [DEVPLAN] Could not find .page-corporate element');
