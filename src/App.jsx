@@ -51,25 +51,6 @@ function App() {
     clearHistory
   } = useNavigationHistory();
 
-  // Clear history on user change
-  useEffect(() => {
-    if (user) {
-      clearHistory();
-      // Push initial dashboard state
-      pushNavigationState({ screen: 'dashboard', params: {} });
-    }
-  }, [user?.uid, clearHistory, pushNavigationState]);
-
-  // Sync currentScreen with navigation history (for browser back/forward buttons)
-  useEffect(() => {
-    const state = getCurrentState();
-    if (state && state.screen !== currentScreen) {
-      console.log('🔙 [App.jsx] Browser navigation detected:', { from: currentScreen, to: state.screen, params: state.params });
-      setCurrentScreen(state.screen);
-      setNavParams(state.params || {});
-    }
-  }, [getCurrentState, currentScreen]);
-
   useEffect(() => {
     const config = typeof window.__FIREBASE_CONFIG__ !== 'undefined' ? window.__FIREBASE_CONFIG__ : undefined;
     if (config) {
