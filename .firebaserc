@@ -1,5 +1,7 @@
 {
   "projects": {
-    "default": "leaderreps-pd-platform"
+    "default": "leaderreps-pd-platform",
+    "dev": "leaderreps-pd-platform",
+    "test": "leaderreps-test"
   }
 }
