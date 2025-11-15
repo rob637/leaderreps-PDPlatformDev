@@ -78,16 +78,6 @@ function App() {
     clearHistory
   } = useNavigationHistory();
 
-  // Handle navigation state changes
-  useEffect(() => {
-    const currentState = getCurrentState();
-    if (currentState) {
-      console.log('[App] Restoring navigation state:', currentState);
-      setCurrentScreen(currentState.screen || 'dashboard');
-      setNavParams(currentState.params || {});
-    }
-  }, [getCurrentState]);
-
   // Clear history on user change
   useEffect(() => {
     if (user) {
