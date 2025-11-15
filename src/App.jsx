@@ -28,6 +28,7 @@ import useNavigationHistory from './hooks/useNavigationHistory.js';
 import AuthPanel from './components/auth/AuthPanel.jsx';
 import AppContent from './components/layout/AppContent.jsx';
 import DataProvider from './providers/DataProvider.jsx';
+import NavigationProvider from './providers/NavigationProvider.jsx';
 import ConfigError from './components/system/ConfigError.jsx';
 
 // 🔍 DEBUG: Log all imports to verify they're defined
@@ -178,27 +179,35 @@ function App() {
   }
 
   return (
-    <DataProvider
-      firebaseServices={firebaseServices}
-      userId={user?.uid}
-      isAuthReady={isAuthReady}
+    <NavigationProvider
       navigate={navigate}
-      user={user}
+      canGoBack={canGoBack}
+      goBack={goBack}
+      currentScreen={currentScreen}
+      navParams={navParams}
     >
-      {isAuthRequired ? (
-        <AuthPanel auth={firebaseServices.auth} onSuccess={() => {}} />
-      ) : (
-        <AppContent
-          currentScreen={currentScreen}
-          user={user}
-          navParams={navParams}
-          isMobileOpen={isMobileOpen}
-          setIsMobileOpen={setIsMobileOpen}
-          isAuthRequired={isAuthRequired}
-          auth={firebaseServices.auth}
-        />
-      )}
-    </DataProvider>
+      <DataProvider
+        firebaseServices={firebaseServices}
+        userId={user?.uid}
+        isAuthReady={isAuthReady}
+        navigate={navigate}
+        user={user}
+      >
+        {isAuthRequired ? (
+          <AuthPanel auth={firebaseServices.auth} onSuccess={() => {}} />
+        ) : (
+          <AppContent
+            currentScreen={currentScreen}
+            user={user}
+            navParams={navParams}
+            isMobileOpen={isMobileOpen}
+            setIsMobileOpen={setIsMobileOpen}
+            isAuthRequired={isAuthRequired}
+            auth={firebaseServices.auth}
+          />
+        )}
+      </DataProvider>
+    </NavigationProvider>
   );
 }
 
