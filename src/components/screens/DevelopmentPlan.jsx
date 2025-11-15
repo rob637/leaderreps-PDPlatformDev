@@ -99,57 +99,47 @@ export default function DevelopmentPlan() {
     navigate
   } = services || {};
   
-  // Width debugging - FULL PARENT CHAIN
-  useEffect(() => {
+    // Width debugging - AGGRESSIVE LOGGING
+  React.useEffect(() => {
     console.log('🔍 [DEVPLAN] Width debug useEffect FIRED');
-    
-    const checkWidth = () => {
-      const pageCorporate = document.querySelector('.page-corporate');
-      console.log('🔍 [DEVPLAN] Found .page-corporate?', !!pageCorporate);
+    const container = document.querySelector('.page-corporate');
+    if (container) {
+      console.log('🔍 [DEVPLAN] Found .page-corporate?', !!container);
+      const rect = container.getBoundingClientRect();
+      const computed = window.getComputedStyle(container);
       
-      if (pageCorporate) {
-        const rect = pageCorporate.getBoundingClientRect();
-        const computed = window.getComputedStyle(pageCorporate);
-        
-        // Check ALL parent elements
-        let parent = pageCorporate.parentElement;
-        let parentChain = [];
-        while (parent && parentChain.length < 6) {
-          const parentComputed = window.getComputedStyle(parent);
-          parentChain.push({
-            tag: parent.tagName,
-            classes: parent.className,
-            width: `${parent.offsetWidth}px`,
-            maxWidth: parentComputed.maxWidth,
-            overflow: parentComputed.overflow,
-            display: parentComputed.display
-          });
-          parent = parent.parentElement;
-        }
-        
-        console.log('📐 [DEVPLAN] Width Measurements:', {
-          component: 'DevelopmentPlan',
-          actualWidth: `${rect.width}px`,
-          offsetWidth: `${pageCorporate.offsetWidth}px`,
-          clientWidth: `${pageCorporate.clientWidth}px`,
-          maxWidth: computed.maxWidth,
-          padding: computed.padding,
-          margin: computed.margin,
-          classList: pageCorporate.className,
-          viewport: `${window.innerWidth}px`,
-          parentChain
+      // Log ALL layout-related CSS properties
+      const layoutProps = [
+        'width', 'minWidth', 'maxWidth', 'flexBasis', 'flexGrow', 'flexShrink',
+        'display', 'position', 'boxSizing', 'overflow', 'overflowX',
+        'paddingLeft', 'paddingRight', 'marginLeft', 'marginRight'
+      ];
+      
+      const styles = {};
+      layoutProps.forEach(prop => {
+        styles[prop] = computed[prop];
+      });
+      
+      console.log('🎨 [DEVPLAN] ALL LAYOUT STYLES:', styles);
+      console.log('📐 [DEVPLAN] Width: actual=' + rect.width + 'px, offset=' + container.offsetWidth + 'px');
+      
+      // Check parent widths
+      let parent = container.parentElement;
+      let level = 0;
+      while (parent && level < 5) {
+        const pComputed = window.getComputedStyle(parent);
+        console.log(`👆 [DEVPLAN] Parent ${level}:`, {
+          tag: parent.tagName,
+          classes: parent.className,
+          width: parent.offsetWidth + 'px',
+          maxWidth: pComputed.maxWidth,
+          display: pComputed.display,
+          flex: pComputed.flex
         });
-      } else {
-        console.warn('⚠️ [DEVPLAN] Could not find .page-corporate element');
+        parent = parent.parentElement;
+        level++;
       }
-    };
-    
-    // Try immediately
-    checkWidth();
-    
-    // Also try after delays
-    setTimeout(checkWidth, 100);
-    setTimeout(checkWidth, 500);
+    }
   }, []);
 
   // Helpers

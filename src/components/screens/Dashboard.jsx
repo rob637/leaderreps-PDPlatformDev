@@ -318,6 +318,12 @@ const Dashboard = (props) => {
           parent = parent.parentElement;
         }
         
+        // Log ALL layout-related CSS properties
+        const layoutProps = ['width', 'minWidth', 'maxWidth', 'flexBasis', 'flexGrow', 'flexShrink', 'display', 'position', 'boxSizing'];
+        const styles = {};
+        layoutProps.forEach(prop => { styles[prop] = computed[prop]; });
+        
+        console.log('🎨 [DASHBOARD] ALL LAYOUT STYLES:', styles);
         console.log('📐 [DASHBOARD] Width Measurements:', {
           component: 'Dashboard',
           actualWidth: `${rect.width}px`,
