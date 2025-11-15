@@ -236,14 +236,8 @@ const AppContent = ({
                       <button
                         key={item.screen}
                         onClick={() => {
-                          alert(`🔵 BEFORE navigate:\nTarget: ${item.screen}\nCurrent: ${currentScreen}\nnavigate exists: ${!!navigate}`);
                           if (navigate) {
                             navigate(item.screen);
-                            setTimeout(() => {
-                              alert(`🟢 AFTER navigate:\nTarget: ${item.screen}\nCurrent screen should now be: ${item.screen}\nCheck if screen changed!`);
-                            }, 100);
-                          } else {
-                            alert('❌ ERROR: navigate is undefined!');
                           }
                           setDropdownOpen(false);
                         }}

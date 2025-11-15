@@ -65,7 +65,6 @@ const RepFeedItem = ({ item }) => {
         const isDeveloperMode = localStorage.getItem('arena-developer-mode') === 'true';
         if (isDeveloperMode) {
           if (localStorage.getItem('arena-developer-mode') === 'true') {
-            alert(`Action: View comments for post ${item.id}`);
           }
         }
     };
@@ -75,7 +74,6 @@ const RepFeedItem = ({ item }) => {
         const isDeveloperMode = localStorage.getItem('arena-developer-mode') === 'true';
         if (isDeveloperMode) {
           if (localStorage.getItem('arena-developer-mode') === 'true') {
-            alert(`Action: Liked post ${item.id}`);
           }
         }
     };
@@ -169,7 +167,6 @@ const CommunityFeedScreen = () => {
         const isDeveloperMode = localStorage.getItem('arena-developer-mode') === 'true';
         if (isDeveloperMode) {
           if (localStorage.getItem('arena-developer-mode') === 'true') {
-            alert(`Mock Share Success: "${textToShare}"`);
           }
         }
         setQuickShareText(''); // Clear input

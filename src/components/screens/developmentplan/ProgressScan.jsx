@@ -117,7 +117,6 @@ const ProgressScan = ({
   // This just moves from the form to the comparison view
   const handleReviewProgress = () => {
     if (!isComplete) {
-      alert("Please answer all assessment questions.");
       return;
     }
     setView('comparison');

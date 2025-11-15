@@ -301,7 +301,6 @@ export const EveningBookend = ({
                         const isDeveloperMode = localStorage.getItem('arena-developer-mode') === 'true';
                         if (isDeveloperMode) {
                           if (localStorage.getItem('arena-developer-mode') === 'true') {
-                            alert('🟢 Save Reflection clicked!\nGood: ' + (reflectionGood?.length || 0) + ' chars\nBetter: ' + (reflectionBetter?.length || 0) + ' chars\nBest: ' + (reflectionBest?.length || 0) + ' chars');
                           }
                         }
                         if (onSaveReflection) {

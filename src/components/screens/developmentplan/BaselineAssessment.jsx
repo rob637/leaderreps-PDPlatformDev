@@ -122,18 +122,13 @@ const BaselineAssessment = ({ onComplete, isLoading = false }) => {
   };
 
   const handleComplete = () => {
-    alert('🔴 Complete & Generate clicked!\nQuestions: ' + completedQuestions + '/' + totalQuestions + '\nGoals: ' + goals.filter(g => g.trim()).length);
-    
     if (!allLikertAnswered) {
-      alert("Please answer all assessment questions.");
       return;
     }
     if (!atLeastOneGoal) {
-      alert("Please enter at least one leadership goal.");
       return;
     }
 
-    alert('🔴 Starting 8-second generation timer...');
     // START SIMULATED GENERATION
     setIsGenerating(true);
     
@@ -147,9 +142,7 @@ const BaselineAssessment = ({ onComplete, isLoading = false }) => {
             cycle: 1,
         };
         
-        alert('🔴 8 seconds complete!\nCalling onComplete() to save plan...');
         onComplete(assessment);
-        alert('🔴 onComplete() returned!\nWaiting for plan to save...');
         setIsGenerating(false);
     }, 8000); // 8-second delay
   };

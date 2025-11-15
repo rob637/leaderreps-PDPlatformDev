@@ -415,21 +415,18 @@ export const useDashboard = ({
     const isDeveloperMode = localStorage.getItem('arena-developer-mode') === 'true';
     if (isDeveloperMode) {
       if (isDeveloperMode()) {
-        alert('🟡 Adding Task: "' + taskText + '"\nCurrent tasks: ' + otherTasks.length);
       }
     }
     
     if (!taskText.trim()) {
       const isDeveloperMode = localStorage.getItem('arena-developer-mode') === 'true';
       if (isDeveloperMode) {
-        alert('❌ Task text is empty!');
       }
       return;
     }
     if (otherTasks.length >= 5) {
       const isDeveloperMode = localStorage.getItem('arena-developer-mode') === 'true';
       if (isDeveloperMode) {
-        alert('Maximum 5 tasks allowed');
       }
       return;
     }
@@ -579,7 +576,6 @@ export const useDashboard = ({
       
       if (success) {
         // Always show feedback, not just in dev mode
-        alert('✅ Today\'s WIN saved successfully!\n\nYou can see it in the "Today\'s Progress" section below.');
       } else {
         throw new Error('Update returned false');
       }
