@@ -4,6 +4,7 @@ import React, { useState, useEffect, useMemo, useCallback } from 'react';
 // --- Core Services & Context ---
 import { useAppServices } from '../../services/useAppServices.jsx'; // cite: useAppServices.jsx
 import { membershipService } from '../../services/membershipService.js';
+import { logWidthMeasurements } from '../../utils/debugWidth.js';
 
 // --- Icons ---
 import {
@@ -432,7 +433,10 @@ const CommunityScreen = () => {
     const allThreads = useMemo(() => MOCK_FEED_FALLBACK, []); // cite: MOCK_FEED_FALLBACK
 
     // --- Effect to scroll to top when view changes ---
-    useEffect(() => { window.scrollTo({ top: 0, behavior: 'smooth' }); }, [view]);
+    useEffect(() => { 
+        window.scrollTo({ top: 0, behavior: 'smooth' }); 
+        logWidthMeasurements('Community');
+    }, [view]);
 
     // --- Filter Threads for Home View ---
     const filteredThreads = useMemo(() => {

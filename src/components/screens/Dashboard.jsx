@@ -281,13 +281,34 @@ const Dashboard = (props) => {
   // Use simulatedTier if available (for testing), otherwise use actual membershipData
   const currentTier = simulatedTier || membershipData?.currentTier || 'basic';
   
-  console.log('📊 [Dashboard] Tier state:', { 
+  console.log('📊 [DASHBOARD] Tier state:', { 
     simulatedTier, 
     membershipTier: membershipData?.currentTier, 
-    computedCurrentTier: currentTier 
+    computedCurrentTier: currentTier,
+    isDeveloperMode 
   });
   const isMemberPro = membershipService.hasAccess(currentTier, 'professional');
   const isMemberPremium = membershipService.hasAccess(currentTier, 'elite');
+  
+  // Width debugging - log on mount
+  React.useEffect(() => {
+    setTimeout(() => {
+      const container = document.querySelector('.page-corporate');
+      if (container) {
+        const rect = container.getBoundingClientRect();
+        const computed = window.getComputedStyle(container);
+        console.log('📐 [DASHBOARD] Width Measurements:', {
+          component: 'Dashboard',
+          actualWidth: `${rect.width}px`,
+          maxWidth: computed.maxWidth,
+          padding: computed.padding,
+          margin: computed.margin,
+          boxSizing: computed.boxSizing,
+          classList: container.className
+        });
+      }
+    }, 100);
+  }, []);
 
   // -------------------------------
   // Compute Anchor State (Unified)

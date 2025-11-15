@@ -5,6 +5,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Film, User, Clock, ArrowRight, Zap, Briefcase, ArrowLeft, Search, Filter, Play, BookOpen, Users, Target, Lightbulb, TrendingUp, Star } from 'lucide-react';
 // --- Core Services & Context ---
 import { useAppServices } from '../../services/useAppServices.jsx'; // cite: useAppServices.jsx
+import { logWidthMeasurements } from '../../utils/debugWidth.js';
 
 /* =========================================================
    PALETTE & UI COMPONENTS (Standardized)
@@ -341,6 +342,7 @@ const LeadershipVideosScreen = () => {
         if (typeof window !== 'undefined') {
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
+        logWidthMeasurements('LeadershipVideos');
     }, []); // Empty dependency array ensures it runs only once on mount
 
     // --- Determine Video Data Source ---

@@ -390,10 +390,13 @@ const SkillDetailView = ({ skill, setSelectedSkill, resourceLibrary, getTierName
    MAIN SCREEN COMPONENT: AppliedLeadershipScreen (Course Library)
 ========================================================= */
 
+import { logWidthMeasurements } from '../../utils/debugWidth.js';
+
 export default function AppliedLeadershipScreen() {
     // Scroll to top when component mounts
     React.useEffect(() => {
         window.scrollTo({ top: 0, behavior: 'smooth' });
+        logWidthMeasurements('AppliedLeadership');
     }, []);
     
     // --- Consume services ---

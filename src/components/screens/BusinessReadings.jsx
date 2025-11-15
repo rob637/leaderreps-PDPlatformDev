@@ -644,10 +644,13 @@ function BookFlyerStable({
    MAIN SCREEN COMPONENT: BusinessReadingsScreen
 ========================================================= */
 
+import { logWidthMeasurements } from '../../utils/debugWidth.js';
+
 export default function BusinessReadingsScreen() {
   // Scroll to top when component mounts
   React.useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
+    logWidthMeasurements('BusinessReadings');
   }, []);
   
   // --- Consume Core Services ---

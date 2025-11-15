@@ -3,6 +3,7 @@
 import React from 'react';
 // --- Core Services & Context ---
 import { useAppServices } from '../../services/useAppServices.jsx'; // cite: useAppServices.jsx
+import { logWidthMeasurements } from '../../utils/debugWidth.js';
 
 // --- Icons ---
 import { User, Lock, Code, Cpu, Settings, Shield, ArrowLeft } from 'lucide-react'; // Added Shield, ArrowLeft
@@ -56,6 +57,11 @@ const Card = ({ children, title, icon: Icon, className = '', accent = 'NAVY' }) 
 const AppSettingsScreen = () => {
   // --- Consume Services ---
   const { user, API_KEY, auth, navigate, isAdmin } = useAppServices(); // cite: useAppServices.jsx
+
+  // Width debugging
+  React.useEffect(() => {
+    logWidthMeasurements('AppSettings');
+  }, []);
 
   // --- Handlers ---
   /**

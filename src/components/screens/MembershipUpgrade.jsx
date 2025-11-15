@@ -243,7 +243,33 @@ const MembershipUpgrade = ({ setCurrentScreen, simulatedTier }) => {
   // Scroll to top when component mounts to ensure users see the full page
   React.useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
-  }, []);
+    
+    console.log('🎯 [MEMBERSHIP] Tier Debug:', {
+      simulatedTier,
+      membershipDataTier: membershipData?.currentTier,
+      computedCurrentTier: currentTier,
+      isDeveloperMode,
+      localStorageTier
+    });
+    
+    // Width debugging
+    setTimeout(() => {
+      const container = document.querySelector('.page-corporate');
+      if (container) {
+        const rect = container.getBoundingClientRect();
+        const computed = window.getComputedStyle(container);
+        console.log('📐 [MEMBERSHIP] Width Measurements:', {
+          component: 'MembershipUpgrade',
+          actualWidth: `${rect.width}px`,
+          maxWidth: computed.maxWidth,
+          padding: computed.padding,
+          margin: computed.margin,
+          boxSizing: computed.boxSizing,
+          classList: container.className
+        });
+      }
+    }, 100);
+  }, [simulatedTier, membershipData, currentTier, isDeveloperMode, localStorageTier]);
 
   const handleUpgrade = (tier) => {
     // In a real app, this would integrate with Stripe/payment processor

@@ -8,6 +8,7 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 // FIX: Import the real useAppServices from the standard path.
 import { useAppServices } from '../../services/useAppServices.jsx';
+import { logWidthMeasurements } from '../../utils/debugWidth.js';
 import { membershipService } from '../../services/membershipService.js';
 import { useNavigation } from '../../providers/NavigationProvider.jsx'; 
 import { AlertTriangle, ArrowLeft, BarChart3, Beaker, Briefcase, CheckCircle, Clock, CornerRightUp, Cpu, Eye, HeartPulse, Info, Lightbulb, Mic, Play, PlusCircle, Send, ShieldCheck, Star, Target, TrendingUp, Users, X, Zap } from 'lucide-react'; 
@@ -1650,6 +1651,7 @@ export default function CoachingLabScreen() {
         if (typeof window !== 'undefined') {
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
+        logWidthMeasurements('CoachingLab');
     }, [view]);
 
     const renderView = () => {

@@ -94,10 +94,30 @@ export default function DevelopmentPlan() {
     db, userId, isAuthReady, isLoading: isServicesLoading,
     developmentPlanData, updateDevelopmentPlanData, 
     // FIXED: Add writer for dailyPracticeData
-    updateDailyPracticeData: updateDailyPracticeWriter,
+    updateDailyPracticeWriter,
     metadata: globalMetadata,
     navigate
   } = services || {};
+  
+  // Width debugging - log on mount
+  React.useEffect(() => {
+    setTimeout(() => {
+      const container = document.querySelector('.page-corporate');
+      if (container) {
+        const rect = container.getBoundingClientRect();
+        const computed = window.getComputedStyle(container);
+        console.log('📐 [DEVELOPMENT PLAN] Width Measurements:', {
+          component: 'DevelopmentPlan',
+          actualWidth: `${rect.width}px`,
+          maxWidth: computed.maxWidth,
+          padding: computed.padding,
+          margin: computed.margin,
+          boxSizing: computed.boxSizing,
+          classList: container.className
+        });
+      }
+    }, 100);
+  }, []);
 
   // Helpers
   const skillCatalog = useMemo(() => normalizeSkillCatalog(globalMetadata), [globalMetadata]);
