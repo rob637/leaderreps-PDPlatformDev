@@ -40,7 +40,6 @@ const LoadingBlock = ({ title = 'Loading…', description = 'Preparing your deve
 // Finds the first rep matching the plan's first focus area and saves it
 const findAndSetTargetRep = async (newPlan, metadata, writer) => {
   if (!newPlan || !newPlan.focusAreas || newPlan.focusAreas.length === 0) {
-    console.log('[DevPlan] No focus areas in new plan, cannot set target rep.');
     return;
   }
   // Use REP_LIBRARY (from image_b9f3bd.png)
@@ -60,8 +59,6 @@ const findAndSetTargetRep = async (newPlan, metadata, writer) => {
     const firstFocusAreaCategory = newPlan.focusAreas[0];
     
     // DEBUG LOGGING ADDED FOR ISSUE 4
-    console.log(`[DevPlan Target Rep] Searching for category: ${firstFocusAreaCategory}`);
-    console.log(`[DevPlan Target Rep] REP_LIBRARY size: ${metadata.REP_LIBRARY.items.length}`);
     
     if (!firstFocusAreaCategory) {
       console.warn('[DevPlan] First focus area has no category. Cannot find rep. Check skill_catalog data.');
@@ -76,14 +73,9 @@ const findAndSetTargetRep = async (newPlan, metadata, writer) => {
     if (matchingRep) {
       const newRepId = matchingRep.id || matchingRep.repId; // 'id' is seen in image_b9f3bd.png
       if (newRepId) {
-        console.log(`[DevPlan] Setting new dailyTargetRepId: ${newRepId}`);
         // Reset status to pending when a new rep is assigned
         await writer({ 
-          dailyTargetRepId: newRepId,
-          dailyTargetRepStatus: 'Pending',
-          dailyTargetRepDate: null,
-        });
-        console.log('[DevPlan] Target rep set successfully.');
+  });
       } else {
         console.warn('[DevPlan] Matching rep found but has no ID.');
       }
@@ -114,19 +106,7 @@ export default function DevelopmentPlan() {
   const adaptedDevelopmentPlanData = useMemo(() => {
     if (!developmentPlanData) return null;
     
-    console.log('[DevelopmentPlan] Adapting Firebase data:', {
-      hasCurrentPlan: !!developmentPlanData.currentPlan,
-      hasFocusAreas: !!developmentPlanData.currentPlan?.focusAreas,
-      assessmentCount: developmentPlanData.assessmentHistory?.length || 0
-    });
-    
     const adapted = adaptDevelopmentPlanData(developmentPlanData);
-    
-    console.log('[DevelopmentPlan] Adapted data:', {
-      hasCurrentPlan: !!adapted?.currentPlan,
-      hasCoreReps: !!adapted?.currentPlan?.coreReps,
-      coreRepsCount: adapted?.currentPlan?.coreReps?.length || 0
-    });
     
     return adapted;
   }, [developmentPlanData]);
@@ -142,10 +122,6 @@ export default function DevelopmentPlan() {
   // Combine actual and virtual skill catalogs
   const combinedSkillCatalog = useMemo(() => {
     if (skillCatalog.length > 0 && virtualSkillCatalog.length > 0) {
-      console.log('[DevelopmentPlan] Merging skill catalogs:', {
-        actual: skillCatalog.length,
-        virtual: virtualSkillCatalog.length
-      });
       // Prefer virtual (from plan) since it's current
       return virtualSkillCatalog;
     }
@@ -168,11 +144,9 @@ export default function DevelopmentPlan() {
       justCompletedBaseline,
       hasCurrentPlan: !!adaptedDevelopmentPlanData?.currentPlan
     };
-    console.log('[DevelopmentPlan useEffect] Checking view state:', stateInfo);
     
     // DON'T switch views while saving is in progress
     if (isSaving) {
-      console.log('[DevelopmentPlan] Save in progress, not switching views.');
       return;
     }
     
@@ -180,7 +154,6 @@ export default function DevelopmentPlan() {
     // Otherwise, let the user navigate freely between views
     if (adaptedDevelopmentPlanData?.currentPlan && justCompletedBaseline) {
       if (view !== 'tracker') {
-        console.log('[DevelopmentPlan] Plan data exists after baseline, switching to tracker view.');
         const isDeveloperMode = localStorage.getItem('arena-developer-mode') === 'true';
         if (isDeveloperMode) {
           if (localStorage.getItem('arena-developer-mode') === 'true') {
@@ -195,19 +168,16 @@ export default function DevelopmentPlan() {
     
     // When no plan exists and we just completed baseline, STAY on baseline and wait for data
     if (!adaptedDevelopmentPlanData?.currentPlan && justCompletedBaseline) {
-      console.log('[DevelopmentPlan] Waiting for plan data after baseline completion...');
       return;
     }
     
     // When no plan exists and we're on tracker, switch to baseline
     if (!adaptedDevelopmentPlanData?.currentPlan && view === 'tracker') {
-      console.log('[DevelopmentPlan] No plan data and on tracker, switching to baseline view.');
       setView('baseline');
     }
   }, [adaptedDevelopmentPlanData?.currentPlan, view, isSaving, justCompletedBaseline]);
 
   const writeDevPlan = async (payload, { merge = true } = {}) => {
-    console.log('[DevelopmentPlan] Starting writeDevPlan...');
     setError(null);
     setIsSaving(true);
     
@@ -219,12 +189,10 @@ export default function DevelopmentPlan() {
       if (firebasePayload.currentPlan) {
         if (firebasePayload.currentPlan._source === 'generation') {
           // New plan: It's already in the Firebase focusAreas format. We use it as-is.
-          console.log('[DevelopmentPlan] Skipping adapter for new plan, using direct format.');
           // We must remove the temporary flag before saving.
           delete firebasePayload.currentPlan._source;
         } else if (firebasePayload.currentPlan.coreReps) {
           // Edited plan: It's in component (coreReps) format and needs conversion back.
-          console.log('[DevelopmentPlan] Converting existing plan (coreReps) to Firebase format.');
           // The adapter is now correctly applied to the sub-object only.
           firebasePayload.currentPlan = adaptComponentPlanToFirebase(firebasePayload.currentPlan);
         }
@@ -252,7 +220,6 @@ export default function DevelopmentPlan() {
       return false;
     }
     
-    console.log('[DevelopmentPlan] writeDevPlan completed successfully.');
     setIsSaving(false);
     return true;
   };
@@ -262,7 +229,6 @@ export default function DevelopmentPlan() {
     const isDeveloperMode = localStorage.getItem('arena-developer-mode') === 'true';
     
     if (!isDeveloperMode) {
-      console.log('[DevelopmentPlan] Reset only available in developer mode');
       return;
     }
 
@@ -289,7 +255,6 @@ export default function DevelopmentPlan() {
       }, { merge: false }); // Don't merge, replace everything
 
       if (ok) {
-        console.log('[DevelopmentPlan] Plan deleted successfully');
         setView('baseline');
         setJustCompletedBaseline(false);
         if (localStorage.getItem('arena-developer-mode') === 'true') {
@@ -330,17 +295,13 @@ async function confirmPlanPersisted(db, userId, retries = 4, delayMs = 250) {
 
   // Baseline → Generate new plan then route to tracker
   const handleCompleteBaseline = async (assessment) => {
-    console.log('[DevelopmentPlan] Starting baseline completion with assessment:', assessment);
     
     const date = new Date().toISOString();
     const newAssessment = { ...assessment, date };
     
     // Assumes generatePlanFromAssessment uses the *corrected* skill catalog
-    console.log('[DevelopmentPlan] Generating plan from assessment...');
-    console.log('[DevelopmentPlan] combinedSkillCatalog:', combinedSkillCatalog?.length || 'undefined');
     
     const newPlanRaw = generatePlanFromAssessment(newAssessment, combinedSkillCatalog);
-    console.log('[DevelopmentPlan] Generated plan:', newPlanRaw);
     if (localStorage.getItem('arena-developer-mode') === 'true') {
       alert('🔴 Plan generated!\nFocus areas: ' + (newPlanRaw?.focusAreas?.length || 0));
     }
@@ -367,10 +328,7 @@ async function confirmPlanPersisted(db, userId, retries = 4, delayMs = 250) {
     if (prevPlan) {
       prevPlans.push({
         ...prevPlan,
-        endDate: new Date().toISOString(),
-        archivedAt: new Date().toISOString(),
-        status: 'archived'
-      });
+  });
     }
 
     const assessmentHistory = Array.isArray(adaptedDevelopmentPlanData?.assessmentHistory)
@@ -389,30 +347,24 @@ async function confirmPlanPersisted(db, userId, retries = 4, delayMs = 250) {
     if (localStorage.getItem('arena-developer-mode') === 'true') {
       alert('🔴 About to save plan to Firestore...');
     }
-    console.log('[DevelopmentPlan] Saving payload to Firebase:', payload);
     const ok = await writeDevPlan(payload, { merge: true });
-    console.log('[DevelopmentPlan] writeDevPlan result:', ok);
     alert('🔴 writeDevPlan returned: ' + ok);
     
     if (ok) {
       // Set flag to prevent returning to baseline view
-      console.log('[DevelopmentPlan] Setting justCompletedBaseline flag');
       setJustCompletedBaseline(true);
       
       // FINAL FIX (Issue 4): Set the target rep
-      console.log('[DevelopmentPlan] Baseline saved. Setting target rep...');
       await findAndSetTargetRep(newPlan, globalMetadata, updateDailyPracticeWriter);
       
       // Confirm plan persisted for logging purposes
       const okPersisted = await confirmPlanPersisted(db, userId);
       if (okPersisted) {
-        console.log('[DevelopmentPlan] Confirmed currentPlan via read-after-write.');
       } else {
         console.warn('[DevelopmentPlan] Could not confirm plan persistence, but waiting for listener.');
       }
       
       // View will automatically switch to tracker via useEffect when data arrives
-      console.log('[DevelopmentPlan] Assessment completed. Waiting for Firestore update...');
     } else {
       console.error('[DevelopmentPlan] Failed to save plan!');
       alert('Failed to save development plan. Please try again.');
@@ -438,10 +390,7 @@ async function confirmPlanPersisted(db, userId, retries = 4, delayMs = 250) {
     if (prevPlan) {
       prevPlans.push({
         ...prevPlan,
-        endDate: date,
-        archivedAt: date,
-        status: 'archived'
-      });
+  });
     }
 
     const assessmentHistory = Array.isArray(adaptedDevelopmentPlanData?.assessmentHistory) ? adaptedDevelopmentPlanData.assessmentHistory.slice() : [];
@@ -459,11 +408,9 @@ async function confirmPlanPersisted(db, userId, retries = 4, delayMs = 250) {
     
     if (ok) {
       // FINAL FIX (Issue 4): Set the target rep
-      console.log('[DevelopmentPlan] Scan saved. Setting target rep...');
       await findAndSetTargetRep(withCycle, globalMetadata, updateDailyPracticeWriter);
       
       // REQ #16: FIX - Do not manually set view. Let the useEffect handle it.
-      console.log('[DevelopmentPlan] Waiting for data listener to switch view.');
     }
   };
 

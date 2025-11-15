@@ -184,11 +184,9 @@ const ContentDetailsModalInternal = ({ content, onClose, htmlContent, rating, se
     const tierData = LEADERSHIP_TIERS[content.tier] || { name: 'Unknown Tier' };
     
     const handleLogLearning = async () => {
-        if (rating === 0) { console.log('Please provide a 5-star rating before logging.'); return; }
+        if (rating === 0) { return; }
         setIsLogging(true);
-        console.log(`Mock: Logging learning for ${content.title} with rating ${rating}/5.`);
         await new Promise(r => setTimeout(r, 800));
-        console.log(`Learning logged! Your ${rating}/5 rating will influence future plan revisions.`);
         // NOTE: In a real app, you would dispatch a data update here to log learning progress.
         setIsLogging(false);
         onClose();
@@ -425,13 +423,7 @@ const TrackerDashboardView = ({ data, updatePdpData, navigate }) => {
         setIsSaving(true);
         try {
             await updatePdpData({ 
-                plan: [], 
-                assessment: null, 
-                currentMonth: 1, 
-                progressScans: [], 
-                latestScenario: null, 
-                lastUpdate: new Date().toISOString() 
-            });
+  });
             // After data is cleared, navigate to the generator screen.
             navigate('prof-dev-plan');
             window.scrollTo(0,0); 
@@ -471,7 +463,6 @@ const TrackerDashboardView = ({ data, updatePdpData, navigate }) => {
             };
         }).then(() => {
             setIsSaving(false);
-            console.log("Reflection and Progress Scan Snapshot Saved.");
         }).catch((e) => {
              console.error("Reflection Save Failed:", e);
              setIsSaving(false);
@@ -520,7 +511,7 @@ const TrackerDashboardView = ({ data, updatePdpData, navigate }) => {
                     <Button onClick={handleResetPlan} variant='outline' className='text-xs px-4 py-2 text-[#E04E1B] border-[#E04E1B]/50 hover:bg-[#E04E1B]/10'>
                         Start Over / Re-Run Assessment
                     </Button>
-                    <Button onClick={() => console.log('Share')} variant='outline' className='text-xs px-4 py-2 border-[#002E47] text-[#002E47] hover:bg-[#002E47]/10'>
+                    <Button onClick={() => {}} variant='outline' className='text-xs px-4 py-2 border-[#002E47] text-[#002E47] hover:bg-[#002E47]/10'>
                         <ShareIcon className="w-4 h-4 mr-1" /> Share Monthly Focus
                     </Button>
                 </div>

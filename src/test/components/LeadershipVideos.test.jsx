@@ -45,14 +45,10 @@ describe('Leadership Videos Component', () => {
         mockNavigate.mockClear();
         // Mock window.scrollTo
         Object.defineProperty(window, 'scrollTo', {
-            value: vi.fn(),
-            writable: true
-        });
+  });
         // Mock window.open 
         Object.defineProperty(window, 'open', {
-            value: vi.fn(),
-            writable: true
-        });
+  });
     });
 
     afterEach(() => {
@@ -275,9 +271,7 @@ describe('Leadership Videos Component', () => {
             render(<LeadershipVideosScreen />);
             
             expect(window.scrollTo).toHaveBeenCalledWith({ 
-                top: 0, 
-                behavior: 'smooth' 
-            });
+  });
         });
     });
 });

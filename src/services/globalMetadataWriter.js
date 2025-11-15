@@ -58,7 +58,6 @@ export const updateGlobalMetadata = async (
     const success = await setDocEx(db, path, finalPayload, merge);
 
     if (success) {
-        console.log(`[GLOBAL WRITE SUCCESS] Document: ${path}. Merge: ${merge}. Keys Updated: ${Object.keys(payload).join(', ')}. Source: ${source}`);
         return { ...payload, _updatedBy: userId, _source: source };
     } else {
         throw new Error(`setDocEx failed for path ${path}`);

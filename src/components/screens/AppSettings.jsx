@@ -66,7 +66,6 @@ const AppSettingsScreen = () => {
       alert('Cannot reset password: User email or authentication service is unavailable.');
       return;
     }
-    console.log(`[AppSettings] Requesting password reset for ${user.email}`);
     try {
       // Use the sendPasswordResetEmail function from firebase/auth
       await sendPasswordResetEmail(auth, user.email); // cite: App.jsx (original location)

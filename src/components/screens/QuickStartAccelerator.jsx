@@ -103,7 +103,6 @@ const LISAuditorView = ({ setQuickStartView }) => {
         setIsGenerating(true);
         setCritique(''); // Clear previous critique
         setCritiqueHtml('');
-        console.log("[LISAuditor] Requesting critique for draft:", draft);
 
         // --- Use Mock Critique if API Key is missing ---
         if (!hasGeminiKey()) {
@@ -134,7 +133,6 @@ const LISAuditorView = ({ setQuickStartView }) => {
                 model: 'gemini-1.5-flash', // Use flash model for faster critique // cite: QuickStartAccelerator.jsx (Original Logic)
             };
             const result = await callSecureGeminiAPI(payload); // cite: useAppServices.jsx
-            console.log("[LISAuditor] AI Response:", result);
             const text = result?.candidates?.[0]?.content?.parts?.[0]?.text;
 
             // --- Set Result ---

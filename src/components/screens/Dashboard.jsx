@@ -93,7 +93,6 @@ const GetStartedCard = ({ onNavigate, membershipData, developmentPlanData, curre
               if (userData?.isDeveloperMode) {
                 alert('🔵 View Plans button clicked!\nAttempting to navigate to: membership-upgrade');
               }
-              console.log('[GetStartedCard] View Plans clicked, calling onNavigate');
               onNavigate('membership-upgrade');
               if (userData?.isDeveloperMode) {
                 alert('🔵 onNavigate called with membership-upgrade');
@@ -252,24 +251,13 @@ const Dashboard = (props) => {
     updateDailyPracticeData
   });
 
-  console.log('[Dashboard] Component rendering, simulatedTier:', props.simulatedTier);
-  console.log('[Dashboard] _setCurrentScreen type:', typeof _setCurrentScreen);
-
-  // Debug wrapper for setCurrentScreen
+  // Wrapper for setCurrentScreen
   const setCurrentScreen = (screen) => {
-    console.log('[Dashboard] setCurrentScreen called with:', screen);
-    console.log('[Dashboard] _setCurrentScreen type:', typeof _setCurrentScreen);
-    console.log('[Dashboard] _setCurrentScreen value:', _setCurrentScreen);
-    
     if (typeof _setCurrentScreen === 'function') {
-      console.log('[Dashboard] Calling _setCurrentScreen with:', screen);
       _setCurrentScreen(screen);
-      console.log('[Dashboard] _setCurrentScreen called successfully');
     } else {
       console.error('[Dashboard] ERROR: setCurrentScreen is not a function!', {
-        type: typeof _setCurrentScreen,
-        value: _setCurrentScreen
-      });
+  });
       if (userData?.isDeveloperMode) {
         alert(`Navigation error: Cannot navigate to ${screen}. Please refresh the page.`);
       }
@@ -349,8 +337,7 @@ const Dashboard = (props) => {
     if (user && db) {
       try {
         await updateDoc(doc(db, 'users', user.uid), {
-          isStudyMode: newMode
-        });
+  });
       } catch (error) {
         console.error('Error updating daily mode:', error);
         setDailyMode(!newMode);
@@ -456,7 +443,6 @@ const Dashboard = (props) => {
         alert('✅ Leadership Anchors saved! Your identity, habit, and why are now set.');
       }
       
-      console.log('[Dashboard] All anchors saved successfully');
     } catch (error) {
       console.error('Error saving anchors:', error);
       alert('❌ Error saving anchors. Please try again.');
@@ -471,8 +457,7 @@ const Dashboard = (props) => {
     setIsSaving(true);
     try {
       await updateDoc(doc(db, 'user_anchors', user.uid), {
-        anchor: deleteField()
-      });
+  });
       setLocalAnchor(null);
       setShowAnchorModal(false);
       setIsEditorOpen(false);

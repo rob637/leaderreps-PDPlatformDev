@@ -164,7 +164,6 @@ async function handleAiSubmit(e, services, selectedBook, aiQuery, setIsSubmittin
   const q = (aiQuery || '').trim();
   if (!selectedBook || !q || !services || typeof services.callSecureGeminiAPI !== 'function') return;
 
-  console.log("[handleAiSubmit] Submitting query for book:", selectedBook.title);
   setIsSubmitting(true);
   setAiResponse('The AI Rep Coach is analyzing the book and your question...'); // Updated name
 
@@ -210,7 +209,6 @@ async function handleAiSubmit(e, services, selectedBook, aiQuery, setIsSubmittin
     };
 
     const result = await services.callSecureGeminiAPI(payload); // cite: useAppServices.jsx
-    console.log("[handleAiSubmit] API Response:", result);
 
     // --- Process the Response ---
     const text = result?.candidates?.[0]?.content?.parts?.[0]?.text
@@ -683,7 +681,6 @@ export default function BusinessReadingsScreen() {
     const catalogItems = READING_CATALOG?.items;
     // Validate structure: must be an object with at least one key/value pair where value is array
     if (catalogItems && typeof catalogItems === 'object' && Object.keys(catalogItems).length > 0 && Object.values(catalogItems).some(Array.isArray)) {
-        console.log("[BusinessReadings] Using READING_CATALOG from services.");
         return catalogItems;
     } else {
         console.warn("[BusinessReadings] READING_CATALOG invalid or empty. Using fallback data.", READING_CATALOG);
@@ -697,7 +694,6 @@ export default function BusinessReadingsScreen() {
 
   /* ---------- Filtering Logic (Memoized) ---------- */
   const filteredBooks = useMemo(() => {
-    console.log("[BusinessReadings] Re-calculating filtered books. Signature:", deepDataSignature);
     // Safety check for allBooks structure
     if (!allBooks || typeof allBooks !== 'object') return {};
 
@@ -729,7 +725,6 @@ export default function BusinessReadingsScreen() {
             }
         }
     }
-    console.log("[BusinessReadings] Filtering complete. Result keys:", Object.keys(result));
     return result;
   }, [allBooks, filters, deepDataSignature]); // Dependencies: Trigger re-filter on data, filters, or signature change
 
@@ -741,7 +736,6 @@ export default function BusinessReadingsScreen() {
       setHtmlFlyer(''); // Clear flyer if no book selected
       return;
     }
-    console.log(`[BusinessReadings] Loading flyer for: ${selectedBook.title}, Brief Mode: ${isExecutiveBrief}`);
     // Determine which HTML content key to use
     const contentKey = isExecutiveBrief ? 'executiveBriefHTML' : 'fullFlyerHTML';
     // Retrieve HTML from the selected book object, use error fallback if missing
@@ -752,7 +746,6 @@ export default function BusinessReadingsScreen() {
     const timer = setTimeout(() => {
         setHtmlFlyer(newHtml);
         setIsFlyerLoading(false);
-        console.log(`[BusinessReadings] Flyer content set.`);
     }, 50); // Minimal delay
 
     // Cleanup timer on unmount or if dependencies change
@@ -764,7 +757,6 @@ export default function BusinessReadingsScreen() {
   useEffect(() => {
     // Reset secondary states when the selected book changes
     if (selectedBook) {
-      console.log(`[BusinessReadings] Resetting state for new book: ${selectedBook.title}`);
       setIsExecutiveBrief(false); // Default to full flyer view
       setAiQuery('');             // Clear AI query
       setAiResponse('');          // Clear AI response
@@ -782,7 +774,6 @@ export default function BusinessReadingsScreen() {
   useEffect(() => {
     // Custom event listener to allow BookFlyerStable to signal closing itself
     const handler = () => {
-        console.log("[BusinessReadings] Close flyer event received.");
         setSelectedBook(null);
     };
     window.addEventListener('lr-close-flyer', handler);
@@ -809,7 +800,6 @@ export default function BusinessReadingsScreen() {
 
   // Handler for selecting a book from the list
   const handleSelectBook = useCallback((book, tier) => {
-      console.log(`[BusinessReadings] Book selected: ${book.title} from tier ${tier}`);
       setSelectedBook(book);
       setSelectedTier(tier || ''); // Store the tier/category name
   }, []);
@@ -818,7 +808,6 @@ export default function BusinessReadingsScreen() {
   const handleToggleSave = useCallback((bookId) => {
     setSavedBooks(prev => {
         const isCurrentlySaved = !!prev[bookId];
-        console.log(`[BusinessReadings] Toggling save for book ${bookId}. New status: ${!isCurrentlySaved}`);
         return { ...prev, [bookId]: !isCurrentlySaved };
         // TODO: Persist savedBooks state (e.g., to localStorage or user profile in Firestore)
     });
@@ -827,7 +816,6 @@ export default function BusinessReadingsScreen() {
   // --- Adds the selected book reading task as a Daily Practice Rep ---
   const handleCommitment = useCallback(async (book) => {
     if (!book || isCommitted) return; // Prevent adding if already committed or no book
-    console.log(`[BusinessReadings] Adding commitment for book: ${book.title}`);
 
     // --- Create the new Rep (Commitment) object ---
     const estimatedDuration = book.duration || getDerivedDuration(book) || 0; // Get duration
@@ -854,7 +842,6 @@ export default function BusinessReadingsScreen() {
         }); // cite: useAppServices.jsx
 
         if (success) {
-            console.log("[BusinessReadings] Commitment added successfully.");
             setIsCommitted(true); // Update local state to reflect commitment
             // Optional: Navigate to daily practice after a brief delay
             // setTimeout(() => navigate('daily-practice'), 1000);

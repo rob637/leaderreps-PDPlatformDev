@@ -21,13 +21,11 @@ const createMockSnapshot = (docPath, data, exists = true) => ({
 
 const mockSetDoc = async (docRefPath, data) => {
   __firestore_mock_store[docRefPath] = data;
-  console.log(`[MOCK SET] Path: ${docRefPath}`, data); 
   return true;
 };
 
 const mockGetDoc = async (docPath) => {
-  const d = __firestore_mock_store[docPath];
-  console.log(`[MOCK GET] Path: ${docPath}`, d ? '(Found)' : '(Not Found)'); 
+  const d = __firestore_mock_store[docPath]; 
   return createMockSnapshot(docPath, d || {}, !!d);
 };
 
@@ -108,13 +106,7 @@ export const setDocEx = async (db, path, data, merge = false) => {
       const cleanedData = cleanUndefinedValues(data);
       const dataWithTimestamp = { ...cleanedData, _updatedAt: serverTimestamp() };
       const docRef = toDocRef(db, path);
-      console.log(`[setDocEx] Attempting write to ${path}`, {
-        merge,
-        dataKeys: Object.keys(dataWithTimestamp),
-        dataPreview: JSON.stringify(dataWithTimestamp, null, 2).substring(0, 500)
-      });
       await fsSetDoc(docRef, dataWithTimestamp, merge ? { merge: true } : undefined);
-      console.log(`[setDocEx SUCCESS] Path: ${path}`);
       return true; 
   } catch (error) {
       console.error(`[setDocEx FAILED] Path: ${path}`, error);

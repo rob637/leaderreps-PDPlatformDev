@@ -14,12 +14,6 @@
 export const adaptFirebasePlanToComponents = (firebasePlan) => {
   if (!firebasePlan) return null;
   
-  console.log('[Adapter] Adapting Firebase plan:', {
-    hasFocusAreas: !!firebasePlan.focusAreas,
-    focusAreaCount: firebasePlan.focusAreas?.length || 0,
-    cycle: firebasePlan.cycle
-  });
-  
   // Transform focusAreas → coreReps
   const coreReps = [];
   
@@ -50,11 +44,7 @@ export const adaptFirebasePlanToComponents = (firebasePlan) => {
             
             // Metadata
             areaIndex,
-            repIndex,
-            
-            // Keep original for reference
-            _originalRep: rep,
-            _originalArea: { name: area.name, courses: area.courses }
+            repIndex
           });
         });
       }
@@ -62,11 +52,6 @@ export const adaptFirebasePlanToComponents = (firebasePlan) => {
   } else if (firebasePlan.focusAreas) {
     console.warn('[Adapter] focusAreas exists but is not an array:', typeof firebasePlan.focusAreas);
   }
-  
-  console.log('[Adapter] Created coreReps:', {
-    count: coreReps.length,
-    sample: coreReps[0]
-  });
   
   return {
     ...firebasePlan,
@@ -82,12 +67,6 @@ export const adaptFirebasePlanToComponents = (firebasePlan) => {
  */
 export const adaptFirebaseAssessmentToComponents = (firebaseAssessment) => {
   if (!firebaseAssessment) return null;
-  
-  console.log('[Adapter] Adapting Firebase assessment:', {
-    hasAnswers: !!firebaseAssessment.answers,
-    hasOpenEnded: firebaseAssessment.openEnded !== undefined,
-    hasScores: !!firebaseAssessment.scores
-  });
   
   return {
     ...firebaseAssessment,
@@ -142,9 +121,7 @@ export const adaptComponentPlanToFirebase = (componentPlan) => {
     }
     
     focusAreasMap[areaName].reps.push({
-      rep: rep.skillName || rep.skillId,
-      week: weeksToPhase(rep.weeksCompleted) || 'Week 1-3'
-    });
+  });
   });
   
   const focusAreas = Object.values(focusAreasMap);
@@ -271,7 +248,6 @@ export const buildVirtualSkillCatalog = (currentPlan) => {
   currentPlan.focusAreas.forEach((area, areaIndex) => {
     // Handle string-only focus areas (simplified format)
     if (typeof area === 'string') {
-      console.log('[Adapter] Focus area is a string, skipping skill catalog build:', area);
       return;
     }
     
@@ -310,15 +286,8 @@ export const buildVirtualSkillCatalog = (currentPlan) => {
         repIndex,
         
         // Source tracking
-        _source: 'plan',
-        _virtual: true
-      });
-    });
   });
-  
-  console.log('[Adapter] Built virtual skill catalog:', {
-    count: skills.length,
-    sample: skills[0]
+    });
   });
   
   return skills;
@@ -361,12 +330,6 @@ export const mergeSkillCatalogs = (virtualCatalog, actualCatalog) => {
     return virtualSkill;
   });
   
-  console.log('[Adapter] Merged catalogs:', {
-    virtual: safeVirtual.length,
-    actual: safeActual.length,
-    merged: merged.length
-  });
-  
   return merged;
 };
 
@@ -381,7 +344,6 @@ export const mergeSkillCatalogs = (virtualCatalog, actualCatalog) => {
 export const getAssessmentScores = (assessment, calculateFallback) => {
   // Check if Firebase has pre-calculated scores
   if (assessment.scores && Object.keys(assessment.scores).length > 0) {
-    console.log('[Adapter] Using pre-calculated scores from Firebase');
     
     // Convert Firebase scores format to simple map
     return Object.fromEntries(
@@ -394,7 +356,6 @@ export const getAssessmentScores = (assessment, calculateFallback) => {
   
   // Fallback to calculation
   if (calculateFallback && (assessment.responses || assessment.answers)) {
-    console.log('[Adapter] Calculating scores from responses');
     const responses = assessment.responses || assessment.answers;
     return calculateFallback(responses);
   }
@@ -450,7 +411,6 @@ export const calculatePlanProgressFromFocusAreas = (focusAreas) => {
 export const adaptDevelopmentPlanData = (firebaseData) => {
   if (!firebaseData) return null;
   
-  console.log('[Adapter] Adapting full development plan data');
   
   // Helper to safely map over arrays
   const safeMap = (data, mapper) => {

@@ -53,11 +53,8 @@ export const useGlobalMetadata = (db, isAuthReady) => {
 
     const fetchMetadata = async () => {
       try {
-          console.log("[GLOBAL METADATA] Fetching from metadata/config");
           const configSnap = await getDocEx(db, 'metadata/config');
           const configData = configSnap.exists() ? configSnap.data() : {};
-          
-          console.log("[GLOBAL METADATA] Config keys found:", Object.keys(configData));
 
           const iconComponents = {
             HeartPulse, Briefcase, Users, AlertTriangle, TrendingUp, Zap,

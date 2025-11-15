@@ -434,11 +434,9 @@ export default function AppliedLeadershipScreen() {
     // Safely extract the array of courses
     const safeCourses = useMemo(() => {
         if (isAppLoading) return [];
-        console.log("[AppliedLeadership] COURSE_LIBRARY data:", COURSE_LIBRARY);
         if (COURSE_LIBRARY && typeof COURSE_LIBRARY === 'object' && Array.isArray(COURSE_LIBRARY.items)) {
             // Courses are expected to have a 'title' field
             const filteredCourses = COURSE_LIBRARY.items.filter(item => item.title);
-            console.log("[AppliedLeadership] Found", filteredCourses.length, "courses:", filteredCourses.map(c => c.title));
             return filteredCourses;
         }
         console.warn("[AppliedLeadership] COURSE_LIBRARY data is missing or invalid. Using empty array.");
@@ -447,13 +445,11 @@ export default function AppliedLeadershipScreen() {
 
     // --- Callbacks ---
     const handleSelectSkill = useCallback((skill) => {
-        console.log("[AppliedLeadership] Selecting skill:", skill.name);
         setSelectedCourse(null); // Clear course selection
         setSelectedSkill(skill);
     }, []);
 
     const handleSelectCourse = useCallback((course) => {
-        console.log("[AppliedLeadership] Selecting course:", course.title);
         setSelectedSkill(null); // Clear skill selection
         setSelectedCourse(course);
     }, []);
@@ -461,7 +457,6 @@ export default function AppliedLeadershipScreen() {
     // These resource handlers are now only relevant for the top-level home view if it links to resources directly
     // They are no longer needed for SkillDetailView since it manages its own state.
     const handleOpenResource = useCallback((resource) => {
-        console.log("[AppliedLeadership] Opening resource (Home View):", resource.title);
         setSelectedResource(resource);
         setIsModalVisible(true);
     }, []);

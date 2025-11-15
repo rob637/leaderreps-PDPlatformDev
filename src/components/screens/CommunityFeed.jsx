@@ -59,7 +59,6 @@ const MOCK_LEADERBOARD = [ // cite: CommunityFeed.jsx (Original)
 const RepFeedItem = ({ item }) => {
     // --- Mock Handlers (Replace with actual interaction logic) ---
     const handleComment = () => {
-        console.log(`[RepFeedItem] Navigating to comment thread for Rep ID: ${item.id}`);
         // Example navigation (route needs to be defined in App.jsx)
         // navigate('community-thread', { feedItemId: item.id });
         // For now, just show an alert
@@ -150,7 +149,6 @@ const CommunityFeedScreen = () => {
     // --- Filter Feed Data (Memoized) ---
     // Uses local MOCK_FEED for now
     const filteredFeed = useMemo(() => {
-        console.log(`[CommunityFeed] Filtering feed for: ${feedFilter}`);
         if (feedFilter === 'pod') return MOCK_FEED.filter(item => item.isPod);
         return MOCK_FEED; // 'all' filter shows everything (including non-pod)
     }, [feedFilter]);
@@ -161,7 +159,6 @@ const CommunityFeedScreen = () => {
         if (!textToShare || isSharing) return;
 
         setIsSharing(true);
-        console.log(`[CommunityFeed] Quick Sharing (Mock): "${textToShare}" by ${safeUser.name}`);
         // --- MOCK API CALL ---
         await new Promise(resolve => setTimeout(resolve, 800));
         // --- END MOCK ---

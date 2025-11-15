@@ -20,11 +20,6 @@ const DataProvider = ({
   const [services, setServices] = useState(null);
   const [isLoadingServices, setIsLoadingServices] = useState(true);
   const [serviceData, setServiceData] = useState({
-    developmentPlanData: null,
-    dailyPracticeData: null,
-    strategicContentData: null,
-    membershipData: null,
-    globalMetadata: null,
   });
 
   useEffect(() => {
@@ -50,12 +45,7 @@ const DataProvider = ({
       });
       setServices(createdServices);
       setServiceData({
-        developmentPlanData: createdServices.developmentPlanData,
-        dailyPracticeData: createdServices.dailyPracticeData,
-        strategicContentData: createdServices.strategicContentData,
-        membershipData: createdServices.membershipData,
-        globalMetadata: createdServices.globalMetadata,
-      });
+  });
     } catch (error) {
       console.error('[DataProvider] Error creating services:', error);
       setServices(null);

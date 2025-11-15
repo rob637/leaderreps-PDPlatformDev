@@ -152,7 +152,6 @@ function calculateStreak(history) { // cite: Original Dashboard Logic
  */
 const useLongitudinalData = (dailyPracticeData, developmentPlanData, strategicContentData) => { // cite: Original Logic, useAppServices.jsx for data sources
   return useMemo(() => {
-    console.log("[useLongitudinalData] Recalculating...");
     // --- Safely Extract Input Data ---
     // Practice History (Array of { date, score: 'X/Y', ... })
     const history = dailyPracticeData?.practiceHistory || []; // cite: useAppServices.jsx (assumes practiceHistory field)
@@ -232,7 +231,6 @@ const useLongitudinalData = (dailyPracticeData, developmentPlanData, strategicCo
         avgDailyScore: (avgDailyScore * 100).toFixed(0), // Overall avg score %
         menteeFeedback, // Placeholder feedback object
     };
-    console.log("[useLongitudinalData] Calculated metrics:", result);
     return result;
 
   }, [dailyPracticeData, developmentPlanData, strategicContentData]); // Dependencies: Recalculate if source data changes
@@ -293,7 +291,6 @@ export default function ExecutiveReflection() {
 
     // --- Navigation Handler ---
     const handleNavigation = useCallback((screen, params = {}) => {
-        console.log(`[ExecutiveReflection] Navigating to ${screen} with params:`, params);
         navigate(screen, params); // Use navigate from context // cite: useAppServices.jsx
     }, [navigate]); // Dependency: navigate function
 

@@ -110,9 +110,7 @@ const QuickPlanEditor = ({ plan, onSave, onCancel }) => {
       }
       
       area.reps.push({
-        rep: skillName,
-        week: 'Week 1-3'
-      });
+  });
       
       newRep.repIndex = area.reps.length - 1;
     }
@@ -124,7 +122,6 @@ const QuickPlanEditor = ({ plan, onSave, onCancel }) => {
   const handleSave = async () => {
     setIsSaving(true);
     try {
-      console.log('[QuickPlanEditor] Saving plan with synced structures');
       await onSave(editedPlan);
       setHasChanges(false);
     } catch (error) {

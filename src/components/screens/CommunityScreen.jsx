@@ -108,12 +108,10 @@ const CommunityHomeView = ({ setView, user, currentTierFilter, setCurrentTierFil
 
     // --- Mock Handlers (Replace with actual interaction logic) ---
     const handleCommentClick = (threadId) => {
-        console.log(`[CommunityHome] Navigate to comment thread for ID: ${threadId}`);
         // navigate('community-thread', { threadId }); // Example navigation
         alert(`Action: View details/comments for thread ${threadId}`);
     };
     const handleReactClick = (threadId) => {
-        console.log(`[CommunityHome] Reacted to thread ID: ${threadId}`);
         alert(`Action: Liked thread ${threadId}`);
     };
 
@@ -334,7 +332,6 @@ const NewThreadView = ({ setView }) => {
 
         setIsSubmitting(true);
         setIsSuccess(false);
-        console.log("[NewThread] Submitting thread:", { title, context, question, tier });
 
         // --- MOCK API CALL ---
         await new Promise(resolve => setTimeout(resolve, 1000));
@@ -439,7 +436,6 @@ const CommunityScreen = () => {
 
     // --- Filter Threads for Home View ---
     const filteredThreads = useMemo(() => {
-        console.log(`[CommunityScreen] Filtering threads for: ${currentTierFilter}`);
         // Filter based on selected tier, or show all non-system if 'All'
         return allThreads.filter(thread =>
             thread.tier !== 'System' && // Always exclude system messages from main feed

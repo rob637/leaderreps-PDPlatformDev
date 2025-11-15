@@ -13,12 +13,6 @@ const ProgressBreakdown = ({ plan, globalMetadata }) => {
     
     const skillCatalog = globalMetadata?.SKILL_CATALOG?.items || globalMetadata?.SKILL_CATALOG || [];
     
-    console.log('[ProgressBreakdown] Processing adapted plan:', {
-      hasCoreReps: !!plan.coreReps,
-      coreRepsCount: plan.coreReps?.length,
-      catalogSize: skillCatalog.length
-    });
-    
     return plan.coreReps.map(rep => {
       // Use skillName from adapted rep (already has the name!)
       const skillName = rep.skillName || rep.skillId;
@@ -46,7 +40,6 @@ const ProgressBreakdown = ({ plan, globalMetadata }) => {
       grouped[area].push(skill);
     });
     
-    console.log('[ProgressBreakdown] Grouped by focus area:', Object.keys(grouped));
     return grouped;
   }, [skillProgress]);
 

@@ -69,7 +69,6 @@ const ReflectionLogScreen = () => {
         // Only fetch if db and userId are available
         if (db && userId) {
             const fetchHistory = async () => {
-                console.log("[ReflectionLogScreen] Fetching reflection history...");
                 setIsHistoryLoading(true); // Start loading
                 setFetchError(null); // Clear previous errors
                 try {
@@ -87,7 +86,6 @@ const ReflectionLogScreen = () => {
                     }));
 
                     setReflectionHistory(historyData);
-                    console.log(`[ReflectionLogScreen] Fetched ${historyData.length} reflection entries.`);
                 } catch (e) {
                     console.error("[ReflectionLogScreen] Failed to fetch reflection history:", e);
                     setFetchError(e.message || 'Failed to load history.'); // Set fetch error state

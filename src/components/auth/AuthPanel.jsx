@@ -49,8 +49,7 @@ function AuthPanel({ auth, onSuccess }) {
           password
         );
         await updateProfile(userCredential.user, {
-          displayName: name,
-        });
+  });
         onSuccess();
       }
     } catch (e) {

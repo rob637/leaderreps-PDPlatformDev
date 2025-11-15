@@ -163,16 +163,6 @@ const AppContent = ({
     setIsMobileOpen,
   ]);
   const { navigate, isAdmin, membershipData } = useAppServices();
-  
-  // Debug logging
-  console.log('[AppContent] RENDER - currentScreen prop:', currentScreen);
-  console.log('[AppContent] navigate function:', typeof navigate, navigate);
-  
-  // Track when currentScreen prop changes
-  useEffect(() => {
-    alert(`🔵 AppContent received new currentScreen prop: ${currentScreen}`);
-    console.log('[AppContent] currentScreen prop changed to:', currentScreen);
-  }, [currentScreen]);
 
   // Navigation items for dropdown menu
   const currentTier = isDeveloperMode ? 'elite' : simulatedTier;
@@ -210,7 +200,6 @@ const AppContent = ({
   const handleSignOut = async () => {
     try {
       if (auth) await signOut(auth);
-      console.log('Sign Out successful.');
       closeMobileMenu();
     } catch (e) {
       console.error('Sign out failed:', e);

@@ -350,7 +350,6 @@ const LeadershipVideosScreen = () => {
         const catalogItems = VIDEO_CATALOG?.items;
         // Basic validation: Check if catalogItems is an object with the expected keys
         if (catalogItems && typeof catalogItems === 'object' && catalogItems.INSPIRATIONAL && catalogItems.ACTIONABLE) {
-             console.log("[LeadershipVideos] Using VIDEO_CATALOG from services."); // Log source
             return catalogItems;
         } else {
             console.warn("[LeadershipVideos] VIDEO_CATALOG from services is missing or invalid. Using enhanced catalog."); // Log warning

@@ -4,7 +4,6 @@ import { buildUserProfilePath, buildModulePath } from './pathUtils.js';
 import { serverTimestamp } from 'firebase/firestore';
 
 export const ensureUserDocs = async (db, uid) => {
-  console.log(`[ensureUserDocs] Running for UID: ${uid} (CLEAN STRUCTURE)`); 
   try {
     if (!db || !uid) {
         console.warn('[ensureUserDocs] DB or UID missing, skipping.');
@@ -18,7 +17,6 @@ export const ensureUserDocs = async (db, uid) => {
     const userProfileSnap = await getDocEx(db, userProfilePath);
     
     if (!userProfileSnap.exists()) {
-        console.log(`[ensureUserDocs] Creating user profile at: ${userProfilePath}`);
         await setDocEx(db, userProfilePath, {
             userId: uid,
             createdAt: new Date().toISOString(),
@@ -31,7 +29,6 @@ export const ensureUserDocs = async (db, uid) => {
     const devPlanSnap = await getDocEx(db, devPlanPath);
     
     if (!devPlanSnap.exists()) {
-        console.log(`[ensureUserDocs] Creating development plan at: ${devPlanPath}`);
         const defaultPlan = {
             currentCycle: 1,
             createdAt: serverTimestamp(),
@@ -48,7 +45,6 @@ export const ensureUserDocs = async (db, uid) => {
     const dailyPracticeSnap = await getDocEx(db, dailyPracticePath);
     
     if (!dailyPracticeSnap.exists()) {
-        console.log(`[ensureUserDocs] Creating daily practice at: ${dailyPracticePath}`);
         const defaultDailyPractice = {
             activeCommitments: [], 
             identityAnchor: '', 
@@ -71,7 +67,6 @@ export const ensureUserDocs = async (db, uid) => {
     const strategicSnap = await getDocEx(db, strategicPath);
     
     if (!strategicSnap.exists()) {
-        console.log(`[ensureUserDocs] Creating strategic content at: ${strategicPath}`);
         const defaultStrategic = {
             vision: '',
             mission: '',
@@ -88,7 +83,6 @@ export const ensureUserDocs = async (db, uid) => {
     const membershipSnap = await getDocEx(db, membershipPath);
 
     if (!membershipSnap.exists()) {
-        console.log(`[ensureUserDocs] Creating membership data at: ${membershipPath}`);
         const defaultMembership = {
             status: 'Trial',
             currentPlanId: 'trial',
@@ -101,8 +95,6 @@ export const ensureUserDocs = async (db, uid) => {
         };
         await setDocEx(db, membershipPath, defaultMembership);
     }
-
-    console.log('[ensureUserDocs] All required documents verified/created (CLEAN STRUCTURE)');
   } catch (e) {
     console.error('[ensureUserDocs] Error:', e);
   }

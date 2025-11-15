@@ -104,9 +104,7 @@ const AdminEmailManager = ({ initialEmails, updateGlobalMetadata }) => {
         try {
             // Use the updateGlobalMetadata function provided by context
             await updateGlobalMetadata(dataToSave, { 
-                source: 'AdminEmailManager',
-                merge: true
-            });
+  });
             setSaveStatus('✅ Admin emails updated successfully!');
             // The useEffect syncs the local state after the context update.
         } catch (error) {
@@ -252,11 +250,9 @@ const AdminFunctionsScreen = () => {
             // If a save was *just* successful, assume the local state is ahead of the context 
             // and temporarily wait for the next external context update to reflect the change.
             if (saveStatus.startsWith('✅')) {
-                 console.log("[AdminFunctions] Successful save detected. Skipping immediate local state sync with context (Firestore latency expected).");
                  return;
             }
 
-            console.log("[AdminFunctions] Context feature flags updated or initial load finished. Syncing local state.");
             setCurrentFlags(initialFlags);
         }
     }, [initialFlags, isAuthenticated, saveStatus, currentFlags]); // Dependency on initialFlags and saveStatus
@@ -265,7 +261,6 @@ const AdminFunctionsScreen = () => {
     const handlePasswordCheck = () => {
         setAuthError(''); // Clear previous error
         if (passwordInput === ADMIN_PASSWORD) { // cite: useAppServices.jsx (provides ADMIN_PASSWORD)
-            console.log("[AdminFunctions] Admin password correct. Granting access.");
             setIsAuthenticated(true); // Grant access
         } else {
             console.warn("[AdminFunctions] Incorrect admin password entered.");
@@ -278,7 +273,6 @@ const AdminFunctionsScreen = () => {
         setCurrentFlags(prevFlags => {
             const currentVal = prevFlags[flagName] !== false; 
             const updatedFlags = { ...prevFlags, [flagName]: !currentVal };
-            console.log(`[AdminFunctions] Toggling flag '${flagName}' to ${!currentVal}. New local state:`, updatedFlags);
             return updatedFlags;
         });
         setSaveStatus(''); // Clear save status when flags are changed
@@ -287,14 +281,10 @@ const AdminFunctionsScreen = () => {
     const handleSaveChanges = async () => {
         setIsSaving(true);
         setSaveStatus(''); // Clear previous status
-        console.log("[AdminFunctions] Saving feature flags:", currentFlags);
 
         try {
             await updateGlobalMetadata({ featureFlags: currentFlags }, { // cite: useAppServices.jsx
-                source: 'AdminFunctionsScreen', // Identify the source of the update
-                merge: true // CRITICAL FIX: Ensure merge is true for safe global updates
-            });
-            console.log("[AdminFunctions] Feature flags saved successfully.");
+  });
             setSaveStatus('✅ Flags updated successfully!');
         } catch (error) {
             console.error("[AdminFunctions] Failed to save feature flags:", error);

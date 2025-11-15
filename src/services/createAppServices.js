@@ -12,8 +12,6 @@ import { applyPatchDeleteAware, sanitizeTimestamps, stripSentinels } from './dat
 import { resolveGlobalMetadata } from './metadataResolver.js';
 
 export const createAppServices = (db, userId) => {
-  console.log('[createAppServices] Creating services for userId:', userId);
-  
   const stores = {
     developmentPlanData: null,
     dailyPracticeData: null,
@@ -41,7 +39,6 @@ export const createAppServices = (db, userId) => {
     const unsubDev = onSnapshotEx(db, devPlanPath, (snap) => {
       const rawData = snap.exists() ? snap.data() : MOCK_DEVELOPMENT_PLAN_DATA;
       stores.developmentPlanData = stripSentinels(sanitizeTimestamps(rawData));
-      console.log('[createAppServices] 📋 Dev Plan updated (sentinels stripped)');
       notifyChange();
     });
     stores.listeners.push(unsubDev);
@@ -50,7 +47,6 @@ export const createAppServices = (db, userId) => {
     const unsubDaily = onSnapshotEx(db, dailyPath, (snap) => {
       const rawData = snap.exists() ? snap.data() : MOCK_DAILY_PRACTICE_DATA;
       stores.dailyPracticeData = stripSentinels(sanitizeTimestamps(rawData));
-      console.log('[createAppServices] 💪 Daily Practice updated (sentinels stripped)');
       notifyChange();
     });
     stores.listeners.push(unsubDaily);
@@ -59,7 +55,6 @@ export const createAppServices = (db, userId) => {
     const unsubStrategic = onSnapshotEx(db, strategicPath, (snap) => {
       const rawData = snap.exists() ? snap.data() : MOCK_STRATEGIC_CONTENT_DATA;
       stores.strategicContentData = stripSentinels(sanitizeTimestamps(rawData));
-      console.log('[createAppServices] Strategic Content updated');
       notifyChange();
     });
     stores.listeners.push(unsubStrategic);
@@ -68,7 +63,6 @@ export const createAppServices = (db, userId) => {
     const unsubMembership = onSnapshotEx(db, membershipPath, (snap) => {
       const rawData = snap.exists() ? snap.data() : MOCK_MEMBERSHIP_DATA;
       stores.membershipData = stripSentinels(sanitizeTimestamps(rawData));
-      console.log('[createAppServices] Membership Data updated');
       notifyChange();
     });
     stores.listeners.push(unsubMembership);
@@ -84,7 +78,6 @@ export const createAppServices = (db, userId) => {
         Object.assign(stores.globalMetadata, cleanData);
       }
       
-      console.log('[createAppServices] Global Metadata (config) updated');
       notifyChange();
     });
     stores.listeners.push(unsubMeta);
@@ -106,7 +99,6 @@ export const createAppServices = (db, userId) => {
         if (snap.exists()) {
           const keyName = catalogName.toUpperCase();
           stores.globalMetadata[keyName] = stripSentinels(sanitizeTimestamps(snap.data()));
-          console.log(`[createAppServices] Catalog ${catalogName} loaded:`, snap.data().items?.length || 0, 'items');
         }
         
         notifyChange();

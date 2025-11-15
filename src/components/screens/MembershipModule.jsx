@@ -169,19 +169,10 @@ const MembershipModule = () => {
             // Remove all warning/expiration notifications upon successful payment
             const newNotifications = membershipData.notifications.filter(n => n.type !== 'warning' && n.type !== 'expiration');
             newNotifications.push({ 
-                id: `upgrade-${Date.now()}`, 
-                message: `Upgrade to ${selectedPlan.name} successful!`, 
-                type: 'success', 
-                isRead: false 
-            });
+  });
 
             await updateMembershipData({
-                status: 'Active',
-                currentPlanId: selectedPlan.id,
-                nextBillingDate: nextDate.toISOString().split('T')[0],
-                paymentHistory: [...membershipData.paymentHistory, newPaymentRecord],
-                notifications: newNotifications
-            });
+  });
 
             setPaymentStatus('success');
             setTimeout(() => setModalOpen(false), 2000);
@@ -199,8 +190,7 @@ const MembershipModule = () => {
                 error: 'Payment declined by mock gateway.'
             };
             await updateMembershipData({
-                paymentHistory: [...membershipData.paymentHistory, failedRecord]
-            });
+  });
             // Show error message
             setTimeout(() => setPaymentStatus(null), 3000);
         }

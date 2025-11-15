@@ -42,9 +42,6 @@ export const useDashboard = ({
   const [reflectionBest, setReflectionBest] = useState('');
   const [winsList, setWinsList] = useState([]); // New: Cumulative wins list
   const [habitsCompleted, setHabitsCompleted] = useState({
-      readLIS: false,
-      completedDailyRep: false,
-      eveningReflection: false
   });
   const [isSavingBookend, setIsSavingBookend] = useState(false);
   
@@ -151,20 +148,14 @@ export const useDashboard = ({
       setReflectionBetter(eb.better || '');
       setReflectionBest(eb.best || '');
       setHabitsCompleted(eb.habits || {
-        readLIS: false,
-        completedDailyRep: false,
-        eveningReflection: false
-      });
+  });
     } else {
       // If no evening bookend data, reset to default state
       setReflectionGood('');
       setReflectionBetter('');
       setReflectionBest('');
       setHabitsCompleted({
-        readLIS: false,
-        completedDailyRep: false,
-        eveningReflection: false
-      });
+  });
     }
 
     // Load cumulative wins list from stored data
@@ -189,7 +180,6 @@ export const useDashboard = ({
       const success = await updateDailyPracticeData({ arenaMode: newMode });
       if (success) {
         setIsArenaMode(newMode);
-        console.log(`[Dashboard] Mode toggled to ${newMode ? 'Arena' : 'Solo'}`);
       }
     } catch (error) {
       console.error('Error changing mode:', error);
@@ -221,7 +211,6 @@ export const useDashboard = ({
         setTargetRepStatus('Committed');
         // Update habits
         setHabitsCompleted(prev => ({ ...prev, completedDailyRep: true }));
-        console.log('[Dashboard] Target rep completed');
       }
         } catch (error) {
       console.error('Error completing rep:', error);
@@ -246,7 +235,6 @@ export const useDashboard = ({
       if (success) {
         setIdentityStatement(newIdentity);
         setShowIdentityEditor(false);
-        console.log('[Dashboard] Identity saved');
         return true;
       }
       return false;
@@ -265,7 +253,6 @@ export const useDashboard = ({
       if (success) {
         setHabitAnchor(newHabit);
         setShowHabitEditor(false);
-        console.log('[Dashboard] Habit anchor saved');
         return true;
       }
       return false;
@@ -283,7 +270,6 @@ export const useDashboard = ({
       const success = await updateDailyPracticeData({ whyStatement: newWhy });
       if (success) {
         setWhyStatement(newWhy);
-        console.log('[Dashboard] Why statement saved');
         return true;
       }
       return false;
@@ -317,7 +303,6 @@ export const useDashboard = ({
 
       const success = await updateDailyPracticeData(updates);
       if (!success) throw new Error('Update failed');
-      console.log('[Dashboard] Morning bookend saved');
       // Always show success message with warm feeling
       const message = '✅ Morning Plan Saved Successfully!\n\n' +
                      '🎯 Your WIN is locked in for today\n' +
@@ -340,13 +325,6 @@ export const useDashboard = ({
       return;
     }
 
-    console.log('[Dashboard] Starting evening bookend save...', {
-      reflectionGood: reflectionGood?.length || 0,
-      reflectionBetter: reflectionBetter?.length || 0,
-      reflectionBest: reflectionBest?.length || 0,
-      habitsCompleted
-    });
-
     setIsSavingBookend(true);
     try {
       // Create reminders from the evening bookend data
@@ -355,23 +333,13 @@ export const useDashboard = ({
       // Add tomorrow's reminder if provided
       if (reflectionBest && reflectionBest.trim()) {
         newReminders.push({
-          id: `reminder-${Date.now()}-tomorrow`,
-          text: reflectionBest,
-          type: 'tomorrow',
-          createdAt: new Date().toISOString(),
-          dismissed: false
-        });
+  });
       }
       
       // Add improvement reminder if provided
       if (reflectionBetter && reflectionBetter.trim()) {
         newReminders.push({
-          id: `reminder-${Date.now()}-improvement`,
-          text: `Focus on improving: ${reflectionBetter}`,
-          type: 'improvement',
-          createdAt: new Date().toISOString(),
-          dismissed: false
-        });
+  });
       }
 
       // Add new win to cumulative wins list if provided
@@ -409,9 +377,7 @@ export const useDashboard = ({
         updates.reminders = [...existingReminders, ...newReminders];
       }
 
-      console.log('[Dashboard] Calling updateDailyPracticeData with updates:', updates);
       const success = await updateDailyPracticeData(updates);
-      console.log('[Dashboard] updateDailyPracticeData result:', success);
       
       if (!success) throw new Error('Update failed');
 
@@ -424,7 +390,6 @@ export const useDashboard = ({
       setReflectionBest('');
       setShouldSkipReflectionLoad(true); // <-- Set flag to skip next listener update
       
-      console.log('[Dashboard] Evening bookend saved successfully with next-day reminders');
       
       // Always show success message with warm feeling
       let message = '✅ Evening Reflection Saved Successfully!\n\n';
@@ -439,10 +404,7 @@ export const useDashboard = ({
     } catch (error) {
       console.error('[Dashboard] Error saving evening bookend:', error);
       console.error('[Dashboard] Error details:', {
-        name: error.name,
-        message: error.message,
-        stack: error.stack
-      });
+  });
       alert(`Error saving reflection: ${error.message}. Please try again.`);
     } finally {
       setIsSavingBookend(false);
@@ -456,14 +418,12 @@ export const useDashboard = ({
         alert('🟡 Adding Task: "' + taskText + '"\nCurrent tasks: ' + otherTasks.length);
       }
     }
-    console.log('[Dashboard] handleAddTask called with:', taskText);
     
     if (!taskText.trim()) {
       const isDeveloperMode = localStorage.getItem('arena-developer-mode') === 'true';
       if (isDeveloperMode) {
         alert('❌ Task text is empty!');
       }
-      console.log('[Dashboard] Task text is empty, skipping');
       return;
     }
     if (otherTasks.length >= 5) {
@@ -481,27 +441,22 @@ export const useDashboard = ({
     };
     
     const updatedTasks = [...otherTasks, newTask];
-    console.log('[Dashboard] Adding task, new task list:', updatedTasks);
     setOtherTasks(updatedTasks);
     
     // NEW: Auto-save to Firestore immediately
     // Use the destructured prop directly
     if (updateDailyPracticeData) {
-      console.log('[Dashboard] Auto-saving task to Firestore...');
       updateDailyPracticeData({
         morningBookend: {
           ...dailyPracticeData?.morningBookend,
           otherTasks: updatedTasks
         }
       }).then(() => {
-        console.log('[Dashboard] Task saved successfully');
         // Simple confirmation without cluttering the UI
       }).catch(error => {
         console.error('[Dashboard] Error auto-saving task:', error);
         console.error('[Dashboard] Error details:', {
-          name: error.name,
-          message: error.message
-        });
+  });
         alert(`Error saving task: ${error.message}`);
       });
     } else {
@@ -526,7 +481,6 @@ export const useDashboard = ({
             otherTasks: updatedTasks
           }
         });
-        console.log('[Dashboard] Task toggled and saved');
       } catch (error) {
         console.error('[Dashboard] Error auto-saving task toggle:', error);
       }
@@ -559,7 +513,6 @@ export const useDashboard = ({
             otherTasks: updatedTasks
           }
         });
-        console.log('[Dashboard] Task removed and saved');
       } catch (error) {
         console.error('[Dashboard] Error auto-saving task removal:', error);
       }
@@ -578,7 +531,6 @@ export const useDashboard = ({
       await updateDailyPracticeData({
         'morningBookend.winCompleted': newStatus
       });
-      console.log('[Dashboard] WIN toggled:', newStatus);
     } catch (error) {
       console.error('[Dashboard] Error toggling WIN:', error);
     }
@@ -596,7 +548,6 @@ export const useDashboard = ({
     
     try {
       await updateDailyPracticeData({ winsList: updatedWinsList });
-      console.log('Win deleted successfully');
     } catch (error) {
       console.error('Error deleting win:', error);
       // Revert on error
@@ -617,7 +568,6 @@ export const useDashboard = ({
     }
     
     setIsSavingWIN(true);
-    console.log('[Dashboard] Saving WIN:', morningWIN);
     
     try {
       // Use nested object structure instead of dot notation
@@ -628,7 +578,6 @@ export const useDashboard = ({
       });
       
       if (success) {
-        console.log('[Dashboard] WIN saved successfully');
         // Always show feedback, not just in dev mode
         alert('✅ Today\'s WIN saved successfully!\n\nYou can see it in the "Today\'s Progress" section below.');
       } else {

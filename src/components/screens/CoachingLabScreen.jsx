@@ -276,7 +276,6 @@ const RolePlayCritique = ({ history, scenario, difficultyLevel, setView }) => {
                 ...data,
                 practice_history: [...(data?.practice_history || []), sessionData]
             }));
-            console.log("Practice session logged to commitmentData.practice_history.");
         }
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [scoreBreakdown?.overall, difficultyLevel, keyTakeaway, scenario.title, updateCommitmentData]); 
@@ -329,11 +328,7 @@ const RolePlayCritique = ({ history, scenario, difficultyLevel, setView }) => {
                 const takeaway = extractKeyTakeaway(aiText);
 
                 setScoreBreakdown({
-                    overall: overallScore,
-                    sbi: sbiScore,
-                    empathy: empathyScore,
-                    resolution: resolutionScore,
-                });
+  });
                 setKeyTakeaway(takeaway);
                 setCritique(aiText);
 
@@ -376,9 +371,7 @@ const RolePlayCritique = ({ history, scenario, difficultyLevel, setView }) => {
             }));
             console.info("Commitment created successfully!");
             navigate('daily-practice', { 
-                initialGoal: newCommitment.linkedGoal, 
-                initialTier: newCommitment.linkedTier 
-            }); 
+  }); 
         } catch (e) {
             console.error("Failed to save new commitment:", e);
             console.warn("Commitment saving failed. Check if updateCommitmentData is available.");
@@ -608,10 +601,7 @@ const RolePlayView = ({ scenario, setCoachingLabView, difficultyLevel, preparedS
         if (aiLower.includes('but ') || aiLower.includes('however') || aiLower.includes('not my fault') || 
             aiLower.includes('everyone does') || aiLower.includes('you always')) {
             setRealtimeHint({ 
-                type: 'warning', 
-                message: 'Alex is getting defensive - try validating their feelings before continuing',
-                icon: AlertTriangle
-            });
+  });
             setShowHint(true);
             setTimeout(() => setShowHint(false), 8000);
             return;
@@ -622,10 +612,7 @@ const RolePlayView = ({ scenario, setCoachingLabView, difficultyLevel, preparedS
             (userLower.includes('when you') || userLower.includes('i noticed')) &&
             (userLower.includes('impact') || userLower.includes('result') || userLower.includes('affect'))) {
             setRealtimeHint({ 
-                type: 'success', 
-                message: 'Great SBI usage! Specific situation, behavior, and impact',
-                icon: CheckCircle
-            });
+  });
             setShowHint(true);
             setTimeout(() => setShowHint(false), 6000);
             return;
@@ -634,10 +621,7 @@ const RolePlayView = ({ scenario, setCoachingLabView, difficultyLevel, preparedS
         // Detect solving too quickly
         if (userLower.includes('you should') || userLower.includes('you need to') || userLower.includes('what you have to do')) {
             setRealtimeHint({ 
-                type: 'caution', 
-                message: 'You\'re jumping to solutions - try asking questions first',
-                icon: Info
-            });
+  });
             setShowHint(true);
             setTimeout(() => setShowHint(false), 7000);
             return;
@@ -646,10 +630,7 @@ const RolePlayView = ({ scenario, setCoachingLabView, difficultyLevel, preparedS
         // Detect good questioning
         if (userLower.includes('what ') || userLower.includes('how ') || userLower.includes('tell me about') || userLower.includes('help me understand')) {
             setRealtimeHint({ 
-                type: 'success', 
-                message: 'Good use of open-ended questions!',
-                icon: Lightbulb
-            });
+  });
             setShowHint(true);
             setTimeout(() => setShowHint(false), 5000);
             return;
@@ -659,10 +640,7 @@ const RolePlayView = ({ scenario, setCoachingLabView, difficultyLevel, preparedS
         if (userLower.includes('i understand') || userLower.includes('i hear you') || userLower.includes('that makes sense') ||
             userLower.includes('i can see') || userLower.includes('appreciate you')) {
             setRealtimeHint({ 
-                type: 'success', 
-                message: 'Excellent empathy and validation!',
-                icon: HeartPulse
-            });
+  });
             setShowHint(true);
             setTimeout(() => setShowHint(false), 5000);
             return;
@@ -1540,13 +1518,10 @@ const ScenarioLibraryView = ({ setCoachingLabView, setSelectedScenario, setMicro
     const { SCENARIO_CATALOG } = useAppServices();
     // SCENARIO_CATALOG is an array, not an object with items property
     const scenarios = useMemo(() => {
-        console.log('[CoachingLab] SCENARIO_CATALOG data:', SCENARIO_CATALOG);
         if (Array.isArray(SCENARIO_CATALOG)) {
-            console.log('[CoachingLab] Found', SCENARIO_CATALOG.length, 'scenarios:', SCENARIO_CATALOG.map(s => s.title));
             return SCENARIO_CATALOG;
         }
         const items = SCENARIO_CATALOG?.items || [];
-        console.log('[CoachingLab] Found', items.length, 'scenarios from items array');
         return items;
     }, [SCENARIO_CATALOG]);
     

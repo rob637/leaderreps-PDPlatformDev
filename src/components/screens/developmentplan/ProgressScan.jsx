@@ -100,7 +100,6 @@ const ProgressScan = ({
     const lastAssessment = developmentPlanData?.assessmentHistory?.[developmentPlanData.assessmentHistory.length - 1];
     if (!lastAssessment) return null;
     
-    console.log('[ProgressScan] Adapting previous assessment');
     // Ensure the answers keys are correctly mapped
     return adaptFirebaseAssessmentToComponents(lastAssessment);
   }, [developmentPlanData?.assessmentHistory]);
@@ -138,7 +137,6 @@ const ProgressScan = ({
             cycle: (developmentPlanData?.currentCycle || 0) + 1, // Cycle starts at 1, so if currentCycle is 0 (initial state), new is 1. If current is 1, new is 2.
         };
 
-        console.log('[ProgressScan] Generating plan with skill catalog size:', skillCatalog.length);
         const newPlan = generatePlanFromAssessment(newAssessment, skillCatalog);
         
         onCompleteScan(newPlan, newAssessment);

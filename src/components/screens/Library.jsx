@@ -3,7 +3,6 @@
 import React from 'react';
 import { BookOpen, ShieldCheck, Film, ArrowLeft, Sparkles, Target, Trophy, Users, TrendingUp, Star, Zap } from 'lucide-react';
 import { useAppServices } from '../../services/useAppServices.jsx';
-import { useNavigation } from '../../providers/NavigationProvider.jsx';
 import { membershipService } from '../../services/membershipService.js';
 import { Button } from '../shared/UI';
 
@@ -81,7 +80,6 @@ const LibraryCard = ({ title, description, icon: Icon, onClick, disabled = false
 
 const Library = ({ simulatedTier }) => {
   const { membershipData, navigate } = useAppServices();
-  const { canGoBack, goBack } = useNavigation();
   
   // Scroll to top when component mounts
   React.useEffect(() => {
@@ -90,14 +88,6 @@ const Library = ({ simulatedTier }) => {
   
   // Match Dashboard's exact tier logic - MUST match Dashboard.jsx line 285
   const currentTier = simulatedTier || membershipData?.currentTier || 'basic';
-  
-  // DEBUG: Log to help diagnose tier issues
-  console.log('[Library] Tier Debug:', {
-    propsSimulatedTier: simulatedTier,
-    membershipDataCurrentTier: membershipData?.currentTier,
-    finalTier: currentTier,
-    fullMembershipData: membershipData
-  });
 
   const libraryItems = [
     {
@@ -142,9 +132,9 @@ const Library = ({ simulatedTier }) => {
         <div className="content-full">
       <div>
         {/* Back Button */}
-        <div className="flex items-center gap-2 mb-6 text-gray-600 hover:text-gray-800 cursor-pointer transition-colors" onClick={() => canGoBack ? goBack() : navigate && navigate('dashboard')}>
-          <ArrowLeft className="w-4 h-4" />
-          <span className="text-sm font-medium">{canGoBack ? 'Back' : 'Back to The Arena'}</span>
+        <div className="flex items-center gap-2 mb-6 text-gray-600 hover:text-gray-800 cursor-pointer transition-colors" onClick={() => navigate('dashboard')}>
+          <ArrowLeft className="w-5 h-5" />
+          <span className="text-sm font-medium">Back to The Arena</span>
         </div>
 
         {/* Enhanced Header with Stats */}
@@ -203,7 +193,6 @@ const Library = ({ simulatedTier }) => {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           {libraryItems.map((item) => {
             const hasAccess = membershipService.hasAccess(currentTier, item.requiredTier);
-            console.log(`[Library] Access check for ${item.title}: currentTier=${currentTier}, requiredTier=${item.requiredTier}, hasAccess=${hasAccess}`);
             return (
               <LibraryCard
                 key={item.id}

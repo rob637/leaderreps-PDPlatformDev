@@ -147,7 +147,6 @@ const BaselineAssessment = ({ onComplete, isLoading = false }) => {
             cycle: 1,
         };
         
-        console.log('[BaselineAssessment] Submitting single-page assessment:', assessment);
         alert('🔴 8 seconds complete!\nCalling onComplete() to save plan...');
         onComplete(assessment);
         alert('🔴 onComplete() returned!\nWaiting for plan to save...');

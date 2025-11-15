@@ -144,7 +144,6 @@ const PreMortemView = ({ setPlanningView }) => {
 
         setIsGenerating(true);
         setAuditResult(''); // Clear previous result
-        console.log("[PreMortem] Running AI audit...");
 
         // Prepare context and prompt
         const userContext = `**Decision:** ${decision.trim()}\n**Desired Outcome:** ${outcome.trim()}\n**Identified Risks:**\n${validRisks.map(r => `- ${r}`).join('\n')}`;
@@ -172,11 +171,7 @@ const PreMortemView = ({ setPlanningView }) => {
 
             // Save inputs to context on successful audit
             await updateStrategicContentData({ // cite: useAppServices.jsx
-                lastPreMortemDecision: decision.trim(),
-                desiredOutcome: outcome.trim(), // Save outcome as well
-                risks: validRisks // Save the validated risks
-            });
-            console.log("[PreMortem] Audit successful, inputs saved.");
+  });
 
         } catch (error) {
             console.error("[PreMortem] AI Audit Error:", error);
@@ -189,7 +184,6 @@ const PreMortemView = ({ setPlanningView }) => {
     // --- Handler to Create Daily Rep from Mitigation ---
     const handleCommitmentCreation = useCallback(async () => {
         if (!mitigationText || !updateDailyPracticeData) return; // Validation // cite: useAppServices.jsx
-        console.log("[PreMortem] Creating commitment for mitigation:", mitigationText);
 
         const commitmentText = `(Pre-Mortem Mit.) ${mitigationText}`;
         const newCommitment = {
@@ -215,7 +209,6 @@ const PreMortemView = ({ setPlanningView }) => {
     // --- Handler to Create Coaching Lab Scenario from Risk ---
     const handleCreateScenario = useCallback(() => {
         if (!riskScenario) return;
-        console.log("[PreMortem] Creating coaching lab scenario for risk:", riskScenario);
         // --- TODO: Implement actual scenario saving ---
         // This would involve updating a global list of scenarios, potentially
         // in `metadata/config/catalog/SCENARIO_CATALOG` via `updateGlobalMetadata`.
@@ -694,7 +687,6 @@ const AlignmentTrackerView = ({ setPlanningView }) => {
         setSuggestionText('');
         setSuggestionCommitment(null); // Clear previous suggestion object
         setLastJsonError(''); // Clear previous error
-        console.log("[AlignmentTracker] Requesting AI preventative commitment...");
 
         // Define the desired JSON structure
         const jsonSchema = {
@@ -716,14 +708,12 @@ const AlignmentTrackerView = ({ setPlanningView }) => {
             };
 
             const result = await callSecureGeminiAPI(payload); // cite: useAppServices.jsx
-            console.log("[AlignmentTracker] AI Response (raw):", result);
 
             // Response should already be parsed JSON if API call was successful
             const parsedJson = result?.candidates?.[0]?.content?.parts?.[0]; // The part itself should be the object
 
             // --- Validate Parsed JSON ---
             if (parsedJson && typeof parsedJson === 'object' && parsedJson.commitment && parsedJson.tier) {
-                console.log("[AlignmentTracker] AI Suggestion generated:", parsedJson);
                 setSuggestionText(parsedJson.commitment);
                 setSuggestionCommitment(parsedJson); // Store the full object
             } else {

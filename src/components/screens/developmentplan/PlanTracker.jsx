@@ -22,7 +22,6 @@ const PlanTracker = ({
   const [showEditor, setShowEditor] = useState(false);
 
   if (!plan) {
-    console.log('[PlanTracker] No plan available:', { plan });
     
     return (
       <div className="text-center py-8">
@@ -39,12 +38,6 @@ const PlanTracker = ({
 
   // Generate summary with logging
   const summary = generatePlanSummary(plan);
-  console.log('[PlanTracker] Plan summary:', {
-    hasCoreReps: !!plan?.coreReps,
-    coreRepsCount: plan?.coreReps?.length,
-    progress: summary.progress,
-    cycle
-  });
 
   const handleSaveEdit = async (updatedPlan) => {
     if (onEditPlan) {

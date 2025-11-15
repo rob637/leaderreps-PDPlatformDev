@@ -255,20 +255,10 @@ export const generatePlanFromAssessment = (assessment, skillCatalog = []) => {
     const recommendedSkills = getRecommendedSkills(category, skillCatalog, 2);
     recommendedSkills.forEach((skill) => {
       skills.push({
-        id: skill.id || `skill_${category}_${Math.random().toString(36).substr(2, 9)}`,
-        name: skill.name || skill.title,
-        category: SKILL_CATEGORIES[category],
-        targetLevel: skill.targetLevel || 3,
-        currentLevel: 1,
-        priority: skill.priority || 'medium',
-        milestones: skill.milestones || [],
-        resources: skill.resources || [],
-      });
+  });
       
       coreReps.push({
-        skillId: skill.id || `skill_${category}_${Math.random().toString(36).substr(2, 9)}`,
-        weeksCompleted: 0,
-      });
+  });
     });
   });
 
@@ -403,9 +393,6 @@ export const formatDate = (dateString) => {
   if (!dateString) return '';
   const date = new Date(dateString);
   return date.toLocaleDateString('en-US', { 
-    year: 'numeric', 
-    month: 'short', 
-    day: 'numeric' 
   });
 };
 

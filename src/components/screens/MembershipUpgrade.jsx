@@ -89,8 +89,6 @@ const Card = ({ children, className = '', accent }) => {
 
 const FeatureList = ({ features, included = true }) => {
   // Extensive defensive checking for features array
-  console.log('FeatureList received features:', features, 'Type:', typeof features);
-  
   if (!features) {
     console.error('FeatureList: features is null or undefined');
     return <div className="text-red-500 text-sm">Error: No features provided</div>;
@@ -240,17 +238,10 @@ const MembershipUpgrade = ({ setCurrentScreen }) => {
   // Scroll to top when component mounts to ensure users see the full page
   React.useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
-    console.log('[MembershipUpgrade] DEBUG:', { 
-      hasMembershipData: !!membershipData, 
-      currentTier,
-      hasSetCurrentScreen: !!setCurrentScreen,
-      setCurrentScreenType: typeof setCurrentScreen
-    });
   }, []);
 
   const handleUpgrade = (tier) => {
     // In a real app, this would integrate with Stripe/payment processor
-    console.log(`Upgrading to ${tier}`);
     // For now, just show an alert
     const isDeveloperMode = localStorage.getItem('arena-developer-mode') === 'true';
     if (isDeveloperMode) {

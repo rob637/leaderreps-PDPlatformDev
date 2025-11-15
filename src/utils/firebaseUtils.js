@@ -149,7 +149,6 @@ export const validateNoSentinels = (data, context = 'unknown') => {
     return false;
   }
   
-  console.log(`[validateNoSentinels] ✓ ${context} is clean`);
   return true;
 };
 
