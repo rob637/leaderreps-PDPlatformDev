@@ -1,7 +1,7 @@
 // src/components/layout/MobileBottomNav.jsx
 import React from 'react';
 import { Home, Target, Users, BookOpen } from 'lucide-react';
-import { useNavigation } from '../../providers/NavigationProvider.jsx';
+import { useAppServices } from '../../services/useAppServices.jsx';
 
 const COLORS = {
   NAVY: '#002E47',
@@ -11,8 +11,8 @@ const COLORS = {
   MUTED: '#6B7280'
 };
 
-const MobileBottomNav = ({ currentScreen, navigate }) => {
-  const navigationContext = useNavigation();
+const MobileBottomNav = ({ currentScreen }) => {
+  const { navigate } = useAppServices();
   
   const navItems = [
     {
@@ -42,10 +42,7 @@ const MobileBottomNav = ({ currentScreen, navigate }) => {
   ];
 
   const handleNavClick = (item) => {
-    // Try navigation context first, fallback to prop
-    if (navigationContext?.navigate && typeof navigationContext.navigate === 'function') {
-      navigationContext.navigate(item.screen);
-    } else if (navigate && typeof navigate === 'function') {
+    if (navigate && typeof navigate === 'function') {
       navigate(item.screen);
     }
   };

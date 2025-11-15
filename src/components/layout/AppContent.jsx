@@ -237,7 +237,7 @@ const AppContent = ({
                       <button
                         key={item.screen}
                         onClick={() => {
-                          setCurrentScreen(item.screen);
+                          navigate(item.screen);
                           setDropdownOpen(false);
                         }}
                         className={`nav-item-corporate w-full text-left mx-2 ${
@@ -398,7 +398,6 @@ const AppContent = ({
         {/* Mobile Bottom Navigation */}
         <MobileBottomNav 
           currentScreen={currentScreen} 
-          navigate={navigate} 
         />
       </main>
     </div>
