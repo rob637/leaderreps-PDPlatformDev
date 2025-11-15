@@ -1743,56 +1743,37 @@ export default function CoachingLabScreen() {
 
     return (
         <div className="page-corporate container-corporate animate-corporate-fade-in">
-            <div className={`relative ${!hasCoachingAccess ? 'opacity-60 pointer-events-none' : ''}`}>
-                {renderView()}
-            </div>
-            
-            {/* Unlock Section for Basic Users */}
+            <div className="content-standard">
+                <div className={`relative ${!hasCoachingAccess ? 'opacity-60 pointer-events-none' : ''}`}>
+                    {renderView()}
+                </div>
+                
+                {/* Unlock Section for Basic Users */}
             {!hasCoachingAccess && (
-                <div className="mt-8 relative overflow-hidden rounded-3xl border-4 border-gradient-to-r from-orange-400 to-teal-500 shadow-2xl">
-                    <div className="absolute inset-0 bg-gradient-to-br from-orange-50 via-white to-teal-50"></div>
-                    <div className="absolute top-4 right-4 w-32 h-32 rounded-full bg-gradient-to-br from-orange-200 to-teal-200 opacity-30 animate-pulse"></div>
-                    <div className="absolute bottom-4 left-4 w-24 h-24 rounded-full bg-gradient-to-br from-navy-200 to-orange-200 opacity-30 animate-bounce"></div>
-                    
-                    <div className="relative z-10 p-8">
-                        <div className="flex items-center justify-center gap-2 mb-4">
-                            <Zap className="w-8 h-8 animate-pulse" style={{ color: COLORS.ORANGE }} />
-                            <h3 className="text-2xl font-bold" style={{ color: COLORS.NAVY }}>
-                                🚀 Unlock AI Coaching Lab
-                            </h3>
-                            <Zap className="w-8 h-8 animate-pulse" style={{ color: COLORS.TEAL }} />
-                        </div>
+                <div className="mt-8 bg-white rounded-2xl border-2 shadow-lg" style={{ borderColor: COLORS.TEAL }}>
+                    <div className="relative z-10 p-8 text-center">
+                        <h3 className="text-2xl font-bold mb-4" style={{ color: COLORS.NAVY }}>
+                            Unlock Coaching Lab
+                        </h3>
                         
-                        <p className="text-lg text-gray-700 mb-6 mx-auto px-4">
-                            Join <strong>1,200+ leaders</strong> practicing critical conversations with our AI coaching simulator. Master <strong>difficult conversations</strong>, <strong>feedback delivery</strong>, and <strong>conflict resolution</strong> in a risk-free environment.
+                        <p className="text-lg text-gray-700 mb-6">
+                            Practice critical conversations with our AI coaching simulator and master difficult conversations in a risk-free environment.
                         </p>
                         
-                        <div className="flex items-center justify-center gap-6 mb-6">
-                            <div className="text-center">
-                                <div className="text-2xl font-bold" style={{ color: COLORS.TEAL }}>15+</div>
-                                <div className="text-sm text-gray-600">Scenarios</div>
-                            </div>
-                            <div className="text-center">
-                                <div className="text-2xl font-bold" style={{ color: COLORS.NAVY }}>AI</div>
-                                <div className="text-sm text-gray-600">Role Play</div>
-                            </div>
-                            <div className="text-center">
-                                <div className="text-2xl font-bold" style={{ color: COLORS.ORANGE }}>∞</div>
-                                <div className="text-sm text-gray-600">Practice</div>
-                            </div>
+                        <div className="text-center mb-6">
+                            <span className="inline-block bg-orange-100 text-orange-800 px-4 py-2 rounded-full text-sm font-semibold">Requires Pro Tier</span>
                         </div>
                         
                         <button
-                            onClick={() => navigate && navigate('membership-upgrade')}
-                            className="bg-gradient-to-r from-teal-600 to-navy-600 text-white px-8 py-4 rounded-xl font-bold text-lg shadow-xl hover:shadow-2xl transform hover:-translate-y-1 transition-all duration-300"
+                            onClick={() => navigate('membership-upgrade')}
+                            className="bg-gradient-to-r from-teal-600 to-navy-600 text-white px-8 py-4 rounded-xl font-bold text-lg shadow-lg hover:shadow-xl transition-all duration-300"
                         >
-                            🎯 Upgrade Now & Start Practicing
+                            Upgrade Now
                         </button>
-                        
-                        <p className="text-xs text-gray-500 mt-3">Join thousands of leaders mastering difficult conversations</p>
                     </div>
                 </div>
             )}
+            </div>
         </div>
     );
 }

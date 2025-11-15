@@ -40,6 +40,7 @@ export const useDashboard = ({
   const [reflectionGood, setReflectionGood] = useState('');
   const [reflectionBetter, setReflectionBetter] = useState('');
   const [reflectionBest, setReflectionBest] = useState('');
+  const [winsList, setWinsList] = useState([]); // New: Cumulative wins list
   const [habitsCompleted, setHabitsCompleted] = useState({
       readLIS: false,
       completedDailyRep: false,
@@ -165,7 +166,14 @@ export const useDashboard = ({
         eveningReflection: false
       });
     }
-  }, [dailyPracticeData?.eveningBookend, shouldSkipReflectionLoad]);
+
+    // Load cumulative wins list from stored data
+    if (dailyPracticeData?.winsList) {
+      setWinsList(dailyPracticeData.winsList);
+    } else {
+      setWinsList([]);
+    }
+  }, [dailyPracticeData?.eveningBookend, dailyPracticeData?.winsList, shouldSkipReflectionLoad]);
 
   /* =========================================================
      MODE TOGGLE HANDLER (Dependency on updateDailyPracticeData)
@@ -310,9 +318,12 @@ export const useDashboard = ({
       const success = await updateDailyPracticeData(updates);
       if (!success) throw new Error('Update failed');
       console.log('[Dashboard] Morning bookend saved');
-      if (isDeveloperMode()) {
-        alert('✅ Morning Bookend Complete! Your WIN and tasks are set for the day.');
-      }
+      // Always show success message with warm feeling
+      const message = '✅ Morning Plan Saved Successfully!\n\n' +
+                     '🎯 Your WIN is locked in for today\n' +
+                     '📋 Tasks are ready to track\n' +
+                     '🚀 You\'re all set to make today count!';
+      alert(message);
     } catch (error) {
       console.error('Error saving morning plan:', error);
       alert('Error saving morning plan. Please try again.');
@@ -363,6 +374,19 @@ export const useDashboard = ({
         });
       }
 
+      // Add new win to cumulative wins list if provided
+      const updatedWinsList = [...winsList];
+      if (reflectionGood && reflectionGood.trim()) {
+        const newWin = {
+          id: Date.now(),
+          text: reflectionGood.trim(),
+          date: new Date().toLocaleDateString(),
+          timestamp: new Date().toISOString()
+        };
+        updatedWinsList.push(newWin);
+        setWinsList(updatedWinsList); // Update local state immediately
+      }
+
       const updates = {
         eveningBookend: {
           good: reflectionGood,
@@ -371,6 +395,8 @@ export const useDashboard = ({
           habits: habitsCompleted,
           completedAt: serverTimestamp()
         },
+        // Save cumulative wins list
+        winsList: updatedWinsList,
         // NEW: Set tomorrow's reminders from today's reflection
         tomorrowsReminder: reflectionBest,
         improvementReminder: reflectionBetter
@@ -400,14 +426,15 @@ export const useDashboard = ({
       
       console.log('[Dashboard] Evening bookend saved successfully with next-day reminders');
       
-      // Always show success message with clear guidance about value
-      let message = '✅ Evening Reflection saved successfully!\n\n';
-      message += '📊 Your reflections appear in "Today\'s Progress" section above\n';
-      message += '📈 They\'re analyzed for growth patterns in your Executive ROI Report\n';
-      message += '📚 Full history is available in your Reflection Log\n';
+      // Always show success message with warm feeling
+      let message = '✅ Evening Reflection Saved Successfully!\n\n';
+      message += '🏆 Your wins have been added to your victory collection\n';
+      message += '📈 Growth insights captured for your leadership journey\n';
+      message += '🎯 Tomorrow\'s focus areas are now clear\n';
       if (newReminders.length > 0) {
         message += `\n🔔 ${newReminders.length} smart reminder(s) created for tomorrow based on your insights`;
       }
+      message += '\n\n🌟 Great work closing out your day with intention!';
       alert(message);
     } catch (error) {
       console.error('[Dashboard] Error saving evening bookend:', error);
@@ -557,9 +584,26 @@ export const useDashboard = ({
     }
   }, [dailyPracticeData, updateDailyPracticeData]); // Explicitly include prop
 
-  const handleHabitToggle = useCallback((habitKey, checked) => {
-    setHabitsCompleted(prev => ({ ...prev, [habitKey]: checked }));
+  const handleHabitToggle = useCallback((habitKey, isChecked) => {
+    setHabitsCompleted(prev => ({ ...prev, [habitKey]: isChecked }));
   }, []);
+
+  const handleDeleteWin = useCallback(async (winId) => {
+    if (!updateDailyPracticeData) return;
+    
+    const updatedWinsList = winsList.filter(win => win.id !== winId);
+    setWinsList(updatedWinsList);
+    
+    try {
+      await updateDailyPracticeData({ winsList: updatedWinsList });
+      console.log('Win deleted successfully');
+    } catch (error) {
+      console.error('Error deleting win:', error);
+      // Revert on error
+      setWinsList(winsList);
+      alert('Error deleting win. Please try again.');
+    }
+  }, [winsList, updateDailyPracticeData]);
 
   // NEW: Handle saving WIN separately
   const [isSavingWIN, setIsSavingWIN] = useState(false);
@@ -657,6 +701,8 @@ export const useDashboard = ({
     setReflectionBetter,
     reflectionBest,
     setReflectionBest,
+    winsList,
+    setWinsList,
     habitsCompleted,
     isSavingBookend,
     handleSaveMorningBookend,
@@ -666,6 +712,7 @@ export const useDashboard = ({
     handleRemoveTask,
     handleToggleWIN,
     handleHabitToggle,
+    handleDeleteWin,
     handleSaveWIN,
     isSavingWIN,
 

@@ -261,6 +261,7 @@ const MembershipUpgrade = ({ setCurrentScreen }) => {
 
   return (
     <div className="page-corporate container-corporate animate-corporate-fade-in">
+      <div className="content-standard">
         {/* Back Button */}
         <div className="flex items-center gap-2 mb-6 text-gray-600 hover:text-gray-800 cursor-pointer transition-colors" onClick={() => setCurrentScreen('dashboard')}>
           <ArrowLeft className="w-4 h-4" />
@@ -375,6 +376,7 @@ const MembershipUpgrade = ({ setCurrentScreen }) => {
             </div>
           </div>
         </Card>
+      </div>
     </div>
   );
 };

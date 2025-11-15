@@ -8,6 +8,7 @@
 // 🛑 CRITICAL FIX (10/30/25): Refactored writeDevPlan to only adapt the currentPlan sub-object.
 
 import React, { useMemo, useState, useEffect } from 'react';
+import { ArrowLeft } from 'lucide-react';
 import { useAppServices } from '../../services/useAppServices.jsx';
 import BaselineAssessment from './developmentplan/BaselineAssessment';
 import PlanTracker from './developmentplan/PlanTracker';
@@ -484,11 +485,12 @@ async function confirmPlanPersisted(db, userId, retries = 4, delayMs = 250) {
   
   return (
     <div className="page-corporate container-corporate animate-corporate-fade-in">
-      {/* Back Button */}
-      <div className="flex items-center gap-2 mb-6 text-gray-600 hover:text-gray-800 cursor-pointer transition-colors" onClick={() => navigate && navigate('dashboard')}>
-        <ArrowLeft className="w-4 h-4" />
-        <span className="text-sm font-medium">Back to The Arena</span>
-      </div>
+      <div className="content-narrow">
+        {/* Back Button */}
+        <div className="flex items-center gap-2 mb-6 text-gray-600 hover:text-gray-800 cursor-pointer transition-colors" onClick={() => navigate && navigate('dashboard')}>
+          <ArrowLeft className="w-4 h-4" />
+          <span className="text-sm font-medium">Back to The Arena</span>
+        </div>
 
       {/* Developer Mode Reset Button */}
       {isDeveloperMode && hasCurrentPlan && (
@@ -561,6 +563,7 @@ async function confirmPlanPersisted(db, userId, retries = 4, delayMs = 250) {
           onTimeline={() => setView('timeline')}
         />
       )}
+      </div>
     </div>
   );
 }

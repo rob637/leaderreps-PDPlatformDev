@@ -1536,6 +1536,76 @@ export const DailyProgressSummary = ({ dailyPracticeData }) => {
 };
 
 /* =========================================================
+   WINS LIST COMPONENT - Display cumulative wins
+========================================================= */
+export const WinsList = ({ winsList, onDeleteWin }) => {
+    const [isExpanded, setIsExpanded] = useState(true);
+    
+    if (!winsList || winsList.length === 0) {
+        return null;
+    }
+
+    return (
+        <Card accent="GREEN">
+            <div className="space-y-4">
+                {/* Header */}
+                <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                        <Trophy className="w-5 h-5" style={{ color: COLORS.GREEN }} />
+                        <h3 className="text-lg font-bold" style={{ color: COLORS.NAVY }}>
+                            🏆 Your Wins ({winsList.length})
+                        </h3>
+                    </div>
+                    <button
+                        onClick={() => setIsExpanded(!isExpanded)}
+                        className="p-1 rounded-full hover:bg-gray-100 transition-colors"
+                    >
+                        {isExpanded ? (
+                            <ChevronUp className="w-5 h-5" style={{ color: COLORS.MUTED }} />
+                        ) : (
+                            <ChevronDown className="w-5 h-5" style={{ color: COLORS.MUTED }} />
+                        )}
+                    </button>
+                </div>
+                
+                {isExpanded && (
+                    <div className="space-y-3">
+                        {winsList.slice().reverse().map((win, index) => (
+                            <div key={win.id || index} 
+                                 className="p-3 rounded-lg border-2 bg-gradient-to-r from-green-50 to-teal-50" 
+                                 style={{ borderColor: COLORS.GREEN }}>
+                                <div className="flex items-start justify-between gap-3">
+                                    <div className="flex-1">
+                                        <div className="flex items-center gap-2 mb-1">
+                                            <Star className="w-4 h-4" style={{ color: COLORS.GREEN }} />
+                                            <span className="text-xs font-semibold" style={{ color: COLORS.MUTED }}>
+                                                {win.date}
+                                            </span>
+                                        </div>
+                                        <p className="text-sm" style={{ color: COLORS.TEXT }}>
+                                            {win.text}
+                                        </p>
+                                    </div>
+                                    {onDeleteWin && (
+                                        <button
+                                            onClick={() => onDeleteWin(win.id)}
+                                            className="p-1 rounded-full hover:bg-red-100 transition-colors text-red-500 hover:text-red-700"
+                                            title="Delete this win"
+                                        >
+                                            <X className="w-4 h-4" />
+                                        </button>
+                                    )}
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                )}
+            </div>
+        </Card>
+    );
+};
+
+/* =========================================================
    PLACEHOLDER COMPONENTS (Required to fix build errors)
 ========================================================= */
 // Exporting placeholder components to prevent errors in Dashboard.jsx when these are not used

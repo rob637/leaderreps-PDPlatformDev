@@ -133,7 +133,8 @@ const Library = ({ simulatedTier }) => {
   };
 
   return (
-    <div className="page-corporate container-corporate animate-corporate-fade-in">
+      <div className="page-corporate container-corporate animate-corporate-fade-in">
+        <div className="content-standard">
       <div>
         {/* Back Button */}
         <div className="flex items-center gap-2 mb-6 text-gray-600 hover:text-gray-800 cursor-pointer transition-colors" onClick={() => canGoBack ? goBack() : navigate && navigate('dashboard')}>
@@ -266,51 +267,30 @@ const Library = ({ simulatedTier }) => {
         
         {/* Upgrade CTA for Basic Users */}
         {currentTier === 'basic' && (
-          <div className="card-corporate-elevated mt-12 text-center relative overflow-hidden" style={{ borderColor: COLORS.ORANGE }}>
-            {/* Animated background */}
-            <div className="absolute inset-0 bg-gradient-to-br from-orange-50 via-white to-teal-50"></div>
-            <div className="absolute top-4 right-4 w-32 h-32 rounded-full bg-gradient-to-br from-orange-200 to-teal-200 opacity-30 animate-pulse"></div>
-            <div className="absolute bottom-4 left-4 w-24 h-24 rounded-full bg-gradient-to-br from-navy-200 to-orange-200 opacity-30 animate-bounce"></div>
-            
-            <div className="relative z-10 p-8">
-              <div className="flex items-center justify-center gap-2 mb-4">
-                <Zap className="w-8 h-8 animate-pulse" style={{ color: COLORS.ORANGE }} />
-                <h3 className="text-2xl font-bold" style={{ color: COLORS.NAVY }}>
-                  🚀 Unlock Your Leadership Potential
-                </h3>
-                <Zap className="w-8 h-8 animate-pulse" style={{ color: COLORS.TEAL }} />
-              </div>
+          <div className="card-corporate-elevated mt-12 text-center" style={{ borderColor: COLORS.TEAL }}>
+            <div className="relative z-10 p-8 text-center">
+              <h3 className="text-2xl font-bold mb-4" style={{ color: COLORS.NAVY }}>
+                Unlock Leadership Library
+              </h3>
               
-              <p className="text-lg text-gray-700 mb-6 mx-auto px-4">
-                Join <strong>1,200+ leaders</strong> who've transformed their careers with our premium library. Get access to <strong>exclusive courses</strong>, <strong>expert-curated readings</strong>, and <strong>leadership videos</strong> that aren't available anywhere else.
+              <p className="text-lg text-gray-700 mb-6">
+                Access our premium library of leadership courses, expert-curated readings, and exclusive videos.
               </p>
               
-              <div className="flex items-center justify-center gap-6 mb-6">
-                <div className="text-center">
-                  <div className="text-2xl font-bold" style={{ color: COLORS.TEAL }}>6</div>
-                  <div className="text-sm text-gray-600">Live Courses</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-2xl font-bold" style={{ color: COLORS.NAVY }}>50+</div>
-                  <div className="text-sm text-gray-600">Premium Books</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-2xl font-bold" style={{ color: COLORS.ORANGE }}>25+</div>
-                  <div className="text-sm text-gray-600">Expert Videos</div>
-                </div>
+              <div className="text-center mb-6">
+                <span className="inline-block bg-orange-100 text-orange-800 px-4 py-2 rounded-full text-sm font-semibold">Requires Pro Tier</span>
               </div>
               
               <button
                 onClick={() => navigate && navigate('membership-upgrade')}
-                className="bg-gradient-to-r from-teal-600 to-navy-600 text-white px-8 py-4 rounded-xl font-bold text-lg shadow-xl hover:shadow-2xl transform hover:-translate-y-1 transition-all duration-300"
+                className="bg-gradient-to-r from-teal-600 to-navy-600 text-white px-8 py-4 rounded-xl font-bold text-lg shadow-lg hover:shadow-xl transition-all duration-300"
               >
-                🎯 Upgrade Now & Start Learning
+                Upgrade Now
               </button>
-              
-              <p className="text-xs text-gray-500 mt-3">Join thousands of leaders already accelerating their growth</p>
             </div>
           </div>
         )}
+        </div>
       </div>
     </div>
   );

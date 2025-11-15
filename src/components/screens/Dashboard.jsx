@@ -27,6 +27,7 @@ import {
   BonusExerciseModal,
   SocialPodCard,
   DailyProgressSummary,
+  WinsList,
   // === UNIFIED IMPORTS ===
   UnifiedAnchorEditorModal,
   AdditionalRepsCard
@@ -242,7 +243,9 @@ const Dashboard = (props) => {
     handleSaveMorningBookend,
     handleSaveWIN,
     isSavingWIN,
-    amWinCompleted
+    amWinCompleted,
+    winsList,
+    handleDeleteWin
   } = useDashboard({
     ...props,
     dailyPracticeData,
@@ -499,6 +502,7 @@ const Dashboard = (props) => {
   // --- RENDER ---
   return (
     <div className="page-corporate container-corporate animate-corporate-fade-in">
+      <div className="content-wide">
       {/* Save indicator */}
       <SaveIndicator isSaving={isSaving} />
 
@@ -596,6 +600,11 @@ const Dashboard = (props) => {
         />
         </div>
       )}
+
+      {/* Wins List - Display cumulative wins */}
+      <div className="section-corporate">
+        <WinsList winsList={winsList} onDeleteWin={handleDeleteWin} />
+      </div>
 
       {/* Development Plan Progress Link (Arena 1.0 – Show for Pro/Premium only) */}
       {visibleComponents.includes('devPlanProgress') && (isMemberPro || isMemberPremium) && (
@@ -763,6 +772,7 @@ const Dashboard = (props) => {
       )}
 
       <TestUtilsModal isOpen={testUtilsOpen} onClose={() => setTestUtilsOpen(false)} />
+      </div>
     </div>
   );
 };
