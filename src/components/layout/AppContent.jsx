@@ -298,7 +298,7 @@ const AppContent = ({
           </div>
           <div className="flex items-center gap-3">
             <img 
-              src="/images/leaderreps-logo.svg" 
+              src="/images/lr_logo_teal__1__.png" 
               alt="LeaderReps" 
               className="h-8 sm:h-10 w-auto"
             />
