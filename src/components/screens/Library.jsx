@@ -165,7 +165,7 @@ const Library = ({ simulatedTier, isDeveloperMode }) => {
         {/* Back Button */}
         <div className="flex items-center gap-2 mb-6 text-gray-600 hover:text-gray-800 cursor-pointer transition-colors" onClick={() => navigate('dashboard')}>
           <ArrowLeft className="w-5 h-5" />
-          <span className="text-sm font-medium">Back to The Arena</span>
+          <span className="text-sm font-medium">Back to Dashboard</span>
         </div>
 
         {/* Enhanced Header with Stats */}
@@ -178,7 +178,7 @@ const Library = ({ simulatedTier, isDeveloperMode }) => {
           <div className="flex items-center justify-center gap-2 mb-4">
             <BookOpen className='w-8 h-8' style={{color: COLORS.TEAL}}/>
             <h1 className="corporate-heading-xl" style={{ color: COLORS.NAVY }}>
-              Leadership Library
+              Leadership Content
             </h1>
             <BookOpen className='w-8 h-8' style={{color: COLORS.TEAL}}/>
           </div>

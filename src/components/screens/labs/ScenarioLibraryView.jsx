@@ -20,7 +20,7 @@ const ScenarioLibraryView = ({ setCoachingLabView, setSelectedScenario }) => {
             <p className="text-lg text-gray-600 mb-6">Select a high-stakes scenario to practice your preparation process. Each scenario includes a unique persona for the AI simulator.</p>
             
             <Button onClick={() => setCoachingLabView('coaching-lab-home')} variant="outline" className="mb-8">
-                <ArrowLeft className="w-5 h-5 mr-2" /> Back to Coaching Lab
+                <ArrowLeft className="w-5 h-5 mr-2" /> Back to Coaching
             </Button>
             
             <Card 

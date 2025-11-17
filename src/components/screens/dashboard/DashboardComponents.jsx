@@ -1048,7 +1048,7 @@ export const AICoachNudge = ({ onOpenLab, disabled }) => (
           Practice scenarios, get feedback, or work through challenges with your AI coach.
         </p>
         <Button onClick={onOpenLab} variant="outline" size="sm" disabled={disabled}>
-          <Zap className="w-4 h-4 mr-1" /> Open Coaching Lab
+          <Zap className="w-4 h-4 mr-1" /> Open Coaching
         </Button>
       </div>
     </div>

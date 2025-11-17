@@ -1022,7 +1022,7 @@ const ProgressAnalyticsView = ({ setCoachingLabView }) => {
             <p className="corporate-text-body text-gray-600 mb-6">Track your leadership practice performance and identify growth opportunities.</p>
             
             <Button onClick={handleBackClick} variant="nav-back" size="sm" className="mb-8">
-                <ArrowLeft className="w-5 h-5 mr-2" /> {canGoBack ? 'Back' : 'Back to Coaching Lab'}
+                <ArrowLeft className="w-5 h-5 mr-2" /> {canGoBack ? 'Back' : 'Back to Coaching'}
             </Button>
             
             {totalSessions === 0 ? (
@@ -1711,13 +1711,13 @@ export default function CoachingLabScreen({ simulatedTier }) {
                         <div className="text-center mb-12">
                             <div className="flex items-center justify-center gap-2 mb-4">
                                 <Beaker className='w-8 h-8' style={{color: COLORS.TEAL}}/>
-                                <h1 className="corporate-heading-xl" style={{ color: COLORS.NAVY }}>Coaching Lab</h1>
+                                <h1 className="corporate-heading-xl" style={{ color: COLORS.NAVY }}>Coaching</h1>
                                 <Beaker className='w-8 h-8' style={{color: COLORS.TEAL}}/>
                             </div>
                             {!hasCoachingAccess && (
                                 <span className="inline-block bg-orange-100 text-orange-800 px-3 py-1 rounded-full text-sm font-semibold mb-4">Requires Pro Tier</span>
                             )}
-                            <p className="corporate-text-body text-gray-600 mx-auto px-4">Welcome to the Coaching Lab. Select a tool to build your leadership skills.</p>
+                            <p className="corporate-text-body text-gray-600 mx-auto px-4">Welcome to Coaching. Select a tool to build your leadership skills.</p>
                         </div>
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                             <Card title="Scenario Library" icon={Briefcase} onClick={hasCoachingAccess ? () => setView('scenario-library') : undefined}>

@@ -35,7 +35,7 @@ const MobileBottomNav = ({ currentScreen }) => {
     },
     {
       id: 'library',
-      label: 'Library',
+      label: 'Content',
       icon: BookOpen,
       screen: 'library'
     }

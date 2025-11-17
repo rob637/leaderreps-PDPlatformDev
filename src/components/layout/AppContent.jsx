@@ -199,20 +199,32 @@ const AppContent = ({
   // Basic: Arena, Dev Plan, Membership
   // Pro & Elite: Arena, Dev Plan, Coaching, Community, Library, Membership  
   // Dev: Everything including Developer Tools
-  const navigationItems = [
-    { screen: 'dashboard', label: 'The Arena', requiredTier: 'basic' },
+    const navigationItems = [
+    { screen: 'dashboard', label: 'Dashboard', requiredTier: 'basic' },
     { screen: 'development-plan', label: 'Development Plan', requiredTier: 'basic' },
-    { screen: 'coaching-lab', label: 'Coaching Lab', requiredTier: 'professional' },
+    { screen: 'library', label: 'Content', requiredTier: 'professional' },
     { screen: 'community', label: 'Community', requiredTier: 'professional' },
-    { screen: 'library', label: 'Library', requiredTier: 'professional' },
-    { screen: 'membership-module', label: 'Membership', requiredTier: 'basic' },
-    // Developer Tools (only visible in dev mode)
-    ...(isDeveloperMode ? [
-      { screen: 'planning-hub', label: 'Strategic Content Tools', requiredTier: 'basic', devModeOnly: true },
-      { screen: 'executive-reflection', label: 'Executive ROI Report', requiredTier: 'basic', devModeOnly: true },
-      { screen: 'app-settings', label: 'App Settings', requiredTier: 'basic', devModeOnly: true }
-    ] : [])
-  ];
+    { screen: 'coaching-lab', label: 'Coaching', requiredTier: 'professional' },
+    { screen: 'membership-upgrade', label: 'Membership', requiredTier: 'basic' },
+    // --- Admin & Developer Tools ---
+    { screen: 'admin-functions', label: 'Admin Functions', requiredTier: 'admin', devModeOnly: true },
+    { screen: 'debug-data', label: 'Debug Data Viewer', requiredTier: 'admin', devModeOnly: true },
+  ].filter(item => {
+    if (!item.requiredTier) return true; // Always show if no tier is required
+    
+    // Show developer-only items if in developer mode
+    if (item.devModeOnly && isDeveloperMode) {
+      return true;
+    }
+    
+    // In user mode, hide dev-only items
+    if (item.devModeOnly && !isDeveloperMode) {
+      return false;
+    }
+    
+    // Standard access check for non-dev items
+    return hasAccess(item.requiredTier);
+  });
 
   const handleSignOut = async () => {
     try {
