@@ -3,7 +3,7 @@ import { createRoot } from 'react-dom/client';
 import './styles/global.css';
 import ErrorBoundary from './components/system/ErrorBoundary';
 import ConfigGate from './components/system/ConfigGate';
-import { onCLS, onFID, onLCP, onFCP, onTTFB } from 'web-vitals';
+import { onCLS, onINP, onLCP, onFCP, onTTFB } from 'web-vitals';
 
 // === CORE WEB VITALS MONITORING ===
 const reportWebVitals = (metric) => {
@@ -26,7 +26,7 @@ const reportWebVitals = (metric) => {
 
 const initWebVitals = () => {
   onCLS(reportWebVitals);  // Cumulative Layout Shift
-  onFID(reportWebVitals);  // First Input Delay
+  onINP(reportWebVitals);  // Interaction to Next Paint
   onLCP(reportWebVitals);  // Largest Contentful Paint
   onFCP(reportWebVitals);  // First Contentful Paint
   onTTFB(reportWebVitals); // Time to First Byte
