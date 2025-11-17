@@ -27,28 +27,28 @@ COMMIT_MESSAGE="$1"
 echo -e "\n${YELLOW}📋 Checking git status...${NC}"
 git status --short
 
-# 2. Add all changes
+# 2. Switch to test Firebase project
+echo -e "\n${YELLOW}🔄 Switching to TEST Firebase project...${NC}"
+firebase use test
+
+# 3. Build with test environment (BEFORE committing)
+echo -e "\n${YELLOW}🏗️  Building for TEST environment...${NC}"
+cp .env.test .env.local
+npm run build
+
+# 4. If build succeeds, proceed with git operations
 echo -e "\n${YELLOW}➕ Adding all changes...${NC}"
 git add .
 
-# 3. Commit with provided message
+# 5. Commit with provided message
 echo -e "\n${YELLOW}💾 Committing changes...${NC}"
 git commit -m "$COMMIT_MESSAGE" || {
     echo -e "${YELLOW}⚠️  No changes to commit${NC}"
 }
 
-# 4. Push to GitHub
+# 6. Push to GitHub
 echo -e "\n${YELLOW}🔄 Pushing to GitHub...${NC}"
 git push origin main
-
-# 5. Switch to test Firebase project
-echo -e "\n${YELLOW}🔄 Switching to TEST Firebase project...${NC}"
-firebase use test
-
-# 6. Build production version with test environment
-echo -e "\n${YELLOW}🏗️  Building for TEST environment...${NC}"
-cp .env.test .env.local
-npm run build
 
 # 7. Deploy to Firebase Test
 echo -e "\n${YELLOW}🚀 Deploying to Firebase Test Hosting...${NC}"

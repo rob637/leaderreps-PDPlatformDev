@@ -27,28 +27,28 @@ COMMIT_MESSAGE="$1"
 echo -e "\n${YELLOW}📋 Checking git status...${NC}"
 git status --short
 
-# 2. Add all changes
+# 2. Switch to development Firebase project
+echo -e "\n${YELLOW}🔄 Switching to DEVELOPMENT Firebase project...${NC}"
+firebase use dev
+
+# 3. Build with development environment (BEFORE committing)
+echo -e "\n${YELLOW}🏗️  Building for DEVELOPMENT environment...${NC}"
+cp .env.dev .env.local
+npm run build
+
+# 4. If build succeeds, proceed with git operations
 echo -e "\n${YELLOW}➕ Adding all changes...${NC}"
 git add .
 
-# 3. Commit with provided message
+# 5. Commit with provided message
 echo -e "\n${YELLOW}💾 Committing changes...${NC}"
 git commit -m "$COMMIT_MESSAGE" || {
     echo -e "${YELLOW}⚠️  No changes to commit${NC}"
 }
 
-# 4. Push to GitHub
+# 6. Push to GitHub
 echo -e "\n${YELLOW}🔄 Pushing to GitHub...${NC}"
 git push origin main
-
-# 5. Switch to development Firebase project
-echo -e "\n${YELLOW}🔄 Switching to DEVELOPMENT Firebase project...${NC}"
-firebase use dev
-
-# 6. Build with development environment
-echo -e "\n${YELLOW}🏗️  Building for DEVELOPMENT environment...${NC}"
-cp .env.dev .env.local
-npm run build
 
 # 7. Deploy to Firebase Development
 echo -e "\n${YELLOW}🚀 Deploying to Firebase Development Hosting...${NC}"
