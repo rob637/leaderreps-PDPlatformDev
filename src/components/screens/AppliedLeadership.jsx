@@ -3,9 +3,10 @@
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
 // --- Core Services & Context ---
 import { useAppServices } from '../../services/useAppServices.jsx'; // cite: useAppServices.jsx
+import { getCourses } from '../../services/contentService.js';
 
 // --- ICONS: CRITICAL FIX - Import all icons used in sub-components/rendering logic ---
-import { ArrowLeft, BookOpen, ChevronRight, Loader, AlertTriangle, ShieldCheck, Zap, Briefcase, Lightbulb, CheckCircle, X, CornerRightUp } from 'lucide-react'; 
+import { ArrowLeft, BookOpen, ChevronRight, Loader, AlertTriangle, ShieldCheck, Zap, Briefcase, Lightbulb, CheckCircle, X, CornerRightUp, Users, Calendar } from 'lucide-react'; 
 
 /* =========================================================
    PALETTE & UI COMPONENTS (Standardized)
@@ -402,13 +403,15 @@ export default function AppliedLeadershipScreen() {
     // --- Consume services ---
     const {
         SKILL_CATALOG, // Contains individual skills
-        COURSE_LIBRARY, // Contains full courses (like QuickStart)
+        COURSE_LIBRARY, // Contains full courses (like QuickStart) - DEPRECATED, use CMS instead
         RESOURCE_LIBRARY,
         LEADERSHIP_TIERS,
         IconMap,
         navigate,
         isLoading: isAppLoading,
         error: appError,
+        db,
+        user,
     } = useAppServices();
 
     // --- Local State ---
@@ -416,32 +419,58 @@ export default function AppliedLeadershipScreen() {
     const [selectedCourse, setSelectedCourse] = useState(null); // Holds the currently viewed course object
     const [isModalVisible, setIsModalVisible] = useState(false); // Modal for resource detail (only used in legacy structure/home view)
     const [selectedResource, setSelectedResource] = useState(null);
+    const [cmsCourses, setCmsCourses] = useState([]);
 
     // --- Effect to scroll to top on mount or when detail changes ---
     useEffect(() => { window.scrollTo({ top: 0, behavior: 'smooth' }); }, [selectedSkill, selectedCourse]);
 
-    // --- Derived Data ---
-    // Safely extract the array of individual skills
-    const safeSkills = useMemo(() => {
-        if (isAppLoading) return [];
-        if (SKILL_CATALOG && typeof SKILL_CATALOG === 'object' && Array.isArray(SKILL_CATALOG.items)) {
-            return SKILL_CATALOG.items;
-        }
-        console.warn("[AppliedLeadership] SKILL_CATALOG data is missing or invalid.");
-        return [];
-    }, [SKILL_CATALOG, isAppLoading]); // cite: useAppServices.jsx
+    // --- Load CMS courses ---
+    useEffect(() => {
+        if (!db || isAppLoading) return;
+        
+        const loadCourses = async () => {
+            try {
+                const userTier = user?.membershipData?.tier || 'elite';
+                console.log('[AppliedLeadership] Loading courses with tier:', userTier);
+                const courses = await getCourses(db, userTier);
+                console.log('[AppliedLeadership] Loaded from CMS:', courses?.length || 0, 'courses');
+                setCmsCourses(courses || []);
+            } catch (error) {
+                console.error('[AppliedLeadership] Error loading CMS courses:', error);
+                // Firestore indexes might still be building
+                setCmsCourses([]);
+            }
+        };
+        
+        loadCourses();
+    }, [db, user, isAppLoading]);
 
-    // Safely extract the array of courses
+    // --- Derived Data ---
+    // Skills removed - only showing courses from CMS
+
+    // Extract courses from CMS only
     const safeCourses = useMemo(() => {
         if (isAppLoading) return [];
-        if (COURSE_LIBRARY && typeof COURSE_LIBRARY === 'object' && Array.isArray(COURSE_LIBRARY.items)) {
-            // Courses are expected to have a 'title' field
-            const filteredCourses = COURSE_LIBRARY.items.filter(item => item.title);
-            return filteredCourses;
+        
+        if (cmsCourses && cmsCourses.length > 0) {
+            console.log('[AppliedLeadership] Using CMS courses:', cmsCourses.length);
+            return cmsCourses.map(course => ({
+                id: course.id,
+                title: course.title || 'Untitled',
+                description: course.description || '',
+                category: course.category || 'Leadership',
+                tier: course.tier || 'professional',
+                instructor: course.metadata?.instructor || '',
+                duration: course.metadata?.duration || '',
+                level: course.metadata?.level || '',
+                modules: [], // Modules not yet in CMS structure
+                isActive: course.isActive !== false,
+            }));
         }
-        console.warn("[AppliedLeadership] COURSE_LIBRARY data is missing or invalid. Using empty array.");
+        
+        console.log("[AppliedLeadership] No CMS courses loaded yet");
         return [];
-    }, [COURSE_LIBRARY, isAppLoading]); // cite: useAppServices.jsx
+    }, [cmsCourses, isAppLoading]);
 
     // --- Callbacks ---
     const handleSelectSkill = useCallback((skill) => {
@@ -567,56 +596,11 @@ export default function AppliedLeadershipScreen() {
                 </section>
             )}
 
-            {/* --- 2. SKILL Section --- */}
-            {safeSkills.length > 0 && (
-                <section>
-                    <h2 className='text-2xl font-bold mb-6 border-l-4 pl-3 flex items-center gap-2' style={{ color: COLORS.NAVY, borderColor: COLORS.TEAL }}>
-                        <Briefcase className='w-6 h-6' style={{color: COLORS.TEAL}}/> Individual Skills & Micro-Learning
-                    </h2>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:p-4 lg:p-6">
-                        {safeSkills.map((skill) => {
-                            const IconComponent = IconMap?.[skill.icon] || BookOpen;
-                            const tierMeta = LEADERSHIP_TIERS?.[skill.tier_id];
-                            const accentColorKey = tierMeta?.color?.split('-')[0].toUpperCase();
-                            const accentColor = COLORS[accentColorKey] || COLORS.TEAL;
-                            const resourceCount = RESOURCE_LIBRARY?.[skill.skill_id]?.length || 0;
-
-                            return (
-                                <button
-                                    key={skill.skill_id}
-                                    onClick={() => handleSelectSkill(skill)}
-                                    className="text-left block w-full group focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[${COLORS.TEAL}] rounded-2xl"
-                                >
-                                    <div className={`p-6 rounded-2xl border-2 shadow-lg transition-all duration-300 group-hover:scale-[1.03] group-hover:shadow-xl h-full flex flex-col`}
-                                         style={{ borderColor: `${accentColor}30`, background: COLORS.LIGHT_GRAY }}>
-                                        <div className='flex items-center space-x-3 mb-3'>
-                                            <div className="w-12 h-12 rounded-full flex items-center justify-center shadow-md flex-shrink-0" style={{ background: `${accentColor}1A` }}>
-                                                {IconComponent && <IconComponent className="w-6 h-6" style={{ color: accentColor }} />}
-                                            </div>
-                                            <h2 className="text-lg font-extrabold flex-1" style={{ color: COLORS.NAVY }}>{skill.name}</h2>
-                                        </div>
-                                        <p className="text-sm text-gray-600 mb-4 flex-grow" style={{ minHeight: '3rem' }}>{skill.summary}</p>
-                                        <div className='mt-auto pt-3 border-t' style={{ borderColor: COLORS.SUBTLE }}>
-                                            <div className='flex justify-between items-center'>
-                                                <span className='text-xs font-semibold uppercase' style={{ color: accentColor }}>
-                                                    {resourceCount} Resource{resourceCount !== 1 ? 's' : ''}
-                                                </span>
-                                                <ChevronRight className='w-4 h-4' style={{ color: accentColor }}/>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </button>
-                            );
-                        })}
-                    </div>
-                </section>
-            )}
-
             {/* Empty State (Post-Loading, No Error) */}
-            {!isAppLoading && !appError && safeSkills.length === 0 && safeCourses.length === 0 && (
+            {!isAppLoading && !appError && safeCourses.length === 0 && (
                  <div className="text-gray-500 italic text-center py-10 bg-gray-100 p-4 rounded-lg border border-gray-200 max-w-2xl mx-auto flex items-center justify-center gap-2">
                      <AlertTriangle className="w-5 h-5 text-orange-500"/>
-                     <span>The Course Library and Skill Catalog appear to be empty or missing data. Please contact an administrator.</span>
+                     <span>The Course Library appears to be empty. Please contact an administrator.</span>
                  </div>
             )}
         </div>

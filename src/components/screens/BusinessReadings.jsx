@@ -3,6 +3,7 @@
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
 // --- Core Services & Context ---
 import { useAppServices } from '../../services/useAppServices.jsx'; // cite: useAppServices.jsx
+import { getReadings } from '../../services/contentService.js'; // NEW: Load from CMS
 
 import ConfigError from '../../components/system/ConfigError.jsx';
 
@@ -657,12 +658,36 @@ export default function BusinessReadingsScreen() {
   const {
     // Data & State
     isLoading: isAppLoading, error: appError, // Combined loading/error state
-    READING_CATALOG, // Catalog data { items: { Category: [books...] } } // cite: useAppServices.jsx
+    db, // NEW: Need db for loading from CMS
+    user, // NEW: Need user for tier filtering
     dailyPracticeData, // For adding commitments // cite: useAppServices.jsx
     // Functions
     navigate,
     updateDailyPracticeData, callSecureGeminiAPI, hasGeminiKey, GEMINI_MODEL, // cite: useAppServices.jsx
   } = useAppServices();
+
+  // --- Load Readings from CMS ---
+  const [cmsReadings, setCmsReadings] = useState([]);
+  const [isLoadingCms, setIsLoadingCms] = useState(true);
+  
+  useEffect(() => {
+    if (!db) return;
+    
+    const loadReadings = async () => {
+      try {
+        setIsLoadingCms(true);
+        const readings = await getReadings(db, user);
+        console.log('[BusinessReadings] Loaded from CMS:', readings.length, 'readings');
+        setCmsReadings(readings);
+      } catch (error) {
+        console.error('[BusinessReadings] Error loading from CMS:', error);
+      } finally {
+        setIsLoadingCms(false);
+      }
+    };
+    
+    loadReadings();
+  }, [db, user]);
 
   // --- Local State ---
   const [selectedBook, setSelectedBook] = useState(null); // The book object currently viewed in the flyer
@@ -680,17 +705,39 @@ export default function BusinessReadingsScreen() {
   const [isSubmittingAi, setIsSubmittingAi] = useState(false); // Loading state for AI query
 
   // --- Determine Book Data Source ---
-  // Use READING_CATALOG from services if valid, otherwise use local fallback
+  // Convert CMS readings array to the expected category structure
   const allBooks = useMemo(() => {
-    const catalogItems = READING_CATALOG?.items;
-    // Validate structure: must be an object with at least one key/value pair where value is array
-    if (catalogItems && typeof catalogItems === 'object' && Object.keys(catalogItems).length > 0 && Object.values(catalogItems).some(Array.isArray)) {
-        return catalogItems;
+    if (cmsReadings && cmsReadings.length > 0) {
+      // Group readings by category
+      const grouped = {};
+      cmsReadings.forEach(reading => {
+        const category = reading.category || 'Uncategorized';
+        if (!grouped[category]) {
+          grouped[category] = [];
+        }
+        // Transform CMS format to expected format
+        grouped[category].push({
+          id: reading.id,
+          title: reading.title,
+          author: reading.metadata?.author || '',
+          theme: reading.description,
+          complexity: reading.metadata?.complexity || 'Medium',
+          duration: reading.metadata?.duration || 0,
+          focus: reading.metadata?.focus || '',
+          fullFlyerHTML: reading.metadata?.fullFlyerHTML || '',
+          executiveBriefHTML: reading.metadata?.executiveBriefHTML || '',
+          url: reading.url,
+          tier: reading.tier,
+          isActive: reading.isActive
+        });
+      });
+      console.log('[BusinessReadings] Using CMS data with', Object.keys(grouped).length, 'categories');
+      return grouped;
     } else {
-        console.warn("[BusinessReadings] READING_CATALOG invalid or empty. Using fallback data.", READING_CATALOG);
-        return MOCK_ALL_BOOKS_FALLBACK;
+      console.log("[BusinessReadings] No CMS data loaded yet");
+      return {};
     }
-  }, [READING_CATALOG]); // cite: useAppServices.jsx
+  }, [cmsReadings]);
 
   // --- Deep Dependency Signature ---
   // Used to ensure filtering memoization updates correctly when book data changes fundamentally
@@ -878,8 +925,8 @@ export default function BusinessReadingsScreen() {
 
   // --- RENDER LOGIC ---
 
-  // Show loading spinner if the app's core data is still loading
-  if (isAppLoading) {
+  // Show loading spinner if the app's core data is still loading OR CMS data is loading
+  if (isAppLoading || isLoadingCms) {
     return <LoadingSpinner message="Loading Reading Hub..." />;
   }
   // Show error message if app loading failed

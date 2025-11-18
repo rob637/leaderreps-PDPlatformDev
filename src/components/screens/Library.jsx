@@ -1,10 +1,11 @@
 // src/components/screens/Library.jsx
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { BookOpen, ShieldCheck, Film, ArrowLeft, Sparkles, Target, Trophy, Users, TrendingUp, Star, Zap } from 'lucide-react';
 import { useAppServices } from '../../services/useAppServices.jsx';
 import { membershipService } from '../../services/membershipService.js';
 import { Button } from '../shared/UI';
+import { getReadings, getVideos, getCourses } from '../../services/contentService';
 
 // LEADERREPS.COM OFFICIAL CORPORATE COLORS - VERIFIED 11/14/25
 const COLORS = {
@@ -79,10 +80,43 @@ const LibraryCard = ({ title, description, icon: Icon, onClick, disabled = false
 };
 
 const Library = ({ simulatedTier, isDeveloperMode }) => {
-  const { membershipData, navigate } = useAppServices();
+  const { membershipData, navigate, db } = useAppServices();
+  const [contentCounts, setContentCounts] = useState({ readings: 0, videos: 0, courses: 0 });
+  const [loading, setLoading] = useState(true);
+  
+  // Match Dashboard's exact tier logic - MUST match Dashboard.jsx line 285
+  const currentTier = simulatedTier || membershipData?.currentTier || 'basic';
+  
+  // Fetch content counts on mount
+  useEffect(() => {
+    const fetchContentCounts = async () => {
+      try {
+        setLoading(true);
+        const [readingsData, videosData, coursesData] = await Promise.all([
+          getReadings(db, currentTier),
+          getVideos(db, currentTier),
+          getCourses(db, currentTier)
+        ]);
+        setContentCounts({
+          readings: readingsData.length,
+          videos: videosData.length,
+          courses: coursesData.length
+        });
+      } catch (error) {
+        console.error('Error fetching content counts:', error);
+        setContentCounts({ readings: 0, videos: 0, courses: 0 });
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    if (db) {
+      fetchContentCounts();
+    }
+  }, [db, currentTier]);
   
   // Scroll to top when component mounts
-  React.useEffect(() => {
+  useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
     
     // DEBUG: Measure actual widths
@@ -97,9 +131,6 @@ const Library = ({ simulatedTier, isDeveloperMode }) => {
       });
     }, 100);
   }, []);
-  
-  // Match Dashboard's exact tier logic - MUST match Dashboard.jsx line 285
-  const currentTier = simulatedTier || membershipData?.currentTier || 'basic';
 
   const libraryItems = [
     {
@@ -192,21 +223,27 @@ const Library = ({ simulatedTier, isDeveloperMode }) => {
             <div className="bg-white rounded-xl p-4 shadow-md border-2" style={{ borderColor: `${COLORS.TEAL}20` }}>
               <div className="flex items-center justify-center gap-2 mb-2">
                 <Target className="w-5 h-5" style={{ color: COLORS.TEAL }} />
-                <span className="text-2xl font-bold" style={{ color: COLORS.NAVY }}>6</span>
+                <span className="text-2xl font-bold" style={{ color: COLORS.NAVY }}>
+                  {loading ? '...' : contentCounts.courses}
+                </span>
               </div>
               <p className="text-sm font-medium text-gray-600">Expert-Led Courses</p>
             </div>
             <div className="bg-white rounded-xl p-4 shadow-md border-2" style={{ borderColor: `${COLORS.NAVY}20` }}>
               <div className="flex items-center justify-center gap-2 mb-2">
-                <BookOpen className="w-5 h-5" style={{ color: COLORS.NAVY }} />
-                <span className="text-2xl font-bold" style={{ color: COLORS.NAVY }}>50+</span>
+                <Trophy className="w-5 h-5" style={{ color: COLORS.NAVY }} />
+                <span className="text-2xl font-bold" style={{ color: COLORS.NAVY }}>
+                  {loading ? '...' : `${contentCounts.readings}+`}
+                </span>
               </div>
               <p className="text-sm font-medium text-gray-600">Curated Readings</p>
             </div>
             <div className="bg-white rounded-xl p-4 shadow-md border-2" style={{ borderColor: `${COLORS.ORANGE}20` }}>
               <div className="flex items-center justify-center gap-2 mb-2">
-                <Film className="w-5 h-5" style={{ color: COLORS.ORANGE }} />
-                <span className="text-2xl font-bold" style={{ color: COLORS.NAVY }}>25+</span>
+                <Star className="w-5 h-5" style={{ color: COLORS.ORANGE }} />
+                <span className="text-2xl font-bold" style={{ color: COLORS.NAVY }}>
+                  {loading ? '...' : contentCounts.videos > 0 ? `${contentCounts.videos}` : 'Elite'}
+                </span>
               </div>
               <p className="text-sm font-medium text-gray-600">Premium Videos</p>
             </div>

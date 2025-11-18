@@ -53,6 +53,12 @@ const ScreenMap = {
   'library': lazy(() =>
     import('../components/screens/Library.jsx')
   ),
+  'admin-content-home': lazy(() =>
+    import('../components/admin/ContentAdminHome.jsx')
+  ),
+  'admin-content-manager': lazy(() =>
+    import('../components/admin/ContentManager.jsx')
+  ),
 };
 
 const NotFoundScreen = () => (

@@ -39,6 +39,28 @@ service cloud.firestore {
       allow write: if false; // Public content should be managed server-side
     }
     
+    // Content Collections - authenticated users can read, only admins can write
+    match /content_readings/{document} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null && 
+        (request.auth.token.email in ['rob@sagecg.com', 'admin@leaderreps.com'] ||
+         get(/databases/$(database)/documents/global/metadata).data.adminemails.hasAny([request.auth.token.email]));
+    }
+    
+    match /content_videos/{document} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null && 
+        (request.auth.token.email in ['rob@sagecg.com', 'admin@leaderreps.com'] ||
+         get(/databases/$(database)/documents/global/metadata).data.adminemails.hasAny([request.auth.token.email]));
+    }
+    
+    match /content_courses/{document} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null && 
+        (request.auth.token.email in ['rob@sagecg.com', 'admin@leaderreps.com'] ||
+         get(/databases/$(database)/documents/global/metadata).data.adminemails.hasAny([request.auth.token.email]));
+    }
+    
     // Deny all other access
     match /{document=**} {
       allow read, write: if false;

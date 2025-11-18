@@ -207,6 +207,7 @@ const AppContent = ({
     { screen: 'coaching-lab', label: 'Coaching', requiredTier: 'professional' },
     { screen: 'membership-upgrade', label: 'Membership', requiredTier: 'basic' },
     // --- Admin & Developer Tools ---
+    { screen: 'admin-content-home', label: 'Content Management', requiredTier: 'admin', devModeOnly: true },
     { screen: 'admin-functions', label: 'Admin Functions', requiredTier: 'admin', devModeOnly: true },
     { screen: 'debug-data', label: 'Debug Data Viewer', requiredTier: 'admin', devModeOnly: true },
   ].filter(item => {

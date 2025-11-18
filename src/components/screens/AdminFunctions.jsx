@@ -194,7 +194,7 @@ const AdminEmailManager = ({ initialEmails, updateGlobalMetadata }) => {
 const AdminFunctionsScreen = () => {
     // --- Consume Services ---
     const {
-        navigate, isAdmin, ADMIN_PASSWORD, // Get admin status, password constant, and navigation // cite: useAppServices.jsx
+        navigate, isAdmin, // Get admin status and navigation // cite: useAppServices.jsx
         featureFlags: initialFlags, // Get initial feature flags // cite: useAppServices.jsx
         metadata, // Access the global metadata object for adminemails <-- NEW
         updateGlobalMetadata, // Function to save changes to Firestore // cite: useAppServices.jsx
@@ -202,9 +202,6 @@ const AdminFunctionsScreen = () => {
     } = useAppServices();
 
     // --- Local State ---
-    const [isAuthenticated, setIsAuthenticated] = useState(false); // Controls access to admin functions
-    const [passwordInput, setPasswordInput] = useState(''); // Input for password check
-    const [authError, setAuthError] = useState(''); // Error message for password check
     // State to hold the feature flags being edited
     const [currentFlags, setCurrentFlags] = useState(() => initialFlags || {}); // cite: useAppServices.jsx
     const [isSaving, setIsSaving] = useState(false); // Loading state for saving flags
@@ -238,8 +235,8 @@ const AdminFunctionsScreen = () => {
 
     // --- Effect to update local flags if context flags change ---
     useEffect(() => {
-        // Only update if the screen is authenticated and context flags are available.
-        if (!isAuthenticated || !initialFlags) return;
+        // Only update if context flags are available.
+        if (!initialFlags) return;
 
         const initialFlagsString = JSON.stringify(initialFlags);
         const currentFlagsString = JSON.stringify(currentFlags);
@@ -255,20 +252,9 @@ const AdminFunctionsScreen = () => {
 
             setCurrentFlags(initialFlags);
         }
-    }, [initialFlags, isAuthenticated, saveStatus, currentFlags]); // Dependency on initialFlags and saveStatus
+    }, [initialFlags, saveStatus, currentFlags]); // Dependency on initialFlags and saveStatus
 
-    // --- Handlers (Password, ToggleFlag, SaveChanges are unchanged) ---
-    const handlePasswordCheck = () => {
-        setAuthError(''); // Clear previous error
-        if (passwordInput === ADMIN_PASSWORD) { // cite: useAppServices.jsx (provides ADMIN_PASSWORD)
-            setIsAuthenticated(true); // Grant access
-        } else {
-            console.warn("[AdminFunctions] Incorrect admin password entered.");
-            setAuthError('Incorrect password. Please try again.'); // Show error
-            setPasswordInput(''); // Clear input on failure
-        }
-    };
-
+    // --- Handlers (ToggleFlag, SaveChanges are unchanged) ---
     const handleToggleFlag = (flagName) => {
         setCurrentFlags(prevFlags => {
             const currentVal = prevFlags[flagName] !== false; 
@@ -308,34 +294,6 @@ const AdminFunctionsScreen = () => {
     
     if (!isAdmin) {
          return null;
-    }
-
-    if (!isAuthenticated) {
-        return (
-            <div className="min-h-screen flex items-center justify-center p-4" style={{ background: COLORS.BG }}>
-                <Card title="Admin Access Required" icon={Key} accent="ORANGE" className="max-w-md w-full text-center">
-                    <p className="text-sm text-gray-600 mb-4">Enter the administrator password to manage application features.</p>
-                    <form onSubmit={(e) => { e.preventDefault(); handlePasswordCheck(); }} className="space-y-4">
-                        <input
-                            type="password"
-                            value={passwordInput}
-                            onChange={(e) => setPasswordInput(e.target.value)}
-                            className={`w-full p-3 border rounded-lg text-center focus:ring-2 ${authError ? 'border-red-400 ring-red-300' : 'border-gray-300 ring-[#E04E1B]'}`} // Style based on error
-                            placeholder="Admin Password"
-                            aria-label="Admin Password"
-                            required
-                        />
-                        {authError && <p className="text-xs text-red-600">{authError}</p>}
-                        <Button type="submit" variant="secondary" size="md" className="w-full">
-                            Authenticate
-                        </Button>
-                    </form>
-                    <Button onClick={() => navigate('app-settings')} variant="outline" size="sm" className="mt-6 w-full">
-                         <ArrowLeft className="w-4 h-4 mr-2" /> Back to Settings
-                    </Button>
-                </Card>
-            </div>
-        );
     }
 
     return (
