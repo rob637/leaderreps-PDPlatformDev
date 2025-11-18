@@ -104,7 +104,7 @@ const AppContent = ({
 
   // Tier Simulation State (for development/testing)
   const [simulatedTier, setSimulatedTier] = useState(() => {
-    return localStorage.getItem('arena-simulated-tier') || 'basic';
+    return localStorage.getItem('arena-simulated-tier') || 'free';
   });
   
   const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -124,7 +124,7 @@ const AppContent = ({
   useEffect(() => {
     const handleStorageChange = () => {
       setIsDeveloperMode(localStorage.getItem('arena-developer-mode') === 'true');
-      setSimulatedTier(localStorage.getItem('arena-simulated-tier') || 'basic');
+      setSimulatedTier(localStorage.getItem('arena-simulated-tier') || 'free');
     };
     window.addEventListener('storage', handleStorageChange);
     return () => window.removeEventListener('storage', handleStorageChange);
@@ -152,15 +152,13 @@ const AppContent = ({
   };
 
   const tierColors = {
-    basic: 'bg-gray-500',
-    professional: 'bg-blue-500', 
-    elite: 'bg-purple-500'
+    free: 'bg-gray-500',
+    premium: 'bg-orange-500'
   };
 
   const tierLabels = {
-    basic: 'Basic',
-    professional: 'Pro',
-    elite: 'Elite'
+    free: 'Free',
+    premium: 'Premium'
   };
 
   const closeMobileMenu = useCallback(() => setIsMobileOpen(false), [
@@ -169,15 +167,15 @@ const AppContent = ({
   const { navigate, isAdmin, membershipData } = useAppServices();
 
   // Navigation items for dropdown menu
-  const currentTier = isDeveloperMode ? 'elite' : simulatedTier;
+  const currentTier = isDeveloperMode ? 'premium' : simulatedTier;
   
   // Helper function to check tier access
   const hasAccess = (requiredTier) => {
     if (isAdmin || isDeveloperMode) return true;
     if (!requiredTier) return true;
     
-    const tierLevels = { basic: 1, professional: 2, elite: 3 };
-    const currentUserTier = simulatedTier || membershipData?.currentTier || 'basic';
+    const tierLevels = { free: 1, premium: 2 };
+    const currentUserTier = simulatedTier || membershipData?.currentTier || 'free';
     const userLevel = tierLevels[currentUserTier];
     const requiredLevel = tierLevels[requiredTier];
     const hasAccessResult = userLevel >= requiredLevel;
@@ -196,16 +194,16 @@ const AppContent = ({
   };
 
   // Flat navigation menu items (NO subcategories/headers)
-  // Basic: Arena, Dev Plan, Membership
-  // Pro & Elite: Arena, Dev Plan, Coaching, Community, Library, Membership  
+  // Free: Dashboard, Development Plan, Content, Community, Coaching, Membership (limited content)
+  // Premium: All modules with full content access
   // Dev: Everything including Developer Tools
     const navigationItems = [
-    { screen: 'dashboard', label: 'Dashboard', requiredTier: 'basic' },
-    { screen: 'development-plan', label: 'Development Plan', requiredTier: 'basic' },
-    { screen: 'library', label: 'Content', requiredTier: 'professional' },
-    { screen: 'community', label: 'Community', requiredTier: 'professional' },
-    { screen: 'coaching-lab', label: 'Coaching', requiredTier: 'professional' },
-    { screen: 'membership-upgrade', label: 'Membership', requiredTier: 'basic' },
+    { screen: 'dashboard', label: 'Dashboard', requiredTier: 'free' },
+    { screen: 'development-plan', label: 'Development Plan', requiredTier: 'free' },
+    { screen: 'library', label: 'Content', requiredTier: 'free' },
+    { screen: 'community', label: 'Community', requiredTier: 'premium' },
+    { screen: 'coaching-lab', label: 'Coaching', requiredTier: 'premium' },
+    { screen: 'membership-upgrade', label: 'Membership', requiredTier: 'free' },
     // --- Admin & Developer Tools ---
     { screen: 'admin-content-home', label: 'Content Management', requiredTier: 'admin', devModeOnly: true },
     { screen: 'admin-functions', label: 'Admin Functions', requiredTier: 'admin', devModeOnly: true },
@@ -330,9 +328,8 @@ const AppContent = ({
                 className={`px-2 py-1.5 rounded-md text-xs font-normal transition-all duration-200 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-offset-1 text-white border-none cursor-pointer ${tierColors[simulatedTier]}`}
                 title="Simulate Membership Tier (Dev Only)"
               >
-                <option value="basic">Basic Tier</option>
-                <option value="professional">Pro Tier</option>
-                <option value="elite">Elite Tier</option>
+                <option value="free">Free Tier</option>
+                <option value="premium">Premium Tier</option>
               </select>
             </div>
           )}

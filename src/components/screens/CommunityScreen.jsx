@@ -418,7 +418,7 @@ const CommunityScreen = ({ simulatedTier }) => {
     const safeUser = useMemo(() => user || { userId: null, name: 'Guest' }, [user]); // cite: useAppServices.jsx (provides user)
     
     // Check membership access - use simulatedTier if provided, otherwise use actual membership
-    const currentTier = simulatedTier || membershipData?.currentTier || user?.membershipTier || 'basic';
+    const currentTier = simulatedTier || membershipData?.currentTier || user?.membershipTier || 'free';
     const hasCommunityAccess = membershipService.canAccessFeature(currentTier, 'communitySubmit');
     
     console.log('🏘️ [CommunityScreen] Tier check:', {
@@ -524,7 +524,7 @@ const CommunityScreen = ({ simulatedTier }) => {
                     <Users className='w-8 h-8' style={{color: COLORS.TEAL}}/>
                 </div>
                 {!hasCommunityAccess && (
-                    <span className="inline-block bg-orange-100 text-orange-800 px-3 py-1 rounded-full text-sm font-semibold mb-4">Requires Pro Tier</span>
+                    <span className="inline-block bg-orange-100 text-orange-800 px-3 py-1 rounded-full text-sm font-semibold mb-4">Requires Premium</span>
                 )}
                 <p className="corporate-text-body text-gray-600 mx-auto px-4">Connect, share insights, and grow with fellow leaders.</p>
             </div>
@@ -568,7 +568,7 @@ const CommunityScreen = ({ simulatedTier }) => {
                 </main>
             </div>
             
-            {/* Unlock Section for Basic Users */}
+            {/* Unlock Section for Free Users */}
             {!hasCommunityAccess && (
                 <div className="mt-8 bg-white rounded-2xl border-2 shadow-lg" style={{ borderColor: COLORS.TEAL }}>
                     
@@ -582,7 +582,7 @@ const CommunityScreen = ({ simulatedTier }) => {
                         </p>
                         
                         <div className="text-center mb-6">
-                            <span className="inline-block bg-orange-100 text-orange-800 px-4 py-2 rounded-full text-sm font-semibold">Requires Pro Tier</span>
+                            <span className="inline-block bg-orange-100 text-orange-800 px-4 py-2 rounded-full text-sm font-semibold">Requires Premium</span>
                         </div>
                         
                         <button

@@ -1,15 +1,15 @@
 // src/services/membershipService.js
-// MEMBERSHIP SYSTEM: Arena Basic, Professional, Elite tiers
+// MEMBERSHIP SYSTEM: Free and Premium tiers
 
 export const MEMBERSHIP_TIERS = {
-  basic: {
-    id: 'basic',
-    name: 'Basic',
-    level: 1,
-    price: 29,
+  free: {
+    id: 'free',
+    name: 'Free',
+    level: 0,
+    price: 0,
     color: '#47A88D', // CORPORATE TEAL
     features: {
-      // Access Controls
+      // Limited Access
       dailyWeeklyContent: true,
       professionalDevPlan: false,
       fullCalendar: false,
@@ -18,8 +18,8 @@ export const MEMBERSHIP_TIERS = {
       aiCoaching: 'limited', // 5 per month
       
       // Content Access
-      businessReadings: 'daily_weekly_only',
-      targetReps: 'basic_only',
+      businessReadings: 'limited',
+      targetReps: 'preview_only',
       coachingCalls: 'view_only',
       community: 'view_only'
     },
@@ -30,10 +30,10 @@ export const MEMBERSHIP_TIERS = {
     }
   },
   
-  professional: {
-    id: 'professional', 
-    name: 'Pro',
-    level: 2,
+  premium: {
+    id: 'premium', 
+    name: 'Premium',
+    level: 1,
     price: 79,
     color: '#002E47', // CORPORATE NAVY
     features: {
@@ -43,29 +43,30 @@ export const MEMBERSHIP_TIERS = {
       fullCalendar: true,
       documentDownload: true,
       communitySubmit: true,
-      aiCoaching: 'full',
+      aiCoaching: 'unlimited',
+      personalizedCoaching: true,
       
-      // Enhanced Content
+      // Full Content
       businessReadings: 'full_library',
       targetReps: 'full_catalog',
       coachingCalls: 'register_attend',
       community: 'full_participation'
     },
     limits: {
-      aiInteractions: 50,
-      documentAccess: 'download_view',
+      aiInteractions: 'unlimited',
+      documentAccess: 'full_permissions',
       planDepth: 'full_18_months'
     }
   },
   
-  elite: {
-    id: 'elite',
-    name: 'Elite', 
-    level: 3,
-    price: 149,
+  dev: {
+    id: 'dev',
+    name: 'Developer', 
+    level: 999,
+    price: 0,
     color: '#E04E1B', // CORPORATE ORANGE
     features: {
-      // Premium Access
+      // Developer Access - See Everything
       dailyWeeklyContent: true,
       professionalDevPlan: true,
       fullCalendar: true,
@@ -74,40 +75,40 @@ export const MEMBERSHIP_TIERS = {
       aiCoaching: 'unlimited',
       personalizedCoaching: true,
       
-      // Premium Content
-      businessReadings: 'premium_library',
-      targetReps: 'custom_creation',
-      coachingCalls: 'priority_access',
-      community: 'moderator_privileges'
+      // Full Access
+      businessReadings: 'full_library',
+      targetReps: 'full_catalog',
+      coachingCalls: 'full_access',
+      community: 'full_participation'
     },
     limits: {
       aiInteractions: 'unlimited',
       documentAccess: 'full_permissions',
-      planDepth: 'custom_tailored'
+      planDepth: 'unlimited'
     }
   }
 };
 
 // Access Control Functions
 export const checkAccess = (userMembership, featureKey) => {
-  const tier = MEMBERSHIP_TIERS[userMembership?.toLowerCase()] || MEMBERSHIP_TIERS.basic;
+  const tier = MEMBERSHIP_TIERS[userMembership?.toLowerCase()] || MEMBERSHIP_TIERS.free;
   return tier.features[featureKey] || false;
 };
 
 export const canAccessFeature = (userMembership, feature) => {
-  const tier = MEMBERSHIP_TIERS[userMembership?.toLowerCase()] || MEMBERSHIP_TIERS.basic;
+  const tier = MEMBERSHIP_TIERS[userMembership?.toLowerCase()] || MEMBERSHIP_TIERS.free;
   return tier.features[feature] === true || tier.features[feature] === 'full' || tier.features[feature] === 'unlimited';
 };
 
 export const getFeatureLimit = (userMembership, limitKey) => {
-  const tier = MEMBERSHIP_TIERS[userMembership?.toLowerCase()] || MEMBERSHIP_TIERS.basic;
+  const tier = MEMBERSHIP_TIERS[userMembership?.toLowerCase()] || MEMBERSHIP_TIERS.free;
   return tier.limits[limitKey];
 };
 
 // Check if user has access to a specific tier level
 export const hasAccess = (currentTier, requiredTier) => {
-  const current = MEMBERSHIP_TIERS[currentTier?.toLowerCase()] || MEMBERSHIP_TIERS.basic;
-  const required = MEMBERSHIP_TIERS[requiredTier?.toLowerCase()] || MEMBERSHIP_TIERS.basic;
+  const current = MEMBERSHIP_TIERS[currentTier?.toLowerCase()] || MEMBERSHIP_TIERS.free;
+  const required = MEMBERSHIP_TIERS[requiredTier?.toLowerCase()] || MEMBERSHIP_TIERS.free;
   
   const accessGranted = current.level >= required.level;
   
@@ -124,12 +125,12 @@ export const hasAccess = (currentTier, requiredTier) => {
 
 // Get tier information by ID
 export const getTier = (tierName) => {
-  return MEMBERSHIP_TIERS[tierName?.toLowerCase()] || MEMBERSHIP_TIERS.basic;
+  return MEMBERSHIP_TIERS[tierName?.toLowerCase()] || MEMBERSHIP_TIERS.free;
 };
 
 // Membership Upgrade Prompts
 export const getMembershipUpgradeMessage = (currentTier, blockedFeature) => {
-  const current = MEMBERSHIP_TIERS[currentTier?.toLowerCase()] || MEMBERSHIP_TIERS.basic;
+  const current = MEMBERSHIP_TIERS[currentTier?.toLowerCase()] || MEMBERSHIP_TIERS.free;
   
   const messages = {
     professionalDevPlan: {

@@ -1643,7 +1643,7 @@ export default function CoachingLabScreen({ simulatedTier }) {
     const { navigate, currentUser, membershipData } = useAppServices();
     
     // Check membership access - use simulatedTier if provided, otherwise use actual membership
-    const currentTier = simulatedTier || membershipData?.currentTier || currentUser?.membershipTier || 'basic';
+    const currentTier = simulatedTier || membershipData?.currentTier || currentUser?.membershipTier || 'free';
     const hasCoachingAccess = membershipService.canAccessFeature(currentTier, 'aiCoaching');
     
     console.log('🧪 [CoachingLabScreen] Tier check:', {
@@ -1715,7 +1715,7 @@ export default function CoachingLabScreen({ simulatedTier }) {
                                 <Beaker className='w-8 h-8' style={{color: COLORS.TEAL}}/>
                             </div>
                             {!hasCoachingAccess && (
-                                <span className="inline-block bg-orange-100 text-orange-800 px-3 py-1 rounded-full text-sm font-semibold mb-4">Requires Pro Tier</span>
+                                <span className="inline-block bg-orange-100 text-orange-800 px-3 py-1 rounded-full text-sm font-semibold mb-4">Requires Premium</span>
                             )}
                             <p className="corporate-text-body text-gray-600 mx-auto px-4">Welcome to Coaching. Select a tool to build your leadership skills.</p>
                         </div>
@@ -1724,7 +1724,7 @@ export default function CoachingLabScreen({ simulatedTier }) {
                                 <p className="text-sm text-gray-600 mb-3">Practice high-stakes conversations in a realistic AI role-play simulator.</p>
                                 {!hasCoachingAccess && (
                                     <div className="mt-2">
-                                        <span className="inline-block bg-orange-100 text-orange-800 px-2 py-1 rounded-full text-xs font-semibold">Requires Pro Tier</span>
+                                        <span className="inline-block bg-orange-100 text-orange-800 px-2 py-1 rounded-full text-xs font-semibold">Requires Premium</span>
                                     </div>
                                 )}
                             </Card>
@@ -1732,7 +1732,7 @@ export default function CoachingLabScreen({ simulatedTier }) {
                                 <p className="text-sm text-gray-600 mb-3">Track your performance trends, strengths, and growth opportunities.</p>
                                 {!hasCoachingAccess && (
                                     <div className="mt-2">
-                                        <span className="inline-block bg-orange-100 text-orange-800 px-2 py-1 rounded-full text-xs font-semibold">Requires Pro Tier</span>
+                                        <span className="inline-block bg-orange-100 text-orange-800 px-2 py-1 rounded-full text-xs font-semibold">Requires Premium</span>
                                     </div>
                                 )}
                             </Card>
@@ -1740,7 +1740,7 @@ export default function CoachingLabScreen({ simulatedTier }) {
                                 <p className="text-sm text-gray-600 mb-3">Review your past performance, scores, and AI feedback.</p>
                                 {!hasCoachingAccess && (
                                     <div className="mt-2">
-                                        <span className="inline-block bg-orange-100 text-orange-800 px-2 py-1 rounded-full text-xs font-semibold">Requires Pro Tier</span>
+                                        <span className="inline-block bg-orange-100 text-orange-800 px-2 py-1 rounded-full text-xs font-semibold">Requires Premium</span>
                                     </div>
                                 )}
                             </Card>
@@ -1757,7 +1757,7 @@ export default function CoachingLabScreen({ simulatedTier }) {
                     {renderView()}
                 </div>
                 
-                {/* Unlock Section for Basic Users */}
+                {/* Unlock Section for Free Users */}
             {!hasCoachingAccess && (
                 <div className="mt-8 bg-white rounded-2xl border-2 shadow-lg" style={{ borderColor: COLORS.TEAL }}>
                     <div className="relative z-10 p-8 text-center">
@@ -1770,7 +1770,7 @@ export default function CoachingLabScreen({ simulatedTier }) {
                         </p>
                         
                         <div className="text-center mb-6">
-                            <span className="inline-block bg-orange-100 text-orange-800 px-4 py-2 rounded-full text-sm font-semibold">Requires Pro Tier</span>
+                            <span className="inline-block bg-orange-100 text-orange-800 px-4 py-2 rounded-full text-sm font-semibold">Requires Premium</span>
                         </div>
                         
                         <button

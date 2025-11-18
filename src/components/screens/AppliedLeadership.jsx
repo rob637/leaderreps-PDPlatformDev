@@ -430,7 +430,7 @@ export default function AppliedLeadershipScreen() {
         
         const loadCourses = async () => {
             try {
-                const userTier = user?.membershipData?.tier || 'elite';
+                const userTier = user?.membershipData?.tier || 'premium';
                 console.log('[AppliedLeadership] Loading courses with tier:', userTier);
                 const courses = await getCourses(db, userTier);
                 console.log('[AppliedLeadership] Loaded from CMS:', courses?.length || 0, 'courses');

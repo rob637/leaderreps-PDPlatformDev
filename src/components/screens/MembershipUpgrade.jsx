@@ -145,36 +145,26 @@ const TierCard = ({ tier, isCurrentTier = false, onUpgrade, isPopular = false })
     }
     
     switch(tier) {
-      case 'basic':
+      case 'free':
         return [
-          'Daily & Weekly Leadership Content',
+          'Limited Leadership Content',
           'Basic Development Plan Access',
           'View Community Posts',
           'Limited AI Coaching (5/month)',
-          'Basic Target Reps Library',
+          'Sample Content Library',
           'Mobile & Desktop Access'
         ];
-      case 'professional':
+      case 'premium':
         return [
-          'Everything in Basic',
+          'Everything in Free',
           'Full Development Plan & Assessment',
           'Accountability Pod Matching',
           'Complete Business Readings Library',
+          'Complete Video & Course Library',
           'Unlimited AI Coaching Support',
           'Document Downloads & Calendar Sync',
           'Community Posting & Discussions',
-          'Advanced Target Reps Catalog'
-        ];
-      case 'elite':
-        return [
-          'Everything in Pro',
-          'Priority AI Coaching Lab Access',
-          'Advanced Analytics & Insights',
-          'Leadership Coaching Call Library',
-          'Executive Peer Network Access',
-          'Custom Development Pathways',
-          'Premium Content & Masterclasses',
-          'Direct Leadership Mentor Access'
+          'Priority Support'
         ];
       default:
         console.warn('TierCard: Unknown tier:', tier);
@@ -195,9 +185,8 @@ const TierCard = ({ tier, isCurrentTier = false, onUpgrade, isPopular = false })
       <Card accent={isPopular ? 'ORANGE' : tier === 'elite' ? 'PURPLE' : 'TEAL'} className={isPopular ? 'ring-2 ring-orange-200' : ''}>
         <div className="text-center mb-6">
           <div className="flex items-center justify-center gap-2 mb-2">
-            {tier === 'elite' && <Crown className="w-6 h-6 text-purple-600" />}
-            {tier === 'professional' && <Zap className="w-6 h-6 text-blue-600" />}
-            {tier === 'basic' && <Target className="w-6 h-6 text-teal-600" />}
+            {tier === 'premium' && <Crown className="w-6 h-6 text-orange-600" />}
+            {tier === 'free' && <Target className="w-6 h-6 text-teal-600" />}
             <h3 className="text-xl sm:text-2xl font-bold" style={{ color: COLORS.NAVY }}>
               {tierData.name}
             </h3>
@@ -220,7 +209,7 @@ const TierCard = ({ tier, isCurrentTier = false, onUpgrade, isPopular = false })
               onClick={() => onUpgrade(tier)}
               className="w-full mb-6"
             >
-              {tier === 'basic' ? 'Get Started' : `Upgrade to ${tierData.name}`}
+              {tier === 'free' ? 'Get Started' : `Upgrade to ${tierData.name}`}
             </Button>
           )}
         </div>
@@ -234,7 +223,7 @@ const TierCard = ({ tier, isCurrentTier = false, onUpgrade, isPopular = false })
 const MembershipUpgrade = ({ setCurrentScreen, simulatedTier }) => {
   const { membershipData } = useAppServices();
   // Match Dashboard's exact tier logic - use simulatedTier if provided (from toggle), otherwise use actual membership tier
-  const currentTier = simulatedTier || membershipData?.currentTier || 'basic';
+  const currentTier = simulatedTier || membershipData?.currentTier || 'free';
   
   // Check if developer mode is on
   const isDeveloperMode = localStorage.getItem('arena-developer-mode') === 'true';
@@ -315,22 +304,17 @@ const MembershipUpgrade = ({ setCurrentScreen, simulatedTier }) => {
         </div>
 
         {/* Pricing Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8 max-w-4xl mx-auto">
           <TierCard 
-            tier="basic" 
-            isCurrentTier={currentTier === 'basic'}
+            tier="free" 
+            isCurrentTier={currentTier === 'free'}
             onUpgrade={handleUpgrade}
           />
           <TierCard 
-            tier="professional" 
-            isCurrentTier={currentTier === 'professional'}
+            tier="premium" 
+            isCurrentTier={currentTier === 'premium'}
             onUpgrade={handleUpgrade}
             isPopular={true}
-          />
-          <TierCard 
-            tier="elite" 
-            isCurrentTier={currentTier === 'elite'}
-            onUpgrade={handleUpgrade}
           />
         </div>
 
@@ -345,41 +329,35 @@ const MembershipUpgrade = ({ setCurrentScreen, simulatedTier }) => {
               <thead>
                 <tr className="border-b">
                   <th className="text-left py-4 px-4">Features</th>
-                  <th className="text-center py-4 px-4">Basic</th>
-                  <th className="text-center py-4 px-4">Pro</th>
-                  <th className="text-center py-4 px-4">Elite</th>
+                  <th className="text-center py-4 px-4">Free</th>
+                  <th className="text-center py-4 px-4">Premium</th>
                 </tr>
               </thead>
               <tbody className="divide-y">
                 <tr>
                   <td className="py-4 px-4 font-medium">Development Plan Access</td>
-                  <td className="text-center py-4 px-4">Basic</td>
-                  <td className="text-center py-4 px-4"><Check className="w-5 h-5 text-green-500 mx-auto" /></td>
-                  <td className="text-center py-4 px-4"><Check className="w-5 h-5 text-green-500 mx-auto" /></td>
+                  <td className="text-center py-4 px-4">Limited</td>
+                  <td className="text-center py-4 px-4">Full Access</td>
                 </tr>
                 <tr>
                   <td className="py-4 px-4 font-medium">AI Coaching Sessions</td>
                   <td className="text-center py-4 px-4">5/month</td>
                   <td className="text-center py-4 px-4">Unlimited</td>
-                  <td className="text-center py-4 px-4">Priority Access</td>
                 </tr>
                 <tr>
                   <td className="py-4 px-4 font-medium">Accountability Pods</td>
                   <td className="text-center py-4 px-4">View Only</td>
                   <td className="text-center py-4 px-4"><Check className="w-5 h-5 text-green-500 mx-auto" /></td>
-                  <td className="text-center py-4 px-4"><Check className="w-5 h-5 text-green-500 mx-auto" /></td>
                 </tr>
                 <tr>
-                  <td className="py-4 px-4 font-medium">Business Readings Library</td>
-                  <td className="text-center py-4 px-4">Daily/Weekly Only</td>
-                  <td className="text-center py-4 px-4">Full Library</td>
-                  <td className="text-center py-4 px-4">Full + Exclusive</td>
-                </tr>
-                <tr>
-                  <td className="py-4 px-4 font-medium">Leadership Coaching Calls</td>
-                  <td className="text-center py-4 px-4">View Only</td>
+                  <td className="py-4 px-4 font-medium">Content Library</td>
+                  <td className="text-center py-4 px-4">Limited</td>
                   <td className="text-center py-4 px-4">Full Access</td>
-                  <td className="text-center py-4 px-4">Live Participation</td>
+                </tr>
+                <tr>
+                  <td className="py-4 px-4 font-medium">Development Plan</td>
+                  <td className="text-center py-4 px-4">Limited</td>
+                  <td className="text-center py-4 px-4">Full + Assessment</td>
                 </tr>
               </tbody>
             </table>
