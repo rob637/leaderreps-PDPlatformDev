@@ -100,7 +100,6 @@ Icon?
 # -------------------------
 # Platform/CLI folders
 # -------------------------
-.netlify/
 .firebase/
 
 # 1. Open your .gitignore file and add:

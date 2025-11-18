@@ -1,5 +1,5 @@
 // src/utils/ApiHelpers.js
-// Utilities for API access + Gemini (Vite/ESM + Netlify-friendly)
+// Utilities for API access + Gemini (Vite/ESM)
 
 // ---------------- Env helpers ----------------
 export function getEnv(key, fallback = '') {
@@ -11,7 +11,7 @@ export function getEnv(key, fallback = '') {
   }
 }
 
-// Prefer using a server-side proxy (e.g., Netlify function) for Gemini calls.
+// Prefer using a server-side proxy (e.g., Firebase function) for Gemini calls.
 // Leave empty by default; set VITE_GEMINI_PROXY_URL to use your function.
 export const PROXY_URL    = getEnv('VITE_GEMINI_PROXY_URL', '');
 export const GEMINI_MODEL = getEnv('VITE_GEMINI_MODEL', 'gemini-1.5-pro');
