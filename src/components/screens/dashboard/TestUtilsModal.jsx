@@ -52,11 +52,11 @@ const TestUtilsModal = ({ isOpen, onDeletePlan, onClose, membershipData, updateM
         </div>
 
         <div className="grid grid-cols-2 gap-2 mb-3">
-          <Button onClick={() => handleSetTier('professional')} variant="primary" size="sm" className="w-full" disabled={isSettingTier}>
-            Set Tier: Professional
+          <Button onClick={() => handleSetTier('premium')} variant="primary" size="sm" className="w-full" disabled={isSettingTier}>
+            Set Tier: Premium
           </Button>
-          <Button onClick={() => handleSetTier('basic')} variant="outline" size="sm" className="w-full" disabled={isSettingTier}>
-            Set Tier: Basic
+          <Button onClick={() => handleSetTier('free')} variant="outline" size="sm" className="w-full" disabled={isSettingTier}>
+            Set Tier: Free
           </Button>
         </div>
 

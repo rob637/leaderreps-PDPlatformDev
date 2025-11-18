@@ -5,7 +5,7 @@ import React, { useState } from 'react';
 import { BookOpen, Film, GraduationCap, ArrowLeft, Settings, RefreshCw, Trash2 } from 'lucide-react';
 import { useAppServices } from '../../services/useAppServices';
 import { CONTENT_COLLECTIONS, addContent } from '../../services/contentService';
-import { collection, doc, getDoc, getDocs, deleteDoc } from 'firebase/firestore';
+import { collection, doc, getDoc, getDocs, deleteDoc, updateDoc } from 'firebase/firestore';
 
 const COLORS = {
   NAVY: '#002E47',
@@ -348,6 +348,57 @@ const ContentAdminHome = () => {
     }
   };
 
+  const migrateTiersToFreePremium = async () => {
+    if (!confirm('This will update all content from old tiers (basic/professional/elite) to new tiers (free/premium). Continue?')) {
+      return;
+    }
+
+    setIsRemoving(true);
+    setRemovalStatus('🔄 Migrating tiers...');
+
+    try {
+      const TIER_MAPPING = {
+        'basic': 'free',
+        'professional': 'premium',
+        'elite': 'premium',
+        'free': 'free',
+        'premium': 'premium'
+      };
+
+      let totalUpdated = 0;
+
+      // Migrate each collection
+      for (const collectionName of [CONTENT_COLLECTIONS.READINGS, CONTENT_COLLECTIONS.VIDEOS, CONTENT_COLLECTIONS.COURSES]) {
+        const collectionRef = collection(db, collectionName);
+        const snapshot = await getDocs(collectionRef);
+        
+        for (const docSnap of snapshot.docs) {
+          const data = docSnap.data();
+          const oldTier = data.tier;
+          
+          if (!oldTier) continue;
+          
+          const newTier = TIER_MAPPING[oldTier.toLowerCase()];
+          
+          if (!newTier || oldTier === newTier) continue;
+          
+          // Update document
+          await updateDoc(doc(db, collectionName, docSnap.id), { tier: newTier });
+          totalUpdated++;
+        }
+      }
+
+      setRemovalStatus(`✅ Updated ${totalUpdated} content items to new tier system!`);
+      setTimeout(() => setRemovalStatus(''), 5000);
+
+    } catch (error) {
+      console.error('Error migrating tiers:', error);
+      setRemovalStatus(`❌ Error: ${error.message}`);
+    } finally {
+      setIsRemoving(false);
+    }
+  };
+
   const contentTypes = [
     {
       id: CONTENT_COLLECTIONS.READINGS,
@@ -484,6 +535,34 @@ const ContentAdminHome = () => {
             </div>
           </div>
         </div>
+
+        {/* Tier Migration Tool */}
+        <div className="p-6 bg-gradient-to-r from-blue-50 to-teal-50 rounded-xl border-2" style={{ borderColor: COLORS.TEAL }}>
+          <div className="flex items-start gap-4">
+            <RefreshCw className="w-6 h-6 flex-shrink-0 mt-1" style={{ color: COLORS.TEAL }} />
+            <div className="flex-1">
+              <h3 className="font-bold mb-2" style={{ color: COLORS.NAVY }}>
+                Migrate Tiers to Free/Premium
+              </h3>
+              <p className="text-sm mb-4" style={{ color: COLORS.MUTED }}>
+                Update all content from old tier system (basic/professional/elite) to new simplified system (free/premium). Run this once after code update.
+              </p>
+              <button
+                onClick={migrateTiersToFreePremium}
+                disabled={isRemoving}
+                className="px-4 py-2 rounded-lg font-semibold text-white transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                style={{ backgroundColor: COLORS.TEAL }}
+              >
+                {isRemoving ? 'Migrating...' : 'Migrate Tiers'}
+              </button>
+              {removalStatus && (
+                <p className="mt-3 text-sm font-medium" style={{ color: COLORS.NAVY }}>
+                  {removalStatus}
+                </p>
+              )}
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Info Box */}
@@ -492,8 +571,9 @@ const ContentAdminHome = () => {
           About Content Management
         </h3>
         <ul className="space-y-2 text-sm" style={{ color: COLORS.MUTED }}>
-          <li>• Content is organized by tier: Free, Basic, Professional, Elite</li>
-          <li>• Users can only see content for their membership tier or lower</li>
+          <li>• Content is organized by tier: Free and Premium</li>
+          <li>• Free users see limited content, Premium users see all content</li>
+          <li>• Dev mode shows all content regardless of tier</li>
           <li>• Inactive content is hidden from all users but not deleted</li>
           <li>• Changes take effect immediately across all user sessions</li>
         </ul>

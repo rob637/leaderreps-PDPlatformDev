@@ -80,7 +80,7 @@ const GetStartedCard = ({ onNavigate, membershipData, developmentPlanData, curre
   const hasAnyAnchor = identityStatement || habitAnchor || whyStatement;
 
   // Base members -> Show upgrade page
-  if (currentTier === 'basic') {
+  if (currentTier === 'free') {
     return (
       <Card accent="ORANGE">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:p-4 lg:p-6">
@@ -89,7 +89,7 @@ const GetStartedCard = ({ onNavigate, membershipData, developmentPlanData, curre
               Unlock Your Leadership Potential
             </h2>
             <p className="corporate-text-body">
-              Upgrade to Arena Professional to access assessments, development plans, and accountability pods.
+              Upgrade to Arena Premium to access assessments, development plans, and accountability pods.
             </p>
           </div>
           <Button
@@ -114,7 +114,7 @@ const GetStartedCard = ({ onNavigate, membershipData, developmentPlanData, curre
   }
 
   // Pro/Premium members without plan -> Assessment & Plan flow
-  if ((currentTier === 'professional' || currentTier === 'elite') && !hasCompletedPlan) {
+  if (currentTier === 'premium' && !hasCompletedPlan) {
     return (
       <Card accent="BLUE">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:p-4 lg:p-6">
@@ -140,7 +140,7 @@ const GetStartedCard = ({ onNavigate, membershipData, developmentPlanData, curre
   }
 
   // Pro/Premium members with plan -> This Week's Focus
-  if ((currentTier === 'professional' || currentTier === 'elite') && hasCompletedPlan) {
+  if (currentTier === 'premium' && hasCompletedPlan) {
     const currentWeekFocus = developmentPlanData?.currentPlan?.focusAreas?.[0]?.name || 'Leadership Development';
     
     return (
@@ -321,14 +321,14 @@ const Dashboard = (props) => {
   const [isEditorOpen, setIsEditorOpen] = useState(false);
 
   // Use simulatedTier if available (for testing), otherwise use actual membershipData
-  const currentTier = simulatedTier || membershipData?.currentTier || 'basic';
+  const currentTier = simulatedTier || membershipData?.currentTier || 'free';
   
   const isMemberPro = useMemo(() => {
-    return membershipService.hasAccess(currentTier, 'professional');
+    return membershipService.hasAccess(currentTier, 'premium');
   }, [currentTier]);
   
   const isMemberPremium = useMemo(() => {
-    return membershipService.hasAccess(currentTier, 'elite');
+    return membershipService.hasAccess(currentTier, 'premium');
   }, [currentTier]);
   
   // Width debugging - FULL PARENT CHAIN

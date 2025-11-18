@@ -69,7 +69,7 @@ const LibraryCard = ({ title, description, icon: Icon, onClick, disabled = false
                   border: `1px solid ${COLORS.ORANGE}40`
                 }}
               >
-                Requires {requiredTier === 'professional' ? 'Pro' : 'Elite'} Tier
+                Requires Premium Tier
               </div>
             </div>
           )}
@@ -85,7 +85,7 @@ const Library = ({ simulatedTier, isDeveloperMode }) => {
   const [loading, setLoading] = useState(true);
   
   // Match Dashboard's exact tier logic - MUST match Dashboard.jsx line 285
-  const currentTier = simulatedTier || membershipData?.currentTier || 'basic';
+  const currentTier = simulatedTier || membershipData?.currentTier || 'free';
   
   // Fetch content counts on mount
   useEffect(() => {
@@ -139,7 +139,7 @@ const Library = ({ simulatedTier, isDeveloperMode }) => {
       description: 'Structured leadership courses and learning paths to develop your skills.',
       icon: ShieldCheck,
       screen: 'applied-leadership',
-      requiredTier: 'professional' // Pro and Elite can access
+      requiredTier: 'free' // Available to all users, but content varies by tier
     },
     {
       id: 'readings',
@@ -147,7 +147,7 @@ const Library = ({ simulatedTier, isDeveloperMode }) => {
       description: 'Curated business readings with actionable exercises and practice opportunities.',
       icon: BookOpen,
       screen: 'business-readings',
-      requiredTier: 'professional' // Pro and Elite can access
+      requiredTier: 'free' // Available to all users, but content varies by tier
     },
     {
       id: 'media',
@@ -155,7 +155,7 @@ const Library = ({ simulatedTier, isDeveloperMode }) => {
       description: 'Video content, leader talks, and multimedia resources for visual learners.',
       icon: Film,
       screen: 'leadership-videos',
-      requiredTier: 'elite' // Elite tier only
+      requiredTier: 'free' // Available to all users, but content varies by tier
     }
   ];
 
@@ -278,8 +278,8 @@ const Library = ({ simulatedTier, isDeveloperMode }) => {
 
 
         
-        {/* Upgrade CTA for Basic Users */}
-        {currentTier === 'basic' && (
+        {/* Upgrade CTA for Free Users */}
+        {currentTier === 'free' && (
           <div className="card-corporate-elevated mt-12 text-center" style={{ borderColor: COLORS.TEAL }}>
             <div className="relative z-10 p-8 text-center">
               <h3 className="text-2xl font-bold mb-4" style={{ color: COLORS.NAVY }}>
@@ -291,7 +291,7 @@ const Library = ({ simulatedTier, isDeveloperMode }) => {
               </p>
               
               <div className="text-center mb-6">
-                <span className="inline-block bg-orange-100 text-orange-800 px-4 py-2 rounded-full text-sm font-semibold">Requires Pro Tier</span>
+                <span className="inline-block bg-orange-100 text-orange-800 px-4 py-2 rounded-full text-sm font-semibold">Requires Premium</span>
               </div>
               
               <button

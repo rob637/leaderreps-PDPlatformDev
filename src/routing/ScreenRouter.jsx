@@ -79,11 +79,11 @@ const ScreenRouter = ({ currentScreen, navParams, navigate, isDeveloperMode, sim
   const Component = ScreenMap[currentScreen] || NotFoundScreen;
 
   const screenTierRequirements = {
-    'business-readings': 'professional',
-    'applied-leadership': 'professional',
-    'coaching-lab': 'professional',
-    'community': 'professional',
-    'library': 'professional',
+    'business-readings': 'premium',
+    'applied-leadership': 'premium',
+    'coaching-lab': 'premium',
+    'community': 'premium',
+    'library': 'premium',
   };
 
   const requiredTier = screenTierRequirements[currentScreen];

@@ -107,14 +107,14 @@ const MembershipModule = () => {
 
     // Current Plan Details - Updated to use new MEMBERSHIP_TIERS
     const currentPlanDetails = useMemo(() => {
-        const currentTier = membershipData?.currentTier || 'basic';
-        return MEMBERSHIP_TIERS[currentTier] || MEMBERSHIP_TIERS.basic;
+        const currentTier = membershipData?.currentTier || 'free';
+        return MEMBERSHIP_TIERS[currentTier] || MEMBERSHIP_TIERS.free;
     }, [membershipData?.currentTier]);
     
     // Available upgrade plans - Updated to use new MEMBERSHIP_TIERS
     const upgradePlans = useMemo(() => {
-        const currentTier = membershipData?.currentTier || 'basic';
-        const availableTiers = ['basic', 'professional', 'elite'];
+        const currentTier = membershipData?.currentTier || 'free';
+        const availableTiers = ['free', 'premium'];
         
         return availableTiers
             .filter(tier => tier !== currentTier)

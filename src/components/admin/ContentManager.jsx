@@ -250,9 +250,7 @@ const ContentManager = ({ contentType }) => {
                   className="w-full p-2 border rounded-lg"
                 >
                   <option value="free">Free</option>
-                  <option value="basic">Basic</option>
-                  <option value="professional">Professional</option>
-                  <option value="elite">Elite</option>
+                  <option value="premium">Premium</option>
                 </select>
               </div>
 

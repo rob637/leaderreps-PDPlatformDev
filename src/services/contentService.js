@@ -21,7 +21,7 @@ import {
  *   title: string
  *   description: string
  *   url: string (for readings/videos) or null (for courses with modules)
- *   tier: 'free' | 'basic' | 'professional' | 'elite'
+ *   tier: 'free' | 'premium'
  *   category: string (e.g., 'leadership', 'management', 'communication')
  *   isActive: boolean
  *   thumbnail: string (optional - URL to image)
@@ -39,12 +39,11 @@ export const CONTENT_COLLECTIONS = {
   COURSES: 'content_courses',
 };
 
-// Tier hierarchy for filtering
+// Tier hierarchy for filtering (dev has unlimited access)
 const TIER_LEVELS = {
   free: 0,
-  basic: 1,
-  professional: 2,
-  elite: 3
+  premium: 1,
+  dev: 999
 };
 
 /**

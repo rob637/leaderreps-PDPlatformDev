@@ -157,7 +157,7 @@ const LeadershipVideosScreen = () => {
         const loadVideos = async () => {
             try {
                 setIsLoadingCms(true);
-                const userTier = user?.membershipData?.tier || 'elite';
+                const userTier = user?.membershipData?.tier || 'premium';
                 console.log('[LeadershipVideos] Loading with tier:', userTier);
                 const videos = await getVideos(db, userTier);
                 console.log('[LeadershipVideos] Loaded from CMS:', videos.length, 'videos');
