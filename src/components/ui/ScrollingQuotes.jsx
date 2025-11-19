@@ -3,7 +3,9 @@ import React from 'react';
 const QUOTES = [
   { text: "Leadership is not about being in charge. It is about taking care of those in your charge.", author: "Simon Sinek" },
   { text: "The greatest leader is not necessarily the one who does the greatest things. He is the one that gets the people to do the greatest things.", author: "Ronald Reagan" },
-  { text: "Innovation distinguishes between a leader and a follower.", author: "Steve Jobs" }
+  { text: "Innovation distinguishes between a leader and a follower.", author: "Steve Jobs" },
+  { text: "A leader is one who knows the way, goes the way, and shows the way.", author: "John C. Maxwell" },
+  { text: "To handle yourself, use your head; to handle others, use your heart.", author: "Eleanor Roosevelt" }
 ];
 
 const ScrollingQuotes = () => {

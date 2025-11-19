@@ -8,7 +8,8 @@ const BookendsWidget = ({
   stats,
   wins = [],
   mode,
-  setMode
+  setMode,
+  reflectionHistory = []
 }) => {
   // Local state for inputs to prevent excessive re-renders/writes
   const [winInput, setWinInput] = useState('');
@@ -231,6 +232,42 @@ const BookendsWidget = ({
                 </div>
               </div>
             </div>
+
+            {/* Reflection Log */}
+            {reflectionHistory.length > 0 && (
+              <div className="pt-6 border-t border-gray-100">
+                <h3 className="text-lg font-bold text-corporate-navy font-serif mb-4 text-left">Reflection Log</h3>
+                <div className="space-y-4 max-h-60 overflow-y-auto pr-2">
+                  {reflectionHistory.map((log) => (
+                    <div key={log.id} className="bg-gray-50 rounded-xl p-4 border border-gray-100 text-left">
+                      <div className="text-xs font-bold text-corporate-teal uppercase tracking-wider mb-2">
+                        {new Date(log.date).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })}
+                      </div>
+                      <div className="space-y-2 text-sm">
+                        {log.reflectionGood && (
+                          <div>
+                            <span className="font-bold text-corporate-navy">Well: </span>
+                            <span className="text-gray-600">{log.reflectionGood}</span>
+                          </div>
+                        )}
+                        {log.reflectionWork && (
+                          <div>
+                            <span className="font-bold text-corporate-navy">Work: </span>
+                            <span className="text-gray-600">{log.reflectionWork}</span>
+                          </div>
+                        )}
+                        {log.reflectionTomorrow && (
+                          <div>
+                            <span className="font-bold text-corporate-navy">Tomorrow: </span>
+                            <span className="text-gray-600">{log.reflectionTomorrow}</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         )}
       </div>

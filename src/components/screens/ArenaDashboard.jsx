@@ -18,6 +18,7 @@ const ArenaDashboard = () => {
   
   // Bookend Mode State (Lifted from BookendsWidget)
   const [bookendMode, setBookendMode] = useState('AM');
+  const [reflectionHistory, setReflectionHistory] = useState([]);
 
   // Adapt Development Plan Data
   const adaptedDevPlan = useMemo(() => {
@@ -43,6 +44,13 @@ const ArenaDashboard = () => {
         setLoading(false);
       }
     );
+    
+    // Fetch history
+    const fetchHistory = async () => {
+      const history = await dailyLogService.getReflectionHistory(db, user.uid);
+      setReflectionHistory(history);
+    };
+    fetchHistory();
 
     return () => unsubscribe();
   }, [user, db, dateId]);
@@ -248,6 +256,7 @@ const ArenaDashboard = () => {
             wins={wins}
             mode={bookendMode}
             setMode={setBookendMode}
+            reflectionHistory={reflectionHistory}
           />
         </div>
 

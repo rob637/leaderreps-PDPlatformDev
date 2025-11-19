@@ -5,7 +5,11 @@ import {
   setDoc, 
   updateDoc, 
   onSnapshot,
-  serverTimestamp 
+  serverTimestamp,
+  query,
+  orderBy,
+  limit,
+  getDocs
 } from 'firebase/firestore';
 
 /**
@@ -127,6 +131,42 @@ export const dailyLogService = {
         wins: updatedWins,
         lastUpdated: serverTimestamp()
       });
+    }
+  },
+
+  /**
+   * Get reflection history (last 7 days with reflections)
+   */
+  getReflectionHistory: async (db, userId, limitCount = 7) => {
+    if (!userId) return [];
+    
+    try {
+      const logsRef = collection(db, 'users', userId, 'daily_logs');
+      const q = query(
+        logsRef,
+        orderBy('createdAt', 'desc'),
+        limit(limitCount)
+      );
+      
+      const querySnapshot = await getDocs(q);
+      const history = [];
+      
+      querySnapshot.forEach((doc) => {
+        const data = doc.data();
+        // Only include if there is at least one reflection field
+        if (data.reflectionGood || data.reflectionWork || data.reflectionTomorrow) {
+          history.push({
+            id: doc.id, // dateId
+            date: doc.id,
+            ...data
+          });
+        }
+      });
+      
+      return history;
+    } catch (error) {
+      console.error("Error fetching reflection history:", error);
+      return [];
     }
   }
 };
