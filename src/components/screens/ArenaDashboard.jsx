@@ -1,13 +1,14 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useAppServices } from '../../services/useAppServices';
 import { dailyLogService } from '../../services/dailyLogService';
+import { adaptDevelopmentPlanData } from '../../utils/devPlanAdapter';
 import WinTracker from '../arena/WinTracker';
 import BookendsWidget from '../arena/BookendsWidget';
 import FocusCard from '../arena/FocusCard';
 import { Calendar, ChevronRight, Activity, Dumbbell, Target } from 'lucide-react';
 
 const ArenaDashboard = () => {
-  const { user, db } = useAppServices();
+  const { user, db, developmentPlanData, navigate } = useAppServices();
   const [dailyLog, setDailyLog] = useState(null);
   const [loading, setLoading] = useState(true);
   
@@ -17,6 +18,16 @@ const ArenaDashboard = () => {
   
   // Bookend Mode State (Lifted from BookendsWidget)
   const [bookendMode, setBookendMode] = useState('AM');
+
+  // Adapt Development Plan Data
+  const adaptedDevPlan = useMemo(() => {
+    return adaptDevelopmentPlanData(developmentPlanData);
+  }, [developmentPlanData]);
+
+  const currentPlan = adaptedDevPlan?.currentPlan;
+  const focusAreas = currentPlan?._originalFocusAreas || currentPlan?.focusAreas || [];
+  const primaryFocus = focusAreas.length > 0 ? focusAreas[0].name : 'No active plan';
+  const planProgress = currentPlan ? Math.round((currentPlan.cycle || 1) * 10) : 0; // Mock progress if needed
 
   // Subscribe to data
   useEffect(() => {
@@ -120,13 +131,13 @@ const ArenaDashboard = () => {
                      <h3 className="text-lg font-bold text-corporate-navy font-serif">Upcoming Events:</h3>
                      <span className="text-xs text-gray-400 uppercase tracking-wider">Coming Soon</span>
                    </div>
-                   <div className="space-y-2">
-                      <div className="flex gap-4 text-sm text-gray-500">
-                        <div className="w-2 h-2 rounded-full bg-corporate-teal mt-1.5"></div>
+                   <div className="space-y-2 pl-4">
+                      <div className="flex gap-2 text-sm text-gray-500">
+                        <div className="w-1.5 h-1.5 rounded-full bg-corporate-teal mt-2 flex-shrink-0"></div>
                         <div className="flex-1 border-b border-gray-100 pb-1">Team Meeting - 11/20/25 4:00pm</div>
                       </div>
-                      <div className="flex gap-4 text-sm text-gray-500">
-                        <div className="w-2 h-2 rounded-full bg-corporate-teal mt-1.5"></div>
+                      <div className="flex gap-2 text-sm text-gray-500">
+                        <div className="w-1.5 h-1.5 rounded-full bg-corporate-teal mt-2 flex-shrink-0"></div>
                         <div className="flex-1 border-b border-gray-100 pb-1">Coaching Session - 11/25/25 10:00am</div>
                       </div>
                    </div>
@@ -134,16 +145,44 @@ const ArenaDashboard = () => {
 
                 {/* Development Plan Details (AM View) */}
                 <div>
-                  <div className="flex items-center justify-between mb-4 cursor-pointer group">
-                    <h3 className="text-xl font-bold text-corporate-navy font-serif">
+                  <div 
+                    className="flex items-center justify-between mb-4 cursor-pointer group"
+                    onClick={() => navigate('development-plan')}
+                  >
+                    <h3 className="text-xl font-bold text-corporate-navy font-serif group-hover:text-corporate-teal transition-colors">
                       Development Plan Details
                     </h3>
-                    <ChevronRight className="w-6 h-6 text-corporate-navy transform rotate-90 transition-transform" />
+                    <ChevronRight className="w-6 h-6 text-corporate-navy transform rotate-90 transition-transform group-hover:text-corporate-teal" />
                   </div>
                   <div className="pl-4 border-l-2 border-gray-100">
-                    <div className="h-20 bg-gray-50 rounded-lg border border-gray-100 flex items-center justify-center text-gray-400 italic text-sm">
-                      Plan details content...
-                    </div>
+                    {currentPlan ? (
+                      <div 
+                        className="bg-gray-50 rounded-lg border border-gray-100 p-4 cursor-pointer hover:bg-gray-100 transition-colors"
+                        onClick={() => navigate('development-plan')}
+                      >
+                        <div className="flex justify-between items-start mb-2">
+                          <div>
+                            <span className="text-xs font-bold text-corporate-teal uppercase tracking-wider">Current Focus</span>
+                            <h4 className="font-bold text-corporate-navy text-lg">{primaryFocus}</h4>
+                          </div>
+                          <div className="text-right">
+                            <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">Cycle</span>
+                            <div className="font-bold text-corporate-navy">{currentPlan.cycle || 1}</div>
+                          </div>
+                        </div>
+                        <p className="text-sm text-gray-600 italic line-clamp-2">
+                          {focusAreas[0]?.why || "Focusing on core leadership competencies."}
+                        </p>
+                      </div>
+                    ) : (
+                      <div 
+                        className="h-20 bg-gray-50 rounded-lg border border-gray-100 flex flex-col items-center justify-center text-gray-400 cursor-pointer hover:bg-gray-100 transition-colors"
+                        onClick={() => navigate('development-plan')}
+                      >
+                        <span className="font-medium text-corporate-navy">No Active Plan</span>
+                        <span className="text-xs italic">Click to start your development journey</span>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>

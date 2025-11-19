@@ -173,11 +173,11 @@ const BookendsWidget = ({
             </div>
 
             <div>
-              <h3 className="text-lg font-bold text-corporate-navy font-serif mb-4">Reflection</h3>
+              <h3 className="text-lg font-bold text-corporate-navy font-serif mb-4 text-left">Reflection</h3>
               
               <div className="space-y-6">
                 <div>
-                  <label className="block text-sm text-corporate-navy mb-2">
+                  <label className="block text-sm text-corporate-navy mb-2 text-left font-medium">
                     What went well?
                   </label>
                   <div className="flex gap-2">
@@ -195,7 +195,7 @@ const BookendsWidget = ({
                 </div>
                 
                 <div>
-                  <label className="block text-sm text-corporate-navy mb-2">
+                  <label className="block text-sm text-corporate-navy mb-2 text-left font-medium">
                     What needs work?
                   </label>
                   <div className="flex gap-2">
@@ -213,7 +213,7 @@ const BookendsWidget = ({
                 </div>
 
                 <div>
-                  <label className="block text-sm text-corporate-navy mb-2">
+                  <label className="block text-sm text-corporate-navy mb-2 text-left font-medium">
                     What needs to happen to show up as your best tomorrow?
                   </label>
                   <div className="flex gap-2">
