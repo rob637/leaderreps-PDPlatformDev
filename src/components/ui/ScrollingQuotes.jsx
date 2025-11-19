@@ -12,11 +12,6 @@ const FALLBACK_QUOTES = [
 const ScrollingQuotes = () => {
   const { globalMetadata } = useAppServices();
 
-  React.useEffect(() => {
-    console.log('📜 [ScrollingQuotes] globalMetadata updated:', globalMetadata);
-    console.log('📜 [ScrollingQuotes] SYSTEM_QUOTES:', globalMetadata?.SYSTEM_QUOTES);
-  }, [globalMetadata]);
-
   const quotes = useMemo(() => {
     const systemQuotes = globalMetadata?.SYSTEM_QUOTES;
     

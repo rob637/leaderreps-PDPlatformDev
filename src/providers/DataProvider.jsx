@@ -302,6 +302,7 @@ const DataProvider = ({
       ...strategicContentHook,
       ...membershipHook,
       ...globalHook,
+      globalMetadata: resolvedMetadata, // Explicitly expose globalMetadata for components that expect it
 
       // Catalogs (from resolvedMetadata)
       SKILL_CATALOG: resolvedMetadata.SKILL_CATALOG || EMPTY_ARRAY_CATALOG,
