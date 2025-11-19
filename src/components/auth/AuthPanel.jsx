@@ -11,7 +11,7 @@ import {
 } from 'firebase/auth';
 import { Loader } from 'lucide-react';
 
-const SECRET_SIGNUP_CODE = 'mock-code-123';
+const SECRET_SIGNUP_CODE = '7777';
 
 function AuthPanel({ auth, onSuccess }) {
   const [email, setEmail] = useState('');
@@ -49,7 +49,8 @@ function AuthPanel({ auth, onSuccess }) {
           password
         );
         await updateProfile(userCredential.user, {
-  });
+          displayName: name
+        });
         onSuccess();
       }
     } catch (e) {

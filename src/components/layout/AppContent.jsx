@@ -1,7 +1,7 @@
 // src/components/layout/AppContent.jsx 
 
 import React, { Suspense, useCallback, useState, useEffect } from 'react';
-import { signOut } from 'firebase/auth';
+import { signOut, updateProfile } from 'firebase/auth';
 import { Menu, LogOut, Loader, Settings, Anchor, ChevronDown, ChevronUp } from 'lucide-react';
 import PWAInstall from '../ui/PWAInstall.jsx';
 import ScreenRouter from '../../routing/ScreenRouter.jsx';
@@ -100,6 +100,20 @@ const AppContent = ({
     window.addEventListener('storage', handleStorageChange);
     return () => window.removeEventListener('storage', handleStorageChange);
   }, []);
+
+  // Temporary fix: Update Rob's profile name if missing
+  useEffect(() => {
+    if (user && !user.displayName && (user.email === 'rob@sagecg.com' || user.email === 'rob@leaderreps.com')) {
+      console.log("Updating profile for Rob...");
+      updateProfile(user, { displayName: 'Rob Pfleghardt' })
+        .then(() => {
+          console.log("Profile updated successfully");
+          // Force a reload to reflect changes if needed, or just let React handle it
+          window.location.reload();
+        })
+        .catch(err => console.error("Error updating profile:", err));
+    }
+  }, [user]);
 
   const toggleDeveloperMode = () => {
     const newMode = !isDeveloperMode;

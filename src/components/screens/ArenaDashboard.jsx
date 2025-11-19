@@ -12,9 +12,19 @@ const ArenaDashboard = () => {
   const [dailyLog, setDailyLog] = useState(null);
   const [loading, setLoading] = useState(true);
   
-  // Date Management
-  const [currentDate] = useState(new Date());
+  // Date Management - Auto-update at midnight
+  const [currentDate, setCurrentDate] = useState(new Date());
   const dateId = dailyLogService.getDateId(currentDate);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      const now = new Date();
+      if (dailyLogService.getDateId(now) !== dateId) {
+        setCurrentDate(now);
+      }
+    }, 60000); // Check every minute
+    return () => clearInterval(timer);
+  }, [dateId]);
   
   // Bookend Mode State (Lifted from BookendsWidget)
   const [bookendMode, setBookendMode] = useState('AM');

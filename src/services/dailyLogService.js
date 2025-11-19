@@ -19,9 +19,11 @@ export const dailyLogService = {
   
   /**
    * Get the document ID for a specific date (YYYY-MM-DD)
+   * Uses local time to ensure the "day" matches the user's perspective
    */
   getDateId: (date = new Date()) => {
-    return date.toISOString().split('T')[0];
+    // Use Sweden/Canada format (YYYY-MM-DD) which is standard for sorting
+    return date.toLocaleDateString('en-CA');
   },
 
   /**
