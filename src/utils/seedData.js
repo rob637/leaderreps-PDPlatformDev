@@ -222,6 +222,8 @@ export const seedDatabase = async (db) => {
                 authorId: item.ownerId,
                 createdAt: serverTimestamp(),
                 updatedAt: serverTimestamp(),
+                dateAdded: serverTimestamp(),
+                order: 999,
                 isActive: true,
                 type: 'post'
             };
@@ -249,6 +251,8 @@ export const seedDatabase = async (db) => {
                  isActive: true,
                  createdAt: serverTimestamp(),
                  updatedAt: serverTimestamp(),
+                 dateAdded: serverTimestamp(),
+                 order: 999,
              };
              delete newItem.id;
 
