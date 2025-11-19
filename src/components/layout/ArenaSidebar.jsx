@@ -1,0 +1,114 @@
+import React from 'react';
+import { 
+  LayoutDashboard, 
+  Target, 
+  BookOpen, 
+  Users, 
+  MessageSquare, 
+  User, 
+  LogOut,
+  Menu,
+  ChevronLeft
+} from 'lucide-react';
+
+const ArenaSidebar = ({ isOpen, toggle, currentScreen, navigate, onSignOut, user, membershipData }) => {
+  
+  const menuItems = [
+    { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+    { id: 'development-plan', label: 'Dev Plan', icon: Target },
+    { id: 'library', label: 'Content', icon: BookOpen },
+    { id: 'community', label: 'Community', icon: Users },
+    { id: 'coaching-lab', label: 'Coaching', icon: MessageSquare },
+    { id: 'profile', label: 'Profile', icon: User },
+  ];
+
+  // Determine display name
+  const displayName = membershipData?.firstName 
+    ? `${membershipData.firstName} ${membershipData.lastName || ''}`.trim()
+    : user?.displayName || 'Leader';
+
+  return (
+    <div 
+      className={`
+        fixed md:relative z-40 h-full bg-corporate-navy text-white transition-all duration-300 ease-in-out flex flex-col
+        ${isOpen ? 'w-64 translate-x-0' : 'w-0 -translate-x-full md:w-16 md:translate-x-0'}
+      `}
+    >
+      {/* Header / Toggle */}
+      <div className="h-20 flex items-center justify-between px-4 border-b border-white/10">
+        {isOpen ? (
+          <div className="flex items-center gap-3 overflow-hidden whitespace-nowrap">
+            <img src="/icons/icon-192x192.png" alt="Logo" className="w-10 h-10 rounded bg-white" />
+            <div className="flex flex-col">
+              <span className="font-bold text-lg tracking-wide leading-tight">LeaderReps</span>
+              <span className="text-xs text-corporate-teal font-medium uppercase tracking-wider truncate max-w-[140px]">
+                {displayName}'s Arena
+              </span>
+            </div>
+          </div>
+        ) : (
+          <div className="w-8 mx-auto">
+             <img src="/icons/icon-192x192.png" alt="Logo" className="w-8 h-8 rounded bg-white" />
+          </div>
+        )}
+        
+        {/* Mobile Close Button */}
+        <button 
+          onClick={toggle}
+          className="md:hidden p-1 hover:bg-white/10 rounded"
+        >
+          <ChevronLeft className="w-6 h-6" />
+        </button>
+      </div>
+
+      {/* Navigation Items */}
+      <nav className="flex-1 py-4 overflow-y-auto overflow-x-hidden">
+        <ul className="space-y-1">
+          {menuItems.map((item) => {
+            const Icon = item.icon;
+            const isActive = currentScreen === item.id;
+            
+            return (
+              <li key={item.id}>
+                <button
+                  onClick={() => navigate(item.id)}
+                  className={`
+                    w-full flex items-center gap-4 px-4 py-3 transition-colors relative
+                    ${isActive ? 'bg-corporate-teal text-white' : 'text-gray-300 hover:bg-white/5 hover:text-white'}
+                  `}
+                  title={!isOpen ? item.label : ''}
+                >
+                  <Icon className={`w-5 h-5 min-w-[1.25rem] ${isActive ? 'text-white' : ''}`} />
+                  <span className={`whitespace-nowrap transition-opacity duration-200 ${isOpen ? 'opacity-100' : 'opacity-0 md:hidden'}`}>
+                    {item.label}
+                  </span>
+                  
+                  {/* Active Indicator for collapsed state */}
+                  {!isOpen && isActive && (
+                    <div className="absolute left-0 top-0 bottom-0 w-1 bg-corporate-teal" />
+                  )}
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+      </nav>
+
+      {/* Footer / Sign Out */}
+      <div className="p-4 border-t border-white/10">
+        <button
+          onClick={onSignOut}
+          className="w-full flex items-center gap-4 px-0 py-2 text-gray-400 hover:text-white transition-colors"
+          title={!isOpen ? "Sign Out" : ''}
+        >
+          <LogOut className="w-5 h-5 min-w-[1.25rem]" />
+          <span className={`whitespace-nowrap transition-opacity duration-200 ${isOpen ? 'opacity-100' : 'opacity-0 md:hidden'}`}>
+            Sign Out
+          </span>
+        </button>
+      </div>
+    </div>
+  );
+};
+
+export default ArenaSidebar;

@@ -7,7 +7,7 @@ const ScreenMap = {
   'roadmap-tracker': lazy(() =>
     import('../components/screens/RoadmapTracker.jsx')
   ),
-  dashboard: lazy(() => import('../components/screens/Dashboard.jsx')),
+  dashboard: lazy(() => import('../components/screens/ArenaDashboard.jsx')),
   'development-plan': lazy(() =>
     import('../components/screens/DevelopmentPlan.jsx')
   ),
