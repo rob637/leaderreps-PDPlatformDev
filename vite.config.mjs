@@ -8,72 +8,123 @@ export default defineConfig({
   plugins: [
     react(),
     VitePWA({
-      registerType: 'autoUpdate',
-      includeAssets: ['icons/icon-512x512.svg'], 
+      registerType: 'prompt',
+      includeAssets: ['icons/*.png', 'icons/*.svg', 'images/*.png'],
       
-      manifest: {
-        name: 'LeaderReps PD Platform',
-        short_name: 'LeaderReps',
-        description: 'Professional leadership development platform for consistent practice and growth.',
-        theme_color: '#002E47',
-        background_color: '#FCFCFA',
-        display: 'standalone',
-        start_url: '/',
-        icons: [
-          {
-            src: 'icons/icon-192x192.png',
-            sizes: '192x192',
-            type: 'image/png',
-            purpose: 'any'
-          },
-          {
-            src: 'icons/icon-512x512.png',
-            sizes: '512x512',
-            type: 'image/png',
-            purpose: 'any'
-          },
-          {
-            src: 'icons/icon-512x512.png',
-            sizes: '512x512',
-            type: 'image/png',
-            purpose: 'maskable'
-          },
-          {
-            src: 'icons/icon-512x512.svg',
-            sizes: '512x512',
-            type: 'image/svg+xml',
-            purpose: 'any'
-          }
-        ],
-      },
+      // Inject service worker registration with update detection
+      injectRegister: 'auto',
+      
+      // Generate manifest from public/manifest.webmanifest
+      manifest: false, // Use existing manifest.webmanifest
       
       workbox: {
-        globPatterns: ['**/*.{js,css,html,ico,png,svg}'],
+        // Comprehensive glob patterns for all assets
+        globPatterns: [
+          '**/*.{js,css,html,ico,png,svg,jpg,jpeg,gif,webp,woff,woff2}'
+        ],
+        
+        // Maximum cache size (50MB)
+        maximumFileSizeToCacheInBytes: 50 * 1024 * 1024,
+        
+        // Navigation fallback
         navigateFallback: '/index.html',
-        navigateFallbackDenylist: [/^\/_/, /\/[^/?]+\.[^/]+$/],
+        navigateFallbackDenylist: [
+          /^\/_/,
+          /\/[^/?]+\.[^/]+$/,
+          /^\/api\//
+        ],
+        
+        // Runtime caching strategies
         runtimeCaching: [
+          // Firestore API - Network First (fresh data, fallback to cache)
           {
-            urlPattern: ({ url }) => url.origin === 'https://firestore.googleapis.com',
+            urlPattern: ({ url }) => 
+              url.origin === 'https://firestore.googleapis.com' ||
+              url.origin.includes('googleapis.com'),
             handler: 'NetworkFirst',
             options: {
-              cacheName: 'firestore-cache',
+              cacheName: 'firestore-api-cache',
               expiration: {
-                maxEntries: 50,
-                maxAgeSeconds: 60 * 60 * 24,
+                maxEntries: 100,
+                maxAgeSeconds: 60 * 60 * 24, // 24 hours
               },
+              networkTimeoutSeconds: 10,
             },
           },
+          
+          // Firebase Auth - Network Only (always fresh auth state)
+          {
+            urlPattern: ({ url }) => 
+              url.origin.includes('identitytoolkit.googleapis.com') ||
+              url.origin.includes('securetoken.googleapis.com'),
+            handler: 'NetworkOnly',
+          },
+          
+          // Google Fonts CSS - Stale While Revalidate
           {
             urlPattern: ({ url }) => url.origin === 'https://fonts.googleapis.com',
             handler: 'StaleWhileRevalidate',
             options: {
               cacheName: 'google-fonts-stylesheets',
+              expiration: {
+                maxEntries: 20,
+                maxAgeSeconds: 60 * 60 * 24 * 365, // 1 year
+              },
+            },
+          },
+          
+          // Google Fonts - Cache First (font files rarely change)
+          {
+            urlPattern: ({ url }) => url.origin === 'https://fonts.gstatic.com',
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'google-fonts-webfonts',
+              expiration: {
+                maxEntries: 30,
+                maxAgeSeconds: 60 * 60 * 24 * 365, // 1 year
+              },
+              cacheableResponse: {
+                statuses: [0, 200],
+              },
+            },
+          },
+          
+          // Images - Cache First with fallback
+          {
+            urlPattern: ({ request }) => request.destination === 'image',
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'images-cache',
+              expiration: {
+                maxEntries: 100,
+                maxAgeSeconds: 60 * 60 * 24 * 30, // 30 days
+              },
+            },
+          },
+          
+          // App navigation - Network First
+          {
+            urlPattern: ({ request }) => request.mode === 'navigate',
+            handler: 'NetworkFirst',
+            options: {
+              cacheName: 'pages-cache',
+              networkTimeoutSeconds: 5,
             },
           },
         ],
+        
+        // Clean up outdated caches automatically
         cleanupOutdatedCaches: true,
-        skipWaiting: true,
+        
+        // Skip waiting to activate immediately (with user consent via UpdateNotification)
+        skipWaiting: false, // We'll handle this in UpdateNotification component
         clientsClaim: true,
+      },
+      
+      // Development options
+      devOptions: {
+        enabled: false, // Disable SW in development for easier debugging
+        type: 'module',
       },
     }),
     visualizer({

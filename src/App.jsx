@@ -29,6 +29,7 @@ import AuthPanel from './components/auth/AuthPanel.jsx';
 import AppContent from './components/layout/AppContent.jsx';
 import DataProvider from './providers/DataProvider.jsx';
 import ConfigError from './components/system/ConfigError.jsx';
+import UpdateNotification from './components/ui/UpdateNotification.jsx';
 
 /* =========================================================
    MAIN APP COMPONENT
@@ -99,29 +100,34 @@ function App() {
   }
 
   return (
-    <DataProvider
-      firebaseServices={firebaseServices}
-      userId={user?.uid}
-      isAuthReady={isAuthReady}
-      navigate={navigate}
-      user={user}
-    >
-      {isAuthRequired ? (
-        <AuthPanel auth={firebaseServices.auth} onSuccess={() => {}} />
-      ) : (
-        <AppContent
-          currentScreen={currentScreen}
-          user={user}
-          navParams={navParams}
-          isMobileOpen={isMobileOpen}
-          setIsMobileOpen={setIsMobileOpen}
-          isAuthRequired={isAuthRequired}
-          auth={firebaseServices.auth}
-          goBack={goBack}
-          canGoBack={canGoBack}
-        />
-      )}
-    </DataProvider>
+    <>
+      <DataProvider
+        firebaseServices={firebaseServices}
+        userId={user?.uid}
+        isAuthReady={isAuthReady}
+        navigate={navigate}
+        user={user}
+      >
+        {isAuthRequired ? (
+          <AuthPanel auth={firebaseServices.auth} onSuccess={() => {}} />
+        ) : (
+          <AppContent
+            currentScreen={currentScreen}
+            user={user}
+            navParams={navParams}
+            isMobileOpen={isMobileOpen}
+            setIsMobileOpen={setIsMobileOpen}
+            isAuthRequired={isAuthRequired}
+            auth={firebaseServices.auth}
+            goBack={goBack}
+            canGoBack={canGoBack}
+          />
+        )}
+      </DataProvider>
+      
+      {/* PWA Update Notification */}
+      <UpdateNotification />
+    </>
   );
 }
 

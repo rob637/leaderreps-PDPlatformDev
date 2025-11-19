@@ -164,7 +164,7 @@ const AppContent = ({
   const closeMobileMenu = useCallback(() => setIsMobileOpen(false), [
     setIsMobileOpen,
   ]);
-  const { navigate, isAdmin, membershipData } = useAppServices();
+  const { navigate, isAdmin, membershipData, logout } = useAppServices();
 
   // Navigation items for dropdown menu
   const currentTier = isDeveloperMode ? 'premium' : simulatedTier;
@@ -227,7 +227,11 @@ const AppContent = ({
 
   const handleSignOut = async () => {
     try {
-      if (auth) await signOut(auth);
+      if (logout) {
+        await logout();
+      } else if (auth) {
+        await signOut(auth);
+      }
       closeMobileMenu();
     } catch (e) {
       console.error('Sign out failed:', e);
@@ -246,76 +250,75 @@ const AppContent = ({
     >
       <div className="relative min-h-screen flex flex-col font-sans antialiased bg-corporate-light-gray">
       <header className="nav-corporate sticky top-0 flex justify-between items-center z-50 px-6 py-4">
-        <div className="flex items-center gap-6">
-          <div className="relative">
-            <button
-              onClick={() => setDropdownOpen(!dropdownOpen)}
-              className="p-3 hover:bg-gray-100 rounded-xl transition-all duration-200 text-corporate-navy"
-              title="Navigation Menu"
-            >
-              <Menu className="w-6 h-6" />
-            </button>
-            
-            {dropdownOpen && (
-              <div className="absolute top-full left-0 mt-2 w-72 bg-white rounded-2xl shadow-2xl border border-gray-100 z-50">
-                <div className="py-3">
-                  {navigationItems
-                    .filter(item => {
-                      // Developer Tools only show in dev mode
-                      if (item.devModeOnly && !isDeveloperMode && !isAdmin) {
-                        console.log(`🚫 [Navigation Filter] ${item.label} hidden (dev mode only)`);
-                        return false;
-                      }
-                      // Check tier access
-                      const hasItemAccess = hasAccess(item.requiredTier);
-                      if (!hasItemAccess) {
-                        console.log(`🚫 [Navigation Filter] ${item.label} hidden (insufficient tier access)`);
-                        return false;
-                      }
-                      console.log(`✅ [Navigation Filter] ${item.label} visible`);
-                      return true;
-                    })
-                    .map((item) => (
-                      <button
-                        key={item.screen}
-                        onClick={() => {
-                          if (navigate) {
-                            navigate(item.screen);
-                          }
-                          setDropdownOpen(false);
-                        }}
-                        className={`nav-item-corporate w-full text-left mx-2 ${
-                          currentScreen === item.screen ? 'active' : ''
-                        }`}
-                      >
-                        {item.label}
-                      </button>
-                    ))}
-                </div>
+        <div className="flex items-center gap-4">
+          <button
+            onClick={() => setDropdownOpen(!dropdownOpen)}
+            className="p-3 hover:bg-gray-100 rounded-xl transition-all duration-200 text-corporate-navy"
+            title="Navigation Menu"
+          >
+            <Menu className="w-6 h-6" />
+          </button>
+          
+          {dropdownOpen && (
+            <div className="absolute top-full left-6 mt-2 w-72 bg-white rounded-2xl shadow-2xl border border-gray-100 z-50">
+              <div className="py-3">
+                {navigationItems
+                  .filter(item => {
+                    // Developer Tools only show in dev mode
+                    if (item.devModeOnly && !isDeveloperMode && !isAdmin) {
+                      console.log(`🚫 [Navigation Filter] ${item.label} hidden (dev mode only)`);
+                      return false;
+                    }
+                    // Check tier access
+                    const hasItemAccess = hasAccess(item.requiredTier);
+                    if (!hasItemAccess) {
+                      console.log(`🚫 [Navigation Filter] ${item.label} hidden (insufficient tier access)`);
+                      return false;
+                    }
+                    console.log(`✅ [Navigation Filter] ${item.label} visible`);
+                    return true;
+                  })
+                  .map((item) => (
+                    <button
+                      key={item.screen}
+                      onClick={() => {
+                        if (navigate) {
+                          navigate(item.screen);
+                        }
+                        setDropdownOpen(false);
+                      }}
+                      className={`nav-item-corporate w-full text-left mx-2 ${
+                        currentScreen === item.screen ? 'active' : ''
+                      }`}
+                    >
+                      {item.label}
+                    </button>
+                  ))}
               </div>
-            )}
-          </div>
-          <div className="flex items-center gap-3">
-            <img 
-              src="/images/lr_logo_teal__1__.png" 
-              alt="LeaderReps" 
-              className="h-8 sm:h-10 w-auto"
-            />
-            <LeadershipAnchorsDropdown />
-            {isDeveloperMode && (
-              <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-orange-100 text-orange-700">
-                DEV
-              </span>
-            )}
-            {!isDeveloperMode && (
-              <span 
-                className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold text-white"
-                style={{ backgroundColor: tierColors[simulatedTier] }}
-              >
-                TEST: {tierLabels[simulatedTier]}
-              </span>
-            )}
-          </div>
+            </div>
+          )}
+          
+          <img 
+            src="/images/lr_logo_teal__1_.png" 
+            alt="LeaderReps" 
+            className="h-8 sm:h-10 w-auto object-contain"
+          />
+          
+          <LeadershipAnchorsDropdown />
+          
+          {isDeveloperMode && (
+            <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-orange-100 text-orange-700">
+              DEV
+            </span>
+          )}
+          {!isDeveloperMode && (
+            <span 
+              className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold text-white"
+              style={{ backgroundColor: tierColors[simulatedTier] }}
+            >
+              TEST: {tierLabels[simulatedTier]}
+            </span>
+          )}
         </div>
 
         <div className="flex items-center gap-3">

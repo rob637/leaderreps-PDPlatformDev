@@ -35,8 +35,9 @@ const DataProvider = ({
     }
 
     setIsLoadingServices(true);
+    let createdServices = null;
     try {
-      const createdServices = createAppServices(db, userId);
+      createdServices = createAppServices(db, userId);
       createdServices.setOnChange((data) => {
         setServiceData(data);
         if (
@@ -58,8 +59,8 @@ const DataProvider = ({
     }
 
     return () => {
-      if (services) {
-        services.cleanup();
+      if (createdServices) {
+        createdServices.cleanup();
       }
     };
   }, [userId, db, isAuthReady]);
@@ -188,6 +189,18 @@ const DataProvider = ({
 
   const hasGeminiKey = useCallback(() => !!apiKey, [apiKey]);
 
+  const logout = useCallback(async () => {
+    try {
+      if (services) {
+        services.cleanup();
+        setServices(null);
+      }
+      await auth.signOut();
+    } catch (error) {
+      console.error('Logout error:', error);
+    }
+  }, [auth, services]);
+
   const callSecureGeminiAPI = useCallback(
     async (payload) => {
       if (!hasGeminiKey()) {
@@ -278,6 +291,7 @@ const DataProvider = ({
       isAuthReady,
       isLoading: isLoadingServices,
       hasPendingDailyPractice,
+      logout,
 
       // Feature Flags
       featureFlags: convertedFeatureFlags,
@@ -326,6 +340,7 @@ const DataProvider = ({
     isAuthReady,
     isLoadingServices,
     hasPendingDailyPractice,
+    logout,
     resolvedMetadata,
     devPlanHook,
     dailyPracticeHook,
