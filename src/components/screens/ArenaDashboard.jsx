@@ -54,8 +54,11 @@ const ArenaDashboard = () => {
   };
 
   const handleDeleteWin = async (itemId) => {
-    // Optional: Implement delete if needed
-    console.log("Delete not implemented yet", itemId);
+    try {
+      await dailyLogService.deleteWinItem(db, user.uid, dateId, itemId);
+    } catch (error) {
+      console.error("Error deleting win:", error);
+    }
   };
 
   const handleUpdatePM = async (data) => {
@@ -127,6 +130,21 @@ const ArenaDashboard = () => {
                         <div className="flex-1 border-b border-gray-100 pb-1">Coaching Session - 11/25/25 10:00am</div>
                       </div>
                    </div>
+                </div>
+
+                {/* Development Plan Details (AM View) */}
+                <div>
+                  <div className="flex items-center justify-between mb-4 cursor-pointer group">
+                    <h3 className="text-xl font-bold text-corporate-navy font-serif">
+                      Development Plan Details
+                    </h3>
+                    <ChevronRight className="w-6 h-6 text-corporate-navy transform rotate-90 transition-transform" />
+                  </div>
+                  <div className="pl-4 border-l-2 border-gray-100">
+                    <div className="h-20 bg-gray-50 rounded-lg border border-gray-100 flex items-center justify-center text-gray-400 italic text-sm">
+                      Plan details content...
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>

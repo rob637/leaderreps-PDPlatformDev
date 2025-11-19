@@ -110,5 +110,23 @@ export const dailyLogService = {
         lastUpdated: serverTimestamp()
       });
     }
+  },
+
+  /**
+   * Delete a WIN item
+   */
+  deleteWinItem: async (db, userId, dateId, itemId) => {
+    const docRef = doc(db, 'users', userId, 'daily_logs', dateId);
+    const docSnap = await getDoc(docRef);
+    
+    if (docSnap.exists()) {
+      const data = docSnap.data();
+      const updatedWins = (data.wins || []).filter(item => item.id !== itemId);
+      
+      await updateDoc(docRef, {
+        wins: updatedWins,
+        lastUpdated: serverTimestamp()
+      });
+    }
   }
 };

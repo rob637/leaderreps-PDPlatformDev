@@ -1,5 +1,5 @@
 import React from 'react';
-import { Check, Plus, Trash2 } from 'lucide-react';
+import { Check, Trash2 } from 'lucide-react';
 
 const WinTracker = ({ wins = [], onToggle, onDelete }) => {
   const mainWins = wins.filter(w => w.type === 'win');
@@ -40,7 +40,8 @@ const WinTracker = ({ wins = [], onToggle, onDelete }) => {
       {onDelete && (
         <button 
           onClick={() => onDelete(item.id)}
-          className="opacity-0 group-hover:opacity-100 p-2 text-gray-300 hover:text-red-500 transition-all"
+          className="opacity-0 group-hover:opacity-100 p-2 text-gray-300 hover:text-corporate-orange transition-all"
+          title="Delete item"
         >
           <Trash2 className="w-4 h-4" />
         </button>
@@ -52,27 +53,37 @@ const WinTracker = ({ wins = [], onToggle, onDelete }) => {
     <div className="w-full">
       <div className="space-y-6">
         {/* Main WIN Section */}
-        <div>
-          <h3 className="text-lg font-bold text-corporate-navy font-serif mb-2">WIN:</h3>
-          {mainWins.length > 0 ? (
-            mainWins.map(win => <WinItem key={win.id} item={win} />)
-          ) : (
-            <div className="border-b border-gray-300 h-8 w-full max-w-md"></div>
-          )}
+        <div className="flex flex-col md:flex-row md:gap-4">
+          <div className="w-24 flex-shrink-0 pt-3">
+            <h3 className="text-lg font-bold text-corporate-navy font-serif">WIN:</h3>
+          </div>
+          <div className="flex-1">
+            {mainWins.length > 0 ? (
+              mainWins.map(win => <WinItem key={win.id} item={win} />)
+            ) : (
+              <div className="border-b border-gray-300 h-8 w-full max-w-md"></div>
+            )}
+          </div>
         </div>
 
         {/* Priorities Section */}
-        <div>
-          <h3 className="text-lg font-bold text-corporate-navy font-serif mb-2">Priorities:</h3>
-          {priorities.length > 0 ? (
-            priorities.map(priority => <WinItem key={priority.id} item={priority} />)
-          ) : (
-            <div className="space-y-4 max-w-md">
-               <div className="border-b border-gray-300 h-8 w-full"></div>
-               <div className="border-b border-gray-300 h-8 w-full"></div>
-               <div className="border-b border-gray-300 h-8 w-full"></div>
-            </div>
-          )}
+        <div className="flex flex-col md:flex-row md:gap-4">
+          <div className="w-24 flex-shrink-0 pt-3">
+            <h3 className="text-lg font-bold text-corporate-navy font-serif">
+              {priorities.length === 1 ? 'Priority:' : 'Priorities:'}
+            </h3>
+          </div>
+          <div className="flex-1">
+            {priorities.length > 0 ? (
+              priorities.map(priority => <WinItem key={priority.id} item={priority} />)
+            ) : (
+              <div className="space-y-4 max-w-md">
+                 <div className="border-b border-gray-300 h-8 w-full"></div>
+                 <div className="border-b border-gray-300 h-8 w-full"></div>
+                 <div className="border-b border-gray-300 h-8 w-full"></div>
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </div>

@@ -109,7 +109,10 @@ function App() {
         user={user}
       >
         {isAuthRequired ? (
-          <AuthPanel auth={firebaseServices.auth} onSuccess={() => {}} />
+          <AuthPanel 
+            auth={firebaseServices.auth} 
+            onSuccess={() => navigate('dashboard')} 
+          />
         ) : (
           <AppContent
             currentScreen={currentScreen}
