@@ -140,97 +140,120 @@ const BookendsWidget = ({
           </div>
         ) : (
           <div className="space-y-6 animate-fadeIn">
-            {/* Completed Items Summary */}
-            <div className="bg-gray-50 rounded-xl p-4 border border-gray-100">
-              <h3 className="text-xs font-bold text-corporate-navy uppercase tracking-wider mb-3">
-                Completed Today
-              </h3>
-              {completedWins.length > 0 ? (
-                <div className="space-y-2">
-                  {completedWins.map(win => (
-                    <div key={win.id} className="flex items-start gap-2 text-sm">
-                      <CheckCircle2 className="w-4 h-4 text-corporate-teal mt-0.5 flex-shrink-0" />
-                      <span className="text-gray-600 line-through">{win.text}</span>
-                    </div>
-                  ))}
+            {/* Stats Summary List */}
+            <div className="space-y-3 pb-6 border-b border-gray-100">
+              <div className="flex items-center justify-between">
+                <span className="text-corporate-navy font-medium font-serif">WIN/Tasks</span>
+                <div className="flex items-center gap-3">
+                  <span className="font-bold text-corporate-navy">{stats.completedTasks}/{stats.totalTasks}</span>
+                  {stats.completedTasks === stats.totalTasks && stats.totalTasks > 0 && (
+                    <CheckCircle2 className="w-5 h-5 text-corporate-teal" />
+                  )}
                 </div>
-              ) : (
-                <p className="text-sm text-gray-400 italic">No items completed yet.</p>
-              )}
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-corporate-navy font-medium font-serif">Daily Reps</span>
+                <div className="flex items-center gap-3">
+                  <span className="font-bold text-corporate-navy">{stats.dailyReps ? '1/1' : '0/1'}</span>
+                  {stats.dailyReps && <CheckCircle2 className="w-5 h-5 text-corporate-teal" />}
+                </div>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-corporate-navy font-medium font-serif">Grounding Rep (LIS)</span>
+                <button 
+                  onClick={() => onUpdatePM({ groundingRep: !pmData?.groundingRep })}
+                  className={`
+                    w-6 h-6 rounded border-2 flex items-center justify-center transition-colors
+                    ${pmData?.groundingRep ? 'bg-corporate-navy border-corporate-navy text-white' : 'border-gray-300'}
+                  `}
+                >
+                  {pmData?.groundingRep && <CheckCircle2 className="w-4 h-4" />}
+                </button>
+              </div>
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-corporate-navy uppercase tracking-wider mb-2">
-                What went well?
-              </label>
-              <textarea
-                value={reflection.good}
-                onChange={(e) => handleReflectionChange('good', e.target.value)}
-                onBlur={handleReflectionBlur}
-                className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-corporate-navy/20 min-h-[80px] resize-none"
-                placeholder="Celebrate the wins..."
-              />
-            </div>
-            
-            <div>
-              <label className="block text-xs font-bold text-corporate-navy uppercase tracking-wider mb-2">
-                What needs work?
-              </label>
-              <textarea
-                value={reflection.work}
-                onChange={(e) => handleReflectionChange('work', e.target.value)}
-                onBlur={handleReflectionBlur}
-                className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-corporate-navy/20 min-h-[80px] resize-none"
-                placeholder="Be honest..."
-              />
-            </div>
+              <h3 className="text-lg font-bold text-corporate-navy font-serif mb-4">Reflection</h3>
+              
+              <div className="space-y-6">
+                <div>
+                  <label className="block text-sm text-corporate-navy mb-2">
+                    What went well?
+                  </label>
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={reflection.good}
+                      onChange={(e) => handleReflectionChange('good', e.target.value)}
+                      onBlur={handleReflectionBlur}
+                      className="flex-1 px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-corporate-navy/20"
+                    />
+                    <button className="px-4 bg-gray-200 text-gray-600 rounded-xl font-bold hover:bg-gray-300 transition-colors">
+                      +
+                    </button>
+                  </div>
+                </div>
+                
+                <div>
+                  <label className="block text-sm text-corporate-navy mb-2">
+                    What needs work?
+                  </label>
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={reflection.work}
+                      onChange={(e) => handleReflectionChange('work', e.target.value)}
+                      onBlur={handleReflectionBlur}
+                      className="flex-1 px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-corporate-navy/20"
+                    />
+                    <button className="px-4 bg-gray-200 text-gray-600 rounded-xl font-bold hover:bg-gray-300 transition-colors">
+                      +
+                    </button>
+                  </div>
+                </div>
 
-            <div>
-              <label className="block text-xs font-bold text-corporate-navy uppercase tracking-wider mb-2">
-                What needs to happen to show up as your best tomorrow?
-              </label>
-              <textarea
-                value={reflection.tomorrow}
-                onChange={(e) => handleReflectionChange('tomorrow', e.target.value)}
-                onBlur={handleReflectionBlur}
-                className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-corporate-navy/20 min-h-[80px] resize-none"
-                placeholder="Plan ahead..."
-              />
-            </div>
-
-            <div className="flex items-center justify-between pt-4 border-t border-gray-100">
-               <span className="text-sm font-medium text-corporate-navy">Grounding Rep (LIS)</span>
-               <button 
-                 onClick={() => onUpdatePM({ groundingRep: !pmData?.groundingRep })}
-                 className={`
-                   w-6 h-6 rounded border-2 flex items-center justify-center transition-colors
-                   ${pmData?.groundingRep ? 'bg-corporate-navy border-corporate-navy text-white' : 'border-gray-300'}
-                 `}
-               >
-                 {pmData?.groundingRep && <CheckCircle2 className="w-4 h-4" />}
-               </button>
+                <div>
+                  <label className="block text-sm text-corporate-navy mb-2">
+                    What needs to happen to show up as your best tomorrow?
+                  </label>
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={reflection.tomorrow}
+                      onChange={(e) => handleReflectionChange('tomorrow', e.target.value)}
+                      onBlur={handleReflectionBlur}
+                      className="flex-1 px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-corporate-navy/20"
+                    />
+                    <button className="px-4 bg-gray-200 text-gray-600 rounded-xl font-bold hover:bg-gray-300 transition-colors">
+                      +
+                    </button>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         )}
       </div>
 
-      {/* Stats Footer */}
-      <div className="bg-gray-50 p-4 border-t border-gray-100">
-        <div className="grid grid-cols-3 gap-2 text-center">
-          <div>
-            <div className="text-xs text-gray-400 uppercase">WIN/Tasks</div>
-            <div className="font-bold text-corporate-navy">{stats.completedTasks}/{stats.totalTasks}</div>
-          </div>
-          <div>
-            <div className="text-xs text-gray-400 uppercase">Daily Reps</div>
-            <div className="font-bold text-corporate-navy">{stats.dailyReps ? '1/1' : '0/1'}</div>
-          </div>
-          <div>
-            <div className="text-xs text-gray-400 uppercase">Grounding</div>
-            <div className="font-bold text-corporate-navy">{stats.grounding ? '1/1' : '0/1'}</div>
+      {/* Stats Footer - Only show in AM mode since PM has stats at top */}
+      {mode === 'AM' && (
+        <div className="bg-gray-50 p-4 border-t border-gray-100">
+          <div className="grid grid-cols-3 gap-2 text-center">
+            <div>
+              <div className="text-xs text-gray-400 uppercase">WIN/Tasks</div>
+              <div className="font-bold text-corporate-navy">{stats.completedTasks}/{stats.totalTasks}</div>
+            </div>
+            <div>
+              <div className="text-xs text-gray-400 uppercase">Daily Reps</div>
+              <div className="font-bold text-corporate-navy">{stats.dailyReps ? '1/1' : '0/1'}</div>
+            </div>
+            <div>
+              <div className="text-xs text-gray-400 uppercase">Grounding</div>
+              <div className="font-bold text-corporate-navy">{stats.grounding ? '1/1' : '0/1'}</div>
+            </div>
           </div>
         </div>
-      </div>
+      )}
     </div>
   );
 };

@@ -4,7 +4,7 @@ import { dailyLogService } from '../../services/dailyLogService';
 import WinTracker from '../arena/WinTracker';
 import BookendsWidget from '../arena/BookendsWidget';
 import FocusCard from '../arena/FocusCard';
-import { Calendar, ChevronRight, Activity, Dumbbell } from 'lucide-react';
+import { Calendar, ChevronRight, Activity, Dumbbell, Target } from 'lucide-react';
 
 const ArenaDashboard = () => {
   const { user, db } = useAppServices();
@@ -87,74 +87,97 @@ const ArenaDashboard = () => {
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 h-[calc(100vh-140px)] min-h-[600px]">
         
         {/* Left/Center Column: Training & WINs */}
-        <div className="lg:col-span-7 flex flex-col gap-6 h-full overflow-hidden">
+        <div className="lg:col-span-7 h-full overflow-hidden flex flex-col">
           {bookendMode === 'AM' ? (
-            <>
-              <FocusCard block={1} focus="Feedback" />
-              
-              <div className="flex-1 min-h-0">
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-300 p-8 h-full overflow-y-auto">
+              {/* Unified AM Sheet */}
+              <div className="space-y-8">
+                <FocusCard block={1} focus="Feedback" />
+                
                 <WinTracker 
                   wins={wins} 
                   onToggle={handleToggleWin}
                   onDelete={handleDeleteWin}
                 />
-              </div>
 
-              {/* Placeholder for Daily Reps */}
-              <div className="bg-white rounded-2xl shadow-sm border border-gray-300 p-6">
-                 <div className="flex items-center justify-between mb-4">
-                   <h3 className="font-bold text-corporate-navy">Daily Reps</h3>
-                   <span className="text-xs text-gray-400 uppercase tracking-wider">Coming Soon</span>
-                 </div>
-                 <div className="p-4 bg-gray-50 rounded-xl text-center text-gray-400 italic text-sm">
-                   Your daily leadership exercises will appear here.
-                 </div>
-              </div>
-
-              {/* Placeholder for Upcoming Events */}
-              <div className="bg-white rounded-2xl shadow-sm border border-gray-300 p-6">
-                 <div className="flex items-center justify-between mb-4">
-                   <h3 className="font-bold text-corporate-navy">Upcoming Events</h3>
-                   <span className="text-xs text-gray-400 uppercase tracking-wider">Coming Soon</span>
-                 </div>
-                 <div className="p-4 bg-gray-50 rounded-xl text-center text-gray-400 italic text-sm">
-                   Team meetings and coaching sessions will appear here.
-                 </div>
-              </div>
-            </>
-          ) : (
-            <>
-              {/* PM Mode: Development Plan Details & Habit Tracking */}
-              <div className="bg-white rounded-2xl shadow-sm border border-gray-300 p-6 flex-1">
-                <div className="flex items-center justify-between mb-6">
-                  <h3 className="font-bold text-xl text-corporate-navy flex items-center gap-2">
-                    <Target className="w-6 h-6 text-corporate-teal" />
-                    Development Plan Details
-                  </h3>
+                {/* Daily Reps Section */}
+                <div>
+                   <div className="flex items-center justify-between mb-2">
+                     <h3 className="text-lg font-bold text-corporate-navy font-serif">Daily Rep:</h3>
+                     <span className="text-xs text-gray-400 uppercase tracking-wider">Coming Soon</span>
+                   </div>
+                   <div className="p-3 bg-gray-50 rounded-lg border border-gray-100">
+                     <div className="h-6 w-full bg-gray-100 rounded animate-pulse"></div>
+                   </div>
                 </div>
-                <div className="p-8 bg-gray-50 rounded-xl text-center border border-gray-100 h-full flex items-center justify-center">
-                  <div className="text-gray-400">
-                    <p className="font-medium mb-2">Your Development Plan Review</p>
-                    <p className="text-sm italic">Review your progress on your core competencies.</p>
+
+                {/* Upcoming Events Section */}
+                <div>
+                   <div className="flex items-center justify-between mb-2">
+                     <h3 className="text-lg font-bold text-corporate-navy font-serif">Upcoming Events:</h3>
+                     <span className="text-xs text-gray-400 uppercase tracking-wider">Coming Soon</span>
+                   </div>
+                   <div className="space-y-2">
+                      <div className="flex gap-4 text-sm text-gray-500">
+                        <div className="w-2 h-2 rounded-full bg-corporate-teal mt-1.5"></div>
+                        <div className="flex-1 border-b border-gray-100 pb-1">Team Meeting - 11/20/25 4:00pm</div>
+                      </div>
+                      <div className="flex gap-4 text-sm text-gray-500">
+                        <div className="w-2 h-2 rounded-full bg-corporate-teal mt-1.5"></div>
+                        <div className="flex-1 border-b border-gray-100 pb-1">Coaching Session - 11/25/25 10:00am</div>
+                      </div>
+                   </div>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-300 p-8 h-full overflow-y-auto">
+              {/* Unified PM Sheet */}
+              <div className="space-y-12">
+                
+                {/* Development Plan Details */}
+                <div>
+                  <div className="flex items-center justify-between mb-4 cursor-pointer group">
+                    <h3 className="text-xl font-bold text-corporate-navy font-serif">
+                      Development Plan Details
+                    </h3>
+                    <ChevronRight className="w-6 h-6 text-corporate-navy transform rotate-90 transition-transform" />
+                  </div>
+                  <div className="pl-4 border-l-2 border-gray-100">
+                    <div className="h-20 bg-gray-50 rounded-lg border border-gray-100 flex items-center justify-center text-gray-400 italic text-sm">
+                      Plan details content...
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              <div className="bg-white rounded-2xl shadow-sm border border-gray-300 p-6 flex-1">
-                <div className="flex items-center justify-between mb-6">
-                  <h3 className="font-bold text-xl text-corporate-navy flex items-center gap-2">
-                    <Activity className="w-6 h-6 text-corporate-orange" />
+                {/* Habit Tracking */}
+                <div>
+                  <h3 className="text-xl font-bold text-corporate-navy font-serif mb-6">
                     Habit Tracking
                   </h3>
-                </div>
-                <div className="p-8 bg-gray-50 rounded-xl text-center border border-gray-100 h-full flex items-center justify-center">
-                  <div className="text-gray-400">
-                    <p className="font-medium mb-2">Daily Habit Check-in</p>
-                    <p className="text-sm italic">Track your consistency and build momentum.</p>
+                  <div className="space-y-6 pl-2">
+                    {[
+                      { id: 1, streak: '6-day streak' },
+                      { id: 2, streak: '1-day streak' },
+                      { id: 3, streak: '12-day streak' }
+                    ].map((habit) => (
+                      <div key={habit.id} className="flex items-center gap-4">
+                        <div className="w-8 h-8 rounded-full border-2 border-corporate-navy flex items-center justify-center font-bold text-corporate-navy">
+                          {habit.id}
+                        </div>
+                        <div className="flex-1 h-2 bg-gray-100 rounded-full overflow-hidden">
+                          <div className="h-full bg-corporate-teal w-2/3 opacity-50"></div>
+                        </div>
+                        <span className="text-corporate-navy font-medium font-serif whitespace-nowrap">
+                          {habit.streak}
+                        </span>
+                      </div>
+                    ))}
                   </div>
                 </div>
+
               </div>
-            </>
+            </div>
           )}
         </div>
 

@@ -49,43 +49,31 @@ const WinTracker = ({ wins = [], onToggle, onDelete }) => {
   );
   
   return (
-    <div className="bg-white rounded-2xl shadow-sm border border-gray-300 p-6 h-full flex flex-col">
-      <div className="flex items-center justify-between mb-6">
-        <h2 className="text-xl font-bold text-corporate-navy font-serif">What's Important Now (WIN)</h2>
-        <span className="text-sm text-gray-400 font-medium">
-          {wins.filter(w => w.completed).length}/{wins.length}
-        </span>
-      </div>
+    <div className="w-full">
+      <div className="space-y-6">
+        {/* Main WIN Section */}
+        <div>
+          <h3 className="text-lg font-bold text-corporate-navy font-serif mb-2">WIN:</h3>
+          {mainWins.length > 0 ? (
+            mainWins.map(win => <WinItem key={win.id} item={win} />)
+          ) : (
+            <div className="border-b border-gray-300 h-8 w-full max-w-md"></div>
+          )}
+        </div>
 
-      <div className="flex-1 overflow-y-auto pr-2">
-        {wins.length === 0 ? (
-          <div className="text-center py-10 text-gray-400 italic">
-            No priorities set for today yet.<br/>
-            Add them from your AM Bookend.
-          </div>
-        ) : (
-          <div className="space-y-6">
-            {/* Main WIN Section */}
-            <div>
-              <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">WIN:</h3>
-              {mainWins.length > 0 ? (
-                mainWins.map(win => <WinItem key={win.id} item={win} />)
-              ) : (
-                <p className="text-sm text-gray-400 italic pl-2">No main WIN set</p>
-              )}
+        {/* Priorities Section */}
+        <div>
+          <h3 className="text-lg font-bold text-corporate-navy font-serif mb-2">Priorities:</h3>
+          {priorities.length > 0 ? (
+            priorities.map(priority => <WinItem key={priority.id} item={priority} />)
+          ) : (
+            <div className="space-y-4 max-w-md">
+               <div className="border-b border-gray-300 h-8 w-full"></div>
+               <div className="border-b border-gray-300 h-8 w-full"></div>
+               <div className="border-b border-gray-300 h-8 w-full"></div>
             </div>
-
-            {/* Priorities Section */}
-            <div>
-              <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Priorities:</h3>
-              {priorities.length > 0 ? (
-                priorities.map(priority => <WinItem key={priority.id} item={priority} />)
-              ) : (
-                <p className="text-sm text-gray-400 italic pl-2">No additional priorities</p>
-              )}
-            </div>
-          </div>
-        )}
+          )}
+        </div>
       </div>
     </div>
   );
