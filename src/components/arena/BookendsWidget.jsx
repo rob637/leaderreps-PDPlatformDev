@@ -5,10 +5,11 @@ const BookendsWidget = ({
   pmData, 
   onUpdatePM, 
   onAddWin,
-  stats 
+  stats,
+  wins = [],
+  mode,
+  setMode
 }) => {
-  const [mode, setMode] = useState('AM'); // 'AM' or 'PM'
-  
   // Local state for inputs to prevent excessive re-renders/writes
   const [winInput, setWinInput] = useState('');
   const [priorityInput, setPriorityInput] = useState('');
@@ -19,6 +20,9 @@ const BookendsWidget = ({
     work: '',
     tomorrow: ''
   });
+
+  // Filter completed wins for PM view
+  const completedWins = wins.filter(w => w.completed);
 
   // Sync props to local state when they change (initial load)
   useEffect(() => {
@@ -136,6 +140,25 @@ const BookendsWidget = ({
           </div>
         ) : (
           <div className="space-y-6 animate-fadeIn">
+            {/* Completed Items Summary */}
+            <div className="bg-gray-50 rounded-xl p-4 border border-gray-100">
+              <h3 className="text-xs font-bold text-corporate-navy uppercase tracking-wider mb-3">
+                Completed Today
+              </h3>
+              {completedWins.length > 0 ? (
+                <div className="space-y-2">
+                  {completedWins.map(win => (
+                    <div key={win.id} className="flex items-start gap-2 text-sm">
+                      <CheckCircle2 className="w-4 h-4 text-corporate-teal mt-0.5 flex-shrink-0" />
+                      <span className="text-gray-600 line-through">{win.text}</span>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm text-gray-400 italic">No items completed yet.</p>
+              )}
+            </div>
+
             <div>
               <label className="block text-xs font-bold text-corporate-navy uppercase tracking-wider mb-2">
                 What went well?

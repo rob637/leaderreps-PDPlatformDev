@@ -73,7 +73,7 @@ const ArenaSidebar = ({ isOpen, toggle, currentScreen, navigate, onSignOut, user
                 <button
                   onClick={() => navigate(item.id)}
                   className={`
-                    w-full flex items-center gap-4 px-4 py-3 transition-colors relative
+                    w-full flex items-center gap-4 px-4 py-3 transition-colors relative bg-transparent border-none
                     ${isActive ? 'bg-corporate-teal text-white' : 'text-gray-300 hover:bg-white/5 hover:text-white'}
                   `}
                   title={!isOpen ? item.label : ''}

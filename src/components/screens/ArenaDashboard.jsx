@@ -14,6 +14,9 @@ const ArenaDashboard = () => {
   // Date Management
   const [currentDate] = useState(new Date());
   const dateId = dailyLogService.getDateId(currentDate);
+  
+  // Bookend Mode State (Lifted from BookendsWidget)
+  const [bookendMode, setBookendMode] = useState('AM');
 
   // Subscribe to data
   useEffect(() => {
@@ -85,37 +88,74 @@ const ArenaDashboard = () => {
         
         {/* Left/Center Column: Training & WINs */}
         <div className="lg:col-span-7 flex flex-col gap-6 h-full overflow-hidden">
-          <FocusCard block={1} focus="Feedback" />
-          
-          <div className="flex-1 min-h-0">
-            <WinTracker 
-              wins={wins} 
-              onToggle={handleToggleWin}
-              onDelete={handleDeleteWin}
-            />
-          </div>
+          {bookendMode === 'AM' ? (
+            <>
+              <FocusCard block={1} focus="Feedback" />
+              
+              <div className="flex-1 min-h-0">
+                <WinTracker 
+                  wins={wins} 
+                  onToggle={handleToggleWin}
+                  onDelete={handleDeleteWin}
+                />
+              </div>
 
-          {/* Placeholder for Daily Reps */}
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-300 p-6">
-             <div className="flex items-center justify-between mb-4">
-               <h3 className="font-bold text-corporate-navy">Daily Reps</h3>
-               <span className="text-xs text-gray-400 uppercase tracking-wider">Coming Soon</span>
-             </div>
-             <div className="p-4 bg-gray-50 rounded-xl text-center text-gray-400 italic text-sm">
-               Your daily leadership exercises will appear here.
-             </div>
-          </div>
+              {/* Placeholder for Daily Reps */}
+              <div className="bg-white rounded-2xl shadow-sm border border-gray-300 p-6">
+                 <div className="flex items-center justify-between mb-4">
+                   <h3 className="font-bold text-corporate-navy">Daily Reps</h3>
+                   <span className="text-xs text-gray-400 uppercase tracking-wider">Coming Soon</span>
+                 </div>
+                 <div className="p-4 bg-gray-50 rounded-xl text-center text-gray-400 italic text-sm">
+                   Your daily leadership exercises will appear here.
+                 </div>
+              </div>
 
-          {/* Placeholder for Upcoming Events */}
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-300 p-6">
-             <div className="flex items-center justify-between mb-4">
-               <h3 className="font-bold text-corporate-navy">Upcoming Events</h3>
-               <span className="text-xs text-gray-400 uppercase tracking-wider">Coming Soon</span>
-             </div>
-             <div className="p-4 bg-gray-50 rounded-xl text-center text-gray-400 italic text-sm">
-               Team meetings and coaching sessions will appear here.
-             </div>
-          </div>
+              {/* Placeholder for Upcoming Events */}
+              <div className="bg-white rounded-2xl shadow-sm border border-gray-300 p-6">
+                 <div className="flex items-center justify-between mb-4">
+                   <h3 className="font-bold text-corporate-navy">Upcoming Events</h3>
+                   <span className="text-xs text-gray-400 uppercase tracking-wider">Coming Soon</span>
+                 </div>
+                 <div className="p-4 bg-gray-50 rounded-xl text-center text-gray-400 italic text-sm">
+                   Team meetings and coaching sessions will appear here.
+                 </div>
+              </div>
+            </>
+          ) : (
+            <>
+              {/* PM Mode: Development Plan Details & Habit Tracking */}
+              <div className="bg-white rounded-2xl shadow-sm border border-gray-300 p-6 flex-1">
+                <div className="flex items-center justify-between mb-6">
+                  <h3 className="font-bold text-xl text-corporate-navy flex items-center gap-2">
+                    <Target className="w-6 h-6 text-corporate-teal" />
+                    Development Plan Details
+                  </h3>
+                </div>
+                <div className="p-8 bg-gray-50 rounded-xl text-center border border-gray-100 h-full flex items-center justify-center">
+                  <div className="text-gray-400">
+                    <p className="font-medium mb-2">Your Development Plan Review</p>
+                    <p className="text-sm italic">Review your progress on your core competencies.</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-white rounded-2xl shadow-sm border border-gray-300 p-6 flex-1">
+                <div className="flex items-center justify-between mb-6">
+                  <h3 className="font-bold text-xl text-corporate-navy flex items-center gap-2">
+                    <Activity className="w-6 h-6 text-corporate-orange" />
+                    Habit Tracking
+                  </h3>
+                </div>
+                <div className="p-8 bg-gray-50 rounded-xl text-center border border-gray-100 h-full flex items-center justify-center">
+                  <div className="text-gray-400">
+                    <p className="font-medium mb-2">Daily Habit Check-in</p>
+                    <p className="text-sm italic">Track your consistency and build momentum.</p>
+                  </div>
+                </div>
+              </div>
+            </>
+          )}
         </div>
 
         {/* Right Column: Bookends */}
@@ -125,6 +165,9 @@ const ArenaDashboard = () => {
             onUpdatePM={handleUpdatePM}
             onAddWin={handleAddWin}
             stats={stats}
+            wins={wins}
+            mode={bookendMode}
+            setMode={setBookendMode}
           />
         </div>
 
