@@ -3,6 +3,7 @@ import {
   doc, 
   addDoc, 
   setDoc, 
+  updateDoc,
   getDocs, 
   query, 
   where, 
@@ -210,7 +211,22 @@ export const seedDatabase = async (db) => {
             const snapshot = await getDocs(q);
             
             if (!snapshot.empty) {
-                log(`   Skipping existing thread: ${item.id}`);
+                log(`   Updating existing thread: ${item.id}`);
+                const docId = snapshot.docs[0].id;
+                // Update existing doc to ensure it has dateAdded and other new fields
+                await updateDoc(doc(communityRef, docId), {
+                    ...item,
+                    title: item.rep,
+                    content: item.rep,
+                    author: item.ownerName,
+                    authorId: item.ownerId,
+                    updatedAt: serverTimestamp(),
+                    // Only set dateAdded if it's missing, or just update it to ensure sort works
+                    dateAdded: serverTimestamp(), 
+                    order: 999,
+                    isActive: true,
+                    type: 'post'
+                });
                 continue;
             }
 
@@ -242,7 +258,15 @@ export const seedDatabase = async (db) => {
              const snapshot = await getDocs(q);
              
              if (!snapshot.empty) {
-                 log(`   Skipping existing scenario: ${item.title}`);
+                 log(`   Updating existing scenario: ${item.title}`);
+                 const docId = snapshot.docs[0].id;
+                 await updateDoc(doc(coachingRef, docId), {
+                     ...item,
+                     isActive: true,
+                     updatedAt: serverTimestamp(),
+                     dateAdded: serverTimestamp(),
+                     order: 999,
+                 });
                  continue;
              }
 
