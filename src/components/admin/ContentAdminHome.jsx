@@ -592,9 +592,6 @@ const ContentAdminHome = () => {
           About Content Management
         </h3>
         <ul className="space-y-2 text-sm" style={{ color: COLORS.MUTED }}>
-          <li>• Content is organized by tier: Free and Premium</li>
-          <li>• Free users see limited content, Premium users see all content</li>
-          <li>• Dev mode shows all content regardless of tier</li>
           <li>• Inactive content is hidden from all users but not deleted</li>
           <li>• Changes take effect immediately across all user sessions</li>
         </ul>

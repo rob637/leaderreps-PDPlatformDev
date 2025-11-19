@@ -69,13 +69,14 @@ export const createAppServices = (db, userId) => {
 
     const metadataPath = 'metadata/config';
     const unsubMeta = onSnapshotEx(db, metadataPath, (snap) => {
-      if (!stores.globalMetadata) {
-        stores.globalMetadata = {};
-      }
-      
       if (snap.exists()) {
         const cleanData = stripSentinels(sanitizeTimestamps(snap.data()));
-        Object.assign(stores.globalMetadata, cleanData);
+        stores.globalMetadata = {
+          ...(stores.globalMetadata || {}),
+          ...cleanData
+        };
+      } else if (!stores.globalMetadata) {
+        stores.globalMetadata = {};
       }
       
       notifyChange();
@@ -92,13 +93,14 @@ export const createAppServices = (db, userId) => {
     catalogNames.forEach(catalogName => {
       const catalogPath = `metadata/config/catalog/${catalogName}`;
       const unsubCatalog = onSnapshotEx(db, catalogPath, (snap) => {
-        if (!stores.globalMetadata) {
-          stores.globalMetadata = {};
-        }
-        
         if (snap.exists()) {
           const keyName = catalogName.toUpperCase();
-          stores.globalMetadata[keyName] = stripSentinels(sanitizeTimestamps(snap.data()));
+          stores.globalMetadata = {
+            ...(stores.globalMetadata || {}),
+            [keyName]: stripSentinels(sanitizeTimestamps(snap.data()))
+          };
+        } else if (!stores.globalMetadata) {
+          stores.globalMetadata = {};
         }
         
         notifyChange();
@@ -114,10 +116,6 @@ export const createAppServices = (db, userId) => {
         path: readingCatalogPath
       });
       
-      if (!stores.globalMetadata) {
-        stores.globalMetadata = {};
-      }
-      
       if (snap.exists()) {
         const rawData = snap.data();
         console.log('📚 [createAppServices] Reading catalog raw data:', {
@@ -126,13 +124,19 @@ export const createAppServices = (db, userId) => {
           itemsKeys: rawData?.items ? Object.keys(rawData.items) : [],
           itemsLength: rawData?.items ? Object.keys(rawData.items).length : 0
         });
-        stores.globalMetadata.READING_CATALOG = stripSentinels(sanitizeTimestamps(rawData));
+        stores.globalMetadata = {
+          ...(stores.globalMetadata || {}),
+          READING_CATALOG: stripSentinels(sanitizeTimestamps(rawData))
+        };
         console.log('📚 [createAppServices] READING_CATALOG set in globalMetadata:', {
           hasItems: !!stores.globalMetadata.READING_CATALOG?.items,
           itemsKeys: stores.globalMetadata.READING_CATALOG?.items ? Object.keys(stores.globalMetadata.READING_CATALOG.items) : []
         });
       } else {
         console.warn('⚠️ [createAppServices] Reading catalog document does NOT exist at:', readingCatalogPath);
+        if (!stores.globalMetadata) {
+          stores.globalMetadata = {};
+        }
       }
       
       notifyChange();
@@ -142,16 +146,17 @@ export const createAppServices = (db, userId) => {
     // Listener for System Quotes
     const quotesPath = 'system_lovs/system_quotes';
     const unsubQuotes = onSnapshotEx(db, quotesPath, (snap) => {
-      if (!stores.globalMetadata) {
-        stores.globalMetadata = {};
-      }
-      
       if (snap.exists()) {
         const data = snap.data();
         if (data.items && Array.isArray(data.items)) {
-          stores.globalMetadata.SYSTEM_QUOTES = data.items;
+          stores.globalMetadata = {
+            ...(stores.globalMetadata || {}),
+            SYSTEM_QUOTES: data.items
+          };
           console.log('✅ [createAppServices] Loaded SYSTEM_QUOTES from system_lovs');
         }
+      } else if (!stores.globalMetadata) {
+        stores.globalMetadata = {};
       }
       notifyChange();
     });
@@ -160,10 +165,6 @@ export const createAppServices = (db, userId) => {
     // Listener for System LOVs (Leadership Tiers)
     const lovTiersPath = 'system_lovs/leadership_tiers';
     const unsubLovTiers = onSnapshotEx(db, lovTiersPath, (snap) => {
-      if (!stores.globalMetadata) {
-        stores.globalMetadata = {};
-      }
-      
       if (snap.exists()) {
         const data = snap.data();
         if (data.values && Array.isArray(data.values)) {
@@ -182,9 +183,14 @@ export const createAppServices = (db, userId) => {
           if (!tiersMap['All']) tiersMap['All'] = { name: 'All Tiers', hex: '#47A88D', color: 'teal-500' };
           if (!tiersMap['System']) tiersMap['System'] = { name: 'System Info', hex: '#47A88D', color: 'gray-500' };
           
-          stores.globalMetadata.LEADERSHIP_TIERS = tiersMap;
+          stores.globalMetadata = {
+            ...(stores.globalMetadata || {}),
+            LEADERSHIP_TIERS: tiersMap
+          };
           console.log('✅ [createAppServices] Loaded LEADERSHIP_TIERS from system_lovs');
         }
+      } else if (!stores.globalMetadata) {
+        stores.globalMetadata = {};
       }
       notifyChange();
     });
