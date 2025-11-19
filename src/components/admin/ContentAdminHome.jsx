@@ -2,9 +2,10 @@
 // Admin dashboard for content management
 
 import React, { useState } from 'react';
-import { BookOpen, Film, GraduationCap, ArrowLeft, Settings, RefreshCw, Trash2 } from 'lucide-react';
+import { BookOpen, Film, GraduationCap, ArrowLeft, Settings, RefreshCw, Trash2, Users, BrainCircuit, List } from 'lucide-react';
 import { useAppServices } from '../../services/useAppServices';
 import { CONTENT_COLLECTIONS, addContent } from '../../services/contentService';
+import { seedDatabase } from '../../utils/seedData';
 import { collection, doc, getDoc, getDocs, deleteDoc, updateDoc } from 'firebase/firestore';
 
 const COLORS = {
@@ -33,6 +34,30 @@ const ContentAdminHome = () => {
       'advanced': 'elite'
     };
     return tierMap[String(oldTier).toLowerCase()] || 'free';
+  };
+
+  const handleSeed = async () => {
+    if (!confirm('This will seed the database with initial data for Community, Coaching, and LOVs. Continue?')) {
+      return;
+    }
+
+    setIsMigrating(true);
+    setMigrationStatus('Starting seed...');
+
+    try {
+      const result = await seedDatabase(db);
+      if (result.success) {
+        setMigrationStatus('✅ Database seeded successfully!');
+        setTimeout(() => setMigrationStatus(''), 5000);
+      } else {
+        setMigrationStatus(`❌ Seed failed: ${result.error?.message}`);
+      }
+    } catch (error) {
+      console.error('Seed error:', error);
+      setMigrationStatus(`❌ Error: ${error.message}`);
+    } finally {
+      setIsMigrating(false);
+    }
   };
 
   const handleMigration = async () => {
@@ -405,21 +430,54 @@ const ContentAdminHome = () => {
       label: 'Readings',
       icon: BookOpen,
       description: 'Manage articles, blog posts, and reading materials',
-      color: COLORS.TEAL
+      color: COLORS.TEAL,
+      route: 'admin-content-manager',
+      param: { contentType: CONTENT_COLLECTIONS.READINGS }
     },
     {
       id: CONTENT_COLLECTIONS.VIDEOS,
       label: 'Videos',
       icon: Film,
       description: 'Manage video content and tutorials',
-      color: COLORS.ORANGE
+      color: COLORS.ORANGE,
+      route: 'admin-content-manager',
+      param: { contentType: CONTENT_COLLECTIONS.VIDEOS }
     },
     {
       id: CONTENT_COLLECTIONS.COURSES,
       label: 'Courses',
       icon: GraduationCap,
       description: 'Manage structured courses and learning paths',
-      color: COLORS.NAVY
+      color: COLORS.NAVY,
+      route: 'admin-content-manager',
+      param: { contentType: CONTENT_COLLECTIONS.COURSES }
+    }
+  ];
+
+  const advancedTypes = [
+    {
+      id: 'community',
+      label: 'Community',
+      icon: Users,
+      description: 'Manage community feed posts and seeds',
+      color: COLORS.TEAL,
+      route: 'admin-community-manager'
+    },
+    {
+      id: 'coaching',
+      label: 'Coaching',
+      icon: BrainCircuit,
+      description: 'Manage AI coaching scenarios and personas',
+      color: COLORS.ORANGE,
+      route: 'admin-coaching-manager'
+    },
+    {
+      id: 'lov',
+      label: 'System Values',
+      icon: List,
+      description: 'Manage dropdown lists and system values',
+      color: COLORS.NAVY,
+      route: 'admin-lov-manager'
     }
   ];
 
@@ -436,27 +494,46 @@ const ContentAdminHome = () => {
           Back to Dashboard
         </button>
         
-        <div className="flex items-center gap-3">
-          <Settings className="w-8 h-8" style={{ color: COLORS.TEAL }} />
-          <div>
-            <h1 className="text-3xl font-bold" style={{ color: COLORS.NAVY }}>
-              Content Management
-            </h1>
-            <p style={{ color: COLORS.MUTED }}>
-              Manage all content for your LeaderReps platform
-            </p>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <Settings className="w-8 h-8" style={{ color: COLORS.TEAL }} />
+            <div>
+              <h1 className="text-3xl font-bold" style={{ color: COLORS.NAVY }}>
+                Content Management
+              </h1>
+              <p style={{ color: COLORS.MUTED }}>
+                Manage all content for your LeaderReps platform
+              </p>
+            </div>
+          </div>
+          <div className="flex flex-col items-end gap-2">
+            <button
+              onClick={handleSeed}
+              disabled={isMigrating}
+              className="flex items-center gap-2 px-4 py-2 rounded-lg font-semibold text-white transition-all hover:opacity-90 disabled:opacity-50"
+              style={{ backgroundColor: COLORS.ORANGE }}
+            >
+              {isMigrating ? <RefreshCw className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
+              {isMigrating ? 'Seeding...' : 'Seed Database'}
+            </button>
+            {migrationStatus && (
+              <span className="text-sm font-medium text-teal-600 animate-pulse">
+                {migrationStatus}
+              </span>
+            )}
           </div>
         </div>
       </div>
 
       {/* Content Type Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <h2 className="text-xl font-bold mb-4" style={{ color: COLORS.NAVY }}>Standard Content</h2>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
         {contentTypes.map((type) => {
           const Icon = type.icon;
           return (
             <button
               key={type.id}
-              onClick={() => navigate('admin-content-manager', { contentType: type.id })}
+              onClick={() => navigate(type.route, type.param)}
               className="p-6 bg-white rounded-xl shadow-lg hover:shadow-xl transition-all text-left border-2 hover:border-opacity-100"
               style={{ borderColor: `${type.color}40` }}
             >
@@ -479,90 +556,34 @@ const ContentAdminHome = () => {
         })}
       </div>
 
-      {/* Admin Tools */}
-      <div className="mt-8 space-y-4">
-        {/* Migration Tool */}
-        <div className="p-6 bg-gradient-to-r from-orange-50 to-red-50 rounded-xl border-2" style={{ borderColor: COLORS.ORANGE }}>
-          <div className="flex items-start gap-4">
-            <RefreshCw className="w-6 h-6 flex-shrink-0 mt-1" style={{ color: COLORS.ORANGE }} />
-            <div className="flex-1">
-              <h3 className="font-bold mb-2" style={{ color: COLORS.NAVY }}>
-                Migrate Legacy Content
-              </h3>
-              <p className="text-sm mb-4" style={{ color: COLORS.MUTED }}>
-                Migrate your existing content from the old structure (metadata/reading_catalog) to the new CMS collections. This only needs to be done once.
+      <h2 className="text-xl font-bold mb-4" style={{ color: COLORS.NAVY }}>Advanced Management</h2>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        {advancedTypes.map((type) => {
+          const Icon = type.icon;
+          return (
+            <button
+              key={type.id}
+              onClick={() => navigate(type.route)}
+              className="p-6 bg-white rounded-xl shadow-lg hover:shadow-xl transition-all text-left border-2 hover:border-opacity-100"
+              style={{ borderColor: `${type.color}40` }}
+            >
+              <div className="flex items-center gap-3 mb-3">
+                <div 
+                  className="w-12 h-12 rounded-lg flex items-center justify-center"
+                  style={{ backgroundColor: `${type.color}20` }}
+                >
+                  <Icon className="w-6 h-6" style={{ color: type.color }} />
+                </div>
+                <h2 className="text-xl font-bold" style={{ color: COLORS.NAVY }}>
+                  {type.label}
+                </h2>
+              </div>
+              <p className="text-sm" style={{ color: COLORS.MUTED }}>
+                {type.description}
               </p>
-              <button
-                onClick={handleMigration}
-                disabled={isMigrating}
-                className="px-4 py-2 rounded-lg font-semibold text-white transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                style={{ backgroundColor: COLORS.ORANGE }}
-              >
-                {isMigrating ? 'Migrating...' : 'Run Migration'}
-              </button>
-              {migrationStatus && (
-                <p className="mt-3 text-sm font-medium" style={{ color: COLORS.NAVY }}>
-                  {migrationStatus}
-                </p>
-              )}
-            </div>
-          </div>
-        </div>
-
-        {/* Remove Duplicates Tool */}
-        <div className="p-6 bg-gradient-to-r from-red-50 to-pink-50 rounded-xl border-2 border-red-300">
-          <div className="flex items-start gap-4">
-            <Trash2 className="w-6 h-6 flex-shrink-0 mt-1 text-red-600" />
-            <div className="flex-1">
-              <h3 className="font-bold mb-2" style={{ color: COLORS.NAVY }}>
-                Remove Duplicate Videos
-              </h3>
-              <p className="text-sm mb-4" style={{ color: COLORS.MUTED }}>
-                Scan the video collection for duplicates (same title) and remove extras, keeping only one copy of each video.
-              </p>
-              <button
-                onClick={handleRemoveDuplicates}
-                disabled={isRemoving}
-                className="px-4 py-2 rounded-lg font-semibold text-white transition-all disabled:opacity-50 disabled:cursor-not-allowed bg-red-600 hover:bg-red-700"
-              >
-                {isRemoving ? 'Scanning...' : 'Remove Duplicates'}
-              </button>
-              {removalStatus && (
-                <p className="mt-3 text-sm font-medium" style={{ color: COLORS.NAVY }}>
-                  {removalStatus}
-                </p>
-              )}
-            </div>
-          </div>
-        </div>
-
-        {/* Tier Migration Tool */}
-        <div className="p-6 bg-gradient-to-r from-blue-50 to-teal-50 rounded-xl border-2" style={{ borderColor: COLORS.TEAL }}>
-          <div className="flex items-start gap-4">
-            <RefreshCw className="w-6 h-6 flex-shrink-0 mt-1" style={{ color: COLORS.TEAL }} />
-            <div className="flex-1">
-              <h3 className="font-bold mb-2" style={{ color: COLORS.NAVY }}>
-                Migrate Tiers to Free/Premium
-              </h3>
-              <p className="text-sm mb-4" style={{ color: COLORS.MUTED }}>
-                Update all content from old tier system (basic/professional/elite) to new simplified system (free/premium). Run this once after code update.
-              </p>
-              <button
-                onClick={migrateTiersToFreePremium}
-                disabled={isRemoving}
-                className="px-4 py-2 rounded-lg font-semibold text-white transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                style={{ backgroundColor: COLORS.TEAL }}
-              >
-                {isRemoving ? 'Migrating...' : 'Migrate Tiers'}
-              </button>
-              {removalStatus && (
-                <p className="mt-3 text-sm font-medium" style={{ color: COLORS.NAVY }}>
-                  {removalStatus}
-                </p>
-              )}
-            </div>
-          </div>
-        </div>
+            </button>
+          );
+        })}
       </div>
 
       {/* Info Box */}

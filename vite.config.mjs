@@ -128,8 +128,10 @@ export default defineConfig({
       },
     }),
     visualizer({
-      open: true,
-      filename: 'build/stats.html', 
+      open: false, // Don't auto-open to prevent terminal crashes
+      filename: 'build/stats.html',
+      gzipSize: true,
+      brotliSize: true,
     }),
   ],
   

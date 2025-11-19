@@ -138,6 +138,57 @@ export const createAppServices = (db, userId) => {
       notifyChange();
     });
     stores.listeners.push(unsubReadingCatalog);
+
+    // Listener for System Quotes
+    const quotesPath = 'system_lovs/system_quotes';
+    const unsubQuotes = onSnapshotEx(db, quotesPath, (snap) => {
+      if (!stores.globalMetadata) {
+        stores.globalMetadata = {};
+      }
+      
+      if (snap.exists()) {
+        const data = snap.data();
+        if (data.items && Array.isArray(data.items)) {
+          stores.globalMetadata.SYSTEM_QUOTES = data.items;
+          console.log('✅ [createAppServices] Loaded SYSTEM_QUOTES from system_lovs');
+        }
+      }
+      notifyChange();
+    });
+    stores.listeners.push(unsubQuotes);
+
+    // Listener for System LOVs (Leadership Tiers)
+    const lovTiersPath = 'system_lovs/leadership_tiers';
+    const unsubLovTiers = onSnapshotEx(db, lovTiersPath, (snap) => {
+      if (!stores.globalMetadata) {
+        stores.globalMetadata = {};
+      }
+      
+      if (snap.exists()) {
+        const data = snap.data();
+        if (data.values && Array.isArray(data.values)) {
+          const tiersMap = {};
+          data.values.forEach(t => {
+            if (t.isActive !== false) {
+                tiersMap[t.code] = { 
+                    name: t.label, 
+                    hex: t.color, 
+                    color: t.color, // Fallback
+                    ...t 
+                };
+            }
+          });
+          // Ensure 'All' and 'System' exist if not in DB
+          if (!tiersMap['All']) tiersMap['All'] = { name: 'All Tiers', hex: '#47A88D', color: 'teal-500' };
+          if (!tiersMap['System']) tiersMap['System'] = { name: 'System Info', hex: '#47A88D', color: 'gray-500' };
+          
+          stores.globalMetadata.LEADERSHIP_TIERS = tiersMap;
+          console.log('✅ [createAppServices] Loaded LEADERSHIP_TIERS from system_lovs');
+        }
+      }
+      notifyChange();
+    });
+    stores.listeners.push(unsubLovTiers);
   } else {
     console.warn('[createAppServices] No db or userId provided, using mock data');
     stores.developmentPlanData = MOCK_DEVELOPMENT_PLAN_DATA;

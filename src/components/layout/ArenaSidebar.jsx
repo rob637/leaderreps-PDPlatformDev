@@ -8,7 +8,8 @@ import {
   User, 
   LogOut,
   Menu,
-  ChevronLeft
+  ChevronLeft,
+  ShieldCheck
 } from 'lucide-react';
 
 const ArenaSidebar = ({ isOpen, toggle, currentScreen, navigate, onSignOut, user, membershipData }) => {
@@ -22,10 +23,18 @@ const ArenaSidebar = ({ isOpen, toggle, currentScreen, navigate, onSignOut, user
     { id: 'profile', label: 'Profile', icon: User },
   ];
 
-  // Determine display name
-  const displayName = membershipData?.firstName 
-    ? `${membershipData.firstName} ${membershipData.lastName || ''}`.trim()
-    : user?.displayName || 'Leader';
+  // Determine display name (First Name Only)
+  const getFirstName = () => {
+    if (membershipData?.firstName) return membershipData.firstName;
+    if (user?.displayName) return user.displayName.split(' ')[0];
+    return 'Leader';
+  };
+  
+  const firstName = getFirstName();
+
+  // Admin Check
+  const ADMIN_EMAILS = ['rob@sagecg.com', 'ryan@leaderreps.com', 'admin@leaderreps.com'];
+  const isAdmin = user?.email && ADMIN_EMAILS.includes(user.email);
 
   return (
     <div 
@@ -42,7 +51,7 @@ const ArenaSidebar = ({ isOpen, toggle, currentScreen, navigate, onSignOut, user
             <div className="flex flex-col">
               <span className="font-bold text-lg tracking-wide leading-tight">LeaderReps</span>
               <span className="text-xs text-corporate-teal font-medium uppercase tracking-wider truncate max-w-[140px]">
-                {displayName}'s Arena
+                {firstName}'s Arena
               </span>
             </div>
           </div>
@@ -71,7 +80,13 @@ const ArenaSidebar = ({ isOpen, toggle, currentScreen, navigate, onSignOut, user
             return (
               <li key={item.id}>
                 <button
-                  onClick={() => navigate(item.id)}
+                  onClick={() => {
+                    navigate(item.id);
+                    // Close sidebar on mobile when item is selected
+                    if (window.innerWidth < 768) {
+                      toggle();
+                    }
+                  }}
                   className={`
                     w-full flex items-center gap-4 px-4 py-3 transition-colors relative bg-transparent border-none
                     ${isActive ? 'bg-corporate-teal text-white' : 'text-gray-300 hover:bg-white/5 hover:text-white'}
@@ -91,6 +106,25 @@ const ArenaSidebar = ({ isOpen, toggle, currentScreen, navigate, onSignOut, user
               </li>
             );
           })}
+
+          {/* Admin Link - Only visible to admins */}
+          {isAdmin && (
+            <li className="mt-8 pt-4 border-t border-white/10">
+              <button
+                onClick={() => navigate('admin-portal')}
+                className={`
+                  w-full flex items-center gap-4 px-4 py-3 transition-colors relative bg-transparent border-none
+                  ${currentScreen === 'admin-portal' ? 'bg-corporate-orange text-white' : 'text-corporate-orange hover:bg-white/5'}
+                `}
+                title={!isOpen ? 'Admin Portal' : ''}
+              >
+                <ShieldCheck className="w-5 h-5 min-w-[1.25rem]" />
+                <span className={`whitespace-nowrap font-bold transition-opacity duration-200 ${isOpen ? 'opacity-100' : 'opacity-0 md:hidden'}`}>
+                  Admin Portal
+                </span>
+              </button>
+            </li>
+          )}
         </ul>
       </nav>
 

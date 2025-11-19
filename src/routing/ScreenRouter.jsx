@@ -59,6 +59,18 @@ const ScreenMap = {
   'admin-content-manager': lazy(() =>
     import('../components/admin/ContentManager.jsx')
   ),
+  'admin-portal': lazy(() =>
+    import('../components/admin/AdminPortal.jsx')
+  ),
+  'admin-community-manager': lazy(() =>
+    import('../components/admin/CommunityManager.jsx')
+  ),
+  'admin-coaching-manager': lazy(() =>
+    import('../components/admin/CoachingManager.jsx')
+  ),
+  'admin-lov-manager': lazy(() =>
+    import('../components/admin/LOVManager.jsx')
+  ),
 };
 
 const NotFoundScreen = () => (

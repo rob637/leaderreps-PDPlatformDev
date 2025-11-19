@@ -37,6 +37,9 @@ export const CONTENT_COLLECTIONS = {
   READINGS: 'content_readings',
   VIDEOS: 'content_videos',
   COURSES: 'content_courses',
+  COMMUNITY: 'content_community',
+  COACHING: 'content_coaching',
+  LOV: 'system_lovs'
 };
 
 // Tier hierarchy for filtering (dev has unlimited access)

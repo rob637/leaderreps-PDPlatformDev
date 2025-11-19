@@ -4,6 +4,7 @@ import React, { useState, useEffect, useMemo, useCallback } from 'react';
 // --- Core Services & Context ---
 import { useAppServices } from '../../services/useAppServices.jsx'; // cite: useAppServices.jsx
 import { membershipService } from '../../services/membershipService.js';
+import contentService, { CONTENT_COLLECTIONS } from '../../services/contentService.js';
 import { logWidthMeasurements } from '../../utils/debugWidth.js';
 
 // --- Icons ---
@@ -71,13 +72,7 @@ const LoadingSpinner = ({ message = "Loading..." }) => ( /* ... Re-use definitio
 
 // --- Mock Feed Data (Local Fallback - Replace with Service/API later) ---
 // Note: Added `ownerName` to align with `user.name` usage
-const MOCK_FEED_FALLBACK = [ // cite: CommunityFeed.jsx (original)
-    { id: 't1', ownerName: 'Alex H.', ownerId: 'user-alex-h', rep: 'Used CLEAR framework in 1:1. Felt structured.', tier: 'T2', time: '15m ago', reactions: 8, comments: 2, isPodMember: true, impact: false },
-    { id: 't2', ownerName: 'System Admin', ownerId: 'system', rep: 'New Rep Streak Coins unlocked! Keep up the great work.', tier: 'System', time: '1h ago', reactions: 25, comments: 5, isPodMember: false, impact: false },
-    { id: 't3', ownerName: 'Sarah K.', ownerId: 'user-sarah-k', rep: 'Practiced mindful check-in before the QBR. Helped stay centered.', tier: 'T1', time: '3h ago', reactions: 12, comments: 1, isPodMember: true, impact: false },
-    { id: 't4', ownerName: 'Justin M.', ownerId: 'user-justin-m', rep: 'Retired a rep (Delegation SOP). Shifting focus to T5 Strategic Alignment.', tier: 'T5', time: 'Yesterday', reactions: 18, comments: 3, isPodMember: true, impact: true },
-    { id: 't5', ownerName: 'Coach Support', ownerId: 'system-coach', rep: 'Reminder: Office Hours today at 2 PM ET for T3 Coaching skills.', tier: 'System', time: 'Yesterday', reactions: 9, comments: 0, isPodMember: false, impact: false },
-];
+// const MOCK_FEED_FALLBACK = []; // Removed in favor of Firestore data
 
 // --- Tier Metadata Fallback (If LEADERSHIP_TIERS fails to load) ---
 const LEADERSHIP_TIERS_META_FALLBACK = { // cite: CommunityScreen.jsx (original)
@@ -319,6 +314,7 @@ const NotificationsView = () => (
  * Form for creating a new discussion thread.
  */
 const NewThreadView = ({ setView }) => {
+    const { db, user } = useAppServices();
     const [title, setTitle] = useState('');
     const [context, setContext] = useState('');
     const [question, setQuestion] = useState('');
@@ -326,7 +322,7 @@ const NewThreadView = ({ setView }) => {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isSuccess, setIsSuccess] = useState(false);
 
-    // Mock Submission Handler (Replace with API call)
+    // Submission Handler
     const handleSubmit = useCallback(async (e) => {
         e.preventDefault();
         if (!title || !context || !question || isSubmitting) return; // Basic validation
@@ -334,19 +330,32 @@ const NewThreadView = ({ setView }) => {
         setIsSubmitting(true);
         setIsSuccess(false);
 
-        // --- MOCK API CALL ---
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        // --- END MOCK ---
+        try {
+            await contentService.addContent(db, CONTENT_COLLECTIONS.COMMUNITY, {
+                title: title,
+                content: `${context}\n\n${question}`, // Combine context and question for now as 'content'
+                tier: tier,
+                author: user?.name || 'Anonymous',
+                authorId: user?.userId || 'anonymous',
+                type: 'thread',
+                context: context,
+                question: question,
+                reactions: 0,
+                comments: 0,
+                isPodMember: false, // Default
+                impact: false // Default
+            });
+            setIsSuccess(true);
+            // Navigate back to home after success message
+            setTimeout(() => setView('home'), 2000);
+        } catch (error) {
+            console.error("Error posting thread:", error);
+            alert("Failed to post thread. Please try again.");
+        } finally {
+            setIsSubmitting(false);
+        }
 
-        // In a real app, you would send this data to your backend/Firestore
-        // Example: addDoc(collection(db, 'community_threads'), { title, context, question, tier, ownerId: user.userId, ownerName: user.name, createdAt: serverTimestamp(), ... });
-
-        setIsSubmitting(false);
-        setIsSuccess(true);
-        // Navigate back to home after success message
-        setTimeout(() => setView('home'), 2000);
-
-    }, [title, context, question, tier, isSubmitting, setView]); // Dependencies // Removed user dependency for now
+    }, [title, context, question, tier, isSubmitting, setView, db, user]);
 
     return (
         // Use Card container
@@ -413,7 +422,7 @@ const NewThreadView = ({ setView }) => {
 
 const CommunityScreen = ({ simulatedTier }) => {
     // --- Consume Services ---
-    const { user, navigate, LEADERSHIP_TIERS, featureFlags, isAdmin, membershipData, isLoading: isAppLoading, error: appError } = useAppServices(); // cite: useAppServices.jsx
+    const { db, user, navigate, LEADERSHIP_TIERS, featureFlags, isAdmin, membershipData, isLoading: isAppLoading, error: appError } = useAppServices(); // cite: useAppServices.jsx
     // Use safeUser structure even if user context is briefly null during auth changes
     const safeUser = useMemo(() => user || { userId: null, name: 'Guest' }, [user]); // cite: useAppServices.jsx (provides user)
     
@@ -432,13 +441,39 @@ const CommunityScreen = ({ simulatedTier }) => {
     // --- Local State ---
     const [view, setView] = useState('home'); // Controls which sub-view is displayed
     const [currentTierFilter, setCurrentTierFilter] = useState('All'); // Filter for the home feed
+    const [allThreads, setAllThreads] = useState([]);
+    const [isLoadingThreads, setIsLoadingThreads] = useState(true);
 
     // --- Determine Data Sources ---
     // Use LEADERSHIP_TIERS from context if available, otherwise use fallback
     const tierMeta = useMemo(() => LEADERSHIP_TIERS || LEADERSHIP_TIERS_META_FALLBACK, [LEADERSHIP_TIERS]); // cite: useAppServices.jsx, LEADERSHIP_TIERS_META_FALLBACK
-    // Use mock feed data for now. Replace with fetched data later.
-    // TODO: Fetch real thread data, potentially filter based on user's pod
-    const allThreads = useMemo(() => MOCK_FEED_FALLBACK, []); // cite: MOCK_FEED_FALLBACK
+    
+    // Fetch Threads
+    useEffect(() => {
+        const fetchThreads = async () => {
+            setIsLoadingThreads(true);
+            try {
+                const threads = await contentService.getContent(db, CONTENT_COLLECTIONS.COMMUNITY);
+                // Map to expected format if needed
+                const mappedThreads = threads.map(t => ({
+                    ...t,
+                    ownerName: t.author || t.ownerName,
+                    ownerId: t.authorId || t.ownerId,
+                    rep: t.title || t.rep, // Map title back to rep for display compatibility
+                    time: t.createdAt?.toDate ? t.createdAt.toDate().toLocaleDateString() : 'Just now'
+                }));
+                setAllThreads(mappedThreads);
+            } catch (error) {
+                console.error("Error fetching threads:", error);
+            } finally {
+                setIsLoadingThreads(false);
+            }
+        };
+        
+        if (db) {
+            fetchThreads();
+        }
+    }, [db]);
 
     // --- Effect to scroll to top when view changes ---
     useEffect(() => { 

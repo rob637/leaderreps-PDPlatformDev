@@ -8,6 +8,7 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 // FIX: Import the real useAppServices from the standard path.
 import { useAppServices } from '../../services/useAppServices.jsx';
+import contentService, { CONTENT_COLLECTIONS } from '../../services/contentService.js';
 import { logWidthMeasurements } from '../../utils/debugWidth.js';
 import { membershipService } from '../../services/membershipService.js';
 import { useNavigation } from '../../providers/NavigationProvider.jsx'; 
@@ -1514,17 +1515,28 @@ const ScenarioLibraryView = ({ setCoachingLabView, setSelectedScenario, setMicro
     const [isDynamicGeneratorVisible, setIsDynamicGeneratorVisible] = useState(false);
     const [showMicroLearningPrompt, setShowMicroLearningPrompt] = useState(false);
     const [tempSelectedScenario, setTempSelectedScenario] = useState(null);
+    const [scenarios, setScenarios] = useState([]);
+    const [isLoadingScenarios, setIsLoadingScenarios] = useState(true);
     
-    // Load scenarios from database via useAppServices
-    const { SCENARIO_CATALOG } = useAppServices();
-    // SCENARIO_CATALOG is an array, not an object with items property
-    const scenarios = useMemo(() => {
-        if (Array.isArray(SCENARIO_CATALOG)) {
-            return SCENARIO_CATALOG;
+    const { db } = useAppServices();
+
+    useEffect(() => {
+        const fetchScenarios = async () => {
+            setIsLoadingScenarios(true);
+            try {
+                const data = await contentService.getContent(db, CONTENT_COLLECTIONS.COACHING);
+                setScenarios(data);
+            } catch (error) {
+                console.error("Error fetching scenarios:", error);
+            } finally {
+                setIsLoadingScenarios(false);
+            }
+        };
+        
+        if (db) {
+            fetchScenarios();
         }
-        const items = SCENARIO_CATALOG?.items || [];
-        return items;
-    }, [SCENARIO_CATALOG]);
+    }, [db]);
     
     const handleScenarioClick = (scenario) => {
         setTempSelectedScenario(scenario);

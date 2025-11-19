@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useMemo } from 'react';
+import { useAppServices } from '../../services/useAppServices';
 
-const QUOTES = [
+const FALLBACK_QUOTES = [
   { text: "Leadership is not about being in charge. It is about taking care of those in your charge.", author: "Simon Sinek" },
   { text: "The greatest leader is not necessarily the one who does the greatest things. He is the one that gets the people to do the greatest things.", author: "Ronald Reagan" },
   { text: "Innovation distinguishes between a leader and a follower.", author: "Steve Jobs" },
@@ -9,14 +10,38 @@ const QUOTES = [
 ];
 
 const ScrollingQuotes = () => {
+  const { globalMetadata } = useAppServices();
+
+  const quotes = useMemo(() => {
+    const systemQuotes = globalMetadata?.SYSTEM_QUOTES;
+    
+    if (systemQuotes && Array.isArray(systemQuotes) && systemQuotes.length > 0) {
+      return systemQuotes.map(item => {
+        // Handle "Quote|Author" format
+        if (typeof item === 'string') {
+          const parts = item.split('|');
+          if (parts.length >= 2) {
+            return { text: parts[0].trim(), author: parts[1].trim() };
+          }
+          return { text: item, author: '' };
+        }
+        return item; // Fallback if it's already an object (future proofing)
+      });
+    }
+    
+    return FALLBACK_QUOTES;
+  }, [globalMetadata?.SYSTEM_QUOTES]);
+
   return (
     <div className="bg-corporate-navy text-white py-3 overflow-hidden relative z-40 border-b border-corporate-teal/30">
       <div className="animate-marquee whitespace-nowrap flex items-center">
         {/* Duplicate the quotes to ensure seamless scrolling */}
-        {[...QUOTES, ...QUOTES].map((quote, index) => (
+        {[...quotes, ...quotes].map((quote, index) => (
           <div key={index} className="flex items-center mx-8 text-sm font-medium opacity-90 hover:opacity-100 transition-opacity">
             <span className="italic mr-2">"{quote.text}"</span>
-            <span className="text-corporate-teal font-bold text-xs uppercase tracking-wider">— {quote.author}</span>
+            {quote.author && (
+              <span className="text-corporate-teal font-bold text-xs uppercase tracking-wider">— {quote.author}</span>
+            )}
           </div>
         ))}
       </div>

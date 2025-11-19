@@ -27,7 +27,10 @@ const ArenaDashboard = () => {
   }, [dateId]);
   
   // Bookend Mode State (Lifted from BookendsWidget)
-  const [bookendMode, setBookendMode] = useState('AM');
+  const [bookendMode, setBookendMode] = useState(() => {
+    const hour = new Date().getHours();
+    return hour < 12 ? 'AM' : 'PM';
+  });
   const [reflectionHistory, setReflectionHistory] = useState([]);
 
   // Adapt Development Plan Data
@@ -121,7 +124,7 @@ const ArenaDashboard = () => {
         {/* Left/Center Column: Training & WINs */}
         <div className="lg:col-span-7 h-full overflow-hidden flex flex-col">
           {bookendMode === 'AM' ? (
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-300 p-8 h-full overflow-y-auto">
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-300 p-4 md:p-8 h-full overflow-y-auto">
               {/* Unified AM Sheet */}
               <div className="space-y-8">
                 <FocusCard block={1} focus="Feedback" />
@@ -135,7 +138,7 @@ const ArenaDashboard = () => {
                 {/* Daily Reps Section */}
                 <div>
                    <div className="flex items-center justify-between mb-2">
-                     <h3 className="text-lg font-bold text-corporate-navy font-serif">Daily Rep:</h3>
+                     <h3 className="text-lg font-bold text-corporate-navy font-serif text-left">Daily Rep:</h3>
                      <span className="text-xs text-gray-400 uppercase tracking-wider">Coming Soon</span>
                    </div>
                    <div className="p-3 bg-gray-50 rounded-lg border border-gray-100">
@@ -146,7 +149,7 @@ const ArenaDashboard = () => {
                 {/* Upcoming Events Section */}
                 <div>
                    <div className="flex items-center justify-between mb-2">
-                     <h3 className="text-lg font-bold text-corporate-navy font-serif">Upcoming Events:</h3>
+                     <h3 className="text-lg font-bold text-corporate-navy font-serif text-left">Upcoming Events:</h3>
                      <span className="text-xs text-gray-400 uppercase tracking-wider">Coming Soon</span>
                    </div>
                    <div className="space-y-2 pl-4">

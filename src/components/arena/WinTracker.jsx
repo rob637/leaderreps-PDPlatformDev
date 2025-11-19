@@ -8,44 +8,46 @@ const WinTracker = ({ wins = [], onToggle, onDelete }) => {
   const WinItem = ({ item }) => (
     <div 
       className={`
-        group flex items-start gap-3 p-3 rounded-xl transition-all duration-200 border mb-2
+        group flex items-center justify-between gap-3 p-3 rounded-xl transition-all duration-200 border mb-2
         ${item.completed 
           ? 'bg-gray-50 border-gray-100' 
           : 'bg-white border-gray-200 hover:border-corporate-teal/30 hover:shadow-sm'
         }
       `}
     >
-      <button
-        onClick={() => onToggle(item.id)}
-        className={`
-          mt-1 flex-shrink-0 w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-colors
-          ${item.completed 
-            ? 'bg-corporate-teal border-corporate-teal text-white' 
-            : 'border-gray-300 text-transparent hover:border-corporate-teal'
-          }
-        `}
-      >
-        <Check className="w-4 h-4" strokeWidth={3} />
-      </button>
-      
       <div className="flex-1 min-w-0">
         <p className={`
-          text-base leading-relaxed break-words transition-all
+          text-base leading-relaxed break-words transition-all text-left
           ${item.completed ? 'text-gray-400 line-through' : 'text-corporate-navy font-medium'}
         `}>
           {item.text}
         </p>
       </div>
 
-      {onDelete && (
-        <button 
-          onClick={() => onDelete(item.id)}
-          className="opacity-0 group-hover:opacity-100 p-2 text-gray-300 hover:text-corporate-orange transition-all"
-          title="Delete item"
+      <div className="flex items-center gap-3">
+        <button
+          onClick={() => onToggle(item.id)}
+          className={`
+            flex-shrink-0 w-6 h-6 rounded border-2 flex items-center justify-center transition-colors
+            ${item.completed 
+              ? 'bg-corporate-teal border-corporate-teal text-white' 
+              : 'border-gray-300 text-transparent hover:border-corporate-teal'
+            }
+          `}
         >
-          <Trash2 className="w-4 h-4" />
+          <Check className="w-4 h-4" strokeWidth={3} />
         </button>
-      )}
+
+        {onDelete && (
+          <button 
+            onClick={() => onDelete(item.id)}
+            className="opacity-0 group-hover:opacity-100 p-2 text-gray-300 hover:text-corporate-orange transition-all"
+            title="Delete item"
+          >
+            <Trash2 className="w-4 h-4" />
+          </button>
+        )}
+      </div>
     </div>
   );
   
@@ -53,9 +55,9 @@ const WinTracker = ({ wins = [], onToggle, onDelete }) => {
     <div className="w-full">
       <div className="space-y-6">
         {/* Main WIN Section */}
-        <div className="flex flex-col md:flex-row md:gap-4">
-          <div className="w-24 flex-shrink-0 pt-3">
-            <h3 className="text-lg font-bold text-corporate-navy font-serif">WIN:</h3>
+        <div className="flex flex-col gap-2">
+          <div className="flex-shrink-0">
+            <h3 className="text-lg font-bold text-corporate-navy font-serif text-left">WIN:</h3>
           </div>
           <div className="flex-1">
             {mainWins.length > 0 ? (
@@ -67,9 +69,9 @@ const WinTracker = ({ wins = [], onToggle, onDelete }) => {
         </div>
 
         {/* Priorities Section */}
-        <div className="flex flex-col md:flex-row md:gap-4">
-          <div className="w-24 flex-shrink-0 pt-3">
-            <h3 className="text-lg font-bold text-corporate-navy font-serif">
+        <div className="flex flex-col gap-2">
+          <div className="flex-shrink-0">
+            <h3 className="text-lg font-bold text-corporate-navy font-serif text-left">
               {priorities.length === 1 ? 'Priority:' : 'Priorities:'}
             </h3>
           </div>

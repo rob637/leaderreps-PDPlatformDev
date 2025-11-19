@@ -46,8 +46,8 @@ echo -e "\n${YELLOW}🏗️  Building production version...${NC}"
 npm run build
 
 # 6. Deploy to Firebase
-echo -e "\n${YELLOW}🚀 Deploying to Firebase Hosting...${NC}"
-firebase deploy --only hosting
+echo -e "\n${YELLOW}🚀 Deploying to Firebase (Hosting & Rules)...${NC}"
+firebase deploy --only hosting,firestore:rules
 
 # 7. Success message
 echo -e "\n${GREEN}✅ Deployment Complete!${NC}"
