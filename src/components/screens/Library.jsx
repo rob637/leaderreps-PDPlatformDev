@@ -1,11 +1,12 @@
 // src/components/screens/Library.jsx
 
 import React, { useState, useEffect } from 'react';
-import { BookOpen, ShieldCheck, Film, ArrowLeft, Sparkles, Target, Trophy, Users, TrendingUp, Star, Zap } from 'lucide-react';
+import { BookOpen, ShieldCheck, Film, ArrowLeft, Sparkles, Target, Trophy, Users, TrendingUp, Star, Zap, PlayCircle, FileText } from 'lucide-react';
 import { useAppServices } from '../../services/useAppServices.jsx';
 import { membershipService } from '../../services/membershipService.js';
 import { Button } from '../shared/UI';
 import { getReadings, getVideos, getCourses } from '../../services/contentService';
+import { useFeatures } from '../../providers/FeatureProvider';
 
 // LEADERREPS.COM OFFICIAL CORPORATE COLORS - VERIFIED 11/14/25
 const COLORS = {
@@ -81,6 +82,7 @@ const LibraryCard = ({ title, description, icon: Icon, onClick, disabled = false
 
 const Library = ({ simulatedTier, isDeveloperMode }) => {
   const { membershipData, navigate, db } = useAppServices();
+  const { isFeatureEnabled } = useFeatures();
   const [contentCounts, setContentCounts] = useState({ readings: 0, videos: 0, courses: 0 });
   const [loading, setLoading] = useState(true);
   
@@ -138,7 +140,7 @@ const Library = ({ simulatedTier, isDeveloperMode }) => {
       title: 'Courses',
       description: 'Structured leadership courses and learning paths to develop your skills.',
       icon: ShieldCheck,
-      screen: 'applied-leadership',
+      screen: isFeatureEnabled('course-library') ? 'course-library' : 'applied-leadership',
       requiredTier: 'free' // Available to all users, but content varies by tier
     },
     {
@@ -146,7 +148,7 @@ const Library = ({ simulatedTier, isDeveloperMode }) => {
       title: 'Reading & Reps',
       description: 'Curated business readings with actionable exercises and practice opportunities.',
       icon: BookOpen,
-      screen: 'business-readings',
+      screen: isFeatureEnabled('reading-hub') ? 'reading-hub' : 'business-readings',
       requiredTier: 'free' // Available to all users, but content varies by tier
     },
     {
@@ -156,7 +158,16 @@ const Library = ({ simulatedTier, isDeveloperMode }) => {
       icon: Film,
       screen: 'leadership-videos',
       requiredTier: 'free' // Available to all users, but content varies by tier
-    }
+    },
+    // Feature: Strategic Templates
+    ...(isFeatureEnabled('strat-templates') ? [{
+      id: 'templates',
+      title: 'Strategic Templates',
+      description: 'Downloadable worksheets and tools for your team.',
+      icon: FileText,
+      screen: 'strat-templates',
+      requiredTier: 'professional'
+    }] : [])
   ];
 
   const handleCardClick = (item) => {

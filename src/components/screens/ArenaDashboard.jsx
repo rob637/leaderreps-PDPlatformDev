@@ -11,7 +11,8 @@ import {
 } from 'lucide-react';
 import { COLORS } from './dashboard/dashboardConstants.js';
 import { useDashboard } from './dashboard/DashboardHooks.jsx';
-import { UnifiedAnchorEditorModal } from './dashboard/DashboardComponents.jsx';
+import { UnifiedAnchorEditorModal, StreakTracker } from './dashboard/DashboardComponents.jsx';
+import { useFeatures } from '../../providers/FeatureProvider';
 
 const ArenaDashboard = (props) => {
   const { 
@@ -23,6 +24,8 @@ const ArenaDashboard = (props) => {
     userData,
     navigate
   } = useAppServices();
+
+  const { features, isFeatureEnabled } = useFeatures();
 
   // --- HOOKS ---
   const {
@@ -221,6 +224,33 @@ const ArenaDashboard = (props) => {
           </p>
         </header>
 
+        {/* FEATURE: Gamification Engine */}
+        {features?.gamification && (
+          <div className="flex justify-end">
+             <StreakTracker streakCount={streakCount} streakCoins={streakCoins} userEmail={user?.email} />
+          </div>
+        )}
+
+        {/* FEATURE: Executive Summary Widget */}
+        {features?.['exec-summary'] && (
+          <div className="bg-corporate-navy text-white p-6 rounded-2xl shadow-lg flex items-center justify-between">
+            <div>
+              <h2 className="text-lg font-bold mb-1">Executive Summary</h2>
+              <p className="text-blue-200 text-sm">Your leadership impact at a glance.</p>
+            </div>
+            <div className="flex gap-8 text-center">
+              <div>
+                <div className="text-2xl font-bold text-corporate-teal">94%</div>
+                <div className="text-xs text-blue-200 uppercase">Consistency</div>
+              </div>
+              <div>
+                <div className="text-2xl font-bold text-corporate-orange">12</div>
+                <div className="text-xs text-blue-200 uppercase">Reps Done</div>
+              </div>
+            </div>
+          </div>
+        )}
+
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
           
           {/* LEFT COLUMN (Main Work) */}
@@ -259,46 +289,58 @@ const ArenaDashboard = (props) => {
               
               <div className="space-y-3 text-left">
                 {/* Grounding Rep */}
-                {hasLIS ? (
-                  <Checkbox 
-                    checked={lisRead}
-                    onChange={() => handleHabitCheck('readLIS', !lisRead)}
-                    label="Grounding Rep: Read LIS"
-                    subLabel="Center yourself on your identity."
-                  />
-                ) : (
-                  <div className="p-4 rounded-xl border-2 border-dashed border-orange-300 bg-orange-50 flex items-center justify-between">
-                    <div>
-                      <p className="font-semibold text-orange-800">Grounding Rep: Read LIS</p>
-                      <p className="text-xs text-orange-600">No Identity Statement set yet.</p>
+                {isFeatureEnabled('identity-builder') && (
+                  hasLIS ? (
+                    <Checkbox 
+                      checked={lisRead}
+                      onChange={() => handleHabitCheck('readLIS', !lisRead)}
+                      label="Grounding Rep: Read LIS"
+                      subLabel="Center yourself on your identity."
+                    />
+                  ) : (
+                    <div className="p-4 rounded-xl border-2 border-dashed border-orange-300 bg-orange-50 flex items-center justify-between">
+                      <div>
+                        <p className="font-semibold text-orange-800">Grounding Rep: Read LIS</p>
+                        <p className="text-xs text-orange-600">No Identity Statement set yet.</p>
+                      </div>
+                      <button 
+                        onClick={() => setIsAnchorModalOpen(true)}
+                        className="px-4 py-2 bg-orange-500 text-white rounded-lg text-sm font-bold hover:bg-orange-600 transition-colors"
+                      >
+                        Enter / Save
+                      </button>
                     </div>
-                    <button 
-                      onClick={() => setIsAnchorModalOpen(true)}
-                      className="px-4 py-2 bg-orange-500 text-white rounded-lg text-sm font-bold hover:bg-orange-600 transition-colors"
-                    >
-                      Enter / Save
-                    </button>
-                  </div>
+                  )
                 )}
 
                 {/* Daily Rep */}
-                {dailyRepName ? (
-                  <Checkbox 
-                    checked={dailyRepCompleted}
-                    onChange={() => handleHabitCheck('completedDailyRep', !dailyRepCompleted)}
-                    label={`Daily Rep: ${dailyRepName}`}
-                    subLabel="Execute your targeted practice."
-                  />
-                ) : (
-                  <div className="p-4 rounded-xl border border-slate-200 bg-white opacity-75">
-                    <p className="font-semibold text-slate-700">Daily Rep</p>
-                    <p className="text-xs text-slate-500">
-                      Daily reps are delivered based on your Focus/Dev Plan.
-                      <button onClick={() => navigate('development-plan')} className="text-teal-600 ml-1 hover:underline">
-                        Check Plan
-                      </button>
-                    </p>
-                  </div>
+                {isFeatureEnabled('habit-stack') && (
+                  dailyRepName ? (
+                    <div className="relative">
+                      <Checkbox 
+                        checked={dailyRepCompleted}
+                        onChange={() => handleHabitCheck('completedDailyRep', !dailyRepCompleted)}
+                        label={`Daily Rep: ${dailyRepName}`}
+                        subLabel="Execute your targeted practice."
+                      />
+                      {/* FEATURE: Calendar Integration */}
+                      {features?.['calendar-sync'] && (
+                        <button className="absolute right-4 top-1/2 -translate-y-1/2 p-2 text-slate-400 hover:text-corporate-teal" title="Sync to Calendar">
+                          <Calendar className="w-5 h-5" />
+                        </button>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="p-4 rounded-xl border border-slate-200 bg-white opacity-75">
+                      <p className="font-semibold text-slate-700">Daily Rep</p>
+                      <p className="text-xs text-slate-500">
+                        Daily reps are delivered based on your Focus/Dev Plan.
+                        <button onClick={() => navigate('development-plan')} className="text-teal-600 ml-1 hover:underline">
+                          Check Plan
+                        </button>
+                      </p>
+                    </div>
+                  )
                 )}
 
                 {/* Additional Reps */}
@@ -315,136 +357,138 @@ const ArenaDashboard = (props) => {
             </section>
 
             {/* 4. WIN THE DAY - 1-2-3 */}
-            <section>
-              <div className="flex items-center gap-2 mb-4">
-                <div className="w-8 h-8 rounded-lg bg-teal-100 flex items-center justify-center text-teal-600">
-                  <Trophy className="w-5 h-5" />
+            {isFeatureEnabled('win-the-day') && (
+              <section>
+                <div className="flex items-center gap-2 mb-4">
+                  <div className="w-8 h-8 rounded-lg bg-teal-100 flex items-center justify-center text-teal-600">
+                    <Trophy className="w-5 h-5" />
+                  </div>
+                  <h2 className="text-xl font-bold text-[#002E47]">
+                    Win the Day (Today's 1-2-3)
+                  </h2>
                 </div>
-                <h2 className="text-xl font-bold text-[#002E47]">
-                  Win the Day (Today's 1-2-3)
-                </h2>
-              </div>
 
-              <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200 space-y-6">
-                
-                {/* 1. Top Priority */}
-                <div className="text-left">
-                  <label className="block text-xs font-bold text-slate-400 uppercase mb-2 text-left">
-                    1. Top Priority (The WIN)
-                  </label>
-                  <div className="flex gap-3">
-                    {amWinCompleted ? (
-                      <div className="flex-1 p-3 bg-green-50 border border-green-200 rounded-xl flex items-center gap-3">
-                        <CheckSquare className="w-5 h-5 text-green-600" />
-                        <span className="font-bold text-green-900 line-through opacity-75">{morningWIN}</span>
+                <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200 space-y-6">
+                  
+                  {/* 1. Top Priority */}
+                  <div className="text-left">
+                    <label className="block text-xs font-bold text-slate-400 uppercase mb-2 text-left">
+                      1. Top Priority (The WIN)
+                    </label>
+                    <div className="flex gap-3">
+                      {amWinCompleted ? (
+                        <div className="flex-1 p-3 bg-green-50 border border-green-200 rounded-xl flex items-center gap-3">
+                          <CheckSquare className="w-5 h-5 text-green-600" />
+                          <span className="font-bold text-green-900 line-through opacity-75">{morningWIN}</span>
+                        </div>
+                      ) : (
+                        <div className="flex-1 flex gap-2">
+                          <input 
+                            type="text"
+                            value={morningWIN}
+                            onChange={(e) => setMorningWIN(e.target.value)}
+                            placeholder="What is the ONE thing that must get done?"
+                            className="flex-1 p-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-teal-500 outline-none transition-all font-medium"
+                            disabled={amWinCompleted} // Can't edit if checked (unless we add uncheck logic)
+                          />
+                          {/* Save Button (Initial '+') */}
+                          {!amWinCompleted && morningWIN && (
+                             <button 
+                               onClick={handleSaveWINWrapper}
+                               disabled={isSavingWIN || isWinSaved}
+                               className={`p-3 rounded-xl transition-colors disabled:opacity-50 ${
+                                 isWinSaved ? 'bg-green-500 text-white' : 'bg-teal-500 text-white hover:bg-teal-600'
+                               }`}
+                               title="Save WIN"
+                             >
+                               {isSavingWIN ? <Loader className="w-5 h-5 animate-spin" /> : 
+                                isWinSaved ? <CheckSquare className="w-5 h-5" /> : <Plus className="w-5 h-5" />}
+                             </button>
+                          )}
+                        </div>
+                      )}
+                      
+                      {/* Checkbox to complete (only shows if saved/has value) */}
+                      {morningWIN && !isSavingWIN && (
+                        <button
+                          onClick={handleToggleWIN}
+                          className={`p-3 rounded-xl border-2 transition-colors ${
+                            amWinCompleted 
+                              ? 'bg-green-500 border-green-500 text-white' 
+                              : 'bg-white border-slate-200 text-slate-300 hover:border-green-400'
+                          }`}
+                        >
+                          <CheckSquare className="w-5 h-5" />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* 2 & 3. Next Most Important */}
+                  <div className="space-y-3 text-left">
+                    <div className="flex justify-between items-center">
+                      <label className="block text-xs font-bold text-slate-400 uppercase text-left">
+                        2 & 3. Next Most Important
+                      </label>
+                      {otherTasks.length > 0 && (
+                        <span className="text-xs text-green-600 font-medium flex items-center gap-1">
+                          <CheckSquare className="w-3 h-3" /> Auto-saved
+                        </span>
+                      )}
+                    </div>
+                    
+                    {otherTasks.map((task, idx) => (
+                      <div key={task.id || idx} className="flex items-center gap-3">
+                        <div className={`flex-1 p-3 rounded-xl border ${
+                          task.completed ? 'bg-slate-50 border-slate-200' : 'bg-white border-slate-200'
+                        }`}>
+                          <span className={`font-medium ${task.completed ? 'line-through text-slate-400' : 'text-slate-700'}`}>
+                            {task.text}
+                          </span>
+                        </div>
+                        <button
+                          onClick={() => handleToggleTask(task.id)}
+                          className={`p-3 rounded-xl border-2 transition-colors ${
+                            task.completed
+                              ? 'bg-teal-500 border-teal-500 text-white' 
+                              : 'bg-white border-slate-200 text-slate-300 hover:border-teal-400'
+                          }`}
+                        >
+                          <CheckSquare className="w-5 h-5" />
+                        </button>
+                        <button 
+                          onClick={() => handleRemoveTask(task.id)}
+                          className="p-3 text-slate-300 hover:text-red-400 transition-colors"
+                        >
+                          <X className="w-5 h-5" />
+                        </button>
                       </div>
-                    ) : (
-                      <div className="flex-1 flex gap-2">
+                    ))}
+
+                    {otherTasks.length < 2 && (
+                      <div className="flex gap-2">
                         <input 
                           type="text"
-                          value={morningWIN}
-                          onChange={(e) => setMorningWIN(e.target.value)}
-                          placeholder="What is the ONE thing that must get done?"
-                          className="flex-1 p-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-teal-500 outline-none transition-all font-medium"
-                          disabled={amWinCompleted} // Can't edit if checked (unless we add uncheck logic)
+                          value={newTaskText}
+                          onChange={(e) => setNewTaskText(e.target.value)}
+                          onKeyPress={(e) => e.key === 'Enter' && handleAddOtherTask()}
+                          placeholder="Add another priority..."
+                          className="flex-1 p-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-teal-500 outline-none transition-all text-sm"
                         />
-                        {/* Save Button (Initial '+') */}
-                        {!amWinCompleted && morningWIN && (
-                           <button 
-                             onClick={handleSaveWINWrapper}
-                             disabled={isSavingWIN || isWinSaved}
-                             className={`p-3 rounded-xl transition-colors disabled:opacity-50 ${
-                               isWinSaved ? 'bg-green-500 text-white' : 'bg-teal-500 text-white hover:bg-teal-600'
-                             }`}
-                             title="Save WIN"
-                           >
-                             {isSavingWIN ? <Loader className="w-5 h-5 animate-spin" /> : 
-                              isWinSaved ? <CheckSquare className="w-5 h-5" /> : <Plus className="w-5 h-5" />}
-                           </button>
-                        )}
+                        <button 
+                          onClick={handleAddOtherTask}
+                          disabled={!newTaskText.trim()}
+                          className="p-3 bg-slate-200 text-slate-600 rounded-xl hover:bg-teal-500 hover:text-white transition-colors disabled:opacity-50"
+                        >
+                          <Plus className="w-5 h-5" />
+                        </button>
                       </div>
                     )}
-                    
-                    {/* Checkbox to complete (only shows if saved/has value) */}
-                    {morningWIN && !isSavingWIN && (
-                      <button
-                        onClick={handleToggleWIN}
-                        className={`p-3 rounded-xl border-2 transition-colors ${
-                          amWinCompleted 
-                            ? 'bg-green-500 border-green-500 text-white' 
-                            : 'bg-white border-slate-200 text-slate-300 hover:border-green-400'
-                        }`}
-                      >
-                        <CheckSquare className="w-5 h-5" />
-                      </button>
-                    )}
                   </div>
+
                 </div>
-
-                {/* 2 & 3. Next Most Important */}
-                <div className="space-y-3 text-left">
-                  <div className="flex justify-between items-center">
-                    <label className="block text-xs font-bold text-slate-400 uppercase text-left">
-                      2 & 3. Next Most Important
-                    </label>
-                    {otherTasks.length > 0 && (
-                      <span className="text-xs text-green-600 font-medium flex items-center gap-1">
-                        <CheckSquare className="w-3 h-3" /> Auto-saved
-                      </span>
-                    )}
-                  </div>
-                  
-                  {otherTasks.map((task, idx) => (
-                    <div key={task.id || idx} className="flex items-center gap-3">
-                      <div className={`flex-1 p-3 rounded-xl border ${
-                        task.completed ? 'bg-slate-50 border-slate-200' : 'bg-white border-slate-200'
-                      }`}>
-                        <span className={`font-medium ${task.completed ? 'line-through text-slate-400' : 'text-slate-700'}`}>
-                          {task.text}
-                        </span>
-                      </div>
-                      <button
-                        onClick={() => handleToggleTask(task.id)}
-                        className={`p-3 rounded-xl border-2 transition-colors ${
-                          task.completed
-                            ? 'bg-teal-500 border-teal-500 text-white' 
-                            : 'bg-white border-slate-200 text-slate-300 hover:border-teal-400'
-                        }`}
-                      >
-                        <CheckSquare className="w-5 h-5" />
-                      </button>
-                      <button 
-                        onClick={() => handleRemoveTask(task.id)}
-                        className="p-3 text-slate-300 hover:text-red-400 transition-colors"
-                      >
-                        <X className="w-5 h-5" />
-                      </button>
-                    </div>
-                  ))}
-
-                  {otherTasks.length < 2 && (
-                    <div className="flex gap-2">
-                      <input 
-                        type="text"
-                        value={newTaskText}
-                        onChange={(e) => setNewTaskText(e.target.value)}
-                        onKeyPress={(e) => e.key === 'Enter' && handleAddOtherTask()}
-                        placeholder="Add another priority..."
-                        className="flex-1 p-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-teal-500 outline-none transition-all text-sm"
-                      />
-                      <button 
-                        onClick={handleAddOtherTask}
-                        disabled={!newTaskText.trim()}
-                        className="p-3 bg-slate-200 text-slate-600 rounded-xl hover:bg-teal-500 hover:text-white transition-colors disabled:opacity-50"
-                      >
-                        <Plus className="w-5 h-5" />
-                      </button>
-                    </div>
-                  )}
-                </div>
-
-              </div>
-            </section>
+              </section>
+            )}
 
           </div>
 

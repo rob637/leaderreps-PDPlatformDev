@@ -12,6 +12,7 @@ import contentService, { CONTENT_COLLECTIONS } from '../../services/contentServi
 import { logWidthMeasurements } from '../../utils/debugWidth.js';
 import { membershipService } from '../../services/membershipService.js';
 import { useNavigation } from '../../providers/NavigationProvider.jsx'; 
+import { useFeatures } from '../../providers/FeatureProvider';
 import { AlertTriangle, ArrowLeft, BarChart3, Beaker, Briefcase, CheckCircle, Clock, CornerRightUp, Cpu, Eye, HeartPulse, Info, Lightbulb, Mic, Play, PlusCircle, Send, ShieldCheck, Star, Target, TrendingUp, Users, X, Zap } from 'lucide-react'; 
 import { COLORS, COMPLEXITY_MAP } from './labs/labConstants.js';
 
@@ -1653,6 +1654,7 @@ export default function CoachingLabScreen({ simulatedTier }) {
     const [preparedSBI, setPreparedSBI] = useState(null);
     const [microLearningTopic, setMicroLearningTopic] = useState(null);
     const { navigate, currentUser, membershipData } = useAppServices();
+    const { isFeatureEnabled } = useFeatures();
     
     // Check membership access - use simulatedTier if provided, otherwise use actual membership
     const currentTier = simulatedTier || membershipData?.currentTier || currentUser?.membershipTier || 'free';
@@ -1732,22 +1734,42 @@ export default function CoachingLabScreen({ simulatedTier }) {
                             <p className="corporate-text-body text-gray-600 mx-auto px-4">Welcome to Coaching. Select a tool to build your leadership skills.</p>
                         </div>
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                            <Card title="Scenario Library" icon={Briefcase} onClick={hasCoachingAccess ? () => setView('scenario-library') : undefined}>
-                                <p className="text-sm text-gray-600 mb-3">Practice high-stakes conversations in a realistic AI role-play simulator.</p>
-                                {!hasCoachingAccess && (
-                                    <div className="mt-2">
-                                        <span className="inline-block bg-orange-100 text-orange-800 px-2 py-1 rounded-full text-xs font-semibold">Requires Premium</span>
-                                    </div>
-                                )}
-                            </Card>
-                            <Card title="Progress Analytics" icon={BarChart3} onClick={hasCoachingAccess ? () => setView('progress-analytics') : undefined}>
-                                <p className="text-sm text-gray-600 mb-3">Track your performance trends, strengths, and growth opportunities.</p>
-                                {!hasCoachingAccess && (
-                                    <div className="mt-2">
-                                        <span className="inline-block bg-orange-100 text-orange-800 px-2 py-1 rounded-full text-xs font-semibold">Requires Premium</span>
-                                    </div>
-                                )}
-                            </Card>
+                            {/* Feature: AI Roleplay */}
+                            {isFeatureEnabled('ai-roleplay') && (
+                                <Card title="AI Roleplay" icon={Briefcase} onClick={hasCoachingAccess ? () => setView('scenario-library') : undefined}>
+                                    <p className="text-sm text-gray-600 mb-3">Practice high-stakes conversations in a realistic AI role-play simulator.</p>
+                                    {!hasCoachingAccess && (
+                                        <div className="mt-2">
+                                            <span className="inline-block bg-orange-100 text-orange-800 px-2 py-1 rounded-full text-xs font-semibold">Requires Premium</span>
+                                        </div>
+                                    )}
+                                </Card>
+                            )}
+
+                            {/* Feature: Scenario Sim */}
+                            {isFeatureEnabled('scenario-sim') && (
+                                <Card title="Scenario Sim" icon={Target} onClick={hasCoachingAccess ? () => setView('scenario-library') : undefined}>
+                                    <p className="text-sm text-gray-600 mb-3">Run complex leadership simulations to test your decision making.</p>
+                                    {!hasCoachingAccess && (
+                                        <div className="mt-2">
+                                            <span className="inline-block bg-orange-100 text-orange-800 px-2 py-1 rounded-full text-xs font-semibold">Requires Premium</span>
+                                        </div>
+                                    )}
+                                </Card>
+                            )}
+
+                            {/* Feature: Feedback Gym */}
+                            {isFeatureEnabled('feedback-gym') && (
+                                <Card title="Feedback Gym" icon={BarChart3} onClick={hasCoachingAccess ? () => setView('progress-analytics') : undefined}>
+                                    <p className="text-sm text-gray-600 mb-3">Get instant feedback on your communication style and effectiveness.</p>
+                                    {!hasCoachingAccess && (
+                                        <div className="mt-2">
+                                            <span className="inline-block bg-orange-100 text-orange-800 px-2 py-1 rounded-full text-xs font-semibold">Requires Premium</span>
+                                        </div>
+                                    )}
+                                </Card>
+                            )}
+
                             <Card title="Practice History" icon={Clock} onClick={hasCoachingAccess ? () => navigate('daily-practice') : undefined}>
                                 <p className="text-sm text-gray-600 mb-3">Review your past performance, scores, and AI feedback.</p>
                                 {!hasCoachingAccess && (

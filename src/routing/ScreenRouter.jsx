@@ -65,6 +65,17 @@ const ScreenMap = {
   'admin-portal': lazy(() =>
     import('../components/admin/AdminPortal.jsx')
   ),
+  
+  // Feature Lab Screens
+  'reading-hub': lazy(() => import('../components/screens/features/ReadingHub.jsx')),
+  'course-library': lazy(() => import('../components/screens/features/CourseLibrary.jsx')),
+  'strat-templates': lazy(() => import('../components/screens/features/StrategicTemplates.jsx')),
+  'mastermind': lazy(() => import('../components/screens/features/MastermindGroups.jsx')),
+  'mentor-match': lazy(() => import('../components/screens/features/MentorMatch.jsx')),
+  'live-events': lazy(() => import('../components/screens/features/LiveEvents.jsx')),
+  'ai-roleplay': lazy(() => import('../components/screens/features/AIRoleplay.jsx')),
+  '360-feedback': lazy(() => import('../components/screens/features/Feedback360.jsx')),
+  'roi-report': lazy(() => import('../components/screens/features/ROIReport.jsx')),
   'admin-community-manager': lazy(() =>
     import('../components/admin/CommunityManager.jsx')
   ),

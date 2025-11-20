@@ -6,11 +6,12 @@ import { useAppServices } from '../../services/useAppServices.jsx'; // cite: use
 import { membershipService } from '../../services/membershipService.js';
 import contentService, { CONTENT_COLLECTIONS } from '../../services/contentService.js';
 import { logWidthMeasurements } from '../../utils/debugWidth.js';
+import { useFeatures } from '../../providers/FeatureProvider';
 
 // --- Icons ---
 import {
     Users, MessageSquare, Briefcase, Bell, PlusCircle, User, ArrowLeft, Target, Filter, Clock,
-    Star, CheckCircle, Award, Link, Send, Loader, Heart, X
+    Star, CheckCircle, Award, Link, Send, Loader, Heart, X, UserPlus, Video
 } from 'lucide-react';
 
 /* =========================================================
@@ -426,6 +427,7 @@ const NewThreadView = ({ setView }) => {
 const CommunityScreen = ({ simulatedTier }) => {
     // --- Consume Services ---
     const { db, user, navigate, LEADERSHIP_TIERS, featureFlags, isAdmin, membershipData, isLoading: isAppLoading, error: appError } = useAppServices(); // cite: useAppServices.jsx
+    const { isFeatureEnabled } = useFeatures();
     // Use safeUser structure even if user context is briefly null during auth changes
     const safeUser = useMemo(() => user || { userId: null, name: 'Guest' }, [user]); // cite: useAppServices.jsx (provides user)
     
@@ -498,23 +500,62 @@ const CommunityScreen = ({ simulatedTier }) => {
     const navItems = useMemo(() => [
         { screen: 'home', label: 'Community Feed', icon: MessageSquare },
         { screen: 'my-threads', label: 'My Discussions', icon: Briefcase },
-        // Conditionally include Mentorship based on flag
-        ...(featureFlags?.enableMentorship ? [{ screen: 'mentorship', label: 'Mentorship Network', icon: Users }] : []), // Example flag // cite: useAppServices.jsx
-        { screen: 'notifications', label: 'Notifications', icon: Bell, notify: true }, // Mock notification indicator
-    ], [featureFlags]); // Rebuild if flags change
+        
+        // Feature: Mastermind Groups
+        ...(isFeatureEnabled('mastermind') ? [{ screen: 'mastermind', label: 'Mastermind Groups', icon: Users }] : []),
+        
+        // Feature: Mentor Match
+        ...(isFeatureEnabled('mentor-match') ? [{ screen: 'mentorship', label: 'Mentor Match', icon: UserPlus }] : []),
+        
+        // Feature: Live Events
+        ...(isFeatureEnabled('live-events') ? [{ screen: 'events', label: 'Live Events', icon: Video }] : []),
+
+        { screen: 'notifications', label: 'Notifications', icon: Bell, notify: true },
+    ], [isFeatureEnabled]);
 
     // --- Render Logic ---
     const renderContent = () => {
         switch(view) {
             case 'my-threads':
-                return <MyThreadsView user={safeUser} allThreads={allThreads} />; // Pass safeUser and allThreads
+                return <MyThreadsView user={safeUser} allThreads={allThreads} />;
+            
+            case 'mastermind':
+                return isFeatureEnabled('mastermind') ? (
+                    <Card title="Mastermind Groups" icon={Users}>
+                        <div className="p-8 text-center text-gray-500">
+                            <h3 className="text-lg font-bold mb-2">Mastermind Groups</h3>
+                            <p>Join a small group of peers for focused growth and accountability.</p>
+                            <p className="text-xs mt-4 text-gray-400">(Feature Module Placeholder)</p>
+                        </div>
+                    </Card>
+                ) : null;
+
             case 'mentorship':
-                 // Only render if feature is enabled (redundant check if nav item is hidden, but safe)
-                return featureFlags?.enableMentorship ? <MentorshipView /> : <CommunityHomeView setView={setView} user={safeUser} currentTierFilter={currentTierFilter} setCurrentTierFilter={setCurrentTierFilter} filteredThreads={filteredThreads} tierMeta={tierMeta} /* Fallback or redirect */ />;
+                return isFeatureEnabled('mentor-match') ? (
+                    <Card title="Mentor Match" icon={UserPlus}>
+                        <div className="p-8 text-center text-gray-500">
+                            <h3 className="text-lg font-bold mb-2">Mentor Match</h3>
+                            <p>Find a mentor or become one to accelerate your leadership journey.</p>
+                            <p className="text-xs mt-4 text-gray-400">(Feature Module Placeholder)</p>
+                        </div>
+                    </Card>
+                ) : null;
+
+            case 'events':
+                return isFeatureEnabled('live-events') ? (
+                    <Card title="Live Events" icon={Video}>
+                        <div className="p-8 text-center text-gray-500">
+                            <h3 className="text-lg font-bold mb-2">Live Events</h3>
+                            <p>Register for upcoming webinars, workshops, and live Q&A sessions.</p>
+                            <p className="text-xs mt-4 text-gray-400">(Feature Module Placeholder)</p>
+                        </div>
+                    </Card>
+                ) : null;
+
             case 'notifications':
-                return <NotificationsView />; // Placeholder
+                return <NotificationsView />;
             case 'new-thread':
-                return <NewThreadView setView={setView} />; // Pass setter
+                return <NewThreadView setView={setView} />;
             case 'home':
             default:
                 return <CommunityHomeView
