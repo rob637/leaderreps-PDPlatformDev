@@ -11,7 +11,7 @@ import {
 } from 'lucide-react';
 import { COLORS } from './dashboard/dashboardConstants.js';
 import { useDashboard } from './dashboard/DashboardHooks.jsx';
-import { UnifiedAnchorEditorModal, StreakTracker } from './dashboard/DashboardComponents.jsx';
+import { UnifiedAnchorEditorModal, StreakTracker, CalendarSyncModal } from './dashboard/DashboardComponents.jsx';
 import { useFeatures } from '../../providers/FeatureProvider';
 
 const DASHBOARD_FEATURES = [
@@ -85,6 +85,7 @@ const Dashboard4 = (props) => {
 
   // --- LOCAL STATE ---
   const [isAnchorModalOpen, setIsAnchorModalOpen] = useState(false);
+  const [isCalendarModalOpen, setIsCalendarModalOpen] = useState(false);
   const [newTaskText, setNewTaskText] = useState('');
   const [showTaskInput, setShowTaskInput] = useState(false);
   const [isWinSaved, setIsWinSaved] = useState(false);
@@ -298,7 +299,11 @@ const Dashboard4 = (props) => {
                 subLabel="Execute your targeted practice."
               />
               {isFeatureEnabled('calendar-sync') && (
-                <button className="absolute right-4 top-1/2 -translate-y-1/2 p-2 text-slate-400 hover:text-corporate-teal" title="Sync to Calendar">
+                <button 
+                  onClick={() => setIsCalendarModalOpen(true)}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 p-2 text-slate-400 hover:text-corporate-teal" 
+                  title="Sync to Calendar"
+                >
                   <Calendar className="w-5 h-5" />
                 </button>
               )}
@@ -596,6 +601,15 @@ const Dashboard4 = (props) => {
     )
   };
 
+  const handleSaveAnchors = async (data) => {
+    await Promise.all([
+      handleSaveIdentity(data.identity),
+      handleSaveHabit(data.habit),
+      handleSaveWhy(data.why)
+    ]);
+    setIsAnchorModalOpen(false);
+  };
+
   return (
     <div className="min-h-screen bg-[#F5F5F7] p-4 sm:p-6 lg:p-8 font-sans text-slate-800">
       <div className="max-w-3xl mx-auto space-y-8">
@@ -622,18 +636,16 @@ const Dashboard4 = (props) => {
       {/* Anchor Editor Modal */}
       <UnifiedAnchorEditorModal
         isOpen={isAnchorModalOpen}
-        onClose={() => setIsAnchorModalOpen(false)}
-        onSave={async (data) => {
-          await Promise.all([
-            handleSaveIdentity(data.identity),
-            handleSaveHabit(data.habit),
-            handleSaveWhy(data.why)
-          ]);
-          setIsAnchorModalOpen(false);
-        }}
         initialIdentity={identityStatement}
         initialHabit={habitAnchor}
         initialWhy={whyStatement}
+        onSave={handleSaveAnchors}
+        onClose={() => setIsAnchorModalOpen(false)}
+      />
+
+      <CalendarSyncModal 
+        isOpen={isCalendarModalOpen}
+        onClose={() => setIsCalendarModalOpen(false)}
       />
     </div>
   );

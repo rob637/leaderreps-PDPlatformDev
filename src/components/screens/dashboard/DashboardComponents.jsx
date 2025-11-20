@@ -8,7 +8,7 @@ import {
   Target, Clock, User, Save, Loader, CheckCircle, TrendingUp, Star, 
   ChevronDown, ChevronUp, Plus, X, Sunrise, Moon, Flame, Anchor,
   ToggleLeft, ToggleRight, Zap, AlertTriangle, MessageSquare, Trophy,
-  Send, Users, Activity, Edit3
+  Send, Users, Activity, Edit3, Calendar
 } from 'lucide-react';
 
 // --- Helper function to format timestamps ---
@@ -1133,11 +1133,6 @@ export const ReminderBanner = ({ message, onDismiss, type = 'best' }) => {
 };
 
 /* =========================================================
-   NEW: LEADERSHIP ANCHORS CARD (Exported) -- REMOVED
-========================================================= */
-// export const LeadershipAnchorsCard = () => null; // Placeholder removed
-
-/* =========================================================
    NEW: UNIFIED ANCHOR EDITOR MODAL
 ========================================================= */
 const AnchorInputSection = ({ 
@@ -1231,17 +1226,17 @@ export const UnifiedAnchorEditorModal = ({
 
     return (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-2xl p-3 sm:p-4 lg:p-6 max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col">
-                <div className="flex justify-between items-center mb-4 pb-2 border-b" style={{ borderColor: COLORS.SUBTLE }}>
-                    <h2 className="text-xl sm:text-2xl font-bold" style={{ color: COLORS.NAVY }}>
-                        <Anchor className="w-6 h-6 inline-block mr-2" style={{ color: COLORS.TEAL }} />
+            <div className="bg-white rounded-2xl p-6 max-w-md w-full shadow-xl">
+                <div className="flex justify-between items-center mb-6 border-b pb-4 border-slate-100">
+                    <h2 className="text-xl font-bold text-[#002E47] flex items-center gap-2">
+                        <Anchor className="w-6 h-6 text-teal-600" />
                         Define Your Leadership Anchors
                     </h2>
-                    <button onClick={handleClose} className="p-1 rounded-full hover:bg-gray-100">
-                        <X className="w-5 h-5" style={{ color: COLORS.MUTED }} />
+                    <button onClick={onClose} className="p-1 rounded-full hover:bg-slate-100">
+                        <X className="w-5 h-5" />
                     </button>
                 </div>
-
+                
                 <div className="overflow-y-auto flex-1 space-y-4 pr-2">
                     <AnchorInputSection
                         title="1. Identity Anchor"
@@ -1288,6 +1283,65 @@ export const UnifiedAnchorEditorModal = ({
     );
 };
 
+export const CalendarSyncModal = ({ isOpen, onClose }) => {
+    if (!isOpen) return null;
+
+    const handleSync = (provider) => {
+        alert(`Integration with ${provider} is coming soon!`);
+    };
+
+    return (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-2xl p-6 max-w-md w-full shadow-xl">
+                <div className="flex justify-between items-center mb-6 border-b pb-4 border-slate-100">
+                    <h2 className="text-xl font-bold text-[#002E47] flex items-center gap-2">
+                        <Calendar className="w-6 h-6 text-teal-600" />
+                        Calendar Integration
+                    </h2>
+                    <button onClick={onClose} className="p-1 rounded-full hover:bg-slate-100">
+                        <X className="w-5 h-5" />
+                    </button>
+                </div>
+                
+                <p className="text-slate-600 mb-6">
+                    Sync your Daily Reps and Coaching Sessions directly to your personal calendar. Never miss a beat in your leadership journey.
+                </p>
+
+                <div className="space-y-3">
+                    <button 
+                        onClick={() => handleSync('Google Calendar')}
+                        className="w-full flex items-center justify-between p-4 rounded-xl border border-slate-200 hover:border-teal-500 hover:bg-teal-50 transition-all group"
+                    >
+                        <span className="font-semibold text-slate-700 group-hover:text-teal-700">Google Calendar</span>
+                        <ChevronRight className="w-5 h-5 text-slate-300 group-hover:text-teal-500" />
+                    </button>
+                    
+                    <button 
+                        onClick={() => handleSync('Outlook')}
+                        className="w-full flex items-center justify-between p-4 rounded-xl border border-slate-200 hover:border-teal-500 hover:bg-teal-50 transition-all group"
+                    >
+                        <span className="font-semibold text-slate-700 group-hover:text-teal-700">Outlook Calendar</span>
+                        <ChevronRight className="w-5 h-5 text-slate-300 group-hover:text-teal-500" />
+                    </button>
+                    
+                    <button 
+                        onClick={() => handleSync('Apple Calendar')}
+                        className="w-full flex items-center justify-between p-4 rounded-xl border border-slate-200 hover:border-teal-500 hover:bg-teal-50 transition-all group"
+                    >
+                        <span className="font-semibold text-slate-700 group-hover:text-teal-700">Apple Calendar (iCal)</span>
+                        <ChevronRight className="w-5 h-5 text-slate-300 group-hover:text-teal-500" />
+                    </button>
+                </div>
+
+                <div className="mt-6 pt-4 border-t border-slate-100 text-center">
+                    <p className="text-xs text-slate-400">
+                        Secure one-way sync. We never read your personal events.
+                    </p>
+                </div>
+            </div>
+        </div>
+    );
+};
 
 /* =========================================================
    ANCHORS IN ACTION - Shows how anchors are being used
