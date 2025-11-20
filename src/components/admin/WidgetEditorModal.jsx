@@ -8,12 +8,19 @@ import { COLORS } from '../screens/dashboard/dashboardConstants';
 import DynamicWidgetRenderer from './DynamicWidgetRenderer';
 import OpenAI from 'openai';
 
-// Initialize OpenAI Client
+// Initialize OpenAI Client safely
 // Note: In production, this should be proxied through a backend to hide the key.
-const openai = new OpenAI({
-  apiKey: import.meta.env.VITE_OPENAI_API_KEY,
-  dangerouslyAllowBrowser: true // Enabled for this internal admin tool prototype
-});
+let openai;
+try {
+  if (import.meta.env.VITE_OPENAI_API_KEY) {
+    openai = new OpenAI({
+      apiKey: import.meta.env.VITE_OPENAI_API_KEY,
+      dangerouslyAllowBrowser: true // Enabled for this internal admin tool prototype
+    });
+  }
+} catch (e) {
+  console.warn("OpenAI Client failed to initialize:", e);
+}
 
 // Mock Checkbox for preview scope
 const Checkbox = ({ checked, onChange, label, subLabel, disabled }) => (
@@ -92,6 +99,10 @@ const WidgetEditorModal = ({ isOpen, onClose, widgetId, widgetName, initialCode 
     setIsGenerating(true);
 
     try {
+      if (!openai) {
+        throw new Error("OpenAI API Key is missing. Please check your environment configuration.");
+      }
+
       const completion = await openai.chat.completions.create({
         messages: [
           { 
