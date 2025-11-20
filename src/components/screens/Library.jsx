@@ -134,53 +134,54 @@ const Library = ({ simulatedTier, isDeveloperMode }) => {
     }, 100);
   }, []);
 
-  const allLibraryItems = [
-    {
-      featureId: 'course-library',
-      id: 'courses',
-      title: 'Courses',
-      description: 'Structured leadership courses and learning paths to develop your skills.',
-      icon: ShieldCheck,
-      screen: 'course-library',
-      requiredTier: 'free'
-    },
-    {
-      featureId: 'reading-hub',
-      id: 'readings',
-      title: 'Reading & Reps',
-      description: 'Curated business readings with actionable exercises and practice opportunities.',
-      icon: BookOpen,
-      screen: 'reading-hub',
-      requiredTier: 'free'
-    },
-    {
-      featureId: 'leadership-videos',
-      id: 'media',
-      title: 'Media',
-      description: 'Video content, leader talks, and multimedia resources for visual learners.',
-      icon: Film,
-      screen: 'leadership-videos',
-      requiredTier: 'free'
-    },
-    {
-      featureId: 'strat-templates',
-      id: 'templates',
-      title: 'Strategic Templates',
-      description: 'Downloadable worksheets and tools for your team.',
-      icon: FileText,
-      screen: 'strat-templates',
-      requiredTier: 'professional'
-    }
-  ];
+  const libraryItems = useMemo(() => {
+    const allLibraryItems = [
+      {
+        featureId: 'course-library',
+        id: 'courses',
+        title: 'Courses',
+        description: 'Structured leadership courses and learning paths to develop your skills.',
+        icon: ShieldCheck,
+        screen: 'course-library',
+        requiredTier: 'free'
+      },
+      {
+        featureId: 'reading-hub',
+        id: 'readings',
+        title: 'Reading & Reps',
+        description: 'Curated business readings with actionable exercises and practice opportunities.',
+        icon: BookOpen,
+        screen: 'reading-hub',
+        requiredTier: 'free'
+      },
+      {
+        featureId: 'leadership-videos',
+        id: 'media',
+        title: 'Media',
+        description: 'Video content, leader talks, and multimedia resources for visual learners.',
+        icon: Film,
+        screen: 'leadership-videos',
+        requiredTier: 'free'
+      },
+      {
+        featureId: 'strat-templates',
+        id: 'templates',
+        title: 'Strategic Templates',
+        description: 'Downloadable worksheets and tools for your team.',
+        icon: FileText,
+        screen: 'strat-templates',
+        requiredTier: 'professional'
+      }
+    ];
 
-  // Filter enabled items and sort them based on feature order
-  const libraryItems = allLibraryItems
-    .filter(item => isFeatureEnabled(item.featureId))
-    .sort((a, b) => {
-      const orderA = getFeatureOrder(a.featureId);
-      const orderB = getFeatureOrder(b.featureId);
-      return orderA - orderB;
-    });
+    return allLibraryItems
+      .filter(item => isFeatureEnabled(item.featureId))
+      .sort((a, b) => {
+        const orderA = getFeatureOrder(a.featureId);
+        const orderB = getFeatureOrder(b.featureId);
+        return orderA - orderB;
+      });
+  }, [isFeatureEnabled, getFeatureOrder]);
 
   const handleCardClick = (item) => {
     console.log('🔍 Library Card Click Debug:', {

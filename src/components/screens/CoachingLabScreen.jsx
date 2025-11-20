@@ -1734,7 +1734,7 @@ export default function CoachingLabScreen({ simulatedTier }) {
                             <p className="corporate-text-body text-gray-600 mx-auto px-4">Welcome to Coaching. Select a tool to build your leadership skills.</p>
                         </div>
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                            {[
+                            {useMemo(() => [
                                 {
                                     featureId: 'ai-roleplay',
                                     title: 'AI Roleplay',
@@ -1779,7 +1779,11 @@ export default function CoachingLabScreen({ simulatedTier }) {
                                 }
                             ]
                             .filter(item => isFeatureEnabled(item.featureId))
-                            .sort((a, b) => getFeatureOrder(a.featureId) - getFeatureOrder(b.featureId))
+                            .sort((a, b) => {
+                                const orderA = getFeatureOrder(a.featureId);
+                                const orderB = getFeatureOrder(b.featureId);
+                                return orderA - orderB;
+                            }), [isFeatureEnabled, getFeatureOrder])
                             .map(item => (
                                 <Card key={item.featureId} title={item.title} icon={item.icon} onClick={hasCoachingAccess ? item.onClick : undefined}>
                                     <p className="text-sm text-gray-600 mb-3">{item.description}</p>

@@ -520,7 +520,11 @@ const CommunityScreen = ({ simulatedTier }) => {
 
         const sortedItems = allItems
             .filter(item => isFeatureEnabled(item.featureId))
-            .sort((a, b) => getFeatureOrder(a.featureId) - getFeatureOrder(b.featureId));
+            .sort((a, b) => {
+                const orderA = getFeatureOrder(a.featureId);
+                const orderB = getFeatureOrder(b.featureId);
+                return orderA - orderB;
+            });
 
         return [
             ...sortedItems,
