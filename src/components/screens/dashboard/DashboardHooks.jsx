@@ -122,11 +122,35 @@ export const useDashboard = ({
 
   // Load Additional Commitments
   useEffect(() => {
-    if (dailyPracticeData?.activeCommitments) {
-      setAdditionalCommitments(sanitizeTimestamps(dailyPracticeData.activeCommitments));
+    // Support both snake_case (new) and camelCase (legacy/mock)
+    const commitments = dailyPracticeData?.active_commitments || dailyPracticeData?.activeCommitments;
+    if (commitments) {
+      setAdditionalCommitments(sanitizeTimestamps(commitments));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [JSON.stringify(dailyPracticeData?.activeCommitments)]);
+  }, [JSON.stringify(dailyPracticeData?.active_commitments), JSON.stringify(dailyPracticeData?.activeCommitments)]);
+
+  const handleToggleAdditionalRep = useCallback(async (commitmentId, currentStatus) => {
+    const newStatus = currentStatus === 'Committed' ? 'Pending' : 'Committed';
+    
+    // Optimistic update
+    const updatedCommitments = additionalCommitments.map(c => 
+      c.id === commitmentId ? { ...c, status: newStatus } : c
+    );
+    setAdditionalCommitments(updatedCommitments);
+
+    if (updateDailyPracticeData) {
+      try {
+        await updateDailyPracticeData({
+          active_commitments: updatedCommitments
+        });
+      } catch (error) {
+        console.error('Error toggling commitment:', error);
+        // Revert
+        setAdditionalCommitments(additionalCommitments);
+      }
+    }
+  }, [additionalCommitments, updateDailyPracticeData]);
 
   // Load Morning Bookend
   useEffect(() => {
@@ -698,6 +722,7 @@ export const useDashboard = ({
     // Streak & Additional Reps
     streakCount,
     streakCoins,
-    additionalCommitments
+    additionalCommitments,
+    handleToggleAdditionalRep
   };
 };

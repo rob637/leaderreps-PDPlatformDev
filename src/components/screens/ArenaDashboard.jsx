@@ -63,7 +63,8 @@ const ArenaDashboard = (props) => {
     streakCoins,
     
     // Additional Reps
-    additionalCommitments
+    additionalCommitments,
+    handleToggleAdditionalRep
   } = useDashboard({
     dailyPracticeData,
     updateDailyPracticeData
@@ -170,25 +171,6 @@ const ArenaDashboard = (props) => {
     await handleSaveWIN();
     setIsWinSaved(true);
     setTimeout(() => setIsWinSaved(false), 2000);
-  };
-
-  const handleToggleAdditionalRep = async (commitmentId, currentStatus) => {
-    const newStatus = currentStatus === 'Committed' ? 'Pending' : 'Committed';
-    
-    // Create updated list
-    const updatedCommitments = additionalCommitments.map(c => 
-      c.id === commitmentId ? { ...c, status: newStatus } : c
-    );
-
-    // Optimistic update (if we had a setter exposed, but we rely on Firestore)
-    // We'll just call update directly
-    try {
-      await updateDailyPracticeData({
-        active_commitments: updatedCommitments
-      });
-    } catch (error) {
-      console.error('Error toggling commitment:', error);
-    }
   };
 
   const handleAddOtherTask = () => {
