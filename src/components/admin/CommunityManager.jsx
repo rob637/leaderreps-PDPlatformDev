@@ -92,7 +92,22 @@ const CommunityManager = () => {
         await addContent(db, CONTENT_COLLECTIONS.COMMUNITY, postData);
       } else {
         const { id, ...updates } = postData;
-        await updateContent(db, CONTENT_COLLECTIONS.COMMUNITY, id, updates);
+        try {
+          await updateContent(db, CONTENT_COLLECTIONS.COMMUNITY, id, updates);
+        } catch (updateError) {
+          if (updateError.message && updateError.message.includes('No document to update')) {
+            const shouldCreate = window.confirm(
+              'This post could not be found in the database (it may have been deleted). \n\nDo you want to save it as a NEW post?'
+            );
+            if (shouldCreate) {
+              await addContent(db, CONTENT_COLLECTIONS.COMMUNITY, updates);
+            } else {
+              return;
+            }
+          } else {
+            throw updateError;
+          }
+        }
       }
       setEditingItem(null);
       setIsAddingNew(false);

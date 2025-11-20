@@ -169,13 +169,31 @@ const AdminDashboard = () => {
 
     try {
       if (metric === 'users') {
-        const usersSnap = await getDocs(query(collection(db, 'users'), limit(20)));
-        const users = usersSnap.docs.map(doc => ({
-          id: doc.id,
-          primary: doc.data().email || 'No Email',
-          secondary: doc.data().displayName || 'No Name',
-          status: doc.data().role || 'User'
-        }));
+        // Fetch users sorted by creation date (newest first)
+        const usersSnap = await getDocs(query(collection(db, 'users'), orderBy('createdAt', 'desc'), limit(50)));
+        
+        const users = usersSnap.docs.map(doc => {
+          const data = doc.data();
+          const joinedDate = data.createdAt?.toDate ? data.createdAt.toDate().toLocaleDateString() : 'Unknown';
+          const lastActiveDate = data.lastActive?.toDate ? data.lastActive.toDate().toLocaleDateString() : 'Never';
+          
+          return {
+            id: doc.id,
+            primary: (
+              <div className="flex flex-col">
+                <span className="font-bold text-corporate-navy">{data.displayName || 'No Name'}</span>
+                <span className="text-xs text-gray-500">{data.email || 'No Email'}</span>
+              </div>
+            ),
+            secondary: (
+              <div className="text-xs text-gray-500">
+                <div>Joined: {joinedDate}</div>
+                <div>Active: {lastActiveDate}</div>
+              </div>
+            ),
+            status: data.role || 'User'
+          };
+        });
         setDetailData(users);
       } else if (metric === 'content') {
         // Show breakdown

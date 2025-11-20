@@ -89,7 +89,24 @@ const CoachingManager = () => {
         await addContent(db, CONTENT_COLLECTIONS.COACHING, scenarioData);
       } else {
         const { id, ...updates } = scenarioData;
-        await updateContent(db, CONTENT_COLLECTIONS.COACHING, id, updates);
+        try {
+          await updateContent(db, CONTENT_COLLECTIONS.COACHING, id, updates);
+        } catch (updateError) {
+          // Handle case where document doesn't exist (e.g. stale cache or deleted)
+          if (updateError.message && updateError.message.includes('No document to update')) {
+            const shouldCreate = window.confirm(
+              'This scenario could not be found in the database (it may have been deleted externally). \n\nDo you want to save your changes as a NEW scenario?'
+            );
+            
+            if (shouldCreate) {
+              await addContent(db, CONTENT_COLLECTIONS.COACHING, updates);
+            } else {
+              return; // User cancelled, keep form open
+            }
+          } else {
+            throw updateError;
+          }
+        }
       }
       setEditingItem(null);
       setIsAddingNew(false);

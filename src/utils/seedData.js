@@ -11,11 +11,11 @@ import {
 } from 'firebase/firestore';
 
 const MOCK_FEED_FALLBACK = [
-    { id: 't1', ownerName: 'Alex H.', ownerId: 'user-alex-h', rep: 'Used CLEAR framework in 1:1. Felt structured.', tier: 'T2', time: '15m ago', reactions: 8, comments: 2, isPodMember: true, impact: false },
-    { id: 't2', ownerName: 'System Admin', ownerId: 'system', rep: 'New Rep Streak Coins unlocked! Keep up the great work.', tier: 'System', time: '1h ago', reactions: 25, comments: 5, isPodMember: false, impact: false },
-    { id: 't3', ownerName: 'Sarah K.', ownerId: 'user-sarah-k', rep: 'Practiced mindful check-in before the QBR. Helped stay centered.', tier: 'T1', time: '3h ago', reactions: 12, comments: 1, isPodMember: true, impact: false },
-    { id: 't4', ownerName: 'Justin M.', ownerId: 'user-justin-m', rep: 'Retired a rep (Delegation SOP). Shifting focus to T5 Strategic Alignment.', tier: 'T5', time: 'Yesterday', reactions: 18, comments: 3, isPodMember: true, impact: true },
-    { id: 't5', ownerName: 'Coach Support', ownerId: 'system-coach', rep: 'Reminder: Office Hours today at 2 PM ET for T3 Coaching skills.', tier: 'System', time: 'Yesterday', reactions: 9, comments: 0, isPodMember: false, impact: false },
+    { id: 't1', ownerName: 'Alex H.', ownerId: 'user-alex-h', rep: 'AH', content: 'Used CLEAR framework in 1:1. Felt structured.', tier: 'T2', time: '15m ago', reactions: 8, comments: 2, isPodMember: true, impact: false },
+    { id: 't2', ownerName: 'System Admin', ownerId: 'system', rep: 'SA', content: 'New Rep Streak Coins unlocked! Keep up the great work.', tier: 'System', time: '1h ago', reactions: 25, comments: 5, isPodMember: false, impact: false },
+    { id: 't3', ownerName: 'Sarah K.', ownerId: 'user-sarah-k', rep: 'SK', content: 'Practiced mindful check-in before the QBR. Helped stay centered.', tier: 'T1', time: '3h ago', reactions: 12, comments: 1, isPodMember: true, impact: false },
+    { id: 't4', ownerName: 'Justin M.', ownerId: 'user-justin-m', rep: 'JM', content: 'Retired a rep (Delegation SOP). Shifting focus to T5 Strategic Alignment.', tier: 'T5', time: 'Yesterday', reactions: 18, comments: 3, isPodMember: true, impact: true },
+    { id: 't5', ownerName: 'Coach Support', ownerId: 'system-coach', rep: 'CS', content: 'Reminder: Office Hours today at 2 PM ET for T3 Coaching skills.', tier: 'System', time: 'Yesterday', reactions: 9, comments: 0, isPodMember: false, impact: false },
 ];
 
 const MOCK_SCENARIO_CATALOG = [
@@ -202,12 +202,8 @@ export const seedDatabase = async (db) => {
         const communityRef = collection(db, 'content_community');
         
         for (const item of MOCK_FEED_FALLBACK) {
-            // Check if exists (simple check by title/rep to avoid dupes if run multiple times)
-            // Ideally we'd check by ID but we are generating new IDs or using random ones.
-            // Let's just add them for now, assuming empty DB or we don't care about dupes for this seed.
-            // Actually, let's check if we can query by 'title' which we map from 'rep'
-            
-            const q = query(communityRef, where('title', '==', item.rep));
+            // Check if exists (simple check by content to avoid dupes if run multiple times)
+            const q = query(communityRef, where('content', '==', item.content));
             const snapshot = await getDocs(q);
             
             if (!snapshot.empty) {
@@ -216,8 +212,7 @@ export const seedDatabase = async (db) => {
                 // Update existing doc to ensure it has dateAdded and other new fields
                 await updateDoc(doc(communityRef, docId), {
                     ...item,
-                    title: item.rep,
-                    content: item.rep,
+                    title: item.content.substring(0, 50) + (item.content.length > 50 ? '...' : ''), // Generate a title from content
                     author: item.ownerName,
                     authorId: item.ownerId,
                     updatedAt: serverTimestamp(),
@@ -232,8 +227,7 @@ export const seedDatabase = async (db) => {
 
             const newItem = {
                 ...item,
-                title: item.rep,
-                content: item.rep,
+                title: item.content.substring(0, 50) + (item.content.length > 50 ? '...' : ''),
                 author: item.ownerName,
                 authorId: item.ownerId,
                 createdAt: serverTimestamp(),

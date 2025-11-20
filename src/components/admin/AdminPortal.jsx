@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   LayoutDashboard, 
   Activity, 
@@ -6,25 +6,72 @@ import {
   FlaskConical, 
   Users, 
   ShieldAlert,
-  FileText
+  FileText,
+  Loader
 } from 'lucide-react';
 import AdminDashboard from './AdminDashboard';
 import SystemDiagnostics from './SystemDiagnostics';
 import FeatureManager from './FeatureManager';
 import ContentAdminHome from './ContentAdminHome'; // Existing component
 import { useAppServices } from '../../services/useAppServices';
+import { doc, getDoc } from 'firebase/firestore';
 
 // Define version locally if not available globally
 // eslint-disable-next-line no-undef
 const APP_VERSION = typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : '1.0.0';
 
 const AdminPortal = () => {
-  const { user } = useAppServices();
+  const { user, db } = useAppServices();
   const [activeTab, setActiveTab] = useState('dashboard');
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [loading, setLoading] = useState(true);
 
-  // Security Check (Double check in UI, though Sidebar hides it too)
-  const ADMIN_EMAILS = ['rob@sagecg.com', 'ryan@leaderreps.com', 'admin@leaderreps.com'];
-  const isAdmin = user?.email && ADMIN_EMAILS.includes(user.email);
+  useEffect(() => {
+    const checkAdminStatus = async () => {
+      if (!user?.email) {
+        setIsAdmin(false);
+        setLoading(false);
+        return;
+      }
+
+      // Default fallback admins
+      const DEFAULT_ADMINS = ['rob@sagecg.com', 'ryan@leaderreps.com', 'admin@leaderreps.com'];
+      
+      try {
+        // Try to fetch from Firestore config
+        const configRef = doc(db, 'metadata', 'config');
+        const configSnap = await getDoc(configRef);
+        
+        let allowedEmails = DEFAULT_ADMINS;
+        
+        if (configSnap.exists() && configSnap.data().adminemails) {
+          allowedEmails = configSnap.data().adminemails;
+        }
+        
+        // Check if user is in the allowed list (case-insensitive)
+        const userEmail = user.email.toLowerCase();
+        const isAllowed = allowedEmails.some(email => email.toLowerCase() === userEmail);
+        
+        setIsAdmin(isAllowed);
+      } catch (error) {
+        console.error("Error checking admin status:", error);
+        // Fallback to default list on error
+        setIsAdmin(DEFAULT_ADMINS.includes(user.email));
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    checkAdminStatus();
+  }, [user, db]);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-full p-8">
+        <Loader className="w-8 h-8 animate-spin text-corporate-teal" />
+      </div>
+    );
+  }
 
   if (!isAdmin) {
     return (

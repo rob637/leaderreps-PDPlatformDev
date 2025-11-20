@@ -118,7 +118,22 @@ const ContentManager = ({ contentType }) => {
         await addContent(db, contentType, editingItem);
       } else {
         const { id, ...updates } = editingItem;
-        await updateContent(db, contentType, id, updates);
+        try {
+          await updateContent(db, contentType, id, updates);
+        } catch (updateError) {
+          if (updateError.message && updateError.message.includes('No document to update')) {
+            const shouldCreate = window.confirm(
+              'This item could not be found in the database (it may have been deleted). \n\nDo you want to save it as a NEW item?'
+            );
+            if (shouldCreate) {
+              await addContent(db, contentType, updates);
+            } else {
+              return;
+            }
+          } else {
+            throw updateError;
+          }
+        }
       }
       setEditingItem(null);
       setIsAddingNew(false);

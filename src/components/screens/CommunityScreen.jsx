@@ -174,7 +174,9 @@ const CommunityHomeView = ({ setView, user, currentTierFilter, setCurrentTierFil
                             <div className="flex justify-between items-start mb-3 border-b pb-2" style={{ borderColor: COLORS.SUBTLE }}>
                                 {/* User Info */}
                                 <div className="flex items-center space-x-3">
-                                    <User className="w-5 h-5 text-gray-400 flex-shrink-0" />
+                                    <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center font-bold text-xs text-gray-600 shrink-0">
+                                        {thread.rep}
+                                    </div>
                                     <div>
                                         <p className="font-bold text-md leading-tight" style={{ color: COLORS.NAVY }}>{thread.ownerName || 'User'}</p>
                                         <p className="text-xs text-gray-500">{thread.time}</p>
@@ -192,7 +194,8 @@ const CommunityHomeView = ({ setView, user, currentTierFilter, setCurrentTierFil
                             </div>
 
                             {/* Rep/Post Content */}
-                            <p className="text-sm text-gray-800 mb-4 font-medium italic">"{thread.rep}"</p>
+                            {thread.title && thread.title !== thread.content && <h4 className="font-bold text-sm mb-1" style={{ color: COLORS.NAVY }}>{thread.title}</h4>}
+                            <p className="text-sm text-gray-800 mb-4 font-medium whitespace-pre-wrap">{thread.content}</p>
 
                             {/* Actions Footer */}
                             <div className="flex justify-between items-center text-xs pt-3 border-t" style={{ borderColor: COLORS.SUBTLE }}>
@@ -459,7 +462,8 @@ const CommunityScreen = ({ simulatedTier }) => {
                     ...t,
                     ownerName: t.author || t.ownerName,
                     ownerId: t.authorId || t.ownerId,
-                    rep: t.title || t.rep, // Map title back to rep for display compatibility
+                    rep: t.rep || (t.author ? t.author.substring(0, 2).toUpperCase() : 'U'), 
+                    content: t.content || t.title, // Fallback to title if content missing
                     time: t.createdAt?.toDate ? t.createdAt.toDate().toLocaleDateString() : 'Just now'
                 }));
                 setAllThreads(mappedThreads);
