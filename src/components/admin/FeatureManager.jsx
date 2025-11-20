@@ -10,7 +10,7 @@ const FeatureManager = () => {
     // Dashboard
     'identity-builder': { name: 'Identity Builder', description: 'Grounding Rep & Identity Statement tools.' },
     'habit-stack': { name: 'Habit Stack', description: 'Daily Rep tracking and habit formation.' },
-    'win-the-day': { name: 'Win The Day', description: 'AM Bookend 1-2-3 priority setting.' },
+    'win-the-day': { name: 'AM Bookend (Win The Day)', description: 'AM Bookend 1-2-3 priority setting.' },
     'gamification': { name: 'Gamification Engine', description: 'Arena Mode logic, streaks, coins, and leaderboards.' },
     'exec-summary': { name: 'Executive Summary Widget', description: 'High-level view of leadership growth.' },
     'calendar-sync': { name: 'Calendar Integration', description: 'Sync Daily Reps and coaching sessions to Outlook/Google.' },
@@ -92,7 +92,7 @@ const FeatureManager = () => {
   };
 
   const groupTitles = {
-    dashboard: 'Dashboard 3 (The Arena)',
+    dashboard: 'Dashboard 4',
     content: 'Content',
     community: 'Community',
     coaching: 'Coaching'

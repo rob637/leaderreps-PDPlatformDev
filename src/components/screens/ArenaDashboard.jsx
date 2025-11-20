@@ -357,18 +357,17 @@ const ArenaDashboard = (props) => {
             </section>
 
             {/* 4. WIN THE DAY - 1-2-3 */}
-            {isFeatureEnabled('win-the-day') && (
-              <section>
-                <div className="flex items-center gap-2 mb-4">
-                  <div className="w-8 h-8 rounded-lg bg-teal-100 flex items-center justify-center text-teal-600">
-                    <Trophy className="w-5 h-5" />
-                  </div>
-                  <h2 className="text-xl font-bold text-[#002E47]">
-                    Win the Day (Today's 1-2-3)
-                  </h2>
+            <section>
+              <div className="flex items-center gap-2 mb-4">
+                <div className="w-8 h-8 rounded-lg bg-teal-100 flex items-center justify-center text-teal-600">
+                  <Trophy className="w-5 h-5" />
                 </div>
+                <h2 className="text-xl font-bold text-[#002E47]">
+                  Win the Day (Today's 1-2-3)
+                </h2>
+              </div>
 
-                <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200 space-y-6">
+              <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200 space-y-6">
                   
                   {/* 1. Top Priority */}
                   <div className="text-left">
@@ -488,7 +487,6 @@ const ArenaDashboard = (props) => {
 
                 </div>
               </section>
-            )}
 
           </div>
 
