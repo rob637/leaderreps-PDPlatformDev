@@ -62,21 +62,16 @@ const WidgetEditorModal = ({ isOpen, onClose, widgetId, widgetName, initialCode,
   const [mockState, setMockState] = useState({
     hasLIS: true,
     lisRead: false,
-    dailyRepName: 'Active Listening',
+    dailyRepName: '',
     dailyRepCompleted: false,
-    weeklyFocus: 'Strategic Thinking',
-    morningWIN: 'Complete Q3 Plan',
+    weeklyFocus: '',
+    morningWIN: '',
     amWinCompleted: false,
     reflectionGood: '',
     reflectionBetter: '',
     newTaskText: '',
-    otherTasks: [
-      { id: 1, text: 'Team Sync', completed: true },
-      { id: 2, text: 'Review Budget', completed: false }
-    ],
-    additionalCommitments: [
-      { id: 'c1', text: 'Meditation', status: 'Committed' }
-    ]
+    otherTasks: [],
+    additionalCommitments: []
   });
 
   const mockScope = {
@@ -96,13 +91,13 @@ const WidgetEditorModal = ({ isOpen, onClose, widgetId, widgetName, initialCode,
     
     // Mock Data
     scorecard: {
-      reps: { done: 4, total: 5, pct: 80 },
-      win: { done: 1, total: 1, pct: 100 }
+      reps: { done: 0, total: 5, pct: 0 },
+      win: { done: 0, total: 1, pct: 0 }
     },
-    streakCount: 12,
-    user: { displayName: 'Leader' },
-    greeting: 'Hey, Leader.',
-    dailyQuote: 'Leadership is not about being in charge. It is about taking care of those in your charge.',
+    streakCount: 0,
+    user: { displayName: 'User' },
+    greeting: 'Hey, User.',
+    dailyQuote: 'Your daily quote will appear here.',
     isSavingWIN: false,
     isWinSaved: false,
     isSavingBookend: false,
