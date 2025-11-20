@@ -63,18 +63,89 @@ const WidgetEditorModal = ({ isOpen, onClose, widgetId, widgetName, initialCode,
     hasLIS: true,
     lisRead: false,
     dailyRepName: 'Active Listening',
-    dailyRepCompleted: false
+    dailyRepCompleted: false,
+    weeklyFocus: 'Strategic Thinking',
+    morningWIN: 'Complete Q3 Plan',
+    amWinCompleted: false,
+    reflectionGood: '',
+    reflectionBetter: '',
+    newTaskText: '',
+    otherTasks: [
+      { id: 1, text: 'Team Sync', completed: true },
+      { id: 2, text: 'Review Budget', completed: false }
+    ],
+    additionalCommitments: [
+      { id: 'c1', text: 'Meditation', status: 'Committed' }
+    ]
   });
 
   const mockScope = {
+    // State
     hasLIS: mockState.hasLIS,
     lisRead: mockState.lisRead,
-    handleHabitCheck: (key, val) => setMockState(prev => ({ ...prev, [key]: val })),
-    setIsAnchorModalOpen: () => alert('Open Anchor Modal'),
     dailyRepName: mockState.dailyRepName,
     dailyRepCompleted: mockState.dailyRepCompleted,
+    weeklyFocus: mockState.weeklyFocus,
+    morningWIN: mockState.morningWIN,
+    amWinCompleted: mockState.amWinCompleted,
+    reflectionGood: mockState.reflectionGood,
+    reflectionBetter: mockState.reflectionBetter,
+    newTaskText: mockState.newTaskText,
+    otherTasks: mockState.otherTasks,
+    additionalCommitments: mockState.additionalCommitments,
+    
+    // Mock Data
+    scorecard: {
+      reps: { done: 4, total: 5, pct: 80 },
+      win: { done: 1, total: 1, pct: 100 }
+    },
+    streakCount: 12,
+    user: { displayName: 'Leader' },
+    greeting: 'Hey, Leader.',
+    dailyQuote: 'Leadership is not about being in charge. It is about taking care of those in your charge.',
+    isSavingWIN: false,
+    isWinSaved: false,
+    isSavingBookend: false,
+
+    // Functions
+    handleHabitCheck: (key, val) => setMockState(prev => ({ ...prev, [key]: val })),
+    setIsAnchorModalOpen: () => alert('Open Anchor Modal'),
     isFeatureEnabled: () => true,
     setIsCalendarModalOpen: () => alert('Open Calendar Modal'),
+    navigate: (path) => alert(`Navigate to: ${path}`),
+    handleToggleAdditionalRep: (id) => alert(`Toggle Rep: ${id}`),
+    setMorningWIN: (val) => setMockState(prev => ({ ...prev, morningWIN: val })),
+    handleSaveWINWrapper: () => {
+      setMockState(prev => ({ ...prev, amWinCompleted: true }));
+      alert('WIN Saved!');
+    },
+    handleToggleWIN: () => setMockState(prev => ({ ...prev, amWinCompleted: !prev.amWinCompleted })),
+    handleToggleTask: (id) => {
+      setMockState(prev => ({
+        ...prev,
+        otherTasks: prev.otherTasks.map(t => t.id === id ? { ...t, completed: !t.completed } : t)
+      }));
+    },
+    handleRemoveTask: (id) => {
+      setMockState(prev => ({
+        ...prev,
+        otherTasks: prev.otherTasks.filter(t => t.id !== id)
+      }));
+    },
+    setNewTaskText: (val) => setMockState(prev => ({ ...prev, newTaskText: val })),
+    handleAddOtherTask: () => {
+      if (!mockState.newTaskText) return;
+      setMockState(prev => ({
+        ...prev,
+        otherTasks: [...prev.otherTasks, { id: Date.now(), text: prev.newTaskText, completed: false }],
+        newTaskText: ''
+      }));
+    },
+    setReflectionGood: (val) => setMockState(prev => ({ ...prev, reflectionGood: val })),
+    setReflectionBetter: (val) => setMockState(prev => ({ ...prev, reflectionBetter: val })),
+    handleSaveEveningBookend: () => alert('Evening Bookend Saved!'),
+
+    // Components
     Checkbox
   };
 
@@ -152,6 +223,21 @@ const WidgetEditorModal = ({ isOpen, onClose, widgetId, widgetName, initialCode,
       }]);
     } finally {
       setIsGenerating(false);
+    }
+  };
+
+  const handleSaveDraft = async () => {
+    setIsDeploying(true);
+    try {
+      if (onSave) {
+        await onSave(code);
+      }
+      // Optional: Show a toast or visual indicator
+    } catch (error) {
+      console.error("Save Draft error:", error);
+      alert("Failed to save draft.");
+    } finally {
+      setIsDeploying(false);
     }
   };
 
@@ -316,9 +402,11 @@ const WidgetEditorModal = ({ isOpen, onClose, widgetId, widgetName, initialCode,
               Cancel
             </button>
             <button 
+              onClick={handleSaveDraft}
+              disabled={isDeploying}
               className="px-4 py-2 text-[#002E47] font-bold border border-[#002E47] rounded-lg hover:bg-slate-50 transition-colors flex items-center gap-2"
             >
-              <Save className="w-4 h-4" /> Save Draft
+              {isDeploying ? <Loader className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />} Save Draft
             </button>
             <button 
               onClick={handleDeploy}
