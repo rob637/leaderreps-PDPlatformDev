@@ -50,7 +50,7 @@ const Checkbox = ({ checked, onChange, label, subLabel, disabled }) => (
 
 const WidgetEditorModal = ({ isOpen, onClose, widgetId, widgetName, initialCode, onSave }) => {
   const [activeTab, setActiveTab] = useState('preview'); // preview | code
-  const [code, setCode] = useState(initialCode || '// Widget code will appear here...');
+  const [code, setCode] = useState(initialCode || '<div className="p-4 text-center text-gray-500">Widget content will appear here...</div>');
   const [chatInput, setChatInput] = useState('');
   const [chatHistory, setChatHistory] = useState([
     { role: 'system', content: `I am the Widget Architect. I can help you modify the "${widgetName}" widget. Describe what you want to change.` }

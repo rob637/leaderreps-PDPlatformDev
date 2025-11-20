@@ -62,6 +62,27 @@ const FeatureManager = () => {
     </div>
   </div>
 </div>
+    `,
+    'notifications': `
+<div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
+  <div className="flex items-center justify-between mb-3">
+    <h3 className="font-bold text-gray-700 flex items-center gap-2">
+      <Bell className="w-4 h-4 text-teal-600" />
+      Notifications
+    </h3>
+    <span className="bg-red-100 text-red-600 text-xs font-bold px-2 py-0.5 rounded-full">2 New</span>
+  </div>
+  <div className="space-y-2">
+    <div className="p-2 bg-blue-50 rounded-lg text-sm text-blue-800 flex gap-2">
+      <div className="w-1.5 h-1.5 rounded-full bg-blue-500 mt-1.5 shrink-0" />
+      <p>Your coaching session is confirmed for tomorrow at 10 AM.</p>
+    </div>
+    <div className="p-2 bg-gray-50 rounded-lg text-sm text-gray-600 flex gap-2">
+      <div className="w-1.5 h-1.5 rounded-full bg-gray-400 mt-1.5 shrink-0" />
+      <p>New resource added: "Leading Through Change"</p>
+    </div>
+  </div>
+</div>
     `
   };
   
