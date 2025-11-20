@@ -21,10 +21,10 @@ const UpdateNotification = () => {
       navigator.serviceWorker.ready.then((reg) => {
         setRegistration(reg);
 
-        // Check for updates periodically (every 60 seconds)
+        // Check for updates periodically (every 60 minutes)
         const interval = setInterval(() => {
           reg.update();
-        }, 60 * 1000);
+        }, 60 * 60 * 1000);
 
         // Listen for new service worker waiting
         reg.addEventListener('updatefound', () => {

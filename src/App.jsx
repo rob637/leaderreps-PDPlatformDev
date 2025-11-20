@@ -40,8 +40,18 @@ function App() {
   const [firebaseServices, setFirebaseServices] = useState(null);
   const [user, setUser] = useState(null);
   const [isAuthReady, setIsAuthReady] = useState(false);
-  const [currentScreen, setCurrentScreen] = useState('dashboard');
-  const [navParams, setNavParams] = useState({});
+  const [currentScreen, setCurrentScreen] = useState(() => {
+    // Restore last screen from localStorage or default to 'dashboard'
+    return localStorage.getItem('lastScreen') || 'dashboard';
+  });
+  const [navParams, setNavParams] = useState(() => {
+    try {
+      const savedParams = localStorage.getItem('lastNavParams');
+      return savedParams ? JSON.parse(savedParams) : {};
+    } catch (e) {
+      return {};
+    }
+  });
   const [isMobileOpen, setIsMobileOpen] = useState(false);
 
   // Navigation history manager for browser back/forward buttons
@@ -81,6 +91,10 @@ function App() {
     console.log('🧭 [App.jsx] Navigate called:', { from: currentScreen, to: screen, params });
     setCurrentScreen(screen);
     setNavParams(params);
+    
+    // Persist navigation state
+    localStorage.setItem('lastScreen', screen);
+    localStorage.setItem('lastNavParams', JSON.stringify(params));
     
     // Push to navigation history for browser back/forward support
     pushNavigationState({ screen, params });
