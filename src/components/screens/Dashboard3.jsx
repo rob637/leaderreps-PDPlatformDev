@@ -14,9 +14,19 @@ import { COLORS } from './dashboard/dashboardConstants.js';
 const Dashboard3 = () => {
   const { 
     user, 
+    userData,
     dailyPracticeData, 
     updateDailyPracticeData
   } = useAppServices();
+
+  // Determine display name (First Name Only)
+  const getFirstName = () => {
+    if (userData?.firstName) return userData.firstName;
+    if (user?.displayName) return user.displayName.split(' ')[0];
+    return 'Leader';
+  };
+  
+  const firstName = getFirstName();
 
   // Use the shared dashboard logic for persistence
   const {
@@ -97,7 +107,7 @@ const Dashboard3 = () => {
         <div className="flex justify-between items-end">
             <div>
                 <h1 className="text-4xl font-extrabold tracking-tight text-[#002E47] mb-1">The Arena</h1>
-                <p className="text-xl text-[#47A88D] font-medium">Hey, {user?.firstName || 'Leader'}.</p>
+                <p className="text-xl text-[#47A88D] font-medium">Hey, {firstName}.</p>
             </div>
             <div className="hidden md:block text-right max-w-md">
                 <p className="text-sm italic text-gray-500">"[Daily quote/saying...]"</p>
@@ -111,7 +121,7 @@ const Dashboard3 = () => {
         <div className="lg:col-span-8 space-y-8">
             
             {/* Focus Section */}
-            <section className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+            <section className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 text-left">
                 <h2 className="text-lg font-bold text-[#002E47] mb-2">This week's Focus: <span className="text-[#E04E1B]">Feedback</span></h2>
             </section>
 
@@ -124,7 +134,7 @@ const Dashboard3 = () => {
                 
                 <div className="space-y-3">
                     {/* Grounding Rep */}
-                    <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors">
+                    <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors text-left">
                         <button 
                             onClick={() => handleHabitToggle('readLIS', !habitsCompleted.readLIS)}
                             className="focus:outline-none"
@@ -134,7 +144,7 @@ const Dashboard3 = () => {
                                 <Square className="w-6 h-6 text-gray-300" />
                             }
                         </button>
-                        <div className="flex-1">
+                        <div className="flex-1 text-left">
                             <p className={`font-medium ${habitsCompleted.readLIS ? 'text-gray-400 line-through' : 'text-[#002E47]'}`}>
                                 Grounding Rep: Read LIS
                             </p>
@@ -143,7 +153,7 @@ const Dashboard3 = () => {
                     </div>
 
                     {/* Daily Rep 1 */}
-                    <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors">
+                    <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors text-left">
                         <button 
                             onClick={() => handleHabitToggle('dailyRep1', !habitsCompleted.dailyRep1)}
                             className="focus:outline-none"
@@ -153,7 +163,7 @@ const Dashboard3 = () => {
                                 <Square className="w-6 h-6 text-gray-300" />
                             }
                         </button>
-                        <div className="flex-1">
+                        <div className="flex-1 text-left">
                             <p className={`font-medium ${habitsCompleted.dailyRep1 ? 'text-gray-400 line-through' : 'text-[#002E47]'}`}>
                                 Daily Rep: daily rep (1)
                             </p>
@@ -161,7 +171,7 @@ const Dashboard3 = () => {
                     </div>
 
                     {/* Daily Rep 2 */}
-                    <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors">
+                    <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors text-left">
                         <button 
                             onClick={() => handleHabitToggle('dailyRep2', !habitsCompleted.dailyRep2)}
                             className="focus:outline-none"
@@ -171,7 +181,7 @@ const Dashboard3 = () => {
                                 <Square className="w-6 h-6 text-gray-300" />
                             }
                         </button>
-                        <div className="flex-1">
+                        <div className="flex-1 text-left">
                             <p className={`font-medium ${habitsCompleted.dailyRep2 ? 'text-gray-400 line-through' : 'text-[#002E47]'}`}>
                                 Daily Rep: daily rep (2)
                             </p>
@@ -249,7 +259,7 @@ const Dashboard3 = () => {
 
                 <div className="space-y-4">
                     <div>
-                        <label className="block text-sm font-semibold text-gray-600 mb-1">What went well today?</label>
+                        <label className="block text-sm font-semibold text-gray-600 mb-1 text-left">What went well today?</label>
                         <div className="flex gap-2">
                             <input 
                                 type="text" 
@@ -265,7 +275,7 @@ const Dashboard3 = () => {
                     </div>
 
                     <div>
-                        <label className="block text-sm font-semibold text-gray-600 mb-1">What needs work?</label>
+                        <label className="block text-sm font-semibold text-gray-600 mb-1 text-left">What needs work?</label>
                         <div className="flex gap-2">
                             <input 
                                 type="text" 
@@ -293,23 +303,25 @@ const Dashboard3 = () => {
             
             {/* Notifications */}
             <section className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
-                <h3 className="text-lg font-bold text-[#002E47] mb-4 flex items-center gap-2">
+                <h3 className="text-lg font-bold text-[#002E47] mb-4 flex items-center gap-2 text-left">
                     <Bell className="w-5 h-5" /> Notifications
                 </h3>
                 <div className="space-y-4">
                     {notifications.map((note) => (
-                        <div key={note.id} className="p-3 bg-gray-50 rounded-xl text-sm">
+                        <div key={note.id} className="p-3 bg-gray-50 rounded-xl text-sm text-left border border-gray-100">
                             <p className="text-gray-700 mb-2">{note.text}</p>
-                            {note.action && (
-                                <button className="px-3 py-1 bg-[#002E47] text-white text-xs rounded-lg font-semibold hover:bg-[#002E47]/90">
-                                    {note.action}
-                                </button>
-                            )}
-                            {note.status && (
-                                <span className="flex items-center gap-1 text-[#47A88D] font-bold text-xs">
-                                    <CheckCircle className="w-3 h-3" /> {note.status}
-                                </span>
-                            )}
+                            <div className="flex justify-between items-center">
+                                {note.action && (
+                                    <button className="px-3 py-1 bg-[#002E47] text-white text-xs rounded-lg font-semibold hover:bg-[#002E47]/90">
+                                        {note.action}
+                                    </button>
+                                )}
+                                {note.status && (
+                                    <span className="flex items-center gap-1 text-[#47A88D] font-bold text-xs ml-auto">
+                                        <CheckCircle className="w-3 h-3" /> {note.status}
+                                    </span>
+                                )}
+                            </div>
                         </div>
                     ))}
                 </div>
