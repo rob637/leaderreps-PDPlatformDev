@@ -42,6 +42,24 @@ const FeatureManager = () => {
     )}
   </div>
 </section>
+    `,
+    'exec-summary': `
+<div className="bg-corporate-navy text-white p-6 rounded-2xl shadow-lg flex items-center justify-between w-full">
+  <div>
+    <h2 className="text-lg font-bold mb-1">Executive Summary</h2>
+    <p className="text-blue-200 text-sm">Your leadership impact at a glance.</p>
+  </div>
+  <div className="flex gap-8 text-center">
+    <div>
+      <div className="text-2xl font-bold text-corporate-teal">94%</div>
+      <div className="text-xs text-blue-200 uppercase">Consistency</div>
+    </div>
+    <div>
+      <div className="text-2xl font-bold text-corporate-orange">12</div>
+      <div className="text-xs text-blue-200 uppercase">Reps Done</div>
+    </div>
+  </div>
+</div>
     `
   };
   
@@ -240,7 +258,7 @@ const FeatureManager = () => {
           onClose={() => setEditingWidget(null)}
           widgetId={editingWidget.id}
           widgetName={editingWidget.name}
-          initialCode={WIDGET_TEMPLATES[editingWidget.id]}
+          initialCode={WIDGET_TEMPLATES[editingWidget.id] || `<div>No template found for ${editingWidget.name}</div>`}
         />
       )}
     </div>
