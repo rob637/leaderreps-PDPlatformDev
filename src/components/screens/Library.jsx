@@ -243,33 +243,41 @@ const Library = ({ simulatedTier, isDeveloperMode }) => {
           
           {/* Stats Row */}
           <div className="grid grid-cols-3 gap-3 mx-auto mb-8 max-w-md">
-            <div className="bg-white rounded-xl p-4 shadow-md border-2" style={{ borderColor: `${COLORS.TEAL}20` }}>
-              <div className="flex items-center justify-center gap-2 mb-2">
-                <Target className="w-5 h-5" style={{ color: COLORS.TEAL }} />
-                <span className="text-2xl font-bold" style={{ color: COLORS.NAVY }}>
-                  {loading ? '...' : contentCounts.courses}
-                </span>
+            {isFeatureEnabled('course-library') && (
+              <div className="bg-white rounded-xl p-4 shadow-md border-2" style={{ borderColor: `${COLORS.TEAL}20` }}>
+                <div className="flex items-center justify-center gap-2 mb-2">
+                  <Target className="w-5 h-5" style={{ color: COLORS.TEAL }} />
+                  <span className="text-2xl font-bold" style={{ color: COLORS.NAVY }}>
+                    {loading ? '...' : contentCounts.courses}
+                  </span>
+                </div>
+                <p className="text-sm font-medium text-gray-600">Expert-Led Courses</p>
               </div>
-              <p className="text-sm font-medium text-gray-600">Expert-Led Courses</p>
-            </div>
-            <div className="bg-white rounded-xl p-4 shadow-md border-2" style={{ borderColor: `${COLORS.NAVY}20` }}>
-              <div className="flex items-center justify-center gap-2 mb-2">
-                <Trophy className="w-5 h-5" style={{ color: COLORS.NAVY }} />
-                <span className="text-2xl font-bold" style={{ color: COLORS.NAVY }}>
-                  {loading ? '...' : `${contentCounts.readings}+`}
-                </span>
+            )}
+            
+            {isFeatureEnabled('reading-hub') && (
+              <div className="bg-white rounded-xl p-4 shadow-md border-2" style={{ borderColor: `${COLORS.NAVY}20` }}>
+                <div className="flex items-center justify-center gap-2 mb-2">
+                  <Trophy className="w-5 h-5" style={{ color: COLORS.NAVY }} />
+                  <span className="text-2xl font-bold" style={{ color: COLORS.NAVY }}>
+                    {loading ? '...' : `${contentCounts.readings}+`}
+                  </span>
+                </div>
+                <p className="text-sm font-medium text-gray-600">Curated Readings</p>
               </div>
-              <p className="text-sm font-medium text-gray-600">Curated Readings</p>
-            </div>
-            <div className="bg-white rounded-xl p-4 shadow-md border-2" style={{ borderColor: `${COLORS.ORANGE}20` }}>
-              <div className="flex items-center justify-center gap-2 mb-2">
-                <Star className="w-5 h-5" style={{ color: COLORS.ORANGE }} />
-                <span className="text-2xl font-bold" style={{ color: COLORS.NAVY }}>
-                  {loading ? '...' : contentCounts.videos > 0 ? `${contentCounts.videos}` : 'Elite'}
-                </span>
+            )}
+            
+            {isFeatureEnabled('leadership-videos') && (
+              <div className="bg-white rounded-xl p-4 shadow-md border-2" style={{ borderColor: `${COLORS.ORANGE}20` }}>
+                <div className="flex items-center justify-center gap-2 mb-2">
+                  <Star className="w-5 h-5" style={{ color: COLORS.ORANGE }} />
+                  <span className="text-2xl font-bold" style={{ color: COLORS.NAVY }}>
+                    {loading ? '...' : contentCounts.videos > 0 ? `${contentCounts.videos}` : 'Elite'}
+                  </span>
+                </div>
+                <p className="text-sm font-medium text-gray-600">Premium Videos</p>
               </div>
-              <p className="text-sm font-medium text-gray-600">Premium Videos</p>
-            </div>
+            )}
           </div>
         </div>
 

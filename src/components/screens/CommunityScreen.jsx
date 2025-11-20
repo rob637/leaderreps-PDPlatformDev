@@ -449,6 +449,18 @@ const CommunityScreen = ({ simulatedTier }) => {
     const [allThreads, setAllThreads] = useState([]);
     const [isLoadingThreads, setIsLoadingThreads] = useState(true);
 
+    // Effect to set initial view based on enabled features
+    useEffect(() => {
+        if (view === 'home' && !isFeatureEnabled('community-feed')) {
+            // If home is disabled, try to find the first enabled feature
+            if (isFeatureEnabled('my-discussions')) setView('my-threads');
+            else if (isFeatureEnabled('mastermind')) setView('mastermind');
+            else if (isFeatureEnabled('mentor-match')) setView('mentorship');
+            else if (isFeatureEnabled('live-events')) setView('events');
+            // If nothing is enabled, it will stay on 'home' but render the disabled message
+        }
+    }, [isFeatureEnabled, view]);
+
     // --- Determine Data Sources ---
     // Use LEADERSHIP_TIERS from context if available, otherwise use fallback
     const tierMeta = useMemo(() => LEADERSHIP_TIERS || LEADERSHIP_TIERS_META_FALLBACK, [LEADERSHIP_TIERS]); // cite: useAppServices.jsx, LEADERSHIP_TIERS_META_FALLBACK
@@ -520,7 +532,9 @@ const CommunityScreen = ({ simulatedTier }) => {
     const renderContent = () => {
         switch(view) {
             case 'my-threads':
-                return <MyThreadsView user={safeUser} allThreads={allThreads} />;
+                return isFeatureEnabled('my-discussions') ? (
+                    <MyThreadsView user={safeUser} allThreads={allThreads} />
+                ) : null;
             
             case 'mastermind':
                 return isFeatureEnabled('mastermind') ? (
@@ -561,14 +575,22 @@ const CommunityScreen = ({ simulatedTier }) => {
                 return <NewThreadView setView={setView} />;
             case 'home':
             default:
-                return <CommunityHomeView
-                    setView={setView}
-                    user={safeUser} // Pass safeUser
-                    currentTierFilter={currentTierFilter}
-                    setCurrentTierFilter={setCurrentTierFilter}
-                    filteredThreads={filteredThreads} // Pass filtered data
-                    tierMeta={tierMeta} // Pass tier metadata
-                />;
+                return isFeatureEnabled('community-feed') ? (
+                    <CommunityHomeView
+                        setView={setView}
+                        user={safeUser} // Pass safeUser
+                        currentTierFilter={currentTierFilter}
+                        setCurrentTierFilter={setCurrentTierFilter}
+                        filteredThreads={filteredThreads} // Pass filtered data
+                        tierMeta={tierMeta} // Pass tier metadata
+                    />
+                ) : (
+                    <div className="p-8 text-center text-gray-500">
+                        <MessageSquare className="w-12 h-12 mx-auto mb-4 text-gray-300"/>
+                        <h3 className="text-lg font-bold mb-2">Community Feed Disabled</h3>
+                        <p>The community feed is currently unavailable.</p>
+                    </div>
+                );
         }
     };
 
