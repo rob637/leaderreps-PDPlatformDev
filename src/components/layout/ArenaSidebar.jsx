@@ -19,12 +19,11 @@ const ArenaSidebar = ({ isOpen, toggle, currentScreen, navigate, onSignOut, user
     { id: 'dashboard', label: 'Dashboard 1', icon: LayoutDashboard },
     { id: 'dashboard-main', label: 'Dashboard 2', icon: LayoutDashboard },
     { id: 'arena-dashboard', label: 'Dashboard 3', icon: LayoutDashboard },
+    { id: 'development-plan', label: 'Dev Plan', icon: Target },
     { id: 'library', label: 'Content', icon: BookOpen },
     { id: 'community', label: 'Community', icon: Users },
     { id: 'coaching-lab', label: 'Coaching', icon: MessageSquare },
-    { type: 'section', label: 'Your Space' },
-    { id: 'development-plan', label: 'Dev Plan', icon: Target },
-    { id: 'locker', label: 'Locker', icon: Archive },
+    { id: 'locker', label: 'Your Locker', icon: Archive },
   ];
 
   // Determine display name (First Name Only)

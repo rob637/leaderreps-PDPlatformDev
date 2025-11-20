@@ -140,7 +140,7 @@ const ArenaDashboard = (props) => {
     // Add additional commitments
     if (additionalCommitments && additionalCommitments.length > 0) {
       repsTotal += additionalCommitments.length;
-      repsDone += additionalCommitments.filter(c => c.completed).length;
+      repsDone += additionalCommitments.filter(c => c.status === 'Committed').length;
     }
     
     const repsPct = Math.round((repsDone / repsTotal) * 100);
@@ -170,6 +170,25 @@ const ArenaDashboard = (props) => {
       handleAddTask(newTaskText);
       setNewTaskText('');
       setShowTaskInput(false);
+    }
+  };
+
+  const handleToggleAdditionalRep = async (commitmentId, currentStatus) => {
+    const newStatus = currentStatus === 'Committed' ? 'Pending' : 'Committed';
+    
+    // Create updated list
+    const updatedCommitments = additionalCommitments.map(c => 
+      c.id === commitmentId ? { ...c, status: newStatus } : c
+    );
+
+    // Optimistic update (if we had a setter exposed, but we rely on Firestore)
+    // We'll just call update directly
+    try {
+      await updateDailyPracticeData({
+        active_commitments: updatedCommitments
+      });
+    } catch (error) {
+      console.error('Error toggling commitment:', error);
     }
   };
 
@@ -298,13 +317,9 @@ const ArenaDashboard = (props) => {
                 {additionalCommitments.map((commitment, idx) => (
                   <Checkbox 
                     key={idx}
-                    checked={commitment.completed}
-                    onChange={() => { /* Logic to toggle additional rep */ }} 
-                    // Note: handleHabitToggle doesn't support array items directly in the hook yet without modification
-                    // For now, we'll just display them or need to extend the hook.
-                    // Assuming read-only for this demo or need to implement toggle logic.
+                    checked={commitment.status === 'Committed'}
+                    onChange={() => handleToggleAdditionalRep(commitment.id, commitment.status)} 
                     label={`Daily Rep: ${commitment.text || commitment.repId}`}
-                    disabled={true} // Placeholder until hook supports it
                     subLabel="Additional commitment"
                   />
                 ))}
