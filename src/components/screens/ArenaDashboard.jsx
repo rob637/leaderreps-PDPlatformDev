@@ -1,279 +1,617 @@
+// src/components/screens/Dashboard.jsx
+// REVAMPED: 11/20/25 - "The Arena" Redesign based on wireframe
+// Matches the "LR The Arena" hand-drawn layout.
+
 import React, { useState, useEffect, useMemo } from 'react';
-import { useAppServices } from '../../services/useAppServices';
-import { dailyLogService } from '../../services/dailyLogService';
-import { adaptDevelopmentPlanData } from '../../utils/devPlanAdapter';
-import WinTracker from '../arena/WinTracker';
-import BookendsWidget from '../arena/BookendsWidget';
-import FocusCard from '../arena/FocusCard';
-import { Calendar, ChevronRight, Activity, Dumbbell, Target } from 'lucide-react';
+import { useAppServices } from '../../services/useAppServices.jsx';
+import { 
+  CheckSquare, Square, Plus, Save, X, Trophy, Flame, 
+  MessageSquare, Bell, Calendar, ChevronRight, ArrowRight,
+  Edit3, Loader
+} from 'lucide-react';
+import { COLORS } from './dashboard/dashboardConstants.js';
+import { useDashboard } from './dashboard/DashboardHooks.jsx';
+import { UnifiedAnchorEditorModal } from './dashboard/DashboardComponents.jsx';
 
-const ArenaDashboard = () => {
-  const { user, db, developmentPlanData, navigate } = useAppServices();
-  const [dailyLog, setDailyLog] = useState(null);
-  const [loading, setLoading] = useState(true);
-  
-  // Date Management - Auto-update at midnight
-  const [currentDate, setCurrentDate] = useState(new Date());
-  const dateId = dailyLogService.getDateId(currentDate);
+const ArenaDashboard = (props) => {
+  const { 
+    user, 
+    dailyPracticeData, 
+    updateDailyPracticeData,
+    developmentPlanData,
+    globalMetadata,
+    userData,
+    navigate
+  } = useAppServices();
 
-  useEffect(() => {
-    const timer = setInterval(() => {
-      const now = new Date();
-      if (dailyLogService.getDateId(now) !== dateId) {
-        setCurrentDate(now);
-      }
-    }, 60000); // Check every minute
-    return () => clearInterval(timer);
-  }, [dateId]);
-  
-  // Bookend Mode State (Lifted from BookendsWidget)
-  const [bookendMode, setBookendMode] = useState(() => {
-    const hour = new Date().getHours();
-    return hour < 12 ? 'AM' : 'PM';
-  });
-  const [reflectionHistory, setReflectionHistory] = useState([]);
-
-  // Adapt Development Plan Data
-  const adaptedDevPlan = useMemo(() => {
-    return adaptDevelopmentPlanData(developmentPlanData);
-  }, [developmentPlanData]);
-
-  const currentPlan = adaptedDevPlan?.currentPlan;
-  const focusAreas = currentPlan?._originalFocusAreas || currentPlan?.focusAreas || [];
-  const primaryFocus = focusAreas.length > 0 ? focusAreas[0].name : 'No active plan';
-  const planProgress = currentPlan ? Math.round((currentPlan.cycle || 1) * 10) : 0; // Mock progress if needed
-
-  // Subscribe to data
-  useEffect(() => {
-    if (!user?.uid || !db) return;
-
-    setLoading(true);
-    const unsubscribe = dailyLogService.subscribeToDailyLog(
-      db, 
-      user.uid, 
-      dateId, 
-      (data) => {
-        setDailyLog(data || {});
-        setLoading(false);
-      }
-    );
+  // --- HOOKS ---
+  const {
+    // Identity & Anchors
+    identityStatement,
+    habitAnchor,
+    whyStatement,
+    handleSaveIdentity,
+    handleSaveHabit,
+    handleSaveWhy,
     
-    // Fetch history
-    const fetchHistory = async () => {
-      const history = await dailyLogService.getReflectionHistory(db, user.uid);
-      setReflectionHistory(history);
+    // AM Bookend (Win the Day)
+    morningWIN,
+    setMorningWIN,
+    otherTasks,
+    handleAddTask,
+    handleToggleTask,
+    handleRemoveTask,
+    handleToggleWIN,
+    handleSaveWIN,
+    isSavingWIN,
+    amWinCompleted,
+    
+    // PM Bookend (Reflection)
+    reflectionGood,
+    setReflectionGood,
+    reflectionBetter,
+    setReflectionBetter,
+    handleSaveEveningBookend,
+    isSavingBookend,
+    
+    // Habits / Reps
+    habitsCompleted,
+    handleHabitToggle,
+    
+    // Streak
+    streakCount,
+    streakCoins,
+    
+    // Additional Reps
+    additionalCommitments
+  } = useDashboard({
+    dailyPracticeData,
+    updateDailyPracticeData
+  });
+
+  // --- LOCAL STATE ---
+  const [isAnchorModalOpen, setIsAnchorModalOpen] = useState(false);
+  const [newTaskText, setNewTaskText] = useState('');
+  const [showTaskInput, setShowTaskInput] = useState(false);
+
+  // --- WRAPPERS FOR AUTO-SAVE ---
+  const handleHabitCheck = async (key, value) => {
+    // 1. Update local state immediately for UI responsiveness
+    handleHabitToggle(key, value);
+    
+    // 2. Save to Firestore
+    // We construct the new object manually because state update might lag
+    const newHabits = { ...habitsCompleted, [key]: value };
+    
+    try {
+      await updateDailyPracticeData({
+        'eveningBookend.habits': newHabits
+      });
+    } catch (error) {
+      console.error('Error auto-saving habit:', error);
+      // Revert on error (optional, but good practice)
+      handleHabitToggle(key, !value);
+    }
+  };
+
+  // --- DERIVED DATA ---
+  
+  // 1. Greeting & Quote
+  const greeting = `Hey, ${user?.displayName?.split(' ')[0] || 'Leader'}.`;
+  const dailyQuote = useMemo(() => {
+    const quotes = globalMetadata?.SYSTEM_QUOTES || [];
+    if (quotes.length === 0) return "Leadership is a practice, not a position.";
+    // Simple random quote based on date to keep it consistent for the day
+    const today = new Date().getDate();
+    return quotes[today % quotes.length];
+  }, [globalMetadata]);
+
+  // 2. Weekly Focus
+  const weeklyFocus = developmentPlanData?.currentPlan?.focusAreas?.[0]?.name || 'Leadership Fundamentals';
+
+  // 3. Daily Reps Logic
+  const hasLIS = !!identityStatement;
+  const lisRead = habitsCompleted?.readLIS || false;
+  
+  // Get the "Daily Rep" name (Target Rep)
+  const dailyRepName = useMemo(() => {
+    const repId = dailyPracticeData?.dailyTargetRepId;
+    if (!repId) return null;
+    // Try to find name in catalog if available, else use ID
+    const catalog = Array.isArray(globalMetadata?.REP_LIBRARY) ? globalMetadata.REP_LIBRARY : [];
+    const rep = catalog.find(r => r.id === repId);
+    return rep ? rep.name : repId;
+  }, [dailyPracticeData, globalMetadata]);
+
+  const dailyRepCompleted = habitsCompleted?.completedDailyRep || false;
+
+  // 4. Scorecard Logic
+  const scorecard = useMemo(() => {
+    // "I did my reps today"
+    // Components: LIS + Daily Rep + Additional Commitments
+    let repsTotal = 1; // LIS is always a rep
+    let repsDone = lisRead ? 1 : 0;
+    
+    if (dailyRepName) {
+      repsTotal++;
+      if (dailyRepCompleted) repsDone++;
+    }
+    
+    // Add additional commitments
+    if (additionalCommitments && additionalCommitments.length > 0) {
+      repsTotal += additionalCommitments.length;
+      repsDone += additionalCommitments.filter(c => c.completed).length;
+    }
+    
+    const repsPct = Math.round((repsDone / repsTotal) * 100);
+
+    // "I won the day"
+    // Components: Top Priority (WIN) + Other Tasks
+    let winTotal = 1; // Top Priority
+    let winDone = amWinCompleted ? 1 : 0;
+    
+    if (otherTasks && otherTasks.length > 0) {
+      winTotal += otherTasks.length;
+      winDone += otherTasks.filter(t => t.completed).length;
+    }
+    
+    const winPct = Math.round((winDone / winTotal) * 100);
+
+    return {
+      reps: { done: repsDone, total: repsTotal, pct: repsPct },
+      win: { done: winDone, total: winTotal, pct: winPct }
     };
-    fetchHistory();
+  }, [lisRead, dailyRepName, dailyRepCompleted, additionalCommitments, amWinCompleted, otherTasks]);
 
-    return () => unsubscribe();
-  }, [user, db, dateId]);
+  // --- HANDLERS ---
 
-  // Handlers
-  const handleAddWin = async (text, type) => {
-    try {
-      await dailyLogService.addWinItem(db, user.uid, dateId, text, type);
-    } catch (error) {
-      console.error("Error adding win:", error);
+  const handleAddOtherTask = () => {
+    if (newTaskText.trim()) {
+      handleAddTask(newTaskText);
+      setNewTaskText('');
+      setShowTaskInput(false);
     }
   };
 
-  const handleToggleWin = async (itemId) => {
-    try {
-      await dailyLogService.toggleWinItem(db, user.uid, dateId, itemId);
-    } catch (error) {
-      console.error("Error toggling win:", error);
-    }
-  };
-
-  const handleDeleteWin = async (itemId) => {
-    try {
-      await dailyLogService.deleteWinItem(db, user.uid, dateId, itemId);
-    } catch (error) {
-      console.error("Error deleting win:", error);
-    }
-  };
-
-  const handleUpdatePM = async (data) => {
-    try {
-      await dailyLogService.saveDailyLog(db, user.uid, dateId, data);
-    } catch (error) {
-      console.error("Error saving PM reflection:", error);
-    }
-  };
-
-  // Calculate Stats
-  const wins = dailyLog?.wins || [];
-  const stats = {
-    completedTasks: wins.filter(w => w.completed).length,
-    totalTasks: wins.length,
-    dailyReps: dailyLog?.dailyRep || false,
-    grounding: dailyLog?.groundingRep || false
-  };
-
-  if (loading) {
-    return <div className="p-8 text-center text-gray-400">Loading Arena...</div>;
-  }
+  // --- RENDER HELPERS ---
+  
+  const Checkbox = ({ checked, onChange, label, subLabel, disabled }) => (
+    <div 
+      onClick={!disabled ? onChange : undefined}
+      className={`flex items-start gap-3 p-3 rounded-xl border-2 transition-all cursor-pointer ${
+        checked 
+          ? 'bg-teal-50 border-teal-500' 
+          : 'bg-white border-gray-200 hover:border-teal-300'
+      } ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
+    >
+      <div className={`mt-0.5 w-6 h-6 rounded-md flex items-center justify-center border-2 transition-colors ${
+        checked ? 'bg-teal-500 border-teal-500' : 'bg-white border-gray-300'
+      }`}>
+        {checked && <CheckSquare className="w-4 h-4 text-white" />}
+      </div>
+      <div className="flex-1">
+        <p className={`font-semibold ${checked ? 'text-teal-900' : 'text-gray-700'}`}>
+          {label}
+        </p>
+        {subLabel && (
+          <p className="text-xs text-gray-500 mt-0.5">{subLabel}</p>
+        )}
+      </div>
+    </div>
+  );
 
   return (
-    <div className="min-h-full p-4 md:p-8 max-w-7xl mx-auto">
-      {/* Header Section Removed - Moved to AppContent */}
-
-      {/* Main Grid Layout */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 h-[calc(100vh-140px)] min-h-[600px]">
+    <div className="min-h-screen bg-[#F5F5F7] p-4 sm:p-6 lg:p-8 font-sans text-slate-800">
+      <div className="max-w-5xl mx-auto space-y-8">
         
-        {/* Left/Center Column: Training & WINs */}
-        <div className="lg:col-span-7 h-full overflow-hidden flex flex-col">
-          {bookendMode === 'AM' ? (
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-300 p-4 md:p-8 h-full overflow-y-auto">
-              {/* Unified AM Sheet */}
-              <div className="space-y-8">
-                <FocusCard block={1} focus="Feedback" />
-                
-                <WinTracker 
-                  wins={wins} 
-                  onToggle={handleToggleWin}
-                  onDelete={handleDeleteWin}
-                />
+        {/* 1. HEADER */}
+        <header className="space-y-2">
+          <h1 className="text-3xl sm:text-4xl font-bold text-[#002E47]">
+            {greeting}
+          </h1>
+          <p className="text-lg text-slate-500 italic font-medium border-l-4 border-teal-500 pl-4 py-1">
+            "{dailyQuote}"
+          </p>
+        </header>
 
-                {/* Daily Reps Section */}
-                <div>
-                   <div className="flex items-center justify-between mb-2">
-                     <h3 className="text-lg font-bold text-corporate-navy font-serif text-left">Daily Rep:</h3>
-                     <span className="text-xs text-gray-400 uppercase tracking-wider">Coming Soon</span>
-                   </div>
-                   <div className="p-3 bg-gray-50 rounded-lg border border-gray-100">
-                     <div className="h-6 w-full bg-gray-100 rounded animate-pulse"></div>
-                   </div>
-                </div>
-
-                {/* Upcoming Events Section */}
-                <div>
-                   <div className="flex items-center justify-between mb-2">
-                     <h3 className="text-lg font-bold text-corporate-navy font-serif text-left">Upcoming Events:</h3>
-                     <span className="text-xs text-gray-400 uppercase tracking-wider">Coming Soon</span>
-                   </div>
-                   <div className="space-y-2 pl-4">
-                      <div className="flex gap-2 text-sm text-gray-500">
-                        <div className="w-1.5 h-1.5 rounded-full bg-corporate-teal mt-2 flex-shrink-0"></div>
-                        <div className="flex-1 border-b border-gray-100 pb-1">Team Meeting - 11/20/25 4:00pm</div>
-                      </div>
-                      <div className="flex gap-2 text-sm text-gray-500">
-                        <div className="w-1.5 h-1.5 rounded-full bg-corporate-teal mt-2 flex-shrink-0"></div>
-                        <div className="flex-1 border-b border-gray-100 pb-1">Coaching Session - 11/25/25 10:00am</div>
-                      </div>
-                   </div>
-                </div>
-
-                {/* Development Plan Details (AM View) */}
-                <div>
-                  <div 
-                    className="flex items-center justify-between mb-4 cursor-pointer group"
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+          
+          {/* LEFT COLUMN (Main Work) */}
+          <div className="lg:col-span-7 space-y-8">
+            
+            {/* 2. WEEKLY FOCUS */}
+            <section>
+              <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
+                <h2 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-2">
+                  This Week's Focus
+                </h2>
+                <div className="flex items-center justify-between">
+                  <p className="text-2xl font-bold text-[#002E47]">
+                    {weeklyFocus}
+                  </p>
+                  <button 
                     onClick={() => navigate('development-plan')}
+                    className="text-teal-600 hover:text-teal-700 text-sm font-semibold flex items-center gap-1"
                   >
-                    <h3 className="text-xl font-bold text-corporate-navy font-serif group-hover:text-corporate-teal transition-colors">
-                      Development Plan Details
-                    </h3>
-                    <ChevronRight className="w-6 h-6 text-corporate-navy transform rotate-90 transition-transform group-hover:text-corporate-teal" />
+                    View Plan <ChevronRight className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            </section>
+
+            {/* 3. AM BOOKEND - DO MY REPS */}
+            <section className="text-left">
+              <div className="flex items-center gap-2 mb-4">
+                <div className="w-8 h-8 rounded-lg bg-orange-100 flex items-center justify-center text-orange-600">
+                  <Flame className="w-5 h-5" />
+                </div>
+                <h2 className="text-xl font-bold text-[#002E47]">
+                  AM Bookend - Lock-in Your Day
+                </h2>
+              </div>
+              
+              <div className="space-y-3 text-left">
+                {/* Grounding Rep */}
+                {hasLIS ? (
+                  <Checkbox 
+                    checked={lisRead}
+                    onChange={() => handleHabitCheck('readLIS', !lisRead)}
+                    label="Grounding Rep: Read LIS"
+                    subLabel="Center yourself on your identity."
+                  />
+                ) : (
+                  <div className="p-4 rounded-xl border-2 border-dashed border-orange-300 bg-orange-50 flex items-center justify-between">
+                    <div>
+                      <p className="font-semibold text-orange-800">Grounding Rep: Read LIS</p>
+                      <p className="text-xs text-orange-600">No Identity Statement set yet.</p>
+                    </div>
+                    <button 
+                      onClick={() => setIsAnchorModalOpen(true)}
+                      className="px-4 py-2 bg-orange-500 text-white rounded-lg text-sm font-bold hover:bg-orange-600 transition-colors"
+                    >
+                      Enter / Save
+                    </button>
                   </div>
-                  <div className="pl-4 border-l-2 border-gray-100">
-                    {currentPlan ? (
-                      <div 
-                        className="bg-gray-50 rounded-lg border border-gray-100 p-4 cursor-pointer hover:bg-gray-100 transition-colors"
-                        onClick={() => navigate('development-plan')}
-                      >
-                        <div className="flex justify-between items-start mb-2">
-                          <div>
-                            <span className="text-xs font-bold text-corporate-teal uppercase tracking-wider">Current Focus</span>
-                            <h4 className="font-bold text-corporate-navy text-lg">{primaryFocus}</h4>
-                          </div>
-                          <div className="text-right">
-                            <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">Cycle</span>
-                            <div className="font-bold text-corporate-navy">{currentPlan.cycle || 1}</div>
-                          </div>
-                        </div>
-                        <p className="text-sm text-gray-600 italic line-clamp-2">
-                          {focusAreas[0]?.why || "Focusing on core leadership competencies."}
-                        </p>
+                )}
+
+                {/* Daily Rep */}
+                {dailyRepName ? (
+                  <Checkbox 
+                    checked={dailyRepCompleted}
+                    onChange={() => handleHabitCheck('completedDailyRep', !dailyRepCompleted)}
+                    label={`Daily Rep: ${dailyRepName}`}
+                    subLabel="Execute your targeted practice."
+                  />
+                ) : (
+                  <div className="p-4 rounded-xl border border-slate-200 bg-white opacity-75">
+                    <p className="font-semibold text-slate-700">Daily Rep</p>
+                    <p className="text-xs text-slate-500">
+                      Daily reps are delivered based on your Focus/Dev Plan.
+                      <button onClick={() => navigate('development-plan')} className="text-teal-600 ml-1 hover:underline">
+                        Check Plan
+                      </button>
+                    </p>
+                  </div>
+                )}
+
+                {/* Additional Reps */}
+                {additionalCommitments.map((commitment, idx) => (
+                  <Checkbox 
+                    key={idx}
+                    checked={commitment.completed}
+                    onChange={() => { /* Logic to toggle additional rep */ }} 
+                    // Note: handleHabitToggle doesn't support array items directly in the hook yet without modification
+                    // For now, we'll just display them or need to extend the hook.
+                    // Assuming read-only for this demo or need to implement toggle logic.
+                    label={`Daily Rep: ${commitment.text || commitment.repId}`}
+                    disabled={true} // Placeholder until hook supports it
+                    subLabel="Additional commitment"
+                  />
+                ))}
+              </div>
+            </section>
+
+            {/* 4. WIN THE DAY - 1-2-3 */}
+            <section>
+              <div className="flex items-center gap-2 mb-4">
+                <div className="w-8 h-8 rounded-lg bg-teal-100 flex items-center justify-center text-teal-600">
+                  <Trophy className="w-5 h-5" />
+                </div>
+                <h2 className="text-xl font-bold text-[#002E47]">
+                  Win the Day (Today's 1-2-3)
+                </h2>
+              </div>
+
+              <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200 space-y-6">
+                
+                {/* 1. Top Priority */}
+                <div className="text-left">
+                  <label className="block text-xs font-bold text-slate-400 uppercase mb-2 text-left">
+                    1. Top Priority (The WIN)
+                  </label>
+                  <div className="flex gap-3">
+                    {amWinCompleted ? (
+                      <div className="flex-1 p-3 bg-green-50 border border-green-200 rounded-xl flex items-center gap-3">
+                        <CheckSquare className="w-5 h-5 text-green-600" />
+                        <span className="font-bold text-green-900 line-through opacity-75">{morningWIN}</span>
                       </div>
                     ) : (
-                      <div 
-                        className="h-20 bg-gray-50 rounded-lg border border-gray-100 flex flex-col items-center justify-center text-gray-400 cursor-pointer hover:bg-gray-100 transition-colors"
-                        onClick={() => navigate('development-plan')}
-                      >
-                        <span className="font-medium text-corporate-navy">No Active Plan</span>
-                        <span className="text-xs italic">Click to start your development journey</span>
+                      <div className="flex-1 flex gap-2">
+                        <input 
+                          type="text"
+                          value={morningWIN}
+                          onChange={(e) => setMorningWIN(e.target.value)}
+                          placeholder="What is the ONE thing that must get done?"
+                          className="flex-1 p-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-teal-500 outline-none transition-all font-medium"
+                          disabled={amWinCompleted} // Can't edit if checked (unless we add uncheck logic)
+                        />
+                        {/* Save Button (Initial '+') */}
+                        {!amWinCompleted && morningWIN && (
+                           <button 
+                             onClick={handleSaveWIN}
+                             disabled={isSavingWIN}
+                             className="p-3 bg-teal-500 text-white rounded-xl hover:bg-teal-600 transition-colors disabled:opacity-50"
+                             title="Save WIN"
+                           >
+                             {isSavingWIN ? <Loader className="w-5 h-5 animate-spin" /> : <Plus className="w-5 h-5" />}
+                           </button>
+                        )}
                       </div>
+                    )}
+                    
+                    {/* Checkbox to complete (only shows if saved/has value) */}
+                    {morningWIN && !isSavingWIN && (
+                      <button
+                        onClick={handleToggleWIN}
+                        className={`p-3 rounded-xl border-2 transition-colors ${
+                          amWinCompleted 
+                            ? 'bg-green-500 border-green-500 text-white' 
+                            : 'bg-white border-slate-200 text-slate-300 hover:border-green-400'
+                        }`}
+                      >
+                        <CheckSquare className="w-5 h-5" />
+                      </button>
                     )}
                   </div>
                 </div>
+
+                {/* 2 & 3. Next Most Important */}
+                <div className="space-y-3 text-left">
+                  <label className="block text-xs font-bold text-slate-400 uppercase text-left">
+                    2 & 3. Next Most Important
+                  </label>
+                  
+                  {otherTasks.map((task, idx) => (
+                    <div key={task.id || idx} className="flex items-center gap-3">
+                      <div className={`flex-1 p-3 rounded-xl border ${
+                        task.completed ? 'bg-slate-50 border-slate-200' : 'bg-white border-slate-200'
+                      }`}>
+                        <span className={`font-medium ${task.completed ? 'line-through text-slate-400' : 'text-slate-700'}`}>
+                          {task.text}
+                        </span>
+                      </div>
+                      <button
+                        onClick={() => handleToggleTask(task.id)}
+                        className={`p-3 rounded-xl border-2 transition-colors ${
+                          task.completed
+                            ? 'bg-teal-500 border-teal-500 text-white' 
+                            : 'bg-white border-slate-200 text-slate-300 hover:border-teal-400'
+                        }`}
+                      >
+                        <CheckSquare className="w-5 h-5" />
+                      </button>
+                      <button 
+                        onClick={() => handleRemoveTask(task.id)}
+                        className="p-3 text-slate-300 hover:text-red-400 transition-colors"
+                      >
+                        <X className="w-5 h-5" />
+                      </button>
+                    </div>
+                  ))}
+
+                  {otherTasks.length < 2 && (
+                    <div className="flex gap-2">
+                      <input 
+                        type="text"
+                        value={newTaskText}
+                        onChange={(e) => setNewTaskText(e.target.value)}
+                        onKeyPress={(e) => e.key === 'Enter' && handleAddOtherTask()}
+                        placeholder="Add another priority..."
+                        className="flex-1 p-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-teal-500 outline-none transition-all text-sm"
+                      />
+                      <button 
+                        onClick={handleAddOtherTask}
+                        disabled={!newTaskText.trim()}
+                        className="p-3 bg-slate-200 text-slate-600 rounded-xl hover:bg-teal-500 hover:text-white transition-colors disabled:opacity-50"
+                      >
+                        <Plus className="w-5 h-5" />
+                      </button>
+                    </div>
+                  )}
+                </div>
+
               </div>
-            </div>
-          ) : (
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-300 p-8 h-full overflow-y-auto">
-              {/* Unified PM Sheet */}
-              <div className="space-y-12">
-                
-                {/* Development Plan Details */}
-                <div>
-                  <div className="flex items-center justify-between mb-4 cursor-pointer group">
-                    <h3 className="text-xl font-bold text-corporate-navy font-serif">
-                      Development Plan Details
-                    </h3>
-                    <ChevronRight className="w-6 h-6 text-corporate-navy transform rotate-90 transition-transform" />
+            </section>
+
+          </div>
+
+          {/* RIGHT COLUMN (Stats & Reflection) */}
+          <div className="lg:col-span-5 space-y-8">
+            
+            {/* 5. NOTIFICATIONS */}
+            <section className="text-left">
+              <div className="flex items-center gap-2 mb-4">
+                <Bell className="w-5 h-5 text-slate-400" />
+                <h2 className="text-sm font-bold text-slate-400 uppercase tracking-wider">
+                  Notifications
+                </h2>
+              </div>
+              <div className="bg-white rounded-2xl p-4 shadow-sm border border-slate-200 space-y-3 text-left">
+                {/* Mock Notifications based on wireframe */}
+                <div className="flex gap-3 items-start p-2 hover:bg-slate-50 rounded-lg transition-colors cursor-pointer">
+                  <div className="w-2 h-2 mt-2 rounded-full bg-orange-500 flex-shrink-0" />
+                  <div>
+                    <p className="text-sm font-semibold text-[#002E47]">Yesterday's "Needs Work"</p>
+                    <p className="text-xs text-slate-500">Review your reflection from yesterday.</p>
                   </div>
-                  <div className="pl-4 border-l-2 border-gray-100">
-                    <div className="h-20 bg-gray-50 rounded-lg border border-gray-100 flex items-center justify-center text-gray-400 italic text-sm">
-                      Plan details content...
+                </div>
+                <div className="flex gap-3 items-start p-2 hover:bg-slate-50 rounded-lg transition-colors cursor-pointer">
+                  <div className="w-2 h-2 mt-2 rounded-full bg-teal-500 flex-shrink-0" />
+                  <div>
+                    <p className="text-sm font-semibold text-[#002E47]">Upcoming Feedback Practice</p>
+                    <p className="text-xs text-slate-500">Nov 29, 4:00 PM <span className="text-teal-600 font-bold ml-1">Register</span></p>
+                  </div>
+                </div>
+                <div className="flex gap-3 items-start p-2 hover:bg-slate-50 rounded-lg transition-colors cursor-pointer">
+                  <div className="w-2 h-2 mt-2 rounded-full bg-purple-500 flex-shrink-0" />
+                  <div>
+                    <p className="text-sm font-semibold text-[#002E47]">New R&R Unlocked</p>
+                    <p className="text-xs text-slate-500">Check your resource library.</p>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            {/* 6. TODAY SCORECARD */}
+            <section>
+              <div className="bg-[#002E47] rounded-2xl p-6 text-white shadow-lg relative overflow-hidden">
+                {/* Background Pattern */}
+                <div className="absolute top-0 right-0 w-32 h-32 bg-white opacity-5 rounded-full -mr-10 -mt-10" />
+                
+                <h2 className="text-lg font-bold mb-6 flex items-center gap-2">
+                  <Trophy className="w-5 h-5 text-yellow-400" /> Today Scorecard
+                </h2>
+
+                <div className="space-y-4">
+                  {/* Reps Score */}
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
+                        scorecard.reps.pct === 100 ? 'bg-green-500 border-green-500' : 'border-slate-500'
+                      }`}>
+                        {scorecard.reps.pct === 100 && <CheckSquare className="w-3 h-3 text-white" />}
+                      </div>
+                      <span className="font-medium">I did my reps today</span>
+                    </div>
+                    <div className="text-right">
+                      <span className="font-bold text-xl">{scorecard.reps.done}</span>
+                      <span className="text-slate-400 text-sm"> / {scorecard.reps.total}</span>
+                      <span className={`ml-2 text-sm font-bold ${
+                        scorecard.reps.pct === 100 ? 'text-green-400' : 'text-slate-400'
+                      }`}>
+                        {scorecard.reps.pct}%
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Win Score */}
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
+                        scorecard.win.pct === 100 ? 'bg-green-500 border-green-500' : 'border-slate-500'
+                      }`}>
+                        {scorecard.win.pct === 100 && <CheckSquare className="w-3 h-3 text-white" />}
+                      </div>
+                      <span className="font-medium">I won the day</span>
+                    </div>
+                    <div className="text-right">
+                      <span className="font-bold text-xl">{scorecard.win.done}</span>
+                      <span className="text-slate-400 text-sm"> / {scorecard.win.total}</span>
+                      <span className={`ml-2 text-sm font-bold ${
+                        scorecard.win.pct === 100 ? 'text-green-400' : 'text-slate-400'
+                      }`}>
+                        {scorecard.win.pct}%
+                      </span>
                     </div>
                   </div>
                 </div>
 
-                {/* Habit Tracking */}
-                <div>
-                  <h3 className="text-xl font-bold text-corporate-navy font-serif mb-6">
-                    Habit Tracking
-                  </h3>
-                  <div className="space-y-6 pl-2">
-                    {[
-                      { id: 1, streak: '6-day streak' },
-                      { id: 2, streak: '1-day streak' },
-                      { id: 3, streak: '12-day streak' }
-                    ].map((habit) => (
-                      <div key={habit.id} className="flex items-center gap-4">
-                        <div className="w-8 h-8 rounded-full border-2 border-corporate-navy flex items-center justify-center font-bold text-corporate-navy">
-                          {habit.id}
-                        </div>
-                        <div className="flex-1 h-2 bg-gray-100 rounded-full overflow-hidden">
-                          <div className="h-full bg-corporate-teal w-2/3 opacity-50"></div>
-                        </div>
-                        <span className="text-corporate-navy font-medium font-serif whitespace-nowrap">
-                          {habit.streak}
-                        </span>
-                      </div>
-                    ))}
+                <div className="mt-6 pt-6 border-t border-white/10 flex justify-between items-center">
+                  <div className="flex items-center gap-2">
+                    <Flame className="w-5 h-5 text-orange-500" />
+                    <span className="font-bold text-xl">{streakCount}</span>
+                    <span className="text-xs text-slate-400 uppercase tracking-wider">Day Streak</span>
+                  </div>
+                  {/* Placeholder for 0 Day Streak from wireframe? Maybe "Best Streak"? */}
+                  <div className="text-xs text-slate-500">
+                    Keep it up!
                   </div>
                 </div>
-
               </div>
-            </div>
-          )}
-        </div>
+            </section>
 
-        {/* Right Column: Bookends */}
-        <div className="lg:col-span-5 h-full min-h-[500px]">
-          <BookendsWidget 
-            pmData={dailyLog}
-            onUpdatePM={handleUpdatePM}
-            onAddWin={handleAddWin}
-            stats={stats}
-            wins={wins}
-            mode={bookendMode}
-            setMode={setBookendMode}
-            reflectionHistory={reflectionHistory}
-          />
-        </div>
+            {/* 7. PM BOOKEND - REFLECTION */}
+            <section>
+              <div className="flex items-center gap-2 mb-4">
+                <div className="w-8 h-8 rounded-lg bg-indigo-100 flex items-center justify-center text-indigo-600">
+                  <MessageSquare className="w-5 h-5" />
+                </div>
+                <h2 className="text-xl font-bold text-[#002E47]">
+                  PM Bookend - Reflection
+                </h2>
+              </div>
 
+              <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200 space-y-4">
+                <div>
+                  <label className="block text-sm font-bold text-green-700 mb-2">
+                    What went well today?
+                  </label>
+                  <textarea 
+                    value={reflectionGood}
+                    onChange={(e) => setReflectionGood(e.target.value)}
+                    className="w-full p-3 bg-green-50 border border-green-100 rounded-xl focus:ring-2 focus:ring-green-500 outline-none transition-all text-sm"
+                    rows={2}
+                    placeholder="Celebrate a win..."
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-bold text-orange-700 mb-2">
+                    What needs work?
+                  </label>
+                  <textarea 
+                    value={reflectionBetter}
+                    onChange={(e) => setReflectionBetter(e.target.value)}
+                    className="w-full p-3 bg-orange-50 border border-orange-100 rounded-xl focus:ring-2 focus:ring-orange-500 outline-none transition-all text-sm"
+                    rows={2}
+                    placeholder="Identify an improvement..."
+                  />
+                </div>
+
+                <button 
+                  onClick={handleSaveEveningBookend}
+                  disabled={isSavingBookend || (!reflectionGood && !reflectionBetter)}
+                  className="w-full py-3 bg-[#002E47] text-white rounded-xl font-bold hover:bg-[#003E5F] transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                >
+                  {isSavingBookend ? <Loader className="w-5 h-5 animate-spin" /> : <Save className="w-5 h-5" />}
+                  Save Journal Page
+                </button>
+                <p className="text-xs text-center text-slate-400">
+                  Saved to history in Locker
+                </p>
+              </div>
+            </section>
+
+          </div>
+        </div>
       </div>
+
+      {/* Anchor Editor Modal */}
+      <UnifiedAnchorEditorModal
+        isOpen={isAnchorModalOpen}
+        onClose={() => setIsAnchorModalOpen(false)}
+        onSave={async (data) => {
+          await Promise.all([
+            handleSaveIdentity(data.identity),
+            handleSaveHabit(data.habit),
+            handleSaveWhy(data.why)
+          ]);
+          setIsAnchorModalOpen(false);
+        }}
+        initialIdentity={identityStatement}
+        initialHabit={habitAnchor}
+        initialWhy={whyStatement}
+      />
     </div>
   );
 };

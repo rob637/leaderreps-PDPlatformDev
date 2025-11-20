@@ -7,11 +7,14 @@ const ScreenMap = {
   'roadmap-tracker': lazy(() =>
     import('../components/screens/RoadmapTracker.jsx')
   ),
-  dashboard: lazy(() => import('../components/screens/ArenaDashboard.jsx')),
+  dashboard: lazy(() => import('../components/screens/Dashboard.jsx')),
+  'dashboard-main': lazy(() => import('../components/screens/DashboardMain.jsx')),
+  'arena-dashboard': lazy(() => import('../components/screens/ArenaDashboard.jsx')),
   'development-plan': lazy(() =>
     import('../components/screens/DevelopmentPlan.jsx')
   ),
   'coaching-lab': lazy(() => import('../components/screens/CoachingLabScreen.jsx')),
+  'locker': lazy(() => import('../components/screens/Locker.jsx')),
   'labs': lazy(() => import('../components/screens/CoachingLabScreen.jsx')), // Alias for backward compatibility
   'daily-practice': lazy(() =>
     import('../components/screens/DailyPractice.jsx')

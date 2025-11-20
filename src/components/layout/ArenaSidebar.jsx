@@ -6,6 +6,7 @@ import {
   Users, 
   MessageSquare, 
   User, 
+  Archive,
   LogOut,
   Menu,
   ChevronLeft,
@@ -15,12 +16,15 @@ import {
 const ArenaSidebar = ({ isOpen, toggle, currentScreen, navigate, onSignOut, user, membershipData }) => {
   
   const menuItems = [
-    { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-    { id: 'development-plan', label: 'Dev Plan', icon: Target },
+    { id: 'dashboard', label: 'Dashboard 1', icon: LayoutDashboard },
+    { id: 'dashboard-main', label: 'Dashboard 2', icon: LayoutDashboard },
+    { id: 'arena-dashboard', label: 'Dashboard 3', icon: LayoutDashboard },
     { id: 'library', label: 'Content', icon: BookOpen },
     { id: 'community', label: 'Community', icon: Users },
     { id: 'coaching-lab', label: 'Coaching', icon: MessageSquare },
-    { id: 'profile', label: 'Profile', icon: User },
+    { type: 'section', label: 'Your Space' },
+    { id: 'development-plan', label: 'Dev Plan', icon: Target },
+    { id: 'locker', label: 'Locker', icon: Archive },
   ];
 
   // Determine display name (First Name Only)
@@ -51,7 +55,7 @@ const ArenaSidebar = ({ isOpen, toggle, currentScreen, navigate, onSignOut, user
             <div className="flex flex-col">
               <span className="font-bold text-lg tracking-wide leading-tight">LeaderReps</span>
               <span className="text-xs text-corporate-teal font-medium uppercase tracking-wider truncate max-w-[140px]">
-                {firstName}'s Arena
+                The Arena
               </span>
             </div>
           </div>
@@ -73,7 +77,18 @@ const ArenaSidebar = ({ isOpen, toggle, currentScreen, navigate, onSignOut, user
       {/* Navigation Items */}
       <nav className="flex-1 py-4 overflow-y-auto overflow-x-hidden">
         <ul className="space-y-1">
-          {menuItems.map((item) => {
+          {menuItems.map((item, index) => {
+            if (item.type === 'section') {
+               return (
+                 <li key={`section-${index}`} className="mt-6 mb-2 px-4">
+                   <span className={`text-xs font-bold text-slate-500 uppercase tracking-wider ${isOpen ? 'block' : 'hidden'}`}>
+                     {item.label}
+                   </span>
+                   {!isOpen && <div className="h-px bg-white/10 mx-1 my-2"></div>}
+                 </li>
+               );
+            }
+
             const Icon = item.icon;
             const isActive = currentScreen === item.id;
             
