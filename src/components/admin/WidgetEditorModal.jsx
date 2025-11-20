@@ -48,7 +48,7 @@ const Checkbox = ({ checked, onChange, label, subLabel, disabled }) => (
   </div>
 );
 
-const WidgetEditorModal = ({ isOpen, onClose, widgetId, widgetName, initialCode }) => {
+const WidgetEditorModal = ({ isOpen, onClose, widgetId, widgetName, initialCode, onSave }) => {
   const [activeTab, setActiveTab] = useState('preview'); // preview | code
   const [code, setCode] = useState(initialCode || '// Widget code will appear here...');
   const [chatInput, setChatInput] = useState('');
@@ -155,13 +155,20 @@ const WidgetEditorModal = ({ isOpen, onClose, widgetId, widgetName, initialCode 
     }
   };
 
-  const handleDeploy = () => {
+  const handleDeploy = async () => {
     setIsDeploying(true);
-    setTimeout(() => {
-      setIsDeploying(false);
-      alert('Widget deployed to DEV environment successfully!');
+    try {
+      if (onSave) {
+        await onSave(code);
+      }
+      // alert('Widget deployed to DEV environment successfully!');
       onClose();
-    }, 2000);
+    } catch (error) {
+      console.error("Deploy error:", error);
+      alert("Failed to save widget.");
+    } finally {
+      setIsDeploying(false);
+    }
   };
 
   return (

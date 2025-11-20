@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { ToggleLeft, ToggleRight, FlaskConical, ArrowUp, ArrowDown, Edit3 } from 'lucide-react';
+import { ToggleLeft, ToggleRight, FlaskConical, ArrowUp, ArrowDown, Edit3, Plus, Trash2, RefreshCw, Save } from 'lucide-react';
 import { useFeatures } from '../../providers/FeatureProvider';
 import WidgetEditorModal from './WidgetEditorModal';
 
 const FeatureManager = () => {
-  const { features, toggleFeature, updateFeatureOrder, getFeatureOrder, isFeatureEnabled } = useFeatures();
+  const { features, toggleFeature, updateFeatureOrder, saveFeature, deleteFeature, isFeatureEnabled } = useFeatures();
   const [editingWidget, setEditingWidget] = useState(null);
+  const [isAdding, setIsAdding] = useState(false);
+  const [newWidget, setNewWidget] = useState({ name: '', id: '', group: 'dashboard', description: '' });
 
   const WIDGET_TEMPLATES = {
     'identity-builder': `
@@ -63,7 +65,6 @@ const FeatureManager = () => {
     `
   };
   
-  // Define the static metadata for features
   const FEATURE_METADATA = {
     // Dashboard
     'identity-builder': { name: 'Identity Builder', description: 'Grounding Rep & Identity Statement tools.' },
@@ -99,37 +100,87 @@ const FeatureManager = () => {
     'roi-report': { name: 'Executive ROI Report', description: 'Automated reports showing progress and value.' },
   };
 
-  // Initial groups structure (ids only)
   const initialGroups = {
     dashboard: ['identity-builder', 'habit-stack', 'win-the-day', 'gamification', 'exec-summary', 'calendar-sync', 'weekly-focus', 'notifications', 'scorecard', 'pm-bookend'],
     content: ['course-library', 'reading-hub', 'leadership-videos', 'strat-templates'],
     community: ['community-feed', 'my-discussions', 'mastermind', 'mentor-match', 'live-events'],
-    coaching: ['ai-roleplay', 'scenario-sim', 'feedback-gym', 'practice-history', 'progress-analytics', 'roi-report']
+    coaching: ['practice-history', 'progress-analytics', 'ai-roleplay', 'scenario-sim', 'feedback-gym', 'roi-report']
   };
 
-  // State to hold the sorted list of IDs for each group
-  const [sortedGroups, setSortedGroups] = useState(initialGroups);
+  // Group features dynamically
+  const groups = {
+    dashboard: [],
+    content: [],
+    community: [],
+    coaching: []
+  };
 
-  // Effect to sort groups based on persisted order
-  useEffect(() => {
-    const newSortedGroups = {};
-    Object.keys(initialGroups).forEach(groupKey => {
-      const unsortedIds = initialGroups[groupKey];
-      // Sort based on getFeatureOrder
-      const sorted = [...unsortedIds].sort((a, b) => {
-        const orderA = getFeatureOrder(a);
-        const orderB = getFeatureOrder(b);
-        // If orders are equal (e.g. both 999), maintain original relative order
-        if (orderA === orderB) return unsortedIds.indexOf(a) - unsortedIds.indexOf(b);
-        return orderA - orderB;
+  // Merge DB features with metadata for display
+  Object.entries(features).forEach(([id, data]) => {
+    const group = data.group || (initialGroups.dashboard.includes(id) ? 'dashboard' : 
+                                 initialGroups.content.includes(id) ? 'content' :
+                                 initialGroups.community.includes(id) ? 'community' : 
+                                 initialGroups.coaching.includes(id) ? 'coaching' : 'dashboard');
+    
+    const meta = FEATURE_METADATA[id] || {};
+    
+    if (groups[group]) {
+      groups[group].push({
+        id,
+        name: data.name || meta.name || id,
+        description: data.description || meta.description || '',
+        enabled: data.enabled,
+        order: data.order ?? 999,
+        code: data.code || WIDGET_TEMPLATES[id] || ''
       });
-      newSortedGroups[groupKey] = sorted;
+    }
+  });
+
+  // Sort groups
+  Object.keys(groups).forEach(key => {
+    groups[key].sort((a, b) => a.order - b.order);
+  });
+
+  const handleSyncDefaults = async () => {
+    if (!window.confirm('This will populate the database with default widgets. Continue?')) return;
+    
+    for (const [id, meta] of Object.entries(FEATURE_METADATA)) {
+       if (!features[id] || !features[id].name) {
+         await saveFeature(id, {
+           name: meta.name,
+           description: meta.description,
+           code: WIDGET_TEMPLATES[id] || '',
+           group: initialGroups.dashboard.includes(id) ? 'dashboard' : 
+                  initialGroups.content.includes(id) ? 'content' :
+                  initialGroups.community.includes(id) ? 'community' : 'coaching',
+           enabled: true,
+           order: 999
+         });
+       }
+    }
+    alert('Defaults synced!');
+  };
+
+  const handleAddWidget = async () => {
+    if (!newWidget.name || !newWidget.id) return;
+    await saveFeature(newWidget.id, {
+      ...newWidget,
+      code: '// New widget code',
+      enabled: true,
+      order: 999
     });
-    setSortedGroups(newSortedGroups);
-  }, [features]); // Re-run when features context updates
+    setIsAdding(false);
+    setNewWidget({ name: '', id: '', group: 'dashboard', description: '' });
+  };
+
+  const handleDelete = async (id) => {
+    if (window.confirm('Are you sure you want to delete this widget?')) {
+      await deleteFeature(id);
+    }
+  };
 
   const handleMove = (groupKey, index, direction) => {
-    const currentList = [...sortedGroups[groupKey]];
+    const currentList = [...groups[groupKey]];
     if (direction === 'up' && index > 0) {
       [currentList[index], currentList[index - 1]] = [currentList[index - 1], currentList[index]];
     } else if (direction === 'down' && index < currentList.length - 1) {
@@ -138,19 +189,14 @@ const FeatureManager = () => {
       return;
     }
     
-    // Optimistic update
-    setSortedGroups(prev => ({ ...prev, [groupKey]: currentList }));
-    
-    // Persist new order
-    // We only need to update the order for the items in this group
-    // But updateFeatureOrder expects a map of { id: order } or list of ids?
-    // The provider implementation I wrote takes an array of IDs and assigns index as order.
-    // So we just pass the new list.
-    updateFeatureOrder(currentList);
+    // Update orders
+    currentList.forEach((item, idx) => {
+        saveFeature(item.id, { ...features[item.id], order: idx });
+    });
   };
 
   const groupTitles = {
-    dashboard: 'Dashboard 4',
+    dashboard: 'Dashboard',
     content: 'Content',
     community: 'Community',
     coaching: 'Coaching'
@@ -163,24 +209,76 @@ const FeatureManager = () => {
           <h2 className="text-xl font-bold text-corporate-navy font-serif">Widget Lab</h2>
           <p className="text-gray-500 text-sm">Manage, design, and deploy widgets for each module.</p>
         </div>
-        <div className="p-3 bg-purple-100 text-purple-600 rounded-lg">
-          <FlaskConical className="w-6 h-6" />
+        <div className="flex gap-2">
+            <button 
+                onClick={() => setIsAdding(true)}
+                className="px-4 py-2 bg-teal-600 text-white rounded-lg flex items-center gap-2 hover:bg-teal-700 transition-colors"
+            >
+                <Plus className="w-4 h-4" /> Add Widget
+            </button>
+            <button 
+                onClick={handleSyncDefaults}
+                className="px-4 py-2 bg-slate-100 text-slate-600 rounded-lg flex items-center gap-2 hover:bg-slate-200 transition-colors"
+                title="Restore default widgets to database"
+            >
+                <RefreshCw className="w-4 h-4" /> Sync Defaults
+            </button>
         </div>
       </div>
 
+      {/* Add Widget Modal */}
+      {isAdding && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+            <div className="bg-white p-6 rounded-xl w-96 space-y-4">
+                <h3 className="font-bold text-lg">Add New Widget</h3>
+                <input 
+                    className="w-full p-2 border rounded" 
+                    placeholder="Widget Name" 
+                    value={newWidget.name}
+                    onChange={e => setNewWidget({...newWidget, name: e.target.value, id: e.target.value.toLowerCase().replace(/\s+/g, '-')})}
+                />
+                <input 
+                    className="w-full p-2 border rounded" 
+                    placeholder="Widget ID" 
+                    value={newWidget.id}
+                    onChange={e => setNewWidget({...newWidget, id: e.target.value})}
+                />
+                <select 
+                    className="w-full p-2 border rounded"
+                    value={newWidget.group}
+                    onChange={e => setNewWidget({...newWidget, group: e.target.value})}
+                >
+                    <option value="dashboard">Dashboard</option>
+                    <option value="content">Content</option>
+                    <option value="community">Community</option>
+                    <option value="coaching">Coaching</option>
+                </select>
+                <textarea 
+                    className="w-full p-2 border rounded" 
+                    placeholder="Description" 
+                    value={newWidget.description}
+                    onChange={e => setNewWidget({...newWidget, description: e.target.value})}
+                />
+                <div className="flex justify-end gap-2">
+                    <button onClick={() => setIsAdding(false)} className="px-4 py-2 text-gray-600">Cancel</button>
+                    <button onClick={handleAddWidget} className="px-4 py-2 bg-teal-600 text-white rounded">Add</button>
+                </div>
+            </div>
+        </div>
+      )}
+
       <div className="space-y-8">
-        {Object.keys(sortedGroups).map((groupKey) => (
+        {Object.keys(groups).map((groupKey) => (
           <div key={groupKey} className="space-y-4">
             <h3 className="text-lg font-bold text-gray-700 border-b border-gray-200 pb-2">
               {groupTitles[groupKey]}
             </h3>
             <div className="grid grid-cols-1 gap-4">
-              {sortedGroups[groupKey].map((featureId, index) => {
-                const meta = FEATURE_METADATA[featureId] || { name: featureId, description: '' };
-                const isEnabled = isFeatureEnabled(featureId);
-                
-                return (
-                  <div key={featureId} className="flex items-center justify-between p-4 bg-white border border-gray-200 rounded-xl hover:shadow-md transition-shadow">
+              {groups[groupKey].length === 0 && (
+                  <p className="text-gray-400 italic">No widgets in this group.</p>
+              )}
+              {groups[groupKey].map((feature, index) => (
+                  <div key={feature.id} className="flex items-center justify-between p-4 bg-white border border-gray-200 rounded-xl hover:shadow-md transition-shadow">
                     <div className="flex items-center gap-4">
                       {/* Reorder Controls */}
                       <div className="flex flex-col gap-1">
@@ -193,7 +291,7 @@ const FeatureManager = () => {
                         </button>
                         <button 
                           onClick={() => handleMove(groupKey, index, 'down')}
-                          disabled={index === sortedGroups[groupKey].length - 1}
+                          disabled={index === groups[groupKey].length - 1}
                           className="p-1 hover:bg-gray-100 rounded text-gray-400 hover:text-corporate-navy disabled:opacity-30"
                         >
                           <ArrowDown className="w-4 h-4" />
@@ -204,44 +302,52 @@ const FeatureManager = () => {
                         <div className="flex items-center gap-3">
                           <h4 
                             className="font-bold text-corporate-navy text-lg cursor-pointer hover:text-teal-600 hover:underline decoration-dotted underline-offset-4"
-                            onClick={() => setEditingWidget({ id: featureId, name: meta.name })}
+                            onClick={() => setEditingWidget(feature)}
                             title="Click to edit widget design"
                           >
-                            {meta.name}
+                            {feature.name}
                           </h4>
                           <button 
-                            onClick={() => setEditingWidget({ id: featureId, name: meta.name })}
+                            onClick={() => setEditingWidget(feature)}
                             className="p-1 text-slate-400 hover:text-teal-600 hover:bg-teal-50 rounded-full transition-colors"
                             title="Edit Widget Design"
                           >
                             <Edit3 className="w-4 h-4" />
                           </button>
-                          {isEnabled ? (
+                          {feature.enabled ? (
                             <span className="px-2 py-0.5 bg-green-100 text-green-800 text-xs font-bold rounded-full uppercase">Active</span>
                           ) : (
                             <span className="px-2 py-0.5 bg-gray-100 text-gray-600 text-xs font-bold rounded-full uppercase">Disabled</span>
                           )}
                         </div>
-                        <p className="text-gray-500 mt-1 text-sm">{meta.description}</p>
+                        <p className="text-gray-500 mt-1 text-sm">{feature.description}</p>
                       </div>
                     </div>
                     
-                    <button 
-                      onClick={() => toggleFeature(featureId, !isEnabled)}
-                      className={`
-                        transition-colors duration-200
-                        ${isEnabled ? 'text-corporate-teal' : 'text-gray-300 hover:text-gray-400'}
-                      `}
-                    >
-                      {isEnabled ? (
-                        <ToggleRight className="w-10 h-10" />
-                      ) : (
-                        <ToggleLeft className="w-10 h-10" />
-                      )}
-                    </button>
+                    <div className="flex items-center gap-4">
+                        <button 
+                        onClick={() => toggleFeature(feature.id, !feature.enabled)}
+                        className={`
+                            transition-colors duration-200
+                            ${feature.enabled ? 'text-corporate-teal' : 'text-gray-300 hover:text-gray-400'}
+                        `}
+                        >
+                        {feature.enabled ? (
+                            <ToggleRight className="w-10 h-10" />
+                        ) : (
+                            <ToggleLeft className="w-10 h-10" />
+                        )}
+                        </button>
+                        <button 
+                            onClick={() => handleDelete(feature.id)}
+                            className="p-2 text-red-400 hover:bg-red-50 hover:text-red-600 rounded-lg transition-colors"
+                            title="Delete Widget"
+                        >
+                            <Trash2 className="w-5 h-5" />
+                        </button>
+                    </div>
                   </div>
-                );
-              })}
+                ))}
             </div>
           </div>
         ))}
@@ -258,7 +364,10 @@ const FeatureManager = () => {
           onClose={() => setEditingWidget(null)}
           widgetId={editingWidget.id}
           widgetName={editingWidget.name}
-          initialCode={WIDGET_TEMPLATES[editingWidget.id] || `<div>No template found for ${editingWidget.name}</div>`}
+          initialCode={editingWidget.code}
+          onSave={async (code) => {
+              await saveFeature(editingWidget.id, { ...features[editingWidget.id], code });
+          }}
         />
       )}
     </div>
