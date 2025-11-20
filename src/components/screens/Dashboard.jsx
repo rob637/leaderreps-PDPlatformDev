@@ -36,6 +36,7 @@ import {
 } from './dashboard/DashboardComponents.jsx';
 import TestUtilsModal from './dashboard/TestUtilsModal.jsx';// Arena v1.0 Scope: Import Daily Tasks component to replace Social Pod
 import DailyTasksCard from './dashboard/DailyTasksCard.jsx';
+import WidgetRenderer from '../admin/WidgetRenderer.jsx';
 
 // Import hooks from the file you provided
 import { useDashboard } from './dashboard/DashboardHooks.jsx';
@@ -660,65 +661,124 @@ const Dashboard = (props) => {
       {/* Get Started / Onboarding Card */}
       {visibleComponents.includes('getStarted') && (
         <div className="section-corporate">
-          <GetStartedCard
-            onNavigate={setCurrentScreen}
-            membershipData={membershipData}
-            developmentPlanData={developmentPlanData}
-            currentTier={currentTier}
-            userData={userData}
-            identityStatement={identityStatement}
-            habitAnchor={habitAnchor}
-            whyStatement={whyStatement}
-          />
+          <WidgetRenderer 
+            widgetId="identity-builder"
+            scope={{
+              onNavigate: setCurrentScreen,
+              membershipData,
+              developmentPlanData,
+              currentTier,
+              userData,
+              identityStatement,
+              habitAnchor,
+              whyStatement,
+              hasLIS: !!identityStatement,
+              lisRead: false, // TODO: Hook up real state
+              handleHabitCheck: () => {}, // TODO: Hook up real state
+              setIsAnchorModalOpen: () => setShowAnchorModal(true)
+            }}
+          >
+            <GetStartedCard
+              onNavigate={setCurrentScreen}
+              membershipData={membershipData}
+              developmentPlanData={developmentPlanData}
+              currentTier={currentTier}
+              userData={userData}
+              identityStatement={identityStatement}
+              habitAnchor={habitAnchor}
+              whyStatement={whyStatement}
+            />
+          </WidgetRenderer>
         </div>
       )}
 
       {/* Daily Progress Summary - Shows WIN and Reflections */}
       {visibleComponents.includes('dynamicBookend') && (
         <div className="section-corporate">
-          <DailyProgressSummary dailyPracticeData={dailyPracticeData} />
+          <WidgetRenderer widgetId="scorecard" scope={{ dailyPracticeData }}>
+            <DailyProgressSummary dailyPracticeData={dailyPracticeData} />
+          </WidgetRenderer>
         </div>
       )}
 
       {/* Dynamic Bookend (Morning/Evening Practice) */}
       {visibleComponents.includes('dynamicBookend') && (
         <div className="section-corporate">
-        <DynamicBookendContainer
-          morningProps={{
-            dailyWIN: morningWIN,
-            setDailyWIN: setMorningWIN,
-            otherTasks,
-            onAddTask: handleAddTask,
-            onToggleTask: handleToggleTask,
-            onRemoveTask: handleRemoveTask,
-            showLIS: false,
-            setShowLIS: () => {},
-            identityStatement,
-            onSave: handleSaveMorningBookend,
-            onSaveWIN: handleSaveWIN,
-            isSavingWIN,
-            isSaving: isSavingBookend,
-            winCompleted: amWinCompleted
+        <WidgetRenderer 
+          widgetId="win-the-day" 
+          scope={{
+            morningProps: {
+              dailyWIN: morningWIN,
+              setDailyWIN: setMorningWIN,
+              otherTasks,
+              onAddTask: handleAddTask,
+              onToggleTask: handleToggleTask,
+              onRemoveTask: handleRemoveTask,
+              showLIS: false,
+              setShowLIS: () => {},
+              identityStatement,
+              onSave: handleSaveMorningBookend,
+              onSaveWIN: handleSaveWIN,
+              isSavingWIN,
+              isSaving: isSavingBookend,
+              winCompleted: amWinCompleted
+            },
+            eveningProps: {
+              reflectionGood,
+              setReflectionGood,
+              reflectionBetter,
+              setReflectionBetter,
+              reflectionBest,
+              setReflectionBest,
+              habitsCompleted,
+              onHabitToggle: handleHabitToggle,
+              onSave: handleSaveEveningBookend,
+              isSaving: isSavingBookend,
+              otherTasks,
+              onAddTask: handleAddTask,
+              onToggleTask: handleToggleTask,
+              onRemoveTask: handleRemoveTask
+            },
+            dailyPracticeData: {}
           }}
-          eveningProps={{
-            reflectionGood,
-            setReflectionGood,
-            reflectionBetter,
-            setReflectionBetter,
-            reflectionBest,
-            setReflectionBest,
-            habitsCompleted,
-            onHabitToggle: handleHabitToggle,
-            onSave: handleSaveEveningBookend,
-            isSaving: isSavingBookend,
-            // Add task management to evening bookend
-            otherTasks,
-            onAddTask: handleAddTask,
-            onToggleTask: handleToggleTask,
-            onRemoveTask: handleRemoveTask
-          }}
-          dailyPracticeData={{}}
-        />
+        >
+          <DynamicBookendContainer
+            morningProps={{
+              dailyWIN: morningWIN,
+              setDailyWIN: setMorningWIN,
+              otherTasks,
+              onAddTask: handleAddTask,
+              onToggleTask: handleToggleTask,
+              onRemoveTask: handleRemoveTask,
+              showLIS: false,
+              setShowLIS: () => {},
+              identityStatement,
+              onSave: handleSaveMorningBookend,
+              onSaveWIN: handleSaveWIN,
+              isSavingWIN,
+              isSaving: isSavingBookend,
+              winCompleted: amWinCompleted
+            }}
+            eveningProps={{
+              reflectionGood,
+              setReflectionGood,
+              reflectionBetter,
+              setReflectionBetter,
+              reflectionBest,
+              setReflectionBest,
+              habitsCompleted,
+              onHabitToggle: handleHabitToggle,
+              onSave: handleSaveEveningBookend,
+              isSaving: isSavingBookend,
+              // Add task management to evening bookend
+              otherTasks,
+              onAddTask: handleAddTask,
+              onToggleTask: handleToggleTask,
+              onRemoveTask: handleRemoveTask
+            }}
+            dailyPracticeData={{}}
+          />
+        </WidgetRenderer>
         </div>
       )}
 
@@ -730,31 +790,48 @@ const Dashboard = (props) => {
       {/* AI Coach Nudge (Arena 1.0 – Show for Premium only) */}
       {visibleComponents.includes('aiCoachNudge') && isMemberPremium && (
         <div className="section-corporate">
-          <AICoachNudge onOpenLab={() => setCurrentScreen('coaching-lab')} />
+          <WidgetRenderer widgetId="ai-roleplay" scope={{ onOpenLab: () => setCurrentScreen('coaching-lab') }}>
+            <AICoachNudge onOpenLab={() => setCurrentScreen('coaching-lab')} />
+          </WidgetRenderer>
         </div>
       )}
 
       {/* Additional Reps (Bonus Exercises) (Arena 1.0 – Show for Pro/Premium only) */}
       {(isMemberPro || isMemberPremium) && bonusExercises.length > 0 && (
         <div className="section-corporate">
-          <AdditionalRepsCard
-            bonusExercises={bonusExercises}
-            onExerciseClick={handleBonusExerciseClick}
-          />
+          <WidgetRenderer widgetId="course-library" scope={{ bonusExercises, onExerciseClick: handleBonusExerciseClick }}>
+            <AdditionalRepsCard
+              bonusExercises={bonusExercises}
+              onExerciseClick={handleBonusExerciseClick}
+            />
+          </WidgetRenderer>
         </div>
       )}
 
       {/* Social Pod / Daily Tasks (Arena 1.0 Scope) */}
       {dailyMode ? (
-        <DailyTasksCard
-          otherTasks={otherTasks || []}
-          morningWIN={morningWIN || ''}
-          winCompleted={amWinCompleted || false}
-          onToggleTask={handleToggleTask}
-          onRemoveTask={handleRemoveTask}
-          onAddTask={handleAddTask}
-          onToggleWIN={handleToggleWIN}
-        />
+        <WidgetRenderer 
+          widgetId="habit-stack" 
+          scope={{
+            otherTasks: otherTasks || [],
+            morningWIN: morningWIN || '',
+            winCompleted: amWinCompleted || false,
+            onToggleTask: handleToggleTask,
+            onRemoveTask: handleRemoveTask,
+            onAddTask: handleAddTask,
+            onToggleWIN: handleToggleWIN
+          }}
+        >
+          <DailyTasksCard
+            otherTasks={otherTasks || []}
+            morningWIN={morningWIN || ''}
+            winCompleted={amWinCompleted || false}
+            onToggleTask={handleToggleTask}
+            onRemoveTask={handleRemoveTask}
+            onAddTask={handleAddTask}
+            onToggleWIN={handleToggleWIN}
+          />
+        </WidgetRenderer>
       ) : (
         <SocialPodCard onNavigate={setCurrentScreen} />
       )}

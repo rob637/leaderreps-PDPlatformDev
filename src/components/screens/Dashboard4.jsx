@@ -13,6 +13,7 @@ import { COLORS } from './dashboard/dashboardConstants.js';
 import { useDashboard } from './dashboard/DashboardHooks.jsx';
 import { UnifiedAnchorEditorModal, CalendarSyncModal } from './dashboard/DashboardComponents.jsx';
 import { useFeatures } from '../../providers/FeatureProvider';
+import WidgetRenderer from '../admin/WidgetRenderer';
 
 const DASHBOARD_FEATURES = [
   'gamification', 'exec-summary', 'weekly-focus', 
@@ -199,400 +200,467 @@ const Dashboard4 = (props) => {
       });
   }, [isFeatureEnabled, getFeatureOrder]);
 
+  const scope = {
+    // Icons
+    CheckSquare, Square, Plus, Save, X, Trophy, Flame, 
+    MessageSquare, Bell, Calendar, ChevronRight, ArrowRight,
+    Edit3, Loader,
+    
+    // Components
+    Checkbox,
+    
+    // Functions
+    navigate,
+    handleHabitCheck,
+    setIsAnchorModalOpen,
+    setIsCalendarModalOpen,
+    handleToggleAdditionalRep,
+    setMorningWIN,
+    handleSaveWINWrapper,
+    handleToggleWIN,
+    handleToggleTask,
+    handleRemoveTask,
+    setNewTaskText,
+    handleAddOtherTask,
+    setReflectionGood,
+    setReflectionBetter,
+    handleSaveEveningBookend,
+    
+    // State
+    weeklyFocus,
+    hasLIS,
+    lisRead,
+    dailyRepName,
+    dailyRepCompleted,
+    additionalCommitments,
+    amWinCompleted,
+    morningWIN,
+    isSavingWIN,
+    isWinSaved,
+    otherTasks,
+    newTaskText,
+    scorecard,
+    streakCount,
+    reflectionGood,
+    reflectionBetter,
+    isSavingBookend,
+    
+    // User Data
+    user,
+    greeting,
+    dailyQuote
+  };
+
   const renderers = {
-    'gamification': () => null,
+    'gamification': () => <WidgetRenderer widgetId="gamification" scope={scope} />,
     'exec-summary': () => (
-      <div className="bg-corporate-navy text-white p-6 rounded-2xl shadow-lg flex items-center justify-between w-full">
-        <div>
-          <h2 className="text-lg font-bold mb-1">Executive Summary</h2>
-          <p className="text-blue-200 text-sm">Your leadership impact at a glance.</p>
-        </div>
-        <div className="flex gap-8 text-center">
+      <WidgetRenderer widgetId="exec-summary" scope={scope}>
+        <div className="bg-corporate-navy text-white p-6 rounded-2xl shadow-lg flex items-center justify-between w-full">
           <div>
-            <div className="text-2xl font-bold text-corporate-teal">94%</div>
-            <div className="text-xs text-blue-200 uppercase">Consistency</div>
+            <h2 className="text-lg font-bold mb-1">Executive Summary</h2>
+            <p className="text-blue-200 text-sm">Your leadership impact at a glance.</p>
           </div>
-          <div>
-            <div className="text-2xl font-bold text-corporate-orange">12</div>
-            <div className="text-xs text-blue-200 uppercase">Reps Done</div>
+          <div className="flex gap-8 text-center">
+            <div>
+              <div className="text-2xl font-bold text-corporate-teal">94%</div>
+              <div className="text-xs text-blue-200 uppercase">Consistency</div>
+            </div>
+            <div>
+              <div className="text-2xl font-bold text-corporate-orange">12</div>
+              <div className="text-xs text-blue-200 uppercase">Reps Done</div>
+            </div>
           </div>
         </div>
-      </div>
+      </WidgetRenderer>
     ),
     'weekly-focus': () => (
-      <section className="w-full">
-        <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
-          <h2 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-2">
-            This Week's Focus
-          </h2>
-          <div className="flex items-center justify-between">
-            <p className="text-2xl font-bold text-[#002E47]">
-              {weeklyFocus}
-            </p>
-            <button 
-              onClick={() => navigate('development-plan')}
-              className="text-teal-600 hover:text-teal-700 text-sm font-semibold flex items-center gap-1"
-            >
-              View Plan <ChevronRight className="w-4 h-4" />
-            </button>
-          </div>
-        </div>
-      </section>
-    ),
-    'identity-builder': () => (
-      <section className="text-left w-full">
-        <div className="flex items-center gap-2 mb-4">
-          <div className="w-8 h-8 rounded-lg bg-orange-100 flex items-center justify-center text-orange-600">
-            <Flame className="w-5 h-5" />
-          </div>
-          <h2 className="text-xl font-bold text-[#002E47]">
-            Identity Builder
-          </h2>
-        </div>
-        <div className="space-y-3 text-left">
-          {hasLIS ? (
-            <Checkbox 
-              checked={lisRead}
-              onChange={() => handleHabitCheck('readLIS', !lisRead)}
-              label="Grounding Rep: Read LIS"
-              subLabel="Center yourself on your identity."
-            />
-          ) : (
-            <div className="p-4 rounded-xl border-2 border-dashed border-orange-300 bg-orange-50 flex items-center justify-between">
-              <div>
-                <p className="font-semibold text-orange-800">Grounding Rep: Read LIS</p>
-                <p className="text-xs text-orange-600">No Identity Statement set yet.</p>
-              </div>
+      <WidgetRenderer widgetId="weekly-focus" scope={scope}>
+        <section className="w-full">
+          <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
+            <h2 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-2">
+              This Week's Focus
+            </h2>
+            <div className="flex items-center justify-between">
+              <p className="text-2xl font-bold text-[#002E47]">
+                {weeklyFocus}
+              </p>
               <button 
-                onClick={() => setIsAnchorModalOpen(true)}
-                className="px-4 py-2 bg-orange-500 text-white rounded-lg text-sm font-bold hover:bg-orange-600 transition-colors"
+                onClick={() => navigate('development-plan')}
+                className="text-teal-600 hover:text-teal-700 text-sm font-semibold flex items-center gap-1"
               >
-                Enter / Save
+                View Plan <ChevronRight className="w-4 h-4" />
               </button>
             </div>
-          )}
-        </div>
-      </section>
+          </div>
+        </section>
+      </WidgetRenderer>
     ),
-    'habit-stack': () => (
-      <section className="text-left w-full">
-        <div className="flex items-center gap-2 mb-4">
-          <div className="w-8 h-8 rounded-lg bg-orange-100 flex items-center justify-center text-orange-600">
-            <Flame className="w-5 h-5" />
-          </div>
-          <h2 className="text-xl font-bold text-[#002E47]">
-            Habit Stack
-          </h2>
-        </div>
-        <div className="space-y-3 text-left">
-          {dailyRepName ? (
-            <div className="relative">
-              <Checkbox 
-                checked={dailyRepCompleted}
-                onChange={() => handleHabitCheck('completedDailyRep', !dailyRepCompleted)}
-                label={`Daily Rep: ${dailyRepName}`}
-                subLabel="Execute your targeted practice."
-              />
-              {isFeatureEnabled('calendar-sync') && (
-                <button 
-                  onClick={() => setIsCalendarModalOpen(true)}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 p-2 text-slate-400 hover:text-corporate-teal" 
-                  title="Sync to Calendar"
-                >
-                  <Calendar className="w-5 h-5" />
-                </button>
-              )}
+    'identity-builder': () => (
+      <WidgetRenderer widgetId="identity-builder" scope={scope}>
+        <section className="text-left w-full">
+          <div className="flex items-center gap-2 mb-4">
+            <div className="w-8 h-8 rounded-lg bg-orange-100 flex items-center justify-center text-orange-600">
+              <Flame className="w-5 h-5" />
             </div>
-          ) : (
-            <div className="p-4 rounded-xl border border-slate-200 bg-white opacity-75">
-              <p className="font-semibold text-slate-700">Daily Rep</p>
-              <p className="text-xs text-slate-500">
-                Daily reps are delivered based on your Focus/Dev Plan.
-                <button onClick={() => navigate('development-plan')} className="text-teal-600 ml-1 hover:underline">
-                  Check Plan
-                </button>
-              </p>
-            </div>
-          )}
-          {/* Additional Reps */}
-          {additionalCommitments.map((commitment, idx) => (
-            <Checkbox 
-              key={idx}
-              checked={commitment.status === 'Committed'}
-              onChange={() => handleToggleAdditionalRep(commitment.id, commitment.status)} 
-              label={`Daily Rep: ${commitment.text || commitment.repId}`}
-              subLabel="Additional commitment"
-            />
-          ))}
-        </div>
-      </section>
-    ),
-    'win-the-day': () => (
-      <section className="w-full">
-        <div className="flex items-center gap-2 mb-4">
-          <div className="w-8 h-8 rounded-lg bg-teal-100 flex items-center justify-center text-teal-600">
-            <Trophy className="w-5 h-5" />
+            <h2 className="text-xl font-bold text-[#002E47]">
+              Identity Builder
+            </h2>
           </div>
-          <h2 className="text-xl font-bold text-[#002E47]">
-            AM Bookend - Win the Day
-          </h2>
-        </div>
-
-        <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200 space-y-6">
-          {/* 1. Top Priority */}
-          <div className="text-left">
-            <label className="block text-xs font-bold text-slate-400 uppercase mb-2 text-left">
-              1. Top Priority (The WIN)
-            </label>
-            <div className="flex gap-3">
-              {amWinCompleted ? (
-                <div className="flex-1 p-3 bg-green-50 border border-green-200 rounded-xl flex items-center gap-3">
-                  <CheckSquare className="w-5 h-5 text-green-600" />
-                  <span className="font-bold text-green-900 line-through opacity-75">{morningWIN}</span>
-                </div>
-              ) : (
-                <div className="flex-1 flex gap-2">
-                  <input 
-                    type="text"
-                    value={morningWIN}
-                    onChange={(e) => setMorningWIN(e.target.value)}
-                    placeholder="What is the ONE thing that must get done?"
-                    className="flex-1 p-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-teal-500 outline-none transition-all font-medium"
-                    disabled={amWinCompleted}
-                  />
-                  {!amWinCompleted && morningWIN && (
-                      <button 
-                        onClick={handleSaveWINWrapper}
-                        disabled={isSavingWIN || isWinSaved}
-                        className={`p-3 rounded-xl transition-colors disabled:opacity-50 ${
-                          isWinSaved ? 'bg-green-500 text-white' : 'bg-teal-500 text-white hover:bg-teal-600'
-                        }`}
-                        title="Save WIN"
-                      >
-                        {isSavingWIN ? <Loader className="w-5 h-5 animate-spin" /> : 
-                        isWinSaved ? <CheckSquare className="w-5 h-5" /> : <Plus className="w-5 h-5" />}
-                      </button>
-                  )}
-                </div>
-              )}
-              
-              {morningWIN && !isSavingWIN && (
-                <button
-                  onClick={handleToggleWIN}
-                  className={`p-3 rounded-xl border-2 transition-colors ${
-                    amWinCompleted 
-                      ? 'bg-green-500 border-green-500 text-white' 
-                      : 'bg-white border-slate-200 text-slate-300 hover:border-green-400'
-                  }`}
-                >
-                  <CheckSquare className="w-5 h-5" />
-                </button>
-              )}
-            </div>
-          </div>
-
-          {/* 2 & 3. Next Most Important */}
           <div className="space-y-3 text-left">
-            <div className="flex justify-between items-center">
-              <label className="block text-xs font-bold text-slate-400 uppercase text-left">
-                2 & 3. Next Most Important
-              </label>
-              {otherTasks.length > 0 && (
-                <span className="text-xs text-green-600 font-medium flex items-center gap-1">
-                  <CheckSquare className="w-3 h-3" /> Auto-saved
-                </span>
-              )}
-            </div>
-            
-            {otherTasks.map((task, idx) => (
-              <div key={task.id || idx} className="flex items-center gap-3">
-                <div className={`flex-1 p-3 rounded-xl border ${
-                  task.completed ? 'bg-slate-50 border-slate-200' : 'bg-white border-slate-200'
-                }`}>
-                  <span className={`font-medium ${task.completed ? 'line-through text-slate-400' : 'text-slate-700'}`}>
-                    {task.text}
-                  </span>
+            {hasLIS ? (
+              <Checkbox 
+                checked={lisRead}
+                onChange={() => handleHabitCheck('readLIS', !lisRead)}
+                label="Grounding Rep: Read LIS"
+                subLabel="Center yourself on your identity."
+              />
+            ) : (
+              <div className="p-4 rounded-xl border-2 border-dashed border-orange-300 bg-orange-50 flex items-center justify-between">
+                <div>
+                  <p className="font-semibold text-orange-800">Grounding Rep: Read LIS</p>
+                  <p className="text-xs text-orange-600">No Identity Statement set yet.</p>
                 </div>
-                <button
-                  onClick={() => handleToggleTask(task.id)}
-                  className={`p-3 rounded-xl border-2 transition-colors ${
-                    task.completed
-                      ? 'bg-teal-500 border-teal-500 text-white' 
-                      : 'bg-white border-slate-200 text-slate-300 hover:border-teal-400'
-                  }`}
-                >
-                  <CheckSquare className="w-5 h-5" />
-                </button>
                 <button 
-                  onClick={() => handleRemoveTask(task.id)}
-                  className="p-3 text-slate-300 hover:text-red-400 transition-colors"
+                  onClick={() => setIsAnchorModalOpen(true)}
+                  className="px-4 py-2 bg-orange-500 text-white rounded-lg text-sm font-bold hover:bg-orange-600 transition-colors"
                 >
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
-            ))}
-
-            {otherTasks.length < 2 && (
-              <div className="flex gap-2">
-                <input 
-                  type="text"
-                  value={newTaskText}
-                  onChange={(e) => setNewTaskText(e.target.value)}
-                  onKeyPress={(e) => e.key === 'Enter' && handleAddOtherTask()}
-                  placeholder="Add another priority..."
-                  className="flex-1 p-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-teal-500 outline-none transition-all text-sm"
-                />
-                <button 
-                  onClick={handleAddOtherTask}
-                  disabled={!newTaskText.trim()}
-                  className="p-3 bg-slate-200 text-slate-600 rounded-xl hover:bg-teal-500 hover:text-white transition-colors disabled:opacity-50"
-                >
-                  <Plus className="w-5 h-5" />
+                  Enter / Save
                 </button>
               </div>
             )}
           </div>
-        </div>
-      </section>
+        </section>
+      </WidgetRenderer>
+    ),
+    'habit-stack': () => (
+      <WidgetRenderer widgetId="habit-stack" scope={scope}>
+        <section className="text-left w-full">
+          <div className="flex items-center gap-2 mb-4">
+            <div className="w-8 h-8 rounded-lg bg-orange-100 flex items-center justify-center text-orange-600">
+              <Flame className="w-5 h-5" />
+            </div>
+            <h2 className="text-xl font-bold text-[#002E47]">
+              Habit Stack
+            </h2>
+          </div>
+          <div className="space-y-3 text-left">
+            {dailyRepName ? (
+              <div className="relative">
+                <Checkbox 
+                  checked={dailyRepCompleted}
+                  onChange={() => handleHabitCheck('completedDailyRep', !dailyRepCompleted)}
+                  label={`Daily Rep: ${dailyRepName}`}
+                  subLabel="Execute your targeted practice."
+                />
+                {isFeatureEnabled('calendar-sync') && (
+                  <button 
+                    onClick={() => setIsCalendarModalOpen(true)}
+                    className="absolute right-4 top-1/2 -translate-y-1/2 p-2 text-slate-400 hover:text-corporate-teal" 
+                    title="Sync to Calendar"
+                  >
+                    <Calendar className="w-5 h-5" />
+                  </button>
+                )}
+              </div>
+            ) : (
+              <div className="p-4 rounded-xl border border-slate-200 bg-white opacity-75">
+                <p className="font-semibold text-slate-700">Daily Rep</p>
+                <p className="text-xs text-slate-500">
+                  Daily reps are delivered based on your Focus/Dev Plan.
+                  <button onClick={() => navigate('development-plan')} className="text-teal-600 ml-1 hover:underline">
+                    Check Plan
+                  </button>
+                </p>
+              </div>
+            )}
+            {/* Additional Reps */}
+            {additionalCommitments.map((commitment, idx) => (
+              <Checkbox 
+                key={idx}
+                checked={commitment.status === 'Committed'}
+                onChange={() => handleToggleAdditionalRep(commitment.id, commitment.status)} 
+                label={`Daily Rep: ${commitment.text || commitment.repId}`}
+                subLabel="Additional commitment"
+              />
+            ))}
+          </div>
+        </section>
+      </WidgetRenderer>
+    ),
+    'win-the-day': () => (
+      <WidgetRenderer widgetId="win-the-day" scope={scope}>
+        <section className="w-full">
+          <div className="flex items-center gap-2 mb-4">
+            <div className="w-8 h-8 rounded-lg bg-teal-100 flex items-center justify-center text-teal-600">
+              <Trophy className="w-5 h-5" />
+            </div>
+            <h2 className="text-xl font-bold text-[#002E47]">
+              AM Bookend - Win the Day
+            </h2>
+          </div>
+
+          <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200 space-y-6">
+            {/* 1. Top Priority */}
+            <div className="text-left">
+              <label className="block text-xs font-bold text-slate-400 uppercase mb-2 text-left">
+                1. Top Priority (The WIN)
+              </label>
+              <div className="flex gap-3">
+                {amWinCompleted ? (
+                  <div className="flex-1 p-3 bg-green-50 border border-green-200 rounded-xl flex items-center gap-3">
+                    <CheckSquare className="w-5 h-5 text-green-600" />
+                    <span className="font-bold text-green-900 line-through opacity-75">{morningWIN}</span>
+                  </div>
+                ) : (
+                  <div className="flex-1 flex gap-2">
+                    <input 
+                      type="text"
+                      value={morningWIN}
+                      onChange={(e) => setMorningWIN(e.target.value)}
+                      placeholder="What is the ONE thing that must get done?"
+                      className="flex-1 p-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-teal-500 outline-none transition-all font-medium"
+                      disabled={amWinCompleted}
+                    />
+                    {!amWinCompleted && morningWIN && (
+                        <button 
+                          onClick={handleSaveWINWrapper}
+                          disabled={isSavingWIN || isWinSaved}
+                          className={`p-3 rounded-xl transition-colors disabled:opacity-50 ${
+                            isWinSaved ? 'bg-green-500 text-white' : 'bg-teal-500 text-white hover:bg-teal-600'
+                          }`}
+                          title="Save WIN"
+                        >
+                          {isSavingWIN ? <Loader className="w-5 h-5 animate-spin" /> : 
+                          isWinSaved ? <CheckSquare className="w-5 h-5" /> : <Plus className="w-5 h-5" />}
+                        </button>
+                    )}
+                  </div>
+                )}
+                
+                {morningWIN && !isSavingWIN && (
+                  <button
+                    onClick={handleToggleWIN}
+                    className={`p-3 rounded-xl border-2 transition-colors ${
+                      amWinCompleted 
+                        ? 'bg-green-500 border-green-500 text-white' 
+                        : 'bg-white border-slate-200 text-slate-300 hover:border-green-400'
+                    }`}
+                  >
+                    <CheckSquare className="w-5 h-5" />
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* 2 & 3. Next Most Important */}
+            <div className="space-y-3 text-left">
+              <div className="flex justify-between items-center">
+                <label className="block text-xs font-bold text-slate-400 uppercase text-left">
+                  2 & 3. Next Most Important
+                </label>
+                {otherTasks.length > 0 && (
+                  <span className="text-xs text-green-600 font-medium flex items-center gap-1">
+                    <CheckSquare className="w-3 h-3" /> Auto-saved
+                  </span>
+                )}
+              </div>
+              
+              {otherTasks.map((task, idx) => (
+                <div key={task.id || idx} className="flex items-center gap-3">
+                  <div className={`flex-1 p-3 rounded-xl border ${
+                    task.completed ? 'bg-slate-50 border-slate-200' : 'bg-white border-slate-200'
+                  }`}>
+                    <span className={`font-medium ${task.completed ? 'line-through text-slate-400' : 'text-slate-700'}`}>
+                      {task.text}
+                    </span>
+                  </div>
+                  <button
+                    onClick={() => handleToggleTask(task.id)}
+                    className={`p-3 rounded-xl border-2 transition-colors ${
+                      task.completed
+                        ? 'bg-teal-500 border-teal-500 text-white' 
+                        : 'bg-white border-slate-200 text-slate-300 hover:border-teal-400'
+                    }`}
+                  >
+                    <CheckSquare className="w-5 h-5" />
+                  </button>
+                  <button 
+                    onClick={() => handleRemoveTask(task.id)}
+                    className="p-3 text-slate-300 hover:text-red-400 transition-colors"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+              ))}
+
+              {otherTasks.length < 2 && (
+                <div className="flex gap-2">
+                  <input 
+                    type="text"
+                    value={newTaskText}
+                    onChange={(e) => setNewTaskText(e.target.value)}
+                    onKeyPress={(e) => e.key === 'Enter' && handleAddOtherTask()}
+                    placeholder="Add another priority..."
+                    className="flex-1 p-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-teal-500 outline-none transition-all text-sm"
+                  />
+                  <button 
+                    onClick={handleAddOtherTask}
+                    disabled={!newTaskText.trim()}
+                    className="p-3 bg-slate-200 text-slate-600 rounded-xl hover:bg-teal-500 hover:text-white transition-colors disabled:opacity-50"
+                  >
+                    <Plus className="w-5 h-5" />
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        </section>
+      </WidgetRenderer>
     ),
     'notifications': () => (
-      <section className="text-left w-full">
-        <div className="flex items-center gap-2 mb-4">
-          <Bell className="w-5 h-5 text-slate-400" />
-          <h2 className="text-sm font-bold text-slate-400 uppercase tracking-wider">
-            Notifications
-          </h2>
-        </div>
-        <div className="bg-white rounded-2xl p-4 shadow-sm border border-slate-200 space-y-3 text-left">
-          <div className="flex gap-3 items-start p-2 hover:bg-slate-50 rounded-lg transition-colors cursor-pointer">
-            <div className="w-2 h-2 mt-2 rounded-full bg-orange-500 flex-shrink-0" />
-            <div>
-              <p className="text-sm font-semibold text-[#002E47]">Yesterday's "Needs Work"</p>
-              <p className="text-xs text-slate-500">Review your reflection from yesterday.</p>
+      <WidgetRenderer widgetId="notifications" scope={scope}>
+        <section className="text-left w-full">
+          <div className="flex items-center gap-2 mb-4">
+            <Bell className="w-5 h-5 text-slate-400" />
+            <h2 className="text-sm font-bold text-slate-400 uppercase tracking-wider">
+              Notifications
+            </h2>
+          </div>
+          <div className="bg-white rounded-2xl p-4 shadow-sm border border-slate-200 space-y-3 text-left">
+            <div className="flex gap-3 items-start p-2 hover:bg-slate-50 rounded-lg transition-colors cursor-pointer">
+              <div className="w-2 h-2 mt-2 rounded-full bg-orange-500 flex-shrink-0" />
+              <div>
+                <p className="text-sm font-semibold text-[#002E47]">Yesterday's "Needs Work"</p>
+                <p className="text-xs text-slate-500">Review your reflection from yesterday.</p>
+              </div>
+            </div>
+            <div className="flex gap-3 items-start p-2 hover:bg-slate-50 rounded-lg transition-colors cursor-pointer">
+              <div className="w-2 h-2 mt-2 rounded-full bg-teal-500 flex-shrink-0" />
+              <div>
+                <p className="text-sm font-semibold text-[#002E47]">Upcoming Feedback Practice</p>
+                <p className="text-xs text-slate-500">Nov 29, 4:00 PM <span className="text-teal-600 font-bold ml-1">Register</span></p>
+              </div>
+            </div>
+            <div className="flex gap-3 items-start p-2 hover:bg-slate-50 rounded-lg transition-colors cursor-pointer">
+              <div className="w-2 h-2 mt-2 rounded-full bg-purple-500 flex-shrink-0" />
+              <div>
+                <p className="text-sm font-semibold text-[#002E47]">New R&R Unlocked</p>
+                <p className="text-xs text-slate-500">Check your resource library.</p>
+              </div>
             </div>
           </div>
-          <div className="flex gap-3 items-start p-2 hover:bg-slate-50 rounded-lg transition-colors cursor-pointer">
-            <div className="w-2 h-2 mt-2 rounded-full bg-teal-500 flex-shrink-0" />
-            <div>
-              <p className="text-sm font-semibold text-[#002E47]">Upcoming Feedback Practice</p>
-              <p className="text-xs text-slate-500">Nov 29, 4:00 PM <span className="text-teal-600 font-bold ml-1">Register</span></p>
-            </div>
-          </div>
-          <div className="flex gap-3 items-start p-2 hover:bg-slate-50 rounded-lg transition-colors cursor-pointer">
-            <div className="w-2 h-2 mt-2 rounded-full bg-purple-500 flex-shrink-0" />
-            <div>
-              <p className="text-sm font-semibold text-[#002E47]">New R&R Unlocked</p>
-              <p className="text-xs text-slate-500">Check your resource library.</p>
-            </div>
-          </div>
-        </div>
-      </section>
+        </section>
+      </WidgetRenderer>
     ),
     'scorecard': () => (
-      <section className="w-full">
-        <div className="bg-[#002E47] rounded-2xl p-6 text-white shadow-lg relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-32 h-32 bg-white opacity-5 rounded-full -mr-10 -mt-10" />
-          
-          <h2 className="text-lg font-bold mb-6 flex items-center gap-2">
-            <Trophy className="w-5 h-5 text-yellow-400" /> Today Scorecard
-          </h2>
+      <WidgetRenderer widgetId="scorecard" scope={scope}>
+        <section className="w-full">
+          <div className="bg-[#002E47] rounded-2xl p-6 text-white shadow-lg relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-white opacity-5 rounded-full -mr-10 -mt-10" />
+            
+            <h2 className="text-lg font-bold mb-6 flex items-center gap-2">
+              <Trophy className="w-5 h-5 text-yellow-400" /> Today Scorecard
+            </h2>
 
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <span className="font-medium">I did my reps today</span>
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <span className="font-medium">I did my reps today</span>
+                </div>
+                <div className="text-right">
+                  <span className="font-bold text-xl">{scorecard.reps.done}</span>
+                  <span className="text-slate-400 text-sm"> / {scorecard.reps.total}</span>
+                  <span className={`ml-2 text-sm font-bold ${
+                    scorecard.reps.pct === 100 ? 'text-green-400' : 'text-slate-400'
+                  }`}>
+                    {scorecard.reps.pct}%
+                  </span>
+                </div>
               </div>
-              <div className="text-right">
-                <span className="font-bold text-xl">{scorecard.reps.done}</span>
-                <span className="text-slate-400 text-sm"> / {scorecard.reps.total}</span>
-                <span className={`ml-2 text-sm font-bold ${
-                  scorecard.reps.pct === 100 ? 'text-green-400' : 'text-slate-400'
-                }`}>
-                  {scorecard.reps.pct}%
-                </span>
+
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <span className="font-medium">I won the day</span>
+                </div>
+                <div className="text-right">
+                  <span className="font-bold text-xl">{scorecard.win.done}</span>
+                  <span className="text-slate-400 text-sm"> / {scorecard.win.total}</span>
+                  <span className={`ml-2 text-sm font-bold ${
+                    scorecard.win.pct === 100 ? 'text-green-400' : 'text-slate-400'
+                  }`}>
+                    {scorecard.win.pct}%
+                  </span>
+                </div>
               </div>
             </div>
 
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <span className="font-medium">I won the day</span>
+            <div className="mt-6 pt-6 border-t border-white/10 flex justify-between items-center">
+              <div className="flex items-center gap-2">
+                <Flame className="w-5 h-5 text-orange-500" />
+                <span className="font-bold text-xl">{streakCount}</span>
+                <span className="text-xs text-slate-400 uppercase tracking-wider">Day Streak</span>
               </div>
-              <div className="text-right">
-                <span className="font-bold text-xl">{scorecard.win.done}</span>
-                <span className="text-slate-400 text-sm"> / {scorecard.win.total}</span>
-                <span className={`ml-2 text-sm font-bold ${
-                  scorecard.win.pct === 100 ? 'text-green-400' : 'text-slate-400'
-                }`}>
-                  {scorecard.win.pct}%
-                </span>
+              <div className="text-xs text-slate-500">
+                Keep it up!
               </div>
             </div>
           </div>
-
-          <div className="mt-6 pt-6 border-t border-white/10 flex justify-between items-center">
-            <div className="flex items-center gap-2">
-              <Flame className="w-5 h-5 text-orange-500" />
-              <span className="font-bold text-xl">{streakCount}</span>
-              <span className="text-xs text-slate-400 uppercase tracking-wider">Day Streak</span>
-            </div>
-            <div className="text-xs text-slate-500">
-              Keep it up!
-            </div>
-          </div>
-        </div>
-      </section>
+        </section>
+      </WidgetRenderer>
     ),
     'pm-bookend': () => (
-      <section className="w-full">
-        <div className="flex items-center gap-2 mb-4">
-          <div className="w-8 h-8 rounded-lg bg-indigo-100 flex items-center justify-center text-indigo-600">
-            <MessageSquare className="w-5 h-5" />
-          </div>
-          <h2 className="text-xl font-bold text-[#002E47]">
-            PM Bookend - Reflection
-          </h2>
-        </div>
-
-        <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200 space-y-4">
-          <div>
-            <label className="block text-sm font-bold text-green-700 mb-2 text-left">
-              What went well today?
-            </label>
-            <textarea 
-              value={reflectionGood}
-              onChange={(e) => setReflectionGood(e.target.value)}
-              className="w-full p-3 bg-green-50 border border-green-100 rounded-xl focus:ring-2 focus:ring-green-500 outline-none transition-all text-sm"
-              rows={2}
-              placeholder="Celebrate a win..."
-            />
+      <WidgetRenderer widgetId="pm-bookend" scope={scope}>
+        <section className="w-full">
+          <div className="flex items-center gap-2 mb-4">
+            <div className="w-8 h-8 rounded-lg bg-indigo-100 flex items-center justify-center text-indigo-600">
+              <MessageSquare className="w-5 h-5" />
+            </div>
+            <h2 className="text-xl font-bold text-[#002E47]">
+              PM Bookend - Reflection
+            </h2>
           </div>
 
-          <div>
-            <label className="block text-sm font-bold text-orange-700 mb-2 text-left">
-              What needs work?
-            </label>
-            <textarea 
-              value={reflectionBetter}
-              onChange={(e) => setReflectionBetter(e.target.value)}
-              className="w-full p-3 bg-orange-50 border border-orange-100 rounded-xl focus:ring-2 focus:ring-orange-500 outline-none transition-all text-sm"
-              rows={2}
-              placeholder="Identify an improvement..."
-            />
-          </div>
+          <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200 space-y-4">
+            <div>
+              <label className="block text-sm font-bold text-green-700 mb-2 text-left">
+                What went well today?
+              </label>
+              <textarea 
+                value={reflectionGood}
+                onChange={(e) => setReflectionGood(e.target.value)}
+                className="w-full p-3 bg-green-50 border border-green-100 rounded-xl focus:ring-2 focus:ring-green-500 outline-none transition-all text-sm"
+                rows={2}
+                placeholder="Celebrate a win..."
+              />
+            </div>
 
-          <button 
-            onClick={handleSaveEveningBookend}
-            disabled={isSavingBookend || (!reflectionGood && !reflectionBetter)}
-            className="w-full py-3 bg-[#002E47] text-white rounded-xl font-bold hover:bg-[#003E5F] transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
-          >
-            {isSavingBookend ? <Loader className="w-5 h-5 animate-spin" /> : <Save className="w-5 h-5" />}
-            Save Journal Page
-          </button>
-          <p className="text-xs text-center text-slate-400">
-            Saved to history in Locker
-          </p>
-        </div>
-      </section>
+            <div>
+              <label className="block text-sm font-bold text-orange-700 mb-2 text-left">
+                What needs work?
+              </label>
+              <textarea 
+                value={reflectionBetter}
+                onChange={(e) => setReflectionBetter(e.target.value)}
+                className="w-full p-3 bg-orange-50 border border-orange-100 rounded-xl focus:ring-2 focus:ring-orange-500 outline-none transition-all text-sm"
+                rows={2}
+                placeholder="Identify an improvement..."
+              />
+            </div>
+
+            <button 
+              onClick={handleSaveEveningBookend}
+              disabled={isSavingBookend || (!reflectionGood && !reflectionBetter)}
+              className="w-full py-3 bg-[#002E47] text-white rounded-xl font-bold hover:bg-[#003E5F] transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+            >
+              {isSavingBookend ? <Loader className="w-5 h-5 animate-spin" /> : <Save className="w-5 h-5" />}
+              Save Journal Page
+            </button>
+            <p className="text-xs text-center text-slate-400">
+              Saved to history in Locker
+            </p>
+          </div>
+        </section>
+      </WidgetRenderer>
     )
   };
 
