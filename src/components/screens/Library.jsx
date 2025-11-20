@@ -232,7 +232,7 @@ const Library = ({ simulatedTier, isDeveloperMode }) => {
           <div className="flex items-center justify-center gap-2 mb-4">
             <BookOpen className='w-8 h-8' style={{color: COLORS.TEAL}}/>
             <h1 className="corporate-heading-xl" style={{ color: COLORS.NAVY }}>
-              Leadership Content
+              Content
             </h1>
             <BookOpen className='w-8 h-8' style={{color: COLORS.TEAL}}/>
           </div>

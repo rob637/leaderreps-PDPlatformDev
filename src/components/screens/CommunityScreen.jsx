@@ -625,7 +625,7 @@ const CommunityScreen = ({ simulatedTier }) => {
             <div className="text-center mb-12">
                 <div className="flex items-center justify-center gap-2 mb-4">
                     <Users className='w-8 h-8' style={{color: COLORS.TEAL}}/>
-                    <h1 className="corporate-heading-xl" style={{ color: COLORS.NAVY }}>Leadership Community</h1>
+                    <h1 className="corporate-heading-xl" style={{ color: COLORS.NAVY }}>Community</h1>
                     <Users className='w-8 h-8' style={{color: COLORS.TEAL}}/>
                 </div>
                 {!hasCommunityAccess && (
