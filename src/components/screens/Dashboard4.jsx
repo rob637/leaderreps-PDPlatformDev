@@ -11,7 +11,7 @@ import {
 } from 'lucide-react';
 import { COLORS } from './dashboard/dashboardConstants.js';
 import { useDashboard } from './dashboard/DashboardHooks.jsx';
-import { UnifiedAnchorEditorModal, StreakTracker, CalendarSyncModal } from './dashboard/DashboardComponents.jsx';
+import { UnifiedAnchorEditorModal, CalendarSyncModal } from './dashboard/DashboardComponents.jsx';
 import { useFeatures } from '../../providers/FeatureProvider';
 
 const DASHBOARD_FEATURES = [
@@ -69,7 +69,6 @@ const Dashboard4 = (props) => {
     
     // Streak
     streakCount,
-    streakCoins,
     
     // Additional Reps
     additionalCommitments,
@@ -201,11 +200,7 @@ const Dashboard4 = (props) => {
   }, [isFeatureEnabled, getFeatureOrder]);
 
   const renderers = {
-    'gamification': () => (
-      <div className="flex justify-end w-full">
-         <StreakTracker streakCount={streakCount} streakCoins={streakCoins} userEmail={user?.email} />
-      </div>
-    ),
+    'gamification': () => null,
     'exec-summary': () => (
       <div className="bg-corporate-navy text-white p-6 rounded-2xl shadow-lg flex items-center justify-between w-full">
         <div>
