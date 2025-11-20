@@ -15,7 +15,8 @@ const Locker = () => {
   const eveningBookend = dailyPracticeData?.eveningBookend || {};
   
   // Scorecard Data
-  const commitmentHistory = commitmentData?.history || [];
+  // Updated to read from dailyPracticeData.scorecardHistory instead of commitmentData
+  const commitmentHistory = dailyPracticeData?.scorecardHistory || commitmentData?.history || [];
 
   return (
     <div className="p-6 space-y-8 bg-slate-50 min-h-screen">

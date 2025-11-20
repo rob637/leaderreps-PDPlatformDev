@@ -73,10 +73,14 @@ const Dashboard4 = (props) => {
     
     // Additional Reps
     additionalCommitments,
-    handleToggleAdditionalRep
+    handleToggleAdditionalRep,
+
+    // Scorecard
+    scorecard
   } = useDashboard({
     dailyPracticeData,
-    updateDailyPracticeData
+    updateDailyPracticeData,
+    globalMetadata // Pass globalMetadata for scorecard calculation
   });
 
   // --- LOCAL STATE ---
@@ -137,43 +141,8 @@ const Dashboard4 = (props) => {
 
   const dailyRepCompleted = habitsCompleted?.completedDailyRep || false;
 
-  // 4. Scorecard Logic
-  const scorecard = useMemo(() => {
-    // "I did my reps today"
-    // Components: LIS + Daily Rep + Additional Commitments
-    let repsTotal = 1; // LIS is always a rep
-    let repsDone = lisRead ? 1 : 0;
-    
-    if (dailyRepName) {
-      repsTotal++;
-      if (dailyRepCompleted) repsDone++;
-    }
-    
-    // Add additional commitments
-    if (additionalCommitments && additionalCommitments.length > 0) {
-      repsTotal += additionalCommitments.length;
-      repsDone += additionalCommitments.filter(c => c.status === 'Committed').length;
-    }
-    
-    const repsPct = Math.round((repsDone / repsTotal) * 100);
-
-    // "I won the day"
-    // Components: Top Priority (WIN) + Other Tasks
-    let winTotal = 1; // Top Priority
-    let winDone = amWinCompleted ? 1 : 0;
-    
-    if (otherTasks && otherTasks.length > 0) {
-      winTotal += otherTasks.length;
-      winDone += otherTasks.filter(t => t.completed).length;
-    }
-    
-    const winPct = Math.round((winDone / winTotal) * 100);
-
-    return {
-      reps: { done: repsDone, total: repsTotal, pct: repsPct },
-      win: { done: winDone, total: winTotal, pct: winPct }
-    };
-  }, [lisRead, dailyRepName, dailyRepCompleted, additionalCommitments, amWinCompleted, otherTasks]);
+  // 4. Scorecard Logic - Moved to DashboardHooks
+  // const scorecard = ... (removed)
 
   // --- HANDLERS ---
 
@@ -531,11 +500,6 @@ const Dashboard4 = (props) => {
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
-                  scorecard.reps.pct === 100 ? 'bg-green-500 border-green-500' : 'border-slate-500'
-                }`}>
-                  {scorecard.reps.pct === 100 && <CheckSquare className="w-3 h-3 text-white" />}
-                </div>
                 <span className="font-medium">I did my reps today</span>
               </div>
               <div className="text-right">
@@ -551,11 +515,6 @@ const Dashboard4 = (props) => {
 
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
-                  scorecard.win.pct === 100 ? 'bg-green-500 border-green-500' : 'border-slate-500'
-                }`}>
-                  {scorecard.win.pct === 100 && <CheckSquare className="w-3 h-3 text-white" />}
-                </div>
                 <span className="font-medium">I won the day</span>
               </div>
               <div className="text-right">
@@ -596,7 +555,7 @@ const Dashboard4 = (props) => {
 
         <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200 space-y-4">
           <div>
-            <label className="block text-sm font-bold text-green-700 mb-2">
+            <label className="block text-sm font-bold text-green-700 mb-2 text-left">
               What went well today?
             </label>
             <textarea 
@@ -609,7 +568,7 @@ const Dashboard4 = (props) => {
           </div>
 
           <div>
-            <label className="block text-sm font-bold text-orange-700 mb-2">
+            <label className="block text-sm font-bold text-orange-700 mb-2 text-left">
               What needs work?
             </label>
             <textarea 
