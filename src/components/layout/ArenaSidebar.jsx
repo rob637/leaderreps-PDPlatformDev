@@ -19,7 +19,7 @@ const ArenaSidebar = ({ isOpen, toggle, currentScreen, navigate, onSignOut, user
   const menuItems = [
     { id: 'dashboard', label: 'Dashboard 1', icon: LayoutDashboard },
     { id: 'dashboard-main', label: 'Dashboard 2', icon: LayoutDashboard },
-    { id: 'arena-dashboard', label: 'Dashboard 3', icon: LayoutDashboard },
+    { id: 'dashboard-3', label: 'Dashboard 3', icon: LayoutDashboard },
     { id: 'dashboard-4', label: 'Dashboard 4', icon: LayoutDashboard },
     { id: 'development-plan', label: 'Dev Plan', icon: Target },
     { id: 'library', label: 'Content', icon: BookOpen },
