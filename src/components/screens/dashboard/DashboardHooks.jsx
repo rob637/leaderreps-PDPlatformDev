@@ -3,7 +3,7 @@
 // FINALIZED: Ensures updateDailyPracticeData dependency is used correctly and safely within callbacks.
 // FIXED (10/30/25): Final fix for Issue 5 (Reflections not clearing) by clearing local state explicitly.
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { serverTimestamp } from 'firebase/firestore';
 
 // Helper function to check if developer mode is enabled
@@ -49,7 +49,7 @@ export const useDashboard = ({
   const [shouldSkipReflectionLoad, setShouldSkipReflectionLoad] = useState(false);
   
   // NEW: Track last local update to prevent stale overwrites
-  const lastHabitUpdateTime = React.useRef(0);
+  const lastHabitUpdateTime = useRef(0);
 
   // === STREAK STATE ===
   const [streakCount, setStreakCount] = useState(0);
