@@ -82,7 +82,7 @@ const LibraryCard = ({ title, description, icon: Icon, onClick, disabled = false
 
 const Library = ({ simulatedTier, isDeveloperMode }) => {
   const { membershipData, navigate, db } = useAppServices();
-  const { isFeatureEnabled } = useFeatures();
+  const { isFeatureEnabled, getFeatureOrder } = useFeatures();
   const [contentCounts, setContentCounts] = useState({ readings: 0, videos: 0, courses: 0 });
   const [loading, setLoading] = useState(true);
   
@@ -134,41 +134,53 @@ const Library = ({ simulatedTier, isDeveloperMode }) => {
     }, 100);
   }, []);
 
-  const libraryItems = [
+  const allLibraryItems = [
     {
+      featureId: 'course-library',
       id: 'courses',
       title: 'Courses',
       description: 'Structured leadership courses and learning paths to develop your skills.',
       icon: ShieldCheck,
-      screen: isFeatureEnabled('course-library') ? 'course-library' : 'applied-leadership',
-      requiredTier: 'free' // Available to all users, but content varies by tier
+      screen: 'course-library',
+      requiredTier: 'free'
     },
     {
+      featureId: 'reading-hub',
       id: 'readings',
       title: 'Reading & Reps',
       description: 'Curated business readings with actionable exercises and practice opportunities.',
       icon: BookOpen,
-      screen: isFeatureEnabled('reading-hub') ? 'reading-hub' : 'business-readings',
-      requiredTier: 'free' // Available to all users, but content varies by tier
+      screen: 'reading-hub',
+      requiredTier: 'free'
     },
     {
+      featureId: 'leadership-videos',
       id: 'media',
       title: 'Media',
       description: 'Video content, leader talks, and multimedia resources for visual learners.',
       icon: Film,
       screen: 'leadership-videos',
-      requiredTier: 'free' // Available to all users, but content varies by tier
+      requiredTier: 'free'
     },
-    // Feature: Strategic Templates
-    ...(isFeatureEnabled('strat-templates') ? [{
+    {
+      featureId: 'strat-templates',
       id: 'templates',
       title: 'Strategic Templates',
       description: 'Downloadable worksheets and tools for your team.',
       icon: FileText,
       screen: 'strat-templates',
       requiredTier: 'professional'
-    }] : [])
+    }
   ];
+
+  // Filter enabled items and sort them based on feature order
+  const libraryItems = allLibraryItems
+    .filter(item => isFeatureEnabled(item.featureId))
+    .sort((a, b) => {
+      const orderA = getFeatureOrder(a.featureId);
+      const orderB = getFeatureOrder(b.featureId);
+      return orderA - orderB;
+    });
 
   const handleCardClick = (item) => {
     console.log('🔍 Library Card Click Debug:', {

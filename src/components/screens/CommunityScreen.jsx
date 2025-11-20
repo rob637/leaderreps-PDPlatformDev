@@ -427,7 +427,7 @@ const NewThreadView = ({ setView }) => {
 const CommunityScreen = ({ simulatedTier }) => {
     // --- Consume Services ---
     const { db, user, navigate, LEADERSHIP_TIERS, featureFlags, isAdmin, membershipData, isLoading: isAppLoading, error: appError } = useAppServices(); // cite: useAppServices.jsx
-    const { isFeatureEnabled } = useFeatures();
+    const { isFeatureEnabled, getFeatureOrder } = useFeatures();
     // Use safeUser structure even if user context is briefly null during auth changes
     const safeUser = useMemo(() => user || { userId: null, name: 'Guest' }, [user]); // cite: useAppServices.jsx (provides user)
     
@@ -497,21 +497,24 @@ const CommunityScreen = ({ simulatedTier }) => {
     }, [currentTierFilter, allThreads]);
 
     // --- Sidebar Navigation Items ---
-    const navItems = useMemo(() => [
-        { screen: 'home', label: 'Community Feed', icon: MessageSquare },
-        { screen: 'my-threads', label: 'My Discussions', icon: Briefcase },
-        
-        // Feature: Mastermind Groups
-        ...(isFeatureEnabled('mastermind') ? [{ screen: 'mastermind', label: 'Mastermind Groups', icon: Users }] : []),
-        
-        // Feature: Mentor Match
-        ...(isFeatureEnabled('mentor-match') ? [{ screen: 'mentorship', label: 'Mentor Match', icon: UserPlus }] : []),
-        
-        // Feature: Live Events
-        ...(isFeatureEnabled('live-events') ? [{ screen: 'events', label: 'Live Events', icon: Video }] : []),
+    const navItems = useMemo(() => {
+        const allItems = [
+            { featureId: 'community-feed', screen: 'home', label: 'Community Feed', icon: MessageSquare },
+            { featureId: 'my-discussions', screen: 'my-threads', label: 'My Discussions', icon: Briefcase },
+            { featureId: 'mastermind', screen: 'mastermind', label: 'Mastermind Groups', icon: Users },
+            { featureId: 'mentor-match', screen: 'mentorship', label: 'Mentor Match', icon: UserPlus },
+            { featureId: 'live-events', screen: 'events', label: 'Live Events', icon: Video },
+        ];
 
-        { screen: 'notifications', label: 'Notifications', icon: Bell, notify: true },
-    ], [isFeatureEnabled]);
+        const sortedItems = allItems
+            .filter(item => isFeatureEnabled(item.featureId))
+            .sort((a, b) => getFeatureOrder(a.featureId) - getFeatureOrder(b.featureId));
+
+        return [
+            ...sortedItems,
+            { screen: 'notifications', label: 'Notifications', icon: Bell, notify: true }
+        ];
+    }, [isFeatureEnabled, getFeatureOrder]);
 
     // --- Render Logic ---
     const renderContent = () => {
