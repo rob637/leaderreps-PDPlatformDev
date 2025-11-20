@@ -25,7 +25,6 @@ const ArenaSidebar = ({ isOpen, toggle, currentScreen, navigate, onSignOut, user
     { id: 'community', label: 'Community', icon: Users },
     { id: 'coaching-lab', label: 'Coaching', icon: MessageSquare },
     { id: 'locker', label: 'Your Locker', icon: Archive },
-    { id: 'features-lab', label: 'Features Lab', icon: Beaker },
   ];
 
   // Determine display name (First Name Only)
@@ -130,7 +129,7 @@ const ArenaSidebar = ({ isOpen, toggle, currentScreen, navigate, onSignOut, user
                 onClick={() => navigate('admin-portal')}
                 className={`
                   w-full flex items-center gap-4 px-4 py-3 transition-colors relative bg-transparent border-none
-                  ${currentScreen === 'admin-portal' ? 'bg-corporate-orange text-white' : 'text-corporate-orange hover:bg-white/5'}
+                  ${currentScreen === 'admin-portal' ? 'bg-red-600 text-white' : 'text-red-400 hover:bg-white/5 hover:text-red-300'}
                 `}
                 title={!isOpen ? 'Admin Portal' : ''}
               >
