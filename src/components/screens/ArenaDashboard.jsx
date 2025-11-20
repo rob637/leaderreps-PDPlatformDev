@@ -191,6 +191,13 @@ const ArenaDashboard = (props) => {
     }
   };
 
+  const handleAddOtherTask = () => {
+    if (newTaskText.trim()) {
+      handleAddTask(newTaskText);
+      setNewTaskText('');
+    }
+  };
+
   // --- RENDER HELPERS ---
   
   const Checkbox = ({ checked, onChange, label, subLabel, disabled }) => (
