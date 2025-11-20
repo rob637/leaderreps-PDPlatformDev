@@ -24,6 +24,7 @@ const ArenaSidebar = ({ isOpen, toggle, currentScreen, navigate, onSignOut, user
     { id: 'community', label: 'Community', icon: Users },
     { id: 'coaching-lab', label: 'Coaching', icon: MessageSquare },
     { id: 'locker', label: 'Your Locker', icon: Archive },
+    { id: 'features-lab', label: 'Features Lab', icon: Beaker },
   ];
 
   // Determine display name (First Name Only)

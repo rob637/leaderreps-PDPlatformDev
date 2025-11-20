@@ -74,6 +74,9 @@ const ScreenMap = {
   'admin-lov-manager': lazy(() =>
     import('../components/admin/LOVManager.jsx')
   ),
+  'features-lab': lazy(() =>
+    import('../components/screens/FeaturesLab.jsx')
+  ),
 };
 
 const NotFoundScreen = () => (
