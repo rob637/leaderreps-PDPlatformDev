@@ -28,7 +28,7 @@ service cloud.firestore {
 
     // Config collection (for Feature Flags)
     match /config/{document=**} {
-      allow read: if request.auth != null;
+      allow read: if true;
       allow write: if isAdmin();
     }
     
