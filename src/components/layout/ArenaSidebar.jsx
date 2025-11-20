@@ -10,7 +10,8 @@ import {
   LogOut,
   Menu,
   ChevronLeft,
-  ShieldCheck
+  ShieldCheck,
+  Beaker
 } from 'lucide-react';
 
 const ArenaSidebar = ({ isOpen, toggle, currentScreen, navigate, onSignOut, user, membershipData }) => {
