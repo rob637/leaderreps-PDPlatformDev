@@ -552,7 +552,7 @@ const CommunityScreen = ({ simulatedTier }) => {
             {/* Back Button */}
             <div className="flex items-center gap-2 mb-6 text-gray-600 hover:text-gray-800 cursor-pointer transition-colors" onClick={() => navigate('dashboard')}>
                 <ArrowLeft className="w-4 h-4" />
-                <span className="text-sm font-medium">Back to The Arena</span>
+                <span className="text-sm font-medium">Back to Dashboard</span>
             </div>
 
             {/* Header */}

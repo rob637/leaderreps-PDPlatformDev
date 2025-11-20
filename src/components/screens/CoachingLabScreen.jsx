@@ -1713,10 +1713,10 @@ export default function CoachingLabScreen({ simulatedTier }) {
                 return (
                     <div>
                         {/* Back Button */}
-                        <div className="flex justify-center mb-6">
+                        <div className="flex justify-start mb-6">
                             <div className="flex items-center gap-2 text-gray-800 hover:text-black cursor-pointer transition-colors" onClick={() => navigate('dashboard')}>
                                 <ArrowLeft className="w-4 h-4" />
-                                <span className="text-sm font-medium">Back to The Arena</span>
+                                <span className="text-sm font-medium">Back to Dashboard</span>
                             </div>
                         </div>
                         

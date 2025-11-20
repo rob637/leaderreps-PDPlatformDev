@@ -1,10 +1,10 @@
 import React from 'react';
 import { useAppServices } from '../../services/useAppServices';
 import { Card } from '../shared/UI';
-import { Archive, CheckCircle, Calendar, Trophy, BookOpen } from 'lucide-react';
+import { Archive, CheckCircle, Calendar, Trophy, BookOpen, ArrowLeft } from 'lucide-react';
 
 const Locker = () => {
-  const { dailyPracticeData, commitmentData } = useAppServices();
+  const { dailyPracticeData, commitmentData, navigate } = useAppServices();
 
   // Arena Data
   // Assuming winsList is an array of { text, completed, date } objects
@@ -19,6 +19,14 @@ const Locker = () => {
 
   return (
     <div className="p-6 space-y-8 bg-slate-50 min-h-screen">
+      {/* Back Button */}
+      <div className="flex justify-start mb-2">
+          <div className="flex items-center gap-2 text-gray-600 hover:text-gray-800 cursor-pointer transition-colors" onClick={() => navigate('dashboard')}>
+              <ArrowLeft className="w-4 h-4" />
+              <span className="text-sm font-medium">Back to Dashboard</span>
+          </div>
+      </div>
+
       <header className="mb-8">
         <h1 className="text-3xl font-bold text-[#002E47] flex items-center gap-3">
           <Archive className="w-8 h-8 text-corporate-teal" />
