@@ -118,7 +118,8 @@ const Dashboard4 = (props) => {
   }, [globalMetadata]);
 
   // 2. Weekly Focus
-  const weeklyFocus = developmentPlanData?.currentPlan?.focusAreas?.[0]?.name || 'Leadership Fundamentals';
+  // Prioritize Admin Portal setting (globalMetadata), fallback to Dev Plan, then default
+  const weeklyFocus = globalMetadata?.weeklyFocus || developmentPlanData?.currentPlan?.focusAreas?.[0]?.name || 'Feedback';
 
   // 3. Daily Reps Logic
   const hasLIS = !!identityStatement;
@@ -364,7 +365,7 @@ const Dashboard4 = (props) => {
             <Trophy className="w-5 h-5" />
           </div>
           <h2 className="text-xl font-bold text-[#002E47]">
-            Win the Day (Today's 1-2-3)
+            AM Bookend - Win the Day
           </h2>
         </div>
 

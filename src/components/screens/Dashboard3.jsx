@@ -16,7 +16,8 @@ const Dashboard3 = () => {
     user, 
     userData,
     dailyPracticeData, 
-    updateDailyPracticeData
+    updateDailyPracticeData,
+    globalMetadata
   } = useAppServices();
 
   // Determine display name (First Name Only)
@@ -47,7 +48,11 @@ const Dashboard3 = () => {
     handleHabitToggle,
     
     // Streak
-    streakCount
+    streakCount,
+
+    // Locker History
+    winsList,
+    setWinsList
   } = useDashboard({
     dailyPracticeData,
     updateDailyPracticeData
@@ -60,37 +65,123 @@ const Dashboard3 = () => {
   const [win1, setWin1] = useState('');
   const [win2, setWin2] = useState('');
   const [win3, setWin3] = useState('');
+  
+  // Completion states for Wins
+  const [win1Completed, setWin1Completed] = useState(false);
+  const [win2Completed, setWin2Completed] = useState(false);
+  const [win3Completed, setWin3Completed] = useState(false);
 
   // Sync hook state to local state on load
   useEffect(() => {
     if (morningWIN) setWin1(morningWIN);
-    if (otherTasks && otherTasks.length > 0) setWin2(otherTasks[0]?.text || '');
-    if (otherTasks && otherTasks.length > 1) setWin3(otherTasks[1]?.text || '');
-  }, [morningWIN, otherTasks]);
+    // Check if morningWIN has a completion status stored separately or if we need to migrate
+    // For now, we'll assume morningWIN is just text in the hook, but we can store completion in dailyPracticeData directly
+    if (dailyPracticeData?.morningWINCompleted) setWin1Completed(dailyPracticeData.morningWINCompleted);
+
+    if (otherTasks && otherTasks.length > 0) {
+        setWin2(otherTasks[0]?.text || '');
+        setWin2Completed(otherTasks[0]?.completed || false);
+    }
+    if (otherTasks && otherTasks.length > 1) {
+        setWin3(otherTasks[1]?.text || '');
+        setWin3Completed(otherTasks[1]?.completed || false);
+    }
+  }, [morningWIN, otherTasks, dailyPracticeData]);
 
   const handleSaveWinTheDay = async () => {
     // Save Win 1 (Morning WIN)
     if (win1 !== morningWIN) {
         setMorningWIN(win1);
-        // Trigger save via hook or direct update if hook doesn't expose simple setter saver
-        // The hook has handleSaveWIN which saves morningWIN and otherTasks
     }
     
     // Construct otherTasks array for Win 2 and Win 3
     const newTasks = [];
-    if (win2) newTasks.push({ id: 'win2', text: win2, completed: otherTasks[0]?.completed || false });
-    if (win3) newTasks.push({ id: 'win3', text: win3, completed: otherTasks[1]?.completed || false });
+    if (win2) newTasks.push({ id: 'win2', text: win2, completed: win2Completed });
+    if (win3) newTasks.push({ id: 'win3', text: win3, completed: win3Completed });
     
-    // We need to update the hook's state or call the update function directly
-    // Since useDashboard manages otherTasks, we might need to use handleAddTask or just update the data directly if the hook allows.
-    // Looking at useDashboard, it syncs from dailyPracticeData. 
-    // We'll use updateDailyPracticeData directly to ensure we match the 3-item structure.
-    
+    // Update using the correct structure for useDashboard compatibility
     await updateDailyPracticeData({
-        morningWIN: win1,
-        otherTasks: newTasks
+        morningBookend: {
+            dailyWIN: win1,
+            winCompleted: win1Completed,
+            otherTasks: newTasks,
+            completedAt: new Date().toISOString()
+        }
     });
   };
+
+  // Auto-save when completion toggles change
+  const toggleWinCompletion = async (index, currentStatus) => {
+      const newStatus = !currentStatus;
+      
+      // Prepare winsList update for Locker
+      let updatedWinsList = [...winsList];
+      const todayDate = new Date().toLocaleDateString();
+      let winId = '';
+      let winText = '';
+      
+      if (index === 1) {
+          winId = `morning-win-${new Date().toISOString().split('T')[0]}`;
+          winText = win1 || 'Morning Win';
+      } else if (index === 2) {
+          winId = `task-win-win2`;
+          winText = win2 || 'Win 2';
+      } else if (index === 3) {
+          winId = `task-win-win3`;
+          winText = win3 || 'Win 3';
+      }
+
+      if (newStatus) {
+          if (!updatedWinsList.find(w => w.id === winId)) {
+              updatedWinsList.push({
+                  id: winId,
+                  text: winText,
+                  date: todayDate,
+                  completed: true,
+                  timestamp: new Date().toISOString()
+              });
+          }
+      } else {
+          updatedWinsList = updatedWinsList.filter(w => w.id !== winId);
+      }
+      setWinsList(updatedWinsList);
+
+      if (index === 1) {
+          setWin1Completed(newStatus);
+          // Construct otherTasks to preserve them
+          const newTasks = [];
+          if (win2) newTasks.push({ id: 'win2', text: win2, completed: win2Completed });
+          if (win3) newTasks.push({ id: 'win3', text: win3, completed: win3Completed });
+
+          await updateDailyPracticeData({ 
+              'morningBookend.winCompleted': newStatus,
+              winsList: updatedWinsList
+          });
+      } else if (index === 2) {
+          setWin2Completed(newStatus);
+          const newTasks = [];
+          if (win2) newTasks.push({ id: 'win2', text: win2, completed: newStatus });
+          if (win3) newTasks.push({ id: 'win3', text: win3, completed: win3Completed });
+          
+          await updateDailyPracticeData({ 
+              'morningBookend.otherTasks': newTasks,
+              winsList: updatedWinsList
+          });
+      } else if (index === 3) {
+          setWin3Completed(newStatus);
+          const newTasks = [];
+          if (win2) newTasks.push({ id: 'win2', text: win2, completed: win2Completed });
+          if (win3) newTasks.push({ id: 'win3', text: win3, completed: newStatus });
+          
+          await updateDailyPracticeData({ 
+              'morningBookend.otherTasks': newTasks,
+              winsList: updatedWinsList
+          });
+      }
+  };
+
+  // Get Weekly Focus from Global Metadata or Default
+  const weeklyFocus = globalMetadata?.weeklyFocus || 'Feedback';
 
   // Mock Data for Notifications (from Sketch)
   const notifications = [
@@ -122,7 +213,7 @@ const Dashboard3 = () => {
             
             {/* Focus Section */}
             <section className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 text-left">
-                <h2 className="text-lg font-bold text-[#002E47] mb-2">This week's Focus: <span className="text-[#E04E1B]">Feedback</span></h2>
+                <h2 className="text-lg font-bold text-[#002E47] mb-2">This week's Focus: <span className="text-[#E04E1B]">{weeklyFocus}</span></h2>
             </section>
 
             {/* AM Backend - Lock-in your Day */}
@@ -194,7 +285,7 @@ const Dashboard3 = () => {
             {/* Win the Day (Today's 1-2-3) */}
             <section className="bg-white rounded-2xl p-6 shadow-lg border-l-4 border-[#E04E1B]">
                 <div className="flex justify-between items-center mb-4">
-                    <h3 className="text-xl font-bold text-[#002E47]">Win the Day <span className="text-sm font-normal text-gray-500">- Today's 1-2-3</span></h3>
+                    <h3 className="text-xl font-bold text-[#002E47]">AM Bookend <span className="text-sm font-normal text-gray-500">- Win the Day</span></h3>
                     <button onClick={handleSaveWinTheDay} className="text-xs font-bold uppercase tracking-wider text-[#E04E1B] flex items-center gap-1 hover:underline">
                         <Save className="w-3 h-3" /> Save
                     </button>
@@ -209,10 +300,16 @@ const Dashboard3 = () => {
                             value={win1}
                             onChange={(e) => setWin1(e.target.value)}
                             placeholder="Top priority"
-                            className="flex-1 p-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-[#E04E1B]/20 focus:border-[#E04E1B] outline-none transition-all"
+                            className={`flex-1 p-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-[#E04E1B]/20 focus:border-[#E04E1B] outline-none transition-all ${win1Completed ? 'text-gray-400 line-through' : ''}`}
                         />
-                        <button className="text-gray-300 hover:text-[#47A88D]">
-                            <Square className="w-6 h-6" />
+                        <button 
+                            onClick={() => toggleWinCompletion(1, win1Completed)}
+                            className="text-gray-300 hover:text-[#47A88D] focus:outline-none"
+                        >
+                            {win1Completed ? 
+                                <CheckSquare className="w-6 h-6 text-[#47A88D]" /> : 
+                                <Square className="w-6 h-6" />
+                            }
                         </button>
                     </div>
 
@@ -224,10 +321,16 @@ const Dashboard3 = () => {
                             value={win2}
                             onChange={(e) => setWin2(e.target.value)}
                             placeholder="Next most important"
-                            className="flex-1 p-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-[#E04E1B]/20 focus:border-[#E04E1B] outline-none transition-all"
+                            className={`flex-1 p-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-[#E04E1B]/20 focus:border-[#E04E1B] outline-none transition-all ${win2Completed ? 'text-gray-400 line-through' : ''}`}
                         />
-                        <button className="text-gray-300 hover:text-[#47A88D]">
-                            <Square className="w-6 h-6" />
+                        <button 
+                            onClick={() => toggleWinCompletion(2, win2Completed)}
+                            className="text-gray-300 hover:text-[#47A88D] focus:outline-none"
+                        >
+                            {win2Completed ? 
+                                <CheckSquare className="w-6 h-6 text-[#47A88D]" /> : 
+                                <Square className="w-6 h-6" />
+                            }
                         </button>
                     </div>
 
@@ -239,10 +342,16 @@ const Dashboard3 = () => {
                             value={win3}
                             onChange={(e) => setWin3(e.target.value)}
                             placeholder="Next most important"
-                            className="flex-1 p-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-[#E04E1B]/20 focus:border-[#E04E1B] outline-none transition-all"
+                            className={`flex-1 p-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-[#E04E1B]/20 focus:border-[#E04E1B] outline-none transition-all ${win3Completed ? 'text-gray-400 line-through' : ''}`}
                         />
-                        <button className="text-gray-300 hover:text-[#47A88D]">
-                            <Square className="w-6 h-6" />
+                        <button 
+                            onClick={() => toggleWinCompletion(3, win3Completed)}
+                            className="text-gray-300 hover:text-[#47A88D] focus:outline-none"
+                        >
+                            {win3Completed ? 
+                                <CheckSquare className="w-6 h-6 text-[#47A88D]" /> : 
+                                <Square className="w-6 h-6" />
+                            }
                         </button>
                     </div>
                 </div>

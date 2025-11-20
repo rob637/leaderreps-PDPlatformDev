@@ -520,6 +520,29 @@ export const useDashboard = ({
     );
     setOtherTasks(updatedTasks);
     
+    // Update winsList based on completion
+    const task = otherTasks.find(t => t.id === taskId);
+    const newStatus = !task.completed; // This is the new status
+    
+    let updatedWinsList = [...winsList];
+    const todayDate = new Date().toLocaleDateString();
+    const winId = `task-win-${taskId}`; 
+
+    if (newStatus) {
+         if (!updatedWinsList.find(w => w.id === winId)) {
+            updatedWinsList.push({
+                id: winId,
+                text: task.text,
+                date: todayDate,
+                completed: true,
+                timestamp: new Date().toISOString()
+            });
+         }
+    } else {
+        updatedWinsList = updatedWinsList.filter(w => w.id !== winId);
+    }
+    setWinsList(updatedWinsList);
+
     // Auto-save to Firestore immediately
     // Use the destructured prop directly
     if (updateDailyPracticeData) {
@@ -528,13 +551,14 @@ export const useDashboard = ({
           morningBookend: {
             ...dailyPracticeData?.morningBookend,
             otherTasks: updatedTasks
-          }
+          },
+          winsList: updatedWinsList
         });
       } catch (error) {
         console.error('[Dashboard] Error auto-saving task toggle:', error);
       }
     }
-  }, [otherTasks, updateDailyPracticeData]); // Explicitly include prop
+  }, [otherTasks, updateDailyPracticeData, winsList, dailyPracticeData]); // Explicitly include prop
 
   const handleRemoveTask = useCallback(async (taskKey) => {
     let updatedTasks;
@@ -576,14 +600,35 @@ export const useDashboard = ({
     const currentStatus = dailyPracticeData?.morningBookend?.winCompleted || false;
     const newStatus = !currentStatus;
     
+    // Update winsList
+    let updatedWinsList = [...winsList];
+    const todayDate = new Date().toLocaleDateString();
+    const winId = `morning-win-${new Date().toISOString().split('T')[0]}`; 
+
+    if (newStatus) {
+        if (!updatedWinsList.find(w => w.id === winId)) {
+            updatedWinsList.push({
+                id: winId,
+                text: morningWIN || 'Morning Win',
+                date: todayDate,
+                completed: true,
+                timestamp: new Date().toISOString()
+            });
+        }
+    } else {
+        updatedWinsList = updatedWinsList.filter(w => w.id !== winId);
+    }
+    setWinsList(updatedWinsList);
+
     try {
       await updateDailyPracticeData({
-        'morningBookend.winCompleted': newStatus
+        'morningBookend.winCompleted': newStatus,
+        winsList: updatedWinsList
       });
     } catch (error) {
       console.error('[Dashboard] Error toggling WIN:', error);
     }
-  }, [dailyPracticeData, updateDailyPracticeData]); // Explicitly include prop
+  }, [dailyPracticeData, updateDailyPracticeData, winsList, morningWIN]); // Explicitly include prop
 
   const handleHabitToggle = useCallback((habitKey, isChecked) => {
     lastHabitUpdateTime.current = Date.now();
