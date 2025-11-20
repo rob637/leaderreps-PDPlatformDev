@@ -6,7 +6,7 @@ import React, { useState, useEffect } from 'react';
 import { useAppServices } from '../../services/useAppServices.jsx';
 import { useDashboard } from './dashboard/DashboardHooks.jsx';
 import { 
-  CheckCircle, Circle, Plus, Save, Bell, Trophy, 
+  CheckCircle, Circle, Plus, Save, Bell, Trophy, Flame,
   Calendar, ChevronRight, ArrowRight, Edit3, CheckSquare, Square
 } from 'lucide-react';
 import { COLORS } from './dashboard/dashboardConstants.js';
