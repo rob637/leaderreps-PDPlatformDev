@@ -7,6 +7,43 @@ const FeatureManager = () => {
   const { features, toggleFeature, updateFeatureOrder, getFeatureOrder, isFeatureEnabled } = useFeatures();
   const [editingWidget, setEditingWidget] = useState(null);
 
+  const WIDGET_TEMPLATES = {
+    'identity-builder': `
+<section className="text-left w-full">
+  <div className="flex items-center gap-2 mb-4">
+    <div className="w-8 h-8 rounded-lg bg-orange-100 flex items-center justify-center text-orange-600">
+      <Flame className="w-5 h-5" />
+    </div>
+    <h2 className="text-xl font-bold text-[#002E47]">
+      Identity Builder
+    </h2>
+  </div>
+  <div className="space-y-3 text-left">
+    {hasLIS ? (
+      <Checkbox 
+        checked={lisRead}
+        onChange={() => handleHabitCheck('readLIS', !lisRead)}
+        label="Grounding Rep: Read LIS"
+        subLabel="Center yourself on your identity."
+      />
+    ) : (
+      <div className="p-4 rounded-xl border-2 border-dashed border-orange-300 bg-orange-50 flex items-center justify-between">
+        <div>
+          <p className="font-semibold text-orange-800">Grounding Rep: Read LIS</p>
+          <p className="text-xs text-orange-600">No Identity Statement set yet.</p>
+        </div>
+        <button 
+          onClick={() => setIsAnchorModalOpen(true)}
+          className="px-4 py-2 bg-orange-500 text-white rounded-lg text-sm font-bold hover:bg-orange-600 transition-colors"
+        >
+          Enter / Save
+        </button>
+      </div>
+    )}
+  </div>
+</section>
+    `
+  };
   
   // Define the static metadata for features
   const FEATURE_METADATA = {
@@ -203,6 +240,7 @@ const FeatureManager = () => {
           onClose={() => setEditingWidget(null)}
           widgetId={editingWidget.id}
           widgetName={editingWidget.name}
+          initialCode={WIDGET_TEMPLATES[editingWidget.id]}
         />
       )}
     </div>

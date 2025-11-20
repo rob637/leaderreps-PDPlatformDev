@@ -2,9 +2,44 @@ import React, { useState, useEffect, useRef } from 'react';
 import { 
   X, Save, Play, Code, MessageSquare, Send, 
   Maximize2, Minimize2, RefreshCw, CheckCircle, AlertTriangle,
-  Loader, Cpu
+  Loader, Cpu, CheckSquare
 } from 'lucide-react';
 import { COLORS } from '../screens/dashboard/dashboardConstants';
+import DynamicWidgetRenderer from './DynamicWidgetRenderer';
+import OpenAI from 'openai';
+
+// Initialize OpenAI Client
+// Note: In production, this should be proxied through a backend to hide the key.
+const openai = new OpenAI({
+  apiKey: import.meta.env.VITE_OPENAI_API_KEY,
+  dangerouslyAllowBrowser: true // Enabled for this internal admin tool prototype
+});
+
+// Mock Checkbox for preview scope
+const Checkbox = ({ checked, onChange, label, subLabel, disabled }) => (
+  <div 
+    onClick={!disabled ? onChange : undefined}
+    className={`flex items-start gap-3 p-3 rounded-xl border-2 transition-all cursor-pointer ${
+      checked 
+        ? 'bg-teal-50 border-teal-500' 
+        : 'bg-white border-gray-200 hover:border-teal-300'
+    } ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
+  >
+    <div className={`mt-0.5 w-6 h-6 rounded-md flex items-center justify-center border-2 transition-colors ${
+      checked ? 'bg-teal-500 border-teal-500' : 'bg-white border-gray-300'
+    }`}>
+      {checked && <CheckSquare className="w-4 h-4 text-white" />}
+    </div>
+    <div className="flex-1">
+      <p className={`font-semibold ${checked ? 'text-teal-900' : 'text-gray-700'}`}>
+        {label}
+      </p>
+      {subLabel && (
+        <p className="text-xs text-gray-500 mt-0.5">{subLabel}</p>
+      )}
+    </div>
+  </div>
+);
 
 const WidgetEditorModal = ({ isOpen, onClose, widgetId, widgetName, initialCode }) => {
   const [activeTab, setActiveTab] = useState('preview'); // preview | code
@@ -16,6 +51,26 @@ const WidgetEditorModal = ({ isOpen, onClose, widgetId, widgetName, initialCode 
   const [isDeploying, setIsDeploying] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
 
+  // Mock Scope Data
+  const [mockState, setMockState] = useState({
+    hasLIS: true,
+    lisRead: false,
+    dailyRepName: 'Active Listening',
+    dailyRepCompleted: false
+  });
+
+  const mockScope = {
+    hasLIS: mockState.hasLIS,
+    lisRead: mockState.lisRead,
+    handleHabitCheck: (key, val) => setMockState(prev => ({ ...prev, [key]: val })),
+    setIsAnchorModalOpen: () => alert('Open Anchor Modal'),
+    dailyRepName: mockState.dailyRepName,
+    dailyRepCompleted: mockState.dailyRepCompleted,
+    isFeatureEnabled: () => true,
+    setIsCalendarModalOpen: () => alert('Open Calendar Modal'),
+    Checkbox
+  };
+
   const chatEndRef = useRef(null);
 
   useEffect(() => {
@@ -26,25 +81,67 @@ const WidgetEditorModal = ({ isOpen, onClose, widgetId, widgetName, initialCode 
 
   if (!isOpen) return null;
 
-  const handleSendMessage = () => {
+  const handleSendMessage = async () => {
     if (!chatInput.trim()) return;
 
     // Add user message
     const newHistory = [...chatHistory, { role: 'user', content: chatInput }];
     setChatHistory(newHistory);
+    const userRequest = chatInput;
     setChatInput('');
     setIsGenerating(true);
 
-    // Simulate AI response
-    setTimeout(() => {
+    try {
+      const completion = await openai.chat.completions.create({
+        messages: [
+          { 
+            role: "system", 
+            content: `You are an expert React developer building widgets for a leadership development dashboard. 
+            You are modifying an existing widget.
+            
+            CONTEXT:
+            - You have access to 'lucide-react' icons (import as needed, but they are in scope).
+            - You have access to 'COLORS' object.
+            - You have access to a 'Checkbox' component.
+            - The code must be a valid React component body (JSX) or a functional component definition.
+            - If the current code is just JSX, keep it as JSX.
+            
+            CURRENT CODE:
+            ${code}
+            
+            TASK:
+            ${userRequest}
+            
+            OUTPUT FORMAT:
+            Return ONLY the raw React code. Do not wrap in markdown code blocks. Do not include explanations.` 
+          },
+          { role: "user", content: userRequest }
+        ],
+        model: "gpt-4o",
+      });
+
+      const aiResponse = completion.choices[0].message.content;
+      
+      // Clean up response if it contains markdown
+      const cleanCode = aiResponse.replace(/```jsx/g, '').replace(/```/g, '').trim();
+
       setChatHistory(prev => [...prev, { 
         role: 'system', 
-        content: `I understand you want to update the "${widgetName}" widget. \n\nBased on your request: "${chatInput}", I've updated the code structure to include those inputs and outputs.` 
+        content: `I've updated the widget based on your request: "${userRequest}"` 
       }]);
+      
+      setCode(cleanCode);
+      setActiveTab('preview'); // Switch to preview to see changes
+
+    } catch (error) {
+      console.error("AI Error:", error);
+      setChatHistory(prev => [...prev, { 
+        role: 'system', 
+        content: `Error generating code: ${error.message}` 
+      }]);
+    } finally {
       setIsGenerating(false);
-      // Simulate code update
-      setCode(prev => prev + `\n// Updated based on: ${chatInput}\n// Added new input field...`);
-    }, 1500);
+    }
   };
 
   const handleDeploy = () => {
@@ -113,20 +210,10 @@ const WidgetEditorModal = ({ isOpen, onClose, widgetId, widgetName, initialCode 
             </div>
 
             {/* Content Area */}
-            <div className="flex-1 overflow-auto p-6 relative">
+            <div className="flex-1 overflow-auto p-6 relative bg-slate-100">
               {activeTab === 'preview' ? (
-                <div className="max-w-md mx-auto bg-white rounded-xl shadow-lg border border-slate-200 overflow-hidden min-h-[300px] flex items-center justify-center relative">
-                  {/* Mock Preview */}
-                  <div className="text-center p-8">
-                    <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                      <Cpu className="w-8 h-8 text-slate-400" />
-                    </div>
-                    <h3 className="text-lg font-bold text-slate-700 mb-2">{widgetName}</h3>
-                    <p className="text-slate-500 text-sm">Widget Preview Area</p>
-                    <div className="mt-4 p-3 bg-yellow-50 text-yellow-800 text-xs rounded border border-yellow-200">
-                      Interactive preview requires live component mounting.
-                    </div>
-                  </div>
+                <div className="max-w-md mx-auto bg-white rounded-xl shadow-lg border border-slate-200 overflow-hidden min-h-[300px] relative p-4">
+                  <DynamicWidgetRenderer code={code} scope={mockScope} />
                 </div>
               ) : (
                 <div className="h-full bg-[#1e1e1e] rounded-xl overflow-hidden shadow-inner border border-slate-800">
