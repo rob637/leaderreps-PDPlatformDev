@@ -109,6 +109,6 @@ const FeatureManager = () => {
       </div>
     </div>
   );
-export default FeatureManager;
+};
 
 export default FeatureManager;
