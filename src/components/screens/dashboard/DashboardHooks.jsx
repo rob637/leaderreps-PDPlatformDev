@@ -47,6 +47,9 @@ export const useDashboard = ({
   
   // FIXED 10/29/25: Track when we're intentionally clearing reflections
   const [shouldSkipReflectionLoad, setShouldSkipReflectionLoad] = useState(false);
+  
+  // NEW: Track last local update to prevent stale overwrites
+  const lastHabitUpdateTime = React.useRef(0);
 
   // === STREAK STATE ===
   const [streakCount, setStreakCount] = useState(0);
@@ -141,6 +144,11 @@ export const useDashboard = ({
     if (shouldSkipReflectionLoad) {
       // Clear flag after skipping the load cycle
       setShouldSkipReflectionLoad(false); 
+      return;
+    }
+    
+    // Skip load if we recently updated locally (within 2 seconds)
+    if (Date.now() - lastHabitUpdateTime.current < 2000) {
       return;
     }
     
@@ -554,6 +562,7 @@ export const useDashboard = ({
   }, [dailyPracticeData, updateDailyPracticeData]); // Explicitly include prop
 
   const handleHabitToggle = useCallback((habitKey, isChecked) => {
+    lastHabitUpdateTime.current = Date.now();
     setHabitsCompleted(prev => ({ ...prev, [habitKey]: isChecked }));
   }, []);
 

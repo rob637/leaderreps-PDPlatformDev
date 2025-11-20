@@ -73,6 +73,7 @@ const ArenaDashboard = (props) => {
   const [isAnchorModalOpen, setIsAnchorModalOpen] = useState(false);
   const [newTaskText, setNewTaskText] = useState('');
   const [showTaskInput, setShowTaskInput] = useState(false);
+  const [isWinSaved, setIsWinSaved] = useState(false);
 
   // --- WRAPPERS FOR AUTO-SAVE ---
   const handleHabitCheck = async (key, value) => {
@@ -165,12 +166,10 @@ const ArenaDashboard = (props) => {
 
   // --- HANDLERS ---
 
-  const handleAddOtherTask = () => {
-    if (newTaskText.trim()) {
-      handleAddTask(newTaskText);
-      setNewTaskText('');
-      setShowTaskInput(false);
-    }
+  const handleSaveWINWrapper = async () => {
+    await handleSaveWIN();
+    setIsWinSaved(true);
+    setTimeout(() => setIsWinSaved(false), 2000);
   };
 
   const handleToggleAdditionalRep = async (commitmentId, currentStatus) => {
@@ -363,12 +362,15 @@ const ArenaDashboard = (props) => {
                         {/* Save Button (Initial '+') */}
                         {!amWinCompleted && morningWIN && (
                            <button 
-                             onClick={handleSaveWIN}
-                             disabled={isSavingWIN}
-                             className="p-3 bg-teal-500 text-white rounded-xl hover:bg-teal-600 transition-colors disabled:opacity-50"
+                             onClick={handleSaveWINWrapper}
+                             disabled={isSavingWIN || isWinSaved}
+                             className={`p-3 rounded-xl transition-colors disabled:opacity-50 ${
+                               isWinSaved ? 'bg-green-500 text-white' : 'bg-teal-500 text-white hover:bg-teal-600'
+                             }`}
                              title="Save WIN"
                            >
-                             {isSavingWIN ? <Loader className="w-5 h-5 animate-spin" /> : <Plus className="w-5 h-5" />}
+                             {isSavingWIN ? <Loader className="w-5 h-5 animate-spin" /> : 
+                              isWinSaved ? <CheckSquare className="w-5 h-5" /> : <Plus className="w-5 h-5" />}
                            </button>
                         )}
                       </div>
@@ -392,9 +394,16 @@ const ArenaDashboard = (props) => {
 
                 {/* 2 & 3. Next Most Important */}
                 <div className="space-y-3 text-left">
-                  <label className="block text-xs font-bold text-slate-400 uppercase text-left">
-                    2 & 3. Next Most Important
-                  </label>
+                  <div className="flex justify-between items-center">
+                    <label className="block text-xs font-bold text-slate-400 uppercase text-left">
+                      2 & 3. Next Most Important
+                    </label>
+                    {otherTasks.length > 0 && (
+                      <span className="text-xs text-green-600 font-medium flex items-center gap-1">
+                        <CheckSquare className="w-3 h-3" /> Auto-saved
+                      </span>
+                    )}
+                  </div>
                   
                   {otherTasks.map((task, idx) => (
                     <div key={task.id || idx} className="flex items-center gap-3">
