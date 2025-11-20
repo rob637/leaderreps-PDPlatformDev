@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { 
   X, Save, Play, Code, MessageSquare, Send, 
   Maximize2, Minimize2, RefreshCw, CheckCircle, AlertTriangle,
-  Loader, Cpu, CheckSquare
+  Loader, Cpu, CheckSquare, Github
 } from 'lucide-react';
 import { COLORS } from '../screens/dashboard/dashboardConstants';
 import DynamicWidgetRenderer from './DynamicWidgetRenderer';
@@ -56,6 +56,10 @@ const WidgetEditorModal = ({ isOpen, onClose, widgetId, widgetName, initialCode,
     { role: 'system', content: `I am the Widget Architect. I can help you modify the "${widgetName}" widget. Describe what you want to change.` }
   ]);
   const [isDeploying, setIsDeploying] = useState(false);
+  const [isSavingDraft, setIsSavingDraft] = useState(false);
+  const [saveSuccess, setSaveSuccess] = useState(false);
+  const [deploySuccess, setDeploySuccess] = useState(false);
+  const [isSyncing, setIsSyncing] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
 
   // Mock Scope Data
@@ -222,17 +226,19 @@ const WidgetEditorModal = ({ isOpen, onClose, widgetId, widgetName, initialCode,
   };
 
   const handleSaveDraft = async () => {
-    setIsDeploying(true);
+    setIsSavingDraft(true);
+    setSaveSuccess(false);
     try {
       if (onSave) {
         await onSave(code);
       }
-      // Optional: Show a toast or visual indicator
+      setSaveSuccess(true);
+      setTimeout(() => setSaveSuccess(false), 3000);
     } catch (error) {
       console.error("Save Draft error:", error);
       alert("Failed to save draft.");
     } finally {
-      setIsDeploying(false);
+      setIsSavingDraft(false);
     }
   };
 
@@ -242,13 +248,76 @@ const WidgetEditorModal = ({ isOpen, onClose, widgetId, widgetName, initialCode,
       if (onSave) {
         await onSave(code);
       }
-      // alert('Widget deployed to DEV environment successfully!');
-      onClose();
+      setDeploySuccess(true);
+      setTimeout(() => {
+        onClose();
+        setDeploySuccess(false);
+      }, 1000);
     } catch (error) {
       console.error("Deploy error:", error);
       alert("Failed to save widget.");
     } finally {
       setIsDeploying(false);
+    }
+  };
+
+  const handleSyncToGitHub = async () => {
+    const token = localStorage.getItem('GITHUB_PAT') || prompt("Enter GitHub PAT (repo scope) to sync:");
+    if (!token) return;
+    localStorage.setItem('GITHUB_PAT', token);
+
+    setIsSyncing(true);
+    try {
+      const owner = 'rob637';
+      const repo = 'leaderreps-PDPlatformDev';
+      const path = 'src/components/admin/FeatureManager.jsx';
+      const branch = 'crazy-idea'; // Hardcoded for prototype
+
+      // 1. Get current file SHA and content
+      const getRes = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/${path}?ref=${branch}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      if (!getRes.ok) throw new Error('Failed to fetch file from GitHub');
+      const getData = await getRes.json();
+      const currentContent = atob(getData.content);
+
+      // 2. Replace the specific widget template
+      // Regex looks for: 'widget-id': `...`
+      // We use a non-greedy match for the content inside backticks
+      const regex = new RegExp(`('${widgetId}': \`)[\\s\\S]*?(\`,)`, 'g');
+      
+      // Check if widget exists in file
+      if (!regex.test(currentContent)) {
+        throw new Error(`Widget ID '${widgetId}' not found in FeatureManager.jsx templates.`);
+      }
+
+      const newContent = currentContent.replace(regex, `$1\n${code}\n$2`);
+
+      // 3. Commit changes
+      const putRes = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/${path}`, {
+        method: 'PUT',
+        headers: { 
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          message: `chore(widgets): update ${widgetName} template via Widget Lab`,
+          content: btoa(newContent),
+          sha: getData.sha,
+          branch: branch
+        })
+      });
+
+      if (!putRes.ok) throw new Error('Failed to commit to GitHub');
+
+      alert(`Successfully synced ${widgetName} to GitHub branch: ${branch}`);
+
+    } catch (error) {
+      console.error("GitHub Sync Error:", error);
+      alert(`Sync failed: ${error.message}`);
+    } finally {
+      setIsSyncing(false);
     }
   };
 
@@ -391,6 +460,15 @@ const WidgetEditorModal = ({ isOpen, onClose, widgetId, widgetName, initialCode,
           </div>
           <div className="flex gap-3">
             <button 
+              onClick={handleSyncToGitHub}
+              disabled={isSyncing}
+              className="px-4 py-2 text-slate-500 font-bold hover:text-black hover:bg-slate-100 rounded-lg transition-colors flex items-center gap-2"
+              title="Push current code to GitHub repository"
+            >
+              {isSyncing ? <Loader className="w-4 h-4 animate-spin" /> : <Github className="w-4 h-4" />}
+              Sync to Git
+            </button>
+            <button 
               onClick={onClose}
               className="px-4 py-2 text-slate-600 font-semibold hover:bg-slate-100 rounded-lg transition-colors"
             >
@@ -398,18 +476,39 @@ const WidgetEditorModal = ({ isOpen, onClose, widgetId, widgetName, initialCode,
             </button>
             <button 
               onClick={handleSaveDraft}
-              disabled={isDeploying}
-              className="px-4 py-2 text-[#002E47] font-bold border border-[#002E47] rounded-lg hover:bg-slate-50 transition-colors flex items-center gap-2"
+              disabled={isSavingDraft || isDeploying}
+              className={`px-4 py-2 font-bold border rounded-lg transition-all flex items-center gap-2 ${
+                saveSuccess 
+                  ? 'bg-green-50 text-green-700 border-green-500' 
+                  : 'text-[#002E47] border-[#002E47] hover:bg-slate-50'
+              }`}
             >
-              {isDeploying ? <Loader className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />} Save Draft
+              {isSavingDraft ? (
+                <Loader className="w-4 h-4 animate-spin" />
+              ) : saveSuccess ? (
+                <CheckCircle className="w-4 h-4" />
+              ) : (
+                <Save className="w-4 h-4" />
+              )}
+              {saveSuccess ? 'Draft Saved!' : 'Save Draft'}
             </button>
             <button 
               onClick={handleDeploy}
-              disabled={isDeploying}
-              className="px-6 py-2 bg-gradient-to-r from-teal-600 to-teal-500 text-white font-bold rounded-lg hover:shadow-lg hover:scale-105 transition-all flex items-center gap-2"
+              disabled={isDeploying || isSavingDraft}
+              className={`px-6 py-2 text-white font-bold rounded-lg hover:shadow-lg hover:scale-105 transition-all flex items-center gap-2 ${
+                deploySuccess 
+                  ? 'bg-green-600' 
+                  : 'bg-gradient-to-r from-teal-600 to-teal-500'
+              }`}
             >
-              {isDeploying ? <Loader className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
-              Save & Deploy to Dev
+              {isDeploying ? (
+                <Loader className="w-4 h-4 animate-spin" />
+              ) : deploySuccess ? (
+                <CheckCircle className="w-4 h-4" />
+              ) : (
+                <RefreshCw className="w-4 h-4" />
+              )}
+              {deploySuccess ? 'Deployed!' : 'Save & Deploy to Dev'}
             </button>
           </div>
         </div>

@@ -873,7 +873,7 @@ const FeatureManager = () => {
     if (!newWidget.name || !newWidget.id) return;
     await saveFeature(newWidget.id, {
       ...newWidget,
-      code: '// New widget code',
+      code: '<div className="p-4 bg-white rounded-lg shadow border border-gray-200"><h3>New Widget</h3><p>Start editing...</p></div>',
       enabled: true,
       order: 999
     });
