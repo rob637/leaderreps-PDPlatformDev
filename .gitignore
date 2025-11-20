@@ -111,3 +111,4 @@ git add .gitignore
 git commit -m "Update gitignore to exclude service-account-key.json"
 scripts/serviceAccount.json
 scripts/private/
+.env.secrets

@@ -34,6 +34,13 @@ firebase use dev
 # 3. Build with development environment (BEFORE committing)
 echo -e "\n${YELLOW}🏗️  Building for DEVELOPMENT environment...${NC}"
 cp .env.dev .env.local
+
+# Append secrets if they exist (for API keys etc)
+if [ -f .env.secrets ]; then
+    echo -e "${YELLOW}🔑 Injecting local secrets...${NC}"
+    cat .env.secrets >> .env.local
+fi
+
 npm run build
 
 # 4. If build succeeds, proceed with git operations
