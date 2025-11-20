@@ -27,11 +27,14 @@ const Locker = () => {
           </div>
       </div>
 
-      <header className="mb-8">
-        <h1 className="text-3xl font-bold text-[#002E47] flex items-center gap-3">
+      <header className="mb-8 text-center">
+        <div className="flex items-center justify-center gap-3 mb-2">
           <Archive className="w-8 h-8 text-corporate-teal" />
-          The Locker
-        </h1>
+          <h1 className="text-3xl font-bold text-[#002E47]">
+            The Locker
+          </h1>
+          <Archive className="w-8 h-8 text-corporate-teal" />
+        </div>
         <p className="text-slate-600 mt-2">
           Your repository of completed reps, wins, and reflections.
         </p>

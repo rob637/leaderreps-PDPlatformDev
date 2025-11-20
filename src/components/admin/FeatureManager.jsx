@@ -14,6 +14,10 @@ const FeatureManager = () => {
     'gamification': { name: 'Gamification Engine', description: 'Arena Mode logic, streaks, coins, and leaderboards.' },
     'exec-summary': { name: 'Executive Summary Widget', description: 'High-level view of leadership growth.' },
     'calendar-sync': { name: 'Calendar Integration', description: 'Sync Daily Reps and coaching sessions to Outlook/Google.' },
+    'weekly-focus': { name: 'Weekly Focus', description: 'Display current development plan focus area.' },
+    'notifications': { name: 'Notifications', description: 'Alerts and reminders widget.' },
+    'scorecard': { name: 'Today Scorecard', description: 'Daily progress summary and streak display.' },
+    'pm-bookend': { name: 'PM Bookend', description: 'Evening reflection and journaling.' },
     
     // Content
     'course-library': { name: 'Course Library', description: 'Structured video modules for deep-dive learning.' },
@@ -39,7 +43,7 @@ const FeatureManager = () => {
 
   // Initial groups structure (ids only)
   const initialGroups = {
-    dashboard: ['identity-builder', 'habit-stack', 'win-the-day', 'gamification', 'exec-summary', 'calendar-sync'],
+    dashboard: ['identity-builder', 'habit-stack', 'win-the-day', 'gamification', 'exec-summary', 'calendar-sync', 'weekly-focus', 'notifications', 'scorecard', 'pm-bookend'],
     content: ['course-library', 'reading-hub', 'leadership-videos', 'strat-templates'],
     community: ['community-feed', 'my-discussions', 'mastermind', 'mentor-match', 'live-events'],
     coaching: ['ai-roleplay', 'scenario-sim', 'feedback-gym', 'practice-history', 'progress-analytics', 'roi-report']
