@@ -1,9 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { ToggleLeft, ToggleRight, FlaskConical, ArrowUp, ArrowDown } from 'lucide-react';
+import { ToggleLeft, ToggleRight, FlaskConical, ArrowUp, ArrowDown, Edit3 } from 'lucide-react';
 import { useFeatures } from '../../providers/FeatureProvider';
+import WidgetEditorModal from './WidgetEditorModal';
 
 const FeatureManager = () => {
   const { features, toggleFeature, updateFeatureOrder, getFeatureOrder, isFeatureEnabled } = useFeatures();
+  const [editingWidget, setEditingWidget] = useState(null);
+
   
   // Define the static metadata for features
   const FEATURE_METADATA = {
@@ -102,8 +105,8 @@ const FeatureManager = () => {
     <div className="space-y-8">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-xl font-bold text-corporate-navy font-serif">Feature Lab</h2>
-          <p className="text-gray-500 text-sm">Toggle and reorder features for each module.</p>
+          <h2 className="text-xl font-bold text-corporate-navy font-serif">Widget Lab</h2>
+          <p className="text-gray-500 text-sm">Manage, design, and deploy widgets for each module.</p>
         </div>
         <div className="p-3 bg-purple-100 text-purple-600 rounded-lg">
           <FlaskConical className="w-6 h-6" />
@@ -144,7 +147,20 @@ const FeatureManager = () => {
 
                       <div>
                         <div className="flex items-center gap-3">
-                          <h4 className="font-bold text-corporate-navy text-lg">{meta.name}</h4>
+                          <h4 
+                            className="font-bold text-corporate-navy text-lg cursor-pointer hover:text-teal-600 hover:underline decoration-dotted underline-offset-4"
+                            onClick={() => setEditingWidget({ id: featureId, name: meta.name })}
+                            title="Click to edit widget design"
+                          >
+                            {meta.name}
+                          </h4>
+                          <button 
+                            onClick={() => setEditingWidget({ id: featureId, name: meta.name })}
+                            className="p-1 text-slate-400 hover:text-teal-600 hover:bg-teal-50 rounded-full transition-colors"
+                            title="Edit Widget Design"
+                          >
+                            <Edit3 className="w-4 h-4" />
+                          </button>
                           {isEnabled ? (
                             <span className="px-2 py-0.5 bg-green-100 text-green-800 text-xs font-bold rounded-full uppercase">Active</span>
                           ) : (
@@ -179,6 +195,16 @@ const FeatureManager = () => {
       <div className="bg-yellow-50 border border-yellow-200 p-4 rounded-lg text-sm text-yellow-800">
         <strong>Note:</strong> Feature toggles and order are persisted globally via Firestore. Changes affect all users immediately.
       </div>
+
+      {/* Widget Editor Modal */}
+      {editingWidget && (
+        <WidgetEditorModal
+          isOpen={!!editingWidget}
+          onClose={() => setEditingWidget(null)}
+          widgetId={editingWidget.id}
+          widgetName={editingWidget.name}
+        />
+      )}
     </div>
   );
 };

@@ -87,7 +87,7 @@ const AdminPortal = () => {
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { id: 'diagnostics', label: 'Diagnostics', icon: Activity },
     { id: 'content', label: 'Content Mgmt', icon: Database },
-    { id: 'features', label: 'Feature Lab', icon: FlaskConical },
+    { id: 'features', label: 'Widget Lab', icon: FlaskConical },
     // { id: 'users', label: 'User Mgmt', icon: Users }, // Future
   ];
 
