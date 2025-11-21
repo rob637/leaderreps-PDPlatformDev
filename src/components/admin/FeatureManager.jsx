@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { 
   ToggleLeft, ToggleRight, FlaskConical, ArrowUp, ArrowDown, Edit3, Plus, Trash2, RefreshCw, Save, Flame, Bell, Target, Calendar, Moon, BookOpen, Play, Book, Video, FileText, Users, MessageSquare, UserPlus, Search, Radio, History, BarChart2, Bot, Cpu, Dumbbell, TrendingUp,
-  CheckSquare, Square, X, Trophy, ChevronRight, ArrowRight, Loader, Eye, EyeOff
+  CheckSquare, Square, X, Trophy, ChevronRight, ArrowRight, Loader, Eye, EyeOff, Settings
 } from 'lucide-react';
 import { useFeatures } from '../../providers/FeatureProvider';
 import { useWidgetEditor } from '../../providers/WidgetEditorProvider';
@@ -199,6 +199,8 @@ const FeatureManager = () => {
   const [isAdding, setIsAdding] = useState(false);
   const [newWidget, setNewWidget] = useState({ name: '', id: '', group: 'dashboard', description: '' });
   const [activeGroup, setActiveGroup] = useState('dashboard');
+  const [expandedSettingsId, setExpandedSettingsId] = useState(null);
+  const [newOption, setNewOption] = useState({ key: '', value: '' });
 
   const initialGroups = {
     header: ['dashboard-header'],
@@ -261,6 +263,7 @@ const FeatureManager = () => {
       enabled: dbData ? dbData.enabled : true, // Default to enabled if not in DB
       order: dbData?.order ?? 999,
       code: dbData?.code || templateCode,
+      options: dbData?.options || {},
       isUnsaved: !dbData, // Flag to indicate it's using default/template
       originalIndex: index // Tie-breaker for stable sorting
     };
@@ -340,6 +343,24 @@ const FeatureManager = () => {
     currentList.forEach((item, idx) => {
         saveFeature(item.id, { ...features[item.id], order: idx });
     });
+  };
+
+  const handleSaveOption = async (widgetId, key, value) => {
+    const currentFeature = features[widgetId];
+    if (!currentFeature) return;
+
+    const newOptions = { ...currentFeature.options, [key]: value };
+    await saveFeature(widgetId, { ...currentFeature, options: newOptions });
+    setNewOption({ key: '', value: '' });
+  };
+
+  const handleDeleteOption = async (widgetId, key) => {
+    const currentFeature = features[widgetId];
+    if (!currentFeature) return;
+
+    const newOptions = { ...currentFeature.options };
+    delete newOptions[key];
+    await saveFeature(widgetId, { ...currentFeature, options: newOptions });
   };
 
   const handleToggleAll = async () => {
@@ -438,6 +459,13 @@ const FeatureManager = () => {
             <Plus className="w-4 h-4 mr-2" />
             Add Widget
           </button>
+          <button 
+            onClick={handleToggleAll} 
+            className="flex items-center px-3 py-2 text-sm sm:text-base font-semibold rounded-lg bg-purple-600 text-white shadow-md hover:bg-purple-700 transition-all ml-2"
+          >
+            <ToggleRight className="w-4 h-4 mr-2" />
+            Toggle All
+          </button>
         </div>
 
         {/* Features List */}
@@ -481,10 +509,22 @@ const FeatureManager = () => {
                   </button>
                   {/* Edit Button */}
                   <button 
-                    onClick={() => openEditor(feature.id)} 
+                    onClick={() => openEditor({
+                      widgetId: feature.id,
+                      widgetName: feature.name,
+                      scope: REAL_SCOPE,
+                      initialCode: feature.code
+                    })} 
                     className="p-2 rounded-full bg-blue-100 text-blue-500 hover:bg-blue-200 transition-all"
                   >
                     <Edit3 className="w-4 h-4" />
+                  </button>
+                  {/* Settings Button */}
+                  <button 
+                    onClick={() => setExpandedSettingsId(expandedSettingsId === feature.id ? null : feature.id)} 
+                    className={`p-2 rounded-full transition-all ${expandedSettingsId === feature.id ? 'bg-gray-300 text-gray-700' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}`}
+                  >
+                    <Settings className="w-4 h-4" />
                   </button>
                   {/* Delete Button */}
                   <button 
@@ -495,14 +535,66 @@ const FeatureManager = () => {
                   </button>
                 </div>
               </div>
-              {/* Feature Content (Preview) */}
-              <div className="text-sm text-gray-700">
-                {feature.code ? (
-                  <div dangerouslySetInnerHTML={{ __html: feature.code }} />
-                ) : (
-                  <p className="italic text-gray-400">No preview available. This widget may require additional configuration.</p>
-                )}
-              </div>
+              
+              {/* Settings Panel */}
+              {expandedSettingsId === feature.id && (
+                <div className="mt-4 p-4 bg-gray-50 rounded-lg border border-gray-200 animate-in fade-in slide-in-from-top-2">
+                  <h4 className="text-sm font-bold text-gray-700 mb-3 flex items-center gap-2">
+                    <Settings className="w-4 h-4" /> Widget Options
+                  </h4>
+                  
+                  {/* Existing Options */}
+                  <div className="space-y-2 mb-4">
+                    {feature.options && Object.entries(feature.options).length > 0 ? (
+                      Object.entries(feature.options).map(([key, value]) => (
+                        <div key={key} className="flex items-center gap-2 bg-white p-2 rounded border border-gray-200">
+                          <span className="font-mono text-xs font-bold text-blue-600 bg-blue-50 px-2 py-1 rounded">{key}</span>
+                          <span className="text-sm text-gray-600 flex-1 truncate">{String(value)}</span>
+                          <button 
+                            onClick={() => handleDeleteOption(feature.id, key)}
+                            className="p-1 text-red-400 hover:text-red-600 hover:bg-red-50 rounded"
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
+                        </div>
+                      ))
+                    ) : (
+                      <p className="text-xs text-gray-400 italic">No options configured.</p>
+                    )}
+                  </div>
+
+                  {/* Add New Option */}
+                  <div className="flex gap-2 items-end">
+                    <div className="flex-1">
+                      <label className="block text-xs font-bold text-gray-500 mb-1">Key</label>
+                      <input 
+                        type="text" 
+                        placeholder="e.g. scrollMode"
+                        className="w-full p-2 text-sm border rounded focus:ring-2 focus:ring-blue-500 outline-none"
+                        value={newOption.key}
+                        onChange={(e) => setNewOption({ ...newOption, key: e.target.value })}
+                      />
+                    </div>
+                    <div className="flex-1">
+                      <label className="block text-xs font-bold text-gray-500 mb-1">Value</label>
+                      <input 
+                        type="text" 
+                        placeholder="e.g. true"
+                        className="w-full p-2 text-sm border rounded focus:ring-2 focus:ring-blue-500 outline-none"
+                        value={newOption.value}
+                        onChange={(e) => setNewOption({ ...newOption, value: e.target.value })}
+                      />
+                    </div>
+                    <button 
+                      onClick={() => handleSaveOption(feature.id, newOption.key, newOption.value)}
+                      disabled={!newOption.key || !newOption.value}
+                      className="px-3 py-2 bg-blue-600 text-white rounded text-sm font-bold hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      Add
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           ))}
         </div>
