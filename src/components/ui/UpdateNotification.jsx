@@ -1,7 +1,8 @@
 // src/components/ui/UpdateNotification.jsx
 // PWA Update Notification - Prompts users when new version is available
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { RefreshCw, X, AlertCircle } from 'lucide-react';
+import { useRegisterSW } from 'virtual:pwa-register/react';
 
 const COLORS = {
   NAVY: '#002E47',
@@ -11,73 +12,30 @@ const COLORS = {
 };
 
 const UpdateNotification = () => {
-  const [updateAvailable, setUpdateAvailable] = useState(false);
-  const [registration, setRegistration] = useState(null);
+  const {
+    needRefresh: [needRefresh, setNeedRefresh],
+    updateServiceWorker,
+  } = useRegisterSW({
+    onRegistered(r) {
+      console.log('✅ [PWA] Service Worker Registered');
+    },
+    onRegisterError(error) {
+      console.error('❌ [PWA] Service Worker Registration Error:', error);
+    },
+  });
+
   const [isUpdating, setIsUpdating] = useState(false);
 
-  useEffect(() => {
-    // Listen for service worker updates
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.ready.then((reg) => {
-        setRegistration(reg);
-
-        // Check for updates periodically (every 60 minutes)
-        const interval = setInterval(() => {
-          reg.update();
-        }, 60 * 60 * 1000);
-
-        // Listen for new service worker waiting
-        reg.addEventListener('updatefound', () => {
-          const newWorker = reg.installing;
-          
-          newWorker?.addEventListener('statechange', () => {
-            if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-              // New service worker available
-              setUpdateAvailable(true);
-              console.log('🔄 [UpdateNotification] New version available');
-            }
-          });
-        });
-
-        // Check if there's already a waiting service worker
-        if (reg.waiting) {
-          setUpdateAvailable(true);
-        }
-
-        return () => clearInterval(interval);
-      });
-
-      // Listen for controller change (service worker activated)
-      navigator.serviceWorker.addEventListener('controllerchange', () => {
-        console.log('🔄 [UpdateNotification] Controller changed, reloading...');
-        window.location.reload();
-      });
-    }
-  }, []);
-
   const handleUpdate = async () => {
-    if (!registration?.waiting) return;
-
     setIsUpdating(true);
-
-    // Tell the waiting service worker to skip waiting
-    registration.waiting.postMessage({ type: 'SKIP_WAITING' });
-
-    // The controllerchange event will trigger a reload
+    await updateServiceWorker(true);
   };
 
   const handleDismiss = () => {
-    setUpdateAvailable(false);
-    // Store dismissal in sessionStorage so it doesn't show again this session
-    sessionStorage.setItem('update-dismissed', 'true');
+    setNeedRefresh(false);
   };
 
-  // Don't show if dismissed this session
-  if (sessionStorage.getItem('update-dismissed') === 'true') {
-    return null;
-  }
-
-  if (!updateAvailable) {
+  if (!needRefresh) {
     return null;
   }
 

@@ -33,19 +33,6 @@ const initWebVitals = () => {
 };
 // === END CORE WEB VITALS MONITORING ===
 
-// === PWA SERVICE WORKER REGISTRATION ===
-const registerServiceWorker = () => {
-  // Check if Service Workers are supported by the browser
-  if ('serviceWorker' in navigator) {
-    // Vite PWA plugin generates the worker as /sw.js in production build
-    navigator.serviceWorker.register('/sw.js', { scope: '/' })
-      .catch((error) => {
-        console.error('SW registration failed:', error);
-      });
-  }
-};
-// === END PWA SERVICE WORKER REGISTRATION ===
-
 const App = lazy(() => import('./App'));
 
 const container = document.getElementById('root');
@@ -65,8 +52,3 @@ root.render(
 
 // Initialize Web Vitals monitoring
 initWebVitals();
-
-// Register the service worker in production
-if (process.env.NODE_ENV === 'production') {
-  registerServiceWorker();
-}
