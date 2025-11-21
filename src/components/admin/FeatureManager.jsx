@@ -205,38 +205,90 @@ const FeatureManager = () => {
   };
 
   const getInputDescriptionsForWidget = (widgetId) => {
-    if (widgetId === 'dashboard-header') {
-      return {
-        'System Data (LOVs)': {
-          'allQuotes': 'List of all system quotes available for display.',
-          'dailyQuote': 'The specific quote selected for today.'
-        },
-        'Widget Options': {
-          'options': 'Custom configuration for this widget (e.g. scrollMode).'
-        }
-      };
-    }
-    return INPUT_DESCRIPTIONS;
-  };
+    const common = {
+      'Core': {
+        'user': 'Current user profile.',
+        'navigate': 'Navigation function.',
+        'sdk': 'Widget SDK.'
+      }
+    };
 
-  const INPUT_DESCRIPTIONS = {
-    'System Data (LOVs)': {
-      'allQuotes': 'List of all system quotes available for display.',
-      'dailyQuote': 'The specific quote selected for today.',
-      'globalMetadata': 'Global configuration and lists (e.g. Rep Library).'
-    },
-    'User State': {
-      'user': 'Current user profile information.',
-      'greeting': 'Personalized greeting string.',
-      'scorecard': 'Current daily progress stats.',
-      'streakCount': 'Current streak count.'
-    },
-    'Widget Options': {
-      'options': 'Custom configuration for this widget (e.g. scrollMode).'
-    },
-    'Actions': {
-      'navigate': 'Function to navigate to other screens.',
-      'sdk': 'Widget SDK for advanced interactions.'
+    switch (widgetId) {
+      case 'dashboard-header':
+        return {
+          ...common,
+          'Quotes Data': {
+            'allQuotes': 'List of system quotes.',
+            'dailyQuote': 'Selected quote for today.'
+          },
+          'Options': { 'options': 'Widget configuration.' }
+        };
+      case 'weekly-focus':
+        return {
+          ...common,
+          'Development Plan': {
+            'weeklyFocus': 'Current focus area (Coming Soon).'
+          }
+        };
+      case 'win-the-day':
+        return {
+          ...common,
+          'User Input': {
+            'morningWIN': 'Top priority (User Entered).',
+            'otherTasks': 'Secondary tasks.'
+          },
+          'Output': {
+            'Locker': 'Saves to Win History.'
+          }
+        };
+      case 'pm-bookend':
+        return {
+          ...common,
+          'User Input': {
+            'reflectionGood': 'What went well.',
+            'reflectionBetter': 'What needs work.'
+          },
+          'Output': {
+            'Locker': 'Saves to Reflection History.'
+          }
+        };
+      case 'welcome-message':
+        return {
+            ...common,
+            'User State': { 'greeting': 'Personalized greeting.' }
+        };
+      case 'identity-builder':
+        return {
+            ...common,
+            'User State': { 
+                'hasLIS': 'True if identity statement is set.',
+                'lisRead': 'True if read today.'
+            },
+            'Actions': { 'setIsAnchorModalOpen': 'Open editor modal.' }
+        };
+      case 'habit-stack':
+        return {
+            ...common,
+            'Daily Reps': {
+                'dailyRepName': 'Name of today\'s target rep.',
+                'dailyRepCompleted': 'Completion status.'
+            }
+        };
+      case 'scorecard':
+        return {
+            ...common,
+            'Stats': {
+                'scorecard': 'Daily progress stats (reps/wins).',
+                'streakCount': 'Current streak.'
+            }
+        };
+      default:
+        return {
+          ...common,
+          'State': {
+             'globalMetadata': 'Global configuration.'
+          }
+        };
     }
   };
 
@@ -247,8 +299,7 @@ const FeatureManager = () => {
   const [newOption, setNewOption] = useState({ key: '', value: '' });
 
   const initialGroups = {
-    header: ['dashboard-header'],
-    dashboard: ['identity-builder', 'habit-stack', 'win-the-day', 'gamification', 'exec-summary', 'calendar-sync', 'weekly-focus', 'notifications', 'scorecard', 'pm-bookend'],
+    dashboard: ['dashboard-header', 'welcome-message', 'identity-builder', 'habit-stack', 'win-the-day', 'gamification', 'exec-summary', 'calendar-sync', 'weekly-focus', 'notifications', 'scorecard', 'pm-bookend'],
     'development-plan': ['dev-plan-header', 'dev-plan-stats', 'dev-plan-actions', 'dev-plan-focus-areas', 'dev-plan-goal'],
     content: ['course-library', 'reading-hub', 'leadership-videos', 'strat-templates'],
     community: ['community-feed', 'my-discussions', 'mastermind', 'mentor-match', 'live-events'],
@@ -258,7 +309,6 @@ const FeatureManager = () => {
 
   // Group features dynamically
   const groups = {
-    header: [],
     dashboard: [],
     'development-plan': [],
     content: [],
@@ -287,11 +337,10 @@ const FeatureManager = () => {
     // Determine group
     let group = 'dashboard';
     if (dbData && dbData.group) {
-      group = dbData.group;
+      group = dbData.group === 'header' ? 'dashboard' : dbData.group; // Migrate header to dashboard
     } else {
       // Fallback to initialGroups mapping
-      if (initialGroups.header.includes(id)) group = 'header';
-      else if (initialGroups['development-plan'].includes(id)) group = 'development-plan';
+      if (initialGroups['development-plan'].includes(id)) group = 'development-plan';
       else if (initialGroups.content.includes(id)) group = 'content';
       else if (initialGroups.community.includes(id)) group = 'community';
       else if (initialGroups.coaching.includes(id)) group = 'coaching';
@@ -337,7 +386,6 @@ const FeatureManager = () => {
            description: meta.description,
            code: WIDGET_TEMPLATES[id] || '',
            group: initialGroups.dashboard.includes(id) ? 'dashboard' : 
-                  initialGroups.header.includes(id) ? 'header' :
                   initialGroups.content.includes(id) ? 'content' :
                   initialGroups.community.includes(id) ? 'community' : 
                   initialGroups.coaching.includes(id) ? 'coaching' : 
@@ -376,6 +424,13 @@ const FeatureManager = () => {
 
   const handleMove = (groupKey, index, direction) => {
     const currentList = [...groups[groupKey]];
+    
+    // Prevent moving the first item if it's dashboard-header
+    if (currentList[index].id === 'dashboard-header') return;
+    
+    // Prevent moving an item UP if the item above is dashboard-header
+    if (direction === 'up' && index > 0 && currentList[index-1].id === 'dashboard-header') return;
+
     if (direction === 'up' && index > 0) {
       [currentList[index], currentList[index - 1]] = [currentList[index - 1], currentList[index]];
     } else if (direction === 'down' && index < currentList.length - 1) {
@@ -440,7 +495,6 @@ const FeatureManager = () => {
   };
 
   const groupTitles = {
-    header: 'Header',
     dashboard: 'Dashboard',
     'development-plan': 'Development Plan',
     content: 'Content',
@@ -540,14 +594,14 @@ const FeatureManager = () => {
                   <div className="flex gap-2">
                     <button 
                       onClick={() => handleMove(activeGroup, index, 'up')} 
-                      disabled={index === 0}
+                      disabled={index === 0 || feature.id === 'dashboard-header' || (index > 0 && groups[activeGroup][index-1].id === 'dashboard-header')}
                       className="p-2 rounded-full bg-gray-100 text-gray-500 hover:bg-gray-200 transition-all disabled:opacity-50"
                     >
                       <ArrowUp className="w-4 h-4" />
                     </button>
                     <button 
                       onClick={() => handleMove(activeGroup, index, 'down')} 
-                      disabled={index === (groups[activeGroup].length - 1)}
+                      disabled={index === (groups[activeGroup].length - 1) || feature.id === 'dashboard-header'}
                       className="p-2 rounded-full bg-gray-100 text-gray-500 hover:bg-gray-200 transition-all disabled:opacity-50"
                     >
                       <ArrowDown className="w-4 h-4" />

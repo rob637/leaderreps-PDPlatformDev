@@ -1014,7 +1014,7 @@ export const WIDGET_TEMPLATES = {
 
   return (
     <>
-    <header className="overflow-hidden bg-[#002E47] text-white border-b border-teal-500/30">
+    <header className="overflow-hidden bg-[#002E47] text-white border-b border-teal-500/30 rounded-2xl mb-6 shadow-lg">
       {isScrolling ? (
         <div className="relative w-full overflow-hidden py-3 group">
           <div className="animate-marquee whitespace-nowrap inline-block group-hover:[animation-play-state:paused]">
@@ -1031,12 +1031,12 @@ export const WIDGET_TEMPLATES = {
           </div>
         </div>
       ) : (
-        <div className="py-3 px-6 text-center">
+        <div className="py-4 px-6 text-center">
           <p className="text-lg italic font-medium text-white/90">
             "{current.text}"
           </p>
           {current.author && (
-            <p className="text-xs text-teal-400 font-bold uppercase tracking-wider mt-1">
+            <p className="text-xs text-teal-400 font-bold uppercase tracking-wider mt-2">
               — {current.author}
             </p>
           )}
@@ -1059,11 +1059,22 @@ export const WIDGET_TEMPLATES = {
 
 render(<DashboardHeader />);
     `,
+    'welcome-message': `
+<div className="mb-6">
+  <h1 className="text-3xl sm:text-4xl font-bold text-[#002E47] mb-2">
+    {greeting || 'Welcome, Leader.'}
+  </h1>
+  <p className="text-slate-500 text-lg">
+    Ready to win the day? Let's get to work.
+  </p>
+</div>
+    `,
   };
 
 export const FEATURE_METADATA = {
     // Dashboard
     'dashboard-header': { name: 'Dashboard Header', description: 'Quotes' },
+    'welcome-message': { name: 'Welcome Message', description: 'Greeting and encouragement.' },
     'identity-builder': { name: 'Identity Builder', description: 'Grounding Rep & Identity Statement tools.' },
     'habit-stack': { name: 'Habit Stack', description: 'Daily Rep tracking and habit formation.' },
     'win-the-day': { name: 'AM Bookend (Win The Day)', description: 'AM Bookend 1-2-3 priority setting.' },

@@ -17,6 +17,7 @@ import WidgetRenderer from '../admin/WidgetRenderer';
 import { createWidgetSDK } from '../../services/WidgetSDK';
 
 const DASHBOARD_FEATURES = [
+  'dashboard-header', 'welcome-message',
   'gamification', 'exec-summary', 'weekly-focus', 
   'identity-builder', 'habit-stack', 'win-the-day', 
   'notifications', 'scorecard', 'pm-bookend'
@@ -259,6 +260,8 @@ const Dashboard4 = (props) => {
   };
 
   const renderers = {
+    'dashboard-header': () => <WidgetRenderer widgetId="dashboard-header" scope={scope} />,
+    'welcome-message': () => <WidgetRenderer widgetId="welcome-message" scope={scope} />,
     'gamification': () => <WidgetRenderer widgetId="gamification" scope={scope} />,
     'exec-summary': () => (
       <WidgetRenderer widgetId="exec-summary" scope={scope}>
@@ -695,13 +698,6 @@ const Dashboard4 = (props) => {
     <div className="min-h-screen bg-[#F5F5F7] p-4 sm:p-6 lg:p-8 font-sans text-slate-800">
       <div className="max-w-3xl mx-auto space-y-8">
         
-        {/* 1. HEADER */}
-        <header className="space-y-2">
-          <h1 className="text-3xl sm:text-4xl font-bold text-[#002E47]">
-            {greeting}
-          </h1>
-        </header>
-
         {/* DYNAMIC FEATURES */}
         {sortedFeatures.map(featureId => (
           <React.Fragment key={featureId}>
