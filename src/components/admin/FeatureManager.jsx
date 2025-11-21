@@ -194,6 +194,64 @@ const FeatureManager = () => {
     locker: 'Locker'
   };
 
+  const MOCK_SCOPE = {
+    user: { displayName: 'Admin User' },
+    greeting: 'Hey, Admin.',
+    dailyQuote: 'Leadership is not about being in charge. It is about taking care of those in your charge.|Simon Sinek',
+    allQuotes: [
+      'Leadership is not about being in charge. It is about taking care of those in your charge.|Simon Sinek',
+      'Innovation distinguishes between a leader and a follower.|Steve Jobs',
+      'A leader is one who knows the way, goes the way, and shows the way.|John C. Maxwell'
+    ],
+    weeklyFocus: 'Strategic Planning',
+    scorecard: {
+      reps: { done: 3, total: 5, pct: 60 },
+      win: { done: 1, total: 1, pct: 100 }
+    },
+    streakCount: 12,
+    dailyRepName: 'Active Listening',
+    dailyRepCompleted: false,
+    amWinCompleted: true,
+    morningWIN: 'Finish the Q3 Report',
+    otherTasks: [
+      { id: 1, text: 'Email the team', completed: false },
+      { id: 2, text: 'Review budget', completed: true }
+    ],
+    reflectionGood: 'Had a great meeting.',
+    reflectionBetter: 'Need to be more concise.',
+    isSavingBookend: false,
+    isSavingWIN: false,
+    isWinSaved: false,
+    hasLIS: true,
+    lisRead: false,
+    additionalCommitments: [],
+    navigate: (path) => console.log(`Navigating to: ${path}`),
+    handleHabitCheck: (key, val) => console.log(`Habit Check: ${key} = ${val}`),
+    setIsAnchorModalOpen: (val) => console.log(`Anchor Modal: ${val}`),
+    setIsCalendarModalOpen: (val) => console.log(`Calendar Modal: ${val}`),
+    handleToggleAdditionalRep: (id, status) => console.log(`Toggle Rep: ${id} -> ${status}`),
+    setMorningWIN: (val) => console.log(`Set WIN: ${val}`),
+    handleSaveWINWrapper: () => console.log('Save WIN'),
+    handleToggleWIN: () => console.log('Toggle WIN'),
+    handleToggleTask: (id) => console.log(`Toggle Task: ${id}`),
+    handleRemoveTask: (id) => console.log(`Remove Task: ${id}`),
+    setNewTaskText: (val) => console.log(`New Task Text: ${val}`),
+    handleAddOtherTask: () => console.log('Add Other Task'),
+    setReflectionGood: (val) => console.log(`Reflection Good: ${val}`),
+    setReflectionBetter: (val) => console.log(`Reflection Better: ${val}`),
+    handleSaveEveningBookend: () => console.log('Save Evening Bookend'),
+    // Mock Components
+    Checkbox: ({ checked, label, subLabel, onChange }) => (
+      <div onClick={onChange} className="p-2 border rounded cursor-pointer hover:bg-gray-50">
+        <div className="font-bold flex items-center gap-2">
+          <div className={`w-4 h-4 border ${checked ? 'bg-teal-500' : 'bg-white'}`} />
+          {label}
+        </div>
+        {subLabel && <div className="text-xs text-gray-500 ml-6">{subLabel}</div>}
+      </div>
+    )
+  };
+
   return (
     <div className="space-y-8">
       <div className="flex items-center justify-between">
@@ -330,7 +388,7 @@ const FeatureManager = () => {
                                 openEditor({
                                   widgetId: feature.id,
                                   widgetName: feature.name,
-                                  scope: {}, 
+                                  scope: MOCK_SCOPE, 
                                   initialCode: feature.code
                                 });
                             }}
@@ -344,7 +402,7 @@ const FeatureManager = () => {
                                 openEditor({
                                   widgetId: feature.id,
                                   widgetName: feature.name,
-                                  scope: {},
+                                  scope: MOCK_SCOPE,
                                   initialCode: feature.code
                                 });
                             }}
