@@ -770,6 +770,70 @@ const FeatureManager = () => {
     Download PDF
   </button>
 </div>
+    `,
+    'locker-wins-history': `
+<Card title="Win the Day History" icon={Trophy} className="border-t-4 border-corporate-orange">
+  <div className="space-y-4 max-h-96 overflow-y-auto">
+    {winsList.length > 0 ? (
+      winsList.map((win, index) => (
+        <div key={index} className="p-3 bg-white rounded-lg border border-slate-200 shadow-sm">
+          <div className="flex justify-between items-start mb-1">
+            <span className="font-bold text-[#002E47]">{win.text || "Untitled Win"}</span>
+            <span className="text-xs text-slate-400">{win.date || ''}</span>
+          </div>
+          <div className="flex gap-2 mt-2">
+            {win.completed ? (
+              <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full flex items-center gap-1">
+                <CheckCircle className="w-3 h-3" /> Won
+              </span>
+            ) : (
+              <span className="text-xs bg-slate-100 text-slate-500 px-2 py-1 rounded-full">
+                Pending
+              </span>
+            )}
+          </div>
+        </div>
+      ))
+    ) : (
+      <p className="text-slate-500 italic">No wins recorded yet.</p>
+    )}
+  </div>
+</Card>
+    `,
+    'locker-scorecard-history': `
+<Card title="Scorecard History" icon={Calendar} className="border-t-4 border-corporate-teal">
+   <div className="space-y-4 max-h-96 overflow-y-auto">
+    {commitmentHistory.length > 0 ? (
+      commitmentHistory.map((entry, index) => (
+        <div key={index} className="flex items-center justify-between p-3 bg-white rounded-lg border border-slate-200">
+          <span className="font-mono font-bold text-slate-600">{entry.date}</span>
+          <span className={\`font-bold \${entry.score && entry.score.includes('/') && entry.score.split('/')[0] === entry.score.split('/')[1] ? 'text-green-600' : 'text-orange-600'}\`}>
+            {entry.score}
+          </span>
+        </div>
+      ))
+    ) : (
+      <p className="text-slate-500 italic">No scorecard history available.</p>
+    )}
+  </div>
+</Card>
+    `,
+    'locker-latest-reflection': `
+<Card title="Latest Reflection" icon={BookOpen} className="lg:col-span-2 border-t-4 border-corporate-navy">
+  {eveningBookend.reflection ? (
+    <div className="bg-white p-6 rounded-xl border border-slate-200">
+      <h3 className="text-sm font-bold text-slate-400 uppercase mb-2">Evening Reflection</h3>
+      <p className="text-slate-700 whitespace-pre-wrap">{eveningBookend.reflection}</p>
+      {eveningBookend.timestamp && (
+         <p className="text-xs text-slate-400 mt-4 text-right">
+            Saved: {new Date(eveningBookend.timestamp).toLocaleString()}
+         </p>
+      )}
+    </div>
+  ) : (
+    <p className="text-slate-500 italic">No reflection recorded for today.</p>
+  )}
+</Card>
     `
   };
   
@@ -806,13 +870,19 @@ const FeatureManager = () => {
     'scenario-sim': { name: 'Scenario Sim', description: 'Complex leadership simulations and decision trees.' },
     'feedback-gym': { name: 'Feedback Gym', description: 'Instant feedback on communication style.' },
     'roi-report': { name: 'Executive ROI Report', description: 'Automated reports showing progress and value.' },
+
+    // Locker
+    'locker-wins-history': { name: 'Wins History', description: 'Log of daily wins and completions.' },
+    'locker-scorecard-history': { name: 'Scorecard History', description: 'Historical view of daily scorecard performance.' },
+    'locker-latest-reflection': { name: 'Latest Reflection', description: 'Most recent evening reflection entry.' },
   };
 
   const initialGroups = {
     dashboard: ['identity-builder', 'habit-stack', 'win-the-day', 'gamification', 'exec-summary', 'calendar-sync', 'weekly-focus', 'notifications', 'scorecard', 'pm-bookend'],
     content: ['course-library', 'reading-hub', 'leadership-videos', 'strat-templates'],
     community: ['community-feed', 'my-discussions', 'mastermind', 'mentor-match', 'live-events'],
-    coaching: ['practice-history', 'progress-analytics', 'ai-roleplay', 'scenario-sim', 'feedback-gym', 'roi-report']
+    coaching: ['practice-history', 'progress-analytics', 'ai-roleplay', 'scenario-sim', 'feedback-gym', 'roi-report'],
+    locker: ['locker-wins-history', 'locker-scorecard-history', 'locker-latest-reflection']
   };
 
   // Group features dynamically
@@ -820,7 +890,8 @@ const FeatureManager = () => {
     dashboard: [],
     content: [],
     community: [],
-    coaching: []
+    coaching: [],
+    locker: []
   };
 
   // Merge DB features with metadata for display
@@ -828,7 +899,8 @@ const FeatureManager = () => {
     const group = data.group || (initialGroups.dashboard.includes(id) ? 'dashboard' : 
                                  initialGroups.content.includes(id) ? 'content' :
                                  initialGroups.community.includes(id) ? 'community' : 
-                                 initialGroups.coaching.includes(id) ? 'coaching' : 'dashboard');
+                                 initialGroups.coaching.includes(id) ? 'coaching' : 
+                                 initialGroups.locker.includes(id) ? 'locker' : 'dashboard');
     
     const meta = FEATURE_METADATA[id] || {};
     
@@ -860,7 +932,9 @@ const FeatureManager = () => {
            code: WIDGET_TEMPLATES[id] || '',
            group: initialGroups.dashboard.includes(id) ? 'dashboard' : 
                   initialGroups.content.includes(id) ? 'content' :
-                  initialGroups.community.includes(id) ? 'community' : 'coaching',
+                  initialGroups.community.includes(id) ? 'community' : 
+                  initialGroups.coaching.includes(id) ? 'coaching' : 
+                  initialGroups.locker.includes(id) ? 'locker' : 'dashboard',
            enabled: true,
            order: 999
          });
@@ -907,7 +981,8 @@ const FeatureManager = () => {
     dashboard: 'Dashboard',
     content: 'Content',
     community: 'Community',
-    coaching: 'Coaching'
+    coaching: 'Coaching',
+    locker: 'Locker'
   };
 
   return (
@@ -960,6 +1035,7 @@ const FeatureManager = () => {
                     <option value="content">Content</option>
                     <option value="community">Community</option>
                     <option value="coaching">Coaching</option>
+                    <option value="locker">Locker</option>
                 </select>
                 <textarea 
                     className="w-full p-2 border rounded" 

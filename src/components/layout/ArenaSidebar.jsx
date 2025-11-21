@@ -97,7 +97,7 @@ const ArenaSidebar = ({ isOpen, toggle, currentScreen, navigate, onSignOut, user
                 <button
                   onClick={() => {
                     navigate(item.id);
-                    toggle();
+                    if (isOpen) toggle();
                   }}
                   className={`
                     w-full flex items-center gap-4 px-4 py-3 transition-colors relative bg-transparent border-none

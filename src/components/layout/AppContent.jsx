@@ -90,7 +90,7 @@ const AppContent = ({
   // Tier Simulation State (for development/testing)
   const [simulatedTier, setSimulatedTier] = useState('premium');
   
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   // Listen for developer mode changes
   useEffect(() => {
