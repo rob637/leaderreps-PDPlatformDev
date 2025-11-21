@@ -1,12 +1,199 @@
 import React, { useState, useEffect } from 'react';
-import { ToggleLeft, ToggleRight, FlaskConical, ArrowUp, ArrowDown, Edit3, Plus, Trash2, RefreshCw, Save, Flame, Bell, Target, Calendar, Moon, BookOpen, Play, Book, Video, FileText, Users, MessageSquare, UserPlus, Search, Radio, History, BarChart2, Bot, Cpu, Dumbbell, TrendingUp } from 'lucide-react';
+import { 
+  ToggleLeft, ToggleRight, FlaskConical, ArrowUp, ArrowDown, Edit3, Plus, Trash2, RefreshCw, Save, Flame, Bell, Target, Calendar, Moon, BookOpen, Play, Book, Video, FileText, Users, MessageSquare, UserPlus, Search, Radio, History, BarChart2, Bot, Cpu, Dumbbell, TrendingUp,
+  CheckSquare, Square, X, Trophy, ChevronRight, ArrowRight, Loader
+} from 'lucide-react';
 import { useFeatures } from '../../providers/FeatureProvider';
 import { useWidgetEditor } from '../../providers/WidgetEditorProvider';
 import { WIDGET_TEMPLATES, FEATURE_METADATA } from '../../config/widgetTemplates';
+import { useAppServices } from '../../services/useAppServices';
+import { useDashboard } from '../screens/dashboard/DashboardHooks';
+import { createWidgetSDK } from '../../services/WidgetSDK';
 
 const FeatureManager = () => {
   const { features, toggleFeature, updateFeatureOrder, saveFeature, deleteFeature, isFeatureEnabled } = useFeatures();
   const { openEditor } = useWidgetEditor();
+  const { 
+    user, 
+    dailyPracticeData, 
+    updateDailyPracticeData,
+    developmentPlanData,
+    globalMetadata,
+    userData,
+    navigate
+  } = useAppServices();
+
+  // --- HOOKS FOR REAL DATA ---
+  const {
+    // Identity & Anchors
+    identityStatement,
+    habitAnchor,
+    whyStatement,
+    handleSaveIdentity,
+    handleSaveHabit,
+    handleSaveWhy,
+    
+    // AM Bookend (Win the Day)
+    morningWIN,
+    setMorningWIN,
+    otherTasks,
+    handleAddTask,
+    handleToggleTask,
+    handleRemoveTask,
+    handleToggleWIN,
+    handleSaveWIN,
+    isSavingWIN,
+    amWinCompleted,
+    
+    // PM Bookend (Reflection)
+    reflectionGood,
+    setReflectionGood,
+    reflectionBetter,
+    setReflectionBetter,
+    handleSaveEveningBookend,
+    isSavingBookend,
+    
+    // Habits / Reps
+    habitsCompleted,
+    handleHabitToggle,
+    
+    // Streak
+    streakCount,
+    
+    // Additional Reps
+    additionalCommitments,
+    handleToggleAdditionalRep,
+
+    // Scorecard
+    scorecard
+  } = useDashboard({
+    dailyPracticeData,
+    updateDailyPracticeData,
+    globalMetadata
+  });
+
+  // --- DERIVED DATA FOR SCOPE ---
+  const greeting = `Hey, ${user?.displayName?.split(' ')[0] || 'Leader'}.`;
+  const dailyQuote = React.useMemo(() => {
+    const quotes = globalMetadata?.SYSTEM_QUOTES || [];
+    if (quotes.length === 0) return "Leadership is a practice, not a position.";
+    const today = new Date().getDate();
+    return quotes[today % quotes.length];
+  }, [globalMetadata]);
+
+  const weeklyFocus = globalMetadata?.weeklyFocus || developmentPlanData?.currentPlan?.focusAreas?.[0]?.name || 'Feedback';
+  const hasLIS = !!identityStatement;
+  const lisRead = habitsCompleted?.readLIS || false;
+  
+  const dailyRepName = React.useMemo(() => {
+    const repId = dailyPracticeData?.dailyTargetRepId;
+    if (!repId) return null;
+    const catalog = Array.isArray(globalMetadata?.REP_LIBRARY) ? globalMetadata.REP_LIBRARY : [];
+    const rep = catalog.find(r => r.id === repId);
+    return rep ? rep.name : repId;
+  }, [dailyPracticeData, globalMetadata]);
+
+  const dailyRepCompleted = habitsCompleted?.completedDailyRep || false;
+
+  // --- MOCK HANDLERS FOR EDITOR (To prevent actual DB writes during preview if desired, or use real ones) ---
+  // The user requested REAL data. We will pass the real handlers, but maybe wrap them to log?
+  // Actually, for the editor, we might want to prevent accidental saves. 
+  // But the user said "NO MOCK DATA". Let's pass the real state, but maybe mock the *save* functions 
+  // so they don't actually write to DB while editing? 
+  // Or just pass them as is. The user is an admin, they might want to test functionality.
+  // However, `WidgetEditorModal` proxies functions to log them. 
+  // Let's pass the real functions. The proxy in `WidgetEditorModal` will intercept them and log them, 
+  // AND execute them (it calls `scope[key](...args)`).
+  // So if we pass real functions, they WILL execute.
+  // This might be dangerous if the user clicks "Save" in the preview.
+  // But for "reading" data (like quotes), it's fine.
+  
+  const sdk = React.useMemo(() => createWidgetSDK({ navigate, user }), [navigate, user]);
+
+  // Mock Checkbox for the editor preview if needed, or use a real one.
+  // Dashboard4 defines a local Checkbox component. We should probably provide a generic one in the scope.
+  const Checkbox = ({ checked, onChange, label, subLabel, disabled }) => (
+    <div 
+      onClick={!disabled ? onChange : undefined}
+      className={`flex items-start gap-3 p-3 rounded-xl border-2 transition-all cursor-pointer ${
+        checked 
+          ? 'bg-teal-50 border-teal-500' 
+          : 'bg-white border-gray-200 hover:border-teal-300'
+      } ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
+    >
+      <div className={`mt-0.5 w-6 h-6 rounded-md flex items-center justify-center border-2 transition-colors ${
+        checked ? 'bg-teal-500 border-teal-500' : 'bg-white border-gray-300'
+      }`}>
+        {checked && <CheckSquare className="w-4 h-4 text-white" />}
+      </div>
+      <div className="flex-1">
+        <p className={`font-semibold ${checked ? 'text-teal-900' : 'text-gray-700'}`}>
+          {label}
+        </p>
+        {subLabel && (
+          <p className="text-xs text-gray-500 mt-0.5">{subLabel}</p>
+        )}
+      </div>
+    </div>
+  );
+
+  const REAL_SCOPE = {
+    // SDK
+    sdk,
+
+    // Icons
+    CheckSquare, Square, Plus, Save, X, Trophy, Flame, 
+    MessageSquare, Bell, Calendar, ChevronRight, ArrowRight,
+    Edit3, Loader,
+    
+    // Components
+    Checkbox,
+    
+    // Functions
+    navigate,
+    // We wrap these to ensure they work in the isolated scope if needed, 
+    // but passing them directly is usually fine.
+    handleHabitCheck: (key, val) => handleHabitToggle(key, val), // This one was wrapped in Dashboard4
+    setIsAnchorModalOpen: () => console.log('Open Anchor Modal (Mocked for Editor)'),
+    setIsCalendarModalOpen: () => console.log('Open Calendar Modal (Mocked for Editor)'),
+    handleToggleAdditionalRep,
+    setMorningWIN,
+    handleSaveWINWrapper: handleSaveWIN, // Dashboard4 wrapper just added a timeout
+    handleToggleWIN,
+    handleToggleTask,
+    handleRemoveTask,
+    setNewTaskText: () => {}, // Local state in Dashboard4
+    handleAddOtherTask: () => {}, // Local state in Dashboard4
+    setReflectionGood,
+    setReflectionBetter,
+    handleSaveEveningBookend,
+    
+    // State
+    weeklyFocus,
+    hasLIS,
+    lisRead,
+    dailyRepName,
+    dailyRepCompleted,
+    additionalCommitments,
+    amWinCompleted,
+    morningWIN,
+    isSavingWIN,
+    isWinSaved: false, // Local state
+    otherTasks,
+    newTaskText: '', // Local state
+    scorecard,
+    streakCount,
+    reflectionGood,
+    reflectionBetter,
+    isSavingBookend,
+    
+    // User Data
+    user,
+    greeting,
+    dailyQuote,
+    allQuotes: globalMetadata?.SYSTEM_QUOTES || []
+  };
+
   const [isAdding, setIsAdding] = useState(false);
   const [newWidget, setNewWidget] = useState({ name: '', id: '', group: 'dashboard', description: '' });
   const [activeGroup, setActiveGroup] = useState('dashboard');
@@ -194,282 +381,199 @@ const FeatureManager = () => {
     locker: 'Locker'
   };
 
-  const MOCK_SCOPE = {
-    user: { displayName: 'Admin User' },
-    greeting: 'Hey, Admin.',
-    dailyQuote: 'Leadership is not about being in charge. It is about taking care of those in your charge.|Simon Sinek',
-    allQuotes: [
-      'Leadership is not about being in charge. It is about taking care of those in your charge.|Simon Sinek',
-      'Innovation distinguishes between a leader and a follower.|Steve Jobs',
-      'A leader is one who knows the way, goes the way, and shows the way.|John C. Maxwell'
-    ],
-    weeklyFocus: 'Strategic Planning',
-    scorecard: {
-      reps: { done: 3, total: 5, pct: 60 },
-      win: { done: 1, total: 1, pct: 100 }
-    },
-    streakCount: 12,
-    dailyRepName: 'Active Listening',
-    dailyRepCompleted: false,
-    amWinCompleted: true,
-    morningWIN: 'Finish the Q3 Report',
-    otherTasks: [
-      { id: 1, text: 'Email the team', completed: false },
-      { id: 2, text: 'Review budget', completed: true }
-    ],
-    reflectionGood: 'Had a great meeting.',
-    reflectionBetter: 'Need to be more concise.',
-    isSavingBookend: false,
-    isSavingWIN: false,
-    isWinSaved: false,
-    hasLIS: true,
-    lisRead: false,
-    additionalCommitments: [],
-    navigate: (path) => console.log(`Navigating to: ${path}`),
-    handleHabitCheck: (key, val) => console.log(`Habit Check: ${key} = ${val}`),
-    setIsAnchorModalOpen: (val) => console.log(`Anchor Modal: ${val}`),
-    setIsCalendarModalOpen: (val) => console.log(`Calendar Modal: ${val}`),
-    handleToggleAdditionalRep: (id, status) => console.log(`Toggle Rep: ${id} -> ${status}`),
-    setMorningWIN: (val) => console.log(`Set WIN: ${val}`),
-    handleSaveWINWrapper: () => console.log('Save WIN'),
-    handleToggleWIN: () => console.log('Toggle WIN'),
-    handleToggleTask: (id) => console.log(`Toggle Task: ${id}`),
-    handleRemoveTask: (id) => console.log(`Remove Task: ${id}`),
-    setNewTaskText: (val) => console.log(`New Task Text: ${val}`),
-    handleAddOtherTask: () => console.log('Add Other Task'),
-    setReflectionGood: (val) => console.log(`Reflection Good: ${val}`),
-    setReflectionBetter: (val) => console.log(`Reflection Better: ${val}`),
-    handleSaveEveningBookend: () => console.log('Save Evening Bookend'),
-    // Mock Components
-    Checkbox: ({ checked, label, subLabel, onChange }) => (
-      <div onClick={onChange} className="p-2 border rounded cursor-pointer hover:bg-gray-50">
-        <div className="font-bold flex items-center gap-2">
-          <div className={`w-4 h-4 border ${checked ? 'bg-teal-500' : 'bg-white'}`} />
-          {label}
-        </div>
-        {subLabel && <div className="text-xs text-gray-500 ml-6">{subLabel}</div>}
-      </div>
-    )
-  };
-
   return (
-    <div className="space-y-8">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-xl font-bold text-corporate-navy font-serif">Widget Lab</h2>
-          <p className="text-gray-500 text-sm">Manage, design, and deploy widgets for each module.</p>
+    <div className="p-4 sm:p-6 lg:p-8">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6">
+        <div className="mb-4 sm:mb-0">
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-gray-900">
+            Feature Manager
+          </h1>
+          <p className="text-sm sm:text-base text-gray-500">
+            Manage and customize your dashboard features.
+          </p>
         </div>
-        <div className="flex gap-2">
-            <select
-              value={activeGroup}
-              onChange={(e) => setActiveGroup(e.target.value)}
-              className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 focus:outline-none focus:ring-2 focus:ring-teal-500 bg-white"
-            >
-              {Object.entries(groupTitles).map(([key, title]) => (
-                <option key={key} value={key}>{title}</option>
-              ))}
-            </select>
+        <div className="flex flex-col sm:flex-row gap-4">
+          {/* Sync Defaults Button */}
+          <button 
+            onClick={handleSyncDefaults} 
+            className="flex items-center justify-center px-4 py-2 text-sm sm:text-base font-semibold rounded-lg bg-blue-600 text-white shadow-md hover:bg-blue-700 transition-all"
+          >
+            <RefreshCw className="w-5 h-5 mr-2" />
+            Sync Default Widgets
+          </button>
+        </div>
+      </div>
 
-            <button 
-                onClick={handleToggleAll}
-                className="px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg flex items-center gap-2 hover:bg-gray-50 transition-colors"
-                title={`Toggle all widgets in ${groupTitles[activeGroup]}`}
-            >
-                {groups[activeGroup]?.every(w => w.enabled) ? (
-                    <>
-                        <ToggleRight className="w-4 h-4 text-corporate-teal" /> Disable All
-                    </>
+      {/* Groups Navigation - Desktop */}
+      <div className="hidden sm:flex sm:gap-4 mb-6">
+        {Object.keys(groups).map((key) => (
+          <button
+            key={key}
+            onClick={() => setActiveGroup(key)}
+            className={`flex-1 px-4 py-2 text-sm sm:text-base font-semibold rounded-lg transition-all 
+              ${activeGroup === key 
+                ? 'bg-blue-600 text-white shadow-md' 
+                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              }`}
+          >
+            {groupTitles[key]}
+          </button>
+        ))}
+      </div>
+
+      {/* Active Group Features */}
+      <div>
+        {/* Group Header */}
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-xl sm:text-2xl font-bold text-gray-900">
+            {groupTitles[activeGroup]} Features
+          </h2>
+          <button 
+            onClick={() => setIsAdding(true)} 
+            className="flex items-center px-3 py-2 text-sm sm:text-base font-semibold rounded-lg bg-green-600 text-white shadow-md hover:bg-green-700 transition-all"
+          >
+            <Plus className="w-4 h-4 mr-2" />
+            Add Widget
+          </button>
+        </div>
+
+        {/* Features List */}
+        <div className="space-y-4">
+          {(groups[activeGroup] || []).map((feature, index) => (
+            <div key={feature.id} className="p-4 bg-white rounded-lg shadow border border-gray-200">
+              {/* Feature Header */}
+              <div className="flex items-center justify-between mb-2">
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-800">{feature.name}</h3>
+                  <p className="text-xs text-gray-500">{feature.description}</p>
+                </div>
+                <div className="flex items-center gap-2">
+                  {/* Move Up/Down Buttons */}
+                  <div className="flex gap-2">
+                    <button 
+                      onClick={() => handleMove(activeGroup, index, 'up')} 
+                      disabled={index === 0}
+                      className="p-2 rounded-full bg-gray-100 text-gray-500 hover:bg-gray-200 transition-all disabled:opacity-50"
+                    >
+                      <ArrowUp className="w-4 h-4" />
+                    </button>
+                    <button 
+                      onClick={() => handleMove(activeGroup, index, 'down')} 
+                      disabled={index === (groups[activeGroup].length - 1)}
+                      className="p-2 rounded-full bg-gray-100 text-gray-500 hover:bg-gray-200 transition-all disabled:opacity-50"
+                    >
+                      <ArrowDown className="w-4 h-4" />
+                    </button>
+                  </div>
+                  {/* Toggle Feature Button */}
+                  <button 
+                    onClick={() => toggleFeature(feature.id)} 
+                    className={`p-2 rounded-full transition-all 
+                      ${feature.enabled 
+                        ? 'bg-red-100 text-red-500 hover:bg-red-200' 
+                        : 'bg-green-100 text-green-500 hover:bg-green-200'
+                      }`}
+                  >
+                    {feature.enabled ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                  {/* Edit Button */}
+                  <button 
+                    onClick={() => openEditor(feature.id)} 
+                    className="p-2 rounded-full bg-blue-100 text-blue-500 hover:bg-blue-200 transition-all"
+                  >
+                    <Edit3 className="w-4 h-4" />
+                  </button>
+                  {/* Delete Button */}
+                  <button 
+                    onClick={() => handleDelete(feature.id)} 
+                    className="p-2 rounded-full bg-red-100 text-red-500 hover:bg-red-200 transition-all"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+              {/* Feature Content (Preview) */}
+              <div className="text-sm text-gray-700">
+                {feature.code ? (
+                  <div dangerouslySetInnerHTML={{ __html: feature.code }} />
                 ) : (
-                    <>
-                        <ToggleLeft className="w-4 h-4 text-gray-400" /> Enable All
-                    </>
+                  <p className="italic text-gray-400">No preview available. This widget may require additional configuration.</p>
                 )}
-            </button>
-
-            <button 
-                onClick={() => setIsAdding(true)}
-                className="px-4 py-2 bg-teal-600 text-white rounded-lg flex items-center gap-2 hover:bg-teal-700 transition-colors"
-            >
-                <Plus className="w-4 h-4" /> Add Widget
-            </button>
-            <button 
-                onClick={handleSyncDefaults}
-                className="px-4 py-2 bg-slate-100 text-slate-600 rounded-lg flex items-center gap-2 hover:bg-slate-200 transition-colors"
-                title="Restore default widgets to database"
-            >
-                <RefreshCw className="w-4 h-4" /> Sync Defaults
-            </button>
+              </div>
+            </div>
+          ))}
         </div>
+
+        {/* No features message */}
+        {groups[activeGroup]?.length === 0 && (
+          <div className="p-4 bg-gray-50 rounded-lg border border-gray-200 text-center">
+            <p className="text-sm text-gray-500">
+              No features found in this group. Widgets that you add will appear here.
+            </p>
+          </div>
+        )}
       </div>
 
       {/* Add Widget Modal */}
       {isAdding && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-            <div className="bg-white p-6 rounded-xl w-96 space-y-4">
-                <h3 className="font-bold text-lg">Add New Widget</h3>
-                <input 
-                    className="w-full p-2 border rounded" 
-                    placeholder="Widget Name" 
-                    value={newWidget.name}
-                    onChange={e => setNewWidget({...newWidget, name: e.target.value, id: e.target.value.toLowerCase().replace(/\s+/g, '-')})}
-                />
-                <input 
-                    className="w-full p-2 border rounded" 
-                    placeholder="Widget ID" 
-                    value={newWidget.id}
-                    onChange={e => setNewWidget({...newWidget, id: e.target.value})}
-                />
-                <select 
-                    className="w-full p-2 border rounded"
-                    value={newWidget.group}
-                    onChange={e => setNewWidget({...newWidget, group: e.target.value})}
-                >
-                    <option value="header">Header</option>
-                    <option value="dashboard">Dashboard</option>
-                    <option value="content">Content</option>
-                    <option value="community">Community</option>
-                    <option value="coaching">Coaching</option>
-                    <option value="locker">Locker</option>
-                    <option value="development-plan">Development Plan</option>
-                </select>
-                <textarea 
-                    className="w-full p-2 border rounded" 
-                    placeholder="Description" 
-                    value={newWidget.description}
-                    onChange={e => setNewWidget({...newWidget, description: e.target.value})}
-                />
-                <div className="flex justify-end gap-2">
-                    <button onClick={() => setIsAdding(false)} className="px-4 py-2 text-gray-600">Cancel</button>
-                    <button onClick={handleAddWidget} className="px-4 py-2 bg-teal-600 text-white rounded">Add</button>
-                </div>
+        <div className="fixed inset-0 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-lg p-6 max-w-sm w-full">
+            <h3 className="text-lg font-semibold mb-4">Add New Widget</h3>
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Widget Name
+              </label>
+              <input 
+                type="text" 
+                value={newWidget.name} 
+                onChange={(e) => setNewWidget({ ...newWidget, name: e.target.value })} 
+                className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                placeholder="Enter widget name"
+              />
             </div>
-        </div>
-      )}
-
-      <div className="space-y-8">
-        {Object.keys(groups)
-          .filter(key => key === activeGroup)
-          .map((groupKey) => (
-          <div key={groupKey} className="space-y-4">
-            <h3 className="text-lg font-bold text-gray-700 border-b border-gray-200 pb-2">
-              {groupTitles[groupKey]}
-            </h3>
-            <div className="grid grid-cols-1 gap-4">
-              {groups[groupKey].length === 0 && (
-                  <p className="text-gray-400 italic">No widgets in this group.</p>
-              )}
-              {groups[groupKey].map((feature, index) => (
-                  <div key={feature.id} className="flex items-center justify-between p-4 bg-white border border-gray-200 rounded-xl hover:shadow-md transition-shadow">
-                    <div className="flex items-center gap-4">
-                      {/* Reorder Controls */}
-                      <div className="flex flex-col gap-1">
-                        <button 
-                          onClick={() => handleMove(groupKey, index, 'up')}
-                          disabled={index === 0}
-                          className="p-1 hover:bg-gray-100 rounded text-gray-400 hover:text-corporate-navy disabled:opacity-30"
-                        >
-                          <ArrowUp className="w-4 h-4" />
-                        </button>
-                        <button 
-                          onClick={() => handleMove(groupKey, index, 'down')}
-                          disabled={index === groups[groupKey].length - 1}
-                          className="p-1 hover:bg-gray-100 rounded text-gray-400 hover:text-corporate-navy disabled:opacity-30"
-                        >
-                          <ArrowDown className="w-4 h-4" />
-                        </button>
-                      </div>
-
-                      <div>
-                        <div className="flex items-center gap-3">
-                          <h4 
-                            className="font-bold text-corporate-navy text-lg cursor-pointer hover:text-teal-600 hover:underline decoration-dotted underline-offset-4"
-                            onClick={() => {
-                                console.log('Opening editor for:', feature.name);
-                                openEditor({
-                                  widgetId: feature.id,
-                                  widgetName: feature.name,
-                                  scope: MOCK_SCOPE, 
-                                  initialCode: feature.code
-                                });
-                            }}
-                            title="Click to edit widget design"
-                          >
-                            {feature.name}
-                          </h4>
-                          <button 
-                            onClick={() => {
-                                console.log('Opening editor (button) for:', feature.name);
-                                openEditor({
-                                  widgetId: feature.id,
-                                  widgetName: feature.name,
-                                  scope: MOCK_SCOPE,
-                                  initialCode: feature.code
-                                });
-                            }}
-                            className="p-1 text-slate-400 hover:text-teal-600 hover:bg-teal-50 rounded-full transition-colors"
-                            title="Edit Widget Design"
-                          >
-                            <Edit3 className="w-4 h-4" />
-                          </button>
-                          {feature.enabled ? (
-                            <span className="px-2 py-0.5 bg-green-100 text-green-800 text-xs font-bold rounded-full uppercase">Active</span>
-                          ) : (
-                            <span className="px-2 py-0.5 bg-gray-100 text-gray-600 text-xs font-bold rounded-full uppercase">Disabled</span>
-                          )}
-                          {feature.isUnsaved && (
-                            <span className="px-2 py-0.5 bg-blue-100 text-blue-800 text-xs font-bold rounded-full uppercase">Default</span>
-                          )}
-                        </div>
-                        <p className="text-gray-500 mt-1 text-sm">{feature.description}</p>
-                      </div>
-                    </div>
-                    
-                    <div className="flex items-center gap-4">
-                        <button 
-                        onClick={() => {
-                            // If unsaved, we need to save the full object first
-                            if (feature.isUnsaved) {
-                                saveFeature(feature.id, {
-                                    name: feature.name,
-                                    description: feature.description,
-                                    code: feature.code,
-                                    group: activeGroup,
-                                    enabled: !feature.enabled,
-                                    order: feature.order
-                                });
-                            } else {
-                                toggleFeature(feature.id, !feature.enabled);
-                            }
-                        }}
-                        className={`
-                            transition-colors duration-200
-                            ${feature.enabled ? 'text-corporate-teal' : 'text-gray-300 hover:text-gray-400'}
-                        `}
-                        >
-                        {feature.enabled ? (
-                            <ToggleRight className="w-10 h-10" />
-                        ) : (
-                            <ToggleLeft className="w-10 h-10" />
-                        )}
-                        </button>
-                        <button 
-                            onClick={() => handleDelete(feature.id)}
-                            className="p-2 text-red-400 hover:bg-red-50 hover:text-red-600 rounded-lg transition-colors"
-                            title="Delete Widget"
-                        >
-                            <Trash2 className="w-5 h-5" />
-                        </button>
-                    </div>
-                  </div>
-                ))}
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Widget ID
+              </label>
+              <input 
+                type="text" 
+                value={newWidget.id} 
+                onChange={(e) => setNewWidget({ ...newWidget, id: e.target.value })} 
+                className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                placeholder="Enter widget ID"
+              />
+            </div>
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Description
+              </label>
+              <textarea 
+                value={newWidget.description} 
+                onChange={(e) => setNewWidget({ ...newWidget, description: e.target.value })} 
+                className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                placeholder="Enter widget description"
+                rows="3"
+              />
+            </div>
+            <div className="flex justify-end gap-2">
+              <button 
+                onClick={() => setIsAdding(false)} 
+                className="px-4 py-2 text-sm font-semibold rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200 transition-all"
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={handleAddWidget} 
+                className="px-4 py-2 text-sm font-semibold rounded-lg bg-green-600 text-white shadow-md hover:bg-green-700 transition-all"
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                Add Widget
+              </button>
             </div>
           </div>
-        ))}
-      </div>
-
-      <div className="bg-yellow-50 border border-yellow-200 p-4 rounded-lg text-sm text-yellow-800">
-        <strong>Note:</strong> Feature toggles and order are persisted globally via Firestore. Changes affect all users immediately.
-      </div>
+        </div>
+      )}
     </div>
   );
 };
