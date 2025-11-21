@@ -970,8 +970,7 @@ export const WIDGET_TEMPLATES = {
   <p className="text-gray-700">{plan.openEndedAnswer}</p>
 </Card>
     `,
-    'dashboard-header': `
-const DashboardHeader = () => {
+    'dashboard-header': `const DashboardHeader = () => {
   // Helper to parse quote
   const parseQuote = (q) => {
     if (!q) return { text: '', author: '' };
@@ -1035,7 +1034,7 @@ render(<DashboardHeader />);
 
 export const FEATURE_METADATA = {
     // Dashboard
-    'dashboard-header': { name: 'Dashboard Header', description: 'Greeting and daily quote.' },
+    'dashboard-header': { name: 'Dashboard Header', description: 'Quotes' },
     'identity-builder': { name: 'Identity Builder', description: 'Grounding Rep & Identity Statement tools.' },
     'habit-stack': { name: 'Habit Stack', description: 'Daily Rep tracking and habit formation.' },
     'win-the-day': { name: 'AM Bookend (Win The Day)', description: 'AM Bookend 1-2-3 priority setting.' },

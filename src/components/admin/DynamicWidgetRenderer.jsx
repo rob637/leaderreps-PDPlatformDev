@@ -5,6 +5,9 @@ import { COLORS } from '../screens/dashboard/dashboardConstants';
 import SafeWidgetWrapper from './SafeWidgetWrapper';
 
 const DynamicWidgetRenderer = ({ code, scope = {} }) => {
+  // Trim code to avoid leading/trailing whitespace issues
+  const cleanCode = code ? code.trim() : '';
+
   // Default scope includes React, Lucide Icons, and common constants
   const defaultScope = {
     React,
@@ -15,10 +18,10 @@ const DynamicWidgetRenderer = ({ code, scope = {} }) => {
 
   // Determine if the code is using the "render()" pattern (noInline=true)
   // or the simple expression pattern (noInline=false)
-  const noInline = code && code.includes('render(');
+  const noInline = cleanCode && cleanCode.includes('render(');
 
   return (
-    <LiveProvider code={code} scope={defaultScope} noInline={noInline}>
+    <LiveProvider code={cleanCode} scope={defaultScope} noInline={noInline}>
       <div className="dynamic-widget-preview h-full w-full overflow-auto">
         <LiveError className="bg-red-100 text-red-800 p-4 rounded-lg mb-4 font-mono text-sm whitespace-pre-wrap" />
         <SafeWidgetWrapper showDetails={true}>
