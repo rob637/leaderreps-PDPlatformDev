@@ -8,6 +8,7 @@ import ScreenRouter from '../../routing/ScreenRouter.jsx';
 import MobileBottomNav from './MobileBottomNav.jsx';
 import ArenaSidebar from './ArenaSidebar.jsx';
 import ScrollingQuotes from '../ui/ScrollingQuotes.jsx';
+import WidgetRenderer from '../admin/WidgetRenderer.jsx';
 import { useAppServices } from '../../services/useAppServices.jsx';
 import { NavigationProvider } from '../../providers/NavigationProvider.jsx';
 
@@ -142,7 +143,18 @@ const AppContent = ({
     premium: 'Premium'
   };
 
-  const { navigate, isAdmin, membershipData, logout } = useAppServices();
+  const { navigate, isAdmin, membershipData, logout, globalMetadata } = useAppServices();
+
+  const headerScope = React.useMemo(() => {
+    const quotes = globalMetadata?.SYSTEM_QUOTES || [];
+    const today = new Date().getDate();
+    const dailyQuote = quotes.length > 0 ? quotes[today % quotes.length] : null;
+    
+    return {
+      allQuotes: quotes,
+      dailyQuote
+    };
+  }, [globalMetadata]);
 
   const handleSignOut = async () => {
     try {
@@ -182,7 +194,9 @@ const AppContent = ({
         {/* Main Content Area */}
         <div className="flex-1 flex flex-col h-screen overflow-hidden relative transition-all duration-300">
           
-          <ScrollingQuotes />
+          <WidgetRenderer widgetId="dashboard-header" scope={headerScope}>
+            <ScrollingQuotes />
+          </WidgetRenderer>
 
           <header className="nav-corporate sticky top-0 flex justify-between items-center z-30 px-6 py-4 bg-white border-b border-gray-200 shadow-sm">
             <div className="flex items-center gap-4">
