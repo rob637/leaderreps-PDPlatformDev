@@ -189,6 +189,36 @@ const FeatureManager = () => {
     allQuotes: globalMetadata?.SYSTEM_QUOTES || []
   };
 
+  const getScopeForWidget = (widgetId) => {
+    if (widgetId === 'dashboard-header') {
+      return {
+        allQuotes: globalMetadata?.SYSTEM_QUOTES || [],
+        dailyQuote,
+        options: features[widgetId]?.options || {},
+        // Minimal common tools
+        React,
+        // No user, no greeting, no other data to keep it clean
+      };
+    }
+    // Default full scope
+    return { ...REAL_SCOPE, options: features[widgetId]?.options || {} };
+  };
+
+  const getInputDescriptionsForWidget = (widgetId) => {
+    if (widgetId === 'dashboard-header') {
+      return {
+        'System Data (LOVs)': {
+          'allQuotes': 'List of all system quotes available for display.',
+          'dailyQuote': 'The specific quote selected for today.'
+        },
+        'Widget Options': {
+          'options': 'Custom configuration for this widget (e.g. scrollMode).'
+        }
+      };
+    }
+    return INPUT_DESCRIPTIONS;
+  };
+
   const INPUT_DESCRIPTIONS = {
     'System Data (LOVs)': {
       'allQuotes': 'List of all system quotes available for display.',
@@ -273,7 +303,8 @@ const FeatureManager = () => {
     const featureObj = {
       id,
       name: dbData?.name || meta.name || id,
-      description: dbData?.description || meta.description || '',
+      // Force metadata description for dashboard-header to ensure it says "Quotes"
+      description: (id === 'dashboard-header' ? meta.description : (dbData?.description || meta.description)) || '',
       enabled: dbData ? dbData.enabled : true, // Default to enabled if not in DB
       order: dbData?.order ?? 999,
       code: dbData?.code || templateCode,
@@ -526,8 +557,8 @@ const FeatureManager = () => {
                     onClick={() => openEditor({
                       widgetId: feature.id,
                       widgetName: feature.name,
-                      scope: { ...REAL_SCOPE, options: feature.options || {} },
-                      inputDescriptions: INPUT_DESCRIPTIONS,
+                      scope: getScopeForWidget(feature.id),
+                      inputDescriptions: getInputDescriptionsForWidget(feature.id),
                       initialCode: feature.code
                     })} 
                     className="p-2 rounded-full bg-blue-100 text-blue-500 hover:bg-blue-200 transition-all"
