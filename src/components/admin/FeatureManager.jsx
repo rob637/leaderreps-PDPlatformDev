@@ -1029,21 +1029,21 @@ const FeatureManager = () => {
 
   const initialGroups = {
     dashboard: ['identity-builder', 'habit-stack', 'win-the-day', 'gamification', 'exec-summary', 'calendar-sync', 'weekly-focus', 'notifications', 'scorecard', 'pm-bookend'],
+    'development-plan': ['dev-plan-header', 'dev-plan-stats', 'dev-plan-actions', 'dev-plan-focus-areas', 'dev-plan-goal'],
     content: ['course-library', 'reading-hub', 'leadership-videos', 'strat-templates'],
     community: ['community-feed', 'my-discussions', 'mastermind', 'mentor-match', 'live-events'],
     coaching: ['practice-history', 'progress-analytics', 'ai-roleplay', 'scenario-sim', 'feedback-gym', 'roi-report'],
-    locker: ['locker-wins-history', 'locker-scorecard-history', 'locker-latest-reflection'],
-    'development-plan': ['dev-plan-header', 'dev-plan-stats', 'dev-plan-actions', 'dev-plan-focus-areas', 'dev-plan-goal']
+    locker: ['locker-wins-history', 'locker-scorecard-history', 'locker-latest-reflection']
   };
 
   // Group features dynamically
   const groups = {
     dashboard: [],
+    'development-plan': [],
     content: [],
     community: [],
     coaching: [],
-    locker: [],
-    'development-plan': []
+    locker: []
   };
 
   // Merge DB features with metadata for display
@@ -1132,11 +1132,11 @@ const FeatureManager = () => {
 
   const groupTitles = {
     dashboard: 'Dashboard',
+    'development-plan': 'Development Plan',
     content: 'Content',
     community: 'Community',
     coaching: 'Coaching',
-    locker: 'Locker',
-    'development-plan': 'Development Plan'
+    locker: 'Locker'
   };
 
   return (
