@@ -449,6 +449,18 @@ const FeatureManager = () => {
     locker: 'Locker'
   };
 
+  // Configuration Schema for Specific Widgets
+  const WIDGET_CONFIG_SCHEMA = {
+    'dashboard-header': [
+      {
+        key: 'scrollMode',
+        label: 'Scrolling Mode',
+        type: 'boolean',
+        description: 'Enable marquee scrolling for quotes instead of a static daily quote.'
+      }
+    ]
+  };
+
   return (
     <div className="p-4 sm:p-6 lg:p-8">
       {/* Header */}
@@ -588,24 +600,64 @@ const FeatureManager = () => {
                   <h4 className="text-sm font-bold text-gray-700 mb-3 flex items-center gap-2">
                     <Settings className="w-4 h-4" /> Widget Options
                   </h4>
+
+                  {/* Predefined Options (Schema Based) */}
+                  {WIDGET_CONFIG_SCHEMA[feature.id] && (
+                    <div className="mb-4 space-y-3 border-b border-gray-200 pb-4">
+                      {WIDGET_CONFIG_SCHEMA[feature.id].map((config) => {
+                        const currentValue = feature.options?.[config.key];
+                        // Handle boolean types (stored as strings usually, but let's handle both)
+                        const isChecked = String(currentValue) === 'true';
+
+                        return (
+                          <div key={config.key} className="flex items-center justify-between bg-white p-3 rounded border border-gray-200">
+                            <div>
+                              <p className="text-sm font-bold text-gray-800">{config.label}</p>
+                              <p className="text-xs text-gray-500">{config.description}</p>
+                            </div>
+                            {config.type === 'boolean' && (
+                              <button
+                                onClick={() => handleSaveOption(feature.id, config.key, isChecked ? 'false' : 'true')}
+                                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
+                                  isChecked ? 'bg-blue-600' : 'bg-gray-200'
+                                }`}
+                              >
+                                <span
+                                  className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                                    isChecked ? 'translate-x-6' : 'translate-x-1'
+                                  }`}
+                                />
+                              </button>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
                   
-                  {/* Existing Options */}
+                  {/* Existing Custom Options */}
                   <div className="space-y-2 mb-4">
+                    <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Custom Options</p>
                     {feature.options && Object.entries(feature.options).length > 0 ? (
-                      Object.entries(feature.options).map(([key, value]) => (
-                        <div key={key} className="flex items-center gap-2 bg-white p-2 rounded border border-gray-200">
-                          <span className="font-mono text-xs font-bold text-blue-600 bg-blue-50 px-2 py-1 rounded">{key}</span>
-                          <span className="text-sm text-gray-600 flex-1 truncate">{String(value)}</span>
-                          <button 
-                            onClick={() => handleDeleteOption(feature.id, key)}
-                            className="p-1 text-red-400 hover:text-red-600 hover:bg-red-50 rounded"
-                          >
-                            <X className="w-4 h-4" />
-                          </button>
-                        </div>
-                      ))
+                      Object.entries(feature.options).map(([key, value]) => {
+                        // Skip schema keys to avoid duplication
+                        if (WIDGET_CONFIG_SCHEMA[feature.id]?.some(c => c.key === key)) return null;
+
+                        return (
+                          <div key={key} className="flex items-center gap-2 bg-white p-2 rounded border border-gray-200">
+                            <span className="font-mono text-xs font-bold text-blue-600 bg-blue-50 px-2 py-1 rounded">{key}</span>
+                            <span className="text-sm text-gray-600 flex-1 truncate">{String(value)}</span>
+                            <button 
+                              onClick={() => handleDeleteOption(feature.id, key)}
+                              className="p-1 text-red-400 hover:text-red-600 hover:bg-red-50 rounded"
+                            >
+                              <X className="w-4 h-4" />
+                            </button>
+                          </div>
+                        );
+                      })
                     ) : (
-                      <p className="text-xs text-gray-400 italic">No options configured.</p>
+                      <p className="text-xs text-gray-400 italic">No custom options configured.</p>
                     )}
                   </div>
 
