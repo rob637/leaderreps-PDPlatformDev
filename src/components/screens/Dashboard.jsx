@@ -19,7 +19,7 @@ import {
   ProgressBar, 
   Badge, 
   StatCard 
-} from '../developmentplan/DevPlanComponents';
+} from './developmentplan/DevPlanComponents';
 
 // Import modular components from the file you provided
 import {
