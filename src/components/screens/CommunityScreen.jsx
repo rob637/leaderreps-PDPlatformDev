@@ -7,6 +7,7 @@ import { membershipService } from '../../services/membershipService.js';
 import contentService, { CONTENT_COLLECTIONS } from '../../services/contentService.js';
 import { logWidthMeasurements } from '../../utils/debugWidth.js';
 import { useFeatures } from '../../providers/FeatureProvider';
+import WidgetRenderer from '../admin/WidgetRenderer';
 
 // --- Icons ---
 import {
@@ -454,8 +455,7 @@ const CommunityScreen = ({ simulatedTier }) => {
         if (view === 'home' && !isFeatureEnabled('community-feed')) {
             // If home is disabled, try to find the first enabled feature
             if (isFeatureEnabled('my-discussions')) setView('my-threads');
-            else if (isFeatureEnabled('mastermind')) setView('mastermind');
-            else if (isFeatureEnabled('mentor-match')) setView('mentorship');
+            else if (isFeatureEnabled('mastermind')) setView('mentorship');
             else if (isFeatureEnabled('live-events')) setView('events');
             // If nothing is enabled, it will stay on 'home' but render the disabled message
         }
@@ -513,8 +513,7 @@ const CommunityScreen = ({ simulatedTier }) => {
         const allItems = [
             { featureId: 'community-feed', screen: 'home', label: 'Community Feed', icon: MessageSquare },
             { featureId: 'my-discussions', screen: 'my-threads', label: 'My Discussions', icon: Briefcase },
-            { featureId: 'mastermind', screen: 'mastermind', label: 'Mastermind Groups', icon: Users },
-            { featureId: 'mentor-match', screen: 'mentorship', label: 'Mentor Match', icon: UserPlus },
+            { featureId: 'mastermind', screen: 'mentorship', label: 'Mastermind Groups', icon: Users },
             { featureId: 'live-events', screen: 'events', label: 'Live Events', icon: Video },
         ];
 
@@ -531,6 +530,30 @@ const CommunityScreen = ({ simulatedTier }) => {
             { screen: 'notifications', label: 'Notifications', icon: Bell, notify: true }
         ];
     }, [isFeatureEnabled, getFeatureOrder]);
+
+    // --- Scope for Widgets ---
+    const scope = {
+        // State
+        view, setView,
+        currentTierFilter, setCurrentTierFilter,
+        allThreads, filteredThreads,
+        isLoadingThreads,
+        
+        // Data
+        user: safeUser,
+        tierMeta,
+        navItems,
+        hasCommunityAccess,
+        
+        // Utils
+        navigate,
+        isFeatureEnabled,
+        COLORS,
+        
+        // Icons
+        Users, MessageSquare, Briefcase, Bell, PlusCircle, User, ArrowLeft, Target, Filter, Clock,
+        Star, CheckCircle, Award, Link, Send, Loader, Heart, X, UserPlus, Video
+    };
 
     // --- Render Logic ---
     const renderContent = () => {
@@ -589,11 +612,7 @@ const CommunityScreen = ({ simulatedTier }) => {
                         tierMeta={tierMeta} // Pass tier metadata
                     />
                 ) : (
-                    <div className="p-8 text-center text-gray-500">
-                        <MessageSquare className="w-12 h-12 mx-auto mb-4 text-gray-300"/>
-                        <h3 className="text-lg font-bold mb-2">Community Feed Disabled</h3>
-                        <p>The community feed is currently unavailable.</p>
-                    </div>
+                    <WidgetRenderer widgetId="community-feed-disabled" scope={scope} />
                 );
         }
     };
@@ -642,33 +661,7 @@ const CommunityScreen = ({ simulatedTier }) => {
             <div className={`grid grid-cols-1 lg:grid-cols-6 gap-3 ${!hasCommunityAccess ? 'opacity-60 pointer-events-none' : ''}`}>
                 {/* Sidebar Navigation */}
                 <aside className="lg:col-span-1 space-y-4 lg:sticky lg:top-3 sm:p-4 lg:p-6 self-start"> {/* Make sidebar sticky */}
-                    <h3 className="text-xs font-extrabold uppercase tracking-wider px-3 py-1 rounded text-gray-500 bg-gray-100 border border-gray-200">
-                        Community Channels
-                    </h3>
-                    {navItems.map((item) => {
-                        const Icon = item.icon;
-                        const isActive = view === item.screen;
-                        // Use Purple for Notifications icon, Navy otherwise
-                        const iconColor = item.screen === 'notifications' ? COLORS.ORANGE : COLORS.NAVY;
-
-                        return (
-                            <button
-                                key={item.screen}
-                                onClick={hasCommunityAccess ? () => setView(item.screen) : undefined}
-                                // Consistent button styling for sidebar nav
-                                className={`flex items-center w-full p-3 rounded-xl font-semibold text-sm relative transition-all duration-200 shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-[${COLORS.TEAL}] ${
-                                    isActive
-                                        ? `bg-white text-[${COLORS.NAVY}] ring-1 ring-[${COLORS.TEAL}] shadow-md` // Active style
-                                        : `text-gray-700 bg-white hover:bg-gray-50 hover:shadow-md border border-gray-200` // Inactive style
-                                }`}
-                            >
-                                <Icon className="w-5 h-5 mr-3 flex-shrink-0" style={{ color: isActive ? COLORS.TEAL : iconColor }} />
-                                <span className="flex-1 text-left truncate">{item.label}</span>
-                                {/* Notification Indicator */}
-                                {item.notify && <div className={`h-2 w-2 rounded-full ml-auto`} style={{ background: COLORS.ORANGE }} />}
-                            </button>
-                        );
-                    })}
+                    <WidgetRenderer widgetId="community-sidebar" scope={scope} />
                 </aside>
 
                 {/* Main Content Area */}

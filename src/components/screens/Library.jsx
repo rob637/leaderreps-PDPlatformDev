@@ -7,6 +7,7 @@ import { membershipService } from '../../services/membershipService.js';
 import { Button } from '../shared/UI';
 import { getReadings, getVideos, getCourses } from '../../services/contentService';
 import { useFeatures } from '../../providers/FeatureProvider';
+import WidgetRenderer from '../admin/WidgetRenderer';
 
 // LEADERREPS.COM OFFICIAL CORPORATE COLORS - VERIFIED 11/14/25
 const COLORS = {
@@ -213,6 +214,29 @@ const Library = ({ simulatedTier, isDeveloperMode }) => {
     }
   };
 
+  const scope = {
+    // Data
+    libraryItems,
+    contentCounts,
+    loading,
+    currentTier,
+    
+    // Functions
+    handleCardClick,
+    navigate,
+    isFeatureEnabled,
+    
+    // Components
+    LibraryCard,
+    
+    // Constants/Utils
+    COLORS,
+    membershipService,
+    
+    // Icons
+    BookOpen, ShieldCheck, Film, ArrowLeft, Sparkles, Target, Trophy, Users, TrendingUp, Star, Zap, PlayCircle, FileText
+  };
+
   return (
       <div className="page-corporate container-corporate animate-corporate-fade-in">
         <div className="content-full">
@@ -223,118 +247,18 @@ const Library = ({ simulatedTier, isDeveloperMode }) => {
           <span className="text-sm font-medium">Back to Dashboard</span>
         </div>
 
-        {/* Enhanced Header with Stats */}
-        <div className="mb-12 text-center relative">
-          {/* Floating decorative elements */}
-          <div className="absolute top-0 left-1/4 w-6 h-6 rounded-full animate-bounce" style={{ backgroundColor: `${COLORS.TEAL}30`, animationDelay: '0s' }}></div>
-          <div className="absolute top-8 right-1/4 w-4 h-4 rounded-full animate-bounce" style={{ backgroundColor: `${COLORS.ORANGE}30`, animationDelay: '1s' }}></div>
-          <div className="absolute top-4 left-3/4 w-5 h-5 rounded-full animate-bounce" style={{ backgroundColor: `${COLORS.NAVY}30`, animationDelay: '2s' }}></div>
-          
-          <div className="flex items-center justify-center gap-2 mb-4">
-            <BookOpen className='w-8 h-8' style={{color: COLORS.TEAL}}/>
-            <h1 className="corporate-heading-xl" style={{ color: COLORS.NAVY }}>
-              Content
-            </h1>
-            <BookOpen className='w-8 h-8' style={{color: COLORS.TEAL}}/>
-          </div>
-          
-          <p className="corporate-text-body mx-auto mb-8 px-4">
-            🚀 Your complete leadership development ecosystem. <strong>6 structured courses</strong>, <strong>50+ curated readings</strong>, and <strong>exclusive video content</strong> - all designed to accelerate your growth from manager to executive.
-          </p>
-          
-          {/* Stats Row */}
-          <div className="grid grid-cols-3 gap-3 mx-auto mb-8 max-w-md">
-            {isFeatureEnabled('course-library') && (
-              <div className="bg-white rounded-xl p-4 shadow-md border-2" style={{ borderColor: `${COLORS.TEAL}20` }}>
-                <div className="flex items-center justify-center gap-2 mb-2">
-                  <Target className="w-5 h-5" style={{ color: COLORS.TEAL }} />
-                  <span className="text-2xl font-bold" style={{ color: COLORS.NAVY }}>
-                    {loading ? '...' : contentCounts.courses}
-                  </span>
-                </div>
-                <p className="text-sm font-medium text-gray-600">Expert-Led Courses</p>
-              </div>
-            )}
-            
-            {isFeatureEnabled('reading-hub') && (
-              <div className="bg-white rounded-xl p-4 shadow-md border-2" style={{ borderColor: `${COLORS.NAVY}20` }}>
-                <div className="flex items-center justify-center gap-2 mb-2">
-                  <Trophy className="w-5 h-5" style={{ color: COLORS.NAVY }} />
-                  <span className="text-2xl font-bold" style={{ color: COLORS.NAVY }}>
-                    {loading ? '...' : `${contentCounts.readings}+`}
-                  </span>
-                </div>
-                <p className="text-sm font-medium text-gray-600">Curated Readings</p>
-              </div>
-            )}
-            
-            {isFeatureEnabled('leadership-videos') && (
-              <div className="bg-white rounded-xl p-4 shadow-md border-2" style={{ borderColor: `${COLORS.ORANGE}20` }}>
-                <div className="flex items-center justify-center gap-2 mb-2">
-                  <Star className="w-5 h-5" style={{ color: COLORS.ORANGE }} />
-                  <span className="text-2xl font-bold" style={{ color: COLORS.NAVY }}>
-                    {loading ? '...' : contentCounts.videos > 0 ? `${contentCounts.videos}` : 'Elite'}
-                  </span>
-                </div>
-                <p className="text-sm font-medium text-gray-600">Premium Videos</p>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Enhanced Library Cards */}
-        <div className="mb-8">
-          <div className="flex items-center gap-3 mb-6">
-            <Trophy className="w-6 h-6" style={{ color: COLORS.TEAL }} />
-            <h2 className="text-2xl font-bold" style={{ color: COLORS.NAVY }}>
-              Choose Your Learning Path
-            </h2>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          {libraryItems.map((item) => {
-            const hasAccess = membershipService.hasAccess(currentTier, item.requiredTier);
-            return (
-              <LibraryCard
-                key={item.id}
-                title={item.title}
-                description={item.description}
-                icon={item.icon}
-                onClick={() => handleCardClick(item)}
-                disabled={!hasAccess}
-                requiredTier={hasAccess ? null : item.requiredTier}
-              />
-            );
-          })}
-          </div>
-        </div>
-
-
-        
-        {/* Upgrade CTA for Free Users */}
-        {currentTier === 'free' && (
-          <div className="card-corporate-elevated mt-12 text-center" style={{ borderColor: COLORS.TEAL }}>
-            <div className="relative z-10 p-8 text-center">
-              <h3 className="text-2xl font-bold mb-4" style={{ color: COLORS.NAVY }}>
-                Unlock Leadership Library
-              </h3>
-              
-              <p className="text-lg text-gray-700 mb-6">
-                Access our premium library of leadership courses, expert-curated readings, and exclusive videos.
-              </p>
-              
-              <div className="text-center mb-6">
-                <span className="inline-block bg-orange-100 text-orange-800 px-4 py-2 rounded-full text-sm font-semibold">Requires Premium</span>
-              </div>
-              
-              <button
-                onClick={() => navigate('membership-upgrade')}
-                className="bg-gradient-to-r from-teal-600 to-navy-600 text-white px-8 py-4 rounded-xl font-bold text-lg shadow-lg hover:shadow-xl transition-all duration-300"
-              >
-                Upgrade Now
-              </button>
+        {/* Header */}
+        <div className="text-center mb-12">
+            <div className="flex items-center justify-center gap-2 mb-4">
+                <BookOpen className='w-8 h-8' style={{color: COLORS.TEAL}}/>
+                <h1 className="corporate-heading-xl" style={{ color: COLORS.NAVY }}>Content</h1>
+                <BookOpen className='w-8 h-8' style={{color: COLORS.TEAL}}/>
             </div>
-          </div>
-        )}
+            <p className="corporate-text-body text-gray-600 mx-auto px-4">Your complete leadership development ecosystem.</p>
+        </div>
+
+        <WidgetRenderer widgetId="content-library-main" scope={scope} />
+        
         </div>
       </div>
     </div>
