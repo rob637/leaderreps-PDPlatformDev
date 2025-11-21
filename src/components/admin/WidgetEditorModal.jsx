@@ -28,7 +28,7 @@ try {
 const WidgetEditorModal = () => {
   const { isOpen, closeEditor, editorState } = useWidgetEditor();
   const { saveFeature, features } = useFeatures();
-  const { widgetId, widgetName, scope, initialCode } = editorState;
+  const { widgetId, widgetName, scope, inputDescriptions, initialCode } = editorState;
 
   const [code, setCode] = useState('');
   const [chatInput, setChatInput] = useState('');
@@ -213,7 +213,31 @@ const WidgetEditorModal = () => {
             <Database className="w-4 h-4 text-blue-400" /> Input Context (Scope)
           </div>
           <div className="flex-1 overflow-auto p-4 font-mono text-xs text-blue-200">
-            <ScopeViewer data={scope} />
+            {inputDescriptions && Object.keys(inputDescriptions).length > 0 ? (
+              <div className="space-y-4">
+                {Object.entries(inputDescriptions).map(([category, items]) => (
+                  <div key={category}>
+                    <h3 className="text-teal-500 font-bold uppercase mb-2 border-b border-slate-700 pb-1">{category}</h3>
+                    <div className="space-y-2">
+                      {Object.entries(items).map(([key, desc]) => (
+                        <div key={key} className="pl-2 border-l-2 border-slate-700">
+                          <div className="text-blue-300 font-bold">{key}</div>
+                          <div className="text-slate-400 italic mb-1">{desc}</div>
+                          {/* Show value if simple */}
+                          {scope[key] !== undefined && typeof scope[key] !== 'function' && !React.isValidElement(scope[key]) && (
+                             <div className="bg-slate-800/50 p-1 rounded text-slate-300 overflow-hidden text-ellipsis whitespace-nowrap">
+                               {typeof scope[key] === 'object' ? JSON.stringify(scope[key]).substring(0, 50) + (JSON.stringify(scope[key]).length > 50 ? '...' : '') : String(scope[key])}
+                             </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <ScopeViewer data={scope} />
+            )}
           </div>
         </div>
 
@@ -265,7 +289,10 @@ const WidgetEditorModal = () => {
           </div>
           <div className="flex-1 overflow-auto p-2 space-y-2 font-mono text-xs">
             {outputLogs.length === 0 && (
-              <div className="text-slate-600 italic p-2">No output recorded.</div>
+              <div className="text-slate-500 p-4 text-center">
+                <p className="font-bold text-slate-400 mb-2">No Output Signals</p>
+                <p className="text-slate-600">This widget is not sending data to other widgets or the system.</p>
+              </div>
             )}
             {outputLogs.map((log) => (
               <div key={log.id} className="p-2 rounded bg-[#1e293b] border border-slate-700">

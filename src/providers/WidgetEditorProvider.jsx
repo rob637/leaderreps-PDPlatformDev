@@ -16,16 +16,18 @@ export const WidgetEditorProvider = ({ children }) => {
     widgetId: null,
     widgetName: '',
     scope: {},
+    inputDescriptions: {}, // New field for structured input documentation
     initialCode: ''
   });
   const [isEditMode, setIsEditMode] = useState(false); // Global toggle to enable "Click to Edit" on widgets
 
-  const openEditor = useCallback(({ widgetId, widgetName, scope, initialCode }) => {
+  const openEditor = useCallback(({ widgetId, widgetName, scope, inputDescriptions, initialCode }) => {
     console.log('Provider: openEditor called', { widgetId, widgetName });
     setEditorState({
       widgetId,
       widgetName: widgetName || widgetId,
       scope: scope || {},
+      inputDescriptions: inputDescriptions || {},
       initialCode: initialCode || ''
     });
     setIsOpen(true);

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { 
   ToggleLeft, ToggleRight, FlaskConical, ArrowUp, ArrowDown, Edit3, Plus, Trash2, RefreshCw, Save, Flame, Bell, Target, Calendar, Moon, BookOpen, Play, Book, Video, FileText, Users, MessageSquare, UserPlus, Search, Radio, History, BarChart2, Bot, Cpu, Dumbbell, TrendingUp,
   CheckSquare, Square, X, Trophy, ChevronRight, ArrowRight, Loader, Eye, EyeOff, Settings
@@ -19,7 +19,6 @@ const FeatureManager = () => {
     updateDailyPracticeData,
     developmentPlanData,
     globalMetadata,
-    userData,
     navigate
   } = useAppServices();
 
@@ -27,17 +26,11 @@ const FeatureManager = () => {
   const {
     // Identity & Anchors
     identityStatement,
-    habitAnchor,
-    whyStatement,
-    handleSaveIdentity,
-    handleSaveHabit,
-    handleSaveWhy,
     
     // AM Bookend (Win the Day)
     morningWIN,
     setMorningWIN,
     otherTasks,
-    handleAddTask,
     handleToggleTask,
     handleRemoveTask,
     handleToggleWIN,
@@ -194,6 +187,27 @@ const FeatureManager = () => {
     greeting,
     dailyQuote,
     allQuotes: globalMetadata?.SYSTEM_QUOTES || []
+  };
+
+  const INPUT_DESCRIPTIONS = {
+    'System Data (LOVs)': {
+      'allQuotes': 'List of all system quotes available for display.',
+      'dailyQuote': 'The specific quote selected for today.',
+      'globalMetadata': 'Global configuration and lists (e.g. Rep Library).'
+    },
+    'User State': {
+      'user': 'Current user profile information.',
+      'greeting': 'Personalized greeting string.',
+      'scorecard': 'Current daily progress stats.',
+      'streakCount': 'Current streak count.'
+    },
+    'Widget Options': {
+      'options': 'Custom configuration for this widget (e.g. scrollMode).'
+    },
+    'Actions': {
+      'navigate': 'Function to navigate to other screens.',
+      'sdk': 'Widget SDK for advanced interactions.'
+    }
   };
 
   const [isAdding, setIsAdding] = useState(false);
@@ -512,7 +526,8 @@ const FeatureManager = () => {
                     onClick={() => openEditor({
                       widgetId: feature.id,
                       widgetName: feature.name,
-                      scope: REAL_SCOPE,
+                      scope: { ...REAL_SCOPE, options: feature.options || {} },
+                      inputDescriptions: INPUT_DESCRIPTIONS,
                       initialCode: feature.code
                     })} 
                     className="p-2 rounded-full bg-blue-100 text-blue-500 hover:bg-blue-200 transition-all"

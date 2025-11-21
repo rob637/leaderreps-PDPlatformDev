@@ -58,11 +58,15 @@ export const FeatureProvider = ({ children, db }) => {
     const current = features[featureId];
     let newValue;
     
+    // Calculate new enabled state if not provided
+    const currentEnabled = (typeof current === 'object' && current !== null) ? current.enabled : !!current;
+    const nextEnabled = enabled !== undefined ? enabled : !currentEnabled;
+    
     if (typeof current === 'object' && current !== null) {
-      newValue = { ...current, enabled };
+      newValue = { ...current, enabled: nextEnabled };
     } else {
       // If it was a boolean or undefined, convert to object to support future fields
-      newValue = { enabled, order: 999 }; 
+      newValue = { enabled: nextEnabled, order: 999 }; 
     }
     
     await setDoc(featureDocRef, { [featureId]: newValue }, { merge: true });

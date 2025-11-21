@@ -971,8 +971,6 @@ export const WIDGET_TEMPLATES = {
 </Card>
     `,
     'dashboard-header': `
-const isScrolling = false; 
-
 const DashboardHeader = () => {
   // Helper to parse quote
   const parseQuote = (q) => {
@@ -983,14 +981,13 @@ const DashboardHeader = () => {
 
   const current = parseQuote(dailyQuote || "Leadership is influence.|John Maxwell");
   const quotesList = allQuotes && allQuotes.length > 0 ? allQuotes : ["Leadership is influence.|John Maxwell"];
+  
+  // Use options from scope if available
+  const isScrolling = typeof options !== 'undefined' && options.scrollMode === 'true';
 
   return (
     <>
-    <header className="space-y-2 overflow-hidden">
-      <h1 className="text-3xl sm:text-4xl font-bold text-[#002E47]">
-        {greeting || "Hello, Leader."}
-      </h1>
-      
+    <header className="overflow-hidden">
       {isScrolling ? (
         <div className="relative w-full overflow-hidden py-2 bg-slate-50 border-l-4 border-teal-500 group">
           <div className="animate-marquee whitespace-nowrap inline-block group-hover:[animation-play-state:paused]">
@@ -1033,7 +1030,7 @@ const DashboardHeader = () => {
 };
 
 render(<DashboardHeader />);
-    `
+    `,
   };
 
 export const FEATURE_METADATA = {
