@@ -615,18 +615,23 @@ export const useDashboard = ({
     const todayDate = new Date().toLocaleDateString();
     const winId = `morning-win-${new Date().toISOString().split('T')[0]}`; 
 
-    if (newStatus) {
-        if (!updatedWinsList.find(w => w.id === winId)) {
-            updatedWinsList.push({
-                id: winId,
-                text: morningWIN || 'Morning Win',
-                date: todayDate,
-                completed: true,
-                timestamp: new Date().toISOString()
-            });
-        }
+    const existingWinIndex = updatedWinsList.findIndex(w => w.id === winId);
+
+    if (existingWinIndex >= 0) {
+        // Update existing
+        updatedWinsList[existingWinIndex] = {
+            ...updatedWinsList[existingWinIndex],
+            completed: newStatus
+        };
     } else {
-        updatedWinsList = updatedWinsList.filter(w => w.id !== winId);
+        // Should exist if saved, but if not (legacy or unsaved flow), add it
+        updatedWinsList.push({
+            id: winId,
+            text: morningWIN || 'Morning Win',
+            date: todayDate,
+            completed: newStatus,
+            timestamp: new Date().toISOString()
+        });
     }
     setWinsList(updatedWinsList);
 
@@ -675,11 +680,40 @@ export const useDashboard = ({
     setIsSavingWIN(true);
     
     try {
+      // NEW: Add to winsList as Pending so it shows in Locker
+      const todayDate = new Date().toLocaleDateString();
+      const winId = `morning-win-${new Date().toISOString().split('T')[0]}`;
+      
+      let updatedWinsList = [...winsList];
+      const existingWinIndex = updatedWinsList.findIndex(w => w.id === winId);
+      
+      const winData = {
+        id: winId,
+        text: morningWIN,
+        date: todayDate,
+        completed: false, // Pending initially
+        timestamp: new Date().toISOString()
+      };
+
+      if (existingWinIndex >= 0) {
+        // Update existing (e.g. text change), preserving completion status if it was already there
+        updatedWinsList[existingWinIndex] = {
+            ...updatedWinsList[existingWinIndex],
+            text: morningWIN
+        };
+      } else {
+        // Add new
+        updatedWinsList.push(winData);
+      }
+      
+      setWinsList(updatedWinsList);
+
       // Use nested object structure instead of dot notation
       const success = await updateDailyPracticeData({
         morningBookend: {
           dailyWIN: morningWIN
-        }
+        },
+        winsList: updatedWinsList
       });
       
       if (success) {
@@ -693,7 +727,7 @@ export const useDashboard = ({
     } finally {
       setIsSavingWIN(false);
     }
-  }, [morningWIN, updateDailyPracticeData]); // Explicitly include prop
+  }, [morningWIN, updateDailyPracticeData, winsList]); // Explicitly include prop
 
   /* =========================================================
      COMPUTED VALUES

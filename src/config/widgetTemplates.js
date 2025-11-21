@@ -50,9 +50,14 @@ export const WIDGET_TEMPLATES = {
       This Week's Focus
     </h2>
     <div className="flex items-center justify-between">
-      <p className="text-2xl font-bold text-[#002E47]">
-        {weeklyFocus}
-      </p>
+      <div>
+        <p className="text-2xl font-bold text-[#002E47]">
+          {weeklyFocus}
+        </p>
+        <p className="text-xs text-slate-500 mt-1">
+          Pulls from Development Plan (Coming Soon)
+        </p>
+      </div>
       <button 
         onClick={() => navigate('development-plan')}
         className="text-teal-600 hover:text-teal-700 text-sm font-semibold flex items-center gap-1"
@@ -288,6 +293,12 @@ export const WIDGET_TEMPLATES = {
     </h2>
   </div>
   <div className="bg-white rounded-2xl p-4 shadow-sm border border-slate-200 space-y-3 text-left">
+    
+    {/* Dev Note */}
+    <div className="bg-slate-50 border border-slate-200 rounded-lg p-2 text-xs text-slate-500 italic text-center">
+      Waiting for inputs to be defined and built. (Mock Data)
+    </div>
+
     <div className="flex gap-3 items-start p-2 hover:bg-slate-50 rounded-lg transition-colors cursor-pointer">
       <div className="w-2 h-2 mt-2 rounded-full bg-orange-500 flex-shrink-0" />
       <div>
@@ -813,14 +824,31 @@ export const WIDGET_TEMPLATES = {
     `,
     'locker-latest-reflection': `
 <Card title="Latest Reflection" icon={BookOpen} className="lg:col-span-2 border-t-4 border-corporate-navy">
-  {eveningBookend.reflection ? (
-    <div className="bg-white p-6 rounded-xl border border-slate-200">
-      <h3 className="text-sm font-bold text-slate-400 uppercase mb-2">Evening Reflection</h3>
-      <p className="text-slate-700 whitespace-pre-wrap">{eveningBookend.reflection}</p>
-      {eveningBookend.timestamp && (
-         <p className="text-xs text-slate-400 mt-4 text-right">
-            Saved: {new Date(eveningBookend.timestamp).toLocaleString()}
-         </p>
+  {(eveningBookend.good || eveningBookend.better || eveningBookend.reflection) ? (
+    <div className="bg-white p-6 rounded-xl border border-slate-200 space-y-4">
+      {eveningBookend.good && (
+        <div>
+          <h3 className="text-sm font-bold text-green-700 uppercase mb-1">What Went Well</h3>
+          <p className="text-slate-700 whitespace-pre-wrap">{eveningBookend.good}</p>
+        </div>
+      )}
+      {eveningBookend.better && (
+        <div>
+          <h3 className="text-sm font-bold text-orange-700 uppercase mb-1">What Needs Work</h3>
+          <p className="text-slate-700 whitespace-pre-wrap">{eveningBookend.better}</p>
+        </div>
+      )}
+      {/* Fallback for legacy data */}
+      {eveningBookend.reflection && !eveningBookend.good && !eveningBookend.better && (
+          <div>
+          <h3 className="text-sm font-bold text-slate-400 uppercase mb-1">Reflection</h3>
+          <p className="text-slate-700 whitespace-pre-wrap">{eveningBookend.reflection}</p>
+        </div>
+      )}
+      {(eveningBookend.completedAt || eveningBookend.timestamp) && (
+          <p className="text-xs text-slate-400 mt-4 text-right border-t pt-2">
+            Saved: {new Date(eveningBookend.completedAt?.toDate?.() || eveningBookend.completedAt || eveningBookend.timestamp).toLocaleString()}
+          </p>
       )}
     </div>
   ) : (

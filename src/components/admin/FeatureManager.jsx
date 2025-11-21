@@ -467,10 +467,10 @@ const FeatureManager = () => {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6">
         <div className="mb-4 sm:mb-0">
           <h1 className="text-2xl sm:text-3xl font-extrabold text-gray-900">
-            Feature Manager
+            Widget Manager
           </h1>
           <p className="text-sm sm:text-base text-gray-500">
-            Manage and customize your dashboard features.
+            Manage and customize your dashboard widgets.
           </p>
         </div>
         <div className="flex flex-col sm:flex-row gap-4">
@@ -502,12 +502,12 @@ const FeatureManager = () => {
         ))}
       </div>
 
-      {/* Active Group Features */}
+      {/* Active Group Widgets */}
       <div>
         {/* Group Header */}
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-xl sm:text-2xl font-bold text-gray-900">
-            {groupTitles[activeGroup]} Features
+            {groupTitles[activeGroup]} Widgets
           </h2>
           <button 
             onClick={() => setIsAdding(true)} 
@@ -525,14 +525,14 @@ const FeatureManager = () => {
           </button>
         </div>
 
-        {/* Features List */}
+        {/* Widgets List */}
         <div className="space-y-4">
           {(groups[activeGroup] || []).map((feature, index) => (
             <div key={feature.id} className="p-4 bg-white rounded-lg shadow border border-gray-200">
-              {/* Feature Header */}
+              {/* Widget Header */}
               <div className="flex items-center justify-between mb-2">
                 <div>
-                  <h3 className="text-lg font-semibold text-gray-800">{feature.name}</h3>
+                  <h3 className="text-lg font-semibold text-gray-800 text-left">{feature.name}</h3>
                   <p className="text-xs text-gray-500">{feature.description}</p>
                 </div>
                 <div className="flex items-center gap-2">
@@ -553,16 +553,16 @@ const FeatureManager = () => {
                       <ArrowDown className="w-4 h-4" />
                     </button>
                   </div>
-                  {/* Toggle Feature Button */}
+                  {/* Toggle Widget Button */}
                   <button 
                     onClick={() => toggleFeature(feature.id, !feature.enabled)} 
                     className={`p-2 rounded-full transition-all 
                       ${feature.enabled 
-                        ? 'bg-red-100 text-red-500 hover:bg-red-200' 
-                        : 'bg-green-100 text-green-500 hover:bg-green-200'
+                        ? 'bg-green-100 text-green-500 hover:bg-green-200' 
+                        : 'bg-red-100 text-red-500 hover:bg-red-200'
                       }`}
                   >
-                    {feature.enabled ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    {feature.enabled ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
                   </button>
                   {/* Edit Button */}
                   <button 
@@ -701,7 +701,7 @@ const FeatureManager = () => {
         {groups[activeGroup]?.length === 0 && (
           <div className="p-4 bg-gray-50 rounded-lg border border-gray-200 text-center">
             <p className="text-sm text-gray-500">
-              No features found in this group. Widgets that you add will appear here.
+              No widgets found in this group. Widgets that you add will appear here.
             </p>
           </div>
         )}

@@ -288,9 +288,14 @@ const Dashboard4 = (props) => {
               This Week's Focus
             </h2>
             <div className="flex items-center justify-between">
-              <p className="text-2xl font-bold text-[#002E47]">
-                {weeklyFocus}
-              </p>
+              <div>
+                <p className="text-2xl font-bold text-[#002E47]">
+                  {weeklyFocus}
+                </p>
+                <p className="text-xs text-slate-500 mt-1">
+                  Pulls from Development Plan (Coming Soon)
+                </p>
+              </div>
               <button 
                 onClick={() => navigate('development-plan')}
                 className="text-teal-600 hover:text-teal-700 text-sm font-semibold flex items-center gap-1"
@@ -534,6 +539,12 @@ const Dashboard4 = (props) => {
             </h2>
           </div>
           <div className="bg-white rounded-2xl p-4 shadow-sm border border-slate-200 space-y-3 text-left">
+            
+            {/* Dev Note */}
+            <div className="bg-slate-50 border border-slate-200 rounded-lg p-2 text-xs text-slate-500 italic text-center">
+              Waiting for inputs to be defined and built. (Mock Data)
+            </div>
+
             <div className="flex gap-3 items-start p-2 hover:bg-slate-50 rounded-lg transition-colors cursor-pointer">
               <div className="w-2 h-2 mt-2 rounded-full bg-orange-500 flex-shrink-0" />
               <div>
@@ -685,16 +696,11 @@ const Dashboard4 = (props) => {
       <div className="max-w-3xl mx-auto space-y-8">
         
         {/* 1. HEADER */}
-        <WidgetRenderer widgetId="dashboard-header" scope={scope}>
-          <header className="space-y-2">
-            <h1 className="text-3xl sm:text-4xl font-bold text-[#002E47]">
-              {greeting}
-            </h1>
-            <p className="text-lg text-slate-500 italic font-medium border-l-4 border-teal-500 pl-4 py-1">
-              "{dailyQuote}"
-            </p>
-          </header>
-        </WidgetRenderer>
+        <header className="space-y-2">
+          <h1 className="text-3xl sm:text-4xl font-bold text-[#002E47]">
+            {greeting}
+          </h1>
+        </header>
 
         {/* DYNAMIC FEATURES */}
         {sortedFeatures.map(featureId => (
