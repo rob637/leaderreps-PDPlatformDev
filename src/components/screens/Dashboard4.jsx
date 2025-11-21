@@ -14,6 +14,7 @@ import { useDashboard } from './dashboard/DashboardHooks.jsx';
 import { UnifiedAnchorEditorModal, CalendarSyncModal } from './dashboard/DashboardComponents.jsx';
 import { useFeatures } from '../../providers/FeatureProvider';
 import WidgetRenderer from '../admin/WidgetRenderer';
+import { createWidgetSDK } from '../../services/WidgetSDK';
 
 const DASHBOARD_FEATURES = [
   'gamification', 'exec-summary', 'weekly-focus', 
@@ -200,7 +201,12 @@ const Dashboard4 = (props) => {
       });
   }, [isFeatureEnabled, getFeatureOrder]);
 
+  const sdk = useMemo(() => createWidgetSDK({ navigate, user }), [navigate, user]);
+
   const scope = {
+    // SDK (New Standard)
+    sdk,
+
     // Icons
     CheckSquare, Square, Plus, Save, X, Trophy, Flame, 
     MessageSquare, Bell, Calendar, ChevronRight, ArrowRight,
@@ -248,7 +254,8 @@ const Dashboard4 = (props) => {
     // User Data
     user,
     greeting,
-    dailyQuote
+    dailyQuote,
+    allQuotes: globalMetadata?.SYSTEM_QUOTES || []
   };
 
   const renderers = {
@@ -678,14 +685,16 @@ const Dashboard4 = (props) => {
       <div className="max-w-3xl mx-auto space-y-8">
         
         {/* 1. HEADER */}
-        <header className="space-y-2">
-          <h1 className="text-3xl sm:text-4xl font-bold text-[#002E47]">
-            {greeting}
-          </h1>
-          <p className="text-lg text-slate-500 italic font-medium border-l-4 border-teal-500 pl-4 py-1">
-            "{dailyQuote}"
-          </p>
-        </header>
+        <WidgetRenderer widgetId="dashboard-header" scope={scope}>
+          <header className="space-y-2">
+            <h1 className="text-3xl sm:text-4xl font-bold text-[#002E47]">
+              {greeting}
+            </h1>
+            <p className="text-lg text-slate-500 italic font-medium border-l-4 border-teal-500 pl-4 py-1">
+              "{dailyQuote}"
+            </p>
+          </header>
+        </WidgetRenderer>
 
         {/* DYNAMIC FEATURES */}
         {sortedFeatures.map(featureId => (

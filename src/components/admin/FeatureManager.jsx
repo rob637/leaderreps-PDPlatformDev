@@ -1,17 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import { ToggleLeft, ToggleRight, FlaskConical, ArrowUp, ArrowDown, Edit3, Plus, Trash2, RefreshCw, Save, Flame, Bell, Target, Calendar, Moon, BookOpen, Play, Book, Video, FileText, Users, MessageSquare, UserPlus, Search, Radio, History, BarChart2, Bot, Cpu, Dumbbell, TrendingUp } from 'lucide-react';
 import { useFeatures } from '../../providers/FeatureProvider';
-import WidgetEditorModal from './WidgetEditorModal';
+import { useWidgetEditor } from '../../providers/WidgetEditorProvider';
 import { WIDGET_TEMPLATES, FEATURE_METADATA } from '../../config/widgetTemplates';
 
 const FeatureManager = () => {
   const { features, toggleFeature, updateFeatureOrder, saveFeature, deleteFeature, isFeatureEnabled } = useFeatures();
-  const [editingWidget, setEditingWidget] = useState(null);
+  const { openEditor } = useWidgetEditor();
   const [isAdding, setIsAdding] = useState(false);
   const [newWidget, setNewWidget] = useState({ name: '', id: '', group: 'dashboard', description: '' });
   const [activeGroup, setActiveGroup] = useState('dashboard');
 
   const initialGroups = {
+    header: ['dashboard-header'],
     dashboard: ['identity-builder', 'habit-stack', 'win-the-day', 'gamification', 'exec-summary', 'calendar-sync', 'weekly-focus', 'notifications', 'scorecard', 'pm-bookend'],
     'development-plan': ['dev-plan-header', 'dev-plan-stats', 'dev-plan-actions', 'dev-plan-focus-areas', 'dev-plan-goal'],
     content: ['course-library', 'reading-hub', 'leadership-videos', 'strat-templates'],
@@ -22,6 +23,7 @@ const FeatureManager = () => {
 
   // Group features dynamically
   const groups = {
+    header: [],
     dashboard: [],
     'development-plan': [],
     content: [],
@@ -30,14 +32,18 @@ const FeatureManager = () => {
     locker: []
   };
 
-  // 1. Get all unique IDs from both DB features and local metadata
-  const allFeatureIds = new Set([
-    ...Object.keys(features),
-    ...Object.keys(FEATURE_METADATA)
-  ]);
+  // 1. Determine canonical order of IDs to prevent jumping
+  // Start with Metadata keys to preserve default order
+  const orderedIds = Object.keys(FEATURE_METADATA);
+  // Append any custom IDs from DB that aren't in metadata
+  Object.keys(features).forEach(id => {
+    if (!FEATURE_METADATA[id]) {
+      orderedIds.push(id);
+    }
+  });
 
   // 2. Iterate and populate groups
-  allFeatureIds.forEach(id => {
+  orderedIds.forEach((id, index) => {
     // Prefer DB data, fallback to metadata/defaults
     const dbData = features[id];
     const meta = FEATURE_METADATA[id] || {};
@@ -49,7 +55,8 @@ const FeatureManager = () => {
       group = dbData.group;
     } else {
       // Fallback to initialGroups mapping
-      if (initialGroups['development-plan'].includes(id)) group = 'development-plan';
+      if (initialGroups.header.includes(id)) group = 'header';
+      else if (initialGroups['development-plan'].includes(id)) group = 'development-plan';
       else if (initialGroups.content.includes(id)) group = 'content';
       else if (initialGroups.community.includes(id)) group = 'community';
       else if (initialGroups.coaching.includes(id)) group = 'coaching';
@@ -65,7 +72,8 @@ const FeatureManager = () => {
       enabled: dbData ? dbData.enabled : true, // Default to enabled if not in DB
       order: dbData?.order ?? 999,
       code: dbData?.code || templateCode,
-      isUnsaved: !dbData // Flag to indicate it's using default/template
+      isUnsaved: !dbData, // Flag to indicate it's using default/template
+      originalIndex: index // Tie-breaker for stable sorting
     };
 
     if (groups[group]) {
@@ -73,9 +81,13 @@ const FeatureManager = () => {
     }
   });
 
-  // Sort groups
+  // Sort groups with stability
   Object.keys(groups).forEach(key => {
-    groups[key].sort((a, b) => a.order - b.order);
+    groups[key].sort((a, b) => {
+        const orderDiff = a.order - b.order;
+        if (orderDiff !== 0) return orderDiff;
+        return a.originalIndex - b.originalIndex;
+    });
   });
 
   const handleSyncDefaults = async () => {
@@ -88,10 +100,12 @@ const FeatureManager = () => {
            description: meta.description,
            code: WIDGET_TEMPLATES[id] || '',
            group: initialGroups.dashboard.includes(id) ? 'dashboard' : 
+                  initialGroups.header.includes(id) ? 'header' :
                   initialGroups.content.includes(id) ? 'content' :
                   initialGroups.community.includes(id) ? 'community' : 
                   initialGroups.coaching.includes(id) ? 'coaching' : 
-                  initialGroups.locker.includes(id) ? 'locker' : 'dashboard',
+                  initialGroups.locker.includes(id) ? 'locker' : 
+                  initialGroups['development-plan'].includes(id) ? 'development-plan' : 'dashboard',
            enabled: true,
            order: 999
          });
@@ -102,11 +116,16 @@ const FeatureManager = () => {
 
   const handleAddWidget = async () => {
     if (!newWidget.name || !newWidget.id) return;
+    
+    // Calculate max order to put at bottom
+    const currentGroupList = groups[newWidget.group] || [];
+    const maxOrder = currentGroupList.reduce((max, item) => Math.max(max, item.order), 0);
+
     await saveFeature(newWidget.id, {
       ...newWidget,
       code: '<div className="p-4 bg-white rounded-lg shadow border border-gray-200"><h3>New Widget</h3><p>Start editing...</p></div>',
       enabled: true,
-      order: 999
+      order: maxOrder + 10
     });
     setIsAdding(false);
     setNewWidget({ name: '', id: '', group: 'dashboard', description: '' });
@@ -166,6 +185,7 @@ const FeatureManager = () => {
   };
 
   const groupTitles = {
+    header: 'Header',
     dashboard: 'Dashboard',
     'development-plan': 'Development Plan',
     content: 'Content',
@@ -246,6 +266,7 @@ const FeatureManager = () => {
                     value={newWidget.group}
                     onChange={e => setNewWidget({...newWidget, group: e.target.value})}
                 >
+                    <option value="header">Header</option>
                     <option value="dashboard">Dashboard</option>
                     <option value="content">Content</option>
                     <option value="community">Community</option>
@@ -304,13 +325,29 @@ const FeatureManager = () => {
                         <div className="flex items-center gap-3">
                           <h4 
                             className="font-bold text-corporate-navy text-lg cursor-pointer hover:text-teal-600 hover:underline decoration-dotted underline-offset-4"
-                            onClick={() => setEditingWidget(feature)}
+                            onClick={() => {
+                                console.log('Opening editor for:', feature.name);
+                                openEditor({
+                                  widgetId: feature.id,
+                                  widgetName: feature.name,
+                                  scope: {}, 
+                                  initialCode: feature.code
+                                });
+                            }}
                             title="Click to edit widget design"
                           >
                             {feature.name}
                           </h4>
                           <button 
-                            onClick={() => setEditingWidget(feature)}
+                            onClick={() => {
+                                console.log('Opening editor (button) for:', feature.name);
+                                openEditor({
+                                  widgetId: feature.id,
+                                  widgetName: feature.name,
+                                  scope: {},
+                                  initialCode: feature.code
+                                });
+                            }}
                             className="p-1 text-slate-400 hover:text-teal-600 hover:bg-teal-50 rounded-full transition-colors"
                             title="Edit Widget Design"
                           >
@@ -375,31 +412,6 @@ const FeatureManager = () => {
       <div className="bg-yellow-50 border border-yellow-200 p-4 rounded-lg text-sm text-yellow-800">
         <strong>Note:</strong> Feature toggles and order are persisted globally via Firestore. Changes affect all users immediately.
       </div>
-
-      {/* Widget Editor Modal */}
-      {editingWidget && (
-        <WidgetEditorModal
-          key={editingWidget.id}
-          isOpen={!!editingWidget}
-          onClose={() => setEditingWidget(null)}
-          widgetId={editingWidget.id}
-          widgetName={editingWidget.name}
-          initialCode={editingWidget.code}
-          onSave={async (code) => {
-              // If unsaved, we need to save the full object
-              const current = features[editingWidget.id] || {};
-              await saveFeature(editingWidget.id, { 
-                  name: editingWidget.name,
-                  description: editingWidget.description,
-                  group: activeGroup, // Use current active group or editingWidget.group? editingWidget has it.
-                  enabled: editingWidget.enabled,
-                  order: editingWidget.order,
-                  ...current, // Merge existing DB props if any
-                  code 
-              });
-          }}
-        />
-      )}
     </div>
   );
 };

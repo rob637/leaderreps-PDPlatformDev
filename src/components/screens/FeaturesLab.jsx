@@ -176,6 +176,20 @@ const FeaturesLab = () => {
     window.dispatchEvent(new CustomEvent('featureFlagsUpdated', { detail: newFlags }));
   };
 
+  const toggleCategory = (category) => {
+    const categoryFeatures = FEATURES.filter(f => f.category === category);
+    const allEnabled = categoryFeatures.every(f => featureFlags[f.id]);
+    
+    const newFlags = { ...featureFlags };
+    categoryFeatures.forEach(f => {
+      newFlags[f.id] = !allEnabled;
+    });
+    
+    setFeatureFlags(newFlags);
+    localStorage.setItem('arena_feature_flags', JSON.stringify(newFlags));
+    window.dispatchEvent(new CustomEvent('featureFlagsUpdated', { detail: newFlags }));
+  };
+
   const renderFeatureCard = (feature) => {
     const isEnabled = featureFlags[feature.id] || false;
     const Icon = feature.icon;

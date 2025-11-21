@@ -21,6 +21,7 @@ export const WidgetEditorProvider = ({ children }) => {
   const [isEditMode, setIsEditMode] = useState(false); // Global toggle to enable "Click to Edit" on widgets
 
   const openEditor = useCallback(({ widgetId, widgetName, scope, initialCode }) => {
+    console.log('Provider: openEditor called', { widgetId, widgetName });
     setEditorState({
       widgetId,
       widgetName: widgetName || widgetId,

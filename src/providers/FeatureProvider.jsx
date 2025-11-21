@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { doc, onSnapshot, setDoc, updateDoc, deleteField } from 'firebase/firestore';
+import { doc, onSnapshot, setDoc, updateDoc, deleteField, collection, addDoc, serverTimestamp } from 'firebase/firestore';
 
 const FeatureContext = createContext();
 
@@ -12,7 +12,15 @@ export const useFeatures = () => {
 };
 
 export const FeatureProvider = ({ children, db }) => {
-  const [features, setFeatures] = useState({});
+  const [features, setFeatures] = useState(() => {
+    // Load from cache initially (Stale-While-Revalidate)
+    try {
+      const cached = localStorage.getItem('cached_features');
+      return cached ? JSON.parse(cached) : {};
+    } catch (e) {
+      return {};
+    }
+  });
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -25,9 +33,13 @@ export const FeatureProvider = ({ children, db }) => {
     
     const unsubscribe = onSnapshot(featureDocRef, (docSnapshot) => {
       if (docSnapshot.exists()) {
-        setFeatures(docSnapshot.data());
+        const data = docSnapshot.data();
+        setFeatures(data);
+        // Update cache
+        localStorage.setItem('cached_features', JSON.stringify(data));
       } else {
         setFeatures({});
+        localStorage.removeItem('cached_features');
       }
       setLoading(false);
     }, (error) => {
@@ -73,6 +85,25 @@ export const FeatureProvider = ({ children, db }) => {
   const saveFeature = async (featureId, data) => {
     if (!db) return;
     const featureDocRef = doc(db, 'config', 'features');
+
+    // 1. Save current version to history (if it exists and has code)
+    const current = features[featureId];
+    if (current && current.code) {
+        try {
+            const historyRef = collection(db, 'config', 'features', 'widget_history');
+            await addDoc(historyRef, {
+                widgetId: featureId,
+                code: current.code,
+                name: current.name,
+                timestamp: serverTimestamp(),
+                savedBy: 'admin' // We could pass user email here if we had it in context
+            });
+        } catch (e) {
+            console.warn("Failed to save widget history:", e);
+            // Don't block the main save
+        }
+    }
+
     await setDoc(featureDocRef, { [featureId]: data }, { merge: true });
   };
 

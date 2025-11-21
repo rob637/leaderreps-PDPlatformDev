@@ -969,11 +969,68 @@ export const WIDGET_TEMPLATES = {
   </h3>
   <p className="text-gray-700">{plan.openEndedAnswer}</p>
 </Card>
+    `,
+    'dashboard-header': `
+// Configuration: Set to true to enable scrolling marquee of all quotes
+const isScrolling = false; 
+
+// Helper to parse quote
+const parseQuote = (q) => {
+  if (!q) return { text: '', author: '' };
+  const parts = q.split('|');
+  return { text: parts[0], author: parts[1] || '' };
+};
+
+const current = parseQuote(dailyQuote);
+
+<header className="space-y-2 overflow-hidden">
+  <h1 className="text-3xl sm:text-4xl font-bold text-[#002E47]">
+    {greeting}
+  </h1>
+  
+  {isScrolling && allQuotes && allQuotes.length > 0 ? (
+    <div className="relative w-full overflow-hidden py-2 bg-slate-50 border-l-4 border-teal-500 group">
+      <div className="animate-marquee whitespace-nowrap inline-block group-hover:[animation-play-state:paused]">
+        {/* Repeat quotes to ensure we fill the screen and loop smoothly */}
+        {[...allQuotes, ...allQuotes].map((q, i) => {
+            const { text, author } = parseQuote(q);
+            return (
+                <span key={i} className="inline-block text-lg text-slate-500 italic font-medium mx-8">
+                "{text}" {author && <span className="text-sm not-italic text-slate-400">- {author}</span>}
+                </span>
+            );
+        })}
+      </div>
+    </div>
+  ) : (
+    <div className="border-l-4 border-teal-500 pl-4 py-1">
+      <p className="text-lg text-slate-500 italic font-medium">
+        "{current.text}"
+      </p>
+      {current.author && (
+        <p className="text-sm text-slate-400 font-medium mt-1">
+          — {current.author}
+        </p>
+      )}
+    </div>
+  )}
+</header>
+<style>{\`
+@keyframes marquee {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+.animate-marquee {
+  display: inline-block;
+  animation: marquee \${Math.max(60, (allQuotes?.length || 1) * 10)}s linear infinite;
+}
+\`}</style>
     `
   };
 
 export const FEATURE_METADATA = {
     // Dashboard
+    'dashboard-header': { name: 'Dashboard Header', description: 'Greeting and daily quote.' },
     'identity-builder': { name: 'Identity Builder', description: 'Grounding Rep & Identity Statement tools.' },
     'habit-stack': { name: 'Habit Stack', description: 'Daily Rep tracking and habit formation.' },
     'win-the-day': { name: 'AM Bookend (Win The Day)', description: 'AM Bookend 1-2-3 priority setting.' },

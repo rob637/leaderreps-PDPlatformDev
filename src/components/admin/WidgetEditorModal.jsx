@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import DynamicWidgetRenderer from './DynamicWidgetRenderer';
 import OpenAI from 'openai';
+import Editor from '@monaco-editor/react';
 import { useWidgetEditor } from '../../providers/WidgetEditorProvider';
 import { useFeatures } from '../../providers/FeatureProvider';
 
@@ -97,6 +98,8 @@ const WidgetEditorModal = () => {
   }, [outputLogs]);
 
   if (!isOpen) return null;
+
+  console.log('WidgetEditorModal rendering. isOpen:', isOpen);
 
   const handleSendMessage = async () => {
     if (!chatInput.trim()) return;
@@ -237,12 +240,20 @@ const WidgetEditorModal = () => {
                   <DynamicWidgetRenderer code={code} scope={proxiedScope} />
                </div>
             ) : (
-               <textarea 
-                  value={code}
-                  onChange={(e) => setCode(e.target.value)}
-                  className="w-full h-full bg-[#1e1e1e] text-green-400 font-mono text-sm p-4 resize-none focus:outline-none rounded-lg shadow-inner"
-                  spellCheck="false"
-                />
+               <Editor
+                 height="100%"
+                 defaultLanguage="javascript"
+                 theme="vs-dark"
+                 value={code}
+                 onChange={(value) => setCode(value || '')}
+                 options={{
+                   minimap: { enabled: false },
+                   fontSize: 14,
+                   wordWrap: 'on',
+                   scrollBeyondLastLine: false,
+                   automaticLayout: true
+                 }}
+               />
             )}
           </div>
         </div>
@@ -335,6 +346,10 @@ const WidgetEditorModal = () => {
 
 // Simple Recursive Scope Viewer with Depth Limit
 const ScopeViewer = ({ data, level = 0 }) => {
+  if (level === 0 && (!data || (typeof data === 'object' && Object.keys(data).length === 0))) {
+      return <div className="text-slate-500 italic p-2">No inputs/scope available.</div>;
+  }
+
   if (level > 3) return <span className="text-slate-600">...</span>;
 
   if (typeof data === 'function') {
