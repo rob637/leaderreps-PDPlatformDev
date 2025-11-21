@@ -1,3 +1,4 @@
+/* eslint-disable */
 // MIGRATION INSTRUCTIONS
 // You need to run this from WITHIN the Content Management screen
 

@@ -62,20 +62,12 @@ const RepFeedItem = ({ item }) => {
         // Example navigation (route needs to be defined in App.jsx)
         // navigate('community-thread', { feedItemId: item.id });
         // For now, just show an alert
-        const isDeveloperMode = localStorage.getItem('arena-developer-mode') === 'true';
-        if (isDeveloperMode) {
-          if (localStorage.getItem('arena-developer-mode') === 'true') {
-          }
-        }
+        console.log('Comment clicked');
     };
-    };
-    const handleLike = (item) => {
+
+    const handleReact = (item) => {
         // For now, just show an alert
-        const isDeveloperMode = localStorage.getItem('arena-developer-mode') === 'true';
-        if (isDeveloperMode) {
-          if (localStorage.getItem('arena-developer-mode') === 'true') {
-          }
-        }
+        console.log('React clicked');
     };
 
     return (
@@ -164,11 +156,6 @@ const CommunityFeedScreen = () => {
         // TODO: Replace with actual API call to post to the feed
         // Example: addDoc(collection(db, 'community_feed'), { userId: safeUser.userId, userName: safeUser.name, text: textToShare, isPod: true, createdAt: serverTimestamp(), ... });
 
-        const isDeveloperMode = localStorage.getItem('arena-developer-mode') === 'true';
-        if (isDeveloperMode) {
-          if (localStorage.getItem('arena-developer-mode') === 'true') {
-          }
-        }
         setQuickShareText(''); // Clear input
         setIsSharing(false);
         // TODO: Optionally refresh the feed after posting

@@ -417,6 +417,7 @@ async function confirmPlanPersisted(db, userId, retries = 4, delayMs = 250) {
       // Confirm plan persisted for logging purposes
       const okPersisted = await confirmPlanPersisted(db, userId);
       if (okPersisted) {
+        console.log('[DevelopmentPlan] Plan persisted successfully.');
       } else {
         console.warn('[DevelopmentPlan] Could not confirm plan persistence, but waiting for listener.');
       }

@@ -298,12 +298,8 @@ export const EveningBookend = ({
             <div className="mt-6 pt-4 border-t" style={{ borderColor: COLORS.SUBTLE }}>
                 <Button
                     onClick={() => {
-                        const isDeveloperMode = localStorage.getItem('arena-developer-mode') === 'true';
-                        if (isDeveloperMode) {
-                          if (localStorage.getItem('arena-developer-mode') === 'true') {
-                          }
-                        }
-                        if (onSaveReflection) {
+                        if (onSave) onSave();
+                    }}
                     disabled={isSaving}
                     variant="primary"
                     size="md"

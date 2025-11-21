@@ -971,7 +971,6 @@ export const WIDGET_TEMPLATES = {
 </Card>
     `,
     'dashboard-header': `
-// Configuration: Set to true to enable scrolling marquee of all quotes
 const isScrolling = false; 
 
 const DashboardHeader = () => {

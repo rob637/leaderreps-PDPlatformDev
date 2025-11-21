@@ -484,22 +484,12 @@ export const useDashboard = ({
   }, [reflectionGood, reflectionBetter, reflectionBest, habitsCompleted, updateDailyPracticeData, dailyPracticeData]); // Explicitly include prop
 
   const handleAddTask = useCallback((taskText) => {
-    const isDeveloperMode = localStorage.getItem('arena-developer-mode') === 'true';
-    if (isDeveloperMode) {
-      if (isDeveloperMode()) {
-      }
-    }
+    // Developer mode check removed for now
     
     if (!taskText.trim()) {
-      const isDeveloperMode = localStorage.getItem('arena-developer-mode') === 'true';
-      if (isDeveloperMode) {
-      }
       return;
     }
     if (otherTasks.length >= 5) {
-      const isDeveloperMode = localStorage.getItem('arena-developer-mode') === 'true';
-      if (isDeveloperMode) {
-      }
       return;
     }
     

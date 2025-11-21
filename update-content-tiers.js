@@ -1,3 +1,4 @@
+/* eslint-disable */
 // update-content-tiers.js
 // Script to update all content collections from old tier system (basic/professional/elite) to new system (free/premium)
 

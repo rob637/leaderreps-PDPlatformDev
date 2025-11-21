@@ -1676,6 +1676,57 @@ export default function CoachingLabScreen({ simulatedTier }) {
         logWidthMeasurements('CoachingLab');
     }, [view]);
 
+    const menuItems = useMemo(() => [
+        {
+            featureId: 'ai-roleplay',
+            title: 'AI Roleplay',
+            icon: Briefcase,
+            description: 'Practice high-stakes conversations in a realistic AI role-play simulator.',
+            onClick: () => setView('scenario-library')
+        },
+        {
+            featureId: 'scenario-sim',
+            title: 'Scenario Sim',
+            icon: Target,
+            description: 'Run complex leadership simulations to test your decision making.',
+            onClick: () => setView('scenario-library')
+        },
+        {
+            featureId: 'feedback-gym',
+            title: 'Feedback Gym',
+            icon: BarChart3,
+            description: 'Get instant feedback on your communication style and effectiveness.',
+            onClick: () => setView('progress-analytics')
+        },
+        {
+            featureId: 'practice-history',
+            title: 'Practice History',
+            icon: Clock,
+            description: 'Review your past performance, scores, and AI feedback.',
+            onClick: () => navigate('daily-practice')
+        },
+        {
+            featureId: 'progress-analytics',
+            title: 'Progress Analytics',
+            icon: TrendingUp,
+            description: 'Track performance trends and strengths.',
+            onClick: () => setView('progress-analytics')
+        },
+        {
+            featureId: 'roi-report',
+            title: 'Executive ROI Report',
+            icon: BarChart3,
+            description: 'Automated reports showing progress and value.',
+            onClick: () => {}
+        }
+    ]
+    .filter(item => isFeatureEnabled(item.featureId))
+    .sort((a, b) => {
+        const orderA = getFeatureOrder(a.featureId);
+        const orderB = getFeatureOrder(b.featureId);
+        return orderA - orderB;
+    }), [isFeatureEnabled, getFeatureOrder, navigate, hasCoachingAccess]);
+
     const renderView = () => {
         const viewProps = { setCoachingLabView: setView, setSelectedScenario, setMicroLearningTopic };
 
@@ -1734,57 +1785,7 @@ export default function CoachingLabScreen({ simulatedTier }) {
                             <p className="corporate-text-body text-gray-600 mx-auto px-4">Welcome to Coaching. Select a tool to build your leadership skills.</p>
                         </div>
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                            {useMemo(() => [
-                                {
-                                    featureId: 'ai-roleplay',
-                                    title: 'AI Roleplay',
-                                    icon: Briefcase,
-                                    description: 'Practice high-stakes conversations in a realistic AI role-play simulator.',
-                                    onClick: () => setView('scenario-library')
-                                },
-                                {
-                                    featureId: 'scenario-sim',
-                                    title: 'Scenario Sim',
-                                    icon: Target,
-                                    description: 'Run complex leadership simulations to test your decision making.',
-                                    onClick: () => setView('scenario-library')
-                                },
-                                {
-                                    featureId: 'feedback-gym',
-                                    title: 'Feedback Gym',
-                                    icon: BarChart3,
-                                    description: 'Get instant feedback on your communication style and effectiveness.',
-                                    onClick: () => setView('progress-analytics')
-                                },
-                                {
-                                    featureId: 'practice-history',
-                                    title: 'Practice History',
-                                    icon: Clock,
-                                    description: 'Review your past performance, scores, and AI feedback.',
-                                    onClick: () => navigate('daily-practice')
-                                },
-                                {
-                                    featureId: 'progress-analytics',
-                                    title: 'Progress Analytics',
-                                    icon: TrendingUp,
-                                    description: 'Track performance trends and strengths.',
-                                    onClick: () => setView('progress-analytics')
-                                },
-                                {
-                                    featureId: 'roi-report',
-                                    title: 'Executive ROI Report',
-                                    icon: BarChart3,
-                                    description: 'Automated reports showing progress and value.',
-                                    onClick: () => {}
-                                }
-                            ]
-                            .filter(item => isFeatureEnabled(item.featureId))
-                            .sort((a, b) => {
-                                const orderA = getFeatureOrder(a.featureId);
-                                const orderB = getFeatureOrder(b.featureId);
-                                return orderA - orderB;
-                            }), [isFeatureEnabled, getFeatureOrder])
-                            .map(item => (
+                            {menuItems.map(item => (
                                 <Card key={item.featureId} title={item.title} icon={item.icon} onClick={hasCoachingAccess ? item.onClick : undefined}>
                                     <p className="text-sm text-gray-600 mb-3">{item.description}</p>
                                     {!hasCoachingAccess && (
