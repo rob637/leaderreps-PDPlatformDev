@@ -8,8 +8,8 @@ import {
   User, 
   Archive,
   LogOut,
-  Menu,
   ChevronLeft,
+  ChevronRight,
   ShieldCheck,
   Beaker
 } from 'lucide-react';
@@ -17,10 +17,7 @@ import {
 const ArenaSidebar = ({ isOpen, toggle, currentScreen, navigate, onSignOut, user, membershipData }) => {
   
   const menuItems = [
-    { id: 'dashboard', label: 'Dashboard 1', icon: LayoutDashboard },
-    { id: 'dashboard-main', label: 'Dashboard 2', icon: LayoutDashboard },
-    { id: 'dashboard-3', label: 'Dashboard 3', icon: LayoutDashboard },
-    { id: 'dashboard-4', label: 'Dashboard 4', icon: LayoutDashboard },
+    { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { id: 'development-plan', label: 'Dev Plan', icon: Target },
     { id: 'library', label: 'Content', icon: BookOpen },
     { id: 'community', label: 'Community', icon: Users },
@@ -44,8 +41,8 @@ const ArenaSidebar = ({ isOpen, toggle, currentScreen, navigate, onSignOut, user
   return (
     <div 
       className={`
-        fixed md:relative z-40 h-full bg-corporate-navy text-white transition-all duration-300 ease-in-out flex flex-col
-        ${isOpen ? 'w-64 translate-x-0' : 'w-0 -translate-x-full md:w-16 md:translate-x-0'}
+        relative z-40 h-full bg-corporate-navy text-white transition-all duration-300 ease-in-out flex flex-col
+        ${isOpen ? 'w-64' : 'w-16'}
       `}
     >
       {/* Header / Toggle */}
@@ -65,13 +62,15 @@ const ArenaSidebar = ({ isOpen, toggle, currentScreen, navigate, onSignOut, user
              <img src="/icons/icon-192x192.png" alt="Logo" className="w-8 h-8 rounded bg-white" />
           </div>
         )}
-        
-        {/* Mobile Close Button */}
+      </div>
+
+      {/* Sidebar Toggle */}
+      <div className="flex justify-center py-2 border-b border-white/10">
         <button 
           onClick={toggle}
-          className="md:hidden p-1 hover:bg-white/10 rounded"
+          className="p-1 hover:bg-white/10 rounded text-gray-400 hover:text-white transition-colors"
         >
-          <ChevronLeft className="w-6 h-6" />
+          {isOpen ? <ChevronLeft className="w-6 h-6" /> : <ChevronRight className="w-6 h-6" />}
         </button>
       </div>
 
@@ -98,10 +97,7 @@ const ArenaSidebar = ({ isOpen, toggle, currentScreen, navigate, onSignOut, user
                 <button
                   onClick={() => {
                     navigate(item.id);
-                    // Close sidebar on mobile when item is selected
-                    if (window.innerWidth < 768) {
-                      toggle();
-                    }
+                    toggle();
                   }}
                   className={`
                     w-full flex items-center gap-4 px-4 py-3 transition-colors relative bg-transparent border-none

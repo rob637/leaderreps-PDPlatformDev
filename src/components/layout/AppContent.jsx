@@ -2,7 +2,7 @@
 
 import React, { Suspense, useCallback, useState, useEffect } from 'react';
 import { signOut, updateProfile } from 'firebase/auth';
-import { Menu, LogOut, Loader, Settings, Anchor, ChevronDown, ChevronUp } from 'lucide-react';
+import { LogOut, Loader, Settings, Anchor, ChevronDown, ChevronUp } from 'lucide-react';
 import PWAInstall from '../ui/PWAInstall.jsx';
 import ScreenRouter from '../../routing/ScreenRouter.jsx';
 import MobileBottomNav from './MobileBottomNav.jsx';
@@ -186,18 +186,6 @@ const AppContent = ({
 
           <header className="nav-corporate sticky top-0 flex justify-between items-center z-30 px-6 py-4 bg-white border-b border-gray-200 shadow-sm">
             <div className="flex items-center gap-4">
-              <button
-                onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-                className="p-2 hover:bg-gray-100 rounded-lg transition-all duration-200 text-corporate-navy"
-                title="Toggle Menu"
-              >
-                <Menu className="w-6 h-6" />
-              </button>
-              
-              {/* The Arena Title (Next to Hamburger) */}
-              <h1 className="text-2xl font-bold text-corporate-navy font-serif hidden md:block">
-                The Arena
-              </h1>
               
               {/* Mobile Logo (only show if sidebar is closed or on mobile) */}
               <img 

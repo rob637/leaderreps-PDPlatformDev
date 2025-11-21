@@ -7,11 +7,8 @@ const ScreenMap = {
   'roadmap-tracker': lazy(() =>
     import('../components/screens/RoadmapTracker.jsx')
   ),
-  dashboard: lazy(() => import('../components/screens/Dashboard.jsx')),
-  'dashboard-main': lazy(() => import('../components/screens/DashboardMain.jsx')),
+  dashboard: lazy(() => import('../components/screens/Dashboard4.jsx')),
   'arena-dashboard': lazy(() => import('../components/screens/ArenaDashboard.jsx')),
-  'dashboard-3': lazy(() => import('../components/screens/Dashboard3.jsx')),
-  'dashboard-4': lazy(() => import('../components/screens/Dashboard4.jsx')),
   'development-plan': lazy(() =>
     import('../components/screens/DevelopmentPlan.jsx')
   ),

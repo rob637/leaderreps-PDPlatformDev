@@ -13,7 +13,7 @@ import {
   Trash2
 } from 'lucide-react';
 import { useAppServices } from '../../services/useAppServices';
-import { collection, getDocs, query, where, orderBy, limit, doc, getDoc, updateDoc, arrayUnion, arrayRemove, addDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, getDocs, query, where, orderBy, limit, doc, getDoc, updateDoc, setDoc, arrayUnion, arrayRemove, addDoc, serverTimestamp } from 'firebase/firestore';
 
 const AdminDashboard = () => {
   const { db, user } = useAppServices();
@@ -128,11 +128,17 @@ const AdminDashboard = () => {
         try {
           const metadataRef = doc(db, 'metadata', 'config');
           const metadataSnap = await getDoc(metadataRef);
+          const DEFAULT_ADMINS = ['rob@sagecg.com', 'ryan@leaderreps.com', 'admin@leaderreps.com'];
+
           if (metadataSnap.exists()) {
             const data = metadataSnap.data();
-            setAdmins(data.adminemails || []);
+            if (data.adminemails && Array.isArray(data.adminemails) && data.adminemails.length > 0) {
+              setAdmins(data.adminemails);
+            } else {
+              setAdmins(DEFAULT_ADMINS);
+            }
           } else {
-            setAdmins(['rob@sagecg.com', 'ryan@leaderreps.com', 'admin@leaderreps.com']);
+            setAdmins(DEFAULT_ADMINS);
           }
         } catch (e) {
           console.error("Error fetching admins:", e);
@@ -232,17 +238,22 @@ const AdminDashboard = () => {
     setIsAddingAdmin(true);
     try {
       const metadataRef = doc(db, 'metadata', 'config');
-      await updateDoc(metadataRef, {
+      // Use setDoc with merge to ensure document exists
+      await setDoc(metadataRef, {
         adminemails: arrayUnion(newAdminEmail.toLowerCase())
-      });
+      }, { merge: true });
       
       await logActivity('Added Admin', `Added ${newAdminEmail} to admin list`);
       
-      setAdmins(prev => [...prev, newAdminEmail.toLowerCase()]);
+      setAdmins(prev => {
+        // Avoid duplicates in local state
+        if (prev.includes(newAdminEmail.toLowerCase())) return prev;
+        return [...prev, newAdminEmail.toLowerCase()];
+      });
       setNewAdminEmail('');
     } catch (error) {
       console.error("Error adding admin:", error);
-      alert("Failed to add admin. Ensure 'metadata/config' exists.");
+      alert("Failed to add admin.");
     } finally {
       setIsAddingAdmin(false);
     }
@@ -253,13 +264,18 @@ const AdminDashboard = () => {
     
     try {
       const metadataRef = doc(db, 'metadata', 'config');
-      await updateDoc(metadataRef, {
-        adminemails: arrayRemove(email)
-      });
+      
+      // Calculate new list based on current state
+      // This ensures that if we were viewing defaults, we save the modified list to DB
+      const newAdmins = admins.filter(a => a !== email);
+
+      await setDoc(metadataRef, {
+        adminemails: newAdmins
+      }, { merge: true });
       
       await logActivity('Removed Admin', `Removed ${email} from admin list`);
       
-      setAdmins(prev => prev.filter(a => a !== email));
+      setAdmins(newAdmins);
     } catch (error) {
       console.error("Error removing admin:", error);
     }
