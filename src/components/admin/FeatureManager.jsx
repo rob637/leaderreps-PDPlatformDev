@@ -73,15 +73,17 @@ const FeatureManager = () => {
   });
 
   // --- DERIVED DATA FOR SCOPE ---
-  const greeting = `Hey, ${user?.displayName?.split(' ')[0] || 'Leader'}.`;
+  // NO MOCK DATA - If data is missing, pass null/undefined so the widget knows.
+  const greeting = user?.displayName ? `Hey, ${user.displayName.split(' ')[0]}.` : null;
+  
   const dailyQuote = React.useMemo(() => {
     const quotes = globalMetadata?.SYSTEM_QUOTES || [];
-    if (quotes.length === 0) return "Leadership is a practice, not a position.";
+    if (quotes.length === 0) return null;
     const today = new Date().getDate();
     return quotes[today % quotes.length];
   }, [globalMetadata]);
 
-  const weeklyFocus = globalMetadata?.weeklyFocus || developmentPlanData?.currentPlan?.focusAreas?.[0]?.name || 'Feedback';
+  const weeklyFocus = globalMetadata?.weeklyFocus || developmentPlanData?.currentPlan?.focusAreas?.[0]?.name || null;
   const hasLIS = !!identityStatement;
   const lisRead = habitsCompleted?.readLIS || false;
   

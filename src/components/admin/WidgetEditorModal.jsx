@@ -265,7 +265,7 @@ const WidgetEditorModal = () => {
           </div>
           <div className="flex-1 overflow-auto p-2 space-y-2 font-mono text-xs">
             {outputLogs.length === 0 && (
-              <div className="text-slate-600 italic p-2">Waiting for events...</div>
+              <div className="text-slate-600 italic p-2">No output recorded.</div>
             )}
             {outputLogs.map((log) => (
               <div key={log.id} className="p-2 rounded bg-[#1e293b] border border-slate-700">
