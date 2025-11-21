@@ -12,8 +12,12 @@ const DynamicWidgetRenderer = ({ code, scope = {} }) => {
     ...scope
   };
 
+  // Determine if the code is using the "render()" pattern (noInline=true)
+  // or the simple expression pattern (noInline=false)
+  const noInline = code && code.includes('render(');
+
   return (
-    <LiveProvider code={code} scope={defaultScope} noInline={false}>
+    <LiveProvider code={code} scope={defaultScope} noInline={noInline}>
       <div className="dynamic-widget-preview h-full w-full overflow-auto">
         <LiveError className="bg-red-100 text-red-800 p-4 rounded-lg mb-4 font-mono text-sm whitespace-pre-wrap" />
         <LivePreview />

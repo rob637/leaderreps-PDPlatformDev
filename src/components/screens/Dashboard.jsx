@@ -12,6 +12,14 @@ import { ArrowRight, Edit3, Loader, X, Users, Send, Target, Clock, Zap, Shield, 
 import { deleteField, updateDoc, doc } from 'firebase/firestore'; // Used for reminder dismissals
 import { MembershipGate } from '../ui/MembershipGate.jsx';
 import { COLORS } from './dashboard/dashboardConstants.js';
+import * as LucideIcons from 'lucide-react';
+import { 
+  Card as DevCard, 
+  Button as DevButton, 
+  ProgressBar, 
+  Badge, 
+  StatCard 
+} from '../developmentplan/DevPlanComponents';
 
 // Import modular components from the file you provided
 import {
@@ -236,6 +244,17 @@ const GetStartedCard = ({ onNavigate, membershipData, developmentPlanData, curre
 };
 
 const Dashboard = (props) => {
+  // Base scope for all widgets to prevent ReferenceErrors
+  const baseWidgetScope = {
+    ...LucideIcons,
+    Card: DevCard,
+    Button: DevButton,
+    ProgressBar,
+    Badge,
+    StatCard,
+    COLORS
+  };
+
   const { 
     db, 
     user, 
@@ -664,6 +683,7 @@ const Dashboard = (props) => {
           <WidgetRenderer 
             widgetId="identity-builder"
             scope={{
+              ...baseWidgetScope,
               onNavigate: setCurrentScreen,
               membershipData,
               developmentPlanData,
@@ -695,7 +715,7 @@ const Dashboard = (props) => {
       {/* Daily Progress Summary - Shows WIN and Reflections */}
       {visibleComponents.includes('dynamicBookend') && (
         <div className="section-corporate">
-          <WidgetRenderer widgetId="scorecard" scope={{ dailyPracticeData }}>
+          <WidgetRenderer widgetId="scorecard" scope={{ ...baseWidgetScope, dailyPracticeData }}>
             <DailyProgressSummary dailyPracticeData={dailyPracticeData} />
           </WidgetRenderer>
         </div>
@@ -707,6 +727,7 @@ const Dashboard = (props) => {
         <WidgetRenderer 
           widgetId="win-the-day" 
           scope={{
+            ...baseWidgetScope,
             morningProps: {
               dailyWIN: morningWIN,
               setDailyWIN: setMorningWIN,
@@ -790,7 +811,7 @@ const Dashboard = (props) => {
       {/* AI Coach Nudge (Arena 1.0 – Show for Premium only) */}
       {visibleComponents.includes('aiCoachNudge') && isMemberPremium && (
         <div className="section-corporate">
-          <WidgetRenderer widgetId="ai-roleplay" scope={{ onOpenLab: () => setCurrentScreen('coaching-lab') }}>
+          <WidgetRenderer widgetId="ai-roleplay" scope={{ ...baseWidgetScope, onOpenLab: () => setCurrentScreen('coaching-lab') }}>
             <AICoachNudge onOpenLab={() => setCurrentScreen('coaching-lab')} />
           </WidgetRenderer>
         </div>
@@ -799,7 +820,7 @@ const Dashboard = (props) => {
       {/* Additional Reps (Bonus Exercises) (Arena 1.0 – Show for Pro/Premium only) */}
       {(isMemberPro || isMemberPremium) && bonusExercises.length > 0 && (
         <div className="section-corporate">
-          <WidgetRenderer widgetId="course-library" scope={{ bonusExercises, onExerciseClick: handleBonusExerciseClick }}>
+          <WidgetRenderer widgetId="course-library" scope={{ ...baseWidgetScope, bonusExercises, onExerciseClick: handleBonusExerciseClick }}>
             <AdditionalRepsCard
               bonusExercises={bonusExercises}
               onExerciseClick={handleBonusExerciseClick}
@@ -813,6 +834,7 @@ const Dashboard = (props) => {
         <WidgetRenderer 
           widgetId="habit-stack" 
           scope={{
+            ...baseWidgetScope,
             otherTasks: otherTasks || [],
             morningWIN: morningWIN || '',
             winCompleted: amWinCompleted || false,
@@ -920,8 +942,7 @@ const Dashboard = (props) => {
                   size="md"
                   className="w-full"
                 >
-                  <Anchor className="w-4 h-4 mr-2" />
-                  Set Your Anchor
+                  Set My Anchor
                 </Button>
               </>
             )}

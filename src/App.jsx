@@ -29,6 +29,8 @@ import AuthPanel from './components/auth/AuthPanel.jsx';
 import AppContent from './components/layout/AppContent.jsx';
 import DataProvider from './providers/DataProvider.jsx';
 import { FeatureProvider } from './providers/FeatureProvider.jsx';
+import { WidgetEditorProvider } from './providers/WidgetEditorProvider.jsx';
+import WidgetEditorModal from './components/admin/WidgetEditorModal.jsx';
 import ConfigError from './components/system/ConfigError.jsx';
 import UpdateNotification from './components/ui/UpdateNotification.jsx';
 
@@ -124,24 +126,27 @@ function App() {
         user={user}
       >
         <FeatureProvider db={firebaseServices?.db}>
-          {isAuthRequired ? (
-            <AuthPanel 
-              auth={firebaseServices.auth} 
-              onSuccess={() => navigate('dashboard')} 
-            />
-          ) : (
-            <AppContent
-              currentScreen={currentScreen}
-              user={user}
-              navParams={navParams}
-              isMobileOpen={isMobileOpen}
-              setIsMobileOpen={setIsMobileOpen}
-              isAuthRequired={isAuthRequired}
-              auth={firebaseServices.auth}
-              goBack={goBack}
-              canGoBack={canGoBack}
-            />
-          )}
+          <WidgetEditorProvider>
+            {isAuthRequired ? (
+              <AuthPanel 
+                auth={firebaseServices.auth} 
+                onSuccess={() => navigate('dashboard')} 
+              />
+            ) : (
+              <AppContent
+                currentScreen={currentScreen}
+                user={user}
+                navParams={navParams}
+                isMobileOpen={isMobileOpen}
+                setIsMobileOpen={setIsMobileOpen}
+                isAuthRequired={isAuthRequired}
+                auth={firebaseServices.auth}
+                goBack={goBack}
+                canGoBack={canGoBack}
+              />
+            )}
+            <WidgetEditorModal />
+          </WidgetEditorProvider>
         </FeatureProvider>
       </DataProvider>
       
