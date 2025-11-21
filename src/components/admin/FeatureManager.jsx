@@ -8,6 +8,7 @@ const FeatureManager = () => {
   const [editingWidget, setEditingWidget] = useState(null);
   const [isAdding, setIsAdding] = useState(false);
   const [newWidget, setNewWidget] = useState({ name: '', id: '', group: 'dashboard', description: '' });
+  const [activeGroup, setActiveGroup] = useState('dashboard');
 
   const WIDGET_TEMPLATES = {
     'gamification': `
@@ -834,6 +835,148 @@ const FeatureManager = () => {
     <p className="text-slate-500 italic">No reflection recorded for today.</p>
   )}
 </Card>
+    `,
+    'dev-plan-header': `
+<Card accent="TEAL">
+  <div className="flex items-center justify-between mb-6">
+    <div>
+      <h1 className="text-xl sm:text-2xl sm:text-3xl font-bold mb-2" style={{ color: COLORS.NAVY }}>
+        Development Plan
+      </h1>
+      <p className="text-gray-600">
+        Cycle {cycle} • {summary.totalSkills} skills • {summary.progress}% complete
+      </p>
+    </div>
+    <Button
+      onClick={() => onEditPlan()}
+      variant="secondary"
+      className="flex items-center gap-2"
+    >
+      <Edit size={16} />
+      Quick Edit
+    </Button>
+  </div>
+
+  <ProgressBar progress={summary.progress} color={COLORS.TEAL} />
+</Card>
+    `,
+    'dev-plan-stats': `
+<div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+  <Card accent="BLUE">
+    <div className="flex items-center gap-3">
+      <Target size={32} style={{ color: COLORS.BLUE }} />
+      <div>
+        <div className="text-xl sm:text-2xl font-bold" style={{ color: COLORS.NAVY }}>
+          {summary.totalSkills}
+        </div>
+        <div className="text-sm text-gray-600">Total Skills</div>
+      </div>
+    </div>
+  </Card>
+
+  <Card accent="GREEN">
+    <div className="flex items-center gap-3">
+      <TrendingUp size={32} style={{ color: COLORS.GREEN }} />
+      <div>
+        <div className="text-xl sm:text-2xl font-bold" style={{ color: COLORS.NAVY }}>
+          {summary.completedSkills}
+        </div>
+        <div className="text-sm text-gray-600">Completed</div>
+      </div>
+    </div>
+  </Card>
+
+  <Card accent="ORANGE">
+    <div className="flex items-center gap-3">
+      <Calendar size={32} style={{ color: COLORS.ORANGE }} />
+      <div>
+        <div className="text-xl sm:text-2xl font-bold" style={{ color: COLORS.NAVY }}>
+          {summary.currentWeek || 0}
+        </div>
+        <div className="text-sm text-gray-600">Current Week</div>
+      </div>
+    </div>
+  </Card>
+</div>
+    `,
+    'dev-plan-actions': `
+<Card accent="TEAL">
+  <h2 className="font-bold mb-4" style={{ color: COLORS.NAVY }}>
+    Actions
+  </h2>
+  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+    <Button
+      onClick={() => setShowBreakdown(true)}
+      variant="primary"
+      className="flex items-center justify-center gap-2"
+    >
+      <Target size={16} />
+      View Progress Breakdown
+    </Button>
+    
+    {onScan && (
+      <Button
+        onClick={onScan}
+        variant="primary"
+        className="flex items-center justify-center gap-2"
+      >
+        <TrendingUp size={16} />
+        Start Progress Scan
+      </Button>
+    )}
+    
+    {onTimeline && (
+      <Button
+        onClick={onTimeline}
+        variant="secondary"
+        className="flex items-center justify-center gap-2"
+      >
+        <Calendar size={16} />
+        View Timeline
+      </Button>
+    )}
+    
+    {onDetail && (
+      <Button
+        onClick={onDetail}
+        variant="secondary"
+        className="flex items-center justify-center gap-2"
+      >
+        View Detailed Plan
+      </Button>
+    )}
+  </div>
+</Card>
+    `,
+    'dev-plan-focus-areas': `
+<Card accent="PURPLE">
+  <h2 className="font-bold mb-4" style={{ color: COLORS.NAVY }}>
+    Focus Areas
+  </h2>
+  <div className="space-y-3">
+    {plan.focusAreas && plan.focusAreas.map((area, index) => (
+      <div key={index} className="p-4 bg-gray-50 rounded-lg">
+        <h3 className="font-semibold mb-2" style={{ color: COLORS.NAVY }}>
+          {area.name}
+        </h3>
+        <p className="text-sm text-gray-600 mb-2">
+          {area.why}
+        </p>
+        <div className="text-xs text-gray-500">
+          {area.reps?.length || 0} practice reps • {area.courses?.length || 0} courses
+        </div>
+      </div>
+    ))}
+  </div>
+</Card>
+    `,
+    'dev-plan-goal': `
+<Card accent="GOLD">
+  <h3 className="font-bold mb-2" style={{ color: COLORS.NAVY }}>
+    Your Goal
+  </h3>
+  <p className="text-gray-700">{plan.openEndedAnswer}</p>
+</Card>
     `
   };
   
@@ -875,6 +1018,13 @@ const FeatureManager = () => {
     'locker-wins-history': { name: 'Wins History', description: 'Log of daily wins and completions.' },
     'locker-scorecard-history': { name: 'Scorecard History', description: 'Historical view of daily scorecard performance.' },
     'locker-latest-reflection': { name: 'Latest Reflection', description: 'Most recent evening reflection entry.' },
+
+    // Development Plan
+    'dev-plan-header': { name: 'Plan Header', description: 'Title, cycle info, and progress bar.' },
+    'dev-plan-stats': { name: 'Plan Stats', description: 'Quick stats: Total Skills, Completed, Current Week.' },
+    'dev-plan-actions': { name: 'Plan Actions', description: 'Buttons for Breakdown, Scan, Timeline, Detail.' },
+    'dev-plan-focus-areas': { name: 'Focus Areas Summary', description: 'List of focus areas in the plan.' },
+    'dev-plan-goal': { name: 'Plan Goal', description: 'User\'s open-ended goal.' },
   };
 
   const initialGroups = {
@@ -882,7 +1032,8 @@ const FeatureManager = () => {
     content: ['course-library', 'reading-hub', 'leadership-videos', 'strat-templates'],
     community: ['community-feed', 'my-discussions', 'mastermind', 'mentor-match', 'live-events'],
     coaching: ['practice-history', 'progress-analytics', 'ai-roleplay', 'scenario-sim', 'feedback-gym', 'roi-report'],
-    locker: ['locker-wins-history', 'locker-scorecard-history', 'locker-latest-reflection']
+    locker: ['locker-wins-history', 'locker-scorecard-history', 'locker-latest-reflection'],
+    'development-plan': ['dev-plan-header', 'dev-plan-stats', 'dev-plan-actions', 'dev-plan-focus-areas', 'dev-plan-goal']
   };
 
   // Group features dynamically
@@ -891,7 +1042,8 @@ const FeatureManager = () => {
     content: [],
     community: [],
     coaching: [],
-    locker: []
+    locker: [],
+    'development-plan': []
   };
 
   // Merge DB features with metadata for display
@@ -900,7 +1052,8 @@ const FeatureManager = () => {
                                  initialGroups.content.includes(id) ? 'content' :
                                  initialGroups.community.includes(id) ? 'community' : 
                                  initialGroups.coaching.includes(id) ? 'coaching' : 
-                                 initialGroups.locker.includes(id) ? 'locker' : 'dashboard');
+                                 initialGroups.locker.includes(id) ? 'locker' : 
+                                 initialGroups['development-plan'].includes(id) ? 'development-plan' : 'dashboard');
     
     const meta = FEATURE_METADATA[id] || {};
     
@@ -982,7 +1135,8 @@ const FeatureManager = () => {
     content: 'Content',
     community: 'Community',
     coaching: 'Coaching',
-    locker: 'Locker'
+    locker: 'Locker',
+    'development-plan': 'Development Plan'
   };
 
   return (
@@ -993,6 +1147,16 @@ const FeatureManager = () => {
           <p className="text-gray-500 text-sm">Manage, design, and deploy widgets for each module.</p>
         </div>
         <div className="flex gap-2">
+            <select
+              value={activeGroup}
+              onChange={(e) => setActiveGroup(e.target.value)}
+              className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 focus:outline-none focus:ring-2 focus:ring-teal-500 bg-white"
+            >
+              {Object.entries(groupTitles).map(([key, title]) => (
+                <option key={key} value={key}>{title}</option>
+              ))}
+            </select>
+
             <button 
                 onClick={() => setIsAdding(true)}
                 className="px-4 py-2 bg-teal-600 text-white rounded-lg flex items-center gap-2 hover:bg-teal-700 transition-colors"
@@ -1036,6 +1200,7 @@ const FeatureManager = () => {
                     <option value="community">Community</option>
                     <option value="coaching">Coaching</option>
                     <option value="locker">Locker</option>
+                    <option value="development-plan">Development Plan</option>
                 </select>
                 <textarea 
                     className="w-full p-2 border rounded" 
@@ -1052,7 +1217,9 @@ const FeatureManager = () => {
       )}
 
       <div className="space-y-8">
-        {Object.keys(groups).map((groupKey) => (
+        {Object.keys(groups)
+          .filter(key => key === activeGroup)
+          .map((groupKey) => (
           <div key={groupKey} className="space-y-4">
             <h3 className="text-lg font-bold text-gray-700 border-b border-gray-200 pb-2">
               {groupTitles[groupKey]}

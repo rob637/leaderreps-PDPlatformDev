@@ -158,6 +158,15 @@ const WidgetEditorModal = ({ isOpen, onClose, widgetId, widgetName, initialCode,
 
   if (!isOpen) return null;
 
+  const checkPassword = () => {
+    const password = prompt("Enter password to authorize this action:");
+    if (password === '7777') {
+      return true;
+    }
+    alert("Incorrect password.");
+    return false;
+  };
+
   const handleSendMessage = async () => {
     if (!chatInput.trim()) return;
 
@@ -226,6 +235,7 @@ const WidgetEditorModal = ({ isOpen, onClose, widgetId, widgetName, initialCode,
   };
 
   const handleSaveDraft = async () => {
+    if (!checkPassword()) return;
     setIsSavingDraft(true);
     setSaveSuccess(false);
     try {
@@ -243,6 +253,7 @@ const WidgetEditorModal = ({ isOpen, onClose, widgetId, widgetName, initialCode,
   };
 
   const handleDeploy = async () => {
+    if (!checkPassword()) return;
     setIsDeploying(true);
     try {
       if (onSave) {
@@ -262,6 +273,7 @@ const WidgetEditorModal = ({ isOpen, onClose, widgetId, widgetName, initialCode,
   };
 
   const handleSyncToGitHub = async () => {
+    if (!checkPassword()) return;
     const token = localStorage.getItem('GITHUB_PAT') || prompt("Enter GitHub PAT (repo scope) to sync:");
     if (!token) return;
     localStorage.setItem('GITHUB_PAT', token);
