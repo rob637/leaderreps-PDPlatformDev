@@ -194,9 +194,11 @@ const AppContent = ({
         {/* Main Content Area */}
         <div className="flex-1 flex flex-col h-screen overflow-hidden relative transition-all duration-300">
           
-          <WidgetRenderer widgetId="dashboard-header" scope={headerScope}>
-            <ScrollingQuotes />
-          </WidgetRenderer>
+          {currentScreen === 'dashboard' && (
+            <WidgetRenderer widgetId="dashboard-header" scope={headerScope}>
+              <ScrollingQuotes />
+            </WidgetRenderer>
+          )}
 
           <header className="nav-corporate sticky top-0 flex justify-between items-center z-30 px-6 py-4 bg-white border-b border-gray-200 shadow-sm">
             <div className="flex items-center gap-4">
@@ -214,7 +216,6 @@ const AppContent = ({
             <div className="flex items-center gap-3">
               
               <PWAInstall />
-              <span className="text-[10px] text-gray-300 font-mono">v{__APP_VERSION__}</span>
             </div>
           </header>
 

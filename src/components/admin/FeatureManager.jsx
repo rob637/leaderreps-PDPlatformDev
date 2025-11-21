@@ -555,7 +555,7 @@ const FeatureManager = () => {
                   </div>
                   {/* Toggle Feature Button */}
                   <button 
-                    onClick={() => toggleFeature(feature.id)} 
+                    onClick={() => toggleFeature(feature.id, !feature.enabled)} 
                     className={`p-2 rounded-full transition-all 
                       ${feature.enabled 
                         ? 'bg-red-100 text-red-500 hover:bg-red-200' 

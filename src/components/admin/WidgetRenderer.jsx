@@ -9,12 +9,20 @@ const WidgetRenderer = ({ widgetId, children, scope = {} }) => {
   const { isEditMode, openEditor } = useWidgetEditor();
   
   const feature = features[widgetId];
+  
+  // Robust check for explicitly disabled state (handles boolean or string)
+  if (feature && (feature.enabled === false || feature.enabled === 'false')) {
+    return null;
+  }
+
   const isEnabled = isFeatureEnabled(widgetId);
 
-  // If feature is disabled, render nothing (or maybe children if we want fallback behavior?)
-  if (!isEnabled) {
-      if (feature && feature.enabled === false) return null;
-  }
+  // If feature is disabled (and not explicitly handled above), render nothing
+  // This catches cases where isFeatureEnabled returns false but feature might be undefined (default)
+  // However, for default widgets, we usually want to render children (fallback).
+  // So we only return null if we are sure it should be disabled.
+  // The check above handles the explicit disable.
+  // If feature is undefined, we proceed to render children.
 
   const handleEdit = (e) => {
     e.stopPropagation();

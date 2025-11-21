@@ -152,6 +152,11 @@ const ArenaSidebar = ({ isOpen, toggle, currentScreen, navigate, onSignOut, user
             Sign Out
           </span>
         </button>
+        {isOpen && (
+          <div className="mt-4 text-center">
+            <span className="text-[10px] text-gray-500 font-mono">v{__APP_VERSION__}</span>
+          </div>
+        )}
       </div>
     </div>
   );

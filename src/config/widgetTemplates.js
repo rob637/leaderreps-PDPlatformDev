@@ -986,28 +986,29 @@ export const WIDGET_TEMPLATES = {
 
   return (
     <>
-    <header className="overflow-hidden">
+    <header className="overflow-hidden bg-[#002E47] text-white border-b border-teal-500/30">
       {isScrolling ? (
-        <div className="relative w-full overflow-hidden py-2 bg-slate-50 border-l-4 border-teal-500 group">
+        <div className="relative w-full overflow-hidden py-3 group">
           <div className="animate-marquee whitespace-nowrap inline-block group-hover:[animation-play-state:paused]">
             {/* Repeat quotes to ensure we fill the screen and loop smoothly */}
             {[...quotesList, ...quotesList].map((q, i) => {
                 const { text, author } = parseQuote(q);
                 return (
-                    <span key={i} className="inline-block text-lg text-slate-500 italic font-medium mx-8">
-                    "{text}" {author && <span className="text-sm not-italic text-slate-400">- {author}</span>}
+                    <span key={i} className="inline-block text-sm font-medium mx-8 opacity-90 hover:opacity-100 transition-opacity">
+                    <span className="italic mr-2">"{text}"</span>
+                    {author && <span className="text-teal-400 font-bold text-xs uppercase tracking-wider">— {author}</span>}
                     </span>
                 );
             })}
           </div>
         </div>
       ) : (
-        <div className="border-l-4 border-teal-500 pl-4 py-1">
-          <p className="text-lg text-slate-500 italic font-medium">
+        <div className="py-3 px-6 text-center">
+          <p className="text-lg italic font-medium text-white/90">
             "{current.text}"
           </p>
           {current.author && (
-            <p className="text-sm text-slate-400 font-medium mt-1">
+            <p className="text-xs text-teal-400 font-bold uppercase tracking-wider mt-1">
               — {current.author}
             </p>
           )}
