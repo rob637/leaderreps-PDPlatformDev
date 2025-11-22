@@ -49,6 +49,9 @@ const WidgetEditorModal = () => {
         // Skip React Components (convention: starts with uppercase)
         if (/^[A-Z]/.test(key)) return;
 
+        // Skip noisy read-only functions to prevent render loops
+        if (['isFeatureEnabled', 'getFeatureOrder'].includes(key)) return;
+
         proxy[key] = (...args) => {
           logToConsole('function', `Called: ${key}`, args);
           try {
