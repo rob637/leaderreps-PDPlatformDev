@@ -14,7 +14,7 @@ import {
     Users, MessageSquare, Briefcase, Bell, PlusCircle, User, ArrowLeft, Target, Filter, Clock,
     Star, CheckCircle, Award, Link, Send, Loader, Heart, X, UserPlus, Video, AlertTriangle
 } from 'lucide-react';
-import { Button, Card } from '../../shared/UI';
+import { Button, Card } from '../shared/UI';
 
 /* =========================================================
    PALETTE & UI COMPONENTS (Standardized)

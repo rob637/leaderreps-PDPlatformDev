@@ -15,7 +15,7 @@ import { useNavigation } from '../../providers/NavigationProvider.jsx';
 import { useFeatures } from '../../providers/FeatureProvider';
 import { AlertTriangle, ArrowLeft, BarChart3, Beaker, Briefcase, CheckCircle, Clock, CornerRightUp, Cpu, Eye, HeartPulse, Info, Lightbulb, Mic, Play, PlusCircle, Send, ShieldCheck, Star, Target, TrendingUp, Users, X, Zap, Edit3 } from 'lucide-react'; 
 import { COLORS, COMPLEXITY_MAP } from './labs/labConstants.js';
-import { Button, Card } from '../../shared/UI';
+import { Button, Card } from '../shared/UI';
 
 /* =========================================================
    UI Components (Unchanged)
