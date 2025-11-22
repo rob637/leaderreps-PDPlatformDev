@@ -676,7 +676,7 @@ export const useDashboard = ({
     const todayDate = new Date().toLocaleDateString();
     const winId = `morning-win-${new Date().toISOString().split('T')[0]}`; 
 
-    const existing
+    const existingWinIndex = updatedWinsList.findIndex(w => w.id === winId);
 
     if (existingWinIndex >= 0) {
         // Update existing
