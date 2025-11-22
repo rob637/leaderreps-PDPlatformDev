@@ -316,6 +316,67 @@ export const useDashboard = ({
   }, [updateDailyPracticeData]); // Explicitly include prop
 
   /* =========================================================
+     COMPUTED VALUES (Moved Up for Dependency Access)
+  ========================================================= */
+  // Derived AM flags for UI auto-tracking
+  const amCompletedAt = useMemo(() => dailyPracticeData?.morningBookend?.completedAt || null, [dailyPracticeData]);
+  const amWinCompleted = useMemo(() => !!(dailyPracticeData?.morningBookend?.winCompleted), [dailyPracticeData]);
+  const amTasksCompleted = useMemo(() => Array.isArray(otherTasks) && otherTasks.length > 0 && otherTasks.every(t => !!t.completed), [otherTasks]);
+
+  const targetRep = useMemo(() => {
+    return dailyPracticeData?.dailyTargetRepId || null;
+  }, [dailyPracticeData?.dailyTargetRepId]);
+
+  const canCompleteTargetRep = useMemo(() => {
+    return targetRepStatus === 'Pending' && !isSavingRep;
+  }, [targetRepStatus, isSavingRep]);
+
+  // NEW: Scorecard Calculation (Moved from Dashboard4)
+  const scorecard = useMemo(() => {
+    // 1. Reps Logic
+    const hasLIS = !!identityStatement;
+    const lisRead = habitsCompleted?.readLIS || false;
+    const dailyRepCompleted = habitsCompleted?.completedDailyRep || false;
+    
+    // Determine if there is a daily rep (Target Rep)
+    // We check if an ID exists. Name resolution happens in UI, but existence is enough for score.
+    const hasDailyRep = !!dailyPracticeData?.dailyTargetRepId;
+
+    let repsTotal = 1; // LIS is always a rep
+    let repsDone = lisRead ? 1 : 0;
+    
+    if (hasDailyRep) {
+      repsTotal++;
+      if (dailyRepCompleted) repsDone++;
+    }
+    
+    // Add additional commitments
+    if (additionalCommitments && additionalCommitments.length > 0) {
+      repsTotal += additionalCommitments.length;
+      repsDone += additionalCommitments.filter(c => c.status === 'Committed').length;
+    }
+    
+    const repsPct = repsTotal > 0 ? Math.round((repsDone / repsTotal) * 100) : 0;
+
+    // 2. Win the Day Logic
+    // Components: Top Priority (WIN) + Other Tasks
+    let winTotal = 1; // Top Priority
+    let winDone = amWinCompleted ? 1 : 0;
+    
+    if (otherTasks && otherTasks.length > 0) {
+      winTotal += otherTasks.length;
+      winDone += otherTasks.filter(t => t.completed).length;
+    }
+    
+    const winPct = winTotal > 0 ? Math.round((winDone / winTotal) * 100) : 0;
+
+    return {
+      reps: { done: repsDone, total: repsTotal, pct: repsPct },
+      win: { done: winDone, total: winTotal, pct: winPct }
+    };
+  }, [identityStatement, habitsCompleted, dailyPracticeData?.dailyTargetRepId, additionalCommitments, amWinCompleted, otherTasks]);
+
+  /* =========================================================
      BOOKEND HANDLERS (Dependency on updateDailyPracticeData)
   ========================================================= */
   const handleSaveMorningBookend = useCallback(async () => {
@@ -615,7 +676,7 @@ export const useDashboard = ({
     const todayDate = new Date().toLocaleDateString();
     const winId = `morning-win-${new Date().toISOString().split('T')[0]}`; 
 
-    const existingWinIndex = updatedWinsList.findIndex(w => w.id === winId);
+    const existing
 
     if (existingWinIndex >= 0) {
         // Update existing
@@ -729,66 +790,43 @@ export const useDashboard = ({
     }
   }, [morningWIN, updateDailyPracticeData, winsList]); // Explicitly include prop
 
-  /* =========================================================
-     COMPUTED VALUES
-  ========================================================= */
-  // Derived AM flags for UI auto-tracking
-  const amCompletedAt = useMemo(() => dailyPracticeData?.morningBookend?.completedAt || null, [dailyPracticeData]);
-  const amWinCompleted = useMemo(() => !!(dailyPracticeData?.morningBookend?.winCompleted), [dailyPracticeData]);
-  const amTasksCompleted = useMemo(() => Array.isArray(otherTasks) && otherTasks.length > 0 && otherTasks.every(t => !!t.completed), [otherTasks]);
+  // NEW: Handle saving Scorecard separately
+  const [isSavingScorecard, setIsSavingScorecard] = useState(false);
 
-  const targetRep = useMemo(() => {
-    return dailyPracticeData?.dailyTargetRepId || null;
-  }, [dailyPracticeData?.dailyTargetRepId]);
-
-  const canCompleteTargetRep = useMemo(() => {
-    return targetRepStatus === 'Pending' && !isSavingRep;
-  }, [targetRepStatus, isSavingRep]);
-
-  // NEW: Scorecard Calculation (Moved from Dashboard4)
-  const scorecard = useMemo(() => {
-    // 1. Reps Logic
-    const hasLIS = !!identityStatement;
-    const lisRead = habitsCompleted?.readLIS || false;
-    const dailyRepCompleted = habitsCompleted?.completedDailyRep || false;
+  const handleSaveScorecard = useCallback(async () => {
+    if (!updateDailyPracticeData) return;
     
-    // Determine if there is a daily rep (Target Rep)
-    // We check if an ID exists. Name resolution happens in UI, but existence is enough for score.
-    const hasDailyRep = !!dailyPracticeData?.dailyTargetRepId;
+    setIsSavingScorecard(true);
+    try {
+      const todayDate = new Date().toLocaleDateString();
+      const currentScore = `${scorecard.reps.pct}/${scorecard.win.pct}`;
+      
+      // Get existing history or init empty
+      const existingHistory = dailyPracticeData?.scorecardHistory || [];
+      // Remove today's entry if exists to overwrite
+      const historyWithoutToday = existingHistory.filter(h => h.date !== todayDate);
+      
+      const newHistoryEntry = {
+          date: todayDate,
+          score: currentScore,
+          timestamp: new Date().toISOString()
+      };
+      
+      const updatedHistory = [...historyWithoutToday, newHistoryEntry];
 
-    let repsTotal = 1; // LIS is always a rep
-    let repsDone = lisRead ? 1 : 0;
-    
-    if (hasDailyRep) {
-      repsTotal++;
-      if (dailyRepCompleted) repsDone++;
+      await updateDailyPracticeData({
+        scorecardHistory: updatedHistory
+      });
+      
+      alert('✅ Scorecard saved to Locker!');
+    } catch (error) {
+      console.error('Error saving scorecard:', error);
+      alert('Error saving scorecard. Please try again.');
+    } finally {
+      setIsSavingScorecard(false);
     }
-    
-    // Add additional commitments
-    if (additionalCommitments && additionalCommitments.length > 0) {
-      repsTotal += additionalCommitments.length;
-      repsDone += additionalCommitments.filter(c => c.status === 'Committed').length;
-    }
-    
-    const repsPct = repsTotal > 0 ? Math.round((repsDone / repsTotal) * 100) : 0;
+  }, [scorecard, dailyPracticeData, updateDailyPracticeData]);
 
-    // 2. Win the Day Logic
-    // Components: Top Priority (WIN) + Other Tasks
-    let winTotal = 1; // Top Priority
-    let winDone = amWinCompleted ? 1 : 0;
-    
-    if (otherTasks && otherTasks.length > 0) {
-      winTotal += otherTasks.length;
-      winDone += otherTasks.filter(t => t.completed).length;
-    }
-    
-    const winPct = winTotal > 0 ? Math.round((winDone / winTotal) * 100) : 0;
-
-    return {
-      reps: { done: repsDone, total: repsTotal, pct: repsPct },
-      win: { done: winDone, total: winTotal, pct: winPct }
-    };
-  }, [identityStatement, habitsCompleted, dailyPracticeData?.dailyTargetRepId, additionalCommitments, amWinCompleted, otherTasks]);
 
   /* =========================================================
      RETURN ALL STATE & HANDLERS
@@ -847,6 +885,8 @@ export const useDashboard = ({
     handleDeleteWin,
     handleSaveWIN,
     isSavingWIN,
+    handleSaveScorecard,
+    isSavingScorecard,
 
     // Computed Values
     amCompletedAt,

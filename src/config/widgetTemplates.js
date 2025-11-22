@@ -370,9 +370,14 @@ export const WIDGET_TEMPLATES = {
         <span className="font-bold text-xl">{streakCount}</span>
         <span className="text-xs text-slate-400 uppercase tracking-wider">Day Streak</span>
       </div>
-      <div className="text-xs text-slate-500">
-        Keep it up!
-      </div>
+      <button 
+        onClick={handleSaveScorecard}
+        disabled={isSavingScorecard}
+        className="text-xs font-bold text-teal-400 hover:text-teal-300 flex items-center gap-1 disabled:opacity-50"
+      >
+        {isSavingScorecard ? <Loader className="w-3 h-3 animate-spin" /> : <Save className="w-3 h-3" />}
+        Save to Locker
+      </button>
     </div>
   </div>
 </section>

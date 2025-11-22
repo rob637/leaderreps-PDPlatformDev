@@ -78,7 +78,9 @@ const Dashboard4 = (props) => {
     handleToggleAdditionalRep,
 
     // Scorecard
-    scorecard
+    scorecard,
+    handleSaveScorecard,
+    isSavingScorecard
   } = useDashboard({
     dailyPracticeData,
     updateDailyPracticeData,
@@ -248,6 +250,8 @@ const Dashboard4 = (props) => {
     otherTasks,
     newTaskText,
     scorecard,
+    handleSaveScorecard,
+    isSavingScorecard,
     streakCount,
     reflectionGood,
     reflectionBetter,
