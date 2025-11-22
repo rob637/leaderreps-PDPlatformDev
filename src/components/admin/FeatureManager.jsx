@@ -227,7 +227,7 @@ const FeatureManager = () => {
         return {
           ...common,
           'Development Plan': {
-            'weeklyFocus': 'Current focus area (Coming Soon).'
+            'weeklyFocus': 'Data Source: Development Plan (Active Focus Area). If null, plan is not set.'
           }
         };
       case 'win-the-day':
@@ -425,12 +425,6 @@ const FeatureManager = () => {
   const handleMove = (groupKey, index, direction) => {
     const currentList = [...groups[groupKey]];
     
-    // Prevent moving the first item if it's dashboard-header
-    if (currentList[index].id === 'dashboard-header') return;
-    
-    // Prevent moving an item UP if the item above is dashboard-header
-    if (direction === 'up' && index > 0 && currentList[index-1].id === 'dashboard-header') return;
-
     if (direction === 'up' && index > 0) {
       [currentList[index], currentList[index - 1]] = [currentList[index - 1], currentList[index]];
     } else if (direction === 'down' && index < currentList.length - 1) {
@@ -594,14 +588,14 @@ const FeatureManager = () => {
                   <div className="flex gap-2">
                     <button 
                       onClick={() => handleMove(activeGroup, index, 'up')} 
-                      disabled={index === 0 || feature.id === 'dashboard-header' || (index > 0 && groups[activeGroup][index-1].id === 'dashboard-header')}
+                      disabled={index === 0}
                       className="p-2 rounded-full bg-gray-100 text-gray-500 hover:bg-gray-200 transition-all disabled:opacity-50"
                     >
                       <ArrowUp className="w-4 h-4" />
                     </button>
                     <button 
                       onClick={() => handleMove(activeGroup, index, 'down')} 
-                      disabled={index === (groups[activeGroup].length - 1) || feature.id === 'dashboard-header'}
+                      disabled={index === (groups[activeGroup].length - 1)}
                       className="p-2 rounded-full bg-gray-100 text-gray-500 hover:bg-gray-200 transition-all disabled:opacity-50"
                     >
                       <ArrowDown className="w-4 h-4" />
