@@ -63,7 +63,7 @@ export const WIDGET_TEMPLATES = {
             />
             {!amWinCompleted && morningWIN && (
                 <button 
-                  onClick={handleSaveWINWrapper}
+                  onClick={() => handleSaveWINWrapper()}
                   disabled={isSavingWIN || isWinSaved}
                   className={\`p-3 rounded-xl transition-colors disabled:opacity-50 \${
                     isWinSaved ? 'bg-green-500 text-white' : 'bg-teal-500 text-white hover:bg-teal-600'
@@ -79,7 +79,7 @@ export const WIDGET_TEMPLATES = {
         
         {morningWIN && !isSavingWIN && (
           <button
-            onClick={handleToggleWIN}
+            onClick={() => handleToggleWIN()}
             className={\`p-3 rounded-xl border-2 transition-colors \${
               amWinCompleted 
                 ? 'bg-green-500 border-green-500 text-white' 
@@ -144,7 +144,7 @@ export const WIDGET_TEMPLATES = {
             className="flex-1 p-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-teal-500 outline-none transition-all text-sm"
           />
           <button 
-            onClick={handleAddOtherTask}
+            onClick={() => handleAddOtherTask()}
             disabled={!newTaskText.trim()}
             className="p-3 bg-slate-200 text-slate-600 rounded-xl hover:bg-teal-500 hover:text-white transition-colors disabled:opacity-50"
           >
@@ -230,7 +230,7 @@ export const WIDGET_TEMPLATES = {
         <span className="text-xs text-slate-400 uppercase tracking-wider">Day Streak</span>
       </div>
       <button 
-        onClick={handleSaveScorecard}
+        onClick={() => handleSaveScorecard()}
         disabled={isSavingScorecard}
         className="text-xs font-bold text-teal-600 hover:text-teal-700 flex items-center gap-1 disabled:opacity-50"
       >
@@ -270,7 +270,7 @@ export const WIDGET_TEMPLATES = {
     </div>
 
     <button 
-      onClick={handleSaveEveningBookend}
+      onClick={() => handleSaveEveningBookend()}
       disabled={isSavingBookend || (!reflectionGood && !reflectionBetter)}
       className="w-full py-3 bg-[#002E47] text-white rounded-xl font-bold hover:bg-[#003E5F] transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
     >
@@ -902,7 +902,7 @@ render(<DailyQuote />);
             />
             {!amWinCompleted && morningWIN && (
                 <button 
-                  onClick={handleSaveWINWrapper}
+                  onClick={() => handleSaveWINWrapper()}
                   disabled={isSavingWIN || isWinSaved}
                   className={\`p-3 rounded-xl transition-colors disabled:opacity-50 \${
                     isWinSaved ? 'bg-green-500 text-white' : 'bg-teal-500 text-white hover:bg-teal-600'
@@ -918,7 +918,7 @@ render(<DailyQuote />);
         
         {morningWIN && !isSavingWIN && (
           <button
-            onClick={handleToggleWIN}
+            onClick={() => handleToggleWIN()}
             className={\`p-3 rounded-xl border-2 transition-colors \${
               amWinCompleted 
                 ? 'bg-green-500 border-green-500 text-white' 
@@ -983,7 +983,7 @@ render(<DailyQuote />);
             className="flex-1 p-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-teal-500 outline-none transition-all text-sm"
           />
           <button 
-            onClick={handleAddOtherTask}
+            onClick={() => handleAddOtherTask()}
             disabled={!newTaskText.trim()}
             className="p-3 bg-slate-200 text-slate-600 rounded-xl hover:bg-teal-500 hover:text-white transition-colors disabled:opacity-50"
           >
@@ -1069,7 +1069,7 @@ render(<DailyQuote />);
         <span className="text-xs text-slate-400 uppercase tracking-wider">Day Streak</span>
       </div>
       <button 
-        onClick={handleSaveScorecard}
+        onClick={() => handleSaveScorecard()}
         disabled={isSavingScorecard}
         className="text-xs font-bold text-teal-600 hover:text-teal-700 flex items-center gap-1 disabled:opacity-50"
       >
@@ -1109,7 +1109,7 @@ render(<DailyQuote />);
     </div>
 
     <button 
-      onClick={handleSaveEveningBookend}
+      onClick={() => handleSaveEveningBookend()}
       disabled={isSavingBookend || (!reflectionGood && !reflectionBetter)}
       className="w-full py-3 bg-[#002E47] text-white rounded-xl font-bold hover:bg-[#003E5F] transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
     >
