@@ -20,7 +20,7 @@ import WidgetRenderer from '../admin/WidgetRenderer';
 import { createWidgetSDK } from '../../services/WidgetSDK';
 
 const DASHBOARD_FEATURES = [
-  'daily-quote', 'welcome-message',
+  'daily-quote', 'welcome-message', 'dashboard-header',
   'gamification', 'exec-summary', 'weekly-focus', 
   'identity-builder', 'habit-stack', 'win-the-day', 
   'notifications', 'scorecard', 'pm-bookend'
@@ -207,7 +207,13 @@ const Dashboard4 = () => {
 
   const sortedFeatures = useMemo(() => {
     return DASHBOARD_FEATURES
-      .filter(id => isFeatureEnabled(id))
+      .filter(id => {
+        // Only include if enabled AND it's a valid dashboard widget (not dev-plan, etc.)
+        if (!isFeatureEnabled(id)) return false;
+        // Extra safety: filter out any dev-plan or other non-dashboard widgets
+        if (id.startsWith('dev-plan-') || id.startsWith('locker-')) return false;
+        return true;
+      })
       .sort((a, b) => {
         const orderA = getFeatureOrder(a);
         const orderB = getFeatureOrder(b);

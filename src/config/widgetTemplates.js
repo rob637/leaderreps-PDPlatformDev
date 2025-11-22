@@ -861,7 +861,7 @@ export const WIDGET_TEMPLATES = {
     }
     \`}</style>
     </>
-  };
+  );
 };
 
 render(<DailyQuote />);
