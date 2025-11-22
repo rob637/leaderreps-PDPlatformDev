@@ -9,7 +9,7 @@ import { WIDGET_TEMPLATES, FEATURE_METADATA } from '../../config/widgetTemplates
 import { useAppServices } from '../../services/useAppServices';
 import { useDashboard } from '../screens/dashboard/DashboardHooks';
 import { createWidgetSDK } from '../../services/WidgetSDK';
-import { Card } from '../shared/UI';
+import { Card, Button } from '../shared/UI';
 import { ENHANCEMENT_IDEAS } from '../../data/enhancementIdeas';
 
 const FeatureManager = () => {
@@ -156,6 +156,7 @@ const FeatureManager = () => {
     // Components
     Checkbox,
     Card,
+    Button,
     
     // Functions
     navigate,
