@@ -38,17 +38,8 @@ export const createRoadmapWidget = (title, ideas) => `
 
 export const WIDGET_TEMPLATES = {
     'win-the-day': `
-<section className="w-full">
-  <div className="flex items-center gap-2 mb-4">
-    <div className="w-8 h-8 rounded-lg bg-teal-100 flex items-center justify-center text-teal-600">
-      <Trophy className="w-5 h-5" />
-    </div>
-    <h2 className="text-xl font-bold text-[#002E47]">
-      AM Bookend - Win the Day
-    </h2>
-  </div>
-
-  <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200 space-y-6">
+<Card title="AM Bookend - Win the Day" icon={Trophy} accent="TEAL">
+  <div className="space-y-6">
     {/* 1. Top Priority */}
     <div className="text-left">
       <label className="block text-xs font-bold text-slate-400 uppercase mb-2 text-left">
@@ -163,17 +154,11 @@ export const WIDGET_TEMPLATES = {
       )}
     </div>
   </div>
-</section>
+</Card>
     `,
     'notifications': `
-<section className="text-left w-full">
-  <div className="flex items-center gap-2 mb-4">
-    <Bell className="w-5 h-5 text-slate-400" />
-    <h2 className="text-sm font-bold text-slate-400 uppercase tracking-wider">
-      Notifications
-    </h2>
-  </div>
-  <div className="bg-white rounded-2xl p-4 shadow-sm border border-slate-200 space-y-3 text-left">
+<Card title="Notifications" icon={Bell} accent="GRAY">
+  <div className="space-y-3 text-left">
     
     {/* Dev Note */}
     <div className="bg-slate-50 border border-slate-200 rounded-lg p-2 text-xs text-slate-500 italic text-center">
@@ -202,27 +187,20 @@ export const WIDGET_TEMPLATES = {
       </div>
     </div>
   </div>
-</section>
+</Card>
     `,
     'scorecard': `
-<section className="w-full">
-  <div className="bg-[#002E47] rounded-2xl p-6 text-white shadow-lg relative overflow-hidden">
-    <div className="absolute top-0 right-0 w-32 h-32 bg-white opacity-5 rounded-full -mr-10 -mt-10" />
-    
-    <h2 className="text-lg font-bold mb-6 flex items-center gap-2">
-      <Trophy className="w-5 h-5 text-yellow-400" /> Today Scorecard
-    </h2>
-
+<Card title="Today Scorecard" icon={Trophy} accent="YELLOW">
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <span className="font-medium">I did my reps today</span>
+          <span className="font-medium text-slate-700">I did my reps today</span>
         </div>
         <div className="text-right">
-          <span className="font-bold text-xl">{scorecard.reps.done}</span>
+          <span className="font-bold text-xl text-[#002E47]">{scorecard.reps.done}</span>
           <span className="text-slate-400 text-sm"> / {scorecard.reps.total}</span>
           <span className={\`ml-2 text-sm font-bold \${
-            scorecard.reps.pct === 100 ? 'text-green-400' : 'text-slate-400'
+            scorecard.reps.pct === 100 ? 'text-green-500' : 'text-slate-400'
           }\`}>
             {scorecard.reps.pct}%
           </span>
@@ -231,13 +209,13 @@ export const WIDGET_TEMPLATES = {
 
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <span className="font-medium">I won the day</span>
+          <span className="font-medium text-slate-700">I won the day</span>
         </div>
         <div className="text-right">
-          <span className="font-bold text-xl">{scorecard.win.done}</span>
+          <span className="font-bold text-xl text-[#002E47]">{scorecard.win.done}</span>
           <span className="text-slate-400 text-sm"> / {scorecard.win.total}</span>
           <span className={\`ml-2 text-sm font-bold \${
-            scorecard.win.pct === 100 ? 'text-green-400' : 'text-slate-400'
+            scorecard.win.pct === 100 ? 'text-green-500' : 'text-slate-400'
           }\`}>
             {scorecard.win.pct}%
           </span>
@@ -245,36 +223,26 @@ export const WIDGET_TEMPLATES = {
       </div>
     </div>
 
-    <div className="mt-6 pt-6 border-t border-white/10 flex justify-between items-center">
+    <div className="mt-6 pt-6 border-t border-slate-100 flex justify-between items-center">
       <div className="flex items-center gap-2">
         <Flame className="w-5 h-5 text-orange-500" />
-        <span className="font-bold text-xl">{streakCount}</span>
+        <span className="font-bold text-xl text-[#002E47]">{streakCount}</span>
         <span className="text-xs text-slate-400 uppercase tracking-wider">Day Streak</span>
       </div>
       <button 
         onClick={handleSaveScorecard}
         disabled={isSavingScorecard}
-        className="text-xs font-bold text-teal-400 hover:text-teal-300 flex items-center gap-1 disabled:opacity-50"
+        className="text-xs font-bold text-teal-600 hover:text-teal-700 flex items-center gap-1 disabled:opacity-50"
       >
         {isSavingScorecard ? <Loader className="w-3 h-3 animate-spin" /> : <Save className="w-3 h-3" />}
         Save to Locker
       </button>
     </div>
-  </div>
-</section>
+</Card>
     `,
     'pm-bookend': `
-<section className="w-full">
-  <div className="flex items-center gap-2 mb-4">
-    <div className="w-8 h-8 rounded-lg bg-indigo-100 flex items-center justify-center text-indigo-600">
-      <MessageSquare className="w-5 h-5" />
-    </div>
-    <h2 className="text-xl font-bold text-[#002E47]">
-      PM Bookend - Reflection
-    </h2>
-  </div>
-
-  <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200 space-y-4">
+<Card title="PM Bookend - Reflection" icon={MessageSquare} accent="INDIGO">
+  <div className="space-y-4">
     <div>
       <label className="block text-sm font-bold text-green-700 mb-2 text-left">
         What went well today?
@@ -313,19 +281,11 @@ export const WIDGET_TEMPLATES = {
       Saved to history in Locker
     </p>
   </div>
-</section>
+</Card>
     `,
     'course-library': `
-<section className="w-full">
-  <div className="flex items-center gap-2 mb-4">
-    <div className="w-8 h-8 rounded-lg bg-teal-100 flex items-center justify-center text-teal-600">
-      <BookOpen className="w-5 h-5" />
-    </div>
-    <h2 className="text-xl font-bold text-[#002E47]">
-      Course Library
-    </h2>
-  </div>
-  <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200 space-y-3">
+<Card title="Course Library" icon={BookOpen} accent="TEAL">
+  <div className="space-y-3">
     <div className="flex gap-3 items-center p-2 hover:bg-gray-50 rounded-lg cursor-pointer transition-colors">
       <div className="w-10 h-10 bg-teal-100 rounded-lg flex items-center justify-center text-teal-600">
         <Play className="w-5 h-5" />
@@ -345,100 +305,62 @@ export const WIDGET_TEMPLATES = {
       </div>
     </div>
   </div>
-</section>
+</Card>
     `,
     'reading-hub': `
-<section className="w-full">
-  <div className="flex items-center gap-2 mb-4">
-    <div className="w-8 h-8 rounded-lg bg-orange-100 flex items-center justify-center text-orange-600">
-      <Book className="w-5 h-5" />
+<Card title="Reading Hub" icon={Book} accent="ORANGE">
+  <div className="flex gap-3 overflow-x-auto pb-2">
+    <div className="min-w-[100px] bg-gray-100 rounded-lg p-2 text-center">
+      <div className="w-full h-16 bg-gray-300 rounded mb-2"></div>
+      <p className="text-xs font-bold text-gray-700 truncate">Atomic Habits</p>
     </div>
-    <h2 className="text-xl font-bold text-[#002E47]">
-      Reading Hub
-    </h2>
-  </div>
-  <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
-    <div className="flex gap-3 overflow-x-auto pb-2">
-      <div className="min-w-[100px] bg-gray-100 rounded-lg p-2 text-center">
-        <div className="w-full h-16 bg-gray-300 rounded mb-2"></div>
-        <p className="text-xs font-bold text-gray-700 truncate">Atomic Habits</p>
-      </div>
-      <div className="min-w-[100px] bg-gray-100 rounded-lg p-2 text-center">
-        <div className="w-full h-16 bg-gray-300 rounded mb-2"></div>
-        <p className="text-xs font-bold text-gray-700 truncate">Dare to Lead</p>
-      </div>
-      <div className="min-w-[100px] bg-gray-100 rounded-lg p-2 text-center">
-        <div className="w-full h-16 bg-gray-300 rounded mb-2"></div>
-        <p className="text-xs font-bold text-gray-700 truncate">Start with Why</p>
-      </div>
+    <div className="min-w-[100px] bg-gray-100 rounded-lg p-2 text-center">
+      <div className="w-full h-16 bg-gray-300 rounded mb-2"></div>
+      <p className="text-xs font-bold text-gray-700 truncate">Dare to Lead</p>
+    </div>
+    <div className="min-w-[100px] bg-gray-100 rounded-lg p-2 text-center">
+      <div className="w-full h-16 bg-gray-300 rounded mb-2"></div>
+      <p className="text-xs font-bold text-gray-700 truncate">Start with Why</p>
     </div>
   </div>
-</section>
+</Card>
     `,
     'leadership-videos': `
-<section className="w-full">
-  <div className="flex items-center gap-2 mb-4">
-    <div className="w-8 h-8 rounded-lg bg-red-100 flex items-center justify-center text-red-600">
-      <Video className="w-5 h-5" />
+<Card title="Featured Talk" icon={Video} accent="RED">
+  <div className="relative w-full aspect-video bg-gray-800 rounded-lg flex items-center justify-center mb-3 group cursor-pointer">
+    <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform">
+      <Play className="w-6 h-6 text-white fill-current" />
     </div>
-    <h2 className="text-xl font-bold text-[#002E47]">
-      Featured Talk
-    </h2>
+    <span className="absolute bottom-2 right-2 bg-black/60 px-2 py-1 rounded text-xs text-white">12:45</span>
   </div>
-  <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
-    <div className="relative w-full aspect-video bg-gray-800 rounded-lg flex items-center justify-center mb-3 group cursor-pointer">
-      <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform">
-        <Play className="w-6 h-6 text-white fill-current" />
-      </div>
-      <span className="absolute bottom-2 right-2 bg-black/60 px-2 py-1 rounded text-xs text-white">12:45</span>
-    </div>
-    <p className="font-bold text-sm text-gray-800">Simon Sinek: How Great Leaders Inspire Action</p>
-  </div>
-</section>
+  <p className="font-bold text-sm text-gray-800">Simon Sinek: How Great Leaders Inspire Action</p>
+</Card>
     `,
     'strat-templates': `
-<section className="w-full">
-  <div className="flex items-center gap-2 mb-4">
-    <div className="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center text-blue-600">
-      <FileText className="w-5 h-5" />
-    </div>
-    <h2 className="text-xl font-bold text-[#002E47]">
-      Templates
-    </h2>
+<Card title="Templates" icon={FileText} accent="BLUE">
+  <div className="grid grid-cols-2 gap-2">
+    <button className="p-3 bg-blue-50 hover:bg-blue-100 rounded-lg text-left transition-colors">
+      <FileText className="w-5 h-5 text-blue-600 mb-2" />
+      <p className="text-xs font-bold text-blue-900">QBR Deck</p>
+    </button>
+    <button className="p-3 bg-green-50 hover:bg-green-100 rounded-lg text-left transition-colors">
+      <FileText className="w-5 h-5 text-green-600 mb-2" />
+      <p className="text-xs font-bold text-green-900">1:1 Agenda</p>
+    </button>
+    <button className="p-3 bg-purple-50 hover:bg-purple-100 rounded-lg text-left transition-colors">
+      <FileText className="w-5 h-5 text-purple-600 mb-2" />
+      <p className="text-xs font-bold text-purple-900">OKRs Sheet</p>
+    </button>
+    <button className="p-3 bg-orange-50 hover:bg-orange-100 rounded-lg text-left transition-colors">
+      <FileText className="w-5 h-5 text-orange-600 mb-2" />
+      <p className="text-xs font-bold text-orange-900">Feedback Form</p>
+    </button>
   </div>
-  <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
-    <div className="grid grid-cols-2 gap-2">
-      <button className="p-3 bg-blue-50 hover:bg-blue-100 rounded-lg text-left transition-colors">
-        <FileText className="w-5 h-5 text-blue-600 mb-2" />
-        <p className="text-xs font-bold text-blue-900">QBR Deck</p>
-      </button>
-      <button className="p-3 bg-green-50 hover:bg-green-100 rounded-lg text-left transition-colors">
-        <FileText className="w-5 h-5 text-green-600 mb-2" />
-        <p className="text-xs font-bold text-green-900">1:1 Agenda</p>
-      </button>
-      <button className="p-3 bg-purple-50 hover:bg-purple-100 rounded-lg text-left transition-colors">
-        <FileText className="w-5 h-5 text-purple-600 mb-2" />
-        <p className="text-xs font-bold text-purple-900">OKRs Sheet</p>
-      </button>
-      <button className="p-3 bg-orange-50 hover:bg-orange-100 rounded-lg text-left transition-colors">
-        <FileText className="w-5 h-5 text-orange-600 mb-2" />
-        <p className="text-xs font-bold text-orange-900">Feedback Form</p>
-      </button>
-    </div>
-  </div>
-</section>
+</Card>
     `,
     'community-feed': `
-<section className="w-full">
-  <div className="flex items-center gap-2 mb-4">
-    <div className="w-8 h-8 rounded-lg bg-indigo-100 flex items-center justify-center text-indigo-600">
-      <MessageSquare className="w-5 h-5" />
-    </div>
-    <h2 className="text-xl font-bold text-[#002E47]">
-      Community Feed
-    </h2>
-  </div>
-  <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200 space-y-4">
+<Card title="Community Feed" icon={MessageSquare} accent="INDIGO">
+  <div className="space-y-4">
     <div className="flex gap-3">
       <div className="w-8 h-8 rounded-full bg-gray-200 flex-shrink-0"></div>
       <div>
@@ -458,19 +380,11 @@ export const WIDGET_TEMPLATES = {
       </div>
     </div>
   </div>
-</section>
+</Card>
     `,
     'my-discussions': `
-<section className="w-full">
-  <div className="flex items-center gap-2 mb-4">
-    <div className="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center text-blue-600">
-      <MessageCircle className="w-5 h-5" />
-    </div>
-    <h2 className="text-xl font-bold text-[#002E47]">
-      My Discussions
-    </h2>
-  </div>
-  <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200 space-y-2">
+<Card title="My Discussions" icon={MessageCircle} accent="BLUE">
+  <div className="space-y-2">
     <div className="p-2 hover:bg-gray-50 rounded-lg cursor-pointer transition-colors flex justify-between items-center">
       <span className="text-sm font-medium text-gray-700">Q3 Planning Thread</span>
       <span className="text-xs bg-red-100 text-red-600 px-2 py-1 rounded-full">2 new</span>
@@ -484,62 +398,34 @@ export const WIDGET_TEMPLATES = {
       <span className="text-xs text-gray-400">3d ago</span>
     </div>
   </div>
-</section>
+</Card>
     `,
     'mastermind': `
-<section className="w-full">
-  <div className="flex items-center gap-2 mb-4">
-    <div className="w-8 h-8 rounded-lg bg-purple-100 flex items-center justify-center text-purple-600">
-      <Users className="w-5 h-5" />
-    </div>
-    <h2 className="text-xl font-bold text-[#002E47]">
-      Mastermind Groups
-    </h2>
-  </div>
-  <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
-    <p className="text-gray-600 text-sm mb-4">Join a peer group of leaders at your level to share challenges and grow together.</p>
-    <button className="w-full py-2 bg-indigo-600 text-white rounded-lg font-bold text-sm hover:bg-indigo-700 transition-colors">
-      Find a Group
-    </button>
-  </div>
-</section>
+<Card title="Mastermind Groups" icon={Users} accent="PURPLE">
+  <p className="text-gray-600 text-sm mb-4">Join a peer group of leaders at your level to share challenges and grow together.</p>
+  <button className="w-full py-2 bg-indigo-600 text-white rounded-lg font-bold text-sm hover:bg-indigo-700 transition-colors">
+    Find a Group
+  </button>
+</Card>
     `,
     'mentor-match': `
-<section className="w-full">
-  <div className="flex items-center gap-2 mb-4">
-    <div className="w-8 h-8 rounded-lg bg-green-100 flex items-center justify-center text-green-600">
-      <UserPlus className="w-5 h-5" />
+<Card title="Mentor Match" icon={UserPlus} accent="GREEN">
+  <div className="flex items-center gap-3 mb-3">
+    <div className="w-12 h-12 bg-gray-200 rounded-full"></div>
+    <div>
+      <p className="font-bold text-gray-800">David Chen</p>
+      <p className="text-xs text-gray-500">VP Engineering @ TechCorp</p>
     </div>
-    <h2 className="text-xl font-bold text-[#002E47]">
-      Mentor Match
-    </h2>
   </div>
-  <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
-    <div className="flex items-center gap-3 mb-3">
-      <div className="w-12 h-12 bg-gray-200 rounded-full"></div>
-      <div>
-        <p className="font-bold text-gray-800">David Chen</p>
-        <p className="text-xs text-gray-500">VP Engineering @ TechCorp</p>
-      </div>
-    </div>
-    <p className="text-xs text-gray-600 mb-3">"Happy to help with scaling teams and technical strategy."</p>
-    <button className="w-full py-2 border border-indigo-600 text-indigo-600 rounded-lg font-bold text-sm hover:bg-indigo-50 transition-colors">
-      Request Intro
-    </button>
-  </div>
-</section>
+  <p className="text-xs text-gray-600 mb-3">"Happy to help with scaling teams and technical strategy."</p>
+  <button className="w-full py-2 border border-indigo-600 text-indigo-600 rounded-lg font-bold text-sm hover:bg-indigo-50 transition-colors">
+    Request Intro
+  </button>
+</Card>
     `,
     'live-events': `
-<section className="w-full">
-  <div className="flex items-center gap-2 mb-4">
-    <div className="w-8 h-8 rounded-lg bg-pink-100 flex items-center justify-center text-pink-600">
-      <Calendar className="w-5 h-5" />
-    </div>
-    <h2 className="text-xl font-bold text-[#002E47]">
-      Upcoming Events
-    </h2>
-  </div>
-  <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200 space-y-3">
+<Card title="Upcoming Events" icon={Calendar} accent="PINK">
+  <div className="space-y-3">
     <div className="flex gap-3 items-start border-b border-gray-100 pb-3">
       <div className="bg-indigo-100 text-indigo-700 rounded px-2 py-1 text-center min-w-[50px]">
         <p className="text-xs font-bold">OCT</p>
@@ -561,19 +447,11 @@ export const WIDGET_TEMPLATES = {
       </div>
     </div>
   </div>
-</section>
+</Card>
     `,
     'practice-history': `
-<section className="w-full">
-  <div className="flex items-center gap-2 mb-4">
-    <div className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center text-gray-600">
-      <History className="w-5 h-5" />
-    </div>
-    <h2 className="text-xl font-bold text-[#002E47]">
-      Recent Practice
-    </h2>
-  </div>
-  <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200 space-y-3">
+<Card title="Recent Practice" icon={History} accent="GRAY">
+  <div className="space-y-3">
     <div className="flex justify-between items-center">
       <div>
         <p className="text-sm font-bold text-gray-800">Difficult Conversation</p>
@@ -589,76 +467,48 @@ export const WIDGET_TEMPLATES = {
       <span className="text-yellow-600 font-bold text-sm">78%</span>
     </div>
   </div>
-</section>
+</Card>
     `,
     'progress-analytics': `
-<section className="w-full">
-  <div className="flex items-center gap-2 mb-4">
-    <div className="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center text-blue-600">
-      <BarChart2 className="w-5 h-5" />
+<Card title="Growth Analytics" icon={BarChart2} accent="BLUE">
+  <div className="flex items-end gap-2 h-24 mt-4">
+    <div className="flex-1 bg-blue-100 rounded-t hover:bg-blue-200 transition-colors relative group">
+      <div className="absolute bottom-0 w-full bg-blue-500 rounded-t" style={{ height: '40%' }}></div>
     </div>
-    <h2 className="text-xl font-bold text-[#002E47]">
-      Growth Analytics
-    </h2>
-  </div>
-  <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
-    <div className="flex items-end gap-2 h-24 mt-4">
-      <div className="flex-1 bg-blue-100 rounded-t hover:bg-blue-200 transition-colors relative group">
-        <div className="absolute bottom-0 w-full bg-blue-500 rounded-t" style={{ height: '40%' }}></div>
-      </div>
-      <div className="flex-1 bg-blue-100 rounded-t hover:bg-blue-200 transition-colors relative group">
-        <div className="absolute bottom-0 w-full bg-blue-500 rounded-t" style={{ height: '60%' }}></div>
-      </div>
-      <div className="flex-1 bg-blue-100 rounded-t hover:bg-blue-200 transition-colors relative group">
-        <div className="absolute bottom-0 w-full bg-blue-500 rounded-t" style={{ height: '55%' }}></div>
-      </div>
-      <div className="flex-1 bg-blue-100 rounded-t hover:bg-blue-200 transition-colors relative group">
-        <div className="absolute bottom-0 w-full bg-blue-500 rounded-t" style={{ height: '85%' }}></div>
-      </div>
-      <div className="flex-1 bg-blue-100 rounded-t hover:bg-blue-200 transition-colors relative group">
-        <div className="absolute bottom-0 w-full bg-blue-500 rounded-t" style={{ height: '75%' }}></div>
-      </div>
+    <div className="flex-1 bg-blue-100 rounded-t hover:bg-blue-200 transition-colors relative group">
+      <div className="absolute bottom-0 w-full bg-blue-500 rounded-t" style={{ height: '60%' }}></div>
     </div>
-    <div className="flex justify-between mt-2 text-xs text-gray-400">
-      <span>Mon</span>
-      <span>Fri</span>
+    <div className="flex-1 bg-blue-100 rounded-t hover:bg-blue-200 transition-colors relative group">
+      <div className="absolute bottom-0 w-full bg-blue-500 rounded-t" style={{ height: '55%' }}></div>
+    </div>
+    <div className="flex-1 bg-blue-100 rounded-t hover:bg-blue-200 transition-colors relative group">
+      <div className="absolute bottom-0 w-full bg-blue-500 rounded-t" style={{ height: '85%' }}></div>
+    </div>
+    <div className="flex-1 bg-blue-100 rounded-t hover:bg-blue-200 transition-colors relative group">
+      <div className="absolute bottom-0 w-full bg-blue-500 rounded-t" style={{ height: '75%' }}></div>
     </div>
   </div>
-</section>
+  <div className="flex justify-between mt-2 text-xs text-gray-400">
+    <span>Mon</span>
+    <span>Fri</span>
+  </div>
+</Card>
     `,
     'ai-roleplay': `
-<section className="w-full">
-  <div className="flex items-center gap-2 mb-4">
-    <div className="w-8 h-8 rounded-lg bg-purple-100 flex items-center justify-center text-purple-600">
-      <Bot className="w-5 h-5" />
-    </div>
-    <h2 className="text-xl font-bold text-[#002E47]">
-      AI Roleplay
-    </h2>
+<Card title="AI Roleplay" icon={Bot} accent="PURPLE">
+  <p className="text-xs text-gray-500 mb-4">Practice real-world scenarios with AI.</p>
+  <div className="bg-purple-50 rounded-lg p-3 mb-3 border border-purple-100">
+    <p className="text-xs font-bold text-purple-600 uppercase mb-1">Recommended</p>
+    <p className="text-sm font-bold text-purple-900">Giving Constructive Feedback</p>
   </div>
-  <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
-    <p className="text-xs text-gray-500 mb-4">Practice real-world scenarios with AI.</p>
-    <div className="bg-purple-50 rounded-lg p-3 mb-3 border border-purple-100">
-      <p className="text-xs font-bold text-purple-600 uppercase mb-1">Recommended</p>
-      <p className="text-sm font-bold text-purple-900">Giving Constructive Feedback</p>
-    </div>
-    <button className="w-full py-2 bg-purple-600 text-white rounded-lg text-sm font-bold hover:bg-purple-700 transition-colors">
-      Start Session
-    </button>
-  </div>
-</section>
+  <button className="w-full py-2 bg-purple-600 text-white rounded-lg text-sm font-bold hover:bg-purple-700 transition-colors">
+    Start Session
+  </button>
+</Card>
     `,
     'scenario-sim': `
-<section className="w-full">
-  <div className="flex items-center gap-2 mb-4">
-    <div className="w-8 h-8 rounded-lg bg-orange-100 flex items-center justify-center text-orange-600">
-      <Cpu className="w-5 h-5" />
-    </div>
-    <h2 className="text-xl font-bold text-[#002E47]">
-      Scenario Sim
-    </h2>
-  </div>
-  <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200 space-y-3">
+<Card title="Scenario Sim" icon={Cpu} accent="ORANGE">
+  <div className="space-y-3">
     <div className="border border-gray-200 rounded-lg p-3 hover:border-orange-300 transition-colors cursor-pointer">
       <div className="flex justify-between mb-1">
         <span className="text-xs font-bold text-orange-600">Crisis Management</span>
@@ -674,139 +524,38 @@ export const WIDGET_TEMPLATES = {
       <p className="text-sm font-bold text-gray-800">Market Expansion</p>
     </div>
   </div>
-</section>
+</Card>
     `,
     'feedback-gym': `
-<section className="w-full">
-  <div className="flex items-center gap-2 mb-4">
-    <div className="w-8 h-8 rounded-lg bg-teal-100 flex items-center justify-center text-teal-600">
-      <Dumbbell className="w-5 h-5" />
+<Card title="Feedback Gym" icon={Dumbbell} accent="TEAL">
+  <p className="text-xs text-gray-500 mb-3">Quick drills to improve your delivery.</p>
+  <div className="grid grid-cols-2 gap-2">
+    <div className="bg-teal-50 p-2 rounded-lg text-center cursor-pointer hover:bg-teal-100 transition-colors">
+      <p className="text-lg font-bold text-teal-700">Radical</p>
+      <p className="text-[10px] text-teal-600">Candor</p>
     </div>
-    <h2 className="text-xl font-bold text-[#002E47]">
-      Feedback Gym
-    </h2>
-  </div>
-  <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
-    <p className="text-xs text-gray-500 mb-3">Quick drills to improve your delivery.</p>
-    <div className="grid grid-cols-2 gap-2">
-      <div className="bg-teal-50 p-2 rounded-lg text-center cursor-pointer hover:bg-teal-100 transition-colors">
-        <p className="text-lg font-bold text-teal-700">Radical</p>
-        <p className="text-[10px] text-teal-600">Candor</p>
-      </div>
-      <div className="bg-blue-50 p-2 rounded-lg text-center cursor-pointer hover:bg-blue-100 transition-colors">
-        <p className="text-lg font-bold text-blue-700">SBI</p>
-        <p className="text-[10px] text-blue-600">Model</p>
-      </div>
+    <div className="bg-blue-50 p-2 rounded-lg text-center cursor-pointer hover:bg-blue-100 transition-colors">
+      <p className="text-lg font-bold text-blue-700">SBI</p>
+      <p className="text-[10px] text-blue-600">Model</p>
     </div>
   </div>
-</section>
+</Card>
     `,
     'roi-report': `
-<section className="w-full">
-  <div className="flex items-center gap-2 mb-4">
-    <div className="w-8 h-8 rounded-lg bg-green-100 flex items-center justify-center text-green-600">
-      <TrendingUp className="w-5 h-5" />
+<Card title="ROI Report" icon={TrendingUp} accent="GREEN">
+  <div className="flex items-center justify-between mb-4">
+    <div>
+      <p className="text-xs text-gray-500">Leadership Score</p>
+      <p className="text-2xl font-bold text-gray-800">+15%</p>
     </div>
-    <h2 className="text-xl font-bold text-[#002E47]">
-      ROI Report
-    </h2>
-  </div>
-  <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
-    <div className="flex items-center justify-between mb-4">
-      <div>
-        <p className="text-xs text-gray-500">Leadership Score</p>
-        <p className="text-2xl font-bold text-gray-800">+15%</p>
-      </div>
-      <div className="text-right">
-        <p className="text-xs text-gray-500">Team Engagement</p>
-        <p className="text-2xl font-bold text-gray-800">+8%</p>
-      </div>
+    <div className="text-right">
+      <p className="text-xs text-gray-500">Team Engagement</p>
+      <p className="text-2xl font-bold text-gray-800">+8%</p>
     </div>
-    <button className="w-full py-2 border border-gray-200 rounded-lg text-sm font-bold text-gray-600 hover:bg-gray-50 transition-colors">
-      Download PDF
-    </button>
   </div>
-</section>
-    `,
-    'locker-wins-history': `
-<Card title="AM Bookend" icon={Trophy} className="border-t-4 border-corporate-orange">
-  <div className="space-y-4 max-h-96 overflow-y-auto">
-    {winsList.length > 0 ? (
-      winsList.map((win, index) => (
-        <div key={index} className="p-3 bg-white rounded-lg border border-slate-200 shadow-sm">
-          <div className="flex justify-between items-start mb-1">
-            <span className="font-bold text-[#002E47]">{win.text || "Untitled Win"}</span>
-            <span className="text-xs text-slate-400">{win.date || ''}</span>
-          </div>
-          <div className="flex gap-2 mt-2">
-            {win.completed ? (
-              <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full flex items-center gap-1">
-                <CheckCircle className="w-3 h-3" /> Won
-              </span>
-            ) : (
-              <span className="text-xs bg-slate-100 text-slate-500 px-2 py-1 rounded-full">
-                Pending
-              </span>
-            )}
-          </div>
-        </div>
-      ))
-    ) : (
-      <p className="text-slate-500 italic">No wins recorded yet.</p>
-    )}
-  </div>
-</Card>
-    `,
-    'locker-scorecard-history': `
-<Card title="Scorecard History" icon={Calendar} className="border-t-4 border-corporate-teal">
-   <div className="space-y-4 max-h-96 overflow-y-auto">
-    {commitmentHistory.length > 0 ? (
-      commitmentHistory.map((entry, index) => (
-        <div key={index} className="flex items-center justify-between p-3 bg-white rounded-lg border border-slate-200">
-          <span className="font-mono font-bold text-slate-600">{entry.date}</span>
-          <span className={\`font-bold \${entry.score && entry.score.includes('/') && entry.score.split('/')[0] === entry.score.split('/')[1] ? 'text-green-600' : 'text-orange-600'}\`}>
-            {entry.score}
-          </span>
-        </div>
-      ))
-    ) : (
-      <p className="text-slate-500 italic">No scorecard history available.</p>
-    )}
-  </div>
-</Card>
-    `,
-    'locker-latest-reflection': `
-<Card title="PM Bookend" icon={BookOpen} className="lg:col-span-2 border-t-4 border-corporate-navy">
-  {(eveningBookend.good || eveningBookend.better || eveningBookend.reflection) ? (
-    <div className="bg-white p-6 rounded-xl border border-slate-200 space-y-4">
-      {eveningBookend.good && (
-        <div>
-          <h3 className="text-sm font-bold text-green-700 uppercase mb-1">What Went Well</h3>
-          <p className="text-slate-700 whitespace-pre-wrap">{eveningBookend.good}</p>
-        </div>
-      )}
-      {eveningBookend.better && (
-        <div>
-          <h3 className="text-sm font-bold text-orange-700 uppercase mb-1">What Needs Work</h3>
-          <p className="text-slate-700 whitespace-pre-wrap">{eveningBookend.better}</p>
-        </div>
-      )}
-      {/* Fallback for legacy data */}
-      {eveningBookend.reflection && !eveningBookend.good && !eveningBookend.better && (
-          <div>
-          <h3 className="text-sm font-bold text-slate-400 uppercase mb-1">Reflection</h3>
-          <p className="text-slate-700 whitespace-pre-wrap">{eveningBookend.reflection}</p>
-        </div>
-      )}
-      {(eveningBookend.completedAt || eveningBookend.timestamp) && (
-          <p className="text-xs text-slate-400 mt-4 text-right border-t pt-2">
-            Saved: {new Date(eveningBookend.completedAt?.toDate?.() || eveningBookend.completedAt || eveningBookend.timestamp).toLocaleString()}
-          </p>
-      )}
-    </div>
-  ) : (
-    <p className="text-slate-500 italic">No reflection recorded for today.</p>
-  )}
+  <button className="w-full py-2 border border-gray-200 rounded-lg text-sm font-bold text-gray-600 hover:bg-gray-50 transition-colors">
+    Download PDF
+  </button>
 </Card>
     `,
     'dev-plan-header': `

@@ -1,6 +1,6 @@
 // src/styles/corporate-colors.js
-// LEADERREPS CORPORATE COLOR SCHEME - STRICT REQUIREMENTS
-// Based on leaderreps.com brand guidelines
+// LEADERREPS CORPORATE COLOR SCHEME - UPDATED FOR SLEEK UI 11/14/25
+// Based on leaderreps.com brand guidelines + Modern UI Standards
 
 /**
  * Official LeaderReps Corporate Colors
@@ -15,35 +15,48 @@ export const CORPORATE_COLORS = {
   TEAL: '#47A88D',        // Secondary buttons, success states, accents
   SUBTLE_TEAL: '#349881', // Hover states for teal elements
 
-  // === SEMANTIC COLORS (CORPORATE COLORS ONLY!) ===
-  // Text Colors (using ONLY corporate colors)
+  // === NEUTRALS (Added for sleek UI) ===
+  WHITE: '#FFFFFF',
+  SLATE_50: '#F8FAFC',
+  SLATE_100: '#F1F5F9',
+  SLATE_200: '#E2E8F0',
+  SLATE_300: '#CBD5E1',
+  SLATE_400: '#94A3B8',
+  SLATE_500: '#64748B',
+  SLATE_600: '#475569',
+  SLATE_700: '#334155',
+  SLATE_800: '#1E293B',
+  SLATE_900: '#0F172A',
+
+  // === SEMANTIC COLORS ===
+  // Text Colors
   PRIMARY_TEXT: '#002E47',    // Navy for primary text
-  SECONDARY_TEXT: '#002E47',  // Navy for secondary text  
-  MUTED_TEXT: '#349881',     // Subtle teal for muted text
+  SECONDARY_TEXT: '#334155',  // Slate-700 for secondary text  
+  MUTED_TEXT: '#64748B',      // Slate-500 for muted text
   
-  // Background Colors (using ONLY corporate colors)
-  PAGE_BG: '#FCFCFA',        // Main page background
-  CARD_BG: '#FCFCFA',        // Card/surface background (use corporate light gray)
-  SUBTLE_BG: '#FCFCFA',      // Subtle section backgrounds
+  // Background Colors
+  PAGE_BG: '#F8FAFC',        // Slate-50 for main page background (cleaner)
+  CARD_BG: '#FFFFFF',        // White for cards
+  SUBTLE_BG: '#F1F5F9',      // Slate-100 for subtle sections
   
-  // Interactive Elements (using ONLY corporate colors)
+  // Interactive Elements
   PRIMARY_BUTTON: '#47A88D',     // Teal primary buttons
   PRIMARY_BUTTON_HOVER: '#349881', // Subtle teal hover
   SECONDARY_BUTTON: '#E04E1B',    // Orange secondary buttons  
-  SECONDARY_BUTTON_HOVER: '#349881', // Subtle teal hover (NO non-corporate colors!)
+  SECONDARY_BUTTON_HOVER: '#C33E12', // Darker orange hover
   
-  // Status Colors (using ONLY corporate colors)
+  // Status Colors
   SUCCESS: '#47A88D',        // Use brand teal for success
   WARNING: '#E04E1B',        // Use brand orange for warnings
-  ERROR: '#E04E1B',          // Use orange for errors (NO RED!)
+  ERROR: '#EF4444',          // Standard Red for errors (Orange can be confusing)
   INFO: '#002E47',           // Use brand navy for info
   
-  // Border & Divider Colors (using ONLY corporate colors)
-  BORDER: '#47A88D',         // Teal borders
-  SUBTLE_BORDER: '#349881',  // Subtle teal borders
+  // Border & Divider Colors
+  BORDER: '#E2E8F0',         // Slate-200 for borders (Sleek)
+  SUBTLE_BORDER: '#F1F5F9',  // Slate-100 for subtle borders
   ACCENT_BORDER: '#47A88D',  // Branded accent borders
   
-  // Focus & Selection States (using ONLY corporate colors)
+  // Focus & Selection States
   FOCUS_RING: '#47A88D',     // Use teal for focus indicators
   SELECTION: '#47A88D20',    // Teal with 20% opacity for selections
 };

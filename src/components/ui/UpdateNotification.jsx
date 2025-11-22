@@ -1,6 +1,6 @@
 // src/components/ui/UpdateNotification.jsx
 // PWA Update Notification - Prompts users when new version is available
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { RefreshCw, X, AlertCircle } from 'lucide-react';
 import { useRegisterSW } from 'virtual:pwa-register/react';
 
@@ -26,9 +26,34 @@ const UpdateNotification = () => {
 
   const [isUpdating, setIsUpdating] = useState(false);
 
+  // Handle controller change to reload the page when the new SW takes over
+  useEffect(() => {
+    let refreshing = false;
+    const onControllerChange = () => {
+      if (refreshing) return;
+      refreshing = true;
+      window.location.reload();
+    };
+
+    if (navigator.serviceWorker) {
+      navigator.serviceWorker.addEventListener('controllerchange', onControllerChange);
+    }
+
+    return () => {
+      if (navigator.serviceWorker) {
+        navigator.serviceWorker.removeEventListener('controllerchange', onControllerChange);
+      }
+    };
+  }, []);
+
   const handleUpdate = async () => {
     setIsUpdating(true);
-    await updateServiceWorker(true);
+    try {
+      await updateServiceWorker(true);
+    } catch (error) {
+      console.error('Failed to update service worker:', error);
+      setIsUpdating(false);
+    }
   };
 
   const handleDismiss = () => {
