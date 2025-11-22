@@ -218,6 +218,7 @@ const Dashboard4 = (props) => {
     
     // Functions
     navigate,
+    isFeatureEnabled,
     handleHabitCheck,
     setIsAnchorModalOpen,
     setIsCalendarModalOpen,

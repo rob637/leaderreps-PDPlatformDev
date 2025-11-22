@@ -35,7 +35,8 @@ const Locker = () => {
     Trophy,
     CheckCircle,
     Calendar,
-    BookOpen
+    BookOpen,
+    isFeatureEnabled // Added to scope just in case
   };
 
   const renderers = {
