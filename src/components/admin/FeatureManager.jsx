@@ -178,17 +178,17 @@ const FeatureManager = () => {
     handleHabitCheck: (key, val) => handleHabitToggle(key, val), // This one was wrapped in Dashboard4
     setIsAnchorModalOpen: () => console.log('Open Anchor Modal (Mocked for Editor)'),
     setIsCalendarModalOpen: () => console.log('Open Calendar Modal (Mocked for Editor)'),
-    handleToggleAdditionalRep,
-    setMorningWIN,
-    handleSaveWINWrapper: handleSaveWIN, // Dashboard4 wrapper just added a timeout
-    handleToggleWIN,
-    handleToggleTask,
-    handleRemoveTask,
+    handleToggleAdditionalRep: (id, isChecked) => handleToggleAdditionalRep(id, isChecked),
+    setMorningWIN: (val) => setMorningWIN(val),
+    handleSaveWINWrapper: () => handleSaveWIN(), // Dashboard4 wrapper just added a timeout - wrap to prevent event
+    handleToggleWIN: () => handleToggleWIN(),
+    handleToggleTask: (id) => handleToggleTask(id),
+    handleRemoveTask: (id) => handleRemoveTask(id),
     setNewTaskText: () => {}, // Local state in Dashboard4
     handleAddOtherTask: () => {}, // Local state in Dashboard4
-    setReflectionGood,
-    setReflectionBetter,
-    handleSaveEveningBookend,
+    setReflectionGood: (val) => setReflectionGood(val),
+    setReflectionBetter: (val) => setReflectionBetter(val),
+    handleSaveEveningBookend: () => handleSaveEveningBookend(),
     
     // State
     weeklyFocus,

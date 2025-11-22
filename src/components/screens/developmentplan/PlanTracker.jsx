@@ -9,7 +9,7 @@ import { Button, Card, ProgressBar } from './DevPlanComponents';
 import { COLORS, generatePlanSummary } from './devPlanUtils';
 import ProgressBreakdown from './ProgressBreakdown';
 import QuickPlanEditor from './QuickPlanEditor';
-import WidgetRenderer from '../../admin/WidgetRenderer';
+import ZoneRenderer from '../../admin/ZoneRenderer';
 
 const PlanTracker = ({ 
   plan, 
@@ -98,20 +98,7 @@ const PlanTracker = ({
 
   return (
     <div className="space-y-4 sm:space-y-5 lg:space-y-6">
-      {/* Header */}
-      <WidgetRenderer widgetId="dev-plan-header" scope={scope} />
-
-      {/* Quick Stats */}
-      <WidgetRenderer widgetId="dev-plan-stats" scope={scope} />
-
-      {/* Actions */}
-      <WidgetRenderer widgetId="dev-plan-actions-v2" scope={scope} />
-
-      {/* Focus Areas Summary */}
-      <WidgetRenderer widgetId="dev-plan-focus-areas" scope={scope} />
-
-      {/* Open-Ended Goal */}
-      <WidgetRenderer widgetId="dev-plan-goal" scope={scope} />
+      <ZoneRenderer zoneId="dev-plan-main" scope={scope} />
     </div>
   );
 };

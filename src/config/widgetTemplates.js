@@ -578,6 +578,26 @@ export const WIDGET_TEMPLATES = {
   <ProgressBar progress={summary.progress} color={COLORS.TEAL} />
 </Card>
     `,
+    'dev-plan-header-v2': `
+<Card title="Development Plan" icon={Target} accent="TEAL">
+  <div className="flex items-center justify-between mb-6">
+    <div>
+      <p className="text-gray-600">
+        Cycle {cycle} • {summary.totalSkills} skills • {summary.progress}% complete
+      </p>
+    </div>
+    <Button
+      onClick={() => onEditPlan()}
+      variant="nav-back"
+      className="flex items-center gap-2"
+    >
+      <Edit size={16} />
+      Quick Edit
+    </Button>
+  </div>
+  <ProgressBar progress={summary.progress} color={COLORS.TEAL} />
+</Card>
+    `,
     'dev-plan-stats': `
 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
   <Card accent="BLUE">
@@ -661,6 +681,52 @@ export const WIDGET_TEMPLATES = {
       <Button
         onClick={onDetail}
         variant="soft-orange"
+        className="flex items-center justify-center gap-2"
+      >
+        View Detailed Plan
+      </Button>
+    )}
+  </div>
+</Card>
+    `,
+    'dev-plan-actions-v3': `
+<Card title="Actions" icon={Zap} accent="TEAL">
+  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+    <Button
+      onClick={() => setShowBreakdown(true)}
+      variant="soft-teal"
+      className="flex items-center justify-center gap-2"
+    >
+      <Target size={16} />
+      View Progress Breakdown
+    </Button>
+    
+    {onScan && (
+      <Button
+        onClick={onScan}
+        variant="soft-teal"
+        className="flex items-center justify-center gap-2"
+      >
+        <TrendingUp size={16} />
+        Start Progress Scan
+      </Button>
+    )}
+    
+    {onTimeline && (
+      <Button
+        onClick={onTimeline}
+        variant="nav-back"
+        className="flex items-center justify-center gap-2"
+      >
+        <Calendar size={16} />
+        View Timeline
+      </Button>
+    )}
+    
+    {onDetail && (
+      <Button
+        onClick={onDetail}
+        variant="nav-back"
         className="flex items-center justify-center gap-2"
       >
         View Detailed Plan
@@ -795,7 +861,7 @@ export const WIDGET_TEMPLATES = {
     }
     \`}</style>
     </>
-  );
+  };
 };
 
 render(<DailyQuote />);
@@ -1112,7 +1178,7 @@ render(<DailyQuote />);
     }
     \`}</style>
     </>
-  );
+  };
 };
 
 render(<DailyQuote />);
@@ -1141,9 +1207,11 @@ export const FEATURE_METADATA = {
   'welcome-message-v2': { core: true, category: 'General', description: 'Welcome message V2' },
   'notifications-v2': { core: true, category: 'General', description: 'Notifications V2' },
   'dev-plan-header': { core: true, category: 'Development', description: 'Development Plan Header' },
+  'dev-plan-header-v2': { core: true, category: 'Development', description: 'Development Plan Header V2' },
   'dev-plan-stats': { core: true, category: 'Development', description: 'Development Plan Stats' },
   'dev-plan-actions': { core: true, category: 'Development', description: 'Development Plan Actions' },
   'dev-plan-actions-v2': { core: true, category: 'Development', description: 'Development Plan Actions V2' },
+  'dev-plan-actions-v3': { core: true, category: 'Development', description: 'Development Plan Actions V3' },
   'dev-plan-focus-areas': { core: true, category: 'Development', description: 'Development Plan Focus Areas' },
   'dev-plan-goal': { core: true, category: 'Development', description: 'Development Plan Goal' },
   'course-library': { core: false, category: 'Learning', description: 'Course library' },
