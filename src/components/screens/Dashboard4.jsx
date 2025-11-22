@@ -17,7 +17,7 @@ import WidgetRenderer from '../admin/WidgetRenderer';
 import { createWidgetSDK } from '../../services/WidgetSDK';
 
 const DASHBOARD_FEATURES = [
-  'welcome-message',
+  'welcome-message', 'daily-quote',
   'gamification', 'exec-summary', 'weekly-focus', 
   'identity-builder', 'habit-stack', 'win-the-day', 
   'notifications', 'scorecard', 'pm-bookend'
@@ -266,6 +266,7 @@ const Dashboard4 = (props) => {
 
   const renderers = {
     'dashboard-header': () => <WidgetRenderer widgetId="dashboard-header" scope={scope} />,
+    'daily-quote': () => <WidgetRenderer widgetId="daily-quote" scope={scope} />,
     'welcome-message': () => <WidgetRenderer widgetId="welcome-message" scope={scope} />,
     'gamification': () => <WidgetRenderer widgetId="gamification" scope={scope} />,
     'exec-summary': () => (

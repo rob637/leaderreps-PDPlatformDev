@@ -195,6 +195,15 @@ const FeatureManager = () => {
   };
 
   const getScopeForWidget = (widgetId) => {
+    if (widgetId === 'daily-quote') {
+      return {
+        allQuotes: globalMetadata?.SYSTEM_QUOTES || [],
+        dailyQuote,
+        options: features[widgetId]?.options || {},
+        // Minimal common tools
+        React,
+      };
+    }
     // Default full scope
     return { ...REAL_SCOPE, options: features[widgetId]?.options || {} };
   };
@@ -209,71 +218,222 @@ const FeatureManager = () => {
     };
 
     switch (widgetId) {
+      case 'daily-quote':
+        return {
+          ...common,
+          'Input': {
+            'allQuotes': 'List of Values (LOV) of System Quotes.',
+            'dailyQuote': 'Selected quote for today.'
+          },
+          'Output': { 'Display': 'No output (Display only).' }
+        };
+      case 'welcome-message':
+        return {
+            ...common,
+            'Input': { 'greeting': 'User Profile (First Name).' },
+            'Output': { 'Display': 'No output (Display only).' }
+        };
       case 'weekly-focus':
         return {
           ...common,
-          'Development Plan': {
-            'weeklyFocus': 'Data Source: Development Plan (Active Focus Area). If null, plan is not set.'
+          'Input': {
+            'weeklyFocus': 'Details from the Development Plan (Current Focus Area).'
+          },
+          'Output': {
+            'Navigation': 'Navigation to Development Plan.'
           }
+        };
+      case 'identity-builder':
+        return {
+            ...common,
+            'Input': { 
+                'hasLIS': 'User Profile (Saved Identity Statement).',
+                'lisRead': 'Daily Practice Data (Read Status).'
+            },
+            'Output': { 'User Profile': 'Updates User Profile (Identity Statement).' }
+        };
+      case 'habit-stack':
+        return {
+            ...common,
+            'Input': {
+                'dailyRepName': 'Details from the Development Plan (Target Rep).',
+                'dailyRepCompleted': 'Daily Practice Data (Completion Status).'
+            },
+            'Output': { 'Daily Practice': 'Updates Daily Practice Data (Habit Completion).' }
         };
       case 'win-the-day':
         return {
           ...common,
-          'User Input': {
-            'morningWIN': 'Top priority (User Entered).',
-            'otherTasks': 'Secondary tasks.'
+          'Input': {
+            'morningWIN': 'User Input (Text Entry - Top Priority).',
+            'otherTasks': 'User Input (Text Entry - Secondary Tasks).'
           },
           'Output': {
-            'Locker': 'Saves to Win History.'
+            'Locker': 'Output to Your Locker (Win History).'
           }
         };
       case 'pm-bookend':
         return {
           ...common,
-          'User Input': {
-            'reflectionGood': 'What went well.',
-            'reflectionBetter': 'What needs work.'
+          'Input': {
+            'reflectionGood': 'User Input (Reflection Text).',
+            'reflectionBetter': 'User Input (Reflection Text).'
           },
           'Output': {
-            'Locker': 'Saves to Reflection History.'
+            'Locker': 'Output to Your Locker (Reflection History).'
           }
-        };
-      case 'welcome-message':
-        return {
-            ...common,
-            'User State': { 'greeting': 'Personalized greeting.' }
-        };
-      case 'identity-builder':
-        return {
-            ...common,
-            'User State': { 
-                'hasLIS': 'True if identity statement is set.',
-                'lisRead': 'True if read today.'
-            },
-            'Actions': { 'setIsAnchorModalOpen': 'Open editor modal.' }
-        };
-      case 'habit-stack':
-        return {
-            ...common,
-            'Daily Reps': {
-                'dailyRepName': 'Name of today\'s target rep.',
-                'dailyRepCompleted': 'Completion status.'
-            }
         };
       case 'scorecard':
         return {
             ...common,
-            'Stats': {
-                'scorecard': 'Daily progress stats (reps/wins).',
-                'streakCount': 'Current streak.'
-            }
+            'Input': {
+                'scorecard': 'Calculated from Daily Practice Data (Reps & Wins).',
+                'streakCount': 'Calculated from Daily Practice Data (Streak).'
+            },
+            'Output': { 'Display': 'No output (Display only).' }
+        };
+      case 'notifications':
+        return {
+            ...common,
+            'Input': { 'notifications': 'System Alerts (Waiting to be built).' },
+            'Output': { 'Navigation': 'Navigation to relevant feature.' }
+        };
+      case 'gamification':
+        return {
+            ...common,
+            'Input': { 'stats': 'User Statistics (XP, Rank - Waiting to be built).' },
+            'Output': { 'Display': 'No output.' }
+        };
+      case 'exec-summary':
+        return {
+            ...common,
+            'Input': { 'data': 'Aggregated User Data (Waiting to be built).' },
+            'Output': { 'Display': 'No output.' }
+        };
+      case 'calendar-sync':
+        return {
+            ...common,
+            'Input': { 'provider': 'External Calendar Provider (Waiting to be built).' },
+            'Output': { 'External': 'Syncs to Outlook/Google Calendar.' }
+        };
+      case 'course-library':
+      case 'leadership-videos':
+        return {
+            ...common,
+            'Input': { 'content': 'Content Management System (Videos).' },
+            'Output': { 'Player': 'Video Player.' }
+        };
+      case 'reading-hub':
+        return {
+            ...common,
+            'Input': { 'content': 'Content Management System (Books).' },
+            'Output': { 'External': 'External Link/Reader.' }
+        };
+      case 'strat-templates':
+        return {
+            ...common,
+            'Input': { 'content': 'Content Management System (Files).' },
+            'Output': { 'Download': 'File Download.' }
+        };
+      case 'community-feed':
+        return {
+            ...common,
+            'Input': { 'posts': 'Community Database (Posts).' },
+            'Output': { 'Database': 'Updates Community Database (New Post).' }
+        };
+      case 'my-discussions':
+        return {
+            ...common,
+            'Input': { 'threads': 'Community Database (User Threads).' },
+            'Output': { 'Navigation': 'Navigation to Thread.' }
+        };
+      case 'mastermind':
+        return {
+            ...common,
+            'Input': { 'groups': 'Group Data (Waiting to be built).' },
+            'Output': { 'Navigation': 'Navigation to Group.' }
+        };
+      case 'mentor-match':
+        return {
+            ...common,
+            'Input': { 'mentors': 'Mentor Database (Waiting to be built).' },
+            'Output': { 'Request': 'Match Request.' }
+        };
+      case 'live-events':
+        return {
+            ...common,
+            'Input': { 'schedule': 'Event Schedule (Waiting to be built).' },
+            'Output': { 'Stream': 'Video Stream.' }
+        };
+      case 'practice-history':
+        return {
+            ...common,
+            'Input': { 'logs': 'Practice Logs.' },
+            'Output': { 'Display': 'No output.' }
+        };
+      case 'progress-analytics':
+        return {
+            ...common,
+            'Input': { 'data': 'Performance Data.' },
+            'Output': { 'Display': 'No output.' }
+        };
+      case 'ai-roleplay':
+        return {
+            ...common,
+            'Input': { 'scenarios': 'AI Scenarios.' },
+            'Output': { 'Session': 'Practice Session.' }
+        };
+      case 'scenario-sim':
+        return {
+            ...common,
+            'Input': { 'simulations': 'Simulation Scenarios.' },
+            'Output': { 'Results': 'Simulation Results.' }
+        };
+      case 'feedback-gym':
+        return {
+            ...common,
+            'Input': { 'drills': 'Drill Library.' },
+            'Output': { 'Results': 'Drill Results.' }
+        };
+      case 'roi-report':
+        return {
+            ...common,
+            'Input': { 'metrics': 'Aggregated Metrics.' },
+            'Output': { 'Download': 'PDF Download.' }
+        };
+      case 'locker-wins-history':
+        return {
+            ...common,
+            'Input': { 'history': 'Win History Data.' },
+            'Output': { 'Display': 'No output.' }
+        };
+      case 'locker-scorecard-history':
+        return {
+            ...common,
+            'Input': { 'history': 'Scorecard History Data.' },
+            'Output': { 'Display': 'No output.' }
+        };
+      case 'locker-latest-reflection':
+        return {
+            ...common,
+            'Input': { 'history': 'Reflection History Data.' },
+            'Output': { 'Display': 'No output.' }
         };
       default:
+        // Check for dev-plan widgets
+        if (widgetId.startsWith('dev-plan-')) {
+             return {
+                ...common,
+                'Input': { 'plan': 'Development Plan Data.' },
+                'Output': { 'Navigation': 'Navigation/Edit Mode.' }
+            };
+        }
         return {
           ...common,
-          'State': {
+          'Input': {
              'globalMetadata': 'Global configuration.'
-          }
+          },
+          'Output': { 'Display': 'No output.' }
         };
     }
   };
@@ -285,7 +445,7 @@ const FeatureManager = () => {
   const [newOption, setNewOption] = useState({ key: '', value: '' });
 
   const initialGroups = {
-    dashboard: ['welcome-message', 'identity-builder', 'habit-stack', 'win-the-day', 'gamification', 'exec-summary', 'calendar-sync', 'weekly-focus', 'notifications', 'scorecard', 'pm-bookend'],
+    dashboard: ['welcome-message', 'daily-quote', 'identity-builder', 'habit-stack', 'win-the-day', 'gamification', 'exec-summary', 'calendar-sync', 'weekly-focus', 'notifications', 'scorecard', 'pm-bookend'],
     'development-plan': ['dev-plan-header', 'dev-plan-stats', 'dev-plan-actions', 'dev-plan-focus-areas', 'dev-plan-goal'],
     content: ['course-library', 'reading-hub', 'leadership-videos', 'strat-templates'],
     community: ['community-feed', 'my-discussions', 'mastermind', 'mentor-match', 'live-events'],
@@ -485,6 +645,14 @@ const FeatureManager = () => {
 
   // Configuration Schema for Specific Widgets
   const WIDGET_CONFIG_SCHEMA = {
+    'daily-quote': [
+      {
+        key: 'scrollMode',
+        label: 'Scrolling Mode',
+        type: 'boolean',
+        description: 'Enable marquee scrolling for quotes instead of a static daily quote.'
+      }
+    ]
   };
 
   return (

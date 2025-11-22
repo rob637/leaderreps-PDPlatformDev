@@ -998,7 +998,7 @@ export const WIDGET_TEMPLATES = {
   <p className="text-gray-700">{plan.openEndedAnswer}</p>
 </Card>
     `,
-    'dashboard-header': `const DashboardHeader = () => {
+    'daily-quote': `const DailyQuote = () => {
   // Helper to parse quote
   const parseQuote = (q) => {
     if (!q) return { text: '', author: '' };
@@ -1014,7 +1014,7 @@ export const WIDGET_TEMPLATES = {
 
   return (
     <>
-    <header className="overflow-hidden bg-[#002E47] text-white border-b border-teal-500/30 rounded-2xl mb-6 shadow-lg">
+    <div className="overflow-hidden bg-[#002E47] text-white rounded-2xl shadow-lg">
       {isScrolling ? (
         <div className="relative w-full overflow-hidden py-3 group">
           <div className="animate-marquee whitespace-nowrap inline-block group-hover:[animation-play-state:paused]">
@@ -1042,7 +1042,7 @@ export const WIDGET_TEMPLATES = {
           )}
         </div>
       )}
-    </header>
+    </div>
     <style>{\`
     @keyframes marquee {
       0% { transform: translateX(0); }
@@ -1057,7 +1057,7 @@ export const WIDGET_TEMPLATES = {
   );
 };
 
-render(<DashboardHeader />);
+render(<DailyQuote />);
     `,
     'welcome-message': `
 <div className="mb-6">
@@ -1073,7 +1073,7 @@ render(<DashboardHeader />);
 
 export const FEATURE_METADATA = {
     // Dashboard
-    'dashboard-header': { name: 'Dashboard Header', description: 'Quotes' },
+    'daily-quote': { name: 'Daily Quote', description: 'Inspirational quote (Static or Scrolling).' },
     'welcome-message': { name: 'Welcome Message', description: 'Greeting and encouragement.' },
     'identity-builder': { name: 'Identity Builder', description: 'Grounding Rep & Identity Statement tools.' },
     'habit-stack': { name: 'Habit Stack', description: 'Daily Rep tracking and habit formation.' },
