@@ -776,7 +776,7 @@ export const WIDGET_TEMPLATES = {
 </div>
     `,
     'locker-wins-history': `
-<Card title="Win the Day History" icon={Trophy} className="border-t-4 border-corporate-orange">
+<Card title="AM Bookend" icon={Trophy} className="border-t-4 border-corporate-orange">
   <div className="space-y-4 max-h-96 overflow-y-auto">
     {winsList.length > 0 ? (
       winsList.map((win, index) => (
@@ -823,7 +823,7 @@ export const WIDGET_TEMPLATES = {
 </Card>
     `,
     'locker-latest-reflection': `
-<Card title="Latest Reflection" icon={BookOpen} className="lg:col-span-2 border-t-4 border-corporate-navy">
+<Card title="PM Bookend" icon={BookOpen} className="lg:col-span-2 border-t-4 border-corporate-navy">
   {(eveningBookend.good || eveningBookend.better || eveningBookend.reflection) ? (
     <div className="bg-white p-6 rounded-xl border border-slate-200 space-y-4">
       {eveningBookend.good && (
@@ -1108,9 +1108,9 @@ export const FEATURE_METADATA = {
     'roi-report': { name: 'Executive ROI Report', description: 'Automated reports showing progress and value.' },
 
     // Locker
-    'locker-wins-history': { name: 'Wins History', description: 'Log of daily wins and completions.' },
+    'locker-wins-history': { name: 'AM Bookend', description: 'Log of daily wins and completions.' },
     'locker-scorecard-history': { name: 'Scorecard History', description: 'Historical view of daily scorecard performance.' },
-    'locker-latest-reflection': { name: 'Latest Reflection', description: 'Most recent evening reflection entry.' },
+    'locker-latest-reflection': { name: 'PM Bookend', description: 'Most recent evening reflection entry.' },
 
     // Development Plan
     'dev-plan-header': { name: 'Plan Header', description: 'Title, cycle info, and progress bar.' },

@@ -41,7 +41,7 @@ const Locker = () => {
   const renderers = {
     'locker-wins-history': () => (
       <WidgetRenderer widgetId="locker-wins-history" scope={scope}>
-        <Card title="Win the Day History" icon={Trophy} className="border-t-4 border-corporate-orange">
+        <Card title="AM Bookend" icon={Trophy} className="border-t-4 border-corporate-orange">
           <div className="space-y-4 max-h-96 overflow-y-auto">
             {winsList.length > 0 ? (
               winsList.map((win, index) => (
@@ -92,7 +92,7 @@ const Locker = () => {
     ),
     'locker-latest-reflection': () => (
       <WidgetRenderer widgetId="locker-latest-reflection" scope={scope}>
-        <Card title="Latest Reflection" icon={BookOpen} className="lg:col-span-2 border-t-4 border-corporate-navy">
+        <Card title="PM Bookend" icon={BookOpen} className="lg:col-span-2 border-t-4 border-corporate-navy">
           {(eveningBookend.good || eveningBookend.better || eveningBookend.reflection) ? (
             <div className="bg-white p-6 rounded-xl border border-slate-200 space-y-4">
               {eveningBookend.good && (

@@ -398,7 +398,7 @@ const FeatureManager = () => {
       case 'locker-wins-history':
         return {
             ...common,
-            'Input': { 'history': 'Win History Data.' },
+            'Input': { 'history': 'AM Bookend History Data.' },
             'Output': { 'Display': 'No output.' }
         };
       case 'locker-scorecard-history':
@@ -410,7 +410,7 @@ const FeatureManager = () => {
       case 'locker-latest-reflection':
         return {
             ...common,
-            'Input': { 'history': 'Reflection History Data.' },
+            'Input': { 'history': 'PM Bookend History Data.' },
             'Output': { 'Display': 'No output.' }
         };
       default:
