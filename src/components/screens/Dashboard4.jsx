@@ -12,6 +12,7 @@ import {
 import { Card, Button } from '../shared/UI';
 import { ProgressBar } from './developmentplan/DevPlanComponents';
 import { COLORS } from './developmentplan/devPlanConstants';
+import ProgressBreakdown from './developmentplan/ProgressBreakdown';
 import { useDashboard } from './dashboard/DashboardHooks.jsx';
 import { UnifiedAnchorEditorModal, CalendarSyncModal } from './dashboard/DashboardComponents.jsx';
 import { useFeatures } from '../../providers/FeatureProvider';
@@ -101,6 +102,7 @@ const Dashboard4 = () => {
   // --- LOCAL STATE ---
   const [isAnchorModalOpen, setIsAnchorModalOpen] = useState(false);
   const [isCalendarModalOpen, setIsCalendarModalOpen] = useState(false);
+  const [showBreakdown, setShowBreakdown] = useState(false);
   const [newTaskText, setNewTaskText] = useState('');
   const [isWinSaved, setIsWinSaved] = useState(false);
 
@@ -236,6 +238,12 @@ const Dashboard4 = () => {
     
     // Functions
     navigate,
+    onScan: () => navigate('development-plan'),
+    onTimeline: () => navigate('development-plan'),
+    onDetail: () => navigate('development-plan'),
+    setShowBreakdown,
+    onEditPlan: () => navigate('development-plan'),
+
     isFeatureEnabled,
     handleHabitCheck,
     setIsAnchorModalOpen,
@@ -344,6 +352,21 @@ const Dashboard4 = () => {
         isOpen={isCalendarModalOpen}
         onClose={() => setIsCalendarModalOpen(false)}
       />
+
+      {/* Plan Breakdown Modal */}
+      {showBreakdown && (
+        <div className="fixed inset-0 z-50 bg-white overflow-y-auto animate-in fade-in slide-in-from-bottom-4">
+            <div className="p-4 max-w-3xl mx-auto">
+                <div className="mb-4">
+                    <Button onClick={() => setShowBreakdown(false)} variant="nav-back" size="sm">
+                        <ChevronRight className="w-4 h-4 rotate-180" />
+                        Back to Dashboard
+                    </Button>
+                </div>
+                <ProgressBreakdown plan={plan} globalMetadata={globalMetadata} />
+            </div>
+        </div>
+      )}
     </div>
   );
 };

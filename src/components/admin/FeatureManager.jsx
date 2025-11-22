@@ -166,6 +166,12 @@ const FeatureManager = () => {
     
     // Functions
     navigate,
+    onScan: () => console.log('Navigate to Scan'),
+    onTimeline: () => console.log('Navigate to Timeline'),
+    onDetail: () => console.log('Navigate to Detail'),
+    setShowBreakdown: (val) => console.log('Show Breakdown:', val),
+    onEditPlan: () => console.log('Navigate to Edit Plan'),
+
     isFeatureEnabled,
     // We wrap these to ensure they work in the isolated scope if needed, 
     // but passing them directly is usually fine.

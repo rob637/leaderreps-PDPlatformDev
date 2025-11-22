@@ -568,7 +568,7 @@ export const WIDGET_TEMPLATES = {
     </div>
     <Button
       onClick={() => onEditPlan()}
-      variant="soft-orange"
+      variant="nav-back"
       className="flex items-center gap-2"
     >
       <Edit size={16} />
