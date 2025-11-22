@@ -92,6 +92,16 @@ const FeatureManager = () => {
 
   const dailyRepCompleted = habitsCompleted?.completedDailyRep || false;
 
+  // --- PLAN DATA ---
+  const plan = React.useMemo(() => developmentPlanData?.currentPlan || {}, [developmentPlanData]);
+  const cycle = plan.cycle || 1;
+  const summary = React.useMemo(() => plan.summary || { 
+    totalSkills: 0, 
+    completedSkills: 0, 
+    progress: 0,
+    currentWeek: 0
+  }, [plan]);
+
   // --- MOCK HANDLERS FOR EDITOR (To prevent actual DB writes during preview if desired, or use real ones) ---
   // The user requested REAL data. We will pass the real handlers, but maybe wrap them to log?
   // Actually, for the editor, we might want to prevent accidental saves. 
@@ -185,6 +195,14 @@ const FeatureManager = () => {
     reflectionGood,
     reflectionBetter,
     isSavingBookend,
+    eveningBookend: dailyPracticeData?.eveningBookend || {},
+    commitmentHistory: additionalCommitments || [],
+
+    // Plan Data
+    plan,
+    cycle,
+    summary,
+    winsList: otherTasks, // Alias
     
     // User Data
     user: user ? {

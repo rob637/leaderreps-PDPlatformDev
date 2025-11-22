@@ -4,7 +4,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { BookOpen, ShieldCheck, Film, ArrowLeft, Sparkles, Target, Trophy, Users, TrendingUp, Star, Zap, PlayCircle, FileText } from 'lucide-react';
 import { useAppServices } from '../../services/useAppServices.jsx';
 import { membershipService } from '../../services/membershipService.js';
-import { Button } from '../shared/UI';
+import { Button, Card } from '../shared/UI';
 import { getReadings, getVideos, getCourses } from '../../services/contentService';
 import { useFeatures } from '../../providers/FeatureProvider';
 import WidgetRenderer from '../admin/WidgetRenderer';
@@ -26,58 +26,46 @@ const COLORS = {
 
 const LibraryCard = ({ title, description, icon: Icon, onClick, disabled = false, requiredTier }) => {
   return (
-    <button
-      onClick={onClick}
-      disabled={disabled}
-      className={`card-corporate-elevated w-full text-left transition-all duration-300 ${
-        disabled
-          ? 'opacity-60 cursor-not-allowed'
-          : 'hover:shadow-xl hover:-translate-y-1 cursor-pointer'
-      }`}
-      style={{ 
-        borderColor: disabled ? COLORS.SUBTLE : COLORS.TEAL,
-        background: disabled ? COLORS.LIGHT_GRAY : 'white'
-      }}
+    <Card
+      onClick={disabled ? undefined : onClick}
+      accent={disabled ? 'GRAY' : 'TEAL'}
+      className={`h-full ${disabled ? 'opacity-60 cursor-not-allowed bg-slate-50' : 'hover:shadow-xl'}`}
     >
-      <div className="p-6 h-full flex flex-col">
-        <div className="text-center mb-4">
-          <div
-            className="w-20 h-20 rounded-2xl flex items-center justify-center mx-auto mb-4"
-            style={{ 
-              backgroundColor: disabled ? `${COLORS.SUBTLE}20` : `${COLORS.TEAL}15`,
-              border: `3px solid ${disabled ? COLORS.SUBTLE : COLORS.TEAL}30`
-            }}
-          >
-            <Icon
-              className="w-10 h-10"
-              style={{ color: disabled ? COLORS.SUBTLE : COLORS.TEAL }}
-            />
-          </div>
-          <h3 className="text-xl font-bold mb-3" style={{ color: disabled ? COLORS.MUTED : COLORS.NAVY }}>
-            {title}
-          </h3>
+      <div className="flex flex-col items-center text-center h-full">
+        <div
+          className="w-20 h-20 rounded-2xl flex items-center justify-center mb-4"
+          style={{ 
+            backgroundColor: disabled ? `${COLORS.SUBTLE}20` : `${COLORS.TEAL}15`,
+            border: `3px solid ${disabled ? COLORS.SUBTLE : COLORS.TEAL}30`
+          }}
+        >
+          <Icon
+            className="w-10 h-10"
+            style={{ color: disabled ? COLORS.SUBTLE : COLORS.TEAL }}
+          />
         </div>
-        <div className="flex-1 flex flex-col">
-          <p className="text-gray-600 text-center mb-4 flex-1">
-            {description}
-          </p>
-          {disabled && requiredTier && (
-            <div className="mt-auto">
-              <div 
-                className="inline-flex items-center px-3 py-2 rounded-full text-sm font-semibold w-full justify-center"
-                style={{ 
-                  backgroundColor: `${COLORS.ORANGE}20`, 
-                  color: COLORS.ORANGE,
-                  border: `1px solid ${COLORS.ORANGE}40`
-                }}
-              >
-                Requires Premium Tier
-              </div>
+        <h3 className="text-xl font-bold mb-3" style={{ color: disabled ? COLORS.MUTED : COLORS.NAVY }}>
+          {title}
+        </h3>
+        <p className="text-gray-600 mb-4 flex-1">
+          {description}
+        </p>
+        {disabled && requiredTier && (
+          <div className="mt-auto w-full">
+            <div 
+              className="inline-flex items-center px-3 py-2 rounded-full text-sm font-semibold w-full justify-center"
+              style={{ 
+                backgroundColor: `${COLORS.ORANGE}20`, 
+                color: COLORS.ORANGE,
+                border: `1px solid ${COLORS.ORANGE}40`
+              }}
+            >
+              Requires Premium Tier
             </div>
-          )}
-        </div>
+          </div>
+        )}
       </div>
-    </button>
+    </Card>
   );
 };
 
@@ -242,9 +230,15 @@ const Library = ({ simulatedTier, isDeveloperMode }) => {
         <div className="content-full">
       <div>
         {/* Back Button */}
-        <div className="flex items-center gap-2 mb-6 text-gray-600 hover:text-gray-800 cursor-pointer transition-colors" onClick={() => navigate('dashboard')}>
-          <ArrowLeft className="w-5 h-5" />
-          <span className="text-sm font-medium">Back to Dashboard</span>
+        <div className="mb-6">
+          <Button 
+            variant="nav-back" 
+            onClick={() => navigate('dashboard')}
+            className="pl-2"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Back to Dashboard
+          </Button>
         </div>
 
         {/* Header */}

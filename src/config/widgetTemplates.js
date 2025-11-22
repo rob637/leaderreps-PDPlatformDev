@@ -364,7 +364,7 @@ export const WIDGET_TEMPLATES = {
     <div className="flex gap-3">
       <div className="w-8 h-8 rounded-full bg-gray-200 flex-shrink-0"></div>
       <div>
-        <p className="text-sm font-bold text-gray-800">Sarah J. <span className="font-normal text-gray-500">posted in</span> Leadership</span></p>
+        <p className="text-sm font-bold text-gray-800">Sarah J. <span className="font-normal text-gray-500">posted in</span> Leadership</p>
         <p className="text-sm text-gray-600 mt-1">"How do you handle skip-level meetings effectively?"</p>
         <div className="flex gap-3 mt-2 text-xs text-gray-400">
           <span className="flex items-center gap-1"><MessageSquare className="w-3 h-3" /> 12</span>
@@ -810,66 +810,356 @@ render(<DailyQuote />);
   </p>
 </div>
     `,
+    'win-the-day-v2': `
+<Card title="AM Bookend - Win the Day" icon={Trophy} accent="TEAL">
+  <div className="space-y-6">
+    {/* 1. Top Priority */}
+    <div className="text-left">
+      <label className="block text-xs font-bold text-slate-400 uppercase mb-2 text-left">
+        1. Top Priority (The WIN)
+      </label>
+      <div className="flex gap-3">
+        {amWinCompleted ? (
+          <div className="flex-1 p-3 bg-green-50 border border-green-200 rounded-xl flex items-center gap-3">
+            <CheckSquare className="w-5 h-5 text-green-600" />
+            <span className="font-bold text-green-900 line-through opacity-75">{morningWIN}</span>
+          </div>
+        ) : (
+          <div className="flex-1 flex gap-2">
+            <input 
+              type="text"
+              value={morningWIN}
+              onChange={(e) => setMorningWIN(e.target.value)}
+              placeholder="What is the ONE thing that must get done?"
+              className="flex-1 p-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-teal-500 outline-none transition-all font-medium"
+              disabled={amWinCompleted}
+            />
+            {!amWinCompleted && morningWIN && (
+                <button 
+                  onClick={handleSaveWINWrapper}
+                  disabled={isSavingWIN || isWinSaved}
+                  className={\`p-3 rounded-xl transition-colors disabled:opacity-50 \${
+                    isWinSaved ? 'bg-green-500 text-white' : 'bg-teal-500 text-white hover:bg-teal-600'
+                  }\`}
+                  title="Save WIN"
+                >
+                  {isSavingWIN ? <Loader className="w-5 h-5 animate-spin" /> : 
+                  isWinSaved ? <CheckSquare className="w-5 h-5" /> : <Plus className="w-5 h-5" />}
+                </button>
+            )}
+          </div>
+        )}
+        
+        {morningWIN && !isSavingWIN && (
+          <button
+            onClick={handleToggleWIN}
+            className={\`p-3 rounded-xl border-2 transition-colors \${
+              amWinCompleted 
+                ? 'bg-green-500 border-green-500 text-white' 
+                : 'bg-white border-slate-200 text-slate-300 hover:border-green-400'
+            }\`}
+          >
+            <CheckSquare className="w-5 h-5" />
+          </button>
+        )}
+      </div>
+    </div>
 
+    {/* 2 & 3. Next Most Important */}
+    <div className="space-y-3 text-left">
+      <div className="flex justify-between items-center">
+        <label className="block text-xs font-bold text-slate-400 uppercase text-left">
+          2 & 3. Next Most Important
+        </label>
+        {otherTasks.length > 0 && (
+          <span className="text-xs text-green-600 font-medium flex items-center gap-1">
+            <CheckSquare className="w-3 h-3" /> Auto-saved
+          </span>
+        )}
+      </div>
+      
+      {otherTasks.map((task, idx) => (
+        <div key={task.id || idx} className="flex items-center gap-3">
+          <div className={\`flex-1 p-3 rounded-xl border \${
+            task.completed ? 'bg-slate-50 border-slate-200' : 'bg-white border-slate-200'
+          }\`}>
+            <span className={\`font-medium \${task.completed ? 'line-through text-slate-400' : 'text-slate-700'}\`}>
+              {task.text}
+            </span>
+          </div>
+          <button
+            onClick={() => handleToggleTask(task.id)}
+            className={\`p-3 rounded-xl border-2 transition-colors \${
+              task.completed
+                ? 'bg-teal-500 border-teal-500 text-white' 
+                : 'bg-white border-slate-200 text-slate-300 hover:border-teal-400'
+            }\`}
+          >
+            <CheckSquare className="w-5 h-5" />
+          </button>
+          <button 
+            onClick={() => handleRemoveTask(task.id)}
+            className="p-3 text-slate-300 hover:text-red-400 transition-colors"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+      ))}
 
+      {otherTasks.length < 2 && (
+        <div className="flex gap-2">
+          <input 
+            type="text"
+            value={newTaskText}
+            onChange={(e) => setNewTaskText(e.target.value)}
+            onKeyPress={(e) => e.key === 'Enter' && handleAddOtherTask()}
+            placeholder="Add another priority..."
+            className="flex-1 p-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-teal-500 outline-none transition-all text-sm"
+          />
+          <button 
+            onClick={handleAddOtherTask}
+            disabled={!newTaskText.trim()}
+            className="p-3 bg-slate-200 text-slate-600 rounded-xl hover:bg-teal-500 hover:text-white transition-colors disabled:opacity-50"
+          >
+            <Plus className="w-5 h-5" />
+          </button>
+        </div>
+      )}
+    </div>
+  </div>
+</Card>
+    `,
+    'notifications-v2': `
+<Card title="Notifications" icon={Bell} accent="GRAY">
+  <div className="space-y-3 text-left">
+    
+    {/* Dev Note */}
+    <div className="bg-slate-50 border border-slate-200 rounded-lg p-2 text-xs text-slate-500 italic text-center">
+      Waiting for inputs to be defined and built. (Mock Data)
+    </div>
+
+    <div className="flex gap-3 items-start p-2 hover:bg-slate-50 rounded-lg transition-colors cursor-pointer">
+      <div className="w-2 h-2 mt-2 rounded-full bg-orange-500 flex-shrink-0" />
+      <div>
+        <p className="text-sm font-semibold text-[#002E47]">Yesterday's "Needs Work"</p>
+        <p className="text-xs text-slate-500">Review your reflection from yesterday.</p>
+      </div>
+    </div>
+    <div className="flex gap-3 items-start p-2 hover:bg-slate-50 rounded-lg transition-colors cursor-pointer">
+      <div className="w-2 h-2 mt-2 rounded-full bg-teal-500 flex-shrink-0" />
+      <div>
+        <p className="text-sm font-semibold text-[#002E47]">Upcoming Feedback Practice</p>
+        <p className="text-xs text-slate-500">Nov 29, 4:00 PM <span className="text-teal-600 font-bold ml-1">Register</span></p>
+      </div>
+    </div>
+    <div className="flex gap-3 items-start p-2 hover:bg-slate-50 rounded-lg transition-colors cursor-pointer">
+      <div className="w-2 h-2 mt-2 rounded-full bg-purple-500 flex-shrink-0" />
+      <div>
+        <p className="text-sm font-semibold text-[#002E47]">New R&R Unlocked</p>
+        <p className="text-xs text-slate-500">Check your resource library.</p>
+      </div>
+    </div>
+  </div>
+</Card>
+    `,
+    'scorecard-v2': `
+<Card title="Today Scorecard" icon={Trophy} accent="YELLOW">
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <span className="font-medium text-slate-700">I did my reps today</span>
+        </div>
+        <div className="text-right">
+          <span className="font-bold text-xl text-[#002E47]">{scorecard.reps.done}</span>
+          <span className="text-slate-400 text-sm"> / {scorecard.reps.total}</span>
+          <span className={\`ml-2 text-sm font-bold \${
+            scorecard.reps.pct === 100 ? 'text-green-500' : 'text-slate-400'
+          }\`}>
+            {scorecard.reps.pct}%
+          </span>
+        </div>
+      </div>
+
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <span className="font-medium text-slate-700">I won the day</span>
+        </div>
+        <div className="text-right">
+          <span className="font-bold text-xl text-[#002E47]">{scorecard.win.done}</span>
+          <span className="text-slate-400 text-sm"> / {scorecard.win.total}</span>
+          <span className={\`ml-2 text-sm font-bold \${
+            scorecard.win.pct === 100 ? 'text-green-500' : 'text-slate-400'
+          }\`}>
+            {scorecard.win.pct}%
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <div className="mt-6 pt-6 border-t border-slate-100 flex justify-between items-center">
+      <div className="flex items-center gap-2">
+        <Flame className="w-5 h-5 text-orange-500" />
+        <span className="font-bold text-xl text-[#002E47]">{streakCount}</span>
+        <span className="text-xs text-slate-400 uppercase tracking-wider">Day Streak</span>
+      </div>
+      <button 
+        onClick={handleSaveScorecard}
+        disabled={isSavingScorecard}
+        className="text-xs font-bold text-teal-600 hover:text-teal-700 flex items-center gap-1 disabled:opacity-50"
+      >
+        {isSavingScorecard ? <Loader className="w-3 h-3 animate-spin" /> : <Save className="w-3 h-3" />}
+        Save to Locker
+      </button>
+    </div>
+</Card>
+    `,
+    'pm-bookend-v2': `
+<Card title="PM Bookend - Reflection" icon={MessageSquare} accent="INDIGO">
+  <div className="space-y-4">
+    <div>
+      <label className="block text-sm font-bold text-green-700 mb-2 text-left">
+        What went well today?
+      </label>
+      <textarea 
+        value={reflectionGood}
+        onChange={(e) => setReflectionGood(e.target.value)}
+        className="w-full p-3 bg-green-50 border border-green-100 rounded-xl focus:ring-2 focus:ring-green-500 outline-none transition-all text-sm"
+        rows={2}
+        placeholder="Celebrate a win..."
+      />
+    </div>
+
+    <div>
+      <label className="block text-sm font-bold text-orange-700 mb-2 text-left">
+        What needs work?
+      </label>
+      <textarea 
+        value={reflectionBetter}
+        onChange={(e) => setReflectionBetter(e.target.value)}
+        className="w-full p-3 bg-orange-50 border border-orange-100 rounded-xl focus:ring-2 focus:ring-orange-500 outline-none transition-all text-sm"
+        rows={2}
+        placeholder="Identify an improvement..."
+      />
+    </div>
+
+    <button 
+      onClick={handleSaveEveningBookend}
+      disabled={isSavingBookend || (!reflectionGood && !reflectionBetter)}
+      className="w-full py-3 bg-[#002E47] text-white rounded-xl font-bold hover:bg-[#003E5F] transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+    >
+      {isSavingBookend ? <Loader className="w-5 h-5 animate-spin" /> : <Save className="w-5 h-5" />}
+      Save Journal Page
+    </button>
+    <p className="text-xs text-center text-slate-400">
+      Saved to history in Locker
+    </p>
+  </div>
+</Card>
+    `,
+    'daily-quote-v2': `const DailyQuote = () => {
+  // Helper to parse quote
+  const parseQuote = (q) => {
+    if (!q) return { text: '', author: '' };
+    const parts = q.split('|');
+    return { text: parts[0], author: parts[1] || '' };
+  };
+
+  const current = parseQuote(dailyQuote || "Leadership is influence.|John Maxwell");
+  const quotesList = allQuotes && allQuotes.length > 0 ? allQuotes : ["Leadership is influence.|John Maxwell"];
+  
+  // Use options from scope if available
+  const isScrolling = typeof options !== 'undefined' && options.scrollMode === 'true';
+
+  return (
+    <>
+    <div className="overflow-hidden bg-[#002E47] text-white rounded-2xl shadow-lg">
+      {isScrolling ? (
+        <div className="relative w-full overflow-hidden py-3 group">
+          <div className="animate-marquee whitespace-nowrap inline-block group-hover:[animation-play-state:paused]">
+            {/* Repeat quotes to ensure we fill the screen and loop smoothly */}
+            {[...quotesList, ...quotesList].map((q, i) => {
+                const { text, author } = parseQuote(q);
+                return (
+                    <span key={i} className="inline-block text-sm font-medium mx-8 opacity-90 hover:opacity-100 transition-opacity">
+                    <span className="italic mr-2">"{text}"</span>
+                    {author && <span className="text-teal-400 font-bold text-xs uppercase tracking-wider">— {author}</span>}
+                    </span>
+                );
+            })}
+          </div>
+        </div>
+      ) : (
+        <div className="py-4 px-6 text-center">
+          <p className="text-lg italic font-medium text-white/90">
+            "{current.text}"
+          </p>
+          {current.author && (
+            <p className="text-xs text-teal-400 font-bold uppercase tracking-wider mt-2">
+              — {current.author}
+            </p>
+          )}
+        </div>
+      )}
+    </div>
+    <style>{\`
+    @keyframes marquee {
+      0% { transform: translateX(0); }
+      100% { transform: translateX(-50%); }
+    }
+    .animate-marquee {
+      display: inline-block;
+      animation: marquee \${Math.max(60, (quotesList.length || 1) * 10)}s linear infinite;
+    }
+    \`}</style>
+    </>
+  );
+};
+
+render(<DailyQuote />);
+    `,
+    'welcome-message-v2': `
+<div className="mb-6">
+  <h1 className="text-3xl sm:text-4xl font-bold text-[#002E47] mb-2">
+    {greeting || 'Welcome, Leader.'}
+  </h1>
+  <p className="text-slate-500 text-lg">
+    Ready to win the day? Let's get to work.
+  </p>
+</div>
+    `,
   };
 
 export const FEATURE_METADATA = {
-    // Dashboard
-    'daily-quote': { name: 'Daily Quote', description: 'Inspirational quote (Static or Scrolling).' },
-    'welcome-message': { name: 'Welcome Message', description: 'Greeting and encouragement.' },
-    'identity-builder': { name: 'Identity Builder', description: 'Grounding Rep & Identity Statement tools.' },
-    'habit-stack': { name: 'Habit Stack', description: 'Daily Rep tracking and habit formation.' },
-    'win-the-day': { name: 'AM Bookend (Win The Day)', description: 'AM Bookend 1-2-3 priority setting.' },
-    'exec-summary': { name: 'Executive Summary Widget', description: 'High-level view of leadership growth.' },
-    'weekly-focus': { name: 'Weekly Focus', description: 'Display current development plan focus area.' },
-    'notifications': { name: 'Notifications', description: 'Alerts and reminders widget.' },
-    'scorecard': { name: 'Today Scorecard', description: 'Daily progress summary and streak display.' },
-    'pm-bookend': { name: 'PM Bookend', description: 'Evening reflection and journaling.' },
-    
+  'scorecard': { core: true, category: 'Tracking', description: 'Daily habit scorecard' },
+  'scorecard-v2': { core: true, category: 'Tracking', description: 'Daily habit scorecard V2' },
+  'pm-bookend': { core: true, category: 'Reflection', description: 'Evening reflection' },
+  'pm-bookend-v2': { core: true, category: 'Reflection', description: 'Evening reflection V2' },
+  'win-the-day-v2': { core: true, category: 'Planning', description: 'Morning planning V2' },
+  'daily-quote': { core: true, category: 'Inspiration', description: 'Daily quote' },
+  'daily-quote-v2': { core: true, category: 'Inspiration', description: 'Daily quote V2' },
+  'welcome-message': { core: true, category: 'General', description: 'Welcome message' },
+  'welcome-message-v2': { core: true, category: 'General', description: 'Welcome message V2' },
+  'notifications-v2': { core: true, category: 'General', description: 'Notifications V2' },
+  'dev-plan-header': { core: true, category: 'Development', description: 'Development Plan Header' },
+  'dev-plan-stats': { core: true, category: 'Development', description: 'Development Plan Stats' },
+  'dev-plan-actions': { core: true, category: 'Development', description: 'Development Plan Actions' },
+  'dev-plan-actions-v2': { core: true, category: 'Development', description: 'Development Plan Actions V2' },
+  'dev-plan-focus-areas': { core: true, category: 'Development', description: 'Development Plan Focus Areas' },
+  'dev-plan-goal': { core: true, category: 'Development', description: 'Development Plan Goal' },
+  'course-library': { core: false, category: 'Learning', description: 'Course library' },
+  'reading-hub': { core: false, category: 'Learning', description: 'Reading hub' },
+  'leadership-videos': { core: false, category: 'Learning', description: 'Leadership videos' },
+  'strat-templates': { core: false, category: 'Resources', description: 'Strategic templates' },
+  'community-feed': { core: false, category: 'Community', description: 'Community feed' },
+  'my-discussions': { core: false, category: 'Community', description: 'My discussions' },
+  'mastermind': { core: false, category: 'Community', description: 'Mastermind groups' },
+  'mentor-match': { core: false, category: 'Community', description: 'Mentor match' },
+  'live-events': { core: false, category: 'Community', description: 'Live events' },
+  'practice-history': { core: false, category: 'Tracking', description: 'Practice history' },
+  'progress-analytics': { core: false, category: 'Tracking', description: 'Progress analytics' },
+  'ai-roleplay': { core: false, category: 'Practice', description: 'AI Roleplay' },
+  'scenario-sim': { core: false, category: 'Practice', description: 'Scenario simulation' },
+  'feedback-gym': { core: false, category: 'Practice', description: 'Feedback gym' },
+  'roi-report': { core: false, category: 'Reporting', description: 'ROI Report' },
+};
 
-
-    // Content
-    'course-library': { name: 'Course Library', description: 'Structured video modules for deep-dive learning.' },
-    'reading-hub': { name: 'Professional Reading Hub', description: 'Curated book summaries and leadership articles.' },
-    'leadership-videos': { name: 'Leadership Videos (Media)', description: 'Video content, leader talks, and multimedia resources.' },
-    'strat-templates': { name: 'Strategic Templates', description: 'Downloadable worksheets and tools.' },
-    
-
-
-    // Community
-    'community-feed': { name: 'Community Feed', description: 'Main discussion stream and posting interface.' },
-    'my-discussions': { name: 'My Discussions', description: 'Filter view for user-owned threads.' },
-    'mastermind': { name: 'Peer Mastermind Groups', description: 'Automated matching for accountability squads.' },
-    'mentor-match': { name: 'Mentor Match', description: 'Connect aspiring leaders with senior executives.' },
-    'live-events': { name: 'Live Event Streaming', description: 'Integrated video player for town halls and workshops.' },
-    
-
-
-    // Coaching
-    'practice-history': { name: 'Practice History', description: 'Review past performance and scores.' },
-    'progress-analytics': { name: 'Progress Analytics', description: 'Track performance trends and strengths.' },
-    'ai-roleplay': { name: 'AI Roleplay Scenarios', description: 'Interactive practice for difficult conversations.' },
-    'scenario-sim': { name: 'Scenario Sim', description: 'Complex leadership simulations and decision trees.' },
-    'feedback-gym': { name: 'Feedback Gym', description: 'Instant feedback on communication style.' },
-    'roi-report': { name: 'Executive ROI Report', description: 'Automated reports showing progress and value.' },
-
-
-
-    // Locker
-    'locker-wins-history': { name: 'AM Bookend', description: 'Log of daily wins and completions.' },
-    'locker-scorecard-history': { name: 'Scorecard History', description: 'Historical view of daily scorecard performance.' },
-    'locker-latest-reflection': { name: 'PM Bookend', description: 'Most recent evening reflection entry.' },
-
-
-
-    // Development Plan
-    'dev-plan-header': { name: 'Plan Header', description: 'Title, cycle info, and progress bar.' },
-    'dev-plan-stats': { name: 'Plan Stats', description: 'Quick stats: Total Skills, Completed, Current Week.' },
-    'dev-plan-actions-v2': { name: 'Plan Actions (V2)', description: 'Buttons for Breakdown, Scan, Timeline, Detail.' },
-    'dev-plan-actions': { name: 'Plan Actions', description: 'Buttons for Breakdown, Scan, Timeline, Detail.' },
-    'dev-plan-focus-areas': { name: 'Focus Areas Summary', description: 'List of focus areas in the plan.' },
-    'dev-plan-goal': { name: 'Plan Goal', description: 'User\'s open-ended goal.' },
-
-
-  };

@@ -13,62 +13,13 @@ import { logWidthMeasurements } from '../../utils/debugWidth.js';
 import { membershipService } from '../../services/membershipService.js';
 import { useNavigation } from '../../providers/NavigationProvider.jsx'; 
 import { useFeatures } from '../../providers/FeatureProvider';
-import { AlertTriangle, ArrowLeft, BarChart3, Beaker, Briefcase, CheckCircle, Clock, CornerRightUp, Cpu, Eye, HeartPulse, Info, Lightbulb, Mic, Play, PlusCircle, Send, ShieldCheck, Star, Target, TrendingUp, Users, X, Zap } from 'lucide-react'; 
+import { AlertTriangle, ArrowLeft, BarChart3, Beaker, Briefcase, CheckCircle, Clock, CornerRightUp, Cpu, Eye, HeartPulse, Info, Lightbulb, Mic, Play, PlusCircle, Send, ShieldCheck, Star, Target, TrendingUp, Users, X, Zap, Edit3 } from 'lucide-react'; 
 import { COLORS, COMPLEXITY_MAP } from './labs/labConstants.js';
+import { Button, Card } from '../../shared/UI';
 
 /* =========================================================
    UI Components (Unchanged)
 ========================================================= */
-const Button = ({ children, onClick, disabled = false, variant = 'primary', className = '', ...rest }) => {
-    let baseStyle = "px-6 py-3 rounded-xl font-semibold transition-all shadow-xl focus:outline-none focus:ring-4 text-white flex items-center justify-center";
-
-    if (variant === 'primary') { baseStyle += ` bg-[${COLORS.TEAL}] hover:bg-[#47A88D] focus:ring-[#47A88D]/50`; } 
-    else if (variant === 'secondary') { baseStyle += ` bg-[${COLORS.ORANGE}] hover:bg-red-700 focus:ring-[#E04E1B]/50`; } 
-    else if (variant === 'outline') { baseStyle = `px-6 py-3 rounded-xl font-semibold transition-all shadow-md border-2 border-[${COLORS.TEAL}] text-[${COLORS.TEAL}] hover:bg-[#47A88D]/10 focus:ring-4 focus:ring-[#47A88D]/50 bg-[${COLORS.LIGHT_GRAY}] flex items-center justify-center`; }
-
-    if (disabled) { baseStyle = "px-6 py-3 rounded-xl font-semibold bg-gray-300 text-gray-500 cursor-not-allowed shadow-inner transition-none flex items-center justify-center"; }
-
-    return (
-        <button {...rest} onClick={onClick} disabled={disabled} className={`${baseStyle} ${className}`}>
-            {children}
-        </button>
-    );
-};
-
-const Card = ({ children, title, icon: Icon, className = '', onClick, accent = 'ORANGE' }) => {
-  const interactive = !!onClick;
-  const Tag = interactive ? 'button' : 'div';
-  const accentColor = COLORS[accent] || COLORS.ORANGE;
-  return (
-    <Tag
-      role={interactive ? 'button' : undefined}
-      tabIndex={interactive ? 0 : undefined}
-      className={`relative p-6 rounded-2xl border-2 shadow-xl hover:shadow-2xl transition-all duration-300 text-left ${className}`}
-      style={{
-        background: 'linear-gradient(180deg,#FFFFFF,#F9FAFB)',
-        borderColor: COLORS.SUBTLE,
-        color: COLORS.TEXT
-      }}
-      onClick={onClick}
-    >
-      <span style={{
-        position:'absolute', top:0, left:0, right:0, height:6,
-        background: accentColor,
-        borderTopLeftRadius:14, borderTopRightRadius:14
-      }} />
-
-      {Icon && (
-        <div className="w-10 h-10 rounded-lg flex items-center justify-center border mb-3"
-             style={{ borderColor: COLORS.SUBTLE, background: '#F3F4F6' }}>
-          <Icon className="w-5 h-5" style={{ color: COLORS.TEAL }} />
-        </div>
-      )}
-      {title && <h2 className="text-xl font-extrabold mb-2" style={{ color: COLORS.NAVY }}>{title}</h2>}
-      {children}
-    </Tag>
-  );
-};
-
 const Tooltip = ({ content, children }) => {
     const [isVisible, setIsVisible] = useState(false);
     
@@ -331,7 +282,11 @@ const RolePlayCritique = ({ history, scenario, difficultyLevel, setView }) => {
                 const takeaway = extractKeyTakeaway(aiText);
 
                 setScoreBreakdown({
-  });
+                    overall: overallScore,
+                    sbi: sbiScore,
+                    empathy: empathyScore,
+                    resolution: resolutionScore
+                });
                 setKeyTakeaway(takeaway);
                 setCritique(aiText);
 
@@ -953,699 +908,50 @@ const RolePlayView = ({ scenario, setCoachingLabView, difficultyLevel, preparedS
 };
 
 
-// --- PROGRESS ANALYTICS DASHBOARD ---
-const ProgressAnalyticsView = ({ setCoachingLabView }) => {
-    const { dailyPracticeData } = useAppServices();
-    const { canGoBack, goBack } = useNavigation();
-    const practiceHistory = dailyPracticeData?.practice_history || [];
-    
-    // Calculate analytics
-    const totalSessions = practiceHistory.length;
-    const averageScore = totalSessions > 0 
-        ? Math.round(practiceHistory.reduce((sum, session) => sum + (session.score || 0), 0) / totalSessions)
-        : 0;
-    
-    // Score trend (last 10 sessions)
-    const recentSessions = practiceHistory.slice(-10);
-    const scoreTrend = recentSessions.length >= 2
-        ? recentSessions[recentSessions.length - 1].score - recentSessions[0].score
-        : 0;
-    
-    // Scenario category breakdown
-    const scenarioBreakdown = practiceHistory.reduce((acc, session) => {
-        const category = session.category || 'General';
-        acc[category] = (acc[category] || 0) + 1;
-        return acc;
-    }, {});
-    
-    // Best and worst performing scenarios
-    const scenarioPerformance = practiceHistory.reduce((acc, session) => {
-        const title = session.title || 'Unknown';
-        if (!acc[title]) {
-            acc[title] = { total: 0, count: 0, scores: [] };
-        }
-        acc[title].total += session.score || 0;
-        acc[title].count += 1;
-        acc[title].scores.push(session.score || 0);
-        return acc;
-    }, {});
-    
-    const scenarioAverages = Object.entries(scenarioPerformance).map(([title, data]) => ({
-        title,
-        avgScore: Math.round(data.total / data.count),
-        sessions: data.count
-    })).sort((a, b) => b.avgScore - a.avgScore);
-    
-    const bestScenario = scenarioAverages[0];
-    const worstScenario = scenarioAverages[scenarioAverages.length - 1];
-    
-    // Recent improvement velocity
-    const last5 = practiceHistory.slice(-5);
-    const prev5 = practiceHistory.slice(-10, -5);
-    const recentAvg = last5.length > 0 ? last5.reduce((sum, s) => sum + s.score, 0) / last5.length : 0;
-    const previousAvg = prev5.length > 0 ? prev5.reduce((sum, s) => sum + s.score, 0) / prev5.length : 0;
-    const velocityChange = recentAvg - previousAvg;
-    
-    const handleBackClick = () => {
-        if (canGoBack) {
-            goBack();
-        } else {
-            setCoachingLabView('coaching-lab-home');
-        }
+// --- SCENARIO PREPARATION VIEW ---
+const ScenarioPreparationView = ({ scenario, setCoachingLabView, setPreparedSBI }) => {
+    const [sbiInput, setSbiInput] = useState('');
+
+    const handleStart = () => {
+        setPreparedSBI(sbiInput);
+        setCoachingLabView('role-play');
     };
-    
+
     return (
-        <div className="p-4 sm:p-3 sm:p-4 lg:p-6 lg:p-8">
-            <Button onClick={handleBackClick} variant="nav-back" size="sm" className="mb-6">
-                <ArrowLeft className="w-4 h-4 mr-2" /> {canGoBack ? 'Back' : 'Back to Coaching Lab'}
+        <div className="p-4 sm:p-6 lg:p-8">
+            <Button onClick={() => setCoachingLabView('scenario-library')} variant="nav-back" className="mb-6">
+                <ArrowLeft className="w-4 h-4 mr-2" /> Back to Library
             </Button>
             
-            <h1 className="corporate-heading-xl mb-4" style={{ color: '#002E47' }}>Progress Analytics</h1>
-            <p className="corporate-text-body text-gray-600 mb-6">Track your leadership practice performance and identify growth opportunities.</p>
+            <h1 className="text-2xl font-bold text-[#002E47] mb-4">Prepare for: {scenario.title}</h1>
             
-            <Button onClick={handleBackClick} variant="nav-back" size="sm" className="mb-8">
-                <ArrowLeft className="w-5 h-5 mr-2" /> {canGoBack ? 'Back' : 'Back to Coaching'}
-            </Button>
-            
-            {totalSessions === 0 ? (
-                <Card title="No Data Yet" icon={BarChart3} className="text-center">
-                    <p className="text-gray-600 mb-4">Complete your first scenario practice to see analytics here.</p>
-                    <Button onClick={() => setCoachingLabView('scenario-library')} className="mx-auto">
-                        <Play className="w-5 h-5 mr-2" /> Start First Practice
+            <div className="grid lg:grid-cols-2 gap-6">
+                <Card title="Scenario Context" icon={Info}>
+                    <p className="text-gray-700 mb-4">{scenario.description}</p>
+                    <div className="bg-blue-50 p-4 rounded-lg border border-blue-100">
+                        <h4 className="font-semibold text-[#002E47] mb-2">Persona: {scenario.persona}</h4>
+                        <p className="text-sm text-gray-600">{scenario.context || "No additional context provided."}</p>
+                    </div>
+                </Card>
+                
+                <Card title="Draft Your Opening (SBI)" icon={Edit3}>
+                    <p className="text-sm text-gray-600 mb-4">
+                        Draft your Situation-Behavior-Impact statement to start the conversation.
+                    </p>
+                    <textarea
+                        value={sbiInput}
+                        onChange={(e) => setSbiInput(e.target.value)}
+                        placeholder="Situation: In yesterday's meeting... Behavior: You interrupted... Impact: It caused..."
+                        className="w-full h-40 p-3 border border-gray-300 rounded-xl focus:ring-[#47A88D] focus:border-[#47A88D] mb-4"
+                    />
+                    <Button onClick={handleStart} className="w-full">
+                        Start Role-Play <Play className="w-4 h-4 ml-2" />
                     </Button>
                 </Card>
-            ) : (
-                <div className="space-y-4 sm:space-y-5 lg:space-y-6">
-                    {/* Overview Stats */}
-                    <div className="grid grid-cols-1 md:grid-cols-4 gap-3 sm:p-4 lg:p-6">
-                        <Card title="Total Sessions" icon={Target} accent="TEAL">
-                            <div className="text-4xl font-extrabold text-[#47A88D]">{totalSessions}</div>
-                        </Card>
-                        <Card title="Average Score" icon={Star} accent="ORANGE">
-                            <div className="text-4xl font-extrabold text-[#E04E1B]">{averageScore}/100</div>
-                        </Card>
-                        <Card title="Score Trend" icon={TrendingUp} accent={scoreTrend >= 0 ? 'TEAL' : 'ORANGE'}>
-                            <div className={`text-4xl font-extrabold ${scoreTrend >= 0 ? 'text-[#47A88D]' : 'text-[#E04E1B]'}`}>
-                                {scoreTrend > 0 ? '+' : ''}{scoreTrend}
-                            </div>
-                            <p className="text-xs text-gray-600 mt-1">Last 10 sessions</p>
-                        </Card>
-                        <Card title="Improvement Velocity" icon={Zap} accent={velocityChange >= 0 ? 'TEAL' : 'ORANGE'}>
-                            <div className={`text-4xl font-extrabold ${velocityChange >= 0 ? 'text-[#47A88D]' : 'text-[#E04E1B]'}`}>
-                                {velocityChange > 0 ? '+' : ''}{Math.round(velocityChange)}
-                            </div>
-                            <p className="text-xs text-gray-600 mt-1">Recent 5 vs prior 5</p>
-                        </Card>
-                    </div>
-                    
-                    {/* Performance Breakdown */}
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:p-4 lg:p-6">
-                        <Card title="Strengths & Weaknesses" icon={BarChart3} accent="TEAL">
-                            {bestScenario && (
-                                <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg">
-                                    <div className="flex items-center justify-between">
-                                        <div>
-                                            <p className="text-xs text-green-700 font-semibold uppercase">Strongest Area</p>
-                                            <p className="text-sm font-bold text-[#002E47] mt-1">{bestScenario.title}</p>
-                                        </div>
-                                        <div className="text-xl sm:text-2xl sm:text-3xl font-extrabold text-green-600">{bestScenario.avgScore}</div>
-                                    </div>
-                                </div>
-                            )}
-                            {worstScenario && worstScenario !== bestScenario && (
-                                <div className="p-3 bg-orange-50 border border-orange-200 rounded-lg">
-                                    <div className="flex items-center justify-between">
-                                        <div>
-                                            <p className="text-xs text-orange-700 font-semibold uppercase">Growth Opportunity</p>
-                                            <p className="text-sm font-bold text-[#002E47] mt-1">{worstScenario.title}</p>
-                                        </div>
-                                        <div className="text-xl sm:text-2xl sm:text-3xl font-extrabold text-orange-600">{worstScenario.avgScore}</div>
-                                    </div>
-                                </div>
-                            )}
-                        </Card>
-                        
-                        <Card title="Scenario Type Distribution" icon={Briefcase} accent="ORANGE">
-                            {Object.entries(scenarioBreakdown).map(([category, count]) => (
-                                <div key={category} className="mb-3">
-                                    <div className="flex justify-between text-sm mb-1">
-                                        <span className="font-semibold text-[#002E47]">{category}</span>
-                                        <span className="text-gray-600">{count} sessions</span>
-                                    </div>
-                                    <div className="w-full bg-gray-200 rounded-full h-2">
-                                        <div 
-                                            className="bg-[#47A88D] h-2 rounded-full transition-all"
-                                            style={{ width: `${(count / totalSessions) * 100}%` }}
-                                        />
-                                    </div>
-                                </div>
-                            ))}
-                        </Card>
-                    </div>
-                    
-                    {/* Recent Sessions */}
-                    <Card title="Recent Practice Sessions" icon={Clock} accent="TEAL">
-                        <div className="space-y-3">
-                            {recentSessions.reverse().map((session, idx) => (
-                                <div key={idx} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-200">
-                                    <div className="flex-1">
-                                        <p className="font-semibold text-[#002E47]">{session.title}</p>
-                                        <p className="text-xs text-gray-600">{session.date} • {session.difficulty} Difficulty</p>
-                                    </div>
-                                    <div className={`text-2xl font-extrabold ${
-                                        session.score >= 80 ? 'text-green-600' : 
-                                        session.score >= 60 ? 'text-[#47A88D]' : 'text-orange-600'
-                                    }`}>
-                                        {session.score}
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    </Card>
-                    
-                    {/* Skill Mastery Indicators */}
-                    <Card title="Skill Mastery Progress" icon={ShieldCheck} accent="ORANGE">
-                        <p className="text-sm text-gray-600 mb-4">Track your development across core leadership competencies</p>
-                        <div className="space-y-4">
-                            {['SBI Framework', 'Active Listening', 'Resolution Drive'].map((skill) => {
-                                const skillAvg = Math.round(50 + Math.random() * 30); // Placeholder - would calculate from actual data
-                                return (
-                                    <div key={skill}>
-                                        <div className="flex justify-between text-sm mb-2">
-                                            <span className="font-semibold text-[#002E47]">{skill}</span>
-                                            <span className="text-gray-600">{skillAvg}/100</span>
-                                        </div>
-                                        <div className="w-full bg-gray-200 rounded-full h-3">
-                                            <div 
-                                                className={`h-3 rounded-full transition-all ${
-                                                    skillAvg >= 80 ? 'bg-green-500' :
-                                                    skillAvg >= 60 ? 'bg-[#47A88D]' : 'bg-orange-500'
-                                                }`}
-                                                style={{ width: `${skillAvg}%` }}
-                                            />
-                                        </div>
-                                    </div>
-                                );
-                            })}
-                        </div>
-                    </Card>
-                </div>
-            )}
-        </div>
-    );
-};
-
-
-// --- MICRO-LEARNING MODULE VIEW ---
-const MicroLearningView = ({ topic, setCoachingLabView, onComplete }) => {
-    const [currentSlide, setCurrentSlide] = useState(0);
-    
-    const modules = {
-        'sbi-framework': {
-            title: 'SBI Framework Refresher',
-            icon: ShieldCheck,
-            slides: [
-                {
-                    title: 'What is SBI?',
-                    content: 'SBI stands for **Situation-Behavior-Impact**. It\'s a structured approach to delivering feedback that focuses on observable facts rather than judgments.',
-                    tip: 'Always start with objective observations, not interpretations.'
-                },
-                {
-                    title: 'Situation: Set the Context',
-                    content: '**When** and **where** did the behavior occur? Be specific: "In yesterday\'s team standup at 9am..." not "The other day..."',
-                    tip: 'Specificity prevents defensiveness and confusion.'
-                },
-                {
-                    title: 'Behavior: Describe What You Observed',
-                    content: 'What did you **see** or **hear**? Use objective language: "You interrupted Sarah twice" not "You were disrespectful."',
-                    tip: 'Stick to facts that could be captured on video.'
-                },
-                {
-                    title: 'Impact: Explain the Effect',
-                    content: 'How did this behavior affect the team, project, or individuals? "This caused Sarah to withdraw from the conversation and we missed her critical insights."',
-                    tip: 'Connect behavior to business or team outcomes.'
-                }
-            ]
-        },
-        'active-listening': {
-            title: 'Active Listening Techniques',
-            icon: HeartPulse,
-            slides: [
-                {
-                    title: 'Why Active Listening Matters',
-                    content: 'Most defensive reactions stem from feeling **unheard**. Active listening demonstrates respect and opens channels for honest dialogue.',
-                    tip: 'Listen to understand, not to respond.'
-                },
-                {
-                    title: 'Technique: Paraphrasing',
-                    content: 'Repeat back what you heard in your own words: "So what I\'m hearing is that you felt overwhelmed by the deadline changes. Is that right?"',
-                    tip: 'Always end with a confirmation question.'
-                },
-                {
-                    title: 'Technique: Open-Ended Questions',
-                    content: 'Avoid yes/no questions. Ask: "What challenges are you facing?" instead of "Are you struggling with the workload?"',
-                    tip: 'Start questions with What, How, or Tell me about...'
-                },
-                {
-                    title: 'Technique: Validating Emotions',
-                    content: 'Acknowledge feelings without agreeing with behavior: "I can see this situation is frustrating for you."',
-                    tip: 'Validation ≠ Agreement. You can acknowledge emotion while addressing behavior.'
-                }
-            ]
-        },
-        'handling-defensiveness': {
-            title: 'Handling Defensiveness',
-            icon: AlertTriangle,
-            slides: [
-                {
-                    title: 'Why People Get Defensive',
-                    content: 'Defensiveness is a **protection mechanism**. It signals that someone feels attacked, misunderstood, or unsafe.',
-                    tip: 'Recognize defensiveness as information, not obstruction.'
-                },
-                {
-                    title: 'Tactic: Pause and Validate',
-                    content: 'When you hear deflection ("But everyone does that!"), pause and validate: "I hear you. Let\'s focus on your specific situation."',
-                    tip: 'Don\'t argue with defensive statements—redirect calmly.'
-                },
-                {
-                    title: 'Tactic: Return to Facts',
-                    content: 'Bring the conversation back to observable behavior: "Let\'s set aside others for now. On Tuesday, I observed..."',
-                    tip: 'Facts are harder to argue with than feelings or judgments.'
-                },
-                {
-                    title: 'Tactic: Ask for Their Perspective',
-                    content: 'Invite collaboration: "Help me understand your view of what happened." This shifts from confrontation to partnership.',
-                    tip: 'Curiosity disarms defensiveness better than logic.'
-                }
-            ]
-        }
-    };
-    
-    const module = modules[topic] || modules['sbi-framework'];
-    const slide = module.slides[currentSlide];
-    const Icon = module.icon;
-    const isLastSlide = currentSlide === module.slides.length - 1;
-    
-    return (
-        <div className="p-3 sm:p-4 lg:p-6 mx-auto">
-            <div className="mb-8">
-                <h1 className="text-xl sm:text-2xl sm:text-3xl font-extrabold text-[#002E47] mb-2 flex items-center">
-                    <Icon className="w-8 h-8 mr-3 text-[#47A88D]" />
-                    {module.title}
-                </h1>
-                <p className="text-sm text-gray-600">2-minute micro-learning • Slide {currentSlide + 1} of {module.slides.length}</p>
-            </div>
-            
-            <Card className="mb-6">
-                <h2 className="text-xl sm:text-2xl font-bold text-[#002E47] mb-4">{slide.title}</h2>
-                <p className="text-gray-700 text-lg mb-6 leading-relaxed" dangerouslySetInnerHTML={{ __html: slide.content.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') }} />
-                
-                <div className="p-4 bg-[#47A88D]/10 border-l-4 border-[#47A88D] rounded-lg">
-                    <p className="text-sm font-semibold text-[#002E47]">
-                        <Lightbulb className="w-4 h-4 inline mr-2 text-[#47A88D]" />
-                        Pro Tip: {slide.tip}
-                    </p>
-                </div>
-            </Card>
-            
-            <div className="flex justify-between items-center">
-                <Button 
-                    onClick={() => setCurrentSlide(Math.max(0, currentSlide - 1))}
-                    disabled={currentSlide === 0}
-                    variant="outline"
-                >
-                    <ArrowLeft className="w-5 h-5 mr-2" /> Previous
-                </Button>
-                
-                <div className="flex space-x-2">
-                    {module.slides.map((_, idx) => (
-                        <div 
-                            key={idx}
-                            className={`w-3 h-3 rounded-full ${idx === currentSlide ? 'bg-[#47A88D]' : 'bg-gray-300'}`}
-                        />
-                    ))}
-                </div>
-                
-                {isLastSlide ? (
-                    <Button onClick={onComplete}>
-                        Complete & Start Practice <CheckCircle className="w-5 h-5 ml-2" />
-                    </Button>
-                ) : (
-                    <Button onClick={() => setCurrentSlide(currentSlide + 1)}>
-                        Next <ArrowLeft className="w-5 h-5 ml-2 rotate-180" />
-                    </Button>
-                )}
             </div>
         </div>
     );
 };
-
-
-// --- CUSTOM SCENARIO BUILDER ---
-const CustomScenarioBuilder = ({ setCoachingLabView, setSelectedScenario, onClose }) => {
-    const { callSecureGeminiAPI, hasGeminiKey, GEMINI_MODEL } = useAppServices();
-    const [scenarioTitle, setScenarioTitle] = useState('');
-    const [situationDescription, setSituationDescription] = useState('');
-    const [personaType, setPersonaType] = useState('defensive');
-    const [isGenerating, setIsGenerating] = useState(false);
-    const [previewScenario, setPreviewScenario] = useState(null);
-    
-    const personaOptions = [
-        { value: 'defensive', label: 'Defensive & Resistant', icon: AlertTriangle },
-        { value: 'emotional', label: 'Emotionally Charged', icon: HeartPulse },
-        { value: 'passive', label: 'Passive-Aggressive', icon: Eye },
-        { value: 'skeptical', label: 'Skeptical & Analytical', icon: Cpu },
-        { value: 'overwhelmed', label: 'Overwhelmed & Stressed', icon: Clock }
-    ];
-    
-    const handleGenerateScenario = async () => {
-        if (!scenarioTitle.trim() || !situationDescription.trim()) {
-            alert('Please fill in both the scenario title and situation description.');
-            return;
-        }
-        
-        if (!hasGeminiKey()) {
-            alert('Gemini API key is required to generate custom scenarios.');
-            return;
-        }
-        
-        setIsGenerating(true);
-        
-        const personaLabel = personaOptions.find(p => p.value === personaType)?.label || 'Defensive';
-        
-        const prompt = `You are a leadership training scenario generator. Create a realistic workplace scenario based on these inputs:
-
-Title: ${scenarioTitle}
-Situation: ${situationDescription}
-Persona Type: ${personaLabel}
-
-Generate a JSON response with these fields:
-{
-  "title": "refined version of the title",
-  "description": "2-3 sentence description of the performance/behavior issue",
-  "persona": "${personaLabel} [Role Name]",
-  "context": "detailed background (3-4 sentences) about the person, their history, and current situation",
-  "suggestedApproach": "coaching advice on how to handle this conversation",
-  "learningObjectives": ["objective 1", "objective 2", "objective 3"]
-}
-
-Return only valid JSON, no additional text.`;
-
-        try {
-            const payload = {
-                contents: [{ role: "user", parts: [{ text: prompt }] }],
-                systemInstruction: { parts: [{ text: "You are a leadership scenario designer. Return only valid JSON." }] },
-                model: GEMINI_MODEL,
-            };
-            
-            const result = await callSecureGeminiAPI(payload);
-            const aiText = result?.candidates?.[0]?.content?.parts?.[0]?.text || "";
-            
-            // Extract JSON from response (handle markdown code blocks)
-            const jsonMatch = aiText.match(/\{[\s\S]*\}/);
-            if (jsonMatch) {
-                const scenarioData = JSON.parse(jsonMatch[0]);
-                const customScenario = {
-                    id: `custom-${Date.now()}`,
-                    title: scenarioData.title || scenarioTitle,
-                    description: scenarioData.description,
-                    persona: scenarioData.persona,
-                    context: scenarioData.context,
-                    complexity: 'intermediate',
-                    category: 'custom',
-                    suggestedApproach: scenarioData.suggestedApproach,
-                    learningObjectives: scenarioData.learningObjectives,
-                    difficultyLevel: 50
-                };
-                
-                setPreviewScenario(customScenario);
-            } else {
-                throw new Error('Invalid JSON response from AI');
-            }
-        } catch (error) {
-            console.error('Custom scenario generation error:', error);
-            alert('Failed to generate scenario. Please try again or adjust your inputs.');
-        } finally {
-            setIsGenerating(false);
-        }
-    };
-    
-    const handleUseScenario = () => {
-        setSelectedScenario(previewScenario);
-        onClose();
-        setCoachingLabView('scenario-prep');
-    };
-    
-    return (
-        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4 overflow-y-auto">
-            <div className="bg-white rounded-2xl shadow-2xl w-full p-3 sm:p-4 lg:p-6 my-8">
-                <div className="flex justify-between items-center mb-6">
-                    <h2 className="text-xl sm:text-2xl sm:text-3xl font-extrabold text-[#002E47]">Custom Scenario Builder</h2>
-                    <button onClick={onClose} className="text-gray-500 hover:text-[#002E47]">
-                        <X className="w-6 h-6" />
-                    </button>
-                </div>
-                
-                {!previewScenario ? (
-                    <div className="space-y-4 sm:space-y-5 lg:space-y-6">
-                        <p className="text-gray-700">Describe a real situation you need to practice, and AI will generate a tailored scenario with a realistic persona.</p>
-                        
-                        <div>
-                            <label className="block text-sm font-semibold text-[#002E47] mb-2">Scenario Title</label>
-                            <input
-                                type="text"
-                                value={scenarioTitle}
-                                onChange={(e) => setScenarioTitle(e.target.value)}
-                                placeholder="e.g., Addressing Team Member's Missed Deadlines"
-                                className="w-full p-3 border-2 border-gray-300 rounded-xl focus:ring-[#47A88D] focus:border-[#47A88D]"
-                            />
-                        </div>
-                        
-                        <div>
-                            <label className="block text-sm font-semibold text-[#002E47] mb-2">Situation Description</label>
-                            <textarea
-                                value={situationDescription}
-                                onChange={(e) => setSituationDescription(e.target.value)}
-                                placeholder="Describe the situation in detail: What happened? Who is involved? What's the impact? What do you need to address?"
-                                className="w-full p-3 border-2 border-gray-300 rounded-xl focus:ring-[#47A88D] focus:border-[#47A88D] h-32"
-                            />
-                        </div>
-                        
-                        <div>
-                            <label className="block text-sm font-semibold text-[#002E47] mb-3">Persona Type (How will they respond?)</label>
-                            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                                {personaOptions.map((option) => {
-                                    const Icon = option.icon;
-                                    return (
-                                        <button
-                                            key={option.value}
-                                            onClick={() => setPersonaType(option.value)}
-                                            className={`p-4 border-2 rounded-xl text-left transition-all ${
-                                                personaType === option.value
-                                                    ? 'border-[#47A88D] bg-[#47A88D]/10'
-                                                    : 'border-gray-300 hover:border-[#47A88D]/50'
-                                            }`}
-                                        >
-                                            <Icon className={`w-5 h-5 mb-2 ${personaType === option.value ? 'text-[#47A88D]' : 'text-gray-500'}`} />
-                                            <p className="text-sm font-semibold text-[#002E47]">{option.label}</p>
-                                        </button>
-                                    );
-                                })}
-                            </div>
-                        </div>
-                        
-                        <div className="flex justify-end space-x-4 pt-4">
-                            <Button onClick={onClose} variant="outline">Cancel</Button>
-                            <Button onClick={handleGenerateScenario} disabled={isGenerating || !scenarioTitle.trim() || !situationDescription.trim()}>
-                                {isGenerating ? (
-                                    <>
-                                        <Cpu className="w-5 h-5 mr-2 animate-spin" /> Generating...
-                                    </>
-                                ) : (
-                                    <>
-                                        <Zap className="w-5 h-5 mr-2" /> Generate Scenario
-                                    </>
-                                )}
-                            </Button>
-                        </div>
-                    </div>
-                ) : (
-                    <div className="space-y-4 sm:space-y-5 lg:space-y-6">
-                        <div className="p-3 sm:p-4 lg:p-6 bg-[#47A88D]/10 rounded-xl border-2 border-[#47A88D]">
-                            <h3 className="text-xl sm:text-2xl font-bold text-[#002E47] mb-3">{previewScenario.title}</h3>
-                            <p className="text-gray-700 mb-4">{previewScenario.description}</p>
-                            <div className="flex items-center mb-4">
-                                <Users className="w-5 h-5 text-[#47A88D] mr-2" />
-                                <span className="font-semibold text-[#002E47]">Persona: {previewScenario.persona}</span>
-                            </div>
-                            <p className="text-sm text-gray-600 italic">{previewScenario.context}</p>
-                        </div>
-                        
-                        <div>
-                            <h4 className="font-bold text-[#002E47] mb-2">Suggested Approach:</h4>
-                            <p className="text-sm text-gray-700">{previewScenario.suggestedApproach}</p>
-                        </div>
-                        
-                        <div>
-                            <h4 className="font-bold text-[#002E47] mb-2">Learning Objectives:</h4>
-                            <ul className="list-disc list-inside space-y-1 text-sm text-gray-700">
-                                {previewScenario.learningObjectives?.map((obj, idx) => (
-                                    <li key={idx}>{obj}</li>
-                                ))}
-                            </ul>
-                        </div>
-                        
-                        <div className="flex justify-end space-x-4 pt-4">
-                            <Button onClick={() => setPreviewScenario(null)} variant="outline">
-                                <ArrowLeft className="w-5 h-5 mr-2" /> Edit & Regenerate
-                            </Button>
-                            <Button onClick={handleUseScenario}>
-                                <Play className="w-5 h-5 mr-2" /> Use This Scenario
-                            </Button>
-                        </div>
-                    </div>
-                )}
-            </div>
-        </div>
-    );
-};
-
-
-// --- SCENARIO LIBRARY VIEW ---
-const ScenarioLibraryView = ({ setCoachingLabView, setSelectedScenario, setMicroLearningTopic }) => {
-    const [isDynamicGeneratorVisible, setIsDynamicGeneratorVisible] = useState(false);
-    const [showMicroLearningPrompt, setShowMicroLearningPrompt] = useState(false);
-    const [tempSelectedScenario, setTempSelectedScenario] = useState(null);
-    const [scenarios, setScenarios] = useState([]);
-    const [isLoadingScenarios, setIsLoadingScenarios] = useState(true);
-    
-    const { db } = useAppServices();
-
-    useEffect(() => {
-        const fetchScenarios = async () => {
-            setIsLoadingScenarios(true);
-            try {
-                const data = await contentService.getContent(db, CONTENT_COLLECTIONS.COACHING);
-                setScenarios(data);
-            } catch (error) {
-                console.error("Error fetching scenarios:", error);
-            } finally {
-                setIsLoadingScenarios(false);
-            }
-        };
-        
-        if (db) {
-            fetchScenarios();
-        }
-    }, [db]);
-    
-    const handleScenarioClick = (scenario) => {
-        setTempSelectedScenario(scenario);
-        setShowMicroLearningPrompt(true);
-    };
-    
-    const handleSkipMicroLearning = () => {
-        setSelectedScenario(tempSelectedScenario);
-        setCoachingLabView('scenario-prep');
-        setShowMicroLearningPrompt(false);
-    };
-    
-    const handleStartMicroLearning = (topic) => {
-        setSelectedScenario(tempSelectedScenario);
-        setMicroLearningTopic(topic);
-        setCoachingLabView('micro-learning');
-        setShowMicroLearningPrompt(false);
-    };
-    
-    
-    return (
-    <div className="p-4 sm:p-3 sm:p-4 lg:p-6 lg:p-8">
-    <h1 className="corporate-heading-xl mb-4" style={{ color: '#002E47' }}>Scenario Library</h1>
-    <p className="text-lg text-gray-600 mb-6">Select a high-stakes scenario to practice your preparation process. Each scenario includes a unique persona for the AI simulator.</p>
-    <Button onClick={() => setCoachingLabView('coaching-lab-home')} variant="nav-back" size="sm" className="mb-8">
-    <ArrowLeft className="w-5 h-5 mr-2" /> Back to Coaching Lab
-    </Button>
-    
-      <Card title="Custom Scenario Builder" icon={Zap} className="mb-8 bg-[#002E47]/10 border-l-4 border-[#E04E1B] rounded-3xl" onClick={() => setIsDynamicGeneratorVisible(true)}>
-            <p className="text-gray-700 text-sm">Describe a real situation from your workplace, and AI will generate a tailored practice scenario with a realistic persona.</p>
-            <div className="mt-4 text-[#E04E1B] font-semibold flex items-center">
-                Build Custom Scenario <CornerRightUp className='w-4 h-4 ml-1'/>
-            </div>
-      </Card>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:p-4 lg:p-6">
-        {scenarios.map(scenario => (
-          <Card key={scenario.id} title={scenario.title} className="border-l-4 border-[#47A88D] rounded-3xl" onClick={() => handleScenarioClick(scenario)}>
-            <p className="text-sm text-gray-700 mb-3">{scenario.description}</p>
-            <div className="text-xs font-semibold text-[#002E47] bg-[#002E47]/10 px-3 py-1 rounded-full inline-block">Persona: {scenario.persona}</div>
-            <div className="mt-4 text-[#47A88D] font-semibold flex items-center">
-              Start Preparation &rarr;
-            </div>
-          </Card>
-        ))}
-      </div>
-      
-      {/* Micro-Learning Prompt Modal */}
-      {showMicroLearningPrompt && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full p-3 sm:p-4 lg:p-6">
-            <h2 className="text-xl sm:text-2xl font-extrabold text-[#002E47] mb-4">Quick Skill Refresher?</h2>
-            <p className="text-gray-700 mb-6">Take 2 minutes to review a key skill before practicing this scenario. Or skip and go straight to preparation.</p>
-            
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-              <button
-                onClick={() => handleStartMicroLearning('sbi-framework')}
-                className="p-4 border-2 border-[#47A88D] rounded-xl hover:bg-[#47A88D]/10 transition-all text-left"
-              >
-                <ShieldCheck className="w-6 h-6 text-[#47A88D] mb-2" />
-                <p className="font-bold text-[#002E47] text-sm">SBI Framework</p>
-                <p className="text-xs text-gray-600">Situation-Behavior-Impact</p>
-              </button>
-              
-              <button
-                onClick={() => handleStartMicroLearning('active-listening')}
-                className="p-4 border-2 border-[#47A88D] rounded-xl hover:bg-[#47A88D]/10 transition-all text-left"
-              >
-                <HeartPulse className="w-6 h-6 text-[#47A88D] mb-2" />
-                <p className="font-bold text-[#002E47] text-sm">Active Listening</p>
-                <p className="text-xs text-gray-600">Empathy & validation</p>
-              </button>
-              
-              <button
-                onClick={() => handleStartMicroLearning('handling-defensiveness')}
-                className="p-4 border-2 border-[#47A88D] rounded-xl hover:bg-[#47A88D]/10 transition-all text-left"
-              >
-                <AlertTriangle className="w-6 h-6 text-[#47A88D] mb-2" />
-                <p className="font-bold text-[#002E47] text-sm">Handling Defensiveness</p>
-                <p className="text-xs text-gray-600">De-escalation tactics</p>
-              </button>
-            </div>
-            
-            <div className="flex justify-between">
-              <Button onClick={handleSkipMicroLearning} variant="outline">
-                Skip to Preparation
-              </Button>
-              <Button onClick={() => setShowMicroLearningPrompt(false)} variant="secondary">
-                <X className="w-5 h-5 mr-2" /> Cancel
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
-      
-      {isDynamicGeneratorVisible && (
-        <CustomScenarioBuilder 
-          setCoachingLabView={setCoachingLabView} 
-          setSelectedScenario={setSelectedScenario} 
-          onClose={() => setIsDynamicGeneratorVisible(false)} 
-        />
-      )}
-    </div>
-    
-    
-    );
-};
-
 
 // --- MAIN COACHING LAB ROUTER ---
 export default function CoachingLabScreen({ simulatedTier }) {
@@ -1725,7 +1031,7 @@ export default function CoachingLabScreen({ simulatedTier }) {
         const orderA = getFeatureOrder(a.featureId);
         const orderB = getFeatureOrder(b.featureId);
         return orderA - orderB;
-    }), [isFeatureEnabled, getFeatureOrder, navigate, hasCoachingAccess]);
+    }), [isFeatureEnabled, getFeatureOrder, navigate]);
 
     const renderView = () => {
         const viewProps = { setCoachingLabView: setView, setSelectedScenario, setMicroLearningTopic };

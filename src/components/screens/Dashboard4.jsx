@@ -2,15 +2,14 @@
 // Dashboard 4: Fully Modular "The Arena"
 // All sections are controlled by Feature Lab flags.
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useAppServices } from '../../services/useAppServices.jsx';
 import { 
   CheckSquare, Square, Plus, Save, X, Trophy, Flame, 
   MessageSquare, Bell, Calendar, ChevronRight, ArrowRight,
   Edit3, Loader
 } from 'lucide-react';
-import { Card } from '../shared/UI';
-import { COLORS } from './dashboard/dashboardConstants.js';
+import { Card, Button } from '../shared/UI';
 import { useDashboard } from './dashboard/DashboardHooks.jsx';
 import { UnifiedAnchorEditorModal, CalendarSyncModal } from './dashboard/DashboardComponents.jsx';
 import { useFeatures } from '../../providers/FeatureProvider';
@@ -24,18 +23,27 @@ const DASHBOARD_FEATURES = [
   'notifications', 'scorecard', 'pm-bookend'
 ];
 
-const Dashboard4 = (props) => {
+const Dashboard4 = () => {
   const { 
     user, 
     dailyPracticeData, 
     updateDailyPracticeData,
     developmentPlanData,
     globalMetadata,
-    userData,
     navigate
   } = useAppServices();
 
   const { isFeatureEnabled, getFeatureOrder } = useFeatures();
+
+  // --- PLAN DATA ---
+  const plan = useMemo(() => developmentPlanData?.currentPlan || {}, [developmentPlanData]);
+  const cycle = plan.cycle || 1;
+  const summary = useMemo(() => plan.summary || { 
+    totalSkills: 0, 
+    completedSkills: 0, 
+    progress: 0,
+    currentWeek: 0
+  }, [plan]);
 
   // --- HOOKS ---
   const {
@@ -92,7 +100,6 @@ const Dashboard4 = (props) => {
   const [isAnchorModalOpen, setIsAnchorModalOpen] = useState(false);
   const [isCalendarModalOpen, setIsCalendarModalOpen] = useState(false);
   const [newTaskText, setNewTaskText] = useState('');
-  const [showTaskInput, setShowTaskInput] = useState(false);
   const [isWinSaved, setIsWinSaved] = useState(false);
 
   // --- WRAPPERS FOR AUTO-SAVE ---
@@ -219,6 +226,7 @@ const Dashboard4 = (props) => {
     // Components
     Checkbox,
     Card,
+    Button,
     
     // Functions
     navigate,
@@ -250,6 +258,7 @@ const Dashboard4 = (props) => {
     isSavingWIN,
     isWinSaved,
     otherTasks,
+    winsList: otherTasks, // Alias
     newTaskText,
     scorecard,
     handleSaveScorecard,
@@ -258,6 +267,13 @@ const Dashboard4 = (props) => {
     reflectionGood,
     reflectionBetter,
     isSavingBookend,
+    eveningBookend: dailyPracticeData?.eveningBookend || {},
+    commitmentHistory: additionalCommitments || [],
+
+    // Plan Data
+    plan,
+    cycle,
+    summary,
     
     // User Data
     user: user ? {
@@ -273,17 +289,17 @@ const Dashboard4 = (props) => {
 
   const renderers = {
     'dashboard-header': () => <WidgetRenderer widgetId="dashboard-header" scope={scope} />,
-    'daily-quote': () => <WidgetRenderer widgetId="daily-quote" scope={scope} />,
-    'welcome-message': () => <WidgetRenderer widgetId="welcome-message" scope={scope} />,
+    'daily-quote': () => <WidgetRenderer widgetId="daily-quote-v2" scope={scope} />,
+    'welcome-message': () => <WidgetRenderer widgetId="welcome-message-v2" scope={scope} />,
     'gamification': () => <WidgetRenderer widgetId="gamification" scope={scope} />,
     'exec-summary': () => <WidgetRenderer widgetId="exec-summary" scope={scope} />,
     'weekly-focus': () => <WidgetRenderer widgetId="weekly-focus" scope={scope} />,
     'identity-builder': () => <WidgetRenderer widgetId="identity-builder" scope={scope} />,
     'habit-stack': () => <WidgetRenderer widgetId="habit-stack" scope={scope} />,
-    'win-the-day': () => <WidgetRenderer widgetId="win-the-day" scope={scope} />,
-    'notifications': () => <WidgetRenderer widgetId="notifications" scope={scope} />,
-    'scorecard': () => <WidgetRenderer widgetId="scorecard" scope={scope} />,
-    'pm-bookend': () => <WidgetRenderer widgetId="pm-bookend" scope={scope} />
+    'win-the-day': () => <WidgetRenderer widgetId="win-the-day-v2" scope={scope} />,
+    'notifications': () => <WidgetRenderer widgetId="notifications-v2" scope={scope} />,
+    'scorecard': () => <WidgetRenderer widgetId="scorecard-v2" scope={scope} />,
+    'pm-bookend': () => <WidgetRenderer widgetId="pm-bookend-v2" scope={scope} />
   };
 
   const handleSaveAnchors = async (data) => {
