@@ -28,7 +28,11 @@ export const Button = ({ children, onClick, disabled = false, variant = 'primary
     secondary: "bg-corporate-orange text-white shadow-sm hover:bg-orange-700 focus:ring-orange-500/50",
     outline: "bg-white text-corporate-teal border-2 border-corporate-teal shadow-sm hover:bg-teal-50 focus:ring-teal-500/50",
     'nav-back': "bg-white text-slate-700 border border-slate-200 shadow-sm hover:bg-slate-50 focus:ring-slate-200/50 px-4 py-2 text-sm",
-    ghost: "bg-transparent text-slate-600 hover:bg-slate-100 focus:ring-slate-200/50 px-3 py-1.5 text-sm"
+    ghost: "bg-transparent text-slate-600 hover:bg-slate-100 focus:ring-slate-200/50 px-3 py-1.5 text-sm",
+    'soft-teal': "bg-teal-50 text-teal-700 hover:bg-teal-100 focus:ring-teal-500/50 border border-teal-100",
+    'soft-orange': "bg-orange-50 text-orange-700 hover:bg-orange-100 focus:ring-orange-500/50 border border-orange-100",
+    'soft-blue': "bg-blue-50 text-blue-700 hover:bg-blue-100 focus:ring-blue-500/50 border border-blue-100",
+    'soft-purple': "bg-purple-50 text-purple-700 hover:bg-purple-100 focus:ring-purple-500/50 border border-purple-100",
   };
 
   const disabledStyle = "bg-slate-200 text-slate-400 shadow-none border-transparent hover:bg-slate-200 cursor-not-allowed";

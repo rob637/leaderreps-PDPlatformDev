@@ -105,7 +105,7 @@ const PlanTracker = ({
       <WidgetRenderer widgetId="dev-plan-stats" scope={scope} />
 
       {/* Actions */}
-      <WidgetRenderer widgetId="dev-plan-actions" scope={scope} />
+      <WidgetRenderer widgetId="dev-plan-actions-v2" scope={scope} />
 
       {/* Focus Areas Summary */}
       <WidgetRenderer widgetId="dev-plan-focus-areas" scope={scope} />

@@ -568,7 +568,7 @@ export const WIDGET_TEMPLATES = {
     </div>
     <Button
       onClick={() => onEditPlan()}
-      variant="secondary"
+      variant="soft-orange"
       className="flex items-center gap-2"
     >
       <Edit size={16} />
@@ -623,12 +623,12 @@ export const WIDGET_TEMPLATES = {
   </Card>
 </div>
     `,
-    'dev-plan-actions': `
+    'dev-plan-actions-v2': `
 <Card title="Actions" icon={Zap} accent="TEAL">
   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
     <Button
       onClick={() => setShowBreakdown(true)}
-      variant="primary"
+      variant="soft-teal"
       className="flex items-center justify-center gap-2"
     >
       <Target size={16} />
@@ -638,7 +638,7 @@ export const WIDGET_TEMPLATES = {
     {onScan && (
       <Button
         onClick={onScan}
-        variant="primary"
+        variant="soft-teal"
         className="flex items-center justify-center gap-2"
       >
         <TrendingUp size={16} />
@@ -649,7 +649,7 @@ export const WIDGET_TEMPLATES = {
     {onTimeline && (
       <Button
         onClick={onTimeline}
-        variant="secondary"
+        variant="soft-orange"
         className="flex items-center justify-center gap-2"
       >
         <Calendar size={16} />
@@ -660,7 +660,53 @@ export const WIDGET_TEMPLATES = {
     {onDetail && (
       <Button
         onClick={onDetail}
-        variant="secondary"
+        variant="soft-orange"
+        className="flex items-center justify-center gap-2"
+      >
+        View Detailed Plan
+      </Button>
+    )}
+  </div>
+</Card>
+    `,
+    'dev-plan-actions': `
+<Card title="Actions" icon={Zap} accent="TEAL">
+  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+    <Button
+      onClick={() => setShowBreakdown(true)}
+      variant="soft-teal"
+      className="flex items-center justify-center gap-2"
+    >
+      <Target size={16} />
+      View Progress Breakdown
+    </Button>
+    
+    {onScan && (
+      <Button
+        onClick={onScan}
+        variant="soft-teal"
+        className="flex items-center justify-center gap-2"
+      >
+        <TrendingUp size={16} />
+        Start Progress Scan
+      </Button>
+    )}
+    
+    {onTimeline && (
+      <Button
+        onClick={onTimeline}
+        variant="soft-orange"
+        className="flex items-center justify-center gap-2"
+      >
+        <Calendar size={16} />
+        View Timeline
+      </Button>
+    )}
+    
+    {onDetail && (
+      <Button
+        onClick={onDetail}
+        variant="soft-orange"
         className="flex items-center justify-center gap-2"
       >
         View Detailed Plan
@@ -820,6 +866,7 @@ export const FEATURE_METADATA = {
     // Development Plan
     'dev-plan-header': { name: 'Plan Header', description: 'Title, cycle info, and progress bar.' },
     'dev-plan-stats': { name: 'Plan Stats', description: 'Quick stats: Total Skills, Completed, Current Week.' },
+    'dev-plan-actions-v2': { name: 'Plan Actions (V2)', description: 'Buttons for Breakdown, Scan, Timeline, Detail.' },
     'dev-plan-actions': { name: 'Plan Actions', description: 'Buttons for Breakdown, Scan, Timeline, Detail.' },
     'dev-plan-focus-areas': { name: 'Focus Areas Summary', description: 'List of focus areas in the plan.' },
     'dev-plan-goal': { name: 'Plan Goal', description: 'User\'s open-ended goal.' },
