@@ -32,6 +32,26 @@ const WidgetEditorModal = () => {
   const proxiedScope = useMemo(() => {
     const proxy = { ...scope };
     
+    // Helper to sanitize data for logging (remove circular refs and event objects)
+    const sanitizeForLog = (data) => {
+      if (!data) return data;
+      if (Array.isArray(data)) {
+        return data.map(item => {
+          // Filter out React SyntheticEvents and DOM elements
+          if (item && typeof item === 'object') {
+            if (item.nativeEvent || item._reactName || item.target instanceof Element) {
+              return '[Event Object]';
+            }
+            if (item instanceof Element) {
+              return '[DOM Element]';
+            }
+          }
+          return item;
+        });
+      }
+      return data;
+    };
+    
     // Helper to log to our internal console
     const logToConsole = (type, message, data) => {
       setOutputLogs(prev => [...prev, { 
@@ -39,7 +59,7 @@ const WidgetEditorModal = () => {
         timestamp: new Date().toLocaleTimeString(), 
         type, 
         message, 
-        data 
+        data: sanitizeForLog(data)
       }]);
     };
 
@@ -233,7 +253,13 @@ const WidgetEditorModal = () => {
                         <div className="text-slate-300 font-bold">{log.message}</div>
                         {log.data && log.data.length > 0 && (
                         <div className="mt-1 text-slate-400 overflow-x-auto whitespace-pre-wrap">
-                            {JSON.stringify(log.data, null, 2)}
+                            {(() => {
+                              try {
+                                return JSON.stringify(log.data, null, 2);
+                              } catch (e) {
+                                return `[Unable to serialize: ${e.message}]`;
+                              }
+                            })()}
                         </div>
                         )}
                     </div>
