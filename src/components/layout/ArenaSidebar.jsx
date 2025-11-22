@@ -20,6 +20,8 @@ import { useAppServices } from '../../services/useAppServices.jsx';
 const ArenaSidebar = ({ isOpen, toggle, currentScreen, navigate, onSignOut, user, membershipData }) => {
   const { identityStatement, habitAnchor, whyStatement } = useAppServices();
   const [showAnchors, setShowAnchors] = useState(false);
+
+  const menuItems = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { id: 'development-plan', label: 'Dev Plan', icon: Target },
     { id: 'library', label: 'Content', icon: BookOpen },
