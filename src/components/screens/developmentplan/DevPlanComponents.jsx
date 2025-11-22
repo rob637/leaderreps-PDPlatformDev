@@ -35,7 +35,7 @@ export const Button = ({ children, onClick, disabled = false, variant = 'primary
    Standardized Card Component
    (Shared with DashboardComponents)
 ========================================================= */
-export const Card = ({ children, title, className = '', onClick, accent = 'NAVY', actions }) => {
+export const Card = ({ children, title, icon: Icon, className = '', onClick, accent = 'NAVY', actions }) => {
   const interactive = !!onClick;
   const Tag = interactive ? 'button' : 'div';
   const accentColor = COLORS[accent] || COLORS.NAVY;
@@ -55,9 +55,14 @@ export const Card = ({ children, title, className = '', onClick, accent = 'NAVY'
       onClick={onClick}
     >
       <span style={{ position:'absolute', top:0, left:0, right:0, height:6, background: accentColor, borderTopLeftRadius:14, borderTopRightRadius:14 }} />
-      {(title || actions) && (
+      {(title || actions || Icon) && (
         <div className="flex items-center justify-between p-3 sm:p-4 lg:p-6 pb-4">
           <div className="flex items-center gap-3">
+            {Icon && (
+              <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ backgroundColor: `${accentColor}20`, color: accentColor }}>
+                <Icon size={20} />
+              </div>
+            )}
             {title && (
               <h2 className="text-xl font-extrabold" style={{ color: COLORS.NAVY }}>{title}</h2>
             )}
@@ -68,7 +73,7 @@ export const Card = ({ children, title, className = '', onClick, accent = 'NAVY'
         </div>
       )}
       
-      <div className={title || actions ? "p-6 pt-0" : "p-6"}>
+      <div className={title || actions || Icon ? "p-6 pt-0" : "p-6"}>
         {children}
       </div>
     </Tag>

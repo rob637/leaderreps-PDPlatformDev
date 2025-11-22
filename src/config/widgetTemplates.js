@@ -810,141 +810,119 @@ export const WIDGET_TEMPLATES = {
 </Card>
     `,
     'dev-plan-header': `
-<section className="w-full">
-  <div className="flex items-center gap-2 mb-4">
-    <div className="w-8 h-8 rounded-lg bg-teal-100 flex items-center justify-center text-teal-600">
-      <Target className="w-5 h-5" />
+<Card title="Development Plan" icon={Target} accent="TEAL">
+  <div className="flex items-center justify-between mb-6">
+    <div>
+      <p className="text-gray-600">
+        Cycle {cycle} • {summary.totalSkills} skills • {summary.progress}% complete
+      </p>
     </div>
-    <h2 className="text-xl font-bold text-[#002E47]">
-      Development Plan
-    </h2>
+    <Button
+      onClick={() => onEditPlan()}
+      variant="secondary"
+      className="flex items-center gap-2"
+    >
+      <Edit size={16} />
+      Quick Edit
+    </Button>
   </div>
-  <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
-    <div className="flex items-center justify-between mb-6">
-      <div>
-        <p className="text-gray-600">
-          Cycle {cycle} • {summary.totalSkills} skills • {summary.progress}% complete
-        </p>
-      </div>
-      <Button
-        onClick={() => onEditPlan()}
-        variant="secondary"
-        className="flex items-center gap-2"
-      >
-        <Edit size={16} />
-        Quick Edit
-      </Button>
-    </div>
-    <ProgressBar progress={summary.progress} color={COLORS.TEAL} />
-  </div>
-</section>
+  <ProgressBar progress={summary.progress} color={COLORS.TEAL} />
+</Card>
     `,
     'dev-plan-stats': `
 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-  <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200 flex items-center gap-3">
-    <div className="w-12 h-12 rounded-lg bg-blue-100 flex items-center justify-center text-blue-600">
-      <Target size={24} />
-    </div>
-    <div>
-      <div className="text-2xl font-bold text-[#002E47]">
-        {summary.totalSkills}
+  <Card accent="BLUE">
+    <div className="flex items-center gap-3">
+      <div className="w-12 h-12 rounded-lg bg-blue-100 flex items-center justify-center text-blue-600">
+        <Target size={24} />
       </div>
-      <div className="text-sm text-gray-600">Total Skills</div>
+      <div>
+        <div className="text-2xl font-bold text-[#002E47]">
+          {summary.totalSkills}
+        </div>
+        <div className="text-sm text-gray-600">Total Skills</div>
+      </div>
     </div>
-  </div>
+  </Card>
 
-  <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200 flex items-center gap-3">
-    <div className="w-12 h-12 rounded-lg bg-green-100 flex items-center justify-center text-green-600">
-      <TrendingUp size={24} />
-    </div>
-    <div>
-      <div className="text-2xl font-bold text-[#002E47]">
-        {summary.completedSkills}
+  <Card accent="GREEN">
+    <div className="flex items-center gap-3">
+      <div className="w-12 h-12 rounded-lg bg-green-100 flex items-center justify-center text-green-600">
+        <TrendingUp size={24} />
       </div>
-      <div className="text-sm text-gray-600">Completed</div>
+      <div>
+        <div className="text-2xl font-bold text-[#002E47]">
+          {summary.completedSkills}
+        </div>
+        <div className="text-sm text-gray-600">Completed</div>
+      </div>
     </div>
-  </div>
+  </Card>
 
-  <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200 flex items-center gap-3">
-    <div className="w-12 h-12 rounded-lg bg-orange-100 flex items-center justify-center text-orange-600">
-      <Calendar size={24} />
-    </div>
-    <div>
-      <div className="text-2xl font-bold text-[#002E47]">
-        {summary.currentWeek || 0}
+  <Card accent="ORANGE">
+    <div className="flex items-center gap-3">
+      <div className="w-12 h-12 rounded-lg bg-orange-100 flex items-center justify-center text-orange-600">
+        <Calendar size={24} />
       </div>
-      <div className="text-sm text-gray-600">Current Week</div>
+      <div>
+        <div className="text-2xl font-bold text-[#002E47]">
+          {summary.currentWeek || 0}
+        </div>
+        <div className="text-sm text-gray-600">Current Week</div>
+      </div>
     </div>
-  </div>
+  </Card>
 </div>
     `,
     'dev-plan-actions': `
-<section className="w-full">
-  <div className="flex items-center gap-2 mb-4">
-    <div className="w-8 h-8 rounded-lg bg-teal-100 flex items-center justify-center text-teal-600">
-      <Zap className="w-5 h-5" />
-    </div>
-    <h2 className="text-xl font-bold text-[#002E47]">
-      Actions
-    </h2>
-  </div>
-  <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+<Card title="Actions" icon={Zap} accent="TEAL">
+  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+    <Button
+      onClick={() => setShowBreakdown(true)}
+      variant="primary"
+      className="flex items-center justify-center gap-2"
+    >
+      <Target size={16} />
+      View Progress Breakdown
+    </Button>
+    
+    {onScan && (
       <Button
-        onClick={() => setShowBreakdown(true)}
+        onClick={onScan}
         variant="primary"
         className="flex items-center justify-center gap-2"
       >
-        <Target size={16} />
-        View Progress Breakdown
+        <TrendingUp size={16} />
+        Start Progress Scan
       </Button>
-      
-      {onScan && (
-        <Button
-          onClick={onScan}
-          variant="primary"
-          className="flex items-center justify-center gap-2"
-        >
-          <TrendingUp size={16} />
-          Start Progress Scan
-        </Button>
-      )}
-      
-      {onTimeline && (
-        <Button
-          onClick={onTimeline}
-          variant="secondary"
-          className="flex items-center justify-center gap-2"
-        >
-          <Calendar size={16} />
-          View Timeline
-        </Button>
-      )}
-      
-      {onDetail && (
-        <Button
-          onClick={onDetail}
-          variant="secondary"
-          className="flex items-center justify-center gap-2"
-        >
-          View Detailed Plan
-        </Button>
-      )}
-    </div>
+    )}
+    
+    {onTimeline && (
+      <Button
+        onClick={onTimeline}
+        variant="secondary"
+        className="flex items-center justify-center gap-2"
+      >
+        <Calendar size={16} />
+        View Timeline
+      </Button>
+    )}
+    
+    {onDetail && (
+      <Button
+        onClick={onDetail}
+        variant="secondary"
+        className="flex items-center justify-center gap-2"
+      >
+        View Detailed Plan
+      </Button>
+    )}
   </div>
-</section>
+</Card>
     `,
     'dev-plan-focus-areas': `
-<section className="w-full">
-  <div className="flex items-center gap-2 mb-4">
-    <div className="w-8 h-8 rounded-lg bg-purple-100 flex items-center justify-center text-purple-600">
-      <Crosshair className="w-5 h-5" />
-    </div>
-    <h2 className="text-xl font-bold text-[#002E47]">
-      Focus Areas
-    </h2>
-  </div>
-  <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200 space-y-3">
+<Card title="Focus Areas" icon={Crosshair} accent="PURPLE">
+  <div className="space-y-3">
     {plan.focusAreas && plan.focusAreas.map((area, index) => (
       <div key={index} className="p-4 bg-gray-50 rounded-lg">
         <h3 className="font-semibold mb-2" style={{ color: COLORS.NAVY }}>
@@ -959,22 +937,12 @@ export const WIDGET_TEMPLATES = {
       </div>
     ))}
   </div>
-</section>
+</Card>
     `,
     'dev-plan-goal': `
-<section className="w-full">
-  <div className="flex items-center gap-2 mb-4">
-    <div className="w-8 h-8 rounded-lg bg-yellow-100 flex items-center justify-center text-yellow-600">
-      <Flag className="w-5 h-5" />
-    </div>
-    <h2 className="text-xl font-bold text-[#002E47]">
-      Your Goal
-    </h2>
-  </div>
-  <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
-    <p className="text-gray-700">{plan.openEndedAnswer}</p>
-  </div>
-</section>
+<Card title="Your Goal" icon={Flag} accent="YELLOW">
+  <p className="text-gray-700">{plan.openEndedAnswer}</p>
+</Card>
     `,
     'daily-quote': `const DailyQuote = () => {
   // Helper to parse quote
