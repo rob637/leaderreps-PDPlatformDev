@@ -298,7 +298,7 @@ const FeatureManager = () => {
             'otherTasks': 'User Input (Text Entry - Secondary Tasks).'
           },
           'Output': {
-            'Locker': 'Output to Your Locker (Win History).'
+            'Locker': 'Output to Your Locker (AM Bookend History).'
           }
         };
       case 'pm-bookend':
@@ -309,7 +309,7 @@ const FeatureManager = () => {
             'reflectionBetter': 'User Input (Reflection Text).'
           },
           'Output': {
-            'Locker': 'Output to Your Locker (Reflection History).'
+            'Locker': 'Output to Your Locker (PM Bookend History).'
           }
         };
       case 'scorecard':
@@ -447,6 +447,28 @@ const FeatureManager = () => {
             ...common,
             'Input': { 'history': 'PM Bookend History Data.' },
             'Output': { 'Display': 'No output.' }
+        };
+      case 'win-the-day-v2':
+        return {
+          ...common,
+          'Input': {
+            'morningWIN': 'User Input (Text Entry - Top Priority).',
+            'otherTasks': 'User Input (Text Entry - Secondary Tasks).'
+          },
+          'Output': {
+            'Locker': 'Output to Your Locker (AM Bookend History).'
+          }
+        };
+      case 'pm-bookend-v2':
+        return {
+          ...common,
+          'Input': {
+            'reflectionGood': 'User Input (Reflection Text).',
+            'reflectionBetter': 'User Input (Reflection Text).'
+          },
+          'Output': {
+            'Locker': 'Output to Your Locker (PM Bookend History).'
+          }
         };
       default:
         // Check for dev-plan widgets
