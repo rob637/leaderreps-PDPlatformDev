@@ -183,23 +183,18 @@ const FeatureManager = () => {
     isSavingBookend,
     
     // User Data
-    user,
+    user: user ? {
+      uid: user.uid,
+      displayName: user.displayName,
+      email: user.email,
+      photoURL: user.photoURL
+    } : null,
     greeting,
     dailyQuote,
     allQuotes: globalMetadata?.SYSTEM_QUOTES || []
   };
 
   const getScopeForWidget = (widgetId) => {
-    if (widgetId === 'dashboard-header') {
-      return {
-        allQuotes: globalMetadata?.SYSTEM_QUOTES || [],
-        dailyQuote,
-        options: features[widgetId]?.options || {},
-        // Minimal common tools
-        React,
-        // No user, no greeting, no other data to keep it clean
-      };
-    }
     // Default full scope
     return { ...REAL_SCOPE, options: features[widgetId]?.options || {} };
   };
@@ -214,15 +209,6 @@ const FeatureManager = () => {
     };
 
     switch (widgetId) {
-      case 'dashboard-header':
-        return {
-          ...common,
-          'Quotes Data': {
-            'allQuotes': 'List of system quotes.',
-            'dailyQuote': 'Selected quote for today.'
-          },
-          'Options': { 'options': 'Widget configuration.' }
-        };
       case 'weekly-focus':
         return {
           ...common,
@@ -299,7 +285,7 @@ const FeatureManager = () => {
   const [newOption, setNewOption] = useState({ key: '', value: '' });
 
   const initialGroups = {
-    dashboard: ['dashboard-header', 'welcome-message', 'identity-builder', 'habit-stack', 'win-the-day', 'gamification', 'exec-summary', 'calendar-sync', 'weekly-focus', 'notifications', 'scorecard', 'pm-bookend'],
+    dashboard: ['welcome-message', 'identity-builder', 'habit-stack', 'win-the-day', 'gamification', 'exec-summary', 'calendar-sync', 'weekly-focus', 'notifications', 'scorecard', 'pm-bookend'],
     'development-plan': ['dev-plan-header', 'dev-plan-stats', 'dev-plan-actions', 'dev-plan-focus-areas', 'dev-plan-goal'],
     content: ['course-library', 'reading-hub', 'leadership-videos', 'strat-templates'],
     community: ['community-feed', 'my-discussions', 'mastermind', 'mentor-match', 'live-events'],
@@ -337,7 +323,7 @@ const FeatureManager = () => {
     // Determine group
     let group = 'dashboard';
     if (dbData && dbData.group) {
-      group = dbData.group === 'header' ? 'dashboard' : dbData.group; // Migrate header to dashboard
+      group = dbData.group;
     } else {
       // Fallback to initialGroups mapping
       if (initialGroups['development-plan'].includes(id)) group = 'development-plan';
@@ -353,7 +339,7 @@ const FeatureManager = () => {
       id,
       name: dbData?.name || meta.name || id,
       // Force metadata description for dashboard-header to ensure it says "Quotes"
-      description: (id === 'dashboard-header' ? meta.description : (dbData?.description || meta.description)) || '',
+      description: (dbData?.description || meta.description) || '',
       enabled: dbData ? dbData.enabled : true, // Default to enabled if not in DB
       order: dbData?.order ?? 999,
       code: dbData?.code || templateCode,
@@ -499,14 +485,6 @@ const FeatureManager = () => {
 
   // Configuration Schema for Specific Widgets
   const WIDGET_CONFIG_SCHEMA = {
-    'dashboard-header': [
-      {
-        key: 'scrollMode',
-        label: 'Scrolling Mode',
-        type: 'boolean',
-        description: 'Enable marquee scrolling for quotes instead of a static daily quote.'
-      }
-    ]
   };
 
   return (

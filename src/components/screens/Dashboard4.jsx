@@ -17,7 +17,7 @@ import WidgetRenderer from '../admin/WidgetRenderer';
 import { createWidgetSDK } from '../../services/WidgetSDK';
 
 const DASHBOARD_FEATURES = [
-  'dashboard-header', 'welcome-message',
+  'welcome-message',
   'gamification', 'exec-summary', 'weekly-focus', 
   'identity-builder', 'habit-stack', 'win-the-day', 
   'notifications', 'scorecard', 'pm-bookend'
@@ -253,7 +253,12 @@ const Dashboard4 = (props) => {
     isSavingBookend,
     
     // User Data
-    user,
+    user: user ? {
+      uid: user.uid,
+      displayName: user.displayName,
+      email: user.email,
+      photoURL: user.photoURL
+    } : null,
     greeting,
     dailyQuote,
     allQuotes: globalMetadata?.SYSTEM_QUOTES || []
