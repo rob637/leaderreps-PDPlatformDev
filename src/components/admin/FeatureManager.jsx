@@ -9,6 +9,7 @@ import { WIDGET_TEMPLATES, FEATURE_METADATA } from '../../config/widgetTemplates
 import { useAppServices } from '../../services/useAppServices';
 import { useDashboard } from '../screens/dashboard/DashboardHooks';
 import { createWidgetSDK } from '../../services/WidgetSDK';
+import { Card } from '../shared/UI';
 
 const FeatureManager = () => {
   const { features, toggleFeature, updateFeatureOrder, saveFeature, deleteFeature, isFeatureEnabled } = useFeatures();
@@ -143,6 +144,7 @@ const FeatureManager = () => {
     
     // Components
     Checkbox,
+    Card,
     
     // Functions
     navigate,
