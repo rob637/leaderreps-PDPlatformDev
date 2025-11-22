@@ -1178,7 +1178,7 @@ render(<DailyQuote />);
     }
     \`}</style>
     </>
-  };
+  );
 };
 
 render(<DailyQuote />);

@@ -204,6 +204,8 @@ const FeatureManager = () => {
     otherTasks,
     newTaskText: '', // Local state
     scorecard,
+    handleSaveScorecard: () => {}, // Mock for editor
+    isSavingScorecard: false,
     streakCount,
     reflectionGood,
     reflectionBetter,
@@ -529,10 +531,11 @@ const FeatureManager = () => {
 
   // 1. Determine canonical order of IDs to prevent jumping
   // Start with Metadata keys to preserve default order
-  const orderedIds = Object.keys(FEATURE_METADATA);
-  // Append any custom IDs from DB that aren't in metadata
+  // Filter out v2 versions - they're implementation details, not separate features
+  const orderedIds = Object.keys(FEATURE_METADATA).filter(id => !id.endsWith('-v2'));
+  // Append any custom IDs from DB that aren't in metadata (but not v2 versions)
   Object.keys(features).forEach(id => {
-    if (!FEATURE_METADATA[id]) {
+    if (!FEATURE_METADATA[id] && !id.endsWith('-v2')) {
       orderedIds.push(id);
     }
   });
