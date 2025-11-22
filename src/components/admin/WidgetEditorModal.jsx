@@ -146,7 +146,9 @@ const WidgetEditorModal = () => {
           <div className="flex-1 overflow-auto p-4 font-mono text-xs text-blue-200">
             {inputDescriptions && Object.keys(inputDescriptions).length > 0 ? (
               <div className="space-y-4">
-                {Object.entries(inputDescriptions).map(([category, items]) => (
+                {Object.entries(inputDescriptions)
+                  .filter(([category]) => category !== 'Output') // Filter out Output
+                  .map(([category, items]) => (
                   <div key={category}>
                     <h3 className="text-teal-500 font-bold uppercase mb-2 border-b border-slate-700 pb-1">{category}</h3>
                     <div className="space-y-2">
@@ -154,9 +156,9 @@ const WidgetEditorModal = () => {
                         <div key={key} className="pl-2 border-l-2 border-slate-700 mb-4">
                           <div className="text-blue-300 font-bold text-sm mb-1">{key}</div>
                           <div className="text-slate-400 italic mb-2">{desc}</div>
-                          {/* Show value */}
+                          {/* Show value - Start Collapsed (level 1) */}
                           <div className="bg-slate-800/50 p-2 rounded text-slate-300 overflow-hidden">
-                             <ScopeViewer name={key} data={scope[key]} />
+                             <ScopeViewer name={key} data={scope[key]} level={1} />
                           </div>
                         </div>
                       ))}
@@ -185,33 +187,54 @@ const WidgetEditorModal = () => {
         {/* Right: Output (Console) */}
         <div className="w-1/4 bg-[#0f172a] border-l border-slate-700 flex flex-col">
           <div className="p-2 bg-[#1e293b] border-b border-slate-700 flex items-center gap-2 text-xs font-bold text-slate-300 uppercase tracking-wider">
-            <Terminal className="w-4 h-4 text-green-400" /> Output Signals
+            <Terminal className="w-4 h-4 text-green-400" /> Output & Signals
           </div>
-          <div className="flex-1 overflow-auto p-2 space-y-2 font-mono text-xs">
-            {outputLogs.length === 0 && (
-              <div className="text-slate-500 p-4 text-center">
-                <p className="font-bold text-slate-400 mb-2">No Output Signals</p>
-                <p className="text-slate-600">Interact with the widget to see function calls and events.</p>
+          <div className="flex-1 overflow-auto p-4 space-y-4 font-mono text-xs">
+            
+            {/* Static Output Descriptions */}
+            {inputDescriptions && inputDescriptions['Output'] && (
+              <div className="mb-6 border-b border-slate-700 pb-4">
+                <h3 className="text-purple-400 font-bold uppercase mb-2">Expected Outputs</h3>
+                <div className="space-y-3">
+                  {Object.entries(inputDescriptions['Output']).map(([key, desc]) => (
+                    <div key={key} className="pl-2 border-l-2 border-purple-900/50">
+                      <div className="text-purple-300 font-bold text-sm">{key}</div>
+                      <div className="text-slate-400 italic">{desc}</div>
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
-            {outputLogs.map((log) => (
-              <div key={log.id} className="p-2 rounded bg-[#1e293b] border border-slate-700">
-                <div className="flex justify-between text-slate-500 mb-1">
-                  <span>{log.timestamp}</span>
-                  <span className={`uppercase font-bold ${
-                    log.type === 'error' ? 'text-red-400' : 
-                    log.type === 'return' ? 'text-purple-400' : 'text-green-400'
-                  }`}>{log.type}</span>
+
+            {/* Dynamic Logs */}
+            <div>
+                <h3 className="text-green-500 font-bold uppercase mb-2">Live Signals</h3>
+                {outputLogs.length === 0 && (
+                <div className="text-slate-500 p-2 text-center border border-dashed border-slate-800 rounded">
+                    <p className="text-slate-600">Interact with the widget to see function calls and events.</p>
                 </div>
-                <div className="text-slate-300 font-bold">{log.message}</div>
-                {log.data && log.data.length > 0 && (
-                  <div className="mt-1 text-slate-400 overflow-x-auto whitespace-pre-wrap">
-                    {JSON.stringify(log.data, null, 2)}
-                  </div>
                 )}
-              </div>
-            ))}
-            <div ref={logsEndRef} />
+                <div className="space-y-2">
+                    {outputLogs.map((log) => (
+                    <div key={log.id} className="p-2 rounded bg-[#1e293b] border border-slate-700">
+                        <div className="flex justify-between text-slate-500 mb-1">
+                        <span>{log.timestamp}</span>
+                        <span className={`uppercase font-bold ${
+                            log.type === 'error' ? 'text-red-400' : 
+                            log.type === 'return' ? 'text-purple-400' : 'text-green-400'
+                        }`}>{log.type}</span>
+                        </div>
+                        <div className="text-slate-300 font-bold">{log.message}</div>
+                        {log.data && log.data.length > 0 && (
+                        <div className="mt-1 text-slate-400 overflow-x-auto whitespace-pre-wrap">
+                            {JSON.stringify(log.data, null, 2)}
+                        </div>
+                        )}
+                    </div>
+                    ))}
+                    <div ref={logsEndRef} />
+                </div>
+            </div>
           </div>
         </div>
 

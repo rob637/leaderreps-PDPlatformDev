@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { doc, onSnapshot, setDoc, updateDoc, deleteField, collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { FEATURE_METADATA } from '../config/widgetTemplates';
 
 const FeatureContext = createContext();
 
@@ -122,7 +123,12 @@ export const FeatureProvider = ({ children, db }) => {
     if (typeof feature === 'object' && feature !== null) {
       return feature.enabled;
     }
-    return !!feature;
+    if (feature !== undefined) {
+        return !!feature;
+    }
+    // Fallback: If not in DB, check metadata. Default to TRUE if it exists in metadata.
+    // This ensures new widgets appear by default until explicitly disabled.
+    return !!FEATURE_METADATA[featureId];
   };
 
   const getFeatureOrder = (featureId) => {
