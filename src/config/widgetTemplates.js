@@ -805,7 +805,7 @@ export const WIDGET_TEMPLATES = {
   <p className="text-gray-700">{plan.openEndedAnswer}</p>
 </Card>
     `,
-    'daily-quote': `const DailyQuote = () => {
+    'daily-quote': `(() => {
   // Helper to parse quote
   const parseQuote = (q) => {
     if (!q) return { text: '', author: '' };
@@ -862,9 +862,7 @@ export const WIDGET_TEMPLATES = {
     \`}</style>
     </>
   );
-};
-
-render(<DailyQuote />);
+})()
     `,
     'welcome-message': `
 <div className="mb-6">
@@ -1122,7 +1120,7 @@ render(<DailyQuote />);
   </div>
 </Card>
     `,
-    'daily-quote-v2': `const DailyQuote = () => {
+    'daily-quote-v2': `(() => {
   // Helper to parse quote
   const parseQuote = (q) => {
     if (!q) return { text: '', author: '' };
@@ -1179,9 +1177,7 @@ render(<DailyQuote />);
     \`}</style>
     </>
   );
-};
-
-render(<DailyQuote />);
+})()
     `,
     'welcome-message-v2': `
 <div className="mb-6">
