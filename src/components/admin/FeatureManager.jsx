@@ -209,13 +209,7 @@ const FeatureManager = () => {
   };
 
   const getInputDescriptionsForWidget = (widgetId) => {
-    const common = {
-      'Core': {
-        'user': 'Current user profile.',
-        'navigate': 'Navigation function.',
-        'sdk': 'Widget SDK.'
-      }
-    };
+    const common = {};
 
     switch (widgetId) {
       case 'daily-quote':
@@ -445,7 +439,7 @@ const FeatureManager = () => {
   const [newOption, setNewOption] = useState({ key: '', value: '' });
 
   const initialGroups = {
-    dashboard: ['welcome-message', 'daily-quote', 'identity-builder', 'habit-stack', 'win-the-day', 'gamification', 'exec-summary', 'calendar-sync', 'weekly-focus', 'notifications', 'scorecard', 'pm-bookend'],
+    dashboard: ['daily-quote', 'welcome-message', 'identity-builder', 'habit-stack', 'win-the-day', 'gamification', 'exec-summary', 'calendar-sync', 'weekly-focus', 'notifications', 'scorecard', 'pm-bookend'],
     'development-plan': ['dev-plan-header', 'dev-plan-stats', 'dev-plan-actions', 'dev-plan-focus-areas', 'dev-plan-goal'],
     content: ['course-library', 'reading-hub', 'leadership-videos', 'strat-templates'],
     community: ['community-feed', 'my-discussions', 'mastermind', 'mentor-match', 'live-events'],

@@ -17,7 +17,7 @@ import WidgetRenderer from '../admin/WidgetRenderer';
 import { createWidgetSDK } from '../../services/WidgetSDK';
 
 const DASHBOARD_FEATURES = [
-  'welcome-message', 'daily-quote',
+  'daily-quote', 'welcome-message',
   'gamification', 'exec-summary', 'weekly-focus', 
   'identity-builder', 'habit-stack', 'win-the-day', 
   'notifications', 'scorecard', 'pm-bookend'
