@@ -1,161 +1,24 @@
 import { 
-  Flame, Trophy, MessageSquare, Calendar, BookOpen, Play, Book, Video, FileText, Users, UserPlus, Search, Radio, History, BarChart2, Bot, Cpu, Dumbbell, TrendingUp, CheckCircle, Edit
+  Flame, Trophy, MessageSquare, Calendar, BookOpen, Play, Book, Video, FileText, Users, UserPlus, Search, Radio, History, BarChart2, Bot, Cpu, Dumbbell, TrendingUp, CheckCircle, Edit, Lightbulb, CheckSquare, X, Plus, Loader, Save, Bell
 } from 'lucide-react';
 
+// Helper for Idea Templates
+const createIdeaTemplate = (title, desc) => `
+<div className="bg-white p-4 rounded-xl border border-dashed border-slate-300 shadow-sm opacity-80 hover:opacity-100 transition-opacity group cursor-default">
+  <div className="flex items-center gap-2 mb-2">
+    <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 group-hover:bg-blue-50 group-hover:text-blue-500 transition-colors">
+      <Lightbulb className="w-4 h-4" />
+    </div>
+    <h3 className="font-bold text-slate-700 text-sm group-hover:text-blue-700 transition-colors">${title}</h3>
+  </div>
+  <p className="text-xs text-slate-500 leading-relaxed">${desc}</p>
+  <div className="mt-3 flex justify-end">
+    <span className="text-[10px] font-bold text-slate-400 bg-slate-100 px-2 py-1 rounded-full uppercase tracking-wider group-hover:bg-blue-100 group-hover:text-blue-600 transition-colors">Coming Soon</span>
+  </div>
+</div>
+`;
+
 export const WIDGET_TEMPLATES = {
-    'gamification': `
-<div className="bg-indigo-900 text-white p-4 rounded-xl shadow-lg">
-  <div className="flex justify-between items-center mb-4">
-    <h3 className="font-bold text-indigo-100">Arena Mode</h3>
-    <span className="bg-indigo-800 px-2 py-1 rounded text-xs font-mono">Lvl 12</span>
-  </div>
-  <div className="flex justify-between text-center">
-    <div>
-      <div className="text-2xl font-bold text-yellow-400">1,250</div>
-      <div className="text-xs text-indigo-300">XP</div>
-    </div>
-    <div>
-      <div className="text-2xl font-bold text-orange-400">🔥 5</div>
-      <div className="text-xs text-indigo-300">Streak</div>
-    </div>
-    <div>
-      <div className="text-2xl font-bold text-teal-400">#3</div>
-      <div className="text-xs text-indigo-300">Rank</div>
-    </div>
-  </div>
-</div>
-    `,
-    'exec-summary': `
-<div className="bg-corporate-navy text-white p-6 rounded-2xl shadow-lg flex items-center justify-between w-full">
-  <div>
-    <h2 className="text-lg font-bold mb-1">Executive Summary</h2>
-    <p className="text-blue-200 text-sm">Your leadership impact at a glance.</p>
-  </div>
-  <div className="flex gap-8 text-center">
-    <div>
-      <div className="text-2xl font-bold text-corporate-teal">94%</div>
-      <div className="text-xs text-blue-200 uppercase">Consistency</div>
-    </div>
-    <div>
-      <div className="text-2xl font-bold text-corporate-orange">12</div>
-      <div className="text-xs text-blue-200 uppercase">Reps Done</div>
-    </div>
-  </div>
-</div>
-    `,
-    'weekly-focus': `
-<section className="w-full">
-  <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
-    <h2 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-2">
-      This Week's Focus
-    </h2>
-    <div className="flex items-center justify-between">
-      <div>
-        <p className="text-2xl font-bold text-[#002E47]">
-          {weeklyFocus}
-        </p>
-        <p className="text-xs text-slate-500 mt-1">
-          Pulls from Development Plan (Coming Soon)
-        </p>
-      </div>
-      <button 
-        onClick={() => navigate('development-plan')}
-        className="text-teal-600 hover:text-teal-700 text-sm font-semibold flex items-center gap-1"
-      >
-        View Plan <ChevronRight className="w-4 h-4" />
-      </button>
-    </div>
-  </div>
-</section>
-    `,
-    'identity-builder': `
-<section className="text-left w-full">
-  <div className="flex items-center gap-2 mb-4">
-    <div className="w-8 h-8 rounded-lg bg-orange-100 flex items-center justify-center text-orange-600">
-      <Flame className="w-5 h-5" />
-    </div>
-    <h2 className="text-xl font-bold text-[#002E47]">
-      Identity Builder
-    </h2>
-  </div>
-  <div className="space-y-3 text-left">
-    {hasLIS ? (
-      <Checkbox 
-        checked={lisRead}
-        onChange={() => handleHabitCheck('readLIS', !lisRead)}
-        label="Grounding Rep: Read LIS"
-        subLabel="Center yourself on your identity."
-      />
-    ) : (
-      <div className="p-4 rounded-xl border-2 border-dashed border-orange-300 bg-orange-50 flex items-center justify-between">
-        <div>
-          <p className="font-semibold text-orange-800">Grounding Rep: Read LIS</p>
-          <p className="text-xs text-orange-600">No Identity Statement set yet.</p>
-        </div>
-        <button 
-          onClick={() => setIsAnchorModalOpen(true)}
-          className="px-4 py-2 bg-orange-500 text-white rounded-lg text-sm font-bold hover:bg-orange-600 transition-colors"
-        >
-          Enter / Save
-        </button>
-      </div>
-    )}
-  </div>
-</section>
-    `,
-    'habit-stack': `
-<section className="text-left w-full">
-  <div className="flex items-center gap-2 mb-4">
-    <div className="w-8 h-8 rounded-lg bg-orange-100 flex items-center justify-center text-orange-600">
-      <Flame className="w-5 h-5" />
-    </div>
-    <h2 className="text-xl font-bold text-[#002E47]">
-      Habit Stack
-    </h2>
-  </div>
-  <div className="space-y-3 text-left">
-    {dailyRepName ? (
-      <div className="relative">
-        <Checkbox 
-          checked={dailyRepCompleted}
-          onChange={() => handleHabitCheck('completedDailyRep', !dailyRepCompleted)}
-          label={\`Daily Rep: \${dailyRepName}\`}
-          subLabel="Execute your targeted practice."
-        />
-        {isFeatureEnabled('calendar-sync') && (
-          <button 
-            onClick={() => setIsCalendarModalOpen(true)}
-            className="absolute right-4 top-1/2 -translate-y-1/2 p-2 text-slate-400 hover:text-corporate-teal" 
-            title="Sync to Calendar"
-          >
-            <Calendar className="w-5 h-5" />
-          </button>
-        )}
-      </div>
-    ) : (
-      <div className="p-4 rounded-xl border border-slate-200 bg-white opacity-75">
-        <p className="font-semibold text-slate-700">Daily Rep</p>
-        <p className="text-xs text-slate-500">
-          Daily reps are delivered based on your Focus/Dev Plan.
-          <button onClick={() => navigate('development-plan')} className="text-teal-600 ml-1 hover:underline">
-            Check Plan
-          </button>
-        </p>
-      </div>
-    )}
-    {/* Additional Reps */}
-    {additionalCommitments.map((commitment, idx) => (
-      <Checkbox 
-        key={idx}
-        checked={commitment.status === 'Committed'}
-        onChange={() => handleToggleAdditionalRep(commitment.id, commitment.status)} 
-        label={\`Daily Rep: \${commitment.text || commitment.repId}\`}
-        subLabel="Additional commitment"
-      />
-    ))}
-  </div>
-</section>
-    `,
     'win-the-day': `
 <section className="w-full">
   <div className="flex items-center gap-2 mb-4">
@@ -433,30 +296,6 @@ export const WIDGET_TEMPLATES = {
     </p>
   </div>
 </section>
-    `,
-    'calendar-sync': `
-<div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
-  <h3 className="font-bold text-gray-700 mb-3 flex items-center gap-2">
-    <Calendar className="w-4 h-4" />
-    Today's Schedule
-  </h3>
-  <div className="space-y-3">
-    <div className="flex gap-3 border-l-2 border-blue-500 pl-3">
-      <div className="text-xs text-gray-500 font-mono">09:00</div>
-      <div>
-        <p className="text-sm font-bold text-gray-800">Team Sync</p>
-        <p className="text-xs text-gray-500">Zoom Room A</p>
-      </div>
-    </div>
-    <div className="flex gap-3 border-l-2 border-purple-500 pl-3">
-      <div className="text-xs text-gray-500 font-mono">11:30</div>
-      <div>
-        <p className="text-sm font-bold text-gray-800">Leadership Coaching</p>
-        <p className="text-xs text-gray-500">with Coach Mike</p>
-      </div>
-    </div>
-  </div>
-</div>
     `,
     'course-library': `
 <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
@@ -1074,6 +913,78 @@ render(<DailyQuote />);
   </p>
 </div>
     `,
+
+    // --- DASHBOARD IDEAS ---
+    'dashboard-idea-team-pulse': createIdeaTemplate('Team Pulse Check', 'Track team mood and engagement levels daily.'),
+    'dashboard-idea-smart-agenda': createIdeaTemplate('Smart Agenda', 'AI-generated agenda based on your calendar.'),
+    'dashboard-idea-voice-memo': createIdeaTemplate('Voice Memo', 'Quickly capture thoughts and ideas on the go.'),
+    'dashboard-idea-mood-tracker': createIdeaTemplate('Mood Tracker', 'Log your daily energy and mood.'),
+    'dashboard-idea-focus-timer': createIdeaTemplate('Focus Timer', 'Pomodoro timer for deep work sessions.'),
+    'dashboard-idea-daily-briefing': createIdeaTemplate('Daily Briefing', 'Morning summary of news and tasks.'),
+    'dashboard-idea-kudos-board': createIdeaTemplate('Kudos Board', 'Send and receive recognition from the team.'),
+    'dashboard-idea-habit-streak': createIdeaTemplate('Habit Streak', 'Visual tracker for your daily habits.'),
+    'dashboard-idea-quick-poll': createIdeaTemplate('Quick Poll', 'Send a one-question poll to your team.'),
+    'dashboard-idea-mindfulness': createIdeaTemplate('Mindfulness Moment', '2-minute breathing exercise.'),
+
+    // --- DEV PLAN IDEAS ---
+    'dev-plan-idea-skill-gap': createIdeaTemplate('Skill Gap Analysis', 'Identify where you need to grow next.'),
+    'dev-plan-idea-peer-review': createIdeaTemplate('Peer Review Request', 'Ask for feedback from colleagues.'),
+    'dev-plan-idea-career-path': createIdeaTemplate('Career Path Simulator', 'Visualize your next career steps.'),
+    'dev-plan-idea-mentor-finder': createIdeaTemplate('Mentor Finder', 'Match with a mentor in your field.'),
+    'dev-plan-idea-goal-visualizer': createIdeaTemplate('Goal Visualizer', 'Create a vision board for your goals.'),
+    'dev-plan-idea-learning-log': createIdeaTemplate('Learning Log', 'Track articles, books, and podcasts.'),
+    'dev-plan-idea-cert-tracker': createIdeaTemplate('Certification Tracker', 'Keep track of your professional certs.'),
+    'dev-plan-idea-strength-finder': createIdeaTemplate('Strength Finder', 'Integrate your CliftonStrengths results.'),
+    'dev-plan-idea-role-benchmark': createIdeaTemplate('Role Benchmarking', 'Compare your skills to industry standards.'),
+    'dev-plan-idea-future-self': createIdeaTemplate('Future Self Letter', 'Write a letter to your future self.'),
+
+    // --- CONTENT IDEAS ---
+    'content-idea-playlist-gen': createIdeaTemplate('AI Playlist Generator', 'Create custom learning playlists.'),
+    'content-idea-summary-bot': createIdeaTemplate('Book Summary Bot', 'Get key takeaways from any book.'),
+    'content-idea-audio-shorts': createIdeaTemplate('Audio Shorts', '5-minute leadership lessons.'),
+    'content-idea-quiz-maker': createIdeaTemplate('Quiz Maker', 'Test your knowledge on key topics.'),
+    'content-idea-flashcards': createIdeaTemplate('Leadership Flashcards', 'Quick review of key concepts.'),
+    'content-idea-read-later': createIdeaTemplate('Read Later List', 'Save articles for the weekend.'),
+    'content-idea-expert-qa': createIdeaTemplate('Expert Q&A Archive', 'Searchable database of expert answers.'),
+    'content-idea-trend-watch': createIdeaTemplate('Industry Trend Watch', 'Stay ahead of market shifts.'),
+    'content-idea-case-studies': createIdeaTemplate('Interactive Case Studies', 'Solve real-world business problems.'),
+    'content-idea-community-picks': createIdeaTemplate('Community Top Picks', 'Most popular content this week.'),
+
+    // --- COMMUNITY IDEAS ---
+    'community-idea-challenge-hub': createIdeaTemplate('Challenge Hub', 'Join 30-day leadership challenges.'),
+    'community-idea-expert-ama': createIdeaTemplate('Expert AMA Calendar', 'Schedule for upcoming AMAs.'),
+    'community-idea-study-groups': createIdeaTemplate('Study Group Finder', 'Find peers learning the same topic.'),
+    'community-idea-local-meetups': createIdeaTemplate('Local Meetups', 'Connect with leaders in your city.'),
+    'community-idea-project-collab': createIdeaTemplate('Project Collaboration', 'Find partners for side projects.'),
+    'community-idea-resource-swap': createIdeaTemplate('Resource Swap', 'Share templates and tools.'),
+    'community-idea-success-stories': createIdeaTemplate('Success Stories', 'Read inspiring stories from members.'),
+    'community-idea-accountability': createIdeaTemplate('Accountability Partner', 'Get matched with a buddy.'),
+    'community-idea-virtual-coffee': createIdeaTemplate('Virtual Coffee Roulette', 'Meet a random member for coffee.'),
+    'community-idea-debate-club': createIdeaTemplate('Debate Club', 'Practice argumentation skills.'),
+
+    // --- COACHING IDEAS ---
+    'coaching-idea-ai-coach-chat': createIdeaTemplate('AI Coach Chat', '24/7 leadership advice.'),
+    'coaching-idea-session-prep': createIdeaTemplate('Session Prep Wizard', 'Prepare for your coaching session.'),
+    'coaching-idea-feedback-log': createIdeaTemplate('Feedback Log', 'Track feedback you receive.'),
+    'coaching-idea-roleplay-bot': createIdeaTemplate('Roleplay Bot', 'Practice difficult conversations.'),
+    'coaching-idea-goal-tracker': createIdeaTemplate('Coaching Goal Tracker', 'Monitor progress on coaching goals.'),
+    'coaching-idea-homework': createIdeaTemplate('Homework Assignments', 'Complete tasks between sessions.'),
+    'coaching-idea-sentiment': createIdeaTemplate('Sentiment Analysis', 'Analyze your communication tone.'),
+    'coaching-idea-video-analysis': createIdeaTemplate('Video Analysis', 'Get AI feedback on your videos.'),
+    'coaching-idea-coach-notes': createIdeaTemplate('Coach Notes', 'Review notes from your coach.'),
+    'coaching-idea-progress-chart': createIdeaTemplate('Progress Chart', 'Visualize your growth over time.'),
+
+    // --- LOCKER IDEAS ---
+    'locker-idea-gratitude-jar': createIdeaTemplate('Gratitude Jar', 'Collect moments of gratitude.'),
+    'locker-idea-win-vault': createIdeaTemplate('Win Vault', 'Archive of your biggest wins.'),
+    'locker-idea-journal-search': createIdeaTemplate('Journal Search', 'Find past entries by keyword.'),
+    'locker-idea-media-gallery': createIdeaTemplate('Media Gallery', 'Photos and videos from your journey.'),
+    'locker-idea-cert-wallet': createIdeaTemplate('Certificate Wallet', 'Store your credentials.'),
+    'locker-idea-insight-cloud': createIdeaTemplate('Insight Cloud', 'Visualize your key learnings.'),
+    'locker-idea-milestone-map': createIdeaTemplate('Milestone Map', 'Timeline of your achievements.'),
+    'locker-idea-private-notes': createIdeaTemplate('Private Notes', 'Encrypted personal notes.'),
+    'locker-idea-export-data': createIdeaTemplate('Data Export', 'Download your data.'),
+    'locker-idea-legacy-letter': createIdeaTemplate('Legacy Letter', 'Write your leadership legacy.'),
   };
 
 export const FEATURE_METADATA = {
@@ -1083,20 +994,42 @@ export const FEATURE_METADATA = {
     'identity-builder': { name: 'Identity Builder', description: 'Grounding Rep & Identity Statement tools.' },
     'habit-stack': { name: 'Habit Stack', description: 'Daily Rep tracking and habit formation.' },
     'win-the-day': { name: 'AM Bookend (Win The Day)', description: 'AM Bookend 1-2-3 priority setting.' },
-    'gamification': { name: 'Gamification Engine', description: 'Arena Mode logic, streaks, coins, and leaderboards.' },
     'exec-summary': { name: 'Executive Summary Widget', description: 'High-level view of leadership growth.' },
-    'calendar-sync': { name: 'Calendar Integration', description: 'Sync Daily Reps and coaching sessions to Outlook/Google.' },
     'weekly-focus': { name: 'Weekly Focus', description: 'Display current development plan focus area.' },
     'notifications': { name: 'Notifications', description: 'Alerts and reminders widget.' },
     'scorecard': { name: 'Today Scorecard', description: 'Daily progress summary and streak display.' },
     'pm-bookend': { name: 'PM Bookend', description: 'Evening reflection and journaling.' },
     
+    // Dashboard Ideas
+    'dashboard-idea-team-pulse': { name: 'Idea: Team Pulse Check', description: 'Track team mood and engagement levels daily.' },
+    'dashboard-idea-smart-agenda': { name: 'Idea: Smart Agenda', description: 'AI-generated agenda based on your calendar.' },
+    'dashboard-idea-voice-memo': { name: 'Idea: Voice Memo', description: 'Quickly capture thoughts and ideas on the go.' },
+    'dashboard-idea-mood-tracker': { name: 'Idea: Mood Tracker', description: 'Log your daily energy and mood.' },
+    'dashboard-idea-focus-timer': { name: 'Idea: Focus Timer', description: 'Pomodoro timer for deep work sessions.' },
+    'dashboard-idea-daily-briefing': { name: 'Idea: Daily Briefing', description: 'Morning summary of news and tasks.' },
+    'dashboard-idea-kudos-board': { name: 'Idea: Kudos Board', description: 'Send and receive recognition from the team.' },
+    'dashboard-idea-habit-streak': { name: 'Idea: Habit Streak', description: 'Visual tracker for your daily habits.' },
+    'dashboard-idea-quick-poll': { name: 'Idea: Quick Poll', description: 'Send a one-question poll to your team.' },
+    'dashboard-idea-mindfulness': { name: 'Idea: Mindfulness Moment', description: '2-minute breathing exercise.' },
+
     // Content
     'course-library': { name: 'Course Library', description: 'Structured video modules for deep-dive learning.' },
     'reading-hub': { name: 'Professional Reading Hub', description: 'Curated book summaries and leadership articles.' },
     'leadership-videos': { name: 'Leadership Videos (Media)', description: 'Video content, leader talks, and multimedia resources.' },
     'strat-templates': { name: 'Strategic Templates', description: 'Downloadable worksheets and tools.' },
     
+    // Content Ideas
+    'content-idea-playlist-gen': { name: 'Idea: AI Playlist Generator', description: 'Create custom learning playlists.' },
+    'content-idea-summary-bot': { name: 'Idea: Book Summary Bot', description: 'Get key takeaways from any book.' },
+    'content-idea-audio-shorts': { name: 'Idea: Audio Shorts', description: '5-minute leadership lessons.' },
+    'content-idea-quiz-maker': { name: 'Idea: Quiz Maker', description: 'Test your knowledge on key topics.' },
+    'content-idea-flashcards': { name: 'Idea: Leadership Flashcards', description: 'Quick review of key concepts.' },
+    'content-idea-read-later': { name: 'Idea: Read Later List', description: 'Save articles for the weekend.' },
+    'content-idea-expert-qa': { name: 'Idea: Expert Q&A Archive', description: 'Searchable database of expert answers.' },
+    'content-idea-trend-watch': { name: 'Idea: Industry Trend Watch', description: 'Stay ahead of market shifts.' },
+    'content-idea-case-studies': { name: 'Idea: Interactive Case Studies', description: 'Solve real-world business problems.' },
+    'content-idea-community-picks': { name: 'Idea: Community Top Picks', description: 'Most popular content this week.' },
+
     // Community
     'community-feed': { name: 'Community Feed', description: 'Main discussion stream and posting interface.' },
     'my-discussions': { name: 'My Discussions', description: 'Filter view for user-owned threads.' },
@@ -1104,6 +1037,18 @@ export const FEATURE_METADATA = {
     'mentor-match': { name: 'Mentor Match', description: 'Connect aspiring leaders with senior executives.' },
     'live-events': { name: 'Live Event Streaming', description: 'Integrated video player for town halls and workshops.' },
     
+    // Community Ideas
+    'community-idea-challenge-hub': { name: 'Idea: Challenge Hub', description: 'Join 30-day leadership challenges.' },
+    'community-idea-expert-ama': { name: 'Idea: Expert AMA Calendar', description: 'Schedule for upcoming AMAs.' },
+    'community-idea-study-groups': { name: 'Idea: Study Group Finder', description: 'Find peers learning the same topic.' },
+    'community-idea-local-meetups': { name: 'Idea: Local Meetups', description: 'Connect with leaders in your city.' },
+    'community-idea-project-collab': { name: 'Idea: Project Collaboration', description: 'Find partners for side projects.' },
+    'community-idea-resource-swap': { name: 'Idea: Resource Swap', description: 'Share templates and tools.' },
+    'community-idea-success-stories': { name: 'Idea: Success Stories', description: 'Read inspiring stories from members.' },
+    'community-idea-accountability': { name: 'Idea: Accountability Partner', description: 'Get matched with a buddy.' },
+    'community-idea-virtual-coffee': { name: 'Idea: Virtual Coffee Roulette', description: 'Meet a random member for coffee.' },
+    'community-idea-debate-club': { name: 'Idea: Debate Club', description: 'Practice argumentation skills.' },
+
     // Coaching
     'practice-history': { name: 'Practice History', description: 'Review past performance and scores.' },
     'progress-analytics': { name: 'Progress Analytics', description: 'Track performance trends and strengths.' },
@@ -1112,10 +1057,34 @@ export const FEATURE_METADATA = {
     'feedback-gym': { name: 'Feedback Gym', description: 'Instant feedback on communication style.' },
     'roi-report': { name: 'Executive ROI Report', description: 'Automated reports showing progress and value.' },
 
+    // Coaching Ideas
+    'coaching-idea-ai-coach-chat': { name: 'Idea: AI Coach Chat', description: '24/7 leadership advice.' },
+    'coaching-idea-session-prep': { name: 'Idea: Session Prep Wizard', description: 'Prepare for your coaching session.' },
+    'coaching-idea-feedback-log': { name: 'Idea: Feedback Log', description: 'Track feedback you receive.' },
+    'coaching-idea-roleplay-bot': { name: 'Idea: Roleplay Bot', description: 'Practice difficult conversations.' },
+    'coaching-idea-goal-tracker': { name: 'Idea: Coaching Goal Tracker', description: 'Monitor progress on coaching goals.' },
+    'coaching-idea-homework': { name: 'Idea: Homework Assignments', description: 'Complete tasks between sessions.' },
+    'coaching-idea-sentiment': { name: 'Idea: Sentiment Analysis', description: 'Analyze your communication tone.' },
+    'coaching-idea-video-analysis': { name: 'Idea: Video Analysis', description: 'Get AI feedback on your videos.' },
+    'coaching-idea-coach-notes': { name: 'Idea: Coach Notes', description: 'Review notes from your coach.' },
+    'coaching-idea-progress-chart': { name: 'Idea: Progress Chart', description: 'Visualize your growth over time.' },
+
     // Locker
     'locker-wins-history': { name: 'AM Bookend', description: 'Log of daily wins and completions.' },
     'locker-scorecard-history': { name: 'Scorecard History', description: 'Historical view of daily scorecard performance.' },
     'locker-latest-reflection': { name: 'PM Bookend', description: 'Most recent evening reflection entry.' },
+
+    // Locker Ideas
+    'locker-idea-gratitude-jar': { name: 'Idea: Gratitude Jar', description: 'Collect moments of gratitude.' },
+    'locker-idea-win-vault': { name: 'Idea: Win Vault', description: 'Archive of your biggest wins.' },
+    'locker-idea-journal-search': { name: 'Idea: Journal Search', description: 'Find past entries by keyword.' },
+    'locker-idea-media-gallery': { name: 'Idea: Media Gallery', description: 'Photos and videos from your journey.' },
+    'locker-idea-cert-wallet': { name: 'Idea: Certificate Wallet', description: 'Store your credentials.' },
+    'locker-idea-insight-cloud': { name: 'Idea: Insight Cloud', description: 'Visualize your key learnings.' },
+    'locker-idea-milestone-map': { name: 'Idea: Milestone Map', description: 'Timeline of your achievements.' },
+    'locker-idea-private-notes': { name: 'Idea: Private Notes', description: 'Encrypted personal notes.' },
+    'locker-idea-export-data': { name: 'Idea: Data Export', description: 'Download your data.' },
+    'locker-idea-legacy-letter': { name: 'Idea: Legacy Letter', description: 'Write your leadership legacy.' },
 
     // Development Plan
     'dev-plan-header': { name: 'Plan Header', description: 'Title, cycle info, and progress bar.' },
@@ -1123,4 +1092,16 @@ export const FEATURE_METADATA = {
     'dev-plan-actions': { name: 'Plan Actions', description: 'Buttons for Breakdown, Scan, Timeline, Detail.' },
     'dev-plan-focus-areas': { name: 'Focus Areas Summary', description: 'List of focus areas in the plan.' },
     'dev-plan-goal': { name: 'Plan Goal', description: 'User\'s open-ended goal.' },
+
+    // Development Plan Ideas
+    'dev-plan-idea-skill-gap': { name: 'Idea: Skill Gap Analysis', description: 'Identify where you need to grow next.' },
+    'dev-plan-idea-peer-review': { name: 'Idea: Peer Review Request', description: 'Ask for feedback from colleagues.' },
+    'dev-plan-idea-career-path': { name: 'Idea: Career Path Simulator', description: 'Visualize your next career steps.' },
+    'dev-plan-idea-mentor-finder': { name: 'Idea: Mentor Finder', description: 'Match with a mentor in your field.' },
+    'dev-plan-idea-goal-visualizer': { name: 'Idea: Goal Visualizer', description: 'Create a vision board for your goals.' },
+    'dev-plan-idea-learning-log': { name: 'Idea: Learning Log', description: 'Track articles, books, and podcasts.' },
+    'dev-plan-idea-cert-tracker': { name: 'Idea: Certification Tracker', description: 'Keep track of your professional certs.' },
+    'dev-plan-idea-strength-finder': { name: 'Idea: Strength Finder', description: 'Integrate your CliftonStrengths results.' },
+    'dev-plan-idea-role-benchmark': { name: 'Idea: Role Benchmarking', description: 'Compare your skills to industry standards.' },
+    'dev-plan-idea-future-self': { name: 'Idea: Future Self Letter', description: 'Write a letter to your future self.' },
   };
