@@ -445,51 +445,27 @@ const FeatureManager = () => {
     dashboard: [
       'daily-quote', 'welcome-message', 'identity-builder', 'habit-stack', 'win-the-day', 
       'exec-summary', 'weekly-focus', 'notifications', 'scorecard', 'pm-bookend',
-      // Ideas
-      'dashboard-idea-team-pulse', 'dashboard-idea-smart-agenda', 'dashboard-idea-voice-memo', 
-      'dashboard-idea-mood-tracker', 'dashboard-idea-focus-timer', 'dashboard-idea-daily-briefing', 
-      'dashboard-idea-kudos-board', 'dashboard-idea-habit-streak', 'dashboard-idea-quick-poll', 
-      'dashboard-idea-mindfulness'
+      'dashboard-roadmap'
     ],
     'development-plan': [
       'dev-plan-header', 'dev-plan-stats', 'dev-plan-actions', 'dev-plan-focus-areas', 'dev-plan-goal',
-      // Ideas
-      'dev-plan-idea-skill-gap', 'dev-plan-idea-peer-review', 'dev-plan-idea-career-path', 
-      'dev-plan-idea-mentor-finder', 'dev-plan-idea-goal-visualizer', 'dev-plan-idea-learning-log', 
-      'dev-plan-idea-cert-tracker', 'dev-plan-idea-strength-finder', 'dev-plan-idea-role-benchmark', 
-      'dev-plan-idea-future-self'
+      'dev-plan-roadmap'
     ],
     content: [
       'course-library', 'reading-hub', 'leadership-videos', 'strat-templates',
-      // Ideas
-      'content-idea-playlist-gen', 'content-idea-summary-bot', 'content-idea-audio-shorts', 
-      'content-idea-quiz-maker', 'content-idea-flashcards', 'content-idea-read-later', 
-      'content-idea-expert-qa', 'content-idea-trend-watch', 'content-idea-case-studies', 
-      'content-idea-community-picks'
+      'content-roadmap'
     ],
     community: [
       'community-feed', 'my-discussions', 'mastermind', 'mentor-match', 'live-events',
-      // Ideas
-      'community-idea-challenge-hub', 'community-idea-expert-ama', 'community-idea-study-groups', 
-      'community-idea-local-meetups', 'community-idea-project-collab', 'community-idea-resource-swap', 
-      'community-idea-success-stories', 'community-idea-accountability', 'community-idea-virtual-coffee', 
-      'community-idea-debate-club'
+      'community-roadmap'
     ],
     coaching: [
       'practice-history', 'progress-analytics', 'ai-roleplay', 'scenario-sim', 'feedback-gym', 'roi-report',
-      // Ideas
-      'coaching-idea-ai-coach-chat', 'coaching-idea-session-prep', 'coaching-idea-feedback-log', 
-      'coaching-idea-roleplay-bot', 'coaching-idea-goal-tracker', 'coaching-idea-homework', 
-      'coaching-idea-sentiment', 'coaching-idea-video-analysis', 'coaching-idea-coach-notes', 
-      'coaching-idea-progress-chart'
+      'coaching-roadmap'
     ],
     locker: [
       'locker-wins-history', 'locker-scorecard-history', 'locker-latest-reflection',
-      // Ideas
-      'locker-idea-gratitude-jar', 'locker-idea-win-vault', 'locker-idea-journal-search', 
-      'locker-idea-media-gallery', 'locker-idea-cert-wallet', 'locker-idea-insight-cloud', 
-      'locker-idea-milestone-map', 'locker-idea-private-notes', 'locker-idea-export-data', 
-      'locker-idea-legacy-letter'
+      'locker-roadmap'
     ]
   };
 

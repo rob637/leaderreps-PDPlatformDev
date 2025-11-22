@@ -506,14 +506,14 @@
   border-top-right-radius: 14px;
 }
 
-#root {
+/* #root {
   max-width: 1280px;
   width: 100%;
   margin: 0 auto;
   text-align: center;
-}
+} */
 
-.logo {
+/* .logo {
   height: 6em;
   padding: 1.5em;
   will-change: filter;
@@ -547,7 +547,7 @@
 
 .read-the-docs {
   color: #888;
-}
+} */
 
 @tailwind base;
 @tailwind components;
@@ -578,8 +578,8 @@
 
   body {
     margin: 0;
-    display: flex;
-    place-items: center;
+    /* display: flex; */
+    /* place-items: center; */
     min-width: 320px;
     min-height: 100vh;
   }

@@ -2,21 +2,105 @@ import {
   Flame, Trophy, MessageSquare, Calendar, BookOpen, Play, Book, Video, FileText, Users, UserPlus, Search, Radio, History, BarChart2, Bot, Cpu, Dumbbell, TrendingUp, CheckCircle, Edit, Lightbulb, CheckSquare, X, Plus, Loader, Save, Bell
 } from 'lucide-react';
 
-// Helper for Idea Templates
-const createIdeaTemplate = (title, desc) => `
-<div className="bg-white p-4 rounded-xl border border-dashed border-slate-300 shadow-sm opacity-80 hover:opacity-100 transition-opacity group cursor-default">
-  <div className="flex items-center gap-2 mb-2">
-    <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 group-hover:bg-blue-50 group-hover:text-blue-500 transition-colors">
-      <Lightbulb className="w-4 h-4" />
+// Helper for Roadmap Widgets
+const createRoadmapWidget = (title, ideas) => `
+<div className="bg-slate-50 p-6 rounded-2xl border border-slate-200">
+  <h3 className="font-bold text-slate-700 mb-4 flex items-center gap-2">
+    <Lightbulb className="w-5 h-5 text-yellow-500" />
+    ${title}
+  </h3>
+  <div className="space-y-3">
+    ${ideas.map(idea => `
+    <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm opacity-80 hover:opacity-100 transition-opacity">
+      <div className="flex justify-between items-start mb-1">
+        <h4 className="font-bold text-slate-800 text-sm">${idea.title}</h4>
+        <span className="text-[10px] font-bold text-slate-400 bg-slate-100 px-2 py-1 rounded-full uppercase tracking-wider">Coming Soon</span>
+      </div>
+      <p className="text-xs text-slate-500 leading-relaxed">${idea.desc}</p>
     </div>
-    <h3 className="font-bold text-slate-700 text-sm group-hover:text-blue-700 transition-colors">${title}</h3>
-  </div>
-  <p className="text-xs text-slate-500 leading-relaxed">${desc}</p>
-  <div className="mt-3 flex justify-end">
-    <span className="text-[10px] font-bold text-slate-400 bg-slate-100 px-2 py-1 rounded-full uppercase tracking-wider group-hover:bg-blue-100 group-hover:text-blue-600 transition-colors">Coming Soon</span>
+    `).join('')}
   </div>
 </div>
 `;
+
+// Idea Lists
+const DASHBOARD_IDEAS = [
+  { title: 'Team Pulse Check', desc: 'Track team mood and engagement levels daily.' },
+  { title: 'Smart Agenda', desc: 'AI-generated agenda based on your calendar.' },
+  { title: 'Voice Memo', desc: 'Quickly capture thoughts and ideas on the go.' },
+  { title: 'Mood Tracker', desc: 'Log your daily energy and mood.' },
+  { title: 'Focus Timer', desc: 'Pomodoro timer for deep work sessions.' },
+  { title: 'Daily Briefing', desc: 'Morning summary of news and tasks.' },
+  { title: 'Kudos Board', desc: 'Send and receive recognition from the team.' },
+  { title: 'Habit Streak', desc: 'Visual tracker for your daily habits.' },
+  { title: 'Quick Poll', desc: 'Send a one-question poll to your team.' },
+  { title: 'Mindfulness Moment', desc: '2-minute breathing exercise.' }
+];
+
+const DEV_PLAN_IDEAS = [
+  { title: 'Skill Gap Analysis', desc: 'Identify where you need to grow next.' },
+  { title: 'Peer Review Request', desc: 'Ask for feedback from colleagues.' },
+  { title: 'Career Path Simulator', desc: 'Visualize your next career steps.' },
+  { title: 'Mentor Finder', desc: 'Match with a mentor in your field.' },
+  { title: 'Goal Visualizer', desc: 'Create a vision board for your goals.' },
+  { title: 'Learning Log', desc: 'Track articles, books, and podcasts.' },
+  { title: 'Certification Tracker', desc: 'Keep track of your professional certs.' },
+  { title: 'Strength Finder', desc: 'Integrate your CliftonStrengths results.' },
+  { title: 'Role Benchmarking', desc: 'Compare your skills to industry standards.' },
+  { title: 'Future Self Letter', desc: 'Write a letter to your future self.' }
+];
+
+const CONTENT_IDEAS = [
+  { title: 'AI Playlist Generator', desc: 'Create custom learning playlists.' },
+  { title: 'Book Summary Bot', desc: 'Get key takeaways from any book.' },
+  { title: 'Audio Shorts', desc: '5-minute leadership lessons.' },
+  { title: 'Quiz Maker', desc: 'Test your knowledge on key topics.' },
+  { title: 'Leadership Flashcards', desc: 'Quick review of key concepts.' },
+  { title: 'Read Later List', desc: 'Save articles for the weekend.' },
+  { title: 'Expert Q&A Archive', desc: 'Searchable database of expert answers.' },
+  { title: 'Industry Trend Watch', desc: 'Stay ahead of market shifts.' },
+  { title: 'Interactive Case Studies', desc: 'Solve real-world business problems.' },
+  { title: 'Community Top Picks', desc: 'Most popular content this week.' }
+];
+
+const COMMUNITY_IDEAS = [
+  { title: 'Challenge Hub', desc: 'Join 30-day leadership challenges.' },
+  { title: 'Expert AMA Calendar', desc: 'Schedule for upcoming AMAs.' },
+  { title: 'Study Group Finder', desc: 'Find peers learning the same topic.' },
+  { title: 'Local Meetups', desc: 'Connect with leaders in your city.' },
+  { title: 'Project Collaboration', desc: 'Find partners for side projects.' },
+  { title: 'Resource Swap', desc: 'Share templates and tools.' },
+  { title: 'Success Stories', desc: 'Read inspiring stories from members.' },
+  { title: 'Accountability Partner', desc: 'Get matched with a buddy.' },
+  { title: 'Virtual Coffee Roulette', desc: 'Meet a random member for coffee.' },
+  { title: 'Debate Club', desc: 'Practice argumentation skills.' }
+];
+
+const COACHING_IDEAS = [
+  { title: 'AI Coach Chat', desc: '24/7 leadership advice.' },
+  { title: 'Session Prep Wizard', desc: 'Prepare for your coaching session.' },
+  { title: 'Feedback Log', desc: 'Track feedback you receive.' },
+  { title: 'Roleplay Bot', desc: 'Practice difficult conversations.' },
+  { title: 'Coaching Goal Tracker', desc: 'Monitor progress on coaching goals.' },
+  { title: 'Homework Assignments', desc: 'Complete tasks between sessions.' },
+  { title: 'Sentiment Analysis', desc: 'Analyze your communication tone.' },
+  { title: 'Video Analysis', desc: 'Get AI feedback on your videos.' },
+  { title: 'Coach Notes', desc: 'Review notes from your coach.' },
+  { title: 'Progress Chart', desc: 'Visualize your growth over time.' }
+];
+
+const LOCKER_IDEAS = [
+  { title: 'Gratitude Jar', desc: 'Collect moments of gratitude.' },
+  { title: 'Win Vault', desc: 'Archive of your biggest wins.' },
+  { title: 'Journal Search', desc: 'Find past entries by keyword.' },
+  { title: 'Media Gallery', desc: 'Photos and videos from your journey.' },
+  { title: 'Certificate Wallet', desc: 'Store your credentials.' },
+  { title: 'Insight Cloud', desc: 'Visualize your key learnings.' },
+  { title: 'Milestone Map', desc: 'Timeline of your achievements.' },
+  { title: 'Private Notes', desc: 'Encrypted personal notes.' },
+  { title: 'Data Export', desc: 'Download your data.' },
+  { title: 'Legacy Letter', desc: 'Write your leadership legacy.' }
+];
 
 export const WIDGET_TEMPLATES = {
     'win-the-day': `
@@ -914,77 +998,13 @@ render(<DailyQuote />);
 </div>
     `,
 
-    // --- DASHBOARD IDEAS ---
-    'dashboard-idea-team-pulse': createIdeaTemplate('Team Pulse Check', 'Track team mood and engagement levels daily.'),
-    'dashboard-idea-smart-agenda': createIdeaTemplate('Smart Agenda', 'AI-generated agenda based on your calendar.'),
-    'dashboard-idea-voice-memo': createIdeaTemplate('Voice Memo', 'Quickly capture thoughts and ideas on the go.'),
-    'dashboard-idea-mood-tracker': createIdeaTemplate('Mood Tracker', 'Log your daily energy and mood.'),
-    'dashboard-idea-focus-timer': createIdeaTemplate('Focus Timer', 'Pomodoro timer for deep work sessions.'),
-    'dashboard-idea-daily-briefing': createIdeaTemplate('Daily Briefing', 'Morning summary of news and tasks.'),
-    'dashboard-idea-kudos-board': createIdeaTemplate('Kudos Board', 'Send and receive recognition from the team.'),
-    'dashboard-idea-habit-streak': createIdeaTemplate('Habit Streak', 'Visual tracker for your daily habits.'),
-    'dashboard-idea-quick-poll': createIdeaTemplate('Quick Poll', 'Send a one-question poll to your team.'),
-    'dashboard-idea-mindfulness': createIdeaTemplate('Mindfulness Moment', '2-minute breathing exercise.'),
-
-    // --- DEV PLAN IDEAS ---
-    'dev-plan-idea-skill-gap': createIdeaTemplate('Skill Gap Analysis', 'Identify where you need to grow next.'),
-    'dev-plan-idea-peer-review': createIdeaTemplate('Peer Review Request', 'Ask for feedback from colleagues.'),
-    'dev-plan-idea-career-path': createIdeaTemplate('Career Path Simulator', 'Visualize your next career steps.'),
-    'dev-plan-idea-mentor-finder': createIdeaTemplate('Mentor Finder', 'Match with a mentor in your field.'),
-    'dev-plan-idea-goal-visualizer': createIdeaTemplate('Goal Visualizer', 'Create a vision board for your goals.'),
-    'dev-plan-idea-learning-log': createIdeaTemplate('Learning Log', 'Track articles, books, and podcasts.'),
-    'dev-plan-idea-cert-tracker': createIdeaTemplate('Certification Tracker', 'Keep track of your professional certs.'),
-    'dev-plan-idea-strength-finder': createIdeaTemplate('Strength Finder', 'Integrate your CliftonStrengths results.'),
-    'dev-plan-idea-role-benchmark': createIdeaTemplate('Role Benchmarking', 'Compare your skills to industry standards.'),
-    'dev-plan-idea-future-self': createIdeaTemplate('Future Self Letter', 'Write a letter to your future self.'),
-
-    // --- CONTENT IDEAS ---
-    'content-idea-playlist-gen': createIdeaTemplate('AI Playlist Generator', 'Create custom learning playlists.'),
-    'content-idea-summary-bot': createIdeaTemplate('Book Summary Bot', 'Get key takeaways from any book.'),
-    'content-idea-audio-shorts': createIdeaTemplate('Audio Shorts', '5-minute leadership lessons.'),
-    'content-idea-quiz-maker': createIdeaTemplate('Quiz Maker', 'Test your knowledge on key topics.'),
-    'content-idea-flashcards': createIdeaTemplate('Leadership Flashcards', 'Quick review of key concepts.'),
-    'content-idea-read-later': createIdeaTemplate('Read Later List', 'Save articles for the weekend.'),
-    'content-idea-expert-qa': createIdeaTemplate('Expert Q&A Archive', 'Searchable database of expert answers.'),
-    'content-idea-trend-watch': createIdeaTemplate('Industry Trend Watch', 'Stay ahead of market shifts.'),
-    'content-idea-case-studies': createIdeaTemplate('Interactive Case Studies', 'Solve real-world business problems.'),
-    'content-idea-community-picks': createIdeaTemplate('Community Top Picks', 'Most popular content this week.'),
-
-    // --- COMMUNITY IDEAS ---
-    'community-idea-challenge-hub': createIdeaTemplate('Challenge Hub', 'Join 30-day leadership challenges.'),
-    'community-idea-expert-ama': createIdeaTemplate('Expert AMA Calendar', 'Schedule for upcoming AMAs.'),
-    'community-idea-study-groups': createIdeaTemplate('Study Group Finder', 'Find peers learning the same topic.'),
-    'community-idea-local-meetups': createIdeaTemplate('Local Meetups', 'Connect with leaders in your city.'),
-    'community-idea-project-collab': createIdeaTemplate('Project Collaboration', 'Find partners for side projects.'),
-    'community-idea-resource-swap': createIdeaTemplate('Resource Swap', 'Share templates and tools.'),
-    'community-idea-success-stories': createIdeaTemplate('Success Stories', 'Read inspiring stories from members.'),
-    'community-idea-accountability': createIdeaTemplate('Accountability Partner', 'Get matched with a buddy.'),
-    'community-idea-virtual-coffee': createIdeaTemplate('Virtual Coffee Roulette', 'Meet a random member for coffee.'),
-    'community-idea-debate-club': createIdeaTemplate('Debate Club', 'Practice argumentation skills.'),
-
-    // --- COACHING IDEAS ---
-    'coaching-idea-ai-coach-chat': createIdeaTemplate('AI Coach Chat', '24/7 leadership advice.'),
-    'coaching-idea-session-prep': createIdeaTemplate('Session Prep Wizard', 'Prepare for your coaching session.'),
-    'coaching-idea-feedback-log': createIdeaTemplate('Feedback Log', 'Track feedback you receive.'),
-    'coaching-idea-roleplay-bot': createIdeaTemplate('Roleplay Bot', 'Practice difficult conversations.'),
-    'coaching-idea-goal-tracker': createIdeaTemplate('Coaching Goal Tracker', 'Monitor progress on coaching goals.'),
-    'coaching-idea-homework': createIdeaTemplate('Homework Assignments', 'Complete tasks between sessions.'),
-    'coaching-idea-sentiment': createIdeaTemplate('Sentiment Analysis', 'Analyze your communication tone.'),
-    'coaching-idea-video-analysis': createIdeaTemplate('Video Analysis', 'Get AI feedback on your videos.'),
-    'coaching-idea-coach-notes': createIdeaTemplate('Coach Notes', 'Review notes from your coach.'),
-    'coaching-idea-progress-chart': createIdeaTemplate('Progress Chart', 'Visualize your growth over time.'),
-
-    // --- LOCKER IDEAS ---
-    'locker-idea-gratitude-jar': createIdeaTemplate('Gratitude Jar', 'Collect moments of gratitude.'),
-    'locker-idea-win-vault': createIdeaTemplate('Win Vault', 'Archive of your biggest wins.'),
-    'locker-idea-journal-search': createIdeaTemplate('Journal Search', 'Find past entries by keyword.'),
-    'locker-idea-media-gallery': createIdeaTemplate('Media Gallery', 'Photos and videos from your journey.'),
-    'locker-idea-cert-wallet': createIdeaTemplate('Certificate Wallet', 'Store your credentials.'),
-    'locker-idea-insight-cloud': createIdeaTemplate('Insight Cloud', 'Visualize your key learnings.'),
-    'locker-idea-milestone-map': createIdeaTemplate('Milestone Map', 'Timeline of your achievements.'),
-    'locker-idea-private-notes': createIdeaTemplate('Private Notes', 'Encrypted personal notes.'),
-    'locker-idea-export-data': createIdeaTemplate('Data Export', 'Download your data.'),
-    'locker-idea-legacy-letter': createIdeaTemplate('Legacy Letter', 'Write your leadership legacy.'),
+    // --- ROADMAP WIDGETS ---
+    'dashboard-roadmap': createRoadmapWidget('Dashboard Roadmap', DASHBOARD_IDEAS),
+    'dev-plan-roadmap': createRoadmapWidget('Development Plan Roadmap', DEV_PLAN_IDEAS),
+    'content-roadmap': createRoadmapWidget('Content Roadmap', CONTENT_IDEAS),
+    'community-roadmap': createRoadmapWidget('Community Roadmap', COMMUNITY_IDEAS),
+    'coaching-roadmap': createRoadmapWidget('Coaching Roadmap', COACHING_IDEAS),
+    'locker-roadmap': createRoadmapWidget('Locker Roadmap', LOCKER_IDEAS),
   };
 
 export const FEATURE_METADATA = {
@@ -1000,17 +1020,8 @@ export const FEATURE_METADATA = {
     'scorecard': { name: 'Today Scorecard', description: 'Daily progress summary and streak display.' },
     'pm-bookend': { name: 'PM Bookend', description: 'Evening reflection and journaling.' },
     
-    // Dashboard Ideas
-    'dashboard-idea-team-pulse': { name: 'Idea: Team Pulse Check', description: 'Track team mood and engagement levels daily.' },
-    'dashboard-idea-smart-agenda': { name: 'Idea: Smart Agenda', description: 'AI-generated agenda based on your calendar.' },
-    'dashboard-idea-voice-memo': { name: 'Idea: Voice Memo', description: 'Quickly capture thoughts and ideas on the go.' },
-    'dashboard-idea-mood-tracker': { name: 'Idea: Mood Tracker', description: 'Log your daily energy and mood.' },
-    'dashboard-idea-focus-timer': { name: 'Idea: Focus Timer', description: 'Pomodoro timer for deep work sessions.' },
-    'dashboard-idea-daily-briefing': { name: 'Idea: Daily Briefing', description: 'Morning summary of news and tasks.' },
-    'dashboard-idea-kudos-board': { name: 'Idea: Kudos Board', description: 'Send and receive recognition from the team.' },
-    'dashboard-idea-habit-streak': { name: 'Idea: Habit Streak', description: 'Visual tracker for your daily habits.' },
-    'dashboard-idea-quick-poll': { name: 'Idea: Quick Poll', description: 'Send a one-question poll to your team.' },
-    'dashboard-idea-mindfulness': { name: 'Idea: Mindfulness Moment', description: '2-minute breathing exercise.' },
+    // Dashboard Roadmap
+    'dashboard-roadmap': { name: 'Dashboard Roadmap', description: 'List of upcoming dashboard features.' },
 
     // Content
     'course-library': { name: 'Course Library', description: 'Structured video modules for deep-dive learning.' },
@@ -1018,17 +1029,8 @@ export const FEATURE_METADATA = {
     'leadership-videos': { name: 'Leadership Videos (Media)', description: 'Video content, leader talks, and multimedia resources.' },
     'strat-templates': { name: 'Strategic Templates', description: 'Downloadable worksheets and tools.' },
     
-    // Content Ideas
-    'content-idea-playlist-gen': { name: 'Idea: AI Playlist Generator', description: 'Create custom learning playlists.' },
-    'content-idea-summary-bot': { name: 'Idea: Book Summary Bot', description: 'Get key takeaways from any book.' },
-    'content-idea-audio-shorts': { name: 'Idea: Audio Shorts', description: '5-minute leadership lessons.' },
-    'content-idea-quiz-maker': { name: 'Idea: Quiz Maker', description: 'Test your knowledge on key topics.' },
-    'content-idea-flashcards': { name: 'Idea: Leadership Flashcards', description: 'Quick review of key concepts.' },
-    'content-idea-read-later': { name: 'Idea: Read Later List', description: 'Save articles for the weekend.' },
-    'content-idea-expert-qa': { name: 'Idea: Expert Q&A Archive', description: 'Searchable database of expert answers.' },
-    'content-idea-trend-watch': { name: 'Idea: Industry Trend Watch', description: 'Stay ahead of market shifts.' },
-    'content-idea-case-studies': { name: 'Idea: Interactive Case Studies', description: 'Solve real-world business problems.' },
-    'content-idea-community-picks': { name: 'Idea: Community Top Picks', description: 'Most popular content this week.' },
+    // Content Roadmap
+    'content-roadmap': { name: 'Content Roadmap', description: 'List of upcoming content features.' },
 
     // Community
     'community-feed': { name: 'Community Feed', description: 'Main discussion stream and posting interface.' },
@@ -1037,17 +1039,8 @@ export const FEATURE_METADATA = {
     'mentor-match': { name: 'Mentor Match', description: 'Connect aspiring leaders with senior executives.' },
     'live-events': { name: 'Live Event Streaming', description: 'Integrated video player for town halls and workshops.' },
     
-    // Community Ideas
-    'community-idea-challenge-hub': { name: 'Idea: Challenge Hub', description: 'Join 30-day leadership challenges.' },
-    'community-idea-expert-ama': { name: 'Idea: Expert AMA Calendar', description: 'Schedule for upcoming AMAs.' },
-    'community-idea-study-groups': { name: 'Idea: Study Group Finder', description: 'Find peers learning the same topic.' },
-    'community-idea-local-meetups': { name: 'Idea: Local Meetups', description: 'Connect with leaders in your city.' },
-    'community-idea-project-collab': { name: 'Idea: Project Collaboration', description: 'Find partners for side projects.' },
-    'community-idea-resource-swap': { name: 'Idea: Resource Swap', description: 'Share templates and tools.' },
-    'community-idea-success-stories': { name: 'Idea: Success Stories', description: 'Read inspiring stories from members.' },
-    'community-idea-accountability': { name: 'Idea: Accountability Partner', description: 'Get matched with a buddy.' },
-    'community-idea-virtual-coffee': { name: 'Idea: Virtual Coffee Roulette', description: 'Meet a random member for coffee.' },
-    'community-idea-debate-club': { name: 'Idea: Debate Club', description: 'Practice argumentation skills.' },
+    // Community Roadmap
+    'community-roadmap': { name: 'Community Roadmap', description: 'List of upcoming community features.' },
 
     // Coaching
     'practice-history': { name: 'Practice History', description: 'Review past performance and scores.' },
@@ -1057,34 +1050,16 @@ export const FEATURE_METADATA = {
     'feedback-gym': { name: 'Feedback Gym', description: 'Instant feedback on communication style.' },
     'roi-report': { name: 'Executive ROI Report', description: 'Automated reports showing progress and value.' },
 
-    // Coaching Ideas
-    'coaching-idea-ai-coach-chat': { name: 'Idea: AI Coach Chat', description: '24/7 leadership advice.' },
-    'coaching-idea-session-prep': { name: 'Idea: Session Prep Wizard', description: 'Prepare for your coaching session.' },
-    'coaching-idea-feedback-log': { name: 'Idea: Feedback Log', description: 'Track feedback you receive.' },
-    'coaching-idea-roleplay-bot': { name: 'Idea: Roleplay Bot', description: 'Practice difficult conversations.' },
-    'coaching-idea-goal-tracker': { name: 'Idea: Coaching Goal Tracker', description: 'Monitor progress on coaching goals.' },
-    'coaching-idea-homework': { name: 'Idea: Homework Assignments', description: 'Complete tasks between sessions.' },
-    'coaching-idea-sentiment': { name: 'Idea: Sentiment Analysis', description: 'Analyze your communication tone.' },
-    'coaching-idea-video-analysis': { name: 'Idea: Video Analysis', description: 'Get AI feedback on your videos.' },
-    'coaching-idea-coach-notes': { name: 'Idea: Coach Notes', description: 'Review notes from your coach.' },
-    'coaching-idea-progress-chart': { name: 'Idea: Progress Chart', description: 'Visualize your growth over time.' },
+    // Coaching Roadmap
+    'coaching-roadmap': { name: 'Coaching Roadmap', description: 'List of upcoming coaching features.' },
 
     // Locker
     'locker-wins-history': { name: 'AM Bookend', description: 'Log of daily wins and completions.' },
     'locker-scorecard-history': { name: 'Scorecard History', description: 'Historical view of daily scorecard performance.' },
     'locker-latest-reflection': { name: 'PM Bookend', description: 'Most recent evening reflection entry.' },
 
-    // Locker Ideas
-    'locker-idea-gratitude-jar': { name: 'Idea: Gratitude Jar', description: 'Collect moments of gratitude.' },
-    'locker-idea-win-vault': { name: 'Idea: Win Vault', description: 'Archive of your biggest wins.' },
-    'locker-idea-journal-search': { name: 'Idea: Journal Search', description: 'Find past entries by keyword.' },
-    'locker-idea-media-gallery': { name: 'Idea: Media Gallery', description: 'Photos and videos from your journey.' },
-    'locker-idea-cert-wallet': { name: 'Idea: Certificate Wallet', description: 'Store your credentials.' },
-    'locker-idea-insight-cloud': { name: 'Idea: Insight Cloud', description: 'Visualize your key learnings.' },
-    'locker-idea-milestone-map': { name: 'Idea: Milestone Map', description: 'Timeline of your achievements.' },
-    'locker-idea-private-notes': { name: 'Idea: Private Notes', description: 'Encrypted personal notes.' },
-    'locker-idea-export-data': { name: 'Idea: Data Export', description: 'Download your data.' },
-    'locker-idea-legacy-letter': { name: 'Idea: Legacy Letter', description: 'Write your leadership legacy.' },
+    // Locker Roadmap
+    'locker-roadmap': { name: 'Locker Roadmap', description: 'List of upcoming locker features.' },
 
     // Development Plan
     'dev-plan-header': { name: 'Plan Header', description: 'Title, cycle info, and progress bar.' },
@@ -1093,15 +1068,6 @@ export const FEATURE_METADATA = {
     'dev-plan-focus-areas': { name: 'Focus Areas Summary', description: 'List of focus areas in the plan.' },
     'dev-plan-goal': { name: 'Plan Goal', description: 'User\'s open-ended goal.' },
 
-    // Development Plan Ideas
-    'dev-plan-idea-skill-gap': { name: 'Idea: Skill Gap Analysis', description: 'Identify where you need to grow next.' },
-    'dev-plan-idea-peer-review': { name: 'Idea: Peer Review Request', description: 'Ask for feedback from colleagues.' },
-    'dev-plan-idea-career-path': { name: 'Idea: Career Path Simulator', description: 'Visualize your next career steps.' },
-    'dev-plan-idea-mentor-finder': { name: 'Idea: Mentor Finder', description: 'Match with a mentor in your field.' },
-    'dev-plan-idea-goal-visualizer': { name: 'Idea: Goal Visualizer', description: 'Create a vision board for your goals.' },
-    'dev-plan-idea-learning-log': { name: 'Idea: Learning Log', description: 'Track articles, books, and podcasts.' },
-    'dev-plan-idea-cert-tracker': { name: 'Idea: Certification Tracker', description: 'Keep track of your professional certs.' },
-    'dev-plan-idea-strength-finder': { name: 'Idea: Strength Finder', description: 'Integrate your CliftonStrengths results.' },
-    'dev-plan-idea-role-benchmark': { name: 'Idea: Role Benchmarking', description: 'Compare your skills to industry standards.' },
-    'dev-plan-idea-future-self': { name: 'Idea: Future Self Letter', description: 'Write a letter to your future self.' },
+    // Development Plan Roadmap
+    'dev-plan-roadmap': { name: 'Development Plan Roadmap', description: 'List of upcoming development plan features.' },
   };
