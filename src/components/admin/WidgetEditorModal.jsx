@@ -46,6 +46,9 @@ const WidgetEditorModal = () => {
     // Wrap functions
     Object.keys(scope).forEach(key => {
       if (typeof scope[key] === 'function') {
+        // Skip React Components (convention: starts with uppercase)
+        if (/^[A-Z]/.test(key)) return;
+
         proxy[key] = (...args) => {
           logToConsole('function', `Called: ${key}`, args);
           try {

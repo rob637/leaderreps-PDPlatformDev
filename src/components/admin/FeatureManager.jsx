@@ -148,6 +148,7 @@ const FeatureManager = () => {
     
     // Functions
     navigate,
+    isFeatureEnabled,
     // We wrap these to ensure they work in the isolated scope if needed, 
     // but passing them directly is usually fine.
     handleHabitCheck: (key, val) => handleHabitToggle(key, val), // This one was wrapped in Dashboard4
