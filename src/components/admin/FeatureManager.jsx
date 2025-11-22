@@ -10,6 +10,8 @@ import { useAppServices } from '../../services/useAppServices';
 import { useDashboard } from '../screens/dashboard/DashboardHooks';
 import { createWidgetSDK } from '../../services/WidgetSDK';
 import { Card, Button } from '../shared/UI';
+import { ProgressBar } from '../screens/developmentplan/DevPlanComponents';
+import { COLORS } from '../screens/developmentplan/devPlanConstants';
 import { ENHANCEMENT_IDEAS } from '../../data/enhancementIdeas';
 
 const FeatureManager = () => {
@@ -157,6 +159,10 @@ const FeatureManager = () => {
     Checkbox,
     Card,
     Button,
+    ProgressBar,
+
+    // Constants
+    COLORS,
     
     // Functions
     navigate,

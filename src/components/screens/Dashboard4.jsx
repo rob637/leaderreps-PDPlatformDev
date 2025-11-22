@@ -10,6 +10,8 @@ import {
   Edit3, Loader
 } from 'lucide-react';
 import { Card, Button } from '../shared/UI';
+import { ProgressBar } from './developmentplan/DevPlanComponents';
+import { COLORS } from './developmentplan/devPlanConstants';
 import { useDashboard } from './dashboard/DashboardHooks.jsx';
 import { UnifiedAnchorEditorModal, CalendarSyncModal } from './dashboard/DashboardComponents.jsx';
 import { useFeatures } from '../../providers/FeatureProvider';
@@ -227,6 +229,10 @@ const Dashboard4 = () => {
     Checkbox,
     Card,
     Button,
+    ProgressBar,
+
+    // Constants
+    COLORS,
     
     // Functions
     navigate,
