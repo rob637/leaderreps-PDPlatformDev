@@ -3,6 +3,7 @@ import { useFeatures } from '../../providers/FeatureProvider';
 import { useWidgetEditor } from '../../providers/WidgetEditorProvider';
 import DynamicWidgetRenderer from './DynamicWidgetRenderer';
 import { Edit3 } from 'lucide-react';
+import { WIDGET_TEMPLATES } from '../../config/widgetTemplates';
 
 const WidgetRenderer = ({ widgetId, children, scope = {} }) => {
   const { features, isFeatureEnabled } = useFeatures();
@@ -15,14 +16,8 @@ const WidgetRenderer = ({ widgetId, children, scope = {} }) => {
     return null;
   }
 
-  const isEnabled = isFeatureEnabled(widgetId);
-
-  // If feature is disabled (and not explicitly handled above), render nothing
-  // This catches cases where isFeatureEnabled returns false but feature might be undefined (default)
-  // However, for default widgets, we usually want to render children (fallback).
-  // So we only return null if we are sure it should be disabled.
-  // The check above handles the explicit disable.
-  // If feature is undefined, we proceed to render children.
+  // Determine code to render: Custom DB code -> Template Default -> Empty
+  const code = (feature && feature.code) ? feature.code : WIDGET_TEMPLATES[widgetId];
 
   const handleEdit = (e) => {
     e.stopPropagation();
@@ -31,26 +26,26 @@ const WidgetRenderer = ({ widgetId, children, scope = {} }) => {
       widgetId,
       widgetName: feature?.name || widgetId,
       scope,
-      initialCode: feature?.code || ''
+      initialCode: code || ''
     });
   };
 
-  // If we have custom code for this widget, render it
-  if (feature && feature.code && feature.code.trim().length > 0) {
+  // If we have code for this widget, render it
+  if (code && code.trim().length > 0) {
     return (
-      <div className={`widget-wrapper mb-6 relative group ${isEditMode ? 'ring-2 ring-teal-500/50 rounded-xl' : ''}`}>
+      <div className={`widget-wrapper relative group ${isEditMode ? 'ring-2 ring-teal-500/50 rounded-xl' : ''}`}>
         {isEditMode && (
           <div className="absolute -top-3 -right-3 z-50 opacity-0 group-hover:opacity-100 transition-opacity">
             <button 
               onClick={handleEdit}
               className="bg-teal-600 text-white p-2 rounded-full shadow-lg hover:bg-teal-700 hover:scale-110 transition-all"
-              title={`Edit ${feature.name || widgetId}`}
+              title={`Edit ${feature?.name || widgetId}`}
             >
               <Edit3 className="w-4 h-4" />
             </button>
           </div>
         )}
-        <DynamicWidgetRenderer code={feature.code} scope={scope} />
+        <DynamicWidgetRenderer code={code} scope={scope} />
       </div>
     );
   }
