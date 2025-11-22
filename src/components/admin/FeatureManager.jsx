@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { 
   ToggleLeft, ToggleRight, FlaskConical, ArrowUp, ArrowDown, Edit3, Plus, Trash2, RefreshCw, Save, Flame, Bell, Target, Calendar, Moon, BookOpen, Play, Book, Video, FileText, Users, MessageSquare, UserPlus, Search, Radio, History, BarChart2, Bot, Cpu, Dumbbell, TrendingUp,
-  CheckSquare, Square, X, Trophy, ChevronRight, ArrowRight, Loader, Eye, EyeOff, Settings
+  CheckSquare, Square, X, Trophy, ChevronRight, ArrowRight, Loader, Eye, EyeOff, Settings, Lightbulb
 } from 'lucide-react';
 import { useFeatures } from '../../providers/FeatureProvider';
 import { useWidgetEditor } from '../../providers/WidgetEditorProvider';
@@ -10,6 +10,7 @@ import { useAppServices } from '../../services/useAppServices';
 import { useDashboard } from '../screens/dashboard/DashboardHooks';
 import { createWidgetSDK } from '../../services/WidgetSDK';
 import { Card } from '../shared/UI';
+import { ENHANCEMENT_IDEAS } from '../../data/enhancementIdeas';
 
 const FeatureManager = () => {
   const { features, toggleFeature, updateFeatureOrder, saveFeature, deleteFeature, isFeatureEnabled } = useFeatures();
@@ -444,28 +445,22 @@ const FeatureManager = () => {
   const initialGroups = {
     dashboard: [
       'daily-quote', 'welcome-message', 'identity-builder', 'habit-stack', 'win-the-day', 
-      'exec-summary', 'weekly-focus', 'notifications', 'scorecard', 'pm-bookend',
-      'dashboard-roadmap'
+      'exec-summary', 'weekly-focus', 'notifications', 'scorecard', 'pm-bookend'
     ],
     'development-plan': [
-      'dev-plan-header', 'dev-plan-stats', 'dev-plan-actions', 'dev-plan-focus-areas', 'dev-plan-goal',
-      'dev-plan-roadmap'
+      'dev-plan-header', 'dev-plan-stats', 'dev-plan-actions', 'dev-plan-focus-areas', 'dev-plan-goal'
     ],
     content: [
-      'course-library', 'reading-hub', 'leadership-videos', 'strat-templates',
-      'content-roadmap'
+      'course-library', 'reading-hub', 'leadership-videos', 'strat-templates'
     ],
     community: [
-      'community-feed', 'my-discussions', 'mastermind', 'mentor-match', 'live-events',
-      'community-roadmap'
+      'community-feed', 'my-discussions', 'mastermind', 'mentor-match', 'live-events'
     ],
     coaching: [
-      'practice-history', 'progress-analytics', 'ai-roleplay', 'scenario-sim', 'feedback-gym', 'roi-report',
-      'coaching-roadmap'
+      'practice-history', 'progress-analytics', 'ai-roleplay', 'scenario-sim', 'feedback-gym', 'roi-report'
     ],
     locker: [
-      'locker-wins-history', 'locker-scorecard-history', 'locker-latest-reflection',
-      'locker-roadmap'
+      'locker-wins-history', 'locker-scorecard-history', 'locker-latest-reflection'
     ]
   };
 
@@ -915,6 +910,25 @@ const FeatureManager = () => {
             </p>
           </div>
         )}
+
+        {/* Future Enhancements List */}
+        <div className="mt-12 border-t border-gray-200 pt-8">
+          <h3 className="text-xl font-bold text-gray-900 mb-6 flex items-center gap-2">
+            <Lightbulb className="w-6 h-6 text-yellow-500" />
+            Future Enhancements: {groupTitles[activeGroup]}
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {ENHANCEMENT_IDEAS[activeGroup]?.map((idea, idx) => (
+              <div key={idx} className="p-4 bg-slate-50 rounded-lg border border-slate-200">
+                <div className="flex justify-between items-start mb-1">
+                  <h4 className="font-bold text-slate-800 text-sm">{idea.title}</h4>
+                  <span className="text-[10px] font-bold text-slate-400 bg-slate-100 px-2 py-1 rounded-full uppercase tracking-wider">Planned</span>
+                </div>
+                <p className="text-xs text-slate-500 leading-relaxed">{idea.desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
 
       {/* Add Widget Modal */}
