@@ -509,6 +509,7 @@ const FeatureManager = () => {
     const featureObj = {
       id,
       name: dbData?.name || meta.name || id,
+      group, // Include group for global operations
       // Force metadata description for dashboard-header to ensure it says "Quotes"
       description: (dbData?.description || meta.description) || '',
       enabled: dbData ? dbData.enabled : true, // Default to enabled if not in DB
@@ -645,6 +646,35 @@ const FeatureManager = () => {
     }
   };
 
+  const handleGlobalToggle = async () => {
+    // Flatten all widgets from all groups
+    const allWidgets = Object.values(groups).flat();
+    if (allWidgets.length === 0) return;
+
+    // Check if all are enabled
+    const allEnabled = allWidgets.every(w => w.enabled);
+    const newState = !allEnabled;
+
+    if (!window.confirm(`Are you sure you want to ${newState ? 'ENABLE' : 'DISABLE'} ALL widgets across the entire platform?`)) return;
+
+    for (const widget of allWidgets) {
+        if (widget.enabled !== newState) {
+             if (widget.isUnsaved) {
+                await saveFeature(widget.id, {
+                    name: widget.name,
+                    description: widget.description,
+                    code: widget.code,
+                    group: widget.group,
+                    enabled: newState,
+                    order: widget.order
+                });
+            } else {
+                await toggleFeature(widget.id, newState);
+            }
+        }
+    }
+  };
+
   const groupTitles = {
     dashboard: 'Dashboard',
     'development-plan': 'Development Plan',
@@ -679,6 +709,15 @@ const FeatureManager = () => {
           </p>
         </div>
         <div className="flex flex-col sm:flex-row gap-4">
+          {/* Global Toggle Button */}
+          <button 
+            onClick={handleGlobalToggle} 
+            className="flex items-center justify-center px-4 py-2 text-sm sm:text-base font-semibold rounded-lg bg-purple-600 text-white shadow-md hover:bg-purple-700 transition-all"
+          >
+            <ToggleLeft className="w-5 h-5 mr-2" />
+            Global Toggle
+          </button>
+
           {/* Sync Defaults Button */}
           <button 
             onClick={handleSyncDefaults} 

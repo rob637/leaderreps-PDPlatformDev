@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { 
   LayoutDashboard, 
   Target, 
@@ -11,12 +11,15 @@ import {
   ChevronLeft,
   ChevronRight,
   ShieldCheck,
-  Beaker
+  Beaker,
+  Anchor
 } from 'lucide-react';
+import PWAInstall from '../ui/PWAInstall.jsx';
+import { useAppServices } from '../../services/useAppServices.jsx';
 
 const ArenaSidebar = ({ isOpen, toggle, currentScreen, navigate, onSignOut, user, membershipData }) => {
-  
-  const menuItems = [
+  const { identityStatement, habitAnchor, whyStatement } = useAppServices();
+  const [showAnchors, setShowAnchors] = useState(false);
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { id: 'development-plan', label: 'Dev Plan', icon: Target },
     { id: 'library', label: 'Content', icon: BookOpen },
@@ -141,10 +144,62 @@ const ArenaSidebar = ({ isOpen, toggle, currentScreen, navigate, onSignOut, user
       </nav>
 
       {/* Footer / Sign Out */}
-      <div className="p-4 border-t border-white/10">
+      <div className="p-4 border-t border-white/10 space-y-2">
+        
+        {/* PWA Install Button */}
+        <div className="w-full mb-2">
+           <PWAInstall collapsed={!isOpen} />
+        </div>
+
+        {/* Leadership Anchors */}
+        {(identityStatement || habitAnchor || whyStatement) && (
+            <div className="relative">
+                <button
+                    onClick={() => setShowAnchors(!showAnchors)}
+                    className={`w-full flex items-center gap-4 px-0 py-2 text-gray-400 hover:text-white transition-colors ${!isOpen ? 'justify-center' : ''}`}
+                    title={!isOpen ? "Leadership Anchors" : ''}
+                >
+                    <Anchor className="w-5 h-5 min-w-[1.25rem]" />
+                    <span className={`whitespace-nowrap transition-opacity duration-200 ${isOpen ? 'opacity-100' : 'opacity-0 md:hidden'}`}>
+                        Anchors
+                    </span>
+                </button>
+                
+                {/* Anchors Popup */}
+                {showAnchors && (
+                    <>
+                        <div className="fixed inset-0 z-50" onClick={() => setShowAnchors(false)} />
+                        <div className="absolute bottom-full left-0 mb-2 w-72 bg-white rounded-lg shadow-xl p-4 text-slate-800 z-50 border border-slate-200">
+                             <h3 className="font-bold mb-3 text-corporate-navy border-b pb-2">Your Leadership Anchors</h3>
+                             <div className="space-y-3 text-xs">
+                                {identityStatement && (
+                                    <div>
+                                    <p className="font-bold text-corporate-teal uppercase tracking-wider text-[10px]">Identity</p>
+                                    <p className="text-gray-700 mt-1">{identityStatement}</p>
+                                    </div>
+                                )}
+                                {habitAnchor && (
+                                    <div>
+                                    <p className="font-bold text-blue-600 uppercase tracking-wider text-[10px]">Habit</p>
+                                    <p className="text-gray-700 mt-1">{habitAnchor}</p>
+                                    </div>
+                                )}
+                                {whyStatement && (
+                                    <div>
+                                    <p className="font-bold text-orange-600 uppercase tracking-wider text-[10px]">Why</p>
+                                    <p className="text-gray-700 mt-1">{whyStatement}</p>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    </>
+                )}
+            </div>
+        )}
+
         <button
           onClick={onSignOut}
-          className="w-full flex items-center gap-4 px-0 py-2 text-gray-400 hover:text-white transition-colors"
+          className={`w-full flex items-center gap-4 px-0 py-2 text-gray-400 hover:text-white transition-colors ${!isOpen ? 'justify-center' : ''}`}
           title={!isOpen ? "Sign Out" : ''}
         >
           <LogOut className="w-5 h-5 min-w-[1.25rem]" />

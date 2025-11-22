@@ -1,5 +1,5 @@
 import { 
-  Flame, Trophy, MessageSquare, Calendar, BookOpen, Play, Book, Video, FileText, Users, UserPlus, Search, Radio, History, BarChart2, Bot, Cpu, Dumbbell, TrendingUp, CheckCircle, Edit, Lightbulb, CheckSquare, X, Plus, Loader, Save, Bell
+  Flame, Trophy, MessageSquare, Calendar, BookOpen, Play, Book, Video, FileText, Users, UserPlus, Search, Radio, History, BarChart2, Bot, Cpu, Dumbbell, TrendingUp, CheckCircle, Edit, Lightbulb, CheckSquare, X, Plus, Loader, Save, Bell, Target, Zap, Crosshair, Flag, MessageCircle, Heart
 } from 'lucide-react';
 
 // Helper for Roadmap Widgets
@@ -316,12 +316,16 @@ export const WIDGET_TEMPLATES = {
 </section>
     `,
     'course-library': `
-<div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
-  <h3 className="font-bold text-gray-700 mb-3 flex items-center gap-2">
-    <BookOpen className="w-4 h-4 text-teal-600" />
-    Course Library
-  </h3>
-  <div className="space-y-3">
+<section className="w-full">
+  <div className="flex items-center gap-2 mb-4">
+    <div className="w-8 h-8 rounded-lg bg-teal-100 flex items-center justify-center text-teal-600">
+      <BookOpen className="w-5 h-5" />
+    </div>
+    <h2 className="text-xl font-bold text-[#002E47]">
+      Course Library
+    </h2>
+  </div>
+  <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200 space-y-3">
     <div className="flex gap-3 items-center p-2 hover:bg-gray-50 rounded-lg cursor-pointer transition-colors">
       <div className="w-10 h-10 bg-teal-100 rounded-lg flex items-center justify-center text-teal-600">
         <Play className="w-5 h-5" />
@@ -341,176 +345,235 @@ export const WIDGET_TEMPLATES = {
       </div>
     </div>
   </div>
-</div>
+</section>
     `,
     'reading-hub': `
-<div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
-  <h3 className="font-bold text-gray-700 mb-3 flex items-center gap-2">
-    <Book className="w-4 h-4 text-orange-600" />
-    Reading Hub
-  </h3>
-  <div className="flex gap-3 overflow-x-auto pb-2">
-    <div className="min-w-[100px] bg-gray-100 rounded-lg p-2 text-center">
-      <div className="w-full h-16 bg-gray-300 rounded mb-2"></div>
-      <p className="text-xs font-bold text-gray-700 truncate">Atomic Habits</p>
+<section className="w-full">
+  <div className="flex items-center gap-2 mb-4">
+    <div className="w-8 h-8 rounded-lg bg-orange-100 flex items-center justify-center text-orange-600">
+      <Book className="w-5 h-5" />
     </div>
-    <div className="min-w-[100px] bg-gray-100 rounded-lg p-2 text-center">
-      <div className="w-full h-16 bg-gray-300 rounded mb-2"></div>
-      <p className="text-xs font-bold text-gray-700 truncate">Dare to Lead</p>
-    </div>
-    <div className="min-w-[100px] bg-gray-100 rounded-lg p-2 text-center">
-      <div className="w-full h-16 bg-gray-300 rounded mb-2"></div>
-      <p className="text-xs font-bold text-gray-700 truncate">Start with Why</p>
+    <h2 className="text-xl font-bold text-[#002E47]">
+      Reading Hub
+    </h2>
+  </div>
+  <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
+    <div className="flex gap-3 overflow-x-auto pb-2">
+      <div className="min-w-[100px] bg-gray-100 rounded-lg p-2 text-center">
+        <div className="w-full h-16 bg-gray-300 rounded mb-2"></div>
+        <p className="text-xs font-bold text-gray-700 truncate">Atomic Habits</p>
+      </div>
+      <div className="min-w-[100px] bg-gray-100 rounded-lg p-2 text-center">
+        <div className="w-full h-16 bg-gray-300 rounded mb-2"></div>
+        <p className="text-xs font-bold text-gray-700 truncate">Dare to Lead</p>
+      </div>
+      <div className="min-w-[100px] bg-gray-100 rounded-lg p-2 text-center">
+        <div className="w-full h-16 bg-gray-300 rounded mb-2"></div>
+        <p className="text-xs font-bold text-gray-700 truncate">Start with Why</p>
+      </div>
     </div>
   </div>
-</div>
+</section>
     `,
     'leadership-videos': `
-<div className="bg-black text-white p-4 rounded-xl shadow-lg">
-  <h3 className="font-bold text-white mb-3 flex items-center gap-2">
-    <Video className="w-4 h-4 text-red-500" />
-    Featured Talk
-  </h3>
-  <div className="relative w-full aspect-video bg-gray-800 rounded-lg flex items-center justify-center mb-3 group cursor-pointer">
-    <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform">
-      <Play className="w-6 h-6 text-white fill-current" />
+<section className="w-full">
+  <div className="flex items-center gap-2 mb-4">
+    <div className="w-8 h-8 rounded-lg bg-red-100 flex items-center justify-center text-red-600">
+      <Video className="w-5 h-5" />
     </div>
-    <span className="absolute bottom-2 right-2 bg-black/60 px-2 py-1 rounded text-xs">12:45</span>
+    <h2 className="text-xl font-bold text-[#002E47]">
+      Featured Talk
+    </h2>
   </div>
-  <p className="font-bold text-sm">Simon Sinek: How Great Leaders Inspire Action</p>
-</div>
+  <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
+    <div className="relative w-full aspect-video bg-gray-800 rounded-lg flex items-center justify-center mb-3 group cursor-pointer">
+      <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform">
+        <Play className="w-6 h-6 text-white fill-current" />
+      </div>
+      <span className="absolute bottom-2 right-2 bg-black/60 px-2 py-1 rounded text-xs text-white">12:45</span>
+    </div>
+    <p className="font-bold text-sm text-gray-800">Simon Sinek: How Great Leaders Inspire Action</p>
+  </div>
+</section>
     `,
     'strat-templates': `
-<div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
-  <h3 className="font-bold text-gray-700 mb-3 flex items-center gap-2">
-    <FileText className="w-4 h-4 text-blue-600" />
-    Templates
-  </h3>
-  <div className="grid grid-cols-2 gap-2">
-    <button className="p-3 bg-blue-50 hover:bg-blue-100 rounded-lg text-left transition-colors">
-      <FileText className="w-5 h-5 text-blue-600 mb-2" />
-      <p className="text-xs font-bold text-blue-900">QBR Deck</p>
-    </button>
-    <button className="p-3 bg-green-50 hover:bg-green-100 rounded-lg text-left transition-colors">
-      <FileText className="w-5 h-5 text-green-600 mb-2" />
-      <p className="text-xs font-bold text-green-900">1:1 Agenda</p>
-    </button>
-    <button className="p-3 bg-purple-50 hover:bg-purple-100 rounded-lg text-left transition-colors">
-      <FileText className="w-5 h-5 text-purple-600 mb-2" />
-      <p className="text-xs font-bold text-purple-900">OKRs Sheet</p>
-    </button>
-    <button className="p-3 bg-orange-50 hover:bg-orange-100 rounded-lg text-left transition-colors">
-      <FileText className="w-5 h-5 text-orange-600 mb-2" />
-      <p className="text-xs font-bold text-orange-900">Feedback Form</p>
-    </button>
+<section className="w-full">
+  <div className="flex items-center gap-2 mb-4">
+    <div className="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center text-blue-600">
+      <FileText className="w-5 h-5" />
+    </div>
+    <h2 className="text-xl font-bold text-[#002E47]">
+      Templates
+    </h2>
   </div>
-</div>
+  <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
+    <div className="grid grid-cols-2 gap-2">
+      <button className="p-3 bg-blue-50 hover:bg-blue-100 rounded-lg text-left transition-colors">
+        <FileText className="w-5 h-5 text-blue-600 mb-2" />
+        <p className="text-xs font-bold text-blue-900">QBR Deck</p>
+      </button>
+      <button className="p-3 bg-green-50 hover:bg-green-100 rounded-lg text-left transition-colors">
+        <FileText className="w-5 h-5 text-green-600 mb-2" />
+        <p className="text-xs font-bold text-green-900">1:1 Agenda</p>
+      </button>
+      <button className="p-3 bg-purple-50 hover:bg-purple-100 rounded-lg text-left transition-colors">
+        <FileText className="w-5 h-5 text-purple-600 mb-2" />
+        <p className="text-xs font-bold text-purple-900">OKRs Sheet</p>
+      </button>
+      <button className="p-3 bg-orange-50 hover:bg-orange-100 rounded-lg text-left transition-colors">
+        <FileText className="w-5 h-5 text-orange-600 mb-2" />
+        <p className="text-xs font-bold text-orange-900">Feedback Form</p>
+      </button>
+    </div>
+  </div>
+</section>
     `,
     'community-feed': `
-<div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
-  <h3 className="font-bold text-gray-700 mb-3 flex items-center gap-2">
-    <Users className="w-4 h-4 text-indigo-600" />
-    Community Pulse
-  </h3>
-  <div className="space-y-4">
+<section className="w-full">
+  <div className="flex items-center gap-2 mb-4">
+    <div className="w-8 h-8 rounded-lg bg-indigo-100 flex items-center justify-center text-indigo-600">
+      <MessageSquare className="w-5 h-5" />
+    </div>
+    <h2 className="text-xl font-bold text-[#002E47]">
+      Community Feed
+    </h2>
+  </div>
+  <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200 space-y-4">
     <div className="flex gap-3">
-      <div className="w-8 h-8 rounded-full bg-gray-200 shrink-0"></div>
+      <div className="w-8 h-8 rounded-full bg-gray-200 flex-shrink-0"></div>
       <div>
-        <p className="text-sm text-gray-800"><span className="font-bold">Sarah J.</span> shared a win</p>
-        <p className="text-xs text-gray-500 mt-1">"Just completed my first 30-day streak! The consistency is really paying off..."</p>
+        <p className="text-sm font-bold text-gray-800">Sarah J. <span className="font-normal text-gray-500">posted in</span> Leadership</span></p>
+        <p className="text-sm text-gray-600 mt-1">"How do you handle skip-level meetings effectively?"</p>
         <div className="flex gap-3 mt-2 text-xs text-gray-400">
-          <span className="hover:text-indigo-600 cursor-pointer">Like</span>
-          <span className="hover:text-indigo-600 cursor-pointer">Reply</span>
+          <span className="flex items-center gap-1"><MessageSquare className="w-3 h-3" /> 12</span>
+          <span className="flex items-center gap-1"><Heart className="w-3 h-3" /> 5</span>
         </div>
       </div>
     </div>
+    <div className="border-t border-gray-100 pt-3 flex gap-3">
+      <div className="w-8 h-8 rounded-full bg-gray-200 flex-shrink-0"></div>
+      <div>
+        <p className="text-sm font-bold text-gray-800">Mike T. <span className="font-normal text-gray-500">replied to</span> Strategy</span></p>
+        <p className="text-sm text-gray-600 mt-1">"The key is alignment on the north star metric..."</p>
+      </div>
+    </div>
   </div>
-</div>
+</section>
     `,
     'my-discussions': `
-<div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
-  <h3 className="font-bold text-gray-700 mb-3 flex items-center gap-2">
-    <MessageSquare className="w-4 h-4 text-indigo-600" />
-    My Discussions
-  </h3>
-  <div className="space-y-2">
-    <div className="p-2 hover:bg-gray-50 rounded-lg cursor-pointer">
-      <div className="flex justify-between items-start">
-        <p className="text-sm font-bold text-gray-800">Managing Remote Teams</p>
-        <span className="bg-indigo-100 text-indigo-600 text-[10px] px-1.5 py-0.5 rounded-full">3 new</span>
-      </div>
-      <p className="text-xs text-gray-500 mt-1">Last reply 2h ago by Mike T.</p>
+<section className="w-full">
+  <div className="flex items-center gap-2 mb-4">
+    <div className="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center text-blue-600">
+      <MessageCircle className="w-5 h-5" />
     </div>
-    <div className="p-2 hover:bg-gray-50 rounded-lg cursor-pointer">
-      <div className="flex justify-between items-start">
-        <p className="text-sm font-bold text-gray-800">Book Club: Atomic Habits</p>
-      </div>
-      <p className="text-xs text-gray-500 mt-1">Last reply 1d ago by You</p>
+    <h2 className="text-xl font-bold text-[#002E47]">
+      My Discussions
+    </h2>
+  </div>
+  <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200 space-y-2">
+    <div className="p-2 hover:bg-gray-50 rounded-lg cursor-pointer transition-colors flex justify-between items-center">
+      <span className="text-sm font-medium text-gray-700">Q3 Planning Thread</span>
+      <span className="text-xs bg-red-100 text-red-600 px-2 py-1 rounded-full">2 new</span>
+    </div>
+    <div className="p-2 hover:bg-gray-50 rounded-lg cursor-pointer transition-colors flex justify-between items-center">
+      <span className="text-sm font-medium text-gray-700">Remote Culture</span>
+      <span className="text-xs text-gray-400">Yesterday</span>
+    </div>
+    <div className="p-2 hover:bg-gray-50 rounded-lg cursor-pointer transition-colors flex justify-between items-center">
+      <span className="text-sm font-medium text-gray-700">Hiring Best Practices</span>
+      <span className="text-xs text-gray-400">3d ago</span>
     </div>
   </div>
-</div>
+</section>
     `,
     'mastermind': `
-<div className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white p-4 rounded-xl shadow-lg">
-  <h3 className="font-bold text-white mb-2 flex items-center gap-2">
-    <Users className="w-4 h-4" />
-    Mastermind Group
-  </h3>
-  <p className="text-xs text-indigo-200 mb-4">Next session in 2 days</p>
-  <div className="flex -space-x-2 mb-4">
-    <div className="w-8 h-8 rounded-full bg-white/20 border-2 border-indigo-600"></div>
-    <div className="w-8 h-8 rounded-full bg-white/20 border-2 border-indigo-600"></div>
-    <div className="w-8 h-8 rounded-full bg-white/20 border-2 border-indigo-600"></div>
-    <div className="w-8 h-8 rounded-full bg-indigo-800 border-2 border-indigo-600 flex items-center justify-center text-xs font-bold">+2</div>
+<section className="w-full">
+  <div className="flex items-center gap-2 mb-4">
+    <div className="w-8 h-8 rounded-lg bg-purple-100 flex items-center justify-center text-purple-600">
+      <Users className="w-5 h-5" />
+    </div>
+    <h2 className="text-xl font-bold text-[#002E47]">
+      Mastermind Groups
+    </h2>
   </div>
-  <button className="w-full py-2 bg-white/10 hover:bg-white/20 rounded-lg text-sm font-bold transition-colors">
-    View Agenda
-  </button>
-</div>
+  <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
+    <p className="text-gray-600 text-sm mb-4">Join a peer group of leaders at your level to share challenges and grow together.</p>
+    <button className="w-full py-2 bg-indigo-600 text-white rounded-lg font-bold text-sm hover:bg-indigo-700 transition-colors">
+      Find a Group
+    </button>
+  </div>
+</section>
     `,
     'mentor-match': `
-<div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
-  <h3 className="font-bold text-gray-700 mb-3 flex items-center gap-2">
-    <UserPlus className="w-4 h-4 text-teal-600" />
-    Mentor Match
-  </h3>
-  <div className="text-center p-4 bg-gray-50 rounded-xl border border-dashed border-gray-300">
-    <div className="w-12 h-12 bg-teal-100 rounded-full flex items-center justify-center mx-auto mb-2 text-teal-600">
-      <Search className="w-6 h-6" />
+<section className="w-full">
+  <div className="flex items-center gap-2 mb-4">
+    <div className="w-8 h-8 rounded-lg bg-green-100 flex items-center justify-center text-green-600">
+      <UserPlus className="w-5 h-5" />
     </div>
-    <p className="text-sm font-bold text-gray-800">Find a Mentor</p>
-    <p className="text-xs text-gray-500 mb-3">Connect with experienced leaders in your industry.</p>
-    <button className="px-4 py-2 bg-teal-600 text-white rounded-lg text-xs font-bold hover:bg-teal-700 transition-colors">
-      Start Matching
+    <h2 className="text-xl font-bold text-[#002E47]">
+      Mentor Match
+    </h2>
+  </div>
+  <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
+    <div className="flex items-center gap-3 mb-3">
+      <div className="w-12 h-12 bg-gray-200 rounded-full"></div>
+      <div>
+        <p className="font-bold text-gray-800">David Chen</p>
+        <p className="text-xs text-gray-500">VP Engineering @ TechCorp</p>
+      </div>
+    </div>
+    <p className="text-xs text-gray-600 mb-3">"Happy to help with scaling teams and technical strategy."</p>
+    <button className="w-full py-2 border border-indigo-600 text-indigo-600 rounded-lg font-bold text-sm hover:bg-indigo-50 transition-colors">
+      Request Intro
     </button>
   </div>
-</div>
+</section>
     `,
     'live-events': `
-<div className="bg-red-50 p-4 rounded-xl border border-red-100">
-  <div className="flex justify-between items-start mb-3">
-    <h3 className="font-bold text-red-800 flex items-center gap-2">
-      <Radio className="w-4 h-4" />
-      Live Events
-    </h3>
-    <span className="bg-red-200 text-red-800 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase animate-pulse">Live Now</span>
+<section className="w-full">
+  <div className="flex items-center gap-2 mb-4">
+    <div className="w-8 h-8 rounded-lg bg-pink-100 flex items-center justify-center text-pink-600">
+      <Calendar className="w-5 h-5" />
+    </div>
+    <h2 className="text-xl font-bold text-[#002E47]">
+      Upcoming Events
+    </h2>
   </div>
-  <div className="bg-white rounded-lg p-3 border border-red-100 shadow-sm">
-    <p className="text-sm font-bold text-gray-800">Town Hall: Q3 Vision</p>
-    <p className="text-xs text-gray-500 mt-1">Started 15 mins ago</p>
-    <button className="mt-3 w-full py-1.5 bg-red-600 text-white rounded text-xs font-bold hover:bg-red-700 transition-colors">
-      Join Stream
-    </button>
+  <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200 space-y-3">
+    <div className="flex gap-3 items-start border-b border-gray-100 pb-3">
+      <div className="bg-indigo-100 text-indigo-700 rounded px-2 py-1 text-center min-w-[50px]">
+        <p className="text-xs font-bold">OCT</p>
+        <p className="text-lg font-bold">24</p>
+      </div>
+      <div>
+        <p className="font-bold text-gray-800 text-sm">Leadership Summit 2024</p>
+        <p className="text-xs text-gray-500">2:00 PM EST • Virtual</p>
+      </div>
+    </div>
+    <div className="flex gap-3 items-start">
+      <div className="bg-gray-100 text-gray-700 rounded px-2 py-1 text-center min-w-[50px]">
+        <p className="text-xs font-bold">NOV</p>
+        <p className="text-lg font-bold">02</p>
+      </div>
+      <div>
+        <p className="font-bold text-gray-800 text-sm">Q4 Planning Workshop</p>
+        <p className="text-xs text-gray-500">11:00 AM EST • Virtual</p>
+      </div>
+    </div>
   </div>
-</div>
+</section>
     `,
     'practice-history': `
-<div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
-  <h3 className="font-bold text-gray-700 mb-3 flex items-center gap-2">
-    <History className="w-4 h-4 text-gray-500" />
-    Recent Practice
-  </h3>
-  <div className="space-y-3">
+<section className="w-full">
+  <div className="flex items-center gap-2 mb-4">
+    <div className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center text-gray-600">
+      <History className="w-5 h-5" />
+    </div>
+    <h2 className="text-xl font-bold text-[#002E47]">
+      Recent Practice
+    </h2>
+  </div>
+  <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200 space-y-3">
     <div className="flex justify-between items-center">
       <div>
         <p className="text-sm font-bold text-gray-800">Difficult Conversation</p>
@@ -526,60 +589,76 @@ export const WIDGET_TEMPLATES = {
       <span className="text-yellow-600 font-bold text-sm">78%</span>
     </div>
   </div>
-</div>
+</section>
     `,
     'progress-analytics': `
-<div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
-  <h3 className="font-bold text-gray-700 mb-3 flex items-center gap-2">
-    <BarChart2 className="w-4 h-4 text-blue-600" />
-    Growth Analytics
-  </h3>
-  <div className="flex items-end gap-2 h-24 mt-4">
-    <div className="flex-1 bg-blue-100 rounded-t hover:bg-blue-200 transition-colors relative group">
-      <div className="absolute bottom-0 w-full bg-blue-500 rounded-t" style={{ height: '40%' }}></div>
+<section className="w-full">
+  <div className="flex items-center gap-2 mb-4">
+    <div className="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center text-blue-600">
+      <BarChart2 className="w-5 h-5" />
     </div>
-    <div className="flex-1 bg-blue-100 rounded-t hover:bg-blue-200 transition-colors relative group">
-      <div className="absolute bottom-0 w-full bg-blue-500 rounded-t" style={{ height: '60%' }}></div>
+    <h2 className="text-xl font-bold text-[#002E47]">
+      Growth Analytics
+    </h2>
+  </div>
+  <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
+    <div className="flex items-end gap-2 h-24 mt-4">
+      <div className="flex-1 bg-blue-100 rounded-t hover:bg-blue-200 transition-colors relative group">
+        <div className="absolute bottom-0 w-full bg-blue-500 rounded-t" style={{ height: '40%' }}></div>
+      </div>
+      <div className="flex-1 bg-blue-100 rounded-t hover:bg-blue-200 transition-colors relative group">
+        <div className="absolute bottom-0 w-full bg-blue-500 rounded-t" style={{ height: '60%' }}></div>
+      </div>
+      <div className="flex-1 bg-blue-100 rounded-t hover:bg-blue-200 transition-colors relative group">
+        <div className="absolute bottom-0 w-full bg-blue-500 rounded-t" style={{ height: '55%' }}></div>
+      </div>
+      <div className="flex-1 bg-blue-100 rounded-t hover:bg-blue-200 transition-colors relative group">
+        <div className="absolute bottom-0 w-full bg-blue-500 rounded-t" style={{ height: '85%' }}></div>
+      </div>
+      <div className="flex-1 bg-blue-100 rounded-t hover:bg-blue-200 transition-colors relative group">
+        <div className="absolute bottom-0 w-full bg-blue-500 rounded-t" style={{ height: '75%' }}></div>
+      </div>
     </div>
-    <div className="flex-1 bg-blue-100 rounded-t hover:bg-blue-200 transition-colors relative group">
-      <div className="absolute bottom-0 w-full bg-blue-500 rounded-t" style={{ height: '55%' }}></div>
-    </div>
-    <div className="flex-1 bg-blue-100 rounded-t hover:bg-blue-200 transition-colors relative group">
-      <div className="absolute bottom-0 w-full bg-blue-500 rounded-t" style={{ height: '85%' }}></div>
-    </div>
-    <div className="flex-1 bg-blue-100 rounded-t hover:bg-blue-200 transition-colors relative group">
-      <div className="absolute bottom-0 w-full bg-blue-500 rounded-t" style={{ height: '75%' }}></div>
+    <div className="flex justify-between mt-2 text-xs text-gray-400">
+      <span>Mon</span>
+      <span>Fri</span>
     </div>
   </div>
-  <div className="flex justify-between mt-2 text-xs text-gray-400">
-    <span>Mon</span>
-    <span>Fri</span>
-  </div>
-</div>
+</section>
     `,
     'ai-roleplay': `
-<div className="bg-gradient-to-br from-purple-600 to-indigo-700 text-white p-4 rounded-xl shadow-lg">
-  <h3 className="font-bold text-white mb-2 flex items-center gap-2">
-    <Bot className="w-4 h-4" />
-    AI Roleplay
-  </h3>
-  <p className="text-xs text-purple-200 mb-4">Practice real-world scenarios with AI.</p>
-  <div className="bg-white/10 rounded-lg p-3 mb-3 backdrop-blur-sm">
-    <p className="text-xs font-bold text-purple-100 uppercase mb-1">Recommended</p>
-    <p className="text-sm font-bold">Giving Constructive Feedback</p>
+<section className="w-full">
+  <div className="flex items-center gap-2 mb-4">
+    <div className="w-8 h-8 rounded-lg bg-purple-100 flex items-center justify-center text-purple-600">
+      <Bot className="w-5 h-5" />
+    </div>
+    <h2 className="text-xl font-bold text-[#002E47]">
+      AI Roleplay
+    </h2>
   </div>
-  <button className="w-full py-2 bg-white text-purple-700 rounded-lg text-sm font-bold hover:bg-purple-50 transition-colors">
-    Start Session
-  </button>
-</div>
+  <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
+    <p className="text-xs text-gray-500 mb-4">Practice real-world scenarios with AI.</p>
+    <div className="bg-purple-50 rounded-lg p-3 mb-3 border border-purple-100">
+      <p className="text-xs font-bold text-purple-600 uppercase mb-1">Recommended</p>
+      <p className="text-sm font-bold text-purple-900">Giving Constructive Feedback</p>
+    </div>
+    <button className="w-full py-2 bg-purple-600 text-white rounded-lg text-sm font-bold hover:bg-purple-700 transition-colors">
+      Start Session
+    </button>
+  </div>
+</section>
     `,
     'scenario-sim': `
-<div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
-  <h3 className="font-bold text-gray-700 mb-3 flex items-center gap-2">
-    <Cpu className="w-4 h-4 text-orange-600" />
-    Scenario Sim
-  </h3>
-  <div className="space-y-3">
+<section className="w-full">
+  <div className="flex items-center gap-2 mb-4">
+    <div className="w-8 h-8 rounded-lg bg-orange-100 flex items-center justify-center text-orange-600">
+      <Cpu className="w-5 h-5" />
+    </div>
+    <h2 className="text-xl font-bold text-[#002E47]">
+      Scenario Sim
+    </h2>
+  </div>
+  <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200 space-y-3">
     <div className="border border-gray-200 rounded-lg p-3 hover:border-orange-300 transition-colors cursor-pointer">
       <div className="flex justify-between mb-1">
         <span className="text-xs font-bold text-orange-600">Crisis Management</span>
@@ -595,47 +674,59 @@ export const WIDGET_TEMPLATES = {
       <p className="text-sm font-bold text-gray-800">Market Expansion</p>
     </div>
   </div>
-</div>
+</section>
     `,
     'feedback-gym': `
-<div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
-  <h3 className="font-bold text-gray-700 mb-3 flex items-center gap-2">
-    <Dumbbell className="w-4 h-4 text-teal-600" />
-    Feedback Gym
-  </h3>
-  <p className="text-xs text-gray-500 mb-3">Quick drills to improve your delivery.</p>
-  <div className="grid grid-cols-2 gap-2">
-    <div className="bg-teal-50 p-2 rounded-lg text-center cursor-pointer hover:bg-teal-100 transition-colors">
-      <p className="text-lg font-bold text-teal-700">Radical</p>
-      <p className="text-[10px] text-teal-600">Candor</p>
+<section className="w-full">
+  <div className="flex items-center gap-2 mb-4">
+    <div className="w-8 h-8 rounded-lg bg-teal-100 flex items-center justify-center text-teal-600">
+      <Dumbbell className="w-5 h-5" />
     </div>
-    <div className="bg-blue-50 p-2 rounded-lg text-center cursor-pointer hover:bg-blue-100 transition-colors">
-      <p className="text-lg font-bold text-blue-700">SBI</p>
-      <p className="text-[10px] text-blue-600">Model</p>
+    <h2 className="text-xl font-bold text-[#002E47]">
+      Feedback Gym
+    </h2>
+  </div>
+  <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
+    <p className="text-xs text-gray-500 mb-3">Quick drills to improve your delivery.</p>
+    <div className="grid grid-cols-2 gap-2">
+      <div className="bg-teal-50 p-2 rounded-lg text-center cursor-pointer hover:bg-teal-100 transition-colors">
+        <p className="text-lg font-bold text-teal-700">Radical</p>
+        <p className="text-[10px] text-teal-600">Candor</p>
+      </div>
+      <div className="bg-blue-50 p-2 rounded-lg text-center cursor-pointer hover:bg-blue-100 transition-colors">
+        <p className="text-lg font-bold text-blue-700">SBI</p>
+        <p className="text-[10px] text-blue-600">Model</p>
+      </div>
     </div>
   </div>
-</div>
+</section>
     `,
     'roi-report': `
-<div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
-  <h3 className="font-bold text-gray-700 mb-3 flex items-center gap-2">
-    <TrendingUp className="w-4 h-4 text-green-600" />
-    ROI Report
-  </h3>
-  <div className="flex items-center justify-between mb-4">
-    <div>
-      <p className="text-xs text-gray-500">Leadership Score</p>
-      <p className="text-2xl font-bold text-gray-800">+15%</p>
+<section className="w-full">
+  <div className="flex items-center gap-2 mb-4">
+    <div className="w-8 h-8 rounded-lg bg-green-100 flex items-center justify-center text-green-600">
+      <TrendingUp className="w-5 h-5" />
     </div>
-    <div className="text-right">
-      <p className="text-xs text-gray-500">Team Engagement</p>
-      <p className="text-2xl font-bold text-gray-800">+8%</p>
-    </div>
+    <h2 className="text-xl font-bold text-[#002E47]">
+      ROI Report
+    </h2>
   </div>
-  <button className="w-full py-2 border border-gray-200 rounded-lg text-sm font-bold text-gray-600 hover:bg-gray-50 transition-colors">
-    Download PDF
-  </button>
-</div>
+  <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
+    <div className="flex items-center justify-between mb-4">
+      <div>
+        <p className="text-xs text-gray-500">Leadership Score</p>
+        <p className="text-2xl font-bold text-gray-800">+15%</p>
+      </div>
+      <div className="text-right">
+        <p className="text-xs text-gray-500">Team Engagement</p>
+        <p className="text-2xl font-bold text-gray-800">+8%</p>
+      </div>
+    </div>
+    <button className="w-full py-2 border border-gray-200 rounded-lg text-sm font-bold text-gray-600 hover:bg-gray-50 transition-colors">
+      Download PDF
+    </button>
+  </div>
+</section>
     `,
     'locker-wins-history': `
 <Card title="AM Bookend" icon={Trophy} className="border-t-4 border-corporate-orange">
@@ -719,123 +810,141 @@ export const WIDGET_TEMPLATES = {
 </Card>
     `,
     'dev-plan-header': `
-<Card accent="TEAL">
-  <div className="flex items-center justify-between mb-6">
-    <div>
-      <h1 className="text-xl sm:text-2xl sm:text-3xl font-bold mb-2" style={{ color: COLORS.NAVY }}>
-        Development Plan
-      </h1>
-      <p className="text-gray-600">
-        Cycle {cycle} • {summary.totalSkills} skills • {summary.progress}% complete
-      </p>
+<section className="w-full">
+  <div className="flex items-center gap-2 mb-4">
+    <div className="w-8 h-8 rounded-lg bg-teal-100 flex items-center justify-center text-teal-600">
+      <Target className="w-5 h-5" />
     </div>
-    <Button
-      onClick={() => onEditPlan()}
-      variant="secondary"
-      className="flex items-center gap-2"
-    >
-      <Edit size={16} />
-      Quick Edit
-    </Button>
+    <h2 className="text-xl font-bold text-[#002E47]">
+      Development Plan
+    </h2>
   </div>
-
-  <ProgressBar progress={summary.progress} color={COLORS.TEAL} />
-</Card>
+  <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
+    <div className="flex items-center justify-between mb-6">
+      <div>
+        <p className="text-gray-600">
+          Cycle {cycle} • {summary.totalSkills} skills • {summary.progress}% complete
+        </p>
+      </div>
+      <Button
+        onClick={() => onEditPlan()}
+        variant="secondary"
+        className="flex items-center gap-2"
+      >
+        <Edit size={16} />
+        Quick Edit
+      </Button>
+    </div>
+    <ProgressBar progress={summary.progress} color={COLORS.TEAL} />
+  </div>
+</section>
     `,
     'dev-plan-stats': `
 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-  <Card accent="BLUE">
-    <div className="flex items-center gap-3">
-      <Target size={32} style={{ color: COLORS.BLUE }} />
-      <div>
-        <div className="text-xl sm:text-2xl font-bold" style={{ color: COLORS.NAVY }}>
-          {summary.totalSkills}
-        </div>
-        <div className="text-sm text-gray-600">Total Skills</div>
-      </div>
+  <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200 flex items-center gap-3">
+    <div className="w-12 h-12 rounded-lg bg-blue-100 flex items-center justify-center text-blue-600">
+      <Target size={24} />
     </div>
-  </Card>
+    <div>
+      <div className="text-2xl font-bold text-[#002E47]">
+        {summary.totalSkills}
+      </div>
+      <div className="text-sm text-gray-600">Total Skills</div>
+    </div>
+  </div>
 
-  <Card accent="GREEN">
-    <div className="flex items-center gap-3">
-      <TrendingUp size={32} style={{ color: COLORS.GREEN }} />
-      <div>
-        <div className="text-xl sm:text-2xl font-bold" style={{ color: COLORS.NAVY }}>
-          {summary.completedSkills}
-        </div>
-        <div className="text-sm text-gray-600">Completed</div>
-      </div>
+  <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200 flex items-center gap-3">
+    <div className="w-12 h-12 rounded-lg bg-green-100 flex items-center justify-center text-green-600">
+      <TrendingUp size={24} />
     </div>
-  </Card>
+    <div>
+      <div className="text-2xl font-bold text-[#002E47]">
+        {summary.completedSkills}
+      </div>
+      <div className="text-sm text-gray-600">Completed</div>
+    </div>
+  </div>
 
-  <Card accent="ORANGE">
-    <div className="flex items-center gap-3">
-      <Calendar size={32} style={{ color: COLORS.ORANGE }} />
-      <div>
-        <div className="text-xl sm:text-2xl font-bold" style={{ color: COLORS.NAVY }}>
-          {summary.currentWeek || 0}
-        </div>
-        <div className="text-sm text-gray-600">Current Week</div>
-      </div>
+  <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200 flex items-center gap-3">
+    <div className="w-12 h-12 rounded-lg bg-orange-100 flex items-center justify-center text-orange-600">
+      <Calendar size={24} />
     </div>
-  </Card>
+    <div>
+      <div className="text-2xl font-bold text-[#002E47]">
+        {summary.currentWeek || 0}
+      </div>
+      <div className="text-sm text-gray-600">Current Week</div>
+    </div>
+  </div>
 </div>
     `,
     'dev-plan-actions': `
-<Card accent="TEAL">
-  <h2 className="font-bold mb-4" style={{ color: COLORS.NAVY }}>
-    Actions
-  </h2>
-  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-    <Button
-      onClick={() => setShowBreakdown(true)}
-      variant="primary"
-      className="flex items-center justify-center gap-2"
-    >
-      <Target size={16} />
-      View Progress Breakdown
-    </Button>
-    
-    {onScan && (
+<section className="w-full">
+  <div className="flex items-center gap-2 mb-4">
+    <div className="w-8 h-8 rounded-lg bg-teal-100 flex items-center justify-center text-teal-600">
+      <Zap className="w-5 h-5" />
+    </div>
+    <h2 className="text-xl font-bold text-[#002E47]">
+      Actions
+    </h2>
+  </div>
+  <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
       <Button
-        onClick={onScan}
+        onClick={() => setShowBreakdown(true)}
         variant="primary"
         className="flex items-center justify-center gap-2"
       >
-        <TrendingUp size={16} />
-        Start Progress Scan
+        <Target size={16} />
+        View Progress Breakdown
       </Button>
-    )}
-    
-    {onTimeline && (
-      <Button
-        onClick={onTimeline}
-        variant="secondary"
-        className="flex items-center justify-center gap-2"
-      >
-        <Calendar size={16} />
-        View Timeline
-      </Button>
-    )}
-    
-    {onDetail && (
-      <Button
-        onClick={onDetail}
-        variant="secondary"
-        className="flex items-center justify-center gap-2"
-      >
-        View Detailed Plan
-      </Button>
-    )}
+      
+      {onScan && (
+        <Button
+          onClick={onScan}
+          variant="primary"
+          className="flex items-center justify-center gap-2"
+        >
+          <TrendingUp size={16} />
+          Start Progress Scan
+        </Button>
+      )}
+      
+      {onTimeline && (
+        <Button
+          onClick={onTimeline}
+          variant="secondary"
+          className="flex items-center justify-center gap-2"
+        >
+          <Calendar size={16} />
+          View Timeline
+        </Button>
+      )}
+      
+      {onDetail && (
+        <Button
+          onClick={onDetail}
+          variant="secondary"
+          className="flex items-center justify-center gap-2"
+        >
+          View Detailed Plan
+        </Button>
+      )}
+    </div>
   </div>
-</Card>
+</section>
     `,
     'dev-plan-focus-areas': `
-<Card accent="PURPLE">
-  <h2 className="font-bold mb-4" style={{ color: COLORS.NAVY }}>
-    Focus Areas
-  </h2>
-  <div className="space-y-3">
+<section className="w-full">
+  <div className="flex items-center gap-2 mb-4">
+    <div className="w-8 h-8 rounded-lg bg-purple-100 flex items-center justify-center text-purple-600">
+      <Crosshair className="w-5 h-5" />
+    </div>
+    <h2 className="text-xl font-bold text-[#002E47]">
+      Focus Areas
+    </h2>
+  </div>
+  <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200 space-y-3">
     {plan.focusAreas && plan.focusAreas.map((area, index) => (
       <div key={index} className="p-4 bg-gray-50 rounded-lg">
         <h3 className="font-semibold mb-2" style={{ color: COLORS.NAVY }}>
@@ -850,15 +959,22 @@ export const WIDGET_TEMPLATES = {
       </div>
     ))}
   </div>
-</Card>
+</section>
     `,
     'dev-plan-goal': `
-<Card accent="GOLD">
-  <h3 className="font-bold mb-2" style={{ color: COLORS.NAVY }}>
-    Your Goal
-  </h3>
-  <p className="text-gray-700">{plan.openEndedAnswer}</p>
-</Card>
+<section className="w-full">
+  <div className="flex items-center gap-2 mb-4">
+    <div className="w-8 h-8 rounded-lg bg-yellow-100 flex items-center justify-center text-yellow-600">
+      <Flag className="w-5 h-5" />
+    </div>
+    <h2 className="text-xl font-bold text-[#002E47]">
+      Your Goal
+    </h2>
+  </div>
+  <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
+    <p className="text-gray-700">{plan.openEndedAnswer}</p>
+  </div>
+</section>
     `,
     'daily-quote': `const DailyQuote = () => {
   // Helper to parse quote

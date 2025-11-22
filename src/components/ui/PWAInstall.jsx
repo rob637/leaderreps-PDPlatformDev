@@ -13,7 +13,7 @@ const COLORS = {
   BG: '#FCFCFA'
 };
 
-const PWAInstall = () => {
+const PWAInstall = ({ collapsed = false }) => {
   const [deferredPrompt, setDeferredPrompt] = useState(null);
   const [isInstallable, setIsInstallable] = useState(false);
   const [showInstructions, setShowInstructions] = useState(false);
@@ -116,8 +116,9 @@ const PWAInstall = () => {
     };
   };
 
-  if (isInstalled || !isInstallable) {
-    return null; // Don't show install button if already installed or not installable
+  // Show button if not installed, even if deferredPrompt isn't ready (for iOS instructions)
+  if (isInstalled) {
+    return null;
   }
 
   return (
@@ -125,7 +126,7 @@ const PWAInstall = () => {
       {/* Install Button */}
       <button
         onClick={handleInstallClick}
-        className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-offset-1"
+        className={`flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-offset-1 animate-pulse ${collapsed ? 'w-full' : ''}`}
         style={{
           backgroundColor: COLORS.TEAL,
           color: 'white',
@@ -134,7 +135,7 @@ const PWAInstall = () => {
         title="Install LeaderReps App"
       >
         <Download className="w-4 h-4" />
-        <span className="hidden sm:inline">Install App</span>
+        {!collapsed && <span className="hidden sm:inline">Install App</span>}
       </button>
 
       {/* Instructions Modal */}

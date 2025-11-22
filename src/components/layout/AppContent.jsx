@@ -2,8 +2,7 @@
 
 import React, { Suspense, useCallback, useState, useEffect } from 'react';
 import { signOut, updateProfile } from 'firebase/auth';
-import { LogOut, Loader, Settings, Anchor, ChevronDown, ChevronUp } from 'lucide-react';
-import PWAInstall from '../ui/PWAInstall.jsx';
+import { LogOut, Loader, Settings, ChevronDown, ChevronUp } from 'lucide-react';
 import ScreenRouter from '../../routing/ScreenRouter.jsx';
 import MobileBottomNav from './MobileBottomNav.jsx';
 import ArenaSidebar from './ArenaSidebar.jsx';
@@ -15,60 +14,6 @@ import { NavigationProvider } from '../../providers/NavigationProvider.jsx';
 const COLORS = {
   // ...existing code...
   SUBTLE: '#47A88D'       // TEAL for subtle elements
-};
-
-// Small inconspicuous Leadership Anchors dropdown component
-const LeadershipAnchorsDropdown = () => {
-  const [isOpen, setIsOpen] = useState(false);
-  const { identityStatement, habitAnchor, whyStatement } = useAppServices();
-  
-  // Don't show if no anchors are set
-  const hasAnchors = identityStatement || habitAnchor || whyStatement;
-  if (!hasAnchors) return null;
-  
-  return (
-    <div className="relative">
-      <button
-        onClick={() => setIsOpen(!isOpen)}
-        className="p-1 text-gray-400 hover:text-gray-600 transition-colors"
-        title="Your Leadership Anchors"
-      >
-        <Anchor className="w-4 h-4" />
-      </button>
-      
-      {isOpen && (
-        <>
-          <div 
-            className="fixed inset-0 z-40" 
-            onClick={() => setIsOpen(false)}
-          />
-          <div className="absolute top-full left-0 mt-2 w-80 bg-white rounded-lg shadow-lg border border-gray-200 z-50 p-3">
-            <h3 className="text-sm font-semibold mb-2" style={{ color: COLORS.NAVY }}>Your Leadership Anchors</h3>
-            <div className="space-y-2 text-xs">
-              {identityStatement && (
-                <div>
-                  <p className="font-medium" style={{ color: COLORS.TEAL }}>Identity:</p>
-                  <p className="text-gray-600">{identityStatement}</p>
-                </div>
-              )}
-              {habitAnchor && (
-                <div>
-                  <p className="font-medium" style={{ color: COLORS.BLUE }}>Habit:</p>
-                  <p className="text-gray-600">{habitAnchor}</p>
-                </div>
-              )}
-              {whyStatement && (
-                <div>
-                  <p className="font-medium" style={{ color: COLORS.ORANGE }}>Why:</p>
-                  <p className="text-gray-600">{whyStatement}</p>
-                </div>
-              )}
-            </div>
-          </div>
-        </>
-      )}
-    </div>
-  );
 };
 
 const AppContent = ({
@@ -182,25 +127,6 @@ const AppContent = ({
         {/* Main Content Area */}
         <div className="flex-1 flex flex-col h-screen overflow-hidden relative transition-all duration-300">
           
-          <header className="nav-corporate sticky top-0 flex justify-between items-center z-30 px-6 py-2 bg-white border-b border-gray-200 shadow-sm">
-            <div className="flex items-center gap-4">
-              
-              {/* Mobile Logo (only show if sidebar is closed or on mobile) */}
-              <img 
-                src="/images/lr_logo_teal__1_.png" 
-                alt="LeaderReps" 
-                className="h-8 w-auto object-contain md:hidden"
-              />
-              
-              <LeadershipAnchorsDropdown />
-            </div>
-
-            <div className="flex items-center gap-3">
-              
-              <PWAInstall />
-            </div>
-          </header>
-
           <main className="flex-1 flex flex-col overflow-hidden relative">
             <div className="flex-1 overflow-y-auto">
                 <Suspense
