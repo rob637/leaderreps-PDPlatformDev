@@ -92,15 +92,19 @@ const Dashboard = (props) => {
     // Scorecard
     scorecard,
     handleSaveScorecard,
+    // ...existing code...
     isSavingScorecard
   } = useDashboard({
     dailyPracticeData,
     updateDailyPracticeData,
-    globalMetadata // Pass globalMetadata for scorecard calculation
+    globalMetadata, // Pass globalMetadata for scorecard calculation
+    db,
+    userId: user?.uid
   });
 
   // --- LOCAL STATE ---
   const [isAnchorModalOpen, setIsAnchorModalOpen] = useState(false);
+// ...existing code...
   const [isCalendarModalOpen, setIsCalendarModalOpen] = useState(false);
   const [newTaskText, setNewTaskText] = useState('');
   const [showTaskInput, setShowTaskInput] = useState(false);

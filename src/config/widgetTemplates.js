@@ -129,11 +129,11 @@ export const WIDGET_TEMPLATES = {
     'daily-leader-reps': `
 <Card title="Daily Leader Reps" icon={Dumbbell} accent="BLUE">
   <div className="space-y-2">
-    {[
+    {(developmentPlanData?.currentPlan?.weeklyReps || [
       { id: 'r1', label: 'Review Calendar', time: '2m' },
       { id: 'r2', label: 'Check Team Pulse', time: '5m' },
       { id: 'r3', label: 'Send 1 Appreciation', time: '3m' }
-    ].map(rep => (
+    ]).map(rep => (
       <div key={rep.id} className="flex items-center justify-between p-3 bg-slate-50 rounded-xl hover:bg-blue-50 transition-colors cursor-pointer group">
         <div className="flex items-center gap-3">
           <div className="w-5 h-5 rounded border-2 border-slate-300 group-hover:border-blue-400 flex items-center justify-center">
@@ -182,12 +182,12 @@ export const WIDGET_TEMPLATES = {
     </div>
 
     {/* Category 3: New Content */}
-    <div className="flex gap-3 items-start p-3 bg-purple-50 rounded-xl border border-purple-100">
+    <div className="flex gap-3 items-start p-3 bg-blue-50 rounded-xl border border-blue-100">
       <div className="mt-1">
-        <div className="w-2 h-2 rounded-full bg-purple-500" />
+        <div className="w-2 h-2 rounded-full bg-blue-500" />
       </div>
       <div>
-        <p className="text-xs font-bold text-purple-800 uppercase mb-1">New Unlock</p>
+        <p className="text-xs font-bold text-blue-800 uppercase mb-1">New Unlock</p>
         <p className="text-sm font-medium text-slate-800">
           Module 4: "Strategic Vision" is now available.
         </p>

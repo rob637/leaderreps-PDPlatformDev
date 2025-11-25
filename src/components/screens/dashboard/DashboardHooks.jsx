@@ -6,6 +6,7 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { serverTimestamp } from 'firebase/firestore';
 import { useAppServices } from '../../../hooks/useAppServices';
+import { dailyLogService } from '../../../services/dailyLogService';
 
 // Helper function to check if developer mode is enabled
 const isDeveloperMode = () => localStorage.getItem('arena-developer-mode') === 'true';
@@ -17,7 +18,9 @@ const isDeveloperMode = () => localStorage.getItem('arena-developer-mode') === '
 export const useDashboard = ({
   dailyPracticeData,
   updateDailyPracticeData, // <--- Prop from useAppServices
-  globalMetadata // <--- Added for Scorecard calculation
+  globalMetadata, // <--- Added for Scorecard calculation
+  db,
+  userId
 }) => {
   
   // === ARENA MODE STATE ===
@@ -63,6 +66,30 @@ export const useDashboard = ({
 
   // === ADDITIONAL REPS STATE ===
   const [additionalCommitments, setAdditionalCommitments] = useState([]);
+
+  // === END OF DAY COMMIT LOGIC ===
+  useEffect(() => {
+    const checkTimeAndCommit = () => {
+      const now = new Date();
+      const isCommitTime = now.getHours() === 23 && now.getMinutes() === 59;
+
+      // To prevent multiple commits, we can use a flag in localStorage
+      const lastCommitDate = localStorage.getItem('lastCommitDate');
+      const todayStr = now.toISOString().split('T')[0];
+
+      if (isCommitTime && lastCommitDate !== todayStr) {
+        console.log('COMMIT_LOG: Triggering end-of-day commit...');
+        dailyLogService.commitEndOfDay(db, userId);
+        localStorage.setItem('lastCommitDate', todayStr);
+      }
+    };
+
+    // Check every minute
+    const intervalId = setInterval(checkTimeAndCommit, 60000);
+
+    return () => clearInterval(intervalId);
+  }, [db, userId]);
+
 
   /* =========================================================
      LOAD DATA FROM FIRESTORE (Dependency on dailyPracticeData)

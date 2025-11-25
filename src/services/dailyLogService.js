@@ -137,6 +137,47 @@ export const dailyLogService = {
   },
 
   /**
+   * Commits the current `daily_practice` data to a permanent daily log.
+   * This should be run at the end of the day.
+   */
+  commitEndOfDay: async (db, userId) => {
+    if (!userId) throw new Error('User ID required');
+
+    const dateId = dailyLogService.getDateId();
+    const dailyPracticeRef = doc(db, 'users', userId, 'daily_practice', 'current');
+    const dailyLogRef = doc(db, 'users', userId, 'daily_logs', dateId);
+
+    try {
+      const dailyPracticeSnap = await getDoc(dailyPracticeRef);
+      if (!dailyPracticeSnap.exists()) {
+        console.log('No daily practice data to commit.');
+        return;
+      }
+
+      const practiceData = dailyPracticeSnap.data();
+
+      // Merge with existing log data if any
+      const existingLogSnap = await getDoc(dailyLogRef);
+      const existingData = existingLogSnap.exists() ? existingLogSnap.data() : {};
+
+      const commitData = {
+        ...existingData,
+        ...practiceData,
+        committedAt: serverTimestamp(),
+      };
+
+      await setDoc(dailyLogRef, commitData, { merge: true });
+      console.log(`Successfully committed end-of-day log for ${dateId}`);
+
+      // Optional: Reset daily_practice document for the new day
+      // await setDoc(dailyPracticeRef, { lastReset: serverTimestamp() });
+
+    } catch (error) {
+      console.error('Error committing end-of-day log:', error);
+    }
+  },
+
+  /**
    * Get reflection history (last 7 days with reflections)
    */
   getReflectionHistory: async (db, userId, limitCount = 7) => {
