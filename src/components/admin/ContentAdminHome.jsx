@@ -487,8 +487,7 @@ const ContentAdminHome = () => {
       <div className="mb-8">
         <button
           onClick={() => navigate('dashboard')}
-          className="flex items-center gap-2 text-sm mb-4 hover:opacity-70"
-          className="text-slate-500"
+          className="flex items-center gap-2 text-sm mb-4 hover:opacity-70 text-slate-500"
         >
           <ArrowLeft className="w-4 h-4" />
           Back to Dashboard

@@ -115,8 +115,8 @@ const LISAuditorView = ({ setQuickStartView }) => {
         // Consistent page structure and padding
         <div className="p-6 md:p-4 sm:p-3 sm:p-4 lg:p-6 lg:p-8 lg:p-10 min-h-screen bg-slate-50">
             {/* Header */}
-            <header className='flex items-center gap-4 border-b-2 pb-3 mb-8' className="border-corporate-navy/30">
-                <ShieldCheck className='w-10 h-10 flex-shrink-0' className="text-corporate-navy"/>
+            <header className="flex items-center gap-4 border-b-2 pb-3 mb-8 border-corporate-navy/30">
+                <ShieldCheck className="w-10 h-10 flex-shrink-0 text-corporate-navy"/>
                 <div>
                     <h1 className="text-xl sm:text-2xl sm:text-3xl md:text-4xl font-extrabold text-corporate-navy">Leadership Identity Statement (LIS) Auditor</h1>
                     <p className="text-md text-gray-600 mt-1">Refine your core leadership foundation.</p>
@@ -211,8 +211,8 @@ const QuickStartAcceleratorScreen = () => {
                     // Consistent page structure and padding
                     <div className="p-6 md:p-4 sm:p-3 sm:p-4 lg:p-6 lg:p-8 lg:p-10">
                         {/* Header */}
-                        <header className='flex items-center gap-4 border-b-2 pb-3 mb-8' className="border-corporate-orange/30"> {/* Use ORANGE accent */}
-                            <Zap className='w-10 h-10 flex-shrink-0' className="text-corporate-orange"/>
+                        <header className="flex items-center gap-4 border-b-2 pb-3 mb-8 border-corporate-orange/30"> {/* Use ORANGE accent */}
+                            <Zap className="w-10 h-10 flex-shrink-0 text-corporate-orange"/>
                             <div>
                                 <h1 className="text-xl sm:text-2xl sm:text-3xl md:text-4xl font-extrabold text-corporate-navy">QuickStart Program</h1>
                                 <p className="text-md text-gray-600 mt-1">(Core Pillar)</p>

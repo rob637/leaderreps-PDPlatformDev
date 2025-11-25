@@ -34,6 +34,9 @@ export {
 // Typography Components
 export { Heading, Text, PageHeader } from './Typography';
 
+// Layout Components
+export { PageLayout, PageEmptyState, PageSection, PageGrid } from './PageLayout';
+
 // Feature Components
 export { default as MembershipGate } from './MembershipGate';
 export { default as PWAInstall } from './PWAInstall';

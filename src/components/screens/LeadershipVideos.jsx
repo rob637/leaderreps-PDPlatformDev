@@ -2,13 +2,13 @@
 
 import React, { useEffect, useMemo, useState } from 'react';
 // --- Icons ---
-import { Film, User, Clock, ArrowRight, Zap, Briefcase, ArrowLeft, Search, Filter, Play, BookOpen, Users, Target, Lightbulb, TrendingUp, Star } from 'lucide-react';
+import { Film, User, Clock, ArrowRight, Zap, Briefcase, Search, Filter, Play, BookOpen, Users, Target, Lightbulb, TrendingUp, Star } from 'lucide-react';
 // --- Core Services & Context ---
 import { useAppServices } from '../../services/useAppServices.jsx'; // cite: useAppServices.jsx
 import { getVideos } from '../../services/contentService.js'; // NEW: Load from CMS
 import { logWidthMeasurements } from '../../utils/debugWidth.js';
 // --- UI Components ---
-import { Button } from '../ui';
+import { Button, PageLayout } from '../ui';
 
 /* =========================================================
    PALETTE & UI COMPONENTS (Standardized)
@@ -287,26 +287,13 @@ const LeadershipVideosScreen = () => {
     }
 
     return (
-        <div className="p-3 sm:p-4 lg:p-6 md:p-10 min-h-screen bg-slate-50">
-            {/* Back Button */}
-            <Button onClick={() => navigate('library')} variant="nav-back" size="sm" className="mb-6">
-                <ArrowLeft className="w-4 h-4 mr-2" />
-                Back to Library
-            </Button>
-            
-            {/* Header */}
-            <header className='flex items-center gap-4 border-b-2 pb-3 mb-8' className="border-corporate-navy/30">
-                <Film className='w-10 h-10 flex-shrink-0' className="text-corporate-navy"/>
-                <div>
-                    <h1 className="text-xl sm:text-2xl sm:text-3xl md:text-4xl font-extrabold text-corporate-navy">
-                        Leadership Video Library
-                    </h1>
-                    <p className="text-md text-corporate-navy/80">
-                        Curated content for leaders at every level
-                    </p>
-                </div>
-            </header>
-
+        <PageLayout
+            title="Leadership Video Library"
+            description="Curated content for leaders at every level"
+            icon={Film}
+            backTo="library"
+            onNavigate={navigate}
+        >
             {/* Search and Filter Controls */}
             <div className="mb-8 space-y-4">
                 <div className="flex flex-col md:flex-row gap-4 items-start md:items-center">
@@ -362,8 +349,7 @@ const LeadershipVideosScreen = () => {
                                 setSelectedTag('');
                                 setSelectedCategory('ALL');
                             }}
-                            className="text-sm underline hover:no-underline"
-                            className="text-corporate-teal"
+                            className="text-sm underline hover:no-underline text-corporate-teal"
                         >
                             Clear filters
                         </button>
@@ -444,9 +430,7 @@ const LeadershipVideosScreen = () => {
                 })}
                 </>
             )}
-
-
-        </div>
+        </PageLayout>
     );
 };
 

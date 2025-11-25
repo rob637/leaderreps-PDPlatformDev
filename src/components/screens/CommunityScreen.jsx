@@ -11,10 +11,10 @@ import WidgetRenderer from '../admin/WidgetRenderer';
 
 // --- Icons ---
 import {
-    Users, MessageSquare, Briefcase, Bell, PlusCircle, User, ArrowLeft, Target, Filter, Clock,
+    Users, MessageSquare, Briefcase, Bell, PlusCircle, User, Target, Filter, Clock,
     Star, CheckCircle, Award, Link, Send, Loader, Heart, X, UserPlus, Video
 } from 'lucide-react';
-import { Button, Card, LoadingSpinner } from '../ui';
+import { Button, Card, LoadingSpinner, PageLayout } from '../ui';
 
 /* =========================================================
    PALETTE (use CSS variables from src/styles/global.css)
@@ -505,7 +505,7 @@ const CommunityScreen = ({ simulatedTier }) => {
         isFeatureEnabled,
         
         // Icons
-        Users, MessageSquare, Briefcase, Bell, PlusCircle, User, ArrowLeft, Target, Filter, Clock,
+        Users, MessageSquare, Briefcase, Bell, PlusCircle, User, Target, Filter, Clock,
         Star, CheckCircle, Award, Link, Send, Loader, Heart, X, UserPlus, Video
     };
 
@@ -589,26 +589,14 @@ const CommunityScreen = ({ simulatedTier }) => {
     if (appError) return <ConfigError message={`Failed to load Community Hub: ${appError.message}`} />;
 
     return (
-        <div className="min-h-screen bg-slate-50 p-6 space-y-8">
-            {/* Back Button */}
-            <div className="flex items-center gap-2 text-slate-600 hover:text-slate-900 cursor-pointer transition-colors w-fit" onClick={() => navigate('dashboard')}>
-                <ArrowLeft className="w-4 h-4" />
-                <span className="text-sm font-medium">Back to Dashboard</span>
-            </div>
-
-            {/* Header */}
-            <div className="text-center max-w-4xl mx-auto">
-                <div className="flex items-center justify-center gap-3 mb-2">
-                    <Users className="w-8 h-8 text-corporate-teal" />
-                    <h1 className="text-3xl font-bold text-corporate-navy">Community</h1>
-                    <Users className="w-8 h-8 text-corporate-teal" />
-                </div>
-                {!hasCommunityAccess && (
-                    <span className="inline-block bg-orange-100 text-orange-800 px-3 py-1 rounded-full text-sm font-semibold mb-4">Requires Premium</span>
-                )}
-                <p className="text-slate-600 text-lg">Connect, share insights, and grow with fellow leaders.</p>
-            </div>
-
+        <PageLayout
+            title="Community"
+            description="Connect, share insights, and grow with fellow leaders."
+            icon={Users}
+            backTo="dashboard"
+            onNavigate={navigate}
+            badge={!hasCommunityAccess ? "Requires Premium" : undefined}
+        >
             {/* Main Layout Grid (Sidebar + Content) */}
             <div className={`grid grid-cols-1 lg:grid-cols-6 gap-6 max-w-7xl mx-auto ${!hasCommunityAccess ? 'opacity-60 pointer-events-none' : ''}`}>
                 {/* Sidebar Navigation */}
@@ -650,7 +638,7 @@ const CommunityScreen = ({ simulatedTier }) => {
                     </div>
                 </div>
             )}
-        </div>
+        </PageLayout>
     );
 };
 

@@ -13,9 +13,9 @@ import { logWidthMeasurements } from '../../utils/debugWidth.js';
 import { membershipService } from '../../services/membershipService.js';
 import { useNavigation } from '../../providers/NavigationProvider.jsx'; 
 import { useFeatures } from '../../providers/FeatureProvider';
-import { AlertTriangle, ArrowLeft, BarChart3, Beaker, Briefcase, CheckCircle, Clock, CornerRightUp, Cpu, Eye, HeartPulse, Info, Lightbulb, Mic, Play, PlusCircle, Send, ShieldCheck, Star, Target, TrendingUp, Users, X, Zap } from 'lucide-react'; 
+import { AlertTriangle, BarChart3, Beaker, Briefcase, CheckCircle, Clock, CornerRightUp, Cpu, Eye, HeartPulse, Info, Lightbulb, Mic, Play, PlusCircle, Send, ShieldCheck, Star, Target, TrendingUp, Users, X, Zap, ArrowLeft } from 'lucide-react'; 
 import { COLORS, COMPLEXITY_MAP } from './labs/labConstants.js';
-import { Button, Card, Tooltip } from '../ui';
+import { Button, Card, Tooltip, PageLayout } from '../ui';
 
 const mdToHtml = async (markdown) => {
   let html = markdown;
@@ -1692,31 +1692,14 @@ export default function CoachingLabScreen({ simulatedTier }) {
 
             default:
                 return (
-                    <div>
-                        {/* Back Button */}
-                        <div className="flex justify-start mb-2">
-                            <div className="flex items-center gap-2 text-gray-600 hover:text-gray-800 cursor-pointer transition-colors" onClick={() => navigate('dashboard')}>
-                                <ArrowLeft className="w-4 h-4" />
-                                <span className="text-sm font-medium">Back to Dashboard</span>
-                            </div>
-                        </div>
-                        
-                        <header className="mb-8 text-center">
-                            <div className="flex items-center justify-center gap-3 mb-2">
-                                <Beaker className="w-8 h-8 text-corporate-teal" />
-                                <h1 className="text-3xl font-bold text-corporate-navy">
-                                    Coaching Lab
-                                </h1>
-                                <Beaker className="w-8 h-8 text-corporate-teal" />
-                            </div>
-                            <p className="text-slate-600 mt-2">
-                                Welcome to Coaching. Select a tool to build your leadership skills.
-                            </p>
-                            {!hasCoachingAccess && (
-                                <span className="inline-block bg-orange-100 text-orange-800 px-3 py-1 rounded-full text-sm font-semibold mt-4">Requires Premium</span>
-                            )}
-                        </header>
-
+                    <PageLayout
+                        title="Coaching Lab"
+                        description="Welcome to Coaching. Select a tool to build your leadership skills."
+                        icon={Beaker}
+                        backTo="dashboard"
+                        onNavigate={navigate}
+                        badge={!hasCoachingAccess ? "Requires Premium" : undefined}
+                    >
                         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                             {menuItems.map(item => (
                                 <Card key={item.featureId} title={item.title} icon={item.icon} onClick={hasCoachingAccess ? item.onClick : undefined} accent="TEAL">
@@ -1729,7 +1712,7 @@ export default function CoachingLabScreen({ simulatedTier }) {
                                 </Card>
                             ))}
                         </div>
-                    </div>
+                    </PageLayout>
                 );
         }
     };

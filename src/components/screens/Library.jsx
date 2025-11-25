@@ -1,10 +1,10 @@
 // src/components/screens/Library.jsx
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { BookOpen, ShieldCheck, Film, ArrowLeft, Sparkles, Target, Trophy, Users, TrendingUp, Star, Zap, PlayCircle, FileText } from 'lucide-react';
+import { BookOpen, ShieldCheck, Film, Sparkles, Target, Trophy, Users, TrendingUp, Star, Zap, PlayCircle, FileText } from 'lucide-react';
 import { useAppServices } from '../../services/useAppServices.jsx';
 import { membershipService } from '../../services/membershipService.js';
-import { Button } from '../ui';
+import { PageLayout, PageGrid } from '../ui';
 import { getReadings, getVideos, getCourses } from '../../services/contentService';
 import { useFeatures } from '../../providers/FeatureProvider';
 import WidgetRenderer from '../admin/WidgetRenderer';
@@ -168,48 +168,31 @@ const Library = ({ simulatedTier, isDeveloperMode }) => {
     membershipService,
     
     // Icons
-    BookOpen, ShieldCheck, Film, ArrowLeft, Sparkles, Target, Trophy, Users, TrendingUp, Star, Zap, PlayCircle, FileText
+    BookOpen, ShieldCheck, Film, Sparkles, Target, Trophy, Users, TrendingUp, Star, Zap, PlayCircle, FileText
   };
 
   return (
-      <div className="min-h-screen bg-slate-50 p-6 md:p-10 animate-fade-in">
-        <div className="max-w-7xl mx-auto">
-      
-        {/* Back Button */}
-        <button 
-            onClick={() => navigate('dashboard')}
-            className="flex items-center gap-2 mb-8 text-slate-500 hover:text-corporate-navy transition-colors group"
-        >
-          <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
-          <span className="font-medium">Back to Dashboard</span>
-        </button>
-
-        {/* Header */}
-        <div className="text-center mb-12 space-y-4">
-            <div className="flex items-center justify-center gap-3">
-                <BookOpen className='w-8 h-8 text-corporate-teal'/>
-                <h1 className="text-4xl font-bold text-corporate-navy">Content</h1>
-                <BookOpen className='w-8 h-8 text-corporate-teal'/>
-            </div>
-            <p className="text-lg text-slate-600 max-w-2xl mx-auto">Your complete leadership development ecosystem.</p>
+    <PageLayout
+      title="Content"
+      subtitle="Your complete leadership development ecosystem."
+      icon={BookOpen}
+      navigate={navigate}
+      backTo="dashboard"
+    >
+      <WidgetRenderer widgetId="content-library-main" scope={scope}>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-5xl mx-auto">
+          {libraryItems.map(item => (
+            <LibraryCard 
+              key={item.id}
+              {...item}
+              onClick={() => handleCardClick(item)}
+              isLocked={!membershipService.hasAccess(currentTier, item.requiredTier)}
+              requiredTier={item.requiredTier}
+            />
+          ))}
         </div>
-
-        <WidgetRenderer widgetId="content-library-main" scope={scope}>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6 max-w-5xl mx-auto">
-                {libraryItems.map(item => (
-                    <LibraryCard 
-                        key={item.id}
-                        {...item}
-                        onClick={() => handleCardClick(item)}
-                        isLocked={!membershipService.hasAccess(currentTier, item.requiredTier)}
-                        requiredTier={item.requiredTier}
-                    />
-                ))}
-            </div>
-        </WidgetRenderer>
-        
-      </div>
-    </div>
+      </WidgetRenderer>
+    </PageLayout>
   );
 };
 

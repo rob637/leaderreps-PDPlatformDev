@@ -8,7 +8,7 @@ import {
 } from 'lucide-react';
 import { DIMENSION_TO_TIER_MAP } from '../../data/LeadershipTiers.js';
 import { logWidthMeasurements } from '../../utils/debugWidth.js';
-import { Button, Card } from '../ui';
+import { Button, Card, PageLayout } from '../ui';
 
 const LoadingSpinner = ({ message = "Loading..." }) => (
   <div className="min-h-[60vh] flex flex-col items-center justify-center space-y-4">
@@ -600,53 +600,44 @@ export default function BusinessReadingsScreen() {
   if (appError) return <ConfigError message={`Failed to load Reading Hub data: ${appError.message}`} />;
 
   return (
-    <div className="min-h-screen bg-slate-50 p-6 space-y-8">
-      <div className="max-w-7xl mx-auto space-y-8">
-        <div className="text-center space-y-4">
-          <h1 className="text-3xl font-bold text-corporate-navy">Reading & Reps</h1>
-          <p className="text-slate-600 text-lg max-w-2xl mx-auto">
-            Access curated business readings and generate AI-powered practice reps.
-          </p>
-          <div className="flex justify-center pt-4">
-             <Button onClick={() => navigate('library')} variant="nav-back" size="sm">
-                <ArrowLeft className="w-4 h-4 mr-2" />
-                Back to Library
-             </Button>
-          </div>
-        </div>
-
-        {!selectedBook ? (
-            <BookListStable
-                filters={filters}
-                filteredBooks={filteredBooks}
-                savedBooks={savedBooks}
-                selectedBook={selectedBook}
-                onSelectBook={handleSelectBook}
-                onToggleSave={handleToggleSave}
-                handleSearchChange={handleSearchChange}
-                handleFilterChange={handleFilterChange}
-            />
-        ) : (
-            <BookFlyerStable
-                selectedBook={selectedBook}
-                htmlFlyer={htmlFlyer}
-                isFlyerLoading={isFlyerLoading}
-                isExecutiveBrief={isExecutiveBrief}
-                setIsExecutiveBrief={setIsExecutiveBrief}
-                questionFeedback={questionFeedback}
-                aiResponse={aiResponse}
-                aiQuery={aiQuery}
-                handleAiQueryChange={handleAiQueryChange}
-                submitHandler={submitAiHandler}
-                savedBooks={savedBooks}
-                onToggleSave={handleToggleSave}
-                onCommit={() => handleCommitment(selectedBook)}
-                isCommitted={isCommitted}
-                isSubmitting={isSubmittingAi}
-                onBack={() => setSelectedBook(null)}
-            />
-        )}
-      </div>
-    </div>
+    <PageLayout
+      title="Reading & Reps"
+      description="Access curated business readings and generate AI-powered practice reps."
+      icon={BookOpen}
+      backTo="library"
+      onNavigate={navigate}
+    >
+      {!selectedBook ? (
+        <BookListStable
+          filters={filters}
+          filteredBooks={filteredBooks}
+          savedBooks={savedBooks}
+          selectedBook={selectedBook}
+          onSelectBook={handleSelectBook}
+          onToggleSave={handleToggleSave}
+          handleSearchChange={handleSearchChange}
+          handleFilterChange={handleFilterChange}
+        />
+      ) : (
+        <BookFlyerStable
+          selectedBook={selectedBook}
+          htmlFlyer={htmlFlyer}
+          isFlyerLoading={isFlyerLoading}
+          isExecutiveBrief={isExecutiveBrief}
+          setIsExecutiveBrief={setIsExecutiveBrief}
+          questionFeedback={questionFeedback}
+          aiResponse={aiResponse}
+          aiQuery={aiQuery}
+          handleAiQueryChange={handleAiQueryChange}
+          submitHandler={submitAiHandler}
+          savedBooks={savedBooks}
+          onToggleSave={handleToggleSave}
+          onCommit={() => handleCommitment(selectedBook)}
+          isCommitted={isCommitted}
+          isSubmitting={isSubmittingAi}
+          onBack={() => setSelectedBook(null)}
+        />
+      )}
+    </PageLayout>
   );
 }

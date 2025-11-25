@@ -123,8 +123,7 @@ const LOVManager = () => {
       <div className="mb-6">
         <button
           onClick={() => navigate('admin-content-home')}
-          className="flex items-center gap-2 text-sm mb-4 hover:opacity-70"
-          className="text-slate-500"
+          className="flex items-center gap-2 text-sm mb-4 hover:opacity-70 text-slate-500"
         >
           <ArrowLeft className="w-4 h-4" />
           Back to Admin
@@ -140,8 +139,7 @@ const LOVManager = () => {
           
           <button
             onClick={handleAdd}
-            className="flex items-center gap-2 px-4 py-2 rounded-lg font-semibold text-white transition-all"
-            className="bg-corporate-teal"
+            className="flex items-center gap-2 px-4 py-2 rounded-lg font-semibold text-white transition-all bg-corporate-teal"
           >
             <Plus className="w-5 h-5" />
             Create New List
@@ -225,8 +223,7 @@ const LOVManager = () => {
             <div className="flex gap-3 pt-4">
               <button
                 onClick={handleSave}
-                className="flex items-center gap-2 px-6 py-2 rounded-lg font-semibold text-white"
-                className="bg-corporate-teal"
+                className="flex items-center gap-2 px-6 py-2 rounded-lg font-semibold text-white bg-corporate-teal"
               >
                 <Save className="w-4 h-4" />
                 Save List
@@ -256,8 +253,7 @@ const LOVManager = () => {
           lovs.map((lov) => (
             <div
               key={lov.id}
-              className="p-6 bg-white rounded-xl shadow-sm border hover:shadow-md transition-all"
-              className="border-corporate-teal"
+              className="p-6 bg-white rounded-xl shadow-sm border hover:shadow-md transition-all border-corporate-teal"
             >
               <div className="flex justify-between items-start mb-4">
                 <div>

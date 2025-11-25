@@ -162,8 +162,7 @@ const CoachingManager = () => {
       <div className="mb-6">
         <button
           onClick={() => navigate('admin-content-home')}
-          className="flex items-center gap-2 text-sm mb-4 hover:opacity-70"
-          className="text-slate-500"
+          className="flex items-center gap-2 text-sm mb-4 hover:opacity-70 text-slate-500"
         >
           <ArrowLeft className="w-4 h-4" />
           Back to Admin
@@ -179,8 +178,7 @@ const CoachingManager = () => {
           
           <button
             onClick={handleAdd}
-            className="flex items-center gap-2 px-4 py-2 rounded-lg font-semibold text-white transition-all"
-            className="bg-corporate-teal"
+            className="flex items-center gap-2 px-4 py-2 rounded-lg font-semibold text-white transition-all bg-corporate-teal"
           >
             <Plus className="w-5 h-5" />
             Add Scenario
@@ -322,8 +320,7 @@ const CoachingManager = () => {
             <div className="flex gap-3 pt-4">
               <button
                 onClick={handleSave}
-                className="flex items-center gap-2 px-6 py-2 rounded-lg font-semibold text-white"
-                className="bg-corporate-teal"
+                className="flex items-center gap-2 px-6 py-2 rounded-lg font-semibold text-white bg-corporate-teal"
               >
                 <Save className="w-4 h-4" />
                 Save

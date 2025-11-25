@@ -8,7 +8,7 @@
 // 🛑 CRITICAL FIX (10/30/25): Refactored writeDevPlan to only adapt the currentPlan sub-object.
 
 import React, { useMemo, useState, useEffect } from 'react';
-import { ArrowLeft, Target } from 'lucide-react';
+import { Target } from 'lucide-react';
 import { useAppServices } from '../../services/useAppServices.jsx';
 import BaselineAssessment from './developmentplan/BaselineAssessment';
 import PlanTracker from './developmentplan/PlanTracker';
@@ -17,6 +17,7 @@ import DetailedPlanView from './developmentplan/DetailedPlanView';
 import MilestoneTimeline from './developmentplan/MilestoneTimeline';
 import { Button, Card, EmptyState } from './developmentplan/DevPlanComponents';
 import { generatePlanFromAssessment, normalizeSkillCatalog } from './developmentplan/devPlanUtils';
+import { PageLayout } from '../ui';
 
 // FIXED: Import adapter utilities
 import { 
@@ -489,28 +490,13 @@ async function confirmPlanPersisted(db, userId, retries = 4, delayMs = 250) {
   const isDeveloperMode = localStorage.getItem('arena-developer-mode') === 'true';
   
   return (
-    <div className="p-6 space-y-8 bg-slate-50 min-h-screen">
-      {/* Back Button */}
-      <div className="flex justify-start mb-2">
-          <div className="flex items-center gap-2 text-gray-600 hover:text-gray-800 cursor-pointer transition-colors" onClick={() => navigate && navigate('dashboard')}>
-              <ArrowLeft className="w-4 h-4" />
-              <span className="text-sm font-medium">Back to Dashboard</span>
-          </div>
-      </div>
-
-      <header className="mb-8 text-center">
-        <div className="flex items-center justify-center gap-3 mb-2">
-          <Target className="w-8 h-8 text-corporate-teal" />
-          <h1 className="text-3xl font-bold text-corporate-navy">
-            Development Plan
-          </h1>
-          <Target className="w-8 h-8 text-corporate-teal" />
-        </div>
-        <p className="text-slate-600 mt-2">
-          Your roadmap to leadership excellence.
-        </p>
-      </header>
-
+    <PageLayout
+      title="Development Plan"
+      description="Your roadmap to leadership excellence."
+      icon={Target}
+      backTo="dashboard"
+      onNavigate={navigate}
+    >
       {/* Developer Mode Reset Button */}
       {isDeveloperMode && hasCurrentPlan && (
         <div className="mb-4 text-center">
@@ -582,6 +568,6 @@ async function confirmPlanPersisted(db, userId, retries = 4, delayMs = 250) {
           onTimeline={() => setView('timeline')}
         />
       )}
-    </div>
+    </PageLayout>
   );
 }

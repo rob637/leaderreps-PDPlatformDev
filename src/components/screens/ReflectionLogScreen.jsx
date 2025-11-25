@@ -8,8 +8,8 @@ import { useAppServices } from '../../services/useAppServices.jsx'; // cite: use
 import { collection, query, orderBy, getDocs } from 'firebase/firestore'; // cite: DailyPractice.jsx
 
 // --- Icons ---
-import { Archive, Loader, MessageSquare, ArrowLeft, User } from 'lucide-react';
-import { Button, Card, LoadingSpinner } from '../ui';
+import { Archive, Loader, MessageSquare, User } from 'lucide-react';
+import { Button, Card, LoadingSpinner, PageLayout } from '../ui';
 
 /* =========================================================
    ReflectionLogScreen Component
@@ -99,20 +99,13 @@ const ReflectionLogScreen = () => {
     }
 
     return (
-        // Consistent page structure and padding
-        <div className="p-6 md:p-4 sm:p-3 sm:p-4 lg:p-6 lg:p-8 lg:p-10 max-w-4xl mx-auto min-h-screen bg-slate-50">
-            {/* Header */}
-            {/* Back Button */}
-            <Button onClick={() => navigate('dashboard')} variant="nav-back" size="sm" className="mb-6"> 
-                <ArrowLeft className="w-4 h-4 mr-2" /> Back to Dashboard
-            </Button>
-            
-            <header className="flex flex-col sm:flex-row justify-between sm:items-center gap-4 border-b pb-4 mb-6 border-slate-200">
-                <h1 className="text-xl sm:text-2xl sm:text-3xl md:text-4xl font-extrabold flex items-center gap-3 text-corporate-navy">
-                    <Archive className="w-8 h-8 text-corporate-teal" /> Reflection Log
-                </h1>
-            </header>
-
+        <PageLayout
+            title="Reflection Log"
+            description="Review your journey of daily reflections and insights."
+            icon={Archive}
+            backTo="dashboard"
+            onNavigate={navigate}
+        >
             {/* Loading State for History Fetch */}
             {isHistoryLoading && <LoadingSpinner message="Loading reflection history..." />}
 
@@ -166,7 +159,7 @@ const ReflectionLogScreen = () => {
                     ))}
                 </div>
             )}
-        </div>
+        </PageLayout>
     );
 };
 
