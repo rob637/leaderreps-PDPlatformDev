@@ -176,7 +176,7 @@ const MembershipUpgrade = ({ setCurrentScreen, simulatedTier }) => {
             className="flex items-center gap-2 mb-8 text-slate-500 hover:text-[#002E47] transition-colors group"
         >
           <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
-          <span className="font-medium">Back to The Arena</span>
+          <span className="font-medium">Back to Dashboard</span>
         </button>
 
         <div className="text-center mb-16 space-y-4">

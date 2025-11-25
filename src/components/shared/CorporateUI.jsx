@@ -166,7 +166,7 @@ export const PageHeader = ({ title, subtitle, icon: Icon }) => (
 /* =========================================================
    STANDARDIZED BACK BUTTON
 ========================================================= */
-export const BackButton = ({ onClick, children = "Back to The Arena" }) => (
+export const BackButton = ({ onClick, children = "Back to Dashboard" }) => (
   <div className={CORPORATE_CLASSES.BACK_BUTTON} onClick={onClick}>
     <ArrowLeft className="w-4 h-4" />
     <span className="text-sm font-medium">{children}</span>

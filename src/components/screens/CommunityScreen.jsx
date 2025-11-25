@@ -45,12 +45,12 @@ const COLORS = {
 const Button = ({ children, onClick, disabled = false, variant = 'primary', className = '', size = 'md', ...rest }) => { /* ... Re-use exact Button definition from Dashboard.jsx ... */
     let baseStyle = `inline-flex items-center justify-center gap-2 font-semibold rounded-xl transition-all duration-200 focus:outline-none focus:ring-4 disabled:opacity-50 disabled:cursor-not-allowed`;
     if (size === 'sm') baseStyle += ' px-4 py-2 text-sm'; else if (size === 'lg') baseStyle += ' px-8 py-4 text-lg'; else baseStyle += ' px-6 py-3 text-base'; // Default 'md'
-    if (variant === 'primary') baseStyle += ` bg-[${COLORS.TEAL}] text-white shadow-lg hover:opacity-90 focus:ring-[${COLORS.TEAL}]/50`;
-    else if (variant === 'secondary') baseStyle += ` bg-[${COLORS.ORANGE}] text-white shadow-lg hover:opacity-90 focus:ring-[${COLORS.ORANGE}]/50`;
-    else if (variant === 'outline') baseStyle += ` bg-[${COLORS.OFF_WHITE}] text-[${COLORS.TEAL}] border-2 border-[${COLORS.TEAL}] shadow-md hover:bg-[${COLORS.TEAL}]/10 focus:ring-[${COLORS.TEAL}]/50`;
-    else if (variant === 'nav-back') baseStyle += ` bg-[${COLORS.LIGHT_GRAY}] text-[${COLORS.NAVY}] border border-[${COLORS.TEAL}] shadow-sm hover:opacity-90 focus:ring-[${COLORS.TEAL}]/50 px-4 py-2 text-sm`;
-    else if (variant === 'ghost') baseStyle += ` bg-transparent text-[${COLORS.MUTED}] hover:bg-[${COLORS.LIGHT_GRAY}] focus:ring-[${COLORS.TEAL}]/50 px-3 py-1.5 text-sm`;
-    if (disabled) baseStyle += ` bg-[${COLORS.LIGHT_GRAY}] text-[${COLORS.MUTED}] shadow-inner border-transparent opacity-50 hover:bg-[${COLORS.LIGHT_GRAY}]`;
+    if (variant === 'primary') baseStyle += ` bg-[#47A88D] text-white shadow-lg hover:opacity-90 focus:ring-[#47A88D]/50`;
+    else if (variant === 'secondary') baseStyle += ` bg-[#E04E1B] text-white shadow-lg hover:opacity-90 focus:ring-[#E04E1B]/50`;
+    else if (variant === 'outline') baseStyle += ` bg-[#FFFFFF] text-[#47A88D] border-2 border-[#47A88D] shadow-md hover:bg-[#47A88D]/10 focus:ring-[#47A88D]/50`;
+    else if (variant === 'nav-back') baseStyle += ` bg-[#FCFCFA] text-[#002E47] border border-[#47A88D] shadow-sm hover:opacity-90 focus:ring-[#47A88D]/50 px-4 py-2 text-sm`;
+    else if (variant === 'ghost') baseStyle += ` bg-transparent text-[#47A88D] hover:bg-[#FCFCFA] focus:ring-[#47A88D]/50 px-3 py-1.5 text-sm`;
+    if (disabled) baseStyle += ` bg-[#FCFCFA] text-[#47A88D] shadow-inner border-transparent opacity-50 hover:bg-[#FCFCFA]`;
     return (<button {...rest} onClick={onClick} disabled={disabled} className={`${baseStyle} ${className}`}>{children}</button>);
 };
 const Card = ({ children, title, icon: Icon, className = '', onClick, accent = 'NAVY' }) => { /* ... Re-use exact Card definition from Dashboard.jsx ... */
@@ -189,7 +189,7 @@ const CommunityHomeView = ({ setView, user, currentTierFilter, setCurrentTierFil
                                     {/* Pod Member Tag (Example - adjust logic based on real data) */}
                                     {thread.isPodMember && <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-100 text-blue-700`}>Pod</span>}
                                     {/* Impact Tag */}
-                                    {thread.impact && <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full text-white bg-[${COLORS.ORANGE}] flex items-center gap-1`}><Star size={10} fill="currentColor"/> Impact</span>}
+                                    {thread.impact && <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full text-white bg-[#E04E1B] flex items-center gap-1`}><Star size={10} fill="currentColor"/> Impact</span>}
                                     {/* Tier Tag */}
                                     <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full`} style={{ background: `${threadTierMeta.hex}1A`, color: threadTierMeta.hex }}>{thread.tier}</span>
                                 </div>
@@ -378,23 +378,23 @@ const NewThreadView = ({ setView }) => {
                 {/* Title */}
                 <div>
                     <label className="block text-sm font-semibold text-gray-700 mb-1">1. Thread Title / Topic <span className="text-red-500">*</span></label>
-                    <input type="text" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g., Applying SBI to high performers" className="w-full p-3 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-[${COLORS.TEAL}]" required />
+                    <input type="text" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g., Applying SBI to high performers" className="w-full p-3 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-[#47A88D]" required />
                 </div>
                 {/* Context */}
                 <div>
                     <label className="block text-sm font-semibold text-gray-700 mb-1">2. Situation & Context (1-2 sentences) <span className="text-red-500">*</span></label>
-                    <textarea value={context} onChange={(e) => setContext(e.target.value)} placeholder="e.g., Giving feedback to a senior engineer who is technically strong but dismissive in code reviews." className="w-full p-3 border border-gray-300 rounded-lg h-20 text-sm focus:ring-2 focus:ring-[${COLORS.TEAL}]" required />
+                    <textarea value={context} onChange={(e) => setContext(e.target.value)} placeholder="e.g., Giving feedback to a senior engineer who is technically strong but dismissive in code reviews." className="w-full p-3 border border-gray-300 rounded-lg h-20 text-sm focus:ring-2 focus:ring-[#47A88D]" required />
                 </div>
                 {/* Question */}
                 <div>
                     <label className="block text-sm font-semibold text-gray-700 mb-1">3. Specific Question / Challenge <span className="text-red-500">*</span></label>
-                    <textarea value={question} onChange={(e) => setQuestion(e.target.value)} placeholder="e.g., How can I deliver this feedback using SBI without demotivating them, focusing on the impact on team collaboration?" className="w-full p-3 border border-gray-300 rounded-lg h-24 text-sm focus:ring-2 focus:ring-[${COLORS.TEAL}]" required />
+                    <textarea value={question} onChange={(e) => setQuestion(e.target.value)} placeholder="e.g., How can I deliver this feedback using SBI without demotivating them, focusing on the impact on team collaboration?" className="w-full p-3 border border-gray-300 rounded-lg h-24 text-sm focus:ring-2 focus:ring-[#47A88D]" required />
                 </div>
                 {/* Tier Selection */}
                 <div>
                     <label className="block text-sm font-semibold text-gray-700 mb-1">4. Primary Leadership Tier Focus</label>
                     {/* TODO: Populate options from LEADERSHIP_TIERS context */}
-                    <select value={tier} onChange={(e) => setTier(e.target.value)} className="w-full p-3 border border-gray-300 rounded-lg text-sm bg-white focus:ring-2 focus:ring-[${COLORS.TEAL}]">
+                    <select value={tier} onChange={(e) => setTier(e.target.value)} className="w-full p-3 border border-gray-300 rounded-lg text-sm bg-white focus:ring-2 focus:ring-[#47A88D]">
                         <option value="T1">T1: Lead Self</option>
                         <option value="T2">T2: Lead Work</option>
                         <option value="T3">T3: Lead People</option>
@@ -405,7 +405,7 @@ const NewThreadView = ({ setView }) => {
 
                 {/* Success Message */}
                 {isSuccess && (
-                    <div className="flex items-center p-3 text-sm font-semibold text-white rounded-lg bg-[${COLORS.GREEN}] animate-pulse">
+                    <div className="flex items-center p-3 text-sm font-semibold text-white rounded-lg bg-[#47A88D] animate-pulse">
                         <CheckCircle className='w-4 h-4 mr-2'/> Thread Posted! Redirecting...
                     </div>
                 )}

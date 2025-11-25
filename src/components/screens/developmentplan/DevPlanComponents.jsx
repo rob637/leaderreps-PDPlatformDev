@@ -45,25 +45,23 @@ export const Card = ({ children, title, icon: Icon, className = '', onClick, acc
       role={interactive ? 'button' : undefined}
       tabIndex={interactive ? 0 : undefined}
       onKeyDown={handleKeyDown}
-      className={`relative rounded-2xl border-2 shadow-xl transition-all duration-300 text-left ${className}`}
+      className={`relative rounded-2xl bg-white shadow-sm border border-slate-200 text-left transition-all duration-300 ${className}`}
       style={{
-          background: 'linear-gradient(180deg,#FFFFFF, #FCFCFA)',
-          borderColor: '#47A88D',
-          color: '#002E47'
+          borderTopWidth: '4px',
+          borderTopColor: accentColor,
       }}
       onClick={onClick}
     >
-      <span style={{ position:'absolute', top:0, left:0, right:0, height:6, background: accentColor, borderTopLeftRadius:14, borderTopRightRadius:14 }} />
       {(title || actions || Icon) && (
-        <div className="flex items-center justify-between p-3 sm:p-4 lg:p-6 pb-4">
+        <div className="flex items-center justify-between p-4 sm:p-6 pb-2">
           <div className="flex items-center gap-3">
             {Icon && (
-              <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ backgroundColor: `${accentColor}20`, color: accentColor }}>
-                <Icon size={20} />
+              <div className="flex items-center justify-center">
+                <Icon size={20} color={accentColor} />
               </div>
             )}
             {title && (
-              <h2 className="text-xl font-extrabold" style={{ color: '#002E47' }}>{title}</h2>
+              <h2 className="text-lg font-bold text-[#002E47]">{title}</h2>
             )}
           </div>
           {actions && (
@@ -72,7 +70,7 @@ export const Card = ({ children, title, icon: Icon, className = '', onClick, acc
         </div>
       )}
       
-      <div className={title || actions || Icon ? "p-6 pt-0" : "p-6"}>
+      <div className={title || actions || Icon ? "p-4 sm:p-6 pt-2" : "p-4 sm:p-6"}>
         {children}
       </div>
     </Tag>

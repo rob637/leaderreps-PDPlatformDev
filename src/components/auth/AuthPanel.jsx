@@ -70,7 +70,7 @@ function AuthPanel({ auth, onSuccess }) {
           className={`text-2xl font-extrabold mb-4 text-corporate-navy`}
         >
           {mode === 'login'
-            ? 'Sign In to The Arena'
+            ? 'Sign In to Dashboard'
             : isSignup
             ? 'Create Your Account'
             : 'Reset Password'}
