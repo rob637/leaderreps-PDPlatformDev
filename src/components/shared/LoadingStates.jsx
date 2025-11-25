@@ -25,7 +25,7 @@ export const LoadingSpinner = ({
         style={{ color }} 
       />
       {message && (
-        <p className="text-sm font-medium" style={{ color: COLORS.TEXT }}>
+        <p className="text-sm font-medium" className="text-corporate-navy">
           {message}
         </p>
       )}
@@ -41,7 +41,7 @@ export const ErrorState = ({
 }) => (
   <div className={`flex flex-col items-center justify-center p-8 text-center ${className}`}>
     <AlertCircle className="h-12 w-12 mb-4" style={{ color: COLORS.ERROR }} />
-    <h3 className="text-lg font-semibold mb-2" style={{ color: COLORS.TEXT }}>
+    <h3 className="text-lg font-semibold mb-2" className="text-corporate-navy">
       {title}
     </h3>
     <p className="text-sm text-gray-600 mb-6 max-w-md">
@@ -51,7 +51,7 @@ export const ErrorState = ({
       <button
         onClick={onRetry}
         className="px-4 py-2 rounded-lg font-medium text-white transition-colors"
-        style={{ backgroundColor: COLORS.TEAL }}
+        className="bg-corporate-teal"
       >
         Try Again
       </button>
@@ -68,7 +68,7 @@ export const EmptyState = ({
 }) => (
   <div className={`flex flex-col items-center justify-center p-8 text-center ${className}`}>
     <FileX className="h-12 w-12 mb-4" style={{ color: COLORS.SUBTLE }} />
-    <h3 className="text-lg font-semibold mb-2" style={{ color: COLORS.TEXT }}>
+    <h3 className="text-lg font-semibold mb-2" className="text-corporate-navy">
       {title}
     </h3>
     <p className="text-sm text-gray-600 mb-6 max-w-md">
@@ -78,7 +78,7 @@ export const EmptyState = ({
       <button
         onClick={onAction}
         className="px-4 py-2 rounded-lg font-medium text-white transition-colors"
-        style={{ backgroundColor: COLORS.TEAL }}
+        className="bg-corporate-teal"
       >
         {actionLabel}
       </button>

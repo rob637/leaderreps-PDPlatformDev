@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useAppServices } from '../../services/useAppServices.jsx';
-import { Card, Button } from '../shared/UI';
+import { Card, Button } from '../ui';
 import { PlusCircle, X, CheckCircle, Target, TrendingUp, Clock, AlertTriangle, BarChart3, CornerRightUp, ArrowLeft } from 'lucide-react';
 import { LEADERSHIP_TIERS, COMMITMENT_COLLECTION } from '../../data/Constants';
 
@@ -185,15 +185,15 @@ const CommitmentSelectorView = ({ setView, initialGoal, initialTier }) => {
     const tabStyle = (currentTab) => 
         `px-4 py-2 font-semibold rounded-t-xl transition-colors ${
             tab === currentTab 
-            ? 'bg-[#FCFCFA] text-[#002E47] border-t-2 border-x-2 border-[#47A88D]' 
-            : 'bg-gray-200 text-gray-500 hover:text-[#002E47]'
+            ? 'bg-[#FCFCFA] text-corporate-navy border-t-2 border-x-2 border-corporate-teal' 
+            : 'bg-gray-200 text-gray-500 hover:text-corporate-navy'
         }`;
 
     return (
         <div className="min-h-screen bg-slate-50 p-6 space-y-8">
             <div className="max-w-7xl mx-auto">
                 <div className="text-center max-w-4xl mx-auto mb-8">
-                    <h1 className="text-3xl font-bold text-[#002E47] mb-2">Manage Your Scorecard Commitments</h1>
+                    <h1 className="text-3xl font-bold text-corporate-navy mb-2">Manage Your Scorecard Commitments</h1>
                     <p className="text-slate-600 text-lg">Select the core micro-habits that directly support your current leadership development goals. Aim for 3-5 active commitments.</p>
                 </div>
 
@@ -230,7 +230,7 @@ const CommitmentSelectorView = ({ setView, initialGoal, initialTier }) => {
                                     <select 
                                         value={linkedGoal}
                                         onChange={(e) => setLinkedGoal(e.target.value)}
-                                        className="w-full p-3 border border-slate-300 rounded-xl focus:ring-[#002E47] focus:border-[#002E47] text-[#002E47] font-semibold"
+                                        className="w-full p-3 border border-slate-300 rounded-xl focus:ring-corporate-navy focus:border-corporate-navy text-corporate-navy font-semibold"
                                     >
                                         {availableGoals.map(goal => (
                                             <option 
@@ -249,7 +249,7 @@ const CommitmentSelectorView = ({ setView, initialGoal, initialTier }) => {
                                     <select 
                                         value={linkedTier}
                                         onChange={(e) => setLinkedTier(e.target.value)}
-                                        className="w-full p-3 border border-slate-300 rounded-xl focus:ring-[#002E47] focus:border-[#002E47] text-[#002E47] font-semibold"
+                                        className="w-full p-3 border border-slate-300 rounded-xl focus:ring-corporate-navy focus:border-corporate-navy text-corporate-navy font-semibold"
                                     >
                                          <option value="">--- Select Tier ---</option>
                                          {Object.values(Tiers).map(tier => (
@@ -337,7 +337,7 @@ const CommitmentSelectorView = ({ setView, initialGoal, initialTier }) => {
 
                                             return (
                                                 <div key={category}>
-                                                    <h3 className="text-sm font-bold text-[#002E47] border-b pb-1 mb-2">{category}</h3>
+                                                    <h3 className="text-sm font-bold text-corporate-navy border-b pb-1 mb-2">{category}</h3>
                                                     {categoryCommitments.map(c => (
                                                         <div key={c.id} className="flex justify-between items-center p-2 text-sm bg-slate-50 rounded-lg mb-1">
                                                             <span className='text-slate-800'>{c.text}</span>
@@ -395,7 +395,7 @@ const CommitmentItem = ({ commitment, onLogCommitment, onRemove }) => {
 
     const getStatusIcon = (status) => {
         if (status === 'Committed') return <CheckCircle className="w-5 h-5 text-green-600" />;
-        if (status === 'Missed') return <X className="w-5 h-5 text-[#E04E1B]" />;
+        if (status === 'Missed') return <X className="w-5 h-5 text-corporate-orange" />;
         return <Clock className="w-5 h-5 text-gray-500" />;
     };
 
@@ -410,23 +410,23 @@ const CommitmentItem = ({ commitment, onLogCommitment, onRemove }) => {
             <div className='flex items-start justify-between'>
                 <div className='flex items-center space-x-2 text-lg font-semibold mb-2'>
                     {getStatusIcon(status)}
-                    <span className='text-[#002E47] text-base'>{commitment.text || commitment.title}</span>
+                    <span className='text-corporate-navy text-base'>{commitment.text || commitment.title}</span>
                 </div>
-                <button onClick={() => onRemove(commitment.id)} className="text-gray-400 hover:text-[#E04E1B] transition-colors p-1 rounded-full">
+                <button onClick={() => onRemove(commitment.id)} className="text-gray-400 hover:text-corporate-orange transition-colors p-1 rounded-full">
                     <X className="w-4 h-4" />
                 </button>
             </div>
 
             <div className='flex space-x-3 mb-3 overflow-x-auto'>
-                <div className='text-xs text-[#002E47] bg-[#002E47]/10 px-3 py-1 rounded-full inline-block font-medium whitespace-nowrap'>
+                <div className='text-xs text-corporate-navy bg-corporate-navy/10 px-3 py-1 rounded-full inline-block font-medium whitespace-nowrap'>
                     Goal: {commitment.linkedGoal || 'N/A'}
                 </div>
                 {commitment.linkedTier && (
-                    <div className='text-xs text-[#47A88D] bg-[#47A88D]/10 px-3 py-1 rounded-full inline-block font-medium whitespace-nowrap'>
+                    <div className='text-xs text-corporate-teal bg-corporate-teal/10 px-3 py-1 rounded-full inline-block font-medium whitespace-nowrap'>
                         Tier: {tierLabel}
                     </div>
                 )}
-                <div className='text-xs text-[#E04E1B] bg-[#E04E1B]/10 px-3 py-1 rounded-full inline-block font-medium whitespace-nowrap'>
+                <div className='text-xs text-corporate-orange bg-corporate-orange/10 px-3 py-1 rounded-full inline-block font-medium whitespace-nowrap'>
                     Focus: {colleagueLabel}
                 </div>
             </div>
@@ -435,14 +435,14 @@ const CommitmentItem = ({ commitment, onLogCommitment, onRemove }) => {
                 <Button 
                     onClick={() => onLogCommitment(commitment.id, 'Committed')} 
                     disabled={status === 'Committed'}
-                    className="px-3 py-1 text-xs bg-[#47A88D] hover:bg-[#47A88D] disabled:bg-green-300 disabled:shadow-none"
+                    className="px-3 py-1 text-xs bg-corporate-teal hover:bg-corporate-teal disabled:bg-green-300 disabled:shadow-none"
                     >
                     Committed
                 </Button>
                 <Button 
                     onClick={() => onLogCommitment(commitment.id, 'Missed')} 
                     disabled={status === 'Missed'}
-                    className="px-3 py-1 text-xs bg-[#E04E1B] hover:bg-red-700 disabled:bg-red-300 disabled:shadow-none"
+                    className="px-3 py-1 text-xs bg-corporate-orange hover:bg-red-700 disabled:bg-red-300 disabled:shadow-none"
                     >
                     Missed
                 </Button>
@@ -477,7 +477,7 @@ const ScorecardView = ({ setView, initialGoal, initialTier, isSaving, commitment
                 </Button>
                 
                 <div className="text-center max-w-4xl mx-auto mb-8">
-                    <h1 className="text-3xl font-bold text-[#002E47] mb-2">Daily Commitment Scorecard (Leadership Practice)</h1>
+                    <h1 className="text-3xl font-bold text-corporate-navy mb-2">Daily Commitment Scorecard (Leadership Practice)</h1>
                     <p className="text-slate-600 text-lg">Track your daily commitment to the non-negotiable leadership actions that reinforce your professional identity. Consistently hitting this score is the key to sustained executive growth.</p>
                 </div>
 
@@ -485,7 +485,7 @@ const ScorecardView = ({ setView, initialGoal, initialTier, isSaving, commitment
                     {/* Scorecard Column */}
                     <div className='lg:col-span-2 space-y-6'>
                         {(initialGoal || initialTier) && (
-                                <div className="p-4 bg-teal-50 border border-corporate-teal rounded-xl text-sm font-medium text-[#002E47]">
+                                <div className="p-4 bg-teal-50 border border-corporate-teal rounded-xl text-sm font-medium text-corporate-navy">
                                 <p className='font-bold flex items-center'>
                                     <CornerRightUp className='w-4 h-4 mr-2'/> New PDP Focus:
                                 </p>
@@ -493,7 +493,7 @@ const ScorecardView = ({ setView, initialGoal, initialTier, isSaving, commitment
                                 </div>
                         )}
                         <div className="flex justify-between items-center">
-                            <h3 className="text-2xl font-bold text-[#002E47]">
+                            <h3 className="text-2xl font-bold text-corporate-navy">
                                 Today's Commitments ({commitmentData?.active_commitments?.length || 0})
                             </h3>
                             <Button onClick={() => setView('selector')} variant="outline" className="text-sm px-4 py-2" disabled={isSaving}>
@@ -518,11 +518,11 @@ const ScorecardView = ({ setView, initialGoal, initialTier, isSaving, commitment
                             </div>
 
                             <div className="mt-8 pt-4 border-t border-slate-200 flex justify-between items-center">
-                                <h3 className="text-2xl font-bold text-[#002E47]">
+                                <h3 className="text-2xl font-bold text-corporate-navy">
                                     Daily Score:
                                 </h3>
                                 <span className={`text-4xl font-extrabold p-3 rounded-xl shadow-inner min-w-[100px] text-center ${
-                                    commitmentData?.active_commitments?.length > 0 && commitmentData.active_commitments.every(c => c.status === 'Committed') ? 'text-green-600 bg-green-50' : 'text-[#002E47] bg-slate-100'
+                                    commitmentData?.active_commitments?.length > 0 && commitmentData.active_commitments.every(c => c.status === 'Committed') ? 'text-green-600 bg-green-50' : 'text-corporate-navy bg-slate-100'
                                 }`}>
                                     {calculateTotalScore()}
                                 </span>
@@ -532,12 +532,12 @@ const ScorecardView = ({ setView, initialGoal, initialTier, isSaving, commitment
                     
                     {/* History Column */}
                     <div className='lg:col-span-1 space-y-6'>
-                        <Card title="Commitment History" icon={BarChart3} className='bg-slate-50 border-t-4 border-[#002E47]'>
+                        <Card title="Commitment History" icon={BarChart3} className='bg-slate-50 border-t-4 border-corporate-navy'>
                             <p className='text-slate-700 text-sm mb-4'>
                                 **Data is persistent and loaded from Firestore!** (Last 7 days)
                             </p>
                             <div className='p-6 bg-white border border-slate-200 rounded-xl'>
-                                <h4 className='text-lg font-semibold text-[#002E47] mb-2'>Last 7 Days</h4>
+                                <h4 className='text-lg font-semibold text-corporate-navy mb-2'>Last 7 Days</h4>
                                 <div className='flex justify-between text-xs font-mono text-slate-700 space-x-1 overflow-x-auto'>
                                     {commitmentHistory.slice(-7).map(item => (
                                         <div key={item.date} className='flex flex-col items-center min-w-[40px]'>
@@ -683,7 +683,7 @@ export default function DailyPracticeScreen({ initialGoal, initialTier }) {
         );
     }
     if (error) {
-        return <div className="p-4 sm:p-3 sm:p-4 lg:p-6 lg:p-8"><p className="text-[#E04E1B] p-4 bg-red-100 rounded-xl">Error loading data: {error}</p></div>;
+        return <div className="p-4 sm:p-3 sm:p-4 lg:p-6 lg:p-8"><p className="text-corporate-orange p-4 bg-red-100 rounded-xl">Error loading data: {error}</p></div>;
     }
     
     const sharedProps = {

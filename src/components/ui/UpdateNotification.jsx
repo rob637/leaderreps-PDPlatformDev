@@ -38,7 +38,7 @@ const UpdateNotification = () => {
         className="rounded-xl shadow-2xl p-5 border-2 backdrop-blur-sm"
         style={{
           backgroundColor: 'rgba(252, 252, 250, 0.95)',
-          borderColor: '#47A88D',
+          borderColor: 'var(--corporate-teal)',
         }}
       >
         <div className="flex items-start gap-4">
@@ -52,7 +52,7 @@ const UpdateNotification = () => {
           <div className="flex-1 min-w-0">
             <h3
               className="font-bold text-lg mb-1"
-              style={{ color: '#002E47' }}
+              style={{ color: 'var(--corporate-navy)' }}
             >
               New Version Available!
             </h3>
@@ -83,7 +83,7 @@ const UpdateNotification = () => {
               <button
                 onClick={handleDismiss}
                 className="px-4 py-2.5 rounded-lg text-sm font-medium transition-colors hover:bg-gray-100"
-                style={{ color: '#002E47' }}
+                style={{ color: 'var(--corporate-navy)' }}
               >
                 Later
               </button>

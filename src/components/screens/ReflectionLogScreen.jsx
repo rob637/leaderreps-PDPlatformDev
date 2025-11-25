@@ -9,38 +9,7 @@ import { collection, query, orderBy, getDocs } from 'firebase/firestore'; // cit
 
 // --- Icons ---
 import { Archive, Loader, MessageSquare, ArrowLeft, User } from 'lucide-react';
-
-/* =========================================================
-   PALETTE & UI COMPONENTS (Standardized)
-========================================================= */
-// --- Primary Color Palette ---
-const COLORS = { NAVY: '#002E47', TEAL: '#47A88D', BLUE: '#002E47', ORANGE: '#E04E1B', GREEN: '#47A88D', AMBER: '#E04E1B', RED: '#E04E1B', LIGHT_GRAY: '#FCFCFA', OFF_WHITE: '#FFFFFF', SUBTLE: '#E5E7EB', TEXT: '#374151', MUTED: '#4B5563', PURPLE: '#47A88D', BG: '#F9FAFB' }; // cite: App.jsx
-
-// --- Standardized UI Components (Assume imported or globally available) ---
-// Using placeholder comments, assuming Button and Card are correctly defined elsewhere or globally
-// const Button = ({...}) => { /* ... Standard Button ... */ };
-// const Card = ({...}) => { /* ... Standard Card ... */ };
-// --- Standardized Button Component (Local Definition for standalone use) ---
-const Button = ({ children, onClick, disabled = false, variant = 'primary', className = '', size = 'md', ...rest }) => { /* ... Re-use definition ... */
-    let baseStyle = `inline-flex items-center justify-center gap-2 font-semibold rounded-xl transition-all duration-200 focus:outline-none focus:ring-4 disabled:opacity-50 disabled:cursor-not-allowed`;
-    if (size === 'sm') baseStyle += ' px-4 py-2 text-sm'; else if (size === 'lg') baseStyle += ' px-8 py-4 text-lg'; else baseStyle += ' px-6 py-3 text-base'; // Default 'md'
-    if (variant === 'primary') baseStyle += ` bg-[#47A88D] text-white shadow-lg hover:bg-[#47A88D] focus:ring-[#47A88D]/50`;
-    else if (variant === 'secondary') baseStyle += ` bg-[#E04E1B] text-white shadow-lg hover:bg-[#C312] focus:ring-[#E04E1B]/50`;
-    else if (variant === 'outline') baseStyle += ` bg-[#FFFFFF] text-[#47A88D] border-2 border-[#47A88D] shadow-md hover:bg-[#47A88D]/10 focus:ring-[#47A88D]/50`;
-    else if (variant === 'nav-back') baseStyle += ` bg-white text-gray-700 border border-gray-300 shadow-sm hover:bg-gray-100 focus:ring-gray-300/50 px-4 py-2 text-sm`;
-    else if (variant === 'ghost') baseStyle += ` bg-transparent text-gray-600 hover:bg-gray-100 focus:ring-gray-300/50 px-3 py-1.5 text-sm`;
-    if (disabled) baseStyle += ' bg-gray-300 text-gray-500 shadow-inner border-transparent hover:bg-gray-300';
-    return (<button {...rest} onClick={onClick} disabled={disabled} className={`${baseStyle} ${className}`}>{children}</button>);
-};
-// --- Standardized Card Component (Local Definition for standalone use) ---
-const Card = ({ children, title, icon: Icon, className = '', accent = 'NAVY' }) => { /* ... Re-use definition ... */
-    const accentColor = COLORS[accent] || COLORS.NAVY;
-    return ( <div className={`relative p-6 rounded-2xl border-2 shadow-xl ${className}`} style={{ background: 'linear-gradient(180deg,#FFFFFF, #FCFCFA)', borderColor: COLORS.SUBTLE, color: COLORS.NAVY }}> <span style={{ position:'absolute', top:0, left:0, right:0, height:6, background: accentColor, borderTopLeftRadius:14, borderTopRightRadius:14 }} /> {Icon && title && ( <div className="flex items-center gap-3 mb-4"> <div className="w-10 h-10 rounded-lg flex items-center justify-center border flex-shrink-0" style={{ borderColor: COLORS.SUBTLE, background: COLORS.LIGHT_GRAY }}> <Icon className="w-5 h-5" style={{ color: accentColor }} /> </div> <h2 className="text-xl font-extrabold" style={{ color: COLORS.NAVY }}>{title}</h2> </div> )} {!Icon && title && <h2 className="text-xl font-extrabold mb-4 border-b pb-2" style={{ color: COLORS.NAVY, borderColor: COLORS.SUBTLE }}>{title}</h2>} <div>{children}</div> </div> );
-};
-// --- Standardized Loading Spinner ---
-const LoadingSpinner = ({ message = "Loading..." }) => ( /* ... Re-use definition ... */
-    <div className="min-h-[300px] flex items-center justify-center" style={{ background: COLORS.BG }}> <div className="flex flex-col items-center"> <Loader className="animate-spin h-12 w-12 mb-3" style={{ color: COLORS.TEAL }} /> <p className="font-semibold" style={{ color: COLORS.NAVY }}>{message}</p> </div> </div>
-);
+import { Button, Card, LoadingSpinner } from '../ui';
 
 /* =========================================================
    ReflectionLogScreen Component
@@ -131,16 +100,16 @@ const ReflectionLogScreen = () => {
 
     return (
         // Consistent page structure and padding
-        <div className="p-6 md:p-4 sm:p-3 sm:p-4 lg:p-6 lg:p-8 lg:p-10 max-w-4xl mx-auto min-h-screen" style={{ background: COLORS.BG }}>
+        <div className="p-6 md:p-4 sm:p-3 sm:p-4 lg:p-6 lg:p-8 lg:p-10 max-w-4xl mx-auto min-h-screen" className="bg-slate-50">
             {/* Header */}
             {/* Back Button */}
             <Button onClick={() => navigate('dashboard')} variant="nav-back" size="sm" className="mb-6"> 
                 <ArrowLeft className="w-4 h-4 mr-2" /> Back to Dashboard
             </Button>
             
-            <header className="flex flex-col sm:flex-row justify-between sm:items-center gap-4 border-b pb-4 mb-6" style={{ borderColor: COLORS.SUBTLE }}>
-                <h1 className="text-xl sm:text-2xl sm:text-3xl md:text-4xl font-extrabold flex items-center gap-3" style={{ color: COLORS.NAVY }}>
-                    <Archive className="w-8 h-8" style={{ color: COLORS.TEAL }} /> Reflection Log
+            <header className="flex flex-col sm:flex-row justify-between sm:items-center gap-4 border-b pb-4 mb-6" className="border-slate-200">
+                <h1 className="text-xl sm:text-2xl sm:text-3xl md:text-4xl font-extrabold flex items-center gap-3" className="text-corporate-navy">
+                    <Archive className="w-8 h-8" className="text-corporate-teal" /> Reflection Log
                 </h1>
             </header>
 
@@ -159,7 +128,7 @@ const ReflectionLogScreen = () => {
             {!isHistoryLoading && !fetchError && reflectionHistory.length === 0 && (
                 <Card accent="TEAL" className="text-center border-dashed">
                     <MessageSquare className="w-12 h-12 mx-auto mb-4 text-gray-400"/>
-                    <h2 className="text-xl font-semibold mb-2" style={{ color: COLORS.NAVY }}>No Reflections Yet</h2>
+                    <h2 className="text-xl font-semibold mb-2" className="text-corporate-navy">No Reflections Yet</h2>
                     <p className="text-gray-600 text-sm">Your daily reflection entries will appear here once you save them.</p>
                     <Button onClick={() => navigate('daily-practice')} size="sm" className="mt-4">
                         Go to Daily Reflection
@@ -174,7 +143,7 @@ const ReflectionLogScreen = () => {
                         // Use Card for each entry for consistent styling
                         <Card key={entry.id} accent="NAVY" className="shadow-md hover:shadow-lg transition-shadow">
                             {/* Date Header */}
-                            <p className="text-sm font-bold mb-3 border-b pb-2 flex justify-between items-center" style={{ color: COLORS.NAVY, borderColor: COLORS.SUBTLE }}>
+                            <p className="text-sm font-bold mb-3 border-b pb-2 flex justify-between items-center text-corporate-navy border-slate-200">
                                <span>{formatDate(entry.timestamp || entry.date)}</span>
                                {/* Optional: Show short ID */}
                                {/* <span className="text-xs font-normal text-gray-400">ID: {entry.id.slice(0, 6)}</span> */}
@@ -186,7 +155,7 @@ const ReflectionLogScreen = () => {
                                 {entry.tryDiff && <p><strong>Try:</strong> {entry.tryDiff}</p>}
                                 {entry.identity && (
                                     <p className="italic font-medium text-gray-800 pt-2 border-t border-gray-200 mt-3 flex items-start gap-2">
-                                        <User size={14} className="flex-shrink-0 mt-0.5" style={{ color: COLORS.TEAL }}/>
+                                        <User size={14} className="flex-shrink-0 mt-0.5" className="text-corporate-teal"/>
                                         <span>"I'm the kind of leader who {entry.identity}"</span>
                                     </p>
                                 )}

@@ -116,7 +116,7 @@ const DetailedPlanView = ({
                 <ArrowLeft className="w-4 h-4" /> Back to Tracker
               </Button>
             </div>
-            <h1 className="text-xl sm:text-2xl sm:text-3xl md:text-4xl font-extrabold mb-2" style={{ color: '#002E47' }}>
+            <h1 className="text-xl sm:text-2xl sm:text-3xl md:text-4xl font-extrabold mb-2" style={{ color: 'var(--corporate-navy)' }}>
               Your Arena Development Plan
             </h1>
             <p className="text-lg text-gray-600">
@@ -141,7 +141,7 @@ const DetailedPlanView = ({
                 key={item.cycle}
                 className={`p-3 rounded-lg border-2 transition-all duration-300 ${
                   item.cycle === currentCycle 
-                    ? 'bg-[#47A88D]/10 border-[#47A88D] shadow-lg scale-105' 
+                    ? 'bg-corporate-teal/10 border-corporate-teal shadow-lg scale-105' 
                     : 'bg-gray-50 border-gray-200'
                 } ${item.cycle < currentCycle ? 'opacity-60' : ''}`}
               >
@@ -149,17 +149,17 @@ const DetailedPlanView = ({
                 <span 
                   className={`text-[10px] font-bold px-2 py-0.5 rounded`}
                   style={{
-                    backgroundColor: item.phase === 'Foundation' ? `${'#002E47'}20` : 
-                                    item.phase === 'Performance' ? `${'#47A88D'}20` : `${'#E04E1B'}20`,
-                    color: item.phase === 'Foundation' ? '#002E47' : 
-                          item.phase === 'Performance' ? '#47A88D' : '#E04E1B'
+                    backgroundColor: item.phase === 'Foundation' ? 'var(--corporate-navy-20)' : 
+                                    item.phase === 'Performance' ? 'var(--corporate-teal-20)' : 'var(--corporate-orange-20)',
+                    color: item.phase === 'Foundation' ? 'var(--corporate-navy)' : 
+                          item.phase === 'Performance' ? 'var(--corporate-teal)' : 'var(--corporate-orange)'
                   }}
                 >
                   {item.phase}
                 </span>
                 
                 {/* Cycle Title */}
-                <h4 className="font-bold text-xs mt-2 mb-1" style={{ color: '#002E47' }}>
+                <h4 className="font-bold text-xs mt-2 mb-1" style={{ color: 'var(--corporate-navy)' }}>
                   {item.q}
                 </h4>
                 
@@ -173,7 +173,7 @@ const DetailedPlanView = ({
                 {/* Current Cycle Indicator */}
                 {item.cycle === currentCycle && (
                   <span className="block text-center text-[10px] font-bold mt-1" 
-                        style={{ color: '#47A88D' }}>
+                        style={{ color: 'var(--corporate-teal)' }}>
                     ← YOU ARE HERE
                   </span>
                 )}
@@ -181,7 +181,7 @@ const DetailedPlanView = ({
                 {/* Completed Indicator */}
                 {item.cycle < currentCycle && (
                   <div className="flex justify-center mt-1">
-                    <CheckCircle className="w-3 h-3" style={{ color: '#47A88D' }} />
+                    <CheckCircle className="w-3 h-3" style={{ color: 'var(--corporate-teal)' }} />
                   </div>
                 )}
               </div>
@@ -219,8 +219,8 @@ const DetailedPlanView = ({
                       <Radar 
                         name="Your Scores" 
                         dataKey="score" 
-                        stroke={'#47A88D'} 
-                        fill={'#47A88D'} 
+                        stroke="var(--corporate-teal)" 
+                        fill="var(--corporate-teal)" 
                         fillOpacity={0.6} 
                       />
                     </RadarChart>
@@ -252,13 +252,13 @@ const DetailedPlanView = ({
                     
                     {/* Number Badge */}
                     <div className={`w-10 h-10 rounded-full flex-shrink-0 flex items-center justify-center text-white text-xl font-bold mb-2 sm:mb-0`} 
-                         style={{ background: '#E04E1B' }}>
+                         style={{ background: 'var(--corporate-orange)' }}>
                       {index + 1}
                     </div>
                     
                     {/* Area Details */}
                     <div className="flex-1">
-                      <h3 className="text-lg font-bold" style={{ color: '#002E47' }}>
+                      <h3 className="text-lg font-bold" style={{ color: 'var(--corporate-navy)' }}>
                         {area.name}
                         {area.score !== 'N/A' && (
                           <span className="text-sm font-normal text-gray-500"> (Score: {area.score})</span>
@@ -267,15 +267,15 @@ const DetailedPlanView = ({
                       
                       {/* FIX #3: WHY it Matters & What Good Looks Like */}
                       <div className="mt-2 space-y-2">
-                        <div className="p-2 rounded" style={{ backgroundColor: `${'#002E47'}05` }}>
-                          <p className="text-xs font-semibold" style={{ color: '#002E47' }}>
+                        <div className="p-2 rounded" style={{ backgroundColor: 'var(--corporate-navy-10)' }}>
+                          <p className="text-xs font-semibold" style={{ color: 'var(--corporate-navy)' }}>
                             💡 WHY IT MATTERS:
                           </p>
                           <p className="text-sm italic text-gray-600 mt-1">{area.why}</p>
                         </div>
                         
-                        <div className="p-2 rounded" style={{ backgroundColor: `${'#47A88D'}05` }}>
-                          <p className="text-xs font-semibold" style={{ color: '#47A88D' }}>
+                        <div className="p-2 rounded" style={{ backgroundColor: 'var(--corporate-teal-10)' }}>
+                          <p className="text-xs font-semibold" style={{ color: 'var(--corporate-teal)' }}>
                             🎯 WHAT GREAT LOOKS LIKE:
                           </p>
                           <p className="text-sm text-gray-600 mt-1">{area.whatGoodLooksLike}</p>
@@ -283,14 +283,14 @@ const DetailedPlanView = ({
                       </div>
                       
                       {/* Training Plan / Courses */}
-                      <h5 className="text-sm font-bold mt-3 mb-2" style={{ color: '#002E47' }}>
+                      <h5 className="text-sm font-bold mt-3 mb-2" style={{ color: 'var(--corporate-navy)' }}>
                         Related Training:
                       </h5>
                       <ul className="list-disc list-inside text-sm text-gray-700 space-y-1">
                         {area.courses?.map((course, idx) => (
                           <li key={idx}>Arena Course: <strong>{course}</strong></li>
                         ))}
-                        <li className="font-semibold" style={{ color: '#47A88D' }}>
+                        <li className="font-semibold" style={{ color: 'var(--corporate-teal)' }}>
                           <CheckCircle className="w-4 h-4 inline-block mr-1" />
                           Core reps added to Daily Practice
                         </li>

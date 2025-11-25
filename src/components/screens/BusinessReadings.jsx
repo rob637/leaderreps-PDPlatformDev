@@ -8,62 +8,11 @@ import {
 } from 'lucide-react';
 import { DIMENSION_TO_TIER_MAP } from '../../data/LeadershipTiers.js';
 import { logWidthMeasurements } from '../../utils/debugWidth.js';
-
-// --- Standardized UI Components ---
-const Button = ({ children, onClick, disabled = false, variant = 'primary', className = '', size = 'md', ...rest }) => {
-  const baseStyles = "inline-flex items-center justify-center gap-2 font-semibold rounded-xl transition-all duration-200 focus:outline-none focus:ring-2 disabled:opacity-50 disabled:cursor-not-allowed";
-  const variants = {
-    primary: "bg-[#47A88D] text-white shadow-md hover:bg-[#3d917a] focus:ring-[#47A88D]/50",
-    secondary: "bg-[#E04E1B] text-white shadow-md hover:bg-[#c44317] focus:ring-[#E04E1B]/50",
-    outline: "bg-white text-[#47A88D] border-2 border-[#47A88D] shadow-sm hover:bg-[#47A88D]/10 focus:ring-[#47A88D]/50",
-    'nav-back': "bg-white text-slate-600 border border-slate-200 shadow-sm hover:bg-slate-50 hover:text-slate-900",
-    ghost: "bg-transparent text-slate-600 hover:bg-slate-100",
-  };
-  const sizes = {
-    sm: "px-3 py-1.5 text-sm",
-    md: "px-5 py-2.5 text-base",
-    lg: "px-8 py-4 text-lg",
-  };
-  return (
-    <button 
-      onClick={onClick} 
-      disabled={disabled} 
-      className={`${baseStyles} ${variants[variant] || variants.primary} ${sizes[size] || sizes.md} ${className}`}
-      {...rest}
-    >
-      {children}
-    </button>
-  );
-};
-
-const Card = ({ children, title, icon: Icon, className = '', onClick, accentColor = 'bg-[#002E47]' }) => {
-  const Tag = onClick ? 'button' : 'div';
-  return (
-    <Tag 
-      onClick={onClick}
-      className={`relative w-full text-left bg-white rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-all duration-300 overflow-hidden ${className}`}
-    >
-      <div className={`absolute top-0 left-0 right-0 h-1.5 ${accentColor}`} />
-      <div className="p-6">
-        {title && (
-          <div className="flex items-center gap-3 mb-6 pb-4 border-b border-slate-100">
-            {Icon && (
-              <div className="w-10 h-10 rounded-lg bg-slate-50 flex items-center justify-center border border-slate-100">
-                <Icon className="w-5 h-5 text-[#002E47]" />
-              </div>
-            )}
-            <h2 className="text-xl font-bold text-[#002E47]">{title}</h2>
-          </div>
-        )}
-        {children}
-      </div>
-    </Tag>
-  );
-};
+import { Button, Card } from '../ui';
 
 const LoadingSpinner = ({ message = "Loading..." }) => (
   <div className="min-h-[60vh] flex flex-col items-center justify-center space-y-4">
-    <Loader className="w-10 h-10 text-[#47A88D] animate-spin" />
+    <Loader className="w-10 h-10 text-corporate-teal animate-spin" />
     <p className="text-slate-600 font-medium">{message}</p>
   </div>
 );
@@ -167,14 +116,14 @@ async function handleAiSubmit(e, services, selectedBook, aiQuery, setIsSubmittin
 const SearchInput = React.memo(({ value, onChange }) => (
     <div>
         <label className="block text-sm font-medium mb-1 flex items-center gap-1.5 text-slate-500">
-            <SearchIcon className="w-4 h-4 text-[#47A88D]"/> Search Library
+            <SearchIcon className="w-4 h-4 text-corporate-teal"/> Search Library
         </label>
         <input
             type="search"
             value={value}
             onChange={onChange}
             placeholder="Find by title, author, or focus..."
-            className="w-full p-3 border border-slate-200 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-[#47A88D] text-sm"
+            className="w-full p-3 border border-slate-200 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-corporate-teal text-sm"
         />
     </div>
 ));
@@ -226,7 +175,7 @@ function BookListStable({ filters, filteredBooks, savedBooks, selectedBook, onSe
 
   return (
     <div className="space-y-8">
-      <Card title="Personalize Your Library" icon={Filter} accentColor="bg-[#47A88D]">
+      <Card title="Personalize Your Library" icon={Filter} accentColor="bg-corporate-teal">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <SearchInput value={filters.search} onChange={handleSearchChange} />
           <div>
@@ -234,7 +183,7 @@ function BookListStable({ filters, filteredBooks, savedBooks, selectedBook, onSe
             <select
               value={filters.complexity}
               onChange={(e) => handleFilterChange('complexity', e.target.value)}
-              className="w-full p-3 border border-slate-200 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-[#47A88D] text-sm"
+              className="w-full p-3 border border-slate-200 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-corporate-teal text-sm"
             >
               <option value="All">All Levels</option>
               {Object.keys(COMPLEXITY_MAP).map(k => (<option key={k} value={k}>{COMPLEXITY_MAP[k].label}</option>))}
@@ -246,7 +195,7 @@ function BookListStable({ filters, filteredBooks, savedBooks, selectedBook, onSe
               type="range" min="60" max="300" step="10"
               value={filters.maxDuration}
               onChange={(e) => handleFilterChange('maxDuration', parseInt(e.target.value, 10))}
-              className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-[#E04E1B]"
+              className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-corporate-orange"
             />
             <div className="flex justify-between text-xs mt-1 text-slate-400"><span>60 min</span><span>300 min</span></div>
           </div>
@@ -255,15 +204,15 @@ function BookListStable({ filters, filteredBooks, savedBooks, selectedBook, onSe
 
       {isSourceDataEmpty && (
            <div className="p-10 rounded-2xl border-2 border-dashed border-slate-200 bg-slate-50 text-center">
-                <AlertTriangle className='w-10 h-10 mx-auto mb-4 text-[#E04E1B]'/>
-                <h3 className="text-xl font-bold text-[#002E47]">Reading Library Empty</h3>
+                <AlertTriangle className='w-10 h-10 mx-auto mb-4 text-corporate-orange'/>
+                <h3 className="text-xl font-bold text-corporate-navy">Reading Library Empty</h3>
                 <p className="text-slate-600 mt-2 text-sm">The reading catalog hasn't been loaded yet.</p>
            </div>
       )}
       {isFilteredEmpty && (
            <div className="p-8 rounded-2xl border border-slate-200 bg-white text-center shadow-sm">
-                <SearchIcon className='w-8 h-8 mx-auto mb-3 text-[#47A88D]'/>
-                <h3 className="text-lg font-bold text-[#002E47]">No Results Found</h3>
+                <SearchIcon className='w-8 h-8 mx-auto mb-3 text-corporate-teal'/>
+                <h3 className="text-lg font-bold text-corporate-navy">No Results Found</h3>
                 <p className="text-slate-600 mt-1 text-sm">Try adjusting your search query or filter settings.</p>
            </div>
       )}
@@ -274,8 +223,8 @@ function BookListStable({ filters, filteredBooks, savedBooks, selectedBook, onSe
             Array.isArray(booksInCategory) && booksInCategory.length > 0 && (
                 <div key={tier} className="rounded-2xl shadow-sm overflow-hidden border border-slate-200 bg-white">
                   <div className="p-4 border-b border-slate-100 bg-slate-50">
-                    <h3 className="text-lg font-bold flex items-center gap-2 text-[#002E47]">
-                        <Target className="w-5 h-5 text-[#E04E1B]" />
+                    <h3 className="text-lg font-bold flex items-center gap-2 text-corporate-navy">
+                        <Target className="w-5 h-5 text-corporate-orange" />
                         {tier}
                     </h3>
                     <p className="text-sm mt-1 text-slate-500">{booksInCategory.length} item{booksInCategory.length !== 1 ? 's' : ''} available</p>
@@ -294,18 +243,18 @@ function BookListStable({ filters, filteredBooks, savedBooks, selectedBook, onSe
                           <button
                             onClick={() => onSelectBook(book, tier)}
                             className={`p-5 text-left w-full h-full block rounded-2xl border transition-all duration-300 flex flex-col
-                                ${isSelected ? 'border-[#47A88D] ring-1 ring-[#47A88D] shadow-md' : 'border-slate-200 hover:border-[#47A88D]/50 hover:shadow-md'}
+                                ${isSelected ? 'border-corporate-teal ring-1 ring-corporate-teal shadow-md' : 'border-slate-200 hover:border-corporate-teal/50 hover:shadow-md'}
                                 bg-white`}
                           >
-                            <div className={`absolute top-0 left-0 right-0 h-1.5 rounded-t-2xl ${isSelected ? 'bg-[#47A88D]' : 'bg-[#E04E1B]'}`} />
+                            <div className={`absolute top-0 left-0 right-0 h-1.5 rounded-t-2xl ${isSelected ? 'bg-corporate-teal' : 'bg-corporate-orange'}`} />
                             
                             <div className="flex-grow pt-2">
                                 <div className="flex gap-3 items-start mb-3">
                                     <div className="w-10 h-10 rounded-lg bg-slate-50 flex items-center justify-center border border-slate-100 flex-shrink-0">
-                                        <BookOpen className="w-5 h-5 text-[#47A88D]" />
+                                        <BookOpen className="w-5 h-5 text-corporate-teal" />
                                     </div>
                                     <div className="min-w-0">
-                                        <p className="font-bold text-md leading-tight text-[#002E47] line-clamp-2">{book.title}</p>
+                                        <p className="font-bold text-md leading-tight text-corporate-navy line-clamp-2">{book.title}</p>
                                         <p className="text-xs italic mt-0.5 text-slate-500 truncate">by {book.author}</p>
                                     </div>
                                 </div>
@@ -314,7 +263,7 @@ function BookListStable({ filters, filteredBooks, savedBooks, selectedBook, onSe
 
                                 <div className="space-y-1.5 text-xs">
                                     <div className="flex items-center gap-2 text-slate-600">
-                                        <Clock className="w-3.5 h-3.5 flex-shrink-0 text-[#E04E1B]"/>
+                                        <Clock className="w-3.5 h-3.5 flex-shrink-0 text-corporate-orange"/>
                                         <span className="font-semibold">Est. Time:</span>
                                         <span className="ml-auto font-bold">{estimatedDuration ? `${estimatedDuration} min` : 'N/A'}</span>
                                     </div>
@@ -326,7 +275,7 @@ function BookListStable({ filters, filteredBooks, savedBooks, selectedBook, onSe
                                 </div>
 
                                 <div className="mt-3 pt-3 border-t border-slate-100">
-                                    <p className="text-[10px] font-semibold uppercase mb-1.5 text-[#47A88D]">Key Focus</p>
+                                    <p className="text-[10px] font-semibold uppercase mb-1.5 text-corporate-teal">Key Focus</p>
                                     <div className="flex flex-wrap gap-1">
                                         {(String(book.focus || '').split(',').slice(0, 3)).map((f, i) => (
                                             f.trim() && <span key={i} className="px-2 py-0.5 text-[10px] font-medium rounded-full bg-slate-100 text-slate-600">{f.trim()}</span>
@@ -368,8 +317,8 @@ function BookFlyerStable({
   return (
     <div className="space-y-8">
       <div className="flex flex-col md:flex-row justify-between md:items-center gap-4 pb-4 border-b border-slate-200">
-        <h2 className="text-2xl font-bold flex items-center gap-3 text-[#002E47]">
-          <BookOpen className="w-7 h-7 flex-shrink-0 text-[#47A88D]" />
+        <h2 className="text-2xl font-bold flex items-center gap-3 text-corporate-navy">
+          <BookOpen className="w-7 h-7 flex-shrink-0 text-corporate-teal" />
           Focus Flyer: {selectedBook.title}
         </h2>
         <Button onClick={onBack} variant="nav-back" size="sm">
@@ -377,17 +326,17 @@ function BookFlyerStable({
         </Button>
       </div>
 
-      <Card accentColor="bg-[#47A88D]" className="shadow-lg">
+      <Card accentColor="bg-corporate-teal" className="shadow-lg">
         <div className="flex flex-col md:flex-row justify-between gap-4 mb-6">
           <div className="flex items-center gap-3 p-3 rounded-xl border border-slate-200 bg-slate-50">
-            <TrendingUp className="w-5 h-5 flex-shrink-0 text-[#47A88D]"/>
+            <TrendingUp className="w-5 h-5 flex-shrink-0 text-corporate-teal"/>
             <div>
               <p className="text-xs font-medium uppercase text-slate-500">Your Progress (Mock)</p>
               <div className="flex items-center gap-2 mt-1">
                 <div className="w-32 h-2 rounded-full bg-slate-200">
-                  <div className="h-2 rounded-full bg-[#47A88D]" style={{ width: `${progressPercent}%` }} />
+                  <div className="h-2 rounded-full bg-corporate-teal" style={{ width: `${progressPercent}%` }} />
                 </div>
-                <span className="text-sm font-bold text-[#002E47]">{progressPercent}%</span>
+                <span className="text-sm font-bold text-corporate-navy">{progressPercent}%</span>
               </div>
             </div>
           </div>
@@ -397,11 +346,11 @@ function BookFlyerStable({
                 role="switch" 
                 aria-checked={isExecutiveBrief} 
                 onClick={() => setIsExecutiveBrief(!isExecutiveBrief)}
-                className={`relative inline-flex items-center h-6 w-11 rounded-full transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-[#E04E1B] ${isExecutiveBrief ? 'bg-[#E04E1B]' : 'bg-slate-300'}`}
+                className={`relative inline-flex items-center h-6 w-11 rounded-full transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-corporate-orange ${isExecutiveBrief ? 'bg-corporate-orange' : 'bg-slate-300'}`}
             >
                 <span className={`inline-block w-4 h-4 transform bg-white rounded-full transition-transform duration-200 ${isExecutiveBrief ? 'translate-x-6' : 'translate-x-1'}`} />
             </button>
-            <span className="text-sm font-semibold text-[#002E47]">Executive Brief</span>
+            <span className="text-sm font-semibold text-corporate-navy">Executive Brief</span>
           </div>
         </div>
 
@@ -419,17 +368,17 @@ function BookFlyerStable({
                 </div>
             )}
             {!isFlyerLoading && !htmlFlyer.includes('Content Error:') && (
-                <div className="prose prose-sm max-w-none prose-headings:text-[#002E47] prose-p:text-slate-600" dangerouslySetInnerHTML={{ __html: htmlFlyer }} />
+                <div className="prose prose-sm max-w-none prose-headings:text-corporate-navy prose-p:text-slate-600" dangerouslySetInnerHTML={{ __html: htmlFlyer }} />
             )}
         </div>
 
         <div className="mt-8 pt-6 border-t border-slate-200">
-          <h3 className="text-xl font-bold mb-4 flex items-center gap-3 text-[#002E47]">
+          <h3 className="text-xl font-bold mb-4 flex items-center gap-3 text-corporate-navy">
             <MessageSquare className="w-6 h-6 text-purple-600"/> AI Rep Coach: Apply It Now
           </h3>
           {aiResponse && (
             <div className="p-4 mb-4 rounded-xl shadow-sm border-l-4 border-purple-600 bg-purple-50 text-slate-700">
-              <p className="text-sm font-semibold flex items-center gap-2 mb-1 text-[#002E47]">
+              <p className="text-sm font-semibold flex items-center gap-2 mb-1 text-corporate-navy">
                 <Cpu className="w-4 h-4"/> AI Rep Coach Response:
               </p>
               <p className="text-sm whitespace-pre-wrap">{aiResponse}</p>
@@ -654,7 +603,7 @@ export default function BusinessReadingsScreen() {
     <div className="min-h-screen bg-slate-50 p-6 space-y-8">
       <div className="max-w-7xl mx-auto space-y-8">
         <div className="text-center space-y-4">
-          <h1 className="text-3xl font-bold text-[#002E47]">Reading & Reps</h1>
+          <h1 className="text-3xl font-bold text-corporate-navy">Reading & Reps</h1>
           <p className="text-slate-600 text-lg max-w-2xl mx-auto">
             Access curated business readings and generate AI-powered practice reps.
           </p>

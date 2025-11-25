@@ -3,51 +3,12 @@ import { useAppServices } from '../../services/useAppServices.jsx'; // Canonical
 import { MEMBERSHIP_TIERS } from '../../services/membershipService.js';
 import { DollarSign, Zap, Clock, CheckCircle, CreditCard, AlertTriangle, X, ShieldCheck, CornerRightUp, RefreshCw, Trash2, Mail, Bell } from 'lucide-react';
 import { CORPORATE_COLORS } from '../../styles/corporate-colors.js';
+import { Button, Card } from '../ui';
 
 
 // --- Local Components for Modularity and Style ---
 
 const COLORS = CORPORATE_COLORS;
-
-const Card = ({ title, children, accent = 'TEAL', icon: Icon, className = '' }) => {
-    const accentColor = COLORS[accent] || COLORS.TEAL;
-    return (
-        <div 
-            className={`bg-white rounded-xl shadow-lg p-6 border-t-4 ${className}`}
-            style={{ borderColor: accentColor }}
-        >
-            <div className="flex items-center mb-4">
-                {Icon && <Icon className="w-6 h-6 mr-3" style={{ color: accentColor }} />}
-                <h2 className="text-xl font-bold" style={{ color: COLORS.NAVY }}>{title}</h2>
-            </div>
-            {children}
-        </div>
-    );
-};
-
-const Button = ({ children, onClick, variant = 'primary', size = 'md', className = '', disabled = false }) => {
-    let style = { background: COLORS.TEAL, color: 'white' };
-    let padding = size === 'sm' ? 'px-3 py-1.5 text-sm' : 'px-4 py-2 text-base';
-
-    if (variant === 'secondary') {
-        style = { background: COLORS.NAVY, color: 'white' };
-    } else if (variant === 'outline') {
-        style = { border: `1px solid ${COLORS.TEAL}`, color: COLORS.TEAL, background: 'white' };
-    } else if (variant === 'danger') {
-        style = { background: COLORS.RED, color: 'white' };
-    }
-
-    return (
-        <button
-            onClick={onClick}
-            disabled={disabled}
-            className={`${padding} rounded-lg font-semibold transition-all duration-200 hover:opacity-85 disabled:opacity-50 disabled:cursor-not-allowed ${className}`}
-            style={style}
-        >
-            {children}
-        </button>
-    );
-};
 
 const NotificationBanner = ({ notification, onDismiss }) => {
     let baseStyle = 'bg-blue-50 border-blue-200 text-blue-700';
@@ -72,7 +33,7 @@ const NotificationBanner = ({ notification, onDismiss }) => {
             <button 
                 onClick={() => onDismiss(notification.id)}
                 className={`ml-4 p-1 rounded-full opacity-70 hover:opacity-100 transition-opacity`}
-                style={{ color: COLORS.MUTED }}
+                className="text-slate-500"
                 title="Dismiss"
             >
                 <X className="w-4 h-4" />
@@ -200,7 +161,7 @@ const MembershipModule = () => {
     if (isLoading || !membershipData) {
         return (
             <div className="flex items-center justify-center h-full min-h-screen">
-                <Zap className="w-8 h-8 animate-spin" style={{ color: COLORS.TEAL }} />
+                <Zap className="w-8 h-8 animate-spin" className="text-corporate-teal" />
             </div>
         );
     }
@@ -213,18 +174,18 @@ const MembershipModule = () => {
             <div>
                 
                 {/* Header */}
-                <h1 className="text-xl sm:text-2xl sm:text-3xl md:text-4xl font-extrabold mb-2" style={{ color: COLORS.NAVY }}>
+                <h1 className="text-xl sm:text-2xl sm:text-3xl md:text-4xl font-extrabold mb-2" className="text-corporate-navy">
                     Membership & Billing
                 </h1>
-                <p className="text-base mb-6" style={{ color: COLORS.MUTED }}>
+                <p className="text-base mb-6" className="text-slate-500">
                     Manage your plan, payments, and account status here.
                 </p>
 
                 {/* Notifications Panel */}
                 {membershipData.notifications.length > 0 && (
                     <div className="mb-6 space-y-3">
-                        <h3 className="text-lg font-bold" style={{ color: COLORS.NAVY }}>
-                            <Mail className="inline-block w-5 h-5 mr-2" style={{ color: COLORS.ORANGE }} /> Notifications
+                        <h3 className="text-lg font-bold" className="text-corporate-navy">
+                            <Mail className="inline-block w-5 h-5 mr-2" className="text-corporate-orange" /> Notifications
                         </h3>
                         {membershipData.notifications.map(n => (
                             <NotificationBanner 
@@ -241,27 +202,27 @@ const MembershipModule = () => {
                     
                     {/* Current Plan Card (Span 1) */}
                     <Card title="Current Plan" accent={statusColor} icon={ShieldCheck} className="lg:col-span-1">
-                        <p className="text-sm font-semibold mb-2" style={{ color: COLORS.MUTED }}>
+                        <p className="text-sm font-semibold mb-2" className="text-slate-500">
                             STATUS: <span className={`font-extrabold uppercase`} style={{ color: COLORS[statusColor] }}>
                                 {membershipData.status}
                             </span>
                         </p>
-                        <h3 className="text-xl sm:text-2xl font-extrabold mb-4" style={{ color: COLORS.NAVY }}>
+                        <h3 className="text-xl sm:text-2xl font-extrabold mb-4" className="text-corporate-navy">
                             {currentPlanDetails.name}
                         </h3>
                         
                         {nextBillingDate && (
                             <div className="flex items-center text-sm font-medium mb-4 p-3 rounded-lg bg-gray-50 border">
-                                <Clock className="w-4 h-4 mr-2" style={{ color: COLORS.TEAL }} />
+                                <Clock className="w-4 h-4 mr-2" className="text-corporate-teal" />
                                 <p>Next Billing Date: <strong>{nextBillingDate.toDateString()}</strong></p>
                             </div>
                         )}
                         
-                        <p className="font-semibold text-base mb-2" style={{ color: COLORS.NAVY }}>Your Features:</p>
+                        <p className="font-semibold text-base mb-2" className="text-corporate-navy">Your Features:</p>
                         <ul className="space-y-1 text-sm">
                             {currentPlanDetails.features && Object.entries(currentPlanDetails.features).map(([key, value], index) => (
                                 <li key={index} className="flex items-center text-gray-700">
-                                    <CheckCircle className="w-4 h-4 mr-2 flex-shrink-0" style={{ color: COLORS.GREEN }} />
+                                    <CheckCircle className="w-4 h-4 mr-2 flex-shrink-0" className="text-corporate-teal" />
                                     {key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}: {typeof value === 'boolean' ? (value ? 'Yes' : 'No') : value}
                                 </li>
                             ))}
@@ -281,7 +242,7 @@ const MembershipModule = () => {
 
                     {/* Available Plans (Span 2) */}
                     <div className="lg:col-span-2 space-y-4">
-                        <h3 className="text-xl sm:text-2xl font-bold" style={{ color: COLORS.NAVY }}>Upgrade Options</h3>
+                        <h3 className="text-xl sm:text-2xl font-bold" className="text-corporate-navy">Upgrade Options</h3>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             {upgradePlans.map(plan => (
                                 <div 
@@ -289,10 +250,10 @@ const MembershipModule = () => {
                                     className="bg-white rounded-xl shadow-md p-3 sm:p-4 lg:p-6 border-t-4 hover:shadow-xl transition-shadow duration-300"
                                     style={{ borderColor: plan.id === 'pro' ? COLORS.PURPLE : COLORS.BLUE }}
                                 >
-                                    <h4 className="text-xl font-extrabold mb-1" style={{ color: COLORS.NAVY }}>{plan.name}</h4>
-                                    <p className="text-sm font-semibold mb-3" style={{ color: COLORS.MUTED }}>{plan.recurrence}</p>
+                                    <h4 className="text-xl font-extrabold mb-1" className="text-corporate-navy">{plan.name}</h4>
+                                    <p className="text-sm font-semibold mb-3" className="text-slate-500">{plan.recurrence}</p>
                                     
-                                    <p className="text-xl sm:text-2xl sm:text-3xl font-extrabold mb-4" style={{ color: COLORS.NAVY }}>
+                                    <p className="text-xl sm:text-2xl sm:text-3xl font-extrabold mb-4" className="text-corporate-navy">
                                         <DollarSign className="inline-block w-6 h-6" />{plan.price}
                                         <span className="text-base font-medium text-gray-500">/{plan.recurrence ? plan.recurrence.toLowerCase().replace('ly', '').replace('ally', '') : 'period'}</span>
                                     </p>
@@ -300,7 +261,7 @@ const MembershipModule = () => {
                                     <ul className="space-y-2 text-sm mb-6">
                                         {plan.features && Object.entries(plan.features).map(([key, value], index) => (
                                             <li key={index} className="flex items-center text-gray-700">
-                                                <CornerRightUp className="w-4 h-4 mr-2 flex-shrink-0" style={{ color: COLORS.ORANGE }} />
+                                                <CornerRightUp className="w-4 h-4 mr-2 flex-shrink-0" className="text-corporate-orange" />
                                                 {key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}: {typeof value === 'boolean' ? (value ? 'Yes' : 'No') : value}
                                             </li>
                                         ))}
@@ -324,22 +285,22 @@ const MembershipModule = () => {
                 <Card title="Payment History" accent='NAVY' icon={DollarSign}>
                     <div className="overflow-x-auto">
                         {membershipData.paymentHistory.length === 0 ? (
-                            <p className="text-sm text-center py-4" style={{ color: COLORS.MUTED }}>No payment history found.</p>
+                            <p className="text-sm text-center py-4" className="text-slate-500">No payment history found.</p>
                         ) : (
                             <table className="min-w-full divide-y divide-gray-200">
-                                <thead style={{ backgroundColor: COLORS.LIGHT_GRAY }}>
+                                <thead className="bg-slate-50">
                                     <tr>
-                                        <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider" style={{ color: COLORS.MUTED }}>Plan</th>
-                                        <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider" style={{ color: COLORS.MUTED }}>Amount</th>
-                                        <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider" style={{ color: COLORS.MUTED }}>Date</th>
-                                        <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider" style={{ color: COLORS.MUTED }}>Method</th>
-                                        <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider" style={{ color: COLORS.MUTED }}>Status</th>
+                                        <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider" className="text-slate-500">Plan</th>
+                                        <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider" className="text-slate-500">Amount</th>
+                                        <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider" className="text-slate-500">Date</th>
+                                        <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider" className="text-slate-500">Method</th>
+                                        <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider" className="text-slate-500">Status</th>
                                     </tr>
                                 </thead>
                                 <tbody className="bg-white divide-y divide-gray-200">
                                     {membershipData.paymentHistory.map((item, index) => (
                                         <tr key={index}>
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium" style={{ color: COLORS.NAVY }}>{item.planId}</td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium" className="text-corporate-navy">{item.planId}</td>
                                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">${item.amount.toFixed(2)}</td>
                                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">{new Date(item.date).toLocaleDateString()}</td>
                                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">{item.method}</td>
@@ -358,19 +319,19 @@ const MembershipModule = () => {
                 <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4">
                     <div className="bg-white rounded-2xl p-3 sm:p-4 lg:p-6 w-full shadow-2xl">
                         <div className="flex justify-between items-center mb-6">
-                            <h2 className="text-xl sm:text-2xl font-bold" style={{ color: COLORS.NAVY }}>
+                            <h2 className="text-xl sm:text-2xl font-bold" className="text-corporate-navy">
                                 Secure Checkout: {selectedPlan.name}
                             </h2>
                             <button onClick={() => setModalOpen(false)} className="p-2 rounded-full hover:bg-gray-100">
-                                <X className="w-6 h-6" style={{ color: COLORS.MUTED }} />
+                                <X className="w-6 h-6" className="text-slate-500" />
                             </button>
                         </div>
                         
                         {/* Summary */}
                         <div className="border-b pb-4 mb-4">
-                            <p className="text-lg font-semibold" style={{ color: COLORS.TEXT }}>
+                            <p className="text-lg font-semibold" className="text-corporate-navy">
                                 Total Due Today: 
-                                <span className="ml-2 text-xl sm:text-2xl font-extrabold" style={{ color: COLORS.TEAL }}>
+                                <span className="ml-2 text-xl sm:text-2xl font-extrabold" className="text-corporate-teal">
                                     ${selectedPlan.price.toFixed(2)}
                                 </span>
                                 <span className="text-sm text-gray-500"> / {selectedPlan.recurrence}</span>
@@ -381,7 +342,7 @@ const MembershipModule = () => {
                         </div>
 
                         {/* Payment Method Selection */}
-                        <h3 className="text-lg font-bold mb-3" style={{ color: COLORS.NAVY }}>
+                        <h3 className="text-lg font-bold mb-3" className="text-corporate-navy">
                             1. Select Payment Method
                         </h3>
                         <div className="flex space-x-4 mb-6">
@@ -402,7 +363,7 @@ const MembershipModule = () => {
                         </div>
 
                         {/* Mock Payment Details */}
-                        <h3 className="text-lg font-bold mb-3" style={{ color: COLORS.NAVY }}>
+                        <h3 className="text-lg font-bold mb-3" className="text-corporate-navy">
                             2. Payment Details ({paymentMethod.toUpperCase()})
                         </h3>
                         {paymentMethod === 'card' && (
@@ -441,7 +402,7 @@ const MembershipModule = () => {
                         </Button>
                         
                         {paymentStatus === 'failure' && (
-                             <p className="text-sm text-center mt-3 font-semibold" style={{ color: COLORS.RED }}>
+                             <p className="text-sm text-center mt-3 font-semibold" className="text-corporate-orange">
                                 Transaction declined. Please try a different method.
                              </p>
                         )}

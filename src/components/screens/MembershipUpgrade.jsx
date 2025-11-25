@@ -4,44 +4,7 @@ import React from 'react';
 import { useAppServices } from '../../services/useAppServices.jsx';
 import { MEMBERSHIP_TIERS } from '../../services/membershipService.js';
 import { ArrowLeft, Check, Crown, Zap, Target, Users, Calendar, BookOpen, MessageSquare, Bot } from 'lucide-react';
-
-// --- Standardized UI Components ---
-const Button = ({ children, onClick, disabled = false, variant = 'primary', className = '', size = 'md', ...rest }) => {
-  const baseStyles = "inline-flex items-center justify-center gap-2 font-semibold rounded-xl transition-all duration-200 focus:outline-none focus:ring-2 disabled:opacity-50 disabled:cursor-not-allowed";
-  const variants = {
-    primary: "bg-[#47A88D] text-white shadow-md hover:bg-[#3d917a] focus:ring-[#47A88D]/50",
-    secondary: "bg-[#E04E1B] text-white shadow-md hover:bg-[#c44317] focus:ring-[#E04E1B]/50",
-    outline: "bg-white text-[#47A88D] border-2 border-[#47A88D] shadow-sm hover:bg-[#47A88D]/10 focus:ring-[#47A88D]/50",
-    ghost: "bg-transparent text-slate-600 hover:bg-slate-100",
-    upgrade: "bg-gradient-to-r from-orange-500 to-amber-500 text-white shadow-lg hover:shadow-xl hover:scale-[1.02] focus:ring-orange-500/50",
-  };
-  const sizes = {
-    sm: "px-3 py-1.5 text-sm",
-    md: "px-5 py-2.5 text-base",
-    lg: "px-8 py-4 text-lg",
-  };
-  return (
-    <button 
-      onClick={onClick} 
-      disabled={disabled} 
-      className={`${baseStyles} ${variants[variant] || variants.primary} ${sizes[size] || sizes.md} ${className}`}
-      {...rest}
-    >
-      {children}
-    </button>
-  );
-};
-
-const Card = ({ children, className = '', accentColor = 'bg-[#002E47]' }) => {
-  return (
-    <div className={`relative w-full text-left bg-white rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-all duration-300 overflow-hidden ${className}`}>
-      <div className={`absolute top-0 left-0 right-0 h-1.5 ${accentColor}`} />
-      <div className="p-6">
-        {children}
-      </div>
-    </div>
-  );
-};
+import { Button, Card } from '../ui';
 
 const FeatureList = ({ features, included = true }) => {
   if (!features || !Array.isArray(features) || features.length === 0) {
@@ -112,16 +75,16 @@ const TierCard = ({ tier, isCurrentTier = false, onUpgrade, isPopular = false })
       )}
       
       <Card 
-        accentColor={isPopular ? 'bg-gradient-to-r from-orange-500 to-amber-500' : tier === 'free' ? 'bg-[#47A88D]' : 'bg-purple-600'} 
+        accentColor={isPopular ? 'bg-gradient-to-r from-orange-500 to-amber-500' : tier === 'free' ? 'bg-corporate-teal' : 'bg-purple-600'} 
         className={`h-full flex flex-col ${isPopular ? 'ring-2 ring-orange-200 shadow-xl' : ''}`}
       >
         <div className="text-center mb-8">
-          <h3 className="text-2xl font-bold text-[#002E47] mb-2">
+          <h3 className="text-2xl font-bold text-corporate-navy mb-2">
             {tierData.name}
           </h3>
           
           <div className="mb-6 flex items-baseline justify-center gap-1">
-            <span className="text-4xl font-bold text-[#002E47]">
+            <span className="text-4xl font-bold text-corporate-navy">
               ${tierData.price}
             </span>
             <span className="text-slate-500 font-medium">/month</span>
@@ -173,7 +136,7 @@ const MembershipUpgrade = ({ setCurrentScreen, simulatedTier }) => {
         {/* Back Button */}
         <button 
             onClick={() => setCurrentScreen('dashboard')}
-            className="flex items-center gap-2 mb-8 text-slate-500 hover:text-[#002E47] transition-colors group"
+            className="flex items-center gap-2 mb-8 text-slate-500 hover:text-corporate-navy transition-colors group"
         >
           <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
           <span className="font-medium">Back to Dashboard</span>
@@ -181,11 +144,11 @@ const MembershipUpgrade = ({ setCurrentScreen, simulatedTier }) => {
 
         <div className="text-center mb-16 space-y-4">
           <div className="flex items-center justify-center gap-3">
-            <Crown className="w-8 h-8 text-[#E04E1B]" />
-            <h1 className="text-4xl font-bold text-[#002E47]">
+            <Crown className="w-8 h-8 text-corporate-orange" />
+            <h1 className="text-4xl font-bold text-corporate-navy">
               Membership Plans
             </h1>
-            <Crown className="w-8 h-8 text-[#E04E1B]" />
+            <Crown className="w-8 h-8 text-corporate-orange" />
           </div>
           <p className="text-lg text-slate-600 max-w-2xl mx-auto">
             Choose the perfect plan to accelerate your leadership development.
@@ -208,8 +171,8 @@ const MembershipUpgrade = ({ setCurrentScreen, simulatedTier }) => {
         </div>
 
         {/* Feature Comparison */}
-        <Card className="mb-12" accentColor="bg-[#002E47]">
-          <h2 className="text-2xl font-bold mb-8 text-center text-[#002E47]">
+        <Card className="mb-12" accentColor="bg-corporate-navy">
+          <h2 className="text-2xl font-bold mb-8 text-center text-corporate-navy">
             Feature Comparison
           </h2>
           
@@ -219,7 +182,7 @@ const MembershipUpgrade = ({ setCurrentScreen, simulatedTier }) => {
                 <tr className="border-b border-slate-200">
                   <th className="text-left py-4 px-6 text-sm font-bold text-slate-500 uppercase tracking-wider">Features</th>
                   <th className="text-center py-4 px-6 text-sm font-bold text-slate-500 uppercase tracking-wider">Free</th>
-                  <th className="text-center py-4 px-6 text-sm font-bold text-[#E04E1B] uppercase tracking-wider">Premium</th>
+                  <th className="text-center py-4 px-6 text-sm font-bold text-corporate-orange uppercase tracking-wider">Premium</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
@@ -233,7 +196,7 @@ const MembershipUpgrade = ({ setCurrentScreen, simulatedTier }) => {
                     <tr key={i} className="hover:bg-slate-50 transition-colors">
                         <td className="py-4 px-6 font-medium text-slate-700">{row.name}</td>
                         <td className="text-center py-4 px-6 text-slate-500">{row.free}</td>
-                        <td className="text-center py-4 px-6 font-semibold text-[#002E47]">
+                        <td className="text-center py-4 px-6 font-semibold text-corporate-navy">
                             {row.premium === true ? <Check className="w-5 h-5 text-green-500 mx-auto" /> : row.premium}
                         </td>
                     </tr>
@@ -245,23 +208,23 @@ const MembershipUpgrade = ({ setCurrentScreen, simulatedTier }) => {
 
         {/* FAQ Section */}
         <Card accentColor="bg-slate-400">
-          <h2 className="text-2xl font-bold mb-8 text-[#002E47]">
+          <h2 className="text-2xl font-bold mb-8 text-corporate-navy">
             Frequently Asked Questions
           </h2>
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             <div>
-              <h3 className="font-bold text-[#002E47] mb-2">Can I upgrade or downgrade anytime?</h3>
+              <h3 className="font-bold text-corporate-navy mb-2">Can I upgrade or downgrade anytime?</h3>
               <p className="text-slate-600 text-sm leading-relaxed">Yes, you can change your membership tier at any time. Upgrades take effect immediately, while downgrades take effect at the next billing cycle.</p>
             </div>
             
             <div>
-              <h3 className="font-bold text-[#002E47] mb-2">What's included in the AI Coaching?</h3>
+              <h3 className="font-bold text-corporate-navy mb-2">What's included in the AI Coaching?</h3>
               <p className="text-slate-600 text-sm leading-relaxed">Our AI coaching provides personalized leadership development insights, scenario practice, and guidance tailored to your specific challenges and goals.</p>
             </div>
             
             <div>
-              <h3 className="font-bold text-[#002E47] mb-2">How do Accountability Pods work?</h3>
+              <h3 className="font-bold text-corporate-navy mb-2">How do Accountability Pods work?</h3>
               <p className="text-slate-600 text-sm leading-relaxed">Pods are small groups (4-8 members) of leaders who support each other's growth through regular check-ins, shared goals, and peer accountability.</p>
             </div>
           </div>

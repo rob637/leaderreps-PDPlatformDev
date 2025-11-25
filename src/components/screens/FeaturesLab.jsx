@@ -17,33 +17,7 @@ import {
   ArrowLeft
 } from 'lucide-react';
 import { useAppServices } from '../../services/useAppServices.jsx';
-
-// --- Standardized UI Components ---
-const Button = ({ children, onClick, disabled = false, variant = 'primary', className = '', size = 'md', ...rest }) => {
-  const baseStyles = "inline-flex items-center justify-center gap-2 font-semibold rounded-xl transition-all duration-200 focus:outline-none focus:ring-2 disabled:opacity-50 disabled:cursor-not-allowed";
-  const variants = {
-    primary: "bg-[#47A88D] text-white shadow-md hover:bg-[#3d917a] focus:ring-[#47A88D]/50",
-    secondary: "bg-[#E04E1B] text-white shadow-md hover:bg-[#c44317] focus:ring-[#E04E1B]/50",
-    outline: "bg-white text-[#47A88D] border-2 border-[#47A88D] shadow-sm hover:bg-[#47A88D]/10 focus:ring-[#47A88D]/50",
-    ghost: "bg-transparent text-slate-600 hover:bg-slate-100",
-    'nav-back': "bg-white text-slate-700 border border-slate-300 shadow-sm hover:bg-slate-100 focus:ring-slate-300/50 px-4 py-2 text-sm",
-  };
-  const sizes = {
-    sm: "px-3 py-1.5 text-sm",
-    md: "px-5 py-2.5 text-base",
-    lg: "px-8 py-4 text-lg",
-  };
-  return (
-    <button 
-      onClick={onClick} 
-      disabled={disabled} 
-      className={`${baseStyles} ${variants[variant] || variants.primary} ${sizes[size] || sizes.md} ${className}`}
-      {...rest}
-    >
-      {children}
-    </button>
-  );
-};
+import { Button } from '../ui';
 
 // Feature Categories
 const CATEGORIES = {
@@ -215,7 +189,7 @@ const FeaturesLab = () => {
         key={feature.id} 
         className={`p-4 rounded-xl border transition-all duration-200 ${
           isEnabled 
-            ? 'bg-white border-[#47A88D] shadow-md' 
+            ? 'bg-white border-corporate-teal shadow-md' 
             : 'bg-slate-50 border-slate-200 opacity-75 hover:opacity-100'
         }`}
       >
@@ -225,13 +199,13 @@ const FeaturesLab = () => {
           </div>
           <button 
             onClick={() => toggleFeature(feature.id)}
-            className={`transition-colors ${isEnabled ? 'text-[#47A88D]' : 'text-slate-400'}`}
+            className={`transition-colors ${isEnabled ? 'text-corporate-teal' : 'text-slate-400'}`}
           >
             {isEnabled ? <ToggleRight className="w-8 h-8" /> : <ToggleLeft className="w-8 h-8" />}
           </button>
         </div>
         
-        <h3 className="font-bold text-[#002E47] mb-1">{feature.title}</h3>
+        <h3 className="font-bold text-corporate-navy mb-1">{feature.title}</h3>
         <p className="text-sm text-slate-600 mb-3 min-h-[40px]">{feature.description}</p>
         
         <div className="flex items-center gap-2">
@@ -243,7 +217,7 @@ const FeaturesLab = () => {
             {feature.status}
           </span>
           {isEnabled && (
-            <span className="text-xs font-bold text-[#47A88D] flex items-center gap-1">
+            <span className="text-xs font-bold text-corporate-teal flex items-center gap-1">
               <Zap className="w-3 h-3" /> Active
             </span>
           )}
@@ -262,11 +236,11 @@ const FeaturesLab = () => {
                 <ArrowLeft className="w-4 h-4 mr-2" /> Back to Settings
           </Button>
           <div className="flex items-center gap-3">
-            <div className="p-3 bg-[#002E47] rounded-xl text-white shadow-lg">
+            <div className="p-3 bg-corporate-navy rounded-xl text-white shadow-lg">
               <Beaker className="w-8 h-8" />
             </div>
             <div>
-              <h1 className="text-3xl font-bold text-[#002E47]">Features Lab</h1>
+              <h1 className="text-3xl font-bold text-corporate-navy">Features Lab</h1>
               <p className="text-slate-500">Experimental features playground. Toggle features to test functionality without impacting the main application.</p>
             </div>
           </div>
@@ -287,7 +261,7 @@ const FeaturesLab = () => {
         {Object.values(CATEGORIES).map(category => (
           <section key={category} className="space-y-4">
             <div className="flex items-center gap-2 border-b border-slate-200 pb-2">
-              <h2 className="text-xl font-bold text-[#002E47]">{category} Experiments</h2>
+              <h2 className="text-xl font-bold text-corporate-navy">{category} Experiments</h2>
               <span className="bg-slate-200 text-slate-600 text-xs font-bold px-2 py-1 rounded-full">
                 {FEATURES.filter(f => f.category === category).length}
               </span>

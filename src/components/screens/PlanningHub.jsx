@@ -1,57 +1,13 @@
-// src/components/screens/PlanningHub.jsx (Refactored for Consistency, Context, AI Fixes)
+// src/components/screens/PlanningHub.jsx
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-// --- Core Services & Context ---
-import { useAppServices } from '../../services/useAppServices.jsx'; // cite: useAppServices.jsx
-
-// --- Icons ---
+import { useAppServices } from '../../services/useAppServices.jsx';
+import { Button, Card, LoadingSpinner, Tooltip } from '../ui';
 import {
-    ArrowLeft, CheckCircle, PlusCircle, X, TrendingUp, Target, AlertTriangle, Lightbulb,
-    ShieldCheck, Cpu, Trash2, Zap, MessageSquare, BookOpen, Clock, CornerRightUp, Award, Activity,
-    Link, CornerDownRight, Dumbbell, Trello, Loader, Save // Added Trello, Loader, Save
+  ArrowLeft, CheckCircle, PlusCircle, X, TrendingUp, Target, AlertTriangle, Lightbulb,
+  ShieldCheck, Cpu, Trash2, Zap, MessageSquare, BookOpen, Clock, CornerRightUp, Award, Activity,
+  Link, CornerDownRight, Dumbbell, Trello, Loader, Save
 } from 'lucide-react';
-
-/* =========================================================
-   PALETTE & UI COMPONENTS (Standardized)
-========================================================= */
-// --- Primary Color Palette ---
-// COLORS removed in favor of Tailwind/Hex
-
-
-// --- Standardized UI Components (Matches Dashboard/Dev Plan) ---
-const Button = ({ children, onClick, disabled = false, variant = 'primary', className = '', size = 'md', ...rest }) => { /* ... Re-use exact Button definition from Dashboard.jsx ... */
-    let baseStyle = `inline-flex items-center justify-center gap-2 font-semibold rounded-xl transition-all duration-200 focus:outline-none focus:ring-4 disabled:opacity-50 disabled:cursor-not-allowed`;
-    if (size === 'sm') baseStyle += ' px-4 py-2 text-sm'; else if (size === 'lg') baseStyle += ' px-8 py-4 text-lg'; else baseStyle += ' px-6 py-3 text-base'; // Default 'md'
-    if (variant === 'primary') baseStyle += ` bg-[${'#47A88D'}] text-white shadow-lg hover:bg-[#47A88D] focus:ring-[${'#47A88D'}]/50`;
-    else if (variant === 'secondary') baseStyle += ` bg-[${'#E04E1B'}] text-white shadow-lg hover:bg-[#C312] focus:ring-[${'#E04E1B'}]/50`;
-    else if (variant === 'outline') baseStyle += ` bg-[${'#FFFFFF'}] text-[${'#47A88D'}] border-2 border-[${'#47A88D'}] shadow-md hover:bg-[${'#47A88D'}]/10 focus:ring-[${'#47A88D'}]/50`;
-    else if (variant === 'nav-back') baseStyle += ` bg-white text-gray-700 border border-gray-300 shadow-sm hover:bg-gray-100 focus:ring-gray-300/50 px-4 py-2 text-sm`;
-    else if (variant === 'ghost') baseStyle += ` bg-transparent text-gray-600 hover:bg-gray-100 focus:ring-gray-300/50 px-3 py-1.5 text-sm`;
-    if (disabled) baseStyle += ' bg-gray-300 text-gray-500 shadow-inner border-transparent hover:bg-gray-300';
-    return (<button {...rest} onClick={onClick} disabled={disabled} className={`${baseStyle} ${className}`}>{children}</button>);
-};
-const Card = ({ children, title, icon: Icon, className = '', onClick, accent = 'NAVY' }) => { /* ... Re-use exact Card definition from Dashboard.jsx ... */
-    const interactive = !!onClick; 
-    const Tag = interactive ? 'button' : 'div'; 
-    const accentMap = { NAVY: '#002E47', TEAL: '#47A88D', BLUE: '#002E47', ORANGE: '#E04E1B', GREEN: '#47A88D', AMBER: '#E04E1B', RED: '#E04E1B', PURPLE: '#47A88D' };
-    const accentColor = accentMap[accent] || '#002E47'; 
-    const handleKeyDown = (e) => { if (interactive && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); onClick?.(); } };
-    return (
-        <Tag {...(interactive ? { type: 'button' } : {})} role={interactive ? 'button' : undefined} tabIndex={interactive ? 0 : undefined} onKeyDown={handleKeyDown} className={`relative p-6 rounded-2xl border-2 shadow-xl hover:shadow-lg transition-all duration-300 text-left ${className}`} style={{ background: 'linear-gradient(180deg,#FFFFFF, #FCFCFA)', borderColor: '#E5E7EB', color: '#002E47' }} onClick={onClick}>
-            <span style={{ position:'absolute', top:0, left:0, right:0, height:6, background: accentColor, borderTopLeftRadius:14, borderTopRightRadius:14 }} />
-            {Icon && title && ( <div className="flex items-center gap-3 mb-4"> <div className="w-10 h-10 rounded-lg flex items-center justify-center border flex-shrink-0" style={{ borderColor: '#E5E7EB', background: '#FCFCFA' }}> <Icon className="w-5 h-5" style={{ color: accentColor }} /> </div> <h2 className="text-xl font-extrabold" style={{ color: '#002E47' }}>{title}</h2> </div> )}
-            {!Icon && title && <h2 className="text-xl font-extrabold mb-4 border-b pb-2" style={{ color: '#002E47', borderColor: '#E5E7EB' }}>{title}</h2>}
-            <div className={Icon || title ? '' : ''}>{children}</div>
-        </Tag>
-    );
-};
-const LoadingSpinner = ({ message = "Loading..." }) => ( /* ... Re-use definition from DevelopmentPlan.jsx ... */
-    <div className="min-h-[200px] flex items-center justify-center" style={{ background: '#F9FAFB' }}> <div className="flex flex-col items-center"> <Loader className="animate-spin h-12 w-12 mb-3" style={{ color: '#47A88D' }} /> <p className="font-semibold" style={{ color: '#002E47' }}>{message}</p> </div> </div>
-);
-const Tooltip = ({ content, children }) => { /* ... Re-use definition from Labs.jsx ... */
-    const [isVisible, setIsVisible] = useState(false);
-    return ( <div className="relative inline-block" onMouseEnter={() => setIsVisible(true)} onMouseLeave={() => setIsVisible(false)}> {children} {isVisible && ( <div className="absolute z-10 w-64 p-3 -mt-2 text-xs text-white bg-[#002E47] rounded-lg shadow-lg bottom-full left-1/2 transform -translate-x-1/2"> {content} <div className="absolute left-1/2 transform -translate-x-1/2 -bottom-1 w-0 h-0 border-l-4 border-r-4 border-t-4 border-l-transparent border-r-transparent border-t-[#002E47]"></div> </div> )} </div> );
-};
 
 /* =========================================================
    UTILITIES (Local or Shared)
@@ -59,8 +15,8 @@ const Tooltip = ({ content, children }) => { /* ... Re-use definition from Labs.
 // Markdown to HTML converter (Simplified version, ensure consistency if used elsewhere)
 const mdToHtml = async (md) => { /* ... Re-use definition from Labs.jsx ... */
     if (!md) return ''; let html = md;
-    html = html.replace(/^## (.*$)/gim, '<h2 class="text-xl font-extrabold text-[#002E47] border-b border-gray-200 pb-2 mb-3 mt-5">$1</h2>');
-    html = html.replace(/^### (.*$)/gim, '<h3 class="text-lg font-bold text-[#47A88D] mt-4 mb-2">$1</h3>');
+    html = html.replace(/^## (.*$)/gim, '<h2 class="text-xl font-extrabold text-corporate-navy border-b border-gray-200 pb-2 mb-3 mt-5">$1</h2>');
+    html = html.replace(/^### (.*$)/gim, '<h3 class="text-lg font-bold text-corporate-teal mt-4 mb-2">$1</h3>');
     html = html.replace(/\*\*(.*?)\*\*/gim, '<strong class="font-semibold">$1</strong>');
     html = html.replace(/^\* (.*$)/gim, '<li>$1</li>');
     html = html.replace(/(<li>.*<\/li>\s*)+/g, (match) => `<ul class="list-disc list-inside space-y-1 mb-4 pl-4">${match.trim()}</ul>`);
@@ -261,7 +217,7 @@ const PreMortemView = ({ setPlanningView }) => {
 
                 {/* Header */}
                 <div className="text-center mb-8">
-                    <h1 className="text-3xl font-bold text-[#002E47] mb-2">Tool: Decision Pre-Mortem Audit</h1>
+                    <h1 className="text-3xl font-bold text-corporate-navy mb-2">Tool: Decision Pre-Mortem Audit</h1>
                     <p className="text-slate-600 text-lg">Identify critical risks *before* committing to a high-stakes decision using the AI Devil's Advocate.</p>
                 </div>
 
@@ -271,13 +227,13 @@ const PreMortemView = ({ setPlanningView }) => {
                     <Card title="1. Define Decision & Desired Outcome" icon={TrendingUp} accent='TEAL'>
                         {/* Decision Input */}
                         <div className="mb-4">
-                            <label className="block text-sm font-semibold mb-1 text-[#002E47]">Critical Decision:</label>
+                            <label className="block text-sm font-semibold mb-1 text-corporate-navy">Critical Decision:</label>
                             <textarea value={decision} onChange={(e) => setDecision(e.target.value)}
                                 className="w-full p-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-corporate-teal h-20 text-sm" placeholder="e.g., Should we acquire competitor X?" />
                         </div>
                         {/* Outcome Input */}
                         <div>
-                            <label className="block text-sm font-semibold mb-1 text-[#002E47]">Desired Outcome (Success State):</label>
+                            <label className="block text-sm font-semibold mb-1 text-corporate-navy">Desired Outcome (Success State):</label>
                             <input type="text" value={outcome} onChange={(e) => setOutcome(e.target.value)}
                                 className="w-full p-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-corporate-teal text-sm" placeholder="e.g., Integrate acquisition smoothly, retain 90% key staff, increase market share by 5% in 12 months."/>
                         </div>
@@ -314,14 +270,14 @@ const PreMortemView = ({ setPlanningView }) => {
 
                 {/* Audit Results Section (Conditional) */}
                 {auditHtml && (
-                    <Card title="AI Audit Results & Mitigation Plan" icon={ShieldCheck} accent='NAVY' className="mt-8 border-t-4 border-[#002E47]">
+                    <Card title="AI Audit Results & Mitigation Plan" icon={ShieldCheck} accent='NAVY' className="mt-8 border-t-4 border-corporate-navy">
                         {/* Render Audit HTML */}
                         <div dangerouslySetInnerHTML={{ __html: auditHtml }} />
 
                         {/* Actionable Next Steps (Conditional) */}
                         {(mitigationText || riskScenario) && hasGeminiKey() && (
                             <div className='mt-6 pt-4 border-t border-slate-300 space-y-3'>
-                                <p className='text-sm font-semibold flex items-center gap-1 text-[#002E47]'><Award className="w-4 h-4 text-corporate-teal" /> Actionable Next Steps:</p>
+                                <p className='text-sm font-semibold flex items-center gap-1 text-corporate-navy'><Award className="w-4 h-4 text-corporate-teal" /> Actionable Next Steps:</p>
                                 {/* Create Commitment Button */}
                                 {mitigationText && (
                                     <Button onClick={handleCommitmentCreation} size="sm" className="w-full bg-corporate-teal hover:bg-teal-700 text-white">
@@ -435,7 +391,7 @@ const VisionBuilderView = ({ setPlanningView }) => {
 
                 {/* Header */}
                 <div className="text-center mb-8">
-                    <h1 className="text-3xl font-bold text-[#002E47] mb-2">Tool: Vision & Mission Builder</h1>
+                    <h1 className="text-3xl font-bold text-corporate-navy mb-2">Tool: Vision & Mission Builder</h1>
                     <p className="text-slate-600 text-lg">Define your aspirational 3-5 year Vision (Future State) and Mission (Core Purpose).</p>
                 </div>
 
@@ -454,7 +410,7 @@ const VisionBuilderView = ({ setPlanningView }) => {
                             className="w-full p-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-corporate-teal h-20 text-sm" placeholder="e.g., 'To empower businesses with data-driven insights...'" />
                     </Card>
                     {/* Quality Check Card */}
-                    <Card title="Quality Check" icon={CheckCircle} accent='NAVY' className='bg-slate-50 text-sm border-t-4 border-[#002E47]'>
+                    <Card title="Quality Check" icon={CheckCircle} accent='NAVY' className='bg-slate-50 text-sm border-t-4 border-corporate-navy'>
                          <ul className="list-disc list-inside space-y-2 text-slate-700">
                             <li><strong>Inspiring?</strong> Does it motivate action?</li>
                             <li><strong>Clear & Concise?</strong> Is it easy to understand and remember?</li>
@@ -593,7 +549,7 @@ const OKRDraftingView = ({ setPlanningView }) => {
 
                 {/* Header */}
                 <div className="text-center mb-8">
-                    <h1 className="text-3xl font-bold text-[#002E47] mb-2">Tool: OKR Drafting & Audit</h1>
+                    <h1 className="text-3xl font-bold text-corporate-navy mb-2">Tool: OKR Drafting & Audit</h1>
                     <p className="text-slate-600 text-lg">Set ambitious Objectives (What) and measurable Key Results (How) for the quarter, aligned with your Vision.</p>
                 </div>
 
@@ -637,7 +593,7 @@ const OKRDraftingView = ({ setPlanningView }) => {
 
                 {/* Add Objective & Save Buttons */}
                 <div className='flex flex-col sm:flex-row items-center gap-4 mt-8'>
-                    <Button onClick={addObjective} variant="outline" size="md" className="w-full sm:w-auto border-[#002E47] text-[#002E47] hover:bg-[#002E47]/10">
+                    <Button onClick={addObjective} variant="outline" size="md" className="w-full sm:w-auto border-corporate-navy text-corporate-navy hover:bg-corporate-navy/10">
                         <PlusCircle className='w-5 h-5 mr-2'/> Add New Objective
                     </Button>
                     <Button onClick={handleSave} disabled={isSaving || okrs.length === 0} size="lg" className="w-full sm:w-auto flex-grow bg-corporate-teal hover:bg-teal-700 text-white">
@@ -650,7 +606,7 @@ const OKRDraftingView = ({ setPlanningView }) => {
                 <Card title="AI OKR Auditor" icon={Cpu} accent='TEAL' className='mt-8'>
                     <p className='text-slate-700 text-sm mb-4'>Use the AI Rep Coach to review drafted OKRs for measurability, ambition, and alignment.</p>
                     {/* Critique Button */}
-                    <Button onClick={critiqueOKRs} disabled={isCritiquing || okrs.length === 0 || !okrs.every(o=>o.objective.trim() && o.keyResults?.every(kr=>kr.kr.trim())) || !hasGeminiKey()} size="md" className="w-full bg-[#002E47] hover:bg-slate-700 text-white"> {/* Navy Button */}
+                    <Button onClick={critiqueOKRs} disabled={isCritiquing || okrs.length === 0 || !okrs.every(o=>o.objective.trim() && o.keyResults?.every(kr=>kr.kr.trim())) || !hasGeminiKey()} size="md" className="w-full bg-corporate-navy hover:bg-slate-700 text-white"> {/* Navy Button */}
                         {isCritiquing ? <Loader className="w-5 h-5 mr-2 animate-spin"/> : <MessageSquare className='w-5 h-5 mr-2'/>} {isCritiquing ? 'Auditing OKRs...' : 'Run OKR Audit'}
                     </Button>
                      {!hasGeminiKey() && <p className="text-xs text-red-500 mt-2 text-center">API Key missing. Audit disabled.</p>}
@@ -786,14 +742,14 @@ const AlignmentTrackerView = ({ setPlanningView }) => {
 
                 {/* Header */}
                 <div className="text-center mb-8">
-                    <h1 className="text-3xl font-bold text-[#002E47] mb-2">Tool: Strategic Alignment Tracker</h1>
+                    <h1 className="text-3xl font-bold text-corporate-navy mb-2">Tool: Strategic Alignment Tracker</h1>
                     <p className="text-slate-600 text-lg">Review OKR progress, log misalignments, and get AI-suggested "preventative reps" to improve team focus.</p>
                 </div>
 
                 {/* Main Content Sections */}
                 <div className="space-y-6">
                     {/* OKR Progress Section */}
-                    <h2 className='text-2xl font-bold border-b-2 pb-2 mb-4 text-[#002E47] border-corporate-teal'>Quarterly Objective Progress</h2>
+                    <h2 className='text-2xl font-bold border-b-2 pb-2 mb-4 text-corporate-navy border-corporate-teal'>Quarterly Objective Progress</h2>
                     {objectives.length === 0 && <Card className="text-center italic text-slate-500 border-dashed">No OKRs defined yet. Use the OKR Drafting Tool.</Card>}
                     {objectives.map(obj => (
                         <Card key={obj.id} title={obj.title} icon={CheckCircle} accent='TEAL' className="shadow-md">
@@ -830,7 +786,7 @@ const AlignmentTrackerView = ({ setPlanningView }) => {
                         {/* Suggestion Result */}
                         {(suggestionText || lastJsonError) && (
                             <div className="mt-6 pt-4 border-t border-slate-200">
-                                <p className='text-sm font-semibold mb-2 text-[#002E47]'>Suggested Rep (Tier: {suggestionCommitment?.tier || 'N/A'}):</p>
+                                <p className='text-sm font-semibold mb-2 text-corporate-navy'>Suggested Rep (Tier: {suggestionCommitment?.tier || 'N/A'}):</p>
                                 <div className={`p-3 rounded-lg text-sm ${lastJsonError ? 'bg-red-100 text-red-800' : 'bg-purple-100 text-purple-800'}`}>
                                     {suggestionText}
                                     {lastJsonError && <p className="text-xs mt-2"><strong>Error Details:</strong> {lastJsonError}</p>}
@@ -869,7 +825,7 @@ const PlanningHub = () => {
         <div className="min-h-screen bg-slate-50 p-6 space-y-8">
             <div className="max-w-7xl mx-auto">
                 <div className="text-center max-w-4xl mx-auto mb-12">
-                    <h1 className="text-3xl font-bold text-[#002E47] mb-2">Strategic Planning Hub</h1>
+                    <h1 className="text-3xl font-bold text-corporate-navy mb-2">Strategic Planning Hub</h1>
                     <p className="text-slate-600 text-lg">A suite of tools to help you define your strategy, set clear goals, and align your team for maximum impact.</p>
                 </div>
 

@@ -77,16 +77,16 @@ const ProgressBreakdown = ({ plan, globalMetadata }) => {
     );
   }
 
-  // Focus area colors
+  // Focus area colors - use CSS variable names for consistency
   const areaColors = {
-    'Clarity & Communication': '#002E47',
-    'Trust & Relationships': '#47A88D',
-    'Delegation & Empowerment': '#47A88D',
-    'Execution & Results': '#E04E1B',
-    'Leadership Mindset & Identity': '#002E47',
-    'Ownership & Accountability': '#47A88D',
-    'Recognition & Motivation': '#E04E1B',
-    'Team Health & Culture': '#E04E1B'
+    'Clarity & Communication': 'var(--corporate-navy)',
+    'Trust & Relationships': 'var(--corporate-teal)',
+    'Delegation & Empowerment': 'var(--corporate-teal)',
+    'Execution & Results': 'var(--corporate-orange)',
+    'Leadership Mindset & Identity': 'var(--corporate-navy)',
+    'Ownership & Accountability': 'var(--corporate-teal)',
+    'Recognition & Motivation': 'var(--corporate-orange)',
+    'Team Health & Culture': 'var(--corporate-orange)'
   };
 
   return (
@@ -95,7 +95,7 @@ const ProgressBreakdown = ({ plan, globalMetadata }) => {
       <Card accent="BLUE">
         <div className="flex items-center justify-between mb-4">
           <div>
-            <h2 className="text-xl sm:text-2xl font-bold" style={{ color: '#002E47' }}>
+            <h2 className="text-xl sm:text-2xl font-bold" style={{ color: 'var(--corporate-navy)' }}>
               Overall Progress
             </h2>
             <p className="text-gray-600">
@@ -103,20 +103,20 @@ const ProgressBreakdown = ({ plan, globalMetadata }) => {
             </p>
           </div>
           <div className="text-right">
-            <div className="text-xl sm:text-2xl sm:text-3xl font-bold" style={{ color: '#002E47' }}>
+            <div className="text-xl sm:text-2xl sm:text-3xl font-bold" style={{ color: 'var(--corporate-navy)' }}>
               {overallProgress}%
             </div>
             <p className="text-sm text-gray-600">complete</p>
           </div>
         </div>
-        <ProgressBar progress={overallProgress} color={'#002E47'} />
+        <ProgressBar progress={overallProgress} color={'var(--corporate-navy)'} />
       </Card>
 
       {/* Skills by Focus Area */}
       {Object.entries(skillsByFocusArea).map(([area, skills]) => {
         if (skills.length === 0) return null;
         
-        const areaColor = areaColors[area] || '#E04E1B';
+        const areaColor = areaColors[area] || 'var(--corporate-orange)';
         const areaProgress = Math.round(
           skills.reduce((sum, s) => sum + s.progress, 0) / skills.length
         );
@@ -155,7 +155,7 @@ const ProgressBreakdown = ({ plan, globalMetadata }) => {
                   >
                     <div className="flex items-center justify-between mb-3">
                       <div className="flex-1">
-                        <h3 className="font-semibold mb-1" style={{ color: '#002E47' }}>
+                        <h3 className="font-semibold mb-1" style={{ color: 'var(--corporate-navy)' }}>
                           {skill.skillName}
                         </h3>
                         {skill.phase && (
@@ -166,7 +166,7 @@ const ProgressBreakdown = ({ plan, globalMetadata }) => {
                       </div>
                       <div className="flex items-center gap-2">
                         {isMastered && (
-                          <Award size={20} style={{ color: '#E04E1B' }} />
+                          <Award size={20} style={{ color: 'var(--corporate-orange)' }} />
                         )}
                         <span className="text-sm font-medium" style={{ color: areaColor }}>
                           {skill.weeksCompleted || 0} weeks
@@ -185,8 +185,8 @@ const ProgressBreakdown = ({ plan, globalMetadata }) => {
       {/* Insights */}
       <Card accent="TEAL">
         <div className="flex items-center gap-3 mb-3">
-          <TrendingUp size={24} style={{ color: '#47A88D' }} />
-          <h3 className="font-bold" style={{ color: '#002E47' }}>
+          <TrendingUp size={24} style={{ color: 'var(--corporate-teal)' }} />
+          <h3 className="font-bold" style={{ color: 'var(--corporate-navy)' }}>
             Key Insights
           </h3>
         </div>

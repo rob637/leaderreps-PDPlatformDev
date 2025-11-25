@@ -20,14 +20,6 @@ import {
   CONTENT_COLLECTIONS 
 } from '../../services/contentService';
 
-const COLORS = {
-  NAVY: '#002E47',
-  ORANGE: '#E04E1B',
-  TEAL: '#47A88D',
-  LIGHT_GRAY: '#FCFCFA',
-  MUTED: '#6B7280'
-};
-
 const LOVManager = () => {
   const { db, navigate } = useAppServices();
   const [lovs, setLovs] = useState([]);
@@ -120,19 +112,19 @@ const LOVManager = () => {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <Loader className="w-8 h-8 animate-spin" style={{ color: COLORS.TEAL }} />
+        <Loader className="w-8 h-8 animate-spin" className="text-corporate-teal" />
       </div>
     );
   }
 
   return (
-    <div className="p-6 max-w-7xl mx-auto" style={{ backgroundColor: COLORS.LIGHT_GRAY, minHeight: '100vh' }}>
+    <div className="p-6 max-w-7xl mx-auto" className="bg-slate-50 min-h-screen">
       {/* Header */}
       <div className="mb-6">
         <button
           onClick={() => navigate('admin-content-home')}
           className="flex items-center gap-2 text-sm mb-4 hover:opacity-70"
-          style={{ color: COLORS.MUTED }}
+          className="text-slate-500"
         >
           <ArrowLeft className="w-4 h-4" />
           Back to Admin
@@ -140,8 +132,8 @@ const LOVManager = () => {
         
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <List className="w-8 h-8" style={{ color: COLORS.TEAL }} />
-            <h1 className="text-3xl font-bold" style={{ color: COLORS.NAVY }}>
+            <List className="w-8 h-8" className="text-corporate-teal" />
+            <h1 className="text-3xl font-bold" className="text-corporate-navy">
               List of Values (LOV)
             </h1>
           </div>
@@ -149,7 +141,7 @@ const LOVManager = () => {
           <button
             onClick={handleAdd}
             className="flex items-center gap-2 px-4 py-2 rounded-lg font-semibold text-white transition-all"
-            style={{ backgroundColor: COLORS.TEAL }}
+            className="bg-corporate-teal"
           >
             <Plus className="w-5 h-5" />
             Create New List
@@ -159,14 +151,14 @@ const LOVManager = () => {
 
       {/* Edit Form */}
       {editingItem && (
-        <div className="mb-6 p-6 bg-white rounded-xl shadow-lg border-2" style={{ borderColor: COLORS.TEAL }}>
-          <h2 className="text-xl font-bold mb-4" style={{ color: COLORS.NAVY }}>
+        <div className="mb-6 p-6 bg-white rounded-xl shadow-lg border-2" className="border-corporate-teal">
+          <h2 className="text-xl font-bold mb-4" className="text-corporate-navy">
             {isAddingNew ? 'Create New List' : `Edit List: ${editingItem.title}`}
           </h2>
           
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-semibold mb-1" style={{ color: COLORS.NAVY }}>
+              <label className="block text-sm font-semibold mb-1" className="text-corporate-navy">
                 List Name (Key) *
               </label>
               <input
@@ -181,7 +173,7 @@ const LOVManager = () => {
             </div>
 
             <div>
-              <label className="block text-sm font-semibold mb-1" style={{ color: COLORS.NAVY }}>
+              <label className="block text-sm font-semibold mb-1" className="text-corporate-navy">
                 Description
               </label>
               <input
@@ -194,7 +186,7 @@ const LOVManager = () => {
             </div>
 
             <div>
-              <label className="block text-sm font-semibold mb-1" style={{ color: COLORS.NAVY }}>
+              <label className="block text-sm font-semibold mb-1" className="text-corporate-navy">
                 List Items
               </label>
               {editingItem.title === 'System Quotes' && (
@@ -234,7 +226,7 @@ const LOVManager = () => {
               <button
                 onClick={handleSave}
                 className="flex items-center gap-2 px-6 py-2 rounded-lg font-semibold text-white"
-                style={{ backgroundColor: COLORS.TEAL }}
+                className="bg-corporate-teal"
               >
                 <Save className="w-4 h-4" />
                 Save List
@@ -244,8 +236,7 @@ const LOVManager = () => {
                   setEditingItem(null);
                   setIsAddingNew(false);
                 }}
-                className="flex items-center gap-2 px-6 py-2 rounded-lg font-semibold"
-                style={{ backgroundColor: COLORS.LIGHT_GRAY, color: COLORS.MUTED }}
+                className="flex items-center gap-2 px-6 py-2 rounded-lg font-semibold bg-slate-50 text-slate-500"
               >
                 <X className="w-4 h-4" />
                 Cancel
@@ -259,18 +250,18 @@ const LOVManager = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {lovs.length === 0 ? (
           <div className="col-span-full text-center py-12 bg-white rounded-xl">
-            <p style={{ color: COLORS.MUTED }}>No lists defined yet.</p>
+            <p className="text-slate-500">No lists defined yet.</p>
           </div>
         ) : (
           lovs.map((lov) => (
             <div
               key={lov.id}
               className="p-6 bg-white rounded-xl shadow-sm border hover:shadow-md transition-all"
-              style={{ borderColor: COLORS.TEAL }}
+              className="border-corporate-teal"
             >
               <div className="flex justify-between items-start mb-4">
                 <div>
-                  <h3 className="font-bold text-lg" style={{ color: COLORS.NAVY }}>
+                  <h3 className="font-bold text-lg" className="text-corporate-navy">
                     {lov.title}
                   </h3>
                   <p className="text-xs text-gray-500">{lov.description}</p>
@@ -281,14 +272,14 @@ const LOVManager = () => {
                     className="p-1.5 rounded hover:bg-gray-100"
                     title="Edit"
                   >
-                    <Edit className="w-4 h-4" style={{ color: COLORS.NAVY }} />
+                    <Edit className="w-4 h-4" className="text-corporate-navy" />
                   </button>
                   <button
                     onClick={() => handleDelete(lov)}
                     className="p-1.5 rounded hover:bg-gray-100"
                     title="Delete"
                   >
-                    <Trash2 className="w-4 h-4" style={{ color: COLORS.ORANGE }} />
+                    <Trash2 className="w-4 h-4" className="text-corporate-orange" />
                   </button>
                 </div>
               </div>

@@ -8,7 +8,7 @@ export default function Card({ title, icon, className = '', children }) {
       className={`rounded-2xl border-2 p-6 shadow-lg hover:shadow-xl transition-all duration-300 ${className}`}
       style={{ 
         backgroundColor: '#FCFCFA',
-        borderColor: '#47A88D',
+        borderColor: 'var(--corporate-teal)',
         borderLeftColor: '#47A88D',
         borderLeftWidth: '4px'
       }}
@@ -19,12 +19,12 @@ export default function Card({ title, icon, className = '', children }) {
             className="w-10 h-10 rounded-lg flex items-center justify-center"
             style={{ backgroundColor: '#47A88D20' }}
           >
-            <IconComp size={20} style={{ color: '#47A88D' }} />
+            <IconComp size={20} style={{ color: 'var(--corporate-teal)' }} />
           </div>
         ) : null}
-        <h3 className="text-xl font-bold" style={{ color: '#002E47' }}>{title}</h3>
+        <h3 className="text-xl font-bold" style={{ color: 'var(--corporate-navy)' }}>{title}</h3>
       </div>
-      <div style={{ color: '#002E47' }}>
+      <div style={{ color: 'var(--corporate-navy)' }}>
         {children}
       </div>
     </div>

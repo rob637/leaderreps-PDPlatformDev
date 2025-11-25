@@ -160,7 +160,7 @@ const ContentManager = ({ contentType }) => {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <Loader className="w-8 h-8 animate-spin text-[#47A88D]" />
+        <Loader className="w-8 h-8 animate-spin text-corporate-teal" />
       </div>
     );
   }
@@ -179,15 +179,15 @@ const ContentManager = ({ contentType }) => {
         
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <Icon className="w-8 h-8 text-[#47A88D]" />
-            <h1 className="text-3xl font-bold text-[#002E47]">
+            <Icon className="w-8 h-8 text-corporate-teal" />
+            <h1 className="text-3xl font-bold text-corporate-navy">
               Manage {config.label}
             </h1>
           </div>
           
           <button
             onClick={handleAdd}
-            className="flex items-center gap-2 px-4 py-2 rounded-lg font-semibold text-white transition-all bg-[#47A88D] hover:bg-[#3d917a]"
+            className="flex items-center gap-2 px-4 py-2 rounded-lg font-semibold text-white transition-all bg-corporate-teal hover:bg-corporate-teal-dark"
           >
             <Plus className="w-5 h-5" />
             Add New
@@ -197,33 +197,33 @@ const ContentManager = ({ contentType }) => {
 
       {/* Edit Form */}
       {editingItem && (
-        <div ref={editFormRef} className="mb-6 p-6 bg-white rounded-xl shadow-lg border-2 border-[#47A88D]">
-          <h2 className="text-xl font-bold mb-4 text-[#002E47]">
+        <div ref={editFormRef} className="mb-6 p-6 bg-white rounded-xl shadow-lg border-2 border-corporate-teal">
+          <h2 className="text-xl font-bold mb-4 text-corporate-navy">
             {isAddingNew ? 'Add New Item' : `Edit: ${editingItem.title || 'Untitled'}`}
           </h2>
           
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-semibold mb-1 text-[#002E47]">
+              <label className="block text-sm font-semibold mb-1 text-corporate-navy">
                 Title *
               </label>
               <input
                 type="text"
                 value={editingItem.title}
                 onChange={(e) => setEditingItem({ ...editingItem, title: e.target.value })}
-                className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-[#47A88D] focus:border-[#47A88D] outline-none"
+                className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-corporate-teal focus:border-corporate-teal outline-none"
                 placeholder="Enter title"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-semibold mb-1 text-[#002E47]">
+              <label className="block text-sm font-semibold mb-1 text-corporate-navy">
                 Description
               </label>
               <textarea
                 value={editingItem.description}
                 onChange={(e) => setEditingItem({ ...editingItem, description: e.target.value })}
-                className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-[#47A88D] focus:border-[#47A88D] outline-none"
+                className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-corporate-teal focus:border-corporate-teal outline-none"
                 rows="3"
                 placeholder="Enter description"
               />
@@ -231,14 +231,14 @@ const ContentManager = ({ contentType }) => {
 
             {config.fields.includes('url') && (
               <div>
-                <label className="block text-sm font-semibold mb-1 text-[#002E47]">
+                <label className="block text-sm font-semibold mb-1 text-corporate-navy">
                   URL *
                 </label>
                 <input
                   type="url"
                   value={editingItem.url}
                   onChange={(e) => setEditingItem({ ...editingItem, url: e.target.value })}
-                  className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-[#47A88D] focus:border-[#47A88D] outline-none"
+                  className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-corporate-teal focus:border-corporate-teal outline-none"
                   placeholder="https://"
                 />
               </div>
@@ -246,13 +246,13 @@ const ContentManager = ({ contentType }) => {
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-semibold mb-1 text-[#002E47]">
+                <label className="block text-sm font-semibold mb-1 text-corporate-navy">
                   Tier *
                 </label>
                 <select
                   value={editingItem.tier}
                   onChange={(e) => setEditingItem({ ...editingItem, tier: e.target.value })}
-                  className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-[#47A88D] focus:border-[#47A88D] outline-none"
+                  className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-corporate-teal focus:border-corporate-teal outline-none"
                 >
                   <option value="free">Free</option>
                   <option value="premium">Premium</option>
@@ -260,28 +260,28 @@ const ContentManager = ({ contentType }) => {
               </div>
 
               <div>
-                <label className="block text-sm font-semibold mb-1 text-[#002E47]">
+                <label className="block text-sm font-semibold mb-1 text-corporate-navy">
                   Category
                 </label>
                 <input
                   type="text"
                   value={editingItem.category}
                   onChange={(e) => setEditingItem({ ...editingItem, category: e.target.value })}
-                  className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-[#47A88D] focus:border-[#47A88D] outline-none"
+                  className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-corporate-teal focus:border-corporate-teal outline-none"
                   placeholder="e.g., leadership"
                 />
               </div>
             </div>
 
             <div>
-              <label className="block text-sm font-semibold mb-1 text-[#002E47]">
+              <label className="block text-sm font-semibold mb-1 text-corporate-navy">
                 Thumbnail URL
               </label>
               <input
                 type="url"
                 value={editingItem.thumbnail}
                 onChange={(e) => setEditingItem({ ...editingItem, thumbnail: e.target.value })}
-                className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-[#47A88D] focus:border-[#47A88D] outline-none"
+                className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-corporate-teal focus:border-corporate-teal outline-none"
                 placeholder="https://"
               />
             </div>
@@ -290,7 +290,7 @@ const ContentManager = ({ contentType }) => {
             {contentType === CONTENT_COLLECTIONS.READINGS && editingItem.metadata && (
               <>
                 <div>
-                  <label className="block text-sm font-semibold mb-1 text-[#002E47]">
+                  <label className="block text-sm font-semibold mb-1 text-corporate-navy">
                     Author
                   </label>
                   <input
@@ -300,14 +300,14 @@ const ContentManager = ({ contentType }) => {
                       ...editingItem, 
                       metadata: { ...editingItem.metadata, author: e.target.value }
                     })}
-                    className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-[#47A88D] focus:border-[#47A88D] outline-none"
+                    className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-corporate-teal focus:border-corporate-teal outline-none"
                     placeholder="Book author"
                   />
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-semibold mb-1 text-[#002E47]">
+                    <label className="block text-sm font-semibold mb-1 text-corporate-navy">
                       Duration (pages)
                     </label>
                     <input
@@ -317,12 +317,12 @@ const ContentManager = ({ contentType }) => {
                         ...editingItem, 
                         metadata: { ...editingItem.metadata, duration: e.target.value }
                       })}
-                      className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-[#47A88D] focus:border-[#47A88D] outline-none"
+                      className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-corporate-teal focus:border-corporate-teal outline-none"
                       placeholder="e.g., 320"
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-semibold mb-1 text-[#002E47]">
+                    <label className="block text-sm font-semibold mb-1 text-corporate-navy">
                       Complexity
                     </label>
                     <select
@@ -331,7 +331,7 @@ const ContentManager = ({ contentType }) => {
                         ...editingItem, 
                         metadata: { ...editingItem.metadata, complexity: e.target.value }
                       })}
-                      className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-[#47A88D] focus:border-[#47A88D] outline-none"
+                      className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-corporate-teal focus:border-corporate-teal outline-none"
                     >
                       <option value="">Select...</option>
                       <option value="Low">Low</option>
@@ -342,7 +342,7 @@ const ContentManager = ({ contentType }) => {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-semibold mb-1 text-[#002E47]">
+                  <label className="block text-sm font-semibold mb-1 text-corporate-navy">
                     Focus Areas
                   </label>
                   <input
@@ -352,13 +352,13 @@ const ContentManager = ({ contentType }) => {
                       ...editingItem, 
                       metadata: { ...editingItem.metadata, focus: e.target.value }
                     })}
-                    className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-[#47A88D] focus:border-[#47A88D] outline-none"
+                    className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-corporate-teal focus:border-corporate-teal outline-none"
                     placeholder="Key concepts (comma separated)"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-semibold mb-1 text-[#002E47]">
+                  <label className="block text-sm font-semibold mb-1 text-corporate-navy">
                     Executive Brief HTML
                   </label>
                   <textarea
@@ -367,14 +367,14 @@ const ContentManager = ({ contentType }) => {
                       ...editingItem, 
                       metadata: { ...editingItem.metadata, executiveBriefHTML: e.target.value }
                     })}
-                    className="w-full p-2 border rounded-lg font-mono text-sm focus:ring-2 focus:ring-[#47A88D] focus:border-[#47A88D] outline-none"
+                    className="w-full p-2 border rounded-lg font-mono text-sm focus:ring-2 focus:ring-corporate-teal focus:border-corporate-teal outline-none"
                     rows="4"
                     placeholder="<h3>Executive Brief HTML content...</h3>"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-semibold mb-1 text-[#002E47]">
+                  <label className="block text-sm font-semibold mb-1 text-corporate-navy">
                     Full Flyer HTML
                   </label>
                   <textarea
@@ -383,7 +383,7 @@ const ContentManager = ({ contentType }) => {
                       ...editingItem, 
                       metadata: { ...editingItem.metadata, fullFlyerHTML: e.target.value }
                     })}
-                    className="w-full p-2 border rounded-lg font-mono text-sm focus:ring-2 focus:ring-[#47A88D] focus:border-[#47A88D] outline-none"
+                    className="w-full p-2 border rounded-lg font-mono text-sm focus:ring-2 focus:ring-corporate-teal focus:border-corporate-teal outline-none"
                     rows="6"
                     placeholder="<h2>Full Flyer HTML content...</h2>"
                   />
@@ -396,9 +396,9 @@ const ContentManager = ({ contentType }) => {
                 type="checkbox"
                 checked={editingItem.isActive}
                 onChange={(e) => setEditingItem({ ...editingItem, isActive: e.target.checked })}
-                className="w-4 h-4 text-[#47A88D] focus:ring-[#47A88D]"
+                className="w-4 h-4 text-corporate-teal focus:ring-corporate-teal"
               />
-              <label className="text-sm font-semibold text-[#002E47]">
+              <label className="text-sm font-semibold text-corporate-navy">
                 Active (visible to users)
               </label>
             </div>
@@ -406,7 +406,7 @@ const ContentManager = ({ contentType }) => {
             <div className="flex gap-3 pt-4">
               <button
                 onClick={handleSave}
-                className="flex items-center gap-2 px-6 py-2 rounded-lg font-semibold text-white bg-[#47A88D] hover:bg-[#3d917a]"
+                className="flex items-center gap-2 px-6 py-2 rounded-lg font-semibold text-white bg-corporate-teal hover:bg-corporate-teal-dark"
               >
                 <Save className="w-4 h-4" />
                 Save
@@ -436,10 +436,10 @@ const ContentManager = ({ contentType }) => {
           content.map((item) => (
             <div
               key={item.id}
-              className={`p-4 bg-white rounded-xl shadow-sm border flex items-center justify-between ${item.isActive ? 'border-[#47A88D]' : 'border-slate-300 opacity-60'}`}
+              className={`p-4 bg-white rounded-xl shadow-sm border flex items-center justify-between ${item.isActive ? 'border-corporate-teal' : 'border-slate-300 opacity-60'}`}
             >
               <div className="flex-1">
-                <h3 className="font-bold text-[#002E47]">
+                <h3 className="font-bold text-corporate-navy">
                   {item.title}
                 </h3>
                 <p className="text-sm text-slate-500">
@@ -447,11 +447,11 @@ const ContentManager = ({ contentType }) => {
                   {item.description?.length > 100 ? '...' : ''}
                 </p>
                 <div className="flex gap-3 mt-2 text-xs">
-                  <span className="px-2 py-1 rounded bg-[#47A88D]/20 text-[#47A88D]">
+                  <span className="px-2 py-1 rounded bg-corporate-teal/20 text-corporate-teal">
                     {item.tier}
                   </span>
                   {item.category && (
-                    <span className="px-2 py-1 rounded bg-[#002E47]/10 text-[#002E47]">
+                    <span className="px-2 py-1 rounded bg-corporate-navy/10 text-corporate-navy">
                       {item.category}
                     </span>
                   )}
@@ -465,7 +465,7 @@ const ContentManager = ({ contentType }) => {
                   title={item.isActive ? 'Deactivate' : 'Activate'}
                 >
                   {item.isActive ? (
-                    <Eye className="w-5 h-5 text-[#47A88D]" />
+                    <Eye className="w-5 h-5 text-corporate-teal" />
                   ) : (
                     <EyeOff className="w-5 h-5 text-slate-500" />
                   )}
@@ -475,14 +475,14 @@ const ContentManager = ({ contentType }) => {
                   className="p-2 rounded-lg hover:bg-gray-100"
                   title="Edit"
                 >
-                  <Edit className="w-5 h-5 text-[#002E47]" />
+                  <Edit className="w-5 h-5 text-corporate-navy" />
                 </button>
                 <button
                   onClick={() => handleDelete(item)}
                   className="p-2 rounded-lg hover:bg-gray-100"
                   title="Delete"
                 >
-                  <Trash2 className="w-5 h-5 text-[#E04E1B]" />
+                  <Trash2 className="w-5 h-5 text-corporate-orange" />
                 </button>
               </div>
             </div>

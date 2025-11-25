@@ -65,19 +65,19 @@ export const MILESTONE_CONFIG = {
     FOUNDATION: { 
       name: 'Foundation', 
       weeks: [1, 2, 3, 4], 
-      color: '#47A88D', // TEAL
+      color: 'var(--corporate-teal)', // TEAL
       description: 'Building core habits and understanding'
     },
     DEVELOPMENT: { 
       name: 'Development', 
       weeks: [5, 6, 7, 8], 
-      color: '#E04E1B', // ORANGE
+      color: 'var(--corporate-orange)', // ORANGE
       description: 'Expanding skills and consistent practice'
     },
     MASTERY: { 
       name: 'Mastery', 
       weeks: [9, 10, 11, 12], 
-      color: '#47A88D', // GREEN (mapped to TEAL/Green hex)
+      color: 'var(--corporate-teal)', // GREEN (mapped to TEAL/Green hex)
       description: 'Integration and unconscious competence'
     },
   },
@@ -86,19 +86,19 @@ export const MILESTONE_CONFIG = {
     { 
       name: 'Foundation', 
       weeks: [1, 2, 3, 4], 
-      color: '#47A88D', // TEAL
+      color: 'var(--corporate-teal)', // TEAL
       description: 'Building core habits and understanding'
     },
     { 
       name: 'Development', 
       weeks: [5, 6, 7, 8], 
-      color: '#E04E1B', // ORANGE
+      color: 'var(--corporate-orange)', // ORANGE
       description: 'Expanding skills and consistent practice'
     },
     { 
       name: 'Mastery', 
       weeks: [9, 10, 11, 12], 
-      color: '#47A88D', // GREEN
+      color: 'var(--corporate-teal)', // GREEN
       description: 'Integration and unconscious competence'
     },
   ],

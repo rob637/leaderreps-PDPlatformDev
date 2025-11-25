@@ -14,6 +14,8 @@
     "deploy": "npm run build && firebase deploy --only hosting",
     "deploy:quick": "firebase deploy --only hosting",
     "lint": "eslint .",
+    "lint:ui": "bash ./scripts/ui-architecture-check.sh",
+    "precommit": "npm run lint:ui && npm run lint",
     "test": "vitest",
     "test:run": "vitest run",
     "test:coverage": "vitest --coverage"

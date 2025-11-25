@@ -4,7 +4,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { BookOpen, ShieldCheck, Film, ArrowLeft, Sparkles, Target, Trophy, Users, TrendingUp, Star, Zap, PlayCircle, FileText } from 'lucide-react';
 import { useAppServices } from '../../services/useAppServices.jsx';
 import { membershipService } from '../../services/membershipService.js';
-import { Button } from '../shared/UI';
+import { Button } from '../ui';
 import { getReadings, getVideos, getCourses } from '../../services/contentService';
 import { useFeatures } from '../../providers/FeatureProvider';
 import WidgetRenderer from '../admin/WidgetRenderer';
@@ -16,17 +16,17 @@ const LibraryCard = ({ title, description, icon: Icon, onClick, isLocked = false
       className={`w-full text-left transition-all duration-300 rounded-2xl border p-6 h-full flex flex-col group
         ${isLocked 
           ? 'opacity-90 border-slate-200 bg-slate-50 hover:bg-slate-100' 
-          : 'bg-white hover:shadow-xl hover:-translate-y-1 cursor-pointer border-slate-200 hover:border-[#47A88D]/50'
+          : 'bg-white hover:shadow-xl hover:-translate-y-1 cursor-pointer border-slate-200 hover:border-corporate-teal/50'
         }`}
     >
       <div className="text-center mb-4 w-full">
         <div
           className={`w-20 h-20 rounded-2xl flex items-center justify-center mx-auto mb-4 transition-colors
-            ${isLocked ? 'bg-slate-200 text-slate-400' : 'bg-[#47A88D]/10 text-[#47A88D] group-hover:bg-[#47A88D]/20'}`}
+            ${isLocked ? 'bg-slate-200 text-slate-400' : 'bg-corporate-teal/10 text-corporate-teal group-hover:bg-corporate-teal/20'}`}
         >
           <Icon className="w-10 h-10" />
         </div>
-        <h3 className={`text-xl font-bold mb-3 ${isLocked ? 'text-slate-500' : 'text-[#002E47]'}`}>
+        <h3 className={`text-xl font-bold mb-3 ${isLocked ? 'text-slate-500' : 'text-corporate-navy'}`}>
           {title}
         </h3>
       </div>
@@ -36,7 +36,7 @@ const LibraryCard = ({ title, description, icon: Icon, onClick, isLocked = false
         </p>
         {isLocked && requiredTier && (
           <div className="mt-auto w-full">
-            <div className="inline-flex items-center px-3 py-2 rounded-full text-sm font-semibold w-full justify-center bg-[#E04E1B]/10 text-[#E04E1B] border border-[#E04E1B]/20">
+            <div className="inline-flex items-center px-3 py-2 rounded-full text-sm font-semibold w-full justify-center bg-corporate-orange/10 text-corporate-orange border border-corporate-orange/20">
               Requires Premium Tier
             </div>
           </div>
@@ -178,7 +178,7 @@ const Library = ({ simulatedTier, isDeveloperMode }) => {
         {/* Back Button */}
         <button 
             onClick={() => navigate('dashboard')}
-            className="flex items-center gap-2 mb-8 text-slate-500 hover:text-[#002E47] transition-colors group"
+            className="flex items-center gap-2 mb-8 text-slate-500 hover:text-corporate-navy transition-colors group"
         >
           <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
           <span className="font-medium">Back to Dashboard</span>
@@ -187,9 +187,9 @@ const Library = ({ simulatedTier, isDeveloperMode }) => {
         {/* Header */}
         <div className="text-center mb-12 space-y-4">
             <div className="flex items-center justify-center gap-3">
-                <BookOpen className='w-8 h-8 text-[#47A88D]'/>
-                <h1 className="text-4xl font-bold text-[#002E47]">Content</h1>
-                <BookOpen className='w-8 h-8 text-[#47A88D]'/>
+                <BookOpen className='w-8 h-8 text-corporate-teal'/>
+                <h1 className="text-4xl font-bold text-corporate-navy">Content</h1>
+                <BookOpen className='w-8 h-8 text-corporate-teal'/>
             </div>
             <p className="text-lg text-slate-600 max-w-2xl mx-auto">Your complete leadership development ecosystem.</p>
         </div>

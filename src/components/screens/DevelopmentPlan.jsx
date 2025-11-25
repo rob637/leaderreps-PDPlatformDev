@@ -501,7 +501,7 @@ async function confirmPlanPersisted(db, userId, retries = 4, delayMs = 250) {
       <header className="mb-8 text-center">
         <div className="flex items-center justify-center gap-3 mb-2">
           <Target className="w-8 h-8 text-corporate-teal" />
-          <h1 className="text-3xl font-bold text-[#002E47]">
+          <h1 className="text-3xl font-bold text-corporate-navy">
             Development Plan
           </h1>
           <Target className="w-8 h-8 text-corporate-teal" />

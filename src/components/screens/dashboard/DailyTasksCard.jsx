@@ -2,90 +2,10 @@
 // Arena v1.0 Scope: Daily Tasks component to replace Social Pod
 import React, { useState } from 'react';
 import { Check, Plus, X, Clock, Calendar } from 'lucide-react';
+import { Button, Card } from '../../ui';
 
-// LEADERREPS.COM OFFICIAL CORPORATE COLORS - VERIFIED 11/12/25
-const COLORS = { 
-  // === PRIMARY BRAND COLORS (from leaderreps.com) ===
-  NAVY: '#002E47',        // Primary text, headers, navigation
-  ORANGE: '#E04E1B',      // Call-to-action buttons, highlights, alerts  
-  TEAL: '#47A88D',        // Secondary buttons, success states, accents
-  LIGHT_GRAY: '#FCFCFA',  // Page backgrounds, subtle surfaces
-  
-  // === SEMANTIC MAPPINGS (using ONLY corporate colors) ===
-  BLUE: '#002E47',        // Map to NAVY
-  GREEN: '#47A88D',       // Map to TEAL  
-  AMBER: '#E04E1B',       // Map to ORANGE
-  RED: '#E04E1B',         // Map to ORANGE
-  PURPLE: '#47A88D',      // Map to TEAL
-  
-  // === TEXT & BACKGROUNDS (corporate colors only) ===
-  TEXT: '#002E47',        // NAVY for all text
-  MUTED: '#47A88D',       // TEAL for muted text
-  BG: '#FCFCFA',          // LIGHT_GRAY for backgrounds
-  OFF_WHITE: '#FCFCFA',   // Same as BG
-  SUBTLE: '#47A88D'       // TEAL for subtle elements
-};
-
-const Button = ({ children, onClick, variant = 'primary', size = 'md', className = '', disabled = false }) => {
-  const baseStyles = 'inline-flex items-center justify-center rounded-lg font-semibold transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2';
-  
-  const variants = {
-    primary: `text-white hover:shadow-lg focus:ring-2 focus:ring-teal-500`,
-    secondary: `text-white hover:opacity-90 focus:ring-2 focus:ring-blue-500`,
-    outline: `border-2 text-teal-600 hover:text-white focus:ring-2 focus:ring-teal-500`,
-    ghost: `text-gray-700 hover:bg-gray-100 focus:ring-2 focus:ring-gray-500`,
-    danger: `bg-red-600 text-white hover:opacity-90 focus:ring-2 focus:ring-red-500`
-  };
-  
-  const sizes = {
-    sm: 'px-3 py-1.5 text-sm',
-    md: 'px-4 py-2 text-base',
-    lg: 'px-6 py-3 text-lg'
-  };
-  
-  return (
-    <button
-      onClick={onClick}
-      disabled={disabled}
-      className={`${baseStyles} ${variants[variant]} ${sizes[size]} ${disabled ? 'opacity-50 cursor-not-allowed' : ''} ${className}`}
-      style={{
-        background: variant === 'primary' ? `linear-gradient(135deg, ${COLORS.TEAL}, ${COLORS.BLUE})` : 
-                   variant === 'outline' ? 'transparent' :
-                   variant === 'secondary' ? COLORS.NAVY :
-                   undefined,
-        borderColor: variant === 'outline' ? COLORS.TEAL : undefined
-      }}
-    >
-      {children}
-    </button>
-  );
-};
-
-const Card = ({ children, title, accent, className = '' }) => {
-  const accentColors = {
-    TEAL: COLORS.TEAL,
-    NAVY: COLORS.NAVY,
-    ORANGE: COLORS.ORANGE,
-    BLUE: COLORS.BLUE,
-    PURPLE: COLORS.PURPLE
-  };
-  
-  const accentColor = accent ? accentColors[accent] : COLORS.TEAL;
-  
-  return (
-    <div 
-      className={`bg-white rounded-xl shadow-sm border-l-4 p-6 ${className}`}
-      style={{ borderLeftColor: accentColor }}
-    >
-      {title && (
-        <h3 className="text-xl font-bold mb-4" style={{ color: COLORS.NAVY }}>
-          {title}
-        </h3>
-      )}
-      {children}
-    </div>
-  );
-};
+// Use CSS variables for corporate colors - see src/styles/global.css
+// --corporate-navy, --corporate-orange, --corporate-teal, --corporate-light-gray
 
 const TaskItem = ({ task, onToggle, onRemove, showRemove = true }) => {
   return (
@@ -160,21 +80,20 @@ const DailyTasksCard = ({
     <Card title="📋 Daily Tasks" accent="BLUE">
       
       {/* Progress Overview */}
-      <div className="mb-6 p-4 rounded-lg" style={{ backgroundColor: `${COLORS.BLUE}10` }}>
+      <div className="mb-6 p-4 rounded-lg" style={{ backgroundColor: 'var(--corporate-navy-10)' }}>
         <div className="flex items-center justify-between mb-2">
-          <span className="text-sm font-semibold" style={{ color: COLORS.BLUE }}>
+          <span className="text-sm font-semibold text-corporate-navy">
             Daily Progress
           </span>
-          <span className="text-sm font-bold" style={{ color: COLORS.BLUE }}>
+          <span className="text-sm font-bold text-corporate-navy">
             {completedTasks.length} of {otherTasks.length} completed
           </span>
         </div>
         <div className="w-full bg-gray-200 rounded-full h-2">
           <div 
-            className="h-2 rounded-full transition-all duration-500"
+            className="h-2 rounded-full transition-all duration-500 bg-corporate-navy"
             style={{ 
-              width: `${progressPercentage}%`,
-              backgroundColor: COLORS.BLUE
+              width: `${progressPercentage}%`
             }}
           />
         </div>
@@ -183,17 +102,17 @@ const DailyTasksCard = ({
       {/* Today's WIN Display */}
       {morningWIN && (
         <div className="mb-4 p-3 rounded-lg border-2" style={{ 
-          backgroundColor: winCompleted ? `${COLORS.GREEN}10` : `${COLORS.ORANGE}10`,
-          borderColor: winCompleted ? `${COLORS.GREEN}30` : `${COLORS.ORANGE}30`
+          backgroundColor: winCompleted ? 'var(--corporate-teal-10)' : 'var(--corporate-orange-10)',
+          borderColor: winCompleted ? 'var(--corporate-teal-30)' : 'var(--corporate-orange-30)'
         }}>
           <div className="flex items-center justify-between">
             <div className="flex-1">
               <p className="text-xs font-semibold mb-1" style={{ 
-                color: winCompleted ? COLORS.GREEN : COLORS.ORANGE 
+                color: winCompleted ? 'var(--corporate-teal)' : 'var(--corporate-orange)' 
               }}>
                 🏆 TODAY'S WIN:
               </p>
-              <p className="text-sm" style={{ color: COLORS.TEXT }}>
+              <p className="text-sm text-corporate-navy">
                 {morningWIN}
               </p>
             </div>
@@ -289,11 +208,11 @@ const DailyTasksCard = ({
       {/* Empty State */}
       {otherTasks.length === 0 && !morningWIN && (
         <div className="text-center py-6">
-          <Clock className="w-12 h-12 mx-auto mb-3" style={{ color: COLORS.MUTED }} />
-          <p className="text-sm font-medium mb-1" style={{ color: COLORS.TEXT }}>
+          <Clock className="w-12 h-12 mx-auto mb-3 text-slate-500" />
+          <p className="text-sm font-medium mb-1 text-corporate-navy">
             No tasks for today
           </p>
-          <p className="text-xs" style={{ color: COLORS.MUTED }}>
+          <p className="text-xs text-slate-500">
             Add your first task or set today's WIN to get started
           </p>
         </div>

@@ -25,7 +25,7 @@ const PlanTracker = ({
     return (
       <div className="text-center py-8">
         <Target className="w-12 h-12 mx-auto mb-4 text-slate-400" />
-        <h3 className="text-lg font-semibold mb-2 text-[#002E47]">
+        <h3 className="text-lg font-semibold mb-2 text-corporate-navy">
           No plan available
         </h3>
         <p className="text-sm text-slate-500">
@@ -100,11 +100,11 @@ const PlanTracker = ({
       {/* Stats Grid - Simplified to single card with grid inside */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center gap-4">
-          <div className="w-12 h-12 rounded-lg bg-[#002E47]/10 flex items-center justify-center text-[#002E47]">
+          <div className="w-12 h-12 rounded-lg bg-corporate-navy/10 flex items-center justify-center text-corporate-navy">
             <Target size={24} />
           </div>
           <div>
-            <div className="text-2xl font-bold text-[#002E47]">
+            <div className="text-2xl font-bold text-corporate-navy">
               {summary.totalSkills}
             </div>
             <div className="text-sm text-slate-600">Total Skills</div>
@@ -112,11 +112,11 @@ const PlanTracker = ({
         </div>
 
         <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center gap-4">
-          <div className="w-12 h-12 rounded-lg bg-[#47A88D]/10 flex items-center justify-center text-[#47A88D]">
+          <div className="w-12 h-12 rounded-lg bg-corporate-teal/10 flex items-center justify-center text-corporate-teal">
             <TrendingUp size={24} />
           </div>
           <div>
-            <div className="text-2xl font-bold text-[#002E47]">
+            <div className="text-2xl font-bold text-corporate-navy">
               {summary.completedSkills}
             </div>
             <div className="text-sm text-slate-600">Completed</div>
@@ -124,11 +124,11 @@ const PlanTracker = ({
         </div>
 
         <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center gap-4">
-          <div className="w-12 h-12 rounded-lg bg-[#E04E1B]/10 flex items-center justify-center text-[#E04E1B]">
+          <div className="w-12 h-12 rounded-lg bg-corporate-orange/10 flex items-center justify-center text-corporate-orange">
             <Calendar size={24} />
           </div>
           <div>
-            <div className="text-2xl font-bold text-[#002E47]">
+            <div className="text-2xl font-bold text-corporate-navy">
               {summary.currentWeek || 0}
             </div>
             <div className="text-sm text-slate-600">Current Week</div>
@@ -187,7 +187,7 @@ const PlanTracker = ({
         <div className="space-y-3">
           {plan.focusAreas && plan.focusAreas.map((area, index) => (
             <div key={index} className="p-4 bg-slate-50 rounded-lg border border-slate-100">
-              <h3 className="font-bold text-[#002E47] mb-1">
+              <h3 className="font-bold text-corporate-navy mb-1">
                 {area.name}
               </h3>
               <p className="text-sm text-slate-600 mb-2">
@@ -205,7 +205,7 @@ const PlanTracker = ({
 
       {/* Goal - Simple Card */}
       <Card title="Your Goal" icon={Flag} accent="ORANGE">
-        <p className="text-slate-700 italic border-l-4 border-[#E04E1B] pl-4 py-1">
+        <p className="text-slate-700 italic border-l-4 border-corporate-orange pl-4 py-1">
           "{plan.openEndedAnswer}"
         </p>
       </Card>

@@ -1,32 +1,35 @@
 import React from 'react';
-import { Users, Send } from 'lucide-react';
+import { Send } from 'lucide-react';
+import { Card, PageHeader, Heading, Text, Input, Button } from '../../ui';
 
 const Feedback360 = () => (
   <div className="p-8 max-w-6xl mx-auto">
-    <header className="mb-8">
-      <h1 className="text-3xl font-bold text-corporate-navy">360° Feedback Tool</h1>
-      <p className="text-slate-500">Gather anonymous insights from your team.</p>
-    </header>
-    <div className="bg-white p-8 rounded-xl shadow-sm border border-slate-200">
-      <h2 className="text-xl font-bold text-corporate-navy mb-4">Request Feedback</h2>
-      <p className="text-slate-600 mb-6">
-        Send a standardized survey to your direct reports, peers, and manager. We'll aggregate the results into a confidential report.
-      </p>
-      <div className="flex gap-4 mb-8">
-        <input 
-          type="email" 
-          placeholder="Enter colleague's email" 
-          className="flex-1 p-3 border border-slate-300 rounded-lg"
-        />
-        <button className="px-6 py-3 bg-corporate-teal text-white rounded-lg font-bold flex items-center gap-2">
-          <Send className="w-4 h-4" /> Send Request
-        </button>
+    <PageHeader 
+      title="360° Feedback Tool" 
+      description="Gather anonymous insights from your team." 
+    />
+    <Card>
+      <div className="p-8">
+        <Heading level="h2" variant="section" className="mb-4">Request Feedback</Heading>
+        <Text className="mb-6">
+          Send a standardized survey to your direct reports, peers, and manager. We'll aggregate the results into a confidential report.
+        </Text>
+        <div className="flex gap-4 mb-8">
+          <Input 
+            type="email" 
+            placeholder="Enter colleague's email" 
+            className="flex-1"
+          />
+          <Button variant="primary" className="flex items-center gap-2">
+            <Send className="w-4 h-4" /> Send Request
+          </Button>
+        </div>
+        <div className="border-t border-slate-100 pt-6">
+          <Heading level="h3" variant="card" className="mb-4 text-slate-700">Active Requests</Heading>
+          <Text variant="small" className="italic">No active feedback requests.</Text>
+        </div>
       </div>
-      <div className="border-t border-slate-100 pt-6">
-        <h3 className="font-bold text-slate-700 mb-4">Active Requests</h3>
-        <div className="text-sm text-slate-500 italic">No active feedback requests.</div>
-      </div>
-    </div>
+    </Card>
   </div>
 );
 export default Feedback360;

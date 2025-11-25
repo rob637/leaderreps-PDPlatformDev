@@ -7,68 +7,10 @@ import {
   HeartPulse, Users, Lightbulb, X, CornerRightUp, Activity, Briefcase, Trello, Clock,
   ChevronsRight, CheckCircle, Mic, Archive, Sparkles, Loader
 } from 'lucide-react';
+import { Button, Card, LoadingSpinner } from '../ui';
 import { DIMENSION_TO_TIER_MAP } from '../../data/LeadershipTiers.js';
 
-// --- Standardized UI Components ---
-const Button = ({ children, onClick, disabled = false, variant = 'primary', className = '', size = 'md', ...rest }) => {
-  const baseStyles = "inline-flex items-center justify-center gap-2 font-semibold rounded-xl transition-all duration-200 focus:outline-none focus:ring-2 disabled:opacity-50 disabled:cursor-not-allowed";
-  const variants = {
-    primary: "bg-[#47A88D] text-white shadow-md hover:bg-[#3d917a] focus:ring-[#47A88D]/50",
-    secondary: "bg-[#E04E1B] text-white shadow-md hover:bg-[#c44317] focus:ring-[#E04E1B]/50",
-    outline: "bg-white text-[#47A88D] border-2 border-[#47A88D] shadow-sm hover:bg-[#47A88D]/10 focus:ring-[#47A88D]/50",
-    'nav-back': "bg-white text-slate-600 border border-slate-200 shadow-sm hover:bg-slate-50 hover:text-slate-900",
-    ghost: "bg-transparent text-slate-600 hover:bg-slate-100",
-  };
-  const sizes = {
-    sm: "px-3 py-1.5 text-sm",
-    md: "px-5 py-2.5 text-base",
-    lg: "px-8 py-4 text-lg",
-  };
-  return (
-    <button 
-      onClick={onClick} 
-      disabled={disabled} 
-      className={`${baseStyles} ${variants[variant] || variants.primary} ${sizes[size] || sizes.md} ${className}`}
-      {...rest}
-    >
-      {children}
-    </button>
-  );
-};
-
-const Card = ({ children, title, icon: Icon, className = '', onClick, accentColor = 'bg-[#002E47]' }) => {
-  const Tag = onClick ? 'button' : 'div';
-  return (
-    <Tag 
-      onClick={onClick}
-      className={`relative w-full text-left bg-white rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-all duration-300 overflow-hidden ${className}`}
-    >
-      <div className={`absolute top-0 left-0 right-0 h-1.5 ${accentColor}`} />
-      <div className="p-6">
-        {title && (
-          <div className="flex items-center gap-3 mb-6 pb-4 border-b border-slate-100">
-            {Icon && (
-              <div className="w-10 h-10 rounded-lg bg-slate-50 flex items-center justify-center border border-slate-100">
-                <Icon className="w-5 h-5 text-[#002E47]" />
-              </div>
-            )}
-            <h2 className="text-xl font-bold text-[#002E47]">{title}</h2>
-          </div>
-        )}
-        {children}
-      </div>
-    </Tag>
-  );
-};
-
-const LoadingSpinner = ({ message = "Loading..." }) => (
-  <div className="min-h-[60vh] flex flex-col items-center justify-center space-y-4">
-    <Loader className="w-10 h-10 text-[#47A88D] animate-spin" />
-    <p className="text-slate-600 font-medium">{message}</p>
-  </div>
-);
-
-const StatCard = ({ icon: Icon, label, value, onClick, trend = 0, accentColor = 'bg-[#002E47]', size = 'full', className = '', ...rest }) => {
+const StatCard = ({ icon: Icon, label, value, onClick, trend = 0, accentColor = 'bg-corporate-navy', size = 'full', className = '', ...rest }) => {
   const TrendIcon = trend > 0 ? TrendingUp : TrendingDown;
   const showTrend = trend !== 0;
   const trendColor = trend > 0 ? 'text-green-600 bg-green-50' : trend < 0 ? 'text-orange-600 bg-orange-50' : 'text-slate-400 bg-slate-50';
@@ -289,42 +231,42 @@ export default function ExecutiveReflection() {
         <div className="min-h-screen bg-slate-50 p-6 space-y-8">
             <div className="max-w-7xl mx-auto space-y-8">
                 <header className="text-center space-y-4">
-                     <h1 className="text-3xl font-bold text-[#002E47]">Executive ROI Report</h1>
+                     <h1 className="text-3xl font-bold text-corporate-navy">Executive ROI Report</h1>
                      <p className="text-lg text-slate-600 max-w-3xl mx-auto">Data-driven insights into your leadership development progress and impact (Last 90 Days).</p>
                 </header>
 
                  <Card title="Performance Scorecard" icon={Activity} accentColor="bg-purple-600">
                      <p className='text-sm text-slate-600 mb-6'>Key metrics summarizing recent activity and progress.</p>
                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                        <StatCard icon={CheckCircle} label="Reps Completed Today" value={`${commitsCompletedToday} / ${commitsTotalToday}`} onClick={() => handleNavigation('daily-practice')} accentColor="bg-[#E04E1B]" trend={commitsCompletedToday > 0 ? 5 : 0} />
+                        <StatCard icon={CheckCircle} label="Reps Completed Today" value={`${commitsCompletedToday} / ${commitsTotalToday}`} onClick={() => handleNavigation('daily-practice')} accentColor="bg-corporate-orange" trend={commitsCompletedToday > 0 ? 5 : 0} />
                         <StatCard icon={Star} label="Current Streak" value={`${perfectStreak} Days`} onClick={() => handleNavigation('daily-practice')} accentColor="bg-amber-500" trend={perfectStreak * 2} />
-                        <StatCard icon={ChevronsRight} label="Total Reps Logged" value={`${totalRepsCompletedAllTime}`} onClick={() => handleNavigation('daily-practice')} accentColor="bg-[#47A88D]" trend={totalRepsCompletedAllTime > 100 ? 10 : 0} />
+                        <StatCard icon={ChevronsRight} label="Total Reps Logged" value={`${totalRepsCompletedAllTime}`} onClick={() => handleNavigation('daily-practice')} accentColor="bg-corporate-teal" trend={totalRepsCompletedAllTime > 100 ? 10 : 0} />
                          <StatCard icon={Target} label="Current Focus Tier" value={`${weakestTierMeta?.name || 'N/A'}`} onClick={() => handleNavigation('development-plan')} accentColor="bg-red-600" />
                          <StatCard icon={Mic} label="Coaching Labs Done" value={`${totalCoachingLabsCompleted}`} onClick={() => handleNavigation('coaching-lab')} accentColor="bg-purple-600" trend={totalCoachingLabsCompleted * 5} />
-                         <StatCard icon={Briefcase} label="Dev Plan Progress" value={`${roadmapProgressPercent}%`} onClick={() => handleNavigation('development-plan')} accentColor="bg-[#002E47]" trend={roadmapProgressPercent / 10} />
+                         <StatCard icon={Briefcase} label="Dev Plan Progress" value={`${roadmapProgressPercent}%`} onClick={() => handleNavigation('development-plan')} accentColor="bg-corporate-navy" trend={roadmapProgressPercent / 10} />
                         <StatCard icon={Archive} label="OKRs At Risk" value={`${okrsAtRisk} / ${okrsDefined}`} onClick={() => handleNavigation('planning-hub')} accentColor="bg-blue-600" trend={okrsAtRisk > 0 ? -okrsAtRisk * 10 : 0} />
-                        <StatCard icon={Lightbulb} label="AI Reflection Insights" value={`View`} onClick={() => handleNavigation('coaching-lab', { view: 'reflection-summary' })} accentColor="bg-[#002E47]" />
+                        <StatCard icon={Lightbulb} label="AI Reflection Insights" value={`View`} onClick={() => handleNavigation('coaching-lab', { view: 'reflection-summary' })} accentColor="bg-corporate-navy" />
                      </div>
                  </Card>
 
-                <h2 className='text-2xl font-bold pt-4 border-t border-slate-200 mt-10 text-[#002E47]'>Longitudinal Impact (90-Day View)</h2>
+                <h2 className='text-2xl font-bold pt-4 border-t border-slate-200 mt-10 text-corporate-navy'>Longitudinal Impact (90-Day View)</h2>
                 <div className='grid grid-cols-1 lg:grid-cols-3 gap-6'>
-                    <Card title="Confidence vs. Competence" icon={Target} accentColor="bg-[#47A88D]" className='lg:col-span-2'>
+                    <Card title="Confidence vs. Competence" icon={Target} accentColor="bg-corporate-teal" className='lg:col-span-2'>
                         <p className='text-sm text-slate-600 mb-4'>Self-perception (Assessment Score) vs. Proven capability (Daily Rep Execution %).</p>
                         <div className='grid grid-cols-2 gap-4 text-center'>
                             <div className="p-4 rounded-xl border border-slate-200 bg-slate-50 shadow-inner">
                                 <p className='text-xs font-semibold uppercase text-slate-500'>Confidence</p>
-                                <p className="text-4xl font-bold mt-1 text-[#002E47]">{longitudinalData.confidence.toFixed(1)}<span className="text-xl sm:text-2xl text-slate-400">/5</span></p>
+                                <p className="text-4xl font-bold mt-1 text-corporate-navy">{longitudinalData.confidence.toFixed(1)}<span className="text-xl sm:text-2xl text-slate-400">/5</span></p>
                                 <p className='text-[10px] text-slate-500'>(Latest Self-Assessment)</p>
                             </div>
                             <div className="p-4 rounded-xl border border-slate-200 bg-slate-50 shadow-inner">
                                 <p className='text-xs font-semibold uppercase text-slate-500'>Competence</p>
-                                <p className="text-4xl font-bold mt-1 text-[#47A88D]">{longitudinalData.competence}%</p>
+                                <p className="text-4xl font-bold mt-1 text-corporate-teal">{longitudinalData.competence}%</p>
                                  <p className='text-[10px] text-slate-500'>(Daily Rep Success Rate)</p>
                             </div>
                         </div>
-                        <div className="mt-6 p-4 rounded-xl border border-[#47A88D]/20 bg-[#47A88D]/5 text-[#002E47]">
-                            <p className='font-semibold text-sm flex items-center gap-2'><Cpu className='w-4 h-4 text-[#47A88D]'/> AI Rep Coach Insight:</p>
+                        <div className="mt-6 p-4 rounded-xl border border-corporate-teal/20 bg-corporate-teal/5 text-corporate-navy">
+                            <p className='font-semibold text-sm flex items-center gap-2'><Cpu className='w-4 h-4 text-corporate-teal'/> AI Rep Coach Insight:</p>
                             <p className='text-sm mt-1 italic text-slate-700'>
                                 {longitudinalData.confidence >= 4 && Number(longitudinalData.competence) < 75 ?
                                     `High confidence, moderate execution. Focus daily reps on bridging the gap in ${weakestTierMeta.name}. Consistency is key.` :
@@ -336,20 +278,20 @@ export default function ExecutiveReflection() {
                         </div>
                     </Card>
 
-                    <Card title="Risk Reduction Scorecard" icon={ShieldCheck} accentColor="bg-[#E04E1B]">
+                    <Card title="Risk Reduction Scorecard" icon={ShieldCheck} accentColor="bg-corporate-orange">
                         <p className='text-sm text-slate-600 mb-4'>Impact of Pre-Mortem Audits on mitigating strategic failures.</p>
                         <div className='text-center mb-4'>
                             <p className='text-xs font-semibold uppercase text-slate-500'>Risk Mitigation Impact</p>
-                            <p className={`text-5xl font-bold mt-1 ${Number(longitudinalData.riskReduction) < 80 ? 'text-[#E04E1B]' : 'text-green-600'}`}>
+                            <p className={`text-5xl font-bold mt-1 ${Number(longitudinalData.riskReduction) < 80 ? 'text-corporate-orange' : 'text-green-600'}`}>
                                 {longitudinalData.riskReduction}%
                             </p>
                         </div>
                         <div className='mt-4 pt-4 border-t border-slate-200'>
-                            <p className='text-sm font-semibold text-[#002E47]'>Tier Mastery Projection:</p>
+                            <p className='text-sm font-semibold text-corporate-navy'>Tier Mastery Projection:</p>
                             <p className='text-sm text-slate-600 mt-1'>
-                                Est. <strong className='text-lg text-[#002E47]'>{longitudinalData.tierMasteryProjection}</strong> days to master <strong style={{ color: weakestTierMeta.hex }}>{weakestTierMeta.name}</strong> based on current execution rate.
+                                Est. <strong className='text-lg text-corporate-navy'>{longitudinalData.tierMasteryProjection}</strong> days to master <strong style={{ color: weakestTierMeta.hex }}>{weakestTierMeta.name}</strong> based on current execution rate.
                             </p>
-                             <Button onClick={() => handleNavigation('planning-hub', { view: 'pre-mortem' })} variant="outline" size="sm" className="w-full mt-4 !border-orange-200 !text-[#E04E1B] hover:!bg-orange-50">
+                             <Button onClick={() => handleNavigation('planning-hub', { view: 'pre-mortem' })} variant="outline" size="sm" className="w-full mt-4 !border-orange-200 !text-corporate-orange hover:!bg-orange-50">
                                  Go to Pre-Mortem Tool
                              </Button>
                         </div>
@@ -360,15 +302,15 @@ export default function ExecutiveReflection() {
                          <div className="grid grid-cols-2 gap-4 text-center mb-4">
                              <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl">
                                  <p className="text-xs text-slate-500 uppercase font-semibold">Overall Avg Score</p>
-                                 <p className="text-xl sm:text-2xl font-bold text-[#002E47]">{longitudinalData.avgDailyScore}%</p>
+                                 <p className="text-xl sm:text-2xl font-bold text-corporate-navy">{longitudinalData.avgDailyScore}%</p>
                              </div>
                              <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl">
                                  <p className="text-xs text-slate-500 uppercase font-semibold">Avg on Low Energy Days</p>
                                  <p className={`text-2xl font-bold ${Number(longitudinalData.avgScoreLowEnergy) < Number(longitudinalData.avgDailyScore) ? 'text-red-600' : 'text-green-600'}`}>{longitudinalData.avgScoreLowEnergy}%</p>
                              </div>
                          </div>
-                         <div className="mt-4 p-4 rounded-xl border border-red-200 bg-red-50 text-[#002E47]">
-                             <p className='font-semibold text-sm flex items-center gap-2'><MessageSquare className='w-4 h-4 text-[#E04E1B]'/> AI Rep Coach Insight:</p>
+                         <div className="mt-4 p-4 rounded-xl border border-red-200 bg-red-50 text-corporate-navy">
+                             <p className='font-semibold text-sm flex items-center gap-2'><MessageSquare className='w-4 h-4 text-corporate-orange'/> AI Rep Coach Insight:</p>
                              <p className='text-sm mt-1 italic text-slate-700'>
                                 { (longitudinalData.lowEnergyDays / Math.max(1, Object.keys(dailyPracticeData?.resilienceLog || {}).length)) > 0.3 ?
                                     `Significant drop (${Number(longitudinalData.avgDailyScore) - Number(longitudinalData.avgScoreLowEnergy)} pts) on low energy days (${longitudinalData.lowEnergyDays} logged). Prioritize recovery reps.` :
@@ -388,7 +330,7 @@ export default function ExecutiveReflection() {
                              <p className='font-semibold text-sm flex items-center gap-2 text-red-800'><TrendingDown className='w-4 h-4'/> Mentee Feedback (Example T4):</p>
                              <p className='text-xs mt-1 text-slate-700'>Score: <strong>{longitudinalData.menteeFeedback.score}/100</strong>. Comment: "{longitudinalData.menteeFeedback.comment}"</p>
                          </div>
-                         <Button onClick={() => handleNavigation('coaching-lab', { view: 'feedback-review', tier: 'T4' })} size="sm" variant="primary" className='mt-4 w-full !bg-[#002E47] hover:!bg-[#001a29]'>
+                         <Button onClick={() => handleNavigation('coaching-lab', { view: 'feedback-review', tier: 'T4' })} size="sm" variant="primary" className='mt-4 w-full !bg-corporate-navy hover:!bg-corporate-navy/90'>
                              Review Full Mentee Feedback
                          </Button>
                     </Card>
@@ -400,7 +342,7 @@ export default function ExecutiveReflection() {
                              <p className='flex justify-between font-semibold text-slate-700'>Team Turnover Rate: <span className='font-bold text-green-600'>-6%</span></p>
                              <p className='flex justify-between font-semibold text-slate-700'>Project On-Time Rate: <span className='font-bold text-amber-600'>+5%</span></p>
                          </div>
-                         <Button onClick={() => handleNavigation('planning-hub', { view: 'roi-report' })} size="sm" variant="secondary" className='mt-6 w-full !bg-[#47A88D] hover:!bg-[#3d917a]'>
+                         <Button onClick={() => handleNavigation('planning-hub', { view: 'roi-report' })} size="sm" variant="secondary" className='mt-6 w-full !bg-corporate-teal hover:!bg-corporate-teal-dark'>
                              Generate Full Management ROI Report
                          </Button>
                     </Card>

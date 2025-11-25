@@ -45,8 +45,8 @@ export const Button = ({ children, onClick, disabled = false, variant = 'primary
     ...(variant === 'primary' && { backgroundColor: '#47A88D', '--tw-ring-color': '#47A88D' }),
     ...(variant === 'secondary' && { backgroundColor: '#E04E1B', '--tw-ring-color': '#E04E1B' }),
     ...(variant === 'outline' && { 
-      borderColor: '#47A88D', 
-      color: '#47A88D',
+      borderColor: 'var(--corporate-teal)', 
+      color: 'var(--corporate-teal)',
       '--tw-ring-color': '#47A88D' 
     })
   };
@@ -105,7 +105,7 @@ export const Card = ({ children, title, icon: Icon, className = '', onClick, acc
       style={{
         background: 'linear-gradient(180deg, #FFFFFF, #FCFCFA)',
         borderColor: '#E5E7EB',
-        color: '#002E47'
+        color: 'var(--corporate-navy)'
       }}
       onClick={onClick}
     >
@@ -125,7 +125,7 @@ export const Card = ({ children, title, icon: Icon, className = '', onClick, acc
       {Icon && title && (
         <div className="flex items-center gap-3 mb-4">
           <Icon className="w-6 h-6 flex-shrink-0" style={{ color: accentColor }} />
-          <h2 className={CORPORATE_CLASSES.HEADING_LG} style={{ color: '#002E47' }}>
+          <h2 className={CORPORATE_CLASSES.HEADING_LG} style={{ color: 'var(--corporate-navy)' }}>
             {title}
           </h2>
         </div>
@@ -143,15 +143,15 @@ export const PageHeader = ({ title, subtitle, icon: Icon }) => (
   <div className="text-center mb-8">
     {Icon && (
       <div className="flex items-center justify-center gap-2 mb-4">
-        <Icon className="w-8 h-8" style={{ color: '#47A88D' }} />
-        <h1 className={CORPORATE_CLASSES.HEADING_XL} style={{ color: '#002E47' }}>
+        <Icon className="w-8 h-8" style={{ color: 'var(--corporate-teal)' }} />
+        <h1 className={CORPORATE_CLASSES.HEADING_XL} style={{ color: 'var(--corporate-navy)' }}>
           {title}
         </h1>
-        <Icon className="w-8 h-8" style={{ color: '#47A88D' }} />
+        <Icon className="w-8 h-8" style={{ color: 'var(--corporate-teal)' }} />
       </div>
     )}
     {!Icon && (
-      <h1 className={CORPORATE_CLASSES.HEADING_XL} style={{ color: '#002E47' }}>
+      <h1 className={CORPORATE_CLASSES.HEADING_XL} style={{ color: 'var(--corporate-navy)' }}>
         {title}
       </h1>
     )}

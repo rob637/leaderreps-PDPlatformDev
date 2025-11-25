@@ -138,7 +138,7 @@ const PWAInstall = ({ collapsed = false }) => {
             <div className="flex items-start justify-between mb-4">
               <div className="flex items-center gap-3">
                 {getDeviceInstructions().icon}
-                <h3 className="text-lg font-bold" style={{ color: '#002E47' }}>
+                <h3 className="text-lg font-bold" style={{ color: 'var(--corporate-navy)' }}>
                   {getDeviceInstructions().title}
                 </h3>
               </div>
@@ -146,7 +146,7 @@ const PWAInstall = ({ collapsed = false }) => {
                 onClick={() => setShowInstructions(false)}
                 className="p-1 hover:bg-gray-100 rounded-lg transition-colors"
               >
-                <X className="w-5 h-5" style={{ color: '#47A88D' }} />
+                <X className="w-5 h-5" style={{ color: 'var(--corporate-teal)' }} />
               </button>
             </div>
 
@@ -159,7 +159,7 @@ const PWAInstall = ({ collapsed = false }) => {
                   >
                     {index + 1}
                   </div>
-                  <p className="text-sm" style={{ color: '#002E47' }}>
+                  <p className="text-sm" style={{ color: 'var(--corporate-navy)' }}>
                     {step}
                   </p>
                 </div>

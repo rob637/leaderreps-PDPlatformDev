@@ -1,6 +1,6 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import { useAppServices } from '../../services/useAppServices';
-import { Card } from '../shared/UI';
+import { Card } from '../ui';
 import { Archive, CheckCircle, Calendar, Trophy, BookOpen, ArrowLeft } from 'lucide-react';
 import { useFeatures } from '../../providers/FeatureProvider';
 import WidgetRenderer from '../admin/WidgetRenderer';
@@ -222,7 +222,7 @@ const Locker = () => {
       <header className="mb-8 text-center">
         <div className="flex items-center justify-center gap-3 mb-2">
           <Archive className="w-8 h-8 text-corporate-teal" />
-          <h1 className="text-3xl font-bold text-[#002E47]">
+          <h1 className="text-3xl font-bold text-corporate-navy">
             The Locker
           </h1>
           <Archive className="w-8 h-8 text-corporate-teal" />

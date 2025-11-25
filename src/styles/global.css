@@ -8,6 +8,18 @@
   --corporate-teal: #47A88D;        /* Secondary brand color */
   --corporate-subtle-teal: #349881; /* Teal hover states */
   --corporate-light-gray: #FCFCFA;  /* Page background */
+  
+  /* === ALPHA VARIANTS (for backgrounds with transparency) === */
+  --corporate-navy-10: rgba(0, 46, 71, 0.1);
+  --corporate-navy-20: rgba(0, 46, 71, 0.2);
+  --corporate-navy-30: rgba(0, 46, 71, 0.3);
+  --corporate-orange-10: rgba(224, 78, 27, 0.1);
+  --corporate-orange-20: rgba(224, 78, 27, 0.2);
+  --corporate-orange-30: rgba(224, 78, 27, 0.3);
+  --corporate-teal-10: rgba(71, 168, 141, 0.1);
+  --corporate-teal-20: rgba(71, 168, 141, 0.2);
+  --corporate-teal-30: rgba(71, 168, 141, 0.3);
+  --corporate-teal-40: rgba(71, 168, 141, 0.4);
 
   /* === LEADERREPS.COM DESIGN SYSTEM === */
   

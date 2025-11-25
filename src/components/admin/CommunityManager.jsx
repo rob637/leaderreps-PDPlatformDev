@@ -134,7 +134,7 @@ const CommunityManager = () => {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <Loader className="w-8 h-8 animate-spin text-[#47A88D]" />
+        <Loader className="w-8 h-8 animate-spin text-corporate-teal" />
       </div>
     );
   }
@@ -153,15 +153,15 @@ const CommunityManager = () => {
         
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <Users className="w-8 h-8 text-[#47A88D]" />
-            <h1 className="text-3xl font-bold text-[#002E47]">
+            <Users className="w-8 h-8 text-corporate-teal" />
+            <h1 className="text-3xl font-bold text-corporate-navy">
               Community Management
             </h1>
           </div>
           
           <button
             onClick={handleAdd}
-            className="flex items-center gap-2 px-4 py-2 rounded-lg font-semibold text-white transition-all bg-[#47A88D] hover:bg-[#3d917a]"
+            className="flex items-center gap-2 px-4 py-2 rounded-lg font-semibold text-white transition-all bg-corporate-teal hover:bg-corporate-teal-dark"
           >
             <Plus className="w-5 h-5" />
             Add Seed Post
@@ -171,34 +171,34 @@ const CommunityManager = () => {
 
       {/* Edit Form */}
       {editingItem && (
-        <div className="mb-6 p-6 bg-white rounded-xl shadow-lg border-2 border-[#47A88D]">
-          <h2 className="text-xl font-bold mb-4 text-[#002E47]">
+        <div className="mb-6 p-6 bg-white rounded-xl shadow-lg border-2 border-corporate-teal">
+          <h2 className="text-xl font-bold mb-4 text-corporate-navy">
             {isAddingNew ? 'Add New Seed Post' : 'Edit Post'}
           </h2>
           
           <div className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-semibold mb-1 text-[#002E47]">
+                <label className="block text-sm font-semibold mb-1 text-corporate-navy">
                   Owner Name *
                 </label>
                 <input
                   type="text"
                   value={editingItem.ownerName}
                   onChange={(e) => setEditingItem({ ...editingItem, ownerName: e.target.value })}
-                  className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-[#47A88D] focus:border-[#47A88D] outline-none"
+                  className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-corporate-teal focus:border-corporate-teal outline-none"
                   placeholder="e.g., Sarah Jenkins"
                 />
               </div>
               <div>
-                <label className="block text-sm font-semibold mb-1 text-[#002E47]">
+                <label className="block text-sm font-semibold mb-1 text-corporate-navy">
                   Rep Initials (Avatar)
                 </label>
                 <input
                   type="text"
                   value={editingItem.rep}
                   onChange={(e) => setEditingItem({ ...editingItem, rep: e.target.value })}
-                  className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-[#47A88D] focus:border-[#47A88D] outline-none"
+                  className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-corporate-teal focus:border-corporate-teal outline-none"
                   placeholder="e.g., SJ"
                   maxLength={2}
                 />
@@ -207,13 +207,13 @@ const CommunityManager = () => {
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-semibold mb-1 text-[#002E47]">
+                <label className="block text-sm font-semibold mb-1 text-corporate-navy">
                   Tier Badge
                 </label>
                 <select
                   value={editingItem.tier}
                   onChange={(e) => setEditingItem({ ...editingItem, tier: e.target.value })}
-                  className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-[#47A88D] focus:border-[#47A88D] outline-none"
+                  className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-corporate-teal focus:border-corporate-teal outline-none"
                 >
                   <option value="Free">Free</option>
                   <option value="Premium">Premium</option>
@@ -221,27 +221,27 @@ const CommunityManager = () => {
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-semibold mb-1 text-[#002E47]">
+                <label className="block text-sm font-semibold mb-1 text-corporate-navy">
                   Time Display
                 </label>
                 <input
                   type="text"
                   value={editingItem.time}
                   onChange={(e) => setEditingItem({ ...editingItem, time: e.target.value })}
-                  className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-[#47A88D] focus:border-[#47A88D] outline-none"
+                  className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-corporate-teal focus:border-corporate-teal outline-none"
                   placeholder="e.g., 2h ago"
                 />
               </div>
             </div>
 
             <div>
-              <label className="block text-sm font-semibold mb-1 text-[#002E47]">
+              <label className="block text-sm font-semibold mb-1 text-corporate-navy">
                 Content *
               </label>
               <textarea
                 value={editingItem.content}
                 onChange={(e) => setEditingItem({ ...editingItem, content: e.target.value })}
-                className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-[#47A88D] focus:border-[#47A88D] outline-none"
+                className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-corporate-teal focus:border-corporate-teal outline-none"
                 rows="4"
                 placeholder="Post content..."
               />
@@ -249,36 +249,36 @@ const CommunityManager = () => {
 
             <div className="grid grid-cols-3 gap-4">
               <div>
-                <label className="block text-sm font-semibold mb-1 text-[#002E47]">
+                <label className="block text-sm font-semibold mb-1 text-corporate-navy">
                   Likes
                 </label>
                 <input
                   type="number"
                   value={editingItem.likes}
                   onChange={(e) => setEditingItem({ ...editingItem, likes: e.target.value })}
-                  className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-[#47A88D] focus:border-[#47A88D] outline-none"
+                  className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-corporate-teal focus:border-corporate-teal outline-none"
                 />
               </div>
               <div>
-                <label className="block text-sm font-semibold mb-1 text-[#002E47]">
+                <label className="block text-sm font-semibold mb-1 text-corporate-navy">
                   Comments
                 </label>
                 <input
                   type="number"
                   value={editingItem.comments}
                   onChange={(e) => setEditingItem({ ...editingItem, comments: e.target.value })}
-                  className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-[#47A88D] focus:border-[#47A88D] outline-none"
+                  className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-corporate-teal focus:border-corporate-teal outline-none"
                 />
               </div>
               <div>
-                <label className="block text-sm font-semibold mb-1 text-[#002E47]">
+                <label className="block text-sm font-semibold mb-1 text-corporate-navy">
                   Shares
                 </label>
                 <input
                   type="number"
                   value={editingItem.shares}
                   onChange={(e) => setEditingItem({ ...editingItem, shares: e.target.value })}
-                  className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-[#47A88D] focus:border-[#47A88D] outline-none"
+                  className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-corporate-teal focus:border-corporate-teal outline-none"
                 />
               </div>
             </div>
@@ -288,9 +288,9 @@ const CommunityManager = () => {
                 type="checkbox"
                 checked={editingItem.isActive}
                 onChange={(e) => setEditingItem({ ...editingItem, isActive: e.target.checked })}
-                className="w-4 h-4 text-[#47A88D] focus:ring-[#47A88D]"
+                className="w-4 h-4 text-corporate-teal focus:ring-corporate-teal"
               />
-              <label className="text-sm font-semibold text-[#002E47]">
+              <label className="text-sm font-semibold text-corporate-navy">
                 Active (visible in feed)
               </label>
             </div>
@@ -298,7 +298,7 @@ const CommunityManager = () => {
             <div className="flex gap-3 pt-4">
               <button
                 onClick={handleSave}
-                className="flex items-center gap-2 px-6 py-2 rounded-lg font-semibold text-white bg-[#47A88D] hover:bg-[#3d917a]"
+                className="flex items-center gap-2 px-6 py-2 rounded-lg font-semibold text-white bg-corporate-teal hover:bg-corporate-teal-dark"
               >
                 <Save className="w-4 h-4" />
                 Save
@@ -328,7 +328,7 @@ const CommunityManager = () => {
           posts.map((post) => (
             <div
               key={post.id}
-              className={`p-4 bg-white rounded-xl shadow-sm border flex items-start gap-4 ${post.isActive ? 'border-[#47A88D]' : 'border-slate-300 opacity-60'}`}
+              className={`p-4 bg-white rounded-xl shadow-sm border flex items-start gap-4 ${post.isActive ? 'border-corporate-teal' : 'border-slate-300 opacity-60'}`}
             >
               <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center font-bold text-gray-600 shrink-0">
                 {post.rep}
@@ -337,7 +337,7 @@ const CommunityManager = () => {
               <div className="flex-1">
                 <div className="flex justify-between items-start">
                   <div>
-                    <h3 className="font-bold text-sm text-[#002E47]">
+                    <h3 className="font-bold text-sm text-corporate-navy">
                       {post.ownerName} 
                       <span className="ml-2 text-xs font-normal px-2 py-0.5 rounded-full bg-gray-100 text-gray-600">
                         {post.tier}
@@ -353,7 +353,7 @@ const CommunityManager = () => {
                       title={post.isActive ? 'Deactivate' : 'Activate'}
                     >
                       {post.isActive ? (
-                        <Eye className="w-4 h-4 text-[#47A88D]" />
+                        <Eye className="w-4 h-4 text-corporate-teal" />
                       ) : (
                         <EyeOff className="w-4 h-4 text-slate-500" />
                       )}
@@ -363,14 +363,14 @@ const CommunityManager = () => {
                       className="p-1.5 rounded hover:bg-gray-100"
                       title="Edit"
                     >
-                      <Edit className="w-4 h-4 text-[#002E47]" />
+                      <Edit className="w-4 h-4 text-corporate-navy" />
                     </button>
                     <button
                       onClick={() => handleDelete(post)}
                       className="p-1.5 rounded hover:bg-gray-100"
                       title="Delete"
                     >
-                      <Trash2 className="w-4 h-4 text-[#E04E1B]" />
+                      <Trash2 className="w-4 h-4 text-corporate-orange" />
                     </button>
                   </div>
                 </div>

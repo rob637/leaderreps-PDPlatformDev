@@ -22,6 +22,7 @@ const Button = React.forwardRef(({
     link: 'text-corporate-teal underline-offset-4 hover:underline p-0 h-auto font-normal',
     'nav-active': 'bg-corporate-teal text-white shadow-sm',
     'nav-inactive': 'text-gray-300 hover:bg-white/5 hover:text-white bg-transparent',
+    'nav-back': 'bg-white text-slate-700 border border-slate-300 shadow-sm hover:bg-slate-100',
   };
 
   const sizes = {

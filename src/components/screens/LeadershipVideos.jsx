@@ -7,33 +7,30 @@ import { Film, User, Clock, ArrowRight, Zap, Briefcase, ArrowLeft, Search, Filte
 import { useAppServices } from '../../services/useAppServices.jsx'; // cite: useAppServices.jsx
 import { getVideos } from '../../services/contentService.js'; // NEW: Load from CMS
 import { logWidthMeasurements } from '../../utils/debugWidth.js';
+// --- UI Components ---
+import { Button } from '../ui';
 
 /* =========================================================
    PALETTE & UI COMPONENTS (Standardized)
+   Uses CSS variables from global.css:
+   --corporate-navy, --corporate-teal, --corporate-orange, etc.
 ========================================================= */
-// --- CORPORATE COLORS (STRICT COMPLIANCE) ---
-const COLORS = { NAVY: '#002E47', TEAL: '#47A88D', BLUE: '#002E47', ORANGE: '#E04E1B', GREEN: '#47A88D', AMBER: '#E04E1B', RED: '#E04E1B', LIGHT_GRAY: '#FCFCFA', OFF_WHITE: '#FFFFFF', SUBTLE: '#47A88D', TEXT: '#002E47', MUTED: '#47A88D', PURPLE: '#47A88D', BG: '#FCFCFA' }; // CORPORATE COLORS ONLY!
-
-// --- Standardized Button Component (Local Definition, Styled Consistently) ---
-// Note: Ideally, this would be imported from a shared UI library.
-// Kept local as per original file structure, but styles updated to match standard.
-const Button = ({ children, onClick, disabled = false, variant = 'primary', className = '', size = 'md', ...rest }) => {
-  let baseStyle = `inline-flex items-center justify-center gap-2 font-semibold rounded-xl transition-all duration-200 focus:outline-none focus:ring-4 disabled:opacity-50 disabled:cursor-not-allowed`;
-  if (size === 'sm') baseStyle += ' px-4 py-2 text-sm'; else if (size === 'lg') baseStyle += ' px-8 py-4 text-lg'; else baseStyle += ' px-6 py-3 text-base'; // Default 'md'
-  if (variant === 'primary') baseStyle += ` bg-[#47A88D] text-white shadow-lg hover:bg-[#47A88D] focus:ring-[#47A88D]/50`;
-  else if (variant === 'secondary') baseStyle += ` bg-[#E04E1B] text-white shadow-lg hover:bg-[#C33E12] focus:ring-[#E04E1B]/50`;
-  else if (variant === 'outline') baseStyle += ` bg-[#FFFFFF] text-[#47A88D] border-2 border-[#47A88D] shadow-md hover:bg-[#47A88D]/10 focus:ring-[#47A88D]/50`;
-  else if (variant === 'nav-back') baseStyle += ` bg-white text-gray-700 border border-gray-300 shadow-sm hover:bg-gray-100 focus:ring-gray-300/50 px-4 py-2 text-sm`;
-  if (disabled) baseStyle += ' bg-gray-300 text-gray-500 shadow-inner border-transparent hover:bg-gray-300';
-  return (<button {...rest} onClick={onClick} disabled={disabled} className={`${baseStyle} ${className}`}>{children}</button>);
-};
 
 /**
  * Enhanced VideoCard Component
  * Corporate-styled video card with thumbnails, ratings, and enhanced metadata
  */
+// Accent color lookup for VideoCard using CSS variables
+const ACCENT_COLORS = {
+    NAVY: 'var(--corporate-navy)',
+    TEAL: 'var(--corporate-teal)',
+    ORANGE: 'var(--corporate-orange)',
+    GREEN: 'var(--corporate-teal)',
+    BLUE: 'var(--corporate-navy)'
+};
+
 const VideoCard = ({ title, speaker, duration, url, description, accent, category, rating, views, tags = [] }) => {
-    const accentColor = COLORS[accent] || COLORS.NAVY;
+    const accentColor = ACCENT_COLORS[accent] || ACCENT_COLORS.NAVY;
     
     // Generate YouTube thumbnail URL from video URL
     const getThumbnail = (videoUrl) => {
@@ -66,7 +63,7 @@ const VideoCard = ({ title, speaker, duration, url, description, accent, categor
                 {/* Rating badge */}
                 {rating && (
                     <div className="absolute top-2 right-2 bg-white/90 px-2 py-1 rounded flex items-center text-xs font-medium">
-                        <Star className="w-3 h-3 mr-1" style={{ color: COLORS.ORANGE, fill: COLORS.ORANGE }} />
+                        <Star className="w-3 h-3 mr-1" style={{ color: 'var(--corporate-orange)', fill: 'var(--corporate-orange)' }} />
                         {rating}
                     </div>
                 )}
@@ -88,7 +85,7 @@ const VideoCard = ({ title, speaker, duration, url, description, accent, categor
                 </h3>
                 
                 {/* Speaker & Metadata */}
-                <div className="flex items-center gap-4 mb-3 text-sm" style={{ color: COLORS.MUTED }}>
+                <div className="flex items-center gap-4 mb-3 text-sm" className="text-slate-500">
                     <div className="flex items-center">
                         <User className="w-4 h-4 mr-1" />
                         {speaker}
@@ -280,17 +277,17 @@ const LeadershipVideosScreen = () => {
     // Show loading if CMS data is still loading
     if (isLoadingCms) {
         return (
-            <div className="min-h-screen flex items-center justify-center" style={{ background: COLORS.BG }}>
+            <div className="min-h-screen flex items-center justify-center" className="bg-slate-50">
                 <div className="text-center">
-                    <Film className="w-12 h-12 animate-pulse mb-4 mx-auto" style={{ color: COLORS.TEAL }} />
-                    <p className="text-lg font-semibold" style={{ color: COLORS.NAVY }}>Loading Videos...</p>
+                    <Film className="w-12 h-12 animate-pulse mb-4 mx-auto" className="text-corporate-teal" />
+                    <p className="text-lg font-semibold" className="text-corporate-navy">Loading Videos...</p>
                 </div>
             </div>
         );
     }
 
     return (
-        <div className="p-3 sm:p-4 lg:p-6 md:p-10 min-h-screen" style={{ background: COLORS.BG }}>
+        <div className="p-3 sm:p-4 lg:p-6 md:p-10 min-h-screen" className="bg-slate-50">
             {/* Back Button */}
             <Button onClick={() => navigate('library')} variant="nav-back" size="sm" className="mb-6">
                 <ArrowLeft className="w-4 h-4 mr-2" />
@@ -298,13 +295,13 @@ const LeadershipVideosScreen = () => {
             </Button>
             
             {/* Header */}
-            <header className='flex items-center gap-4 border-b-2 pb-3 mb-8' style={{borderColor: COLORS.NAVY+'30'}}>
-                <Film className='w-10 h-10 flex-shrink-0' style={{color: COLORS.NAVY}}/>
+            <header className='flex items-center gap-4 border-b-2 pb-3 mb-8' className="border-corporate-navy/30">
+                <Film className='w-10 h-10 flex-shrink-0' className="text-corporate-navy"/>
                 <div>
-                    <h1 className="text-xl sm:text-2xl sm:text-3xl md:text-4xl font-extrabold" style={{ color: COLORS.NAVY }}>
+                    <h1 className="text-xl sm:text-2xl sm:text-3xl md:text-4xl font-extrabold" className="text-corporate-navy">
                         Leadership Video Library
                     </h1>
-                    <p className="text-md" style={{ color: COLORS.NAVY + '80' }}>
+                    <p className="text-md text-corporate-navy/80">
                         Curated content for leaders at every level
                     </p>
                 </div>
@@ -315,17 +312,13 @@ const LeadershipVideosScreen = () => {
                 <div className="flex flex-col md:flex-row gap-4 items-start md:items-center">
                     {/* Search Input */}
                     <div className="flex-1 relative">
-                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4" style={{ color: COLORS.NAVY + '60' }} />
+                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-corporate-navy/60" />
                         <input
                             type="text"
                             placeholder="Search videos, speakers, topics..."
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
-                            className="w-full pl-10 pr-4 py-2 border rounded-lg focus:ring-2 focus:border-transparent"
-                            style={{ 
-                                borderColor: COLORS.NAVY + '30',
-                                focusRingColor: COLORS.TEAL + '50'
-                            }}
+                            className="w-full pl-10 pr-4 py-2 border border-corporate-navy/30 rounded-lg focus:ring-2 focus:ring-corporate-teal/50 focus:border-transparent"
                         />
                     </div>
                     
@@ -333,8 +326,7 @@ const LeadershipVideosScreen = () => {
                     <select
                         value={selectedCategory}
                         onChange={(e) => setSelectedCategory(e.target.value)}
-                        className="px-3 py-2 border rounded-lg"
-                        style={{ borderColor: COLORS.NAVY + '30' }}
+                        className="px-3 py-2 border border-corporate-navy/30 rounded-lg"
                     >
                         {categories.map(cat => (
                             <option key={cat} value={cat}>
@@ -347,8 +339,7 @@ const LeadershipVideosScreen = () => {
                     <select
                         value={selectedTag}
                         onChange={(e) => setSelectedTag(e.target.value)}
-                        className="px-3 py-2 border rounded-lg"
-                        style={{ borderColor: COLORS.NAVY + '30' }}
+                        className="px-3 py-2 border border-corporate-navy/30 rounded-lg"
                     >
                         <option value="">All Tags</option>
                         {allTags.map(tag => (
@@ -360,7 +351,7 @@ const LeadershipVideosScreen = () => {
                 </div>
                 
                 {/* Results Summary */}
-                <div className="flex items-center justify-between text-sm" style={{ color: COLORS.NAVY + '80' }}>
+                <div className="flex items-center justify-between text-sm text-corporate-navy/80">
                     <span>
                         {filteredVideos.length} video{filteredVideos.length !== 1 ? 's' : ''} found
                     </span>
@@ -372,7 +363,7 @@ const LeadershipVideosScreen = () => {
                                 setSelectedCategory('ALL');
                             }}
                             className="text-sm underline hover:no-underline"
-                            style={{ color: COLORS.TEAL }}
+                            className="text-corporate-teal"
                         >
                             Clear filters
                         </button>
@@ -404,10 +395,10 @@ const LeadershipVideosScreen = () => {
                     </div>
                 ) : (
                     <div className="text-center py-12">
-                        <p className="text-lg mb-2" style={{ color: COLORS.NAVY + '60' }}>
+                        <p className="text-lg mb-2 text-corporate-navy/60">
                             No videos found matching your criteria
                         </p>
-                        <p className="text-sm" style={{ color: COLORS.NAVY + '40' }}>
+                        <p className="text-sm text-corporate-navy/40">
                             Try adjusting your search terms or filters
                         </p>
                     </div>
@@ -426,9 +417,9 @@ const LeadershipVideosScreen = () => {
                 
                 return (
                     <section key={categoryKey} className={idx < videoCategories.length - 1 ? "mb-12" : ""}>
-                        <h2 className="text-2xl md:text-xl sm:text-2xl sm:text-3xl font-bold mb-6 border-l-4 pl-3 flex items-center gap-3"
-                            style={{ color: COLORS.NAVY, borderColor: COLORS[config.color] }}>
-                            <CategoryIcon className='w-6 h-6' style={{color: COLORS[config.color]}} />
+                        <h2 className="text-2xl md:text-xl sm:text-2xl sm:text-3xl font-bold mb-6 border-l-4 pl-3 flex items-center gap-3 text-corporate-navy"
+                            style={{ borderColor: ACCENT_COLORS[config.color] || 'var(--corporate-teal)' }}>
+                            <CategoryIcon className='w-6 h-6' style={{color: ACCENT_COLORS[config.color] || 'var(--corporate-teal)'}} />
                             {config.name}
                         </h2>
                         {videos.length > 0 ? (

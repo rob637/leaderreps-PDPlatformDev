@@ -12,85 +12,12 @@ import {
   AlertTriangle, CheckCircle, FileText, Copy, RefreshCw, Eye, EyeOff,
   MessageSquare, Users, BookOpen, Film, Zap, ChevronDown, ChevronUp, GripVertical, ArrowLeft
 } from 'lucide-react';
-
-// --- Standardized UI Components ---
-const Button = ({ children, onClick, disabled = false, variant = 'primary', className = '', size = 'md', ...rest }) => {
-  const baseStyles = "inline-flex items-center justify-center gap-2 font-semibold rounded-xl transition-all duration-200 focus:outline-none focus:ring-2 disabled:opacity-50 disabled:cursor-not-allowed";
-  const variants = {
-    primary: "bg-[#47A88D] text-white shadow-md hover:bg-[#3d917a] focus:ring-[#47A88D]/50",
-    secondary: "bg-[#E04E1B] text-white shadow-md hover:bg-[#c44317] focus:ring-[#E04E1B]/50",
-    outline: "bg-white text-[#47A88D] border-2 border-[#47A88D] shadow-sm hover:bg-[#47A88D]/10 focus:ring-[#47A88D]/50",
-    ghost: "bg-transparent text-slate-600 hover:bg-slate-100",
-    danger: "bg-red-600 text-white shadow-md hover:bg-red-700 focus:ring-red-500/50",
-    'nav-back': "bg-white text-slate-700 border border-slate-300 shadow-sm hover:bg-slate-100 focus:ring-slate-300/50 px-4 py-2 text-sm",
-  };
-  const sizes = {
-    sm: "px-3 py-1.5 text-sm",
-    md: "px-5 py-2.5 text-base",
-    lg: "px-8 py-4 text-lg",
-  };
-  return (
-    <button 
-      onClick={onClick} 
-      disabled={disabled} 
-      className={`${baseStyles} ${variants[variant] || variants.primary} ${sizes[size] || sizes.md} ${className}`}
-      {...rest}
-    >
-      {children}
-    </button>
-  );
-};
-
-const Card = ({ children, title, icon: Icon, className = '', accentColor = 'bg-[#002E47]', actions }) => {
-  return (
-    <div className={`relative w-full text-left bg-white rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-all duration-300 overflow-hidden ${className}`}>
-      <div className={`absolute top-0 left-0 right-0 h-1.5 ${accentColor}`} />
-      <div className="p-6">
-        {(Icon || title || actions) && (
-            <div className="flex items-center justify-between mb-6 border-b border-slate-100 pb-4">
-                <div className="flex items-center gap-3">
-                    {Icon && (
-                        <div className="w-10 h-10 rounded-lg bg-slate-50 flex items-center justify-center border border-slate-100">
-                            <Icon className="w-5 h-5 text-[#002E47]" />
-                        </div>
-                    )}
-                    {title && (
-                        <h2 className="text-xl font-bold text-[#002E47]">{title}</h2>
-                    )}
-                </div>
-                {actions && (
-                    <div className="flex-shrink-0 flex gap-2">{actions}</div>
-                )}
-            </div>
-        )}
-        {children}
-      </div>
-    </div>
-  );
-};
-
-const Badge = ({ children, variant = 'default', size = 'md' }) => {
-  const baseStyles = "font-semibold rounded-full inline-block";
-  const sizes = {
-      sm: "px-2.5 py-0.5 text-xs",
-      md: "px-3 py-1 text-sm"
-  };
-  const variants = {
-      default: "bg-slate-100 text-slate-600",
-      primary: "bg-blue-100 text-blue-700",
-      success: "bg-green-100 text-green-700",
-      warning: "bg-amber-100 text-amber-700",
-      danger: "bg-red-100 text-red-700",
-      purple: "bg-purple-100 text-purple-700",
-  };
-
-  return <span className={`${baseStyles} ${sizes[size]} ${variants[variant]}`}>{children}</span>;
-};
+import { Button, Card, Badge } from '../ui';
 
 const LoadingSpinner = ({ message = "Loading..." }) => (
   <div className="flex items-center justify-center p-12">
     <div className="text-center">
-      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#47A88D] mx-auto mb-4" />
+      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-corporate-teal mx-auto mb-4" />
       <p className="text-slate-600">{message}</p>
     </div>
   </div>
@@ -103,8 +30,8 @@ const MODULE_GROUPS = {
   user_data: {
     name: "User Profile",
     icon: Database,
-    color: "text-[#002E47]",
-    accentColor: "bg-[#002E47]",
+    color: "text-corporate-navy",
+    accentColor: "bg-corporate-navy",
     description: "Basic user information and account settings",
     tables: {
       profile: {
@@ -127,8 +54,8 @@ const MODULE_GROUPS = {
   development_plan: {
     name: "Development Plan",
     icon: Target,
-    color: "text-[#47A88D]",
-    accentColor: "bg-[#47A88D]",
+    color: "text-corporate-teal",
+    accentColor: "bg-corporate-teal",
     description: "12-week leadership development plans and assessments",
     tables: {
       current_plan: {
@@ -150,8 +77,8 @@ const MODULE_GROUPS = {
   daily_practice: {
     name: "Daily Practice",
     icon: Calendar,
-    color: "text-[#E04E1B]",
-    accentColor: "bg-[#E04E1B]",
+    color: "text-corporate-orange",
+    accentColor: "bg-corporate-orange",
     description: "Daily reps, streaks, commitments, reflections, and bookends",
     tables: {
       current_practice: {
@@ -259,8 +186,8 @@ const MODULE_GROUPS = {
   global_metadata: {
     name: "Global Metadata",
     icon: Settings,
-    color: "text-[#002E47]",
-    accentColor: "bg-[#002E47]",
+    color: "text-corporate-navy",
+    accentColor: "bg-corporate-navy",
     description: "App-wide configuration and catalogs (affects all users)",
     isGlobal: true,
     tables: {
@@ -480,7 +407,7 @@ const SubcollectionViewer = ({ tableConfig, userId }) => {
 
       <div className="grid gap-3">
         {docs.map(docData => (
-          <div key={docData.id} className="p-4 bg-white rounded-lg border border-slate-200 hover:border-[#47A88D] transition-all shadow-sm">
+          <div key={docData.id} className="p-4 bg-white rounded-lg border border-slate-200 hover:border-corporate-teal transition-all shadow-sm">
             <div className="flex items-start justify-between mb-2">
               <div className="flex-1">
                 <p className="text-xs text-slate-500 mb-1">
@@ -568,7 +495,7 @@ const CatalogItemEditor = ({ item, index, onUpdate, onDelete, onAddNewField }) =
         <select
           value={String(value)}
           onChange={(e) => handleChange(key, e.target.value === 'true')}
-          className="w-full p-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-[#47A88D] focus:border-[#47A88D] outline-none"
+          className="w-full p-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-corporate-teal focus:border-corporate-teal outline-none"
         >
           <option value="true">True</option>
           <option value="false">False</option>
@@ -582,7 +509,7 @@ const CatalogItemEditor = ({ item, index, onUpdate, onDelete, onAddNewField }) =
           type="number"
           value={value}
           onChange={(e) => handleChange(key, Number(e.target.value))}
-          className="w-full p-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-[#47A88D] focus:border-[#47A88D] outline-none"
+          className="w-full p-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-corporate-teal focus:border-corporate-teal outline-none"
         />
       );
     }
@@ -592,7 +519,7 @@ const CatalogItemEditor = ({ item, index, onUpdate, onDelete, onAddNewField }) =
         <textarea
           value={value}
           onChange={(e) => handleChange(key, e.target.value)}
-          className="w-full p-2 border border-slate-300 rounded-lg text-sm font-mono focus:ring-2 focus:ring-[#47A88D] focus:border-[#47A88D] outline-none"
+          className="w-full p-2 border border-slate-300 rounded-lg text-sm font-mono focus:ring-2 focus:ring-corporate-teal focus:border-corporate-teal outline-none"
           rows={4}
         />
       );
@@ -603,20 +530,20 @@ const CatalogItemEditor = ({ item, index, onUpdate, onDelete, onAddNewField }) =
         type="text"
         value={value}
         onChange={(e) => handleChange(key, e.target.value)}
-        className="w-full p-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-[#47A88D] focus:border-[#47A88D] outline-none"
+        className="w-full p-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-corporate-teal focus:border-corporate-teal outline-none"
       />
     );
   };
 
   return (
     <div 
-      className={`rounded-xl border transition-colors ${isEditing ? 'border-[#47A88D] bg-[#47A88D]/5' : 'border-slate-200 bg-white'}`}
+      className={`rounded-xl border transition-colors ${isEditing ? 'border-corporate-teal bg-corporate-teal/5' : 'border-slate-200 bg-white'}`}
     >
       {/* Header Bar */}
       <div className="flex items-center justify-between p-3 border-b border-slate-200">
         <div className="flex items-center gap-3">
           <GripVertical className="w-5 h-5 text-slate-400 cursor-grab" />
-          <p className="font-semibold text-[#002E47]">
+          <p className="font-semibold text-corporate-navy">
             {item.name || item.id || `Item ${index + 1}`}
           </p>
           <Badge variant="default" size="sm">{item.id || 'NO ID'}</Badge>
@@ -940,7 +867,7 @@ const TableDataEditor = ({ tableConfig, data, onSave, onDelete }) => {
       {showJson ? (
         <div className="relative">
           <textarea
-            className="w-full h-96 p-4 font-mono text-sm border border-slate-300 rounded-xl focus:ring-2 focus:ring-[#47A88D] focus:border-[#47A88D] outline-none"
+            className="w-full h-96 p-4 font-mono text-sm border border-slate-300 rounded-xl focus:ring-2 focus:ring-corporate-teal focus:border-corporate-teal outline-none"
             value={jsonText}
             onChange={(e) => handleJsonChange(e.target.value)}
             spellCheck={false}
@@ -972,7 +899,7 @@ const TableDataEditor = ({ tableConfig, data, onSave, onDelete }) => {
               <div key={field.key} className="p-4 bg-slate-50 rounded-xl border border-slate-200">
                 <div className="flex items-start justify-between mb-2">
                   <div>
-                    <label className="block text-sm font-semibold mb-1 text-[#002E47]">
+                    <label className="block text-sm font-semibold mb-1 text-corporate-navy">
                       {field.label}
                     </label>
                     {field.readonly && (
@@ -993,14 +920,14 @@ const TableDataEditor = ({ tableConfig, data, onSave, onDelete }) => {
                   </div>
                 ) : field.type === 'textarea' ? (
                   <textarea
-                    className="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-[#47A88D] focus:border-[#47A88D] outline-none"
+                    className="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-corporate-teal focus:border-corporate-teal outline-none"
                     rows={4}
                     value={displayValue}
                     onChange={(e) => handleFieldChange(field.key, e.target.value, field.type)}
                   />
                 ) : field.type === 'json' ? (
                   <textarea
-                    className="w-full p-3 font-mono text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-[#47A88D] focus:border-[#47A88D] outline-none"
+                    className="w-full p-3 font-mono text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-corporate-teal focus:border-corporate-teal outline-none"
                     rows={6}
                     value={displayValue}
                     onChange={(e) => handleFieldChange(field.key, e.target.value, field.type)}
@@ -1008,7 +935,7 @@ const TableDataEditor = ({ tableConfig, data, onSave, onDelete }) => {
                   />
                 ) : field.type === 'boolean' ? (
                   <select
-                    className="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-[#47A88D] focus:border-[#47A88D] outline-none"
+                    className="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-corporate-teal focus:border-corporate-teal outline-none"
                     value={String(value)}
                     onChange={(e) => handleFieldChange(field.key, e.target.value, field.type)}
                   >
@@ -1018,7 +945,7 @@ const TableDataEditor = ({ tableConfig, data, onSave, onDelete }) => {
                 ) : (
                   <input
                     type={field.type === 'number' ? 'number' : field.type === 'email' ? 'email' : 'text'}
-                    className="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-[#47A88D] focus:border-[#47A88D] outline-none"
+                    className="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-corporate-teal focus:border-corporate-teal outline-none"
                     value={displayValue}
                     onChange={(e) => handleFieldChange(field.key, e.target.value, field.type)}
                   />
@@ -1195,7 +1122,7 @@ export default function AdminDataMaintenance() {
         <Card accentColor="bg-red-600">
           <div className="text-center p-8">
             <AlertTriangle className="w-16 h-16 mx-auto mb-4 text-red-600" />
-            <h2 className="text-2xl font-bold mb-2 text-[#002E47]">
+            <h2 className="text-2xl font-bold mb-2 text-corporate-navy">
               Access Denied
             </h2>
             <p className="text-slate-600">
@@ -1217,7 +1144,7 @@ export default function AdminDataMaintenance() {
         <div className="max-w-7xl mx-auto px-6 py-6">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-3xl font-bold mb-2 text-[#002E47]">
+              <h1 className="text-3xl font-bold mb-2 text-corporate-navy">
                 Admin Data Maintenance
               </h1>
               <p className="text-slate-600">
@@ -1227,7 +1154,7 @@ export default function AdminDataMaintenance() {
             
             {!currentGroup?.isGlobal && (
               <div className="flex items-center gap-3">
-                <label className="text-sm font-semibold text-[#002E47]">
+                <label className="text-sm font-semibold text-corporate-navy">
                   User ID:
                 </label>
                 <input
@@ -1235,7 +1162,7 @@ export default function AdminDataMaintenance() {
                   value={targetUserId}
                   onChange={(e) => setTargetUserId(e.target.value)}
                   placeholder="Enter user ID..."
-                  className="px-4 py-2 border border-slate-300 rounded-lg text-sm font-mono w-64 focus:ring-2 focus:ring-[#47A88D] focus:border-[#47A88D] outline-none"
+                  className="px-4 py-2 border border-slate-300 rounded-lg text-sm font-mono w-64 focus:ring-2 focus:ring-corporate-teal focus:border-corporate-teal outline-none"
                 />
               </div>
             )}
@@ -1284,7 +1211,7 @@ export default function AdminDataMaintenance() {
           {/* Sidebar - Table List */}
           <div className="col-span-12 lg:col-span-3">
             <Card accentColor={currentGroup.accentColor}>
-              <h3 className="text-lg font-bold mb-4 text-[#002E47]">
+              <h3 className="text-lg font-bold mb-4 text-corporate-navy">
                 {currentGroup.name}
               </h3>
               <p className="text-sm text-slate-600 mb-4">
@@ -1344,7 +1271,7 @@ export default function AdminDataMaintenance() {
               <Card accentColor={currentGroup.accentColor}>
                 <div className="p-12 text-center">
                   <Search className="w-16 h-16 mx-auto mb-4 text-slate-400" />
-                  <h3 className="text-xl font-bold mb-2 text-[#002E47]">
+                  <h3 className="text-xl font-bold mb-2 text-corporate-navy">
                     Enter a User ID
                   </h3>
                   <p className="text-slate-600">

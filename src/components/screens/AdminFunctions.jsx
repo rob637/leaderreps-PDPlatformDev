@@ -3,58 +3,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useAppServices } from '../../services/useAppServices.jsx';
 import { Shield, ToggleLeft, ToggleRight, Save, Loader, AlertTriangle, ArrowLeft, Key, Settings, Mail, Plus, X } from 'lucide-react';
-
-// --- Standardized UI Components ---
-const Button = ({ children, onClick, disabled = false, variant = 'primary', className = '', size = 'md', ...rest }) => {
-  const baseStyles = "inline-flex items-center justify-center gap-2 font-semibold rounded-xl transition-all duration-200 focus:outline-none focus:ring-2 disabled:opacity-50 disabled:cursor-not-allowed";
-  const variants = {
-    primary: "bg-[#47A88D] text-white shadow-md hover:bg-[#3d917a] focus:ring-[#47A88D]/50",
-    secondary: "bg-[#E04E1B] text-white shadow-md hover:bg-[#c44317] focus:ring-[#E04E1B]/50",
-    outline: "bg-white text-[#47A88D] border-2 border-[#47A88D] shadow-sm hover:bg-[#47A88D]/10 focus:ring-[#47A88D]/50",
-    ghost: "bg-transparent text-slate-600 hover:bg-slate-100",
-    'nav-back': "bg-white text-slate-700 border border-slate-300 shadow-sm hover:bg-slate-100 focus:ring-slate-300/50 px-4 py-2 text-sm",
-    'action-write': "bg-green-600 text-white shadow-md hover:bg-green-700 focus:ring-green-500/50",
-    'action-danger': "bg-red-600 text-white shadow-md hover:bg-red-700 focus:ring-red-500/50",
-  };
-  const sizes = {
-    sm: "px-3 py-1.5 text-sm",
-    md: "px-5 py-2.5 text-base",
-    lg: "px-8 py-4 text-lg",
-  };
-  return (
-    <button 
-      onClick={onClick} 
-      disabled={disabled} 
-      className={`${baseStyles} ${variants[variant] || variants.primary} ${sizes[size] || sizes.md} ${className}`}
-      {...rest}
-    >
-      {children}
-    </button>
-  );
-};
-
-const Card = ({ children, title, icon: Icon, className = '', accentColor = 'bg-[#002E47]' }) => {
-  return (
-    <div className={`relative w-full text-left bg-white rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-all duration-300 overflow-hidden ${className}`}>
-      <div className={`absolute top-0 left-0 right-0 h-1.5 ${accentColor}`} />
-      <div className="p-6">
-        {(Icon || title) && (
-            <div className="flex items-center gap-3 mb-6 border-b border-slate-100 pb-4">
-                {Icon && (
-                    <div className="w-10 h-10 rounded-lg bg-slate-50 flex items-center justify-center border border-slate-100">
-                        <Icon className="w-5 h-5 text-[#002E47]" />
-                    </div>
-                )}
-                {title && (
-                    <h2 className="text-xl font-bold text-[#002E47]">{title}</h2>
-                )}
-            </div>
-        )}
-        {children}
-      </div>
-    </div>
-  );
-};
+import { Button, Card } from '../ui';
 
 const AdminEmailManager = ({ initialEmails, updateGlobalMetadata }) => {
     const [emails, setEmails] = useState(initialEmails || []);
@@ -120,7 +69,7 @@ const AdminEmailManager = ({ initialEmails, updateGlobalMetadata }) => {
     };
 
     return (
-        <Card title="Administrator List" icon={Mail} accentColor="bg-[#002E47]">
+        <Card title="Administrator List" icon={Mail} accentColor="bg-corporate-navy">
             <p className="text-sm text-slate-600 mb-4">Emails listed here are granted full access to Admin Functions and all hidden features.</p>
             
             <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-2 mb-4 max-h-48 overflow-y-auto">
@@ -150,7 +99,7 @@ const AdminEmailManager = ({ initialEmails, updateGlobalMetadata }) => {
                     value={newEmail}
                     onChange={(e) => setNewEmail(e.target.value)}
                     onKeyDown={(e) => e.key === 'Enter' && handleAddEmail()}
-                    className="flex-1 p-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-[#47A88D] focus:border-[#47A88D] outline-none transition-all"
+                    className="flex-1 p-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-corporate-teal focus:border-corporate-teal outline-none transition-all"
                     disabled={isSaving}
                 />
                 <Button onClick={handleAddEmail} variant="primary" size="sm" disabled={isSaving || !newEmail.trim().includes('@')}>
@@ -251,7 +200,7 @@ const AdminFunctionsScreen = () => {
         return (
             <div className="min-h-screen flex items-center justify-center p-4 bg-slate-50">
                 <div className="flex items-center justify-center p-8 text-center text-slate-500 bg-white rounded-xl shadow-sm min-h-[100px]">
-                    <Loader className="w-5 h-5 animate-spin mr-2 text-[#47A88D]" />
+                    <Loader className="w-5 h-5 animate-spin mr-2 text-corporate-teal" />
                     Loading Admin Functions...
                 </div>
             </div>
@@ -265,8 +214,8 @@ const AdminFunctionsScreen = () => {
     return (
         <div className="p-6 md:p-10 min-h-screen bg-slate-50 animate-fade-in">
             <header className="mb-8">
-                <h1 className="text-3xl md:text-4xl font-extrabold mb-2 flex items-center gap-3 text-[#002E47]">
-                    <Shield className="w-8 h-8 text-[#47A88D]" /> Admin Functions
+                <h1 className="text-3xl md:text-4xl font-extrabold mb-2 flex items-center gap-3 text-corporate-navy">
+                    <Shield className="w-8 h-8 text-corporate-teal" /> Admin Functions
                 </h1>
                 <p className="text-lg text-slate-600">Manage application features and settings.</p>
             </header>
@@ -282,7 +231,7 @@ const AdminFunctionsScreen = () => {
                     updateGlobalMetadata={updateGlobalMetadata}
                 />
 
-                <Card title="Feature Flags" icon={Settings} accentColor="bg-[#47A88D]">
+                <Card title="Feature Flags" icon={Settings} accentColor="bg-corporate-teal">
                     <p className="text-sm text-slate-600 mb-6">Enable or disable application features globally. Changes affect all users on next load.</p>
 
                     <div className="space-y-4">
@@ -343,7 +292,7 @@ const AdminFunctionsScreen = () => {
                 </Card>
             </div>
 
-             <Card title="Database Management" icon={Key} accentColor="bg-[#002E47]" className="mt-6">
+             <Card title="Database Management" icon={Key} accentColor="bg-corporate-navy" className="mt-6">
                 <p className="text-sm text-slate-600 mb-4">Direct access to the Firestore Data Manager to view and edit document/collection data.</p>
                 <Button onClick={() => navigate('data-maintenance')} variant="outline" size="md">
                     <Shield className="w-5 h-5 mr-2" /> Open Data Manager

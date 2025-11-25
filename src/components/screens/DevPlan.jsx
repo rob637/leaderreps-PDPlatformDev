@@ -5,66 +5,7 @@ import React, { useState, useEffect, useMemo, useCallback } from 'react';
 
 // --- SERVICES (production) ---
 import { useAppServices } from '../../services/useAppServices';
-
-
-
-// Mock UI components (Standardized)
-const Button = ({ children, onClick, disabled = false, variant = 'primary', className = '', ...rest }) => {
-  let baseStyle = "px-6 py-3 rounded-xl font-semibold transition-all shadow-xl focus:outline-none focus:ring-4 text-white flex items-center justify-center";
-  if (variant === 'primary') { baseStyle += ` bg-[#47A88D] hover:bg-[#47A88D] focus:ring-[#47A88D]/50`; }
-  else if (variant === 'secondary') { baseStyle += ` bg-[#E04E1B] hover:opacity-90 focus:ring-[#E04E1B]/50`; }
-  else if (variant === 'outline') { baseStyle = `px-6 py-3 rounded-xl font-semibold transition-all shadow-md border-2 border-[#47A88D] text-[#47A88D] hover:bg-[#47A88D]/10 focus:ring-4 focus:ring-[#47A88D]/50 bg-[#FCFCFA] flex items-center justify-center`; }
-  else if (variant === 'nav-back') { baseStyle = `px-4 py-2 rounded-lg font-medium transition-all shadow-sm border-2 border-gray-300 text-gray-700 hover:bg-gray-100 flex items-center justify-center`; }
-  if (disabled) { baseStyle = "px-6 py-3 rounded-xl font-semibold bg-gray-300 text-gray-500 cursor-not-allowed shadow-inner transition-none flex items-center justify-center"; }
-  return (
-    <button {...rest} onClick={onClick} disabled={disabled} className={`${baseStyle} ${className}`}>
-      {children}
-    </button>
-  );
-};
-
-const ACCENT_COLORS = {
-  NAVY: '#002E47',
-  TEAL: '#47A88D',
-  ORANGE: '#E04E1B',
-  GREEN: '#47A88D',
-  PURPLE: '#47A88D',
-  AMBER: '#E04E1B',
-  RED: '#E04E1B',
-};
-
-const Card = ({ children, title, icon: Icon, className = '', onClick, accent = 'NAVY' }) => {
-  const interactive = !!onClick;
-  const Tag = interactive ? 'button' : 'div';
-  const accentColor = ACCENT_COLORS[accent] || ACCENT_COLORS.NAVY;
-  const handleKeyDown = (e) => {
-    if (!interactive) return;
-    if (e.key === 'Enter' || e.key === ' ') {
-      e.preventDefault();
-      onClick?.();
-    }
-  };
-  return (
-    <Tag
-      role={interactive ? 'button' : undefined}
-      tabIndex={interactive ? 0 : undefined}
-      onKeyDown={handleKeyDown}
-      className={`relative p-6 rounded-2xl border-2 shadow-2xl transition-all duration-300 text-left ${className}`}
-      style={{ background: `linear-gradient(180deg, #FFFFFF, #FCFCFA)`, borderColor: '#47A88D', color: '#002E47' }}
-      onClick={onClick}
-    >
-      <span style={{ position:'absolute', top:0, left:0, right:0, height:6, background: accentColor, borderTopLeftRadius:14, borderTopRightRadius:14 }} />
-
-      {Icon && (
-        <div className="w-10 h-10 rounded-lg flex items-center justify-center border mb-3" style={{ borderColor: '#47A88D', background: '#FCFCFA' }}>
-          <Icon className="w-5 h-5" style={{ color: '#47A88D' }} />
-        </div>
-      )}
-      {title && <h2 className="text-xl font-extrabold mb-2" style={{ color: '#002E47' }}>{title}</h2>}
-      {children}
-    </Tag>
-  );
-};
+import { Button, Card } from '../ui';
 
 // --- Tooltip Component ---
 const Tooltip = ({ content, children }) => {
@@ -77,9 +18,9 @@ const Tooltip = ({ content, children }) => {
         >
             {children}
             {isVisible && (
-                <div className="absolute z-10 w-64 p-3 -mt-2 -ml-32 text-xs text-white bg-[#002E47] rounded-lg shadow-lg bottom-full left-1/2 transform translate-x-1/2">
+                <div className="absolute z-10 w-64 p-3 -mt-2 -ml-32 text-xs text-white bg-corporate-navy rounded-lg shadow-lg bottom-full left-1/2 transform translate-x-1/2">
                     {content}
-                    <div className="absolute left-1/2 transform -translate-x-1/2 bottom-[-4px] w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-[#002E47]"></div>
+                    <div className="absolute left-1/2 transform -translate-x-1/2 bottom-[-4px] w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-corporate-navy"></div>
                 </div>
             )}
         </div>
@@ -87,8 +28,8 @@ const Tooltip = ({ content, children }) => {
 };
 const mdToHtml = async (md) => {
     let html = md;
-    html = html.replace(/## (.*$)/gim, '<h2 class="text-2xl font-extrabold text-[#E04E1B] mb-3">$1</h2>');
-    html = html.replace(/### (.*$)/gim, '<h3 class="text-xl font-bold text-[#47A88D] mt-4 mb-2">$1</h3>');
+    html = html.replace(/## (.*$)/gim, '<h2 class="text-2xl font-extrabold text-corporate-orange mb-3">$1</h2>');
+    html = html.replace(/### (.*$)/gim, '<h3 class="text-xl font-bold text-corporate-teal mt-4 mb-2">$1</h3>');
     html = html.replace(/\*\*(.*)\*\*/gim, '<strong>$1</strong>');
     html = html.split('\n').map(line => line.trim()).filter(line => line.length > 0).map(line => {
         if (line.startsWith('<ul>') || line.startsWith('<li>') || line.startsWith('<h') || line.startsWith('<s')) return line;
@@ -314,21 +255,21 @@ const ContentDetailsModalInternal = ({ onClose, content }) => {
     }, [memoizedMockDetail]);
     
     return (
-        <div className="fixed inset-0 bg-[#002E47]/80 z-50 flex items-center justify-center p-4">
-            <div className="bg-[#FCFCFA] rounded-3xl shadow-2xl w-full max-h-[90vh] overflow-y-auto p-3 sm:p-4 lg:p-6">
+        <div className="fixed inset-0 bg-corporate-navy/80 z-50 flex items-center justify-center p-4">
+            <div className="bg-corporate-light-gray rounded-3xl shadow-2xl w-full max-h-[90vh] overflow-y-auto p-3 sm:p-4 lg:p-6">
                 <div className="flex justify-between items-start border-b pb-4 mb-6">
-                    <h2 className="text-xl sm:text-2xl sm:text-3xl font-extrabold text-[#002E47] flex items-center">
-                        <BookOpen className="w-8 h-8 mr-3 text-[#47A88D]" />
+                    <h2 className="text-xl sm:text-2xl sm:text-3xl font-extrabold text-corporate-navy flex items-center">
+                        <BookOpen className="w-8 h-8 mr-3 text-corporate-teal" />
                         {content.title} ({content.type})
                     </h2>
-                    <button onClick={onClose} className="p-2 text-gray-500 hover:text-[#E04E1B] transition-colors">
+                    <button onClick={onClose} className="p-2 text-gray-500 hover:text-corporate-orange transition-colors">
                         <X className="w-6 h-6" />
                     </button>
                 </div>
                 <div className="mb-6 text-sm flex space-x-4 border-b pb-4">
-                    <p className="text-gray-700 font-semibold">Tier: <span className='text-[#002E47]'>{tierData.name}</span></p>
-                    <p className="text-gray-700 font-semibold">Skill Focus: <span className='text-[#002E47]'>{content.skill}</span></p>
-                    <p className="text-gray-700 font-semibold">Est. Duration: <span className='text-[#002E47]'>{content.duration} min</span></p>
+                    <p className="text-gray-700 font-semibold">Tier: <span className='text-corporate-navy'>{tierData.name}</span></p>
+                    <p className="text-gray-700 font-semibold">Skill Focus: <span className='text-corporate-navy'>{content.skill}</span></p>
+                    <p className="text-gray-700 font-semibold">Est. Duration: <span className='text-corporate-navy'>{content.duration} min</span></p>
                 </div>
                 <div className="prose max-w-none text-gray-700">
                     {htmlContent ? (
@@ -341,8 +282,8 @@ const ContentDetailsModalInternal = ({ onClose, content }) => {
                     )}
                 </div>
                 <div className='mt-8 pt-6 border-t border-gray-200'>
-                    <h3 className='text-lg font-bold text-[#002E47] mb-3 flex items-center'>
-                        <Star className="w-5 h-5 mr-2 text-[#E04E1B]" />
+                    <h3 className='text-lg font-bold text-corporate-navy mb-3 flex items-center'>
+                        <Star className="w-5 h-5 mr-2 text-corporate-orange" />
                         Review & Log Learning
                     </h3>
                     <p className="text-sm text-gray-700 mb-4">
@@ -360,7 +301,7 @@ const ContentDetailsModalInternal = ({ onClose, content }) => {
                                 />
                             ))}
                         </div>
-                        <span className='text-md font-semibold text-[#002E47]'>{rating > 0 ? `${rating}/5 Stars` : 'Rate Content'}</span>
+                        <span className='text-md font-semibold text-corporate-navy'>{rating > 0 ? `${rating}/5 Stars` : 'Rate Content'}</span>
                     </div>
                     <Button onClick={handleLogLearning} disabled={isLogging || rating === 0} className='w-full'>
                         {isLogging ? 'Logging...' : 'Log Learning & Submit Rating'}
@@ -375,7 +316,7 @@ const ContentDetailsModalInternal = ({ onClose, content }) => {
 // --- Component 3: Roadmap Timeline View (Unchanged) ---
 const RoadmapTimeline = ({ data, navigateToMonth, viewMonth }) => {
     return (
-        <Card title="24-Month Roadmap Timeline" icon={Trello} accent="PURPLE" className='lg:sticky lg:top-4 bg-white shadow-2xl border-l-4 border-[#47A88D]'>
+        <Card title="24-Month Roadmap Timeline" icon={Trello} accent="PURPLE" className='lg:sticky lg:top-4 bg-white shadow-2xl border-l-4 border-corporate-teal'>
             <p className='text-sm text-gray-600 mb-4'>Review your full two-year journey. Click a month to review its content and reflection.</p>
             <div className='max-h-96 overflow-y-auto space-y-2 pr-2'>
                 {data.plan.map(monthData => {
@@ -387,14 +328,14 @@ const RoadmapTimeline = ({ data, navigateToMonth, viewMonth }) => {
                     return (
                         <div key={monthData.month}
                              className={`p-3 rounded-lg border flex justify-between items-center transition-all cursor-pointer shadow-sm
-                                         ${isCurrentView ? 'bg-[#47A88D]/20 border-[#47A88D] font-extrabold' : isCompleted ? 'bg-[#47A88D]/10 border-[#47A88D]' : 'bg-gray-50 border-gray-200 hover:bg-gray-100'}
+                                         ${isCurrentView ? 'bg-corporate-teal/20 border-corporate-teal font-extrabold' : isCompleted ? 'bg-corporate-teal/10 border-corporate-teal' : 'bg-gray-50 border-gray-200 hover:bg-gray-100'}
                                          ${isFuture && !isCurrentView ? 'opacity-80' : ''}` 
                              }
                              onClick={() => {
                                  if (isClickable) navigateToMonth(monthData.month); 
                              }}
                         >
-                            <span className={`text-sm ${isCurrentView ? 'text-[#47A88D]' : 'text-[#002E47]'}`}>
+                            <span className={`text-sm ${isCurrentView ? 'text-corporate-teal' : 'text-corporate-navy'}`}>
                                 **Training Month {monthData.month}**: {monthData.theme}
                             </span>
                             <span className="flex items-center space-x-1 text-xs">
@@ -612,28 +553,28 @@ const TrackerDashboardView = ({ data, updatePdpData, navigate }) => {
 
 
     return (
-        <div className="p-3 sm:p-4 lg:p-6 md:p-10 min-h-screen" style={{ background: '#FCFCFA', color: '#002E47' }}>
-            <div className='flex items-center gap-4 border-b-2 pb-2 mb-8' style={{borderColor: '#47A88D'+'30'}}>
-                <Dumbbell className='w-10 h-10' style={{color: '#47A88D'}}/>
-                <h1 className="text-4xl font-extrabold" style={{ color: '#002E47' }}>Development Roadmap Tracker</h1>
+        <div className="p-3 sm:p-4 lg:p-6 md:p-10 min-h-screen bg-corporate-light-gray text-corporate-navy">
+            <div className='flex items-center gap-4 border-b-2 pb-2 mb-8' style={{borderColor: 'var(--corporate-teal-30)'}}>
+                <Dumbbell className='w-10 h-10' style={{color: 'var(--corporate-teal)'}}/>
+                <h1 className="text-4xl font-extrabold text-corporate-navy">Development Roadmap Tracker</h1>
             </div>
 
             {/* Progress Bar & Header */}
-            <Card title={`Roadmap Progress: Training Month ${data.currentMonth} of 24`} icon={Clock} accent='NAVY' className="bg-[#002E47]/10 border-4 border-[#002E47]/20 mb-8">
+            <Card title={`Roadmap Progress: Training Month ${data.currentMonth} of 24`} icon={Clock} accent='NAVY' className="bg-corporate-navy/10 border-4 border-corporate-navy/20 mb-8">
                 <div className="w-full bg-gray-200 rounded-full h-4 mb-2">
                     <div
-                        className="bg-[#47A88D] h-4 rounded-full transition-all duration-700"
+                        className="bg-corporate-teal h-4 rounded-full transition-all duration-700"
                         style={{ width: `${progressPercentage}%` }}
                     ></div>
                 </div>
-                <p className='text-sm font-medium text-[#002E47]'>
+                <p className='text-sm font-medium text-corporate-navy'>
                     {Math.round(progressPercentage)}% Complete. Next Tier Focus in {4 - ((data.currentMonth - 1) % 4)} months.
                 </p>
                 <div className='flex space-x-4 mt-4'>
-                    <Button onClick={handleResetPlan} variant='outline' className='text-xs px-4 py-2 text-[#E04E1B] border-[#E04E1B]/50 hover:bg-[#E04E1B]/10'>
+                    <Button onClick={handleResetPlan} variant='outline' className='text-xs px-4 py-2 text-corporate-orange border-corporate-orange/50 hover:bg-corporate-orange/10'>
                         Start Over / Re-Run Assessment
                     </Button>
-                    <Button onClick={() => {}} variant='outline' className='text-xs px-4 py-2 border-[#002E47] text-[#002E47] hover:bg-[#002E47]/10'>
+                    <Button onClick={() => {}} variant='outline' className='text-xs px-4 py-2 border-corporate-navy text-corporate-navy hover:bg-corporate-navy/10'>
                         <ShareIcon className="w-4 h-4 mr-1" /> Share Monthly Focus
                     </Button>
                 </div>
@@ -645,17 +586,17 @@ const TrackerDashboardView = ({ data, updatePdpData, navigate }) => {
                 <div className='lg:col-span-1 space-y-4 sm:space-y-6 lg:space-y-8 order-1'>
                     <RoadmapTimeline data={data} navigateToMonth={setViewMonth} viewMonth={viewMonth} />
                     
-                    <Card title={`Tier Mastery Status (${currentTierId})`} icon={Star} accent='NAVY' className='bg-[#FCFCFA] border-l-4 border-[#002E47] text-center'>
+                    <Card title={`Tier Mastery Status (${currentTierId})`} icon={Star} accent='NAVY' className='bg-corporate-light-gray border-l-4 border-corporate-navy text-center'>
                          <div className="relative w-32 h-32 mx-auto mb-4">
                             <svg viewBox="0 0 36 36" className="w-full h-32 h-full transform -rotate-90">
                                 <path className="text-gray-300" fill="none" stroke="currentColor" strokeWidth="3.8" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
-                                <path className="text-[#47A88D]" fill="none" stroke="currentColor" strokeWidth="3.8" strokeDasharray={`${tierProgress.overallPercentage}, 100`} d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
+                                <path className="text-corporate-teal" fill="none" stroke="currentColor" strokeWidth="3.8" strokeDasharray={`${tierProgress.overallPercentage}, 100`} d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
                             </svg>
                             <div className="absolute top-0 left-0 w-full h-full flex items-center justify-center">
-                                <span className="text-xl sm:text-2xl sm:text-3xl font-extrabold text-[#002E47]">{tierProgress.overallPercentage}%</span>
+                                <span className="text-xl sm:text-2xl sm:text-3xl font-extrabold text-corporate-navy">{tierProgress.overallPercentage}%</span>
                             </div>
                         </div>
-                        <p className='text-md font-semibold text-[#002E47] mb-1'>{tierProgress.completedContent} / {tierProgress.totalContent} Content Reps Completed</p>
+                        <p className='text-md font-semibold text-corporate-navy mb-1'>{tierProgress.completedContent} / {tierProgress.totalContent} Content Reps Completed</p>
                         <p className='text-xs text-gray-600'>For Tier: **{LEADERSHIP_TIERS[currentTierId]?.name}**</p>
                     </Card>
 
@@ -679,11 +620,11 @@ const TrackerDashboardView = ({ data, updatePdpData, navigate }) => {
                     )}
 
                     {/* CONTENT CARD (Always Renders) */}
-                    <Card title={`Focus: ${monthPlan?.theme} (Training Month ${viewMonth})`} icon={TierIcon} accent='TEAL' className='border-l-8 border-[#47A88D]'>
+                    <Card title={`Focus: ${monthPlan?.theme} (Training Month ${viewMonth})`} icon={TierIcon} accent='TEAL' className='border-l-8 border-corporate-teal'>
 
                         {/* AI Monthly Briefing (Renders for all months) */}
-                        <div className='mb-4 p-4 rounded-xl bg-[#002E47]/10 border border-[#002E47]/20'>
-                            <h3 className='font-bold text-[#002E47] mb-1 flex items-center'><Activity className="w-4 h-4 mr-2 text-[#47A88D]" /> Monthly Executive Briefing</h3>
+                        <div className='mb-4 p-4 rounded-xl bg-corporate-navy/10 border border-corporate-navy/20'>
+                            <h3 className='font-bold text-corporate-navy mb-1 flex items-center'><Activity className="w-4 h-4 mr-2 text-corporate-teal" /> Monthly Executive Briefing</h3>
                             {briefingLoading && isCurrentView ? (
                                 <p className='text-sm text-gray-600 flex items-center'><div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-500 mr-2 rounded-full"></div> Drafting advice...</p>
                             ) : (
@@ -695,16 +636,16 @@ const TrackerDashboardView = ({ data, updatePdpData, navigate }) => {
                         
                         {/* Status / Difficulty (Renders for all months) */}
                         <div className='mb-4 text-sm border-t pt-4'>
-                            <p className='font-bold text-[#002E47]'>Tier: {LEADERSHIP_TIERS[currentTierId]?.name}</p>
+                            <p className='font-bold text-corporate-navy'>Tier: {LEADERSHIP_TIERS[currentTierId]?.name}</p>
                             <p className='text-gray-600'>Target Difficulty: **{selfRating >= 8 ? 'Mastery' : selfRating >= 5 ? 'Core' : 'Intro'}** (Self-Rating: {selfRating}/10)</p>
                             {lowRatingFlag && (
-                                <p className='font-semibold mt-1 flex items-center text-[#E04E1B]'>
+                                <p className='font-semibold mt-1 flex items-center text-corporate-orange'>
                                     <AlertTriangle className='w-4 h-4 mr-1' /> HIGH RISK TIER: Prioritize Content Completion.
                                 </p>
                             )}
                         </div>
 
-                        <h3 className='text-xl font-bold text-[#002E47] border-t pt-4 mt-4'>Required Content Reps (Lessons)</h3>
+                        <h3 className='text-xl font-bold text-corporate-navy border-t pt-4 mt-4'>Required Content Reps (Lessons)</h3>
                         <div className='space-y-3 mt-4'>
                             {requiredContent.map(item => {
                                 const isCompleted = item.status === 'Completed';
@@ -715,9 +656,9 @@ const TrackerDashboardView = ({ data, updatePdpData, navigate }) => {
                                 return (
                                     <div key={item.id} className='flex items-center justify-between p-3 bg-gray-50 rounded-xl shadow-sm'>
                                         <div className='flex flex-col'>
-                                            <p className={`font-semibold text-sm ${isCompleted && isPastOrCurrent ? 'line-through text-gray-500' : 'text-[#002E47]'}`}>
+                                            <p className={`font-semibold text-sm ${isCompleted && isPastOrCurrent ? 'line-through text-gray-500' : 'text-corporate-navy'}`}>
                                                 {item.title} ({item.type})
-                                                {lowRatingFlag && <span className='ml-2 text-xs text-[#E04E1B] font-extrabold'>(CRITICAL)</span>}
+                                                {lowRatingFlag && <span className='ml-2 text-xs text-corporate-orange font-extrabold'>(CRITICAL)</span>}
                                             </p>
                                             <p className='text-xs text-gray-600'>~{item.duration} min | Difficulty: {item.difficulty}</p>
                                         </div>
@@ -753,23 +694,23 @@ const TrackerDashboardView = ({ data, updatePdpData, navigate }) => {
                     {/* REFLECTION AND ADVANCEMENT CARDS (Only render if current month) */}
                     {isCurrentView && (
                     <>
-                        <Card title="Monthly Reflection" icon={Lightbulb} accent="NAVY" className='bg-[#002E47]/10 border-2 border-[#002E47]/20'>
+                        <Card title="Monthly Reflection" icon={Lightbulb} accent="NAVY" className='bg-corporate-navy/10 border-2 border-corporate-navy/20'>
                             <p className="text-gray-700 text-sm mb-4">
                                 Reflect on the growth you achieved this month. How did the content/reps impact your daily leadership behavior? (**Minimum 50 characters required**)
                             </p>
                             <textarea
                                 value={localReflection} 
                                 onChange={(e) => setLocalReflection(e.target.value)}
-                                className="w-full p-3 border border-gray-300 rounded-xl focus:ring-[#47A88D] focus:border-[#47A88D] h-40"
+                                className="w-full p-3 border border-gray-300 rounded-xl focus:ring-corporate-teal focus:border-corporate-teal h-40"
                                 placeholder="My reflection (required)..."
                                 readOnly={!isCurrentView}
                             ></textarea>
                             {isCurrentView && (
                                 <div className='flex justify-between items-center mt-1'>
-                                    <p className={`text-xs ${localReflection.length < 50 ? 'text-[#E04E1B]' : 'text-[#47A88D]'}`}>
+                                    <p className={`text-xs ${localReflection.length < 50 ? 'text-corporate-orange' : 'text-corporate-teal'}`}>
                                         {localReflection.length} / 50 characters written.
                                     </p>
-                                    <span className={`text-xs font-semibold ${isSaving ? 'text-gray-500' : 'text-[#47A88D]'}`}>
+                                    <span className={`text-xs font-semibold ${isSaving ? 'text-gray-500' : 'text-corporate-teal'}`}>
                                         {isSaving ? 'Saving...' : 'Reflection ready'}
                                     </span>
                                 </div>
@@ -780,42 +721,42 @@ const TrackerDashboardView = ({ data, updatePdpData, navigate }) => {
                                  <Button
                                     onClick={handleSaveReflection}
                                     disabled={isSaving || localReflection === monthPlan?.reflectionText || localReflection.length === 0}
-                                    className='w-full mt-4 bg-[#002E47] hover:bg-gray-700'
+                                    className='w-full mt-4 bg-corporate-navy hover:bg-gray-700'
                                 >
                                     {isSaving ? 'Saving Reflection...' : 'Save Reflection'}
                                 </Button>
                             )}
                         </Card>
 
-                        <Card title="Recalibrate Skill Assessment" icon={Activity} accent='ORANGE' className='bg-[#E04E1B]/10 border-4 border-[#E04E1B]'>
+                        <Card title="Recalibrate Skill Assessment" icon={Activity} accent='ORANGE' className='bg-corporate-orange/10 border-4 border-corporate-orange'>
                             <p className="text-gray-700 text-sm mb-4">
                                 Feel like you've mastered this tier? Re-run your initial **Self-Ratings** to check your progress and generate an **accelerated, revised roadmap** to match your new skill level.
                             </p>
                             <Button
                                 onClick={handleResetPlan} 
                                 variant="secondary"
-                                className='w-full bg-[#E04E1B] hover:bg-red-700'
+                                className='w-full bg-corporate-orange hover:bg-red-700'
                             >
                                 <Target className='w-4 h-4 mr-2' /> Re-Run Assessment
                             </Button>
                         </Card>
                         
-                        <Card title="Advance Roadmap" icon={CornerRightUp} accent='TEAL' className='bg-[#47A88D]/10 border-4 border-[#47A88D]'>
+                        <Card title="Advance Roadmap" icon={CornerRightUp} accent='TEAL' className='bg-corporate-teal/10 border-4 border-corporate-teal'>
                             <p className='text-sm text-gray-700 mb-4'>
                                 Once all content and your reflection are complete, lock in your progress and move to **Training Month {data.currentMonth + 1}** of your Roadmap (Progressive Overload).
                             </p>
                             <Button
                                 onClick={handleCompleteMonth}
                                 disabled={isSaving || !isReadyToComplete}
-                                className='w-full bg-[#47A88D] hover:bg-[#47A88D]'
+                                className='w-full bg-corporate-teal hover:bg-corporate-teal'
                             >
                                 {isSaving ? 'Processing...' : `Complete Month ${data.currentMonth} and Advance`}
                             </Button>
                             {!allContentCompleted && (
-                                <p className='text-[#E04E1B] text-xs mt-2'>* Finish all content reps first.</p>
+                                <p className='text-corporate-orange text-xs mt-2'>* Finish all content reps first.</p>
                             )}
                             {allContentCompleted && localReflection.length < 50 && (
-                                <p className='text-[#E04E1B] text-xs mt-2'>* Reflection required (50 chars min).</p>
+                                <p className='text-corporate-orange text-xs mt-2'>* Reflection required (50 chars min).</p>
                             )}
                         </Card>
                     </>
@@ -888,10 +829,10 @@ const PlanGeneratorView = ({ userId, saveNewPlan, navigate, setGeneratedPlanData
     };
 
     return (
-        <div className="p-3 sm:p-4 lg:p-6 md:p-10 min-h-screen" style={{ background: '#FCFCFA', color: '#002E47' }}>
-            <div className='flex items-center gap-4 border-b-2 pb-2 mb-8' style={{borderColor: '#47A88D'+'30'}}>
-                <Dumbbell className='w-10 h-10' style={{color: '#47A88D'}}/>
-                <h1 className="text-4xl font-extrabold" style={{ color: '#002E47' }}>Personalized Arena Assessment</h1>
+        <div className="p-3 sm:p-4 lg:p-6 md:p-10 min-h-screen bg-corporate-light-gray text-corporate-navy">
+            <div className='flex items-center gap-4 border-b-2 pb-2 mb-8' style={{borderColor: 'var(--corporate-teal-30)'}}>
+                <Dumbbell className='w-10 h-10 text-corporate-teal'/>
+                <h1 className="text-4xl font-extrabold text-corporate-navy">Personalized Arena Assessment</h1>
             </div>
             <p className="text-lg text-gray-600 mb-8 max-w-3xl">Apply the principle of **Progressive Overload**. Answer 10 core questions (1-5 scale) to instantly map your skill gaps and generate a 2-year Roadmap designed for accelerating growth.</p>
 
@@ -901,13 +842,13 @@ const PlanGeneratorView = ({ userId, saveNewPlan, navigate, setGeneratedPlanData
                     
                     {ASSESSMENT_QUESTIONS.map(q => {
                         const answer = assessmentAnswers[q.id] || 3; // Default display score is 3
-                        const scoreColor = answer >= 4 ? '#47A88D' : answer <= 2 ? '#E04E1B' : '#E04E1B';
+                        const scoreColor = answer >= 4 ? 'var(--corporate-teal)' : 'var(--corporate-orange)';
 
                         return (
                             <div key={q.id} className="mb-6 border p-3 rounded-lg bg-gray-50">
-                                <p className="font-semibold text-[#002E47] mb-2 text-sm">{q.id}. {q.text}</p>
+                                <p className="font-semibold text-corporate-navy mb-2 text-sm">{q.id}. {q.text}</p>
                                 <div className='flex flex-col space-y-1'>
-                                    <p className="font-semibold text-[#002E47] flex justify-between">
+                                    <p className="font-semibold text-corporate-navy flex justify-between">
                                         <span className='text-sm text-gray-600'>Rating:</span>
                                         <span className='text-xl font-extrabold' style={{ color: scoreColor }}>{answer} / 5</span>
                                     </p>
@@ -928,7 +869,7 @@ const PlanGeneratorView = ({ userId, saveNewPlan, navigate, setGeneratedPlanData
                             </div>
                         );
                     })}
-                    {!allAnswered && <p className='text-[#E04E1B] text-xs mt-2'>* Please answer all 10 questions to continue.</p>}
+                    {!allAnswered && <p className='text-corporate-orange text-xs mt-2'>* Please answer all 10 questions to continue.</p>}
                 </Card>
                 
                 <Card title="2. Final Input" icon={MessageSquare} accent='ORANGE'>
@@ -936,15 +877,15 @@ const PlanGeneratorView = ({ userId, saveNewPlan, navigate, setGeneratedPlanData
                     <textarea
                         value={openEndedGoal}
                         onChange={(e) => setOpenEndedGoal(e.target.value)}
-                        className="w-full p-3 border border-gray-300 rounded-xl focus:ring-[#E04E1B] focus:border-[#E04E1B] h-20"
+                        className="w-full p-3 border border-gray-300 rounded-xl focus:ring-corporate-orange focus:border-corporate-orange h-20"
                         placeholder="What’s one leadership behavior you most want to strengthen in the next 90 days?"
                     ></textarea>
                     
                     <label className="block text-sm font-medium text-gray-700 mt-4 mb-1">Overall Confidence (1-10 Scale)</label>
                     <div className='flex flex-col space-y-1'>
-                        <p className="font-semibold text-[#002E47] flex justify-between">
+                        <p className="font-semibold text-corporate-navy flex justify-between">
                             <span className='text-sm text-gray-600'>Overall Leadership Confidence:</span>
-                            <span className='text-xl font-extrabold' style={{ color: '#002E47' }}>{overallConfidence} / 10</span>
+                            <span className='text-xl font-extrabold' style={{ color: 'var(--corporate-navy)' }}>{overallConfidence} / 10</span>
                         </p>
                         <input
                             type="range"
@@ -952,7 +893,7 @@ const PlanGeneratorView = ({ userId, saveNewPlan, navigate, setGeneratedPlanData
                             value={overallConfidence}
                             onChange={(e) => setOverallConfidence(parseInt(e.target.value))}
                             className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer range-lg"
-                            style={{ accentColor: '#002E47' }}
+                            style={{ accentColor: 'var(--corporate-navy)' }}
                         />
                     </div>
                 </Card>
@@ -975,7 +916,7 @@ const PlanGeneratorView = ({ userId, saveNewPlan, navigate, setGeneratedPlanData
 const PlanReviewScreen = ({ generatedPlan, navigate, clearReviewData, finalizeWithData }) => { 
     if (!generatedPlan || !generatedPlan.userPlan || !generatedPlan.userPlan.leadershipProfile) return (
          <div className="p-4 sm:p-3 sm:p-4 lg:p-6 lg:p-8 min-h-screen">
-             <p className='text-xl text-[#E04E1B] font-bold'>Error: Personalized plan data is incomplete. Please re-run the assessment.</p>
+             <p className='text-xl text-corporate-orange font-bold'>Error: Personalized plan data is incomplete. Please re-run the assessment.</p>
              <Button onClick={() => navigate('/prof-dev-plan')} className='mt-4'>Go to Assessment</Button>
          </div>
     );
@@ -1000,13 +941,13 @@ const PlanReviewScreen = ({ generatedPlan, navigate, clearReviewData, finalizeWi
 
     const StatItem = ({ label, value, diff, unit = '', isPositiveBetter = true }) => {
         const isGood = isPositiveBetter ? diff > 0 : diff < 0;
-        const diffColor = diff === 0 ? '#47A88D' : isGood ? '#47A88D' : '#E04E1B';
+        const diffColor = diff === 0 ? 'var(--corporate-teal)' : isGood ? 'var(--corporate-teal)' : 'var(--corporate-orange)';
         const diffSign = diff > 0 ? '+' : '';
         return (
             <div className='flex justify-between items-center py-2 border-b border-gray-200'>
                 <span className='font-semibold'>{label}:</span>
                 <div className='text-right'>
-                    <span className={`font-bold text-lg mr-2`} style={{color: '#002E47'}}>{value} {unit}</span>
+                    <span className={`font-bold text-lg mr-2`} style={{color: 'var(--corporate-navy)'}}>{value} {unit}</span>
                     <span className={`text-xs font-semibold`} style={{ color: diffColor }}>({diffSign}{diff} {unit})</span>
                 </div>
             </div>
@@ -1031,24 +972,24 @@ const PlanReviewScreen = ({ generatedPlan, navigate, clearReviewData, finalizeWi
     return (
         <div className="page-corporate container-corporate animate-corporate-fade-in">
             <div className="content-full">
-                <div className='flex items-center gap-4 border-b-2 pb-2 mb-8' style={{borderColor: '#47A88D'+'30'}}>
-                <CheckCircle className='w-10 h-10' style={{color: '#47A88D'}}/>
-                <h1 className="text-4xl font-extrabold" style={{ color: '#002E47' }}>Roadmap Successfully Generated!</h1>
+                <div className='flex items-center gap-4 border-b-2 pb-2 mb-8' style={{borderColor: 'var(--corporate-teal)'+'30'}}>
+                <CheckCircle className='w-10 h-10' style={{color: 'var(--corporate-teal)'}}/>
+                <h1 className="text-4xl font-extrabold" style={{ color: 'var(--corporate-navy)' }}>Roadmap Successfully Generated!</h1>
             </div>
             <p className="text-lg text-gray-600 mb-8 max-w-3xl">Review your personalized Roadmap highlights below. Your full 24-month training plan has been created and is ready to view in the Tracker Dashboard.</p>
 
-            <Card title="Leadership Profile Snapshot" icon={Target} accent='ORANGE' className='mt-8 border-l-4 border-[#E04E1B] bg-[#E04E1B]/10'>
-                 <h3 className="text-xl font-extrabold text-[#002E47] mb-4">Your Top 3 Growth Focus Areas:</h3>
+            <Card title="Leadership Profile Snapshot" icon={Target} accent='ORANGE' className='mt-8 border-l-4 border-corporate-orange bg-corporate-orange/10'>
+                 <h3 className="text-xl font-extrabold text-corporate-navy mb-4">Your Top 3 Growth Focus Areas:</h3>
                  <div className='space-y-3 mb-6'>
                     {leadershipProfile.slice(0, 3).map((d, i) => (
                          <div key={d.dimension} className='p-3 bg-white rounded-lg shadow-sm border border-gray-200'>
-                            <p className='text-sm font-bold text-[#002E47]'>{i+1}. {d.dimension}</p>
+                            <p className='text-sm font-bold text-corporate-navy'>{i+1}. {d.dimension}</p>
                             <p className='text-xs text-gray-600'>Average Score: {d.score.toFixed(2)} / 5.00</p>
                         </div>
                     ))}
                 </div>
                 
-                <h3 className="text-xl font-extrabold text-[#002E47] mb-4">Comparison: Personalized vs. Generic</h3>
+                <h3 className="text-xl font-extrabold text-corporate-navy mb-4">Comparison: Personalized vs. Generic</h3>
                 <div className='space-y-1 text-sm text-gray-700'>
                     <StatItem 
                         label="Total Estimated Training Time" 
@@ -1077,7 +1018,7 @@ const PlanReviewScreen = ({ generatedPlan, navigate, clearReviewData, finalizeWi
                 </p>
                 
                 <div className='flex justify-between space-x-4 mt-6'>
-                    <Button onClick={handleStartOver} variant='outline' className='text-xs px-4 py-2 text-[#E04E1B] border-[#E04E1B]/50 hover:bg-[#E04E1B]/10'>
+                    <Button onClick={handleStartOver} variant='outline' className='text-xs px-4 py-2 text-corporate-orange border-corporate-orange/50 hover:bg-corporate-orange/10'>
                         <X className='w-4 h-4 mr-1'/> Start Over / Re-Run Assessment
                     </Button>
                     <Button onClick={handleFinalize} variant='primary'>
@@ -1158,8 +1099,8 @@ if (isLoading || pdpData === undefined) {
         return (
             <div className="p-4 sm:p-3 sm:p-4 lg:p-6 lg:p-8 min-h-screen flex items-center justify-center">
                 <div className="flex flex-col items-center">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#47A88D] mb-3"></div>
-                    <p className="text-[#47A88D] font-medium">Loading Personalized Development Roadmap...</p>
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-corporate-teal mb-3"></div>
+                    <p className="text-corporate-teal font-medium">Loading Personalized Development Roadmap...</p>
                 </div>
             </div>
         );

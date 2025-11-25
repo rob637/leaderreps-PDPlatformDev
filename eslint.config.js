@@ -32,6 +32,15 @@ export default [
       ...reactHooks.configs.recommended.rules,
       'no-unused-vars': ['warn', { varsIgnorePattern: '^[A-Z_]' }],
       'react-refresh/only-export-components': 'warn',
+      // UI Library Enforcement: Restrict imports of Button, Card to canonical UI library
+      'no-restricted-imports': ['warn', {
+        patterns: [
+          {
+            group: ['**/shared/Button*', '**/shared/Card*', '**/shared/UI*', '**/uiKit*', '**/CorporateUI*'],
+            message: 'Import UI components from "@ui" or "../ui" instead. Use the canonical UI library at src/components/ui.'
+          }
+        ]
+      }],
     },
   },
   prettier,
