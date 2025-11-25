@@ -3,13 +3,13 @@
 
 import React, { useEffect, useState } from 'react';
 import { 
-  CheckCircle, ArrowRight, Loader, 
+  CheckCircle, ArrowRight,
   TrendingUp, Target, Award, Clock, BarChart3, 
   Edit, RefreshCw, Calendar, Save, X, Plus, Trash2, FileX
 } from 'lucide-react';
 
 // Re-export Button and Card from canonical UI for backwards compatibility
-export { Button, Card } from '../../ui';
+export { Button, Card, LoadingSpinner, LoadingState } from '../../ui';
 
 /* =========================================================
    ProgressBar Component
@@ -107,24 +107,6 @@ export const StatCard = ({ label, value, color, trend }) => {
     </div>
   );
 };
-
-/* =========================================================
-   LoadingSpinner Component
-   (Used in DevelopmentPlan)
-========================================================= */
-export const LoadingSpinner = ({ message }) => (
-  <div className="flex items-center justify-center min-h-[50vh]">
-    <div className="text-center">
-      <div 
-        className="animate-spin rounded-full h-12 w-12 border-b-2 mx-auto mb-4" 
-        style={{ borderColor: 'var(--corporate-teal)' }} 
-      />
-      <p style={{ color: 'var(--corporate-navy)' }}>
-        {message || 'Loading...'}
-      </p>
-    </div>
-  </div>
-);
 
 /* =========================================================
    PlanGenerationLoader Component - COOL ANIMATION!

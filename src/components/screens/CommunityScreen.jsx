@@ -14,7 +14,7 @@ import {
     Users, MessageSquare, Briefcase, Bell, PlusCircle, User, Target, Filter, Clock,
     Star, CheckCircle, Award, Link, Send, Loader, Heart, X, UserPlus, Video
 } from 'lucide-react';
-import { Button, Card, LoadingSpinner, PageLayout } from '../ui';
+import { Button, Card, LoadingSpinner, PageLayout, NoWidgetsEnabled } from '../ui';
 
 /* =========================================================
    PALETTE (use CSS variables from src/styles/global.css)
@@ -598,17 +598,21 @@ const CommunityScreen = ({ simulatedTier }) => {
             badge={!hasCommunityAccess ? "Requires Premium" : undefined}
         >
             {/* Main Layout Grid (Sidebar + Content) */}
-            <div className={`grid grid-cols-1 lg:grid-cols-6 gap-6 max-w-7xl mx-auto ${!hasCommunityAccess ? 'opacity-60 pointer-events-none' : ''}`}>
-                {/* Sidebar Navigation */}
-                <aside className="lg:col-span-1 space-y-4 lg:sticky lg:top-6 self-start"> {/* Make sidebar sticky */}
-                    <WidgetRenderer widgetId="community-sidebar" scope={scope} />
-                </aside>
+            {navItems.length > 1 ? (
+                <div className={`grid grid-cols-1 lg:grid-cols-6 gap-6 max-w-7xl mx-auto ${!hasCommunityAccess ? 'opacity-60 pointer-events-none' : ''}`}>
+                    {/* Sidebar Navigation */}
+                    <aside className="lg:col-span-1 space-y-4 lg:sticky lg:top-6 self-start"> {/* Make sidebar sticky */}
+                        <WidgetRenderer widgetId="community-sidebar" scope={scope} />
+                    </aside>
 
-                {/* Main Content Area */}
-                <main className="lg:col-span-5">
-                    {renderContent()}
-                </main>
-            </div>
+                    {/* Main Content Area */}
+                    <main className="lg:col-span-5">
+                        {renderContent()}
+                    </main>
+                </div>
+            ) : (
+                <NoWidgetsEnabled moduleName="Community" />
+            )}
             
             {/* Unlock Section for Free Users */}
             {!hasCommunityAccess && (

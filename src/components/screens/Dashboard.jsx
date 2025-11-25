@@ -9,7 +9,7 @@ import { useFeatures } from '../../providers/FeatureProvider';
 import WidgetRenderer from '../admin/WidgetRenderer';
 import { 
   UnifiedAnchorEditorModal, CalendarSyncModal, 
-  ModeSwitch, StreakTracker, SaveIndicator
+  SaveIndicator
 } from './dashboard/DashboardComponents';
 import { 
   Sunrise, Moon, Flame, Trophy, Bell, Target, Calendar,
@@ -20,7 +20,7 @@ import {
 // --- ATOMIC COMPONENTS ---
 import { 
   Button, Card, CardHeader, CardTitle, CardContent, CardFooter,
-  Input, Textarea, Checkbox, Badge 
+  Input, Textarea, Checkbox, Badge, NoWidgetsEnabled 
 } from '../ui';
 
 // Dashboard Widget IDs (from widgetTemplates.js)
@@ -533,19 +533,6 @@ const Dashboard = () => {
                 {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
               </p>
             </div>
-            
-            <div className="flex items-center gap-3">
-              <StreakTracker 
-                streakCount={streakCount} 
-                streakCoins={streakCoins}
-                userEmail={user.email}
-              />
-              <ModeSwitch 
-                isArenaMode={isArenaMode} 
-                onToggle={handleToggleMode} 
-                isLoading={isTogglingMode}
-              />
-            </div>
           </div>
         </div>
       </div>
@@ -559,10 +546,7 @@ const Dashboard = () => {
         ))}
         
         {sortedFeatures.length === 0 && (
-          <div className="text-center py-16 text-slate-500">
-            <p className="text-lg font-medium mb-2">No widgets enabled</p>
-            <p className="text-sm">Go to Widget Lab in Admin Portal to enable dashboard widgets.</p>
-          </div>
+          <NoWidgetsEnabled moduleName="Dashboard" />
         )}
       </main>
 

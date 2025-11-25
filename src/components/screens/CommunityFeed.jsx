@@ -5,19 +5,10 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { useAppServices } from '../../services/useAppServices.jsx'; // cite: useAppServices.jsx
 
 // --- Icons ---
-import { Users, Send, MessageSquare, Heart, CornerRightUp, Award, Link, Settings, Loader, User } from 'lucide-react'; // Added Loader
+import { Users, Send, MessageSquare, Heart, CornerRightUp, Award, Link, Settings, User } from 'lucide-react';
 
 // --- UI Components ---
-import { Button } from '../ui';
-
-const LoadingSpinner = ({ message = "Loading..." }) => (
-    <div className="min-h-screen flex items-center justify-center bg-[#F9FAFB]"> 
-        <div className="flex flex-col items-center"> 
-            <Loader className="animate-spin h-12 w-12 mb-3 text-corporate-teal" /> 
-            <p className="font-semibold text-corporate-navy">{message}</p> 
-        </div> 
-    </div>
-);
+import { Button, LoadingState } from '../ui';
 
 /* =========================================================
    MOCK DATA (Local Fallback - Replace with Service/API)
@@ -162,7 +153,7 @@ const CommunityFeedScreen = () => {
       );
     }
     // Loading/Error States
-    if (isAppLoading) return <LoadingSpinner message="Loading Community Feed..." />;
+    if (isAppLoading) return <LoadingState fullPage message="Loading Community Feed..." />;
     if (appError) return <div className="p-4 text-red-500">Failed to load Community Feed: {appError.message}</div>;
 
     return (

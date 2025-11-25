@@ -7,21 +7,12 @@ import {
 } from "firebase/firestore";
 import { useAppServices } from '../../services/useAppServices.jsx';
 import { 
-  Loader, Download, Upload, Trash2, Save, Search, Edit, Plus, X,
+  Download, Upload, Trash2, Save, Search, Edit, Plus, X,
   LayoutDashboard, Target, Calendar, Lightbulb, Settings, Database,
   AlertTriangle, CheckCircle, FileText, Copy, RefreshCw, Eye, EyeOff,
   MessageSquare, Users, BookOpen, Film, Zap, ChevronDown, ChevronUp, GripVertical, ArrowLeft
 } from 'lucide-react';
-import { Button, Card, Badge } from '../ui';
-
-const LoadingSpinner = ({ message = "Loading..." }) => (
-  <div className="flex items-center justify-center p-12">
-    <div className="text-center">
-      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-corporate-teal mx-auto mb-4" />
-      <p className="text-slate-600">{message}</p>
-    </div>
-  </div>
-);
+import { Button, Card, Badge, LoadingState } from '../ui';
 
 /* =========================================================
    DATA STRUCTURE CONFIGURATION (ALL LOWERCASE KEYS)
@@ -374,7 +365,7 @@ const SubcollectionViewer = ({ tableConfig, userId }) => {
   };
 
   if (loading) {
-    return <LoadingSpinner message="Loading entries..." />;
+    return <LoadingState message="Loading entries..." />;
   }
 
   if (error) {
@@ -1058,7 +1049,7 @@ const TableViewer = ({ config, userId }) => {
   }
 
   if (loading) {
-    return <LoadingSpinner message={`Loading ${config.name}...`} />;
+    return <LoadingState message={`Loading ${config.name}...`} />;
   }
 
   if (error) {

@@ -3,17 +3,8 @@
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { useAppServices } from '../../services/useAppServices.jsx';
 import { getCourses } from '../../services/contentService.js';
-import { ArrowLeft, BookOpen, ChevronRight, Loader, AlertTriangle, ShieldCheck, Zap, Briefcase, Lightbulb, CheckCircle, X, CornerRightUp, Users, Calendar, Clock } from 'lucide-react';
-import { Button, Card } from '../ui';
-
-const LoadingSpinner = ({ message = "Loading..." }) => (
-  <div className="min-h-[300px] flex items-center justify-center bg-slate-50">
-    <div className="flex flex-col items-center">
-      <Loader className="animate-spin h-12 w-12 mb-3 text-corporate-teal" />
-      <p className="font-semibold text-corporate-navy">{message}</p>
-    </div>
-  </div>
-);
+import { ArrowLeft, BookOpen, ChevronRight, AlertTriangle, ShieldCheck, Zap, Briefcase, Lightbulb, CheckCircle, X, CornerRightUp, Users, Calendar, Clock } from 'lucide-react';
+import { Button, Card, LoadingState, Modal, ModalHeader, ModalTitle, ModalBody, ModalFooter } from '../ui';
 
 // --- Helper for dynamic colors ---
 const getAccentColorClass = (tierIdOrColorKey) => {
@@ -44,28 +35,27 @@ const AICoachingSimulator = ({ item, isCourse = false }) => (
 );
 
 const ResourceDetailModal = ({ isVisible, onClose, resource, skill }) => {
-    if (!isVisible || !resource || !skill) return null;
+    if (!resource || !skill) return null;
 
     return (
-        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 animate-in fade-in duration-200 backdrop-blur-sm">
-            <div className="bg-white p-6 rounded-2xl shadow-2xl max-w-lg w-full relative animate-in zoom-in-95 slide-in-from-bottom-5 duration-300 overflow-hidden">
-                <div className="flex justify-between items-center pb-3 mb-4 border-b border-slate-100">
-                    <h3 className="text-lg font-bold text-corporate-navy">{resource.title}</h3>
-                    <Button onClick={onClose} variant="ghost" size="sm" className="!p-1 text-slate-400 hover:text-red-600 absolute top-3 right-3">
-                        <X className="w-5 h-5" />
-                    </Button>
-                </div>
+        <Modal isOpen={isVisible} onClose={onClose}>
+            <ModalHeader>
+                <ModalTitle>{resource.title}</ModalTitle>
+            </ModalHeader>
+            <ModalBody>
                 <p className="text-xs font-semibold uppercase mb-1 text-corporate-teal">Skill: {skill.name}</p>
                 <p className="text-sm text-slate-600 mb-4">{resource.summary || 'Details unavailable.'}</p>
                 {resource.type && <p className="text-xs text-slate-500 mb-1">Type: {resource.type}</p>}
-                 {resource.url && (
+                {resource.url && (
                     <a href={resource.url} target="_blank" rel="noopener noreferrer" className="mt-4 inline-block text-blue-600 hover:underline text-sm font-medium group">
                         View Resource <span className="inline-block transition-transform group-hover:translate-x-1">&rarr;</span>
                     </a>
-                 )}
-                <Button onClick={onClose} variant="outline" size="sm" className="mt-6 w-full">Close</Button>
-            </div>
-        </div>
+                )}
+            </ModalBody>
+            <ModalFooter>
+                <Button onClick={onClose} variant="outline" size="sm">Close</Button>
+            </ModalFooter>
+        </Modal>
     );
 };
 
@@ -417,7 +407,7 @@ export default function AppliedLeadershipScreen() {
                 Explore leadership skills, access curated resources, practice with AI coaching, and build mastery through focused reps. <strong className="text-corporate-navy">Practice over theory.</strong>
             </p>
 
-            {isAppLoading && <LoadingSpinner message="Loading course library..." />}
+            {isAppLoading && <LoadingState message="Loading course library..." />}
             {!isAppLoading && appError && (
                  <div className="text-red-600 italic text-center py-10 bg-red-50 p-4 rounded-xl border border-red-200 max-w-2xl mx-auto flex items-center justify-center gap-2">
                      <AlertTriangle className="w-5 h-5 text-red-500"/>

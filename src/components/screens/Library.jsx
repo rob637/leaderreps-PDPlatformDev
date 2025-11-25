@@ -4,7 +4,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { BookOpen, ShieldCheck, Film, Sparkles, Target, Trophy, Users, TrendingUp, Star, Zap, PlayCircle, FileText } from 'lucide-react';
 import { useAppServices } from '../../services/useAppServices.jsx';
 import { membershipService } from '../../services/membershipService.js';
-import { PageLayout, PageGrid } from '../ui';
+import { PageLayout, PageGrid, NoWidgetsEnabled } from '../ui';
 import { getReadings, getVideos, getCourses } from '../../services/contentService';
 import { useFeatures } from '../../providers/FeatureProvider';
 import WidgetRenderer from '../admin/WidgetRenderer';
@@ -180,17 +180,21 @@ const Library = ({ simulatedTier, isDeveloperMode }) => {
       backTo="dashboard"
     >
       <WidgetRenderer widgetId="content-library-main" scope={scope}>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-5xl mx-auto">
-          {libraryItems.map(item => (
-            <LibraryCard 
-              key={item.id}
-              {...item}
-              onClick={() => handleCardClick(item)}
-              isLocked={!membershipService.hasAccess(currentTier, item.requiredTier)}
-              requiredTier={item.requiredTier}
-            />
-          ))}
-        </div>
+        {libraryItems.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-5xl mx-auto">
+            {libraryItems.map(item => (
+              <LibraryCard 
+                key={item.id}
+                {...item}
+                onClick={() => handleCardClick(item)}
+                isLocked={!membershipService.hasAccess(currentTier, item.requiredTier)}
+                requiredTier={item.requiredTier}
+              />
+            ))}
+          </div>
+        ) : (
+          <NoWidgetsEnabled moduleName="Content" />
+        )}
       </WidgetRenderer>
     </PageLayout>
   );

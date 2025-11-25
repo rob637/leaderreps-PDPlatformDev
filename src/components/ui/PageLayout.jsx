@@ -163,6 +163,28 @@ export const PageEmptyState = ({
 );
 
 /**
+ * NoWidgetsEnabled - Standardized empty state when no widgets are configured for a module
+ * 
+ * @param {string} moduleName - Name of the module (e.g., "Dashboard", "Content", "Community")
+ * 
+ * @example
+ * {enabledWidgets.length === 0 && <NoWidgetsEnabled moduleName="Dashboard" />}
+ */
+export const NoWidgetsEnabled = ({ moduleName = 'this module' }) => (
+  <div className="text-center py-16 text-slate-500 bg-slate-50 rounded-2xl border border-dashed border-slate-200">
+    <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-slate-100 flex items-center justify-center">
+      <svg className="w-8 h-8 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z" />
+      </svg>
+    </div>
+    <p className="text-lg font-medium mb-2 text-corporate-navy">No widgets enabled</p>
+    <p className="text-sm text-slate-500">
+      Go to <span className="font-semibold text-corporate-teal">Widget Lab</span> in Admin Portal to enable {moduleName} widgets.
+    </p>
+  </div>
+);
+
+/**
  * PageSection - Consistent section wrapper within a page
  * 
  * @param {string} title - Section title

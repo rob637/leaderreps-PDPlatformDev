@@ -15,6 +15,7 @@ import { Card } from '../../ui/Card';
 import { Input, Textarea } from '../../ui/Input';
 import { Checkbox } from '../../ui/Checkbox';
 import { Badge } from '../../ui/Badge';
+import { Modal, ModalHeader, ModalTitle, ModalBody, ModalFooter } from '../../ui/Modal';
 
 // --- Helper function to format timestamps ---
 const formatTimestamp = (timestamp) => {
@@ -121,87 +122,72 @@ export const UnifiedAnchorEditorModal = ({
         }
     };
 
-    if (!isOpen) return null;
-
     return (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-2xl p-6 max-w-md w-full shadow-xl max-h-[90vh] flex flex-col">
-                <div className="flex justify-between items-center mb-6 border-b pb-4 border-slate-100">
-                    <h2 className="text-xl font-bold text-corporate-navy flex items-center gap-2">
-                        <Anchor className="w-6 h-6 text-corporate-teal" />
-                        Define Your Leadership Anchors
-                    </h2>
-                    <button onClick={onClose} className="p-1 rounded-full hover:bg-slate-100">
-                        <X className="w-5 h-5" />
-                    </button>
-                </div>
+        <Modal isOpen={isOpen} onClose={onClose} className="max-w-md max-h-[90vh]">
+            <ModalHeader>
+                <ModalTitle className="flex items-center gap-2">
+                    <Anchor className="w-6 h-6 text-corporate-teal" />
+                    Define Your Leadership Anchors
+                </ModalTitle>
+            </ModalHeader>
+            <ModalBody className="overflow-y-auto space-y-4">
+                <AnchorInputSection
+                    title="1. Identity Anchor"
+                    icon={User}
+                    description='Complete the statement: "I am the kind of leader who..."'
+                    value={identity}
+                    setValue={setIdentity}
+                    suggestions={identitySuggestions}
+                    onSelectSuggestion={setIdentity}
+                />
+
+                <AnchorInputSection
+                    title="2. Habit Anchor (Cue)"
+                    icon={Clock}
+                    description='Your daily cue: "When I..."'
+                    value={habit}
+                    setValue={setHabit}
+                    suggestions={habitSuggestions}
+                    onSelectSuggestion={setHabit}
+                />
                 
-                <div className="overflow-y-auto flex-1 space-y-4 pr-2">
-                    <AnchorInputSection
-                        title="1. Identity Anchor"
-                        icon={User}
-                        description='Complete the statement: "I am the kind of leader who..."'
-                        value={identity}
-                        setValue={setIdentity}
-                        suggestions={identitySuggestions}
-                        onSelectSuggestion={setIdentity}
-                    />
-
-                    <AnchorInputSection
-                        title="2. Habit Anchor (Cue)"
-                        icon={Clock}
-                        description='Your daily cue: "When I..."'
-                        value={habit}
-                        setValue={setHabit}
-                        suggestions={habitSuggestions}
-                        onSelectSuggestion={setHabit}
-                    />
-                    
-                    <AnchorInputSection
-                        title="3. Your 'Why It Matters'"
-                        icon={Zap}
-                        description='Your core purpose: Why does this leadership journey matter to you?'
-                        value={why}
-                        setValue={setWhy}
-                        suggestions={whySuggestions}
-                        onSelectSuggestion={setWhy}
-                        isTextArea={true}
-                    />
-                </div>
-
-                <div className="mt-4 pt-4 border-t border-slate-200 flex gap-3">
-                    <Button onClick={handleSave} variant="primary" className="flex-1">
-                        <Save className="w-4 h-4 mr-2" /> Save All Anchors
-                    </Button>
-                    <Button onClick={onClose} variant="outline" className="flex-1">
-                        Cancel
-                    </Button>
-                </div>
-            </div>
-        </div>
+                <AnchorInputSection
+                    title="3. Your 'Why It Matters'"
+                    icon={Zap}
+                    description='Your core purpose: Why does this leadership journey matter to you?'
+                    value={why}
+                    setValue={setWhy}
+                    suggestions={whySuggestions}
+                    onSelectSuggestion={setWhy}
+                    isTextArea={true}
+                />
+            </ModalBody>
+            <ModalFooter>
+                <Button onClick={onClose} variant="outline" className="flex-1">
+                    Cancel
+                </Button>
+                <Button onClick={handleSave} variant="primary" className="flex-1">
+                    <Save className="w-4 h-4 mr-2" /> Save All Anchors
+                </Button>
+            </ModalFooter>
+        </Modal>
     );
 };
 
 export const CalendarSyncModal = ({ isOpen, onClose }) => {
-    if (!isOpen) return null;
-
     const handleSync = (provider) => {
         alert(`Integration with ${provider} is coming soon!`);
     };
 
     return (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-2xl p-6 max-w-md w-full shadow-xl">
-                <div className="flex justify-between items-center mb-6 border-b pb-4 border-slate-100">
-                    <h2 className="text-xl font-bold text-corporate-navy flex items-center gap-2">
-                        <Calendar className="w-6 h-6 text-corporate-teal" />
-                        Calendar Integration
-                    </h2>
-                    <button onClick={onClose} className="p-1 rounded-full hover:bg-slate-100">
-                        <X className="w-5 h-5" />
-                    </button>
-                </div>
-                
+        <Modal isOpen={isOpen} onClose={onClose} className="max-w-md">
+            <ModalHeader>
+                <ModalTitle className="flex items-center gap-2">
+                    <Calendar className="w-6 h-6 text-corporate-teal" />
+                    Calendar Integration
+                </ModalTitle>
+            </ModalHeader>
+            <ModalBody>
                 <p className="text-slate-600 mb-6">
                     Sync your Daily Reps and Coaching Sessions directly to your personal calendar. Never miss a beat in your leadership journey.
                 </p>
@@ -237,8 +223,8 @@ export const CalendarSyncModal = ({ isOpen, onClose }) => {
                         Secure one-way sync. We never read your personal events.
                     </p>
                 </div>
-            </div>
-        </div>
+            </ModalBody>
+        </Modal>
     );
 };
 
@@ -303,42 +289,35 @@ export const TabButton = ({ active, onClick, label, minimized = false }) => (
 // ... (Other components like MorningBookend, EveningBookend are omitted for brevity as they are not used in the new Dashboard. 
 // If they are needed, they should be refactored similarly. For now, I'm keeping the file clean with just the used exports and minimal legacy support.)
 
-export const SuggestionModal = ({ title, prefix, suggestions, onSelect, onClose }) => (
-  <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-    <div className="bg-white rounded-2xl p-3 sm:p-4 lg:p-6 max-w-2xl w-full max-h-[80vh] overflow-hidden flex flex-col">
-      <div className="flex items-center justify-between mb-4">
-        <h2 className="text-xl sm:text-2xl font-bold text-corporate-navy">
-          {title}
-        </h2>
-        <button onClick={onClose} className="text-gray-400 hover:text-gray-600 transition-colors">
-          <X className="w-6 h-6" />
-        </button>
-      </div>
-      <div className="overflow-y-auto flex-1 space-y-2">
-        {suggestions.map((suggestion, index) => (
-          <button
-            key={index}
-            onClick={() => onSelect(suggestion.value || suggestion.text || suggestion)}
-            className="w-full text-left p-4 rounded-lg border-2 border-slate-200 transition-all hover:border-corporate-teal hover:bg-teal-50"
-          >
-            <p className="text-sm font-medium text-slate-700">
-              {prefix} <strong>{suggestion.value || suggestion.text || suggestion}</strong>
+export const SuggestionModal = ({ title, prefix, suggestions, onSelect, onClose, isOpen = true }) => (
+  <Modal isOpen={isOpen} onClose={onClose} className="max-w-2xl max-h-[80vh]">
+    <ModalHeader>
+      <ModalTitle>{title}</ModalTitle>
+    </ModalHeader>
+    <ModalBody className="overflow-y-auto space-y-2">
+      {suggestions.map((suggestion, index) => (
+        <button
+          key={index}
+          onClick={() => onSelect(suggestion.value || suggestion.text || suggestion)}
+          className="w-full text-left p-4 rounded-lg border-2 border-slate-200 transition-all hover:border-corporate-teal hover:bg-teal-50"
+        >
+          <p className="text-sm font-medium text-slate-700">
+            {prefix} <strong>{suggestion.value || suggestion.text || suggestion}</strong>
+          </p>
+          {suggestion.description && (
+            <p className="text-xs mt-1 text-slate-500">
+              {suggestion.description}
             </p>
-            {suggestion.description && (
-              <p className="text-xs mt-1 text-slate-500">
-                {suggestion.description}
-              </p>
-            )}
-          </button>
-        ))}
-      </div>
-      <div className="mt-4 pt-4 border-t border-slate-200">
-        <Button onClick={onClose} variant="outline" className="w-full">
-          Close
-        </Button>
-      </div>
-    </div>
-  </div>
+          )}
+        </button>
+      ))}
+    </ModalBody>
+    <ModalFooter>
+      <Button onClick={onClose} variant="outline" className="w-full">
+        Close
+      </Button>
+    </ModalFooter>
+  </Modal>
 );
 
 export const SaveIndicator = ({ show, message = "Saved!" }) => {

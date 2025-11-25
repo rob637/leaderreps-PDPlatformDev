@@ -17,7 +17,7 @@ import DetailedPlanView from './developmentplan/DetailedPlanView';
 import MilestoneTimeline from './developmentplan/MilestoneTimeline';
 import { Button, Card, EmptyState } from './developmentplan/DevPlanComponents';
 import { generatePlanFromAssessment, normalizeSkillCatalog } from './developmentplan/devPlanUtils';
-import { PageLayout } from '../ui';
+import { PageLayout, NoWidgetsEnabled } from '../ui';
 
 // FIXED: Import adapter utilities
 import { 

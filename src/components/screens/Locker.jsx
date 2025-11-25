@@ -1,6 +1,6 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import { useAppServices } from '../../services/useAppServices';
-import { Card, PageLayout } from '../ui';
+import { Card, PageLayout, NoWidgetsEnabled } from '../ui';
 import { Archive, CheckCircle, Calendar, Trophy, BookOpen } from 'lucide-react';
 import { useFeatures } from '../../providers/FeatureProvider';
 import WidgetRenderer from '../admin/WidgetRenderer';
@@ -218,13 +218,17 @@ const Locker = () => {
       backTo="dashboard"
       accentColor="teal"
     >
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {sortedFeatures.map(featureId => (
-          <React.Fragment key={featureId}>
-            {renderers[featureId] ? renderers[featureId]() : null}
-          </React.Fragment>
-        ))}
-      </div>
+      {sortedFeatures.length > 0 ? (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {sortedFeatures.map(featureId => (
+            <React.Fragment key={featureId}>
+              {renderers[featureId] ? renderers[featureId]() : null}
+            </React.Fragment>
+          ))}
+        </div>
+      ) : (
+        <NoWidgetsEnabled moduleName="Your Locker" />
+      )}
     </PageLayout>
   );
 };

@@ -2,6 +2,9 @@
 // Canonical UI Component Library - Barrel Exports
 // All UI components should be imported from this file
 
+// Design Tokens (Single Source of Truth for design values)
+export { default as designTokens } from './design-tokens';
+
 // Core Components
 export { Button } from './Button';
 export { 
@@ -35,7 +38,7 @@ export {
 export { Heading, Text, PageHeader } from './Typography';
 
 // Layout Components
-export { PageLayout, PageEmptyState, PageSection, PageGrid } from './PageLayout';
+export { PageLayout, PageEmptyState, PageSection, PageGrid, NoWidgetsEnabled } from './PageLayout';
 
 // Widget Components
 export { WidgetCard, WidgetHeader, WidgetGrid } from './WidgetCard';
@@ -52,6 +55,25 @@ export {
   SkeletonStat, 
   SkeletonList 
 } from './LoadingState';
+
+// Tab Components
+export { Tabs, TabsList, TabsTrigger, TabsContent, TabButton } from './Tabs';
+
+// Data Display Components
+export { DataTable, TableCellText, TableCellBadge } from './DataTable';
+
+// Filter Components
+export { 
+  FilterBar, 
+  FilterSearch, 
+  FilterSelect, 
+  FilterChips, 
+  FilterToggle,
+  ActiveFilters 
+} from './FilterBar';
+
+// List Components
+export { List, ListItem, ListItemAction, ListSection } from './ListItem';
 
 // Feature Components
 export { default as MembershipGate } from './MembershipGate';

@@ -4,18 +4,11 @@ import { getReadings } from '../../services/contentService.js';
 import ConfigError from '../../components/system/ConfigError.jsx';
 import {
   BookOpen, Target, CheckCircle, Clock, AlertTriangle, MessageSquare, Filter, TrendingUp,
-  Star, Search as SearchIcon, Cpu, Zap, Info, Check, Loader, ArrowLeft
+  Star, Search as SearchIcon, Cpu, Zap, Info, Check, ArrowLeft
 } from 'lucide-react';
 import { DIMENSION_TO_TIER_MAP } from '../../data/LeadershipTiers.js';
 import { logWidthMeasurements } from '../../utils/debugWidth.js';
-import { Button, Card, PageLayout } from '../ui';
-
-const LoadingSpinner = ({ message = "Loading..." }) => (
-  <div className="min-h-[60vh] flex flex-col items-center justify-center space-y-4">
-    <Loader className="w-10 h-10 text-corporate-teal animate-spin" />
-    <p className="text-slate-600 font-medium">{message}</p>
-  </div>
-);
+import { Button, Card, PageLayout, LoadingState } from '../ui';
 
 // --- Complexity Mapping ---
 const COMPLEXITY_MAP = {
@@ -596,7 +589,7 @@ export default function BusinessReadingsScreen() {
       handleAiSubmit(e, { callSecureGeminiAPI, hasGeminiKey, GEMINI_MODEL }, selectedBook, aiQuery, setIsSubmittingAi, setAiResponse);
   }, [aiQuery, selectedBook, callSecureGeminiAPI, hasGeminiKey, GEMINI_MODEL]);
 
-  if (isAppLoading || isLoadingCms) return <LoadingSpinner message="Loading Reading Hub..." />;
+  if (isAppLoading || isLoadingCms) return <LoadingState message="Loading Reading Hub..." />;
   if (appError) return <ConfigError message={`Failed to load Reading Hub data: ${appError.message}`} />;
 
   return (

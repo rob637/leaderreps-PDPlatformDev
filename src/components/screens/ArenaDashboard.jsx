@@ -10,7 +10,7 @@ import {
   Edit3, Loader
 } from 'lucide-react';
 import { useDashboard } from './dashboard/DashboardHooks.jsx';
-import { UnifiedAnchorEditorModal, StreakTracker } from './dashboard/DashboardComponents.jsx';
+import { UnifiedAnchorEditorModal } from './dashboard/DashboardComponents.jsx';
 
 const ArenaDashboard = (props) => {
   const { 
@@ -219,11 +219,6 @@ const ArenaDashboard = (props) => {
             "{dailyQuote}"
           </p>
         </header>
-
-        {/* FEATURE: Gamification Engine */}
-        <div className="flex justify-end">
-            <StreakTracker streakCount={streakCount} streakCoins={streakCoins} userEmail={user?.email} />
-        </div>
 
         {/* FEATURE: Executive Summary Widget */}
         <div className="bg-corporate-navy text-white p-6 rounded-2xl shadow-lg flex items-center justify-between">

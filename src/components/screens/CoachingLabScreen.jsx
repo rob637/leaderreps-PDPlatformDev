@@ -15,7 +15,7 @@ import { useNavigation } from '../../providers/NavigationProvider.jsx';
 import { useFeatures } from '../../providers/FeatureProvider';
 import { AlertTriangle, BarChart3, Beaker, Briefcase, CheckCircle, Clock, CornerRightUp, Cpu, Eye, HeartPulse, Info, Lightbulb, Mic, Play, PlusCircle, Send, ShieldCheck, Star, Target, TrendingUp, Users, X, Zap, ArrowLeft } from 'lucide-react'; 
 import { COLORS, COMPLEXITY_MAP } from './labs/labConstants.js';
-import { Button, Card, Tooltip, PageLayout } from '../ui';
+import { Button, Card, Tooltip, PageLayout, NoWidgetsEnabled } from '../ui';
 
 const mdToHtml = async (markdown) => {
   let html = markdown;
@@ -1700,18 +1700,22 @@ export default function CoachingLabScreen({ simulatedTier }) {
                         navigate={navigate}
                         badge={!hasCoachingAccess ? "Requires Premium" : undefined}
                     >
-                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                            {menuItems.map(item => (
-                                <Card key={item.featureId} title={item.title} icon={item.icon} onClick={hasCoachingAccess ? item.onClick : undefined} accent="TEAL">
-                                    <p className="text-sm text-gray-600 mb-3">{item.description}</p>
-                                    {!hasCoachingAccess && (
-                                        <div className="mt-2">
-                                            <span className="inline-block bg-orange-100 text-orange-800 px-2 py-1 rounded-full text-xs font-semibold">Requires Premium</span>
-                                        </div>
-                                    )}
-                                </Card>
-                            ))}
-                        </div>
+                        {menuItems.length > 0 ? (
+                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                                {menuItems.map(item => (
+                                    <Card key={item.featureId} title={item.title} icon={item.icon} onClick={hasCoachingAccess ? item.onClick : undefined} accent="TEAL">
+                                        <p className="text-sm text-gray-600 mb-3">{item.description}</p>
+                                        {!hasCoachingAccess && (
+                                            <div className="mt-2">
+                                                <span className="inline-block bg-orange-100 text-orange-800 px-2 py-1 rounded-full text-xs font-semibold">Requires Premium</span>
+                                            </div>
+                                        )}
+                                    </Card>
+                                ))}
+                            </div>
+                        ) : (
+                            <NoWidgetsEnabled moduleName="Coaching" />
+                        )}
                     </PageLayout>
                 );
         }
