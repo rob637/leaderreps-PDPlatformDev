@@ -5,35 +5,47 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { useAppServices } from '../../services/useAppServices.jsx'; // cite: useAppServices.jsx
 
 // --- Icons ---
-import { Users, Send, MessageSquare, Heart, CornerRightUp, Award, Link, Settings, Loader } from 'lucide-react'; // Added Loader
+import { Users, Send, MessageSquare, Heart, CornerRightUp, Award, Link, Settings, Loader, User } from 'lucide-react'; // Added Loader
 
 /* =========================================================
-   PALETTE & UI COMPONENTS (Standardized)
+   UI COMPONENTS (Standardized)
 ========================================================= */
-// --- Primary Color Palette ---
-const COLORS = { NAVY: '#002E47', TEAL: '#47A88D', BLUE: '#002E47', ORANGE: '#E04E1B', GREEN: '#47A88D', AMBER: '#E04E1B', RED: '#E04E1B', LIGHT_GRAY: '#FCFCFA', OFF_WHITE: '#FFFFFF', SUBTLE: '#E5E7EB', TEXT: '#374151', MUTED: '#4B5563', PURPLE: '#47A88D', BG: '#F9FAFB' }; // cite: App.jsx
 
 // --- Standardized UI Components (Matches Dashboard/Dev Plan) ---
-const Button = ({ children, onClick, disabled = false, variant = 'primary', className = '', size = 'md', ...rest }) => { /* ... Re-use exact Button definition from Dashboard.jsx ... */
+const Button = ({ children, onClick, disabled = false, variant = 'primary', className = '', size = 'md', ...rest }) => {
     let baseStyle = `inline-flex items-center justify-center gap-2 font-semibold rounded-xl transition-all duration-200 focus:outline-none focus:ring-4 disabled:opacity-50 disabled:cursor-not-allowed`;
-    if (size === 'sm') baseStyle += ' px-4 py-2 text-sm'; else if (size === 'lg') baseStyle += ' px-8 py-4 text-lg'; else baseStyle += ' px-6 py-3 text-base'; // Default 'md'
-    if (variant === 'primary') baseStyle += ` bg-[${COLORS.TEAL}] text-white shadow-lg hover:bg-[#47A88D] focus:ring-[${COLORS.TEAL}]/50`;
-    else if (variant === 'secondary') baseStyle += ` bg-[${COLORS.ORANGE}] text-white shadow-lg hover:bg-[#C312] focus:ring-[${COLORS.ORANGE}]/50`;
-    else if (variant === 'outline') baseStyle += ` bg-[${COLORS.OFF_WHITE}] text-[${COLORS.TEAL}] border-2 border-[${COLORS.TEAL}] shadow-md hover:bg-[${COLORS.TEAL}]/10 focus:ring-[${COLORS.TEAL}]/50`;
+    
+    // Size
+    if (size === 'sm') baseStyle += ' px-4 py-2 text-sm'; 
+    else if (size === 'lg') baseStyle += ' px-8 py-4 text-lg'; 
+    else baseStyle += ' px-6 py-3 text-base'; // Default 'md'
+    
+    // Variant
+    if (variant === 'primary') baseStyle += ` bg-[#47A88D] text-white shadow-lg hover:bg-[#3d917a] focus:ring-[#47A88D]/50`;
+    else if (variant === 'secondary') baseStyle += ` bg-[#E04E1B] text-white shadow-lg hover:bg-[#c44317] focus:ring-[#E04E1B]/50`;
+    else if (variant === 'outline') baseStyle += ` bg-white text-[#47A88D] border-2 border-[#47A88D] shadow-md hover:bg-[#47A88D]/10 focus:ring-[#47A88D]/50`;
     else if (variant === 'nav-back') baseStyle += ` bg-white text-gray-700 border border-gray-300 shadow-sm hover:bg-gray-100 focus:ring-gray-300/50 px-4 py-2 text-sm`;
     else if (variant === 'ghost') baseStyle += ` bg-transparent text-gray-600 hover:bg-gray-100 focus:ring-gray-300/50 px-3 py-1.5 text-sm`;
+    
     if (disabled) baseStyle += ' bg-gray-300 text-gray-500 shadow-inner border-transparent hover:bg-gray-300';
+    
     return (<button {...rest} onClick={onClick} disabled={disabled} className={`${baseStyle} ${className}`}>{children}</button>);
 };
-const LoadingSpinner = ({ message = "Loading..." }) => ( /* ... Re-use definition from DevelopmentPlan.jsx ... */
-    <div className="min-h-screen flex items-center justify-center" style={{ background: COLORS.BG }}> <div className="flex flex-col items-center"> <Loader className="animate-spin h-12 w-12 mb-3" style={{ color: COLORS.TEAL }} /> <p className="font-semibold" style={{ color: COLORS.NAVY }}>{message}</p> </div> </div>
+
+const LoadingSpinner = ({ message = "Loading..." }) => (
+    <div className="min-h-screen flex items-center justify-center bg-[#F9FAFB]"> 
+        <div className="flex flex-col items-center"> 
+            <Loader className="animate-spin h-12 w-12 mb-3 text-[#47A88D]" /> 
+            <p className="font-semibold text-[#002E47]">{message}</p> 
+        </div> 
+    </div>
 );
 
 /* =========================================================
    MOCK DATA (Local Fallback - Replace with Service/API)
 ========================================================= */
 // Mock data for the feed items
-const MOCK_FEED = [ // cite: CommunityFeed.jsx (Original)
+const MOCK_FEED = [
     { id: 1, user: 'Alex H.', rep: 'Successfully used the CLEAR coaching framework in my 1:1 this morning.', tier: 'T4: People Dev', time: '5m ago', reactions: 8, comments: 2, isPod: true },
     { id: 2, user: 'Team Admin', rep: 'New LeaderRep Streak Coin Unlocked! Check your profile for details.', tier: 'Gamification', time: '2h ago', reactions: 15, comments: 10, isPod: false },
     { id: 3, user: 'Sarah K.', rep: 'Conducted a 10-minute mindful check before the quarterly review.', tier: 'T1: Self-Awareness', time: '3h ago', reactions: 4, comments: 0, isPod: true },
@@ -41,7 +53,7 @@ const MOCK_FEED = [ // cite: CommunityFeed.jsx (Original)
 ];
 
 // Mock data for the leaderboard
-const MOCK_LEADERBOARD = [ // cite: CommunityFeed.jsx (Original)
+const MOCK_LEADERBOARD = [
     { rank: 1, name: 'Alex H.', streak: 12, reps: 68 },
     { rank: 2, name: 'Sarah K.', streak: 9, reps: 55 },
     { rank: 3, name: 'Justin M.', streak: 7, reps: 42 },
@@ -74,14 +86,14 @@ const RepFeedItem = ({ item }) => {
         // Use consistent card styling from Card component (applied manually here for structure)
         <div className="p-4 bg-white border border-gray-200 rounded-xl shadow-md transition-shadow duration-200 hover:shadow-lg">
             {/* Header: User Info & Tags */}
-            <div className="flex justify-between items-start mb-3 border-b pb-2" style={{ borderColor: COLORS.SUBTLE }}>
+            <div className="flex justify-between items-start mb-3 border-b border-gray-200 pb-2">
                 {/* User Avatar (Placeholder) & Name/Time */}
                 <div className="flex items-center space-x-3">
                     <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center"> {/* Placeholder Avatar */}
                         <User className="w-4 h-4 text-gray-500" />
                     </div>
                     <div>
-                        <p className="font-bold text-sm" style={{ color: COLORS.NAVY }}>{item.user}</p>
+                        <p className="font-bold text-sm text-[#002E47]">{item.user}</p>
                         <p className="text-xs text-gray-500">{item.time}</p>
                     </div>
                 </div>
@@ -97,7 +109,7 @@ const RepFeedItem = ({ item }) => {
             <p className="text-sm text-gray-800 mb-4 font-medium italic">"{item.rep}"</p>
 
             {/* Footer: Actions & Tier */}
-            <div className="flex justify-between items-center text-xs pt-3 border-t" style={{ borderColor: COLORS.SUBTLE }}>
+            <div className="flex justify-between items-center text-xs pt-3 border-t border-gray-200">
                 {/* Actions: React & Comment */}
                 <div className="flex space-x-4">
                     <button onClick={handleReact} className="flex items-center text-red-500 hover:text-red-700 transition-colors group" aria-label={`Like post by ${item.user}`}>
@@ -173,15 +185,15 @@ const CommunityFeedScreen = () => {
     }
     // Loading/Error States
     if (isAppLoading) return <LoadingSpinner message="Loading Community Feed..." />;
-    if (appError) return <ConfigError message={`Failed to load Community Feed: ${appError.message}`} />;
+    if (appError) return <div className="p-4 text-red-500">Failed to load Community Feed: {appError.message}</div>;
 
     return (
         // Consistent page structure and padding
-        <div className="p-6 md:p-4 sm:p-3 sm:p-4 lg:p-6 lg:p-8 lg:p-10 space-y-4 sm:space-y-6 lg:space-y-8 min-h-screen" style={{ background: COLORS.BG }}>
+        <div className="p-6 md:p-4 sm:p-3 sm:p-4 lg:p-6 lg:p-8 lg:p-10 space-y-4 sm:space-y-6 lg:space-y-8 min-h-screen bg-[#F9FAFB]">
             {/* Header */}
-            <header className="flex flex-col sm:flex-row justify-between sm:items-center gap-4 border-b pb-4" style={{ borderColor: COLORS.SUBTLE }}>
-                <h1 className="text-xl sm:text-2xl sm:text-3xl md:text-4xl font-extrabold flex items-center gap-3" style={{ color: COLORS.NAVY }}>
-                    <Users size={32} style={{ color: COLORS.BLUE }} /> Accountability Pod Feed
+            <header className="flex flex-col sm:flex-row justify-between sm:items-center gap-4 border-b border-gray-200 pb-4">
+                <h1 className="text-xl sm:text-2xl sm:text-3xl md:text-4xl font-extrabold flex items-center gap-3 text-[#002E47]">
+                    <Users size={32} className="text-[#002E47]" /> Accountability Pod Feed
                 </h1>
                 {/* Link to Community Settings */}
                 <Button onClick={() => navigate('app-settings', { section: 'community' })} variant="outline" size="sm">
@@ -196,19 +208,19 @@ const CommunityFeedScreen = () => {
                 <aside className="lg:col-span-1 space-y-4 sm:space-y-5 lg:space-y-6 lg:sticky lg:top-3 sm:p-4 lg:p-6 self-start"> {/* Sticky sidebar */}
                     {/* Leaderboard Card */}
                     <div className="p-3 sm:p-4 lg:p-6 bg-white border border-gray-200 rounded-xl shadow-lg">
-                        <h2 className="text-lg font-bold mb-4 flex items-center gap-2 border-b pb-2" style={{ color: COLORS.NAVY, borderColor: COLORS.SUBTLE }}>
+                        <h2 className="text-lg font-bold mb-4 flex items-center gap-2 border-b border-gray-200 pb-2 text-[#002E47]">
                             <Award className="w-5 h-5 text-amber-500" /> Rep Streak Leaderboard (Pod)
                         </h2>
                         {MOCK_LEADERBOARD.map((leader, index) => (
-                            <div key={leader.rank} className={`flex items-center py-2 border-b last:border-b-0 ${index < 3 ? '' : 'opacity-70'}`} style={{ borderColor: COLORS.SUBTLE }}>
+                            <div key={leader.rank} className={`flex items-center py-2 border-b border-gray-200 last:border-b-0 ${index < 3 ? '' : 'opacity-70'}`}>
                                 {/* Rank */}
                                 <span className={`font-extrabold w-6 text-center text-sm ${
                                     index === 0 ? 'text-amber-500' : index === 1 ? 'text-gray-500' : index === 2 ? 'text-orange-700' : 'text-gray-400'
                                 }`}>{leader.rank}.</span>
                                 {/* Name */}
-                                <span className="flex-1 font-semibold text-sm ml-2 truncate" style={{ color: COLORS.NAVY }}>{leader.name}</span>
+                                <span className="flex-1 font-semibold text-sm ml-2 truncate text-[#002E47]">{leader.name}</span>
                                 {/* Streak */}
-                                <span className="text-xs font-medium ml-2" style={{ color: COLORS.TEAL }}>{leader.streak} Day Streak</span>
+                                <span className="text-xs font-medium ml-2 text-[#47A88D]">{leader.streak} Day Streak</span>
                             </div>
                         ))}
                          {/* Optional: Link to full leaderboard */}
@@ -217,7 +229,7 @@ const CommunityFeedScreen = () => {
 
                     {/* Quick Share Card */}
                     <div className="p-3 sm:p-4 lg:p-6 bg-white border border-gray-200 rounded-xl shadow-lg">
-                        <h2 className="text-lg font-bold mb-4 flex items-center gap-2 border-b pb-2" style={{ color: COLORS.NAVY, borderColor: COLORS.SUBTLE }}>
+                        <h2 className="text-lg font-bold mb-4 flex items-center gap-2 border-b border-gray-200 pb-2 text-[#002E47]">
                             <Link className="w-5 h-5 text-gray-500" /> Quick Share
                         </h2>
                         {/* Input */}
@@ -225,7 +237,7 @@ const CommunityFeedScreen = () => {
                             value={quickShareText}
                             onChange={(e) => setQuickShareText(e.target.value)}
                             placeholder="Share your latest rep or a quick win..."
-                            className="w-full p-3 border border-gray-300 rounded-lg text-sm mb-3 focus:ring-2 focus:ring-[${COLORS.TEAL}]"
+                            className="w-full p-3 border border-gray-300 rounded-lg text-sm mb-3 focus:ring-2 focus:ring-[#47A88D]"
                             rows="3" disabled={isSharing}
                         />
                         {/* Share Button */}

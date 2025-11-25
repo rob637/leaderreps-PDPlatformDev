@@ -4,19 +4,6 @@ import React, { useState, useMemo } from 'react';
 import { X, Zap, CheckCircle, CornerRightUp, AlertTriangle } from 'lucide-react';
 import { useAppServices } from '../../services/useAppServices.jsx';
 
-// LEADERREPS.COM OFFICIAL CORPORATE COLORS - VERIFIED 11/14/25
-const COLORS = {
-  // === PRIMARY BRAND COLORS (from leaderreps.com) ===
-  NAVY: '#002E47',        // Primary text, headers, navigation
-  ORANGE: '#E04E1B',      // Call-to-action buttons, highlights, alerts  
-  TEAL: '#47A88D',        // Secondary buttons, success states, accents
-  LIGHT_GRAY: '#FCFCFA',  // Page backgrounds, subtle surfaces
-  
-  // === SEMANTIC MAPPINGS (using ONLY corporate colors) ===
-  BLUE: '#002E47',        // Map to NAVY
-  OFF_WHITE: '#FCFCFA'    // Same as LIGHT_GRAY
-};
-
 // --- ENHANCEMENT: QUICK CHALLENGE CATALOG DELETED (Now loaded via service context) ---
 // Fallback array for safety if service data hasn't loaded or is empty
 const QUICK_CHALLENGE_FALLBACK = [
@@ -96,7 +83,7 @@ const TwoMinuteChallengeModal = ({ isVisible, onClose, sourceScreen, onLogSucces
 
     return (
         <div className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4"> 
-            <div className={`relative bg-[${COLORS.OFF_WHITE}] rounded-xl shadow-2xl w-full max-w-lg p-8 text-center border-t-8 border-[${COLORS.BLUE}]`}>
+            <div className={`relative bg-[#FCFCFA] rounded-xl shadow-2xl w-full max-w-lg p-8 text-center border-t-8 border-[#002E47]`}>
                 <button 
                     onClick={onClose} // CRITICAL FIX: Wire the button to the handler
                     disabled={isLogging} 
@@ -105,7 +92,7 @@ const TwoMinuteChallengeModal = ({ isVisible, onClose, sourceScreen, onLogSucces
                     <X className="w-6 h-6" />
                 </button>
 
-                <Zap className={`w-12 h-12 text-[${COLORS.BLUE}] mx-auto mb-4`} />
+                <Zap className={`w-12 h-12 text-[#002E47] mx-auto mb-4`} />
                 <h3 className="text-2xl font-extrabold text-[#002E47] mb-2">Grab a Micro-Action Rep</h3>
                 <p className="text-lg text-gray-600 mb-6">Frictionless training for momentum! Complete this action quickly (Feature 3).</p>
 

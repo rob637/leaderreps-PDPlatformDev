@@ -1,22 +1,15 @@
 import React from 'react';
 import { IconMap } from '../../data/Constants'; // fix the path as needed
 
-// LEADERREPS.COM OFFICIAL CORPORATE COLORS - VERIFIED 11/14/25
-const COLORS = {
-  NAVY: '#002E47',        // Primary text, headers, navigation
-  TEAL: '#47A88D',        // Secondary buttons, success states, accents
-  LIGHT_GRAY: '#FCFCFA'   // Page backgrounds, subtle surfaces
-};
-
 export default function Card({ title, icon, className = '', children }) {
   const IconComp = typeof icon === 'string' ? IconMap[icon] : icon;
   return (
     <div 
       className={`rounded-2xl border-2 p-6 shadow-lg hover:shadow-xl transition-all duration-300 ${className}`}
       style={{ 
-        backgroundColor: COLORS.LIGHT_GRAY,
-        borderColor: COLORS.TEAL,
-        borderLeftColor: COLORS.TEAL,
+        backgroundColor: '#FCFCFA',
+        borderColor: '#47A88D',
+        borderLeftColor: '#47A88D',
         borderLeftWidth: '4px'
       }}
     >
@@ -24,14 +17,14 @@ export default function Card({ title, icon, className = '', children }) {
         {IconComp ? (
           <div 
             className="w-10 h-10 rounded-lg flex items-center justify-center"
-            style={{ backgroundColor: `${COLORS.TEAL}20` }}
+            style={{ backgroundColor: '#47A88D20' }}
           >
-            <IconComp size={20} style={{ color: COLORS.TEAL }} />
+            <IconComp size={20} style={{ color: '#47A88D' }} />
           </div>
         ) : null}
-        <h3 className="text-xl font-bold" style={{ color: COLORS.NAVY }}>{title}</h3>
+        <h3 className="text-xl font-bold" style={{ color: '#002E47' }}>{title}</h3>
       </div>
-      <div style={{ color: COLORS.NAVY }}>
+      <div style={{ color: '#002E47' }}>
         {children}
       </div>
     </div>

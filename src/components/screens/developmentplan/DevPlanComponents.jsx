@@ -8,7 +8,6 @@ import {
   TrendingUp, Target, Award, Clock, BarChart3, 
   Edit, RefreshCw, Calendar, Save, X, Plus, Trash2, FileX
 } from 'lucide-react';
-import { COLORS } from './devPlanConstants.js';
 
 /* =========================================================
    Standardized Button Component
@@ -21,9 +20,9 @@ export const Button = ({ children, onClick, disabled = false, variant = 'primary
   else if (size === 'lg') baseStyle += ' px-8 py-4 text-lg';
   else baseStyle += ' px-6 py-3 text-base';
 
-  if (variant === 'primary') baseStyle += ` bg-[${COLORS.TEAL}] text-white shadow-lg hover:bg-[#47A88D] focus:ring-[${COLORS.TEAL}]/50`;
-  else if (variant === 'secondary') baseStyle += ` bg-[${COLORS.ORANGE}] text-white shadow-lg hover:bg-[#C33E12] focus:ring-[${COLORS.ORANGE}]/50`;
-  else if (variant === 'outline') baseStyle += ` bg-[${COLORS.OFF_WHITE}] text-[${COLORS.TEAL}] border-2 border-[${COLORS.TEAL}] shadow-md hover:bg-[${COLORS.TEAL}]/10 focus:ring-[${COLORS.TEAL}]/50`;
+  if (variant === 'primary') baseStyle += ` bg-[#47A88D] text-white shadow-lg hover:bg-[#47A88D] focus:ring-[#47A88D]/50`;
+  else if (variant === 'secondary') baseStyle += ` bg-[#E04E1B] text-white shadow-lg hover:bg-[#C33E12] focus:ring-[#E04E1B]/50`;
+  else if (variant === 'outline') baseStyle += ` bg-[#FCFCFA] text-[#47A88D] border-2 border-[#47A88D] shadow-md hover:bg-[#47A88D]/10 focus:ring-[#47A88D]/50`;
   else if (variant === 'nav-back') baseStyle += ` bg-white text-gray-700 border border-gray-300 shadow-sm hover:bg-gray-100 focus:ring-gray-300/50 px-4 py-2 text-sm`;
   else if (variant === 'ghost') baseStyle += ` bg-transparent text-gray-600 hover:bg-gray-100 focus:ring-gray-300/50 px-3 py-1.5 text-sm`;
   if (disabled) baseStyle += ' bg-gray-300 text-gray-500 shadow-inner border-transparent hover:bg-gray-300';
@@ -38,7 +37,7 @@ export const Button = ({ children, onClick, disabled = false, variant = 'primary
 export const Card = ({ children, title, icon: Icon, className = '', onClick, accent = 'NAVY', actions }) => {
   const interactive = !!onClick;
   const Tag = interactive ? 'button' : 'div';
-  const accentColor = COLORS[accent] || COLORS.NAVY;
+  const accentColor = accent === 'ORANGE' ? '#E04E1B' : accent === 'TEAL' ? '#47A88D' : '#002E47';
   const handleKeyDown = (e) => { if (interactive && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); onClick?.(); } };
   return (
     <Tag
@@ -49,8 +48,8 @@ export const Card = ({ children, title, icon: Icon, className = '', onClick, acc
       className={`relative rounded-2xl border-2 shadow-xl transition-all duration-300 text-left ${className}`}
       style={{
           background: 'linear-gradient(180deg,#FFFFFF, #FCFCFA)',
-          borderColor: COLORS.SUBTLE,
-          color: COLORS.NAVY
+          borderColor: '#47A88D',
+          color: '#002E47'
       }}
       onClick={onClick}
     >
@@ -64,7 +63,7 @@ export const Card = ({ children, title, icon: Icon, className = '', onClick, acc
               </div>
             )}
             {title && (
-              <h2 className="text-xl font-extrabold" style={{ color: COLORS.NAVY }}>{title}</h2>
+              <h2 className="text-xl font-extrabold" style={{ color: '#002E47' }}>{title}</h2>
             )}
           </div>
           {actions && (
@@ -86,13 +85,13 @@ export const Card = ({ children, title, icon: Icon, className = '', onClick, acc
 ========================================================= */
 export const ProgressBar = ({ progress = 0, color, height = 8, showLabel = false }) => {
   const progressPercent = Math.max(0, Math.min(100, progress));
-  const barColor = color || COLORS.TEAL;
+  const barColor = color || '#47A88D';
   
   return (
     <div className="relative w-full" style={{ height: `${height}px` }}>
       <div 
         className="w-full h-full rounded-full"
-        style={{ backgroundColor: COLORS.SUBTLE }}
+        style={{ backgroundColor: '#47A88D' }}
       >
         <div 
           className="h-full rounded-full transition-all duration-500"
@@ -127,11 +126,11 @@ export const Badge = ({ children, variant = 'default', size = 'md' }) => {
   else baseStyle += ' px-3 py-1 text-sm';
   
   // Variant
-  if (variant === 'primary') baseStyle += ` bg-[${COLORS.BLUE}20] text-[${COLORS.BLUE}]`;
-  else if (variant === 'success') baseStyle += ` bg-[${COLORS.GREEN}20] text-[${COLORS.GREEN}]`;
-  else if (variant === 'warning') baseStyle += ` bg-[${COLORS.AMBER}20] text-[${COLORS.AMBER}]`;
-  else if (variant === 'purple') baseStyle += ` bg-[${COLORS.PURPLE}20] text-[${COLORS.PURPLE}]`;
-  else baseStyle += ` bg-[${COLORS.SUBTLE}] text-[${COLORS.MUTED}]`;
+  if (variant === 'primary') baseStyle += ` bg-[#002E47]20 text-[#002E47]`;
+  else if (variant === 'success') baseStyle += ` bg-[#47A88D]20 text-[#47A88D]`;
+  else if (variant === 'warning') baseStyle += ` bg-[#E04E1B]20 text-[#E04E1B]`;
+  else if (variant === 'purple') baseStyle += ` bg-[#47A88D]20 text-[#47A88D]`;
+  else baseStyle += ` bg-[#47A88D] text-[#47A88D]`;
   
   return (
     <span className={baseStyle}>
@@ -145,12 +144,12 @@ export const Badge = ({ children, variant = 'default', size = 'md' }) => {
    (Used in ProgressBreakdown, PlanTracker)
 ========================================================= */
 export const StatCard = ({ label, value, color, trend }) => {
-  const accentColor = color || COLORS.TEAL;
+  const accentColor = color || '#47A88D';
 
   return (
     <div 
       className="p-4 rounded-xl border-2"
-      style={{ borderColor: COLORS.SUBTLE, background: 'white' }}
+      style={{ borderColor: '#47A88D', background: 'white' }}
     >
       <div className="flex items-center gap-3 mb-3">
         <div 
@@ -160,16 +159,16 @@ export const StatCard = ({ label, value, color, trend }) => {
           <TrendingUp className="w-5 h-5" style={{ color: accentColor }} />
         </div>
         <div>
-          <p className="text-xs font-semibold" style={{ color: COLORS.MUTED }}>
+          <p className="text-xs font-semibold" style={{ color: '#47A88D' }}>
             {label}
           </p>
         </div>
       </div>
-      <p className="text-xl sm:text-2xl sm:text-3xl font-extrabold" style={{ color: COLORS.NAVY }}>
+      <p className="text-xl sm:text-2xl sm:text-3xl font-extrabold" style={{ color: '#002E47' }}>
         {value}
       </p>
       {trend && (
-        <p className="text-xs mt-1" style={{ color: COLORS.MUTED }}>
+        <p className="text-xs mt-1" style={{ color: '#47A88D' }}>
           {trend}
         </p>
       )}
@@ -186,9 +185,9 @@ export const LoadingSpinner = ({ message }) => (
     <div className="text-center">
       <div 
         className="animate-spin rounded-full h-12 w-12 border-b-2 mx-auto mb-4" 
-        style={{ borderColor: COLORS.TEAL }} 
+        style={{ borderColor: '#47A88D' }} 
       />
-      <p style={{ color: COLORS.TEXT }}>
+      <p style={{ color: '#002E47' }}>
         {message || 'Loading...'}
       </p>
     </div>
@@ -204,11 +203,11 @@ export const PlanGenerationLoader = ({ message = 'Crafting Your Development Plan
   const [currentStep, setCurrentStep] = useState(0);
   
   const steps = [
-    { icon: '🎯', text: 'Analyzing your assessment', color: COLORS.TEAL },
-    { icon: '🧠', text: 'Identifying growth areas', color: COLORS.BLUE },
-    { icon: '💡', text: 'Mapping practice reps', color: COLORS.ORANGE },
-    { icon: '📅', text: 'Structuring your 90-day plan', color: COLORS.GREEN },
-    { icon: '✨', text: 'Finalizing recommendations', color: COLORS.PURPLE }
+    { icon: '🎯', text: 'Analyzing your assessment', color: '#47A88D' },
+    { icon: '🧠', text: 'Identifying growth areas', color: '#002E47' },
+    { icon: '💡', text: 'Mapping practice reps', color: '#E04E1B' },
+    { icon: '📅', text: 'Structuring your 90-day plan', color: '#47A88D' },
+    { icon: '✨', text: 'Finalizing recommendations', color: '#47A88D' }
   ];
   
   useEffect(() => {
@@ -237,14 +236,14 @@ export const PlanGenerationLoader = ({ message = 'Crafting Your Development Plan
           <div 
             className="absolute w-64 h-64 rounded-full animate-pulse"
             style={{ 
-              background: `radial-gradient(circle, ${COLORS.TEAL}20 0%, transparent 70%)`,
+              background: `radial-gradient(circle, #47A88D20 0%, transparent 70%)`,
               animation: 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite'
             }}
           />
           <div 
             className="absolute w-48 h-48 rounded-full animate-ping"
             style={{ 
-              background: `radial-gradient(circle, ${COLORS.ORANGE}15 0%, transparent 70%)`,
+              background: `radial-gradient(circle, #E04E1B15 0%, transparent 70%)`,
               animation: 'ping 2s cubic-bezier(0, 0, 0.2, 1) infinite'
             }}
           />
@@ -254,7 +253,7 @@ export const PlanGenerationLoader = ({ message = 'Crafting Your Development Plan
         <div 
           className="relative bg-white rounded-3xl shadow-2xl p-12 max-w-md mx-4"
           style={{ 
-            border: `3px solid ${COLORS.TEAL}40`,
+            border: `3px solid #47A88D40`,
             animation: 'fadeIn 0.3s ease-out'
           }}
         >
@@ -263,7 +262,7 @@ export const PlanGenerationLoader = ({ message = 'Crafting Your Development Plan
             <div 
               className="w-20 h-20 rounded-full flex items-center justify-center text-4xl"
               style={{ 
-                background: `linear-gradient(135deg, ${COLORS.TEAL}20, ${COLORS.BLUE}20)`,
+                background: `linear-gradient(135deg, #47A88D20, #002E4720)`,
                 animation: 'spin 3s linear infinite'
               }}
             >
@@ -274,7 +273,7 @@ export const PlanGenerationLoader = ({ message = 'Crafting Your Development Plan
           {/* Main Message */}
           <h3 
             className="text-xl sm:text-2xl font-extrabold text-center mb-2"
-            style={{ color: COLORS.NAVY }}
+            style={{ color: '#002E47' }}
           >
             {message}{dots}
           </h3>
@@ -308,14 +307,14 @@ export const PlanGenerationLoader = ({ message = 'Crafting Your Development Plan
                   width: index === currentStep ? '32px' : '8px',
                   height: '8px',
                   borderRadius: '4px',
-                  background: index === currentStep ? COLORS.TEAL : `${COLORS.SUBTLE}`
+                  background: index === currentStep ? '#47A88D' : '#47A88D'
                 }}
               />
             ))}
           </div>
           
           {/* Encouraging Message */}
-          <p className="text-center text-xs mt-6" style={{ color: COLORS.MUTED }}>
+          <p className="text-center text-xs mt-6" style={{ color: '#47A88D' }}>
             This usually takes 5-8 seconds...
           </p>
         </div>
@@ -340,15 +339,15 @@ export const PlanGenerationLoader = ({ message = 'Crafting Your Development Plan
    (Used in PlanTracker)
 ========================================================= */
 export const EmptyState = ({ title, description, action }) => (
-  <div className="text-center p-12 my-12 border-2 border-dashed rounded-2xl" style={{ borderColor: COLORS.SUBTLE, backgroundColor: COLORS.LIGHT_GRAY }}>
+  <div className="text-center p-12 my-12 border-2 border-dashed rounded-2xl" style={{ borderColor: '#47A88D', backgroundColor: '#FCFCFA' }}>
     <FileX 
       className="w-12 h-12 mx-auto mb-4" 
-      style={{ color: COLORS.MUTED }} 
+      style={{ color: '#47A88D' }} 
     />
-    <h3 className="text-xl font-bold mb-2" style={{ color: COLORS.NAVY }}>
+    <h3 className="text-xl font-bold mb-2" style={{ color: '#002E47' }}>
       {title}
     </h3>
-    <p className="text-sm mb-6 max-w-sm mx-auto" style={{ color: COLORS.TEXT }}>
+    <p className="text-sm mb-6 max-w-sm mx-auto" style={{ color: '#002E47' }}>
       {description}
     </p>
     {action && (
@@ -362,12 +361,12 @@ export const EmptyState = ({ title, description, action }) => (
    (Used in PlanTracker)
 ========================================================= */
 export const SectionHeader = ({ title, accent = 'NAVY' }) => {
-  const accentColor = COLORS[accent] || COLORS.NAVY;
+  const accentColor = accent === 'ORANGE' ? '#E04E1B' : accent === 'TEAL' ? '#47A88D' : '#002E47';
   
   return (
-    <div className="flex items-center gap-3 mb-4 pb-3 border-b-2" style={{ borderColor: COLORS.SUBTLE }}>
+    <div className="flex items-center gap-3 mb-4 pb-3 border-b-2" style={{ borderColor: '#47A88D' }}>
       <BarChart3 className="w-6 h-6" style={{ color: accentColor }} />
-      <h2 className="text-xl sm:text-2xl font-bold" style={{ color: COLORS.NAVY }}>
+      <h2 className="text-xl sm:text-2xl font-bold" style={{ color: '#002E47' }}>
         {title}
       </h2>
     </div>
@@ -383,17 +382,17 @@ export const LikertScaleInput = ({ question, options, value, onChange }) => {
     <div 
       className="p-3 sm:p-4 lg:p-6 rounded-2xl border-2" 
       style={{ 
-        borderColor: value ? COLORS.TEAL : COLORS.SUBTLE, 
-        backgroundColor: value ? `${COLORS.TEAL}05` : COLORS.OFF_WHITE,
+        borderColor: value ? '#47A88D' : '#47A88D', 
+        backgroundColor: value ? '#47A88D05' : '#FCFCFA',
         transition: 'border-color 0.3s'
       }}
     >
-      <p className="text-base font-semibold mb-4" style={{ color: COLORS.NAVY }}>
+      <p className="text-base font-semibold mb-4" style={{ color: '#002E47' }}>
         {question.text}
       </p>
       <div 
         className="flex flex-col sm:flex-row rounded-lg overflow-hidden border" 
-        style={{ borderColor: COLORS.SUBTLE }}
+        style={{ borderColor: '#47A88D' }}
       >
         {options.map((option, index) => (
           <button
@@ -405,10 +404,10 @@ export const LikertScaleInput = ({ question, options, value, onChange }) => {
                 : 'hover:bg-gray-100'
             }`}
             style={{ 
-              backgroundColor: value === option.value ? COLORS.TEAL : COLORS.OFF_WHITE,
-              color: value === option.value ? 'white' : COLORS.TEXT,
-              borderRight: index < options.length - 1 ? `1px solid ${COLORS.SUBTLE}` : 'none',
-              borderBottom: `1px solid ${COLORS.SUBTLE}`,
+              backgroundColor: value === option.value ? '#47A88D' : '#FCFCFA',
+              color: value === option.value ? 'white' : '#002E47',
+              borderRight: index < options.length - 1 ? `1px solid #47A88D` : 'none',
+              borderBottom: `1px solid #47A88D`,
             }}
           >
             {option.label}

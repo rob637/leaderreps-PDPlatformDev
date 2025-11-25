@@ -1,14 +1,12 @@
 // src/components/screens/dashboard/DashboardComponents.jsx
-// MODIFIED: 10/30/25 - Final version with UnifiedAnchorEditorModal, 
-//                      clickable system tasks, and fixed height for Morning Bookend to prevent layout shift.
-// REMOVED: LeadershipAnchorsCard and related placeholder exports.
+// MODIFIED: Refactored to use Tailwind CSS and remove COLORS object dependency.
 
 import React, { useState, useEffect } from 'react';
 import { 
   Target, Clock, User, Save, Loader, CheckCircle, TrendingUp, Star, 
   ChevronDown, ChevronUp, Plus, X, Sunrise, Moon, Flame, Anchor,
   ToggleLeft, ToggleRight, Zap, AlertTriangle, MessageSquare, Trophy,
-  Send, Users, Activity, Edit3, Calendar
+  Send, Users, Activity, Edit3, Calendar, ChevronRight
 } from 'lucide-react';
 
 // --- Helper function to format timestamps ---
@@ -39,52 +37,30 @@ const formatTimestamp = (timestamp) => {
   }
 };
 
-import { COLORS } from './dashboardConstants.js';
-
 // --- Corporate Button Component ---
 export const Button = ({ children, onClick, disabled = false, variant = 'primary', className = '', size = 'md', ...rest }) => {
-  // Corporate button classes matching leaderreps.com
-  let buttonClass = 'inline-flex items-center justify-center font-semibold transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2';
+  const baseStyles = "inline-flex items-center justify-center font-semibold transition-all duration-200 focus:outline-none focus:ring-2 disabled:opacity-50 disabled:cursor-not-allowed";
   
-  if (variant === 'primary') {
-    buttonClass += ' btn-corporate-primary';
-  } else if (variant === 'secondary') {
-    buttonClass += ' btn-corporate-secondary';
-  } else if (variant === 'outline') {
-    buttonClass += ' btn-corporate-secondary';
-  } else if (variant === 'nav-back') {
-    buttonClass += ' form-corporate bg-white border border-gray-300';
-  } else if (variant === 'ghost') {
-    buttonClass += ' bg-transparent hover:bg-gray-50 border border-transparent';
-  } else {
-    buttonClass += ' btn-corporate-primary';
-  }
+  const variants = {
+    primary: "bg-[#47A88D] text-white shadow-md hover:bg-[#3d917a] focus:ring-[#47A88D]/50",
+    secondary: "bg-[#E04E1B] text-white shadow-md hover:bg-[#c44317] focus:ring-[#E04E1B]/50",
+    outline: "bg-white text-[#47A88D] border-2 border-[#47A88D] shadow-sm hover:bg-[#47A88D]/10 focus:ring-[#47A88D]/50",
+    ghost: "bg-transparent text-slate-600 hover:bg-slate-100",
+    'nav-back': "bg-white text-slate-700 border border-slate-300 shadow-sm hover:bg-slate-100 focus:ring-slate-300/50",
+  };
 
-  // Professional size system
-  if (size === 'sm') {
-    buttonClass += ' px-4 py-2 text-sm rounded-lg';
-  } else if (size === 'lg') {
-    buttonClass += ' px-8 py-4 text-lg rounded-xl';
-  } else {
-    buttonClass += ' px-6 py-3 text-base rounded-lg';
-  }
-
-  // Corporate disabled state
-  const disabledStyle = disabled ? {
-    opacity: 0.6,
-    cursor: 'not-allowed',
-    background: COLORS.LIGHT_GRAY,
-    color: COLORS.MUTED,
-    border: `1px solid ${COLORS.SUBTLE}`
-  } : {};
+  const sizes = {
+    sm: "px-3 py-1.5 text-sm rounded-lg",
+    md: "px-5 py-2.5 text-base rounded-xl",
+    lg: "px-8 py-4 text-lg rounded-xl",
+  };
 
   return (
     <button 
-      {...rest} 
       onClick={onClick} 
       disabled={disabled} 
-      className={`${buttonClass} ${className}`}
-      style={{ ...disabledStyle }}
+      className={`${baseStyles} ${variants[variant] || variants.primary} ${sizes[size] || sizes.md} ${className}`}
+      {...rest}
     >
       {children}
     </button>
@@ -95,13 +71,26 @@ export const Button = ({ children, onClick, disabled = false, variant = 'primary
 export const Card = ({ children, title, icon: Icon, className = '', onClick, accent = 'NAVY' }) => {
   const interactive = !!onClick;
   const Tag = interactive ? 'button' : 'div';
-  const accentColor = COLORS[accent] || COLORS.NAVY;
-  const handleKeyDown = (e) => { if (interactive && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); onClick?.(); } };
+  
+  const accentColors = {
+    NAVY: 'text-[#002E47] border-[#002E47]',
+    TEAL: 'text-[#47A88D] border-[#47A88D]',
+    ORANGE: 'text-[#E04E1B] border-[#E04E1B]',
+    GREEN: 'text-green-600 border-green-600',
+    BLUE: 'text-blue-600 border-blue-600',
+  };
+  
+  const accentColorClass = accentColors[accent] || accentColors.NAVY;
+  const iconBgColors = {
+    NAVY: 'bg-[#002E47]/10',
+    TEAL: 'bg-[#47A88D]/10',
+    ORANGE: 'bg-[#E04E1B]/10',
+    GREEN: 'bg-green-100',
+    BLUE: 'bg-blue-100',
+  };
+  const iconBgClass = iconBgColors[accent] || iconBgColors.NAVY;
 
-  // Corporate card styling matching leaderreps.com
-  const cardClass = interactive 
-    ? 'card-corporate cursor-pointer hover:-translate-y-1' 
-    : 'card-corporate-elevated';
+  const handleKeyDown = (e) => { if (interactive && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); onClick?.(); } };
 
   return (
     <Tag
@@ -109,60 +98,46 @@ export const Card = ({ children, title, icon: Icon, className = '', onClick, acc
       role={interactive ? 'button' : undefined}
       tabIndex={interactive ? 0 : undefined}
       onKeyDown={handleKeyDown}
-      className={`${cardClass} ${className} text-left relative overflow-hidden`}
-      style={{ color: COLORS.NAVY }}
       onClick={onClick}
+      className={`bg-white rounded-2xl shadow-sm border border-slate-200 p-6 text-left relative overflow-hidden ${interactive ? 'cursor-pointer hover:-translate-y-1 transition-transform duration-200' : ''} ${className}`}
     >
-      {/* Professional accent bar */}
-      {Icon && title && <span style={{ position:'absolute', top:0, left:0, right:0, height:'4px', background: accentColor }} />}
+      {/* Accent Bar */}
+      {Icon && title && <div className={`absolute top-0 left-0 right-0 h-1 ${accent === 'NAVY' ? 'bg-[#002E47]' : accent === 'TEAL' ? 'bg-[#47A88D]' : accent === 'ORANGE' ? 'bg-[#E04E1B]' : 'bg-slate-200'}`} />}
 
       {Icon && title && (
-           <div className="flex items-center" style={{ gap: 'var(--spacing-md)', marginBottom: 'var(--spacing-lg)' }}>
-              <div className="flex items-center justify-center flex-shrink-0 shadow-md" 
-                   style={{ 
-                     width: '56px', 
-                     height: '56px', 
-                     borderRadius: 'var(--radius-xl)', 
-                     backgroundColor: `${accentColor}15`,
-                     border: `2px solid ${accentColor}30`
-                   }}>
-                  <Icon className="w-7 h-7" style={{ color: accentColor }} />
+           <div className="flex items-center gap-4 mb-6">
+              <div className={`flex items-center justify-center flex-shrink-0 w-14 h-14 rounded-xl ${iconBgClass}`}>
+                  <Icon className={`w-7 h-7 ${accentColorClass.split(' ')[0]}`} />
               </div>
-              <h2 className="corporate-heading-lg" style={{ color: COLORS.NAVY }}>{title}</h2>
+              <h2 className="text-xl font-bold text-[#002E47]">{title}</h2>
           </div>
       )}
       {!Icon && title && (
-        <div style={{ marginBottom: 'var(--spacing-xl)' }}>
-          <h2 className="corporate-heading-lg" style={{ 
-            color: COLORS.NAVY, 
-            borderBottom: `2px solid ${COLORS.SUBTLE}30`,
-            paddingBottom: 'var(--spacing-md)'
-          }}>{title}</h2>
+        <div className="mb-6 border-b border-slate-100 pb-4">
+          <h2 className="text-xl font-bold text-[#002E47]">{title}</h2>
         </div>
       )}
 
-      <div className="corporate-text-body">{children}</div>
+      <div className="text-slate-600">{children}</div>
     </Tag>
   );
 };
 
 /* =========================================================
-   MODE SWITCH COMPONENT (Unchanged)
+   MODE SWITCH COMPONENT
 ========================================================= */
 export const ModeSwitch = ({ isArenaMode, onToggle, isLoading }) => (
   <button
     onClick={onToggle}
     disabled={isLoading}
-    className="flex items-center gap-2 px-4 py-2 rounded-lg transition-all duration-200 border-2"
-    style={{
-      backgroundColor: isArenaMode ? COLORS.TEAL : COLORS.ORANGE,
-      borderColor: isArenaMode ? COLORS.TEAL : COLORS.ORANGE,
-      color: 'white',
-      opacity: isLoading ? 0.6 : 1
-    }}
+    className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all duration-200 border-2 text-white font-semibold text-sm ${
+      isArenaMode 
+        ? 'bg-[#47A88D] border-[#47A88D]' 
+        : 'bg-[#E04E1B] border-[#E04E1B]'
+    } ${isLoading ? 'opacity-60' : ''}`}
   >
     {isArenaMode ? <ToggleRight className="w-5 h-5" /> : <ToggleLeft className="w-5 h-5" />}
-    <span className="font-semibold text-sm">{isArenaMode ? 'Arena Mode' : 'Solo Mode'}</span>
+    <span>{isArenaMode ? 'Arena Mode' : 'Solo Mode'}</span>
   </button>
 );
 
@@ -174,20 +149,19 @@ export const StreakTracker = ({ streakCount, streakCoins, userEmail }) => {
   const isDeveloper = userEmail === 'rob@sagecg.com';
   
   return (
-    <div className="flex items-center gap-4 px-4 py-2 rounded-lg border-2" 
-         style={{ borderColor: COLORS.SUBTLE, backgroundColor: COLORS.LIGHT_GRAY }}>
+    <div className="flex items-center gap-4 px-4 py-2 rounded-lg border border-slate-200 bg-slate-50">
       <div className="flex items-center gap-2">
-        <Flame className="w-5 h-5" style={{ color: COLORS.ORANGE }} />
-        <span className="font-bold text-lg" style={{ color: COLORS.NAVY }}>{streakCount}</span>
-        <span className="text-sm" style={{ color: COLORS.MUTED }}>Day Streak</span>
+        <Flame className="w-5 h-5 text-[#E04E1B]" />
+        <span className="font-bold text-lg text-[#002E47]">{streakCount}</span>
+        <span className="text-sm text-slate-500">Day Streak</span>
       </div>
       {isDeveloper && (
         <>
-          <div className="h-6 w-px" style={{ backgroundColor: COLORS.SUBTLE }} />
+          <div className="h-6 w-px bg-slate-300" />
           <div className="flex items-center gap-2">
             <span className="text-xl">🪙</span>
-            <span className="font-bold text-lg" style={{ color: COLORS.NAVY }}>{streakCoins}</span>
-            <span className="text-sm" style={{ color: COLORS.MUTED }}>Tokens</span>
+            <span className="font-bold text-lg text-[#002E47]">{streakCoins}</span>
+            <span className="text-sm text-slate-500">Tokens</span>
           </div>
         </>
       )}
@@ -196,7 +170,7 @@ export const StreakTracker = ({ streakCount, streakCoins, userEmail }) => {
 };
 
 /* =========================================================
-   TAB BUTTON (for Dynamic Bookend Container) (Unchanged)
+   TAB BUTTON (for Dynamic Bookend Container)
 ========================================================= */
 export const TabButton = ({ active, onClick, label, minimized = false }) => (
   <button
@@ -204,19 +178,15 @@ export const TabButton = ({ active, onClick, label, minimized = false }) => (
     aria-pressed={active}
     onClick={onClick}
     className={`flex-1 px-4 py-2 rounded-lg font-semibold text-sm transition-all duration-200 relative ${
-      active ? 'shadow-md' : 'hover:bg-gray-50'
+      active 
+        ? 'bg-[#47A88D] text-white shadow-md' 
+        : 'bg-transparent text-slate-600 border-2 border-slate-200 hover:bg-slate-50'
     }`}
-    style={{
-      backgroundColor: active ? COLORS.TEAL : 'transparent',
-      color: active ? 'white' : COLORS.TEXT,
-      border: active ? 'none' : `2px solid ${COLORS.SUBTLE}`
-    }}
   >
     {label}
     {minimized && !active && (
       <span 
-        className="absolute -top-1 -right-1 w-3 h-3 rounded-full"
-        style={{ backgroundColor: COLORS.ORANGE }}
+        className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-[#E04E1B]"
         title="Incomplete"
       />
     )}
@@ -224,7 +194,7 @@ export const TabButton = ({ active, onClick, label, minimized = false }) => (
 );
 
 /* =========================================================
-   DYNAMIC BOOKEND CONTAINER (Unchanged)
+   DYNAMIC BOOKEND CONTAINER
 ========================================================= */
 export const DynamicBookendContainer = ({ 
   morningProps,
@@ -246,7 +216,6 @@ export const DynamicBookendContainer = ({
     }
   }, []);
   
-  // FIX #7: Improved minimization logic for AM bookend
   const currentHour = new Date().getHours();
   const shouldMinimizeAM = currentHour >= 12 && 
     !dailyPracticeData?.morningBookend?.completedAt;
@@ -276,7 +245,7 @@ export const DynamicBookendContainer = ({
 };
 
 /* =========================================================
-   MORNING BOOKEND COMPONENT (WITH LAYOUT FIX)
+   MORNING BOOKEND COMPONENT
 ========================================================= */
 export const MorningBookend = ({ 
     dailyWIN, setDailyWIN, otherTasks, onAddTask, onToggleTask, onRemoveTask,
@@ -291,7 +260,6 @@ export const MorningBookend = ({
     };
     const handleKeyPress = (e) => { if (e.key === 'Enter') handleAddClick(); };
     
-    // FIX #7: Improved lock logic
     const isChecklistMode = !!completedAt;
     const currentHour = new Date().getHours();
     const isPastNoon = currentHour >= 12;
@@ -305,55 +273,46 @@ export const MorningBookend = ({
             <div className="space-y-4">
                 {/* Header */}
                 <div className="flex items-center gap-2 mb-3">
-                    <Sunrise className="w-5 h-5" style={{ color: COLORS.TEAL }} />
-                    <h3 className="text-lg font-bold" style={{ color: COLORS.NAVY }}>
+                    <Sunrise className="w-5 h-5 text-[#47A88D]" />
+                    <h3 className="text-lg font-bold text-[#002E47]">
                         ✅ Today's Plan
                     </h3>
                 </div>
                 
                 {/* WIN Display with Checkbox */}
-                <div className="p-3 rounded-lg border-2" 
-                     style={{ 
-                         backgroundColor: winCompleted ? `${COLORS.GREEN}10` : `${COLORS.TEAL}10`,
-                         borderColor: winCompleted ? COLORS.GREEN : COLORS.TEAL
-                     }}>
+                <div className={`p-3 rounded-lg border-2 ${winCompleted ? 'bg-green-50 border-green-500' : 'bg-teal-50 border-[#47A88D]'}`}>
                     <div className="flex items-start gap-3">
                         <input 
                             type="checkbox"
                             checked={winCompleted || false}
                             onChange={onToggleWIN}
-                            className="mt-1 w-5 h-5 flex-shrink-0"
-                            style={{ accentColor: COLORS.TEAL }}
+                            className="mt-1 w-5 h-5 flex-shrink-0 accent-[#47A88D]"
                         />
                         <div className="flex-1">
-                            <p className="text-xs font-semibold mb-1" style={{ color: COLORS.MUTED }}>
+                            <p className="text-xs font-semibold mb-1 text-slate-500">
                                 🏆 TODAY'S WIN:
                             </p>
-                            <p className={`text-sm font-bold ${winCompleted ? 'line-through opacity-60' : ''}`} 
-                               style={{ color: COLORS.NAVY }}>
+                            <p className={`text-sm font-bold text-[#002E47] ${winCompleted ? 'line-through opacity-60' : ''}`}>
                                 {dailyWIN || 'No WIN set'}
                             </p>
                         </div>
                     </div>
                 </div>
                 
-                {/* Tasks Display with Checkboxes - MIN-HEIGHT FIX APPLIED */}
+                {/* Tasks Display with Checkboxes */}
                 <div className="space-y-2"> 
-                    <p className="text-xs font-semibold" style={{ color: COLORS.MUTED }}>
+                    <p className="text-xs font-semibold text-slate-500">
                         📋 OTHER TASKS:
                     </p>
                     {otherTasks && otherTasks.length > 0 ? (
                         otherTasks.map((task, idx) => (
                             <div key={task.id || idx} 
-                                 className="flex items-center gap-3 p-2 border rounded-lg"
-                                 style={{ borderColor: task.completed ? COLORS.GREEN : COLORS.SUBTLE }}>
+                                 className={`flex items-center gap-3 p-2 border rounded-lg ${task.completed ? 'border-green-500' : 'border-slate-200'}`}>
                                 
-                                {/* MODIFIED: Render system tasks as clickable buttons/links */}
                                 {task.isSystem ? (
                                     <button 
                                         onClick={task.onClick}
-                                        className="text-sm flex-1 text-left font-medium hover:text-teal-600 transition-colors"
-                                        style={{ color: COLORS.NAVY }}
+                                        className="text-sm flex-1 text-left font-medium hover:text-[#47A88D] transition-colors text-[#002E47]"
                                     >
                                         <span className="mr-2 text-red-500">→</span>
                                         {task.text}
@@ -364,16 +323,13 @@ export const MorningBookend = ({
                                         type="checkbox"
                                         checked={task.completed}
                                         onChange={() => onToggleTask(task.id ?? idx)}
-                                        className="w-4 h-4"
-                                        style={{ accentColor: COLORS.TEAL }}
+                                        className="w-4 h-4 accent-[#47A88D]"
                                     />
-                                    <span className={`text-sm flex-1 ${task.completed ? 'line-through opacity-60' : ''}`}
-                                        style={{ color: COLORS.TEXT }}>
+                                    <span className={`text-sm flex-1 text-slate-700 ${task.completed ? 'line-through opacity-60' : ''}`}>
                                         {task.text}
                                     </span>
                                   </>
                                 )}
-                                {/* Only show remove button for non-system, non-completed tasks in checklist mode */}
                                 {!task.isSystem && !task.completed && (
                                     <button 
                                         onClick={() => onRemoveTask(task.id ?? idx)}
@@ -385,26 +341,25 @@ export const MorningBookend = ({
                             </div>
                         ))
                     ) : (
-                        <p className="text-sm italic pt-2" style={{ color: COLORS.MUTED }}>No tasks were set for today.</p>
+                        <p className="text-sm italic pt-2 text-slate-500">No tasks were set for today.</p>
                     )}
                 </div>
                 
                 {/* LIS Display (if enabled) */}
                 {showLIS && identityStatement && (
-                    <div className="p-3 rounded-lg border" 
-                         style={{ backgroundColor: `${COLORS.TEAL}10`, borderColor: `${COLORS.TEAL}30` }}>
-                        <p className="text-xs font-semibold mb-1" style={{ color: COLORS.TEAL }}>
+                    <div className="p-3 rounded-lg border border-[#47A88D]/30 bg-[#47A88D]/10">
+                        <p className="text-xs font-semibold mb-1 text-[#47A88D]">
                             🎯 IDENTITY ANCHOR:
                         </p>
-                        <p className="text-sm italic" style={{ color: COLORS.TEXT }}>
+                        <p className="text-sm italic text-slate-700">
                             {identityStatement}
                         </p>
                     </div>
                 )}
                 
                 {/* Completion Status */}
-                <div className="pt-3 border-t text-center" style={{ borderColor: COLORS.SUBTLE }}>
-                    <p className="text-xs font-semibold" style={{ color: COLORS.GREEN }}>
+                <div className="pt-3 border-t border-slate-200 text-center">
+                    <p className="text-xs font-semibold text-green-600">
                         ✓ Morning plan locked in!
                     </p>
                 </div>
@@ -417,23 +372,22 @@ export const MorningBookend = ({
         <div className="space-y-4">
             {/* Header */}
             <div className="flex items-center gap-2 mb-3">
-                <Sunrise className="w-5 h-5" style={{ color: COLORS.ORANGE }} />
-                <h3 className="text-lg font-bold" style={{ color: COLORS.NAVY }}>
+                <Sunrise className="w-5 h-5 text-[#E04E1B]" />
+                <h3 className="text-lg font-bold text-[#002E47]">
                     🌅 Plan Your Day
                 </h3>
             </div>
             
-            {/* FIX #7: Warning if past noon */}
+            {/* Warning if past noon */}
             {showNoonWarning && (
-                <div className="p-3 rounded-lg border-l-4" 
-                     style={{ backgroundColor: `${COLORS.AMBER}10`, borderColor: COLORS.AMBER }}>
+                <div className="p-3 rounded-lg border-l-4 bg-amber-50 border-amber-500">
                     <div className="flex items-start gap-2">
-                        <AlertTriangle className="w-4 h-4 mt-0.5 flex-shrink-0" style={{ color: COLORS.AMBER }} />
+                        <AlertTriangle className="w-4 h-4 mt-0.5 flex-shrink-0 text-amber-600" />
                         <div>
-                            <p className="text-xs font-semibold" style={{ color: COLORS.AMBER }}>
+                            <p className="text-xs font-semibold text-amber-700">
                                ⚠️ LATE START ALERT
                             </p>
-                            <p className="text-xs mt-1" style={{ color: COLORS.TEXT }}>
+                            <p className="text-xs mt-1 text-slate-700">
                                 It's past noon! Set your WIN and lock in your plan to stay on track.
                             </p>
                         </div>
@@ -441,12 +395,12 @@ export const MorningBookend = ({
                 </div>
             )}
 
-            {/* FIX #7: Why It Matters Section */}
-            <div className="p-3 rounded-lg" style={{ backgroundColor: `${COLORS.BLUE}05`, border: `1px solid ${COLORS.BLUE}20` }}>
-                <p className="text-xs font-semibold mb-1" style={{ color: COLORS.BLUE }}>
+            {/* Why It Matters Section */}
+            <div className="p-3 rounded-lg bg-blue-50 border border-blue-200">
+                <p className="text-xs font-semibold mb-1 text-blue-700">
                     💡 WHY IT MATTERS:
                 </p>
-                <p className="text-xs" style={{ color: COLORS.TEXT }}>
+                <p className="text-xs text-slate-700">
                     Leaders who plan their day intentionally are 3x more likely to achieve their goals. 
                     Your WIN keeps you focused on what truly matters.
                 </p>
@@ -454,17 +408,16 @@ export const MorningBookend = ({
             
             {/* WIN Input */}
             <div>
-                <label className="text-sm font-semibold mb-2 flex items-center" style={{ color: COLORS.TEXT }}>
-                    <Target className="w-4 h-4 mr-1" style={{ color: COLORS.ORANGE }} />
+                <label className="text-sm font-semibold mb-2 flex items-center text-slate-700">
+                    <Target className="w-4 h-4 mr-1 text-[#E04E1B]" />
                     Today's WIN (What's Important Now)
                 </label>
                 <textarea 
                     value={dailyWIN} onChange={(e) => setDailyWIN(e.target.value)}
                     placeholder="What is the ONE thing that must get done today?"
-                    className="w-full p-3 border rounded-lg focus:ring-2 transition-all"
-                    style={{ borderColor: COLORS.SUBTLE }} rows={2}
+                    className="w-full p-3 border border-slate-200 rounded-lg focus:ring-2 focus:ring-[#47A88D] outline-none transition-all"
+                    rows={2}
                 />
-                {/* Separate Save WIN Button (Address user confusion) */}
                 <Button 
                     onClick={onSaveWIN}
                     variant="outline" 
@@ -482,9 +435,9 @@ export const MorningBookend = ({
 
             {/* Tasks Input */}
             <div>
-                <label className="text-sm font-semibold mb-2 flex items-center justify-between" style={{ color: COLORS.TEXT }}>
+                <label className="text-sm font-semibold mb-2 flex items-center justify-between text-slate-700">
                     <span className="flex items-center">
-                        <Clock className="w-4 h-4 mr-1" style={{ color: COLORS.TEAL }} />
+                        <Clock className="w-4 h-4 mr-1 text-[#47A88D]" />
                         Other Important Tasks ({otherTasks?.length || 0}/5)
                     </span>
                 </label>
@@ -494,21 +447,18 @@ export const MorningBookend = ({
                     <div className="space-y-2 mb-3">
                         {otherTasks.map((task, idx) => (
                             <div key={task.id || idx} 
-                                 className="flex items-center gap-2 p-2 border rounded-lg"
-                                 style={{ borderColor: COLORS.SUBTLE, backgroundColor: COLORS.LIGHT_GRAY }}>
+                                 className="flex items-center gap-2 p-2 border border-slate-200 rounded-lg bg-slate-50">
                                 
-                                {/* MODIFIED: Render system tasks as clickable buttons/links */}
                                 {task.isSystem ? (
                                     <button 
                                         onClick={task.onClick}
-                                        className="text-sm flex-1 text-left font-medium hover:text-teal-600 transition-colors"
-                                        style={{ color: COLORS.NAVY }}
+                                        className="text-sm flex-1 text-left font-medium hover:text-[#47A88D] transition-colors text-[#002E47]"
                                     >
                                         <span className="mr-2 text-red-500">→</span>
                                         {task.text}
                                     </button>
                                 ) : (
-                                    <span className="text-sm flex-1" style={{ color: COLORS.TEXT }}>{task.text}</span>
+                                    <span className="text-sm flex-1 text-slate-700">{task.text}</span>
                                 )}
 
                                 {!task.isSystem && (
@@ -530,14 +480,12 @@ export const MorningBookend = ({
                         <input 
                             type="text" value={newTaskText} onChange={(e) => setNewTaskText(e.target.value)}
                             onKeyPress={handleKeyPress} placeholder="Add a task (auto-saves when you click +)..."
-                            className="flex-1 p-2 border rounded-lg text-sm focus:ring-2 transition-all"
-                            style={{ borderColor: COLORS.SUBTLE }}
+                            className="flex-1 p-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-[#47A88D] outline-none transition-all"
                         />
                         <button 
                             onClick={handleAddClick}
                             disabled={!newTaskText.trim() || (otherTasks && otherTasks.length >= 5)}
-                            className="px-4 py-2 rounded-lg font-semibold text-white transition-all disabled:opacity-50"
-                            style={{ backgroundColor: COLORS.TEAL }}
+                            className="px-4 py-2 rounded-lg font-semibold text-white transition-all disabled:opacity-50 bg-[#47A88D] hover:bg-[#3d917a]"
                         >
                             <Plus className="w-4 h-4" />
                         </button>
@@ -549,26 +497,24 @@ export const MorningBookend = ({
             <div>
                 <button 
                     onClick={() => setShowLIS(!showLIS)}
-                    className="text-sm font-semibold flex items-center gap-2 transition-colors hover:opacity-80"
-                    style={{ color: COLORS.TEAL }}
+                    className="text-sm font-semibold flex items-center gap-2 transition-colors hover:opacity-80 text-[#47A88D]"
                 >
                     {showLIS ? 'Hide' : 'Show'} Leadership Identity Statement
                     {showLIS ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
                 </button>
                 {showLIS && (
-                    <div className="mt-3 p-4 rounded-lg border" 
-                         style={{ backgroundColor: `${COLORS.TEAL}10`, borderColor: `${COLORS.TEAL}30` }}>
-                        <p className="text-sm italic font-medium" style={{ color: COLORS.TEXT }}>
+                    <div className="mt-3 p-4 rounded-lg border border-[#47A88D]/30 bg-[#47A88D]/10">
+                        <p className="text-sm italic font-medium text-slate-700">
                             "I am the kind of leader who {identityStatement || '...'}"
                         </p>
                     </div>
                 )}
             </div>
 
-            {/* FIX #7: Validation - require WIN before completion */}
-            <div className="pt-4 border-t" style={{ borderColor: COLORS.SUBTLE }}>
+            {/* Validation - require WIN before completion */}
+            <div className="pt-4 border-t border-slate-200">
                 {!dailyWIN && (
-                    <p className="text-xs mb-2 text-center" style={{ color: COLORS.AMBER }}>
+                    <p className="text-xs mb-2 text-center text-amber-600">
                         ⚠️ Set your WIN before completing the bookend
                     </p>
                 )}
@@ -588,125 +534,122 @@ export const MorningBookend = ({
 };
 
 /* =========================================================
-   EVENING BOOKEND COMPONENT (WITH LAYOUT FIX)
+   EVENING BOOKEND COMPONENT
 ========================================================= */
 export const EveningBookend = ({ 
     reflectionGood, setReflectionGood, reflectionBetter, setReflectionBetter,
     reflectionBest, setReflectionBest, habitsCompleted, onHabitToggle, onSave, isSaving,
     onNavigate, amWinCompleted, amTasksCompleted
 }) => {
-    // Determine the calculated stable height based on MorningBookend
-    const minHeightStyle = { minHeight: '445px' }; // Height based on a stable MorningBookend height
+    const minHeightStyle = { minHeight: '445px' };
     
     return (
         <div className="space-y-4" style={minHeightStyle}>
             {/* Header */}
             <div className="flex items-center gap-2 mb-3">
-                <Moon className="w-5 h-5" style={{ color: COLORS.NAVY }} />
-                <h3 className="text-lg font-bold" style={{ color: COLORS.NAVY }}>
+                <Moon className="w-5 h-5 text-[#002E47]" />
+                <h3 className="text-lg font-bold text-[#002E47]">
                     🌙 Evening Reflection
                 </h3>
             </div>
             
             {/* Good */}
             <div>
-                <label className="text-sm font-semibold mb-2 flex items-center" style={{ color: COLORS.GREEN }}>
+                <label className="text-sm font-semibold mb-2 flex items-center text-green-600">
                     <CheckCircle className="w-4 h-4 mr-1" />
                     Good - What went well today?
                 </label>
                 <textarea value={reflectionGood} onChange={(e) => setReflectionGood(e.target.value)}
-                    placeholder="Celebrate your wins..." className="w-full p-3 border rounded-lg focus:ring-2 transition-all"
-                    style={{ borderColor: `${COLORS.GREEN}40` }} rows={2}
+                    placeholder="Celebrate your wins..." className="w-full p-3 border border-green-200 rounded-lg focus:ring-2 focus:ring-green-500 outline-none transition-all"
+                    rows={2}
                 />
             </div>
 
             {/* Better */}
             <div>
-                <label className="text-sm font-semibold mb-2 flex items-center" style={{ color: COLORS.AMBER }}>
+                <label className="text-sm font-semibold mb-2 flex items-center text-amber-600">
                     <TrendingUp className="w-4 h-4 mr-1" />
                     Better - What needs improvement?
                 </label>
                 <textarea value={reflectionBetter} onChange={(e) => setReflectionBetter(e.target.value)}
-                    placeholder="Areas for growth..." className="w-full p-3 border rounded-lg focus:ring-2 transition-all"
-                    style={{ borderColor: `${COLORS.AMBER}40` }} rows={2}
+                    placeholder="Areas for growth..." className="w-full p-3 border border-amber-200 rounded-lg focus:ring-2 focus:ring-amber-500 outline-none transition-all"
+                    rows={2}
                 />
             </div>
 
             {/* Best */}
             <div>
-                <label className="text-sm font-semibold mb-2 flex items-center" style={{ color: COLORS.BLUE }}>
+                <label className="text-sm font-semibold mb-2 flex items-center text-blue-600">
                     <Star className="w-4 h-4 mr-1" />
                     Best - What do I need to do to show up as my best tomorrow?
                 </label>
                 <textarea value={reflectionBest} onChange={(e) => setReflectionBest(e.target.value)}
-                    placeholder="Tomorrow's commitment..." className="w-full p-3 border rounded-lg focus:ring-2 transition-all"
-                    style={{ borderColor: `${COLORS.BLUE}40` }} rows={2}
+                    placeholder="Tomorrow's commitment..." className="w-full p-3 border border-blue-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition-all"
+                    rows={2}
                 />
             </div>
 
             {/* Daily Habits Tracker */}
-            <div className="pt-4 border-t" style={{ borderColor: COLORS.SUBTLE }}>
-                <p className="text-sm font-semibold mb-3" style={{ color: COLORS.TEXT }}>Daily Habits Tracker</p>
+            <div className="pt-4 border-t border-slate-200">
+                <p className="text-sm font-semibold mb-3 text-slate-700">Daily Habits Tracker</p>
                 
-                {/* Auto-Tracked Habits (Matches user request) */}
-                <div className="space-y-2 mb-3 p-3 rounded-lg" style={{ backgroundColor: `${COLORS.TEAL}05` }}>
-                    <p className="text-xs font-semibold mb-2" style={{ color: COLORS.TEAL }}>
+                {/* Auto-Tracked Habits */}
+                <div className="space-y-2 mb-3 p-3 rounded-lg bg-[#47A88D]/5">
+                    <p className="text-xs font-semibold mb-2 text-[#47A88D]">
                         🔗 AUTO-TRACKED FROM MORNING:
                     </p>
                     
                     <label className="flex items-center gap-2 p-2 rounded opacity-75">
-                        {/* MODIFIED (10/29/25): Use amWinCompleted prop */}
                         <input type="checkbox" checked={amWinCompleted || false}
                             disabled 
-                            className="w-4 h-4" style={{ accentColor: COLORS.TEAL }}
+                            className="w-4 h-4 accent-[#47A88D]"
                         />
-                        <span className="text-sm" style={{ color: COLORS.TEXT }}>Completed Morning WIN</span>
+                        <span className="text-sm text-slate-700">Completed Morning WIN</span>
                     </label>
                     
                     <label className="flex items-center gap-2 p-2 rounded opacity-75">
-                        {/* MODIFIED (10/29/25): Use amTasksCompleted prop */}
                         <input type="checkbox" checked={amTasksCompleted || false}
                             disabled
-                            className="w-4 h-4" style={{ accentColor: COLORS.TEAL }}
+                            className="w-4 h-4 accent-[#47A88D]"
                         />
-                        <span className="text-sm" style={{ color: COLORS.TEXT }}>Completed All Morning Tasks</span>
+                        <span className="text-sm text-slate-700">Completed All Morning Tasks</span>
                     </label>
                 </div>
                 
                 {/* Manual Tracking */}
                 <div className="space-y-2">
-                    <p className="text-xs font-semibold mb-2" style={{ color: COLORS.MUTED }}>
+                    <p className="text-xs font-semibold mb-2 text-slate-500">
                         ✍️ MANUAL TRACKING:
                     </p>
                     
-                    <label className="flex items-center gap-2 cursor-pointer p-2 rounded hover:bg-gray-50 transition-colors">
+                    <label className="flex items-center gap-2 cursor-pointer p-2 rounded hover:bg-slate-50 transition-colors">
                         <input type="checkbox" checked={(habitsCompleted || {}).readLIS || false}
                             onChange={(e) => onHabitToggle('readLIS', e.target.checked)}
-                            className="w-4 h-4" style={{ accentColor: COLORS.TEAL }}
+                            className="w-4 h-4 accent-[#47A88D]"
                         />
-                        <span className="text-sm" style={{ color: COLORS.TEXT }}>Read LIS</span>
+                        <span className="text-sm text-slate-700">Read LIS</span>
                     </label>
                     
-                    <label className="flex items-center gap-2 cursor-pointer p-2 rounded hover:bg-gray-50 transition-colors">
+                    <label className="flex items-center gap-2 cursor-pointer p-2 rounded hover:bg-slate-50 transition-colors">
                         <input type="checkbox" checked={(habitsCompleted || {}).completedDailyRep || false}
                             onChange={(e) => onHabitToggle('completedDailyRep', e.target.checked)}
-                            className="w-4 h-4" style={{ accentColor: COLORS.TEAL }}
+                            className="w-4 h-4 accent-[#47A88D]"
                         />
-                        <span className="text-sm" style={{ color: COLORS.TEXT }}>Complete Daily Rep</span>
+                        <span className="text-sm text-slate-700">Complete Daily Rep</span>
                     </label>
                     
-                    <label className="flex items-center gap-2 cursor-pointer p-2 rounded hover:bg-gray-50 transition-colors">
+                    <label className="flex items-center gap-2 cursor-pointer p-2 rounded hover:bg-slate-50 transition-colors">
                         <input type="checkbox" checked={(habitsCompleted || {}).eveningReflection || false}
                             onChange={(e) => onHabitToggle('eveningReflection', e.target.checked)}
-                            className="w-4 h-4" style={{ accentColor: COLORS.TEAL }}
+                            className="w-4 h-4 accent-[#47A88D]"
                         />
-                        <span className="text-sm" style={{ color: COLORS.TEXT }}>Evening Reflection</span>
+                        <span className="text-sm text-slate-700">Evening Reflection</span>
                     </label>
                 </div>
             </div>
 
             {/* Save Button */}
-            <div className="pt-4 border-t" style={{ borderColor: COLORS.SUBTLE }}>
+            <div className="pt-4 border-t border-slate-200">
                 <Button onClick={onSave} disabled={isSaving} variant="primary" size="md" className="w-full">
                     {isSaving ? <><Loader className="w-5 h-5 mr-2 animate-spin" />Saving...</> : 
                                <><Save className="w-5 h-5 mr-2" />Save Reflection</>}
@@ -731,13 +674,13 @@ export const EveningBookend = ({
 };
 
 /* =========================================================
-   SUGGESTION MODAL (FIX #4, #5)
+   SUGGESTION MODAL
 ========================================================= */
 export const SuggestionModal = ({ title, prefix, suggestions, onSelect, onClose }) => (
   <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
     <div className="bg-white rounded-2xl p-3 sm:p-4 lg:p-6 max-w-2xl w-full max-h-[80vh] overflow-hidden flex flex-col">
       <div className="flex items-center justify-between mb-4">
-        <h2 className="text-xl sm:text-2xl font-bold" style={{ color: COLORS.NAVY }}>
+        <h2 className="text-xl sm:text-2xl font-bold text-[#002E47]">
           {title}
         </h2>
         <button 
@@ -753,14 +696,13 @@ export const SuggestionModal = ({ title, prefix, suggestions, onSelect, onClose 
           <button
             key={index}
             onClick={() => onSelect(suggestion.value || suggestion.text || suggestion)}
-            className="w-full text-left p-4 rounded-lg border-2 transition-all hover:border-teal-500 hover:bg-teal-50"
-            style={{ borderColor: COLORS.SUBTLE }}
+            className="w-full text-left p-4 rounded-lg border-2 border-slate-200 transition-all hover:border-[#47A88D] hover:bg-teal-50"
           >
-            <p className="text-sm font-medium" style={{ color: COLORS.TEXT }}>
+            <p className="text-sm font-medium text-slate-700">
               {prefix} <strong>{suggestion.value || suggestion.text || suggestion}</strong>
             </p>
             {suggestion.description && (
-              <p className="text-xs mt-1" style={{ color: COLORS.MUTED }}>
+              <p className="text-xs mt-1 text-slate-500">
                 {suggestion.description}
               </p>
             )}
@@ -768,7 +710,7 @@ export const SuggestionModal = ({ title, prefix, suggestions, onSelect, onClose 
         ))}
       </div>
       
-      <div className="mt-4 pt-4 border-t" style={{ borderColor: COLORS.SUBTLE }}>
+      <div className="mt-4 pt-4 border-t border-slate-200">
         <Button onClick={onClose} variant="outline" size="sm" className="w-full">
           Close
         </Button>
@@ -778,7 +720,7 @@ export const SuggestionModal = ({ title, prefix, suggestions, onSelect, onClose 
 );
 
 /* =========================================================
-   FIX #6: SAVE INDICATOR
+   SAVE INDICATOR
 ========================================================= */
 export const SaveIndicator = ({ show, message = "Saved!" }) => {
   if (!show) return null;
@@ -794,33 +736,32 @@ export const SaveIndicator = ({ show, message = "Saved!" }) => {
 };
 
 /* =========================================================
-   FIX #3: BONUS EXERCISE MODAL
+   BONUS EXERCISE MODAL
 ========================================================= */
 export const BonusExerciseModal = ({ exercise, onComplete, onSkip }) => (
   <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
     <div className="bg-white rounded-2xl p-3 sm:p-4 lg:p-6 max-w-lg w-full">
       <div className="text-center mb-4">
-        <div className="w-16 h-16 mx-auto mb-3 rounded-full flex items-center justify-center"
-             style={{ backgroundColor: `${COLORS.ORANGE}20` }}>
-          <Trophy className="w-8 h-8" style={{ color: COLORS.ORANGE }} />
+        <div className="w-16 h-16 mx-auto mb-3 rounded-full flex items-center justify-center bg-[#E04E1B]/20">
+          <Trophy className="w-8 h-8 text-[#E04E1B]" />
         </div>
-        <h2 className="text-xl sm:text-2xl font-bold mb-2" style={{ color: COLORS.NAVY }}>
+        <h2 className="text-xl sm:text-2xl font-bold mb-2 text-[#002E47]">
           🎉 Bonus Challenge!
         </h2>
-        <p className="text-sm" style={{ color: COLORS.MUTED }}>
+        <p className="text-sm text-slate-500">
           Complete this 2-minute exercise to earn +50 coins
         </p>
       </div>
 
-      <div className="p-4 rounded-lg mb-4" style={{ backgroundColor: `${COLORS.TEAL}10` }}>
-        <h3 className="font-bold mb-2" style={{ color: COLORS.NAVY }}>
+      <div className="p-4 rounded-lg mb-4 bg-[#47A88D]/10">
+        <h3 className="font-bold mb-2 text-[#002E47]">
           {exercise.name || exercise.title}
         </h3>
-        <p className="text-sm mb-3" style={{ color: COLORS.TEXT }}>
+        <p className="text-sm mb-3 text-slate-700">
           {exercise.description}
         </p>
         {exercise.instructions && (
-          <div className="text-xs" style={{ color: COLORS.MUTED }}>
+          <div className="text-xs text-slate-500">
             <strong>How to do it:</strong>
             <p className="mt-1">{exercise.instructions}</p>
           </div>
@@ -840,16 +781,14 @@ export const BonusExerciseModal = ({ exercise, onComplete, onSkip }) => (
 );
 
 /* =========================================================
-   FIX #8: ADDITIONAL REPS CARD (Enhanced)
+   ADDITIONAL REPS CARD
 ========================================================= */
 export const AdditionalRepsCard = ({ commitments, onToggle, repLibrary }) => {
-  // Lookup full rep details from library
   const enrichedCommitments = commitments.map(commitment => {
     if (typeof commitment === 'string') {
       return { id: commitment, text: commitment, completed: false };
     }
     
-    // If we have a repId, lookup details from library
     if (commitment.repId && repLibrary) {
       const repDetails = repLibrary.find(rep => rep.id === commitment.repId || rep.repId === commitment.repId);
       if (repDetails) {
@@ -870,32 +809,25 @@ export const AdditionalRepsCard = ({ commitments, onToggle, repLibrary }) => {
       <div className="space-y-3">
         {enrichedCommitments.map((commitment, idx) => (
           <div key={commitment.id || idx} 
-               className="p-4 rounded-lg border-2 transition-all"
-               style={{ 
-                 borderColor: commitment.completed ? COLORS.GREEN : COLORS.SUBTLE,
-                 backgroundColor: commitment.completed ? `${COLORS.GREEN}05` : COLORS.LIGHT_GRAY
-               }}>
+               className={`p-4 rounded-lg border-2 transition-all ${commitment.completed ? 'border-green-500 bg-green-50' : 'border-slate-200 bg-slate-50'}`}>
             <div className="flex items-start gap-3">
               <input 
                 type="checkbox" 
                 checked={commitment.completed || false}
                 onChange={() => onToggle(commitment.id)}
-                className="mt-1 w-5 h-5 flex-shrink-0"
-                style={{ accentColor: COLORS.TEAL }}
+                className="mt-1 w-5 h-5 flex-shrink-0 accent-[#47A88D]"
               />
               <div className="flex-1">
-                <p className={`text-sm font-bold mb-1 ${commitment.completed ? 'line-through opacity-60' : ''}`}
-                   style={{ color: COLORS.NAVY }}>
+                <p className={`text-sm font-bold mb-1 text-[#002E47] ${commitment.completed ? 'line-through opacity-60' : ''}`}>
                   {commitment.name || commitment.text || commitment.repId}
                 </p>
                 {commitment.description && (
-                  <p className="text-xs mb-2" style={{ color: COLORS.MUTED }}>
+                  <p className="text-xs mb-2 text-slate-500">
                     {commitment.description}
                   </p>
                 )}
                 {commitment.category && (
-                  <span className="inline-block px-2 py-1 rounded text-xs font-semibold"
-                        style={{ backgroundColor: `${COLORS.BLUE}20`, color: COLORS.BLUE }}>
+                  <span className="inline-block px-2 py-1 rounded text-xs font-semibold bg-blue-100 text-blue-700">
                     {commitment.category}
                   </span>
                 )}
@@ -909,7 +841,7 @@ export const AdditionalRepsCard = ({ commitments, onToggle, repLibrary }) => {
 };
 
 /* =========================================================
-   FIX #8 & #9: SOCIAL POD CARD (with working Find Pod button)
+   SOCIAL POD CARD
 ========================================================= */
 export const SocialPodCard = ({ podMembers, activityFeed, onSendMessage, onFindPod }) => {
   const [newMessage, setNewMessage] = useState('');
@@ -927,23 +859,21 @@ export const SocialPodCard = ({ podMembers, activityFeed, onSendMessage, onFindP
       {podMembers && podMembers.length > 0 ? (
         <>
           <div className="mb-4">
-            <p className="text-xs font-semibold mb-2" style={{ color: COLORS.MUTED }}>
+            <p className="text-xs font-semibold mb-2 text-slate-500">
               YOUR POD MEMBERS:
             </p>
             <div className="flex gap-2 flex-wrap">
               {podMembers.map((member, idx) => (
                 <div key={idx} 
-                     className="flex items-center gap-2 px-3 py-2 rounded-lg border"
-                     style={{ borderColor: COLORS.SUBTLE, backgroundColor: COLORS.LIGHT_GRAY }}>
-                  <div className="w-8 h-8 rounded-full flex items-center justify-center"
-                       style={{ backgroundColor: COLORS.TEAL, color: 'white' }}>
+                     className="flex items-center gap-2 px-3 py-2 rounded-lg border border-slate-200 bg-slate-50">
+                  <div className="w-8 h-8 rounded-full flex items-center justify-center bg-[#47A88D] text-white">
                     <User className="w-4 h-4" />
                   </div>
                   <div>
-                    <p className="text-sm font-semibold" style={{ color: COLORS.NAVY }}>
+                    <p className="text-sm font-semibold text-[#002E47]">
                       {member.name || 'Leader'}
                     </p>
-                    <p className="text-xs" style={{ color: COLORS.MUTED }}>
+                    <p className="text-xs text-slate-500">
                       {member.streak || 0} day streak
                     </p>
                   </div>
@@ -954,28 +884,24 @@ export const SocialPodCard = ({ podMembers, activityFeed, onSendMessage, onFindP
 
           {/* Activity Feed */}
           <div className="mb-4">
-            <p className="text-xs font-semibold mb-2" style={{ color: COLORS.MUTED }}>
+            <p className="text-xs font-semibold mb-2 text-slate-500">
               RECENT ACTIVITY:
             </p>
             <div className="space-y-2 max-h-64 overflow-y-auto">
               {activityFeed && activityFeed.length > 0 ? (
                 activityFeed.map((activity, idx) => (
                   <div key={idx} 
-                       className="p-3 rounded-lg border-l-4"
-                       style={{ 
-                         backgroundColor: COLORS.LIGHT_GRAY,
-                         borderColor: COLORS.TEAL
-                       }}>
+                       className="p-3 rounded-lg border-l-4 bg-slate-50 border-[#47A88D]">
                     <div className="flex items-start gap-2">
-                      <Activity className="w-4 h-4 mt-0.5 flex-shrink-0" style={{ color: COLORS.TEAL }} />
+                      <Activity className="w-4 h-4 mt-0.5 flex-shrink-0 text-[#47A88D]" />
                       <div className="flex-1">
-                        <p className="text-sm font-semibold" style={{ color: COLORS.NAVY }}>
+                        <p className="text-sm font-semibold text-[#002E47]">
                           {activity.userName}
                         </p>
-                        <p className="text-xs" style={{ color: COLORS.TEXT }}>
+                        <p className="text-xs text-slate-700">
                           {activity.message}
                         </p>
-                        <p className="text-xs mt-1" style={{ color: COLORS.MUTED }}>
+                        <p className="text-xs mt-1 text-slate-500">
                           {formatTimestamp(activity.timestamp)}
                         </p>
                       </div>
@@ -983,7 +909,7 @@ export const SocialPodCard = ({ podMembers, activityFeed, onSendMessage, onFindP
                   </div>
                 ))
               ) : (
-                <p className="text-sm text-center py-4" style={{ color: COLORS.MUTED }}>
+                <p className="text-sm text-center py-4 text-slate-500">
                   No recent activity. Be the first to share!
                 </p>
               )}
@@ -991,7 +917,7 @@ export const SocialPodCard = ({ podMembers, activityFeed, onSendMessage, onFindP
           </div>
 
           {/* Send Message */}
-          <div className="pt-3 border-t" style={{ borderColor: COLORS.SUBTLE }}>
+          <div className="pt-3 border-t border-slate-200">
             <div className="flex gap-2">
               <input 
                 type="text"
@@ -999,14 +925,12 @@ export const SocialPodCard = ({ podMembers, activityFeed, onSendMessage, onFindP
                 onChange={(e) => setNewMessage(e.target.value)}
                 onKeyPress={(e) => e.key === 'Enter' && handleSend()}
                 placeholder="Share your progress..."
-                className="flex-1 p-2 border rounded-lg text-sm"
-                style={{ borderColor: COLORS.SUBTLE }}
+                className="flex-1 p-2 border border-slate-200 rounded-lg text-sm"
               />
               <button
                 onClick={handleSend}
                 disabled={!newMessage.trim()}
-                className="px-4 py-2 rounded-lg font-semibold text-white transition-all disabled:opacity-50"
-                style={{ backgroundColor: COLORS.TEAL }}
+                className="px-4 py-2 rounded-lg font-semibold text-white transition-all disabled:opacity-50 bg-[#47A88D]"
               >
                 <Send className="w-4 h-4" />
               </button>
@@ -1016,11 +940,11 @@ export const SocialPodCard = ({ podMembers, activityFeed, onSendMessage, onFindP
       ) : (
         /* Empty State */
         <div className="text-center py-8">
-          <Users className="w-12 h-12 mx-auto mb-3" style={{ color: COLORS.MUTED }} />
-          <p className="text-sm font-semibold mb-2" style={{ color: COLORS.NAVY }}>
+          <Users className="w-12 h-12 mx-auto mb-3 text-slate-500" />
+          <p className="text-sm font-semibold mb-2 text-[#002E47]">
             No Pod Members Yet
           </p>
-          <p className="text-xs mb-4" style={{ color: COLORS.MUTED }}>
+          <p className="text-xs mb-4 text-slate-500">
             Connect with other leaders to build accountability
           </p>
           <Button onClick={onFindPod} variant="outline" size="sm">
@@ -1038,13 +962,12 @@ export const SocialPodCard = ({ podMembers, activityFeed, onSendMessage, onFindP
 export const AICoachNudge = ({ onOpenLab, disabled }) => (
   <Card>
     <div className="flex items-start gap-3">
-      <div className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0" 
-           style={{ backgroundColor: `${COLORS.TEAL}20`, color: COLORS.TEAL }}>
+      <div className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 bg-[#47A88D]/20 text-[#47A88D]">
         <MessageSquare className="w-5 h-5" />
       </div>
       <div className="flex-1">
-        <h3 className="font-bold mb-1" style={{ color: COLORS.NAVY }}>Need coaching support?</h3>
-        <p className="text-sm mb-3" style={{ color: COLORS.TEXT }}>
+        <h3 className="font-bold mb-1 text-[#002E47]">Need coaching support?</h3>
+        <p className="text-sm mb-3 text-slate-700">
           Practice scenarios, get feedback, or work through challenges with your AI coach.
         </p>
         <Button onClick={onOpenLab} variant="outline" size="sm" disabled={disabled}>
@@ -1056,24 +979,24 @@ export const AICoachNudge = ({ onOpenLab, disabled }) => (
 );
 
 /* =========================================================
-   DEV PLAN PROGRESS LINK (FIX #2)
+   DEV PLAN PROGRESS LINK
 ========================================================= */
 export const DevPlanProgressLink = ({ progress, focusArea, onNavigate }) => (
   <Card>
     <div className="flex items-center justify-between mb-3">
       <div className="flex-1">
-        <p className="text-xs font-semibold mb-1" style={{ color: COLORS.MUTED }}>
+        <p className="text-xs font-semibold mb-1 text-slate-500">
           CURRENT DEVELOPMENT FOCUS
         </p>
-        <p className="text-base font-bold" style={{ color: COLORS.NAVY }}>
+        <p className="text-base font-bold text-[#002E47]">
           {focusArea || 'Not Set'}
         </p>
       </div>
       <div className="text-right">
-        <p className="text-xl sm:text-2xl sm:text-3xl font-bold" style={{ color: COLORS.TEAL }}>
+        <p className="text-xl sm:text-2xl sm:text-3xl font-bold text-[#47A88D]">
           {progress || 0}%
         </p>
-        <p className="text-xs" style={{ color: COLORS.MUTED }}>
+        <p className="text-xs text-slate-500">
           Complete
         </p>
       </div>
@@ -1093,30 +1016,23 @@ export const DevPlanProgressLink = ({ progress, focusArea, onNavigate }) => (
    REMINDER BANNER COMPONENTS
 ========================================================= */
 export const ReminderBanner = ({ message, onDismiss, type = 'best' }) => {
-  const bgColor = type === 'best' ? COLORS.TEAL : COLORS.AMBER;
+  const bgColorClass = type === 'best' ? 'bg-[#47A88D]/10 border-[#47A88D]' : 'bg-amber-100 border-amber-500';
+  const textColorClass = type === 'best' ? 'text-[#47A88D]' : 'text-amber-600';
   const emoji = type ==='best' ? '🌟' : '💡';
   const label = type === 'best' ? "YESTERDAY'S COMMITMENT:" : "AREA FOR IMPROVEMENT:";
   
-  // CRITICAL FIX: Don't render if message is a FieldValue sentinel (has _methodName)
-  // This prevents React Error #31 when deleteField() or other sentinels are passed
   if (!message || typeof message !== 'string') {
-    return null; // Don't render if message is not a valid string
+    return null;
   }
   
   return (
-    <div 
-      className="p-4 rounded-lg border-l-4" 
-      style={{ 
-        backgroundColor: `${bgColor}10`, 
-        borderColor: bgColor 
-      }}
-    >
+    <div className={`p-4 rounded-lg border-l-4 ${bgColorClass}`}>
       <div className="flex justify-between items-start gap-3">
         <div className="flex-1">
-          <p className="text-xs font-semibold mb-1" style={{ color: bgColor }}>
+          <p className={`text-xs font-semibold mb-1 ${textColorClass}`}>
             {emoji} {label}
           </p>
-          <p className="text-sm" style={{ color: COLORS.NAVY }}>
+          <p className="text-sm text-[#002E47]">
             {message}
           </p>
         </div>
@@ -1133,27 +1049,24 @@ export const ReminderBanner = ({ message, onDismiss, type = 'best' }) => {
 };
 
 /* =========================================================
-   NEW: UNIFIED ANCHOR EDITOR MODAL
+   UNIFIED ANCHOR EDITOR MODAL
 ========================================================= */
 const AnchorInputSection = ({ 
     title, description, value, setValue, 
     suggestions, onSelectSuggestion, isTextArea = false,
     icon: Icon 
 }) => {
-    // Determine the text used for suggestions based on the anchor type
-    const suggestionPrefix = title === '1. Identity Anchor' 
-        ? '... ' // for "...prioritizes team well-being"
-        : ''; 
+    const suggestionPrefix = title === '1. Identity Anchor' ? '... ' : ''; 
         
     return (
-        <div className="p-4 rounded-xl border" style={{ borderColor: COLORS.SUBTLE }}>
+        <div className="p-4 rounded-xl border border-slate-200">
             <div className="flex items-center gap-2 mb-2">
-                <Icon className="w-5 h-5" style={{ color: COLORS.TEAL }} />
-                <h3 className="text-lg font-bold" style={{ color: COLORS.NAVY }}>
+                <Icon className="w-5 h-5 text-[#47A88D]" />
+                <h3 className="text-lg font-bold text-[#002E47]">
                     {title}
                 </h3>
             </div>
-            <p className="text-xs mb-3" style={{ color: COLORS.MUTED }}>
+            <p className="text-xs mb-3 text-slate-500">
                 {description}
             </p>
             
@@ -1162,8 +1075,7 @@ const AnchorInputSection = ({
                     value={value}
                     onChange={(e) => setValue(e.target.value)}
                     placeholder="Enter your anchor..."
-                    className="w-full p-3 border rounded-lg mb-4"
-                    style={{ borderColor: COLORS.SUBTLE }}
+                    className="w-full p-3 border border-slate-200 rounded-lg mb-4"
                     rows={3}
                 />
             ) : (
@@ -1172,14 +1084,13 @@ const AnchorInputSection = ({
                     value={value}
                     onChange={(e) => setValue(e.target.value)}
                     placeholder="Enter your anchor..."
-                    className="w-full p-3 border rounded-lg mb-4"
-                    style={{ borderColor: COLORS.SUBTLE }}
+                    className="w-full p-3 border border-slate-200 rounded-lg mb-4"
                 />
             )}
             
             {suggestions && suggestions.length > 0 && (
                 <>
-                    <p className="text-xs font-semibold mb-2" style={{ color: COLORS.MUTED }}>
+                    <p className="text-xs font-semibold mb-2 text-slate-500">
                         SUGGESTIONS:
                     </p>
                     <div className="space-y-1 max-h-32 overflow-y-auto">
@@ -1187,8 +1098,7 @@ const AnchorInputSection = ({
                             <button
                                 key={index}
                                 onClick={() => onSelectSuggestion(suggestion.text)}
-                                className="w-full text-left p-2 rounded-lg text-sm transition-all bg-gray-50 hover:bg-teal-50"
-                                style={{ color: COLORS.NAVY }}
+                                className="w-full text-left p-2 rounded-lg text-sm transition-all bg-slate-50 hover:bg-teal-50 text-[#002E47]"
                             >
                                 {suggestionPrefix} {suggestion.text}
                             </button>
@@ -1229,7 +1139,7 @@ export const UnifiedAnchorEditorModal = ({
             <div className="bg-white rounded-2xl p-6 max-w-md w-full shadow-xl">
                 <div className="flex justify-between items-center mb-6 border-b pb-4 border-slate-100">
                     <h2 className="text-xl font-bold text-[#002E47] flex items-center gap-2">
-                        <Anchor className="w-6 h-6 text-teal-600" />
+                        <Anchor className="w-6 h-6 text-[#47A88D]" />
                         Define Your Leadership Anchors
                     </h2>
                     <button onClick={onClose} className="p-1 rounded-full hover:bg-slate-100">
@@ -1270,7 +1180,7 @@ export const UnifiedAnchorEditorModal = ({
                     />
                 </div>
 
-                <div className="mt-4 pt-4 border-t flex gap-3" style={{ borderColor: COLORS.SUBTLE }}>
+                <div className="mt-4 pt-4 border-t border-slate-200 flex gap-3">
                     <Button onClick={handleSave} variant="primary" size="md" className="flex-1">
                         <Save className="w-4 h-4 mr-2" /> Save All Anchors
                     </Button>
@@ -1295,7 +1205,7 @@ export const CalendarSyncModal = ({ isOpen, onClose }) => {
             <div className="bg-white rounded-2xl p-6 max-w-md w-full shadow-xl">
                 <div className="flex justify-between items-center mb-6 border-b pb-4 border-slate-100">
                     <h2 className="text-xl font-bold text-[#002E47] flex items-center gap-2">
-                        <Calendar className="w-6 h-6 text-teal-600" />
+                        <Calendar className="w-6 h-6 text-[#47A88D]" />
                         Calendar Integration
                     </h2>
                     <button onClick={onClose} className="p-1 rounded-full hover:bg-slate-100">
@@ -1310,26 +1220,26 @@ export const CalendarSyncModal = ({ isOpen, onClose }) => {
                 <div className="space-y-3">
                     <button 
                         onClick={() => handleSync('Google Calendar')}
-                        className="w-full flex items-center justify-between p-4 rounded-xl border border-slate-200 hover:border-teal-500 hover:bg-teal-50 transition-all group"
+                        className="w-full flex items-center justify-between p-4 rounded-xl border border-slate-200 hover:border-[#47A88D] hover:bg-teal-50 transition-all group"
                     >
                         <span className="font-semibold text-slate-700 group-hover:text-teal-700">Google Calendar</span>
-                        <ChevronRight className="w-5 h-5 text-slate-300 group-hover:text-teal-500" />
+                        <ChevronRight className="w-5 h-5 text-slate-300 group-hover:text-[#47A88D]" />
                     </button>
                     
                     <button 
                         onClick={() => handleSync('Outlook')}
-                        className="w-full flex items-center justify-between p-4 rounded-xl border border-slate-200 hover:border-teal-500 hover:bg-teal-50 transition-all group"
+                        className="w-full flex items-center justify-between p-4 rounded-xl border border-slate-200 hover:border-[#47A88D] hover:bg-teal-50 transition-all group"
                     >
                         <span className="font-semibold text-slate-700 group-hover:text-teal-700">Outlook Calendar</span>
-                        <ChevronRight className="w-5 h-5 text-slate-300 group-hover:text-teal-500" />
+                        <ChevronRight className="w-5 h-5 text-slate-300 group-hover:text-[#47A88D]" />
                     </button>
                     
                     <button 
                         onClick={() => handleSync('Apple Calendar')}
-                        className="w-full flex items-center justify-between p-4 rounded-xl border border-slate-200 hover:border-teal-500 hover:bg-teal-50 transition-all group"
+                        className="w-full flex items-center justify-between p-4 rounded-xl border border-slate-200 hover:border-[#47A88D] hover:bg-teal-50 transition-all group"
                     >
                         <span className="font-semibold text-slate-700 group-hover:text-teal-700">Apple Calendar (iCal)</span>
-                        <ChevronRight className="w-5 h-5 text-slate-300 group-hover:text-teal-500" />
+                        <ChevronRight className="w-5 h-5 text-slate-300 group-hover:text-[#47A88D]" />
                     </button>
                 </div>
 
@@ -1344,12 +1254,11 @@ export const CalendarSyncModal = ({ isOpen, onClose }) => {
 };
 
 /* =========================================================
-   ANCHORS IN ACTION - Shows how anchors are being used
+   ANCHORS IN ACTION
 ========================================================= */
 export const AnchorsInAction = ({ identityStatement, habitAnchor, whyStatement }) => {
     const [isExpanded, setIsExpanded] = useState(false);
     
-    // Don't show if no anchors are set
     if (!identityStatement && !habitAnchor && !whyStatement) {
         return null;
     }
@@ -1360,8 +1269,8 @@ export const AnchorsInAction = ({ identityStatement, habitAnchor, whyStatement }
                 {/* Header */}
                 <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                        <Anchor className="w-5 h-5" style={{ color: COLORS.BLUE }} />
-                        <h3 className="text-lg font-bold" style={{ color: COLORS.NAVY }}>
+                        <Anchor className="w-5 h-5 text-blue-600" />
+                        <h3 className="text-lg font-bold text-[#002E47]">
                             Your Leadership Anchors
                         </h3>
                     </div>
@@ -1370,9 +1279,9 @@ export const AnchorsInAction = ({ identityStatement, habitAnchor, whyStatement }
                         className="p-1 rounded-full hover:bg-gray-100 transition-colors"
                     >
                         {isExpanded ? (
-                            <ChevronUp className="w-5 h-5" style={{ color: COLORS.MUTED }} />
+                            <ChevronUp className="w-5 h-5 text-slate-500" />
                         ) : (
-                            <ChevronDown className="w-5 h-5" style={{ color: COLORS.MUTED }} />
+                            <ChevronDown className="w-5 h-5 text-slate-500" />
                         )}
                     </button>
                 </div>
@@ -1381,21 +1290,17 @@ export const AnchorsInAction = ({ identityStatement, habitAnchor, whyStatement }
                     <div className="space-y-3">
                         {/* Identity Anchor */}
                         {identityStatement && (
-                            <div className="p-3 rounded-lg border-l-4" 
-                                 style={{ 
-                                     backgroundColor: `${COLORS.TEAL}10`,
-                                     borderColor: COLORS.TEAL
-                                 }}>
+                            <div className="p-3 rounded-lg border-l-4 bg-[#47A88D]/10 border-[#47A88D]">
                                 <div className="flex items-start gap-2">
-                                    <User className="w-4 h-4 flex-shrink-0 mt-1" style={{ color: COLORS.TEAL }} />
+                                    <User className="w-4 h-4 flex-shrink-0 mt-1 text-[#47A88D]" />
                                     <div className="flex-1">
-                                        <p className="text-xs font-semibold mb-1" style={{ color: COLORS.TEAL }}>
+                                        <p className="text-xs font-semibold mb-1 text-[#47A88D]">
                                             🎯 IDENTITY ANCHOR:
                                         </p>
-                                        <p className="text-sm italic" style={{ color: COLORS.TEXT }}>
+                                        <p className="text-sm italic text-slate-700">
                                             "I am the kind of leader who {identityStatement}"
                                         </p>
-                                        <p className="text-xs mt-2" style={{ color: COLORS.MUTED }}>
+                                        <p className="text-xs mt-2 text-slate-500">
                                             ✓ Displayed in your Morning Bookend to ground your daily practice
                                         </p>
                                     </div>
@@ -1405,21 +1310,17 @@ export const AnchorsInAction = ({ identityStatement, habitAnchor, whyStatement }
                         
                         {/* Habit Anchor */}
                         {habitAnchor && (
-                            <div className="p-3 rounded-lg border-l-4" 
-                                 style={{ 
-                                     backgroundColor: `${COLORS.BLUE}10`,
-                                     borderColor: COLORS.BLUE
-                                 }}>
+                            <div className="p-3 rounded-lg border-l-4 bg-blue-100 border-blue-600">
                                 <div className="flex items-start gap-2">
-                                    <Clock className="w-4 h-4 flex-shrink-0 mt-1" style={{ color: COLORS.BLUE }} />
+                                    <Clock className="w-4 h-4 flex-shrink-0 mt-1 text-blue-600" />
                                     <div className="flex-1">
-                                        <p className="text-xs font-semibold mb-1" style={{ color: COLORS.BLUE }}>
+                                        <p className="text-xs font-semibold mb-1 text-blue-600">
                                             ⏰ HABIT ANCHOR (CUE):
                                         </p>
-                                        <p className="text-sm italic" style={{ color: COLORS.TEXT }}>
+                                        <p className="text-sm italic text-slate-700">
                                             "When I {habitAnchor}..."
                                         </p>
-                                        <p className="text-xs mt-2" style={{ color: COLORS.MUTED }}>
+                                        <p className="text-xs mt-2 text-slate-500">
                                             ✓ Triggers your daily leadership practice routine
                                         </p>
                                     </div>
@@ -1429,21 +1330,17 @@ export const AnchorsInAction = ({ identityStatement, habitAnchor, whyStatement }
                         
                         {/* Why Statement */}
                         {whyStatement && (
-                            <div className="p-3 rounded-lg border-l-4" 
-                                 style={{ 
-                                     backgroundColor: `${COLORS.ORANGE}10`,
-                                     borderColor: COLORS.ORANGE
-                                 }}>
+                            <div className="p-3 rounded-lg border-l-4 bg-[#E04E1B]/10 border-[#E04E1B]">
                                 <div className="flex items-start gap-2">
-                                    <Zap className="w-4 h-4 flex-shrink-0 mt-1" style={{ color: COLORS.ORANGE }} />
+                                    <Zap className="w-4 h-4 flex-shrink-0 mt-1 text-[#E04E1B]" />
                                     <div className="flex-1">
-                                        <p className="text-xs font-semibold mb-1" style={{ color: COLORS.ORANGE }}>
+                                        <p className="text-xs font-semibold mb-1 text-[#E04E1B]">
                                             💡 WHY IT MATTERS:
                                         </p>
-                                        <p className="text-sm" style={{ color: COLORS.TEXT }}>
+                                        <p className="text-sm text-slate-700">
                                             {whyStatement}
                                         </p>
-                                        <p className="text-xs mt-2" style={{ color: COLORS.MUTED }}>
+                                        <p className="text-xs mt-2 text-slate-500">
                                             ✓ Your core purpose that keeps you motivated
                                         </p>
                                     </div>
@@ -1452,18 +1349,18 @@ export const AnchorsInAction = ({ identityStatement, habitAnchor, whyStatement }
                         )}
                         
                         {/* How Anchors Are Used */}
-                        <div className="pt-3 border-t" style={{ borderColor: COLORS.SUBTLE }}>
-                            <p className="text-xs font-semibold mb-2" style={{ color: COLORS.NAVY }}>
+                        <div className="pt-3 border-t border-slate-200">
+                            <p className="text-xs font-semibold mb-2 text-[#002E47]">
                                 📍 WHERE YOUR ANCHORS APPEAR:
                             </p>
                             <div className="space-y-1">
-                                <p className="text-xs" style={{ color: COLORS.TEXT }}>
+                                <p className="text-xs text-slate-700">
                                     • <strong>Morning Bookend:</strong> Identity statement visible in optional LIS section
                                 </p>
-                                <p className="text-xs" style={{ color: COLORS.TEXT }}>
+                                <p className="text-xs text-slate-700">
                                     • <strong>Daily Reminders:</strong> Why statement reminds you of your purpose
                                 </p>
-                                <p className="text-xs" style={{ color: COLORS.TEXT }}>
+                                <p className="text-xs text-slate-700">
                                     • <strong>Habit Building:</strong> Cue triggers consistent daily practice
                                 </p>
                             </div>
@@ -1476,17 +1373,15 @@ export const AnchorsInAction = ({ identityStatement, habitAnchor, whyStatement }
 };
 
 /* =========================================================
-   DAILY PROGRESS SUMMARY - Shows Today's WIN and Recent Reflections
+   DAILY PROGRESS SUMMARY
 ========================================================= */
 export const DailyProgressSummary = ({ dailyPracticeData }) => {
     const [isExpanded, setIsExpanded] = useState(true);
     
-    // Extract today's WIN and evening reflection
     const todaysWIN = dailyPracticeData?.morningBookend?.dailyWIN;
     const eveningReflection = dailyPracticeData?.eveningBookend;
     const winCompleted = dailyPracticeData?.morningBookend?.winCompleted;
     
-    // Don't show if no data
     if (!todaysWIN && !eveningReflection?.good) {
         return null;
     }
@@ -1497,8 +1392,8 @@ export const DailyProgressSummary = ({ dailyPracticeData }) => {
                 {/* Header */}
                 <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                        <Trophy className="w-5 h-5" style={{ color: COLORS.TEAL }} />
-                        <h3 className="text-lg font-bold" style={{ color: COLORS.NAVY }}>
+                        <Trophy className="w-5 h-5 text-[#47A88D]" />
+                        <h3 className="text-lg font-bold text-[#002E47]">
                             Today's Progress
                         </h3>
                     </div>
@@ -1507,9 +1402,9 @@ export const DailyProgressSummary = ({ dailyPracticeData }) => {
                         className="p-1 rounded-full hover:bg-gray-100 transition-colors"
                     >
                         {isExpanded ? (
-                            <ChevronUp className="w-5 h-5" style={{ color: COLORS.MUTED }} />
+                            <ChevronUp className="w-5 h-5 text-slate-500" />
                         ) : (
-                            <ChevronDown className="w-5 h-5" style={{ color: COLORS.MUTED }} />
+                            <ChevronDown className="w-5 h-5 text-slate-500" />
                         )}
                     </button>
                 </div>
@@ -1518,21 +1413,16 @@ export const DailyProgressSummary = ({ dailyPracticeData }) => {
                     <>
                         {/* Today's WIN */}
                         {todaysWIN && (
-                            <div className="p-3 rounded-lg border-2" 
-                                 style={{ 
-                                     backgroundColor: winCompleted ? `${COLORS.GREEN}10` : `${COLORS.TEAL}10`,
-                                     borderColor: winCompleted ? COLORS.GREEN : COLORS.TEAL
-                                 }}>
+                            <div className={`p-3 rounded-lg border-2 ${winCompleted ? 'bg-green-50 border-green-500' : 'bg-teal-50 border-[#47A88D]'}`}>
                                 <div className="flex items-start gap-3">
                                     {winCompleted && (
-                                        <CheckCircle className="w-5 h-5 flex-shrink-0 mt-0.5" style={{ color: COLORS.GREEN }} />
+                                        <CheckCircle className="w-5 h-5 flex-shrink-0 mt-0.5 text-green-600" />
                                     )}
                                     <div className="flex-1">
-                                        <p className="text-xs font-semibold mb-1" style={{ color: COLORS.MUTED }}>
+                                        <p className="text-xs font-semibold mb-1 text-slate-500">
                                             🏆 TODAY'S WIN:
                                         </p>
-                                        <p className={`text-sm font-bold ${winCompleted ? 'line-through opacity-60' : ''}`} 
-                                           style={{ color: COLORS.NAVY }}>
+                                        <p className={`text-sm font-bold text-[#002E47] ${winCompleted ? 'line-through opacity-60' : ''}`}>
                                             {todaysWIN}
                                         </p>
                                     </div>
@@ -1543,27 +1433,27 @@ export const DailyProgressSummary = ({ dailyPracticeData }) => {
                         {/* Evening Reflection Summary */}
                         {eveningReflection?.good && (
                             <div className="space-y-2">
-                                <p className="text-xs font-semibold" style={{ color: COLORS.MUTED }}>
+                                <p className="text-xs font-semibold text-slate-500">
                                     🌙 TODAY'S REFLECTION:
                                 </p>
                                 
                                 {/* What Went Well */}
-                                <div className="p-2 rounded-lg" style={{ backgroundColor: `${COLORS.GREEN}10` }}>
-                                    <p className="text-xs font-semibold mb-1" style={{ color: COLORS.GREEN }}>
+                                <div className="p-2 rounded-lg bg-green-100">
+                                    <p className="text-xs font-semibold mb-1 text-green-600">
                                         ✅ What Went Well:
                                     </p>
-                                    <p className="text-sm" style={{ color: COLORS.TEXT }}>
+                                    <p className="text-sm text-slate-700">
                                         {eveningReflection.good}
                                     </p>
                                 </div>
                                 
                                 {/* What Could Be Better */}
                                 {eveningReflection.better && (
-                                    <div className="p-2 rounded-lg" style={{ backgroundColor: `${COLORS.AMBER}10` }}>
-                                        <p className="text-xs font-semibold mb-1" style={{ color: COLORS.AMBER }}>
+                                    <div className="p-2 rounded-lg bg-amber-100">
+                                        <p className="text-xs font-semibold mb-1 text-amber-600">
                                             💡 What Could Be Better:
                                         </p>
-                                        <p className="text-sm" style={{ color: COLORS.TEXT }}>
+                                        <p className="text-sm text-slate-700">
                                             {eveningReflection.better}
                                         </p>
                                     </div>
@@ -1571,11 +1461,11 @@ export const DailyProgressSummary = ({ dailyPracticeData }) => {
                                 
                                 {/* Tomorrow's Focus */}
                                 {eveningReflection.best && (
-                                    <div className="p-2 rounded-lg" style={{ backgroundColor: `${COLORS.BLUE}10` }}>
-                                        <p className="text-xs font-semibold mb-1" style={{ color: COLORS.BLUE }}>
+                                    <div className="p-2 rounded-lg bg-blue-100">
+                                        <p className="text-xs font-semibold mb-1 text-blue-600">
                                             🎯 Tomorrow's Focus:
                                         </p>
-                                        <p className="text-sm" style={{ color: COLORS.TEXT }}>
+                                        <p className="text-sm text-slate-700">
                                             {eveningReflection.best}
                                         </p>
                                     </div>
@@ -1590,7 +1480,7 @@ export const DailyProgressSummary = ({ dailyPracticeData }) => {
 };
 
 /* =========================================================
-   WINS LIST COMPONENT - Display cumulative wins
+   WINS LIST COMPONENT
 ========================================================= */
 export const WinsList = ({ winsList, onDeleteWin }) => {
     const [isExpanded, setIsExpanded] = useState(true);
@@ -1605,8 +1495,8 @@ export const WinsList = ({ winsList, onDeleteWin }) => {
                 {/* Header */}
                 <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                        <Trophy className="w-5 h-5" style={{ color: COLORS.GREEN }} />
-                        <h3 className="text-lg font-bold" style={{ color: COLORS.NAVY }}>
+                        <Trophy className="w-5 h-5 text-green-600" />
+                        <h3 className="text-lg font-bold text-[#002E47]">
                             🏆 Your Wins ({winsList.length})
                         </h3>
                     </div>
@@ -1615,9 +1505,9 @@ export const WinsList = ({ winsList, onDeleteWin }) => {
                         className="p-1 rounded-full hover:bg-gray-100 transition-colors"
                     >
                         {isExpanded ? (
-                            <ChevronUp className="w-5 h-5" style={{ color: COLORS.MUTED }} />
+                            <ChevronUp className="w-5 h-5 text-slate-500" />
                         ) : (
-                            <ChevronDown className="w-5 h-5" style={{ color: COLORS.MUTED }} />
+                            <ChevronDown className="w-5 h-5 text-slate-500" />
                         )}
                     </button>
                 </div>
@@ -1626,17 +1516,16 @@ export const WinsList = ({ winsList, onDeleteWin }) => {
                     <div className="space-y-3">
                         {winsList.slice().reverse().map((win, index) => (
                             <div key={win.id || index} 
-                                 className="p-3 rounded-lg border-2 bg-gradient-to-r from-green-50 to-teal-50" 
-                                 style={{ borderColor: COLORS.GREEN }}>
+                                 className="p-3 rounded-lg border-2 bg-gradient-to-r from-green-50 to-teal-50 border-green-600">
                                 <div className="flex items-start justify-between gap-3">
                                     <div className="flex-1">
                                         <div className="flex items-center gap-2 mb-1">
-                                            <Star className="w-4 h-4" style={{ color: COLORS.GREEN }} />
-                                            <span className="text-xs font-semibold" style={{ color: COLORS.MUTED }}>
+                                            <Star className="w-4 h-4 text-green-600" />
+                                            <span className="text-xs font-semibold text-slate-500">
                                                 {win.date}
                                             </span>
                                         </div>
-                                        <p className="text-sm" style={{ color: COLORS.TEXT }}>
+                                        <p className="text-sm text-slate-700">
                                             {win.text}
                                         </p>
                                     </div>
@@ -1660,9 +1549,8 @@ export const WinsList = ({ winsList, onDeleteWin }) => {
 };
 
 /* =========================================================
-   PLACEHOLDER COMPONENTS (Required to fix build errors)
+   PLACEHOLDER COMPONENTS
 ========================================================= */
-// Exporting placeholder components to prevent errors in Dashboard.jsx when these are not used
 export const IdentityAnchorCard = () => null;
 export const HabitAnchorCard = () => null;
 export const WhyAnchorCard = () => null;

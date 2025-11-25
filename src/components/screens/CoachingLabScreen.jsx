@@ -1766,27 +1766,32 @@ export default function CoachingLabScreen({ simulatedTier }) {
                 return (
                     <div>
                         {/* Back Button */}
-                        <div className="flex justify-start mb-6">
-                            <div className="flex items-center gap-2 text-gray-800 hover:text-black cursor-pointer transition-colors" onClick={() => navigate('dashboard')}>
+                        <div className="flex justify-start mb-2">
+                            <div className="flex items-center gap-2 text-gray-600 hover:text-gray-800 cursor-pointer transition-colors" onClick={() => navigate('dashboard')}>
                                 <ArrowLeft className="w-4 h-4" />
                                 <span className="text-sm font-medium">Back to Dashboard</span>
                             </div>
                         </div>
                         
-                        <div className="text-center mb-12">
-                            <div className="flex items-center justify-center gap-2 mb-4">
-                                <Beaker className='w-8 h-8' style={{color: COLORS.TEAL}}/>
-                                <h1 className="corporate-heading-xl" style={{ color: COLORS.NAVY }}>Coaching</h1>
-                                <Beaker className='w-8 h-8' style={{color: COLORS.TEAL}}/>
+                        <header className="mb-8 text-center">
+                            <div className="flex items-center justify-center gap-3 mb-2">
+                                <Beaker className="w-8 h-8 text-corporate-teal" />
+                                <h1 className="text-3xl font-bold text-[#002E47]">
+                                    Coaching Lab
+                                </h1>
+                                <Beaker className="w-8 h-8 text-corporate-teal" />
                             </div>
+                            <p className="text-slate-600 mt-2">
+                                Welcome to Coaching. Select a tool to build your leadership skills.
+                            </p>
                             {!hasCoachingAccess && (
-                                <span className="inline-block bg-orange-100 text-orange-800 px-3 py-1 rounded-full text-sm font-semibold mb-4">Requires Premium</span>
+                                <span className="inline-block bg-orange-100 text-orange-800 px-3 py-1 rounded-full text-sm font-semibold mt-4">Requires Premium</span>
                             )}
-                            <p className="corporate-text-body text-gray-600 mx-auto px-4">Welcome to Coaching. Select a tool to build your leadership skills.</p>
-                        </div>
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                        </header>
+
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                             {menuItems.map(item => (
-                                <Card key={item.featureId} title={item.title} icon={item.icon} onClick={hasCoachingAccess ? item.onClick : undefined}>
+                                <Card key={item.featureId} title={item.title} icon={item.icon} onClick={hasCoachingAccess ? item.onClick : undefined} accent="TEAL">
                                     <p className="text-sm text-gray-600 mb-3">{item.description}</p>
                                     {!hasCoachingAccess && (
                                         <div className="mt-2">
@@ -1802,13 +1807,12 @@ export default function CoachingLabScreen({ simulatedTier }) {
     };
 
     return (
-        <div className="page-corporate container-corporate animate-corporate-fade-in">
-            <div className="content-full">
-                <div className={`relative ${!hasCoachingAccess ? 'opacity-60 pointer-events-none' : ''}`}>
-                    {renderView()}
-                </div>
-                
-                {/* Unlock Section for Free Users */}
+        <div className="p-6 space-y-8 bg-slate-50 min-h-screen">
+            <div className={`relative ${!hasCoachingAccess ? 'opacity-60 pointer-events-none' : ''}`}>
+                {renderView()}
+            </div>
+            
+            {/* Unlock Section for Free Users */}
             {!hasCoachingAccess && (
                 <div className="mt-8 bg-white rounded-2xl border-2 shadow-lg" style={{ borderColor: COLORS.TEAL }}>
                     <div className="relative z-10 p-8 text-center">
@@ -1833,7 +1837,6 @@ export default function CoachingLabScreen({ simulatedTier }) {
                     </div>
                 </div>
             )}
-            </div>
         </div>
     );
 }

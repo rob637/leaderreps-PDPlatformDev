@@ -7,14 +7,14 @@ import { useAppServices } from '../../services/useAppServices.jsx';
 import { 
   CheckSquare, Square, Plus, Save, X, Trophy, Flame, 
   MessageSquare, Bell, Calendar, ChevronRight, ArrowRight,
-  Edit3, Loader
+  Edit3, Loader, LayoutDashboard, Target, Layers, Sun, Moon, Clipboard
 } from 'lucide-react';
-import { COLORS } from './dashboard/dashboardConstants.js';
 import { useDashboard } from './dashboard/DashboardHooks.jsx';
 import { UnifiedAnchorEditorModal, CalendarSyncModal } from './dashboard/DashboardComponents.jsx';
 import { useFeatures } from '../../providers/FeatureProvider';
 import WidgetRenderer from '../admin/WidgetRenderer';
 import { createWidgetSDK } from '../../services/WidgetSDK';
+import { Card } from '../shared/UI';
 
 const DASHBOARD_FEATURES = [
   'daily-quote', 'welcome-message',
@@ -271,67 +271,71 @@ const Dashboard4 = (props) => {
 
   const renderers = {
     'dashboard-header': () => <WidgetRenderer widgetId="dashboard-header" scope={scope} />,
-    'daily-quote': () => <WidgetRenderer widgetId="daily-quote" scope={scope} />,
+    'daily-quote': () => (
+      <WidgetRenderer widgetId="daily-quote" scope={scope}>
+        <Card title="Daily Inspiration" icon={MessageSquare} className="border-t-4 border-[#47A88D] h-full">
+          <div className="flex flex-col justify-center h-full">
+            <blockquote className="text-lg font-medium text-slate-700 italic text-center">
+              "{dailyQuote}"
+            </blockquote>
+          </div>
+        </Card>
+      </WidgetRenderer>
+    ),
     'welcome-message': () => <WidgetRenderer widgetId="welcome-message" scope={scope} />,
     'gamification': () => <WidgetRenderer widgetId="gamification" scope={scope} />,
     'exec-summary': () => (
       <WidgetRenderer widgetId="exec-summary" scope={scope}>
-        <div className="bg-corporate-navy text-white p-6 rounded-2xl shadow-lg flex items-center justify-between w-full">
-          <div>
-            <h2 className="text-lg font-bold mb-1">Executive Summary</h2>
-            <p className="text-blue-200 text-sm">Your leadership impact at a glance.</p>
-          </div>
-          <div className="flex gap-8 text-center">
+        <Card title="Executive Summary" icon={Trophy} className="border-t-4 border-[#002E47] h-full">
+          <div className="bg-[#002E47] text-white p-6 rounded-xl shadow-inner flex items-center justify-between w-full">
             <div>
-              <div className="text-2xl font-bold text-corporate-teal">94%</div>
-              <div className="text-xs text-blue-200 uppercase">Consistency</div>
+              <h2 className="text-lg font-bold mb-1">Impact</h2>
+              <p className="text-blue-200 text-sm">Your leadership at a glance.</p>
             </div>
-            <div>
-              <div className="text-2xl font-bold text-corporate-orange">12</div>
-              <div className="text-xs text-blue-200 uppercase">Reps Done</div>
+            <div className="flex gap-8 text-center">
+              <div>
+                <div className="text-2xl font-bold text-[#47A88D]">94%</div>
+                <div className="text-xs text-blue-200 uppercase">Consistency</div>
+              </div>
+              <div>
+                <div className="text-2xl font-bold text-[#E04E1B]">12</div>
+                <div className="text-xs text-blue-200 uppercase">Reps Done</div>
+              </div>
             </div>
           </div>
-        </div>
+        </Card>
       </WidgetRenderer>
     ),
     'weekly-focus': () => (
       <WidgetRenderer widgetId="weekly-focus" scope={scope}>
-        <section className="w-full">
-          <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
-            <h2 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-2">
-              This Week's Focus
-            </h2>
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-2xl font-bold text-[#002E47]">
-                  {weeklyFocus}
-                </p>
-                <p className="text-xs text-slate-500 mt-1">
-                  Pulls from Development Plan (Coming Soon)
-                </p>
-              </div>
+        <Card title="Weekly Focus" icon={Target} className="border-t-4 border-[#47A88D] h-full">
+          <div className="flex flex-col justify-between h-full">
+            <div>
+              <h2 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-2">
+                Current Focus
+              </h2>
+              <p className="text-2xl font-bold text-[#002E47]">
+                {weeklyFocus}
+              </p>
+              <p className="text-xs text-slate-500 mt-1">
+                Pulls from Development Plan
+              </p>
+            </div>
+            <div className="mt-4 text-right">
               <button 
                 onClick={() => navigate('development-plan')}
-                className="text-teal-600 hover:text-teal-700 text-sm font-semibold flex items-center gap-1"
+                className="text-teal-600 hover:text-teal-700 text-sm font-semibold flex items-center gap-1 justify-end ml-auto"
               >
                 View Plan <ChevronRight className="w-4 h-4" />
               </button>
             </div>
           </div>
-        </section>
+        </Card>
       </WidgetRenderer>
     ),
     'identity-builder': () => (
       <WidgetRenderer widgetId="identity-builder" scope={scope}>
-        <section className="text-left w-full">
-          <div className="flex items-center gap-2 mb-4">
-            <div className="w-8 h-8 rounded-lg bg-orange-100 flex items-center justify-center text-orange-600">
-              <Flame className="w-5 h-5" />
-            </div>
-            <h2 className="text-xl font-bold text-[#002E47]">
-              Identity Builder
-            </h2>
-          </div>
+        <Card title="Identity Builder" icon={Flame} className="border-t-4 border-orange-500 h-full">
           <div className="space-y-3 text-left">
             {hasLIS ? (
               <Checkbox 
@@ -355,20 +359,12 @@ const Dashboard4 = (props) => {
               </div>
             )}
           </div>
-        </section>
+        </Card>
       </WidgetRenderer>
     ),
     'habit-stack': () => (
       <WidgetRenderer widgetId="habit-stack" scope={scope}>
-        <section className="text-left w-full">
-          <div className="flex items-center gap-2 mb-4">
-            <div className="w-8 h-8 rounded-lg bg-orange-100 flex items-center justify-center text-orange-600">
-              <Flame className="w-5 h-5" />
-            </div>
-            <h2 className="text-xl font-bold text-[#002E47]">
-              Habit Stack
-            </h2>
-          </div>
+        <Card title="Habit Stack" icon={Layers} className="border-t-4 border-blue-500 h-full">
           <div className="space-y-3 text-left">
             {dailyRepName ? (
               <div className="relative">
@@ -381,7 +377,7 @@ const Dashboard4 = (props) => {
                 {isFeatureEnabled('calendar-sync') && (
                   <button 
                     onClick={() => setIsCalendarModalOpen(true)}
-                    className="absolute right-4 top-1/2 -translate-y-1/2 p-2 text-slate-400 hover:text-corporate-teal" 
+                    className="absolute right-4 top-1/2 -translate-y-1/2 p-2 text-slate-400 hover:text-[#47A88D]" 
                     title="Sync to Calendar"
                   >
                     <Calendar className="w-5 h-5" />
@@ -410,22 +406,13 @@ const Dashboard4 = (props) => {
               />
             ))}
           </div>
-        </section>
+        </Card>
       </WidgetRenderer>
     ),
     'win-the-day': () => (
       <WidgetRenderer widgetId="win-the-day" scope={scope}>
-        <section className="w-full">
-          <div className="flex items-center gap-2 mb-4">
-            <div className="w-8 h-8 rounded-lg bg-teal-100 flex items-center justify-center text-teal-600">
-              <Trophy className="w-5 h-5" />
-            </div>
-            <h2 className="text-xl font-bold text-[#002E47]">
-              AM Bookend - Win the Day
-            </h2>
-          </div>
-
-          <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200 space-y-6">
+        <Card title="AM Bookend - Win the Day" icon={Sun} className="border-t-4 border-yellow-500 h-full">
+          <div className="space-y-6">
             {/* 1. Top Priority */}
             <div className="text-left">
               <label className="block text-xs font-bold text-slate-400 uppercase mb-2 text-left">
@@ -540,19 +527,13 @@ const Dashboard4 = (props) => {
               )}
             </div>
           </div>
-        </section>
+        </Card>
       </WidgetRenderer>
     ),
     'notifications': () => (
       <WidgetRenderer widgetId="notifications" scope={scope}>
-        <section className="text-left w-full">
-          <div className="flex items-center gap-2 mb-4">
-            <Bell className="w-5 h-5 text-slate-400" />
-            <h2 className="text-sm font-bold text-slate-400 uppercase tracking-wider">
-              Notifications
-            </h2>
-          </div>
-          <div className="bg-white rounded-2xl p-4 shadow-sm border border-slate-200 space-y-3 text-left">
+        <Card title="Notifications" icon={Bell} className="border-t-4 border-red-500 h-full">
+          <div className="space-y-3 text-left">
             
             {/* Dev Note */}
             <div className="bg-slate-50 border border-slate-200 rounded-lg p-2 text-xs text-slate-500 italic text-center">
@@ -581,19 +562,15 @@ const Dashboard4 = (props) => {
               </div>
             </div>
           </div>
-        </section>
+        </Card>
       </WidgetRenderer>
     ),
     'scorecard': () => (
       <WidgetRenderer widgetId="scorecard" scope={scope}>
-        <section className="w-full">
-          <div className="bg-[#002E47] rounded-2xl p-6 text-white shadow-lg relative overflow-hidden">
+        <Card title="Today Scorecard" icon={Clipboard} className="border-t-4 border-green-500 h-full">
+          <div className="bg-[#002E47] rounded-xl p-6 text-white shadow-lg relative overflow-hidden">
             <div className="absolute top-0 right-0 w-32 h-32 bg-white opacity-5 rounded-full -mr-10 -mt-10" />
             
-            <h2 className="text-lg font-bold mb-6 flex items-center gap-2">
-              <Trophy className="w-5 h-5 text-yellow-400" /> Today Scorecard
-            </h2>
-
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
@@ -637,22 +614,13 @@ const Dashboard4 = (props) => {
               </div>
             </div>
           </div>
-        </section>
+        </Card>
       </WidgetRenderer>
     ),
     'pm-bookend': () => (
       <WidgetRenderer widgetId="pm-bookend" scope={scope}>
-        <section className="w-full">
-          <div className="flex items-center gap-2 mb-4">
-            <div className="w-8 h-8 rounded-lg bg-indigo-100 flex items-center justify-center text-indigo-600">
-              <MessageSquare className="w-5 h-5" />
-            </div>
-            <h2 className="text-xl font-bold text-[#002E47]">
-              PM Bookend - Reflection
-            </h2>
-          </div>
-
-          <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200 space-y-4">
+        <Card title="PM Bookend - Reflection" icon={Moon} className="border-t-4 border-indigo-500 h-full">
+          <div className="space-y-4">
             <div>
               <label className="block text-sm font-bold text-green-700 mb-2 text-left">
                 What went well today?
@@ -691,7 +659,7 @@ const Dashboard4 = (props) => {
               Saved to history in Locker
             </p>
           </div>
-        </section>
+        </Card>
       </WidgetRenderer>
     )
   };
@@ -706,16 +674,27 @@ const Dashboard4 = (props) => {
   };
 
   return (
-    <div className="min-h-screen bg-[#F5F5F7] p-4 sm:p-6 lg:p-8 font-sans text-slate-800">
-      <div className="max-w-3xl mx-auto space-y-8">
-        
+    <div className="p-6 space-y-8 bg-slate-50 min-h-screen">
+      <header className="mb-8 text-center">
+        <div className="flex items-center justify-center gap-3 mb-2">
+          <LayoutDashboard className="w-8 h-8 text-[#47A88D]" />
+          <h1 className="text-3xl font-bold text-[#002E47]">
+            The Arena
+          </h1>
+          <LayoutDashboard className="w-8 h-8 text-[#47A88D]" />
+        </div>
+        <p className="text-slate-600 mt-2">
+          {greeting} Welcome to your daily practice.
+        </p>
+      </header>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* DYNAMIC FEATURES */}
         {sortedFeatures.map(featureId => (
           <React.Fragment key={featureId}>
             {renderers[featureId] ? renderers[featureId]() : null}
           </React.Fragment>
         ))}
-
       </div>
 
       {/* Anchor Editor Modal */}

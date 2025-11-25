@@ -6,33 +6,14 @@ import React, { useState, useEffect, useMemo, useCallback } from 'react';
 // --- SERVICES (production) ---
 import { useAppServices } from '../../services/useAppServices';
 
-/* =========================================================
-   HIGH-CONTRAST PALETTE (Centralized for Consistency)
-========================================================= */
-const COLORS = {
-  NAVY: '#002E47',      
-  TEAL: '#47A88D',      
-  SUBTLE_TEAL: '#47A88D', 
-  ORANGE: '#E04E1B',    
-  GREEN: '#47A88D',      // NO GREEN! Use corporate teal
-  AMBER: '#E04E1B',      // NO AMBER! Use corporate orange
-  RED: '#E04E1B',
-  LIGHT_GRAY: '#FCFCFA',
-  OFF_WHITE: '#FFFFFF', 
-  SUBTLE: '#47A88D',     // Use teal for subtle borders
-  TEXT: '#002E47',
-  MUTED: '#47A88D',      // Use subtle teal for muted
-  BLUE: '#002E47',       // NO BLUE! Use corporate navy
-  BG: '#FCFCFA',         // Use corporate light gray
-  PURPLE: '#47A88D',     // NO PURPLE! Use corporate teal
-};
+
 
 // Mock UI components (Standardized)
 const Button = ({ children, onClick, disabled = false, variant = 'primary', className = '', ...rest }) => {
   let baseStyle = "px-6 py-3 rounded-xl font-semibold transition-all shadow-xl focus:outline-none focus:ring-4 text-white flex items-center justify-center";
-  if (variant === 'primary') { baseStyle += ` bg-[${COLORS.TEAL}] hover:bg-[${COLORS.SUBTLE_TEAL}] focus:ring-[${COLORS.TEAL}]/50`; }
-  else if (variant === 'secondary') { baseStyle += ` bg-[${COLORS.ORANGE}] hover:opacity-90 focus:ring-[${COLORS.ORANGE}]/50`; }
-  else if (variant === 'outline') { baseStyle = `px-6 py-3 rounded-xl font-semibold transition-all shadow-md border-2 border-[${COLORS.TEAL}] text-[${COLORS.TEAL}] hover:bg-[${COLORS.TEAL}]/10 focus:ring-4 focus:ring-[${COLORS.TEAL}]/50 bg-[${COLORS.LIGHT_GRAY}] flex items-center justify-center`; }
+  if (variant === 'primary') { baseStyle += ` bg-[#47A88D] hover:bg-[#47A88D] focus:ring-[#47A88D]/50`; }
+  else if (variant === 'secondary') { baseStyle += ` bg-[#E04E1B] hover:opacity-90 focus:ring-[#E04E1B]/50`; }
+  else if (variant === 'outline') { baseStyle = `px-6 py-3 rounded-xl font-semibold transition-all shadow-md border-2 border-[#47A88D] text-[#47A88D] hover:bg-[#47A88D]/10 focus:ring-4 focus:ring-[#47A88D]/50 bg-[#FCFCFA] flex items-center justify-center`; }
   else if (variant === 'nav-back') { baseStyle = `px-4 py-2 rounded-lg font-medium transition-all shadow-sm border-2 border-gray-300 text-gray-700 hover:bg-gray-100 flex items-center justify-center`; }
   if (disabled) { baseStyle = "px-6 py-3 rounded-xl font-semibold bg-gray-300 text-gray-500 cursor-not-allowed shadow-inner transition-none flex items-center justify-center"; }
   return (
@@ -42,10 +23,20 @@ const Button = ({ children, onClick, disabled = false, variant = 'primary', clas
   );
 };
 
+const ACCENT_COLORS = {
+  NAVY: '#002E47',
+  TEAL: '#47A88D',
+  ORANGE: '#E04E1B',
+  GREEN: '#47A88D',
+  PURPLE: '#47A88D',
+  AMBER: '#E04E1B',
+  RED: '#E04E1B',
+};
+
 const Card = ({ children, title, icon: Icon, className = '', onClick, accent = 'NAVY' }) => {
   const interactive = !!onClick;
   const Tag = interactive ? 'button' : 'div';
-  const accentColor = COLORS[accent] || COLORS.NAVY;
+  const accentColor = ACCENT_COLORS[accent] || ACCENT_COLORS.NAVY;
   const handleKeyDown = (e) => {
     if (!interactive) return;
     if (e.key === 'Enter' || e.key === ' ') {
@@ -59,17 +50,17 @@ const Card = ({ children, title, icon: Icon, className = '', onClick, accent = '
       tabIndex={interactive ? 0 : undefined}
       onKeyDown={handleKeyDown}
       className={`relative p-6 rounded-2xl border-2 shadow-2xl transition-all duration-300 text-left ${className}`}
-      style={{ background: `linear-gradient(180deg, ${COLORS.OFF_WHITE}, ${COLORS.LIGHT_GRAY})`, borderColor: COLORS.SUBTLE, color: COLORS.TEXT }}
+      style={{ background: `linear-gradient(180deg, #FFFFFF, #FCFCFA)`, borderColor: '#47A88D', color: '#002E47' }}
       onClick={onClick}
     >
       <span style={{ position:'absolute', top:0, left:0, right:0, height:6, background: accentColor, borderTopLeftRadius:14, borderTopRightRadius:14 }} />
 
       {Icon && (
-        <div className="w-10 h-10 rounded-lg flex items-center justify-center border mb-3" style={{ borderColor: COLORS.SUBTLE, background: COLORS.LIGHT_GRAY }}>
-          <Icon className="w-5 h-5" style={{ color: COLORS.TEAL }} />
+        <div className="w-10 h-10 rounded-lg flex items-center justify-center border mb-3" style={{ borderColor: '#47A88D', background: '#FCFCFA' }}>
+          <Icon className="w-5 h-5" style={{ color: '#47A88D' }} />
         </div>
       )}
-      {title && <h2 className="text-xl font-extrabold mb-2" style={{ color: COLORS.NAVY }}>{title}</h2>}
+      {title && <h2 className="text-xl font-extrabold mb-2" style={{ color: '#002E47' }}>{title}</h2>}
       {children}
     </Tag>
   );
@@ -621,10 +612,10 @@ const TrackerDashboardView = ({ data, updatePdpData, navigate }) => {
 
 
     return (
-        <div className="p-3 sm:p-4 lg:p-6 md:p-10 min-h-screen" style={{ background: COLORS.BG, color: COLORS.TEXT }}>
-            <div className='flex items-center gap-4 border-b-2 pb-2 mb-8' style={{borderColor: COLORS.PURPLE+'30'}}>
-                <Dumbbell className='w-10 h-10' style={{color: COLORS.PURPLE}}/>
-                <h1 className="text-4xl font-extrabold" style={{ color: COLORS.NAVY }}>Development Roadmap Tracker</h1>
+        <div className="p-3 sm:p-4 lg:p-6 md:p-10 min-h-screen" style={{ background: '#FCFCFA', color: '#002E47' }}>
+            <div className='flex items-center gap-4 border-b-2 pb-2 mb-8' style={{borderColor: '#47A88D'+'30'}}>
+                <Dumbbell className='w-10 h-10' style={{color: '#47A88D'}}/>
+                <h1 className="text-4xl font-extrabold" style={{ color: '#002E47' }}>Development Roadmap Tracker</h1>
             </div>
 
             {/* Progress Bar & Header */}
@@ -897,10 +888,10 @@ const PlanGeneratorView = ({ userId, saveNewPlan, navigate, setGeneratedPlanData
     };
 
     return (
-        <div className="p-3 sm:p-4 lg:p-6 md:p-10 min-h-screen" style={{ background: COLORS.BG, color: COLORS.TEXT }}>
-            <div className='flex items-center gap-4 border-b-2 pb-2 mb-8' style={{borderColor: COLORS.PURPLE+'30'}}>
-                <Dumbbell className='w-10 h-10' style={{color: COLORS.PURPLE}}/>
-                <h1 className="text-4xl font-extrabold" style={{ color: COLORS.NAVY }}>Personalized Arena Assessment</h1>
+        <div className="p-3 sm:p-4 lg:p-6 md:p-10 min-h-screen" style={{ background: '#FCFCFA', color: '#002E47' }}>
+            <div className='flex items-center gap-4 border-b-2 pb-2 mb-8' style={{borderColor: '#47A88D'+'30'}}>
+                <Dumbbell className='w-10 h-10' style={{color: '#47A88D'}}/>
+                <h1 className="text-4xl font-extrabold" style={{ color: '#002E47' }}>Personalized Arena Assessment</h1>
             </div>
             <p className="text-lg text-gray-600 mb-8 max-w-3xl">Apply the principle of **Progressive Overload**. Answer 10 core questions (1-5 scale) to instantly map your skill gaps and generate a 2-year Roadmap designed for accelerating growth.</p>
 
@@ -910,7 +901,7 @@ const PlanGeneratorView = ({ userId, saveNewPlan, navigate, setGeneratedPlanData
                     
                     {ASSESSMENT_QUESTIONS.map(q => {
                         const answer = assessmentAnswers[q.id] || 3; // Default display score is 3
-                        const scoreColor = answer >= 4 ? COLORS.GREEN : answer <= 2 ? COLORS.RED : COLORS.AMBER;
+                        const scoreColor = answer >= 4 ? '#47A88D' : answer <= 2 ? '#E04E1B' : '#E04E1B';
 
                         return (
                             <div key={q.id} className="mb-6 border p-3 rounded-lg bg-gray-50">
@@ -953,7 +944,7 @@ const PlanGeneratorView = ({ userId, saveNewPlan, navigate, setGeneratedPlanData
                     <div className='flex flex-col space-y-1'>
                         <p className="font-semibold text-[#002E47] flex justify-between">
                             <span className='text-sm text-gray-600'>Overall Leadership Confidence:</span>
-                            <span className='text-xl font-extrabold' style={{ color: COLORS.BLUE }}>{overallConfidence} / 10</span>
+                            <span className='text-xl font-extrabold' style={{ color: '#002E47' }}>{overallConfidence} / 10</span>
                         </p>
                         <input
                             type="range"
@@ -961,7 +952,7 @@ const PlanGeneratorView = ({ userId, saveNewPlan, navigate, setGeneratedPlanData
                             value={overallConfidence}
                             onChange={(e) => setOverallConfidence(parseInt(e.target.value))}
                             className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer range-lg"
-                            style={{ accentColor: COLORS.BLUE }}
+                            style={{ accentColor: '#002E47' }}
                         />
                     </div>
                 </Card>
@@ -1009,13 +1000,13 @@ const PlanReviewScreen = ({ generatedPlan, navigate, clearReviewData, finalizeWi
 
     const StatItem = ({ label, value, diff, unit = '', isPositiveBetter = true }) => {
         const isGood = isPositiveBetter ? diff > 0 : diff < 0;
-        const diffColor = diff === 0 ? COLORS.MUTED : isGood ? COLORS.GREEN : COLORS.RED;
+        const diffColor = diff === 0 ? '#47A88D' : isGood ? '#47A88D' : '#E04E1B';
         const diffSign = diff > 0 ? '+' : '';
         return (
             <div className='flex justify-between items-center py-2 border-b border-gray-200'>
                 <span className='font-semibold'>{label}:</span>
                 <div className='text-right'>
-                    <span className={`font-bold text-lg mr-2`} style={{color: COLORS.NAVY}}>{value} {unit}</span>
+                    <span className={`font-bold text-lg mr-2`} style={{color: '#002E47'}}>{value} {unit}</span>
                     <span className={`text-xs font-semibold`} style={{ color: diffColor }}>({diffSign}{diff} {unit})</span>
                 </div>
             </div>
@@ -1040,9 +1031,9 @@ const PlanReviewScreen = ({ generatedPlan, navigate, clearReviewData, finalizeWi
     return (
         <div className="page-corporate container-corporate animate-corporate-fade-in">
             <div className="content-full">
-                <div className='flex items-center gap-4 border-b-2 pb-2 mb-8' style={{borderColor: COLORS.GREEN+'30'}}>
-                <CheckCircle className='w-10 h-10' style={{color: COLORS.GREEN}}/>
-                <h1 className="text-4xl font-extrabold" style={{ color: COLORS.NAVY }}>Roadmap Successfully Generated!</h1>
+                <div className='flex items-center gap-4 border-b-2 pb-2 mb-8' style={{borderColor: '#47A88D'+'30'}}>
+                <CheckCircle className='w-10 h-10' style={{color: '#47A88D'}}/>
+                <h1 className="text-4xl font-extrabold" style={{ color: '#002E47' }}>Roadmap Successfully Generated!</h1>
             </div>
             <p className="text-lg text-gray-600 mb-8 max-w-3xl">Review your personalized Roadmap highlights below. Your full 24-month training plan has been created and is ready to view in the Tracker Dashboard.</p>
 

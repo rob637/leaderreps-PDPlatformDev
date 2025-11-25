@@ -1,192 +1,201 @@
-// src/components/screens/AppliedLeadership.jsx (FIXED: Missing Icons and Modal State)
+// src/components/screens/AppliedLeadership.jsx
 
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
-// --- Core Services & Context ---
-import { useAppServices } from '../../services/useAppServices.jsx'; // cite: useAppServices.jsx
+import { useAppServices } from '../../services/useAppServices.jsx';
 import { getCourses } from '../../services/contentService.js';
+import { ArrowLeft, BookOpen, ChevronRight, Loader, AlertTriangle, ShieldCheck, Zap, Briefcase, Lightbulb, CheckCircle, X, CornerRightUp, Users, Calendar, Clock } from 'lucide-react';
 
-// --- ICONS: CRITICAL FIX - Import all icons used in sub-components/rendering logic ---
-import { ArrowLeft, BookOpen, ChevronRight, Loader, AlertTriangle, ShieldCheck, Zap, Briefcase, Lightbulb, CheckCircle, X, CornerRightUp, Users, Calendar } from 'lucide-react'; 
-
-/* =========================================================
-   PALETTE & UI COMPONENTS (Standardized)
-========================================================= */
-// --- Primary Color Palette ---
-const COLORS = { NAVY: '#002E47', TEAL: '#47A88D', BLUE: '#002E47', ORANGE: '#E04E1B', GREEN: '#47A88D', AMBER: '#E04E1B', RED: '#E04E1B', LIGHT_GRAY: '#FCFCFA', OFF_WHITE: '#FFFFFF', SUBTLE: '#E5E7EB', TEXT: '#374151', MUTED: '#4B5563', PURPLE: '#47A88D', BG: '#F9FAFB' }; // cite: App.jsx
-
-// --- Standardized Button Component (Matches Dashboard) ---
-const Button = ({ children, onClick, disabled = false, variant = 'primary', className = '', size = 'md', ...rest }) => { /* ... Re-use exact Button definition from Dashboard.jsx ... */
-    let baseStyle = `inline-flex items-center justify-center gap-2 font-semibold rounded-xl transition-all duration-200 focus:outline-none focus:ring-4 disabled:opacity-50 disabled:cursor-not-allowed`;
-    if (size === 'sm') baseStyle += ' px-4 py-2 text-sm'; else if (size === 'lg') baseStyle += ' px-8 py-4 text-lg'; else baseStyle += ' px-6 py-3 text-base'; // Default 'md'
-    if (variant === 'primary') baseStyle += ` bg-[${COLORS.TEAL}] text-white shadow-lg hover:bg-[#47A88D] focus:ring-[${COLORS.TEAL}]/50`;
-    else if (variant === 'secondary') baseStyle += ` bg-[${COLORS.ORANGE}] text-white shadow-lg hover:bg-[#C33E12] focus:ring-[${COLORS.ORANGE}]/50`;
-    else if (variant === 'outline') baseStyle += ` bg-[${COLORS.OFF_WHITE}] text-[${COLORS.TEAL}] border-2 border-[${COLORS.TEAL}] shadow-md hover:bg-[${COLORS.TEAL}]/10 focus:ring-[${COLORS.TEAL}]/50`;
-    else if (variant === 'nav-back') baseStyle += ` bg-white text-gray-700 border border-gray-300 shadow-sm hover:bg-gray-100 focus:ring-gray-300/50 px-4 py-2 text-sm`;
-    else if (variant === 'ghost') baseStyle += ` bg-transparent text-gray-600 hover:bg-gray-100 focus:ring-gray-300/50 px-3 py-1.5 text-sm`;
-    if (disabled) baseStyle += ' bg-gray-300 text-gray-500 shadow-inner border-transparent hover:bg-gray-300';
-    return (<button {...rest} onClick={onClick} disabled={disabled} className={`${baseStyle} ${className}`}>{children}</button>);
+// --- Standardized UI Components ---
+const Button = ({ children, onClick, disabled = false, variant = 'primary', className = '', size = 'md', ...rest }) => {
+  const baseStyles = "inline-flex items-center justify-center gap-2 font-semibold rounded-xl transition-all duration-200 focus:outline-none focus:ring-2 disabled:opacity-50 disabled:cursor-not-allowed";
+  const variants = {
+    primary: "bg-[#47A88D] text-white shadow-md hover:bg-[#3d917a] focus:ring-[#47A88D]/50",
+    secondary: "bg-[#E04E1B] text-white shadow-md hover:bg-[#c44317] focus:ring-[#E04E1B]/50",
+    outline: "bg-white text-[#47A88D] border-2 border-[#47A88D] shadow-sm hover:bg-[#47A88D]/10 focus:ring-[#47A88D]/50",
+    ghost: "bg-transparent text-slate-600 hover:bg-slate-100",
+    'nav-back': "bg-white text-slate-700 border border-slate-300 shadow-sm hover:bg-slate-100 focus:ring-slate-300/50 px-4 py-2 text-sm",
+  };
+  const sizes = {
+    sm: "px-3 py-1.5 text-sm",
+    md: "px-5 py-2.5 text-base",
+    lg: "px-8 py-4 text-lg",
+  };
+  return (
+    <button 
+      onClick={onClick} 
+      disabled={disabled} 
+      className={`${baseStyles} ${variants[variant] || variants.primary} ${sizes[size] || sizes.md} ${className}`}
+      {...rest}
+    >
+      {children}
+    </button>
+  );
 };
 
-// --- Standardized Card Component (Matches Dashboard) ---
-const Card = ({ children, title, icon: Icon, className = '', onClick, accent = 'NAVY' }) => { /* ... Re-use exact Card definition from Dashboard.jsx ... */
-    const interactive = !!onClick; const Tag = interactive ? 'button' : 'div'; const accentColor = COLORS[accent] || COLORS.NAVY; const handleKeyDown = (e) => { if (interactive && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); onClick?.(); } };
-    return (
-        <Tag {...(interactive ? { type: 'button' } : {})} role={interactive ? 'button' : undefined} tabIndex={interactive ? 0 : undefined} onKeyDown={handleKeyDown} className={`relative p-6 rounded-2xl border-2 shadow-xl hover:shadow-lg transition-all duration-300 text-left ${className}`} style={{ background: 'linear-gradient(180deg,#FFFFFF, #FCFCFA)', borderColor: COLORS.SUBTLE, color: COLORS.NAVY }} onClick={onClick}>
-            <span style={{ position:'absolute', top:0, left:0, right:0, height:6, background: accentColor, borderTopLeftRadius:14, borderTopRightRadius:14 }} />
-            {Icon && title && ( <div className="flex items-center gap-3 mb-4"> <div className="w-10 h-10 rounded-lg flex items-center justify-center border flex-shrink-0" style={{ borderColor: COLORS.SUBTLE, background: COLORS.LIGHT_GRAY }}> <Icon className="w-5 h-5" style={{ color: accentColor }} /> </div> <h2 className="text-xl font-extrabold" style={{ color: COLORS.NAVY }}>{title}</h2> </div> )}
-            {!Icon && title && <h2 className="text-xl font-extrabold mb-4 border-b pb-2" style={{ color: COLORS.NAVY, borderColor: COLORS.SUBTLE }}>{title}</h2>}
-            <div className={Icon || title ? '' : ''}>{children}</div>
-        </Tag>
-    );
+const Card = ({ children, title, icon: Icon, className = '', onClick, accentColor = 'bg-[#002E47]' }) => {
+  const interactive = !!onClick;
+  const Tag = interactive ? 'button' : 'div';
+  
+  return (
+    <Tag 
+      onClick={onClick}
+      className={`relative w-full text-left bg-white rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-all duration-300 overflow-hidden ${interactive ? 'cursor-pointer hover:scale-[1.01]' : ''} ${className}`}
+    >
+      <div className={`absolute top-0 left-0 right-0 h-1.5 ${accentColor}`} />
+      <div className="p-6">
+        {(Icon || title) && (
+            <div className="flex items-center gap-3 mb-6 border-b border-slate-100 pb-4">
+                {Icon && (
+                    <div className="w-10 h-10 rounded-lg bg-slate-50 flex items-center justify-center border border-slate-100">
+                        <Icon className="w-5 h-5 text-[#002E47]" />
+                    </div>
+                )}
+                {title && (
+                    <h2 className="text-xl font-bold text-[#002E47]">{title}</h2>
+                )}
+            </div>
+        )}
+        {children}
+      </div>
+    </Tag>
+  );
 };
 
-// --- Standardized Loading Spinner ---
-const LoadingSpinner = ({ message = "Loading..." }) => ( /* ... Re-use definition from DevelopmentPlan.jsx ... */
-    <div className="min-h-[300px] flex items-center justify-center" style={{ background: COLORS.BG }}> <div className="flex flex-col items-center"> <Loader className="animate-spin h-12 w-12 mb-3" style={{ color: COLORS.TEAL }} /> <p className="font-semibold" style={{ color: COLORS.NAVY }}>{message}</p> </div> </div>
+const LoadingSpinner = ({ message = "Loading..." }) => (
+  <div className="min-h-[300px] flex items-center justify-center bg-slate-50">
+    <div className="flex flex-col items-center">
+      <Loader className="animate-spin h-12 w-12 mb-3 text-[#47A88D]" />
+      <p className="font-semibold text-[#002E47]">{message}</p>
+    </div>
+  </div>
 );
+
+// --- Helper for dynamic colors ---
+const getAccentColorClass = (tierIdOrColorKey) => {
+    const key = String(tierIdOrColorKey).toUpperCase();
+    if (key.includes('ORANGE') || key.includes('AMBER') || key.includes('RED')) return 'bg-[#E04E1B]';
+    if (key.includes('TEAL') || key.includes('GREEN') || key.includes('PURPLE')) return 'bg-[#47A88D]';
+    return 'bg-[#002E47]'; // Default Navy
+};
+
+const getAccentTextClass = (tierIdOrColorKey) => {
+    const key = String(tierIdOrColorKey).toUpperCase();
+    if (key.includes('ORANGE') || key.includes('AMBER') || key.includes('RED')) return 'text-[#E04E1B]';
+    if (key.includes('TEAL') || key.includes('GREEN') || key.includes('PURPLE')) return 'text-[#47A88D]';
+    return 'text-[#002E47]';
+};
 
 /* =========================================================
    PLACEHOLDER COMPONENTS (Styled Consistently)
 ========================================================= */
 
-/**
- * Placeholder for AI Coaching Simulator specific to a skill/course.
- */
 const AICoachingSimulator = ({ item, isCourse = false }) => (
-  <Card title={`AI Rep Coach for ${item.title || item.name}`} icon={ShieldCheck} accent="PURPLE" className="my-8">
-    <p className="text-sm text-gray-600 mb-4">Practice applying '{item.title || item.name}' principles in simulated scenarios.</p>
-    {/* Placeholder content */}
+  <Card title={`AI Rep Coach for ${item.title || item.name}`} icon={ShieldCheck} accentColor="bg-[#47A88D]" className="my-8">
+    <p className="text-sm text-slate-600 mb-4">Practice applying '{item.title || item.name}' principles in simulated scenarios.</p>
     <div className="p-4 bg-purple-50 border border-purple-200 rounded-lg text-center text-purple-700 font-medium italic">
       {isCourse ? `Access the dedicated AI Coach for this course's modules.` : `AI Coaching Simulator coming soon...`}
     </div>
   </Card>
 );
 
-/**
- * Modal to display details of a selected resource.
- */
-const ResourceDetailModal = ({ isVisible, onClose, resource, skill }) => { // Renamed prop to 'skill'
+const ResourceDetailModal = ({ isVisible, onClose, resource, skill }) => {
     if (!isVisible || !resource || !skill) return null;
 
-    // Use X icon (imported)
-    // Note: X icon is now imported at the top.
-    
     return (
-        // Standard modal structure with backdrop and content
         <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 animate-in fade-in duration-200 backdrop-blur-sm">
-            <div className="bg-white p-3 sm:p-4 lg:p-6 rounded-xl shadow-2xl max-w-lg w-full relative animate-in zoom-in-95 slide-in-from-bottom-5 duration-300 overflow-hidden">
-                {/* Header */}
-                <div className="flex justify-between items-center pb-3 mb-4 border-b" style={{ borderColor: COLORS.SUBTLE }}>
-                    <h3 className="text-lg font-bold" style={{ color: COLORS.NAVY }}>{resource.title}</h3>
-                    <Button onClick={onClose} variant="ghost" size="sm" className="!p-1 text-gray-400 hover:text-red-600 absolute top-3 right-3"> {/* Use Button */}
+            <div className="bg-white p-6 rounded-2xl shadow-2xl max-w-lg w-full relative animate-in zoom-in-95 slide-in-from-bottom-5 duration-300 overflow-hidden">
+                <div className="flex justify-between items-center pb-3 mb-4 border-b border-slate-100">
+                    <h3 className="text-lg font-bold text-[#002E47]">{resource.title}</h3>
+                    <Button onClick={onClose} variant="ghost" size="sm" className="!p-1 text-slate-400 hover:text-red-600 absolute top-3 right-3">
                         <X className="w-5 h-5" />
                     </Button>
                 </div>
-                {/* Content */}
-                <p className="text-xs font-semibold uppercase mb-1" style={{ color: COLORS.TEAL }}>Skill: {skill.name}</p>
-                <p className="text-sm text-gray-600 mb-4">{resource.summary || 'Details unavailable.'}</p>
-                {/* Additional details like type, duration could go here */}
-                {resource.type && <p className="text-xs text-gray-500 mb-1">Type: {resource.type}</p>}
-                {/* Link */}
+                <p className="text-xs font-semibold uppercase mb-1 text-[#47A88D]">Skill: {skill.name}</p>
+                <p className="text-sm text-slate-600 mb-4">{resource.summary || 'Details unavailable.'}</p>
+                {resource.type && <p className="text-xs text-slate-500 mb-1">Type: {resource.type}</p>}
                  {resource.url && (
                     <a href={resource.url} target="_blank" rel="noopener noreferrer" className="mt-4 inline-block text-blue-600 hover:underline text-sm font-medium group">
                         View Resource <span className="inline-block transition-transform group-hover:translate-x-1">&rarr;</span>
                     </a>
                  )}
-                 {/* Close Button */}
                 <Button onClick={onClose} variant="outline" size="sm" className="mt-6 w-full">Close</Button>
             </div>
         </div>
     );
 };
 
-
-/**
- * Renders the detail view for a full Course (like QuickStart).
- * The Course structure is assumed to be { id, title, summary, icon, modules: [...] }
- */
 const CourseDetailView = ({ course, setCourseDetail }) => {
-    // Determine Icon and Color
     const { IconMap, LEADERSHIP_TIERS, navigate } = useAppServices();
     const IconComponent = IconMap?.[course.icon] || ShieldCheck;
     const tierMeta = LEADERSHIP_TIERS?.[course.tier_id];
     const accentColorKey = tierMeta?.color?.split('-')[0].toUpperCase() || 'TEAL';
-    const accentColor = COLORS[accentColorKey] || COLORS.TEAL;
+    const accentBgClass = getAccentColorClass(accentColorKey);
+    const accentTextClass = getAccentTextClass(accentColorKey);
 
     return (
-        <div className="p-6 md:p-4 sm:p-3 sm:p-4 lg:p-6 lg:p-8 lg:p-10 max-w-4xl mx-auto">
-            {/* Back Button */}
+        <div className="p-6 md:p-10 max-w-5xl mx-auto animate-fade-in">
             <Button onClick={() => setCourseDetail(null)} variant='nav-back' className='mb-6'>
                 <ArrowLeft className="w-4 h-4 mr-2" /> Back to Course Library
             </Button>
 
-            {/* Course Header Card */}
-            <Card accent={accentColorKey} className="mb-8">
-                 <div className='flex flex-col sm:flex-row items-start space-y-4 sm:space-y-0 sm:space-x-4'>
-                    {/* Icon */}
-                    <div className="w-16 h-16 rounded-full flex items-center justify-center shadow-lg flex-shrink-0" style={{ background: `${accentColor}1A` }}>
-                        {IconComponent && <IconComponent className="w-8 h-8" style={{ color: accentColor }} />}
+            <Card accentColor={accentBgClass} className="mb-8">
+                 <div className='flex flex-col sm:flex-row items-start space-y-4 sm:space-y-0 sm:space-x-6'>
+                    <div className={`w-16 h-16 rounded-full flex items-center justify-center shadow-lg flex-shrink-0 ${accentBgClass} bg-opacity-10`}>
+                        {IconComponent && <IconComponent className={`w-8 h-8 ${accentTextClass}`} />}
                     </div>
-                    {/* Title & Summary */}
                     <div className="flex-1">
-                        <h1 className="text-2xl md:text-xl sm:text-2xl sm:text-3xl font-extrabold" style={{ color: COLORS.NAVY }}>{course.title}</h1>
-                        <p className="text-md md:text-lg text-gray-600 mt-1">{course.description}</p>
+                        <h1 className="text-2xl md:text-3xl font-extrabold text-[#002E47]">{course.title}</h1>
+                        <p className="text-lg text-slate-600 mt-2">{course.description}</p>
                         
-                        {/* Course Meta Information */}
-                        <div className="mt-4 grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <div className="mt-6 grid grid-cols-2 md:grid-cols-4 gap-6">
                             <div>
-                                <span className="text-xs text-gray-500 uppercase">Duration</span>
-                                <p className="font-semibold">{course.duration}</p>
+                                <span className="text-xs text-slate-500 uppercase font-bold tracking-wider">Duration</span>
+                                <p className="font-semibold text-slate-700">{course.duration}</p>
                             </div>
                             <div>
-                                <span className="text-xs text-gray-500 uppercase">Format</span>
-                                <p className="font-semibold">{course.format}</p>
+                                <span className="text-xs text-slate-500 uppercase font-bold tracking-wider">Format</span>
+                                <p className="font-semibold text-slate-700">{course.format}</p>
                             </div>
                             <div>
-                                <span className="text-xs text-gray-500 uppercase">Level</span>
-                                <p className="font-semibold">{course.level}</p>
+                                <span className="text-xs text-slate-500 uppercase font-bold tracking-wider">Level</span>
+                                <p className="font-semibold text-slate-700">{course.level}</p>
                             </div>
                             <div>
-                                <span className="text-xs text-gray-500 uppercase">Price</span>
-                                <p className="font-semibold text-lg" style={{ color: accentColor }}>${course.price}</p>
+                                <span className="text-xs text-slate-500 uppercase font-bold tracking-wider">Price</span>
+                                <p className={`font-semibold text-lg ${accentTextClass}`}>${course.price}</p>
                             </div>
                         </div>
                     </div>
                 </div>
             </Card>
             
-            {/* Enrollment and Schedule Card */}
             <div className="grid md:grid-cols-2 gap-6 mb-8">
-                {/* Enrollment Info */}
-                <Card title="Enrollment" icon={Users} accent='TEAL'>
+                <Card title="Enrollment" icon={Users} accentColor="bg-[#47A88D]">
                     <div className="space-y-4">
                         <div>
                             <div className="flex justify-between items-center mb-2">
-                                <span className="text-sm text-gray-600">Enrollment Progress</span>
-                                <span className="text-sm font-semibold">{course.currentEnrollment}/{course.maxParticipants}</span>
+                                <span className="text-sm text-slate-600">Enrollment Progress</span>
+                                <span className="text-sm font-semibold text-slate-700">{course.currentEnrollment}/{course.maxParticipants}</span>
                             </div>
-                            <div className="w-full bg-gray-200 rounded-full h-2">
+                            <div className="w-full bg-slate-200 rounded-full h-2">
                                 <div 
-                                    className="h-2 rounded-full" 
-                                    style={{ 
-                                        backgroundColor: COLORS.TEAL,
-                                        width: `${(course.currentEnrollment / course.maxParticipants) * 100}%` 
-                                    }}
+                                    className="h-2 rounded-full bg-[#47A88D]" 
+                                    style={{ width: `${(course.currentEnrollment / course.maxParticipants) * 100}%` }}
                                 />
                             </div>
                         </div>
                         
                         <div className="space-y-2">
                             <div className="flex justify-between">
-                                <span className="text-sm text-gray-600">Start Date:</span>
-                                <span className="font-medium">{new Date(course.startDate).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</span>
+                                <span className="text-sm text-slate-600">Start Date:</span>
+                                <span className="font-medium text-slate-700">{new Date(course.startDate).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</span>
                             </div>
                             <div className="flex justify-between">
-                                <span className="text-sm text-gray-600">End Date:</span>
-                                <span className="font-medium">{new Date(course.endDate).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</span>
+                                <span className="text-sm text-slate-600">End Date:</span>
+                                <span className="font-medium text-slate-700">{new Date(course.endDate).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</span>
                             </div>
                             <div className="flex justify-between">
-                                <span className="text-sm text-gray-600">Enrollment Deadline:</span>
+                                <span className="text-sm text-slate-600">Enrollment Deadline:</span>
                                 <span className="font-medium text-red-600">{new Date(course.enrollmentDeadline).toLocaleDateString()}</span>
                             </div>
                         </div>
@@ -201,14 +210,13 @@ const CourseDetailView = ({ course, setCourseDetail }) => {
                     </div>
                 </Card>
                 
-                {/* Schedule & Instructor */}
-                <Card title="Schedule & Instructor" icon={Calendar} accent='NAVY'>
+                <Card title="Schedule & Instructor" icon={Calendar} accentColor="bg-[#002E47]">
                     <div className="space-y-4">
                         <div>
-                            <h4 className="font-semibold text-sm mb-2">Meeting Times:</h4>
+                            <h4 className="font-semibold text-sm mb-2 text-[#002E47]">Meeting Times:</h4>
                             <ul className="space-y-1">
                                 {course.meetingTimes?.map((time, idx) => (
-                                    <li key={idx} className="text-sm text-gray-600 flex items-center gap-2">
+                                    <li key={idx} className="text-sm text-slate-600 flex items-center gap-2">
                                         <Clock className="w-3 h-3" />
                                         {time}
                                     </li>
@@ -217,25 +225,25 @@ const CourseDetailView = ({ course, setCourseDetail }) => {
                         </div>
                         
                         <div>
-                            <h4 className="font-semibold text-sm mb-2">Instructor:</h4>
-                            <p className="font-medium">{course.instructor}</p>
-                            <p className="text-sm text-gray-600">{course.instructorBio}</p>
+                            <h4 className="font-semibold text-sm mb-2 text-[#002E47]">Instructor:</h4>
+                            <p className="font-medium text-slate-700">{course.instructor}</p>
+                            <p className="text-sm text-slate-600">{course.instructorBio}</p>
                         </div>
                         
                         <div>
-                            <h4 className="font-semibold text-sm mb-2">Prerequisites:</h4>
+                            <h4 className="font-semibold text-sm mb-2 text-[#002E47]">Prerequisites:</h4>
                             <ul className="space-y-1">
                                 {course.prerequisites?.map((prereq, idx) => (
-                                    <li key={idx} className="text-sm text-gray-600">• {prereq}</li>
+                                    <li key={idx} className="text-sm text-slate-600">• {prereq}</li>
                                 ))}
                             </ul>
                         </div>
                         
                         <div>
-                            <h4 className="font-semibold text-sm mb-2">Learning Outcomes:</h4>
+                            <h4 className="font-semibold text-sm mb-2 text-[#002E47]">Learning Outcomes:</h4>
                             <ul className="space-y-1">
                                 {course.learningOutcomes?.map((outcome, idx) => (
-                                    <li key={idx} className="text-sm text-gray-600">✓ {outcome}</li>
+                                    <li key={idx} className="text-sm text-slate-600">✓ {outcome}</li>
                                 ))}
                             </ul>
                         </div>
@@ -243,39 +251,34 @@ const CourseDetailView = ({ course, setCourseDetail }) => {
                 </Card>
             </div>
 
-            {/* AI Coaching Simulator for the Course */}
             <AICoachingSimulator item={course} isCourse={true} />
 
-            {/* Modules/Sessions Card */}
-            <Card title="Course Modules" icon={Briefcase} accent='NAVY' className='mt-8'>
+            <Card title="Course Modules" icon={Briefcase} accentColor="bg-[#002E47]" className='mt-8'>
                 <div className="space-y-4">
                     {(course.modules || []).map((module, index) => (
-                        <div key={module.id || index} className="p-4 rounded-lg border shadow-sm bg-white hover:border-blue-400 transition">
-                            <h3 className="text-lg font-bold flex items-center gap-2" style={{ color: COLORS.NAVY }}>
-                                <span className="w-6 h-6 flex items-center justify-center rounded-full text-xs font-extrabold text-white" style={{ background: accentColor }}>{module.id || index + 1}</span>
+                        <div key={module.id || index} className="p-4 rounded-xl border border-slate-200 shadow-sm bg-white hover:border-blue-300 transition-colors">
+                            <h3 className="text-lg font-bold flex items-center gap-3 text-[#002E47]">
+                                <span className={`w-6 h-6 flex items-center justify-center rounded-full text-xs font-extrabold text-white ${accentBgClass}`}>{module.id || index + 1}</span>
                                 {module.title}
                             </h3>
-                            {/* Why it Matters */}
                             <details className="my-3 group">
-                                <summary className="text-sm font-semibold cursor-pointer list-none flex items-center gap-1" style={{ color: COLORS.TEAL }}>
+                                <summary className="text-sm font-semibold cursor-pointer list-none flex items-center gap-2 text-[#47A88D]">
                                     <Lightbulb className="w-4 h-4 text-amber-500"/> Rationale: {module.focus}
-                                    <span className="text-xs text-gray-400 group-open:rotate-90 transition-transform">▶</span>
+                                    <span className="text-xs text-slate-400 group-open:rotate-90 transition-transform">▶</span>
                                 </summary>
-                                <blockquote className="mt-2 border-l-4 pl-4 py-1 text-sm italic text-gray-600" style={{ borderColor: COLORS.TEAL }}>
+                                <blockquote className="mt-2 border-l-4 border-[#47A88D] pl-4 py-1 text-sm italic text-slate-600">
                                     {module.rationale}
                                 </blockquote>
                             </details>
 
-                            {/* Pre-Work Checklist */}
-                            <div className='mt-3 pt-3 border-t' style={{ borderColor: COLORS.SUBTLE }}>
-                                <p className="text-sm font-semibold mb-1" style={{ color: COLORS.ORANGE }}><CheckCircle className='w-4 h-4 inline-block mr-1'/> Pre-Work Required:</p>
-                                <ul className="list-disc pl-5 text-gray-700 space-y-0.5 text-sm">
+                            <div className='mt-3 pt-3 border-t border-slate-100'>
+                                <p className="text-sm font-semibold mb-1 text-[#E04E1B]"><CheckCircle className='w-4 h-4 inline-block mr-1'/> Pre-Work Required:</p>
+                                <ul className="list-disc pl-5 text-slate-700 space-y-0.5 text-sm">
                                     {(module.preWork || []).map((item, idx) => (
                                         <li key={idx} className='text-xs'>{item}</li>
                                     ))}
                                 </ul>
                             </div>
-                            {/* Special case link for LIS Auditor if it's QuickStart Session 2 */}
                             {course.id === 'quickstart_accelerator' && module.id === 2 && (
                                 <Button onClick={() => navigate('quick-start-accelerator')} variant="secondary" size="sm" className='mt-4'>
                                     <Zap className="w-4 h-4" /> Go to LIS Auditor Tool
@@ -289,16 +292,10 @@ const CourseDetailView = ({ course, setCourseDetail }) => {
     );
 };
 
-
-/**
- * Renders the detail view for an individual Skill.
- */
 const SkillDetailView = ({ skill, setSelectedSkill, resourceLibrary, getTierName }) => {
-    // FIX: Define local state for modal visibility and resource
     const [isResourceModalVisible, setIsResourceModalVisible] = useState(false);
     const [currentResource, setCurrentResource] = useState(null);
 
-    // FIX: Update modal handlers to use local state
     const localHandleOpenResource = (resource) => {
         setCurrentResource(resource);
         setIsResourceModalVisible(true);
@@ -309,101 +306,78 @@ const SkillDetailView = ({ skill, setSelectedSkill, resourceLibrary, getTierName
         setTimeout(() => setCurrentResource(null), 300);
     };
 
-    // Get resources associated with this skill's ID from the pre-transformed library
-    const resources = resourceLibrary?.[skill.skill_id] || []; // cite: useAppServices.jsx
-    // Get the icon component from IconMap, fallback to BookOpen
+    const resources = resourceLibrary?.[skill.skill_id] || [];
     const { IconMap, LEADERSHIP_TIERS } = useAppServices();
-    const IconComponent = IconMap?.[skill.icon] || BookOpen; // cite: useAppServices.jsx
-    // Determine accent color based on the skill's tier
-    const tierMeta = LEADERSHIP_TIERS?.[skill.tier_id]; // cite: useAppServices.jsx
+    const IconComponent = IconMap?.[skill.icon] || BookOpen;
+    const tierMeta = LEADERSHIP_TIERS?.[skill.tier_id];
     const accentColorKey = tierMeta?.color?.split('-')[0].toUpperCase();
-    const accentColor = COLORS[accentColorKey] || COLORS.TEAL;
+    const accentBgClass = getAccentColorClass(accentColorKey);
+    const accentTextClass = getAccentTextClass(accentColorKey);
 
     return (
-        // Consistent padding and max-width for detail view
-        <div className="p-6 md:p-4 sm:p-3 sm:p-4 lg:p-6 lg:p-8 lg:p-10 max-w-4xl mx-auto">
-            {/* Back Button */}
+        <div className="p-6 md:p-10 max-w-5xl mx-auto animate-fade-in">
             <Button onClick={() => setSelectedSkill(null)} variant='nav-back' className='mb-6'>
                 <ArrowLeft className="w-4 h-4 mr-2" /> Back to Course Library
             </Button>
 
-            {/* Skill Header Card */}
-            <Card accent={accentColorKey} className="mb-8">
-                 <div className='flex flex-col sm:flex-row items-start space-y-4 sm:space-y-0 sm:space-x-4'>
-                    {/* Icon */}
-                    <div className="w-16 h-16 rounded-full flex items-center justify-center shadow-lg flex-shrink-0" style={{ background: `${accentColor}1A` }}>
-                        {IconComponent && <IconComponent className="w-8 h-8" style={{ color: accentColor }} />}
+            <Card accentColor={accentBgClass} className="mb-8">
+                 <div className='flex flex-col sm:flex-row items-start space-y-4 sm:space-y-0 sm:space-x-6'>
+                    <div className={`w-16 h-16 rounded-full flex items-center justify-center shadow-lg flex-shrink-0 ${accentBgClass} bg-opacity-10`}>
+                        {IconComponent && <IconComponent className={`w-8 h-8 ${accentTextClass}`} />}
                     </div>
-                    {/* Title, Summary, Tier Badge */}
                     <div className="flex-1">
-                        <h1 className="text-2xl md:text-xl sm:text-2xl sm:text-3xl font-extrabold" style={{ color: COLORS.NAVY }}>{skill.name}</h1>
-                        <p className="text-md md:text-lg text-gray-600 mt-1">{skill.summary}</p>
-                        <p className="text-xs font-semibold mt-3 px-3 py-1 rounded-full inline-block" style={{ background: `${accentColor}20`, color: accentColor }}>
-                           {getTierName(skill.tier_id)} {/* Display tier name */}
+                        <h1 className="text-2xl md:text-3xl font-extrabold text-[#002E47]">{skill.name}</h1>
+                        <p className="text-lg text-slate-600 mt-2">{skill.summary}</p>
+                        <p className={`text-xs font-semibold mt-3 px-3 py-1 rounded-full inline-block ${accentBgClass} bg-opacity-10 ${accentTextClass}`}>
+                           {getTierName(skill.tier_id)}
                         </p>
                     </div>
                 </div>
             </Card>
 
-            {/* AI Coaching Simulator (Placeholder) */}
             <AICoachingSimulator item={skill} isCourse={false} />
 
-            {/* Curated Resources Card */}
-            <Card title="Curated Deep Dive Resources" icon={BookOpen} accent='NAVY' className='mt-8'>
-                {/* Empty State */}
+            <Card title="Curated Deep Dive Resources" icon={BookOpen} accentColor="bg-[#002E47]" className='mt-8'>
                 {resources.length === 0 && (
-                    <p className="text-gray-500 italic text-sm text-center py-4">
+                    <p className="text-slate-500 italic text-sm text-center py-4">
                         No specific resources linked to this skill yet.
                     </p>
                 )}
-                {/* Resource List */}
                 <div className="space-y-3">
                     {resources.map((resource, index) => (
                         <button
-                            key={resource.resource_id || index} // Use unique ID if available
-                            onClick={() => localHandleOpenResource(resource)} // FIX: Use local handler
-                            // Styling for resource list items
-                            className="w-full text-left p-4 rounded-lg bg-gray-50 hover:bg-teal-50 border border-gray-200 hover:border-teal-200 transition flex justify-between items-center group focus:outline-none focus:ring-2 focus:ring-[${COLORS.TEAL}]"
+                            key={resource.resource_id || index}
+                            onClick={() => localHandleOpenResource(resource)}
+                            className="w-full text-left p-4 rounded-xl bg-slate-50 hover:bg-teal-50 border border-slate-200 hover:border-teal-200 transition flex justify-between items-center group focus:outline-none focus:ring-2 focus:ring-[#47A88D]"
                         >
-                            <div className="overflow-hidden"> {/* Prevent text overflow */}
-                                <p className="font-semibold text-sm truncate" style={{ color: COLORS.NAVY }}>{resource.title}</p>
-                                <p className="text-xs text-gray-500">{resource.type || 'Resource'}</p>
+                            <div className="overflow-hidden">
+                                <p className="font-semibold text-sm truncate text-[#002E47]">{resource.title}</p>
+                                <p className="text-xs text-slate-500">{resource.type || 'Resource'}</p>
                             </div>
-                            <ChevronRight className='w-5 h-5 text-gray-400 flex-shrink-0 ml-2 group-hover:text-[${COLORS.TEAL}] transition-colors'/>
+                            <ChevronRight className='w-5 h-5 text-slate-400 flex-shrink-0 ml-2 group-hover:text-[#47A88D] transition-colors'/>
                         </button>
                     ))}
                 </div>
             </Card>
 
-            {/* Resource Detail Modal - FIX: Use local state and handlers */}
             <ResourceDetailModal
                 isVisible={isResourceModalVisible}
                 onClose={localHandleCloseResource}
                 resource={currentResource}
-                skill={skill} // Pass skill context
+                skill={skill}
             />
         </div>
     );
 };
 
-
-/* =========================================================
-   MAIN SCREEN COMPONENT: AppliedLeadershipScreen (Course Library)
-========================================================= */
-
-import { logWidthMeasurements } from '../../utils/debugWidth.js';
-
 export default function AppliedLeadershipScreen() {
-    // Scroll to top when component mounts
     React.useEffect(() => {
         window.scrollTo({ top: 0, behavior: 'smooth' });
-        logWidthMeasurements('AppliedLeadership');
     }, []);
     
-    // --- Consume services ---
     const {
-        SKILL_CATALOG, // Contains individual skills
-        COURSE_LIBRARY, // Contains full courses (like QuickStart) - DEPRECATED, use CMS instead
+        SKILL_CATALOG,
+        COURSE_LIBRARY,
         RESOURCE_LIBRARY,
         LEADERSHIP_TIERS,
         IconMap,
@@ -414,30 +388,24 @@ export default function AppliedLeadershipScreen() {
         user,
     } = useAppServices();
 
-    // --- Local State ---
-    const [selectedSkill, setSelectedSkill] = useState(null); // Holds the currently viewed skill object
-    const [selectedCourse, setSelectedCourse] = useState(null); // Holds the currently viewed course object
-    const [isModalVisible, setIsModalVisible] = useState(false); // Modal for resource detail (only used in legacy structure/home view)
+    const [selectedSkill, setSelectedSkill] = useState(null);
+    const [selectedCourse, setSelectedCourse] = useState(null);
+    const [isModalVisible, setIsModalVisible] = useState(false);
     const [selectedResource, setSelectedResource] = useState(null);
     const [cmsCourses, setCmsCourses] = useState([]);
 
-    // --- Effect to scroll to top on mount or when detail changes ---
     useEffect(() => { window.scrollTo({ top: 0, behavior: 'smooth' }); }, [selectedSkill, selectedCourse]);
 
-    // --- Load CMS courses ---
     useEffect(() => {
         if (!db || isAppLoading) return;
         
         const loadCourses = async () => {
             try {
                 const userTier = user?.membershipData?.tier || 'premium';
-                console.log('[AppliedLeadership] Loading courses with tier:', userTier);
                 const courses = await getCourses(db, userTier);
-                console.log('[AppliedLeadership] Loaded from CMS:', courses?.length || 0, 'courses');
                 setCmsCourses(courses || []);
             } catch (error) {
                 console.error('[AppliedLeadership] Error loading CMS courses:', error);
-                // Firestore indexes might still be building
                 setCmsCourses([]);
             }
         };
@@ -445,15 +413,10 @@ export default function AppliedLeadershipScreen() {
         loadCourses();
     }, [db, user, isAppLoading]);
 
-    // --- Derived Data ---
-    // Skills removed - only showing courses from CMS
-
-    // Extract courses from CMS only
     const safeCourses = useMemo(() => {
         if (isAppLoading) return [];
         
         if (cmsCourses && cmsCourses.length > 0) {
-            console.log('[AppliedLeadership] Using CMS courses:', cmsCourses.length);
             return cmsCourses.map(course => ({
                 id: course.id,
                 title: course.title || 'Untitled',
@@ -463,28 +426,23 @@ export default function AppliedLeadershipScreen() {
                 instructor: course.metadata?.instructor || '',
                 duration: course.metadata?.duration || '',
                 level: course.metadata?.level || '',
-                modules: [], // Modules not yet in CMS structure
+                modules: [],
                 isActive: course.isActive !== false,
             }));
         }
-        
-        console.log("[AppliedLeadership] No CMS courses loaded yet");
         return [];
     }, [cmsCourses, isAppLoading]);
 
-    // --- Callbacks ---
     const handleSelectSkill = useCallback((skill) => {
-        setSelectedCourse(null); // Clear course selection
+        setSelectedCourse(null);
         setSelectedSkill(skill);
     }, []);
 
     const handleSelectCourse = useCallback((course) => {
-        setSelectedSkill(null); // Clear skill selection
+        setSelectedSkill(null);
         setSelectedCourse(course);
     }, []);
 
-    // These resource handlers are now only relevant for the top-level home view if it links to resources directly
-    // They are no longer needed for SkillDetailView since it manages its own state.
     const handleOpenResource = useCallback((resource) => {
         setSelectedResource(resource);
         setIsModalVisible(true);
@@ -496,96 +454,90 @@ export default function AppliedLeadershipScreen() {
     }, []);
 
     const getTierName = useCallback((tierId) => {
-        return LEADERSHIP_TIERS?.[tierId]?.name || `Tier ${tierId}`; // cite: useAppServices.jsx
+        return LEADERSHIP_TIERS?.[tierId]?.name || `Tier ${tierId}`;
     }, [LEADERSHIP_TIERS]);
 
-    // --- RENDER: Skill Grid View (Course Library Home) ---
     const renderLibraryHome = () => (
-        <div className="p-6 md:p-4 sm:p-3 sm:p-4 lg:p-6 lg:p-8 lg:p-10">
-            {/* Back Button */}
+        <div className="p-6 md:p-10 max-w-7xl mx-auto animate-fade-in">
             <Button onClick={() => navigate('library')} variant="nav-back" size="sm" className="mb-6">
                 <ArrowLeft className="w-4 h-4 mr-2" />
                 Back to Library
             </Button>
             
-            {/* Header */}
-            <div className='flex items-center gap-4 border-b-2 pb-2 mb-8' style={{borderColor: COLORS.NAVY+'30'}}>
-                <ShieldCheck className='w-10 h-10' style={{color: COLORS.NAVY}}/> {/* Use consistent header style */}
-                <h1 className="text-xl sm:text-2xl sm:text-3xl md:text-4xl font-extrabold" style={{ color: COLORS.NAVY }}>Course Library</h1>
+            <div className='flex items-center gap-4 border-b border-slate-200 pb-4 mb-8'>
+                <ShieldCheck className='w-10 h-10 text-[#002E47]'/>
+                <h1 className="text-3xl md:text-4xl font-extrabold text-[#002E47]">Course Library</h1>
             </div>
-            <p className="text-lg text-gray-600 mb-10 max-w-3xl">
-                Explore leadership skills, access curated resources, practice with AI coaching, and build mastery through focused reps. **Practice over theory.**
+            <p className="text-lg text-slate-600 mb-10 max-w-3xl">
+                Explore leadership skills, access curated resources, practice with AI coaching, and build mastery through focused reps. <strong className="text-[#002E47]">Practice over theory.</strong>
             </p>
 
-            {/* Loading/Error States */}
             {isAppLoading && <LoadingSpinner message="Loading course library..." />}
             {!isAppLoading && appError && (
-                 <div className="text-red-600 italic text-center py-10 bg-red-50 p-4 rounded-lg border border-red-200 max-w-2xl mx-auto flex items-center justify-center gap-2">
+                 <div className="text-red-600 italic text-center py-10 bg-red-50 p-4 rounded-xl border border-red-200 max-w-2xl mx-auto flex items-center justify-center gap-2">
                      <AlertTriangle className="w-5 h-5 text-red-500"/>
                      <span>Error loading library: {appError.message}. Please try again later.</span>
                  </div>
             )}
 
-            {/* --- 1. COURSE Section (QuickStart, etc.) --- */}
             {safeCourses.length > 0 && (
                 <section className='mb-12'>
-                    <h2 className='text-2xl font-bold mb-6 border-l-4 pl-3 flex items-center gap-2' style={{ color: COLORS.NAVY, borderColor: COLORS.ORANGE }}>
-                        <Zap className='w-6 h-6' style={{color: COLORS.ORANGE}}/> Programs & Courses
+                    <h2 className='text-2xl font-bold mb-6 border-l-4 border-[#E04E1B] pl-3 flex items-center gap-2 text-[#002E47]'>
+                        <Zap className='w-6 h-6 text-[#E04E1B]'/> Programs & Courses
                     </h2>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:p-4 lg:p-6">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                         {safeCourses.map((course) => {
                             const IconComponent = IconMap?.[course.icon] || Briefcase;
                             const accentColorKey = (course.tier_id ? LEADERSHIP_TIERS?.[course.tier_id]?.color?.split('-')[0].toUpperCase() : null) || 'ORANGE';
-                            const accentColor = COLORS[accentColorKey] || COLORS.ORANGE;
+                            const accentBgClass = getAccentColorClass(accentColorKey);
+                            const accentTextClass = getAccentTextClass(accentColorKey);
                             const moduleCount = course.modules?.length || 0;
 
                             return (
                                 <button
                                     key={course.id}
                                     onClick={() => handleSelectCourse(course)}
-                                    className="text-left block w-full group focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[${COLORS.ORANGE}] rounded-2xl"
+                                    className="text-left block w-full group focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#E04E1B] rounded-2xl"
                                 >
-                                    <div className={`p-6 rounded-2xl border-2 shadow-lg transition-all duration-300 group-hover:scale-[1.03] group-hover:shadow-xl h-full flex flex-col`}
-                                         style={{ borderColor: `${accentColor}30`, background: COLORS.LIGHT_GRAY }}>
-                                        <div className='flex items-center space-x-3 mb-3'>
-                                            <div className="w-12 h-12 rounded-full flex items-center justify-center shadow-md flex-shrink-0" style={{ background: `${accentColor}1A` }}>
-                                                {IconComponent && <IconComponent className="w-6 h-6" style={{ color: accentColor }} />}
+                                    <div className={`p-6 rounded-2xl border border-slate-200 shadow-md transition-all duration-300 group-hover:scale-[1.02] group-hover:shadow-xl h-full flex flex-col bg-white`}>
+                                        <div className='flex items-center space-x-3 mb-4'>
+                                            <div className={`w-12 h-12 rounded-full flex items-center justify-center shadow-sm flex-shrink-0 ${accentBgClass} bg-opacity-10`}>
+                                                {IconComponent && <IconComponent className={`w-6 h-6 ${accentTextClass}`} />}
                                             </div>
-                                            <h2 className="text-lg font-extrabold flex-1" style={{ color: COLORS.NAVY }}>{course.title}</h2>
+                                            <h2 className="text-lg font-extrabold flex-1 text-[#002E47] leading-tight">{course.title}</h2>
                                         </div>
-                                        <p className="text-sm text-gray-600 mb-4 flex-grow" style={{ minHeight: '3rem' }}>{course.description}</p>
+                                        <p className="text-sm text-slate-600 mb-4 flex-grow line-clamp-3">{course.description}</p>
                                         
-                                        {/* Course Details */}
-                                        <div className="space-y-2 mb-3">
+                                        <div className="space-y-2 mb-4 border-t border-slate-100 pt-3">
                                             <div className="flex justify-between items-center text-xs">
-                                                <span className="text-gray-500">Duration:</span>
-                                                <span className="font-medium">{course.duration}</span>
+                                                <span className="text-slate-500">Duration:</span>
+                                                <span className="font-medium text-slate-700">{course.duration}</span>
                                             </div>
                                             <div className="flex justify-between items-center text-xs">
-                                                <span className="text-gray-500">Format:</span>
-                                                <span className="font-medium">{course.format}</span>
+                                                <span className="text-slate-500">Format:</span>
+                                                <span className="font-medium text-slate-700">{course.format}</span>
                                             </div>
                                             <div className="flex justify-between items-center text-xs">
-                                                <span className="text-gray-500">Starts:</span>
-                                                <span className="font-medium">{new Date(course.startDate).toLocaleDateString()}</span>
+                                                <span className="text-slate-500">Starts:</span>
+                                                <span className="font-medium text-slate-700">{new Date(course.startDate).toLocaleDateString()}</span>
                                             </div>
                                             <div className="flex justify-between items-center text-xs">
-                                                <span className="text-gray-500">Enrollment:</span>
-                                                <span className="font-medium">{course.currentEnrollment}/{course.maxParticipants}</span>
+                                                <span className="text-slate-500">Enrollment:</span>
+                                                <span className="font-medium text-slate-700">{course.currentEnrollment}/{course.maxParticipants}</span>
                                             </div>
                                         </div>
                                         
-                                        <div className='mt-auto pt-3 border-t' style={{ borderColor: COLORS.SUBTLE }}>
+                                        <div className='mt-auto pt-3 border-t border-slate-100'>
                                             <div className='flex justify-between items-center'>
                                                 <div className="flex flex-col">
-                                                    <span className='text-xs font-semibold uppercase' style={{ color: accentColor }}>
+                                                    <span className={`text-xs font-semibold uppercase ${accentTextClass}`}>
                                                         {moduleCount} Module{moduleCount !== 1 ? 's' : ''}
                                                     </span>
-                                                    <span className='text-sm font-bold' style={{ color: COLORS.NAVY }}>
+                                                    <span className='text-sm font-bold text-[#002E47]'>
                                                         ${course.price}
                                                     </span>
                                                 </div>
-                                                <ChevronRight className='w-4 h-4' style={{ color: accentColor }}/>
+                                                <ChevronRight className={`w-4 h-4 ${accentTextClass}`}/>
                                             </div>
                                         </div>
                                     </div>
@@ -596,9 +548,8 @@ export default function AppliedLeadershipScreen() {
                 </section>
             )}
 
-            {/* Empty State (Post-Loading, No Error) */}
             {!isAppLoading && !appError && safeCourses.length === 0 && (
-                 <div className="text-gray-500 italic text-center py-10 bg-gray-100 p-4 rounded-lg border border-gray-200 max-w-2xl mx-auto flex items-center justify-center gap-2">
+                 <div className="text-slate-500 italic text-center py-10 bg-slate-100 p-4 rounded-xl border border-slate-200 max-w-2xl mx-auto flex items-center justify-center gap-2">
                      <AlertTriangle className="w-5 h-5 text-orange-500"/>
                      <span>The Course Library appears to be empty. Please contact an administrator.</span>
                  </div>
@@ -606,10 +557,8 @@ export default function AppliedLeadershipScreen() {
         </div>
     );
 
-    // --- Main Component Return ---
-    // Renders either a detail view or the main grid
     return (
-        <div className='min-h-screen' style={{ background: COLORS.BG }}>
+        <div className='min-h-screen bg-slate-50'>
             {selectedCourse ? (
                 <CourseDetailView course={selectedCourse} setCourseDetail={setSelectedCourse} />
             ) : selectedSkill ? (
@@ -624,12 +573,11 @@ export default function AppliedLeadershipScreen() {
                 renderLibraryHome()
             )}
 
-            {/* Global Resource Modal (Used by SkillDetailView) */}
             <ResourceDetailModal
                 isVisible={isModalVisible}
                 onClose={handleCloseResource}
                 resource={selectedResource}
-                skill={selectedSkill || {}} // Pass skill context
+                skill={selectedSkill || {}}
             />
         </div>
     );

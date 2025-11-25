@@ -5,7 +5,7 @@ import React, { useEffect } from 'react';
 // REQ #5: Import Button and ArrowLeft
 import { CheckCircle, Circle, Flag, Calendar, ArrowLeft } from 'lucide-react';
 import { Card, Badge, Button } from './DevPlanComponents';
-import { MILESTONE_CONFIG, getCurrentWeek, getCurrentPhase, COLORS } from './devPlanUtils';
+import { MILESTONE_CONFIG, getCurrentWeek, getCurrentPhase } from './devPlanUtils';
 
 const MilestoneTimeline = ({ plan, onBack }) => {
   const currentWeek = getCurrentWeek(plan);
@@ -47,7 +47,7 @@ const MilestoneTimeline = ({ plan, onBack }) => {
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-2">
             <div>
               <Badge variant="purple" size="lg">Week {currentWeek} of 12</Badge>
-              <h4 className="text-xl sm:text-2xl font-bold mt-3" style={{ color: COLORS.NAVY }}>
+              <h4 className="text-xl sm:text-2xl font-bold mt-3" style={{ color: '#002E47' }}>
                 {currentPhase.name} Phase
               </h4>
               <p className="text-base text-gray-600 mt-1">{currentPhase.description}</p>
@@ -74,7 +74,7 @@ const MilestoneTimeline = ({ plan, onBack }) => {
                   {phaseIdx + 1}
                 </div>
                 <div>
-                  <h5 className="font-bold text-lg" style={{ color: COLORS.NAVY }}>
+                  <h5 className="font-bold text-lg" style={{ color: '#002E47' }}>
                     {phase.name}
                   </h5>
                   <p className="text-sm text-gray-600">
@@ -84,7 +84,7 @@ const MilestoneTimeline = ({ plan, onBack }) => {
               </div>
 
               {/* Week Markers - IMPROVED GRID */}
-              <div className="ml-6 pl-6 border-l-2" style={{ borderColor: COLORS.SUBTLE }}>
+              <div className="ml-6 pl-6 border-l-2" style={{ borderColor: '#E5E7EB' }}>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                   {phase.weeks.map(weekNum => {
                     const isPast = weekNum < currentWeek;
@@ -97,7 +97,7 @@ const MilestoneTimeline = ({ plan, onBack }) => {
                           isCurrent ? 'ring-2 shadow-lg' : 'shadow-sm'
                         }`}
                         style={{
-                          borderColor: isPast || isCurrent ? phase.color : COLORS.SUBTLE,
+                          borderColor: isPast || isCurrent ? phase.color : '#E5E7EB',
                           background: isPast ? `${phase.color}10` : isCurrent ? `${phase.color}20` : 'white',
                           ringColor: isCurrent ? phase.color : 'transparent',
                         }}
@@ -129,8 +129,8 @@ const MilestoneTimeline = ({ plan, onBack }) => {
         </div>
 
         {/* Key Milestones - IMPROVED LAYOUT */}
-        <div className="mt-8 p-3 sm:p-4 lg:p-6 rounded-xl border-2 shadow-sm" style={{ borderColor: COLORS.SUBTLE, background: COLORS.LIGHT_GRAY }}>
-          <h5 className="font-bold text-lg mb-4" style={{ color: COLORS.NAVY }}>
+        <div className="mt-8 p-3 sm:p-4 lg:p-6 rounded-xl border-2 shadow-sm" style={{ borderColor: '#E5E7EB', background: '#FCFCFA' }}>
+          <h5 className="font-bold text-lg mb-4" style={{ color: '#002E47' }}>
             🎯 Key Milestones
           </h5>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -188,7 +188,7 @@ const MilestoneItem = ({ week, label, completed, description }) => {
       </div>
       <div className="flex-1">
         <div className="flex items-center gap-2 mb-1">
-          <span className="text-sm font-bold" style={{ color: COLORS.NAVY }}>
+          <span className="text-sm font-bold" style={{ color: '#002E47' }}>
             Week {week}:
           </span>
           <span className={`text-sm font-bold ${completed ? 'text-green-600' : 'text-gray-500'}`}>

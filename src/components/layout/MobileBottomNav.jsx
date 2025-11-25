@@ -3,14 +3,6 @@ import React from 'react';
 import { Home, Target, Users, BookOpen } from 'lucide-react';
 import { useAppServices } from '../../services/useAppServices.jsx';
 
-const COLORS = {
-  NAVY: '#002E47',
-  TEAL: '#47A88D',
-  ORANGE: '#E04E1B',
-  LIGHT_GRAY: '#FCFCFA',
-  MUTED: '#6B7280'
-};
-
 const MobileBottomNav = ({ currentScreen }) => {
   const { navigate } = useAppServices();
   
@@ -51,7 +43,7 @@ const MobileBottomNav = ({ currentScreen }) => {
   return (
     <div className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t shadow-lg md:hidden" 
          style={{ 
-           borderColor: COLORS.TEAL + '30',
+           borderColor: '#47A88D30',
            boxShadow: '0 -4px 20px rgba(0, 0, 0, 0.1)'
          }}>
       <div className="flex justify-around items-center py-1 px-1">
@@ -69,7 +61,7 @@ const MobileBottomNav = ({ currentScreen }) => {
                   : 'hover:bg-gray-50 active:scale-95'
               }`}
               style={{
-                backgroundColor: isActive ? COLORS.TEAL : 'transparent'
+                backgroundColor: isActive ? '#47A88D' : 'transparent'
               }}
             >
               <Icon 
@@ -77,7 +69,7 @@ const MobileBottomNav = ({ currentScreen }) => {
                   isActive ? 'animate-pulse' : ''
                 }`}
                 style={{ 
-                  color: isActive ? '#fff' : COLORS.MUTED 
+                  color: isActive ? '#fff' : '#6B7280' 
                 }}
               />
               <span 
@@ -94,7 +86,7 @@ const MobileBottomNav = ({ currentScreen }) => {
               {isActive && (
                 <div 
                   className="absolute -top-1 w-8 h-1 rounded-full"
-                  style={{ backgroundColor: COLORS.ORANGE }}
+                  style={{ backgroundColor: '#E04E1B' }}
                 />
               )}
             </button>

@@ -4,13 +4,6 @@ import React, { useState } from 'react';
 import { RefreshCw, X, AlertCircle } from 'lucide-react';
 import { useRegisterSW } from 'virtual:pwa-register/react';
 
-const COLORS = {
-  NAVY: '#002E47',
-  ORANGE: '#E04E1B',
-  TEAL: '#47A88D',
-  LIGHT_GRAY: '#FCFCFA',
-};
-
 const UpdateNotification = () => {
   const {
     needRefresh: [needRefresh, setNeedRefresh],
@@ -45,13 +38,13 @@ const UpdateNotification = () => {
         className="rounded-xl shadow-2xl p-5 border-2 backdrop-blur-sm"
         style={{
           backgroundColor: 'rgba(252, 252, 250, 0.95)',
-          borderColor: COLORS.TEAL,
+          borderColor: '#47A88D',
         }}
       >
         <div className="flex items-start gap-4">
           <div
             className="flex-shrink-0 w-12 h-12 rounded-full flex items-center justify-center shadow-lg animate-bounce"
-            style={{ backgroundColor: COLORS.TEAL }}
+            style={{ backgroundColor: '#47A88D' }}
           >
             <RefreshCw className="w-6 h-6 text-white" />
           </div>
@@ -59,7 +52,7 @@ const UpdateNotification = () => {
           <div className="flex-1 min-w-0">
             <h3
               className="font-bold text-lg mb-1"
-              style={{ color: COLORS.NAVY }}
+              style={{ color: '#002E47' }}
             >
               New Version Available!
             </h3>
@@ -72,7 +65,7 @@ const UpdateNotification = () => {
                 onClick={handleUpdate}
                 disabled={isUpdating}
                 className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-bold text-white transition-all hover:shadow-lg hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
-                style={{ backgroundColor: COLORS.TEAL }}
+                style={{ backgroundColor: '#47A88D' }}
               >
                 {isUpdating ? (
                   <>
@@ -90,7 +83,7 @@ const UpdateNotification = () => {
               <button
                 onClick={handleDismiss}
                 className="px-4 py-2.5 rounded-lg text-sm font-medium transition-colors hover:bg-gray-100"
-                style={{ color: COLORS.NAVY }}
+                style={{ color: '#002E47' }}
               >
                 Later
               </button>

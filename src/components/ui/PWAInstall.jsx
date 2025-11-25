@@ -3,16 +3,6 @@
 import React, { useState, useEffect } from 'react';
 import { Download, X, Info, Smartphone, Monitor, ExternalLink } from 'lucide-react';
 
-const COLORS = {
-  NAVY: '#002E47',
-  ORANGE: '#E04E1B',
-  TEAL: '#47A88D',
-  LIGHT_GRAY: '#FCFCFA',
-  TEXT: '#002E47',
-  MUTED: '#47A88D',
-  BG: '#FCFCFA'
-};
-
 const PWAInstall = ({ collapsed = false }) => {
   const [deferredPrompt, setDeferredPrompt] = useState(null);
   const [isInstallable, setIsInstallable] = useState(false);
@@ -128,7 +118,7 @@ const PWAInstall = ({ collapsed = false }) => {
         onClick={handleInstallClick}
         className={`flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-offset-1 animate-pulse ${collapsed ? 'w-full' : ''}`}
         style={{
-          backgroundColor: COLORS.TEAL,
+          backgroundColor: '#47A88D',
           color: 'white',
           border: 'none'
         }}
@@ -143,12 +133,12 @@ const PWAInstall = ({ collapsed = false }) => {
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div
             className="bg-white rounded-lg shadow-2xl max-w-md w-full p-6"
-            style={{ backgroundColor: COLORS.BG }}
+            style={{ backgroundColor: '#FCFCFA' }}
           >
             <div className="flex items-start justify-between mb-4">
               <div className="flex items-center gap-3">
                 {getDeviceInstructions().icon}
-                <h3 className="text-lg font-bold" style={{ color: COLORS.NAVY }}>
+                <h3 className="text-lg font-bold" style={{ color: '#002E47' }}>
                   {getDeviceInstructions().title}
                 </h3>
               </div>
@@ -156,7 +146,7 @@ const PWAInstall = ({ collapsed = false }) => {
                 onClick={() => setShowInstructions(false)}
                 className="p-1 hover:bg-gray-100 rounded-lg transition-colors"
               >
-                <X className="w-5 h-5" style={{ color: COLORS.MUTED }} />
+                <X className="w-5 h-5" style={{ color: '#47A88D' }} />
               </button>
             </div>
 
@@ -165,11 +155,11 @@ const PWAInstall = ({ collapsed = false }) => {
                 <div key={index} className="flex gap-3">
                   <div
                     className="flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold text-white"
-                    style={{ backgroundColor: COLORS.ORANGE }}
+                    style={{ backgroundColor: '#E04E1B' }}
                   >
                     {index + 1}
                   </div>
-                  <p className="text-sm" style={{ color: COLORS.TEXT }}>
+                  <p className="text-sm" style={{ color: '#002E47' }}>
                     {step}
                   </p>
                 </div>
@@ -194,7 +184,7 @@ const PWAInstall = ({ collapsed = false }) => {
               onClick={() => setShowInstructions(false)}
               className="w-full py-2 px-4 rounded-lg font-medium transition-colors"
               style={{
-                backgroundColor: COLORS.NAVY,
+                backgroundColor: '#002E47',
                 color: 'white'
               }}
             >

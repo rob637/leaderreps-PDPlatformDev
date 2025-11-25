@@ -1,3 +1,5 @@
+// src/components/screens/FeaturesLab.jsx
+
 import React, { useState, useEffect } from 'react';
 import { 
   Beaker, 
@@ -11,9 +13,37 @@ import {
   ToggleLeft, 
   ToggleRight,
   Info,
-  AlertTriangle
+  AlertTriangle,
+  ArrowLeft
 } from 'lucide-react';
 import { useAppServices } from '../../services/useAppServices.jsx';
+
+// --- Standardized UI Components ---
+const Button = ({ children, onClick, disabled = false, variant = 'primary', className = '', size = 'md', ...rest }) => {
+  const baseStyles = "inline-flex items-center justify-center gap-2 font-semibold rounded-xl transition-all duration-200 focus:outline-none focus:ring-2 disabled:opacity-50 disabled:cursor-not-allowed";
+  const variants = {
+    primary: "bg-[#47A88D] text-white shadow-md hover:bg-[#3d917a] focus:ring-[#47A88D]/50",
+    secondary: "bg-[#E04E1B] text-white shadow-md hover:bg-[#c44317] focus:ring-[#E04E1B]/50",
+    outline: "bg-white text-[#47A88D] border-2 border-[#47A88D] shadow-sm hover:bg-[#47A88D]/10 focus:ring-[#47A88D]/50",
+    ghost: "bg-transparent text-slate-600 hover:bg-slate-100",
+    'nav-back': "bg-white text-slate-700 border border-slate-300 shadow-sm hover:bg-slate-100 focus:ring-slate-300/50 px-4 py-2 text-sm",
+  };
+  const sizes = {
+    sm: "px-3 py-1.5 text-sm",
+    md: "px-5 py-2.5 text-base",
+    lg: "px-8 py-4 text-lg",
+  };
+  return (
+    <button 
+      onClick={onClick} 
+      disabled={disabled} 
+      className={`${baseStyles} ${variants[variant] || variants.primary} ${sizes[size] || sizes.md} ${className}`}
+      {...rest}
+    >
+      {children}
+    </button>
+  );
+};
 
 // Feature Categories
 const CATEGORIES = {
@@ -176,20 +206,6 @@ const FeaturesLab = () => {
     window.dispatchEvent(new CustomEvent('featureFlagsUpdated', { detail: newFlags }));
   };
 
-  const toggleCategory = (category) => {
-    const categoryFeatures = FEATURES.filter(f => f.category === category);
-    const allEnabled = categoryFeatures.every(f => featureFlags[f.id]);
-    
-    const newFlags = { ...featureFlags };
-    categoryFeatures.forEach(f => {
-      newFlags[f.id] = !allEnabled;
-    });
-    
-    setFeatureFlags(newFlags);
-    localStorage.setItem('arena_feature_flags', JSON.stringify(newFlags));
-    window.dispatchEvent(new CustomEvent('featureFlagsUpdated', { detail: newFlags }));
-  };
-
   const renderFeatureCard = (feature) => {
     const isEnabled = featureFlags[feature.id] || false;
     const Icon = feature.icon;
@@ -197,9 +213,9 @@ const FeaturesLab = () => {
     return (
       <div 
         key={feature.id} 
-        className={`p-4 rounded-xl border-2 transition-all duration-200 ${
+        className={`p-4 rounded-xl border transition-all duration-200 ${
           isEnabled 
-            ? 'bg-white border-teal-500 shadow-md' 
+            ? 'bg-white border-[#47A88D] shadow-md' 
             : 'bg-slate-50 border-slate-200 opacity-75 hover:opacity-100'
         }`}
       >
@@ -209,13 +225,13 @@ const FeaturesLab = () => {
           </div>
           <button 
             onClick={() => toggleFeature(feature.id)}
-            className={`transition-colors ${isEnabled ? 'text-teal-600' : 'text-slate-400'}`}
+            className={`transition-colors ${isEnabled ? 'text-[#47A88D]' : 'text-slate-400'}`}
           >
             {isEnabled ? <ToggleRight className="w-8 h-8" /> : <ToggleLeft className="w-8 h-8" />}
           </button>
         </div>
         
-        <h3 className="font-bold text-slate-800 mb-1">{feature.title}</h3>
+        <h3 className="font-bold text-[#002E47] mb-1">{feature.title}</h3>
         <p className="text-sm text-slate-600 mb-3 min-h-[40px]">{feature.description}</p>
         
         <div className="flex items-center gap-2">
@@ -227,7 +243,7 @@ const FeaturesLab = () => {
             {feature.status}
           </span>
           {isEnabled && (
-            <span className="text-xs font-bold text-teal-600 flex items-center gap-1">
+            <span className="text-xs font-bold text-[#47A88D] flex items-center gap-1">
               <Zap className="w-3 h-3" /> Active
             </span>
           )}
@@ -237,13 +253,16 @@ const FeaturesLab = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#F5F5F7] p-4 sm:p-6 lg:p-8 font-sans text-slate-800">
+    <div className="min-h-screen bg-slate-50 p-6 md:p-10 animate-fade-in">
       <div className="max-w-6xl mx-auto space-y-8">
         
         {/* Header */}
         <header className="space-y-4">
+          <Button onClick={() => navigate('app-settings')} variant="nav-back" size="sm">
+                <ArrowLeft className="w-4 h-4 mr-2" /> Back to Settings
+          </Button>
           <div className="flex items-center gap-3">
-            <div className="p-3 bg-indigo-600 rounded-xl text-white shadow-lg">
+            <div className="p-3 bg-[#002E47] rounded-xl text-white shadow-lg">
               <Beaker className="w-8 h-8" />
             </div>
             <div>
@@ -252,11 +271,11 @@ const FeaturesLab = () => {
             </div>
           </div>
           
-          <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded-r-xl flex items-start gap-3">
-            <AlertTriangle className="w-5 h-5 text-yellow-600 mt-0.5" />
+          <div className="bg-amber-50 border-l-4 border-amber-400 p-4 rounded-r-xl flex items-start gap-3">
+            <AlertTriangle className="w-5 h-5 text-amber-600 mt-0.5" />
             <div>
-              <p className="font-bold text-yellow-800">Experimental Zone</p>
-              <p className="text-sm text-yellow-700">
+              <p className="font-bold text-amber-800">Experimental Zone</p>
+              <p className="text-sm text-amber-700">
                 Features enabled here are stored locally in your browser. They may be incomplete, unstable, or change without notice. 
                 Use at your own risk for testing purposes.
               </p>

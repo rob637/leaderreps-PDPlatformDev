@@ -6,10 +6,27 @@ import React, { useState } from 'react';
 import { Target, TrendingUp, Calendar, Edit, ArrowLeft } from 'lucide-react'; // REQ #4: Added ArrowLeft
 import * as LucideIcons from 'lucide-react';
 import { Button, Card, ProgressBar } from './DevPlanComponents';
-import { COLORS, generatePlanSummary } from './devPlanUtils';
+import { generatePlanSummary } from './devPlanUtils';
 import ProgressBreakdown from './ProgressBreakdown';
 import QuickPlanEditor from './QuickPlanEditor';
 import WidgetRenderer from '../../admin/WidgetRenderer';
+
+const COLORS = {
+  NAVY: '#002E47',
+  TEAL: '#47A88D',
+  ORANGE: '#E04E1B',
+  GREEN: '#47A88D',
+  LIGHT_GRAY: '#FCFCFA',
+  OFF_WHITE: '#FFFFFF',
+  SUBTLE: '#E5E7EB',
+  TEXT: '#002E47',
+  MUTED: '#4B5563',
+  BLUE: '#002E47',
+  PURPLE: '#47A88D',
+  AMBER: '#E04E1B',
+  RED: '#E04E1B',
+  BG: '#FCFCFA'
+};
 
 const PlanTracker = ({ 
   plan, 

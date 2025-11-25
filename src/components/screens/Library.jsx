@@ -9,73 +9,38 @@ import { getReadings, getVideos, getCourses } from '../../services/contentServic
 import { useFeatures } from '../../providers/FeatureProvider';
 import WidgetRenderer from '../admin/WidgetRenderer';
 
-// LEADERREPS.COM OFFICIAL CORPORATE COLORS - VERIFIED 11/14/25
-const COLORS = {
-  // === PRIMARY BRAND COLORS (from leaderreps.com) ===
-  NAVY: '#002E47',        // Primary text, headers, navigation
-  ORANGE: '#E04E1B',      // Call-to-action buttons, highlights, alerts  
-  TEAL: '#47A88D',        // Secondary buttons, success states, accents
-  LIGHT_GRAY: '#FCFCFA',  // Page backgrounds, subtle surfaces
-  
-  // === TEXT & BACKGROUNDS (corporate colors only) ===
-  TEXT: '#002E47',        // NAVY for all text
-  MUTED: '#47A88D',       // TEAL for muted text
-  BG: '#FCFCFA',          // LIGHT_GRAY for backgrounds
-  SUBTLE: '#47A88D'       // TEAL for subtle elements
-};
-
-const LibraryCard = ({ title, description, icon: Icon, onClick, disabled = false, requiredTier }) => {
+const LibraryCard = ({ title, description, icon: Icon, onClick, isLocked = false, requiredTier }) => {
   return (
     <button
       onClick={onClick}
-      disabled={disabled}
-      className={`card-corporate-elevated w-full text-left transition-all duration-300 ${
-        disabled
-          ? 'opacity-60 cursor-not-allowed'
-          : 'hover:shadow-xl hover:-translate-y-1 cursor-pointer'
-      }`}
-      style={{ 
-        borderColor: disabled ? COLORS.SUBTLE : COLORS.TEAL,
-        background: disabled ? COLORS.LIGHT_GRAY : 'white'
-      }}
+      className={`w-full text-left transition-all duration-300 rounded-2xl border p-6 h-full flex flex-col group
+        ${isLocked 
+          ? 'opacity-90 border-slate-200 bg-slate-50 hover:bg-slate-100' 
+          : 'bg-white hover:shadow-xl hover:-translate-y-1 cursor-pointer border-slate-200 hover:border-[#47A88D]/50'
+        }`}
     >
-      <div className="p-6 h-full flex flex-col">
-        <div className="text-center mb-4">
-          <div
-            className="w-20 h-20 rounded-2xl flex items-center justify-center mx-auto mb-4"
-            style={{ 
-              backgroundColor: disabled ? `${COLORS.SUBTLE}20` : `${COLORS.TEAL}15`,
-              border: `3px solid ${disabled ? COLORS.SUBTLE : COLORS.TEAL}30`
-            }}
-          >
-            <Icon
-              className="w-10 h-10"
-              style={{ color: disabled ? COLORS.SUBTLE : COLORS.TEAL }}
-            />
-          </div>
-          <h3 className="text-xl font-bold mb-3" style={{ color: disabled ? COLORS.MUTED : COLORS.NAVY }}>
-            {title}
-          </h3>
+      <div className="text-center mb-4 w-full">
+        <div
+          className={`w-20 h-20 rounded-2xl flex items-center justify-center mx-auto mb-4 transition-colors
+            ${isLocked ? 'bg-slate-200 text-slate-400' : 'bg-[#47A88D]/10 text-[#47A88D] group-hover:bg-[#47A88D]/20'}`}
+        >
+          <Icon className="w-10 h-10" />
         </div>
-        <div className="flex-1 flex flex-col">
-          <p className="text-gray-600 text-center mb-4 flex-1">
-            {description}
-          </p>
-          {disabled && requiredTier && (
-            <div className="mt-auto">
-              <div 
-                className="inline-flex items-center px-3 py-2 rounded-full text-sm font-semibold w-full justify-center"
-                style={{ 
-                  backgroundColor: `${COLORS.ORANGE}20`, 
-                  color: COLORS.ORANGE,
-                  border: `1px solid ${COLORS.ORANGE}40`
-                }}
-              >
-                Requires Premium Tier
-              </div>
+        <h3 className={`text-xl font-bold mb-3 ${isLocked ? 'text-slate-500' : 'text-[#002E47]'}`}>
+          {title}
+        </h3>
+      </div>
+      <div className="flex-1 flex flex-col w-full">
+        <p className="text-slate-600 text-center mb-4 flex-1">
+          {description}
+        </p>
+        {isLocked && requiredTier && (
+          <div className="mt-auto w-full">
+            <div className="inline-flex items-center px-3 py-2 rounded-full text-sm font-semibold w-full justify-center bg-[#E04E1B]/10 text-[#E04E1B] border border-[#E04E1B]/20">
+              Requires Premium Tier
             </div>
-          )}
-        </div>
+          </div>
+        )}
       </div>
     </button>
   );
@@ -121,18 +86,6 @@ const Library = ({ simulatedTier, isDeveloperMode }) => {
   // Scroll to top when component mounts
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
-    
-    // DEBUG: Measure actual widths
-    setTimeout(() => {
-      const pageEl = document.querySelector('.page-corporate');
-      const contentEl = document.querySelector('.content-full');
-      console.log('📏 LIBRARY Width Measurements:', {
-        pageWidth: pageEl?.offsetWidth,
-        contentWidth: contentEl?.offsetWidth,
-        pageComputedMaxWidth: window.getComputedStyle(pageEl || document.body).maxWidth,
-        contentComputedMaxWidth: window.getComputedStyle(contentEl || document.body).maxWidth
-      });
-    }, 100);
   }, []);
 
   const libraryItems = useMemo(() => {
@@ -185,32 +138,14 @@ const Library = ({ simulatedTier, isDeveloperMode }) => {
   }, [isFeatureEnabled, getFeatureOrder]);
 
   const handleCardClick = (item) => {
-    console.log('🔍 Library Card Click Debug:', {
-      itemId: item.id,
-      itemTitle: item.title,
-      targetScreen: item.screen,
-      currentTier: currentTier,
-      requiredTier: item.requiredTier,
-      navigateFunction: typeof navigate
-    });
-    
     if (navigate && typeof navigate === 'function') {
       const hasAccess = membershipService.hasAccess(currentTier, item.requiredTier);
       
-      console.log('🔑 Access Check Result:', {
-        hasAccess: hasAccess,
-        willNavigateTo: hasAccess ? item.screen : 'membership-upgrade'
-      });
-      
       if (!hasAccess) {
-        console.log('❌ No access - redirecting to membership-upgrade');
         navigate('membership-upgrade');
       } else {
-        console.log('✅ Access granted - navigating to:', item.screen);
         navigate(item.screen);
       }
-    } else {
-      console.error('❌ Navigate function not available or not a function');
     }
   };
 
@@ -230,7 +165,6 @@ const Library = ({ simulatedTier, isDeveloperMode }) => {
     LibraryCard,
     
     // Constants/Utils
-    COLORS,
     membershipService,
     
     // Icons
@@ -238,28 +172,42 @@ const Library = ({ simulatedTier, isDeveloperMode }) => {
   };
 
   return (
-      <div className="page-corporate container-corporate animate-corporate-fade-in">
-        <div className="content-full">
-      <div>
+      <div className="min-h-screen bg-slate-50 p-6 md:p-10 animate-fade-in">
+        <div className="max-w-7xl mx-auto">
+      
         {/* Back Button */}
-        <div className="flex items-center gap-2 mb-6 text-gray-600 hover:text-gray-800 cursor-pointer transition-colors" onClick={() => navigate('dashboard')}>
-          <ArrowLeft className="w-5 h-5" />
-          <span className="text-sm font-medium">Back to Dashboard</span>
-        </div>
+        <button 
+            onClick={() => navigate('dashboard')}
+            className="flex items-center gap-2 mb-8 text-slate-500 hover:text-[#002E47] transition-colors group"
+        >
+          <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
+          <span className="font-medium">Back to Dashboard</span>
+        </button>
 
         {/* Header */}
-        <div className="text-center mb-12">
-            <div className="flex items-center justify-center gap-2 mb-4">
-                <BookOpen className='w-8 h-8' style={{color: COLORS.TEAL}}/>
-                <h1 className="corporate-heading-xl" style={{ color: COLORS.NAVY }}>Content</h1>
-                <BookOpen className='w-8 h-8' style={{color: COLORS.TEAL}}/>
+        <div className="text-center mb-12 space-y-4">
+            <div className="flex items-center justify-center gap-3">
+                <BookOpen className='w-8 h-8 text-[#47A88D]'/>
+                <h1 className="text-4xl font-bold text-[#002E47]">Content</h1>
+                <BookOpen className='w-8 h-8 text-[#47A88D]'/>
             </div>
-            <p className="corporate-text-body text-gray-600 mx-auto px-4">Your complete leadership development ecosystem.</p>
+            <p className="text-lg text-slate-600 max-w-2xl mx-auto">Your complete leadership development ecosystem.</p>
         </div>
 
-        <WidgetRenderer widgetId="content-library-main" scope={scope} />
+        <WidgetRenderer widgetId="content-library-main" scope={scope}>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6 max-w-5xl mx-auto">
+                {libraryItems.map(item => (
+                    <LibraryCard 
+                        key={item.id}
+                        {...item}
+                        onClick={() => handleCardClick(item)}
+                        isLocked={!membershipService.hasAccess(currentTier, item.requiredTier)}
+                        requiredTier={item.requiredTier}
+                    />
+                ))}
+            </div>
+        </WidgetRenderer>
         
-        </div>
       </div>
     </div>
   );

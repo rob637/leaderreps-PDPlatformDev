@@ -11,46 +11,48 @@ import {
   ResponsiveContainer 
 } from 'recharts';
 
-/* =========================================================
-   COLORS & COMPONENTS (Match Dashboard)
-========================================================= */
-const COLORS = { 
-  NAVY: '#002E47', TEAL: '#47A88D', BLUE: '#002E47', ORANGE: '#E04E1B', 
-  GREEN: '#47A88D', AMBER: '#E04E1B', RED: '#E04E1B', LIGHT_GRAY: '#FCFCFA', 
-  OFF_WHITE: '#FFFFFF', SUBTLE: '#E5E7EB', TEXT: '#374151', MUTED: '#4B5563', 
-  PURPLE: '#47A88D', BG: '#F9FAFB' 
-};
+
 
 const Button = ({ children, onClick, disabled = false, variant = 'primary', className = '', size = 'md', ...rest }) => {
     let baseStyle = `inline-flex items-center justify-center gap-2 font-semibold rounded-xl transition-all duration-200 focus:outline-none focus:ring-4 disabled:opacity-50 disabled:cursor-not-allowed`;
     if (size === 'sm') baseStyle += ' px-4 py-2 text-sm'; 
     else if (size === 'lg') baseStyle += ' px-8 py-4 text-lg'; 
     else baseStyle += ' px-6 py-3 text-base';
-    if (variant === 'primary') baseStyle += ` bg-[${COLORS.TEAL}] text-white shadow-lg hover:bg-[#47A88D] focus:ring-[${COLORS.TEAL}]/50`;
-    else if (variant === 'secondary') baseStyle += ` bg-[${COLORS.ORANGE}] text-white shadow-lg hover:bg-[#C33E12] focus:ring-[${COLORS.ORANGE}]/50`;
-    else if (variant === 'outline') baseStyle += ` bg-[${COLORS.OFF_WHITE}] text-[${COLORS.TEAL}] border-2 border-[${COLORS.TEAL}] shadow-md hover:bg-[${COLORS.TEAL}]/10 focus:ring-[${COLORS.TEAL}]/50`;
+    if (variant === 'primary') baseStyle += ` bg-[#47A88D] text-white shadow-lg hover:bg-[#47A88D] focus:ring-[#47A88D]/50`;
+    else if (variant === 'secondary') baseStyle += ` bg-[#E04E1B] text-white shadow-lg hover:bg-[#C33E12] focus:ring-[#E04E1B]/50`;
+    else if (variant === 'outline') baseStyle += ` bg-[#FFFFFF] text-[#47A88D] border-2 border-[#47A88D] shadow-md hover:bg-[#47A88D]/10 focus:ring-[#47A88D]/50`;
     else if (variant === 'nav-back') baseStyle += ` bg-white text-gray-700 border border-gray-300 shadow-sm hover:bg-gray-100 focus:ring-gray-300/50 px-4 py-2 text-sm`;
     else if (variant === 'ghost') baseStyle += ` bg-transparent text-gray-600 hover:bg-gray-100 focus:ring-gray-300/50 px-3 py-1.5 text-sm`;
     if (disabled) baseStyle += ' bg-gray-300 text-gray-500 shadow-inner border-transparent hover:bg-gray-300';
     return (<button {...rest} onClick={onClick} disabled={disabled} className={`${baseStyle} ${className}`}>{children}</button>);
 };
 
+const ACCENT_COLORS = {
+  NAVY: '#002E47',
+  TEAL: '#47A88D',
+  ORANGE: '#E04E1B',
+  GREEN: '#47A88D',
+  PURPLE: '#47A88D',
+  AMBER: '#E04E1B',
+  RED: '#E04E1B',
+};
+
 const Card = ({ children, title, icon: Icon, className = '', accent = 'NAVY' }) => {
-    const accentColor = COLORS[accent] || COLORS.NAVY;
+    const accentColor = ACCENT_COLORS[accent] || ACCENT_COLORS.NAVY;
     return (
         <div className={`relative p-6 rounded-2xl border-2 shadow-xl hover:shadow-lg transition-all duration-300 text-left ${className}`} 
-             style={{ background: 'linear-gradient(180deg,#FFFFFF, #FCFCFA)', borderColor: COLORS.SUBTLE, color: COLORS.NAVY }}>
+             style={{ background: 'linear-gradient(180deg,#FFFFFF, #FCFCFA)', borderColor: '#E5E7EB', color: '#002E47' }}>
             <span style={{ position:'absolute', top:0, left:0, right:0, height:6, background: accentColor, borderTopLeftRadius:14, borderTopRightRadius:14 }} />
             {Icon && title && (
                 <div className="flex items-center gap-3 mb-4">
                     <div className="w-10 h-10 rounded-lg flex items-center justify-center border flex-shrink-0" 
-                         style={{ borderColor: COLORS.SUBTLE, background: COLORS.LIGHT_GRAY }}> 
+                         style={{ borderColor: '#E5E7EB', background: '#FCFCFA' }}> 
                         <Icon className="w-5 h-5" style={{ color: accentColor }} /> 
                     </div>
-                    <h2 className="text-xl font-extrabold" style={{ color: COLORS.NAVY }}>{title}</h2>
+                    <h2 className="text-xl font-extrabold" style={{ color: '#002E47' }}>{title}</h2>
                 </div>
             )}
-            {!Icon && title && <h2 className="text-xl font-extrabold mb-4 border-b pb-2" style={{ color: COLORS.NAVY, borderColor: COLORS.SUBTLE }}>{title}</h2>}
+            {!Icon && title && <h2 className="text-xl font-extrabold mb-4 border-b pb-2" style={{ color: '#002E47', borderColor: '#E5E7EB' }}>{title}</h2>}
             <div>{children}</div>
         </div>
     );
@@ -149,7 +151,7 @@ const DetailedPlanView = ({
   }
 
   return (
-    <div className="min-h-screen" style={{ background: COLORS.BG }}>
+    <div className="min-h-screen" style={{ background: '#F9FAFB' }}>
       <div className="w-full mx-auto px-4 py-6">
         
         {/* Header Area */}
@@ -160,7 +162,7 @@ const DetailedPlanView = ({
                 <ArrowLeft className="w-4 h-4" /> Back to Tracker
               </Button>
             </div>
-            <h1 className="text-xl sm:text-2xl sm:text-3xl md:text-4xl font-extrabold mb-2" style={{ color: COLORS.NAVY }}>
+            <h1 className="text-xl sm:text-2xl sm:text-3xl md:text-4xl font-extrabold mb-2" style={{ color: '#002E47' }}>
               Your Arena Development Plan
             </h1>
             <p className="text-lg text-gray-600">
@@ -193,17 +195,17 @@ const DetailedPlanView = ({
                 <span 
                   className={`text-[10px] font-bold px-2 py-0.5 rounded`}
                   style={{
-                    backgroundColor: item.phase === 'Foundation' ? `${COLORS.BLUE}20` : 
-                                    item.phase === 'Performance' ? `${COLORS.TEAL}20` : `${COLORS.ORANGE}20`,
-                    color: item.phase === 'Foundation' ? COLORS.BLUE : 
-                          item.phase === 'Performance' ? COLORS.TEAL : COLORS.ORANGE
+                    backgroundColor: item.phase === 'Foundation' ? `${'#002E47'}20` : 
+                                    item.phase === 'Performance' ? `${'#47A88D'}20` : `${'#E04E1B'}20`,
+                    color: item.phase === 'Foundation' ? '#002E47' : 
+                          item.phase === 'Performance' ? '#47A88D' : '#E04E1B'
                   }}
                 >
                   {item.phase}
                 </span>
                 
                 {/* Cycle Title */}
-                <h4 className="font-bold text-xs mt-2 mb-1" style={{ color: COLORS.NAVY }}>
+                <h4 className="font-bold text-xs mt-2 mb-1" style={{ color: '#002E47' }}>
                   {item.q}
                 </h4>
                 
@@ -217,7 +219,7 @@ const DetailedPlanView = ({
                 {/* Current Cycle Indicator */}
                 {item.cycle === currentCycle && (
                   <span className="block text-center text-[10px] font-bold mt-1" 
-                        style={{ color: COLORS.TEAL }}>
+                        style={{ color: '#47A88D' }}>
                     ← YOU ARE HERE
                   </span>
                 )}
@@ -225,7 +227,7 @@ const DetailedPlanView = ({
                 {/* Completed Indicator */}
                 {item.cycle < currentCycle && (
                   <div className="flex justify-center mt-1">
-                    <CheckCircle className="w-3 h-3" style={{ color: COLORS.GREEN }} />
+                    <CheckCircle className="w-3 h-3" style={{ color: '#47A88D' }} />
                   </div>
                 )}
               </div>
@@ -250,21 +252,21 @@ const DetailedPlanView = ({
                 <div style={{ width: '100%', height: 300 }}>
                   <ResponsiveContainer>
                     <RadarChart cx="50%" cy="50%" outerRadius="80%" data={radarData}>
-                      <PolarGrid stroke={COLORS.SUBTLE} />
+                      <PolarGrid stroke={'#E5E7EB'} />
                       <PolarAngleAxis 
                         dataKey="subject" 
-                        tick={{ fontSize: 9, fill: COLORS.MUTED }} 
+                        tick={{ fontSize: 9, fill: '#4B5563' }} 
                       />
                       <PolarRadiusAxis 
                         angle={30} 
                         domain={[0, 5]} 
-                        tick={{ fontSize: 10, fill: COLORS.MUTED }} 
+                        tick={{ fontSize: 10, fill: '#4B5563' }} 
                       />
                       <Radar 
                         name="Your Scores" 
                         dataKey="score" 
-                        stroke={COLORS.TEAL} 
-                        fill={COLORS.TEAL} 
+                        stroke={'#47A88D'} 
+                        fill={'#47A88D'} 
                         fillOpacity={0.6} 
                       />
                     </RadarChart>
@@ -292,17 +294,17 @@ const DetailedPlanView = ({
                 {currentPlan.focusAreas?.map((area, index) => (
                   <div key={index} 
                        className="flex flex-col sm:flex-row gap-4 border-b pb-6 last:border-b-0" 
-                       style={{ borderColor: COLORS.SUBTLE }}>
+                       style={{ borderColor: '#E5E7EB' }}>
                     
                     {/* Number Badge */}
                     <div className={`w-10 h-10 rounded-full flex-shrink-0 flex items-center justify-center text-white text-xl font-bold mb-2 sm:mb-0`} 
-                         style={{ background: COLORS.ORANGE }}>
+                         style={{ background: '#E04E1B' }}>
                       {index + 1}
                     </div>
                     
                     {/* Area Details */}
                     <div className="flex-1">
-                      <h3 className="text-lg font-bold" style={{ color: COLORS.NAVY }}>
+                      <h3 className="text-lg font-bold" style={{ color: '#002E47' }}>
                         {area.name}
                         {area.score !== 'N/A' && (
                           <span className="text-sm font-normal text-gray-500"> (Score: {area.score})</span>
@@ -311,15 +313,15 @@ const DetailedPlanView = ({
                       
                       {/* FIX #3: WHY it Matters & What Good Looks Like */}
                       <div className="mt-2 space-y-2">
-                        <div className="p-2 rounded" style={{ backgroundColor: `${COLORS.BLUE}05` }}>
-                          <p className="text-xs font-semibold" style={{ color: COLORS.BLUE }}>
+                        <div className="p-2 rounded" style={{ backgroundColor: `${'#002E47'}05` }}>
+                          <p className="text-xs font-semibold" style={{ color: '#002E47' }}>
                             💡 WHY IT MATTERS:
                           </p>
                           <p className="text-sm italic text-gray-600 mt-1">{area.why}</p>
                         </div>
                         
-                        <div className="p-2 rounded" style={{ backgroundColor: `${COLORS.TEAL}05` }}>
-                          <p className="text-xs font-semibold" style={{ color: COLORS.TEAL }}>
+                        <div className="p-2 rounded" style={{ backgroundColor: `${'#47A88D'}05` }}>
+                          <p className="text-xs font-semibold" style={{ color: '#47A88D' }}>
                             🎯 WHAT GREAT LOOKS LIKE:
                           </p>
                           <p className="text-sm text-gray-600 mt-1">{area.whatGoodLooksLike}</p>
@@ -327,14 +329,14 @@ const DetailedPlanView = ({
                       </div>
                       
                       {/* Training Plan / Courses */}
-                      <h5 className="text-sm font-bold mt-3 mb-2" style={{ color: COLORS.NAVY }}>
+                      <h5 className="text-sm font-bold mt-3 mb-2" style={{ color: '#002E47' }}>
                         Related Training:
                       </h5>
                       <ul className="list-disc list-inside text-sm text-gray-700 space-y-1">
                         {area.courses?.map((course, idx) => (
                           <li key={idx}>Arena Course: <strong>{course}</strong></li>
                         ))}
-                        <li className="font-semibold" style={{ color: COLORS.TEAL }}>
+                        <li className="font-semibold" style={{ color: '#47A88D' }}>
                           <CheckCircle className="w-4 h-4 inline-block mr-1" />
                           Core reps added to Daily Practice
                         </li>

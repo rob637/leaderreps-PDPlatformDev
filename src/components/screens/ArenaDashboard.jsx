@@ -9,7 +9,6 @@ import {
   MessageSquare, Bell, Calendar, ChevronRight, ArrowRight,
   Edit3, Loader
 } from 'lucide-react';
-import { COLORS } from './dashboard/dashboardConstants.js';
 import { useDashboard } from './dashboard/DashboardHooks.jsx';
 import { UnifiedAnchorEditorModal, StreakTracker } from './dashboard/DashboardComponents.jsx';
 
@@ -227,18 +226,18 @@ const ArenaDashboard = (props) => {
         </div>
 
         {/* FEATURE: Executive Summary Widget */}
-        <div className="bg-corporate-navy text-white p-6 rounded-2xl shadow-lg flex items-center justify-between">
+        <div className="bg-[#002E47] text-white p-6 rounded-2xl shadow-lg flex items-center justify-between">
           <div>
             <h2 className="text-lg font-bold mb-1">Executive Summary</h2>
             <p className="text-blue-200 text-sm">Your leadership impact at a glance.</p>
           </div>
           <div className="flex gap-8 text-center">
             <div>
-              <div className="text-2xl font-bold text-corporate-teal">94%</div>
+              <div className="text-2xl font-bold text-[#47A88D]">94%</div>
               <div className="text-xs text-blue-200 uppercase">Consistency</div>
             </div>
             <div>
-              <div className="text-2xl font-bold text-corporate-orange">12</div>
+              <div className="text-2xl font-bold text-[#E04E1B]">12</div>
               <div className="text-xs text-blue-200 uppercase">Reps Done</div>
             </div>
           </div>
@@ -314,7 +313,7 @@ const ArenaDashboard = (props) => {
                       subLabel="Execute your targeted practice."
                     />
                     {/* FEATURE: Calendar Integration */}
-                    <button className="absolute right-4 top-1/2 -translate-y-1/2 p-2 text-slate-400 hover:text-corporate-teal" title="Sync to Calendar">
+                    <button className="absolute right-4 top-1/2 -translate-y-1/2 p-2 text-slate-400 hover:text-[#47A88D]" title="Sync to Calendar">
                       <Calendar className="w-5 h-5" />
                     </button>
                   </div>
