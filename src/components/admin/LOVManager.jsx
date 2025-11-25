@@ -112,13 +112,13 @@ const LOVManager = () => {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <Loader className="w-8 h-8 animate-spin" className="text-corporate-teal" />
+        <Loader className="w-8 h-8 animate-spin text-corporate-teal" />
       </div>
     );
   }
 
   return (
-    <div className="p-6 max-w-7xl mx-auto" className="bg-slate-50 min-h-screen">
+    <div className="p-6 max-w-7xl mx-auto bg-slate-50 min-h-screen">
       {/* Header */}
       <div className="mb-6">
         <button
@@ -132,8 +132,8 @@ const LOVManager = () => {
         
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <List className="w-8 h-8" className="text-corporate-teal" />
-            <h1 className="text-3xl font-bold" className="text-corporate-navy">
+            <List className="w-8 h-8 text-corporate-teal" />
+            <h1 className="text-3xl font-bold text-corporate-navy">
               List of Values (LOV)
             </h1>
           </div>
@@ -151,14 +151,14 @@ const LOVManager = () => {
 
       {/* Edit Form */}
       {editingItem && (
-        <div className="mb-6 p-6 bg-white rounded-xl shadow-lg border-2" className="border-corporate-teal">
-          <h2 className="text-xl font-bold mb-4" className="text-corporate-navy">
+        <div className="mb-6 p-6 bg-white rounded-xl shadow-lg border-2 border-corporate-teal">
+          <h2 className="text-xl font-bold mb-4 text-corporate-navy">
             {isAddingNew ? 'Create New List' : `Edit List: ${editingItem.title}`}
           </h2>
           
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-semibold mb-1" className="text-corporate-navy">
+              <label className="block text-sm font-semibold mb-1 text-corporate-navy">
                 List Name (Key) *
               </label>
               <input
@@ -173,7 +173,7 @@ const LOVManager = () => {
             </div>
 
             <div>
-              <label className="block text-sm font-semibold mb-1" className="text-corporate-navy">
+              <label className="block text-sm font-semibold mb-1 text-corporate-navy">
                 Description
               </label>
               <input
@@ -186,7 +186,7 @@ const LOVManager = () => {
             </div>
 
             <div>
-              <label className="block text-sm font-semibold mb-1" className="text-corporate-navy">
+              <label className="block text-sm font-semibold mb-1 text-corporate-navy">
                 List Items
               </label>
               {editingItem.title === 'System Quotes' && (
@@ -261,7 +261,7 @@ const LOVManager = () => {
             >
               <div className="flex justify-between items-start mb-4">
                 <div>
-                  <h3 className="font-bold text-lg" className="text-corporate-navy">
+                  <h3 className="font-bold text-lg text-corporate-navy">
                     {lov.title}
                   </h3>
                   <p className="text-xs text-gray-500">{lov.description}</p>
@@ -272,14 +272,14 @@ const LOVManager = () => {
                     className="p-1.5 rounded hover:bg-gray-100"
                     title="Edit"
                   >
-                    <Edit className="w-4 h-4" className="text-corporate-navy" />
+                    <Edit className="w-4 h-4 text-corporate-navy" />
                   </button>
                   <button
                     onClick={() => handleDelete(lov)}
                     className="p-1.5 rounded hover:bg-gray-100"
                     title="Delete"
                   >
-                    <Trash2 className="w-4 h-4" className="text-corporate-orange" />
+                    <Trash2 className="w-4 h-4 text-corporate-orange" />
                   </button>
                 </div>
               </div>

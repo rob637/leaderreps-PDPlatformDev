@@ -482,7 +482,7 @@ const ContentAdminHome = () => {
   ];
 
   return (
-    <div className="p-6 max-w-6xl mx-auto min-h-screen" className="bg-slate-50">
+    <div className="p-6 max-w-6xl mx-auto min-h-screen bg-slate-50">
       {/* Header */}
       <div className="mb-8">
         <button
@@ -496,9 +496,9 @@ const ContentAdminHome = () => {
         
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <Settings className="w-8 h-8" className="text-corporate-teal" />
+            <Settings className="w-8 h-8 text-corporate-teal" />
             <div>
-              <h1 className="text-3xl font-bold" className="text-corporate-navy">
+              <h1 className="text-3xl font-bold text-corporate-navy">
                 Content Management
               </h1>
               <p className="text-slate-500">
@@ -526,7 +526,7 @@ const ContentAdminHome = () => {
       </div>
 
       {/* Content Type Cards */}
-      <h2 className="text-xl font-bold mb-4" className="text-corporate-navy">Standard Content</h2>
+      <h2 className="text-xl font-bold mb-4 text-corporate-navy">Standard Content</h2>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
         {contentTypes.map((type) => {
           const Icon = type.icon;
@@ -544,11 +544,11 @@ const ContentAdminHome = () => {
                 >
                   <Icon className="w-6 h-6" style={{ color: type.color }} />
                 </div>
-                <h2 className="text-xl font-bold" className="text-corporate-navy">
+                <h2 className="text-xl font-bold text-corporate-navy">
                   {type.label}
                 </h2>
               </div>
-              <p className="text-sm" className="text-slate-500">
+              <p className="text-sm text-slate-500">
                 {type.description}
               </p>
             </button>
@@ -556,7 +556,7 @@ const ContentAdminHome = () => {
         })}
       </div>
 
-      <h2 className="text-xl font-bold mb-4" className="text-corporate-navy">Advanced Management</h2>
+      <h2 className="text-xl font-bold mb-4 text-corporate-navy">Advanced Management</h2>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {advancedTypes.map((type) => {
           const Icon = type.icon;
@@ -574,11 +574,11 @@ const ContentAdminHome = () => {
                 >
                   <Icon className="w-6 h-6" style={{ color: type.color }} />
                 </div>
-                <h2 className="text-xl font-bold" className="text-corporate-navy">
+                <h2 className="text-xl font-bold text-corporate-navy">
                   {type.label}
                 </h2>
               </div>
-              <p className="text-sm" className="text-slate-500">
+              <p className="text-sm text-slate-500">
                 {type.description}
               </p>
             </button>
@@ -587,11 +587,11 @@ const ContentAdminHome = () => {
       </div>
 
       {/* Info Box */}
-      <div className="mt-8 p-6 bg-white rounded-xl border-l-4" className="border-corporate-teal">
-        <h3 className="font-bold mb-2" className="text-corporate-navy">
+      <div className="mt-8 p-6 bg-white rounded-xl border-l-4 border-corporate-teal">
+        <h3 className="font-bold mb-2 text-corporate-navy">
           About Content Management
         </h3>
-        <ul className="space-y-2 text-sm" className="text-slate-500">
+        <ul className="space-y-2 text-sm text-slate-500">
           <li>• Inactive content is hidden from all users but not deleted</li>
           <li>• Changes take effect immediately across all user sessions</li>
         </ul>

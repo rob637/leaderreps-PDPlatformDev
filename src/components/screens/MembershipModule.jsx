@@ -32,8 +32,7 @@ const NotificationBanner = ({ notification, onDismiss }) => {
             </div>
             <button 
                 onClick={() => onDismiss(notification.id)}
-                className={`ml-4 p-1 rounded-full opacity-70 hover:opacity-100 transition-opacity`}
-                className="text-slate-500"
+                className="ml-4 p-1 rounded-full opacity-70 hover:opacity-100 transition-opacity text-slate-500"
                 title="Dismiss"
             >
                 <X className="w-4 h-4" />
@@ -161,7 +160,7 @@ const MembershipModule = () => {
     if (isLoading || !membershipData) {
         return (
             <div className="flex items-center justify-center h-full min-h-screen">
-                <Zap className="w-8 h-8 animate-spin" className="text-corporate-teal" />
+                <Zap className="w-8 h-8 animate-spin text-corporate-teal" />
             </div>
         );
     }
@@ -174,18 +173,18 @@ const MembershipModule = () => {
             <div>
                 
                 {/* Header */}
-                <h1 className="text-xl sm:text-2xl sm:text-3xl md:text-4xl font-extrabold mb-2" className="text-corporate-navy">
+                <h1 className="text-xl sm:text-2xl sm:text-3xl md:text-4xl font-extrabold mb-2 text-corporate-navy">
                     Membership & Billing
                 </h1>
-                <p className="text-base mb-6" className="text-slate-500">
+                <p className="text-base mb-6 text-slate-500">
                     Manage your plan, payments, and account status here.
                 </p>
 
                 {/* Notifications Panel */}
                 {membershipData.notifications.length > 0 && (
                     <div className="mb-6 space-y-3">
-                        <h3 className="text-lg font-bold" className="text-corporate-navy">
-                            <Mail className="inline-block w-5 h-5 mr-2" className="text-corporate-orange" /> Notifications
+                        <h3 className="text-lg font-bold text-corporate-navy">
+                            <Mail className="inline-block w-5 h-5 mr-2 text-corporate-orange" /> Notifications
                         </h3>
                         {membershipData.notifications.map(n => (
                             <NotificationBanner 
@@ -202,27 +201,27 @@ const MembershipModule = () => {
                     
                     {/* Current Plan Card (Span 1) */}
                     <Card title="Current Plan" accent={statusColor} icon={ShieldCheck} className="lg:col-span-1">
-                        <p className="text-sm font-semibold mb-2" className="text-slate-500">
+                        <p className="text-sm font-semibold mb-2 text-slate-500">
                             STATUS: <span className={`font-extrabold uppercase`} style={{ color: COLORS[statusColor] }}>
                                 {membershipData.status}
                             </span>
                         </p>
-                        <h3 className="text-xl sm:text-2xl font-extrabold mb-4" className="text-corporate-navy">
+                        <h3 className="text-xl sm:text-2xl font-extrabold mb-4 text-corporate-navy">
                             {currentPlanDetails.name}
                         </h3>
                         
                         {nextBillingDate && (
                             <div className="flex items-center text-sm font-medium mb-4 p-3 rounded-lg bg-gray-50 border">
-                                <Clock className="w-4 h-4 mr-2" className="text-corporate-teal" />
+                                <Clock className="w-4 h-4 mr-2 text-corporate-teal" />
                                 <p>Next Billing Date: <strong>{nextBillingDate.toDateString()}</strong></p>
                             </div>
                         )}
                         
-                        <p className="font-semibold text-base mb-2" className="text-corporate-navy">Your Features:</p>
+                        <p className="font-semibold text-base mb-2 text-corporate-navy">Your Features:</p>
                         <ul className="space-y-1 text-sm">
                             {currentPlanDetails.features && Object.entries(currentPlanDetails.features).map(([key, value], index) => (
                                 <li key={index} className="flex items-center text-gray-700">
-                                    <CheckCircle className="w-4 h-4 mr-2 flex-shrink-0" className="text-corporate-teal" />
+                                    <CheckCircle className="w-4 h-4 mr-2 flex-shrink-0 text-corporate-teal" />
                                     {key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}: {typeof value === 'boolean' ? (value ? 'Yes' : 'No') : value}
                                 </li>
                             ))}
@@ -242,7 +241,7 @@ const MembershipModule = () => {
 
                     {/* Available Plans (Span 2) */}
                     <div className="lg:col-span-2 space-y-4">
-                        <h3 className="text-xl sm:text-2xl font-bold" className="text-corporate-navy">Upgrade Options</h3>
+                        <h3 className="text-xl sm:text-2xl font-bold text-corporate-navy">Upgrade Options</h3>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             {upgradePlans.map(plan => (
                                 <div 
@@ -250,10 +249,10 @@ const MembershipModule = () => {
                                     className="bg-white rounded-xl shadow-md p-3 sm:p-4 lg:p-6 border-t-4 hover:shadow-xl transition-shadow duration-300"
                                     style={{ borderColor: plan.id === 'pro' ? COLORS.PURPLE : COLORS.BLUE }}
                                 >
-                                    <h4 className="text-xl font-extrabold mb-1" className="text-corporate-navy">{plan.name}</h4>
-                                    <p className="text-sm font-semibold mb-3" className="text-slate-500">{plan.recurrence}</p>
+                                    <h4 className="text-xl font-extrabold mb-1 text-corporate-navy">{plan.name}</h4>
+                                    <p className="text-sm font-semibold mb-3 text-slate-500">{plan.recurrence}</p>
                                     
-                                    <p className="text-xl sm:text-2xl sm:text-3xl font-extrabold mb-4" className="text-corporate-navy">
+                                    <p className="text-xl sm:text-2xl sm:text-3xl font-extrabold mb-4 text-corporate-navy">
                                         <DollarSign className="inline-block w-6 h-6" />{plan.price}
                                         <span className="text-base font-medium text-gray-500">/{plan.recurrence ? plan.recurrence.toLowerCase().replace('ly', '').replace('ally', '') : 'period'}</span>
                                     </p>
@@ -261,7 +260,7 @@ const MembershipModule = () => {
                                     <ul className="space-y-2 text-sm mb-6">
                                         {plan.features && Object.entries(plan.features).map(([key, value], index) => (
                                             <li key={index} className="flex items-center text-gray-700">
-                                                <CornerRightUp className="w-4 h-4 mr-2 flex-shrink-0" className="text-corporate-orange" />
+                                                <CornerRightUp className="w-4 h-4 mr-2 flex-shrink-0 text-corporate-orange" />
                                                 {key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}: {typeof value === 'boolean' ? (value ? 'Yes' : 'No') : value}
                                             </li>
                                         ))}
@@ -285,22 +284,22 @@ const MembershipModule = () => {
                 <Card title="Payment History" accent='NAVY' icon={DollarSign}>
                     <div className="overflow-x-auto">
                         {membershipData.paymentHistory.length === 0 ? (
-                            <p className="text-sm text-center py-4" className="text-slate-500">No payment history found.</p>
+                            <p className="text-sm text-center py-4 text-slate-500">No payment history found.</p>
                         ) : (
                             <table className="min-w-full divide-y divide-gray-200">
                                 <thead className="bg-slate-50">
                                     <tr>
-                                        <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider" className="text-slate-500">Plan</th>
-                                        <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider" className="text-slate-500">Amount</th>
-                                        <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider" className="text-slate-500">Date</th>
-                                        <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider" className="text-slate-500">Method</th>
-                                        <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider" className="text-slate-500">Status</th>
+                                        <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-500">Plan</th>
+                                        <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-500">Amount</th>
+                                        <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-500">Date</th>
+                                        <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-500">Method</th>
+                                        <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-500">Status</th>
                                     </tr>
                                 </thead>
                                 <tbody className="bg-white divide-y divide-gray-200">
                                     {membershipData.paymentHistory.map((item, index) => (
                                         <tr key={index}>
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium" className="text-corporate-navy">{item.planId}</td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-corporate-navy">{item.planId}</td>
                                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">${item.amount.toFixed(2)}</td>
                                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">{new Date(item.date).toLocaleDateString()}</td>
                                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">{item.method}</td>
@@ -319,19 +318,19 @@ const MembershipModule = () => {
                 <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4">
                     <div className="bg-white rounded-2xl p-3 sm:p-4 lg:p-6 w-full shadow-2xl">
                         <div className="flex justify-between items-center mb-6">
-                            <h2 className="text-xl sm:text-2xl font-bold" className="text-corporate-navy">
+                            <h2 className="text-xl sm:text-2xl font-bold text-corporate-navy">
                                 Secure Checkout: {selectedPlan.name}
                             </h2>
                             <button onClick={() => setModalOpen(false)} className="p-2 rounded-full hover:bg-gray-100">
-                                <X className="w-6 h-6" className="text-slate-500" />
+                                <X className="w-6 h-6 text-slate-500" />
                             </button>
                         </div>
                         
                         {/* Summary */}
                         <div className="border-b pb-4 mb-4">
-                            <p className="text-lg font-semibold" className="text-corporate-navy">
+                            <p className="text-lg font-semibold text-corporate-navy">
                                 Total Due Today: 
-                                <span className="ml-2 text-xl sm:text-2xl font-extrabold" className="text-corporate-teal">
+                                <span className="ml-2 text-xl sm:text-2xl font-extrabold text-corporate-teal">
                                     ${selectedPlan.price.toFixed(2)}
                                 </span>
                                 <span className="text-sm text-gray-500"> / {selectedPlan.recurrence}</span>
@@ -342,7 +341,7 @@ const MembershipModule = () => {
                         </div>
 
                         {/* Payment Method Selection */}
-                        <h3 className="text-lg font-bold mb-3" className="text-corporate-navy">
+                        <h3 className="text-lg font-bold mb-3 text-corporate-navy">
                             1. Select Payment Method
                         </h3>
                         <div className="flex space-x-4 mb-6">
@@ -363,7 +362,7 @@ const MembershipModule = () => {
                         </div>
 
                         {/* Mock Payment Details */}
-                        <h3 className="text-lg font-bold mb-3" className="text-corporate-navy">
+                        <h3 className="text-lg font-bold mb-3 text-corporate-navy">
                             2. Payment Details ({paymentMethod.toUpperCase()})
                         </h3>
                         {paymentMethod === 'card' && (
@@ -402,7 +401,7 @@ const MembershipModule = () => {
                         </Button>
                         
                         {paymentStatus === 'failure' && (
-                             <p className="text-sm text-center mt-3 font-semibold" className="text-corporate-orange">
+                             <p className="text-sm text-center mt-3 font-semibold text-corporate-orange">
                                 Transaction declined. Please try a different method.
                              </p>
                         )}

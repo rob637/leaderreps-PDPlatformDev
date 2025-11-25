@@ -113,12 +113,12 @@ const LISAuditorView = ({ setQuickStartView }) => {
 
     return (
         // Consistent page structure and padding
-        <div className="p-6 md:p-4 sm:p-3 sm:p-4 lg:p-6 lg:p-8 lg:p-10 min-h-screen" className="bg-slate-50">
+        <div className="p-6 md:p-4 sm:p-3 sm:p-4 lg:p-6 lg:p-8 lg:p-10 min-h-screen bg-slate-50">
             {/* Header */}
             <header className='flex items-center gap-4 border-b-2 pb-3 mb-8' className="border-corporate-navy/30">
                 <ShieldCheck className='w-10 h-10 flex-shrink-0' className="text-corporate-navy"/>
                 <div>
-                    <h1 className="text-xl sm:text-2xl sm:text-3xl md:text-4xl font-extrabold" className="text-corporate-navy">Leadership Identity Statement (LIS) Auditor</h1>
+                    <h1 className="text-xl sm:text-2xl sm:text-3xl md:text-4xl font-extrabold text-corporate-navy">Leadership Identity Statement (LIS) Auditor</h1>
                     <p className="text-md text-gray-600 mt-1">Refine your core leadership foundation.</p>
                 </div>
             </header>
@@ -214,7 +214,7 @@ const QuickStartAcceleratorScreen = () => {
                         <header className='flex items-center gap-4 border-b-2 pb-3 mb-8' className="border-corporate-orange/30"> {/* Use ORANGE accent */}
                             <Zap className='w-10 h-10 flex-shrink-0' className="text-corporate-orange"/>
                             <div>
-                                <h1 className="text-xl sm:text-2xl sm:text-3xl md:text-4xl font-extrabold" className="text-corporate-navy">QuickStart Program</h1>
+                                <h1 className="text-xl sm:text-2xl sm:text-3xl md:text-4xl font-extrabold text-corporate-navy">QuickStart Program</h1>
                                 <p className="text-md text-gray-600 mt-1">(Core Pillar)</p>
                             </div>
                         </header>
@@ -236,25 +236,25 @@ const QuickStartAcceleratorScreen = () => {
                                 <Card key={session.id} title={`Session ${session.id}: ${session.title}`} icon={BookOpen} accent="NAVY">
                                     {/* Why it Matters */}
                                     <details className="mb-4 group">
-                                        <summary className="text-sm font-semibold cursor-pointer list-none flex items-center gap-1" className="text-corporate-navy">
+                                        <summary className="text-sm font-semibold cursor-pointer list-none flex items-center gap-1 text-corporate-navy">
                                             <Lightbulb className="w-4 h-4 text-amber-500"/> Why This Session Matters
                                             <span className="text-xs text-gray-400 group-open:rotate-90 transition-transform">▶</span>
                                         </summary>
-                                        <blockquote className="mt-2 border-l-4 pl-4 py-1 text-sm italic text-gray-600" className="border-corporate-teal">
+                                        <blockquote className="mt-2 border-l-4 pl-4 py-1 text-sm italic text-gray-600 border-corporate-teal">
                                             {session.keyRationale}
                                         </blockquote>
                                     </details>
 
                                     {/* Grid for Focus & Pre-Work */}
-                                    <div className="grid md:grid-cols-2 gap-4 pt-4 border-t" className="border-slate-200">
+                                    <div className="grid md:grid-cols-2 gap-4 pt-4 border-t border-slate-200">
                                         {/* Core Focus */}
                                         <div>
-                                            <h3 className="text-md font-semibold mb-2 flex items-center gap-1.5" className="text-corporate-teal"><Target className='w-4 h-4'/> Core Focus</h3>
+                                            <h3 className="text-md font-semibold mb-2 flex items-center gap-1.5 text-corporate-teal"><Target className='w-4 h-4'/> Core Focus</h3>
                                             <p className="text-gray-700 text-sm">{session.focus}</p>
                                         </div>
                                         {/* Pre-Work */}
                                         <div>
-                                            <h3 className="text-md font-semibold mb-2 flex items-center gap-1.5" className="text-corporate-orange"><Clock className='w-4 h-4'/> Pre-Work Checklist</h3>
+                                            <h3 className="text-md font-semibold mb-2 flex items-center gap-1.5 text-corporate-orange"><Clock className='w-4 h-4'/> Pre-Work Checklist</h3>
                                             <ul className="list-disc pl-5 text-gray-700 space-y-1 text-sm">
                                                 {session.preWork.map((item, index) => (
                                                     <li key={index}>{item}</li>
@@ -281,7 +281,7 @@ const QuickStartAcceleratorScreen = () => {
     if (appError) return <ConfigError message={`Failed to load QuickStart Program: ${appError.message}`} />;
 
     return (
-      <div className="min-h-screen" className="bg-slate-50"> {/* Consistent BG */}
+      <div className="min-h-screen bg-slate-50"> {/* Consistent BG */}
         {renderView()}
       </div>
     );

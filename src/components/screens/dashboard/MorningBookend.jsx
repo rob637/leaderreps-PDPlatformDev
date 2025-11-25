@@ -49,8 +49,8 @@ export const MorningBookend = ({
         <Card title="Morning Bookend" icon={Target} accent='ORANGE' className="min-h-[680px]">
             {/* Daily WIN */}
             <div className="mb-6">
-                <label className="text-sm font-semibold mb-2 flex items-center" className="text-corporate-navy">
-                    <Target className="w-4 h-4 mr-1" className="text-corporate-orange" />
+                <label className="text-sm font-semibold mb-2 flex items-center text-corporate-navy">
+                    <Target className="w-4 h-4 mr-1 text-corporate-orange" />
                     Today's WIN (What's Important Now - #1 Priority)
                 </label>
                 <textarea 
@@ -64,9 +64,9 @@ export const MorningBookend = ({
 
             {/* Other Important Tasks */}
             <div className="mb-6">
-                <label className="text-sm font-semibold mb-2 flex items-center justify-between" className="text-corporate-navy">
+                <label className="text-sm font-semibold mb-2 flex items-center justify-between text-corporate-navy">
                     <span className="flex items-center">
-                        <Clock className="w-4 h-4 mr-1" className="text-corporate-teal" />
+                        <Clock className="w-4 h-4 mr-1 text-corporate-teal" />
                         Other Important Tasks ({otherTasks.length}/5)
                     </span>
                 </label>
@@ -74,7 +74,7 @@ export const MorningBookend = ({
                 {/* Task List */}
                 <div className="space-y-2 mb-3">
                     {otherTasks.map((task) => (
-                        <div key={task.id} className="flex items-center gap-2 p-2 rounded bg-gray-50 border" className="border-slate-200">
+                        <div key={task.id} className="flex items-center gap-2 p-2 rounded bg-gray-50 border border-slate-200">
                             <input 
                                 type="checkbox"
                                 checked={task.completed}
@@ -120,11 +120,10 @@ export const MorningBookend = ({
             </div>
 
             {/* Leadership Identity Statement (Expandable) */}
-            <div className="pt-4 border-t" className="border-slate-200">
+            <div className="pt-4 border-t border-slate-200">
                 <button 
                     onClick={() => setShowLIS(!showLIS)}
-                    className="flex items-center gap-2 text-sm font-semibold transition-colors hover:opacity-80 w-full"
-                    className="text-corporate-teal"
+                    className="flex items-center gap-2 text-sm font-semibold transition-colors hover:opacity-80 w-full text-corporate-teal"
                 >
                     <User className="w-4 h-4" />
                     {showLIS ? 'Hide' : 'Read'} Leadership Identity Statement
@@ -143,7 +142,7 @@ export const MorningBookend = ({
             </div>
 
             {/* Save Button */}
-            <div className="mt-6 pt-4 border-t" className="border-slate-200">
+            <div className="mt-6 pt-4 border-t border-slate-200">
                 <Button
                     onClick={onSave}
                     disabled={isSaving}

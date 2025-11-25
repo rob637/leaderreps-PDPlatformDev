@@ -151,13 +151,13 @@ const CoachingManager = () => {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <Loader className="w-8 h-8 animate-spin" className="text-corporate-teal" />
+        <Loader className="w-8 h-8 animate-spin text-corporate-teal" />
       </div>
     );
   }
 
   return (
-    <div className="p-6 max-w-7xl mx-auto" className="bg-slate-50 min-h-screen">
+    <div className="p-6 max-w-7xl mx-auto bg-slate-50 min-h-screen">
       {/* Header */}
       <div className="mb-6">
         <button
@@ -171,8 +171,8 @@ const CoachingManager = () => {
         
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <BrainCircuit className="w-8 h-8" className="text-corporate-teal" />
-            <h1 className="text-3xl font-bold" className="text-corporate-navy">
+            <BrainCircuit className="w-8 h-8 text-corporate-teal" />
+            <h1 className="text-3xl font-bold text-corporate-navy">
               Coaching Scenarios
             </h1>
           </div>
@@ -190,14 +190,14 @@ const CoachingManager = () => {
 
       {/* Edit Form */}
       {editingItem && (
-        <div className="mb-6 p-6 bg-white rounded-xl shadow-lg border-2" className="border-corporate-teal">
-          <h2 className="text-xl font-bold mb-4" className="text-corporate-navy">
+        <div className="mb-6 p-6 bg-white rounded-xl shadow-lg border-2 border-corporate-teal">
+          <h2 className="text-xl font-bold mb-4 text-corporate-navy">
             {isAddingNew ? 'Add New Scenario' : 'Edit Scenario'}
           </h2>
           
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-semibold mb-1" className="text-corporate-navy">
+              <label className="block text-sm font-semibold mb-1 text-corporate-navy">
                 Scenario Title *
               </label>
               <input
@@ -210,7 +210,7 @@ const CoachingManager = () => {
             </div>
 
             <div>
-              <label className="block text-sm font-semibold mb-1" className="text-corporate-navy">
+              <label className="block text-sm font-semibold mb-1 text-corporate-navy">
                 Description (Short) *
               </label>
               <textarea
@@ -224,7 +224,7 @@ const CoachingManager = () => {
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-semibold mb-1" className="text-corporate-navy">
+                <label className="block text-sm font-semibold mb-1 text-corporate-navy">
                   Persona (Role) *
                 </label>
                 <input
@@ -236,7 +236,7 @@ const CoachingManager = () => {
                 />
               </div>
               <div>
-                <label className="block text-sm font-semibold mb-1" className="text-corporate-navy">
+                <label className="block text-sm font-semibold mb-1 text-corporate-navy">
                   Difficulty Level (0-100)
                 </label>
                 <input
@@ -251,7 +251,7 @@ const CoachingManager = () => {
             </div>
 
             <div>
-              <label className="block text-sm font-semibold mb-1" className="text-corporate-navy">
+              <label className="block text-sm font-semibold mb-1 text-corporate-navy">
                 Context (Detailed Background)
               </label>
               <textarea
@@ -264,7 +264,7 @@ const CoachingManager = () => {
             </div>
 
             <div>
-              <label className="block text-sm font-semibold mb-1" className="text-corporate-navy">
+              <label className="block text-sm font-semibold mb-1 text-corporate-navy">
                 Suggested Approach
               </label>
               <textarea
@@ -277,7 +277,7 @@ const CoachingManager = () => {
             </div>
 
             <div>
-              <label className="block text-sm font-semibold mb-1" className="text-corporate-navy">
+              <label className="block text-sm font-semibold mb-1 text-corporate-navy">
                 Learning Objectives
               </label>
               <div className="space-y-2">
@@ -314,7 +314,7 @@ const CoachingManager = () => {
                 onChange={(e) => setEditingItem({ ...editingItem, isActive: e.target.checked })}
                 className="w-4 h-4"
               />
-              <label className="text-sm font-semibold" className="text-corporate-navy">
+              <label className="text-sm font-semibold text-corporate-navy">
                 Active (visible in library)
               </label>
             </div>
@@ -356,7 +356,7 @@ const CoachingManager = () => {
               className={`p-4 bg-white rounded-xl shadow-sm border flex items-center justify-between ${scenario.isActive ? 'border-corporate-teal' : 'border-slate-300 opacity-60'}`}
             >
               <div className="flex-1">
-                <h3 className="font-bold text-lg" className="text-corporate-navy">
+                <h3 className="font-bold text-lg text-corporate-navy">
                   {scenario.title}
                 </h3>
                 <p className="text-sm text-gray-600 mb-2">{scenario.description}</p>
@@ -377,9 +377,9 @@ const CoachingManager = () => {
                   title={scenario.isActive ? 'Deactivate' : 'Activate'}
                 >
                   {scenario.isActive ? (
-                    <Eye className="w-5 h-5" className="text-corporate-teal" />
+                    <Eye className="w-5 h-5 text-corporate-teal" />
                   ) : (
-                    <EyeOff className="w-5 h-5" className="text-slate-500" />
+                    <EyeOff className="w-5 h-5 text-slate-500" />
                   )}
                 </button>
                 <button
@@ -387,14 +387,14 @@ const CoachingManager = () => {
                   className="p-2 rounded-lg hover:bg-gray-100"
                   title="Edit"
                 >
-                  <Edit className="w-5 h-5" className="text-corporate-navy" />
+                  <Edit className="w-5 h-5 text-corporate-navy" />
                 </button>
                 <button
                   onClick={() => handleDelete(scenario)}
                   className="p-2 rounded-lg hover:bg-gray-100"
                   title="Delete"
                 >
-                  <Trash2 className="w-5 h-5" className="text-corporate-orange" />
+                  <Trash2 className="w-5 h-5 text-corporate-orange" />
                 </button>
               </div>
             </div>

@@ -1742,9 +1742,9 @@ export default function CoachingLabScreen({ simulatedTier }) {
             
             {/* Unlock Section for Free Users */}
             {!hasCoachingAccess && (
-                <div className="mt-8 bg-white rounded-2xl border-2 shadow-lg" className="border-corporate-teal">
+                <div className="mt-8 bg-white rounded-2xl border-2 shadow-lg border-corporate-teal">
                     <div className="relative z-10 p-8 text-center">
-                        <h3 className="text-2xl font-bold mb-4" className="text-corporate-navy">
+                        <h3 className="text-2xl font-bold mb-4 text-corporate-navy">
                             Unlock Coaching Lab
                         </h3>
                         

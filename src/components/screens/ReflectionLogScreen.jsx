@@ -100,16 +100,16 @@ const ReflectionLogScreen = () => {
 
     return (
         // Consistent page structure and padding
-        <div className="p-6 md:p-4 sm:p-3 sm:p-4 lg:p-6 lg:p-8 lg:p-10 max-w-4xl mx-auto min-h-screen" className="bg-slate-50">
+        <div className="p-6 md:p-4 sm:p-3 sm:p-4 lg:p-6 lg:p-8 lg:p-10 max-w-4xl mx-auto min-h-screen bg-slate-50">
             {/* Header */}
             {/* Back Button */}
             <Button onClick={() => navigate('dashboard')} variant="nav-back" size="sm" className="mb-6"> 
                 <ArrowLeft className="w-4 h-4 mr-2" /> Back to Dashboard
             </Button>
             
-            <header className="flex flex-col sm:flex-row justify-between sm:items-center gap-4 border-b pb-4 mb-6" className="border-slate-200">
-                <h1 className="text-xl sm:text-2xl sm:text-3xl md:text-4xl font-extrabold flex items-center gap-3" className="text-corporate-navy">
-                    <Archive className="w-8 h-8" className="text-corporate-teal" /> Reflection Log
+            <header className="flex flex-col sm:flex-row justify-between sm:items-center gap-4 border-b pb-4 mb-6 border-slate-200">
+                <h1 className="text-xl sm:text-2xl sm:text-3xl md:text-4xl font-extrabold flex items-center gap-3 text-corporate-navy">
+                    <Archive className="w-8 h-8 text-corporate-teal" /> Reflection Log
                 </h1>
             </header>
 
@@ -128,7 +128,7 @@ const ReflectionLogScreen = () => {
             {!isHistoryLoading && !fetchError && reflectionHistory.length === 0 && (
                 <Card accent="TEAL" className="text-center border-dashed">
                     <MessageSquare className="w-12 h-12 mx-auto mb-4 text-gray-400"/>
-                    <h2 className="text-xl font-semibold mb-2" className="text-corporate-navy">No Reflections Yet</h2>
+                    <h2 className="text-xl font-semibold mb-2 text-corporate-navy">No Reflections Yet</h2>
                     <p className="text-gray-600 text-sm">Your daily reflection entries will appear here once you save them.</p>
                     <Button onClick={() => navigate('daily-practice')} size="sm" className="mt-4">
                         Go to Daily Reflection
@@ -155,7 +155,7 @@ const ReflectionLogScreen = () => {
                                 {entry.tryDiff && <p><strong>Try:</strong> {entry.tryDiff}</p>}
                                 {entry.identity && (
                                     <p className="italic font-medium text-gray-800 pt-2 border-t border-gray-200 mt-3 flex items-start gap-2">
-                                        <User size={14} className="flex-shrink-0 mt-0.5" className="text-corporate-teal"/>
+                                        <User size={14} className="flex-shrink-0 mt-0.5 text-corporate-teal"/>
                                         <span>"I'm the kind of leader who {entry.identity}"</span>
                                     </p>
                                 )}

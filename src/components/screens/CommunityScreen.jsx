@@ -71,8 +71,8 @@ const CommunityHomeView = ({ setView, user, currentTierFilter, setCurrentTierFil
     return (
         <div className="space-y-4 sm:space-y-5 lg:space-y-6">
             {/* Header: Title & New Thread Button */}
-            <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4 border-b pb-4" className="border-slate-200">
-                <h2 className="text-xl sm:text-2xl font-bold" className="text-corporate-navy">Community Feed ({safeTierMeta[currentTierFilter]?.name || 'All'})</h2>
+            <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4 border-b pb-4 border-slate-200">
+                <h2 className="text-xl sm:text-2xl font-bold text-corporate-navy">Community Feed ({safeTierMeta[currentTierFilter]?.name || 'All'})</h2>
                 <Button onClick={() => setView('new-thread')} size="sm"> {/* Use standard Button */}
                     <PlusCircle className="w-4 h-4 mr-2" /> Start Discussion
                 </Button>
@@ -81,8 +81,8 @@ const CommunityHomeView = ({ setView, user, currentTierFilter, setCurrentTierFil
             {/* Tier Filter Bar */}
             <Card accent="TEAL" className="!p-3"> {/* Use Card for consistent container */}
                 <div className="flex flex-wrap items-center gap-2">
-                    <Filter className="w-5 h-5 flex-shrink-0" className="text-corporate-navy" />
-                    <span className="text-sm font-semibold mr-2" className="text-corporate-navy">Filter:</span>
+                    <Filter className="w-5 h-5 flex-shrink-0 text-corporate-navy" />
+                    <span className="text-sm font-semibold mr-2 text-corporate-navy">Filter:</span>
                     {/* Map through available tiers from safeTierMeta */}
                     {Object.keys(safeTierMeta).map(tierId => {
                         const meta = safeTierMeta[tierId];
@@ -128,14 +128,14 @@ const CommunityHomeView = ({ setView, user, currentTierFilter, setCurrentTierFil
                         // Use Card for each thread item
                         <Card key={thread.id} accent={isMyThread ? 'TEAL' : (thread.impact ? 'ORANGE' : 'NAVY')} className="transition-shadow duration-200 hover:shadow-lg">
                             {/* Thread Header */}
-                            <div className="flex justify-between items-start mb-3 border-b pb-2" className="border-slate-200">
+                            <div className="flex justify-between items-start mb-3 border-b pb-2 border-slate-200">
                                 {/* User Info */}
                                 <div className="flex items-center space-x-3">
                                     <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center font-bold text-xs text-gray-600 shrink-0">
                                         {thread.rep}
                                     </div>
                                     <div>
-                                        <p className="font-bold text-md leading-tight" className="text-corporate-navy">{thread.ownerName || 'User'}</p>
+                                        <p className="font-bold text-md leading-tight text-corporate-navy">{thread.ownerName || 'User'}</p>
                                         <p className="text-xs text-gray-500">{thread.time}</p>
                                     </div>
                                 </div>
@@ -151,11 +151,11 @@ const CommunityHomeView = ({ setView, user, currentTierFilter, setCurrentTierFil
                             </div>
 
                             {/* Rep/Post Content */}
-                            {thread.title && thread.title !== thread.content && <h4 className="font-bold text-sm mb-1" className="text-corporate-navy">{thread.title}</h4>}
+                            {thread.title && thread.title !== thread.content && <h4 className="font-bold text-sm mb-1 text-corporate-navy">{thread.title}</h4>}
                             <p className="text-sm text-gray-800 mb-4 font-medium whitespace-pre-wrap">{thread.content}</p>
 
                             {/* Actions Footer */}
-                            <div className="flex justify-between items-center text-xs pt-3 border-t" className="border-slate-200">
+                            <div className="flex justify-between items-center text-xs pt-3 border-t border-slate-200">
                                 {/* Reactions & Comments */}
                                 <div className="flex space-x-4">
                                     <button onClick={() => handleReactClick(thread.id)} className="flex items-center text-red-500 hover:text-red-700 transition-colors group">
@@ -200,7 +200,7 @@ const MyThreadsView = ({ user, allThreads }) => { // Pass allThreads from parent
                         <div key={thread.id} className="p-4 rounded-lg border-l-4 shadow-sm transition-shadow hover:shadow-md cursor-pointer" style={{ borderColor: 'var(--corporate-teal)', backgroundColor: 'var(--corporate-light-gray)' }}
                              onClick={() => alert(`Maps to details for thread ${thread.id}`)} // Placeholder action
                         >
-                            <h3 className="font-semibold text-md mb-1" className="text-corporate-navy">{thread.title}</h3>
+                            <h3 className="font-semibold text-md mb-1 text-corporate-navy">{thread.title}</h3>
                             <p className="text-xs text-gray-600">
                                 Tier: {thread.tier} | {thread.replies} Replies | Last active: {thread.lastActive}
                             </p>
@@ -257,7 +257,7 @@ const NotificationsView = () => (
                 {id: 4, text: "Reminder: **Office Hours** with Coach Support at 2 PM today."},
                 {id: 5, text: "You earned the **'Consistent Contributor'** badge!"},
             ].map(notif => (
-                <div key={notif.id} className="text-sm text-gray-700 border-b pb-2 last:border-b-0" className="border-slate-200">
+                <div key={notif.id} className="text-sm text-gray-700 border-b pb-2 last:border-b-0 border-slate-200">
                      <p dangerouslySetInnerHTML={{ __html: notif.text.replace(/\*\*(.*?)\*\*/g, '<strong class="font-semibold">$1</strong>') }} />
                      <span className="text-xs text-gray-400"> (Mock time)</span>
                 </div>
@@ -324,7 +324,7 @@ const NewThreadView = ({ setView }) => {
             <button onClick={() => setView('home')} className="absolute top-4 right-4 text-gray-500 hover:text-gray-800 transition-colors">
                 <X className="w-5 h-5" />
             </button>
-            <p className="text-sm text-gray-700 mb-4 border-l-4 pl-3 italic" className="border-corporate-teal">
+            <p className="text-sm text-gray-700 mb-4 border-l-4 pl-3 italic border-corporate-teal">
                 Use the structure below for high-quality discussions and faster responses from peers and coaches.
             </p>
 
@@ -624,10 +624,10 @@ const CommunityScreen = ({ simulatedTier }) => {
             
             {/* Unlock Section for Free Users */}
             {!hasCommunityAccess && (
-                <div className="mt-8 bg-white rounded-2xl border-2 shadow-lg max-w-4xl mx-auto" className="border-corporate-teal">
+                <div className="mt-8 bg-white rounded-2xl border-2 shadow-lg max-w-4xl mx-auto border-corporate-teal">
                     
                     <div className="relative z-10 p-8 text-center">
-                        <h3 className="text-2xl font-bold mb-4" className="text-corporate-navy">
+                        <h3 className="text-2xl font-bold mb-4 text-corporate-navy">
                             Unlock Leadership Community
                         </h3>
                         

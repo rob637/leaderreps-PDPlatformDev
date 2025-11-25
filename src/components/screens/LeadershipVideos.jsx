@@ -85,7 +85,7 @@ const VideoCard = ({ title, speaker, duration, url, description, accent, categor
                 </h3>
                 
                 {/* Speaker & Metadata */}
-                <div className="flex items-center gap-4 mb-3 text-sm" className="text-slate-500">
+                <div className="flex items-center gap-4 mb-3 text-sm text-slate-500">
                     <div className="flex items-center">
                         <User className="w-4 h-4 mr-1" />
                         {speaker}
@@ -277,17 +277,17 @@ const LeadershipVideosScreen = () => {
     // Show loading if CMS data is still loading
     if (isLoadingCms) {
         return (
-            <div className="min-h-screen flex items-center justify-center" className="bg-slate-50">
+            <div className="min-h-screen flex items-center justify-center bg-slate-50">
                 <div className="text-center">
-                    <Film className="w-12 h-12 animate-pulse mb-4 mx-auto" className="text-corporate-teal" />
-                    <p className="text-lg font-semibold" className="text-corporate-navy">Loading Videos...</p>
+                    <Film className="w-12 h-12 animate-pulse mb-4 mx-auto text-corporate-teal" />
+                    <p className="text-lg font-semibold text-corporate-navy">Loading Videos...</p>
                 </div>
             </div>
         );
     }
 
     return (
-        <div className="p-3 sm:p-4 lg:p-6 md:p-10 min-h-screen" className="bg-slate-50">
+        <div className="p-3 sm:p-4 lg:p-6 md:p-10 min-h-screen bg-slate-50">
             {/* Back Button */}
             <Button onClick={() => navigate('library')} variant="nav-back" size="sm" className="mb-6">
                 <ArrowLeft className="w-4 h-4 mr-2" />
@@ -298,7 +298,7 @@ const LeadershipVideosScreen = () => {
             <header className='flex items-center gap-4 border-b-2 pb-3 mb-8' className="border-corporate-navy/30">
                 <Film className='w-10 h-10 flex-shrink-0' className="text-corporate-navy"/>
                 <div>
-                    <h1 className="text-xl sm:text-2xl sm:text-3xl md:text-4xl font-extrabold" className="text-corporate-navy">
+                    <h1 className="text-xl sm:text-2xl sm:text-3xl md:text-4xl font-extrabold text-corporate-navy">
                         Leadership Video Library
                     </h1>
                     <p className="text-md text-corporate-navy/80">

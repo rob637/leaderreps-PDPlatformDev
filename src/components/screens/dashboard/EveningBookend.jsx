@@ -32,9 +32,9 @@ const TaskSection = ({ otherTasks, onAddTask, onToggleTask, onRemoveTask }) => {
     
     return (
         <div>
-            <label className="text-sm font-semibold mb-2 flex items-center justify-between" className="text-corporate-navy">
+            <label className="text-sm font-semibold mb-2 flex items-center justify-between text-corporate-navy">
                 <span className="flex items-center">
-                    <Clock className="w-4 h-4 mr-1" className="text-corporate-teal" />
+                    <Clock className="w-4 h-4 mr-1 text-corporate-teal" />
                     Daily Tasks ({otherTasks?.length || 0}/5)
                 </span>
             </label>
@@ -56,8 +56,7 @@ const TaskSection = ({ otherTasks, onAddTask, onToggleTask, onRemoveTask }) => {
                                 style={{ accentColor: 'var(--corporate-teal)' }}
                             />
                             
-                            <span className={`text-sm flex-1 ${task.completed ? 'line-through opacity-60' : ''}`} 
-                                  className="text-corporate-navy">
+                            <span className={`text-sm flex-1 text-corporate-navy ${task.completed ? 'line-through opacity-60' : ''}`}>
                                 {task.text}
                             </span>
                             
@@ -83,14 +82,12 @@ const TaskSection = ({ otherTasks, onAddTask, onToggleTask, onRemoveTask }) => {
                         onChange={(e) => setNewTaskText(e.target.value)}
                         onKeyPress={handleKeyPress} 
                         placeholder="Add a task..."
-                        className="flex-1 p-2 border rounded-lg text-sm focus:ring-2 transition-all"
-                        className="border-slate-200"
+                        className="flex-1 p-2 border rounded-lg text-sm focus:ring-2 transition-all border-slate-200"
                     />
                     <button 
                         onClick={handleAddClick}
                         disabled={!newTaskText.trim() || (otherTasks && otherTasks.length >= 5)}
-                        className="px-4 py-2 rounded-lg font-semibold text-white transition-all disabled:opacity-50"
-                        className="bg-corporate-teal"
+                        className="px-4 py-2 rounded-lg font-semibold text-white transition-all disabled:opacity-50 bg-corporate-teal"
                     >
                         <Plus className="w-4 h-4" />
                     </button>
@@ -128,7 +125,7 @@ export const EveningBookend = ({
         <Card title="Evening Bookend - Daily Reflection" icon={Moon} accent='NAVY'>
             {/* Good - What went well */}
             <div className="mb-4">
-                <label className="text-sm font-semibold mb-2 flex items-center" className="text-corporate-teal">
+                <label className="text-sm font-semibold mb-2 flex items-center text-corporate-teal">
                     <CheckCircle className="w-4 h-4 mr-1" />
                     Good - What went well today?
                 </label>
@@ -164,7 +161,7 @@ export const EveningBookend = ({
 
             {/* Best - What to do tomorrow */}
             <div className="mb-4">
-                <label className="text-sm font-semibold mb-2 flex items-center" className="text-corporate-navy">
+                <label className="text-sm font-semibold mb-2 flex items-center text-corporate-navy">
                     <Star className="w-4 h-4 mr-1" />
                     Best - What do I need to do to show up as my best tomorrow?
                 </label>
@@ -182,7 +179,7 @@ export const EveningBookend = ({
 
             {/* Daily Tasks Section */}
             {onAddTask && (
-                <div className="pt-4 border-t" className="border-slate-200">
+                <div className="pt-4 border-t border-slate-200">
                     <TaskSection 
                         otherTasks={otherTasks}
                         onAddTask={onAddTask}
@@ -193,8 +190,8 @@ export const EveningBookend = ({
             )}
 
             {/* Daily Habits Tracker */}
-            <div className="pt-4 border-t" className="border-slate-200">
-                <p className="text-sm font-semibold mb-3" className="text-corporate-navy">Daily Habits Tracker</p>
+            <div className="pt-4 border-t border-slate-200">
+                <p className="text-sm font-semibold mb-3 text-corporate-navy">Daily Habits Tracker</p>
                 <div className="space-y-2">
                     <label className="flex items-center gap-2 cursor-pointer p-2 rounded hover:bg-gray-50 transition-colors">
                         <input 
@@ -230,7 +227,7 @@ export const EveningBookend = ({
             </div>
 
             {/* Save Button */}
-            <div className="mt-6 pt-4 border-t" className="border-slate-200">
+            <div className="mt-6 pt-4 border-t border-slate-200">
                 <Button
                     onClick={() => {
                         if (onSave) onSave();
