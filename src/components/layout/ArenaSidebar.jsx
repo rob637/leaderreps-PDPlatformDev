@@ -58,7 +58,7 @@ const ArenaSidebar = ({ isOpen, toggle, currentScreen, navigate, onSignOut, user
             <div className="flex flex-col">
               <span className="font-bold text-lg tracking-wide leading-tight">LeaderReps</span>
               <span className="text-xs text-corporate-teal font-medium uppercase tracking-wider truncate max-w-[140px]">
-                The Arena
+                Dashboard
               </span>
             </div>
           </div>

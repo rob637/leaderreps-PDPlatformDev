@@ -25,14 +25,6 @@ import {
   CONTENT_COLLECTIONS 
 } from '../../services/contentService';
 
-const COLORS = {
-  NAVY: '#002E47',
-  ORANGE: '#E04E1B',
-  TEAL: '#47A88D',
-  LIGHT_GRAY: '#FCFCFA',
-  MUTED: '#6B7280'
-};
-
 // Content type configurations
 const CONTENT_TYPES = {
   [CONTENT_COLLECTIONS.READINGS]: {
@@ -168,19 +160,18 @@ const ContentManager = ({ contentType }) => {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <Loader className="w-8 h-8 animate-spin" style={{ color: COLORS.TEAL }} />
+        <Loader className="w-8 h-8 animate-spin text-corporate-teal" />
       </div>
     );
   }
 
   return (
-    <div className="p-6 max-w-7xl mx-auto" style={{ backgroundColor: COLORS.LIGHT_GRAY, minHeight: '100vh' }}>
+    <div className="p-6 max-w-7xl mx-auto bg-slate-50 min-h-screen">
       {/* Header */}
       <div className="mb-6">
         <button
           onClick={() => navigate('admin-content-home')}
-          className="flex items-center gap-2 text-sm mb-4 hover:opacity-70"
-          style={{ color: COLORS.MUTED }}
+          className="flex items-center gap-2 text-sm mb-4 hover:opacity-70 text-slate-500"
         >
           <ArrowLeft className="w-4 h-4" />
           Back to Admin
@@ -188,16 +179,15 @@ const ContentManager = ({ contentType }) => {
         
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <Icon className="w-8 h-8" style={{ color: COLORS.TEAL }} />
-            <h1 className="text-3xl font-bold" style={{ color: COLORS.NAVY }}>
+            <Icon className="w-8 h-8 text-corporate-teal" />
+            <h1 className="text-3xl font-bold text-corporate-navy">
               Manage {config.label}
             </h1>
           </div>
           
           <button
             onClick={handleAdd}
-            className="flex items-center gap-2 px-4 py-2 rounded-lg font-semibold text-white transition-all"
-            style={{ backgroundColor: COLORS.TEAL }}
+            className="flex items-center gap-2 px-4 py-2 rounded-lg font-semibold text-white transition-all bg-corporate-teal hover:bg-corporate-teal-dark"
           >
             <Plus className="w-5 h-5" />
             Add New
@@ -207,33 +197,33 @@ const ContentManager = ({ contentType }) => {
 
       {/* Edit Form */}
       {editingItem && (
-        <div ref={editFormRef} className="mb-6 p-6 bg-white rounded-xl shadow-lg border-2" style={{ borderColor: COLORS.TEAL }}>
-          <h2 className="text-xl font-bold mb-4" style={{ color: COLORS.NAVY }}>
+        <div ref={editFormRef} className="mb-6 p-6 bg-white rounded-xl shadow-lg border-2 border-corporate-teal">
+          <h2 className="text-xl font-bold mb-4 text-corporate-navy">
             {isAddingNew ? 'Add New Item' : `Edit: ${editingItem.title || 'Untitled'}`}
           </h2>
           
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-semibold mb-1" style={{ color: COLORS.NAVY }}>
+              <label className="block text-sm font-semibold mb-1 text-corporate-navy">
                 Title *
               </label>
               <input
                 type="text"
                 value={editingItem.title}
                 onChange={(e) => setEditingItem({ ...editingItem, title: e.target.value })}
-                className="w-full p-2 border rounded-lg"
+                className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-corporate-teal focus:border-corporate-teal outline-none"
                 placeholder="Enter title"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-semibold mb-1" style={{ color: COLORS.NAVY }}>
+              <label className="block text-sm font-semibold mb-1 text-corporate-navy">
                 Description
               </label>
               <textarea
                 value={editingItem.description}
                 onChange={(e) => setEditingItem({ ...editingItem, description: e.target.value })}
-                className="w-full p-2 border rounded-lg"
+                className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-corporate-teal focus:border-corporate-teal outline-none"
                 rows="3"
                 placeholder="Enter description"
               />
@@ -241,14 +231,14 @@ const ContentManager = ({ contentType }) => {
 
             {config.fields.includes('url') && (
               <div>
-                <label className="block text-sm font-semibold mb-1" style={{ color: COLORS.NAVY }}>
+                <label className="block text-sm font-semibold mb-1 text-corporate-navy">
                   URL *
                 </label>
                 <input
                   type="url"
                   value={editingItem.url}
                   onChange={(e) => setEditingItem({ ...editingItem, url: e.target.value })}
-                  className="w-full p-2 border rounded-lg"
+                  className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-corporate-teal focus:border-corporate-teal outline-none"
                   placeholder="https://"
                 />
               </div>
@@ -256,13 +246,13 @@ const ContentManager = ({ contentType }) => {
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-semibold mb-1" style={{ color: COLORS.NAVY }}>
+                <label className="block text-sm font-semibold mb-1 text-corporate-navy">
                   Tier *
                 </label>
                 <select
                   value={editingItem.tier}
                   onChange={(e) => setEditingItem({ ...editingItem, tier: e.target.value })}
-                  className="w-full p-2 border rounded-lg"
+                  className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-corporate-teal focus:border-corporate-teal outline-none"
                 >
                   <option value="free">Free</option>
                   <option value="premium">Premium</option>
@@ -270,28 +260,28 @@ const ContentManager = ({ contentType }) => {
               </div>
 
               <div>
-                <label className="block text-sm font-semibold mb-1" style={{ color: COLORS.NAVY }}>
+                <label className="block text-sm font-semibold mb-1 text-corporate-navy">
                   Category
                 </label>
                 <input
                   type="text"
                   value={editingItem.category}
                   onChange={(e) => setEditingItem({ ...editingItem, category: e.target.value })}
-                  className="w-full p-2 border rounded-lg"
+                  className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-corporate-teal focus:border-corporate-teal outline-none"
                   placeholder="e.g., leadership"
                 />
               </div>
             </div>
 
             <div>
-              <label className="block text-sm font-semibold mb-1" style={{ color: COLORS.NAVY }}>
+              <label className="block text-sm font-semibold mb-1 text-corporate-navy">
                 Thumbnail URL
               </label>
               <input
                 type="url"
                 value={editingItem.thumbnail}
                 onChange={(e) => setEditingItem({ ...editingItem, thumbnail: e.target.value })}
-                className="w-full p-2 border rounded-lg"
+                className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-corporate-teal focus:border-corporate-teal outline-none"
                 placeholder="https://"
               />
             </div>
@@ -300,7 +290,7 @@ const ContentManager = ({ contentType }) => {
             {contentType === CONTENT_COLLECTIONS.READINGS && editingItem.metadata && (
               <>
                 <div>
-                  <label className="block text-sm font-semibold mb-1" style={{ color: COLORS.NAVY }}>
+                  <label className="block text-sm font-semibold mb-1 text-corporate-navy">
                     Author
                   </label>
                   <input
@@ -310,14 +300,14 @@ const ContentManager = ({ contentType }) => {
                       ...editingItem, 
                       metadata: { ...editingItem.metadata, author: e.target.value }
                     })}
-                    className="w-full p-2 border rounded-lg"
+                    className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-corporate-teal focus:border-corporate-teal outline-none"
                     placeholder="Book author"
                   />
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-semibold mb-1" style={{ color: COLORS.NAVY }}>
+                    <label className="block text-sm font-semibold mb-1 text-corporate-navy">
                       Duration (pages)
                     </label>
                     <input
@@ -327,12 +317,12 @@ const ContentManager = ({ contentType }) => {
                         ...editingItem, 
                         metadata: { ...editingItem.metadata, duration: e.target.value }
                       })}
-                      className="w-full p-2 border rounded-lg"
+                      className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-corporate-teal focus:border-corporate-teal outline-none"
                       placeholder="e.g., 320"
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-semibold mb-1" style={{ color: COLORS.NAVY }}>
+                    <label className="block text-sm font-semibold mb-1 text-corporate-navy">
                       Complexity
                     </label>
                     <select
@@ -341,7 +331,7 @@ const ContentManager = ({ contentType }) => {
                         ...editingItem, 
                         metadata: { ...editingItem.metadata, complexity: e.target.value }
                       })}
-                      className="w-full p-2 border rounded-lg"
+                      className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-corporate-teal focus:border-corporate-teal outline-none"
                     >
                       <option value="">Select...</option>
                       <option value="Low">Low</option>
@@ -352,7 +342,7 @@ const ContentManager = ({ contentType }) => {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-semibold mb-1" style={{ color: COLORS.NAVY }}>
+                  <label className="block text-sm font-semibold mb-1 text-corporate-navy">
                     Focus Areas
                   </label>
                   <input
@@ -362,13 +352,13 @@ const ContentManager = ({ contentType }) => {
                       ...editingItem, 
                       metadata: { ...editingItem.metadata, focus: e.target.value }
                     })}
-                    className="w-full p-2 border rounded-lg"
+                    className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-corporate-teal focus:border-corporate-teal outline-none"
                     placeholder="Key concepts (comma separated)"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-semibold mb-1" style={{ color: COLORS.NAVY }}>
+                  <label className="block text-sm font-semibold mb-1 text-corporate-navy">
                     Executive Brief HTML
                   </label>
                   <textarea
@@ -377,14 +367,14 @@ const ContentManager = ({ contentType }) => {
                       ...editingItem, 
                       metadata: { ...editingItem.metadata, executiveBriefHTML: e.target.value }
                     })}
-                    className="w-full p-2 border rounded-lg font-mono text-sm"
+                    className="w-full p-2 border rounded-lg font-mono text-sm focus:ring-2 focus:ring-corporate-teal focus:border-corporate-teal outline-none"
                     rows="4"
                     placeholder="<h3>Executive Brief HTML content...</h3>"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-semibold mb-1" style={{ color: COLORS.NAVY }}>
+                  <label className="block text-sm font-semibold mb-1 text-corporate-navy">
                     Full Flyer HTML
                   </label>
                   <textarea
@@ -393,7 +383,7 @@ const ContentManager = ({ contentType }) => {
                       ...editingItem, 
                       metadata: { ...editingItem.metadata, fullFlyerHTML: e.target.value }
                     })}
-                    className="w-full p-2 border rounded-lg font-mono text-sm"
+                    className="w-full p-2 border rounded-lg font-mono text-sm focus:ring-2 focus:ring-corporate-teal focus:border-corporate-teal outline-none"
                     rows="6"
                     placeholder="<h2>Full Flyer HTML content...</h2>"
                   />
@@ -406,9 +396,9 @@ const ContentManager = ({ contentType }) => {
                 type="checkbox"
                 checked={editingItem.isActive}
                 onChange={(e) => setEditingItem({ ...editingItem, isActive: e.target.checked })}
-                className="w-4 h-4"
+                className="w-4 h-4 text-corporate-teal focus:ring-corporate-teal"
               />
-              <label className="text-sm font-semibold" style={{ color: COLORS.NAVY }}>
+              <label className="text-sm font-semibold text-corporate-navy">
                 Active (visible to users)
               </label>
             </div>
@@ -416,8 +406,7 @@ const ContentManager = ({ contentType }) => {
             <div className="flex gap-3 pt-4">
               <button
                 onClick={handleSave}
-                className="flex items-center gap-2 px-6 py-2 rounded-lg font-semibold text-white"
-                style={{ backgroundColor: COLORS.TEAL }}
+                className="flex items-center gap-2 px-6 py-2 rounded-lg font-semibold text-white bg-corporate-teal hover:bg-corporate-teal-dark"
               >
                 <Save className="w-4 h-4" />
                 Save
@@ -427,8 +416,7 @@ const ContentManager = ({ contentType }) => {
                   setEditingItem(null);
                   setIsAddingNew(false);
                 }}
-                className="flex items-center gap-2 px-6 py-2 rounded-lg font-semibold"
-                style={{ backgroundColor: COLORS.LIGHT_GRAY, color: COLORS.MUTED }}
+                className="flex items-center gap-2 px-6 py-2 rounded-lg font-semibold bg-slate-100 text-slate-500 hover:bg-slate-200"
               >
                 <X className="w-4 h-4" />
                 Cancel
@@ -442,32 +430,28 @@ const ContentManager = ({ contentType }) => {
       <div className="space-y-3">
         {content.length === 0 ? (
           <div className="text-center py-12 bg-white rounded-xl">
-            <p style={{ color: COLORS.MUTED }}>No {config.label.toLowerCase()} yet. Click "Add New" to create one.</p>
+            <p className="text-slate-500">No {config.label.toLowerCase()} yet. Click "Add New" to create one.</p>
           </div>
         ) : (
           content.map((item) => (
             <div
               key={item.id}
-              className="p-4 bg-white rounded-xl shadow-sm border flex items-center justify-between"
-              style={{ 
-                borderColor: item.isActive ? COLORS.TEAL : COLORS.MUTED,
-                opacity: item.isActive ? 1 : 0.6
-              }}
+              className={`p-4 bg-white rounded-xl shadow-sm border flex items-center justify-between ${item.isActive ? 'border-corporate-teal' : 'border-slate-300 opacity-60'}`}
             >
               <div className="flex-1">
-                <h3 className="font-bold" style={{ color: COLORS.NAVY }}>
+                <h3 className="font-bold text-corporate-navy">
                   {item.title}
                 </h3>
-                <p className="text-sm" style={{ color: COLORS.MUTED }}>
+                <p className="text-sm text-slate-500">
                   {item.description?.substring(0, 100)}
                   {item.description?.length > 100 ? '...' : ''}
                 </p>
                 <div className="flex gap-3 mt-2 text-xs">
-                  <span className="px-2 py-1 rounded" style={{ backgroundColor: `${COLORS.TEAL}20`, color: COLORS.TEAL }}>
+                  <span className="px-2 py-1 rounded bg-corporate-teal/20 text-corporate-teal">
                     {item.tier}
                   </span>
                   {item.category && (
-                    <span className="px-2 py-1 rounded" style={{ backgroundColor: `${COLORS.NAVY}10`, color: COLORS.NAVY }}>
+                    <span className="px-2 py-1 rounded bg-corporate-navy/10 text-corporate-navy">
                       {item.category}
                     </span>
                   )}
@@ -481,9 +465,9 @@ const ContentManager = ({ contentType }) => {
                   title={item.isActive ? 'Deactivate' : 'Activate'}
                 >
                   {item.isActive ? (
-                    <Eye className="w-5 h-5" style={{ color: COLORS.TEAL }} />
+                    <Eye className="w-5 h-5 text-corporate-teal" />
                   ) : (
-                    <EyeOff className="w-5 h-5" style={{ color: COLORS.MUTED }} />
+                    <EyeOff className="w-5 h-5 text-slate-500" />
                   )}
                 </button>
                 <button
@@ -491,14 +475,14 @@ const ContentManager = ({ contentType }) => {
                   className="p-2 rounded-lg hover:bg-gray-100"
                   title="Edit"
                 >
-                  <Edit className="w-5 h-5" style={{ color: COLORS.NAVY }} />
+                  <Edit className="w-5 h-5 text-corporate-navy" />
                 </button>
                 <button
                   onClick={() => handleDelete(item)}
                   className="p-2 rounded-lg hover:bg-gray-100"
                   title="Delete"
                 >
-                  <Trash2 className="w-5 h-5" style={{ color: COLORS.ORANGE }} />
+                  <Trash2 className="w-5 h-5 text-corporate-orange" />
                 </button>
               </div>
             </div>

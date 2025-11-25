@@ -30,7 +30,7 @@ export default class ErrorBoundary extends React.Component {
       
       return (
         <div style={{ padding: 24, maxWidth: 900, margin: '48px auto', fontFamily: 'system-ui' }}>
-          <h2 style={{ color: '#E04E1B' }}>❌ Something went wrong</h2>
+          <h2 style={{ color: 'var(--corporate-orange)' }}>❌ Something went wrong</h2>
           
           {isReactError130 && (
             <div style={{ 

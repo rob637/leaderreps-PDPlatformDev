@@ -1,9 +1,4 @@
 // src/components/screens/AdminDataMaintenance.jsx
-// Comprehensive admin interface for viewing and editing all Firestore data
-// Organized by functional module with full CRUD operations
-// UPDATED: All field keys in lowercase, added reflection history and bookend data
-// UPDATED (10/30/25): Added table-based CRUD editor for 'isCatalog' documents
-// FIX (10/30/25): Added 'adminemails' to global_metadata/config
 
 import React, { useState, useEffect, useMemo, useCallback } from "react";
 import {
@@ -12,100 +7,12 @@ import {
 } from "firebase/firestore";
 import { useAppServices } from '../../services/useAppServices.jsx';
 import { 
-  Loader, Download, Upload, Trash2, Save, Search, Edit, Plus, X,
+  Download, Upload, Trash2, Save, Search, Edit, Plus, X,
   LayoutDashboard, Target, Calendar, Lightbulb, Settings, Database,
   AlertTriangle, CheckCircle, FileText, Copy, RefreshCw, Eye, EyeOff,
-  MessageSquare, Users, BookOpen, Film, Zap, ChevronDown, ChevronUp, GripVertical
-} from 'lucide-react'; // Added new icons
-
-/* =========================================================
-   DESIGN SYSTEM - Matching DevPlanComponents
-========================================================= */
-const COLORS = { 
-  NAVY: '#002E47', TEAL: '#47A88D', BLUE: '#002E47', ORANGE: '#E04E1B', 
-  GREEN: '#47A88D', AMBER: '#E04E1B', RED: '#E04E1B', LIGHT_GRAY: '#FCFCFA', 
-  OFF_WHITE: '#FFFFFF', SUBTLE: '#E5E7EB', TEXT: '#374151', MUTED: '#4B5563', 
-  PURPLE: '#47A88D', BG: '#F9FAFB', PINK: '#E04E1B', GOLD: '#E04E1B'
-};
-
-const Button = ({ children, onClick, disabled = false, variant = 'primary', size = 'md', className = '', ...rest }) => {
-  let baseStyle = `inline-flex items-center justify-center gap-2 font-semibold rounded-xl transition-all duration-200 focus:outline-none focus:ring-4 disabled:opacity-50 disabled:cursor-not-allowed`;
-
-  if (size === 'sm') baseStyle += ' px-3 py-1.5 text-xs';
-  else if (size === 'lg') baseStyle += ' px-8 py-4 text-lg';
-  else baseStyle += ' px-4 py-2 text-sm';
-
-  if (variant === 'primary') baseStyle += ` bg-[${COLORS.TEAL}] text-white shadow-md hover:bg-[#47A88D] focus:ring-[${COLORS.TEAL}]/50`;
-  else if (variant === 'secondary') baseStyle += ` bg-[${COLORS.ORANGE}] text-white shadow-md hover:bg-[#C33E12] focus:ring-[${COLORS.ORANGE}]/50`;
-  else if (variant === 'outline') baseStyle += ` bg-white text-[${COLORS.TEAL}] border-2 border-[${COLORS.TEAL}] hover:bg-[${COLORS.TEAL}]/10 focus:ring-[${COLORS.TEAL}]/50`;
-  else if (variant === 'danger') baseStyle += ` bg-red-600 text-white shadow-md hover:bg-red-700 focus:ring-red-500/50`;
-  else if (variant === 'ghost') baseStyle += ` bg-transparent text-gray-600 hover:bg-gray-100 focus:ring-gray-300/50`;
-
-  return <button {...rest} onClick={onClick} disabled={disabled} className={`${baseStyle} ${className}`}>{children}</button>;
-};
-
-const Card = ({ children, title, icon: Icon, className = '', accent = 'NAVY', actions }) => {
-  const accentColor = COLORS[accent] || COLORS.NAVY;
-
-  return (
-    <div className={`relative rounded-2xl border-2 shadow-xl transition-all duration-300 ${className}`}
-      style={{
-        background: 'linear-gradient(180deg,#FFFFFF, #FCFCFA)',
-        borderColor: COLORS.SUBTLE,
-        color: COLORS.NAVY
-      }}
-    >
-      <span style={{ position:'absolute', top:0, left:0, right:0, height:6, background: accentColor, borderTopLeftRadius:14, borderTopRightRadius:14 }} />
-      
-      {(title || actions) && (
-        <div className="flex items-center justify-between p-3 sm:p-4 lg:p-6 pb-4">
-          <div className="flex items-center gap-3">
-            {Icon && (
-              <div className="w-10 h-10 rounded-lg flex items-center justify-center border flex-shrink-0" style={{ borderColor: COLORS.SUBTLE, background: COLORS.LIGHT_GRAY }}>
-                  <Icon className="w-5 h-5" style={{ color: accentColor }} />
-              </div>
-            )}
-            {title && (
-              <h2 className="text-xl font-extrabold" style={{ color: COLORS.NAVY }}>{title}</h2>
-            )}
-          </div>
-          {actions && (
-            <div className="flex-shrink-0 flex gap-2">{actions}</div>
-          )}
-        </div>
-      )}
-      
-      <div className={title || actions ? "p-6 pt-0" : "p-6"}>
-        {children}
-      </div>
-    </div>
-  );
-};
-
-const Badge = ({ children, variant = 'default', size = 'md' }) => {
-  let baseStyle = 'font-semibold rounded-full inline-block';
-
-  if (size === 'sm') baseStyle += ' px-2.5 py-0.5 text-xs';
-  else baseStyle += ' px-3 py-1 text-sm';
-  
-  if (variant === 'primary') baseStyle += ` bg-[${COLORS.BLUE}20] text-[${COLORS.BLUE}]`;
-  else if (variant === 'success') baseStyle += ` bg-[${COLORS.GREEN}20] text-[${COLORS.GREEN}]`;
-  else if (variant === 'warning') baseStyle += ` bg-[${COLORS.AMBER}20] text-[${COLORS.AMBER}]`;
-  else if (variant === 'danger') baseStyle += ` bg-[${COLORS.RED}20] text-[${COLORS.RED}]`;
-  else if (variant === 'purple') baseStyle += ` bg-[${COLORS.PURPLE}20] text-[${COLORS.PURPLE}]`;
-  else baseStyle += ` bg-[${COLORS.SUBTLE}] text-[${COLORS.MUTED}]`;
-  
-  return <span className={baseStyle}>{children}</span>;
-};
-
-const LoadingSpinner = ({ message = "Loading..." }) => (
-  <div className="flex items-center justify-center p-12">
-    <div className="text-center">
-      <div className="animate-spin rounded-full h-12 w-12 border-b-2 mx-auto mb-4" style={{ borderColor: COLORS.TEAL }} />
-      <p style={{ color: COLORS.TEXT }}>{message}</p>
-    </div>
-  </div>
-);
+  MessageSquare, Users, BookOpen, Film, Zap, ChevronDown, ChevronUp, GripVertical, ArrowLeft
+} from 'lucide-react';
+import { Button, Card, Badge, LoadingState } from '../ui';
 
 /* =========================================================
    DATA STRUCTURE CONFIGURATION (ALL LOWERCASE KEYS)
@@ -114,7 +21,8 @@ const MODULE_GROUPS = {
   user_data: {
     name: "User Profile",
     icon: Database,
-    color: COLORS.BLUE,
+    color: "text-corporate-navy",
+    accentColor: "bg-corporate-navy",
     description: "Basic user information and account settings",
     tables: {
       profile: {
@@ -137,7 +45,8 @@ const MODULE_GROUPS = {
   development_plan: {
     name: "Development Plan",
     icon: Target,
-    color: COLORS.TEAL,
+    color: "text-corporate-teal",
+    accentColor: "bg-corporate-teal",
     description: "12-week leadership development plans and assessments",
     tables: {
       current_plan: {
@@ -159,7 +68,8 @@ const MODULE_GROUPS = {
   daily_practice: {
     name: "Daily Practice",
     icon: Calendar,
-    color: COLORS.ORANGE,
+    color: "text-corporate-orange",
+    accentColor: "bg-corporate-orange",
     description: "Daily reps, streaks, commitments, reflections, and bookends",
     tables: {
       current_practice: {
@@ -201,7 +111,8 @@ const MODULE_GROUPS = {
   strategic_content: {
     name: "Strategic Content",
     icon: Lightbulb,
-    color: COLORS.PURPLE,
+    color: "text-purple-600",
+    accentColor: "bg-purple-600",
     description: "Vision, mission, values, goals, and strategic planning",
     tables: {
       vision_mission: {
@@ -227,7 +138,8 @@ const MODULE_GROUPS = {
   community_content: {
     name: "Community & Content",
     icon: Users,
-    color: COLORS.PINK,
+    color: "text-pink-600",
+    accentColor: "bg-pink-600",
     description: "Community feed, readings, videos, and shared content",
     tables: {
       community_feed: {
@@ -265,7 +177,8 @@ const MODULE_GROUPS = {
   global_metadata: {
     name: "Global Metadata",
     icon: Settings,
-    color: COLORS.NAVY,
+    color: "text-corporate-navy",
+    accentColor: "bg-corporate-navy",
     description: "App-wide configuration and catalogs (affects all users)",
     isGlobal: true,
     tables: {
@@ -276,7 +189,7 @@ const MODULE_GROUPS = {
           { key: 'app_id', label: 'App ID', type: 'text' },
           { key: 'gemini_model', label: 'Gemini Model', type: 'text' },
           { key: 'featureflags', label: 'Feature Flags', type: 'json' },
-          { key: 'adminemails', label: 'Admin Emails', type: 'json' }, // <-- ADDED FIELD
+          { key: 'adminemails', label: 'Admin Emails', type: 'json' },
           { key: 'leadership_tiers', label: 'Leadership Tiers', type: 'json' },
           { key: 'iconmap', label: 'Icon Map', type: 'json' },
           { key: '_updatedat', label: 'Updated At', type: 'timestamp', readonly: true },
@@ -452,12 +365,12 @@ const SubcollectionViewer = ({ tableConfig, userId }) => {
   };
 
   if (loading) {
-    return <LoadingSpinner message="Loading entries..." />;
+    return <LoadingState message="Loading entries..." />;
   }
 
   if (error) {
     return (
-      <div className="p-3 sm:p-4 lg:p-6 bg-red-50 border-2 border-red-200 rounded-xl">
+      <div className="p-4 bg-red-50 border border-red-200 rounded-xl">
         <AlertTriangle size={20} className="text-red-600 mb-2" />
         <p className="text-red-800">{error}</p>
       </div>
@@ -466,9 +379,9 @@ const SubcollectionViewer = ({ tableConfig, userId }) => {
 
   if (docs.length === 0) {
     return (
-      <div className="p-4 sm:p-3 sm:p-4 lg:p-6 lg:p-8 text-center bg-gray-50 rounded-xl border-2 border-dashed" style={{ borderColor: COLORS.SUBTLE }}>
-        <MessageSquare className="w-12 h-12 mx-auto mb-4 text-gray-400" />
-        <p className="text-gray-600">No entries found</p>
+      <div className="p-8 text-center bg-slate-50 rounded-xl border border-dashed border-slate-300">
+        <MessageSquare className="w-12 h-12 mx-auto mb-4 text-slate-400" />
+        <p className="text-slate-600">No entries found</p>
       </div>
     );
   }
@@ -485,10 +398,10 @@ const SubcollectionViewer = ({ tableConfig, userId }) => {
 
       <div className="grid gap-3">
         {docs.map(docData => (
-          <div key={docData.id} className="p-4 bg-white rounded-lg border-2 hover:border-teal-300 transition-all" style={{ borderColor: COLORS.SUBTLE }}>
+          <div key={docData.id} className="p-4 bg-white rounded-lg border border-slate-200 hover:border-corporate-teal transition-all shadow-sm">
             <div className="flex items-start justify-between mb-2">
               <div className="flex-1">
-                <p className="text-xs text-gray-500 mb-1">
+                <p className="text-xs text-slate-500 mb-1">
                   {formatTimestamp(docData.timestamp || docData.date)}
                 </p>
                 <div className="text-sm space-y-1">
@@ -497,7 +410,7 @@ const SubcollectionViewer = ({ tableConfig, userId }) => {
                     if (!value) return null;
                     
                     return (
-                      <p key={field.key} className="text-gray-700">
+                      <p key={field.key} className="text-slate-700">
                         <strong>{field.label}:</strong> {
                           field.type === 'json' 
                             ? JSON.stringify(value).substring(0, 100) + '...'
@@ -528,8 +441,8 @@ const SubcollectionViewer = ({ tableConfig, userId }) => {
             </div>
             
             {selectedDoc?.id === docData.id && (
-              <div className="mt-3 pt-3 border-t" style={{ borderColor: COLORS.SUBTLE }}>
-                <pre className="text-xs font-mono bg-gray-50 p-3 rounded overflow-auto max-h-64">
+              <div className="mt-3 pt-3 border-t border-slate-100">
+                <pre className="text-xs font-mono bg-slate-50 p-3 rounded overflow-auto max-h-64">
                   {pretty(docData)}
                 </pre>
               </div>
@@ -573,8 +486,7 @@ const CatalogItemEditor = ({ item, index, onUpdate, onDelete, onAddNewField }) =
         <select
           value={String(value)}
           onChange={(e) => handleChange(key, e.target.value === 'true')}
-          className="w-full p-2 border-2 rounded-lg text-sm"
-          style={{ borderColor: COLORS.SUBTLE }}
+          className="w-full p-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-corporate-teal focus:border-corporate-teal outline-none"
         >
           <option value="true">True</option>
           <option value="false">False</option>
@@ -588,8 +500,7 @@ const CatalogItemEditor = ({ item, index, onUpdate, onDelete, onAddNewField }) =
           type="number"
           value={value}
           onChange={(e) => handleChange(key, Number(e.target.value))}
-          className="w-full p-2 border-2 rounded-lg text-sm"
-          style={{ borderColor: COLORS.SUBTLE }}
+          className="w-full p-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-corporate-teal focus:border-corporate-teal outline-none"
         />
       );
     }
@@ -599,8 +510,7 @@ const CatalogItemEditor = ({ item, index, onUpdate, onDelete, onAddNewField }) =
         <textarea
           value={value}
           onChange={(e) => handleChange(key, e.target.value)}
-          className="w-full p-2 border-2 rounded-lg text-sm font-mono"
-          style={{ borderColor: COLORS.SUBTLE }}
+          className="w-full p-2 border border-slate-300 rounded-lg text-sm font-mono focus:ring-2 focus:ring-corporate-teal focus:border-corporate-teal outline-none"
           rows={4}
         />
       );
@@ -611,25 +521,20 @@ const CatalogItemEditor = ({ item, index, onUpdate, onDelete, onAddNewField }) =
         type="text"
         value={value}
         onChange={(e) => handleChange(key, e.target.value)}
-        className="w-full p-2 border-2 rounded-lg text-sm"
-        style={{ borderColor: COLORS.SUBTLE }}
+        className="w-full p-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-corporate-teal focus:border-corporate-teal outline-none"
       />
     );
   };
 
   return (
     <div 
-      className="rounded-xl border-2" 
-      style={{ 
-        borderColor: isEditing ? COLORS.TEAL : COLORS.SUBTLE, 
-        backgroundColor: isEditing ? `${COLORS.TEAL}05` : COLORS.OFF_WHITE
-      }}
+      className={`rounded-xl border transition-colors ${isEditing ? 'border-corporate-teal bg-corporate-teal/5' : 'border-slate-200 bg-white'}`}
     >
       {/* Header Bar */}
-      <div className="flex items-center justify-between p-3" style={{ borderBottom: `2px solid ${COLORS.SUBTLE}` }}>
+      <div className="flex items-center justify-between p-3 border-b border-slate-200">
         <div className="flex items-center gap-3">
-          <GripVertical className="w-5 h-5 text-gray-400 cursor-grab" />
-          <p className="font-semibold" style={{ color: COLORS.NAVY }}>
+          <GripVertical className="w-5 h-5 text-slate-400 cursor-grab" />
+          <p className="font-semibold text-corporate-navy">
             {item.name || item.id || `Item ${index + 1}`}
           </p>
           <Badge variant="default" size="sm">{item.id || 'NO ID'}</Badge>
@@ -659,7 +564,7 @@ const CatalogItemEditor = ({ item, index, onUpdate, onDelete, onAddNewField }) =
         <div className="p-4 space-y-3">
           {Object.entries(editedItem).map(([key, value]) => (
             <div key={key}>
-              <label className="block text-xs font-semibold mb-1" style={{ color: COLORS.MUTED }}>
+              <label className="block text-xs font-semibold mb-1 text-slate-500">
                 {key}
               </label>
               {getInput(key, value)}
@@ -722,7 +627,7 @@ const CatalogTableEditor = ({ items, onChange }) => {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <p className="text-sm font-semibold" style={{ color: COLORS.MUTED }}>
+        <p className="text-sm font-semibold text-slate-500">
           CATALOG ITEMS
         </p>
         <Button onClick={handleAddItem} variant="primary" size="sm">
@@ -731,7 +636,7 @@ const CatalogTableEditor = ({ items, onChange }) => {
         </Button>
       </div>
       
-      <div className="p-4 bg-gray-50 rounded-xl border-2 space-y-3" style={{ borderColor: COLORS.SUBTLE }}>
+      <div className="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-3">
         {items.length > 0 ? (
           items.map((item, index) => (
             <CatalogItemEditor
@@ -744,7 +649,7 @@ const CatalogTableEditor = ({ items, onChange }) => {
             />
           ))
         ) : (
-          <div className="p-4 sm:p-3 sm:p-4 lg:p-6 lg:p-8 text-center text-gray-500">
+          <div className="p-8 text-center text-slate-500">
             <p>No items in this catalog.</p>
           </div>
         )}
@@ -870,9 +775,9 @@ const TableDataEditor = ({ tableConfig, data, onSave, onDelete }) => {
 
   if (!data) {
     return (
-      <div className="p-4 sm:p-3 sm:p-4 lg:p-6 lg:p-8 text-center bg-gray-50 rounded-xl border-2 border-dashed" style={{ borderColor: COLORS.SUBTLE }}>
-        <Database className="w-12 h-12 mx-auto mb-4 text-gray-400" />
-        <p className="text-gray-600 mb-4">No data found for this table</p>
+      <div className="p-8 text-center bg-slate-50 rounded-xl border border-dashed border-slate-300">
+        <Database className="w-12 h-12 mx-auto mb-4 text-slate-400" />
+        <p className="text-slate-600 mb-4">No data found for this table</p>
         <Button onClick={handleSave} variant="primary">
           <Plus size={16} />
           Create New Document
@@ -953,8 +858,7 @@ const TableDataEditor = ({ tableConfig, data, onSave, onDelete }) => {
       {showJson ? (
         <div className="relative">
           <textarea
-            className="w-full h-96 p-4 font-mono text-sm border-2 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-transparent"
-            style={{ borderColor: COLORS.SUBTLE }}
+            className="w-full h-96 p-4 font-mono text-sm border border-slate-300 rounded-xl focus:ring-2 focus:ring-corporate-teal focus:border-corporate-teal outline-none"
             value={jsonText}
             onChange={(e) => handleJsonChange(e.target.value)}
             spellCheck={false}
@@ -983,10 +887,10 @@ const TableDataEditor = ({ tableConfig, data, onSave, onDelete }) => {
               : value ?? '';
 
             return (
-              <div key={field.key} className="p-4 bg-gray-50 rounded-xl border-2" style={{ borderColor: COLORS.SUBTLE }}>
+              <div key={field.key} className="p-4 bg-slate-50 rounded-xl border border-slate-200">
                 <div className="flex items-start justify-between mb-2">
                   <div>
-                    <label className="block text-sm font-semibold mb-1" style={{ color: COLORS.NAVY }}>
+                    <label className="block text-sm font-semibold mb-1 text-corporate-navy">
                       {field.label}
                     </label>
                     {field.readonly && (
@@ -996,27 +900,25 @@ const TableDataEditor = ({ tableConfig, data, onSave, onDelete }) => {
                 </div>
 
                 {field.readonly ? (
-                  <div className="p-3 bg-white rounded-lg border" style={{ borderColor: COLORS.SUBTLE }}>
+                  <div className="p-3 bg-white rounded-lg border border-slate-200">
                     {field.type === 'json' ? (
                       <pre className="text-xs font-mono whitespace-pre-wrap overflow-auto max-h-32">
                         {displayValue}
                       </pre>
                     ) : (
-                      <span className="text-sm text-gray-600">{displayValue || 'N/A'}</span>
+                      <span className="text-sm text-slate-600">{displayValue || 'N/A'}</span>
                     )}
                   </div>
                 ) : field.type === 'textarea' ? (
                   <textarea
-                    className="w-full p-3 border-2 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
-                    style={{ borderColor: COLORS.SUBTLE }}
+                    className="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-corporate-teal focus:border-corporate-teal outline-none"
                     rows={4}
                     value={displayValue}
                     onChange={(e) => handleFieldChange(field.key, e.target.value, field.type)}
                   />
                 ) : field.type === 'json' ? (
                   <textarea
-                    className="w-full p-3 font-mono text-sm border-2 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
-                    style={{ borderColor: COLORS.SUBTLE }}
+                    className="w-full p-3 font-mono text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-corporate-teal focus:border-corporate-teal outline-none"
                     rows={6}
                     value={displayValue}
                     onChange={(e) => handleFieldChange(field.key, e.target.value, field.type)}
@@ -1024,8 +926,7 @@ const TableDataEditor = ({ tableConfig, data, onSave, onDelete }) => {
                   />
                 ) : field.type === 'boolean' ? (
                   <select
-                    className="w-full p-3 border-2 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
-                    style={{ borderColor: COLORS.SUBTLE }}
+                    className="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-corporate-teal focus:border-corporate-teal outline-none"
                     value={String(value)}
                     onChange={(e) => handleFieldChange(field.key, e.target.value, field.type)}
                   >
@@ -1035,8 +936,7 @@ const TableDataEditor = ({ tableConfig, data, onSave, onDelete }) => {
                 ) : (
                   <input
                     type={field.type === 'number' ? 'number' : field.type === 'email' ? 'email' : 'text'}
-                    className="w-full p-3 border-2 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
-                    style={{ borderColor: COLORS.SUBTLE }}
+                    className="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-corporate-teal focus:border-corporate-teal outline-none"
                     value={displayValue}
                     onChange={(e) => handleFieldChange(field.key, e.target.value, field.type)}
                   />
@@ -1049,7 +949,7 @@ const TableDataEditor = ({ tableConfig, data, onSave, onDelete }) => {
 
       {/* Catalog Item Count */}
       {tableConfig.isCatalog && editedData.items && (
-        <div className="p-4 bg-blue-50 border-2 border-blue-200 rounded-xl mt-4">
+        <div className="p-4 bg-blue-50 border border-blue-200 rounded-xl mt-4">
           <div className="flex items-center gap-2">
             <CheckCircle size={16} className="text-blue-600" />
             <span className="text-sm font-medium text-blue-900">
@@ -1149,12 +1049,12 @@ const TableViewer = ({ config, userId }) => {
   }
 
   if (loading) {
-    return <LoadingSpinner message={`Loading ${config.name}...`} />;
+    return <LoadingState message={`Loading ${config.name}...`} />;
   }
 
   if (error) {
     return (
-      <div className="p-3 sm:p-4 lg:p-6 bg-red-50 border-2 border-red-200 rounded-xl">
+      <div className="p-4 bg-red-50 border border-red-200 rounded-xl">
         <div className="flex items-center gap-3 text-red-800">
           <AlertTriangle size={20} />
           <div>
@@ -1186,7 +1086,7 @@ const TableViewer = ({ config, userId }) => {
 ========================================================= */
 export default function AdminDataMaintenance() {
   const services = useAppServices();
-  const { userId, isAdmin } = services || {};
+  const { userId, isAdmin, navigate } = services || {};
   
   const [activeGroup, setActiveGroup] = useState('user_data');
   const [activeTable, setActiveTable] = useState(null);
@@ -1209,14 +1109,14 @@ export default function AdminDataMaintenance() {
 
   if (!isAdmin) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-3 sm:p-4 lg:p-6">
-        <Card accent="RED">
-          <div className="text-center p-4 sm:p-3 sm:p-4 lg:p-6 lg:p-8">
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center p-6">
+        <Card accentColor="bg-red-600">
+          <div className="text-center p-8">
             <AlertTriangle className="w-16 h-16 mx-auto mb-4 text-red-600" />
-            <h2 className="text-xl sm:text-2xl font-bold mb-2" style={{ color: COLORS.NAVY }}>
+            <h2 className="text-2xl font-bold mb-2 text-corporate-navy">
               Access Denied
             </h2>
-            <p className="text-gray-600">
+            <p className="text-slate-600">
               You need admin privileges to access this page.
             </p>
           </div>
@@ -1229,23 +1129,23 @@ export default function AdminDataMaintenance() {
   const currentTable = activeTable ? currentGroup.tables[activeTable] : null;
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-slate-50 animate-fade-in">
       {/* Header */}
-      <div className="bg-white border-b-2" style={{ borderColor: COLORS.SUBTLE }}>
+      <div className="bg-white border-b border-slate-200">
         <div className="max-w-7xl mx-auto px-6 py-6">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-xl sm:text-2xl sm:text-3xl font-bold mb-2" style={{ color: COLORS.NAVY }}>
+              <h1 className="text-3xl font-bold mb-2 text-corporate-navy">
                 Admin Data Maintenance
               </h1>
-              <p className="text-gray-600">
+              <p className="text-slate-600">
                 Comprehensive database management with full CRUD operations
               </p>
             </div>
             
             {!currentGroup?.isGlobal && (
               <div className="flex items-center gap-3">
-                <label className="text-sm font-semibold" style={{ color: COLORS.NAVY }}>
+                <label className="text-sm font-semibold text-corporate-navy">
                   User ID:
                 </label>
                 <input
@@ -1253,18 +1153,22 @@ export default function AdminDataMaintenance() {
                   value={targetUserId}
                   onChange={(e) => setTargetUserId(e.target.value)}
                   placeholder="Enter user ID..."
-                  className="px-4 py-2 border-2 rounded-lg text-sm font-mono w-64 focus:ring-2 focus:ring-teal-500 focus:border-transparent"
-                  style={{ borderColor: COLORS.SUBTLE }}
+                  className="px-4 py-2 border border-slate-300 rounded-lg text-sm font-mono w-64 focus:ring-2 focus:ring-corporate-teal focus:border-corporate-teal outline-none"
                 />
               </div>
             )}
+          </div>
+          <div className="mt-4">
+             <Button onClick={() => navigate('admin-functions')} variant="nav-back">
+                <ArrowLeft className="w-4 h-4 mr-2" /> Back to Admin Functions
+             </Button>
           </div>
         </div>
       </div>
 
       {/* Module Group Tabs */}
-      <div className="bg-white border-b-2" style={{ borderColor: COLORS.SUBTLE }}>
-        <div className="max-w-7xl mx-auto px-6 flex gap-1">
+      <div className="bg-white border-b border-slate-200">
+        <div className="max-w-7xl mx-auto px-6 flex gap-1 overflow-x-auto">
           {Object.entries(MODULE_GROUPS).map(([key, group]) => {
             const Icon = group.icon;
             const isActive = activeGroup === key;
@@ -1273,18 +1177,20 @@ export default function AdminDataMaintenance() {
               <button
                 key={key}
                 onClick={() => setActiveGroup(key)}
-                className={`flex items-center gap-2 px-6 py-4 font-semibold transition-all border-b-4 ${
+                className={`flex items-center gap-2 px-6 py-4 font-semibold transition-all border-b-4 whitespace-nowrap ${
                   isActive 
                     ? 'border-current' 
-                    : 'border-transparent hover:bg-gray-50'
+                    : 'border-transparent hover:bg-slate-50'
                 }`}
                 style={{ 
-                  color: isActive ? group.color : COLORS.MUTED,
-                  borderColor: isActive ? group.color : 'transparent'
+                  color: isActive ? (group.color.includes('text-') ? '' : group.color) : '#64748b',
+                  borderColor: isActive ? (group.color.includes('text-') ? '' : group.color) : 'transparent'
                 }}
               >
-                <Icon size={20} />
-                {group.name}
+                <div className={isActive ? group.color : ''}>
+                    <Icon size={20} />
+                </div>
+                <span className={isActive ? group.color : ''}>{group.name}</span>
               </button>
             );
           })}
@@ -1292,14 +1198,14 @@ export default function AdminDataMaintenance() {
       </div>
 
       <div className="max-w-7xl mx-auto px-6 py-6">
-        <div className="grid grid-cols-12 gap-3 sm:p-4 lg:p-6">
+        <div className="grid grid-cols-12 gap-6">
           {/* Sidebar - Table List */}
-          <div className="col-span-3">
-            <Card accent={currentGroup.color.replace('#', '').toUpperCase()}>
-              <h3 className="text-lg font-bold mb-4" style={{ color: COLORS.NAVY }}>
+          <div className="col-span-12 lg:col-span-3">
+            <Card accentColor={currentGroup.accentColor}>
+              <h3 className="text-lg font-bold mb-4 text-corporate-navy">
                 {currentGroup.name}
               </h3>
-              <p className="text-sm text-gray-600 mb-4">
+              <p className="text-sm text-slate-600 mb-4">
                 {currentGroup.description}
               </p>
               
@@ -1313,12 +1219,12 @@ export default function AdminDataMaintenance() {
                       onClick={() => setActiveTable(key)}
                       className={`w-full text-left px-4 py-3 rounded-lg font-medium transition-all ${
                         isActive 
-                          ? 'bg-white shadow-md' 
-                          : 'hover:bg-gray-50'
+                          ? 'bg-white shadow-md border-l-4' 
+                          : 'hover:bg-slate-50 border-l-4 border-transparent'
                       }`}
                       style={{
-                        color: isActive ? currentGroup.color : COLORS.MUTED,
-                        borderLeft: isActive ? `4px solid ${currentGroup.color}` : '4px solid transparent'
+                        borderColor: isActive ? (currentGroup.accentColor.replace('bg-', '')) : 'transparent',
+                        color: isActive ? '#002E47' : '#64748b'
                       }}
                     >
                       <div className="flex items-center justify-between">
@@ -1338,12 +1244,12 @@ export default function AdminDataMaintenance() {
           </div>
 
           {/* Main Content - Table Editor */}
-          <div className="col-span-9">
+          <div className="col-span-12 lg:col-span-9">
             {currentTable && (currentGroup.isGlobal || targetUserId) ? (
               <Card 
                 title={currentTable.name}
                 icon={Database}
-                accent={currentGroup.color.replace('#', '').toUpperCase()}
+                accentColor={currentGroup.accentColor}
               >
                 <TableViewer
                   groupKey={activeGroup}
@@ -1353,13 +1259,13 @@ export default function AdminDataMaintenance() {
                 />
               </Card>
             ) : (
-              <Card accent={currentGroup.color.replace('#', '').toUpperCase()}>
+              <Card accentColor={currentGroup.accentColor}>
                 <div className="p-12 text-center">
-                  <Search className="w-16 h-16 mx-auto mb-4 text-gray-400" />
-                  <h3 className="text-xl font-bold mb-2" style={{ color: COLORS.NAVY }}>
+                  <Search className="w-16 h-16 mx-auto mb-4 text-slate-400" />
+                  <h3 className="text-xl font-bold mb-2 text-corporate-navy">
                     Enter a User ID
                   </h3>
-                  <p className="text-gray-600">
+                  <p className="text-slate-600">
                     Please enter a user ID above to view and edit their data
                   </p>
                 </div>
@@ -1369,8 +1275,8 @@ export default function AdminDataMaintenance() {
         </div>
 
         {/* Help Section */}
-        <div className="mt-8 grid grid-cols-2 gap-3 sm:p-4 lg:p-6">
-          <Card accent="BLUE">
+        <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-6">
+          <Card accentColor="bg-blue-600">
             <div className="flex items-start gap-3">
               <FileText className="text-blue-600 flex-shrink-0 mt-1" size={20} />
               <div className="text-sm">
@@ -1388,7 +1294,7 @@ export default function AdminDataMaintenance() {
             </div>
           </Card>
           
-          <Card accent="PURPLE">
+          <Card accentColor="bg-purple-600">
             <div className="flex items-start gap-3">
               <Settings className="text-purple-600 flex-shrink-0 mt-1" size={20} />
               <div className="text-sm">

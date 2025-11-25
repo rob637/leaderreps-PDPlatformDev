@@ -23,14 +23,6 @@ import {
   CONTENT_COLLECTIONS 
 } from '../../services/contentService';
 
-const COLORS = {
-  NAVY: '#002E47',
-  ORANGE: '#E04E1B',
-  TEAL: '#47A88D',
-  LIGHT_GRAY: '#FCFCFA',
-  MUTED: '#6B7280'
-};
-
 const CoachingManager = () => {
   const { db, navigate } = useAppServices();
   const [scenarios, setScenarios] = useState([]);
@@ -159,19 +151,18 @@ const CoachingManager = () => {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <Loader className="w-8 h-8 animate-spin" style={{ color: COLORS.TEAL }} />
+        <Loader className="w-8 h-8 animate-spin text-corporate-teal" />
       </div>
     );
   }
 
   return (
-    <div className="p-6 max-w-7xl mx-auto" style={{ backgroundColor: COLORS.LIGHT_GRAY, minHeight: '100vh' }}>
+    <div className="p-6 max-w-7xl mx-auto bg-slate-50 min-h-screen">
       {/* Header */}
       <div className="mb-6">
         <button
           onClick={() => navigate('admin-content-home')}
-          className="flex items-center gap-2 text-sm mb-4 hover:opacity-70"
-          style={{ color: COLORS.MUTED }}
+          className="flex items-center gap-2 text-sm mb-4 hover:opacity-70 text-slate-500"
         >
           <ArrowLeft className="w-4 h-4" />
           Back to Admin
@@ -179,16 +170,15 @@ const CoachingManager = () => {
         
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <BrainCircuit className="w-8 h-8" style={{ color: COLORS.TEAL }} />
-            <h1 className="text-3xl font-bold" style={{ color: COLORS.NAVY }}>
+            <BrainCircuit className="w-8 h-8 text-corporate-teal" />
+            <h1 className="text-3xl font-bold text-corporate-navy">
               Coaching Scenarios
             </h1>
           </div>
           
           <button
             onClick={handleAdd}
-            className="flex items-center gap-2 px-4 py-2 rounded-lg font-semibold text-white transition-all"
-            style={{ backgroundColor: COLORS.TEAL }}
+            className="flex items-center gap-2 px-4 py-2 rounded-lg font-semibold text-white transition-all bg-corporate-teal"
           >
             <Plus className="w-5 h-5" />
             Add Scenario
@@ -198,14 +188,14 @@ const CoachingManager = () => {
 
       {/* Edit Form */}
       {editingItem && (
-        <div className="mb-6 p-6 bg-white rounded-xl shadow-lg border-2" style={{ borderColor: COLORS.TEAL }}>
-          <h2 className="text-xl font-bold mb-4" style={{ color: COLORS.NAVY }}>
+        <div className="mb-6 p-6 bg-white rounded-xl shadow-lg border-2 border-corporate-teal">
+          <h2 className="text-xl font-bold mb-4 text-corporate-navy">
             {isAddingNew ? 'Add New Scenario' : 'Edit Scenario'}
           </h2>
           
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-semibold mb-1" style={{ color: COLORS.NAVY }}>
+              <label className="block text-sm font-semibold mb-1 text-corporate-navy">
                 Scenario Title *
               </label>
               <input
@@ -218,7 +208,7 @@ const CoachingManager = () => {
             </div>
 
             <div>
-              <label className="block text-sm font-semibold mb-1" style={{ color: COLORS.NAVY }}>
+              <label className="block text-sm font-semibold mb-1 text-corporate-navy">
                 Description (Short) *
               </label>
               <textarea
@@ -232,7 +222,7 @@ const CoachingManager = () => {
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-semibold mb-1" style={{ color: COLORS.NAVY }}>
+                <label className="block text-sm font-semibold mb-1 text-corporate-navy">
                   Persona (Role) *
                 </label>
                 <input
@@ -244,7 +234,7 @@ const CoachingManager = () => {
                 />
               </div>
               <div>
-                <label className="block text-sm font-semibold mb-1" style={{ color: COLORS.NAVY }}>
+                <label className="block text-sm font-semibold mb-1 text-corporate-navy">
                   Difficulty Level (0-100)
                 </label>
                 <input
@@ -259,7 +249,7 @@ const CoachingManager = () => {
             </div>
 
             <div>
-              <label className="block text-sm font-semibold mb-1" style={{ color: COLORS.NAVY }}>
+              <label className="block text-sm font-semibold mb-1 text-corporate-navy">
                 Context (Detailed Background)
               </label>
               <textarea
@@ -272,7 +262,7 @@ const CoachingManager = () => {
             </div>
 
             <div>
-              <label className="block text-sm font-semibold mb-1" style={{ color: COLORS.NAVY }}>
+              <label className="block text-sm font-semibold mb-1 text-corporate-navy">
                 Suggested Approach
               </label>
               <textarea
@@ -285,7 +275,7 @@ const CoachingManager = () => {
             </div>
 
             <div>
-              <label className="block text-sm font-semibold mb-1" style={{ color: COLORS.NAVY }}>
+              <label className="block text-sm font-semibold mb-1 text-corporate-navy">
                 Learning Objectives
               </label>
               <div className="space-y-2">
@@ -322,7 +312,7 @@ const CoachingManager = () => {
                 onChange={(e) => setEditingItem({ ...editingItem, isActive: e.target.checked })}
                 className="w-4 h-4"
               />
-              <label className="text-sm font-semibold" style={{ color: COLORS.NAVY }}>
+              <label className="text-sm font-semibold text-corporate-navy">
                 Active (visible in library)
               </label>
             </div>
@@ -330,8 +320,7 @@ const CoachingManager = () => {
             <div className="flex gap-3 pt-4">
               <button
                 onClick={handleSave}
-                className="flex items-center gap-2 px-6 py-2 rounded-lg font-semibold text-white"
-                style={{ backgroundColor: COLORS.TEAL }}
+                className="flex items-center gap-2 px-6 py-2 rounded-lg font-semibold text-white bg-corporate-teal"
               >
                 <Save className="w-4 h-4" />
                 Save
@@ -341,8 +330,7 @@ const CoachingManager = () => {
                   setEditingItem(null);
                   setIsAddingNew(false);
                 }}
-                className="flex items-center gap-2 px-6 py-2 rounded-lg font-semibold"
-                style={{ backgroundColor: COLORS.LIGHT_GRAY, color: COLORS.MUTED }}
+                className="flex items-center gap-2 px-6 py-2 rounded-lg font-semibold bg-slate-50 text-slate-500"
               >
                 <X className="w-4 h-4" />
                 Cancel
@@ -356,20 +344,16 @@ const CoachingManager = () => {
       <div className="space-y-4">
         {scenarios.length === 0 ? (
           <div className="text-center py-12 bg-white rounded-xl">
-            <p style={{ color: COLORS.MUTED }}>No scenarios yet. Create your first one.</p>
+            <p className="text-slate-500">No scenarios yet. Create your first one.</p>
           </div>
         ) : (
           scenarios.map((scenario) => (
             <div
               key={scenario.id}
-              className="p-4 bg-white rounded-xl shadow-sm border flex items-center justify-between"
-              style={{ 
-                borderColor: scenario.isActive ? COLORS.TEAL : COLORS.MUTED,
-                opacity: scenario.isActive ? 1 : 0.6
-              }}
+              className={`p-4 bg-white rounded-xl shadow-sm border flex items-center justify-between ${scenario.isActive ? 'border-corporate-teal' : 'border-slate-300 opacity-60'}`}
             >
               <div className="flex-1">
-                <h3 className="font-bold text-lg" style={{ color: COLORS.NAVY }}>
+                <h3 className="font-bold text-lg text-corporate-navy">
                   {scenario.title}
                 </h3>
                 <p className="text-sm text-gray-600 mb-2">{scenario.description}</p>
@@ -390,9 +374,9 @@ const CoachingManager = () => {
                   title={scenario.isActive ? 'Deactivate' : 'Activate'}
                 >
                   {scenario.isActive ? (
-                    <Eye className="w-5 h-5" style={{ color: COLORS.TEAL }} />
+                    <Eye className="w-5 h-5 text-corporate-teal" />
                   ) : (
-                    <EyeOff className="w-5 h-5" style={{ color: COLORS.MUTED }} />
+                    <EyeOff className="w-5 h-5 text-slate-500" />
                   )}
                 </button>
                 <button
@@ -400,14 +384,14 @@ const CoachingManager = () => {
                   className="p-2 rounded-lg hover:bg-gray-100"
                   title="Edit"
                 >
-                  <Edit className="w-5 h-5" style={{ color: COLORS.NAVY }} />
+                  <Edit className="w-5 h-5 text-corporate-navy" />
                 </button>
                 <button
                   onClick={() => handleDelete(scenario)}
                   className="p-2 rounded-lg hover:bg-gray-100"
                   title="Delete"
                 >
-                  <Trash2 className="w-5 h-5" style={{ color: COLORS.ORANGE }} />
+                  <Trash2 className="w-5 h-5 text-corporate-orange" />
                 </button>
               </div>
             </div>

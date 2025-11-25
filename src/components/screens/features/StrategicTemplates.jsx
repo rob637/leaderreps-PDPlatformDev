@@ -1,30 +1,43 @@
 import React from 'react';
 import { FileText, Download } from 'lucide-react';
+import { Card, Text, PageLayout, PageGrid } from '../../ui';
+import { useAppServices } from '../../../services/useAppServices';
 
-const StrategicTemplates = () => (
-  <div className="p-8 max-w-6xl mx-auto">
-    <header className="mb-8">
-      <h1 className="text-3xl font-bold text-corporate-navy">Strategic Templates</h1>
-      <p className="text-slate-500">Downloadable worksheets and tools for your team.</p>
-    </header>
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-      {['Quarterly Planning', '1-on-1 Meeting Guide', 'Performance Review', 'Team Charter'].map((title, i) => (
-        <div key={i} className="bg-white p-6 rounded-xl shadow-sm border border-slate-200 flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <div className="p-3 bg-green-100 text-green-600 rounded-lg">
-              <FileText className="w-6 h-6" />
+const StrategicTemplates = () => {
+  const { navigate } = useAppServices();
+  
+  return (
+    <PageLayout
+      title="Strategic Templates"
+      icon={FileText}
+      subtitle="Downloadable worksheets and tools for your team."
+      navigate={navigate}
+      backTo="library"
+      backLabel="Back to Library"
+      accentColor="teal"
+    >
+      <PageGrid cols={2}>
+        {['Quarterly Planning', '1-on-1 Meeting Guide', 'Performance Review', 'Team Charter'].map((title, i) => (
+          <Card key={i}>
+            <div className="p-6 flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <div className="p-3 bg-corporate-teal/10 text-corporate-teal rounded-lg">
+                  <FileText className="w-6 h-6" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-corporate-navy">{title}</h3>
+                  <Text variant="small">PDF & Excel Formats</Text>
+                </div>
+              </div>
+              <button className="p-2 text-slate-400 hover:text-corporate-teal transition-colors">
+                <Download className="w-5 h-5" />
+              </button>
             </div>
-            <div>
-              <h3 className="font-bold text-corporate-navy">{title}</h3>
-              <p className="text-xs text-slate-500">PDF & Excel Formats</p>
-            </div>
-          </div>
-          <button className="p-2 text-slate-400 hover:text-corporate-teal">
-            <Download className="w-5 h-5" />
-          </button>
-        </div>
-      ))}
-    </div>
-  </div>
-);
+          </Card>
+        ))}
+      </PageGrid>
+    </PageLayout>
+  );
+};
+
 export default StrategicTemplates;

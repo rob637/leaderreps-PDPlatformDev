@@ -2,7 +2,16 @@
 // Standardized UI components for consistent look across all screens
 
 import React from 'react';
-import { CORPORATE_COLORS, CORPORATE_CLASSES, CORPORATE_STYLES } from '../../styles/corporateConstants.js';
+import { ArrowLeft } from 'lucide-react';
+
+const CORPORATE_CLASSES = {
+  PAGE_CONTAINER: 'page-corporate container-corporate animate-corporate-fade-in',
+  HEADING_XL: 'corporate-heading-xl',
+  HEADING_LG: 'corporate-heading-lg', 
+  HEADING_MD: 'corporate-heading-md',
+  TEXT_BODY: 'corporate-text-body',
+  BACK_BUTTON: 'flex items-center gap-2 mb-6 text-gray-600 hover:text-gray-800 cursor-pointer transition-colors'
+};
 
 /* =========================================================
    STANDARDIZED BUTTON COMPONENT
@@ -33,12 +42,12 @@ export const Button = ({ children, onClick, disabled = false, variant = 'primary
   }
 
   const buttonStyle = {
-    ...(variant === 'primary' && { backgroundColor: CORPORATE_COLORS.TEAL, '--tw-ring-color': CORPORATE_COLORS.TEAL }),
-    ...(variant === 'secondary' && { backgroundColor: CORPORATE_COLORS.ORANGE, '--tw-ring-color': CORPORATE_COLORS.ORANGE }),
+    ...(variant === 'primary' && { backgroundColor: '#47A88D', '--tw-ring-color': '#47A88D' }),
+    ...(variant === 'secondary' && { backgroundColor: '#E04E1B', '--tw-ring-color': '#E04E1B' }),
     ...(variant === 'outline' && { 
-      borderColor: CORPORATE_COLORS.TEAL, 
-      color: CORPORATE_COLORS.TEAL,
-      '--tw-ring-color': CORPORATE_COLORS.TEAL 
+      borderColor: 'var(--corporate-teal)', 
+      color: 'var(--corporate-teal)',
+      '--tw-ring-color': '#47A88D' 
     })
   };
 
@@ -61,7 +70,21 @@ export const Button = ({ children, onClick, disabled = false, variant = 'primary
 export const Card = ({ children, title, icon: Icon, className = '', onClick, accent = 'TEAL' }) => {
   const interactive = !!onClick;
   const Tag = interactive ? 'button' : 'div';
-  const accentColor = CORPORATE_COLORS[accent] || CORPORATE_COLORS.TEAL;
+  
+  const accentMap = {
+    NAVY: '#002E47',
+    TEAL: '#47A88D',
+    ORANGE: '#E04E1B',
+    SUBTLE_TEAL: '#349881',
+    LIGHT_GRAY: '#FCFCFA',
+    PRIMARY: '#47A88D',
+    SECONDARY: '#E04E1B',
+    SUCCESS: '#47A88D',
+    WARNING: '#E04E1B',
+    DANGER: '#E04E1B',
+    INFO: '#47A88D'
+  };
+  const accentColor = accentMap[accent] || accentMap.TEAL;
 
   const handleKeyDown = (e) => {
     if (!interactive) return;
@@ -82,7 +105,7 @@ export const Card = ({ children, title, icon: Icon, className = '', onClick, acc
       style={{
         background: 'linear-gradient(180deg, #FFFFFF, #FCFCFA)',
         borderColor: '#E5E7EB',
-        color: CORPORATE_COLORS.NAVY
+        color: 'var(--corporate-navy)'
       }}
       onClick={onClick}
     >
@@ -102,7 +125,7 @@ export const Card = ({ children, title, icon: Icon, className = '', onClick, acc
       {Icon && title && (
         <div className="flex items-center gap-3 mb-4">
           <Icon className="w-6 h-6 flex-shrink-0" style={{ color: accentColor }} />
-          <h2 className={CORPORATE_CLASSES.HEADING_LG} style={{ color: CORPORATE_COLORS.NAVY }}>
+          <h2 className={CORPORATE_CLASSES.HEADING_LG} style={{ color: 'var(--corporate-navy)' }}>
             {title}
           </h2>
         </div>
@@ -120,15 +143,15 @@ export const PageHeader = ({ title, subtitle, icon: Icon }) => (
   <div className="text-center mb-8">
     {Icon && (
       <div className="flex items-center justify-center gap-2 mb-4">
-        <Icon className="w-8 h-8" style={{ color: CORPORATE_COLORS.TEAL }} />
-        <h1 className={CORPORATE_CLASSES.HEADING_XL} style={CORPORATE_STYLES.MAIN_HEADER}>
+        <Icon className="w-8 h-8" style={{ color: 'var(--corporate-teal)' }} />
+        <h1 className={CORPORATE_CLASSES.HEADING_XL} style={{ color: 'var(--corporate-navy)' }}>
           {title}
         </h1>
-        <Icon className="w-8 h-8" style={{ color: CORPORATE_COLORS.TEAL }} />
+        <Icon className="w-8 h-8" style={{ color: 'var(--corporate-teal)' }} />
       </div>
     )}
     {!Icon && (
-      <h1 className={CORPORATE_CLASSES.HEADING_XL} style={CORPORATE_STYLES.MAIN_HEADER}>
+      <h1 className={CORPORATE_CLASSES.HEADING_XL} style={{ color: 'var(--corporate-navy)' }}>
         {title}
       </h1>
     )}
@@ -143,12 +166,9 @@ export const PageHeader = ({ title, subtitle, icon: Icon }) => (
 /* =========================================================
    STANDARDIZED BACK BUTTON
 ========================================================= */
-export const BackButton = ({ onClick, children = "Back to The Arena" }) => (
+export const BackButton = ({ onClick, children = "Back to Dashboard" }) => (
   <div className={CORPORATE_CLASSES.BACK_BUTTON} onClick={onClick}>
     <ArrowLeft className="w-4 h-4" />
     <span className="text-sm font-medium">{children}</span>
   </div>
 );
-
-// Import ArrowLeft for BackButton
-import { ArrowLeft } from 'lucide-react';

@@ -19,7 +19,6 @@ import {
   ASSESSMENT_QUESTIONS, 
   OPEN_ENDED_QUESTION, 
   LIKERT_SCALE, 
-  COLORS, 
   generatePlanFromAssessment 
 } from './devPlanUtils';
 import { adaptFirebaseAssessmentToComponents } from '../../../utils/devPlanAdapter';
@@ -32,16 +31,16 @@ const RadioButtonInput = ({ question, options, value, onChange }) => {
     <div 
       className="p-3 sm:p-4 lg:p-6 rounded-lg transition-all"
       style={{ 
-        background: isFocused ? 'white' : COLORS.BG,
-        border: `2px solid ${isFocused ? COLORS.TEAL : 'transparent'}`
+        background: isFocused ? 'white' : 'var(--corporate-light-gray)',
+        border: `2px solid ${isFocused ? 'var(--corporate-teal)' : 'transparent'}`
       }}
       onFocus={() => setIsFocused(true)}
       onBlur={() => setIsFocused(false)}
     >
-      <label className="block text-base font-semibold mb-1" style={{ color: COLORS.NAVY }}>
+      <label className="block text-base font-semibold mb-1" style={{ color: 'var(--corporate-navy)' }}>
         {question.text}
       </label>
-      <p className="text-sm mb-4" style={{ color: COLORS.MUTED }}>
+      <p className="text-sm mb-4" style={{ color: 'var(--corporate-teal)' }}>
         {question.description}
       </p>
       
@@ -58,12 +57,12 @@ const RadioButtonInput = ({ question, options, value, onChange }) => {
                 checked={value === option.value}
                 onChange={() => onChange(question.id, option.value)}
                 className="h-5 w-5 border-gray-300"
-                style={{ color: COLORS.TEAL, accentColor: COLORS.TEAL }}
+                style={{ color: 'var(--corporate-teal)', accentColor: 'var(--corporate-teal)' }}
               />
               <label 
                 htmlFor={`${question.id}-${option.value}`} 
                 className="ml-2 block text-sm font-medium"
-                style={{ color: COLORS.TEXT }}
+                style={{ color: 'var(--corporate-navy)' }}
               >
                 {option.label}
               </label>
@@ -177,10 +176,10 @@ const ProgressScan = ({
         <div className="p-4 sm:p-3 sm:p-4 lg:p-6">
         <Card accent="GREEN">
           <div className="mb-6">
-            <h2 className="text-xl sm:text-2xl sm:text-3xl font-extrabold mb-2" style={{ color: COLORS.NAVY }}>
+            <h2 className="text-xl sm:text-2xl sm:text-3xl font-extrabold mb-2" style={{ color: 'var(--corporate-navy)' }}>
               Your Progress
             </h2>
-            <p className="text-lg" style={{ color: COLORS.MUTED }}>
+            <p className="text-lg" style={{ color: 'var(--corporate-teal)' }}>
               Compare your current assessment with your previous baseline.
             </p>
           </div>
@@ -196,16 +195,16 @@ const ProgressScan = ({
                 <div
                   key={question.id}
                   className="p-4 rounded-xl border-2"
-                  style={{ borderColor: COLORS.SUBTLE, background: 'white' }}
+                  style={{ borderColor: 'var(--corporate-teal)', background: 'white' }}
                 >
-                  <p className="text-base font-semibold mb-3" style={{ color: COLORS.NAVY }}>
+                  <p className="text-base font-semibold mb-3" style={{ color: 'var(--corporate-navy)' }}>
                     {question.text}
                   </p>
                   <div className="flex items-center gap-4">
                     <div className="flex-1">
                       <div className="flex items-center justify-between mb-1">
-                        <span className="text-xs font-semibold" style={{ color: COLORS.MUTED }}>Previous: {prevScore}/5</span>
-                        <span className="text-xs font-semibold" style={{ color: COLORS.TEAL }}>Current: {newScore}/5</span>
+                        <span className="text-xs font-semibold" style={{ color: 'var(--corporate-teal)' }}>Previous: {prevScore}/5</span>
+                        <span className="text-xs font-semibold" style={{ color: 'var(--corporate-teal)' }}>Current: {newScore}/5</span>
                       </div>
                       <div className="w-full bg-gray-200 rounded-full h-2.5">
                         <div 
@@ -256,7 +255,7 @@ const ProgressScan = ({
   const isTotalLoading = isLoading || isGenerating;
   
   return (
-    <div className="p-4 sm:p-3 sm:p-4 lg:p-6" style={{ background: COLORS.BG }}>
+    <div className="p-4 sm:p-3 sm:p-4 lg:p-6 bg-corporate-light-gray">
       
       {/* REQ #3: Added Back Button */}
       <div className="mb-4">
@@ -268,26 +267,26 @@ const ProgressScan = ({
 
       {/* Header Card */}
       <Card accent="GREEN">
-        <h1 className="text-xl sm:text-2xl sm:text-3xl font-extrabold mb-2" style={{ color: COLORS.NAVY }}>
+        <h1 className="text-xl sm:text-2xl sm:text-3xl font-extrabold mb-2" style={{ color: 'var(--corporate-navy)' }}>
           Progress Scan
         </h1>
-        <p className="text-lg" style={{ color: COLORS.MUTED }}>
+        <p className="text-lg" style={{ color: 'var(--corporate-teal)' }}>
           Let's reassess your leadership effectiveness to see how you've grown.
         </p>
       </Card>
 
       {/* Sticky Progress Bar */}
-      <div className="sticky top-0 z-10 py-4" style={{ background: `${COLORS.BG}F0` }}>
+      <div className="sticky top-0 z-10 py-4 bg-corporate-light-gray/95">
         <div>
           <div className="flex justify-between text-sm mb-2 px-1">
-            <span className="font-semibold" style={{ color: COLORS.GREEN }}>
+            <span className="font-semibold" style={{ color: 'var(--corporate-teal)' }}>
               {completedQuestions} of {totalQuestions} Questions Answered
             </span>
-            <span className="font-semibold" style={{ color: COLORS.GREEN }}>
+            <span className="font-semibold" style={{ color: 'var(--corporate-teal)' }}>
               {Math.round(progress)}%
             </span>
           </div>
-          <ProgressBar progress={progress} color={COLORS.GREEN} height={12} />
+          <ProgressBar progress={progress} color={'var(--corporate-teal)'} height={12} />
         </div>
       </div>
 
@@ -307,8 +306,8 @@ const ProgressScan = ({
                 onChange={handleResponse}
               />
               {prevScore && (
-                <div className="px-6 py-2 rounded-b-xl" style={{ backgroundColor: `${COLORS.TEAL}10` }}>
-                  <p className="text-xs font-medium" style={{ color: COLORS.TEAL }}>
+                <div className="px-6 py-2 rounded-b-xl" style={{ backgroundColor: 'var(--corporate-teal-10)' }}>
+                  <p className="text-xs font-medium" style={{ color: 'var(--corporate-teal)' }}>
                     Your previous score was: **{prevScore}/5**
                   </p>
                 </div>
@@ -319,15 +318,14 @@ const ProgressScan = ({
 
         {/* Open-ended question */}
         <Card accent="ORANGE">
-          <label className="block text-lg font-semibold mb-3" style={{ color: COLORS.NAVY }}>
+          <label className="block text-lg font-semibold mb-3" style={{ color: 'var(--corporate-navy)' }}>
             {OPEN_ENDED_QUESTION.text}
           </label>
-           <p className="text-sm mb-3" style={{ color: COLORS.MUTED }}>
+           <p className="text-sm mb-3" style={{ color: 'var(--corporate-teal)' }}>
             {OPEN_ENDED_QUESTION.placeholder}
           </p>
           <textarea
-            className="w-full p-4 border rounded-lg focus:ring-2 transition-all"
-            style={{ borderColor: COLORS.SUBTLE, ringColor: COLORS.ORANGE }}
+            className="w-full p-4 border rounded-lg focus:ring-2 transition-all border-corporate-teal focus:ring-corporate-orange"
             rows={4}
             value={openEndedResponse}
             onChange={(e) => setOpenEndedResponse(e.target.value)}
@@ -353,7 +351,7 @@ const ProgressScan = ({
             {isTotalLoading ? 'Generating Plan...' : 'Review My Progress'}
           </Button>
           {!isComplete && (
-            <p className="text-center text-sm mt-3" style={{ color: COLORS.MUTED }}>
+            <p className="text-center text-sm mt-3" style={{ color: 'var(--corporate-teal)' }}>
               Please answer all {totalQuestions} questions to continue.
             </p>
           )}

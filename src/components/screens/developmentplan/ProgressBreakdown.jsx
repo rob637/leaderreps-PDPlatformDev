@@ -5,7 +5,7 @@
 import React, { useMemo, useEffect } from 'react';
 import { TrendingUp, Target, Award } from 'lucide-react';
 import { Card, ProgressBar, Badge } from './DevPlanComponents';
-import { COLORS, calculateSkillProgress } from './devPlanUtils';
+import { calculateSkillProgress } from './devPlanUtils';
 
 const ProgressBreakdown = ({ plan, globalMetadata }) => {
   // Width debugging
@@ -77,16 +77,16 @@ const ProgressBreakdown = ({ plan, globalMetadata }) => {
     );
   }
 
-  // Focus area colors
+  // Focus area colors - use CSS variable names for consistency
   const areaColors = {
-    'Clarity & Communication': COLORS.BLUE,
-    'Trust & Relationships': COLORS.TEAL,
-    'Delegation & Empowerment': COLORS.PURPLE,
-    'Execution & Results': COLORS.ORANGE,
-    'Leadership Mindset & Identity': COLORS.NAVY,
-    'Ownership & Accountability': COLORS.GREEN,
-    'Recognition & Motivation': COLORS.PINK,
-    'Team Health & Culture': COLORS.GOLD
+    'Clarity & Communication': 'var(--corporate-navy)',
+    'Trust & Relationships': 'var(--corporate-teal)',
+    'Delegation & Empowerment': 'var(--corporate-teal)',
+    'Execution & Results': 'var(--corporate-orange)',
+    'Leadership Mindset & Identity': 'var(--corporate-navy)',
+    'Ownership & Accountability': 'var(--corporate-teal)',
+    'Recognition & Motivation': 'var(--corporate-orange)',
+    'Team Health & Culture': 'var(--corporate-orange)'
   };
 
   return (
@@ -95,7 +95,7 @@ const ProgressBreakdown = ({ plan, globalMetadata }) => {
       <Card accent="BLUE">
         <div className="flex items-center justify-between mb-4">
           <div>
-            <h2 className="text-xl sm:text-2xl font-bold" style={{ color: COLORS.NAVY }}>
+            <h2 className="text-xl sm:text-2xl font-bold" style={{ color: 'var(--corporate-navy)' }}>
               Overall Progress
             </h2>
             <p className="text-gray-600">
@@ -103,20 +103,20 @@ const ProgressBreakdown = ({ plan, globalMetadata }) => {
             </p>
           </div>
           <div className="text-right">
-            <div className="text-xl sm:text-2xl sm:text-3xl font-bold" style={{ color: COLORS.BLUE }}>
+            <div className="text-xl sm:text-2xl sm:text-3xl font-bold" style={{ color: 'var(--corporate-navy)' }}>
               {overallProgress}%
             </div>
             <p className="text-sm text-gray-600">complete</p>
           </div>
         </div>
-        <ProgressBar progress={overallProgress} color={COLORS.BLUE} />
+        <ProgressBar progress={overallProgress} color={'var(--corporate-navy)'} />
       </Card>
 
       {/* Skills by Focus Area */}
       {Object.entries(skillsByFocusArea).map(([area, skills]) => {
         if (skills.length === 0) return null;
         
-        const areaColor = areaColors[area] || COLORS.ORANGE;
+        const areaColor = areaColors[area] || 'var(--corporate-orange)';
         const areaProgress = Math.round(
           skills.reduce((sum, s) => sum + s.progress, 0) / skills.length
         );
@@ -149,13 +149,13 @@ const ProgressBreakdown = ({ plan, globalMetadata }) => {
                     key={skill.skillId || idx}
                     className="p-4 rounded-lg border-2"
                     style={{
-                      borderColor: isComplete ? areaColor : COLORS.SUBTLE,
+                      borderColor: isComplete ? areaColor : '#E5E7EB',
                       background: isComplete ? `${areaColor}08` : 'white'
                     }}
                   >
                     <div className="flex items-center justify-between mb-3">
                       <div className="flex-1">
-                        <h3 className="font-semibold mb-1" style={{ color: COLORS.NAVY }}>
+                        <h3 className="font-semibold mb-1" style={{ color: 'var(--corporate-navy)' }}>
                           {skill.skillName}
                         </h3>
                         {skill.phase && (
@@ -166,7 +166,7 @@ const ProgressBreakdown = ({ plan, globalMetadata }) => {
                       </div>
                       <div className="flex items-center gap-2">
                         {isMastered && (
-                          <Award size={20} style={{ color: COLORS.GOLD }} />
+                          <Award size={20} style={{ color: 'var(--corporate-orange)' }} />
                         )}
                         <span className="text-sm font-medium" style={{ color: areaColor }}>
                           {skill.weeksCompleted || 0} weeks
@@ -185,8 +185,8 @@ const ProgressBreakdown = ({ plan, globalMetadata }) => {
       {/* Insights */}
       <Card accent="TEAL">
         <div className="flex items-center gap-3 mb-3">
-          <TrendingUp size={24} style={{ color: COLORS.TEAL }} />
-          <h3 className="font-bold" style={{ color: COLORS.NAVY }}>
+          <TrendingUp size={24} style={{ color: 'var(--corporate-teal)' }} />
+          <h3 className="font-bold" style={{ color: 'var(--corporate-navy)' }}>
             Key Insights
           </h3>
         </div>

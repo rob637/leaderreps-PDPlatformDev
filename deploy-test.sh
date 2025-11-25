@@ -14,6 +14,19 @@ NC='\033[0m'
 
 echo -e "${BLUE}🧪 Starting TEST Deployment...${NC}"
 
+# 0. UI Architecture Check (Prevents architectural drift)
+echo -e "${BLUE}🏛️  Running UI Architecture Check...${NC}"
+if [ -f "./scripts/ui-architecture-check.sh" ]; then
+    chmod +x ./scripts/ui-architecture-check.sh
+    if ! ./scripts/ui-architecture-check.sh; then
+        echo -e "${RED}❌ Deployment blocked: UI architecture violations detected.${NC}"
+        echo -e "${RED}   Fix the issues above before deploying.${NC}"
+        exit 1
+    fi
+else
+    echo -e "${YELLOW}⚠️  UI architecture check script not found, skipping...${NC}"
+fi
+
 # 1. Handle Git (Commit & Push)
 if [ -n "$(git status --porcelain)" ]; then
     if [ -z "$1" ]; then

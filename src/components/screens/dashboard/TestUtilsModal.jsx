@@ -39,7 +39,7 @@ const TestUtilsModal = ({ isOpen, onDeletePlan, onClose, membershipData, updateM
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-2xl p-3 sm:p-4 lg:p-6 max-w-md w-full">
-        <h2 className="text-xl sm:text-2xl font-bold mb-2" style={{ color: COLORS.NAVY }}>
+        <h2 className="text-xl sm:text-2xl font-bold mb-2 text-corporate-navy">
           ⚙️ Test Utilities (Danger Zone)
         </h2>
         <p className="text-sm text-red-600 mb-4">
@@ -82,7 +82,7 @@ const TestUtilsModal = ({ isOpen, onDeletePlan, onClose, membershipData, updateM
           </Button>
         )}
 
-        <div className="pt-4 mt-4 border-t" style={{ borderColor: COLORS.SUBTLE }}>
+        <div className="pt-4 mt-4 border-t border-slate-200">
           <Button onClick={onClose} variant="ghost" size="sm" className="w-full">Close</Button>
         </div>
       </div>

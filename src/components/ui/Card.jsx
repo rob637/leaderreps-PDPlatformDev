@@ -1,0 +1,154 @@
+import React from 'react';
+import { cn } from '../../lib/utils';
+
+// --- COMPOSABLE COMPONENTS ---
+const CardHeader = React.forwardRef(({ className, ...props }, ref) => (
+  <div
+    ref={ref}
+    className={cn("flex flex-col space-y-1.5 p-6", className)}
+    {...props}
+  />
+));
+CardHeader.displayName = "CardHeader";
+
+const CardTitle = React.forwardRef(({ className, icon: Icon, iconColor, children, ...props }, ref) => (
+  <h3
+    ref={ref}
+    className={cn("text-2xl font-semibold leading-none tracking-tight flex items-center gap-2", className)}
+    {...props}
+  >
+    {Icon && <Icon className={cn("w-6 h-6", iconColor)} />}
+    {children}
+  </h3>
+));
+CardTitle.displayName = "CardTitle";
+
+const CardDescription = React.forwardRef(({ className, ...props }, ref) => (
+  <p
+    ref={ref}
+    className={cn("text-sm text-slate-500", className)}
+    {...props}
+  />
+));
+CardDescription.displayName = "CardDescription";
+
+const CardContent = React.forwardRef(({ className, ...props }, ref) => (
+  <div ref={ref} className={cn("p-6 pt-0", className)} {...props} />
+));
+CardContent.displayName = "CardContent";
+
+const CardFooter = React.forwardRef(({ className, ...props }, ref) => (
+  <div
+    ref={ref}
+    className={cn("flex items-center p-6 pt-0", className)}
+    {...props}
+  />
+));
+CardFooter.displayName = "CardFooter";
+
+// --- SMART CARD (Legacy/Convenience Wrapper) ---
+const Card = React.forwardRef(({ 
+  className, 
+  variant = 'default', 
+  accent = 'none',
+  title,
+  icon: Icon,
+  children,
+  onClick,
+  ...props 
+}, ref) => {
+  
+  const variants = {
+    default: 'bg-white border border-slate-200 shadow-sm',
+    elevated: 'bg-white border-none shadow-xl',
+    flat: 'bg-slate-50 border border-slate-200 shadow-none',
+    interactive: 'bg-white border border-slate-200 shadow-sm hover:shadow-md cursor-pointer transition-shadow',
+  };
+
+  // Map accents to specific border-top colors using Tailwind classes
+  const accents = {
+    none: '',
+    navy: 'border-t-4 border-t-corporate-navy',
+    teal: 'border-t-4 border-t-corporate-teal',
+    orange: 'border-t-4 border-t-corporate-orange',
+    red: 'border-t-4 border-t-red-500',
+    green: 'border-t-4 border-t-green-500',
+    blue: 'border-t-4 border-t-blue-500',
+    yellow: 'border-t-4 border-t-yellow-500',
+    purple: 'border-t-4 border-t-purple-500',
+    // Support uppercase too just in case
+    NAVY: 'border-t-4 border-t-corporate-navy',
+    TEAL: 'border-t-4 border-t-corporate-teal',
+    ORANGE: 'border-t-4 border-t-corporate-orange',
+    RED: 'border-t-4 border-t-red-500',
+    GREEN: 'border-t-4 border-t-green-500',
+    BLUE: 'border-t-4 border-t-blue-500',
+    YELLOW: 'border-t-4 border-t-yellow-500',
+    PURPLE: 'border-t-4 border-t-purple-500',
+  };
+
+  const iconColors = {
+    none: 'text-corporate-navy',
+    navy: 'text-corporate-navy',
+    teal: 'text-corporate-teal',
+    orange: 'text-corporate-orange',
+    red: 'text-red-500',
+    green: 'text-green-500',
+    blue: 'text-blue-500',
+    yellow: 'text-yellow-500',
+    purple: 'text-purple-500',
+    NAVY: 'text-corporate-navy',
+    TEAL: 'text-corporate-teal',
+    ORANGE: 'text-corporate-orange',
+    RED: 'text-red-500',
+    GREEN: 'text-green-500',
+    BLUE: 'text-blue-500',
+    YELLOW: 'text-yellow-500',
+    PURPLE: 'text-purple-500',
+  };
+
+  const Component = onClick ? 'button' : 'div';
+
+  // Strategy: If title or Icon is provided, use the "Smart" layout.
+  // If not, just render children inside the container (acting as a wrapper).
+  
+  const isSmartMode = !!(title || Icon);
+
+  return (
+    <Component
+      ref={ref}
+      onClick={onClick}
+      className={cn(
+        'rounded-2xl overflow-hidden text-left w-full',
+        variants[variant],
+        accents[accent],
+        className
+      )}
+      {...props}
+    >
+      {isSmartMode ? (
+        <>
+          <div className="p-6 pb-2">
+            <div className="flex items-center gap-3">
+              {Icon && <Icon className={cn("w-6 h-6", iconColors[accent])} />}
+              {title && (
+                <h3 className="text-lg font-bold text-corporate-navy tracking-tight">
+                  {title}
+                </h3>
+              )}
+            </div>
+          </div>
+          <div className="p-6 pt-4">
+            {children}
+          </div>
+        </>
+      ) : (
+        children
+      )}
+    </Component>
+  );
+});
+
+Card.displayName = 'Card';
+
+export { Card, CardHeader, CardFooter, CardTitle, CardDescription, CardContent };

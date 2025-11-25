@@ -10,12 +10,6 @@ import WidgetRenderer from '../admin/WidgetRenderer.jsx';
 import { useAppServices } from '../../services/useAppServices.jsx';
 import { NavigationProvider } from '../../providers/NavigationProvider.jsx';
 
-// LEADERREPS.COM OFFICIAL CORPORATE COLORS - VERIFIED 11/14/25
-const COLORS = {
-  // ...existing code...
-  SUBTLE: '#47A88D'       // TEAL for subtle elements
-};
-
 const AppContent = ({
   currentScreen,
   user,

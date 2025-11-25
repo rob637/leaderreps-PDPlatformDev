@@ -8,7 +8,7 @@
 // 🛑 CRITICAL FIX (10/30/25): Refactored writeDevPlan to only adapt the currentPlan sub-object.
 
 import React, { useMemo, useState, useEffect } from 'react';
-import { ArrowLeft } from 'lucide-react';
+import { Target } from 'lucide-react';
 import { useAppServices } from '../../services/useAppServices.jsx';
 import BaselineAssessment from './developmentplan/BaselineAssessment';
 import PlanTracker from './developmentplan/PlanTracker';
@@ -17,6 +17,7 @@ import DetailedPlanView from './developmentplan/DetailedPlanView';
 import MilestoneTimeline from './developmentplan/MilestoneTimeline';
 import { Button, Card, EmptyState } from './developmentplan/DevPlanComponents';
 import { generatePlanFromAssessment, normalizeSkillCatalog } from './developmentplan/devPlanUtils';
+import { PageLayout, NoWidgetsEnabled } from '../ui';
 
 // FIXED: Import adapter utilities
 import { 
@@ -489,18 +490,16 @@ async function confirmPlanPersisted(db, userId, retries = 4, delayMs = 250) {
   const isDeveloperMode = localStorage.getItem('arena-developer-mode') === 'true';
   
   return (
-    <div className="page-corporate container-corporate animate-corporate-fade-in min-w-full">
-      <div className="content-full min-w-full">
-      <div className="min-w-full">
-        {/* Back Button */}
-        <div className="flex items-center gap-2 mb-6 text-gray-600 hover:text-gray-800 cursor-pointer transition-colors" onClick={() => navigate && navigate('dashboard')}>
-          <ArrowLeft className="w-4 h-4" />
-          <span className="text-sm font-medium">Back to Dashboard</span>
-        </div>
-
+    <PageLayout
+      title="Development Plan"
+      subtitle="Your roadmap to leadership excellence."
+      icon={Target}
+      backTo="dashboard"
+      navigate={navigate}
+    >
       {/* Developer Mode Reset Button */}
       {isDeveloperMode && hasCurrentPlan && (
-        <div className="mb-4">
+        <div className="mb-4 text-center">
           <Button
             onClick={handleResetPlan}
             variant="secondary"
@@ -569,8 +568,6 @@ async function confirmPlanPersisted(db, userId, retries = 4, delayMs = 250) {
           onTimeline={() => setView('timeline')}
         />
       )}
-      </div>
-      </div>
-    </div>
+    </PageLayout>
   );
 }

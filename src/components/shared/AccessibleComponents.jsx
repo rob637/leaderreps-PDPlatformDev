@@ -23,10 +23,10 @@ export const AccessibleButton = ({
   `;
 
   const variants = {
-    primary: `bg-[${COLORS.TEAL}] text-white hover:bg-[${COLORS.SUBTLE_TEAL}] focus:ring-[${COLORS.TEAL}]`,
-    secondary: `bg-[${COLORS.ORANGE}] text-white hover:bg-[${COLORS.SUBTLE_TEAL}] focus:ring-[${COLORS.ORANGE}]`,
-    outline: `border-2 border-[${COLORS.TEAL}] text-[${COLORS.TEAL}] hover:bg-[${COLORS.TEAL}] hover:text-white focus:ring-[${COLORS.TEAL}]`,
-    ghost: `text-[${COLORS.TEXT}] hover:bg-gray-100 focus:ring-gray-300`
+    primary: "bg-corporate-teal text-white hover:bg-[#349881] focus:ring-corporate-teal",
+    secondary: "bg-corporate-orange text-white hover:bg-[#349881] focus:ring-corporate-orange",
+    outline: "border-2 border-corporate-teal text-corporate-teal hover:bg-corporate-teal hover:text-white focus:ring-corporate-teal",
+    ghost: "text-corporate-navy hover:bg-gray-100 focus:ring-gray-300"
   };
 
   const sizes = {
@@ -80,7 +80,7 @@ export const AccessibleInput = ({
         <label 
           htmlFor={inputId}
           className="block text-sm font-medium"
-          style={{ color: COLORS.TEXT }}
+          className="text-corporate-navy"
         >
           {label}
           {required && <span className="text-red-500 ml-1" aria-label="required">*</span>}
@@ -95,7 +95,7 @@ export const AccessibleInput = ({
           focus:outline-none focus:ring-2 focus:ring-offset-1
           ${error ? 
             'border-red-400 focus:ring-red-300' : 
-            'border-gray-300 focus:ring-[' + COLORS.TEAL + ']'
+            'border-gray-300 focus:ring-corporate-teal'
           }
         `}
         aria-invalid={error ? 'true' : 'false'}
@@ -123,7 +123,7 @@ export const SkipLink = ({ href = "#main", children = "Skip to main content" }) 
   <a
     href={href}
     className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 z-50 px-4 py-2 rounded-lg font-medium text-white"
-    style={{ backgroundColor: COLORS.NAVY }}
+    className="bg-corporate-navy"
   >
     {children}
   </a>

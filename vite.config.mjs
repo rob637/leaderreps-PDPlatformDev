@@ -139,9 +139,13 @@ export default defineConfig({
     dedupe: ['react', 'react-dom'],
     alias: {
       '@': '/src',
+      '@ui': '/src/components/ui',
       '@components': '/src/components',
+      '@hooks': '/src/hooks',
       '@utils': '/src/utils',
-      '@services': '/src/services'
+      '@services': '/src/services',
+      '@lib': '/src/lib',
+      '@config': '/src/config'
     }
   },
 

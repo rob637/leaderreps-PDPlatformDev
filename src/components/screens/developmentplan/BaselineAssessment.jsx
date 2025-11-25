@@ -15,8 +15,7 @@ import {
 import { 
   ASSESSMENT_QUESTIONS, 
   OPEN_ENDED_QUESTION, // We'll still use its title
-  LIKERT_SCALE, 
-  COLORS 
+  LIKERT_SCALE
 } from './devPlanUtils';
 
 // REQ #2: New Radio Button Input Component
@@ -27,16 +26,16 @@ const RadioButtonInput = ({ question, options, value, onChange }) => {
     <div 
       className="p-3 sm:p-4 lg:p-6 rounded-lg transition-all"
       style={{ 
-        background: isFocused ? 'white' : COLORS.BG,
-        border: `2px solid ${isFocused ? COLORS.TEAL : 'transparent'}`
+        background: isFocused ? 'white' : 'var(--corporate-light-gray)',
+        border: `2px solid ${isFocused ? 'var(--corporate-teal)' : 'transparent'}`
       }}
       onFocus={() => setIsFocused(true)}
       onBlur={() => setIsFocused(false)}
     >
-      <label className="block text-base font-semibold mb-1" style={{ color: COLORS.NAVY }}>
+      <label className="block text-base font-semibold mb-1" style={{ color: 'var(--corporate-navy)' }}>
         {question.text}
       </label>
-      <p className="text-sm mb-4" style={{ color: COLORS.MUTED }}>
+      <p className="text-sm mb-4" style={{ color: 'var(--corporate-teal)' }}>
         {question.description}
       </p>
       
@@ -53,12 +52,12 @@ const RadioButtonInput = ({ question, options, value, onChange }) => {
                 checked={value === option.value}
                 onChange={() => onChange(question.id, option.value)}
                 className="h-5 w-5 border-gray-300"
-                style={{ color: COLORS.TEAL, accentColor: COLORS.TEAL }}
+                style={{ color: 'var(--corporate-teal)', accentColor: 'var(--corporate-teal)' }}
               />
               <label 
                 htmlFor={`${question.id}-${option.value}`} 
                 className="ml-2 block text-sm font-medium"
-                style={{ color: COLORS.TEXT }}
+                style={{ color: 'var(--corporate-navy)' }}
               >
                 {option.label}
               </label>
@@ -156,30 +155,30 @@ const BaselineAssessment = ({ onComplete, isLoading = false }) => {
       {/* Show cool loading overlay when generating */}
       {isGenerating && <PlanGenerationLoader message="Creating Your Leadership Plan" />}
       
-      <div className="min-h-screen p-4 sm:p-6 lg:p-4 sm:p-3 sm:p-4 lg:p-6 lg:p-8" style={{ background: COLORS.BG }}>
+      <div className="min-h-screen p-4 sm:p-6 lg:p-4 sm:p-3 sm:p-4 lg:p-6 lg:p-8 bg-corporate-light-gray">
       
       {/* Sticky Progress Bar */}
-      <div className="sticky top-0 z-10 py-4" style={{ background: `${COLORS.BG}F0`, backdropFilter: 'blur(8px)' }}>
+      <div className="sticky top-0 z-10 py-4 bg-corporate-light-gray/95 backdrop-blur-sm">
           <div className="flex justify-between text-sm mb-2 px-1">
-            <span className="font-semibold" style={{ color: COLORS.TEAL }}>
+            <span className="font-semibold" style={{ color: 'var(--corporate-teal)' }}>
               {completedQuestions} of {totalQuestions} Questions Answered
             </span>
-            <span className="font-semibold" style={{ color: COLORS.TEAL }}>
+            <span className="font-semibold" style={{ color: 'var(--corporate-teal)' }}>
               {Math.round(progress)}%
             </span>
           </div>
-          <ProgressBar progress={progress} color={COLORS.TEAL} height={12} />
+          <ProgressBar progress={progress} color={'var(--corporate-teal)'} height={12} />
       </div>
 
       {/* Main Content Card */}
       <div className="bg-white rounded-2xl shadow-xl overflow-hidden mt-4">
         
         {/* Header Area */}
-        <div className="p-6 sm:p-4 sm:p-3 sm:p-4 lg:p-6 lg:p-8 border-b" style={{ borderColor: COLORS.SUBTLE }}>
-          <h1 className="text-xl sm:text-2xl sm:text-3xl font-extrabold mb-2" style={{ color: COLORS.NAVY }}>
+        <div className="p-6 sm:p-4 sm:p-3 sm:p-4 lg:p-6 lg:p-8 border-b" style={{ borderColor: 'var(--corporate-teal)' }}>
+          <h1 className="text-xl sm:text-2xl sm:text-3xl font-extrabold mb-2" style={{ color: 'var(--corporate-navy)' }}>
             Baseline Assessment
           </h1>
-          <p className="text-lg" style={{ color: COLORS.MUTED }}>
+          <p className="text-lg" style={{ color: 'var(--corporate-teal)' }}>
             Answer these {totalQuestions} questions to create your personalized leadership plan.
           </p>
         </div>
@@ -201,11 +200,11 @@ const BaselineAssessment = ({ onComplete, isLoading = false }) => {
           </div>
 
           {/* REQ #15: Open-ended goals section */}
-          <div className="mt-8 p-3 sm:p-4 lg:p-6 rounded-lg" style={{ background: `${COLORS.ORANGE}10` }}>
-            <label className="block text-lg font-semibold mb-2" style={{ color: COLORS.NAVY }}>
+          <div className="mt-8 p-3 sm:p-4 lg:p-6 rounded-lg" style={{ background: 'var(--corporate-orange-10)' }}>
+            <label className="block text-lg font-semibold mb-2" style={{ color: 'var(--corporate-navy)' }}>
               {OPEN_ENDED_QUESTION.text}
             </label>
-            <p className="text-sm mb-4" style={{ color: COLORS.MUTED }}>
+            <p className="text-sm mb-4" style={{ color: 'var(--corporate-teal)' }}>
               {OPEN_ENDED_QUESTION.placeholder} (Add up to 3)
             </p>
             
@@ -214,8 +213,7 @@ const BaselineAssessment = ({ onComplete, isLoading = false }) => {
                 <div key={index} className="flex items-center gap-2">
                   <input
                     type="text"
-                    className="flex-1 w-full p-3 border rounded-lg focus:ring-2 transition-all"
-                    style={{ borderColor: COLORS.SUBTLE, ringColor: COLORS.ORANGE }}
+                    className="flex-1 w-full p-3 border rounded-lg focus:ring-2 transition-all border-corporate-teal focus:ring-corporate-orange"
                     value={goal}
                     onChange={(e) => handleGoalChange(index, e.target.value)}
                     placeholder={`Leadership goal #${index + 1}`}
@@ -264,7 +262,7 @@ const BaselineAssessment = ({ onComplete, isLoading = false }) => {
               {isTotalLoading ? 'Creating Your Plan...' : 'Complete & Generate My Plan'}
             </Button>
             {!isComplete && (
-              <p className="text-center text-sm mt-3" style={{ color: COLORS.MUTED }}>
+              <p className="text-center text-sm mt-3" style={{ color: 'var(--corporate-teal)' }}>
                 Please answer all {totalQuestions} questions and add at least one goal to complete the assessment.
               </p>
             )}

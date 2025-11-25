@@ -3,19 +3,7 @@
 import React, { useState, useMemo } from 'react';
 import { X, Zap, CheckCircle, CornerRightUp, AlertTriangle } from 'lucide-react';
 import { useAppServices } from '../../services/useAppServices.jsx';
-
-// LEADERREPS.COM OFFICIAL CORPORATE COLORS - VERIFIED 11/14/25
-const COLORS = {
-  // === PRIMARY BRAND COLORS (from leaderreps.com) ===
-  NAVY: '#002E47',        // Primary text, headers, navigation
-  ORANGE: '#E04E1B',      // Call-to-action buttons, highlights, alerts  
-  TEAL: '#47A88D',        // Secondary buttons, success states, accents
-  LIGHT_GRAY: '#FCFCFA',  // Page backgrounds, subtle surfaces
-  
-  // === SEMANTIC MAPPINGS (using ONLY corporate colors) ===
-  BLUE: '#002E47',        // Map to NAVY
-  OFF_WHITE: '#FCFCFA'    // Same as LIGHT_GRAY
-};
+import { Button } from '../ui';
 
 // --- ENHANCEMENT: QUICK CHALLENGE CATALOG DELETED (Now loaded via service context) ---
 // Fallback array for safety if service data hasn't loaded or is empty
@@ -23,13 +11,6 @@ const QUICK_CHALLENGE_FALLBACK = [
     { rep: "Take one deep, deliberate breath (T1 - Fallback)", tier: 'T1' },
     { rep: "Send a thank-you Slack (T4 - Fallback)", tier: 'T4' },
 ];
-
-
-const Button = ({ children, onClick, disabled = false, className = '', ...rest }) => (
-    <button {...rest} onClick={onClick} disabled={disabled} className={`px-6 py-3 rounded-xl font-semibold transition-all shadow-lg text-white flex items-center justify-center ${className} ${disabled ? 'bg-gray-400 cursor-not-allowed' : 'bg-green-600 hover:bg-green-700'}`}>
-      {children}
-    </button>
-);
 
 // --- MODAL COMPONENT (Feature 3: 2-Minute Challenge Mode) ---
 const TwoMinuteChallengeModal = ({ isVisible, onClose, sourceScreen, onLogSuccess }) => {
@@ -96,7 +77,7 @@ const TwoMinuteChallengeModal = ({ isVisible, onClose, sourceScreen, onLogSucces
 
     return (
         <div className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4"> 
-            <div className={`relative bg-[${COLORS.OFF_WHITE}] rounded-xl shadow-2xl w-full max-w-lg p-8 text-center border-t-8 border-[${COLORS.BLUE}]`}>
+            <div className={`relative bg-[#FCFCFA] rounded-xl shadow-2xl w-full max-w-lg p-8 text-center border-t-8 border-corporate-navy`}>
                 <button 
                     onClick={onClose} // CRITICAL FIX: Wire the button to the handler
                     disabled={isLogging} 
@@ -105,13 +86,13 @@ const TwoMinuteChallengeModal = ({ isVisible, onClose, sourceScreen, onLogSucces
                     <X className="w-6 h-6" />
                 </button>
 
-                <Zap className={`w-12 h-12 text-[${COLORS.BLUE}] mx-auto mb-4`} />
-                <h3 className="text-2xl font-extrabold text-[#002E47] mb-2">Grab a Micro-Action Rep</h3>
+                <Zap className={`w-12 h-12 text-corporate-navy mx-auto mb-4`} />
+                <h3 className="text-2xl font-extrabold text-corporate-navy mb-2">Grab a Micro-Action Rep</h3>
                 <p className="text-lg text-gray-600 mb-6">Frictionless training for momentum! Complete this action quickly (Feature 3).</p>
 
                 <div className={`p-4 rounded-xl border-2 mb-6 ${logStatus === 'success' ? 'border-green-400 bg-green-50' : 'border-gray-300 bg-gray-100'}`}>
                     <p className='text-sm font-semibold text-gray-700 mb-1'>Today's Micro-Action ({randomRep.tier}):</p>
-                    <p className={`text-xl font-bold text-left ${logStatus === 'success' ? 'text-green-600' : 'text-[#002E47]'}`}>
+                    <p className={`text-xl font-bold text-left ${logStatus === 'success' ? 'text-green-600' : 'text-corporate-navy'}`}>
                         <CornerRightUp className='w-5 h-5 inline mr-2'/> {randomRep.rep}
                     </p>
                 </div>
@@ -121,7 +102,7 @@ const TwoMinuteChallengeModal = ({ isVisible, onClose, sourceScreen, onLogSucces
                     value={journalNote}
                     onChange={(e) => setJournalNote(e.target.value)}
                     placeholder="Optional journal note: What did I notice? (Feature 4)"
-                    className="w-full p-3 border border-gray-300 rounded-xl focus:ring-[#47A88D] focus:border-[#47A88D] h-16 text-gray-800 mb-4"
+                    className="w-full p-3 border border-gray-300 rounded-xl focus:ring-corporate-teal focus:border-corporate-teal h-16 text-gray-800 mb-4"
                     disabled={isLogging || logStatus === 'success'}
                 />
 
@@ -133,7 +114,7 @@ const TwoMinuteChallengeModal = ({ isVisible, onClose, sourceScreen, onLogSucces
                     <Button 
                         onClick={handleLog} 
                         disabled={isLogging}
-                        className="w-full text-lg bg-[#47A88D] hover:opacity-90"
+                        className="w-full text-lg bg-corporate-teal hover:opacity-90"
                     >
                         {isLogging ? 'Logging...' : 'I Did It! Log Rep Now'}
                     </Button>

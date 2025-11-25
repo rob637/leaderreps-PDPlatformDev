@@ -1,5 +1,4 @@
 // tailwind.config.cjs
-const { CORPORATE_COLORS } = require('./src/styles/corporate-colors.js');
 
 /** @type {import('tailwindcss').Config} */
 module.exports = {
@@ -10,14 +9,18 @@ module.exports = {
         sans: ['Poppins', 'sans-serif'],
       },
       colors: {
-        ...CORPORATE_COLORS,
+        NAVY: '#002E47',
+        TEAL: '#47A88D',
+        ORANGE: '#E04E1B',
+        LIGHT_GRAY: '#FCFCFA',
+        SUBTLE_TEAL: '#349881',
         // Add kebab-case variants for Tailwind classes
-        'corporate-navy': CORPORATE_COLORS.NAVY,
-        'corporate-orange': CORPORATE_COLORS.ORANGE,
-        'corporate-teal': CORPORATE_COLORS.TEAL,
-        'corporate-teal-dark': CORPORATE_COLORS.SUBTLE_TEAL,
-        'corporate-light-gray': CORPORATE_COLORS.LIGHT_GRAY,
-        'corporate-subtle-teal': CORPORATE_COLORS.SUBTLE_TEAL,
+        'corporate-navy': '#002E47',
+        'corporate-orange': '#E04E1B',
+        'corporate-teal': '#47A88D',
+        'corporate-teal-dark': '#349881',
+        'corporate-light-gray': '#FCFCFA',
+        'corporate-subtle-teal': '#349881',
       },
     },
   },

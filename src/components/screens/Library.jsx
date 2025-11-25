@@ -1,71 +1,48 @@
 // src/components/screens/Library.jsx
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { BookOpen, ShieldCheck, Film, ArrowLeft, Sparkles, Target, Trophy, Users, TrendingUp, Star, Zap, PlayCircle, FileText } from 'lucide-react';
+import { BookOpen, ShieldCheck, Film, Sparkles, Target, Trophy, Users, TrendingUp, Star, Zap, PlayCircle, FileText } from 'lucide-react';
 import { useAppServices } from '../../services/useAppServices.jsx';
 import { membershipService } from '../../services/membershipService.js';
-import { Button, Card } from '../shared/UI';
+import { PageLayout, PageGrid, NoWidgetsEnabled } from '../ui';
 import { getReadings, getVideos, getCourses } from '../../services/contentService';
 import { useFeatures } from '../../providers/FeatureProvider';
 import WidgetRenderer from '../admin/WidgetRenderer';
 
-// LEADERREPS.COM OFFICIAL CORPORATE COLORS - VERIFIED 11/14/25
-const COLORS = {
-  // === PRIMARY BRAND COLORS (from leaderreps.com) ===
-  NAVY: '#002E47',        // Primary text, headers, navigation
-  ORANGE: '#E04E1B',      // Call-to-action buttons, highlights, alerts  
-  TEAL: '#47A88D',        // Secondary buttons, success states, accents
-  LIGHT_GRAY: '#FCFCFA',  // Page backgrounds, subtle surfaces
-  
-  // === TEXT & BACKGROUNDS (corporate colors only) ===
-  TEXT: '#002E47',        // NAVY for all text
-  MUTED: '#47A88D',       // TEAL for muted text
-  BG: '#FCFCFA',          // LIGHT_GRAY for backgrounds
-  SUBTLE: '#47A88D'       // TEAL for subtle elements
-};
-
-const LibraryCard = ({ title, description, icon: Icon, onClick, disabled = false, requiredTier }) => {
+const LibraryCard = ({ title, description, icon: Icon, onClick, isLocked = false, requiredTier }) => {
   return (
-    <Card
-      onClick={disabled ? undefined : onClick}
-      accent={disabled ? 'GRAY' : 'TEAL'}
-      className={`h-full ${disabled ? 'opacity-60 cursor-not-allowed bg-slate-50' : 'hover:shadow-xl'}`}
+    <button
+      onClick={onClick}
+      className={`w-full text-left transition-all duration-300 rounded-2xl border p-6 h-full flex flex-col group
+        ${isLocked 
+          ? 'opacity-90 border-slate-200 bg-slate-50 hover:bg-slate-100' 
+          : 'bg-white hover:shadow-xl hover:-translate-y-1 cursor-pointer border-slate-200 hover:border-corporate-teal/50'
+        }`}
     >
-      <div className="flex flex-col items-center text-center h-full">
+      <div className="text-center mb-4 w-full">
         <div
-          className="w-20 h-20 rounded-2xl flex items-center justify-center mb-4"
-          style={{ 
-            backgroundColor: disabled ? `${COLORS.SUBTLE}20` : `${COLORS.TEAL}15`,
-            border: `3px solid ${disabled ? COLORS.SUBTLE : COLORS.TEAL}30`
-          }}
+          className={`w-20 h-20 rounded-2xl flex items-center justify-center mx-auto mb-4 transition-colors
+            ${isLocked ? 'bg-slate-200 text-slate-400' : 'bg-corporate-teal/10 text-corporate-teal group-hover:bg-corporate-teal/20'}`}
         >
-          <Icon
-            className="w-10 h-10"
-            style={{ color: disabled ? COLORS.SUBTLE : COLORS.TEAL }}
-          />
+          <Icon className="w-10 h-10" />
         </div>
-        <h3 className="text-xl font-bold mb-3" style={{ color: disabled ? COLORS.MUTED : COLORS.NAVY }}>
+        <h3 className={`text-xl font-bold mb-3 ${isLocked ? 'text-slate-500' : 'text-corporate-navy'}`}>
           {title}
         </h3>
-        <p className="text-gray-600 mb-4 flex-1">
+      </div>
+      <div className="flex-1 flex flex-col w-full">
+        <p className="text-slate-600 text-center mb-4 flex-1">
           {description}
         </p>
-        {disabled && requiredTier && (
+        {isLocked && requiredTier && (
           <div className="mt-auto w-full">
-            <div 
-              className="inline-flex items-center px-3 py-2 rounded-full text-sm font-semibold w-full justify-center"
-              style={{ 
-                backgroundColor: `${COLORS.ORANGE}20`, 
-                color: COLORS.ORANGE,
-                border: `1px solid ${COLORS.ORANGE}40`
-              }}
-            >
+            <div className="inline-flex items-center px-3 py-2 rounded-full text-sm font-semibold w-full justify-center bg-corporate-orange/10 text-corporate-orange border border-corporate-orange/20">
               Requires Premium Tier
             </div>
           </div>
         )}
       </div>
-    </Card>
+    </button>
   );
 };
 
@@ -109,18 +86,6 @@ const Library = ({ simulatedTier, isDeveloperMode }) => {
   // Scroll to top when component mounts
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
-    
-    // DEBUG: Measure actual widths
-    setTimeout(() => {
-      const pageEl = document.querySelector('.page-corporate');
-      const contentEl = document.querySelector('.content-full');
-      console.log('📏 LIBRARY Width Measurements:', {
-        pageWidth: pageEl?.offsetWidth,
-        contentWidth: contentEl?.offsetWidth,
-        pageComputedMaxWidth: window.getComputedStyle(pageEl || document.body).maxWidth,
-        contentComputedMaxWidth: window.getComputedStyle(contentEl || document.body).maxWidth
-      });
-    }, 100);
   }, []);
 
   const libraryItems = useMemo(() => {
@@ -173,32 +138,14 @@ const Library = ({ simulatedTier, isDeveloperMode }) => {
   }, [isFeatureEnabled, getFeatureOrder]);
 
   const handleCardClick = (item) => {
-    console.log('🔍 Library Card Click Debug:', {
-      itemId: item.id,
-      itemTitle: item.title,
-      targetScreen: item.screen,
-      currentTier: currentTier,
-      requiredTier: item.requiredTier,
-      navigateFunction: typeof navigate
-    });
-    
     if (navigate && typeof navigate === 'function') {
       const hasAccess = membershipService.hasAccess(currentTier, item.requiredTier);
       
-      console.log('🔑 Access Check Result:', {
-        hasAccess: hasAccess,
-        willNavigateTo: hasAccess ? item.screen : 'membership-upgrade'
-      });
-      
       if (!hasAccess) {
-        console.log('❌ No access - redirecting to membership-upgrade');
         navigate('membership-upgrade');
       } else {
-        console.log('✅ Access granted - navigating to:', item.screen);
         navigate(item.screen);
       }
-    } else {
-      console.error('❌ Navigate function not available or not a function');
     }
   };
 
@@ -218,44 +165,38 @@ const Library = ({ simulatedTier, isDeveloperMode }) => {
     LibraryCard,
     
     // Constants/Utils
-    COLORS,
     membershipService,
     
     // Icons
-    BookOpen, ShieldCheck, Film, ArrowLeft, Sparkles, Target, Trophy, Users, TrendingUp, Star, Zap, PlayCircle, FileText
+    BookOpen, ShieldCheck, Film, Sparkles, Target, Trophy, Users, TrendingUp, Star, Zap, PlayCircle, FileText
   };
 
   return (
-      <div className="page-corporate container-corporate animate-corporate-fade-in">
-        <div className="content-full">
-      <div>
-        {/* Back Button */}
-        <div className="mb-6">
-          <Button 
-            variant="nav-back" 
-            onClick={() => navigate('dashboard')}
-            className="pl-2"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            Back to Dashboard
-          </Button>
-        </div>
-
-        {/* Header */}
-        <div className="text-center mb-12">
-            <div className="flex items-center justify-center gap-2 mb-4">
-                <BookOpen className='w-8 h-8' style={{color: COLORS.TEAL}}/>
-                <h1 className="corporate-heading-xl" style={{ color: COLORS.NAVY }}>Content</h1>
-                <BookOpen className='w-8 h-8' style={{color: COLORS.TEAL}}/>
-            </div>
-            <p className="corporate-text-body text-gray-600 mx-auto px-4">Your complete leadership development ecosystem.</p>
-        </div>
-
-        <WidgetRenderer widgetId="content-library-main" scope={scope} />
-        
-        </div>
-      </div>
-    </div>
+    <PageLayout
+      title="Content"
+      subtitle="Your complete leadership development ecosystem."
+      icon={BookOpen}
+      navigate={navigate}
+      backTo="dashboard"
+    >
+      <WidgetRenderer widgetId="content-library-main" scope={scope}>
+        {libraryItems.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-5xl mx-auto">
+            {libraryItems.map(item => (
+              <LibraryCard 
+                key={item.id}
+                {...item}
+                onClick={() => handleCardClick(item)}
+                isLocked={!membershipService.hasAccess(currentTier, item.requiredTier)}
+                requiredTier={item.requiredTier}
+              />
+            ))}
+          </div>
+        ) : (
+          <NoWidgetsEnabled moduleName="Content" />
+        )}
+      </WidgetRenderer>
+    </PageLayout>
   );
 };
 

@@ -9,9 +9,8 @@ import {
   MessageSquare, Bell, Calendar, ChevronRight, ArrowRight,
   Edit3, Loader
 } from 'lucide-react';
-import { COLORS } from './dashboard/dashboardConstants.js';
 import { useDashboard } from './dashboard/DashboardHooks.jsx';
-import { UnifiedAnchorEditorModal, StreakTracker } from './dashboard/DashboardComponents.jsx';
+import { UnifiedAnchorEditorModal } from './dashboard/DashboardComponents.jsx';
 
 const ArenaDashboard = (props) => {
   const { 
@@ -213,18 +212,13 @@ const ArenaDashboard = (props) => {
         
         {/* 1. HEADER */}
         <header className="space-y-2">
-          <h1 className="text-3xl sm:text-4xl font-bold text-[#002E47]">
+          <h1 className="text-3xl sm:text-4xl font-bold text-corporate-navy">
             {greeting}
           </h1>
           <p className="text-lg text-slate-500 italic font-medium border-l-4 border-teal-500 pl-4 py-1">
             "{dailyQuote}"
           </p>
         </header>
-
-        {/* FEATURE: Gamification Engine */}
-        <div className="flex justify-end">
-            <StreakTracker streakCount={streakCount} streakCoins={streakCoins} userEmail={user?.email} />
-        </div>
 
         {/* FEATURE: Executive Summary Widget */}
         <div className="bg-corporate-navy text-white p-6 rounded-2xl shadow-lg flex items-center justify-between">
@@ -256,7 +250,7 @@ const ArenaDashboard = (props) => {
                   This Week's Focus
                 </h2>
                 <div className="flex items-center justify-between">
-                  <p className="text-2xl font-bold text-[#002E47]">
+                  <p className="text-2xl font-bold text-corporate-navy">
                     {weeklyFocus}
                   </p>
                   <button 
@@ -275,7 +269,7 @@ const ArenaDashboard = (props) => {
                 <div className="w-8 h-8 rounded-lg bg-orange-100 flex items-center justify-center text-orange-600">
                   <Flame className="w-5 h-5" />
                 </div>
-                <h2 className="text-xl font-bold text-[#002E47]">
+                <h2 className="text-xl font-bold text-corporate-navy">
                   AM Bookend - Lock-in Your Day
                 </h2>
               </div>
@@ -349,7 +343,7 @@ const ArenaDashboard = (props) => {
                 <div className="w-8 h-8 rounded-lg bg-teal-100 flex items-center justify-center text-teal-600">
                   <Trophy className="w-5 h-5" />
                 </div>
-                <h2 className="text-xl font-bold text-[#002E47]">
+                <h2 className="text-xl font-bold text-corporate-navy">
                   Win the Day (Today's 1-2-3)
                 </h2>
               </div>
@@ -493,21 +487,21 @@ const ArenaDashboard = (props) => {
                 <div className="flex gap-3 items-start p-2 hover:bg-slate-50 rounded-lg transition-colors cursor-pointer">
                   <div className="w-2 h-2 mt-2 rounded-full bg-orange-500 flex-shrink-0" />
                   <div>
-                    <p className="text-sm font-semibold text-[#002E47]">Yesterday's "Needs Work"</p>
+                    <p className="text-sm font-semibold text-corporate-navy">Yesterday's "Needs Work"</p>
                     <p className="text-xs text-slate-500">Review your reflection from yesterday.</p>
                   </div>
                 </div>
                 <div className="flex gap-3 items-start p-2 hover:bg-slate-50 rounded-lg transition-colors cursor-pointer">
                   <div className="w-2 h-2 mt-2 rounded-full bg-teal-500 flex-shrink-0" />
                   <div>
-                    <p className="text-sm font-semibold text-[#002E47]">Upcoming Feedback Practice</p>
+                    <p className="text-sm font-semibold text-corporate-navy">Upcoming Feedback Practice</p>
                     <p className="text-xs text-slate-500">Nov 29, 4:00 PM <span className="text-teal-600 font-bold ml-1">Register</span></p>
                   </div>
                 </div>
                 <div className="flex gap-3 items-start p-2 hover:bg-slate-50 rounded-lg transition-colors cursor-pointer">
                   <div className="w-2 h-2 mt-2 rounded-full bg-purple-500 flex-shrink-0" />
                   <div>
-                    <p className="text-sm font-semibold text-[#002E47]">New R&R Unlocked</p>
+                    <p className="text-sm font-semibold text-corporate-navy">New R&R Unlocked</p>
                     <p className="text-xs text-slate-500">Check your resource library.</p>
                   </div>
                 </div>
@@ -516,7 +510,7 @@ const ArenaDashboard = (props) => {
 
             {/* 6. TODAY SCORECARD */}
             <section>
-              <div className="bg-[#002E47] rounded-2xl p-6 text-white shadow-lg relative overflow-hidden">
+              <div className="bg-corporate-navy rounded-2xl p-6 text-white shadow-lg relative overflow-hidden">
                 {/* Background Pattern */}
                 <div className="absolute top-0 right-0 w-32 h-32 bg-white opacity-5 rounded-full -mr-10 -mt-10" />
                 
@@ -588,7 +582,7 @@ const ArenaDashboard = (props) => {
                 <div className="w-8 h-8 rounded-lg bg-indigo-100 flex items-center justify-center text-indigo-600">
                   <MessageSquare className="w-5 h-5" />
                 </div>
-                <h2 className="text-xl font-bold text-[#002E47]">
+                <h2 className="text-xl font-bold text-corporate-navy">
                   PM Bookend - Reflection
                 </h2>
               </div>
@@ -623,7 +617,7 @@ const ArenaDashboard = (props) => {
                 <button 
                   onClick={handleSaveEveningBookend}
                   disabled={isSavingBookend || (!reflectionGood && !reflectionBetter)}
-                  className="w-full py-3 bg-[#002E47] text-white rounded-xl font-bold hover:bg-[#003E5F] transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                  className="w-full py-3 bg-corporate-navy text-white rounded-xl font-bold hover:opacity-90 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
                 >
                   {isSavingBookend ? <Loader className="w-5 h-5 animate-spin" /> : <Save className="w-5 h-5" />}
                   Save Journal Page

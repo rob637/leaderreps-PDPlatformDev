@@ -1,86 +1,35 @@
 // src/components/screens/ExecutiveReflection.jsx (Refactored for Consistency, Context)
 
 import React, { useMemo, useCallback, useEffect } from 'react';
-// --- Core Services & Context ---
-import { useAppServices } from '../../services/useAppServices.jsx'; // cite: useAppServices.jsx
-
-
-// --- Icons ---
+import { useAppServices } from '../../services/useAppServices.jsx';
 import {
   BarChart3, TrendingUp, Target, ShieldCheck, Zap, TrendingDown, Cpu, Star, MessageSquare,
   HeartPulse, Users, Lightbulb, X, CornerRightUp, Activity, Briefcase, Trello, Clock,
-  ChevronsRight, CheckCircle, Mic, Archive, Sparkles, Loader // Added Loader
+  ChevronsRight, CheckCircle, Mic, Archive, Sparkles, Loader
 } from 'lucide-react';
-import { CORPORATE_COLORS } from '../../styles/corporate-colors.js';
+import { Button, Card, LoadingSpinner } from '../ui';
 import { DIMENSION_TO_TIER_MAP } from '../../data/LeadershipTiers.js';
 
-/* =========================================================
-   PALETTE & UI COMPONENTS (Standardized)
-========================================================= */
-// --- Primary Color Palette ---
-const COLORS = CORPORATE_COLORS;
-
-// --- Standardized UI Components (Matches Dashboard/Dev Plan) ---
-const Button = ({ children, onClick, disabled = false, variant = 'primary', className = '', size = 'md', ...rest }) => { /* ... Re-use exact Button definition from Dashboard.jsx ... */
-    let baseStyle = `inline-flex items-center justify-center gap-2 font-semibold rounded-xl transition-all duration-200 focus:outline-none focus:ring-4 disabled:opacity-50 disabled:cursor-not-allowed`;
-    if (size === 'sm') baseStyle += ' px-4 py-2 text-sm'; else if (size === 'lg') baseStyle += ' px-8 py-4 text-lg'; else baseStyle += ' px-6 py-3 text-base'; // Default 'md'
-    if (variant === 'primary') baseStyle += ` bg-[${COLORS.TEAL}] text-white shadow-lg hover:bg-[#47A88D] focus:ring-[${COLORS.TEAL}]/50`;
-    else if (variant === 'secondary') baseStyle += ` bg-[${COLORS.ORANGE}] text-white shadow-lg hover:bg-[#C312] focus:ring-[${COLORS.ORANGE}]/50`;
-    else if (variant === 'outline') baseStyle += ` bg-[${COLORS.OFF_WHITE}] text-[${COLORS.TEAL}] border-2 border-[${COLORS.TEAL}] shadow-md hover:bg-[${COLORS.TEAL}]/10 focus:ring-[${COLORS.TEAL}]/50`;
-    else if (variant === 'nav-back') baseStyle += ` bg-white text-gray-700 border border-gray-300 shadow-sm hover:bg-gray-100 focus:ring-gray-300/50 px-4 py-2 text-sm`;
-    else if (variant === 'ghost') baseStyle += ` bg-transparent text-gray-600 hover:bg-gray-100 focus:ring-gray-300/50 px-3 py-1.5 text-sm`;
-    if (disabled) baseStyle += ' bg-gray-300 text-gray-500 shadow-inner border-transparent hover:bg-gray-300';
-    return (<button {...rest} onClick={onClick} disabled={disabled} className={`${baseStyle} ${className}`}>{children}</button>);
-};
-const Card = ({ children, title, icon: Icon, className = '', onClick, accent = 'NAVY' }) => { /* ... Re-use exact Card definition from Dashboard.jsx ... */
-    const interactive = !!onClick; const Tag = interactive ? 'button' : 'div'; const accentColor = COLORS[accent] || COLORS.NAVY; const handleKeyDown = (e) => { if (interactive && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); onClick?.(); } };
-    return (
-        <Tag {...(interactive ? { type: 'button' } : {})} role={interactive ? 'button' : undefined} tabIndex={interactive ? 0 : undefined} onKeyDown={handleKeyDown} className={`relative p-6 rounded-2xl border-2 shadow-xl hover:shadow-lg transition-all duration-300 text-left ${className}`} style={{ background: 'linear-gradient(180deg,#FFFFFF, #FCFCFA)', borderColor: COLORS.SUBTLE, color: COLORS.NAVY }} onClick={onClick}>
-            <span style={{ position:'absolute', top:0, left:0, right:0, height:6, background: accentColor, borderTopLeftRadius:14, borderTopRightRadius:14 }} />
-            {Icon && title && ( <div className="flex items-center gap-3 mb-4"> <div className="w-10 h-10 rounded-lg flex items-center justify-center border flex-shrink-0" style={{ borderColor: COLORS.SUBTLE, background: COLORS.LIGHT_GRAY }}> <Icon className="w-5 h-5" style={{ color: accentColor }} /> </div> <h2 className="text-xl font-extrabold" style={{ color: COLORS.NAVY }}>{title}</h2> </div> )}
-            {!Icon && title && <h2 className="text-xl font-extrabold mb-4 border-b pb-2" style={{ color: COLORS.NAVY, borderColor: COLORS.SUBTLE }}>{title}</h2>}
-            <div className={Icon || title ? '' : ''}>{children}</div>
-        </Tag>
-    );
-};
-const LoadingSpinner = ({ message = "Loading..." }) => ( /* ... Re-use definition from DevelopmentPlan.jsx ... */
-    <div className="min-h-screen flex items-center justify-center" style={{ background: COLORS.BG }}> <div className="flex flex-col items-center"> <Loader className="animate-spin h-12 w-12 mb-3" style={{ color: COLORS.TEAL }} /> <p className="font-semibold" style={{ color: COLORS.NAVY }}>{message}</p> </div> </div>
-);
-
-/**
- * StatCard Component (Local Definition, Styled Consistently)
- * Displays a single key metric with an optional trend indicator.
- */
-const StatCard = ({ icon: Icon, label, value, onClick, trend = 0, accent = 'NAVY', size = 'full', className = '', ...rest }) => {
-  const TrendIcon = trend > 0 ? TrendingUp : TrendingDown; // Determine trend icon
-  const showTrend = trend !== 0; // Only show if trend is non-zero
-  // Determine trend color based on value
-  const trendColor = trend > 0 ? COLORS.GREEN : trend < 0 ? COLORS.ORANGE : COLORS.MUTED;
-  // Determine card width class (simplified for this layout)
-  const widthClass = size === 'half' ? 'md:col-span-1' : (size === 'third' ? 'lg:col-span-1 md:col-span-2' : 'col-span-1'); // Adjust grid span
+const StatCard = ({ icon: Icon, label, value, onClick, trend = 0, accentColor = 'bg-corporate-navy', size = 'full', className = '', ...rest }) => {
+  const TrendIcon = trend > 0 ? TrendingUp : TrendingDown;
+  const showTrend = trend !== 0;
+  const trendColor = trend > 0 ? 'text-green-600 bg-green-50' : trend < 0 ? 'text-orange-600 bg-orange-50' : 'text-slate-400 bg-slate-50';
+  const widthClass = size === 'half' ? 'md:col-span-1' : (size === 'third' ? 'lg:col-span-1 md:col-span-2' : 'col-span-1');
 
   return (
-    // Use standard Card component as the base
-    <Card {...rest} icon={Icon} title={value} onClick={onClick} className={`${widthClass} ${className} ${onClick ? 'cursor-pointer' : ''}`} accent={accent}>
-      <div className="flex justify-between items-center -mt-1">
-        {/* Label */}
+    <Card {...rest} icon={Icon} title={value} onClick={onClick} className={`${widthClass} ${className}`} accentColor={accentColor}>
+      <div className="flex justify-between items-center -mt-2">
         <div className="flex-1 mr-2">
-          <div className="text-xs font-medium text-gray-500 truncate">{label}</div> {/* Smaller label, truncate */}
+          <div className="text-xs font-medium text-slate-500 truncate">{label}</div>
         </div>
-        {/* Trend Indicator (Conditional) */}
         {showTrend && (
-          <div className={`text-xs font-semibold flex items-center gap-1 flex-shrink-0`} style={{ color: trendColor }}>
-            {/* Trend Icon with Background */}
-            <span className={`p-0.5 rounded-full`} style={{ background: trend > 0 ? `${COLORS.GREEN}1A` : `${COLORS.ORANGE}1A` }}>
-              <TrendIcon size={12} strokeWidth={3} /> {/* Smaller icon */}
-            </span>
-            {/* Trend Value */}
-            <span className='font-bold'>{Math.abs(trend)}{label.includes("Reps Completed Today") ? '' : '%'}</span> {/* Adjust unit based on label */}
+          <div className={`text-xs font-bold flex items-center gap-1 px-2 py-1 rounded-full ${trendColor}`}>
+            <TrendIcon size={12} strokeWidth={3} />
+            <span>{Math.abs(trend)}{label.includes("Reps Completed Today") ? '' : '%'}</span>
           </div>
         )}
       </div>
-      {/* Navigation Arrow (if clickable) */}
-      {onClick && <CornerRightUp className="absolute top-4 right-4 text-gray-300 group-hover:text-gray-500 transition-colors" size={16} />}
+      {onClick && <CornerRightUp className="absolute top-4 right-4 text-slate-300 group-hover:text-slate-500 transition-colors" size={16} />}
     </Card>
   );
 };
@@ -237,219 +186,168 @@ const useLongitudinalData = (dailyPracticeData, developmentPlanData, strategicCo
 };
 
 
-/* =========================================================
-   MAIN SCREEN COMPONENT: ExecutiveReflection (ROI Report)
-========================================================= */
 export default function ExecutiveReflection() {
-    // --- Consume Services ---
     const {
-        navigate, // Core context
-        isLoading: isAppLoading, error: appError, // App loading/error state
-        dailyPracticeData, developmentPlanData, strategicContentData, // Renamed user data // cite: useAppServices.jsx
-        LEADERSHIP_TIERS, // Global metadata // cite: useAppServices.jsx
-        // Mock data source for stats - replace later
-        // MOCK_ACTIVITY_DATA (Removed - Define stats locally or fetch properly)
+        navigate,
+        isLoading: isAppLoading, error: appError,
+        dailyPracticeData, developmentPlanData, strategicContentData,
+        LEADERSHIP_TIERS,
     } = useAppServices();
 
-    // --- Effect for scrolling to top ---
     useEffect(() => { window.scrollTo({ top: 0, behavior: 'smooth' }); }, []);
 
-    // --- Calculate Longitudinal Data ---
-    // This hook processes data from the context hooks
-    const longitudinalData = useLongitudinalData(dailyPracticeData, developmentPlanData, strategicContentData); // cite: useLongitudinalData (above)
+    const longitudinalData = useLongitudinalData(dailyPracticeData, developmentPlanData, strategicContentData);
 
-    // --- Calculate Scorecard Stats (Using Context Data) ---
-    // Reps Completed Today (Target + Additional)
     const todayStr = useMemo(() => new Date().toISOString().split('T')[0], []);
-    const targetRepCompletedToday = dailyPracticeData?.dailyTargetRepStatus === 'Committed' && dailyPracticeData?.dailyTargetRepDate === todayStr; // cite: useAppServices.jsx
-    const additionalCompletedToday = useMemo(() => (dailyPracticeData?.activeCommitments || []).filter(c => c.status === 'Committed').length, [dailyPracticeData]); // cite: useAppServices.jsx
-    const commitsCompletedToday = (targetRepCompletedToday ? 1 : 0) + additionalCompletedToday; // cite: Dashboard.jsx (logic)
-    // Total Reps Assigned Today
-    const targetRepAssignedToday = !!dailyPracticeData?.dailyTargetRepId && dailyPracticeData?.dailyTargetRepDate === todayStr; // cite: useAppServices.jsx
-    const additionalAssignedToday = useMemo(() => (dailyPracticeData?.activeCommitments || []).length, [dailyPracticeData]); // cite: useAppServices.jsx
-    const commitsTotalToday = (targetRepAssignedToday ? 1 : 0) + additionalAssignedToday; // cite: Dashboard.jsx (logic)
+    const targetRepCompletedToday = dailyPracticeData?.dailyTargetRepStatus === 'Committed' && dailyPracticeData?.dailyTargetRepDate === todayStr;
+    const additionalCompletedToday = useMemo(() => (dailyPracticeData?.activeCommitments || []).filter(c => c.status === 'Committed').length, [dailyPracticeData]);
+    const commitsCompletedToday = (targetRepCompletedToday ? 1 : 0) + additionalCompletedToday;
+    const targetRepAssignedToday = !!dailyPracticeData?.dailyTargetRepId && dailyPracticeData?.dailyTargetRepDate === todayStr;
+    const additionalAssignedToday = useMemo(() => (dailyPracticeData?.activeCommitments || []).length, [dailyPracticeData]);
+    const commitsTotalToday = (targetRepAssignedToday ? 1 : 0) + additionalAssignedToday;
 
-    // Current Streak (Calculated from practice history)
-    const perfectStreak = useMemo(() => calculateStreak(dailyPracticeData?.practiceHistory || []), [dailyPracticeData?.practiceHistory]); // cite: calculateStreak (above), useAppServices.jsx
+    const perfectStreak = useMemo(() => calculateStreak(dailyPracticeData?.practiceHistory || []), [dailyPracticeData?.practiceHistory]);
 
-    // --- Placeholder Stats (Replace with real data sources) ---
-    // These need to be sourced from aggregated data (e.g., Firestore aggregation, separate stats doc)
-    const totalRepsCompletedAllTime = dailyPracticeData?.stats?.totalRepsCompleted || 128; // Example: Read from stats field
-    const totalCoachingLabsCompleted = dailyPracticeData?.practiceHistory?.length || 5; // Count lab history entries // cite: useAppServices.jsx
+    const totalRepsCompletedAllTime = dailyPracticeData?.stats?.totalRepsCompleted || 128;
+    const totalCoachingLabsCompleted = dailyPracticeData?.practiceHistory?.length || 5;
 
-    // Development Plan Progress
-    const currentDevPlanCycle = developmentPlanData?.currentCycle || 1; // cite: useAppServices.jsx
-    const totalCycles = 6; // Based on JOURNEY_MAP in Dev Plan // cite: DevelopmentPlan.jsx (constant)
+    const currentDevPlanCycle = developmentPlanData?.currentCycle || 1;
+    const totalCycles = 6;
     const roadmapProgressPercent = Math.round((currentDevPlanCycle / totalCycles) * 100);
 
-    // Strategic Content (OKRs) - Placeholder
-    const okrsDefined = strategicContentData?.okrs?.length || 3; // cite: useAppServices.jsx
-    const okrsAtRisk = (strategicContentData?.okrs || []).filter(o => (o.progress || 0) < 0.5).length; // Mock progress check // cite: PlanningHub.jsx (mock logic)
+    const okrsDefined = strategicContentData?.okrs?.length || 3;
+    const okrsAtRisk = (strategicContentData?.okrs || []).filter(o => (o.progress || 0) < 0.5).length;
 
-    // Weakest Tier Meta
-    const weakestTierMeta = useMemo(() => LEADERSHIP_TIERS?.[longitudinalData.weakestTierId] || { name: 'N/A', hex: COLORS.MUTED }, [longitudinalData.weakestTierId, LEADERSHIP_TIERS]); // cite: useAppServices.jsx
+    const weakestTierMeta = useMemo(() => LEADERSHIP_TIERS?.[longitudinalData.weakestTierId] || { name: 'N/A', hex: '#94a3b8' }, [longitudinalData.weakestTierId, LEADERSHIP_TIERS]);
 
-    // --- Navigation Handler ---
     const handleNavigation = useCallback((screen, params = {}) => {
-        navigate(screen, params); // Use navigate from context // cite: useAppServices.jsx
-    }, [navigate]); // Dependency: navigate function
+        navigate(screen, params);
+    }, [navigate]);
 
-
-    // --- Render Logic ---
     if (isAppLoading) return <LoadingSpinner message="Loading Executive ROI Report..." />;
-    if (appError) return <ConfigError message={`Failed to load report data: ${appError.message}`} />;
+    if (appError) return <div className="p-6 text-red-600">Failed to load report data: {appError.message}</div>;
 
     return (
-        // Consistent page structure and padding
-        <div className={`p-6 md:p-8 lg:p-10 min-h-screen space-y-4 sm:space-y-6 lg:space-y-8`} style={{ background: COLORS.BG }}> {/* Use BG color */}
+        <div className="min-h-screen bg-slate-50 p-6 space-y-8">
+            <div className="max-w-7xl mx-auto space-y-8">
+                <header className="text-center space-y-4">
+                     <h1 className="text-3xl font-bold text-corporate-navy">Executive ROI Report</h1>
+                     <p className="text-lg text-slate-600 max-w-3xl mx-auto">Data-driven insights into your leadership development progress and impact (Last 90 Days).</p>
+                </header>
 
-            {/* --- Section 1: Header --- */}
-            <header>
-                 <h1 className={`text-2xl sm:text-3xl md:text-4xl font-extrabold mb-2`} style={{ color: COLORS.NAVY }}>Executive ROI Report</h1>
-                 <p className="text-lg text-gray-700 max-w-3xl">Data-driven insights into your leadership development progress and impact (Last 90 Days).</p>
-            </header>
+                 <Card title="Performance Scorecard" icon={Activity} accentColor="bg-purple-600">
+                     <p className='text-sm text-slate-600 mb-6'>Key metrics summarizing recent activity and progress.</p>
+                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <StatCard icon={CheckCircle} label="Reps Completed Today" value={`${commitsCompletedToday} / ${commitsTotalToday}`} onClick={() => handleNavigation('daily-practice')} accentColor="bg-corporate-orange" trend={commitsCompletedToday > 0 ? 5 : 0} />
+                        <StatCard icon={Star} label="Current Streak" value={`${perfectStreak} Days`} onClick={() => handleNavigation('daily-practice')} accentColor="bg-amber-500" trend={perfectStreak * 2} />
+                        <StatCard icon={ChevronsRight} label="Total Reps Logged" value={`${totalRepsCompletedAllTime}`} onClick={() => handleNavigation('daily-practice')} accentColor="bg-corporate-teal" trend={totalRepsCompletedAllTime > 100 ? 10 : 0} />
+                         <StatCard icon={Target} label="Current Focus Tier" value={`${weakestTierMeta?.name || 'N/A'}`} onClick={() => handleNavigation('development-plan')} accentColor="bg-red-600" />
+                         <StatCard icon={Mic} label="Coaching Labs Done" value={`${totalCoachingLabsCompleted}`} onClick={() => handleNavigation('coaching-lab')} accentColor="bg-purple-600" trend={totalCoachingLabsCompleted * 5} />
+                         <StatCard icon={Briefcase} label="Dev Plan Progress" value={`${roadmapProgressPercent}%`} onClick={() => handleNavigation('development-plan')} accentColor="bg-corporate-navy" trend={roadmapProgressPercent / 10} />
+                        <StatCard icon={Archive} label="OKRs At Risk" value={`${okrsAtRisk} / ${okrsDefined}`} onClick={() => handleNavigation('planning-hub')} accentColor="bg-blue-600" trend={okrsAtRisk > 0 ? -okrsAtRisk * 10 : 0} />
+                        <StatCard icon={Lightbulb} label="AI Reflection Insights" value={`View`} onClick={() => handleNavigation('coaching-lab', { view: 'reflection-summary' })} accentColor="bg-corporate-navy" />
+                     </div>
+                 </Card>
 
-            {/* --- Section 2: Performance Scorecard --- */}
-             <Card title="Performance Scorecard" icon={Activity} accent='PURPLE'>
-                 <p className='text-sm text-gray-700 mb-6'>Key metrics summarizing recent activity and progress.</p>
-                 {/* Grid for Stat Cards */}
-                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    {/* Reps Today */}
-                    <StatCard icon={CheckCircle} label="Reps Completed Today" value={`${commitsCompletedToday} / ${commitsTotalToday}`} onClick={() => handleNavigation('daily-practice')} accent='ORANGE' trend={commitsCompletedToday > 0 ? 5 : 0} />
-                    {/* Streak */}
-                    <StatCard icon={Star} label="Current Streak" value={`${perfectStreak} Days`} onClick={() => handleNavigation('daily-practice')} accent='AMBER' trend={perfectStreak * 2} />
-                    {/* Total Reps */}
-                    <StatCard icon={ChevronsRight} label="Total Reps Logged" value={`${totalRepsCompletedAllTime}`} onClick={() => handleNavigation('daily-practice')} accent='TEAL' trend={totalRepsCompletedAllTime > 100 ? 10 : 0} />
-                    {/* Weakest Tier */}
-                     <StatCard icon={Target} label="Current Focus Tier" value={`${weakestTierMeta?.name || 'N/A'}`} onClick={() => handleNavigation('development-plan')} accent='RED' />
-                    {/* Coaching Labs */}
-                     <StatCard icon={Mic} label="Coaching Labs Done" value={`${totalCoachingLabsCompleted}`} onClick={() => handleNavigation('coaching-lab')} accent='PURPLE' trend={totalCoachingLabsCompleted * 5} />
-                    {/* Roadmap Progress */}
-                     <StatCard icon={Briefcase} label="Dev Plan Progress" value={`${roadmapProgressPercent}%`} onClick={() => handleNavigation('development-plan')} accent='NAVY' trend={roadmapProgressPercent / 10} />
-                    {/* OKRs At Risk */}
-                    <StatCard icon={Archive} label="OKRs At Risk" value={`${okrsAtRisk} / ${okrsDefined}`} onClick={() => handleNavigation('planning-hub')} accent='BLUE' trend={okrsAtRisk > 0 ? -okrsAtRisk * 10 : 0} />
-                     {/* AI Reflection Summary (Placeholder Link) */}
-                    <StatCard icon={Lightbulb} label="AI Reflection Insights" value={`View`} onClick={() => handleNavigation('coaching-lab', { view: 'reflection-summary' })} accent='NAVY' />
-                 </div>
-             </Card>
-
-            {/* --- Section 3: Longitudinal Impact Grid --- */}
-            <h2 className='text-2xl font-extrabold pt-4 border-t mt-10' style={{ color: COLORS.NAVY, borderColor: COLORS.SUBTLE }}>Longitudinal Impact (90-Day View)</h2>
-            <div className='grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 lg:gap-8'>
-                {/* 1. Confidence vs. Competence */}
-                <Card title="Confidence vs. Competence" icon={Target} accent='TEAL' className='lg:col-span-2'>
-                    <p className='text-sm text-gray-700 mb-4'>Self-perception (Assessment Score) vs. Proven capability (Daily Rep Execution %).</p>
-                    <div className='grid grid-cols-2 gap-4 text-center'>
-                        {/* Confidence */}
-                        <div className={`p-4 rounded-xl border-2 bg-white shadow-inner`} style={{ borderColor: COLORS.NAVY }}>
-                            <p className='text-xs font-semibold uppercase text-gray-500'>Confidence</p>
-                            <p className={`text-4xl font-extrabold mt-1`} style={{ color: COLORS.NAVY }}>{longitudinalData.confidence.toFixed(1)}<span className="text-xl sm:text-2xl text-gray-400">/5</span></p>
-                            <p className='text-[10px] text-gray-500'>(Latest Self-Assessment)</p>
+                <h2 className='text-2xl font-bold pt-4 border-t border-slate-200 mt-10 text-corporate-navy'>Longitudinal Impact (90-Day View)</h2>
+                <div className='grid grid-cols-1 lg:grid-cols-3 gap-6'>
+                    <Card title="Confidence vs. Competence" icon={Target} accentColor="bg-corporate-teal" className='lg:col-span-2'>
+                        <p className='text-sm text-slate-600 mb-4'>Self-perception (Assessment Score) vs. Proven capability (Daily Rep Execution %).</p>
+                        <div className='grid grid-cols-2 gap-4 text-center'>
+                            <div className="p-4 rounded-xl border border-slate-200 bg-slate-50 shadow-inner">
+                                <p className='text-xs font-semibold uppercase text-slate-500'>Confidence</p>
+                                <p className="text-4xl font-bold mt-1 text-corporate-navy">{longitudinalData.confidence.toFixed(1)}<span className="text-xl sm:text-2xl text-slate-400">/5</span></p>
+                                <p className='text-[10px] text-slate-500'>(Latest Self-Assessment)</p>
+                            </div>
+                            <div className="p-4 rounded-xl border border-slate-200 bg-slate-50 shadow-inner">
+                                <p className='text-xs font-semibold uppercase text-slate-500'>Competence</p>
+                                <p className="text-4xl font-bold mt-1 text-corporate-teal">{longitudinalData.competence}%</p>
+                                 <p className='text-[10px] text-slate-500'>(Daily Rep Success Rate)</p>
+                            </div>
                         </div>
-                        {/* Competence */}
-                        <div className={`p-4 rounded-xl border-2 bg-white shadow-inner`} style={{ borderColor: COLORS.TEAL }}>
-                            <p className='text-xs font-semibold uppercase text-gray-500'>Competence</p>
-                            <p className={`text-4xl font-extrabold mt-1`} style={{ color: COLORS.TEAL }}>{longitudinalData.competence}%</p>
-                             <p className='text-[10px] text-gray-500'>(Daily Rep Success Rate)</p>
+                        <div className="mt-6 p-4 rounded-xl border border-corporate-teal/20 bg-corporate-teal/5 text-corporate-navy">
+                            <p className='font-semibold text-sm flex items-center gap-2'><Cpu className='w-4 h-4 text-corporate-teal'/> AI Rep Coach Insight:</p>
+                            <p className='text-sm mt-1 italic text-slate-700'>
+                                {longitudinalData.confidence >= 4 && Number(longitudinalData.competence) < 75 ?
+                                    `High confidence, moderate execution. Focus daily reps on bridging the gap in ${weakestTierMeta.name}. Consistency is key.` :
+                                longitudinalData.confidence < 3.5 && Number(longitudinalData.competence) >= 75 ?
+                                    `Strong execution, lower self-rating. Recognize your progress in ${weakestTierMeta.name}! What evidence supports higher confidence?` :
+                                    `Good alignment between perception and practice. Continue disciplined execution to master ${weakestTierMeta.name}.`
+                                }
+                            </p>
                         </div>
-                    </div>
-                    {/* AI Insight */}
-                    <div className={`mt-6 p-3 rounded-lg border`} style={{ background: COLORS.TEAL + '10', borderColor: COLORS.TEAL + '30', color: COLORS.NAVY }}>
-                        <p className='font-semibold text-sm flex items-center gap-1.5'><Cpu className='w-4 h-4 text-[#47A88D]'/> AI Rep Coach Insight:</p>
-                        <p className='text-xs mt-1 italic'>
-                            {longitudinalData.confidence >= 4 && Number(longitudinalData.competence) < 75 ? // Adjusted threshold
-                                `High confidence, moderate execution. Focus daily reps on bridging the gap in ${weakestTierMeta.name}. Consistency is key.` :
-                            longitudinalData.confidence < 3.5 && Number(longitudinalData.competence) >= 75 ?
-                                `Strong execution, lower self-rating. Recognize your progress in ${weakestTierMeta.name}! What evidence supports higher confidence?` :
-                                `Good alignment between perception and practice. Continue disciplined execution to master ${weakestTierMeta.name}.`
-                            }
-                        </p>
-                    </div>
-                </Card>
+                    </Card>
 
-                {/* 2. Risk Reduction */}
-                <Card title="Risk Reduction Scorecard" icon={ShieldCheck} accent='ORANGE'>
-                    <p className='text-sm text-gray-700 mb-4'>Impact of Pre-Mortem Audits on mitigating strategic failures (Placeholder calculation).</p>
-                    <div className='text-center mb-4'>
-                        <p className='text-xs font-semibold uppercase text-gray-500'>Risk Mitigation Impact</p>
-                        <p className={`text-5xl font-extrabold mt-1`} style={{ color: Number(longitudinalData.riskReduction) < 80 ? COLORS.ORANGE : COLORS.GREEN }}>
-                            {longitudinalData.riskReduction}%
-                        </p>
-                    </div>
-                    <div className='mt-4 pt-4 border-t border-gray-200'>
-                        <p className='text-sm font-semibold' style={{ color: COLORS.NAVY }}>Tier Mastery Projection:</p>
-                        <p className='text-sm text-gray-700'>
-                            Est. <strong className='text-lg'>{longitudinalData.tierMasteryProjection}</strong> days to master <strong style={{ color: weakestTierMeta.hex }}>{weakestTierMeta.name}</strong> based on current execution rate.
-                        </p>
-                         <Button onClick={() => handleNavigation('planning-hub', { view: 'pre-mortem' })} variant="outline" size="sm" className="w-full mt-3 !border-orange-300 !text-orange-600 hover:!bg-orange-50">
-                             Go to Pre-Mortem Tool
+                    <Card title="Risk Reduction Scorecard" icon={ShieldCheck} accentColor="bg-corporate-orange">
+                        <p className='text-sm text-slate-600 mb-4'>Impact of Pre-Mortem Audits on mitigating strategic failures.</p>
+                        <div className='text-center mb-4'>
+                            <p className='text-xs font-semibold uppercase text-slate-500'>Risk Mitigation Impact</p>
+                            <p className={`text-5xl font-bold mt-1 ${Number(longitudinalData.riskReduction) < 80 ? 'text-corporate-orange' : 'text-green-600'}`}>
+                                {longitudinalData.riskReduction}%
+                            </p>
+                        </div>
+                        <div className='mt-4 pt-4 border-t border-slate-200'>
+                            <p className='text-sm font-semibold text-corporate-navy'>Tier Mastery Projection:</p>
+                            <p className='text-sm text-slate-600 mt-1'>
+                                Est. <strong className='text-lg text-corporate-navy'>{longitudinalData.tierMasteryProjection}</strong> days to master <strong style={{ color: weakestTierMeta.hex }}>{weakestTierMeta.name}</strong> based on current execution rate.
+                            </p>
+                             <Button onClick={() => handleNavigation('planning-hub', { view: 'pre-mortem' })} variant="outline" size="sm" className="w-full mt-4 !border-orange-200 !text-corporate-orange hover:!bg-orange-50">
+                                 Go to Pre-Mortem Tool
+                             </Button>
+                        </div>
+                    </Card>
+
+                    <Card title="Performance vs. Well-being" icon={HeartPulse} accentColor="bg-red-600">
+                         <p className='text-sm text-slate-600 mb-4'>Correlation between daily energy/focus and rep completion rate.</p>
+                         <div className="grid grid-cols-2 gap-4 text-center mb-4">
+                             <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl">
+                                 <p className="text-xs text-slate-500 uppercase font-semibold">Overall Avg Score</p>
+                                 <p className="text-xl sm:text-2xl font-bold text-corporate-navy">{longitudinalData.avgDailyScore}%</p>
+                             </div>
+                             <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl">
+                                 <p className="text-xs text-slate-500 uppercase font-semibold">Avg on Low Energy Days</p>
+                                 <p className={`text-2xl font-bold ${Number(longitudinalData.avgScoreLowEnergy) < Number(longitudinalData.avgDailyScore) ? 'text-red-600' : 'text-green-600'}`}>{longitudinalData.avgScoreLowEnergy}%</p>
+                             </div>
+                         </div>
+                         <div className="mt-4 p-4 rounded-xl border border-red-200 bg-red-50 text-corporate-navy">
+                             <p className='font-semibold text-sm flex items-center gap-2'><MessageSquare className='w-4 h-4 text-corporate-orange'/> AI Rep Coach Insight:</p>
+                             <p className='text-sm mt-1 italic text-slate-700'>
+                                { (longitudinalData.lowEnergyDays / Math.max(1, Object.keys(dailyPracticeData?.resilienceLog || {}).length)) > 0.3 ?
+                                    `Significant drop (${Number(longitudinalData.avgDailyScore) - Number(longitudinalData.avgScoreLowEnergy)} pts) on low energy days (${longitudinalData.lowEnergyDays} logged). Prioritize recovery reps.` :
+                                    `Execution rate remains relatively stable despite energy fluctuations. Strong resilience practices evident.`
+                                 }
+                             </p>
+                         </div>
+                    </Card>
+
+                    <Card title="Mentorship & Coaching Alliance" icon={Users} accentColor="bg-blue-600">
+                         <p className='text-sm text-slate-600 mb-4'>Opportunities to mentor peers vs. areas to seek guidance.</p>
+                         <div className="p-3 rounded-xl border border-blue-200 bg-blue-50 shadow-sm mb-3">
+                             <p className='font-semibold text-sm flex items-center gap-2 text-blue-800'><TrendingUp className='w-4 h-4'/> Mentor Opportunity:</p>
+                             <p className='text-xs mt-1 text-slate-700'>Your strength in <strong>{weakestTierMeta.name}</strong> suggests you could mentor others. Action: Coach a peer on a related task this week.</p>
+                         </div>
+                         <div className="p-3 rounded-xl border border-red-200 bg-red-50 shadow-sm">
+                             <p className='font-semibold text-sm flex items-center gap-2 text-red-800'><TrendingDown className='w-4 h-4'/> Mentee Feedback (Example T4):</p>
+                             <p className='text-xs mt-1 text-slate-700'>Score: <strong>{longitudinalData.menteeFeedback.score}/100</strong>. Comment: "{longitudinalData.menteeFeedback.comment}"</p>
+                         </div>
+                         <Button onClick={() => handleNavigation('coaching-lab', { view: 'feedback-review', tier: 'T4' })} size="sm" variant="primary" className='mt-4 w-full !bg-corporate-navy hover:!bg-corporate-navy/90'>
+                             Review Full Mentee Feedback
                          </Button>
-                    </div>
-                </Card>
+                    </Card>
 
-                {/* 3. Performance vs. Well-being */}
-                <Card title="Performance vs. Well-being" icon={HeartPulse} accent='RED'>
-                     <p className='text-sm text-gray-700 mb-4'>Correlation between daily energy/focus (if logged) and rep completion rate.</p>
-                     {/* Score Comparison */}
-                     <div className="grid grid-cols-2 gap-4 text-center mb-4">
-                         <div className="p-3 bg-gray-50 border rounded-lg">
-                             <p className="text-xs text-gray-500 uppercase font-semibold">Overall Avg Score</p>
-                             <p className="text-xl sm:text-2xl font-bold" style={{ color: COLORS.NAVY }}>{longitudinalData.avgDailyScore}%</p>
+                    <Card title="Organizational Impact Score" icon={BarChart3} accentColor="bg-purple-600">
+                         <p className='text-sm text-slate-600 mb-4'>Aggregated view of how development efforts correlate with team/org outcomes.</p>
+                         <div className='space-y-3 text-sm bg-slate-50 p-4 rounded-xl border border-slate-200'>
+                             <p className='flex justify-between font-semibold text-slate-700'>Psych Safety Index: <span className='font-bold text-green-600'>+12%</span></p>
+                             <p className='flex justify-between font-semibold text-slate-700'>Team Turnover Rate: <span className='font-bold text-green-600'>-6%</span></p>
+                             <p className='flex justify-between font-semibold text-slate-700'>Project On-Time Rate: <span className='font-bold text-amber-600'>+5%</span></p>
                          </div>
-                         <div className="p-3 bg-gray-50 border rounded-lg">
-                             <p className="text-xs text-gray-500 uppercase font-semibold">Avg on Low Energy Days</p>
-                             <p className={`text-2xl font-bold ${Number(longitudinalData.avgScoreLowEnergy) < Number(longitudinalData.avgDailyScore) ? 'text-red-600' : 'text-green-600'}`}>{longitudinalData.avgScoreLowEnergy}%</p>
-                         </div>
-                     </div>
-                     {/* AI Insight */}
-                     <div className={`mt-4 p-3 rounded-lg border`} style={{ background: COLORS.RED + '10', borderColor: COLORS.RED + '30', color: COLORS.NAVY }}>
-                         <p className='font-semibold text-sm flex items-center gap-1.5'><MessageSquare className='w-4 h-4 text-[#E04E1B]'/> AI Rep Coach Insight:</p>
-                         <p className='text-xs mt-1 italic'>
-                            { (longitudinalData.lowEnergyDays / Math.max(1, Object.keys(dailyPracticeData?.resilienceLog || {}).length)) > 0.3 ? // Check if >30% days are low energy
-                                `Significant drop (${Number(longitudinalData.avgDailyScore) - Number(longitudinalData.avgScoreLowEnergy)} pts) on low energy days (${longitudinalData.lowEnergyDays} logged). Prioritize recovery reps.` :
-                                `Execution rate remains relatively stable despite energy fluctuations. Strong resilience practices evident.`
-                             }
-                         </p>
-                         {/* TODO: Add link to log resilience if not available */}
-                         {/* <Button variant="outline" size="sm" className="mt-2 w-full !text-xs">Log Daily Resilience</Button> */}
-                     </div>
-                </Card>
-
-                {/* 4. Mentorship Alignment (Placeholder Data) */}
-                <Card title="Mentorship & Coaching Alliance" icon={Users} accent='BLUE'>
-                     <p className='text-sm text-gray-700 mb-4'>Opportunities to mentor peers (strengths) vs. areas to seek guidance (weaknesses).</p>
-                     {/* Strength Area */}
-                     <div className={`p-3 rounded-lg border border-blue-200 bg-blue-50 shadow-sm mb-3`}>
-                         <p className='font-semibold text-sm flex items-center gap-1.5' style={{ color: COLORS.BLUE }}><TrendingUp className='w-4 h-4'/> Mentor Opportunity (Example):</p>
-                         <p className='text-xs mt-1 text-gray-700'>Your strength in <strong>{weakestTierMeta.name}</strong> suggests you could mentor others. Action: Coach a peer on a related task this week.</p>
-                     </div>
-                     {/* Weakness Area (Placeholder) */}
-                     <div className={`p-3 rounded-lg border border-red-200 bg-red-50 shadow-sm`}>
-                         <p className='font-semibold text-sm flex items-center gap-1.5' style={{ color: COLORS.RED }}><TrendingDown className='w-4 h-4'/> Mentee Feedback (Example T4):</p>
-                         <p className='text-xs mt-1 text-gray-700'>Score: <strong>{longitudinalData.menteeFeedback.score}/100</strong>. Comment: "{longitudinalData.menteeFeedback.comment}"</p>
-                     </div>
-                     {/* Button to Feedback Area */}
-                     <Button onClick={() => handleNavigation('coaching-lab', { view: 'feedback-review', tier: 'T4' })} size="sm" variant="primary" className='mt-4 w-full bg-[#002E47] hover:bg-blue-700'> {/* Blue Button */}
-                         Review Full Mentee Feedback
-                     </Button>
-                </Card>
-
-                {/* 5. Organizational Impact (Placeholder Data) */}
-                <Card title="Organizational Impact Score" icon={BarChart3} accent='PURPLE'>
-                     <p className='text-sm text-gray-700 mb-4'>Aggregated view of how development efforts correlate with team/org outcomes (Placeholder data).</p>
-                     <div className='space-y-2 text-sm'>
-                         <p className='flex justify-between font-semibold text-gray-700'>Psych Safety Index: <span className='font-extrabold text-green-600'>+12%</span></p>
-                         <p className='flex justify-between font-semibold text-gray-700'>Team Turnover Rate: <span className='font-extrabold text-green-600'>-6%</span></p>
-                         <p className='flex justify-between font-semibold text-gray-700'>Project On-Time Rate: <span className='font-extrabold text-amber-600'>+5%</span></p>
-                     </div>
-                     {/* Button to Generate Detailed Report */}
-                     <Button onClick={() => handleNavigation('planning-hub', { view: 'roi-report' })} size="sm" variant="secondary" className='mt-6 w-full bg-[#47A88D] hover:bg-purple-700'> {/* Purple Button */}
-                         Generate Full Management ROI Report
-                     </Button>
-                </Card>
+                         <Button onClick={() => handleNavigation('planning-hub', { view: 'roi-report' })} size="sm" variant="secondary" className='mt-6 w-full !bg-corporate-teal hover:!bg-corporate-teal-dark'>
+                             Generate Full Management ROI Report
+                         </Button>
+                    </Card>
+                </div>
             </div>
-
-            {/* Mock Modal removed */}
         </div>
     );
 }

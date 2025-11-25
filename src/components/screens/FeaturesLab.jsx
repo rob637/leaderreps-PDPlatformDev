@@ -1,3 +1,5 @@
+// src/components/screens/FeaturesLab.jsx
+
 import React, { useState, useEffect } from 'react';
 import { 
   Beaker, 
@@ -11,9 +13,11 @@ import {
   ToggleLeft, 
   ToggleRight,
   Info,
-  AlertTriangle
+  AlertTriangle,
+  ArrowLeft
 } from 'lucide-react';
 import { useAppServices } from '../../services/useAppServices.jsx';
+import { Button } from '../ui';
 
 // Feature Categories
 const CATEGORIES = {
@@ -176,20 +180,6 @@ const FeaturesLab = () => {
     window.dispatchEvent(new CustomEvent('featureFlagsUpdated', { detail: newFlags }));
   };
 
-  const toggleCategory = (category) => {
-    const categoryFeatures = FEATURES.filter(f => f.category === category);
-    const allEnabled = categoryFeatures.every(f => featureFlags[f.id]);
-    
-    const newFlags = { ...featureFlags };
-    categoryFeatures.forEach(f => {
-      newFlags[f.id] = !allEnabled;
-    });
-    
-    setFeatureFlags(newFlags);
-    localStorage.setItem('arena_feature_flags', JSON.stringify(newFlags));
-    window.dispatchEvent(new CustomEvent('featureFlagsUpdated', { detail: newFlags }));
-  };
-
   const renderFeatureCard = (feature) => {
     const isEnabled = featureFlags[feature.id] || false;
     const Icon = feature.icon;
@@ -197,9 +187,9 @@ const FeaturesLab = () => {
     return (
       <div 
         key={feature.id} 
-        className={`p-4 rounded-xl border-2 transition-all duration-200 ${
+        className={`p-4 rounded-xl border transition-all duration-200 ${
           isEnabled 
-            ? 'bg-white border-teal-500 shadow-md' 
+            ? 'bg-white border-corporate-teal shadow-md' 
             : 'bg-slate-50 border-slate-200 opacity-75 hover:opacity-100'
         }`}
       >
@@ -209,13 +199,13 @@ const FeaturesLab = () => {
           </div>
           <button 
             onClick={() => toggleFeature(feature.id)}
-            className={`transition-colors ${isEnabled ? 'text-teal-600' : 'text-slate-400'}`}
+            className={`transition-colors ${isEnabled ? 'text-corporate-teal' : 'text-slate-400'}`}
           >
             {isEnabled ? <ToggleRight className="w-8 h-8" /> : <ToggleLeft className="w-8 h-8" />}
           </button>
         </div>
         
-        <h3 className="font-bold text-slate-800 mb-1">{feature.title}</h3>
+        <h3 className="font-bold text-corporate-navy mb-1">{feature.title}</h3>
         <p className="text-sm text-slate-600 mb-3 min-h-[40px]">{feature.description}</p>
         
         <div className="flex items-center gap-2">
@@ -227,7 +217,7 @@ const FeaturesLab = () => {
             {feature.status}
           </span>
           {isEnabled && (
-            <span className="text-xs font-bold text-teal-600 flex items-center gap-1">
+            <span className="text-xs font-bold text-corporate-teal flex items-center gap-1">
               <Zap className="w-3 h-3" /> Active
             </span>
           )}
@@ -237,26 +227,29 @@ const FeaturesLab = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#F5F5F7] p-4 sm:p-6 lg:p-8 font-sans text-slate-800">
+    <div className="min-h-screen bg-slate-50 p-6 md:p-10 animate-fade-in">
       <div className="max-w-6xl mx-auto space-y-8">
         
         {/* Header */}
         <header className="space-y-4">
+          <Button onClick={() => navigate('app-settings')} variant="nav-back" size="sm">
+                <ArrowLeft className="w-4 h-4 mr-2" /> Back to Settings
+          </Button>
           <div className="flex items-center gap-3">
-            <div className="p-3 bg-indigo-600 rounded-xl text-white shadow-lg">
+            <div className="p-3 bg-corporate-navy rounded-xl text-white shadow-lg">
               <Beaker className="w-8 h-8" />
             </div>
             <div>
-              <h1 className="text-3xl font-bold text-[#002E47]">Features Lab</h1>
+              <h1 className="text-3xl font-bold text-corporate-navy">Features Lab</h1>
               <p className="text-slate-500">Experimental features playground. Toggle features to test functionality without impacting the main application.</p>
             </div>
           </div>
           
-          <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded-r-xl flex items-start gap-3">
-            <AlertTriangle className="w-5 h-5 text-yellow-600 mt-0.5" />
+          <div className="bg-amber-50 border-l-4 border-amber-400 p-4 rounded-r-xl flex items-start gap-3">
+            <AlertTriangle className="w-5 h-5 text-amber-600 mt-0.5" />
             <div>
-              <p className="font-bold text-yellow-800">Experimental Zone</p>
-              <p className="text-sm text-yellow-700">
+              <p className="font-bold text-amber-800">Experimental Zone</p>
+              <p className="text-sm text-amber-700">
                 Features enabled here are stored locally in your browser. They may be incomplete, unstable, or change without notice. 
                 Use at your own risk for testing purposes.
               </p>
@@ -268,7 +261,7 @@ const FeaturesLab = () => {
         {Object.values(CATEGORIES).map(category => (
           <section key={category} className="space-y-4">
             <div className="flex items-center gap-2 border-b border-slate-200 pb-2">
-              <h2 className="text-xl font-bold text-[#002E47]">{category} Experiments</h2>
+              <h2 className="text-xl font-bold text-corporate-navy">{category} Experiments</h2>
               <span className="bg-slate-200 text-slate-600 text-xs font-bold px-2 py-1 rounded-full">
                 {FEATURES.filter(f => f.category === category).length}
               </span>

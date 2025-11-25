@@ -6,14 +6,10 @@ const OUTPUT_FILE = 'pre_generated_book_catalog.json';
 const API_KEY = process.env.GEMINI_API_KEY; // Requires GEMINI_API_KEY environment variable
 const MODEL_NAME = 'gemini-2.5-flash';
 
-// --- COLORS AND COMPLEXITY MAP (Copied from BusinessReadings.jsx for styling) ---
-const COLORS = {
-  NAVY: '#002E47', TEAL: '#47A88D', SUBTLE_TEAL: '#349881', ORANGE: '#E04E1B', GREEN: '#10B981', AMBER: '#F59E0B', RED: '#E04E1B', LIGHT_GRAY: '#FCFCFA', OFF_WHITE: '#FFFFFF', MUTED: '#4B5563', SUBTLE: '#E5E7EB', TEXT: '#374151', BLUE: '#2563EB', BG: '#F9FAFB', PURPLE: '#7C3AED',
-};
-const COMPLEXITY_MAP = {
-  Low:    { label: 'Novice',       hex: COLORS.GREEN, icon: 'CheckCircle' },
-  Medium: { label: 'Intermediate', hex: COLORS.AMBER, icon: 'AlertTriangle' },
-  High:   { label: 'Expert',       hex: COLORS.RED,   icon: 'Target' },
+// --- COMPLEXITY MAP ---
+  Low:    { label: 'Novice',       hex: '#10B981', icon: 'CheckCircle' },
+  Medium: { label: 'Intermediate', hex: '#F59E0B', icon: 'AlertTriangle' },
+  High:   { label: 'Expert',       hex: '#E04E1B',   icon: 'Target' },
 };
 
 // --- MOCK DATA (Your provided book catalog) ---
@@ -57,17 +53,17 @@ const BOOK_CATALOG_MOCK = {
 const API_ERROR_HTML = (executive, book) => {
     const errorTitle = executive ? "EXECUTIVE BRIEFING UNAVAILABLE" : "FULL FLYER UNAVAILABLE";
     const baseContent = executive 
-        ? `<p style="color:${COLORS.RED}; font-size: 18px; margin-top: 15px; line-height: 1.6;">**CRITICAL API ERROR**: Content generation failed during pre-processing. Check API key and service status.</p>
-           <h3 style="color:${COLORS.NAVY}; font-weight:800; font-size: 20px; margin-top:20px;">Static Summary (for Reference)</h3>
+        ? `<p style="color:${'#E04E1B'}; font-size: 18px; margin-top: 15px; line-height: 1.6;">**CRITICAL API ERROR**: Content generation failed during pre-processing. Check API key and service status.</p>
+           <h3 style="color:${'#002E47'}; font-weight:800; font-size: 20px; margin-top:20px;">Static Summary (for Reference)</h3>
            <p style="color:#374151; font-size: 16px; margin-top: 5px;">This briefing would have covered: ${book.theme}. Focus areas: ${book.focus.split(',').slice(0, 3).join(', ')}.</p>`
-        : `<p style="color:${COLORS.RED}; font-size: 18px; margin-top: 15px; line-height: 1.6;">**CRITICAL API ERROR**: Content generation failed during pre-processing. Check API key and service status.</p>
-           <h3 style="color:${COLORS.NAVY}; font-weight:800; font-size: 20px; margin-top:20px;">Root Cause Check</h3>
+        : `<p style="color:${'#E04E1B'}; font-size: 18px; margin-top: 15px; line-height: 1.6;">**CRITICAL API ERROR**: Content generation failed during pre-processing. Check API key and service status.</p>
+           <h3 style="color:${'#002E47'}; font-weight:800; font-size: 20px; margin-top:20px;">Root Cause Check</h3>
            <ul style="list-style:disc;margin-left:20px;color:#374151;font-size:16px;">
               <li>The API call failed during the generation script.</li>
               <li>Verify the **Gemini API Key** is correctly set in the environment.</li>
            </ul>`;
         
-    return `<div style="padding: 16px;"><h2 style="color:${COLORS.NAVY}; font-weight:900; font-size: 24px; border-bottom: 3px solid ${COLORS.RED}; padding-bottom: 8px;">${errorTitle}</h2>${baseContent}</div>`;
+    return `<div style="padding: 16px;"><h2 style="color:${'#002E47'}; font-weight:900; font-size: 24px; border-bottom: 3px solid ${'#E04E1B'}; padding-bottom: 8px;">${errorTitle}</h2>${baseContent}</div>`;
 };
 
 /**
@@ -101,8 +97,8 @@ async function generateFlyerHTML({ book, tier, executive, ai }) {
     
     if (html && !html.toLowerCase().includes('error')) {
         // Apply inline styles to the AI-generated HTML for consistent branding
-        html = html.replace(/<h2/g, `<h2 style="color:${COLORS.ORANGE};font-size:24px;border-bottom:2px solid ${COLORS.SUBTLE};padding-bottom:5px;margin-top:15px;"`);
-        html = html.replace(/<h3/g, `<h3 style="color:${COLORS.NAVY};font-size:20px;margin-top:10px;"`);
+        html = html.replace(/<h2/g, `<h2 style="color:${'#E04E1B'};font-size:24px;border-bottom:2px solid ${'#E5E7EB'};padding-bottom:5px;margin-top:15px;"`);
+        html = html.replace(/<h3/g, `<h3 style="color:${'#002E47'};font-size:20px;margin-top:10px;"`);
         html = html.replace(/<p/g, `<p style="color:#374151;font-size:16px;"`);
         html = html.replace(/<ul/g, `<ul style="list-style:disc;margin-left:20px;color:#374151;"`);
         html = html.replace(/<ol/g, `<ol style="list-style:decimal;margin-left:20px;color:#374151;"`);

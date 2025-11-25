@@ -9,9 +9,7 @@ import { WIDGET_TEMPLATES, FEATURE_METADATA } from '../../config/widgetTemplates
 import { useAppServices } from '../../services/useAppServices';
 import { useDashboard } from '../screens/dashboard/DashboardHooks';
 import { createWidgetSDK } from '../../services/WidgetSDK';
-import { Card, Button } from '../shared/UI';
-import { ProgressBar } from '../screens/developmentplan/DevPlanComponents';
-import { COLORS } from '../screens/developmentplan/devPlanConstants';
+import { Card } from '../ui';
 import { ENHANCEMENT_IDEAS } from '../../data/enhancementIdeas';
 
 const FeatureManager = () => {
@@ -94,16 +92,6 @@ const FeatureManager = () => {
 
   const dailyRepCompleted = habitsCompleted?.completedDailyRep || false;
 
-  // --- PLAN DATA ---
-  const plan = React.useMemo(() => developmentPlanData?.currentPlan || {}, [developmentPlanData]);
-  const cycle = plan.cycle || 1;
-  const summary = React.useMemo(() => plan.summary || { 
-    totalSkills: 0, 
-    completedSkills: 0, 
-    progress: 0,
-    currentWeek: 0
-  }, [plan]);
-
   // --- MOCK HANDLERS FOR EDITOR (To prevent actual DB writes during preview if desired, or use real ones) ---
   // The user requested REAL data. We will pass the real handlers, but maybe wrap them to log?
   // Actually, for the editor, we might want to prevent accidental saves. 
@@ -158,37 +146,26 @@ const FeatureManager = () => {
     // Components
     Checkbox,
     Card,
-    Button,
-    ProgressBar,
-
-    // Constants
-    COLORS,
     
     // Functions
     navigate,
-    onScan: () => console.log('Navigate to Scan'),
-    onTimeline: () => console.log('Navigate to Timeline'),
-    onDetail: () => console.log('Navigate to Detail'),
-    setShowBreakdown: (val) => console.log('Show Breakdown:', val),
-    onEditPlan: () => console.log('Navigate to Edit Plan'),
-
     isFeatureEnabled,
     // We wrap these to ensure they work in the isolated scope if needed, 
     // but passing them directly is usually fine.
     handleHabitCheck: (key, val) => handleHabitToggle(key, val), // This one was wrapped in Dashboard4
     setIsAnchorModalOpen: () => console.log('Open Anchor Modal (Mocked for Editor)'),
     setIsCalendarModalOpen: () => console.log('Open Calendar Modal (Mocked for Editor)'),
-    handleToggleAdditionalRep: (id, isChecked) => handleToggleAdditionalRep(id, isChecked),
-    setMorningWIN: (val) => setMorningWIN(val),
-    handleSaveWINWrapper: () => handleSaveWIN(), // Dashboard4 wrapper just added a timeout - wrap to prevent event
-    handleToggleWIN: () => handleToggleWIN(),
-    handleToggleTask: (id) => handleToggleTask(id),
-    handleRemoveTask: (id) => handleRemoveTask(id),
+    handleToggleAdditionalRep,
+    setMorningWIN,
+    handleSaveWINWrapper: handleSaveWIN, // Dashboard4 wrapper just added a timeout
+    handleToggleWIN,
+    handleToggleTask,
+    handleRemoveTask,
     setNewTaskText: () => {}, // Local state in Dashboard4
     handleAddOtherTask: () => {}, // Local state in Dashboard4
-    setReflectionGood: (val) => setReflectionGood(val),
-    setReflectionBetter: (val) => setReflectionBetter(val),
-    handleSaveEveningBookend: () => handleSaveEveningBookend(),
+    setReflectionGood,
+    setReflectionBetter,
+    handleSaveEveningBookend,
     
     // State
     weeklyFocus,
@@ -204,20 +181,10 @@ const FeatureManager = () => {
     otherTasks,
     newTaskText: '', // Local state
     scorecard,
-    handleSaveScorecard: () => {}, // Mock for editor
-    isSavingScorecard: false,
     streakCount,
     reflectionGood,
     reflectionBetter,
     isSavingBookend,
-    eveningBookend: dailyPracticeData?.eveningBookend || {},
-    commitmentHistory: additionalCommitments || [],
-
-    // Plan Data
-    plan,
-    cycle,
-    summary,
-    winsList: otherTasks, // Alias
     
     // User Data
     user: user ? {
@@ -300,7 +267,7 @@ const FeatureManager = () => {
             'otherTasks': 'User Input (Text Entry - Secondary Tasks).'
           },
           'Output': {
-            'Locker': 'Output to Your Locker (AM Bookend History).'
+            'Locker': 'Output to Your Locker (Win History).'
           }
         };
       case 'pm-bookend':
@@ -311,7 +278,7 @@ const FeatureManager = () => {
             'reflectionBetter': 'User Input (Reflection Text).'
           },
           'Output': {
-            'Locker': 'Output to Your Locker (PM Bookend History).'
+            'Locker': 'Output to Your Locker (Reflection History).'
           }
         };
       case 'scorecard':
@@ -450,28 +417,6 @@ const FeatureManager = () => {
             'Input': { 'history': 'PM Bookend History Data.' },
             'Output': { 'Display': 'No output.' }
         };
-      case 'win-the-day-v2':
-        return {
-          ...common,
-          'Input': {
-            'morningWIN': 'User Input (Text Entry - Top Priority).',
-            'otherTasks': 'User Input (Text Entry - Secondary Tasks).'
-          },
-          'Output': {
-            'Locker': 'Output to Your Locker (AM Bookend History).'
-          }
-        };
-      case 'pm-bookend-v2':
-        return {
-          ...common,
-          'Input': {
-            'reflectionGood': 'User Input (Reflection Text).',
-            'reflectionBetter': 'User Input (Reflection Text).'
-          },
-          'Output': {
-            'Locker': 'Output to Your Locker (PM Bookend History).'
-          }
-        };
       default:
         // Check for dev-plan widgets
         if (widgetId.startsWith('dev-plan-')) {
@@ -531,11 +476,10 @@ const FeatureManager = () => {
 
   // 1. Determine canonical order of IDs to prevent jumping
   // Start with Metadata keys to preserve default order
-  // Filter out v2 versions - they're implementation details, not separate features
-  const orderedIds = Object.keys(FEATURE_METADATA).filter(id => !id.endsWith('-v2'));
-  // Append any custom IDs from DB that aren't in metadata (but not v2 versions)
+  const orderedIds = Object.keys(FEATURE_METADATA);
+  // Append any custom IDs from DB that aren't in metadata
   Object.keys(features).forEach(id => {
-    if (!FEATURE_METADATA[id] && !id.endsWith('-v2')) {
+    if (!FEATURE_METADATA[id]) {
       orderedIds.push(id);
     }
   });

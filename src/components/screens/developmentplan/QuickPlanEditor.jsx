@@ -5,7 +5,7 @@
 import React, { useState } from 'react';
 import { Save, Plus, Minus, X } from 'lucide-react';
 import { Button, Card } from './DevPlanComponents';
-import { COLORS } from './devPlanUtils';
+
 
 // Helper to generate consistent skill IDs
 const generateSkillId = (areaName, index) => {
@@ -159,7 +159,7 @@ const QuickPlanEditor = ({ plan, onSave, onCancel }) => {
       <Card accent="ORANGE">
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-xl sm:text-2xl font-bold mb-2" style={{ color: COLORS.NAVY }}>
+            <h2 className="text-xl sm:text-2xl font-bold mb-2" style={{ color: 'var(--corporate-navy)' }}>
               Quick Edit Plan
             </h2>
             <p className="text-gray-600">
@@ -167,7 +167,7 @@ const QuickPlanEditor = ({ plan, onSave, onCancel }) => {
             </p>
           </div>
           {hasChanges && (
-            <div className="text-sm font-medium" style={{ color: COLORS.ORANGE }}>
+            <div className="text-sm font-medium" style={{ color: 'var(--corporate-orange)' }}>
               Unsaved changes
             </div>
           )}
@@ -177,7 +177,7 @@ const QuickPlanEditor = ({ plan, onSave, onCancel }) => {
       {/* Skills by Area */}
       {Object.entries(repsByArea).map(([area, reps]) => (
         <Card key={area} accent="ORANGE">
-          <h3 className="font-bold mb-4" style={{ color: COLORS.NAVY }}>
+          <h3 className="font-bold mb-4" style={{ color: 'var(--corporate-navy)' }}>
             {area}
           </h3>
           
@@ -188,7 +188,7 @@ const QuickPlanEditor = ({ plan, onSave, onCancel }) => {
                 className="flex items-center gap-4 p-3 bg-gray-50 rounded-lg"
               >
                 <div className="flex-1">
-                  <div className="font-medium" style={{ color: COLORS.NAVY }}>
+                  <div className="font-medium" style={{ color: 'var(--corporate-navy)' }}>
                     {rep.skillName}
                   </div>
                   {rep.phase && (
@@ -208,7 +208,7 @@ const QuickPlanEditor = ({ plan, onSave, onCancel }) => {
                   </button>
                   
                   <div className="w-16 text-center">
-                    <div className="font-bold" style={{ color: COLORS.ORANGE }}>
+                    <div className="font-bold" style={{ color: 'var(--corporate-orange)' }}>
                       {rep.weeksCompleted || 0}
                     </div>
                     <div className="text-xs text-gray-600">weeks</div>

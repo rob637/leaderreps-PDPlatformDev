@@ -1,47 +1,12 @@
-// src/components/screens/QuickStartAccelerator.jsx (Refactored for Consistency, Context)
+// src/components/screens/QuickStartAccelerator.jsx
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-// --- Core Services & Context ---
-import { useAppServices } from '../../services/useAppServices.jsx'; // cite: useAppServices.jsx
-
-// --- Icons ---
+import { useAppServices } from '../../services/useAppServices.jsx';
+import { Button, Card, LoadingSpinner } from '../ui';
 import {
   Zap, ShieldCheck, ArrowLeft, Target, Briefcase, Clock, Users, CornerRightUp, X, Activity, Cpu, Eye,
-  CheckCircle, AlertTriangle, Lightbulb, BookOpen, Loader // Added Loader
+  CheckCircle, AlertTriangle, Lightbulb, BookOpen, Loader
 } from 'lucide-react';
-
-/* =========================================================
-   PALETTE & UI COMPONENTS (Standardized)
-========================================================= */
-// --- Primary Color Palette ---
-const COLORS = { NAVY: '#002E47', TEAL: '#47A88D', BLUE: '#002E47', ORANGE: '#E04E1B', GREEN: '#47A88D', AMBER: '#E04E1B', RED: '#E04E1B', LIGHT_GRAY: '#FCFCFA', OFF_WHITE: '#FFFFFF', SUBTLE: '#E5E7EB', TEXT: '#374151', MUTED: '#4B5355', PURPLE: '#47A88D', BG: '#F9FAFB' }; // cite: App.jsx
-
-// --- Standardized UI Components (Matches Dashboard/Dev Plan) ---
-const Button = ({ children, onClick, disabled = false, variant = 'primary', className = '', size = 'md', ...rest }) => { /* ... Re-use exact Button definition from Dashboard.jsx ... */
-    let baseStyle = `inline-flex items-center justify-center gap-2 font-semibold rounded-xl transition-all duration-200 focus:outline-none focus:ring-4 disabled:opacity-50 disabled:cursor-not-allowed`;
-    if (size === 'sm') baseStyle += ' px-4 py-2 text-sm'; else if (size === 'lg') baseStyle += ' px-8 py-4 text-lg'; else baseStyle += ' px-6 py-3 text-base'; // Default 'md'
-    if (variant === 'primary') baseStyle += ` bg-[${COLORS.TEAL}] text-white shadow-lg hover:bg-[#47A88D] focus:ring-[${COLORS.TEAL}]/50`;
-    else if (variant === 'secondary') baseStyle += ` bg-[${COLORS.ORANGE}] text-white shadow-lg hover:bg-[#C312] focus:ring-[${COLORS.ORANGE}]/50`;
-    else if (variant === 'outline') baseStyle += ` bg-[${COLORS.OFF_WHITE}] text-[${COLORS.TEAL}] border-2 border-[${COLORS.TEAL}] shadow-md hover:bg-[${COLORS.TEAL}]/10 focus:ring-[${COLORS.TEAL}]/50`;
-    else if (variant === 'nav-back') baseStyle += ` bg-white text-gray-700 border border-gray-300 shadow-sm hover:bg-gray-100 focus:ring-gray-300/50 px-4 py-2 text-sm`;
-    else if (variant === 'ghost') baseStyle += ` bg-transparent text-gray-600 hover:bg-gray-100 focus:ring-gray-300/50 px-3 py-1.5 text-sm`;
-    if (disabled) baseStyle += ' bg-gray-300 text-gray-500 shadow-inner border-transparent hover:bg-gray-300';
-    return (<button {...rest} onClick={onClick} disabled={disabled} className={`${baseStyle} ${className}`}>{children}</button>);
-};
-const Card = ({ children, title, icon: Icon, className = '', onClick, accent = 'NAVY' }) => { /* ... Re-use exact Card definition from Dashboard.jsx ... */
-    const interactive = !!onClick; const Tag = interactive ? 'button' : 'div'; const accentColor = COLORS[accent] || COLORS.NAVY; const handleKeyDown = (e) => { if (interactive && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); onClick?.(); } };
-    return (
-        <Tag {...(interactive ? { type: 'button' } : {})} role={interactive ? 'button' : undefined} tabIndex={interactive ? 0 : undefined} onKeyDown={handleKeyDown} className={`relative p-6 rounded-2xl border-2 shadow-xl hover:shadow-lg transition-all duration-300 text-left ${className}`} style={{ background: 'linear-gradient(180deg,#FFFFFF, #FCFCFA)', borderColor: COLORS.SUBTLE, color: COLORS.NAVY }} onClick={onClick}>
-            <span style={{ position:'absolute', top:0, left:0, right:0, height:6, background: accentColor, borderTopLeftRadius:14, borderTopRightRadius:14 }} />
-            {Icon && title && ( <div className="flex items-center gap-3 mb-4"> <div className="w-10 h-10 rounded-lg flex items-center justify-center border flex-shrink-0" style={{ borderColor: COLORS.SUBTLE, background: COLORS.LIGHT_GRAY }}> <Icon className="w-5 h-5" style={{ color: accentColor }} /> </div> <h2 className="text-xl font-extrabold" style={{ color: COLORS.NAVY }}>{title}</h2> </div> )}
-            {!Icon && title && <h2 className="text-xl font-extrabold mb-4 border-b pb-2" style={{ color: COLORS.NAVY, borderColor: COLORS.SUBTLE }}>{title}</h2>}
-            <div className={Icon || title ? '' : ''}>{children}</div>
-        </Tag>
-    );
-};
-const LoadingSpinner = ({ message = "Loading..." }) => ( /* ... Re-use definition from DevelopmentPlan.jsx ... */
-    <div className="min-h-[200px] flex items-center justify-center" style={{ background: COLORS.BG }}> <div className="flex flex-col items-center"> <Loader className="animate-spin h-12 w-12 mb-3" style={{ color: COLORS.TEAL }} /> <p className="font-semibold" style={{ color: COLORS.NAVY }}>{message}</p> </div> </div>
-);
 
 /* =========================================================
    UTILITIES (Local or Shared)
@@ -49,8 +14,8 @@ const LoadingSpinner = ({ message = "Loading..." }) => ( /* ... Re-use definitio
 // Markdown to HTML converter (Simplified version)
 const mdToHtml = async (md) => { /* ... Re-use definition from Labs.jsx ... */
     if (!md) return ''; let html = md;
-    html = html.replace(/^## (.*$)/gim, '<h2 class="text-xl font-extrabold text-[#002E47] border-b border-gray-200 pb-2 mb-3 mt-5">$1</h2>');
-    html = html.replace(/^### (.*$)/gim, '<h3 class="text-lg font-bold text-[#47A88D] mt-4 mb-2">$1</h3>');
+    html = html.replace(/^## (.*$)/gim, '<h2 class="text-xl font-extrabold text-corporate-navy border-b border-gray-200 pb-2 mb-3 mt-5">$1</h2>');
+    html = html.replace(/^### (.*$)/gim, '<h3 class="text-lg font-bold text-corporate-teal mt-4 mb-2">$1</h3>');
     html = html.replace(/\*\*(.*?)\*\*/gim, '<strong class="font-semibold">$1</strong>');
     html = html.replace(/^\* (.*$)/gim, '<li>$1</li>');
     html = html.replace(/(<li>.*<\/li>\s*)+/g, (match) => `<ul class="list-disc list-inside space-y-1 mb-4 pl-4">${match.trim()}</ul>`);
@@ -148,12 +113,12 @@ const LISAuditorView = ({ setQuickStartView }) => {
 
     return (
         // Consistent page structure and padding
-        <div className="p-6 md:p-4 sm:p-3 sm:p-4 lg:p-6 lg:p-8 lg:p-10 min-h-screen" style={{ background: COLORS.BG }}>
+        <div className="p-6 md:p-4 sm:p-3 sm:p-4 lg:p-6 lg:p-8 lg:p-10 min-h-screen bg-slate-50">
             {/* Header */}
-            <header className='flex items-center gap-4 border-b-2 pb-3 mb-8' style={{borderColor: COLORS.NAVY+'30'}}>
-                <ShieldCheck className='w-10 h-10 flex-shrink-0' style={{color: COLORS.NAVY}}/>
+            <header className="flex items-center gap-4 border-b-2 pb-3 mb-8 border-corporate-navy/30">
+                <ShieldCheck className="w-10 h-10 flex-shrink-0 text-corporate-navy"/>
                 <div>
-                    <h1 className="text-xl sm:text-2xl sm:text-3xl md:text-4xl font-extrabold" style={{ color: COLORS.NAVY }}>Leadership Identity Statement (LIS) Auditor</h1>
+                    <h1 className="text-xl sm:text-2xl sm:text-3xl md:text-4xl font-extrabold text-corporate-navy">Leadership Identity Statement (LIS) Auditor</h1>
                     <p className="text-md text-gray-600 mt-1">Refine your core leadership foundation.</p>
                 </div>
             </header>
@@ -173,7 +138,7 @@ const LISAuditorView = ({ setQuickStartView }) => {
                     <textarea
                         value={lisDraft}
                         onChange={(e) => setLisDraft(e.target.value)}
-                        className="w-full p-3 mt-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#47A88D] h-32 text-sm" // Teal focus
+                        className="w-full p-3 mt-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-corporate-teal h-32 text-sm" // Teal focus
                         placeholder="e.g., 'I build high-trust teams by modeling vulnerability and consistently delivering on commitments.'"
                         aria-label="Leadership Identity Statement Draft"
                     />
@@ -246,10 +211,10 @@ const QuickStartAcceleratorScreen = () => {
                     // Consistent page structure and padding
                     <div className="p-6 md:p-4 sm:p-3 sm:p-4 lg:p-6 lg:p-8 lg:p-10">
                         {/* Header */}
-                        <header className='flex items-center gap-4 border-b-2 pb-3 mb-8' style={{borderColor: COLORS.ORANGE+'30'}}> {/* Use ORANGE accent */}
-                            <Zap className='w-10 h-10 flex-shrink-0' style={{color: COLORS.ORANGE}}/>
+                        <header className="flex items-center gap-4 border-b-2 pb-3 mb-8 border-corporate-orange/30"> {/* Use ORANGE accent */}
+                            <Zap className="w-10 h-10 flex-shrink-0 text-corporate-orange"/>
                             <div>
-                                <h1 className="text-xl sm:text-2xl sm:text-3xl md:text-4xl font-extrabold" style={{ color: COLORS.NAVY }}>QuickStart Program</h1>
+                                <h1 className="text-xl sm:text-2xl sm:text-3xl md:text-4xl font-extrabold text-corporate-navy">QuickStart Program</h1>
                                 <p className="text-md text-gray-600 mt-1">(Core Pillar)</p>
                             </div>
                         </header>
@@ -258,38 +223,38 @@ const QuickStartAcceleratorScreen = () => {
                         {/* Link to LIS Auditor Tool (Highlighted Card) */}
                         <Card title="Tool: Leadership Identity Statement (LIS) Auditor" icon={ShieldCheck} accent="TEAL" className="mb-8 cursor-pointer hover:border-teal-400" onClick={() => setQuickStartView('lis-auditor')}>
                             <p className='text-gray-700 text-sm'>Draft and refine your core leadership statement using AI critique. **Crucial pre-work for Session 2.**</p>
-                            <div className="mt-4 text-[#47A88D] font-semibold flex items-center group">
+                            <div className="mt-4 text-corporate-teal font-semibold flex items-center group">
                                 Launch LIS Auditor <span className="inline-block transition-transform group-hover:translate-x-1 ml-1">&rarr;</span>
                             </div>
                         </Card>
 
                         {/* Session Cards */}
-                        <h2 className='text-2xl font-bold mb-4 mt-10 border-b pb-1' style={{ color: COLORS.NAVY, borderColor: COLORS.SUBTLE }}>Program Sessions</h2>
+                        <h2 className='text-2xl font-bold mb-4 mt-10 border-b pb-1 text-corporate-navy border-slate-200'>Program Sessions</h2>
                         <div className="space-y-4 sm:space-y-5 lg:space-y-6">
                             {sessions.map(session => (
                                 // Use standard Card for each session
                                 <Card key={session.id} title={`Session ${session.id}: ${session.title}`} icon={BookOpen} accent="NAVY">
                                     {/* Why it Matters */}
                                     <details className="mb-4 group">
-                                        <summary className="text-sm font-semibold cursor-pointer list-none flex items-center gap-1" style={{ color: COLORS.NAVY }}>
+                                        <summary className="text-sm font-semibold cursor-pointer list-none flex items-center gap-1 text-corporate-navy">
                                             <Lightbulb className="w-4 h-4 text-amber-500"/> Why This Session Matters
                                             <span className="text-xs text-gray-400 group-open:rotate-90 transition-transform">▶</span>
                                         </summary>
-                                        <blockquote className="mt-2 border-l-4 pl-4 py-1 text-sm italic text-gray-600" style={{ borderColor: COLORS.TEAL }}>
+                                        <blockquote className="mt-2 border-l-4 pl-4 py-1 text-sm italic text-gray-600 border-corporate-teal">
                                             {session.keyRationale}
                                         </blockquote>
                                     </details>
 
                                     {/* Grid for Focus & Pre-Work */}
-                                    <div className="grid md:grid-cols-2 gap-4 pt-4 border-t" style={{ borderColor: COLORS.SUBTLE }}>
+                                    <div className="grid md:grid-cols-2 gap-4 pt-4 border-t border-slate-200">
                                         {/* Core Focus */}
                                         <div>
-                                            <h3 className="text-md font-semibold mb-2 flex items-center gap-1.5" style={{ color: COLORS.TEAL }}><Target className='w-4 h-4'/> Core Focus</h3>
+                                            <h3 className="text-md font-semibold mb-2 flex items-center gap-1.5 text-corporate-teal"><Target className='w-4 h-4'/> Core Focus</h3>
                                             <p className="text-gray-700 text-sm">{session.focus}</p>
                                         </div>
                                         {/* Pre-Work */}
                                         <div>
-                                            <h3 className="text-md font-semibold mb-2 flex items-center gap-1.5" style={{ color: COLORS.ORANGE }}><Clock className='w-4 h-4'/> Pre-Work Checklist</h3>
+                                            <h3 className="text-md font-semibold mb-2 flex items-center gap-1.5 text-corporate-orange"><Clock className='w-4 h-4'/> Pre-Work Checklist</h3>
                                             <ul className="list-disc pl-5 text-gray-700 space-y-1 text-sm">
                                                 {session.preWork.map((item, index) => (
                                                     <li key={index}>{item}</li>
@@ -316,7 +281,7 @@ const QuickStartAcceleratorScreen = () => {
     if (appError) return <ConfigError message={`Failed to load QuickStart Program: ${appError.message}`} />;
 
     return (
-      <div className="min-h-screen" style={{ background: COLORS.BG }}> {/* Consistent BG */}
+      <div className="min-h-screen bg-slate-50"> {/* Consistent BG */}
         {renderView()}
       </div>
     );

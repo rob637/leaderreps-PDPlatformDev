@@ -3,23 +3,6 @@
 // CRITICAL FIX: Updated generatePlanFromAssessment to use 'answers: responses'
 
 /* =========================================================
-   COLOR CONSTANTS
-========================================================= */
-export const COLORS = {
-  NAVY: '#1E3A5F',
-  TEAL: '#3AAFA9',
-  ORANGE: '#E3651D',
-  OFF_WHITE: '#FEFEFE',
-  BG: '#F5F7FA',
-  LIGHT_GRAY: '#F0F2F5',
-  SUBTLE: '#E1E4E8',
-  GREEN: '#47A88D',
-  RED: '#EF4444',
-  BLUE: '#3B82F6',
-  PURPLE: '#8B5CF6',
-};
-
-/* =========================================================
    ASSESSMENT QUESTIONS
 ========================================================= */
 export const ASSESSMENT_QUESTIONS = [
@@ -82,19 +65,19 @@ export const MILESTONE_CONFIG = {
     FOUNDATION: { 
       name: 'Foundation', 
       weeks: [1, 2, 3, 4], 
-      color: COLORS.TEAL,
+      color: 'var(--corporate-teal)', // TEAL
       description: 'Building core habits and understanding'
     },
     DEVELOPMENT: { 
       name: 'Development', 
       weeks: [5, 6, 7, 8], 
-      color: COLORS.ORANGE,
+      color: 'var(--corporate-orange)', // ORANGE
       description: 'Expanding skills and consistent practice'
     },
     MASTERY: { 
       name: 'Mastery', 
       weeks: [9, 10, 11, 12], 
-      color: COLORS.GREEN,
+      color: 'var(--corporate-teal)', // GREEN (mapped to TEAL/Green hex)
       description: 'Integration and unconscious competence'
     },
   },
@@ -103,19 +86,19 @@ export const MILESTONE_CONFIG = {
     { 
       name: 'Foundation', 
       weeks: [1, 2, 3, 4], 
-      color: COLORS.TEAL,
+      color: 'var(--corporate-teal)', // TEAL
       description: 'Building core habits and understanding'
     },
     { 
       name: 'Development', 
       weeks: [5, 6, 7, 8], 
-      color: COLORS.ORANGE,
+      color: 'var(--corporate-orange)', // ORANGE
       description: 'Expanding skills and consistent practice'
     },
     { 
       name: 'Mastery', 
       weeks: [9, 10, 11, 12], 
-      color: COLORS.GREEN,
+      color: 'var(--corporate-teal)', // GREEN
       description: 'Integration and unconscious competence'
     },
   ],
@@ -380,10 +363,10 @@ export const calculatePlanProgress = (plan) => {
  * Get color for progress based on percentage
  */
 export const getProgressColor = (percentage) => {
-  if (percentage >= 75) return COLORS.GREEN;
-  if (percentage >= 50) return COLORS.TEAL;
-  if (percentage >= 25) return COLORS.ORANGE;
-  return COLORS.RED;
+  if (percentage >= 75) return '#47A88D'; // GREEN
+  if (percentage >= 50) return '#47A88D'; // TEAL
+  if (percentage >= 25) return '#E04E1B'; // ORANGE
+  return '#E04E1B'; // RED
 };
 
 /**
@@ -460,7 +443,6 @@ export const generateAssessmentSummary = (responses) => {
 };
 
 export default {
-  COLORS,
   ASSESSMENT_QUESTIONS,
   OPEN_ENDED_QUESTION,
   LIKERT_SCALE,

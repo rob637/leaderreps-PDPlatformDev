@@ -2,54 +2,52 @@
 // LEADERREPS CORPORATE CONSTANTS - STRICT BRAND COMPLIANCE
 // All colors must match leaderreps.com corporate identity
 
-import { CORPORATE_COLORS } from '../styles/corporate-colors.js';
-
 // Export corporate colors as the primary COLORS constant
 export const COLORS = {
   // === CORPORATE BRAND COLORS (STRICT COMPLIANCE) ===
-  NAVY: CORPORATE_COLORS.NAVY,           // #002E47 - Primary brand color
-  ORANGE: CORPORATE_COLORS.ORANGE,       // #E04E1B - Accent/CTA color  
-  TEAL: CORPORATE_COLORS.TEAL,           // #47A88D - Secondary brand color
-  SUBTLE_TEAL: CORPORATE_COLORS.SUBTLE_TEAL, // #349881 - Teal hover states
-  LIGHT_GRAY: CORPORATE_COLORS.LIGHT_GRAY,   // #FCFCFA - Page background
+  NAVY: '#002E47',           // #002E47 - Primary brand color
+  ORANGE: '#E04E1B',       // #E04E1B - Accent/CTA color  
+  TEAL: '#47A88D',           // #47A88D - Secondary brand color
+  SUBTLE_TEAL: '#349881', // #349881 - Teal hover states
+  LIGHT_GRAY: '#FCFCFA',   // #FCFCFA - Page background
   
   // === SEMANTIC COLORS (CORPORATE ALIGNED) ===
-  PRIMARY_TEXT: CORPORATE_COLORS.PRIMARY_TEXT,
-  SECONDARY_TEXT: CORPORATE_COLORS.SECONDARY_TEXT,
-  MUTED_TEXT: CORPORATE_COLORS.MUTED_TEXT,
+  PRIMARY_TEXT: '#002E47',
+  SECONDARY_TEXT: '#47A88D',
+  MUTED_TEXT: '#6B7280',
   
-  PAGE_BG: CORPORATE_COLORS.PAGE_BG,
-  CARD_BG: CORPORATE_COLORS.CARD_BG,
-  SUBTLE_BG: CORPORATE_COLORS.SUBTLE_BG,
+  PAGE_BG: '#FCFCFA',
+  CARD_BG: '#FFFFFF',
+  SUBTLE_BG: '#47A88D',
   
-  PRIMARY_BUTTON: CORPORATE_COLORS.PRIMARY_BUTTON,
-  PRIMARY_BUTTON_HOVER: CORPORATE_COLORS.PRIMARY_BUTTON_HOVER,
-  SECONDARY_BUTTON: CORPORATE_COLORS.SECONDARY_BUTTON,
-  SECONDARY_BUTTON_HOVER: CORPORATE_COLORS.SECONDARY_BUTTON_HOVER,
+  PRIMARY_BUTTON: '#47A88D',
+  PRIMARY_BUTTON_HOVER: '#349881',
+  SECONDARY_BUTTON: '#E04E1B',
+  SECONDARY_BUTTON_HOVER: '#C44317',
   
-  SUCCESS: CORPORATE_COLORS.SUCCESS,
-  WARNING: CORPORATE_COLORS.WARNING,
-  ERROR: CORPORATE_COLORS.ERROR,
-  INFO: CORPORATE_COLORS.INFO,
+  SUCCESS: '#47A88D',
+  WARNING: '#E04E1B',
+  ERROR: '#E04E1B',
+  INFO: '#47A88D',
   
-  BORDER: CORPORATE_COLORS.BORDER,
-  SUBTLE_BORDER: CORPORATE_COLORS.SUBTLE_BORDER,
-  ACCENT_BORDER: CORPORATE_COLORS.ACCENT_BORDER,
+  BORDER: '#E5E7EB',
+  SUBTLE_BORDER: '#F3F4F6',
+  ACCENT_BORDER: '#47A88D',
   
-  FOCUS_RING: CORPORATE_COLORS.FOCUS_RING,
-  SELECTION: CORPORATE_COLORS.SELECTION,
+  FOCUS_RING: '#47A88D',
+  SELECTION: '#47A88D',
   
   // === LEGACY MAPPINGS (for backwards compatibility) ===
-  BG: CORPORATE_COLORS.PAGE_BG,          // Legacy: background
-  TEXT: CORPORATE_COLORS.PRIMARY_TEXT,   // Legacy: text color
-  SUBTLE: CORPORATE_COLORS.BORDER,       // Legacy: subtle borders
-  MUTED: CORPORATE_COLORS.MUTED_TEXT,    // Legacy: muted text
-  OFF_WHITE: CORPORATE_COLORS.CARD_BG,   // Legacy: card background
-  RED: CORPORATE_COLORS.ERROR,           // Legacy: red/error -> Use corporate orange
-  GREEN: CORPORATE_COLORS.SUCCESS,       // Legacy: green/success -> Use corporate teal
-  BLUE: CORPORATE_COLORS.INFO,           // Legacy: blue/info -> Use corporate navy
-  PURPLE: CORPORATE_COLORS.TEAL,         // NO PURPLE! Use corporate teal instead
-  AMBER: CORPORATE_COLORS.ORANGE         // NO AMBER! Use corporate orange instead
+  BG: '#FCFCFA',          // Legacy: background
+  TEXT: '#002E47',   // Legacy: text color
+  SUBTLE: '#E5E7EB',       // Legacy: subtle borders
+  MUTED: '#6B7280',    // Legacy: muted text
+  OFF_WHITE: '#FFFFFF',   // Legacy: card background
+  RED: '#E04E1B',           // Legacy: red/error -> Use corporate orange
+  GREEN: '#47A88D',       // Legacy: green/success -> Use corporate teal
+  BLUE: '#002E47',           // Legacy: blue/info -> Use corporate navy
+  PURPLE: '#47A88D',         // NO PURPLE! Use corporate teal instead
+  AMBER: '#E04E1B'         // NO AMBER! Use corporate orange instead
 };
 
 export const THEME = {

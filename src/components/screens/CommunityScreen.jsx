@@ -11,55 +11,16 @@ import WidgetRenderer from '../admin/WidgetRenderer';
 
 // --- Icons ---
 import {
-    Users, MessageSquare, Briefcase, Bell, PlusCircle, User, ArrowLeft, Target, Filter, Clock,
-    Star, CheckCircle, Award, Link, Send, Loader, Heart, X, UserPlus, Video, AlertTriangle
+    Users, MessageSquare, Briefcase, Bell, PlusCircle, User, Target, Filter, Clock,
+    Star, CheckCircle, Award, Link, Send, Loader, Heart, X, UserPlus, Video
 } from 'lucide-react';
-import { Button, Card } from '../shared/UI';
+import { Button, Card, LoadingSpinner, PageLayout, NoWidgetsEnabled } from '../ui';
 
 /* =========================================================
-   PALETTE & UI COMPONENTS (Standardized)
+   PALETTE (use CSS variables from src/styles/global.css)
+   --corporate-navy, --corporate-orange, --corporate-teal, --corporate-light-gray
+   --corporate-*-10, --corporate-*-20, --corporate-*-30 for alpha variants
 ========================================================= */
-// LEADERREPS.COM OFFICIAL CORPORATE COLORS - VERIFIED 11/14/25
-const COLORS = {
-  // === PRIMARY BRAND COLORS (from leaderreps.com) ===
-  NAVY: '#002E47',        // Primary text, headers, navigation
-  ORANGE: '#E04E1B',      // Call-to-action buttons, highlights, alerts  
-  TEAL: '#47A88D',        // Secondary buttons, success states, accents
-  LIGHT_GRAY: '#FCFCFA',  // Page backgrounds, subtle surfaces
-  
-  // === SEMANTIC MAPPINGS (using ONLY corporate colors) ===
-  BLUE: '#002E47',        // Map to NAVY
-  GREEN: '#47A88D',       // Map to TEAL  
-  AMBER: '#E04E1B',       // Map to ORANGE
-  RED: '#E04E1B',         // Map to ORANGE
-  PURPLE: '#47A88D',      // Map to TEAL
-  
-  // === TEXT & BACKGROUNDS (corporate colors only) ===
-  TEXT: '#002E47',        // NAVY for all text
-  MUTED: '#47A88D',       // TEAL for muted text
-  BG: '#FCFCFA',          // LIGHT_GRAY for backgrounds
-  OFF_WHITE: '#FCFCFA',   // Same as BG
-  SUBTLE: '#47A88D'       // TEAL for subtle elements
-};
-
-const LoadingSpinner = ({ message = "Loading..." }) => ( /* ... Re-use definition from DevelopmentPlan.jsx ... */
-    <div className="min-h-screen flex items-center justify-center" style={{ background: COLORS.BG }}> <div className="flex flex-col items-center"> <Loader className="animate-spin h-12 w-12 mb-3" style={{ color: COLORS.TEAL }} /> <p className="font-semibold" style={{ color: COLORS.NAVY }}>{message}</p> </div> </div>
-);
-
-const ConfigError = ({ message }) => (
-    <div className="min-h-screen flex items-center justify-center bg-red-50">
-        <div className="text-center p-8 max-w-md">
-            <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <AlertTriangle className="w-8 h-8 text-red-600" />
-            </div>
-            <h2 className="text-xl font-bold text-gray-900 mb-2">Configuration Error</h2>
-            <p className="text-gray-600">{message}</p>
-            <Button onClick={() => window.location.reload()} className="mt-6" variant="outline">
-                Retry
-            </Button>
-        </div>
-    </div>
-);
 
 /* =========================================================
    MOCK DATA & FALLBACKS
@@ -70,14 +31,15 @@ const ConfigError = ({ message }) => (
 // const MOCK_FEED_FALLBACK = []; // Removed in favor of Firestore data
 
 // --- Tier Metadata Fallback (If LEADERSHIP_TIERS fails to load) ---
+// Uses CSS variable references for consistency
 const LEADERSHIP_TIERS_META_FALLBACK = { // cite: CommunityScreen.jsx (original)
-    'All': { name: 'All Tiers', hex: COLORS.TEAL, color: 'teal-500' }, // Added color class for potential use
-    'T1': { name: 'Lead Self', hex: COLORS.GREEN, color: 'green-500' },
-    'T2': { name: 'Lead Work', hex: COLORS.BLUE, color: 'blue-500' },
-    'T3': { name: 'Lead People', hex: COLORS.AMBER, color: 'amber-500' },
-    'T4': { name: 'Lead Teams', hex: COLORS.ORANGE, color: 'orange-500' },
-    'T5': { name: 'Lead Strategy', hex: COLORS.PURPLE, color: 'purple-500' },
-    'System': { name: 'System Info', hex: COLORS.MUTED, color: 'gray-500' },
+    'All': { name: 'All Tiers', hex: 'var(--corporate-teal)', color: 'teal-500' },
+    'T1': { name: 'Lead Self', hex: 'var(--corporate-teal)', color: 'green-500' },
+    'T2': { name: 'Lead Work', hex: 'var(--corporate-navy)', color: 'blue-500' },
+    'T3': { name: 'Lead People', hex: 'var(--corporate-orange)', color: 'amber-500' },
+    'T4': { name: 'Lead Teams', hex: 'var(--corporate-orange)', color: 'orange-500' },
+    'T5': { name: 'Lead Strategy', hex: 'var(--corporate-teal)', color: 'purple-500' },
+    'System': { name: 'System Info', hex: 'var(--corporate-subtle-teal)', color: 'gray-500' },
 };
 
 
@@ -94,7 +56,7 @@ const CommunityHomeView = ({ setView, user, currentTierFilter, setCurrentTierFil
     const safeTierMeta = useMemo(() => {
         // Add 'All' option dynamically if not present in context Tiers
         const tiers = tierMeta || LEADERSHIP_TIERS_META_FALLBACK; // cite: useAppServices.jsx, LEADERSHIP_TIERS_META_FALLBACK
-        return tiers.All ? tiers : { All: { name: 'All Tiers', hex: COLORS.TEAL, color: 'teal-500' }, ...tiers };
+        return tiers.All ? tiers : { All: { name: 'All Tiers', hex: 'var(--corporate-teal)', color: 'teal-500' }, ...tiers };
     }, [tierMeta]);
 
     // --- Mock Handlers (Replace with actual interaction logic) ---
@@ -109,8 +71,8 @@ const CommunityHomeView = ({ setView, user, currentTierFilter, setCurrentTierFil
     return (
         <div className="space-y-4 sm:space-y-5 lg:space-y-6">
             {/* Header: Title & New Thread Button */}
-            <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4 border-b pb-4" style={{ borderColor: COLORS.SUBTLE }}>
-                <h2 className="text-xl sm:text-2xl font-bold" style={{ color: COLORS.NAVY }}>Community Feed ({safeTierMeta[currentTierFilter]?.name || 'All'})</h2>
+            <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4 border-b pb-4 border-slate-200">
+                <h2 className="text-xl sm:text-2xl font-bold text-corporate-navy">Community Feed ({safeTierMeta[currentTierFilter]?.name || 'All'})</h2>
                 <Button onClick={() => setView('new-thread')} size="sm"> {/* Use standard Button */}
                     <PlusCircle className="w-4 h-4 mr-2" /> Start Discussion
                 </Button>
@@ -119,8 +81,8 @@ const CommunityHomeView = ({ setView, user, currentTierFilter, setCurrentTierFil
             {/* Tier Filter Bar */}
             <Card accent="TEAL" className="!p-3"> {/* Use Card for consistent container */}
                 <div className="flex flex-wrap items-center gap-2">
-                    <Filter className="w-5 h-5 flex-shrink-0" style={{ color: COLORS.NAVY }} />
-                    <span className="text-sm font-semibold mr-2" style={{ color: COLORS.NAVY }}>Filter:</span>
+                    <Filter className="w-5 h-5 flex-shrink-0 text-corporate-navy" />
+                    <span className="text-sm font-semibold mr-2 text-corporate-navy">Filter:</span>
                     {/* Map through available tiers from safeTierMeta */}
                     {Object.keys(safeTierMeta).map(tierId => {
                         const meta = safeTierMeta[tierId];
@@ -160,20 +122,20 @@ const CommunityHomeView = ({ setView, user, currentTierFilter, setCurrentTierFil
                     // Determine if the current user owns this thread
                     const isMyThread = user?.userId && thread.ownerId === user.userId; // Use userId // cite: useAppServices.jsx
                     // Get tier metadata for color/styling
-                    const threadTierMeta = safeTierMeta[thread.tier] || { hex: COLORS.MUTED };
+                    const threadTierMeta = safeTierMeta[thread.tier] || { hex: 'var(--corporate-subtle-teal)' };
 
                     return (
                         // Use Card for each thread item
                         <Card key={thread.id} accent={isMyThread ? 'TEAL' : (thread.impact ? 'ORANGE' : 'NAVY')} className="transition-shadow duration-200 hover:shadow-lg">
                             {/* Thread Header */}
-                            <div className="flex justify-between items-start mb-3 border-b pb-2" style={{ borderColor: COLORS.SUBTLE }}>
+                            <div className="flex justify-between items-start mb-3 border-b pb-2 border-slate-200">
                                 {/* User Info */}
                                 <div className="flex items-center space-x-3">
                                     <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center font-bold text-xs text-gray-600 shrink-0">
                                         {thread.rep}
                                     </div>
                                     <div>
-                                        <p className="font-bold text-md leading-tight" style={{ color: COLORS.NAVY }}>{thread.ownerName || 'User'}</p>
+                                        <p className="font-bold text-md leading-tight text-corporate-navy">{thread.ownerName || 'User'}</p>
                                         <p className="text-xs text-gray-500">{thread.time}</p>
                                     </div>
                                 </div>
@@ -182,18 +144,18 @@ const CommunityHomeView = ({ setView, user, currentTierFilter, setCurrentTierFil
                                     {/* Pod Member Tag (Example - adjust logic based on real data) */}
                                     {thread.isPodMember && <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-100 text-blue-700`}>Pod</span>}
                                     {/* Impact Tag */}
-                                    {thread.impact && <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full text-white bg-[${COLORS.ORANGE}] flex items-center gap-1`}><Star size={10} fill="currentColor"/> Impact</span>}
+                                    {thread.impact && <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full text-white bg-corporate-orange flex items-center gap-1`}><Star size={10} fill="currentColor"/> Impact</span>}
                                     {/* Tier Tag */}
                                     <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full`} style={{ background: `${threadTierMeta.hex}1A`, color: threadTierMeta.hex }}>{thread.tier}</span>
                                 </div>
                             </div>
 
                             {/* Rep/Post Content */}
-                            {thread.title && thread.title !== thread.content && <h4 className="font-bold text-sm mb-1" style={{ color: COLORS.NAVY }}>{thread.title}</h4>}
+                            {thread.title && thread.title !== thread.content && <h4 className="font-bold text-sm mb-1 text-corporate-navy">{thread.title}</h4>}
                             <p className="text-sm text-gray-800 mb-4 font-medium whitespace-pre-wrap">{thread.content}</p>
 
                             {/* Actions Footer */}
-                            <div className="flex justify-between items-center text-xs pt-3 border-t" style={{ borderColor: COLORS.SUBTLE }}>
+                            <div className="flex justify-between items-center text-xs pt-3 border-t border-slate-200">
                                 {/* Reactions & Comments */}
                                 <div className="flex space-x-4">
                                     <button onClick={() => handleReactClick(thread.id)} className="flex items-center text-red-500 hover:text-red-700 transition-colors group">
@@ -235,10 +197,10 @@ const MyThreadsView = ({ user, allThreads }) => { // Pass allThreads from parent
                 <div className="space-y-3">
                     {myThreads.map(thread => (
                         // Simpler card for list view
-                        <div key={thread.id} className="p-4 rounded-lg border-l-4 shadow-sm transition-shadow hover:shadow-md cursor-pointer" style={{ borderColor: COLORS.TEAL, backgroundColor: COLORS.OFF_WHITE }}
+                        <div key={thread.id} className="p-4 rounded-lg border-l-4 shadow-sm transition-shadow hover:shadow-md cursor-pointer" style={{ borderColor: 'var(--corporate-teal)', backgroundColor: 'var(--corporate-light-gray)' }}
                              onClick={() => alert(`Maps to details for thread ${thread.id}`)} // Placeholder action
                         >
-                            <h3 className="font-semibold text-md mb-1" style={{ color: COLORS.NAVY }}>{thread.title}</h3>
+                            <h3 className="font-semibold text-md mb-1 text-corporate-navy">{thread.title}</h3>
                             <p className="text-xs text-gray-600">
                                 Tier: {thread.tier} | {thread.replies} Replies | Last active: {thread.lastActive}
                             </p>
@@ -295,7 +257,7 @@ const NotificationsView = () => (
                 {id: 4, text: "Reminder: **Office Hours** with Coach Support at 2 PM today."},
                 {id: 5, text: "You earned the **'Consistent Contributor'** badge!"},
             ].map(notif => (
-                <div key={notif.id} className="text-sm text-gray-700 border-b pb-2 last:border-b-0" style={{ borderColor: COLORS.SUBTLE }}>
+                <div key={notif.id} className="text-sm text-gray-700 border-b pb-2 last:border-b-0 border-slate-200">
                      <p dangerouslySetInnerHTML={{ __html: notif.text.replace(/\*\*(.*?)\*\*/g, '<strong class="font-semibold">$1</strong>') }} />
                      <span className="text-xs text-gray-400"> (Mock time)</span>
                 </div>
@@ -362,7 +324,7 @@ const NewThreadView = ({ setView }) => {
             <button onClick={() => setView('home')} className="absolute top-4 right-4 text-gray-500 hover:text-gray-800 transition-colors">
                 <X className="w-5 h-5" />
             </button>
-            <p className="text-sm text-gray-700 mb-4 border-l-4 pl-3 italic" style={{ borderColor: COLORS.TEAL }}>
+            <p className="text-sm text-gray-700 mb-4 border-l-4 pl-3 italic border-corporate-teal">
                 Use the structure below for high-quality discussions and faster responses from peers and coaches.
             </p>
 
@@ -371,23 +333,23 @@ const NewThreadView = ({ setView }) => {
                 {/* Title */}
                 <div>
                     <label className="block text-sm font-semibold text-gray-700 mb-1">1. Thread Title / Topic <span className="text-red-500">*</span></label>
-                    <input type="text" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g., Applying SBI to high performers" className="w-full p-3 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-[${COLORS.TEAL}]" required />
+                    <input type="text" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g., Applying SBI to high performers" className="w-full p-3 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-corporate-teal" required />
                 </div>
                 {/* Context */}
                 <div>
                     <label className="block text-sm font-semibold text-gray-700 mb-1">2. Situation & Context (1-2 sentences) <span className="text-red-500">*</span></label>
-                    <textarea value={context} onChange={(e) => setContext(e.target.value)} placeholder="e.g., Giving feedback to a senior engineer who is technically strong but dismissive in code reviews." className="w-full p-3 border border-gray-300 rounded-lg h-20 text-sm focus:ring-2 focus:ring-[${COLORS.TEAL}]" required />
+                    <textarea value={context} onChange={(e) => setContext(e.target.value)} placeholder="e.g., Giving feedback to a senior engineer who is technically strong but dismissive in code reviews." className="w-full p-3 border border-gray-300 rounded-lg h-20 text-sm focus:ring-2 focus:ring-corporate-teal" required />
                 </div>
                 {/* Question */}
                 <div>
                     <label className="block text-sm font-semibold text-gray-700 mb-1">3. Specific Question / Challenge <span className="text-red-500">*</span></label>
-                    <textarea value={question} onChange={(e) => setQuestion(e.target.value)} placeholder="e.g., How can I deliver this feedback using SBI without demotivating them, focusing on the impact on team collaboration?" className="w-full p-3 border border-gray-300 rounded-lg h-24 text-sm focus:ring-2 focus:ring-[${COLORS.TEAL}]" required />
+                    <textarea value={question} onChange={(e) => setQuestion(e.target.value)} placeholder="e.g., How can I deliver this feedback using SBI without demotivating them, focusing on the impact on team collaboration?" className="w-full p-3 border border-gray-300 rounded-lg h-24 text-sm focus:ring-2 focus:ring-corporate-teal" required />
                 </div>
                 {/* Tier Selection */}
                 <div>
                     <label className="block text-sm font-semibold text-gray-700 mb-1">4. Primary Leadership Tier Focus</label>
                     {/* TODO: Populate options from LEADERSHIP_TIERS context */}
-                    <select value={tier} onChange={(e) => setTier(e.target.value)} className="w-full p-3 border border-gray-300 rounded-lg text-sm bg-white focus:ring-2 focus:ring-[${COLORS.TEAL}]">
+                    <select value={tier} onChange={(e) => setTier(e.target.value)} className="w-full p-3 border border-gray-300 rounded-lg text-sm bg-white focus:ring-2 focus:ring-corporate-teal">
                         <option value="T1">T1: Lead Self</option>
                         <option value="T2">T2: Lead Work</option>
                         <option value="T3">T3: Lead People</option>
@@ -398,7 +360,7 @@ const NewThreadView = ({ setView }) => {
 
                 {/* Success Message */}
                 {isSuccess && (
-                    <div className="flex items-center p-3 text-sm font-semibold text-white rounded-lg bg-[${COLORS.GREEN}] animate-pulse">
+                    <div className="flex items-center p-3 text-sm font-semibold text-white rounded-lg bg-corporate-teal animate-pulse">
                         <CheckCircle className='w-4 h-4 mr-2'/> Thread Posted! Redirecting...
                     </div>
                 )}
@@ -541,10 +503,9 @@ const CommunityScreen = ({ simulatedTier }) => {
         // Utils
         navigate,
         isFeatureEnabled,
-        COLORS,
         
         // Icons
-        Users, MessageSquare, Briefcase, Bell, PlusCircle, User, ArrowLeft, Target, Filter, Clock,
+        Users, MessageSquare, Briefcase, Bell, PlusCircle, User, Target, Filter, Clock,
         Star, CheckCircle, Award, Link, Send, Loader, Heart, X, UserPlus, Video
     };
 
@@ -628,47 +589,37 @@ const CommunityScreen = ({ simulatedTier }) => {
     if (appError) return <ConfigError message={`Failed to load Community Hub: ${appError.message}`} />;
 
     return (
-        <div className="page-corporate container-corporate animate-corporate-fade-in">
-            <div className="content-full">
-            <div>
-            {/* Back Button */}
-            <div className="flex items-center gap-2 mb-6 text-gray-600 hover:text-gray-800 cursor-pointer transition-colors" onClick={() => navigate('dashboard')}>
-                <ArrowLeft className="w-4 h-4" />
-                <span className="text-sm font-medium">Back to Dashboard</span>
-            </div>
-
-            {/* Header */}
-            <div className="text-center mb-12">
-                <div className="flex items-center justify-center gap-2 mb-4">
-                    <Users className='w-8 h-8' style={{color: COLORS.TEAL}}/>
-                    <h1 className="corporate-heading-xl" style={{ color: COLORS.NAVY }}>Community</h1>
-                    <Users className='w-8 h-8' style={{color: COLORS.TEAL}}/>
-                </div>
-                {!hasCommunityAccess && (
-                    <span className="inline-block bg-orange-100 text-orange-800 px-3 py-1 rounded-full text-sm font-semibold mb-4">Requires Premium</span>
-                )}
-                <p className="corporate-text-body text-gray-600 mx-auto px-4">Connect, share insights, and grow with fellow leaders.</p>
-            </div>
-
+        <PageLayout
+            title="Community"
+            subtitle="Connect, share insights, and grow with fellow leaders."
+            icon={Users}
+            backTo="dashboard"
+            navigate={navigate}
+            badge={!hasCommunityAccess ? "Requires Premium" : undefined}
+        >
             {/* Main Layout Grid (Sidebar + Content) */}
-            <div className={`grid grid-cols-1 lg:grid-cols-6 gap-3 ${!hasCommunityAccess ? 'opacity-60 pointer-events-none' : ''}`}>
-                {/* Sidebar Navigation */}
-                <aside className="lg:col-span-1 space-y-4 lg:sticky lg:top-3 sm:p-4 lg:p-6 self-start"> {/* Make sidebar sticky */}
-                    <WidgetRenderer widgetId="community-sidebar" scope={scope} />
-                </aside>
+            {navItems.length > 1 ? (
+                <div className={`grid grid-cols-1 lg:grid-cols-6 gap-6 max-w-7xl mx-auto ${!hasCommunityAccess ? 'opacity-60 pointer-events-none' : ''}`}>
+                    {/* Sidebar Navigation */}
+                    <aside className="lg:col-span-1 space-y-4 lg:sticky lg:top-6 self-start"> {/* Make sidebar sticky */}
+                        <WidgetRenderer widgetId="community-sidebar" scope={scope} />
+                    </aside>
 
-                {/* Main Content Area */}
-                <main className="lg:col-span-5">
-                    {renderContent()}
-                </main>
-            </div>
+                    {/* Main Content Area */}
+                    <main className="lg:col-span-5">
+                        {renderContent()}
+                    </main>
+                </div>
+            ) : (
+                <NoWidgetsEnabled moduleName="Community" />
+            )}
             
             {/* Unlock Section for Free Users */}
             {!hasCommunityAccess && (
-                <div className="mt-8 bg-white rounded-2xl border-2 shadow-lg" style={{ borderColor: COLORS.TEAL }}>
+                <div className="mt-8 bg-white rounded-2xl border-2 shadow-lg max-w-4xl mx-auto border-corporate-teal">
                     
                     <div className="relative z-10 p-8 text-center">
-                        <h3 className="text-2xl font-bold mb-4" style={{ color: COLORS.NAVY }}>
+                        <h3 className="text-2xl font-bold mb-4 text-corporate-navy">
                             Unlock Leadership Community
                         </h3>
                         
@@ -691,9 +642,7 @@ const CommunityScreen = ({ simulatedTier }) => {
                     </div>
                 </div>
             )}
-            </div>
-            </div>
-        </div>
+        </PageLayout>
     );
 };
 

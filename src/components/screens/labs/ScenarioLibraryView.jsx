@@ -26,11 +26,11 @@ const ScenarioLibraryView = ({ setCoachingLabView, setSelectedScenario }) => {
             <Card 
                 title="Dynamic Scenario Generator" 
                 icon={Zap} 
-                className="mb-6 bg-[#0B3B5B]/10 border-l-4 border-[#E04E1B] rounded-3xl" 
+                className="mb-6 bg-[#0B3B5B]/10 border-l-4 border-corporate-orange rounded-3xl" 
                 onClick={() => setIsDynamicGeneratorVisible(true)}
             >
                 <p className="text-gray-700 text-sm">Create a custom, adaptive scenario by choosing a core conflict and adding a unique **modifier** (e.g., personality, circumstance, or context).</p>
-                <div className="mt-4 text-[#E04E1B] font-semibold flex items-center">
+                <div className="mt-4 text-corporate-orange font-semibold flex items-center">
                     Launch Generator <CornerRightUp className='w-4 h-4 ml-1'/>
                 </div>
             </Card>
