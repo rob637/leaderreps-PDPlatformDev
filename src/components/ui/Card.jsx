@@ -1,6 +1,52 @@
 import React from 'react';
 import { cn } from '../../lib/utils';
 
+// --- COMPOSABLE COMPONENTS ---
+const CardHeader = React.forwardRef(({ className, ...props }, ref) => (
+  <div
+    ref={ref}
+    className={cn("flex flex-col space-y-1.5 p-6", className)}
+    {...props}
+  />
+));
+CardHeader.displayName = "CardHeader";
+
+const CardTitle = React.forwardRef(({ className, icon: Icon, iconColor, children, ...props }, ref) => (
+  <h3
+    ref={ref}
+    className={cn("text-2xl font-semibold leading-none tracking-tight flex items-center gap-2", className)}
+    {...props}
+  >
+    {Icon && <Icon className={cn("w-6 h-6", iconColor)} />}
+    {children}
+  </h3>
+));
+CardTitle.displayName = "CardTitle";
+
+const CardDescription = React.forwardRef(({ className, ...props }, ref) => (
+  <p
+    ref={ref}
+    className={cn("text-sm text-slate-500", className)}
+    {...props}
+  />
+));
+CardDescription.displayName = "CardDescription";
+
+const CardContent = React.forwardRef(({ className, ...props }, ref) => (
+  <div ref={ref} className={cn("p-6 pt-0", className)} {...props} />
+));
+CardContent.displayName = "CardContent";
+
+const CardFooter = React.forwardRef(({ className, ...props }, ref) => (
+  <div
+    ref={ref}
+    className={cn("flex items-center p-6 pt-0", className)}
+    {...props}
+  />
+));
+CardFooter.displayName = "CardFooter";
+
+// --- SMART CARD (Legacy/Convenience Wrapper) ---
 const Card = React.forwardRef(({ 
   className, 
   variant = 'default', 
@@ -20,7 +66,6 @@ const Card = React.forwardRef(({
   };
 
   // Map accents to specific border-top colors using Tailwind classes
-  // These must be full class names to be picked up by the scanner
   const accents = {
     none: '',
     navy: 'border-t-4 border-t-corporate-navy',
@@ -31,6 +76,15 @@ const Card = React.forwardRef(({
     blue: 'border-t-4 border-t-blue-500',
     yellow: 'border-t-4 border-t-yellow-500',
     purple: 'border-t-4 border-t-purple-500',
+    // Support uppercase too just in case
+    NAVY: 'border-t-4 border-t-corporate-navy',
+    TEAL: 'border-t-4 border-t-corporate-teal',
+    ORANGE: 'border-t-4 border-t-corporate-orange',
+    RED: 'border-t-4 border-t-red-500',
+    GREEN: 'border-t-4 border-t-green-500',
+    BLUE: 'border-t-4 border-t-blue-500',
+    YELLOW: 'border-t-4 border-t-yellow-500',
+    PURPLE: 'border-t-4 border-t-purple-500',
   };
 
   const iconColors = {
@@ -43,9 +97,22 @@ const Card = React.forwardRef(({
     blue: 'text-blue-500',
     yellow: 'text-yellow-500',
     purple: 'text-purple-500',
+    NAVY: 'text-corporate-navy',
+    TEAL: 'text-corporate-teal',
+    ORANGE: 'text-corporate-orange',
+    RED: 'text-red-500',
+    GREEN: 'text-green-500',
+    BLUE: 'text-blue-500',
+    YELLOW: 'text-yellow-500',
+    PURPLE: 'text-purple-500',
   };
 
   const Component = onClick ? 'button' : 'div';
+
+  // Strategy: If title or Icon is provided, use the "Smart" layout.
+  // If not, just render children inside the container (acting as a wrapper).
+  
+  const isSmartMode = !!(title || Icon);
 
   return (
     <Component
@@ -59,25 +126,29 @@ const Card = React.forwardRef(({
       )}
       {...props}
     >
-      {(title || Icon) && (
-        <div className="p-6 pb-2">
-          <div className="flex items-center gap-3">
-            {Icon && <Icon className={cn("w-6 h-6", iconColors[accent])} />}
-            {title && (
-              <h3 className="text-lg font-bold text-corporate-navy tracking-tight">
-                {title}
-              </h3>
-            )}
+      {isSmartMode ? (
+        <>
+          <div className="p-6 pb-2">
+            <div className="flex items-center gap-3">
+              {Icon && <Icon className={cn("w-6 h-6", iconColors[accent])} />}
+              {title && (
+                <h3 className="text-lg font-bold text-corporate-navy tracking-tight">
+                  {title}
+                </h3>
+              )}
+            </div>
           </div>
-        </div>
+          <div className="p-6 pt-4">
+            {children}
+          </div>
+        </>
+      ) : (
+        children
       )}
-      <div className="p-6 pt-4">
-        {children}
-      </div>
     </Component>
   );
 });
 
 Card.displayName = 'Card';
 
-export { Card };
+export { Card, CardHeader, CardFooter, CardTitle, CardDescription, CardContent };

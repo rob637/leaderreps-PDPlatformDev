@@ -16,11 +16,11 @@ import {
 } from 'lucide-react';
 
 // --- ATOMIC COMPONENTS ---
-import { Button } from '../../ui/Button';
-import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '../../ui/Card';
-import { Input, Textarea } from '../../ui/Input';
-import { Checkbox } from '../../ui/Checkbox';
-import { Badge } from '../../ui/Badge';
+import { Button } from '../ui/Button';
+import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '../ui/Card';
+import { Input, Textarea } from '../ui/Input';
+import { Checkbox } from '../ui/Checkbox';
+import { Badge } from '../ui/Badge';
 
 // --- WIDGET RENDERER ---
 // This component decides which widget to show based on the active tab
@@ -97,7 +97,7 @@ const WidgetRenderer = ({
           </CardContent>
           <CardFooter>
             <Button 
-              onClick={() => updateDashboardData('save', null)} 
+              onClick={() => updateDashboardData('save', 'morning')} 
               disabled={loading}
               className="w-full sm:w-auto"
             >
@@ -239,7 +239,7 @@ const WidgetRenderer = ({
           </CardContent>
           <CardFooter>
             <Button 
-              onClick={() => updateDashboardData('save', null)} 
+              onClick={() => updateDashboardData('save', 'evening')} 
               disabled={loading}
               className="w-full sm:w-auto"
             >

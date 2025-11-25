@@ -5,6 +5,7 @@
 
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { serverTimestamp } from 'firebase/firestore';
+import { useAppServices } from '../../../hooks/useAppServices';
 
 // Helper function to check if developer mode is enabled
 const isDeveloperMode = () => localStorage.getItem('arena-developer-mode') === 'true';
@@ -899,5 +900,88 @@ export const useDashboard = ({
     streakCoins,
     additionalCommitments,
     handleToggleAdditionalRep
+  };
+};
+/* =========================================================
+   ADAPTER HOOK FOR ATOMIC DASHBOARD
+   Maps legacy useDashboard logic to the new data structure
+========================================================= */
+export const useDashboardData = (user) => {
+  const { dailyPracticeData, updateDailyPracticeData, globalMetadata, isLoading } = useAppServices();
+  
+  // Use the existing logic hook
+  const dashboard = useDashboard({
+    dailyPracticeData,
+    updateDailyPracticeData,
+    globalMetadata
+  });
+
+  // Map to new structure
+  const dashboardData = {
+    morningMindset: {
+      focus: dashboard.morningWIN,
+      gratitude: '', 
+      completed: !!dashboard.amCompletedAt
+    },
+    dailyReps: {
+      reps: dashboard.additionalCommitments.map(c => ({
+        id: c.id,
+        text: c.text,
+        completed: c.status === 'Committed'
+      })),
+      completed: dashboard.scorecard.reps.pct === 100
+    },
+    eveningReflection: {
+      wins: dashboard.reflectionGood,
+      lessons: dashboard.reflectionBetter,
+      plannedTomorrow: !!dashboard.reflectionBest,
+      completed: !!dashboard.habitsCompleted?.eveningReflection
+    },
+    anchors: {
+      identity: dashboard.identityStatement,
+      habit: dashboard.habitAnchor,
+      why: dashboard.whyStatement
+    },
+    streak: {
+      count: dashboard.streakCount,
+      coins: dashboard.streakCoins
+    }
+  };
+
+  const updateDashboardData = async (section, data) => {
+    if (section === 'morningMindset') {
+      dashboard.setMorningWIN(data.focus);
+    } else if (section === 'eveningReflection') {
+      dashboard.setReflectionGood(data.wins);
+      dashboard.setReflectionBetter(data.lessons);
+    } else if (section === 'anchors') {
+      if (data.identity !== undefined) dashboard.handleSaveIdentity(data.identity);
+      if (data.habit !== undefined) dashboard.handleSaveHabit(data.habit);
+      if (data.why !== undefined) dashboard.handleSaveWhy(data.why);
+    } else if (section === 'dailyReps') {
+       const newReps = data.reps;
+       const oldReps = dashboardData.dailyReps.reps;
+       
+       for (let i = 0; i < newReps.length; i++) {
+           const newRep = newReps[i];
+           const oldRep = oldReps.find(r => r.id === newRep.id);
+           if (oldRep && oldRep.completed !== newRep.completed) {
+               dashboard.handleToggleAdditionalRep(newRep.id, oldRep.completed ? 'Committed' : 'Pending');
+           }
+       }
+    } else if (section === 'save') {
+        if (data === 'morning') {
+            dashboard.handleSaveMorningBookend();
+        } else if (data === 'evening') {
+            dashboard.handleSaveEveningBookend();
+        }
+    }
+  };
+
+  return {
+    loading: isLoading,
+    dashboardData,
+    updateDashboardData,
+    refreshData: () => {}
   };
 };
