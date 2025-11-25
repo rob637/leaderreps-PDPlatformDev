@@ -39,7 +39,8 @@ const Dashboard = (props) => {
     developmentPlanData,
     globalMetadata,
     userData,
-    navigate
+    navigate,
+    db // <--- Added db here
   } = useAppServices();
 
   const { isFeatureEnabled, getFeatureOrder } = useFeatures();
