@@ -12,13 +12,14 @@ import { ArrowLeft } from 'lucide-react';
  * 
  * @param {string} title - Page title (required)
  * @param {React.ComponentType} icon - Lucide icon component to display next to title
- * @param {string} subtitle - Optional subtitle/description text
+ * @param {string} subtitle - Subtitle/description text (also accepts 'description' for compatibility)
  * @param {string} backTo - Navigation target for back button (default: 'dashboard')
  * @param {string} backLabel - Label for back button (default: 'Back to Dashboard')
- * @param {function} navigate - Navigation function from useAppServices
+ * @param {function} navigate - Navigation function (also accepts 'onNavigate' for compatibility)
  * @param {boolean} showBack - Whether to show back button (default: true)
  * @param {string} accentColor - 'teal' | 'orange' | 'navy' for icon color
  * @param {React.ReactNode} headerActions - Optional actions to show in header (buttons, badges, etc.)
+ * @param {React.ReactNode} badge - Optional badge text (e.g., "Requires Premium")
  * @param {React.ReactNode} children - Page content
  * @param {string} maxWidth - Max width class (default: 'max-w-7xl')
  * @param {boolean} centerHeader - Whether to center the header (default: true)
@@ -29,18 +30,24 @@ export const PageLayout = ({
   title,
   icon: Icon,
   subtitle,
+  description, // Alias for subtitle (backward compatibility)
   backTo = 'dashboard',
   backLabel = 'Back to Dashboard',
   navigate,
+  onNavigate, // Alias for navigate (backward compatibility)
   showBack = true,
   accentColor = 'teal',
   headerActions,
+  badge,
   children,
   maxWidth = 'max-w-7xl',
   centerHeader = true,
   sidebar,
   sidebarLeft = false,
 }) => {
+  // Support both prop names for compatibility
+  const nav = navigate || onNavigate;
+  const sub = subtitle || description;
   const iconColorClass = {
     teal: 'text-corporate-teal',
     orange: 'text-corporate-orange',
@@ -55,9 +62,9 @@ export const PageLayout = ({
       <div className={`${maxWidth} mx-auto p-4 sm:p-6 lg:p-8`}>
         
         {/* Back Button - Consistent across all pages */}
-        {showBack && navigate && (
+        {showBack && nav && (
           <button
-            onClick={() => navigate(backTo)}
+            onClick={() => nav(backTo)}
             className="flex items-center gap-2 mb-6 text-slate-500 hover:text-corporate-navy transition-colors group"
           >
             <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
@@ -69,16 +76,24 @@ export const PageLayout = ({
         <header className={`mb-8 ${centerHeader ? 'text-center' : ''}`}>
           <div className={`flex items-center gap-3 mb-2 ${centerHeader ? 'justify-center' : ''}`}>
             {Icon && <Icon className={`w-8 h-8 ${iconColorClass}`} />}
-            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-corporate-navy">
+            <h1 className="text-2xl sm:text-3xl font-bold text-corporate-navy">
               {title}
             </h1>
             {Icon && <Icon className={`w-8 h-8 ${iconColorClass}`} />}
           </div>
           
-          {subtitle && (
+          {sub && (
             <p className={`text-slate-600 text-base sm:text-lg mt-2 ${centerHeader ? 'max-w-2xl mx-auto' : ''}`}>
-              {subtitle}
+              {sub}
             </p>
+          )}
+          
+          {badge && (
+            <div className={`mt-3 ${centerHeader ? 'flex justify-center' : ''}`}>
+              <span className="inline-block bg-orange-100 text-orange-800 px-3 py-1 rounded-full text-sm font-semibold">
+                {badge}
+              </span>
+            </div>
           )}
           
           {headerActions && (

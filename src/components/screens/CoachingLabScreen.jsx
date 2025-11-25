@@ -1694,10 +1694,10 @@ export default function CoachingLabScreen({ simulatedTier }) {
                 return (
                     <PageLayout
                         title="Coaching Lab"
-                        description="Welcome to Coaching. Select a tool to build your leadership skills."
+                        subtitle="Practice and master critical leadership conversations."
                         icon={Beaker}
                         backTo="dashboard"
-                        onNavigate={navigate}
+                        navigate={navigate}
                         badge={!hasCoachingAccess ? "Requires Premium" : undefined}
                     >
                         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

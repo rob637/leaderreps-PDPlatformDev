@@ -101,10 +101,10 @@ const ReflectionLogScreen = () => {
     return (
         <PageLayout
             title="Reflection Log"
-            description="Review your journey of daily reflections and insights."
+            subtitle="Review your journey of daily reflections and insights."
             icon={Archive}
             backTo="dashboard"
-            onNavigate={navigate}
+            navigate={navigate}
         >
             {/* Loading State for History Fetch */}
             {isHistoryLoading && <LoadingSpinner message="Loading reflection history..." />}

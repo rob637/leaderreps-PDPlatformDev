@@ -591,10 +591,10 @@ const CommunityScreen = ({ simulatedTier }) => {
     return (
         <PageLayout
             title="Community"
-            description="Connect, share insights, and grow with fellow leaders."
+            subtitle="Connect, share insights, and grow with fellow leaders."
             icon={Users}
             backTo="dashboard"
-            onNavigate={navigate}
+            navigate={navigate}
             badge={!hasCommunityAccess ? "Requires Premium" : undefined}
         >
             {/* Main Layout Grid (Sidebar + Content) */}

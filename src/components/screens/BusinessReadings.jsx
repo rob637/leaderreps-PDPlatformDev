@@ -602,10 +602,11 @@ export default function BusinessReadingsScreen() {
   return (
     <PageLayout
       title="Reading & Reps"
-      description="Access curated business readings and generate AI-powered practice reps."
+      subtitle="Access curated business readings and generate AI-powered practice reps."
       icon={BookOpen}
       backTo="library"
-      onNavigate={navigate}
+      backLabel="Back to Content"
+      navigate={navigate}
     >
       {!selectedBook ? (
         <BookListStable

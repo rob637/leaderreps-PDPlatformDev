@@ -288,11 +288,12 @@ const LeadershipVideosScreen = () => {
 
     return (
         <PageLayout
-            title="Leadership Video Library"
-            description="Curated content for leaders at every level"
+            title="Leadership Videos"
+            subtitle="Curated video content for leaders at every level."
             icon={Film}
             backTo="library"
-            onNavigate={navigate}
+            backLabel="Back to Content"
+            navigate={navigate}
         >
             {/* Search and Filter Controls */}
             <div className="mb-8 space-y-4">

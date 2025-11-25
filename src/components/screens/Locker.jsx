@@ -1,7 +1,7 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import { useAppServices } from '../../services/useAppServices';
-import { Card } from '../ui';
-import { Archive, CheckCircle, Calendar, Trophy, BookOpen, ArrowLeft } from 'lucide-react';
+import { Card, PageLayout } from '../ui';
+import { Archive, CheckCircle, Calendar, Trophy, BookOpen } from 'lucide-react';
 import { useFeatures } from '../../providers/FeatureProvider';
 import WidgetRenderer from '../admin/WidgetRenderer';
 import { dailyLogService } from '../../services/dailyLogService';
@@ -210,28 +210,14 @@ const Locker = () => {
   }, [isFeatureEnabled, getFeatureOrder]);
 
   return (
-    <div className="p-6 space-y-8 bg-slate-50 min-h-screen">
-      {/* Back Button */}
-      <div className="flex justify-start mb-2">
-          <div className="flex items-center gap-2 text-gray-600 hover:text-gray-800 cursor-pointer transition-colors" onClick={() => navigate('dashboard')}>
-              <ArrowLeft className="w-4 h-4" />
-              <span className="text-sm font-medium">Back to Dashboard</span>
-          </div>
-      </div>
-
-      <header className="mb-8 text-center">
-        <div className="flex items-center justify-center gap-3 mb-2">
-          <Archive className="w-8 h-8 text-corporate-teal" />
-          <h1 className="text-3xl font-bold text-corporate-navy">
-            The Locker
-          </h1>
-          <Archive className="w-8 h-8 text-corporate-teal" />
-        </div>
-        <p className="text-slate-600 mt-2">
-          Your repository of completed reps, wins, and reflections.
-        </p>
-      </header>
-
+    <PageLayout
+      title="The Locker"
+      subtitle="Your repository of completed reps, wins, and reflections."
+      icon={Archive}
+      navigate={navigate}
+      backTo="dashboard"
+      accentColor="teal"
+    >
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {sortedFeatures.map(featureId => (
           <React.Fragment key={featureId}>
@@ -239,7 +225,7 @@ const Locker = () => {
           </React.Fragment>
         ))}
       </div>
-    </div>
+    </PageLayout>
   );
 };
 

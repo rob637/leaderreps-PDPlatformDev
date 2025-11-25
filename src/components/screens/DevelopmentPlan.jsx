@@ -492,10 +492,10 @@ async function confirmPlanPersisted(db, userId, retries = 4, delayMs = 250) {
   return (
     <PageLayout
       title="Development Plan"
-      description="Your roadmap to leadership excellence."
+      subtitle="Your roadmap to leadership excellence."
       icon={Target}
       backTo="dashboard"
-      onNavigate={navigate}
+      navigate={navigate}
     >
       {/* Developer Mode Reset Button */}
       {isDeveloperMode && hasCurrentPlan && (
