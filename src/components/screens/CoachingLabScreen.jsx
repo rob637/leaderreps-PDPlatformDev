@@ -22,9 +22,9 @@ import { COLORS, COMPLEXITY_MAP } from './labs/labConstants.js';
 const Button = ({ children, onClick, disabled = false, variant = 'primary', className = '', ...rest }) => {
     let baseStyle = "px-6 py-3 rounded-xl font-semibold transition-all shadow-xl focus:outline-none focus:ring-4 text-white flex items-center justify-center";
 
-    if (variant === 'primary') { baseStyle += ` bg-[${COLORS.TEAL}] hover:bg-[#47A88D] focus:ring-[#47A88D]/50`; } 
-    else if (variant === 'secondary') { baseStyle += ` bg-[${COLORS.ORANGE}] hover:bg-red-700 focus:ring-[#E04E1B]/50`; } 
-    else if (variant === 'outline') { baseStyle = `px-6 py-3 rounded-xl font-semibold transition-all shadow-md border-2 border-[${COLORS.TEAL}] text-[${COLORS.TEAL}] hover:bg-[#47A88D]/10 focus:ring-4 focus:ring-[#47A88D]/50 bg-[${COLORS.LIGHT_GRAY}] flex items-center justify-center`; }
+    if (variant === 'primary') { baseStyle += ` bg-[#47A88D] hover:bg-[#47A88D] focus:ring-[#47A88D]/50`; } 
+    else if (variant === 'secondary') { baseStyle += ` bg-[#E04E1B] hover:bg-red-700 focus:ring-[#E04E1B]/50`; } 
+    else if (variant === 'outline') { baseStyle = `px-6 py-3 rounded-xl font-semibold transition-all shadow-md border-2 border-[#47A88D] text-[#47A88D] hover:bg-[#47A88D]/10 focus:ring-4 focus:ring-[#47A88D]/50 bg-[#FCFCFA] flex items-center justify-center`; }
 
     if (disabled) { baseStyle = "px-6 py-3 rounded-xl font-semibold bg-gray-300 text-gray-500 cursor-not-allowed shadow-inner transition-none flex items-center justify-center"; }
 

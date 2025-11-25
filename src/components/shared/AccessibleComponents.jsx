@@ -23,10 +23,10 @@ export const AccessibleButton = ({
   `;
 
   const variants = {
-    primary: `bg-[${COLORS.TEAL}] text-white hover:bg-[${COLORS.SUBTLE_TEAL}] focus:ring-[${COLORS.TEAL}]`,
-    secondary: `bg-[${COLORS.ORANGE}] text-white hover:bg-[${COLORS.SUBTLE_TEAL}] focus:ring-[${COLORS.ORANGE}]`,
-    outline: `border-2 border-[${COLORS.TEAL}] text-[${COLORS.TEAL}] hover:bg-[${COLORS.TEAL}] hover:text-white focus:ring-[${COLORS.TEAL}]`,
-    ghost: `text-[${COLORS.TEXT}] hover:bg-gray-100 focus:ring-gray-300`
+    primary: "bg-[#47A88D] text-white hover:bg-[#349881] focus:ring-[#47A88D]",
+    secondary: "bg-[#E04E1B] text-white hover:bg-[#349881] focus:ring-[#E04E1B]",
+    outline: "border-2 border-[#47A88D] text-[#47A88D] hover:bg-[#47A88D] hover:text-white focus:ring-[#47A88D]",
+    ghost: "text-[#002E47] hover:bg-gray-100 focus:ring-gray-300"
   };
 
   const sizes = {
@@ -95,7 +95,7 @@ export const AccessibleInput = ({
           focus:outline-none focus:ring-2 focus:ring-offset-1
           ${error ? 
             'border-red-400 focus:ring-red-300' : 
-            'border-gray-300 focus:ring-[' + COLORS.TEAL + ']'
+            'border-gray-300 focus:ring-[#47A88D]'
           }
         `}
         aria-invalid={error ? 'true' : 'false'}

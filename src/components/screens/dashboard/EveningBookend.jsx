@@ -26,9 +26,9 @@ const Button = ({ children, onClick, disabled = false, variant = 'primary', clas
   else if (size === 'lg') baseStyle += ' px-8 py-4 text-lg';
   else baseStyle += ' px-6 py-3 text-base';
 
-  if (variant === 'primary') baseStyle += ` bg-[${COLORS.TEAL}] text-white shadow-lg hover:bg-[#47A88D] focus:ring-[${COLORS.TEAL}]/50`;
-  else if (variant === 'secondary') baseStyle += ` bg-[${COLORS.ORANGE}] text-white shadow-lg hover:bg-[#C33E12] focus:ring-[${COLORS.ORANGE}]/50`;
-  else if (variant === 'outline') baseStyle += ` bg-[${COLORS.OFF_WHITE}] text-[${COLORS.TEAL}] border-2 border-[${COLORS.TEAL}] shadow-md hover:bg-[${COLORS.TEAL}]/10 focus:ring-[${COLORS.TEAL}]/50`;
+  if (variant === 'primary') baseStyle += ` bg-[#47A88D] text-white shadow-lg hover:bg-[#47A88D] focus:ring-[#47A88D]/50`;
+  else if (variant === 'secondary') baseStyle += ` bg-[#E04E1B] text-white shadow-lg hover:bg-[#C33E12] focus:ring-[#E04E1B]/50`;
+  else if (variant === 'outline') baseStyle += ` bg-[#FFFFFF] text-[#47A88D] border-2 border-[#47A88D] shadow-md hover:bg-[#47A88D]/10 focus:ring-[#47A88D]/50`;
   
   if (disabled) baseStyle += ' bg-gray-300 text-gray-500 shadow-inner border-transparent hover:bg-gray-300';
 
