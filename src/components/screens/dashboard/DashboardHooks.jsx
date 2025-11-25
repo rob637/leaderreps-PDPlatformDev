@@ -36,7 +36,11 @@ export const useDashboard = ({
   const [showHabitEditor, setShowHabitEditor] = useState(false);
 
   // === BOOKEND STATE (NEW 10/28/25) ===
-  const [morningWIN, setMorningWIN] = useState('');
+  const [morningWins, setMorningWins] = useState([
+    { id: 'win-1', text: '', completed: false, saved: false },
+    { id: 'win-2', text: '', completed: false, saved: false },
+    { id: 'win-3', text: '', completed: false, saved: false }
+  ]);
   const [otherTasks, setOtherTasks] = useState([]);
   const [showLIS, setShowLIS] = useState(false);
   const [reflectionGood, setReflectionGood] = useState('');
@@ -158,7 +162,19 @@ export const useDashboard = ({
   useEffect(() => {
     if (dailyPracticeData?.morningBookend) {
       const mb = dailyPracticeData.morningBookend;
-      setMorningWIN(mb.dailyWIN || '');
+      
+      // Load 3 Wins
+      if (mb.wins && Array.isArray(mb.wins)) {
+        setMorningWins(mb.wins);
+      } else if (mb.dailyWIN) {
+        // Migration: Put old single win in first slot
+        setMorningWins([
+          { id: 'win-1', text: mb.dailyWIN, completed: mb.winCompleted || false, saved: true },
+          { id: 'win-2', text: '', completed: false, saved: false },
+          { id: 'win-3', text: '', completed: false, saved: false }
+        ]);
+      }
+
       setOtherTasks(sanitizeTimestamps(mb.otherTasks || []));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -360,14 +376,11 @@ export const useDashboard = ({
     const repsPct = repsTotal > 0 ? Math.round((repsDone / repsTotal) * 100) : 0;
 
     // 2. Win the Day Logic
-    // Components: Top Priority (WIN) + Other Tasks
-    let winTotal = 1; // Top Priority
-    let winDone = amWinCompleted ? 1 : 0;
-    
-    if (otherTasks && otherTasks.length > 0) {
-      winTotal += otherTasks.length;
-      winDone += otherTasks.filter(t => t.completed).length;
-    }
+    // Components: 3 Daily Priorities (Wins)
+    // We count how many are defined (text exists) and how many are completed
+    const definedWins = morningWins.filter(w => w.text && w.text.trim().length > 0);
+    const winTotal = definedWins.length > 0 ? definedWins.length : 3; // Default to 3 if none defined yet
+    const winDone = definedWins.filter(w => w.completed).length;
     
     const winPct = winTotal > 0 ? Math.round((winDone / winTotal) * 100) : 0;
 
@@ -375,14 +388,14 @@ export const useDashboard = ({
       reps: { done: repsDone, total: repsTotal, pct: repsPct },
       win: { done: winDone, total: winTotal, pct: winPct }
     };
-  }, [identityStatement, habitsCompleted, dailyPracticeData?.dailyTargetRepId, additionalCommitments, amWinCompleted, otherTasks]);
+  }, [identityStatement, habitsCompleted, dailyPracticeData?.dailyTargetRepId, additionalCommitments, morningWins, otherTasks]);
 
   /* =========================================================
      BOOKEND HANDLERS (Dependency on updateDailyPracticeData)
   ========================================================= */
   const handleSaveMorningBookend = useCallback(async () => {
     console.log('☀️ [MORNING BOOKEND] Save initiated:', {
-      dailyWIN: morningWIN,
+      wins: morningWins,
       otherTasks,
       readLIS: showLIS
     });
@@ -398,7 +411,7 @@ export const useDashboard = ({
     try {
       const updates = {
         morningBookend: {
-          dailyWIN: morningWIN,
+          wins: morningWins,
           otherTasks: otherTasks,
           readLIS: showLIS,
           completedAt: serverTimestamp()
@@ -411,8 +424,7 @@ export const useDashboard = ({
       if (!success) throw new Error('Update failed');
       // Always show success message with warm feeling
       const message = '✅ Morning Plan Saved Successfully!\n\n' +
-                     '🎯 Your WIN is locked in for today\n' +
-                     '📋 Tasks are ready to track\n' +
+                     '🎯 Your 3 Wins are locked in for today\n' +
                      '🚀 You\'re all set to make today count!';
       alert(message);
     } catch (error) {
@@ -421,10 +433,10 @@ export const useDashboard = ({
     } finally {
       setIsSavingBookend(false);
     }
-  }, [morningWIN, otherTasks, showLIS, updateDailyPracticeData]); // Explicitly include prop
+  }, [morningWins, otherTasks, showLIS, updateDailyPracticeData]);
 
   const handleSaveEveningBookend = useCallback(async () => {
-    console.log('💾 [EVENING BOOKEND] Save initiated:', {
+    console.log('🌙 [EVENING BOOKEND] Save initiated:', {
       good: reflectionGood,
       better: reflectionBetter,
       best: reflectionBest,
@@ -446,13 +458,21 @@ export const useDashboard = ({
       // Add tomorrow's reminder if provided
       if (reflectionBest && reflectionBest.trim()) {
         newReminders.push({
-  });
+          id: Date.now() + 1,
+          text: `Reminder: ${reflectionBest}`,
+          completed: false,
+          createdAt: new Date().toISOString()
+        });
       }
       
       // Add improvement reminder if provided
       if (reflectionBetter && reflectionBetter.trim()) {
         newReminders.push({
-  });
+          id: Date.now() + 2,
+          text: `Improve: ${reflectionBetter}`,
+          completed: false,
+          createdAt: new Date().toISOString()
+        });
       }
 
       // Add new win to cumulative wins list if provided
@@ -666,46 +686,22 @@ export const useDashboard = ({
 
   // NEW: Handle WIN checkbox toggle
   const handleToggleWIN = useCallback(async () => {
-    // Use the destructured prop directly
     if (!updateDailyPracticeData) return;
-    
-    const currentStatus = dailyPracticeData?.morningBookend?.winCompleted || false;
-    const newStatus = !currentStatus;
-    
-    // Update winsList
-    let updatedWinsList = [...winsList];
-    const todayDate = new Date().toLocaleDateString();
-    const winId = `morning-win-${new Date().toISOString().split('T')[0]}`; 
 
-    const existingWinIndex = updatedWinsList.findIndex(w => w.id === winId);
-
-    if (existingWinIndex >= 0) {
-        // Update existing
-        updatedWinsList[existingWinIndex] = {
-            ...updatedWinsList[existingWinIndex],
-            completed: newStatus
-        };
-    } else {
-        // Should exist if saved, but if not (legacy or unsaved flow), add it
-        updatedWinsList.push({
-            id: winId,
-            text: morningWIN || 'Morning Win',
-            date: todayDate,
-            completed: newStatus,
-            timestamp: new Date().toISOString()
-        });
-    }
-    setWinsList(updatedWinsList);
+    const newWins = [...morningWins];
+    if (!newWins[0]) return;
+    
+    newWins[0] = { ...newWins[0], completed: !newWins[0].completed };
+    setMorningWins(newWins);
 
     try {
       await updateDailyPracticeData({
-        'morningBookend.winCompleted': newStatus,
-        winsList: updatedWinsList
+        'morningBookend.wins': newWins
       });
     } catch (error) {
-      console.error('[Dashboard] Error toggling WIN:', error);
+      console.error('Error toggling win:', error);
     }
-  }, [dailyPracticeData, updateDailyPracticeData, winsList, morningWIN]); // Explicitly include prop
+  }, [morningWins, updateDailyPracticeData]);
 
   const handleHabitToggle = useCallback((habitKey, isChecked) => {
     lastHabitUpdateTime.current = Date.now();
@@ -729,68 +725,55 @@ export const useDashboard = ({
   }, [winsList, updateDailyPracticeData]);
 
   // NEW: Handle saving WIN separately
+  // NEW: Handle saving WIN separately (Now handles array of 3)
   const [isSavingWIN, setIsSavingWIN] = useState(false);
   
-  const handleSaveWIN = useCallback(async () => {
-    // Use the destructured prop directly
-    if (!updateDailyPracticeData) {
-      console.error('[Dashboard] Cannot save WIN - updateDailyPracticeData not available');
-      alert('⚠️ Error: Cannot save WIN. Please refresh.');
-      return;
-    }
+  const handleUpdateWin = useCallback((index, text) => {
+    const newWins = [...morningWins];
+    newWins[index] = { ...newWins[index], text };
+    setMorningWins(newWins);
+  }, [morningWins]);
+
+  const handleSaveSingleWin = useCallback(async (index) => {
+    if (!updateDailyPracticeData) return;
     
     setIsSavingWIN(true);
-    
     try {
-      // NEW: Add to winsList as Pending so it shows in Locker
-      const todayDate = new Date().toLocaleDateString();
-      const winId = `morning-win-${new Date().toISOString().split('T')[0]}`;
-      
-      let updatedWinsList = [...winsList];
-      const existingWinIndex = updatedWinsList.findIndex(w => w.id === winId);
-      
-      const winData = {
-        id: winId,
-        text: morningWIN,
-        date: todayDate,
-        completed: false, // Pending initially
-        timestamp: new Date().toISOString()
-      };
+      const newWins = [...morningWins];
+      newWins[index] = { ...newWins[index], saved: true };
+      setMorningWins(newWins);
 
-      if (existingWinIndex >= 0) {
-        // Update existing (e.g. text change), preserving completion status if it was already there
-        updatedWinsList[existingWinIndex] = {
-            ...updatedWinsList[existingWinIndex],
-            text: morningWIN
-        };
-      } else {
-        // Add new
-        updatedWinsList.push(winData);
-      }
-      
-      setWinsList(updatedWinsList);
-
-      // Use nested object structure instead of dot notation
-      const success = await updateDailyPracticeData({
-        morningBookend: {
-          dailyWIN: morningWIN
-        },
-        winsList: updatedWinsList
+      // Update Firestore
+      await updateDailyPracticeData({
+        'morningBookend.wins': newWins
       });
-      
-      if (success) {
-        // Always show feedback, not just in dev mode
-      } else {
-        throw new Error('Update returned false');
-      }
     } catch (error) {
-      console.error('[Dashboard] Error saving WIN:', error);
-      alert('❌ Error saving WIN: ' + error.message);
+      console.error('Error saving win:', error);
     } finally {
       setIsSavingWIN(false);
     }
-  }, [morningWIN, updateDailyPracticeData, winsList]); // Explicitly include prop
+  }, [morningWins, updateDailyPracticeData]);
 
+  const handleToggleWinComplete = useCallback(async (index) => {
+    if (!updateDailyPracticeData) return;
+
+    const newWins = [...morningWins];
+    newWins[index] = { ...newWins[index], completed: !newWins[index].completed };
+    setMorningWins(newWins);
+
+    try {
+      await updateDailyPracticeData({
+        'morningBookend.wins': newWins
+      });
+    } catch (error) {
+      console.error('Error toggling win:', error);
+    }
+  }, [morningWins, updateDailyPracticeData]);
+
+  // Legacy handler kept for compatibility but unused in new UI
+  const handleSaveWIN = useCallback(async () => {
+     // ...
+  }, []);
   // NEW: Handle saving Scorecard separately
   const [isSavingScorecard, setIsSavingScorecard] = useState(false);
 
@@ -829,6 +812,15 @@ export const useDashboard = ({
   }, [scorecard, dailyPracticeData, updateDailyPracticeData]);
 
 
+  // Legacy compatibility
+  const morningWIN = morningWins[0]?.text || '';
+  const setMorningWIN = (val) => {
+      const newWins = [...morningWins];
+      if (!newWins[0]) newWins[0] = { id: 'win-1', text: '', completed: false };
+      newWins[0] = { ...newWins[0], text: val };
+      setMorningWins(newWins);
+  };
+
   /* =========================================================
      RETURN ALL STATE & HANDLERS
   ========================================================= */
@@ -860,46 +852,57 @@ export const useDashboard = ({
     handleSaveHabit,
     handleSaveWhy,
 
-    // Bookends
-    morningWIN,
-    setMorningWIN,
+    // Bookends - Morning
+    morningWIN, // Legacy
+    setMorningWIN, // Legacy
+    morningWins, // New Array
+    setMorningWins, // New Array
+    handleUpdateWin,
+    handleSaveSingleWin,
+    handleToggleWinComplete,
+    
     otherTasks,
+    handleAddTask,
+    handleToggleTask,
+    handleRemoveTask,
+    
     showLIS,
     setShowLIS,
+    
+    // Bookends - Evening
     reflectionGood,
     setReflectionGood,
     reflectionBetter,
     setReflectionBetter,
     reflectionBest,
     setReflectionBest,
-    winsList,
-    setWinsList,
-    habitsCompleted,
-    isSavingBookend,
-    handleSaveMorningBookend,
     handleSaveEveningBookend,
-    handleAddTask,
-    handleToggleTask,
-    handleRemoveTask,
-    handleToggleWIN,
-    handleHabitToggle,
+    isSavingBookend,
+    
+    winsList,
     handleDeleteWin,
-    handleSaveWIN,
-    isSavingWIN,
+    
+    // Habits
+    habitsCompleted,
+    handleHabitToggle,
+
+    // Scorecard
+    scorecard,
     handleSaveScorecard,
     isSavingScorecard,
 
-    // Computed Values
-    amCompletedAt,
-    amWinCompleted,
-    amTasksCompleted,
-    scorecard, // <--- Exported
-
-    // Streak & Additional Reps
+    // Streak
     streakCount,
     streakCoins,
+    
+    // Additional Reps
     additionalCommitments,
-    handleToggleAdditionalRep
+    handleToggleAdditionalRep,
+    
+    // Legacy / Deprecated but kept for safety
+    handleToggleWIN,
+    handleSaveWIN,
+    isSavingWIN
   };
 };
 /* =========================================================

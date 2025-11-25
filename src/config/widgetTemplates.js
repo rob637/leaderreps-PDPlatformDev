@@ -1,5 +1,5 @@
 import { 
-  Flame, Trophy, MessageSquare, Calendar, BookOpen, Play, Book, Video, FileText, Users, UserPlus, Search, Radio, History, BarChart2, Bot, Cpu, Dumbbell, TrendingUp, CheckCircle, Edit, Lightbulb, CheckSquare, X, Plus, Loader, Save, Bell, Target, Zap, Crosshair, Flag, MessageCircle, Heart
+  Flame, Trophy, MessageSquare, Calendar, BookOpen, Play, Book, Video, FileText, Users, UserPlus, Search, Radio, History, BarChart2, Bot, Cpu, Dumbbell, TrendingUp, CheckCircle, Edit, Lightbulb, CheckSquare, X, Plus, Loader, Save, Bell, Target, Zap, Crosshair, Flag, MessageCircle, Heart, Sun, Moon
 } from 'lucide-react';
 
 // Helper for Roadmap Widgets
@@ -37,155 +37,239 @@ export const createRoadmapWidget = (title, ideas) => `
 
 
 export const WIDGET_TEMPLATES = {
-    'win-the-day': `
-<Card title="AM Bookend - Win the Day" icon={Trophy} accent="TEAL">
-  <div className="space-y-6">
-    {/* 1. Top Priority */}
-    <div className="text-left">
-      <label className="block text-xs font-bold text-slate-400 uppercase mb-2 text-left">
-        1. Top Priority (The WIN)
-      </label>
-      <div className="flex gap-3">
-        {amWinCompleted ? (
-          <div className="flex-1 p-3 bg-green-50 border border-green-200 rounded-xl flex items-center gap-3">
-            <CheckSquare className="w-5 h-5 text-green-600" />
-            <span className="font-bold text-green-900 line-through opacity-75">{morningWIN}</span>
-          </div>
-        ) : (
-          <div className="flex-1 flex gap-2">
-            <input 
-              type="text"
-              value={morningWIN}
-              onChange={(e) => setMorningWIN(e.target.value)}
-              placeholder="What is the ONE thing that must get done?"
-              className="flex-1 p-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-teal-500 outline-none transition-all font-medium"
-              disabled={amWinCompleted}
-            />
-            {!amWinCompleted && morningWIN && (
-                <button 
-                  onClick={() => handleSaveWINWrapper()}
-                  disabled={isSavingWIN || isWinSaved}
-                  className={\`p-3 rounded-xl transition-colors disabled:opacity-50 \${
-                    isWinSaved ? 'bg-green-500 text-white' : 'bg-teal-500 text-white hover:bg-teal-600'
-                  }\`}
-                  title="Save WIN"
-                >
-                  {isSavingWIN ? <Loader className="w-5 h-5 animate-spin" /> : 
-                  isWinSaved ? <CheckSquare className="w-5 h-5" /> : <Plus className="w-5 h-5" />}
-                </button>
-            )}
-          </div>
-        )}
-        
-        {morningWIN && !isSavingWIN && (
-          <button
-            onClick={() => handleToggleWIN()}
-            className={\`p-3 rounded-xl border-2 transition-colors \${
-              amWinCompleted 
-                ? 'bg-green-500 border-green-500 text-white' 
-                : 'bg-white border-slate-200 text-slate-300 hover:border-green-400'
-            }\`}
-          >
-            <CheckSquare className="w-5 h-5" />
-          </button>
-        )}
-      </div>
+    'am-bookend-header': `
+<div className="flex items-center gap-3 mb-4 mt-8">
+  <Sun className="w-6 h-6 text-orange-500" />
+  <h2 className="text-xl font-bold text-[#002E47]">AM Bookend: Start Strong</h2>
+  <div className="h-px bg-slate-200 flex-1 ml-4"></div>
+</div>
+    `,
+    'weekly-focus': `
+<Card title="Weekly Focus" icon={Target} accent="INDIGO">
+  <div className="space-y-3">
+    <p className="text-sm text-slate-500">What is your primary theme for this week?</p>
+    <textarea 
+      className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all text-sm font-medium"
+      rows={2}
+      placeholder="e.g. Team Alignment, Q4 Strategy..."
+    />
+  </div>
+</Card>
+    `,
+    'grounding-rep': `
+<Card title="Grounding Rep" icon={Zap} accent="YELLOW">
+  <div className="flex items-start gap-4">
+    <div className="p-3 bg-yellow-100 rounded-xl text-yellow-700">
+      <Zap className="w-6 h-6" />
     </div>
-
-    {/* 2 & 3. Next Most Important */}
-    <div className="space-y-3 text-left">
-      <div className="flex justify-between items-center">
-        <label className="block text-xs font-bold text-slate-400 uppercase text-left">
-          2 & 3. Next Most Important
-        </label>
-        {otherTasks.length > 0 && (
-          <span className="text-xs text-green-600 font-medium flex items-center gap-1">
-            <CheckSquare className="w-3 h-3" /> Auto-saved
-          </span>
-        )}
-      </div>
-      
-      {otherTasks.map((task, idx) => (
-        <div key={task.id || idx} className="flex items-center gap-3">
-          <div className={\`flex-1 p-3 rounded-xl border \${
-            task.completed ? 'bg-slate-50 border-slate-200' : 'bg-white border-slate-200'
-          }\`}>
-            <span className={\`font-medium \${task.completed ? 'line-through text-slate-400' : 'text-slate-700'}\`}>
-              {task.text}
-            </span>
-          </div>
-          <button
-            onClick={() => handleToggleTask(task.id)}
-            className={\`p-3 rounded-xl border-2 transition-colors \${
-              task.completed
-                ? 'bg-teal-500 border-teal-500 text-white' 
-                : 'bg-white border-slate-200 text-slate-300 hover:border-teal-400'
-            }\`}
-          >
-            <CheckSquare className="w-5 h-5" />
-          </button>
-          <button 
-            onClick={() => handleRemoveTask(task.id)}
-            className="p-3 text-slate-300 hover:text-red-400 transition-colors"
-          >
-            <X className="w-5 h-5" />
-          </button>
-        </div>
-      ))}
-
-      {otherTasks.length < 2 && (
-        <div className="flex gap-2">
+    <div>
+      <h3 className="font-bold text-slate-800">5-Minute Meditation</h3>
+      <p className="text-xs text-slate-500 mb-3">Clear your mind before the day begins.</p>
+      <button className="px-4 py-2 bg-[#002E47] text-white text-xs font-bold rounded-lg hover:bg-[#003E5F] transition-colors">
+        Start Session
+      </button>
+    </div>
+  </div>
+</Card>
+    `,
+    'win-the-day': `
+<Card title="Win the Day" icon={Trophy} accent="TEAL">
+  <div className="space-y-4">
+    <p className="text-xs text-slate-500 font-medium uppercase tracking-wider">
+      Identify 3 High-Impact Actions
+    </p>
+    
+    {morningWins.map((win) => (
+      <div key={win.id} className="flex gap-2 items-center">
+        <div className="flex-1 relative">
           <input 
             type="text"
-            value={newTaskText}
-            onChange={(e) => setNewTaskText(e.target.value)}
-            onKeyPress={(e) => e.key === 'Enter' && handleAddOtherTask()}
-            placeholder="Add another priority..."
-            className="flex-1 p-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-teal-500 outline-none transition-all text-sm"
+            value={win.text}
+            onChange={(e) => handleUpdateWin(win.id, e.target.value)}
+            placeholder={\`Priority #\${win.id}\`}
+            disabled={win.saved}
+            className={\`w-full p-3 pl-4 border rounded-xl outline-none transition-all text-sm font-medium \${
+              win.saved 
+                ? 'bg-slate-50 border-slate-200 text-slate-500' 
+                : 'bg-white border-slate-200 focus:ring-2 focus:ring-teal-500'
+            }\`}
           />
-          <button 
-            onClick={() => handleAddOtherTask()}
-            disabled={!newTaskText.trim()}
-            className="p-3 bg-slate-200 text-slate-600 rounded-xl hover:bg-teal-500 hover:text-white transition-colors disabled:opacity-50"
-          >
-            <Plus className="w-5 h-5" />
-          </button>
+          {win.saved && (
+            <CheckCircle className="w-4 h-4 text-green-500 absolute right-3 top-1/2 -translate-y-1/2" />
+          )}
         </div>
-      )}
-    </div>
+
+        {!win.saved ? (
+          <button 
+            onClick={() => handleSaveSingleWin(win.id)}
+            disabled={!win.text.trim()}
+            className="p-3 bg-teal-50 text-teal-600 rounded-xl hover:bg-teal-100 disabled:opacity-50 transition-colors"
+            title="Save Priority"
+          >
+            <Save className="w-5 h-5" />
+          </button>
+        ) : (
+          <button 
+            onClick={() => handleToggleWinComplete(win.id)}
+            className={\`p-3 rounded-xl transition-colors \${
+              win.completed 
+                ? 'bg-green-500 text-white' 
+                : 'bg-slate-100 text-slate-300 hover:bg-green-100 hover:text-green-600'
+            }\`}
+            title="Mark Complete"
+          >
+            <CheckSquare className="w-5 h-5" />
+          </button>
+        )}
+      </div>
+    ))}
+  </div>
+</Card>
+    `,
+    'daily-leader-reps': `
+<Card title="Daily Leader Reps" icon={Dumbbell} accent="BLUE">
+  <div className="space-y-2">
+    {[
+      { id: 'r1', label: 'Review Calendar', time: '2m' },
+      { id: 'r2', label: 'Check Team Pulse', time: '5m' },
+      { id: 'r3', label: 'Send 1 Appreciation', time: '3m' }
+    ].map(rep => (
+      <div key={rep.id} className="flex items-center justify-between p-3 bg-slate-50 rounded-xl hover:bg-blue-50 transition-colors cursor-pointer group">
+        <div className="flex items-center gap-3">
+          <div className="w-5 h-5 rounded border-2 border-slate-300 group-hover:border-blue-400 flex items-center justify-center">
+            {/* Checkbox logic would go here */}
+          </div>
+          <span className="text-sm font-bold text-slate-700">{rep.label}</span>
+        </div>
+        <span className="text-xs font-bold text-slate-400 bg-white px-2 py-1 rounded border border-slate-200">
+          {rep.time}
+        </span>
+      </div>
+    ))}
   </div>
 </Card>
     `,
     'notifications': `
 <Card title="Notifications" icon={Bell} accent="GRAY">
-  <div className="space-y-3 text-left">
-    
-    {/* Dev Note */}
-    <div className="bg-slate-50 border border-slate-200 rounded-lg p-2 text-xs text-slate-500 italic text-center">
-      Waiting for inputs to be defined and built. (Mock Data)
+  <div className="space-y-4">
+    {/* Category 1: Yesterday's Needs Work */}
+    <div className="flex gap-3 items-start p-3 bg-orange-50 rounded-xl border border-orange-100">
+      <div className="mt-1">
+        <div className="w-2 h-2 rounded-full bg-orange-500" />
+      </div>
+      <div>
+        <p className="text-xs font-bold text-orange-800 uppercase mb-1">Reflection Insight</p>
+        <p className="text-sm font-medium text-slate-800">
+          You flagged "Active Listening" as needing work yesterday.
+        </p>
+        <button className="mt-2 text-xs font-bold text-orange-600 hover:text-orange-700 flex items-center gap-1">
+          View Resource <Play className="w-3 h-3" />
+        </button>
+      </div>
     </div>
 
-    <div className="flex gap-3 items-start p-2 hover:bg-slate-50 rounded-lg transition-colors cursor-pointer">
-      <div className="w-2 h-2 mt-2 rounded-full bg-orange-500 flex-shrink-0" />
+    {/* Category 2: Upcoming Practice */}
+    <div className="flex gap-3 items-start p-3 bg-teal-50 rounded-xl border border-teal-100">
+      <div className="mt-1">
+        <div className="w-2 h-2 rounded-full bg-teal-500" />
+      </div>
       <div>
-        <p className="text-sm font-semibold text-[#002E47]">Yesterday's "Needs Work"</p>
-        <p className="text-xs text-slate-500">Review your reflection from yesterday.</p>
+        <p className="text-xs font-bold text-teal-800 uppercase mb-1">Upcoming Practice</p>
+        <p className="text-sm font-medium text-slate-800">
+          "Difficult Conversations" workshop starts in 2 hours.
+        </p>
       </div>
     </div>
-    <div className="flex gap-3 items-start p-2 hover:bg-slate-50 rounded-lg transition-colors cursor-pointer">
-      <div className="w-2 h-2 mt-2 rounded-full bg-teal-500 flex-shrink-0" />
+
+    {/* Category 3: New Content */}
+    <div className="flex gap-3 items-start p-3 bg-purple-50 rounded-xl border border-purple-100">
+      <div className="mt-1">
+        <div className="w-2 h-2 rounded-full bg-purple-500" />
+      </div>
       <div>
-        <p className="text-sm font-semibold text-[#002E47]">Upcoming Feedback Practice</p>
-        <p className="text-xs text-slate-500">Nov 29, 4:00 PM <span className="text-teal-600 font-bold ml-1">Register</span></p>
+        <p className="text-xs font-bold text-purple-800 uppercase mb-1">New Unlock</p>
+        <p className="text-sm font-medium text-slate-800">
+          Module 4: "Strategic Vision" is now available.
+        </p>
       </div>
     </div>
-    <div className="flex gap-3 items-start p-2 hover:bg-slate-50 rounded-lg transition-colors cursor-pointer">
-      <div className="w-2 h-2 mt-2 rounded-full bg-purple-500 flex-shrink-0" />
-      <div>
-        <p className="text-sm font-semibold text-[#002E47]">New R&R Unlocked</p>
-        <p className="text-xs text-slate-500">Check your resource library.</p>
-      </div>
+  </div>
+</Card>
+    `,
+    'pm-bookend-header': `
+<div className="flex items-center gap-3 mb-4 mt-8">
+  <Moon className="w-6 h-6 text-indigo-500" />
+  <h2 className="text-xl font-bold text-[#002E47]">PM Bookend: Finish Strong</h2>
+  <div className="h-px bg-slate-200 flex-1 ml-4"></div>
+</div>
+    `,
+    'progress-feedback': `
+<Card title="Progress & Feedback" icon={TrendingUp} accent="GREEN">
+  <div className="flex items-center justify-between p-4 bg-green-50 rounded-xl border border-green-100 mb-4">
+    <div>
+      <p className="text-xs font-bold text-green-800 uppercase">Weekly Completion</p>
+      <p className="text-2xl font-bold text-[#002E47]">85%</p>
     </div>
+    <div className="h-12 w-12 rounded-full border-4 border-green-500 flex items-center justify-center bg-white">
+      <span className="text-xs font-bold text-green-700">A</span>
+    </div>
+  </div>
+  <p className="text-sm text-slate-600 mb-3">
+    "Great job staying consistent with your morning planning this week!"
+  </p>
+  <div className="w-full bg-slate-100 rounded-full h-2">
+    <div className="bg-green-500 h-2 rounded-full" style={{ width: '85%' }}></div>
+  </div>
+</Card>
+    `,
+    'pm-bookend': `
+<Card title="PM Reflection" icon={MessageSquare} accent="INDIGO">
+  <div className="space-y-4">
+    <div>
+      <label className="block text-xs font-bold text-slate-500 uppercase mb-2">
+        1. What went well?
+      </label>
+      <textarea 
+        value={reflectionGood}
+        onChange={(e) => setReflectionGood(e.target.value)}
+        className="w-full p-3 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all text-sm"
+        rows={2}
+        placeholder="Celebrate a win..."
+      />
+    </div>
+
+    <div>
+      <label className="block text-xs font-bold text-slate-500 uppercase mb-2">
+        2. What needs work?
+      </label>
+      <textarea 
+        value={reflectionBetter}
+        onChange={(e) => setReflectionBetter(e.target.value)}
+        className="w-full p-3 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all text-sm"
+        rows={2}
+        placeholder="Identify an improvement..."
+      />
+    </div>
+
+    <div>
+      <label className="block text-xs font-bold text-slate-500 uppercase mb-2">
+        3. Closing thought
+      </label>
+      <textarea 
+        className="w-full p-3 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all text-sm"
+        rows={1}
+        placeholder="One word to describe today..."
+      />
+    </div>
+
+    <button 
+      onClick={() => handleSaveEveningBookend()}
+      disabled={isSavingBookend || (!reflectionGood && !reflectionBetter)}
+      className="w-full py-3 bg-[#002E47] text-white rounded-xl font-bold hover:bg-[#003E5F] transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+    >
+      {isSavingBookend ? <Loader className="w-5 h-5 animate-spin" /> : <Save className="w-5 h-5" />}
+      Save Journal
+    </button>
   </div>
 </Card>
     `,
@@ -238,49 +322,6 @@ export const WIDGET_TEMPLATES = {
         Save to Locker
       </button>
     </div>
-</Card>
-    `,
-    'pm-bookend': `
-<Card title="PM Bookend - Reflection" icon={MessageSquare} accent="INDIGO">
-  <div className="space-y-4">
-    <div>
-      <label className="block text-sm font-bold text-green-700 mb-2 text-left">
-        What went well today?
-      </label>
-      <textarea 
-        value={reflectionGood}
-        onChange={(e) => setReflectionGood(e.target.value)}
-        className="w-full p-3 bg-green-50 border border-green-100 rounded-xl focus:ring-2 focus:ring-green-500 outline-none transition-all text-sm"
-        rows={2}
-        placeholder="Celebrate a win..."
-      />
-    </div>
-
-    <div>
-      <label className="block text-sm font-bold text-orange-700 mb-2 text-left">
-        What needs work?
-      </label>
-      <textarea 
-        value={reflectionBetter}
-        onChange={(e) => setReflectionBetter(e.target.value)}
-        className="w-full p-3 bg-orange-50 border border-orange-100 rounded-xl focus:ring-2 focus:ring-orange-500 outline-none transition-all text-sm"
-        rows={2}
-        placeholder="Identify an improvement..."
-      />
-    </div>
-
-    <button 
-      onClick={() => handleSaveEveningBookend()}
-      disabled={isSavingBookend || (!reflectionGood && !reflectionBetter)}
-      className="w-full py-3 bg-[#002E47] text-white rounded-xl font-bold hover:bg-[#003E5F] transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
-    >
-      {isSavingBookend ? <Loader className="w-5 h-5 animate-spin" /> : <Save className="w-5 h-5" />}
-      Save Journal Page
-    </button>
-    <p className="text-xs text-center text-slate-400">
-      Saved to history in Locker
-    </p>
-  </div>
 </Card>
     `,
     'course-library': `
@@ -765,12 +806,18 @@ export const WIDGET_TEMPLATES = {
   };
 
 export const FEATURE_METADATA = {
+  'am-bookend-header': { core: true, category: 'Planning', description: 'AM Bookend Header' },
+  'weekly-focus': { core: true, category: 'Planning', description: 'Weekly Focus' },
+  'grounding-rep': { core: true, category: 'Planning', description: 'Grounding Rep' },
   'win-the-day': { core: true, category: 'Planning', description: 'Morning planning' },
-  'scorecard': { core: true, category: 'Tracking', description: 'Daily habit scorecard' },
+  'daily-leader-reps': { core: true, category: 'Planning', description: 'Daily Leader Reps' },
+  'notifications': { core: true, category: 'General', description: 'Notifications' },
+  'pm-bookend-header': { core: true, category: 'Reflection', description: 'PM Bookend Header' },
+  'progress-feedback': { core: true, category: 'Tracking', description: 'Progress Feedback' },
   'pm-bookend': { core: true, category: 'Reflection', description: 'Evening reflection' },
+  'scorecard': { core: true, category: 'Tracking', description: 'Daily habit scorecard' },
   'daily-quote': { core: true, category: 'Inspiration', description: 'Daily quote' },
   'welcome-message': { core: true, category: 'General', description: 'Welcome message' },
-  'notifications': { core: true, category: 'General', description: 'Notifications' },
   'dev-plan-header-v2': { core: true, category: 'Development', description: 'Development Plan Header' },
   'dev-plan-stats': { core: true, category: 'Development', description: 'Development Plan Stats' },
   'dev-plan-actions-v3': { core: true, category: 'Development', description: 'Development Plan Actions' },
