@@ -69,6 +69,9 @@ export const useDashboard = ({
 
   // === END OF DAY COMMIT LOGIC ===
   useEffect(() => {
+    // Guard: Don't run if db or userId is not available yet
+    if (!db || !userId) return;
+
     const checkTimeAndCommit = () => {
       const now = new Date();
       const isCommitTime = now.getHours() === 23 && now.getMinutes() === 59;

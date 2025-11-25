@@ -8,6 +8,7 @@ import contentService, { CONTENT_COLLECTIONS } from '../../services/contentServi
 import { logWidthMeasurements } from '../../utils/debugWidth.js';
 import { useFeatures } from '../../providers/FeatureProvider';
 import WidgetRenderer from '../admin/WidgetRenderer';
+import { useLayout } from '../../providers/LayoutProvider';
 
 // --- Icons ---
 import {
@@ -52,6 +53,7 @@ const LEADERSHIP_TIERS_META_FALLBACK = { // cite: CommunityScreen.jsx (original)
  * Displays the main feed, filters, and the "Start Discussion" button.
  */
 const CommunityHomeView = ({ setView, user, currentTierFilter, setCurrentTierFilter, filteredThreads, tierMeta }) => {
+    const { layoutMode } = useLayout();
     // Determine which tier metadata to use (context or fallback)
     const safeTierMeta = useMemo(() => {
         // Add 'All' option dynamically if not present in context Tiers

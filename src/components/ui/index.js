@@ -39,6 +39,7 @@ export { Heading, Text, PageHeader } from './Typography';
 
 // Layout Components
 export { PageLayout, PageEmptyState, PageSection, PageGrid, NoWidgetsEnabled } from './PageLayout';
+export { LayoutToggle } from './LayoutToggle';
 
 // Widget Components
 export { WidgetCard, WidgetHeader, WidgetGrid } from './WidgetCard';

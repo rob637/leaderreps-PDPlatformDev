@@ -7,7 +7,8 @@ import { useAppServices } from '../../services/useAppServices.jsx';
 import { 
   CheckSquare, Square, Plus, Save, X, Trophy, Flame, 
   MessageSquare, Bell, Calendar, ChevronRight, ArrowRight,
-  Edit3, Loader, LayoutDashboard, Target, Layers, Sun, Moon, Clipboard, Zap, TrendingUp
+  Edit3, Loader, LayoutDashboard, Target, Layers, Sun, Moon, Clipboard, Zap, TrendingUp,
+  Dumbbell, CheckCircle
 } from 'lucide-react';
 import { useDashboard } from './dashboard/DashboardHooks.jsx';
 import { UnifiedAnchorEditorModal, CalendarSyncModal } from './dashboard/DashboardComponents.jsx';
@@ -15,6 +16,8 @@ import { useFeatures } from '../../providers/FeatureProvider';
 import WidgetRenderer from '../admin/WidgetRenderer';
 import { createWidgetSDK } from '../../services/WidgetSDK';
 import { Card } from '../ui';
+import { useLayout } from '../../providers/LayoutProvider';
+import { LayoutToggle } from '../ui/LayoutToggle';
 
 const DASHBOARD_FEATURES = [
   'welcome-message',
@@ -43,6 +46,7 @@ const Dashboard = (props) => {
     db // <--- Added db here
   } = useAppServices();
 
+  const { layoutMode } = useLayout();
   const { isFeatureEnabled, getFeatureOrder } = useFeatures();
 
   // --- HOOKS ---
@@ -230,9 +234,10 @@ const Dashboard = (props) => {
     // Icons
     CheckSquare, Square, Plus, Save, X, Trophy, Flame, 
     MessageSquare, Bell, Calendar, ChevronRight, ArrowRight,
-    Edit3, Loader, Sun, Moon, Zap, TrendingUp,
+    Edit3, Loader, Sun, Moon, Zap, TrendingUp, Dumbbell, CheckCircle,
     
     // Components
+    Card,
     Checkbox,
     
     // Functions
@@ -280,6 +285,9 @@ const Dashboard = (props) => {
     reflectionBetter,
     isSavingBookend,
     
+    // Development Plan Data
+    developmentPlanData,
+    
     // User Data
     user: user ? {
       uid: user.uid,
@@ -324,7 +332,12 @@ const Dashboard = (props) => {
   };
 
   return (
-    <div className="p-6 space-y-8 bg-slate-50 min-h-screen">
+    <div className="p-6 space-y-8 bg-slate-50 min-h-screen relative">
+      {/* Layout Toggle - Desktop Only */}
+      <div className="absolute top-6 right-6 z-10 hidden lg:block">
+        <LayoutToggle />
+      </div>
+
       <header className="mb-8 text-center">
         <div className="flex items-center justify-center gap-3 mb-2">
           <LayoutDashboard className="w-8 h-8 text-corporate-teal" />
@@ -338,7 +351,7 @@ const Dashboard = (props) => {
         </p>
       </header>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className={`grid gap-6 ${layoutMode === '1-col' ? 'grid-cols-1' : 'grid-cols-1 lg:grid-cols-2'}`}>
         {/* DYNAMIC FEATURES */}
         {sortedFeatures.map(featureId => (
           <React.Fragment key={featureId}>

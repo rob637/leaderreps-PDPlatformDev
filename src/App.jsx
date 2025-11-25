@@ -29,6 +29,7 @@ import AuthPanel from './components/auth/AuthPanel.jsx';
 import AppContent from './components/layout/AppContent.jsx';
 import DataProvider from './providers/DataProvider.jsx';
 import { FeatureProvider } from './providers/FeatureProvider.jsx';
+import { LayoutProvider } from './providers/LayoutProvider.jsx';
 import { WidgetEditorProvider } from './providers/WidgetEditorProvider.jsx';
 import WidgetEditorModal from './components/admin/WidgetEditorModal.jsx';
 import ConfigError from './components/system/ConfigError.jsx';
@@ -126,8 +127,9 @@ function App() {
         user={user}
       >
         <FeatureProvider db={firebaseServices?.db}>
-          <WidgetEditorProvider>
-            {isAuthRequired ? (
+          <LayoutProvider>
+            <WidgetEditorProvider>
+              {isAuthRequired ? (
               <AuthPanel 
                 auth={firebaseServices.auth} 
                 onSuccess={() => navigate('dashboard')} 
@@ -146,7 +148,8 @@ function App() {
               />
             )}
             <WidgetEditorModal />
-          </WidgetEditorProvider>
+            </WidgetEditorProvider>
+          </LayoutProvider>
         </FeatureProvider>
       </DataProvider>
       

@@ -127,27 +127,54 @@ export const WIDGET_TEMPLATES = {
 </Card>
     `,
     'daily-leader-reps': `
-<Card title="Daily Leader Reps" icon={Dumbbell} accent="BLUE">
-  <div className="space-y-2">
-    {(developmentPlanData?.currentPlan?.weeklyReps || [
-      { id: 'r1', label: 'Review Calendar', time: '2m' },
-      { id: 'r2', label: 'Check Team Pulse', time: '5m' },
-      { id: 'r3', label: 'Send 1 Appreciation', time: '3m' }
-    ]).map(rep => (
-      <div key={rep.id} className="flex items-center justify-between p-3 bg-slate-50 rounded-xl hover:bg-blue-50 transition-colors cursor-pointer group">
-        <div className="flex items-center gap-3">
-          <div className="w-5 h-5 rounded border-2 border-slate-300 group-hover:border-blue-400 flex items-center justify-center">
-            {/* Checkbox logic would go here */}
-          </div>
-          <span className="text-sm font-bold text-slate-700">{rep.label}</span>
-        </div>
-        <span className="text-xs font-bold text-slate-400 bg-white px-2 py-1 rounded border border-slate-200">
-          {rep.time}
-        </span>
+(() => {
+  // Default reps if no development plan exists
+  const defaultReps = [
+    { id: 'r1', label: 'Review Calendar', time: '2m' },
+    { id: 'r2', label: 'Check Team Pulse', time: '5m' },
+    { id: 'r3', label: 'Send 1 Appreciation', time: '3m' }
+  ];
+  
+  const reps = developmentPlanData?.currentPlan?.weeklyReps || defaultReps;
+  
+  // Track completed state locally (would be persisted via additionalCommitments in real impl)
+  const completedReps = additionalCommitments || {};
+  
+  return (
+    <Card title="Daily Leader Reps" icon={Dumbbell} accent="BLUE">
+      <div className="space-y-2">
+        {reps.map(rep => {
+          const isCompleted = completedReps[rep.id] || false;
+          return (
+            <div 
+              key={rep.id} 
+              onClick={() => handleToggleAdditionalRep && handleToggleAdditionalRep(rep.id)}
+              className={\`flex items-center justify-between p-3 rounded-xl transition-colors cursor-pointer group \${
+                isCompleted ? 'bg-green-50 border border-green-200' : 'bg-slate-50 hover:bg-blue-50'
+              }\`}
+            >
+              <div className="flex items-center gap-3">
+                <div className={\`w-5 h-5 rounded border-2 flex items-center justify-center transition-colors \${
+                  isCompleted 
+                    ? 'bg-green-500 border-green-500' 
+                    : 'border-slate-300 group-hover:border-blue-400'
+                }\`}>
+                  {isCompleted && <CheckCircle className="w-3 h-3 text-white" />}
+                </div>
+                <span className={\`text-sm font-bold \${isCompleted ? 'text-green-700 line-through' : 'text-slate-700'}\`}>
+                  {rep.label}
+                </span>
+              </div>
+              <span className="text-xs font-bold text-slate-400 bg-white px-2 py-1 rounded border border-slate-200">
+                {rep.time}
+              </span>
+            </div>
+          );
+        })}
       </div>
-    ))}
-  </div>
-</Card>
+    </Card>
+  );
+})()
     `,
     'notifications': `
 <Card title="Notifications" icon={Bell} accent="GRAY">
@@ -599,7 +626,7 @@ export const WIDGET_TEMPLATES = {
   </button>
 </Card>
     `,
-    'dev-plan-header-v2': `
+    'dev-plan-header': `
 <Card title="Development Plan" icon={Target} accent="TEAL">
   <div className="flex items-center justify-between mb-6">
     <div>
@@ -664,7 +691,7 @@ export const WIDGET_TEMPLATES = {
   </Card>
 </div>
     `,
-    'dev-plan-actions-v3': `
+    'dev-plan-actions': `
 <Card title="Actions" icon={Zap} accent="TEAL">
   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
     <Button
@@ -818,9 +845,9 @@ export const FEATURE_METADATA = {
   'scorecard': { core: true, category: 'Tracking', description: 'Daily habit scorecard' },
   'daily-quote': { core: true, category: 'Inspiration', description: 'Daily quote' },
   'welcome-message': { core: true, category: 'General', description: 'Welcome message' },
-  'dev-plan-header-v2': { core: true, category: 'Development', description: 'Development Plan Header' },
+  'dev-plan-header': { core: true, category: 'Development', description: 'Development Plan Header' },
   'dev-plan-stats': { core: true, category: 'Development', description: 'Development Plan Stats' },
-  'dev-plan-actions-v3': { core: true, category: 'Development', description: 'Development Plan Actions' },
+  'dev-plan-actions': { core: true, category: 'Development', description: 'Development Plan Actions' },
   'dev-plan-focus-areas': { core: true, category: 'Development', description: 'Development Plan Focus Areas' },
   'dev-plan-goal': { core: true, category: 'Development', description: 'Development Plan Goal' },
   'course-library': { core: false, category: 'Learning', description: 'Course library' },
