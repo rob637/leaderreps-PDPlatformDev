@@ -31,7 +31,7 @@ WARNINGS=0
 # ============================================================
 # CHECK 1: No Duplicate Button/Card Definitions
 # ============================================================
-echo -e "${BLUE}[1/6] Checking for rogue Button/Card definitions...${NC}"
+echo -e "${BLUE}[1/10] Checking for rogue Button/Card definitions...${NC}"
 
 # Exclude legacy files that are deprecated but not yet removed:
 # - src/components/shared/CorporateUI.jsx (deprecated, not imported)
@@ -58,7 +58,7 @@ fi
 # ============================================================
 # CHECK 2: No Imports from Deprecated Paths
 # ============================================================
-echo -e "${BLUE}[2/6] Checking for imports from deprecated paths...${NC}"
+echo -e "${BLUE}[2/10] Checking for imports from deprecated paths...${NC}"
 
 DEPRECATED_IMPORTS=$(grep -rE "from.*(shared/Button|shared/Card|shared/UI|uiKit|CorporateUI)" src/ --include="*.jsx" 2>/dev/null | wc -l)
 
@@ -73,7 +73,7 @@ fi
 # ============================================================
 # CHECK 3: New Screen Files Must Import from @ui
 # ============================================================
-echo -e "${BLUE}[3/6] Checking screen file UI adoption...${NC}"
+echo -e "${BLUE}[3/10] Checking screen file UI adoption...${NC}"
 
 TOTAL_SCREENS=$(find src/components/screens -name "*.jsx" -type f | wc -l)
 
@@ -99,7 +99,7 @@ fi
 # ============================================================
 # CHECK 4: No Hardcoded Corporate Hex Colors in New Files
 # ============================================================
-echo -e "${BLUE}[4/6] Checking for hardcoded corporate colors...${NC}"
+echo -e "${BLUE}[4/10] Checking for hardcoded corporate colors...${NC}"
 
 # Corporate colors that should use Tailwind classes or CSS variables
 # Excludes legacy/deprecated files from count
@@ -117,7 +117,7 @@ fi
 # ============================================================
 # CHECK 5: Typography Components Usage (Advisory)
 # ============================================================
-echo -e "${BLUE}[5/6] Checking Typography component adoption...${NC}"
+echo -e "${BLUE}[5/10] Checking Typography component adoption...${NC}"
 
 HEADING_IMPORTS=$(grep -r "Heading.*from.*ui" src/components/screens --include="*.jsx" 2>/dev/null | wc -l)
 PAGEHEADER_IMPORTS=$(grep -r "PageHeader.*from.*ui" src/components/screens --include="*.jsx" 2>/dev/null | wc -l)
@@ -131,9 +131,9 @@ else
 fi
 
 # ============================================================
-# CHECK 6: Widget Pattern Compliance
+# CHECK 6: Service Layer Compliance
 # ============================================================
-echo -e "${BLUE}[6/6] Checking Widget pattern compliance...${NC}"
+echo -e "${BLUE}[6/10] Checking service layer compliance...${NC}"
 
 # Check for direct Firebase imports in screen files (should use hooks/services)
 DIRECT_FIREBASE=$(grep -rE "from\s+['\"]firebase" src/components/screens --include="*.jsx" 2>/dev/null | wc -l)
@@ -147,6 +147,73 @@ else
 fi
 
 # ============================================================
+# CHECK 7: PageLayout Adoption
+# ============================================================
+echo -e "${BLUE}[7/10] Checking PageLayout adoption...${NC}"
+
+# Count screens using PageLayout (directly or via import)
+PAGELAYOUT_USAGE=$(grep -r "PageLayout" src/components/screens --include="*.jsx" 2>/dev/null | wc -l)
+# Target: main screens should use PageLayout for consistent header/nav
+
+if [ "$PAGELAYOUT_USAGE" -lt 5 ]; then
+    echo -e "${YELLOW}   ⚠️  WARN: Low PageLayout adoption ($PAGELAYOUT_USAGE usages)${NC}"
+    echo -e "${YELLOW}         Use <PageLayout> for consistent page headers and navigation${NC}"
+    WARNINGS=$((WARNINGS + 1))
+else
+    echo -e "${GREEN}   ✅ PASS: PageLayout in use ($PAGELAYOUT_USAGE usages)${NC}"
+fi
+
+# ============================================================
+# CHECK 8: Rogue StatCard Definitions
+# ============================================================
+echo -e "${BLUE}[8/10] Checking for rogue StatCard definitions...${NC}"
+
+# StatWidget is the canonical stat display component
+# Exclude known legacy files and the canonical definition
+ROGUE_STATCARDS=$(grep -r "const StatCard\s*=" src/ --include="*.jsx" 2>/dev/null | grep -v "src/components/ui" | wc -l)
+
+if [ "$ROGUE_STATCARDS" -gt 2 ]; then
+    echo -e "${YELLOW}   ⚠️  WARN: Found $ROGUE_STATCARDS rogue StatCard definition(s)${NC}"
+    echo -e "${YELLOW}         Use <StatWidget> from @ui for stat displays${NC}"
+    grep -r "const StatCard\s*=" src/ --include="*.jsx" | grep -v "src/components/ui" | head -3
+    WARNINGS=$((WARNINGS + 1))
+else
+    echo -e "${GREEN}   ✅ PASS: StatCard definitions acceptable ($ROGUE_STATCARDS <= 2 legacy)${NC}"
+fi
+
+# ============================================================
+# CHECK 9: Rogue Loading State Definitions
+# ============================================================
+echo -e "${BLUE}[9/10] Checking for rogue loading state definitions...${NC}"
+
+# LoadingState/LoadingSpinner are the canonical loading components
+ROGUE_LOADING=$(grep -rE "const (LoadingSpinner|LoadingOverlay|LoadingIndicator)\s*=" src/ --include="*.jsx" 2>/dev/null | grep -v "src/components/ui" | wc -l)
+
+if [ "$ROGUE_LOADING" -gt 2 ]; then
+    echo -e "${YELLOW}   ⚠️  WARN: Found $ROGUE_LOADING rogue loading component definition(s)${NC}"
+    echo -e "${YELLOW}         Use <LoadingState> or <LoadingSpinner> from @ui${NC}"
+    WARNINGS=$((WARNINGS + 1))
+else
+    echo -e "${GREEN}   ✅ PASS: Loading components canonical ($ROGUE_LOADING <= 2 legacy)${NC}"
+fi
+
+# ============================================================
+# CHECK 10: WidgetCard Adoption (Advisory)
+# ============================================================
+echo -e "${BLUE}[10/10] Checking WidgetCard adoption...${NC}"
+
+# Check for WidgetCard usage in dashboard/widget areas
+WIDGETCARD_USAGE=$(grep -r "WidgetCard" src/components --include="*.jsx" 2>/dev/null | wc -l)
+
+if [ "$WIDGETCARD_USAGE" -lt 1 ]; then
+    echo -e "${YELLOW}   ⚠️  INFO: WidgetCard not yet adopted${NC}"
+    echo -e "${YELLOW}         New widget components should use <WidgetCard> from @ui${NC}"
+    # Not a warning yet since it's new - just advisory
+else
+    echo -e "${GREEN}   ✅ PASS: WidgetCard in use ($WIDGETCARD_USAGE usages)${NC}"
+fi
+
+# ============================================================
 # SUMMARY
 # ============================================================
 echo ""
@@ -157,7 +224,7 @@ if [ "$ERRORS" -gt 0 ]; then
     echo -e "${RED}   $ERRORS error(s), $WARNINGS warning(s)${NC}"
     echo ""
     echo -e "${RED}   Please fix the errors above before deploying.${NC}"
-    echo -e "${RED}   See: src/components/ui/README.md for guidelines.${NC}"
+    echo -e "${RED}   See: LAYOUT-STANDARDS.md for guidelines.${NC}"
     exit 1
 elif [ "$WARNINGS" -gt 0 ]; then
     echo -e "${YELLOW}⚠️  ARCHITECTURE CHECK PASSED WITH WARNINGS${NC}"

@@ -37,6 +37,22 @@ export { Heading, Text, PageHeader } from './Typography';
 // Layout Components
 export { PageLayout, PageEmptyState, PageSection, PageGrid } from './PageLayout';
 
+// Widget Components
+export { WidgetCard, WidgetHeader, WidgetGrid } from './WidgetCard';
+export { StatWidget, StatWidgetGrid } from './StatWidget';
+
+// Form Components
+export { FormField, FormSection, FormActions } from './FormField';
+
+// Loading Components
+export { 
+  LoadingState, 
+  Skeleton, 
+  SkeletonCard, 
+  SkeletonStat, 
+  SkeletonList 
+} from './LoadingState';
+
 // Feature Components
 export { default as MembershipGate } from './MembershipGate';
 export { default as PWAInstall } from './PWAInstall';
