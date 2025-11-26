@@ -545,7 +545,7 @@ const FeatureManager = () => {
            ...current,
            name: meta.name,
            description: meta.description,
-           code: current?.code || WIDGET_TEMPLATES[id] || '',
+           code: WIDGET_TEMPLATES[id] || current?.code || '',
            group: current?.group || (initialGroups.dashboard.includes(id) ? 'dashboard' : 
                   initialGroups.content.includes(id) ? 'content' :
                   initialGroups.community.includes(id) ? 'community' : 
