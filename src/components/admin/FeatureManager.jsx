@@ -539,13 +539,19 @@ const FeatureManager = () => {
     
     for (const [id, meta] of Object.entries(FEATURE_METADATA)) {
        const current = features[id];
-       // Update if missing OR if name/description doesn't match metadata
-       if (!current || current.name !== meta.name || current.description !== meta.description) {
+       const templateCode = WIDGET_TEMPLATES[id];
+       
+       // Update if missing, name/desc mismatch, OR if template exists and code doesn't match
+       if (!current || 
+           current.name !== meta.name || 
+           current.description !== meta.description ||
+           (templateCode && current.code !== templateCode)) {
+         
          await saveFeature(id, {
            ...current,
            name: meta.name,
            description: meta.description,
-           code: WIDGET_TEMPLATES[id] || current?.code || '',
+           code: templateCode || current?.code || '',
            group: current?.group || (initialGroups.dashboard.includes(id) ? 'dashboard' : 
                   initialGroups.content.includes(id) ? 'content' :
                   initialGroups.community.includes(id) ? 'community' : 
