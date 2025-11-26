@@ -196,6 +196,15 @@ const FeatureManager = () => {
     reflectionBetter,
     isSavingBookend,
     
+    // Development Plan Data (Mocked)
+    developmentPlanData: {
+        reps: [
+            { id: 'r1', label: 'Review Calendar', time: '2m' },
+            { id: 'r2', label: 'Check Team Pulse', time: '5m' },
+            { id: 'r3', label: 'Clear Inbox', time: '15m' }
+        ]
+    },
+    
     // User Data
     user: user ? {
       uid: user.uid,
@@ -251,6 +260,17 @@ const FeatureManager = () => {
             'None': 'No output.'
           }
         };
+      case 'daily-leader-reps':
+        return {
+          ...common,
+          'Input': {
+            'developmentPlan': 'Reps are loaded from the Development Plan (read-only).',
+            'completion': 'Checkbox to mark reps as complete. Saved to temporary file.'
+          },
+          'Output': {
+            'Locker': 'At 11:59:59 PM, completion data is saved to Locker and fields reset for the next day.'
+          }
+        };
       case 'identity-builder':
         return {
             ...common,
@@ -283,11 +303,11 @@ const FeatureManager = () => {
         return {
           ...common,
           'Input': {
-            'morningWins': 'User Input (3 lines of text). Updates throughout the day.',
-            'completion': 'Checkbox to mark as complete.'
+            'morningWins': 'User enters 3 high-impact actions. Can be updated throughout the day. Auto-saved temporarily.',
+            'completion': 'Checkbox to mark items as complete.'
           },
           'Output': {
-            'Locker': 'At 11:59:59 PM, data is saved to Locker and fields reset.'
+            'Locker': 'At 11:59:59 PM, data is saved to Locker and fields reset for the next day.'
           }
         };
       case 'pm-bookend':

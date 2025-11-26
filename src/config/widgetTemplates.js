@@ -76,47 +76,32 @@ export const WIDGET_TEMPLATES = {
     </p>
     
     {morningWins.map((win) => (
-      <div key={win.id} className="flex gap-2 items-center">
-        <div className="flex-1 relative">
+      <div key={win.id} className="flex gap-3 items-center">
+        <button 
+          onClick={() => handleToggleWinComplete(win.id)}
+          className={\`flex-shrink-0 w-12 h-12 rounded-xl flex items-center justify-center transition-colors \${
+            win.completed 
+              ? 'bg-green-500 text-white shadow-sm' 
+              : 'bg-slate-50 text-slate-300 hover:bg-green-50 hover:text-green-500 border border-slate-200'
+          }\`}
+          title={win.completed ? "Mark Incomplete" : "Mark Complete"}
+        >
+          <CheckSquare className="w-6 h-6" />
+        </button>
+
+        <div className="flex-1">
           <input 
             type="text"
             value={win.text}
             onChange={(e) => handleUpdateWin(win.id, e.target.value)}
             placeholder={\`Priority #\${win.id}\`}
-            disabled={win.saved}
-            className={\`w-full p-3 pl-4 border rounded-xl outline-none transition-all text-sm font-medium \${
-              win.saved 
-                ? 'bg-slate-50 border-slate-200 text-slate-500' 
-                : 'bg-white border-slate-200 focus:ring-2 focus:ring-teal-500'
+            className={\`w-full p-3 border rounded-xl outline-none transition-all text-sm font-medium \${
+              win.completed
+                ? 'bg-slate-50 border-slate-200 text-slate-400 line-through' 
+                : 'bg-white border-slate-200 focus:ring-2 focus:ring-teal-500 text-slate-700'
             }\`}
           />
-          {win.saved && (
-            <CheckCircle className="w-4 h-4 text-green-500 absolute right-3 top-1/2 -translate-y-1/2" />
-          )}
         </div>
-
-        {!win.saved ? (
-          <button 
-            onClick={() => handleSaveSingleWin(win.id)}
-            disabled={!win.text.trim()}
-            className="p-3 bg-teal-50 text-teal-600 rounded-xl hover:bg-teal-100 disabled:opacity-50 transition-colors"
-            title="Save Priority"
-          >
-            <Save className="w-5 h-5" />
-          </button>
-        ) : (
-          <button 
-            onClick={() => handleToggleWinComplete(win.id)}
-            className={\`p-3 rounded-xl transition-colors \${
-              win.completed 
-                ? 'bg-green-500 text-white' 
-                : 'bg-slate-100 text-slate-300 hover:bg-green-100 hover:text-green-600'
-            }\`}
-            title="Mark Complete"
-          >
-            <CheckSquare className="w-5 h-5" />
-          </button>
-        )}
       </div>
     ))}
   </div>
@@ -131,13 +116,16 @@ export const WIDGET_TEMPLATES = {
     { id: 'r3', label: 'Send 1 Appreciation', time: '3m' }
   ];
   
-  const reps = developmentPlanData?.currentPlan?.weeklyReps || defaultReps;
+  // Safely access developmentPlanData
+  const reps = (typeof developmentPlanData !== 'undefined' && developmentPlanData?.reps) 
+    ? developmentPlanData.reps 
+    : defaultReps;
   
   // Track completed state locally (would be persisted via additionalCommitments in real impl)
   const completedReps = additionalCommitments || {};
   
   return (
-    <Card title="Daily Leader Reps" icon={Dumbbell} accent="BLUE">
+    <Card title="Daily Reps" icon={Dumbbell} accent="BLUE">
       <div className="space-y-2">
         {reps.map(rep => {
           const isCompleted = completedReps[rep.id] || false;
