@@ -167,6 +167,11 @@ const FeatureManager = () => {
     setReflectionBetter,
     handleSaveEveningBookend,
     
+    // New Win Functions (Mocked for Admin)
+    handleUpdateWin: (id, text) => console.log(`Update Win ${id}: ${text}`),
+    handleSaveSingleWin: (id) => console.log(`Save Win ${id}`),
+    handleToggleWinComplete: (id) => console.log(`Toggle Win ${id}`),
+    
     // State
     weeklyFocus,
     hasLIS,
@@ -176,6 +181,11 @@ const FeatureManager = () => {
     additionalCommitments,
     amWinCompleted,
     morningWIN,
+    morningWins: [
+      { id: 1, text: 'Strategic Planning', saved: true, completed: false },
+      { id: 2, text: 'Team Sync', saved: false, completed: false },
+      { id: 3, text: '', saved: false, completed: false }
+    ],
     isSavingWIN,
     isWinSaved: false, // Local state
     otherTasks,
@@ -259,15 +269,25 @@ const FeatureManager = () => {
             },
             'Output': { 'Daily Practice': 'Updates Daily Practice Data (Habit Completion).' }
         };
+      case 'grounding-rep':
+        return {
+          ...common,
+          'Input': {
+            'leadershipIdentity': 'Input from the Leadership Identity Widget (To be built).'
+          },
+          'Output': {
+            'None': 'No output.'
+          }
+        };
       case 'win-the-day':
         return {
           ...common,
           'Input': {
-            'morningWIN': 'User Input (Text Entry - Top Priority).',
-            'otherTasks': 'User Input (Text Entry - Secondary Tasks).'
+            'morningWins': 'User Input (3 lines of text). Updates throughout the day.',
+            'completion': 'Checkbox to mark as complete.'
           },
           'Output': {
-            'Locker': 'Output to Your Locker (Win History).'
+            'Locker': 'At 11:59:59 PM, data is saved to Locker and fields reset.'
           }
         };
       case 'pm-bookend':

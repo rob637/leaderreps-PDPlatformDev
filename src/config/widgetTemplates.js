@@ -58,17 +58,13 @@ export const WIDGET_TEMPLATES = {
     `,
     'grounding-rep': `
 <Card title="Grounding Rep" icon={Zap} accent="YELLOW">
-  <div className="flex items-start gap-4">
-    <div className="p-3 bg-yellow-100 rounded-xl text-yellow-700">
-      <Zap className="w-6 h-6" />
-    </div>
-    <div>
-      <h3 className="font-bold text-slate-800">5-Minute Meditation</h3>
-      <p className="text-xs text-slate-500 mb-3">Clear your mind before the day begins.</p>
-      <button className="px-4 py-2 bg-[#002E47] text-white text-xs font-bold rounded-lg hover:bg-[#003E5F] transition-colors">
-        Start Session
-      </button>
-    </div>
+  <div className="p-4 bg-yellow-50 rounded-xl border border-yellow-100 text-center">
+    <p className="text-sm text-slate-600 mb-2">
+      This widget will link to your Leadership Identity Statement (LIS).
+    </p>
+    <p className="text-xs text-slate-400 italic">
+      (Leadership Identity Widget integration coming soon)
+    </p>
   </div>
 </Card>
     `,
