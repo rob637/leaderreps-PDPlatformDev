@@ -66,17 +66,22 @@ const UpdateNotification = () => {
 
   const handleUpdate = async () => {
     setIsUpdating(true);
+
+    // 1. Set a safety timeout immediately. 
+    // If the update process hangs or the controller change event is missed,
+    // this ensures we force a reload after 3 seconds no matter what.
+    setTimeout(() => {
+      console.log('[PWA] Update timeout reached. Forcing reload...');
+      window.location.reload();
+    }, 3000);
+
     try {
+      // 2. Attempt to activate the waiting service worker
       await updateServiceWorker(true);
-      // Fallback: If the controller change event doesn't fire within 1 second,
-      // force a reload. This handles cases where the event might be missed
-      // or the browser behaves unexpectedly.
-      setTimeout(() => {
-        window.location.reload();
-      }, 1000);
     } catch (error) {
       console.error('Failed to update service worker:', error);
-      setIsUpdating(false);
+      // If it fails, the timeout above will still trigger a reload, 
+      // which is often the best way to clear a stuck state anyway.
     }
   };
 
