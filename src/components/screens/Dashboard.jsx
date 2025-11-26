@@ -342,7 +342,7 @@ const Dashboard = (props) => {
         <div className="flex items-center justify-center gap-3 mb-2">
           <LayoutDashboard className="w-8 h-8 text-corporate-teal" />
           <h1 className="text-3xl font-bold text-corporate-navy">
-            The Arena
+            Dashboard
           </h1>
           <LayoutDashboard className="w-8 h-8 text-corporate-teal" />
         </div>
