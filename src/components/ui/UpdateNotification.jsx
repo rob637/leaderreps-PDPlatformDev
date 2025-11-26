@@ -18,6 +18,31 @@ const UpdateNotification = () => {
   });
 
   const [isUpdating, setIsUpdating] = useState(false);
+  const [showPopup, setShowPopup] = useState(false);
+  const [newVersion, setNewVersion] = useState(null);
+  const currentVersion = typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : '0.0.0';
+
+  // Check version when update is available
+  useEffect(() => {
+    if (needRefresh) {
+      fetch('/version.json')
+        .then(res => res.json())
+        .then(data => {
+          console.log(`[PWA] Current: ${currentVersion}, Available: ${data.version}`);
+          if (data.version !== currentVersion) {
+            setNewVersion(data.version);
+            setShowPopup(true);
+          } else {
+            console.log('[PWA] Version match. Skipping popup.');
+          }
+        })
+        .catch(err => {
+          console.error('[PWA] Failed to check version:', err);
+          // Fallback: show popup if version check fails
+          setShowPopup(true);
+        });
+    }
+  }, [needRefresh, currentVersion]);
 
   // Handle controller change to reload the page when the new SW takes over
   useEffect(() => {
@@ -43,12 +68,12 @@ const UpdateNotification = () => {
     setIsUpdating(true);
     try {
       await updateServiceWorker(true);
-      // Fallback: If the controller change event doesn't fire within 4 seconds,
+      // Fallback: If the controller change event doesn't fire within 1 second,
       // force a reload. This handles cases where the event might be missed
       // or the browser behaves unexpectedly.
       setTimeout(() => {
         window.location.reload();
-      }, 4000);
+      }, 1000);
     } catch (error) {
       console.error('Failed to update service worker:', error);
       setIsUpdating(false);
@@ -57,9 +82,10 @@ const UpdateNotification = () => {
 
   const handleDismiss = () => {
     setNeedRefresh(false);
+    setShowPopup(false);
   };
 
-  if (!needRefresh) {
+  if (!showPopup) {
     return null;
   }
 
@@ -87,6 +113,11 @@ const UpdateNotification = () => {
             >
               New Version Available!
             </h3>
+            {newVersion && (
+              <p className="text-xs font-mono text-gray-500 mb-1">
+                v{currentVersion} → v{newVersion}
+              </p>
+            )}
             <p className="text-sm text-gray-600 mb-4 leading-relaxed">
               We've improved the app. Update now to get the latest features and speed enhancements.
             </p>
