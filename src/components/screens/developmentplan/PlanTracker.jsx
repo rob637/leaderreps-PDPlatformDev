@@ -2,12 +2,16 @@
 // Main view of current development plan with action buttons
 // FIXED: Simplified UI to match Locker/Dashboard aesthetic (Corporate Colors only)
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Target, TrendingUp, Calendar, Edit, ArrowLeft, Zap, Crosshair, Flag } from 'lucide-react';
 import { Button, Card, ProgressBar } from './DevPlanComponents';
 import { generatePlanSummary } from './devPlanUtils';
 import ProgressBreakdown from './ProgressBreakdown';
 import QuickPlanEditor from './QuickPlanEditor';
+import WidgetRenderer from '../../admin/WidgetRenderer';
+import { useFeatures } from '../../../providers/FeatureProvider';
+import { ZONE_CONFIG } from '../../../config/zoneConfig';
+import { NoWidgetsEnabled } from '../../ui';
 
 const PlanTracker = ({ 
   plan, 
@@ -20,6 +24,14 @@ const PlanTracker = ({
 }) => {
   const [showBreakdown, setShowBreakdown] = useState(false);
   const [showEditor, setShowEditor] = useState(false);
+  const { isFeatureEnabled, getFeatureOrder } = useFeatures();
+
+  const sortedFeatures = useMemo(() => {
+    const features = ZONE_CONFIG['development-plan'] || [];
+    return features
+      .filter(id => isFeatureEnabled(id))
+      .sort((a, b) => getFeatureOrder(a) - getFeatureOrder(b));
+  }, [isFeatureEnabled, getFeatureOrder]);
 
   if (!plan) {
     return (
@@ -37,6 +49,19 @@ const PlanTracker = ({
 
   // Generate summary with logging
   const summary = generatePlanSummary(plan);
+
+  const scope = useMemo(() => ({
+    plan,
+    summary,
+    cycle,
+    handleShowBreakdown: () => setShowBreakdown(true),
+    handleScan: onScan,
+    handleTimeline: onTimeline,
+    handleDetail: onDetail,
+    handleEdit: () => setShowEditor(true),
+    Card, Button, ProgressBar,
+    Target, TrendingUp, Calendar, Edit, Zap, Crosshair, Flag
+  }), [plan, summary, cycle, onScan, onTimeline, onDetail]);
 
   const handleSaveEdit = async (updatedPlan) => {
     if (onEditPlan) {
@@ -71,144 +96,25 @@ const PlanTracker = ({
     );
   }
 
+  const renderers = {
+    'dev-plan-header': () => <WidgetRenderer widgetId="dev-plan-header" scope={scope} />,
+    'dev-plan-stats': () => <WidgetRenderer widgetId="dev-plan-stats" scope={scope} />,
+    'dev-plan-actions': () => <WidgetRenderer widgetId="dev-plan-actions" scope={scope} />,
+    'dev-plan-focus-areas': () => <WidgetRenderer widgetId="dev-plan-focus-areas" scope={scope} />,
+    'dev-plan-goal': () => <WidgetRenderer widgetId="dev-plan-goal" scope={scope} />,
+  };
+
   return (
     <div className="space-y-6">
-      {/* Header Section */}
-      <Card title="Development Plan" icon={Target} accent="TEAL">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-4">
-          <div>
-            <p className="text-slate-600 font-medium">
-              Cycle {cycle} • {summary.totalSkills} skills
-            </p>
-            <p className="text-sm text-slate-500 mt-1">
-              {summary.progress}% complete
-            </p>
-          </div>
-          <Button
-            onClick={() => setShowEditor(true)}
-            variant="secondary"
-            size="sm"
-            className="flex items-center gap-2"
-          >
-            <Edit size={16} />
-            Quick Edit
-          </Button>
-        </div>
-        <ProgressBar progress={summary.progress} color="#47A88D" />
-      </Card>
-
-      {/* Stats Grid - Simplified to single card with grid inside */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center gap-4">
-          <div className="w-12 h-12 rounded-lg bg-corporate-navy/10 flex items-center justify-center text-corporate-navy">
-            <Target size={24} />
-          </div>
-          <div>
-            <div className="text-2xl font-bold text-corporate-navy">
-              {summary.totalSkills}
-            </div>
-            <div className="text-sm text-slate-600">Total Skills</div>
-          </div>
-        </div>
-
-        <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center gap-4">
-          <div className="w-12 h-12 rounded-lg bg-corporate-teal/10 flex items-center justify-center text-corporate-teal">
-            <TrendingUp size={24} />
-          </div>
-          <div>
-            <div className="text-2xl font-bold text-corporate-navy">
-              {summary.completedSkills}
-            </div>
-            <div className="text-sm text-slate-600">Completed</div>
-          </div>
-        </div>
-
-        <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center gap-4">
-          <div className="w-12 h-12 rounded-lg bg-corporate-orange/10 flex items-center justify-center text-corporate-orange">
-            <Calendar size={24} />
-          </div>
-          <div>
-            <div className="text-2xl font-bold text-corporate-navy">
-              {summary.currentWeek || 0}
-            </div>
-            <div className="text-sm text-slate-600">Current Week</div>
-          </div>
-        </div>
-      </div>
-
-      {/* Actions */}
-      <Card title="Actions" icon={Zap} accent="NAVY">
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <Button
-            onClick={() => setShowBreakdown(true)}
-            variant="primary"
-            className="flex items-center justify-center gap-2"
-          >
-            <Target size={16} />
-            View Progress Breakdown
-          </Button>
-          
-          {onScan && (
-            <Button
-              onClick={onScan}
-              variant="outline"
-              className="flex items-center justify-center gap-2"
-            >
-              <TrendingUp size={16} />
-              Start Progress Scan
-            </Button>
-          )}
-          
-          {onTimeline && (
-            <Button
-              onClick={onTimeline}
-              variant="ghost"
-              className="flex items-center justify-center gap-2"
-            >
-              <Calendar size={16} />
-              View Timeline
-            </Button>
-          )}
-          
-          {onDetail && (
-            <Button
-              onClick={onDetail}
-              variant="ghost"
-              className="flex items-center justify-center gap-2"
-            >
-              View Detailed Plan
-            </Button>
-          )}
-        </div>
-      </Card>
-
-      {/* Focus Areas - Clean List */}
-      <Card title="Focus Areas" icon={Crosshair} accent="TEAL">
-        <div className="space-y-3">
-          {plan.focusAreas && plan.focusAreas.map((area, index) => (
-            <div key={index} className="p-4 bg-slate-50 rounded-lg border border-slate-100">
-              <h3 className="font-bold text-corporate-navy mb-1">
-                {area.name}
-              </h3>
-              <p className="text-sm text-slate-600 mb-2">
-                {area.why}
-              </p>
-              <div className="flex items-center gap-3 text-xs font-semibold text-slate-400 uppercase tracking-wider">
-                <span>{area.reps?.length || 0} REPS</span>
-                <span>•</span>
-                <span>{area.courses?.length || 0} COURSES</span>
-              </div>
-            </div>
-          ))}
-        </div>
-      </Card>
-
-      {/* Goal - Simple Card */}
-      <Card title="Your Goal" icon={Flag} accent="ORANGE">
-        <p className="text-slate-700 italic border-l-4 border-corporate-orange pl-4 py-1">
-          "{plan.openEndedAnswer}"
-        </p>
-      </Card>
+      {sortedFeatures.length > 0 ? (
+        sortedFeatures.map(featureId => (
+          <React.Fragment key={featureId}>
+            {renderers[featureId] ? renderers[featureId]() : null}
+          </React.Fragment>
+        ))
+      ) : (
+        <NoWidgetsEnabled moduleName="Development Plan" />
+      )}
     </div>
   );
 };

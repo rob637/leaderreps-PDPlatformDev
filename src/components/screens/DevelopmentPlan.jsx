@@ -8,16 +8,19 @@
 // 🛑 CRITICAL FIX (10/30/25): Refactored writeDevPlan to only adapt the currentPlan sub-object.
 
 import React, { useMemo, useState, useEffect } from 'react';
-import { Target } from 'lucide-react';
+import { Target, TrendingUp, Calendar, Zap, Crosshair, Flag } from 'lucide-react';
 import { useAppServices } from '../../services/useAppServices.jsx';
 import BaselineAssessment from './developmentplan/BaselineAssessment';
 import PlanTracker from './developmentplan/PlanTracker';
 import ProgressScan from './developmentplan/ProgressScan';
 import DetailedPlanView from './developmentplan/DetailedPlanView';
 import MilestoneTimeline from './developmentplan/MilestoneTimeline';
+import ProgressBreakdown from './developmentplan/ProgressBreakdown';
 import { Button, Card, EmptyState } from './developmentplan/DevPlanComponents';
-import { generatePlanFromAssessment, normalizeSkillCatalog } from './developmentplan/devPlanUtils';
+import { generatePlanFromAssessment, normalizeSkillCatalog, generatePlanSummary } from './developmentplan/devPlanUtils';
 import { PageLayout, NoWidgetsEnabled } from '../ui';
+import { useFeatures } from '../../providers/FeatureProvider';
+import WidgetRenderer from '../admin/WidgetRenderer';
 
 // FIXED: Import adapter utilities
 import { 
@@ -486,6 +489,32 @@ async function confirmPlanPersisted(db, userId, retries = 4, delayMs = 250) {
   if (isServicesLoading) return <LoadingBlock title="Loading..." />;
   if (!services || !userId) return <LoadingBlock title="Services unavailable" description="Please refresh or contact support." />;
 
+  // ===== WIDGET LOGIC =====
+  const { isFeatureEnabled, getFeatureOrder } = useFeatures();
+  const [showBreakdown, setShowBreakdown] = useState(false);
+
+  const plan = adaptedDevelopmentPlanData?.currentPlan;
+  const summary = useMemo(() => plan ? generatePlanSummary(plan) : {}, [plan]);
+
+  const scope = {
+    plan,
+    summary,
+    handleShowBreakdown: () => setShowBreakdown(true),
+    handleScan: () => setView('scan'),
+    handleTimeline: () => setView('timeline'),
+    handleDetail: () => setView('detail'),
+    Button,
+    Card,
+    Target,
+    TrendingUp,
+    Calendar,
+    Zap,
+    Crosshair,
+    Flag
+  };
+
+  const enabledWidgets = getFeatureOrder('development-plan');
+
   // ===== RENDER =====
   const isDeveloperMode = localStorage.getItem('arena-developer-mode') === 'true';
   
@@ -561,7 +590,6 @@ async function confirmPlanPersisted(db, userId, retries = 4, delayMs = 250) {
           plan={adaptedDevelopmentPlanData?.currentPlan}
           cycle={adaptedDevelopmentPlanData?.cycle || 1}
           globalMetadata={globalMetadata}
-          skillCatalog={combinedSkillCatalog}
           onEditPlan={handleEditPlan}
           onScan={() => setView('scan')}
           onDetail={() => setView('detail')}

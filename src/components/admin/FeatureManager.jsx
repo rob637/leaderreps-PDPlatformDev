@@ -538,19 +538,22 @@ const FeatureManager = () => {
     if (!window.confirm('This will populate the database with default widgets. Continue?')) return;
     
     for (const [id, meta] of Object.entries(FEATURE_METADATA)) {
-       if (!features[id] || !features[id].name) {
+       const current = features[id];
+       // Update if missing OR if name/description doesn't match metadata
+       if (!current || current.name !== meta.name || current.description !== meta.description) {
          await saveFeature(id, {
+           ...current,
            name: meta.name,
            description: meta.description,
-           code: WIDGET_TEMPLATES[id] || '',
-           group: initialGroups.dashboard.includes(id) ? 'dashboard' : 
+           code: current?.code || WIDGET_TEMPLATES[id] || '',
+           group: current?.group || (initialGroups.dashboard.includes(id) ? 'dashboard' : 
                   initialGroups.content.includes(id) ? 'content' :
                   initialGroups.community.includes(id) ? 'community' : 
                   initialGroups.coaching.includes(id) ? 'coaching' : 
                   initialGroups.locker.includes(id) ? 'locker' : 
-                  initialGroups['development-plan'].includes(id) ? 'development-plan' : 'dashboard',
-           enabled: true,
-           order: 999
+                  initialGroups['development-plan'].includes(id) ? 'development-plan' : 'dashboard'),
+           enabled: current?.enabled !== undefined ? current.enabled : true,
+           order: current?.order !== undefined ? current.order : 999
          });
        }
     }

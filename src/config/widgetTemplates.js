@@ -628,85 +628,83 @@ export const WIDGET_TEMPLATES = {
     `,
     'dev-plan-header': `
 <Card title="Development Plan" icon={Target} accent="TEAL">
-  <div className="flex items-center justify-between mb-6">
+  <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-4">
     <div>
-      <p className="text-gray-600">
-        Cycle {cycle} • {summary.totalSkills} skills • {summary.progress}% complete
+      <p className="text-slate-600 font-medium">
+        Cycle {cycle} • {summary.totalSkills} skills
+      </p>
+      <p className="text-sm text-slate-500 mt-1">
+        {summary.progress}% complete
       </p>
     </div>
     <Button
-      onClick={() => onEditPlan()}
-      variant="nav-back"
+      onClick={() => handleEdit()}
+      variant="secondary"
+      size="sm"
       className="flex items-center gap-2"
     >
       <Edit size={16} />
       Quick Edit
     </Button>
   </div>
-  <ProgressBar progress={summary.progress} color={COLORS.TEAL} />
+  <ProgressBar progress={summary.progress} color="#47A88D" />
 </Card>
     `,
     'dev-plan-stats': `
 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-  <Card accent="BLUE">
-    <div className="flex items-center gap-3">
-      <div className="w-12 h-12 rounded-lg bg-blue-100 flex items-center justify-center text-blue-600">
-        <Target size={24} />
-      </div>
-      <div>
-        <div className="text-2xl font-bold text-[#002E47]">
-          {summary.totalSkills}
-        </div>
-        <div className="text-sm text-gray-600">Total Skills</div>
-      </div>
+  <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center gap-4">
+    <div className="w-12 h-12 rounded-lg bg-corporate-navy/10 flex items-center justify-center text-corporate-navy">
+      <Target size={24} />
     </div>
-  </Card>
+    <div>
+      <div className="text-2xl font-bold text-corporate-navy">
+        {summary.totalSkills}
+      </div>
+      <div className="text-sm text-slate-600">Total Skills</div>
+    </div>
+  </div>
 
-  <Card accent="GREEN">
-    <div className="flex items-center gap-3">
-      <div className="w-12 h-12 rounded-lg bg-green-100 flex items-center justify-center text-green-600">
-        <TrendingUp size={24} />
-      </div>
-      <div>
-        <div className="text-2xl font-bold text-[#002E47]">
-          {summary.completedSkills}
-        </div>
-        <div className="text-sm text-gray-600">Completed</div>
-      </div>
+  <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center gap-4">
+    <div className="w-12 h-12 rounded-lg bg-corporate-teal/10 flex items-center justify-center text-corporate-teal">
+      <TrendingUp size={24} />
     </div>
-  </Card>
+    <div>
+      <div className="text-2xl font-bold text-corporate-navy">
+        {summary.completedSkills}
+      </div>
+      <div className="text-sm text-slate-600">Completed</div>
+    </div>
+  </div>
 
-  <Card accent="ORANGE">
-    <div className="flex items-center gap-3">
-      <div className="w-12 h-12 rounded-lg bg-orange-100 flex items-center justify-center text-orange-600">
-        <Calendar size={24} />
-      </div>
-      <div>
-        <div className="text-2xl font-bold text-[#002E47]">
-          {summary.currentWeek || 0}
-        </div>
-        <div className="text-sm text-gray-600">Current Week</div>
-      </div>
+  <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center gap-4">
+    <div className="w-12 h-12 rounded-lg bg-corporate-orange/10 flex items-center justify-center text-corporate-orange">
+      <Calendar size={24} />
     </div>
-  </Card>
+    <div>
+      <div className="text-2xl font-bold text-corporate-navy">
+        {summary.currentWeek || 0}
+      </div>
+      <div className="text-sm text-slate-600">Current Week</div>
+    </div>
+  </div>
 </div>
     `,
     'dev-plan-actions': `
-<Card title="Actions" icon={Zap} accent="TEAL">
-  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+<Card title="Actions" icon={Zap} accent="NAVY">
+  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
     <Button
-      onClick={() => setShowBreakdown(true)}
-      variant="soft-teal"
+      onClick={handleShowBreakdown}
+      variant="primary"
       className="flex items-center justify-center gap-2"
     >
       <Target size={16} />
       View Progress Breakdown
     </Button>
     
-    {onScan && (
+    {handleScan && (
       <Button
-        onClick={onScan}
-        variant="soft-teal"
+        onClick={handleScan}
+        variant="outline"
         className="flex items-center justify-center gap-2"
       >
         <TrendingUp size={16} />
@@ -714,10 +712,10 @@ export const WIDGET_TEMPLATES = {
       </Button>
     )}
     
-    {onTimeline && (
+    {handleTimeline && (
       <Button
-        onClick={onTimeline}
-        variant="nav-back"
+        onClick={handleTimeline}
+        variant="ghost"
         className="flex items-center justify-center gap-2"
       >
         <Calendar size={16} />
@@ -725,10 +723,10 @@ export const WIDGET_TEMPLATES = {
       </Button>
     )}
     
-    {onDetail && (
+    {handleDetail && (
       <Button
-        onClick={onDetail}
-        variant="nav-back"
+        onClick={handleDetail}
+        variant="ghost"
         className="flex items-center justify-center gap-2"
       >
         View Detailed Plan
@@ -738,18 +736,20 @@ export const WIDGET_TEMPLATES = {
 </Card>
     `,
     'dev-plan-focus-areas': `
-<Card title="Focus Areas" icon={Crosshair} accent="PURPLE">
+<Card title="Focus Areas" icon={Crosshair} accent="TEAL">
   <div className="space-y-3">
     {plan.focusAreas && plan.focusAreas.map((area, index) => (
-      <div key={index} className="p-4 bg-gray-50 rounded-lg">
-        <h3 className="font-semibold mb-2" style={{ color: COLORS.NAVY }}>
+      <div key={index} className="p-4 bg-slate-50 rounded-lg border border-slate-100">
+        <h3 className="font-bold text-corporate-navy mb-1">
           {area.name}
         </h3>
-        <p className="text-sm text-gray-600 mb-2">
+        <p className="text-sm text-slate-600 mb-2">
           {area.why}
         </p>
-        <div className="text-xs text-gray-500">
-          {area.reps?.length || 0} practice reps • {area.courses?.length || 0} courses
+        <div className="flex items-center gap-3 text-xs font-semibold text-slate-400 uppercase tracking-wider">
+          <span>{area.reps?.length || 0} REPS</span>
+          <span>•</span>
+          <span>{area.courses?.length || 0} COURSES</span>
         </div>
       </div>
     ))}
@@ -757,8 +757,10 @@ export const WIDGET_TEMPLATES = {
 </Card>
     `,
     'dev-plan-goal': `
-<Card title="Your Goal" icon={Flag} accent="YELLOW">
-  <p className="text-gray-700">{plan.openEndedAnswer}</p>
+<Card title="Your Goal" icon={Flag} accent="ORANGE">
+  <p className="text-slate-700 italic border-l-4 border-corporate-orange pl-4 py-1">
+    "{plan.openEndedAnswer}"
+  </p>
 </Card>
     `,
     'daily-quote': `(() => {
@@ -833,37 +835,37 @@ export const WIDGET_TEMPLATES = {
   };
 
 export const FEATURE_METADATA = {
-  'am-bookend-header': { core: true, category: 'Planning', description: 'AM Bookend Header' },
-  'weekly-focus': { core: true, category: 'Planning', description: 'Weekly Focus' },
-  'grounding-rep': { core: true, category: 'Planning', description: 'Grounding Rep' },
-  'win-the-day': { core: true, category: 'Planning', description: 'Morning planning' },
-  'daily-leader-reps': { core: true, category: 'Planning', description: 'Daily Leader Reps' },
-  'notifications': { core: true, category: 'General', description: 'Notifications' },
-  'pm-bookend-header': { core: true, category: 'Reflection', description: 'PM Bookend Header' },
-  'progress-feedback': { core: true, category: 'Tracking', description: 'Progress Feedback' },
-  'pm-bookend': { core: true, category: 'Reflection', description: 'Evening reflection' },
-  'scorecard': { core: true, category: 'Tracking', description: 'Daily habit scorecard' },
-  'daily-quote': { core: true, category: 'Inspiration', description: 'Daily quote' },
-  'welcome-message': { core: true, category: 'General', description: 'Welcome message' },
-  'dev-plan-header': { core: true, category: 'Development', description: 'Development Plan Header' },
-  'dev-plan-stats': { core: true, category: 'Development', description: 'Development Plan Stats' },
-  'dev-plan-actions': { core: true, category: 'Development', description: 'Development Plan Actions' },
-  'dev-plan-focus-areas': { core: true, category: 'Development', description: 'Development Plan Focus Areas' },
-  'dev-plan-goal': { core: true, category: 'Development', description: 'Development Plan Goal' },
-  'course-library': { core: false, category: 'Learning', description: 'Course library' },
-  'reading-hub': { core: false, category: 'Learning', description: 'Reading hub' },
-  'leadership-videos': { core: false, category: 'Learning', description: 'Leadership videos' },
-  'strat-templates': { core: false, category: 'Resources', description: 'Strategic templates' },
-  'community-feed': { core: false, category: 'Community', description: 'Community feed' },
-  'my-discussions': { core: false, category: 'Community', description: 'My discussions' },
-  'mastermind': { core: false, category: 'Community', description: 'Mastermind groups' },
-  'mentor-match': { core: false, category: 'Community', description: 'Mentor match' },
-  'live-events': { core: false, category: 'Community', description: 'Live events' },
-  'practice-history': { core: false, category: 'Tracking', description: 'Practice history' },
-  'progress-analytics': { core: false, category: 'Tracking', description: 'Progress analytics' },
-  'ai-roleplay': { core: false, category: 'Practice', description: 'AI Roleplay' },
-  'scenario-sim': { core: false, category: 'Practice', description: 'Scenario simulation' },
-  'feedback-gym': { core: false, category: 'Practice', description: 'Feedback gym' },
-  'roi-report': { core: false, category: 'Reporting', description: 'ROI Report' },
+  'am-bookend-header': { core: true, category: 'Planning', name: 'AM Bookend Header', description: 'AM Bookend Header' },
+  'weekly-focus': { core: true, category: 'Planning', name: 'Focus', description: 'Focus' },
+  'grounding-rep': { core: true, category: 'Planning', name: 'Grounding Rep', description: 'Grounding Rep' },
+  'win-the-day': { core: true, category: 'Planning', name: 'Win the Day', description: 'Win the Day' },
+  'daily-leader-reps': { core: true, category: 'Planning', name: 'Daily Reps', description: 'Daily Reps' },
+  'notifications': { core: true, category: 'General', name: 'Notifications', description: 'Notifications' },
+  'pm-bookend-header': { core: true, category: 'Reflection', name: 'PM Bookend Header', description: 'PM Bookend Header' },
+  'progress-feedback': { core: true, category: 'Tracking', name: 'Progress Feedback', description: 'Progress Feedback' },
+  'pm-bookend': { core: true, category: 'Reflection', name: 'Reflection', description: 'Reflection' },
+  'scorecard': { core: true, category: 'Tracking', name: 'Daily Progress', description: 'Daily Progress' },
+  'daily-quote': { core: true, category: 'Inspiration', name: 'Daily quote', description: 'Daily quote' },
+  'welcome-message': { core: true, category: 'General', name: 'Welcome message', description: 'Welcome message' },
+  'dev-plan-header': { core: true, category: 'Development', name: 'Development Plan Header', description: 'Development Plan Header' },
+  'dev-plan-stats': { core: true, category: 'Development', name: 'Development Plan Stats', description: 'Development Plan Stats' },
+  'dev-plan-actions': { core: true, category: 'Development', name: 'Development Plan Actions', description: 'Development Plan Actions' },
+  'dev-plan-focus-areas': { core: true, category: 'Development', name: 'Development Plan Focus Areas', description: 'Development Plan Focus Areas' },
+  'dev-plan-goal': { core: true, category: 'Development', name: 'Development Plan Goal', description: 'Development Plan Goal' },
+  'course-library': { core: false, category: 'Learning', name: 'Course library', description: 'Course library' },
+  'reading-hub': { core: false, category: 'Learning', name: 'Reading hub', description: 'Reading hub' },
+  'leadership-videos': { core: false, category: 'Learning', name: 'Leadership videos', description: 'Leadership videos' },
+  'strat-templates': { core: false, category: 'Resources', name: 'Strategic templates', description: 'Strategic templates' },
+  'community-feed': { core: false, category: 'Community', name: 'Community feed', description: 'Community feed' },
+  'my-discussions': { core: false, category: 'Community', name: 'My discussions', description: 'My discussions' },
+  'mastermind': { core: false, category: 'Community', name: 'Mastermind groups', description: 'Mastermind groups' },
+  'mentor-match': { core: false, category: 'Community', name: 'Mentor match', description: 'Mentor match' },
+  'live-events': { core: false, category: 'Community', name: 'Live events', description: 'Live events' },
+  'practice-history': { core: false, category: 'Tracking', name: 'Practice history', description: 'Practice history' },
+  'progress-analytics': { core: false, category: 'Tracking', name: 'Progress analytics', description: 'Progress analytics' },
+  'ai-roleplay': { core: false, category: 'Practice', name: 'AI Roleplay', description: 'AI Roleplay' },
+  'scenario-sim': { core: false, category: 'Practice', name: 'Scenario simulation', description: 'Scenario simulation' },
+  'feedback-gym': { core: false, category: 'Practice', name: 'Feedback gym', description: 'Feedback gym' },
+  'roi-report': { core: false, category: 'Reporting', name: 'ROI Report', description: 'ROI Report' },
 };
 
