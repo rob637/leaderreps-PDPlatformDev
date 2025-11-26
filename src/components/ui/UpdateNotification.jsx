@@ -43,12 +43,12 @@ const UpdateNotification = () => {
     setIsUpdating(true);
     try {
       await updateServiceWorker(true);
-      // Fallback: If the controller change event doesn't fire within 1 second,
+      // Fallback: If the controller change event doesn't fire within 4 seconds,
       // force a reload. This handles cases where the event might be missed
       // or the browser behaves unexpectedly.
       setTimeout(() => {
         window.location.reload();
-      }, 1000);
+      }, 4000);
     } catch (error) {
       console.error('Failed to update service worker:', error);
       setIsUpdating(false);
