@@ -235,10 +235,10 @@ const FeatureManager = () => {
         return {
           ...common,
           'Input': {
-            'weeklyFocus': 'Details from the Development Plan (Current Focus Area).'
+            'developmentPlan': 'Static display based on information from the Development Plan (to be built).'
           },
           'Output': {
-            'Navigation': 'Navigation to Development Plan.'
+            'None': 'No output.'
           }
         };
       case 'identity-builder':

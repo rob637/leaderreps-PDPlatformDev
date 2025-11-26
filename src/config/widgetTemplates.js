@@ -45,14 +45,14 @@ export const WIDGET_TEMPLATES = {
 </div>
     `,
     'weekly-focus': `
-<Card title="Weekly Focus" icon={Target} accent="INDIGO">
-  <div className="space-y-3">
-    <p className="text-sm text-slate-500">What is your primary theme for this week?</p>
-    <textarea 
-      className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all text-sm font-medium"
-      rows={2}
-      placeholder="e.g. Team Alignment, Q4 Strategy..."
-    />
+<Card title="Focus" icon={Target} accent="INDIGO">
+  <div className="p-4 bg-slate-50 rounded-xl border border-slate-100 text-center">
+    <p className="text-sm text-slate-600 mb-2">
+      This widget will display your active focus area from the Development Plan.
+    </p>
+    <p className="text-xs text-slate-400 italic">
+      (Development Plan integration coming soon)
+    </p>
   </div>
 </Card>
     `,
