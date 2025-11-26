@@ -119,10 +119,6 @@ export default defineConfig({
         
         // Clean up outdated caches automatically
         cleanupOutdatedCaches: true,
-        
-        // Skip waiting to activate immediately (with user consent via UpdateNotification)
-        skipWaiting: false, // We'll handle this in UpdateNotification component
-        clientsClaim: true,
       },
       
       // Development options
