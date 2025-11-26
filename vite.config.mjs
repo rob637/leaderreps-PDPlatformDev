@@ -18,6 +18,10 @@ export default defineConfig({
       manifest: false, // Use existing manifest.webmanifest
       
       workbox: {
+        // Ensure the new service worker takes control immediately
+        clientsClaim: true,
+        skipWaiting: false, // We handle this manually with the prompt
+
         // Comprehensive glob patterns for all assets
         globPatterns: [
           '**/*.{js,css,html,ico,png,svg,jpg,jpeg,gif,webp,woff,woff2}'
