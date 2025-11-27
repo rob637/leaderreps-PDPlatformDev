@@ -740,8 +740,6 @@ const FeatureManager = () => {
     locker: 'Locker',
     system: 'System'
   };
-    system: 'System'
-  };
 
   // Configuration Schema for Specific Widgets
   const WIDGET_CONFIG_SCHEMA = {
