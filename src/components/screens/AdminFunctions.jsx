@@ -4,7 +4,8 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useAppServices } from '../../services/useAppServices.jsx';
 import { useNotifications } from '../../providers/NotificationProvider';
 import { Shield, ToggleLeft, ToggleRight, Save, Loader, AlertTriangle, ArrowLeft, Key, Settings, Mail, Plus, X } from 'lucide-react';
-import { Button, Card, WidgetRenderer } from '../ui';
+import { Button, Card } from '../ui';
+import WidgetRenderer from '../admin/WidgetRenderer';
 
 const AdminEmailManager = ({ initialEmails, updateGlobalMetadata }) => {
     const [emails, setEmails] = useState(initialEmails || []);
