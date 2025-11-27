@@ -601,7 +601,7 @@ const CommunityScreen = ({ simulatedTier }) => {
         >
             {/* Main Layout Grid (Sidebar + Content) */}
             {navItems.length > 1 ? (
-                <div className={`grid grid-cols-1 lg:grid-cols-6 gap-6 max-w-7xl mx-auto ${!hasCommunityAccess ? 'opacity-60 pointer-events-none' : ''}`}>
+                <div className={`grid grid-cols-1 lg:grid-cols-6 gap-6 max-w-[860px] mx-auto ${!hasCommunityAccess ? 'opacity-60 pointer-events-none' : ''}`}>
                     {/* Sidebar Navigation */}
                     <aside className="lg:col-span-1 space-y-4 lg:sticky lg:top-6 self-start"> {/* Make sidebar sticky */}
                         <WidgetRenderer widgetId="community-sidebar" scope={scope} />

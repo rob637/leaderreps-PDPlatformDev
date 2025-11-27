@@ -191,7 +191,7 @@ const CommitmentSelectorView = ({ setView, initialGoal, initialTier }) => {
 
     return (
         <div className="min-h-screen bg-slate-50 p-6 space-y-8">
-            <div className="max-w-7xl mx-auto">
+            <div className="max-w-[860px] mx-auto">
                 <div className="text-center max-w-4xl mx-auto mb-8">
                     <h1 className="text-3xl font-bold text-corporate-navy mb-2">Manage Your Scorecard Commitments</h1>
                     <p className="text-slate-600 text-lg">Select the core micro-habits that directly support your current leadership development goals. Aim for 3-5 active commitments.</p>
@@ -465,7 +465,7 @@ const ScorecardView = ({ setView, initialGoal, initialTier, isSaving, commitment
     const streak = calculateStreak(commitmentHistory);
     return (
         <div className="min-h-screen bg-slate-50 p-6 space-y-8">
-            <div className="max-w-7xl mx-auto">
+            <div className="max-w-[860px] mx-auto">
                 <Button
                     onClick={() => navigate('coaching-lab')}
                     variant="nav-back"

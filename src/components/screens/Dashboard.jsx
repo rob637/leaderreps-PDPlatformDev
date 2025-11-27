@@ -333,6 +333,7 @@ const Dashboard = (props) => {
 
   return (
     <div className="p-6 space-y-8 bg-slate-50 min-h-screen relative">
+      <div className="max-w-[860px] mx-auto">
       {/* Layout Toggle - Desktop Only */}
       <div className="absolute top-6 right-6 z-10 hidden lg:block">
         <LayoutToggle />
@@ -374,6 +375,7 @@ const Dashboard = (props) => {
         isOpen={isCalendarModalOpen}
         onClose={() => setIsCalendarModalOpen(false)}
       />
+      </div>
     </div>
   );
 };

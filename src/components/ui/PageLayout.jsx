@@ -40,7 +40,7 @@ export const PageLayout = ({
   headerActions,
   badge,
   children,
-  maxWidth = 'max-w-7xl',
+  maxWidth = 'max-w-[860px]',
   centerHeader = true,
   sidebar,
   sidebarLeft = false,

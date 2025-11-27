@@ -115,7 +115,7 @@ const WidgetCard = React.forwardRef(({
     >
       {/* Header */}
       {(title || Icon || action) && (
-        <div className="px-5 pt-5 pb-3 flex items-center justify-between">
+        <div className="px-5 pt-3 pb-2 flex items-center justify-between">
           <div className="flex items-center gap-3">
             {Icon && (
               <div className={cn(
@@ -158,7 +158,7 @@ const WidgetCard = React.forwardRef(({
       )}
       
       {/* Content */}
-      <div className={cn(noPadding ? '' : 'px-5 pb-5')}>
+      <div className={cn(noPadding ? '' : 'px-5 pb-3')}>
         {/* Loading State */}
         {isLoading && (
           <div className="flex items-center justify-center py-8">

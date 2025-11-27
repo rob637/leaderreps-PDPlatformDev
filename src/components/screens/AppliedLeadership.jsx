@@ -393,7 +393,7 @@ export default function AppliedLeadershipScreen() {
     }, [LEADERSHIP_TIERS]);
 
     const renderLibraryHome = () => (
-        <div className="p-6 md:p-10 max-w-7xl mx-auto animate-fade-in">
+        <div className="p-6 md:p-10 max-w-[860px] mx-auto animate-fade-in">
             <Button onClick={() => navigate('library')} variant="nav-back" size="sm" className="mb-6">
                 <ArrowLeft className="w-4 h-4 mr-2" />
                 Back to Library
