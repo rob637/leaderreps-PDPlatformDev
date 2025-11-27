@@ -43,6 +43,12 @@ export const WIDGET_TEMPLATES = {
   <h2 className="text-xl font-bold text-[#002E47]">AM Bookend: Start Strong</h2>
   <div className="h-px bg-slate-200 flex-1 ml-4"></div>
 </div>
+<div className="mt-2 mb-6 px-4 py-3 bg-slate-50 rounded-lg border border-slate-100">
+  <p className="text-xs font-bold text-slate-500 uppercase mb-1">Purpose</p>
+  <p className="text-xs text-slate-600 mb-2">Visual separator for the Morning Routine.</p>
+  <p className="text-xs font-bold text-slate-500 uppercase mb-1">Description</p>
+  <p className="text-xs text-slate-600">Marks the beginning of the AM Bookend section, signaling the start of the daily planning process.</p>
+</div>
     `,
     'weekly-focus': `
 <Card title="Focus" icon={Target} accent="INDIGO">
@@ -53,6 +59,12 @@ export const WIDGET_TEMPLATES = {
     <p className="text-xs text-slate-400 italic">
       (Development Plan integration coming soon)
     </p>
+  </div>
+  <div className="mt-4 pt-4 border-t border-slate-100">
+    <p className="text-xs font-bold text-slate-500 uppercase mb-1">Purpose</p>
+    <p className="text-xs text-slate-600 mb-2">Highlights the primary development goal for the week.</p>
+    <p className="text-xs font-bold text-slate-500 uppercase mb-1">Description</p>
+    <p className="text-xs text-slate-600">Displays the active focus area from the user's Development Plan to keep it top-of-mind.</p>
   </div>
 </Card>
     `,
@@ -65,6 +77,12 @@ export const WIDGET_TEMPLATES = {
     <p className="text-xs text-slate-400 italic">
       (Leadership Identity Widget integration coming soon)
     </p>
+  </div>
+  <div className="mt-4 pt-4 border-t border-slate-100">
+    <p className="text-xs font-bold text-slate-500 uppercase mb-1">Purpose</p>
+    <p className="text-xs text-slate-600 mb-2">Reconnects the leader with their core identity.</p>
+    <p className="text-xs font-bold text-slate-500 uppercase mb-1">Description</p>
+    <p className="text-xs text-slate-600">Provides a quick link or display of the Leadership Identity Statement (LIS) to ground the user before starting their day.</p>
   </div>
 </Card>
     `,
@@ -104,6 +122,12 @@ export const WIDGET_TEMPLATES = {
         </div>
       </div>
     ))}
+  </div>
+  <div className="mt-4 pt-4 border-t border-slate-100">
+    <p className="text-xs font-bold text-slate-500 uppercase mb-1">Purpose</p>
+    <p className="text-xs text-slate-600 mb-2">Sets daily priorities.</p>
+    <p className="text-xs font-bold text-slate-500 uppercase mb-1">Description</p>
+    <p className="text-xs text-slate-600">Allows the user to define and track 3 high-impact actions for the day.</p>
   </div>
 </Card>
     `,
@@ -156,6 +180,12 @@ export const WIDGET_TEMPLATES = {
           );
         })}
       </div>
+      <div className="mt-4 pt-4 border-t border-slate-100">
+        <p className="text-xs font-bold text-slate-500 uppercase mb-1">Purpose</p>
+        <p className="text-xs text-slate-600 mb-2">Tracks daily habits.</p>
+        <p className="text-xs font-bold text-slate-500 uppercase mb-1">Description</p>
+        <p className="text-xs text-slate-600">A checklist of small, consistent actions (reps) that build leadership muscle over time.</p>
+      </div>
     </Card>
   );
 })()
@@ -205,6 +235,12 @@ export const WIDGET_TEMPLATES = {
       </div>
     </div>
   </div>
+  <div className="mt-4 pt-4 border-t border-slate-100">
+    <p className="text-xs font-bold text-slate-500 uppercase mb-1">Purpose</p>
+    <p className="text-xs text-slate-600 mb-2">Centralized alerts and updates.</p>
+    <p className="text-xs font-bold text-slate-500 uppercase mb-1">Description</p>
+    <p className="text-xs text-slate-600">Aggregates important information like reflection insights, upcoming practice sessions, and new content unlocks.</p>
+  </div>
 </Card>
     `,
     'pm-bookend-header': `
@@ -212,6 +248,12 @@ export const WIDGET_TEMPLATES = {
   <Moon className="w-6 h-6 text-indigo-500" />
   <h2 className="text-xl font-bold text-[#002E47]">PM Bookend: Finish Strong</h2>
   <div className="h-px bg-slate-200 flex-1 ml-4"></div>
+</div>
+<div className="mt-2 mb-6 px-4 py-3 bg-slate-50 rounded-lg border border-slate-100">
+  <p className="text-xs font-bold text-slate-500 uppercase mb-1">Purpose</p>
+  <p className="text-xs text-slate-600 mb-2">Visual separator for the Evening Routine.</p>
+  <p className="text-xs font-bold text-slate-500 uppercase mb-1">Description</p>
+  <p className="text-xs text-slate-600">Marks the beginning of the PM Bookend section, signaling the transition to reflection and closing the day.</p>
 </div>
     `,
     'progress-feedback': `
@@ -230,6 +272,12 @@ export const WIDGET_TEMPLATES = {
   </p>
   <div className="w-full bg-slate-100 rounded-full h-2">
     <div className="bg-green-500 h-2 rounded-full" style={{ width: '85%' }}></div>
+  </div>
+  <div className="mt-4 pt-4 border-t border-slate-100">
+    <p className="text-xs font-bold text-slate-500 uppercase mb-1">Purpose</p>
+    <p className="text-xs text-slate-600 mb-2">Visualizes weekly consistency.</p>
+    <p className="text-xs font-bold text-slate-500 uppercase mb-1">Description</p>
+    <p className="text-xs text-slate-600">Shows a progress bar and grade based on the completion of daily planning and reflection tasks.</p>
   </div>
 </Card>
     `,
@@ -282,6 +330,12 @@ export const WIDGET_TEMPLATES = {
       Save Journal
     </button>
   </div>
+  <div className="mt-4 pt-4 border-t border-slate-100">
+    <p className="text-xs font-bold text-slate-500 uppercase mb-1">Purpose</p>
+    <p className="text-xs text-slate-600 mb-2">Daily reflection journal.</p>
+    <p className="text-xs font-bold text-slate-500 uppercase mb-1">Description</p>
+    <p className="text-xs text-slate-600">A structured form for reviewing the day, identifying wins and improvements, and setting a closing thought.</p>
+  </div>
 </Card>
     `,
     'scorecard': `
@@ -333,6 +387,12 @@ export const WIDGET_TEMPLATES = {
         Save to Locker
       </button>
     </div>
+    <div className="mt-4 pt-4 border-t border-slate-100">
+      <p className="text-xs font-bold text-slate-500 uppercase mb-1">Purpose</p>
+      <p className="text-xs text-slate-600 mb-2">Daily performance summary.</p>
+      <p className="text-xs font-bold text-slate-500 uppercase mb-1">Description</p>
+      <p className="text-xs text-slate-600">Displays stats on completed reps and "Win the Day" tasks, along with the current streak count.</p>
+    </div>
 </Card>
     `,
     'course-library': `
@@ -357,6 +417,12 @@ export const WIDGET_TEMPLATES = {
       </div>
     </div>
   </div>
+  <div className="mt-4 pt-4 border-t border-slate-100">
+    <p className="text-xs font-bold text-slate-500 uppercase mb-1">Purpose</p>
+    <p className="text-xs text-slate-600 mb-2">Quick access to learning modules.</p>
+    <p className="text-xs font-bold text-slate-500 uppercase mb-1">Description</p>
+    <p className="text-xs text-slate-600">Displays a list of available courses with progress indicators and duration.</p>
+  </div>
 </Card>
     `,
     'reading-hub': `
@@ -375,6 +441,12 @@ export const WIDGET_TEMPLATES = {
       <p className="text-xs font-bold text-gray-700 truncate">Start with Why</p>
     </div>
   </div>
+  <div className="mt-4 pt-4 border-t border-slate-100">
+    <p className="text-xs font-bold text-slate-500 uppercase mb-1">Purpose</p>
+    <p className="text-xs text-slate-600 mb-2">Digital bookshelf.</p>
+    <p className="text-xs font-bold text-slate-500 uppercase mb-1">Description</p>
+    <p className="text-xs text-slate-600">Showcases recommended or current reading materials for leadership development.</p>
+  </div>
 </Card>
     `,
     'leadership-videos': `
@@ -386,6 +458,12 @@ export const WIDGET_TEMPLATES = {
     <span className="absolute bottom-2 right-2 bg-black/60 px-2 py-1 rounded text-xs text-white">12:45</span>
   </div>
   <p className="font-bold text-sm text-gray-800">Simon Sinek: How Great Leaders Inspire Action</p>
+  <div className="mt-4 pt-4 border-t border-slate-100">
+    <p className="text-xs font-bold text-slate-500 uppercase mb-1">Purpose</p>
+    <p className="text-xs text-slate-600 mb-2">Curated video content.</p>
+    <p className="text-xs font-bold text-slate-500 uppercase mb-1">Description</p>
+    <p className="text-xs text-slate-600">Features high-impact talks and lessons from thought leaders.</p>
+  </div>
 </Card>
     `,
     'strat-templates': `
@@ -407,6 +485,12 @@ export const WIDGET_TEMPLATES = {
       <FileText className="w-5 h-5 text-orange-600 mb-2" />
       <p className="text-xs font-bold text-orange-900">Feedback Form</p>
     </button>
+  </div>
+  <div className="mt-4 pt-4 border-t border-slate-100">
+    <p className="text-xs font-bold text-slate-500 uppercase mb-1">Purpose</p>
+    <p className="text-xs text-slate-600 mb-2">Downloadable resources.</p>
+    <p className="text-xs font-bold text-slate-500 uppercase mb-1">Description</p>
+    <p className="text-xs text-slate-600">Provides quick access to common leadership templates like QBR decks, 1:1 agendas, and OKR sheets.</p>
   </div>
 </Card>
     `,
@@ -432,6 +516,12 @@ export const WIDGET_TEMPLATES = {
       </div>
     </div>
   </div>
+  <div className="mt-4 pt-4 border-t border-slate-100">
+    <p className="text-xs font-bold text-slate-500 uppercase mb-1">Purpose</p>
+    <p className="text-xs text-slate-600 mb-2">Social interaction.</p>
+    <p className="text-xs font-bold text-slate-500 uppercase mb-1">Description</p>
+    <p className="text-xs text-slate-600">A stream of posts and discussions from the leadership community.</p>
+  </div>
 </Card>
     `,
     'my-discussions': `
@@ -450,6 +540,12 @@ export const WIDGET_TEMPLATES = {
       <span className="text-xs text-gray-400">3d ago</span>
     </div>
   </div>
+  <div className="mt-4 pt-4 border-t border-slate-100">
+    <p className="text-xs font-bold text-slate-500 uppercase mb-1">Purpose</p>
+    <p className="text-xs text-slate-600 mb-2">Personal thread tracking.</p>
+    <p className="text-xs font-bold text-slate-500 uppercase mb-1">Description</p>
+    <p className="text-xs text-slate-600">Lists discussions the user is participating in or following.</p>
+  </div>
 </Card>
     `,
     'mastermind': `
@@ -458,6 +554,12 @@ export const WIDGET_TEMPLATES = {
   <button className="w-full py-2 bg-indigo-600 text-white rounded-lg font-bold text-sm hover:bg-indigo-700 transition-colors">
     Find a Group
   </button>
+  <div className="mt-4 pt-4 border-t border-slate-100">
+    <p className="text-xs font-bold text-slate-500 uppercase mb-1">Purpose</p>
+    <p className="text-xs text-slate-600 mb-2">Peer group connection.</p>
+    <p className="text-xs font-bold text-slate-500 uppercase mb-1">Description</p>
+    <p className="text-xs text-slate-600">Facilitates joining or managing small peer accountability groups.</p>
+  </div>
 </Card>
     `,
     'mentor-match': `
@@ -473,6 +575,12 @@ export const WIDGET_TEMPLATES = {
   <button className="w-full py-2 border border-indigo-600 text-indigo-600 rounded-lg font-bold text-sm hover:bg-indigo-50 transition-colors">
     Request Intro
   </button>
+  <div className="mt-4 pt-4 border-t border-slate-100">
+    <p className="text-xs font-bold text-slate-500 uppercase mb-1">Purpose</p>
+    <p className="text-xs text-slate-600 mb-2">Professional guidance.</p>
+    <p className="text-xs font-bold text-slate-500 uppercase mb-1">Description</p>
+    <p className="text-xs text-slate-600">Connects users with mentors for specific leadership challenges.</p>
+  </div>
 </Card>
     `,
     'live-events': `
@@ -499,6 +607,12 @@ export const WIDGET_TEMPLATES = {
       </div>
     </div>
   </div>
+  <div className="mt-4 pt-4 border-t border-slate-100">
+    <p className="text-xs font-bold text-slate-500 uppercase mb-1">Purpose</p>
+    <p className="text-xs text-slate-600 mb-2">Event calendar.</p>
+    <p className="text-xs font-bold text-slate-500 uppercase mb-1">Description</p>
+    <p className="text-xs text-slate-600">Lists upcoming webinars, workshops, and summits.</p>
+  </div>
 </Card>
     `,
     'practice-history': `
@@ -518,6 +632,12 @@ export const WIDGET_TEMPLATES = {
       </div>
       <span className="text-yellow-600 font-bold text-sm">78%</span>
     </div>
+  </div>
+  <div className="mt-4 pt-4 border-t border-slate-100">
+    <p className="text-xs font-bold text-slate-500 uppercase mb-1">Purpose</p>
+    <p className="text-xs text-slate-600 mb-2">Skill tracking.</p>
+    <p className="text-xs font-bold text-slate-500 uppercase mb-1">Description</p>
+    <p className="text-xs text-slate-600">Shows a log of recently practiced scenarios and their scores.</p>
   </div>
 </Card>
     `,
@@ -544,6 +664,12 @@ export const WIDGET_TEMPLATES = {
     <span>Mon</span>
     <span>Fri</span>
   </div>
+  <div className="mt-4 pt-4 border-t border-slate-100">
+    <p className="text-xs font-bold text-slate-500 uppercase mb-1">Purpose</p>
+    <p className="text-xs text-slate-600 mb-2">Long-term growth visualization.</p>
+    <p className="text-xs font-bold text-slate-500 uppercase mb-1">Description</p>
+    <p className="text-xs text-slate-600">A chart showing performance trends over time.</p>
+  </div>
 </Card>
     `,
     'ai-roleplay': `
@@ -556,6 +682,12 @@ export const WIDGET_TEMPLATES = {
   <button className="w-full py-2 bg-purple-600 text-white rounded-lg text-sm font-bold hover:bg-purple-700 transition-colors">
     Start Session
   </button>
+  <div className="mt-4 pt-4 border-t border-slate-100">
+    <p className="text-xs font-bold text-slate-500 uppercase mb-1">Purpose</p>
+    <p className="text-xs text-slate-600 mb-2">Simulated practice.</p>
+    <p className="text-xs font-bold text-slate-500 uppercase mb-1">Description</p>
+    <p className="text-xs text-slate-600">Launches interactive AI roleplay sessions for skills like feedback or conflict resolution.</p>
+  </div>
 </Card>
     `,
     'scenario-sim': `
@@ -576,6 +708,12 @@ export const WIDGET_TEMPLATES = {
       <p className="text-sm font-bold text-gray-800">Market Expansion</p>
     </div>
   </div>
+  <div className="mt-4 pt-4 border-t border-slate-100">
+    <p className="text-xs font-bold text-slate-500 uppercase mb-1">Purpose</p>
+    <p className="text-xs text-slate-600 mb-2">Decision-making practice.</p>
+    <p className="text-xs font-bold text-slate-500 uppercase mb-1">Description</p>
+    <p className="text-xs text-slate-600">Presents text-based scenarios to test strategic thinking and crisis management.</p>
+  </div>
 </Card>
     `,
     'feedback-gym': `
@@ -590,6 +728,12 @@ export const WIDGET_TEMPLATES = {
       <p className="text-lg font-bold text-blue-700">SBI</p>
       <p className="text-[10px] text-blue-600">Model</p>
     </div>
+  </div>
+  <div className="mt-4 pt-4 border-t border-slate-100">
+    <p className="text-xs font-bold text-slate-500 uppercase mb-1">Purpose</p>
+    <p className="text-xs text-slate-600 mb-2">Communication drills.</p>
+    <p className="text-xs font-bold text-slate-500 uppercase mb-1">Description</p>
+    <p className="text-xs text-slate-600">Quick exercises to practice specific feedback models like Radical Candor or SBI.</p>
   </div>
 </Card>
     `,
@@ -608,6 +752,12 @@ export const WIDGET_TEMPLATES = {
   <button className="w-full py-2 border border-gray-200 rounded-lg text-sm font-bold text-gray-600 hover:bg-gray-50 transition-colors">
     Download PDF
   </button>
+  <div className="mt-4 pt-4 border-t border-slate-100">
+    <p className="text-xs font-bold text-slate-500 uppercase mb-1">Purpose</p>
+    <p className="text-xs text-slate-600 mb-2">Value demonstration.</p>
+    <p className="text-xs font-bold text-slate-500 uppercase mb-1">Description</p>
+    <p className="text-xs text-slate-600">Summarizes the impact of leadership development on team metrics.</p>
+  </div>
 </Card>
     `,
     'dev-plan-header': `
@@ -632,6 +782,12 @@ export const WIDGET_TEMPLATES = {
     </Button>
   </div>
   <ProgressBar progress={summary.progress} color="#47A88D" />
+  <div className="mt-4 pt-4 border-t border-slate-100">
+    <p className="text-xs font-bold text-slate-500 uppercase mb-1">Purpose</p>
+    <p className="text-xs text-slate-600 mb-2">Development Plan Overview.</p>
+    <p className="text-xs font-bold text-slate-500 uppercase mb-1">Description</p>
+    <p className="text-xs text-slate-600">Shows the current cycle, total skills, and overall progress of the active Development Plan.</p>
+  </div>
 </Card>
     `,
     'dev-plan-stats': `
@@ -671,6 +827,12 @@ export const WIDGET_TEMPLATES = {
       <div className="text-sm text-slate-600">Current Week</div>
     </div>
   </div>
+</div>
+<div className="mt-2 mb-6 px-4 py-3 bg-slate-50 rounded-lg border border-slate-100">
+  <p className="text-xs font-bold text-slate-500 uppercase mb-1">Purpose</p>
+  <p className="text-xs text-slate-600 mb-2">Detailed progress metrics.</p>
+  <p className="text-xs font-bold text-slate-500 uppercase mb-1">Description</p>
+  <p className="text-xs text-slate-600">Breaks down skills into total, completed, and current week focus.</p>
 </div>
     `,
     'dev-plan-actions': `
@@ -717,6 +879,12 @@ export const WIDGET_TEMPLATES = {
       </Button>
     )}
   </div>
+  <div className="mt-4 pt-4 border-t border-slate-100">
+    <p className="text-xs font-bold text-slate-500 uppercase mb-1">Purpose</p>
+    <p className="text-xs text-slate-600 mb-2">Plan management.</p>
+    <p className="text-xs font-bold text-slate-500 uppercase mb-1">Description</p>
+    <p className="text-xs text-slate-600">Quick actions to view breakdowns, scan progress, or edit the plan.</p>
+  </div>
 </Card>
     `,
     'dev-plan-focus-areas': `
@@ -738,6 +906,12 @@ export const WIDGET_TEMPLATES = {
       </div>
     ))}
   </div>
+  <div className="mt-4 pt-4 border-t border-slate-100">
+    <p className="text-xs font-bold text-slate-500 uppercase mb-1">Purpose</p>
+    <p className="text-xs text-slate-600 mb-2">Strategic priorities.</p>
+    <p className="text-xs font-bold text-slate-500 uppercase mb-1">Description</p>
+    <p className="text-xs text-slate-600">Lists the specific areas the user is working on, including the "why" and associated resources.</p>
+  </div>
 </Card>
     `,
     'dev-plan-goal': `
@@ -745,6 +919,12 @@ export const WIDGET_TEMPLATES = {
   <p className="text-slate-700 italic border-l-4 border-corporate-orange pl-4 py-1">
     "{plan.openEndedAnswer}"
   </p>
+  <div className="mt-4 pt-4 border-t border-slate-100">
+    <p className="text-xs font-bold text-slate-500 uppercase mb-1">Purpose</p>
+    <p className="text-xs text-slate-600 mb-2">North Star.</p>
+    <p className="text-xs font-bold text-slate-500 uppercase mb-1">Description</p>
+    <p className="text-xs text-slate-600">Displays the user's primary open-ended goal for the current development cycle.</p>
+  </div>
 </Card>
     `,
     'daily-quote': `(() => {
@@ -792,6 +972,12 @@ export const WIDGET_TEMPLATES = {
         </div>
       )}
     </div>
+    <div className="mt-4 pt-4 border-t border-slate-100">
+      <p className="text-xs font-bold text-slate-500 uppercase mb-1">Purpose</p>
+      <p className="text-xs text-slate-600 mb-2">Daily inspiration.</p>
+      <p className="text-xs font-bold text-slate-500 uppercase mb-1">Description</p>
+      <p className="text-xs text-slate-600">Displays a rotating leadership quote to inspire the user.</p>
+    </div>
     <style>{\`
     @keyframes marquee {
       0% { transform: translateX(0); }
@@ -814,6 +1000,12 @@ export const WIDGET_TEMPLATES = {
   <p className="text-slate-500 text-lg">
     Ready to win the day? Let's get to work.
   </p>
+  <div className="mt-4 pt-4 border-t border-slate-100">
+    <p className="text-xs font-bold text-slate-500 uppercase mb-1">Purpose</p>
+    <p className="text-xs text-slate-600 mb-2">Personal greeting.</p>
+    <p className="text-xs font-bold text-slate-500 uppercase mb-1">Description</p>
+    <p className="text-xs text-slate-600">Welcomes the user by name and sets a positive tone for the session.</p>
+  </div>
 </div>
     `,
     'locker-controller': `
@@ -897,6 +1089,12 @@ const LockerController = () => {
             <p className="font-medium text-slate-900">{currentWeek}</p>
           </div>
         </div>
+      </div>
+      <div className="mt-4 pt-4 border-t border-slate-100">
+        <p className="text-xs font-bold text-slate-500 uppercase mb-1">Purpose</p>
+        <p className="text-xs text-slate-600 mb-2">Dashboard metadata.</p>
+        <p className="text-xs font-bold text-slate-500 uppercase mb-1">Description</p>
+        <p className="text-xs text-slate-600">Displays current user, time, release group, and plan progress.</p>
       </div>
     </Card>
   );
@@ -1004,6 +1202,12 @@ const LockerReminders = () => {
           Reminders are sent only if the task is not yet completed.
         </p>
       </div>
+      <div className="mt-4 pt-4 border-t border-slate-100">
+        <p className="text-xs font-bold text-slate-500 uppercase mb-1">Purpose</p>
+        <p className="text-xs text-slate-600 mb-2">Notification management.</p>
+        <p className="text-xs font-bold text-slate-500 uppercase mb-1">Description</p>
+        <p className="text-xs text-slate-600">Allows the user to toggle and schedule daily reminders for key habits.</p>
+      </div>
     </Card>
   );
 };
@@ -1091,6 +1295,12 @@ const SystemRemindersController = () => {
             </div>
           </div>
         </div>
+      </div>
+      <div className="mt-4 pt-4 border-t border-slate-100">
+        <p className="text-xs font-bold text-slate-500 uppercase mb-1">Purpose</p>
+        <p className="text-xs text-slate-600 mb-2">Admin notification tools.</p>
+        <p className="text-xs font-bold text-slate-500 uppercase mb-1">Description</p>
+        <p className="text-xs text-slate-600">Provides system status and test controls for the notification infrastructure.</p>
       </div>
     </Card>
   );
