@@ -586,25 +586,29 @@ const FeatureManager = () => {
     for (const [id, meta] of Object.entries(FEATURE_METADATA)) {
        const current = features[id];
        const templateCode = WIDGET_TEMPLATES[id];
+
+       // Determine expected group
+       let expectedGroup = 'dashboard';
+       if (initialGroups['development-plan'].includes(id)) expectedGroup = 'development-plan';
+       else if (initialGroups.content.includes(id)) expectedGroup = 'content';
+       else if (initialGroups.community.includes(id)) expectedGroup = 'community';
+       else if (initialGroups.coaching.includes(id)) expectedGroup = 'coaching';
+       else if (initialGroups.locker.includes(id)) expectedGroup = 'locker';
+       else if (initialGroups.system?.includes(id)) expectedGroup = 'system';
        
-       // Update if missing, name/desc mismatch, OR if template exists and code doesn't match
+       // Update if missing, name/desc mismatch, OR if template exists and code doesn't match, OR group mismatch
        if (!current || 
            current.name !== meta.name || 
            current.description !== meta.description ||
-           (templateCode && current.code !== templateCode)) {
+           (templateCode && current.code !== templateCode) ||
+           (current.group !== expectedGroup)) {
          
          await saveFeature(id, {
            ...current,
            name: meta.name,
            description: meta.description,
            code: templateCode || current?.code || '',
-           group: current?.group || (initialGroups.dashboard.includes(id) ? 'dashboard' : 
-                  initialGroups.content.includes(id) ? 'content' :
-                  initialGroups.community.includes(id) ? 'community' : 
-                  initialGroups.coaching.includes(id) ? 'coaching' : 
-                  initialGroups.locker.includes(id) ? 'locker' : 
-                  meta.category === 'System' ? 'system' :
-                  initialGroups['development-plan'].includes(id) ? 'development-plan' : 'dashboard'),
+           group: expectedGroup,
            enabled: current?.enabled !== undefined ? current.enabled : true,
            order: current?.order !== undefined ? current.order : 999
          });
