@@ -500,7 +500,11 @@ const FeatureManager = () => {
       'practice-history', 'progress-analytics', 'ai-roleplay', 'scenario-sim', 'feedback-gym', 'roi-report'
     ],
     locker: [
-      'locker-wins-history', 'locker-scorecard-history', 'locker-latest-reflection'
+      'locker-wins-history', 'locker-scorecard-history', 'locker-latest-reflection',
+      'locker-controller', 'locker-reminders'
+    ],
+    system: [
+      'system-reminders-controller'
     ]
   };
 
@@ -511,7 +515,8 @@ const FeatureManager = () => {
     content: [],
     community: [],
     coaching: [],
-    locker: []
+    locker: [],
+    system: []
   };
 
   // 1. Determine canonical order of IDs to prevent jumping
@@ -542,6 +547,7 @@ const FeatureManager = () => {
       else if (initialGroups.community.includes(id)) group = 'community';
       else if (initialGroups.coaching.includes(id)) group = 'coaching';
       else if (initialGroups.locker.includes(id)) group = 'locker';
+      else if (initialGroups.system?.includes(id)) group = 'system';
       else if (initialGroups.dashboard.includes(id)) group = 'dashboard';
     }
 
@@ -732,6 +738,8 @@ const FeatureManager = () => {
     community: 'Community',
     coaching: 'Coaching',
     locker: 'Locker',
+    system: 'System'
+  };
     system: 'System'
   };
 
