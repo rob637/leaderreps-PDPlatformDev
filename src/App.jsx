@@ -34,6 +34,7 @@ import { WidgetEditorProvider } from './providers/WidgetEditorProvider.jsx';
 import WidgetEditorModal from './components/admin/WidgetEditorModal.jsx';
 import ConfigError from './components/system/ConfigError.jsx';
 import UpdateNotification from './components/ui/UpdateNotification.jsx';
+import { NotificationProvider } from './providers/NotificationProvider.jsx';
 
 /* =========================================================
    MAIN APP COMPONENT
@@ -129,24 +130,26 @@ function App() {
         <FeatureProvider db={firebaseServices?.db}>
           <LayoutProvider>
             <WidgetEditorProvider>
-              {isAuthRequired ? (
-              <AuthPanel 
-                auth={firebaseServices.auth} 
-                onSuccess={() => navigate('dashboard')} 
-              />
-            ) : (
-              <AppContent
-                currentScreen={currentScreen}
-                user={user}
-                navParams={navParams}
-                isMobileOpen={isMobileOpen}
-                setIsMobileOpen={setIsMobileOpen}
-                isAuthRequired={isAuthRequired}
-                auth={firebaseServices.auth}
-                goBack={goBack}
-                canGoBack={canGoBack}
-              />
-            )}
+              <NotificationProvider>
+                {isAuthRequired ? (
+                <AuthPanel 
+                  auth={firebaseServices.auth} 
+                  onSuccess={() => navigate('dashboard')} 
+                />
+              ) : (
+                <AppContent
+                  currentScreen={currentScreen}
+                  user={user}
+                  navParams={navParams}
+                  isMobileOpen={isMobileOpen}
+                  setIsMobileOpen={setIsMobileOpen}
+                  isAuthRequired={isAuthRequired}
+                  auth={firebaseServices.auth}
+                  goBack={goBack}
+                  canGoBack={canGoBack}
+                />
+              )}
+              </NotificationProvider>
             <WidgetEditorModal />
             </WidgetEditorProvider>
           </LayoutProvider>

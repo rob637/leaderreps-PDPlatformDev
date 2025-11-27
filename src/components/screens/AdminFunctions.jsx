@@ -4,6 +4,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useAppServices } from '../../services/useAppServices.jsx';
 import { Shield, ToggleLeft, ToggleRight, Save, Loader, AlertTriangle, ArrowLeft, Key, Settings, Mail, Plus, X } from 'lucide-react';
 import { Button, Card } from '../ui';
+import SystemRemindersWidget from '../admin/SystemRemindersWidget';
 
 const AdminEmailManager = ({ initialEmails, updateGlobalMetadata }) => {
     const [emails, setEmails] = useState(initialEmails || []);
@@ -136,7 +137,8 @@ const AdminFunctionsScreen = () => {
         featureFlags: initialFlags,
         metadata,
         updateGlobalMetadata,
-        isLoading: isAppLoading
+        isLoading: isAppLoading,
+        globalMetadata // Add this
     } = useAppServices();
 
     const [currentFlags, setCurrentFlags] = useState(() => initialFlags || {});
@@ -212,95 +214,97 @@ const AdminFunctionsScreen = () => {
     }
 
     return (
-        <div className="p-6 md:p-10 min-h-screen bg-slate-50 animate-fade-in">
-            <header className="mb-8">
-                <h1 className="text-3xl md:text-4xl font-extrabold mb-2 flex items-center gap-3 text-corporate-navy">
-                    <Shield className="w-8 h-8 text-corporate-teal" /> Admin Functions
-                </h1>
-                <p className="text-lg text-slate-600">Manage application features and settings.</p>
-            </header>
-
-            <Button onClick={() => navigate('app-settings')} variant="nav-back" className="mb-6">
-                <ArrowLeft className="w-5 h-5 mr-2" /> Back to App Settings
-            </Button>
-
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-
-                <AdminEmailManager
-                    initialEmails={adminEmails}
-                    updateGlobalMetadata={updateGlobalMetadata}
-                />
-
-                <Card title="Feature Flags" icon={Settings} accentColor="bg-corporate-teal">
-                    <p className="text-sm text-slate-600 mb-6">Enable or disable application features globally. Changes affect all users on next load.</p>
-
-                    <div className="space-y-4">
-                        {[
-                            'enableLabs',
-                            'enableLabsAdvanced',
-                            'enableCommunity',
-                            'enablePlanningHub',
-                            'enableRoiReport',
-                            'enableCourses',
-                            'enableVideos',
-                            'enableReadings',
-                            'enableDevPlan',
-                            'enableQuickStart',
-                            'enableDailyPractice',
-                            'enableMembershipModule',
-                        ]
-                         .sort() 
-                         .map((flagName) => {
-                            const isEnabled = currentFlags[flagName]; 
-
-                            return (
-                                <div key={flagName} className="flex items-center justify-between p-3 border border-slate-200 rounded-xl bg-white shadow-sm hover:border-slate-300 transition-colors">
-                                    <span className="text-sm font-medium text-slate-800">{flagName.replace('enable', '').replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase()).trim()}</span>
-                                    
-                                    <button
-                                        onClick={() => handleToggleFlag(flagName)}
-                                        disabled={isSaving}
-                                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold border transition-all ${
-                                            isEnabled !== false ? `bg-green-100 border-green-200 text-green-700` : `bg-red-100 border-red-200 text-red-700`
-                                        }`}
-                                        aria-pressed={isEnabled !== false} 
-                                        aria-label={`Toggle ${flagName}`}
-                                    >
-                                        {isEnabled !== false ? <ToggleRight className="w-4 h-4" /> : <ToggleLeft className="w-4 h-4" />}
-                                        {isEnabled !== false ? 'Enabled' : 'Disabled'}
-                                    </button>
-                                </div>
-                            );
-                        })}
-                    </div>
-
-                    <div className="mt-6 pt-4 border-t border-slate-200 flex items-center gap-4">
-                        <Button onClick={handleSaveChanges} disabled={isSaving} variant="action-write" size="md">
-                            {isSaving ? <Loader className="w-5 h-5 mr-2 animate-spin"/> : <Save className="w-5 h-5 mr-2" />}
-                            {isSaving ? 'Saving Changes...' : 'Save Feature Flags'}
-                        </Button>
-                        {saveStatus && (
-                            <span className={`text-sm font-semibold ${saveStatus.includes('Error') ? 'text-red-600' : 'text-green-600'}`}>
-                                {saveStatus}
-                            </span>
-                        )}
-                    </div>
-
-                    <p className="text-xs text-slate-500 mt-4 italic">
-                        Feature flags are loaded from <code>metadata/config</code> document in Firestore.
-                    </p>
-                </Card>
-            </div>
-
-             <Card title="Database Management" icon={Key} accentColor="bg-corporate-navy" className="mt-6">
-                <p className="text-sm text-slate-600 mb-4">Direct access to the Firestore Data Manager to view and edit document/collection data.</p>
-                <Button onClick={() => navigate('data-maintenance')} variant="outline" size="md">
-                    <Shield className="w-5 h-5 mr-2" /> Open Data Manager
+        <div className="min-h-screen bg-slate-50 p-6 space-y-8">
+            <div className="max-w-7xl mx-auto">
+                <Button onClick={() => navigate('dashboard')} variant="nav-back" size="sm" className="mb-6">
+                    <ArrowLeft className="w-5 h-5 mr-2" />
+                    Back to Dashboard
                 </Button>
-             </Card>
 
+                <header className="mb-8">
+                    <h1 className="text-3xl font-bold text-corporate-navy mb-2">Admin Functions</h1>
+                    <p className="text-slate-600">Manage system settings, feature flags, and user access.</p>
+                </header>
+
+                <SystemRemindersWidget />
+
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <AdminEmailManager 
+                        initialEmails={globalMetadata?.adminemails} 
+                        updateGlobalMetadata={updateGlobalMetadata} 
+                    />
+
+                    <Card title="Feature Flags" icon={Settings} accentColor="bg-corporate-teal">
+                        <p className="text-sm text-slate-600 mb-6">Enable or disable application features globally. Changes affect all users on next load.</p>
+
+                        <div className="space-y-4">
+                            {[
+                                'enableLabs',
+                                'enableLabsAdvanced',
+                                'enableCommunity',
+                                'enablePlanningHub',
+                                'enableRoiReport',
+                                'enableCourses',
+                                'enableVideos',
+                                'enableReadings',
+                                'enableDevPlan',
+                                'enableQuickStart',
+                                'enableDailyPractice',
+                                'enableMembershipModule',
+                            ]
+                             .sort() 
+                             .map((flagName) => {
+                                const isEnabled = currentFlags[flagName]; 
+
+                                return (
+                                    <div key={flagName} className="flex items-center justify-between p-3 border border-slate-200 rounded-xl bg-white shadow-sm hover:border-slate-300 transition-colors">
+                                        <span className="text-sm font-medium text-slate-800">{flagName.replace('enable', '').replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase()).trim()}</span>
+                                        
+                                        <button
+                                            onClick={() => handleToggleFlag(flagName)}
+                                            disabled={isSaving}
+                                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold border transition-all ${
+                                                isEnabled !== false ? `bg-green-100 border-green-200 text-green-700` : `bg-red-100 border-red-200 text-red-700`
+                                            }`}
+                                            aria-pressed={isEnabled !== false} 
+                                            aria-label={`Toggle ${flagName}`}
+                                        >
+                                            {isEnabled !== false ? <ToggleRight className="w-4 h-4" /> : <ToggleLeft className="w-4 h-4" />}
+                                            {isEnabled !== false ? 'Enabled' : 'Disabled'}
+                                        </button>
+                                    </div>
+                                );
+                            })}
+                        </div>
+
+                        <div className="mt-6 pt-4 border-t border-slate-200 flex items-center gap-4">
+                            <Button onClick={handleSaveChanges} disabled={isSaving} variant="action-write" size="md">
+                                {isSaving ? <Loader className="w-5 h-5 mr-2 animate-spin"/> : <Save className="w-5 h-5 mr-2" />}
+                                {isSaving ? 'Saving Changes...' : 'Save Feature Flags'}
+                            </Button>
+                            {saveStatus && (
+                                <span className={`text-sm font-semibold ${saveStatus.includes('Error') ? 'text-red-600' : 'text-green-600'}`}>
+                                    {saveStatus}
+                                </span>
+                            )}
+                        </div>
+
+                        <p className="text-xs text-slate-500 mt-4 italic">
+                            Feature flags are loaded from <code>metadata/config</code> document in Firestore.
+                        </p>
+                    </Card>
+                </div>
+
+                 <Card title="Database Management" icon={Key} accentColor="bg-corporate-navy" className="mt-6">
+                    <p className="text-sm text-slate-600 mb-4">Direct access to the Firestore Data Manager to view and edit document/collection data.</p>
+                    <Button onClick={() => navigate('data-maintenance')} variant="outline" size="md">
+                        <Shield className="w-5 h-5 mr-2" /> Open Data Manager
+                    </Button>
+                 </Card>
+
+            </div>
         </div>
     );
 };
 
-export default AdminFunctionsScreen; 
+export default AdminFunctionsScreen;

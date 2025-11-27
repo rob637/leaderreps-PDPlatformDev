@@ -5,6 +5,8 @@ import { Archive, CheckCircle, Calendar, Trophy, BookOpen } from 'lucide-react';
 import { useFeatures } from '../../providers/FeatureProvider';
 import WidgetRenderer from '../admin/WidgetRenderer';
 import { dailyLogService } from '../../services/dailyLogService';
+import ControllerWidget from './locker/ControllerWidget';
+import RemindersWidget from './locker/RemindersWidget';
 
 const LOCKER_FEATURES = [
   'locker-wins-history',
@@ -218,6 +220,8 @@ const Locker = () => {
       backTo="dashboard"
       accentColor="teal"
     >
+      <ControllerWidget />
+      <RemindersWidget />
       {sortedFeatures.length > 0 ? (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {sortedFeatures.map(featureId => (
