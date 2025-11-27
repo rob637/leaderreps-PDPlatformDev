@@ -143,16 +143,14 @@ const AdminFunctions = () => {
         globalMetadata 
     } = useAppServices();
     
-    const notificationService = useNotifications();
-
     const scope = useMemo(() => ({
-        ...notificationService,
+        useNotifications,
         Button,
         Card,
         Loader,
         Shield,
         AlertTriangle
-    }), [notificationService]);
+    }), []);
 
     const [currentFlags, setCurrentFlags] = useState(() => initialFlags || {});
     const [isSaving, setIsSaving] = useState(false);

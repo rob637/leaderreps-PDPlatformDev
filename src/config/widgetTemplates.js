@@ -817,7 +817,7 @@ export const WIDGET_TEMPLATES = {
 </div>
     `,
     'locker-controller': `
-(() => {
+const LockerController = () => {
   const [currentTime, setCurrentTime] = React.useState(new Date());
 
   React.useEffect(() => {
@@ -900,10 +900,11 @@ export const WIDGET_TEMPLATES = {
       </div>
     </Card>
   );
-})()
+};
+render(<LockerController />);
     `,
     'locker-reminders': `
-(() => {
+const LockerReminders = () => {
   const { 
     permission, 
     requestPermission, 
@@ -1005,10 +1006,11 @@ export const WIDGET_TEMPLATES = {
       </div>
     </Card>
   );
-})()
+};
+render(<LockerReminders />);
     `,
     'system-reminders-controller': `
-(() => {
+const SystemRemindersController = () => {
   const { 
     permission, 
     requestPermission, 
@@ -1092,7 +1094,8 @@ export const WIDGET_TEMPLATES = {
       </div>
     </Card>
   );
-})()
+};
+render(<SystemRemindersController />);
     `,
 
   };
