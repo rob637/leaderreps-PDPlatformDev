@@ -5,12 +5,12 @@ import {
   Loader, Cpu, CheckSquare, Github, Trophy, Calendar, BookOpen, Flame,
   Target, TrendingUp, Edit, ArrowLeft, Video, FileText, Users, UserPlus,
   Radio, History, BarChart2, Bot, Dumbbell, Search, Plus, Terminal, Database, Layout,
-  ChevronRight, ChevronDown
+  ChevronRight, ChevronDown, Info
 } from 'lucide-react';
 import DynamicWidgetRenderer from './DynamicWidgetRenderer';
 import { useWidgetEditor } from '../../providers/WidgetEditorProvider';
 import { useFeatures } from '../../providers/FeatureProvider';
-import { WIDGET_TEMPLATES } from '../../config/widgetTemplates';
+import { WIDGET_TEMPLATES, FEATURE_METADATA } from '../../config/widgetTemplates';
 
 const WidgetEditorModal = () => {
   const { isOpen, closeEditor, editorState } = useWidgetEditor();
@@ -170,6 +170,27 @@ const WidgetEditorModal = () => {
             <Database className="w-4 h-4 text-blue-400" /> Input Context (Scope)
           </div>
           <div className="flex-1 overflow-auto p-4 font-mono text-xs text-blue-200">
+            {/* Widget Info Section */}
+            {FEATURE_METADATA[widgetId] && (FEATURE_METADATA[widgetId].purpose || FEATURE_METADATA[widgetId].extendedDescription) && (
+              <div className="mb-6 bg-slate-800/50 rounded-lg border border-slate-700 p-3">
+                <h3 className="text-teal-400 font-bold uppercase mb-2 flex items-center gap-2">
+                  <Info className="w-3 h-3" /> Widget Info
+                </h3>
+                {FEATURE_METADATA[widgetId].purpose && (
+                  <div className="mb-2">
+                    <span className="text-slate-400 font-bold block mb-1">Purpose:</span>
+                    <span className="text-slate-300">{FEATURE_METADATA[widgetId].purpose}</span>
+                  </div>
+                )}
+                {FEATURE_METADATA[widgetId].extendedDescription && (
+                  <div>
+                    <span className="text-slate-400 font-bold block mb-1">Description:</span>
+                    <span className="text-slate-300">{FEATURE_METADATA[widgetId].extendedDescription}</span>
+                  </div>
+                )}
+              </div>
+            )}
+
             {inputDescriptions && Object.keys(inputDescriptions).length > 0 ? (
               <div className="space-y-4">
                 {Object.entries(inputDescriptions)

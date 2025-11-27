@@ -38,17 +38,14 @@ export const createRoadmapWidget = (title, ideas) => `
 
 export const WIDGET_TEMPLATES = {
     'am-bookend-header': `
+<>
 <div className="flex items-center gap-3 mb-4 mt-8">
   <Sun className="w-6 h-6 text-orange-500" />
   <h2 className="text-xl font-bold text-[#002E47]">AM Bookend: Start Strong</h2>
   <div className="h-px bg-slate-200 flex-1 ml-4"></div>
 </div>
-<div className="mt-2 mb-6 px-4 py-3 bg-slate-50 rounded-lg border border-slate-100">
-  <p className="text-xs font-bold text-slate-500 uppercase mb-1">Purpose</p>
-  <p className="text-xs text-slate-600 mb-2">Visual separator for the Morning Routine.</p>
-  <p className="text-xs font-bold text-slate-500 uppercase mb-1">Description</p>
-  <p className="text-xs text-slate-600">Marks the beginning of the AM Bookend section, signaling the start of the daily planning process.</p>
-</div>
+
+</>
     `,
     'weekly-focus': `
 <Card title="Focus" icon={Target} accent="INDIGO">
@@ -60,12 +57,7 @@ export const WIDGET_TEMPLATES = {
       (Development Plan integration coming soon)
     </p>
   </div>
-  <div className="mt-4 pt-4 border-t border-slate-100">
-    <p className="text-xs font-bold text-slate-500 uppercase mb-1">Purpose</p>
-    <p className="text-xs text-slate-600 mb-2">Highlights the primary development goal for the week.</p>
-    <p className="text-xs font-bold text-slate-500 uppercase mb-1">Description</p>
-    <p className="text-xs text-slate-600">Displays the active focus area from the user's Development Plan to keep it top-of-mind.</p>
-  </div>
+
 </Card>
     `,
     'grounding-rep': `
@@ -78,12 +70,7 @@ export const WIDGET_TEMPLATES = {
       (Leadership Identity Widget integration coming soon)
     </p>
   </div>
-  <div className="mt-4 pt-4 border-t border-slate-100">
-    <p className="text-xs font-bold text-slate-500 uppercase mb-1">Purpose</p>
-    <p className="text-xs text-slate-600 mb-2">Reconnects the leader with their core identity.</p>
-    <p className="text-xs font-bold text-slate-500 uppercase mb-1">Description</p>
-    <p className="text-xs text-slate-600">Provides a quick link or display of the Leadership Identity Statement (LIS) to ground the user before starting their day.</p>
-  </div>
+
 </Card>
     `,
     'win-the-day': `
@@ -123,12 +110,7 @@ export const WIDGET_TEMPLATES = {
       </div>
     ))}
   </div>
-  <div className="mt-4 pt-4 border-t border-slate-100">
-    <p className="text-xs font-bold text-slate-500 uppercase mb-1">Purpose</p>
-    <p className="text-xs text-slate-600 mb-2">Sets daily priorities.</p>
-    <p className="text-xs font-bold text-slate-500 uppercase mb-1">Description</p>
-    <p className="text-xs text-slate-600">Allows the user to define and track 3 high-impact actions for the day.</p>
-  </div>
+
 </Card>
     `,
     'daily-leader-reps': `
@@ -180,12 +162,7 @@ export const WIDGET_TEMPLATES = {
           );
         })}
       </div>
-      <div className="mt-4 pt-4 border-t border-slate-100">
-        <p className="text-xs font-bold text-slate-500 uppercase mb-1">Purpose</p>
-        <p className="text-xs text-slate-600 mb-2">Tracks daily habits.</p>
-        <p className="text-xs font-bold text-slate-500 uppercase mb-1">Description</p>
-        <p className="text-xs text-slate-600">A checklist of small, consistent actions (reps) that build leadership muscle over time.</p>
-      </div>
+
     </Card>
   );
 })()
@@ -235,26 +212,18 @@ export const WIDGET_TEMPLATES = {
       </div>
     </div>
   </div>
-  <div className="mt-4 pt-4 border-t border-slate-100">
-    <p className="text-xs font-bold text-slate-500 uppercase mb-1">Purpose</p>
-    <p className="text-xs text-slate-600 mb-2">Centralized alerts and updates.</p>
-    <p className="text-xs font-bold text-slate-500 uppercase mb-1">Description</p>
-    <p className="text-xs text-slate-600">Aggregates important information like reflection insights, upcoming practice sessions, and new content unlocks.</p>
-  </div>
+
 </Card>
     `,
     'pm-bookend-header': `
+<>
 <div className="flex items-center gap-3 mb-4 mt-8">
   <Moon className="w-6 h-6 text-indigo-500" />
   <h2 className="text-xl font-bold text-[#002E47]">PM Bookend: Finish Strong</h2>
   <div className="h-px bg-slate-200 flex-1 ml-4"></div>
 </div>
-<div className="mt-2 mb-6 px-4 py-3 bg-slate-50 rounded-lg border border-slate-100">
-  <p className="text-xs font-bold text-slate-500 uppercase mb-1">Purpose</p>
-  <p className="text-xs text-slate-600 mb-2">Visual separator for the Evening Routine.</p>
-  <p className="text-xs font-bold text-slate-500 uppercase mb-1">Description</p>
-  <p className="text-xs text-slate-600">Marks the beginning of the PM Bookend section, signaling the transition to reflection and closing the day.</p>
-</div>
+
+</>
     `,
     'progress-feedback': `
 <Card title="Progress & Feedback" icon={TrendingUp} accent="GREEN">
@@ -273,12 +242,7 @@ export const WIDGET_TEMPLATES = {
   <div className="w-full bg-slate-100 rounded-full h-2">
     <div className="bg-green-500 h-2 rounded-full" style={{ width: '85%' }}></div>
   </div>
-  <div className="mt-4 pt-4 border-t border-slate-100">
-    <p className="text-xs font-bold text-slate-500 uppercase mb-1">Purpose</p>
-    <p className="text-xs text-slate-600 mb-2">Visualizes weekly consistency.</p>
-    <p className="text-xs font-bold text-slate-500 uppercase mb-1">Description</p>
-    <p className="text-xs text-slate-600">Shows a progress bar and grade based on the completion of daily planning and reflection tasks.</p>
-  </div>
+
 </Card>
     `,
     'pm-bookend': `
@@ -330,15 +294,17 @@ export const WIDGET_TEMPLATES = {
       Save Journal
     </button>
   </div>
-  <div className="mt-4 pt-4 border-t border-slate-100">
-    <p className="text-xs font-bold text-slate-500 uppercase mb-1">Purpose</p>
-    <p className="text-xs text-slate-600 mb-2">Daily reflection journal.</p>
-    <p className="text-xs font-bold text-slate-500 uppercase mb-1">Description</p>
-    <p className="text-xs text-slate-600">A structured form for reviewing the day, identifying wins and improvements, and setting a closing thought.</p>
-  </div>
+
 </Card>
     `,
     'scorecard': `
+(() => {
+  const safeScorecard = typeof scorecard !== 'undefined' ? scorecard : { reps: { done: 0, total: 0, pct: 0 }, win: { done: 0, total: 0, pct: 0 } };
+  const safeIsSaving = typeof isSavingScorecard !== 'undefined' ? isSavingScorecard : false;
+  const safeStreak = typeof streakCount !== 'undefined' ? streakCount : 0;
+  const safeHandleSave = typeof handleSaveScorecard !== 'undefined' ? handleSaveScorecard : () => {};
+
+  return (
 <Card title="Today Scorecard" icon={Trophy} accent="YELLOW">
     <div className="space-y-4">
       <div className="flex items-center justify-between">
@@ -346,12 +312,12 @@ export const WIDGET_TEMPLATES = {
           <span className="font-medium text-slate-700">I did my reps today</span>
         </div>
         <div className="text-right">
-          <span className="font-bold text-xl text-[#002E47]">{scorecard.reps.done}</span>
-          <span className="text-slate-400 text-sm"> / {scorecard.reps.total}</span>
+          <span className="font-bold text-xl text-[#002E47]">{safeScorecard.reps.done}</span>
+          <span className="text-slate-400 text-sm"> / {safeScorecard.reps.total}</span>
           <span className={\`ml-2 text-sm font-bold \${
-            scorecard.reps.pct === 100 ? 'text-green-500' : 'text-slate-400'
+            safeScorecard.reps.pct === 100 ? 'text-green-500' : 'text-slate-400'
           }\`}>
-            {scorecard.reps.pct}%
+            {safeScorecard.reps.pct}%
           </span>
         </div>
       </div>
@@ -361,12 +327,12 @@ export const WIDGET_TEMPLATES = {
           <span className="font-medium text-slate-700">I won the day</span>
         </div>
         <div className="text-right">
-          <span className="font-bold text-xl text-[#002E47]">{scorecard.win.done}</span>
-          <span className="text-slate-400 text-sm"> / {scorecard.win.total}</span>
+          <span className="font-bold text-xl text-[#002E47]">{safeScorecard.win.done}</span>
+          <span className="text-slate-400 text-sm"> / {safeScorecard.win.total}</span>
           <span className={\`ml-2 text-sm font-bold \${
-            scorecard.win.pct === 100 ? 'text-green-500' : 'text-slate-400'
+            safeScorecard.win.pct === 100 ? 'text-green-500' : 'text-slate-400'
           }\`}>
-            {scorecard.win.pct}%
+            {safeScorecard.win.pct}%
           </span>
         </div>
       </div>
@@ -375,25 +341,22 @@ export const WIDGET_TEMPLATES = {
     <div className="mt-6 pt-6 border-t border-slate-100 flex justify-between items-center">
       <div className="flex items-center gap-2">
         <Flame className="w-5 h-5 text-orange-500" />
-        <span className="font-bold text-xl text-[#002E47]">{streakCount}</span>
+        <span className="font-bold text-xl text-[#002E47]">{safeStreak}</span>
         <span className="text-xs text-slate-400 uppercase tracking-wider">Day Streak</span>
       </div>
       <button 
-        onClick={() => handleSaveScorecard()}
-        disabled={isSavingScorecard}
+        onClick={() => safeHandleSave()}
+        disabled={safeIsSaving}
         className="text-xs font-bold text-teal-600 hover:text-teal-700 flex items-center gap-1 disabled:opacity-50"
       >
-        {isSavingScorecard ? <Loader className="w-3 h-3 animate-spin" /> : <Save className="w-3 h-3" />}
+        {safeIsSaving ? <Loader className="w-3 h-3 animate-spin" /> : <Save className="w-3 h-3" />}
         Save to Locker
       </button>
     </div>
-    <div className="mt-4 pt-4 border-t border-slate-100">
-      <p className="text-xs font-bold text-slate-500 uppercase mb-1">Purpose</p>
-      <p className="text-xs text-slate-600 mb-2">Daily performance summary.</p>
-      <p className="text-xs font-bold text-slate-500 uppercase mb-1">Description</p>
-      <p className="text-xs text-slate-600">Displays stats on completed reps and "Win the Day" tasks, along with the current streak count.</p>
-    </div>
+
 </Card>
+  );
+})()
     `,
     'course-library': `
 <Card title="Course Library" icon={BookOpen} accent="TEAL">
@@ -417,12 +380,7 @@ export const WIDGET_TEMPLATES = {
       </div>
     </div>
   </div>
-  <div className="mt-4 pt-4 border-t border-slate-100">
-    <p className="text-xs font-bold text-slate-500 uppercase mb-1">Purpose</p>
-    <p className="text-xs text-slate-600 mb-2">Quick access to learning modules.</p>
-    <p className="text-xs font-bold text-slate-500 uppercase mb-1">Description</p>
-    <p className="text-xs text-slate-600">Displays a list of available courses with progress indicators and duration.</p>
-  </div>
+
 </Card>
     `,
     'reading-hub': `
@@ -441,12 +399,7 @@ export const WIDGET_TEMPLATES = {
       <p className="text-xs font-bold text-gray-700 truncate">Start with Why</p>
     </div>
   </div>
-  <div className="mt-4 pt-4 border-t border-slate-100">
-    <p className="text-xs font-bold text-slate-500 uppercase mb-1">Purpose</p>
-    <p className="text-xs text-slate-600 mb-2">Digital bookshelf.</p>
-    <p className="text-xs font-bold text-slate-500 uppercase mb-1">Description</p>
-    <p className="text-xs text-slate-600">Showcases recommended or current reading materials for leadership development.</p>
-  </div>
+
 </Card>
     `,
     'leadership-videos': `
@@ -458,12 +411,7 @@ export const WIDGET_TEMPLATES = {
     <span className="absolute bottom-2 right-2 bg-black/60 px-2 py-1 rounded text-xs text-white">12:45</span>
   </div>
   <p className="font-bold text-sm text-gray-800">Simon Sinek: How Great Leaders Inspire Action</p>
-  <div className="mt-4 pt-4 border-t border-slate-100">
-    <p className="text-xs font-bold text-slate-500 uppercase mb-1">Purpose</p>
-    <p className="text-xs text-slate-600 mb-2">Curated video content.</p>
-    <p className="text-xs font-bold text-slate-500 uppercase mb-1">Description</p>
-    <p className="text-xs text-slate-600">Features high-impact talks and lessons from thought leaders.</p>
-  </div>
+
 </Card>
     `,
     'strat-templates': `
@@ -486,12 +434,7 @@ export const WIDGET_TEMPLATES = {
       <p className="text-xs font-bold text-orange-900">Feedback Form</p>
     </button>
   </div>
-  <div className="mt-4 pt-4 border-t border-slate-100">
-    <p className="text-xs font-bold text-slate-500 uppercase mb-1">Purpose</p>
-    <p className="text-xs text-slate-600 mb-2">Downloadable resources.</p>
-    <p className="text-xs font-bold text-slate-500 uppercase mb-1">Description</p>
-    <p className="text-xs text-slate-600">Provides quick access to common leadership templates like QBR decks, 1:1 agendas, and OKR sheets.</p>
-  </div>
+
 </Card>
     `,
     'community-feed': `
@@ -516,12 +459,7 @@ export const WIDGET_TEMPLATES = {
       </div>
     </div>
   </div>
-  <div className="mt-4 pt-4 border-t border-slate-100">
-    <p className="text-xs font-bold text-slate-500 uppercase mb-1">Purpose</p>
-    <p className="text-xs text-slate-600 mb-2">Social interaction.</p>
-    <p className="text-xs font-bold text-slate-500 uppercase mb-1">Description</p>
-    <p className="text-xs text-slate-600">A stream of posts and discussions from the leadership community.</p>
-  </div>
+
 </Card>
     `,
     'my-discussions': `
@@ -540,12 +478,7 @@ export const WIDGET_TEMPLATES = {
       <span className="text-xs text-gray-400">3d ago</span>
     </div>
   </div>
-  <div className="mt-4 pt-4 border-t border-slate-100">
-    <p className="text-xs font-bold text-slate-500 uppercase mb-1">Purpose</p>
-    <p className="text-xs text-slate-600 mb-2">Personal thread tracking.</p>
-    <p className="text-xs font-bold text-slate-500 uppercase mb-1">Description</p>
-    <p className="text-xs text-slate-600">Lists discussions the user is participating in or following.</p>
-  </div>
+
 </Card>
     `,
     'mastermind': `
@@ -554,12 +487,7 @@ export const WIDGET_TEMPLATES = {
   <button className="w-full py-2 bg-indigo-600 text-white rounded-lg font-bold text-sm hover:bg-indigo-700 transition-colors">
     Find a Group
   </button>
-  <div className="mt-4 pt-4 border-t border-slate-100">
-    <p className="text-xs font-bold text-slate-500 uppercase mb-1">Purpose</p>
-    <p className="text-xs text-slate-600 mb-2">Peer group connection.</p>
-    <p className="text-xs font-bold text-slate-500 uppercase mb-1">Description</p>
-    <p className="text-xs text-slate-600">Facilitates joining or managing small peer accountability groups.</p>
-  </div>
+
 </Card>
     `,
     'mentor-match': `
@@ -575,12 +503,7 @@ export const WIDGET_TEMPLATES = {
   <button className="w-full py-2 border border-indigo-600 text-indigo-600 rounded-lg font-bold text-sm hover:bg-indigo-50 transition-colors">
     Request Intro
   </button>
-  <div className="mt-4 pt-4 border-t border-slate-100">
-    <p className="text-xs font-bold text-slate-500 uppercase mb-1">Purpose</p>
-    <p className="text-xs text-slate-600 mb-2">Professional guidance.</p>
-    <p className="text-xs font-bold text-slate-500 uppercase mb-1">Description</p>
-    <p className="text-xs text-slate-600">Connects users with mentors for specific leadership challenges.</p>
-  </div>
+
 </Card>
     `,
     'live-events': `
@@ -607,12 +530,7 @@ export const WIDGET_TEMPLATES = {
       </div>
     </div>
   </div>
-  <div className="mt-4 pt-4 border-t border-slate-100">
-    <p className="text-xs font-bold text-slate-500 uppercase mb-1">Purpose</p>
-    <p className="text-xs text-slate-600 mb-2">Event calendar.</p>
-    <p className="text-xs font-bold text-slate-500 uppercase mb-1">Description</p>
-    <p className="text-xs text-slate-600">Lists upcoming webinars, workshops, and summits.</p>
-  </div>
+
 </Card>
     `,
     'practice-history': `
@@ -633,12 +551,7 @@ export const WIDGET_TEMPLATES = {
       <span className="text-yellow-600 font-bold text-sm">78%</span>
     </div>
   </div>
-  <div className="mt-4 pt-4 border-t border-slate-100">
-    <p className="text-xs font-bold text-slate-500 uppercase mb-1">Purpose</p>
-    <p className="text-xs text-slate-600 mb-2">Skill tracking.</p>
-    <p className="text-xs font-bold text-slate-500 uppercase mb-1">Description</p>
-    <p className="text-xs text-slate-600">Shows a log of recently practiced scenarios and their scores.</p>
-  </div>
+
 </Card>
     `,
     'progress-analytics': `
@@ -664,12 +577,7 @@ export const WIDGET_TEMPLATES = {
     <span>Mon</span>
     <span>Fri</span>
   </div>
-  <div className="mt-4 pt-4 border-t border-slate-100">
-    <p className="text-xs font-bold text-slate-500 uppercase mb-1">Purpose</p>
-    <p className="text-xs text-slate-600 mb-2">Long-term growth visualization.</p>
-    <p className="text-xs font-bold text-slate-500 uppercase mb-1">Description</p>
-    <p className="text-xs text-slate-600">A chart showing performance trends over time.</p>
-  </div>
+
 </Card>
     `,
     'ai-roleplay': `
@@ -682,12 +590,7 @@ export const WIDGET_TEMPLATES = {
   <button className="w-full py-2 bg-purple-600 text-white rounded-lg text-sm font-bold hover:bg-purple-700 transition-colors">
     Start Session
   </button>
-  <div className="mt-4 pt-4 border-t border-slate-100">
-    <p className="text-xs font-bold text-slate-500 uppercase mb-1">Purpose</p>
-    <p className="text-xs text-slate-600 mb-2">Simulated practice.</p>
-    <p className="text-xs font-bold text-slate-500 uppercase mb-1">Description</p>
-    <p className="text-xs text-slate-600">Launches interactive AI roleplay sessions for skills like feedback or conflict resolution.</p>
-  </div>
+
 </Card>
     `,
     'scenario-sim': `
@@ -708,12 +611,7 @@ export const WIDGET_TEMPLATES = {
       <p className="text-sm font-bold text-gray-800">Market Expansion</p>
     </div>
   </div>
-  <div className="mt-4 pt-4 border-t border-slate-100">
-    <p className="text-xs font-bold text-slate-500 uppercase mb-1">Purpose</p>
-    <p className="text-xs text-slate-600 mb-2">Decision-making practice.</p>
-    <p className="text-xs font-bold text-slate-500 uppercase mb-1">Description</p>
-    <p className="text-xs text-slate-600">Presents text-based scenarios to test strategic thinking and crisis management.</p>
-  </div>
+
 </Card>
     `,
     'feedback-gym': `
@@ -729,12 +627,7 @@ export const WIDGET_TEMPLATES = {
       <p className="text-[10px] text-blue-600">Model</p>
     </div>
   </div>
-  <div className="mt-4 pt-4 border-t border-slate-100">
-    <p className="text-xs font-bold text-slate-500 uppercase mb-1">Purpose</p>
-    <p className="text-xs text-slate-600 mb-2">Communication drills.</p>
-    <p className="text-xs font-bold text-slate-500 uppercase mb-1">Description</p>
-    <p className="text-xs text-slate-600">Quick exercises to practice specific feedback models like Radical Candor or SBI.</p>
-  </div>
+
 </Card>
     `,
     'roi-report': `
@@ -752,12 +645,7 @@ export const WIDGET_TEMPLATES = {
   <button className="w-full py-2 border border-gray-200 rounded-lg text-sm font-bold text-gray-600 hover:bg-gray-50 transition-colors">
     Download PDF
   </button>
-  <div className="mt-4 pt-4 border-t border-slate-100">
-    <p className="text-xs font-bold text-slate-500 uppercase mb-1">Purpose</p>
-    <p className="text-xs text-slate-600 mb-2">Value demonstration.</p>
-    <p className="text-xs font-bold text-slate-500 uppercase mb-1">Description</p>
-    <p className="text-xs text-slate-600">Summarizes the impact of leadership development on team metrics.</p>
-  </div>
+
 </Card>
     `,
     'dev-plan-header': `
@@ -782,12 +670,7 @@ export const WIDGET_TEMPLATES = {
     </Button>
   </div>
   <ProgressBar progress={summary.progress} color="#47A88D" />
-  <div className="mt-4 pt-4 border-t border-slate-100">
-    <p className="text-xs font-bold text-slate-500 uppercase mb-1">Purpose</p>
-    <p className="text-xs text-slate-600 mb-2">Development Plan Overview.</p>
-    <p className="text-xs font-bold text-slate-500 uppercase mb-1">Description</p>
-    <p className="text-xs text-slate-600">Shows the current cycle, total skills, and overall progress of the active Development Plan.</p>
-  </div>
+
 </Card>
     `,
     'dev-plan-stats': `
@@ -828,12 +711,7 @@ export const WIDGET_TEMPLATES = {
     </div>
   </div>
 </div>
-<div className="mt-2 mb-6 px-4 py-3 bg-slate-50 rounded-lg border border-slate-100">
-  <p className="text-xs font-bold text-slate-500 uppercase mb-1">Purpose</p>
-  <p className="text-xs text-slate-600 mb-2">Detailed progress metrics.</p>
-  <p className="text-xs font-bold text-slate-500 uppercase mb-1">Description</p>
-  <p className="text-xs text-slate-600">Breaks down skills into total, completed, and current week focus.</p>
-</div>
+
     `,
     'dev-plan-actions': `
 <Card title="Actions" icon={Zap} accent="NAVY">
@@ -879,12 +757,7 @@ export const WIDGET_TEMPLATES = {
       </Button>
     )}
   </div>
-  <div className="mt-4 pt-4 border-t border-slate-100">
-    <p className="text-xs font-bold text-slate-500 uppercase mb-1">Purpose</p>
-    <p className="text-xs text-slate-600 mb-2">Plan management.</p>
-    <p className="text-xs font-bold text-slate-500 uppercase mb-1">Description</p>
-    <p className="text-xs text-slate-600">Quick actions to view breakdowns, scan progress, or edit the plan.</p>
-  </div>
+
 </Card>
     `,
     'dev-plan-focus-areas': `
@@ -906,12 +779,7 @@ export const WIDGET_TEMPLATES = {
       </div>
     ))}
   </div>
-  <div className="mt-4 pt-4 border-t border-slate-100">
-    <p className="text-xs font-bold text-slate-500 uppercase mb-1">Purpose</p>
-    <p className="text-xs text-slate-600 mb-2">Strategic priorities.</p>
-    <p className="text-xs font-bold text-slate-500 uppercase mb-1">Description</p>
-    <p className="text-xs text-slate-600">Lists the specific areas the user is working on, including the "why" and associated resources.</p>
-  </div>
+
 </Card>
     `,
     'dev-plan-goal': `
@@ -919,12 +787,7 @@ export const WIDGET_TEMPLATES = {
   <p className="text-slate-700 italic border-l-4 border-corporate-orange pl-4 py-1">
     "{plan.openEndedAnswer}"
   </p>
-  <div className="mt-4 pt-4 border-t border-slate-100">
-    <p className="text-xs font-bold text-slate-500 uppercase mb-1">Purpose</p>
-    <p className="text-xs text-slate-600 mb-2">North Star.</p>
-    <p className="text-xs font-bold text-slate-500 uppercase mb-1">Description</p>
-    <p className="text-xs text-slate-600">Displays the user's primary open-ended goal for the current development cycle.</p>
-  </div>
+
 </Card>
     `,
     'daily-quote': `(() => {
@@ -972,12 +835,7 @@ export const WIDGET_TEMPLATES = {
         </div>
       )}
     </div>
-    <div className="mt-4 pt-4 border-t border-slate-100">
-      <p className="text-xs font-bold text-slate-500 uppercase mb-1">Purpose</p>
-      <p className="text-xs text-slate-600 mb-2">Daily inspiration.</p>
-      <p className="text-xs font-bold text-slate-500 uppercase mb-1">Description</p>
-      <p className="text-xs text-slate-600">Displays a rotating leadership quote to inspire the user.</p>
-    </div>
+
     <style>{\`
     @keyframes marquee {
       0% { transform: translateX(0); }
@@ -1000,12 +858,7 @@ export const WIDGET_TEMPLATES = {
   <p className="text-slate-500 text-lg">
     Ready to win the day? Let's get to work.
   </p>
-  <div className="mt-4 pt-4 border-t border-slate-100">
-    <p className="text-xs font-bold text-slate-500 uppercase mb-1">Purpose</p>
-    <p className="text-xs text-slate-600 mb-2">Personal greeting.</p>
-    <p className="text-xs font-bold text-slate-500 uppercase mb-1">Description</p>
-    <p className="text-xs text-slate-600">Welcomes the user by name and sets a positive tone for the session.</p>
-  </div>
+
 </div>
     `,
     'locker-controller': `
@@ -1090,12 +943,7 @@ const LockerController = () => {
           </div>
         </div>
       </div>
-      <div className="mt-4 pt-4 border-t border-slate-100">
-        <p className="text-xs font-bold text-slate-500 uppercase mb-1">Purpose</p>
-        <p className="text-xs text-slate-600 mb-2">Dashboard metadata.</p>
-        <p className="text-xs font-bold text-slate-500 uppercase mb-1">Description</p>
-        <p className="text-xs text-slate-600">Displays current user, time, release group, and plan progress.</p>
-      </div>
+
     </Card>
   );
 };
@@ -1103,13 +951,21 @@ render(<LockerController />);
     `,
     'locker-reminders': `
 const LockerReminders = () => {
+  const useNotificationsHook = typeof useNotifications !== 'undefined' ? useNotifications : () => ({ 
+    permission: 'denied', 
+    requestPermission: () => {}, 
+    reminders: {}, 
+    updateReminder: () => {}, 
+    isSupported: false 
+  });
+
   const { 
     permission, 
     requestPermission, 
     reminders, 
     updateReminder,
     isSupported 
-  } = useNotifications();
+  } = useNotificationsHook();
 
   if (!isSupported) {
     return (
@@ -1202,12 +1058,7 @@ const LockerReminders = () => {
           Reminders are sent only if the task is not yet completed.
         </p>
       </div>
-      <div className="mt-4 pt-4 border-t border-slate-100">
-        <p className="text-xs font-bold text-slate-500 uppercase mb-1">Purpose</p>
-        <p className="text-xs text-slate-600 mb-2">Notification management.</p>
-        <p className="text-xs font-bold text-slate-500 uppercase mb-1">Description</p>
-        <p className="text-xs text-slate-600">Allows the user to toggle and schedule daily reminders for key habits.</p>
-      </div>
+
     </Card>
   );
 };
@@ -1296,12 +1147,7 @@ const SystemRemindersController = () => {
           </div>
         </div>
       </div>
-      <div className="mt-4 pt-4 border-t border-slate-100">
-        <p className="text-xs font-bold text-slate-500 uppercase mb-1">Purpose</p>
-        <p className="text-xs text-slate-600 mb-2">Admin notification tools.</p>
-        <p className="text-xs font-bold text-slate-500 uppercase mb-1">Description</p>
-        <p className="text-xs text-slate-600">Provides system status and test controls for the notification infrastructure.</p>
-      </div>
+
     </Card>
   );
 };
@@ -1311,40 +1157,40 @@ render(<SystemRemindersController />);
   };
 
 export const FEATURE_METADATA = {
-  'locker-controller': { core: true, category: 'Locker', name: 'Controller', description: 'Locker Controller' },
-  'locker-reminders': { core: true, category: 'Locker', name: 'Reminders', description: 'Locker Reminders' },
-  'system-reminders-controller': { core: true, category: 'System', name: 'System Reminders', description: 'System Reminders Controller' },
-  'am-bookend-header': { core: true, category: 'Planning', name: 'AM Bookend Header', description: 'AM Bookend Header' },
-  'weekly-focus': { core: true, category: 'Planning', name: 'Focus', description: 'Focus' },
-  'grounding-rep': { core: true, category: 'Planning', name: 'Grounding Rep', description: 'Grounding Rep' },
-  'win-the-day': { core: true, category: 'Planning', name: 'Win the Day', description: 'Win the Day' },
-  'daily-leader-reps': { core: true, category: 'Planning', name: 'Daily Reps', description: 'Daily Reps' },
-  'notifications': { core: true, category: 'General', name: 'Notifications', description: 'Notifications' },
-  'pm-bookend-header': { core: true, category: 'Reflection', name: 'PM Bookend Header', description: 'PM Bookend Header' },
-  'progress-feedback': { core: true, category: 'Tracking', name: 'Progress Feedback', description: 'Progress Feedback' },
-  'pm-bookend': { core: true, category: 'Reflection', name: 'Reflection', description: 'Reflection' },
-  'scorecard': { core: true, category: 'Tracking', name: 'Daily Progress', description: 'Daily Progress' },
-  'daily-quote': { core: true, category: 'Inspiration', name: 'Daily quote', description: 'Daily quote' },
-  'welcome-message': { core: true, category: 'General', name: 'Welcome message', description: 'Welcome message' },
-  'dev-plan-header': { core: true, category: 'Development', name: 'Development Plan Header', description: 'Development Plan Header' },
-  'dev-plan-stats': { core: true, category: 'Development', name: 'Development Plan Stats', description: 'Development Plan Stats' },
-  'dev-plan-actions': { core: true, category: 'Development', name: 'Development Plan Actions', description: 'Development Plan Actions' },
-  'dev-plan-focus-areas': { core: true, category: 'Development', name: 'Development Plan Focus Areas', description: 'Development Plan Focus Areas' },
-  'dev-plan-goal': { core: true, category: 'Development', name: 'Development Plan Goal', description: 'Development Plan Goal' },
-  'course-library': { core: false, category: 'Learning', name: 'Course library', description: 'Course library' },
-  'reading-hub': { core: false, category: 'Learning', name: 'Reading hub', description: 'Reading hub' },
-  'leadership-videos': { core: false, category: 'Learning', name: 'Leadership videos', description: 'Leadership videos' },
-  'strat-templates': { core: false, category: 'Resources', name: 'Strategic templates', description: 'Strategic templates' },
-  'community-feed': { core: false, category: 'Community', name: 'Community feed', description: 'Community feed' },
-  'my-discussions': { core: false, category: 'Community', name: 'My discussions', description: 'My discussions' },
-  'mastermind': { core: false, category: 'Community', name: 'Mastermind groups', description: 'Mastermind groups' },
-  'mentor-match': { core: false, category: 'Community', name: 'Mentor match', description: 'Mentor match' },
-  'live-events': { core: false, category: 'Community', name: 'Live events', description: 'Live events' },
-  'practice-history': { core: false, category: 'Tracking', name: 'Practice history', description: 'Practice history' },
-  'progress-analytics': { core: false, category: 'Tracking', name: 'Progress analytics', description: 'Progress analytics' },
-  'ai-roleplay': { core: false, category: 'Practice', name: 'AI Roleplay', description: 'AI Roleplay' },
-  'scenario-sim': { core: false, category: 'Practice', name: 'Scenario simulation', description: 'Scenario simulation' },
-  'feedback-gym': { core: false, category: 'Practice', name: 'Feedback gym', description: 'Feedback gym' },
-  'roi-report': { core: false, category: 'Reporting', name: 'ROI Report', description: 'ROI Report' },
+  'locker-controller': { core: true, category: 'Locker', name: 'Controller', description: 'Locker Controller', purpose: 'Dashboard metadata.', extendedDescription: 'Displays current user, time, release group, and plan progress.' },
+  'locker-reminders': { core: true, category: 'Locker', name: 'Reminders', description: 'Locker Reminders', purpose: 'Notification management.', extendedDescription: 'Allows the user to toggle and schedule daily reminders for key habits.' },
+  'system-reminders-controller': { core: true, category: 'System', name: 'System Reminders', description: 'System Reminders Controller', purpose: 'Admin notification tools.', extendedDescription: 'Provides system status and test controls for the notification infrastructure.' },
+  'am-bookend-header': { core: true, category: 'Planning', name: 'AM Bookend Header', description: 'AM Bookend Header', purpose: 'Visual separator for the Morning Routine.', extendedDescription: 'Marks the beginning of the AM Bookend section, signaling the start of the daily planning process.' },
+  'weekly-focus': { core: true, category: 'Planning', name: 'Focus', description: 'Focus', purpose: 'Highlights the primary development goal for the week.', extendedDescription: 'Displays the active focus area from the user\'s Development Plan to keep it top-of-mind.' },
+  'grounding-rep': { core: true, category: 'Planning', name: 'Grounding Rep', description: 'Grounding Rep', purpose: 'Reconnects the leader with their core identity.', extendedDescription: 'Provides a quick link or display of the Leadership Identity Statement (LIS) to ground the user before starting their day.' },
+  'win-the-day': { core: true, category: 'Planning', name: 'Win the Day', description: 'Win the Day', purpose: 'Sets daily priorities.', extendedDescription: 'Allows the user to define and track 3 high-impact actions for the day.' },
+  'daily-leader-reps': { core: true, category: 'Planning', name: 'Daily Reps', description: 'Daily Reps', purpose: 'Tracks daily habits.', extendedDescription: 'A checklist of small, consistent actions (reps) that build leadership muscle over time.' },
+  'notifications': { core: true, category: 'General', name: 'Notifications', description: 'Notifications', purpose: 'Centralized alerts and updates.', extendedDescription: 'Aggregates important information like reflection insights, upcoming practice sessions, and new content unlocks.' },
+  'pm-bookend-header': { core: true, category: 'Reflection', name: 'PM Bookend Header', description: 'PM Bookend Header', purpose: 'Visual separator for the Evening Routine.', extendedDescription: 'Marks the beginning of the PM Bookend section, signaling the transition to reflection and closing the day.' },
+  'progress-feedback': { core: true, category: 'Tracking', name: 'Progress Feedback', description: 'Progress Feedback', purpose: 'Visualizes weekly consistency.', extendedDescription: 'Shows a progress bar and grade based on the completion of daily planning and reflection tasks.' },
+  'pm-bookend': { core: true, category: 'Reflection', name: 'Reflection', description: 'Reflection', purpose: 'Daily reflection journal.', extendedDescription: 'A structured form for reviewing the day, identifying wins and improvements, and setting a closing thought.' },
+  'scorecard': { core: true, category: 'Tracking', name: 'Daily Progress', description: 'Daily Progress', purpose: 'Daily performance summary.', extendedDescription: 'Displays stats on completed reps and "Win the Day" tasks, along with the current streak count.' },
+  'daily-quote': { core: true, category: 'Inspiration', name: 'Daily quote', description: 'Daily quote', purpose: 'Daily inspiration.', extendedDescription: 'Displays a rotating leadership quote to inspire the user.' },
+  'welcome-message': { core: true, category: 'General', name: 'Welcome message', description: 'Welcome message', purpose: 'Personal greeting.', extendedDescription: 'Welcomes the user by name and sets a positive tone for the session.' },
+  'dev-plan-header': { core: true, category: 'Development', name: 'Development Plan Header', description: 'Development Plan Header', purpose: 'Development Plan Overview.', extendedDescription: 'Shows the current cycle, total skills, and overall progress of the active Development Plan.' },
+  'dev-plan-stats': { core: true, category: 'Development', name: 'Development Plan Stats', description: 'Development Plan Stats', purpose: 'Detailed progress metrics.', extendedDescription: 'Breaks down skills into total, completed, and current week focus.' },
+  'dev-plan-actions': { core: true, category: 'Development', name: 'Development Plan Actions', description: 'Development Plan Actions', purpose: 'Plan management.', extendedDescription: 'Quick actions to view breakdowns, scan progress, or edit the plan.' },
+  'dev-plan-focus-areas': { core: true, category: 'Development', name: 'Development Plan Focus Areas', description: 'Development Plan Focus Areas', purpose: 'Strategic priorities.', extendedDescription: 'Lists the specific areas the user is working on, including the "why" and associated resources.' },
+  'dev-plan-goal': { core: true, category: 'Development', name: 'Development Plan Goal', description: 'Development Plan Goal', purpose: 'North Star.', extendedDescription: 'Displays the user\'s primary open-ended goal for the current development cycle.' },
+  'course-library': { core: false, category: 'Learning', name: 'Course library', description: 'Course library', purpose: 'Quick access to learning modules.', extendedDescription: 'Displays a list of available courses with progress indicators and duration.' },
+  'reading-hub': { core: false, category: 'Learning', name: 'Reading hub', description: 'Reading hub', purpose: 'Digital bookshelf.', extendedDescription: 'Showcases recommended or current reading materials for leadership development.' },
+  'leadership-videos': { core: false, category: 'Learning', name: 'Leadership videos', description: 'Leadership videos', purpose: 'Curated video content.', extendedDescription: 'Features high-impact talks and lessons from thought leaders.' },
+  'strat-templates': { core: false, category: 'Resources', name: 'Strategic templates', description: 'Strategic templates', purpose: 'Downloadable resources.', extendedDescription: 'Provides quick access to common leadership templates like QBR decks, 1:1 agendas, and OKR sheets.' },
+  'community-feed': { core: false, category: 'Community', name: 'Community feed', description: 'Community feed', purpose: 'Social interaction.', extendedDescription: 'A stream of posts and discussions from the leadership community.' },
+  'my-discussions': { core: false, category: 'Community', name: 'My discussions', description: 'My discussions', purpose: 'Personal thread tracking.', extendedDescription: 'Lists discussions the user is participating in or following.' },
+  'mastermind': { core: false, category: 'Community', name: 'Mastermind groups', description: 'Mastermind groups', purpose: 'Peer group connection.', extendedDescription: 'Facilitates joining or managing small peer accountability groups.' },
+  'mentor-match': { core: false, category: 'Community', name: 'Mentor match', description: 'Mentor match', purpose: 'Professional guidance.', extendedDescription: 'Connects users with mentors for specific leadership challenges.' },
+  'live-events': { core: false, category: 'Community', name: 'Live events', description: 'Live events', purpose: 'Event calendar.', extendedDescription: 'Lists upcoming webinars, workshops, and summits.' },
+  'practice-history': { core: false, category: 'Tracking', name: 'Practice history', description: 'Practice history', purpose: 'Skill tracking.', extendedDescription: 'Shows a log of recently practiced scenarios and their scores.' },
+  'progress-analytics': { core: false, category: 'Tracking', name: 'Progress analytics', description: 'Progress analytics', purpose: 'Long-term growth visualization.', extendedDescription: 'A chart showing performance trends over time.' },
+  'ai-roleplay': { core: false, category: 'Practice', name: 'AI Roleplay', description: 'AI Roleplay', purpose: 'Simulated practice.', extendedDescription: 'Launches interactive AI roleplay sessions for skills like feedback or conflict resolution.' },
+  'scenario-sim': { core: false, category: 'Practice', name: 'Scenario simulation', description: 'Scenario simulation', purpose: 'Decision-making practice.', extendedDescription: 'Presents text-based scenarios to test strategic thinking and crisis management.' },
+  'feedback-gym': { core: false, category: 'Practice', name: 'Feedback gym', description: 'Feedback gym', purpose: 'Communication drills.', extendedDescription: 'Quick exercises to practice specific feedback models like Radical Candor or SBI.' },
+  'roi-report': { core: false, category: 'Reporting', name: 'ROI Report', description: 'ROI Report', purpose: 'Value demonstration.', extendedDescription: 'Summarizes the impact of leadership development on team metrics.' },
 };
 
