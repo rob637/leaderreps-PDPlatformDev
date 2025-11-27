@@ -5,8 +5,8 @@ import { Archive, CheckCircle, Calendar, Trophy, BookOpen } from 'lucide-react';
 import { useFeatures } from '../../providers/FeatureProvider';
 import WidgetRenderer from '../admin/WidgetRenderer';
 import { dailyLogService } from '../../services/dailyLogService';
-import ControllerWidget from './locker/ControllerWidget';
-import RemindersWidget from './locker/RemindersWidget';
+import { useNotifications } from '../../providers/NotificationProvider';
+import { Settings, Clock, User, Bell, AlertTriangle } from 'lucide-react';
 
 const LOCKER_FEATURES = [
   'locker-wins-history',
@@ -51,7 +51,10 @@ const Locker = () => {
     CheckCircle,
     Calendar,
     BookOpen,
-    isFeatureEnabled // Added to scope just in case
+    isFeatureEnabled,
+    useNotifications,
+    Settings, Clock, User, Bell, AlertTriangle,
+    user
   };
 
   const renderers = {
@@ -220,8 +223,8 @@ const Locker = () => {
       backTo="dashboard"
       accentColor="teal"
     >
-      <ControllerWidget />
-      <RemindersWidget />
+      <WidgetRenderer widgetId="locker-controller" scope={scope} />
+      <WidgetRenderer widgetId="locker-reminders" scope={scope} />
       {sortedFeatures.length > 0 ? (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {sortedFeatures.map(featureId => (

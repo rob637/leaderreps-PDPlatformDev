@@ -597,6 +597,7 @@ const FeatureManager = () => {
                   initialGroups.community.includes(id) ? 'community' : 
                   initialGroups.coaching.includes(id) ? 'coaching' : 
                   initialGroups.locker.includes(id) ? 'locker' : 
+                  meta.category === 'System' ? 'system' :
                   initialGroups['development-plan'].includes(id) ? 'development-plan' : 'dashboard'),
            enabled: current?.enabled !== undefined ? current.enabled : true,
            order: current?.order !== undefined ? current.order : 999
@@ -730,7 +731,8 @@ const FeatureManager = () => {
     content: 'Content',
     community: 'Community',
     coaching: 'Coaching',
-    locker: 'Locker'
+    locker: 'Locker',
+    system: 'System'
   };
 
   // Configuration Schema for Specific Widgets

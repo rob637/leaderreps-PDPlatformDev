@@ -2,9 +2,9 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { useAppServices } from '../../services/useAppServices.jsx';
+import { useNotifications } from '../../services/notificationService';
 import { Shield, ToggleLeft, ToggleRight, Save, Loader, AlertTriangle, ArrowLeft, Key, Settings, Mail, Plus, X } from 'lucide-react';
-import { Button, Card } from '../ui';
-import SystemRemindersWidget from '../admin/SystemRemindersWidget';
+import { Button, Card, WidgetRenderer } from '../ui';
 
 const AdminEmailManager = ({ initialEmails, updateGlobalMetadata }) => {
     const [emails, setEmails] = useState(initialEmails || []);
@@ -131,27 +131,31 @@ const AdminEmailManager = ({ initialEmails, updateGlobalMetadata }) => {
     );
 };
 
-const AdminFunctionsScreen = () => {
-    const {
-        navigate, isAdmin,
-        featureFlags: initialFlags,
-        metadata,
-        updateGlobalMetadata,
-        isLoading: isAppLoading,
-        globalMetadata // Add this
+const AdminFunctions = () => {
+    const { 
+        navigate, 
+        isAdmin, 
+        featureFlags: initialFlags, 
+        metadata, 
+        updateGlobalMetadata, 
+        isLoading: isAppLoading, 
+        globalMetadata 
     } = useAppServices();
+    
+    const notificationService = useNotifications();
+
+    const scope = useMemo(() => ({
+        ...notificationService,
+        Button,
+        Card,
+        Loader,
+        Shield,
+        AlertTriangle
+    }), [notificationService]);
 
     const [currentFlags, setCurrentFlags] = useState(() => initialFlags || {});
     const [isSaving, setIsSaving] = useState(false);
     const [saveStatus, setSaveStatus] = useState('');
-
-    const adminEmails = useMemo(() => {
-        const PRIMARY_ADMIN_EMAILS = ['rob@sagecg.com', 'admin@leaderreps.com'];
-        const firestoreEmails = metadata?.adminemails;
-        const allEmails = Array.isArray(firestoreEmails) ? firestoreEmails : [];
-        const finalEmails = [...new Set([...PRIMARY_ADMIN_EMAILS, ...allEmails])].filter(Boolean);
-        return finalEmails.sort();
-    }, [metadata]);
 
     useEffect(() => {
         if (!isAppLoading && !isAdmin) {
@@ -226,7 +230,7 @@ const AdminFunctionsScreen = () => {
                     <p className="text-slate-600">Manage system settings, feature flags, and user access.</p>
                 </header>
 
-                <SystemRemindersWidget />
+                <WidgetRenderer widgetId="system-reminders-controller" scope={scope} />
 
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                     <AdminEmailManager 
@@ -283,7 +287,7 @@ const AdminFunctionsScreen = () => {
                                 {isSaving ? 'Saving Changes...' : 'Save Feature Flags'}
                             </Button>
                             {saveStatus && (
-                                <span className={`text-sm font-semibold ${saveStatus.includes('Error') ? 'text-red-600' : 'text-green-600'}`}>
+                                <span className={`text-sm font-semibold ${saveStatus.includes('Error') ? 'text-red-600' : 'text-green-600'}`}> 
                                     {saveStatus}
                                 </span>
                             )}
@@ -307,4 +311,4 @@ const AdminFunctionsScreen = () => {
     );
 };
 
-export default AdminFunctionsScreen;
+export default AdminFunctions;

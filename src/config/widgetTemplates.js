@@ -816,9 +816,291 @@ export const WIDGET_TEMPLATES = {
   </p>
 </div>
     `,
+    'locker-controller': `
+(() => {
+  const [currentTime, setCurrentTime] = React.useState(new Date());
+
+  React.useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentTime(new Date());
+    }, 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  // 1) User's Name
+  const userName = user?.displayName || 'User';
+
+  // 2) Local Date and Time
+  const formattedDate = currentTime.toLocaleDateString(undefined, { 
+    weekday: 'long', 
+    year: 'numeric', 
+    month: 'long', 
+    day: 'numeric' 
+  });
+  const formattedTime = currentTime.toLocaleTimeString();
+
+  // 3) Release Group (Placeholder)
+  const releaseGroup = "Alpha Group"; // To be setup later
+
+  // 4) Current Week of Plan (Placeholder)
+  const currentWeek = "Week 1"; // To be setup later
+
+  return (
+    <Card 
+      title="Controller" 
+      icon={Settings}
+      accent="navy"
+      className="mb-6"
+    >
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {/* User Name */}
+        <div className="flex items-center p-3 bg-slate-50 rounded-lg">
+          <div className="p-2 bg-blue-100 rounded-full mr-3">
+            <Users className="w-5 h-5 text-blue-600" />
+          </div>
+          <div>
+            <p className="text-xs text-slate-500 uppercase font-semibold">User</p>
+            <p className="font-medium text-slate-900">{userName}</p>
+          </div>
+        </div>
+
+        {/* Date & Time */}
+        <div className="flex items-center p-3 bg-slate-50 rounded-lg">
+          <div className="p-2 bg-green-100 rounded-full mr-3">
+            <Clock className="w-5 h-5 text-green-600" />
+          </div>
+          <div>
+            <p className="text-xs text-slate-500 uppercase font-semibold">Local Time</p>
+            <p className="font-medium text-slate-900">{formattedDate}</p>
+            <p className="text-xs text-slate-600">{formattedTime}</p>
+          </div>
+        </div>
+
+        {/* Release Group */}
+        <div className="flex items-center p-3 bg-slate-50 rounded-lg">
+          <div className="p-2 bg-purple-100 rounded-full mr-3">
+            <Settings className="w-5 h-5 text-purple-600" />
+          </div>
+          <div>
+            <p className="text-xs text-slate-500 uppercase font-semibold">Release Group</p>
+            <p className="font-medium text-slate-900">{releaseGroup}</p>
+          </div>
+        </div>
+
+        {/* Current Week */}
+        <div className="flex items-center p-3 bg-slate-50 rounded-lg">
+          <div className="p-2 bg-orange-100 rounded-full mr-3">
+            <Calendar className="w-5 h-5 text-orange-600" />
+          </div>
+          <div>
+            <p className="text-xs text-slate-500 uppercase font-semibold">Plan Progress</p>
+            <p className="font-medium text-slate-900">{currentWeek}</p>
+          </div>
+        </div>
+      </div>
+    </Card>
+  );
+})()
+    `,
+    'locker-reminders': `
+(() => {
+  const { 
+    permission, 
+    requestPermission, 
+    reminders, 
+    updateReminder,
+    isSupported 
+  } = useNotifications();
+
+  if (!isSupported) {
+    return (
+      <Card title="Daily Reminders" icon={Bell} accent="orange">
+        <div className="p-4 text-center text-slate-500">
+          <AlertTriangle className="w-8 h-8 mx-auto mb-2 text-slate-400" />
+          <p>Notifications are not supported in this browser.</p>
+        </div>
+      </Card>
+    );
+  }
+
+  if (permission !== 'granted') {
+    return (
+      <Card title="Daily Reminders" icon={Bell} accent="orange">
+        <div className="flex flex-col items-center justify-center p-6 text-center space-y-4">
+          <div className="p-3 bg-orange-100 rounded-full">
+            <Bell className="w-8 h-8 text-orange-600" />
+          </div>
+          <div>
+            <h3 className="font-bold text-slate-900">Enable Notifications</h3>
+            <p className="text-sm text-slate-600 mt-1">
+              Get timely nudges for your AM/PM bookends and to seize the day.
+            </p>
+          </div>
+          <button
+            onClick={requestPermission}
+            className="px-4 py-2 bg-teal-600 text-white rounded-lg font-medium hover:bg-teal-700 transition-colors"
+          >
+            Allow Notifications
+          </button>
+          {permission === 'denied' && (
+            <p className="text-xs text-red-500">
+              Notifications are blocked. Please enable them in your browser settings.
+            </p>
+          )}
+        </div>
+      </Card>
+    );
+  }
+
+  return (
+    <Card title="Daily Reminders" icon={Bell} accent="teal">
+      <div className="space-y-4">
+        {Object.values(reminders).map((reminder) => (
+          <div key={reminder.id} className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
+            <div className="flex-1">
+              <div className="flex items-center gap-2 mb-1">
+                <p className={\`font-semibold \${reminder.enabled ? 'text-slate-900' : 'text-slate-400'}\`}>
+                  {reminder.label}
+                </p>
+                {reminder.enabled && (
+                  <span className="text-xs px-2 py-0.5 bg-green-100 text-green-700 rounded-full">
+                    Active
+                  </span>
+                )}
+              </div>
+              
+              <div className="flex items-center gap-2">
+                <Clock className="w-4 h-4 text-slate-400" />
+                <input
+                  type="time"
+                  value={reminder.time}
+                  onChange={(e) => updateReminder(reminder.id, { time: e.target.value })}
+                  disabled={!reminder.enabled}
+                  className="bg-transparent border-none p-0 text-sm text-slate-600 focus:ring-0 cursor-pointer"
+                />
+              </div>
+            </div>
+
+            {/* Toggle Switch */}
+            <button
+              onClick={() => updateReminder(reminder.id, { enabled: !reminder.enabled })}
+              className={\`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 \${
+                reminder.enabled ? 'bg-teal-600' : 'bg-slate-200'
+              }\`}
+            >
+              <span
+                className={\`inline-block h-4 w-4 transform rounded-full bg-white transition-transform \${
+                  reminder.enabled ? 'translate-x-6' : 'translate-x-1'
+                }\`}
+              />
+            </button>
+          </div>
+        ))}
+      </div>
+      
+      <div className="mt-4 pt-4 border-t border-slate-100">
+        <p className="text-xs text-slate-400 text-center">
+          Reminders are sent only if the task is not yet completed.
+        </p>
+      </div>
+    </Card>
+  );
+})()
+    `,
+    'system-reminders-controller': `
+(() => {
+  const { 
+    permission, 
+    requestPermission, 
+    sendTestNotification,
+    isSupported 
+  } = useNotifications();
+
+  return (
+    <Card 
+      title="System Reminders Controller" 
+      icon={Shield} 
+      accent="navy"
+      className="mb-6"
+    >
+      <div className="space-y-6">
+        {/* Status Section */}
+        <div className="flex items-center justify-between p-4 bg-slate-50 rounded-lg border border-slate-200">
+          <div className="flex items-center gap-3">
+            <div className={\`p-2 rounded-full \${
+              permission === 'granted' ? 'bg-green-100 text-green-600' : 
+              permission === 'denied' ? 'bg-red-100 text-red-600' : 'bg-yellow-100 text-yellow-600'
+            }\`}>
+              <Bell className="w-5 h-5" />
+            </div>
+            <div>
+              <p className="text-sm font-medium text-slate-900">Notification Permission</p>
+              <p className="text-xs text-slate-500 capitalize">{permission || 'Unknown'}</p>
+            </div>
+          </div>
+          
+          {permission !== 'granted' && (
+            <button
+              onClick={requestPermission}
+              className="px-3 py-1.5 text-xs font-medium text-white bg-[#002E47] rounded hover:bg-navy-700"
+            >
+              Request Access
+            </button>
+          )}
+        </div>
+
+        {/* Controls Section */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="p-4 border border-slate-200 rounded-lg">
+            <h4 className="text-sm font-bold text-slate-900 mb-2 flex items-center gap-2">
+              <Radio className="w-4 h-4 text-teal-600" />
+              Test Channel
+            </h4>
+            <p className="text-xs text-slate-500 mb-4">
+              Send a test notification to verify the browser's delivery system.
+            </p>
+            <button
+              onClick={sendTestNotification}
+              disabled={permission !== 'granted'}
+              className="w-full px-4 py-2 text-sm font-medium text-teal-600 bg-teal-50 rounded hover:bg-teal-100 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Send Test Notification
+            </button>
+          </div>
+
+          <div className="p-4 border border-slate-200 rounded-lg">
+            <h4 className="text-sm font-bold text-slate-900 mb-2 flex items-center gap-2">
+              <RefreshCw className="w-4 h-4 text-orange-500" />
+              System Status
+            </h4>
+            <div className="space-y-2 text-xs text-slate-600">
+              <div className="flex justify-between">
+                <span>Browser Support:</span>
+                <span className={isSupported ? "text-green-600 font-bold" : "text-red-600 font-bold"}>
+                  {isSupported ? "Yes" : "No"}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span>Service Worker:</span>
+                <span className="font-mono">
+                  {navigator.serviceWorker ? "Active" : "Inactive"}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </Card>
+  );
+})()
+    `,
+
   };
 
 export const FEATURE_METADATA = {
+  'locker-controller': { core: true, category: 'Locker', name: 'Controller', description: 'Locker Controller' },
+  'locker-reminders': { core: true, category: 'Locker', name: 'Reminders', description: 'Locker Reminders' },
+  'system-reminders-controller': { core: true, category: 'System', name: 'System Reminders', description: 'System Reminders Controller' },
   'am-bookend-header': { core: true, category: 'Planning', name: 'AM Bookend Header', description: 'AM Bookend Header' },
   'weekly-focus': { core: true, category: 'Planning', name: 'Focus', description: 'Focus' },
   'grounding-rep': { core: true, category: 'Planning', name: 'Grounding Rep', description: 'Grounding Rep' },
