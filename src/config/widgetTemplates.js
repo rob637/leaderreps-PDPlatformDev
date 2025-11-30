@@ -80,10 +80,10 @@ export const WIDGET_TEMPLATES = {
       Identify 3 High-Impact Actions
     </p>
     
-    {morningWins.map((win) => (
+    {morningWins.map((win, index) => (
       <div key={win.id} className="flex gap-3 items-center">
         <button 
-          onClick={() => handleToggleWinComplete(win.id)}
+          onClick={() => handleToggleWinComplete(index)}
           className={\`flex-shrink-0 w-12 h-12 rounded-xl flex items-center justify-center transition-colors \${
             win.completed 
               ? 'bg-green-500 text-white shadow-sm' 
@@ -98,8 +98,8 @@ export const WIDGET_TEMPLATES = {
           <input 
             type="text"
             value={win.text}
-            onChange={(e) => handleUpdateWin(win.id, e.target.value)}
-            placeholder={\`Priority #\${win.id}\`}
+            onChange={(e) => handleUpdateWin(index, e.target.value)}
+            placeholder={\`Priority #\${index + 1}\`}
             className={\`w-full p-3 border rounded-xl outline-none transition-all text-sm font-medium \${
               win.completed
                 ? 'bg-slate-50 border-slate-200 text-slate-400 line-through' 

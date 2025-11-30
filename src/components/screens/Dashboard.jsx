@@ -81,6 +81,8 @@ const Dashboard = (props) => {
     setReflectionGood,
     reflectionBetter,
     setReflectionBetter,
+    reflectionBest,
+    setReflectionBest,
     handleSaveEveningBookend,
     isSavingBookend,
     
@@ -284,6 +286,8 @@ const Dashboard = (props) => {
     streakCount,
     reflectionGood,
     reflectionBetter,
+    reflectionBest,
+    setReflectionBest,
     isSavingBookend,
     
     // Development Plan Data
@@ -320,6 +324,8 @@ const Dashboard = (props) => {
           setReflectionGood={setReflectionGood}
           reflectionBetter={reflectionBetter}
           setReflectionBetter={setReflectionBetter}
+          reflectionBest={reflectionBest}
+          setReflectionBest={setReflectionBest}
           handleSaveEveningBookend={handleSaveEveningBookend}
           isSavingBookend={isSavingBookend}
         />
