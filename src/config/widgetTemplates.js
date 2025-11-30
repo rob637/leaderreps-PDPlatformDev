@@ -1153,6 +1153,153 @@ const SystemRemindersController = () => {
 };
 render(<SystemRemindersController />);
     `,
+    'locker-wins-history': `
+(() => {
+  const safeWinsList = typeof winsList !== 'undefined' ? winsList : [];
+  
+  return (
+    <Card title="AM Bookend (Wins)" icon={Trophy} className="border-t-4 border-corporate-orange">
+      <div className="overflow-x-auto border border-gray-300 rounded-sm">
+        <table className="min-w-full border-collapse text-sm">
+          <thead>
+            <tr className="bg-gray-100">
+              <th className="border border-gray-300 px-3 py-2 text-left font-bold text-gray-700 uppercase tracking-wider whitespace-nowrap">Date</th>
+              <th className="border border-gray-300 px-3 py-2 text-left font-bold text-gray-700 uppercase tracking-wider whitespace-nowrap">Win / Priority</th>
+              <th className="border border-gray-300 px-3 py-2 text-left font-bold text-gray-700 uppercase tracking-wider whitespace-nowrap">Status</th>
+            </tr>
+          </thead>
+          <tbody className="bg-white">
+            {safeWinsList.length > 0 ? (
+              safeWinsList.map((win, index) => (
+                <tr key={index} className="hover:bg-blue-50 transition-colors">
+                  <td className="border border-gray-300 px-3 py-2 whitespace-nowrap font-mono text-gray-600">
+                    {win.date || '-'}
+                  </td>
+                  <td className="border border-gray-300 px-3 py-2 font-medium text-gray-900">
+                    {win.text || "Untitled Win"}
+                  </td>
+                  <td className="border border-gray-300 px-3 py-2 whitespace-nowrap text-center">
+                    {win.completed ? (
+                      <span className="font-bold text-green-700">WON</span>
+                    ) : (
+                      <span className="text-gray-400">PENDING</span>
+                    )}
+                  </td>
+                </tr>
+              ))
+            ) : (
+              <tr>
+                <td colSpan="3" className="border border-gray-300 px-3 py-8 text-center text-gray-500 italic">
+                  No wins recorded yet.
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+    </Card>
+  );
+})()
+    `,
+    'locker-scorecard-history': `
+(() => {
+  const safeHistory = typeof commitmentHistory !== 'undefined' ? commitmentHistory : [];
+
+  return (
+    <Card title="Scorecard History" icon={Calendar} className="border-t-4 border-corporate-teal">
+      <div className="overflow-x-auto border border-gray-300 rounded-sm">
+        <table className="min-w-full border-collapse text-sm">
+          <thead>
+            <tr className="bg-gray-100">
+              <th className="border border-gray-300 px-3 py-2 text-left font-bold text-gray-700 uppercase tracking-wider whitespace-nowrap">Date</th>
+              <th className="border border-gray-300 px-3 py-2 text-left font-bold text-gray-700 uppercase tracking-wider whitespace-nowrap">Score</th>
+              <th className="border border-gray-300 px-3 py-2 text-left font-bold text-gray-700 uppercase tracking-wider whitespace-nowrap">Result</th>
+            </tr>
+          </thead>
+          <tbody className="bg-white">
+            {safeHistory.length > 0 ? (
+              safeHistory.map((entry, index) => {
+                const isPerfect = entry.score && entry.score.includes('/') && entry.score.split('/')[0] === entry.score.split('/')[1];
+                return (
+                  <tr key={index} className="hover:bg-blue-50 transition-colors">
+                    <td className="border border-gray-300 px-3 py-2 whitespace-nowrap font-mono text-gray-600">
+                      {entry.date}
+                    </td>
+                    <td className="border border-gray-300 px-3 py-2 whitespace-nowrap font-mono font-bold text-gray-900 text-center">
+                      {entry.score}
+                    </td>
+                    <td className="border border-gray-300 px-3 py-2 whitespace-nowrap text-center">
+                      {isPerfect ? (
+                        <span className="font-bold text-green-700">PERFECT</span>
+                      ) : (
+                        <span className="text-orange-600">INCOMPLETE</span>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })
+            ) : (
+              <tr>
+                <td colSpan="3" className="border border-gray-300 px-3 py-8 text-center text-gray-500 italic">
+                  No scorecard history available.
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+    </Card>
+  );
+})()
+    `,
+    'locker-latest-reflection': `
+(() => {
+  const safeReflections = typeof reflectionHistory !== 'undefined' ? reflectionHistory : [];
+
+  return (
+    <Card title="Reflection History" icon={BookOpen} className="lg:col-span-2 border-t-4 border-corporate-navy">
+      <div className="overflow-x-auto border border-gray-300 rounded-sm">
+        <table className="min-w-full border-collapse text-sm">
+          <thead>
+            <tr className="bg-gray-100">
+              <th className="border border-gray-300 px-3 py-2 text-left font-bold text-gray-700 uppercase tracking-wider whitespace-nowrap">Date</th>
+              <th className="border border-gray-300 px-3 py-2 text-left font-bold text-gray-700 uppercase tracking-wider whitespace-nowrap">What Went Well</th>
+              <th className="border border-gray-300 px-3 py-2 text-left font-bold text-gray-700 uppercase tracking-wider whitespace-nowrap">What Needs Work</th>
+              <th className="border border-gray-300 px-3 py-2 text-left font-bold text-gray-700 uppercase tracking-wider whitespace-nowrap">Tomorrow's Focus</th>
+            </tr>
+          </thead>
+          <tbody className="bg-white">
+            {safeReflections.length > 0 ? (
+              safeReflections.map((log, index) => (
+                <tr key={log.id || index} className="hover:bg-blue-50 transition-colors align-top">
+                  <td className="border border-gray-300 px-3 py-2 whitespace-nowrap font-mono text-gray-600">
+                    {new Date(log.date).toLocaleDateString(undefined, { month: 'numeric', day: 'numeric', year: '2-digit' })}
+                  </td>
+                  <td className="border border-gray-300 px-3 py-2 text-gray-800 min-w-[200px]">
+                    {log.reflectionGood || '-'}
+                  </td>
+                  <td className="border border-gray-300 px-3 py-2 text-gray-800 min-w-[200px]">
+                    {log.reflectionWork || '-'}
+                  </td>
+                  <td className="border border-gray-300 px-3 py-2 text-gray-800 min-w-[200px]">
+                    {log.reflectionTomorrow || '-'}
+                  </td>
+                </tr>
+              ))
+            ) : (
+              <tr>
+                <td colSpan="4" className="border border-gray-300 px-3 py-8 text-center text-gray-500 italic">
+                  No reflection history found.
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+    </Card>
+  );
+})()
+    `,
 
   };
 
@@ -1160,6 +1307,9 @@ export const FEATURE_METADATA = {
   'locker-controller': { core: true, category: 'Locker', name: 'Controller', description: 'Locker Controller', purpose: 'Dashboard metadata.', extendedDescription: 'Displays current user, time, release group, and plan progress.' },
   'locker-reminders': { core: true, category: 'Locker', name: 'Reminders', description: 'Locker Reminders', purpose: 'Notification management.', extendedDescription: 'Allows the user to toggle and schedule daily reminders for key habits.' },
   'system-reminders-controller': { core: true, category: 'System', name: 'System Reminders', description: 'System Reminders Controller', purpose: 'Admin notification tools.', extendedDescription: 'Provides system status and test controls for the notification infrastructure.' },
+  'locker-wins-history': { core: true, category: 'Locker', name: 'AM Bookend History', description: 'AM Bookend History', purpose: 'History of daily wins.', extendedDescription: 'Displays a spreadsheet-style history of AM Bookend wins and their completion status.' },
+  'locker-scorecard-history': { core: true, category: 'Locker', name: 'Scorecard History', description: 'Scorecard History', purpose: 'History of daily scores.', extendedDescription: 'Displays a spreadsheet-style history of daily scorecard results.' },
+  'locker-latest-reflection': { core: true, category: 'Locker', name: 'Reflection History', description: 'Reflection History', purpose: 'History of daily reflections.', extendedDescription: 'Displays a spreadsheet-style history of PM Bookend reflections.' },
   'am-bookend-header': { core: true, category: 'Planning', name: 'AM Bookend Header', description: 'AM Bookend Header', purpose: 'Visual separator for the Morning Routine.', extendedDescription: 'Marks the beginning of the AM Bookend section, signaling the start of the daily planning process.' },
   'weekly-focus': { core: true, category: 'Planning', name: 'Focus', description: 'Focus', purpose: 'Highlights the primary development goal for the week.', extendedDescription: 'Displays the active focus area from the user\'s Development Plan to keep it top-of-mind.' },
   'grounding-rep': { core: true, category: 'Planning', name: 'Grounding Rep', description: 'Grounding Rep', purpose: 'Reconnects the leader with their core identity.', extendedDescription: 'Provides a quick link or display of the Leadership Identity Statement (LIS) to ground the user before starting their day.' },
