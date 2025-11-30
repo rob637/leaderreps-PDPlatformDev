@@ -57,147 +57,118 @@ const Locker = () => {
     user
   };
 
+  // Reusable Spreadsheet Table Component
+  const SpreadsheetTable = ({ headers, data, renderRow, emptyMessage }) => (
+    <div className="overflow-x-auto border border-gray-300 rounded-sm">
+      <table className="min-w-full border-collapse text-sm">
+        <thead>
+          <tr className="bg-gray-100">
+            {headers.map((header, idx) => (
+              <th key={idx} className="border border-gray-300 px-3 py-2 text-left font-bold text-gray-700 uppercase tracking-wider whitespace-nowrap">
+                {header}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody className="bg-white">
+          {data && data.length > 0 ? (
+            data.map((item, idx) => renderRow(item, idx))
+          ) : (
+            <tr>
+              <td colSpan={headers.length} className="border border-gray-300 px-3 py-8 text-center text-gray-500 italic">
+                {emptyMessage}
+              </td>
+            </tr>
+          )}
+        </tbody>
+      </table>
+    </div>
+  );
+
   const renderers = {
     'locker-wins-history': () => (
       <WidgetRenderer widgetId="locker-wins-history" scope={scope}>
         <Card title="AM Bookend (Wins)" icon={Trophy} className="border-t-4 border-corporate-orange">
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th scope="col" className="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Date</th>
-                  <th scope="col" className="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Win / Priority</th>
-                  <th scope="col" className="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Status</th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {winsList.length > 0 ? (
-                  winsList.map((win, index) => (
-                    <tr key={index} className="hover:bg-gray-50">
-                      <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">
-                        {win.date || '-'}
-                      </td>
-                      <td className="px-4 py-3 text-sm font-medium text-gray-900">
-                        {win.text || "Untitled Win"}
-                      </td>
-                      <td className="px-4 py-3 whitespace-nowrap">
-                        {win.completed ? (
-                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                            <CheckCircle className="w-3 h-3 mr-1" /> Won
-                          </span>
-                        ) : (
-                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
-                            Pending
-                          </span>
-                        )}
-                      </td>
-                    </tr>
-                  ))
-                ) : (
-                  <tr>
-                    <td colSpan="3" className="px-4 py-8 text-center text-sm text-gray-500 italic">
-                      No wins recorded yet.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
+          <SpreadsheetTable 
+            headers={['Date', 'Win / Priority', 'Status']}
+            data={winsList}
+            emptyMessage="No wins recorded yet."
+            renderRow={(win, index) => (
+              <tr key={index} className="hover:bg-blue-50 transition-colors">
+                <td className="border border-gray-300 px-3 py-2 whitespace-nowrap font-mono text-gray-600">
+                  {win.date || '-'}
+                </td>
+                <td className="border border-gray-300 px-3 py-2 font-medium text-gray-900">
+                  {win.text || "Untitled Win"}
+                </td>
+                <td className="border border-gray-300 px-3 py-2 whitespace-nowrap text-center">
+                  {win.completed ? (
+                    <span className="font-bold text-green-700">WON</span>
+                  ) : (
+                    <span className="text-gray-400">PENDING</span>
+                  )}
+                </td>
+              </tr>
+            )}
+          />
         </Card>
       </WidgetRenderer>
     ),
     'locker-scorecard-history': () => (
       <WidgetRenderer widgetId="locker-scorecard-history" scope={scope}>
         <Card title="Scorecard History" icon={Calendar} className="border-t-4 border-corporate-teal">
-           <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th scope="col" className="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Date</th>
-                  <th scope="col" className="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Score</th>
-                  <th scope="col" className="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Result</th>
+          <SpreadsheetTable 
+            headers={['Date', 'Score', 'Result']}
+            data={commitmentHistory}
+            emptyMessage="No scorecard history available."
+            renderRow={(entry, index) => {
+              const isPerfect = entry.score && entry.score.includes('/') && entry.score.split('/')[0] === entry.score.split('/')[1];
+              return (
+                <tr key={index} className="hover:bg-blue-50 transition-colors">
+                  <td className="border border-gray-300 px-3 py-2 whitespace-nowrap font-mono text-gray-600">
+                    {entry.date}
+                  </td>
+                  <td className="border border-gray-300 px-3 py-2 whitespace-nowrap font-mono font-bold text-gray-900 text-center">
+                    {entry.score}
+                  </td>
+                  <td className="border border-gray-300 px-3 py-2 whitespace-nowrap text-center">
+                    {isPerfect ? (
+                      <span className="font-bold text-green-700">PERFECT</span>
+                    ) : (
+                      <span className="text-orange-600">INCOMPLETE</span>
+                    )}
+                  </td>
                 </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {commitmentHistory.length > 0 ? (
-                  commitmentHistory.map((entry, index) => {
-                    const isPerfect = entry.score && entry.score.includes('/') && entry.score.split('/')[0] === entry.score.split('/')[1];
-                    return (
-                      <tr key={index} className="hover:bg-gray-50">
-                        <td className="px-4 py-3 whitespace-nowrap text-sm font-mono text-gray-600">
-                          {entry.date}
-                        </td>
-                        <td className="px-4 py-3 whitespace-nowrap text-sm font-bold text-gray-900">
-                          {entry.score}
-                        </td>
-                        <td className="px-4 py-3 whitespace-nowrap">
-                          {isPerfect ? (
-                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                              Perfect
-                            </span>
-                          ) : (
-                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800">
-                              Incomplete
-                            </span>
-                          )}
-                        </td>
-                      </tr>
-                    );
-                  })
-                ) : (
-                  <tr>
-                    <td colSpan="3" className="px-4 py-8 text-center text-sm text-gray-500 italic">
-                      No scorecard history available.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
+              );
+            }}
+          />
         </Card>
       </WidgetRenderer>
     ),
     'locker-latest-reflection': () => (
       <WidgetRenderer widgetId="locker-latest-reflection" scope={scope}>
         <Card title="Reflection History" icon={BookOpen} className="lg:col-span-2 border-t-4 border-corporate-navy">
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th scope="col" className="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider w-32">Date</th>
-                  <th scope="col" className="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">What Went Well</th>
-                  <th scope="col" className="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">What Needs Work</th>
-                  <th scope="col" className="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Tomorrow's Focus</th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {reflectionHistory.length > 0 ? (
-                  reflectionHistory.map((log, index) => (
-                    <tr key={log.id || index} className="hover:bg-gray-50 align-top">
-                      <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">
-                        {new Date(log.date).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })}
-                      </td>
-                      <td className="px-4 py-3 text-sm text-gray-600 min-w-[200px]">
-                        {log.reflectionGood || '-'}
-                      </td>
-                      <td className="px-4 py-3 text-sm text-gray-600 min-w-[200px]">
-                        {log.reflectionWork || '-'}
-                      </td>
-                      <td className="px-4 py-3 text-sm text-gray-600 min-w-[200px]">
-                        {log.reflectionTomorrow || '-'}
-                      </td>
-                    </tr>
-                  ))
-                ) : (
-                  <tr>
-                    <td colSpan="4" className="px-4 py-8 text-center text-sm text-gray-500 italic">
-                      No reflection history found.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
+          <SpreadsheetTable 
+            headers={['Date', 'What Went Well', 'What Needs Work', 'Tomorrow\'s Focus']}
+            data={reflectionHistory}
+            emptyMessage="No reflection history found."
+            renderRow={(log, index) => (
+              <tr key={log.id || index} className="hover:bg-blue-50 transition-colors align-top">
+                <td className="border border-gray-300 px-3 py-2 whitespace-nowrap font-mono text-gray-600">
+                  {new Date(log.date).toLocaleDateString(undefined, { month: 'numeric', day: 'numeric', year: '2-digit' })}
+                </td>
+                <td className="border border-gray-300 px-3 py-2 text-gray-800 min-w-[200px]">
+                  {log.reflectionGood || '-'}
+                </td>
+                <td className="border border-gray-300 px-3 py-2 text-gray-800 min-w-[200px]">
+                  {log.reflectionWork || '-'}
+                </td>
+                <td className="border border-gray-300 px-3 py-2 text-gray-800 min-w-[200px]">
+                  {log.reflectionTomorrow || '-'}
+                </td>
+              </tr>
+            )}
+          />
         </Card>
       </WidgetRenderer>
     )
@@ -234,7 +205,9 @@ const Locker = () => {
           ))}
         </div>
       ) : (
-        <NoWidgetsEnabled moduleName="Your Locker" />
+        (!isFeatureEnabled('locker-reminders') && !isFeatureEnabled('locker-controller')) && (
+          <NoWidgetsEnabled moduleName="Your Locker" />
+        )
       )}
     </PageLayout>
   );

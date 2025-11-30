@@ -166,13 +166,26 @@ export const useDashboard = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [JSON.stringify(dailyPracticeData?.active_commitments), JSON.stringify(dailyPracticeData?.activeCommitments)]);
 
-  const handleToggleAdditionalRep = useCallback(async (commitmentId, currentStatus) => {
+  const handleToggleAdditionalRep = useCallback(async (commitmentId, currentStatus, text = '') => {
     const newStatus = currentStatus === 'Committed' ? 'Pending' : 'Committed';
     
-    // Optimistic update
-    const updatedCommitments = additionalCommitments.map(c => 
-      c.id === commitmentId ? { ...c, status: newStatus } : c
-    );
+    let updatedCommitments;
+    const exists = additionalCommitments.find(c => c.id === commitmentId);
+    
+    if (exists) {
+      updatedCommitments = additionalCommitments.map(c => 
+        c.id === commitmentId ? { ...c, status: newStatus } : c
+      );
+    } else {
+      // Add new commitment if it doesn't exist
+      updatedCommitments = [...additionalCommitments, {
+        id: commitmentId,
+        status: newStatus,
+        text: text,
+        createdAt: new Date().toISOString()
+      }];
+    }
+    
     setAdditionalCommitments(updatedCommitments);
 
     if (updateDailyPracticeData) {
@@ -682,6 +695,27 @@ export const useDashboard = ({
     }
   }, [otherTasks, updateDailyPracticeData, winsList, dailyPracticeData]); // Explicitly include prop
 
+  const handleUpdateTask = useCallback(async (taskId, newText) => {
+    const updatedTasks = otherTasks.map(task =>
+      task.id === taskId ? { ...task, text: newText } : task
+    );
+    setOtherTasks(updatedTasks);
+    
+    // Auto-save to Firestore immediately
+    if (updateDailyPracticeData) {
+      try {
+        await updateDailyPracticeData({
+          morningBookend: {
+            ...dailyPracticeData?.morningBookend,
+            otherTasks: updatedTasks
+          }
+        });
+      } catch (error) {
+        console.error('[Dashboard] Error auto-saving task update:', error);
+      }
+    }
+  }, [otherTasks, updateDailyPracticeData, dailyPracticeData]);
+
   const handleRemoveTask = useCallback(async (taskKey) => {
     let updatedTasks;
     if (typeof taskKey === 'number') {
@@ -894,6 +928,7 @@ export const useDashboard = ({
     otherTasks,
     handleAddTask,
     handleToggleTask,
+    handleUpdateTask,
     handleRemoveTask,
     
     showLIS,

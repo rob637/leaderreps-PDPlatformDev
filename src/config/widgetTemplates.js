@@ -117,9 +117,9 @@ export const WIDGET_TEMPLATES = {
 (() => {
   // Default reps if no development plan exists
   const defaultReps = [
-    { id: 'r1', label: 'Review Calendar', time: '2m' },
-    { id: 'r2', label: 'Check Team Pulse', time: '5m' },
-    { id: 'r3', label: 'Send 1 Appreciation', time: '3m' }
+    { id: 'r1', label: 'Review Calendar' },
+    { id: 'r2', label: 'Check Team Pulse' },
+    { id: 'r3', label: 'Send 1 Appreciation' }
   ];
   
   // Safely access developmentPlanData
@@ -127,18 +127,21 @@ export const WIDGET_TEMPLATES = {
     ? developmentPlanData.reps 
     : defaultReps;
   
-  // Track completed state locally (would be persisted via additionalCommitments in real impl)
-  const completedReps = additionalCommitments || {};
+  // Track completed state locally
+  // additionalCommitments is an array of objects { id, status, text }
+  const commitmentsList = Array.isArray(additionalCommitments) ? additionalCommitments : [];
   
   return (
     <Card title="Daily Reps" icon={Dumbbell} accent="BLUE">
       <div className="space-y-2">
         {reps.map(rep => {
-          const isCompleted = completedReps[rep.id] || false;
+          const commitment = commitmentsList.find(c => c.id === rep.id);
+          const isCompleted = commitment?.status === 'Committed';
+          
           return (
             <div 
               key={rep.id} 
-              onClick={() => handleToggleAdditionalRep && handleToggleAdditionalRep(rep.id)}
+              onClick={() => handleToggleAdditionalRep && handleToggleAdditionalRep(rep.id, isCompleted ? 'Committed' : 'Pending', rep.label)}
               className={\`flex items-center justify-between p-3 rounded-xl transition-colors cursor-pointer group \${
                 isCompleted ? 'bg-green-50 border border-green-200' : 'bg-slate-50 hover:bg-blue-50'
               }\`}
@@ -155,9 +158,6 @@ export const WIDGET_TEMPLATES = {
                   {rep.label}
                 </span>
               </div>
-              <span className="text-xs font-bold text-slate-400 bg-white px-2 py-1 rounded border border-slate-200">
-                {rep.time}
-              </span>
             </div>
           );
         })}

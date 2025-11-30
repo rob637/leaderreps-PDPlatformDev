@@ -17,7 +17,16 @@ const WidgetRenderer = ({ widgetId, children, scope = {} }) => {
   }
 
   // Determine code to render: Custom DB code -> Template Default -> Empty
-  const code = (feature && feature.code) ? feature.code : WIDGET_TEMPLATES[widgetId];
+  const customCode = feature && feature.code;
+  const templateCode = WIDGET_TEMPLATES[widgetId];
+  
+  // Priority: 
+  // 1. Custom Code (User Override)
+  // 2. Children (Hardcoded Component)
+  // 3. Template Code (Default String)
+  
+  const shouldRenderDynamic = (customCode && customCode.trim().length > 0) || (!children && templateCode && templateCode.trim().length > 0);
+  const codeToRender = customCode || templateCode;
 
   const handleEdit = (e) => {
     e.stopPropagation();
@@ -26,12 +35,12 @@ const WidgetRenderer = ({ widgetId, children, scope = {} }) => {
       widgetId,
       widgetName: feature?.name || widgetId,
       scope,
-      initialCode: code || ''
+      initialCode: codeToRender || ''
     });
   };
 
   // If we have code for this widget, render it
-  if (code && code.trim().length > 0) {
+  if (shouldRenderDynamic) {
     return (
       <div className={`widget-wrapper relative group ${isEditMode ? 'ring-2 ring-teal-500/50 rounded-xl' : ''}`}>
         {isEditMode && (
@@ -45,7 +54,7 @@ const WidgetRenderer = ({ widgetId, children, scope = {} }) => {
             </button>
           </div>
         )}
-        <DynamicWidgetRenderer code={code} scope={scope} />
+        <DynamicWidgetRenderer code={codeToRender} scope={scope} />
       </div>
     );
   }

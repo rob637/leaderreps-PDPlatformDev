@@ -18,6 +18,7 @@ import { createWidgetSDK } from '../../services/WidgetSDK';
 import { Card } from '../ui';
 import { useLayout } from '../../providers/LayoutProvider';
 import { LayoutToggle } from '../ui/LayoutToggle';
+import PMReflectionWidget from '../widgets/PMReflectionWidget';
 
 const DASHBOARD_FEATURES = [
   'welcome-message',
@@ -312,7 +313,18 @@ const Dashboard = (props) => {
     'notifications': () => <WidgetRenderer widgetId="notifications" scope={scope} />,
     'pm-bookend-header': () => <WidgetRenderer widgetId="pm-bookend-header" scope={scope} />,
     'progress-feedback': () => <WidgetRenderer widgetId="progress-feedback" scope={scope} />,
-    'pm-bookend': () => <WidgetRenderer widgetId="pm-bookend" scope={scope} />,
+    'pm-bookend': () => (
+      <WidgetRenderer widgetId="pm-bookend" scope={scope}>
+        <PMReflectionWidget 
+          reflectionGood={reflectionGood}
+          setReflectionGood={setReflectionGood}
+          reflectionBetter={reflectionBetter}
+          setReflectionBetter={setReflectionBetter}
+          handleSaveEveningBookend={handleSaveEveningBookend}
+          isSavingBookend={isSavingBookend}
+        />
+      </WidgetRenderer>
+    ),
     'scorecard': () => <WidgetRenderer widgetId="scorecard" scope={scope} />,
     
     // Legacy / Optional

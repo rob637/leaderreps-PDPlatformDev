@@ -39,6 +39,7 @@ const ArenaDashboard = (props) => {
     otherTasks,
     handleAddTask,
     handleToggleTask,
+    handleUpdateTask,
     handleRemoveTask,
     handleToggleWIN,
     handleSaveWIN,
@@ -369,20 +370,20 @@ const ArenaDashboard = (props) => {
                           onChange={(e) => setMorningWIN(e.target.value)}
                           placeholder="What is the ONE thing that must get done?"
                           className="flex-1 p-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-teal-500 outline-none transition-all font-medium"
-                          disabled={amWinCompleted} // Can't edit if checked (unless we add uncheck logic)
+                          disabled={amWinCompleted} 
                         />
                         {/* Save Button (Initial '+') */}
                         {!amWinCompleted && morningWIN && (
                             <button 
                               onClick={handleSaveWINWrapper}
                               disabled={isSavingWIN || isWinSaved}
-                              className={`p-3 rounded-xl transition-colors disabled:opacity-50 ${
+                              className={`px-4 py-3 rounded-xl transition-colors disabled:opacity-50 font-bold flex items-center gap-2 ${
                                 isWinSaved ? 'bg-green-500 text-white' : 'bg-teal-500 text-white hover:bg-teal-600'
                               }`}
                               title="Save WIN"
                             >
                               {isSavingWIN ? <Loader className="w-5 h-5 animate-spin" /> : 
-                              isWinSaved ? <CheckSquare className="w-5 h-5" /> : <Plus className="w-5 h-5" />}
+                              isWinSaved ? <><CheckSquare className="w-5 h-5" /> Saved</> : <><Save className="w-5 h-5" /> Save</>}
                             </button>
                         )}
                       </div>
@@ -398,7 +399,7 @@ const ArenaDashboard = (props) => {
                             : 'bg-white border-slate-200 text-slate-300 hover:border-green-400'
                         }`}
                       >
-                        <CheckSquare className="w-5 h-5" />
+                        {amWinCompleted ? <CheckSquare className="w-5 h-5" /> : <Square className="w-5 h-5" />}
                       </button>
                     )}
                   </div>
@@ -422,9 +423,13 @@ const ArenaDashboard = (props) => {
                       <div className={`flex-1 p-3 rounded-xl border ${
                         task.completed ? 'bg-slate-50 border-slate-200' : 'bg-white border-slate-200'
                       }`}>
-                        <span className={`font-medium ${task.completed ? 'line-through text-slate-400' : 'text-slate-700'}`}>
-                          {task.text}
-                        </span>
+                        <input
+                          type="text"
+                          value={task.text}
+                          onChange={(e) => handleUpdateTask(task.id, e.target.value)}
+                          className={`w-full bg-transparent outline-none font-medium ${task.completed ? 'line-through text-slate-400' : 'text-slate-700'}`}
+                          disabled={task.completed}
+                        />
                       </div>
                       <button
                         onClick={() => handleToggleTask(task.id)}
@@ -434,7 +439,7 @@ const ArenaDashboard = (props) => {
                             : 'bg-white border-slate-200 text-slate-300 hover:border-teal-400'
                         }`}
                       >
-                        <CheckSquare className="w-5 h-5" />
+                        {task.completed ? <CheckSquare className="w-5 h-5" /> : <Square className="w-5 h-5" />}
                       </button>
                       <button 
                         onClick={() => handleRemoveTask(task.id)}
@@ -458,7 +463,7 @@ const ArenaDashboard = (props) => {
                       <button 
                         onClick={handleAddOtherTask}
                         disabled={!newTaskText.trim()}
-                        className="p-3 bg-slate-200 text-slate-600 rounded-xl hover:bg-teal-500 hover:text-white transition-colors disabled:opacity-50"
+                        className="p-3 bg-teal-100 text-teal-700 rounded-xl hover:bg-teal-500 hover:text-white transition-colors disabled:opacity-50 font-bold"
                       >
                         <Plus className="w-5 h-5" />
                       </button>
