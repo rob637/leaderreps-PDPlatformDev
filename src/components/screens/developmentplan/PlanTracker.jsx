@@ -130,22 +130,11 @@ const PlanTracker = ({
     );
   }
 
-  const renderers = {
-    'dev-plan-header': () => <WidgetRenderer widgetId="dev-plan-header" scope={scope} />,
-    'dev-plan-stats': () => <WidgetRenderer widgetId="dev-plan-stats" scope={scope} />,
-    'dev-plan-actions': () => <WidgetRenderer widgetId="dev-plan-actions" scope={scope} />,
-    'dev-plan-focus-areas': () => <WidgetRenderer widgetId="dev-plan-focus-areas" scope={scope} />,
-    'dev-plan-goal': () => <WidgetRenderer widgetId="dev-plan-goal" scope={scope} />,
-    'development-plan': () => <WidgetRenderer widgetId="development-plan" scope={scope} />,
-  };
-
   return (
     <div className="space-y-6">
       {sortedFeatures.length > 0 ? (
         sortedFeatures.map(featureId => (
-          <React.Fragment key={featureId}>
-            {renderers[featureId] ? renderers[featureId]() : null}
-          </React.Fragment>
+          <WidgetRenderer key={featureId} widgetId={featureId} scope={scope} />
         ))
       ) : (
         <NoWidgetsEnabled moduleName="Development Plan" />

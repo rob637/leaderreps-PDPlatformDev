@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { 
   ToggleLeft, ToggleRight, FlaskConical, ArrowUp, ArrowDown, Edit3, Plus, Trash2, RefreshCw, Save, Flame, Bell, Target, Calendar, Moon, BookOpen, Play, Book, Video, FileText, Users, MessageSquare, UserPlus, Search, Radio, History, BarChart2, Bot, Cpu, Dumbbell, TrendingUp,
-  CheckSquare, Square, X, Trophy, ChevronRight, ArrowRight, Loader, Eye, EyeOff, Settings, Lightbulb
+  CheckSquare, Square, X, Trophy, ChevronRight, ArrowRight, Loader, Eye, EyeOff, Settings, Lightbulb, Zap, Crosshair, Flag, Circle
 } from 'lucide-react';
 import { useFeatures } from '../../providers/FeatureProvider';
 import { useWidgetEditor } from '../../providers/WidgetEditorProvider';
@@ -10,6 +10,7 @@ import { useAppServices } from '../../services/useAppServices';
 import { useDashboard } from '../screens/dashboard/DashboardHooks';
 import { createWidgetSDK } from '../../services/WidgetSDK';
 import { Card } from '../ui';
+import { Button, ProgressBar } from '../screens/developmentplan/DevPlanComponents';
 import { ENHANCEMENT_IDEAS } from '../../data/enhancementIdeas';
 
 const FeatureManager = () => {
@@ -227,6 +228,51 @@ const FeatureManager = () => {
         React,
       };
     }
+
+    if (widgetId.startsWith('dev-plan-') || widgetId === 'development-plan') {
+      return {
+        ...REAL_SCOPE,
+        options: features[widgetId]?.options || {},
+        // Mock Data for Development Plan Widgets
+        plan: {
+          focusAreas: [
+            { name: 'Strategic Thinking', why: 'To lead better.', reps: [1,2], courses: [1] }
+          ],
+          openEndedAnswer: 'Become a better leader.'
+        },
+        summary: {
+          totalSkills: 10,
+          completedSkills: 2,
+          currentWeek: 3,
+          progress: 20
+        },
+        cycle: 1,
+        currentWeek: {
+          title: 'Week 3',
+          focus: 'Strategy',
+          phase: 'Execution',
+          description: 'Focus on strategy.',
+          content: [],
+          community: [],
+          coaching: []
+        },
+        userProgress: {
+          completedItems: [],
+          reflectionResponse: ''
+        },
+        handleEdit: () => console.log('Edit Plan'),
+        handleShowBreakdown: () => console.log('Show Breakdown'),
+        handleScan: () => console.log('Scan'),
+        handleTimeline: () => console.log('Timeline'),
+        handleDetail: () => console.log('Detail'),
+        handleItemToggle: () => console.log('Toggle Item'),
+        handleReflectionUpdate: () => console.log('Update Reflection'),
+        // Components & Icons
+        Button, ProgressBar,
+        Zap, Crosshair, Flag, Circle, Video, Users, BookOpen
+      };
+    }
+
     // Default full scope
     return { ...REAL_SCOPE, options: features[widgetId]?.options || {} };
   };
