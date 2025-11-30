@@ -80,7 +80,7 @@ const Locker = () => {
       <WidgetRenderer widgetId="locker-controller" scope={scope} />
       <WidgetRenderer widgetId="locker-reminders" scope={scope} />
       {sortedFeatures.length > 0 ? (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 gap-6">
           {sortedFeatures.map(featureId => (
             <WidgetRenderer key={featureId} widgetId={featureId} scope={scope} />
           ))}
