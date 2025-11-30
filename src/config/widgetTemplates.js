@@ -1347,6 +1347,15 @@ render(<SystemRemindersController />);
   );
 })()
     `,
+    'development-plan': `
+<Card title="Development Plan" icon={BookOpen} accent="BLUE">
+  <div className="p-4 bg-slate-50 rounded-xl border border-slate-100 text-center">
+    <p className="text-sm text-slate-600 mb-2">
+      This widget displays your weekly development plan.
+    </p>
+  </div>
+</Card>
+    `,
 
   };
 
@@ -1374,6 +1383,7 @@ export const FEATURE_METADATA = {
   'dev-plan-actions': { core: true, category: 'Development', name: 'Development Plan Actions', description: 'Development Plan Actions', purpose: 'Plan management.', extendedDescription: 'Quick actions to view breakdowns, scan progress, or edit the plan.' },
   'dev-plan-focus-areas': { core: true, category: 'Development', name: 'Development Plan Focus Areas', description: 'Development Plan Focus Areas', purpose: 'Strategic priorities.', extendedDescription: 'Lists the specific areas the user is working on, including the "why" and associated resources.' },
   'dev-plan-goal': { core: true, category: 'Development', name: 'Development Plan Goal', description: 'Development Plan Goal', purpose: 'North Star.', extendedDescription: 'Displays the user\'s primary open-ended goal for the current development cycle.' },
+  'development-plan': { core: true, category: 'Development', name: 'Development Plan', description: 'Development Plan', purpose: 'Weekly development plan.', extendedDescription: 'Displays the current week\'s focus, content, and reflection for the user\'s development plan.' },
   'course-library': { core: false, category: 'Learning', name: 'Course library', description: 'Course library', purpose: 'Quick access to learning modules.', extendedDescription: 'Displays a list of available courses with progress indicators and duration.' },
   'reading-hub': { core: false, category: 'Learning', name: 'Reading hub', description: 'Reading hub', purpose: 'Digital bookshelf.', extendedDescription: 'Showcases recommended or current reading materials for leadership development.' },
   'leadership-videos': { core: false, category: 'Learning', name: 'Leadership videos', description: 'Leadership videos', purpose: 'Curated video content.', extendedDescription: 'Features high-impact talks and lessons from thought leaders.' },
