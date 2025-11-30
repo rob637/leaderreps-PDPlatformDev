@@ -26,7 +26,13 @@ const WidgetRenderer = ({ widgetId, children, scope = {} }) => {
   // 3. Template Code (Default String)
   
   const shouldRenderDynamic = (customCode && customCode.trim().length > 0) || (!children && templateCode && templateCode.trim().length > 0);
-  const codeToRender = customCode || templateCode;
+  
+  // [NUCLEAR FIX] Force 'win-the-day' to use template to bypass potential broken DB overrides
+  let codeToRender = customCode || templateCode;
+  if (widgetId === 'win-the-day') {
+    console.log('[NUCLEAR] Forcing template for win-the-day. Ignoring custom DB code.');
+    codeToRender = templateCode;
+  }
 
   const handleEdit = (e) => {
     e.stopPropagation();

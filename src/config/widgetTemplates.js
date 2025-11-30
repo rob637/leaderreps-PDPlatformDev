@@ -80,7 +80,10 @@ export const WIDGET_TEMPLATES = {
       Identify 3 High-Impact Actions
     </p>
     
-    {morningWins.map((win, index) => (
+    {morningWins.map((win, index) => {
+      // [NUCLEAR] Log render
+      // console.log(\`[NUCLEAR] Rendering Win \${index}: \`, win);
+      return (
       <div key={win.id} className="flex gap-3 items-center">
         <button 
           onClick={() => handleToggleWinComplete(index)}
@@ -98,8 +101,11 @@ export const WIDGET_TEMPLATES = {
           <input 
             type="text"
             value={win.text}
-            onChange={(e) => handleUpdateWin(index, e.target.value)}
-            placeholder={\`Priority #\${index + 1}\`}
+            onChange={(e) => {
+                console.log('[NUCLEAR] Input Change:', index, e.target.value);
+                handleUpdateWin(index, e.target.value);
+            }}
+            placeholder={\`Enter Priority #\${index + 1}\`}
             className={\`w-full p-3 border rounded-xl outline-none transition-all text-sm font-medium \${
               win.completed
                 ? 'bg-slate-50 border-slate-200 text-slate-400 line-through' 
@@ -108,7 +114,7 @@ export const WIDGET_TEMPLATES = {
           />
         </div>
       </div>
-    ))}
+    )})}
   </div>
 
 </Card>
