@@ -4,6 +4,8 @@ import { useWidgetEditor } from '../../providers/WidgetEditorProvider';
 import DynamicWidgetRenderer from './DynamicWidgetRenderer';
 import { Edit3 } from 'lucide-react';
 import { WIDGET_TEMPLATES } from '../../config/widgetTemplates';
+import WinTheDayWidget from '../widgets/WinTheDayWidget';
+import PMReflectionWidget from '../widgets/PMReflectionWidget';
 
 const WidgetRenderer = ({ widgetId, children, scope = {} }) => {
   const { features, isFeatureEnabled } = useFeatures();
@@ -14,6 +16,26 @@ const WidgetRenderer = ({ widgetId, children, scope = {} }) => {
   // Robust check for explicitly disabled state (handles boolean or string)
   if (feature && (feature.enabled === false || feature.enabled === 'false')) {
     return null;
+  }
+
+  // [NUCLEAR FIX] Bypass Dynamic Renderer for complex input widgets to prevent focus loss
+  if (widgetId === 'win-the-day') {
+    return <WinTheDayWidget scope={scope} />;
+  }
+
+  if (widgetId === 'pm-bookend') {
+    return (
+      <PMReflectionWidget 
+        reflectionGood={scope.reflectionGood}
+        setReflectionGood={scope.setReflectionGood}
+        reflectionBetter={scope.reflectionBetter}
+        setReflectionBetter={scope.setReflectionBetter}
+        reflectionBest={scope.reflectionBest}
+        setReflectionBest={scope.setReflectionBest}
+        handleSaveEveningBookend={scope.handleSaveEveningBookend}
+        isSavingBookend={scope.isSavingBookend}
+      />
+    );
   }
 
   // Determine code to render: Custom DB code -> Template Default -> Empty

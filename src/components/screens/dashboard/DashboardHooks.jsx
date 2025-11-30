@@ -793,14 +793,9 @@ export const useDashboard = ({
   const [isSavingWIN, setIsSavingWIN] = useState(false);
   
   const handleUpdateWin = useCallback((index, text) => {
-    console.log(`[NUCLEAR] handleUpdateWin called for index ${index} with text: "${text}"`);
     const newWins = [...morningWins];
-    if (!newWins[index]) {
-        console.error(`[NUCLEAR] Error: Win at index ${index} does not exist!`, newWins);
-        return;
-    }
+    if (!newWins[index]) return;
     newWins[index] = { ...newWins[index], text };
-    console.log(`[NUCLEAR] Updating morningWins state:`, newWins);
     setMorningWins(newWins);
   }, [morningWins]);
 
