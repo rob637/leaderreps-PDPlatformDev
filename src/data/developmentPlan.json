@@ -1,0 +1,61 @@
+[
+  {
+    "id": "week-02-quickstart",
+    "weekNumber": 2,
+    "title": "QuickStart – Week 2",
+    "phase": "QuickStart",
+    "focus": "Anchoring Feedback",
+    "description": "Build the habit of giving simple, clear feedback anchored to your leadership identity.",
+    "startOffsetWeeks": 1,
+
+    "skills": ["feedback", "leadership_identity"],
+    "pillars": ["Lead Self", "Lead People"],
+    "difficultyLevel": "foundation",
+
+    "content": [
+      {
+        "id": "qs-session-2",
+        "type": "workout",
+        "label": "QuickStart Session 2: Anchoring Feedback",
+        "required": true
+      },
+      {
+        "id": "rr-thanks-for-the-feedback",
+        "type": "read_and_rep",
+        "label": "Read & Rep: Thanks for the Feedback",
+        "required": false
+      }
+    ],
+    "community": [
+      {
+        "id": "lc-giving-feedback",
+        "type": "leader_circle",
+        "label": "Leader Circle: Giving Feedback",
+        "recommendedWeekDay": "Thursday",
+        "required": false
+      }
+    ],
+    "coaching": [
+      {
+        "id": "open-gym-feedback",
+        "type": "open_gym",
+        "label": "Open Gym: Feedback Q&A",
+        "optional": true
+      }
+    ],
+
+    "estimatedTimeMinutes": 90,
+    "reflectionPrompt": "What did you notice about your feedback habits this week?",
+
+    "prerequisiteWeekIds": ["week-01-quickstart"],
+    "prerequisiteSkills": ["feedback_basics"],
+
+    "reminderTemplates": [
+      {
+        "id": "week2_feedback_daily_nudge",
+        "frequency": "daily",
+        "channel": "email"
+      }
+    ]
+  }
+]

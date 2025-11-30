@@ -6,6 +6,7 @@ import { Edit3 } from 'lucide-react';
 import { WIDGET_TEMPLATES } from '../../config/widgetTemplates';
 import WinTheDayWidget from '../widgets/WinTheDayWidget';
 import PMReflectionWidget from '../widgets/PMReflectionWidget';
+import DevelopmentPlanWidget from '../widgets/DevelopmentPlanWidget';
 
 const WidgetRenderer = ({ widgetId, children, scope = {} }) => {
   const { features, isFeatureEnabled } = useFeatures();
@@ -21,6 +22,10 @@ const WidgetRenderer = ({ widgetId, children, scope = {} }) => {
   // [NUCLEAR FIX] Bypass Dynamic Renderer for complex input widgets to prevent focus loss
   if (widgetId === 'win-the-day') {
     return <WinTheDayWidget scope={scope} />;
+  }
+
+  if (widgetId === 'development-plan') {
+    return <DevelopmentPlanWidget scope={scope} />;
   }
 
   if (widgetId === 'pm-bookend') {

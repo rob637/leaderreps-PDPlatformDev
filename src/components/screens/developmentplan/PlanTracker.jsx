@@ -12,6 +12,7 @@ import WidgetRenderer from '../../admin/WidgetRenderer';
 import { useFeatures } from '../../../providers/FeatureProvider';
 import { ZONE_CONFIG } from '../../../config/zoneConfig';
 import { NoWidgetsEnabled } from '../../ui';
+import developmentPlan from '../../../data/developmentPlan.json';
 
 const PlanTracker = ({ 
   plan, 
@@ -26,6 +27,34 @@ const PlanTracker = ({
   const [showEditor, setShowEditor] = useState(false);
   const { isFeatureEnabled, getFeatureOrder } = useFeatures();
 
+  // New Development Plan State
+  const [currentWeekIndex, setCurrentWeekIndex] = useState(0);
+  const [userProgress, setUserProgress] = useState({
+    completedItems: [],
+    reflectionResponse: ''
+  });
+
+  const currentWeek = developmentPlan[currentWeekIndex];
+
+  const handleItemToggle = (itemId) => {
+    setUserProgress(prev => {
+      const isCompleted = prev.completedItems.includes(itemId);
+      return {
+        ...prev,
+        completedItems: isCompleted 
+          ? prev.completedItems.filter(id => id !== itemId)
+          : [...prev.completedItems, itemId]
+      };
+    });
+  };
+
+  const handleReflectionUpdate = (text) => {
+    setUserProgress(prev => ({
+      ...prev,
+      reflectionResponse: text
+    }));
+  };
+
   const sortedFeatures = useMemo(() => {
     const features = ZONE_CONFIG['development-plan'] || [];
     return features
@@ -33,7 +62,28 @@ const PlanTracker = ({
       .sort((a, b) => getFeatureOrder(a) - getFeatureOrder(b));
   }, [isFeatureEnabled, getFeatureOrder]);
 
-  if (!plan) {
+  // Generate summary with logging (safe check)
+  const summary = plan ? generatePlanSummary(plan) : null;
+
+  const scope = useMemo(() => ({
+    plan,
+    summary,
+    cycle,
+    handleShowBreakdown: () => setShowBreakdown(true),
+    handleScan: onScan,
+    handleTimeline: onTimeline,
+    handleDetail: onDetail,
+    handleEdit: () => setShowEditor(true),
+    Card, Button, ProgressBar,
+    Target, TrendingUp, Calendar, Edit, Zap, Crosshair, Flag,
+    // New Scope Props
+    currentWeek,
+    userProgress,
+    handleItemToggle,
+    handleReflectionUpdate
+  }), [plan, summary, cycle, onScan, onTimeline, onDetail, currentWeek, userProgress]);
+
+  if (!plan && !sortedFeatures.includes('development-plan')) {
     return (
       <div className="text-center py-8">
         <Target className="w-12 h-12 mx-auto mb-4 text-slate-400" />
@@ -46,22 +96,6 @@ const PlanTracker = ({
       </div>
     );
   }
-
-  // Generate summary with logging
-  const summary = generatePlanSummary(plan);
-
-  const scope = useMemo(() => ({
-    plan,
-    summary,
-    cycle,
-    handleShowBreakdown: () => setShowBreakdown(true),
-    handleScan: onScan,
-    handleTimeline: onTimeline,
-    handleDetail: onDetail,
-    handleEdit: () => setShowEditor(true),
-    Card, Button, ProgressBar,
-    Target, TrendingUp, Calendar, Edit, Zap, Crosshair, Flag
-  }), [plan, summary, cycle, onScan, onTimeline, onDetail]);
 
   const handleSaveEdit = async (updatedPlan) => {
     if (onEditPlan) {
@@ -102,6 +136,7 @@ const PlanTracker = ({
     'dev-plan-actions': () => <WidgetRenderer widgetId="dev-plan-actions" scope={scope} />,
     'dev-plan-focus-areas': () => <WidgetRenderer widgetId="dev-plan-focus-areas" scope={scope} />,
     'dev-plan-goal': () => <WidgetRenderer widgetId="dev-plan-goal" scope={scope} />,
+    'development-plan': () => <WidgetRenderer widgetId="development-plan" scope={scope} />,
   };
 
   return (
