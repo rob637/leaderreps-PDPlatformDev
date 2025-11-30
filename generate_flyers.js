@@ -7,6 +7,7 @@ const API_KEY = process.env.GEMINI_API_KEY; // Requires GEMINI_API_KEY environme
 const MODEL_NAME = 'gemini-2.5-flash';
 
 // --- COMPLEXITY MAP ---
+const COMPLEXITY_MAP = {
   Low:    { label: 'Novice',       hex: '#10B981', icon: 'CheckCircle' },
   Medium: { label: 'Intermediate', hex: '#F59E0B', icon: 'AlertTriangle' },
   High:   { label: 'Expert',       hex: '#E04E1B',   icon: 'Target' },

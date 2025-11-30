@@ -28,7 +28,7 @@ const PlanTracker = ({
   const { isFeatureEnabled, getFeatureOrder } = useFeatures();
 
   // New Development Plan State
-  const [currentWeekIndex, setCurrentWeekIndex] = useState(0);
+  const [currentWeekIndex] = useState(0);
   const [userProgress, setUserProgress] = useState({
     completedItems: [],
     reflectionResponse: ''

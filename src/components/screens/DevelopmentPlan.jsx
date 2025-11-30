@@ -17,10 +17,8 @@ import DetailedPlanView from './developmentplan/DetailedPlanView';
 import MilestoneTimeline from './developmentplan/MilestoneTimeline';
 import ProgressBreakdown from './developmentplan/ProgressBreakdown';
 import { Button, Card, EmptyState } from './developmentplan/DevPlanComponents';
-import { generatePlanFromAssessment, normalizeSkillCatalog, generatePlanSummary } from './developmentplan/devPlanUtils';
-import { PageLayout, NoWidgetsEnabled } from '../ui';
-import { useFeatures } from '../../providers/FeatureProvider';
-import WidgetRenderer from '../admin/WidgetRenderer';
+import { generatePlanFromAssessment, normalizeSkillCatalog } from './developmentplan/devPlanUtils';
+import { PageLayout } from '../ui';
 
 // FIXED: Import adapter utilities
 import { 
@@ -197,15 +195,11 @@ export default function DevelopmentPlan() {
   const [error, setError] = useState(null);
   const [justCompletedBaseline, setJustCompletedBaseline] = useState(false); // Prevent returning to baseline after save
 
+  // ===== MOVED HOOKS (Fix Conditional Hooks) =====
+  // (Removed unused hooks)
+
   // Sync view with live snapshots as they arrive
   useEffect(() => {
-    const stateInfo = {
-      view,
-      isSaving,
-      justCompletedBaseline,
-      hasCurrentPlan: !!adaptedDevelopmentPlanData?.currentPlan
-    };
-    
     // DON'T switch views while saving is in progress
     if (isSaving) {
       return;
@@ -490,30 +484,7 @@ async function confirmPlanPersisted(db, userId, retries = 4, delayMs = 250) {
   if (!services || !userId) return <LoadingBlock title="Services unavailable" description="Please refresh or contact support." />;
 
   // ===== WIDGET LOGIC =====
-  const { isFeatureEnabled, getFeatureOrder } = useFeatures();
-  const [showBreakdown, setShowBreakdown] = useState(false);
-
-  const plan = adaptedDevelopmentPlanData?.currentPlan;
-  const summary = useMemo(() => plan ? generatePlanSummary(plan) : {}, [plan]);
-
-  const scope = {
-    plan,
-    summary,
-    handleShowBreakdown: () => setShowBreakdown(true),
-    handleScan: () => setView('scan'),
-    handleTimeline: () => setView('timeline'),
-    handleDetail: () => setView('detail'),
-    Button,
-    Card,
-    Target,
-    TrendingUp,
-    Calendar,
-    Zap,
-    Crosshair,
-    Flag
-  };
-
-  const enabledWidgets = getFeatureOrder('development-plan');
+  // (Removed unused scope)
 
   // ===== RENDER =====
   const isDeveloperMode = localStorage.getItem('arena-developer-mode') === 'true';
