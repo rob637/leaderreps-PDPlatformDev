@@ -339,10 +339,11 @@ const Dashboard = (props) => {
   return (
     <div className="p-6 space-y-8 bg-slate-50 min-h-screen relative">
       <div className="max-w-[860px] mx-auto">
-      {/* Layout Toggle - Desktop Only */}
+      {/* Layout Toggle - Desktop Only - COMMENTED OUT FOR NOW
       <div className="absolute top-6 right-6 z-10 hidden lg:block">
         <LayoutToggle />
       </div>
+      */}
 
       <header className="mb-8 text-center">
         <div className="flex items-center justify-center gap-3 mb-2">
@@ -357,7 +358,8 @@ const Dashboard = (props) => {
         </p>
       </header>
 
-      <div className={`grid gap-6 ${layoutMode === '1-col' ? 'grid-cols-1' : 'grid-cols-1 lg:grid-cols-2'}`}>
+      {/* Forced 1-col layout for now */}
+      <div className="grid gap-6 grid-cols-1">
         {/* DYNAMIC FEATURES */}
         {sortedFeatures.map(featureId => (
           <React.Fragment key={featureId}>
