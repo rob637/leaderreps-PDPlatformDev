@@ -317,20 +317,7 @@ const Dashboard = (props) => {
     'notifications': () => <WidgetRenderer widgetId="notifications" scope={scope} />,
     'pm-bookend-header': () => <WidgetRenderer widgetId="pm-bookend-header" scope={scope} />,
     'progress-feedback': () => <WidgetRenderer widgetId="progress-feedback" scope={scope} />,
-    'pm-bookend': () => (
-      <WidgetRenderer widgetId="pm-bookend" scope={scope}>
-        <PMReflectionWidget 
-          reflectionGood={reflectionGood}
-          setReflectionGood={setReflectionGood}
-          reflectionBetter={reflectionBetter}
-          setReflectionBetter={setReflectionBetter}
-          reflectionBest={reflectionBest}
-          setReflectionBest={setReflectionBest}
-          handleSaveEveningBookend={handleSaveEveningBookend}
-          isSavingBookend={isSavingBookend}
-        />
-      </WidgetRenderer>
-    ),
+    'pm-bookend': () => <WidgetRenderer widgetId="pm-bookend" scope={scope} />,
     'scorecard': () => <WidgetRenderer widgetId="scorecard" scope={scope} />,
     
     // Legacy / Optional

@@ -279,6 +279,8 @@ export const WIDGET_TEMPLATES = {
         3. Closing thought
       </label>
       <textarea 
+        value={reflectionBest}
+        onChange={(e) => setReflectionBest(e.target.value)}
         className="w-full p-3 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all text-sm"
         rows={1}
         placeholder="One word to describe today..."
