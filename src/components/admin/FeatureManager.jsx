@@ -269,7 +269,7 @@ const FeatureManager = () => {
         handleReflectionUpdate: () => console.log('Update Reflection'),
         // Components & Icons
         Button, ProgressBar,
-        Zap, Crosshair, Flag, Circle, Video, Users, BookOpen
+        Zap, Crosshair, Flag, Circle, Video, Users, BookOpen, CheckCircle, MessageSquare
       };
     }
 
@@ -534,7 +534,7 @@ const FeatureManager = () => {
       'exec-summary', 'weekly-focus', 'notifications', 'scorecard', 'pm-bookend'
     ],
     'development-plan': [
-      'dev-plan-header', 'dev-plan-stats', 'dev-plan-actions', 'dev-plan-focus-areas', 'dev-plan-goal'
+      'dev-plan-header', 'dev-plan-stats', 'dev-plan-actions', 'dev-plan-focus-areas', 'dev-plan-goal', 'development-plan'
     ],
     content: [
       'course-library', 'reading-hub', 'leadership-videos', 'strat-templates'

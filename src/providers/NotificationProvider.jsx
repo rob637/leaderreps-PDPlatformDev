@@ -84,9 +84,19 @@ export const NotificationProvider = ({ children }) => {
   const saveSettings = async (newReminders, newSentLog) => {
     if (!user || !db) return;
     try {
+      const remindersToSave = newReminders || reminders;
+      const sanitizedReminders = {};
+      
+      // Strip functions before saving to avoid Firestore errors
+      Object.keys(remindersToSave).forEach(key => {
+        // eslint-disable-next-line no-unused-vars
+        const { checkCondition, ...rest } = remindersToSave[key];
+        sanitizedReminders[key] = rest;
+      });
+
       const userRef = doc(db, 'users', user.uid);
       await updateDoc(userRef, {
-        'notificationSettings.reminders': newReminders || reminders,
+        'notificationSettings.reminders': sanitizedReminders,
         'notificationSettings.sentLog': newSentLog || sentLog,
         'notificationSettings.updatedAt': new Date().toISOString()
       });
