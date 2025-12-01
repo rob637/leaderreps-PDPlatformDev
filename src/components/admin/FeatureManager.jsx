@@ -54,6 +54,8 @@ const FeatureManager = () => {
     setReflectionGood,
     reflectionBetter,
     setReflectionBetter,
+    reflectionBest,
+    setReflectionBest,
     handleSaveEveningBookend,
     isSavingBookend,
     
@@ -177,6 +179,7 @@ const FeatureManager = () => {
     handleAddOtherTask: () => {}, // Local state in Dashboard4
     setReflectionGood,
     setReflectionBetter,
+    setReflectionBest,
     handleSaveEveningBookend,
     
     // Identity & Anchors Handlers
@@ -214,6 +217,7 @@ const FeatureManager = () => {
     streakCount,
     reflectionGood,
     reflectionBetter,
+    reflectionBest,
     isSavingBookend,
     
     // Identity & Anchors State
