@@ -7,6 +7,7 @@ import { WIDGET_TEMPLATES } from '../../config/widgetTemplates';
 import WinTheDayWidget from '../widgets/WinTheDayWidget';
 import PMReflectionWidget from '../widgets/PMReflectionWidget';
 import DevelopmentPlanWidget from '../widgets/DevelopmentPlanWidget';
+import GroundingRepWidget from '../widgets/GroundingRepWidget';
 
 const WidgetRenderer = ({ widgetId, children, scope = {} }) => {
   const { features, isFeatureEnabled } = useFeatures();
@@ -26,6 +27,10 @@ const WidgetRenderer = ({ widgetId, children, scope = {} }) => {
 
   if (widgetId === 'development-plan') {
     return <DevelopmentPlanWidget scope={scope} />;
+  }
+
+  if (widgetId === 'grounding-rep') {
+    return <GroundingRepWidget scope={scope} />;
   }
 
   if (widgetId === 'pm-bookend') {
@@ -50,12 +55,12 @@ const WidgetRenderer = ({ widgetId, children, scope = {} }) => {
   // Priority: 
   // 1. Custom Code (User Override)
   // 2. Children (Hardcoded Component)
-  // 3. Template Code (Default String)
-  
-  const shouldRenderDynamic = (customCode && customCode.trim().length > 0) || (!children && templateCode && templateCode.trim().length > 0);
-  
   // [NUCLEAR FIX] Force 'win-the-day' and 'grounding-rep' to use template to bypass potential broken DB overrides
   let codeToRender = customCode || templateCode;
+  if (widgetId === 'win-the-day' || widgetId === 'weekly-focus') {
+    console.log(`[NUCLEAR] Forcing template for ${widgetId}. Ignoring custom DB code.`);
+    codeToRender = templateCode;
+  }et codeToRender = customCode || templateCode;
   if (widgetId === 'win-the-day' || widgetId === 'grounding-rep' || widgetId === 'weekly-focus') {
     console.log(`[NUCLEAR] Forcing template for ${widgetId}. Ignoring custom DB code.`);
     codeToRender = templateCode;

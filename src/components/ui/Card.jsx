@@ -135,6 +135,7 @@ const Card = React.forwardRef(({
   // If not, just render children inside the container (acting as a wrapper).
   
   const isSmartMode = !!(title || Icon);
+  const hasContent = React.Children.count(children) > 0;
 
   return (
     <Component
@@ -150,7 +151,7 @@ const Card = React.forwardRef(({
     >
       {isSmartMode ? (
         <>
-          <div className="p-6 pb-2">
+          <div className={cn("p-6", hasContent ? "pb-2" : "")}>
             <div className="flex items-center gap-3">
               {Icon && <Icon className={cn("w-6 h-6", iconColors[accent])} />}
               {title && (
@@ -160,9 +161,11 @@ const Card = React.forwardRef(({
               )}
             </div>
           </div>
-          <div className="p-6 pt-4">
-            {children}
-          </div>
+          {hasContent && (
+            <div className="p-6 pt-4">
+              {children}
+            </div>
+          )}
         </>
       ) : (
         children
