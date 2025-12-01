@@ -10,6 +10,7 @@ import {
 } from './mockData.js';
 import { applyPatchDeleteAware, sanitizeTimestamps, stripSentinels } from './dataUtils.js';
 import { resolveGlobalMetadata } from './metadataResolver.js';
+import { checkAndPerformRollover } from '../utils/dailyRollover.js';
 
 export const createAppServices = (db, userId) => {
   const stores = {
@@ -47,6 +48,13 @@ export const createAppServices = (db, userId) => {
     const unsubDaily = onSnapshotEx(db, dailyPath, (snap) => {
       const rawData = snap.exists() ? snap.data() : MOCK_DAILY_PRACTICE_DATA;
       stores.dailyPracticeData = stripSentinels(sanitizeTimestamps(rawData));
+      
+      // Check for Rollover (Lazy Evaluation)
+      if (snap.exists() && stores.dailyPracticeData) {
+        checkAndPerformRollover(db, userId, stores.dailyPracticeData)
+          .catch(err => console.error('[createAppServices] Rollover error:', err));
+      }
+
       notifyChange();
     });
     stores.listeners.push(unsubDaily);

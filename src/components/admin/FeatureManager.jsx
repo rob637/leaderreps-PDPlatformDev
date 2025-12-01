@@ -505,7 +505,7 @@ const FeatureManager = () => {
         };
       default:
         // Check for dev-plan widgets
-        if (widgetId.startsWith('dev-plan-')) {
+        if (widgetId.startsWith('dev-plan-') || widgetId === 'development-plan') {
              return {
                 ...common,
                 'Input': { 'plan': 'Development Plan Data.' },
@@ -584,7 +584,12 @@ const FeatureManager = () => {
 
     // Determine group
     let group = 'dashboard';
-    if (dbData && dbData.group) {
+    
+    // Force development-plan to be in development-plan group if it's in the initialGroups list
+    // This overrides DB state if it was incorrectly set to dashboard
+    if (initialGroups['development-plan'].includes(id)) {
+        group = 'development-plan';
+    } else if (dbData && dbData.group) {
       group = dbData.group;
     } else {
       // Fallback to initialGroups mapping

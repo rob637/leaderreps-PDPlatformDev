@@ -1,5 +1,5 @@
 import { 
-  Flame, Trophy, MessageSquare, Calendar, BookOpen, Play, Book, Video, FileText, Users, UserPlus, Search, Radio, History, BarChart2, Bot, Cpu, Dumbbell, TrendingUp, CheckCircle, Edit, Lightbulb, CheckSquare, X, Plus, Loader, Save, Bell, Target, Zap, Crosshair, Flag, MessageCircle, Heart, Sun, Moon
+  Flame, Trophy, MessageSquare, Calendar, BookOpen, Play, Book, Video, FileText, Users, UserPlus, Search, Radio, History, BarChart2, Bot, Cpu, Dumbbell, TrendingUp, CheckCircle, Edit, Lightbulb, CheckSquare, X, Plus, Loader, Save, Bell, Target, Zap, Crosshair, Flag, MessageCircle, Heart, Sun, Moon, PenTool, Quote, User
 } from 'lucide-react';
 
 // Helper for Roadmap Widgets
@@ -48,7 +48,7 @@ export const WIDGET_TEMPLATES = {
 </>
     `,
     'weekly-focus': `
-<Card title="Focus" icon={Target} accent="INDIGO">
+<Card title="Weekly Focus" icon={Target} accent="INDIGO">
   <div className="p-4 bg-slate-50 rounded-xl border border-slate-100 text-center">
     <p className="text-sm text-slate-600 mb-2">
       This widget will display your active focus area from the Development Plan.
@@ -60,18 +60,89 @@ export const WIDGET_TEMPLATES = {
 
 </Card>
     `,
-    'grounding-rep': `
-<Card title="Grounding Rep" icon={Zap} accent="YELLOW">
-  <div className="p-4 bg-yellow-50 rounded-xl border border-yellow-100 text-center">
-    <p className="text-sm text-slate-600 mb-2">
-      This widget will link to your Leadership Identity Statement (LIS).
-    </p>
-    <p className="text-xs text-slate-400 italic">
-      (Leadership Identity Widget integration coming soon)
-    </p>
-  </div>
+    'lis-maker': `
+<Card title="LIS Maker" icon={PenTool} accent="PURPLE">
+  <div className="space-y-4">
+    <div className="bg-purple-50 p-4 rounded-xl border border-purple-100">
+      <h4 className="font-bold text-purple-900 mb-2">Build Your Identity</h4>
+      <p className="text-sm text-purple-800 mb-3">
+        Your Leadership Identity Statement (LIS) anchors you in who you want to be.
+      </p>
+      <p className="text-xs text-purple-600 italic mb-2">
+        Try this format: "I am a [Core Value] leader who [Action] to create [Impact]."
+      </p>
+    </div>
 
+    <div>
+      <label className="block text-xs font-bold text-slate-500 uppercase mb-2">
+        Your Statement
+      </label>
+      <textarea 
+        value={identityStatement}
+        onChange={(e) => setIdentityStatement(e.target.value)}
+        className="w-full p-3 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-purple-500 outline-none transition-all text-sm min-h-[100px]"
+        placeholder="I am a..."
+      />
+    </div>
+
+    <button 
+      onClick={() => handleSaveIdentity(identityStatement)}
+      className="w-full py-3 bg-purple-600 text-white rounded-xl font-bold hover:bg-purple-700 transition-colors flex items-center justify-center gap-2"
+    >
+      <Save className="w-4 h-4" />
+      Save Identity
+    </button>
+  </div>
 </Card>
+    `,
+    'grounding-rep': `
+(() => {
+  const hasLIS = identityStatement && identityStatement.trim().length > 0;
+
+  return (
+    <Card title="Grounding Rep" icon={Zap} accent="YELLOW">
+      {hasLIS ? (
+        <div className="p-6 bg-yellow-50 rounded-xl border border-yellow-100 text-center relative overflow-hidden group">
+          <div className="absolute top-0 left-0 w-full h-1 bg-yellow-400"></div>
+          <Quote className="w-8 h-8 text-yellow-300 absolute top-4 left-4 opacity-50" />
+          
+          <p className="text-lg font-serif font-medium text-slate-800 relative z-10 italic">
+            "{identityStatement}"
+          </p>
+          
+          <div className="mt-4 flex justify-center">
+             <button 
+               className="text-xs font-bold text-yellow-700 hover:text-yellow-800 uppercase tracking-wider flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity"
+               onClick={() => {
+                 alert("Use the LIS Maker widget to edit your statement.");
+               }}
+             >
+               Edit Statement
+             </button>
+          </div>
+        </div>
+      ) : (
+        <div className="p-6 bg-slate-50 rounded-xl border border-slate-200 text-center border-dashed">
+          <div className="w-12 h-12 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-3 text-slate-400">
+            <User className="w-6 h-6" />
+          </div>
+          <h4 className="font-bold text-slate-700 mb-1">Who are you as a leader?</h4>
+          <p className="text-sm text-slate-500 mb-4">
+            You haven't defined your Leadership Identity Statement yet.
+          </p>
+          <button 
+            className="px-4 py-2 bg-[#002E47] text-white rounded-lg text-sm font-bold hover:bg-[#003E5F] transition-colors"
+            onClick={() => {
+                alert("Please add the 'LIS Maker' widget to your dashboard to create your statement.");
+            }}
+          >
+            Create LIS
+          </button>
+        </div>
+      )}
+    </Card>
+  );
+})()
     `,
     'win-the-day': `
 <Card title="Win the Day" icon={Trophy} accent="TEAL">
@@ -1416,10 +1487,11 @@ render(<SystemRemindersController />);
         {/* Action Items */}
         <div className="space-y-2">
           <p className="text-xs text-slate-500 font-medium uppercase tracking-wider">
-            This Week's Actions
-          </p>
-          
-          {allItems.map((item) => {
+  'am-bookend-header': { core: true, category: 'Planning', name: 'AM Bookend Header', description: 'AM Bookend Header', purpose: 'Visual separator for the Morning Routine.', extendedDescription: 'Marks the beginning of the AM Bookend section, signaling the start of the daily planning process.' },
+  'weekly-focus': { core: true, category: 'Planning', name: 'Weekly Focus', description: 'Weekly Focus', purpose: 'Highlights the primary development goal for the week.', extendedDescription: 'Displays the active focus area from the user\'s Development Plan to keep it top-of-mind.' },
+  'lis-maker': { core: true, category: 'Planning', name: 'LIS Maker', description: 'LIS Maker', purpose: 'Builds the Leadership Identity Statement.', extendedDescription: 'A guided tool to help the user craft and refine their Leadership Identity Statement (LIS).' },
+  'grounding-rep': { core: true, category: 'Planning', name: 'Grounding Rep', description: 'Grounding Rep', purpose: 'Reconnects the leader with their core identity.', extendedDescription: 'Provides a quick link or display of the Leadership Identity Statement (LIS) to ground the user before starting their day.' },
+  'win-the-day': { core: true, category: 'Planning', name: 'Win the Day', description: 'Win the Day', purpose: 'Sets daily priorities.', extendedDescription: 'Allows the user to define and track 3 high-impact actions for the day.' },
             const isCompleted = completedItems.includes(item.id);
             const Icon = getItemIcon(item.type);
             
@@ -1488,7 +1560,7 @@ export const FEATURE_METADATA = {
   'locker-scorecard-history': { core: true, category: 'Locker', name: 'Scorecard History', description: 'Scorecard History', purpose: 'History of daily scores.', extendedDescription: 'Displays a spreadsheet-style history of daily scorecard results.' },
   'locker-latest-reflection': { core: true, category: 'Locker', name: 'Reflection History', description: 'Reflection History', purpose: 'History of daily reflections.', extendedDescription: 'Displays a spreadsheet-style history of PM Bookend reflections.' },
   'am-bookend-header': { core: true, category: 'Planning', name: 'AM Bookend Header', description: 'AM Bookend Header', purpose: 'Visual separator for the Morning Routine.', extendedDescription: 'Marks the beginning of the AM Bookend section, signaling the start of the daily planning process.' },
-  'weekly-focus': { core: true, category: 'Planning', name: 'Focus', description: 'Focus', purpose: 'Highlights the primary development goal for the week.', extendedDescription: 'Displays the active focus area from the user\'s Development Plan to keep it top-of-mind.' },
+  'weekly-focus': { core: true, category: 'Planning', name: 'Weekly Focus', description: 'Weekly Focus', purpose: 'Highlights the primary development goal for the week.', extendedDescription: 'Displays the active focus area from the user\'s Development Plan to keep it top-of-mind.' },
   'grounding-rep': { core: true, category: 'Planning', name: 'Grounding Rep', description: 'Grounding Rep', purpose: 'Reconnects the leader with their core identity.', extendedDescription: 'Provides a quick link or display of the Leadership Identity Statement (LIS) to ground the user before starting their day.' },
   'win-the-day': { core: true, category: 'Planning', name: 'Win the Day', description: 'Win the Day', purpose: 'Sets daily priorities.', extendedDescription: 'Allows the user to define and track 3 high-impact actions for the day.' },
   'daily-leader-reps': { core: true, category: 'Planning', name: 'Daily Reps', description: 'Daily Reps', purpose: 'Tracks daily habits.', extendedDescription: 'A checklist of small, consistent actions (reps) that build leadership muscle over time.' },
