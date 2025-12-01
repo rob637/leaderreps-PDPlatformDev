@@ -5,7 +5,7 @@ import { cn } from '../../lib/utils';
 const CardHeader = React.forwardRef(({ className, ...props }, ref) => (
   <div
     ref={ref}
-    className={cn("flex flex-col space-y-1.5 p-6", className)}
+    className={cn("flex flex-col space-y-1.5 p-4", className)}
     {...props}
   />
 ));
@@ -14,10 +14,10 @@ CardHeader.displayName = "CardHeader";
 const CardTitle = React.forwardRef(({ className, icon: Icon, iconColor, children, ...props }, ref) => (
   <h3
     ref={ref}
-    className={cn("text-2xl font-semibold leading-none tracking-tight flex items-center gap-2", className)}
+    className={cn("text-xl font-semibold leading-none tracking-tight flex items-center gap-2", className)}
     {...props}
   >
-    {Icon && <Icon className={cn("w-6 h-6", iconColor)} />}
+    {Icon && <Icon className={cn("w-5 h-5", iconColor)} />}
     {children}
   </h3>
 ));
@@ -33,14 +33,14 @@ const CardDescription = React.forwardRef(({ className, ...props }, ref) => (
 CardDescription.displayName = "CardDescription";
 
 const CardContent = React.forwardRef(({ className, ...props }, ref) => (
-  <div ref={ref} className={cn("p-6 pt-0", className)} {...props} />
+  <div ref={ref} className={cn("p-4 pt-0", className)} {...props} />
 ));
 CardContent.displayName = "CardContent";
 
 const CardFooter = React.forwardRef(({ className, ...props }, ref) => (
   <div
     ref={ref}
-    className={cn("flex items-center p-6 pt-0", className)}
+    className={cn("flex items-center p-4 pt-0", className)}
     {...props}
   />
 ));
@@ -151,9 +151,9 @@ const Card = React.forwardRef(({
     >
       {isSmartMode ? (
         <>
-          <div className={cn("p-6", hasContent ? "pb-2" : "")}>
-            <div className="flex items-center gap-3">
-              {Icon && <Icon className={cn("w-6 h-6", iconColors[accent])} />}
+          <div className={cn("p-4", hasContent ? "pb-2" : "")}>
+            <div className="flex items-center gap-2">
+              {Icon && <Icon className={cn("w-5 h-5", iconColors[accent])} />}
               {title && (
                 <h3 className="text-lg font-bold text-corporate-navy tracking-tight">
                   {title}
@@ -162,7 +162,7 @@ const Card = React.forwardRef(({
             </div>
           </div>
           {hasContent && (
-            <div className="p-6 pt-4">
+            <div className="p-4 pt-2">
               {children}
             </div>
           )}

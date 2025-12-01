@@ -62,32 +62,32 @@ export const WIDGET_TEMPLATES = {
     `,
     'lis-maker': `
 <Card title="LIS Maker" icon={PenTool} accent="NAVY">
-  <div className="space-y-4">
-    <div className="bg-purple-50 p-4 rounded-xl border border-purple-100">
-      <h4 className="font-bold text-purple-900 mb-2">Build Your Identity</h4>
-      <p className="text-sm text-purple-800 mb-3">
+  <div className="space-y-2">
+    <div className="bg-purple-50 p-3 rounded-xl border border-purple-100">
+      <h4 className="font-bold text-purple-900 mb-1">Build Your Identity</h4>
+      <p className="text-sm text-purple-800 mb-2">
         Your Leadership Identity Statement (LIS) anchors you in who you want to be.
       </p>
-      <p className="text-xs text-purple-600 italic mb-2">
+      <p className="text-xs text-purple-600 italic mb-1">
         Try this format: "I am a [Core Value] leader who [Action] to create [Impact]."
       </p>
     </div>
 
     <div>
-      <label className="block text-xs font-bold text-slate-500 uppercase mb-2">
+      <label className="block text-xs font-bold text-slate-500 uppercase mb-1">
         Your Statement
       </label>
       <textarea 
         value={identityStatement}
         onChange={(e) => setIdentityStatement(e.target.value)}
-        className="w-full p-3 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-purple-500 outline-none transition-all text-sm min-h-[100px]"
+        className="w-full p-2 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-purple-500 outline-none transition-all text-sm min-h-[80px]"
         placeholder="I am a..."
       />
     </div>
 
     <button 
       onClick={() => handleSaveIdentity(identityStatement)}
-      className="w-full py-3 bg-purple-600 text-white rounded-xl font-bold hover:bg-purple-700 transition-colors flex items-center justify-center gap-2"
+      className="w-full py-2 bg-purple-600 text-white rounded-xl font-bold hover:bg-purple-700 transition-colors flex items-center justify-center gap-2"
     >
       <Save className="w-4 h-4" />
       Save Identity
@@ -104,25 +104,25 @@ export const WIDGET_TEMPLATES = {
   if (isEditing) {
     return (
       <Card title="LIS Maker" icon={PenTool} accent="NAVY">
-        <div className="space-y-4">
-          <div className="bg-purple-50 p-4 rounded-xl border border-purple-100">
-            <h4 className="font-bold text-purple-900 mb-2">Build Your Identity</h4>
-            <p className="text-sm text-purple-800 mb-3">
+        <div className="space-y-2">
+          <div className="bg-purple-50 p-3 rounded-xl border border-purple-100">
+            <h4 className="font-bold text-purple-900 mb-1">Build Your Identity</h4>
+            <p className="text-sm text-purple-800 mb-2">
               Your Leadership Identity Statement (LIS) anchors you in who you want to be.
             </p>
-            <p className="text-xs text-purple-600 italic mb-2">
+            <p className="text-xs text-purple-600 italic mb-1">
               Try this format: "I am a [Core Value] leader who [Action] to create [Impact]."
             </p>
           </div>
 
           <div>
-            <label className="block text-xs font-bold text-slate-500 uppercase mb-2">
+            <label className="block text-xs font-bold text-slate-500 uppercase mb-1">
               Your Statement
             </label>
             <textarea 
               value={identityStatement}
               onChange={(e) => setIdentityStatement(e.target.value)}
-              className="w-full p-3 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-purple-500 outline-none transition-all text-sm min-h-[100px]"
+              className="w-full p-2 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-purple-500 outline-none transition-all text-sm min-h-[80px]"
               placeholder="I am a..."
             />
           </div>
@@ -130,7 +130,7 @@ export const WIDGET_TEMPLATES = {
           <div className="flex gap-2">
             <button 
               onClick={() => setEditing(false)}
-              className="flex-1 py-3 bg-slate-100 text-slate-600 rounded-xl font-bold hover:bg-slate-200 transition-colors"
+              className="flex-1 py-2 bg-slate-100 text-slate-600 rounded-xl font-bold hover:bg-slate-200 transition-colors"
             >
               Cancel
             </button>
@@ -139,7 +139,7 @@ export const WIDGET_TEMPLATES = {
                 handleSaveIdentity(identityStatement);
                 setEditing(false);
               }}
-              className="flex-1 py-3 bg-purple-600 text-white rounded-xl font-bold hover:bg-purple-700 transition-colors flex items-center justify-center gap-2"
+              className="flex-1 py-2 bg-purple-600 text-white rounded-xl font-bold hover:bg-purple-700 transition-colors flex items-center justify-center gap-2"
             >
               <Save className="w-4 h-4" />
               Save
@@ -153,7 +153,7 @@ export const WIDGET_TEMPLATES = {
   return (
     <Card title="Grounding Rep" icon={Zap} accent="ORANGE">
       {hasLIS ? (
-        <div className="p-4 text-center relative overflow-hidden group">
+        <div className="text-center relative overflow-hidden group">
           <div className="absolute top-0 left-0 w-full h-1 bg-yellow-400"></div>
           <Quote className="w-8 h-8 text-yellow-300 absolute top-4 left-4 opacity-50" />
           
@@ -171,7 +171,7 @@ export const WIDGET_TEMPLATES = {
           </div>
         </div>
       ) : (
-        <div className="p-4 text-center">
+        <div className="text-center">
           <div className="w-12 h-12 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-3 text-slate-400">
             <User className="w-6 h-6" />
           </div>
@@ -193,8 +193,8 @@ export const WIDGET_TEMPLATES = {
     `,
     'win-the-day': `
 <Card title="Win the Day" icon={Trophy} accent="TEAL">
-  <div className="space-y-4">
-    <p className="text-xs text-slate-500 font-medium uppercase tracking-wider">
+  <div className="space-y-1">
+    <p className="text-xs text-slate-500 font-medium uppercase tracking-wider mb-1">
       Identify 3 High-Impact Actions
     </p>
     
@@ -202,7 +202,7 @@ export const WIDGET_TEMPLATES = {
       // [NUCLEAR] Log render
       // console.log(\`[NUCLEAR] Rendering Win \${index}: \`, win);
       return (
-      <div key={win.id} className="flex gap-3 items-center">
+      <div key={win.id} className="flex gap-2 items-center">
         <button 
           onClick={() => handleToggleWinComplete(index)}
           className={\`flex-shrink-0 w-12 h-12 rounded-xl flex items-center justify-center transition-colors \${
@@ -224,7 +224,7 @@ export const WIDGET_TEMPLATES = {
                 handleUpdateWin(index, e.target.value);
             }}
             placeholder={\`Enter Priority #\${index + 1}\`}
-            className={\`w-full p-3 border rounded-xl outline-none transition-all text-sm font-medium \${
+            className={\`w-full p-2 border rounded-xl outline-none transition-all text-sm font-medium \${
               win.completed
                 ? 'bg-slate-50 border-slate-200 text-slate-400 line-through' 
                 : 'bg-white border-slate-200 focus:ring-2 focus:ring-teal-500 text-slate-700'
@@ -257,7 +257,7 @@ export const WIDGET_TEMPLATES = {
   
   return (
     <Card title="Daily Reps" icon={Dumbbell} accent="NAVY">
-      <div className="space-y-2">
+      <div className="space-y-1">
         {reps.map(rep => {
           const commitment = commitmentsList.find(c => c.id === rep.id);
           const isCompleted = commitment?.status === 'Committed';
@@ -266,11 +266,11 @@ export const WIDGET_TEMPLATES = {
             <div 
               key={rep.id} 
               onClick={() => handleToggleAdditionalRep && handleToggleAdditionalRep(rep.id, isCompleted ? 'Committed' : 'Pending', rep.label)}
-              className={\`flex items-center justify-between p-3 rounded-xl transition-colors cursor-pointer group \${
+              className={\`flex items-center justify-between p-2 rounded-xl transition-colors cursor-pointer group \${
                 isCompleted ? 'bg-green-50 border border-green-200' : 'bg-slate-50 hover:bg-blue-50'
               }\`}
             >
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2">
                 <div className={\`w-5 h-5 rounded border-2 flex items-center justify-center transition-colors \${
                   isCompleted 
                     ? 'bg-green-500 border-green-500' 
@@ -371,41 +371,41 @@ export const WIDGET_TEMPLATES = {
     `,
     'pm-bookend': `
 <Card title="PM Reflection" icon={MessageSquare} accent="NAVY">
-  <div className="space-y-4">
+  <div className="space-y-2">
     <div>
-      <label className="block text-xs font-bold text-slate-500 uppercase mb-2">
+      <label className="block text-xs font-bold text-slate-500 uppercase mb-1">
         1. What went well?
       </label>
       <textarea 
         value={reflectionGood}
         onChange={(e) => setReflectionGood(e.target.value)}
-        className="w-full p-3 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all text-sm"
+        className="w-full p-2 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all text-sm"
         rows={2}
         placeholder="Celebrate a win..."
       />
     </div>
 
     <div>
-      <label className="block text-xs font-bold text-slate-500 uppercase mb-2">
+      <label className="block text-xs font-bold text-slate-500 uppercase mb-1">
         2. What needs work?
       </label>
       <textarea 
         value={reflectionBetter}
         onChange={(e) => setReflectionBetter(e.target.value)}
-        className="w-full p-3 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all text-sm"
+        className="w-full p-2 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all text-sm"
         rows={2}
         placeholder="Identify an improvement..."
       />
     </div>
 
     <div>
-      <label className="block text-xs font-bold text-slate-500 uppercase mb-2">
+      <label className="block text-xs font-bold text-slate-500 uppercase mb-1">
         3. Closing thought
       </label>
       <textarea 
         value={reflectionBest}
         onChange={(e) => setReflectionBest(e.target.value)}
-        className="w-full p-3 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all text-sm"
+        className="w-full p-2 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all text-sm"
         rows={1}
         placeholder="What will I do 1% better tomorrow?"
       />
@@ -432,7 +432,7 @@ export const WIDGET_TEMPLATES = {
 
   return (
 <Card title="Today Scorecard" icon={Trophy} accent="ORANGE">
-    <div className="space-y-4">
+    <div className="space-y-2">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <span className="font-medium text-slate-700">I did my reps today</span>
@@ -464,7 +464,7 @@ export const WIDGET_TEMPLATES = {
       </div>
     </div>
 
-    <div className="mt-6 pt-6 border-t border-slate-100 flex justify-between items-center">
+    <div className="mt-4 pt-4 border-t border-slate-100 flex justify-between items-center">
       <div className="flex items-center gap-2">
         <Flame className="w-5 h-5 text-orange-500" />
         <span className="font-bold text-xl text-[#002E47]">{safeStreak}</span>

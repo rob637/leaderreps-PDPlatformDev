@@ -6,20 +6,21 @@ const WinTheDayWidget = ({ scope }) => {
   const { 
     morningWins, 
     handleUpdateWin, 
-    handleToggleWinComplete 
+    handleToggleWinComplete,
+    handleSaveSingleWin
   } = scope;
 
   return (
     <Card title="Win the Day" icon={Trophy} accent="TEAL">
-      <div className="space-y-2">
-        <p className="text-xs text-slate-500 font-medium uppercase tracking-wider mb-2">
+      <div className="space-y-1">
+        <p className="text-xs text-slate-500 font-medium uppercase tracking-wider mb-1">
           Identify 3 High-Impact Actions
         </p>
         
         {morningWins.map((win, index) => (
           <div 
             key={win.id} 
-            className={`flex items-center gap-3 p-3 rounded-xl transition-colors group ${
+            className={`flex items-center gap-2 p-2 rounded-xl transition-colors group ${
               win.completed ? 'bg-green-50 border border-green-200' : 'bg-slate-50 hover:bg-blue-50 border border-slate-100'
             }`}
           >
@@ -39,6 +40,7 @@ const WinTheDayWidget = ({ scope }) => {
                 type="text"
                 value={win.text}
                 onChange={(e) => handleUpdateWin(index, e.target.value)}
+                onBlur={() => handleSaveSingleWin && handleSaveSingleWin(index)}
                 placeholder={`Enter Priority #${index + 1}`}
                 className={`w-full bg-transparent outline-none text-sm font-bold ${
                   win.completed 

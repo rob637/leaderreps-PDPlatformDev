@@ -18,25 +18,26 @@ const GroundingRepWidget = ({ scope }) => {
   if (isEditing) {
     return (
       <Card title="LIS Maker" icon={PenTool} accent="NAVY">
-        <div className="space-y-4">
-          <div className="bg-purple-50 p-4 rounded-xl border border-purple-100">
-            <h4 className="font-bold text-purple-900 mb-2">Build Your Identity</h4>
-            <p className="text-sm text-purple-800 mb-3">
+        <div className="space-y-2">
+          <div className="bg-purple-50 p-3 rounded-xl border border-purple-100">
+            <h4 className="font-bold text-purple-900 mb-1">Build Your Identity</h4>
+            <p className="text-sm text-purple-800 mb-2">
               Your Leadership Identity Statement (LIS) anchors you in who you want to be.
             </p>
-            <p className="text-xs text-purple-600 italic mb-2">
+            <p className="text-xs text-purple-600 italic mb-1">
               Try this format: "I am a [Core Value] leader who [Action] to create [Impact]."
             </p>
           </div>
 
           <div>
-            <label className="block text-xs font-bold text-slate-500 uppercase mb-2">
+            <label className="block text-xs font-bold text-slate-500 uppercase mb-1">
               Your Statement
             </label>
             <textarea 
               value={identityStatement}
               onChange={(e) => setIdentityStatement(e.target.value)}
-              className="w-full p-3 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-purple-500 outline-none transition-all text-sm min-h-[100px]"
+              onBlur={() => handleSaveIdentity(identityStatement)}
+              className="w-full p-2 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-purple-500 outline-none transition-all text-sm min-h-[80px]"
               placeholder="I am a..."
             />
           </div>
@@ -44,7 +45,7 @@ const GroundingRepWidget = ({ scope }) => {
           <div className="flex gap-2">
             <button 
               onClick={() => setEditing(false)}
-              className="flex-1 py-3 bg-slate-100 text-slate-600 rounded-xl font-bold hover:bg-slate-200 transition-colors"
+              className="flex-1 py-2 bg-slate-100 text-slate-600 rounded-xl font-bold hover:bg-slate-200 transition-colors"
             >
               Cancel
             </button>
@@ -53,7 +54,7 @@ const GroundingRepWidget = ({ scope }) => {
                 handleSaveIdentity(identityStatement);
                 setEditing(false);
               }}
-              className="flex-1 py-3 bg-purple-600 text-white rounded-xl font-bold hover:bg-purple-700 transition-colors flex items-center justify-center gap-2"
+              className="flex-1 py-2 bg-purple-600 text-white rounded-xl font-bold hover:bg-purple-700 transition-colors flex items-center justify-center gap-2"
             >
               <Save className="w-4 h-4" />
               Save
@@ -67,14 +68,13 @@ const GroundingRepWidget = ({ scope }) => {
   return (
     <Card title="Grounding Rep" icon={Zap} accent="ORANGE">
       {hasLIS ? (
-        <div className="p-4 text-center relative overflow-hidden group">
-          <Quote className="w-8 h-8 text-yellow-300 absolute top-4 left-4 opacity-50" />
+        <div className="text-center relative overflow-hidden group">
           
           <p className="text-lg font-serif font-medium text-slate-800 relative z-10 italic">
             "{identityStatement}"
           </p>
           
-          <div className="mt-4 flex justify-center">
+          <div className="mt-1 flex justify-center">
              <button 
                className="text-xs font-bold text-yellow-700 hover:text-yellow-800 uppercase tracking-wider flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity"
                onClick={() => setEditing(true)}
@@ -84,12 +84,12 @@ const GroundingRepWidget = ({ scope }) => {
           </div>
         </div>
       ) : (
-        <div className="p-4 text-center">
-          <div className="w-12 h-12 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-3 text-slate-400">
-            <User className="w-6 h-6" />
+        <div className="text-center">
+          <div className="w-10 h-10 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-2 text-slate-400">
+            <User className="w-5 h-5" />
           </div>
           <h4 className="font-bold text-slate-700 mb-1">Who are you as a leader?</h4>
-          <p className="text-sm text-slate-500 mb-4">
+          <p className="text-sm text-slate-500 mb-3">
             You haven't defined your Leadership Identity Statement yet.
           </p>
           <button 
