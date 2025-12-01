@@ -75,7 +75,7 @@ const WidgetRenderer = ({ widgetId, children, scope = {} }) => {
   // If we have code for this widget, render it
   if (shouldRenderDynamic) {
     return (
-      <div className={`widget-wrapper relative group ${isEditMode ? 'ring-2 ring-teal-500/50 rounded-xl' : ''}`}>
+      <div id={`widget-${widgetId}`} className={`widget-wrapper relative group ${isEditMode ? 'ring-2 ring-teal-500/50 rounded-xl' : ''}`}>
         {isEditMode && (
           <div className="absolute -top-3 -right-3 z-50 opacity-0 group-hover:opacity-100 transition-opacity">
             <button 
@@ -94,7 +94,7 @@ const WidgetRenderer = ({ widgetId, children, scope = {} }) => {
 
   // Fallback to the hardcoded component (children)
   return (
-    <div className={`relative group ${isEditMode ? 'ring-2 ring-teal-500/50 rounded-xl' : ''}`}>
+    <div id={`widget-${widgetId}`} className={`relative group ${isEditMode ? 'ring-2 ring-teal-500/50 rounded-xl' : ''}`}>
        {isEditMode && (
           <div className="absolute -top-3 -right-3 z-50 opacity-0 group-hover:opacity-100 transition-opacity">
             <button 

@@ -114,7 +114,15 @@ export const WIDGET_TEMPLATES = {
              <button 
                className="text-xs font-bold text-yellow-700 hover:text-yellow-800 uppercase tracking-wider flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity"
                onClick={() => {
-                 alert("Use the LIS Maker widget to edit your statement.");
+                 const el = document.getElementById('widget-lis-maker');
+                 if (el) {
+                   el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                   // Highlight it briefly
+                   el.classList.add('ring-4', 'ring-purple-400', 'transition-all', 'duration-500');
+                   setTimeout(() => el.classList.remove('ring-4', 'ring-purple-400'), 2000);
+                 } else {
+                   alert("Use the LIS Maker widget to edit your statement. Please enable it in the Widget Manager if not visible.");
+                 }
                }}
              >
                Edit Statement
@@ -133,7 +141,15 @@ export const WIDGET_TEMPLATES = {
           <button 
             className="px-4 py-2 bg-[#002E47] text-white rounded-lg text-sm font-bold hover:bg-[#003E5F] transition-colors"
             onClick={() => {
-                alert("Please add the 'LIS Maker' widget to your dashboard to create your statement.");
+                const el = document.getElementById('widget-lis-maker');
+                if (el) {
+                   el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                   // Highlight it briefly
+                   el.classList.add('ring-4', 'ring-purple-400', 'transition-all', 'duration-500');
+                   setTimeout(() => el.classList.remove('ring-4', 'ring-purple-400'), 2000);
+                } else {
+                   alert("Please add the 'LIS Maker' widget to your dashboard to create your statement.");
+                }
             }}
           >
             Create LIS
