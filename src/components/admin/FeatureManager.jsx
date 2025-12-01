@@ -317,7 +317,7 @@ const FeatureManager = () => {
             'Locker': 'At 11:59:59 PM, completion data is saved to Locker and fields reset for the next day.'
           }
         };
-      case 'identity-builder':
+      case 'lis-maker':
         return {
             ...common,
             'Input': { 
@@ -530,7 +530,7 @@ const FeatureManager = () => {
 
   const initialGroups = {
     dashboard: [
-      'daily-quote', 'welcome-message', 'identity-builder', 'habit-stack', 'win-the-day', 
+      'daily-quote', 'welcome-message', 'lis-maker', 'habit-stack', 'win-the-day', 
       'exec-summary', 'weekly-focus', 'notifications', 'scorecard', 'pm-bookend'
     ],
     'development-plan': [
