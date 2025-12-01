@@ -792,6 +792,27 @@ export const useDashboard = ({
     }
   }, [morningWins, updateDailyPracticeData]);
 
+  const handleSaveAllWins = useCallback(async () => {
+    if (!updateDailyPracticeData) return;
+    
+    setIsSavingWIN(true);
+    try {
+      // Mark all as saved
+      const newWins = morningWins.map(win => ({ ...win, saved: true }));
+      setMorningWins(newWins);
+
+      // Update Firestore
+      await updateDailyPracticeData({
+        'morningBookend.wins': newWins
+      });
+    } catch (error) {
+      console.error('Error saving all wins:', error);
+      alert('Error saving priorities. Please try again.');
+    } finally {
+      setIsSavingWIN(false);
+    }
+  }, [morningWins, updateDailyPracticeData]);
+
   const handleToggleWinComplete = useCallback(async (index) => {
     if (!updateDailyPracticeData) return;
 
@@ -897,6 +918,7 @@ export const useDashboard = ({
     setMorningWins, // New Array
     handleUpdateWin,
     handleSaveSingleWin,
+    handleSaveAllWins,
     handleToggleWinComplete,
     
     otherTasks,

@@ -7,7 +7,8 @@ const WinTheDayWidget = ({ scope }) => {
     morningWins, 
     handleUpdateWin, 
     handleToggleWinComplete,
-    handleSaveSingleWin
+    handleSaveSingleWin,
+    handleSaveAllWins
   } = scope;
 
   const [isSaving, setIsSaving] = useState(false);
@@ -17,8 +18,11 @@ const WinTheDayWidget = ({ scope }) => {
     // Simulate save delay for UX
     await new Promise(resolve => setTimeout(resolve, 500));
     
-    // Save each win
-    if (handleSaveSingleWin) {
+    // Save all wins
+    if (handleSaveAllWins) {
+      await handleSaveAllWins();
+    } else if (handleSaveSingleWin) {
+      // Fallback
       morningWins.forEach((_, index) => {
         handleSaveSingleWin(index);
       });

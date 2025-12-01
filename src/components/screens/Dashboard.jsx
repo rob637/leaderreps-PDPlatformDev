@@ -278,6 +278,7 @@ const Dashboard = (props) => {
     // New Win Functions
     handleUpdateWin,
     handleSaveSingleWin,
+    handleSaveAllWins,
     handleToggleWinComplete,
     
     // State
