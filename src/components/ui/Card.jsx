@@ -71,20 +71,31 @@ const Card = React.forwardRef(({
     navy: 'border-t-4 border-t-corporate-navy',
     teal: 'border-t-4 border-t-corporate-teal',
     orange: 'border-t-4 border-t-corporate-orange',
-    red: 'border-t-4 border-t-red-500',
-    green: 'border-t-4 border-t-green-500',
-    blue: 'border-t-4 border-t-blue-500',
-    yellow: 'border-t-4 border-t-yellow-500',
-    purple: 'border-t-4 border-t-purple-500',
-    // Support uppercase too just in case
+    
+    // Remap standard colors to Corporate Palette
+    red: 'border-t-4 border-t-corporate-orange',
+    green: 'border-t-4 border-t-corporate-teal',
+    blue: 'border-t-4 border-t-corporate-navy',
+    yellow: 'border-t-4 border-t-corporate-orange',
+    purple: 'border-t-4 border-t-corporate-navy',
+    indigo: 'border-t-4 border-t-corporate-navy',
+    pink: 'border-t-4 border-t-corporate-orange',
+    gray: 'border-t-4 border-t-slate-400',
+
+    // Support uppercase too
     NAVY: 'border-t-4 border-t-corporate-navy',
     TEAL: 'border-t-4 border-t-corporate-teal',
     ORANGE: 'border-t-4 border-t-corporate-orange',
-    RED: 'border-t-4 border-t-red-500',
-    GREEN: 'border-t-4 border-t-green-500',
-    BLUE: 'border-t-4 border-t-blue-500',
-    YELLOW: 'border-t-4 border-t-yellow-500',
-    PURPLE: 'border-t-4 border-t-purple-500',
+    
+    // Remap uppercase standard colors
+    RED: 'border-t-4 border-t-corporate-orange',
+    GREEN: 'border-t-4 border-t-corporate-teal',
+    BLUE: 'border-t-4 border-t-corporate-navy',
+    YELLOW: 'border-t-4 border-t-corporate-orange',
+    PURPLE: 'border-t-4 border-t-corporate-navy',
+    INDIGO: 'border-t-4 border-t-corporate-navy',
+    PINK: 'border-t-4 border-t-corporate-orange',
+    GRAY: 'border-t-4 border-t-slate-400',
   };
 
   const iconColors = {
@@ -92,19 +103,30 @@ const Card = React.forwardRef(({
     navy: 'text-corporate-navy',
     teal: 'text-corporate-teal',
     orange: 'text-corporate-orange',
-    red: 'text-red-500',
-    green: 'text-green-500',
-    blue: 'text-blue-500',
-    yellow: 'text-yellow-500',
-    purple: 'text-purple-500',
+    
+    // Remap standard colors
+    red: 'text-corporate-orange',
+    green: 'text-corporate-teal',
+    blue: 'text-corporate-navy',
+    yellow: 'text-corporate-orange',
+    purple: 'text-corporate-navy',
+    indigo: 'text-corporate-navy',
+    pink: 'text-corporate-orange',
+    gray: 'text-slate-400',
+    
     NAVY: 'text-corporate-navy',
     TEAL: 'text-corporate-teal',
     ORANGE: 'text-corporate-orange',
-    RED: 'text-red-500',
-    GREEN: 'text-green-500',
-    BLUE: 'text-blue-500',
-    YELLOW: 'text-yellow-500',
-    PURPLE: 'text-purple-500',
+    
+    // Remap uppercase standard colors
+    RED: 'text-corporate-orange',
+    GREEN: 'text-corporate-teal',
+    BLUE: 'text-corporate-navy',
+    YELLOW: 'text-corporate-orange',
+    PURPLE: 'text-corporate-navy',
+    INDIGO: 'text-corporate-navy',
+    PINK: 'text-corporate-orange',
+    GRAY: 'text-slate-400',
   };
 
   const Component = onClick ? 'button' : 'div';

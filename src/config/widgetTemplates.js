@@ -48,20 +48,26 @@ export const WIDGET_TEMPLATES = {
 </>
     `,
     'weekly-focus': `
-<Card title="Weekly Focus" icon={Target} accent="INDIGO">
-  <div className="p-4 bg-slate-50 rounded-xl border border-slate-100 text-center">
-    <p className="text-sm text-slate-600 mb-2">
-      This widget will display your active focus area from the Development Plan.
-    </p>
-    <p className="text-xs text-slate-400 italic">
-      (Development Plan integration coming soon)
-    </p>
-  </div>
+(() => {
+  const focus = (typeof developmentPlanData !== 'undefined' && developmentPlanData?.focus) 
+    ? developmentPlanData.focus 
+    : "Strategic Thinking";
 
-</Card>
+  return (
+    <Card accent="NAVY">
+      <div className="flex items-center gap-3 p-4">
+        <Target className="w-5 h-5 text-corporate-navy flex-shrink-0" />
+        <span className="font-bold text-corporate-navy whitespace-nowrap">Weekly Focus:</span>
+        <span className="text-slate-600 font-medium truncate border-b border-slate-200 px-2 flex-1">
+          {focus}
+        </span>
+      </div>
+    </Card>
+  );
+})()
     `,
     'lis-maker': `
-<Card title="LIS Maker" icon={PenTool} accent="PURPLE">
+<Card title="LIS Maker" icon={PenTool} accent="NAVY">
   <div className="space-y-4">
     <div className="bg-purple-50 p-4 rounded-xl border border-purple-100">
       <h4 className="font-bold text-purple-900 mb-2">Build Your Identity</h4>
@@ -100,7 +106,7 @@ export const WIDGET_TEMPLATES = {
   const hasLIS = identityStatement && identityStatement.trim().length > 0;
 
   return (
-    <Card title="Grounding Rep" icon={Zap} accent="YELLOW">
+    <Card title="Grounding Rep" icon={Zap} accent="ORANGE">
       {hasLIS ? (
         <div className="p-6 bg-yellow-50 rounded-xl border border-yellow-100 text-center relative overflow-hidden group">
           <div className="absolute top-0 left-0 w-full h-1 bg-yellow-400"></div>
@@ -113,17 +119,7 @@ export const WIDGET_TEMPLATES = {
           <div className="mt-4 flex justify-center">
              <button 
                className="text-xs font-bold text-yellow-700 hover:text-yellow-800 uppercase tracking-wider flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity"
-               onClick={() => {
-                 const el = document.getElementById('widget-lis-maker');
-                 if (el) {
-                   el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                   // Highlight it briefly
-                   el.classList.add('ring-4', 'ring-purple-400', 'transition-all', 'duration-500');
-                   setTimeout(() => el.classList.remove('ring-4', 'ring-purple-400'), 2000);
-                 } else {
-                   alert("Use the LIS Maker widget to edit your statement. Please enable it in the Widget Manager if not visible.");
-                 }
-               }}
+               onClick={() => setIsAnchorModalOpen(true)}
              >
                Edit Statement
              </button>
@@ -140,17 +136,7 @@ export const WIDGET_TEMPLATES = {
           </p>
           <button 
             className="px-4 py-2 bg-[#002E47] text-white rounded-lg text-sm font-bold hover:bg-[#003E5F] transition-colors"
-            onClick={() => {
-                const el = document.getElementById('widget-lis-maker');
-                if (el) {
-                   el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                   // Highlight it briefly
-                   el.classList.add('ring-4', 'ring-purple-400', 'transition-all', 'duration-500');
-                   setTimeout(() => el.classList.remove('ring-4', 'ring-purple-400'), 2000);
-                } else {
-                   alert("Please add the 'LIS Maker' widget to your dashboard to create your statement.");
-                }
-            }}
+            onClick={() => setIsAnchorModalOpen(true)}
           >
             Create LIS
           </button>
@@ -225,7 +211,7 @@ export const WIDGET_TEMPLATES = {
   const commitmentsList = Array.isArray(additionalCommitments) ? additionalCommitments : [];
   
   return (
-    <Card title="Daily Reps" icon={Dumbbell} accent="BLUE">
+    <Card title="Daily Reps" icon={Dumbbell} accent="NAVY">
       <div className="space-y-2">
         {reps.map(rep => {
           const commitment = commitmentsList.find(c => c.id === rep.id);
@@ -319,7 +305,7 @@ export const WIDGET_TEMPLATES = {
 </>
     `,
     'progress-feedback': `
-<Card title="Progress & Feedback" icon={TrendingUp} accent="GREEN">
+<Card title="Progress & Feedback" icon={TrendingUp} accent="TEAL">
   <div className="flex items-center justify-between p-4 bg-green-50 rounded-xl border border-green-100 mb-4">
     <div>
       <p className="text-xs font-bold text-green-800 uppercase">Weekly Completion</p>
@@ -339,7 +325,7 @@ export const WIDGET_TEMPLATES = {
 </Card>
     `,
     'pm-bookend': `
-<Card title="PM Reflection" icon={MessageSquare} accent="INDIGO">
+<Card title="PM Reflection" icon={MessageSquare} accent="NAVY">
   <div className="space-y-4">
     <div>
       <label className="block text-xs font-bold text-slate-500 uppercase mb-2">
@@ -376,7 +362,7 @@ export const WIDGET_TEMPLATES = {
         onChange={(e) => setReflectionBest(e.target.value)}
         className="w-full p-3 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all text-sm"
         rows={1}
-        placeholder="One word to describe today..."
+        placeholder="What will I do 1% better tomorrow?"
       />
     </div>
 
@@ -400,7 +386,7 @@ export const WIDGET_TEMPLATES = {
   const safeHandleSave = typeof handleSaveScorecard !== 'undefined' ? handleSaveScorecard : () => {};
 
   return (
-<Card title="Today Scorecard" icon={Trophy} accent="YELLOW">
+<Card title="Today Scorecard" icon={Trophy} accent="ORANGE">
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
@@ -494,7 +480,7 @@ export const WIDGET_TEMPLATES = {
 </Card>
     `,
     'leadership-videos': `
-<Card title="Featured Talk" icon={Video} accent="RED">
+<Card title="Featured Talk" icon={Video} accent="ORANGE">
   <div className="relative w-full aspect-video bg-gray-800 rounded-lg flex items-center justify-center mb-3 group cursor-pointer">
     <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform">
       <Play className="w-6 h-6 text-white fill-current" />
@@ -506,7 +492,7 @@ export const WIDGET_TEMPLATES = {
 </Card>
     `,
     'strat-templates': `
-<Card title="Templates" icon={FileText} accent="BLUE">
+<Card title="Templates" icon={FileText} accent="NAVY">
   <div className="grid grid-cols-2 gap-2">
     <button className="p-3 bg-blue-50 hover:bg-blue-100 rounded-lg text-left transition-colors">
       <FileText className="w-5 h-5 text-blue-600 mb-2" />
@@ -529,7 +515,7 @@ export const WIDGET_TEMPLATES = {
 </Card>
     `,
     'community-feed': `
-<Card title="Community Feed" icon={MessageSquare} accent="INDIGO">
+<Card title="Community Feed" icon={MessageSquare} accent="NAVY">
   <div className="space-y-4">
     <div className="flex gap-3">
       <div className="w-8 h-8 rounded-full bg-gray-200 flex-shrink-0"></div>
@@ -554,7 +540,7 @@ export const WIDGET_TEMPLATES = {
 </Card>
     `,
     'my-discussions': `
-<Card title="My Discussions" icon={MessageCircle} accent="BLUE">
+<Card title="My Discussions" icon={MessageCircle} accent="NAVY">
   <div className="space-y-2">
     <div className="p-2 hover:bg-gray-50 rounded-lg cursor-pointer transition-colors flex justify-between items-center">
       <span className="text-sm font-medium text-gray-700">Q3 Planning Thread</span>
@@ -573,7 +559,7 @@ export const WIDGET_TEMPLATES = {
 </Card>
     `,
     'mastermind': `
-<Card title="Mastermind Groups" icon={Users} accent="PURPLE">
+<Card title="Mastermind Groups" icon={Users} accent="NAVY">
   <p className="text-gray-600 text-sm mb-4">Join a peer group of leaders at your level to share challenges and grow together.</p>
   <button className="w-full py-2 bg-indigo-600 text-white rounded-lg font-bold text-sm hover:bg-indigo-700 transition-colors">
     Find a Group
@@ -582,7 +568,7 @@ export const WIDGET_TEMPLATES = {
 </Card>
     `,
     'mentor-match': `
-<Card title="Mentor Match" icon={UserPlus} accent="GREEN">
+<Card title="Mentor Match" icon={UserPlus} accent="TEAL">
   <div className="flex items-center gap-3 mb-3">
     <div className="w-12 h-12 bg-gray-200 rounded-full"></div>
     <div>
@@ -598,7 +584,7 @@ export const WIDGET_TEMPLATES = {
 </Card>
     `,
     'live-events': `
-<Card title="Upcoming Events" icon={Calendar} accent="PINK">
+<Card title="Upcoming Events" icon={Calendar} accent="ORANGE">
   <div className="space-y-3">
     <div className="flex gap-3 items-start border-b border-gray-100 pb-3">
       <div className="bg-indigo-100 text-indigo-700 rounded px-2 py-1 text-center min-w-[50px]">
@@ -646,7 +632,7 @@ export const WIDGET_TEMPLATES = {
 </Card>
     `,
     'progress-analytics': `
-<Card title="Growth Analytics" icon={BarChart2} accent="BLUE">
+<Card title="Growth Analytics" icon={BarChart2} accent="NAVY">
   <div className="flex items-end gap-2 h-24 mt-4">
     <div className="flex-1 bg-blue-100 rounded-t hover:bg-blue-200 transition-colors relative group">
       <div className="absolute bottom-0 w-full bg-blue-500 rounded-t" style={{ height: '40%' }}></div>
@@ -672,7 +658,7 @@ export const WIDGET_TEMPLATES = {
 </Card>
     `,
     'ai-roleplay': `
-<Card title="AI Roleplay" icon={Bot} accent="PURPLE">
+<Card title="AI Roleplay" icon={Bot} accent="NAVY">
   <p className="text-xs text-gray-500 mb-4">Practice real-world scenarios with AI.</p>
   <div className="bg-purple-50 rounded-lg p-3 mb-3 border border-purple-100">
     <p className="text-xs font-bold text-purple-600 uppercase mb-1">Recommended</p>
@@ -722,7 +708,7 @@ export const WIDGET_TEMPLATES = {
 </Card>
     `,
     'roi-report': `
-<Card title="ROI Report" icon={TrendingUp} accent="GREEN">
+<Card title="ROI Report" icon={TrendingUp} accent="TEAL">
   <div className="flex items-center justify-between mb-4">
     <div>
       <p className="text-xs text-gray-500">Leadership Score</p>
@@ -985,7 +971,7 @@ const LockerController = () => {
     <Card 
       title="Controller" 
       icon={Settings}
-      accent="navy"
+      accent="NAVY"
       className="mb-6"
     >
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -1060,7 +1046,7 @@ const LockerReminders = () => {
 
   if (!isSupported) {
     return (
-      <Card title="Daily Reminders" icon={Bell} accent="orange">
+      <Card title="Daily Reminders" icon={Bell} accent="ORANGE">
         <div className="p-4 text-center text-slate-500">
           <AlertTriangle className="w-8 h-8 mx-auto mb-2 text-slate-400" />
           <p>Notifications are not supported in this browser.</p>
@@ -1071,7 +1057,7 @@ const LockerReminders = () => {
 
   if (permission !== 'granted') {
     return (
-      <Card title="Daily Reminders" icon={Bell} accent="orange">
+      <Card title="Daily Reminders" icon={Bell} accent="ORANGE">
         <div className="flex flex-col items-center justify-center p-6 text-center space-y-4">
           <div className="p-3 bg-orange-100 rounded-full">
             <Bell className="w-8 h-8 text-orange-600" />
@@ -1099,7 +1085,7 @@ const LockerReminders = () => {
   }
 
   return (
-    <Card title="Daily Reminders" icon={Bell} accent="teal">
+    <Card title="Daily Reminders" icon={Bell} accent="TEAL">
       <div className="space-y-4">
         {Object.values(reminders).map((reminder) => (
           <div key={reminder.id} className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
@@ -1168,7 +1154,7 @@ const SystemRemindersController = () => {
     <Card 
       title="System Reminders Controller" 
       icon={Shield} 
-      accent="navy"
+      accent="NAVY"
       className="mb-6"
     >
       <div className="space-y-6">
@@ -1478,7 +1464,7 @@ render(<SystemRemindersController />);
   };
 
   return (
-    <Card title={phase} subtitle={title} icon={BookOpen} accent="BLUE">
+    <Card title={phase} subtitle={title} icon={BookOpen} accent="NAVY">
       <div className="space-y-4">
         {/* Header Info */}
         <div>

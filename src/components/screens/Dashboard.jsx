@@ -25,7 +25,6 @@ const DASHBOARD_FEATURES = [
   'daily-quote',
   'am-bookend-header',
   'weekly-focus',
-  'lis-maker',
   'grounding-rep',
   'win-the-day',
   'daily-leader-reps',
