@@ -192,50 +192,58 @@ export const WIDGET_TEMPLATES = {
 })()
     `,
     'win-the-day': `
-<Card title="Win the Day" icon={Trophy} accent="TEAL">
-  <div className="space-y-1">
-    <p className="text-xs text-slate-500 font-medium uppercase tracking-wider mb-1">
-      Identify 3 High-Impact Actions
-    </p>
-    
-    {morningWins.map((win, index) => {
-      // [NUCLEAR] Log render
-      // console.log(\`[NUCLEAR] Rendering Win \${index}: \`, win);
-      return (
-      <div key={win.id} className="flex gap-2 items-center">
+(() => {
+  return (
+    <Card title="Win the Day" icon={Trophy} accent="TEAL">
+      <div className="space-y-1">
+        <p className="text-xs text-slate-500 font-medium uppercase tracking-wider mb-1">
+          Identify 3 High-Impact Actions
+        </p>
+        
+        {morningWins.map((win, index) => {
+          const hasText = win.text && win.text.trim().length > 0;
+          return (
+          <div key={win.id} className="flex gap-2 items-center p-2 rounded-xl bg-slate-50 border border-slate-100">
+            <button 
+              onClick={() => hasText && handleToggleWinComplete(index)}
+              className={\`flex-shrink-0 w-5 h-5 rounded border-2 flex items-center justify-center transition-colors \${
+                win.completed 
+                  ? 'bg-green-500 border-green-500' 
+                  : hasText ? 'border-slate-300 hover:border-blue-400 cursor-pointer' : 'border-slate-200 bg-slate-100 cursor-not-allowed opacity-50'
+              }\`}
+              title={win.completed ? "Mark Incomplete" : "Mark Complete"}
+            >
+              {win.completed && <CheckCircle className="w-3 h-3 text-white" />}
+            </button>
+
+            <div className="flex-1">
+              <input 
+                type="text"
+                value={win.text}
+                onChange={(e) => handleUpdateWin(index, e.target.value)}
+                onBlur={() => handleSaveSingleWin && handleSaveSingleWin(index)}
+                placeholder={\`Enter Priority #\${index + 1}\`}
+                className={\`w-full bg-transparent outline-none text-sm font-bold \${
+                  win.completed
+                    ? 'text-green-700 line-through placeholder:text-green-300' 
+                    : 'text-slate-700 placeholder:text-slate-400'
+                }\`}
+              />
+            </div>
+          </div>
+        )})}
+        
         <button 
-          onClick={() => handleToggleWinComplete(index)}
-          className={\`flex-shrink-0 w-12 h-12 rounded-xl flex items-center justify-center transition-colors \${
-            win.completed 
-              ? 'bg-green-500 text-white shadow-sm' 
-              : 'bg-slate-50 text-slate-300 hover:bg-green-50 hover:text-green-500 border border-slate-200'
-          }\`}
-          title={win.completed ? "Mark Incomplete" : "Mark Complete"}
+          onClick={() => morningWins.forEach((_, i) => handleSaveSingleWin && handleSaveSingleWin(i))}
+          className="w-full mt-2 py-2 bg-[#002E47] text-white rounded-xl font-bold hover:bg-[#003E5F] transition-colors flex items-center justify-center gap-2 text-sm"
         >
-          <CheckSquare className="w-6 h-6" />
+          <Save className="w-4 h-4" />
+          Save Priorities
         </button>
-
-        <div className="flex-1">
-          <input 
-            type="text"
-            value={win.text}
-            onChange={(e) => {
-                console.log('[NUCLEAR] Input Change:', index, e.target.value);
-                handleUpdateWin(index, e.target.value);
-            }}
-            placeholder={\`Enter Priority #\${index + 1}\`}
-            className={\`w-full p-2 border rounded-xl outline-none transition-all text-sm font-medium \${
-              win.completed
-                ? 'bg-slate-50 border-slate-200 text-slate-400 line-through' 
-                : 'bg-white border-slate-200 focus:ring-2 focus:ring-teal-500 text-slate-700'
-            }\`}
-          />
-        </div>
       </div>
-    )})}
-  </div>
-
-</Card>
+    </Card>
+  );
+})()
     `,
     'daily-leader-reps': `
 (() => {
@@ -267,7 +275,7 @@ export const WIDGET_TEMPLATES = {
               key={rep.id} 
               onClick={() => handleToggleAdditionalRep && handleToggleAdditionalRep(rep.id, isCompleted ? 'Committed' : 'Pending', rep.label)}
               className={\`flex items-center justify-between p-2 rounded-xl transition-colors cursor-pointer group \${
-                isCompleted ? 'bg-green-50 border border-green-200' : 'bg-slate-50 hover:bg-blue-50'
+                isCompleted ? 'bg-green-50 border border-green-200' : 'bg-slate-50 hover:bg-blue-50 border border-slate-100'
               }\`}
             >
               <div className="flex items-center gap-2">
@@ -285,6 +293,13 @@ export const WIDGET_TEMPLATES = {
             </div>
           );
         })}
+
+        <button 
+          className="w-full mt-2 py-2 bg-[#002E47] text-white rounded-xl font-bold hover:bg-[#003E5F] transition-colors flex items-center justify-center gap-2 text-sm"
+        >
+          <Save className="w-4 h-4" />
+          Save Reps
+        </button>
       </div>
 
     </Card>
