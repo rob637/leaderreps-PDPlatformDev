@@ -54,13 +54,11 @@ export const WIDGET_TEMPLATES = {
     : "Strategic Thinking";
 
   return (
-    <Card accent="NAVY">
-      <div className="flex items-center gap-3 p-4">
-        <Target className="w-5 h-5 text-corporate-navy flex-shrink-0" />
-        <span className="font-bold text-corporate-navy whitespace-nowrap">Weekly Focus:</span>
-        <span className="text-slate-600 font-medium truncate border-b border-slate-200 px-2 flex-1">
+    <Card title="Weekly Focus" icon={Target} accent="NAVY">
+      <div className="p-2">
+        <p className="text-lg font-medium text-slate-700">
           {focus}
-        </span>
+        </p>
       </div>
     </Card>
   );

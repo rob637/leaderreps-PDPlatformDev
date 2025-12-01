@@ -56,7 +56,7 @@ const WidgetRenderer = ({ widgetId, children, scope = {} }) => {
   
   // [NUCLEAR FIX] Force 'win-the-day' and 'grounding-rep' to use template to bypass potential broken DB overrides
   let codeToRender = customCode || templateCode;
-  if (widgetId === 'win-the-day' || widgetId === 'grounding-rep') {
+  if (widgetId === 'win-the-day' || widgetId === 'grounding-rep' || widgetId === 'weekly-focus') {
     console.log(`[NUCLEAR] Forcing template for ${widgetId}. Ignoring custom DB code.`);
     codeToRender = templateCode;
   }
