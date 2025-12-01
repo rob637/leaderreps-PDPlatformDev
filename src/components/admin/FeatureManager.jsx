@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { 
   ToggleLeft, ToggleRight, FlaskConical, ArrowUp, ArrowDown, Edit3, Plus, Trash2, RefreshCw, Save, Flame, Bell, Target, Calendar, Moon, BookOpen, Play, Book, Video, FileText, Users, MessageSquare, UserPlus, Search, Radio, History, BarChart2, Bot, Cpu, Dumbbell, TrendingUp,
-  CheckSquare, Square, X, Trophy, ChevronRight, ArrowRight, Loader, Eye, EyeOff, Settings, Lightbulb, Zap, Crosshair, Flag, Circle, PenTool
+  CheckSquare, Square, X, Trophy, ChevronRight, ArrowRight, Loader, Eye, EyeOff, Settings, Lightbulb, Zap, Crosshair, Flag, Circle, PenTool, CheckCircle
 } from 'lucide-react';
 import { useFeatures } from '../../providers/FeatureProvider';
 import { useWidgetEditor } from '../../providers/WidgetEditorProvider';
@@ -62,6 +62,7 @@ const FeatureManager = () => {
     // Habits / Reps
     habitsCompleted,
     handleHabitToggle,
+    handleSaveReps,
     
     // Streak
     streakCount,
@@ -167,6 +168,7 @@ const FeatureManager = () => {
     // We wrap these to ensure they work in the isolated scope if needed, 
     // but passing them directly is usually fine.
     handleHabitCheck: (key, val) => handleHabitToggle(key, val), // This one was wrapped in Dashboard4
+    handleSaveReps,
     setIsAnchorModalOpen: () => console.log('Open Anchor Modal (Mocked for Editor)'),
     setIsCalendarModalOpen: () => console.log('Open Calendar Modal (Mocked for Editor)'),
     handleToggleAdditionalRep,

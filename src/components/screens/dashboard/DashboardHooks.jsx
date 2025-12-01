@@ -941,7 +941,25 @@ export const useDashboard = ({
     // Legacy / Deprecated but kept for safety
     handleToggleWIN,
     handleSaveWIN,
-    isSavingWIN
+    isSavingWIN,
+
+    // NEW: Save Reps Handler
+    handleSaveReps: useCallback(async () => {
+      // Since reps save on toggle, this is a confirmation action
+      // We could force a save here if needed, but for now just confirm
+      if (updateDailyPracticeData) {
+         // Force a re-save of current commitments to be safe
+         try {
+             await updateDailyPracticeData({
+                 active_commitments: additionalCommitments
+             });
+             alert('✅ Daily Reps Saved!');
+         } catch (e) {
+             console.error(e);
+             alert('Error saving reps.');
+         }
+      }
+    }, [updateDailyPracticeData, additionalCommitments])
   };
 };
 /* =========================================================

@@ -295,6 +295,7 @@ export const WIDGET_TEMPLATES = {
         })}
 
         <button 
+          onClick={() => handleSaveReps && handleSaveReps()}
           className="w-full mt-2 py-2 bg-[#002E47] text-white rounded-xl font-bold hover:bg-[#003E5F] transition-colors flex items-center justify-center gap-2 text-sm"
         >
           <Save className="w-4 h-4" />
@@ -1549,11 +1550,9 @@ render(<SystemRemindersController />);
         {/* Action Items */}
         <div className="space-y-2">
           <p className="text-xs text-slate-500 font-medium uppercase tracking-wider">
-  'am-bookend-header': { core: true, category: 'Planning', name: 'AM Bookend Header', description: 'AM Bookend Header', purpose: 'Visual separator for the Morning Routine.', extendedDescription: 'Marks the beginning of the AM Bookend section, signaling the start of the daily planning process.' },
-  'weekly-focus': { core: true, category: 'Planning', name: 'Weekly Focus', description: 'Weekly Focus', purpose: 'Highlights the primary development goal for the week.', extendedDescription: 'Displays the active focus area from the user\'s Development Plan to keep it top-of-mind.' },
-  'lis-maker': { core: true, category: 'Dashboard', name: 'LIS Maker', description: 'LIS Maker', purpose: 'Builds the Leadership Identity Statement.', extendedDescription: 'A guided tool to help the user craft and refine their Leadership Identity Statement (LIS).' },
-  'grounding-rep': { core: true, category: 'Planning', name: 'Grounding Rep', description: 'Grounding Rep', purpose: 'Reconnects the leader with their core identity.', extendedDescription: 'Provides a quick link or display of the Leadership Identity Statement (LIS) to ground the user before starting their day.' },
-  'win-the-day': { core: true, category: 'Planning', name: 'Win the Day', description: 'Win the Day', purpose: 'Sets daily priorities.', extendedDescription: 'Allows the user to define and track 3 high-impact actions for the day.' },
+            Action Items
+          </p>
+          {allItems.map(item => {
             const isCompleted = completedItems.includes(item.id);
             const Icon = getItemIcon(item.type);
             
