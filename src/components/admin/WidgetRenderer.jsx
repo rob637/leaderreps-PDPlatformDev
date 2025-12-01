@@ -55,16 +55,14 @@ const WidgetRenderer = ({ widgetId, children, scope = {} }) => {
   // Priority: 
   // 1. Custom Code (User Override)
   // 2. Children (Hardcoded Component)
-  // [NUCLEAR FIX] Force 'win-the-day' and 'grounding-rep' to use template to bypass potential broken DB overrides
+  // [NUCLEAR FIX] Force 'win-the-day' and 'weekly-focus' to use template to bypass potential broken DB overrides
   let codeToRender = customCode || templateCode;
   if (widgetId === 'win-the-day' || widgetId === 'weekly-focus') {
     console.log(`[NUCLEAR] Forcing template for ${widgetId}. Ignoring custom DB code.`);
     codeToRender = templateCode;
-  }et codeToRender = customCode || templateCode;
-  if (widgetId === 'win-the-day' || widgetId === 'grounding-rep' || widgetId === 'weekly-focus') {
-    console.log(`[NUCLEAR] Forcing template for ${widgetId}. Ignoring custom DB code.`);
-    codeToRender = templateCode;
   }
+
+  const shouldRenderDynamic = (codeToRender && codeToRender.trim().length > 0) || (!children && templateCode && templateCode.trim().length > 0);
 
   const handleEdit = (e) => {
     e.stopPropagation();
