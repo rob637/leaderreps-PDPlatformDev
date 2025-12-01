@@ -69,6 +69,7 @@ const Dashboard = (props) => {
     morningWins, // New Array
     handleUpdateWin,
     handleSaveSingleWin,
+    handleSaveAllWins,
     handleToggleWinComplete,
     otherTasks,
     handleAddTask,
@@ -99,6 +100,7 @@ const Dashboard = (props) => {
     // Additional Reps
     additionalCommitments,
     handleToggleAdditionalRep,
+    handleSaveReps,
 
     // Scorecard
     scorecard,
@@ -256,6 +258,7 @@ const Dashboard = (props) => {
     isEditingLIS,
     setIsEditingLIS,
     handleToggleAdditionalRep,
+    handleSaveReps,
     setMorningWIN,
     handleSaveWINWrapper,
     handleToggleWIN,
