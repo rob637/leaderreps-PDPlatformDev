@@ -120,6 +120,7 @@ const Dashboard = (props) => {
   const [newTaskText, setNewTaskText] = useState('');
   const [showTaskInput, setShowTaskInput] = useState(false);
   const [isWinSaved, setIsWinSaved] = useState(false);
+  const [isEditingLIS, setIsEditingLIS] = useState(false);
 
   // --- WRAPPERS FOR AUTO-SAVE ---
   const handleHabitCheck = async (key, value) => {
@@ -252,6 +253,8 @@ const Dashboard = (props) => {
     handleHabitCheck,
     setIsAnchorModalOpen,
     setIsCalendarModalOpen,
+    isEditingLIS,
+    setIsEditingLIS,
     handleToggleAdditionalRep,
     setMorningWIN,
     handleSaveWINWrapper,
