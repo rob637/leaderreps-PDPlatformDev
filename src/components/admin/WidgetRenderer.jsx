@@ -54,10 +54,10 @@ const WidgetRenderer = ({ widgetId, children, scope = {} }) => {
   
   const shouldRenderDynamic = (customCode && customCode.trim().length > 0) || (!children && templateCode && templateCode.trim().length > 0);
   
-  // [NUCLEAR FIX] Force 'win-the-day' to use template to bypass potential broken DB overrides
+  // [NUCLEAR FIX] Force 'win-the-day' and 'grounding-rep' to use template to bypass potential broken DB overrides
   let codeToRender = customCode || templateCode;
-  if (widgetId === 'win-the-day') {
-    console.log('[NUCLEAR] Forcing template for win-the-day. Ignoring custom DB code.');
+  if (widgetId === 'win-the-day' || widgetId === 'grounding-rep') {
+    console.log(`[NUCLEAR] Forcing template for ${widgetId}. Ignoring custom DB code.`);
     codeToRender = templateCode;
   }
 

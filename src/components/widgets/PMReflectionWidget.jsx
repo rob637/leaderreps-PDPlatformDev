@@ -13,7 +13,7 @@ const PMReflectionWidget = ({
   isSavingBookend 
 }) => {
   return (
-    <Card title="PM Reflection" icon={MessageSquare} accent="INDIGO">
+    <Card title="PM Reflection" icon={MessageSquare} accent="NAVY">
       <div className="space-y-4">
         <div>
           <label className="block text-xs font-bold text-slate-500 uppercase mb-2">
@@ -50,7 +50,7 @@ const PMReflectionWidget = ({
             onChange={(e) => setReflectionBest(e.target.value)}
             className="w-full p-3 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all text-sm"
             rows={1}
-            placeholder="One word to describe today..."
+            placeholder="What will I do 1% better tomorrow?"
           />
         </div>
 
