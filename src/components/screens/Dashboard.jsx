@@ -55,8 +55,11 @@ const Dashboard = (props) => {
   const {
     // Identity & Anchors
     identityStatement,
+    setIdentityStatement,
     habitAnchor,
+    setHabitAnchor,
     whyStatement,
+    setWhyStatement,
     handleSaveIdentity,
     handleSaveHabit,
     handleSaveWhy,
