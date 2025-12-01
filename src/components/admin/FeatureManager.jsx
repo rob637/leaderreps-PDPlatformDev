@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { 
   ToggleLeft, ToggleRight, FlaskConical, ArrowUp, ArrowDown, Edit3, Plus, Trash2, RefreshCw, Save, Flame, Bell, Target, Calendar, Moon, BookOpen, Play, Book, Video, FileText, Users, MessageSquare, UserPlus, Search, Radio, History, BarChart2, Bot, Cpu, Dumbbell, TrendingUp,
-  CheckSquare, Square, X, Trophy, ChevronRight, ArrowRight, Loader, Eye, EyeOff, Settings, Lightbulb, Zap, Crosshair, Flag, Circle
+  CheckSquare, Square, X, Trophy, ChevronRight, ArrowRight, Loader, Eye, EyeOff, Settings, Lightbulb, Zap, Crosshair, Flag, Circle, PenTool
 } from 'lucide-react';
 import { useFeatures } from '../../providers/FeatureProvider';
 import { useWidgetEditor } from '../../providers/WidgetEditorProvider';
@@ -29,6 +29,14 @@ const FeatureManager = () => {
   const {
     // Identity & Anchors
     identityStatement,
+    setIdentityStatement,
+    handleSaveIdentity,
+    habitAnchor,
+    setHabitAnchor,
+    handleSaveHabit,
+    whyStatement,
+    setWhyStatement,
+    handleSaveWhy,
     
     // AM Bookend (Win the Day)
     morningWIN,
@@ -136,13 +144,16 @@ const FeatureManager = () => {
   );
 
   const REAL_SCOPE = {
+    // Core
+    React,
+
     // SDK
     sdk,
 
     // Icons
     CheckSquare, Square, Plus, Save, X, Trophy, Flame, 
     MessageSquare, Bell, Calendar, ChevronRight, ArrowRight,
-    Edit3, Loader,
+    Edit3, Loader, PenTool,
     
     // Components
     Checkbox,
@@ -167,6 +178,14 @@ const FeatureManager = () => {
     setReflectionGood,
     setReflectionBetter,
     handleSaveEveningBookend,
+    
+    // Identity & Anchors Handlers
+    setIdentityStatement,
+    handleSaveIdentity,
+    setHabitAnchor,
+    handleSaveHabit,
+    setWhyStatement,
+    handleSaveWhy,
     
     // New Win Functions (Mocked for Admin)
     handleUpdateWin: (id, text) => console.log(`Update Win ${id}: ${text}`),
@@ -196,6 +215,11 @@ const FeatureManager = () => {
     reflectionGood,
     reflectionBetter,
     isSavingBookend,
+    
+    // Identity & Anchors State
+    identityStatement,
+    habitAnchor,
+    whyStatement,
     
     // Development Plan Data (Mocked)
     developmentPlanData: {
