@@ -8,7 +8,7 @@ import {
   CheckSquare, Square, Plus, Save, X, Trophy, Flame, 
   MessageSquare, Bell, Calendar, ChevronRight, ArrowRight,
   Edit3, Loader, LayoutDashboard, Target, Layers, Sun, Moon, Clipboard, Zap, TrendingUp,
-  Dumbbell, CheckCircle
+  Dumbbell, CheckCircle, PenTool
 } from 'lucide-react';
 import { useDashboard } from './dashboard/DashboardHooks.jsx';
 import { UnifiedAnchorEditorModal, CalendarSyncModal } from './dashboard/DashboardComponents.jsx';
@@ -25,6 +25,7 @@ const DASHBOARD_FEATURES = [
   'daily-quote',
   'am-bookend-header',
   'weekly-focus',
+  'lis-maker',
   'grounding-rep',
   'win-the-day',
   'daily-leader-reps',
@@ -237,7 +238,7 @@ const Dashboard = (props) => {
     // Icons
     CheckSquare, Square, Plus, Save, X, Trophy, Flame, 
     MessageSquare, Bell, Calendar, ChevronRight, ArrowRight,
-    Edit3, Loader, Sun, Moon, Zap, TrendingUp, Dumbbell, CheckCircle,
+    Edit3, Loader, Sun, Moon, Zap, TrendingUp, Dumbbell, CheckCircle, PenTool,
     
     // Components
     Card,
@@ -260,6 +261,14 @@ const Dashboard = (props) => {
     setReflectionGood,
     setReflectionBetter,
     handleSaveEveningBookend,
+    
+    // Identity & Anchors Handlers
+    setIdentityStatement,
+    handleSaveIdentity,
+    setHabitAnchor,
+    handleSaveHabit,
+    setWhyStatement,
+    handleSaveWhy,
     
     // New Win Functions
     handleUpdateWin,
@@ -290,6 +299,11 @@ const Dashboard = (props) => {
     setReflectionBest,
     isSavingBookend,
     
+    // Identity & Anchors State
+    identityStatement,
+    habitAnchor,
+    whyStatement,
+    
     // Development Plan Data
     developmentPlanData,
     
@@ -311,6 +325,7 @@ const Dashboard = (props) => {
     'daily-quote': () => <WidgetRenderer widgetId="daily-quote" scope={scope} />,
     'am-bookend-header': () => <WidgetRenderer widgetId="am-bookend-header" scope={scope} />,
     'weekly-focus': () => <WidgetRenderer widgetId="weekly-focus" scope={scope} />,
+    'lis-maker': () => <WidgetRenderer widgetId="lis-maker" scope={scope} />,
     'grounding-rep': () => <WidgetRenderer widgetId="grounding-rep" scope={scope} />,
     'win-the-day': () => <WidgetRenderer widgetId="win-the-day" scope={scope} />,
     'daily-leader-reps': () => <WidgetRenderer widgetId="daily-leader-reps" scope={scope} />,
