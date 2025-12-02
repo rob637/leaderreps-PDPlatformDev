@@ -1310,8 +1310,122 @@ const SystemRemindersController = () => {
 };
 render(<SystemRemindersController />);
     `,
+    'time-traveler': `
+const TimeTravelerWidget = () => {
+  const [isExpanded, setIsExpanded] = React.useState(false);
+  const [targetDate, setTargetDate] = React.useState('');
+  const [targetTime, setTargetTime] = React.useState('');
+  
+  // Check if time travel is currently active
+  const offset = parseInt(localStorage.getItem('time_travel_offset') || '0', 10);
+  const isActive = offset !== 0;
+  const simulatedTime = new Date(Date.now() + offset);
+  
+  const handleTravel = () => {
+    if (!targetDate) {
+      alert('Please select a date');
+      return;
+    }
+    const dateStr = targetDate + 'T' + (targetTime || '12:00');
+    const target = new Date(dateStr);
+    const now = Date.now();
+    const newOffset = target.getTime() - now;
+    localStorage.setItem('time_travel_offset', newOffset.toString());
+    window.location.reload();
+  };
+  
+  const handleReset = () => {
+    localStorage.removeItem('time_travel_offset');
+    window.location.reload();
+  };
+  
+  const presets = [
+    { label: 'Tonight 11:58 PM', hours: 23, minutes: 58 },
+    { label: 'Tomorrow 6:00 AM', days: 1, hours: 6, minutes: 0 },
+    { label: '+1 Week', days: 7 }
+  ];
+  
+  const applyPreset = (preset) => {
+    const now = new Date();
+    const target = new Date(now);
+    if (preset.days) target.setDate(target.getDate() + preset.days);
+    if (preset.hours !== undefined) target.setHours(preset.hours, preset.minutes || 0, 0, 0);
+    const newOffset = target.getTime() - Date.now();
+    localStorage.setItem('time_travel_offset', newOffset.toString());
+    window.location.reload();
+  };
+
+  return (
+    <Card title="Time Traveler" icon={Clock} accent="indigo">
+      <div className="space-y-4">
+        {isActive && (
+          <div className="bg-indigo-100 border border-indigo-300 rounded-lg p-3">
+            <div className="flex items-center gap-2 text-indigo-800">
+              <Clock className="w-4 h-4" />
+              <span className="font-bold">TIME TRAVEL ACTIVE</span>
+            </div>
+            <p className="text-sm text-indigo-700 mt-1">
+              Simulated: {simulatedTime.toLocaleString()}
+            </p>
+            <button
+              onClick={handleReset}
+              className="mt-2 px-3 py-1.5 bg-red-500 hover:bg-red-600 text-white text-sm font-medium rounded-lg transition-colors"
+            >
+              Reset to Real Time
+            </button>
+          </div>
+        )}
+        
+        <div className="space-y-3">
+          <div className="font-medium text-slate-700 text-sm">Quick Presets:</div>
+          <div className="flex flex-wrap gap-2">
+            {presets.map((preset, i) => (
+              <button
+                key={i}
+                onClick={() => applyPreset(preset)}
+                className="px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-sm font-medium rounded-lg transition-colors border border-indigo-200"
+              >
+                {preset.label}
+              </button>
+            ))}
+          </div>
+        </div>
+        
+        <div className="border-t border-slate-200 pt-3">
+          <div className="font-medium text-slate-700 text-sm mb-2">Custom Date/Time:</div>
+          <div className="flex gap-2">
+            <input
+              type="date"
+              value={targetDate}
+              onChange={(e) => setTargetDate(e.target.value)}
+              className="flex-1 px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+            />
+            <input
+              type="time"
+              value={targetTime}
+              onChange={(e) => setTargetTime(e.target.value)}
+              className="px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+            />
+          </div>
+          <button
+            onClick={handleTravel}
+            className="mt-2 w-full px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-lg transition-colors"
+          >
+            Travel to Date
+          </button>
+        </div>
+        
+        <p className="text-xs text-slate-400 italic">
+          Admin only. Test midnight rollover and time-dependent features.
+        </p>
+      </div>
+    </Card>
+  );
+};
+render(<TimeTravelerWidget />);
+    `,
     'locker-wins-history': `
-(() => {
+const WinsHistoryWidget = () => {
   const safeWinsList = typeof winsList !== 'undefined' ? winsList : [];
   const [visibleCount, setVisibleCount] = React.useState(3);
   
@@ -1412,10 +1526,11 @@ render(<SystemRemindersController />);
       )}
     </Card>
   );
-})()
+};
+render(<WinsHistoryWidget />);
     `,
     'locker-scorecard-history': `
-(() => {
+const ScorecardHistoryWidget = () => {
   const safeHistory = typeof commitmentHistory !== 'undefined' ? commitmentHistory : [];
   const [visibleCount, setVisibleCount] = React.useState(3);
   
@@ -1507,10 +1622,11 @@ render(<SystemRemindersController />);
       )}
     </Card>
   );
-})()
+};
+render(<ScorecardHistoryWidget />);
     `,
     'locker-latest-reflection': `
-(() => {
+const ReflectionHistoryWidget = () => {
   const safeReflections = typeof reflectionHistory !== 'undefined' ? reflectionHistory : [];
   const [visibleCount, setVisibleCount] = React.useState(3);
   
@@ -1587,10 +1703,11 @@ render(<SystemRemindersController />);
       )}
     </Card>
   );
-})()
+};
+render(<ReflectionHistoryWidget />);
     `,
     'locker-reps-history': `
-(() => {
+const RepsHistoryWidget = () => {
   const safeHistory = typeof repsHistory !== 'undefined' ? repsHistory : [];
   const [visibleCount, setVisibleCount] = React.useState(3);
   
@@ -1666,7 +1783,8 @@ render(<SystemRemindersController />);
       )}
     </Card>
   );
-})()
+};
+render(<RepsHistoryWidget />);
     `,
     'development-plan': `
 (() => {
