@@ -67,27 +67,38 @@ const UpdateNotification = () => {
   const handleUpdate = async () => {
     setIsUpdating(true);
 
-    // 1. Set a safety timeout immediately. 
+    // 1. Set a safety timeout. 
     // If the update process hangs or the controller change event is missed,
-    // this ensures we force a reload after 3 seconds no matter what.
+    // this ensures we force a reload. Increased to 10s to allow for slow devices.
     setTimeout(() => {
       console.log('[PWA] Update timeout reached. Forcing reload...');
       window.location.reload();
-    }, 3000);
+    }, 10000);
 
     try {
       // 2. Attempt to activate the waiting service worker
+      console.log('[PWA] Sending skipWaiting to new service worker...');
       await updateServiceWorker(true);
+      console.log('[PWA] skipWaiting sent.');
     } catch (error) {
       console.error('Failed to update service worker:', error);
-      // If it fails, the timeout above will still trigger a reload, 
-      // which is often the best way to clear a stuck state anyway.
+      // If it fails, the timeout above will still trigger a reload.
     }
   };
 
   const handleDismiss = () => {
     setNeedRefresh(false);
     setShowPopup(false);
+  };
+
+  const handleHardReset = async () => {
+    if (window.navigator && navigator.serviceWorker) {
+      const registrations = await navigator.serviceWorker.getRegistrations();
+      for (const registration of registrations) {
+        await registration.unregister();
+      }
+    }
+    window.location.reload();
   };
 
   if (!showPopup) {
@@ -127,7 +138,7 @@ const UpdateNotification = () => {
               We've improved the app. Update now to get the latest features and speed enhancements.
             </p>
 
-            <div className="flex gap-3">
+            <div className="flex gap-3 mb-3">
               <button
                 onClick={handleUpdate}
                 disabled={isUpdating}
@@ -153,6 +164,15 @@ const UpdateNotification = () => {
                 style={{ color: 'var(--corporate-navy)' }}
               >
                 Later
+              </button>
+            </div>
+            
+            <div className="text-center">
+              <button 
+                onClick={handleHardReset}
+                className="text-xs text-gray-400 underline hover:text-red-500 transition-colors"
+              >
+                Stuck? Force Reset
               </button>
             </div>
           </div>
