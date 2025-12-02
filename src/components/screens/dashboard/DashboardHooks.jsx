@@ -985,7 +985,12 @@ export const useDashboard = ({
     handleSaveSingleWin,
     handleSaveAllWins,
     handleToggleWinComplete,
+    handleSaveMorningBookend, // Exposed
     
+    amCompletedAt, // Exposed
+    amWinCompleted, // Exposed
+    amTasksCompleted, // Exposed
+
     otherTasks,
     handleAddTask,
     handleToggleTask,
