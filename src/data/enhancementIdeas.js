@@ -70,5 +70,17 @@ export const ENHANCEMENT_IDEAS = {
     { title: 'Private Notes', desc: 'Encrypted personal notes.' },
     { title: 'Data Export', desc: 'Download your data.' },
     { title: 'Legacy Letter', desc: 'Write your leadership legacy.' }
+  ],
+  system: [
+    { title: 'Data Migration Tools', desc: 'Bulk import/export user data and settings.' },
+    { title: 'Cache Management', desc: 'Clear and refresh cached data across the app.' },
+    { title: 'Performance Monitor', desc: 'Real-time app performance metrics and diagnostics.' },
+    { title: 'Session Manager', desc: 'View and manage active user sessions.' },
+    { title: 'Feature Flag Console', desc: 'Toggle experimental features for testing.' },
+    { title: 'Error Log Viewer', desc: 'Browse and filter application error logs.' },
+    { title: 'A/B Test Manager', desc: 'Configure and monitor A/B experiments.' },
+    { title: 'Webhook Tester', desc: 'Test and debug webhook integrations.' },
+    { title: 'Database Inspector', desc: 'Browse Firestore collections and documents.' },
+    { title: 'Announcement Broadcaster', desc: 'Send system-wide notifications to users.' }
   ]
 };

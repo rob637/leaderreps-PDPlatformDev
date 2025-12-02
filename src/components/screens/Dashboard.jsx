@@ -101,6 +101,7 @@ const Dashboard = (props) => {
     additionalCommitments,
     handleToggleAdditionalRep,
     handleSaveReps,
+    isSavingReps,
 
     // Scorecard
     scorecard,
@@ -291,6 +292,7 @@ const Dashboard = (props) => {
     dailyRepName,
     dailyRepCompleted,
     additionalCommitments,
+    isSavingReps,
     amWinCompleted,
     morningWIN,
     morningWins, // New Array
