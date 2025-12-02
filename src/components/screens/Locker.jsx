@@ -11,7 +11,8 @@ import { Settings, Clock, User, Bell, AlertTriangle } from 'lucide-react';
 const LOCKER_FEATURES = [
   'locker-wins-history',
   'locker-scorecard-history',
-  'locker-latest-reflection'
+  'locker-latest-reflection',
+  'locker-reps-history'
 ];
 
 const Locker = () => {
@@ -41,11 +42,15 @@ const Locker = () => {
   // Updated to read from dailyPracticeData.scorecardHistory instead of commitmentData
   const commitmentHistory = dailyPracticeData?.scorecardHistory || commitmentData?.history || [];
 
+  // Reps History Data
+  const repsHistory = dailyPracticeData?.repsHistory || [];
+
   const scope = {
     winsList,
     eveningBookend,
     commitmentHistory,
     reflectionHistory,
+    repsHistory,
     Card,
     Trophy,
     CheckCircle,
