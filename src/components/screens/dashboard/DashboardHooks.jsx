@@ -71,141 +71,6 @@ export const useDashboard = ({
   const [additionalCommitments, setAdditionalCommitments] = useState([]);
   const [isSavingReps, setIsSavingReps] = useState(false); // NEW
 
-  /* =========================================================
-     MIDNIGHT ROLLOVER LOGIC (Time Traveler Feature)
-     When day transitions at midnight:
-     - Finalize completed wins to history
-     - Clear morning wins, carrying over incomplete items
-     - Clear PM reflection fields
-     - Reset scorecard
-  ========================================================= */
-  const handleDayTransition = useCallback(async (oldDate, newDate) => {
-    console.log('🌙 [MIDNIGHT ROLLOVER] Day transition detected!', { oldDate, newDate });
-    
-    if (!updateDailyPracticeData) {
-      console.warn('[MIDNIGHT ROLLOVER] No updateDailyPracticeData available');
-      return;
-    }
-
-    try {
-      // 1. Prepare to finalize current day's wins
-      const completedWins = morningWins.filter(w => w.text && w.text.trim().length > 0);
-      const incompleteWins = morningWins.filter(w => w.text && w.text.trim().length > 0 && !w.completed);
-      
-      // Add today's wins to winsList (history)
-      const winsToAdd = completedWins.map(w => ({
-        ...w,
-        date: oldDate,
-        finalizedAt: timeService.getISOString()
-      }));
-      
-      const updatedWinsList = [...(winsList || []), ...winsToAdd];
-
-      // 2. Create new morning wins - carry over incomplete items
-      const newMorningWins = [
-        { id: 'win-1', text: incompleteWins[0]?.text || '', completed: false, saved: false, carriedOver: !!incompleteWins[0] },
-        { id: 'win-2', text: incompleteWins[1]?.text || '', completed: false, saved: false, carriedOver: !!incompleteWins[1] },
-        { id: 'win-3', text: incompleteWins[2]?.text || '', completed: false, saved: false, carriedOver: !!incompleteWins[2] }
-      ];
-
-      // 3. Finalize scorecard for the old day (if not already saved)
-      const oldDayScorecard = {
-        date: oldDate,
-        score: `${scorecard.reps.done + scorecard.win.done}/${scorecard.reps.total + scorecard.win.total}`,
-        repsScore: `${scorecard.reps.done}/${scorecard.reps.total}`,
-        winsScore: `${scorecard.win.done}/${scorecard.win.total}`,
-        finalizedAt: timeService.getISOString()
-      };
-      
-      const existingHistory = dailyPracticeData?.scorecardHistory || [];
-      const historyWithoutOldDate = existingHistory.filter(h => h.date !== oldDate);
-      const updatedScorecardHistory = [...historyWithoutOldDate, oldDayScorecard];
-
-      // 4. Finalize PM Reflection to history (if has content)
-      const existingReflectionHistory = dailyPracticeData?.reflectionHistory || [];
-      const reflectionHistoryWithoutOldDate = existingReflectionHistory.filter(h => h.date !== oldDate);
-      let updatedReflectionHistory = reflectionHistoryWithoutOldDate;
-      
-      if (reflectionGood || reflectionBetter || reflectionBest) {
-        const reflectionEntry = {
-          id: `ref-${oldDate}`,
-          date: oldDate,
-          reflectionGood: reflectionGood || '',
-          reflectionWork: reflectionBetter || '',
-          reflectionTomorrow: reflectionBest || '',
-          finalizedAt: timeService.getISOString()
-        };
-        updatedReflectionHistory = [reflectionEntry, ...reflectionHistoryWithoutOldDate];
-      }
-
-      // 5. Prepare Firestore update for the NEW day
-      const updates = {
-        // Reset morning bookend for new day
-        morningBookend: {
-          wins: newMorningWins,
-          completedAt: null
-        },
-        // Clear evening bookend
-        eveningBookend: {
-          good: '',
-          better: '',
-          best: '',
-          habits: {},
-          completedAt: null
-        },
-        // Clear active commitments for new day (fresh start)
-        active_commitments: [],
-        // Update histories
-        winsList: updatedWinsList,
-        scorecardHistory: updatedScorecardHistory,
-        reflectionHistory: updatedReflectionHistory,
-        // Update the date marker
-        date: newDate,
-        // Clear reminders that were for the old day
-        tomorrowsReminder: '',
-        improvementReminder: ''
-      };
-
-      console.log('🌙 [MIDNIGHT ROLLOVER] Saving finalized data...', updates);
-      await updateDailyPracticeData(updates);
-
-      // 6. Reset local state for new day
-      setMorningWins(newMorningWins);
-      setOtherTasks([]);
-      setShowLIS(false);
-      setReflectionGood('');
-      setReflectionBetter('');
-      setReflectionBest('');
-      setHabitsCompleted({});
-      setAdditionalCommitments([]);
-      setTargetRepStatus('Pending');
-      
-      // Update local history state
-      setWinsList(updatedWinsList);
-
-      console.log('🌙 [MIDNIGHT ROLLOVER] Day transition complete! Welcome to', newDate);
-      
-    } catch (error) {
-      console.error('[MIDNIGHT ROLLOVER] Error during day transition:', error);
-    }
-  }, [
-    updateDailyPracticeData, 
-    morningWins, 
-    winsList, 
-    reflectionGood, 
-    reflectionBetter, 
-    reflectionBest,
-    dailyPracticeData?.scorecardHistory,
-    dailyPracticeData?.reflectionHistory,
-    scorecard
-  ]);
-
-  // Use day transition hook to detect midnight crossing during time travel
-  useDayTransition({
-    onDayTransition: handleDayTransition,
-    enabled: timeService.isActive() // Only active during time travel
-  });
-
 
   /* =========================================================
      LOAD DATA FROM FIRESTORE (Dependency on dailyPracticeData)
@@ -564,6 +429,141 @@ export const useDashboard = ({
       win: { done: winDone, total: winTotal, pct: winPct }
     };
   }, [identityStatement, habitsCompleted, dailyPracticeData?.dailyTargetRepId, additionalCommitments, morningWins, otherTasks]);
+
+  /* =========================================================
+     MIDNIGHT ROLLOVER LOGIC (Time Traveler Feature)
+     When day transitions at midnight:
+     - Finalize completed wins to history
+     - Clear morning wins, carrying over incomplete items
+     - Clear PM reflection fields
+     - Reset scorecard
+  ========================================================= */
+  const handleDayTransition = useCallback(async (oldDate, newDate) => {
+    console.log('🌙 [MIDNIGHT ROLLOVER] Day transition detected!', { oldDate, newDate });
+    
+    if (!updateDailyPracticeData) {
+      console.warn('[MIDNIGHT ROLLOVER] No updateDailyPracticeData available');
+      return;
+    }
+
+    try {
+      // 1. Prepare to finalize current day's wins
+      const completedWins = morningWins.filter(w => w.text && w.text.trim().length > 0);
+      const incompleteWins = morningWins.filter(w => w.text && w.text.trim().length > 0 && !w.completed);
+      
+      // Add today's wins to winsList (history)
+      const winsToAdd = completedWins.map(w => ({
+        ...w,
+        date: oldDate,
+        finalizedAt: timeService.getISOString()
+      }));
+      
+      const updatedWinsList = [...(winsList || []), ...winsToAdd];
+
+      // 2. Create new morning wins - carry over incomplete items
+      const newMorningWins = [
+        { id: 'win-1', text: incompleteWins[0]?.text || '', completed: false, saved: false, carriedOver: !!incompleteWins[0] },
+        { id: 'win-2', text: incompleteWins[1]?.text || '', completed: false, saved: false, carriedOver: !!incompleteWins[1] },
+        { id: 'win-3', text: incompleteWins[2]?.text || '', completed: false, saved: false, carriedOver: !!incompleteWins[2] }
+      ];
+
+      // 3. Finalize scorecard for the old day (if not already saved)
+      const oldDayScorecard = {
+        date: oldDate,
+        score: `${scorecard.reps.done + scorecard.win.done}/${scorecard.reps.total + scorecard.win.total}`,
+        repsScore: `${scorecard.reps.done}/${scorecard.reps.total}`,
+        winsScore: `${scorecard.win.done}/${scorecard.win.total}`,
+        finalizedAt: timeService.getISOString()
+      };
+      
+      const existingHistory = dailyPracticeData?.scorecardHistory || [];
+      const historyWithoutOldDate = existingHistory.filter(h => h.date !== oldDate);
+      const updatedScorecardHistory = [...historyWithoutOldDate, oldDayScorecard];
+
+      // 4. Finalize PM Reflection to history (if has content)
+      const existingReflectionHistory = dailyPracticeData?.reflectionHistory || [];
+      const reflectionHistoryWithoutOldDate = existingReflectionHistory.filter(h => h.date !== oldDate);
+      let updatedReflectionHistory = reflectionHistoryWithoutOldDate;
+      
+      if (reflectionGood || reflectionBetter || reflectionBest) {
+        const reflectionEntry = {
+          id: `ref-${oldDate}`,
+          date: oldDate,
+          reflectionGood: reflectionGood || '',
+          reflectionWork: reflectionBetter || '',
+          reflectionTomorrow: reflectionBest || '',
+          finalizedAt: timeService.getISOString()
+        };
+        updatedReflectionHistory = [reflectionEntry, ...reflectionHistoryWithoutOldDate];
+      }
+
+      // 5. Prepare Firestore update for the NEW day
+      const updates = {
+        // Reset morning bookend for new day
+        morningBookend: {
+          wins: newMorningWins,
+          completedAt: null
+        },
+        // Clear evening bookend
+        eveningBookend: {
+          good: '',
+          better: '',
+          best: '',
+          habits: {},
+          completedAt: null
+        },
+        // Clear active commitments for new day (fresh start)
+        active_commitments: [],
+        // Update histories
+        winsList: updatedWinsList,
+        scorecardHistory: updatedScorecardHistory,
+        reflectionHistory: updatedReflectionHistory,
+        // Update the date marker
+        date: newDate,
+        // Clear reminders that were for the old day
+        tomorrowsReminder: '',
+        improvementReminder: ''
+      };
+
+      console.log('🌙 [MIDNIGHT ROLLOVER] Saving finalized data...', updates);
+      await updateDailyPracticeData(updates);
+
+      // 6. Reset local state for new day
+      setMorningWins(newMorningWins);
+      setOtherTasks([]);
+      setShowLIS(false);
+      setReflectionGood('');
+      setReflectionBetter('');
+      setReflectionBest('');
+      setHabitsCompleted({});
+      setAdditionalCommitments([]);
+      setTargetRepStatus('Pending');
+      
+      // Update local history state
+      setWinsList(updatedWinsList);
+
+      console.log('🌙 [MIDNIGHT ROLLOVER] Day transition complete! Welcome to', newDate);
+      
+    } catch (error) {
+      console.error('[MIDNIGHT ROLLOVER] Error during day transition:', error);
+    }
+  }, [
+    updateDailyPracticeData, 
+    morningWins, 
+    winsList, 
+    reflectionGood, 
+    reflectionBetter, 
+    reflectionBest,
+    dailyPracticeData?.scorecardHistory,
+    dailyPracticeData?.reflectionHistory,
+    scorecard
+  ]);
+
+  // Use day transition hook to detect midnight crossing during time travel
+  useDayTransition({
+    onDayTransition: handleDayTransition,
+    enabled: timeService.isActive() // Only active during time travel
+  });
 
   /* =========================================================
      BOOKEND HANDLERS (Dependency on updateDailyPracticeData)
