@@ -105,24 +105,27 @@ const AppContent = ({
       currentScreen={currentScreen}
       navParams={navParams}
     >
-      <div className="relative min-h-screen flex font-sans antialiased bg-corporate-navy overflow-hidden">
+      <div className="relative min-h-screen flex justify-center font-sans antialiased bg-corporate-navy overflow-hidden">
         
-        {/* New Sidebar */}
-        <ArenaSidebar 
-          isOpen={isSidebarOpen} 
-          toggle={() => setIsSidebarOpen(!isSidebarOpen)}
-          currentScreen={currentScreen}
-          navigate={navigate}
-          onSignOut={handleSignOut}
-          user={user}
-          membershipData={membershipData}
-        />
-
-        {/* Main Content Area */}
-        <div className="flex-1 flex flex-col h-screen overflow-hidden relative transition-all duration-300 bg-corporate-light-gray rounded-l-3xl shadow-2xl my-2 mr-2">
+        {/* Centered App Container */}
+        <div className="flex w-full max-w-[1000px] h-screen relative">
           
-          <main className="flex-1 flex flex-col overflow-hidden relative rounded-l-3xl">
-            <div className="flex-1 overflow-y-auto">
+          {/* New Sidebar */}
+          <ArenaSidebar 
+            isOpen={isSidebarOpen} 
+            toggle={() => setIsSidebarOpen(!isSidebarOpen)}
+            currentScreen={currentScreen}
+            navigate={navigate}
+            onSignOut={handleSignOut}
+            user={user}
+            membershipData={membershipData}
+          />
+
+          {/* Main Content Area */}
+          <div className="flex-1 flex flex-col h-screen overflow-hidden relative transition-all duration-300 bg-corporate-light-gray rounded-l-3xl shadow-2xl my-2 mr-2">
+            
+            <main className="flex-1 flex flex-col overflow-hidden relative rounded-l-3xl">
+              <div className="flex-1 overflow-y-auto">
                 <Suspense
                   fallback={
                     <div className="min-h-full flex items-center justify-center gradient-corporate-hero">
