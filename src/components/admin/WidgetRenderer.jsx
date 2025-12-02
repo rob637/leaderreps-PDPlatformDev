@@ -55,9 +55,9 @@ const WidgetRenderer = ({ widgetId, children, scope = {} }) => {
   // Priority: 
   // 1. Custom Code (User Override)
   // 2. Children (Hardcoded Component)
-  // [NUCLEAR FIX] Force 'win-the-day' and 'weekly-focus' to use template to bypass potential broken DB overrides
+  // [NUCLEAR FIX] Force certain widgets to use template to bypass potential broken DB overrides
   let codeToRender = customCode || templateCode;
-  if (widgetId === 'win-the-day' || widgetId === 'weekly-focus') {
+  if (widgetId === 'win-the-day' || widgetId === 'weekly-focus' || widgetId === 'time-traveler') {
     console.log(`[NUCLEAR] Forcing template for ${widgetId}. Ignoring custom DB code.`);
     codeToRender = templateCode;
   }
