@@ -7,13 +7,15 @@ import {
   Users, 
   ShieldAlert,
   FileText,
-  Loader
+  Loader,
+  Settings
 } from 'lucide-react';
 import AdminDashboard from './AdminDashboard';
 import SystemDiagnostics from './SystemDiagnostics';
 import FeatureManager from './FeatureManager';
 import ContentAdminHome from './ContentAdminHome'; // Existing component
 import TimeTraveler from './TimeTraveler';
+import SystemWidgets from './SystemWidgets';
 import { useAppServices } from '../../services/useAppServices';
 import { doc, getDoc } from 'firebase/firestore';
 
@@ -89,6 +91,7 @@ const AdminPortal = () => {
     { id: 'diagnostics', label: 'Diagnostics', icon: Activity },
     { id: 'content', label: 'Content Mgmt', icon: Database },
     { id: 'features', label: 'Widget Lab', icon: FlaskConical },
+    { id: 'system', label: 'System', icon: Settings },
     // { id: 'users', label: 'User Mgmt', icon: Users }, // Future
   ];
 
@@ -102,6 +105,8 @@ const AdminPortal = () => {
         return <ContentAdminHome />;
       case 'features':
         return <FeatureManager />;
+      case 'system':
+        return <SystemWidgets />;
       default:
         return <AdminDashboard />;
     }
