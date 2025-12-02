@@ -1316,6 +1316,12 @@ const TimeTravelerWidget = () => {
   const [targetDate, setTargetDate] = React.useState('');
   const [targetTime, setTargetTime] = React.useState('');
   
+  const { handleResetPlanStartDate, developmentPlanData } = typeof scope !== 'undefined' ? scope : {};
+  
+  const startDate = developmentPlanData?.startDate 
+    ? (developmentPlanData.startDate.toDate ? developmentPlanData.startDate.toDate() : new Date(developmentPlanData.startDate))
+    : null;
+
   // Check if time travel is currently active
   const offset = parseInt(localStorage.getItem('time_travel_offset') || '0', 10);
   const isActive = offset !== 0;
@@ -1418,6 +1424,19 @@ const TimeTravelerWidget = () => {
         <p className="text-xs text-slate-400 italic">
           Admin only. Test midnight rollover and time-dependent features.
         </p>
+
+        <div className="border-t border-slate-200 pt-3 mt-3">
+           <div className="font-medium text-slate-700 text-sm mb-2">Plan Debug:</div>
+           <div className="text-xs text-slate-500 mb-2">
+             Start Date: {startDate ? startDate.toLocaleDateString() : 'Not Set'}
+           </div>
+           <button
+              onClick={handleResetPlanStartDate}
+              className="w-full px-4 py-2 bg-orange-100 hover:bg-orange-200 text-orange-800 font-medium rounded-lg transition-colors text-xs"
+            >
+              Reset Start Date to NOW
+            </button>
+        </div>
       </div>
     </Card>
   );

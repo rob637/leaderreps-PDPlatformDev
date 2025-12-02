@@ -19,6 +19,7 @@ import { Card } from '../ui';
 import { useLayout } from '../../providers/LayoutProvider';
 import { LayoutToggle } from '../ui/LayoutToggle';
 import PMReflectionWidget from '../widgets/PMReflectionWidget';
+import { serverTimestamp } from 'firebase/firestore';
 
 const DASHBOARD_FEATURES = [
   'welcome-message',
@@ -42,6 +43,7 @@ const Dashboard = (props) => {
     dailyPracticeData, 
     updateDailyPracticeData,
     developmentPlanData,
+    updateDevelopmentPlanData,
     globalMetadata,
     userData,
     navigate,
@@ -318,6 +320,13 @@ const Dashboard = (props) => {
     
     // Development Plan Data
     developmentPlanData,
+    handleResetPlanStartDate: async () => {
+      if (updateDevelopmentPlanData) {
+        await updateDevelopmentPlanData({ startDate: serverTimestamp() });
+        alert("Plan Start Date reset to NOW. Time travel will be relative to this moment.");
+        window.location.reload();
+      }
+    },
     
     // User Data
     user: user ? {
