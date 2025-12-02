@@ -21,10 +21,10 @@ const MobileBottomNav = ({ currentScreen }) => {
       screen: 'library'
     },
     {
-      id: 'communication',
-      label: 'Comms',
+      id: 'community',
+      label: 'Community',
       icon: MessageSquare,
-      screen: 'communication'
+      screen: 'community'
     },
     {
       id: 'coaching',
@@ -49,7 +49,7 @@ const MobileBottomNav = ({ currentScreen }) => {
   // Only show on mobile devices
   return (
     <div className="fixed bottom-0 left-0 right-0 z-50 bg-corporate-light-gray border-t border-slate-200 md:hidden pb-safe">
-      <div className="flex justify-around items-center px-2 py-2">
+      <div className="flex justify-between items-center px-2 py-2">
         {navItems.map((item) => {
           const Icon = item.icon;
           const isActive = currentScreen === item.screen;
@@ -58,10 +58,10 @@ const MobileBottomNav = ({ currentScreen }) => {
             <button
               key={item.id}
               onClick={() => handleNavClick(item)}
-              className="flex flex-col items-center justify-center w-full gap-1"
+              className="flex flex-col items-center justify-center flex-1 gap-1 min-w-0"
             >
               <div className={`
-                px-5 py-1 rounded-full transition-all duration-200
+                px-3 py-1 rounded-full transition-all duration-200
                 ${isActive ? 'bg-corporate-teal' : 'bg-transparent'}
               `}>
                 <Icon 
