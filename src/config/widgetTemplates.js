@@ -1140,9 +1140,17 @@ const LockerReminders = () => {
             Allow Notifications
           </button>
           {permission === 'denied' && (
-            <p className="text-xs text-red-500">
-              Notifications are blocked. Please enable them in your browser settings.
-            </p>
+            <div className="mt-2 p-3 bg-red-50 border border-red-200 rounded-lg text-left">
+              <p className="text-sm font-semibold text-red-700 mb-2">Notifications are blocked</p>
+              <p className="text-xs text-red-600 mb-2">To enable notifications:</p>
+              <ol className="text-xs text-red-600 space-y-1 list-decimal list-inside">
+                <li><strong>Chrome/Edge:</strong> Click the lock icon (🔒) in the address bar → Site settings → Notifications → Allow</li>
+                <li><strong>Safari:</strong> Safari menu → Settings → Websites → Notifications → Allow for this site</li>
+                <li><strong>Firefox:</strong> Click the lock icon (🔒) → Clear permissions → Refresh page and click Allow</li>
+                <li><strong>Mobile:</strong> Go to your device Settings → App/Browser → Notifications → Enable</li>
+              </ol>
+              <p className="text-xs text-red-500 mt-2 italic">After enabling, refresh this page.</p>
+            </div>
           )}
         </div>
       </Card>
@@ -1305,6 +1313,7 @@ render(<SystemRemindersController />);
     'locker-wins-history': `
 (() => {
   const safeWinsList = typeof winsList !== 'undefined' ? winsList : [];
+  const [visibleCount, setVisibleCount] = React.useState(3);
   
   // Group wins by date
   const groupedWins = {};
@@ -1321,6 +1330,10 @@ render(<SystemRemindersController />);
       if (b === 'Unknown Date') return -1;
       return new Date(b) - new Date(a);
   });
+  
+  const visibleDates = sortedDates.slice(0, visibleCount);
+  const hasMore = sortedDates.length > visibleCount;
+  const canShowLess = visibleCount > 3;
 
   return (
     <Card title="AM Bookend (Wins History)" icon={Trophy} className="border-t-4 border-corporate-orange">
@@ -1335,8 +1348,8 @@ render(<SystemRemindersController />);
             </tr>
           </thead>
           <tbody className="bg-white">
-            {sortedDates.length > 0 ? (
-              sortedDates.map((date) => {
+            {visibleDates.length > 0 ? (
+              visibleDates.map((date) => {
                 const wins = groupedWins[date];
                 // Ensure we have 3 slots, fill with empty if needed
                 const slots = [wins[0], wins[1], wins[2]];
@@ -1377,6 +1390,26 @@ render(<SystemRemindersController />);
           </tbody>
         </table>
       </div>
+      {sortedDates.length > 3 && (
+        <div className="flex justify-center gap-2 mt-3 pt-3 border-t border-gray-100">
+          {canShowLess && (
+            <button 
+              onClick={() => setVisibleCount(3)}
+              className="px-3 py-1.5 text-xs font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors flex items-center gap-1"
+            >
+              ▲ Show Less
+            </button>
+          )}
+          {hasMore && (
+            <button 
+              onClick={() => setVisibleCount(prev => prev + 3)}
+              className="px-3 py-1.5 text-xs font-medium text-white bg-corporate-orange hover:bg-orange-700 rounded-lg transition-colors flex items-center gap-1"
+            >
+              ▼ Show More ({sortedDates.length - visibleCount} remaining)
+            </button>
+          )}
+        </div>
+      )}
     </Card>
   );
 })()
@@ -1384,6 +1417,18 @@ render(<SystemRemindersController />);
     'locker-scorecard-history': `
 (() => {
   const safeHistory = typeof commitmentHistory !== 'undefined' ? commitmentHistory : [];
+  const [visibleCount, setVisibleCount] = React.useState(3);
+  
+  // Sort by date descending (latest first)
+  const sortedHistory = [...safeHistory].sort((a, b) => {
+    if (!a.date) return 1;
+    if (!b.date) return -1;
+    return new Date(b.date) - new Date(a.date);
+  });
+  
+  const visibleHistory = sortedHistory.slice(0, visibleCount);
+  const hasMore = sortedHistory.length > visibleCount;
+  const canShowLess = visibleCount > 3;
 
   return (
     <Card title="Scorecard History" icon={Calendar} className="border-t-4 border-corporate-teal">
@@ -1397,8 +1442,8 @@ render(<SystemRemindersController />);
             </tr>
           </thead>
           <tbody className="bg-white">
-            {safeHistory.length > 0 ? (
-              safeHistory.map((entry, index) => {
+            {visibleHistory.length > 0 ? (
+              visibleHistory.map((entry, index) => {
                 // Parse score "X/Y"
                 const [done, total] = (entry.score || "0/0").split('/').map(Number);
                 const pct = total > 0 ? Math.round((done / total) * 100) : 0;
@@ -1440,6 +1485,26 @@ render(<SystemRemindersController />);
           </tbody>
         </table>
       </div>
+      {sortedHistory.length > 3 && (
+        <div className="flex justify-center gap-2 mt-3 pt-3 border-t border-gray-100">
+          {canShowLess && (
+            <button 
+              onClick={() => setVisibleCount(3)}
+              className="px-3 py-1.5 text-xs font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors flex items-center gap-1"
+            >
+              ▲ Show Less
+            </button>
+          )}
+          {hasMore && (
+            <button 
+              onClick={() => setVisibleCount(prev => prev + 3)}
+              className="px-3 py-1.5 text-xs font-medium text-white bg-corporate-teal hover:bg-teal-700 rounded-lg transition-colors flex items-center gap-1"
+            >
+              ▼ Show More ({sortedHistory.length - visibleCount} remaining)
+            </button>
+          )}
+        </div>
+      )}
     </Card>
   );
 })()
@@ -1447,6 +1512,18 @@ render(<SystemRemindersController />);
     'locker-latest-reflection': `
 (() => {
   const safeReflections = typeof reflectionHistory !== 'undefined' ? reflectionHistory : [];
+  const [visibleCount, setVisibleCount] = React.useState(3);
+  
+  // Sort by date descending (latest first) - reflections should already be sorted but ensure
+  const sortedReflections = [...safeReflections].sort((a, b) => {
+    if (!a.date) return 1;
+    if (!b.date) return -1;
+    return new Date(b.date) - new Date(a.date);
+  });
+  
+  const visibleReflections = sortedReflections.slice(0, visibleCount);
+  const hasMore = sortedReflections.length > visibleCount;
+  const canShowLess = visibleCount > 3;
 
   return (
     <Card title="Reflection History" icon={BookOpen} className="lg:col-span-2 border-t-4 border-corporate-navy">
@@ -1461,8 +1538,8 @@ render(<SystemRemindersController />);
             </tr>
           </thead>
           <tbody className="bg-white">
-            {safeReflections.length > 0 ? (
-              safeReflections.map((log, index) => (
+            {visibleReflections.length > 0 ? (
+              visibleReflections.map((log, index) => (
                 <tr key={log.id || index} className="hover:bg-blue-50 transition-colors align-top">
                   <td className="border border-gray-300 px-3 py-2 whitespace-nowrap font-mono text-gray-600">
                     {new Date(log.date).toLocaleDateString(undefined, { month: 'numeric', day: 'numeric', year: '2-digit' })}
@@ -1488,6 +1565,26 @@ render(<SystemRemindersController />);
           </tbody>
         </table>
       </div>
+      {sortedReflections.length > 3 && (
+        <div className="flex justify-center gap-2 mt-3 pt-3 border-t border-gray-100">
+          {canShowLess && (
+            <button 
+              onClick={() => setVisibleCount(3)}
+              className="px-3 py-1.5 text-xs font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors flex items-center gap-1"
+            >
+              ▲ Show Less
+            </button>
+          )}
+          {hasMore && (
+            <button 
+              onClick={() => setVisibleCount(prev => prev + 3)}
+              className="px-3 py-1.5 text-xs font-medium text-white bg-corporate-navy hover:bg-navy-700 rounded-lg transition-colors flex items-center gap-1"
+            >
+              ▼ Show More ({sortedReflections.length - visibleCount} remaining)
+            </button>
+          )}
+        </div>
+      )}
     </Card>
   );
 })()
@@ -1495,6 +1592,7 @@ render(<SystemRemindersController />);
     'locker-reps-history': `
 (() => {
   const safeHistory = typeof repsHistory !== 'undefined' ? repsHistory : [];
+  const [visibleCount, setVisibleCount] = React.useState(3);
   
   // Sort dates descending (newest first)
   const sortedHistory = [...safeHistory].sort((a, b) => {
@@ -1502,12 +1600,16 @@ render(<SystemRemindersController />);
     if (!b.date) return -1;
     return new Date(b.date) - new Date(a.date);
   });
+  
+  const visibleHistory = sortedHistory.slice(0, visibleCount);
+  const hasMore = sortedHistory.length > visibleCount;
+  const canShowLess = visibleCount > 3;
 
   return (
     <Card title="Daily Reps History" icon={Dumbbell} className="border-t-4 border-corporate-navy">
       <div className="space-y-4">
-        {sortedHistory.length > 0 ? (
-          sortedHistory.map((entry, dateIndex) => (
+        {visibleHistory.length > 0 ? (
+          visibleHistory.map((entry, dateIndex) => (
             <div key={dateIndex} className="border border-gray-200 rounded-lg overflow-hidden">
               {/* Date Header */}
               <div className="bg-gray-100 px-4 py-2 flex items-center justify-between border-b border-gray-200">
@@ -1542,6 +1644,26 @@ render(<SystemRemindersController />);
           </div>
         )}
       </div>
+      {sortedHistory.length > 3 && (
+        <div className="flex justify-center gap-2 mt-3 pt-3 border-t border-gray-100">
+          {canShowLess && (
+            <button 
+              onClick={() => setVisibleCount(3)}
+              className="px-3 py-1.5 text-xs font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors flex items-center gap-1"
+            >
+              ▲ Show Less
+            </button>
+          )}
+          {hasMore && (
+            <button 
+              onClick={() => setVisibleCount(prev => prev + 3)}
+              className="px-3 py-1.5 text-xs font-medium text-white bg-corporate-navy hover:bg-navy-700 rounded-lg transition-colors flex items-center gap-1"
+            >
+              ▼ Show More ({sortedHistory.length - visibleCount} remaining)
+            </button>
+          )}
+        </div>
+      )}
     </Card>
   );
 })()

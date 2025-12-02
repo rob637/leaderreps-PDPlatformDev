@@ -9,6 +9,7 @@ import ArenaSidebar from './ArenaSidebar.jsx';
 import WidgetRenderer from '../admin/WidgetRenderer.jsx';
 import { useAppServices } from '../../services/useAppServices.jsx';
 import { NavigationProvider } from '../../providers/NavigationProvider.jsx';
+import TimeTravelBanner from '../admin/TimeTravelBanner.jsx';
 
 const AppContent = ({
   currentScreen,
@@ -105,6 +106,9 @@ const AppContent = ({
       currentScreen={currentScreen}
       navParams={navParams}
     >
+      {/* Time Travel Banner - visible to admins when active */}
+      <TimeTravelBanner isAdmin={isAdmin} />
+      
       <div className="relative min-h-screen flex justify-center font-sans antialiased bg-corporate-navy overflow-hidden">
         
         {/* Centered App Container */}
