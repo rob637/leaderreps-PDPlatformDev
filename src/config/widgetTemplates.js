@@ -700,7 +700,7 @@ export const WIDGET_TEMPLATES = {
     <div className="border-t border-gray-100 pt-3 flex gap-3">
       <div className="w-8 h-8 rounded-full bg-gray-200 flex-shrink-0"></div>
       <div>
-        <p className="text-sm font-bold text-gray-800">Mike T. <span className="font-normal text-gray-500">replied to</span> Strategy</span></p>
+        <p className="text-sm font-bold text-gray-800">Mike T. <span className="font-normal text-gray-500">replied to</span> Strategy</p>
         <p className="text-sm text-gray-600 mt-1">"The key is alignment on the north star metric..."</p>
       </div>
     </div>

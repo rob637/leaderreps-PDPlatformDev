@@ -574,17 +574,6 @@ const CommunityScreen = ({ simulatedTier }) => {
     };
 
     // --- Main Render ---
-    // Feature Flag Check for entire screen (bypass for admins)
-    if (!isAdmin && !featureFlags?.enableCommunity) { // cite: useAppServices.jsx
-         return (
-             <div className="p-4 sm:p-3 sm:p-4 lg:p-6 lg:p-8 text-center text-gray-500">
-                 <Users className="w-12 h-12 mx-auto mb-4 text-gray-400"/>
-                 <h1 className="text-xl sm:text-2xl font-bold mb-2">Community Hub Unavailable</h1>
-                 <p>This feature is currently disabled.</p>
-                 <Button onClick={() => navigate('dashboard')} variant="outline" size="sm" className="mt-4">Back to Arena</Button>
-             </div>
-         );
-    }
     // Loading/Error States
     if (isAppLoading) return <LoadingSpinner message="Loading Community Hub..." />;
     // Note: appError check might be redundant if handled globally, but included for robustness
