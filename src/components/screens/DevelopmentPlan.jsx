@@ -91,7 +91,7 @@ const findAndSetTargetRep = async (newPlan, metadata, writer) => {
 };
 
 
-export default function DevelopmentPlan() {
+export default function DevelopmentPlan(props) {
   const services = useAppServices();
   const {
     db, userId, isAuthReady, isLoading: isServicesLoading,
@@ -191,7 +191,15 @@ export default function DevelopmentPlan() {
   // Local view-state (router-in-component)
   // tracker | baseline | scan | detail | timeline
   const hasCurrentPlan = !!(adaptedDevelopmentPlanData && adaptedDevelopmentPlanData.currentPlan);
-  const [view, setView] = useState(hasCurrentPlan ? 'tracker' : 'baseline');
+  const [view, setView] = useState(props.view || (hasCurrentPlan ? 'tracker' : 'baseline'));
+
+  // Sync view with props (navigation params)
+  useEffect(() => {
+    if (props.view) {
+      setView(props.view);
+    }
+  }, [props.view]);
+
   const [isSaving, setIsSaving] = useState(false); // Used to detect in-progress save
   const [error, setError] = useState(null);
   const [justCompletedBaseline, setJustCompletedBaseline] = useState(false); // Prevent returning to baseline after save
@@ -479,6 +487,11 @@ async function confirmPlanPersisted(db, userId, retries = 4, delayMs = 250) {
     return ok;
   };
 
+  // Get latest assessment if available
+  const latestAssessment = adaptedDevelopmentPlanData?.assessmentHistory?.length > 0 
+    ? adaptedDevelopmentPlanData.assessmentHistory[adaptedDevelopmentPlanData.assessmentHistory.length - 1] 
+    : null;
+
   // ===== GUARDS =====
   if (!isAuthReady) return <LoadingBlock title="Authenticating…" description="Connecting securely..." />;
   if (isServicesLoading) return <LoadingBlock title="Loading..." />;
@@ -542,6 +555,8 @@ async function confirmPlanPersisted(db, userId, retries = 4, delayMs = 250) {
         <BaselineAssessment
           onComplete={handleCompleteBaseline}
           isLoading={isSaving}
+          initialData={latestAssessment}
+          mode={props.mode}
         />
       )}
 

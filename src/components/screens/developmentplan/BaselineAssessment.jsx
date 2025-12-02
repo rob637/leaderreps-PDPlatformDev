@@ -70,12 +70,12 @@ const RadioButtonInput = ({ question, options, value, onChange }) => {
 };
 
 
-const BaselineAssessment = ({ onComplete, isLoading = false }) => {
+const BaselineAssessment = ({ onComplete, isLoading = false, initialData = null, mode = 'create' }) => {
   // One state object for all answers
-  const [responses, setResponses] = useState({});
+  const [responses, setResponses] = useState(initialData?.answers || {});
   
   // REQ #15: State for 1-3 goals
-  const [goals, setGoals] = useState(['']);
+  const [goals, setGoals] = useState(initialData?.openEnded && initialData.openEnded.length > 0 ? initialData.openEnded : ['']);
 
   const completedQuestions = Object.keys(responses).length;
   const totalQuestions = ASSESSMENT_QUESTIONS.length;
@@ -259,7 +259,7 @@ const BaselineAssessment = ({ onComplete, isLoading = false }) => {
               ) : (
                 <ArrowRight className="w-5 h-5" />
               )}
-              {isTotalLoading ? 'Creating Your Plan...' : 'Complete & Generate My Plan'}
+              {isTotalLoading ? 'Creating Your Plan...' : (initialData ? 'Update My Plan' : 'Complete & Generate My Plan')}
             </Button>
             {!isComplete && (
               <p className="text-center text-sm mt-3" style={{ color: 'var(--corporate-teal)' }}>
