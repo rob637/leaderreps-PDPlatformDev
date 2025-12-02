@@ -10,7 +10,8 @@ import {
   ChevronRight,
   ShieldCheck,
   Plus,
-  Trash2
+  Trash2,
+  LayoutDashboard
 } from 'lucide-react';
 import { useAppServices } from '../../services/useAppServices';
 import { collection, getDocs, query, where, orderBy, limit, doc, getDoc, updateDoc, setDoc, arrayUnion, arrayRemove, addDoc, serverTimestamp } from 'firebase/firestore';
@@ -287,11 +288,24 @@ const AdminDashboard = () => {
 
   return (
     <div className="space-y-8">
-      <div className="flex items-center justify-between">
-        <h2 className="text-xl font-bold text-corporate-navy font-serif">System Overview</h2>
-        <span className={`px-3 py-1 rounded-full text-xs font-bold flex items-center gap-2 ${stats.pendingIssues > 0 ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'}`}>
+      {/* Header - Matching PageLayout style */}
+      <header className="text-center mb-8">
+        <div className="flex items-center gap-3 justify-center mb-2">
+          <LayoutDashboard className="w-8 h-8 text-corporate-teal" />
+          <h1 className="text-2xl sm:text-3xl font-bold text-corporate-navy">
+            Admin Command Center
+          </h1>
+        </div>
+        <p className="text-slate-500 text-sm sm:text-base max-w-2xl mx-auto">
+          Monitor system health, manage administrators, and view activity logs.
+        </p>
+      </header>
+
+      {/* System Status Bar */}
+      <div className="flex items-center justify-center">
+        <span className={`px-4 py-2 rounded-full text-sm font-bold flex items-center gap-2 ${stats.pendingIssues > 0 ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'}`}>
           <div className={`w-2 h-2 rounded-full animate-pulse ${stats.pendingIssues > 0 ? 'bg-red-500' : 'bg-green-500'}`}></div>
-          {stats.systemStatus}
+          System Status: {stats.systemStatus}
         </span>
       </div>
 
