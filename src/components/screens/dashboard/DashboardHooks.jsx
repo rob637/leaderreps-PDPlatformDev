@@ -65,6 +65,7 @@ export const useDashboard = ({
 
   // === ADDITIONAL REPS STATE ===
   const [additionalCommitments, setAdditionalCommitments] = useState([]);
+  const [isSavingReps, setIsSavingReps] = useState(false); // NEW
 
 
   /* =========================================================
@@ -535,7 +536,8 @@ export const useDashboard = ({
         scorecardHistory: updatedHistory,
         // NEW: Set tomorrow's reminders from today's reflection
         tomorrowsReminder: reflectionBest,
-        improvementReminder: reflectionBetter
+        improvementReminder: reflectionBetter,
+        date: new Date().toLocaleDateString('en-CA') // Ensure date is updated
       };
 
       // Add reminders to updates if any were created
@@ -783,7 +785,8 @@ export const useDashboard = ({
 
       // Update Firestore
       await updateDailyPracticeData({
-        'morningBookend.wins': newWins
+        'morningBookend.wins': newWins,
+        date: new Date().toLocaleDateString('en-CA') // Ensure date is updated
       });
     } catch (error) {
       console.error('Error saving win:', error);
@@ -803,7 +806,8 @@ export const useDashboard = ({
 
       // Update Firestore
       await updateDailyPracticeData({
-        'morningBookend.wins': newWins
+        'morningBookend.wins': newWins,
+        date: new Date().toLocaleDateString('en-CA') // Ensure date is updated
       });
     } catch (error) {
       console.error('Error saving all wins:', error);
@@ -822,7 +826,8 @@ export const useDashboard = ({
 
     try {
       await updateDailyPracticeData({
-        'morningBookend.wins': newWins
+        'morningBookend.wins': newWins,
+        date: new Date().toLocaleDateString('en-CA') // Ensure date is updated
       });
     } catch (error) {
       console.error('Error toggling win:', error);
@@ -858,7 +863,8 @@ export const useDashboard = ({
       const updatedHistory = [...historyWithoutToday, newHistoryEntry];
 
       await updateDailyPracticeData({
-        scorecardHistory: updatedHistory
+        scorecardHistory: updatedHistory,
+        date: new Date().toLocaleDateString('en-CA') // Ensure date is updated
       });
       
       alert('✅ Scorecard saved to Locker!');
@@ -959,6 +965,8 @@ export const useDashboard = ({
     // Additional Reps
     additionalCommitments,
     handleToggleAdditionalRep,
+    handleSaveReps,
+    isSavingReps,
     
     // Legacy / Deprecated but kept for safety
     handleToggleWIN,
@@ -970,15 +978,19 @@ export const useDashboard = ({
       // Since reps save on toggle, this is a confirmation action
       // We could force a save here if needed, but for now just confirm
       if (updateDailyPracticeData) {
+         setIsSavingReps(true);
          // Force a re-save of current commitments to be safe
          try {
              await updateDailyPracticeData({
-                 active_commitments: additionalCommitments
+                 active_commitments: additionalCommitments,
+                 date: new Date().toLocaleDateString('en-CA') // Ensure date is updated
              });
-             alert('✅ Daily Reps Saved!');
+             // Removed alert, UI should handle success state via isSavingReps
          } catch (e) {
              console.error(e);
              alert('Error saving reps.');
+         } finally {
+             setIsSavingReps(false);
          }
       }
     }, [updateDailyPracticeData, additionalCommitments])

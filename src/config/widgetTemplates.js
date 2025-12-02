@@ -240,6 +240,7 @@ export const WIDGET_TEMPLATES = {
           <Save className="w-4 h-4" />
           Save Priorities
         </button>
+        <p className="text-xs text-center text-slate-400 mt-2 italic">Autosaves at 11:59 PM</p>
       </div>
     </Card>
   );
@@ -262,6 +263,7 @@ export const WIDGET_TEMPLATES = {
   // Track completed state locally
   // additionalCommitments is an array of objects { id, status, text }
   const commitmentsList = Array.isArray(additionalCommitments) ? additionalCommitments : [];
+  const safeIsSaving = typeof isSavingReps !== 'undefined' ? isSavingReps : false;
   
   return (
     <Card title="Daily Reps" icon={Dumbbell} accent="NAVY">
@@ -298,9 +300,10 @@ export const WIDGET_TEMPLATES = {
           onClick={() => handleSaveReps && handleSaveReps()}
           className="w-full mt-2 py-2 bg-[#002E47] text-white rounded-xl font-bold hover:bg-[#003E5F] transition-colors flex items-center justify-center gap-2 text-sm"
         >
-          <Save className="w-4 h-4" />
+          {safeIsSaving ? <Loader className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
           Save Reps
         </button>
+        <p className="text-xs text-center text-slate-400 mt-2 italic">Autosaves at 11:59 PM</p>
       </div>
 
     </Card>
@@ -433,8 +436,9 @@ export const WIDGET_TEMPLATES = {
       className="w-full py-3 bg-[#002E47] text-white rounded-xl font-bold hover:bg-[#003E5F] transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
     >
       {isSavingBookend ? <Loader className="w-5 h-5 animate-spin" /> : <Save className="w-5 h-5" />}
-      Save Journal
+      Save Reflection
     </button>
+    <p className="text-xs text-center text-slate-400 mt-2 italic">Autosaves at 11:59 PM</p>
   </div>
 
 </Card>
@@ -1204,12 +1208,19 @@ render(<LockerReminders />);
     `,
     'system-reminders-controller': `
 const SystemRemindersController = () => {
+  const useNotificationsHook = typeof useNotifications !== 'undefined' ? useNotifications : () => ({ 
+    permission: 'denied', 
+    requestPermission: () => {}, 
+    sendTestNotification: () => {}, 
+    isSupported: false 
+  });
+
   const { 
     permission, 
     requestPermission, 
     sendTestNotification,
     isSupported 
-  } = useNotifications();
+  } = useNotificationsHook();
 
   return (
     <Card 
@@ -1483,12 +1494,13 @@ render(<SystemRemindersController />);
     `,
     'development-plan': `
 (() => {
+  const safeScope = typeof scope !== 'undefined' ? scope : {};
   const { 
     currentWeek,
     userProgress,
     handleItemToggle,
     handleReflectionUpdate
-  } = scope;
+  } = safeScope;
 
   if (!currentWeek) return null;
 
