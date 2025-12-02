@@ -589,7 +589,7 @@ export const useDashboard = ({
     } finally {
       setIsSavingBookend(false);
     }
-  }, [reflectionGood, reflectionBetter, reflectionBest, habitsCompleted, updateDailyPracticeData, dailyPracticeData]); // Explicitly include prop
+  }, [reflectionGood, reflectionBetter, reflectionBest, habitsCompleted, updateDailyPracticeData, dailyPracticeData, scorecard, winsList]); // Explicitly include prop
 
   const handleAddTask = useCallback((taskText) => {
     // Developer mode check removed for now
@@ -616,6 +616,7 @@ export const useDashboard = ({
       updateDailyPracticeData({
         morningBookend: {
           ...dailyPracticeData?.morningBookend,
+          wins: morningWins, // Ensure wins are preserved from local state
           otherTasks: updatedTasks
         }
       }).then(() => {
@@ -630,7 +631,7 @@ export const useDashboard = ({
       console.error('[Dashboard] updateDailyPracticeData is not available!');
       alert('Error: Cannot save task. Please refresh the page.');
     }
-  }, [otherTasks, updateDailyPracticeData]); // Explicitly include prop
+  }, [otherTasks, updateDailyPracticeData, dailyPracticeData, morningWins]); // Explicitly include prop
 
   const handleToggleTask = useCallback(async (taskId) => {
     const updatedTasks = otherTasks.map(task =>
@@ -668,6 +669,7 @@ export const useDashboard = ({
         await updateDailyPracticeData({
           morningBookend: {
             ...dailyPracticeData?.morningBookend,
+            wins: morningWins, // Ensure wins are preserved from local state
             otherTasks: updatedTasks
           },
           winsList: updatedWinsList
@@ -676,7 +678,7 @@ export const useDashboard = ({
         console.error('[Dashboard] Error auto-saving task toggle:', error);
       }
     }
-  }, [otherTasks, updateDailyPracticeData, winsList, dailyPracticeData]); // Explicitly include prop
+  }, [otherTasks, updateDailyPracticeData, winsList, dailyPracticeData, morningWins]); // Explicitly include prop
 
   const handleUpdateTask = useCallback(async (taskId, newText) => {
     const updatedTasks = otherTasks.map(task =>
@@ -690,6 +692,7 @@ export const useDashboard = ({
         await updateDailyPracticeData({
           morningBookend: {
             ...dailyPracticeData?.morningBookend,
+            wins: morningWins, // Ensure wins are preserved from local state
             otherTasks: updatedTasks
           }
         });
@@ -697,7 +700,7 @@ export const useDashboard = ({
         console.error('[Dashboard] Error auto-saving task update:', error);
       }
     }
-  }, [otherTasks, updateDailyPracticeData, dailyPracticeData]);
+  }, [otherTasks, updateDailyPracticeData, dailyPracticeData, morningWins]);
 
   const handleRemoveTask = useCallback(async (taskKey) => {
     let updatedTasks;
@@ -722,6 +725,7 @@ export const useDashboard = ({
         await updateDailyPracticeData({
           morningBookend: {
             ...dailyPracticeData?.morningBookend,
+            wins: morningWins, // Ensure wins are preserved from local state
             otherTasks: updatedTasks
           }
         });
@@ -729,7 +733,7 @@ export const useDashboard = ({
         console.error('[Dashboard] Error auto-saving task removal:', error);
       }
     }
-  }, [otherTasks, updateDailyPracticeData]); // Explicitly include prop
+  }, [otherTasks, updateDailyPracticeData, dailyPracticeData, morningWins]); // Explicitly include prop
 
   // NEW: Handle WIN checkbox toggle
   const handleToggleWIN = useCallback(async () => {
@@ -745,13 +749,14 @@ export const useDashboard = ({
       await updateDailyPracticeData({
         morningBookend: {
             ...dailyPracticeData?.morningBookend,
-            wins: newWins
+            wins: newWins,
+            otherTasks: otherTasks // Ensure otherTasks are preserved from local state
         }
       });
     } catch (error) {
       console.error('Error toggling win:', error);
     }
-  }, [morningWins, updateDailyPracticeData, dailyPracticeData]);
+  }, [morningWins, updateDailyPracticeData, dailyPracticeData, otherTasks]);
 
   const handleHabitToggle = useCallback((habitKey, isChecked) => {
     lastHabitUpdateTime.current = Date.now();
@@ -798,7 +803,8 @@ export const useDashboard = ({
       await updateDailyPracticeData({
         morningBookend: {
             ...dailyPracticeData?.morningBookend,
-            wins: newWins
+            wins: newWins,
+            otherTasks: otherTasks // Ensure otherTasks are preserved from local state
         },
         date: new Date().toLocaleDateString('en-CA') // Ensure date is updated
       });
@@ -807,7 +813,7 @@ export const useDashboard = ({
     } finally {
       setIsSavingWIN(false);
     }
-  }, [morningWins, updateDailyPracticeData, dailyPracticeData]);
+  }, [morningWins, updateDailyPracticeData, dailyPracticeData, otherTasks]);
 
   const handleSaveAllWins = useCallback(async () => {
     if (!updateDailyPracticeData) return;
@@ -822,7 +828,8 @@ export const useDashboard = ({
       await updateDailyPracticeData({
         morningBookend: {
             ...dailyPracticeData?.morningBookend,
-            wins: newWins
+            wins: newWins,
+            otherTasks: otherTasks // Ensure otherTasks are preserved from local state
         },
         date: new Date().toLocaleDateString('en-CA') // Ensure date is updated
       });
@@ -832,7 +839,7 @@ export const useDashboard = ({
     } finally {
       setIsSavingWIN(false);
     }
-  }, [morningWins, updateDailyPracticeData, dailyPracticeData]);
+  }, [morningWins, updateDailyPracticeData, dailyPracticeData, otherTasks]);
 
   const handleToggleWinComplete = useCallback(async (index) => {
     if (!updateDailyPracticeData) return;
@@ -845,14 +852,15 @@ export const useDashboard = ({
       await updateDailyPracticeData({
         morningBookend: {
             ...dailyPracticeData?.morningBookend,
-            wins: newWins
+            wins: newWins,
+            otherTasks: otherTasks // Ensure otherTasks are preserved from local state
         },
         date: new Date().toLocaleDateString('en-CA') // Ensure date is updated
       });
     } catch (error) {
       console.error('Error toggling win:', error);
     }
-  }, [morningWins, updateDailyPracticeData, dailyPracticeData]);
+  }, [morningWins, updateDailyPracticeData, dailyPracticeData, otherTasks]);
 
   // Legacy handler kept for compatibility but unused in new UI
   const handleSaveWIN = useCallback(async () => {

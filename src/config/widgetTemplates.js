@@ -234,10 +234,10 @@ export const WIDGET_TEMPLATES = {
         )})}
         
         <button 
-          onClick={() => morningWins.forEach((_, i) => handleSaveSingleWin && handleSaveSingleWin(i))}
+          onClick={() => handleSaveAllWins && handleSaveAllWins()}
           className="w-full mt-2 py-2 bg-[#002E47] text-white rounded-xl font-bold hover:bg-[#003E5F] transition-colors flex items-center justify-center gap-2 text-sm"
         >
-          <Save className="w-4 h-4" />
+          {isSavingWIN ? <Loader className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
           Save Priorities
         </button>
         <p className="text-xs text-center text-slate-400 mt-2 italic">Autosaves at 11:59 PM</p>
