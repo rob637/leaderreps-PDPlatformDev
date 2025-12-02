@@ -8,7 +8,6 @@ import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { serverTimestamp } from 'firebase/firestore';
 import { useAppServices } from '../../../hooks/useAppServices';
 import { timeService } from '../../../services/timeService';
-import { useDayTransition } from '../../../hooks/useDayTransition';
 
 // Helper function to check if developer mode is enabled
 const isDeveloperMode = () => localStorage.getItem('arena-developer-mode') === 'true';
@@ -559,11 +558,35 @@ export const useDashboard = ({
     scorecard
   ]);
 
-  // Use day transition hook to detect midnight crossing during time travel
-  useDayTransition({
-    onDayTransition: handleDayTransition,
-    enabled: timeService.isActive() // Only active during time travel
-  });
+  // Day transition detection for time travel - using inline useEffect instead of external hook
+  // to avoid hook ordering issues
+  const lastDateRef = useRef(timeService.getTodayStr());
+  
+  useEffect(() => {
+    // Only run when time travel is active
+    if (!timeService.isActive()) return;
+
+    const checkInterval = setInterval(() => {
+      const currentDate = timeService.getTodayStr();
+      const lastDate = lastDateRef.current;
+
+      if (currentDate !== lastDate) {
+        console.log('[DayTransition] Day transition detected!', {
+          from: lastDate,
+          to: currentDate,
+          time: timeService.getNow().toLocaleTimeString()
+        });
+
+        // Update ref before calling callback to prevent multiple triggers
+        lastDateRef.current = currentDate;
+
+        // Call the transition handler
+        handleDayTransition(lastDate, currentDate);
+      }
+    }, 1000);
+
+    return () => clearInterval(checkInterval);
+  }, [handleDayTransition]);
 
   /* =========================================================
      BOOKEND HANDLERS (Dependency on updateDailyPracticeData)
