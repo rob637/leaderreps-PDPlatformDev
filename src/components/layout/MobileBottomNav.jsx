@@ -41,12 +41,8 @@ const MobileBottomNav = ({ currentScreen }) => {
 
   // Only show on mobile devices
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t shadow-lg md:hidden" 
-         style={{ 
-           borderColor: '#47A88D30',
-           boxShadow: '0 -4px 20px rgba(0, 0, 0, 0.1)'
-         }}>
-      <div className="flex justify-around items-center py-1 px-1">
+    <div className="fixed bottom-0 left-0 right-0 z-50 bg-corporate-light-gray border-t border-slate-200 md:hidden pb-safe">
+      <div className="flex justify-around items-center px-2 py-2">
         {navItems.map((item) => {
           const Icon = item.icon;
           const isActive = currentScreen === item.screen;
@@ -55,40 +51,25 @@ const MobileBottomNav = ({ currentScreen }) => {
             <button
               key={item.id}
               onClick={() => handleNavClick(item)}
-              className={`flex flex-col items-center justify-center py-3 px-2 rounded-xl transition-all duration-300 min-w-0 flex-1 mx-1 ${
-                isActive 
-                  ? 'shadow-lg transform scale-105' 
-                  : 'hover:bg-gray-50 active:scale-95'
-              }`}
-              style={{
-                backgroundColor: isActive ? '#47A88D' : 'transparent'
-              }}
+              className="flex flex-col items-center justify-center w-full gap-1"
             >
-              <Icon 
-                className={`w-6 h-6 mb-1 transition-all duration-200 ${
-                  isActive ? 'animate-pulse' : ''
-                }`}
-                style={{ 
-                  color: isActive ? '#fff' : '#6B7280' 
-                }}
-              />
+              <div className={`
+                px-5 py-1 rounded-full transition-all duration-200
+                ${isActive ? 'bg-corporate-teal' : 'bg-transparent'}
+              `}>
+                <Icon 
+                  className={`w-6 h-6 transition-colors duration-200 ${
+                    isActive ? 'text-white' : 'text-slate-500'
+                  }`}
+                />
+              </div>
               <span 
-                className={`text-xs font-semibold truncate transition-all duration-200 ${
-                  isActive ? 'text-white' : 'text-gray-600'
+                className={`text-[10px] font-medium transition-colors duration-200 ${
+                  isActive ? 'text-corporate-navy font-bold' : 'text-slate-500'
                 }`}
-                style={{
-                  fontSize: '10px',
-                  lineHeight: '12px'
-                }}
               >
                 {item.label}
               </span>
-              {isActive && (
-                <div 
-                  className="absolute -top-1 w-8 h-1 rounded-full"
-                  style={{ backgroundColor: '#E04E1B' }}
-                />
-              )}
             </button>
           );
         })}

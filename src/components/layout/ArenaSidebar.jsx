@@ -46,7 +46,7 @@ const ArenaSidebar = ({ isOpen, toggle, currentScreen, navigate, onSignOut, user
   return (
     <div 
       className={`
-        relative z-40 h-full bg-corporate-navy text-white transition-all duration-300 ease-in-out flex flex-col
+        relative z-40 h-full bg-corporate-navy text-white transition-all duration-300 ease-in-out flex-col hidden md:flex
         ${isOpen ? 'w-64' : 'w-16'}
       `}
     >
