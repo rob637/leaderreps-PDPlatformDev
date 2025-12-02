@@ -209,6 +209,7 @@ const AppContent = ({
           </main>
         </div>
       </div>
+      </div>
     </NavigationProvider>
   );
 };
