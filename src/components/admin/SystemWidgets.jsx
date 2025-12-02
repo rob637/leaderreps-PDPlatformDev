@@ -8,7 +8,7 @@ import WidgetRenderer from './WidgetRenderer';
 import { ENHANCEMENT_IDEAS } from '../../data/enhancementIdeas';
 
 // List of system widget IDs
-const SYSTEM_WIDGETS = ['system-reminders', 'time-traveler'];
+const SYSTEM_WIDGETS = ['system-reminders-controller', 'time-traveler'];
 
 /**
  * SystemWidgets - Admin System Tools Panel
@@ -138,7 +138,7 @@ const SystemWidgets = () => {
             </div>
 
             <p className="text-xs text-gray-400 italic text-center">
-              {isFeatureEnabled('system-reminders') 
+              {isFeatureEnabled('system-reminders-controller') 
                 ? '✓ Enabled - Widget shown above' 
                 : 'Enable in Widget Lab to activate'}
             </p>

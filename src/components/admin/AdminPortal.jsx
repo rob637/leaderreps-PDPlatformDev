@@ -14,7 +14,6 @@ import AdminDashboard from './AdminDashboard';
 import SystemDiagnostics from './SystemDiagnostics';
 import FeatureManager from './FeatureManager';
 import ContentAdminHome from './ContentAdminHome'; // Existing component
-import TimeTraveler from './TimeTraveler';
 import SystemWidgets from './SystemWidgets';
 import { useAppServices } from '../../services/useAppServices';
 import { doc, getDoc } from 'firebase/firestore';
@@ -165,9 +164,6 @@ const AdminPortal = () => {
         <div className="bg-white rounded-2xl shadow-sm border border-gray-200 min-h-[600px] p-6">
           {renderContent()}
         </div>
-        
-        {/* Time Traveler Widget - Floating in Admin Portal */}
-        <TimeTraveler />
       </div>
     </div>
   );
