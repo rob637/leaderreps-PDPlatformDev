@@ -17,6 +17,11 @@ const DevelopmentPlanWidget = ({ scope }) => {
     focus, 
     phase, 
     description, 
+    weekNumber,
+    estimatedTimeMinutes,
+    skills = [],
+    pillars = [],
+    difficultyLevel,
     content = [], 
     community = [], 
     coaching = [],
@@ -51,8 +56,34 @@ const DevelopmentPlanWidget = ({ scope }) => {
       <div className="space-y-4">
         {/* Header Info */}
         <div>
-          <h3 className="text-lg font-bold text-slate-800">{focus}</h3>
-          <p className="text-sm text-slate-600">{description}</p>
+          <div className="flex justify-between items-start mb-1">
+            <h3 className="text-lg font-bold text-slate-800">{focus}</h3>
+            {weekNumber && (
+              <span className="text-xs font-bold text-slate-400 bg-slate-100 px-2 py-1 rounded-full uppercase tracking-wider">
+                Week {weekNumber}
+              </span>
+            )}
+          </div>
+          <p className="text-sm text-slate-600 mb-3">{description}</p>
+          
+          {/* Metadata Tags */}
+          <div className="flex flex-wrap gap-2 mb-2">
+            {difficultyLevel && (
+              <span className="text-[10px] font-bold text-slate-500 border border-slate-200 px-2 py-0.5 rounded uppercase">
+                {difficultyLevel}
+              </span>
+            )}
+            {estimatedTimeMinutes && (
+              <span className="text-[10px] font-bold text-slate-500 border border-slate-200 px-2 py-0.5 rounded uppercase">
+                {estimatedTimeMinutes} mins
+              </span>
+            )}
+            {pillars.map(p => (
+              <span key={p} className="text-[10px] font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded uppercase">
+                {p}
+              </span>
+            ))}
+          </div>
         </div>
 
         {/* Progress Bar */}
@@ -96,9 +127,16 @@ const DevelopmentPlanWidget = ({ scope }) => {
                 </div>
                 
                 <div className="flex-1">
-                  <p className={`text-sm font-medium ${isCompleted ? 'text-slate-500' : 'text-slate-800'}`}>
-                    {item.label}
-                  </p>
+                  <div className="flex justify-between items-start">
+                    <p className={`text-sm font-medium ${isCompleted ? 'text-slate-500' : 'text-slate-800'}`}>
+                      {item.label}
+                    </p>
+                    {item.recommendedWeekDay && !isCompleted && (
+                      <span className="text-[10px] font-bold text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded uppercase ml-2 whitespace-nowrap">
+                        {item.recommendedWeekDay}
+                      </span>
+                    )}
+                  </div>
                   <p className="text-xs text-slate-500 capitalize">
                     {item.type.replace(/_/g, ' ')} • {item.required === false || item.optional ? 'Optional' : 'Required'}
                   </p>

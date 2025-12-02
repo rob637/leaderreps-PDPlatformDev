@@ -13,7 +13,8 @@ const DynamicWidgetRenderer = ({ code, scope = {} }) => {
     React,
     ...LucideIcons,
     COLORS,
-    ...scope
+    ...scope,
+    scope // Allow widgets to access the full scope object directly
   };
 
   // Determine if the code is using the "render()" pattern (noInline=true)
