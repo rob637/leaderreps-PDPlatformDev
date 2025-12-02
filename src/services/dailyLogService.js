@@ -11,6 +11,7 @@ import {
   limit,
   getDocs
 } from 'firebase/firestore';
+import { timeService } from './timeService';
 
 /**
  * Service to handle Daily Log operations (The Arena Dashboard)
@@ -21,9 +22,10 @@ export const dailyLogService = {
    * Get the document ID for a specific date (YYYY-MM-DD)
    * Uses local time to ensure the "day" matches the user's perspective
    */
-  getDateId: (date = new Date()) => {
+  getDateId: (date) => {
+    const d = date || timeService.getNow();
     // Use Sweden/Canada format (YYYY-MM-DD) which is standard for sorting
-    return date.toLocaleDateString('en-CA');
+    return d.toLocaleDateString('en-CA');
   },
 
   /**

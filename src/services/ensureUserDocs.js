@@ -2,6 +2,7 @@
 import { getDocEx, setDocEx } from './firestoreUtils';
 import { buildUserProfilePath, buildModulePath } from './pathUtils.js';
 import { serverTimestamp } from 'firebase/firestore';
+import { timeService } from './timeService';
 
 export const ensureUserDocs = async (db, uid) => {
   try {
@@ -10,7 +11,7 @@ export const ensureUserDocs = async (db, uid) => {
         return;
     }
 
-    const todayStr = new Date().toISOString().split('T')[0]; 
+    const todayStr = timeService.getISOString().split('T')[0]; 
 
     // ==================== USER PROFILE ====================
     const userProfilePath = buildUserProfilePath(uid);
@@ -19,7 +20,7 @@ export const ensureUserDocs = async (db, uid) => {
     if (!userProfileSnap.exists()) {
         await setDocEx(db, userProfilePath, {
             userId: uid,
-            createdAt: new Date().toISOString(),
+            createdAt: timeService.getISOString(),
             _createdAt: serverTimestamp()
         });
     }
@@ -86,7 +87,7 @@ export const ensureUserDocs = async (db, uid) => {
         const defaultMembership = {
             status: 'Trial',
             currentPlanId: 'trial',
-            nextBillingDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+            nextBillingDate: new Date(timeService.getNow().getTime() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
             paymentHistory: [],
             notifications: [
                 { id: 'welcome', message: 'Welcome to your 7-day free trial! Upgrade now to maintain access.', type: 'warning', isRead: false }

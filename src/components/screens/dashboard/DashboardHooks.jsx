@@ -6,6 +6,7 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { serverTimestamp } from 'firebase/firestore';
 import { useAppServices } from '../../../hooks/useAppServices';
+import { timeService } from '../../../services/timeService';
 
 // Helper function to check if developer mode is enabled
 const isDeveloperMode = () => localStorage.getItem('arena-developer-mode') === 'true';
@@ -157,7 +158,7 @@ export const useDashboard = ({
         id: commitmentId,
         status: newStatus,
         text: text,
-        createdAt: new Date().toISOString()
+        createdAt: timeService.getISOString()
       }];
     }
     
@@ -293,7 +294,7 @@ export const useDashboard = ({
     try {
       const updates = {
         dailyTargetRepStatus: 'Committed',
-        dailyTargetRepDate: new Date().toISOString().split('T')[0]
+        dailyTargetRepDate: timeService.getISOString().split('T')[0]
       };
 
       const success = await updateDailyPracticeData(updates);
@@ -498,7 +499,7 @@ export const useDashboard = ({
           id: Date.now() + 1,
           text: `Reminder: ${reflectionBest}`,
           completed: false,
-          createdAt: new Date().toISOString()
+          createdAt: timeService.getISOString()
         });
       }
       
@@ -508,7 +509,7 @@ export const useDashboard = ({
           id: Date.now() + 2,
           text: `Improve: ${reflectionBetter}`,
           completed: false,
-          createdAt: new Date().toISOString()
+          createdAt: timeService.getISOString()
         });
       }
 
@@ -518,16 +519,19 @@ export const useDashboard = ({
         const newWin = {
           id: Date.now(),
           text: reflectionGood.trim(),
-          date: new Date().toLocaleDateString(),
-          timestamp: new Date().toISOString()
+          date: timeService.getNow().toLocaleDateString(),
+          timestamp: timeService.getISOString()
         };
         updatedWinsList.push(newWin);
         setWinsList(updatedWinsList); // Update local state immediately
       }
 
       // NEW: Save Scorecard History
-      const todayDate = new Date().toLocaleDateString();
-      const currentScore = `${scorecard.reps.pct}/${scorecard.win.pct}`;
+      const todayDate = timeService.getNow().toLocaleDateString();
+      // Calculate combined score: total done / total possible
+      const totalDone = scorecard.reps.done + scorecard.win.done;
+      const totalPossible = scorecard.reps.total + scorecard.win.total;
+      const currentScore = `${totalDone}/${totalPossible}`;
       
       // Get existing history or init empty
       const existingHistory = dailyPracticeData?.scorecardHistory || [];
@@ -537,10 +541,31 @@ export const useDashboard = ({
       const newHistoryEntry = {
           date: todayDate,
           score: currentScore,
-          timestamp: new Date().toISOString()
+          repsScore: `${scorecard.reps.done}/${scorecard.reps.total}`,
+          winsScore: `${scorecard.win.done}/${scorecard.win.total}`,
+          timestamp: timeService.getISOString()
       };
       
       const updatedHistory = [...historyWithoutToday, newHistoryEntry];
+
+      // NEW: Save Reflection History for the Locker
+      const existingReflectionHistory = dailyPracticeData?.reflectionHistory || [];
+      // Remove today's entry if exists to overwrite
+      const reflectionHistoryWithoutToday = existingReflectionHistory.filter(h => h.date !== todayDate);
+      
+      // Only add entry if there's at least one reflection field
+      let updatedReflectionHistory = reflectionHistoryWithoutToday;
+      if (reflectionGood || reflectionBetter || reflectionBest) {
+        const newReflectionEntry = {
+          id: `ref-${todayDate}`,
+          date: todayDate,
+          reflectionGood: reflectionGood || '',
+          reflectionWork: reflectionBetter || '',
+          reflectionTomorrow: reflectionBest || '',
+          timestamp: timeService.getISOString()
+        };
+        updatedReflectionHistory = [newReflectionEntry, ...reflectionHistoryWithoutToday];
+      }
 
       const updates = {
         eveningBookend: {
@@ -554,10 +579,12 @@ export const useDashboard = ({
         winsList: updatedWinsList,
         // Save Scorecard History
         scorecardHistory: updatedHistory,
+        // Save Reflection History for the Locker
+        reflectionHistory: updatedReflectionHistory,
         // NEW: Set tomorrow's reminders from today's reflection
         tomorrowsReminder: reflectionBest,
         improvementReminder: reflectionBetter,
-        date: new Date().toLocaleDateString('en-CA') // Ensure date is updated
+        date: timeService.getNow().toLocaleDateString('en-CA') // Ensure date is updated
       };
 
       // Add reminders to updates if any were created
@@ -656,7 +683,7 @@ export const useDashboard = ({
     const newStatus = !task.completed; // This is the new status
     
     let updatedWinsList = [...winsList];
-    const todayDate = new Date().toLocaleDateString();
+    const todayDate = timeService.getNow().toLocaleDateString();
     const winId = `task-win-${taskId}`; 
 
     if (newStatus) {
@@ -666,7 +693,7 @@ export const useDashboard = ({
                 text: task.text,
                 date: todayDate,
                 completed: true,
-                timestamp: new Date().toISOString()
+                timestamp: timeService.getISOString()
             });
          }
     } else {
@@ -820,7 +847,7 @@ export const useDashboard = ({
       setMorningWins(newWins);
 
       // === Sync to winsList for Locker History ===
-      const todayDate = new Date().toLocaleDateString();
+      const todayDate = timeService.getNow().toLocaleDateString();
       const existingWinsList = [...winsList].filter(w => w.date !== todayDate);
       const todaysWins = newWins
         .filter(w => w.text && w.text.trim().length > 0)
@@ -829,7 +856,7 @@ export const useDashboard = ({
           text: w.text,
           completed: w.completed,
           date: todayDate,
-          timestamp: new Date().toISOString()
+          timestamp: timeService.getISOString()
         }));
       const updatedWinsList = [...existingWinsList, ...todaysWins];
       setWinsList(updatedWinsList);
@@ -841,7 +868,7 @@ export const useDashboard = ({
             otherTasks: otherTasks
         },
         winsList: updatedWinsList,
-        date: new Date().toLocaleDateString('en-CA')
+        date: timeService.getNow().toLocaleDateString('en-CA')
       };
       
       console.log('%c[WIN-THE-DAY DEBUG] FIRESTORE PAYLOAD (single win):', 'background: yellow; color: black; font-weight: bold;');
@@ -877,7 +904,7 @@ export const useDashboard = ({
       setMorningWins(newWins);
 
       // === Sync to winsList for Locker History ===
-      const todayDate = new Date().toLocaleDateString();
+      const todayDate = timeService.getNow().toLocaleDateString();
       const existingWinsList = [...winsList].filter(w => w.date !== todayDate);
       const todaysWins = newWins
         .filter(w => w.text && w.text.trim().length > 0)
@@ -886,7 +913,7 @@ export const useDashboard = ({
           text: w.text,
           completed: w.completed,
           date: todayDate,
-          timestamp: new Date().toISOString()
+          timestamp: timeService.getISOString()
         }));
       const updatedWinsList = [...existingWinsList, ...todaysWins];
       setWinsList(updatedWinsList);
@@ -899,7 +926,7 @@ export const useDashboard = ({
             otherTasks: otherTasks
         },
         winsList: updatedWinsList,
-        date: new Date().toLocaleDateString('en-CA')
+        date: timeService.getNow().toLocaleDateString('en-CA')
       };
       
       console.log('%c[WIN-THE-DAY DEBUG] FIRESTORE PAYLOAD being sent:', 'background: yellow; color: black; font-weight: bold;');
@@ -925,7 +952,7 @@ export const useDashboard = ({
     setMorningWins(newWins);
 
     // === Sync to winsList for Locker History ===
-    const todayDate = new Date().toLocaleDateString();
+    const todayDate = timeService.getNow().toLocaleDateString();
     const existingWinsList = [...winsList].filter(w => w.date !== todayDate);
     const todaysWins = newWins
       .filter(w => w.text && w.text.trim().length > 0)
@@ -934,7 +961,7 @@ export const useDashboard = ({
         text: w.text,
         completed: w.completed,
         date: todayDate,
-        timestamp: new Date().toISOString()
+        timestamp: timeService.getISOString()
       }));
     const updatedWinsList = [...existingWinsList, ...todaysWins];
     setWinsList(updatedWinsList);
@@ -947,7 +974,7 @@ export const useDashboard = ({
             otherTasks: otherTasks
         },
         winsList: updatedWinsList,
-        date: new Date().toLocaleDateString('en-CA')
+        date: timeService.getNow().toLocaleDateString('en-CA')
       });
     } catch (error) {
       console.error('Error toggling win:', error);
@@ -966,8 +993,11 @@ export const useDashboard = ({
     
     setIsSavingScorecard(true);
     try {
-      const todayDate = new Date().toLocaleDateString();
-      const currentScore = `${scorecard.reps.pct}/${scorecard.win.pct}`;
+      const todayDate = timeService.getNow().toLocaleDateString();
+      // Calculate combined score: total done / total possible
+      const totalDone = scorecard.reps.done + scorecard.win.done;
+      const totalPossible = scorecard.reps.total + scorecard.win.total;
+      const currentScore = `${totalDone}/${totalPossible}`;
       
       // Get existing history or init empty
       const existingHistory = dailyPracticeData?.scorecardHistory || [];
@@ -977,14 +1007,16 @@ export const useDashboard = ({
       const newHistoryEntry = {
           date: todayDate,
           score: currentScore,
-          timestamp: new Date().toISOString()
+          repsScore: `${scorecard.reps.done}/${scorecard.reps.total}`,
+          winsScore: `${scorecard.win.done}/${scorecard.win.total}`,
+          timestamp: timeService.getISOString()
       };
       
       const updatedHistory = [...historyWithoutToday, newHistoryEntry];
 
       await updateDailyPracticeData({
         scorecardHistory: updatedHistory,
-        date: new Date().toLocaleDateString('en-CA') // Ensure date is updated
+        date: timeService.getNow().toLocaleDateString('en-CA') // Ensure date is updated
       });
       
       alert('✅ Scorecard saved to Locker!');
@@ -1015,14 +1047,14 @@ export const useDashboard = ({
        // Force a re-save of current commitments to be safe
        try {
            // Create history entry
-           const todayDate = new Date().toLocaleDateString();
+           const todayDate = timeService.getNow().toLocaleDateString();
            const completedReps = additionalCommitments.filter(c => c.status === 'Committed');
            const historyEntry = {
                date: todayDate,
                completedCount: completedReps.length,
                totalCount: additionalCommitments.length,
                items: completedReps.map(r => ({ id: r.id, text: r.text || r.label })),
-               timestamp: new Date().toISOString()
+               timestamp: timeService.getISOString()
            };
            
            // Update history
@@ -1033,7 +1065,7 @@ export const useDashboard = ({
            await updateDailyPracticeData({
                active_commitments: additionalCommitments,
                repsHistory: updatedHistory, // Save history
-               date: new Date().toLocaleDateString('en-CA') // Ensure date is updated
+               date: timeService.getNow().toLocaleDateString('en-CA') // Ensure date is updated
            });
            // Removed alert, UI should handle success state via isSavingReps
        } catch (e) {

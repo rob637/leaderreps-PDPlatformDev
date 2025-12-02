@@ -1,4 +1,5 @@
 import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { timeService } from '../services/timeService';
 
 /**
  * Checks if the daily practice data belongs to a previous day and performs a rollover if needed.
@@ -28,7 +29,7 @@ export const checkAndPerformRollover = async (db, userId, currentData) => {
 
   // 1. Determine Dates
   // Use local date for "Today" to match user's perspective
-  const today = new Date().toLocaleDateString('en-CA'); // YYYY-MM-DD
+  const today = timeService.getTodayStr(); // YYYY-MM-DD
   console.log('[ROLLOVER DEBUG] Today (en-CA):', today);
   
   // Get the date of the data. Fallback to lastUpdated or today if missing (to prevent loop on fresh doc)
@@ -129,7 +130,7 @@ export const checkAndPerformRollover = async (db, userId, currentData) => {
   const newState = {
     ...currentData,
     date: today,
-    lastUpdated: new Date().toISOString(),
+    lastUpdated: timeService.getISOString(),
     
     // Update Histories
     winsList: [newWinsHistoryEntry, ...existingWinsList].flat().filter((v,i,a)=>a.findIndex(t=>(t.id === v.id))===i), // Dedup by ID

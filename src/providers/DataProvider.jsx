@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import AppServiceContext from '../services/AppServiceContext.js';
 import { createAppServices } from '../services/createAppServices.js';
+import { timeService } from '../services/timeService.js';
 
 const resolveGlobalMetadata = (meta) => {
   return meta && typeof meta === 'object' ? meta : {};
@@ -167,7 +168,7 @@ const DataProvider = ({
 
   const hasPendingDailyPractice = useMemo(() => {
     const dailyData = dailyPracticeHook.dailyPracticeData;
-    const todayStr = new Date().toISOString().split('T')[0];
+    const todayStr = timeService.getISOString().split('T')[0];
     const hasPendingTargetRep =
       dailyData?.dailyTargetRepStatus === 'Pending' &&
       dailyData?.dailyTargetRepDate === todayStr &&

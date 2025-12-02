@@ -2,6 +2,8 @@
 // Utility functions and constants for Development Plan
 // CRITICAL FIX: Updated generatePlanFromAssessment to use 'answers: responses'
 
+import { timeService } from '../../../services/timeService';
+
 /* =========================================================
    ASSESSMENT QUESTIONS
 ========================================================= */
@@ -124,7 +126,7 @@ export const getCurrentWeek = (planOrStartDate) => {
   if (!startDate) return 1;
   
   const start = new Date(startDate);
-  const today = new Date();
+  const today = timeService.getNow();
   const diffTime = today - start;
   const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
   const currentWeek = Math.floor(diffDays / 7) + 1;
@@ -257,7 +259,7 @@ export const generatePlanFromAssessment = (assessment, skillCatalog = []) => {
     coreReps,
     assessmentScores: categoryScores,
     status: 'active',
-    createdAt: new Date().toISOString(),
+    createdAt: timeService.getISOString(),
   };
 
   return plan;
@@ -271,7 +273,7 @@ export const generatePlanSummary = (plan) => {
     return {
       cycle: 1,
       focusArea: 'Not Set',
-      startDate: new Date().toISOString(),
+      startDate: timeService.getISOString(),
       totalReps: 0,
       currentWeek: 1,
       progress: 0,
@@ -385,7 +387,7 @@ export const formatDate = (dateString) => {
 export const calculateDaysRemaining = (endDate) => {
   if (!endDate) return 0;
   const end = new Date(endDate);
-  const today = new Date();
+  const today = timeService.getNow();
   const diffTime = end - today;
   const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
   return Math.max(0, diffDays);

@@ -35,6 +35,7 @@ import WidgetEditorModal from './components/admin/WidgetEditorModal.jsx';
 import ConfigError from './components/system/ConfigError.jsx';
 import UpdateNotification from './components/ui/UpdateNotification.jsx';
 import { NotificationProvider } from './providers/NotificationProvider.jsx';
+import { TimeProvider } from './providers/TimeProvider.jsx';
 
 /* =========================================================
    MAIN APP COMPONENT
@@ -120,41 +121,43 @@ function App() {
 
   return (
     <>
-      <DataProvider
-        firebaseServices={firebaseServices}
-        userId={user?.uid}
-        isAuthReady={isAuthReady}
-        navigate={navigate}
-        user={user}
-      >
-        <FeatureProvider db={firebaseServices?.db}>
-          <LayoutProvider>
-            <WidgetEditorProvider>
-              <NotificationProvider>
-                {isAuthRequired ? (
-                <AuthPanel 
-                  auth={firebaseServices.auth} 
-                  onSuccess={() => navigate('dashboard')} 
-                />
-              ) : (
-                <AppContent
-                  currentScreen={currentScreen}
-                  user={user}
-                  navParams={navParams}
-                  isMobileOpen={isMobileOpen}
-                  setIsMobileOpen={setIsMobileOpen}
-                  isAuthRequired={isAuthRequired}
-                  auth={firebaseServices.auth}
-                  goBack={goBack}
-                  canGoBack={canGoBack}
-                />
-              )}
-              </NotificationProvider>
-            <WidgetEditorModal />
-            </WidgetEditorProvider>
-          </LayoutProvider>
-        </FeatureProvider>
-      </DataProvider>
+      <TimeProvider>
+        <DataProvider
+          firebaseServices={firebaseServices}
+          userId={user?.uid}
+          isAuthReady={isAuthReady}
+          navigate={navigate}
+          user={user}
+        >
+          <FeatureProvider db={firebaseServices?.db}>
+            <LayoutProvider>
+              <WidgetEditorProvider>
+                <NotificationProvider>
+                  {isAuthRequired ? (
+                  <AuthPanel 
+                    auth={firebaseServices.auth} 
+                    onSuccess={() => navigate('dashboard')} 
+                  />
+                ) : (
+                  <AppContent
+                    currentScreen={currentScreen}
+                    user={user}
+                    navParams={navParams}
+                    isMobileOpen={isMobileOpen}
+                    setIsMobileOpen={setIsMobileOpen}
+                    isAuthRequired={isAuthRequired}
+                    auth={firebaseServices.auth}
+                    goBack={goBack}
+                    canGoBack={canGoBack}
+                  />
+                )}
+                </NotificationProvider>
+              <WidgetEditorModal />
+              </WidgetEditorProvider>
+            </LayoutProvider>
+          </FeatureProvider>
+        </DataProvider>
+      </TimeProvider>
       
       {/* PWA Update Notification */}
       <UpdateNotification />

@@ -13,6 +13,7 @@ import AdminDashboard from './AdminDashboard';
 import SystemDiagnostics from './SystemDiagnostics';
 import FeatureManager from './FeatureManager';
 import ContentAdminHome from './ContentAdminHome'; // Existing component
+import TimeTraveler from './TimeTraveler';
 import { useAppServices } from '../../services/useAppServices';
 import { doc, getDoc } from 'firebase/firestore';
 
@@ -155,10 +156,13 @@ const AdminPortal = () => {
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 p-8 max-w-7xl mx-auto w-full">
+      <div className="flex-1 p-8 max-w-7xl mx-auto w-full relative">
         <div className="bg-white rounded-2xl shadow-sm border border-gray-200 min-h-[600px] p-6">
           {renderContent()}
         </div>
+        
+        {/* Time Traveler Widget - Floating in Admin Portal */}
+        <TimeTraveler />
       </div>
     </div>
   );

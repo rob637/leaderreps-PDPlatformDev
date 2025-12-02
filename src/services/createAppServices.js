@@ -11,24 +11,13 @@ import {
 import { applyPatchDeleteAware, sanitizeTimestamps, stripSentinels } from './dataUtils.js';
 import { resolveGlobalMetadata } from './metadataResolver.js';
 import { checkAndPerformRollover } from '../utils/dailyRollover.js';
+import { timeService } from './timeService.js';
 
 /**
  * Calculate milliseconds until 11:59:59 PM today (or tomorrow if already past)
  */
 const getMsUntilMidnight = () => {
-  const now = new Date();
-  const midnight = new Date(now);
-  midnight.setHours(23, 59, 59, 0); // 11:59:59 PM
-  
-  let msUntil = midnight.getTime() - now.getTime();
-  
-  // If already past 11:59:59 PM, schedule for tomorrow
-  if (msUntil < 0) {
-    midnight.setDate(midnight.getDate() + 1);
-    msUntil = midnight.getTime() - now.getTime();
-  }
-  
-  return msUntil;
+  return timeService.getMsUntilMidnight();
 };
 
 export const createAppServices = (db, userId) => {
@@ -349,7 +338,7 @@ export const createAppServices = (db, userId) => {
       
       const devPlanPath = buildModulePath(userId, 'development_plan', 'current');
       const dailyPath = buildModulePath(userId, 'daily_practice', 'current');
-      const todayStr = new Date().toISOString().split('T')[0];
+      const todayStr = timeService.getTodayStr();
       
       const defaultPlanPayload = {
           currentPlan: null,

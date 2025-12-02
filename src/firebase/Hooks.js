@@ -5,6 +5,7 @@ import { doc, onSnapshot, setDoc, updateDoc, writeBatch, getDoc } from 'firebase
 import { 
     useAppServices 
 } from '../App'; // Assuming App context export is available via relative path or provided globally
+import { timeService } from '../services/timeService';
 
 import {
     PDP_COLLECTION, PDP_DOCUMENT, COMMITMENT_COLLECTION, COMMITMENT_DOCUMENT, PLANNING_COLLECTION, 
@@ -18,7 +19,7 @@ const getPath = (collection, document, userId, appId) =>
 
 // --- COMMITMENT DEFAULTS (Moved from App.jsx) ---
 const DEFAULT_COMMITMENT_DATA = {
-    lastCommitmentDate: new Date().toISOString().split('T')[0], 
+    lastCommitmentDate: timeService.getISOString().split('T')[0], 
     history: [
         { date: '2025-10-10', score: '3/3' },
         { date: '2025-10-16', score: '3/3' },
@@ -85,7 +86,7 @@ export const usePDPData = (db, userId, isAuthReady) => {
         
         try {
             const docRef = doc(db, pdpPath);
-            await updateDoc(docRef, { ...dataToUpdate, lastUpdate: new Date().toISOString() });
+            await updateDoc(docRef, { ...dataToUpdate, lastUpdate: timeService.getISOString() });
             return true;
         } catch (e) {
             console.error("Error updating PDP data:", e);
@@ -101,7 +102,7 @@ export const usePDPData = (db, userId, isAuthReady) => {
             await setDoc(docRef, { 
                 ...newPlanData, 
                 ownerUid: userId,
-                lastUpdate: new Date().toISOString(),
+                lastUpdate: timeService.getISOString(),
                 currentMonth: 1,
             });
             return true;
@@ -128,7 +129,7 @@ export const useCommitmentData = (db, userId, isAuthReady) => {
 
     const needsReset = (data) => {
         if (!data) return false;
-        const today = new Date().toISOString().split('T')[0];
+        const today = timeService.getISOString().split('T')[0];
         return data.lastCommitmentDate !== today;
     };
 
@@ -147,8 +148,12 @@ export const useCommitmentData = (db, userId, isAuthReady) => {
                 currentData = docSnap.data();
             } else {
                 try {
-                    await setDoc(docRef, DEFAULT_COMMITMENT_DATA);
-                    currentData = DEFAULT_COMMITMENT_DATA;
+                    const initialData = {
+                        ...DEFAULT_COMMITMENT_DATA,
+                        lastCommitmentDate: timeService.getISOString().split('T')[0]
+                    };
+                    await setDoc(docRef, initialData);
+                    currentData = initialData;
                 } catch (e) {
                     console.error("Error creating default Commitment document:", e);
                     setError("Could not initialize Commitment data.");
@@ -159,7 +164,7 @@ export const useCommitmentData = (db, userId, isAuthReady) => {
 
             if (needsReset(currentData)) {
                 // --- DAILY RESET LOGIC ---
-                const today = new Date().toISOString().split('T')[0];
+                const today = timeService.getISOString().split('T')[0];
                 
                 const yesterdayScore = currentData.active_commitments.length > 0
                     ? `${currentData.active_commitments.filter(c => c.status === 'Committed').length}/${currentData.active_commitments.length}`

@@ -63,12 +63,12 @@ export const WIDGET_TEMPLATES = {
     'lis-maker': `
 <Card title="LIS Maker" icon={PenTool} accent="NAVY">
   <div className="space-y-2">
-    <div className="bg-purple-50 p-3 rounded-xl border border-purple-100">
-      <h4 className="font-bold text-purple-900 mb-1">Build Your Identity</h4>
-      <p className="text-sm text-purple-800 mb-2">
+    <div className="bg-teal-50 p-3 rounded-xl border border-teal-100">
+      <h4 className="font-bold text-teal-900 mb-1">Build Your Identity</h4>
+      <p className="text-sm text-teal-800 mb-2">
         Your Leadership Identity Statement (LIS) anchors you in who you want to be.
       </p>
-      <p className="text-xs text-purple-600 italic mb-1">
+      <p className="text-xs text-teal-600 italic mb-1">
         Try this format: "I am a [Core Value] leader who [Action] to create [Impact]."
       </p>
     </div>
@@ -80,14 +80,14 @@ export const WIDGET_TEMPLATES = {
       <textarea 
         value={identityStatement}
         onChange={(e) => setIdentityStatement(e.target.value)}
-        className="w-full p-2 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-purple-500 outline-none transition-all text-sm min-h-[80px]"
+        className="w-full p-2 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-teal-500 outline-none transition-all text-sm min-h-[80px]"
         placeholder="I am a..."
       />
     </div>
 
     <button 
       onClick={() => handleSaveIdentity(identityStatement)}
-      className="w-full py-2 bg-purple-600 text-white rounded-xl font-bold hover:bg-purple-700 transition-colors flex items-center justify-center gap-2"
+      className="w-full py-2 bg-[#002E47] text-white rounded-xl font-bold hover:bg-[#003E5F] transition-colors flex items-center justify-center gap-2"
     >
       <Save className="w-4 h-4" />
       Save Identity
@@ -105,12 +105,12 @@ export const WIDGET_TEMPLATES = {
     return (
       <Card title="LIS Maker" icon={PenTool} accent="NAVY">
         <div className="space-y-2">
-          <div className="bg-purple-50 p-3 rounded-xl border border-purple-100">
-            <h4 className="font-bold text-purple-900 mb-1">Build Your Identity</h4>
-            <p className="text-sm text-purple-800 mb-2">
+          <div className="bg-teal-50 p-3 rounded-xl border border-teal-100">
+            <h4 className="font-bold text-teal-900 mb-1">Build Your Identity</h4>
+            <p className="text-sm text-teal-800 mb-2">
               Your Leadership Identity Statement (LIS) anchors you in who you want to be.
             </p>
-            <p className="text-xs text-purple-600 italic mb-1">
+            <p className="text-xs text-teal-600 italic mb-1">
               Try this format: "I am a [Core Value] leader who [Action] to create [Impact]."
             </p>
           </div>
@@ -122,7 +122,7 @@ export const WIDGET_TEMPLATES = {
             <textarea 
               value={identityStatement}
               onChange={(e) => setIdentityStatement(e.target.value)}
-              className="w-full p-2 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-purple-500 outline-none transition-all text-sm min-h-[80px]"
+              className="w-full p-2 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-teal-500 outline-none transition-all text-sm min-h-[80px]"
               placeholder="I am a..."
             />
           </div>
@@ -139,7 +139,7 @@ export const WIDGET_TEMPLATES = {
                 handleSaveIdentity(identityStatement);
                 setEditing(false);
               }}
-              className="flex-1 py-2 bg-purple-600 text-white rounded-xl font-bold hover:bg-purple-700 transition-colors flex items-center justify-center gap-2"
+              className="flex-1 py-2 bg-[#002E47] text-white rounded-xl font-bold hover:bg-[#003E5F] transition-colors flex items-center justify-center gap-2"
             >
               <Save className="w-4 h-4" />
               Save
@@ -513,7 +513,7 @@ export const WIDGET_TEMPLATES = {
       </div>
     </div>
     <div className="flex gap-3 items-center p-2 hover:bg-gray-50 rounded-lg cursor-pointer transition-colors">
-      <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center text-purple-600">
+      <div className="w-10 h-10 bg-teal-100 rounded-lg flex items-center justify-center text-teal-600">
         <Play className="w-5 h-5" />
       </div>
       <div>
@@ -567,9 +567,9 @@ export const WIDGET_TEMPLATES = {
       <FileText className="w-5 h-5 text-green-600 mb-2" />
       <p className="text-xs font-bold text-green-900">1:1 Agenda</p>
     </button>
-    <button className="p-3 bg-purple-50 hover:bg-purple-100 rounded-lg text-left transition-colors">
-      <FileText className="w-5 h-5 text-purple-600 mb-2" />
-      <p className="text-xs font-bold text-purple-900">OKRs Sheet</p>
+    <button className="p-3 bg-teal-50 hover:bg-teal-100 rounded-lg text-left transition-colors">
+      <FileText className="w-5 h-5 text-teal-600 mb-2" />
+      <p className="text-xs font-bold text-teal-900">OKRs Sheet</p>
     </button>
     <button className="p-3 bg-orange-50 hover:bg-orange-100 rounded-lg text-left transition-colors">
       <FileText className="w-5 h-5 text-orange-600 mb-2" />
@@ -725,11 +725,11 @@ export const WIDGET_TEMPLATES = {
     'ai-roleplay': `
 <Card title="AI Roleplay" icon={Bot} accent="NAVY">
   <p className="text-xs text-gray-500 mb-4">Practice real-world scenarios with AI.</p>
-  <div className="bg-purple-50 rounded-lg p-3 mb-3 border border-purple-100">
-    <p className="text-xs font-bold text-purple-600 uppercase mb-1">Recommended</p>
-    <p className="text-sm font-bold text-purple-900">Giving Constructive Feedback</p>
+  <div className="bg-teal-50 rounded-lg p-3 mb-3 border border-teal-100">
+    <p className="text-xs font-bold text-teal-600 uppercase mb-1">Recommended</p>
+    <p className="text-sm font-bold text-teal-900">Giving Constructive Feedback</p>
   </div>
-  <button className="w-full py-2 bg-purple-600 text-white rounded-lg text-sm font-bold hover:bg-purple-700 transition-colors">
+  <button className="w-full py-2 bg-[#002E47] text-white rounded-lg text-sm font-bold hover:bg-[#003E5F] transition-colors">
     Start Session
   </button>
 
@@ -1065,8 +1065,8 @@ const LockerController = () => {
 
         {/* Release Group */}
         <div className="flex items-center p-3 bg-slate-50 rounded-lg">
-          <div className="p-2 bg-purple-100 rounded-full mr-3">
-            <Settings className="w-5 h-5 text-purple-600" />
+          <div className="p-2 bg-teal-100 rounded-full mr-3">
+            <Settings className="w-5 h-5 text-teal-600" />
           </div>
           <div>
             <p className="text-xs text-slate-500 uppercase font-semibold">Release Group</p>
