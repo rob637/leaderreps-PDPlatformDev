@@ -90,6 +90,7 @@ const WinTheDayWidget = ({ scope }) => {
           {isSaving ? <Loader className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
           Save Priorities
         </button>
+        <p className="text-xs text-center text-slate-400 mt-2 italic">Autosaves to your locker each night at 11:59 PM</p>
       </div>
     </Card>
   );

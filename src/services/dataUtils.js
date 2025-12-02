@@ -33,6 +33,21 @@ export const stripSentinels = (val) => {
     return val;
   }
   
+  // Check if this is a PURE sentinel object (has _methodName but ONLY sentinel-related keys)
+  // True Firebase sentinels typically ONLY have _methodName and maybe operand/delegate
+  const isPureSentinel = () => {
+    // Must have _methodName
+    if (!val._methodName || typeof val._methodName !== 'string') {
+      return false;
+    }
+    // Check if it ONLY has sentinel-related keys (not a real data object with _methodName leftover)
+    const keys = Object.keys(val);
+    const sentinelOnlyKeys = ['_methodName', 'operand', 'delegate', '_delegate'];
+    const hasOnlySentinelKeys = keys.every(k => sentinelOnlyKeys.includes(k));
+    // If it has other keys like 'wins', 'otherTasks', etc., it's NOT a pure sentinel
+    return hasOnlySentinelKeys;
+  };
+  
   const isSentinel = (
     val.constructor?.name === 'FieldValue' ||
     val.constructor?.name === 'ServerTimestampTransform' ||
@@ -40,16 +55,12 @@ export const stripSentinels = (val) => {
     val.constructor?.name === 'NumericIncrementFieldValueImpl' ||
     val.constructor?.name === 'ArrayUnionFieldValueImpl' ||
     val.constructor?.name === 'ArrayRemoveFieldValueImpl' ||
-    (val._methodName && typeof val._methodName === 'string') ||
-    val._methodName === 'serverTimestamp' ||
-    val._methodName === 'delete' ||
-    val._methodName === 'increment' ||
-    val._methodName === 'arrayUnion' ||
-    val._methodName === 'arrayRemove' ||
+    isPureSentinel() ||  // Only treat as sentinel if it's a PURE sentinel object
     (val.toJSON && 
      typeof val.toJSON === 'function' && 
      !val.toISOString &&
-     !val.toDate)
+     !val.toDate &&
+     Object.keys(val).length <= 2)  // Pure sentinels have few keys
   );
   
   if (isSentinel) {
@@ -74,6 +85,10 @@ export const stripSentinels = (val) => {
     const cleaned = {};
     for (const key in val) {
       if (Object.prototype.hasOwnProperty.call(val, key)) {
+        // Skip _methodName properties that are leftover from migrations
+        if (key === '_methodName') {
+          continue;
+        }
         const cleanedValue = stripSentinels(val[key]);
         if (cleanedValue !== null && cleanedValue !== undefined) {
           cleaned[key] = cleanedValue;

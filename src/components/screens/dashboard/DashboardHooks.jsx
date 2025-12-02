@@ -178,22 +178,34 @@ export const useDashboard = ({
 
   // Load Morning Bookend
   useEffect(() => {
+    // === NUCLEAR DEBUG: Morning Bookend Load ===
+    console.log('%c[WIN-THE-DAY DEBUG] useEffect TRIGGERED for morningBookend load', 'background: #ff6600; color: white; font-weight: bold; padding: 4px 8px;');
+    console.log('[WIN-THE-DAY DEBUG] Full dailyPracticeData:', JSON.stringify(dailyPracticeData, null, 2));
+    console.log('[WIN-THE-DAY DEBUG] morningBookend specifically:', dailyPracticeData?.morningBookend);
+    
     if (dailyPracticeData?.morningBookend) {
       const mb = dailyPracticeData.morningBookend;
+      console.log('%c[WIN-THE-DAY DEBUG] Found morningBookend data:', 'color: green; font-weight: bold;', mb);
       
       // Load 3 Wins
       if (mb.wins && Array.isArray(mb.wins)) {
+        console.log('%c[WIN-THE-DAY DEBUG] Loading wins from mb.wins:', 'color: blue; font-weight: bold;', mb.wins);
         setMorningWins(mb.wins);
       } else if (mb.dailyWIN) {
+        console.log('%c[WIN-THE-DAY DEBUG] MIGRATION: Loading from old dailyWIN format:', 'color: orange; font-weight: bold;', mb.dailyWIN);
         // Migration: Put old single win in first slot
         setMorningWins([
           { id: 'win-1', text: mb.dailyWIN, completed: mb.winCompleted || false, saved: true },
           { id: 'win-2', text: '', completed: false, saved: false },
           { id: 'win-3', text: '', completed: false, saved: false }
         ]);
+      } else {
+        console.log('%c[WIN-THE-DAY DEBUG] WARNING: morningBookend exists but NO wins or dailyWIN found!', 'color: red; font-weight: bold;');
       }
 
       setOtherTasks(sanitizeTimestamps(mb.otherTasks || []));
+    } else {
+      console.log('%c[WIN-THE-DAY DEBUG] NO morningBookend in dailyPracticeData!', 'color: red; font-weight: bold;');
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [JSON.stringify(dailyPracticeData?.morningBookend)]);
@@ -791,55 +803,119 @@ export const useDashboard = ({
   }, [morningWins]);
 
   const handleSaveSingleWin = useCallback(async (index) => {
-    if (!updateDailyPracticeData) return;
+    // === NUCLEAR DEBUG: Save Single Win ===
+    console.log('%c[WIN-THE-DAY DEBUG] handleSaveSingleWin CALLED for index:', 'background: #0088ff; color: white; font-weight: bold; padding: 4px 8px;', index);
+    console.log('[WIN-THE-DAY DEBUG] Current morningWins:', JSON.stringify(morningWins, null, 2));
+    
+    if (!updateDailyPracticeData) {
+      console.log('%c[WIN-THE-DAY DEBUG] ABORT: updateDailyPracticeData is falsy!', 'color: red; font-weight: bold;');
+      return;
+    }
     
     setIsSavingWIN(true);
     try {
       const newWins = [...morningWins];
       newWins[index] = { ...newWins[index], saved: true };
+      console.log('[WIN-THE-DAY DEBUG] newWins after update:', JSON.stringify(newWins, null, 2));
       setMorningWins(newWins);
 
-      // Update Firestore
-      await updateDailyPracticeData({
+      // === Sync to winsList for Locker History ===
+      const todayDate = new Date().toLocaleDateString();
+      const existingWinsList = [...winsList].filter(w => w.date !== todayDate);
+      const todaysWins = newWins
+        .filter(w => w.text && w.text.trim().length > 0)
+        .map((w, idx) => ({
+          id: `win-${todayDate}-${idx}`,
+          text: w.text,
+          completed: w.completed,
+          date: todayDate,
+          timestamp: new Date().toISOString()
+        }));
+      const updatedWinsList = [...existingWinsList, ...todaysWins];
+      setWinsList(updatedWinsList);
+
+      const firestorePayload = {
         morningBookend: {
             ...dailyPracticeData?.morningBookend,
             wins: newWins,
-            otherTasks: otherTasks // Ensure otherTasks are preserved from local state
+            otherTasks: otherTasks
         },
-        date: new Date().toLocaleDateString('en-CA') // Ensure date is updated
-      });
+        winsList: updatedWinsList,
+        date: new Date().toLocaleDateString('en-CA')
+      };
+      
+      console.log('%c[WIN-THE-DAY DEBUG] FIRESTORE PAYLOAD (single win):', 'background: yellow; color: black; font-weight: bold;');
+      console.log(JSON.stringify(firestorePayload, null, 2));
+
+      // Update Firestore
+      const result = await updateDailyPracticeData(firestorePayload);
+      console.log('%c[WIN-THE-DAY DEBUG] Firestore save result:', 'color: green; font-weight: bold;', result);
     } catch (error) {
-      console.error('Error saving win:', error);
+      console.error('%c[WIN-THE-DAY DEBUG] ERROR saving win:', 'color: red; font-weight: bold;', error);
     } finally {
       setIsSavingWIN(false);
     }
-  }, [morningWins, updateDailyPracticeData, dailyPracticeData, otherTasks]);
+  }, [morningWins, updateDailyPracticeData, dailyPracticeData, otherTasks, winsList]);
 
   const handleSaveAllWins = useCallback(async () => {
-    if (!updateDailyPracticeData) return;
+    // === NUCLEAR DEBUG: Save All Wins ===
+    console.log('%c[WIN-THE-DAY DEBUG] handleSaveAllWins CALLED', 'background: #00ff00; color: black; font-weight: bold; padding: 4px 8px;');
+    console.log('[WIN-THE-DAY DEBUG] updateDailyPracticeData exists:', !!updateDailyPracticeData);
+    console.log('[WIN-THE-DAY DEBUG] Current morningWins state:', JSON.stringify(morningWins, null, 2));
+    console.log('[WIN-THE-DAY DEBUG] Current dailyPracticeData?.morningBookend:', dailyPracticeData?.morningBookend);
+    
+    if (!updateDailyPracticeData) {
+      console.log('%c[WIN-THE-DAY DEBUG] ABORT: updateDailyPracticeData is falsy!', 'color: red; font-weight: bold;');
+      return;
+    }
     
     setIsSavingWIN(true);
     try {
       // Mark all as saved
       const newWins = morningWins.map(win => ({ ...win, saved: true }));
+      console.log('%c[WIN-THE-DAY DEBUG] newWins after marking saved:', 'color: blue;', JSON.stringify(newWins, null, 2));
       setMorningWins(newWins);
 
-      // Update Firestore
-      await updateDailyPracticeData({
+      // === Sync to winsList for Locker History ===
+      const todayDate = new Date().toLocaleDateString();
+      const existingWinsList = [...winsList].filter(w => w.date !== todayDate);
+      const todaysWins = newWins
+        .filter(w => w.text && w.text.trim().length > 0)
+        .map((w, idx) => ({
+          id: `win-${todayDate}-${idx}`,
+          text: w.text,
+          completed: w.completed,
+          date: todayDate,
+          timestamp: new Date().toISOString()
+        }));
+      const updatedWinsList = [...existingWinsList, ...todaysWins];
+      setWinsList(updatedWinsList);
+
+      // Build the payload
+      const firestorePayload = {
         morningBookend: {
             ...dailyPracticeData?.morningBookend,
             wins: newWins,
-            otherTasks: otherTasks // Ensure otherTasks are preserved from local state
+            otherTasks: otherTasks
         },
-        date: new Date().toLocaleDateString('en-CA') // Ensure date is updated
-      });
+        winsList: updatedWinsList,
+        date: new Date().toLocaleDateString('en-CA')
+      };
+      
+      console.log('%c[WIN-THE-DAY DEBUG] FIRESTORE PAYLOAD being sent:', 'background: yellow; color: black; font-weight: bold;');
+      console.log(JSON.stringify(firestorePayload, null, 2));
+
+      // Update Firestore
+      const result = await updateDailyPracticeData(firestorePayload);
+      console.log('%c[WIN-THE-DAY DEBUG] Firestore save result:', 'color: green; font-weight: bold;', result);
+      
     } catch (error) {
-      console.error('Error saving all wins:', error);
-      alert('Error saving priorities. Please try again.');
+      console.error('%c[WIN-THE-DAY DEBUG] ERROR saving all wins:', 'color: red; font-weight: bold;', error);
     } finally {
       setIsSavingWIN(false);
+      console.log('%c[WIN-THE-DAY DEBUG] handleSaveAllWins COMPLETE', 'background: #00ff00; color: black; font-weight: bold; padding: 4px 8px;');
     }
-  }, [morningWins, updateDailyPracticeData, dailyPracticeData, otherTasks]);
+  }, [morningWins, updateDailyPracticeData, dailyPracticeData, otherTasks, winsList]);
 
   const handleToggleWinComplete = useCallback(async (index) => {
     if (!updateDailyPracticeData) return;
@@ -848,19 +924,35 @@ export const useDashboard = ({
     newWins[index] = { ...newWins[index], completed: !newWins[index].completed };
     setMorningWins(newWins);
 
+    // === Sync to winsList for Locker History ===
+    const todayDate = new Date().toLocaleDateString();
+    const existingWinsList = [...winsList].filter(w => w.date !== todayDate);
+    const todaysWins = newWins
+      .filter(w => w.text && w.text.trim().length > 0)
+      .map((w, idx) => ({
+        id: `win-${todayDate}-${idx}`,
+        text: w.text,
+        completed: w.completed,
+        date: todayDate,
+        timestamp: new Date().toISOString()
+      }));
+    const updatedWinsList = [...existingWinsList, ...todaysWins];
+    setWinsList(updatedWinsList);
+
     try {
       await updateDailyPracticeData({
         morningBookend: {
             ...dailyPracticeData?.morningBookend,
             wins: newWins,
-            otherTasks: otherTasks // Ensure otherTasks are preserved from local state
+            otherTasks: otherTasks
         },
-        date: new Date().toLocaleDateString('en-CA') // Ensure date is updated
+        winsList: updatedWinsList,
+        date: new Date().toLocaleDateString('en-CA')
       });
     } catch (error) {
       console.error('Error toggling win:', error);
     }
-  }, [morningWins, updateDailyPracticeData, dailyPracticeData, otherTasks]);
+  }, [morningWins, updateDailyPracticeData, dailyPracticeData, otherTasks, winsList]);
 
   // Legacy handler kept for compatibility but unused in new UI
   const handleSaveWIN = useCallback(async () => {

@@ -12,6 +12,25 @@ import { applyPatchDeleteAware, sanitizeTimestamps, stripSentinels } from './dat
 import { resolveGlobalMetadata } from './metadataResolver.js';
 import { checkAndPerformRollover } from '../utils/dailyRollover.js';
 
+/**
+ * Calculate milliseconds until 11:59:59 PM today (or tomorrow if already past)
+ */
+const getMsUntilMidnight = () => {
+  const now = new Date();
+  const midnight = new Date(now);
+  midnight.setHours(23, 59, 59, 0); // 11:59:59 PM
+  
+  let msUntil = midnight.getTime() - now.getTime();
+  
+  // If already past 11:59:59 PM, schedule for tomorrow
+  if (msUntil < 0) {
+    midnight.setDate(midnight.getDate() + 1);
+    msUntil = midnight.getTime() - now.getTime();
+  }
+  
+  return msUntil;
+};
+
 export const createAppServices = (db, userId) => {
   const stores = {
     developmentPlanData: null,
@@ -20,7 +39,8 @@ export const createAppServices = (db, userId) => {
     membershipData: null,
     globalMetadata: null,
     listeners: [],
-    onChange: null
+    onChange: null,
+    midnightTimer: null // Track the midnight timer for cleanup
   };
 
   const notifyChange = () => {
@@ -46,8 +66,17 @@ export const createAppServices = (db, userId) => {
 
     const dailyPath = buildModulePath(userId, 'daily_practice', 'current');
     const unsubDaily = onSnapshotEx(db, dailyPath, (snap) => {
+      // === NUCLEAR DEBUG: Firestore Snapshot Received ===
+      console.log('%c[FIRESTORE SNAPSHOT] daily_practice snapshot received!', 'background: #00ffff; color: black; font-weight: bold; padding: 4px 8px;');
+      console.log('[FIRESTORE SNAPSHOT] snap.exists():', snap.exists());
+      
       const rawData = snap.exists() ? snap.data() : MOCK_DAILY_PRACTICE_DATA;
+      console.log('[FIRESTORE SNAPSHOT] Raw data from Firestore:', JSON.stringify(rawData, null, 2));
+      console.log('[FIRESTORE SNAPSHOT] morningBookend specifically:', rawData?.morningBookend);
+      console.log('[FIRESTORE SNAPSHOT] morningBookend.wins:', rawData?.morningBookend?.wins);
+      
       stores.dailyPracticeData = stripSentinels(sanitizeTimestamps(rawData));
+      console.log('[FIRESTORE SNAPSHOT] After sanitize/strip:', JSON.stringify(stores.dailyPracticeData, null, 2));
       
       // Check for Rollover (Lazy Evaluation)
       if (snap.exists() && stores.dailyPracticeData) {
@@ -58,6 +87,32 @@ export const createAppServices = (db, userId) => {
       notifyChange();
     });
     stores.listeners.push(unsubDaily);
+
+    // === MIDNIGHT AUTO-ROLLOVER TIMER ===
+    // Schedule rollover to run at 11:59:59 PM if app is open
+    const scheduleMidnightRollover = () => {
+      const msUntil = getMsUntilMidnight();
+      console.log(`[MIDNIGHT ROLLOVER] Scheduling rollover in ${Math.round(msUntil / 1000 / 60)} minutes`);
+      
+      stores.midnightTimer = setTimeout(async () => {
+        console.log('%c[MIDNIGHT ROLLOVER] 11:59:59 PM reached - triggering auto-rollover!', 'background: #ff6600; color: white; font-weight: bold; padding: 4px 8px;');
+        
+        if (stores.dailyPracticeData) {
+          try {
+            await checkAndPerformRollover(db, userId, stores.dailyPracticeData);
+            console.log('[MIDNIGHT ROLLOVER] Rollover completed successfully');
+          } catch (err) {
+            console.error('[MIDNIGHT ROLLOVER] Rollover error:', err);
+          }
+        }
+        
+        // Schedule the next midnight rollover (for tomorrow)
+        scheduleMidnightRollover();
+      }, msUntil);
+    };
+    
+    // Start the midnight rollover scheduler
+    scheduleMidnightRollover();
 
     const strategicPath = buildModulePath(userId, 'strategic_content', 'vision_mission');
     const unsubStrategic = onSnapshotEx(db, strategicPath, (snap) => {
@@ -238,12 +293,28 @@ export const createAppServices = (db, userId) => {
   };
 
   const updateDailyPracticeData = async (updates) => {
-    if (!db || !userId) return false;
+    // === NUCLEAR DEBUG: updateDailyPracticeData ===
+    console.log('%c[FIRESTORE DEBUG] updateDailyPracticeData CALLED', 'background: #ff00ff; color: white; font-weight: bold; padding: 4px 8px;');
+    console.log('[FIRESTORE DEBUG] db exists:', !!db);
+    console.log('[FIRESTORE DEBUG] userId:', userId);
+    console.log('[FIRESTORE DEBUG] updates payload:', JSON.stringify(updates, null, 2));
+    console.log('[FIRESTORE DEBUG] BEFORE - stores.dailyPracticeData:', JSON.stringify(stores.dailyPracticeData, null, 2));
+    
+    if (!db || !userId) {
+      console.log('%c[FIRESTORE DEBUG] ABORT: db or userId missing!', 'color: red; font-weight: bold;');
+      return false;
+    }
     const path = buildModulePath(userId, 'daily_practice', 'current');
+    console.log('[FIRESTORE DEBUG] Firestore path:', path);
+    
     const ok = await setDocEx(db, path, updates, true);
+    console.log('%c[FIRESTORE DEBUG] setDocEx result:', ok ? 'color: green; font-weight: bold;' : 'color: red; font-weight: bold;', ok);
+    
     if (ok) {
       stores.dailyPracticeData = applyPatchDeleteAware(stores.dailyPracticeData || {}, updates);
+      console.log('[FIRESTORE DEBUG] AFTER - stores.dailyPracticeData:', JSON.stringify(stores.dailyPracticeData, null, 2));
       notifyChange();
+      console.log('[FIRESTORE DEBUG] notifyChange() called');
     }
     return ok;
   };
@@ -325,6 +396,11 @@ export const createAppServices = (db, userId) => {
     },
     cleanup: () => {
       stores.listeners.forEach(unsub => unsub && unsub());
+      // Clear midnight rollover timer
+      if (stores.midnightTimer) {
+        clearTimeout(stores.midnightTimer);
+        stores.midnightTimer = null;
+      }
     }
   };
 };

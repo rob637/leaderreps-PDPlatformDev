@@ -60,8 +60,9 @@ const PMReflectionWidget = ({
           className="w-full py-3 bg-[#002E47] text-white rounded-xl font-bold hover:bg-[#003E5F] transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
         >
           {isSavingBookend ? <Loader className="w-5 h-5 animate-spin" /> : <Save className="w-5 h-5" />}
-          Save Journal
+          Save Reflection
         </button>
+        <p className="text-xs text-center text-slate-400 mt-2 italic">Autosaves to your locker each night at 11:59 PM</p>
       </div>
     </Card>
   );

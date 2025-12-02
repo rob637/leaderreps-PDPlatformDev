@@ -240,7 +240,7 @@ export const WIDGET_TEMPLATES = {
           {isSavingWIN ? <Loader className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
           Save Priorities
         </button>
-        <p className="text-xs text-center text-slate-400 mt-2 italic">Autosaves at 11:59 PM</p>
+        <p className="text-xs text-center text-slate-400 mt-2 italic">Autosaves to your locker each night at 11:59 PM</p>
       </div>
     </Card>
   );
@@ -303,7 +303,7 @@ export const WIDGET_TEMPLATES = {
           {safeIsSaving ? <Loader className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
           Save Reps
         </button>
-        <p className="text-xs text-center text-slate-400 mt-2 italic">Autosaves at 11:59 PM</p>
+        <p className="text-xs text-center text-slate-400 mt-2 italic">Autosaves to your locker each night at 11:59 PM</p>
       </div>
 
     </Card>
@@ -438,7 +438,7 @@ export const WIDGET_TEMPLATES = {
       {isSavingBookend ? <Loader className="w-5 h-5 animate-spin" /> : <Save className="w-5 h-5" />}
       Save Reflection
     </button>
-    <p className="text-xs text-center text-slate-400 mt-2 italic">Autosaves at 11:59 PM</p>
+    <p className="text-xs text-center text-slate-400 mt-2 italic">Autosaves to your locker each night at 11:59 PM</p>
   </div>
 
 </Card>
@@ -1495,42 +1495,52 @@ render(<SystemRemindersController />);
     'locker-reps-history': `
 (() => {
   const safeHistory = typeof repsHistory !== 'undefined' ? repsHistory : [];
+  
+  // Sort dates descending (newest first)
+  const sortedHistory = [...safeHistory].sort((a, b) => {
+    if (!a.date) return 1;
+    if (!b.date) return -1;
+    return new Date(b.date) - new Date(a.date);
+  });
 
   return (
-    <Card title="Reps History" icon={Dumbbell} className="border-t-4 border-corporate-navy">
-      <div className="overflow-x-auto border border-gray-300 rounded-sm">
-        <table className="min-w-full border-collapse text-sm">
-          <thead>
-            <tr className="bg-gray-100">
-              <th className="border border-gray-300 px-3 py-2 text-left font-bold text-gray-700 uppercase tracking-wider whitespace-nowrap">Date</th>
-              <th className="border border-gray-300 px-3 py-2 text-left font-bold text-gray-700 uppercase tracking-wider whitespace-nowrap">Completed</th>
-              <th className="border border-gray-300 px-3 py-2 text-left font-bold text-gray-700 uppercase tracking-wider whitespace-nowrap">Details</th>
-            </tr>
-          </thead>
-          <tbody className="bg-white">
-            {safeHistory.length > 0 ? (
-              safeHistory.map((entry, index) => (
-                <tr key={index} className="hover:bg-blue-50 transition-colors">
-                  <td className="border border-gray-300 px-3 py-2 whitespace-nowrap font-mono text-gray-600">
-                    {entry.date}
-                  </td>
-                  <td className="border border-gray-300 px-3 py-2 whitespace-nowrap font-bold text-gray-900 text-center">
-                    {entry.completedCount}
-                  </td>
-                  <td className="border border-gray-300 px-3 py-2 text-gray-600 text-xs">
-                    {entry.items && entry.items.map(i => i.text).join(', ')}
-                  </td>
-                </tr>
-              ))
-            ) : (
-              <tr>
-                <td colSpan="3" className="border border-gray-300 px-3 py-8 text-center text-gray-500 italic">
-                  No reps history available.
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
+    <Card title="Daily Reps History" icon={Dumbbell} className="border-t-4 border-corporate-navy">
+      <div className="space-y-4">
+        {sortedHistory.length > 0 ? (
+          sortedHistory.map((entry, dateIndex) => (
+            <div key={dateIndex} className="border border-gray-200 rounded-lg overflow-hidden">
+              {/* Date Header */}
+              <div className="bg-gray-100 px-4 py-2 flex items-center justify-between border-b border-gray-200">
+                <span className="font-mono font-bold text-gray-700">{entry.date}</span>
+                <span className="text-sm text-gray-500">
+                  <span className="font-bold text-corporate-navy">{entry.completedCount || (entry.items?.length || 0)}</span> reps completed
+                </span>
+              </div>
+              
+              {/* Reps List */}
+              <div className="bg-white divide-y divide-gray-100">
+                {entry.items && entry.items.length > 0 ? (
+                  entry.items.map((rep, repIndex) => (
+                    <div key={repIndex} className="px-4 py-3 flex items-start gap-3 hover:bg-blue-50 transition-colors">
+                      <div className="mt-0.5 w-5 h-5 rounded-full bg-green-100 text-green-600 flex items-center justify-center flex-shrink-0">
+                        <CheckCircle className="w-3.5 h-3.5" />
+                      </div>
+                      <span className="text-sm text-gray-900">{rep.text || rep.label || 'Completed rep'}</span>
+                    </div>
+                  ))
+                ) : (
+                  <div className="px-4 py-3 text-sm text-gray-400 italic">
+                    No rep details recorded
+                  </div>
+                )}
+              </div>
+            </div>
+          ))
+        ) : (
+          <div className="text-center py-8 text-gray-500 italic border border-gray-200 rounded-lg bg-gray-50">
+            No reps history available yet. Complete your daily reps to start building your history!
+          </div>
+        )}
       </div>
     </Card>
   );

@@ -41,6 +41,12 @@ const FeatureManager = () => {
     // AM Bookend (Win the Day)
     morningWIN,
     setMorningWIN,
+    morningWins, // New Array - REAL DATA
+    setMorningWins,
+    handleUpdateWin, // REAL HANDLER
+    handleSaveSingleWin, // REAL HANDLER
+    handleToggleWinComplete, // REAL HANDLER
+    handleSaveAllWins, // REAL HANDLER
     otherTasks,
     handleToggleTask,
     handleRemoveTask,
@@ -192,10 +198,10 @@ const FeatureManager = () => {
     setWhyStatement,
     handleSaveWhy,
     
-    // New Win Functions (Mocked for Admin)
-    handleUpdateWin: (id, text) => console.log(`Update Win ${id}: ${text}`),
-    handleSaveSingleWin: (id) => console.log(`Save Win ${id}`),
-    handleToggleWinComplete: (id) => console.log(`Toggle Win ${id}`),
+    // New Win Functions (Real Data from useDashboard)
+    handleUpdateWin,
+    handleSaveSingleWin,
+    handleToggleWinComplete,
     
     // State
     weeklyFocus,
@@ -206,11 +212,7 @@ const FeatureManager = () => {
     additionalCommitments,
     amWinCompleted,
     morningWIN,
-    morningWins: [
-      { id: 1, text: 'Strategic Planning', saved: true, completed: false },
-      { id: 2, text: 'Team Sync', saved: false, completed: false },
-      { id: 3, text: '', saved: false, completed: false }
-    ],
+    morningWins, // Real data from useDashboard, not mock
     isSavingWIN,
     isWinSaved: false, // Local state
     otherTasks,
@@ -577,7 +579,7 @@ const FeatureManager = () => {
     ],
     locker: [
       'locker-wins-history', 'locker-scorecard-history', 'locker-latest-reflection',
-      'locker-controller', 'locker-reminders'
+      'locker-controller', 'locker-reminders', 'locker-reps-history'
     ],
     system: [
       'system-reminders-controller'

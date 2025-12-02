@@ -15,32 +15,48 @@ import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
  * @param {Object} currentData - The current daily_practice data
  */
 export const checkAndPerformRollover = async (db, userId, currentData) => {
-  if (!db || !userId || !currentData) return;
+  // === NUCLEAR DEBUG: Rollover Check ===
+  console.log('%c[ROLLOVER DEBUG] checkAndPerformRollover CALLED', 'background: #ff0000; color: white; font-weight: bold; padding: 4px 8px;');
+  console.log('[ROLLOVER DEBUG] db exists:', !!db);
+  console.log('[ROLLOVER DEBUG] userId:', userId);
+  console.log('[ROLLOVER DEBUG] currentData:', JSON.stringify(currentData, null, 2));
+  
+  if (!db || !userId || !currentData) {
+    console.log('[ROLLOVER DEBUG] ABORT: Missing db, userId, or currentData');
+    return;
+  }
 
   // 1. Determine Dates
   // Use local date for "Today" to match user's perspective
   const today = new Date().toLocaleDateString('en-CA'); // YYYY-MM-DD
+  console.log('[ROLLOVER DEBUG] Today (en-CA):', today);
   
   // Get the date of the data. Fallback to lastUpdated or today if missing (to prevent loop on fresh doc)
   let dataDate = currentData.date;
+  console.log('[ROLLOVER DEBUG] currentData.date:', dataDate);
+  
   if (!dataDate && currentData.lastUpdated) {
     dataDate = currentData.lastUpdated.split('T')[0];
+    console.log('[ROLLOVER DEBUG] Using lastUpdated fallback:', dataDate);
   }
   
   // If no date info found, assume it's fresh or we shouldn't touch it yet. 
   // But if it has data and no date, we might want to stamp it. 
   // For now, if dataDate is missing, we set it to today to start tracking.
   if (!dataDate) {
-    console.log('[Rollover] No date found on data. Stamping with today.');
+    console.log('%c[ROLLOVER DEBUG] No date found on data. Stamping with today.', 'color: orange; font-weight: bold;');
     const currentRef = doc(db, 'users', userId, 'daily_practice', 'current');
     await setDoc(currentRef, { ...currentData, date: today }, { merge: true });
     return;
   }
 
   // If dates match, we are good.
-  if (dataDate === today) return;
+  if (dataDate === today) {
+    console.log('%c[ROLLOVER DEBUG] Dates match, no rollover needed. dataDate=' + dataDate + ' today=' + today, 'color: green; font-weight: bold;');
+    return;
+  }
 
-  console.log(`[Rollover] Rollover needed. Data Date: ${dataDate}, Today: ${today}`);
+  console.log(`%c[ROLLOVER DEBUG] ROLLOVER NEEDED! Data Date: ${dataDate}, Today: ${today}`, 'background: red; color: white; font-weight: bold; padding: 4px 8px;');
 
   // 2. Archive Old Data (Locker)
   const archiveRef = doc(db, 'users', userId, 'daily_logs', dataDate);
