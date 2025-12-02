@@ -11,12 +11,26 @@ export const useDevPlan = () => {
   const { db, user, developmentPlanData, updateDevelopmentPlanData } = useAppServices();
   const [masterPlan, setMasterPlan] = useState([]);
   const [loadingPlan, setLoadingPlan] = useState(true);
-  const [timeOffset, setTimeOffset] = useState(0);
+  const [timeOffset, setTimeOffset] = useState(() => {
+    return parseInt(localStorage.getItem('time_travel_offset') || '0', 10);
+  });
 
-  // 0. Initialize Time Travel Offset
+  // 0. Initialize Time Travel Offset and listen for changes
   useEffect(() => {
+    // Initial read
     const offset = parseInt(localStorage.getItem('time_travel_offset') || '0', 10);
     setTimeOffset(offset);
+    
+    // Listen for storage changes (from other tabs or same-tab manual updates)
+    const handleStorageChange = (e) => {
+      if (e.key === 'time_travel_offset' || e.key === null) {
+        const newOffset = parseInt(localStorage.getItem('time_travel_offset') || '0', 10);
+        setTimeOffset(newOffset);
+      }
+    };
+    
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
   }, []);
 
   const simulatedNow = useMemo(() => new Date(Date.now() + timeOffset), [timeOffset]);

@@ -31,14 +31,16 @@ const PlanTracker = ({
     toggleItemComplete, 
     completeWeek,
     updateDevelopmentPlanData,
-    loading 
+    loading,
+    simulatedNow
   } = useDevPlan();
 
   const [viewIndex, setViewIndex] = useState(0);
 
-  // Sync viewIndex with user's current week on load
+  // Sync viewIndex with user's current week on load AND when time travel changes
   useEffect(() => {
     if (userState && userState.currentWeekIndex !== undefined) {
+      console.log('[PlanTracker] Syncing viewIndex to currentWeekIndex:', userState.currentWeekIndex);
       setViewIndex(userState.currentWeekIndex);
     }
   }, [userState?.currentWeekIndex]);

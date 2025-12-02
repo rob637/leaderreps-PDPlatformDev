@@ -1315,6 +1315,7 @@ const TimeTravelerWidget = () => {
   const [isExpanded, setIsExpanded] = React.useState(false);
   const [targetDate, setTargetDate] = React.useState('');
   const [targetTime, setTargetTime] = React.useState('');
+  const [localOffset, setLocalOffset] = React.useState(() => parseInt(localStorage.getItem('time_travel_offset') || '0', 10));
   
   const { handleResetPlanStartDate, developmentPlanData } = typeof scope !== 'undefined' ? scope : {};
   
@@ -1323,9 +1324,20 @@ const TimeTravelerWidget = () => {
     : null;
 
   // Check if time travel is currently active
-  const offset = parseInt(localStorage.getItem('time_travel_offset') || '0', 10);
-  const isActive = offset !== 0;
-  const simulatedTime = new Date(Date.now() + offset);
+  const isActive = localOffset !== 0;
+  const simulatedTime = new Date(Date.now() + localOffset);
+  
+  // Calculate current week based on time offset
+  const currentWeekNum = startDate 
+    ? Math.floor((simulatedTime.getTime() - startDate.getTime()) / (7 * 24 * 60 * 60 * 1000)) + 1
+    : 1;
+  
+  const setTimeOffset = (newOffset) => {
+    localStorage.setItem('time_travel_offset', newOffset.toString());
+    setLocalOffset(newOffset);
+    // Dispatch a storage event so other components can react
+    window.dispatchEvent(new StorageEvent('storage', { key: 'time_travel_offset', newValue: newOffset.toString() }));
+  };
   
   const handleTravel = () => {
     if (!targetDate) {
@@ -1336,19 +1348,21 @@ const TimeTravelerWidget = () => {
     const target = new Date(dateStr);
     const now = Date.now();
     const newOffset = target.getTime() - now;
-    localStorage.setItem('time_travel_offset', newOffset.toString());
-    window.location.reload();
+    setTimeOffset(newOffset);
   };
   
   const handleReset = () => {
     localStorage.removeItem('time_travel_offset');
-    window.location.reload();
+    setLocalOffset(0);
+    window.dispatchEvent(new StorageEvent('storage', { key: 'time_travel_offset', newValue: '0' }));
   };
   
   const presets = [
     { label: 'Tonight 11:58 PM', hours: 23, minutes: 58 },
     { label: 'Tomorrow 6:00 AM', days: 1, hours: 6, minutes: 0 },
-    { label: '+1 Week', days: 7 }
+    { label: '+1 Week', days: 7 },
+    { label: '+2 Weeks', days: 14 },
+    { label: '+4 Weeks', days: 28 }
   ];
   
   const applyPreset = (preset) => {
@@ -1357,8 +1371,7 @@ const TimeTravelerWidget = () => {
     if (preset.days) target.setDate(target.getDate() + preset.days);
     if (preset.hours !== undefined) target.setHours(preset.hours, preset.minutes || 0, 0, 0);
     const newOffset = target.getTime() - Date.now();
-    localStorage.setItem('time_travel_offset', newOffset.toString());
-    window.location.reload();
+    setTimeOffset(newOffset);
   };
 
   return (
@@ -1372,6 +1385,9 @@ const TimeTravelerWidget = () => {
             </div>
             <p className="text-sm text-indigo-700 mt-1">
               Simulated: {simulatedTime.toLocaleString()}
+            </p>
+            <p className="text-sm text-indigo-700 font-bold">
+              Current Week: {currentWeekNum > 0 ? currentWeekNum : 'Not Started'}
             </p>
             <button
               onClick={handleReset}
