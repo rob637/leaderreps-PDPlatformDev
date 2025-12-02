@@ -1,6 +1,6 @@
 [
   {
-    "id": "week-02-quickstart",
+    "weekBlockId": "week-02-quickstart",
     "weekNumber": 2,
     "title": "QuickStart – Week 2",
     "phase": "QuickStart",
@@ -14,47 +14,47 @@
 
     "content": [
       {
-        "id": "qs-session-2",
-        "type": "workout",
-        "label": "QuickStart Session 2: Anchoring Feedback",
-        "required": true
+        "contentItemId": "qs-session-2",
+        "contentItemType": "workout",
+        "contentItemLabel": "QuickStart Session 2: Anchoring Feedback",
+        "isRequiredContent": true
       },
       {
-        "id": "rr-thanks-for-the-feedback",
-        "type": "read_and_rep",
-        "label": "Read & Rep: Thanks for the Feedback",
-        "required": false
+        "contentItemId": "rr-thanks-for-the-feedback",
+        "contentItemType": "read_and_rep",
+        "contentItemLabel": "Read & Rep: Thanks for the Feedback",
+        "isRequiredContent": false
       }
     ],
     "community": [
       {
-        "id": "lc-giving-feedback",
-        "type": "leader_circle",
-        "label": "Leader Circle: Giving Feedback",
+        "communityItemId": "lc-giving-feedback",
+        "communityItemType": "leader_circle",
+        "communityItemLabel": "Leader Circle: Giving Feedback",
         "recommendedWeekDay": "Thursday",
-        "required": false
+        "isRequiredCommunityItem": false
       }
     ],
     "coaching": [
       {
-        "id": "open-gym-feedback",
-        "type": "open_gym",
-        "label": "Open Gym: Feedback Q&A",
-        "optional": true
+        "coachingItemId": "open-gym-feedback",
+        "coachingItemType": "open_gym",
+        "coachingItemLabel": "Open Gym: Feedback Q&A",
+        "isOptionalCoachingItem": true
       }
     ],
 
     "estimatedTimeMinutes": 90,
     "reflectionPrompt": "What did you notice about your feedback habits this week?",
 
-    "prerequisiteWeekIds": ["week-01-quickstart"],
+    "prerequisiteWeekBlockIds": ["week-01-quickstart"],
     "prerequisiteSkills": ["feedback_basics"],
 
     "reminderTemplates": [
       {
-        "id": "week2_feedback_daily_nudge",
-        "frequency": "daily",
-        "channel": "email"
+        "reminderTemplateId": "week2_feedback_daily_nudge",
+        "reminderFrequency": "daily",
+        "reminderChannel": "email"
       }
     ]
   }

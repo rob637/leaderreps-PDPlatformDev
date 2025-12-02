@@ -32,7 +32,8 @@ const DASHBOARD_FEATURES = [
   'pm-bookend-header',
   'progress-feedback',
   'pm-bookend',
-  'scorecard'
+  'scorecard',
+  'time-traveler'
 ];
 
 const Dashboard = (props) => {
@@ -345,6 +346,7 @@ const Dashboard = (props) => {
     'progress-feedback': () => <WidgetRenderer widgetId="progress-feedback" scope={scope} />,
     'pm-bookend': () => <WidgetRenderer widgetId="pm-bookend" scope={scope} />,
     'scorecard': () => <WidgetRenderer widgetId="scorecard" scope={scope} />,
+    'time-traveler': () => <WidgetRenderer widgetId="time-traveler" scope={scope} />,
     
     // Legacy / Optional
     'gamification': () => <WidgetRenderer widgetId="gamification" scope={scope} />,

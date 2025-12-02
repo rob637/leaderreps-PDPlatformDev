@@ -8,13 +8,15 @@ import {
   ShieldAlert,
   FileText,
   Loader,
-  Settings
+  Settings,
+  Calendar
 } from 'lucide-react';
 import AdminDashboard from './AdminDashboard';
 import SystemDiagnostics from './SystemDiagnostics';
 import FeatureManager from './FeatureManager';
 import ContentAdminHome from './ContentAdminHome'; // Existing component
 import SystemWidgets from './SystemWidgets';
+import DevPlanManager from './DevPlanManager';
 import { useAppServices } from '../../services/useAppServices';
 import { doc, getDoc } from 'firebase/firestore';
 
@@ -87,6 +89,7 @@ const AdminPortal = () => {
 
   const tabs = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+    { id: 'devplan', label: 'Dev Plan', icon: Calendar },
     { id: 'diagnostics', label: 'Diagnostics', icon: Activity },
     { id: 'content', label: 'Content Mgmt', icon: Database },
     { id: 'features', label: 'Widget Lab', icon: FlaskConical },
@@ -98,6 +101,8 @@ const AdminPortal = () => {
     switch (activeTab) {
       case 'dashboard':
         return <AdminDashboard />;
+      case 'devplan':
+        return <DevPlanManager />;
       case 'diagnostics':
         return <SystemDiagnostics />;
       case 'content':
