@@ -592,32 +592,61 @@ export const useDashboard = ({
   const hasProcessedCrossingsRef = useRef(false);
   
   useEffect(() => {
-    // Only process once and only if we have the update function ready
-    if (hasProcessedCrossingsRef.current || !updateDailyPracticeData) return;
+    // Only process once and only if we have all necessary data ready
+    if (hasProcessedCrossingsRef.current) return;
+    if (!updateDailyPracticeData) return;
     
-    const pendingCrossings = timeService.getPendingMidnightCrossings();
+    // Wait for scorecard to be computed (it's needed for the rollover)
+    if (!scorecard || scorecard.reps === undefined) {
+      console.log('[TIME WARP] Waiting for scorecard to be ready...');
+      return;
+    }
     
-    if (pendingCrossings && pendingCrossings.length > 0) {
-      hasProcessedCrossingsRef.current = true;
-      
-      console.log('🚀 [TIME WARP] Processing pending midnight crossings:', pendingCrossings);
-      
-      // Process each crossing sequentially
-      // For a multi-day warp, we process each day's rollover
-      const processCrossings = async () => {
+    // Check for pending crossings (peek without removing)
+    const pendingRaw = localStorage.getItem('pending_midnight_crossings');
+    if (!pendingRaw) return;
+    
+    let pendingCrossings;
+    try {
+      pendingCrossings = JSON.parse(pendingRaw);
+    } catch (e) {
+      console.error('[TIME WARP] Failed to parse pending crossings:', e);
+      localStorage.removeItem('pending_midnight_crossings');
+      return;
+    }
+    
+    if (!pendingCrossings || pendingCrossings.length === 0) return;
+    
+    // Mark as processing to prevent re-entry
+    hasProcessedCrossingsRef.current = true;
+    
+    console.log('🚀 [TIME WARP] Processing pending midnight crossings:', pendingCrossings);
+    console.log('🚀 [TIME WARP] Current scorecard state:', scorecard);
+    
+    // Process each crossing sequentially
+    const processCrossings = async () => {
+      try {
         for (const crossing of pendingCrossings) {
           console.log(`🌙 [TIME WARP] Processing midnight rollover: ${crossing.oldDate} → ${crossing.newDate}`);
           await handleDayTransition(crossing.oldDate, crossing.newDate);
           
           // Small delay between crossings to ensure state updates properly
-          await new Promise(resolve => setTimeout(resolve, 100));
+          await new Promise(resolve => setTimeout(resolve, 200));
         }
+        
+        // Only remove from localStorage after successful processing
+        localStorage.removeItem('pending_midnight_crossings');
         console.log('✅ [TIME WARP] All midnight rollovers processed!');
-      };
-      
-      processCrossings();
-    }
-  }, [updateDailyPracticeData, handleDayTransition]);
+      } catch (error) {
+        console.error('❌ [TIME WARP] Error processing midnight crossings:', error);
+        // Keep in localStorage so user can retry
+        hasProcessedCrossingsRef.current = false;
+      }
+    };
+    
+    // Small delay to ensure React state is settled
+    setTimeout(processCrossings, 500);
+  }, [updateDailyPracticeData, handleDayTransition, scorecard]);
 
   /* =========================================================
      BOOKEND HANDLERS (Dependency on updateDailyPracticeData)
