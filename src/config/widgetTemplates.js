@@ -1492,6 +1492,50 @@ render(<SystemRemindersController />);
   );
 })()
     `,
+    'locker-reps-history': `
+(() => {
+  const safeHistory = typeof repsHistory !== 'undefined' ? repsHistory : [];
+
+  return (
+    <Card title="Reps History" icon={Dumbbell} className="border-t-4 border-corporate-navy">
+      <div className="overflow-x-auto border border-gray-300 rounded-sm">
+        <table className="min-w-full border-collapse text-sm">
+          <thead>
+            <tr className="bg-gray-100">
+              <th className="border border-gray-300 px-3 py-2 text-left font-bold text-gray-700 uppercase tracking-wider whitespace-nowrap">Date</th>
+              <th className="border border-gray-300 px-3 py-2 text-left font-bold text-gray-700 uppercase tracking-wider whitespace-nowrap">Completed</th>
+              <th className="border border-gray-300 px-3 py-2 text-left font-bold text-gray-700 uppercase tracking-wider whitespace-nowrap">Details</th>
+            </tr>
+          </thead>
+          <tbody className="bg-white">
+            {safeHistory.length > 0 ? (
+              safeHistory.map((entry, index) => (
+                <tr key={index} className="hover:bg-blue-50 transition-colors">
+                  <td className="border border-gray-300 px-3 py-2 whitespace-nowrap font-mono text-gray-600">
+                    {entry.date}
+                  </td>
+                  <td className="border border-gray-300 px-3 py-2 whitespace-nowrap font-bold text-gray-900 text-center">
+                    {entry.completedCount}
+                  </td>
+                  <td className="border border-gray-300 px-3 py-2 text-gray-600 text-xs">
+                    {entry.items && entry.items.map(i => i.text).join(', ')}
+                  </td>
+                </tr>
+              ))
+            ) : (
+              <tr>
+                <td colSpan="3" className="border border-gray-300 px-3 py-8 text-center text-gray-500 italic">
+                  No reps history available.
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+    </Card>
+  );
+})()
+    `,
     'development-plan': `
 (() => {
   const safeScope = typeof scope !== 'undefined' ? scope : {};
@@ -1670,6 +1714,7 @@ export const FEATURE_METADATA = {
   'locker-wins-history': { core: true, category: 'Locker', name: 'AM Bookend History', description: 'AM Bookend History', purpose: 'History of daily wins.', extendedDescription: 'Displays a spreadsheet-style history of AM Bookend wins and their completion status.' },
   'locker-scorecard-history': { core: true, category: 'Locker', name: 'Scorecard History', description: 'Scorecard History', purpose: 'History of daily scores.', extendedDescription: 'Displays a spreadsheet-style history of daily scorecard results.' },
   'locker-latest-reflection': { core: true, category: 'Locker', name: 'Reflection History', description: 'Reflection History', purpose: 'History of daily reflections.', extendedDescription: 'Displays a spreadsheet-style history of PM Bookend reflections.' },
+  'locker-reps-history': { core: true, category: 'Locker', name: 'Reps History', description: 'Reps History', purpose: 'History of daily reps.', extendedDescription: 'Displays a spreadsheet-style history of daily reps completion.' },
   'am-bookend-header': { core: true, category: 'Planning', name: 'AM Bookend Header', description: 'AM Bookend Header', purpose: 'Visual separator for the Morning Routine.', extendedDescription: 'Marks the beginning of the AM Bookend section, signaling the start of the daily planning process.' },
   'weekly-focus': { core: true, category: 'Planning', name: 'Weekly Focus', description: 'Weekly Focus', purpose: 'Highlights the primary development goal for the week.', extendedDescription: 'Displays the active focus area from the user\'s Development Plan to keep it top-of-mind.' },
   'lis-maker': { core: true, category: 'Dashboard', name: 'LIS Maker', description: 'LIS Maker', purpose: 'Builds the Leadership Identity Statement.', extendedDescription: 'A guided tool to help the user craft and refine their Leadership Identity Statement (LIS).' },

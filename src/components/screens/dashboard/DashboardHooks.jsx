@@ -49,6 +49,7 @@ export const useDashboard = ({
   const [reflectionBetter, setReflectionBetter] = useState('');
   const [reflectionBest, setReflectionBest] = useState('');
   const [winsList, setWinsList] = useState([]); // New: Cumulative wins list
+  const [repsHistory, setRepsHistory] = useState([]); // New: Reps History
   const [habitsCompleted, setHabitsCompleted] = useState({
   });
   const [isSavingBookend, setIsSavingBookend] = useState(false);
@@ -233,8 +234,15 @@ export const useDashboard = ({
     } else {
       setWinsList([]);
     }
+
+    // Load Reps History
+    if (dailyPracticeData?.repsHistory) {
+      setRepsHistory(dailyPracticeData.repsHistory);
+    } else {
+      setRepsHistory([]);
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [JSON.stringify(dailyPracticeData?.eveningBookend), JSON.stringify(dailyPracticeData?.winsList), shouldSkipReflectionLoad]);
+  }, [JSON.stringify(dailyPracticeData?.eveningBookend), JSON.stringify(dailyPracticeData?.winsList), JSON.stringify(dailyPracticeData?.repsHistory), shouldSkipReflectionLoad]);
 
   /* =========================================================
      MODE TOGGLE HANDLER (Dependency on updateDailyPracticeData)
@@ -735,12 +743,15 @@ export const useDashboard = ({
 
     try {
       await updateDailyPracticeData({
-        'morningBookend.wins': newWins
+        morningBookend: {
+            ...dailyPracticeData?.morningBookend,
+            wins: newWins
+        }
       });
     } catch (error) {
       console.error('Error toggling win:', error);
     }
-  }, [morningWins, updateDailyPracticeData]);
+  }, [morningWins, updateDailyPracticeData, dailyPracticeData]);
 
   const handleHabitToggle = useCallback((habitKey, isChecked) => {
     lastHabitUpdateTime.current = Date.now();
@@ -785,7 +796,10 @@ export const useDashboard = ({
 
       // Update Firestore
       await updateDailyPracticeData({
-        'morningBookend.wins': newWins,
+        morningBookend: {
+            ...dailyPracticeData?.morningBookend,
+            wins: newWins
+        },
         date: new Date().toLocaleDateString('en-CA') // Ensure date is updated
       });
     } catch (error) {
@@ -793,7 +807,7 @@ export const useDashboard = ({
     } finally {
       setIsSavingWIN(false);
     }
-  }, [morningWins, updateDailyPracticeData]);
+  }, [morningWins, updateDailyPracticeData, dailyPracticeData]);
 
   const handleSaveAllWins = useCallback(async () => {
     if (!updateDailyPracticeData) return;
@@ -806,7 +820,10 @@ export const useDashboard = ({
 
       // Update Firestore
       await updateDailyPracticeData({
-        'morningBookend.wins': newWins,
+        morningBookend: {
+            ...dailyPracticeData?.morningBookend,
+            wins: newWins
+        },
         date: new Date().toLocaleDateString('en-CA') // Ensure date is updated
       });
     } catch (error) {
@@ -815,7 +832,7 @@ export const useDashboard = ({
     } finally {
       setIsSavingWIN(false);
     }
-  }, [morningWins, updateDailyPracticeData]);
+  }, [morningWins, updateDailyPracticeData, dailyPracticeData]);
 
   const handleToggleWinComplete = useCallback(async (index) => {
     if (!updateDailyPracticeData) return;
@@ -826,13 +843,16 @@ export const useDashboard = ({
 
     try {
       await updateDailyPracticeData({
-        'morningBookend.wins': newWins,
+        morningBookend: {
+            ...dailyPracticeData?.morningBookend,
+            wins: newWins
+        },
         date: new Date().toLocaleDateString('en-CA') // Ensure date is updated
       });
     } catch (error) {
       console.error('Error toggling win:', error);
     }
-  }, [morningWins, updateDailyPracticeData]);
+  }, [morningWins, updateDailyPracticeData, dailyPracticeData]);
 
   // Legacy handler kept for compatibility but unused in new UI
   const handleSaveWIN = useCallback(async () => {
@@ -894,8 +914,25 @@ export const useDashboard = ({
        setIsSavingReps(true);
        // Force a re-save of current commitments to be safe
        try {
+           // Create history entry
+           const todayDate = new Date().toLocaleDateString();
+           const completedReps = additionalCommitments.filter(c => c.status === 'Committed');
+           const historyEntry = {
+               date: todayDate,
+               completedCount: completedReps.length,
+               totalCount: additionalCommitments.length,
+               items: completedReps.map(r => ({ id: r.id, text: r.text || r.label })),
+               timestamp: new Date().toISOString()
+           };
+           
+           // Update history
+           const existingHistory = dailyPracticeData?.repsHistory || [];
+           const historyWithoutToday = existingHistory.filter(h => h.date !== todayDate);
+           const updatedHistory = [...historyWithoutToday, historyEntry];
+
            await updateDailyPracticeData({
                active_commitments: additionalCommitments,
+               repsHistory: updatedHistory, // Save history
                date: new Date().toLocaleDateString('en-CA') // Ensure date is updated
            });
            // Removed alert, UI should handle success state via isSavingReps
@@ -906,7 +943,7 @@ export const useDashboard = ({
            setIsSavingReps(false);
        }
     }
-  }, [updateDailyPracticeData, additionalCommitments]);
+  }, [updateDailyPracticeData, additionalCommitments, dailyPracticeData]);
 
   /* =========================================================
      RETURN ALL STATE & HANDLERS
@@ -989,6 +1026,7 @@ export const useDashboard = ({
     handleToggleAdditionalRep,
     handleSaveReps,
     isSavingReps,
+    repsHistory, // New
     
     // Legacy / Deprecated but kept for safety
     handleToggleWIN,

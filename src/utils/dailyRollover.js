@@ -52,7 +52,7 @@ export const checkAndPerformRollover = async (db, userId, currentData) => {
     rolloverSource: 'lazy-client'
   }, { merge: true });
 
-  // 3. Calculate Carry-Over
+  // 3. Calculate Carry-Over & History
   
   // Wins: Keep uncompleted
   const currentWins = currentData.morningBookend?.wins || [];
@@ -61,11 +61,52 @@ export const checkAndPerformRollover = async (db, userId, currentData) => {
     completed: false, // Ensure they are not completed
     saved: true // Keep them as saved tasks
   }));
+
+  // Wins History
+  const completedWins = currentWins.filter(w => w.completed && w.text);
+  const newWinsHistoryEntry = completedWins.map((w, i) => ({
+    id: w.id || `win-${dataDate}-${i}`,
+    date: dataDate,
+    text: w.text,
+    completed: true
+  }));
+  const existingWinsList = currentData.winsList || [];
   
   // Reps: Keep uncommitted (Pending)
   // active_commitments structure: { id, status: 'Committed'|'Pending', text }
   const currentReps = currentData.active_commitments || [];
   const carriedReps = currentReps.filter(r => r.status !== 'Committed');
+
+  // Reps History
+  const completedReps = currentReps.filter(r => r.status === 'Committed');
+  const newRepsHistoryEntry = {
+    date: dataDate,
+    completedCount: completedReps.length,
+    items: completedReps.map(r => ({ id: r.id, text: r.text }))
+  };
+  const existingRepsHistory = currentData.repsHistory || [];
+
+  // Reflection History
+  const reflection = currentData.eveningBookend || {};
+  const hasReflection = reflection.good || reflection.better || reflection.best;
+  const newReflectionEntry = hasReflection ? {
+    id: `ref-${dataDate}`,
+    date: dataDate,
+    reflectionGood: reflection.good,
+    reflectionWork: reflection.better,
+    reflectionTomorrow: reflection.best
+  } : null;
+  const existingReflectionHistory = currentData.reflectionHistory || [];
+
+  // Scorecard History
+  const scorecard = currentData.scorecard || { reps: { done: 0, total: 0 }, win: { done: 0, total: 0 } };
+  const newScorecardEntry = {
+    date: dataDate,
+    score: `${scorecard.reps.done + scorecard.win.done}/${scorecard.reps.total + scorecard.win.total}`,
+    details: scorecard
+  };
+  const existingCommitmentHistory = currentData.commitmentHistory || [];
+
 
   // 4. Prepare New State
   // We keep settings (anchors, etc) but reset daily progress
@@ -74,6 +115,12 @@ export const checkAndPerformRollover = async (db, userId, currentData) => {
     date: today,
     lastUpdated: new Date().toISOString(),
     
+    // Update Histories
+    winsList: [newWinsHistoryEntry, ...existingWinsList].flat().filter((v,i,a)=>a.findIndex(t=>(t.id === v.id))===i), // Dedup by ID
+    repsHistory: [newRepsHistoryEntry, ...existingRepsHistory].filter((v,i,a)=>a.findIndex(t=>(t.date === v.date))===i), // Dedup by Date
+    reflectionHistory: newReflectionEntry ? [newReflectionEntry, ...existingReflectionHistory].filter((v,i,a)=>a.findIndex(t=>(t.date === v.date))===i) : existingReflectionHistory,
+    commitmentHistory: [newScorecardEntry, ...existingCommitmentHistory].filter((v,i,a)=>a.findIndex(t=>(t.date === v.date))===i), // Dedup by Date
+
     // Reset Morning Bookend
     morningBookend: {
       ...currentData.morningBookend,
