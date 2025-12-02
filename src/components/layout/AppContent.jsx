@@ -126,9 +126,9 @@ const AppContent = ({
           />
 
           {/* Main Content Area */}
-          <div className="flex-1 flex flex-col h-screen overflow-hidden relative transition-all duration-300 bg-corporate-light-gray md:rounded-l-3xl md:shadow-2xl md:my-2 md:mr-2">
+          <div className="flex-1 flex flex-col h-screen overflow-hidden relative transition-all duration-300 bg-corporate-light-gray md:rounded-3xl md:shadow-2xl md:my-2 md:mr-2">
             
-            <main className="flex-1 flex flex-col overflow-hidden relative md:rounded-l-3xl">
+            <main className="flex-1 flex flex-col overflow-hidden relative md:rounded-3xl">
               <div className="flex-1 overflow-y-auto">
                 <Suspense
                   fallback={
