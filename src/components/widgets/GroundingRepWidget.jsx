@@ -19,12 +19,12 @@ const GroundingRepWidget = ({ scope }) => {
     return (
       <Card title="LIS Maker" icon={PenTool} accent="NAVY">
         <div className="space-y-2">
-          <div className="bg-purple-50 p-3 rounded-xl border border-purple-100">
-            <h4 className="font-bold text-purple-900 mb-1">Build Your Identity</h4>
-            <p className="text-sm text-purple-800 mb-2">
+          <div className="bg-teal-50 p-3 rounded-xl border border-teal-100">
+            <h4 className="font-bold text-teal-900 mb-1">Build Your Identity</h4>
+            <p className="text-sm text-teal-800 mb-2">
               Your Leadership Identity Statement (LIS) anchors you in who you want to be.
             </p>
-            <p className="text-xs text-purple-600 italic mb-1">
+            <p className="text-xs text-teal-600 italic mb-1">
               Try this format: "I am a [Core Value] leader who [Action] to create [Impact]."
             </p>
           </div>
@@ -37,7 +37,7 @@ const GroundingRepWidget = ({ scope }) => {
               value={identityStatement}
               onChange={(e) => setIdentityStatement(e.target.value)}
               onBlur={() => handleSaveIdentity(identityStatement)}
-              className="w-full p-2 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-purple-500 outline-none transition-all text-sm min-h-[80px]"
+              className="w-full p-2 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-teal-500 outline-none transition-all text-sm min-h-[80px]"
               placeholder="I am a..."
             />
           </div>
@@ -54,7 +54,7 @@ const GroundingRepWidget = ({ scope }) => {
                 handleSaveIdentity(identityStatement);
                 setEditing(false);
               }}
-              className="flex-1 py-2 bg-purple-600 text-white rounded-xl font-bold hover:bg-purple-700 transition-colors flex items-center justify-center gap-2"
+              className="flex-1 py-2 bg-[#002E47] text-white rounded-xl font-bold hover:bg-[#003E5F] transition-colors flex items-center justify-center gap-2"
             >
               <Save className="w-4 h-4" />
               Save
