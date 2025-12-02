@@ -841,45 +841,41 @@ const FeatureManager = () => {
   };
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6">
-        <div className="mb-4 sm:mb-0">
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-gray-900">
-            Widget Manager
-          </h1>
-          <p className="text-sm sm:text-base text-gray-500">
-            Manage and customize your dashboard widgets.
-          </p>
+    <div className="p-4">
+      {/* Compact Header */}
+      <div className="flex items-center justify-between mb-4">
+        <div>
+          <h1 className="text-xl font-bold text-gray-900">Widget Manager</h1>
+          <p className="text-xs text-gray-500">Manage and customize your dashboard widgets.</p>
         </div>
-        <div className="flex flex-col sm:flex-row gap-4">
+        <div className="flex gap-2">
           {/* Global Toggle Button */}
           <button 
             onClick={handleGlobalToggle} 
-            className="flex items-center justify-center px-4 py-2 text-sm sm:text-base font-semibold rounded-lg bg-purple-600 text-white shadow-md hover:bg-purple-700 transition-all"
+            className="flex items-center px-3 py-1.5 text-xs font-semibold rounded-lg bg-purple-600 text-white shadow hover:bg-purple-700 transition-all"
           >
-            <ToggleLeft className="w-5 h-5 mr-2" />
-            Global Toggle
+            <ToggleLeft className="w-4 h-4 mr-1" />
+            Toggle
           </button>
 
           {/* Sync Defaults Button */}
           <button 
             onClick={handleSyncDefaults} 
-            className="flex items-center justify-center px-4 py-2 text-sm sm:text-base font-semibold rounded-lg bg-blue-600 text-white shadow-md hover:bg-blue-700 transition-all"
+            className="flex items-center px-3 py-1.5 text-xs font-semibold rounded-lg bg-blue-600 text-white shadow hover:bg-blue-700 transition-all"
           >
-            <RefreshCw className="w-5 h-5 mr-2" />
-            Sync Default Widgets
+            <RefreshCw className="w-4 h-4 mr-1" />
+            Widgets
           </button>
         </div>
       </div>
 
-      {/* Groups Navigation - Desktop */}
-      <div className="hidden sm:flex sm:gap-4 mb-6">
+      {/* Groups Navigation - Desktop - Wrap on smaller screens */}
+      <div className="flex flex-wrap gap-2 mb-6">
         {Object.keys(groups).map((key) => (
           <button
             key={key}
             onClick={() => setActiveGroup(key)}
-            className={`flex-1 px-4 py-2 text-sm sm:text-base font-semibold rounded-lg transition-all 
+            className={`px-3 py-1.5 text-xs sm:text-sm font-semibold rounded-lg transition-all whitespace-nowrap
               ${activeGroup === key 
                 ? 'bg-blue-600 text-white shadow-md' 
                 : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
@@ -893,64 +889,64 @@ const FeatureManager = () => {
       {/* Active Group Widgets */}
       <div>
         {/* Group Header */}
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xl sm:text-2xl font-bold text-gray-900">
+        <div className="flex flex-wrap items-center gap-2 mb-3">
+          <h2 className="text-lg font-bold text-gray-900 mr-auto">
             {groupTitles[activeGroup]} Widgets
           </h2>
           <button 
             onClick={() => setIsAdding(true)} 
-            className="flex items-center px-3 py-2 text-sm sm:text-base font-semibold rounded-lg bg-green-600 text-white shadow-md hover:bg-green-700 transition-all"
+            className="flex items-center px-2 py-1 text-xs font-semibold rounded-lg bg-green-600 text-white shadow-md hover:bg-green-700 transition-all"
           >
-            <Plus className="w-4 h-4 mr-2" />
-            Add Widget
+            <Plus className="w-3 h-3 mr-1" />
+            Add
           </button>
           <button 
             onClick={handleToggleAll} 
-            className="flex items-center px-3 py-2 text-sm sm:text-base font-semibold rounded-lg bg-purple-600 text-white shadow-md hover:bg-purple-700 transition-all ml-2"
+            className="flex items-center px-2 py-1 text-xs font-semibold rounded-lg bg-purple-600 text-white shadow-md hover:bg-purple-700 transition-all"
           >
-            <ToggleRight className="w-4 h-4 mr-2" />
+            <ToggleRight className="w-3 h-3 mr-1" />
             Toggle All
           </button>
         </div>
 
         {/* Widgets List */}
-        <div className="space-y-4">
+        <div className="space-y-2">
           {(groups[activeGroup] || []).map((feature, index) => (
-            <div key={feature.id} className="p-4 bg-white rounded-lg shadow border border-gray-200">
+            <div key={feature.id} className="p-3 bg-white rounded-lg shadow border border-gray-200">
               {/* Widget Header */}
-              <div className="flex items-center justify-between mb-2">
-                <div>
-                  <h3 className="text-lg font-semibold text-gray-800 text-left">{feature.name}</h3>
-                  <p className="text-xs text-gray-500">{feature.description}</p>
+              <div className="flex items-center justify-between">
+                <div className="min-w-0 flex-1">
+                  <h3 className="text-sm font-semibold text-gray-800 text-left truncate">{feature.name}</h3>
+                  <p className="text-xs text-gray-500 truncate">{feature.description}</p>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1 ml-2 flex-shrink-0">
                   {/* Move Up/Down Buttons */}
-                  <div className="flex gap-2">
+                  <div className="flex gap-1">
                     <button 
                       onClick={() => handleMove(activeGroup, index, 'up')} 
                       disabled={index === 0}
-                      className="p-2 rounded-full bg-gray-100 text-gray-500 hover:bg-gray-200 transition-all disabled:opacity-50"
+                      className="p-1.5 rounded-full bg-gray-100 text-gray-500 hover:bg-gray-200 transition-all disabled:opacity-50"
                     >
-                      <ArrowUp className="w-4 h-4" />
+                      <ArrowUp className="w-3 h-3" />
                     </button>
                     <button 
                       onClick={() => handleMove(activeGroup, index, 'down')} 
                       disabled={index === (groups[activeGroup].length - 1)}
-                      className="p-2 rounded-full bg-gray-100 text-gray-500 hover:bg-gray-200 transition-all disabled:opacity-50"
+                      className="p-1.5 rounded-full bg-gray-100 text-gray-500 hover:bg-gray-200 transition-all disabled:opacity-50"
                     >
-                      <ArrowDown className="w-4 h-4" />
+                      <ArrowDown className="w-3 h-3" />
                     </button>
                   </div>
                   {/* Toggle Widget Button */}
                   <button 
                     onClick={() => toggleFeature(feature.id, !feature.enabled)} 
-                    className={`p-2 rounded-full transition-all 
+                    className={`p-1.5 rounded-full transition-all 
                       ${feature.enabled 
                         ? 'bg-green-100 text-green-500 hover:bg-green-200' 
                         : 'bg-red-100 text-red-500 hover:bg-red-200'
                       }`}
                   >
-                    {feature.enabled ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
+                    {feature.enabled ? <Eye className="w-3 h-3" /> : <EyeOff className="w-3 h-3" />}
                   </button>
                   {/* Edit Button */}
                   <button 
@@ -961,27 +957,26 @@ const FeatureManager = () => {
                       inputDescriptions: getInputDescriptionsForWidget(feature.id),
                       initialCode: feature.code
                     })} 
-                    className="p-2 rounded-full bg-blue-100 text-blue-500 hover:bg-blue-200 transition-all"
+                    className="p-1.5 rounded-full bg-blue-100 text-blue-500 hover:bg-blue-200 transition-all"
                   >
-                    <Edit3 className="w-4 h-4" />
+                    <Edit3 className="w-3 h-3" />
                   </button>
                   {/* Settings Button */}
                   <button 
                     onClick={() => setExpandedSettingsId(expandedSettingsId === feature.id ? null : feature.id)} 
-                    className={`p-2 rounded-full transition-all ${expandedSettingsId === feature.id ? 'bg-gray-300 text-gray-700' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}`}
+                    className={`p-1.5 rounded-full transition-all ${expandedSettingsId === feature.id ? 'bg-gray-300 text-gray-700' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}`}
                   >
-                    <Settings className="w-4 h-4" />
+                    <Settings className="w-3 h-3" />
                   </button>
                   {/* Delete Button */}
                   <button 
                     onClick={() => handleDelete(feature.id)} 
-                    className="p-2 rounded-full bg-red-100 text-red-500 hover:bg-red-200 transition-all"
+                    className="p-1.5 rounded-full bg-red-100 text-red-500 hover:bg-red-200 transition-all"
                   >
-                    <Trash2 className="w-4 h-4" />
+                    <Trash2 className="w-3 h-3" />
                   </button>
                 </div>
               </div>
-              
               {/* Settings Panel */}
               {expandedSettingsId === feature.id && (
                 <div className="mt-4 p-4 bg-gray-50 rounded-lg border border-gray-200 animate-in fade-in slide-in-from-top-2">
