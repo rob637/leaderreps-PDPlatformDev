@@ -1,11 +1,12 @@
 // src/components/layout/MobileBottomNav.jsx
 import React from 'react';
-import { Home, Target, Users, BookOpen } from 'lucide-react';
+import { Home, BookOpen, MessageSquare, Users, Archive } from 'lucide-react';
 import { useAppServices } from '../../services/useAppServices.jsx';
 
 const MobileBottomNav = ({ currentScreen }) => {
   const { navigate } = useAppServices();
   
+  // 5 buttons: Dashboard, Content, Communication, Coaching, Locker
   const navItems = [
     {
       id: 'dashboard',
@@ -14,10 +15,16 @@ const MobileBottomNav = ({ currentScreen }) => {
       screen: 'dashboard'
     },
     {
-      id: 'dev-plan',
-      label: 'Dev Plan',
-      icon: Target,
-      screen: 'development-plan'
+      id: 'library',
+      label: 'Content',
+      icon: BookOpen,
+      screen: 'library'
+    },
+    {
+      id: 'communication',
+      label: 'Comms',
+      icon: MessageSquare,
+      screen: 'communication'
     },
     {
       id: 'coaching',
@@ -26,10 +33,10 @@ const MobileBottomNav = ({ currentScreen }) => {
       screen: 'coaching-lab'
     },
     {
-      id: 'library',
-      label: 'Content',
-      icon: BookOpen,
-      screen: 'library'
+      id: 'locker',
+      label: 'Locker',
+      icon: Archive,
+      screen: 'locker'
     }
   ];
 

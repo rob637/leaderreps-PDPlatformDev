@@ -8,9 +8,10 @@ import {
   CheckSquare, Square, Plus, Save, X, Trophy, Flame, 
   MessageSquare, Bell, Calendar, ChevronRight, ArrowRight,
   Edit3, Loader, LayoutDashboard, Target, Layers, Sun, Moon, Clipboard, Zap, TrendingUp,
-  Dumbbell, CheckCircle, PenTool
+  Dumbbell, CheckCircle, PenTool, Quote, User
 } from 'lucide-react';
 import { useDashboard } from './dashboard/DashboardHooks.jsx';
+import { useDevPlan } from '../../hooks/useDevPlan';
 import { UnifiedAnchorEditorModal, CalendarSyncModal } from './dashboard/DashboardComponents.jsx';
 import { useFeatures } from '../../providers/FeatureProvider';
 import WidgetRenderer from '../admin/WidgetRenderer';
@@ -33,8 +34,7 @@ const DASHBOARD_FEATURES = [
   'pm-bookend-header',
   'progress-feedback',
   'pm-bookend',
-  'scorecard',
-  'time-traveler'
+  'scorecard'
 ];
 
 const Dashboard = (props) => {
@@ -109,8 +109,11 @@ const Dashboard = (props) => {
     // Scorecard
     scorecard,
     handleSaveScorecard,
-    // ...existing code...
-    isSavingScorecard
+    isSavingScorecard,
+    
+    // Grounding Rep (click-to-reveal)
+    groundingRepCompleted,
+    handleGroundingRepComplete
   } = useDashboard({
     dailyPracticeData,
     updateDailyPracticeData,
@@ -160,9 +163,31 @@ const Dashboard = (props) => {
     return quotes[today % quotes.length];
   }, [globalMetadata]);
 
-  // 2. Weekly Focus
-  // Prioritize Admin Portal setting (globalMetadata), fallback to Dev Plan, then default
-  const weeklyFocus = globalMetadata?.weeklyFocus || developmentPlanData?.currentPlan?.focusAreas?.[0]?.name || 'Feedback';
+  // 2. Weekly Focus - Now uses Development Plan with Time Travel support
+  const { currentWeek: devPlanCurrentWeek, userState: devPlanUserState, simulatedNow } = useDevPlan();
+  
+  // Get focus from current week in Dev Plan, with fallbacks
+  const weeklyFocus = useMemo(() => {
+    // Priority 1: Current week's focus from Development Plan (time-travel aware)
+    if (devPlanCurrentWeek?.focus) {
+      return devPlanCurrentWeek.focus;
+    }
+    // Priority 2: Admin Portal override
+    if (globalMetadata?.weeklyFocus) {
+      return globalMetadata.weeklyFocus;
+    }
+    // Priority 3: Legacy focusAreas from developmentPlanData
+    if (developmentPlanData?.currentPlan?.focusAreas?.[0]?.name) {
+      return developmentPlanData.currentPlan.focusAreas[0].name;
+    }
+    // Default
+    return 'Leadership Identity';
+  }, [devPlanCurrentWeek, globalMetadata, developmentPlanData]);
+  
+  // Also expose the current week number for the weekly-focus widget
+  const currentWeekNumber = devPlanUserState?.currentWeekIndex != null 
+    ? devPlanUserState.currentWeekIndex + 1 
+    : null;
 
   // 3. Daily Reps Logic
   const hasLIS = !!identityStatement;
@@ -247,7 +272,7 @@ const Dashboard = (props) => {
     // Icons
     CheckSquare, Square, Plus, Save, X, Trophy, Flame, 
     MessageSquare, Bell, Calendar, ChevronRight, ArrowRight,
-    Edit3, Loader, Sun, Moon, Zap, TrendingUp, Dumbbell, CheckCircle, PenTool,
+    Edit3, Loader, Sun, Moon, Zap, TrendingUp, Dumbbell, CheckCircle, PenTool, Quote, User,
     
     // Components
     Card,
@@ -290,6 +315,9 @@ const Dashboard = (props) => {
     
     // State
     weeklyFocus,
+    currentWeekNumber,
+    simulatedNow,
+    devPlanCurrentWeek,
     hasLIS,
     lisRead,
     dailyRepName,
@@ -313,6 +341,10 @@ const Dashboard = (props) => {
     setReflectionBest,
     isSavingBookend,
     
+    // Grounding Rep (click-to-reveal)
+    groundingRepCompleted,
+    handleGroundingRepComplete,
+    
     // Identity & Anchors State
     identityStatement,
     habitAnchor,
@@ -321,10 +353,21 @@ const Dashboard = (props) => {
     // Development Plan Data
     developmentPlanData,
     handleResetPlanStartDate: async () => {
+      console.log('[Dashboard] handleResetPlanStartDate called');
+      console.log('[Dashboard] updateDevelopmentPlanData exists:', !!updateDevelopmentPlanData);
       if (updateDevelopmentPlanData) {
-        await updateDevelopmentPlanData({ startDate: serverTimestamp() });
-        alert("Plan Start Date reset to NOW. Time travel will be relative to this moment.");
-        window.location.reload();
+        try {
+          await updateDevelopmentPlanData({ startDate: serverTimestamp() });
+          console.log('[Dashboard] startDate set successfully');
+          alert("Plan Start Date reset to NOW. Time travel will be relative to this moment.");
+          window.location.reload();
+        } catch (error) {
+          console.error('[Dashboard] Error setting startDate:', error);
+          alert("Error setting start date: " + error.message);
+        }
+      } else {
+        console.error('[Dashboard] updateDevelopmentPlanData is not available');
+        alert("Error: updateDevelopmentPlanData function not available");
       }
     },
     
@@ -355,7 +398,6 @@ const Dashboard = (props) => {
     'progress-feedback': () => <WidgetRenderer widgetId="progress-feedback" scope={scope} />,
     'pm-bookend': () => <WidgetRenderer widgetId="pm-bookend" scope={scope} />,
     'scorecard': () => <WidgetRenderer widgetId="scorecard" scope={scope} />,
-    'time-traveler': () => <WidgetRenderer widgetId="time-traveler" scope={scope} />,
     
     // Legacy / Optional
     'gamification': () => <WidgetRenderer widgetId="gamification" scope={scope} />,

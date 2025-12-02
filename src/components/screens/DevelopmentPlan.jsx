@@ -8,7 +8,7 @@
 // 🛑 CRITICAL FIX (10/30/25): Refactored writeDevPlan to only adapt the currentPlan sub-object.
 
 import React, { useMemo, useState, useEffect } from 'react';
-import { Target, TrendingUp, Calendar, Zap, Crosshair, Flag } from 'lucide-react';
+import { Target, TrendingUp, Calendar, Zap, Crosshair, Flag, ClipboardList, CheckCircle, AlertCircle, Eye, ArrowRight } from 'lucide-react';
 import { useAppServices } from '../../services/useAppServices.jsx';
 import BaselineAssessment from './developmentplan/BaselineAssessment';
 import PlanTracker from './developmentplan/PlanTracker';
@@ -18,7 +18,8 @@ import MilestoneTimeline from './developmentplan/MilestoneTimeline';
 import ProgressBreakdown from './developmentplan/ProgressBreakdown';
 import { Button, Card, EmptyState } from './developmentplan/DevPlanComponents';
 import { generatePlanFromAssessment, normalizeSkillCatalog } from './developmentplan/devPlanUtils';
-import { PageLayout } from '../ui';
+import { PageLayout, Card as UICard } from '../ui';
+import WidgetRenderer from '../admin/WidgetRenderer';
 
 // FIXED: Import adapter utilities
 import { 
@@ -484,7 +485,25 @@ async function confirmPlanPersisted(db, userId, retries = 4, delayMs = 250) {
   if (!services || !userId) return <LoadingBlock title="Services unavailable" description="Please refresh or contact support." />;
 
   // ===== WIDGET LOGIC =====
-  // (Removed unused scope)
+  // Create scope for widgets on this screen
+  const widgetScope = useMemo(() => ({
+    // Data
+    developmentPlanData: adaptedDevelopmentPlanData,
+    
+    // Navigation
+    navigate,
+    
+    // Icons (for baseline-assessment widget)
+    ClipboardList,
+    CheckCircle,
+    AlertCircle,
+    Eye,
+    ArrowRight,
+    Target,
+    
+    // Components
+    Card: UICard,
+  }), [adaptedDevelopmentPlanData, navigate]);
 
   // ===== RENDER =====
   const isDeveloperMode = localStorage.getItem('arena-developer-mode') === 'true';
@@ -557,15 +576,22 @@ async function confirmPlanPersisted(db, userId, retries = 4, delayMs = 250) {
       )}
 
       {view === 'tracker' && (
-        <PlanTracker
-          plan={adaptedDevelopmentPlanData?.currentPlan}
-          cycle={adaptedDevelopmentPlanData?.cycle || 1}
-          globalMetadata={globalMetadata}
-          onEditPlan={handleEditPlan}
-          onScan={() => setView('scan')}
-          onDetail={() => setView('detail')}
-          onTimeline={() => setView('timeline')}
-        />
+        <>
+          {/* Baseline Assessment Widget */}
+          <div className="mb-4">
+            <WidgetRenderer widgetId="baseline-assessment" scope={widgetScope} />
+          </div>
+          
+          <PlanTracker
+            plan={adaptedDevelopmentPlanData?.currentPlan}
+            cycle={adaptedDevelopmentPlanData?.cycle || 1}
+            globalMetadata={globalMetadata}
+            onEditPlan={handleEditPlan}
+            onScan={() => setView('scan')}
+            onDetail={() => setView('detail')}
+            onTimeline={() => setView('timeline')}
+          />
+        </>
       )}
     </PageLayout>
   );

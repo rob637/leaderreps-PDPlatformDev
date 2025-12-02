@@ -70,11 +70,27 @@ export const useDevPlan = () => {
       startDate: null
     };
 
-    if (!developmentPlanData) return defaultState;
+    console.log('[useDevPlan] Deriving userState from developmentPlanData:', JSON.stringify(developmentPlanData, null, 2));
+
+    if (!developmentPlanData) {
+      console.log('[useDevPlan] No developmentPlanData - using defaults');
+      return defaultState;
+    }
+
+    // Check if we have a startDate
+    if (developmentPlanData.startDate) {
+      console.log('[useDevPlan] Found startDate in developmentPlanData:', developmentPlanData.startDate);
+      return {
+        ...defaultState,
+        ...developmentPlanData,
+        isSetup: true
+      };
+    }
 
     // Check if this is the new V1 schema or old schema
     // If it has 'currentWeekIndex', it's likely V1.
     if (typeof developmentPlanData.currentWeekIndex === 'number') {
+      console.log('[useDevPlan] Found V1 schema with currentWeekIndex');
       return {
         ...defaultState,
         ...developmentPlanData,
@@ -83,22 +99,72 @@ export const useDevPlan = () => {
     }
 
     // If old schema, we might need to migrate or just treat as new user
+    console.log('[useDevPlan] No startDate or V1 schema found - using defaults');
     return defaultState;
   }, [developmentPlanData]);
+  
+  // Auto-initialize startDate if not set
+  useEffect(() => {
+    const autoInit = async () => {
+      if (!developmentPlanData?.startDate && updateDevelopmentPlanData && user) {
+        console.log('[useDevPlan] Auto-initializing startDate for user');
+        try {
+          await updateDevelopmentPlanData({ startDate: serverTimestamp(), version: 'v1' });
+          console.log('[useDevPlan] startDate auto-initialized successfully');
+        } catch (error) {
+          console.error('[useDevPlan] Error auto-initializing startDate:', error);
+        }
+      }
+    };
+    autoInit();
+  }, [developmentPlanData, updateDevelopmentPlanData, user]);
 
   // 3. Compute Current Week View (Time-Based Calculation)
   const currentWeekIndex = useMemo(() => {
     // If we have a start date, calculate week based on time
     if (userState.startDate) {
-      const start = userState.startDate.toDate ? userState.startDate.toDate() : new Date(userState.startDate);
+      // Robust date parsing - handle multiple formats
+      let start = null;
+      const rawDate = userState.startDate;
+      
+      if (rawDate.toDate && typeof rawDate.toDate === 'function') {
+        start = rawDate.toDate();
+      } else if (rawDate.seconds) {
+        start = new Date(rawDate.seconds * 1000);
+      } else if (typeof rawDate === 'string') {
+        start = new Date(rawDate);
+      } else if (rawDate instanceof Date) {
+        start = rawDate;
+      } else if (typeof rawDate === 'number') {
+        start = new Date(rawDate);
+      } else {
+        start = new Date(rawDate);
+      }
+      
+      // Validate the date
+      if (!start || isNaN(start.getTime())) {
+        console.warn('[useDevPlan] Invalid startDate:', rawDate);
+        return userState.currentWeekIndex || 0;
+      }
+      
       const diff = simulatedNow.getTime() - start.getTime();
       // 1 week = 7 * 24 * 60 * 60 * 1000 ms
       const weeksPassed = Math.floor(diff / 604800000);
-      return Math.max(0, weeksPassed);
+      const calculatedIndex = Math.max(0, weeksPassed);
+      console.log('[useDevPlan] Time-based week calculation:', {
+        startDate: start.toISOString(),
+        simulatedNow: simulatedNow.toISOString(),
+        diffMs: diff,
+        weeksPassed,
+        calculatedIndex,
+        timeOffset
+      });
+      return calculatedIndex;
     }
     // Fallback to manual progress if no start date (or legacy)
+    console.log('[useDevPlan] No startDate found, using fallback:', userState.currentWeekIndex || 0);
     return userState.currentWeekIndex || 0;
-  }, [userState.startDate, userState.currentWeekIndex, simulatedNow]);
+  }, [userState.startDate, userState.currentWeekIndex, simulatedNow, timeOffset]);
 
   const currentWeek = useMemo(() => {
     if (masterPlan.length === 0) return null;

@@ -1,6 +1,7 @@
 // src/services/createAppServices.js
 import { onSnapshotEx, setDocEx } from './firestoreUtils';
 import { buildModulePath } from './pathUtils';
+import { Timestamp } from 'firebase/firestore';
 import { 
     MOCK_DEVELOPMENT_PLAN_DATA, MOCK_DAILY_PRACTICE_DATA, MOCK_STRATEGIC_CONTENT_DATA, 
     MOCK_MEMBERSHIP_DATA, MOCK_MEMBERSHIP_PLANS, MOCK_FEATURE_FLAGS, MOCK_REP_LIBRARY,
@@ -12,6 +13,29 @@ import { applyPatchDeleteAware, sanitizeTimestamps, stripSentinels } from './dat
 import { resolveGlobalMetadata } from './metadataResolver.js';
 import { checkAndPerformRollover } from '../utils/dailyRollover.js';
 import { timeService } from './timeService.js';
+
+/**
+ * Convert Date objects to Firestore Timestamps recursively
+ */
+const convertDatesToTimestamps = (obj) => {
+  if (!obj) return obj;
+  if (obj instanceof Date) {
+    return Timestamp.fromDate(obj);
+  }
+  if (Array.isArray(obj)) {
+    return obj.map(item => convertDatesToTimestamps(item));
+  }
+  if (obj && typeof obj === 'object' && obj.constructor === Object) {
+    const converted = {};
+    for (const key in obj) {
+      if (Object.prototype.hasOwnProperty.call(obj, key)) {
+        converted[key] = convertDatesToTimestamps(obj[key]);
+      }
+    }
+    return converted;
+  }
+  return obj;
+};
 
 /**
  * Calculate milliseconds until 11:59:59 PM today (or tomorrow if already past)
@@ -47,8 +71,19 @@ export const createAppServices = (db, userId) => {
   if (db && userId) {
     const devPlanPath = buildModulePath(userId, 'development_plan', 'current');
     const unsubDev = onSnapshotEx(db, devPlanPath, (snap) => {
+      console.log('%c[DEV_PLAN SNAPSHOT] Received!', 'background: #8b5cf6; color: white; font-weight: bold; padding: 4px 8px;');
+      console.log('[DEV_PLAN SNAPSHOT] snap.exists():', snap.exists());
+      console.log('[DEV_PLAN SNAPSHOT] path:', devPlanPath);
+      
       const rawData = snap.exists() ? snap.data() : MOCK_DEVELOPMENT_PLAN_DATA;
+      console.log('[DEV_PLAN SNAPSHOT] rawData:', rawData);
+      console.log('[DEV_PLAN SNAPSHOT] rawData.startDate:', rawData?.startDate);
+      console.log('[DEV_PLAN SNAPSHOT] typeof rawData.startDate:', typeof rawData?.startDate);
+      
       stores.developmentPlanData = stripSentinels(sanitizeTimestamps(rawData));
+      console.log('[DEV_PLAN SNAPSHOT] After sanitize:', stores.developmentPlanData);
+      console.log('[DEV_PLAN SNAPSHOT] startDate after sanitize:', stores.developmentPlanData?.startDate);
+      
       notifyChange();
     });
     stores.listeners.push(unsubDev);
@@ -276,9 +311,29 @@ export const createAppServices = (db, userId) => {
   }
 
   const updateDevelopmentPlanData = async (updates, { merge = true } = {}) => {
-    if (!db || !userId) return false;
+    console.log('%c[DEV_PLAN UPDATE] updateDevelopmentPlanData CALLED', 'background: #8b5cf6; color: white; font-weight: bold; padding: 4px 8px;');
+    console.log('[DEV_PLAN UPDATE] db exists:', !!db);
+    console.log('[DEV_PLAN UPDATE] userId:', userId);
+    console.log('[DEV_PLAN UPDATE] updates:', updates);
+    console.log('[DEV_PLAN UPDATE] updates.startDate:', updates?.startDate);
+    console.log('[DEV_PLAN UPDATE] typeof updates.startDate:', typeof updates?.startDate);
+    
+    if (!db || !userId) {
+      console.log('%c[DEV_PLAN UPDATE] ABORT: db or userId missing!', 'color: red; font-weight: bold;');
+      return false;
+    }
+    
+    // Convert Date objects to Firestore Timestamps
+    const convertedUpdates = convertDatesToTimestamps(updates);
+    console.log('[DEV_PLAN UPDATE] After conversion:', convertedUpdates);
+    console.log('[DEV_PLAN UPDATE] startDate after conversion:', convertedUpdates?.startDate);
+    
     const path = buildModulePath(userId, 'development_plan', 'current');
-    return await setDocEx(db, path, updates, merge);
+    console.log('[DEV_PLAN UPDATE] Firestore path:', path);
+    
+    const result = await setDocEx(db, path, convertedUpdates, merge);
+    console.log('[DEV_PLAN UPDATE] setDocEx result:', result);
+    return result;
   };
 
   const updateDailyPracticeData = async (updates) => {

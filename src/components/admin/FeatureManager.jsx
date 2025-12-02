@@ -566,7 +566,7 @@ const FeatureManager = () => {
       'exec-summary', 'weekly-focus', 'notifications', 'scorecard', 'pm-bookend'
     ],
     'development-plan': [
-      'dev-plan-header', 'dev-plan-stats', 'dev-plan-actions', 'dev-plan-focus-areas', 'dev-plan-goal', 'development-plan'
+      'dev-plan-header', 'dev-plan-stats', 'dev-plan-actions', 'dev-plan-focus-areas', 'dev-plan-goal', 'baseline-assessment', 'development-plan'
     ],
     content: [
       'course-library', 'reading-hub', 'leadership-videos', 'strat-templates'

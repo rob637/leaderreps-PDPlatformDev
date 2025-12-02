@@ -6,12 +6,29 @@ export const sanitizeTimestamps = (obj) => {
     return obj.map(item => sanitizeTimestamps(item));
   }
   
+  // Handle Firestore Timestamp with toDate method
   if (obj && typeof obj === 'object' && typeof obj.toDate === 'function') {
     try {
       return obj.toDate();
     } catch (error) {
       console.warn('[sanitizeTimestamps] Error converting timestamp:', error);
       return null;
+    }
+  }
+  
+  // Handle serialized Firestore Timestamp {seconds, nanoseconds} format
+  // Only convert if it's a pure timestamp object (has seconds, optionally nanoseconds, and no other meaningful keys)
+  if (obj && typeof obj === 'object' && typeof obj.seconds === 'number') {
+    const keys = Object.keys(obj);
+    const isTimestampLike = keys.every(k => k === 'seconds' || k === 'nanoseconds');
+    if (isTimestampLike && keys.length <= 2) {
+      try {
+        const nanoseconds = typeof obj.nanoseconds === 'number' ? obj.nanoseconds : 0;
+        return new Date(obj.seconds * 1000 + nanoseconds / 1000000);
+      } catch (error) {
+        console.warn('[sanitizeTimestamps] Error converting seconds/nanoseconds:', error, obj);
+        return null;
+      }
     }
   }
   

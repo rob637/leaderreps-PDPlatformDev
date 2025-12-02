@@ -15,7 +15,7 @@ const LOCKER_FEATURES = [
 ];
 
 const Locker = () => {
-  const { dailyPracticeData, commitmentData, navigate, db, user } = useAppServices();
+  const { dailyPracticeData, commitmentData, navigate, db, user, developmentPlanData, updateDevelopmentPlanData } = useAppServices();
   const { isFeatureEnabled, getFeatureOrder } = useFeatures();
 
   // Arena Data
@@ -50,7 +50,9 @@ const Locker = () => {
     isFeatureEnabled,
     useNotifications,
     Settings, Clock, User, Bell, AlertTriangle,
-    user
+    user,
+    developmentPlanData,
+    updateDevelopmentPlanData
   };
 
   const sortedFeatures = useMemo(() => {

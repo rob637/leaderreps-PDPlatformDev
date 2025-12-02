@@ -49,13 +49,16 @@ export const WIDGET_TEMPLATES = {
     `,
     'weekly-focus': `
 (() => {
-  const focus = (typeof developmentPlanData !== 'undefined' && developmentPlanData?.focus) 
-    ? developmentPlanData.focus 
-    : "Strategic Thinking";
+  // Get the weekly focus from scope (calculated by Dashboard using useDevPlan with time travel)
+  const focus = weeklyFocus || "Leadership Identity";
+  const weekNum = currentWeekNumber || 1;
+  
+  // Simple title format: Week X Focus: [Focus Area]
+  const title = \`Week \${weekNum} Focus: \${focus}\`;
 
   return (
-    <Card title={\`Weekly Focus: \${focus}\`} icon={Target} accent="NAVY">
-      {/* Content is in the title for a cleaner look */}
+    <Card title={title} icon={Target} accent="NAVY">
+      {/* Clean, minimal display - just the title */}
     </Card>
   );
 })()
@@ -100,6 +103,29 @@ export const WIDGET_TEMPLATES = {
   const hasLIS = identityStatement && identityStatement.trim().length > 0;
   const isEditing = typeof isEditingLIS !== 'undefined' ? isEditingLIS : false;
   const setEditing = typeof setIsEditingLIS !== 'undefined' ? setIsEditingLIS : () => {};
+  
+  // Track if grounding rep is revealed (viewed) today
+  const [isRevealed, setIsRevealed] = React.useState(false);
+  const [showConfetti, setShowConfetti] = React.useState(false);
+  
+  // Check if already completed today from scorecard state
+  const groundingRepDone = typeof groundingRepCompleted !== 'undefined' ? groundingRepCompleted : false;
+  
+  // Handle reveal - this completes the grounding rep for the day
+  const handleReveal = () => {
+    setIsRevealed(true);
+    setShowConfetti(true);
+    // Mark as completed for scorecard
+    if (typeof handleGroundingRepComplete === 'function') {
+      handleGroundingRepComplete();
+    }
+    setTimeout(() => setShowConfetti(false), 2000);
+  };
+  
+  // Handle close - reset revealed state
+  const handleClose = () => {
+    setIsRevealed(false);
+  };
 
   if (isEditing) {
     return (
@@ -150,28 +176,76 @@ export const WIDGET_TEMPLATES = {
     );
   }
 
-  return (
-    <Card title="Grounding Rep" icon={Zap} accent="ORANGE">
-      {hasLIS ? (
-        <div className="text-center relative overflow-hidden group">
-          <div className="absolute top-0 left-0 w-full h-1 bg-yellow-400"></div>
-          <Quote className="w-8 h-8 text-yellow-300 absolute top-4 left-4 opacity-50" />
+  // Revealed state - show the LIS with close button
+  if (isRevealed || groundingRepDone) {
+    return (
+      <Card title="Grounding Rep" icon={Zap} accent="ORANGE">
+        <div className="text-center relative overflow-hidden">
+          {showConfetti && (
+            <div className="absolute inset-0 pointer-events-none overflow-hidden">
+              <div className="text-4xl animate-bounce absolute top-0 left-1/4">🎉</div>
+              <div className="text-4xl animate-bounce absolute top-0 right-1/4" style={{animationDelay: '0.1s'}}>✨</div>
+            </div>
+          )}
           
-          <p className="text-lg font-serif font-medium text-slate-800 relative z-10 italic">
+          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-yellow-400 via-orange-400 to-yellow-400"></div>
+          
+          <div className="flex items-center justify-center gap-2 mb-3">
+            <CheckCircle className="w-5 h-5 text-green-500" />
+            <span className="text-xs font-bold text-green-600 uppercase tracking-wider">Grounding Rep Complete!</span>
+          </div>
+          
+          <Quote className="w-8 h-8 text-yellow-300 mx-auto mb-2 opacity-60" />
+          
+          <p className="text-lg font-serif font-medium text-slate-800 italic px-4">
             "{identityStatement}"
           </p>
           
-          <div className="mt-4 flex justify-center">
-             <button 
-               className="text-xs font-bold text-yellow-700 hover:text-yellow-800 uppercase tracking-wider flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity"
-               onClick={() => setEditing(true)}
-             >
-               Edit Statement
-             </button>
+          <div className="mt-4 flex justify-center gap-3">
+            <button 
+              className="text-xs font-bold text-slate-500 hover:text-slate-700 uppercase tracking-wider flex items-center gap-1"
+              onClick={handleClose}
+            >
+              <X className="w-3 h-3" />
+              Close
+            </button>
+            <button 
+              className="text-xs font-bold text-yellow-700 hover:text-yellow-800 uppercase tracking-wider flex items-center gap-1"
+              onClick={() => setEditing(true)}
+            >
+              Edit
+            </button>
           </div>
         </div>
+      </Card>
+    );
+  }
+
+  // Default state - click to reveal
+  return (
+    <Card title="Grounding Rep" icon={Zap} accent="ORANGE">
+      {hasLIS ? (
+        <div className="text-center py-4">
+          <button
+            onClick={handleReveal}
+            className="group relative w-full py-6 px-4 bg-gradient-to-br from-yellow-50 via-orange-50 to-yellow-50 rounded-xl border-2 border-dashed border-yellow-300 hover:border-yellow-400 hover:from-yellow-100 hover:via-orange-100 hover:to-yellow-100 transition-all duration-300"
+          >
+            <div className="flex flex-col items-center gap-3">
+              <div className="w-16 h-16 bg-yellow-100 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform duration-300 shadow-lg">
+                <Zap className="w-8 h-8 text-yellow-600 group-hover:text-yellow-700" />
+              </div>
+              <div>
+                <p className="text-lg font-bold text-slate-800 mb-1">Ground Yourself</p>
+                <p className="text-sm text-slate-500">Tap to reveal your Leadership Identity</p>
+              </div>
+              <div className="text-xs font-medium text-yellow-600 bg-yellow-100 px-3 py-1 rounded-full">
+                +1 Rep Earned on Reveal
+              </div>
+            </div>
+          </button>
+        </div>
       ) : (
-        <div className="text-center">
+        <div className="text-center py-4">
           <div className="w-12 h-12 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-3 text-slate-400">
             <User className="w-6 h-6" />
           </div>
@@ -265,6 +339,18 @@ export const WIDGET_TEMPLATES = {
   const commitmentsList = Array.isArray(additionalCommitments) ? additionalCommitments : [];
   const safeIsSaving = typeof isSavingReps !== 'undefined' ? isSavingReps : false;
   
+  // Auto-save handler - saves immediately when a rep is toggled
+  const handleToggleWithAutoSave = async (repId, currentStatus, label) => {
+    if (handleToggleAdditionalRep) {
+      await handleToggleAdditionalRep(repId, currentStatus, label);
+    }
+    // Auto-save after toggle
+    if (handleSaveReps) {
+      // Small delay to ensure state is updated
+      setTimeout(() => handleSaveReps(), 100);
+    }
+  };
+  
   return (
     <Card title="Daily Reps" icon={Dumbbell} accent="NAVY">
       <div className="space-y-1">
@@ -275,7 +361,7 @@ export const WIDGET_TEMPLATES = {
           return (
             <div 
               key={rep.id} 
-              onClick={() => handleToggleAdditionalRep && handleToggleAdditionalRep(rep.id, isCompleted ? 'Committed' : 'Pending', rep.label)}
+              onClick={() => handleToggleWithAutoSave(rep.id, isCompleted ? 'Committed' : 'Pending', rep.label)}
               className={\`flex items-center justify-between p-2 rounded-xl transition-colors cursor-pointer group \${
                 isCompleted ? 'bg-green-50 border border-green-200' : 'bg-slate-50 hover:bg-blue-50 border border-slate-100'
               }\`}
@@ -292,18 +378,12 @@ export const WIDGET_TEMPLATES = {
                   {rep.label}
                 </span>
               </div>
+              {safeIsSaving && <Loader className="w-3 h-3 animate-spin text-slate-400" />}
             </div>
           );
         })}
 
-        <button 
-          onClick={() => handleSaveReps && handleSaveReps()}
-          className="w-full mt-2 py-2 bg-[#002E47] text-white rounded-xl font-bold hover:bg-[#003E5F] transition-colors flex items-center justify-center gap-2 text-sm"
-        >
-          {safeIsSaving ? <Loader className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-          Save Reps
-        </button>
-        <p className="text-xs text-center text-slate-400 mt-2 italic">Autosaves to your locker each night at 11:59 PM</p>
+        <p className="text-xs text-center text-slate-400 mt-3 italic">Autosaves to your locker each night at 11:59 PM</p>
       </div>
 
     </Card>
@@ -445,41 +525,55 @@ export const WIDGET_TEMPLATES = {
     `,
     'scorecard': `
 (() => {
-  const safeScorecard = typeof scorecard !== 'undefined' ? scorecard : { reps: { done: 0, total: 0, pct: 0 }, win: { done: 0, total: 0, pct: 0 } };
+  const safeScorecard = typeof scorecard !== 'undefined' ? scorecard : { grounding: { done: 0, total: 1, pct: 0 }, reps: { done: 0, total: 0, pct: 0 }, win: { done: 0, total: 0, pct: 0 } };
   const safeIsSaving = typeof isSavingScorecard !== 'undefined' ? isSavingScorecard : false;
   const safeStreak = typeof streakCount !== 'undefined' ? streakCount : 0;
   const safeHandleSave = typeof handleSaveScorecard !== 'undefined' ? handleSaveScorecard : () => {};
+  
+  // Get grounding rep status - either from scorecard or from dedicated state
+  const groundingDone = safeScorecard.grounding?.done || (typeof groundingRepCompleted !== 'undefined' && groundingRepCompleted ? 1 : 0);
+  const groundingTotal = safeScorecard.grounding?.total || 1;
+  const groundingPct = groundingTotal > 0 ? Math.round((groundingDone / groundingTotal) * 100) : 0;
 
   return (
-<Card title="Today Scorecard" icon={Trophy} accent="ORANGE">
+<Card title="Today's Scorecard" icon={Trophy} accent="ORANGE">
     <div className="space-y-2">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <span className="font-medium text-slate-700">I did my reps today</span>
+      {/* Grounding Rep */}
+      <div className="flex items-center justify-between p-2 bg-yellow-50 rounded-lg border border-yellow-100">
+        <div className="flex items-center gap-2">
+          <Zap className="w-4 h-4 text-yellow-600" />
+          <span className="font-medium text-slate-700">Grounding Rep</span>
         </div>
-        <div className="text-right">
-          <span className="font-bold text-xl text-[#002E47]">{safeScorecard.reps.done}</span>
-          <span className="text-slate-400 text-sm"> / {safeScorecard.reps.total}</span>
-          <span className={\`ml-2 text-sm font-bold \${
-            safeScorecard.reps.pct === 100 ? 'text-green-500' : 'text-slate-400'
-          }\`}>
-            {safeScorecard.reps.pct}%
-          </span>
+        <div className="text-right flex items-center gap-2">
+          <span className="font-bold text-lg text-[#002E47]">{groundingDone}</span>
+          <span className="text-slate-400 text-sm">/ {groundingTotal}</span>
+          {groundingPct === 100 && <CheckCircle className="w-4 h-4 text-green-500" />}
         </div>
       </div>
 
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <span className="font-medium text-slate-700">I won the day</span>
+      {/* Win the Day */}
+      <div className="flex items-center justify-between p-2 bg-teal-50 rounded-lg border border-teal-100">
+        <div className="flex items-center gap-2">
+          <Trophy className="w-4 h-4 text-teal-600" />
+          <span className="font-medium text-slate-700">Win the Day</span>
         </div>
-        <div className="text-right">
-          <span className="font-bold text-xl text-[#002E47]">{safeScorecard.win.done}</span>
-          <span className="text-slate-400 text-sm"> / {safeScorecard.win.total}</span>
-          <span className={\`ml-2 text-sm font-bold \${
-            safeScorecard.win.pct === 100 ? 'text-green-500' : 'text-slate-400'
-          }\`}>
-            {safeScorecard.win.pct}%
-          </span>
+        <div className="text-right flex items-center gap-2">
+          <span className="font-bold text-lg text-[#002E47]">{safeScorecard.win.done}</span>
+          <span className="text-slate-400 text-sm">/ {safeScorecard.win.total}</span>
+          {safeScorecard.win.pct === 100 && <CheckCircle className="w-4 h-4 text-green-500" />}
+        </div>
+      </div>
+
+      {/* Daily Reps */}
+      <div className="flex items-center justify-between p-2 bg-blue-50 rounded-lg border border-blue-100">
+        <div className="flex items-center gap-2">
+          <Dumbbell className="w-4 h-4 text-blue-600" />
+          <span className="font-medium text-slate-700">Daily Reps</span>
+        </div>
+        <div className="text-right flex items-center gap-2">
+          <span className="font-bold text-lg text-[#002E47]">{safeScorecard.reps.done}</span>
+          <span className="text-slate-400 text-sm">/ {safeScorecard.reps.total}</span>
+          {safeScorecard.reps.pct === 100 && <CheckCircle className="w-4 h-4 text-green-500" />}
         </div>
       </div>
     </div>
@@ -1006,6 +1100,16 @@ export const WIDGET_TEMPLATES = {
     'locker-controller': `
 const LockerController = () => {
   const [currentTime, setCurrentTime] = React.useState(new Date());
+  const [isSettingDate, setIsSettingDate] = React.useState(false);
+  const [newStartDate, setNewStartDate] = React.useState('');
+
+  // Get scope data
+  const { developmentPlanData, updateDevelopmentPlanData } = typeof scope !== 'undefined' ? scope : {};
+  
+  // DEBUG: Log what we're receiving
+  console.log('[LockerController] developmentPlanData:', developmentPlanData);
+  console.log('[LockerController] developmentPlanData?.startDate:', developmentPlanData?.startDate);
+  console.log('[LockerController] updateDevelopmentPlanData available:', !!updateDevelopmentPlanData);
 
   React.useEffect(() => {
     const timer = setInterval(() => {
@@ -1017,20 +1121,92 @@ const LockerController = () => {
   // 1) User's Name
   const userName = user?.displayName || 'User';
 
-  // 2) Local Date and Time
-  const formattedDate = currentTime.toLocaleDateString(undefined, { 
+  // 2) Local Date and Time (respects time travel)
+  const timeOffset = parseInt(localStorage.getItem('time_travel_offset') || '0', 10);
+  const simulatedNow = new Date(currentTime.getTime() + timeOffset);
+  
+  const formattedDate = simulatedNow.toLocaleDateString(undefined, { 
     weekday: 'long', 
     year: 'numeric', 
     month: 'long', 
     day: 'numeric' 
   });
-  const formattedTime = currentTime.toLocaleTimeString();
+  const formattedTime = simulatedNow.toLocaleTimeString();
 
-  // 3) Release Group (Placeholder)
-  const releaseGroup = "Alpha Group"; // To be setup later
+  // 3) Release Group
+  const releaseGroup = "Alpha Group";
 
-  // 4) Current Week of Plan (Placeholder)
-  const currentWeek = "Week 1"; // To be setup later
+  // 4) Plan Start Date from Firestore - handle multiple formats
+  const rawStartDate = developmentPlanData?.startDate;
+  let startDate = null;
+  
+  if (rawStartDate) {
+    // Handle Firestore Timestamp
+    if (rawStartDate.toDate && typeof rawStartDate.toDate === 'function') {
+      startDate = rawStartDate.toDate();
+    }
+    // Handle seconds/nanoseconds object (serialized Firestore Timestamp)
+    else if (rawStartDate.seconds) {
+      startDate = new Date(rawStartDate.seconds * 1000);
+    }
+    // Handle ISO string or date string
+    else if (typeof rawStartDate === 'string') {
+      startDate = new Date(rawStartDate);
+    }
+    // Handle Date object or timestamp number
+    else if (rawStartDate instanceof Date) {
+      startDate = rawStartDate;
+    }
+    else if (typeof rawStartDate === 'number') {
+      startDate = new Date(rawStartDate);
+    }
+    
+    // Validate the date
+    if (startDate && isNaN(startDate.getTime())) {
+      console.warn('[Controller] Invalid startDate:', rawStartDate);
+      startDate = null;
+    }
+  }
+
+  // 5) Calculate Current Week based on startDate and simulated time
+  const currentWeekNum = startDate 
+    ? Math.floor((simulatedNow.getTime() - startDate.getTime()) / (7 * 24 * 60 * 60 * 1000)) + 1
+    : null;
+  
+  const currentWeek = currentWeekNum && currentWeekNum > 0 
+    ? \`Week \${currentWeekNum}\` 
+    : (startDate ? 'Not Started Yet' : 'Not Set');
+
+  const handleSetStartDate = async () => {
+    if (!newStartDate || !updateDevelopmentPlanData) return;
+    try {
+      // Parse the date and set to midnight local time
+      const dateObj = new Date(newStartDate + 'T00:00:00');
+      await updateDevelopmentPlanData({ startDate: dateObj });
+      setIsSettingDate(false);
+      setNewStartDate('');
+      alert('Start date set successfully!');
+      window.location.reload(); // Refresh to show updated data
+    } catch (error) {
+      console.error('Error setting start date:', error);
+      alert('Error setting start date: ' + error.message);
+    }
+  };
+
+  const handleSetToToday = async () => {
+    if (!updateDevelopmentPlanData) return;
+    try {
+      // Use simulated "now" if time traveling, otherwise real now
+      const today = new Date(simulatedNow);
+      today.setHours(0, 0, 0, 0); // Midnight of simulated day
+      await updateDevelopmentPlanData({ startDate: today });
+      alert('Start date set to today!');
+      window.location.reload(); // Refresh to show updated data
+    } catch (error) {
+      console.error('Error setting start date:', error);
+      alert('Error setting start date: ' + error.message);
+    }
+  };
 
   return (
     <Card 
@@ -1060,6 +1236,9 @@ const LockerController = () => {
             <p className="text-xs text-slate-500 uppercase font-semibold">Local Time</p>
             <p className="font-medium text-slate-900">{formattedDate}</p>
             <p className="text-xs text-slate-600">{formattedTime}</p>
+            {timeOffset !== 0 && (
+              <p className="text-xs text-indigo-600 font-semibold">⏰ Time Travel Active</p>
+            )}
           </div>
         </div>
 
@@ -1084,6 +1263,65 @@ const LockerController = () => {
             <p className="font-medium text-slate-900">{currentWeek}</p>
           </div>
         </div>
+      </div>
+
+      {/* Plan Start Date Section */}
+      <div className="mt-4 p-4 bg-gradient-to-r from-indigo-50 to-purple-50 rounded-lg border border-indigo-100">
+        <div className="flex items-center justify-between mb-2">
+          <div>
+            <p className="text-xs text-indigo-600 uppercase font-semibold">Plan Start Date</p>
+            <p className="font-bold text-indigo-900">
+              {startDate ? startDate.toLocaleDateString(undefined, { 
+                weekday: 'short', 
+                year: 'numeric', 
+                month: 'short', 
+                day: 'numeric' 
+              }) : 'Not Set'}
+            </p>
+          </div>
+          {!isSettingDate && (
+            <button
+              onClick={() => setIsSettingDate(true)}
+              className="px-3 py-1.5 bg-indigo-100 hover:bg-indigo-200 text-indigo-700 text-xs font-medium rounded-lg transition-colors"
+            >
+              {startDate ? 'Change' : 'Set Date'}
+            </button>
+          )}
+        </div>
+        
+        {isSettingDate && (
+          <div className="mt-3 p-3 bg-white rounded-lg border border-indigo-200">
+            <div className="flex gap-2 mb-2">
+              <input
+                type="date"
+                value={newStartDate}
+                onChange={(e) => setNewStartDate(e.target.value)}
+                className="flex-1 px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+              />
+              <button
+                onClick={handleSetStartDate}
+                disabled={!newStartDate}
+                className="px-3 py-2 bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-300 text-white text-sm font-medium rounded-lg transition-colors"
+              >
+                Save
+              </button>
+            </div>
+            <div className="flex gap-2">
+              <button
+                onClick={handleSetToToday}
+                className="flex-1 px-3 py-1.5 bg-green-100 hover:bg-green-200 text-green-700 text-xs font-medium rounded-lg transition-colors"
+              >
+                Set to Today (Dec 2, 2025 for Alpha)
+              </button>
+              <button
+                onClick={() => { setIsSettingDate(false); setNewStartDate(''); }}
+                className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-medium rounded-lg transition-colors"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
     </Card>
@@ -1312,10 +1550,8 @@ render(<SystemRemindersController />);
     `,
     'time-traveler': `
 const TimeTravelerWidget = () => {
-  const [isExpanded, setIsExpanded] = React.useState(false);
   const [targetDate, setTargetDate] = React.useState('');
   const [targetTime, setTargetTime] = React.useState('');
-  const [localOffset, setLocalOffset] = React.useState(() => parseInt(localStorage.getItem('time_travel_offset') || '0', 10));
   
   const { handleResetPlanStartDate, developmentPlanData } = typeof scope !== 'undefined' ? scope : {};
   
@@ -1324,20 +1560,14 @@ const TimeTravelerWidget = () => {
     : null;
 
   // Check if time travel is currently active
-  const isActive = localOffset !== 0;
-  const simulatedTime = new Date(Date.now() + localOffset);
+  const offset = parseInt(localStorage.getItem('time_travel_offset') || '0', 10);
+  const isActive = offset !== 0;
+  const simulatedTime = new Date(Date.now() + offset);
   
   // Calculate current week based on time offset
   const currentWeekNum = startDate 
     ? Math.floor((simulatedTime.getTime() - startDate.getTime()) / (7 * 24 * 60 * 60 * 1000)) + 1
     : 1;
-  
-  const setTimeOffset = (newOffset) => {
-    localStorage.setItem('time_travel_offset', newOffset.toString());
-    setLocalOffset(newOffset);
-    // Dispatch a storage event so other components can react
-    window.dispatchEvent(new StorageEvent('storage', { key: 'time_travel_offset', newValue: newOffset.toString() }));
-  };
   
   const handleTravel = () => {
     if (!targetDate) {
@@ -1346,15 +1576,14 @@ const TimeTravelerWidget = () => {
     }
     const dateStr = targetDate + 'T' + (targetTime || '12:00');
     const target = new Date(dateStr);
-    const now = Date.now();
-    const newOffset = target.getTime() - now;
-    setTimeOffset(newOffset);
+    const newOffset = target.getTime() - Date.now();
+    localStorage.setItem('time_travel_offset', newOffset.toString());
+    window.location.reload(); // Force reload to sync timeService and banner
   };
   
   const handleReset = () => {
     localStorage.removeItem('time_travel_offset');
-    setLocalOffset(0);
-    window.dispatchEvent(new StorageEvent('storage', { key: 'time_travel_offset', newValue: '0' }));
+    window.location.reload(); // Force reload to sync everything
   };
   
   const presets = [
@@ -1371,7 +1600,8 @@ const TimeTravelerWidget = () => {
     if (preset.days) target.setDate(target.getDate() + preset.days);
     if (preset.hours !== undefined) target.setHours(preset.hours, preset.minutes || 0, 0, 0);
     const newOffset = target.getTime() - Date.now();
-    setTimeOffset(newOffset);
+    localStorage.setItem('time_travel_offset', newOffset.toString());
+    window.location.reload(); // Force reload to sync everything
   };
 
   return (
@@ -1989,6 +2219,90 @@ render(<RepsHistoryWidget />);
   );
 })()
     `,
+    
+    'baseline-assessment': `
+(() => {
+  // Get assessment data from developmentPlanData
+  const assessmentHistory = developmentPlanData?.assessmentHistory || [];
+  const hasCompletedAssessment = assessmentHistory.length > 0;
+  const latestAssessment = hasCompletedAssessment ? assessmentHistory[assessmentHistory.length - 1] : null;
+  
+  // Format date if available
+  const assessmentDate = latestAssessment?.date 
+    ? new Date(latestAssessment.date).toLocaleDateString(undefined, { 
+        year: 'numeric', 
+        month: 'short', 
+        day: 'numeric' 
+      })
+    : null;
+  
+  // Navigation handlers
+  const handleTakeAssessment = () => {
+    if (navigate) {
+      navigate('development-plan', { view: 'baseline' });
+    }
+  };
+  
+  const handleViewBaseline = () => {
+    if (navigate) {
+      // Navigate to view/update the baseline assessment
+      navigate('development-plan', { view: 'baseline', mode: 'view' });
+    }
+  };
+
+  return (
+    <Card 
+      title="Baseline Assessment" 
+      icon={ClipboardList}
+      accent="NAVY"
+    >
+      {hasCompletedAssessment ? (
+        <div className="space-y-3">
+          {/* Completed Status */}
+          <div className="flex items-center gap-2 p-3 bg-green-50 rounded-lg border border-green-200">
+            <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0" />
+            <div className="flex-1">
+              <p className="text-sm font-semibold text-green-800">Assessment Complete</p>
+              <p className="text-xs text-green-600">Completed on {assessmentDate}</p>
+            </div>
+          </div>
+          
+          {/* View/Update Baseline Link */}
+          <button
+            onClick={handleViewBaseline}
+            className="w-full flex items-center justify-center gap-2 py-2.5 px-4 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold rounded-lg transition-colors shadow-sm"
+          >
+            <Eye className="w-4 h-4" />
+            View / Update Baseline
+          </button>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {/* Not Completed Notice */}
+          <div className="flex items-start gap-3 p-3 bg-amber-50 rounded-lg border border-amber-200">
+            <AlertCircle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+            <div>
+              <p className="text-sm font-semibold text-amber-800">Assessment Not Completed</p>
+              <p className="text-xs text-amber-600 mt-1">
+                Complete your baseline assessment to unlock your personalized leadership development plan.
+              </p>
+            </div>
+          </div>
+          
+          {/* Call to Action */}
+          <button
+            onClick={handleTakeAssessment}
+            className="w-full flex items-center justify-center gap-2 py-2.5 px-4 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold rounded-lg transition-colors shadow-sm"
+          >
+            <ArrowRight className="w-4 h-4" />
+            Take the Assessment
+          </button>
+        </div>
+      )}
+    </Card>
+  );
+})()
+    `,
 
   };
 
@@ -2019,6 +2333,7 @@ export const FEATURE_METADATA = {
   'dev-plan-actions': { core: true, category: 'Development Plan', name: 'DP Actions', description: 'Development Plan Actions', purpose: 'Plan management.', extendedDescription: 'Quick actions to view breakdowns, scan progress, or edit the plan.' },
   'dev-plan-focus-areas': { core: true, category: 'Development Plan', name: 'DP Focus Areas', description: 'Development Plan Focus Areas', purpose: 'Strategic priorities.', extendedDescription: 'Lists the specific areas the user is working on, including the "why" and associated resources.' },
   'dev-plan-goal': { core: true, category: 'Development Plan', name: 'DP Goal', description: 'Development Plan Goal', purpose: 'North Star.', extendedDescription: 'Displays the user\'s primary open-ended goal for the current development cycle.' },
+  'baseline-assessment': { core: true, category: 'Development Plan', name: 'Baseline Assessment', description: 'Baseline Assessment Widget', purpose: 'Assessment status and link.', extendedDescription: 'Shows whether the user has completed their baseline assessment. If not completed, provides a link to take it. If completed, shows goals and links to view results.' },
   'development-plan': { core: true, category: 'Development Plan', name: 'DP Weekly Plan', description: 'Development Plan', purpose: 'Weekly development plan.', extendedDescription: 'Displays the current week\'s focus, content, and reflection for the user\'s development plan.' },
   'course-library': { core: false, category: 'Learning', name: 'Course library', description: 'Course library', purpose: 'Quick access to learning modules.', extendedDescription: 'Displays a list of available courses with progress indicators and duration.' },
   'reading-hub': { core: false, category: 'Learning', name: 'Reading hub', description: 'Reading hub', purpose: 'Digital bookshelf.', extendedDescription: 'Showcases recommended or current reading materials for leadership development.' },

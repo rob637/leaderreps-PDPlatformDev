@@ -70,6 +70,9 @@ export const useDashboard = ({
   const [additionalCommitments, setAdditionalCommitments] = useState([]);
   const [isSavingReps, setIsSavingReps] = useState(false); // NEW
 
+  // === GROUNDING REP STATE (for click-to-reveal scorecard completion) ===
+  const [groundingRepCompleted, setGroundingRepCompleted] = useState(false);
+
 
   /* =========================================================
      LOAD DATA FROM FIRESTORE (Dependency on dailyPracticeData)
@@ -142,6 +145,39 @@ export const useDashboard = ({
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [JSON.stringify(dailyPracticeData?.active_commitments), JSON.stringify(dailyPracticeData?.activeCommitments)]);
+
+  // Load Grounding Rep Completed status
+  useEffect(() => {
+    const todayDate = timeService.getNow().toLocaleDateString('en-CA');
+    const savedDate = dailyPracticeData?.groundingRepDate;
+    // Only mark as completed if it was done today
+    if (savedDate === todayDate && dailyPracticeData?.groundingRepCompleted) {
+      setGroundingRepCompleted(true);
+    } else {
+      setGroundingRepCompleted(false);
+    }
+  }, [dailyPracticeData?.groundingRepCompleted, dailyPracticeData?.groundingRepDate]);
+
+  // Handler for completing the Grounding Rep (click to reveal LIS)
+  const handleGroundingRepComplete = useCallback(async () => {
+    if (groundingRepCompleted) return; // Already done today
+    
+    setGroundingRepCompleted(true);
+    
+    if (updateDailyPracticeData) {
+      try {
+        const todayDate = timeService.getNow().toLocaleDateString('en-CA');
+        await updateDailyPracticeData({
+          groundingRepCompleted: true,
+          groundingRepDate: todayDate
+        });
+        console.log('[Grounding Rep] Marked as complete for today');
+      } catch (error) {
+        console.error('Error saving grounding rep completion:', error);
+        setGroundingRepCompleted(false); // Revert on error
+      }
+    }
+  }, [groundingRepCompleted, updateDailyPracticeData]);
 
   const handleToggleAdditionalRep = useCallback(async (commitmentId, currentStatus, text = '') => {
     const newStatus = currentStatus === 'Committed' ? 'Pending' : 'Committed';
@@ -389,32 +425,24 @@ export const useDashboard = ({
 
   // NEW: Scorecard Calculation (Moved from Dashboard4)
   const scorecard = useMemo(() => {
-    // 1. Reps Logic
-    const hasLIS = !!identityStatement;
-    const lisRead = habitsCompleted?.readLIS || false;
-    const dailyRepCompleted = habitsCompleted?.completedDailyRep || false;
+    // 1. Grounding Rep (Click to reveal LIS)
+    const groundingDone = groundingRepCompleted ? 1 : 0;
+    const groundingTotal = 1;
+    const groundingPct = groundingDone * 100;
     
-    // Determine if there is a daily rep (Target Rep)
-    // We check if an ID exists. Name resolution happens in UI, but existence is enough for score.
-    const hasDailyRep = !!dailyPracticeData?.dailyTargetRepId;
-
-    let repsTotal = 1; // LIS is always a rep
-    let repsDone = lisRead ? 1 : 0;
+    // 2. Daily Reps Logic
+    // Add additional commitments (Daily Reps from Dev Plan)
+    let repsTotal = 0;
+    let repsDone = 0;
     
-    if (hasDailyRep) {
-      repsTotal++;
-      if (dailyRepCompleted) repsDone++;
-    }
-    
-    // Add additional commitments
     if (additionalCommitments && additionalCommitments.length > 0) {
-      repsTotal += additionalCommitments.length;
-      repsDone += additionalCommitments.filter(c => c.status === 'Committed').length;
+      repsTotal = additionalCommitments.length;
+      repsDone = additionalCommitments.filter(c => c.status === 'Committed').length;
     }
     
     const repsPct = repsTotal > 0 ? Math.round((repsDone / repsTotal) * 100) : 0;
 
-    // 2. Win the Day Logic
+    // 3. Win the Day Logic
     // Components: 3 Daily Priorities (Wins)
     // We count how many are defined (text exists) and how many are completed
     const definedWins = morningWins.filter(w => w.text && w.text.trim().length > 0);
@@ -424,10 +452,11 @@ export const useDashboard = ({
     const winPct = winTotal > 0 ? Math.round((winDone / winTotal) * 100) : 0;
 
     return {
+      grounding: { done: groundingDone, total: groundingTotal, pct: groundingPct },
       reps: { done: repsDone, total: repsTotal, pct: repsPct },
       win: { done: winDone, total: winTotal, pct: winPct }
     };
-  }, [identityStatement, habitsCompleted, dailyPracticeData?.dailyTargetRepId, additionalCommitments, morningWins, otherTasks]);
+  }, [groundingRepCompleted, additionalCommitments, morningWins]);
 
   /* =========================================================
      MIDNIGHT ROLLOVER LOGIC (Time Traveler Feature)
@@ -1373,6 +1402,10 @@ export const useDashboard = ({
     scorecard,
     handleSaveScorecard,
     isSavingScorecard,
+
+    // Grounding Rep (click-to-reveal)
+    groundingRepCompleted,
+    handleGroundingRepComplete,
 
     // Streak
     streakCount,
