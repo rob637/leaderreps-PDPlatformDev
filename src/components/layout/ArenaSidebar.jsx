@@ -80,8 +80,8 @@ const ArenaSidebar = ({ isOpen, toggle, currentScreen, navigate, onSignOut, user
       </div>
 
       {/* Navigation Items */}
-      <nav className="flex-1 py-4 overflow-y-auto overflow-x-hidden">
-        <ul className="space-y-1">
+      <nav className="flex-1 py-4 px-3 overflow-y-auto overflow-x-hidden">
+        <ul className="space-y-2">
           {menuItems.map((item, index) => {
             if (item.type === 'section') {
                return (
@@ -105,8 +105,11 @@ const ArenaSidebar = ({ isOpen, toggle, currentScreen, navigate, onSignOut, user
                     if (isOpen) toggle();
                   }}
                   className={`
-                    w-full flex items-center gap-4 px-4 py-3 transition-colors relative bg-transparent border-none
-                    ${isActive ? 'bg-corporate-teal text-white' : 'text-gray-300 hover:bg-white/5 hover:text-white'}
+                    w-full flex items-center gap-4 px-4 py-3 transition-all duration-200 relative border-none rounded-2xl
+                    ${isActive 
+                      ? 'bg-corporate-teal text-white shadow-md font-bold' 
+                      : 'text-slate-400 hover:bg-white/5 hover:text-white'
+                    }
                   `}
                   title={!isOpen ? item.label : ''}
                 >
@@ -114,11 +117,6 @@ const ArenaSidebar = ({ isOpen, toggle, currentScreen, navigate, onSignOut, user
                   <span className={`whitespace-nowrap transition-opacity duration-200 ${isOpen ? 'opacity-100' : 'opacity-0 md:hidden'}`}>
                     {item.label}
                   </span>
-                  
-                  {/* Active Indicator for collapsed state */}
-                  {!isOpen && isActive && (
-                    <div className="absolute left-0 top-0 bottom-0 w-1 bg-corporate-teal" />
-                  )}
                 </button>
               </li>
             );
@@ -130,8 +128,11 @@ const ArenaSidebar = ({ isOpen, toggle, currentScreen, navigate, onSignOut, user
               <button
                 onClick={() => navigate('admin-portal')}
                 className={`
-                  w-full flex items-center gap-4 px-4 py-3 transition-colors relative bg-transparent border-none
-                  ${currentScreen === 'admin-portal' ? 'bg-red-600 text-white' : 'text-red-400 hover:bg-white/5 hover:text-red-300'}
+                  w-full flex items-center gap-4 px-4 py-3 transition-all duration-200 relative border-none rounded-2xl
+                  ${currentScreen === 'admin-portal' 
+                    ? 'bg-red-600 text-white shadow-md font-bold' 
+                    : 'text-red-400 hover:bg-white/5 hover:text-red-300'
+                  }
                 `}
                 title={!isOpen ? 'Admin Portal' : ''}
               >

@@ -105,7 +105,7 @@ const AppContent = ({
       currentScreen={currentScreen}
       navParams={navParams}
     >
-      <div className="relative min-h-screen flex font-sans antialiased bg-corporate-light-gray overflow-hidden">
+      <div className="relative min-h-screen flex font-sans antialiased bg-corporate-navy overflow-hidden">
         
         {/* New Sidebar */}
         <ArenaSidebar 
@@ -119,9 +119,9 @@ const AppContent = ({
         />
 
         {/* Main Content Area */}
-        <div className="flex-1 flex flex-col h-screen overflow-hidden relative transition-all duration-300">
+        <div className="flex-1 flex flex-col h-screen overflow-hidden relative transition-all duration-300 bg-corporate-light-gray rounded-l-3xl shadow-2xl my-2 mr-2">
           
-          <main className="flex-1 flex flex-col overflow-hidden relative">
+          <main className="flex-1 flex flex-col overflow-hidden relative rounded-l-3xl">
             <div className="flex-1 overflow-y-auto">
                 <Suspense
                   fallback={
