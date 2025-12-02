@@ -886,6 +886,28 @@ export const useDashboard = ({
       setMorningWins(newWins);
   };
 
+  // NEW: Save Reps Handler
+  const handleSaveReps = useCallback(async () => {
+    // Since reps save on toggle, this is a confirmation action
+    // We could force a save here if needed, but for now just confirm
+    if (updateDailyPracticeData) {
+       setIsSavingReps(true);
+       // Force a re-save of current commitments to be safe
+       try {
+           await updateDailyPracticeData({
+               active_commitments: additionalCommitments,
+               date: new Date().toLocaleDateString('en-CA') // Ensure date is updated
+           });
+           // Removed alert, UI should handle success state via isSavingReps
+       } catch (e) {
+           console.error(e);
+           alert('Error saving reps.');
+       } finally {
+           setIsSavingReps(false);
+       }
+    }
+  }, [updateDailyPracticeData, additionalCommitments]);
+
   /* =========================================================
      RETURN ALL STATE & HANDLERS
   ========================================================= */
@@ -971,29 +993,7 @@ export const useDashboard = ({
     // Legacy / Deprecated but kept for safety
     handleToggleWIN,
     handleSaveWIN,
-    isSavingWIN,
-
-    // NEW: Save Reps Handler
-    handleSaveReps: useCallback(async () => {
-      // Since reps save on toggle, this is a confirmation action
-      // We could force a save here if needed, but for now just confirm
-      if (updateDailyPracticeData) {
-         setIsSavingReps(true);
-         // Force a re-save of current commitments to be safe
-         try {
-             await updateDailyPracticeData({
-                 active_commitments: additionalCommitments,
-                 date: new Date().toLocaleDateString('en-CA') // Ensure date is updated
-             });
-             // Removed alert, UI should handle success state via isSavingReps
-         } catch (e) {
-             console.error(e);
-             alert('Error saving reps.');
-         } finally {
-             setIsSavingReps(false);
-         }
-      }
-    }, [updateDailyPracticeData, additionalCommitments])
+    isSavingWIN
   };
 };
 /* =========================================================
