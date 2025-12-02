@@ -113,7 +113,10 @@ const Dashboard = (props) => {
     
     // Grounding Rep (click-to-reveal)
     groundingRepCompleted,
-    handleGroundingRepComplete
+    groundingRepRevealed,
+    groundingRepConfetti,
+    handleGroundingRepComplete,
+    handleGroundingRepClose
   } = useDashboard({
     dailyPracticeData,
     updateDailyPracticeData,
@@ -343,7 +346,10 @@ const Dashboard = (props) => {
     
     // Grounding Rep (click-to-reveal)
     groundingRepCompleted,
+    groundingRepRevealed,
+    groundingRepConfetti,
     handleGroundingRepComplete,
+    handleGroundingRepClose,
     
     // Identity & Anchors State
     identityStatement,

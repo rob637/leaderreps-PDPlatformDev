@@ -69,9 +69,12 @@ export const useDashboard = ({
   // === ADDITIONAL REPS STATE ===
   const [additionalCommitments, setAdditionalCommitments] = useState([]);
   const [isSavingReps, setIsSavingReps] = useState(false); // NEW
+  const lastCommitmentUpdateTime = useRef(0); // Track last local update to prevent stale overwrites
 
   // === GROUNDING REP STATE (for click-to-reveal scorecard completion) ===
   const [groundingRepCompleted, setGroundingRepCompleted] = useState(false);
+  const [groundingRepRevealed, setGroundingRepRevealed] = useState(false);
+  const [groundingRepConfetti, setGroundingRepConfetti] = useState(false);
 
 
   /* =========================================================
@@ -138,6 +141,10 @@ export const useDashboard = ({
 
   // Load Additional Commitments
   useEffect(() => {
+    // Skip load if we recently updated locally (within 2 seconds) to prevent stale data overwrite
+    if (Date.now() - lastCommitmentUpdateTime.current < 2000) {
+      return;
+    }
     // Support both snake_case (new) and camelCase (legacy/mock)
     const commitments = dailyPracticeData?.active_commitments || dailyPracticeData?.activeCommitments;
     if (commitments) {
@@ -160,7 +167,12 @@ export const useDashboard = ({
 
   // Handler for completing the Grounding Rep (click to reveal LIS)
   const handleGroundingRepComplete = useCallback(async () => {
-    if (groundingRepCompleted) return; // Already done today
+    // Set revealed state and show confetti
+    setGroundingRepRevealed(true);
+    setGroundingRepConfetti(true);
+    setTimeout(() => setGroundingRepConfetti(false), 2000);
+    
+    if (groundingRepCompleted) return; // Already saved today, but still show revealed
     
     setGroundingRepCompleted(true);
     
@@ -178,6 +190,11 @@ export const useDashboard = ({
       }
     }
   }, [groundingRepCompleted, updateDailyPracticeData]);
+  
+  // Handler to close the revealed grounding rep
+  const handleGroundingRepClose = useCallback(() => {
+    setGroundingRepRevealed(false);
+  }, []);
 
   const handleToggleAdditionalRep = useCallback(async (commitmentId, currentStatus, text = '') => {
     const newStatus = currentStatus === 'Committed' ? 'Pending' : 'Committed';
@@ -200,12 +217,14 @@ export const useDashboard = ({
     }
     
     setAdditionalCommitments(updatedCommitments);
+    lastCommitmentUpdateTime.current = Date.now(); // Mark local update time
 
     if (updateDailyPracticeData) {
       try {
         await updateDailyPracticeData({
           active_commitments: updatedCommitments
         });
+        console.log('[Daily Reps] Saved commitment toggle:', commitmentId, newStatus);
       } catch (error) {
         console.error('Error toggling commitment:', error);
         // Revert
@@ -1405,7 +1424,10 @@ export const useDashboard = ({
 
     // Grounding Rep (click-to-reveal)
     groundingRepCompleted,
+    groundingRepRevealed,
+    groundingRepConfetti,
     handleGroundingRepComplete,
+    handleGroundingRepClose,
 
     // Streak
     streakCount,

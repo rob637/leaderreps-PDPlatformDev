@@ -104,27 +104,23 @@ export const WIDGET_TEMPLATES = {
   const isEditing = typeof isEditingLIS !== 'undefined' ? isEditingLIS : false;
   const setEditing = typeof setIsEditingLIS !== 'undefined' ? setIsEditingLIS : () => {};
   
-  // Track if grounding rep is revealed (viewed) today
-  const [isRevealed, setIsRevealed] = React.useState(false);
-  const [showConfetti, setShowConfetti] = React.useState(false);
-  
-  // Check if already completed today from scorecard state
+  // Use scope state instead of React.useState (react-live can't handle hooks in IIFE)
+  const isRevealed = typeof groundingRepRevealed !== 'undefined' ? groundingRepRevealed : false;
+  const showConfetti = typeof groundingRepConfetti !== 'undefined' ? groundingRepConfetti : false;
   const groundingRepDone = typeof groundingRepCompleted !== 'undefined' ? groundingRepCompleted : false;
   
-  // Handle reveal - this completes the grounding rep for the day
+  // Handle reveal - calls scope handler
   const handleReveal = () => {
-    setIsRevealed(true);
-    setShowConfetti(true);
-    // Mark as completed for scorecard
     if (typeof handleGroundingRepComplete === 'function') {
       handleGroundingRepComplete();
     }
-    setTimeout(() => setShowConfetti(false), 2000);
   };
   
-  // Handle close - reset revealed state
+  // Handle close - calls scope handler
   const handleClose = () => {
-    setIsRevealed(false);
+    if (typeof handleGroundingRepClose === 'function') {
+      handleGroundingRepClose();
+    }
   };
 
   if (isEditing) {
@@ -177,7 +173,8 @@ export const WIDGET_TEMPLATES = {
   }
 
   // Revealed state - show the LIS with close button
-  if (isRevealed || groundingRepDone) {
+  // Only show if actively revealed (not just because it's done today - user can close it)
+  if (isRevealed) {
     return (
       <Card title="Grounding Rep" icon={Zap} accent="ORANGE">
         <div className="text-center relative overflow-hidden">
@@ -187,8 +184,6 @@ export const WIDGET_TEMPLATES = {
               <div className="text-4xl animate-bounce absolute top-0 right-1/4" style={{animationDelay: '0.1s'}}>✨</div>
             </div>
           )}
-          
-          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-yellow-400 via-orange-400 to-yellow-400"></div>
           
           <div className="flex items-center justify-center gap-2 mb-3">
             <CheckCircle className="w-5 h-5 text-green-500" />
@@ -216,6 +211,26 @@ export const WIDGET_TEMPLATES = {
               Edit
             </button>
           </div>
+        </div>
+      </Card>
+    );
+  }
+
+  // Completed today but closed - show completion badge with option to view again
+  if (groundingRepDone) {
+    return (
+      <Card title="Grounding Rep" icon={Zap} accent="ORANGE">
+        <div className="text-center py-4">
+          <div className="flex items-center justify-center gap-2 mb-3">
+            <CheckCircle className="w-6 h-6 text-green-500" />
+            <span className="text-sm font-bold text-green-600">Complete for Today!</span>
+          </div>
+          <button
+            onClick={handleReveal}
+            className="text-xs font-medium text-slate-500 hover:text-slate-700 underline"
+          >
+            View Your LIS Again
+          </button>
         </div>
       </Card>
     );
@@ -339,15 +354,10 @@ export const WIDGET_TEMPLATES = {
   const commitmentsList = Array.isArray(additionalCommitments) ? additionalCommitments : [];
   const safeIsSaving = typeof isSavingReps !== 'undefined' ? isSavingReps : false;
   
-  // Auto-save handler - saves immediately when a rep is toggled
-  const handleToggleWithAutoSave = async (repId, currentStatus, label) => {
+  // Toggle handler - handleToggleAdditionalRep already auto-saves to Firestore
+  const handleToggle = (repId, currentStatus, label) => {
     if (handleToggleAdditionalRep) {
-      await handleToggleAdditionalRep(repId, currentStatus, label);
-    }
-    // Auto-save after toggle
-    if (handleSaveReps) {
-      // Small delay to ensure state is updated
-      setTimeout(() => handleSaveReps(), 100);
+      handleToggleAdditionalRep(repId, currentStatus, label);
     }
   };
   
@@ -361,7 +371,7 @@ export const WIDGET_TEMPLATES = {
           return (
             <div 
               key={rep.id} 
-              onClick={() => handleToggleWithAutoSave(rep.id, isCompleted ? 'Committed' : 'Pending', rep.label)}
+              onClick={() => handleToggle(rep.id, isCompleted ? 'Committed' : 'Pending', rep.label)}
               className={\`flex items-center justify-between p-2 rounded-xl transition-colors cursor-pointer group \${
                 isCompleted ? 'bg-green-50 border border-green-200' : 'bg-slate-50 hover:bg-blue-50 border border-slate-100'
               }\`}
