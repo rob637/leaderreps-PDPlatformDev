@@ -113,21 +113,25 @@ const AdminPortal = () => {
 
   return (
     <div className="min-h-full bg-gray-50 flex flex-col">
-      {/* Admin Header */}
-      <div className="bg-corporate-navy text-white px-8 py-6 shadow-md">
+      {/* Admin Header - Clean light style matching app */}
+      <div className="bg-white border-b border-gray-200 px-8 py-6">
         <div className="flex items-center justify-between max-w-7xl mx-auto">
-          <div>
-            <h1 className="text-2xl font-bold font-serif flex items-center gap-3">
-              <ShieldAlert className="w-8 h-8 text-corporate-orange" />
-              Admin Command Center
-            </h1>
-            <p className="text-corporate-teal text-sm mt-1 font-mono">
-              Logged in as: {user.email}
-            </p>
+          <div className="flex items-center gap-4">
+            <div className="p-3 bg-corporate-teal/10 rounded-xl">
+              <ShieldAlert className="w-8 h-8 text-corporate-teal" />
+            </div>
+            <div>
+              <h1 className="text-2xl font-bold text-corporate-navy">
+                Admin Command Center
+              </h1>
+              <p className="text-slate-500 text-sm mt-0.5">
+                Logged in as: <span className="font-medium text-corporate-navy">{user.email}</span>
+              </p>
+            </div>
           </div>
-          <div className="bg-white/10 px-4 py-2 rounded-lg border border-white/20">
-            <span className="text-xs font-bold uppercase tracking-wider text-gray-300">Environment</span>
-            <div className="font-bold text-white">Production (v{APP_VERSION})</div>
+          <div className="bg-slate-100 px-4 py-2 rounded-lg border border-slate-200">
+            <span className="text-xs font-bold uppercase tracking-wider text-slate-400">Environment</span>
+            <div className="font-bold text-corporate-navy">Production (v{APP_VERSION})</div>
           </div>
         </div>
       </div>
