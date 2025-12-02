@@ -219,19 +219,39 @@ export const useDashboard = ({
     setAdditionalCommitments(updatedCommitments);
     lastCommitmentUpdateTime.current = Date.now(); // Mark local update time
 
+    // Calculate new history entry immediately
+    const todayDate = timeService.getNow().toLocaleDateString();
+    const completedReps = updatedCommitments.filter(c => c.status === 'Committed');
+    const historyEntry = {
+        date: todayDate,
+        completedCount: completedReps.length,
+        totalCount: updatedCommitments.length,
+        items: completedReps.map(r => ({ id: r.id, text: r.text || r.label })),
+        timestamp: timeService.getISOString()
+    };
+
+    // Update local history state
+    const existingHistory = repsHistory || [];
+    const historyWithoutToday = existingHistory.filter(h => h.date !== todayDate);
+    const updatedHistory = [...historyWithoutToday, historyEntry];
+    setRepsHistory(updatedHistory);
+
     if (updateDailyPracticeData) {
       try {
         await updateDailyPracticeData({
-          active_commitments: updatedCommitments
+          active_commitments: updatedCommitments,
+          repsHistory: updatedHistory,
+          date: timeService.getNow().toLocaleDateString('en-CA')
         });
         console.log('[Daily Reps] Saved commitment toggle:', commitmentId, newStatus);
       } catch (error) {
         console.error('Error toggling commitment:', error);
         // Revert
         setAdditionalCommitments(additionalCommitments);
+        setRepsHistory(repsHistory);
       }
     }
-  }, [additionalCommitments, updateDailyPracticeData]);
+  }, [additionalCommitments, updateDailyPracticeData, repsHistory]);
 
   // Load Morning Bookend
   useEffect(() => {
