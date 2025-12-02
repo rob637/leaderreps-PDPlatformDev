@@ -588,6 +588,37 @@ export const useDashboard = ({
     return () => clearInterval(checkInterval);
   }, [handleDayTransition]);
 
+  // Process pending midnight crossings from time warp (runs once after reload)
+  const hasProcessedCrossingsRef = useRef(false);
+  
+  useEffect(() => {
+    // Only process once and only if we have the update function ready
+    if (hasProcessedCrossingsRef.current || !updateDailyPracticeData) return;
+    
+    const pendingCrossings = timeService.getPendingMidnightCrossings();
+    
+    if (pendingCrossings && pendingCrossings.length > 0) {
+      hasProcessedCrossingsRef.current = true;
+      
+      console.log('🚀 [TIME WARP] Processing pending midnight crossings:', pendingCrossings);
+      
+      // Process each crossing sequentially
+      // For a multi-day warp, we process each day's rollover
+      const processCrossings = async () => {
+        for (const crossing of pendingCrossings) {
+          console.log(`🌙 [TIME WARP] Processing midnight rollover: ${crossing.oldDate} → ${crossing.newDate}`);
+          await handleDayTransition(crossing.oldDate, crossing.newDate);
+          
+          // Small delay between crossings to ensure state updates properly
+          await new Promise(resolve => setTimeout(resolve, 100));
+        }
+        console.log('✅ [TIME WARP] All midnight rollovers processed!');
+      };
+      
+      processCrossings();
+    }
+  }, [updateDailyPracticeData, handleDayTransition]);
+
   /* =========================================================
      BOOKEND HANDLERS (Dependency on updateDailyPracticeData)
   ========================================================= */
