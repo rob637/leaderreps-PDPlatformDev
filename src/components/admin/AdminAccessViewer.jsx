@@ -54,14 +54,20 @@ const AdminAccessViewer = () => {
       const userProfile = userDoc.exists() ? userDoc.data() : { displayName: 'Unknown' };
 
       // 2. Get Dev Plan Data
-      const planDoc = await getDoc(doc(db, 'users', targetUserId, 'program_data', 'development_plan'));
+      // TRY NEW PATH FIRST: modules/{userId}/development_plan/current
+      let planDoc = await getDoc(doc(db, 'modules', targetUserId, 'development_plan', 'current'));
+      
+      if (!planDoc.exists()) {
+          // Fallback to old path: users/{userId}/program_data/development_plan
+          planDoc = await getDoc(doc(db, 'users', targetUserId, 'program_data', 'development_plan'));
+      }
       
       if (planDoc.exists()) {
         const planData = planDoc.data();
         setUserData({ id: targetUserId, ...userProfile, ...planData });
         generateReport(planData);
       } else {
-        alert('User has no development plan data.');
+        alert('User has no development plan data (checked both modules/ and users/ paths).');
         setUserData(null);
         setAccessReport(null);
       }
