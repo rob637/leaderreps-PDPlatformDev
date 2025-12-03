@@ -439,7 +439,7 @@ export default function BusinessReadingsScreen() {
     db, user, dailyPracticeData, navigate,
     updateDailyPracticeData, callSecureGeminiAPI, hasGeminiKey, GEMINI_MODEL,
   } = useAppServices();
-  const { plan, currentWeek } = useDevPlan(); // Get plan data for unlocking logic
+  const { masterPlan, currentWeek } = useDevPlan(); // Get plan data for unlocking logic
 
   const [cmsReadings, setCmsReadings] = useState([]);
   const [isLoadingCms, setIsLoadingCms] = useState(true);
@@ -475,32 +475,37 @@ export default function BusinessReadingsScreen() {
 
   // --- Calculate Unlocked Resources ---
   const unlockedResourceIds = useMemo(() => {
-      if (!plan) return new Set();
+      if (!masterPlan || masterPlan.length === 0) return new Set();
       const ids = new Set();
+      const currentWeekNum = currentWeek?.weekNumber || 1;
+
       // Iterate through weeks 1 to currentWeek
-      for (let i = 1; i <= currentWeek; i++) {
-          const weekKey = `week${i}`;
-          if (plan[weekKey]?.items) {
-              plan[weekKey].items.forEach(item => {
-                  if (item.resourceId) ids.add(item.resourceId);
-              });
+      masterPlan.forEach(week => {
+          if (week.weekNumber <= currentWeekNum) {
+              if (week.content) {
+                  week.content.forEach(item => {
+                      if (item.resourceId) ids.add(item.resourceId);
+                  });
+              }
           }
-      }
+      });
       return ids;
-  }, [plan, currentWeek]);
+  }, [masterPlan, currentWeek]);
 
   // --- Calculate Newly Unlocked Resources (This Week) ---
   const newResourceIds = useMemo(() => {
-      if (!plan) return new Set();
+      if (!masterPlan) return new Set();
       const ids = new Set();
-      const weekKey = `week${currentWeek}`;
-      if (plan[weekKey]?.items) {
-          plan[weekKey].items.forEach(item => {
+      const currentWeekNum = currentWeek?.weekNumber || 1;
+      
+      const thisWeek = masterPlan.find(w => w.weekNumber === currentWeekNum);
+      if (thisWeek?.content) {
+          thisWeek.content.forEach(item => {
               if (item.resourceId) ids.add(item.resourceId);
           });
       }
       return ids;
-  }, [plan, currentWeek]);
+  }, [masterPlan, currentWeek]);
 
   const allBooks = useMemo(() => {
     if (cmsReadings && cmsReadings.length > 0) {

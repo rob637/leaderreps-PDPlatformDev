@@ -78,8 +78,15 @@ const AdminDashboard = () => {
         let activeCount = 0;
         usersSnap.docs.forEach(doc => {
           const data = doc.data();
-          if (data.lastActive && data.lastActive.toDate() >= today) {
-            activeCount++;
+          if (data.lastActive) {
+            // Handle Firestore Timestamp, Date object, or string/number
+            const lastActiveDate = typeof data.lastActive.toDate === 'function' 
+              ? data.lastActive.toDate() 
+              : new Date(data.lastActive);
+
+            if (lastActiveDate >= today) {
+              activeCount++;
+            }
           }
         });
 

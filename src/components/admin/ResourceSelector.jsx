@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { useAppServices } from '../../services/useAppServices';
 import { getAllContentAdmin, CONTENT_COLLECTIONS } from '../../services/contentService';
+import { doc, getDoc } from 'firebase/firestore';
 
 const ResourceSelector = ({ value, onChange, resourceType = 'content' }) => {
   const { db } = useAppServices();
@@ -73,8 +74,34 @@ const ResourceSelector = ({ value, onChange, resourceType = 'content' }) => {
 
     if (isOpen) {
       loadResources();
+    } else if (value && !selectedResource) {
+      // Load single resource if not open but value exists
+      const loadSingle = async () => {
+        try {
+          // We check both collections if type is content, or specific if known
+          const collections = resourceType === 'content' 
+            ? [CONTENT_COLLECTIONS.VIDEOS, CONTENT_COLLECTIONS.READINGS]
+            : resourceType === 'community' ? [CONTENT_COLLECTIONS.COMMUNITY]
+            : [CONTENT_COLLECTIONS.COACHING];
+
+          for (const col of collections) {
+            const docRef = doc(db, col, value);
+            const snap = await getDoc(docRef);
+            if (snap.exists()) {
+              const type = col === CONTENT_COLLECTIONS.VIDEOS ? 'video' : 
+                           col === CONTENT_COLLECTIONS.READINGS ? 'reading' :
+                           col === CONTENT_COLLECTIONS.COMMUNITY ? 'community' : 'coaching';
+              setSelectedResource({ id: snap.id, ...snap.data(), resourceType: type });
+              return;
+            }
+          }
+        } catch (e) {
+          console.error("Error loading single resource:", e);
+        }
+      };
+      loadSingle();
     }
-  }, [isOpen, db, resourceType, value]); // Added dependencies
+  }, [isOpen, db, resourceType, value, selectedResource]);
 
   const filteredResources = resources.filter(r => 
     r.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
