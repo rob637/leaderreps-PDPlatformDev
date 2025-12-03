@@ -91,13 +91,16 @@ const PlanTracker = ({
       isRequired: item.isRequired ?? true
     }));
 
+    const normalizedReps = normalizeReps(displayWeek.reps);
+    const normalizedDailyReps = normalizeReps(displayWeek.dailyReps);
+
     return {
       ...displayWeek,
       content: normalize(displayWeek.content, 'contentItem'),
       community: normalize(displayWeek.community, 'communityItem'),
       coaching: normalize(displayWeek.coaching, 'coachingItem'),
-      reps: normalizeReps(displayWeek.reps),
-      dailyReps: normalizeReps(displayWeek.dailyReps)
+      reps: normalizedReps,
+      dailyReps: normalizedDailyReps
     };
   }, [displayWeek]);
 

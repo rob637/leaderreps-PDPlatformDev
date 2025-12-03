@@ -105,11 +105,11 @@ export const WIDGET_TEMPLATES = {
   if (weekNum <= 1) {
     return (
       <Card title="Grounding Rep" icon={Zap} accent="ORANGE">
-        <div className="text-center py-6 px-4">
-          <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <Clock className="w-8 h-8 text-slate-400" />
+        <div className="text-center py-3 px-4">
+          <div className="w-12 h-12 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-2">
+            <Clock className="w-6 h-6 text-slate-400" />
           </div>
-          <p className="text-sm font-medium text-slate-600 mb-2">Coming Soon</p>
+          <p className="text-sm font-medium text-slate-600 mb-1">Coming Soon</p>
           <p className="text-xs text-slate-500">
             The Grounding Rep will be available starting Week 2 of your development plan.
           </p>
@@ -238,9 +238,9 @@ export const WIDGET_TEMPLATES = {
   if (groundingRepDone) {
     return (
       <Card title="Grounding Rep" icon={Zap} accent="ORANGE">
-        <div className="text-center py-4">
-          <div className="flex items-center justify-center gap-2 mb-3">
-            <CheckCircle className="w-6 h-6 text-green-500" />
+        <div className="text-center py-2">
+          <div className="flex items-center justify-center gap-2 mb-2">
+            <CheckCircle className="w-5 h-5 text-green-500" />
             <span className="text-sm font-bold text-green-600">Complete for Today!</span>
           </div>
           <button
@@ -258,18 +258,18 @@ export const WIDGET_TEMPLATES = {
   return (
     <Card title="Grounding Rep" icon={Zap} accent="ORANGE">
       {hasLIS ? (
-        <div className="text-center py-4">
+        <div className="text-center py-2">
           <button
             onClick={handleReveal}
-            className="group relative w-full py-6 px-4 bg-gradient-to-br from-yellow-50 via-orange-50 to-yellow-50 rounded-xl border-2 border-dashed border-yellow-300 hover:border-yellow-400 hover:from-yellow-100 hover:via-orange-100 hover:to-yellow-100 transition-all duration-300"
+            className="group relative w-full py-4 px-4 bg-gradient-to-br from-yellow-50 via-orange-50 to-yellow-50 rounded-xl border-2 border-dashed border-yellow-300 hover:border-yellow-400 hover:from-yellow-100 hover:via-orange-100 hover:to-yellow-100 transition-all duration-300"
           >
-            <div className="flex flex-col items-center gap-3">
-              <div className="w-16 h-16 bg-yellow-100 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform duration-300 shadow-lg">
-                <Zap className="w-8 h-8 text-yellow-600 group-hover:text-yellow-700" />
+            <div className="flex flex-col items-center gap-2">
+              <div className="w-12 h-12 bg-yellow-100 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform duration-300 shadow-lg">
+                <Zap className="w-6 h-6 text-yellow-600 group-hover:text-yellow-700" />
               </div>
               <div>
-                <p className="text-lg font-bold text-slate-800 mb-1">Ground Yourself</p>
-                <p className="text-sm text-slate-500">Tap to reveal your Leadership Identity</p>
+                <p className="text-base font-bold text-slate-800 mb-0.5">Ground Yourself</p>
+                <p className="text-xs text-slate-500">Tap to reveal your Leadership Identity</p>
               </div>
               <div className="text-xs font-medium text-yellow-600 bg-yellow-100 px-3 py-1 rounded-full">
                 +1 Rep Earned on Reveal
@@ -278,12 +278,12 @@ export const WIDGET_TEMPLATES = {
           </button>
         </div>
       ) : (
-        <div className="text-center py-4">
-          <div className="w-12 h-12 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-3 text-slate-400">
-            <User className="w-6 h-6" />
+        <div className="text-center py-2">
+          <div className="w-10 h-10 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-2 text-slate-400">
+            <User className="w-5 h-5" />
           </div>
           <h4 className="font-bold text-slate-700 mb-1">Who are you as a leader?</h4>
-          <p className="text-sm text-slate-500 mb-4">
+          <p className="text-sm text-slate-500 mb-3">
             You haven't defined your Leadership Identity Statement yet.
           </p>
           <button 
@@ -419,52 +419,93 @@ export const WIDGET_TEMPLATES = {
 })()
     `,
     'notifications': `
-<Card title="Notifications" icon={Bell} accent="GRAY">
-  <div className="space-y-4">
-    {/* Category 1: Yesterday's Needs Work */}
-    <div className="flex gap-3 items-start p-3 bg-orange-50 rounded-xl border border-orange-100">
-      <div className="mt-1">
-        <div className="w-2 h-2 rounded-full bg-orange-500" />
-      </div>
-      <div>
-        <p className="text-xs font-bold text-orange-800 uppercase mb-1">Reflection Insight</p>
-        <p className="text-sm font-medium text-slate-800">
-          You flagged "Active Listening" as needing work yesterday.
-        </p>
-        <button className="mt-2 text-xs font-bold text-orange-600 hover:text-orange-700 flex items-center gap-1">
-          View Resource <Play className="w-3 h-3" />
-        </button>
-      </div>
-    </div>
+(() => {
+  // Get current week data from scope
+  const currentWeek = typeof devPlanCurrentWeek !== 'undefined' ? devPlanCurrentWeek : null;
+  
+  // Extract all items from the current week
+  const content = currentWeek?.content || [];
+  const community = currentWeek?.community || [];
+  const coaching = currentWeek?.coaching || [];
+  const allItems = [...content, ...community, ...coaching];
+  
+  // Find items with recommendedWeekDay (Upcoming Practice)
+  const today = new Date();
+  const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+  const todayName = dayNames[today.getDay()];
+  
+  // Get items scheduled for today or upcoming days this week
+  const upcomingPractice = allItems.filter(item => 
+    item.recommendedWeekDay && 
+    dayNames.indexOf(item.recommendedWeekDay) >= today.getDay()
+  );
+  
+  // Find new content items (first item of each type for "New Unlock")
+  const newUnlocks = [];
+  if (content.length > 0) {
+    newUnlocks.push({ type: 'Content', label: content[0].label, category: content[0].type });
+  }
+  if (community.length > 0) {
+    newUnlocks.push({ type: 'Community', label: community[0].label, category: community[0].type });
+  }
+  if (coaching.length > 0) {
+    newUnlocks.push({ type: 'Coaching', label: coaching[0].label, category: coaching[0].type });
+  }
 
-    {/* Category 2: Upcoming Practice */}
-    <div className="flex gap-3 items-start p-3 bg-teal-50 rounded-xl border border-teal-100">
-      <div className="mt-1">
-        <div className="w-2 h-2 rounded-full bg-teal-500" />
-      </div>
-      <div>
-        <p className="text-xs font-bold text-teal-800 uppercase mb-1">Upcoming Practice</p>
-        <p className="text-sm font-medium text-slate-800">
-          "Difficult Conversations" workshop starts in 2 hours.
-        </p>
-      </div>
-    </div>
+  // Check if we have any data
+  const hasData = upcomingPractice.length > 0 || newUnlocks.length > 0;
 
-    {/* Category 3: New Content */}
-    <div className="flex gap-3 items-start p-3 bg-blue-50 rounded-xl border border-blue-100">
-      <div className="mt-1">
-        <div className="w-2 h-2 rounded-full bg-blue-500" />
-      </div>
-      <div>
-        <p className="text-xs font-bold text-blue-800 uppercase mb-1">New Unlock</p>
-        <p className="text-sm font-medium text-slate-800">
-          Module 4: "Strategic Vision" is now available.
-        </p>
-      </div>
-    </div>
-  </div>
+  return (
+    <Card title="Notifications" icon={Bell} accent="GRAY">
+      <div className="space-y-3">
+        {!hasData && (
+          <div className="flex gap-3 items-center p-3 bg-slate-50 rounded-xl border border-slate-100">
+            <div className="w-2 h-2 rounded-full bg-slate-300" />
+            <p className="text-sm text-slate-500">No new notifications for this week.</p>
+          </div>
+        )}
 
-</Card>
+        {/* Upcoming Practice - Items with recommendedWeekDay */}
+        {upcomingPractice.slice(0, 2).map((item, idx) => (
+          <div key={\`practice-\${idx}\`} className="flex gap-3 items-start p-3 bg-[#00A896]/10 rounded-xl border border-[#00A896]/20">
+            <div className="mt-1">
+              <div className="w-2 h-2 rounded-full bg-[#00A896]" />
+            </div>
+            <div>
+              <p className="text-xs font-bold text-[#00A896] uppercase mb-1">Upcoming Practice</p>
+              <p className="text-sm font-medium text-slate-800">
+                {item.label}
+              </p>
+              <p className="text-xs text-slate-500 mt-0.5">
+                {item.recommendedWeekDay === todayName ? 'Today' : item.recommendedWeekDay}
+              </p>
+            </div>
+          </div>
+        ))}
+
+        {/* New Unlocks - Content, Community, Coaching for this week */}
+        {newUnlocks.map((unlock, idx) => (
+          <div key={\`unlock-\${idx}\`} className="flex gap-3 items-start p-3 bg-blue-50 rounded-xl border border-blue-100">
+            <div className="mt-1">
+              <div className="w-2 h-2 rounded-full bg-blue-500" />
+            </div>
+            <div>
+              <p className="text-xs font-bold text-blue-800 uppercase mb-1">New Unlock • {unlock.type}</p>
+              <p className="text-sm font-medium text-slate-800">
+                {unlock.label}
+              </p>
+              {unlock.category && (
+                <p className="text-xs text-slate-500 mt-0.5 capitalize">
+                  {unlock.category.replace(/_/g, ' ')}
+                </p>
+              )}
+            </div>
+          </div>
+        ))}
+      </div>
+    </Card>
+  );
+})()
     `,
     'pm-bookend-header': `
 <>

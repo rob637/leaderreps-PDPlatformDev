@@ -1,5 +1,5 @@
 import React from 'react';
-import { BookOpen, CheckCircle, Circle, MessageSquare, Users, Video } from 'lucide-react';
+import { BookOpen, CheckCircle, Circle, MessageSquare, Users, Video, Zap, Repeat } from 'lucide-react';
 import { Card } from '../ui';
 
 const DevelopmentPlanWidget = ({ scope }) => {
@@ -25,6 +25,8 @@ const DevelopmentPlanWidget = ({ scope }) => {
     content = [], 
     community = [], 
     coaching = [],
+    reps = [],
+    dailyReps = [],
     reflectionPrompt
   } = currentWeek;
 
@@ -148,24 +150,42 @@ const DevelopmentPlanWidget = ({ scope }) => {
           })}
         </div>
 
-        {/* Reflection */}
-        {reflectionPrompt && (
+        {/* Daily Reps Section */}
+        {(reps.length > 0 || dailyReps.length > 0) && (
           <div className="space-y-2 pt-2 border-t border-slate-100">
-            <p className="text-sm font-medium text-slate-700">
-              Reflection
+            <p className="text-xs text-slate-500 font-medium uppercase tracking-wider flex items-center gap-2">
+              <Zap className="w-4 h-4 text-[#00A896]" />
+              Daily Reps
             </p>
-            <p className="text-xs text-slate-500 italic">
-              {reflectionPrompt}
+            <p className="text-xs text-slate-400 mb-2">
+              Practice these daily to reinforce learning
             </p>
-            <textarea
-              value={reflectionResponse}
-              onChange={(e) => handleReflectionUpdate(e.target.value)}
-              placeholder="Type your reflection here..."
-              className="w-full p-3 text-sm bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all resize-none"
-              rows={3}
-            />
+            <div className="space-y-2">
+              {[...dailyReps, ...reps].map((rep, idx) => (
+                <div 
+                  key={rep.repId || rep.id || idx}
+                  className="flex items-start gap-3 p-3 bg-[#00A896]/10 border border-[#00A896]/20 rounded-xl"
+                >
+                  <div className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center bg-[#00A896]/20 text-[#00A896]">
+                    <Repeat className="w-4 h-4" />
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-slate-800">
+                      {rep.repLabel || rep.label || rep.name || 'Daily Rep'}
+                    </p>
+                    {rep.repType && (
+                      <p className="text-xs text-[#00A896] capitalize">
+                        {rep.repType}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         )}
+
+
       </div>
     </Card>
   );
