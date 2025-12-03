@@ -105,7 +105,7 @@ const Library = ({ simulatedTier, isDeveloperMode }) => {
         title: 'Reading & Reps',
         description: 'Curated business readings with actionable exercises and practice opportunities.',
         icon: BookOpen,
-        screen: 'reading-hub',
+        screen: 'business-readings',
         requiredTier: 'free'
       },
       {
