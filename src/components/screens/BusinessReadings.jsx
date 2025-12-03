@@ -485,6 +485,7 @@ export default function BusinessReadingsScreen() {
               if (week.content) {
                   week.content.forEach(item => {
                       if (item.resourceId) ids.add(item.resourceId);
+                      if (item.contentItemId) ids.add(item.contentItemId);
                   });
               }
           }
@@ -502,6 +503,7 @@ export default function BusinessReadingsScreen() {
       if (thisWeek?.content) {
           thisWeek.content.forEach(item => {
               if (item.resourceId) ids.add(item.resourceId);
+              if (item.contentItemId) ids.add(item.contentItemId);
           });
       }
       return ids;
