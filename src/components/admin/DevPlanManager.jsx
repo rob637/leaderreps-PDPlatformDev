@@ -15,7 +15,15 @@ import {
   Loader,
   ArrowLeft,
   Eye,
-  Zap
+  Zap,
+  Users,
+  BookOpen,
+  Wrench,
+  Bell,
+  Target,
+  GraduationCap,
+  Clock,
+  FileText
 } from 'lucide-react';
 import { useAppServices } from '../../services/useAppServices';
 import { 
@@ -130,22 +138,46 @@ const DevPlanManager = () => {
   const handleCreateWeek = () => {
     const nextWeekNum = weeks.length + 1;
     const newWeek = {
+      // Core Identity
       weekBlockId: `week-${String(nextWeekNum).padStart(2, '0')}`,
       weekNumber: nextWeekNum,
       title: `Week ${nextWeekNum}`,
       focus: '',
       phase: '',
       description: '',
+      
+      // Scheduling
       startOffsetWeeks: nextWeekNum - 1,
       estimatedTimeMinutes: 90,
+      
+      // Workouts & Tools
+      workouts: [],         // Primary workouts for the week
+      optionalWorkouts: [], // Optional/bonus workouts (e.g., for managers with teams)
+      tools: [],            // Frameworks, checklists, tools taught this week
+      
+      // Daily Reps (static text tasks users should do daily)
+      dailyReps: [],
+      
+      // Resources (Content, Community, Coaching)
+      content: [],    // Content unlocks (videos, workbooks, PDFs)
+      community: [],  // Community activities (live meetings, forums, Ask the Trainer)
+      coaching: [],   // Coaching elements (AI coach, live coaching, 1:1s)
+      
+      // Legacy reps field (special week-specific reps)
+      reps: [],
+      
+      // Classification & Metadata
       skills: [],
       pillars: [],
       difficultyLevel: 'Foundation',
-      content: [],
-      community: [],
-      coaching: [],
-      reps: [],
+      level: 100,           // Course level (100, 200, 300)
+      prerequisites: [],    // Prerequisite week IDs
+      prerequisiteSkills: [], // Required skills before this week
+      
+      // Reminders & Notifications
       reminderTemplates: [],
+      
+      // Status
       isDraft: true
     };
     setNewWeekData(newWeek);
@@ -277,34 +309,62 @@ const WeekListView = ({ weeks, onEdit, onDelete }) => {
       <table className="w-full text-left border-collapse">
         <thead className="bg-slate-50 sticky top-0 z-10">
           <tr>
-            <th className="p-4 font-bold text-slate-600 text-xs uppercase tracking-wider border-b">Seq</th>
-            <th className="p-4 font-bold text-slate-600 text-xs uppercase tracking-wider border-b">Title & Focus</th>
-            <th className="p-4 font-bold text-slate-600 text-xs uppercase tracking-wider border-b">Phase</th>
-            <th className="p-4 font-bold text-slate-600 text-xs uppercase tracking-wider border-b">Content</th>
-            <th className="p-4 font-bold text-slate-600 text-xs uppercase tracking-wider border-b">Status</th>
-            <th className="p-4 font-bold text-slate-600 text-xs uppercase tracking-wider border-b text-right">Actions</th>
+            <th className="p-3 font-bold text-slate-600 text-xs uppercase tracking-wider border-b">Week</th>
+            <th className="p-3 font-bold text-slate-600 text-xs uppercase tracking-wider border-b">Title & Focus</th>
+            <th className="p-3 font-bold text-slate-600 text-xs uppercase tracking-wider border-b">Phase</th>
+            <th className="p-3 font-bold text-slate-600 text-xs uppercase tracking-wider border-b">Workouts</th>
+            <th className="p-3 font-bold text-slate-600 text-xs uppercase tracking-wider border-b">Resources</th>
+            <th className="p-3 font-bold text-slate-600 text-xs uppercase tracking-wider border-b">Reps</th>
+            <th className="p-3 font-bold text-slate-600 text-xs uppercase tracking-wider border-b">Status</th>
+            <th className="p-3 font-bold text-slate-600 text-xs uppercase tracking-wider border-b text-right">Actions</th>
           </tr>
         </thead>
         <tbody className="divide-y divide-slate-100">
           {weeks.map((week) => (
             <tr key={week.id} className="hover:bg-slate-50 transition-colors group">
-              <td className="p-4 font-mono text-slate-500 font-bold">#{week.weekNumber}</td>
-              <td className="p-4">
-                <div className="font-bold text-corporate-navy">{week.title}</div>
-                <div className="text-xs text-slate-500">{week.focus}</div>
+              <td className="p-3 font-mono text-slate-500 font-bold">
+                <div className="text-corporate-navy">#{week.weekNumber}</div>
+                <div className="text-[10px] text-slate-400">ID: {week.weekBlockId || week.id}</div>
               </td>
-              <td className="p-4">
+              <td className="p-3">
+                <div className="font-bold text-corporate-navy">{week.title}</div>
+                <div className="text-xs text-slate-500 italic">{week.focus}</div>
+              </td>
+              <td className="p-3">
                 <span className="px-2 py-1 bg-blue-50 text-blue-700 rounded text-xs font-bold">
                   {week.phase}
                 </span>
+                {week.level && (
+                  <div className="text-[10px] text-slate-400 mt-1">Level {week.level}</div>
+                )}
               </td>
-              <td className="p-4 text-xs text-slate-500">
-                <div className="flex gap-2">
-                  <span title="Content Items" className="flex items-center gap-1"><List className="w-3 h-3" /> {week.content?.length || 0}</span>
-                  <span title="Community Items" className="flex items-center gap-1"><Layout className="w-3 h-3" /> {week.community?.length || 0}</span>
+              <td className="p-3 text-xs">
+                <div className="flex flex-col gap-1">
+                  {week.workouts?.length > 0 && (
+                    <span className="text-purple-600">{week.workouts.length} workout(s)</span>
+                  )}
+                  {week.tools?.length > 0 && (
+                    <span className="text-orange-600">{week.tools.length} tool(s)</span>
+                  )}
                 </div>
               </td>
-              <td className="p-4">
+              <td className="p-3 text-xs text-slate-500">
+                <div className="flex flex-col gap-1">
+                  <span title="Content Items" className="flex items-center gap-1">
+                    <BookOpen className="w-3 h-3 text-blue-500" /> {week.content?.length || 0}
+                  </span>
+                  <span title="Community Items" className="flex items-center gap-1">
+                    <Users className="w-3 h-3 text-green-500" /> {week.community?.length || 0}
+                  </span>
+                  <span title="Coaching Items" className="flex items-center gap-1">
+                    <GraduationCap className="w-3 h-3 text-orange-500" /> {week.coaching?.length || 0}
+                  </span>
+                </div>
+              </td>
+              <td className="p-3 text-xs">
+                <span className="text-purple-600">{week.dailyReps?.length || week.reps?.length || 0} rep(s)</span>
+              </td>
+              <td className="p-3">
                 {week.isDraft ? (
                   <span className="flex items-center gap-1 text-orange-600 text-xs font-bold">
                     <AlertCircle className="w-3 h-3" /> Draft
@@ -315,7 +375,7 @@ const WeekListView = ({ weeks, onEdit, onDelete }) => {
                   </span>
                 )}
               </td>
-              <td className="p-4 text-right flex justify-end gap-2">
+              <td className="p-3 text-right flex justify-end gap-2">
                 <button 
                   onClick={() => onEdit(week)}
                   className="px-3 py-1.5 border border-slate-200 rounded text-xs font-bold text-slate-600 hover:bg-white hover:border-corporate-teal hover:text-corporate-teal transition-colors"
@@ -352,6 +412,12 @@ const WeekEditor = ({ weekId, initialData, lovs, onSave, onCancel, allWeeks }) =
     skills: [],
     pillars: [],
     difficultyLevel: 'Foundation',
+    level: '',
+    prerequisites: '',
+    prerequisiteSkills: '',
+    workouts: [],
+    tools: [],
+    optional: '',
     content: [],
     community: [],
     coaching: [],
@@ -361,7 +427,7 @@ const WeekEditor = ({ weekId, initialData, lovs, onSave, onCancel, allWeeks }) =
   };
 
   const [formData, setFormData] = useState(initialData || defaultData);
-  const [activeTab, setActiveTab] = useState('identity'); // identity, content, metadata
+  const [activeTab, setActiveTab] = useState('identity'); // identity, resources, metadata, reminders
 
   // Navigation helpers
   const currentIdx = allWeeks.findIndex(w => w.id === weekId);
@@ -437,7 +503,7 @@ const WeekEditor = ({ weekId, initialData, lovs, onSave, onCancel, allWeeks }) =
 
       {/* Tabs */}
       <div className="flex border-b border-slate-200 px-4">
-        {['identity', 'content', 'metadata'].map(tab => (
+        {['identity', 'resources', 'metadata', 'reminders'].map(tab => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
@@ -459,14 +525,28 @@ const WeekEditor = ({ weekId, initialData, lovs, onSave, onCancel, allWeeks }) =
             <div className="space-y-4">
               <h4 className="font-bold text-slate-800 border-b pb-2">Core Identity</h4>
               
-              <div>
-                <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Week Number</label>
-                <input 
-                  type="number" 
-                  value={formData.weekNumber} 
-                  onChange={e => handleChange('weekNumber', parseInt(e.target.value))}
-                  className="w-full p-2 border rounded"
-                />
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Week Block ID</label>
+                  <input 
+                    type="text" 
+                    value={formData.weekBlockId} 
+                    onChange={e => handleChange('weekBlockId', e.target.value)}
+                    className="w-full p-2 border rounded font-mono"
+                    placeholder="e.g. 100, 110, 120"
+                  />
+                  <p className="text-xs text-slate-400 mt-1">Unique identifier</p>
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Week Number</label>
+                  <input 
+                    type="number" 
+                    value={formData.weekNumber} 
+                    onChange={e => handleChange('weekNumber', parseInt(e.target.value))}
+                    className="w-full p-2 border rounded"
+                  />
+                  <p className="text-xs text-slate-400 mt-1">Sequential order</p>
+                </div>
               </div>
 
               <div>
@@ -476,19 +556,20 @@ const WeekEditor = ({ weekId, initialData, lovs, onSave, onCancel, allWeeks }) =
                   value={formData.title} 
                   onChange={e => handleChange('title', e.target.value)}
                   className="w-full p-2 border rounded"
-                  placeholder="e.g. QuickStart - Week 1"
+                  placeholder="e.g. QuickStart S1"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Focus</label>
+                <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Focus (Action Verb)</label>
                 <input 
                   type="text" 
                   value={formData.focus} 
                   onChange={e => handleChange('focus', e.target.value)}
                   className="w-full p-2 border rounded"
-                  placeholder="e.g. Anchoring Feedback"
+                  placeholder="e.g. Delivering CLEAR Feedback"
                 />
+                <p className="text-xs text-slate-400 mt-1">Displayed weekly to help users concentrate</p>
               </div>
 
               <div>
@@ -503,31 +584,34 @@ const WeekEditor = ({ weekId, initialData, lovs, onSave, onCancel, allWeeks }) =
                     <option key={p} value={p}>{p}</option>
                   ))}
                 </select>
+                <p className="text-xs text-slate-400 mt-1">Program structure (e.g., QS Level 1, QS Challenge)</p>
               </div>
             </div>
 
             <div className="space-y-4">
               <h4 className="font-bold text-slate-800 border-b pb-2">Scheduling & Details</h4>
               
-              <div>
-                <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Start Offset (Weeks)</label>
-                <input 
-                  type="number" 
-                  value={formData.startOffsetWeeks} 
-                  onChange={e => handleChange('startOffsetWeeks', parseInt(e.target.value))}
-                  className="w-full p-2 border rounded"
-                />
-                <p className="text-xs text-slate-400 mt-1">0 = First week of program</p>
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Est. Time (Minutes)</label>
-                <input 
-                  type="number" 
-                  value={formData.estimatedTimeMinutes} 
-                  onChange={e => handleChange('estimatedTimeMinutes', parseInt(e.target.value))}
-                  className="w-full p-2 border rounded"
-                />
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Start Offset (Weeks)</label>
+                  <input 
+                    type="number" 
+                    value={formData.startOffsetWeeks} 
+                    onChange={e => handleChange('startOffsetWeeks', parseInt(e.target.value))}
+                    className="w-full p-2 border rounded"
+                  />
+                  <p className="text-xs text-slate-400 mt-1">-2 = Prep, 0 = Week 1</p>
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Est. Time (Minutes)</label>
+                  <input 
+                    type="number" 
+                    value={formData.estimatedTimeMinutes} 
+                    onChange={e => handleChange('estimatedTimeMinutes', parseInt(e.target.value))}
+                    className="w-full p-2 border rounded"
+                  />
+                  <p className="text-xs text-slate-400 mt-1">e.g., 90 min, 180 min</p>
+                </div>
               </div>
 
               <div>
@@ -554,13 +638,145 @@ const WeekEditor = ({ weekId, initialData, lovs, onSave, onCancel, allWeeks }) =
           </div>
         )}
 
-        {activeTab === 'content' && (
+        {activeTab === 'resources' && (
           <div className="space-y-8 max-w-5xl">
+            {/* Workouts Section */}
+            <div className="bg-indigo-50 p-4 rounded-xl border border-indigo-200">
+              <div className="flex justify-between items-center mb-4">
+                <h4 className="font-bold text-indigo-900 flex items-center gap-2">
+                  <Target className="w-5 h-5" /> Workouts
+                </h4>
+                <button 
+                  onClick={() => addItem('workouts', { workoutId: '', workoutName: '', workoutLevel: '' })}
+                  className="text-xs font-bold text-indigo-600 hover:underline flex items-center gap-1"
+                >
+                  <Plus className="w-3 h-3" /> Add Workout
+                </button>
+              </div>
+              
+              <div className="space-y-3">
+                {formData.workouts?.map((item, idx) => (
+                  <div key={idx} className="flex gap-3 items-start bg-white p-3 rounded border border-indigo-200">
+                    <div className="flex-1 grid grid-cols-1 md:grid-cols-3 gap-3">
+                      <input 
+                        type="text" 
+                        placeholder="ID (e.g. feedback-1)" 
+                        value={item.workoutId}
+                        onChange={e => updateItem('workouts', idx, 'workoutId', e.target.value)}
+                        className="p-2 border rounded text-sm"
+                      />
+                      <input 
+                        type="text" 
+                        placeholder="Name (e.g. Feedback One)" 
+                        value={item.workoutName}
+                        onChange={e => updateItem('workouts', idx, 'workoutName', e.target.value)}
+                        className="p-2 border rounded text-sm"
+                      />
+                      <input 
+                        type="text" 
+                        placeholder="Level (e.g. 100)" 
+                        value={item.workoutLevel}
+                        onChange={e => updateItem('workouts', idx, 'workoutLevel', e.target.value)}
+                        className="p-2 border rounded text-sm"
+                      />
+                    </div>
+                    <button onClick={() => removeItem('workouts', idx)} className="text-red-400 hover:text-red-600 pt-2">
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                ))}
+                {(!formData.workouts || formData.workouts.length === 0) && (
+                  <p className="text-sm text-slate-400 italic text-center py-4">No workouts added.</p>
+                )}
+              </div>
+            </div>
+
+            {/* Tools Section */}
+            <div className="bg-teal-50 p-4 rounded-xl border border-teal-200">
+              <div className="flex justify-between items-center mb-4">
+                <h4 className="font-bold text-teal-900 flex items-center gap-2">
+                  <Wrench className="w-5 h-5" /> Tools
+                </h4>
+                <button 
+                  onClick={() => addItem('tools', { toolId: '', toolName: '', toolDescription: '' })}
+                  className="text-xs font-bold text-teal-600 hover:underline flex items-center gap-1"
+                >
+                  <Plus className="w-3 h-3" /> Add Tool
+                </button>
+              </div>
+              
+              <div className="space-y-3">
+                {formData.tools?.map((item, idx) => (
+                  <div key={idx} className="flex gap-3 items-start bg-white p-3 rounded border border-teal-200">
+                    <div className="flex-1 grid grid-cols-1 md:grid-cols-3 gap-3">
+                      <input 
+                        type="text" 
+                        placeholder="ID" 
+                        value={item.toolId}
+                        onChange={e => updateItem('tools', idx, 'toolId', e.target.value)}
+                        className="p-2 border rounded text-sm"
+                      />
+                      <input 
+                        type="text" 
+                        placeholder="Name (e.g. CLEAR Framework)" 
+                        value={item.toolName}
+                        onChange={e => updateItem('tools', idx, 'toolName', e.target.value)}
+                        className="p-2 border rounded text-sm"
+                      />
+                      <input 
+                        type="text" 
+                        placeholder="Description" 
+                        value={item.toolDescription}
+                        onChange={e => updateItem('tools', idx, 'toolDescription', e.target.value)}
+                        className="p-2 border rounded text-sm"
+                      />
+                    </div>
+                    <button onClick={() => removeItem('tools', idx)} className="text-red-400 hover:text-red-600 pt-2">
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Optional Section */}
+            <div className="bg-yellow-50 p-4 rounded-xl border border-yellow-200">
+              <h4 className="font-bold text-yellow-900 flex items-center gap-2 mb-2">
+                <AlertCircle className="w-5 h-5" /> Optional / Bonus Content
+              </h4>
+              <p className="text-xs text-yellow-700 mb-3">For conditional content (e.g., bonus workouts for managers with larger teams)</p>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Optional Reference</label>
+                  <select 
+                    value={formData.optional || ''}
+                    onChange={e => handleChange('optional', e.target.value)}
+                    className="w-full p-2 border rounded text-sm"
+                  >
+                    <option value="">(None)</option>
+                    <option value="Team1">Team1 - Small Team Bonus</option>
+                    <option value="Team2">Team2 - Medium Team Bonus</option>
+                    <option value="Team3">Team3 - Large Team Bonus</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Optional Notes</label>
+                  <input 
+                    type="text" 
+                    value={formData.optionalNotes || ''}
+                    onChange={e => handleChange('optionalNotes', e.target.value)}
+                    className="w-full p-2 border rounded text-sm"
+                    placeholder="Additional context..."
+                  />
+                </div>
+              </div>
+            </div>
+
             {/* Content Section */}
             <div className="bg-slate-50 p-4 rounded-xl border border-slate-200">
               <div className="flex justify-between items-center mb-4">
                 <h4 className="font-bold text-corporate-navy flex items-center gap-2">
-                  <List className="w-5 h-5" /> Content Items
+                  <List className="w-5 h-5" /> Content Items (Unlocking)
                 </h4>
                 <button 
                   onClick={() => addItem('content', { contentItemId: '', contentItemType: 'Workout', contentItemLabel: '', isRequiredContent: true })}
@@ -722,7 +938,7 @@ const WeekEditor = ({ weekId, initialData, lovs, onSave, onCancel, allWeeks }) =
             <div className="bg-purple-50 p-4 rounded-xl border border-purple-100">
               <div className="flex justify-between items-center mb-4">
                 <h4 className="font-bold text-purple-900 flex items-center gap-2">
-                  <Zap className="w-5 h-5" /> Special Reps
+                  <Zap className="w-5 h-5" /> Daily Reps
                 </h4>
                 <button 
                   onClick={() => addItem('reps', { repId: '', repType: 'Challenge', repLabel: '', isRequired: true })}
@@ -826,22 +1042,58 @@ const WeekEditor = ({ weekId, initialData, lovs, onSave, onCancel, allWeeks }) =
               </div>
             </div>
 
-            {/* Difficulty */}
-            <div>
-              <h4 className="font-bold text-slate-800 mb-3">Difficulty Level</h4>
-              <select 
-                value={formData.difficultyLevel}
-                onChange={e => handleChange('difficultyLevel', e.target.value)}
-                className="w-full p-2 border rounded"
-              >
-                {lovs['Difficulty Levels']?.map(l => (
-                  <option key={l} value={l}>{l}</option>
-                ))}
-              </select>
+            {/* Difficulty & Level */}
+            <div className="space-y-4">
+              <div>
+                <h4 className="font-bold text-slate-800 mb-3">Difficulty Level</h4>
+                <select 
+                  value={formData.difficultyLevel}
+                  onChange={e => handleChange('difficultyLevel', e.target.value)}
+                  className="w-full p-2 border rounded"
+                >
+                  {lovs['Difficulty Levels']?.map(l => (
+                    <option key={l} value={l}>{l}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <h4 className="font-bold text-slate-800 mb-3">Level (e.g. 100, 200)</h4>
+                <input 
+                  type="text" 
+                  value={formData.level} 
+                  onChange={e => handleChange('level', e.target.value)}
+                  className="w-full p-2 border rounded"
+                  placeholder="e.g. 100"
+                />
+              </div>
+            </div>
+
+            {/* Prerequisites */}
+            <div className="space-y-4">
+              <div>
+                <h4 className="font-bold text-slate-800 mb-3">Prerequisites</h4>
+                <input 
+                  type="text" 
+                  value={formData.prerequisites} 
+                  onChange={e => handleChange('prerequisites', e.target.value)}
+                  className="w-full p-2 border rounded"
+                  placeholder="e.g. QuickStart S1"
+                />
+              </div>
+              <div>
+                <h4 className="font-bold text-slate-800 mb-3">Prerequisite Skills</h4>
+                <input 
+                  type="text" 
+                  value={formData.prerequisiteSkills} 
+                  onChange={e => handleChange('prerequisiteSkills', e.target.value)}
+                  className="w-full p-2 border rounded"
+                  placeholder="e.g. Feedback 1"
+                />
+              </div>
             </div>
 
             {/* Reflection Prompt */}
-            <div>
+            <div className="md:col-span-2">
               <h4 className="font-bold text-slate-800 mb-3">Reflection Prompt</h4>
               <textarea 
                 value={formData.reflectionPrompt}
@@ -849,6 +1101,69 @@ const WeekEditor = ({ weekId, initialData, lovs, onSave, onCancel, allWeeks }) =
                 className="w-full p-2 border rounded h-24"
                 placeholder="Question for the user at end of week..."
               />
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'reminders' && (
+          <div className="space-y-8 max-w-5xl">
+            <div className="bg-red-50 p-4 rounded-xl border border-red-200">
+              <div className="flex justify-between items-center mb-4">
+                <h4 className="font-bold text-red-900 flex items-center gap-2">
+                  <Bell className="w-5 h-5" /> Reminders
+                </h4>
+                <button 
+                  onClick={() => addItem('reminderTemplates', { templateId: '', frequency: '', channel: 'Email', message: '' })}
+                  className="text-xs font-bold text-red-600 hover:underline flex items-center gap-1"
+                >
+                  <Plus className="w-3 h-3" /> Add Reminder
+                </button>
+              </div>
+              
+              <div className="space-y-3">
+                {formData.reminderTemplates?.map((item, idx) => (
+                  <div key={idx} className="flex gap-3 items-start bg-white p-3 rounded border border-red-200">
+                    <div className="flex-1 grid grid-cols-1 md:grid-cols-4 gap-3">
+                      <input 
+                        type="text" 
+                        placeholder="Template ID (e.g. RT1)" 
+                        value={item.templateId}
+                        onChange={e => updateItem('reminderTemplates', idx, 'templateId', e.target.value)}
+                        className="p-2 border rounded text-sm"
+                      />
+                      <input 
+                        type="text" 
+                        placeholder="Frequency (e.g. 1)" 
+                        value={item.frequency}
+                        onChange={e => updateItem('reminderTemplates', idx, 'frequency', e.target.value)}
+                        className="p-2 border rounded text-sm"
+                      />
+                      <select 
+                        value={item.channel}
+                        onChange={e => updateItem('reminderTemplates', idx, 'channel', e.target.value)}
+                        className="p-2 border rounded text-sm"
+                      >
+                        <option value="Email">Email</option>
+                        <option value="Text">Text</option>
+                        <option value="Push">Push</option>
+                      </select>
+                      <input 
+                        type="text" 
+                        placeholder="Message" 
+                        value={item.message}
+                        onChange={e => updateItem('reminderTemplates', idx, 'message', e.target.value)}
+                        className="p-2 border rounded text-sm"
+                      />
+                    </div>
+                    <button onClick={() => removeItem('reminderTemplates', idx)} className="text-red-400 hover:text-red-600 pt-2">
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                ))}
+                {(!formData.reminderTemplates || formData.reminderTemplates.length === 0) && (
+                  <p className="text-sm text-slate-400 italic text-center py-4">No reminders added.</p>
+                )}
+              </div>
             </div>
           </div>
         )}
