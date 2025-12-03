@@ -8,6 +8,7 @@ import { useWidgetEditor } from '../../providers/WidgetEditorProvider';
 import { WIDGET_TEMPLATES, FEATURE_METADATA } from '../../config/widgetTemplates';
 import { useAppServices } from '../../services/useAppServices';
 import { useDashboard } from '../screens/dashboard/DashboardHooks';
+import { useDevPlan } from '../../hooks/useDevPlan';
 import { createWidgetSDK } from '../../services/WidgetSDK';
 import { Card } from '../ui';
 import { Button, ProgressBar } from '../screens/developmentplan/DevPlanComponents';
@@ -24,6 +25,12 @@ const FeatureManager = () => {
     globalMetadata,
     navigate
   } = useAppServices();
+
+  // --- DEV PLAN HOOK ---
+  const { currentWeek: devPlanCurrentWeek, userState: devPlanUserState, simulatedNow } = useDevPlan();
+  const currentWeekNumber = devPlanUserState?.currentWeekIndex != null 
+    ? devPlanUserState.currentWeekIndex + 1 
+    : null;
 
   // --- HOOKS FOR REAL DATA ---
   const {
@@ -205,6 +212,9 @@ const FeatureManager = () => {
     
     // State
     weeklyFocus,
+    currentWeekNumber,
+    simulatedNow,
+    devPlanCurrentWeek,
     hasLIS,
     lisRead,
     dailyRepName,
