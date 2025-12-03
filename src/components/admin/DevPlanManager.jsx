@@ -40,6 +40,7 @@ import {
 import { SEED_DATA } from '../../data/seedLovs';
 import { SEED_WEEKS } from '../../data/seedWeeks';
 import { addContent, CONTENT_COLLECTIONS } from '../../services/contentService';
+import ResourceSelector from './ResourceSelector';
 
 const DevPlanManager = () => {
   const { db } = useAppServices();
@@ -463,6 +464,15 @@ const WeekEditor = ({ weekId, initialData, lovs, onSave, onCancel, allWeeks }) =
     });
   };
 
+  // Update multiple fields of an item
+  const updateItemFields = (collectionName, index, updates) => {
+    setFormData(prev => {
+      const newItems = [...prev[collectionName]];
+      newItems[index] = { ...newItems[index], ...updates };
+      return { ...prev, [collectionName]: newItems };
+    });
+  };
+
   return (
     <div className="flex flex-col h-full">
       {/* Editor Toolbar */}
@@ -790,13 +800,26 @@ const WeekEditor = ({ weekId, initialData, lovs, onSave, onCancel, allWeeks }) =
                 {formData.content?.map((item, idx) => (
                   <div key={idx} className="flex gap-3 items-start bg-white p-3 rounded border border-slate-200">
                     <div className="flex-1 grid grid-cols-1 md:grid-cols-4 gap-3">
-                      <input 
-                        type="text" 
-                        placeholder="ID (e.g. qs-session-1)" 
-                        value={item.contentItemId}
-                        onChange={e => updateItem('content', idx, 'contentItemId', e.target.value)}
-                        className="p-2 border rounded text-sm"
-                      />
+                      <div className="md:col-span-1">
+                        <ResourceSelector 
+                          value={item.resourceId || item.contentItemId}
+                          resourceType="content"
+                          onChange={(id, resource) => {
+                            updateItemFields('content', idx, {
+                              contentItemId: id,
+                              resourceId: id,
+                              resourceType: resource.resourceType,
+                              resourceThumbnail: resource.thumbnail,
+                              // Auto-fill label if empty
+                              contentItemLabel: item.contentItemLabel || resource.title,
+                              // Auto-fill type if possible (map resource type to content type)
+                              contentItemType: resource.resourceType === 'video' ? 'Video' : 
+                                              resource.resourceType === 'reading' ? 'Reading' : 
+                                              item.contentItemType
+                            });
+                          }}
+                        />
+                      </div>
                       <select 
                         value={item.contentItemType}
                         onChange={e => updateItem('content', idx, 'contentItemType', e.target.value)}
@@ -849,13 +872,21 @@ const WeekEditor = ({ weekId, initialData, lovs, onSave, onCancel, allWeeks }) =
                 {formData.community?.map((item, idx) => (
                   <div key={idx} className="flex gap-3 items-start bg-white p-3 rounded border border-blue-100">
                     <div className="flex-1 grid grid-cols-1 md:grid-cols-4 gap-3">
-                      <input 
-                        type="text" 
-                        placeholder="ID" 
-                        value={item.communityItemId}
-                        onChange={e => updateItem('community', idx, 'communityItemId', e.target.value)}
-                        className="p-2 border rounded text-sm"
-                      />
+                      <div className="md:col-span-1">
+                        <ResourceSelector 
+                          value={item.resourceId || item.communityItemId}
+                          resourceType="community"
+                          onChange={(id, resource) => {
+                            updateItemFields('community', idx, {
+                              communityItemId: id,
+                              resourceId: id,
+                              resourceType: resource.resourceType,
+                              resourceThumbnail: resource.thumbnail,
+                              communityItemLabel: item.communityItemLabel || resource.title
+                            });
+                          }}
+                        />
+                      </div>
                       <select 
                         value={item.communityItemType}
                         onChange={e => updateItem('community', idx, 'communityItemType', e.target.value)}
@@ -904,13 +935,21 @@ const WeekEditor = ({ weekId, initialData, lovs, onSave, onCancel, allWeeks }) =
                 {formData.coaching?.map((item, idx) => (
                   <div key={idx} className="flex gap-3 items-start bg-white p-3 rounded border border-orange-100">
                     <div className="flex-1 grid grid-cols-1 md:grid-cols-4 gap-3">
-                      <input 
-                        type="text" 
-                        placeholder="ID" 
-                        value={item.coachingItemId}
-                        onChange={e => updateItem('coaching', idx, 'coachingItemId', e.target.value)}
-                        className="p-2 border rounded text-sm"
-                      />
+                      <div className="md:col-span-1">
+                        <ResourceSelector 
+                          value={item.resourceId || item.coachingItemId}
+                          resourceType="coaching"
+                          onChange={(id, resource) => {
+                            updateItemFields('coaching', idx, {
+                              coachingItemId: id,
+                              resourceId: id,
+                              resourceType: resource.resourceType,
+                              resourceThumbnail: resource.thumbnail,
+                              coachingItemLabel: item.coachingItemLabel || resource.title
+                            });
+                          }}
+                        />
+                      </div>
                       <select 
                         value={item.coachingItemType}
                         onChange={e => updateItem('coaching', idx, 'coachingItemType', e.target.value)}

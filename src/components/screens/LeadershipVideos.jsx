@@ -6,6 +6,8 @@ import { Film, User, Clock, ArrowRight, Zap, Briefcase, Search, Filter, Play, Bo
 // --- Core Services & Context ---
 import { useAppServices } from '../../services/useAppServices.jsx'; // cite: useAppServices.jsx
 import { getVideos } from '../../services/contentService.js'; // NEW: Load from CMS
+import { useDevPlan } from '../../hooks/useDevPlan';
+import UniversalResourceViewer from '../ui/UniversalResourceViewer';
 import { logWidthMeasurements } from '../../utils/debugWidth.js';
 // --- UI Components ---
 import { Button, PageLayout } from '../ui';
@@ -29,17 +31,28 @@ const ACCENT_COLORS = {
     BLUE: 'var(--corporate-navy)'
 };
 
-const VideoCard = ({ title, speaker, duration, url, description, accent, category, rating, views, tags = [] }) => {
+const VideoCard = ({ title, speaker, duration, url, description, accent, category, rating, views, tags = [], onClick, isNew }) => {
     const accentColor = ACCENT_COLORS[accent] || ACCENT_COLORS.NAVY;
     
     // Generate YouTube thumbnail URL from video URL
     const getThumbnail = (videoUrl) => {
+        if (!videoUrl) return '/api/placeholder/320/180';
         const videoId = videoUrl.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&\n?#]+)/)?.[1];
         return videoId ? `https://img.youtube.com/vi/${videoId}/hqdefault.jpg` : '/api/placeholder/320/180';
     };
 
     return (
-        <div className="card-corporate group cursor-pointer transition-all duration-300 hover:scale-105">
+        <div 
+            className="card-corporate group cursor-pointer transition-all duration-300 hover:scale-105 flex flex-col h-full relative"
+            onClick={onClick}
+        >
+            {/* New Badge */}
+            {isNew && (
+                <div className="absolute top-2 left-2 z-10 bg-blue-600 text-white px-2 py-1 rounded text-xs font-bold shadow-md animate-pulse">
+                    NEW
+                </div>
+            )}
+
             {/* Corporate accent border */}
             <div className="absolute top-0 left-0 right-0 h-1 rounded-t-xl" style={{ background: accentColor }}></div>
             
@@ -70,10 +83,10 @@ const VideoCard = ({ title, speaker, duration, url, description, accent, categor
             </div>
 
             {/* Content Section */}
-            <div className="flex-grow">
+            <div className="flex-grow flex flex-col">
                 {/* Category badge */}
                 {category && (
-                    <div className="inline-block px-3 py-1 rounded-full text-xs font-medium mb-2" 
+                    <div className="inline-block px-3 py-1 rounded-full text-xs font-medium mb-2 self-start" 
                          style={{ backgroundColor: `${accentColor}20`, color: accentColor }}>
                         {category}
                     </div>
@@ -99,7 +112,7 @@ const VideoCard = ({ title, speaker, duration, url, description, accent, categor
                 </div>
                 
                 {/* Description */}
-                <p className="corporate-text-body text-sm mb-4 line-clamp-3">
+                <p className="corporate-text-body text-sm mb-4 line-clamp-3 flex-grow">
                     {description}
                 </p>
                 
@@ -119,15 +132,16 @@ const VideoCard = ({ title, speaker, duration, url, description, accent, categor
             </div>
 
             {/* Action Button */}
-            <a 
-                href={url} 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className="btn-corporate-primary w-full mt-4"
+            <button 
+                className="btn-corporate-primary w-full mt-auto"
+                onClick={(e) => {
+                    e.stopPropagation();
+                    onClick && onClick();
+                }}
             >
                 <Play className="w-4 h-4 mr-2" />
                 Watch Video
-            </a>
+            </button>
         </div>
     );
 };
@@ -143,10 +157,12 @@ const VideoCard = ({ title, speaker, duration, url, description, accent, categor
 const LeadershipVideosScreen = () => {
     // --- Consume services ---
     const { navigate, db, user } = useAppServices(); // cite: useAppServices.jsx
+    const { plan, currentWeek } = useDevPlan(); // Get plan data for unlocking logic
 
     // --- Load Videos from CMS ---
     const [cmsVideos, setCmsVideos] = useState([]);
     const [isLoadingCms, setIsLoadingCms] = useState(true);
+    const [selectedResource, setSelectedResource] = useState(null); // For viewer
     
     useEffect(() => {
         if (!db) return;
@@ -178,10 +194,44 @@ const LeadershipVideosScreen = () => {
         logWidthMeasurements('LeadershipVideos');
     }, []); // Empty dependency array ensures it runs only once on mount
 
+    // --- Calculate Unlocked Resources ---
+    const unlockedResourceIds = useMemo(() => {
+        if (!plan) return new Set();
+        const ids = new Set();
+        // Iterate through weeks 1 to currentWeek
+        for (let i = 1; i <= currentWeek; i++) {
+            const weekKey = `week${i}`;
+            if (plan[weekKey]?.items) {
+                plan[weekKey].items.forEach(item => {
+                    if (item.resourceId) ids.add(item.resourceId);
+                });
+            }
+        }
+        return ids;
+    }, [plan, currentWeek]);
+
+    // --- Calculate Newly Unlocked Resources (This Week) ---
+    const newResourceIds = useMemo(() => {
+        if (!plan) return new Set();
+        const ids = new Set();
+        const weekKey = `week${currentWeek}`;
+        if (plan[weekKey]?.items) {
+            plan[weekKey].items.forEach(item => {
+                if (item.resourceId) ids.add(item.resourceId);
+            });
+        }
+        return ids;
+    }, [plan, currentWeek]);
+
     // --- Convert CMS videos to grouped format by category ---
     const VIDEO_LISTS = useMemo(() => {
         const grouped = {};
         cmsVideos.forEach(video => {
+            // Check if video should be hidden
+            if (video.isHiddenUntilUnlocked && !unlockedResourceIds.has(video.id)) {
+                return; // Skip hidden videos that aren't unlocked
+            }
+
             const category = video.category || 'GENERAL';
             if (!grouped[category]) {
                 grouped[category] = [];
@@ -196,12 +246,15 @@ const LeadershipVideosScreen = () => {
                 category: video.category,
                 rating: video.metadata?.rating || 4.5,
                 views: video.metadata?.views || '',
-                tags: video.metadata?.tags || []
+                tags: video.metadata?.tags || [],
+                isNew: newResourceIds.has(video.id),
+                // Pass raw video object for viewer
+                rawVideo: video
             });
         });
         console.log('[LeadershipVideos] Loaded', cmsVideos.length, 'videos from CMS in', Object.keys(grouped).length, 'categories');
         return grouped;
-    }, [cmsVideos]);
+    }, [cmsVideos, unlockedResourceIds, newResourceIds]);
 
     // --- Enhanced State Management ---
     const [searchTerm, setSearchTerm] = useState('');
@@ -260,6 +313,18 @@ const LeadershipVideosScreen = () => {
         
         return videos;
     }, [selectedCategory, searchTerm, selectedTag, allVideos]);
+
+    const handleResourceClick = (video) => {
+        // Construct resource object for viewer
+        const resource = {
+            id: video.id,
+            title: video.title,
+            type: 'video', // Assuming all here are videos
+            url: video.url,
+            description: video.description
+        };
+        setSelectedResource(resource);
+    };
 
     // Get category display names and colors
     const categoryConfig = {
@@ -377,6 +442,7 @@ const LeadershipVideosScreen = () => {
                                 views={video.views}
                                 tags={video.tags}
                                 accent="TEAL"
+                                onClick={() => handleResourceClick(video)}
                             />
                         ))}
                     </div>
@@ -420,6 +486,7 @@ const LeadershipVideosScreen = () => {
                                         url={video.url}
                                         description={video.description}
                                         accent={config.color}
+                                        onClick={() => handleResourceClick(video)}
                                     />
                                 ))}
                             </div>
@@ -430,6 +497,13 @@ const LeadershipVideosScreen = () => {
                 );
                 })}
                 </>
+            )}
+            {/* Resource Viewer Modal */}
+            {selectedResource && (
+                <UniversalResourceViewer
+                    resource={selectedResource}
+                    onClose={() => setSelectedResource(null)}
+                />
             )}
         </PageLayout>
     );

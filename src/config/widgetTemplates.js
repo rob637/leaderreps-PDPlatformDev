@@ -440,20 +440,32 @@ export const WIDGET_TEMPLATES = {
     dayNames.indexOf(item.recommendedWeekDay) >= today.getDay()
   );
   
-  // Find new content items (first item of each type for "New Unlock")
+  // Find new content items (prioritize items with resources)
   const newUnlocks = [];
-  if (content.length > 0) {
-    newUnlocks.push({ type: 'Content', label: content[0].label, category: content[0].type });
-  }
-  if (community.length > 0) {
-    newUnlocks.push({ type: 'Community', label: community[0].label, category: community[0].type });
-  }
-  if (coaching.length > 0) {
-    newUnlocks.push({ type: 'Coaching', label: coaching[0].label, category: coaching[0].type });
+  
+  const addUnlock = (item, type) => {
+    // Only add if it has a resourceId (it's a library unlock) or if we want to show all items
+    if (item.resourceId) {
+       newUnlocks.push({ type, label: item.label, category: item.type });
+    }
+  };
+
+  content.forEach(i => addUnlock(i, 'Content'));
+  community.forEach(i => addUnlock(i, 'Community'));
+  coaching.forEach(i => addUnlock(i, 'Coaching'));
+
+  // Fallback: If no resources, show generic summary like before
+  if (newUnlocks.length === 0) {
+      if (content.length > 0) newUnlocks.push({ type: 'Content', label: content[0].label, category: content[0].type });
+      if (community.length > 0) newUnlocks.push({ type: 'Community', label: community[0].label, category: community[0].type });
+      if (coaching.length > 0) newUnlocks.push({ type: 'Coaching', label: coaching[0].label, category: coaching[0].type });
   }
 
+  // Limit to 3 to avoid overflow
+  const displayUnlocks = newUnlocks.slice(0, 3);
+
   // Check if we have any data
-  const hasData = upcomingPractice.length > 0 || newUnlocks.length > 0;
+  const hasData = upcomingPractice.length > 0 || displayUnlocks.length > 0;
 
   return (
     <Card title="Notifications" icon={Bell} accent="GRAY">
@@ -484,7 +496,7 @@ export const WIDGET_TEMPLATES = {
         ))}
 
         {/* New Unlocks - Content, Community, Coaching for this week */}
-        {newUnlocks.map((unlock, idx) => (
+        {displayUnlocks.map((unlock, idx) => (
           <div key={\`unlock-\${idx}\`} className="flex gap-3 items-start p-3 bg-blue-50 rounded-xl border border-blue-100">
             <div className="mt-1">
               <div className="w-2 h-2 rounded-full bg-blue-500" />

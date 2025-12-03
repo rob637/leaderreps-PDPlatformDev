@@ -14,7 +14,10 @@ import {
   BookOpen,
   Film,
   GraduationCap,
-  Loader
+  Loader,
+  Upload,
+  FileText,
+  Link as LinkIcon
 } from 'lucide-react';
 import { useAppServices } from '../../services/useAppServices';
 import { 
@@ -22,6 +25,7 @@ import {
   addContent, 
   updateContent, 
   deleteContent, 
+  uploadResourceFile,
   CONTENT_COLLECTIONS 
 } from '../../services/contentService';
 
@@ -50,6 +54,7 @@ const ContentManager = ({ contentType }) => {
   const [loading, setLoading] = useState(true);
   const [editingItem, setEditingItem] = useState(null);
   const [isAddingNew, setIsAddingNew] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
   const editFormRef = useRef(null);
   
   const config = CONTENT_TYPES[contentType];
@@ -81,7 +86,8 @@ const ContentManager = ({ contentType }) => {
       category: '',
       thumbnail: '',
       isActive: true,
-      order: 999
+      order: 999,
+      resourceType: 'link' // 'link' or 'file'
     });
     setIsAddingNew(true);
   };
@@ -91,7 +97,8 @@ const ContentManager = ({ contentType }) => {
     // Deep copy to avoid reference issues
     setEditingItem({ 
       ...item, 
-      metadata: item.metadata ? { ...item.metadata } : {} 
+      metadata: item.metadata ? { ...item.metadata } : {},
+      resourceType: item.metadata?.isUploadedFile ? 'file' : 'link'
     });
     setIsAddingNew(false);
     // Scroll to edit form after state update
@@ -102,6 +109,35 @@ const ContentManager = ({ contentType }) => {
         window.scrollTo({ top: y, behavior: 'smooth' });
       }
     }, 100);
+  };
+
+  const handleFileUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    try {
+      setIsUploading(true);
+      const folder = contentType === CONTENT_COLLECTIONS.VIDEOS ? 'resources/videos' : 'resources/documents';
+      const { url, metadata } = await uploadResourceFile(file, folder);
+      
+      setEditingItem(prev => ({
+        ...prev,
+        url: url,
+        metadata: {
+          ...prev.metadata,
+          isUploadedFile: true,
+          fileName: metadata.name,
+          fileSize: metadata.size,
+          fileType: metadata.type,
+          storagePath: metadata.fullPath
+        }
+      }));
+    } catch (error) {
+      console.error('Upload failed:', error);
+      alert('Failed to upload file. Please try again.');
+    } finally {
+      setIsUploading(false);
+    }
   };
 
   const handleSave = async () => {
@@ -230,17 +266,90 @@ const ContentManager = ({ contentType }) => {
             </div>
 
             {config.fields.includes('url') && (
-              <div>
-                <label className="block text-sm font-semibold mb-1 text-corporate-navy">
-                  URL *
+              <div className="space-y-3">
+                <label className="block text-sm font-semibold text-corporate-navy">
+                  Resource Type
                 </label>
-                <input
-                  type="url"
-                  value={editingItem.url}
-                  onChange={(e) => setEditingItem({ ...editingItem, url: e.target.value })}
-                  className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-corporate-teal focus:border-corporate-teal outline-none"
-                  placeholder="https://"
-                />
+                <div className="flex gap-4 mb-2">
+                  <button
+                    onClick={() => setEditingItem({ ...editingItem, resourceType: 'link' })}
+                    className={`flex items-center gap-2 px-4 py-2 rounded-lg border transition-all ${
+                      editingItem.resourceType === 'link'
+                        ? 'bg-corporate-teal text-white border-corporate-teal'
+                        : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
+                    }`}
+                  >
+                    <LinkIcon className="w-4 h-4" />
+                    External Link
+                  </button>
+                  <button
+                    onClick={() => setEditingItem({ ...editingItem, resourceType: 'file' })}
+                    className={`flex items-center gap-2 px-4 py-2 rounded-lg border transition-all ${
+                      editingItem.resourceType === 'file'
+                        ? 'bg-corporate-teal text-white border-corporate-teal'
+                        : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
+                    }`}
+                  >
+                    <FileText className="w-4 h-4" />
+                    Upload File
+                  </button>
+                </div>
+
+                {editingItem.resourceType === 'file' ? (
+                  <div className="border-2 border-dashed border-slate-300 rounded-xl p-6 text-center bg-slate-50 hover:bg-slate-100 transition-colors relative">
+                    {isUploading ? (
+                      <div className="flex flex-col items-center justify-center py-4">
+                        <Loader className="w-8 h-8 animate-spin text-corporate-teal mb-2" />
+                        <p className="text-sm text-slate-500">Uploading to The Vault...</p>
+                      </div>
+                    ) : (
+                      <>
+                        <input
+                          type="file"
+                          onChange={handleFileUpload}
+                          className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                          accept={contentType === CONTENT_COLLECTIONS.VIDEOS ? "video/*" : ".pdf,.doc,.docx"}
+                        />
+                        <div className="flex flex-col items-center justify-center pointer-events-none">
+                          <Upload className="w-10 h-10 text-slate-400 mb-2" />
+                          <p className="text-sm font-medium text-slate-700">
+                            Click or drag file to upload
+                          </p>
+                          <p className="text-xs text-slate-500 mt-1">
+                            {contentType === CONTENT_COLLECTIONS.VIDEOS ? 'MP4, MOV, WebM' : 'PDF, Word Docs'}
+                          </p>
+                        </div>
+                      </>
+                    )}
+                    
+                    {editingItem.url && editingItem.resourceType === 'file' && (
+                      <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-lg flex items-center gap-3 text-left">
+                        <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0">
+                          <FileText className="w-4 h-4 text-green-600" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-green-800 truncate">
+                            {editingItem.metadata?.fileName || 'Uploaded File'}
+                          </p>
+                          <p className="text-xs text-green-600 truncate">{editingItem.url}</p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div>
+                    <label className="block text-xs font-bold text-slate-500 uppercase mb-1">
+                      External URL *
+                    </label>
+                    <input
+                      type="url"
+                      value={editingItem.url}
+                      onChange={(e) => setEditingItem({ ...editingItem, url: e.target.value })}
+                      className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-corporate-teal focus:border-corporate-teal outline-none"
+                      placeholder="https://"
+                    />
+                  </div>
+                )}
               </div>
             )}
 
@@ -284,6 +393,19 @@ const ContentManager = ({ contentType }) => {
                 className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-corporate-teal focus:border-corporate-teal outline-none"
                 placeholder="https://"
               />
+            </div>
+
+            <div className="flex items-center gap-2 p-3 bg-slate-50 rounded-lg border border-slate-200">
+              <input
+                type="checkbox"
+                id="isHiddenUntilUnlocked"
+                checked={editingItem.isHiddenUntilUnlocked || false}
+                onChange={(e) => setEditingItem({ ...editingItem, isHiddenUntilUnlocked: e.target.checked })}
+                className="w-4 h-4 text-corporate-teal border-gray-300 rounded focus:ring-corporate-teal"
+              />
+              <label htmlFor="isHiddenUntilUnlocked" className="text-sm font-medium text-corporate-navy cursor-pointer select-none">
+                Hide from Library until Unlocked via Development Plan
+              </label>
             </div>
 
             {/* Additional metadata fields for readings */}

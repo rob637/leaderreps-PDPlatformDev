@@ -1,8 +1,15 @@
-import React from 'react';
-import { BookOpen, CheckCircle, Circle, MessageSquare, Users, Video, Zap, Repeat } from 'lucide-react';
+import React, { useState } from 'react';
+import { BookOpen, CheckCircle, Circle, MessageSquare, Users, Video, Zap, Repeat, Play, FileText, ExternalLink, Loader } from 'lucide-react';
 import { Card } from '../ui';
+import UniversalResourceViewer from '../ui/UniversalResourceViewer';
+import { doc, getDoc } from 'firebase/firestore';
+import { useAppServices } from '../../services/useAppServices';
+import { CONTENT_COLLECTIONS } from '../../services/contentService';
 
 const DevelopmentPlanWidget = ({ scope }) => {
+  const { db } = useAppServices();
+  const [viewingResource, setViewingResource] = useState(null);
+  const [loadingResource, setLoadingResource] = useState(false);
   const { 
     currentWeek,
     userProgress,
@@ -53,8 +60,50 @@ const DevelopmentPlanWidget = ({ scope }) => {
     }
   };
 
+  const handleViewResource = async (e, item) => {
+    e.stopPropagation(); // Prevent toggling completion
+    
+    if (item.url) {
+      // Legacy: direct URL
+      setViewingResource({ ...item, resourceType: 'link' });
+      return;
+    }
+
+    if (item.resourceId) {
+      setLoadingResource(item.id);
+      try {
+        // Determine collection based on type
+        let collectionName = CONTENT_COLLECTIONS.READINGS;
+        if (item.resourceType === 'video') collectionName = CONTENT_COLLECTIONS.VIDEOS;
+        else if (item.resourceType === 'community') collectionName = CONTENT_COLLECTIONS.COMMUNITY;
+        else if (item.resourceType === 'coaching') collectionName = CONTENT_COLLECTIONS.COACHING;
+        
+        const docRef = doc(db, collectionName, item.resourceId);
+        const docSnap = await getDoc(docRef);
+        
+        if (docSnap.exists()) {
+          setViewingResource({ id: docSnap.id, ...docSnap.data(), resourceType: item.resourceType });
+        } else {
+          alert("Resource not found. It may have been deleted.");
+        }
+      } catch (error) {
+        console.error("Error fetching resource:", error);
+        alert("Failed to load resource.");
+      } finally {
+        setLoadingResource(false);
+      }
+    }
+  };
+
   return (
-    <Card title={phase} subtitle={title} icon={BookOpen} accent="BLUE">
+    <>
+      {viewingResource && (
+        <UniversalResourceViewer 
+          resource={viewingResource} 
+          onClose={() => setViewingResource(null)} 
+        />
+      )}
+      <Card title={phase} subtitle={title} icon={BookOpen} accent="BLUE">
       <div className="space-y-4">
         {/* Header Info */}
         <div>
@@ -144,6 +193,24 @@ const DevelopmentPlanWidget = ({ scope }) => {
                   </p>
                 </div>
 
+                {(item.resourceId || item.url) && (
+                  <button
+                    onClick={(e) => handleViewResource(e, item)}
+                    className="p-2 text-slate-400 hover:text-corporate-teal hover:bg-teal-50 rounded-full transition-colors"
+                    title="View Resource"
+                  >
+                    {loadingResource === item.id ? (
+                      <Loader className="w-5 h-5 animate-spin" />
+                    ) : item.resourceType === 'video' ? (
+                      <Play className="w-5 h-5" />
+                    ) : item.resourceType === 'reading' || item.resourceType === 'pdf' ? (
+                      <FileText className="w-5 h-5" />
+                    ) : (
+                      <ExternalLink className="w-5 h-5" />
+                    )}
+                  </button>
+                )}
+
                 {isCompleted && <CheckCircle className="w-5 h-5 text-green-500" />}
               </div>
             );
@@ -188,6 +255,7 @@ const DevelopmentPlanWidget = ({ scope }) => {
 
       </div>
     </Card>
+    </>
   );
 };
 

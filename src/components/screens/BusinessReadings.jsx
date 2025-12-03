@@ -1,6 +1,8 @@
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { useAppServices } from '../../services/useAppServices.jsx';
 import { getReadings } from '../../services/contentService.js';
+import { useDevPlan } from '../../hooks/useDevPlan';
+import UniversalResourceViewer from '../ui/UniversalResourceViewer';
 import ConfigError from '../../components/system/ConfigError.jsx';
 import {
   BookOpen, Target, CheckCircle, Clock, AlertTriangle, MessageSquare, Filter, TrendingUp,
@@ -160,7 +162,7 @@ const AICoachInput = React.memo(({ aiQuery, handleAiQueryChange, submitHandler, 
 });
 AICoachInput.displayName = 'AICoachInput';
 
-function BookListStable({ filters, filteredBooks, savedBooks, selectedBook, onSelectBook, onToggleSave, handleSearchChange, handleFilterChange }) {
+function BookListStable({ filters, filteredBooks, savedBooks, selectedBook, onSelectBook, onToggleSave, handleSearchChange, handleFilterChange, newResourceIds }) {
     const totalBookCount = useMemo(() => Object.values(filteredBooks || {}).reduce((sum, arr) => sum + (Array.isArray(arr) ? arr.length : 0), 0), [filteredBooks]);
     const hasActiveFilters = filters.search || filters.complexity !== 'All' || filters.maxDuration !== 300;
     const isFilteredEmpty = totalBookCount === 0 && hasActiveFilters;
@@ -230,6 +232,7 @@ function BookListStable({ filters, filteredBooks, savedBooks, selectedBook, onSe
                       const isSaved = !!savedBooks[book.id];
                       const isSelected = selectedBook?.id === book.id;
                       const estimatedDuration = book.duration || getDerivedDuration(book);
+                      const isNew = newResourceIds?.has(book.id);
 
                       return (
                         <div key={book.id} className="relative h-full group">
@@ -239,6 +242,11 @@ function BookListStable({ filters, filteredBooks, savedBooks, selectedBook, onSe
                                 ${isSelected ? 'border-corporate-teal ring-1 ring-corporate-teal shadow-md' : 'border-slate-200 hover:border-corporate-teal/50 hover:shadow-md'}
                                 bg-white`}
                           >
+                            {isNew && (
+                                <div className="absolute top-2 left-2 z-10 bg-blue-600 text-white px-2 py-1 rounded text-xs font-bold shadow-md animate-pulse">
+                                    NEW
+                                </div>
+                            )}
                             <div className={`absolute top-0 left-0 right-0 h-1.5 rounded-t-2xl ${isSelected ? 'bg-corporate-teal' : 'bg-corporate-orange'}`} />
                             
                             <div className="flex-grow pt-2">
@@ -301,7 +309,7 @@ function BookListStable({ filters, filteredBooks, savedBooks, selectedBook, onSe
 function BookFlyerStable({
   selectedBook, htmlFlyer, isFlyerLoading, isExecutiveBrief, setIsExecutiveBrief,
   questionFeedback, aiResponse, aiQuery, handleAiQueryChange, submitHandler,
-  savedBooks, onToggleSave, onCommit, isCommitted, isSubmitting, onBack,
+  savedBooks, onToggleSave, onCommit, isCommitted, isSubmitting, onBack, onRead
 }) {
   const progressMinutes = 45;
   const totalDuration = selectedBook.duration || getDerivedDuration(selectedBook) || 180;
@@ -333,17 +341,25 @@ function BookFlyerStable({
               </div>
             </div>
           </div>
-          <div className="flex items-center gap-2">
-            <button 
-                type="button" 
-                role="switch" 
-                aria-checked={isExecutiveBrief} 
-                onClick={() => setIsExecutiveBrief(!isExecutiveBrief)}
-                className={`relative inline-flex items-center h-6 w-11 rounded-full transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-corporate-orange ${isExecutiveBrief ? 'bg-corporate-orange' : 'bg-slate-300'}`}
-            >
-                <span className={`inline-block w-4 h-4 transform bg-white rounded-full transition-transform duration-200 ${isExecutiveBrief ? 'translate-x-6' : 'translate-x-1'}`} />
-            </button>
-            <span className="text-sm font-semibold text-corporate-navy">Executive Brief</span>
+          <div className="flex items-center gap-4">
+            {selectedBook.url && (
+                 <Button onClick={onRead} variant="primary" size="sm">
+                     <BookOpen className="w-4 h-4 mr-2" />
+                     Read Document
+                 </Button>
+            )}
+            <div className="flex items-center gap-2">
+                <button 
+                    type="button" 
+                    role="switch" 
+                    aria-checked={isExecutiveBrief} 
+                    onClick={() => setIsExecutiveBrief(!isExecutiveBrief)}
+                    className={`relative inline-flex items-center h-6 w-11 rounded-full transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-corporate-orange ${isExecutiveBrief ? 'bg-corporate-orange' : 'bg-slate-300'}`}
+                >
+                    <span className={`inline-block w-4 h-4 transform bg-white rounded-full transition-transform duration-200 ${isExecutiveBrief ? 'translate-x-6' : 'translate-x-1'}`} />
+                </button>
+                <span className="text-sm font-semibold text-corporate-navy">Executive Brief</span>
+            </div>
           </div>
         </div>
 
@@ -423,9 +439,11 @@ export default function BusinessReadingsScreen() {
     db, user, dailyPracticeData, navigate,
     updateDailyPracticeData, callSecureGeminiAPI, hasGeminiKey, GEMINI_MODEL,
   } = useAppServices();
+  const { plan, currentWeek } = useDevPlan(); // Get plan data for unlocking logic
 
   const [cmsReadings, setCmsReadings] = useState([]);
   const [isLoadingCms, setIsLoadingCms] = useState(true);
+  const [selectedResource, setSelectedResource] = useState(null); // For viewer
   
   useEffect(() => {
     if (!db) return;
@@ -455,10 +473,44 @@ export default function BusinessReadingsScreen() {
   const [aiResponse, setAiResponse] = useState('');
   const [isSubmittingAi, setIsSubmittingAi] = useState(false);
 
+  // --- Calculate Unlocked Resources ---
+  const unlockedResourceIds = useMemo(() => {
+      if (!plan) return new Set();
+      const ids = new Set();
+      // Iterate through weeks 1 to currentWeek
+      for (let i = 1; i <= currentWeek; i++) {
+          const weekKey = `week${i}`;
+          if (plan[weekKey]?.items) {
+              plan[weekKey].items.forEach(item => {
+                  if (item.resourceId) ids.add(item.resourceId);
+              });
+          }
+      }
+      return ids;
+  }, [plan, currentWeek]);
+
+  // --- Calculate Newly Unlocked Resources (This Week) ---
+  const newResourceIds = useMemo(() => {
+      if (!plan) return new Set();
+      const ids = new Set();
+      const weekKey = `week${currentWeek}`;
+      if (plan[weekKey]?.items) {
+          plan[weekKey].items.forEach(item => {
+              if (item.resourceId) ids.add(item.resourceId);
+          });
+      }
+      return ids;
+  }, [plan, currentWeek]);
+
   const allBooks = useMemo(() => {
     if (cmsReadings && cmsReadings.length > 0) {
       const grouped = {};
       cmsReadings.forEach(reading => {
+        // Check if reading should be hidden
+        if (reading.isHiddenUntilUnlocked && !unlockedResourceIds.has(reading.id)) {
+            return; // Skip hidden readings that aren't unlocked
+        }
+
         const category = reading.category || 'Uncategorized';
         if (!grouped[category]) grouped[category] = [];
         grouped[category].push({
@@ -473,14 +525,15 @@ export default function BusinessReadingsScreen() {
           executiveBriefHTML: reading.metadata?.executiveBriefHTML || '',
           url: reading.url,
           tier: reading.tier,
-          isActive: reading.isActive
+          isActive: reading.isActive,
+          isHiddenUntilUnlocked: reading.isHiddenUntilUnlocked
         });
       });
       return grouped;
     } else {
       return {};
     }
-  }, [cmsReadings]);
+  }, [cmsReadings, unlockedResourceIds]);
 
   const deepDataSignature = useMemo(() => getDeepDataSignature(allBooks), [allBooks]);
 
@@ -611,6 +664,7 @@ export default function BusinessReadingsScreen() {
           onToggleSave={handleToggleSave}
           handleSearchChange={handleSearchChange}
           handleFilterChange={handleFilterChange}
+          newResourceIds={newResourceIds}
         />
       ) : (
         <BookFlyerStable
@@ -630,7 +684,16 @@ export default function BusinessReadingsScreen() {
           isCommitted={isCommitted}
           isSubmitting={isSubmittingAi}
           onBack={() => setSelectedBook(null)}
+          onRead={() => setSelectedResource({ ...selectedBook, type: 'pdf' })}
         />
+      )}
+
+      {/* Resource Viewer Modal */}
+      {selectedResource && (
+          <UniversalResourceViewer
+              resource={selectedResource}
+              onClose={() => setSelectedResource(null)}
+          />
       )}
     </PageLayout>
   );

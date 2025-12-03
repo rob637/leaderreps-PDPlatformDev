@@ -14,6 +14,12 @@ import {
   orderBy,
   serverTimestamp 
 } from 'firebase/firestore';
+import { 
+  getStorage, 
+  ref, 
+  uploadBytes, 
+  getDownloadURL 
+} from 'firebase/storage';
 
 /**
  * Content Schema (for all content types):
@@ -211,6 +217,38 @@ export const getCourses = async (db, userTier = 'free') => {
   return getContent(db, CONTENT_COLLECTIONS.COURSES, { userTier });
 };
 
+/**
+ * Upload a resource file to Firebase Storage
+ * @param {File} file - The file object to upload
+ * @param {string} folder - The folder path in storage (e.g., 'resources/videos')
+ * @returns {Promise<{url: string, metadata: object}>} - The download URL and metadata
+ */
+export const uploadResourceFile = async (file, folder = 'resources') => {
+  try {
+    const storage = getStorage();
+    // Create a unique filename: timestamp_originalName
+    const filename = `${Date.now()}_${file.name.replace(/[^a-zA-Z0-9.]/g, '_')}`;
+    const storageRef = ref(storage, `${folder}/${filename}`);
+    
+    const snapshot = await uploadBytes(storageRef, file);
+    const url = await getDownloadURL(snapshot.ref);
+    
+    return {
+      url,
+      metadata: {
+        name: file.name,
+        size: file.size,
+        type: file.type,
+        fullPath: snapshot.metadata.fullPath,
+        timeCreated: snapshot.metadata.timeCreated
+      }
+    };
+  } catch (error) {
+    console.error('Error uploading file:', error);
+    throw error;
+  }
+};
+
 export default {
   getContent,
   getAllContentAdmin,
@@ -218,6 +256,7 @@ export default {
   updateContent,
   deleteContent,
   deactivateContent,
+  uploadResourceFile,
   getReadings,
   getVideos,
   getCourses,

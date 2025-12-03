@@ -5,6 +5,8 @@ import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useAppServices } from '../../services/useAppServices.jsx'; // cite: useAppServices.jsx
 import { membershipService } from '../../services/membershipService.js';
 import contentService, { CONTENT_COLLECTIONS } from '../../services/contentService.js';
+import { useDevPlan } from '../../hooks/useDevPlan';
+import UniversalResourceViewer from '../ui/UniversalResourceViewer';
 import { logWidthMeasurements } from '../../utils/debugWidth.js';
 import { useFeatures } from '../../providers/FeatureProvider';
 import WidgetRenderer from '../admin/WidgetRenderer';
@@ -13,7 +15,7 @@ import { useLayout } from '../../providers/LayoutProvider';
 // --- Icons ---
 import {
     Users, MessageSquare, Briefcase, Bell, PlusCircle, User, Target, Filter, Clock,
-    Star, CheckCircle, Award, Link, Send, Loader, Heart, X, UserPlus, Video
+    Star, CheckCircle, Award, Link, Send, Loader, Heart, X, UserPlus, Video, BookOpen, FileText
 } from 'lucide-react';
 import { Button, Card, LoadingSpinner, PageLayout, NoWidgetsEnabled } from '../ui';
 
@@ -378,6 +380,114 @@ const NewThreadView = ({ setView }) => {
 };
 
 
+const CommunityResourcesView = ({ db }) => {
+    const { plan, currentWeek } = useDevPlan();
+    const [resources, setResources] = useState([]);
+    const [isLoading, setIsLoading] = useState(true);
+    const [selectedResource, setSelectedResource] = useState(null);
+
+    useEffect(() => {
+        const fetchResources = async () => {
+            if (!db) return;
+            setIsLoading(true);
+            try {
+                // Fetch from content_community
+                const allItems = await contentService.getContent(db, CONTENT_COLLECTIONS.COMMUNITY);
+                setResources(allItems);
+            } catch (error) {
+                console.error("Error fetching community resources:", error);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+        fetchResources();
+    }, [db]);
+
+    const unlockedResourceIds = useMemo(() => {
+        if (!plan) return new Set();
+        const ids = new Set();
+        for (let i = 1; i <= currentWeek; i++) {
+            const weekKey = `week${i}`;
+            if (plan[weekKey]?.items) {
+                plan[weekKey].items.forEach(item => {
+                    if (item.resourceId) ids.add(item.resourceId);
+                });
+            }
+        }
+        return ids;
+    }, [plan, currentWeek]);
+
+    const newResourceIds = useMemo(() => {
+        if (!plan) return new Set();
+        const ids = new Set();
+        const weekKey = `week${currentWeek}`;
+        if (plan[weekKey]?.items) {
+            plan[weekKey].items.forEach(item => {
+                if (item.resourceId) ids.add(item.resourceId);
+            });
+        }
+        return ids;
+    }, [plan, currentWeek]);
+
+    const visibleResources = useMemo(() => {
+        return resources.filter(item => {
+            if (item.isHiddenUntilUnlocked && !unlockedResourceIds.has(item.id)) return false;
+            // Show items that have a URL or are explicitly files/resources
+            return item.url || item.resourceType === 'file' || item.resourceType === 'video';
+        });
+    }, [resources, unlockedResourceIds]);
+
+    if (isLoading) return <LoadingSpinner message="Loading Resources..." />;
+
+    return (
+        <div className="space-y-6">
+            <div className="flex items-center justify-between">
+                <h2 className="text-2xl font-bold text-corporate-navy">Community Resources</h2>
+            </div>
+
+            {visibleResources.length > 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {visibleResources.map(resource => {
+                        const isNew = newResourceIds.has(resource.id);
+                        return (
+                        <Card key={resource.id} className="hover:shadow-md transition-shadow cursor-pointer relative" onClick={() => setSelectedResource(resource)}>
+                            {isNew && (
+                                <div className="absolute top-2 right-2 bg-blue-600 text-white px-2 py-1 rounded text-xs font-bold shadow-md animate-pulse">
+                                    NEW
+                                </div>
+                            )}
+                            <div className="flex items-start gap-3">
+                                <div className="p-2 bg-teal-50 rounded-lg">
+                                    {resource.resourceType === 'video' ? <Video className="w-6 h-6 text-teal-600" /> :
+                                     resource.resourceType === 'file' ? <FileText className="w-6 h-6 text-teal-600" /> :
+                                     <Link className="w-6 h-6 text-teal-600" />}
+                                </div>
+                                <div>
+                                    <h3 className="font-semibold text-corporate-navy line-clamp-1">{resource.title}</h3>
+                                    <p className="text-sm text-slate-500 line-clamp-2 mt-1">{resource.description || 'No description'}</p>
+                                </div>
+                            </div>
+                        </Card>
+                    )})}
+                </div>
+            ) : (
+                <div className="text-center py-12 bg-slate-50 rounded-xl border border-dashed border-slate-300">
+                    <BookOpen className="w-12 h-12 text-slate-300 mx-auto mb-3" />
+                    <p className="text-slate-500">No resources available yet.</p>
+                </div>
+            )}
+
+            {selectedResource && (
+                <UniversalResourceViewer
+                    resource={selectedResource}
+                    onClose={() => setSelectedResource(null)}
+                />
+            )}
+        </div>
+    );
+};
+
+
 /* =========================================================
    MAIN COMPONENT: CommunityScreen (Router)
 ========================================================= */
@@ -472,10 +582,11 @@ const CommunityScreen = ({ simulatedTier }) => {
             { featureId: 'my-discussions', screen: 'my-threads', label: 'My Discussions', icon: Briefcase },
             { featureId: 'mastermind', screen: 'mentorship', label: 'Mastermind Groups', icon: Users },
             { featureId: 'live-events', screen: 'events', label: 'Live Events', icon: Video },
+            { featureId: 'community-resources', screen: 'resources', label: 'Resources', icon: BookOpen },
         ];
 
         const sortedItems = allItems
-            .filter(item => isFeatureEnabled(item.featureId))
+            .filter(item => isFeatureEnabled(item.featureId) || item.featureId === 'community-resources')
             .sort((a, b) => {
                 const orderA = getFeatureOrder(a.featureId);
                 const orderB = getFeatureOrder(b.featureId);
@@ -551,6 +662,9 @@ const CommunityScreen = ({ simulatedTier }) => {
                         </div>
                     </Card>
                 ) : null;
+
+            case 'resources':
+                return <CommunityResourcesView db={db} />;
 
             case 'notifications':
                 return <NotificationsView />;

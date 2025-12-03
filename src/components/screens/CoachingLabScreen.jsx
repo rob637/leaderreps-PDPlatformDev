@@ -9,13 +9,15 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 // FIX: Import the real useAppServices from the standard path.
 import { useAppServices } from '../../services/useAppServices.jsx';
 import contentService, { CONTENT_COLLECTIONS } from '../../services/contentService.js';
+import { useDevPlan } from '../../hooks/useDevPlan';
+import UniversalResourceViewer from '../ui/UniversalResourceViewer';
 import { logWidthMeasurements } from '../../utils/debugWidth.js';
 import { membershipService } from '../../services/membershipService.js';
 import { useNavigation } from '../../providers/NavigationProvider.jsx'; 
 import { useFeatures } from '../../providers/FeatureProvider';
-import { AlertTriangle, BarChart3, Beaker, Briefcase, CheckCircle, Clock, CornerRightUp, Cpu, Eye, HeartPulse, Info, Lightbulb, Mic, Play, PlusCircle, Send, ShieldCheck, Star, Target, TrendingUp, Users, X, Zap, ArrowLeft } from 'lucide-react'; 
+import { AlertTriangle, BarChart3, Beaker, Briefcase, CheckCircle, Clock, CornerRightUp, Cpu, Eye, HeartPulse, Info, Lightbulb, Mic, Play, PlusCircle, Send, ShieldCheck, Star, Target, TrendingUp, Users, X, Zap, ArrowLeft, BookOpen, FileText, Link, Video } from 'lucide-react'; 
 import { COLORS, COMPLEXITY_MAP } from './labs/labConstants.js';
-import { Button, Card, Tooltip, PageLayout, NoWidgetsEnabled } from '../ui';
+import { Button, Card, Tooltip, PageLayout, NoWidgetsEnabled, LoadingSpinner } from '../ui';
 
 const mdToHtml = async (markdown) => {
   let html = markdown;
@@ -1575,13 +1577,123 @@ const ScenarioLibraryView = ({ setCoachingLabView, setSelectedScenario, setMicro
 };
 
 
+const CoachingResourcesView = ({ setCoachingLabView, db }) => {
+    const { plan, currentWeek } = useDevPlan();
+    const [resources, setResources] = useState([]);
+    const [isLoading, setIsLoading] = useState(true);
+    const [selectedResource, setSelectedResource] = useState(null);
+
+    useEffect(() => {
+        const fetchResources = async () => {
+            if (!db) return;
+            setIsLoading(true);
+            try {
+                // Fetch from content_coaching
+                const allItems = await contentService.getContent(db, CONTENT_COLLECTIONS.COACHING);
+                setResources(allItems);
+            } catch (error) {
+                console.error("Error fetching coaching resources:", error);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+        fetchResources();
+    }, [db]);
+
+    const unlockedResourceIds = useMemo(() => {
+        if (!plan) return new Set();
+        const ids = new Set();
+        for (let i = 1; i <= currentWeek; i++) {
+            const weekKey = `week${i}`;
+            if (plan[weekKey]?.items) {
+                plan[weekKey].items.forEach(item => {
+                    if (item.resourceId) ids.add(item.resourceId);
+                });
+            }
+        }
+        return ids;
+    }, [plan, currentWeek]);
+
+    const newResourceIds = useMemo(() => {
+        if (!plan) return new Set();
+        const ids = new Set();
+        const weekKey = `week${currentWeek}`;
+        if (plan[weekKey]?.items) {
+            plan[weekKey].items.forEach(item => {
+                if (item.resourceId) ids.add(item.resourceId);
+            });
+        }
+        return ids;
+    }, [plan, currentWeek]);
+
+    const visibleResources = useMemo(() => {
+        return resources.filter(item => {
+            if (item.isHiddenUntilUnlocked && !unlockedResourceIds.has(item.id)) return false;
+            // Show items that have a URL or are explicitly files/resources
+            return item.url || item.resourceType === 'file' || item.resourceType === 'video';
+        });
+    }, [resources, unlockedResourceIds]);
+
+    if (isLoading) return <LoadingSpinner message="Loading Resources..." />;
+
+    return (
+        <div className="p-4 sm:p-3 sm:p-4 lg:p-6 lg:p-8">
+            <h1 className="corporate-heading-xl mb-4" style={{ color: 'var(--corporate-navy)' }}>Coaching Resources</h1>
+            <p className="text-lg text-gray-600 mb-6">Access guides, templates, and videos to support your coaching practice.</p>
+            <Button onClick={() => setCoachingLabView('coaching-lab-home')} variant="nav-back" size="sm" className="mb-8">
+                <ArrowLeft className="w-5 h-5 mr-2" /> Back to Coaching Lab
+            </Button>
+
+            {visibleResources.length > 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {visibleResources.map(resource => {
+                        const isNew = newResourceIds.has(resource.id);
+                        return (
+                        <Card key={resource.id} className="hover:shadow-md transition-shadow cursor-pointer relative" onClick={() => setSelectedResource(resource)}>
+                            {isNew && (
+                                <div className="absolute top-2 right-2 bg-blue-600 text-white px-2 py-1 rounded text-xs font-bold shadow-md animate-pulse">
+                                    NEW
+                                </div>
+                            )}
+                            <div className="flex items-start gap-3">
+                                <div className="p-2 bg-teal-50 rounded-lg">
+                                    {resource.resourceType === 'video' ? <Video className="w-6 h-6 text-teal-600" /> :
+                                     resource.resourceType === 'file' ? <FileText className="w-6 h-6 text-teal-600" /> :
+                                     <Link className="w-6 h-6 text-teal-600" />}
+                                </div>
+                                <div>
+                                    <h3 className="font-semibold text-corporate-navy line-clamp-1">{resource.title}</h3>
+                                    <p className="text-sm text-slate-500 line-clamp-2 mt-1">{resource.description || 'No description'}</p>
+                                </div>
+                            </div>
+                        </Card>
+                    )})}
+                </div>
+            ) : (
+                <div className="text-center py-12 bg-slate-50 rounded-xl border border-dashed border-slate-300">
+                    <BookOpen className="w-12 h-12 text-slate-300 mx-auto mb-3" />
+                    <p className="text-slate-500">No resources available yet.</p>
+                </div>
+            )}
+
+            {selectedResource && (
+                <UniversalResourceViewer
+                    resource={selectedResource}
+                    onClose={() => setSelectedResource(null)}
+                />
+            )}
+        </div>
+    );
+};
+
+
 // --- MAIN COACHING LAB ROUTER ---
 export default function CoachingLabScreen({ simulatedTier }) {
     const [view, setView] = useState('coaching-lab-home');
     const [selectedScenario, setSelectedScenario] = useState(null);
     const [preparedSBI, setPreparedSBI] = useState(null);
     const [microLearningTopic, setMicroLearningTopic] = useState(null);
-    const { navigate, currentUser, membershipData } = useAppServices();
+    const { navigate, currentUser, membershipData, db } = useAppServices();
     const { isFeatureEnabled, getFeatureOrder } = useFeatures();
     
     // Check membership access - use simulatedTier if provided, otherwise use actual membership
@@ -1627,6 +1739,13 @@ export default function CoachingLabScreen({ simulatedTier }) {
             onClick: () => setView('progress-analytics')
         },
         {
+            featureId: 'coaching-resources',
+            title: 'Coaching Resources',
+            icon: BookOpen,
+            description: 'Access guides, templates, and videos to support your coaching practice.',
+            onClick: () => setView('resources')
+        },
+        {
             featureId: 'practice-history',
             title: 'Practice History',
             icon: Clock,
@@ -1648,7 +1767,7 @@ export default function CoachingLabScreen({ simulatedTier }) {
             onClick: () => {}
         }
     ]
-    .filter(item => isFeatureEnabled(item.featureId))
+    .filter(item => isFeatureEnabled(item.featureId) || item.featureId === 'coaching-resources')
     .sort((a, b) => {
         const orderA = getFeatureOrder(a.featureId);
         const orderB = getFeatureOrder(b.featureId);
@@ -1661,6 +1780,8 @@ export default function CoachingLabScreen({ simulatedTier }) {
         switch (view) {
             case 'progress-analytics':
                 return <ProgressAnalyticsView setCoachingLabView={setView} />;
+            case 'resources':
+                return <CoachingResourcesView setCoachingLabView={setView} db={db} />;
             case 'scenario-library':
                 return <ScenarioLibraryView {...viewProps} />;
             case 'micro-learning':
