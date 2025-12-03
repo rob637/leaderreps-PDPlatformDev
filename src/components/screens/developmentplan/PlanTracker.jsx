@@ -80,11 +80,24 @@ const PlanTracker = ({
       recommendedWeekDay: item.recommendedWeekDay
     }));
 
+    // Normalize reps - they use repId, repLabel, repType
+    const normalizeReps = (items) => (items || []).map(item => ({
+      id: item.repId || item.id,
+      repId: item.repId || item.id,
+      label: item.repLabel || item.label,
+      repLabel: item.repLabel || item.label,
+      repType: item.repType || item.type,
+      type: item.repType || item.type,
+      isRequired: item.isRequired ?? true
+    }));
+
     return {
       ...displayWeek,
       content: normalize(displayWeek.content, 'contentItem'),
       community: normalize(displayWeek.community, 'communityItem'),
-      coaching: normalize(displayWeek.coaching, 'coachingItem')
+      coaching: normalize(displayWeek.coaching, 'coachingItem'),
+      reps: normalizeReps(displayWeek.reps),
+      dailyReps: normalizeReps(displayWeek.dailyReps)
     };
   }, [displayWeek]);
 

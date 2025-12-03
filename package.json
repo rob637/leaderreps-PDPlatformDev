@@ -18,7 +18,10 @@
     "precommit": "npm run lint:ui && npm run lint",
     "test": "vitest",
     "test:run": "vitest run",
-    "test:coverage": "vitest --coverage"
+    "test:coverage": "vitest --coverage",
+    "data:export": "node scripts/migrate-app-data.js export",
+    "data:import": "node scripts/migrate-app-data.js import",
+    "data:list": "node scripts/migrate-app-data.js list"
   },
   "engines": {
     "node": ">=20.x"
