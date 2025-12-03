@@ -451,6 +451,7 @@ export default function BusinessReadingsScreen() {
       try {
         setIsLoadingCms(true);
         const readings = await getReadings(db, user);
+        console.log('[BusinessReadings] Loaded readings from CMS:', readings);
         setCmsReadings(readings);
       } catch (error) {
         console.error('[BusinessReadings] Error loading from CMS:', error);
@@ -492,6 +493,9 @@ export default function BusinessReadingsScreen() {
               }
           }
       });
+      console.log('[BusinessReadings] Master Plan:', masterPlan);
+      console.log('[BusinessReadings] Current Week:', currentWeek);
+      console.log('[BusinessReadings] Unlocked IDs:', Array.from(ids));
       return ids;
   }, [masterPlan, currentWeek]);
 
@@ -517,6 +521,13 @@ export default function BusinessReadingsScreen() {
     if (cmsReadings && cmsReadings.length > 0) {
       const grouped = {};
       cmsReadings.forEach(reading => {
+        // DEBUG: Log if we find the missing item
+        if (reading.title && (reading.title.includes('PDQ') || reading.title.includes('Feedback Loop'))) {
+             console.log('[BusinessReadings] Found target item in CMS:', reading);
+             console.log('[BusinessReadings] Is Unlocked?', unlockedResourceIds.has(reading.id));
+             console.log('[BusinessReadings] isHiddenUntilUnlocked?', reading.isHiddenUntilUnlocked);
+        }
+
         // Check if reading should be hidden
         if (reading.isHiddenUntilUnlocked && !unlockedResourceIds.has(reading.id)) {
             return; // Skip hidden readings that aren't unlocked
