@@ -486,9 +486,10 @@ export default function BusinessReadingsScreen() {
               if (week.content && Array.isArray(week.content)) {
                   week.content.forEach(item => {
                       if (!item) return;
-                      if (item.resourceId) ids.add(item.resourceId);
-                      if (item.contentItemId) ids.add(item.contentItemId);
-                      if (item.id) ids.add(item.id); // Fallback
+                      // Normalize all IDs to lowercase strings for robust matching
+                      if (item.resourceId) ids.add(String(item.resourceId).toLowerCase());
+                      if (item.contentItemId) ids.add(String(item.contentItemId).toLowerCase());
+                      if (item.id) ids.add(String(item.id).toLowerCase()); // Fallback
                   });
               }
           }
@@ -509,9 +510,9 @@ export default function BusinessReadingsScreen() {
       if (thisWeek?.content && Array.isArray(thisWeek.content)) {
           thisWeek.content.forEach(item => {
               if (!item) return;
-              if (item.resourceId) ids.add(item.resourceId);
-              if (item.contentItemId) ids.add(item.contentItemId);
-              if (item.id) ids.add(item.id); // Fallback
+              if (item.resourceId) ids.add(String(item.resourceId).toLowerCase());
+              if (item.contentItemId) ids.add(String(item.contentItemId).toLowerCase());
+              if (item.id) ids.add(String(item.id).toLowerCase()); // Fallback
           });
       }
       return ids;
@@ -521,15 +522,18 @@ export default function BusinessReadingsScreen() {
     if (cmsReadings && cmsReadings.length > 0) {
       const grouped = {};
       cmsReadings.forEach(reading => {
+        const readingId = String(reading.id).toLowerCase();
+
         // DEBUG: Log if we find the missing item
         if (reading.title && (reading.title.includes('PDQ') || reading.title.includes('Feedback Loop'))) {
              console.log('[BusinessReadings] Found target item in CMS:', reading);
-             console.log('[BusinessReadings] Is Unlocked?', unlockedResourceIds.has(reading.id));
+             console.log('[BusinessReadings] Normalized ID:', readingId);
+             console.log('[BusinessReadings] Is Unlocked?', unlockedResourceIds.has(readingId));
              console.log('[BusinessReadings] isHiddenUntilUnlocked?', reading.isHiddenUntilUnlocked);
         }
 
         // Check if reading should be hidden
-        if (reading.isHiddenUntilUnlocked && !unlockedResourceIds.has(reading.id)) {
+        if (reading.isHiddenUntilUnlocked && !unlockedResourceIds.has(readingId)) {
             return; // Skip hidden readings that aren't unlocked
         }
 
