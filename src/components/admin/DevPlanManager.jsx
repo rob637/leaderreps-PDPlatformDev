@@ -22,6 +22,7 @@ import {
   getDocs, 
   doc, 
   setDoc, 
+  updateDoc,
   deleteDoc, 
   query, 
   orderBy,
@@ -38,6 +39,7 @@ const DevPlanManager = () => {
   const [selectedWeekId, setSelectedWeekId] = useState(null);
   const [newWeekData, setNewWeekData] = useState(null);
   const [lovs, setLovs] = useState({});
+  const [lovIds, setLovIds] = useState({});
   const [viewMode, setViewMode] = useState('list'); // 'list' or 'edit'
 
   const loadData = useCallback(async () => {
@@ -46,11 +48,14 @@ const DevPlanManager = () => {
       // 1. Load LOVs
       const lovSnapshot = await getDocs(collection(db, CONTENT_COLLECTIONS.LOV));
       const lovData = {};
+      const ids = {};
       lovSnapshot.docs.forEach(doc => {
         const data = doc.data();
         lovData[data.title] = data.items;
+        ids[data.title] = doc.id;
       });
       setLovs(lovData);
+      setLovIds(ids);
 
       // 2. Load Weeks
       const weeksRef = collection(db, 'development_plan_v1');
@@ -75,17 +80,26 @@ const DevPlanManager = () => {
   }, [loadData]);
 
   const handleSeedLovs = async () => {
-    if (!confirm('This will add missing LOVs to the database. Continue?')) return;
+    if (!confirm('This will sync LOVs from the seed file to the database. Existing LOVs will be updated. Continue?')) return;
     try {
       for (const lov of SEED_DATA) {
         // Check if exists
-        if (!lovs[lov.title]) {
+        if (lovIds[lov.title]) {
+          // Update existing
+          await updateDoc(doc(db, CONTENT_COLLECTIONS.LOV, lovIds[lov.title]), {
+            items: lov.items,
+            description: lov.description,
+            updatedAt: serverTimestamp()
+          });
+          console.log(`Updated LOV: ${lov.title}`);
+        } else {
+          // Add new
           await addContent(db, CONTENT_COLLECTIONS.LOV, lov);
           console.log(`Seeded LOV: ${lov.title}`);
         }
       }
       await loadData(); // Reload
-      alert('LOVs seeded successfully!');
+      alert('LOVs synced successfully!');
     } catch (error) {
       console.error("Error seeding LOVs:", error);
       alert('Error seeding LOVs.');
@@ -175,6 +189,14 @@ const DevPlanManager = () => {
           </p>
         </div>
         <div className="flex gap-2">
+          {Object.keys(lovs).length > 0 && (
+            <button 
+              onClick={handleSeedLovs}
+              className="px-4 py-2 bg-orange-100 text-orange-700 rounded-lg text-sm font-bold hover:bg-orange-200"
+            >
+              Sync System LOVs
+            </button>
+          )}
           {Object.keys(lovs).length === 0 && (
             <button 
               onClick={handleSeedLovs}
