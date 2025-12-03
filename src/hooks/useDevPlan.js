@@ -256,6 +256,7 @@ export const useDevPlan = () => {
     initializePlan,
     toggleItemComplete,
     completeWeek,
-    simulatedNow // Expose for UI if needed
+    simulatedNow, // Expose for UI if needed
+    user // Expose user for access control
   };
 };

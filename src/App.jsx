@@ -36,6 +36,7 @@ import ConfigError from './components/system/ConfigError.jsx';
 import UpdateNotification from './components/ui/UpdateNotification.jsx';
 import { NotificationProvider } from './providers/NotificationProvider.jsx';
 import { TimeProvider } from './providers/TimeProvider.jsx';
+import { AccessControlProvider } from './providers/AccessControlProvider.jsx';
 
 /* =========================================================
    MAIN APP COMPONENT
@@ -131,29 +132,31 @@ function App() {
         >
           <FeatureProvider db={firebaseServices?.db}>
             <LayoutProvider>
-              <WidgetEditorProvider>
-                <NotificationProvider>
-                  {isAuthRequired ? (
-                  <AuthPanel 
-                    auth={firebaseServices.auth} 
-                    onSuccess={() => navigate('dashboard')} 
-                  />
-                ) : (
-                  <AppContent
-                    currentScreen={currentScreen}
-                    user={user}
-                    navParams={navParams}
-                    isMobileOpen={isMobileOpen}
-                    setIsMobileOpen={setIsMobileOpen}
-                    isAuthRequired={isAuthRequired}
-                    auth={firebaseServices.auth}
-                    goBack={goBack}
-                    canGoBack={canGoBack}
-                  />
-                )}
-                </NotificationProvider>
-              <WidgetEditorModal />
-              </WidgetEditorProvider>
+              <AccessControlProvider>
+                <WidgetEditorProvider>
+                  <NotificationProvider>
+                    {isAuthRequired ? (
+                    <AuthPanel 
+                      auth={firebaseServices.auth} 
+                      onSuccess={() => navigate('dashboard')} 
+                    />
+                  ) : (
+                    <AppContent
+                      currentScreen={currentScreen}
+                      user={user}
+                      navParams={navParams}
+                      isMobileOpen={isMobileOpen}
+                      setIsMobileOpen={setIsMobileOpen}
+                      isAuthRequired={isAuthRequired}
+                      auth={firebaseServices.auth}
+                      goBack={goBack}
+                      canGoBack={canGoBack}
+                    />
+                  )}
+                  </NotificationProvider>
+                <WidgetEditorModal />
+                </WidgetEditorProvider>
+              </AccessControlProvider>
             </LayoutProvider>
           </FeatureProvider>
         </DataProvider>

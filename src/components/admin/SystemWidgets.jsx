@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { Settings, Clock, Bell, RefreshCw, Info, Lightbulb } from 'lucide-react';
+import { Settings, Clock, Bell, RefreshCw, Info, Lightbulb, Shield } from 'lucide-react';
 import TimeTraveler from './TimeTraveler';
 import { Card } from '../ui';
 import { FEATURE_METADATA } from '../../config/widgetTemplates';
@@ -8,7 +8,7 @@ import WidgetRenderer from './WidgetRenderer';
 import { ENHANCEMENT_IDEAS } from '../../data/enhancementIdeas';
 
 // List of system widget IDs
-const SYSTEM_WIDGETS = ['system-reminders-controller', 'time-traveler'];
+const SYSTEM_WIDGETS = ['system-reminders-controller', 'time-traveler', 'admin-access-viewer'];
 
 /**
  * SystemWidgets - Admin System Tools Panel
@@ -91,6 +91,30 @@ const SystemWidgets = () => {
       {/* Widget Details Grid - Always show for reference */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         
+        {/* Admin Access Viewer Section */}
+        <Card title="Admin Access Viewer" icon={Shield} accent="navy">
+          <div className="space-y-4">
+            <p className="text-sm text-gray-600">
+              Inspect user progress and unlocked content.
+            </p>
+            
+            <div className="bg-indigo-50 border border-indigo-200 rounded-lg p-4">
+              <h4 className="font-semibold text-indigo-900 mb-2">Capabilities:</h4>
+              <ul className="text-sm text-indigo-800 space-y-1">
+                <li>• View current week and cumulative access</li>
+                <li>• List all unlocked reps and content items</li>
+                <li>• Verify "Unlock Engine" logic for specific users</li>
+              </ul>
+            </div>
+
+            <p className="text-xs text-gray-400 italic text-center">
+              {isFeatureEnabled('admin-access-viewer') 
+                ? '✓ Enabled - Widget shown above' 
+                : 'Enable in Widget Lab to activate'}
+            </p>
+          </div>
+        </Card>
+
         {/* Time Traveler Section */}
         <Card title="Time Traveler" icon={Clock} accent="navy">
           <div className="space-y-4">

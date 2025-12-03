@@ -1558,6 +1558,16 @@ const SystemRemindersController = () => {
 };
 render(<SystemRemindersController />);
     `,
+    'admin-access-viewer': `
+// Hardcoded widget: AdminAccessViewer
+// This widget is rendered directly by WidgetRenderer.jsx
+// This template is a placeholder for the Widget Manager.
+<Card title="Admin Access Viewer" icon={Shield} accent="NAVY">
+  <div className="p-4 text-center text-slate-500">
+    <p>This widget is rendered via a hardcoded component.</p>
+  </div>
+</Card>
+    `,
     'time-traveler': `
 const TimeTravelerWidget = () => {
   const [targetDate, setTargetDate] = React.useState('');
@@ -2320,6 +2330,7 @@ export const FEATURE_METADATA = {
   'locker-controller': { core: true, category: 'Locker', name: 'Controller', description: 'Locker Controller', purpose: 'Dashboard metadata.', extendedDescription: 'Displays current user, time, release group, and plan progress.' },
   'locker-reminders': { core: true, category: 'Locker', name: 'Reminders', description: 'Locker Reminders', purpose: 'Notification management.', extendedDescription: 'Allows the user to toggle and schedule daily reminders for key habits.' },
   'system-reminders-controller': { core: true, category: 'System', name: 'System Reminders', description: 'System Reminders Controller', purpose: 'Admin notification tools.', extendedDescription: 'Provides system status and test controls for the notification infrastructure.' },
+  'admin-access-viewer': { core: true, category: 'System', name: 'Admin Access Viewer', description: 'View user access levels.', purpose: 'Admin tool for checking user unlocks.', extendedDescription: 'Allows admins to view unlocked content and cumulative access for any user.' },
   'time-traveler': { core: true, category: 'System', name: 'Time Traveler', description: 'Time Travel Testing Widget', purpose: 'Test time-sensitive features.', extendedDescription: 'Allows admins to simulate different dates and times to test midnight rollover, scheduling, and time-based logic. Only visible to admin users.' },
   'locker-wins-history': { core: true, category: 'Locker', name: 'AM Bookend History', description: 'AM Bookend History', purpose: 'History of daily wins.', extendedDescription: 'Displays a spreadsheet-style history of AM Bookend wins and their completion status.' },
   'locker-scorecard-history': { core: true, category: 'Locker', name: 'Scorecard History', description: 'Scorecard History', purpose: 'History of daily scores.', extendedDescription: 'Displays a spreadsheet-style history of daily scorecard results.' },

@@ -592,7 +592,7 @@ const FeatureManager = () => {
       'locker-controller', 'locker-reminders', 'locker-reps-history'
     ],
     system: [
-      'system-reminders-controller', 'time-traveler'
+      'system-reminders-controller', 'time-traveler', 'admin-access-viewer'
     ]
   };
 

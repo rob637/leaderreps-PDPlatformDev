@@ -8,6 +8,7 @@ import WinTheDayWidget from '../widgets/WinTheDayWidget';
 import PMReflectionWidget from '../widgets/PMReflectionWidget';
 import DevelopmentPlanWidget from '../widgets/DevelopmentPlanWidget';
 import GroundingRepWidget from '../widgets/GroundingRepWidget';
+import AdminAccessViewer from './AdminAccessViewer';
 
 const WidgetRenderer = ({ widgetId, children, scope = {} }) => {
   const { features, isFeatureEnabled } = useFeatures();
@@ -27,6 +28,10 @@ const WidgetRenderer = ({ widgetId, children, scope = {} }) => {
 
   if (widgetId === 'development-plan') {
     return <DevelopmentPlanWidget scope={scope} />;
+  }
+
+  if (widgetId === 'admin-access-viewer') {
+    return <AdminAccessViewer />;
   }
 
   // NOTE: grounding-rep now uses the NUCLEAR template system below (not the hardcoded GroundingRepWidget)

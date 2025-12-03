@@ -14,7 +14,8 @@ import {
   AlertCircle,
   Loader,
   ArrowLeft,
-  Eye
+  Eye,
+  Zap
 } from 'lucide-react';
 import { useAppServices } from '../../services/useAppServices';
 import { 
@@ -143,6 +144,7 @@ const DevPlanManager = () => {
       content: [],
       community: [],
       coaching: [],
+      reps: [],
       reminderTemplates: [],
       isDraft: true
     };
@@ -353,6 +355,7 @@ const WeekEditor = ({ weekId, initialData, lovs, onSave, onCancel, allWeeks }) =
     content: [],
     community: [],
     coaching: [],
+    reps: [],
     reminderTemplates: [],
     isDraft: true
   };
@@ -710,6 +713,62 @@ const WeekEditor = ({ weekId, initialData, lovs, onSave, onCancel, allWeeks }) =
                     <button onClick={() => removeItem('coaching', idx)} className="text-red-400 hover:text-red-600 pt-2">
                       <Trash2 className="w-4 h-4" />
                     </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Special Reps Section */}
+            <div className="bg-purple-50 p-4 rounded-xl border border-purple-100">
+              <div className="flex justify-between items-center mb-4">
+                <h4 className="font-bold text-purple-900 flex items-center gap-2">
+                  <Zap className="w-5 h-5" /> Special Reps
+                </h4>
+                <button 
+                  onClick={() => addItem('reps', { repId: '', repType: 'Challenge', repLabel: '', isRequired: true })}
+                  className="text-xs font-bold text-purple-600 hover:underline flex items-center gap-1"
+                >
+                  <Plus className="w-3 h-3" /> Add Item
+                </button>
+              </div>
+              
+              <div className="space-y-3">
+                {formData.reps?.map((item, idx) => (
+                  <div key={idx} className="flex gap-3 items-start bg-white p-3 rounded border border-purple-100">
+                    <div className="flex-1 grid grid-cols-1 md:grid-cols-4 gap-3">
+                      <input 
+                        type="text" 
+                        placeholder="ID" 
+                        value={item.repId}
+                        onChange={e => updateItem('reps', idx, 'repId', e.target.value)}
+                        className="p-2 border rounded text-sm"
+                      />
+                      <input 
+                        type="text" 
+                        placeholder="Type (e.g. Challenge)" 
+                        value={item.repType}
+                        onChange={e => updateItem('reps', idx, 'repType', e.target.value)}
+                        className="p-2 border rounded text-sm"
+                      />
+                      <input 
+                        type="text" 
+                        placeholder="Label" 
+                        value={item.repLabel}
+                        onChange={e => updateItem('reps', idx, 'repLabel', e.target.value)}
+                        className="p-2 border rounded text-sm md:col-span-2"
+                      />
+                    </div>
+                    <div className="flex items-center gap-2 pt-2">
+                      <input 
+                        type="checkbox" 
+                        checked={item.isRequired}
+                        onChange={e => updateItem('reps', idx, 'isRequired', e.target.checked)}
+                      />
+                      <span className="text-xs text-slate-500">Req</span>
+                      <button onClick={() => removeItem('reps', idx)} className="text-red-400 hover:text-red-600">
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
                   </div>
                 ))}
               </div>
