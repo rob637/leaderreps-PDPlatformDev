@@ -10,16 +10,38 @@ const AdminAccessViewer = () => {
   const [accessReport, setAccessReport] = useState(null);
   const [loading, setLoading] = useState(false);
   const [masterPlan, setMasterPlan] = useState([]);
+  const [usersList, setUsersList] = useState([]);
 
-  // Load Master Plan once
+  // Load Master Plan and Users once
   useEffect(() => {
-    const loadPlan = async () => {
+    const loadData = async () => {
+      // Load Plan
       const weeksRef = collection(db, 'development_plan_v1');
       const q = query(weeksRef, orderBy('weekNumber', 'asc'));
       const snapshot = await getDocs(q);
       setMasterPlan(snapshot.docs.map(d => d.data()));
+
+      // Load Users
+      try {
+        const usersRef = collection(db, 'users');
+        const userSnapshot = await getDocs(usersRef);
+        const users = userSnapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        }));
+        
+        // Sort by name or email
+        users.sort((a, b) => {
+            const nameA = a.displayName || a.email || '';
+            const nameB = b.displayName || b.email || '';
+            return nameA.localeCompare(nameB);
+        });
+        setUsersList(users);
+      } catch (error) {
+        console.error("Error loading users:", error);
+      }
     };
-    loadPlan();
+    loadData();
   }, [db]);
 
   const handleSearch = async () => {
@@ -95,14 +117,23 @@ const AdminAccessViewer = () => {
       </h3>
       
       <div className="flex gap-2 mb-6">
-        <input 
-          type="text" 
-          placeholder="User UID" 
-          value={targetUserId}
-          onChange={e => setTargetUserId(e.target.value)}
-          className="border p-2 rounded flex-1"
-        />
-        <button onClick={handleSearch} className="bg-corporate-teal text-white px-4 py-2 rounded font-bold flex items-center gap-2">
+        <select
+            value={targetUserId}
+            onChange={e => setTargetUserId(e.target.value)}
+            className="border p-2 rounded flex-1 bg-white text-sm"
+        >
+            <option value="">Select a User...</option>
+            {usersList.map(user => (
+                <option key={user.id} value={user.id}>
+                    {user.displayName || 'No Name'} ({user.email || 'No Email'})
+                </option>
+            ))}
+        </select>
+        <button 
+            onClick={handleSearch} 
+            disabled={!targetUserId || loading}
+            className="bg-corporate-teal text-white px-4 py-2 rounded font-bold flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+        >
           <Search className="w-4 h-4" /> Check Access
         </button>
       </div>
