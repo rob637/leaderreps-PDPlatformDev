@@ -482,10 +482,12 @@ export default function BusinessReadingsScreen() {
       // Iterate through weeks 1 to currentWeek
       masterPlan.forEach(week => {
           if (week.weekNumber <= currentWeekNum) {
-              if (week.content) {
+              if (week.content && Array.isArray(week.content)) {
                   week.content.forEach(item => {
+                      if (!item) return;
                       if (item.resourceId) ids.add(item.resourceId);
                       if (item.contentItemId) ids.add(item.contentItemId);
+                      if (item.id) ids.add(item.id); // Fallback
                   });
               }
           }
@@ -500,10 +502,12 @@ export default function BusinessReadingsScreen() {
       const currentWeekNum = currentWeek?.weekNumber || 1;
       
       const thisWeek = masterPlan.find(w => w.weekNumber === currentWeekNum);
-      if (thisWeek?.content) {
+      if (thisWeek?.content && Array.isArray(thisWeek.content)) {
           thisWeek.content.forEach(item => {
+              if (!item) return;
               if (item.resourceId) ids.add(item.resourceId);
               if (item.contentItemId) ids.add(item.contentItemId);
+              if (item.id) ids.add(item.id); // Fallback
           });
       }
       return ids;
