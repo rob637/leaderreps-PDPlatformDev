@@ -6,7 +6,7 @@ import UniversalResourceViewer from '../ui/UniversalResourceViewer';
 import ConfigError from '../../components/system/ConfigError.jsx';
 import {
   BookOpen, Target, CheckCircle, Clock, AlertTriangle, MessageSquare, Filter, TrendingUp,
-  Star, Search as SearchIcon, Cpu, Zap, Info, Check, ArrowLeft
+  Star, Search as SearchIcon, Cpu, Zap, Info, Check, ArrowLeft, Loader
 } from 'lucide-react';
 import { DIMENSION_TO_TIER_MAP } from '../../data/LeadershipTiers.js';
 import { logWidthMeasurements } from '../../utils/debugWidth.js';
