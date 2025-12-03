@@ -1,5 +1,5 @@
 import { 
-  Flame, Trophy, MessageSquare, Calendar, BookOpen, Play, Book, Video, FileText, Users, UserPlus, Search, Radio, History, BarChart2, Bot, Cpu, Dumbbell, TrendingUp, CheckCircle, Edit, Lightbulb, CheckSquare, X, Plus, Loader, Save, Bell, Target, Zap, Crosshair, Flag, MessageCircle, Heart, Sun, Moon, PenTool, Quote, User
+  Flame, Trophy, MessageSquare, Calendar, BookOpen, Play, Book, Video, FileText, Users, UserPlus, Search, Radio, History, BarChart2, Bot, Cpu, Dumbbell, TrendingUp, CheckCircle, Edit, Lightbulb, CheckSquare, X, Plus, Loader, Save, Bell, Target, Zap, Crosshair, Flag, MessageCircle, Heart, Sun, Moon, PenTool, Quote, User, Repeat, Clock, Circle
 } from 'lucide-react';
 
 // Helper for Roadmap Widgets
@@ -100,6 +100,24 @@ export const WIDGET_TEMPLATES = {
     `,
     'grounding-rep': `
 (() => {
+  // Don't show in Week 1 - Grounding Rep starts Week 2
+  const weekNum = typeof currentWeekNumber !== 'undefined' ? currentWeekNumber : 1;
+  if (weekNum <= 1) {
+    return (
+      <Card title="Grounding Rep" icon={Zap} accent="ORANGE">
+        <div className="text-center py-6 px-4">
+          <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <Clock className="w-8 h-8 text-slate-400" />
+          </div>
+          <p className="text-sm font-medium text-slate-600 mb-2">Coming Soon</p>
+          <p className="text-xs text-slate-500">
+            The Grounding Rep will be available starting Week 2 of your development plan.
+          </p>
+        </div>
+      </Card>
+    );
+  }
+  
   const hasLIS = identityStatement && identityStatement.trim().length > 0;
   const isEditing = typeof isEditingLIS !== 'undefined' ? isEditingLIS : false;
   const setEditing = typeof setIsEditingLIS !== 'undefined' ? setIsEditingLIS : () => {};
@@ -2096,6 +2114,8 @@ render(<RepsHistoryWidget />);
     content = [], 
     community = [], 
     coaching = [],
+    dailyReps = [],
+    reps = [],
     reflectionPrompt
   } = currentWeek;
 
@@ -2215,6 +2235,41 @@ render(<RepsHistoryWidget />);
             );
           })}
         </div>
+
+        {/* Daily Reps Section */}
+        {(dailyReps.length > 0 || reps.length > 0) && (
+          <div className="space-y-2 pt-2 border-t border-slate-100">
+            <p className="text-xs text-slate-500 font-medium uppercase tracking-wider flex items-center gap-2">
+              <Zap className="w-4 h-4 text-purple-500" />
+              Daily Reps
+            </p>
+            <p className="text-xs text-slate-400 mb-2">
+              Practice these daily to reinforce learning
+            </p>
+            <div className="space-y-2">
+              {[...dailyReps, ...reps].map((rep, idx) => (
+                <div 
+                  key={rep.repId || rep.id || idx}
+                  className="flex items-start gap-3 p-3 bg-purple-50 border border-purple-100 rounded-xl"
+                >
+                  <div className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center bg-purple-100 text-purple-600">
+                    <Repeat className="w-4 h-4" />
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-slate-800">
+                      {rep.repLabel || rep.label || rep.name || 'Daily Rep'}
+                    </p>
+                    {rep.repType && (
+                      <p className="text-xs text-purple-600 capitalize">
+                        {rep.repType}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Reflection */}
         {reflectionPrompt && (

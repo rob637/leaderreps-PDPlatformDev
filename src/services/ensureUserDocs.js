@@ -4,8 +4,12 @@ import { buildUserProfilePath, buildModulePath } from './pathUtils.js';
 import { serverTimestamp } from 'firebase/firestore';
 import { timeService } from './timeService';
 
-export const ensureUserDocs = async (db, uid) => {
+export const ensureUserDocs = async (db, uidOrUser) => {
   try {
+    // Support both uid string and user object
+    const uid = typeof uidOrUser === 'string' ? uidOrUser : uidOrUser?.uid;
+    const user = typeof uidOrUser === 'object' ? uidOrUser : null;
+    
     if (!db || !uid) {
         console.warn('[ensureUserDocs] DB or UID missing, skipping.');
         return;
@@ -18,11 +22,34 @@ export const ensureUserDocs = async (db, uid) => {
     const userProfileSnap = await getDocEx(db, userProfilePath);
     
     if (!userProfileSnap.exists()) {
+        // Create new profile with user info from Firebase Auth
         await setDocEx(db, userProfilePath, {
             userId: uid,
+            email: user?.email || null,
+            displayName: user?.displayName || null,
+            photoURL: user?.photoURL || null,
             createdAt: timeService.getISOString(),
             _createdAt: serverTimestamp()
         });
+    } else {
+        // Update existing profile with latest user info (in case name/email changed)
+        const existingData = userProfileSnap.data();
+        const updates = {};
+        
+        if (user?.email && user.email !== existingData.email) {
+            updates.email = user.email;
+        }
+        if (user?.displayName && user.displayName !== existingData.displayName) {
+            updates.displayName = user.displayName;
+        }
+        if (user?.photoURL && user.photoURL !== existingData.photoURL) {
+            updates.photoURL = user.photoURL;
+        }
+        
+        if (Object.keys(updates).length > 0) {
+            updates.lastActive = serverTimestamp();
+            await setDocEx(db, userProfilePath, updates, true); // merge: true
+        }
     }
 
     // ==================== DEVELOPMENT PLAN MODULE ====================

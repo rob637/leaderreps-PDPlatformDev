@@ -87,7 +87,8 @@ function App() {
       setUser(user);
       setIsAuthReady(true);
       if (user) {
-        ensureUserDocs(firebaseServices.db, user.uid);
+        // Pass full user object to save profile data (email, displayName, etc.)
+        ensureUserDocs(firebaseServices.db, user);
       }
     });
     return () => unsubscribe();
