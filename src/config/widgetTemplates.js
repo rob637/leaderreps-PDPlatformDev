@@ -2054,7 +2054,11 @@ const ScorecardHistoryWidget = () => {
                       {entry.score} <span className="text-xs text-gray-400 font-normal ml-1">({pct}%)</span>
                     </td>
                     <td className="border border-gray-300 px-3 py-2 whitespace-nowrap text-center">
-                      {isPerfect ? (
+                      {isToday ? (
+                        <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-blue-100 text-blue-700 text-xs font-bold">
+                          IN PROGRESS
+                        </span>
+                      ) : isPerfect ? (
                         <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-green-100 text-green-700 text-xs font-bold">
                           <CheckCircle className="w-3 h-3" /> PERFECT
                         </span>
