@@ -1,10 +1,9 @@
 import React, { useState } from 'react';
 import { 
-  ToggleLeft, ToggleRight, FlaskConical, ArrowUp, ArrowDown, Edit3, Plus, Trash2, RefreshCw, Save, Flame, Bell, Target, Calendar, Moon, BookOpen, Play, Book, Video, FileText, Users, MessageSquare, UserPlus, Search, Radio, History, BarChart2, Bot, Cpu, Dumbbell, TrendingUp,
-  CheckSquare, Square, X, Trophy, ChevronRight, ArrowRight, Loader, Eye, EyeOff, Settings, Lightbulb, Zap, Crosshair, Flag, Circle, PenTool, CheckCircle
+  ToggleLeft, ToggleRight, FlaskConical, ArrowUp, ArrowDown, Plus, Trash2, RefreshCw, Save, Flame, Bell, Target, Calendar, Moon, BookOpen, Play, Book, Video, FileText, Users, MessageSquare, UserPlus, Search, Radio, History, BarChart2, Bot, Cpu, Dumbbell, TrendingUp,
+  CheckSquare, Square, X, Trophy, ChevronRight, ArrowRight, Loader, Eye, EyeOff, Settings, Lightbulb, Zap, Crosshair, Flag, Circle, PenTool, CheckCircle, Edit3
 } from 'lucide-react';
 import { useFeatures } from '../../providers/FeatureProvider';
-import { useWidgetEditor } from '../../providers/WidgetEditorProvider';
 import { WIDGET_TEMPLATES, FEATURE_METADATA } from '../../config/widgetTemplates';
 import { useAppServices } from '../../services/useAppServices';
 import { useDashboard } from '../screens/dashboard/DashboardHooks';
@@ -15,8 +14,7 @@ import { Button, ProgressBar } from '../screens/developmentplan/DevPlanComponent
 import { ENHANCEMENT_IDEAS } from '../../data/enhancementIdeas';
 
 const FeatureManager = () => {
-  const { features, toggleFeature, updateFeatureOrder, saveFeature, deleteFeature, isFeatureEnabled } = useFeatures();
-  const { openEditor } = useWidgetEditor();
+  const { features, toggleFeature, updateFeatureOrder, isFeatureEnabled } = useFeatures();
   const { 
     user, 
     dailyPracticeData, 
@@ -957,19 +955,6 @@ const FeatureManager = () => {
                       }`}
                   >
                     {feature.enabled ? <Eye className="w-3 h-3" /> : <EyeOff className="w-3 h-3" />}
-                  </button>
-                  {/* Edit Button */}
-                  <button 
-                    onClick={() => openEditor({
-                      widgetId: feature.id,
-                      widgetName: feature.name,
-                      scope: getScopeForWidget(feature.id),
-                      inputDescriptions: getInputDescriptionsForWidget(feature.id),
-                      initialCode: feature.code
-                    })} 
-                    className="p-1.5 rounded-full bg-blue-100 text-blue-500 hover:bg-blue-200 transition-all"
-                  >
-                    <Edit3 className="w-3 h-3" />
                   </button>
                   {/* Settings Button */}
                   <button 

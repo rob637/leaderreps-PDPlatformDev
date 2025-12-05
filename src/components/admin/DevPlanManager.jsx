@@ -23,7 +23,11 @@ import {
   Target,
   GraduationCap,
   Clock,
-  FileText
+  FileText,
+  Download,
+  X,
+  Copy,
+  Printer
 } from 'lucide-react';
 import { useAppServices } from '../../services/useAppServices';
 import { 
@@ -37,8 +41,6 @@ import {
   orderBy,
   serverTimestamp 
 } from 'firebase/firestore';
-import { SEED_DATA } from '../../data/seedLovs';
-import { SEED_WEEKS } from '../../data/seedWeeks';
 import { addContent, CONTENT_COLLECTIONS } from '../../services/contentService';
 import ResourceSelector from './ResourceSelector';
 
@@ -51,6 +53,7 @@ const DevPlanManager = () => {
   const [lovs, setLovs] = useState({});
   const [lovIds, setLovIds] = useState({});
   const [viewMode, setViewMode] = useState('list'); // 'list' or 'edit'
+  const [showReport, setShowReport] = useState(false);
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -88,53 +91,6 @@ const DevPlanManager = () => {
   useEffect(() => {
     loadData();
   }, [loadData]);
-
-  const handleSeedLovs = async () => {
-    if (!confirm('This will sync LOVs from the seed file to the database. Existing LOVs will be updated. Continue?')) return;
-    try {
-      for (const lov of SEED_DATA) {
-        // Check if exists
-        if (lovIds[lov.title]) {
-          // Update existing
-          await updateDoc(doc(db, CONTENT_COLLECTIONS.LOV, lovIds[lov.title]), {
-            items: lov.items,
-            description: lov.description,
-            updatedAt: serverTimestamp()
-          });
-          console.log(`Updated LOV: ${lov.title}`);
-        } else {
-          // Add new
-          await addContent(db, CONTENT_COLLECTIONS.LOV, lov);
-          console.log(`Seeded LOV: ${lov.title}`);
-        }
-      }
-      await loadData(); // Reload
-      alert('LOVs synced successfully!');
-    } catch (error) {
-      console.error("Error seeding LOVs:", error);
-      alert('Error seeding LOVs.');
-    }
-  };
-
-  const handleSeedWeeks = async () => {
-    if (!confirm('This will overwrite the first 8 weeks of the plan. Continue?')) return;
-    try {
-      for (const week of SEED_WEEKS) {
-        const docId = `week-${String(week.weekNumber).padStart(2, '0')}`;
-        await setDoc(doc(db, 'development_plan_v1', docId), {
-          ...week,
-          weekBlockId: docId,
-          updatedAt: serverTimestamp()
-        });
-        console.log(`Seeded Week: ${week.weekNumber}`);
-      }
-      await loadData();
-      alert('Weeks 1-8 seeded successfully!');
-    } catch (error) {
-      console.error("Error seeding weeks:", error);
-      alert('Error seeding weeks.');
-    }
-  };
 
   const handleCreateWeek = () => {
     const nextWeekNum = weeks.length + 1;
@@ -224,39 +180,31 @@ const DevPlanManager = () => {
           </p>
         </div>
         <div className="flex gap-2">
-          {Object.keys(lovs).length > 0 && (
-            <button 
-              onClick={handleSeedLovs}
-              className="px-4 py-2 bg-orange-100 text-orange-700 rounded-lg text-sm font-bold hover:bg-orange-200"
-            >
-              Sync System LOVs
-            </button>
-          )}
-          {Object.keys(lovs).length === 0 && (
-            <button 
-              onClick={handleSeedLovs}
-              className="px-4 py-2 bg-orange-100 text-orange-700 rounded-lg text-sm font-bold hover:bg-orange-200"
-            >
-              Seed System LOVs
-            </button>
-          )}
-          <button 
-            onClick={handleSeedWeeks}
-            className="px-4 py-2 bg-blue-100 text-blue-700 rounded-lg text-sm font-bold hover:bg-blue-200"
-          >
-            Seed Weeks 1-8
-          </button>
           {viewMode === 'list' && (
-            <button 
-              onClick={handleCreateWeek}
-              className="px-4 py-2 bg-corporate-teal text-white rounded-lg text-sm font-bold hover:bg-teal-700 flex items-center gap-2"
-            >
-              <Plus className="w-4 h-4" />
-              Add Week
-            </button>
+            <>
+              <button 
+                onClick={() => setShowReport(true)}
+                className="px-4 py-2 bg-slate-100 text-slate-700 rounded-lg text-sm font-bold hover:bg-slate-200 flex items-center gap-2"
+              >
+                <FileText className="w-4 h-4" />
+                Generate Report
+              </button>
+              <button 
+                onClick={handleCreateWeek}
+                className="px-4 py-2 bg-corporate-teal text-white rounded-lg text-sm font-bold hover:bg-teal-700 flex items-center gap-2"
+              >
+                <Plus className="w-4 h-4" />
+                Add Week
+              </button>
+            </>
           )}
         </div>
       </div>
+
+      {/* Report Modal */}
+      {showReport && (
+        <DevPlanReportModal weeks={weeks} onClose={() => setShowReport(false)} />
+      )}
 
       {/* Main Content Area */}
       <div className="flex-1 bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
@@ -1206,6 +1154,419 @@ const WeekEditor = ({ weekId, initialData, lovs, onSave, onCancel, allWeeks }) =
             </div>
           </div>
         )}
+      </div>
+    </div>
+  );
+};
+
+// Report Modal Component
+const DevPlanReportModal = ({ weeks, onClose }) => {
+  const [viewMode, setViewMode] = useState('table'); // 'table' or 'detailed'
+  const [copied, setCopied] = useState(false);
+
+  // Helper to count array items
+  const countItems = (arr) => Array.isArray(arr) ? arr.length : 0;
+
+  // Phase colors for badges
+  const phaseColors = {
+    'QuickStart': 'bg-green-100 text-green-700',
+    'Spaced Learning': 'bg-yellow-100 text-yellow-700',
+    'Clear Performance': 'bg-cyan-100 text-cyan-700',
+    'Impact': 'bg-purple-100 text-purple-700'
+  };
+
+  // Difficulty colors
+  const difficultyColors = {
+    'Foundation': 'bg-blue-100 text-blue-700',
+    'Intermediate': 'bg-orange-100 text-orange-700',
+    'Advanced': 'bg-red-100 text-red-700'
+  };
+
+  // Calculate summary stats
+  const stats = {
+    totalWeeks: weeks.length,
+    activeWeeks: weeks.filter(w => !w.isDraft).length,
+    draftWeeks: weeks.filter(w => w.isDraft).length,
+    totalContent: weeks.reduce((sum, w) => sum + countItems(w.content), 0),
+    totalCommunity: weeks.reduce((sum, w) => sum + countItems(w.community), 0),
+    totalCoaching: weeks.reduce((sum, w) => sum + countItems(w.coaching), 0),
+    totalReps: weeks.reduce((sum, w) => sum + countItems(w.reps) + countItems(w.dailyReps), 0),
+    totalTime: weeks.reduce((sum, w) => sum + (w.estimatedTimeMinutes || 0), 0)
+  };
+
+  // Phase breakdown
+  const phaseBreakdown = {};
+  weeks.forEach(w => {
+    phaseBreakdown[w.phase] = (phaseBreakdown[w.phase] || 0) + 1;
+  });
+
+  // Pillar breakdown
+  const pillarBreakdown = {};
+  weeks.forEach(w => {
+    (w.pillars || []).forEach(p => {
+      pillarBreakdown[p] = (pillarBreakdown[p] || 0) + 1;
+    });
+  });
+
+  // Generate CSV content
+  const generateCSV = () => {
+    const headers = ['Week', 'Title', 'Focus', 'Phase', 'Skills', 'Pillars', 'Difficulty', 'Time (min)', 'Content', 'Community', 'Coaching', 'Reps', 'Status'];
+    const rows = weeks.map(w => [
+      w.weekNumber,
+      `"${w.title || ''}"`,
+      `"${w.focus || ''}"`,
+      `"${w.phase || ''}"`,
+      `"${(w.skills || []).join(', ')}"`,
+      `"${(w.pillars || []).join(', ')}"`,
+      `"${w.difficultyLevel || ''}"`,
+      w.estimatedTimeMinutes || '',
+      countItems(w.content),
+      countItems(w.community),
+      countItems(w.coaching),
+      countItems(w.reps) + countItems(w.dailyReps),
+      w.isDraft ? 'Draft' : 'Active'
+    ]);
+    return [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+  };
+
+  // Download CSV
+  const handleDownloadCSV = () => {
+    const csv = generateCSV();
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `development-plan-report-${new Date().toISOString().split('T')[0]}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  // Copy to clipboard
+  const handleCopyToClipboard = () => {
+    const text = weeks.map(w => 
+      `Week ${w.weekNumber}: ${w.title} | ${w.focus} | ${w.phase} | ${(w.skills || []).join(', ')} | ${w.isDraft ? 'DRAFT' : 'ACTIVE'}`
+    ).join('\n');
+    navigator.clipboard.writeText(text);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  // Print
+  const handlePrint = () => {
+    window.print();
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-xl shadow-2xl max-w-6xl w-full max-h-[90vh] flex flex-col">
+        {/* Header */}
+        <div className="flex justify-between items-center p-4 border-b bg-slate-50 rounded-t-xl">
+          <div>
+            <h2 className="text-xl font-bold text-corporate-navy flex items-center gap-2">
+              <FileText className="w-5 h-5" />
+              Development Plan Report
+            </h2>
+            <p className="text-sm text-slate-500">
+              Generated: {new Date().toLocaleString()}
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            {/* View Toggle */}
+            <div className="flex bg-slate-200 rounded-lg p-1">
+              <button
+                onClick={() => setViewMode('table')}
+                className={`px-3 py-1 text-sm rounded ${viewMode === 'table' ? 'bg-white shadow font-bold' : 'text-slate-600'}`}
+              >
+                Table
+              </button>
+              <button
+                onClick={() => setViewMode('detailed')}
+                className={`px-3 py-1 text-sm rounded ${viewMode === 'detailed' ? 'bg-white shadow font-bold' : 'text-slate-600'}`}
+              >
+                Detailed
+              </button>
+            </div>
+            {/* Action buttons */}
+            <button
+              onClick={handleCopyToClipboard}
+              className="p-2 hover:bg-slate-100 rounded-lg text-slate-600"
+              title="Copy to clipboard"
+            >
+              {copied ? <CheckCircle className="w-5 h-5 text-green-500" /> : <Copy className="w-5 h-5" />}
+            </button>
+            <button
+              onClick={handleDownloadCSV}
+              className="p-2 hover:bg-slate-100 rounded-lg text-slate-600"
+              title="Download CSV"
+            >
+              <Download className="w-5 h-5" />
+            </button>
+            <button
+              onClick={handlePrint}
+              className="p-2 hover:bg-slate-100 rounded-lg text-slate-600"
+              title="Print"
+            >
+              <Printer className="w-5 h-5" />
+            </button>
+            <button
+              onClick={onClose}
+              className="p-2 hover:bg-red-100 rounded-lg text-slate-600 hover:text-red-600"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+        </div>
+
+        {/* Summary Stats */}
+        <div className="p-4 bg-gradient-to-r from-corporate-navy to-corporate-navy/90 text-white">
+          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-4 text-center">
+            <div>
+              <div className="text-2xl font-bold">{stats.totalWeeks}</div>
+              <div className="text-xs opacity-75">Total Weeks</div>
+            </div>
+            <div>
+              <div className="text-2xl font-bold text-green-300">{stats.activeWeeks}</div>
+              <div className="text-xs opacity-75">Active</div>
+            </div>
+            <div>
+              <div className="text-2xl font-bold text-yellow-300">{stats.draftWeeks}</div>
+              <div className="text-xs opacity-75">Draft</div>
+            </div>
+            <div>
+              <div className="text-2xl font-bold">{stats.totalContent}</div>
+              <div className="text-xs opacity-75">Content</div>
+            </div>
+            <div>
+              <div className="text-2xl font-bold">{stats.totalCommunity}</div>
+              <div className="text-xs opacity-75">Community</div>
+            </div>
+            <div>
+              <div className="text-2xl font-bold">{stats.totalCoaching}</div>
+              <div className="text-xs opacity-75">Coaching</div>
+            </div>
+            <div>
+              <div className="text-2xl font-bold">{stats.totalReps}</div>
+              <div className="text-xs opacity-75">Daily Reps</div>
+            </div>
+            <div>
+              <div className="text-2xl font-bold">{(stats.totalTime / 60).toFixed(1)}h</div>
+              <div className="text-xs opacity-75">Total Time</div>
+            </div>
+          </div>
+        </div>
+
+        {/* Content */}
+        <div className="flex-1 overflow-auto p-4 print:p-0">
+          {viewMode === 'table' ? (
+            /* TABLE VIEW */
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm border-collapse print:text-xs">
+                <thead className="bg-slate-100 sticky top-0">
+                  <tr>
+                    <th className="p-2 text-left font-bold border-b">Wk</th>
+                    <th className="p-2 text-left font-bold border-b">Title</th>
+                    <th className="p-2 text-left font-bold border-b">Focus</th>
+                    <th className="p-2 text-left font-bold border-b">Phase</th>
+                    <th className="p-2 text-left font-bold border-b">Skills</th>
+                    <th className="p-2 text-left font-bold border-b">Pillars</th>
+                    <th className="p-2 text-left font-bold border-b">Difficulty</th>
+                    <th className="p-2 text-center font-bold border-b">Time</th>
+                    <th className="p-2 text-center font-bold border-b" title="Content">📚</th>
+                    <th className="p-2 text-center font-bold border-b" title="Community">👥</th>
+                    <th className="p-2 text-center font-bold border-b" title="Coaching">🎯</th>
+                    <th className="p-2 text-center font-bold border-b" title="Reps">🔄</th>
+                    <th className="p-2 text-left font-bold border-b">Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {weeks.map((week, idx) => (
+                    <tr key={week.id || idx} className="border-b hover:bg-slate-50">
+                      <td className="p-2 font-bold text-corporate-navy">{week.weekNumber}</td>
+                      <td className="p-2 font-medium">{week.title}</td>
+                      <td className="p-2 text-slate-600">{week.focus}</td>
+                      <td className="p-2">
+                        <span className={`px-2 py-0.5 rounded text-xs font-bold ${phaseColors[week.phase] || 'bg-slate-100'}`}>
+                          {week.phase}
+                        </span>
+                      </td>
+                      <td className="p-2 text-xs text-slate-500 max-w-[150px] truncate" title={(week.skills || []).join(', ')}>
+                        {(week.skills || []).join(', ')}
+                      </td>
+                      <td className="p-2 text-xs text-slate-500">
+                        {(week.pillars || []).join(', ')}
+                      </td>
+                      <td className="p-2">
+                        <span className={`px-2 py-0.5 rounded text-xs ${difficultyColors[week.difficultyLevel] || 'bg-slate-100'}`}>
+                          {week.difficultyLevel}
+                        </span>
+                      </td>
+                      <td className="p-2 text-center">{week.estimatedTimeMinutes || '-'}</td>
+                      <td className="p-2 text-center">{countItems(week.content)}</td>
+                      <td className="p-2 text-center">{countItems(week.community)}</td>
+                      <td className="p-2 text-center">{countItems(week.coaching)}</td>
+                      <td className="p-2 text-center">{countItems(week.reps) + countItems(week.dailyReps)}</td>
+                      <td className="p-2">
+                        {week.isDraft ? (
+                          <span className="text-yellow-600 font-bold text-xs">DRAFT</span>
+                        ) : (
+                          <span className="text-green-600 font-bold text-xs">ACTIVE</span>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            /* DETAILED VIEW */
+            <div className="space-y-4">
+              {weeks.map((week, idx) => (
+                <div key={week.id || idx} className="border rounded-lg overflow-hidden">
+                  {/* Week Header */}
+                  <div className="bg-slate-100 p-3 flex justify-between items-center">
+                    <div className="flex items-center gap-3">
+                      <span className="text-2xl font-bold text-corporate-navy">#{week.weekNumber}</span>
+                      <div>
+                        <h3 className="font-bold text-corporate-navy">{week.title}</h3>
+                        <p className="text-sm text-slate-500">{week.focus}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className={`px-2 py-1 rounded text-xs font-bold ${phaseColors[week.phase] || 'bg-slate-200'}`}>
+                        {week.phase}
+                      </span>
+                      <span className={`px-2 py-1 rounded text-xs ${difficultyColors[week.difficultyLevel] || 'bg-slate-200'}`}>
+                        {week.difficultyLevel}
+                      </span>
+                      {week.isDraft ? (
+                        <span className="px-2 py-1 bg-yellow-100 text-yellow-700 rounded text-xs font-bold">DRAFT</span>
+                      ) : (
+                        <span className="px-2 py-1 bg-green-100 text-green-700 rounded text-xs font-bold">ACTIVE</span>
+                      )}
+                    </div>
+                  </div>
+                  
+                  {/* Week Details */}
+                  <div className="p-3 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 text-sm">
+                    {/* Skills & Pillars */}
+                    <div>
+                      <div className="font-bold text-slate-600 text-xs uppercase mb-1">Skills</div>
+                      <div className="flex flex-wrap gap-1">
+                        {(week.skills || []).map((skill, i) => (
+                          <span key={i} className="px-2 py-0.5 bg-blue-50 text-blue-700 rounded text-xs">{skill}</span>
+                        ))}
+                      </div>
+                      <div className="font-bold text-slate-600 text-xs uppercase mb-1 mt-2">Pillars</div>
+                      <div className="flex flex-wrap gap-1">
+                        {(week.pillars || []).map((pillar, i) => (
+                          <span key={i} className="px-2 py-0.5 bg-purple-50 text-purple-700 rounded text-xs">{pillar}</span>
+                        ))}
+                      </div>
+                    </div>
+                    
+                    {/* Content */}
+                    <div>
+                      <div className="font-bold text-slate-600 text-xs uppercase mb-1">
+                        <BookOpen className="w-3 h-3 inline mr-1" />
+                        Content ({countItems(week.content)})
+                      </div>
+                      <ul className="text-xs text-slate-600 space-y-0.5">
+                        {(week.content || []).slice(0, 3).map((c, i) => (
+                          <li key={i} className="truncate">
+                            • [{c.contentItemType}] {c.contentItemLabel}
+                          </li>
+                        ))}
+                        {countItems(week.content) > 3 && (
+                          <li className="text-slate-400">...and {countItems(week.content) - 3} more</li>
+                        )}
+                      </ul>
+                    </div>
+                    
+                    {/* Community & Coaching */}
+                    <div>
+                      <div className="font-bold text-slate-600 text-xs uppercase mb-1">
+                        <Users className="w-3 h-3 inline mr-1" />
+                        Community ({countItems(week.community)})
+                      </div>
+                      <ul className="text-xs text-slate-600 space-y-0.5">
+                        {(week.community || []).map((c, i) => (
+                          <li key={i} className="truncate">• {c.communityItemLabel}</li>
+                        ))}
+                      </ul>
+                      <div className="font-bold text-slate-600 text-xs uppercase mb-1 mt-2">
+                        <GraduationCap className="w-3 h-3 inline mr-1" />
+                        Coaching ({countItems(week.coaching)})
+                      </div>
+                      <ul className="text-xs text-slate-600 space-y-0.5">
+                        {(week.coaching || []).map((c, i) => (
+                          <li key={i} className="truncate">• {c.coachingItemLabel}</li>
+                        ))}
+                      </ul>
+                    </div>
+                    
+                    {/* Reps */}
+                    <div>
+                      <div className="font-bold text-slate-600 text-xs uppercase mb-1">
+                        <Zap className="w-3 h-3 inline mr-1" />
+                        Daily Reps ({countItems(week.reps) + countItems(week.dailyReps)})
+                      </div>
+                      <ul className="text-xs text-slate-600 space-y-0.5">
+                        {(week.reps || week.dailyReps || []).map((r, i) => (
+                          <li key={i} className="truncate">• {r.repLabel}</li>
+                        ))}
+                      </ul>
+                      {week.reflectionPrompt && (
+                        <>
+                          <div className="font-bold text-slate-600 text-xs uppercase mb-1 mt-2">Reflection</div>
+                          <p className="text-xs text-slate-500 italic">{week.reflectionPrompt}</p>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Footer Stats & Legend */}
+        <div className="p-3 border-t bg-slate-50 rounded-b-xl space-y-2">
+          <div className="flex flex-wrap gap-4 text-xs text-slate-500">
+            <span><strong>By Phase:</strong> {Object.entries(phaseBreakdown).map(([p, c]) => `${p}: ${c}`).join(' | ')}</span>
+            <span><strong>By Pillar:</strong> {Object.entries(pillarBreakdown).map(([p, c]) => `${p}: ${c}`).join(' | ')}</span>
+          </div>
+          
+          {/* Field Type Legend */}
+          <div className="pt-2 border-t border-slate-200">
+            <div className="text-xs text-slate-600 font-bold mb-1">📋 Field Types Key:</div>
+            <div className="flex flex-wrap gap-x-6 gap-y-1 text-xs">
+              <div className="flex items-center gap-4">
+                <span className="font-medium text-slate-500">LOV (List of Values):</span>
+                <span className="px-1.5 py-0.5 bg-blue-50 text-blue-700 rounded">Phase</span>
+                <span className="px-1.5 py-0.5 bg-blue-50 text-blue-700 rounded">Skills</span>
+                <span className="px-1.5 py-0.5 bg-blue-50 text-blue-700 rounded">Pillars</span>
+                <span className="px-1.5 py-0.5 bg-blue-50 text-blue-700 rounded">Difficulty</span>
+                <span className="px-1.5 py-0.5 bg-blue-50 text-blue-700 rounded">Content Type</span>
+                <span className="px-1.5 py-0.5 bg-blue-50 text-blue-700 rounded">Community Type</span>
+                <span className="px-1.5 py-0.5 bg-blue-50 text-blue-700 rounded">Coaching Type</span>
+              </div>
+              <div className="flex items-center gap-4">
+                <span className="font-medium text-slate-500">Free-form:</span>
+                <span className="px-1.5 py-0.5 bg-slate-100 text-slate-600 rounded border border-dashed border-slate-300">Title</span>
+                <span className="px-1.5 py-0.5 bg-slate-100 text-slate-600 rounded border border-dashed border-slate-300">Focus</span>
+                <span className="px-1.5 py-0.5 bg-slate-100 text-slate-600 rounded border border-dashed border-slate-300">Description</span>
+                <span className="px-1.5 py-0.5 bg-slate-100 text-slate-600 rounded border border-dashed border-slate-300">Reflection</span>
+                <span className="px-1.5 py-0.5 bg-slate-100 text-slate-600 rounded border border-dashed border-slate-300">Rep Labels</span>
+              </div>
+              <div className="flex items-center gap-4">
+                <span className="font-medium text-slate-500">Numeric:</span>
+                <span className="px-1.5 py-0.5 bg-green-50 text-green-700 rounded">Week #</span>
+                <span className="px-1.5 py-0.5 bg-green-50 text-green-700 rounded">Time (min)</span>
+                <span className="px-1.5 py-0.5 bg-green-50 text-green-700 rounded">Level</span>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );

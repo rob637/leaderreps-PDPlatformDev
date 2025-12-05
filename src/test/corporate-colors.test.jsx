@@ -9,7 +9,6 @@ import { CORPORATE_COLORS, APPROVED_COLORS, isApprovedColor, extractColorsFromEl
 
 // Import components to test
 import { Button, Card } from '../components/screens/dashboard/DashboardComponents.jsx'
-import { MembershipGate } from '../components/ui/MembershipGate.jsx'
 
 // Mock required context providers
 const MockProviders = ({ children }) => {
@@ -192,31 +191,6 @@ describe('Corporate Color Compliance', () => {
         value.includes('47A88D') || value.includes('71, 168, 141')
       )
       expect(hasTeal, 'Teal accent card should contain teal color').toBe(true)
-    })
-  })
-
-  describe('Membership Gate Component Compliance', () => {
-    it('should only use corporate colors for tier badges', () => {
-      render(
-        <MockProviders>
-          <MembershipGate 
-            requiredTier="professional"
-            currentTier="basic"
-            data-testid="membership-gate"
-          >
-            <div>Protected content</div>
-          </MembershipGate>
-        </MockProviders>
-      )
-      
-      const gate = screen.getByTestId('membership-gate')
-      const colors = extractColorsFromElement(gate)
-      
-      colors.forEach(({ property, value }) => {
-        expect(isApprovedColor(value),
-          `MembershipGate property '${property}' uses non-corporate color: ${value}`
-        ).toBe(true)
-      })
     })
   })
 

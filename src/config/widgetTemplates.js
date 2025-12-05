@@ -105,13 +105,13 @@ export const WIDGET_TEMPLATES = {
   if (weekNum <= 1) {
     return (
       <Card title="Grounding Rep" icon={Zap} accent="ORANGE">
-        <div className="text-center py-3 px-4">
-          <div className="w-12 h-12 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-2">
-            <Clock className="w-6 h-6 text-slate-400" />
+        <div className="text-center py-1 px-2">
+          <div className="w-8 h-8 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-1">
+            <Clock className="w-4 h-4 text-slate-400" />
           </div>
-          <p className="text-sm font-medium text-slate-600 mb-1">Coming Soon</p>
+          <p className="text-sm font-medium text-slate-600 mb-0.5">Coming Soon</p>
           <p className="text-xs text-slate-500">
-            The Grounding Rep will be available starting Week 2 of your development plan.
+            Available Week 2.
           </p>
         </div>
       </Card>
@@ -195,7 +195,7 @@ export const WIDGET_TEMPLATES = {
   if (isRevealed) {
     return (
       <Card title="Grounding Rep" icon={Zap} accent="ORANGE">
-        <div className="text-center relative overflow-hidden">
+        <div className="text-center relative overflow-hidden pt-0">
           {showConfetti && (
             <div className="absolute inset-0 pointer-events-none overflow-hidden">
               <div className="text-4xl animate-bounce absolute top-0 left-1/4">🎉</div>
@@ -203,18 +203,18 @@ export const WIDGET_TEMPLATES = {
             </div>
           )}
           
-          <div className="flex items-center justify-center gap-2 mb-3">
+          <div className="flex items-center justify-center gap-2 mb-2">
             <CheckCircle className="w-5 h-5 text-green-500" />
             <span className="text-xs font-bold text-green-600 uppercase tracking-wider">Grounding Rep Complete!</span>
           </div>
           
-          <Quote className="w-8 h-8 text-yellow-300 mx-auto mb-2 opacity-60" />
+          <Quote className="w-6 h-6 text-yellow-300 mx-auto mb-1 opacity-60" />
           
-          <p className="text-lg font-serif font-medium text-slate-800 italic px-4">
+          <p className="text-lg font-serif font-medium text-slate-800 italic px-4 leading-tight">
             "{identityStatement}"
           </p>
           
-          <div className="mt-4 flex justify-center gap-3">
+          <div className="mt-3 flex justify-center gap-3">
             <button 
               className="text-xs font-bold text-slate-500 hover:text-slate-700 uppercase tracking-wider flex items-center gap-1"
               onClick={handleClose}
@@ -238,8 +238,8 @@ export const WIDGET_TEMPLATES = {
   if (groundingRepDone) {
     return (
       <Card title="Grounding Rep" icon={Zap} accent="ORANGE">
-        <div className="text-center py-2">
-          <div className="flex items-center justify-center gap-2 mb-2">
+        <div className="text-center py-1">
+          <div className="flex items-center justify-center gap-2 mb-1">
             <CheckCircle className="w-5 h-5 text-green-500" />
             <span className="text-sm font-bold text-green-600">Complete for Today!</span>
           </div>
@@ -258,21 +258,21 @@ export const WIDGET_TEMPLATES = {
   return (
     <Card title="Grounding Rep" icon={Zap} accent="ORANGE">
       {hasLIS ? (
-        <div className="text-center py-2">
+        <div className="text-center py-0">
           <button
             onClick={handleReveal}
-            className="group relative w-full py-4 px-4 bg-gradient-to-br from-yellow-50 via-orange-50 to-yellow-50 rounded-xl border-2 border-dashed border-yellow-300 hover:border-yellow-400 hover:from-yellow-100 hover:via-orange-100 hover:to-yellow-100 transition-all duration-300"
+            className="group relative w-full py-3 px-4 bg-gradient-to-br from-yellow-50 via-orange-50 to-yellow-50 rounded-xl border-2 border-dashed border-yellow-300 hover:border-yellow-400 hover:from-yellow-100 hover:via-orange-100 hover:to-yellow-100 transition-all duration-300"
           >
-            <div className="flex flex-col items-center gap-2">
-              <div className="w-12 h-12 bg-yellow-100 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform duration-300 shadow-lg">
-                <Zap className="w-6 h-6 text-yellow-600 group-hover:text-yellow-700" />
+            <div className="flex flex-col items-center gap-1">
+              <div className="w-10 h-10 bg-yellow-100 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform duration-300 shadow-lg">
+                <Zap className="w-5 h-5 text-yellow-600 group-hover:text-yellow-700" />
               </div>
               <div>
-                <p className="text-base font-bold text-slate-800 mb-0.5">Ground Yourself</p>
-                <p className="text-xs text-slate-500">Tap to reveal your Leadership Identity</p>
+                <p className="text-sm font-bold text-slate-800 mb-0">Ground Yourself</p>
+                <p className="text-[10px] text-slate-500">Tap to reveal your Leadership Identity</p>
               </div>
-              <div className="text-xs font-medium text-yellow-600 bg-yellow-100 px-3 py-1 rounded-full">
-                +1 Rep Earned on Reveal
+              <div className="text-[10px] font-medium text-yellow-600 bg-yellow-100 px-2 py-0.5 rounded-full">
+                +1 Rep Earned
               </div>
             </div>
           </button>
@@ -355,17 +355,19 @@ export const WIDGET_TEMPLATES = {
     `,
     'daily-leader-reps': `
 (() => {
-  // Default reps if no development plan exists
-  const defaultReps = [
-    { id: 'r1', label: 'Review Calendar' },
-    { id: 'r2', label: 'Check Team Pulse' },
-    { id: 'r3', label: 'Send 1 Appreciation' }
-  ];
+  // Get current week's daily reps from the Development Plan
+  const currentWeek = typeof devPlanCurrentWeek !== 'undefined' ? devPlanCurrentWeek : null;
   
-  // Safely access developmentPlanData
-  const reps = (typeof developmentPlanData !== 'undefined' && developmentPlanData?.reps) 
-    ? developmentPlanData.reps 
-    : defaultReps;
+  // Daily reps come from the Dev Plan week data (dailyReps or reps array)
+  const weekReps = currentWeek?.dailyReps || currentWeek?.reps || [];
+  
+  // Map to consistent format with id and label
+  const reps = weekReps.length > 0 
+    ? weekReps.map((rep, idx) => ({
+        id: rep.repId || rep.id || \`rep-\${idx}\`,
+        label: rep.repLabel || rep.label || rep.name || 'Daily Rep'
+      }))
+    : []; // No default reps - only show what's in the Dev Plan
   
   // Track completed state locally
   // additionalCommitments is an array of objects { id, status, text }
@@ -382,6 +384,12 @@ export const WIDGET_TEMPLATES = {
   return (
     <Card title="Daily Reps" icon={Dumbbell} accent="NAVY">
       <div className="space-y-1">
+        {reps.length === 0 && (
+          <div className="p-3 bg-slate-50 rounded-xl border border-slate-100 text-center">
+            <p className="text-sm text-slate-500">No daily reps assigned for this week.</p>
+            <p className="text-xs text-slate-400 mt-1">Check your Development Plan for updates.</p>
+          </div>
+        )}
         {reps.map(rep => {
           const commitment = commitmentsList.find(c => c.id === rep.id);
           const isCompleted = commitment?.status === 'Committed';
@@ -411,7 +419,9 @@ export const WIDGET_TEMPLATES = {
           );
         })}
 
-        <p className="text-xs text-center text-slate-400 mt-3 italic">Autosaves to your locker each night at 11:59 PM</p>
+        {reps.length > 0 && (
+          <p className="text-xs text-center text-slate-400 mt-3 italic">Autosaves to your locker each night at 11:59 PM</p>
+        )}
       </div>
 
     </Card>
@@ -422,50 +432,82 @@ export const WIDGET_TEMPLATES = {
 (() => {
   // Get current week data from scope
   const currentWeek = typeof devPlanCurrentWeek !== 'undefined' ? devPlanCurrentWeek : null;
+  const navFn = typeof navigate !== 'undefined' ? navigate : (typeof scope !== 'undefined' && scope.navigate ? scope.navigate : () => {});
   
   // Extract all items from the current week
   const content = currentWeek?.content || [];
   const community = currentWeek?.community || [];
   const coaching = currentWeek?.coaching || [];
-  const allItems = [...content, ...community, ...coaching];
   
-  // Find items with recommendedWeekDay (Upcoming Practice)
+  // Find items with recommendedWeekDay (Upcoming Practice / Meetings)
   const today = new Date();
   const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
   const todayName = dayNames[today.getDay()];
   
-  // Get items scheduled for today or upcoming days this week
-  const upcomingPractice = allItems.filter(item => 
-    item.recommendedWeekDay && 
-    dayNames.indexOf(item.recommendedWeekDay) >= today.getDay()
-  );
+  // Get community items scheduled for specific days (like Live QS1 Meeting on Monday)
+  const upcomingPractice = community.filter(item => 
+    item.recommendedWeekDay
+  ).map(item => ({
+    ...item,
+    isPast: dayNames.indexOf(item.recommendedWeekDay) < today.getDay(),
+    isToday: item.recommendedWeekDay === todayName
+  }));
   
-  // Find new content items (prioritize items with resources)
+  // Build content unlocks with proper routes based on content type
   const newUnlocks = [];
   
-  const addUnlock = (item, type) => {
-    // Only add if it has a resourceId (it's a library unlock) or if we want to show all items
-    if (item.resourceId) {
-       newUnlocks.push({ type, label: item.label, category: item.type });
+  content.forEach(item => {
+    const label = item.contentItemLabel || item.label || item.title || 'Content';
+    const itemType = (item.contentItemType || item.type || '').toLowerCase();
+    
+    // Determine route based on content type
+    let route = 'business-readings';
+    let category = item.contentItemType || item.type || 'Content';
+    
+    if (itemType.includes('video') || itemType.includes('workout')) {
+      route = 'leadership-videos';
+      category = itemType.includes('workout') ? 'Workout' : 'Video';
+    } else if (itemType.includes('read') || itemType.includes('workbook') || itemType.includes('pdf')) {
+      route = 'business-readings';
+      category = itemType.includes('workbook') ? 'Workbook' : 'Reading';
     }
-  };
+    
+    newUnlocks.push({ 
+      type: 'Content', 
+      label, 
+      category,
+      route, 
+      resourceId: item.resourceId || item.contentItemId 
+    });
+  });
 
-  content.forEach(i => addUnlock(i, 'Content'));
-  community.forEach(i => addUnlock(i, 'Community'));
-  coaching.forEach(i => addUnlock(i, 'Coaching'));
+  // Add community items that don't have a specific day (or show all)
+  community.forEach(item => {
+    const label = item.communityItemLabel || item.label || 'Community';
+    newUnlocks.push({ 
+      type: 'Community', 
+      label, 
+      category: item.communityItemType || item.type || 'Community',
+      route: 'community', 
+      resourceId: item.resourceId || item.communityItemId,
+      day: item.recommendedWeekDay
+    });
+  });
 
-  // Fallback: If no resources, show generic summary like before
-  if (newUnlocks.length === 0) {
-      if (content.length > 0) newUnlocks.push({ type: 'Content', label: content[0].label, category: content[0].type });
-      if (community.length > 0) newUnlocks.push({ type: 'Community', label: community[0].label, category: community[0].type });
-      if (coaching.length > 0) newUnlocks.push({ type: 'Coaching', label: coaching[0].label, category: coaching[0].type });
-  }
-
-  // Limit to 3 to avoid overflow
-  const displayUnlocks = newUnlocks.slice(0, 3);
+  // Add coaching items
+  coaching.forEach(item => {
+    const label = item.coachingItemLabel || item.label || 'Coaching';
+    newUnlocks.push({ 
+      type: 'Coaching', 
+      label, 
+      category: item.coachingItemType || item.type || 'Coaching',
+      route: 'coaching-lab', 
+      resourceId: item.resourceId || item.coachingItemId 
+    });
+  });
 
   // Check if we have any data
-  const hasData = upcomingPractice.length > 0 || displayUnlocks.length > 0;
+  const hasData = newUnlocks.length > 0;
 
   return (
     <Card title="Notifications" icon={Bell} accent="GRAY">
@@ -477,40 +519,72 @@ export const WIDGET_TEMPLATES = {
           </div>
         )}
 
-        {/* Upcoming Practice - Items with recommendedWeekDay */}
-        {upcomingPractice.slice(0, 2).map((item, idx) => (
-          <div key={\`practice-\${idx}\`} className="flex gap-3 items-start p-3 bg-[#00A896]/10 rounded-xl border border-[#00A896]/20">
+        {/* Upcoming/Past Meetings - Community items with recommendedWeekDay */}
+        {upcomingPractice.map((item, idx) => (
+          <div 
+            key={\`practice-\${idx}\`} 
+            className={\`flex gap-3 items-start p-3 rounded-xl border cursor-pointer transition-colors \${
+              item.isPast 
+                ? 'bg-slate-50 border-slate-200 opacity-75' 
+                : 'bg-[#00A896]/10 border-[#00A896]/20 hover:bg-[#00A896]/20'
+            }\`}
+            onClick={() => navFn('community')}
+          >
             <div className="mt-1">
-              <div className="w-2 h-2 rounded-full bg-[#00A896]" />
+              <div className={\`w-2 h-2 rounded-full \${item.isPast ? 'bg-slate-400' : 'bg-[#00A896]'}\`} />
             </div>
-            <div>
-              <p className="text-xs font-bold text-[#00A896] uppercase mb-1">Upcoming Practice</p>
+            <div className="flex-1">
+              <p className={\`text-xs font-bold uppercase mb-1 \${item.isPast ? 'text-slate-500' : 'text-[#00A896]'}\`}>
+                {item.isPast ? 'Past Meeting' : item.isToday ? 'Today' : 'Upcoming'}
+              </p>
               <p className="text-sm font-medium text-slate-800">
-                {item.label}
+                {item.communityItemLabel || item.label}
               </p>
               <p className="text-xs text-slate-500 mt-0.5">
-                {item.recommendedWeekDay === todayName ? 'Today' : item.recommendedWeekDay}
+                {item.recommendedWeekDay} • {item.communityItemType || item.type}
               </p>
             </div>
           </div>
         ))}
 
-        {/* New Unlocks - Content, Community, Coaching for this week */}
-        {displayUnlocks.map((unlock, idx) => (
-          <div key={\`unlock-\${idx}\`} className="flex gap-3 items-start p-3 bg-blue-50 rounded-xl border border-blue-100">
+        {/* Content Unlocks - Videos, Readings, Workbooks */}
+        {newUnlocks.filter(u => u.type === 'Content').map((unlock, idx) => (
+          <div 
+            key={\`content-\${idx}\`} 
+            className="flex gap-3 items-start p-3 bg-blue-50 rounded-xl border border-blue-100 cursor-pointer hover:bg-blue-100 transition-colors"
+            onClick={() => navFn(unlock.route)}
+          >
             <div className="mt-1">
               <div className="w-2 h-2 rounded-full bg-blue-500" />
             </div>
-            <div>
-              <p className="text-xs font-bold text-blue-800 uppercase mb-1">New Unlock • {unlock.type}</p>
-              <p className="text-sm font-medium text-slate-800">
+            <div className="flex-1 min-w-0">
+              <p className="text-xs font-bold text-blue-800 uppercase mb-1">
+                New Unlock • {unlock.category}
+              </p>
+              <p className="text-sm font-medium text-slate-800 underline decoration-blue-300 underline-offset-2 break-words">
                 {unlock.label}
               </p>
-              {unlock.category && (
-                <p className="text-xs text-slate-500 mt-0.5 capitalize">
-                  {unlock.category.replace(/_/g, ' ')}
-                </p>
-              )}
+            </div>
+          </div>
+        ))}
+
+        {/* Coaching Unlocks */}
+        {newUnlocks.filter(u => u.type === 'Coaching').map((unlock, idx) => (
+          <div 
+            key={\`coaching-\${idx}\`} 
+            className="flex gap-3 items-start p-3 bg-orange-50 rounded-xl border border-orange-100 cursor-pointer hover:bg-orange-100 transition-colors"
+            onClick={() => navFn(unlock.route)}
+          >
+            <div className="mt-1">
+              <div className="w-2 h-2 rounded-full bg-orange-500" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-xs font-bold text-orange-800 uppercase mb-1">
+                Coaching • {unlock.category}
+              </p>
+              <p className="text-sm font-medium text-slate-800 underline decoration-orange-300 underline-offset-2 break-words">
+                {unlock.label}
+              </p>
             </div>
           </div>
         ))}
@@ -610,6 +684,7 @@ export const WIDGET_TEMPLATES = {
   const safeIsSaving = typeof isSavingScorecard !== 'undefined' ? isSavingScorecard : false;
   const safeStreak = typeof streakCount !== 'undefined' ? streakCount : 0;
   const safeHandleSave = typeof handleSaveScorecard !== 'undefined' ? handleSaveScorecard : () => {};
+  const weekNum = typeof currentWeekNumber !== 'undefined' ? currentWeekNumber : 1;
   
   // Get grounding rep status - either from scorecard or from dedicated state
   const groundingDone = safeScorecard.grounding?.done || (typeof groundingRepCompleted !== 'undefined' && groundingRepCompleted ? 1 : 0);
@@ -619,7 +694,8 @@ export const WIDGET_TEMPLATES = {
   return (
 <Card title="Today's Scorecard" icon={Trophy} accent="ORANGE">
     <div className="space-y-2">
-      {/* Grounding Rep */}
+      {/* Grounding Rep - Only show from Week 2 onwards */}
+      {weekNum > 1 && (
       <div className="flex items-center justify-between p-2 bg-yellow-50 rounded-lg border border-yellow-100">
         <div className="flex items-center gap-2">
           <Zap className="w-4 h-4 text-yellow-600" />
@@ -631,6 +707,7 @@ export const WIDGET_TEMPLATES = {
           {groundingPct === 100 && <CheckCircle className="w-4 h-4 text-green-500" />}
         </div>
       </div>
+      )}
 
       {/* Win the Day */}
       <div className="flex items-center justify-between p-2 bg-teal-50 rounded-lg border border-teal-100">
@@ -677,27 +754,13 @@ export const WIDGET_TEMPLATES = {
     `,
     'course-library': `
 <Card title="Course Library" icon={BookOpen} accent="TEAL">
-  <div className="space-y-3">
-    <div className="flex gap-3 items-center p-2 hover:bg-gray-50 rounded-lg cursor-pointer transition-colors">
-      <div className="w-10 h-10 bg-teal-100 rounded-lg flex items-center justify-center text-teal-600">
-        <Play className="w-5 h-5" />
-      </div>
-      <div>
-        <p className="text-sm font-bold text-gray-800">Strategic Thinking</p>
-        <p className="text-xs text-gray-500">Module 3 • 15 mins</p>
-      </div>
+  <div className="text-center py-6">
+    <div className="w-12 h-12 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-3">
+      <BookOpen className="w-6 h-6 text-slate-400" />
     </div>
-    <div className="flex gap-3 items-center p-2 hover:bg-gray-50 rounded-lg cursor-pointer transition-colors">
-      <div className="w-10 h-10 bg-teal-100 rounded-lg flex items-center justify-center text-teal-600">
-        <Play className="w-5 h-5" />
-      </div>
-      <div>
-        <p className="text-sm font-bold text-gray-800">Team Dynamics</p>
-        <p className="text-xs text-gray-500">Module 1 • 20 mins</p>
-      </div>
-    </div>
+    <p className="text-sm font-medium text-slate-600">Course Library Coming Soon</p>
+    <p className="text-xs text-slate-400 mt-1">Check back for new learning modules.</p>
   </div>
-
 </Card>
     `,
     'reading-hub': `
@@ -1442,65 +1505,56 @@ const LockerReminders = () => {
   if (permission !== 'granted') {
     return (
       <Card title="Daily Reminders" icon={Bell} accent="ORANGE">
-        <div className="flex flex-col items-center justify-center p-6 text-center space-y-4">
-          <div className="p-3 bg-orange-100 rounded-full">
-            <Bell className="w-8 h-8 text-orange-600" />
+        <div className="flex items-center gap-2 -mt-2">
+          <div className="p-2 bg-orange-100 rounded-full flex-shrink-0">
+            <Bell className="w-5 h-5 text-orange-600" />
           </div>
-          <div>
-            <h3 className="font-bold text-slate-900">Enable Notifications</h3>
-            <p className="text-sm text-slate-600 mt-1">
-              Get timely nudges for your AM/PM bookends and to seize the day.
-            </p>
+          <div className="flex-1 min-w-0">
+            <h3 className="font-bold text-slate-900 text-sm">Enable Notifications</h3>
+            <p className="text-xs text-slate-600">Get timely nudges for your AM/PM bookends.</p>
           </div>
           <button
             onClick={requestPermission}
-            className="px-4 py-2 bg-teal-600 text-white rounded-lg font-medium hover:bg-teal-700 transition-colors"
+            className="px-3 py-1.5 bg-teal-600 text-white rounded-lg text-xs font-medium hover:bg-teal-700 transition-colors flex-shrink-0"
           >
-            Allow Notifications
+            Allow
           </button>
-          {permission === 'denied' && (
-            <div className="mt-2 p-3 bg-red-50 border border-red-200 rounded-lg text-left">
-              <p className="text-sm font-semibold text-red-700 mb-2">Notifications are blocked</p>
-              <p className="text-xs text-red-600 mb-2">To enable notifications:</p>
-              <ol className="text-xs text-red-600 space-y-1 list-decimal list-inside">
-                <li><strong>Chrome/Edge:</strong> Click the lock icon (🔒) in the address bar → Site settings → Notifications → Allow</li>
-                <li><strong>Safari:</strong> Safari menu → Settings → Websites → Notifications → Allow for this site</li>
-                <li><strong>Firefox:</strong> Click the lock icon (🔒) → Clear permissions → Refresh page and click Allow</li>
-                <li><strong>Mobile:</strong> Go to your device Settings → App/Browser → Notifications → Enable</li>
-              </ol>
-              <p className="text-xs text-red-500 mt-2 italic">After enabling, refresh this page.</p>
-            </div>
-          )}
         </div>
+        {permission === 'denied' && (
+          <div className="mt-2 p-2 bg-red-50 border border-red-200 rounded-lg text-left">
+            <p className="text-xs font-semibold text-red-700 mb-1">Notifications are blocked</p>
+            <p className="text-[10px] text-red-600">Click the lock icon (🔒) in your address bar → Site settings → Notifications → Allow</p>
+          </div>
+        )}
       </Card>
     );
   }
 
   return (
     <Card title="Daily Reminders" icon={Bell} accent="TEAL">
-      <div className="space-y-4">
+      <div className="space-y-1.5 -mt-2">
         {Object.values(reminders).map((reminder) => (
-          <div key={reminder.id} className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
+          <div key={reminder.id} className="flex items-center justify-between p-2 bg-slate-50 rounded-lg">
             <div className="flex-1">
-              <div className="flex items-center gap-2 mb-1">
-                <p className={\`font-semibold \${reminder.enabled ? 'text-slate-900' : 'text-slate-400'}\`}>
+              <div className="flex items-center gap-2 mb-0.5">
+                <p className={\`font-semibold text-sm \${reminder.enabled ? 'text-slate-900' : 'text-slate-400'}\`}>
                   {reminder.label}
                 </p>
                 {reminder.enabled && (
-                  <span className="text-xs px-2 py-0.5 bg-green-100 text-green-700 rounded-full">
+                  <span className="text-[10px] px-1.5 py-0.5 bg-green-100 text-green-700 rounded-full">
                     Active
                   </span>
                 )}
               </div>
               
               <div className="flex items-center gap-2">
-                <Clock className="w-4 h-4 text-slate-400" />
+                <Clock className="w-3 h-3 text-slate-400" />
                 <input
                   type="time"
                   value={reminder.time}
                   onChange={(e) => updateReminder(reminder.id, { time: e.target.value })}
                   disabled={!reminder.enabled}
-                  className="bg-transparent border-none p-0 text-sm text-slate-600 focus:ring-0 cursor-pointer"
+                  className="bg-transparent border-none p-0 text-xs text-slate-600 focus:ring-0 cursor-pointer"
                 />
               </div>
             </div>
@@ -1508,7 +1562,7 @@ const LockerReminders = () => {
             {/* Toggle Switch */}
             <button
               onClick={() => updateReminder(reminder.id, { enabled: !reminder.enabled })}
-              className={\`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 \${
+              className={\`relative inline-flex h-5 w-9 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 \${
                 reminder.enabled ? 'bg-teal-600' : 'bg-slate-200'
               }\`}
             >
@@ -1646,9 +1700,20 @@ const TimeTravelerWidget = () => {
   
   const { handleResetPlanStartDate, developmentPlanData } = typeof scope !== 'undefined' ? scope : {};
   
-  const startDate = developmentPlanData?.startDate 
-    ? (developmentPlanData.startDate.toDate ? developmentPlanData.startDate.toDate() : new Date(developmentPlanData.startDate))
-    : null;
+  // Handle multiple startDate formats (Firestore Timestamp, {seconds}, Date, string)
+  const rawStartDate = developmentPlanData?.startDate;
+  let startDate = null;
+  if (rawStartDate) {
+    if (rawStartDate.toDate && typeof rawStartDate.toDate === 'function') {
+      startDate = rawStartDate.toDate();
+    } else if (rawStartDate.seconds !== undefined) {
+      startDate = new Date(rawStartDate.seconds * 1000);
+    } else if (rawStartDate instanceof Date) {
+      startDate = rawStartDate;
+    } else if (typeof rawStartDate === 'string' || typeof rawStartDate === 'number') {
+      startDate = new Date(rawStartDate);
+    }
+  }
 
   // Check if time travel is currently active
   const offset = parseInt(localStorage.getItem('time_travel_offset') || '0', 10);
@@ -1890,16 +1955,74 @@ const ScorecardHistoryWidget = () => {
   const safeHistory = typeof commitmentHistory !== 'undefined' ? commitmentHistory : [];
   const [visibleCount, setVisibleCount] = React.useState(3);
   
+  // Get today's date for comparison (respects time travel) - USE LOCAL DATE
+  const timeOffset = parseInt(localStorage.getItem('time_travel_offset') || '0', 10);
+  const simulatedNow = new Date(Date.now() + timeOffset);
+  // Use local date format YYYY-MM-DD (not UTC to avoid timezone issues)
+  const todayStr = \`\${simulatedNow.getFullYear()}-\${String(simulatedNow.getMonth() + 1).padStart(2, '0')}-\${String(simulatedNow.getDate()).padStart(2, '0')}\`;
+  
+  // Helper to normalize any date format to YYYY-MM-DD for comparison
+  const normalizeDate = (dateStr) => {
+    if (!dateStr) return null;
+    // Already YYYY-MM-DD format
+    if (/^\\d{4}-\\d{2}-\\d{2}$/.test(dateStr)) return dateStr;
+    // Handle M/D/YYYY or MM/DD/YYYY format
+    if (dateStr.includes('/')) {
+      const parts = dateStr.split('/');
+      if (parts.length === 3) {
+        const [month, day, year] = parts;
+        return \`\${year}-\${String(month).padStart(2, '0')}-\${String(day).padStart(2, '0')}\`;
+      }
+    }
+    // Fallback: try to parse and format using LOCAL date
+    try {
+      const d = new Date(dateStr);
+      if (!isNaN(d.getTime())) {
+        return \`\${d.getFullYear()}-\${String(d.getMonth() + 1).padStart(2, '0')}-\${String(d.getDate()).padStart(2, '0')}\`;
+      }
+    } catch (e) {}
+    return dateStr;
+  };
+  
+  // Deduplicate entries by normalized date (keep most recent/highest score)
+  const deduplicatedHistory = (() => {
+    const byDate = {};
+    safeHistory.forEach(entry => {
+      const normalized = normalizeDate(entry.date);
+      if (!normalized) return;
+      // Keep the entry with the higher score or the first one encountered
+      if (!byDate[normalized]) {
+        byDate[normalized] = { ...entry, normalizedDate: normalized };
+      } else {
+        // Compare scores - keep the higher one
+        const existingScore = parseInt((byDate[normalized].score || '0').split('/')[0], 10);
+        const newScore = parseInt((entry.score || '0').split('/')[0], 10);
+        if (newScore > existingScore) {
+          byDate[normalized] = { ...entry, normalizedDate: normalized };
+        }
+      }
+    });
+    return Object.values(byDate);
+  })();
+  
   // Sort by date descending (latest first)
-  const sortedHistory = [...safeHistory].sort((a, b) => {
-    if (!a.date) return 1;
-    if (!b.date) return -1;
-    return new Date(b.date) - new Date(a.date);
+  const sortedHistory = [...deduplicatedHistory].sort((a, b) => {
+    if (!a.normalizedDate) return 1;
+    if (!b.normalizedDate) return -1;
+    return b.normalizedDate.localeCompare(a.normalizedDate);
   });
   
   const visibleHistory = sortedHistory.slice(0, visibleCount);
   const hasMore = sortedHistory.length > visibleCount;
   const canShowLess = visibleCount > 3;
+  
+  // Format date for display (M/D/YYYY)
+  const formatDisplayDate = (dateStr) => {
+    const normalized = normalizeDate(dateStr);
+    if (!normalized) return dateStr;
+    const [year, month, day] = normalized.split('-');
+    return \`\${parseInt(month, 10)}/\${parseInt(day, 10)}/\${year}\`;
+  };
 
   return (
     <Card title="Scorecard History" icon={Calendar} className="border-t-4 border-corporate-teal">
@@ -1919,11 +2042,13 @@ const ScorecardHistoryWidget = () => {
                 const [done, total] = (entry.score || "0/0").split('/').map(Number);
                 const pct = total > 0 ? Math.round((done / total) * 100) : 0;
                 const isPerfect = pct === 100;
+                // Use pre-normalized date for comparison
+                const isToday = entry.normalizedDate === todayStr;
                 
                 return (
                   <tr key={index} className="hover:bg-blue-50 transition-colors">
                     <td className="border border-gray-300 px-3 py-2 whitespace-nowrap font-mono text-gray-600">
-                      {entry.date}
+                      {formatDisplayDate(entry.date)}{isToday && <span className="ml-1 text-xs text-blue-500">(Today)</span>}
                     </td>
                     <td className="border border-gray-300 px-3 py-2 whitespace-nowrap font-mono font-bold text-gray-900 text-center">
                       {entry.score} <span className="text-xs text-gray-400 font-normal ml-1">({pct}%)</span>
@@ -1934,8 +2059,8 @@ const ScorecardHistoryWidget = () => {
                           <CheckCircle className="w-3 h-3" /> PERFECT
                         </span>
                       ) : pct > 0 ? (
-                         <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-blue-100 text-blue-700 text-xs font-bold">
-                          IN PROGRESS
+                        <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-amber-100 text-amber-700 text-xs font-bold">
+                          COMPLETE
                         </span>
                       ) : (
                         <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-gray-100 text-gray-500 text-xs font-bold">

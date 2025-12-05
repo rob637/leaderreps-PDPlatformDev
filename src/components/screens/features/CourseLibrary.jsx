@@ -17,26 +17,10 @@ const CourseLibrary = () => {
       accentColor="navy"
     >
       <div className="space-y-4">
-        {[1, 2, 3].map((i) => (
-          <Card key={i}>
-            <div className="p-4 sm:p-6 flex flex-col lg:flex-row gap-4 lg:gap-6 items-start lg:items-center">
-              <div className="w-full lg:w-48 h-32 bg-corporate-navy rounded-lg flex items-center justify-center flex-shrink-0">
-                <PlayCircle className="w-12 h-12 text-white opacity-80" />
-              </div>
-              <div className="flex-1">
-                <div className="flex items-center gap-2 mb-2">
-                  <Badge variant="primary">Module {i}</Badge>
-                  <Text variant="small" className="flex items-center gap-1"><Clock className="w-3 h-3" /> 45 mins</Text>
-                </div>
-                <h3 className="font-bold text-xl text-corporate-navy mb-2">Advanced Team Dynamics</h3>
-                <Text variant="muted">Master the art of building high-performing teams through psychological safety and clear accountability.</Text>
-              </div>
-              <Button variant="primary" className="w-full lg:w-auto">
-                Start Module
-              </Button>
-            </div>
-          </Card>
-        ))}
+        <div className="text-center py-12 bg-slate-50 rounded-xl border border-dashed border-slate-300">
+            <GraduationCap className="w-12 h-12 text-slate-300 mx-auto mb-3" />
+            <p className="text-slate-500">No courses available yet.</p>
+        </div>
       </div>
     </PageLayout>
   );

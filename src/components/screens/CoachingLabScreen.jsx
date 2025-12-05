@@ -1058,12 +1058,17 @@ const ProgressAnalyticsView = ({ setCoachingLabView }) => {
                         <p className="text-sm text-gray-600 mb-4">Track your development across core leadership competencies</p>
                         <div className="space-y-4">
                             {['SBI Framework', 'Active Listening', 'Resolution Drive'].map((skill) => {
-                                const skillAvg = Math.round(50 + Math.random() * 30); // Placeholder - would calculate from actual data
+                                // Calculate real average from practice history
+                                const relevantSessions = practiceHistory.filter(s => s.score > 0); // Use all sessions for now as we don't have granular skill scores yet
+                                const skillAvg = relevantSessions.length > 0 
+                                    ? Math.round(relevantSessions.reduce((sum, s) => sum + s.score, 0) / relevantSessions.length)
+                                    : 0;
+                                
                                 return (
                                     <div key={skill}>
                                         <div className="flex justify-between text-sm mb-2">
                                             <span className="font-semibold text-corporate-navy">{skill}</span>
-                                            <span className="text-gray-600">{skillAvg}/100</span>
+                                            <span className="text-gray-600">{skillAvg > 0 ? `${skillAvg}/100` : 'No Data'}</span>
                                         </div>
                                         <div className="w-full bg-gray-200 rounded-full h-3">
                                             <div 
@@ -1767,7 +1772,7 @@ export default function CoachingLabScreen({ simulatedTier }) {
             onClick: () => {}
         }
     ]
-    .filter(item => isFeatureEnabled(item.featureId) || item.featureId === 'coaching-resources')
+    .filter(item => isFeatureEnabled(item.featureId))
     .sort((a, b) => {
         const orderA = getFeatureOrder(a.featureId);
         const orderB = getFeatureOrder(b.featureId);
@@ -1819,18 +1824,12 @@ export default function CoachingLabScreen({ simulatedTier }) {
                         icon={Beaker}
                         backTo="dashboard"
                         navigate={navigate}
-                        badge={!hasCoachingAccess ? "Requires Premium" : undefined}
                     >
                         {menuItems.length > 0 ? (
                             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                                 {menuItems.map(item => (
-                                    <Card key={item.featureId} title={item.title} icon={item.icon} onClick={hasCoachingAccess ? item.onClick : undefined} accent="TEAL">
+                                    <Card key={item.featureId} title={item.title} icon={item.icon} onClick={item.onClick} accent="TEAL">
                                         <p className="text-sm text-gray-600 mb-3">{item.description}</p>
-                                        {!hasCoachingAccess && (
-                                            <div className="mt-2">
-                                                <span className="inline-block bg-orange-100 text-orange-800 px-2 py-1 rounded-full text-xs font-semibold">Requires Premium</span>
-                                            </div>
-                                        )}
                                     </Card>
                                 ))}
                             </div>
@@ -1844,35 +1843,9 @@ export default function CoachingLabScreen({ simulatedTier }) {
 
     return (
         <div className="p-6 space-y-8 bg-slate-50 min-h-screen">
-            <div className={`relative ${!hasCoachingAccess ? 'opacity-60 pointer-events-none' : ''}`}>
+            <div className="relative">
                 {renderView()}
             </div>
-            
-            {/* Unlock Section for Free Users */}
-            {!hasCoachingAccess && (
-                <div className="mt-8 bg-white rounded-2xl border-2 shadow-lg border-corporate-teal">
-                    <div className="relative z-10 p-8 text-center">
-                        <h3 className="text-2xl font-bold mb-4 text-corporate-navy">
-                            Unlock Coaching Lab
-                        </h3>
-                        
-                        <p className="text-lg text-gray-700 mb-6">
-                            Practice critical conversations with our AI coaching simulator and master difficult conversations in a risk-free environment.
-                        </p>
-                        
-                        <div className="text-center mb-6">
-                            <span className="inline-block bg-orange-100 text-orange-800 px-4 py-2 rounded-full text-sm font-semibold">Requires Premium</span>
-                        </div>
-                        
-                        <button
-                            onClick={() => navigate('membership-upgrade')}
-                            className="bg-gradient-to-r from-teal-600 to-navy-600 text-white px-8 py-4 rounded-xl font-bold text-lg shadow-lg hover:shadow-xl transition-all duration-300"
-                        >
-                            Upgrade Now
-                        </button>
-                    </div>
-                </div>
-            )}
         </div>
     );
 }

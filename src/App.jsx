@@ -30,8 +30,6 @@ import AppContent from './components/layout/AppContent.jsx';
 import DataProvider from './providers/DataProvider.jsx';
 import { FeatureProvider } from './providers/FeatureProvider.jsx';
 import { LayoutProvider } from './providers/LayoutProvider.jsx';
-import { WidgetEditorProvider } from './providers/WidgetEditorProvider.jsx';
-import WidgetEditorModal from './components/admin/WidgetEditorModal.jsx';
 import ConfigError from './components/system/ConfigError.jsx';
 import UpdateNotification from './components/ui/UpdateNotification.jsx';
 import { NotificationProvider } from './providers/NotificationProvider.jsx';
@@ -134,9 +132,8 @@ function App() {
           <FeatureProvider db={firebaseServices?.db}>
             <LayoutProvider>
               <AccessControlProvider>
-                <WidgetEditorProvider>
-                  <NotificationProvider>
-                    {isAuthRequired ? (
+                <NotificationProvider>
+                  {isAuthRequired ? (
                     <AuthPanel 
                       auth={firebaseServices.auth} 
                       onSuccess={() => navigate('dashboard')} 
@@ -154,9 +151,7 @@ function App() {
                       canGoBack={canGoBack}
                     />
                   )}
-                  </NotificationProvider>
-                <WidgetEditorModal />
-                </WidgetEditorProvider>
+                </NotificationProvider>
               </AccessControlProvider>
             </LayoutProvider>
           </FeatureProvider>

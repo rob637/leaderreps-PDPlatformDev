@@ -109,23 +109,62 @@ export const MILESTONE_CONFIG = {
 };
 
 /**
+ * Convert various date formats to a Date object
+ * Handles: Firestore Timestamp, {seconds, nanoseconds} object, Date, string, number
+ */
+const normalizeToDate = (value) => {
+  if (!value) return null;
+  
+  // Firestore Timestamp with toDate() method
+  if (value.toDate && typeof value.toDate === 'function') {
+    return value.toDate();
+  }
+  
+  // Serialized Firestore Timestamp {seconds, nanoseconds}
+  if (value.seconds !== undefined) {
+    return new Date(value.seconds * 1000);
+  }
+  
+  // Already a Date
+  if (value instanceof Date) {
+    return value;
+  }
+  
+  // Number (timestamp in ms)
+  if (typeof value === 'number') {
+    return new Date(value);
+  }
+  
+  // String (ISO or other date string)
+  if (typeof value === 'string') {
+    const parsed = new Date(value);
+    return isNaN(parsed.getTime()) ? null : parsed;
+  }
+  
+  return null;
+};
+
+/**
  * Get the current week number based on plan start date
  */
 export const getCurrentWeek = (planOrStartDate) => {
-  let startDate;
+  let rawStartDate;
   
-  // Handle both plan object and direct startDate string
-  if (typeof planOrStartDate === 'string') {
-    startDate = planOrStartDate;
+  // Handle both plan object and direct startDate value
+  if (typeof planOrStartDate === 'string' || typeof planOrStartDate === 'number') {
+    rawStartDate = planOrStartDate;
+  } else if (planOrStartDate?.seconds !== undefined) {
+    // Direct Firestore Timestamp object
+    rawStartDate = planOrStartDate;
   } else if (planOrStartDate?.startDate) {
-    startDate = planOrStartDate.startDate;
+    rawStartDate = planOrStartDate.startDate;
   } else {
     return 1;
   }
   
-  if (!startDate) return 1;
+  const start = normalizeToDate(rawStartDate);
+  if (!start) return 1;
   
-  const start = new Date(startDate);
   const today = timeService.getNow();
   const diffTime = today - start;
   const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
@@ -310,7 +349,7 @@ export const generatePlanSummary = (plan) => {
  * Calculate end date from start date and duration in days
  */
 export const calculateEndDate = (startDate, durationDays) => {
-  const start = new Date(startDate);
+  const start = normalizeToDate(startDate) || new Date();
   const end = new Date(start);
   end.setDate(end.getDate() + durationDays);
   return end.toISOString().split('T')[0];

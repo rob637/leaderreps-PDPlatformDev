@@ -37,97 +37,56 @@ export const MOCK_STRATEGIC_CONTENT_DATA = {
 };
 
 export const MOCK_MEMBERSHIP_DATA = {
-    status: 'Trial',
-    currentPlanId: 'trial',
-    nextBillingDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+    status: 'Active',
+    currentPlanId: 'free',
+    nextBillingDate: null,
     paymentHistory: [],
     notifications: [
-        { id: 'welcome', message: 'Welcome to your 7-day free trial! Upgrade now to maintain access.', type: 'warning', isRead: false }
+        { id: 'welcome', message: 'Welcome to LeaderReps! All features are available to you.', type: 'info', isRead: false }
     ],
 };
 
 export const MOCK_FEATURE_FLAGS = { 
-  // V1 CORE FEATURES (ENABLED)
+  // ALL FEATURES ENABLED - Single free tier with full access
   enableDevPlan: true,
   enableDailyPractice: true,
-  enableMembershipModule: true,
+  enableMembershipModule: false, // Disabled - no paid tiers
   
-  // TIER-GATED FEATURES (ENABLED - Access controlled by tier)
-  enableReadings: true,       // Professional Reading Hub - Pro+
-  enableCourses: true,        // Course Library - Pro+
-  enableLabs: true,           // AI Coaching Lab - Pro+
-  enableVideos: true,         // Leadership Videos - Pro+
-  enableCommunity: true,      // Community features - Pro+
+  // All content features enabled for everyone
+  enableReadings: true,
+  enableCourses: true,
+  enableLabs: true,
+  enableVideos: true,
+  enableCommunity: true,
   
-  // DEVELOPER/ELITE FEATURES (ENABLED - Dev mode or Elite tier)
-  enableLabsAdvanced: true,   // Advanced Lab features
-  enablePlanningHub: true,    // Strategic Tools - Dev only
-  enableRoiReport: true,      // Executive ROI Report - Dev only
-  enableQuickStart: true,     // Keep QuickStart for onboarding
+  // Developer features
+  enableLabsAdvanced: true,
+  enablePlanningHub: true,
+  enableRoiReport: true,
+  enableQuickStart: true,
   
   // LEGACY/OTHER
   enableNewFeature: false 
 };
 
+// Single free plan - no paid tiers
 export const MOCK_MEMBERSHIP_PLANS = {
     items: [
         { 
-            id: 'basic', 
-            name: 'Base', 
-            price: 29, 
-            recurrence: 'Monthly', 
+            id: 'free', 
+            name: 'LeaderReps', 
+            price: 0, 
+            recurrence: 'Free', 
             features: [
                 'Dashboard & Daily Practice', 
                 'All Leadership Reps',
-                'Workouts & Challenges',
-                'Basic Reading Catalog',
-                'Progress Tracking'
-            ], 
-            tier_id: 'T1' 
-        },
-        { 
-            id: 'professional', 
-            name: 'Professional', 
-            price: 79, 
-            recurrence: 'Monthly', 
-            features: [
-                'Everything in Base',
                 'Full Reading & Video Catalog',
                 'Business Readings',
-                'Executive Reflection',
-                'Priority Support',
-                'Quarterly Strategy Reviews'
+                'AI Coaching Lab',
+                'Community Access',
+                'Progress Tracking'
             ], 
-            tier_id: 'T3' 
-        },
-        { 
-            id: 'elite', 
-            name: 'Elite', 
-            price: 199, 
-            recurrence: 'Monthly', 
-            features: [
-                'Everything in Professional',
-                'Live Courses & Masterclasses',
-                'Executive Coaching Sessions',
-                'Custom Development Plans',
-                'White-Glove Support',
-                'Private Leadership Community',
-                'Annual Leadership Summit Access'
-            ], 
-            tier_id: 'T4' 
-        },
-        { 
-            id: 'trial', 
-            name: 'Free Trial', 
-            price: 0, 
-            recurrence: '7 Days', 
-            features: [
-                'Limited Dashboard Access',
-                'Sample Reps',
-                'Preview of Content',
-                'Basic Progress Tracking'
-            ], 
-            tier_id: 'trial' 
+            tier_id: 'free' 
         }
     ],
 };
@@ -156,14 +115,10 @@ export const MOCK_VIDEO_CATALOG = [];
 
 export const MOCK_SCENARIO_CATALOG = [];
 
-// Tier fallback data
+// Single tier - all users get full access
 export const LEADERSHIP_TIERS_FALLBACK = {
   items: [
-    { id: 'T0', name: 'Trial', access: 'Limited trial access' },
-    { id: 'T1', name: 'Basic', access: 'Core leadership reps and exercises' },
-    { id: 'T2', name: 'Pro', access: 'Advanced content and video library' },
-    { id: 'T3', name: 'Professional', access: 'Full content library and business readings' },
-    { id: 'T4', name: 'Elite', access: 'All features including live courses and coaching' }
+    { id: 'free', name: 'LeaderReps', access: 'Full access to all features' }
   ]
 };
 

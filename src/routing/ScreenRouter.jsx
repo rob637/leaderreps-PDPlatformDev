@@ -1,7 +1,6 @@
 // src/routing/ScreenRouter.jsx
 
 import React, { lazy, Suspense } from 'react';
-import { MembershipGate } from '../components/ui/MembershipGate.jsx';
 
 const ScreenMap = {
   'roadmap-tracker': lazy(() =>
@@ -48,9 +47,6 @@ const ScreenMap = {
     import('../components/screens/AdminDataMaintenance.jsx')
   ),
   'debug-data': lazy(() => import('../components/screens/DebugDataViewer.jsx')),
-  // 'membership-module': lazy(() =>
-  //   import('../components/screens/MembershipModule.jsx')
-  // ),
   'library': lazy(() =>
     import('../components/screens/Library.jsx')
   ),
@@ -95,51 +91,25 @@ const NotFoundScreen = () => (
   </div>
 );
 
-const ScreenRouter = ({ currentScreen, navParams, navigate, isDeveloperMode, simulatedTier }) => {
+const ScreenRouter = ({ currentScreen, navParams, navigate, isDeveloperMode }) => {
   console.log('🗺️ [ScreenRouter] Routing to screen:', { 
     currentScreen, 
-    simulatedTier, 
     isDeveloperMode,
     hasComponent: !!ScreenMap[currentScreen]
   });
   
   const Component = ScreenMap[currentScreen] || NotFoundScreen;
 
-  const screenTierRequirements = {
-    'business-readings': 'premium',
-    'applied-leadership': 'premium',
-    'coaching-lab': 'premium',
-    'community': 'premium',
-    'library': 'premium',
-  };
-
-  const requiredTier = screenTierRequirements[currentScreen];
-  
-  const componentElement = (
+  return (
     <Suspense fallback={<div className="p-8 text-center">Loading...</div>}>
       <Component 
         key={currentScreen} 
         {...(navParams && typeof navParams === 'object' ? navParams : null)} 
         setCurrentScreen={navigate}
         isDeveloperMode={isDeveloperMode}
-        simulatedTier={simulatedTier}
       />
     </Suspense>
   );
-
-  if (requiredTier) {
-    return (
-      <MembershipGate 
-        requiredTier={requiredTier} 
-        featureName={currentScreen}
-        simulatedTier={simulatedTier}
-      >
-        {componentElement}
-      </MembershipGate>
-    );
-  }
-
-  return componentElement;
 };
 
 

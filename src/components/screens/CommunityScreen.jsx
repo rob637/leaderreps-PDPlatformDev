@@ -700,11 +700,10 @@ const CommunityScreen = ({ simulatedTier }) => {
             icon={Users}
             backTo="dashboard"
             navigate={navigate}
-            badge={!hasCommunityAccess ? "Requires Premium" : undefined}
         >
             {/* Main Layout Grid (Sidebar + Content) */}
             {navItems.length > 1 ? (
-                <div className={`grid grid-cols-1 lg:grid-cols-6 gap-6 max-w-[860px] mx-auto ${!hasCommunityAccess ? 'opacity-60 pointer-events-none' : ''}`}>
+                <div className="grid grid-cols-1 lg:grid-cols-6 gap-6 max-w-[860px] mx-auto">
                     {/* Sidebar Navigation */}
                     <aside className="lg:col-span-1 space-y-4 lg:sticky lg:top-6 self-start"> {/* Make sidebar sticky */}
                         <WidgetRenderer widgetId="community-sidebar" scope={scope} />
@@ -718,36 +717,8 @@ const CommunityScreen = ({ simulatedTier }) => {
             ) : (
                 <NoWidgetsEnabled moduleName="Community" />
             )}
-            
-            {/* Unlock Section for Free Users */}
-            {!hasCommunityAccess && (
-                <div className="mt-8 bg-white rounded-2xl border-2 shadow-lg max-w-4xl mx-auto border-corporate-teal">
-                    
-                    <div className="relative z-10 p-8 text-center">
-                        <h3 className="text-2xl font-bold mb-4 text-corporate-navy">
-                            Unlock Leadership Community
-                        </h3>
-                        
-                        <p className="text-lg text-gray-700 mb-6">
-                            Join our community of leaders sharing insights and supporting each other's growth through meaningful discussions.
-                        </p>
-                        
-                        <div className="text-center mb-6">
-                            <span className="inline-block bg-orange-100 text-orange-800 px-4 py-2 rounded-full text-sm font-semibold">Requires Premium</span>
-                        </div>
-                        
-                        <button
-                            onClick={() => navigate('membership-upgrade')}
-                            className="bg-gradient-to-r from-teal-600 to-navy-600 text-white px-8 py-4 rounded-xl font-bold text-lg shadow-lg hover:shadow-xl transition-all duration-300"
-                        >
-                            Upgrade Now
-                        </button>
-                        
-                        <p className="text-xs text-gray-500 mt-3">Connect with leaders who are growing just like you</p>
-                    </div>
-                </div>
-            )}
         </PageLayout>
+
     );
 };
 

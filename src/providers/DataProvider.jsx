@@ -35,6 +35,7 @@ const DataProvider = ({
       return;
     }
 
+    console.log('[DataProvider] Initializing services for userId:', userId);
     setIsLoadingServices(true);
     let createdServices = null;
     try {

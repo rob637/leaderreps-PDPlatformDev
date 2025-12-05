@@ -254,9 +254,9 @@ function BookListStable({ filters, filteredBooks, savedBooks, selectedBook, onSe
                                     <div className="w-10 h-10 rounded-lg bg-slate-50 flex items-center justify-center border border-slate-100 flex-shrink-0">
                                         <BookOpen className="w-5 h-5 text-corporate-teal" />
                                     </div>
-                                    <div className="min-w-0">
-                                        <p className="font-bold text-md leading-tight text-corporate-navy line-clamp-2">{book.title}</p>
-                                        <p className="text-xs italic mt-0.5 text-slate-500 truncate">by {book.author}</p>
+                                    <div className="min-w-0 flex-1">
+                                        <p className="font-bold text-sm leading-snug text-corporate-navy break-words whitespace-normal">{book.title}</p>
+                                        <p className="text-xs italic mt-1 text-slate-500">by {book.author}</p>
                                     </div>
                                 </div>
 

@@ -462,7 +462,17 @@ const CommitmentItem = ({ commitment, onLogCommitment, onRemove }) => {
 
 const ScorecardView = ({ setView, initialGoal, initialTier, isSaving, commitmentData, handleLogCommitment, handleRemoveCommitment, handleSaveReflection, calculateTotalScore, calculateStreak, commitmentHistory, reflection, setReflection }) => {
     const { navigate } = useAppServices();
+    const { currentWeek } = useDevPlan();
     const streak = calculateStreak(commitmentHistory);
+
+    // Filter out Grounding Rep in Week 1
+    const visibleCommitments = (commitmentData?.active_commitments || []).filter(c => {
+        if ((currentWeek <= 1 || !currentWeek) && (c.text === 'Grounding Rep' || c.id === 'grounding-rep')) {
+            return false;
+        }
+        return true;
+    });
+
     return (
         <div className="min-h-screen bg-slate-50 p-6 space-y-8">
             <div className="max-w-[860px] mx-auto">
@@ -503,8 +513,8 @@ const ScorecardView = ({ setView, initialGoal, initialTier, isSaving, commitment
 
                         <Card title="Current Commitments" icon={Target} className="border-t-4 border-corporate-teal">
                             <div className="space-y-4">
-                                {commitmentData?.active_commitments?.length > 0 ? (
-                                    commitmentData.active_commitments.map(c => (
+                                {visibleCommitments.length > 0 ? (
+                                    visibleCommitments.map(c => (
                                         <CommitmentItem 
                                             key={c.id} 
                                             commitment={c} 
@@ -522,7 +532,7 @@ const ScorecardView = ({ setView, initialGoal, initialTier, isSaving, commitment
                                     Daily Score:
                                 </h3>
                                 <span className={`text-4xl font-extrabold p-3 rounded-xl shadow-inner min-w-[100px] text-center ${
-                                    commitmentData?.active_commitments?.length > 0 && commitmentData.active_commitments.every(c => c.status === 'Committed') ? 'text-green-600 bg-green-50' : 'text-corporate-navy bg-slate-100'
+                                    visibleCommitments.length > 0 && visibleCommitments.every(c => c.status === 'Committed') ? 'text-green-600 bg-green-50' : 'text-corporate-navy bg-slate-100'
                                 }`}>
                                     {calculateTotalScore()}
                                 </span>
@@ -584,7 +594,7 @@ export default function DailyPracticeScreen({ initialGoal, initialTier }) {
     const [reflection, setReflection] = useState('');
     
     const userCommitments = useMemo(() => commitmentData?.active_commitments || [], [commitmentData]);
-    const commitmentHistory = useMemo(() => commitmentData?.history || [], [commitmentData]);
+    const commitmentHistory = useMemo(() => commitmentData?.scorecardHistory || commitmentData?.history || [], [commitmentData]);
 
 
     const handleLogCommitment = useCallback(async (id, status) => {

@@ -179,6 +179,7 @@ export const createAppServices = (db, userId) => {
     
     catalogNames.forEach(catalogName => {
       const catalogPath = `metadata/config/catalog/${catalogName}`;
+      // console.log(`[createAppServices] Listening to catalog: ${catalogPath}`);
       const unsubCatalog = onSnapshotEx(db, catalogPath, (snap) => {
         if (snap.exists()) {
           const keyName = catalogName.toUpperCase();

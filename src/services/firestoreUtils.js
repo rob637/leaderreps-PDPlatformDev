@@ -54,6 +54,7 @@ export const onSnapshotEx = (db, path, cb) => {
       console.warn(`[onSnapshotEx] No Firestore DB instance provided for path: ${path}. Using mock (no-op).`);
       return () => {}; 
   }
+  console.log(`[onSnapshotEx] Setting up listener for: ${path}`);
   try {
       return fsOnSnapshot(
           toDocRef(db, path),

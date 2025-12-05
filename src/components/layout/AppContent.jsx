@@ -26,9 +26,6 @@ const AppContent = ({
   const [isDeveloperMode, setIsDeveloperMode] = useState(() => {
     return localStorage.getItem('arena-developer-mode') === 'true';
   });
-
-  // Tier Simulation State (for development/testing)
-  const [simulatedTier, setSimulatedTier] = useState('premium');
   
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
@@ -48,7 +45,6 @@ const AppContent = ({
       updateProfile(user, { displayName: 'Rob Pfleghardt' })
         .then(() => {
           console.log("Profile updated successfully");
-          // Force a reload to reflect changes if needed, or just let React handle it
           window.location.reload();
         })
         .catch(err => console.error("Error updating profile:", err));
@@ -59,27 +55,6 @@ const AppContent = ({
     const newMode = !isDeveloperMode;
     setIsDeveloperMode(newMode);
     localStorage.setItem('arena-developer-mode', newMode.toString());
-  };
-
-  const handleTierChange = (tier) => {
-    console.log('🎚️ [AppContent] Tier changed:', { oldTier: simulatedTier, newTier: tier, isDeveloperMode });
-    setSimulatedTier(tier);
-    localStorage.setItem('arena-simulated-tier', tier);
-    // Trigger a storage event to notify other components
-    window.dispatchEvent(new StorageEvent('storage', {
-      key: 'arena-simulated-tier',
-      newValue: tier
-    }));
-  };
-
-  const tierColors = {
-    free: 'bg-gray-500',
-    premium: 'bg-orange-500'
-  };
-
-  const tierLabels = {
-    free: 'Free',
-    premium: 'Premium'
   };
 
   const { navigate, isAdmin, membershipData, logout, globalMetadata } = useAppServices();
@@ -147,7 +122,6 @@ const AppContent = ({
                   navParams={navParams}
                   navigate={navigate}
                   isDeveloperMode={isDeveloperMode}
-                  simulatedTier={simulatedTier}
                 />
               </Suspense>
             </div>

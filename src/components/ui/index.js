@@ -77,7 +77,6 @@ export {
 export { List, ListItem, ListItemAction, ListSection } from './ListItem';
 
 // Feature Components
-export { default as MembershipGate } from './MembershipGate';
 export { default as PWAInstall } from './PWAInstall';
 export { default as ScrollingQuotes } from './ScrollingQuotes';
 export { default as UpdateNotification } from './UpdateNotification';

@@ -38,7 +38,8 @@ export const useDevPlan = () => {
   // 1. Fetch Master Plan (The 26 Weeks)
   useEffect(() => {
     const fetchMasterPlan = async () => {
-      if (!db) return;
+      // Wait for both db AND authenticated user before fetching
+      if (!db || !user) return;
       try {
         const weeksRef = collection(db, 'development_plan_v1');
         const q = query(weeksRef, orderBy('weekNumber', 'asc'));
@@ -58,7 +59,7 @@ export const useDevPlan = () => {
     };
 
     fetchMasterPlan();
-  }, [db]);
+  }, [db, user]);
 
   // 2. Derive User State
   const userState = useMemo(() => {
