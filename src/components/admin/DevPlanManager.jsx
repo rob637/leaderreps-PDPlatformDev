@@ -74,10 +74,45 @@ const DevPlanManager = () => {
       const weeksRef = collection(db, 'development_plan_v1');
       const q = query(weeksRef, orderBy('weekNumber', 'asc'));
       const weeksSnapshot = await getDocs(q);
-      const weeksData = weeksSnapshot.docs.map(doc => ({
+      let weeksData = weeksSnapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
       }));
+      
+      // DEBUG: Log all documents to see duplicates
+      console.log('[DevPlanManager] All documents from Firestore:', weeksData.map(w => ({
+        docId: w.id,
+        weekNumber: w.weekNumber,
+        title: w.title
+      })));
+      
+      // Deduplicate by weekNumber - if multiple docs have the same weekNumber,
+      // prefer the one with a numeric ID over 'week-XX' format (legacy naming)
+      const byWeekNumber = new Map();
+      weeksData.forEach(week => {
+        const existing = byWeekNumber.get(week.weekNumber);
+        if (!existing) {
+          byWeekNumber.set(week.weekNumber, week);
+        } else {
+          // If existing is 'week-XX' format and current is numeric, prefer current
+          const existingIsLegacy = /^week-\d+$/i.test(existing.id);
+          const currentIsLegacy = /^week-\d+$/i.test(week.id);
+          if (existingIsLegacy && !currentIsLegacy) {
+            console.log(`[DevPlanManager] Preferring doc "${week.id}" over legacy "${existing.id}" for weekNumber ${week.weekNumber}`);
+            byWeekNumber.set(week.weekNumber, week);
+          } else if (!existingIsLegacy && currentIsLegacy) {
+            console.log(`[DevPlanManager] Keeping doc "${existing.id}" over legacy "${week.id}" for weekNumber ${week.weekNumber}`);
+          } else {
+            // Both are same type - keep the first one
+            console.warn(`[DevPlanManager] Duplicate weekNumber ${week.weekNumber} found: "${existing.id}" and "${week.id}". Keeping first.`);
+          }
+        }
+      });
+      
+      // Convert back to array and sort
+      weeksData = Array.from(byWeekNumber.values()).sort((a, b) => a.weekNumber - b.weekNumber);
+      console.log('[DevPlanManager] After deduplication:', weeksData.length, 'weeks');
+      
       setWeeks(weeksData);
 
     } catch (error) {

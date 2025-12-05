@@ -147,11 +147,53 @@ exports.scheduledDailyRollover = onSchedule(
           };
           const existingScorecardHistory = currentData.scorecardHistory || currentData.commitmentHistory || [];
 
+          // === STREAK CALCULATION ===
+          // User maintains streak if they completed at least ONE of:
+          // 1. Grounding Rep (groundingRepCompleted)
+          // 2. Win the Day (at least one win completed)
+          // 3. Daily Rep (at least one rep committed)
+          const currentStreakCount = currentData.streakCount || 0;
+          const lastStreakDate = currentData.lastStreakDate;
+          
+          const groundingDone = currentData.groundingRepCompleted ? 1 : 0;
+          const winsDone = scorecard.win?.done || 0;
+          const repsDone = scorecard.reps?.done || completedReps.length;
+          
+          const didActivity = groundingDone > 0 || winsDone > 0 || repsDone > 0;
+          
+          // Check if today is a weekend (Saturday=6, Sunday=0)
+          const todayDate = new Date(dataDate + 'T12:00:00'); // Parse date at noon to avoid timezone issues
+          const dayOfWeek = todayDate.getDay();
+          const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
+          
+          let newStreakCount = currentStreakCount;
+          
+          if (didActivity) {
+            // User did at least one activity - increment streak
+            newStreakCount = currentStreakCount + 1;
+            logger.info(`User ${userId}: Activity detected (grounding=${groundingDone}, wins=${winsDone}, reps=${repsDone}). Streak: ${currentStreakCount} -> ${newStreakCount}`);
+          } else if (isWeekend) {
+            // Weekend with no activity - maintain streak (grace period)
+            logger.info(`User ${userId}: Weekend with no activity. Streak maintained at ${currentStreakCount}`);
+          } else {
+            // Weekday with no activity - reset streak
+            newStreakCount = 0;
+            logger.info(`User ${userId}: Weekday with no activity. Streak reset: ${currentStreakCount} -> 0`);
+          }
+
           // === PREPARE NEW STATE ===
           const newState = {
             ...currentData,
             date: tomorrow,
             lastUpdated: new Date().toISOString(),
+
+            // Update Streak
+            streakCount: newStreakCount,
+            lastStreakDate: dataDate,
+            streakHistory: [
+              { date: dataDate, streak: newStreakCount, didActivity, isWeekend },
+              ...(currentData.streakHistory || []).slice(0, 29) // Keep last 30 days
+            ],
 
             // Update Histories (dedup by date/id)
             winsList: [...newWinsHistoryEntry, ...existingWinsList].filter(

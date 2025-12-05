@@ -45,10 +45,45 @@ export const useDevPlan = () => {
         const q = query(weeksRef, orderBy('weekNumber', 'asc'));
         const snapshot = await getDocs(q);
         
-        const weeks = snapshot.docs.map(doc => ({
+        let weeks = snapshot.docs.map(doc => ({
           id: doc.id,
           ...doc.data()
         }));
+        
+        // DEBUG: Log all documents before deduplication
+        console.log('[useDevPlan] All documents from Firestore:', weeks.map(w => ({
+          docId: w.id,
+          weekNumber: w.weekNumber
+        })));
+        
+        // Deduplicate by weekNumber - if multiple docs have the same weekNumber,
+        // prefer the one with a numeric ID over 'week-XX' format (legacy naming)
+        const byWeekNumber = new Map();
+        weeks.forEach(week => {
+          const existing = byWeekNumber.get(week.weekNumber);
+          if (!existing) {
+            byWeekNumber.set(week.weekNumber, week);
+          } else {
+            // If existing is 'week-XX' format and current is numeric, prefer current
+            const existingIsLegacy = /^week-\d+$/i.test(existing.id);
+            const currentIsLegacy = /^week-\d+$/i.test(week.id);
+            if (existingIsLegacy && !currentIsLegacy) {
+              console.log(`[useDevPlan] Preferring doc "${week.id}" over legacy "${existing.id}" for weekNumber ${week.weekNumber}`);
+              byWeekNumber.set(week.weekNumber, week);
+            }
+            // Otherwise keep existing
+          }
+        });
+        
+        // Convert back to array and sort
+        weeks = Array.from(byWeekNumber.values()).sort((a, b) => (a.weekNumber || 0) - (b.weekNumber || 0));
+        
+        // DEBUG: Log the masterPlan order after deduplication
+        console.log('[useDevPlan] After deduplication - masterPlan:', weeks.map((w, i) => ({
+          arrayIndex: i,
+          docId: w.id,
+          weekNumber: w.weekNumber
+        })));
         
         setMasterPlan(weeks);
       } catch (error) {
@@ -168,11 +203,18 @@ export const useDevPlan = () => {
   }, [userState.startDate, userState.currentWeekIndex, simulatedNow, timeOffset]);
 
   const currentWeek = useMemo(() => {
-    if (masterPlan.length === 0) return null;
+    console.log('[useDevPlan] Computing currentWeek. masterPlan.length:', masterPlan.length, 'currentWeekIndex:', currentWeekIndex);
+    
+    if (masterPlan.length === 0) {
+      console.log('[useDevPlan] masterPlan is empty, returning null');
+      return null;
+    }
     
     // Ensure index is within bounds
     const safeIndex = Math.min(Math.max(0, currentWeekIndex), masterPlan.length - 1);
     const weekData = masterPlan[safeIndex];
+    
+    console.log('[useDevPlan] safeIndex:', safeIndex, 'weekData.weekNumber:', weekData?.weekNumber, 'weekData.id:', weekData?.id);
     
     // Get user progress for this specific week
     const progressKey = weekData.weekBlockId || `week-${String(weekData.weekNumber).padStart(2, '0')}`;

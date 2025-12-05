@@ -20,6 +20,7 @@ export const useDashboard = ({
   dailyPracticeData,
   updateDailyPracticeData, // <--- Prop from useAppServices
   globalMetadata, // <--- Added for Scorecard calculation
+  devPlanCurrentWeek, // <--- Added for Scorecard reps from Dev Plan (12/05/25)
   db,
   userId
 }) => {
@@ -470,13 +471,24 @@ export const useDashboard = ({
     const groundingPct = groundingDone * 100;
     
     // 2. Daily Reps Logic
-    // Add additional commitments (Daily Reps from Dev Plan)
+    // FIXED 12/05/25: Use reps from Development Plan current week, not stale additionalCommitments
     let repsTotal = 0;
     let repsDone = 0;
     
-    if (additionalCommitments && additionalCommitments.length > 0) {
-      repsTotal = additionalCommitments.length;
-      repsDone = additionalCommitments.filter(c => c.status === 'Committed').length;
+    // Get the reps from the current Dev Plan week
+    const devPlanReps = devPlanCurrentWeek?.dailyReps || devPlanCurrentWeek?.reps || [];
+    
+    if (devPlanReps && devPlanReps.length > 0) {
+      repsTotal = devPlanReps.length;
+      // Check completion status from additionalCommitments (persisted user data)
+      // IMPORTANT: Use same ID extraction logic as the widget (repId || id || rep-${idx})
+      repsDone = devPlanReps.filter((rep, idx) => {
+        // Get the rep ID using same logic as widgetTemplates.js daily-leader-reps widget
+        const repId = rep.repId || rep.id || `rep-${idx}`;
+        // Find matching commitment in user's persisted data
+        const commitment = additionalCommitments?.find(c => c.id === repId);
+        return commitment?.status === 'Committed';
+      }).length;
     }
     
     const repsPct = repsTotal > 0 ? Math.round((repsDone / repsTotal) * 100) : 0;
@@ -495,7 +507,32 @@ export const useDashboard = ({
       reps: { done: repsDone, total: repsTotal, pct: repsPct },
       win: { done: winDone, total: winTotal, pct: winPct }
     };
-  }, [groundingRepCompleted, additionalCommitments, morningWins]);
+  }, [groundingRepCompleted, additionalCommitments, morningWins, devPlanCurrentWeek]);
+
+  // === LIVE STREAK CALCULATION ===
+  // Calculate what the streak WILL BE after today is processed
+  // This gives users immediate feedback when they complete their first activity
+  const liveStreakCount = useMemo(() => {
+    const baseStreak = dailyPracticeData?.streakCount || 0;
+    
+    // Check if user has done any activity TODAY
+    const hasGroundingToday = groundingRepCompleted;
+    const hasWinToday = morningWins.some(w => w.completed && w.text?.trim());
+    const hasRepToday = additionalCommitments.some(c => c.status === 'Committed');
+    
+    const didActivityToday = hasGroundingToday || hasWinToday || hasRepToday;
+    
+    // If they've done activity today, show what streak will be after rollover (+1)
+    // Otherwise show current streak (which may be 0 if they missed yesterday)
+    if (didActivityToday) {
+      // Show current streak + 1 to give immediate feedback
+      // The nightly rollover will make this official
+      return baseStreak + 1;
+    }
+    
+    // If no activity yet, show the base streak (maintained or reset by nightly rollover)
+    return baseStreak;
+  }, [dailyPracticeData?.streakCount, groundingRepCompleted, morningWins, additionalCommitments]);
 
   /* =========================================================
      MIDNIGHT ROLLOVER LOGIC (Time Traveler Feature)
@@ -1449,8 +1486,8 @@ export const useDashboard = ({
     handleGroundingRepComplete,
     handleGroundingRepClose,
 
-    // Streak
-    streakCount,
+    // Streak - use liveStreakCount for real-time feedback
+    streakCount: liveStreakCount,
     streakCoins,
     
     // Additional Reps

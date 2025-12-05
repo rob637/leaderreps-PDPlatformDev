@@ -53,6 +53,13 @@ const Dashboard = (props) => {
   const { layoutMode } = useLayout();
   const { isFeatureEnabled, getFeatureOrder } = useFeatures();
 
+  // 2. Development Plan (moved up for scorecard calculation) - with Time Travel support
+  const { currentWeek: devPlanCurrentWeek, userState: devPlanUserState, simulatedNow } = useDevPlan();
+
+  // DEBUG: Log the current week being returned
+  console.log('[Dashboard] devPlanCurrentWeek:', devPlanCurrentWeek?.weekNumber, devPlanCurrentWeek?.id, devPlanCurrentWeek);
+  console.log('[Dashboard] devPlanUserState:', devPlanUserState);
+
   // --- HOOKS ---
   const {
     // Identity & Anchors
@@ -121,6 +128,7 @@ const Dashboard = (props) => {
     dailyPracticeData,
     updateDailyPracticeData,
     globalMetadata, // Pass globalMetadata for scorecard calculation
+    devPlanCurrentWeek, // Pass Dev Plan current week for scorecard reps (12/05/25)
     db,
     userId: user?.uid
   });
@@ -166,9 +174,7 @@ const Dashboard = (props) => {
     return quotes[today % quotes.length];
   }, [globalMetadata]);
 
-  // 2. Weekly Focus - Now uses Development Plan with Time Travel support
-  const { currentWeek: devPlanCurrentWeek, userState: devPlanUserState, simulatedNow } = useDevPlan();
-  
+  // Weekly Focus - uses Development Plan (already retrieved above) with Time Travel support
   // Get focus from current week in Dev Plan, with fallbacks
   const weeklyFocus = useMemo(() => {
     // Priority 1: Current week's focus from Development Plan (time-travel aware)
