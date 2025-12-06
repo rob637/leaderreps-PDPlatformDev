@@ -99,6 +99,13 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
+    // Coaching Registrations
+    match /coaching_registrations/{document} {
+      allow read: if request.auth != null && (request.auth.uid == resource.data.userId || isAdmin());
+      allow create: if request.auth != null && request.auth.uid == request.resource.data.userId;
+      allow update, delete: if request.auth != null && (request.auth.uid == resource.data.userId || isAdmin());
+    }
+
     // System Alerts & Logs
     match /system_alerts/{document=**} {
       allow read: if isAdmin();
