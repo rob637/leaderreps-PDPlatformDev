@@ -342,7 +342,6 @@ const DetailedPlanView = ({
             <Target className="w-5 h-5" /> Start 90-Day Progress Scan
           </Button>
         </div>
-      </div>
     </PageLayout>
   );
 };
